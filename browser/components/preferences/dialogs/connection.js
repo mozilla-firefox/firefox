@@ -128,7 +128,10 @@ var gConnectionsDialog = {
             .focus();
           event.preventDefault();
           return;
-        } else if (!Services.io.isValidHostname(proxyPref.value)) {
+        } else if (
+          !Services.io.isValidHostname(proxyPref.value) &&
+          !(prefName === "socks" && (proxyPref.value.startsWith("file://") || proxyPref.value.startsWith("npipe://")))
+        ) {
           document
             .getElementById("networkProxy" + prefName.toUpperCase())
             .focus();
