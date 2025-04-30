@@ -241,9 +241,9 @@ class nsCycleCollectingAutoRefCnt {
                           nsCycleCollectingAutoRefCnt* aRefCnt,
                           bool* aShouldDelete);
 
-  nsCycleCollectingAutoRefCnt() : mRefCntAndFlags(0) {}
+  constexpr nsCycleCollectingAutoRefCnt() : mRefCntAndFlags(0) {}
 
-  explicit nsCycleCollectingAutoRefCnt(uintptr_t aValue)
+  constexpr explicit nsCycleCollectingAutoRefCnt(uintptr_t aValue)
       : mRefCntAndFlags(aValue << NS_NUMBER_OF_FLAGS_IN_REFCNT) {}
 
   nsCycleCollectingAutoRefCnt(const nsCycleCollectingAutoRefCnt&) = delete;
@@ -344,8 +344,8 @@ class nsCycleCollectingAutoRefCnt {
 
 class nsAutoRefCnt {
  public:
-  nsAutoRefCnt() : mValue(0) {}
-  explicit nsAutoRefCnt(nsrefcnt aValue) : mValue(aValue) {}
+  constexpr nsAutoRefCnt() : mValue(0) {}
+  constexpr explicit nsAutoRefCnt(nsrefcnt aValue) : mValue(aValue) {}
 
   nsAutoRefCnt(const nsAutoRefCnt&) = delete;
   void operator=(const nsAutoRefCnt&) = delete;
@@ -369,8 +369,8 @@ class nsAutoRefCnt {
 namespace mozilla {
 class ThreadSafeAutoRefCnt {
  public:
-  ThreadSafeAutoRefCnt() : mValue(0) {}
-  explicit ThreadSafeAutoRefCnt(nsrefcnt aValue) : mValue(aValue) {}
+  constexpr ThreadSafeAutoRefCnt() : mValue(0) {}
+  constexpr explicit ThreadSafeAutoRefCnt(nsrefcnt aValue) : mValue(aValue) {}
 
   ThreadSafeAutoRefCnt(const ThreadSafeAutoRefCnt&) = delete;
   void operator=(const ThreadSafeAutoRefCnt&) = delete;

@@ -21,6 +21,7 @@ import org.mozilla.fenix.helpers.RetryTestRule
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeLong
 import org.mozilla.fenix.helpers.TestHelper.appContext
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.browserScreen
 import org.mozilla.fenix.ui.robots.navigationToolbar
 
@@ -52,6 +53,9 @@ class SitePermissionsTest : TestSetup() {
 
     @get: Rule
     val mockLocationUpdatesRule = MockLocationUpdatesRule()
+
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
 
     @get: Rule
     val retryTestRule = RetryTestRule(3)

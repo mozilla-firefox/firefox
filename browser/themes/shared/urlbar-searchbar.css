@@ -301,12 +301,8 @@
   display: none;
 }
 
-#urlbar[breakout][breakout-extend],
-#urlbar[breakout][breakout-extend-disabled][open] {
-  height: auto;
-}
-
 #urlbar[breakout][breakout-extend] {
+  height: auto;
   margin-left: calc(-1 * var(--urlbar-margin-inline));
   width: calc(var(--urlbar-width) + 2 * var(--urlbar-margin-inline));
 
@@ -1029,7 +1025,7 @@
 /* Search bar */
 
 #search-container,
-#wrapper-search-container {
+#wrapper-search-container:not([place="panel"]) {
   flex: 175 175 auto;
 }
 

@@ -703,6 +703,31 @@ mozilla::ipc::IPCResult SocketProcessChild::RecvGetHttpConnectionData(
   return IPC_OK();
 }
 
+mozilla::ipc::IPCResult SocketProcessChild::RecvGetHttp3ConnectionStatsData(
+    GetHttp3ConnectionStatsDataResolver&& aResolve) {
+  if (!gSocketTransportService) {
+    aResolve(nsTArray<Http3ConnectionStatsParams>());
+    return IPC_OK();
+  }
+
+  RefPtr<DataResolver<nsTArray<Http3ConnectionStatsParams>,
+                      SocketProcessChild::GetHttp3ConnectionStatsDataResolver>>
+      resolver = new DataResolver<
+          nsTArray<Http3ConnectionStatsParams>,
+          SocketProcessChild::GetHttp3ConnectionStatsDataResolver>(
+          std::move(aResolve));
+  gSocketTransportService->Dispatch(
+      NS_NewRunnableFunction(
+          "net::SocketProcessChild::RecvGetHttpConnectionStatsData",
+          [resolver{std::move(resolver)}]() {
+            nsTArray<Http3ConnectionStatsParams> data;
+            HttpInfo::GetHttp3ConnectionStatsData(&data);
+            resolver->OnResolve(std::move(data));
+          }),
+      NS_DISPATCH_NORMAL);
+  return IPC_OK();
+}
+
 mozilla::ipc::IPCResult SocketProcessChild::RecvInitProxyAutoConfigChild(
     Endpoint<PProxyAutoConfigChild>&& aEndpoint) {
   // For parsing PAC.

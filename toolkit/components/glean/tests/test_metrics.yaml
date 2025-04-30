@@ -787,6 +787,26 @@ test_only:
     send_in_pings:
       - collection-disabled-ping
 
+  expired_hist:
+    type: custom_distribution
+    description: >
+      a testing histogram; not meant to be touched
+
+      This metric was generated to correspond to the Legacy Telemetry linear
+      histogram TELEMETRY_TEST_EXPIRED.
+    range_min: 1
+    range_max: 10
+    bucket_count: 3
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956726
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956726
+    notification_emails:
+      - telemetry-client-dev@mozilla.com
+    expires: never
+    telemetry_mirror: TELEMETRY_TEST_EXPIRED
+
 test_only.ipc:
   a_counter:
     type: counter

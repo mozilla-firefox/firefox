@@ -45,7 +45,7 @@ import org.mozilla.fenix.helpers.ext.waitNotNull
 class SettingsSubMenuLoginsAndPasswordsSavedLoginsRobot {
     fun verifySecurityPromptForLogins() {
         Log.i(TAG, "verifySecurityPromptForLogins: Trying to verify that the \"Secure your saved passwords\" dialog is visible")
-        onView(withText("Secure your saved passwords")).check(
+        onView(withText("Secure your saved passwords")).inRoot(RootMatchers.isDialog()).check(
             matches(
                 withEffectiveVisibility(
                     ViewMatchers.Visibility.VISIBLE,

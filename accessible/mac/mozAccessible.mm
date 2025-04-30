@@ -887,22 +887,19 @@ struct RoleDescrComparator {
                                  : nullptr;
   if (maybeRoot && maybeRoot->IsRoot() &&
       [[self moxDOMIdentifier] isEqualToString:@"a11y-announcement"]) {
-    // Our actual announcement should be stored as a child of the alert,
-    // so we verify a child exists, and then query that child below.
-    NSArray* children = [self moxChildren];
-    MOZ_ASSERT([children count] == 1 && children[0],
-               "A11yUtil event received, but no announcement found?");
-
-    mozAccessible* announcement = children[0];
-    NSString* key;
-    if ([announcement providesLabelNotTitle]) {
-      key = [announcement moxLabel];
+    nsAutoString name;
+    // Our actual announcement should be stored as a child of the alert.
+    if (Accessible* announcement = mGeckoAccessible->FirstChild()) {
+      announcement->Name(name);
     } else {
-      key = [announcement moxTitle];
+      MOZ_ASSERT_UNREACHABLE(
+          "A11yUtil event received, but no announcement found?");
     }
 
     NSDictionary* info = @{
-      NSAccessibilityAnnouncementKey : key ? key : @(""),
+      NSAccessibilityAnnouncementKey : name.IsEmpty()
+          ? @("")
+          : nsCocoaUtils::ToNSString(name),
       // High priority means VO will stop what it is currently speaking
       // to speak our announcement.
       NSAccessibilityPriorityKey : @(NSAccessibilityPriorityHigh)

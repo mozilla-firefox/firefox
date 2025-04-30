@@ -10,7 +10,7 @@ const { ExperimentFakes } = ChromeUtils.importESModule(
  */
 add_task(async function test_nimbus_user_prefs() {
   const nimbus = "sidebar.nimbus";
-  const vertical = "sidebar.verticalTabs";
+  const vertical = VERTICAL_TABS_PREF;
 
   Assert.ok(
     !Services.prefs.prefHasUserValue(nimbus),

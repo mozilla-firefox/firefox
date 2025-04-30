@@ -72,6 +72,10 @@ namespace jit {
   _(MarkLoadsUsedAsPropertyKeys)           \
   /* Output a list of MIR expressions */   \
   _(MIRExpressions)                        \
+  /* Summary info about loop unrolling */  \
+  _(Unroll)                                \
+  /* Detailed info about loop unrolling */ \
+  _(UnrollDetails)                         \
   /* Information about stub folding */     \
   _(StubFolding)                           \
                                            \

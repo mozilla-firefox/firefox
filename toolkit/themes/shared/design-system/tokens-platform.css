@@ -39,6 +39,12 @@
     --font-size-xlarge: unset;
     --font-size-xxlarge: unset;
 
+    /** Link **/
+    --link-color: LinkText;
+    --link-color-hover: color-mix(in srgb, black 10%, var(--link-color));
+    --link-color-active: color-mix(in srgb, black 20%, var(--link-color));
+    --link-color-visited: var(--link-color);
+
     /** Table Row **/
     --table-row-background-color-alternate: light-dark(rgba(0,0,0,5%), rgba(255,255,255,5%)); /* TODO Bug 1821203 - Gray use needs to be consolidated */
 

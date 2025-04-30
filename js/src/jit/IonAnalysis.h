@@ -37,7 +37,7 @@ class MTest;
 
 [[nodiscard]] bool FoldTests(MIRGraph& graph);
 
-[[nodiscard]] bool FoldEmptyBlocks(MIRGraph& graph);
+[[nodiscard]] bool FoldEmptyBlocks(MIRGraph& graph, bool* changed);
 
 [[nodiscard]] bool SplitCriticalEdges(MIRGraph& graph);
 
@@ -188,10 +188,37 @@ bool IsDiscardable(const MDefinition* def);
 bool IsDiscardableAllowEffectful(const MDefinition* def);
 
 class CompileInfo;
-void DumpMIRExpressions(GenericPrinter& out, MIRGraph& graph,
-                        const CompileInfo& info, const char* phase);
-void DumpMIRDefinition(GenericPrinter& out, const MDefinition* def);
 
+// Debug printing.  For avoidance of ambiguity resulting from use of integer
+// IDs for MBasicBlocks and MDefinitions, these routines can optionally be
+// asked to dump a base-26 hashed version of pointers too.  Be aware these are
+// not guaranteed to be unique, although collisions are very unlikely.
+
+// Dump `p`, hashed, to `out`.
+void DumpHashedPointer(GenericPrinter& out, const void* p);
+
+// Dump the ID and possibly the pointer hash of `def`, to `out`.
+void DumpMIRDefinitionID(GenericPrinter& out, const MDefinition* def,
+                         bool showHashedPointers = false);
+// Dump an MDefinition to `out`.
+void DumpMIRDefinition(GenericPrinter& out, const MDefinition* def,
+                       bool showHashedPointers = false);
+
+// Dump the ID and possibly the pointer hash of `block`, to `out`.
+void DumpMIRBlockID(GenericPrinter& out, const MBasicBlock* block,
+                    bool showHashedPointers = false);
+// Dump an MBasicBlock to `out`.
+void DumpMIRBlock(GenericPrinter& out, MBasicBlock* block,
+                  bool showHashedPointers = false);
+
+// Dump an entire MIRGraph to `out`.
+void DumpMIRGraph(GenericPrinter& out, MIRGraph& graph,
+                  bool showHashedPointers = false);
+
+// Legacy entry point for DumpMIRGraph.
+void DumpMIRExpressions(GenericPrinter& out, MIRGraph& graph,
+                        const CompileInfo& info, const char* phase,
+                        bool showHashedPointers = false);
 }  // namespace jit
 }  // namespace js
 

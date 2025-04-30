@@ -118,11 +118,6 @@ nsresult AppendAppNotesToCrashReport(const nsACString& data) {
 
 bool GetAnnotation(const nsACString& key, nsACString& data) { return false; }
 
-void GetAnnotation(ProcessId childPid, Annotation annotation,
-                   nsACString& outStr) {
-  return;
-}
-
 nsresult RegisterAppMemory(void* ptr, size_t length) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
@@ -203,13 +198,27 @@ bool WriteExtraFile(const nsAString& id, const AnnotationTable& annotations) {
   return false;
 }
 
-void OOPInit() {}
+#if defined(MOZ_WIDGET_ANDROID)
+void SetNotificationPipeForChild(FileHandle breakpadFd,
+                                 FileHandle crashHelperFd) {}
+#endif  // defined(MOZ_WIDGET_ANDROID)
 
 CrashPipeType GetChildNotificationPipe() { return nullptr; }
 
+#if defined(MOZ_WIDGET_ANDROID)
+void SetCrashHelperPipes(FileHandle breakpadFd, FileHandle crashHelperFd) {}
+#endif // defined(MOZ_WIDGET_ANDROID)
+
+#if defined(XP_LINUX) && !defined(MOZ_WIDGET_ANDROID)
+MOZ_EXPORT ProcessId GetCrashHelperPid() { return -1; };
+#endif  // XP_LINUX && !defined(MOZ_WIDGET_ANDROID)
+
 bool GetLastRunCrashID(nsAString& id) { return false; }
 
-bool SetRemoteExceptionHandler(CrashPipeType aCrashPipe) { return false; }
+bool SetRemoteExceptionHandler(CrashPipeType aCrashPipe,
+                               ProcessId aCrashHelperPid) {
+  return false;
+}
 
 bool TakeMinidumpForChild(ProcessId childPid, nsIFile** dump,
                           AnnotationTable& aAnnotations) {

@@ -47,6 +47,10 @@ namespace js {
   aobj->initShape(shape);
   aobj->initFixedElements(kind, length);
 
+  if (MOZ_UNLIKELY(length > INT32_MAX)) {
+    cx->runtime()->hasSeenArrayExceedsInt32LengthFuse.ref().popFuse(cx);
+  }
+
   if (!nDynamicSlots) {
     aobj->initEmptyDynamicSlots();
   } else if (!aobj->allocateInitialSlots(cx, nDynamicSlots)) {

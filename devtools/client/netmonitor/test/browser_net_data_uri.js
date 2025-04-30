@@ -54,10 +54,9 @@ add_task(async function test_content_request_to_data_uri() {
   const IMAGE_URL =
     "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
   const URL = `https://example.com/document-builder.sjs?html=
-  <h1>Test page for content data uri request</h1>
-  <img src="${IMAGE_URL}"></iframe>`;
+  <h1>Test page for content data uri request</h1>`;
 
-  const { monitor } = await initNetMonitor(URL, {
+  const { monitor, tab } = await initNetMonitor(URL, {
     requestCount: 1,
     waitForLoad: false,
   });
@@ -68,9 +67,18 @@ add_task(async function test_content_request_to_data_uri() {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 2);
+  let onNetworkEvents = waitForNetworkEvents(monitor, 1);
   reloadBrowser({ waitForLoad: false });
-  await wait;
+  await onNetworkEvents;
+
+  info("Load an image in content with a data URI");
+  onNetworkEvents = waitForNetworkEvents(monitor, 1);
+  await SpecialPowers.spawn(tab.linkedBrowser, [IMAGE_URL], imageURL => {
+    const img = content.document.createElement("img");
+    img.src = imageURL;
+    content.document.body.appendChild(img);
+  });
+  await onNetworkEvents;
 
   const firstItem = document.querySelectorAll(".request-list-item")[1];
 

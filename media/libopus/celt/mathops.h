@@ -490,6 +490,12 @@ void celt_float2int16_c(const float * OPUS_RESTRICT in, short * OPUS_RESTRICT ou
 #define celt_float2int16(in, out, cnt, arch) ((void)(arch), celt_float2int16_c(in, out, cnt))
 #endif
 
+int opus_limit2_checkwithin1_c(float *samples, int cnt);
+
+#ifndef OVERRIDE_LIMIT2_CHECKWITHIN1
+#define opus_limit2_checkwithin1(samples, cnt, arch) ((void)(arch), opus_limit2_checkwithin1_c(samples, cnt))
+#endif
+
 #endif /* DISABLE_FLOAT_API */
 
 #endif /* MATHOPS_H */

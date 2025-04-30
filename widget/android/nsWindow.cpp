@@ -1997,6 +1997,11 @@ void GeckoViewSupport::AttachAccessibility(
       jni::NativeWeakPtrHolder<a11y::SessionAccessibility>::Attach(
           sessionAccessibility, mWindow->mGeckoViewSupport,
           sessionAccessibility);
+
+  DispatchToUiThread(
+      "GeckoViewSupport::AttachAccessibility",
+      [sa = java::SessionAccessibility::NativeProvider::GlobalRef(
+           sessionAccessibility)] { sa->SetAttached(true); });
 }
 
 auto GeckoViewSupport::OnLoadRequest(mozilla::jni::String::Param aUri,
@@ -2956,6 +2961,10 @@ void nsWindow::DispatchHitTest(const WidgetTouchEvent& aEvent) {
 }
 
 void nsWindow::PassExternalResponse(java::WebResponse::Param aResponse) {
+  if (Destroyed()) {
+    return;
+  }
+
   auto acc(mGeckoViewSupport.Access());
   if (!acc) {
     return;
@@ -3277,8 +3286,9 @@ void nsWindow::NotifyCompositorScrollUpdate(
     const auto& compositor = lvs->GetJavaCompositor();
     mContentDocumentDisplayed = true;
     compositor->NotifyCompositorScrollUpdate(
-        aUpdate.mVisualScrollOffset.x, aUpdate.mVisualScrollOffset.y,
-        aUpdate.mZoom.scale, ConvertScrollUpdateSource(aUpdate.mSource));
+        aUpdate.mMetrics.mVisualScrollOffset.x,
+        aUpdate.mMetrics.mVisualScrollOffset.y, aUpdate.mMetrics.mZoom.scale,
+        ConvertScrollUpdateSource(aUpdate.mSource));
   }
 }
 

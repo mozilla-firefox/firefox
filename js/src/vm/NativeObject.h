@@ -1388,8 +1388,7 @@ class NativeObject : public JSObject {
 
   // The maximum number of usable dense elements in an object.
   static const uint32_t MAX_DENSE_ELEMENTS_COUNT =
-      MAX_DENSE_ELEMENTS_ALLOCATION - ObjectElements::VALUES_PER_HEADER -
-      gc::LargeBufferHeaderSize / sizeof(Value);
+      MAX_DENSE_ELEMENTS_ALLOCATION - ObjectElements::VALUES_PER_HEADER;
 
   static void elementsSizeMustNotOverflow() {
     static_assert(

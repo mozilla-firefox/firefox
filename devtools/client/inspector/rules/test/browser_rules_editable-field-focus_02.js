@@ -51,7 +51,7 @@ async function testEditableFieldFocus(
     "Focus should have moved to the new property span"
   );
 
-  for (const textProp of ruleEditor.rule.textProps.slice(0).reverse()) {
+  for (const textProp of ruleEditor.rule.textProps.toReversed()) {
     const propEditor = textProp.editor;
 
     await focusNextField(view, ruleEditor, commitKey, options);

@@ -15,7 +15,7 @@ class IntTest {
         val expected = "٥"
         val numberUnderTest = 5
 
-        JavaLocale.setDefault(JavaLocale("ar"))
+        JavaLocale.setDefault(JavaLocale.forLanguageTag("ar"))
 
         assertEquals(expected, numberUnderTest.toLocaleString())
     }

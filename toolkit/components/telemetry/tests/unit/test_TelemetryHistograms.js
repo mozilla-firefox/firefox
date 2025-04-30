@@ -12,9 +12,17 @@ function numberRange(lower, upper) {
   return a;
 }
 
-function check_histogram(histogram_type, name, min, max) {
+function check_histogram(glean_name, histogram_type, name, min, max) {
+  function add(val) {
+    let metric = Glean.testOnlyIpc[glean_name];
+    if (metric.accumulate) {
+      metric.accumulate(val);
+    } else {
+      metric.accumulateSingleSample(val);
+    }
+  }
   var h = Telemetry.getHistogramById(name);
-  h.add(0);
+  add(0);
   var s = h.snapshot();
   Assert.equal(0, s.sum);
 
@@ -25,8 +33,8 @@ function check_histogram(histogram_type, name, min, max) {
   Assert.deepEqual(gh.range, [min, max]);
 
   // Check that booleans work with nonboolean histograms
-  h.add(false);
-  h.add(true);
+  add(false);
+  add(true);
   s = Object.values(h.snapshot().values);
   Assert.deepEqual(s, [2, 1, 0]);
 
@@ -36,8 +44,8 @@ function check_histogram(histogram_type, name, min, max) {
   Assert.deepEqual(s.values, {});
   Assert.equal(s.sum, 0);
 
-  h.add(0);
-  h.add(1);
+  add(0);
+  add(1);
   var c = Object.values(h.snapshot().values);
   Assert.deepEqual(c, [1, 1, 0]);
 }
@@ -54,7 +62,7 @@ add_task(
     // Instantiate the subsession histogram through |add| and make sure they match.
     // This MUST be the first use of "TELEMETRY_TEST_COUNT" in this file, otherwise
     // |add| will not instantiate the histogram.
-    h.add(1);
+    Glean.testOnlyIpc.aCounterForHgram.add();
     let snapshot = h.snapshot();
     let subsession = Telemetry.getSnapshotForHistograms(
       "main",
@@ -74,32 +82,20 @@ add_task(
 add_task(async function test_parameterChecks() {
   let kinds = [Telemetry.HISTOGRAM_EXPONENTIAL, Telemetry.HISTOGRAM_LINEAR];
   let testNames = ["TELEMETRY_TEST_EXPONENTIAL", "TELEMETRY_TEST_LINEAR"];
+  let gleanNames = ["aTimingDist", "aMemoryDist"];
   for (let i = 0; i < kinds.length; i++) {
     let histogram_type = kinds[i];
     let test_type = testNames[i];
+    let glean_name = gleanNames[i];
     let [min, max, bucket_count] = [1, INT_MAX - 1, 10];
-    check_histogram(histogram_type, test_type, min, max, bucket_count);
-  }
-});
-
-add_task(async function test_parameterCounts() {
-  let histogramIds = [
-    "TELEMETRY_TEST_EXPONENTIAL",
-    "TELEMETRY_TEST_LINEAR",
-    "TELEMETRY_TEST_CATEGORICAL",
-    "TELEMETRY_TEST_BOOLEAN",
-  ];
-
-  for (let id of histogramIds) {
-    let h = Telemetry.getHistogramById(id);
-    h.clear();
-    h.add();
-    Assert.equal(
-      h.snapshot().sum,
-      0,
-      "Calling add() without a value should only log an error."
+    check_histogram(
+      glean_name,
+      histogram_type,
+      test_type,
+      min,
+      max,
+      bucket_count
     );
-    h.clear();
   }
 });
 
@@ -139,52 +135,34 @@ add_task(async function test_boolean_histogram() {
   var r = h.snapshot().range;
   // boolean histograms ignore numeric parameters
   Assert.deepEqual(r, [1, 2]);
-  h.add(0);
-  h.add(1);
-  h.add(2);
 
-  h.add(true);
-  h.add(false);
+  Glean.testOnlyIpc.aLabeledCounterForHgram.true.add();
+  Glean.testOnlyIpc.aLabeledCounterForHgram.false.add();
   var s = h.snapshot();
   Assert.equal(s.histogram_type, Telemetry.HISTOGRAM_BOOLEAN);
-  // last bucket should always be 0 since .add parameters are normalized to either 0 or 1
-  Assert.deepEqual(s.values, { 0: 2, 1: 3, 2: 0 });
-  Assert.equal(s.sum, 3);
+  Assert.deepEqual(s.values, { 0: 1, 1: 1, 2: 0 });
+  Assert.equal(s.sum, 1);
 });
 
 add_task(async function test_count_histogram() {
-  let h = Telemetry.getHistogramById("TELEMETRY_TEST_COUNT2");
+  let h = Telemetry.getHistogramById("TELEMETRY_TEST_COUNT");
+  h.clear();
   let s = h.snapshot();
   Assert.deepEqual(s.range, [1, 2]);
   Assert.deepEqual(s.values, {});
   Assert.equal(s.sum, 0);
-  h.add();
+  Glean.testOnlyIpc.aCounterForHgram.add();
   s = h.snapshot();
   Assert.deepEqual(s.values, { 0: 1, 1: 0 });
   Assert.equal(s.sum, 1);
-  h.add();
+  Glean.testOnlyIpc.aCounterForHgram.add();
   s = h.snapshot();
   Assert.deepEqual(s.values, { 0: 2, 1: 0 });
   Assert.equal(s.sum, 2);
 });
 
 add_task(async function test_categorical_histogram() {
-  let h1 = Telemetry.getHistogramById("TELEMETRY_TEST_CATEGORICAL");
-  for (let v of ["CommonLabel", "Label2", "Label3", "Label3", 0, 0, 1]) {
-    h1.add(v);
-  }
-  for (let s of ["", "Label4", "1234"]) {
-    // The |add| method should not throw for unexpected values, but rather
-    // print an error message in the console.
-    h1.add(s);
-  }
-
-  let snapshot = h1.snapshot();
-  Assert.equal(snapshot.sum, 6);
-  Assert.deepEqual(snapshot.range, [1, 50]);
-  Assert.deepEqual(snapshot.values, { 0: 3, 1: 2, 2: 2, 3: 0 });
-
-  let h2 = Telemetry.getHistogramById("TELEMETRY_TEST_CATEGORICAL_OPTOUT");
+  let h = Telemetry.getHistogramById("TELEMETRY_TEST_CATEGORICAL_OPTOUT");
   for (let v of [
     "CommonLabel",
     "CommonLabel",
@@ -194,29 +172,17 @@ add_task(async function test_categorical_histogram() {
     0,
     1,
   ]) {
-    h2.add(v);
+    Glean.testOnlyIpc.aLabeledCounterForCategorical[v].add();
   }
   for (let s of ["", "Label3", "1234"]) {
-    // The |add| method should not throw for unexpected values, but rather
-    // print an error message in the console.
-    h2.add(s);
+    // Should not throw for unexpected values.
+    Glean.testOnlyIpc.aLabeledCounterForCategorical[s].add();
   }
 
-  snapshot = h2.snapshot();
-  Assert.equal(snapshot.sum, 7);
+  let snapshot = h.snapshot();
+  Assert.equal(snapshot.sum, 6);
   Assert.deepEqual(snapshot.range, [1, 50]);
-  Assert.deepEqual(snapshot.values, { 0: 3, 1: 2, 2: 1, 3: 1, 4: 0 });
-
-  // This histogram overrides the default of 50 values to 70.
-  let h3 = Telemetry.getHistogramById("TELEMETRY_TEST_CATEGORICAL_NVALUES");
-  for (let v of ["CommonLabel", "Label7", "Label8"]) {
-    h3.add(v);
-  }
-
-  snapshot = h3.snapshot();
-  Assert.equal(snapshot.sum, 3);
-  Assert.deepEqual(snapshot.range, [1, 70]);
-  Assert.deepEqual(snapshot.values, { 0: 1, 1: 1, 2: 1, 3: 0 });
+  Assert.deepEqual(snapshot.values, { 0: 2, 1: 1, 2: 1, 3: 1, 4: 0 });
 });
 
 add_task(async function test_getCategoricalLabels() {
@@ -246,29 +212,12 @@ add_task(async function test_getCategoricalLabels() {
 });
 
 add_task(async function test_add_error_behaviour() {
-  const PLAIN_HISTOGRAMS_TO_TEST = [
-    "TELEMETRY_TEST_EXPONENTIAL",
-    "TELEMETRY_TEST_LINEAR",
-    "TELEMETRY_TEST_BOOLEAN",
-  ];
-
   const KEYED_HISTOGRAMS_TO_TEST = [
     "TELEMETRY_TEST_KEYED_COUNT",
     "TELEMETRY_TEST_KEYED_BOOLEAN",
   ];
 
-  // Check that |add| doesn't throw for plain histograms.
-  for (let hist of PLAIN_HISTOGRAMS_TO_TEST) {
-    const returnValue =
-      Telemetry.getHistogramById(hist).add("unexpected-value");
-    Assert.strictEqual(
-      returnValue,
-      undefined,
-      "Adding to an histogram must return 'undefined'."
-    );
-  }
-
-  // And for keyed histograms.
+  // Check that |add| doesn't throw for keyed histograms.
   for (let hist of KEYED_HISTOGRAMS_TO_TEST) {
     const returnValue = Telemetry.getKeyedHistogramById(hist).add(
       "some-key",
@@ -286,15 +235,9 @@ add_task(async function test_API_return_values() {
   // Check that the plain scalar functions don't allow to crash the browser.
   // We expect 'undefined' to be returned so that .add(1).add() can't be called.
   // See bug 1321349 for context.
-  let hist = Telemetry.getHistogramById("TELEMETRY_TEST_LINEAR");
   let keyedHist = Telemetry.getKeyedHistogramById("TELEMETRY_TEST_KEYED_COUNT");
 
-  const RETURN_VALUES = [
-    hist.clear(),
-    hist.add(1),
-    keyedHist.clear(),
-    keyedHist.add("some-key", 1),
-  ];
+  const RETURN_VALUES = [keyedHist.clear(), keyedHist.add("some-key", 1)];
 
   for (let returnValue of RETURN_VALUES) {
     Assert.strictEqual(
@@ -326,18 +269,16 @@ add_task(async function test_privateMode() {
   var h = Telemetry.getHistogramById("TELEMETRY_TEST_BOOLEAN");
   var orig = h.snapshot();
   Telemetry.canRecordExtended = false;
-  h.add(1);
+  Glean.testOnlyIpc.aLabeledCounterForHgram.true.add();
   Assert.deepEqual(orig, h.snapshot());
   Telemetry.canRecordExtended = true;
-  h.add(1);
+  Glean.testOnlyIpc.aLabeledCounterForHgram.true.add();
   Assert.notDeepEqual(orig, h.snapshot());
 });
 
 add_task(async function test_expired_histogram() {
   var test_expired_id = "TELEMETRY_TEST_EXPIRED";
-  var dummy = Telemetry.getHistogramById(test_expired_id);
-
-  dummy.add(1);
+  Glean.testOnly.expiredHist.accumulateSingleSample(1);
 
   for (let process of ["main", "content", "gpu", "extension"]) {
     let histograms = Telemetry.getSnapshotForHistograms(
@@ -608,91 +549,6 @@ add_task(async function test_keyed_keys() {
   );
 });
 
-add_task(async function test_count_multiple_samples() {
-  let valid = [1, 1, 3, 0];
-  let invalid = ["1", "0", "", "random"];
-
-  let h = Telemetry.getHistogramById("TELEMETRY_TEST_COUNT");
-  h.clear();
-
-  // If the array contains even a single invalid value, no accumulation should take place
-  // Keep the valid values in front of invalid to check if it is simply accumulating as
-  // it's traversing the array and throwing upon first invalid value. That should not happen.
-  h.add(valid.concat(invalid));
-  let s1 = h.snapshot();
-  Assert.equal(s1.sum, 0);
-  // Ensure that no accumulations of 0-like values took place.
-  // These accumulations won't increase the sum.
-  Assert.deepEqual({}, s1.values);
-
-  h.add(valid);
-  let s2 = h.snapshot();
-  Assert.deepEqual(s2.values, { 0: 4, 1: 0 });
-  Assert.equal(s2.sum, 5);
-});
-
-add_task(async function test_categorical_multiple_samples() {
-  let h = Telemetry.getHistogramById("TELEMETRY_TEST_CATEGORICAL");
-  h.clear();
-  let valid = ["CommonLabel", "Label2", "Label3", "Label3", 0, 0, 1];
-  let invalid = ["", "Label4", "1234", "0", "1", 5000];
-
-  // At least one invalid parameter, so no accumulation should happen here
-  // Valid values in front of invalid.
-  h.add(valid.concat(invalid));
-  let s1 = h.snapshot();
-  Assert.equal(s1.sum, 0);
-  Assert.deepEqual({}, s1.values);
-
-  h.add(valid);
-  let snapshot = h.snapshot();
-  Assert.equal(snapshot.sum, 6);
-  Assert.deepEqual(snapshot.values, { 0: 3, 1: 2, 2: 2, 3: 0 });
-});
-
-add_task(async function test_boolean_multiple_samples() {
-  let valid = [true, false, 0, 1, 2];
-  let invalid = ["", "0", "1", ",2", "true", "false", "random"];
-
-  let h = Telemetry.getHistogramById("TELEMETRY_TEST_BOOLEAN");
-  h.clear();
-
-  // At least one invalid parameter, so no accumulation should happen here
-  // Valid values in front of invalid.
-  h.add(valid.concat(invalid));
-  let s1 = h.snapshot();
-  Assert.equal(s1.sum, 0);
-  Assert.deepEqual({}, s1.values);
-
-  h.add(valid);
-  let s = h.snapshot();
-  Assert.deepEqual(s.values, { 0: 2, 1: 3, 2: 0 });
-  Assert.equal(s.sum, 3);
-});
-
-add_task(async function test_linear_multiple_samples() {
-  // According to telemetry.mozilla.org/histogram-simulator, bucket at
-  // index 1 of TELEMETRY_TEST_LINEAR has max value of 268.44M
-  let valid = [0, 1, 5, 10, 268450000, 268450001, Math.pow(2, 31) + 1];
-  let invalid = ["", "0", "1", "random"];
-
-  let h = Telemetry.getHistogramById("TELEMETRY_TEST_LINEAR");
-  h.clear();
-
-  // At least one invalid paramater, so no accumulations.
-  // Valid values in front of invalid.
-  h.add(valid.concat(invalid));
-  let s1 = h.snapshot();
-  Assert.equal(s1.sum, 0);
-  Assert.deepEqual({}, s1.values);
-
-  h.add(valid);
-  let s2 = h.snapshot();
-  // Values >= INT32_MAX are accumulated as INT32_MAX - 1
-  Assert.equal(s2.sum, valid.reduce((acc, cur) => acc + cur) - 3);
-  Assert.deepEqual(Object.values(s2.values), [1, 3, 2, 1]);
-});
-
 add_task(async function test_keyed_no_arguments() {
   // Test for no accumulation when add is called with no arguments
   let h = Telemetry.getKeyedHistogramById("TELEMETRY_TEST_KEYED_LINEAR");
@@ -818,155 +674,6 @@ add_task(
   {
     skip_if: () => gIsAndroid,
   },
-  async function test_productSpecificHistograms() {
-    const DEFAULT_PRODUCTS_HISTOGRAM = "TELEMETRY_TEST_DEFAULT_PRODUCTS";
-    const DESKTOP_ONLY_HISTOGRAM = "TELEMETRY_TEST_DESKTOP_ONLY";
-    const MULTIPRODUCT_HISTOGRAM = "TELEMETRY_TEST_MULTIPRODUCT";
-    const MOBILE_ONLY_HISTOGRAM = "TELEMETRY_TEST_MOBILE_ONLY";
-
-    var default_histo = Telemetry.getHistogramById(DEFAULT_PRODUCTS_HISTOGRAM);
-    var desktop_histo = Telemetry.getHistogramById(DESKTOP_ONLY_HISTOGRAM);
-    var multiproduct_histo = Telemetry.getHistogramById(MULTIPRODUCT_HISTOGRAM);
-    var mobile_histo = Telemetry.getHistogramById(MOBILE_ONLY_HISTOGRAM);
-    default_histo.clear();
-    desktop_histo.clear();
-    multiproduct_histo.clear();
-    mobile_histo.clear();
-
-    default_histo.add(42);
-    desktop_histo.add(42);
-    multiproduct_histo.add(42);
-    mobile_histo.add(42);
-
-    let histograms = Telemetry.getSnapshotForHistograms(
-      "main",
-      false /* clear */
-    ).parent;
-
-    Assert.ok(
-      DEFAULT_PRODUCTS_HISTOGRAM in histograms,
-      "Should have recorded default products histogram"
-    );
-    Assert.ok(
-      DESKTOP_ONLY_HISTOGRAM in histograms,
-      "Should have recorded desktop-only histogram"
-    );
-    Assert.ok(
-      MULTIPRODUCT_HISTOGRAM in histograms,
-      "Should have recorded multiproduct histogram"
-    );
-
-    Assert.ok(
-      !(MOBILE_ONLY_HISTOGRAM in histograms),
-      "Should not have recorded mobile-only histogram"
-    );
-  }
-);
-
-add_task(
-  {
-    skip_if: () => !gIsAndroid,
-  },
-  async function test_mobileSpecificHistograms() {
-    const DEFAULT_PRODUCTS_HISTOGRAM = "TELEMETRY_TEST_DEFAULT_PRODUCTS";
-    const DESKTOP_ONLY_HISTOGRAM = "TELEMETRY_TEST_DESKTOP_ONLY";
-    const MULTIPRODUCT_HISTOGRAM = "TELEMETRY_TEST_MULTIPRODUCT";
-    const MOBILE_ONLY_HISTOGRAM = "TELEMETRY_TEST_MOBILE_ONLY";
-
-    var default_histo = Telemetry.getHistogramById(DEFAULT_PRODUCTS_HISTOGRAM);
-    var desktop_histo = Telemetry.getHistogramById(DESKTOP_ONLY_HISTOGRAM);
-    var multiproduct_histo = Telemetry.getHistogramById(MULTIPRODUCT_HISTOGRAM);
-    var mobile_histo = Telemetry.getHistogramById(MOBILE_ONLY_HISTOGRAM);
-    default_histo.clear();
-    desktop_histo.clear();
-    multiproduct_histo.clear();
-    mobile_histo.clear();
-
-    default_histo.add(1);
-    desktop_histo.add(1);
-    multiproduct_histo.add(1);
-    mobile_histo.add(1);
-
-    let histograms = Telemetry.getSnapshotForHistograms(
-      "main",
-      false /* clear */
-    ).parent;
-
-    Assert.ok(
-      DEFAULT_PRODUCTS_HISTOGRAM in histograms,
-      "Should have recorded default products histogram"
-    );
-    Assert.ok(
-      MOBILE_ONLY_HISTOGRAM in histograms,
-      "Should have recorded mobile-only histogram"
-    );
-    Assert.ok(
-      MULTIPRODUCT_HISTOGRAM in histograms,
-      "Should have recorded multiproduct histogram"
-    );
-
-    Assert.ok(
-      !(DESKTOP_ONLY_HISTOGRAM in histograms),
-      "Should not have recorded desktop-only histogram"
-    );
-  }
-);
-
-add_task(async function test_productsOverride() {
-  Services.prefs.setBoolPref(
-    "toolkit.telemetry.testing.overrideProductsCheck",
-    true
-  );
-  const DEFAULT_PRODUCTS_HISTOGRAM = "TELEMETRY_TEST_DEFAULT_PRODUCTS";
-  const DESKTOP_ONLY_HISTOGRAM = "TELEMETRY_TEST_DESKTOP_ONLY";
-  const MULTIPRODUCT_HISTOGRAM = "TELEMETRY_TEST_MULTIPRODUCT";
-  const MOBILE_ONLY_HISTOGRAM = "TELEMETRY_TEST_MOBILE_ONLY";
-
-  var default_histo = Telemetry.getHistogramById(DEFAULT_PRODUCTS_HISTOGRAM);
-  var desktop_histo = Telemetry.getHistogramById(DESKTOP_ONLY_HISTOGRAM);
-  var multiproduct_histo = Telemetry.getHistogramById(MULTIPRODUCT_HISTOGRAM);
-  var mobile_histo = Telemetry.getHistogramById(MOBILE_ONLY_HISTOGRAM);
-  default_histo.clear();
-  desktop_histo.clear();
-  multiproduct_histo.clear();
-  mobile_histo.clear();
-
-  default_histo.add(1);
-  desktop_histo.add(1);
-  multiproduct_histo.add(1);
-  mobile_histo.add(1);
-
-  let histograms = Telemetry.getSnapshotForHistograms(
-    "main",
-    false /* clear */
-  ).parent;
-
-  Assert.ok(
-    DEFAULT_PRODUCTS_HISTOGRAM in histograms,
-    "Should have recorded default products histogram"
-  );
-  Assert.ok(
-    MOBILE_ONLY_HISTOGRAM in histograms,
-    "Should have recorded mobile-only histogram"
-  );
-  Assert.ok(
-    MULTIPRODUCT_HISTOGRAM in histograms,
-    "Should have recorded multiproduct histogram"
-  );
-
-  Assert.ok(
-    DESKTOP_ONLY_HISTOGRAM in histograms,
-    "Should not have recorded desktop-only histogram"
-  );
-  Services.prefs.clearUserPref(
-    "toolkit.telemetry.testing.overrideProductsCheck"
-  );
-});
-
-add_task(
-  {
-    skip_if: () => gIsAndroid,
-  },
   async function test_clearHistogramsOnSnapshot() {
     const COUNT = "TELEMETRY_TEST_COUNT";
     let h = Telemetry.getHistogramById(COUNT);
@@ -981,7 +688,7 @@ add_task(
     Assert.ok(!(COUNT in snapshot));
 
     // After recording into a histogram, the data should be in the snapshot. Don't delete it.
-    h.add(1);
+    Glean.testOnlyIpc.aCounterForHgram.add(1);
 
     Assert.equal(h.snapshot().sum, 1);
     snapshot = Telemetry.getSnapshotForHistograms(
@@ -993,7 +700,7 @@ add_task(
 
     // After recording into a histogram again, the data should be updated and in the snapshot.
     // Clean up after.
-    h.add(41);
+    Glean.testOnlyIpc.aCounterForHgram.add(41);
 
     Assert.equal(h.snapshot().sum, 42);
     snapshot = Telemetry.getSnapshotForHistograms(
@@ -1019,60 +726,6 @@ add_task(async function test_multistore_individual_histogram() {
   let id;
   let hist;
   let snapshot;
-
-  id = "TELEMETRY_TEST_MAIN_ONLY";
-  hist = Telemetry.getHistogramById(id);
-  snapshot = hist.snapshot();
-  Assert.equal(0, snapshot.sum, `Histogram ${id} should be empty.`);
-  hist.add(1);
-  snapshot = hist.snapshot();
-  Assert.equal(
-    1,
-    snapshot.sum,
-    `Histogram ${id} should have recorded one value.`
-  );
-  hist.clear();
-  snapshot = hist.snapshot();
-  Assert.equal(0, snapshot.sum, `Histogram ${id} should be cleared.`);
-
-  id = "TELEMETRY_TEST_MULTIPLE_STORES";
-  hist = Telemetry.getHistogramById(id);
-  snapshot = hist.snapshot();
-  Assert.equal(0, snapshot.sum, `Histogram ${id} should be empty.`);
-  hist.add(1);
-  snapshot = hist.snapshot();
-  Assert.equal(
-    1,
-    snapshot.sum,
-    `Histogram ${id} should have recorded one value.`
-  );
-  hist.clear();
-  snapshot = hist.snapshot();
-  Assert.equal(0, snapshot.sum, `Histogram ${id} should be cleared.`);
-
-  // When sync only, then the snapshot will be empty on the main store
-  id = "TELEMETRY_TEST_SYNC_ONLY";
-  hist = Telemetry.getHistogramById(id);
-  snapshot = hist.snapshot();
-  Assert.equal(
-    undefined,
-    snapshot,
-    `Histogram ${id} should not be in the 'main' storage`
-  );
-  hist.add(1);
-  snapshot = hist.snapshot();
-  Assert.equal(
-    undefined,
-    snapshot,
-    `Histogram ${id} should not be in the 'main' storage`
-  );
-  hist.clear();
-  snapshot = hist.snapshot();
-  Assert.equal(
-    undefined,
-    snapshot,
-    `Histogram ${id} should not be in the 'main' storage`
-  );
 
   id = "TELEMETRY_TEST_KEYED_MULTIPLE_STORES";
   hist = Telemetry.getKeyedHistogramById(id);
@@ -1124,54 +777,6 @@ add_task(async function test_multistore_main_snapshot() {
   let hist;
   let snapshot;
 
-  // Plain histograms
-
-  // Fill with data
-  id = "TELEMETRY_TEST_MAIN_ONLY";
-  hist = Telemetry.getHistogramById(id);
-  hist.add(1);
-
-  id = "TELEMETRY_TEST_MULTIPLE_STORES";
-  hist = Telemetry.getHistogramById(id);
-  hist.add(1);
-
-  id = "TELEMETRY_TEST_SYNC_ONLY";
-  hist = Telemetry.getHistogramById(id);
-  hist.add(1);
-
-  // Getting snapshot and NOT clearing (using default values for optional parameters)
-  snapshot = Telemetry.getSnapshotForHistograms().parent;
-  id = "TELEMETRY_TEST_MAIN_ONLY";
-  Assert.ok(id in snapshot, `${id} should be in a main store snapshot`);
-  id = "TELEMETRY_TEST_MULTIPLE_STORES";
-  Assert.ok(id in snapshot, `${id} should be in a main store snapshot`);
-  id = "TELEMETRY_TEST_SYNC_ONLY";
-  Assert.ok(!(id in snapshot), `${id} should not be in a main store snapshot`);
-
-  // Data should still be in, getting snapshot and clearing
-  snapshot = Telemetry.getSnapshotForHistograms(
-    "main",
-    /* clear */ true
-  ).parent;
-  id = "TELEMETRY_TEST_MAIN_ONLY";
-  Assert.ok(id in snapshot, `${id} should be in a main store snapshot`);
-  id = "TELEMETRY_TEST_MULTIPLE_STORES";
-  Assert.ok(id in snapshot, `${id} should be in a main store snapshot`);
-  id = "TELEMETRY_TEST_SYNC_ONLY";
-  Assert.ok(!(id in snapshot), `${id} should not be in a main store snapshot`);
-
-  // Should be empty after clearing
-  snapshot = Telemetry.getSnapshotForHistograms(
-    "main",
-    /* clear */ false
-  ).parent;
-  id = "TELEMETRY_TEST_MAIN_ONLY";
-  Assert.ok(!(id in snapshot), `${id} should not be in a main store snapshot`);
-  id = "TELEMETRY_TEST_MULTIPLE_STORES";
-  Assert.ok(!(id in snapshot), `${id} should not be in a main store snapshot`);
-  id = "TELEMETRY_TEST_SYNC_ONLY";
-  Assert.ok(!(id in snapshot), `${id} should not be in a main store snapshot`);
-
   // Keyed histograms
 
   // Fill with data
@@ -1222,69 +827,6 @@ add_task(async function test_multistore_argument_handling() {
   let id;
   let hist;
   let snapshot;
-
-  // Plain Histograms
-
-  id = "TELEMETRY_TEST_MULTIPLE_STORES";
-  hist = Telemetry.getHistogramById(id);
-  hist.add(37);
-
-  // No argument
-  snapshot = hist.snapshot();
-  Assert.equal(37, snapshot.sum, `${id} should be in a default store snapshot`);
-
-  hist.clear();
-  snapshot = hist.snapshot();
-  Assert.equal(0, snapshot.sum, `${id} should be cleared in the default store`);
-
-  snapshot = hist.snapshot({ store: "sync" });
-  Assert.equal(
-    37,
-    snapshot.sum,
-    `${id} should not have been cleared in the sync store`
-  );
-
-  Assert.throws(
-    () => hist.snapshot(2, "or", "more", "arguments"),
-    /one argument/,
-    "snapshot should check argument count"
-  );
-  Assert.throws(
-    () => hist.snapshot(2),
-    /object argument/,
-    "snapshot should check argument type"
-  );
-  Assert.throws(
-    () => hist.snapshot({}),
-    /property/,
-    "snapshot should check for object property"
-  );
-  Assert.throws(
-    () => hist.snapshot({ store: 1 }),
-    /string/,
-    "snapshot should check object property's type"
-  );
-
-  Assert.throws(
-    () => hist.clear(2, "or", "more", "arguments"),
-    /one argument/,
-    "clear should check argument count"
-  );
-  Assert.throws(
-    () => hist.clear(2),
-    /object argument/,
-    "clear should check argument type"
-  );
-  Assert.throws(
-    () => hist.clear({}),
-    /property/,
-    "clear should check for object property"
-  );
-  Assert.throws(
-    () => hist.clear({ store: 1 }),
-    /string/,
-    "clear should check object property's type"
-  );
 
   // Keyed Histogram
 
@@ -1357,55 +899,6 @@ add_task(async function test_multistore_argument_handling() {
   );
 });
 
-add_task(async function test_multistore_sync_snapshot() {
-  Telemetry.canRecordExtended = true;
-  // Clear histograms
-  Telemetry.getSnapshotForHistograms("main", true);
-  Telemetry.getSnapshotForHistograms("sync", true);
-
-  let id;
-  let hist;
-  let snapshot;
-
-  // Plain histograms
-
-  // Fill with data
-  id = "TELEMETRY_TEST_MAIN_ONLY";
-  hist = Telemetry.getHistogramById(id);
-  hist.add(1);
-
-  id = "TELEMETRY_TEST_MULTIPLE_STORES";
-  hist = Telemetry.getHistogramById(id);
-  hist.add(1);
-
-  id = "TELEMETRY_TEST_SYNC_ONLY";
-  hist = Telemetry.getHistogramById(id);
-  hist.add(1);
-
-  // Getting snapshot and clearing
-  snapshot = Telemetry.getSnapshotForHistograms(
-    "main",
-    /* clear */ true
-  ).parent;
-  id = "TELEMETRY_TEST_MAIN_ONLY";
-  Assert.ok(id in snapshot, `${id} should be in a main store snapshot`);
-  id = "TELEMETRY_TEST_MULTIPLE_STORES";
-  Assert.ok(id in snapshot, `${id} should be in a main store snapshot`);
-  id = "TELEMETRY_TEST_SYNC_ONLY";
-  Assert.ok(!(id in snapshot), `${id} should not be in a main store snapshot`);
-
-  snapshot = Telemetry.getSnapshotForHistograms(
-    "sync",
-    /* clear */ true
-  ).parent;
-  id = "TELEMETRY_TEST_MAIN_ONLY";
-  Assert.ok(!(id in snapshot), `${id} should not be in a sync store snapshot`);
-  id = "TELEMETRY_TEST_MULTIPLE_STORES";
-  Assert.ok(id in snapshot, `${id} should be in a sync store snapshot`);
-  id = "TELEMETRY_TEST_SYNC_ONLY";
-  Assert.ok(id in snapshot, `${id} should be in a sync store snapshot`);
-});
-
 add_task(async function test_multistore_keyed_sync_snapshot() {
   Telemetry.canRecordExtended = true;
   // Clear histograms
@@ -1453,65 +946,6 @@ add_task(async function test_multistore_keyed_sync_snapshot() {
   Assert.ok(id in snapshot, `${id} should be in a sync store snapshot`);
   id = "TELEMETRY_TEST_KEYED_SYNC_ONLY";
   Assert.ok(id in snapshot, `${id} should be in a sync store snapshot`);
-});
-
-add_task(async function test_multistore_plain_individual_snapshot() {
-  Telemetry.canRecordExtended = true;
-  // Clear histograms
-  Telemetry.getSnapshotForHistograms("main", true);
-  Telemetry.getSnapshotForHistograms("sync", true);
-
-  let id;
-  let hist;
-
-  id = "TELEMETRY_TEST_MAIN_ONLY";
-  hist = Telemetry.getHistogramById(id);
-
-  hist.add(37);
-  Assert.deepEqual(37, hist.snapshot({ store: "main" }).sum);
-  Assert.deepEqual(undefined, hist.snapshot({ store: "sync" }));
-
-  hist.clear({ store: "main" });
-  Assert.deepEqual(0, hist.snapshot({ store: "main" }).sum);
-  Assert.deepEqual(undefined, hist.snapshot({ store: "sync" }));
-
-  id = "TELEMETRY_TEST_MULTIPLE_STORES";
-  hist = Telemetry.getHistogramById(id);
-
-  hist.add(37);
-  Assert.deepEqual(37, hist.snapshot({ store: "main" }).sum);
-  Assert.deepEqual(37, hist.snapshot({ store: "sync" }).sum);
-
-  hist.clear({ store: "main" });
-  Assert.deepEqual(0, hist.snapshot({ store: "main" }).sum);
-  Assert.deepEqual(37, hist.snapshot({ store: "sync" }).sum);
-
-  hist.add(3);
-  Assert.deepEqual(3, hist.snapshot({ store: "main" }).sum);
-  Assert.deepEqual(40, hist.snapshot({ store: "sync" }).sum);
-
-  hist.clear({ store: "sync" });
-  Assert.deepEqual(3, hist.snapshot({ store: "main" }).sum);
-  Assert.deepEqual(0, hist.snapshot({ store: "sync" }).sum);
-
-  id = "TELEMETRY_TEST_SYNC_ONLY";
-  hist = Telemetry.getHistogramById(id);
-
-  hist.add(37);
-  Assert.deepEqual(undefined, hist.snapshot({ store: "main" }));
-  Assert.deepEqual(37, hist.snapshot({ store: "sync" }).sum);
-
-  hist.clear({ store: "main" });
-  Assert.deepEqual(undefined, hist.snapshot({ store: "main" }));
-  Assert.deepEqual(37, hist.snapshot({ store: "sync" }).sum);
-
-  hist.add(3);
-  Assert.deepEqual(undefined, hist.snapshot({ store: "main" }));
-  Assert.deepEqual(40, hist.snapshot({ store: "sync" }).sum);
-
-  hist.clear({ store: "sync" });
-  Assert.deepEqual(undefined, hist.snapshot({ store: "main" }));
-  Assert.deepEqual(0, hist.snapshot({ store: "sync" }).sum);
 });
 
 add_task(async function test_multistore_keyed_individual_snapshot() {

@@ -6,9 +6,9 @@
 add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
     set: [
-      ["sidebar.visibility", "always-show"],
-      ["sidebar.position_start", true],
-      ["sidebar.verticalTabs", true],
+      [SIDEBAR_VISIBILITY_PREF, "always-show"],
+      [POSITION_SETTING_PREF, true],
+      [VERTICAL_TABS_PREF, true],
     ],
   });
   await SidebarController.initializeUIState({
@@ -78,7 +78,7 @@ add_task(async function test_drag_expand_and_collapse() {
 
 add_task(async function test_drag_show_and_hide() {
   await SpecialPowers.pushPrefEnv({
-    set: [["sidebar.visibility", "hide-sidebar"]],
+    set: [[SIDEBAR_VISIBILITY_PREF, "hide-sidebar"]],
   });
   await SidebarController.initializeUIState({
     launcherExpanded: true,
@@ -143,7 +143,7 @@ add_task(async function test_resize_after_toggling_revamp() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["sidebar.revamp", false],
-      ["sidebar.verticalTabs", false],
+      [VERTICAL_TABS_PREF, false],
     ],
   });
   await waitForTabstripOrientation("horizontal");

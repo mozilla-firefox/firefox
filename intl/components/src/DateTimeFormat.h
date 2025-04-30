@@ -477,12 +477,6 @@ class DateTimeFormat final {
     }
     return Ok();
   }
-  /**
-   * Set the start time of the Gregorian calendar. This is useful for
-   * ensuring the consistent use of a proleptic Gregorian calendar for ECMA-402.
-   * https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar
-   */
-  void SetStartTimeIfGregorian(double aTime);
 
   /**
    * Determines the resolved components for the current DateTimeFormat.

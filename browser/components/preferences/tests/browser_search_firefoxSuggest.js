@@ -58,6 +58,11 @@ const EXPECTED = {
 // run through, so request a longer timeout.
 requestLongerTimeout(10);
 
+add_setup(async function () {
+  // Suggest needs to be initialized in order to dismiss a suggestion.
+  await QuickSuggestTestUtils.ensureQuickSuggestInit();
+});
+
 // The following tasks check the initial visibility of the Firefox Suggest UI
 // and the visibility after installing a Nimbus experiment.
 
@@ -199,9 +204,11 @@ add_task(async function initiallyEnabled_settingsUiOfflineOnly() {
 
 // Tests the "Restore" button for dismissed suggestions.
 add_task(async function restoreDismissedSuggestions() {
+  // Start with no dismissed suggestions.
+  await QuickSuggest.clearDismissedSuggestions();
   Assert.ok(
     !(await QuickSuggest.canClearDismissedSuggestions()),
-    "Sanity check: This test expects canClearDismissedSuggestions to return false initially"
+    "canClearDismissedSuggestions should be false after clearing suggestions"
   );
 
   await openPreferencesViaOpenPreferencesAPI("search", { leaveOpen: true });
@@ -213,27 +220,120 @@ add_task(async function restoreDismissedSuggestions() {
   let button = doc.getElementById(BUTTON_RESTORE_DISMISSED_ID);
   Assert.ok(button.disabled, "Restore button is disabled initially.");
 
-  await QuickSuggest.blockedSuggestions.add("https://example.com/");
+  await QuickSuggest.dismissResult(QuickSuggestTestUtils.ampResult());
 
   Assert.ok(
     await QuickSuggest.canClearDismissedSuggestions(),
     "canClearDismissedSuggestions should return true after dismissing a suggestion"
   );
-  Assert.ok(!button.disabled, "Restore button is enabled after blocking URL.");
+  await TestUtils.waitForCondition(
+    () => !button.disabled,
+    "Waiting for Restore button to become enabled after dismissing suggestion"
+  );
+  Assert.ok(
+    !button.disabled,
+    "Restore button should be enabled after dismissing suggestion"
+  );
 
   let clearPromise = TestUtils.topicObserved("quicksuggest-dismissals-cleared");
   button.click();
   await clearPromise;
 
   Assert.ok(
-    await QuickSuggest.blockedSuggestions.isEmpty(),
-    "blockedSuggestions.isEmpty() should return true after restoring dismissals"
-  );
-  Assert.ok(
     !(await QuickSuggest.canClearDismissedSuggestions()),
     "canClearDismissedSuggestions should return false after restoring dismissals"
   );
-  Assert.ok(button.disabled, "Restore button is disabled after clicking it.");
+  await TestUtils.waitForCondition(
+    () => button.disabled,
+    "Waiting for Restore button to become disabled after clicking it"
+  );
+  Assert.ok(
+    button.disabled,
+    "Restore button should be disabled after clearing suggestions"
+  );
 
   gBrowser.removeCurrentTab();
 });
+
+// If the pane is open while Suggest is still initializing and there are
+// dismissed suggestions, the "Restore" button should become enabled when init
+// finishes.
+add_task(async function restoreDismissedSuggestions_init_enabled() {
+  // Dismiss a suggestion.
+  await QuickSuggest.dismissResult(QuickSuggestTestUtils.ampResult());
+  Assert.ok(
+    await QuickSuggest.canClearDismissedSuggestions(),
+    "canClearDismissedSuggestions should be true after dismissing suggestion"
+  );
+
+  await doRestoreInitTest(async button => {
+    // The button should become enabled since we dismissed a suggestion above.
+    await TestUtils.waitForCondition(
+      () => !button.disabled,
+      "Waiting for Restore button to become enabled after re-enabling Rust backend"
+    );
+    Assert.ok(
+      !button.disabled,
+      "Restore button should be enabled after re-enabling Rust backend"
+    );
+  });
+});
+
+// If the pane is open while Suggest is still initializing and there are no
+// dismissed suggestions, the "Restore" button should remain disabled when init
+// finishes.
+add_task(async function restoreDismissedSuggestions_init_disabled() {
+  // Clear dismissed suggestions.
+  await QuickSuggest.clearDismissedSuggestions();
+  Assert.ok(
+    !(await QuickSuggest.canClearDismissedSuggestions()),
+    "canClearDismissedSuggestions should be false after clearing suggestions"
+  );
+
+  await doRestoreInitTest(async button => {
+    // The button should remain disabled since there are no dismissed
+    // suggestions.
+    await TestUtils.waitForTick();
+    Assert.ok(
+      button.disabled,
+      "Restore button should remain disabled after re-enabling Rust backend"
+    );
+  });
+});
+
+async function doRestoreInitTest(checkButton) {
+  // Disable the Suggest Rust backend, which manages individually dismissed
+  // suggestions. While Rust is disabled, Suggest won't be able to tell whether
+  // there are any individually dismissed suggestions.
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.quicksuggest.rustEnabled", false]],
+  });
+
+  // Open the pane.
+  await openPreferencesViaOpenPreferencesAPI("search", { leaveOpen: true });
+
+  let doc = gBrowser.selectedBrowser.contentDocument;
+  let addressBarSection = doc.getElementById("locationBarGroup");
+  addressBarSection.scrollIntoView();
+
+  let button = doc.getElementById(BUTTON_RESTORE_DISMISSED_ID);
+  Assert.ok(button.disabled, "Restore button is disabled initially.");
+
+  // Re-enable the Rust backend. It will send `quicksuggest-dismissals-changed`
+  // when it finishes initialization.
+  let changedPromise = TestUtils.topicObserved(
+    "quicksuggest-dismissals-changed"
+  );
+  await SpecialPowers.popPrefEnv();
+
+  info(
+    "Waiting for quicksuggest-dismissals-changed after re-enabling Rust backend"
+  );
+  await changedPromise;
+
+  await checkButton(button);
+
+  // Clean up.
+  await QuickSuggest.clearDismissedSuggestions();
+  gBrowser.removeCurrentTab();
+}

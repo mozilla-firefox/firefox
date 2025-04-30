@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_MAP_H
 #define PIPEWIRE_MAP_H
@@ -34,6 +14,10 @@ extern "C" {
 
 #include <spa/utils/defs.h>
 #include <pipewire/array.h>
+
+#ifndef PW_API_MAP
+#define PW_API_MAP static inline
+#endif
 
 /** \defgroup pw_map Map
  *
@@ -85,7 +69,7 @@ struct pw_map {
 };
 
 /** \param extend the amount of bytes to grow the map with when needed */
-#define PW_MAP_INIT(extend) (struct pw_map) { PW_ARRAY_INIT(extend), SPA_ID_INVALID }
+#define PW_MAP_INIT(extend) ((struct pw_map) { PW_ARRAY_INIT(extend), SPA_ID_INVALID })
 
 /**
  * Get the number of currently allocated elements in the map.
@@ -113,7 +97,7 @@ struct pw_map {
  * \param size the initial size of the map
  * \param extend the amount to bytes to grow the map with when needed
  */
-static inline void pw_map_init(struct pw_map *map, size_t size, size_t extend)
+PW_API_MAP void pw_map_init(struct pw_map *map, size_t size, size_t extend)
 {
 	pw_array_init(&map->items, extend * sizeof(union pw_map_item));
 	pw_array_ensure_size(&map->items, size * sizeof(union pw_map_item));
@@ -123,7 +107,7 @@ static inline void pw_map_init(struct pw_map *map, size_t size, size_t extend)
 /** Clear a map and free the data storage. All previously returned ids
  * must be treated as invalid.
  */
-static inline void pw_map_clear(struct pw_map *map)
+PW_API_MAP void pw_map_clear(struct pw_map *map)
 {
 	pw_array_clear(&map->items);
 }
@@ -131,7 +115,7 @@ static inline void pw_map_clear(struct pw_map *map)
 /** Reset a map but keep previously allocated storage. All previously
  * returned ids must be treated as invalid.
  */
-static inline void pw_map_reset(struct pw_map *map)
+PW_API_MAP void pw_map_reset(struct pw_map *map)
 {
 	pw_array_reset(&map->items);
 	map->free_list = SPA_ID_INVALID;
@@ -143,7 +127,7 @@ static inline void pw_map_reset(struct pw_map *map)
  * \return the id where the item was inserted or SPA_ID_INVALID when the
  *	item can not be inserted.
  */
-static inline uint32_t pw_map_insert_new(struct pw_map *map, void *data)
+PW_API_MAP uint32_t pw_map_insert_new(struct pw_map *map, void *data)
 {
 	union pw_map_item *start, *item;
 	uint32_t id;
@@ -170,7 +154,7 @@ static inline uint32_t pw_map_insert_new(struct pw_map *map, void *data)
  * \param data the data to insert
  * \return 0 on success, -ENOSPC value when the index is invalid or a negative errno
  */
-static inline int pw_map_insert_at(struct pw_map *map, uint32_t id, void *data)
+PW_API_MAP int pw_map_insert_at(struct pw_map *map, uint32_t id, void *data)
 {
 	size_t size = pw_map_get_size(map);
 	union pw_map_item *item;
@@ -195,7 +179,7 @@ static inline int pw_map_insert_at(struct pw_map *map, uint32_t id, void *data)
  * \param map the map to remove from
  * \param id the index to remove
  */
-static inline void pw_map_remove(struct pw_map *map, uint32_t id)
+PW_API_MAP void pw_map_remove(struct pw_map *map, uint32_t id)
 {
 	if (pw_map_id_is_free(map, id))
 		return;
@@ -209,7 +193,7 @@ static inline void pw_map_remove(struct pw_map *map, uint32_t id)
  * \param id the index to look at
  * \return the item at \a id or NULL when no such item exists
  */
-static inline void *pw_map_lookup(struct pw_map *map, uint32_t id)
+PW_API_MAP void *pw_map_lookup(const struct pw_map *map, uint32_t id)
 {
 	if (SPA_LIKELY(pw_map_check_id(map, id))) {
 		union pw_map_item *item = pw_map_get_item(map, id);
@@ -227,8 +211,8 @@ static inline void *pw_map_lookup(struct pw_map *map, uint32_t id)
  * \param data data to pass to \a func
  * \return the result of the last call to \a func or 0 when all callbacks returned 0.
  */
-static inline int pw_map_for_each(struct pw_map *map,
-				   int (*func) (void *item_data, void *data), void *data)
+PW_API_MAP int pw_map_for_each(const struct pw_map *map,
+				  int (*func) (void *item_data, void *data), void *data)
 {
 	union pw_map_item *item;
 	int res = 0;

@@ -97,6 +97,8 @@ def lint(paths, config, fix=None, **lintargs):
     march_cargo_process.wait()
 
     if fix:
-        log.error("Rust linting in mach does not support --fix")
+        # Fix isn't supported because we can't limit what gets fixed to only
+        # the specified paths.
+        log.debug("Clippy linting does not support --fix")
 
     return results

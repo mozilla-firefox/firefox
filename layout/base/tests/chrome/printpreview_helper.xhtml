@@ -1950,6 +1950,35 @@ async function runTest65() {
     },
   });
   await SpecialPowers.popPrefEnv();
+  requestAnimationFrame(() => setTimeout(runTest66));
+}
+
+// Basic test for black-and-white rendering. This is mostly a crashtest for
+// bug 1961975, but it also serves to verify that a blank page looks the same
+// whether rendered in color vs. in black-and-white.
+// (Actual content -- even black-and-white content -- is harder to test because
+// our black-and-white filter adds some subtle antialiasing effects.)
+async function runTest66() {
+  // Note: these test/ref URIs are both blank; we're testing a blank page
+  // rendered under two different configurations. The HTML comments are
+  // only there to make the data-URIs different, so that a navigation
+  // actually happens -- and the 'load' event fires, etc. -- when we set the
+  // reference-case-URI.
+  let test = `data:text/html,<!--test-->`;
+  let ref = `data:text/html,<!--ref-->`;
+
+  await compareFiles(test, ref, {
+    test: {
+      settings: {
+        printInColor: false,
+      },
+    },
+    ref: {
+      settings: {
+        printInColor: true,
+      },
+    },
+  });
   finish();
 }
 

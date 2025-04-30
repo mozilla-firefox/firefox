@@ -39,4 +39,8 @@ export const AutofillFormFactory = {
     }
     return lazy.FormLikeFactory.createFromField(aField, { ignoreForm });
   },
+
+  createFromDocumentRoot(aDocRoot) {
+    return lazy.FormLikeFactory.createFromDocumentRoot(aDocRoot);
+  },
 };

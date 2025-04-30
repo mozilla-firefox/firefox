@@ -10,6 +10,7 @@ support-files = [
   "../fixtures/dynamic_formless_fields_updated_due_to_node_mutations.html",
   "../fixtures/dynamic_formless_fields_updated_due_to_visiblity_state_change.html",
   "../fixtures/dynamic_form_changing_on_user_interaction.html",
+  "../fixtures/dynamic_form_replacing_all_fields.html",
   "../fixtures/page_navigation.html",
   "./empty.html",
   "../fixtures/**",
@@ -70,6 +71,8 @@ skip-if = [
 ["browser_dynamic_form_autocompletion.js"]
 
 ["browser_dynamic_form_detection.js"]
+
+["browser_dynamic_form_refill_on_site_clearing_values.js"]
 
 ["browser_dynamic_form_telemetry.js"]
 

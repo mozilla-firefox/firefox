@@ -917,14 +917,12 @@ void* js::Nursery::reallocateBuffer(Zone* zone, Cell* cell, void* oldBuffer,
                                     size_t oldBytes, size_t newBytes) {
   if (!IsInsideNursery(cell)) {
     MOZ_ASSERT(IsBufferAlloc(oldBuffer));
-    MOZ_ASSERT(!ChunkPtrIsInsideNursery(oldBuffer));
-    MOZ_ASSERT(!IsNurseryOwned(oldBuffer));
+    MOZ_ASSERT(!IsNurseryOwned(zone, oldBuffer));
     return ReallocBuffer(zone, oldBuffer, newBytes, false);
   }
 
-  if (!ChunkPtrIsInsideNursery(oldBuffer)) {
-    MOZ_ASSERT(IsBufferAlloc(oldBuffer));
-    MOZ_ASSERT(IsNurseryOwned(oldBuffer));
+  if (IsBufferAlloc(oldBuffer)) {
+    MOZ_ASSERT(IsNurseryOwned(zone, oldBuffer));
     MOZ_ASSERT(toSpace.mallocedBufferBytes >= oldBytes);
 
     void* newBuffer = ReallocBuffer(zone, oldBuffer, newBytes, true);
@@ -1702,8 +1700,7 @@ js::Nursery::CollectionResult js::Nursery::doCollection(AutoGCSession& session,
   // Sweep malloced buffers.
   startProfile(ProfileKey::FreeMallocedBuffers);
   gc->queueBuffersForFreeAfterMinorGC(fromSpace.mallocedBuffers,
-                                      stringBuffersToReleaseAfterMinorGC_,
-                                      largeAllocsToFreeAfterMinorGC_);
+                                      stringBuffersToReleaseAfterMinorGC_);
   fromSpace.mallocedBufferBytes = 0;
   endProfile(ProfileKey::FreeMallocedBuffers);
 
@@ -1979,12 +1976,12 @@ Nursery::WasBufferMoved js::Nursery::maybeMoveRawBufferOnPromotion(
   bool nurseryOwned = IsInsideNursery(owner);
 
   void* buffer = *bufferp;
-  if (!ChunkPtrIsInsideNursery(buffer)) {
+  if (IsBufferAlloc(buffer)) {
     // This is an external buffer allocation owned by a nursery GC thing.
-    MOZ_ASSERT(IsNurseryOwned(buffer));
+    Zone* zone = owner->zone();
+    MOZ_ASSERT(IsNurseryOwned(zone, buffer));
     bool ownerWasTenured = !nurseryOwned;
-    owner->zone()->bufferAllocator.markNurseryOwnedAlloc(buffer,
-                                                         ownerWasTenured);
+    zone->bufferAllocator.markNurseryOwnedAlloc(buffer, ownerWasTenured);
     if (nurseryOwned) {
       registerBuffer(buffer, nbytes);
     }
@@ -2014,11 +2011,8 @@ Nursery::WasBufferMoved js::Nursery::maybeMoveRawBufferOnPromotion(
 }
 
 void js::Nursery::sweepBuffers() {
-  MOZ_ASSERT(largeAllocsToFreeAfterMinorGC_.isEmpty());
-
   for (ZonesIter zone(runtime(), WithAtoms); !zone.done(); zone.next()) {
-    if (zone->bufferAllocator.startMinorSweeping(
-            largeAllocsToFreeAfterMinorGC_)) {
+    if (zone->bufferAllocator.startMinorSweeping()) {
       sweepTask->queueAllocatorToSweep(zone->bufferAllocator);
     }
   }

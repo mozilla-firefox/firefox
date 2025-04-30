@@ -181,6 +181,7 @@ export const MenuMessage = {
     win.MozXULElement.insertFTLIfNeeded("browser/newtab/asrouter.ftl");
 
     const msgElement = document.createElement("fxa-menu-message");
+    msgElement.layout = message.content.layout ?? "column";
     msgElement.imageURL = message.content.imageURL;
     msgElement.buttonText = await lazy.RemoteL10n.formatLocalizableText(
       message.content.primaryActionText
@@ -192,9 +193,23 @@ export const MenuMessage = {
       message.content.secondaryText
     );
     msgElement.dataset.navigableWithTabOnly = "true";
+    if (message.content.imageWidth !== undefined) {
+      msgElement.style.setProperty(
+        "--image-width",
+        `${message.content.imageWidth}px`
+      );
+    }
     msgElement.style.setProperty(
-      "--illustration-margin-block-offset",
-      `${message.content.imageVerticalOffset}px`
+      "--illustration-margin-block-start-offset",
+      `${message.content.imageVerticalTopOffset}px`
+    );
+    msgElement.style.setProperty(
+      "--illustration-margin-block-end-offset",
+      `${message.content.imageVerticalBottomOffset}px`
+    );
+    msgElement.style.setProperty(
+      "--container-margin-block-end-offset",
+      `${message.content.containerVerticalBottomOffset}px`
     );
 
     msgElement.addEventListener("FxAMenuMessage:Close", () => {

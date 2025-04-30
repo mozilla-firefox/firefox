@@ -21,7 +21,7 @@ import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
- * Settings for DNS Over HTTPS (DoH)
+ * Settings for DNS over HTTPS (DoH)
  */
 internal class DohSettingsFragment : Fragment() {
 

@@ -17,9 +17,7 @@
 
 #include "builtin/intl/CommonFunctions.h"
 #include "builtin/intl/FormatBuffer.h"
-#ifdef JS_HAS_TEMPORAL_API
-#  include "builtin/temporal/Duration.h"
-#endif
+#include "builtin/temporal/Duration.h"
 #include "gc/AllocKind.h"
 #include "gc/GCContext.h"
 #include "js/CallArgs.h"
@@ -161,7 +159,6 @@ bool js::intl_GetTimeSeparator(JSContext* cx, unsigned argc, Value* vp) {
   return true;
 }
 
-#ifdef JS_HAS_TEMPORAL_API
 bool js::TemporalDurationToLocaleString(JSContext* cx,
                                         const JS::CallArgs& args) {
   MOZ_ASSERT(args.thisv().isObject());
@@ -187,4 +184,3 @@ bool js::TemporalDurationToLocaleString(JSContext* cx,
   return CallSelfHostedFunction(cx, cx->names().Intl_DurationFormat_format,
                                 thisv, invokeArgs, args.rval());
 }
-#endif

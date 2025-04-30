@@ -324,6 +324,26 @@ TEST_P(TlsConnectClientAuth, ClientAuth) {
   client_->CheckClientAuthCompleted();
 }
 
+TEST_F(TlsConnectStreamTls13, ClientAuthWithMultipleTickets) {
+  client_->SetupClientAuth();
+  server_->RequestClientAuth(true);
+
+  ConfigureVersion(SSL_LIBRARY_VERSION_TLS_1_3);
+  ConfigureSessionCache(RESUME_BOTH, RESUME_BOTH);
+
+  auto cb = [](PRFileDesc* fd, const PRUint8* ticket, unsigned int ticket_len,
+               void* arg) -> SECStatus { return SECSuccess; };
+  EXPECT_EQ(SECSuccess,
+            SSL_SetResumptionTokenCallback(client_->ssl_fd(), cb, nullptr));
+
+  Connect();
+  SendReceive(50);
+  CheckKeys();
+  // An automatic ticket has already been sent. This sends another one.
+  EXPECT_EQ(SECSuccess, SSL_SendSessionTicket(server_->ssl_fd(), nullptr, 0));
+  SendReceive(100);
+}
+
 // All stream only tests; PostHandshakeAuth isn't supported for DTLS.
 
 TEST_P(TlsConnectClientAuthStream13, PostHandshakeAuth) {

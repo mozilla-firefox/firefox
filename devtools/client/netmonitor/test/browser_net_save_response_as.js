@@ -41,25 +41,14 @@ add_task(async function () {
 
   registerCleanupFunction(function () {
     MockFilePicker.cleanup();
-    destDir.remove(true);
   });
 
   // Select gzip request.
 
-  info("Open the context menu");
-
-  EventUtils.sendMouseEvent(
-    { type: "mousedown" },
+  await triggerSaveResponseAs(
+    monitor,
     document.querySelectorAll(".request-list-item")[6]
   );
-
-  EventUtils.sendMouseEvent(
-    { type: "contextmenu" },
-    document.querySelectorAll(".request-list-item")[6]
-  );
-
-  info("Open the save dialog");
-  await selectContextMenuItem(monitor, "request-list-context-save-response-as");
 
   info("Wait for the save dialog to close");
   const savedPath = await saveDialogClosedPromise;
@@ -69,14 +58,7 @@ add_task(async function () {
 
   is(savedPath, expectedFile.path, "Response was saved to correct path");
 
-  info("Wait for the downloaded file to be fully saved to disk: " + savedPath);
-  await TestUtils.waitForCondition(async () => {
-    if (!(await IOUtils.exists(savedPath))) {
-      return false;
-    }
-    const { size } = await IOUtils.stat(savedPath);
-    return size > 0;
-  });
+  await waitForFileSavedToDisk(savedPath);
 
   const buffer = await IOUtils.read(savedPath);
   const savedFileContent = new TextDecoder().decode(buffer);
@@ -91,12 +73,3 @@ add_task(async function () {
 
   await teardown(monitor);
 });
-
-function createTemporarySaveDirectory() {
-  const saveDir = Services.dirsvc.get("TmpD", Ci.nsIFile);
-  saveDir.append("testsavedir");
-  if (!saveDir.exists()) {
-    saveDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0o755);
-  }
-  return saveDir;
-}

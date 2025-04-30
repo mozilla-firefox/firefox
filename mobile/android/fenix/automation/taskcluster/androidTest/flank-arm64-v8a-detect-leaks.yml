@@ -30,7 +30,7 @@ gcloud:
   test-targets:
     - notPackage org.mozilla.fenix.syncintegration
     - notPackage org.mozilla.fenix.experimentintegration
-    - annotation org.mozilla.fenix.customannotations.DetectLeaks
+    - notAnnotation org.mozilla.fenix.customannotations.SkipLeaks
 
   device:
     - model: MediumPhone.arm

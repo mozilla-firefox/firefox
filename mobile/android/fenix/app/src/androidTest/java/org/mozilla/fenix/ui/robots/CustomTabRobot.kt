@@ -26,9 +26,11 @@ import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectExists
 import org.mozilla.fenix.helpers.MatcherHelper.itemContainingText
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithDescription
+import org.mozilla.fenix.helpers.MatcherHelper.itemWithDescriptionAndIndex
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResId
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResIdAndText
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResIdContainingText
+import org.mozilla.fenix.helpers.TestAssetHelper
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
 import org.mozilla.fenix.helpers.TestHelper.appName
 import org.mozilla.fenix.helpers.TestHelper.mDevice
@@ -176,14 +178,15 @@ class CustomTabRobot {
             itemWithResIdAndText("download", "Download"),
         )
 
-    fun verifyRedesignedCustomTabsMainMenuItemsExist(customMenuItem: String, exist: Boolean) =
+    fun verifyRedesignedCustomTabsMainMenuItemsExist(customMenuItem: String, exist: Boolean, waitingTime: Long = TestAssetHelper.waitingTime) =
         assertUIObjectExists(
             itemWithDescription(getStringResource(R.string.browser_menu_switch_to_desktop_site)),
             itemWithDescription(getStringResource(R.string.browser_menu_find_in_page_2)),
-            itemWithDescription("Open in $appName"),
+            itemWithDescriptionAndIndex("Open in $appName", 2),
             itemWithDescription(getStringResource(R.string.browser_menu_share_2)),
             itemContainingText(customMenuItem),
             exists = exist,
+            waitingTime = waitingTime,
         )
 
     fun verifySwitchToDesktopSiteButtonIsEnabled(
@@ -302,7 +305,7 @@ class CustomTabRobot {
 
         fun clickOutsideTheMainMenu(interact: BrowserRobot.() -> Unit): BrowserRobot.Transition {
             Log.i(TAG, "clickOutsideTheMainMenu: Trying to click outside the main menu.")
-            itemWithResId("$packageName:id/touch_outside").swipeUp(6)
+            itemWithResId("$packageName:id/touch_outside").clickTopLeft()
             Log.i(TAG, "clickOutsideTheMainMenu: Clicked click outside the main menu.")
 
             BrowserRobot().interact()

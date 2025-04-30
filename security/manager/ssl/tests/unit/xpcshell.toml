@@ -5,7 +5,7 @@ firefox-appdir = "browser"
 prefs = [
   "security.pki.certificate_transparency.mode=1",
 ]
-skip-if = ["os == 'win' && msix"] # https://bugzilla.mozilla.org/show_bug.cgi?id=1809477
+run-if = ["!msix"] # Bug 1809477
 support-files = [
   "bad_certs/**",
   "ocsp_certs/**",
@@ -65,10 +65,7 @@ tags = "remote-settings blocklist psm"
 # FIPS still works on Linux, so this test doesn't make any sense there.
 # FIPS still works on Windows, but running the test to ensure that it does not
 # break with a non-ASCII profile path.
-skip-if = [
-  "os == 'android'",
-  "os == 'linux'"
-]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_certDB_export_pkcs12.js"]
 
@@ -76,13 +73,11 @@ skip-if = [
 
 ["test_certDB_import.js"]
 # nsCertificateDialogs not available in geckoview, bug 1554276
-skip-if = ["os == 'android' && processor == 'x86_64'"]
 
 ["test_certDB_import_pkcs12.js"]
 
 ["test_certDB_import_with_primary_password.js"]
 # nsCertificateDialogs not available in geckoview, bug 1554276
-skip-if = ["os == 'android' && processor == 'x86_64'"]
 
 ["test_cert_chains.js"]
 run-sequentially = "hardcoded ports"
@@ -126,7 +121,6 @@ tags = "addons psm blocklist"
 ["test_cert_version.js"]
 
 ["test_client_auth_remember_service_read.js"]
-skip-if = ["condprof"]
 
 ["test_constructX509FromBase64.js"]
 
@@ -138,24 +132,23 @@ tags = "remote-settings psm"
 ["test_crlite_preexisting.js"]
 
 ["test_ct.js"]
-# Requires hard-coded debug-only data
-skip-if = ["!debug"]
+run-if = ["debug"] # Requires hard-coded debug-only data
 run-sequentially = "hardcoded ports"
+skip-if = ["os == 'win' && os_version == '11.26100' && processor == 'x86_64' && msix"]
 
 ["test_ct_stapled.js"]
-# Requires hard-coded debug-only data
-skip-if = ["!debug"]
+run-if = ["debug"] # Requires hard-coded debug-only data
 run-sequentially = "hardcoded ports"
+skip-if = ["os == 'win' && os_version == '11.26100' && processor == 'x86_64' && msix"]
 
 ["test_data_storage.js"]
 
 ["test_db_format_pref_new.js"]
-# Android always has and always will use the new format, so
-# this test doesn't apply.
+run-if = ["os != 'android'"] # Android always has and always will use the new format, so this test doesn't apply.
 skip-if = [
-  "os == 'android'",
-  "condprof",
-]  # Bug 1769154 - as designed
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && opt && condprof",
+  "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && opt && condprof",
+]
 
 ["test_delegated_credentials.js"]
 run-sequentially = "hardcoded ports"
@@ -171,7 +164,10 @@ run-sequentially = "hardcoded ports"
 ["test_enterprise_roots.js"]
 # This feature is implemented for Windows and OS X. However, we don't currently
 # have a way to test it on OS X.
-skip-if = ["os != 'win'"]
+run-if = [
+  "os == 'windows'",
+  "os == 'mac'",
+]
 
 ["test_ev_certs.js"]
 tags = "blocklist psm"
@@ -185,8 +181,6 @@ run-sequentially = "hardcoded ports"
 ["test_hash_algorithms.js"]
 
 ["test_hash_algorithms_wrap.js"]
-# bug 1124289 - run_test_in_child violates the sandbox on android
-skip-if = ["os == 'android'"]
 
 ["test_intermediate_basic_usage_constraints.js"]
 
@@ -200,7 +194,6 @@ tags = "blocklist psm remote-settings"
 run-sequentially = "hardcoded ports"
 
 ["test_logoutAndTeardown.js"]
-skip-if = ["socketprocess_networking && os == 'linux' && debug"]
 run-sequentially = "hardcoded ports"
 
 ["test_missing_intermediate.js"]
@@ -233,7 +226,6 @@ run-sequentially = "hardcoded ports"
 
 ["test_ocsp_private_caching.js"]
 run-sequentially = "hardcoded ports"
-skip-if = ["condprof"]  # Bug 1769154 - should look into this
 
 ["test_ocsp_required.js"]
 run-sequentially = "hardcoded ports"
@@ -248,15 +240,16 @@ run-sequentially = "hardcoded ports"
 run-sequentially = "hardcoded ports"
 
 ["test_ocsp_timeout.js"]
-skip-if = ["(os == 'win' && socketprocess_networking)"]
 run-sequentially = "hardcoded ports"
 
 ["test_ocsp_url.js"]
 run-sequentially = "hardcoded ports"
 
 ["test_oskeystore.js"]
-skip-if = ["os == 'mac' && os_version == '11.20' && arch == 'aarch64'"] # bug 1729538
-
+skip-if = [
+  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Bug 1729538
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1729538
+]
 
 ["test_osreauthenticator.js"]
 # Reauthentication has been implemented on Windows and MacOS, so running this
@@ -279,16 +272,14 @@ run-sequentially = "hardcoded ports"
 
 ["test_sdr_preexisting.js"]
 # Not relevant to Android. See the comment in the test.
-skip-if = ["os == 'android'"]
 
 ["test_sdr_preexisting_with_password.js"]
 # Not relevant to Android. See the comment in the test.
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_self_signed_certs.js"]
 
 ["test_session_resumption.js"]
-skip-if = ["os == 'win'"] # Bug 1585916
 run-sequentially = "hardcoded ports"
 
 ["test_signed_apps.js"]
@@ -297,49 +288,44 @@ run-sequentially = "hardcoded ports"
 run-sequentially = "hardcoded ports"
 
 ["test_sss_eviction.js"]
-skip-if = ["condprof"]  # Bug 1769154 - as designed
+run-if = ["!condprof"] # Bug 1769154 - as designed
 
 ["test_sss_migration.js"]
-skip-if = ["condprof"]  # Bug 1769154 - as designed
+run-if = ["!condprof"] # Bug 1769154 - as designed
 
 ["test_sss_originAttributes.js"]
 
 ["test_sss_readstate.js"]
-skip-if = ["condprof"]  # Bug 1769154 - as designed
+run-if = ["!condprof"] # Bug 1769154 - as designed
 
 ["test_sss_readstate_empty.js"]
-skip-if = ["condprof"]  # Bug 1769154 - as designed
+run-if = ["!condprof"] # Bug 1769154 - as designed
 
 ["test_sss_readstate_garbage.js"]
-skip-if = ["condprof"]  # Bug 1769154 - as designed
+run-if = ["!condprof"] # Bug 1769154 - as designed
 
 ["test_sss_readstate_huge.js"]
-skip-if = ["condprof"]  # Bug 1769154 - as designed
+run-if = ["!condprof"] # Bug 1769154 - as designed
 
 ["test_sss_resetState.js"]
 
 ["test_sss_sanitizeOnShutdown.js"]
 prefs = ["privacy.sanitize.useOldClearHistoryDialog=true"]
 firefox-appdir = "browser"
-# Sanitization works differently on Android - this doesn't apply.
-# browser/modules/Sanitizer.sys.mjs used by the test isn't available in Thunderbird.
 skip-if = [
-  "os == 'android'",
-  "appname == 'thunderbird'"
+  "os == 'android'", # Sanitization works differently on Android - this doesn't apply.
+  "appname == 'thunderbird'", # browser/modules/Sanitizer.sys.mjs used by the test isn't available in Thunderbird.
 ]
 
 ["test_sss_sanitizeOnShutdown_v2.js"]
 prefs = ["privacy.sanitize.useOldClearHistoryDialog=false"]
 firefox-appdir = "browser"
-# Sanitization works differently on Android - this doesn't apply.
-# browser/modules/Sanitizer.sys.mjs used by the test isn't available in Thunderbird.
 skip-if = [
-  "os == 'android'",
-  "appname == 'thunderbird'"
+  "os == 'android'", # Sanitization works differently on Android - this doesn't apply.
+  "appname == 'thunderbird'", # browser/modules/Sanitizer.sys.mjs used by the test isn't available in Thunderbird.
 ]
 
 ["test_sss_savestate.js"]
-skip-if = ["condprof"]  # Bug 1769154 - as designed
 
 ["test_sts_fqdn.js"]
 

@@ -58,6 +58,7 @@ suites:
         tests:
             "browser_ml_engine_perf.js": ""
             "browser_ml_engine_multi_perf.js": ""
+            "ML Semantic History Search": ""
             "browser_ml_suggest_feature_perf.js": ""
             "browser_ml_suggest_inference.js": ""
             "browser_ml_autofill_perf.js": ""
@@ -74,7 +75,7 @@ suites:
             "IntlNumberFormat": ""
             "IntlPluralRules": ""
 
-    dom/webgpu/mochitest:
-        description: "Performance tests from the 'dom/webgpu/mochitest' folder."
+    dom/webgpu/tests/mochitest:
+        description: "Performance tests from the 'dom/webgpu/tests/mochitest' folder."
         tests:
             "Queue Write": ""

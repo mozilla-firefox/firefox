@@ -115,22 +115,12 @@ open class StrictModeManager(
      */
     open fun <R> resetAfter(policy: StrictMode.ThreadPolicy, functionBlock: () -> R): R {
         fun instrumentedFunctionBlock(): R {
-            // For Mozilla Online builds, we decided not to add a profile marker because we need to
-            // prevent early initialization of the engine. These markers also have no distinct
-            // meaning to the Mozilla Online build variant.
-            // See: https://bugzilla.mozilla.org/show_bug.cgi?id=1825028
-            if (config.channel.isMozillaOnline) {
-                return functionBlock()
-            }
-
             val startProfilerTime = components.core.engine.profiler?.getProfilerTime()
-
             val returnValue = functionBlock()
 
             if (mainLooper.thread === Thread.currentThread()) { // markers only supported on main thread.
                 components.core.engine.profiler?.addMarker("StrictMode.resetAfter", startProfilerTime)
             }
-
             return returnValue
         }
 

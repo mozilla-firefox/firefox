@@ -551,6 +551,13 @@ rustdoc = check_prog(
     allow_missing=True,
 )
 
+option(
+    env="RUSTDOCFLAGS",
+    nargs=1,
+    help="Extra options for the rustdoc program",
+)
+set_config("RUSTDOCFLAGS", depends_if("RUSTDOCFLAGS")(lambda flags: flags[0]))
+
 # This option is separate from --enable-tests because Rust tests are particularly
 # expensive in terms of compile time (especially for code in libxul).
 option(

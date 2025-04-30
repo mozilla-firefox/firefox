@@ -133,17 +133,16 @@ async function checkInlinePreview(dbg, fnName, inlinePreviews) {
 }
 
 async function checkInspectorIcon(dbg) {
-  await waitForElement(dbg, "inlinePreviewOpenInspector");
-
-  const { toolbox } = dbg;
-  const node = findElement(dbg, "inlinePreviewOpenInspector");
+  const node = await waitForElement(dbg, "inlinePreviewOpenInspector");
 
   // Ensure hovering over button highlights the node in content pane
   const view = node.ownerDocument.defaultView;
+  const { toolbox } = dbg;
   const onNodeHighlight = toolbox.getHighlighter().waitForHighlighterShown();
 
   EventUtils.synthesizeMouseAtCenter(node, { type: "mousemove" }, view);
 
+  info("Wait for node to be highlighted");
   const { nodeFront } = await onNodeHighlight;
   is(nodeFront.displayName, "button", "The correct node was highlighted");
 

@@ -24,6 +24,7 @@ struct CompilationDependency {
     RegExpPrototype,
     StringPrototypeSymbols,
     EmulatesUndefined,
+    ArrayExceedsInt32Length,
     Limit
   };
 

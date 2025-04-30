@@ -217,7 +217,14 @@ class Interventions {
 
     for (const intervention of config.interventions) {
       await this._changeCustomFuncs("enable", label, intervention, config);
-      await this._enableContentScripts(config.id, label, intervention, matches);
+      if (intervention.content_scripts) {
+        await this._enableContentScripts(
+          config.id,
+          label,
+          intervention,
+          matches
+        );
+      }
       await this._enableUAOverrides(label, intervention, matches);
       await this._enableRequestBlocks(label, intervention, blocks);
     }
@@ -251,7 +258,9 @@ class Interventions {
 
     for (const intervention of interventions) {
       await this._changeCustomFuncs("disable", label, intervention, config);
-      await this._disableContentScripts(label, intervention);
+      if (intervention.content_scripts) {
+        await this._disableContentScripts(label, intervention);
+      }
 
       // This covers both request blocks and ua_string cases
       const listeners = this._activeListenersPerIntervention.get(intervention);
@@ -271,13 +280,15 @@ class Interventions {
       this._customFunctions
     )) {
       if (customFuncName in intervention) {
-        try {
-          await customFunc[action](config, intervention);
-        } catch (e) {
-          console.trace(
-            `Error while calling custom function ${customFuncName}.${action} for ${label}:`,
-            e
-          );
+        for (const details of intervention[customFuncName]) {
+          try {
+            await customFunc[action](details, config);
+          } catch (e) {
+            console.trace(
+              `Error while calling custom function ${customFuncName}.${action} for ${label}:`,
+              e
+            );
+          }
         }
       }
     }
@@ -426,7 +437,11 @@ class Interventions {
       persistAcrossSessions: false,
     };
 
-    let { all_frames, css, js, run_at } = intervention.content_scripts ?? {};
+    let { all_frames, css, js, run_at } = intervention.content_scripts;
+    if (!css && !js) {
+      console.error(`Missing js or css for content_script in ${label}`);
+      return [];
+    }
     if (all_frames) {
       registration.allFrames = true;
     }

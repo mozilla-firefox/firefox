@@ -1828,8 +1828,9 @@ class App extends PDFObject {
     callbackId,
     interval
   }) {
+    const documentObj = this._document.obj;
     if (callbackId === USERACTIVATION_CALLBACKID) {
-      this._document.obj._userActivation = false;
+      documentObj._userActivation = false;
       return;
     }
     const expr = this._timeoutCallbackIds.get(callbackId);
@@ -1837,7 +1838,10 @@ class App extends PDFObject {
       this._unregisterTimeoutCallback(callbackId);
     }
     if (expr) {
+      const saveUserActivation = documentObj._userActivation;
+      documentObj._userActivation = false;
       this._globalEval(expr);
+      documentObj._userActivation = saveUserActivation;
     }
   }
   _registerTimeout(callbackId, interval) {
@@ -4039,8 +4043,8 @@ function initSandbox(params) {
 
 ;// ./src/pdf.scripting.js
 
-const pdfjsVersion = "5.2.87";
-const pdfjsBuild = "2f7d163df";
+const pdfjsVersion = "5.2.135";
+const pdfjsBuild = "b47b248e1";
 globalThis.pdfjsScripting = {
   initSandbox: initSandbox
 };

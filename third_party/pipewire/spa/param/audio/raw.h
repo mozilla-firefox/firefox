@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_AUDIO_RAW_H
 #define SPA_AUDIO_RAW_H
@@ -31,9 +11,7 @@ extern "C" {
 
 #include <stdint.h>
 
-#if !defined(__FreeBSD__) && !defined(__MidnightBSD__)
-#include <endian.h>
-#endif
+#include <spa/utils/endian.h>
 
 /**
  * \addtogroup spa_param
@@ -281,6 +259,12 @@ enum spa_audio_channel {
 	SPA_AUDIO_CHANNEL_START_Custom	= 0x10000,
 };
 
+enum spa_audio_volume_ramp_scale {
+	SPA_AUDIO_VOLUME_RAMP_INVALID,
+	SPA_AUDIO_VOLUME_RAMP_LINEAR,
+	SPA_AUDIO_VOLUME_RAMP_CUBIC,
+};
+
 /** Extra audio flags */
 #define SPA_AUDIO_FLAG_NONE		(0)		/*< no valid flag */
 #define SPA_AUDIO_FLAG_UNPOSITIONED	(1 << 0)	/*< the position array explicitly
@@ -294,7 +278,7 @@ struct spa_audio_info_raw {
 	uint32_t position[SPA_AUDIO_MAX_CHANNELS];	/*< channel position from enum spa_audio_channel */
 };
 
-#define SPA_AUDIO_INFO_RAW_INIT(...)		(struct spa_audio_info_raw) { __VA_ARGS__ }
+#define SPA_AUDIO_INFO_RAW_INIT(...)		((struct spa_audio_info_raw) { __VA_ARGS__ })
 
 #define SPA_KEY_AUDIO_FORMAT		"audio.format"		/**< an audio format as string,
 								  *  Ex. "S16LE" */
@@ -306,13 +290,6 @@ struct spa_audio_info_raw {
 								  *  of channels ex. "FL,FR" */
 #define SPA_KEY_AUDIO_ALLOWED_RATES	"audio.allowed-rates"	/**< a list of allowed samplerates
 								  *  ex. "[ 44100 48000 ]" */
-
-struct spa_audio_info_dsp {
-	enum spa_audio_format format;		/*< format, one of the DSP formats in enum spa_audio_format_dsp */
-};
-
-#define SPA_AUDIO_INFO_DSP_INIT(...)		(struct spa_audio_info_dsp) { __VA_ARGS__ }
-
 /**
  * \}
  */

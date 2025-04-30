@@ -391,10 +391,10 @@ async function doShowLessFrequently({
 add_task(async function resultMenu_not_relevant() {
   await doDismiss({
     menu: "not_relevant",
-    assert: resuilt => {
+    assert: result => {
       Assert.ok(
-        QuickSuggest.blockedSuggestions.isResultBlocked(resuilt),
-        "The URL should be register as blocked"
+        QuickSuggest.isResultDismissed(result),
+        "The result should be dismissed"
       );
     },
   });
@@ -427,6 +427,9 @@ async function doDismiss({ menu, assert }) {
   let result = details.result;
 
   // Click the command.
+  let dismissalPromise = TestUtils.topicObserved(
+    "quicksuggest-dismissals-changed"
+  );
   await UrlbarTestUtils.openResultMenuAndClickItem(
     window,
     ["[data-l10n-id=firefox-suggest-command-manage-fakespot]", menu],
@@ -435,6 +438,8 @@ async function doDismiss({ menu, assert }) {
       openByMouse: true,
     }
   );
+  info("Awaiting dismissal promise");
+  await dismissalPromise;
 
   // The row should be a tip now.
   Assert.ok(gURLBar.view.isOpen, "The view should remain open after dismissal");

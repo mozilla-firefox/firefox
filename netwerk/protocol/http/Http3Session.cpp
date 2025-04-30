@@ -155,7 +155,7 @@ nsresult Http3Session::Init(const nsHttpConnectionInfo* aConnInfo,
         StaticPrefs::network_http_http3_max_stream_data(),
         StaticPrefs::network_http_http3_version_negotiation_enabled(),
         mConnInfo->GetWebTransport(), gHttpHandler->Http3QlogDir(),
-        datagramSize, StaticPrefs::network_http_http3_max_accumlated_time_ms(),
+        datagramSize,
         aProviderFlags, idleTimeout, getter_AddRefs(mHttp3Connection));
   } else {
     rv = NeqoHttp3Conn::Init(
@@ -166,7 +166,7 @@ nsresult Http3Session::Init(const nsHttpConnectionInfo* aConnInfo,
         StaticPrefs::network_http_http3_max_stream_data(),
         StaticPrefs::network_http_http3_version_negotiation_enabled(),
         mConnInfo->GetWebTransport(), gHttpHandler->Http3QlogDir(),
-        datagramSize, StaticPrefs::network_http_http3_max_accumlated_time_ms(),
+        datagramSize,
         aProviderFlags, idleTimeout, socket->GetFileDescriptor(),
         getter_AddRefs(mHttp3Connection));
   }
@@ -2703,6 +2703,16 @@ void Http3Session::SetSendOrder(Http3StreamBase* aStream,
     MOZ_ASSERT(NS_SUCCEEDED(rv));
     Unused << rv;
   }
+}
+
+Http3Stats Http3Session::GetStats() {
+  if (!mHttp3Connection) {
+    return Http3Stats();
+  }
+
+  Http3Stats stats{};
+  mHttp3Connection->GetStats(&stats);
+  return stats;
 }
 
 }  // namespace mozilla::net

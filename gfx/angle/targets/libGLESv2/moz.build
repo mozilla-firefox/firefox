@@ -425,4 +425,4 @@ OS_LIBS += [
 
 DEFFILE = "../../checkout/src/libGLESv2/libGLESv2_autogen.def"
 RCFILE = "../../checkout/src/libGLESv2/libGLESv2.rc"
-GeckoSharedLibrary("libGLESv2", linkage=None)
+GeckoSharedLibrary("libGLESv2")

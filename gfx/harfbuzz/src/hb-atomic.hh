@@ -80,7 +80,6 @@ _hb_atomic_ptr_impl_cmplexch (const void **P, const void *O_, const void *N)
 
 #include <atomic>
 
-#define _hb_memory_barrier()			std::atomic_thread_fence(std::memory_order_ack_rel)
 #define _hb_memory_r_barrier()			std::atomic_thread_fence(std::memory_order_acquire)
 #define _hb_memory_w_barrier()			std::atomic_thread_fence(std::memory_order_release)
 

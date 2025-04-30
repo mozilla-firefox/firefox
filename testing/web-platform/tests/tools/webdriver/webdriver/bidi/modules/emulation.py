@@ -9,11 +9,11 @@ class CoordinatesOptions(Dict[str, Any]):
         self,
         latitude: float,
         longitude: float,
-        accuracy: float = None,
-        altitude: float = None,
-        altitude_accuracy: float = None,
-        heading: float = None,
-        speed: float = None,
+        accuracy: Optional[float] = None,
+        altitude: Optional[float] = None,
+        altitude_accuracy: Optional[float] = None,
+        heading: Optional[float] = None,
+        speed: Optional[float] = None,
     ):
         self["latitude"] = latitude
         self["longitude"] = longitude

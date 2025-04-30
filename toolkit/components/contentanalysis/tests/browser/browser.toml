@@ -82,6 +82,8 @@ skip-if = ["true"] # bug 1932955
 
 ["browser_content_analysis_policies.js"]
 
+["browser_content_analysis_quit_confirmation_dialog.js"]
+
 ["browser_print_changing_page_content_analysis.js"]
 support-files = [
   "!/toolkit/components/printing/tests/head.js",

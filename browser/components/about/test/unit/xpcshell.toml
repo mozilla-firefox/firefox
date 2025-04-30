@@ -1,5 +1,4 @@
 [DEFAULT]
-skip-if = ["os == 'android'"] # bug 1730213
 head =  ''
 # make the firefox services (eg newtab-service) available to xpcshell
 firefox-appdir = "browser"

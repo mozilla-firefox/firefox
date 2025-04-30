@@ -1,7 +1,7 @@
 [DEFAULT]
 head = "head.js"
 firefox-appdir = "browser"
-skip-if = ["os != 'win'"]
+run-if = ["os == 'win'"]
 
 # These tests must all run sequentially because they use the same registry key.
 # It might be possible to get around this requirement by overriding the install
@@ -10,7 +10,9 @@ skip-if = ["os != 'win'"]
 
 ["test_empty_prefs_list.js"]
 run-sequentially = "Uses the Windows registry"
-skip-if = ["os == 'win' && msix"] # https://bugzilla.mozilla.org/show_bug.cgi?id=1807932
+skip-if = [
+  "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && msix", # Bug 1807932
+]
 
 ["test_invalid_name.js"]
 run-sequentially = "Uses the Windows registry"

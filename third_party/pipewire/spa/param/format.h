@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_PARAM_FORMAT_H
 #define SPA_PARAM_FORMAT_H
@@ -68,6 +48,10 @@ enum spa_media_subtype {
 	SPA_MEDIA_SUBTYPE_g729,
 	SPA_MEDIA_SUBTYPE_amr,
 	SPA_MEDIA_SUBTYPE_gsm,
+	SPA_MEDIA_SUBTYPE_alac,		/** since 0.3.65 */
+	SPA_MEDIA_SUBTYPE_flac,		/** since 0.3.65 */
+	SPA_MEDIA_SUBTYPE_ape,		/** since 0.3.65 */
+	SPA_MEDIA_SUBTYPE_opus,		/** since 0.3.68 */
 
 	SPA_MEDIA_SUBTYPE_START_Video	= 0x20000,
 	SPA_MEDIA_SUBTYPE_h264,
@@ -106,16 +90,25 @@ enum spa_format {
 
 	/* Audio format keys */
 	SPA_FORMAT_START_Audio = 0x10000,
-	SPA_FORMAT_AUDIO_format,	/**< audio format, (Id enum spa_audio_format) */
-	SPA_FORMAT_AUDIO_flags,		/**< optional flags (Int) */
-	SPA_FORMAT_AUDIO_rate,		/**< sample rate (Int) */
-	SPA_FORMAT_AUDIO_channels,	/**< number of audio channels (Int) */
-	SPA_FORMAT_AUDIO_position,	/**< channel positions (Id enum spa_audio_position) */
+	SPA_FORMAT_AUDIO_format,		/**< audio format, (Id enum spa_audio_format) */
+	SPA_FORMAT_AUDIO_flags,			/**< optional flags (Int) */
+	SPA_FORMAT_AUDIO_rate,			/**< sample rate (Int) */
+	SPA_FORMAT_AUDIO_channels,		/**< number of audio channels (Int) */
+	SPA_FORMAT_AUDIO_position,		/**< channel positions (Id enum spa_audio_position) */
 
-	SPA_FORMAT_AUDIO_iec958Codec,	/**< codec used (IEC958) (Id enum spa_audio_iec958_codec) */
+	SPA_FORMAT_AUDIO_iec958Codec,		/**< codec used (IEC958) (Id enum spa_audio_iec958_codec) */
 
-	SPA_FORMAT_AUDIO_bitorder,	/**< bit order (Id enum spa_param_bitorder) */
-	SPA_FORMAT_AUDIO_interleave,	/**< Interleave bytes (Int) */
+	SPA_FORMAT_AUDIO_bitorder,		/**< bit order (Id enum spa_param_bitorder) */
+	SPA_FORMAT_AUDIO_interleave,		/**< Interleave bytes (Int) */
+	SPA_FORMAT_AUDIO_bitrate,		/**< bit rate (Int) */
+	SPA_FORMAT_AUDIO_blockAlign,    	/**< audio data block alignment (Int) */
+
+	SPA_FORMAT_AUDIO_AAC_streamFormat,	/**< AAC stream format, (Id enum spa_audio_aac_stream_format) */
+
+	SPA_FORMAT_AUDIO_WMA_profile,		/**< WMA profile (Id enum spa_audio_wma_profile) */
+
+	SPA_FORMAT_AUDIO_AMR_bandMode,		/**< AMR band mode (Id enum spa_audio_amr_band_mode) */
+
 
 	/* Video Format keys */
 	SPA_FORMAT_START_Video = 0x20000,
@@ -148,6 +141,8 @@ enum spa_format {
 	SPA_FORMAT_START_Stream = 0x50000,
 	/* Application Format keys */
 	SPA_FORMAT_START_Application = 0x60000,
+	SPA_FORMAT_CONTROL_types,		/**< possible control types (flags choice Int,
+						  *  mask of enum spa_control_type) */
 };
 
 #define SPA_KEY_FORMAT_DSP		"format.dsp"		/**< a predefined DSP format,

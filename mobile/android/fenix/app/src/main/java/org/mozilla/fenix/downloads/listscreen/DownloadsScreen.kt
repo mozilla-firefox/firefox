@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.downloads.listscreen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,6 +35,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FilterChip
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
+import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +46,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
@@ -59,6 +63,7 @@ import mozilla.components.compose.base.menu.MenuItem
 import mozilla.components.compose.base.text.Text
 import mozilla.components.lib.state.ext.observeAsState
 import org.mozilla.fenix.R
+import org.mozilla.fenix.compose.button.FloatingActionButton
 import org.mozilla.fenix.compose.ext.isItemPartiallyVisible
 import org.mozilla.fenix.compose.list.ExpandableListHeader
 import org.mozilla.fenix.compose.list.SelectableListItem
@@ -66,33 +71,216 @@ import org.mozilla.fenix.compose.snackbar.AcornSnackbarHostState
 import org.mozilla.fenix.compose.snackbar.SnackbarHost
 import org.mozilla.fenix.compose.snackbar.SnackbarState
 import org.mozilla.fenix.downloads.listscreen.store.CreatedTime
+import org.mozilla.fenix.downloads.listscreen.store.DownloadListItem
 import org.mozilla.fenix.downloads.listscreen.store.DownloadUIAction
 import org.mozilla.fenix.downloads.listscreen.store.DownloadUIState
+import org.mozilla.fenix.downloads.listscreen.store.DownloadUIState.Mode
 import org.mozilla.fenix.downloads.listscreen.store.DownloadUIStore
 import org.mozilla.fenix.downloads.listscreen.store.FileItem
 import org.mozilla.fenix.downloads.listscreen.store.HeaderItem
+import org.mozilla.fenix.downloads.listscreen.ui.DownloadSearchField
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
  * Downloads screen that displays the list of downloads.
  *
  * @param downloadsStore The [DownloadUIStore] used to manage and access the state of download items.
- * @param onItemClick Invoked when a download item is clicked.
- * @param onItemDeleteClick Invoked when delete icon button is clicked.
+ * @param onItemClick Callback invoked when a download item is clicked.
+ * @param onItemDeleteClick Callback invoked when the delete action is triggered for a single download item.
+ * @param onMultipleItemsDeleteClick Callback invoked when the delete action
+ * is triggered for multiple selected download items.
+ * @param onNavigationIconClick Callback for the back button click in the toolbar.
  */
 @Composable
+@Suppress("LongMethod")
 fun DownloadsScreen(
     downloadsStore: DownloadUIStore,
     onItemClick: (FileItem) -> Unit,
     onItemDeleteClick: (FileItem) -> Unit,
+    onMultipleItemsDeleteClick: () -> Unit,
+    onNavigationIconClick: () -> Unit,
 ) {
     val uiState by downloadsStore.observeAsState(initialValue = downloadsStore.state) { it }
+    val toolbarConfig = getToolbarConfig(mode = uiState.mode)
 
+    BackHandler(uiState.isSearchFieldVisible) {
+        downloadsStore.dispatch(DownloadUIAction.SearchBarDismissRequest)
+    }
+
+    if (uiState.isDeleteDialogVisible) {
+        DeleteDownloadFileDialog(
+            onConfirmDelete = {
+                downloadsStore.dispatch(DownloadUIAction.UpdateDeleteDialogVisibility(false))
+                onMultipleItemsDeleteClick()
+            },
+            onCancel = {
+                downloadsStore.dispatch(DownloadUIAction.UpdateDeleteDialogVisibility(false))
+            },
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            DownloadsTopAppBar(
+                modifier = Modifier.fillMaxWidth(),
+                backgroundColor = toolbarConfig.backgroundColor,
+                title = {
+                    if (uiState.isSearchFieldVisible) {
+                        DownloadSearchField(
+                            initialText = uiState.searchQuery,
+                            onValueChange = {
+                                downloadsStore.dispatch(DownloadUIAction.SearchQueryEntered(it))
+                            },
+                            onSearchDismissRequest = {
+                                downloadsStore.dispatch(DownloadUIAction.SearchBarDismissRequest)
+                            },
+                        )
+                    } else {
+                        Text(
+                            text = toolbarConfig.title,
+                            color = toolbarConfig.textColor,
+                            style = FirefoxTheme.typography.headline6,
+                        )
+                    }
+                },
+                navigationIcon = {
+                    if (!uiState.isSearchFieldVisible) {
+                        NavigationIcon(
+                            iconColorTint = toolbarConfig.iconColor,
+                            showBackIcon = uiState.mode !is Mode.Editing,
+                            onNavigationIconClick = onNavigationIconClick,
+                        )
+                    }
+                },
+                actions = {
+                    if (uiState.mode is Mode.Editing) {
+                        ToolbarEditActions(
+                            downloadsStore = downloadsStore,
+                            toolbarConfig = toolbarConfig,
+                            onItemDeleteClick = onItemDeleteClick,
+                        )
+                    }
+                },
+            )
+        },
+        floatingActionButton = {
+            if (!uiState.isSearchFieldVisible && uiState.mode is Mode.Normal) {
+                FloatingActionButton(
+                    icon = painterResource(R.drawable.mozac_ic_search_24),
+                    contentDescription = stringResource(R.string.download_search_placeholder),
+                    onClick = { downloadsStore.dispatch(DownloadUIAction.SearchBarVisibilityRequest) },
+                )
+            }
+        },
+        backgroundColor = FirefoxTheme.colors.layer1,
+    ) { paddingValues ->
+        DownloadsScreenContent(
+            uiState = uiState,
+            paddingValues = paddingValues,
+            onContentTypeSelected = {
+                downloadsStore.dispatch(DownloadUIAction.ContentTypeSelected(it))
+            },
+            onItemClick = onItemClick,
+            onSelectionChange = { item, isSelected ->
+                if (isSelected) {
+                    downloadsStore.dispatch(DownloadUIAction.AddItemForRemoval(item))
+                } else {
+                    downloadsStore.dispatch(DownloadUIAction.RemoveItemForRemoval(item))
+                }
+            },
+            onDeleteClick = { onItemDeleteClick(it) },
+            onShareUrlClick = { downloadsStore.dispatch(DownloadUIAction.ShareUrlClicked(it.url)) },
+            onShareFileClick = {
+                downloadsStore.dispatch(
+                    DownloadUIAction.ShareFileClicked(
+                        it.filePath,
+                        it.contentType,
+                    ),
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun ToolbarEditActions(
+    downloadsStore: DownloadUIStore,
+    toolbarConfig: ToolbarConfig,
+    onItemDeleteClick: (FileItem) -> Unit,
+) {
+    // IconButton and DropdownMenu in a common parent so the menu position is calculated correctly.
+    Row {
+        var showMenu by remember { mutableStateOf(false) }
+
+        IconButton(onClick = { showMenu = true }) {
+            Icon(
+                painter = painterResource(R.drawable.mozac_ic_ellipsis_vertical_24),
+                contentDescription = stringResource(
+                    R.string.content_description_menu,
+                ),
+                tint = toolbarConfig.iconColor,
+            )
+        }
+
+        DropdownMenu(
+            expanded = showMenu,
+            menuItems = listOf(
+                MenuItem.TextItem(
+                    text = Text.Resource(R.string.download_select_all_items),
+                    level = MenuItem.FixedItem.Level.Default,
+                    onClick = { downloadsStore.dispatch(DownloadUIAction.AddAllItemsForRemoval) },
+                ),
+                MenuItem.TextItem(
+                    text = Text.Resource(R.string.download_delete_item),
+                    level = MenuItem.FixedItem.Level.Critical,
+                    onClick = {
+                        when (downloadsStore.state.mode.selectedItems.size) {
+                            1 -> {
+                                onItemDeleteClick(downloadsStore.state.mode.selectedItems.first())
+                                downloadsStore.dispatch(DownloadUIAction.ExitEditMode)
+                            }
+
+                            else -> downloadsStore.dispatch(
+                                DownloadUIAction.UpdateDeleteDialogVisibility(true),
+                            )
+                        }
+                    },
+                ),
+            ),
+            onDismissRequest = { showMenu = false },
+        )
+    }
+}
+
+/**
+ * Content of the screen below the toolbar.
+ * @param uiState The UI state of the screen.
+ * @param paddingValues The padding values of the screen.
+ * @param onContentTypeSelected Callback invoked when a content type filter is selected.
+ * @param onItemClick Invoked when a download item is clicked.
+ * @param onSelectionChange Invoked when selection state of an item changed.
+ * @param onDeleteClick Invoked when delete icon button is clicked.
+ * @param onShareUrlClick Invoked when share url button is clicked.
+ * @param onShareFileClick Invoked when share file button is clicked.
+ */
+@SuppressWarnings("LongParameterList")
+@Composable
+private fun DownloadsScreenContent(
+    uiState: DownloadUIState,
+    paddingValues: PaddingValues,
+    onContentTypeSelected: (FileItem.ContentTypeFilter) -> Unit,
+    onItemClick: (FileItem) -> Unit,
+    onSelectionChange: (FileItem, Boolean) -> Unit,
+    onDeleteClick: (FileItem) -> Unit,
+    onShareUrlClick: (FileItem) -> Unit,
+    onShareFileClick: (FileItem) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(FirefoxTheme.colors.layer1)
-            .widthIn(max = FirefoxTheme.layout.size.containerMaxWidth),
+            .widthIn(max = FirefoxTheme.layout.size.containerMaxWidth)
+            .padding(paddingValues),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (uiState.filtersToDisplay.isNotEmpty()) {
@@ -102,35 +290,26 @@ fun DownloadsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = FirefoxTheme.layout.space.static200),
-                onContentTypeSelected = {
-                    downloadsStore.dispatch(DownloadUIAction.ContentTypeSelected(it))
-                },
+                onContentTypeSelected = onContentTypeSelected,
             )
         }
 
-        if (uiState.itemsToDisplay.isEmpty()) {
-            EmptyState(modifier = Modifier.fillMaxSize())
-        } else {
-            DownloadsContent(
-                state = uiState,
+        when (uiState.itemsState) {
+            is DownloadUIState.ItemsState.NoItems -> EmptyState(modifier = Modifier.fillMaxSize())
+            is DownloadUIState.ItemsState.NoSearchResults -> NoSearchResults(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding(),
+            )
+
+            is DownloadUIState.ItemsState.Items -> DownloadsContent(
+                items = uiState.itemsState.items,
+                mode = uiState.mode,
                 onClick = onItemClick,
-                onSelectionChange = { item, isSelected ->
-                    if (isSelected) {
-                        downloadsStore.dispatch(DownloadUIAction.AddItemForRemoval(item))
-                    } else {
-                        downloadsStore.dispatch(DownloadUIAction.RemoveItemForRemoval(item))
-                    }
-                },
-                onDeleteClick = onItemDeleteClick,
-                onShareUrlClick = { downloadsStore.dispatch(DownloadUIAction.ShareUrlClicked(it.url)) },
-                onShareFileClick = {
-                    downloadsStore.dispatch(
-                        DownloadUIAction.ShareFileClicked(
-                            it.filePath,
-                            it.contentType,
-                        ),
-                    )
-                },
+                onSelectionChange = onSelectionChange,
+                onDeleteClick = onDeleteClick,
+                onShareUrlClick = onShareUrlClick,
+                onShareFileClick = onShareFileClick,
                 modifier = Modifier.fillMaxHeight(),
             )
         }
@@ -138,9 +317,33 @@ fun DownloadsScreen(
 }
 
 @Composable
+private fun NavigationIcon(
+    iconColorTint: Color,
+    showBackIcon: Boolean = false,
+    onNavigationIconClick: () -> Unit,
+) {
+    IconButton(onClick = onNavigationIconClick) {
+        Icon(
+            painter = if (showBackIcon) {
+                painterResource(R.drawable.mozac_ic_back_24)
+            } else {
+                painterResource(R.drawable.mozac_ic_cross_24)
+            },
+            contentDescription = if (showBackIcon) {
+                stringResource(R.string.download_navigate_back_description)
+            } else {
+                stringResource(R.string.download_navigate_up_description)
+            },
+            tint = iconColorTint,
+        )
+    }
+}
+
+@Composable
 @OptIn(ExperimentalFoundationApi::class)
 private fun DownloadsContent(
-    state: DownloadUIState,
+    items: List<DownloadListItem>,
+    mode: Mode,
     modifier: Modifier = Modifier,
     onClick: (FileItem) -> Unit,
     onSelectionChange: (FileItem, Boolean) -> Unit,
@@ -154,7 +357,7 @@ private fun DownloadsContent(
         modifier = modifier,
     ) {
         itemsIndexed(
-            items = state.itemsToDisplay,
+            items = items,
             contentType = { _, item -> item::class },
             key = { _, item ->
                 when (item) {
@@ -174,8 +377,8 @@ private fun DownloadsContent(
                 is FileItem -> {
                     FileListItem(
                         fileItem = listItem,
-                        isSelected = state.mode.selectedItems.contains(listItem),
-                        isMenuIconVisible = state.isNormalMode,
+                        isSelected = mode.selectedItems.contains(listItem),
+                        isMenuIconVisible = mode is Mode.Normal,
                         onDeleteClick = onDeleteClick,
                         onShareUrlClick = onShareUrlClick,
                         onShareFileClick = onShareFileClick,
@@ -183,17 +386,17 @@ private fun DownloadsContent(
                             .animateItem()
                             .combinedClickable(
                                 onClick = {
-                                    if (state.isNormalMode) {
+                                    if (mode is Mode.Normal) {
                                         onClick(listItem)
                                     } else {
                                         onSelectionChange(
                                             listItem,
-                                            !state.mode.selectedItems.contains(listItem),
+                                            !mode.selectedItems.contains(listItem),
                                         )
                                     }
                                 },
                                 onLongClick = {
-                                    if (state.isNormalMode) {
+                                    if (mode is Mode.Normal) {
                                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                         onSelectionChange(listItem, true)
                                     }
@@ -202,7 +405,7 @@ private fun DownloadsContent(
                             .testTag("${DownloadsListTestTag.DOWNLOADS_LIST_ITEM}.${listItem.fileName}"),
                     )
 
-                    if (index == state.itemsToDisplay.lastIndex || state.itemsToDisplay[index + 1] is HeaderItem) {
+                    if (index == items.lastIndex || items[index + 1] is HeaderItem) {
                         Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static200))
                     }
                 }
@@ -372,6 +575,20 @@ private fun DownloadChip(
 }
 
 @Composable
+private fun NoSearchResults(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(id = R.string.download_search_no_results_found),
+            color = FirefoxTheme.colors.textSecondary,
+            style = FirefoxTheme.typography.body2,
+        )
+    }
+}
+
+@Composable
 private fun EmptyState(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
@@ -390,6 +607,28 @@ private fun EmptyState(modifier: Modifier = Modifier) {
             text = stringResource(id = R.string.download_empty_description),
             color = FirefoxTheme.colors.textPrimary,
             style = FirefoxTheme.typography.body2,
+        )
+    }
+}
+
+@Composable
+private fun getToolbarConfig(mode: Mode): ToolbarConfig {
+    return when (mode) {
+        is Mode.Editing -> ToolbarConfig(
+            title = stringResource(
+                R.string.download_multi_select_title,
+                mode.selectedItems.size,
+            ),
+            backgroundColor = FirefoxTheme.colors.layerAccent,
+            textColor = FirefoxTheme.colors.textOnColorPrimary,
+            iconColor = FirefoxTheme.colors.iconOnColor,
+        )
+
+        is Mode.Normal -> ToolbarConfig(
+            title = stringResource(R.string.library_downloads),
+            backgroundColor = FirefoxTheme.colors.layer1,
+            textColor = FirefoxTheme.colors.textPrimary,
+            iconColor = FirefoxTheme.colors.iconPrimary,
         )
     }
 }
@@ -435,7 +674,7 @@ private class DownloadsScreenPreviewModelParameterProvider :
                         createdTime = CreatedTime.OLDER,
                     ),
                 ),
-                mode = DownloadUIState.Mode.Normal,
+                mode = Mode.Normal,
                 pendingDeletionIds = emptySet(),
                 userSelectedContentTypeFilter = FileItem.ContentTypeFilter.All,
             ),
@@ -461,6 +700,7 @@ private fun DownloadsScreenPreviews(
                         )
                     }
                 },
+                onMultipleItemsDeleteClick = {},
                 onItemDeleteClick = {
                     store.dispatch(DownloadUIAction.UpdateFileItems(store.state.items - it))
                     scope.launch {
@@ -472,6 +712,7 @@ private fun DownloadsScreenPreviews(
                         )
                     }
                 },
+                onNavigationIconClick = {},
             )
             SnackbarHost(
                 snackbarHostState = snackbarHostState,

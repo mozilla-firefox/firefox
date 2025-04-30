@@ -1,35 +1,29 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
-import { ExtensionParent } from "resource://gre/modules/ExtensionParent.sys.mjs";
-
+import { StartupCache } from "resource://gre/modules/ExtensionParent.sys.mjs";
 import { ExtensionUtils } from "resource://gre/modules/ExtensionUtils.sys.mjs";
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import { ExtensionDNRLimits } from "./ExtensionDNRLimits.sys.mjs";
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   DeferredTask: "resource://gre/modules/DeferredTask.sys.mjs",
   Extension: "resource://gre/modules/Extension.sys.mjs",
   ExtensionDNR: "resource://gre/modules/ExtensionDNR.sys.mjs",
   ExtensionDNRLimits: "resource://gre/modules/ExtensionDNRLimits.sys.mjs",
   Schemas: "resource://gre/modules/Schemas.sys.mjs",
-});
-
-XPCOMUtils.defineLazyServiceGetters(lazy, {
-  aomStartup: [
-    "@mozilla.org/addons/addon-manager-startup;1",
-    "amIAddonManagerStartup",
-  ],
+  aomStartup: {
+    service: "@mozilla.org/addons/addon-manager-startup;1",
+    iid: Ci.amIAddonManagerStartup,
+  },
 });
 
 const LAST_UPDATE_TAG_PREF_PREFIX = "extensions.dnr.lastStoreUpdateTag.";
 
 const { DefaultMap, ExtensionError } = ExtensionUtils;
-const { StartupCache } = ExtensionParent;
 
 // DNR Rules store subdirectory/file names and file extensions.
 //

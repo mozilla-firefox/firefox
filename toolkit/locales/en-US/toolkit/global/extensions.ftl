@@ -108,3 +108,8 @@ webext-site-perms-header-unsigned-with-perms = Add { $extension }? This extensio
 
 webext-site-perms-midi = Access MIDI devices
 webext-site-perms-midi-sysex = Access MIDI devices with SysEx support
+
+## Colorway theme migration
+
+webext-colorway-theme-migration-notification-message = <b>Your colorway theme was removed.</b> { -brand-shorter-name } updated its colorways collection. You can find the latest versions on the add-ons site.
+webext-colorway-theme-migration-notification-button = Get updated colorways

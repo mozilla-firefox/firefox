@@ -50,7 +50,6 @@ class nsIOpenWindowInfo;
 namespace mozilla {
 class RemoteSpellcheckEngineChild;
 class ChildProfilerController;
-class BenchmarkStorageChild;
 
 namespace ipc {
 class UntypedEndpoint;
@@ -232,10 +231,6 @@ class ContentChild final : public PContentChild,
 
   bool DeallocPMediaChild(PMediaChild* aActor);
 
-  PBenchmarkStorageChild* AllocPBenchmarkStorageChild();
-
-  bool DeallocPBenchmarkStorageChild(PBenchmarkStorageChild* aActor);
-
   mozilla::ipc::IPCResult RecvNotifyEmptyHTTPCache();
 
   mozilla::ipc::IPCResult RecvRegisterChrome(
@@ -372,7 +367,8 @@ class ContentChild final : public PContentChild,
   const nsACString& GetRemoteType() const override;
 
   mozilla::ipc::IPCResult RecvInitRemoteWorkerService(
-      Endpoint<PRemoteWorkerServiceChild>&& aEndpoint);
+      Endpoint<PRemoteWorkerServiceChild>&& aEndpoint,
+      Endpoint<PRemoteWorkerDebuggerManagerChild>&& aDebuggerChildEp);
 
   mozilla::ipc::IPCResult RecvInitBlobURLs(
       nsTArray<BlobURLRegistrationData>&& aRegistations);

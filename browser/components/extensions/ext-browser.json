@@ -159,6 +159,12 @@
     "manifest": ["sidebar_action"],
     "paths": [["sidebarAction"]]
   },
+  "tabGroups": {
+    "url": "chrome://browser/content/parent/ext-tabGroups.js",
+    "schema": "chrome://browser/content/schemas/tabGroups.json",
+    "scopes": ["addon_parent"],
+    "paths": [["tabGroups"]]
+  },
   "tabs": {
     "url": "chrome://browser/content/parent/ext-tabs.js",
     "schema": "chrome://browser/content/schemas/tabs.json",

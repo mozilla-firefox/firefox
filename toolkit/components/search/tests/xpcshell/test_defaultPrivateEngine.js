@@ -23,9 +23,22 @@ const CONFIG = [
     base: {
       name: "Application Default Private",
       urls: {
-        search: { base: "https://example.org", searchTermParamName: "q2" },
+        search: {
+          base: "https://example.org",
+          params: [{ name: "pc", value: "{partnerCode}" }],
+          searchTermParamName: "q2",
+        },
       },
     },
+    variants: [
+      {
+        environment: {
+          allLocalesAndRegions: true,
+        },
+        telemetrySuffix: "123",
+        partnerCode: "foo",
+      },
+    ],
   },
   {
     identifier: "otherEngine1",
@@ -105,16 +118,22 @@ add_task(async function test_defaultPrivateEngine() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "appDefault",
+      partnerCode: "",
+      overriddenByThirdParty: false,
       engineId: "appDefault",
       displayName: "Application Default",
       loadPath: "[app]appDefault",
       submissionUrl: "https://example.org/?q1=",
     },
     private: {
-      engineId: "appDefaultPrivate",
+      providerId: "appDefaultPrivate",
+      partnerCode: "foo",
+      overriddenByThirdParty: false,
+      engineId: "appDefaultPrivate-123",
       displayName: "Application Default Private",
       loadPath: "[app]appDefaultPrivate",
-      submissionUrl: "https://example.org/?q2=",
+      submissionUrl: "https://example.org/?pc=foo&q2=",
     },
   });
 
@@ -139,12 +158,18 @@ add_task(async function test_defaultPrivateEngine() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "appDefault",
+      partnerCode: "",
+      overriddenByThirdParty: false,
       engineId: "appDefault",
       displayName: "Application Default",
       loadPath: "[app]appDefault",
       submissionUrl: "https://example.org/?q1=",
     },
     private: {
+      providerId: "otherEngine1",
+      partnerCode: "",
+      overriddenByThirdParty: false,
       engineId: "otherEngine1",
       displayName: "Other Engine 1",
       loadPath: "[app]otherEngine1",
@@ -184,12 +209,18 @@ add_task(async function test_defaultPrivateEngine() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "appDefault",
+      partnerCode: "",
+      overriddenByThirdParty: false,
       engineId: "appDefault",
       displayName: "Application Default",
       loadPath: "[app]appDefault",
       submissionUrl: "https://example.org/?q1=",
     },
     private: {
+      providerId: "otherEngine2",
+      partnerCode: "",
+      overriddenByThirdParty: false,
       engineId: "otherEngine2",
       displayName: "Other Engine 2",
       loadPath: "[app]otherEngine2",
@@ -215,9 +246,11 @@ add_task(async function test_defaultPrivateEngine() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "appDefault",
       engineId: "appDefault",
     },
     private: {
+      providerId: "otherEngine1",
       engineId: "otherEngine1",
     },
   });
@@ -236,10 +269,12 @@ add_task(async function test_defaultPrivateEngine() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "appDefault",
       engineId: "appDefault",
     },
     private: {
-      engineId: "appDefaultPrivate",
+      providerId: "appDefaultPrivate",
+      engineId: "appDefaultPrivate-123",
     },
   });
 
@@ -253,10 +288,12 @@ add_task(async function test_defaultPrivateEngine() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine1",
       engineId: "otherEngine1",
     },
     private: {
-      engineId: "appDefaultPrivate",
+      providerId: "appDefaultPrivate",
+      engineId: "appDefaultPrivate-123",
     },
   });
 
@@ -274,9 +311,15 @@ add_task(async function test_telemetry_private_empty_submission_url() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "appDefault",
+      partnerCode: "",
+      overriddenByThirdParty: false,
       engineId: appDefault.telemetryId,
     },
     private: {
+      providerId: "other",
+      partnerCode: "",
+      overriddenByThirdParty: false,
       engineId: "other-simple",
       displayName: "simple",
       loadPath: "[http]localhost/simple.xml",
@@ -293,9 +336,11 @@ add_task(async function test_defaultPrivateEngine_turned_off() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "appDefault",
       engineId: "appDefault",
     },
     private: {
+      providerId: "otherEngine1",
       engineId: "otherEngine1",
     },
   });
@@ -313,9 +358,11 @@ add_task(async function test_defaultPrivateEngine_turned_off() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "appDefault",
       engineId: "appDefault",
     },
     private: {
+      providerId: "",
       engineId: "",
     },
   });
@@ -346,9 +393,11 @@ add_task(async function test_defaultPrivateEngine_turned_off() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine1",
       engineId: "otherEngine1",
     },
     private: {
+      providerId: "",
       engineId: "",
     },
   });
@@ -381,9 +430,11 @@ add_task(async function test_defaultPrivateEngine_turned_off() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine1",
       engineId: "otherEngine1",
     },
     private: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
   });
@@ -408,9 +459,11 @@ add_task(async function test_defaultPrivateEngine_turned_off() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine1",
       engineId: "otherEngine1",
     },
     private: {
+      providerId: "otherEngine1",
       engineId: "otherEngine1",
     },
   });
@@ -429,9 +482,11 @@ add_task(async function test_defaultPrivateEngine_ui_turned_off() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
     private: {
+      providerId: "otherEngine1",
       engineId: "otherEngine1",
     },
   });
@@ -449,9 +504,11 @@ add_task(async function test_defaultPrivateEngine_ui_turned_off() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
     private: {
+      providerId: "",
       engineId: "",
     },
   });
@@ -471,9 +528,11 @@ add_task(async function test_defaultPrivateEngine_ui_turned_off() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine1",
       engineId: "otherEngine1",
     },
     private: {
+      providerId: "",
       engineId: "",
     },
   });
@@ -495,9 +554,11 @@ add_task(async function test_defaultPrivateEngine_same_engine_toggle_pref() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
     private: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
   });
@@ -520,9 +581,11 @@ add_task(async function test_defaultPrivateEngine_same_engine_toggle_pref() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
     private: {
+      providerId: "",
       engineId: "",
     },
   });
@@ -545,9 +608,11 @@ add_task(async function test_defaultPrivateEngine_same_engine_toggle_pref() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
     private: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
   });
@@ -569,9 +634,11 @@ add_task(async function test_defaultPrivateEngine_same_engine_toggle_ui_pref() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
     private: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
   });
@@ -594,9 +661,11 @@ add_task(async function test_defaultPrivateEngine_same_engine_toggle_ui_pref() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
     private: {
+      providerId: "",
       engineId: "",
     },
   });
@@ -619,9 +688,11 @@ add_task(async function test_defaultPrivateEngine_same_engine_toggle_ui_pref() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
     private: {
+      providerId: "otherEngine2",
       engineId: "otherEngine2",
     },
   });

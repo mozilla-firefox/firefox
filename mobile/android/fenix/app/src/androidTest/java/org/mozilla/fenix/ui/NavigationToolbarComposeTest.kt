@@ -18,6 +18,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.GleanMetrics.NavigationBar
 import org.mozilla.fenix.IntentReceiverActivity
+import org.mozilla.fenix.customannotations.SkipLeaks
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.AppAndSystemHelper.assertExternalAppOpens
 import org.mozilla.fenix.helpers.AppAndSystemHelper.enableOrDisableBackGestureNavigationOnDevice
@@ -35,6 +36,7 @@ import org.mozilla.fenix.helpers.TestHelper.exitMenu
 import org.mozilla.fenix.helpers.TestHelper.mDevice
 import org.mozilla.fenix.helpers.TestHelper.setLandscapeDisplayOrientation
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.browserScreen
 import org.mozilla.fenix.ui.robots.clickPageObject
 import org.mozilla.fenix.ui.robots.customTabScreen
@@ -61,6 +63,9 @@ class NavigationToolbarComposeTest : TestSetup() {
         true,
         false,
     )
+
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/987326
     // Swipes the nav bar left/right to switch between tabs
@@ -121,6 +126,7 @@ class NavigationToolbarComposeTest : TestSetup() {
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1661318
     @SmokeTest
     @Test
+    @SkipLeaks(reasons = ["https://bugzilla.mozilla.org/show_bug.cgi?id=1936110"])
     fun verifyClearCookiesFromQuickSettingsTest() {
         val helpPageUrl = "mozilla.org"
 
@@ -403,6 +409,7 @@ class NavigationToolbarComposeTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2767054
     @Test
+    @SkipLeaks
     fun verifyTabsCounterShortcutMenuOptionFromNavbarInNormalModeTest() {
         navigationToolbar {
         }.openTabButtonShortcutsMenu {
@@ -414,6 +421,7 @@ class NavigationToolbarComposeTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2876118
     @Test
+    @SkipLeaks
     fun verifyTabsCounterShortcutMenuOptionFromNavbarInPrivateModeTest() {
         homeScreen { }.togglePrivateBrowsingMode()
 

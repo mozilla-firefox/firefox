@@ -78,3 +78,39 @@ sandbox:
       - alissy@mozilla.com
     expires: 145
     telemetry_mirror: h#SANDBOX_HAS_USER_NAMESPACES
+
+  effective_content_process_level:
+    type: quantity
+    unit: level
+    lifetime: application
+    description: |
+      The current sandbox level.
+      The "security.sandbox.content.level" preference rounded up to the current minimum allowed level.
+      0 if `MOZ_DISABLE_CONTENT_SANDBOX` is set.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950398
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950398
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - bowen@mozilla.com
+    expires: never
+
+  content_win32k_lockdown_state:
+    type: quantity
+    unit: lockdown state
+    lifetime: application
+    description: |
+      The current win32k.sys lockdown state.
+      Possible values are defined in the ContentWin32kLockdownState enum.
+      Reported even on non-Windows machines.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950398
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950398
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - bowen@mozilla.com
+    expires: never

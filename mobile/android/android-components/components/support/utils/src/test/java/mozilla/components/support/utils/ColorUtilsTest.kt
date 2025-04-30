@@ -5,13 +5,17 @@
 package mozilla.components.support.utils
 
 import android.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.support.utils.ColorUtils.calculateAlphaFromPercentage
+import mozilla.components.support.utils.ColorUtils.darken
+import mozilla.components.support.utils.ColorUtils.lighten
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import androidx.compose.ui.graphics.Color as ComposeColor
 
 @RunWith(AndroidJUnit4::class)
 class ColorUtilsTest {
@@ -77,5 +81,37 @@ class ColorUtilsTest {
             val result = calculateAlphaFromPercentage(i)
             assertEquals(255, result)
         }
+    }
+
+    @Test
+    fun `GIVEN a red color and a factor of 0 WHEN lighten is called THEN the color is red`() {
+        assertEquals(ComposeColor.Red, ComposeColor.Red.lighten(0f))
+    }
+
+    @Test
+    @OptIn(ExperimentalStdlibApi::class)
+    fun `GIVEN a red color and a factor of 0,5 WHEN lighten is called THEN the result is pink`() {
+        assertEquals("ffffa191", ComposeColor.Red.lighten(0.5f).toArgb().toHexString(HexFormat.Default))
+    }
+
+    @Test
+    fun `GIVEN a red color and a factor of 1 WHEN lighten is called THEN the result is white`() {
+        assertEquals(ComposeColor.White, ComposeColor.Red.lighten(1f))
+    }
+
+    @Test
+    fun `GIVEN a yellow color and a factor of 0 WHEN darken is called THEN the color is yellow`() {
+        assertEquals(ComposeColor.Yellow, ComposeColor.Yellow.darken(0f))
+    }
+
+    @Test
+    @OptIn(ExperimentalStdlibApi::class)
+    fun `GIVEN a red color and a factor of 0,5 WHEN darken is called THEN the result is olive`() {
+        assertEquals("ff636300", ComposeColor.Yellow.darken(0.5f).toArgb().toHexString(HexFormat.Default))
+    }
+
+    @Test
+    fun `GIVEN a red color and a factor of 1 WHEN darken is called THEN the result is black`() {
+        assertEquals(ComposeColor.Black, ComposeColor.Yellow.darken(1f))
     }
 }

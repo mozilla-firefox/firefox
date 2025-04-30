@@ -2,7 +2,7 @@
   "description": "A collection of rules that help enforce CSS coding standards in the Mozilla project.",
   "main": "index.mjs",
   "scripts": {
-    "test": "node --test tests/**"
+    "test": "node --test --test-reporter=./reporters/mozilla-format.mjs tests/**"
   },
   "license": "MPL-2.0",
   "devDependencies": {

@@ -8,10 +8,8 @@
 #define builtin_intl_DateTimeFormat_h
 
 #include "builtin/SelfHostingDefines.h"
-#ifdef JS_HAS_TEMPORAL_API
-#  include "builtin/temporal/Calendar.h"
-#  include "builtin/temporal/TimeZone.h"
-#endif
+#include "builtin/temporal/Calendar.h"
+#include "builtin/temporal/TimeZone.h"
 #include "js/Class.h"
 #include "vm/NativeObject.h"
 
@@ -94,7 +92,6 @@ class DateTimeFormatObject : public NativeObject {
                  Int32Value(static_cast<int32_t>(kind)));
   }
 
-#ifdef JS_HAS_TEMPORAL_API
   temporal::CalendarValue getCalendar() const {
     const auto& slot = getFixedSlot(CALENDAR_SLOT);
     if (slot.isUndefined()) {
@@ -118,7 +115,6 @@ class DateTimeFormatObject : public NativeObject {
   void setTimeZone(const temporal::TimeZoneValue& timeZone) {
     setFixedSlot(TIMEZONE_SLOT, timeZone.toSlotValue());
   }
-#endif
 
   void maybeClearCache(DateTimeValueKind kind);
 

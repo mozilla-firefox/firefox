@@ -426,17 +426,6 @@ export class TranslationsParent extends JSWindowActorParent {
   resolveEngine = null;
 
   /**
-   * The cached URI spec where the panel was first ever shown, as determined by the
-   * browser.translations.panelShown pref.
-   *
-   * Holding on to this URI value allows us to show the introductory message in the panel
-   * when the panel opens, as long as the active panel is open on that particular URI.
-   *
-   * @type {string | null}
-   */
-  firstShowUriSpec = null;
-
-  /**
    * The TranslationsEngineParent instance which requests from this
    * TranslationsParent are being handled by.
    *

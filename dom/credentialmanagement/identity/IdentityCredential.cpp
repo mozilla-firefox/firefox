@@ -1121,6 +1121,63 @@ IdentityCredential::CreateHeavyweightCredentialDuringDiscovery(
               return IdentityCredential::GetAccountPromise::CreateAndReject(
                   NS_ERROR_FAILURE, __func__);
             }
+
+            // Remove accounts without a matching login hint if one was provided
+            // in the JS call
+            if (aProvider.mLoginHint.WasPassed()) {
+              const nsCString& loginHint = aProvider.mLoginHint.Value();
+              accountList.mAccounts.Value().RemoveElementsBy(
+                  [loginHint](const IdentityProviderAccount& account) {
+                    if (!account.mLogin_hints.WasPassed() ||
+                        account.mLogin_hints.Value().Length() == 0) {
+                      return true;
+                    }
+                    if (account.mLogin_hints.Value().Contains(loginHint)) {
+                      return false;
+                    }
+                    return true;
+                  });
+            }
+
+            // Remove accounts without a matching domain hint if one was
+            // provided in the JS call
+            if (aProvider.mDomainHint.WasPassed()) {
+              const nsCString& domainHint = aProvider.mDomainHint.Value();
+              accountList.mAccounts.Value().RemoveElementsBy(
+                  [domainHint](const IdentityProviderAccount& account) {
+                    if (!account.mDomain_hints.WasPassed() ||
+                        account.mDomain_hints.Value().Length() == 0) {
+                      return true;
+                    }
+                    // The domain hint "any" matches any hint.
+                    if (domainHint.Equals("any")) {
+                      return false;
+                    }
+                    if (account.mDomain_hints.Value().Contains(domainHint)) {
+                      return false;
+                    }
+                    return true;
+                  });
+            }
+
+            // Remove accounts without a matching account hint if a label was
+            // provided in the IDP config
+            if (currentManifest.mAccount_label.WasPassed()) {
+              const nsCString& accountHint =
+                  currentManifest.mAccount_label.Value();
+              accountList.mAccounts.Value().RemoveElementsBy(
+                  [accountHint](const IdentityProviderAccount& account) {
+                    if (!account.mLabel_hints.WasPassed() ||
+                        account.mLabel_hints.Value().Length() == 0) {
+                      return true;
+                    }
+                    if (account.mLabel_hints.Value().Contains(accountHint)) {
+                      return false;
+                    }
+                    return true;
+                  });
+            }
+
             return PromptUserToSelectAccount(browsingContext, accountList,
                                              aProvider, currentManifest);
           },
@@ -1217,6 +1274,19 @@ IdentityCredential::CheckRootManifest(nsIPrincipal* aPrincipal,
   if (NS_FAILED(rv)) {
     return IdentityCredential::ValidationPromise::CreateAndReject(
         NS_ERROR_INVALID_ARG, __func__);
+  }
+
+  // We actually don't need to do any of this well-known stuff if the
+  // requesting principal is same-site to the manifest URI. There is no
+  // privacy risk in that case, because the requests could be sent with
+  // their unpartitioned cookies anyway.
+  if (!aPrincipal->GetIsNullPrincipal()) {
+    bool thirdParty = true;
+    rv = aPrincipal->IsThirdPartyURI(manifestURI, &thirdParty);
+    if (NS_SUCCEEDED(rv) && !thirdParty) {
+      return IdentityCredential::ValidationPromise::CreateAndResolve(true,
+                                                                     __func__);
+    }
   }
 
   return IdentityNetworkHelpers::FetchWellKnownHelper(manifestURI, aPrincipal)

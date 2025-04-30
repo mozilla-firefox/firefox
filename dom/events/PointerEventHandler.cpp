@@ -80,14 +80,43 @@ void PointerEventHandler::UpdateActivePointerState(WidgetMouseEvent* aEvent,
   }
   switch (aEvent->mMessage) {
     case eMouseEnterIntoWidget:
+      if (aEvent->mFlags.mIsSynthesizedForTests) {
+        const PointerInfo* const pointerInfo =
+            GetPointerInfo(aEvent->pointerId);
+        if (pointerInfo && !pointerInfo->mIsSynthesizedForTests) {
+          // Do not overwrite the PointerInfo which is set by user input with
+          // synthesized pointer move.
+          return;
+        }
+      }
       // In this case we have to know information about available mouse pointers
       sActivePointersIds->InsertOrUpdate(
           aEvent->pointerId,
-          MakeUnique<PointerInfo>(false, aEvent->mInputSource, true, false,
-                                  nullptr));
+          MakeUnique<PointerInfo>(
+              false, aEvent->mInputSource, true, false, nullptr,
+              // XXX build-linux64-base-toolchains (Bb) requires this hack.
+              // NOLINTNEXTLINE
+              aEvent->mFlags.mIsSynthesizedForTests != false));
 
       MaybeCacheSpoofedPointerID(aEvent->mInputSource, aEvent->pointerId);
       break;
+    case ePointerMove:
+      // If the event is a synthesized mouse event, we should register the
+      // pointerId for the test if the pointer is not there.
+      if (!aEvent->mFlags.mIsSynthesizedForTests ||
+          aEvent->mInputSource != MouseEvent_Binding::MOZ_SOURCE_MOUSE) {
+        return;
+      }
+      if (GetPointerInfo(aEvent->pointerId)) {
+        return;
+      }
+      sActivePointersIds->InsertOrUpdate(
+          aEvent->pointerId,
+          MakeUnique<PointerInfo>(
+              /* aActiveState = */ false, MouseEvent_Binding::MOZ_SOURCE_MOUSE,
+              /* aPrimaryState = */ true, /* aFromTouchEvent = */ false,
+              nullptr, /* aIsOnlySynthesizedForTests = */ true));
+      return;
     case ePointerDown:
       // In this case we switch pointer to active state
       if (WidgetPointerEvent* pointerEvent = aEvent->AsPointerEvent()) {
@@ -99,7 +128,10 @@ void PointerEventHandler::UpdateActivePointerState(WidgetMouseEvent* aEvent,
             MakeUnique<PointerInfo>(
                 true, pointerEvent->mInputSource, pointerEvent->mIsPrimary,
                 pointerEvent->mFromTouchEvent,
-                aTargetContent ? aTargetContent->OwnerDoc() : nullptr));
+                aTargetContent ? aTargetContent->OwnerDoc() : nullptr,
+                // XXX build-linux64-base-toolchains (Bb) requires this hack.
+                // NOLINTNEXTLINE
+                pointerEvent->mFlags.mIsSynthesizedForTests != false));
         MaybeCacheSpoofedPointerID(pointerEvent->mInputSource,
                                    pointerEvent->pointerId);
       }
@@ -116,15 +148,32 @@ void PointerEventHandler::UpdateActivePointerState(WidgetMouseEvent* aEvent,
             MouseEvent_Binding::MOZ_SOURCE_TOUCH) {
           sActivePointersIds->InsertOrUpdate(
               pointerEvent->pointerId,
-              MakeUnique<PointerInfo>(false, pointerEvent->mInputSource,
-                                      pointerEvent->mIsPrimary,
-                                      pointerEvent->mFromTouchEvent, nullptr));
+              MakeUnique<PointerInfo>(
+                  false, pointerEvent->mInputSource, pointerEvent->mIsPrimary,
+                  pointerEvent->mFromTouchEvent, nullptr,
+                  // XXX build-linux64-base-toolchains (Bb) requires this hack.
+                  // NOLINTNEXTLINE
+                  pointerEvent->mFlags.mIsSynthesizedForTests != false));
         } else {
+          // XXX If the PointerInfo is registered with same pointerId as actual
+          // pointer and the event is synthesized for tests, we unregister the
+          // pointer unexpectedly here.  However, it should be rare and
+          // currently, we use only pointerId for the key.  Therefore, we cannot
+          // do nothing without changing the key.
           sActivePointersIds->Remove(pointerEvent->pointerId);
         }
       }
       break;
     case eMouseExitFromWidget:
+      if (aEvent->mFlags.mIsSynthesizedForTests) {
+        const PointerInfo* const pointerInfo =
+            GetPointerInfo(aEvent->pointerId);
+        if (pointerInfo && !pointerInfo->mIsSynthesizedForTests) {
+          // Do not remove the PointerInfo which is set by user input with
+          // synthesized pointer move.
+          return;
+        }
+      }
       // In this case we have to remove information about disappeared mouse
       // pointers
       sActivePointersIds->Remove(aEvent->pointerId);
@@ -457,8 +506,7 @@ void PointerEventHandler::ImplicitlyCapturePointer(nsIFrame* aFrame,
     // We only implicitly capture the pointer for touch device.
     return;
   }
-  nsCOMPtr<nsIContent> target;
-  aFrame->GetContentForEvent(aEvent, getter_AddRefs(target));
+  nsIContent* target = aFrame->GetContentForEvent(aEvent);
   while (target && !target->IsElement()) {
     target = target->GetParent();
   }

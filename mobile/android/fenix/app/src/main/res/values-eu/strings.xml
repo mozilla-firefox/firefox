@@ -129,6 +129,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Pasatu zeharka tresna-barra fitxak aldatzeko</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Aldatzeko, pasatu ezkerrera edo eskuinera. Fitxa berria irekitzeko, pasatu ezkerrera zure azken fitxan.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">Fitxak aldatzeko, pasatu tresna-barra ezkerrera edo eskuinera.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Kamerarako sarbidea behar da. Joan Androideko ezarpenetara, sakatu baimenetan eta sakatu baimendu.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -834,8 +836,6 @@
   <string name="preferences_override_account_server">Mozilla kontu-zerbitzari pertsonalizatua</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Sinkronizaziorako zerbitzari pertsonalizatua</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla kontuko/Sync zerbitzaria aldatuta. Aplikaziotik irteten aldaketak aplikatzeko…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Kontua</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1384,6 +1384,8 @@
   <string name="tab_tray_multiselect_share_content_description">Partekatu hautatutako fitxak</string>
   <!-- Content description for tabs tray multiselect menu -->
   <string name="tab_tray_multiselect_menu_content_description">Hautatutako fitxen menua</string>
+  <!-- Title text displayed for a homepage tab in the tabs tray. -->
+  <string name="tab_tray_homepage_tab">Hasiera-orria</string>
   <!-- Content description (not visible, for screen readers etc.): Removes tab from collection button. Removes the selected tab from collection when pressed -->
   <string name="remove_tab_from_collection">Kendu fitxa bildumatik</string>
   <!-- Text for button to enter multiselect mode in tabs tray -->
@@ -1481,16 +1483,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Kendu</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Ezabatu</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Nabigatu atzera</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Nabigatu gora</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">Partekatu URLa</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Partekatu fitxategia</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Ziur zaude hautatutako elementuak ezabatu nahi dituzula?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Ziur zaude hautatutako elementuak ezabatu nahi dituzula?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Ezabatu</string>
+  <string name="download_delete_multi_select_dialog_confirm">Ezabatu</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Utzi</string>
+  <string name="download_delete_multi_select_dialog_cancel">Utzi</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Lanean</string>
   <!--
@@ -1521,9 +1527,11 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Deskargak huts egin du</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Bilatu deskargak</string>
+  <string name="download_search_placeholder">Bilatu deskargak</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Ez da emaitzarik aurkitu</string>
+  <string name="download_search_no_results_found">Ez da emaitzarik aurkitu</string>
+  <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
+  <string name="download_select_all_items">Hautatu dena</string>
   <!--
     Downloads Content Type Filters
 
@@ -2274,7 +2282,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Jarraipenaren babes hobetuaren salbuespenen hobespen-ikonoa</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3375,6 +3383,26 @@
   -->
   <string name="glean_debug_tools_title">Glean arazketa-tresnak</string>
   <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">Eskualdearen tresnak</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">Aldi baterako baliogabetzen ditu etxeko eta uneko eskualdearen balioak probak egiteko.</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">Etxeko eskualdea</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">Uneko eskualdea</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">Baliogabetu etxeko eskualdea</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">Baliogabetu uneko eskualdea</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">Baliogabetu etxeko eta uneko eskualdea</string>
+  <!--
     Messages explaining how to exit fullscreen mode
 
     Message shown to explain how to exit fullscreen mode when gesture navigation is enabled.
@@ -3437,6 +3465,46 @@
   <!-- The default content description for the cross trailing icon button in TextField -->
   <string name="text_field_cross_trailing_icon_default_content_description" moz:removedIn="139" tools:ignore="UnusedResources">Garbitu testua</string>
   <!--
+    Setup checklist feature
+
+    ===== Setup checklist feature: Title =====
+
+    Title for the setup checklist feature when the state is 'incomplete'. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_title_state_incomplete">Amaitu %1$s(r)en konfigurazioa</string>
+  <!-- Title for the setup checklist feature when the state is 'completed' -->
+  <string name="setup_checklist_title_state_completed">Zorionak!</string>
+  <!--
+    ===== Setup checklist feature: Subtitles for 3 steps =====
+
+    Subtitle for a setup checklist with 3 steps initial step. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_subtitle_3_steps_initial_state">Osatu ondorengo hiru urratsak %1$s nabigatze-esperientzia optimorako konfiguratzeko.</string>
+  <!-- Subtitle for a setup checklist with 3 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_3_steps_first_step">Hasiera ona! Hirutik urrats bat osatu duzu.</string>
+  <!-- Subtitle for a setup checklist with 3 steps when two of the tasks are completed. -->
+  <string name="setup_checklist_subtitle_3_steps_second_step">Ia-ia eginda! Bi urrats amaituta eta bakarraren faltan.</string>
+  <!-- Subtitle for a setup checklist with 3 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_subtitle_3_steps_completed_state">Hiru urratsak burutu dituzu. Gozatu %1$s(r)en abiadura, pribatutasuna eta segurtasuna.</string>
+  <!--
+    ===== Setup checklist feature: Subtitles for 6 steps =====
+
+    Subtitle for a setup checklist with 6 steps initial state. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_subtitle_6_steps_initial_state">Osatu ondorengo sei urratsak %1$s nabigatze-esperientzia optimorako konfiguratzeko.</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_first_step">Hasiera ona! Seitik urrats bat osatu duzu.</string>
+  <!-- Subtitle for the setup checklist when the second task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_second_step">Seitik bi urrats osatu dituzu. Ederki ari zara!</string>
+  <!-- Subtitle for a setup checklist with 6 steps when three of the tasks are completed. -->
+  <string name="setup_checklist_subtitle_6_steps_third_step">Erdi-bidean zaude! Hiru urrats amaituta eta beste hiruren faltan.</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the fourth task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_fourth_step">Lau urrats osatu dituzu. Bi gehiago faltan!</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the fifth task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_fifth_step">Ia-ia eginda! Urrats bakarraren faltan zaude.</string>
+  <!-- Subtitle for a setup checklist with 6 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_subtitle_6_steps_completed_state">Konfigurazioko sei urratsak burutu dituzu. Gozatu %1$s(r)en abiadura, pribatutasuna eta segurtasuna.</string>
+  <!--
     ===== Setup checklist feature: Task titles =====
 
     The title of the default browser task for the setup checklist
@@ -3462,6 +3530,12 @@
   <string name="setup_checklist_group_customize">Pertsonalizatu zure %1$s</string>
   <!-- The title of the 'helpful tools' group in the setup checklist -->
   <string name="setup_checklist_group_helpful_tools">Tresna lagungarriak</string>
+  <!--
+    ===== Setup checklist feature: Button =====
+
+    Text for the 'remove' button for the setup checklist
+  -->
+  <string name="setup_checklist_button_remove">Kendu egiaztapen-zerrenda</string>
   <!--
     ===== Setup checklist feature: Accessibility =====
 

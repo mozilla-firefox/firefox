@@ -21,22 +21,14 @@ async function test_icon(pageUrl, iconUrl) {
 
     // Ensure the favicon has been stored.
     await storedIconPromise;
-    await new Promise((resolve, reject) => {
-      PlacesUtils.favicons.getFaviconURLForPage(
-        Services.io.newURI(pageUrl),
-        foundIconURI => {
-          if (foundIconURI) {
-            Assert.equal(
-              foundIconURI.spec,
-              iconUrl,
-              "Should have stored the expected icon."
-            );
-            resolve();
-          }
-          reject();
-        }
-      );
-    });
+    let favicon = await PlacesUtils.favicons.getFaviconForPage(
+      Services.io.newURI(pageUrl)
+    );
+    Assert.equal(
+      favicon.uri.spec,
+      iconUrl,
+      "Should have stored the expected icon."
+    );
   });
 }
 

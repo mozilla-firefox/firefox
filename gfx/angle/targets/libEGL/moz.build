@@ -206,4 +206,4 @@ OS_LIBS += [
 
 DEFFILE = "../../checkout/src/libEGL/libEGL_autogen.def"
 RCFILE = "../../checkout/src/libEGL/libEGL.rc"
-GeckoSharedLibrary("libEGL", linkage=None)
+GeckoSharedLibrary("libEGL")

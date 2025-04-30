@@ -1352,6 +1352,11 @@ html {
   z-index: 1;
   box-sizing: border-box;
 }
+@media (prefers-contrast) {
+  .onboardingContainer .main-content {
+    border: 1px solid var(--in-content-page-color);
+  }
+}
 .onboardingContainer .main-content.no-steps {
   padding-bottom: 48px;
 }
@@ -2147,6 +2152,27 @@ html {
 }
 .onboardingContainer .screen[pos=split][fullscreen] .section-secondary .hero-image img {
   width: 30%;
+}
+.onboardingContainer .screen[pos=split][fullscreen] .section-secondary .message-text.hero-text {
+  margin-block: auto;
+  margin-inline: 17% auto;
+  text-align: start;
+  width: 100%;
+  max-width: 450px;
+}
+.onboardingContainer .screen[pos=split][fullscreen] .section-secondary .message-text.hero-text h1 {
+  font-weight: 510;
+  font-size: 80px;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+}
+.onboardingContainer .screen[pos=split][fullscreen] .section-secondary .message-text.hero-text h2 {
+  font-size: 20px;
+  margin: 0;
+  margin-block-start: 24px;
+  font-weight: 510;
+  width: 100%;
 }
 .onboardingContainer .screen[pos=split][fullscreen] .addons-picker-container {
   background: none;

@@ -1,4 +1,18 @@
-Overview of changes leading to 11.0.0
+Overview of changes leading to 11.1.0
+Wednesdat, April 16, 2025
+====================================
+- Include bidi mirroring variants of the requested codepoints when subsetting.
+  The new HB_SUBSET_FLAGS_NO_BIDI_CLOSURE can be used to disable this
+  behaviour.
+- Various bug fixes.
+- Various build fixes and improvements.
+- Various test suite improvements.
+
+New API:
++HB_SUBSET_FLAGS_NO_BIDI_CLOSURE
+
+
+Overview of changes leading to 11.0.1
 Friday, April 4, 2025
 ====================================
 - The change in version 10.3.0 to apply “trak” table tracking values to glyph

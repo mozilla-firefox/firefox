@@ -379,7 +379,7 @@ void LIRGenerator::visitWasmLoad(MWasmLoad* ins) {
 
   if (ins->access().type() == Scalar::Int64 && ins->access().isAtomic()) {
     auto* lir = new (alloc())
-        LWasmAtomicLoadI64(useRegister(memoryBase), useRegister(base),
+        LWasmAtomicLoadI64(useRegister(base), useRegister(memoryBase),
                            tempInt64Fixed(Register64(ecx, ebx)));
     defineInt64Fixed(lir, ins,
                      LInt64Allocation(LAllocation(AnyRegister(edx)),
@@ -427,10 +427,9 @@ void LIRGenerator::visitWasmStore(MWasmStore* ins) {
   MOZ_ASSERT(memoryBase->type() == MIRType::Pointer);
 
   if (ins->access().type() == Scalar::Int64 && ins->access().isAtomic()) {
-    auto* lir = new (alloc())
-        LWasmAtomicStoreI64(useRegister(memoryBase), useRegister(base),
-                            useInt64Fixed(ins->value(), Register64(ecx, ebx)),
-                            tempInt64Fixed(Register64(edx, eax)));
+    auto* lir = new (alloc()) LWasmAtomicStoreI64(
+        useRegister(base), useInt64Fixed(ins->value(), Register64(ecx, ebx)),
+        useRegister(memoryBase), tempInt64Fixed(Register64(edx, eax)));
     add(lir, ins);
     return;
   }
@@ -501,9 +500,10 @@ void LIRGenerator::visitWasmCompareExchangeHeap(MWasmCompareExchangeHeap* ins) {
 
   if (ins->access().type() == Scalar::Int64) {
     auto* lir = new (alloc()) LWasmCompareExchangeI64(
-        useRegisterAtStart(memoryBase), useRegisterAtStart(base),
+        useRegisterAtStart(base),
         useInt64FixedAtStart(ins->oldValue(), Register64(edx, eax)),
-        useInt64FixedAtStart(ins->newValue(), Register64(ecx, ebx)));
+        useInt64FixedAtStart(ins->newValue(), Register64(ecx, ebx)),
+        useRegisterAtStart(memoryBase));
     defineInt64Fixed(lir, ins,
                      LInt64Allocation(LAllocation(AnyRegister(edx)),
                                       LAllocation(AnyRegister(eax))));
@@ -543,8 +543,8 @@ void LIRGenerator::visitWasmAtomicExchangeHeap(MWasmAtomicExchangeHeap* ins) {
   if (ins->access().type() == Scalar::Int64) {
     MDefinition* base = ins->base();
     auto* lir = new (alloc()) LWasmAtomicExchangeI64(
-        useRegister(memoryBase), useRegister(base),
-        useInt64Fixed(ins->value(), Register64(ecx, ebx)), ins->access());
+        useRegister(base), useInt64Fixed(ins->value(), Register64(ecx, ebx)),
+        useRegister(memoryBase), ins->access());
     defineInt64Fixed(lir, ins,
                      LInt64Allocation(LAllocation(AnyRegister(edx)),
                                       LAllocation(AnyRegister(eax))));
@@ -572,10 +572,9 @@ void LIRGenerator::visitWasmAtomicBinopHeap(MWasmAtomicBinopHeap* ins) {
   MOZ_ASSERT(memoryBase->type() == MIRType::Pointer);
 
   if (ins->access().type() == Scalar::Int64) {
-    auto* lir = new (alloc())
-        LWasmAtomicBinopI64(useRegister(memoryBase), useRegister(base),
-                            useInt64Fixed(ins->value(), Register64(ecx, ebx)),
-                            ins->access(), ins->operation());
+    auto* lir = new (alloc()) LWasmAtomicBinopI64(
+        useRegister(base), useInt64Fixed(ins->value(), Register64(ecx, ebx)),
+        useRegister(memoryBase), ins->access(), ins->operation());
     defineInt64Fixed(lir, ins,
                      LInt64Allocation(LAllocation(AnyRegister(edx)),
                                       LAllocation(AnyRegister(eax))));

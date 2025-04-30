@@ -11392,6 +11392,7 @@ interface nsISearchSubmission extends nsISupports {
 
 interface nsISearchEngine extends nsISupports {
   getSubmission(searchTerms: string, responseType?: string): nsISearchSubmission;
+  readonly searchURLWithNoTerms: nsIURI;
   searchTermFromResult(uri: nsIURI): string;
   readonly searchUrlQueryParamName: string;
   readonly searchUrlPublicSuffix: string;
@@ -11406,6 +11407,7 @@ interface nsISearchEngine extends nsISupports {
   readonly id: string;
   readonly telemetryId: string;
   readonly identifier: string;
+  readonly loadPath: string;
   readonly isAppProvided: boolean;
   readonly inMemory: boolean;
   readonly overriddenById: string;

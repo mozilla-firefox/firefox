@@ -828,8 +828,6 @@
   <string name="preferences_override_account_server">เซิร์ฟเวอร์บัญชี Mozilla ที่กำหนดเอง</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">เซิร์ฟเวอร์ Sync ที่กำหนดเอง</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">เปลี่ยนแปลงเซิร์ฟเวอร์บัญชี Mozilla/Sync แล้ว กำลังออกจากแอปพลิเคชันเพื่อนำการเปลี่ยนแปลงไปใช้…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">บัญชี</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1445,6 +1443,8 @@
   <string name="download_delete_multiple_items_snackbar_1" moz:removedIn="138" tools:ignore="UnusedResources">การดาวน์โหลดถูกลบ</string>
   <!-- Text for the snackbar to confirm that a single download item has been removed. %1$s is the name of the download item. -->
   <string name="download_delete_single_item_snackbar" moz:removedIn="138" tools:ignore="UnusedResources">เอา %1$s ออกแล้ว</string>
+  <!-- Text for the snackbar to confirm that a single download item has been removed. %1$s is the name of the download item. -->
+  <string name="download_delete_single_item_snackbar_2">ลบ “%1$s” แล้ว</string>
   <!-- Text for the snackbar to confirm that downloads are in progress. -->
   <string name="download_in_progress_snackbar" tools:ignore="UnusedResources">กำลังดาวน์โหลด…</string>
   <!-- Text for the snackbar action button to view in progress download details. -->
@@ -1470,16 +1470,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">เอาออก</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">ลบ</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">นำทางย้อนกลับ</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">นำทางขึ้นไปด้านบน</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">แบ่งปัน URL</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">แบ่งปันไฟล์</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">คุณแน่ใจหรือไม่ว่าต้องการลบรายการที่เลือก?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">คุณแน่ใจหรือไม่ว่าต้องการลบรายการที่เลือก?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">ลบ</string>
+  <string name="download_delete_multi_select_dialog_confirm">ลบ</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">ยกเลิก</string>
+  <string name="download_delete_multi_select_dialog_cancel">ยกเลิก</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">ดำเนินการอยู่</string>
   <!--
@@ -1502,8 +1506,10 @@
   <string name="download_item_download_speed_pending" tools:ignore="UnusedResources">กำลังรอ</string>
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">การดาวน์โหลดล้มเหลว</string>
+  <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
+  <string name="download_search_placeholder">ค้นหาการดาวน์โหลด</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">ไม่พบผลลัพธ์</string>
+  <string name="download_search_no_results_found">ไม่พบผลลัพธ์</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">เลือกทั้งหมด</string>
   <!--
@@ -1632,6 +1638,10 @@
   <string name="bookmark_menu_delete_button">ลบ</string>
   <!-- Bookmark overflow menu save button -->
   <string name="bookmark_menu_save_button">บันทึก</string>
+  <!-- Label for button to sort bookmarks by newest in the bookmark sorting overflow menu. -->
+  <string name="bookmark_sort_menu_newest">เรียงตามใหม่ล่าสุด</string>
+  <!-- Label for button to sort bookmarks by oldest in the bookmark sorting overflow menu. -->
+  <string name="bookmark_sort_menu_oldest">เรียงตามเก่าที่สุด</string>
   <!--
     Bookmark multi select title in app bar
     %1$d is the number of bookmarks selected
@@ -2248,7 +2258,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">ไอคอนการกำหนดลักษณะข้อยกเว้นการป้องกันการติดตามที่ปรับปรุงใหม่</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3409,6 +3419,20 @@
   <string name="text_field_eye_trailing_icon_default_content_description" moz:removedIn="139" tools:ignore="UnusedResources">แสดงข้อความที่ซ่อนอยู่</string>
   <!-- The default content description for the cross trailing icon button in TextField -->
   <string name="text_field_cross_trailing_icon_default_content_description" moz:removedIn="139" tools:ignore="UnusedResources">ล้างข้อความ</string>
+  <!-- Title for the setup checklist feature when the state is 'completed' -->
+  <string name="setup_checklist_title_state_completed">ขอแสดงความยินดี!</string>
+  <!--
+    ===== Setup checklist feature: Task titles =====
+
+    The title of the default browser task for the setup checklist
+  -->
+  <string name="setup_checklist_task_default_browser">ตั้งเป็นเบราว์เซอร์เริ่มต้น</string>
+  <!-- The title of the sign-in task for the setup checklist -->
+  <string name="setup_checklist_task_account_sync">ลงชื่อเข้าบัญชีของคุณ</string>
+  <!-- The title of the explore extensions task for the setup checklist -->
+  <string name="setup_checklist_task_explore_extensions">สำรวจส่วนขยาย</string>
+  <!-- The title of the 'customize' group in the setup checklist. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_group_customize">ปรับแต่ง %1$s ของคุณ</string>
   <!-- The title of the 'helpful tools' group in the setup checklist -->
   <string name="setup_checklist_group_helpful_tools">เครื่องมือที่มีประโยชน์</string>
   <!--
@@ -3425,6 +3449,12 @@
   <string name="a11y_completed_task_description">งานที่เสร็จสมบูรณ์</string>
   <!-- Accessibility description for the task icon -->
   <string name="a11y_task_icon_description">ไอคอนงาน</string>
+  <!--
+    Private browsing mode authentication screen
+
+    Label for the secondary action to exit private browsing mode
+  -->
+  <string name="pbm_authentication_leave_private_tabs">ออกจากแท็บส่วนตัว</string>
   <!-- Label for the primary action button to unlock private tabs -->
   <string name="pbm_authentication_unlock">ปลดล็อก</string>
 </resources>

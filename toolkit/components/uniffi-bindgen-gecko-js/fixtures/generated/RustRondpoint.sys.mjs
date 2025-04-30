@@ -665,7 +665,7 @@ export class Optionneur {
         const liftError = null;
         const functionCall = () => {
             return UniFFIScaffolding.callAsyncWrapper(
-                170, // rondpoint:uniffi_uniffi_rondpoint_fn_constructor_optionneur_new
+                176, // rondpoint:uniffi_uniffi_rondpoint_fn_constructor_optionneur_new
             )
         }
         try {
@@ -691,7 +691,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                145, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_boolean
+                151, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_boolean
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterBool.lower(value),
             )
@@ -720,7 +720,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                146, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_enum
+                152, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_enum
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterTypeEnumeration.lower(value),
             )
@@ -749,7 +749,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                147, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_f32
+                153, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_f32
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterF32.lower(value),
             )
@@ -778,7 +778,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                148, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_f64
+                154, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_f64
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterF64.lower(value),
             )
@@ -807,7 +807,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                149, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i16_dec
+                155, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i16_dec
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterI16.lower(value),
             )
@@ -836,7 +836,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                150, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i16_hex
+                156, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i16_hex
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterI16.lower(value),
             )
@@ -865,7 +865,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                151, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i32_dec
+                157, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i32_dec
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterI32.lower(value),
             )
@@ -894,7 +894,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                152, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i32_hex
+                158, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i32_hex
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterI32.lower(value),
             )
@@ -923,7 +923,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                153, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i64_dec
+                159, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i64_dec
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterI64.lower(value),
             )
@@ -952,7 +952,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                154, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i64_hex
+                160, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i64_hex
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterI64.lower(value),
             )
@@ -981,7 +981,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                155, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i8_dec
+                161, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i8_dec
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterI8.lower(value),
             )
@@ -1010,7 +1010,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                156, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i8_hex
+                162, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_i8_hex
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterI8.lower(value),
             )
@@ -1039,7 +1039,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                157, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_null
+                163, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_null
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterOptionalstring.lower(value),
             )
@@ -1068,7 +1068,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                158, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_sequence
+                164, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_sequence
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterSequencestring.lower(value),
             )
@@ -1097,7 +1097,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                159, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_string
+                165, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_string
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterString.lower(value),
             )
@@ -1126,7 +1126,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                160, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u16_dec
+                166, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u16_dec
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterU16.lower(value),
             )
@@ -1155,7 +1155,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                161, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u16_hex
+                167, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u16_hex
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterU16.lower(value),
             )
@@ -1184,7 +1184,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                162, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u32_dec
+                168, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u32_dec
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterU32.lower(value),
             )
@@ -1213,7 +1213,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                163, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u32_hex
+                169, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u32_hex
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterU32.lower(value),
             )
@@ -1242,7 +1242,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                164, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u32_oct
+                170, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u32_oct
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterU32.lower(value),
             )
@@ -1271,7 +1271,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                165, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u64_dec
+                171, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u64_dec
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterU64.lower(value),
             )
@@ -1300,7 +1300,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                166, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u64_hex
+                172, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u64_hex
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterU64.lower(value),
             )
@@ -1329,7 +1329,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                167, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u8_dec
+                173, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u8_dec
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterU8.lower(value),
             )
@@ -1358,7 +1358,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                168, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u8_hex
+                174, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_u8_hex
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterU8.lower(value),
             )
@@ -1387,7 +1387,7 @@ export class Optionneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                169, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_zero
+                175, // rondpoint:uniffi_uniffi_rondpoint_fn_method_optionneur_sinon_zero
                 FfiConverterTypeOptionneur.lower(this),
                 FfiConverterOptionali32.lower(value),
             )
@@ -1455,7 +1455,7 @@ export class Retourneur {
         const liftError = null;
         const functionCall = () => {
             return UniFFIScaffolding.callAsyncWrapper(
-                186, // rondpoint:uniffi_uniffi_rondpoint_fn_constructor_retourneur_new
+                192, // rondpoint:uniffi_uniffi_rondpoint_fn_constructor_retourneur_new
             )
         }
         try {
@@ -1481,7 +1481,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                171, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_boolean
+                177, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_boolean
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterBool.lower(value),
             )
@@ -1510,7 +1510,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                172, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_double
+                178, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_double
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterF64.lower(value),
             )
@@ -1539,7 +1539,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                173, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_float
+                179, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_float
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterF32.lower(value),
             )
@@ -1568,7 +1568,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                174, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_i16
+                180, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_i16
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterI16.lower(value),
             )
@@ -1597,7 +1597,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                175, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_i32
+                181, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_i32
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterI32.lower(value),
             )
@@ -1626,7 +1626,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                176, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_i64
+                182, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_i64
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterI64.lower(value),
             )
@@ -1655,7 +1655,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                177, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_i8
+                183, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_i8
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterI8.lower(value),
             )
@@ -1684,7 +1684,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                178, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_nombres
+                184, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_nombres
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterTypeDictionnaireNombres.lower(value),
             )
@@ -1713,7 +1713,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                179, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_nombres_signes
+                185, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_nombres_signes
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterTypeDictionnaireNombresSignes.lower(value),
             )
@@ -1742,7 +1742,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                180, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_optionneur_dictionnaire
+                186, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_optionneur_dictionnaire
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterTypeOptionneurDictionnaire.lower(value),
             )
@@ -1771,7 +1771,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                181, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_string
+                187, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_string
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterString.lower(value),
             )
@@ -1800,7 +1800,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                182, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_u16
+                188, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_u16
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterU16.lower(value),
             )
@@ -1829,7 +1829,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                183, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_u32
+                189, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_u32
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterU32.lower(value),
             )
@@ -1858,7 +1858,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                184, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_u64
+                190, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_u64
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterU64.lower(value),
             )
@@ -1887,7 +1887,7 @@ export class Retourneur {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                185, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_u8
+                191, // rondpoint:uniffi_uniffi_rondpoint_fn_method_retourneur_identique_u8
                 FfiConverterTypeRetourneur.lower(this),
                 FfiConverterU8.lower(value),
             )
@@ -1955,7 +1955,7 @@ export class Stringifier {
         const liftError = null;
         const functionCall = () => {
             return UniFFIScaffolding.callAsyncWrapper(
-                199, // rondpoint:uniffi_uniffi_rondpoint_fn_constructor_stringifier_new
+                205, // rondpoint:uniffi_uniffi_rondpoint_fn_constructor_stringifier_new
             )
         }
         try {
@@ -1981,7 +1981,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                187, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_boolean
+                193, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_boolean
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterBool.lower(value),
             )
@@ -2010,7 +2010,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                188, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_double
+                194, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_double
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterF64.lower(value),
             )
@@ -2039,7 +2039,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                189, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_float
+                195, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_float
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterF32.lower(value),
             )
@@ -2068,7 +2068,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                190, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_i16
+                196, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_i16
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterI16.lower(value),
             )
@@ -2097,7 +2097,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                191, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_i32
+                197, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_i32
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterI32.lower(value),
             )
@@ -2126,7 +2126,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                192, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_i64
+                198, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_i64
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterI64.lower(value),
             )
@@ -2155,7 +2155,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                193, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_i8
+                199, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_i8
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterI8.lower(value),
             )
@@ -2184,7 +2184,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                194, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_u16
+                200, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_u16
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterU16.lower(value),
             )
@@ -2213,7 +2213,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                195, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_u32
+                201, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_u32
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterU32.lower(value),
             )
@@ -2242,7 +2242,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                196, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_u64
+                202, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_u64
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterU64.lower(value),
             )
@@ -2271,7 +2271,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                197, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_u8
+                203, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_to_string_u8
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterU8.lower(value),
             )
@@ -2300,7 +2300,7 @@ export class Stringifier {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                198, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_well_known_string
+                204, // rondpoint:uniffi_uniffi_rondpoint_fn_method_stringifier_well_known_string
                 FfiConverterTypeStringifier.lower(this),
                 FfiConverterString.lower(value),
             )
@@ -3677,7 +3677,7 @@ export function copieCarte(c) {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                140, // rondpoint:uniffi_uniffi_rondpoint_fn_func_copie_carte
+                146, // rondpoint:uniffi_uniffi_rondpoint_fn_func_copie_carte
                 FfiConverterMapStringTypeEnumerationAvecDonnees.lower(c),
             )
         }
@@ -3706,7 +3706,7 @@ export function copieDictionnaire(d) {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                141, // rondpoint:uniffi_uniffi_rondpoint_fn_func_copie_dictionnaire
+                147, // rondpoint:uniffi_uniffi_rondpoint_fn_func_copie_dictionnaire
                 FfiConverterTypeDictionnaire.lower(d),
             )
         }
@@ -3735,7 +3735,7 @@ export function copieEnumeration(e) {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                142, // rondpoint:uniffi_uniffi_rondpoint_fn_func_copie_enumeration
+                148, // rondpoint:uniffi_uniffi_rondpoint_fn_func_copie_enumeration
                 FfiConverterTypeEnumeration.lower(e),
             )
         }
@@ -3764,7 +3764,7 @@ export function copieEnumerations(e) {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                143, // rondpoint:uniffi_uniffi_rondpoint_fn_func_copie_enumerations
+                149, // rondpoint:uniffi_uniffi_rondpoint_fn_func_copie_enumerations
                 FfiConverterSequenceTypeEnumeration.lower(e),
             )
         }
@@ -3793,7 +3793,7 @@ export function switcheroo(b) {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                144, // rondpoint:uniffi_uniffi_rondpoint_fn_func_switcheroo
+                150, // rondpoint:uniffi_uniffi_rondpoint_fn_func_switcheroo
                 FfiConverterBool.lower(b),
             )
         }

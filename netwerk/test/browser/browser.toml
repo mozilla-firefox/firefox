@@ -94,6 +94,7 @@ support-files = [
 skip-if = [
   "os == 'mac' && os_version == '10.15' && processor == 'x86_64' && debug", # Bug 1829935
   "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && opt", # Bug 1829935
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1829935
   "os == 'win' && os_version == '11.26100' && opt", # Bug 1829935
 ]
 

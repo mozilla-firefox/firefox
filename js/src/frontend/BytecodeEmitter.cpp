@@ -64,15 +64,16 @@
 #include "js/friend/StackLimits.h"    // AutoCheckRecursionLimit
 #include "util/StringBuilder.h"       // StringBuilder
 #include "vm/BytecodeUtil.h"  // JOF_*, IsArgOp, IsLocalOp, SET_UINT24, SET_ICINDEX, BytecodeFallsThrough, BytecodeIsJumpTarget
-#include "vm/CompletionKind.h"      // CompletionKind
-#include "vm/FunctionPrefixKind.h"  // FunctionPrefixKind
-#include "vm/GeneratorObject.h"     // AbstractGeneratorObject
-#include "vm/Opcodes.h"             // JSOp, JSOpLength_*
-#include "vm/PropMap.h"             // SharedPropMap::MaxPropsForNonDictionary
-#include "vm/Scope.h"               // GetScopeDataTrailingNames
-#include "vm/SharedStencil.h"       // ScopeNote
-#include "vm/ThrowMsgKind.h"        // ThrowMsgKind
-#include "vm/TypeofEqOperand.h"     // TypeofEqOperand
+#include "vm/CompletionKind.h"          // CompletionKind
+#include "vm/ConstantCompareOperand.h"  // ConstantCompareOperand
+#include "vm/FunctionPrefixKind.h"      // FunctionPrefixKind
+#include "vm/GeneratorObject.h"         // AbstractGeneratorObject
+#include "vm/Opcodes.h"                 // JSOp, JSOpLength_*
+#include "vm/PropMap.h"          // SharedPropMap::MaxPropsForNonDictionary
+#include "vm/Scope.h"            // GetScopeDataTrailingNames
+#include "vm/SharedStencil.h"    // ScopeNote
+#include "vm/ThrowMsgKind.h"     // ThrowMsgKind
+#include "vm/TypeofEqOperand.h"  // TypeofEqOperand
 
 using namespace js;
 using namespace js::frontend;
@@ -8715,12 +8716,104 @@ bool BytecodeEmitter::emitRightAssociative(ListNode* node) {
   return true;
 }
 
+Maybe<ConstantCompareOperand> ParseNodeToConstantCompareOperand(
+    ParseNode* constant) {
+  switch (constant->getKind()) {
+    case ParseNodeKind::NumberExpr: {
+      double d = constant->as<NumericLiteral>().value();
+      int32_t ival;
+      if (NumberEqualsInt32(d, &ival)) {
+        if (ConstantCompareOperand::CanEncodeInt32ValueAsOperand(ival)) {
+          return Some(ConstantCompareOperand((int8_t)ival));
+        }
+      }
+      return Nothing();
+    }
+    case ParseNodeKind::TrueExpr:
+    case ParseNodeKind::FalseExpr:
+      return Some(
+          ConstantCompareOperand(constant->isKind(ParseNodeKind::TrueExpr)));
+    case ParseNodeKind::NullExpr:
+      return Some(
+          ConstantCompareOperand(ConstantCompareOperand::EncodedType::Null));
+    case ParseNodeKind::RawUndefinedExpr:
+      return Some(ConstantCompareOperand(
+          ConstantCompareOperand::EncodedType::Undefined));
+    default:
+      return Nothing();
+  }
+}
+
+bool BytecodeEmitter::tryEmitConstantEq(ListNode* node, JSOp op,
+                                        bool* emitted) {
+  // We ignore long chains of === or !==, we
+  // only optimise cases a === b or a !== b
+  if (node->count() != 2) {
+    *emitted = false;
+    return true;
+  }
+
+  JSOp constantOp;
+  switch (op) {
+    case JSOp::StrictEq:
+      constantOp = JSOp::StrictConstantEq;
+      break;
+    case JSOp::StrictNe:
+      constantOp = JSOp::StrictConstantNe;
+      break;
+    default:
+      *emitted = false;
+      return true;
+  }
+
+  ParseNode* left = node->head();
+  ParseNode* right = node->head()->pn_next;
+
+  ParseNode* expressionNode;
+  ParseNode* constantNode;
+  if (left->isConstant()) {
+    expressionNode = right;
+    constantNode = left;
+  } else if (right->isConstant()) {
+    expressionNode = left;
+    constantNode = right;
+  } else {
+    *emitted = false;
+    return true;
+  }
+
+  Maybe<ConstantCompareOperand> operand =
+      ParseNodeToConstantCompareOperand(constantNode);
+  if (operand.isNothing()) {
+    *emitted = false;
+    return true;
+  }
+
+  if (!emitTree(expressionNode)) {
+    return false;
+  }
+
+  if (!emitUint16Operand(constantOp, operand->rawValue())) {
+    return false;
+  }
+
+  *emitted = true;
+  return true;
+}
+
 bool BytecodeEmitter::emitLeftAssociative(ListNode* node) {
+  JSOp op = BinaryOpParseNodeKindToJSOp(node->getKind());
+  bool constantEqEmitted = false;
+  if (!tryEmitConstantEq(node, op, &constantEqEmitted)) {
+    return false;
+  }
+  if (constantEqEmitted) {
+    return true;
+  }
   // Left-associative operator chain.
   if (!emitTree(node->head())) {
     return false;
   }
-  JSOp op = BinaryOpParseNodeKindToJSOp(node->getKind());
   ParseNode* nextExpr = node->head()->pn_next;
   do {
     if (!updateSourceCoordNotesIfNonLiteral(nextExpr)) {

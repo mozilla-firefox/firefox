@@ -214,7 +214,7 @@ class SharedSubResourceCache {
   [[nodiscard]] bool CoalesceLoad(const Key&, LoadingValue& aNewLoad,
                                   CachedSubResourceState aExistingLoadState);
 
-  size_t SizeOfIncludingThis(MallocSizeOf) const;
+  size_t SizeOfExcludingThis(MallocSizeOf) const;
 
   // Puts the load into the "loading" set.
   void LoadStarted(const Key&, LoadingValue&);
@@ -259,6 +259,8 @@ class SharedSubResourceCache {
   void CancelPendingLoadsForLoader(Loader&);
 
   void WillStartPendingLoad(LoadingValue&);
+
+  void EvictPrincipal(nsIPrincipal*);
 
   nsTHashMap<Key, CompleteSubResource> mComplete;
   nsRefPtrHashtable<Key, LoadingValue> mPending;
@@ -317,11 +319,18 @@ void SharedSubResourceCache<Traits, Derived>::UnregisterLoader(
   MOZ_RELEASE_ASSERT(lookup.Data());
   if (!--lookup.Data()) {
     lookup.Remove();
-    // TODO(emilio): Do this off a timer or something maybe.
-    for (auto iter = mComplete.Iter(); !iter.Done(); iter.Next()) {
-      if (iter.Key().LoaderPrincipal()->Equals(prin)) {
-        iter.Remove();
-      }
+    // TODO(emilio): Do this off a timer or something maybe, though in practice
+    // BFCache is good enough at keeping things alive.
+    AsDerived().EvictPrincipal(prin);
+  }
+}
+
+template <typename Traits, typename Derived>
+void SharedSubResourceCache<Traits, Derived>::EvictPrincipal(
+    nsIPrincipal* aPrincipal) {
+  for (auto iter = mComplete.Iter(); !iter.Done(); iter.Next()) {
+    if (iter.Key().LoaderPrincipal()->Equals(aPrincipal)) {
+      iter.Remove();
     }
   }
 }
@@ -535,11 +544,9 @@ auto SharedSubResourceCache<Traits, Derived>::Lookup(Loader& aLoader,
 }
 
 template <typename Traits, typename Derived>
-size_t SharedSubResourceCache<Traits, Derived>::SizeOfIncludingThis(
+size_t SharedSubResourceCache<Traits, Derived>::SizeOfExcludingThis(
     MallocSizeOf aMallocSizeOf) const {
-  size_t n = aMallocSizeOf(&AsDerived());
-
-  n += mComplete.ShallowSizeOfExcludingThis(aMallocSizeOf);
+  size_t n = mComplete.ShallowSizeOfExcludingThis(aMallocSizeOf);
   for (const auto& data : mComplete.Values()) {
     n += data.mResource->SizeOfIncludingThis(aMallocSizeOf);
   }

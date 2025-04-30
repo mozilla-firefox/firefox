@@ -6,8 +6,21 @@
 // Tests that the rule-view displays correctly on MathML elements.
 
 const TEST_URI = `
+  <style>
+    div {
+      background-color: hotpink;
+    }
+
+    math {
+      font-size: 36px;
+    }
+
+    msubsup {
+      background-color: tomato;
+    }
+  </style>
   <div>
-    <math xmlns=\http://www.w3.org/1998/Math/MathML\>
+    <math>
       <mfrac>
         <msubsup>
           <mi>a</mi>
@@ -16,7 +29,7 @@ const TEST_URI = `
         </msubsup>
         <msub>
           <mi>x</mi>
-          <mn>0</mn>
+          <mn style="color: gold;">0</mn>
         </msub>
       </mfrac>
     </math>
@@ -29,34 +42,39 @@ add_task(async function () {
 
   info("Select the DIV node and verify the rule-view shows rules");
   await selectNode("div", inspector);
-  ok(
-    view.element.querySelectorAll(".ruleview-rule").length,
-    "The rule-view shows rules for the div element"
+  is(
+    getRuleViewPropertyValue(view, "div", "background-color"),
+    "hotpink",
+    "background-color in div rule has expected value"
   );
 
-  info("Select various MathML nodes and verify the rule-view is empty");
+  info("Select various MathML nodes and check that rules are displayed");
   await selectNode("math", inspector);
-  ok(
-    !view.element.querySelectorAll(".ruleview-rule").length,
-    "The rule-view is empty for the math element"
+  is(
+    getRuleViewPropertyValue(view, "math", "font-size"),
+    "36px",
+    "font-size in math rule has expected value"
   );
 
   await selectNode("msubsup", inspector);
-  ok(
-    !view.element.querySelectorAll(".ruleview-rule").length,
-    "The rule-view is empty for the msubsup element"
+  is(
+    getRuleViewPropertyValue(view, "msubsup", "background-color"),
+    "tomato",
+    "background-color in msubsup rule has expected value"
   );
 
   await selectNode("mn", inspector);
-  ok(
-    !view.element.querySelectorAll(".ruleview-rule").length,
-    "The rule-view is empty for the mn element"
+  is(
+    getRuleViewPropertyValue(view, "element", "color"),
+    "gold",
+    "color in mn element style has expected value"
   );
 
   info("Select again the DIV node and verify the rule-view shows rules");
   await selectNode("div", inspector);
-  ok(
-    view.element.querySelectorAll(".ruleview-rule").length,
-    "The rule-view shows rules for the div element"
+  is(
+    getRuleViewPropertyValue(view, "div", "background-color"),
+    "hotpink",
+    "background-color in div rule still has expected value"
   );
 });

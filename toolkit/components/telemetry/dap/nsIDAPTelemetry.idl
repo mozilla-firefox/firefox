@@ -9,12 +9,14 @@ interface nsIDAPTelemetry : nsISupports {
   /**
    * Split measurement into shares and create a report with encrypted shares.
    *
-   * @param leaderHpkeConfig  The leader share will be encrypted with this
-   *                          config.
-   * @param helperHpkeConfig  Same for the helper.
+   * @param leaderHpkeConfig  Leader encryption configuration.
+   * @param helperHpkeConfig  Helper encryption configuration.
    * @param measurement       The data which will be encoded and shared.
    * @param task_id           Identifies which task this measurement is for
    *                          which influences both encoding and encryption.
+   * @param [bits]            Bitwidth of integers that the VDAF consumes.
+   *                          size of vector in the case of histograms.
+   * @param [length]          Number of bins in the case of histograms.
    * @param time_precision    Determines the report timestamp.
    *
    * @return The raw bytes of a report, ready for sending.
@@ -22,16 +24,25 @@ interface nsIDAPTelemetry : nsISupports {
    * @note This can potentially run for a long time. Take care not to block
    *       the main thread for too long.
    */
-  void GetReportU8(in Array<uint8_t> leaderHpkeConfig,
-                 in Array<uint8_t> helperHpkeConfig, in uint8_t measurement,
-                 in Array<uint8_t> task_id, in uint64_t time_precision,
-                 out Array<uint8_t> report);
-  void GetReportVecU8(in Array<uint8_t> leaderHpkeConfig,
-                 in Array<uint8_t> helperHpkeConfig,
-                 in Array<uint8_t> measurement, in Array<uint8_t> task_id,
-                 in uint64_t time_precision, out Array<uint8_t> report);
-  void GetReportVecU16(in Array<uint8_t> leaderHpkeConfig,
-                 in Array<uint8_t> helperHpkeConfig,
-                 in Array<uint16_t> measurement, in Array<uint8_t> task_id,
-                 in uint64_t time_precision, out Array<uint8_t> report);
+  void GetReportPrioSum(in Array<uint8_t> leaderHpkeConfig,
+                        in Array<uint8_t> helperHpkeConfig,
+                        in uint32_t measurement,
+                        in Array<uint8_t> task_id,
+                        in uint32_t bits,
+                        in uint64_t time_precision,
+                        out Array<uint8_t> report);
+  void GetReportPrioSumVec(in Array<uint8_t> leaderHpkeConfig,
+                           in Array<uint8_t> helperHpkeConfig,
+                           in Array<uint32_t> measurement,
+                           in Array<uint8_t> task_id,
+                           in uint32_t bits,
+                           in uint64_t time_precision,
+                           out Array<uint8_t> report);
+  void GetReportPrioHistogram(in Array<uint8_t> leaderHpkeConfig,
+                              in Array<uint8_t> helperHpkeConfig,
+                              in uint32_t measurement,
+                              in Array<uint8_t> task_id,
+                              in uint32_t length,
+                              in uint64_t time_precision,
+                              out Array<uint8_t> report);
 };

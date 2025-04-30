@@ -1,0 +1,22 @@
+[package]
+name = "rusqlite"
+version = "0.31.999"
+edition = "2021"
+license = "MPL-2.0"
+
+[lib]
+path = "lib.rs"
+
+[dependencies.rusqlite]
+version = "0.33"
+
+[features]
+bundled = ["rusqlite/bundled"]
+bundled-sqlcipher = ["rusqlite/bundled-sqlcipher"]
+functions = ["rusqlite/functions"]
+in_gecko = ["rusqlite/in_gecko"]
+limits = ["rusqlite/limits"]
+load_extension = ["rusqlite/load_extension"]
+modern_sqlite = ["rusqlite/modern_sqlite"]
+serde_json = ["rusqlite/serde_json"]
+unlock_notify = ["rusqlite/unlock_notify"]

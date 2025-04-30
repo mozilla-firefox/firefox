@@ -1501,3 +1501,67 @@ updater:
     data_sensitivity:
       - technical
     expires: never
+
+
+update.settings:
+  channel:
+    type: string
+    lifetime: application
+    description: |
+      The update channel according to defaults,
+      including partner bits.
+      e.g. "nightly-cck"
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950397
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950397
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - application-update-telemetry-alerts@mozilla.com
+    expires: never
+
+  enabled:
+    type: boolean
+    lifetime: application
+    description: |
+      Whether updates are available.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950397
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950397
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - application-update-telemetry-alerts@mozilla.com
+    expires: never
+
+  auto_download:
+    type: boolean
+    lifetime: application
+    description: |
+      Whether app updates are set to auto-download.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950397
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950397
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - application-update-telemetry-alerts@mozilla.com
+    expires: never
+
+  background:
+    type: boolean
+    lifetime: application
+    description: |
+      Whether updates can be delivered in the background.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950397
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950397
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - application-update-telemetry-alerts@mozilla.com
+    expires: never

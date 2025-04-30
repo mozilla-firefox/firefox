@@ -10,14 +10,12 @@ let gAreas = CustomizableUI.getTestOnlyInternalProp("gAreas");
 
 const SIDEBAR_BUTTON_INTRODUCED_PREF =
   "browser.toolbarbuttons.introduced.sidebar-button";
-const SIDEBAR_VISIBILITY_PREF = "sidebar.visibility";
-const SIDEBAR_TAB_DIRECTION_PREF = "sidebar.verticalTabs";
 
 add_setup(async () => {
   // Only vertical tabs mode has expanded state
   await SpecialPowers.pushPrefEnv({
     set: [
-      [SIDEBAR_TAB_DIRECTION_PREF, true],
+      [VERTICAL_TABS_PREF, true],
       [SIDEBAR_BUTTON_INTRODUCED_PREF, false],
     ],
   });
@@ -53,11 +51,11 @@ add_setup(async () => {
     "sidebar-button"
   );
   ok(
-    window.SidebarController.sidebarMain?.expanded,
+    SidebarController.sidebarMain?.expanded,
     "With verticalTabs enabled, the launcher should be initially expanded"
   );
   ok(
-    BrowserTestUtils.isVisible(window.SidebarController.sidebarMain),
+    BrowserTestUtils.isVisible(SidebarController.sidebarMain),
     "Sidebar launcher is visible at setup"
   );
 });
@@ -87,7 +85,7 @@ add_task(async function test_toolbar_sidebar_button() {
 
 add_task(async function test_expanded_state_for_always_show() {
   await waitForTabstripOrientation("vertical");
-  const { sidebarMain, toolbarButton } = window.SidebarController;
+  const { sidebarMain, toolbarButton } = SidebarController;
 
   const checkExpandedState = async (
     expanded,
@@ -200,11 +198,10 @@ add_task(async function test_expanded_state_for_always_show() {
 add_task(async function test_states_for_hide_sidebar() {
   // With horizontal tabs and visibility set to "hide-sidebar", check launcher is initially visible
   await SpecialPowers.pushPrefEnv({
-    set: [[SIDEBAR_TAB_DIRECTION_PREF, false]],
+    set: [[VERTICAL_TABS_PREF, false]],
   });
   await waitForTabstripOrientation("horizontal");
 
-  const { SidebarController } = window;
   const { sidebarContainer, sidebarMain, toolbarButton } = SidebarController;
 
   Assert.equal(
@@ -305,11 +302,12 @@ add_task(async function test_states_for_hide_sidebar() {
 
 add_task(async function test_states_for_hide_sidebar_vertical() {
   info(
-    `starting test with pref values: verticalTabs: ${Services.prefs.getBoolPref("sidebar.verticalTabs")}, visibility: ${Services.prefs.getStringPref("sidebar.visibility")}`
+    `starting test with pref values: verticalTabs: ${Services.prefs.getBoolPref(VERTICAL_TABS_PREF)},
+    visibility: ${Services.prefs.getStringPref(SIDEBAR_VISIBILITY_PREF)}`
   );
   await waitForTabstripOrientation("vertical", window);
   await SpecialPowers.pushPrefEnv({
-    set: [["sidebar.visibility", "hide-sidebar"]],
+    set: [[SIDEBAR_VISIBILITY_PREF, "hide-sidebar"]],
   });
   await window.SidebarController.sidebarMain.updateComplete;
   ok(
@@ -472,7 +470,7 @@ add_task(async function test_keyboard_shortcut() {
   const key = document.getElementById("toggleSidebarKb");
 
   Assert.equal(
-    Services.prefs.getStringPref("sidebar.visibility"),
+    Services.prefs.getStringPref(SIDEBAR_VISIBILITY_PREF),
     "always-show",
     "Got expected visibility value"
   );

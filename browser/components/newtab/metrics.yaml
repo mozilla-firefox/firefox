@@ -1002,6 +1002,38 @@ newtab:
     send_in_pings:
       - newtab
 
+  metric_registered:
+    type: labeled_boolean
+    description: >
+      Records technical data about whether the metric registration
+      at runtime succeeded
+    bugs:
+      - https://bugzil.la/1961989
+    data_reviews:
+      - https://bugzil.la/1961989
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - pdahiya@mozilla.com
+      - mconley@mozilla.com
+    expires: never
+
+  ping_registered:
+    type: labeled_boolean
+    description: >
+      Records technical data about whether the ping registration
+      at runtime succeeded
+    bugs:
+      - https://bugzil.la/1961989
+    data_reviews:
+      - https://bugzil.la/1961989
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - pdahiya@mozilla.com
+      - mconley@mozilla.com
+    expires: never
+
 newtab.search:
   enabled:
     lifetime: application
@@ -1824,6 +1856,533 @@ pocket:
       is_section_followed: *is_section_followed
     send_in_pings:
       - newtab
+
+newtab_content:
+
+  coarse_os:
+    type: string
+    description: >
+      The name of the operating system. Possible values:
+      Android, iOS, Linux, Windows, or macOS
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - nbarrett@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - newtab-content
+
+  coarse_os_version:
+    type: string
+    description: |
+      The user-visible version of the operating system (e.g. "1.2.3").
+      If the version detection fails, this metric gets set to 0.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - nbarrett@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - newtab-content
+
+  utc_offset:
+    type: quantity
+    description: >
+      <0-24> positive UTC offset, rounded to the nearest integer number greater than 0.
+      (If less than 0, then add 24.)
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - nbarrett@mozilla.com
+    expires: never
+    send_in_pings:
+      - newtab-content
+    lifetime: application
+    unit: utc offset
+
+  surface_id:
+    type: string
+    description: >
+      Surface id sent to the client from merino api
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - nbarrett@mozilla.com
+    expires: never
+    send_in_pings:
+      - newtab-content
+      - newtab
+    lifetime: application
+
+  followed_sections:
+    type: string_list
+    description: >
+      Optional metric: section ids followed by user in alphabetical order, if possible,
+      ordered by most recently followed. Max 2 sections
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - nbarrett@mozilla.com
+    expires: never
+    send_in_pings:
+      - newtab-content
+    lifetime: application
+
+  # The `newtab-content` ping does not include any info sections, and
+  # therefore needs to capture experiments and rollouts independently.  This
+  # data layout agrees with the `nimbus-targeting-context` ping for ease of
+  # analysis.
+  active_experiments:
+    type: object
+    description: >
+      slugs of actively enrolled experiments
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - nbarrett@mozilla.com
+    send_in_pings:
+      - newtab-content
+    expires: never
+    structure:
+      type: array
+      items:
+        type: string
+
+  active_rollouts:
+    type: object
+    description: >
+      slugs of actively enrolled rollouts
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - nbarrett@mozilla.com
+    send_in_pings:
+      - newtab-content
+    expires: never
+    structure:
+      type: array
+      items:
+        type: string
+
+  enrollments_map:
+    type: object
+    description: >
+      Information about historic enrollments, including the branches enrolled.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    expires: never
+    notification_emails:
+      - nbarrett@mozilla.com
+    send_in_pings:
+      - newtab-content
+    data_sensitivity:
+      - technical
+    structure:
+      type: array
+      items:
+        type: object
+        properties:
+          experimentSlug:
+            type: string
+          branchSlug:
+            type: string
+
+  impression:
+    type: event
+    description: >
+      Recorded when a pocket tile is visible to the user.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1786612
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1817105
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1854245
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1862670
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1937200
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1786612
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1817105#c11
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1854245
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - anicholson@mozilla.com
+      - chutten@mozilla.com
+      - mmccorquodale@mozilla.com
+      - najiang@mozilla.com
+      - lina@mozilla.com
+      - sdowne@mozilla.com
+    expires: never
+    extra_keys:
+      newtab_visit_id: *newtab_visit_id
+      is_sponsored: *is_sponsored_pocket
+      format: *format
+      position: *pocket_position
+      recommendation_id: *recommendation_id
+      tile_id: *pocket_tile_id
+      scheduled_corpus_item_id: *scheduled_corpus_item_id
+      corpus_item_id: *corpus_item_id
+      received_rank: *received_rank
+      recommended_at: *recommended_at
+      topic:
+        description: The topic of the recommendation. Like "entertainment".
+        type: string
+      selected_topics:
+        description: >
+          The list of topics the user selected
+        type: string
+      is_list_card:
+        description: >
+          Where the article card is in the list component
+        type: boolean
+      section:
+        description: >
+          If click belongs in a section, the name of the section
+        type: string
+      section_position:
+        description: >
+          If click belongs in a section, the numberic position of the section
+        type: string
+      is_section_followed:
+        description: >
+          If click belongs in a section, if that section is followed
+        type: boolean
+    send_in_pings:
+      - newtab-content
+
+  click:
+    type: event
+    description: >
+      Recorded when a pocket tile is clicked.
+      Only happens on click. Not on middle-click. Not on "Open in new Tab"-like
+      options in the context menu.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - mcrawford@mozilla.cocm
+    expires: never
+    extra_keys:
+      newtab_visit_id: *newtab_visit_id
+      is_sponsored: *is_sponsored_pocket
+      format: *format
+      position: *pocket_position
+      recommendation_id: *recommendation_id
+      tile_id: *pocket_tile_id
+      scheduled_corpus_item_id: *scheduled_corpus_item_id
+      corpus_item_id: *corpus_item_id
+      received_rank: *received_rank
+      recommended_at: *recommended_at
+      matches_selected_topic:
+        description: >
+          Returns value based on if a the topic of the pocket recommendation matches one
+          of the user-selected topic categories
+        type: string
+      topic:
+        description: The topic of the recommendation. Like "entertainment".
+        type: string
+      selected_topics:
+        description: >
+          The list of topics the user selected
+        type: string
+      is_list_card:
+        description: >
+          Where the article card is in the list component
+        type: boolean
+      section:
+        description: >
+          If click belongs in a section, the name of the section
+        type: string
+      section_position:
+        description: >
+          If click belongs in a section, the numberic position of the section
+        type: string
+      is_section_followed:
+        description: >
+          If click belongs in a section, if that section is followed
+        type: boolean
+    send_in_pings:
+      - newtab-content
+
+  dismiss:
+    type: event
+    description: >
+      Recorded when a pocket tile is dismissed.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1786612
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1937200
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1786612
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - sdowne@mozilla.com
+      - mcrawford@mozilla.com
+    expires: never
+    extra_keys:
+      newtab_visit_id: *newtab_visit_id
+      is_sponsored: *is_sponsored_pocket
+      format: *format
+      position: *pocket_position
+      recommendation_id: *recommendation_id
+      tile_id: *pocket_tile_id
+      scheduled_corpus_item_id: *scheduled_corpus_item_id
+      corpus_item_id: *corpus_item_id
+      received_rank: *received_rank
+      recommended_at: *recommended_at
+      section:
+        description: >
+          If click belongs in a section, the name of the section
+        type: string
+      section_position:
+        description: >
+          If click belongs in a section, the numberic position of the section
+        type: string
+      is_section_followed:
+        description: >
+          If click belongs in a section, if that section is followed
+        type: boolean
+    send_in_pings:
+      - newtab-content
+
+  thumb_voting_interaction:
+    type: event
+    description: >
+      Recorded when a thumbs up/down on a tile is clicked.
+      Only happens on click. Not on middle-click. Not on "Open in new Tab"-like
+      options in the context menu.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1902099
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1937200
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1902099
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - mcrawford@mozilla.com
+    expires: never
+    extra_keys:
+      newtab_visit_id: *newtab_visit_id
+      recommendation_id: *recommendation_id
+      tile_id: *pocket_tile_id
+      thumbs_up:
+        description: >
+          If the user clicked thumbs up.
+        type: boolean
+      thumbs_down:
+        description: >
+          If the user clicked thumbs down.
+        type: boolean
+      scheduled_corpus_item_id: *scheduled_corpus_item_id
+      corpus_item_id: *corpus_item_id
+      received_rank: *received_rank
+      recommended_at: *recommended_at
+      topic:
+        description: The topic of the recommendation. Like "entertainment".
+        type: string
+      is_list_card:
+        description: >
+          Where the article card is in the list component
+        type: boolean
+      section:
+        description: >
+          If event belongs in a section, the name of the section
+        type: string
+      section_position:
+        description: >
+          If event belongs in a section, the numberic position of the section
+        type: string
+      is_section_followed:
+        description: >
+          If event belongs in a section, if that section is followed
+        type: boolean
+    send_in_pings:
+      - newtab-content
+
+  sections_impression:
+    type: event
+    description: >
+      Recorded when a section is viewport and triggers an impression event
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1927916
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1938215
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1927916
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - nbarrett@mozilla.com
+      - mcrawford@mozilla.com
+    expires: never
+    extra_keys:
+      newtab_visit_id: *newtab_visit_id
+      section:
+        description: >
+          section that had impression event
+        type: string
+      section_position:
+        description: >
+          position of section on newtab
+        type: string
+      is_section_followed:
+        description: >
+          If click belongs in a section, if that section is followed
+        type: boolean
+    send_in_pings:
+      - newtab-content
+
+  sections_follow_section:
+    type: event
+    description: >
+      Recorded when a section is followed
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1932191
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1932191
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - mcrawford@mozilla.com
+    expires: never
+    extra_keys:
+      newtab_visit_id: *newtab_visit_id
+      section:
+        description: >
+          section that had impression event
+        type: string
+      section_position:
+        description: >
+          position of section on newtab
+        type: string
+      event_source:
+        description: >
+          Where the source of the event originated ("button", "context menu", etc.)
+        type: string
+    send_in_pings:
+      - newtab-content
+
+  sections_unfollow_section:
+    type: event
+    description: >
+      Recorded when a section is unfollowed
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1932191
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1932191
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - mcrawford@mozilla.com
+    expires: never
+    extra_keys:
+      newtab_visit_id: *newtab_visit_id
+      section:
+        description: >
+          section that had impression event
+        type: string
+      section_position:
+        description: >
+          position of section on newtab
+        type: string
+      event_source:
+        description: >
+          Where the source of the event originated ("button", "context menu", etc.)
+        type: string
+    send_in_pings:
+      - newtab-content
+
+  sections_block_section:
+    type: event
+    description: >
+      Recorded when a section is blocked
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1932191
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1932191
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - mcrawford@mozilla.com
+    expires: never
+    extra_keys:
+      newtab_visit_id: *newtab_visit_id
+      section:
+        description: >
+          section that had impression event
+        type: string
+      section_position:
+        description: >
+          position of section on newtab
+        type: string
+      event_source:
+        description: >
+          Where the source of the event originated ("button", "context menu", etc.)
+        type: string
+    send_in_pings:
+      - newtab-content
+
+  sections_unblock_section:
+    type: event
+    description: >
+      Recorded when a section is unblocked
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1940566
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1940566
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - mcrawford@mozilla.com
+    expires: never
+    extra_keys:
+      newtab_visit_id: *newtab_visit_id
+      section:
+        description: >
+          section that had unblock event
+        type: string
+      section_position:
+        description: >
+          position of section on newtab
+        type: string
+      event_source:
+        description: >
+          Where the source of the event originated ("button", "context menu", etc.)
+        type: string
+    send_in_pings:
+      - newtab-content
 
 top_sites: # Replacement for PingCentre "topsites-impression|click" pings.
   ping_type:

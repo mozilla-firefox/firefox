@@ -11,7 +11,7 @@
 # both from libxul (when decoding using the codec integration layer Gecko
 # provides) and from ffmpeg (when decoding and encoding through ffmpeg).
 
-GeckoSharedLibrary("gkcodecs", linkage=None)
+GeckoSharedLibrary("gkcodecs")
 SHARED_LIBRARY_NAME = "gkcodecs"
 SYMBOLS_FILE = "gkcodecs.symbols"
 if CONFIG["MOZ_SYSTEM_LIBVPX"]:

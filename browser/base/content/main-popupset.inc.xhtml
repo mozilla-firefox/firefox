@@ -339,16 +339,31 @@
   </menupopup>
 
   <menupopup id="sidebar-history-context-menu">
-    <menuitem data-l10n-id="sidebar-history-context-menu-delete-page"
-              id="sidebar-history-context-delete-page"/>
-    <menuseparator/>
+    <menuitem data-l10n-id="sidebar-context-menu-open-in-tab"
+              id="sidebar-history-context-open-in-tab"/>
+    <menu id="sidebar-history-context-menu-container-tab"
+            data-l10n-id="sidebar-context-menu-open-in-container-tab"
+            selection-type="single"
+            node-type="link"
+            hide-if-private-browsing="true"
+            hide-if-usercontext-disabled="true">
+      <menupopup id="sidebar-history-context-menu-container-popup"/>
+    </menu>
     <menuitem data-l10n-id="sidebar-context-menu-open-in-window"
               id="sidebar-history-context-open-in-window"/>
     <menuitem data-l10n-id="sidebar-context-menu-open-in-private-window"
               id="sidebar-history-context-open-in-private-window"/>
     <menuseparator/>
+    <menuitem data-l10n-id="sidebar-history-context-menu-delete-page-2"
+              id="sidebar-history-context-delete-page"/>
+    <menuitem data-l10n-id="sidebar-context-menu-forget-site"
+              id="sidebar-history-context-forget-site"/>
+    <menuseparator/>
     <menuitem data-l10n-id="sidebar-context-menu-copy-link"
               id="sidebar-history-context-copy-link"/>
+    <menuseparator/>
+    <menuitem data-l10n-id="sidebar-history-context-menu-bookmark-page"
+              id="sidebar-history-context-bookmark-page"/>
   </menupopup>
 
   <menupopup id="sidebar-synced-tabs-context-menu">

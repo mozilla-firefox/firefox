@@ -17,7 +17,7 @@ use crate::{ApiResult, Error, RemoteSettingsContext, Result};
 /// This is the version used in the new API, hence the `2` at the end.  The plan is to move
 /// consumers to the new API, remove the RemoteSettingsConfig struct, then remove the `2` from this
 /// name.
-#[derive(Debug, Clone, uniffi::Record)]
+#[derive(Debug, Default, Clone, uniffi::Record)]
 pub struct RemoteSettingsConfig2 {
     /// The Remote Settings server to use. Defaults to [RemoteSettingsServer::Prod],
     #[uniffi(default = None)]
@@ -63,6 +63,44 @@ impl RemoteSettingsServer {
         self.get_url()
     }
 
+    /// Get a BaseUrl for this server
+    pub fn get_base_url(&self) -> Result<BaseUrl> {
+        let base_url = BaseUrl::parse(self.raw_url())?;
+        // Custom URLs are weird and require a couple tricks for backwards compatibility.
+        // Normally we append `v1/` to match how this has historically worked.  However,
+        // don't do this for file:// schemes which normally don't make any sense, but it's
+        // what Nimbus uses to indicate they want to use the file-based client, rather than
+        // a remote-settings based one.
+        if base_url.url().scheme() != "file" {
+            Ok(base_url.join("v1"))
+        } else {
+            Ok(base_url)
+        }
+    }
+
+    /// get_url() that never fails
+    ///
+    /// If the URL is invalid, we'll log a warning and fall back to the production URL
+    pub fn get_base_url_with_prod_fallback(&self) -> BaseUrl {
+        match self.get_base_url() {
+            Ok(url) => url,
+            // The unwrap below will never fail, since prod is a hard-coded/valid URL.
+            Err(_) => {
+                log::warn!("Invalid Custom URL: {}", self.raw_url());
+                BaseUrl::parse(Self::Prod.raw_url()).unwrap()
+            }
+        }
+    }
+
+    fn raw_url(&self) -> &str {
+        match self {
+            Self::Prod => "https://firefox.settings.services.mozilla.com/v1",
+            Self::Stage => "https://firefox.settings.services.allizom.org/v1",
+            Self::Dev => "https://remote-settings-dev.allizom.org/v1",
+            Self::Custom { url } => url,
+        }
+    }
+
     /// Internal version of `url()`.
     ///
     /// The difference is that it uses `Error` instead of `ApiError`.  This is what we need to use
@@ -85,5 +123,46 @@ impl RemoteSettingsServer {
                 url
             }
         })
+    }
+}
+
+/// Url that's guaranteed safe to use as a base
+#[derive(Debug, Clone)]
+pub struct BaseUrl {
+    url: Url,
+}
+
+impl BaseUrl {
+    pub fn parse(url: &str) -> Result<Self> {
+        let url = Url::parse(url)?;
+        if url.cannot_be_a_base() {
+            Err(Error::UrlParsingError(
+                url::ParseError::RelativeUrlWithCannotBeABaseBase,
+            ))
+        } else {
+            Ok(Self { url })
+        }
+    }
+
+    pub fn url(&self) -> &Url {
+        &self.url
+    }
+
+    pub fn into_inner(self) -> Url {
+        self.url
+    }
+
+    pub fn join(&self, input: &str) -> BaseUrl {
+        Self {
+            // Unwrap is safe, because the join() docs say that it only will error for
+            // cannot-be-a-base URLs.
+            url: self.url.join(input).unwrap(),
+        }
+    }
+
+    pub fn path_segments_mut(&mut self) -> url::PathSegmentsMut<'_> {
+        // Unwrap is safe, because the path_segments_mut() docs say that it only will
+        // error for cannot-be-a-base URLs.
+        self.url.path_segments_mut().unwrap()
     }
 }

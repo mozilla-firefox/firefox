@@ -127,9 +127,14 @@ sealed class WebCompatReporterAction : Action {
     data object ReportSubmitted : WebCompatReporterAction(), NavigationAction
 
     /**
+     * Dispatched when the WebCompat "Send More Info" report has been submitted.
+     */
+    data object SendMoreInfoSubmitted : WebCompatReporterAction(), NavigationAction
+
+    /**
      * Dispatched when the user requests to send more info.
      */
-    data object SendMoreInfoClicked : WebCompatReporterAction(), WebCompatReporterStorageAction, NavigationAction
+    data object SendMoreInfoClicked : WebCompatReporterAction(), WebCompatReporterStorageAction
 
     /**
      * Dispatched when the user requests to cancel the report.
@@ -160,6 +165,7 @@ private fun reduce(
     is WebCompatReporterAction.StateRestored -> action.restoredState
     is WebCompatReporterAction.NavigationAction -> state
     is WebCompatReporterAction.SendReportClicked -> state
+    WebCompatReporterAction.SendMoreInfoClicked -> state
 }
 
 /**

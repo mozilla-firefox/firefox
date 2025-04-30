@@ -1,5 +1,5 @@
-use hashbrown::hash_map::DefaultHashBuilder;
 use hashlink::linked_hash_set::{self, LinkedHashSet};
+use hashlink::DefaultHashBuilder;
 
 #[allow(dead_code)]
 fn assert_covariance() {
@@ -344,9 +344,7 @@ fn test_drain() {
             assert_eq!(last_i, 49);
         }
 
-        for _ in &s {
-            panic!("s should be empty!");
-        }
+        assert_eq!((&s).into_iter().count(), 0);
 
         s.extend(1..100);
     }
@@ -373,14 +371,23 @@ fn test_replace() {
         }
     }
 
+    impl Foo {
+        fn really_eq(&self, other: &Self) -> bool {
+            self.0 == other.0 && self.1 == other.1
+        }
+    }
+
     let mut s = LinkedHashSet::new();
     assert_eq!(s.replace(Foo("a", 1)), None);
     assert_eq!(s.len(), 1);
-    assert_eq!(s.replace(Foo("a", 2)), Some(Foo("a", 1)));
+    assert_eq!(
+        s.replace(Foo("a", 2)).map(|f| f.really_eq(&Foo("a", 1))),
+        Some(true)
+    );
     assert_eq!(s.len(), 1);
 
     let mut it = s.iter();
-    assert_eq!(it.next(), Some(&Foo("a", 2)));
+    assert_eq!(it.next().map(|f| f.really_eq(&Foo("a", 2))), Some(true));
     assert_eq!(it.next(), None);
 }
 
@@ -484,7 +491,6 @@ fn double_ended_iter() {
     assert_eq!(iter.next_back(), None);
     assert_eq!(iter.next(), None);
     assert_eq!(iter.next_back(), None);
-    drop(iter);
 
     let mut iter = set.drain();
     assert_eq!(iter.next(), Some(1));

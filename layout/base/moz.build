@@ -62,6 +62,7 @@ EXPORTS += [
     "nsStyleSheetService.h",
     "StackArena.h",
     "TouchManager.h",
+    "UniqueOrNonOwningPtr.h",
     "Units.h",
     "UnitTransforms.h",
     "WordMovementType.h",

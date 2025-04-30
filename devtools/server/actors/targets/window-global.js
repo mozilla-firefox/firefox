@@ -787,7 +787,10 @@ class WindowGlobalTargetActor extends BaseTargetActor {
     // observe this BrowsingContext and set this attribute to false.
     if (
       this.browsingContext?.watchedByDevTools &&
-      !this.browsingContext.parent
+      !this.browsingContext.parent &&
+      // Avoid updating watchedByDevTools if the browsing context is discarded
+      // otherwise the setter will throw.
+      !this.browsingContext.isDiscarded
     ) {
       this.browsingContext.watchedByDevTools = false;
     }

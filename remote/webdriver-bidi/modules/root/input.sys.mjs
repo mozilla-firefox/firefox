@@ -14,10 +14,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   TabManager: "chrome://remote/content/shared/TabManager.sys.mjs",
 });
 
-ChromeUtils.defineLazyGetter(lazy, "prefAsyncEventsEnabled", () =>
-  Services.prefs.getBoolPref("remote.events.async.enabled", false)
-);
-
 class InputModule extends RootBiDiModule {
   #actionsOptions;
   #inputStates;
@@ -200,6 +196,24 @@ class InputModule extends RootBiDiModule {
     }
   }
 
+  /**
+   * Perform a series of grouped actions at the specified points in time.
+   *
+   * @param {object} options
+   * @param {Array<?>} options.actions
+   *     Array of objects that each represent an action sequence.
+   * @param {string} options.context
+   *     Id of the browsing context to reset the input state.
+   *
+   * @throws {InvalidArgumentError}
+   *     If <var>context</var> is not valid type.
+   * @throws {MoveTargetOutOfBoundsError}
+   *     If target is outside the viewport.
+   * @throws {NoSuchFrameError}
+   *     If the browsing context cannot be found.
+   * @throws {NoSuchElementError}
+   *     If an element that is used as part of the action chain is unknown.
+   */
   async performActions(options = {}) {
     const { actions, context: contextId } = options;
 
@@ -213,15 +227,6 @@ class InputModule extends RootBiDiModule {
       throw new lazy.error.NoSuchFrameError(
         `Browsing context with id ${contextId} not found`
       );
-    }
-
-    if (!lazy.prefAsyncEventsEnabled) {
-      // Bug 1920959: Remove if we no longer need to dispatch in content.
-      await this._forwardToWindowGlobal("performActions", context.id, {
-        actions,
-      });
-
-      return;
     }
 
     // Bug 1821460: Fetch top-level browsing context.
@@ -268,13 +273,6 @@ class InputModule extends RootBiDiModule {
       throw new lazy.error.NoSuchFrameError(
         `Browsing context with id ${contextId} not found`
       );
-    }
-
-    if (!lazy.prefAsyncEventsEnabled) {
-      // Bug 1920959: Remove if we no longer need to dispatch in content.
-      await this._forwardToWindowGlobal("releaseActions", context.id);
-
-      return;
     }
 
     // Bug 1821460: Fetch top-level browsing context.

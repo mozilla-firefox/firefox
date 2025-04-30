@@ -151,7 +151,10 @@ https_first_disabled = true
 ["browser_bug388121-2.js"]
 
 ["browser_bug420605.js"]
-skip-if = ["verify"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1775923
+  "verify",
+]
 
 ["browser_bug422543.js"]
 https_first_disabled = true

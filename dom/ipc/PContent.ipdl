@@ -42,11 +42,11 @@ include protocol PURLClassifierLocal;
 include protocol PURLClassifierLocalByName;
 include protocol PVRManager;
 include protocol PRemoteDecoderManager;
+include protocol PRemoteWorkerDebuggerManager;
 include protocol PRemoteWorkerService;
 include protocol PProfiler;
 include protocol PScriptCache;
 include protocol PSessionStorageObserver;
-include protocol PBenchmarkStorage;
 include CrashReporterInitArgs;
 include DOMTypes;
 include WindowGlobalTypes;
@@ -507,7 +507,6 @@ sync protocol PContent
     manages PURLClassifierLocalByName;
     manages PScriptCache;
     manages PSessionStorageObserver;
-    manages PBenchmarkStorage;
 
     // Depending on exactly how the new browser is being created, it might be
     // created from either the child or parent process!
@@ -784,7 +783,8 @@ child:
     /**
      * Initialize the RemoteWorkerService thread in the content process.
      */
-    async InitRemoteWorkerService(Endpoint<PRemoteWorkerServiceChild> aEndpoint);
+    async InitRemoteWorkerService(Endpoint<PRemoteWorkerServiceChild> aEndpoint,
+        Endpoint<PRemoteWorkerDebuggerManagerChild> aDebuggerChildEp);
 
     /**
      * Send BlobURLRegistrationData to child process.
@@ -1132,8 +1132,6 @@ parent:
     async PURLClassifierLocalByName(nullable nsIURI uri, nsCString[] featureNames, listType aListType);
 
     async PSessionStorageObserver();
-
-    async PBenchmarkStorage();
 
     // Services remoting
 
@@ -1547,12 +1545,6 @@ parent:
       OriginAttributes aOriginAttributes,
       bool aUserActivation,
       bool aTextDirectiveUserActivation);
-
-    /**
-     * Tell the parent that a decoder's' benchmark has been completed.
-     * The result can then be stored in permanent storage.
-     */
-    async NotifyBenchmarkResult(nsString aCodecName, uint32_t aDecodeFPS);
 
     /**
      * Notify `push-message` observers without data in the parent.

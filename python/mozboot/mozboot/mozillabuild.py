@@ -173,16 +173,10 @@ class MozillaBuildBootstrapper(BaseBootstrapper):
         from mozboot import android
 
         os_arch = self._os_arch()
+
         android.ensure_android(
             "windows",
             os_arch,
-            artifact_mode=artifact_mode,
-            no_interactive=self.no_interactive,
-        )
-        android.ensure_android(
-            "windows",
-            os_arch,
-            system_images_only=True,
             artifact_mode=artifact_mode,
             no_interactive=self.no_interactive,
             avd_manifest_path=android.AVD_MANIFEST_X86_64,

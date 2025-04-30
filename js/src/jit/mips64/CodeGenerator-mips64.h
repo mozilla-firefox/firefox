@@ -14,8 +14,9 @@ namespace jit {
 
 class CodeGeneratorMIPS64 : public CodeGeneratorMIPSShared {
  protected:
-  CodeGeneratorMIPS64(MIRGenerator* gen, LIRGraph* graph, MacroAssembler* masm)
-      : CodeGeneratorMIPSShared(gen, graph, masm) {}
+  CodeGeneratorMIPS64(MIRGenerator* gen, LIRGraph* graph, MacroAssembler* masm,
+                      const wasm::CodeMetadata* wasmCodeMeta)
+      : CodeGeneratorMIPSShared(gen, graph, masm, wasmCodeMeta) {}
 
   template <typename T>
   void emitWasmLoadI64(T* ins);

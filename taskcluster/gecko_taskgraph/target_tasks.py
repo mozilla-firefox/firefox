@@ -770,10 +770,11 @@ def target_tasks_custom_car_perf_testing(full_task_graph, parameters, graph_conf
                 # Bug 1954124 - Don't run JS3 + Android on a cron yet.
                 if "jetstream3" in try_name:
                     return False
-                # Bug 1898514: avoid tp6m or non-essential tp6 jobs in cron on non-a55 platform
-                if "tp6m" in try_name and "a55" not in platform:
+                # Bug 1898514 - Avoid tp6m or non-essential tp6 jobs in cron on non-a55 platform
+                # Bug 1961831 - Disable pageload tests temporarily during provider switch
+                if "tp6m" in try_name:
                     return False
-                # Bug 1945165 Disable ebay-kleinanzeigen on cstm-car-m because of permafail
+                # Bug 1945165 - Disable ebay-kleinanzeigen on cstm-car-m because of permafail
                 if (
                     "ebay-kleinanzeigen" in try_name
                     and "ebay-kleinanzeigen-search" not in try_name
@@ -1632,14 +1633,17 @@ def target_tasks_holly(full_task_graph, parameters, graph_config):
     return [l for l, t in full_task_graph.tasks.items() if filter(t)]
 
 
-@register_target_task("snap_upstream_tests")
-def target_tasks_snap_upstream_tests(full_task_graph, parameters, graph_config):
+@register_target_task("snap_upstream_tasks")
+def target_tasks_snap_upstream_tasks(full_task_graph, parameters, graph_config):
     """
-    Select tasks for testing Snap package built as upstream. Omit -try because
-    it does not really make sense on a m-c cron
+    Select tasks for building/testing Snap package built as upstream. Omit -try
+    because it does not really make sense on a m-c cron
+
+    Use test tasks for linux64 builds and only builds for arm* until there is
+    support for running tests (bug 1855463)
     """
     for name, task in full_task_graph.tasks.items():
-        if "snap-upstream-test" in name and not "-try" in name:
+        if "snap-upstream" in name and not "-local" in name:
             yield name
 
 

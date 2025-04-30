@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.core.net.toUri
 import org.junit.Rule
 import org.junit.Test
+import org.mozilla.fenix.customannotations.SkipLeaks
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.AppAndSystemHelper.enableOrDisableBackGestureNavigationOnDevice
 import org.mozilla.fenix.helpers.AppAndSystemHelper.runWithAppLocaleChanged
@@ -16,6 +17,7 @@ import org.mozilla.fenix.helpers.TestAssetHelper
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeLong
 import org.mozilla.fenix.helpers.TestHelper.mDevice
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.homeScreen
 import org.mozilla.fenix.ui.robots.navigationToolbar
 import java.util.Locale
@@ -37,10 +39,14 @@ class NavigationToolbarTest : TestSetup() {
             HomeActivityTestRule.withDefaultSettingsOverrides(),
         ) { it.activity }
 
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
+
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/987326
     // Swipes the nav bar left/right to switch between tabs
     @SmokeTest
     @Test
+    @SkipLeaks
     fun swipeToSwitchTabTest() {
         val firstWebPage = TestAssetHelper.getGenericAsset(mockWebServer, 1)
         val secondWebPage = TestAssetHelper.getGenericAsset(mockWebServer, 2)
@@ -62,10 +68,11 @@ class NavigationToolbarTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/987327
     @Test
+    @SkipLeaks
     fun swipeToSwitchTabInRTLTest() {
         val firstWebPage = TestAssetHelper.getGenericAsset(mockWebServer, 1)
         val secondWebPage = TestAssetHelper.getGenericAsset(mockWebServer, 2)
-        val arabicLocale = Locale("ar", "AR")
+        val arabicLocale = Locale.Builder().setLanguage("ar").setRegion("AR").build()
 
         // Disable the back gesture from the edge of the screen on the device.
         enableOrDisableBackGestureNavigationOnDevice(backGestureNavigationEnabled = false)
@@ -120,6 +127,7 @@ class NavigationToolbarTest : TestSetup() {
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1661318
     @SmokeTest
     @Test
+    @SkipLeaks
     fun verifyClearCookiesFromQuickSettingsTest() {
         val loginPage = "https://mozilla-mobile.github.io/testapp/loginForm"
         val originWebsite = "mozilla-mobile.github.io"

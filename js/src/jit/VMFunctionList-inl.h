@@ -7,6 +7,8 @@
 #ifndef jit_VMFunctionList_inl_h
 #define jit_VMFunctionList_inl_h
 
+#include "mozilla/MacroArgs.h" // MOZ_CONCAT
+
 #include "builtin/Eval.h"
 #include "builtin/ModuleObject.h"  // js::GetOrCreateModuleMetaObject
 #include "builtin/Object.h"        // js::ObjectCreateWithTemplate
@@ -127,7 +129,7 @@ namespace jit {
   _(CloneRegExpObject, js::CloneRegExpObject)                                  \
   _(CloseIterOperation, js::CloseIterOperation)                                \
   _(CodePointAt, js::jit::CodePointAt)                                         \
-  _(ConcatStrings, js::ConcatStrings<CanGC>)                                   \
+  _(ConcatStrings, js::ConcatStrings<js::CanGC>)                               \
   _(CreateAsyncFromSyncIterator, js::CreateAsyncFromSyncIterator)              \
   _(CreateBigIntFromInt32, js::jit::CreateBigIntFromInt32)                     \
   _(CreateBigIntFromInt64, js::jit::CreateBigIntFromInt64)                     \
@@ -218,8 +220,8 @@ namespace jit {
   _(InitFunctionEnvironmentObjects, js::jit::InitFunctionEnvironmentObjects)   \
   _(InitPropGetterSetterOperation, js::InitPropGetterSetterOperation)          \
   _(InitRestParameter, js::jit::InitRestParameter)                             \
-  _(Int32ToString, js::Int32ToString<CanGC>)                                   \
-  _(Int32ToStringWithBase, js::Int32ToStringWithBase<CanGC>)                   \
+  _(Int32ToString, js::Int32ToString<js::CanGC>)                               \
+  _(Int32ToStringWithBase, js::Int32ToStringWithBase<js::CanGC>)               \
   _(InterpretResume, js::jit::InterpretResume)                                 \
   _(InterruptCheck, js::jit::InterruptCheck)                                   \
   _(InvokeFunction, js::jit::InvokeFunction)                                   \
@@ -283,7 +285,7 @@ namespace jit {
     js::NewTypedArrayWithTemplateAndLength)                                    \
   _(NormalSuspend, js::jit::NormalSuspend)                                     \
   _(NumberParseInt, js::NumberParseInt)                                        \
-  _(NumberToString, js::NumberToString<CanGC>)                                 \
+  _(NumberToString, js::NumberToString<js::CanGC>)                             \
   _(ObjectCreateWithTemplate, js::ObjectCreateWithTemplate)                    \
   _(ObjectKeys, js::jit::ObjectKeys)                                           \
   _(ObjectKeysLength, js::jit::ObjectKeysLength)                               \
@@ -342,8 +344,9 @@ namespace jit {
   _(StringTrimEnd, js::StringTrimEnd)                                          \
   _(StringTrimStart, js::StringTrimStart)                                      \
   _(StringsCompareGreaterThanOrEquals,                                         \
-    js::jit::StringsCompare<ComparisonKind::GreaterThanOrEqual>)               \
-  _(StringsCompareLessThan, js::jit::StringsCompare<ComparisonKind::LessThan>) \
+    js::jit::StringsCompare<js::jit::ComparisonKind::GreaterThanOrEqual>)      \
+  _(StringsCompareLessThan,                                                    \
+    js::jit::StringsCompare<js::jit::ComparisonKind::LessThan>)                \
   _(StringsEqual, js::jit::StringsEqual<js::jit::EqualityKind::Equal>)         \
   _(StringsNotEqual, js::jit::StringsEqual<js::jit::EqualityKind::NotEqual>)   \
   _(SubstringKernel, js::SubstringKernel)                                      \
@@ -358,7 +361,7 @@ namespace jit {
   _(ThrowUninitializedThis, js::ThrowUninitializedThis)                        \
   _(ThrowWithStackOperation, js::ThrowWithStackOperation)                      \
   _(ToBigInt, js::ToBigInt)                                                    \
-  _(ToStringSlow, js::ToStringSlow<CanGC>)                                     \
+  _(ToStringSlow, js::ToStringSlow<js::CanGC>)                                 \
   _(ValueToIterator, js::ValueToIterator)                                      \
   _(VarEnvironmentObjectCreateWithoutEnclosing,                                \
     js::VarEnvironmentObject::createWithoutEnclosing)
@@ -384,7 +387,7 @@ struct VMFunctionToId;  // Error here? Update VMFUNCTION_LIST?
 // fully-qualified names in the list above.
 #define DEF_TEMPLATE(name, fp, ...)                        \
   template <>                                              \
-  struct VMFunctionToId<decltype(&(::fp)), ::fp> {         \
+  struct VMFunctionToId<decltype(&fp), fp> {               \
     static constexpr VMFunctionId id = VMFunctionId::name; \
   };
 VMFUNCTION_LIST(DEF_TEMPLATE)
@@ -396,5 +399,14 @@ VMFUNCTION_LIST(DEF_TEMPLATE)
 
 }  // namespace jit
 }  // namespace js
+
+// Make sure that all names are fully qualified (or at least, are resolvable
+// within the toplevel namespace).
+namespace check_fully_qualified {
+#define CHECK_NS_VISIBILITY(name, fp, ...) \
+  [[maybe_unused]] static constexpr decltype(&fp) MOZ_CONCAT(fp_, __COUNTER__) = nullptr;
+VMFUNCTION_LIST(CHECK_NS_VISIBILITY)
+#undef CHECK_NS_VISIBILITY
+}  // namespace check_fully_qualified
 
 #endif  // jit_VMFunctionList_inl_h

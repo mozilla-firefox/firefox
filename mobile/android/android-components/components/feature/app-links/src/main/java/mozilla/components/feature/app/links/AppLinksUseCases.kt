@@ -26,6 +26,8 @@ import java.net.URISyntaxException
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal const val EXTRA_BROWSER_FALLBACK_URL = "browser_fallback_url"
+internal const val PARAMS_ANDROID_FALLBACK_LINK = "afl" // From https://firebase.google.com/docs/dynamic-links/create-manually
+internal const val PARAMS_FALLBACK_LINK = "link"
 private const val MARKET_INTENT_URI_PACKAGE_PREFIX = "market://details?id="
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -122,8 +124,8 @@ class AppLinksUseCases(
 
             // Only set fallback URL if url is not a Google PlayStore URL
             // The reason here is we already handled that case with the market place URL
-            val fallbackUrl = redirectData.fallbackIntent?.data?.takeIf {
-                it.isHttpOrHttps && (!isPlayStoreURL(it.toString()) || redirectData.resolveInfo == null)
+            val fallbackUrl = redirectData.fallbackUrl?.takeIf {
+                !isPlayStoreURL(it) || redirectData.resolveInfo == null
             }?.toString()
 
             val appIntent = when {
@@ -135,7 +137,13 @@ class AppLinksUseCases(
             }
 
             // no need to check marketplace intent since it is only set if a package is set in the intent
-            val appLinkRedirect = AppLinkRedirect(appIntent, appName, fallbackUrl, redirectData.marketplaceIntent)
+            val appLinkRedirect = AppLinkRedirect(
+                appIntent = appIntent,
+                appName = appName,
+                fallbackUrl = fallbackUrl,
+                marketplaceIntent = redirectData.marketplaceIntent,
+            )
+
             redirectCache = AppLinkRedirectCache(currentTimeStamp, urlHash, appLinkRedirect)
             return appLinkRedirect
         }
@@ -148,9 +156,6 @@ class AppLinksUseCases(
 
         private fun createBrowsableIntents(url: String): RedirectData {
             val intent = safeParseUri(url, Intent.URI_INTENT_SCHEME)
-            val fallbackIntent = intent?.getStringExtra(EXTRA_BROWSER_FALLBACK_URL)?.let {
-                safeParseUri(it, 0)
-            }
 
             val marketplaceIntent = intent?.`package`?.let {
                 if (includeInstallAppFallback &&
@@ -203,7 +208,24 @@ class AppLinksUseCases(
                 }
             }
 
-            return RedirectData(appIntent, fallbackIntent, marketplaceIntent, resolveInfo)
+            return RedirectData(
+                appIntent = appIntent,
+                fallbackUrl = url.getHierarchicalUrl(),
+                marketplaceIntent = marketplaceIntent,
+                resolveInfo = resolveInfo,
+            )
+        }
+
+        private fun String.getHierarchicalUrl(): String? {
+            val fallbackUrlFromUrlParams = this.toUri()
+                .takeIf { it.isHierarchical }
+                ?.let { uriWithParams ->
+                    uriWithParams.getQueryParameter(PARAMS_ANDROID_FALLBACK_LINK)
+                        ?: uriWithParams.getQueryParameter(PARAMS_FALLBACK_LINK)
+                }
+
+            return fallbackUrlFromUrlParams ?: safeParseUri(this, Intent.URI_INTENT_SCHEME)
+                ?.getStringExtra(EXTRA_BROWSER_FALLBACK_URL)
         }
 
         private fun isPlayStoreURL(url: String): Boolean {
@@ -298,7 +320,7 @@ class AppLinksUseCases(
     }
     private data class RedirectData(
         val appIntent: Intent? = null,
-        val fallbackIntent: Intent? = null,
+        val fallbackUrl: String? = null,
         val marketplaceIntent: Intent? = null,
         val resolveInfo: ResolveInfo? = null,
     )

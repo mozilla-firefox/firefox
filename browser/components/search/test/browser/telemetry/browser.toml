@@ -184,6 +184,8 @@ support-files = [
   "telemetrySearchSuggestions.xml",
 ]
 
+["browser_search_telemetry_searchform.js"]
+
 ["browser_search_telemetry_shopping.js"]
 support-files = ["searchTelemetryAd_shopping.html"]
 

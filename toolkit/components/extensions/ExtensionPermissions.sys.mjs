@@ -3,16 +3,14 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 import { ExtensionTaskScheduler } from "resource://gre/modules/ExtensionTaskScheduler.sys.mjs";
 import { ExtensionUtils } from "resource://gre/modules/ExtensionUtils.sys.mjs";
 
-/** @type {Lazy} */
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
   AddonManagerPrivate: "resource://gre/modules/AddonManager.sys.mjs",
   Extension: "resource://gre/modules/Extension.sys.mjs",
@@ -20,19 +18,9 @@ ChromeUtils.defineESModuleGetters(lazy, {
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
   JSONFile: "resource://gre/modules/JSONFile.sys.mjs",
   KeyValueService: "resource://gre/modules/kvstore.sys.mjs",
+  StartupCache: "resource://gre/modules/ExtensionParent.sys.mjs",
+  Management: () => lazy.ExtensionParent.apiManager,
 });
-
-ChromeUtils.defineLazyGetter(
-  lazy,
-  "StartupCache",
-  () => lazy.ExtensionParent.StartupCache
-);
-
-ChromeUtils.defineLazyGetter(
-  lazy,
-  "Management",
-  () => lazy.ExtensionParent.apiManager
-);
 
 function emptyPermissions() {
   return { permissions: [], origins: [], data_collection: [] };

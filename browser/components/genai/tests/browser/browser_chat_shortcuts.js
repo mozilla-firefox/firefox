@@ -141,6 +141,8 @@ add_task(async function test_show_shortcuts_second_tab() {
 
       Assert.equal(stub.callCount, 1, "Shortcuts added on select");
       Assert.equal(stub.firstCall.args[0], browser, "Got correct browser");
+
+      sandbox.restore();
     }
   );
 });
@@ -210,6 +212,23 @@ add_task(async function test_show_warning_label() {
         events[0].extra.warning,
         "true",
         "Warning lable value is correct"
+      );
+
+      Assert.ok(
+        !aiActionButton.getAttribute("type").includes("ghost"),
+        "button is active"
+      );
+
+      const hidden = BrowserTestUtils.waitForEvent(
+        chatShortcutsOptionsPanel,
+        "popuphidden"
+      );
+      chatShortcutsOptionsPanel.hidePopup();
+      await hidden;
+
+      Assert.ok(
+        aiActionButton.getAttribute("type").includes("ghost"),
+        "button is inactive"
       );
     }
   );

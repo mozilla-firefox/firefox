@@ -862,7 +862,7 @@ void DocAccessible::AttributeChanged(dom::Element* aElement,
   // Update the accessible tree on aria-hidden change. Make sure to not create
   // a tree under aria-hidden='true'.
   if (aAttribute == nsGkAtoms::aria_hidden) {
-    if (aria::HasDefinedARIAHidden(aElement)) {
+    if (aria::IsValidARIAHidden(aElement)) {
       ContentRemoved(aElement);
     } else {
       ContentInserted(aElement, aElement->GetNextSibling());
@@ -1206,7 +1206,7 @@ LocalAccessible* DocAccessible::GetAccessibleOrContainer(
   for (nsINode* currNode : dom::InclusiveFlatTreeAncestors(*start)) {
     // No container if is inside of aria-hidden subtree.
     if (aNoContainerIfPruned && currNode->IsElement() &&
-        aria::HasDefinedARIAHidden(currNode->AsElement())) {
+        aria::IsValidARIAHidden(currNode->AsElement())) {
       return nullptr;
     }
 

@@ -175,9 +175,6 @@ nsresult UnregisterAppMemory(void* ptr);
 // Include heap regions of the crash context.
 void SetIncludeContextHeap(bool aValue);
 
-void GetAnnotation(ProcessId childPid, Annotation annotation,
-                   nsACString& outStr);
-
 // Functions for working with minidumps and .extras
 typedef mozilla::EnumeratedArray<Annotation, nsCString,
                                  size_t(Annotation::Count)>
@@ -210,25 +207,7 @@ nsresult AppendObjCExceptionInfoToAppNotes(void* inException);
 nsresult GetSubmitReports(bool* aSubmitReport);
 nsresult SetSubmitReports(bool aSubmitReport);
 
-#ifdef XP_WIN
-// This data is stored in the parent process, there is one copy for each child
-// process. The mChildPid and mMinidumpFile fields are filled by the WER runtime
-// exception module when the associated child process crashes.
-struct WindowsErrorReportingData {
-  // PID of the child process that crashed.
-  DWORD mChildPid;
-  // Filename of the generated minidump; this is not a 0-terminated string
-  char mMinidumpFile[40];
-};
-#endif  // XP_WIN
-
 // Out-of-process crash reporter API.
-
-// Initializes out-of-process crash reporting. This method must be called
-// before the platform-specific notification pipe APIs are called. If called
-// from off the main thread, this method will synchronously proxy to the main
-// thread.
-void OOPInit();
 
 // Return true if a dump was found for |childPid|, and return the
 // path in |dump|.  The caller owns the last reference to |dump| if it
@@ -282,17 +261,28 @@ bool CreateMinidumpsAndPair(ProcessHandle aTargetPid,
                             AnnotationTable& aTargetAnnotations,
                             nsIFile** aTargetDumpOut);
 
-#if defined(XP_WIN) || defined(XP_MACOSX)
+#if defined(XP_WIN) || defined(XP_MACOSX) || defined(XP_IOS)
 using CrashPipeType = const char*;
 #else
 using CrashPipeType = mozilla::UniqueFileHandle;
 #endif
 
 // Parent-side API for children
+#if defined(MOZ_WIDGET_ANDROID)
+void SetCrashHelperPipes(FileHandle breakpadFd, FileHandle crashHelperFd);
+#endif
 CrashPipeType GetChildNotificationPipe();
 
+#if defined(XP_LINUX) && !defined(MOZ_WIDGET_ANDROID)
+
+// Return the pid of the crash helper process.
+MOZ_EXPORT ProcessId GetCrashHelperPid();
+
+#endif  // XP_LINUX && !defined(MOZ_WIDGET_ANDROID)
+
 // Child-side API
-bool SetRemoteExceptionHandler(CrashPipeType aCrashPipe);
+MOZ_EXPORT bool SetRemoteExceptionHandler(CrashPipeType aCrashPipe,
+                                          ProcessId aCrashHelperPid = 0);
 bool UnsetRemoteExceptionHandler(bool wasSet = true);
 
 }  // namespace CrashReporter

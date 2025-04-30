@@ -419,7 +419,7 @@ a sync reflow.
 ### Writing tests to ensure you don’t add more unintentional reflow
 
 The interface
-[nsIReflowObserver](https://dxr.mozilla.org/mozilla-central/source/docshell/base/nsIReflowObserver.idl)
+[nsIReflowObserver](https://searchfox.org/mozilla-central/source/docshell/base/nsIReflowObserver.idl)
 lets us detect both interruptible and uninterruptible reflows. A number
 of tests have been written that exercise various functions of the
 browser [opening tabs](http://searchfox.org/mozilla-central/rev/78cefe75fb43195e7f5aee1d8042b8d8fc79fc70/browser/base/content/test/general/browser_tabopen_reflows.js),

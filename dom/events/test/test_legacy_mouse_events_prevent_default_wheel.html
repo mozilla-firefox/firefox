@@ -1,0 +1,49 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>PreventDefault on legacy mouse events also default prevents the wheel event</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="/tests/SimpleTest/EventUtils.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+  <style>
+    body {
+      height: 10000px;
+    }
+  </style>
+  <script>
+    for (const legacyEvent of ["DOMMouseScroll", "MozMousePixelScroll"]) {
+      add_task(async function test() {
+        const wheelEventPromise = new Promise(resolve => {
+          window.addEventListener("wheel", e => resolve(e), { passive: true, once: true });
+        })
+
+        window.addEventListener(legacyEvent, e => {
+          info(`Prevent default on ${legacyEvent}`);
+          e.preventDefault();
+        }, { passive: false, once: true });
+
+        const event = {
+          deltaMode: WheelEvent.DOM_DELTA_LINE,
+          deltaX: -10,
+          deltaY: -10,
+          lineOrPageDeltaX: -10,
+          lineOrPageDeltaY: -10
+        }
+        info("Synthesize wheel event");
+        synthesizeWheel(document.body, 10, 10, event, window);
+
+        info("Waiting for wheel event");
+        const wheelEvent = await wheelEventPromise;
+
+        ok(wheelEvent.defaultPrevented, "Wheel was default prevented");
+      }, `Default preventing ${legacyEvent} also default prevents wheel`);
+    }
+  </script>
+</head>
+<body>
+<p id="display"></p>
+<div id="content" style="display: none"></div>
+<pre id="test"></pre>
+</body>
+</html>

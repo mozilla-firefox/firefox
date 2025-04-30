@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_BUFFER_TYPES_H
 #define SPA_BUFFER_TYPES_H
@@ -55,6 +35,7 @@ static const struct spa_type_info spa_type_data_type[] = {
 	{ SPA_DATA_MemFd, SPA_TYPE_Int, SPA_TYPE_INFO_DATA_FD_BASE "MemFd", NULL },
 	{ SPA_DATA_DmaBuf, SPA_TYPE_Int, SPA_TYPE_INFO_DATA_FD_BASE "DmaBuf", NULL },
 	{ SPA_DATA_MemId, SPA_TYPE_Int, SPA_TYPE_INFO_DATA_BASE "MemId", NULL },
+	{ SPA_DATA_SyncObj, SPA_TYPE_Int, SPA_TYPE_INFO_DATA_BASE "SyncObj", NULL },
 	{ 0, 0, NULL, NULL },
 };
 
@@ -70,6 +51,22 @@ static const struct spa_type_info spa_type_data_type[] = {
 #define SPA_TYPE_INFO_META_ARRAY_Region		SPA_TYPE_INFO_META_ARRAY_BASE "Region"
 #define SPA_TYPE_INFO_META_ARRAY_REGION_BASE	SPA_TYPE_INFO_META_ARRAY_Region ":"
 
+/* VideoTransform meta */
+#define SPA_TYPE_INFO_META_Transformation	SPA_TYPE_INFO_ENUM_BASE "Meta:Transformation"
+#define SPA_TYPE_INFO_META_TRANSFORMATION_BASE	SPA_TYPE_INFO_META_Transformation ":"
+
+static const struct spa_type_info spa_type_meta_videotransform_type[] = {
+	{ SPA_META_TRANSFORMATION_None, SPA_TYPE_Int, SPA_TYPE_INFO_META_TRANSFORMATION_BASE "None", NULL },
+	{ SPA_META_TRANSFORMATION_90, SPA_TYPE_Int, SPA_TYPE_INFO_META_TRANSFORMATION_BASE "90", NULL },
+	{ SPA_META_TRANSFORMATION_180, SPA_TYPE_Int, SPA_TYPE_INFO_META_TRANSFORMATION_BASE "180", NULL },
+	{ SPA_META_TRANSFORMATION_270, SPA_TYPE_Int, SPA_TYPE_INFO_META_TRANSFORMATION_BASE "270", NULL },
+	{ SPA_META_TRANSFORMATION_Flipped, SPA_TYPE_Int, SPA_TYPE_INFO_META_TRANSFORMATION_BASE "Flipped", NULL },
+	{ SPA_META_TRANSFORMATION_Flipped90, SPA_TYPE_Int, SPA_TYPE_INFO_META_TRANSFORMATION_BASE "Flipped90", NULL },
+	{ SPA_META_TRANSFORMATION_Flipped180, SPA_TYPE_Int, SPA_TYPE_INFO_META_TRANSFORMATION_BASE "Flipped180", NULL },
+	{ SPA_META_TRANSFORMATION_Flipped270, SPA_TYPE_Int, SPA_TYPE_INFO_META_TRANSFORMATION_BASE "Flipped270", NULL },
+	{ 0, 0, NULL, NULL },
+};
+
 static const struct spa_type_info spa_type_meta_type[] = {
 	{ SPA_META_Invalid, SPA_TYPE_Pointer, SPA_TYPE_INFO_META_BASE "Invalid", NULL },
 	{ SPA_META_Header, SPA_TYPE_Pointer, SPA_TYPE_INFO_META_BASE "Header", NULL },
@@ -79,6 +76,8 @@ static const struct spa_type_info spa_type_meta_type[] = {
 	{ SPA_META_Cursor, SPA_TYPE_Pointer, SPA_TYPE_INFO_META_BASE "Cursor", NULL },
 	{ SPA_META_Control, SPA_TYPE_Pointer, SPA_TYPE_INFO_META_BASE "Control", NULL },
 	{ SPA_META_Busy, SPA_TYPE_Pointer, SPA_TYPE_INFO_META_BASE "Busy", NULL },
+	{ SPA_META_VideoTransform, SPA_TYPE_Pointer, SPA_TYPE_INFO_META_BASE "VideoTransform", NULL },
+	{ SPA_META_SyncTimeline, SPA_TYPE_Pointer, SPA_TYPE_INFO_META_BASE "SyncTimeline", NULL },
 	{ 0, 0, NULL, NULL },
 };
 

@@ -91,6 +91,7 @@ class MediaChangeMonitor final
     virtual bool IsHardwareAccelerated(nsACString& aFailureReason) const {
       return false;
     }
+    virtual void Flush() {};
     virtual ~CodecChangeMonitor() = default;
   };
 

@@ -140,6 +140,7 @@
 #PanelUI-menu-button[badge-status="update-available"],
 #PanelUI-menu-button[badge-status="update-downloading"],
 #PanelUI-menu-button[badge-status="update-manual"],
+#PanelUI-menu-button[badge-status="update-other-instance"],
 #PanelUI-menu-button[badge-status="update-restart"],
 #PanelUI-menu-button[badge-status="update-unsupported"],
 #PanelUI-menu-button[badge-status="addon-alert"],

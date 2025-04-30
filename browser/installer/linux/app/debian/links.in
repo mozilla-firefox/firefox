@@ -1,6 +1,6 @@
-${DEB_PKG_INSTALL_PATH}/firefox usr/bin/${DEB_PKG_NAME}
-${DEB_PKG_INSTALL_PATH}/browser/chrome/icons/default/default16.png usr/share/icons/hicolor/16x16/apps/${DEB_PKG_NAME}.png
-${DEB_PKG_INSTALL_PATH}/browser/chrome/icons/default/default32.png usr/share/icons/hicolor/32x32/apps/${DEB_PKG_NAME}.png
-${DEB_PKG_INSTALL_PATH}/browser/chrome/icons/default/default48.png usr/share/icons/hicolor/48x48/apps/${DEB_PKG_NAME}.png
-${DEB_PKG_INSTALL_PATH}/browser/chrome/icons/default/default64.png usr/share/icons/hicolor/64x64/apps/${DEB_PKG_NAME}.png
-${DEB_PKG_INSTALL_PATH}/browser/chrome/icons/default/default128.png usr/share/icons/hicolor/128x128/apps/${DEB_PKG_NAME}.png
+${PKG_INSTALL_PATH}/firefox usr/bin/${PKG_NAME}
+${PKG_INSTALL_PATH}/browser/chrome/icons/default/default16.png usr/share/icons/hicolor/16x16/apps/${PKG_NAME}.png
+${PKG_INSTALL_PATH}/browser/chrome/icons/default/default32.png usr/share/icons/hicolor/32x32/apps/${PKG_NAME}.png
+${PKG_INSTALL_PATH}/browser/chrome/icons/default/default48.png usr/share/icons/hicolor/48x48/apps/${PKG_NAME}.png
+${PKG_INSTALL_PATH}/browser/chrome/icons/default/default64.png usr/share/icons/hicolor/64x64/apps/${PKG_NAME}.png
+${PKG_INSTALL_PATH}/browser/chrome/icons/default/default128.png usr/share/icons/hicolor/128x128/apps/${PKG_NAME}.png

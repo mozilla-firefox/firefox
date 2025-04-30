@@ -288,6 +288,18 @@ impl ClipTree {
         &self.nodes[id.0 as usize]
     }
 
+    pub fn get_parent(&self, id: ClipNodeId) -> Option<ClipNodeId> {
+        // Invalid ids point to the first item in the nodes vector which
+        // has an invalid id for the parent so we don't need to handle
+        // `id` being invalid separately.
+        let parent = self.nodes[id.0 as usize].parent;
+        if parent == ClipNodeId::NONE {
+            return None;
+        }
+
+        return Some(parent)
+    }
+
     /// Retrieve a clip tree leaf by id
     pub fn get_leaf(&self, id: ClipLeafId) -> &ClipTreeLeaf {
         &self.leaves[id.0 as usize]
@@ -714,6 +726,10 @@ impl ClipTreeBuilder {
         }
 
         false
+    }
+
+    pub fn get_parent(&self, id: ClipNodeId) -> Option<ClipNodeId> {
+        self.tree.get_parent(id)
     }
 
     /// Finalize building and return the clip-tree

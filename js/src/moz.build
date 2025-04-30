@@ -512,7 +512,7 @@ else:
         "threading/posix/PosixThread.cpp",
     ]
 
-if CONFIG["JS_HAS_INTL_API"] and CONFIG["MOZ_ICU4X"]:
+if CONFIG["JS_HAS_INTL_API"]:
     LOCAL_INCLUDES += [
         "/intl/icu_capi/bindings/c",
     ]
@@ -556,7 +556,7 @@ DIRS += [
     "xsum",
 ]
 
-if CONFIG["JS_HAS_TEMPORAL_API"]:
+if CONFIG["JS_HAS_INTL_API"]:
     DIRS += ["builtin/temporal"]
 
 # Bug 1739321 - clang 13+ only emits debuginfo for classes that are actually

@@ -4,4 +4,6 @@
   <string name="mozac_browser_menu_button">Menu</string>
   <!-- Content description (not visible, for screen readers etc.): Indicates the overflow menu has a highlight -->
   <string name="mozac_browser_menu_highlighted">Mga naka-highlight</string>
+  <!-- Label for extensions submenu section -->
+  <string name="mozac_browser_menu_extensions">Mga extension</string>
 </resources>

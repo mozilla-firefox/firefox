@@ -42,3 +42,10 @@
 - (NSString*)moxTitle;
 
 @end
+
+@interface MOXLabelAccessible : mozAccessible
+
+// override
+- (NSString*)moxTitle;
+
+@end

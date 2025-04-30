@@ -6,8 +6,6 @@ const { cookie } = ChromeUtils.importESModule(
   "chrome://remote/content/marionette/cookie.sys.mjs"
 );
 
-/* eslint-disable mozilla/use-chromeutils-generateqi */
-
 cookie.manager = {
   cookies: [],
 

@@ -54,6 +54,10 @@ neterror-dns-not-found-hint-header = <strong>If you entered the right address, y
 neterror-dns-not-found-hint-try-again = Try again later
 neterror-dns-not-found-hint-check-network = Check your network connection
 neterror-dns-not-found-hint-firewall = Check that { -brand-short-name } has permission to access the web (you might be connected but behind a firewall)
+neterror-dns-not-found-offline-hint-header = <strong>What can you do about it?</strong>
+neterror-dns-not-found-offline-hint-different-device = Try connecting on a different device.
+neterror-dns-not-found-offline-hint-modem = Check your modem or router.
+neterror-dns-not-found-offline-hint-reconnect = Disconnect and reconnect to Wi-Fi.
 
 ## TRR-only specific messages
 ## Variables:
@@ -65,7 +69,6 @@ neterror-dns-not-found-trr-third-party-warning2 = You can continue with your def
 
 neterror-dns-not-found-trr-only-could-not-connect = { -brand-short-name } wasn’t able to connect to { $trrDomain }.
 neterror-dns-not-found-trr-only-timeout = The connection to { $trrDomain } took longer than expected.
-neterror-dns-not-found-trr-offline = You are not connected to the internet.
 neterror-dns-not-found-trr-unknown-host2 = This website wasn’t found by { $trrDomain }.
 neterror-dns-not-found-trr-server-problem = There was a problem with { $trrDomain }.
 neterror-dns-not-found-bad-trr-url = Invalid URL.

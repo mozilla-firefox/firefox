@@ -61,6 +61,6 @@ class DownloadFileTypesTest(fileName: String) : TestSetup() {
         }.openThreeDotMenu {
         }.openDownloadsManager() {
             verifyDownloadedFileExistsInDownloadsList(activityTestRule, downloadFile)
-        }.exitDownloadsManagerToBrowser { }
+        }.exitDownloadsManagerToBrowser(activityTestRule) { }
     }
 }

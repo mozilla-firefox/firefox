@@ -289,10 +289,6 @@ notes = "Local override of the crates.io crate that uses a non-vendored local co
 [policy.wr_malloc_size_of]
 audit-as-crates-io = false
 
-[[exemptions.ahash]]
-version = "0.7.6"
-criteria = "safe-to-deploy"
-
 [[exemptions.alsa]]
 version = "0.4.3"
 criteria = "safe-to-deploy"

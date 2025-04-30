@@ -18,12 +18,10 @@ The tool is built to be conservative about the number of tests to run, so if you
       -h, --help            show this help message and exit
     perf arguments:
       --show-all            Show all available tasks. Alternatively, --full may be used.
-      --android             Show android test categories (disabled by default).
       --chrome              Show tests available for Chrome-based browsers (disabled by
                             default).
       --custom-car          Show tests available for Custom Chromium-as-Release (disabled by
-                            default). Use with --android flag to select Custom CaR android
-                            tests (cstm-car-m)
+                            default)
       --safari              Show tests available for Safari (disabled by default).
       --safari-tp           Show tests available for Safari Technology Preview(disabled by
                             default).
@@ -62,8 +60,8 @@ The tool is built to be conservative about the number of tests to run, so if you
       --variants [ [ ...]]  Select variants to display in the selector from: fission,
                             bytecode-cached, live-sites, profiling, swr
       --platforms [ [ ...]]
-                            Select specific platforms to target. Android only available with
-                            --android. Available platforms: android-a51, android, windows,
+                            Select specific platforms to target.
+                            Available platforms: android-a55, android, windows,
                             linux, macosx, desktop
       --apps [ [ ...]]      Select specific applications to target from: firefox, chrome,
                             geckoview, fenix, chrome-m, safari, safari-tp, custom-car, cstm-
@@ -226,10 +224,10 @@ Using the ``--tests`` option, you can run all tasks that run a specific test. Th
 
 If it's used with ``--alert <NUM>``, only the tasks that run the specific test will be run on try. If it's used with ``--show-all`` or ``--full``, you will only see the tasks that run the specific test in the fuzzy interface. Finally, if it's used without either of those, then categories of the tests that were specified will be displayed in the fuzzy interface. For example, if ``--tests amazon`` is used, then categories like ``amazon linux firefox`` or ``amazon desktop`` will be displayed.
 
-Chrome and Android
-------------------
+Chrome
+------
 
-Android and chrome tests are disabled by default as they are often unneeded and waste our limited resources. If you need either of these, you can add ``--chrome`` and/or ``--android`` to the command like so ``./mach try perf --android --chrome``:
+Chrome tests are disabled by default as they are often unneeded and waste our limited resources. If you need chrome tests you can add ``--chrome`` to the command like so ``./mach try perf --chrome``:
 
 
 .. image:: ./android-chrome-try-perf.png

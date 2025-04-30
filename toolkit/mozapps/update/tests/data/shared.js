@@ -34,10 +34,6 @@ const PREF_APP_UPDATE_CHANNEL = "app.update.channel";
 const PREF_APP_UPDATE_DOWNLOAD_MAXATTEMPTS = "app.update.download.maxAttempts";
 const PREF_APP_UPDATE_DOWNLOAD_ATTEMPTS = "app.update.download.attempts";
 const PREF_APP_UPDATE_DISABLEDFORTESTING = "app.update.disabledForTesting";
-const PREF_APP_UPDATE_INSTALL_LOCKOUT_ENABLED =
-  "app.update.multiSessionInstallLockout.enabled";
-const PREF_APP_UPDATE_INSTALL_LOCKOUT_TIMEOUT_MS =
-  "app.update.multiSessionInstallLockout.timeoutMs";
 const PREF_APP_UPDATE_INTERVAL = "app.update.interval";
 const PREF_APP_UPDATE_LASTUPDATETIME =
   "app.update.lastUpdateTime.background-update-timer";
@@ -102,7 +98,6 @@ const FILE_UPDATE_VERSION = "update.version";
 const FILE_UPDATER_INI = "updater.ini";
 const FILE_UPDATES_XML = "updates.xml";
 const FILE_UPDATES_XML_TMP = "updates.xml.tmp";
-const FILE_UPDATE_TIMESTAMP = "update.timestamp";
 
 const UPDATE_SETTINGS_CONTENTS =
   "[Settings]\nACCEPTED_MAR_CHANNEL_IDS=xpcshell-test\n";
@@ -343,19 +338,6 @@ function writeVersionFile(aVersion) {
 }
 
 /**
- * Writes the specified timestamp (in milliseconds since the epoch) to the
- * multi session install timeout file.
- *
- * @param  aTimestampMs
- *         The timestamp when the lockout window expires, in milliseconds since
- *         the epoch.
- */
-function writeMsilTimeoutFile(aTimestampMs) {
-  let file = getUpdateDirFile(FILE_UPDATE_TIMESTAMP);
-  writeFile(file, aTimestampMs.toString());
-}
-
-/**
  * Writes text to a file. This will replace existing text if the file exists
  * and create the file if it doesn't exist.
  *
@@ -425,18 +407,6 @@ function readStatusState() {
  */
 function readStatusFailedCode() {
   return readStatusFile().split(": ")[1];
-}
-
-/**
- * Read the specified timestamp (in milliseconds since the epoch) to the
- * multi session install timeout file.
- *
- * @return The timestamp read from the file, which will represent the end of the
- *         lockout window. Returns `null` if the file doesn't exist.
- */
-function readMsilTimeoutFile() {
-  let file = getUpdateDirFile(FILE_UPDATE_TIMESTAMP);
-  return readFile(file);
 }
 
 /**
@@ -535,7 +505,6 @@ function getUpdateDirFile(aLeafName, aWhichDir = null) {
     case FILE_UPDATE_STATUS:
     case FILE_UPDATE_VERSION:
     case FILE_UPDATER_INI:
-    case FILE_UPDATE_TIMESTAMP:
       file.append(DIR_UPDATES);
       if (aWhichDir == DIR_DOWNLOADING) {
         file.append(DIR_DOWNLOADING);

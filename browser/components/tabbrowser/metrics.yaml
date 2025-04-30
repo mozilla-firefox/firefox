@@ -363,6 +363,69 @@ tabgroup:
         type: string
     expires: never
 
+  tab_interactions:
+    type: labeled_counter
+    description: >
+      Records interactions with tabs related to a group: open, add tab to
+      group, duplicate, create a new tab, close a tab, reorder, and remove from
+      group
+    notification_emails:
+      - dao@mozilla.com
+      - jswinarton@mozilla.com
+      - sthompson@mozilla.com
+    bugs:
+      - https://bugzil.la/1938405
+      - https://bugzil.la/1960360
+    data_reviews:
+      - https://bugzil.la/1938405
+      - https://bugzil.la/1960360
+    data_sensitivity:
+      - interaction
+    labels:
+      - activate
+      - add
+      - duplicate
+      - new
+      - close_tabstrip
+      - close_tabmenu
+      - reorder
+      - remove_same_window
+      - remove_other_window
+      - remove_new_window
+    expires: never
+
+  group_interactions:
+    type: labeled_counter
+    description: >
+      Records interactions with tab groups: expand/collapse; rename, change
+      color; save/reopen/delete; ungroup tabs; open from tab menu/recent/
+      Awesomebar; move to another window
+    notification_emails:
+      - dao@mozilla.com
+      - jswinarton@mozilla.com
+      - sthompson@mozilla.com
+    bugs:
+      - https://bugzil.la/1938401
+    data_reviews:
+      - https://bugzil.la/1938401
+    data_sensitivity:
+      - interaction
+    labels:
+      - expand
+      - collapse
+      - rename
+      - change_color
+      - save
+      - reopen
+      - open_tabmenu
+      - open_recent
+      - open_suggest
+      - delete
+      - ungroup
+      - move_window
+    expires: never
+
+
   smart_tab_optin:
     type: event
     description: >
@@ -394,8 +457,10 @@ tabgroup:
       - vbaungally@mozilla.com
     bugs:
       - https://bugzil.la/1949010
+      - https://bugzil.la/1961641
     data_reviews:
       - https://bugzil.la/1949010
+      - https://bugzil.la/1961641
     data_sensitivity:
       - interaction
     extra_keys:
@@ -424,6 +489,9 @@ tabgroup:
         type: string
       id:
         description: The ID of the created tab group
+        type: string
+      label_reason:
+        description: Whether the model suggested no label due to low probability or dissimilar tabs
         type: string
     expires: never
     no_lint:

@@ -75,7 +75,7 @@ private fun WordmarkText() {
     Image(
         modifier = Modifier.height(dimensionResource(R.dimen.wordmark_text_height)),
         painter = painterResource(getAttr(R.attr.fenixWordmarkText)),
-        contentDescription = null,
+        contentDescription = stringResource(R.string.app_name),
     )
 }
 

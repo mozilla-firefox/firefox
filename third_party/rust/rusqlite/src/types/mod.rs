@@ -81,6 +81,9 @@ use std::fmt;
 #[cfg_attr(docsrs, doc(cfg(feature = "chrono")))]
 mod chrono;
 mod from_sql;
+#[cfg(feature = "jiff")]
+#[cfg_attr(docsrs, doc(cfg(feature = "jiff")))]
+mod jiff;
 #[cfg(feature = "serde_json")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde_json")))]
 mod serde_json;
@@ -128,11 +131,11 @@ pub enum Type {
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            Type::Null => f.pad("Null"),
-            Type::Integer => f.pad("Integer"),
-            Type::Real => f.pad("Real"),
-            Type::Text => f.pad("Text"),
-            Type::Blob => f.pad("Blob"),
+            Self::Null => f.pad("Null"),
+            Self::Integer => f.pad("Integer"),
+            Self::Real => f.pad("Real"),
+            Self::Text => f.pad("Text"),
+            Self::Blob => f.pad("Blob"),
         }
     }
 }
@@ -239,7 +242,7 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::cognitive_complexity)]
+    #[expect(clippy::cognitive_complexity)]
     fn test_mismatched_types() -> Result<()> {
         fn is_invalid_column_type(err: Error) -> bool {
             matches!(err, Error::InvalidColumnType(..))
@@ -385,9 +388,8 @@ mod test {
     }
 
     #[test]
+    #[expect(clippy::float_cmp)]
     fn test_numeric_conversions() -> Result<()> {
-        #![allow(clippy::float_cmp)]
-
         // Test what happens when we store an f32 and retrieve an i32 etc.
         let db = Connection::open_in_memory()?;
         db.execute_batch("CREATE TABLE foo (x)")?;

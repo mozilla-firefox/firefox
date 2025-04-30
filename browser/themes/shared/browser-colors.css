@@ -111,7 +111,7 @@
 
     /* stylelint-disable-next-line media-query-no-invalid */
     @media not ((-moz-windows-mica) or ((-moz-windows-accent-color-in-titlebar) and -moz-pref("browser.theme.windows.accent-color-in-tabs.enabled"))) {
-      --toolbox-bgcolor: light-dark(rgb(240, 240, 244), rgb(28, 27, 34));
+      --toolbox-bgcolor: light-dark(rgb(234, 234, 237), rgb(28, 27, 34));
       --toolbox-textcolor: light-dark(rgb(21, 20, 26), rgb(251, 251, 254));
       --toolbox-bgcolor-inactive: var(--toolbox-bgcolor);
       --toolbox-textcolor-inactive: var(--toolbox-textcolor);

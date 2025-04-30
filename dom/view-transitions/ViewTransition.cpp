@@ -66,6 +66,11 @@ static CSSToCSSMatrix4x4Flagged EffectiveTransform(nsIFrame* aFrame) {
     float sy = boundingRect.height / untransformedSize.height;
     matrix = CSSToCSSMatrix4x4Flagged::Scaling(sx, sy, 0.0f);
   }
+  auto inkOverflowOffset = aFrame->InkOverflowRectRelativeToSelf().TopLeft();
+  if (inkOverflowOffset != nsPoint()) {
+    auto cssOffset = CSSPoint::FromAppUnits(inkOverflowOffset);
+    matrix.PostTranslate(cssOffset.x, cssOffset.y, 0.0f);
+  }
   if (boundingRect.TopLeft() != CSSPoint()) {
     matrix.PostTranslate(boundingRect.x, boundingRect.y, 0.0f);
   }
@@ -190,7 +195,7 @@ struct CapturedElementOldState {
         mTriedImage(true),
         mSize(aFrame->Style()->IsRootElementStyle()
                   ? aSnapshotContainingBlockSize
-                  : aFrame->GetRect().Size()),
+                  : aFrame->InkOverflowRect().Size()),
         mTransform(EffectiveTransform(aFrame)),
         mWritingMode(aFrame->StyleVisibility()->mWritingMode),
         mDirection(aFrame->StyleVisibility()->mDirection),
@@ -825,9 +830,12 @@ bool ViewTransition::UpdatePseudoElementStyles(bool aNeedsInvalidation) {
     auto* rule = EnsureRule(capturedElement.mGroupRule);
     // Let newRect be snapshot containing block if capturedElement is the
     // document element, otherwise, capturedElement’s border box.
+    // NOTE: Needs ink overflow rect instead to get the correct rendering, see
+    // https://github.com/w3c/csswg-drafts/issues/12092.
+    // TODO(emilio, bug 1961139): Maybe revisit this.
     auto newRect = frame->Style()->IsRootElementStyle()
                        ? SnapshotContainingBlockRect()
-                       : frame->GetRect();
+                       : frame->InkOverflowRectRelativeToSelf();
     auto size = CSSPixel::FromAppUnits(newRect);
     // NOTE(emilio): Intentionally not short-circuiting. Int cast is needed to
     // silence warning.

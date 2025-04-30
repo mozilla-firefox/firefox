@@ -513,8 +513,7 @@ void AnimationInfo::AddAnimationForProperty(
     if (readyTime.IsNull()) {
       // TODO(emilio): This should generally not happen anymore, can we remove
       // this SetPendingReadyTime call?
-      readyTime = aFrame->PresContext()->RefreshDriver()->MostRecentRefresh(
-          /* aEnsureTimerStarted= */ false);
+      readyTime = aFrame->PresContext()->RefreshDriver()->MostRecentRefresh();
       MOZ_ASSERT(!readyTime.IsNull());
       aAnimation->SetPendingReadyTime(readyTime);
     }

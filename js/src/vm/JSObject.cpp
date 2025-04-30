@@ -1085,14 +1085,18 @@ bool NativeObject::fixupAfterSwap(JSContext* cx, Handle<NativeObject*> obj,
     obj->initSlotUnchecked(i, slotValues[i]);
   }
 
-  MOZ_ASSERT_IF(
-      obj->hasDynamicSlots() && gc::IsBufferAlloc(obj->getSlotsHeader()),
-      gc::IsNurseryOwned(obj->getSlotsHeader()) == IsInsideNursery(obj));
-
-  MOZ_ASSERT_IF(obj->hasDynamicElements() &&
-                    gc::IsBufferAlloc(obj->getUnshiftedElementsHeader()),
-                gc::IsNurseryOwned(obj->getUnshiftedElementsHeader()) ==
-                    IsInsideNursery(obj));
+#ifdef DEBUG
+  Zone* zone = obj->zone();
+  if (obj->hasDynamicSlots() && gc::IsBufferAlloc(obj->getSlotsHeader())) {
+    MOZ_ASSERT(gc::IsNurseryOwned(zone, obj->getSlotsHeader()) ==
+               IsInsideNursery(obj));
+  }
+  if (obj->hasDynamicElements() &&
+      gc::IsBufferAlloc(obj->getUnshiftedElementsHeader())) {
+    MOZ_ASSERT(gc::IsNurseryOwned(zone, obj->getUnshiftedElementsHeader()) ==
+               IsInsideNursery(obj));
+  }
+#endif
 
   return true;
 }
@@ -2202,7 +2206,7 @@ JS_PUBLIC_API bool js::ShouldIgnorePropertyDefinition(JSContext* cx,
     }
   }
 
-#ifdef JS_HAS_TEMPORAL_API
+#ifdef JS_HAS_INTL_API
   if (key == JSProto_Date && !JS::Prefs::experimental_temporal() &&
       id == NameToId(cx->names().toTemporalInstant)) {
     return true;
@@ -3193,13 +3197,13 @@ void JSObject::addSizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf,
   // TODO: These will eventually count as GC heap memory.
   if (is<NativeObject>() && as<NativeObject>().hasDynamicSlots()) {
     info->objectsMallocHeapSlots +=
-        gc::GetAllocSize(as<NativeObject>().getSlotsHeader());
+        gc::GetAllocSize(zone(), as<NativeObject>().getSlotsHeader());
   }
 
   if (is<NativeObject>() && as<NativeObject>().hasDynamicElements()) {
     void* allocatedElements = as<NativeObject>().getUnshiftedElementsHeader();
     info->objectsMallocHeapElementsNormal +=
-        gc::GetAllocSize(allocatedElements);
+        gc::GetAllocSize(zone(), allocatedElements);
   }
 
   // Other things may be measured in the future if DMD indicates it is

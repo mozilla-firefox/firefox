@@ -5439,6 +5439,13 @@ static inline void search_intra_modes_in_interframe(
   for (int i = 0; i < TOP_INTRA_MODEL_COUNT; i++) {
     top_intra_model_rd[i] = INT64_MAX;
   }
+
+  if (cpi->oxcf.algo_cfg.sharpness) {
+    int bh = mi_size_high[bsize];
+    int bw = mi_size_wide[bsize];
+    if (bh > 4 || bw > 4) return;
+  }
+
   for (int mode_idx = 0; mode_idx < LUMA_MODE_COUNT; ++mode_idx) {
     if (sf->intra_sf.skip_intra_in_interframe &&
         search_state->intra_search_state.skip_intra_modes)

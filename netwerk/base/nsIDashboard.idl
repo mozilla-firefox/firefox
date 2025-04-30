@@ -61,4 +61,8 @@ interface nsIDashboard : nsISupports
     void requestRcwnStats(in nsINetDashboardCallback cb);
 
     AUTF8String getLogPath();
+
+    /* Arrays: host, port
+     * Array of arrays: connection stats */
+    void requestHttp3ConnectionStats(in nsINetDashboardCallback cb);
 };

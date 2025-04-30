@@ -1,5 +1,8 @@
 //! Online SQLite backup API.
 //!
+//! Alternatively, you can create a backup with a simple
+//! [`VACUUM INTO <backup_path>`](https://sqlite.org/lang_vacuum.html#vacuuminto).
+//!
 //! To create a [`Backup`], you must have two distinct [`Connection`]s - one
 //! for the source (which can be used while the backup is running) and one for
 //! the destination (which cannot).  A [`Backup`] handle exposes three methods:
@@ -65,7 +68,7 @@ impl Connection {
         progress: Option<fn(Progress)>,
     ) -> Result<()> {
         use self::StepResult::{Busy, Done, Locked, More};
-        let mut dst = Connection::open(dst_path)?;
+        let mut dst = Self::open(dst_path)?;
         let backup = Backup::new_with_names(self, name, &mut dst, DatabaseName::Main)?;
 
         let mut r = More;
@@ -103,7 +106,7 @@ impl Connection {
         progress: Option<F>,
     ) -> Result<()> {
         use self::StepResult::{Busy, Done, Locked, More};
-        let src = Connection::open(src_path)?;
+        let src = Self::open(src_path)?;
         let restore = Backup::new_with_names(&src, DatabaseName::Main, self, name)?;
 
         let mut r = More;
@@ -152,8 +155,9 @@ pub enum StepResult {
     Locked,
 }
 
-/// Struct specifying the progress of a backup. The
-/// percentage completion can be calculated as `(pagecount - remaining) /
+/// Struct specifying the progress of a backup.
+///
+/// The percentage completion can be calculated as `(pagecount - remaining) /
 /// pagecount`. The progress of a backup is as of the last call to
 /// [`step`](Backup::step) - if the source database is modified after a call to
 /// [`step`](Backup::step), the progress value will become outdated and
@@ -203,8 +207,8 @@ impl Backup<'_, '_> {
         to: &'b mut Connection,
         to_name: DatabaseName<'_>,
     ) -> Result<Backup<'a, 'b>> {
-        let to_name = to_name.as_cstring()?;
-        let from_name = from_name.as_cstring()?;
+        let to_name = to_name.as_cstr()?;
+        let from_name = from_name.as_cstr()?;
 
         let to_db = to.db.borrow_mut().db;
 
@@ -316,9 +320,27 @@ impl Drop for Backup<'_, '_> {
 
 #[cfg(test)]
 mod test {
-    use super::Backup;
+    use super::{Backup, Progress};
     use crate::{Connection, DatabaseName, Result};
     use std::time::Duration;
+
+    #[test]
+    fn backup_to_path() -> Result<()> {
+        let src = Connection::open_in_memory()?;
+        src.execute_batch("CREATE TABLE foo AS SELECT 42 AS x")?;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let path = temp_dir.path().join("test.db3");
+
+        fn progress(_: Progress) {}
+
+        src.backup(DatabaseName::Main, path.as_path(), Some(progress))?;
+
+        let mut dst = Connection::open_in_memory()?;
+        dst.restore(DatabaseName::Main, path, Some(progress))?;
+
+        Ok(())
+    }
 
     #[test]
     fn test_backup() -> Result<()> {

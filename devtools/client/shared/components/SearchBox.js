@@ -58,7 +58,7 @@ class SearchBox extends PureComponent {
       summaryId: PropTypes.string,
       summaryTooltip: PropTypes.string,
       type: PropTypes.string,
-      value: PropTypes.string,
+      initialValue: PropTypes.string,
     };
   }
 
@@ -66,7 +66,7 @@ class SearchBox extends PureComponent {
     super(props);
 
     this.state = {
-      value: props.value || "",
+      value: props.initialValue || "",
       focused: false,
     };
 

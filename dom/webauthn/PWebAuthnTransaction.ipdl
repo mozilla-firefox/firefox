@@ -16,7 +16,10 @@
 
 include protocol PWindowGlobal;
 
+include "mozilla/dom/WebAuthnIPCUtils.h";
+
 using mozilla::dom::MaybeDiscardedBrowsingContext from "mozilla/dom/BrowsingContext.h";
+using mozilla::dom::CredentialProtectionPolicy from "mozilla/dom/WebAuthenticationBinding.h";
 
 namespace mozilla {
 namespace dom {
@@ -30,6 +33,11 @@ struct WebAuthnAuthenticatorSelection {
 struct WebAuthnScopedCredential {
   uint8_t[] id;
   uint8_t transports;
+};
+
+struct WebAuthnExtensionCredProtect {
+  CredentialProtectionPolicy policy;
+  bool required;
 };
 
 struct WebAuthnExtensionCredProps {
@@ -70,6 +78,7 @@ struct WebAuthnExtensionPrfEvalByCredentialEntry {
 };
 
 union WebAuthnExtension {
+  WebAuthnExtensionCredProtect;
   WebAuthnExtensionCredProps;
   WebAuthnExtensionHmacSecret;
   WebAuthnExtensionLargeBlob;

@@ -1,0 +1,15 @@
+[DEFAULT]
+support-files = [
+  "!/dom/geolocation/test/mochitest/network_geolocation.sjs",
+]
+
+["browser_bug1008941_dismissGeolocationHanger.js"]
+support-files = ["position.html"]
+tags = "geolocation"
+
+["browser_bug1238427.js"]
+https_first_disabled = true
+support-files = ["geo_leak_test.html"]
+
+["browser_geolocation_override.js"]
+support-files = ["!/dom/tests/browser/file_empty.html"]

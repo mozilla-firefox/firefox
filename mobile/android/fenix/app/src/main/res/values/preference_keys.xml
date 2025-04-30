@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?><!-- This Source Code Form is subject to the terms of the Mozilla Public
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
-<resources>
+<resources xmlns:moz="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools">
     <string name="pref_key_make_default_browser" translatable="false">pref_key_make_default_browser</string>
     <string name="pref_key_search_settings" translatable="false">pref_key_search_settings</string>
     <string name="pref_key_search_engine" translatable="false">pref_key_search_engine</string>
@@ -47,7 +47,6 @@
     <string name="pref_key_account" translatable="false">pref_key_account</string>
     <string name="pref_key_sign_in" translatable="false">pref_key_sign_in</string>
     <string name="pref_key_account_auth_error" translatable="false">pref_key_account_auth_error</string>
-    <string name="pref_key_allow_domestic_china_fxa_server" translatable="false">pref_key_allow_domestic_china_fxa_server</string>
     <string name="pref_key_sync_debug" translatable="false">pref_key_sync_debug</string>
     <string name="pref_key_override_fxa_server" translatable="false">pref_key_override_fxa_server</string>
     <string name="pref_key_use_react_fxa" translatable="false">pref_key_use_react_fxa</string>
@@ -201,7 +200,7 @@
     <!-- Cookie Banner Reduction Settings-->
     <string name="pref_key_cookie_banner_private_mode" translatable="false">pref_key_cookie_banner_private_mode</string>
 
-    <!-- DNS Over HTTPS Settings -->
+    <!-- DNS over HTTPS Settings -->
     <string name="pref_key_doh_settings" translatable="false">pref_key_doh_settings</string>
     <string name="pref_key_doh_settings_mode" translatable="false">pref_key_doh_settings_mode</string>
     <string name="pref_key_doh_provider_uri" translatable="false">pref_key_doh_provider_uri</string>
@@ -262,8 +261,9 @@
     <string name="pref_key_open_links_in_apps_never" translatable="false">pref_key_open_links_in_apps_never</string>
     <string name="pref_key_external_download_manager" translatable="false">pref_key_external_download_manager</string>
     <string name="pref_key_allow_screenshots_in_private_mode" translatable="false">pref_key_allow_screenshots_in_private_mode</string>
-    <string name="pref_key_private_browsing_biometrics_enabled" translatable="false">pref_key_private_browsing_biometrics_enabled</string>
+    <string name="pref_key_private_browsing_locked_enabled" translatable="false">pref_key_private_browsing_locked_enabled</string>
     <string name="pref_key_privacy_enable_global_privacy_control" translatable="false">pref_key_privacy_enable_global_privacy_control</string>
+    <string name="pref_key_private_screen_locked" translatable="false">pref_key_private_screen_locked</string>
 
     <string name="pref_key_adjust_campaign" translatable="false">pref_key_adjust_campaign</string>
     <string name="pref_key_adjust_network" translatable="false">pref_key_adjust_network</string>
@@ -336,7 +336,7 @@
     <string name="pref_key_open_tabs_count" translatable="false">pref_key_open_tabs_count</string>
     <string name="pref_key_open_private_tabs_count" translatable="false">pref_key_open_private_tabs_count</string>
 
-    <string name="pref_key_tab_strip" translatable="false">pref_key_tab_strip</string>
+    <string name="pref_key_tab_strip" translatable="false" moz:removedIn="139" tools:ignore="UnusedResources">pref_key_tab_strip</string>
 
     <!-- Add-on Metrics Values -->
     <string name="pref_key_installed_addons_count" translatable="false">pref_key_installed_addons_count</string>
@@ -464,6 +464,7 @@
     <string name="pref_key_glean_usage_profile_id" translatable="false">pref_key_glean_usage_profile_id</string>
 
     <!-- Setup steps completed -->
+    <string name="pref_key_setup_checklist_complete" translatable="false">pref_key_setup_checklist_complete</string>
     <string name="pref_key_setup_step_toolbar" translatable="false">pref_key_setup_step_toolbar</string>
     <string name="pref_key_setup_step_theme" translatable="false">pref_key_setup_step_theme</string>
     <string name="pref_key_setup_step_extensions" translatable="false">pref_key_setup_step_extensions</string>

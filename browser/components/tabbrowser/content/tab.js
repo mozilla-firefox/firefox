@@ -7,6 +7,11 @@
 // This is loaded into chrome windows with the subscript loader. Wrap in
 // a block to prevent accidentally leaking globals onto `window`.
 {
+  const lazy = {};
+  ChromeUtils.defineESModuleGetters(lazy, {
+    TabMetrics: "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs",
+  });
+
   class MozTabbrowserTab extends MozElements.MozTab {
     static markup = `
       <stack class="tab-stack" flex="1">
@@ -127,6 +132,11 @@
       let labelContainer = this.querySelector(".tab-label-container");
       labelContainer.addEventListener("overflow", this);
       labelContainer.addEventListener("underflow", this);
+
+      // Tabs in the tab strip default to being at the top level (level 1)
+      // Tabs in tab groups are one level down (level 2); tab groups will
+      // update this value when tabs move in and out of tab groups.
+      this.setAttribute("aria-level", 1);
     }
 
     #elementIndex;
@@ -545,11 +555,14 @@
 
       if (event.target.classList.contains("tab-close-button")) {
         if (this.multiselected) {
-          gBrowser.removeMultiSelectedTabs();
+          gBrowser.removeMultiSelectedTabs({
+            telemetrySource: lazy.TabMetrics.METRIC_SOURCE.TAB_STRIP,
+          });
         } else {
           gBrowser.removeTab(this, {
             animate: true,
             triggeringEvent: event,
+            telemetrySource: lazy.TabMetrics.METRIC_SOURCE.TAB_STRIP,
           });
         }
         // This enables double-click protection for the tab container

@@ -16,102 +16,93 @@ tasks:
         image: debian:bullseye
         pre-commands:
             - apt-get update
-            - apt-get install -y --no-install-recommends curl mercurial python3-pip
+            - apt-get install -y --no-install-recommends curl git python3-pip
     debian12:
         image: debian:bookworm
         pre-commands:
             - apt-get update
-            - apt-get install -y --no-install-recommends curl mercurial python3-pip
+            - apt-get install -y --no-install-recommends curl git python3-pip
     debian13:
         image: debian:trixie
         pre-commands:
             - apt-get update
-            - apt-get install -y --no-install-recommends curl mercurial python3-pip
+            - apt-get install -y --no-install-recommends curl libcurl4 git python3-pip
     ubuntu2204:
         image: ubuntu:jammy
         pre-commands:
             - apt-get update
-            - apt-get install -y --no-install-recommends curl mercurial python3-pip
+            - apt-get install -y --no-install-recommends curl git python3-pip
     ubuntu2404:
         image: ubuntu:noble
         pre-commands:
             - apt-get update
             # For some reason, this is required, now.
             - export DEBIAN_FRONTEND=noninteractive
-            - apt-get install -y --no-install-recommends curl mercurial python3-pip
+            - apt-get install -y --no-install-recommends curl git python3-pip
     ubuntu2410:
         image: ubuntu:oracular
         pre-commands:
             - apt-get update
             # For some reason, this is required, now.
             - export DEBIAN_FRONTEND=noninteractive
-            - apt-get install -y --no-install-recommends curl mercurial python3-pip
+            - apt-get install -y --no-install-recommends curl git python3-pip
     fedora36:
         image: fedora:36
         pre-commands:
-            - dnf install -y mercurial python3-pip
+            - dnf install -y git python3-pip
     fedora37:
         image: fedora:37
         pre-commands:
-            - dnf install -y mercurial python3-pip
-            # Work around https://bz.mercurial-scm.org/show_bug.cgi?id=6761
-            - mkdir -p /etc/mercurial/hgrc.d
-            - (echo "[devel]"; echo discovery.randomize=false) > /etc/mercurial/hgrc.d/workaround.rc
+            - dnf install -y git python3-pip
     fedora38:
         image: fedora:38
         pre-commands:
-            - dnf install -y mercurial python3-pip
+            - dnf install -y git python3-pip
     fedora39:
         image: fedora:39
         pre-commands:
-            - dnf install -y mercurial python3-pip
+            - dnf install -y git python3-pip
     fedora40:
         image: fedora:40
         pre-commands:
-            - dnf install -y mercurial python3-pip
+            - dnf install -y git python3-pip
     fedora41:
         image: fedora:41
         pre-commands:
-            - dnf install -y mercurial python3-pip
+            - dnf install -y git python3-pip
     fedora42:
         image: fedora:42
         pre-commands:
-            - dnf install -y mercurial python3-pip awk
+            - dnf install -y git python3-pip awk
     rockylinux8:
         image: rockylinux:8
         pre-commands:
-            - dnf install -y mercurial python38-pip
+            - dnf install -y git python38-pip
     rockylinux9:
         image: rockylinux:9
         pre-commands:
-            # Mercurial is in EPEL. https://wiki.rockylinux.org/rocky/repo/#notes-on-epel
-            - dnf install -y epel-release
-            - dnf install -y mercurial python3-pip
+            - dnf install -y git python3-pip
     opensuse-leap:
         image: opensuse/leap
         pre-commands:
-            - zypper install -y curl mercurial python311-pip python311-curses gzip
-            # We can't replace /usr/bin/python3 because mercurial uses that, so
-            # we override it via /usr/local/bin.
-            - ln -s /usr/bin/python3.11 /usr/local/bin/python3
-            # Make the shell forget about where it found python3 in the past.
-            - hash -r python3
+            - zypper install -y curl git python311-pip python311-curses gzip
+            - ln -s /usr/bin/python3.11 /usr/bin/python3
     opensuse-tumbleweed:
         image: opensuse/tumbleweed
         pre-commands:
-            - zypper install -y mercurial python3-pip
+            - zypper install -y git python3-pip python3-curses
     gentoo:
         image: gentoo/stage3
         pre-commands:
             - emerge --sync
-            - emerge mercurial dev-python/pip curl
+            - emerge dev-vcs/git dev-python/pip curl
     archlinux:
         image: archlinux
         pre-commands:
-            - pacman -Syu --noconfirm mercurial python-pip
+            - pacman -Syu --noconfirm git python-pip
     voidlinux:
         image: voidlinux/voidlinux
         pre-commands:
             - sed -i s/alpha.de.repo.voidlinux.org/repo-default.voidlinux.org/g /usr/share/xbps.d/*
             - xbps-install -Suyv xbps
-            - xbps-install -Suyv curl mercurial python3-pip
+            - xbps-install -Suyv curl git python3-pip

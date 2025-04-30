@@ -101,6 +101,25 @@ WebAuthnRegisterArgs::GetExcludeListTransports(
 }
 
 NS_IMETHODIMP
+WebAuthnRegisterArgs::GetCredentialProtectionPolicy(
+    nsACString& aCredentialProtectionPolicy) {
+  if (mCredentialProtectionPolicy.isSome()) {
+    aCredentialProtectionPolicy =
+        GetEnumString(mCredentialProtectionPolicy.ref());
+    return NS_OK;
+  }
+  return NS_ERROR_NOT_AVAILABLE;
+}
+
+NS_IMETHODIMP
+WebAuthnRegisterArgs::GetEnforceCredentialProtectionPolicy(
+    bool* aEnforceCredentialProtectionPolicy) {
+  *aEnforceCredentialProtectionPolicy = mEnforceCredentialProtectionPolicy;
+
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 WebAuthnRegisterArgs::GetCredProps(bool* aCredProps) {
   *aCredProps = mCredProps;
 

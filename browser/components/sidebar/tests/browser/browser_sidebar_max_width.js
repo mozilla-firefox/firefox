@@ -3,11 +3,9 @@
 
 "use strict";
 
-const TAB_DIRECTION_PREF = "sidebar.verticalTabs";
-
 add_task(async function test_customize_sidebar_actions() {
   SpecialPowers.pushPrefEnv({
-    set: [[TAB_DIRECTION_PREF, true]],
+    set: [[VERTICAL_TABS_PREF, true]],
   });
   await waitForTabstripOrientation("vertical");
   const win = await BrowserTestUtils.openNewBrowserWindow();

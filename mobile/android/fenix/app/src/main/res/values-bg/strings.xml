@@ -834,8 +834,6 @@
   <string name="preferences_override_account_server">Персонализиран сървър за профили на Mozilla</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Личен сървър за Sync</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Променен акаунт в Mozilla/Sync. Излизане от приложението за прилагане на промените…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Профил</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1483,16 +1481,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Премахване</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Изтриване</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Връщане назад</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Придвижване нагоре</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">Споделяне на URL</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Споделяне на файл</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Сигурни ли сте, че искате да изтриете избраните елементи?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Сигурни ли сте, че искате да изтриете избраните елементи?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Изтриване</string>
+  <string name="download_delete_multi_select_dialog_confirm">Изтриване</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Отказ</string>
+  <string name="download_delete_multi_select_dialog_cancel">Отказ</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Изпълнява се</string>
   <!--
@@ -1523,9 +1525,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Грешка при изтегляне</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Търсене на изтегляния</string>
+  <string name="download_search_placeholder">Търсене на изтегляния</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Няма резултати</string>
+  <string name="download_search_no_results_found">Няма резултати</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Избиране на всичко</string>
   <!--
@@ -2278,7 +2280,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Икона за предпочитание за изключение с подобрена защита от проследяване</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3193,6 +3195,8 @@
   <string name="protection_panel_no_trackers_blocked">Не са намерени тракери</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">Настройки за поверителност и сигурност</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Права</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.

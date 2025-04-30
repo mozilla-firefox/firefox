@@ -61,7 +61,7 @@ impl ProcessReader {
 
         BufReader::new(maps_file)
             .lines()
-            .flatten()
+            .map_while(Result::ok)
             .map(|line| parse_proc_maps_line(&line))
             .filter_map(Result::ok)
             .find_map(|(name, address)| {
@@ -192,7 +192,10 @@ impl ProcessReader {
 
         unsafe {
             array.set_len(num);
-            Ok(std::mem::transmute(array))
+            Ok(std::mem::transmute::<
+                std::vec::Vec<std::mem::MaybeUninit<T>>,
+                std::vec::Vec<T>,
+            >(array))
         }
     }
 }

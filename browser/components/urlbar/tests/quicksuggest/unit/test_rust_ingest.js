@@ -10,6 +10,7 @@ ChromeUtils.defineESModuleGetters(this, {
   AsyncShutdown: "resource://gre/modules/AsyncShutdown.sys.mjs",
   InterruptKind: "resource://gre/modules/RustSuggest.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
+  SuggestIngestionMetrics: "resource://gre/modules/RustSuggest.sys.mjs",
   SuggestionProvider: "resource://gre/modules/RustSuggest.sys.mjs",
 });
 
@@ -79,7 +80,8 @@ add_task(async function disableEnable() {
 
 // For a feature whose suggestion type provider has constraints, ingest should
 // happen when the constraints change.
-add_task(async function providerConstraintsChanged() {
+// TODO Bug 1961040: Convert ExposureSuggestions to DynamicSuggestions.
+add_task({ skip_if: () => true }, async function providerConstraintsChanged() {
   // We'll use the Exposure feature since it has provider constraints. Make sure
   // it exists.
   let feature = QuickSuggest.getFeature("ExposureSuggestions");
@@ -264,6 +266,12 @@ async function withIngestStub(callback) {
   let sandbox = sinon.createSandbox();
   let { rustBackend } = QuickSuggest;
   let stub = sandbox.stub(rustBackend._test_store, "ingest");
+
+  // `ingest()` returns a `SuggestIngestionMetrics` object.
+  stub.returns(
+    new SuggestIngestionMetrics({ ingestionTimes: [], downloadTimes: [] })
+  );
+
   await callback({ stub, rustBackend });
   sandbox.restore();
 }

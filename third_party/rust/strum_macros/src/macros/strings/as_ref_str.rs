@@ -2,9 +2,14 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse_quote, Data, DeriveInput, Fields};
 
-use crate::helpers::{non_enum_error, HasStrumVariantProperties, HasTypeProperties};
+use crate::helpers::{
+    non_enum_error, non_single_field_variant_error, HasStrumVariantProperties, HasTypeProperties,
+};
 
-fn get_arms(ast: &DeriveInput) -> syn::Result<Vec<TokenStream>> {
+fn get_arms<F>(ast: &DeriveInput, transparent_fn: F) -> syn::Result<Vec<TokenStream>>
+where
+    F: Fn(&TokenStream) -> TokenStream,
+{
     let name = &ast.ident;
     let mut arms = Vec::new();
     let variants = match &ast.data {
@@ -22,12 +27,21 @@ fn get_arms(ast: &DeriveInput) -> syn::Result<Vec<TokenStream>> {
             continue;
         }
 
+        if let Some(..) = variant_properties.transparent {
+            let arm = super::extract_single_field_variant_and_then(name, variant, |tok| {
+                transparent_fn(tok)
+            })
+            .map_err(|_| non_single_field_variant_error("transparent"))?;
+
+            arms.push(arm);
+            continue;
+        }
+
         // Look at all the serialize attributes.
         // Use `to_string` attribute (not `as_ref_str` or something) to keep things consistent
         // (i.e. always `enum.as_ref().to_string() == enum.to_string()`).
         let output = variant_properties
             .get_preferred_name(type_properties.case_style, type_properties.prefix.as_ref());
-
         let params = match variant.fields {
             Fields::Unit => quote! {},
             Fields::Unnamed(..) => quote! { (..) },
@@ -52,9 +66,13 @@ fn get_arms(ast: &DeriveInput) -> syn::Result<Vec<TokenStream>> {
 pub fn as_ref_str_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
     let name = &ast.ident;
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
-    let arms = get_arms(ast)?;
+    let arms = get_arms(ast, |tok| {
+        quote! { ::core::convert::AsRef::<str>::as_ref(#tok) }
+    })?;
+
     Ok(quote! {
         impl #impl_generics ::core::convert::AsRef<str> for #name #ty_generics #where_clause {
+            #[inline]
             fn as_ref(&self) -> &str {
                 match *self {
                     #(#arms),*
@@ -75,7 +93,10 @@ pub fn as_static_str_inner(
 ) -> syn::Result<TokenStream> {
     let name = &ast.ident;
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
-    let arms = get_arms(ast)?;
+    let arms = &get_arms(ast, |tok| {
+        quote! { ::core::convert::From::from(#tok) }
+    })?;
+
     let type_properties = ast.get_type_properties()?;
     let strum_module_path = type_properties.crate_module_path();
 
@@ -86,12 +107,11 @@ pub fn as_static_str_inner(
             parse_quote!('_derivative_strum),
         )));
     let (impl_generics2, _, _) = generics.split_for_impl();
-    let arms2 = arms.clone();
-    let arms3 = arms.clone();
 
     Ok(match trait_variant {
         GenerateTraitVariant::AsStaticStr => quote! {
             impl #impl_generics #strum_module_path::AsStaticRef<str> for #name #ty_generics #where_clause {
+                #[inline]
                 fn as_static(&self) -> &'static str {
                     match *self {
                         #(#arms),*
@@ -99,19 +119,43 @@ pub fn as_static_str_inner(
                 }
             }
         },
+        GenerateTraitVariant::From if !type_properties.const_into_str => quote! {
+            impl #impl_generics ::core::convert::From<#name #ty_generics> for &'static str #where_clause {
+                #[inline]
+                fn from(x: #name #ty_generics) -> &'static str {
+                    match x {
+                        #(#arms),*
+                    }
+                }
+            }
+            impl #impl_generics2 ::core::convert::From<&'_derivative_strum #name #ty_generics> for &'static str #where_clause {
+                #[inline]
+                fn from(x: &'_derivative_strum #name #ty_generics) -> &'static str {
+                    match *x {
+                        #(#arms),*
+                    }
+                }
+            }
+        },
         GenerateTraitVariant::From => quote! {
+            impl #impl_generics #name #ty_generics #where_clause {
+                pub const fn into_str(&self) -> &'static str {
+                    match self {
+                        #(#arms),*
+                    }
+                }
+            }
+
             impl #impl_generics ::core::convert::From<#name #ty_generics> for &'static str #where_clause {
                 fn from(x: #name #ty_generics) -> &'static str {
                     match x {
-                        #(#arms2),*
+                        #(#arms),*
                     }
                 }
             }
             impl #impl_generics2 ::core::convert::From<&'_derivative_strum #name #ty_generics> for &'static str #where_clause {
                 fn from(x: &'_derivative_strum #name #ty_generics) -> &'static str {
-                    match *x {
-                        #(#arms3),*
-                    }
+                    x.into_str()
                 }
             }
         },

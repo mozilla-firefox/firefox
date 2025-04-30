@@ -110,7 +110,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
 
     private val args by navArgs<MenuDialogFragmentArgs>()
     private val webExtensionsMenuBinding = ViewBoundFeatureWrapper<WebExtensionsMenuBinding>()
-    private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
+    private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         Events.toolbarMenuVisible.record(NoExtras())
@@ -139,15 +139,16 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                 val bottomSheet = findViewById<View?>(R.id.design_bottom_sheet)
                 bottomSheet?.setBackgroundResource(android.R.color.transparent)
 
-                bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
-                bottomSheetBehavior.apply {
-                    maxWidth = calculateMenuSheetWidth()
-                    isFitToContents = true
-                    peekHeight = PEEK_HEIGHT.dpToPx(resources.displayMetrics)
-                    halfExpandedRatio = EXPANDED_MIN_RATIO
-                    maxHeight = calculateMenuSheetHeight()
-                    state = BottomSheetBehavior.STATE_COLLAPSED
-                    hideFriction = HIDING_FRICTION
+                bottomSheetBehavior = bottomSheet?.let {
+                    BottomSheetBehavior.from(it).apply {
+                        maxWidth = calculateMenuSheetWidth()
+                        isFitToContents = true
+                        peekHeight = PEEK_HEIGHT.dpToPx(resources.displayMetrics)
+                        halfExpandedRatio = EXPANDED_MIN_RATIO
+                        maxHeight = calculateMenuSheetHeight()
+                        state = BottomSheetBehavior.STATE_COLLAPSED
+                        hideFriction = HIDING_FRICTION
+                    }
                 }
             }
         }
@@ -155,7 +156,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        bottomSheetBehavior.apply {
+        bottomSheetBehavior?.apply {
             maxWidth = calculateMenuSheetWidth()
             maxHeight = calculateMenuSheetHeight()
         }

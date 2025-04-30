@@ -15,9 +15,10 @@ gcloud:
   test: /test/path
 
   auto-google-login: false
-  use-orchestrator: true
+  use-orchestrator: false
   environment-variables:
     clearPackageData: true
+    androidx.benchmark.enabledRules: BaselineProfile
   directories-to-pull:
     - /sdcard/Android/media/
   performance-metrics: true

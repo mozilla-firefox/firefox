@@ -57,6 +57,8 @@
 #include "hb-subset-input.cc"
 #include "hb-subset-instancer-iup.cc"
 #include "hb-subset-instancer-solver.cc"
+#include "hb-subset-plan-layout.cc"
+#include "hb-subset-plan-var.cc"
 #include "hb-subset-plan.cc"
 #include "hb-subset-serialize.cc"
 #include "hb-subset.cc"

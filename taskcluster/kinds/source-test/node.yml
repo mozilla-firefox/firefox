@@ -214,6 +214,24 @@ eslint-plugin-mozilla:
             - linux64-node
             - eslint-plugin-mozilla
 
+stylelint-plugin-mozilla:
+    description: stylelint-plugin-mozilla integration tests
+    treeherder:
+        symbol: node(spm)
+    worker:
+        docker-image: {in-tree: "lint"}
+    run:
+        command: >
+            cp -r $MOZ_FETCHES_DIR/stylelint-plugin-mozilla/node_modules tools/lint/stylelint/stylelint-plugin-mozilla/node_modules &&
+            ./mach configure --disable-compile-environment &&
+            ./mach npm test --prefix tools/lint/stylelint/stylelint-plugin-mozilla
+    when:
+        files-changed:
+            - 'tools/lint/stylelint/stylelint-plugin-mozilla/**'
+    fetches:
+        toolchain:
+            - linux64-node
+            - stylelint-plugin-mozilla
 
 design-tokens-tests:
     description: design tokens unit tests

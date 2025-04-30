@@ -20,29 +20,5 @@
     <!-- Privacy Notice neutral button-->
     <string name="privacy_notice_neutral_button_2">Disagree</string>
 
-    <!-- Topsites-->
-    <!-- Default title for pinned Baidu top site that links to Baidu home page  -->
-    <string name="default_top_site_baidu">Baidu</string>
-    <!-- Default title for pinned JD top site that links to JD home page  -->
-    <string name="default_top_site_jd">JD</string>
-    <!-- Default title for pinned JD top site that links to PDD home page  -->
-    <string name="default_top_site_pdd">PDD</string>
-    <!-- Default title for pinned 58 top site that links to 58 home page  -->
-    <string name="default_top_site_tc">58</string>
-    <!-- Default title for pinned meituan top site that links to 58 home page  -->
-    <string name="default_top_site_meituan">meituan</string>
-
-    <!-- FxA server switch-->
-    <!-- Switch Preference for domestic China/global fxa server -->
-    <string name="preferences_allow_domestic_china_fxa_server">Use domestic China service</string>
-    <!-- Instructions on how to access pairing -->
-    <string name="pair_instructions_2_cn"><![CDATA[Scan the QR code shown at <b>firefox.com.cn/pair</b>]]></string>
-    <!-- Instructions on how to access pairing -->
-    <string name="sign_in_instructions_cn"><![CDATA[On your computer open Firefox and go to <b>https://firefox.com.cn/pair</b>]]></string>
-
-    <!-- Homescreen menu button -->
-    <!-- Browser menu button that opens the account setting page -->
-    <string name="browser_menu_manage_account_and_devices">Manage Account and Devices</string>
-
     <string name="preferences_site_permissions_description">This page shows the default permission settings to all sites; If the permissions of any specific site have been modified, this site will be shown in "Exceptions".</string>
 </resources>

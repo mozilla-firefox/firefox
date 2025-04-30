@@ -31,7 +31,7 @@ class NetworkModule extends Module {
       // decodedBodySize map in the parent process. Return null to swallow the
       // event.
       return null;
-    } else if (name == "network._cachedResourceSent") {
+    } else if (name == "network._windowGlobalNetworkResource") {
       const { context, request, response } = payload;
       if (!lazy.TabManager.isValidCanonicalBrowsingContext(context)) {
         // Discard events for invalid browsing contexts.
@@ -43,7 +43,7 @@ class NetworkModule extends Module {
 
       this.messageHandler.handleCommand({
         moduleName: "network",
-        commandName: "_sendEventsForCachedResource",
+        commandName: "_sendEventsForWindowGlobalNetworkResource",
         params: { request, response },
         destination: {
           type: lazy.RootMessageHandler.type,

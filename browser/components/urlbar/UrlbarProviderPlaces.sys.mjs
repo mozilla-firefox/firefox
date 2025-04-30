@@ -36,15 +36,6 @@ const QUERYINDEX_FRECENCY = 10;
 const QUERYINDEX_USERCONTEXTID = 11;
 const QUERYINDEX_LASTVIST = 12;
 
-// Constants to support an alternative frecency algorithm.
-const PAGES_USE_ALT_FRECENCY = Services.prefs.getBoolPref(
-  "places.frecency.pages.alternative.featureGate",
-  false
-);
-const PAGES_FRECENCY_FIELD = PAGES_USE_ALT_FRECENCY
-  ? "alt_frecency"
-  : "frecency";
-
 // This SQL query fragment provides the following:
 //   - whether the entry is bookmarked (QUERYINDEX_BOOKMARKED)
 //   - the bookmark title, if it is a bookmark (QUERYINDEX_BOOKMARKTITLE)
@@ -65,14 +56,14 @@ const SQL_BOOKMARK_TAGS_FRAGMENT = `EXISTS(SELECT 1 FROM moz_bookmarks WHERE fk 
 // condition once, and avoid evaluating "btitle" and "tags" when it is false.
 function defaultQuery(conditions = "") {
   let query = `SELECT :query_type, h.url, h.title, ${SQL_BOOKMARK_TAGS_FRAGMENT},
-            h.visit_count, h.typed, h.id, t.open_count, ${PAGES_FRECENCY_FIELD}, t.userContextId, h.last_visit_date
+            h.visit_count, h.typed, h.id, t.open_count, ${lazy.PAGES_FRECENCY_FIELD}, t.userContextId, h.last_visit_date
      FROM moz_places h
      LEFT JOIN moz_openpages_temp t
             ON t.url = h.url
             AND (t.userContextId = :userContextId OR (t.userContextId <> -1 AND :userContextId IS NULL))
      WHERE (
         (:switchTabsEnabled AND t.open_count > 0) OR
-        ${PAGES_FRECENCY_FIELD} <> 0
+        ${lazy.PAGES_FRECENCY_FIELD} <> 0
        )
        AND CASE WHEN bookmarked
          THEN
@@ -89,7 +80,7 @@ function defaultQuery(conditions = "") {
                               :matchBehavior, :searchBehavior, NULL)
          END
        ${conditions ? "AND" : ""} ${conditions}
-     ORDER BY ${PAGES_FRECENCY_FIELD} DESC, h.id DESC
+     ORDER BY ${lazy.PAGES_FRECENCY_FIELD} DESC, h.id DESC
      LIMIT :maxResults`;
   return query;
 }
@@ -126,6 +117,13 @@ ChromeUtils.defineESModuleGetters(lazy, {
   UrlbarResult: "resource:///modules/UrlbarResult.sys.mjs",
   UrlbarSearchUtils: "resource:///modules/UrlbarSearchUtils.sys.mjs",
   UrlbarTokenizer: "resource:///modules/UrlbarTokenizer.sys.mjs",
+});
+
+// Constants to support an alternative frecency algorithm.
+ChromeUtils.defineLazyGetter(lazy, "PAGES_FRECENCY_FIELD", () => {
+  return lazy.PlacesUtils.history.isAlternativeFrecencyEnabled
+    ? "alt_frecency"
+    : "frecency";
 });
 
 function setTimeout(callback, ms) {

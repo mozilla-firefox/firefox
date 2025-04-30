@@ -51,7 +51,7 @@ const SEARCH_CONFIG = [
   },
 ];
 
-add_task(async function setup() {
+add_setup(async function setup() {
   TelemetryEnvironmentTesting.registerFakeSysInfo();
   TelemetryEnvironmentTesting.spoofGfxAdapter();
   do_get_profile();
@@ -59,16 +59,6 @@ add_task(async function setup() {
   // We need to ensure FOG is initialized, otherwise we will panic trying to get test values.
   Services.fog.initializeFOG();
 
-  // The system add-on must be installed before AddonManager is started.
-  const distroDir = FileUtils.getDir("ProfD", ["sysfeatures", "app0"]);
-  distroDir.create(Ci.nsIFile.DIRECTORY_TYPE, FileUtils.PERMS_DIRECTORY);
-  do_get_file("system.xpi").copyTo(
-    distroDir,
-    "tel-system-xpi@tests.mozilla.org.xpi"
-  );
-  let system_addon = FileUtils.File(distroDir.path);
-  system_addon.append("tel-system-xpi@tests.mozilla.org.xpi");
-  system_addon.lastModifiedTime = SYSTEM_ADDON_INSTALL_DATE;
   await loadAddonManager(APP_ID, APP_NAME, APP_VERSION, PLATFORM_VERSION);
 
   TelemetryEnvironmentTesting.init(gAppInfo);
@@ -79,7 +69,7 @@ add_task(async function setup() {
   // there is already a database on disk.  Simulate that here by just
   // restarting the AddonManager.
   await AddonTestUtils.promiseShutdownManager();
-  await AddonTestUtils.overrideBuiltIns({ system: [] });
+  await AddonTestUtils.overrideBuiltIns({ builtins: [] });
   AddonTestUtils.addonStartup.remove(true);
   await AddonTestUtils.promiseStartupManager();
 

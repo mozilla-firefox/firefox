@@ -76,6 +76,7 @@
 #endif
 
 #ifdef MOZ_CRASHREPORTER
+@BINPATH@/@DLL_PREFIX@crashhelper@DLL_SUFFIX@
 @BINPATH@/@DLL_PREFIX@minidump_analyzer@DLL_SUFFIX@
 #endif
 

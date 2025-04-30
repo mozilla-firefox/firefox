@@ -1,6 +1,6 @@
 [DEFAULT]
 tags = "devtools"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
+run-if = ["os != 'android'"]
 
 ["test_webconsole_l10n.js"]

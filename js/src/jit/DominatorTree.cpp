@@ -49,6 +49,7 @@ namespace js::jit {
 // whole graph. This is called Dynamic SNCA and both Julia and LLVM implement
 // this.
 class MOZ_RAII SemiNCA {
+  const MIRGenerator* mir_;
   MIRGraph& graph_;
 
   // State associated with each basic block. Note that the paper uses separate
@@ -72,7 +73,8 @@ class MOZ_RAII SemiNCA {
   [[nodiscard]] bool compress(uint32_t v, uint32_t lastLinked);
 
  public:
-  explicit SemiNCA(MIRGraph& graph) : graph_(graph) {}
+  SemiNCA(const MIRGenerator* mir, MIRGraph& graph)
+      : mir_(mir), graph_(graph) {}
 
   [[nodiscard]] bool computeDominators();
 };
@@ -200,6 +202,10 @@ bool SemiNCA::computeDominators() {
 
   // Compute semi-dominators.
   for (size_t w = nblocks - 1; w > 0; w--) {
+    if (mir_->shouldCancel("SemiNCA computeDominators")) {
+      return false;
+    }
+
     MBasicBlock* block = state_[w].block;
     uint32_t semiW = state_[w].ancestor;
 
@@ -256,15 +262,16 @@ bool SemiNCA::computeDominators() {
   return true;
 }
 
-static bool ComputeImmediateDominators(MIRGraph& graph) {
-  SemiNCA semiNCA(graph);
+static bool ComputeImmediateDominators(const MIRGenerator* mir,
+                                       MIRGraph& graph) {
+  SemiNCA semiNCA(mir, graph);
   return semiNCA.computeDominators();
 }
 
-bool jit::BuildDominatorTree(MIRGraph& graph) {
+bool jit::BuildDominatorTree(const MIRGenerator* mir, MIRGraph& graph) {
   MOZ_ASSERT(graph.canBuildDominators());
 
-  if (!ComputeImmediateDominators(graph)) {
+  if (!ComputeImmediateDominators(mir, graph)) {
     return false;
   }
 

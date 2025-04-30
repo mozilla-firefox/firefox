@@ -2,19 +2,17 @@ use core::{
     borrow::Borrow,
     fmt,
     hash::{BuildHasher, Hash},
-    usize,
 };
 
-use hashbrown::hash_map;
-
 use crate::linked_hash_map::{self, LinkedHashMap};
+use crate::DefaultHashBuilder;
 
 pub use crate::linked_hash_map::{
     Drain, Entry, IntoIter, Iter, IterMut, OccupiedEntry, RawEntryBuilder, RawEntryBuilderMut,
     RawOccupiedEntryMut, RawVacantEntryMut, VacantEntry,
 };
 
-pub struct LruCache<K, V, S = hash_map::DefaultHashBuilder> {
+pub struct LruCache<K, V, S = DefaultHashBuilder> {
     map: LinkedHashMap<K, V, S>,
     max_size: usize,
 }

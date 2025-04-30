@@ -86,8 +86,6 @@ fn foo() {
 // A list of types that contains atomics, with a single control case.
 const kAtomicTypes: string[] = [
   'bool', // control case
-  'atomic<i32>',
-  'atomic<u32>',
   'array<atomic<i32>, 4>',
   'AtomicStruct',
 ];

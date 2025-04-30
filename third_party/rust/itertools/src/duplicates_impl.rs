@@ -2,8 +2,8 @@ use std::hash::Hash;
 
 mod private {
     use std::collections::HashMap;
-    use std::hash::Hash;
     use std::fmt;
+    use std::hash::Hash;
 
     #[derive(Clone)]
     #[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
@@ -22,7 +22,7 @@ mod private {
 
     impl<I: Iterator, Key: Eq + Hash, F> DuplicatesBy<I, Key, F> {
         pub(crate) fn new(iter: I, key_method: F) -> Self {
-            DuplicatesBy {
+            Self {
                 iter,
                 meta: Meta {
                     used: HashMap::new(),
@@ -77,7 +77,7 @@ mod private {
         type Item = I::Item;
 
         fn next(&mut self) -> Option<Self::Item> {
-            let DuplicatesBy { iter, meta } = self;
+            let Self { iter, meta } = self;
             iter.find_map(|v| meta.filter(v))
         }
 
@@ -109,7 +109,7 @@ mod private {
         F: KeyMethod<Key, I::Item>,
     {
         fn next_back(&mut self) -> Option<Self::Item> {
-            let DuplicatesBy { iter, meta } = self;
+            let Self { iter, meta } = self;
             iter.rev().find_map(|v| meta.filter(v))
         }
     }
@@ -122,7 +122,7 @@ mod private {
     }
 
     /// Apply the identity function to elements before checking them for equality.
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct ById;
     impl<V> KeyMethod<V, V> for ById {
         type Container = JustValue<V>;
@@ -133,6 +133,7 @@ mod private {
     }
 
     /// Apply a user-supplied function to elements before checking them for equality.
+    #[derive(Clone)]
     pub struct ByFn<F>(pub(crate) F);
     impl<F> fmt::Debug for ByFn<F> {
         debug_fmt_fields!(ByFn,);
@@ -213,4 +214,3 @@ where
 {
     Duplicates::new(iter, private::ById)
 }
-

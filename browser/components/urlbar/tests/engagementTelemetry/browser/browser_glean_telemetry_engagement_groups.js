@@ -343,7 +343,7 @@ add_task(async function actions_search_mode() {
   ];
 
   await doTest(async () => {
-    await openPopup("> view add");
+    await openPopup("> addon");
     await UrlbarTestUtils.promisePopupClose(window, () => {
       EventUtils.synthesizeKey("KEY_Tab");
       EventUtils.synthesizeKey("KEY_Enter");

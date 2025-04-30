@@ -48,7 +48,10 @@ if CONFIG["MOZ_ENABLE_VAAPI"] or CONFIG["MOZ_ENABLE_V4L2"]:
     UNIFIED_SOURCES += ["../FFmpegVideoFramePool.cpp"]
     CXXFLAGS += CONFIG["MOZ_LIBDRM_CFLAGS"]
     if not CONFIG["MOZ_SYSTEM_LIBDRM"]:
-        LOCAL_INCLUDES += ["/third_party/drm/drm/include/"]
+        LOCAL_INCLUDES += [
+            "/third_party/drm/drm/include",
+            "/third_party/drm/drm/include/libdrm",
+        ]
     USE_LIBS += ["mozva"]
     DEFINES["MOZ_USE_HWDECODE"] = 1
 if CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":

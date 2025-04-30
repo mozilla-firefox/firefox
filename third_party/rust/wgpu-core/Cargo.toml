@@ -162,12 +162,12 @@ version = "1"
 default-features = false
 
 [dependencies.raw-window-handle]
-version = "0.6"
+version = "0.6.2"
 optional = true
 default-features = false
 
 [dependencies.ron]
-version = "0.9"
+version = "0.10"
 optional = true
 
 [dependencies.rustc-hash]

@@ -776,11 +776,7 @@ nsPageContentFrame* nsPageFrame::PageContentFrame() const {
 
 nsSize nsPageFrame::ComputePageSize() const {
   // Compute the expected page-size.
-  const nsPageFrame* const frame =
-      StaticPrefs::layout_css_allow_mixed_page_sizes()
-          ? this
-          : static_cast<nsPageFrame*>(FirstContinuation());
-  const StylePageSize& pageSize = frame->PageContentFrame()->StylePage()->mSize;
+  const StylePageSize& pageSize = PageContentFrame()->StylePage()->mSize;
   nsSize size = PresContext()->GetPageSize();
   if (pageSize.IsSize()) {
     // Use the specified size,
@@ -822,18 +818,8 @@ float nsPageFrame::ComputeSinglePPSPageSizeScale(
   MOZ_ASSERT(aContentPageSize == ComputePageSize(),
              "Incorrect content page size");
 
-  // Check for the simplest case first, an auto page-size which requires no
-  // scaling at all.
-  {
-    const nsPageFrame* const frame =
-        StaticPrefs::layout_css_allow_mixed_page_sizes()
-            ? this
-            : static_cast<nsPageFrame*>(FirstContinuation());
-    const StylePageSize& pageSize =
-        frame->PageContentFrame()->StylePage()->mSize;
-    if (pageSize.IsAuto()) {
-      return 1.0f;
-    }
+  if (PageContentFrame()->StylePage()->mSize.IsAuto()) {
+    return 1.0f;
   }
 
   const nsContainerFrame* const parent = GetParent();
@@ -864,10 +850,6 @@ float nsPageFrame::ComputeSinglePPSPageSizeScale(
 }
 
 double nsPageFrame::GetPageOrientationRotation(nsSharedPageData* aPD) const {
-  if (!StaticPrefs::layout_css_page_orientation_enabled()) {
-    return 0.0;
-  }
-
   if (aPD->PagesPerSheetInfo()->mNumPages == 1 && !PresContext()->IsScreen() &&
       aPD->mPrintSettings->GetOutputFormat() !=
           nsIPrintSettings::kOutputFormatPDF) {

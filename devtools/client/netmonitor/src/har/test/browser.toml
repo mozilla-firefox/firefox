@@ -19,6 +19,10 @@ support-files = [
 skip-if = ["os == 'linux' && os_version == '18.04' && processor == 'x86_64' && debug && http3"] # Bug 1829298
 
 ["browser_net_har_import.js"]
+skip-if = [
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && debug", # Bug 1767273
+  "os == 'mac' && os_version == '14.70' && processor == 'x86_64' && debug", # Bug 1767273
+]
 
 ["browser_net_har_import_no-mime.js"]
 

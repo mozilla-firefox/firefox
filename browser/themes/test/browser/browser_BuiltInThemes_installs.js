@@ -29,10 +29,6 @@ add_setup(() => {
       info(`Got AddonManager.maybeInstallBuiltinAddon call: ${args}`);
       maybeInstallBuiltinAddonCallArgs.push(args);
     });
-
-  // Stub BuiltInThemes method called from ensureBuiltInThemes to
-  // make it a no-op.
-  sandbox.stub(Object.getPrototypeOf(BuiltInThemes), "_uninstallExpiredThemes");
 });
 
 add_task(async function test_maybeInstallActiveBuiltInTheme() {

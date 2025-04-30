@@ -10,7 +10,7 @@ const TEST_PATH_ORG = getRootDirectory(gTestPath).replace(
 );
 
 const GEO_URL =
-  "http://mochi.test:8888/tests/dom/tests/mochitest/geolocation/network_geolocation.sjs";
+  "http://mochi.test:8888/tests/dom/geolocation/test/mochitest/network_geolocation.sjs";
 
 add_task(async () => {
   await SpecialPowers.pushPrefEnv({

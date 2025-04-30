@@ -206,6 +206,12 @@ def git_clone_firefox(git: Path, dest: Path, watchman: Path, head_repo, head_rev
                 str(git),
                 "-c",
                 "fetch.prune=true",
+                "-c",
+                "cinnabar.graft=https://github.com/mozilla-firefox/firefox",
+                "-c",
+                "cinnabar.refs=bookmarks",
+                "-c",
+                "remote.origin.fetch=refs/heads/central:refs/remotes/origin/main",
                 "clone",
                 "--no-checkout",
                 "hg::https://hg.mozilla.org/mozilla-unified",
@@ -215,6 +221,20 @@ def git_clone_firefox(git: Path, dest: Path, watchman: Path, head_repo, head_rev
         )
         subprocess.check_call(
             [str(git), "config", "fetch.prune", "true"], cwd=str(dest), env=env
+        )
+        subprocess.check_call(
+            [str(git), "config", "cinnabar.refs", "bookmarks"], cwd=str(dest), env=env
+        )
+        subprocess.check_call(
+            [
+                str(git),
+                "config",
+                "--add",
+                "remote.origin.fetch",
+                "refs/heads/central:refs/remotes/origin/main",
+            ],
+            cwd=str(dest),
+            env=env,
         )
         subprocess.check_call(
             [str(git), "config", "pull.ff", "only"], cwd=str(dest), env=env
@@ -231,7 +251,7 @@ def git_clone_firefox(git: Path, dest: Path, watchman: Path, head_repo, head_rev
             [
                 str(git),
                 "checkout",
-                "FETCH_HEAD" if head_rev else "bookmarks/central",
+                "FETCH_HEAD" if head_rev else "main",
                 "--",
             ],
             cwd=str(dest),

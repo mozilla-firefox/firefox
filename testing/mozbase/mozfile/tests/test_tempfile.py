@@ -67,7 +67,7 @@ class TestNamedTemporaryFile(unittest.TestCase):
         path = None
         with mozfile.NamedTemporaryFile(delete=True) as tf:
             path = tf.name
-        self.assertTrue(isinstance(path, (str,)))
+        self.assertTrue(isinstance(path, str))
         self.assertFalse(os.path.exists(path))
 
         # it is also deleted when __del__ is called

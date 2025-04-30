@@ -19,10 +19,10 @@ def Libxul(name, output_category=None):
     if CONFIG["MOZ_WIDGET_TOOLKIT"] in ("cocoa", "uikit"):
         # This is going to be a framework named "XUL", not an ordinary library named
         # "libxul.dylib"
-        GeckoFramework(name, output_category=output_category, linkage=None)
+        GeckoFramework(name, output_category=output_category)
         SHARED_LIBRARY_NAME = "XUL"
     else:
-        GeckoSharedLibrary(name, output_category=output_category, linkage=None)
+        GeckoSharedLibrary(name, output_category=output_category)
         SHARED_LIBRARY_NAME = "xul"
 
     DELAYLOAD_DLLS += [

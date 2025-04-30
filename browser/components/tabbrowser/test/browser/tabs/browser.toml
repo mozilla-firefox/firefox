@@ -468,6 +468,10 @@ tags = "vertical-tabs"
 ["browser_tab_a11y_description.js"]
 tags = "vertical-tabs"
 
+["browser_tab_aria_level.js"]
+
+["browser_tab_aria_posinset_setsize.js"]
+
 ["browser_tab_close_dependent_window.js"]
 tags = "vertical-tabs"
 

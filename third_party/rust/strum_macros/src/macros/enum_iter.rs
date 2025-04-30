@@ -23,9 +23,9 @@ pub fn enum_iter_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
 
     let phantom_data = if gen.type_params().count() > 0 {
         let g = gen.type_params().map(|param| &param.ident);
-        quote! { < ( #(#g),* ) > }
+        quote! { < fn() -> ( #(#g),* ) > }
     } else {
-        quote! { < () > }
+        quote! { < fn() -> () > }
     };
 
     let variants = match &ast.data {
@@ -100,6 +100,8 @@ pub fn enum_iter_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
 
         impl #impl_generics #strum_module_path::IntoEnumIterator for #name #ty_generics #where_clause {
             type Iterator = #iter_name #ty_generics;
+
+            #[inline]
             fn iter() -> #iter_name #ty_generics {
                 #iter_name {
                     idx: 0,
@@ -112,15 +114,18 @@ pub fn enum_iter_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         impl #impl_generics Iterator for #iter_name #ty_generics #where_clause {
             type Item = #name #ty_generics;
 
+            #[inline]
             fn next(&mut self) -> ::core::option::Option<<Self as Iterator>::Item> {
                 self.nth(0)
             }
 
+            #[inline]
             fn size_hint(&self) -> (usize, ::core::option::Option<usize>) {
                 let t = if self.idx + self.back_idx >= #variant_count { 0 } else { #variant_count - self.idx - self.back_idx };
                 (t, Some(t))
             }
 
+            #[inline]
             fn nth(&mut self, n: usize) -> ::core::option::Option<<Self as Iterator>::Item> {
                 let idx = self.idx + n + 1;
                 if idx + self.back_idx > #variant_count {
@@ -137,12 +142,14 @@ pub fn enum_iter_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         }
 
         impl #impl_generics ExactSizeIterator for #iter_name #ty_generics #where_clause {
+            #[inline]
             fn len(&self) -> usize {
                 self.size_hint().0
             }
         }
 
         impl #impl_generics DoubleEndedIterator for #iter_name #ty_generics #where_clause {
+            #[inline]
             fn next_back(&mut self) -> ::core::option::Option<<Self as Iterator>::Item> {
                 let back_idx = self.back_idx + 1;
 
@@ -162,6 +169,7 @@ pub fn enum_iter_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         impl #impl_generics ::core::iter::FusedIterator for #iter_name #ty_generics #where_clause { }
 
         impl #impl_generics Clone for #iter_name #ty_generics #where_clause {
+            #[inline]
             fn clone(&self) -> #iter_name #ty_generics {
                 #iter_name {
                     idx: self.idx,

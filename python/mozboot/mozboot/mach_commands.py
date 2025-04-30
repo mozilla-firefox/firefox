@@ -82,7 +82,9 @@ def vcs_setup(command_context, update_only=False):
 
     import mozboot.bootstrap as bootstrap
 
-    repo = mozversioncontrol.get_repository_object(command_context._mach_context.topdir)
+    repo = mozversioncontrol.get_repository_object(
+        command_context._mach_context.topdir, jj=None
+    )
     tool = "hg"
     if repo.name == "git":
         tool = "git"

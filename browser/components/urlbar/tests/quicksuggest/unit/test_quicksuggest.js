@@ -46,6 +46,7 @@ const REMOTE_SETTINGS_RESULTS = [
     url: "http://" + PREFIX_SUGGESTIONS_STRIPPED_URL,
     title: "HTTP Suggestion",
     keywords: [HTTP_SEARCH_STRING],
+    full_keywords: [[HTTP_SEARCH_STRING, 1]],
     click_url: "http://example.com/http-click",
     impression_url: "http://example.com/http-impression",
     advertiser: "HttpAdvertiser",
@@ -57,6 +58,7 @@ const REMOTE_SETTINGS_RESULTS = [
     url: "https://" + PREFIX_SUGGESTIONS_STRIPPED_URL,
     title: "https suggestion",
     keywords: [HTTPS_SEARCH_STRING],
+    full_keywords: [[HTTPS_SEARCH_STRING, 1]],
     click_url: "http://click.reporting.test.com/prefix",
     impression_url: "http://impression.reporting.test.com/prefix",
     advertiser: "TestAdvertiserPrefix",
@@ -68,6 +70,7 @@ const REMOTE_SETTINGS_RESULTS = [
     url: TIMESTAMP_SUGGESTION_URL,
     title: "Timestamp suggestion",
     keywords: [TIMESTAMP_SEARCH_STRING],
+    full_keywords: [[TIMESTAMP_SEARCH_STRING, 1]],
     click_url: TIMESTAMP_SUGGESTION_CLICK_URL,
     impression_url: "http://impression.reporting.test.com/timestamp",
     advertiser: "TestAdvertiserTimestamp",
@@ -88,6 +91,10 @@ const REMOTE_SETTINGS_RESULTS = [
       "amp full keyword",
       "xyz",
     ],
+    full_keywords: [
+      ["amp full keyword", 5],
+      ["xyz", 1],
+    ],
     title: "AMP suggestion with full keyword and prefix keywords",
     url: "https://example.com/amp-full-keyword",
   }),
@@ -99,6 +106,7 @@ const REMOTE_SETTINGS_RESULTS = [
       "wikipedia full keywor",
       "wikipedia full keyword",
     ],
+    full_keywords: [["wikipedia full keyword", 5]],
     title: "Wikipedia suggestion with full keyword and prefix keywords",
     url: "https://example.com/wikipedia-full-keyword",
   }),
@@ -167,6 +175,7 @@ add_setup(async function init() {
   );
 
   UrlbarPrefs.set("scotchBonnet.enableOverride", false);
+  UrlbarPrefs.set("quicksuggest.ampTopPickCharThreshold", 0);
 
   await QuickSuggestTestUtils.ensureQuickSuggestInit();
   await resetRemoteSettingsData();
@@ -1070,6 +1079,7 @@ add_task(async function dedupeAgainstURL_timestamps() {
   );
 
   function getPayload(result, keysToIgnore = []) {
+    keysToIgnore.push("suggestionObject");
     let payload = {};
     for (let [key, value] of Object.entries(result.payload)) {
       if (value !== undefined && !keysToIgnore.includes(key)) {
@@ -1146,208 +1156,8 @@ add_task(async function dedupeAgainstURL_timestamps() {
   await PlacesUtils.history.clear();
 });
 
-// Tests the API for blocking suggestions.
-add_task(async function blockedSuggestionsAPI() {
-  // Start with no blocked suggestions.
-  await QuickSuggest.clearDismissedSuggestions();
-  Assert.ok(
-    !(await QuickSuggest.canClearDismissedSuggestions()),
-    "canClearDismissedSuggestions should return false"
-  );
-  Assert.equal(
-    QuickSuggest.blockedSuggestions._test_digests.size,
-    0,
-    "blockedSuggestions._test_digests is empty"
-  );
-  Assert.equal(
-    UrlbarPrefs.get("quicksuggest.blockedDigests"),
-    "",
-    "quicksuggest.blockedDigests is an empty string"
-  );
-
-  // Make some URLs.
-  let urls = [];
-  for (let i = 0; i < 3; i++) {
-    urls.push("http://example.com/" + i);
-  }
-
-  // Block each URL in turn and make sure previously blocked URLs are still
-  // blocked and the remaining URLs are not blocked. Make sure the
-  // `quicksuggest-dismissals-changed` notification is sent.
-  for (let i = 0; i < urls.length; i++) {
-    let changedPromise = TestUtils.topicObserved(
-      "quicksuggest-dismissals-changed"
-    );
-
-    await QuickSuggest.blockedSuggestions.add(urls[i]);
-
-    info("Awaiting dismissals-changed promise");
-    await changedPromise;
-
-    for (let j = 0; j < urls.length; j++) {
-      Assert.equal(
-        await QuickSuggest.blockedSuggestions.has(urls[j]),
-        j <= i,
-        `Suggestion at index ${j} is blocked or not as expected`
-      );
-    }
-    Assert.ok(
-      await QuickSuggest.canClearDismissedSuggestions(),
-      "canClearDismissedSuggestions should return true"
-    );
-  }
-
-  // Make sure all URLs are blocked for good measure.
-  for (let url of urls) {
-    Assert.ok(
-      await QuickSuggest.blockedSuggestions.has(url),
-      `Suggestion is blocked: ${url}`
-    );
-  }
-
-  // Check `blockedSuggestions._test_digests` and `quicksuggest.blockedDigests`.
-  Assert.equal(
-    QuickSuggest.blockedSuggestions._test_digests.size,
-    urls.length,
-    "blockedSuggestions._test_digests has correct size"
-  );
-  let array = JSON.parse(UrlbarPrefs.get("quicksuggest.blockedDigests"));
-  Assert.ok(Array.isArray(array), "Parsed value of pref is an array");
-  Assert.equal(array.length, urls.length, "Array has correct length");
-
-  // Write some junk to `quicksuggest.blockedDigests`.
-  // `blockedSuggestions._test_digests` should not be changed and all previously
-  // blocked URLs should remain blocked.
-  UrlbarPrefs.set("quicksuggest.blockedDigests", "not a json array");
-  await QuickSuggest.blockedSuggestions._test_readyPromise;
-  for (let url of urls) {
-    Assert.ok(
-      await QuickSuggest.blockedSuggestions.has(url),
-      `Suggestion remains blocked: ${url}`
-    );
-  }
-  Assert.equal(
-    QuickSuggest.blockedSuggestions._test_digests.size,
-    urls.length,
-    "blockedSuggestions._test_digests still has correct size"
-  );
-  Assert.ok(
-    await QuickSuggest.canClearDismissedSuggestions(),
-    "canClearDismissedSuggestions should return true"
-  );
-
-  // Block a new URL. All URLs should remain blocked and the pref should be
-  // updated.
-  let newURL = "http://example.com/new-block";
-  await QuickSuggest.blockedSuggestions.add(newURL);
-  urls.push(newURL);
-  for (let url of urls) {
-    Assert.ok(
-      await QuickSuggest.blockedSuggestions.has(url),
-      `Suggestion is blocked: ${url}`
-    );
-  }
-  Assert.equal(
-    QuickSuggest.blockedSuggestions._test_digests.size,
-    urls.length,
-    "blockedSuggestions._test_digests has correct size"
-  );
-  array = JSON.parse(UrlbarPrefs.get("quicksuggest.blockedDigests"));
-  Assert.ok(Array.isArray(array), "Parsed value of pref is an array");
-  Assert.equal(array.length, urls.length, "Array has correct length");
-  Assert.ok(
-    await QuickSuggest.canClearDismissedSuggestions(),
-    "canClearDismissedSuggestions should return true"
-  );
-
-  // Add a new URL digest directly to the JSON'ed array in the pref.
-  newURL = "http://example.com/direct-to-pref";
-  urls.push(newURL);
-  array = JSON.parse(UrlbarPrefs.get("quicksuggest.blockedDigests"));
-  array.push(await QuickSuggest.blockedSuggestions._test_getDigest(newURL));
-  UrlbarPrefs.set("quicksuggest.blockedDigests", JSON.stringify(array));
-  await QuickSuggest.blockedSuggestions._test_readyPromise;
-
-  // All URLs should remain blocked and the new URL should be blocked.
-  for (let url of urls) {
-    Assert.ok(
-      await QuickSuggest.blockedSuggestions.has(url),
-      `Suggestion is blocked: ${url}`
-    );
-  }
-  Assert.equal(
-    QuickSuggest.blockedSuggestions._test_digests.size,
-    urls.length,
-    "blockedSuggestions._test_digests has correct size"
-  );
-  Assert.ok(
-    await QuickSuggest.canClearDismissedSuggestions(),
-    "canClearDismissedSuggestions should return true"
-  );
-
-  // Clear the pref. All URLs should be unblocked.
-  UrlbarPrefs.clear("quicksuggest.blockedDigests");
-  await QuickSuggest.blockedSuggestions._test_readyPromise;
-  for (let url of urls) {
-    Assert.ok(
-      !(await QuickSuggest.blockedSuggestions.has(url)),
-      `Suggestion is no longer blocked: ${url}`
-    );
-  }
-  Assert.equal(
-    QuickSuggest.blockedSuggestions._test_digests.size,
-    0,
-    "blockedSuggestions._test_digests is now empty"
-  );
-  Assert.ok(
-    !(await QuickSuggest.canClearDismissedSuggestions()),
-    "canClearDismissedSuggestions should return false"
-  );
-
-  // Block all the URLs again and test `QuickSuggest.clearDismissedSuggestions()`.
-  // Make sure the `quicksuggest-dismissals-cleared` notification is sent.
-  for (let url of urls) {
-    await QuickSuggest.blockedSuggestions.add(url);
-  }
-  for (let url of urls) {
-    Assert.ok(
-      await QuickSuggest.blockedSuggestions.has(url),
-      `Suggestion is blocked: ${url}`
-    );
-  }
-  Assert.ok(
-    await QuickSuggest.canClearDismissedSuggestions(),
-    "canClearDismissedSuggestions should return true"
-  );
-
-  let clearPromise = TestUtils.topicObserved("quicksuggest-dismissals-cleared");
-
-  info("Clearing dismissals");
-  await QuickSuggest.clearDismissedSuggestions();
-
-  // The test will hang here if this notification isn't sent.
-  info("Awaiting quicksuggest-dismissals-cleared");
-  await clearPromise;
-
-  for (let url of urls) {
-    Assert.ok(
-      !(await QuickSuggest.blockedSuggestions.has(url)),
-      `Suggestion is no longer blocked: ${url}`
-    );
-  }
-  Assert.equal(
-    QuickSuggest.blockedSuggestions._test_digests.size,
-    0,
-    "blockedSuggestions._test_digests is now empty"
-  );
-  Assert.ok(
-    !(await QuickSuggest.canClearDismissedSuggestions()),
-    "canClearDismissedSuggestions should return false"
-  );
-});
-
-// Tests blocking real `UrlbarResult`s.
-add_task(async function block() {
+// Tests `UrlbarResult` dismissal.
+add_task(async function dismissResult() {
   UrlbarPrefs.set("suggest.quicksuggest.nonsponsored", true);
   UrlbarPrefs.set("suggest.quicksuggest.sponsored", true);
   await QuickSuggestTestUtils.forceSync();
@@ -1373,8 +1183,12 @@ add_task(async function block() {
       matches: [expectedResult],
     });
 
-    // Block it.
-    await QuickSuggest.blockedSuggestions.blockResult(context.results[0]);
+    // Dismiss it.
+    await QuickSuggest.dismissResult(context.results[0]);
+    Assert.ok(
+      await QuickSuggest.isResultDismissed(context.results[0]),
+      "isResultDismissed should return true"
+    );
     Assert.ok(
       await QuickSuggest.canClearDismissedSuggestions(),
       "canClearDismissedSuggestions should return true"
@@ -1391,14 +1205,18 @@ add_task(async function block() {
 
     await QuickSuggest.clearDismissedSuggestions();
     Assert.ok(
+      !(await QuickSuggest.isResultDismissed(context.results[0])),
+      "isResultDismissed should return false"
+    );
+    Assert.ok(
       !(await QuickSuggest.canClearDismissedSuggestions()),
       "canClearDismissedSuggestions should return false"
     );
   }
 });
 
-// Tests blocking a real `UrlbarResult` whose URL has a timestamp template.
-add_task(async function block_timestamp() {
+// Tests dismissing a `UrlbarResult` whose URL has a timestamp template.
+add_task(async function dismissResultWithTimestamp() {
   UrlbarPrefs.set("suggest.quicksuggest.sponsored", true);
   UrlbarPrefs.set("suggest.quicksuggest.nonsponsored", true);
   await QuickSuggestTestUtils.forceSync();
@@ -1427,8 +1245,16 @@ add_task(async function block_timestamp() {
     "The actual result's originalUrl should be the raw suggestion URL with a timestamp template"
   );
 
-  // Block the result.
-  await QuickSuggest.blockedSuggestions.blockResult(result);
+  // Dismiss the result.
+  await QuickSuggest.dismissResult(result);
+  Assert.ok(
+    await QuickSuggest.isResultDismissed(result),
+    "isResultDismissed should return true"
+  );
+  Assert.ok(
+    await QuickSuggest.canClearDismissedSuggestions(),
+    "canClearDismissedSuggestions should return true"
+  );
 
   // Do another search. The result shouldn't be added.
   await check_results({
@@ -1438,7 +1264,16 @@ add_task(async function block_timestamp() {
     }),
     matches: [],
   });
+
   await QuickSuggest.clearDismissedSuggestions();
+  Assert.ok(
+    !(await QuickSuggest.isResultDismissed(context.results[0])),
+    "isResultDismissed should return false"
+  );
+  Assert.ok(
+    !(await QuickSuggest.canClearDismissedSuggestions()),
+    "canClearDismissedSuggestions should return false"
+  );
 });
 
 add_task(async function sponsoredPriority_normal() {

@@ -112,6 +112,12 @@ const CONFIG = [
     recordType: "engineOrders",
     orders: [],
   },
+  {
+    recordType: "availableLocales",
+    // We use en-CA as a locale in the test, so we need to add that as an
+    // available locale to avoid falling back to en-US.
+    locales: ["en-CA", "en-US", "zh-CN"],
+  },
 ];
 
 const CONFIG_DEFAULTS_OVERRIDE = [

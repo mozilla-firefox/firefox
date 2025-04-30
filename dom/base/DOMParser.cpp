@@ -58,7 +58,7 @@ NS_IMPL_CYCLE_COLLECTING_RELEASE(DOMParser)
 already_AddRefed<Document> DOMParser::ParseFromStringInternal(
     const nsAString& aStr, SupportedType aType, ErrorResult& aRv) {
   if (aType == SupportedType::Text_html) {
-    nsCOMPtr<Document> document = SetUpDocument(DocumentFlavorHTML, aRv);
+    nsCOMPtr<Document> document = SetUpDocument(DocumentFlavor::HTML, aRv);
     if (NS_WARN_IF(aRv.Failed())) {
       return nullptr;
     }
@@ -191,8 +191,8 @@ already_AddRefed<Document> DOMParser::ParseFromStream(nsIInputStream* aStream,
     stream = bufferedStream;
   }
 
-  nsCOMPtr<Document> document =
-      SetUpDocument(svg ? DocumentFlavorSVG : DocumentFlavorLegacyGuess, aRv);
+  nsCOMPtr<Document> document = SetUpDocument(
+      svg ? DocumentFlavor::SVG : DocumentFlavor::LegacyGuess, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }

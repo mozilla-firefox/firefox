@@ -184,8 +184,6 @@ class PdfCreationTest : BaseSessionTest() {
     @NullDelegate(Autofill.Delegate::class)
     @Test
     fun dontTryToOpenNullContent() {
-        // Bug 1881927.
-        assumeThat(sessionRule.env.isIsolatedProcess, equalTo(false))
         activityRule.scenario.onActivity {
             TestContentProvider.setNullTestData("application/pdf")
             mainSession.loadUri("content://org.mozilla.geckoview.test.provider/pdf")

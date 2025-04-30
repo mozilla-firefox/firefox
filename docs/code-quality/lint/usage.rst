@@ -132,6 +132,17 @@ the following to your repo config:
    command = ["path/to/mozilla-unified/tools/lint/pipelint", "$path"]
    patterns = ["glob:'**/*'"]
 
+
+.. note::
+    On Windows you must explicitly prepend ``"python3",`` to `command`.
+
+
+.. code-block:: toml
+
+   [fix.tools.mozlint]
+   command = ["python3", "path/to/mozilla-unified/tools/lint/pipelint", "$path"]
+   patterns = ["glob:'**/*'"]
+
 .. _Jujutsu SCM's: https://jj-vcs.github.io/jj/latest/
 
 Editor Integrations

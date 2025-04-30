@@ -818,7 +818,7 @@ def cleanup_pending_crash_reports():
         )
     elif mozinfo.isMac:
         location = os.path.expanduser(
-            "~/Library/Application Support/firefox/Crash Reports"
+            "~/Library/Application Support/Firefox/Crash Reports"
         )
     else:
         location = os.path.expanduser("~/.mozilla/firefox/Crash Reports")

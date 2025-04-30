@@ -2,12 +2,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "DateTimeFormat.h"  // for DATE_TIME_FORMAT_REPLACE_SPECIAL_SPACES
 #include "DateTimeFormatUtils.h"
 #include "ScopedICUObject.h"
 
 #include "mozilla/intl/Calendar.h"
 #include "mozilla/intl/DateIntervalFormat.h"
+#include "mozilla/intl/DateTimeFormat.h"
+
+#if !MOZ_SYSTEM_ICU
+#  include "unicode/calendar.h"
+#  include "unicode/datefmt.h"
+#  include "unicode/dtitvfmt.h"
+#endif
 
 namespace mozilla::intl {
 
@@ -63,7 +69,23 @@ Result<UniquePtr<DateIntervalFormat>, ICUError> DateIntervalFormat::TryCreate(
     return Err(ToICUError(status));
   }
 
-  return UniquePtr<DateIntervalFormat>(new DateIntervalFormat(dif));
+  auto result = UniquePtr<DateIntervalFormat>(new DateIntervalFormat(dif));
+
+#if !MOZ_SYSTEM_ICU
+  auto* dtif = reinterpret_cast<icu::DateIntervalFormat*>(dif);
+  const icu::Calendar* calendar = dtif->getDateFormat()->getCalendar();
+
+  auto replacement = CreateCalendarOverride(calendar);
+  if (replacement.isErr()) {
+    return replacement.propagateErr();
+  }
+
+  if (auto newCalendar = replacement.unwrap()) {
+    dtif->adoptCalendar(newCalendar.release());
+  }
+#endif
+
+  return result;
 }
 
 DateIntervalFormat::~DateIntervalFormat() {
@@ -131,6 +153,50 @@ ICUResult DateIntervalFormat::TryFormatDateTime(
 
   MOZ_TRY(DateFieldsPracticallyEqual(aFormatted.Value(), aPracticallyEqual));
   return Ok();
+}
+
+ICUResult DateIntervalFormat::TryFormatDateTime(
+    double aStart, double aEnd, const DateTimeFormat* aDateTimeFormat,
+    AutoFormattedDateInterval& aFormatted, bool* aPracticallyEqual) const {
+#if MOZ_SYSTEM_ICU
+  // We can't access the calendar used by UDateIntervalFormat to change it to a
+  // proleptic Gregorian calendar. Instead we need to call a different formatter
+  // function which accepts UCalendar instead of UDate.
+  // But creating new UCalendar objects for each call is slow, so when we can
+  // ensure that the input dates are later than the Gregorian change date,
+  // directly call the formatter functions taking UDate.
+
+  constexpr int32_t msPerDay = 24 * 60 * 60 * 1000;
+
+  // The Gregorian change date "1582-10-15T00:00:00.000Z".
+  constexpr double GregorianChangeDate = -12219292800000.0;
+
+  // Add a full day to account for time zone offsets.
+  constexpr double GregorianChangeDatePlusOneDay =
+      GregorianChangeDate + msPerDay;
+
+  if (aStart < GregorianChangeDatePlusOneDay ||
+      aEnd < GregorianChangeDatePlusOneDay) {
+    // Create calendar objects for the start and end date by cloning the date
+    // formatter calendar. The date formatter calendar already has the correct
+    // time zone set and was changed to use a proleptic Gregorian calendar.
+    auto startCal = aDateTimeFormat->CloneCalendar(aStart);
+    if (startCal.isErr()) {
+      return startCal.propagateErr();
+    }
+
+    auto endCal = aDateTimeFormat->CloneCalendar(aEnd);
+    if (endCal.isErr()) {
+      return endCal.propagateErr();
+    }
+
+    return TryFormatCalendar(*startCal.unwrap(), *endCal.unwrap(), aFormatted,
+                             aPracticallyEqual);
+  }
+#endif
+
+  // The common fast path which doesn't require creating calendar objects.
+  return TryFormatDateTime(aStart, aEnd, aFormatted, aPracticallyEqual);
 }
 
 ICUResult DateIntervalFormat::TryFormattedToParts(

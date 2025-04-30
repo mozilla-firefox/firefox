@@ -47,8 +47,6 @@ uint32_t IdleSchedulerParent::sPrefConcurrentGCsMax = 0;
 uint32_t IdleSchedulerParent::sPrefConcurrentGCsCPUDivisor = 0;
 
 IdleSchedulerParent::IdleSchedulerParent() {
-  MOZ_ASSERT(!AppShutdown::IsInOrBeyond(ShutdownPhase::XPCOMShutdownThreads));
-
   sChildProcessesAlive++;
 
   uint32_t max_gcs_pref =
@@ -67,33 +65,36 @@ IdleSchedulerParent::IdleSchedulerParent() {
     // just one core.
     sNumCPUs = 1;
 
-    // nsISystemInfo can be initialized only on the main thread.
-    nsCOMPtr<nsIThread> thread = do_GetCurrentThread();
-    nsCOMPtr<nsIRunnable> runnable =
-        NS_NewRunnableFunction("cpucount getter", [thread]() {
-          ProcessInfo processInfo = {};
-          if (NS_SUCCEEDED(CollectProcessInfo(processInfo))) {
-            uint32_t num_cpus = processInfo.cpuCount;
-            // We have a new cpu count, Update the number of idle tasks.
-            if (MOZ_LIKELY(!AppShutdown::IsInOrBeyond(
-                    ShutdownPhase::XPCOMShutdownThreads))) {
-              nsCOMPtr<nsIRunnable> runnable = NS_NewRunnableFunction(
-                  "IdleSchedulerParent::CalculateNumIdleTasks", [num_cpus]() {
-                    // We're setting this within this lambda because it's run on
-                    // the correct thread and avoids a race.
-                    sNumCPUs = num_cpus;
+    // CollectProcessInfo can be an expensive call, so we dispatch it as a
+    // background task and avoid to do so during shutdown.
+    if (MOZ_LIKELY(!AppShutdown::IsInOrBeyond(ShutdownPhase::XPCOMShutdown))) {
+      nsCOMPtr<nsIThread> thread = do_GetCurrentThread();
+      nsCOMPtr<nsIRunnable> runnable =
+          NS_NewRunnableFunction("cpucount getter", [thread]() {
+            ProcessInfo processInfo = {};
+            if (NS_SUCCEEDED(CollectProcessInfo(processInfo))) {
+              uint32_t num_cpus = processInfo.cpuCount;
+              // We have a new cpu count, Update the number of idle tasks.
+              if (MOZ_LIKELY(!AppShutdown::IsInOrBeyond(
+                      ShutdownPhase::XPCOMShutdownThreads))) {
+                nsCOMPtr<nsIRunnable> runnable = NS_NewRunnableFunction(
+                    "IdleSchedulerParent::CalculateNumIdleTasks", [num_cpus]() {
+                      // We're setting this within this lambda because it's run
+                      // on the correct thread and avoids a race.
+                      sNumCPUs = num_cpus;
 
-                    // This reads the sPrefConcurrentGCsMax and
-                    // sPrefConcurrentGCsCPUDivisor values set below, it will
-                    // run after the code that sets those.
-                    CalculateNumIdleTasks();
-                  });
+                      // This reads the sPrefConcurrentGCsMax and
+                      // sPrefConcurrentGCsCPUDivisor values set below, it will
+                      // run after the code that sets those.
+                      CalculateNumIdleTasks();
+                    });
 
-              thread->Dispatch(runnable, NS_DISPATCH_NORMAL);
+                thread->Dispatch(runnable, NS_DISPATCH_NORMAL);
+              }
             }
-          }
-        });
-    NS_DispatchBackgroundTask(runnable.forget(), NS_DISPATCH_EVENT_MAY_BLOCK);
+          });
+      NS_DispatchBackgroundTask(runnable.forget(), NS_DISPATCH_EVENT_MAY_BLOCK);
+    }
   }
 
   if (sPrefConcurrentGCsMax != max_gcs_pref ||

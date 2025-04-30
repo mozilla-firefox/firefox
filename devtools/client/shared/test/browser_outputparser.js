@@ -4,18 +4,20 @@
 "use strict";
 
 add_task(async function () {
-  await pushPref("layout.css.backdrop-filter.enabled", true);
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["security.allow_unsafe_parent_loads", true],
+      ["layout.css.backdrop-filter.enabled", true],
+      ["layout.css.relative-color-syntax.enabled", true],
+      ["dom.security.html_serialization_escape_lt_gt", true],
+    ],
+  });
   await addTab("about:blank");
   await performTest();
   gBrowser.removeCurrentTab();
 });
 
 async function performTest() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["security.allow_unsafe_parent_loads", true]],
-  });
-  await pushPref("layout.css.relative-color-syntax.enabled", true);
-
   const OutputParser = require("resource://devtools/client/shared/output-parser.js");
 
   const { host, doc } = await createHost(
@@ -889,7 +891,7 @@ function testParseVariable(doc, parser) {
             '<span ' +
               'data-variable="chartreuse" ' +
               'data-registered-property-initial-value="hotpink" ' +
-              'data-registered-property-syntax="<color>" ' +
+              'data-registered-property-syntax="&lt;color&gt;" ' +
               'data-registered-property-inherits="true"' +
             '>--registered</span>)' +
           "</span>" +

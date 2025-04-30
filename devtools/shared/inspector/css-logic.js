@@ -839,3 +839,23 @@ function isCssVariable(input) {
   return !!input.match(IS_VARIABLE_TOKEN);
 }
 exports.isCssVariable = isCssVariable;
+
+/**
+ * This is a list of all the element backed pseudo elements.
+ *
+ * From https://drafts.csswg.org/css-pseudo-4/#element-backed :
+ * > The element-backed pseudo-elements, interact with most CSS and other platform features
+ * > as if they were real elements (and, in fact, often are real elements that are
+ * > not otherwise selectable).
+ *
+ * Those pseudo elements are not displayed in the markup view, but declarations in rules
+ * targetting them can then be inherited by their "children", and so we need to retrieve
+ * those rules to surface them in the Inspector (e.g. in "Inherited" sections in the Rules
+ * view, in the matched selectors section in the Computed panel, …).
+ *
+ * Any new element-backed pseudo elements should be added into this Set.
+ */
+exports.ELEMENT_BACKED_PSEUDO_ELEMENTS = new Set([
+  "::details-content",
+  "::file-selector-button",
+]);

@@ -252,3 +252,144 @@ add_task(
     );
   }
 );
+
+function getMeaningfulNodes(infobar) {
+  return [...infobar.notification.messageText.childNodes].filter(
+    n =>
+      n.nodeType === Node.ELEMENT_NODE ||
+      (n.nodeType === Node.TEXT_NODE && n.textContent.trim())
+  );
+}
+
+async function showInfobar(text, box, browser) {
+  let msg = {
+    id: "Test Infobar",
+    content: {
+      text,
+      type: "global",
+      priority: box.PRIORITY_INFO_LOW,
+      buttons: [{ label: "Close", action: { type: "CANCEL" } }],
+    },
+  };
+  let stub = sinon.stub();
+  let infobar = await InfoBar.showInfoBarMessage(browser, msg, stub);
+  return { infobar, stub };
+}
+
+add_task(async function test_formatMessageConfig_single_string() {
+  const win = BrowserWindowTracker.getTopWindow();
+  const browser = win.gBrowser.selectedBrowser;
+  const box = win.gNotificationBox;
+
+  let { infobar } = await showInfobar("Just a plain string", box, browser);
+  const nodes = getMeaningfulNodes(infobar);
+
+  Assert.equal(nodes.length, 1, "One meaningful node for single string");
+  Assert.equal(nodes[0].nodeType, Node.TEXT_NODE, "That node is a text node");
+  Assert.equal(nodes[0].textContent.trim(), "Just a plain string");
+
+  infobar.notification.closeButton.click();
+  await BrowserTestUtils.waitForCondition(() => !InfoBar._activeInfobar);
+});
+
+add_task(async function test_formatMessageConfig_array() {
+  const win = BrowserWindowTracker.getTopWindow();
+  const browser = win.gBrowser.selectedBrowser;
+  const box = win.gNotificationBox;
+
+  let parts = [
+    "A",
+    { raw: "B" },
+    { string_id: "launch-on-login-infobar-message" },
+    { href: "https://x.test/", raw: "LINK" },
+    "Z",
+  ];
+  let { infobar } = await showInfobar(parts, box, browser);
+  const nodes = getMeaningfulNodes(infobar);
+
+  Assert.equal(nodes.length, parts.length, "One node per array part");
+  Assert.equal(nodes[0].textContent, "A", "Plain text");
+  Assert.equal(nodes[1].textContent, "B", "Raw text");
+  Assert.equal(nodes[2].localName, "remote-text", "L10n element");
+  Assert.equal(
+    nodes[2].getAttribute("fluent-remote-id"),
+    "launch-on-login-infobar-message",
+    "Fluent ID"
+  );
+  const [, , , a] = nodes;
+  Assert.equal(a.localName, "a", "It's a link");
+  Assert.equal(a.getAttribute("href"), "https://x.test/", "hred preserved");
+  Assert.equal(a.textContent, "LINK", "Link text");
+  Assert.equal(nodes[4].textContent, "Z", "Trailing text");
+
+  infobar.notification.closeButton.click();
+  await BrowserTestUtils.waitForCondition(() => !InfoBar._activeInfobar);
+});
+
+add_task(async function test_specialMessageAction_onLinkClick() {
+  const win = BrowserWindowTracker.getTopWindow();
+  const browser = win.gBrowser.selectedBrowser;
+  const box = win.gNotificationBox;
+
+  const { SpecialMessageActions } = ChromeUtils.importESModule(
+    "resource://messaging-system/lib/SpecialMessageActions.sys.mjs"
+  );
+  let handleStub = sinon.stub(SpecialMessageActions, "handleAction");
+
+  const parts = [
+    "Click ",
+    { raw: "here", href: "https://example.com/foo", where: "tab" },
+    " to continue",
+  ];
+  let { infobar } = await showInfobar(parts, box, browser);
+
+  let link = infobar.notification.messageText.querySelector("a[href]");
+  Assert.ok(link, "Found the link");
+  EventUtils.synthesizeMouseAtCenter(link, {}, browser.ownerGlobal);
+
+  Assert.equal(handleStub.callCount, 1, "handleAction was invoked once");
+  let [actionArg, browserArg] = handleStub.firstCall.args;
+  Assert.deepEqual(
+    actionArg,
+    {
+      type: "OPEN_URL",
+      data: { args: "https://example.com/foo", where: "tab" },
+    },
+    "Passed correct action to handleAction"
+  );
+  Assert.equal(
+    browserArg,
+    browser,
+    "Passed the selectedBrowser to handleAction"
+  );
+
+  infobar.notification.closeButton.click();
+  await BrowserTestUtils.waitForCondition(() => !InfoBar._activeInfobar);
+
+  handleStub.restore();
+});
+
+add_task(async function test_showInfoBarMessage_skipsPrivateWindow() {
+  const { PrivateBrowsingUtils } = ChromeUtils.importESModule(
+    "resource://gre/modules/PrivateBrowsingUtils.sys.mjs"
+  );
+  sinon.stub(PrivateBrowsingUtils, "isWindowPrivate").returns(true);
+
+  let browser = BrowserWindowTracker.getTopWindow().gBrowser.selectedBrowser;
+  let dispatch = sinon.stub();
+
+  let result = await InfoBar.showInfoBarMessage(
+    browser,
+    {
+      id: "Private Win Test",
+      content: { type: "global", buttons: [], text: "t", dismissable: true },
+    },
+    dispatch
+  );
+
+  Assert.equal(result, null);
+  Assert.equal(dispatch.callCount, 0);
+
+  // Cleanup
+  sinon.restore();
+});

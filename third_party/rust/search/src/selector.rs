@@ -47,20 +47,18 @@ impl SearchEngineSelector {
     ///                               `search-config-v2-overrides` to the selected
     ///                               engines. Should be false unless the application
     ///                               supports the click URL feature.
-    #[handle_error(Error)]
     pub fn use_remote_settings_server(
         self: Arc<Self>,
         service: &Arc<RemoteSettingsService>,
         apply_engine_overrides: bool,
-    ) -> SearchApiResult<()> {
+    ) {
         let mut inner = self.0.lock();
-        inner.search_config_client = Some(service.make_client("search-config-v2".to_string())?);
+        inner.search_config_client = Some(service.make_client("search-config-v2".to_string()));
 
         if apply_engine_overrides {
             inner.search_config_overrides_client =
-                Some(service.make_client("search-config-overrides-v2".to_string())?);
+                Some(service.make_client("search-config-overrides-v2".to_string()));
         }
-        Ok(())
     }
 
     /// Sets the search configuration from the given string. If the configuration
@@ -1889,19 +1887,11 @@ mod tests {
             bucket_name: Some(String::from("main")),
             app_context: Some(RemoteSettingsContext::default()),
         };
-        let service =
-            Arc::new(RemoteSettingsService::new(String::from(":memory:"), config).unwrap());
+        let service = Arc::new(RemoteSettingsService::new(String::from(":memory:"), config));
 
         let selector = Arc::new(SearchEngineSelector::new());
 
-        let settings_result =
-            Arc::clone(&selector).use_remote_settings_server(&service, should_apply_overrides);
-        assert!(
-            settings_result.is_ok(),
-            "Should have set the client successfully. {:?}",
-            settings_result
-        );
-
+        Arc::clone(&selector).use_remote_settings_server(&service, should_apply_overrides);
         let sync_result = Arc::clone(&service).sync();
         assert!(
             if expect_sync_successful {

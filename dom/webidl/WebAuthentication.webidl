@@ -298,6 +298,28 @@ partial dictionary AuthenticationExtensionsClientOutputsJSON {
  * <https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-defined-extensions>
  */
 
+// credProtect
+// <https://fidoalliance.org/specs/fido-v2.2-rd-20230321/fido-client-to-authenticator-protocol-v2.2-rd-20230321.html#sctn-credProtect-extension>
+enum CredentialProtectionPolicy {
+  "userVerificationOptional",
+  "userVerificationOptionalWithCredentialIDList",
+  "userVerificationRequired",
+};
+
+partial dictionary AuthenticationExtensionsClientInputs {
+  CredentialProtectionPolicy credentialProtectionPolicy;
+  // The specification includes a default `= false` value for
+  // enforceCredentialProtectionPolicy. We omit it here to distinguish between
+  // three logical cases: the extension was not sent, the extension was sent
+  // with value false, the extension was sent with value true.
+  boolean enforceCredentialProtectionPolicy;
+};
+
+partial dictionary AuthenticationExtensionsClientInputsJSON {
+  CredentialProtectionPolicy credentialProtectionPolicy;
+  boolean enforceCredentialProtectionPolicy;
+};
+
 // hmac-secret
 // <https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-hmac-secret-extension>
 // note: we don't support hmac-secret in get() (see instead the prf extension)
@@ -409,6 +431,7 @@ dictionary AuthenticationExtensionsPRFOutputs {
 
 dictionary AuthenticationExtensionsPRFOutputsJSON {
   boolean enabled;
+  AuthenticationExtensionsPRFValuesJSON results;
 };
 
 partial dictionary AuthenticationExtensionsClientOutputs {

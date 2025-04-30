@@ -16,6 +16,7 @@ import org.mozilla.fenix.browser.browsingmode.BrowsingModeManager
 import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistState
 import org.mozilla.fenix.components.components
+import org.mozilla.fenix.components.toolbar.ToolbarPosition
 import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.ext.shouldShowRecentSyncedTabs
 import org.mozilla.fenix.ext.shouldShowRecentTabs
@@ -29,6 +30,7 @@ import org.mozilla.fenix.home.recentvisits.RecentlyVisitedItem
 import org.mozilla.fenix.home.topsites.TopSiteColors
 import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.nimbus.HomeScreenSection
+import org.mozilla.fenix.search.SearchDialogFragment
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.wallpapers.WallpaperState
@@ -73,7 +75,8 @@ internal sealed class HomepageState {
      * @property showBookmarks Whether to show bookmarks.
      * @property showRecentlyVisited Whether to show recent history section.
      * @property showPocketStories Whether to show the pocket stories section.
-     * @property showSearchBar Whether to show the search bar.
+     * @property showSearchBar Whether to show the middle search bar.
+     * @property searchBarEnabled Whether the middle search bar is enabled or not.
      * @property setupChecklistState Optional state of the setup checklist feature.
      * @property topSiteColors The color set defined by [TopSiteColors] used to style a top site.
      * @property cardBackgroundColor Background color for card items.
@@ -99,6 +102,7 @@ internal sealed class HomepageState {
         val showRecentlyVisited: Boolean,
         val showPocketStories: Boolean,
         val showSearchBar: Boolean,
+        val searchBarEnabled: Boolean,
         val setupChecklistState: SetupChecklistState?,
         val topSiteColors: TopSiteColors,
         val cardBackgroundColor: Color,
@@ -169,7 +173,9 @@ internal sealed class HomepageState {
                         showRecentlyVisited = settings.historyMetadataUIFeature && recentHistory.isNotEmpty(),
                         showPocketStories = settings.showPocketRecommendationsFeature &&
                             recommendationState.pocketStories.isNotEmpty() && firstFrameDrawn,
-                        showSearchBar = settings.enableHomepageSearchBar,
+                        showSearchBar = shouldShowSearchBar(appState = appState),
+                        searchBarEnabled = settings.enableHomepageSearchBar &&
+                            settings.toolbarPosition == ToolbarPosition.TOP,
                         setupChecklistState = setupChecklistState,
                         topSiteColors = TopSiteColors.colors(wallpaperState = wallpaperState),
                         cardBackgroundColor = wallpaperState.cardBackgroundColor,
@@ -210,5 +216,16 @@ private fun getBottomSpace(): Dp {
 
     return toolbarHeight + extraSpace + HOME_APP_BAR_HEIGHT
 }
+
+/**
+ * Returns whether the search bar should be shown. Only show if the search dialog
+ * [SearchDialogFragment] is not visible, and the user does not have their toolbar set to be on the
+ * bottom, and the screen is not in landscape mode. This is in addition to logic in the view layer
+ * which hides the middle search bar when the users scrolls down. This is separate from the middle
+ * search bar being enabled in settings since the toolbar address bar needs to react to the middle
+ * search bar's visibility.
+ */
+private fun shouldShowSearchBar(appState: AppState) =
+    !appState.isSearchDialogVisible
 
 private val HOME_APP_BAR_HEIGHT = 48.dp

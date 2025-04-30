@@ -705,7 +705,7 @@ class ConfigureSandbox(dict):
         return value
 
     def _dependency(self, arg, callee_name, arg_name=None):
-        if isinstance(arg, (str,)):
+        if isinstance(arg, str):
             prefix, name, values = Option.split_option(arg)
             if values != ():
                 raise ConfigureError("Option must not contain an '='")
@@ -870,7 +870,7 @@ class ConfigureSandbox(dict):
         with self.only_when_impl(when):
             what = self._resolve(what)
             if what:
-                if not isinstance(what, (str,)):
+                if not isinstance(what, str):
                     raise TypeError("Unexpected type: '%s'" % type(what).__name__)
                 self.include_file(what)
 
@@ -951,7 +951,7 @@ class ConfigureSandbox(dict):
             @imports(_from='mozpack', _import='path', _as='mozpath')
         """
         for value, required in ((_import, True), (_from, False), (_as, False)):
-            if not isinstance(value, (str,)) and (required or value is not None):
+            if not isinstance(value, str) and (required or value is not None):
                 raise TypeError("Unexpected type: '%s'" % type(value).__name__)
             if value is not None and not self.RE_MODULE.match(value):
                 raise ValueError("Invalid argument to @imports: '%s'" % value)
@@ -1120,7 +1120,7 @@ class ConfigureSandbox(dict):
         name = self._resolve(name)
         if name is None:
             return
-        if not isinstance(name, (str,)):
+        if not isinstance(name, str):
             raise TypeError("Unexpected type: '%s'" % type(name).__name__)
         if name in data:
             raise ConfigureError(
@@ -1230,9 +1230,7 @@ class ConfigureSandbox(dict):
         frame = inspect.currentframe()
         line = frame.f_back.f_lineno
         filename = frame.f_back.f_code.co_filename
-        if not reason and (
-            isinstance(value, (bool, tuple)) or isinstance(value, (str,))
-        ):
+        if not reason and isinstance(value, (bool, tuple, str)):
             # A reason can be provided automatically when imply_option
             # is called with an immediate value.
             reason = "imply_option at %s:%s" % (filename, line)

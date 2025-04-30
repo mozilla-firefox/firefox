@@ -1655,10 +1655,11 @@ class ArenaCollection {
       MutexAutoLock lock(mLock);
       mDefaultMaxDirtyPageModifier = aModifier;
       for (auto* arena : iter()) {
-        // We can only update max-dirty for main-thread-only arenas from the main thread.
+        // We can only update max-dirty for main-thread-only arenas from the
+        // main thread.
         if (!arena->IsMainThreadOnly() || IsOnMainThreadWeak()) {
           arena->UpdateMaxDirty();
-	}
+        }
       }
     }
   }
@@ -6011,6 +6012,7 @@ inline arena_t* ArenaCollection::GetById(arena_id_t aArenaId, bool aIsPrivate) {
   MOZ_RELEASE_ASSERT(aIsPrivate);
   // This function is not expected to be called before at least one private
   // arena was created.
+  // coverity[missing_lock]
   MOZ_RELEASE_ASSERT(mArenaIdKey);
   arena_id_t id = (aArenaId << mArenaIdRotation) |
                   (aArenaId >> (sizeof(void*) * 8 - mArenaIdRotation));
@@ -6097,7 +6099,8 @@ inline void MozJemalloc::jemalloc_reset_small_alloc_randomization(
 
   MutexAutoLock lock(gArenas.mLock);
   for (auto* arena : gArenas.iter()) {
-    // We can only initialize the PRNG for main-thread-only arenas from the main thread.
+    // We can only initialize the PRNG for main-thread-only arenas from the main
+    // thread.
     if (!arena->IsMainThreadOnly() || gArenas.IsOnMainThreadWeak()) {
       arena->ResetSmallAllocRandomization();
     }

@@ -55,9 +55,13 @@ skip-if = ["os == 'mac' && os_version == '10.15' && processor == 'x86_64' && ver
 skip-if = [
   "os == 'linux' && os_version == '22.04' && processor == 'x86_64'", # Bug 1673527
   "os == 'mac' && os_version == '10.15' && processor == 'x86_64' && opt", # Bug 1775892
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1775892
 ]
 
 ["browser_media_control_seek.js"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1961556
+]
 
 ["browser_media_control_stop_timer.js"]
 

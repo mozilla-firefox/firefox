@@ -4,10 +4,12 @@ from inspect import isawaitable
 
 from sentry_sdk._compat import urlparse, reraise
 from sentry_sdk.hub import Hub
+from sentry_sdk.tracing import TRANSACTION_SOURCE_COMPONENT
 from sentry_sdk.utils import (
     capture_internal_exceptions,
     event_from_exception,
     HAS_REAL_CONTEXTVARS,
+    CONTEXTVARS_ERROR_MESSAGE,
 )
 from sentry_sdk.integrations import Integration, DidNotEnable
 from sentry_sdk.integrations._wsgi_common import RequestExtractor, _filter_headers
@@ -26,6 +28,7 @@ if MYPY:
     from sanic.request import Request, RequestParameters
 
     from sentry_sdk._types import Event, EventProcessor, Hint
+    from sanic.router import Route
 
 try:
     from sanic import Sanic, __version__ as SANIC_VERSION
@@ -35,19 +38,31 @@ try:
 except ImportError:
     raise DidNotEnable("Sanic not installed")
 
+old_error_handler_lookup = ErrorHandler.lookup
+old_handle_request = Sanic.handle_request
+old_router_get = Router.get
+
+try:
+    # This method was introduced in Sanic v21.9
+    old_startup = Sanic._startup
+except AttributeError:
+    pass
+
 
 class SanicIntegration(Integration):
     identifier = "sanic"
+    version = (0, 0)  # type: Tuple[int, ...]
 
     @staticmethod
     def setup_once():
         # type: () -> None
-        try:
-            version = tuple(map(int, SANIC_VERSION.split(".")))
-        except (TypeError, ValueError):
-            raise DidNotEnable("Unparseable Sanic version: {}".format(SANIC_VERSION))
 
-        if version < (0, 8):
+        try:
+            SanicIntegration.version = tuple(map(int, SANIC_VERSION.split(".")))
+        except (TypeError, ValueError):
+            raise DidNotEnable("Unparsable Sanic version: {}".format(SANIC_VERSION))
+
+        if SanicIntegration.version < (0, 8):
             raise DidNotEnable("Sanic 0.8 or newer required.")
 
         if not HAS_REAL_CONTEXTVARS:
@@ -55,7 +70,7 @@ class SanicIntegration(Integration):
             # requests.
             raise DidNotEnable(
                 "The sanic integration for Sentry requires Python 3.7+ "
-                " or aiocontextvars package"
+                " or the aiocontextvars package." + CONTEXTVARS_ERROR_MESSAGE
             )
 
         if SANIC_VERSION.startswith("0.8."):
@@ -70,74 +85,201 @@ class SanicIntegration(Integration):
             # https://github.com/huge-success/sanic/issues/1332
             ignore_logger("root")
 
-        old_handle_request = Sanic.handle_request
+        if SanicIntegration.version < (21, 9):
+            _setup_legacy_sanic()
+            return
 
-        async def sentry_handle_request(self, request, *args, **kwargs):
-            # type: (Any, Request, *Any, **Any) -> Any
-            hub = Hub.current
-            if hub.get_integration(SanicIntegration) is None:
-                return old_handle_request(self, request, *args, **kwargs)
+        _setup_sanic()
 
-            weak_request = weakref.ref(request)
 
-            with Hub(hub) as hub:
-                with hub.configure_scope() as scope:
-                    scope.clear_breadcrumbs()
-                    scope.add_event_processor(_make_request_processor(weak_request))
+class SanicRequestExtractor(RequestExtractor):
+    def content_length(self):
+        # type: () -> int
+        if self.request.body is None:
+            return 0
+        return len(self.request.body)
 
-                response = old_handle_request(self, request, *args, **kwargs)
-                if isawaitable(response):
-                    response = await response
+    def cookies(self):
+        # type: () -> Dict[str, str]
+        return dict(self.request.cookies)
 
-                return response
+    def raw_data(self):
+        # type: () -> bytes
+        return self.request.body
 
-        Sanic.handle_request = sentry_handle_request
+    def form(self):
+        # type: () -> RequestParameters
+        return self.request.form
 
-        old_router_get = Router.get
+    def is_json(self):
+        # type: () -> bool
+        raise NotImplementedError()
 
-        def sentry_router_get(self, request):
-            # type: (Any, Request) -> Any
-            rv = old_router_get(self, request)
-            hub = Hub.current
-            if hub.get_integration(SanicIntegration) is not None:
-                with capture_internal_exceptions():
-                    with hub.configure_scope() as scope:
-                        scope.transaction = rv[0].__name__
-            return rv
+    def json(self):
+        # type: () -> Optional[Any]
+        return self.request.json
 
-        Router.get = sentry_router_get
+    def files(self):
+        # type: () -> RequestParameters
+        return self.request.files
 
-        old_error_handler_lookup = ErrorHandler.lookup
+    def size_of_file(self, file):
+        # type: (Any) -> int
+        return len(file.body or ())
 
-        def sentry_error_handler_lookup(self, exception):
-            # type: (Any, Exception) -> Optional[object]
-            _capture_exception(exception)
-            old_error_handler = old_error_handler_lookup(self, exception)
 
-            if old_error_handler is None:
-                return None
+def _setup_sanic():
+    # type: () -> None
+    Sanic._startup = _startup
+    ErrorHandler.lookup = _sentry_error_handler_lookup
 
-            if Hub.current.get_integration(SanicIntegration) is None:
-                return old_error_handler
 
-            async def sentry_wrapped_error_handler(request, exception):
-                # type: (Request, Exception) -> Any
-                try:
-                    response = old_error_handler(request, exception)
-                    if isawaitable(response):
-                        response = await response
-                    return response
-                except Exception:
-                    # Report errors that occur in Sanic error handler. These
-                    # exceptions will not even show up in Sanic's
-                    # `sanic.exceptions` logger.
-                    exc_info = sys.exc_info()
-                    _capture_exception(exc_info)
-                    reraise(*exc_info)
+def _setup_legacy_sanic():
+    # type: () -> None
+    Sanic.handle_request = _legacy_handle_request
+    Router.get = _legacy_router_get
+    ErrorHandler.lookup = _sentry_error_handler_lookup
 
-            return sentry_wrapped_error_handler
 
-        ErrorHandler.lookup = sentry_error_handler_lookup
+async def _startup(self):
+    # type: (Sanic) -> None
+    # This happens about as early in the lifecycle as possible, just after the
+    # Request object is created. The body has not yet been consumed.
+    self.signal("http.lifecycle.request")(_hub_enter)
+
+    # This happens after the handler is complete. In v21.9 this signal is not
+    # dispatched when there is an exception. Therefore we need to close out
+    # and call _hub_exit from the custom exception handler as well.
+    # See https://github.com/sanic-org/sanic/issues/2297
+    self.signal("http.lifecycle.response")(_hub_exit)
+
+    # This happens inside of request handling immediately after the route
+    # has been identified by the router.
+    self.signal("http.routing.after")(_set_transaction)
+
+    # The above signals need to be declared before this can be called.
+    await old_startup(self)
+
+
+async def _hub_enter(request):
+    # type: (Request) -> None
+    hub = Hub.current
+    request.ctx._sentry_do_integration = (
+        hub.get_integration(SanicIntegration) is not None
+    )
+
+    if not request.ctx._sentry_do_integration:
+        return
+
+    weak_request = weakref.ref(request)
+    request.ctx._sentry_hub = Hub(hub)
+    request.ctx._sentry_hub.__enter__()
+
+    with request.ctx._sentry_hub.configure_scope() as scope:
+        scope.clear_breadcrumbs()
+        scope.add_event_processor(_make_request_processor(weak_request))
+
+
+async def _hub_exit(request, **_):
+    # type: (Request, **Any) -> None
+    request.ctx._sentry_hub.__exit__(None, None, None)
+
+
+async def _set_transaction(request, route, **kwargs):
+    # type: (Request, Route, **Any) -> None
+    hub = Hub.current
+    if hub.get_integration(SanicIntegration) is not None:
+        with capture_internal_exceptions():
+            with hub.configure_scope() as scope:
+                route_name = route.name.replace(request.app.name, "").strip(".")
+                scope.set_transaction_name(
+                    route_name, source=TRANSACTION_SOURCE_COMPONENT
+                )
+
+
+def _sentry_error_handler_lookup(self, exception, *args, **kwargs):
+    # type: (Any, Exception, *Any, **Any) -> Optional[object]
+    _capture_exception(exception)
+    old_error_handler = old_error_handler_lookup(self, exception, *args, **kwargs)
+
+    if old_error_handler is None:
+        return None
+
+    if Hub.current.get_integration(SanicIntegration) is None:
+        return old_error_handler
+
+    async def sentry_wrapped_error_handler(request, exception):
+        # type: (Request, Exception) -> Any
+        try:
+            response = old_error_handler(request, exception)
+            if isawaitable(response):
+                response = await response
+            return response
+        except Exception:
+            # Report errors that occur in Sanic error handler. These
+            # exceptions will not even show up in Sanic's
+            # `sanic.exceptions` logger.
+            exc_info = sys.exc_info()
+            _capture_exception(exc_info)
+            reraise(*exc_info)
+        finally:
+            # As mentioned in previous comment in _startup, this can be removed
+            # after https://github.com/sanic-org/sanic/issues/2297 is resolved
+            if SanicIntegration.version == (21, 9):
+                await _hub_exit(request)
+
+    return sentry_wrapped_error_handler
+
+
+async def _legacy_handle_request(self, request, *args, **kwargs):
+    # type: (Any, Request, *Any, **Any) -> Any
+    hub = Hub.current
+    if hub.get_integration(SanicIntegration) is None:
+        return old_handle_request(self, request, *args, **kwargs)
+
+    weak_request = weakref.ref(request)
+
+    with Hub(hub) as hub:
+        with hub.configure_scope() as scope:
+            scope.clear_breadcrumbs()
+            scope.add_event_processor(_make_request_processor(weak_request))
+
+        response = old_handle_request(self, request, *args, **kwargs)
+        if isawaitable(response):
+            response = await response
+
+        return response
+
+
+def _legacy_router_get(self, *args):
+    # type: (Any, Union[Any, Request]) -> Any
+    rv = old_router_get(self, *args)
+    hub = Hub.current
+    if hub.get_integration(SanicIntegration) is not None:
+        with capture_internal_exceptions():
+            with hub.configure_scope() as scope:
+                if SanicIntegration.version and SanicIntegration.version >= (21, 3):
+                    # Sanic versions above and including 21.3 append the app name to the
+                    # route name, and so we need to remove it from Route name so the
+                    # transaction name is consistent across all versions
+                    sanic_app_name = self.ctx.app.name
+                    sanic_route = rv[0].name
+
+                    if sanic_route.startswith("%s." % sanic_app_name):
+                        # We add a 1 to the len of the sanic_app_name because there is a dot
+                        # that joins app name and the route name
+                        # Format: app_name.route_name
+                        sanic_route = sanic_route[len(sanic_app_name) + 1 :]
+
+                    scope.set_transaction_name(
+                        sanic_route, source=TRANSACTION_SOURCE_COMPONENT
+                    )
+                else:
+                    scope.set_transaction_name(
+                        rv[0].__name__, source=TRANSACTION_SOURCE_COMPONENT
+                    )
+
+    return rv
 
 
 def _capture_exception(exception):
@@ -195,39 +337,3 @@ def _make_request_processor(weak_request):
         return event
 
     return sanic_processor
-
-
-class SanicRequestExtractor(RequestExtractor):
-    def content_length(self):
-        # type: () -> int
-        if self.request.body is None:
-            return 0
-        return len(self.request.body)
-
-    def cookies(self):
-        # type: () -> Dict[str, str]
-        return dict(self.request.cookies)
-
-    def raw_data(self):
-        # type: () -> bytes
-        return self.request.body
-
-    def form(self):
-        # type: () -> RequestParameters
-        return self.request.form
-
-    def is_json(self):
-        # type: () -> bool
-        raise NotImplementedError()
-
-    def json(self):
-        # type: () -> Optional[Any]
-        return self.request.json
-
-    def files(self):
-        # type: () -> RequestParameters
-        return self.request.files
-
-    def size_of_file(self, file):
-        # type: (Any) -> int
-        return len(file.body or ())

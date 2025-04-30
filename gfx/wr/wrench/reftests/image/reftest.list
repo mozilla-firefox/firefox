@@ -32,3 +32,4 @@ fuzzy(3,3000) == snapshot-shadow.yaml snapshot-shadow-ref.yaml
 # reference should be updated to reflect that something needs to be rendered
 # instead of leaving the snapshot empty.
 == snapshot-perspective-01.yaml empty.yaml
+== snapshot-complex-clip.yaml snapshot-complex-clip-ref.yaml

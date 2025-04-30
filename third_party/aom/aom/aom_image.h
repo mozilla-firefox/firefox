@@ -154,17 +154,33 @@ typedef enum aom_chroma_sample_position {
  *
  * While encoding, when metadata is added to an aom_image via
  * aom_img_add_metadata(), the flag passed along with the metadata will
- * determine where the metadata OBU will be placed in the encoded OBU stream.
- * Metadata will be emitted into the output stream within the next temporal unit
- * if it satisfies the specified insertion flag.
+ * determine where the metadata OBU will be placed in the encoded OBU stream,
+ * and whether it's layer-specific. Metadata will be emitted into the output
+ * stream within the next temporal unit if it satisfies the specified insertion
+ * flag.
  *
- * During decoding, when the library encounters a metadata OBU, it is always
- * flagged as AOM_MIF_ANY_FRAME and emitted with the next output aom_image.
+ * If the video contains multiple spatial and/or temporal layers,
+ * a layer-specific metadata OBU only applies to the current frame's layer, as
+ * determined by the frame's temporal_id and spatial_id. Some metadata types
+ * cannot be layer-specific, as listed in Section 6.7.1 of the draft AV1
+ * specification as of 2025-03-06.
+ *
+ * During decoding, when the library encounters a metadata OBU, it is emitted
+ * with the next output aom_image. Its insert_flag is set to either
+ * AOM_MIF_ANY_FRAME, or AOM_MIF_ANY_FRAME_LAYER_SPECIFIC if the OBU contains an
+ * OBU header extension (i.e. the video contains multiple layers AND the
+ * metadata was added using *_LAYER_SPECIFC insert flag if using libaom).
  */
 typedef enum aom_metadata_insert_flags {
-  AOM_MIF_NON_KEY_FRAME = 0, /**< Adds metadata if it's not keyframe */
+  AOM_MIF_NON_KEY_FRAME = 0, /**< Adds metadata if it's not a keyframe */
   AOM_MIF_KEY_FRAME = 1,     /**< Adds metadata only if it's a keyframe */
-  AOM_MIF_ANY_FRAME = 2      /**< Adds metadata to any type of frame */
+  AOM_MIF_ANY_FRAME = 2,     /**< Adds metadata to any type of frame */
+  /** Adds layer-specific metadata if it's not a keyframe */
+  AOM_MIF_NON_KEY_FRAME_LAYER_SPECIFIC = 16,
+  /** Adds layer-specific metadata only if it's a keyframe */
+  AOM_MIF_KEY_FRAME_LAYER_SPECIFIC = 17,
+  /** Adds layer-specific metadata to any type of frame */
+  AOM_MIF_ANY_FRAME_LAYER_SPECIFIC = 18,
 } aom_metadata_insert_flags_t;
 
 /*!\brief Array of aom_metadata structs for an image. */

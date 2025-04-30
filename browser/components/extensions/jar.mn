@@ -25,6 +25,7 @@ browser.jar:
     content/browser/parent/ext-search.js (parent/ext-search.js)
     content/browser/parent/ext-sessions.js (parent/ext-sessions.js)
     content/browser/parent/ext-sidebarAction.js (parent/ext-sidebarAction.js)
+    content/browser/parent/ext-tabGroups.js (parent/ext-tabGroups.js)
     content/browser/parent/ext-tabs.js (parent/ext-tabs.js)
     content/browser/parent/ext-topSites.js (parent/ext-topSites.js)
     content/browser/parent/ext-url-overrides.js (parent/ext-url-overrides.js)

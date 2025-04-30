@@ -46,8 +46,6 @@ add_setup(async function () {
   await PlacesUtils.history.clear();
   await PlacesUtils.bookmarks.eraseEverything();
   await UrlbarTestUtils.formHistory.clear();
-
-  await QuickSuggest.blockedSuggestions._test_readyPromise;
   await QuickSuggest.clearDismissedSuggestions();
 
   let isAmp = suggestion => suggestion.iab_category == "22 - Shopping";
@@ -64,6 +62,7 @@ add_setup(async function () {
         attachment: REMOTE_SETTINGS_RESULTS.filter(s => !isAmp(s)),
       },
     ],
+    prefs: [["quicksuggest.ampTopPickCharThreshold", 0]],
   });
 });
 
@@ -110,15 +109,21 @@ async function doOneBasicBlockTest({ result, block }) {
     "Two rows are present after searching (heuristic + suggestion)"
   );
 
-  await QuickSuggestTestUtils.assertIsQuickSuggest({
-    window,
-    isSponsored,
-    url: isSponsored ? undefined : result.url,
-    originalUrl: isSponsored ? result.url : undefined,
-  });
+  let { result: urlbarResult } =
+    await QuickSuggestTestUtils.assertIsQuickSuggest({
+      window,
+      isSponsored,
+      url: isSponsored ? undefined : result.url,
+      originalUrl: isSponsored ? result.url : undefined,
+    });
 
   // Block the suggestion.
+  let dismissalPromise = TestUtils.topicObserved(
+    "quicksuggest-dismissals-changed"
+  );
   await block();
+  info("Awaiting dismissal promise");
+  await dismissalPromise;
 
   // The row should have been removed.
   Assert.ok(
@@ -134,8 +139,8 @@ async function doOneBasicBlockTest({ result, block }) {
 
   // The URL should be blocked.
   Assert.ok(
-    await QuickSuggest.blockedSuggestions.has(result.url),
-    "Suggestion is blocked"
+    await QuickSuggest.isResultDismissed(urlbarResult),
+    "Result should be dismissed"
   );
 
   await UrlbarTestUtils.promisePopupClose(window);
@@ -153,27 +158,34 @@ add_task(async function blockMultiple() {
     });
 
     let isSponsored = iab_category != "5 - Education";
-    await QuickSuggestTestUtils.assertIsQuickSuggest({
-      window,
-      isSponsored,
-      url: isSponsored ? undefined : url,
-      originalUrl: isSponsored ? url : undefined,
-    });
+    let { result: urlbarResult } =
+      await QuickSuggestTestUtils.assertIsQuickSuggest({
+        window,
+        isSponsored,
+        url: isSponsored ? undefined : url,
+        originalUrl: isSponsored ? url : undefined,
+      });
 
     // Block it.
+    let dismissalPromise = TestUtils.topicObserved(
+      "quicksuggest-dismissals-changed"
+    );
     await UrlbarTestUtils.openResultMenuAndPressAccesskey(window, "D", {
       resultIndex: 1,
     });
+    info("Awaiting dismissal promise");
+    await dismissalPromise;
+
     Assert.ok(
-      await QuickSuggest.blockedSuggestions.has(url),
-      "Suggestion is blocked after picking block button"
+      await QuickSuggest.isResultDismissed(urlbarResult),
+      "Result should be dismissed after dismissing it from the menu"
     );
 
     // Make sure all previous suggestions remain blocked and no other
     // suggestions are blocked yet.
     for (let j = 0; j < REMOTE_SETTINGS_RESULTS.length; j++) {
       Assert.equal(
-        await QuickSuggest.blockedSuggestions.has(
+        await QuickSuggest.rustBackend.isDismissedByKey(
           REMOTE_SETTINGS_RESULTS[j].url
         ),
         j <= i,

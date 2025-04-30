@@ -460,7 +460,7 @@
       "channel": "release",
       "userFacingName": "New Onboarding Experience experiment phase 4 (Android)",
       "userFacingDescription": "Rolling out new onboarding experience pointing to more information about data use.",
-      "isEnrollmentPaused": false,
+      "isEnrollmentPaused": true,
       "isRollout": false,
       "bucketConfig": {
         "randomizationUnit": "nimbus_id",
@@ -609,7 +609,7 @@
       ],
       "targeting": "((is_already_enrolled) || ((isFirstRun == 'true') && (app_version|versionCompare('137.!') >= 0)))",
       "startDate": "2025-04-11",
-      "enrollmentEndDate": null,
+      "enrollmentEndDate": "2025-04-24",
       "endDate": null,
       "proposedDuration": 14,
       "proposedEnrollment": 14,

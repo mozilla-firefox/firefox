@@ -59,12 +59,16 @@ class TSFEmptyTextStore final : public TSFTextStoreBase {
                                      TS_TEXTCHANGE*);
 
  public:
-  [[nodiscard]] IMENotificationRequests GetIMENotificationRequests() final;
+  [[nodiscard]] IMENotificationRequests GetIMENotificationRequests()
+      const final;
 
   void Destroy() final;
 
   [[nodiscard]] static Result<RefPtr<TSFEmptyTextStore>, nsresult>
   CreateAndSetFocus(nsWindow* aFocusedWindow, const InputContext& aContext);
+
+  nsresult SetFocusAndUpdateDocumentURLAndBrowsingMode(
+      nsWindow* aFocusedWindow, const InputContext& aContext);
 
  protected:
   TSFEmptyTextStore();
@@ -72,6 +76,8 @@ class TSFEmptyTextStore final : public TSFTextStoreBase {
 
   bool Init(nsWindow* aWidget, const InputContext& aContext);
   void ReleaseTSFObjects();
+
+  nsresult SetFocus(nsWindow* aFocusedWindow, const InputContext& aContext);
 
   // This is called immediately after a call of OnLockGranted() of mSink.
   // Note that mLock isn't cleared yet when this is called.

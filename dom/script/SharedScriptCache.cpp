@@ -122,7 +122,8 @@ NS_IMETHODIMP
 SharedScriptCache::CollectReports(nsIHandleReportCallback* aHandleReport,
                                   nsISupports* aData, bool aAnonymize) {
   MOZ_COLLECT_REPORT("explicit/js-non-window/cache", KIND_HEAP, UNITS_BYTES,
-                     SizeOfIncludingThis(SharedScriptCacheMallocSizeOf),
+                     SharedScriptCacheMallocSizeOf(this) +
+                         SizeOfExcludingThis(SharedScriptCacheMallocSizeOf),
                      "Memory used for SharedScriptCache to share script "
                      "across documents");
   return NS_OK;

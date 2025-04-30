@@ -41,7 +41,7 @@ add_task(async function moveAndRestoreTabsToolbarWidgets() {
     defaultHorizontalTabStripPlacements.length + 3,
     "tabstrip has 3 new widget placements"
   );
-  await SpecialPowers.pushPrefEnv({ set: [["sidebar.verticalTabs", true]] });
+  await SpecialPowers.pushPrefEnv({ set: [[VERTICAL_TABS_PREF, true]] });
 
   Assert.ok(
     CustomizableUI.verticalTabsEnabled,
@@ -86,7 +86,7 @@ add_task(async function moveAndRestoreTabsToolbarWidgets() {
     "The previous tab strip placements were stored in the pref"
   );
 
-  await SpecialPowers.pushPrefEnv({ set: [["sidebar.verticalTabs", false]] });
+  await SpecialPowers.pushPrefEnv({ set: [[VERTICAL_TABS_PREF, false]] });
 
   Assert.ok(
     !CustomizableUI.verticalTabsEnabled,
@@ -116,7 +116,7 @@ add_task(async function moveAndRestoreTabsToolbarWidgets() {
 });
 
 add_task(async function checkNewTabButtonAbsenceWithVerticalTabs() {
-  await SpecialPowers.pushPrefEnv({ set: [["sidebar.verticalTabs", true]] });
+  await SpecialPowers.pushPrefEnv({ set: [[VERTICAL_TABS_PREF, true]] });
 
   const verticalNavBarPlacements = CustomizableUI.getWidgetIdsInArea(
     CustomizableUI.AREA_NAVBAR

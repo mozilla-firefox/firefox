@@ -1184,7 +1184,7 @@ LocalAccessible* nsAccessibilityService::CreateAccessible(
   if (!aNode->IsContent()) return nullptr;
 
   nsIContent* content = aNode->AsContent();
-  if (aria::HasDefinedARIAHidden(content)) {
+  if (aria::IsValidARIAHidden(content)) {
     if (aIsSubtreeHidden) {
       *aIsSubtreeHidden = true;
     }

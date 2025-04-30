@@ -33,6 +33,7 @@ from mozbuild.base import MozbuildObject
 from mozversioncontrol import (
     GitRepository,
     HgRepository,
+    JujutsuRepository,
 )
 
 TOKEN_FILE = (
@@ -40,7 +41,7 @@ TOKEN_FILE = (
 )
 
 # The supported variants of `Repository` for this workflow.
-SupportedVcsRepository = Union[GitRepository, HgRepository]
+SupportedVcsRepository = Union[GitRepository, HgRepository, JujutsuRepository]
 
 here = os.path.abspath(os.path.dirname(__file__))
 build = MozbuildObject.from_environment(cwd=here)
@@ -401,6 +402,7 @@ def push_to_lando_try(
     PATCH_FORMAT_STRING_MAPPING = {
         GitRepository: "git-format-patch",
         HgRepository: "hgexport",
+        JujutsuRepository: "git-format-patch",
     }
     patch_format = PATCH_FORMAT_STRING_MAPPING.get(type(vcs))
     if not patch_format:

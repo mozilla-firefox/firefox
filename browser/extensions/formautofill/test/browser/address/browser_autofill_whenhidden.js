@@ -83,6 +83,13 @@ add_setup(async function init() {
     "data:text/html," + FORM_MARKUP
   );
 
+  // Don't make the test cases depend on waiting out the refill timeouts
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["extensions.formautofill.heuristics.refillOnSiteClearingFields", false],
+    ],
+  });
+
   registerCleanupFunction(async () => {
     gBrowser.removeTab(tab);
     await removeAllRecords();

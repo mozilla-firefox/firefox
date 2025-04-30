@@ -16,6 +16,8 @@
   <string name="mozac_feature_downloads_dialog_download_again" tools:ignore="UnusedResources">ดาวน์โหลดอีกครั้ง</string>
   <!-- Alert dialog confirmation before download a file, this is the negative action. -->
   <string name="mozac_feature_downloads_dialog_cancel">ยกเลิก</string>
+  <!-- Alert dialog confirmation before downloading a file without network connection, this is the description. -->
+  <string name="mozac_feature_downloads_file_check_connection" tools:ignore="UnusedResources">ตรวจสอบการเชื่อมต่อของคุณแล้วลองอีกครั้ง</string>
   <!-- Error shown when the user is trying to download a invalid file. %1$s will be replaced with the name of the app. -->
   <string name="mozac_feature_downloads_file_not_supported2">%1$s ไม่สามารถดาวน์โหลดไฟล์ชนิดนี้</string>
   <!-- Message that appears when the downloaded file could not be opened. -->

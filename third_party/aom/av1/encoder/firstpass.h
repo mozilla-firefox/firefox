@@ -391,6 +391,8 @@ typedef struct GF_GROUP {
   // Stores the display order hint of the frame to be excluded during reference
   // assignment.
   int skip_frame_as_ref[MAX_STATIC_GF_GROUP_LENGTH];
+  // Indicates whether a switch frame is due.
+  bool is_sframe_due;
   /*!\endcond */
 } GF_GROUP;
 /*!\cond */

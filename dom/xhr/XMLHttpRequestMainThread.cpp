@@ -2182,7 +2182,7 @@ XMLHttpRequestMainThread::OnStartRequest(nsIRequest* request) {
     rv = NS_NewDOMDocument(
         getter_AddRefs(mResponseXML), emptyStr, emptyStr, nullptr, docURI,
         baseURI, requestingPrincipal, true, global,
-        mIsHtml ? DocumentFlavorHTML : DocumentFlavorLegacyGuess);
+        mIsHtml ? DocumentFlavor::HTML : DocumentFlavor::LegacyGuess);
     NS_ENSURE_SUCCESS(rv, rv);
     mResponseXML->SetChromeXHRDocURI(chromeXHRDocURI);
     mResponseXML->SetChromeXHRDocBaseURI(chromeXHRDocBaseURI);

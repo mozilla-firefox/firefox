@@ -11,12 +11,25 @@ from mozversioncontrol import get_repository_object
 
 STEPS = {
     "hg": [
+        "",
         """
         echo "bar" >> bar
         echo "baz" > foo
         """,
     ],
     "git": [
+        "",
+        """
+        echo "bar" >> bar
+        echo "baz" > foo
+        """,
+    ],
+    "jj": [
+        """
+        jj describe -m 'Ignore file for testing'
+        echo foo > .gitignore
+        jj new
+        """,
         """
         echo "bar" >> bar
         echo "baz" > foo
@@ -29,9 +42,14 @@ def test_commit(repo):
     vcs = get_repository_object(repo.dir)
     assert vcs.working_directory_clean()
 
+    # Setup step for jj to allow untracked changes.
+    repo.execute_next_step()
+
     # Modify both foo and bar
     repo.execute_next_step()
-    assert not vcs.working_directory_clean()
+    if repo.vcs != "jj":
+        # jj never has a dirty working directory.
+        assert not vcs.working_directory_clean()
 
     date_string = "2017-07-14 02:40:00 +0000"
 
@@ -48,13 +66,18 @@ def test_commit(repo):
 
     assert original_date == date_from_vcs
 
-    # We only committed bar, so foo is still keeping the working dir dirty
-    assert not vcs.working_directory_clean()
+    # We only committed bar, so foo is still keeping the working dir dirty. jj
+    # always treats the working directory as clean, because the top commit holds
+    # any changes in it.
+    if repo.vcs == "jj":
+        assert vcs.working_directory_clean()
+    else:
+        assert not vcs.working_directory_clean()
 
     if repo.vcs == "git":
         log_cmd = ["log", "-1", "--format=%an,%ae,%aD,%B"]
         patch_cmd = ["log", "-1", "-p"]
-    else:
+    elif repo.vcs == "hg":
         log_cmd = [
             "log",
             "-l",
@@ -63,8 +86,18 @@ def test_commit(repo):
             "{person(author)},{email(author)},{date|rfc822date},{desc}",
         ]
         patch_cmd = ["log", "-l", "1", "-p"]
+    elif repo.vcs == "jj":
+        log_cmd = [
+            "log",
+            "-n1",
+            "--no-graph",
+            "-r@-",
+            "-T",
+            'separate(",", author.name(), author.email(), commit_timestamp(self).format("%a, %d %b %Y %H:%M:%S %z"), description)',
+        ]
+        patch_cmd = ["show", "@-"]
 
-    # Verify commit metadata (we rstrip to normalize trivial git/hg differences)
+    # Verify commit metadata (we rstrip to normalize trivial differences)
     log = vcs._run(*log_cmd).rstrip()
     assert log == (
         "Testing McTesterson,test@example.org,Fri, 14 "

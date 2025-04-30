@@ -18,6 +18,8 @@ class HTMLPreview extends Component {
   static get propTypes() {
     return {
       responseContent: PropTypes.object.isRequired,
+      responseHeaders: PropTypes.object,
+      url: PropTypes.string.isRequired,
     };
   }
 
@@ -54,12 +56,28 @@ class HTMLPreview extends Component {
   }
 
   #updatePreview() {
-    const { responseContent } = this.props;
+    const { responseContent, responseHeaders, url } = this.props;
     const htmlBody = responseContent ? responseContent.content.text : "";
     const uri = Services.io.newURI(
       "data:text/html;charset=UTF-8," + encodeURIComponent(htmlBody)
     );
+
+    let csp = null;
+    const cspHeaders = responseHeaders?.headers.filter(
+      e => e.name.toLowerCase() === "content-security-policy"
+    );
+    if (cspHeaders?.length) {
+      // Merge multiple CSP headers with a comma.
+      const merged = cspHeaders.map(e => e.value).join(",");
+      csp = ChromeUtils.createCSPFromHeader(
+        merged,
+        new URL(url).URI,
+        Services.scriptSecurityManager.createNullPrincipal({})
+      );
+    }
+
     const options = {
+      csp,
       triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
     };
     this.browser.loadURI(uri, options);

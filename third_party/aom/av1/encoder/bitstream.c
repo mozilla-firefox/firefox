@@ -4222,23 +4222,24 @@ static size_t av1_write_metadata_array(AV1_COMP *const cpi, uint8_t *dst,
   for (size_t i = 0; i < arr->sz; i++) {
     aom_metadata_t *current_metadata = arr->metadata_array[i];
     if (current_metadata && current_metadata->payload) {
+      const int metadata_insert_location =
+          current_metadata->insert_flag & AOM_MIF_INSERT_LOCATION_MASK;
       if ((cm->current_frame.frame_type == KEY_FRAME &&
-           current_metadata->insert_flag == AOM_MIF_KEY_FRAME) ||
+           metadata_insert_location == AOM_MIF_KEY_FRAME) ||
           (cm->current_frame.frame_type != KEY_FRAME &&
-           current_metadata->insert_flag == AOM_MIF_NON_KEY_FRAME) ||
-          current_metadata->insert_flag == AOM_MIF_ANY_FRAME) {
+           metadata_insert_location == AOM_MIF_NON_KEY_FRAME) ||
+          metadata_insert_location == AOM_MIF_ANY_FRAME) {
         // OBU header is either one or two bytes.
         if (dst_size < 2) {
           aom_internal_error(cm->error, AOM_CODEC_ERROR,
                              "av1_write_metadata_array: output buffer full");
         }
-        // According to the AV1 spec draft version (as of git commit 5e04f)
-        // Section 6.7.1, some metadata types can be layer specific, but we
-        // currently only support non-layer specific metadata.
+        const bool is_layer_specific_obu =
+            (current_metadata->insert_flag & AOM_MIF_LAYER_SPECIFIC) != 0;
         obu_header_size = av1_write_obu_header(
             &cpi->ppi->level_params, &cpi->frame_header_count, OBU_METADATA,
             cm->seq_params->has_nonzero_operating_point_idc,
-            /*is_layer_specific_obu=*/false, 0, dst);
+            is_layer_specific_obu, 0, dst);
         assert(obu_header_size <= 2);
         obu_payload_size =
             av1_write_metadata_obu(current_metadata, dst + obu_header_size,

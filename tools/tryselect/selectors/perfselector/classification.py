@@ -70,9 +70,7 @@ class Variants(ClassificationEnum):
 
 """
 The following methods and constants are used for restricting
-certain platforms and applications such as chrome, safari, and
-android tests. These all require a flag such as --android to
-enable (see build_category_matrix for more info).
+certain platforms and applications such as chrome and safari
 """
 
 
@@ -238,7 +236,6 @@ class ClassificationProvider:
                     Suites.PERFTEST.value: "'android 'a55",
                     "default": "'android 'a55 'shippable 'aarch64",
                 },
-                "restriction": check_for_android,
                 "platform": Platforms.ANDROID.value,
             },
             Platforms.ANDROID.value: {
@@ -248,7 +245,6 @@ class ClassificationProvider:
                     Suites.PERFTEST.value: "'android",
                     "default": "'android 'a55 'shippable 'aarch64",
                 },
-                "restriction": check_for_android,
                 "platform": Platforms.ANDROID.value,
             },
             Platforms.WINDOWS.value: {
@@ -682,6 +678,28 @@ class ClassificationProvider:
                 "tasks": [],
                 "description": (
                     "A set of tests used to test Translations performance in Firefox."
+                ),
+            },
+            "Critical Android Performance": {
+                "query": {
+                    Suites.RAPTOR.value: ["'speedometer3 | 'jetstream"],
+                    Suites.PERFTEST.value: ["'applink-startup"],
+                },
+                "suites": [Suites.RAPTOR.value, Suites.PERFTEST.value],
+                "platform-restrictions": [
+                    Platforms.ANDROID_A55.value,
+                ],
+                "app-restrictions": {
+                    Suites.PERFTEST.value: [
+                        Apps.FENIX.value,
+                    ],
+                    Suites.RAPTOR.value: [
+                        Apps.FENIX.value,
+                    ],
+                },
+                "tasks": [],
+                "description": (
+                    "Our most important set of tests for android performance."
                 ),
             },
         }

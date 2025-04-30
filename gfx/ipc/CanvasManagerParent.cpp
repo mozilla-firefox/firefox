@@ -239,20 +239,33 @@ mozilla::ipc::IPCResult CanvasManagerParent::RecvGetSnapshot(
   return IPC_OK();
 }
 
+/* static */ mozilla::ipc::IProtocol* CanvasManagerParent::GetCanvasActor(
+    dom::ContentParentId aContentId, uint32_t aManagerId, int32_t aCanvasId) {
+  IProtocol* actor = nullptr;
+  for (CanvasManagerParent* i : sManagers) {
+    if (i->mContentId == aContentId && i->mId == aManagerId) {
+      actor = i->Lookup(aCanvasId);
+      break;
+    }
+  }
+  return actor;
+}
+
 /* static */ already_AddRefed<DataSourceSurface>
 CanvasManagerParent::GetCanvasSurface(dom::ContentParentId aContentId,
-                                      uint32_t aManagerId,
+                                      uint32_t aManagerId, int32_t aCanvasId,
                                       uintptr_t aSurfaceId) {
-  for (CanvasManagerParent* manager : sManagers) {
-    if (manager->mContentId == aContentId && manager->mId == aManagerId) {
-      for (const auto& canvas : manager->ManagedPCanvasParent()) {
-        RefPtr<layers::CanvasTranslator> ct =
-            static_cast<layers::CanvasTranslator*>(canvas);
-        if (RefPtr<DataSourceSurface> surf = ct->WaitForSurface(aSurfaceId)) {
-          return surf.forget();
-        }
-      }
-    }
+  IProtocol* actor = GetCanvasActor(aContentId, aManagerId, aCanvasId);
+  if (!actor) {
+    return nullptr;
+  }
+  switch (actor->GetProtocolId()) {
+    case ProtocolId::PCanvasMsgStart:
+      return static_cast<layers::CanvasTranslator*>(actor)->WaitForSurface(
+          aSurfaceId);
+    default:
+      MOZ_ASSERT_UNREACHABLE("Unsupported protocol");
+      break;
   }
   return nullptr;
 }

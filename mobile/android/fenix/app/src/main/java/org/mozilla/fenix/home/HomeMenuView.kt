@@ -150,12 +150,7 @@ class HomeMenuView(
             }
             HomeMenu.Item.ManageAccountAndDevices -> {
                 homeActivity.openToBrowserAndLoad(
-                    searchTermOrURL =
-                    if (context.settings().allowDomesticChinaFxaServer) {
-                        FxaServer.China.contentUrl() + "/settings"
-                    } else {
-                        FxaServer.Release.contentUrl() + "/settings"
-                    },
+                    searchTermOrURL = FxaServer.Release.contentUrl() + "/settings",
                     newTab = true,
                     from = BrowserDirection.FromHome,
                 )

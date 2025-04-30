@@ -33,6 +33,14 @@ add_task(async function testTabA11yDescription() {
   const tab2 = await addTab("http://mochi.test:8888/2", { userContextId: 2 });
   tab2.label = "tab2";
   const context2 = ContextualIdentityService.getUserContextLabel(2);
+  const tab3 = await addTab("http://mochi.test:8888/3", { userContextId: 3 });
+  const context3 = ContextualIdentityService.getUserContextLabel(3);
+  const tab4 = await addTab("http://mochi.test:8888/4");
+  const tab5 = await addTab("http://mochi.test:8888/5");
+  const tabGroupName = crypto.randomUUID();
+  const group1 = gBrowser.addTabGroup([tab3, tab4, tab5], {
+    label: tabGroupName,
+  });
 
   await BrowserTestUtils.switchTab(gBrowser, tab1);
   let focused = BrowserTestUtils.waitForEvent(tab1, "focus");
@@ -40,7 +48,7 @@ add_task(async function testTabA11yDescription() {
   await focused;
   ok(true, "tab1 initially focused");
   ok(
-    getA11yDescription(tab1).endsWith(context1),
+    getA11yDescription(tab1).includes(context1),
     "tab1 has correct a11y description"
   );
   ok(!getA11yDescription(tab2), "tab2 has no a11y description");
@@ -48,7 +56,7 @@ add_task(async function testTabA11yDescription() {
   info("Moving DOM focus to tab2");
   await waitForFocusAfterKey(false, tab2, "ArrowRight");
   ok(
-    getA11yDescription(tab2).endsWith(context2),
+    getA11yDescription(tab2).includes(context2),
     "tab2 has correct a11y description"
   );
   ok(!getA11yDescription(tab1), "tab1 has no a11y description");
@@ -56,7 +64,7 @@ add_task(async function testTabA11yDescription() {
   info("Moving ARIA focus to tab1");
   await waitForFocusAfterKey(true, tab1, "ArrowLeft", true);
   ok(
-    getA11yDescription(tab1).endsWith(context1),
+    getA11yDescription(tab1).includes(context1),
     "tab1 has correct a11y description"
   );
   ok(!getA11yDescription(tab2), "tab2 has no a11y description");
@@ -64,11 +72,40 @@ add_task(async function testTabA11yDescription() {
   info("Removing ARIA focus (reverting to DOM focus)");
   await waitForFocusAfterKey(true, tab2, "ArrowRight");
   ok(
-    getA11yDescription(tab2).endsWith(context2),
+    getA11yDescription(tab2).includes(context2),
     "tab2 has correct a11y description"
   );
   ok(!getA11yDescription(tab1), "tab1 has no a11y description");
 
+  info("Moving past the tab group label");
+  await waitForFocusAfterKey(true, group1.labelElement, "ArrowRight");
+
+  info("Moving DOM focus to first tab in tab group");
+  await waitForFocusAfterKey(true, tab3, "ArrowRight");
+  ok(
+    getA11yDescription(tab3).includes(tabGroupName),
+    "tab3 (first tab in tab group) should have the tab group name in its description"
+  );
+  ok(
+    getA11yDescription(tab3).includes(context3),
+    "tab3 (first tab in tab group) should have its container name in its description"
+  );
+
+  info("Moving DOM focus to middle tab in tab group");
+  await waitForFocusAfterKey(true, tab4, "ArrowRight");
+  ok(
+    !getA11yDescription(tab4).includes(tabGroupName),
+    "tab4 (middle tab in tab group) should NOT have the tab group label in its description"
+  );
+
+  info("Moving DOM focus to last tab in tab group");
+  await waitForFocusAfterKey(true, tab5, "ArrowRight");
+  ok(
+    getA11yDescription(tab5).includes(tabGroupName),
+    "tab5 (last tab in tab group) should have the tab group label in its description"
+  );
+
   BrowserTestUtils.removeTab(tab1);
   BrowserTestUtils.removeTab(tab2);
+  await removeTabGroup(group1);
 });

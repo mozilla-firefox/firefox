@@ -39,8 +39,8 @@ pub use glean_core::{
         Datetime, DistributionData, MemoryUnit, MetricIdentifier, Rate, RecordedEvent, TimeUnit,
         TimerId,
     },
-    traits, CommonMetricData, Error, ErrorType, Glean, HistogramType, LabeledMetricData, Lifetime,
-    PingRateLimit, RecordedExperiment, Result,
+    traits, AttributionMetrics, CommonMetricData, DistributionMetrics, Error, ErrorType, Glean,
+    HistogramType, LabeledMetricData, Lifetime, PingRateLimit, RecordedExperiment, Result,
 };
 
 mod configuration;
@@ -354,6 +354,32 @@ pub fn persist_ping_lifetime_data() {
 /// The list of ping names that are currently registered.
 pub fn get_registered_ping_names() -> Vec<String> {
     glean_core::glean_get_registered_ping_names()
+}
+
+/// Updates attribution fields with new values.
+/// AttributionMetrics fields with `None` values will not overwrite older values.
+pub fn update_attribution(attribution: AttributionMetrics) {
+    glean_core::glean_update_attribution(attribution);
+}
+
+/// **TEST-ONLY Method**
+///
+/// Returns the current attribution metrics.
+pub fn test_get_attribution() -> AttributionMetrics {
+    glean_core::glean_test_get_attribution()
+}
+
+/// Updates distribution fields with new values.
+/// DistributionMetrics fields with `None` values will not overwrite older values.
+pub fn update_distribution(distribution: DistributionMetrics) {
+    glean_core::glean_update_distribution(distribution);
+}
+
+/// **TEST-ONLY Method**
+///
+/// Returns the current distribution metrics.
+pub fn test_get_distribution() -> DistributionMetrics {
+    glean_core::glean_test_get_distribution()
 }
 
 #[cfg(test)]

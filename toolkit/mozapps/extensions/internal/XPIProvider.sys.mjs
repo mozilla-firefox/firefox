@@ -78,6 +78,9 @@ const PREF_SYSTEM_ADDON_SET = "extensions.systemAddonSet";
 
 const PREF_EM_LAST_APP_BUILD_ID = "extensions.lastAppBuildId";
 
+const PREF_DATA_COLLECTION_PERMISSIONS_ENABLED =
+  "extensions.dataCollectionPermissions.enabled";
+
 // Specify a list of valid built-in add-ons to load.
 const BUILT_IN_ADDONS_URI = "chrome://browser/content/built_in_addons.json";
 
@@ -92,7 +95,6 @@ const FILE_XPI_STATES = "addonStartup.json.lz4";
 const KEY_PROFILEDIR = "ProfD";
 const KEY_ADDON_APP_DIR = "XREAddonAppDir";
 const KEY_APP_DISTRIBUTION = "XREAppDist";
-const KEY_APP_FEATURES = "XREAppFeat";
 
 const KEY_APP_PROFILE = "app-profile";
 // Location of add-ons included in the omni jar and listed in built_in_addons.json.
@@ -103,8 +105,6 @@ const KEY_APP_SYSTEM_BUILTINS = "app-builtin-addons";
 const KEY_APP_SYSTEM_PROFILE = "app-system-profile";
 // Location of add-on xpi files signed with a system signature downloaded from balrog.
 const KEY_APP_SYSTEM_ADDONS = "app-system-addons";
-// Location of add-on xpi files part of the application directry and listed in built_in_addons.json.
-const KEY_APP_SYSTEM_DEFAULTS = "app-system-defaults";
 // Location of add-ons included in the omni jar and manually installed through maybeInstallBuiltinAddon method.
 const KEY_APP_BUILTINS = "app-builtin";
 const KEY_APP_GLOBAL = "app-global";
@@ -144,6 +144,17 @@ XPCOMUtils.defineLazyPreferenceGetter(
   "enabledScopesPref",
   PREF_EM_ENABLED_SCOPES,
   AddonManager.SCOPE_ALL
+);
+
+// An hidden pref that can be used in tests (in particular
+// xpcshell-tests unit tests) that may need to opt-out from
+// XPIProvider startup logic that will be auto-installing
+// the default theme.
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "skipDefaultThemeInstall",
+  "extensions.skipInstallDefaultThemeForTests",
+  false
 );
 
 Object.defineProperty(lazy, "enabledScopes", {
@@ -1208,55 +1219,6 @@ class DirectoryLocation extends XPIStateLocation {
 
   get isSystem() {
     return this._isSystem;
-  }
-}
-
-/**
- * An object which identifies a built-in install location for add-ons, such
- * as default system add-ons.
- *
- * This location should point either to a XPI, or a directory in a local build.
- */
-class LegacySystemDefaultsLocation extends DirectoryLocation {
-  /**
-   * Read the manifest of allowed add-ons and build a mapping between ID and URI
-   * for each.
-   *
-   * @returns {Map<AddonID, nsIFile>}
-   *        A map of add-ons present in this location.
-   */
-  readAddons() {
-    let addons = new Map();
-
-    let manifest = XPIProvider.builtInAddons;
-
-    if (!("system" in manifest)) {
-      logger.debug("No list of valid system add-ons found.");
-      return addons;
-    }
-
-    for (let id of manifest.system) {
-      let file = this.dir.clone();
-      file.append(`${id}.xpi`);
-
-      // Only attempt to load unpacked directory if unofficial build.
-      if (!AppConstants.MOZILLA_OFFICIAL && !file.exists()) {
-        file = this.dir.clone();
-        file.append(`${id}`);
-      }
-
-      addons.set(id, file);
-    }
-
-    return addons;
-  }
-
-  get isSystem() {
-    return true;
-  }
-
-  get isBuiltin() {
-    return true;
   }
 }
 
@@ -2414,15 +2376,6 @@ export var XPIProvider = {
       return new DirectoryLocation(aName, dir, aScope, aLocked, aIsSystem);
     }
 
-    function LegacySystemDefaultsLoc(name, scope, key, paths) {
-      try {
-        var dir = lazy.FileUtils.getDir(key, paths);
-      } catch (e) {
-        return null;
-      }
-      return new LegacySystemDefaultsLocation(name, dir, scope);
-    }
-
     function SystemLoc(aName, aScope, aKey, aPaths) {
       try {
         var dir = lazy.FileUtils.getDir(aKey, aPaths);
@@ -2474,14 +2427,6 @@ export var XPIProvider = {
         () => SystemBuiltInLocation,
         KEY_APP_SYSTEM_BUILTINS,
         AddonManager.SCOPE_APPLICATION,
-      ],
-
-      [
-        LegacySystemDefaultsLoc,
-        KEY_APP_SYSTEM_DEFAULTS,
-        AddonManager.SCOPE_PROFILE,
-        KEY_APP_FEATURES,
-        [],
       ],
 
       [() => BuiltInLocation, KEY_APP_BUILTINS, AddonManager.SCOPE_APPLICATION],
@@ -2648,6 +2593,11 @@ export var XPIProvider = {
       Services.prefs.addObserver(PREF_LANGPACK_SIGNATURES, this);
       Services.obs.addObserver(this, NOTIFICATION_FLUSH_PERMISSIONS);
 
+      Services.prefs.addObserver(
+        PREF_DATA_COLLECTION_PERMISSIONS_ENABLED,
+        this
+      );
+
       this.checkForChanges(aAppChanged, aOldAppVersion, aOldPlatformVersion);
 
       AddonManagerPrivate.markProviderSafe(this);
@@ -2671,7 +2621,12 @@ export var XPIProvider = {
         );
       }
 
-      if (AppConstants.platform != "android") {
+      const isInAutomationOrXPCShellTests =
+        Cu.isInAutomation || Services.env.exists("XPCSHELL_TEST_PROFILE_DIR");
+      if (
+        AppConstants.platform != "android" &&
+        !(isInAutomationOrXPCShellTests && lazy.skipDefaultThemeInstall)
+      ) {
         // Keep version in sync with toolkit/mozapps/extensions/default-theme/manifest.json
         this.maybeInstallBuiltinAddon(
           "default-theme@mozilla.org",
@@ -2900,6 +2855,11 @@ export var XPIProvider = {
 
     // Stop anything we were doing asynchronously
     XPIExports.XPIInstall.cancelAll();
+
+    Services.prefs.removeObserver(
+      PREF_DATA_COLLECTION_PERMISSIONS_ENABLED,
+      this
+    );
 
     for (let install of XPIExports.XPIInstall.installs) {
       if (install.onShutdown()) {
@@ -3300,9 +3260,7 @@ export var XPIProvider = {
   async getNewSideloads() {
     if (XPIStates.scanForChanges(false)) {
       // We detected changes. Update the database to account for them.
-      await XPIExports.XPIDatabase.asyncLoadDB(false);
-      XPIExports.XPIDatabaseReconcile.processFileChanges({}, false);
-      XPIExports.XPIDatabase.updateActiveAddons();
+      await this._updateDatabase({ aSchemaChange: false });
     }
 
     let addons = await Promise.all(
@@ -3459,6 +3417,20 @@ export var XPIProvider = {
           case PREF_LANGPACK_SIGNATURES:
             XPIExports.XPIDatabase.updateAddonAppDisabledStates();
             break;
+
+          case PREF_DATA_COLLECTION_PERMISSIONS_ENABLED:
+            // When this pref is enabled, we need to update the DB. It is fine
+            // to only do this when the pref is enabled because the UI and APIs
+            // are backward compatible.
+            if (
+              Services.prefs.getBoolPref(
+                PREF_DATA_COLLECTION_PERMISSIONS_ENABLED,
+                false
+              )
+            ) {
+              this._updateDatabase({ aSchemaChange: true });
+            }
+            break;
         }
     }
   },
@@ -3466,6 +3438,19 @@ export var XPIProvider = {
   uninstallSystemProfileAddon(aID) {
     let location = XPIStates.getLocation(KEY_APP_SYSTEM_PROFILE);
     return XPIExports.XPIInstall.uninstallAddonFromLocation(aID, location);
+  },
+
+  async _updateDatabase({ aSchemaChange }) {
+    await XPIExports.XPIDatabase.asyncLoadDB(false);
+    XPIExports.XPIDatabaseReconcile.processFileChanges(
+      /* aManifests */ {},
+      /* aAppChanged */ false,
+      /* aOldAppVersion, */ false,
+      /* aOldPlatformVersion */ false,
+      aSchemaChange
+    );
+    XPIExports.XPIDatabase.updateActiveAddons();
+    Services.obs.notifyObservers(null, "xpi-provider:database-updated");
   },
 };
 
@@ -3508,7 +3493,6 @@ export var XPIInternal = {
   KEY_APP_PROFILE,
   KEY_APP_SYSTEM_ADDONS,
   KEY_APP_SYSTEM_BUILTINS,
-  KEY_APP_SYSTEM_DEFAULTS,
   KEY_APP_SYSTEM_PROFILE,
   PREF_BRANCH_INSTALLED_ADDON,
   PREF_SYSTEM_ADDON_SET,

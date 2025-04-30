@@ -49,6 +49,7 @@ perf:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1892231
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1923894
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1954216
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1949038
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1759744#c5
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1799727#c4
@@ -138,6 +139,10 @@ perf:
             2 - assistive technology in use"
         type: quantity
         unit: integer
+      has_ssd:
+        description:
+          "Whether the user has SSD in their hardware or not. Only available on Windows, after startup-idle-tasks are done"
+        type: boolean
     send_in_pings:
       - pageload
 
@@ -754,28 +759,6 @@ security:
           If the principal is a ContentPrincipal, we also collect the scheme
         type: string
     telemetry_mirror: Security_Fissionprincipals_Contentparent
-
-mathml:
-  doc_count:
-    type: counter
-    description: >
-      The number of documents that contained enabled MathML elements.
-      This metric was generated to correspond to the Legacy Telemetry
-      scalar mathml.doc_count.
-    bugs:
-      - https://bugzil.la/1362187
-      - https://bugzil.la/1538985
-      - https://bugzil.la/1590350
-    data_reviews:
-      - https://bugzil.la/1362187
-      - https://bugzil.la/1538985
-      - https://bugzil.la/1590350
-    notification_emails:
-      - emilio@mozilla.com
-      - fred.wang@free.fr
-      - dev-tech-layout@lists.mozilla.org
-    expires: never
-    telemetry_mirror: MATHML_DOC_COUNT
 
 dom.contentprocess:
   build_id_mismatch:

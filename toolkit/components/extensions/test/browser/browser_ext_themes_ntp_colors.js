@@ -188,7 +188,7 @@ async function waitForDarkMode(value) {
   });
 }
 
-add_task(async function test_support_ntp_colors() {
+async function do_test_support_ntp_colors() {
   await SpecialPowers.pushPrefEnv({
     set: [
       // BrowserTestUtils.withNewTab waits for about:newtab to load
@@ -253,4 +253,26 @@ add_task(async function test_support_ntp_colors() {
       );
     });
   }
+}
+
+add_task(async function test_support_ntp_colors() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      // Running these tests with the previous shortcuts style.
+      ["browser.newtabpage.activity-stream.newtabShortcuts.refresh", false],
+    ],
+  });
+  await do_test_support_ntp_colors();
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_support_ntp_colors_shortcuts_pref_flipped() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      // Running these tests with the new shortcuts style.
+      ["browser.newtabpage.activity-stream.newtabShortcuts.refresh", true],
+    ],
+  });
+  await do_test_support_ntp_colors();
+  await SpecialPowers.popPrefEnv();
 });

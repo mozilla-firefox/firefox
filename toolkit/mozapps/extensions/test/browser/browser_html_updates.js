@@ -3,6 +3,9 @@
 const { AddonTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/AddonTestUtils.sys.mjs"
 );
+const { EnterprisePolicyTesting } = ChromeUtils.importESModule(
+  "resource://testing-common/EnterprisePolicyTesting.sys.mjs"
+);
 
 AddonTestUtils.initMochitest(this);
 
@@ -127,7 +130,7 @@ add_task(async function testChangeAutoUpdates() {
 
 async function setupExtensionWithUpdate(
   id,
-  { releaseNotes, cancelUpdate } = {}
+  { releaseNotes, cancelUpdate, policy } = {}
 ) {
   let serverHost = `http://localhost:${server.identity.primaryPort}`;
   let updatesPath = `/ext-updates-${id}.json`;
@@ -147,11 +150,11 @@ async function setupExtensionWithUpdate(
     manifest: {
       ...baseManifest,
       version: "2",
-      // Include a permission in the updated extension, to make
+      // Include permissions in the updated extension, to make
       // sure that we trigger the permission prompt as expected
       // (and that we can accept or cancel the update by observing
       // the underlying observerService notification).
-      permissions: ["http://*.example.com/*"],
+      permissions: ["bookmarks", "http://*.example.com/*"],
     },
   });
 
@@ -186,6 +189,34 @@ async function setupExtensionWithUpdate(
       },
     },
   });
+
+  if (policy) {
+    // If policy is used, we need to explicitly install the extension
+    // via policy and there is no prompt.
+    let originalXpi = AddonTestUtils.createTempWebExtensionFile({
+      manifest: {
+        ...baseManifest,
+        version: "1",
+      },
+    });
+
+    let xpiFilename = `/original-${id}.xpi`;
+    server.registerFile(xpiFilename, originalXpi);
+    await Promise.all([
+      AddonTestUtils.promiseInstallEvent("onInstallEnded"),
+      EnterprisePolicyTesting.setupPolicyEngineWithJson({
+        policies: {
+          ExtensionSettings: {
+            [id]: {
+              installation_mode: "force_installed",
+              install_url: serverHost + xpiFilename,
+            },
+          },
+        },
+      }),
+    ]);
+    return null;
+  }
 
   handlePermissionPrompt({ addonId: id, reject: cancelUpdate });
 
@@ -755,4 +786,39 @@ add_task(async function testNoUpdateAvailableOnUnrelatedAddonCards() {
 
   await closeView(win);
   await extensionNoUpdate.unload();
+});
+
+add_task(async function testNoPromptForPolicy() {
+  const id = "test-noprompt-for-policy@mochi.test";
+  await setupExtensionWithUpdate(id, { policy: true });
+
+  AddonManager.autoUpdateDefault = false;
+
+  let addon = await AddonManager.getAddonByID(id);
+  is(addon.version, "1", "Version is 1 to start");
+  let policy = WebExtensionPolicy.getByID(addon.id);
+  Assert.deepEqual(policy.permissions, [], "Expected no permissions");
+
+  await AddonTestUtils.promiseFindAddonUpdates(
+    addon,
+    AddonManager.UPDATE_WHEN_PERIODIC_UPDATE
+  );
+
+  let win = await loadInitialView("extension");
+  let card = getAddonCard(win, id);
+  await installUpdate(card, "update-installed");
+
+  addon = await AddonManager.getAddonByID(id);
+  is(addon.version, "2", "Version is 2 after update");
+  policy = WebExtensionPolicy.getByID(addon.id);
+  Assert.deepEqual(policy.permissions, ["bookmarks"], "Expected permissions");
+  Assert.ok(
+    policy.allowedOrigins.matches("http://foo.example.com/bar"),
+    "Expected origins"
+  );
+
+  AddonManager.autoUpdateDefault = true;
+
+  await closeView(win);
+  await addon.uninstall();
 });

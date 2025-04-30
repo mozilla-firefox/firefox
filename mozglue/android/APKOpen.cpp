@@ -362,18 +362,23 @@ static void FreeArgv(char** argv, int argc) {
   delete[] (argv);
 }
 
+// These are mirrored in GeckoLoader.java
+#define PROCESS_TYPE_MAIN 0
+#define PROCESS_TYPE_CHILD 1
+#define PROCESS_TYPE_XPCSHELL 2
+
 extern "C" APKOPEN_EXPORT void MOZ_JNICALL
 Java_org_mozilla_gecko_mozglue_GeckoLoader_nativeRun(JNIEnv* jenv, jclass jc,
                                                      jobjectArray jargs,
                                                      jintArray jfds,
-                                                     bool xpcshell,
+                                                     jint processType,
                                                      jstring outFilePath) {
   EnsureBaseProfilerInitialized();
 
   int argc = 0;
   char** argv = CreateArgvFromObjectArray(jenv, jargs, &argc);
 
-  if (!jfds) {
+  if (processType != PROCESS_TYPE_CHILD) {
     if (gBootstrap == nullptr) {
       FreeArgv(argv, argc);
       return;
@@ -384,12 +389,26 @@ Java_org_mozilla_gecko_mozglue_GeckoLoader_nativeRun(JNIEnv* jenv, jclass jc,
 #endif
     gBootstrap->XRE_SetGeckoThreadEnv(jenv);
     if (!argv) {
-      __android_log_print(ANDROID_LOG_FATAL, "mozglue",
-                          "Failed to get arguments for %s",
-                          xpcshell ? "XRE_XPCShellMain" : "XRE_main");
+      __android_log_print(
+          ANDROID_LOG_FATAL, "mozglue", "Failed to get arguments for %s",
+          processType == PROCESS_TYPE_XPCSHELL ? "XRE_XPCShellMain"
+                                               : "XRE_main");
       return;
     }
-    if (xpcshell) {
+
+    jsize size = jenv->GetArrayLength(jfds);
+    if (size != 2) {
+      __android_log_print(ANDROID_LOG_FATAL, "mozglue",
+                          "Wrong number of file descriptors passed to a "
+                          "browser/xpcshell process");
+      return;
+    }
+    jint* fds = jenv->GetIntArrayElements(jfds, nullptr);
+    int crashChildNotificationSocket = fds[0];
+    int crashHelperSocket = fds[1];
+    jenv->ReleaseIntArrayElements(jfds, fds, JNI_ABORT);
+
+    if (processType == PROCESS_TYPE_XPCSHELL) {
       MOZ_ASSERT(outFilePath);
       const char* outFilePathRaw =
           jenv->GetStringUTFChars(outFilePath, nullptr);
@@ -400,6 +419,8 @@ Java_org_mozilla_gecko_mozglue_GeckoLoader_nativeRun(JNIEnv* jenv, jclass jc,
         // what runxpcshell.py does on Desktop.
         shellData.outFile = outFile;
         shellData.errFile = outFile;
+        shellData.crashChildNotificationSocket = crashChildNotificationSocket;
+        shellData.crashHelperSocket = crashHelperSocket;
         int result =
             gBootstrap->XRE_XPCShellMain(argc, argv, nullptr, &shellData);
         fclose(shellData.outFile);
@@ -418,6 +439,8 @@ Java_org_mozilla_gecko_mozglue_GeckoLoader_nativeRun(JNIEnv* jenv, jclass jc,
       BootstrapConfig config;
       config.appData = &sAppData;
       config.appDataPath = nullptr;
+      config.crashChildNotificationSocket = crashChildNotificationSocket;
+      config.crashHelperSocket = crashHelperSocket;
 
       int result = gBootstrap->XRE_main(argc, argv, config);
       if (result) {

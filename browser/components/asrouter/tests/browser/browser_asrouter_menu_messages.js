@@ -122,10 +122,18 @@ async function assertMessageInMenuSource(source, message, win = window) {
     "The element should be configured for tab navigation."
   );
 
+  Assert.equal(
+    messageEl.layout,
+    "column",
+    "The default layout should be 'column'."
+  );
+
   let messageElStyles = window.getComputedStyle(messageEl);
   Assert.equal(
-    messageElStyles.getPropertyValue("--illustration-margin-block-offset"),
-    `${message.content.imageVerticalOffset}px`
+    messageElStyles.getPropertyValue(
+      "--illustration-margin-block-start-offset"
+    ),
+    `${message.content.imageVerticalTopOffset}px`
   );
 
   if (source === MenuMessage.SOURCES.APP_MENU) {

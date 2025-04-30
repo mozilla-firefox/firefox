@@ -32,6 +32,7 @@ import mozilla.components.compose.base.annotation.LightDarkPreview
 import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.Favicon
+import org.mozilla.fenix.settings.trustpanel.store.WebsiteInfoState
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.theme.Theme
 
@@ -42,10 +43,8 @@ private val INNER_ICON_SHAPE = RoundedCornerShape(0.dp)
 
 @Composable
 internal fun ProtectionPanelHeader(
-    url: String,
-    title: String,
     icon: Bitmap?,
-    isSecured: Boolean,
+    websiteInfoState: WebsiteInfoState,
     onConnectionSecurityClick: () -> Unit,
 ) {
     Row(
@@ -56,7 +55,7 @@ internal fun ProtectionPanelHeader(
     ) {
         Spacer(modifier = Modifier.width(4.dp))
 
-        ProtectionPanelIcon(url = url, icon = icon)
+        ProtectionPanelIcon(url = websiteInfoState.websiteUrl, icon = icon)
 
         Spacer(modifier = Modifier.width(8.dp))
 
@@ -66,7 +65,7 @@ internal fun ProtectionPanelHeader(
                 .weight(1f),
         ) {
             Text(
-                text = title,
+                text = websiteInfoState.websiteTitle,
                 color = FirefoxTheme.colors.textSecondary,
                 maxLines = 1,
                 style = FirefoxTheme.typography.headline7,
@@ -74,7 +73,7 @@ internal fun ProtectionPanelHeader(
             )
 
             Text(
-                text = url.tryGetHostFromUrl(),
+                text = websiteInfoState.websiteUrl.tryGetHostFromUrl(),
                 color = FirefoxTheme.colors.textSecondary,
                 maxLines = 1,
                 style = FirefoxTheme.typography.caption,
@@ -93,7 +92,7 @@ internal fun ProtectionPanelHeader(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    painter = if (isSecured) {
+                    painter = if (websiteInfoState.isSecured) {
                         painterResource(id = R.drawable.mozac_ic_lock_20)
                     } else {
                         painterResource(id = R.drawable.mozac_ic_lock_slash_20)
@@ -103,7 +102,7 @@ internal fun ProtectionPanelHeader(
                 )
 
                 Text(
-                    text = if (isSecured) {
+                    text = if (websiteInfoState.isSecured) {
                         stringResource(id = R.string.protection_panel_header_secure)
                     } else {
                         stringResource(id = R.string.protection_panel_header_not_secure)
@@ -166,10 +165,13 @@ private fun ProtectionPanelHeaderPreview() {
                 .background(color = FirefoxTheme.colors.layer3),
         ) {
             ProtectionPanelHeader(
-                url = "https://www.mozilla.org",
-                title = "Mozilla",
                 icon = null,
-                isSecured = true,
+                websiteInfoState = WebsiteInfoState(
+                    isSecured = true,
+                    websiteUrl = "https://www.mozilla.org",
+                    websiteTitle = "Mozilla",
+                    certificateName = "",
+                ),
                 onConnectionSecurityClick = {},
             )
         }
@@ -185,10 +187,13 @@ private fun ProtectionPanelHeaderPrivatePreview() {
                 .background(color = FirefoxTheme.colors.layer3),
         ) {
             ProtectionPanelHeader(
-                url = "https://www.mozilla.org",
-                title = "Mozilla",
                 icon = null,
-                isSecured = false,
+                websiteInfoState = WebsiteInfoState(
+                    isSecured = false,
+                    websiteUrl = "https://www.mozilla.org",
+                    websiteTitle = "Mozilla",
+                    certificateName = "",
+                ),
                 onConnectionSecurityClick = {},
             )
         }

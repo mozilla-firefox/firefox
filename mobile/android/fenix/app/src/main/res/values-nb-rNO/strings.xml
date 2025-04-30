@@ -823,8 +823,6 @@
   <string name="preferences_override_account_server">Selvvalgt server for Mozilla-konto</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Selvvalgt synkroniseringsserver</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla-konto/synkroniseringsserver endret. Avslutter applikasjonen for å legge til endringer…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Konto</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -2181,7 +2179,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Ikon for unntaksinnstillinger for utvidet sporingsbeskyttelse</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->

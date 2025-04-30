@@ -1,0 +1,29 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+include RemoteWorkerTypes;
+include protocol PRemoteWorkerDebugger;
+
+namespace mozilla {
+namespace dom{
+
+// PRemoteWorkerDebuggerManager is used to register a remote WorkerDebugger
+// (PRemoteWorkerDebuggerParent) for a Worker. It is a IPC between the Parent
+// process main thread and the Content process WorkerLauncher thread because
+// when construting a Worker, there is no directly IPC can be reused to directly
+// build up the IPC between the Parent process main thread and the Content
+// process Worker thread. However, the remote WorkerDebugger unregistration is
+// done by PRemoteWorkerDebugger itself, so PRemoteWorkerDebuggeManager has no
+// IPC method for unregister.
+
+[ChildProc=anydom]
+protocol PRemoteWorkerDebuggerManager
+{
+parent:
+  async Register(RemoteWorkerDebuggerInfo aDebuggerInfo,
+      Endpoint<PRemoteWorkerDebuggerParent> aParentEp);
+};
+
+} // namespace dom
+} // namespace mozilla

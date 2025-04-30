@@ -1,7 +1,7 @@
 [DEFAULT]
 support-files = [
   "empty.html",
-  "!/dom/tests/mochitest/geolocation/network_geolocation.sjs",
+  "!/dom/geolocation/test/mochitest/network_geolocation.sjs",
 ]
 tags = "feature-policy"
 

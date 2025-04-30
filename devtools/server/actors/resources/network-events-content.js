@@ -22,6 +22,14 @@ ChromeUtils.defineESModuleGetters(
   { global: "contextual" }
 );
 
+// Internal resource types used to create the appropriate network event based
+// on where the channel / resource is coming from.
+const RESOURCE_TYPES = {
+  BLOCKED: "blocked-resource",
+  CACHED: "cached-resource",
+  DATA_CHANNEL: "data-channel-resource",
+};
+
 /**
  * Handles network events from the content process
  * This currently only handles events for requests (js/css) blocked by CSP.
@@ -48,10 +56,6 @@ class NetworkEventContentWatcher {
     this.onAvailable = onAvailable;
     this.onUpdated = onUpdated;
 
-    this.httpFailedOpeningRequest = this.httpFailedOpeningRequest.bind(this);
-    this.httpOnResourceCacheResponse =
-      this.httpOnResourceCacheResponse.bind(this);
-
     Services.obs.addObserver(
       this.httpFailedOpeningRequest,
       "http-on-failed-opening-request"
@@ -61,6 +65,8 @@ class NetworkEventContentWatcher {
       this.httpOnResourceCacheResponse,
       "http-on-resource-cache-response"
     );
+
+    Services.obs.addObserver(this.onDataChannelOpened, "data-channel-opened");
   }
   /**
    * Allows clearing of network events
@@ -69,7 +75,7 @@ class NetworkEventContentWatcher {
     this.networkEvents.clear();
   }
 
-  httpFailedOpeningRequest(subject) {
+  httpFailedOpeningRequest = subject => {
     const channel = subject.QueryInterface(Ci.nsIHttpChannel);
 
     // Ignore preload requests to avoid duplicity request entries in
@@ -91,10 +97,11 @@ class NetworkEventContentWatcher {
       networkEventOptions: {
         blockedReason: channel.loadInfo.requestBlockingReason,
       },
+      type: RESOURCE_TYPES.BLOCKED,
     });
-  }
+  };
 
-  httpOnResourceCacheResponse(subject, topic) {
+  httpOnResourceCacheResponse = (subject, topic) => {
     if (
       topic != "http-on-resource-cache-response" ||
       !(subject instanceof Ci.nsIHttpChannel)
@@ -133,11 +140,45 @@ class NetworkEventContentWatcher {
     this.onNetworkEventAvailable(channel, {
       fromCache: true,
       networkEventOptions: {},
+      type: RESOURCE_TYPES.CACHED,
     });
-  }
+  };
 
-  onNetworkEventAvailable(channel, { fromCache, networkEventOptions }) {
-    const actor = new NetworkEventActor(
+  onDataChannelOpened = (subject, topic) => {
+    if (
+      topic != "data-channel-opened" ||
+      !(subject instanceof Ci.nsIDataChannel)
+    ) {
+      return;
+    }
+
+    const channel = subject.QueryInterface(Ci.nsIDataChannel);
+    channel.QueryInterface(Ci.nsIIdentChannel);
+    channel.QueryInterface(Ci.nsIChannel);
+
+    if (channel.isDocument) {
+      // Navigation data channels are available in the parent process and will
+      // be monitored there.
+      return;
+    }
+
+    if (
+      !lazy.NetworkUtils.matchRequest(channel, {
+        targetActor: this.targetActor,
+      })
+    ) {
+      return;
+    }
+
+    this.onNetworkEventAvailable(channel, {
+      fromCache: false,
+      networkEventOptions: {},
+      type: RESOURCE_TYPES.DATA_CHANNEL,
+    });
+  };
+
+  onNetworkEventAvailable(channel, { fromCache, networkEventOptions, type }) {
+    const networkEventActor = new NetworkEventActor(
       this.targetActor.conn,
       this.targetActor.sessionContext,
       {
@@ -147,9 +188,9 @@ class NetworkEventContentWatcher {
       networkEventOptions,
       channel
     );
-    this.targetActor.manage(actor);
+    this.targetActor.manage(networkEventActor);
 
-    const resource = actor.asResource();
+    const resource = networkEventActor.asResource();
 
     const networkEvent = {
       browsingContextID: resource.browsingContextID,
@@ -170,19 +211,18 @@ class NetworkEventContentWatcher {
 
     this.onAvailable([resource]);
 
-    actor.addCacheDetails({ fromCache });
-    const isBlocked = !!resource.blockedReason;
-    if (isBlocked) {
+    networkEventActor.addCacheDetails({ fromCache });
+    if (type == RESOURCE_TYPES.BLOCKED) {
       this._emitUpdate(networkEvent);
-    } else {
-      actor.addResponseStart({ channel, fromCache: true });
-      actor.addEventTimings(
+    } else if (type == RESOURCE_TYPES.CACHED) {
+      networkEventActor.addResponseStart({ channel, fromCache: true });
+      networkEventActor.addEventTimings(
         0 /* totalTime */,
         {} /* timings */,
         {} /* offsets */
       );
-      actor.addServerTimings({});
-      actor.addResponseContent(
+      networkEventActor.addServerTimings({});
+      networkEventActor.addResponseContent(
         {
           mimeType: channel.contentType,
           size: channel.contentLength,
@@ -191,6 +231,8 @@ class NetworkEventContentWatcher {
         },
         {}
       );
+    } else if (type == RESOURCE_TYPES.DATA_CHANNEL) {
+      lazy.NetworkUtils.handleDataChannel(channel, networkEventActor);
     }
   }
 
@@ -279,6 +321,11 @@ class NetworkEventContentWatcher {
     Services.obs.removeObserver(
       this.httpOnResourceCacheResponse,
       "http-on-resource-cache-response"
+    );
+
+    Services.obs.removeObserver(
+      this.onDataChannelOpened,
+      "data-channel-opened"
     );
   }
 }

@@ -12,26 +12,18 @@ struct ByteArray{
   uint8_t[] data;
 };
 
-// For ECKey, RSAKey, and Certificate, slotType indicates which slot this object
-// should exist on:
-// 1: modern (supports EC, RSA-PSS)
-// 2: legacy (only supports RSA PKCS#1v1.5)
-
 struct ECKey{
   uint8_t[] params; // the EC point representing this key
   uint8_t[] cert; // the encoded certificate containing this key
-  uint32_t slotType;
 };
 
 struct RSAKey{
   uint8_t[] modulus; // the modulus of this RSA key
   uint8_t[] cert; // the encoded certificate containing this key
-  uint32_t slotType;
 };
 
 struct Certificate{
   uint8_t[] der; // the encoding of this certificate
-  uint32_t slotType;
 };
 
 // Helper type for sending keys and certificates over IPC for use by IPC client

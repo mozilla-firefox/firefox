@@ -211,6 +211,45 @@ impl Options {
         value.serialize(&mut s)
     }
 
+    /// Serializes `value` into `writer`.
+    ///
+    /// This function does not generate any newlines or nice formatting;
+    /// if you want that, you can use
+    /// [`to_io_writer_pretty`][Self::to_io_writer_pretty] instead.
+    pub fn to_io_writer<W, T>(&self, writer: W, value: &T) -> Result<()>
+    where
+        W: io::Write,
+        T: ?Sized + ser::Serialize,
+    {
+        let mut adapter = Adapter {
+            writer,
+            error: Ok(()),
+        };
+        let result = self.to_writer(&mut adapter, value);
+        adapter.error?;
+        result
+    }
+
+    /// Serializes `value` into `writer` in a pretty way.
+    pub fn to_io_writer_pretty<W, T>(
+        &self,
+        writer: W,
+        value: &T,
+        config: PrettyConfig,
+    ) -> Result<()>
+    where
+        W: io::Write,
+        T: ?Sized + ser::Serialize,
+    {
+        let mut adapter = Adapter {
+            writer,
+            error: Ok(()),
+        };
+        let result = self.to_writer_pretty(&mut adapter, value, config);
+        adapter.error?;
+        result
+    }
+
     /// Serializes `value` and returns it as string.
     ///
     /// This function does not generate any newlines or nice formatting;
@@ -235,5 +274,23 @@ impl Options {
         let mut s = Serializer::with_options(&mut output, Some(config), self)?;
         value.serialize(&mut s)?;
         Ok(output)
+    }
+}
+
+// Adapter from io::Write to fmt::Write that keeps the error
+struct Adapter<W: io::Write> {
+    writer: W,
+    error: io::Result<()>,
+}
+
+impl<T: io::Write> fmt::Write for Adapter<T> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        match self.writer.write_all(s.as_bytes()) {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                self.error = Err(e);
+                Err(fmt::Error)
+            }
+        }
     }
 }

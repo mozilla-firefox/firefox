@@ -271,6 +271,8 @@ add_task(async function test_saveAddressCA() {
       "VK_TAB",
       TEST_ADDRESS_CA_1["address-level2"],
       "VK_TAB",
+      // The value is "BC", but the label is "British Columbia", but typing the "B"
+      // will happen to select the right value here.
       TEST_ADDRESS_CA_1["address-level1"],
       "VK_TAB",
       TEST_ADDRESS_CA_1["postal-code"],
@@ -404,7 +406,7 @@ add_task(async function test_saveAddressIE() {
       "VK_TAB",
       TEST_ADDRESS_IE_1["address-level2"],
       "VK_TAB",
-      TEST_ADDRESS_IE_1["address-level1"],
+      "Co. Dub", // This is a dropdown menu, so type the first few letters
       "VK_TAB",
       TEST_ADDRESS_IE_1["postal-code"],
       "VK_TAB",
@@ -463,6 +465,16 @@ add_task(async function test_countryAndStateFieldLabels() {
           ),
           names:
             "Abaco Islands~Acklins~Andros Island~Berry Islands~Bimini~Cat Island~Crooked Island~Eleuthera~Exuma and Cays~Grand Bahama~Harbour Island~Inagua~Long Island~Mayaguana~New Providence~Ragged Island~Rum Cay~San Salvador~Spanish Wells".split(
+              "~"
+            ),
+        },
+        ID: {
+          // Indonesia has no sub_names field
+          keys: "AC~BA~BT~BE~YO~JK~GO~JA~JB~JT~JI~KB~KS~KT~KI~KU~BB~KR~LA~MA~MU~NB~NT~PA~PB~RI~SR~SN~ST~SG~SA~SB~SS~SU".split(
+            "~"
+          ),
+          names:
+            "Aceh~Bali~Banten~Bengkulu~Daerah Istimewa Yogyakarta~DKI Jakarta~Gorontalo~Jambi~Jawa Barat~Jawa Tengah~Jawa Timur~Kalimantan Barat~Kalimantan Selatan~Kalimantan Tengah~Kalimantan Timur~Kalimantan Utara~Kepulauan Bangka Belitung~Kepulauan Riau~Lampung~Maluku~Maluku Utara~Nusa Tenggara Barat~Nusa Tenggara Timur~Papua~Papua Barat~Riau~Sulawesi Barat~Sulawesi Selatan~Sulawesi Tengah~Sulawesi Tenggara~Sulawesi Utara~Sumatera Barat~Sumatera Selatan~Sumatera Utara".split(
               "~"
             ),
         },

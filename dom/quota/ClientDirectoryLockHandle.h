@@ -20,15 +20,14 @@ class ClientDirectoryLock;
  * @brief RAII-style wrapper for managing a ClientDirectoryLock.
  *
  * ClientDirectoryLockHandle is a RAII-style wrapper that manages a
- * ClientDirectoryLock. It is designed to ensure that the associated directory
- * lock remains acquired while the handle is in scope and is automatically
- * released when destroyed.
+ * ClientDirectoryLock created by QuotaManager::OpenClientDirectory.
  *
- * This class will be used by OpenClientDirectory to manage the lifetime of
- * directory locks in a safer and clearer way.
+ * This class ensures that the associated directory lock remains acquired
+ * while the handle is in scope and automatically drops it when destroyed.
  *
  * ## Usage:
- * - Intended for use with QuotaManager::OpenClientDirectory.
+ * - See QuotaManager::OpenClientDirectory for details on obtaining a
+ *   ClientDirectoryLockHandle.
  * - The handle should be retained for as long as access to the directory is
  *   needed.
  *

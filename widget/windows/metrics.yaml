@@ -66,3 +66,49 @@ widget:
       - jimm@mozilla.com
     expires: never
     telemetry_mirror: h#TOUCH_ENABLED_DEVICE
+
+windows.security:
+  antivirus:
+    type: string_list
+    description: |
+      Product names of registered antivirus programs.
+      Windows only.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950415
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950415
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - jimm@mozilla.com
+    expires: never
+
+  antispyware:
+    type: string_list
+    description: |
+      Product names of registered antispyware programs.
+      Windows only.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950415
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950415
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - jimm@mozilla.com
+    expires: never
+
+  firewall:
+    type: string_list
+    description: |
+      Product names of registered firewall programs.
+      Windows only.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950415
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950415
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - jimm@mozilla.com
+    expires: never

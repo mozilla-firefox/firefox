@@ -13,6 +13,7 @@
 #include "nsString.h"
 #include "nsTArray.h"
 #include "nsUnicharUtils.h"
+#include "mozilla/ErrorResult.h"
 
 class nsIChannel;
 
@@ -192,6 +193,10 @@ nsresult CSP_AppendCSPFromHeader(nsIContentSecurityPolicy* aCsp,
                                  bool aReportOnly);
 
 /* =============== Helpers ================== */
+
+already_AddRefed<nsIContentSecurityPolicy> CSP_CreateFromHeader(const nsAString& aHeaderValue, nsIURI* aSelfURI,
+                              nsIPrincipal* aLoadingPrincipal,
+                              mozilla::ErrorResult& aRv);
 
 class nsCSPHostSrc;
 

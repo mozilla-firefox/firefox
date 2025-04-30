@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_DEBUG_TYPES_H
 #define SPA_DEBUG_TYPES_H
@@ -38,7 +18,16 @@ extern "C" {
 
 #include <string.h>
 
-static inline const struct spa_type_info *spa_debug_type_find(const struct spa_type_info *info, uint32_t type)
+#ifndef SPA_API_DEBUG_TYPES
+ #ifdef SPA_API_IMPL
+  #define SPA_API_DEBUG_TYPES SPA_API_IMPL
+ #else
+  #define SPA_API_DEBUG_TYPES static inline
+ #endif
+#endif
+
+
+SPA_API_DEBUG_TYPES const struct spa_type_info *spa_debug_type_find(const struct spa_type_info *info, uint32_t type)
 {
 	const struct spa_type_info *res;
 
@@ -57,22 +46,19 @@ static inline const struct spa_type_info *spa_debug_type_find(const struct spa_t
 	return NULL;
 }
 
-static inline const char *spa_debug_type_short_name(const char *name)
+SPA_API_DEBUG_TYPES const char *spa_debug_type_short_name(const char *name)
 {
-	const char *h;
-	if ((h = strrchr(name, ':')) != NULL)
-		name = h + 1;
-	return name;
+	return spa_type_short_name(name);
 }
 
-static inline const char *spa_debug_type_find_name(const struct spa_type_info *info, uint32_t type)
+SPA_API_DEBUG_TYPES const char *spa_debug_type_find_name(const struct spa_type_info *info, uint32_t type)
 {
 	if ((info = spa_debug_type_find(info, type)) == NULL)
 		return NULL;
 	return info->name;
 }
 
-static inline const char *spa_debug_type_find_short_name(const struct spa_type_info *info, uint32_t type)
+SPA_API_DEBUG_TYPES const char *spa_debug_type_find_short_name(const struct spa_type_info *info, uint32_t type)
 {
 	const char *str;
 	if ((str = spa_debug_type_find_name(info, type)) == NULL)
@@ -80,7 +66,7 @@ static inline const char *spa_debug_type_find_short_name(const struct spa_type_i
 	return spa_debug_type_short_name(str);
 }
 
-static inline uint32_t spa_debug_type_find_type(const struct spa_type_info *info, const char *name)
+SPA_API_DEBUG_TYPES uint32_t spa_debug_type_find_type(const struct spa_type_info *info, const char *name)
 {
 	if (info == NULL)
 		info = SPA_TYPE_ROOT;
@@ -96,7 +82,7 @@ static inline uint32_t spa_debug_type_find_type(const struct spa_type_info *info
 	return SPA_ID_INVALID;
 }
 
-static inline const struct spa_type_info *spa_debug_type_find_short(const struct spa_type_info *info, const char *name)
+SPA_API_DEBUG_TYPES const struct spa_type_info *spa_debug_type_find_short(const struct spa_type_info *info, const char *name)
 {
 	while (info && info->name) {
 		if (strcmp(spa_debug_type_short_name(info->name), name) == 0)
@@ -110,7 +96,7 @@ static inline const struct spa_type_info *spa_debug_type_find_short(const struct
 	return NULL;
 }
 
-static inline uint32_t spa_debug_type_find_type_short(const struct spa_type_info *info, const char *name)
+SPA_API_DEBUG_TYPES uint32_t spa_debug_type_find_type_short(const struct spa_type_info *info, const char *name)
 {
 	if ((info = spa_debug_type_find_short(info, name)) == NULL)
 		return SPA_ID_INVALID;

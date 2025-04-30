@@ -26,6 +26,9 @@ struct JS_PUBLIC_API JSContext;
 
 namespace js {
 
+extern bool ConstantStrictEqual(JSContext* cx, JS::Handle<JS::Value> val,
+                                uint16_t operand, bool* equal);
+
 /** Computes |lval === rval|. */
 extern bool StrictlyEqual(JSContext* cx, JS::Handle<JS::Value> lval,
                           JS::Handle<JS::Value> rval, bool* equal);

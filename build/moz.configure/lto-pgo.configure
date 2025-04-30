@@ -6,16 +6,6 @@
 
 # PGO
 # ==============================================================
-llvm_profdata = check_prog(
-    "LLVM_PROFDATA", ["llvm-profdata"], allow_missing=True, paths=clang_search_path
-)
-
-
-@depends_if(llvm_profdata)
-@checking("whether llvm-profdata supports 'order' subcommand")
-def llvm_profdata_order(profdata):
-    retcode, _, _ = get_cmd_output(profdata, "order", "--help")
-    return retcode == 0
 
 
 option(
@@ -46,6 +36,26 @@ enable_profile_use = depends_if("--enable-profile-use")(lambda _: True)
 
 imply_option("MOZ_PGO", enable_profile_use)
 set_config("MOZ_PROFILE_USE", enable_profile_use)
+
+llvm_profdata = check_prog(
+    "LLVM_PROFDATA", ["llvm-profdata"], allow_missing=True, paths=clang_search_path
+)
+
+
+# --call-graph-profile-sort is the default behavior for lld, and it proves to be
+# more efficient than pgo-based orderfile. Don't pass it explicitly because it's
+# option support differ from one version to the other (w/ or W: argument and the
+# argument value).
+@depends(select_linker, target)
+def pgo_cg_sort(linker, target):
+    return linker and linker.KIND == "lld" and target.os != "OSX"
+
+
+@depends_if(llvm_profdata, when=enable_profile_use & ~pgo_cg_sort)
+@checking("whether llvm-profdata supports 'order' subcommand")
+def llvm_profdata_order(profdata):
+    retcode, _, _ = get_cmd_output(profdata, "order", "--help")
+    return retcode == 0
 
 
 option(
@@ -108,7 +118,7 @@ def orderfile_path(profile_use, path, profdata, profdata_order, build_env):
 pgo_temporal = c_compiler.try_compile(
     flags=["-fprofile-generate", "-mllvm", "-pgo-temporal-instrumentation"],
     check_msg="whether the C compiler supports temporal instrumentation",
-    when="--enable-profile-generate",
+    when=enable_profile_generate & ~pgo_cg_sort,
 )
 
 
@@ -117,13 +127,19 @@ pgo_temporal = c_compiler.try_compile(
     select_linker,
     target,
     pgo_profile_path,
-    orderfile_path,
     target_is_windows,
     pgo_temporal,
+    orderfile_path,
 )
 @imports("multiprocessing")
 def pgo_flags(
-    compiler, linker, target, profdata, orderfile, target_is_windows, pgo_temporal
+    compiler,
+    linker,
+    target,
+    profdata,
+    target_is_windows,
+    pgo_temporal,
+    orderfile,
 ):
     if compiler.type == "gcc":
         return namespace(
@@ -157,8 +173,8 @@ def pgo_flags(
                     "-Wl,--no-warn-symbol-ordering",
                 ]
 
-        if use_ldflags:
-            log.info("Activating PGO-based orderfile")
+            if use_ldflags:
+                log.info("Activating PGO-based orderfile")
 
         gen_cflags = [prefix + "-fprofile-generate"]
 

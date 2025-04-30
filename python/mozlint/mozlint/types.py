@@ -120,13 +120,11 @@ class LineType(BaseType):
             return self._lint_dir(path, config, **lintargs)
 
         payload = config["payload"]
-        with open(path, errors="replace") as fh:
-            lines = fh.readlines()
-
         errors = []
-        for i, line in enumerate(lines):
-            if self.condition(payload, line, config):
-                errors.append(result.from_config(config, path=path, lineno=i + 1))
+        with open(path, errors="replace") as fh:
+            for i, line in enumerate(fh):
+                if self.condition(payload, line, config):
+                    errors.append(result.from_config(config, path=path, lineno=i + 1))
 
         return errors
 

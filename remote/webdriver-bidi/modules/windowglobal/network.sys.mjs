@@ -11,6 +11,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "chrome://remote/content/shared/listeners/BeforeStopRequestListener.sys.mjs",
   CachedResourceListener:
     "chrome://remote/content/shared/listeners/CachedResourceListener.sys.mjs",
+  DataChannelListener:
+    "chrome://remote/content/shared/listeners/DataChannelListener.sys.mjs",
   NetworkRequest: "chrome://remote/content/shared/NetworkRequest.sys.mjs",
   NetworkResponse: "chrome://remote/content/shared/NetworkResponse.sys.mjs",
 });
@@ -18,6 +20,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 class NetworkModule extends WindowGlobalBiDiModule {
   #beforeStopRequestListener;
   #cachedResourceListener;
+  #dataChannelListener;
   #subscribedEvents;
 
   constructor(messageHandler) {
@@ -39,6 +42,14 @@ class NetworkModule extends WindowGlobalBiDiModule {
       this.#onCachedResourceSent
     );
 
+    this.#dataChannelListener = new lazy.DataChannelListener(
+      this.messageHandler.context
+    );
+    this.#dataChannelListener.on(
+      "data-channel-opened",
+      this.#onDataChannelOpened
+    );
+
     // Set of event names which have active subscriptions.
     this.#subscribedEvents = new Set();
   }
@@ -46,7 +57,17 @@ class NetworkModule extends WindowGlobalBiDiModule {
   destroy() {
     this.#beforeStopRequestListener.destroy();
     this.#cachedResourceListener.destroy();
+    this.#dataChannelListener.destroy();
     this.#subscribedEvents = null;
+  }
+
+  #emitWindowGlobalNetworkResource(channel, request, response) {
+    this.messageHandler.emitEvent("network._windowGlobalNetworkResource", {
+      channelId: channel.channelId,
+      context: this.messageHandler.context,
+      request: request.toJSON(),
+      response: response.toJSON(),
+    });
   }
 
   #onBeforeStopRequest = (event, data) => {
@@ -65,21 +86,31 @@ class NetworkModule extends WindowGlobalBiDiModule {
     const response = new lazy.NetworkResponse(data.channel, {
       fromCache: true,
       fromServiceWorker: false,
-      isCachedCSS: true,
+      isCachedResource: true,
     });
 
-    this.messageHandler.emitEvent("network._cachedResourceSent", {
-      channelId: data.channel.channelId,
-      context: this.messageHandler.context,
-      request: request.toJSON(),
-      response: response.toJSON(),
+    this.#emitWindowGlobalNetworkResource(data.channel, request, response);
+  };
+
+  #onDataChannelOpened = (event, data) => {
+    const request = new lazy.NetworkRequest(data.channel, {
+      eventRecord: this,
+      navigationManager: null,
     });
+    const response = new lazy.NetworkResponse(data.channel, {
+      fromCache: false,
+      fromServiceWorker: false,
+      isCachedResource: false,
+    });
+
+    this.#emitWindowGlobalNetworkResource(data.channel, request, response);
   };
 
   #startListening() {
     if (this.#subscribedEvents.size == 0) {
       this.#beforeStopRequestListener.startListening();
       this.#cachedResourceListener.startListening();
+      this.#dataChannelListener.startListening();
     }
   }
 
@@ -87,6 +118,7 @@ class NetworkModule extends WindowGlobalBiDiModule {
     if (this.#subscribedEvents.size == 0) {
       this.#beforeStopRequestListener.stopListening();
       this.#cachedResourceListener.stopListening();
+      this.#dataChannelListener.stopListening();
     }
   }
 

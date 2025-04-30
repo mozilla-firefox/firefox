@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>setting-control test</title>
+    <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+    <link
+      rel="stylesheet"
+      href="chrome://mochikit/content/tests/SimpleTest/test.css"
+    />
+    <link rel="stylesheet" href="chrome://global/skin/global.css" />
+    <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+    <script src="../../../../../toolkit/content/tests/widgets/lit-test-helpers.js"></script>
+    <script
+      type="module"
+      src="chrome://browser/content/preferences/widgets/setting-group.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://browser/content/preferences/widgets/setting-control.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-support-link.mjs"
+    ></script>
+    <script
+      type="application/javascript"
+      src="chrome://global/content/preferencesBindings.js"
+    ></script>
+    <script>
+      /* import-globals-from /toolkit/content/preferencesBindings.js */
+      let html, testHelpers;
+
+      const LABEL_L10N_ID = "browsing-use-autoscroll";
+      const GROUP_L10N_ID = "pane-experimental-reset";
+
+      function renderTemplate(itemConfig, setting) {
+        return testHelpers.renderTemplate(html`
+        <setting-control
+          .config=${itemConfig}
+          .setting=${setting}
+        ></setting-group>
+      `);
+      }
+
+      function waitForSettingChange(setting) {
+        return new Promise(resolve => {
+          setting.on("change", function handler() {
+            setting.off("change", handler);
+            resolve();
+          });
+        });
+      }
+
+      add_setup(async function setup() {
+        await SpecialPowers.pushPrefEnv({
+          set: [["settings.revamp.design", false]],
+        });
+        testHelpers = new InputTestHelpers();
+        ({ html } = await testHelpers.setupLit());
+        testHelpers.setupTests({
+          templateFn: () => html`<setting-group></setting-group>`,
+        });
+        MozXULElement.insertFTLIfNeeded("branding/brand.ftl");
+        MozXULElement.insertFTLIfNeeded("browser/preferences/preferences.ftl");
+      });
+
+      add_task(async function testSimpleCheckbox() {
+        const PREF = "test.setting-control.one";
+        const SETTING = "setting-control-one";
+        await SpecialPowers.pushPrefEnv({
+          set: [[PREF, true]],
+        });
+        Preferences.addAll([{ id: PREF, type: "bool" }]);
+        Preferences.addSetting({
+          id: SETTING,
+          pref: PREF,
+        });
+        let itemConfig = { l10nId: LABEL_L10N_ID, id: SETTING };
+        let setting = Preferences.getSetting(SETTING);
+        let result = await renderTemplate(itemConfig, setting);
+        let control = result.firstElementChild;
+        is(
+          control.localName,
+          "setting-control",
+          "It rendered the setting-control"
+        );
+        is(
+          control.inputEl.localName,
+          "moz-checkbox",
+          "The control rendered a checkbox"
+        );
+        is(control.inputEl.dataset.l10nId, LABEL_L10N_ID, "Label is set");
+        is(control.inputEl.checked, true, "checkbox is checked");
+        is(Services.prefs.getBoolPref(PREF), true, "pref is true");
+
+        let settingChanged = waitForSettingChange(setting);
+        synthesizeMouseAtCenter(control, {});
+        await settingChanged;
+        is(
+          control.inputEl.checked,
+          false,
+          "checkbox becomes unchecked after click"
+        );
+        is(Services.prefs.getBoolPref(PREF), false, "pref is false");
+
+        settingChanged = waitForSettingChange(setting);
+        Services.prefs.setBoolPref(PREF, true);
+        await settingChanged;
+        is(
+          control.inputEl.checked,
+          true,
+          "checkbox becomes checked after pfef change"
+        );
+        is(Services.prefs.getBoolPref(PREF), true, "pref is true");
+      });
+
+      add_task(async function testSupportLinkCheckbox() {
+        const SETTING = "setting-control-support-link";
+        Preferences.addSetting({
+          id: SETTING,
+          get: () => true,
+        });
+        let itemConfig = {
+          l10nId: LABEL_L10N_ID,
+          id: SETTING,
+          supportPage: "foo",
+        };
+        let result = await renderTemplate(
+          itemConfig,
+          Preferences.getSetting(SETTING)
+        );
+        let control = result.firstElementChild;
+        ok(control, "Got a control");
+        let checkbox = control.inputEl;
+        is(checkbox.localName, "moz-checkbox", "moz-checkbox is rendered");
+        is(
+          checkbox.supportPage,
+          "foo",
+          "The checkbox receives the supportPage"
+        );
+      });
+
+      add_task(async function testSupportLinkSubcategory() {
+        const SETTING = "setting-control-subcategory";
+        Preferences.addSetting({
+          id: SETTING,
+          get: () => true,
+        });
+
+        let configOne = {
+          l10nId: LABEL_L10N_ID,
+          id: SETTING,
+          subcategory: "exsubcategory",
+        };
+        let result = await renderTemplate(
+          configOne,
+          Preferences.getSetting(SETTING)
+        );
+        let control = result.firstElementChild;
+        ok(control, "Got the control");
+        is(
+          control.inputEl.dataset.subcategory,
+          "exsubcategory",
+          "Subcategory is set"
+        );
+
+        let configTwo = {
+          l10nId: LABEL_L10N_ID,
+          id: SETTING,
+          subcategory: "exsubcategory2",
+          supportPage: "foo",
+        };
+        result = await renderTemplate(
+          configTwo,
+          Preferences.getSetting(SETTING)
+        );
+        control = result.firstElementChild;
+        ok(control, "Got the control");
+        is(
+          control.inputEl.dataset.subcategory,
+          "exsubcategory2",
+          "Subcategory is set"
+        );
+
+        is(control.inputEl.supportPage, "foo", "Input got the supportPage");
+      });
+    </script>
+  </head>
+  <body>
+    <p id="display"></p>
+    <div id="content" style="display: none"></div>
+    <pre id="test"></pre>
+  </body>
+</html>

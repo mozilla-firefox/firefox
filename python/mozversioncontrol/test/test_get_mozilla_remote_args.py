@@ -16,10 +16,11 @@ STEPS = {
         git remote add try hg::https://hg.mozilla.org/try
         """,
     ],
+    "jj": [],
 }
 
 
-def test_get_upstream_remotes(repo):
+def test_get_mozilla_remote_args(repo):
     # Test is only relevant for Git.
     if not repo.vcs == "git":
         return

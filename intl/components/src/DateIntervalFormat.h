@@ -17,6 +17,7 @@
 
 namespace mozilla::intl {
 class Calendar;
+class DateTimeFormat;
 
 using AutoFormattedDateInterval =
     AutoFormattedResult<UFormattedDateInterval, udtitvfmt_openResult,
@@ -76,6 +77,21 @@ class DateIntervalFormat final {
    * Unix epoch times are equal.
    */
   ICUResult TryFormatDateTime(double aStart, double aEnd,
+                              AutoFormattedDateInterval& aFormatted,
+                              bool* aPracticallyEqual) const;
+
+  /**
+   * Format a date-time range between two Unix epoch times in milliseconds.
+   *
+   * The result will be stored in aFormatted, caller can use
+   * AutoFormattedDateInterval::ToSpan() to get the formatted string, or pass
+   * the aFormatted to TryFormattedToParts to get the parts vector.
+   *
+   * aPracticallyEqual will be set to true if the date times of the two
+   * Unix epoch times are equal.
+   */
+  ICUResult TryFormatDateTime(double aStart, double aEnd,
+                              const DateTimeFormat* aDateTimeFormat,
                               AutoFormattedDateInterval& aFormatted,
                               bool* aPracticallyEqual) const;
 

@@ -609,9 +609,8 @@ TEST_F(FOGFixture, TestLabeledTimingDistWorks) {
 }
 
 TEST_F(FOGFixture, TestLabeledTimingDistTruncateGet) {
-  // Note that bug 1959696 will up this limit to 111.
   auto longKey =
-      "this is a key that is longer than the present limit of 71 characters ok?"_ns;
+      "this is a label that is longer than the new label limit of 111 characters introduced in bug 1959696 in April of 2025."_ns;
 
   auto sec = TimeDuration::FromMilliseconds(1);
   test_only::where_has_the_time_gone.MaybeTruncateAndGet(longKey)

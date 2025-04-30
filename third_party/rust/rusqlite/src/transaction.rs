@@ -100,7 +100,7 @@ impl Transaction<'_> {
     /// transactions.
     ///
     /// Even though we don't mutate the connection, we take a `&mut Connection`
-    /// so as to prevent nested transactions on the same connection. For cases
+    /// to prevent nested transactions on the same connection. For cases
     /// where this is unacceptable, [`Transaction::new_unchecked`] is available.
     #[inline]
     pub fn new(conn: &mut Connection, behavior: TransactionBehavior) -> Result<Transaction<'_>> {
@@ -238,7 +238,7 @@ impl Deref for Transaction<'_> {
     }
 }
 
-#[allow(unused_must_use)]
+#[expect(unused_must_use)]
 impl Drop for Transaction<'_> {
     #[inline]
     fn drop(&mut self) {
@@ -363,7 +363,7 @@ impl Deref for Savepoint<'_> {
     }
 }
 
-#[allow(unused_must_use)]
+#[expect(unused_must_use)]
 impl Drop for Savepoint<'_> {
     #[inline]
     fn drop(&mut self) {
@@ -377,11 +377,11 @@ impl Drop for Savepoint<'_> {
 #[cfg(feature = "modern_sqlite")] // 3.37.0
 #[cfg_attr(docsrs, doc(cfg(feature = "modern_sqlite")))]
 pub enum TransactionState {
-    /// Equivalent to SQLITE_TXN_NONE
+    /// Equivalent to `SQLITE_TXN_NONE`
     None,
-    /// Equivalent to SQLITE_TXN_READ
+    /// Equivalent to `SQLITE_TXN_READ`
     Read,
-    /// Equivalent to SQLITE_TXN_WRITE
+    /// Equivalent to `SQLITE_TXN_WRITE`
     Write,
 }
 
@@ -414,7 +414,7 @@ impl Connection {
     /// Will return `Err` if the underlying SQLite call fails.
     #[inline]
     pub fn transaction(&mut self) -> Result<Transaction<'_>> {
-        Transaction::new(self, TransactionBehavior::Deferred)
+        Transaction::new(self, self.transaction_behavior)
     }
 
     /// Begin a new transaction with a specified behavior.
@@ -464,7 +464,7 @@ impl Connection {
     /// Will return `Err` if the underlying SQLite call fails. The specific
     /// error returned if transactions are nested is currently unspecified.
     pub fn unchecked_transaction(&self) -> Result<Transaction<'_>> {
-        Transaction::new_unchecked(self, TransactionBehavior::Deferred)
+        Transaction::new_unchecked(self, self.transaction_behavior)
     }
 
     /// Begin a new savepoint with the default behavior (DEFERRED).
@@ -517,6 +517,34 @@ impl Connection {
         db_name: Option<crate::DatabaseName<'_>>,
     ) -> Result<TransactionState> {
         self.db.borrow().txn_state(db_name)
+    }
+
+    /// Set the default transaction behavior for the connection.
+    ///
+    /// ## Note
+    ///
+    /// This will only apply to transactions initiated by [`transaction`](Connection::transaction)
+    /// or [`unchecked_transaction`](Connection::unchecked_transaction).
+    ///
+    /// ## Example
+    ///
+    /// ```rust,no_run
+    /// # use rusqlite::{Connection, Result, TransactionBehavior};
+    /// # fn do_queries_part_1(_conn: &Connection) -> Result<()> { Ok(()) }
+    /// # fn do_queries_part_2(_conn: &Connection) -> Result<()> { Ok(()) }
+    /// fn perform_queries(conn: &mut Connection) -> Result<()> {
+    ///     conn.set_transaction_behavior(TransactionBehavior::Immediate);
+    ///
+    ///     let tx = conn.transaction()?;
+    ///
+    ///     do_queries_part_1(&tx)?; // tx causes rollback if this fails
+    ///     do_queries_part_2(&tx)?; // tx causes rollback if this fails
+    ///
+    ///     tx.commit()
+    /// }
+    /// ```
+    pub fn set_transaction_behavior(&mut self, behavior: TransactionBehavior) {
+        self.transaction_behavior = behavior;
     }
 }
 
@@ -624,12 +652,12 @@ mod test {
                 let mut sp1 = tx.savepoint()?;
                 sp1.execute_batch("INSERT INTO foo VALUES(2)")?;
                 assert_current_sum(3, &sp1)?;
-                // will rollback sp1
+                // will roll back sp1
                 {
                     let mut sp2 = sp1.savepoint()?;
                     sp2.execute_batch("INSERT INTO foo VALUES(4)")?;
                     assert_current_sum(7, &sp2)?;
-                    // will rollback sp2
+                    // will roll back sp2
                     {
                         let sp3 = sp2.savepoint()?;
                         sp3.execute_batch("INSERT INTO foo VALUES(8)")?;
@@ -773,6 +801,29 @@ mod test {
         db.pragma_update(None, "user_version", 1)?;
         assert_eq!(TransactionState::Write, db.transaction_state(None)?);
         db.execute_batch("ROLLBACK")?;
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(feature = "modern_sqlite")]
+    fn auto_commit() -> Result<()> {
+        use super::TransactionState;
+        let db = Connection::open_in_memory()?;
+        db.execute_batch("CREATE TABLE t(i UNIQUE);")?;
+        assert!(db.is_autocommit());
+        let mut stmt = db.prepare("SELECT name FROM sqlite_master")?;
+        assert_eq!(TransactionState::None, db.transaction_state(None)?);
+        {
+            let mut rows = stmt.query([])?;
+            assert!(rows.next()?.is_some()); // start reading
+            assert_eq!(TransactionState::Read, db.transaction_state(None)?);
+            db.execute("INSERT INTO t VALUES (1)", [])?; // auto-commit
+            assert_eq!(TransactionState::Read, db.transaction_state(None)?);
+            assert!(rows.next()?.is_some()); // still reading
+            assert_eq!(TransactionState::Read, db.transaction_state(None)?);
+            assert!(rows.next()?.is_none()); // end
+            assert_eq!(TransactionState::None, db.transaction_state(None)?);
+        }
         Ok(())
     }
 }

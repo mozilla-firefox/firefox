@@ -345,7 +345,7 @@ class ScriptMixin(PlatformMixin):
             str: in case `path` is a string. The result is the path with the new notation.
             type(path): `path` itself is returned in case `path` is not str type.
         """
-        if not isinstance(path, (str,)):
+        if not isinstance(path, str):
             return path
         path = path.replace("\\", "/")
 

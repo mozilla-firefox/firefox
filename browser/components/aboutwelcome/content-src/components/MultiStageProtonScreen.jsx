@@ -432,17 +432,56 @@ export class ProtonScreen extends React.PureComponent {
         {content.hero_image ? (
           <HeroImage url={content.hero_image.url} />
         ) : (
-          <React.Fragment>
-            <div className="message-text">
-              <div className="spacer-top" />
-              <Localized text={content.hero_text}>
-                <h1 />
-              </Localized>
-              <div className="spacer-bottom" />
-            </div>
-          </React.Fragment>
+          this.renderHeroText(content.hero_text)
         )}
       </div>
+    );
+  }
+
+  renderHeroText(hero_text) {
+    if (!hero_text) {
+      return null;
+    }
+
+    // Check if hero_text is a string or an object with string_id property
+    // essentially checking if we're using old or new design
+    const isSimpleText =
+      typeof hero_text === "string" ||
+      (typeof hero_text === "object" &&
+        hero_text !== null &&
+        "string_id" in hero_text);
+
+    const HeroTextWrapper = ({ children, className = "" }) => (
+      <React.Fragment>
+        <div className={`message-text ${className}`}>
+          <div className="spacer-top" />
+          {children}
+          <div className="spacer-bottom" />
+        </div>
+      </React.Fragment>
+    );
+
+    if (isSimpleText) {
+      return (
+        <HeroTextWrapper>
+          <Localized text={hero_text}>
+            <h1 />
+          </Localized>
+        </HeroTextWrapper>
+      );
+    }
+
+    return (
+      <HeroTextWrapper className="hero-text">
+        <Localized text={hero_text.title}>
+          <h1 />
+        </Localized>
+        {hero_text.subtitle && (
+          <Localized text={hero_text.subtitle}>
+            <h2 />
+          </Localized>
+        )}
+      </HeroTextWrapper>
     );
   }
 

@@ -15,11 +15,9 @@ support-files = [
 ["test_add_setup.js"]
 
 ["test_check_nsIException.js"]
-skip-if = ["os == 'win' && debug"]
 
 ["test_check_nsIException_failing.js"]
 fail-if = ["true"]
-skip-if = ["os == 'win' && debug"]
 
 ["test_do_check_matches.js"]
 
@@ -27,11 +25,9 @@ skip-if = ["os == 'win' && debug"]
 fail-if = ["true"]
 
 ["test_do_check_null.js"]
-skip-if = ["os == 'win' && debug"]
 
 ["test_do_check_null_failing.js"]
 fail-if = ["true"]
-skip-if = ["os == 'win' && debug"]
 
 ["test_do_get_tempdir.js"]
 
@@ -68,7 +64,7 @@ prefs = ["dummy.pref.from.test.file=1"]
 ["test_sample.js"]
 
 ["test_skip.js"]
-skip-if = ["true"]
+run-if = ["false"]
 
 ["test_tasks_skip.js"]
 

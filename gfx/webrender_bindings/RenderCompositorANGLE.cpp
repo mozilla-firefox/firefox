@@ -913,8 +913,10 @@ void RenderCompositorANGLE::AttachExternalImage(
 
 void RenderCompositorANGLE::AddSurface(
     wr::NativeSurfaceId aId, const wr::CompositorSurfaceTransform& aTransform,
-    wr::DeviceIntRect aClipRect, wr::ImageRendering aImageRendering) {
-  mDCLayerTree->AddSurface(aId, aTransform, aClipRect, aImageRendering);
+    wr::DeviceIntRect aClipRect, wr::ImageRendering aImageRendering,
+    wr::DeviceIntRect aRoundedClipRect, wr::ClipRadius aClipRadius) {
+  mDCLayerTree->AddSurface(aId, aTransform, aClipRect, aImageRendering,
+                           aRoundedClipRect, aClipRadius);
 }
 
 void RenderCompositorANGLE::GetCompositorCapabilities(

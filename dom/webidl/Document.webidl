@@ -760,3 +760,9 @@ partial interface Document {
 
 // https://github.com/w3c/csswg-drafts/pull/10767 for the name divergence in the spec
 callback ViewTransitionUpdateCallback = Promise<any> ();
+
+// https://wicg.github.io/sanitizer-api/#sanitizer-api
+partial interface Document {
+  [Throws, Pref="dom.security.sanitizer.enabled"]
+  static Document parseHTML(DOMString html, optional SetHTMLOptions options = {});
+};

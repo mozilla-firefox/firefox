@@ -33,13 +33,6 @@
 #    define MOZ_THREADSTACKHELPER_NATIVE_STACK
 #  endif
 
-// Android x86 builds consistently crash in the Background Hang Reporter. bug
-// 1368520.
-#  if defined(__ANDROID__)
-#    undef MOZ_THREADSTACKHELPER_PROFILING_STACK
-#    undef MOZ_THREADSTACKHELPER_NATIVE_STACK
-#  endif
-
 namespace mozilla {
 
 /**

@@ -42,7 +42,7 @@ thiserror = "1.0"
 path = "../interrupt"
 
 [dependencies.rusqlite]
-version = "0.31.0"
+version = "0.33.0"
 features = [
     "functions",
     "limits",

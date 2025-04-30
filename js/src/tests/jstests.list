@@ -1145,17 +1145,10 @@ skip script test262/built-ins/Temporal/ZonedDateTime/prototype/until/argument-st
 
 # See Bug 1950425, skip tests for calendars disabled in release or beta
 skip-if(release_or_beta) script non262/Temporal/Intl/defaults.js
-skip-if(release_or_beta) script test262/staging/sm/Temporal/PlainMonthDay/from-chinese-leap-month-common.js
-skip-if(release_or_beta) script test262/staging/sm/Temporal/PlainMonthDay/from-chinese-leap-month-uncommon.js
-skip-if(release_or_beta) script test262/staging/sm/Temporal/PlainMonthDay/from-chinese.js
-skip-if(release_or_beta) script test262/staging/Intl402/Temporal/old/non-iso-calendars-chinese.js
-skip-if(release_or_beta) script test262/staging/Intl402/Temporal/old/non-iso-calendars-dangi.js
 skip-if(release_or_beta) script test262/staging/Intl402/Temporal/old/non-iso-calendars-islamic-umalqura.js
 skip-if(release_or_beta) script test262/staging/Intl402/Temporal/old/islamic-calendars-islamic.js
 skip-if(release_or_beta) script test262/staging/Intl402/Temporal/old/islamic-calendars-islamic-rgsa.js
 skip-if(release_or_beta) script test262/staging/Intl402/Temporal/old/islamic-calendars-islamic-umalqura.js
-skip-if(release_or_beta) script test262/intl402/Temporal/PlainYearMonth/from/reference-day-chinese.js
-skip-if(release_or_beta) script test262/intl402/Temporal/PlainDate/prototype/until/until-across-lunisolar-leap-months.js
 
 # Try re-enabling when Bug 1954138 or Bug 1955545 are fixed.
 skip script test262/staging/Intl402/Temporal/old/non-iso-calendars-islamic.js

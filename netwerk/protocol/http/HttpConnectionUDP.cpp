@@ -723,5 +723,12 @@ nsIRequest::TRRMode HttpConnectionUDP::EffectiveTRRMode() {
 
 TRRSkippedReason HttpConnectionUDP::TRRSkipReason() { return mTRRSkipReason; }
 
+Http3Stats HttpConnectionUDP::GetStats() {
+  if (!mHttp3Session) {
+    return Http3Stats();
+  }
+  return mHttp3Session->GetStats();
+}
+
 }  // namespace net
 }  // namespace mozilla

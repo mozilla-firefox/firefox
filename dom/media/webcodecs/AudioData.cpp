@@ -251,6 +251,9 @@ uint32_t AudioData::NumberOfChannels() const {
 // https://w3c.github.io/webcodecs/#dom-audiodata-duration
 uint64_t AudioData::Duration() const {
   AssertIsOnOwningThread();
+  if (!mNumberOfFrames) {
+    return 0;
+  }
   // The spec isn't clear in which direction to convert to integer.
   // https://github.com/w3c/webcodecs/issues/726
   return static_cast<uint64_t>(

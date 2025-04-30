@@ -15,6 +15,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -24,7 +25,6 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withContentDescription
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiSelector
@@ -41,7 +41,6 @@ import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.helpers.HomeActivityComposeTestRule
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectExists
 import org.mozilla.fenix.helpers.MatcherHelper.itemContainingText
-import org.mozilla.fenix.helpers.MatcherHelper.itemWithDescription
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResId
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResIdAndText
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResIdContainingText
@@ -131,15 +130,15 @@ class DownloadRobot {
     fun verifyDownloadedFileName(fileName: String) =
         assertUIObjectExists(itemContainingText(fileName))
 
-    fun openMultiSelectMoreOptionsMenu() {
+    fun openMultiSelectMoreOptionsMenu(composeTestRule: ComposeTestRule) {
         Log.i(TAG, "openMultiSelectMoreOptionsMenu: Trying to click multi-select more options button")
-        itemWithDescription(getStringResource(R.string.content_description_menu)).click()
+        composeTestRule.onNodeWithContentDescription(getStringResource(R.string.content_description_menu)).performClick()
         Log.i(TAG, "openMultiSelectMoreOptionsMenu: Clicked multi-select more options button")
     }
 
-    fun clickMultiSelectRemoveButton() {
+    fun clickMultiSelectRemoveButton(composeTestRule: ComposeTestRule) {
         Log.i(TAG, "clickMultiSelectRemoveButton: Trying to click multi-select remove button")
-        itemWithResIdContainingText("$packageName:id/title", getStringResource(R.string.download_delete_item)).click()
+        composeTestRule.onNodeWithText(getStringResource(R.string.download_delete_item)).performClick()
         Log.i(TAG, "clickMultiSelectRemoveButton: Clicked multi-select remove button")
     }
 
@@ -267,18 +266,18 @@ class DownloadRobot {
             return Transition()
         }
 
-        fun exitDownloadsManagerToBrowser(interact: BrowserRobot.() -> Unit): BrowserRobot.Transition {
+        fun exitDownloadsManagerToBrowser(composeTestRule: ComposeTestRule, interact: BrowserRobot.() -> Unit): BrowserRobot.Transition {
             Log.i(TAG, "exitDownloadsManagerToBrowser: Trying to click the navigate up toolbar button")
-            onView(withContentDescription("Navigate up")).click()
+            composeTestRule.onNodeWithContentDescription(getStringResource(R.string.download_navigate_back_description)).performClick()
             Log.i(TAG, "exitDownloadsManagerToBrowser: Clicked the navigate up toolbar button")
 
             BrowserRobot().interact()
             return BrowserRobot.Transition()
         }
 
-        fun goBack(interact: HomeScreenRobot.() -> Unit): HomeScreenRobot.Transition {
+        fun goBack(composeTestRule: ComposeTestRule, interact: HomeScreenRobot.() -> Unit): HomeScreenRobot.Transition {
             Log.i(TAG, "goBack: Trying to click the navigate up toolbar button")
-            goBackButton().click()
+            composeTestRule.onNodeWithContentDescription(getStringResource(R.string.download_navigate_back_description)).performClick()
             Log.i(TAG, "goBack: Clicked the navigate up toolbar button")
 
             HomeScreenRobot().interact()
@@ -298,5 +297,3 @@ private fun downloadButton() =
 
 private fun openDownloadButton() =
     mDevice.findObject(UiSelector().resourceId("$packageName:id/download_dialog_action_button"))
-
-private fun goBackButton() = onView(withContentDescription("Navigate up"))

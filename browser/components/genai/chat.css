@@ -171,12 +171,15 @@ browser {
   }
 
   .icon {
+    --icon-size: 30px;
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
     border-radius: 0;
+    height: var(--icon-size);
     margin-inline: var(--space-small);
-    min-width: 40px;
+    max-width: var(--icon-size);
+    min-width: var(--icon-size);
     outline: none;
 
     &.claude {

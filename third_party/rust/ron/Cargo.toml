@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.64.0"
 name = "ron"
-version = "0.9.0"
+version = "0.10.1"
 authors = [
     "Christopher Durham <cad97@cad97.com>",
     "Dzmitry Malyshau <kvarkus@gmail.com>",
@@ -69,6 +69,10 @@ path = "examples/decode_file.rs"
 [[example]]
 name = "encode"
 path = "examples/encode.rs"
+
+[[example]]
+name = "encode_file"
+path = "examples/encode_file.rs"
 
 [[example]]
 name = "transcode"

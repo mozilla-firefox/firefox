@@ -15,6 +15,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   RemoteSettingsServer:
     "resource://testing-common/RemoteSettingsServer.sys.mjs",
   SearchUtils: "resource://gre/modules/SearchUtils.sys.mjs",
+  Suggestion: "resource://gre/modules/RustSuggest.sys.mjs",
   TestUtils: "resource://testing-common/TestUtils.sys.mjs",
   UrlbarPrefs: "resource:///modules/UrlbarPrefs.sys.mjs",
   UrlbarUtils: "resource:///modules/UrlbarUtils.sys.mjs",
@@ -383,12 +384,14 @@ class _QuickSuggestTestUtils {
    */
   ampRemoteSettings({
     keywords = ["amp"],
+    full_keywords = keywords.map(kw => [kw, 1]),
     url = "https://example.com/amp",
     title = "Amp Suggestion",
     score = 0.3,
   } = {}) {
     return {
       keywords,
+      full_keywords,
       url,
       title,
       score,
@@ -463,6 +466,22 @@ class _QuickSuggestTestUtils {
 
     if (result.payload.source == "rust") {
       result.payload.iconBlob = iconBlob;
+      result.payload.suggestionObject = new lazy.Suggestion.Amp(
+        title,
+        url,
+        originalUrl, // rawUrl
+        null, // icon,
+        null, // iconMimetype
+        fullKeyword,
+        blockId,
+        advertiser,
+        iabCategory,
+        impressionUrl,
+        clickUrl,
+        clickUrl, // rawClickUrl
+        0.3, // score
+        null // ftsMatchInfo
+      );
     } else {
       result.payload.icon = icon;
     }
@@ -515,7 +534,7 @@ class _QuickSuggestTestUtils {
     suggestedIndex = -1,
     isSuggestedIndexRelativeToGroup = true,
   } = {}) {
-    return {
+    let result = {
       suggestedIndex,
       isSuggestedIndexRelativeToGroup,
       type: lazy.UrlbarUtils.RESULT_TYPE.URL,
@@ -537,6 +556,18 @@ class _QuickSuggestTestUtils {
         telemetryType: "adm_nonsponsored",
       },
     };
+
+    if (source == "rust") {
+      result.payload.suggestionObject = new lazy.Suggestion.Wikipedia(
+        title,
+        url,
+        null, // icon
+        null, // iconMimetype
+        fullKeyword
+      );
+    }
+
+    return result;
   }
 
   /**
@@ -820,7 +851,7 @@ class _QuickSuggestTestUtils {
       url = url.href;
     }
 
-    return {
+    let result = {
       isBestMatch: true,
       suggestedIndex: 1,
       type: lazy.UrlbarUtils.RESULT_TYPE.URL,
@@ -842,6 +873,21 @@ class _QuickSuggestTestUtils {
         telemetryType: "amo",
       },
     };
+
+    if (source == "rust") {
+      result.payload.suggestionObject = new lazy.Suggestion.Amo(
+        title,
+        originalUrl, // url
+        icon,
+        description,
+        "4.7", // rating
+        1, // numberOfRatings
+        "amo-suggestion@example.com", // guid
+        0.2 // score
+      );
+    }
+
+    return result;
   }
 
   /**
@@ -880,8 +926,92 @@ class _QuickSuggestTestUtils {
         bottomTextL10n: { id: "firefox-suggest-mdn-bottom-text" },
         source: "rust",
         provider: "Mdn",
+        suggestionObject: new lazy.Suggestion.Mdn(
+          title,
+          url,
+          description,
+          0.2 // score
+        ),
       },
     };
+  }
+
+  /**
+   * Returns an expected Yelp result that can be passed to `check_results()` in
+   * xpcshell tests.
+   *
+   * @returns {object}
+   *   An object that can be passed to `check_results()`.
+   */
+  yelpResult({
+    url,
+    title,
+    source = "rust",
+    provider = "Yelp",
+    isTopPick = false,
+    // The default Yelp suggestedIndex is 0, unlike most other Suggest
+    // suggestion types, which use -1.
+    suggestedIndex = 0,
+    isSuggestedIndexRelativeToGroup = true,
+    originalUrl = undefined,
+    displayUrl = undefined,
+  }) {
+    const utmParameters = "&utm_medium=partner&utm_source=mozilla";
+
+    originalUrl ??= url;
+    originalUrl = new URL(originalUrl);
+    originalUrl.searchParams.delete("find_loc");
+    originalUrl = originalUrl.toString();
+
+    displayUrl =
+      (displayUrl ??
+        url
+          .replace(/^https:\/\/www[.]/, "")
+          .replace("%20", " ")
+          .replace("%2C", ",")) + utmParameters;
+
+    url += utmParameters;
+
+    if (isTopPick) {
+      suggestedIndex = 1;
+      isSuggestedIndexRelativeToGroup = false;
+    }
+
+    let result = {
+      type: lazy.UrlbarUtils.RESULT_TYPE.URL,
+      source: lazy.UrlbarUtils.RESULT_SOURCE.SEARCH,
+      isBestMatch: !!isTopPick,
+      suggestedIndex,
+      isSuggestedIndexRelativeToGroup,
+      heuristic: false,
+      payload: {
+        source,
+        provider,
+        telemetryType: "yelp",
+        bottomTextL10n: { id: "firefox-suggest-yelp-bottom-text" },
+        url,
+        originalUrl,
+        title,
+        displayUrl,
+        icon: null,
+        isSponsored: true,
+      },
+    };
+
+    if (source == "rust") {
+      result.payload.suggestionObject = new lazy.Suggestion.Yelp(
+        originalUrl, // url
+        title,
+        null, // icon
+        null, // iconMimetype
+        0.2, // score
+        false, // hasLocationSign
+        false, // subjectExactMatch
+        "find_loc" // locationParam
+      );
+    }
+
+    return result;
   }
 
   /**
@@ -928,7 +1058,7 @@ class _QuickSuggestTestUtils {
         },
         bottomTextL10n: {
           id: "firefox-suggest-weather-sponsored",
-          args: { provider: "AccuWeather" },
+          args: { provider: "AccuWeather®" },
           cacheable: true,
         },
         source,

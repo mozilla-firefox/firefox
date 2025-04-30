@@ -6,6 +6,10 @@
 
 "use strict";
 
+ChromeUtils.defineESModuleGetters(this, {
+  Suggestion: "resource://gre/modules/RustSuggest.sys.mjs",
+});
+
 const REMOTE_SETTINGS_RECORDS = [
   {
     collection: "fakespot-suggest-products",
@@ -826,6 +830,18 @@ function makeExpectedResult({
       isSponsored: true,
       dynamicType: "fakespot",
       icon: null,
+      suggestionObject: new Suggestion.Fakespot(
+        fakespotGrade,
+        "", // productId
+        rating,
+        title,
+        totalReviews,
+        originalUrl, // url
+        null, // icon
+        null, // iconMimetype
+        0.2, // score
+        null // matchInfo
+      ),
     },
   };
 }

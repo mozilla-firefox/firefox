@@ -286,10 +286,6 @@ interface nsITelemetry : nsISupports
    *
    * @param id - unique identifier from TelemetryHistograms.h
    * The returned object has the following functions:
-   *   add(value) - Adds a sample of `value` to the histogram.
-                    `value` may be a categorical histogram's label as a string,
-                    a boolean histogram's value as a boolean,
-                    or a number that fits inside a uint32_t.
    *   snapshot([optional] {store}) - Returns a snapshot of the histogram with the same data fields
                                       as in getSnapshotForHistograms().
                                       Defaults to the "main" store.

@@ -129,8 +129,6 @@ class SVGViewportElement : public SVGGraphicsElement {
     return !GetParent() && IsInUncomposedDoc() && IsSVGElement(nsGkAtoms::svg);
   }
 
-  bool AreWidthAndHeightUnsetOrPositive() const;
-
   /**
    * Returns the explicit or default preserveAspectRatio, unless we're
    * synthesizing a viewBox, in which case it returns the "none" value.

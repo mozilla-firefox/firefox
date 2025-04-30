@@ -155,14 +155,14 @@ class FFSetup:
         # installing webextensions
         webextensions_to_install = []
         webextensions_folder = self.test_config.get("webextensions_folder", None)
-        if isinstance(webextensions_folder, (str,)):
+        if isinstance(webextensions_folder, str):
             folder = utils.interpolate(webextensions_folder)
             for file in os.listdir(folder):
                 if file.endswith(".xpi"):
                     webextensions_to_install.append(os.path.join(folder, file))
 
         webextensions = self.test_config.get("webextensions", None)
-        if isinstance(webextensions, (str,)):
+        if isinstance(webextensions, str):
             webextensions_to_install.append(webextensions)
 
         if webextensions_to_install is not None:

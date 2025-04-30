@@ -55,7 +55,6 @@ pth:tools/moztreedocs
 pth:xpcom/ds/tools
 pth:xpcom/geckoprocesstypes_generator
 pth:xpcom/idl-parser
-vendored:third_party/python/Jinja2
 vendored:third_party/python/MarkupSafe/src
 vendored-fallback:pyyaml:third_party/python/PyYAML/lib/:faster native loading is disabled
 vendored:third_party/python/ansicon
@@ -76,6 +75,7 @@ vendored:third_party/python/glean_parser
 vendored:third_party/python/idna
 vendored:third_party/python/importlib_metadata
 vendored:third_party/python/importlib_resources
+vendored:third_party/python/jinja2
 vendored:third_party/python/jinxed
 vendored:third_party/python/jsmin
 vendored:third_party/python/jsonschema
@@ -104,7 +104,7 @@ vendored:third_party/python/wheel
 vendored:third_party/python/zipp
 # glean-sdk may not be installable if a wheel isn't available
 # and it has to be built from source.
-pypi-optional:glean-sdk==64.0.1:telemetry will not be collected
+pypi-optional:glean-sdk==64.1.1:telemetry will not be collected
 # Mach gracefully handles the case where `psutil` is unavailable.
 # We aren't (yet) able to pin packages in automation, so we have to
 # support down to the oldest locally-installed version (5.4.2).

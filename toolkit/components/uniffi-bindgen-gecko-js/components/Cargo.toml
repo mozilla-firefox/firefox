@@ -22,8 +22,6 @@ search = "0.1"
 suggest = "0.1"
 relevancy = "0.1"
 webext-storage = "0.1"
-# Workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=1959469
-hashbrown = { version = "0.15.2", features = [ "default-hasher" ] }
 
 [features]
 # Should we depend on xpcom crates?

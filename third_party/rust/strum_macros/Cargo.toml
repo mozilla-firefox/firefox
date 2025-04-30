@@ -10,15 +10,11 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-edition = "2018"
+edition = "2021"
+rust-version = "1.66.1"
 name = "strum_macros"
-version = "0.26.4"
+version = "0.27.1"
 authors = ["Peter Glotfelty <peter.glotfelty@microsoft.com>"]
-build = false
-autobins = false
-autoexamples = false
-autotests = false
-autobenches = false
 description = "Helpful macros for working with enums and strings"
 homepage = "https://github.com/Peternator7/strum"
 documentation = "https://docs.rs/strum"
@@ -38,7 +34,6 @@ repository = "https://github.com/Peternator7/strum"
 
 [lib]
 name = "strum_macros"
-path = "src/lib.rs"
 proc-macro = true
 
 [dependencies.heck]
@@ -55,10 +50,6 @@ version = "1.0"
 
 [dependencies.syn]
 version = "2.0"
-features = [
-    "parsing",
-    "extra-traits",
-]
+features = ["parsing"]
 
-[dev-dependencies.strum]
-version = "0.26"
+[dev-dependencies]

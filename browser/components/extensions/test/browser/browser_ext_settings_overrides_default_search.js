@@ -99,7 +99,7 @@ async function checkTelemetry(source, prevEngine, newEngine) {
       category: "search.engine.default",
       name: "changed",
       extra: {
-        change_source: source,
+        change_reason: source,
         previous_engine_id: prevEngine.id,
         new_engine_id: newEngine.id,
         new_display_name: newEngine.name,

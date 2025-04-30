@@ -8,6 +8,7 @@ and maintain connections.
 
 import os.path
 import socket  # noqa: F401
+import typing
 
 from urllib3.exceptions import ClosedPoolError, ConnectTimeoutError
 from urllib3.exceptions import HTTPError as _HTTPError
@@ -25,6 +26,7 @@ from urllib3.poolmanager import PoolManager, proxy_from_url
 from urllib3.util import Timeout as TimeoutSauce
 from urllib3.util import parse_url
 from urllib3.util.retry import Retry
+from urllib3.util.ssl_ import create_urllib3_context
 
 from .auth import _basic_auth_str
 from .compat import basestring, urlparse
@@ -61,10 +63,56 @@ except ImportError:
         raise InvalidSchema("Missing dependencies for SOCKS support.")
 
 
+if typing.TYPE_CHECKING:
+    from .models import PreparedRequest
+
+
 DEFAULT_POOLBLOCK = False
 DEFAULT_POOLSIZE = 10
 DEFAULT_RETRIES = 0
 DEFAULT_POOL_TIMEOUT = None
+
+_preloaded_ssl_context = create_urllib3_context()
+_preloaded_ssl_context.load_verify_locations(
+    extract_zipped_paths(DEFAULT_CA_BUNDLE_PATH)
+)
+
+
+def _urllib3_request_context(
+    request: "PreparedRequest",
+    verify: "bool | str | None",
+    client_cert: "typing.Tuple[str, str] | str | None",
+) -> "(typing.Dict[str, typing.Any], typing.Dict[str, typing.Any])":
+    host_params = {}
+    pool_kwargs = {}
+    parsed_request_url = urlparse(request.url)
+    scheme = parsed_request_url.scheme.lower()
+    port = parsed_request_url.port
+    cert_reqs = "CERT_REQUIRED"
+    if verify is False:
+        cert_reqs = "CERT_NONE"
+    elif verify is True:
+        pool_kwargs["ssl_context"] = _preloaded_ssl_context
+    elif isinstance(verify, str):
+        if not os.path.isdir(verify):
+            pool_kwargs["ca_certs"] = verify
+        else:
+            pool_kwargs["ca_cert_dir"] = verify
+    pool_kwargs["cert_reqs"] = cert_reqs
+    if client_cert is not None:
+        if isinstance(client_cert, tuple) and len(client_cert) == 2:
+            pool_kwargs["cert_file"] = client_cert[0]
+            pool_kwargs["key_file"] = client_cert[1]
+        else:
+            # According to our docs, we allow users to specify just the client
+            # cert path
+            pool_kwargs["cert_file"] = client_cert
+    host_params = {
+        "scheme": scheme,
+        "host": parsed_request_url.hostname,
+        "port": port,
+    }
+    return host_params, pool_kwargs
 
 
 class BaseAdapter:
@@ -247,28 +295,26 @@ class HTTPAdapter(BaseAdapter):
         :param cert: The SSL certificate to verify.
         """
         if url.lower().startswith("https") and verify:
-
-            cert_loc = None
-
-            # Allow self-specified cert location.
-            if verify is not True:
-                cert_loc = verify
-
-            if not cert_loc:
-                cert_loc = extract_zipped_paths(DEFAULT_CA_BUNDLE_PATH)
-
-            if not cert_loc or not os.path.exists(cert_loc):
-                raise OSError(
-                    f"Could not find a suitable TLS CA certificate bundle, "
-                    f"invalid path: {cert_loc}"
-                )
-
             conn.cert_reqs = "CERT_REQUIRED"
 
-            if not os.path.isdir(cert_loc):
-                conn.ca_certs = cert_loc
-            else:
-                conn.ca_cert_dir = cert_loc
+            # Only load the CA certificates if 'verify' is a string indicating the CA bundle to use.
+            # Otherwise, if verify is a boolean, we don't load anything since
+            # the connection will be using a context with the default certificates already loaded,
+            # and this avoids a call to the slow load_verify_locations()
+            if verify is not True:
+                # `verify` must be a str with a path then
+                cert_loc = verify
+
+                if not os.path.exists(cert_loc):
+                    raise OSError(
+                        f"Could not find a suitable TLS CA certificate bundle, "
+                        f"invalid path: {cert_loc}"
+                    )
+
+                if not os.path.isdir(cert_loc):
+                    conn.ca_certs = cert_loc
+                else:
+                    conn.ca_cert_dir = cert_loc
         else:
             conn.cert_reqs = "CERT_NONE"
             conn.ca_certs = None
@@ -327,6 +373,35 @@ class HTTPAdapter(BaseAdapter):
         response.connection = self
 
         return response
+
+    def _get_connection(self, request, verify, proxies=None, cert=None):
+        # Replace the existing get_connection without breaking things and
+        # ensure that TLS settings are considered when we interact with
+        # urllib3 HTTP Pools
+        proxy = select_proxy(request.url, proxies)
+        try:
+            host_params, pool_kwargs = _urllib3_request_context(request, verify, cert)
+        except ValueError as e:
+            raise InvalidURL(e, request=request)
+        if proxy:
+            proxy = prepend_scheme_if_needed(proxy, "http")
+            proxy_url = parse_url(proxy)
+            if not proxy_url.host:
+                raise InvalidProxyURL(
+                    "Please check proxy URL. It is malformed "
+                    "and could be missing the host."
+                )
+            proxy_manager = self.proxy_manager_for(proxy)
+            conn = proxy_manager.connection_from_host(
+                **host_params, pool_kwargs=pool_kwargs
+            )
+        else:
+            # Only scheme should be lower case
+            conn = self.poolmanager.connection_from_host(
+                **host_params, pool_kwargs=pool_kwargs
+            )
+
+        return conn
 
     def get_connection(self, url, proxies=None):
         """Returns a urllib3 connection for the given URL. This should not be
@@ -391,6 +466,9 @@ class HTTPAdapter(BaseAdapter):
             using_socks_proxy = proxy_scheme.startswith("socks")
 
         url = request.path_url
+        if url.startswith("//"):  # Don't confuse urllib3
+            url = f"/{url.lstrip('/')}"
+
         if is_proxied_http_request and not using_socks_proxy:
             url = urldefragauth(request.url)
 
@@ -451,7 +529,7 @@ class HTTPAdapter(BaseAdapter):
         """
 
         try:
-            conn = self.get_connection(request.url, proxies)
+            conn = self._get_connection(request, verify, proxies=proxies, cert=cert)
         except LocationValueError as e:
             raise InvalidURL(e, request=request)
 

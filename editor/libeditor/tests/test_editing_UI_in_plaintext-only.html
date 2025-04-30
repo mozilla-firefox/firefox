@@ -11,9 +11,6 @@
 
 SimpleTest.waitForExplicitFinish();
 SimpleTest.waitForFocus(async () => {
-  await SpecialPowers.pushPrefEnv({
-    set: [["dom.element.contenteditable.plaintext-only.enabled", true]],
-  });
   function waitForTick() {
     return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   }

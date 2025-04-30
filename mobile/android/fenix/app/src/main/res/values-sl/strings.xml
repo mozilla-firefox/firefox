@@ -129,6 +129,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Podrsajte orodno vrstico za preklop zavihkov</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Podrsajte levo ali desno za preklop. Podrsajte levo na zadnjem zavihku, da odprete nov zavihek.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">Za preklop med zavihki podrsajte orodno vrstico v levo ali desno.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Potreben je dostop do kamere. Odprite nastavitve sistema Android in v dovoljenjih tapnite Dovoli.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -826,8 +828,6 @@
   <string name="preferences_override_account_server">Strežnik računov Mozilla po meri</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Sinhronizacijski strežnik po meri</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Strežnik računa Mozilla/sinhronizacije je spremenjen. Zapiranje aplikacije za uveljavitev sprememb …</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Račun</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1475,16 +1475,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Odstrani</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Izbriši</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Pojdi nazaj</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Pojdi gor</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">Deli URL</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Deli datoteko</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Ali ste prepričani, da želite izbrisati izbrane predmete?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Ali ste prepričani, da želite izbrisati izbrane predmete?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Izbriši</string>
+  <string name="download_delete_multi_select_dialog_confirm">Izbriši</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Prekliči</string>
+  <string name="download_delete_multi_select_dialog_cancel">Prekliči</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">V teku</string>
   <!--
@@ -1501,12 +1505,23 @@
   <string name="download_time_period_last_30_days">Zadnjih 30 dni</string>
   <!-- Text for the header that groups the downloads older than other groups -->
   <string name="download_time_period_older">Starejše</string>
+  <!--
+    Description of an in progress download item, displayed in the downloads list.
+    %1$s is the current file size that has been downloaded.
+    %2$s is the total size of the downloaded file.
+    %3$s is the amount of time remaining to complete the download.
+  -->
+  <string name="download_item_in_progress_description" tools:ignore="UnusedResources">%1$s/%2$s • še %3$s</string>
+  <!-- Text to indicate that an in progress download is paused. -->
+  <string name="download_item_status_paused" tools:ignore="UnusedResources">ustavljeno</string>
+  <!-- Text to indicate that the download speed of an in progress download is being calculated. -->
+  <string name="download_item_download_speed_pending" tools:ignore="UnusedResources">čakajoče</string>
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Prenos ni uspel</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Iskanje po prenosih</string>
+  <string name="download_search_placeholder">Iskanje po prenosih</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Ni zadetkov</string>
+  <string name="download_search_no_results_found">Ni zadetkov</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Izberi vse</string>
   <!--
@@ -2259,7 +2274,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Ikona nastavitve izjem za izboljšano zaščito pred sledenjem</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3173,6 +3188,8 @@
   <string name="protection_panel_no_trackers_blocked">Ni najdenih sledilcev</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">Nastavitve za zasebnost in varnost</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Dovoljenja</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3359,6 +3376,26 @@
   -->
   <string name="glean_debug_tools_title">Orodja Glean za razhroščevanje</string>
   <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">Območna orodja</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">Začasno preglasi vrednosti domače in trenutne regije za namene testiranja.</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">Domača regija</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">Trenutna regija</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">Preglasi domačo regijo</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">Preglasi trenutno regijo</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">Preglasi domačo in trenutno regijo</string>
+  <!--
     Messages explaining how to exit fullscreen mode
 
     Message shown to explain how to exit fullscreen mode when gesture navigation is enabled.
@@ -3420,6 +3457,16 @@
   <string name="text_field_eye_trailing_icon_default_content_description" moz:removedIn="139" tools:ignore="UnusedResources">Pokaži skrito besedilo</string>
   <!-- The default content description for the cross trailing icon button in TextField -->
   <string name="text_field_cross_trailing_icon_default_content_description" moz:removedIn="139" tools:ignore="UnusedResources">Počisti besedilo</string>
+  <!--
+    Setup checklist feature
+
+    ===== Setup checklist feature: Title =====
+
+    Title for the setup checklist feature when the state is 'incomplete'. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_title_state_incomplete">Dokončajte nastavitev %1$sa</string>
+  <!-- Title for the setup checklist feature when the state is 'completed' -->
+  <string name="setup_checklist_title_state_completed">Čestitamo!</string>
   <!--
     ===== Setup checklist feature: Task titles =====
 

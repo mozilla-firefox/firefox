@@ -6,9 +6,11 @@
 
 #include "StoragePrincipalHelper.h"
 
+#include "mozilla/ExpandedPrincipal.h"
 #include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/WorkerPrivate.h"
+#include "mozilla/extensions/WebExtensionPolicy.h"
 #include "mozilla/net/CookieJarSettings.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/StaticPrefs_privacy.h"
@@ -699,6 +701,42 @@ void StoragePrincipalHelper::UpdatePartitionKeyWithForeignAncestorBit(
       aKey.ReplaceLiteral(index, cutLength, u")");
     }
   }
+}
+
+// static
+nsString StoragePrincipalHelper::PartitionKeyForExpandedPrincipal(
+    nsIPrincipal* aExpandedPrincipal) {
+  MOZ_ASSERT(nsContentUtils::IsExpandedPrincipal(aExpandedPrincipal));
+
+  OriginAttributes attrs;
+
+  for (const auto& principal : BasePrincipal::Cast(aExpandedPrincipal)
+                                   ->As<ExpandedPrincipal>()
+                                   ->AllowList()) {
+    MOZ_ASSERT(principal);
+
+    nsCOMPtr<nsIURI> uri;
+    nsresult rv = BasePrincipal::Cast(principal)->GetURI(getter_AddRefs(uri));
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      continue;
+    }
+
+    nsAutoCString scheme;
+    rv = uri->GetScheme(scheme);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      continue;
+    }
+
+    if (!scheme.Equals("moz-extension")) {
+      continue;
+    }
+
+    attrs.SetFirstPartyDomain(true, uri, true);
+    MOZ_ASSERT(attrs.mPartitionKey.IsEmpty());
+    break;
+  }
+
+  return attrs.mPartitionKey;
 }
 
 }  // namespace mozilla

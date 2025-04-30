@@ -1,0 +1,47 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Account Hint Test</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="head.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+  <script>
+    SimpleTest.waitForExplicitFinish();
+    setupTest("hint_filter").then(
+      function () {
+        return navigator.credentials.get({
+          identity: {
+            providers: [{
+              configURL: "https://example.net/tests/dom/credentialmanagement/identity/tests/mochitest/server_manifest.sjs",
+              clientId: "mochitest",
+              nonce: "nonce",
+              loginHint: "correct_login",
+            }]
+          }
+        });
+      }
+    ).then((cred) => {
+      ok(true, "successfully got a credential");
+      is(cred.token,
+        "account_id=1234&client_id=mochitest&nonce=nonce&disclosure_text_shown=false&is_auto_selected=false",
+        "Correct token on the credential.");
+      is(cred.id,
+        "1234",
+        "Correct id on the credential");
+      is(cred.type,
+        "identity",
+        "Correct type on the credential");
+    }).catch(() => {
+      ok(false, "must not have an error");
+    }).finally(() => {
+      SimpleTest.finish();
+    })
+  </script>
+</head>
+<body>
+<p id="display"></p>
+<div id="content" style="display: none">This makes sure accounts are filtered by mediated communication between the idp and rp.</div>
+<pre id="test"></pre>
+</body>
+</html>

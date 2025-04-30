@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<script src="util.js"></script>
+
+<!-- This test is ported from layout/generic/crashtests/1682686-2.html -->
+
+<style>
+div {
+  display: grid;
+  border-left: 1px solid blue;
+  margin-left: 0.5em;
+}
+</style>
+
+<div>1
+  <div>2
+    <div>3
+      <div>4
+        <div>5
+          <div>6
+            <div>7
+              <div>8
+                <div>9
+                  <div>10
+                    <div>11
+                      <div>12
+                        <div>13
+                          <div>14
+                            <div>15
+                              <div>16
+                                <div>17
+                                  <div>18
+                                    <div>19
+                                      <div>20
+                                        <div>21
+                                          <div>22
+                                            <div>23
+                                              <div>24
+                                                <div>25
+                                                  <div>26
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+onload = function() {
+  flush_layout();
+  perf_start();
+  document.body.style.width = '95%'
+  flush_layout();
+  perf_finish();
+};
+</script>

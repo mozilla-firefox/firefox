@@ -45,6 +45,7 @@ using struct nsID from "nsID.h";
 using mozilla::net::SocketInfo from "mozilla/net/DashboardTypes.h";
 using mozilla::net::DNSCacheEntries from "mozilla/net/DashboardTypes.h";
 using mozilla::net::HttpRetParams from "mozilla/net/DashboardTypes.h";
+using mozilla::net::Http3ConnectionStatsParams from "mozilla/net/DashboardTypes.h";
 using mozilla::net::NetAddr from "mozilla/net/DNS.h";
 using nsIDNSService::DNSFlags from "nsIDNSService.h";
 
@@ -181,8 +182,10 @@ child:
     returns (SocketDataArgs data);
   async GetDNSCacheEntries()
     returns (DNSCacheEntries[] entries);
-   async GetHttpConnectionData()
+  async GetHttpConnectionData()
     returns (HttpRetParams[] params);
+  async GetHttp3ConnectionStatsData()
+    returns (Http3ConnectionStatsParams[] params);
 
   async InitProxyAutoConfigChild(Endpoint<PProxyAutoConfigChild> endpoint);
 

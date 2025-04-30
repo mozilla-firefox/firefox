@@ -40,6 +40,8 @@ interface nsIWebAuthnRegisterArgs : nsISupports {
     // WebAuthn AuthenticationExtensionsClientInputs. That's not feasible here.
     // So we define a getter for each supported extension input and use the
     // return code to signal presence.
+    [must_use] readonly attribute AUTF8String credentialProtectionPolicy;
+    [must_use] readonly attribute boolean enforceCredentialProtectionPolicy;
     [must_use] readonly attribute boolean credProps;
     [must_use] readonly attribute boolean hmacCreateSecret;
     [must_use] readonly attribute boolean minPinLength;

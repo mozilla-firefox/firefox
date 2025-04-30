@@ -35,7 +35,7 @@ const RESULT_MENU_COMMAND = {
   SHOW_LESS_FREQUENTLY: "show_less_frequently",
 };
 
-const WEATHER_PROVIDER_DISPLAY_NAME = "AccuWeather";
+const WEATHER_PROVIDER_DISPLAY_NAME = "AccuWeather®";
 
 const WEATHER_DYNAMIC_TYPE = "weather";
 const WEATHER_VIEW_TEMPLATE = {

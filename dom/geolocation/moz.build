@@ -81,3 +81,8 @@ elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
     if CONFIG["MOZ_ENABLE_DBUS"]:
         LOCAL_INCLUDES += ["/dom/system/linux"]
         CXXFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]
+
+BROWSER_CHROME_MANIFESTS += ["test/browser/browser.toml"]
+MOCHITEST_CHROME_MANIFESTS += ["test/chrome/chrome.toml"]
+MOCHITEST_MANIFESTS += ["test/mochitest/mochitest.toml"]
+XPCSHELL_TESTS_MANIFESTS += ["test/unit/xpcshell.toml"]

@@ -111,15 +111,7 @@ fn comb_c14(c: &mut Criterion) {
 }
 
 criterion_group!(
-    benches,
-    comb_for1,
-    comb_for2,
-    comb_for3,
-    comb_for4,
-    comb_c1,
-    comb_c2,
-    comb_c3,
-    comb_c4,
+    benches, comb_for1, comb_for2, comb_for3, comb_for4, comb_c1, comb_c2, comb_c3, comb_c4,
     comb_c14,
 );
 criterion_main!(benches);

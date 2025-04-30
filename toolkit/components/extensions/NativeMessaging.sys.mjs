@@ -3,33 +3,12 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 import { EventEmitter } from "resource://gre/modules/EventEmitter.sys.mjs";
 import { ExtensionUtils } from "resource://gre/modules/ExtensionUtils.sys.mjs";
-
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
-  AsyncShutdown: "resource://gre/modules/AsyncShutdown.sys.mjs",
-  NativeManifests: "resource://gre/modules/NativeManifests.sys.mjs",
-  Subprocess: "resource://gre/modules/Subprocess.sys.mjs",
-});
-
-const { ExtensionError, promiseTimeout } = ExtensionUtils;
-
-XPCOMUtils.defineLazyServiceGetter(
-  lazy,
-  "portal",
-  "@mozilla.org/extensions/native-messaging-portal;1",
-  "nsINativeMessagingPortal"
-);
-
-// For a graceful shutdown (i.e., when the extension is unloaded or when it
-// explicitly calls disconnect() on a native port), how long we give the native
-// application to exit before we start trying to kill it.  (in milliseconds)
-const GRACEFUL_SHUTDOWN_TIME = 3000;
 
 // Hard limits on maximum message size that can be read/written
 // These are defined in the native messaging documentation, note that
@@ -47,13 +26,24 @@ const PREF_MAX_READ = "webextensions.native-messaging.max-input-message-bytes";
 const PREF_MAX_WRITE =
   "webextensions.native-messaging.max-output-message-bytes";
 
-XPCOMUtils.defineLazyPreferenceGetter(lazy, "maxRead", PREF_MAX_READ, MAX_READ);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "maxWrite",
-  PREF_MAX_WRITE,
-  MAX_WRITE
-);
+const lazy = XPCOMUtils.declareLazy({
+  AsyncShutdown: "resource://gre/modules/AsyncShutdown.sys.mjs",
+  NativeManifests: "resource://gre/modules/NativeManifests.sys.mjs",
+  Subprocess: "resource://gre/modules/Subprocess.sys.mjs",
+  maxRead: { pref: PREF_MAX_READ, default: MAX_READ },
+  maxWrite: { pref: PREF_MAX_WRITE, default: MAX_WRITE },
+  portal: {
+    service: "@mozilla.org/extensions/native-messaging-portal;1",
+    iid: Ci.nsINativeMessagingPortal,
+  },
+});
+
+const { ExtensionError, promiseTimeout } = ExtensionUtils;
+
+// For a graceful shutdown (i.e., when the extension is unloaded or when it
+// explicitly calls disconnect() on a native port), how long we give the native
+// application to exit before we start trying to kill it.  (in milliseconds)
+const GRACEFUL_SHUTDOWN_TIME = 3000;
 
 export class NativeApp extends EventEmitter {
   _throwGenericError(application) {

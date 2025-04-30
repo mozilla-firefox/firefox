@@ -1594,13 +1594,20 @@ bool SavedStacks::insertFrames(JSContext* cx, MutableHandle<SavedFrame*> frame,
     // stack.
     //
     // Captures using FirstSubsumedFrame expect us to ignore async parents.
-    //
+    bool hasAsyncStackToAdopt =
+        iter.activation() != &activation && activation.asyncStack() &&
+        (activation.asyncCallIsExplicit() || iter.done()) &&
+        !capture.is<JS::FirstSubsumedFrame>();
+
     // If we're censoring the stack for Error.captureStackTrace we also
     // don't want to re-parent an empty stack trace, so make sure
-    // we actually saw a frame.
-    if (iter.activation() != &activation && activation.asyncStack() &&
-        (activation.asyncCallIsExplicit() || iter.done()) &&
-        !capture.is<JS::FirstSubsumedFrame>() && stackChain.length() > 0) {
+    // we actually saw a frame; stop walking the trace if we haven't
+    // seen anything.
+    if (hasAsyncStackToAdopt && stackChain.length() == 0) {
+      break;
+    }
+
+    if (hasAsyncStackToAdopt) {
       // Atomize the async cause string. There should only be a few
       // different strings used.
       const char* cause = activation.asyncCause();

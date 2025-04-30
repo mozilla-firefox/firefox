@@ -771,11 +771,16 @@ void CookieStorage::AddCookie(CookieParser* aCookieParser,
     CookieEntry* entry =
         mHostTable.GetEntry(CookieKey(aBaseDomain, aOriginAttributes));
     int32_t partitionLimitExceededBytes = 0;
+    // we haven't yet added the new cookie so we compare cookie list with >=
     if (entry && entry->GetCookies().Length() >= mMaxCookiesPerHost) {
       nsTArray<CookieListIter> removedIterList;
+      // +1 to account for the cookie that we are adding,
+      // to ensure that we end up with mCookieQuotaPerHost cookies.
+      // "excess" should only be > 1 when prefs have been manipulated
+      uint32_t excess = entry->GetCookies().Length() - mMaxCookiesPerHost + 1;
+      uint32_t limit = mMaxCookiesPerHost - mCookieQuotaPerHost + excess;
       // Prioritize evicting insecure cookies.
       // (draft-ietf-httpbis-cookie-alone section 3.3)
-      uint32_t limit = mMaxCookiesPerHost - mCookieQuotaPerHost;
       FindStaleCookies(entry, currentTime, false, removedIterList, limit);
       if (removedIterList.Length() == 0) {
         if (aCookie->IsSecure()) {
@@ -1100,12 +1105,12 @@ void CookieStorage::PrefChanged(nsIPrefBranch* aPrefBranch) {
 
   if (NS_SUCCEEDED(aPrefBranch->GetIntPref(kPrefCookieQuotaPerHost, &val))) {
     mCookieQuotaPerHost = static_cast<uint16_t> LIMIT(
-        val, 1, mMaxCookiesPerHost - 1, kCookieQuotaPerHost);
+        val, 1, mMaxCookiesPerHost, kCookieQuotaPerHost);
   }
 
   if (NS_SUCCEEDED(aPrefBranch->GetIntPref(kPrefMaxCookiesPerHost, &val))) {
     mMaxCookiesPerHost = static_cast<uint16_t> LIMIT(
-        val, mCookieQuotaPerHost + 1, 0xFFFF, kMaxCookiesPerHost);
+        val, mCookieQuotaPerHost, 0xFFFF, kMaxCookiesPerHost);
   }
 
   if (NS_SUCCEEDED(aPrefBranch->GetIntPref(kPrefCookiePurgeAge, &val))) {

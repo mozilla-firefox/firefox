@@ -134,6 +134,7 @@ impl DatetimeMetric {
     ///   Hemisphere. Negative seconds mean Western Hemisphere.
     #[cfg_attr(not(feature = "with_gecko"), allow(dead_code))]
     #[allow(clippy::too_many_arguments)]
+    #[allow(deprecated)] // use of deprecated chrono functions.
     pub(crate) fn set_with_details(
         &self,
         year: i32,
@@ -325,6 +326,7 @@ mod test {
     use crate::{common_test::*, ipc, metrics};
 
     #[test]
+    #[allow(deprecated)] // use of deprecated chrono functions.
     fn sets_datetime_value() {
         let _lock = lock_test();
 
@@ -356,6 +358,7 @@ mod test {
     }
 
     #[test]
+    #[allow(deprecated)] // use of deprecated chrono functions.
     fn datetime_ipc() {
         // DatetimeMetric doesn't support IPC.
         let _lock = lock_test();

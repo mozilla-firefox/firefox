@@ -15,6 +15,7 @@ import org.mozilla.fenix.helpers.DataGenerationHelper.getSponsoredFxSuggestPlace
 import org.mozilla.fenix.helpers.HomeActivityTestRule
 import org.mozilla.fenix.helpers.TestHelper
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.navigationToolbar
 
 /**
@@ -33,6 +34,9 @@ class FirefoxSuggestTest : TestSetup() {
             isWallpaperOnboardingEnabled = false,
         ),
     ) { it.activity }
+
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
 
     private val sponsoredKeyWords: Map<String, List<String>> =
         mapOf(

@@ -19,7 +19,7 @@ export class NetworkResponse {
   #encodedBodySize;
   #fromCache;
   #fromServiceWorker;
-  #isCachedCSS;
+  #isCachedResource;
   #isDataURL;
   #headersTransmittedSize;
   #status;
@@ -36,8 +36,8 @@ export class NetworkResponse {
    *     Whether the response was read from the cache or not.
    * @param {boolean} params.fromServiceWorker
    *     Whether the response is coming from a service worker or not.
-   * @param {boolean} params.isCachedCSS
-   *     Whether the response is coming from a cached css file.
+   * @param {boolean} params.isCachedResource
+   *     Whether the response is served by the stencil (image/CSS/JS) cache.
    * @param {string=} params.rawHeaders
    *     The response's raw (ie potentially compressed) headers
    */
@@ -46,12 +46,12 @@ export class NetworkResponse {
     const {
       fromCache,
       fromServiceWorker,
-      isCachedCSS,
+      isCachedResource,
       rawHeaders = "",
     } = params;
     this.#fromCache = fromCache;
     this.#fromServiceWorker = fromServiceWorker;
-    this.#isCachedCSS = isCachedCSS;
+    this.#isCachedResource = isCachedResource;
     this.#isDataURL = this.#channel instanceof Ci.nsIDataChannel;
     this.#wrappedChannel = ChannelWrapper.get(channel);
 
@@ -69,7 +69,7 @@ export class NetworkResponse {
     // between responseStarted and responseCompleted.
     this.#status = this.#isDataURL ? 200 : this.#channel.responseStatus;
     this.#statusMessage =
-      this.#isDataURL || this.#isCachedCSS
+      this.#isDataURL || this.#isCachedResource
         ? "OK"
         : this.#channel.responseStatusText;
   }
@@ -222,7 +222,7 @@ export class NetworkResponse {
     let mimeType = "";
 
     try {
-      if (this.#isDataURL || this.#isCachedCSS) {
+      if (this.#isDataURL || this.#isCachedResource) {
         mimeType = this.#channel.contentType;
       } else {
         mimeType = this.#wrappedChannel.contentType;

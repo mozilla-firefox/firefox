@@ -512,7 +512,7 @@ export class _WallpaperCategories extends React.PureComponent {
               }
               return (
                 <div key={category}>
-                  <input
+                  <button
                     ref={el => {
                       if (el) {
                         this.categoryRef[index] = el;
@@ -520,7 +520,6 @@ export class _WallpaperCategories extends React.PureComponent {
                     }}
                     id={category}
                     style={style}
-                    type="button"
                     onKeyDown={e => this.handleCategoryKeyDown(e, category)}
                     // Add overrides for custom wallpaper upload UI
                     onClick={

@@ -605,7 +605,8 @@ void DocumentOrShadowRoot::GetAnimations(
   // structure while iterating over the children below.
   if (Document* doc = AsNode().GetComposedDoc()) {
     doc->FlushPendingNotifications(
-        ChangesToFlush(FlushType::Style, false /* flush animations */));
+        ChangesToFlush(FlushType::Style, /* aFlushAnimations = */ false,
+                       /* aUpdateRelevancy = */ false));
   }
 
   GetAnimationsOptions options;

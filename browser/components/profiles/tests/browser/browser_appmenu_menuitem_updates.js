@@ -3,6 +3,19 @@
 
 "use strict";
 
+const { sinon } = ChromeUtils.importESModule(
+  "resource://testing-common/Sinon.sys.mjs"
+);
+
+add_setup(() => {
+  // Mock the executable process so we doon't launch a new process
+  sinon.stub(SelectableProfileService, "execProcess");
+
+  registerCleanupFunction(() => {
+    sinon.restore();
+  });
+});
+
 async function promiseAppMenuOpened() {
   let promiseViewShown = BrowserTestUtils.waitForEvent(
     PanelUI.panel,
@@ -13,15 +26,6 @@ async function promiseAppMenuOpened() {
 }
 
 add_task(async function test_appmenu_updates_on_edit() {
-  // Mock the executable process so we don't launch a new process when we
-  // create new profiles.
-  SelectableProfileService._execProcess = SelectableProfileService.execProcess;
-  registerCleanupFunction(() => {
-    SelectableProfileService.execProcess =
-      SelectableProfileService._execProcess;
-  });
-  SelectableProfileService.execProcess = () => {};
-
   // We need to create a second profile for the name to be shown in the app
   // menu.
   await SelectableProfileService.createNewProfile();

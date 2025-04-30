@@ -3,6 +3,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
 // TODO:
 // * find out how the Chrome implementation deals with conflicts
@@ -31,10 +32,7 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 import { ExtensionUtils } from "resource://gre/modules/ExtensionUtils.sys.mjs";
 
-/** @type {Lazy} */
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
   BulkKeyBundle: "resource://services-sync/keys.sys.mjs",
   CollectionKeyManager: "resource://services-sync/record.sys.mjs",
@@ -46,6 +44,21 @@ ChromeUtils.defineESModuleGetters(lazy, {
   KintoHttpClient: "resource://services-common/kinto-http-client.sys.mjs",
   Observers: "resource://services-common/observers.sys.mjs",
   Utils: "resource://services-sync/util.sys.mjs",
+  prefStorageSyncServerURL: {
+    pref: STORAGE_SYNC_SERVER_URL_PREF,
+    default: KINTO_DEFAULT_SERVER_URL,
+  },
+  fxAccounts() {
+    return ChromeUtils.importESModule(
+      "resource://gre/modules/FxAccounts.sys.mjs"
+    ).getFxAccountsSingleton();
+  },
+  WeaveCrypto() {
+    let { WeaveCrypto } = ChromeUtils.importESModule(
+      "resource://services-crypto/WeaveCrypto.sys.mjs"
+    );
+    return new WeaveCrypto();
+  },
 });
 
 /**
@@ -55,25 +68,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
  * @typedef {any} KeyBundle
  * @typedef {any} SyncResultObject
  */
-
-ChromeUtils.defineLazyGetter(lazy, "fxAccounts", () => {
-  return ChromeUtils.importESModule(
-    "resource://gre/modules/FxAccounts.sys.mjs"
-  ).getFxAccountsSingleton();
-});
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "prefStorageSyncServerURL",
-  STORAGE_SYNC_SERVER_URL_PREF,
-  KINTO_DEFAULT_SERVER_URL
-);
-ChromeUtils.defineLazyGetter(lazy, "WeaveCrypto", function () {
-  let { WeaveCrypto } = ChromeUtils.importESModule(
-    "resource://services-crypto/WeaveCrypto.sys.mjs"
-  );
-  return new WeaveCrypto();
-});
 
 const { DefaultMap } = ExtensionUtils;
 

@@ -1,8 +1,4 @@
 [DEFAULT]
-skip-if = [
-  "os == 'linux' && ccov", # bug 1821945
-  "os == 'android'", # bug 1730213
-]
 firefox-appdir = "browser"
 head = "head.js"
 support-files = ["../fixtures/**"]
@@ -43,13 +39,8 @@ head = "head_addressComponent.js"
 ["test_addressDataLoader.js"]
 
 ["test_addressRecords.js"]
-skip-if = ["os == 'mac' && os_version == '11.20' && arch == 'aarch64'"] # bug 1729554
 
 ["test_autofillFormFields.js"]
-skip-if = [
-  "tsan", # Times out, bug 1612707
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # bug 1729554
-]
 
 ["test_autofill_ios_library.js"]
 
@@ -57,8 +48,8 @@ skip-if = [
 
 ["test_creditCardRecords.js"]
 skip-if = [
-  "tsan", # Times out, bug 1612707
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # bug 1729554
+  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Bug 1729554
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1729554
 ]
 
 ["test_extractLabelStrings.js"]
@@ -77,8 +68,8 @@ skip-if = [
 
 ["test_getRecords.js"]
 skip-if = [
-  "tsan", # Times out, bug 1612707
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # bug 1729554
+  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Bug 1729554
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1729554
 ]
 
 ["test_inspectFields.js"]
@@ -94,7 +85,6 @@ skip-if = [
 ["test_known_strings.js"]
 
 ["test_migrateRecords.js"]
-skip-if = ["tsan"] # Times out, bug 1612707
 
 ["test_nameUtils.js"]
 
@@ -108,29 +98,28 @@ skip-if = ["tsan"] # Times out, bug 1612707
 
 ["test_reconcile.js"]
 skip-if = [
-  "tsan", # Times out, bug 1612707
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # bug 1729554
+  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Bug 1729554
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1729554
 ]
 
 ["test_savedFieldNames.js"]
 
 ["test_storage_remove.js"]
 skip-if = [
-  "tsan", # Times out, bug 1612707
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # bug 1729554
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1729554
+  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Bug 1729554
 ]
 
 ["test_storage_syncfields.js"]
 
 ["test_storage_tombstones.js"]
 skip-if = [
-  "tsan", # Times out, bug 1612707
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # bug 1729554
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1729554
+  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Bug 1729554
 ]
 
 ["test_sync.js"]
 head = "head.js ../../../../../services/sync/tests/unit/head_appinfo.js ../../../../../services/common/tests/unit/head_helpers.js ../../../../../services/sync/tests/unit/head_helpers.js ../../../../../services/sync/tests/unit/head_http_server.js"
-skip-if = ["tsan"] # Times out, bug 1612707
 
 ["test_sync_deprecate_address_x_name_fields.js"]
 head = "head.js ../../../../../services/sync/tests/unit/head_appinfo.js ../../../../../services/common/tests/unit/head_helpers.js ../../../../../services/sync/tests/unit/head_helpers.js ../../../../../services/sync/tests/unit/head_http_server.js"
@@ -138,14 +127,14 @@ head = "head.js ../../../../../services/sync/tests/unit/head_appinfo.js ../../..
 ["test_sync_deprecate_credit_card_v4.js"]
 head = "head.js ../../../../../services/sync/tests/unit/head_appinfo.js ../../../../../services/common/tests/unit/head_helpers.js ../../../../../services/sync/tests/unit/head_helpers.js ../../../../../services/sync/tests/unit/head_http_server.js"
 skip-if = [
-  "tsan", # Times out, bug 1612707
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # bug 1729554
+  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Bug 1729554
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1729554
 ]
 
 ["test_toOneLineAddress.js"]
 
 ["test_transformFields.js"]
 skip-if = [
-  "tsan", # Times out, bug 1612707
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # bug 1729554
+  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Bug 1729554
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1729554
 ]

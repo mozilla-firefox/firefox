@@ -545,6 +545,7 @@ interface GleanImpl {
     setDefaultPdfHandlerUserChoiceResult: Record<string, GleanCounter>;
     setDefaultUserChoiceResult: Record<string, GleanCounter>;
     attributionErrors: Record<string, GleanCounter>;
+    defaultAtLaunch: GleanBoolean;
   }
 
   browserMigration: {
@@ -653,6 +654,26 @@ interface GleanImpl {
     fetchTimestamp: GleanDatetime;
     newtabCreationTimestamp: GleanDatetime;
     thumbVotingInteraction: GleanEvent;
+  }
+
+  newtabContent: {
+    coarseOs: GleanString;
+    coarseOsVersion: GleanString;
+    utcOffset: GleanQuantity;
+    surfaceId: GleanString;
+    followedSections: GleanStringList;
+    activeExperiments: GleanObject;
+    activeRollouts: GleanObject;
+    enrollmentsMap: GleanObject;
+    impression: GleanEvent;
+    click: GleanEvent;
+    dismiss: GleanEvent;
+    thumbVotingInteraction: GleanEvent;
+    sectionsImpression: GleanEvent;
+    sectionsFollowSection: GleanEvent;
+    sectionsUnfollowSection: GleanEvent;
+    sectionsBlockSection: GleanEvent;
+    sectionsUnblockSection: GleanEvent;
   }
 
   topSites: {
@@ -908,6 +929,7 @@ interface GleanImpl {
   sap: {
     counts: GleanEvent;
     deprecatedCounts: Record<string, GleanCounter>;
+    searchFormCounts: GleanEvent;
   }
 
   serp: {
@@ -1135,6 +1157,7 @@ interface GleanImpl {
 
   contextualManager: {
     sidebarToggle: GleanEvent;
+    passwordsEnabled: GleanEvent;
     toolbarAction: GleanEvent;
     recordsUpdate: GleanEvent;
     recordsInteraction: GleanEvent;
@@ -1176,11 +1199,15 @@ interface GleanImpl {
   tabgroup: {
     createGroup: GleanEvent;
     reopen: GleanEvent;
+    addTab: GleanEvent;
     activeGroups: Record<string, GleanQuantity>;
     tabsPerActiveGroup: Record<string, GleanQuantity>;
+    savedGroups: GleanQuantity;
+    tabsPerSavedGroup: Record<string, GleanQuantity>;
     tabCountInGroups: Record<string, GleanQuantity>;
     save: GleanEvent;
     delete: GleanEvent;
+    tabInteractions: Record<string, GleanCounter>;
     smartTabOptin: GleanEvent;
     smartTabTopic: GleanEvent;
     smartTabSuggest: GleanEvent;
@@ -1963,6 +1990,7 @@ interface GleanImpl {
     textDirectivePages: GleanCounter;
     invalidTextDirectives: GleanCounter;
     textDirectiveNotCreated: GleanCounter;
+    mathMlused: GleanCounter;
   }
 
   useCounterDoc: {
@@ -2320,6 +2348,7 @@ interface GleanImpl {
     textDirectivePages: GleanCounter;
     invalidTextDirectives: GleanCounter;
     textDirectiveNotCreated: GleanCounter;
+    mathMlused: GleanCounter;
   }
 
   useCounterWorkerDedicated: {
@@ -4258,10 +4287,6 @@ interface GleanImpl {
     protectTime: GleanTimingDistribution;
   }
 
-  mathml: {
-    docCount: GleanCounter;
-  }
-
   domContentprocess: {
     buildIdMismatch: GleanCounter;
     buildIdMismatchFalsePositive: GleanCounter;
@@ -4713,6 +4738,7 @@ interface GleanImpl {
 
   preferences: {
     prefsFileWasInvalid: GleanBoolean;
+    userPrefs: GleanObject;
   }
 
   network: {
@@ -5237,6 +5263,11 @@ interface GleanImpl {
     intervalHours: GleanTimingDistribution;
   }
 
+  hangs: {
+    reports: GleanObject;
+    modules: GleanObject;
+  }
+
   backgroundTasksRmdirBase: {
     metricBase: GleanEvent;
     elapsedMs: GleanQuantity;
@@ -5636,6 +5667,7 @@ interface GleanImpl {
     keyedMobileOnly: Record<string, GleanCounter>;
     disabledCounter: GleanCounter;
     collectionDisabledCounter: GleanCounter;
+    expiredHist: GleanCustomDistribution;
   }
 
   testOnlyIpc: {
@@ -6424,6 +6456,9 @@ interface GleanImpl {
 
   searchEngineDefault: {
     engineId: GleanString;
+    providerId: GleanString;
+    partnerCode: GleanString;
+    overriddenByThirdParty: GleanBoolean;
     displayName: GleanString;
     loadPath: GleanString;
     submissionUrl: GleanUrl;
@@ -6432,6 +6467,9 @@ interface GleanImpl {
 
   searchEnginePrivate: {
     engineId: GleanString;
+    providerId: GleanString;
+    partnerCode: GleanString;
+    overriddenByThirdParty: GleanBoolean;
     displayName: GleanString;
     loadPath: GleanString;
     submissionUrl: GleanUrl;
@@ -6735,6 +6773,7 @@ interface GleanImpl {
     installStats: GleanEvent;
     manage: GleanEvent;
     reportSuspiciousSite: GleanEvent;
+    compatibilityCheckEnabled: GleanBoolean;
     installExtension: GleanEvent;
     installTheme: GleanEvent;
     installLocale: GleanEvent;
@@ -6802,6 +6841,7 @@ interface GleanImpl {
     mlbfStashTimeOldest: GleanDatetime;
     mlbfStashTimeNewest: GleanDatetime;
     addonBlockChange: GleanEvent;
+    enabled: GleanBoolean;
   }
 
   update: {
@@ -6893,10 +6933,27 @@ interface GleanImpl {
     versionPin: GleanString;
   }
 
+  updater: {
+    available: GleanBoolean;
+  }
+
   gecko: {
     version: GleanString;
     buildId: GleanString;
     safeModeUsage: GleanCustomDistribution;
+  }
+
+  launcherProcess: {
+    state: GleanQuantity;
+  }
+
+  e10s: {
+    enabled: GleanBoolean;
+    multiProcesses: GleanQuantity;
+  }
+
+  fission: {
+    enabled: GleanBoolean;
   }
 
   widget: {
@@ -6950,11 +7007,32 @@ interface GleanImpl {
   event: {
     longtask: Record<string, GleanTimingDistribution>;
   }
+
+  xpcom: {
+    abi: GleanString;
+  }
+
+  systemCpu: {
+    name: GleanString;
+    vendor: GleanString;
+    logicalCores: GleanQuantity;
+    physicalCores: GleanQuantity;
+    bigCores: GleanQuantity;
+    mediumCores: GleanQuantity;
+    littleCores: GleanQuantity;
+    family: GleanQuantity;
+    model: GleanQuantity;
+    stepping: GleanQuantity;
+    l2Cache: GleanQuantity;
+    l3Cache: GleanQuantity;
+    speed: GleanQuantity;
+  }
 }
 
 interface GleanPingsImpl {
   messagingSystem: nsIGleanPingNoReason;
   newtab: nsIGleanPingWithReason<"newtab_session_end"|"component_init">;
+  newtabContent: nsIGleanPingWithReason<"newtab_session_end"|"component_init">;
   topSites: nsIGleanPingNoReason;
   spoc: nsIGleanPingWithReason<"impression"|"click"|"save">;
   pocketButton: nsIGleanPingNoReason;
@@ -6968,6 +7046,7 @@ interface GleanPingsImpl {
   useCounters: nsIGleanPingWithReason<"app_shutdown_confirmed"|"idle_startup">;
   fxAccounts: nsIGleanPingWithReason<"active"|"dirty_startup"|"inactive">;
   bounceTrackingProtection: nsIGleanPingNoReason;
+  hangReport: nsIGleanPingNoReason;
   backgroundTasks: nsIGleanPingNoReason;
   captchaDetection: nsIGleanPingNoReason;
   crash: nsIGleanPingWithReason<"crash"|"event_found">;

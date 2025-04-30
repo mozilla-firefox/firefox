@@ -6,13 +6,11 @@ package org.mozilla.fenix.tabstray
 
 import android.view.Window
 import android.view.WindowManager
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.fragment.app.Fragment
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import mozilla.components.support.test.libstate.ext.waitUntilIdle
@@ -37,8 +35,6 @@ class SecureTabsTrayBindingTest {
 
     @Before
     fun setup() {
-        mockkStatic(AppCompatResources::class)
-        every { AppCompatResources.getDrawable(any(), any()) } returns mockk(relaxed = true)
         every { fragment.secure() } just Runs
         every { fragment.removeSecure() } just Runs
         every { dialog.window } returns window

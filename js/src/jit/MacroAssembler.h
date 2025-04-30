@@ -3975,7 +3975,7 @@ class MacroAssembler : public MacroAssemblerSpecific {
   // Will select one of the other branchWasmRefIsSubtype* functions depending on
   // destType. See each function for the register allocation requirements, as
   // well as which registers will be preserved.
-  void branchWasmRefIsSubtype(Register ref, wasm::RefType sourceType,
+  void branchWasmRefIsSubtype(Register ref, wasm::MaybeRefType sourceType,
                               wasm::RefType destType, Label* label,
                               bool onSuccess, Register superSTV,
                               Register scratch1, Register scratch2);
@@ -4029,11 +4029,12 @@ class MacroAssembler : public MacroAssemblerSpecific {
   // `superSTV` is statically known, which is the case for all wasm
   // instructions.
   //
-  // `scratch` is required iff the `superDepth` is >=
-  // wasm::MinSuperTypeVectorLength. `subSTV` is clobbered by this method.
-  // `superSTV` is preserved.
+  // `scratch` is required iff the destination type is not final and the
+  // `superDepth` is >= wasm::MinSuperTypeVectorLength. `subSTV` is clobbered by
+  // this method if the destination type is not final. `superSTV` is always
+  // preserved.
   void branchWasmSTVIsSubtype(Register subSTV, Register superSTV,
-                              Register scratch, uint32_t superDepth,
+                              Register scratch, const wasm::TypeDef* destType,
                               Label* label, bool onSuccess);
 
   // Same as branchWasmSTVIsSubtype, but looks up a dynamic position in the

@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_NODE_H
 #define PIPEWIRE_NODE_H
@@ -49,8 +29,14 @@ extern "C" {
  */
 #define PW_TYPE_INTERFACE_Node	PW_TYPE_INFO_INTERFACE_BASE "Node"
 
+#define PW_NODE_PERM_MASK	PW_PERM_RWXML
+
 #define PW_VERSION_NODE		3
 struct pw_node;
+
+#ifndef PW_API_NODE_IMPL
+#define PW_API_NODE_IMPL static inline
+#endif
 
 /** \enum pw_node_state The different node states */
 enum pw_node_state {
@@ -152,6 +138,8 @@ struct pw_node_methods {
 	 *
 	 * \param ids an array of param ids
 	 * \param n_ids the number of ids in \a ids
+	 *
+	 * This requires X permissions on the node.
 	 */
 	int (*subscribe_params) (void *object, uint32_t *ids, uint32_t n_ids);
 
@@ -166,6 +154,8 @@ struct pw_node_methods {
 	 * \param start the start index or 0 for the first param
 	 * \param num the maximum number of params to retrieve
 	 * \param filter a param filter or NULL
+	 *
+	 * This requires X permissions on the node.
 	 */
 	int (*enum_params) (void *object, int seq, uint32_t id,
 			uint32_t start, uint32_t num,
@@ -177,6 +167,8 @@ struct pw_node_methods {
 	 * \param id the parameter id to set
 	 * \param flags extra parameter flags
 	 * \param param the parameter to set
+	 *
+	 * This requires X and W permissions on the node.
 	 */
 	int (*set_param) (void *object, uint32_t id, uint32_t flags,
 			const struct spa_pod *param);
@@ -185,25 +177,58 @@ struct pw_node_methods {
 	 * Send a command to the node
 	 *
 	 * \param command the command to send
+	 *
+	 * This requires X and W permissions on the node.
 	 */
 	int (*send_command) (void *object, const struct spa_command *command);
 };
 
-#define pw_node_method(o,method,version,...)				\
-({									\
-	int _res = -ENOTSUP;						\
-	spa_interface_call_res((struct spa_interface*)o,		\
-			struct pw_node_methods, _res,			\
-			method, version, ##__VA_ARGS__);		\
-	_res;								\
-})
 
-/** Node */
-#define pw_node_add_listener(c,...)	pw_node_method(c,add_listener,0,__VA_ARGS__)
-#define pw_node_subscribe_params(c,...)	pw_node_method(c,subscribe_params,0,__VA_ARGS__)
-#define pw_node_enum_params(c,...)	pw_node_method(c,enum_params,0,__VA_ARGS__)
-#define pw_node_set_param(c,...)	pw_node_method(c,set_param,0,__VA_ARGS__)
-#define pw_node_send_command(c,...)	pw_node_method(c,send_command,0,__VA_ARGS__)
+/** \copydoc pw_node_methods.add_listener
+ * \sa pw_node_methods.add_listener */
+PW_API_NODE_IMPL int pw_node_add_listener(struct pw_node *object,
+			struct spa_hook *listener,
+			const struct pw_node_events *events,
+			void *data)
+{
+	return spa_api_method_r(int, -ENOTSUP,
+			pw_node, (struct spa_interface*)object, add_listener, 0,
+			listener, events, data);
+}
+/** \copydoc pw_node_methods.subscribe_params
+ * \sa pw_node_methods.subscribe_params */
+PW_API_NODE_IMPL int pw_node_subscribe_params(struct pw_node *object, uint32_t *ids, uint32_t n_ids)
+{
+	return spa_api_method_r(int, -ENOTSUP,
+			pw_node, (struct spa_interface*)object, subscribe_params, 0,
+			ids, n_ids);
+}
+/** \copydoc pw_node_methods.enum_params
+ * \sa pw_node_methods.enum_params */
+PW_API_NODE_IMPL int pw_node_enum_params(struct pw_node *object,
+		int seq, uint32_t id, uint32_t start, uint32_t num,
+			    const struct spa_pod *filter)
+{
+	return spa_api_method_r(int, -ENOTSUP,
+			pw_node, (struct spa_interface*)object, enum_params, 0,
+			seq, id, start, num, filter);
+}
+/** \copydoc pw_node_methods.set_param
+ * \sa pw_node_methods.set_param */
+PW_API_NODE_IMPL int pw_node_set_param(struct pw_node *object, uint32_t id, uint32_t flags,
+			  const struct spa_pod *param)
+{
+	return spa_api_method_r(int, -ENOTSUP,
+			pw_node, (struct spa_interface*)object, set_param, 0,
+			id, flags, param);
+}
+/** \copydoc pw_node_methods.send_command
+ * \sa pw_node_methods.send_command */
+PW_API_NODE_IMPL int pw_node_send_command(struct pw_node *object, const struct spa_command *command)
+{
+	return spa_api_method_r(int, -ENOTSUP,
+			pw_node, (struct spa_interface*)object, send_command, 0, command);
+}
 
 /**
  * \}

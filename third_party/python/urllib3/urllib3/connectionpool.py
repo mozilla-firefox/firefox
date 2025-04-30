@@ -9,6 +9,7 @@ import warnings
 from socket import error as SocketError
 from socket import timeout as SocketTimeout
 
+from ._collections import HTTPHeaderDict
 from .connection import (
     BaseSSLError,
     BrokenPipeError,
@@ -767,7 +768,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
                 # so we try to cover our bases here!
                 message = " ".join(re.split("[^a-z]", str(ssl_error).lower()))
                 return (
-                    "wrong version number" in message or "unknown protocol" in message
+                    "wrong version number" in message
+                    or "unknown protocol" in message
+                    or "record layer failure" in message
                 )
 
             # Try to detect a common user error with proxies which is to
@@ -843,7 +846,11 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         redirect_location = redirect and response.get_redirect_location()
         if redirect_location:
             if response.status == 303:
+                # Change the method according to RFC 9110, Section 15.4.4.
                 method = "GET"
+                # And lose the body not to transfer anything sensitive.
+                body = None
+                headers = HTTPHeaderDict(headers)._prepare_for_method_change()
 
             try:
                 retries = retries.increment(method, url, response=response, _pool=self)

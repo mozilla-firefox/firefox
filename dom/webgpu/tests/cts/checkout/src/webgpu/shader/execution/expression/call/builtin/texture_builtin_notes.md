@@ -933,3 +933,87 @@ webgpu:shader,execution,expression,call,builtin,textureGather:sampled_3d_coords:
                                                                                           |
     layer: 5 mip(0), cube-layer: 0 (-z) un-sampled                                        |
 ```
+
+------------------------------------------------------------------------------------------------------------
+* gpu: AMD Radeon Pro 560X (1002:67ef)
+* os: Mac-14.4.1
+* affected: `textureSample` (and probably other `textureSampleXXX` with `lodClampMin` set > 0 and mipmapFilter = 'linear'
+
+The mip sampling level is not correctly clamped
+
+Example failure:
+
+Below we have an 8x8 texture with 3 mip levels. lodMinClamp = 0.25.  The derivative based mip level is -0.8, clamped it should
+be 0.25. The GPU sampled level 0.1875 which is out of bounds for the lodMinClamp of 0.25 (see "mip level (1) weight:")
+
+```
+webgpu:shader,execution,expression,call,builtin,textureSample:sampled_2d_coords,lodClamp:format="rgba8unorm";filt="linear" - fail:
+--> EXPECTATION FAILED: subcase: samplePoints="texel-centre";baseMipLevel=0;lodMinClamp=0.25;lodMaxClamp=1.75
+    result was not as expected:
+       physical size: [8, 8, 1]
+        baseMipLevel: 0
+       mipLevelCount: 3
+      baseArrayLayer: 0
+     arrayLayerCount: 1
+    physicalMipCount: 3
+         lodMinClamp: 0.25 (effective)
+         lodMaxClamp: 1.75 (effective)
+                call: textureSample(texture: T, sampler: S, coords: vec2f(0.4375, 0.5625) + derivativeBase * derivativeMult(vec2f(0.5358867312681466, 0)))  // #3
+              : as texel coord @ mip level[0]: (3.500, 4.500)
+              : as texel coord @ mip level[1]: (1.750, 2.250)
+              : as texel coord @ mip level[2]: (0.875, 1.125)
+    implicit derivative based mip level: -0.90000
+           got: 0.46780, 0.85118, 0.33476, 0.36728
+      expected: 0.48125, 0.81072, 0.34308, 0.37206
+      max diff: 0.027450980392156862
+     abs diffs: 0.01345, 0.04046, 0.00832, 0.00478
+     rel diffs: 2.79%, 4.75%, 2.42%, 1.28%
+     ulp diffs: 4, 10, 2, 1
+    
+      sample points:
+    expected:                                                | got:
+                                                             | 
+    layer: 0 mip(0)                                          | layer: 0 mip(0) 
+         0   1   2   3   4   5   6   7                       |      0   1   2   3   4   5   6   7 
+       ┌───┬───┬───┬───┬───┬───┬───┬───┐                     |    ┌───┬───┬───┬───┬───┬───┬───┬───┐
+     0 │   │   │   │   │   │   │   │   │                     |  0 │   │   │   │   │   │   │   │   │
+       ├───┼───┼───┼───┼───┼───┼───┼───┤                     |    ├───┼───┼───┼───┼───┼───┼───┼───┤
+     1 │   │   │   │   │   │   │   │   │                     |  1 │   │   │   │   │   │   │   │   │
+       ├───┼───┼───┼───┼───┼───┼───┼───┤                     |    ├───┼───┼───┼───┼───┼───┼───┼───┤
+     2 │   │   │   │   │   │   │   │   │                     |  2 │   │   │   │   │   │   │   │   │
+       ├───┼───┼───┼───┼───┼───┼───┼───┤                     |    ├───┼───┼───┼───┼───┼───┼───┼───┤
+     3 │   │   │   │   │   │   │   │   │                     |  3 │   │   │   │   │   │   │   │   │
+       ├───┼───┼───┼───┼───┼───┼───┼───┤                     |    ├───┼───┼───┼───┼───┼───┼───┼───┤
+     4 │   │   │   │ a │   │   │   │   │                     |  4 │   │   │   │ a │   │   │   │   │
+       ├───┼───┼───┼───┼───┼───┼───┼───┤                     |    ├───┼───┼───┼───┼───┼───┼───┼───┤
+     5 │   │   │   │   │   │   │   │   │                     |  5 │   │   │   │   │   │   │   │   │
+       ├───┼───┼───┼───┼───┼───┼───┼───┤                     |    ├───┼───┼───┼───┼───┼───┼───┼───┤
+     6 │   │   │   │   │   │   │   │   │                     |  6 │   │   │   │   │   │   │   │   │
+       ├───┼───┼───┼───┼───┼───┼───┼───┤                     |    ├───┼───┼───┼───┼───┼───┼───┼───┤
+     7 │   │   │   │   │   │   │   │   │                     |  7 │   │   │   │   │   │   │   │   │
+       └───┴───┴───┴───┴───┴───┴───┴───┘                     |    └───┴───┴───┴───┴───┴───┴───┴───┘
+    a: mip(0) at: [ 3,  4,  0], weight: 0.75000              | a: mip(0) at: [ 3,  4,  0], weight: 0.81250
+    a: value: R: 0.42745, G: 0.97255, B: 0.30980, A: 0.35294 | a: value: R: 0.42745, G: 0.97255, B: 0.30980, A: 0.35294
+    mip level (0) weight: 0.75000                            | mip level (0) weight: 0.81250
+                                                             | 
+    layer: 0 mip(1)                                          | layer: 0 mip(1) 
+         0   1   2   3                                       |      0   1   2   3 
+       ┌───┬───┬───┬───┐                                     |    ┌───┬───┬───┬───┐
+     0 │   │   │   │   │                                     |  0 │   │   │   │   │
+       ├───┼───┼───┼───┤                                     |    ├───┼───┼───┼───┤
+     1 │   │ b │ c │   │                                     |  1 │   │ b │ c │   │
+       ├───┼───┼───┼───┤                                     |    ├───┼───┼───┼───┤
+     2 │   │ d │ e │   │                                     |  2 │   │ d │ e │   │
+       ├───┼───┼───┼───┤                                     |    ├───┼───┼───┼───┤
+     3 │   │   │   │   │                                     |  3 │   │   │   │   │
+       └───┴───┴───┴───┘                                     |    └───┴───┴───┴───┘
+    b: mip(1) at: [ 1,  1,  0], weight: 0.04688              | b: mip(1) at: [ 1,  1,  0], weight: 0.03516
+    c: mip(1) at: [ 2,  1,  0], weight: 0.01563              | c: mip(1) at: [ 2,  1,  0], weight: 0.01172
+    d: mip(1) at: [ 1,  2,  0], weight: 0.14063              | d: mip(1) at: [ 1,  2,  0], weight: 0.10547
+    e: mip(1) at: [ 2,  2,  0], weight: 0.04688              | e: mip(1) at: [ 2,  2,  0], weight: 0.03516
+    b: value: R: 0.89804, G: 0.21176, B: 0.29804, A: 0.47843 | b: value: R: 0.89804, G: 0.21176, B: 0.29804, A: 0.47843
+    c: value: R: 0.95294, G: 0.01569, B: 0.29804, A: 0.88235 | c: value: R: 0.95294, G: 0.01569, B: 0.29804, A: 0.88235
+    d: value: R: 0.56078, G: 0.21569, B: 0.40000, A: 0.42353 | d: value: R: 0.56078, G: 0.21569, B: 0.40000, A: 0.42353
+    e: value: R: 0.52941, G: 0.87059, B: 0.76471, A: 0.24706 | e: value: R: 0.52941, G: 0.87059, B: 0.76471, A: 0.24706
+    mip level (1) weight: 0.25000                            | mip level (1) weight: 0.18750
+```

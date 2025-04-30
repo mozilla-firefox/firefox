@@ -61,7 +61,8 @@ var { AppConstants } = SpecialPowers.ChromeUtils.importESModule(
   "resource://gre/modules/AppConstants.sys.mjs"
 );
 var isNightly = AppConstants.NIGHTLY_BUILD;
+var isEarlyBetaOrEarlier = AppConstants.EARLY_BETA_OR_EARLIER;
 var isRelease = AppConstants.RELEASE_OR_BETA;
 var isAndroid = AppConstants.platform == "android";
 
-worker.postMessage({ isNightly, isRelease, isAndroid });
+worker.postMessage({ isNightly, isEarlyBetaOrEarlier, isRelease, isAndroid });

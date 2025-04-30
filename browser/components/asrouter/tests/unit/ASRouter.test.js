@@ -276,15 +276,6 @@ describe("ASRouter", () => {
           active: true,
           branch: { slug: "experiment-branch-slug" },
         }),
-        getExperiment: sandbox.stub().returns({
-          branch: {
-            slug: "unit-slug",
-            feature: {
-              featureId: "foo",
-              value: { id: "test-message" },
-            },
-          },
-        }),
         getAllBranches: sandbox.stub().resolves([]),
         ready: sandbox.stub().resolves(),
       },
@@ -2481,8 +2472,6 @@ describe("ASRouter", () => {
         type: "remote-experiments",
         featureIds: ["infobar"],
       };
-
-      global.ExperimentAPI.getExperiment.returns(null);
 
       const result = await MessageLoaderUtils.loadMessagesForProvider(args);
 

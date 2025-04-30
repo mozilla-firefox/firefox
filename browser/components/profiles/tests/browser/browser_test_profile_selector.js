@@ -7,11 +7,31 @@ const { CustomizableUITestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/CustomizableUITestUtils.sys.mjs"
 );
 
+const { sinon } = ChromeUtils.importESModule(
+  "resource://testing-common/Sinon.sys.mjs"
+);
+
 async function promiseFocus(win) {
   if (!win.document.hasFocus()) {
     await BrowserTestUtils.waitForEvent(win.document, "focus");
   }
 }
+
+const execProcess = sinon.fake();
+const sendCommandLine = sinon.fake.throws(Cr.NS_ERROR_NOT_AVAILABLE);
+
+add_setup(() => {
+  sinon.replace(
+    SelectableProfileService,
+    "sendCommandLine",
+    (path, args, raise) => sendCommandLine(path, [...args], raise)
+  );
+  sinon.replace(SelectableProfileService, "execProcess", execProcess);
+
+  registerCleanupFunction(() => {
+    sinon.restore();
+  });
+});
 
 add_task(async function test_selector_window() {
   await initGroupDatabase();
@@ -62,11 +82,6 @@ add_task(async function test_selector_window() {
   await activated;
 
   let closed = BrowserTestUtils.domWindowClosed(dialog);
-
-  // mock() returns an object with a fake `runw` method that, when
-  // called, records its arguments.
-  let input = [];
-  let mock = args => (input = args);
 
   const profileSelector = dialog.document.querySelector("profile-selector");
   await profileSelector.updateComplete;
@@ -139,8 +154,6 @@ add_task(async function test_selector_window() {
     "Description slot should not exist when checkbox is checked again"
   );
 
-  profileSelector.selectableProfileService.execProcess = mock;
-
   const profiles = profileSelector.profileCards;
 
   Assert.equal(profiles.length, 1, "There is one profile card");
@@ -158,21 +171,38 @@ add_task(async function test_selector_window() {
     "We have not recorded any Glean data yet"
   );
 
+  sendCommandLine.resetHistory();
+
   profileSelector.profileCards[0].click();
 
-  let expected;
+  let expected = ["--profiles-activate"];
+
+  Assert.equal(
+    sendCommandLine.callCount,
+    1,
+    "Should have attempted to remote to one instance"
+  );
+  Assert.deepEqual(
+    sendCommandLine.firstCall.args,
+    [profile.path, expected, true],
+    "Expected sendCommandLine arguments"
+  );
+
+  expected.unshift("--profile", profile.path);
+
   if (Services.appinfo.OS === "Darwin") {
-    expected = [
-      "-foreground",
-      "--profile",
-      profile.path,
-      "--profiles-activate",
-    ];
-  } else {
-    expected = ["--profile", profile.path, "--profiles-activate"];
+    expected.unshift("-foreground");
   }
 
-  Assert.deepEqual(input, expected, "Expected runw arguments");
+  // Our mock remote service claims the instance is not running so we will fall back to launching
+  // a new process.
+
+  Assert.equal(execProcess.callCount, 1, "Should have called execProcess once");
+  Assert.deepEqual(
+    execProcess.firstCall.args,
+    [expected],
+    "Expected execProcess arguments"
+  );
 
   await assertGlean("profiles", "selector_window", "launch");
 

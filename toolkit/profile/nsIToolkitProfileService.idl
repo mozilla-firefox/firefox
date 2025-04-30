@@ -53,7 +53,8 @@ interface nsIToolkitProfileService : nsISupports
     [infallible] readonly attribute nsIToolkitProfile currentProfile;
 
     /**
-     * The single named profile in a profile group.
+     * The single named profile in a profile group. This is only usable after
+     * startup has complete.
      *
      * If the current named profile has a StoreID, this is the current profile.
      * If the current profile is unnamed and has a StoreID, this will be the

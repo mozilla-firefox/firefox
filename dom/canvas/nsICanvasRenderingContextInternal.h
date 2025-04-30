@@ -41,6 +41,9 @@ class nsDisplayListBuilder;
 class ClientWebGLContext;
 class PresShell;
 class WebGLFramebufferJS;
+namespace ipc {
+class IProtocol;
+}  // namespace ipc
 namespace layers {
 class CanvasRenderer;
 class CompositableForwarder;
@@ -138,10 +141,13 @@ class nsICanvasRenderingContextInternal : public nsISupports,
   // provided DrawTarget, which may be nullptr. By default, this will defer to
   // GetSurfaceSnapshot and ignore target-dependent optimization.
   virtual already_AddRefed<mozilla::gfx::SourceSurface> GetOptimizedSnapshot(
-      mozilla::gfx::DrawTarget* aTarget,
-      gfxAlphaType* out_alphaType = nullptr) {
-    return GetSurfaceSnapshot(out_alphaType);
+      mozilla::gfx::DrawTarget* aTarget, gfxAlphaType* out_alphaType = nullptr);
+
+  virtual mozilla::ipc::IProtocol* SupportsSnapshotExternalCanvas() const {
+    return nullptr;
   }
+
+  virtual void SyncSnapshot() {}
 
   virtual RefPtr<mozilla::gfx::SourceSurface> GetFrontBufferSnapshot(bool) {
     return GetSurfaceSnapshot();

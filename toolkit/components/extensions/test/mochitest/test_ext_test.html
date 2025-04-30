@@ -52,7 +52,7 @@ function loadExtensionAndInterceptTest(extensionData) {
 //
 // All browser.test calls results are intercepted by the test itself, see verifyTestResults for
 // the expectations of each browser.test call.
-function testScript() {
+async function testScript() {
   browser.test.notifyPass("dot notifyPass");
   browser.test.notifyFail("dot notifyFail");
   browser.test.log("dot log");
@@ -124,6 +124,13 @@ function testScript() {
     /dummy/
   );
 
+  browser.test.assertThrows(
+    () => { throw new Error("dummy4"); },
+    "dummy4"
+    // allowAmbiguousOptionalArguments: with two optional arguments,
+    // passing a string is interpreted as `expectedError`, not `message`.
+  );
+
   // The WebIDL version of assertDeepEq structurally clones before sending the
   // params to the main thread. This check verifies that the behavior is
   // consistent between the WebIDL and Schemas.sys.mjs-generated API bindings.
@@ -156,11 +163,38 @@ function testScript() {
     browser.test.assertEq(true, false, document.createElement("div"));
   }
 
+  await browser.test.runTests([
+    async () => {
+      await new Promise(r => setTimeout(r, 100));
+      browser.test.assertTrue(true, "After await.");
+    },
+    function subTest2() {
+      // Normally, assertThrows() requires the second `expectedError` argument,
+      // so the inner assertThrows() will throw, producing one success result.
+
+      // In WPT mode, the inner assertThrows() will not throw,
+      // producing two failure results.
+      browser.test.assertThrows(
+        () => browser.test.assertThrows(() => "no-throw"),
+        /Missing required expectedError/
+      );
+
+      throw new Error("Sub2");
+    },
+    () => {
+      // This task will not run because previous task throws.
+      browser.test.assertTrue(false, "Never runs.");
+    },
+  ]).catch(e => {
+    // We could use assertRejects, but the flow would be harder to follow.
+    browser.test.assertEq(e.message, "Sub2", "Expected exception.");
+  });
+
   browser.test.sendMessage("Ran test at", location.protocol);
   browser.test.sendMessage("This is the last browser.test call");
 }
 
-function verifyTestResults(results, shortName, expectedProtocol, useServiceWorker) {
+function verifyTestResults(results, shortName, expectedProtocol, useServiceWorker, wptMode) {
   let expectations = [
     ["test-done", true, "dot notifyPass"],
     ["test-done", false, "dot notifyFail"],
@@ -238,6 +272,10 @@ function verifyTestResults(results, shortName, expectedProtocol, useServiceWorke
     ],
     [
       "test-result", true,
+      "Function threw, expecting error to match '\"dummy4\"', got 'Error: dummy4'"
+    ],
+    [
+      "test-result", true,
       "Function threw, expecting error to match '/An unexpected error occurred/', got 'Error: An unexpected error occurred': assertDeepEq obj with function throws",
     ],
     [
@@ -261,6 +299,33 @@ function verifyTestResults(results, shortName, expectedProtocol, useServiceWorke
       ["test-eq", false, "[object HTMLDivElement]", "true", "false"],
     ]);
   }
+
+  expectations.push(
+    ["test-task-start", "unnamed_test_1"],
+    ["test-result", true, "After await."],
+    ["test-task-done", 2, "unnamed_test_1"],
+  );
+
+  if (wptMode) {
+    expectations.push(
+      ["test-task-start", "subTest2"],
+      ["test-result", false, "Function did not throw, expected error '/.*/'"],
+      ["test-result", false, "Function did not throw, expected error '/Missing required expectedError/'"],
+      ["test-result", false, "Exception running subTest2: Sub2"],
+      ["test-task-done", 1, "subTest2"],
+    );
+  } else {
+    expectations.push(
+      ["test-task-start", "subTest2"],
+      [
+        "test-result", true,
+        "Function threw, expecting error to match '/Missing required expectedError/', got 'Error: Missing required expectedError'"
+      ],
+      ["test-result", false, "Exception running subTest2: Sub2"],
+      ["test-task-done", 1, "subTest2"],
+    );
+  }
+  expectations.push(["test-eq", true, "Expected exception.", "Sub2", "Sub2"]);
 
   expectations.push(...[
     ["test-message", "Ran test at", expectedProtocol],
@@ -288,6 +353,23 @@ add_task(async function test_test_in_background() {
   let results = await extension.awaitResults();
   verifyTestResults(results, "background page", "moz-extension:", false);
   await extension.unload();
+});
+
+add_task(async function test_test_in_wpt_mode() {
+  let extensionData = {
+    background: `(${testScript})()`,
+    useServiceWorker: false,
+  };
+
+  await SpecialPowers.pushPrefEnv({ set: [["extensions.wpt.enabled", true]] });
+
+  let extension = loadExtensionAndInterceptTest(extensionData);
+  await extension.startup();
+  let results = await extension.awaitResults();
+  verifyTestResults(results, "wpt mode", "moz-extension:", false, true);
+  await extension.unload();
+
+  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function test_test_in_background_service_worker() {

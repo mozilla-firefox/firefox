@@ -33,6 +33,7 @@ module.exports = {
     RPMTryPingSecureWWWLink: false,
     RPMOpenSecureWWWLink: false,
     RPMOpenPreferences: false,
+    RPMHasConnectivity: false,
     RPMGetTRRSkipReason: false,
     RPMGetTRRDomain: false,
     RPMIsSiteSpecificTRRError: false,

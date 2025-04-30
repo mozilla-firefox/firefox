@@ -44,7 +44,7 @@ const TEST_CONDITIONS = {
     },
     initialState: [
       { isUpgrade: false, version: null },
-      { isUpgrade: false, version: "2.0", asBuiltin: true },
+      { isUpgrade: false, version: "2.0" },
       { isUpgrade: false, version: "2.0" },
       { isUpgrade: false, version: null },
       { isUpgrade: false, version: null },

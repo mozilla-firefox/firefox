@@ -1,0 +1,22 @@
+[package]
+name = "crash_helper_client"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1"
+crash_helper_common = { path = "../crash_helper_common" }
+num-derive = "0.4"
+num-traits = "0.2"
+
+[target."cfg(any(target_os = \"android\", target_os = \"linux\", target_os = \"macos\"))".dependencies]
+nix = { version = "0.29", features = ["process"] }
+
+[target."cfg(any(target_os = \"android\", target_os = \"linux\"))".dependencies]
+minidump-writer = "0.10"
+rust_minidump_writer_linux = { path = "../rust_minidump_writer_linux" }
+
+[target."cfg(target_os = \"windows\")".dependencies]
+windows-sys = { version = "0.52" } # All features inherited from crash_helper_common

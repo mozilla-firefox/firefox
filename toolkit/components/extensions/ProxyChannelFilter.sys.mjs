@@ -3,34 +3,23 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 import { ExtensionUtils } from "resource://gre/modules/ExtensionUtils.sys.mjs";
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   ExtensionParent: "resource://gre/modules/ExtensionParent.sys.mjs",
+  ProxyService: {
+    service: "@mozilla.org/network/protocol-proxy-service;1",
+    iid: Ci.nsIProtocolProxyService,
+  },
+  getCookieStoreIdForOriginAttributes: () =>
+    lazy.ExtensionParent.apiManager.global.getCookieStoreIdForOriginAttributes,
+  /** @returns {TabTrackerBase} */
+  tabTracker: () => lazy.ExtensionParent.apiManager.global.tabTracker,
 });
-XPCOMUtils.defineLazyServiceGetter(
-  lazy,
-  "ProxyService",
-  "@mozilla.org/network/protocol-proxy-service;1",
-  "nsIProtocolProxyService"
-);
-
-ChromeUtils.defineLazyGetter(lazy, "tabTracker", () => {
-  return lazy.ExtensionParent.apiManager.global.tabTracker;
-});
-ChromeUtils.defineLazyGetter(
-  lazy,
-  "getCookieStoreIdForOriginAttributes",
-  () => {
-    return lazy.ExtensionParent.apiManager.global
-      .getCookieStoreIdForOriginAttributes;
-  }
-);
 
 // DNS is resolved on the SOCKS proxy server.
 const { TRANSPARENT_PROXY_RESOLVES_HOST } = Ci.nsIProxyInfo;

@@ -3,6 +3,17 @@
 
 "use strict";
 
+add_setup(async () => {
+  // New tab preloading breaks BrowserTestUtils.waitForNewTab.
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.newtab.preload", false]],
+  });
+
+  registerCleanupFunction(async () => {
+    await SpecialPowers.popPrefEnv();
+  });
+});
+
 add_task(
   async function test_browser_remains_open_after_closing_last_profiles_tab() {
     if (!AppConstants.MOZ_SELECTABLE_PROFILES) {
@@ -18,8 +29,16 @@ add_task(
       "about:newprofile",
       "about:deleteprofile",
     ]) {
+      let browserLoaded = BrowserTestUtils.browserLoaded(
+        gBrowser.selectedBrowser,
+        false,
+        URI
+      );
       BrowserTestUtils.startLoadingURIString(gBrowser.selectedBrowser, URI);
-      await BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser);
+      await browserLoaded;
+
+      let newTabLoaded = BrowserTestUtils.waitForNewTab(gBrowser);
+      let tabClosed = BrowserTestUtils.waitForTabClosing(gBrowser.selectedTab);
 
       await SpecialPowers.spawn(
         gBrowser.selectedBrowser,
@@ -54,6 +73,9 @@ add_task(
           EventUtils.synthesizeMouseAtCenter(profileCard[button], {}, content);
         }
       );
+
+      await tabClosed;
+      await newTabLoaded;
 
       is(
         gBrowser.currentURI.spec,

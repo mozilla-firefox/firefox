@@ -7,6 +7,7 @@ package mozilla.components.support.utils
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
+import mozilla.components.support.utils.ext.threadIdCompat
 
 @Suppress("unused")
 object ThreadUtils {
@@ -48,8 +49,8 @@ object ThreadUtils {
 
     fun assertOnUiThread() {
         val currentThread = Thread.currentThread()
-        val currentThreadId = currentThread.id
-        val expectedThreadId = uiThread.id
+        val currentThreadId = currentThread.threadIdCompat()
+        val expectedThreadId = uiThread.threadIdCompat()
 
         if (currentThreadId == expectedThreadId) {
             return

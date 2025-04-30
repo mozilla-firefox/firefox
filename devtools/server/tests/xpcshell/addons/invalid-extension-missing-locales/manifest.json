@@ -1,0 +1,7 @@
+{
+  "name": "Supposedly localized extension",
+  "description": "has default_locale without mandatory _locales/en/messages.json",
+  "default_locale": "en",
+  "manifest_version": 3,
+  "version": "1"
+}

@@ -11,7 +11,6 @@ support-files = [
 prefs = [
   "app.update.BITS.enabled=false",
   "app.update.langpack.enabled=true",
-  "app.update.multiSessionInstallLockout.enabled=false",
 ]
 run-if = ["!msix"] # Updater is disabled in MSIX builds
 

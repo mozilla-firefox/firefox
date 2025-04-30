@@ -46,6 +46,8 @@ var subtests = [
   {"file": "helper_zoom_restore_position_tabswitch.html", "prefs": prefs},
   {"file": "helper_zoom_with_dynamic_toolbar.html", "prefs": prefs},
   {"file": "helper_visual_scrollbars_pagescroll.html", "prefs": prefs},
+  {"file": "helper_click_interrupt_animation.html",
+   "prefs": [...prefs, ["layout.scroll.disable-pixel-alignment", true]]},
   {"file": "helper_overflowhidden_zoom.html", "prefs": prefs},
   {"file": "helper_zoom_keyboardscroll.html", "prefs": prefs},
   {"file": "helper_zoom_out_clamped_scrollpos.html", "prefs": instant_repaint_prefs},
@@ -60,11 +62,6 @@ if (isApzEnabled()) {
   // This has a lot of subtests, and Android emulators are slow.
   SimpleTest.requestLongerTimeout(2);
   SimpleTest.waitForExplicitFinish();
-
-  if (getPlatform() != "mac") {
-    // Disabled on Mac due to frequent intermittents (bug 1959374).
-    subtests.push({"file": "helper_click_interrupt_animation.html", "prefs": prefs});
-  }
 
   if (getPlatform() == "linux") {
         subtests.push(

@@ -43,9 +43,6 @@ skip-if = ["os == 'android'"] # Bug 1545439
 ["test_ext_background_api_injection.js"]
 
 ["test_ext_background_early_shutdown.js"]
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_ext_background_empty.js"]
 
@@ -101,8 +98,6 @@ skip-if = ["appname == 'thunderbird'"]
 skip-if = [
   "appname == 'thunderbird'",
   "os == 'android'", # CP service is disabled on Android
-  "os == 'mac' && os_version == '10.15' && processor == 'x86_64' && debug", # Bug 1564534
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && debug", # Bug 1564534
 ]
 run-sequentially = "node server exceptions dont replay well"
 
@@ -111,33 +106,31 @@ run-sequentially = "node server exceptions dont replay well"
 skip-if = [
   "appname == 'thunderbird'",
   "os == 'android'", # CP service is disabled on Android,
-  "os == 'mac' && os_version == '10.15' && processor == 'x86_64' && debug", # Bug 1564534
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && debug", # Bug 1564534
 ]
 run-sequentially = "node server exceptions dont replay well"
 
 ["test_ext_content_security_policy.js"]
 skip-if = ["os == 'win'"] # Bug 1762638
 
+["test_ext_contentscript_antitracking.js"]
+
 ["test_ext_contentscript_api_injection.js"]
 
 ["test_ext_contentscript_async_loading.js"]
 skip-if = [
   "os == 'android' && debug", # The generated script takes too long to load on Android debug
-  "fission",  # Bug 1762638
+  "fission", #  Bug 1762638
 ]
 
 ["test_ext_contentscript_context.js"]
 skip-if = [
   "tsan", # Bug 1683730
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Disabled due to bleedover with other tests when run in regular suites; passes in "failures" jobs
   "sessionHistoryInParent", # Bug 1762638
 ]
 
 ["test_ext_contentscript_context_isolation.js"]
 skip-if = [
   "tsan", # Bug 1683730
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Disabled due to bleedover with other tests when run in regular suites; passes in "failures" jobs
   "sessionHistoryInParent", # Bug 1762638
 ]
 
@@ -147,11 +140,6 @@ skip-if = [
 run-sequentially = "very high failure rate in parallel"
 
 ["test_ext_contentscript_css.js"]
-skip-if = [
-  "os == 'linux' && fission", # Bug 1762638
-  "os == 'mac' && os_version == '10.15' && processor == 'x86_64' && debug", # Bug 1762638
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && debug", # Bug 1762638
-]
 
 ["test_ext_contentscript_dynamic_registration.js"]
 
@@ -164,6 +152,8 @@ skip-if = [
 ["test_ext_contentscript_json_api.js"]
 
 ["test_ext_contentscript_module_import.js"]
+
+["test_ext_contentscript_order.js"]
 
 ["test_ext_contentscript_preloading.js"]
 
@@ -196,7 +186,6 @@ skip-if = [
 requesttimeoutfactor = 3 # deleteDatabase may take several minutes in slow environments, Android (bug 1896262)
 skip-if = [
   "appname == 'thunderbird'",
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Disabled due to bleedover with other tests when run in regular suites; passes in "failures" jobs
   "tsan", # Bug 1683730
 ]
 
@@ -229,9 +218,6 @@ skip-if = [
 ["test_ext_dnr_across_redirects.js"]
 
 ["test_ext_dnr_allowAllRequests.js"]
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_ext_dnr_api.js"]
 
@@ -247,9 +233,6 @@ skip-if = ["os == 'android'"] # Android: downloads.download goes through the emb
 ["test_ext_dnr_modifyHeaders.js"]
 
 ["test_ext_dnr_private_browsing.js"]
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_ext_dnr_redirect_main_frame.js"]
 
@@ -428,7 +411,6 @@ skip-if = [
 skip-if = [
   "appname == 'thunderbird'",
   "os == 'android' && debug",
-  "os == 'linux' && !debug", # Bug 1625455
 ]
 
 ["test_ext_privacy_disable.js"]
@@ -461,10 +443,8 @@ skip-if = ["socketprocess_networking"]
 run-sequentially = "TCPServerSocket fails otherwise"
 
 ["test_ext_proxy_speculative.js"]
-skip-if = ["ccov && os == 'linux'"] # bug 1607581
 
 ["test_ext_proxy_startup.js"]
-skip-if = ["ccov && os == 'linux'"] # bug 1607581
 
 ["test_ext_redirects.js"]
 skip-if = ["os == 'android' && debug"]
@@ -480,7 +460,6 @@ skip-if = ["os == 'android' && debug"]
 ["test_ext_runtime_getPlatformInfo.js"]
 
 ["test_ext_runtime_id.js"]
-skip-if = ["ccov && os == 'linux'"] # bug 1607581
 
 ["test_ext_runtime_messaging_self.js"]
 
@@ -516,11 +495,6 @@ run-sequentially = "very high failure rate in parallel"
 ["test_ext_scripting_contentScripts.js"]
 
 ["test_ext_scripting_contentScripts_css.js"]
-skip-if = [
-  "os == 'linux' && debug && fission", # Bug 1762638
-  "os == 'mac' && os_version == '10.15' && processor == 'x86_64' && debug", # Bug 1762638
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && debug", # Bug 1762638
-]
 run-sequentially = "very high failure rate in parallel"
 
 ["test_ext_scripting_contentScripts_file.js"]
@@ -615,9 +589,7 @@ skip-if = ["os == 'android'"] # Bug 1258975 on android.
 skip-if = ["os == 'android'"] # Themes aren't supported on android.
 
 ["test_ext_theme_startupData.js"]
-skip-if = [
-  "os == 'android'", # Themes aren't supported on android.
-]
+skip-if = ["os == 'android'"] # Themes aren't supported on android.
 
 ["test_ext_trustworthy_origin.js"]
 
@@ -645,17 +617,12 @@ run-sequentially = "very high failure rate in parallel"
 ["test_ext_userScripts_mv3_worlds.js"]
 
 ["test_ext_userScripts_register.js"]
-skip-if = [
-  "os == 'linux' && !fission", # Bug 1763197
-  "os == 'android'", # Bug 1763197
-]
+skip-if = ["os == 'android'"] # Bug 1763197
 
 ["test_ext_wasm.js"]
 
 ["test_ext_webRequest_auth.js"]
-skip-if = [
-   "os == 'android' && debug",
-]
+skip-if = ["os == 'android' && debug"]
 requesttimeoutfactor = 4 # Prevents TV job failures on Android builds.
 
 ["test_ext_webRequest_cached.js"]
@@ -685,9 +652,7 @@ skip-if = ["os == 'android' && debug"]
 skip-if = ["tsan"] # Bug 1683730
 
 ["test_ext_webRequest_permission.js"]
-skip-if = [
-  "os == 'android' && debug",
-]
+skip-if = ["os == 'android' && debug"]
 
 ["test_ext_webRequest_redirectProperty.js"]
 skip-if = ["os == 'android' && processor == 'x86_64'"] # Bug 1683253

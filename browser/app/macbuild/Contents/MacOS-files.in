@@ -13,6 +13,9 @@
 #if defined(MOZ_ASAN) || defined(MOZ_TSAN) || defined(FUZZING)
 /llvm-symbolizer
 #endif
+#if defined(MOZ_CRASHREPORTER)
+/crashhelper
+#endif
 /nmhproxy
 /pingsender
 /pk12util

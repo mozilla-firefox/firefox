@@ -495,6 +495,18 @@ void SVGIDRenderingObserver::OnRenderingChange() {
   }
 }
 
+// Convenience function to return aFrame->GetContent() as an Element* if the
+// content pointer is non-null (or just return nullptr otherwise).
+// (AsElement itself isn't callable on null pointers.)
+static Element* GetFrameContentAsElement(nsIFrame* aFrame) {
+  MOZ_ASSERT(aFrame, "Expecting a non-null frame");
+  auto* content = aFrame->GetContent();
+  if (content) {
+    return content->AsElement();
+  }
+  return nullptr;
+}
+
 class SVGRenderingObserverProperty : public SVGIDRenderingObserver {
  public:
   NS_DECL_ISUPPORTS
@@ -504,7 +516,7 @@ class SVGRenderingObserverProperty : public SVGIDRenderingObserver {
       uint32_t aCallbacks = kAttributeChanged | kContentAppended |
                             kContentInserted | kContentWillBeRemoved,
       TargetIsValidCallback aTargetIsValidCallback = nullptr)
-      : SVGIDRenderingObserver(aReference, aFrame->GetContent()->AsElement(),
+      : SVGIDRenderingObserver(aReference, GetFrameContentAsElement(aFrame),
                                aReferenceImage, aCallbacks,
                                aTargetIsValidCallback),
         mFrameReference(aFrame) {}
@@ -935,7 +947,7 @@ class SVGFilterObserverListForCSSProp final : public SVGFilterObserverList {
   SVGFilterObserverListForCSSProp(Span<const StyleFilter> aFilters,
                                   nsIFrame* aFilteredFrame)
       : SVGFilterObserverList(aFilters,
-                              aFilteredFrame->GetContent()->AsElement(),
+                              GetFrameContentAsElement(aFilteredFrame),
                               aFilteredFrame) {}
 
  protected:
@@ -1080,7 +1092,7 @@ class SVGTemplateElementObserver : public SVGIDRenderingObserver {
 
   SVGTemplateElementObserver(SVGReference* aReference, nsIFrame* aFrame,
                              bool aReferenceImage)
-      : SVGIDRenderingObserver(aReference, aFrame->GetContent()->AsElement(),
+      : SVGIDRenderingObserver(aReference, GetFrameContentAsElement(aFrame),
                                aReferenceImage,
                                kAttributeChanged | kContentAppended |
                                    kContentInserted | kContentWillBeRemoved),
@@ -1752,8 +1764,8 @@ SVGPaintServerFrame* SVGObserverUtils::GetAndObservePaintServer(
 }
 
 void SVGObserverUtils::UpdateEffects(nsIFrame* aFrame) {
-  NS_ASSERTION(aFrame->GetContent()->IsElement(),
-               "aFrame's content should be an element");
+  NS_ASSERTION(!aFrame->GetContent() || aFrame->GetContent()->IsElement(),
+               "aFrame's content (if non-null) should be an element");
 
   aFrame->RemoveProperty(BackdropFilterProperty());
   aFrame->RemoveProperty(FilterProperty());

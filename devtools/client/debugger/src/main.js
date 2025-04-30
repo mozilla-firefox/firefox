@@ -85,6 +85,7 @@ async function loadInitialState(commands) {
   const sourceBlackBox = initialSourceBlackBoxState({ blackboxedRanges });
   const sources = initialSourcesState();
   const sourcesTree = initialSourcesTreeState({
+    mainThreadProjectDirectoryRoots: await asyncStore.directoryRoots,
     isWebExtension: commands.descriptorFront.isWebExtensionDescriptor,
   });
   const ui = initialUIState();

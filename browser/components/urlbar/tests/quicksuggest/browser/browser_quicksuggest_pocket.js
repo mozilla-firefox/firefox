@@ -276,11 +276,16 @@ async function doDismissTest(command) {
   );
 
   // Click the command.
+  let dismissalPromise = TestUtils.topicObserved(
+    "quicksuggest-dismissals-changed"
+  );
   await UrlbarTestUtils.openResultMenuAndClickItem(
     window,
     ["[data-l10n-id=firefox-suggest-command-dont-show-this]", command],
     { resultIndex: EXPECTED_RESULT_INDEX, openByMouse: true }
   );
+  info("Awaiting dismissal promise");
+  await dismissalPromise;
 
   // The row should be a tip now.
   Assert.ok(gURLBar.view.isOpen, "The view should remain open after dismissal");
@@ -353,7 +358,7 @@ async function doDismissTest(command) {
   }
 
   await UrlbarTestUtils.promisePopupClose(window);
-  await QuickSuggest.blockedSuggestions.clear();
+  await QuickSuggest.clearDismissedSuggestions();
 }
 
 // Tests row labels.

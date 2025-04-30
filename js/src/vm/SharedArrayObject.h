@@ -56,8 +56,10 @@ class SharedArrayRawBuffer {
   // Whether this is a WasmSharedArrayRawBuffer.
   bool isWasm_;
 
-  // Whether this is a growable non-Wasm buffer.
-  bool isGrowable_;
+  // Whether this is a growable non-Wasm buffer. All wasm raw buffers are
+  // growable, but must be grown through a wasm instruction or by getting
+  // a GSAB object through wasmMemoryObj.toResizableBuffer().
+  bool isGrowableJS_;
 
   mozilla::Atomic<uint32_t, mozilla::ReleaseAcquire> refcount_;
   mozilla::Atomic<size_t, mozilla::SequentiallyConsistent> length_;
@@ -67,15 +69,18 @@ class SharedArrayRawBuffer {
   FutexWaiter* waiters_ = nullptr;
 
  protected:
-  SharedArrayRawBuffer(bool isGrowable, uint8_t* buffer, size_t length)
-      : isWasm_(false), isGrowable_(isGrowable), refcount_(1), length_(length) {
+  SharedArrayRawBuffer(bool isGrowableJS, uint8_t* buffer, size_t length)
+      : isWasm_(false),
+        isGrowableJS_(isGrowableJS),
+        refcount_(1),
+        length_(length) {
     MOZ_ASSERT(buffer == dataPointerShared());
   }
 
   enum class WasmBuffer {};
 
   SharedArrayRawBuffer(WasmBuffer, uint8_t* buffer, size_t length)
-      : isWasm_(true), isGrowable_(false), refcount_(1), length_(length) {
+      : isWasm_(true), isGrowableJS_(false), refcount_(1), length_(length) {
     MOZ_ASSERT(buffer == dataPointerShared());
   }
 
@@ -99,7 +104,7 @@ class SharedArrayRawBuffer {
 
   bool isWasm() const { return isWasm_; }
 
-  bool isGrowable() const { return isGrowable_; }
+  bool isGrowableJS() const { return isGrowableJS_; }
 
   uint32_t refcount() const { return refcount_; }
 
@@ -114,7 +119,7 @@ class SharedArrayRawBuffer {
   // space. The caller is responsible to ensure that the buffer has been
   // allocated with enough space to hold at least |newByteLength| bytes. IOW
   // this method merely sets the number of user accessible bytes of this buffer.
-  bool grow(size_t newByteLength);
+  bool growJS(size_t newByteLength);
 
   static size_t offsetOfByteLength() {
     return offsetof(SharedArrayRawBuffer, length_);
@@ -191,6 +196,11 @@ class WasmSharedArrayRawBuffer : public SharedArrayRawBuffer {
   wasm::Pages wasmSourceMaxPages() const { return sourceMaxPages_; }
 
   size_t mappedSize() const { return mappedSize_; }
+
+  size_t wasmClampedMaxByteLength() const {
+    MOZ_ASSERT(isWasm());
+    return wasmClampedMaxPages().byteLength();
+  }
 
   bool wasmGrowToPagesInPlace(const Lock&, wasm::AddressType t,
                               wasm::Pages newPages);
@@ -363,9 +373,13 @@ class SharedArrayBufferObject : public ArrayBufferObjectMaybeShared {
     return byteLengthOrMaxByteLength();
   }
 
+  wasm::AddressType wasmAddressType() const {
+    return rawWasmBufferObject()->wasmAddressType();
+  }
+
   bool isWasm() const { return rawBufferObject()->isWasm(); }
 
-  bool isGrowable() const { return rawBufferObject()->isGrowable(); }
+  bool isGrowable() const { return is<GrowableSharedArrayBufferObject>(); }
 
   SharedMem<uint8_t*> dataPointerShared() const {
     return rawBufferObject()->dataPointerShared();
@@ -382,6 +396,12 @@ class SharedArrayBufferObject : public ArrayBufferObjectMaybeShared {
   // i.e. on failure |buffer->dropReference()| is performed.
   static SharedArrayBufferObject* createFromNewRawBuffer(
       JSContext* cx, WasmSharedArrayRawBuffer* buffer, size_t initialSize);
+
+  // Create an SharedArrayBufferObject object (growable or fixed-length),
+  // using the same buffer as in the wasmBuffer object.
+  template <typename SharedArrayBufferType>
+  static SharedArrayBufferType* createFromWasmObject(
+      JSContext* cx, Handle<SharedArrayBufferObject*> wasmBuffer);
 
   wasm::Pages volatileWasmPages() const {
     return rawWasmBufferObject()->volatileWasmPages();

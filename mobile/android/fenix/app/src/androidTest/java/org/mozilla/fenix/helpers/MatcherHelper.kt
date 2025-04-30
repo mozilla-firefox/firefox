@@ -59,6 +59,11 @@ object MatcherHelper {
         return mDevice.findObject(UiSelector().className(className).index(index))
     }
 
+    fun itemWithDescriptionAndIndex(className: String, index: Int): UiObject {
+        Log.i(TAG, "Looking for item with class name: $className and index: $index")
+        return mDevice.findObject(UiSelector().descriptionContains(className).index(index))
+    }
+
     fun checkedItemWithResId(resourceId: String, isChecked: Boolean): UiObject {
         Log.i(TAG, "Looking for checked item with resource id: $resourceId")
         return mDevice.findObject(UiSelector().resourceId(resourceId).checked(isChecked))

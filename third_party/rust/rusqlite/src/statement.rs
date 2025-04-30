@@ -1,4 +1,3 @@
-use std::iter::IntoIterator;
 use std::os::raw::{c_int, c_void};
 #[cfg(feature = "array")]
 use std::rc::Rc;
@@ -442,7 +441,8 @@ impl Statement<'_> {
     #[inline]
     pub fn parameter_name(&self, index: usize) -> Option<&'_ str> {
         self.stmt.bind_parameter_name(index as i32).map(|name| {
-            str::from_utf8(name.to_bytes()).expect("Invalid UTF-8 sequence in parameter name")
+            name.to_str()
+                .expect("Invalid UTF-8 sequence in parameter name")
         })
     }
 
@@ -561,7 +561,7 @@ impl Statement<'_> {
     ///
     /// Any unbound parameters will have `NULL` as their value.
     ///
-    /// This should not generally be used outside of special cases, and
+    /// This should not generally be used outside special cases, and
     /// functions in the [`Statement::execute`] family should be preferred.
     ///
     /// # Failure
@@ -580,7 +580,7 @@ impl Statement<'_> {
     ///
     /// Any unbound parameters will have `NULL` as their value.
     ///
-    /// This should not generally be used outside of special cases, and
+    /// This should not generally be used outside special cases, and
     /// functions in the [`Statement::query`] family should be preferred.
     ///
     /// Note that if the SQL does not return results, [`Statement::raw_execute`]
@@ -608,10 +608,7 @@ impl Statement<'_> {
             }
             #[cfg(feature = "functions")]
             ToSqlOutput::Arg(_) => {
-                return Err(Error::SqliteFailure(
-                    ffi::Error::new(ffi::SQLITE_MISUSE),
-                    Some(format!("Unsupported value \"{value:?}\"")),
-                ));
+                return Err(err!(ffi::SQLITE_MISUSE, "Unsupported value \"{value:?}\""));
             }
             #[cfg(feature = "array")]
             ToSqlOutput::Array(a) => {
@@ -687,7 +684,7 @@ impl Statement<'_> {
 
     #[cfg(not(feature = "extra_check"))]
     #[inline]
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(clippy::unnecessary_wraps)]
     fn check_update(&self) -> Result<()> {
         Ok(())
     }
@@ -741,7 +738,7 @@ impl Statement<'_> {
 
     #[cfg(not(feature = "extra_check"))]
     #[inline]
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(clippy::unnecessary_wraps)]
     pub(crate) fn check_no_tail(&self) -> Result<()> {
         Ok(())
     }
@@ -767,7 +764,7 @@ impl fmt::Debug for Statement<'_> {
         let sql = if self.stmt.is_null() {
             Ok("")
         } else {
-            str::from_utf8(self.stmt.sql().unwrap().to_bytes())
+            self.stmt.sql().unwrap().to_str()
         };
         f.debug_struct("Statement")
             .field("conn", self.conn)
@@ -778,7 +775,7 @@ impl fmt::Debug for Statement<'_> {
 }
 
 impl Drop for Statement<'_> {
-    #[allow(unused_must_use)]
+    #[expect(unused_must_use)]
     #[inline]
     fn drop(&mut self) {
         self.finalize_();
@@ -876,23 +873,23 @@ impl Statement<'_> {
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum StatementStatus {
-    /// Equivalent to SQLITE_STMTSTATUS_FULLSCAN_STEP
+    /// Equivalent to `SQLITE_STMTSTATUS_FULLSCAN_STEP`
     FullscanStep = 1,
-    /// Equivalent to SQLITE_STMTSTATUS_SORT
+    /// Equivalent to `SQLITE_STMTSTATUS_SORT`
     Sort = 2,
-    /// Equivalent to SQLITE_STMTSTATUS_AUTOINDEX
+    /// Equivalent to `SQLITE_STMTSTATUS_AUTOINDEX`
     AutoIndex = 3,
-    /// Equivalent to SQLITE_STMTSTATUS_VM_STEP
+    /// Equivalent to `SQLITE_STMTSTATUS_VM_STEP`
     VmStep = 4,
-    /// Equivalent to SQLITE_STMTSTATUS_REPREPARE (3.20.0)
+    /// Equivalent to `SQLITE_STMTSTATUS_REPREPARE` (3.20.0)
     RePrepare = 5,
-    /// Equivalent to SQLITE_STMTSTATUS_RUN (3.20.0)
+    /// Equivalent to `SQLITE_STMTSTATUS_RUN` (3.20.0)
     Run = 6,
-    /// Equivalent to SQLITE_STMTSTATUS_FILTER_MISS
+    /// Equivalent to `SQLITE_STMTSTATUS_FILTER_MISS`
     FilterMiss = 7,
-    /// Equivalent to SQLITE_STMTSTATUS_FILTER_HIT
+    /// Equivalent to `SQLITE_STMTSTATUS_FILTER_HIT`
     FilterHit = 8,
-    /// Equivalent to SQLITE_STMTSTATUS_MEMUSED (3.20.0)
+    /// Equivalent to `SQLITE_STMTSTATUS_MEMUSED` (3.20.0)
     MemUsed = 99,
 }
 
@@ -1019,8 +1016,8 @@ mod test {
         let doubled_id: i32 = rows.next().unwrap()?;
         assert_eq!(1, doubled_id);
 
-        // second row should be Err
-        #[allow(clippy::match_wild_err_arm)]
+        // second row should be an `Err`
+        #[expect(clippy::match_wild_err_arm)]
         match rows.next().unwrap() {
             Ok(_) => panic!("invalid Ok"),
             Err(Error::SqliteSingleThreadedMode) => (),
@@ -1285,9 +1282,12 @@ mod test {
         let conn = Connection::open_in_memory()?;
         let mut stmt = conn.prepare("")?;
         assert_eq!(0, stmt.column_count());
-        stmt.parameter_index("test").unwrap();
-        stmt.step().unwrap_err();
-        stmt.reset().unwrap(); // SQLITE_OMIT_AUTORESET = false
+        stmt.parameter_index("test")?;
+        let err = stmt.step().unwrap_err();
+        assert_eq!(err.sqlite_error_code(), Some(crate::ErrorCode::ApiMisuse));
+        // error msg is different with sqlcipher, so we use assert_ne:
+        assert_ne!(err.to_string(), "not an error".to_owned());
+        stmt.reset()?; // SQLITE_OMIT_AUTORESET = false
         stmt.execute([]).unwrap_err();
         Ok(())
     }

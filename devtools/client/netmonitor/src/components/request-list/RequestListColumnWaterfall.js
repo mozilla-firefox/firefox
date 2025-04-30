@@ -103,7 +103,8 @@ module.exports = class RequestListColumnWaterfall extends Component {
       );
     }
 
-    return tooltip.join(L10N.getStr("netmonitor.waterfall.tooltip.separator"));
+    const lf = new Intl.ListFormat(undefined, { type: "unit" });
+    return lf.format(tooltip);
   }
 
   timingBoxes() {
@@ -183,7 +184,7 @@ module.exports = class RequestListColumnWaterfall extends Component {
     return dom.td(
       {
         className: "requests-list-column requests-list-waterfall",
-        onMouseOver: this.handeMouseOver,
+        onMouseOver: this.handleMouseOver,
       },
       div(
         {

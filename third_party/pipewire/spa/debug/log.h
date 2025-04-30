@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2022 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2022 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_DEBUG_LOG_H
 #define SPA_DEBUG_LOG_H
@@ -30,17 +10,95 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <stdarg.h>
+
+#include <spa/utils/defs.h>
+#include <spa/support/log.h>
+#include <spa/debug/context.h>
+#include <spa/debug/dict.h>
+#include <spa/debug/format.h>
+#include <spa/debug/mem.h>
+#include <spa/debug/pod.h>
+
+#ifndef SPA_API_DEBUG_LOG
+ #ifdef SPA_API_IMPL
+  #define SPA_API_DEBUG_LOG SPA_API_IMPL
+ #else
+  #define SPA_API_DEBUG_LOG static inline
+ #endif
+#endif
+
 /**
  * \addtogroup spa_debug
  * \{
  */
 
-#ifndef spa_debug
-#define spa_debug(fmt,...)	({ printf(fmt"\n", ## __VA_ARGS__); })
-#endif
-#ifndef spa_debugn
-#define spa_debugn(fmt,...)	({ printf(fmt, ## __VA_ARGS__); })
-#endif
+struct spa_debug_log_ctx {
+	struct spa_debug_context ctx;
+	struct spa_log *log;
+	enum spa_log_level level;
+	const struct spa_log_topic *topic;
+	const char *file;
+	int line;
+	const char *func;
+};
+
+SPA_PRINTF_FUNC(2,3)
+SPA_API_DEBUG_LOG void spa_debug_log_log(struct spa_debug_context *ctx, const char *fmt, ...)
+{
+	struct spa_debug_log_ctx *c = SPA_CONTAINER_OF(ctx, struct spa_debug_log_ctx, ctx);
+	va_list args;
+	va_start(args, fmt);
+	spa_log_logtv(c->log, c->level, c->topic, c->file, c->line, c->func, fmt, args);
+	va_end(args);
+}
+
+#define SPA_LOGF_DEBUG_INIT(_l,_lev,_t,_file,_line,_func)			\
+	(struct spa_debug_log_ctx){ { spa_debug_log_log }, _l, _lev, _t,	\
+		_file, _line, _func }
+
+#define SPA_LOGT_DEBUG_INIT(_l,_lev,_t)						\
+	SPA_LOGF_DEBUG_INIT(_l,_lev,_t,__FILE__,__LINE__,__func__)
+
+#define SPA_LOG_DEBUG_INIT(l,lev) 	\
+	SPA_LOGT_DEBUG_INIT(l,lev,SPA_LOG_TOPIC_DEFAULT)
+
+#define spa_debug_log_pod(l,lev,indent,info,pod) 				\
+({										\
+	struct spa_debug_log_ctx c = SPA_LOG_DEBUG_INIT(l,lev);			\
+	if (SPA_UNLIKELY(spa_log_level_topic_enabled(c.log, c.topic, c.level)))	\
+		spa_debugc_pod(&c.ctx, indent, info, pod);			\
+})
+
+#define spa_debug_log_format(l,lev,indent,info,format) 				\
+({										\
+	struct spa_debug_log_ctx c = SPA_LOG_DEBUG_INIT(l,lev);			\
+	if (SPA_UNLIKELY(spa_log_level_topic_enabled(c.log, c.topic, c.level)))	\
+		spa_debugc_format(&c.ctx, indent, info, format);		\
+})
+
+#define spa_debug_log_mem(l,lev,indent,data,len)				\
+({										\
+	struct spa_debug_log_ctx c = SPA_LOG_DEBUG_INIT(l,lev);			\
+	if (SPA_UNLIKELY(spa_log_level_topic_enabled(c.log, c.topic, c.level)))	\
+		spa_debugc_mem(&c.ctx, indent, data, len);			\
+})
+
+#define spa_debug_log_dict(l,lev,indent,dict)					\
+({										\
+	struct spa_debug_log_ctx c = SPA_LOG_DEBUG_INIT(l,lev);			\
+	if (SPA_UNLIKELY(spa_log_level_topic_enabled(c.log, c.topic, c.level)))	\
+		spa_debugc_dict(&c.ctx, indent, dict);				\
+})
+
+#define spa_debug_log_error_location(l,lev,loc,fmt,...)					\
+({											\
+	struct spa_debug_log_ctx c = SPA_LOG_DEBUG_INIT(l,lev);				\
+	if (SPA_UNLIKELY(spa_log_level_topic_enabled(c.log, c.topic, c.level))) {	\
+		if (fmt) spa_debugc(&c.ctx, fmt, __VA_ARGS__);				\
+		spa_debugc_error_location(&c.ctx, loc);					\
+	}										\
+})
 
 /**
  * \}
@@ -50,4 +108,4 @@ extern "C" {
 }  /* extern "C" */
 #endif
 
-#endif /* SPA_DEBUG_LOGH */
+#endif /* SPA_DEBUG_LOG_H */

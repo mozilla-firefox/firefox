@@ -1,0 +1,96 @@
+.mobileDownloadPromoWrapper {
+  display: none;
+  height: 55px;
+
+  // This class is applied when the weather widget is active and has
+  // a display mode set to "detailed"
+  &.is-tall {
+    @media (min-width: $break-point-widest) {
+      height: 74px;
+    }
+  }
+
+  @media (min-width: $break-point-medium) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    inset-inline-start: var(--space-xlarge);
+    inset-block-start: var(--space-xlarge);
+    margin-block-start: 0;
+    margin-inline-start: 0;
+    z-index: 1;
+  }
+
+
+  // Variant B uses 40px spacing
+  .layout-variant-b & {
+    @media (min-width: $break-point-medium) {
+      inset-block-start: 40px;
+      inset-inline-start: auto;
+      // On smallest break point visible, make additional room for weather widget
+      inset-inline-end: var(--space-medium);
+    }
+
+    @media (min-width: $break-point-layout-variant) {
+      // Reset horizontal spacing back to 40px
+      inset-inline-end: 40px;
+    }
+  }
+
+  // Variant B / No search bar: delay showing the mobile icon until the next breakpoint
+  .layout-variant-b.no-search & {
+    display: none;
+
+    @media (min-width: $break-point-large) {
+      display: flex;
+      inset-block-start: 40px;
+      inset-inline-start: auto;
+      inset-inline-end: 40px;
+    }
+  }
+
+  // Variant A uses 24px spacing
+  .layout-variant-a & {
+    @media (min-width: $break-point-medium) {
+      inset-inline-start: 24px;
+      inset-block-start: 24px;
+    }
+  }
+}
+
+.mobile-download-promo {
+  width: 32px;
+  height: 32px;
+  appearance: none;
+  border: 0;
+  border-radius: var(--border-radius-small);
+  padding: 0;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--button-background-color-ghost-hover);
+
+    &:active {
+      background-color: var(--button-background-color-ghost-active);
+    }
+  }
+
+  // Active state for the toggle button while the modal is open
+  &.is-active {
+    background-color: var(--button-background-color-ghost-active);
+  }
+
+  // Bug 1908010 - This overwrites the design system color because of a
+  // known transparency issue with color-mix syntax when a wallpaper is set
+  .lightWallpaper &,
+  .darkWallpaper & {
+    background-color: var(--newtab-weather-background-color);
+
+    @media (prefers-contrast) {
+      background-color: var(--background-color-box);
+    }
+  }
+
+
+}

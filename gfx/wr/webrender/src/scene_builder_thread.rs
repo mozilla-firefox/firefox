@@ -726,6 +726,13 @@ impl SceneBuilderThread {
             Vec::new()
         };
 
+        // Unless a transaction generates a frame immediately, the compositor should
+        // schedule one whenever appropriate (probably at the next vsync) to present
+        // the changes in the scene.
+        let compositor_should_schedule_a_frame = !txns.iter().any(|txn| {
+            txn.render_frame
+        });
+
         #[cfg(feature = "capture")]
         match self.capture_config {
             Some(ref config) => self.send(SceneBuilderResult::CapturedTransactions(txns, config.clone(), result_tx)),
@@ -740,7 +747,8 @@ impl SceneBuilderThread {
             let swap_result = result_rx.unwrap().recv();
             Telemetry::stop_and_accumulate_sceneswap_time(timer_id);
             self.hooks.as_ref().unwrap().post_scene_swap(&document_ids,
-                                                         pipeline_info);
+                                                         pipeline_info,
+                                                         compositor_should_schedule_a_frame);
             // Once the hook is done, allow the RB thread to resume
             if let Ok(SceneSwapResult::Complete(resume_tx)) = swap_result {
                 resume_tx.send(()).ok();

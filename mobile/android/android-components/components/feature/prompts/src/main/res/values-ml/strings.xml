@@ -97,13 +97,13 @@
   <!-- Header for the select password prompt to allow users to fill a form with a saved password -->
   <string name="mozac_feature_prompts_saved_logins_2">കരുതിവച്ച രഹസ്യവാക്കുകൾ</string>
   <!-- Content description for the suggest strong password prompt to allow users to fill a form with a suggested strong password -->
-  <string name="mozac_feature_prompts_suggest_strong_password_content_description">ഒരു കഠിനമായ രഹസ്യവാക്കു് പറഞ്ഞു തരുക</string>
+  <string name="mozac_feature_prompts_suggest_strong_password_content_description">ഒരു മുരട്ടായ രഹസ്യവാക്കു് പറഞ്ഞു തരുക</string>
   <!-- Header for the suggest strong password prompt to allow users to fill a form with a suggested strong password -->
-  <string name="mozac_feature_prompts_suggest_strong_password_2">ഒരു കഠിനമായ രഹസ്യവാക്കു് ഉപയോഗിക്കുക</string>
+  <string name="mozac_feature_prompts_suggest_strong_password_2">ഒരു മുരട്ടായ രഹസ്യവാക്കു് ഉപയോഗിക്കുക</string>
   <!-- Title for using the suggest strong password confirmation dialog. %1$s will be replaced with the generated password -->
-  <string name="mozac_feature_prompts_suggest_strong_password_message">ഒരു കഠിനമായ രഹസ്യവാക്കു് ഉപയോഗിക്കുക: %1$s</string>
+  <string name="mozac_feature_prompts_suggest_strong_password_message">ഒരു മുരട്ടായ രഹസ്യവാക്കു് ഉപയോഗിക്കുക: %1$s</string>
   <!-- Title for using the suggest strong password confirmation dialog -->
-  <string name="mozac_feature_prompts_suggest_strong_password_title">ഒരു കഠിനമായ രഹസ്യവാക്കു് ഉപയോഗിക്കട്ടെ?</string>
+  <string name="mozac_feature_prompts_suggest_strong_password_title">ഒരു മുരട്ടായ രഹസ്യവാക്കു് ഉപയോഗിക്കട്ടെ?</string>
   <!-- Content description for the suggest strong password confirmation dialog -->
   <string name="mozac_feature_prompts_suggest_strong_password_description_3">ഒരു ശക്തമായ ക്രമരഹിതമായ രഹസ്യവാക്കു് ഉപയോഗിച്ചു് താങ്ങളുടെ അക്കൗണ്ടു് പരിരക്ഷിക്കുക. പില്കാല ഉപയോഗത്തിനു് ഇതു് താങ്ങളുടെ അക്കൗണ്ടിൽ കരുതിവച്ചിരിക്കും.</string>
   <!-- Pressing this will use the suggested strong password -->

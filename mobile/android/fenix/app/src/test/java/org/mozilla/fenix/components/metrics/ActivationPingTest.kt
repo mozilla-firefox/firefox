@@ -5,20 +5,29 @@
 package org.mozilla.fenix.components.metrics
 
 import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 internal class ActivationPingTest {
+    lateinit var context: Context
+
+    @Before
+    fun setup() {
+        context = ApplicationProvider.getApplicationContext()
+    }
+
     @Test
     fun `checkAndSend() triggers the ping if it wasn't marked as triggered`() {
-        val context: Context = mockk()
-        every { context.applicationContext } returns mockk()
-
         val mockAp = spyk(ActivationPing(context), recordPrivateCalls = true)
         every { mockAp.wasAlreadyTriggered() } returns false
         every { mockAp.markAsTriggered() } just Runs

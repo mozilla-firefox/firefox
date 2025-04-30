@@ -1,0 +1,8 @@
+[DEFAULT]
+firefox-appdir = "browser"
+
+["test_average_similarity.js"]
+
+["test_calculate_probability.js"]
+
+["test_text_preprocessing.js"]

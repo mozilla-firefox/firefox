@@ -3663,6 +3663,18 @@ bool nsHttpConnectionMgr::GetConnectionData(nsTArray<HttpRetParams>* aArg) {
   return true;
 }
 
+bool nsHttpConnectionMgr::GetHttp3ConnectionStatsData(
+    nsTArray<Http3ConnectionStatsParams>* aArg) {
+  for (const RefPtr<ConnectionEntry>& ent : mCT.Values()) {
+    if (ent->mConnInfo->GetPrivate()) {
+      continue;
+    }
+    aArg->AppendElement(ent->GetHttp3ConnectionStatsData());
+  }
+
+  return true;
+}
+
 void nsHttpConnectionMgr::ResetIPFamilyPreference(nsHttpConnectionInfo* ci) {
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
   ConnectionEntry* ent = mCT.GetWeak(ci->HashKey());

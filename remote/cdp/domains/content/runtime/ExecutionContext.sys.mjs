@@ -344,7 +344,6 @@ export class ExecutionContext {
           return NaN;
         default:
           if (/^\d+n$/.test(arg.unserializableValue)) {
-            // eslint-disable-next-line no-undef
             return BigInt(arg.unserializableValue.slice(0, -1));
           }
           throw new Error("Couldn't parse value object in call argument");

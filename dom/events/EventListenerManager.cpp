@@ -1517,11 +1517,7 @@ void EventListenerManager::HandleEventInternal(nsPresContext* aPresContext,
         PopupBlocker::GetEventPopupControlState(aEvent, *aDOMEvent));
   }
 
-  EventMessage eventMessage = aEvent->mMessage;
-  RefPtr<nsAtom> typeAtom =
-      eventMessage == eUnidentifiedEvent
-          ? aEvent->mSpecifiedEventType.get()
-          : nsContentUtils::GetEventTypeFromMessage(eventMessage);
+  RefPtr<nsAtom> typeAtom = nsContentUtils::GetEventType(aEvent);
   if (!typeAtom) {
     // Some messages don't have a corresponding type atom, e.g.
     // eMouseEnterIntoWidget. These events can't have a listener, so we
@@ -1529,6 +1525,7 @@ void EventListenerManager::HandleEventInternal(nsPresContext* aPresContext,
     return;
   }
 
+  EventMessage eventMessage = aEvent->mMessage;
   bool hasAnyListenerForEventType = false;
 
   // First, notify any "all events" listeners.
@@ -1611,15 +1608,7 @@ bool EventListenerManager::HandleEventWithListenerArray(
 
   for (Listener& listenerRef : aListeners->EndLimitedRange()) {
     Listener* listener = &listenerRef;
-    if (listener->mListenerType == Listener::eNoListener) {
-      // The listener is a placeholder value of a removed "once" listener.
-      continue;
-    }
-    if (!listener->mEnabled) {
-      // The listener has been disabled, for example by devtools.
-      continue;
-    }
-    if (!listener->MatchesEventGroup(aEvent)) {
+    if (!ListenerCanHandle(listener, aEvent)) {
       continue;
     }
     hasAnyListenerMatchingGroup = true;
@@ -1812,6 +1801,57 @@ bool EventListenerManager::HasListenersFor(const nsAString& aEventName) const {
 
 bool EventListenerManager::HasListenersFor(nsAtom* aEventNameWithOn) const {
   return HasListenersForInternal(aEventNameWithOn, false);
+}
+
+bool EventListenerManager::HasNonPassiveListenersFor(
+    const WidgetEvent* aEvent) const {
+  if (RefPtr<nsAtom> typeAtom = nsContentUtils::GetEventType(aEvent)) {
+    if (const auto& listeners = mListenerMap.GetListenersForType(typeAtom)) {
+      for (const Listener& listener : listeners->NonObservingRange()) {
+        if (!listener.mFlags.mPassive && ListenerCanHandle(&listener, aEvent)) {
+          return true;
+        }
+      }
+    }
+
+    // After dispatching wheel, legacy mouse scroll events are dispatched
+    // and listeners on those can also default prevent the behavior.
+    if (aEvent->mMessage == eWheel) {
+      if (const auto& listeners = mListenerMap.GetListenersForType(nsGkAtoms::onDOMMouseScroll)) {
+        for (const Listener& listener : listeners->NonObservingRange()) {
+          if (!listener.mFlags.mPassive && ListenerCanHandle(&listener, aEvent)) {
+            return true;
+          }
+        }
+      }
+      if (const auto& listeners = mListenerMap.GetListenersForType(nsGkAtoms::onMozMousePixelScroll)) {
+        for (const Listener& listener : listeners->NonObservingRange()) {
+          if (!listener.mFlags.mPassive && ListenerCanHandle(&listener, aEvent)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+bool EventListenerManager::ListenerCanHandle(const Listener* aListener,
+                                             const WidgetEvent* aEvent) const {
+  if (aListener->mListenerType == Listener::eNoListener) {
+    // The listener is a placeholder value of a removed "once" listener.
+    return false;
+  }
+  if (!aListener->mEnabled) {
+    // The listener has been disabled, for example by devtools.
+    return false;
+  }
+  if (!aListener->MatchesEventGroup(aEvent)) {
+    return false;
+  }
+
+  return true;
 }
 
 bool EventListenerManager::HasNonSystemGroupListenersFor(

@@ -1,6 +1,6 @@
 [DEFAULT]
 tags = "devtools"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_devtools_shim.js"]

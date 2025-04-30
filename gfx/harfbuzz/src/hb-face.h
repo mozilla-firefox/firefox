@@ -131,7 +131,7 @@ HB_EXTERN void
 hb_face_make_immutable (hb_face_t *face);
 
 HB_EXTERN hb_bool_t
-hb_face_is_immutable (const hb_face_t *face);
+hb_face_is_immutable (hb_face_t *face);
 
 
 HB_EXTERN hb_blob_t *

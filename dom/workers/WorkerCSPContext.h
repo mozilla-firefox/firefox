@@ -26,6 +26,9 @@ class WorkerCSPContext final {
   const mozilla::ipc::CSPInfo& CSPInfo() const { return mCSPInfo; }
   const nsTArray<UniquePtr<const nsCSPPolicy>>& Policies();
 
+  bool IsEvalAllowed(bool& aReportViolation);
+  bool IsWasmEvalAllowed(bool& aReportViolation);
+
  private:
   void EnsureIPCPoliciesRead();
 

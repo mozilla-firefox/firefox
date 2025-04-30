@@ -855,17 +855,17 @@ var ActivityStreamProvider = {
   async _loadIcons(aUri, preferredFaviconWidth) {
     let iconData = {};
     // Fetch the largest icon available.
-    let faviconData;
     try {
-      faviconData = await lazy.PlacesUtils.promiseFaviconData(
+      let faviconData = await lazy.PlacesUtils.favicons.getFaviconForPage(
         aUri,
         this.THUMB_FAVICON_SIZE
       );
+      let rawData = faviconData.rawData;
       Object.assign(iconData, {
-        favicon: faviconData.data,
-        faviconLength: faviconData.dataLen,
+        favicon: rawData,
+        faviconLength: rawData.length,
         faviconRef: faviconData.uri.ref,
-        faviconSize: faviconData.size,
+        faviconSize: faviconData.width,
         mimeType: faviconData.mimeType,
       });
     } catch (e) {
@@ -876,15 +876,16 @@ var ActivityStreamProvider = {
 
     // Also fetch a smaller icon.
     try {
-      faviconData = await lazy.PlacesUtils.promiseFaviconData(
+      let faviconData = await lazy.PlacesUtils.favicons.getFaviconForPage(
         aUri,
         preferredFaviconWidth
       );
+      let rawData = faviconData.rawData;
       Object.assign(iconData, {
-        smallFavicon: faviconData.data,
-        smallFaviconLength: faviconData.dataLen,
+        smallFavicon: rawData,
+        smallFaviconLength: rawData.length,
         smallFaviconRef: faviconData.uri.ref,
-        smallFaviconSize: faviconData.size,
+        smallFaviconSize: faviconData.width,
         smallFaviconMimeType: faviconData.mimeType,
       });
     } catch (e) {
@@ -2410,6 +2411,50 @@ export var NewTabUtils = {
     return (
       this.shortHostname(parsed.hostname) || parsed.pathname || parsed.href
     );
+  },
+
+  /**
+   * retrieves positive UTC offset, rounded to the nearest integer number greater than 0.
+   * (If less than 0, then add 24.)
+   * @returns {Number} utc_offset
+   */
+  getUtcOffset() {
+    const offsetInMinutes = new Date().getTimezoneOffset(); // in minutes, positive behind UTC
+    const offsetInHours = -offsetInMinutes / 60; // convert to hours, now positive *ahead* of UTC
+    let utc_offset = Math.round(offsetInHours);
+
+    if (utc_offset <= 0) {
+      utc_offset += 24;
+    }
+
+    return utc_offset;
+  },
+
+  /**
+   *  Returns a normalized OS string used in the newtab-content ping
+   * Borrowed from https://github.com/mozilla/gcp-ingestion/ingestion-beam/
+   * src/main/java/com/mozilla/telemetry/transforms/NormalizeAttributes.java
+   * @returns {String} Normalized OS string mac|win|linux|android|ios|other
+   */
+  normalizeOs() {
+    const osString = Services.appinfo.OS;
+    if (osString.startsWith("Windows") || osString.startsWith("WINNT")) {
+      return "windows";
+    } else if (osString.startsWith("Darwin")) {
+      return "mac";
+    } else if (
+      osString.includes("Linux") ||
+      osString.includes("BSD") ||
+      osString.includes("SunOS") ||
+      osString.includes("Solaris")
+    ) {
+      return "Linux";
+    } else if (osString.startsWith("iOS") || osString.includes("iPhone")) {
+      return "ios";
+    } else if (osString.startsWith("Android")) {
+      return "android";
+    }
+    return "other";
   },
 
   links: Links,

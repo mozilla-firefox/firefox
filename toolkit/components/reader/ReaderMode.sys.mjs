@@ -462,18 +462,19 @@ export var ReaderMode = {
   _assignLanguage(article) {
     return lazy.LanguageDetector.detectLanguage(article.textContent).then(
       result => {
-        article.language = result.confident ? result.language : null;
+        article.detectedLanguage = result.confident ? result.language : null;
       }
     );
   },
 
   _maybeAssignTextDirection(article) {
-    // TODO: Remove the hardcoded language codes below once bug 1320265 is resolved.
+    // Assign `article.dir` a value if not set and if we have a valid detected language.
     if (
       !article.dir &&
-      ["ar", "fa", "he", "ug", "ur"].includes(article.language)
+      typeof article.detectedLanguage === "string" &&
+      article.detectedLanguage
     ) {
-      article.dir = "rtl";
+      article.dir = Services.intl.getScriptDirection(article.detectedLanguage);
     }
   },
 
@@ -483,7 +484,7 @@ export var ReaderMode = {
    * @param article the article object to assign the reading time estimate to.
    */
   _assignReadTime(article) {
-    let lang = article.language || "en";
+    let lang = article.detectedLanguage || "en";
     const readingSpeed = this._getReadingSpeedForLanguage(lang);
     const charactersPerMinuteLow = readingSpeed.cpm - readingSpeed.variance;
     const charactersPerMinuteHigh = readingSpeed.cpm + readingSpeed.variance;

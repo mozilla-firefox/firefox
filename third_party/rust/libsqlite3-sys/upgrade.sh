@@ -9,8 +9,8 @@ export SQLITE3_LIB_DIR="$SCRIPT_DIR/sqlite3"
 mkdir -p "$TARGET_DIR" "$SQLITE3_LIB_DIR"
 
 # Download and extract amalgamation
-SQLITE=sqlite-amalgamation-3450000
-curl -O https://sqlite.org/2024/$SQLITE.zip
+SQLITE=sqlite-amalgamation-3480000
+curl -O https://sqlite.org/2025/$SQLITE.zip
 unzip -p "$SQLITE.zip" "$SQLITE/sqlite3.c" > "$SQLITE3_LIB_DIR/sqlite3.c"
 unzip -p "$SQLITE.zip" "$SQLITE/sqlite3.h" > "$SQLITE3_LIB_DIR/sqlite3.h"
 unzip -p "$SQLITE.zip" "$SQLITE/sqlite3ext.h" > "$SQLITE3_LIB_DIR/sqlite3ext.h"
@@ -19,7 +19,7 @@ rm -f "$SQLITE.zip"
 export SQLITE3_INCLUDE_DIR="$SQLITE3_LIB_DIR"
 # Regenerate bindgen file for sqlite3.h
 rm -f "$SQLITE3_LIB_DIR/bindgen_bundled_version.rs"
-cargo update
+cargo update --quiet
 # Just to make sure there is only one bindgen.rs file in target dir
 find "$TARGET_DIR" -type f -name bindgen.rs -exec rm {} \;
 env LIBSQLITE3_SYS_BUNDLING=1 cargo build --features "buildtime_bindgen session" --no-default-features
@@ -38,6 +38,6 @@ rm -f "$SQLITE3_LIB_DIR/sqlite3ext.h.bk"
 
 # Sanity checks
 cd "$SCRIPT_DIR/.." || { echo "fatal error" >&2; exit 1; }
-cargo update
+cargo update --quiet
 cargo test --features "backup blob chrono functions limits load_extension serde_json trace vtab bundled"
 printf '    \e[35;1mFinished\e[0m bundled sqlite3 tests\n'

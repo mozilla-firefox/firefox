@@ -670,10 +670,10 @@ add_task(async function test_currentPingData() {
   // Setup test data.
   let h = Telemetry.getHistogramById("TELEMETRY_TEST_COUNT");
   h.clear();
-  h.add(1);
+  Glean.testOnlyIpc.aCounterForHgram.add();
   let k = Telemetry.getKeyedHistogramById("TELEMETRY_TEST_KEYED_COUNT");
   k.clear();
-  k.add("a", 1);
+  Glean.testOnlyIpc.aLabeledCounterForKeyedCountHgram.a.add(1);
 
   // Get current ping data objects and check that their data is sane.
   for (let subsession of [true, false]) {

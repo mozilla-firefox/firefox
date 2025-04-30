@@ -81,3 +81,11 @@ using namespace mozilla::a11y;
 }
 
 @end
+
+@implementation MOXLabelAccessible
+
+- (NSString*)moxTitle {
+  return @"";
+}
+
+@end

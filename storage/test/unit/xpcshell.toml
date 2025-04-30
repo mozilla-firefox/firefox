@@ -34,7 +34,7 @@ fail-if = ["os == 'android'"]
 ["test_connection_failsafe_close.js"]
 # The failsafe close mechanism asserts when performing SpinningSynchronousClose
 # on debug builds, so we can only test on non-debug builds.
-skip-if = ["debug"]
+run-if = ["!debug"]
 
 ["test_connection_interrupt.js"]
 
@@ -78,6 +78,9 @@ fail-if = ["os == 'android'"]
 skip-if = ["appname != 'thunderbird' && appname != 'seamonkey'"]
 
 ["test_storage_ext_fts5.js"]
+
+["test_storage_ext_vec.js"]
+run-if = ["buildapp == 'browser'"]
 
 ["test_storage_function.js"]
 

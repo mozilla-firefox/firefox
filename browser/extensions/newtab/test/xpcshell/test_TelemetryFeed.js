@@ -1588,7 +1588,6 @@ add_task(
     let pingSubmitted = new Promise(resolve => {
       GleanPings.spoc.testBeforeNextSubmit(reason => {
         Assert.equal(reason, "impression");
-
         let pocketImpressions = Glean.pocket.impression.testGetValue();
         Assert.equal(pocketImpressions.length, 2);
         Assert.deepEqual(pocketImpressions[0].extra, {

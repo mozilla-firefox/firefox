@@ -1534,7 +1534,7 @@ const MESSAGES = () => [
       },
       imageURL:
         "chrome://browser/content/asrouter/assets/fox-with-box-on-cloud.svg",
-      imageVerticalOffset: -20,
+      imageVerticalTopOffset: -20,
     },
     skip_in_tests: "TODO",
     trigger: {
@@ -1546,7 +1546,7 @@ const MESSAGES = () => [
     id: "TEST_NEWTAB_MESSAGE",
     template: "newtab_message",
     content: {
-      messageType: "CustomWallpaperHighlight",
+      messageType: "DownloadMobilePromoHighlight",
     },
     trigger: {
       id: "newtabMessageCheck",

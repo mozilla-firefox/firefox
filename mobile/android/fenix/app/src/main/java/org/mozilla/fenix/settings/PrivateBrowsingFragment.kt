@@ -58,9 +58,9 @@ class PrivateBrowsingFragment : PreferenceFragmentCompat() {
             }
         }
 
-        requirePreference<SwitchPreference>(R.string.pref_key_private_browsing_biometrics_enabled).apply {
+        requirePreference<SwitchPreference>(R.string.pref_key_private_browsing_locked_enabled).apply {
             onPreferenceChangeListener = SharedPreferenceUpdater()
-            isChecked = context.settings().privateBrowsingBiometricsEnabled
+            isChecked = context.settings().privateBrowsingLockedEnabled
             isVisible = Config.channel.isDebug
         }
     }

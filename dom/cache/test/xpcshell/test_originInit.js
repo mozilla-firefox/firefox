@@ -3,7 +3,7 @@
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
-add_task(async function testSteps() {
+async function testSteps() {
   // ToDo: Replace storage and default with a getter function once we expose the
   // filenames of them to a IDL file.
   const basePath = `${storageDirName}/${defaultPersistenceDirName}/`;
@@ -246,4 +246,11 @@ add_task(async function testSteps() {
   }
 
   await testPermanentCacheDir();
-});
+}
+
+add_task(
+  {
+    pref_set: [["dom.quotaManager.loadQuotaFromCache", false]],
+  },
+  testSteps
+);

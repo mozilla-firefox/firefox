@@ -199,4 +199,5 @@ DEFINES["MOZ_SUPPORT_LEAKCHECKING"] = True
 # don't use mfbt.
 DIRS += ["../build/pure_virtual"]
 
-FINAL_LIBRARY = "mozglue"
+if CONFIG["MOZ_BUILD_APP"] != "memory":
+    FINAL_LIBRARY = "mozglue"

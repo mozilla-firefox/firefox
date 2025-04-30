@@ -362,12 +362,13 @@
 - name: WasmTrap
   mir_op: true
 
-- name: WasmTrapIfNull
+- name: WasmRefAsNonNull
   operands:
     ref: WordSized
+  result_type: WordSized
   mir_op: true
 
-- name: WasmRefIsSubtypeOfConcrete
+- name: WasmRefTestConcrete
   mir_op: true
   operands:
     ref: WordSized
@@ -375,30 +376,45 @@
   result_type: WordSized
   num_temps: 2
 
-- name: WasmRefIsSubtypeOfAbstract
+- name: WasmRefTestAbstract
   mir_op: true
   operands:
     ref: WordSized
   result_type: WordSized
   num_temps: 1
 
-- name: WasmRefIsSubtypeOfConcreteAndBranch
+- name: WasmRefTestConcreteAndBranch
   successors: [ifTrue, ifFalse]
   operands:
     ref: WordSized
     superSTV: WordSized
   arguments:
-    sourceType: wasm::RefType
+    sourceType: wasm::MaybeRefType
     destType: wasm::RefType
   num_temps: 2
 
-- name: WasmRefIsSubtypeOfAbstractAndBranch
+- name: WasmRefTestAbstractAndBranch
   successors: [ifTrue, ifFalse]
   operands:
     ref: WordSized
   arguments:
-    sourceType: wasm::RefType
+    sourceType: wasm::MaybeRefType
     destType: wasm::RefType
+  num_temps: 1
+
+- name: WasmRefCastConcrete
+  mir_op: true
+  operands:
+    ref: WordSized
+    superSTV: WordSized
+  result_type: WordSized
+  num_temps: 2
+
+- name: WasmRefCastAbstract
+  mir_op: true
+  operands:
+    ref: WordSized
+  result_type: WordSized
   num_temps: 1
 
 - name: WasmNewStructObject
@@ -5334,34 +5350,34 @@
 - name: WasmAtomicLoadI64
   result_type: Int64
   operands:
-    memoryBase: WordSized
     ptr: WordSized
+    memoryBase: WordSized
   num_temps64: 1
   mir_op: WasmLoad
 
 - name: WasmAtomicStoreI64
   operands:
-    memoryBase: WordSized
     ptr: WordSized
     value: Int64
+    memoryBase: WordSized
   num_temps64: 1
   mir_op: WasmStore
 
 - name: WasmCompareExchangeI64
   result_type: Int64
   operands:
-    memoryBase: WordSized
     ptr: WordSized
     expected: Int64
     replacement: Int64
+    memoryBase: WordSized
   mir_op: WasmCompareExchangeHeap
 
 - name: WasmAtomicBinopI64
   result_type: Int64
   operands:
-    memoryBase: WordSized
     ptr: WordSized
     value: Int64
+    memoryBase: WordSized
   arguments:
     access: const wasm::MemoryAccessDesc&
     operation: AtomicOp
@@ -5369,9 +5385,9 @@
 - name: WasmAtomicExchangeI64
   result_type: Int64
   operands:
-    memoryBase: WordSized
     ptr: WordSized
     value: Int64
+    memoryBase: WordSized
   arguments:
     access: const wasm::MemoryAccessDesc&
 #endif

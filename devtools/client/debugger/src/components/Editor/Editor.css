@@ -82,6 +82,7 @@ html[dir="rtl"] .editor-mount {
   color: var(--theme-comment);
 }
 
+/* debug-expression is only used in CM5 */
 .debug-expression {
   background-color: var(--debug-expression-background);
   border-style: solid;
@@ -99,7 +100,7 @@ html[dir="rtl"] .editor-mount {
   top: -2px;
   left: 0;
   width: 100%;
- }
+}
 
 .debug-expression::after {
   content: "";
@@ -109,7 +110,57 @@ html[dir="rtl"] .editor-mount {
   bottom: -2px;
   left: 0;
   width: 100%;
- }
+}
+
+/**
+ * This is the "paused" caret displaying at what particular column we are currently paused.
+ */
+.paused-location {
+  position: relative;
+
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  top: -1px;
+
+  /* This controls the space before and after the caret */
+  margin-left: -3px;
+  margin-right: -3px;
+
+  &.first-column {
+    /* When the caret is set on the first non-space column,
+       we can shift it further on the left empty space
+       in order to prevent shifting the code content.
+       Also shift the caret one pixel closer to the token (-3 to -4px right)
+       in order to avoid showing too far right when on the very first column. */
+    margin-left: -7px;
+    margin-right: -4px;
+  }
+
+  .column-breakpoint + &.first-column {
+    /* When the caret is on the first column, but there is a column breakpoint displayed before
+      reset back the first-column margins as we may display the caret over the breakpoint marker. */
+    margin-left: -4px;
+    margin-right: -4px;
+  }
+
+  background-image: url("chrome://devtools/skin/images/dropmarker.svg");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100%;
+  -moz-context-properties: fill;
+  fill: var(--paused-line-border);
+
+  span.vertical-bar {
+    border-left: 1.5px solid var(--paused-line-border);
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc( 50% - 1px );
+    width: 1px;
+    height: 1.5em;
+  }
+}
 
 .to-line-end ~ .CodeMirror-widget {
   background-color: var(--debug-expression-background);

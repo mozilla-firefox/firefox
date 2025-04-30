@@ -1,0 +1,102 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Adding a new metric? We have docs for that!
+# https://firefox-source-docs.mozilla.org/toolkit/components/glean/user/new_definitions_file.html
+
+---
+$schema: moz://mozilla.org/schemas/glean/metrics/2-0-0
+$tags:
+  - 'Core :: Internationalization'
+
+intl:
+  requested_locales:
+    type: string_list
+    lifetime: application
+    description: |
+      The Locales that are being requested.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - flod@mozilla.com
+    expires: never
+
+  available_locales:
+    type: string_list
+    lifetime: application
+    description: |
+      The Locales that are available for use.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - flod@mozilla.com
+    expires: never
+
+  app_locales:
+    type: string_list
+    lifetime: application
+    description: |
+      The negotiated Locales that are being used.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - flod@mozilla.com
+    expires: never
+
+  system_locales:
+    type: string_list
+    lifetime: application
+    description: |
+      The Locales for the OS.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - flod@mozilla.com
+    expires: never
+
+  regional_prefs_locales:
+    type: string_list
+    lifetime: application
+    description: |
+      The regional preferences for the OS.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - flod@mozilla.com
+    expires: never
+
+  accept_languages:
+    type: string_list
+    lifetime: application
+    description: |
+      The languages for the Accept-Languages header.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950394
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - flod@mozilla.com
+    expires: never

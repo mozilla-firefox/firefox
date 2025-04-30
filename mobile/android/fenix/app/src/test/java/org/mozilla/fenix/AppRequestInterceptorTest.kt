@@ -3,13 +3,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 package org.mozilla.fenix
-
-import android.net.ConnectivityManager
-import androidx.core.content.getSystemService
 import androidx.navigation.NavController
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
+import io.mockk.spyk
 import mozilla.components.browser.errorpages.ErrorPages
 import mozilla.components.browser.errorpages.ErrorType
 import mozilla.components.concept.engine.request.RequestInterceptor
@@ -22,7 +19,6 @@ import org.junit.runner.RunWith
 import org.mozilla.fenix.AppRequestInterceptor.Companion.HIGH_RISK_ERROR_PAGES
 import org.mozilla.fenix.AppRequestInterceptor.Companion.LOW_AND_MEDIUM_RISK_ERROR_PAGES
 import org.mozilla.fenix.GleanMetrics.ErrorPage
-import org.mozilla.fenix.ext.isOnline
 import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.helpers.FenixRobolectricTestRunner
@@ -38,15 +34,16 @@ class AppRequestInterceptorTest {
 
     @Before
     fun setUp() {
-        mockkStatic("org.mozilla.fenix.ext.ConnectivityManagerKt")
-
-        every { testContext.getSystemService<ConnectivityManager>()!!.isOnline() } returns true
         every { testContext.settings() } returns mockk(relaxed = true)
 
         navigationController = mockk(relaxed = true)
-        interceptor = AppRequestInterceptor(testContext).also {
-            it.setNavigationController(navigationController)
-        }
+        interceptor = spyk(
+            AppRequestInterceptor(testContext).also {
+                it.setNavigationController(navigationController)
+            },
+        )
+
+        every { (interceptor as AppRequestInterceptor).isConnected() } returns true
     }
 
     @Test

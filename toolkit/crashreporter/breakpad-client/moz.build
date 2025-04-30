@@ -8,8 +8,6 @@ SOURCES += [
     'minidump_file_writer.cc',
 ]
 
-Library('breakpad_client')
-
 USE_LIBS += [
     'breakpad_common_s',
 ]
@@ -19,11 +17,13 @@ if CONFIG['OS_ARCH'] == 'Darwin':
         'breakpad_mac_common_s',
     ]
 elif CONFIG['OS_ARCH'] == 'Linux':
+    UNIFIED_SOURCES += [
+        '../linux_utils.cc',
+    ]
+
     USE_LIBS += [
         'breakpad_linux_common_s',
     ]
-
-FINAL_LIBRARY = 'xul'
 
 LOCAL_INCLUDES += [
     '/toolkit/crashreporter/google-breakpad/src',
@@ -31,3 +31,5 @@ LOCAL_INCLUDES += [
 
 if CONFIG['CC_TYPE'] in ('clang', 'gcc'):
     CXXFLAGS += ['-Wno-error=stack-protector']
+
+Library('breakpad_client')

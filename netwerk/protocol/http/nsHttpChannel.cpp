@@ -9146,7 +9146,11 @@ nsresult nsHttpChannel::ContinueOnStopRequest(nsresult aStatus, bool aIsFromNet,
   ReleaseListeners();
 
   // Release mUploadStream to free some memory sooner.
-  mUploadStream = nullptr;
+  // We release this in background thread to avoid blocking I/O operations on
+  // main thread See Bug 1940224
+  Unused << NS_DispatchBackgroundTask(NS_NewRunnableFunction(
+      "release HttpBaseChannel::mUploadStream",
+      [uploadStream = std::move(mUploadStream)]() { Unused << uploadStream; }));
 
   return NS_OK;
 }

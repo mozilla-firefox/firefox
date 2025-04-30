@@ -207,15 +207,17 @@ reftest.Runner = class {
     }
     // Make sure the browser element is exactly the right size, no matter
     // what size our window is
-    const windowStyle = `
-      padding: 0px;
-      margin: 0px;
-      border:none;
-      min-width: ${width}px; min-height: ${height}px;
-      max-width: ${width}px; max-height: ${height}px;
-      color-scheme: env(-moz-content-preferred-color-scheme);
-    `;
-    browser.setAttribute("style", windowStyle);
+    browser.style.setProperty("padding", "0px");
+    browser.style.setProperty("margin", "0px");
+    browser.style.setProperty("border", "none");
+    browser.style.setProperty("min-width", `${width}px`);
+    browser.style.setProperty("min-height", `${height}px`);
+    browser.style.setProperty("max-width", `${width}px`);
+    browser.style.setProperty("max-height", `${height}px`);
+    browser.style.setProperty(
+      "color-scheme",
+      "env(-moz-content-preferred-color-scheme)"
+    );
 
     if (!lazy.AppInfo.isAndroid) {
       let doc = reftestWin.document.documentElement;

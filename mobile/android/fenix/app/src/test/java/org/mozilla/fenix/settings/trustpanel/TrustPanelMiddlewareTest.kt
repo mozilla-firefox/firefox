@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.settings.trustpanel
 
+import androidx.activity.result.ActivityResultLauncher
 import androidx.core.net.toUri
 import kotlinx.coroutines.Deferred
 import mozilla.components.browser.state.state.ContentState
@@ -11,9 +12,13 @@ import mozilla.components.browser.state.state.SessionState
 import mozilla.components.concept.engine.Engine
 import mozilla.components.concept.engine.EngineSession.TrackingProtectionPolicy.TrackingCategory
 import mozilla.components.concept.engine.content.blocking.TrackerLog
+import mozilla.components.concept.engine.permission.SitePermissions
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.session.TrackingProtectionUseCases
+import mozilla.components.feature.sitepermissions.SitePermissionsRules
 import mozilla.components.lib.publicsuffixlist.PublicSuffixList
+import mozilla.components.support.ktx.kotlin.getOrigin
+import mozilla.components.support.test.any
 import mozilla.components.support.test.libstate.ext.waitUntilIdle
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.rule.MainCoroutineRule
@@ -24,17 +29,25 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.anyLong
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
 import org.mozilla.fenix.components.AppStore
+import org.mozilla.fenix.components.PermissionStorage
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.helpers.FenixRobolectricTestRunner
+import org.mozilla.fenix.settings.PhoneFeature
+import org.mozilla.fenix.settings.toggle
 import org.mozilla.fenix.settings.trustpanel.middleware.TrustPanelMiddleware
+import org.mozilla.fenix.settings.trustpanel.store.AutoplayValue
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelAction
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelState
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelStore
+import org.mozilla.fenix.settings.trustpanel.store.WebsitePermission
 import org.mozilla.fenix.trackingprotection.TrackerBuckets
+import org.mozilla.fenix.utils.Settings
 
 @RunWith(FenixRobolectricTestRunner::class)
 class TrustPanelMiddlewareTest {
@@ -48,6 +61,9 @@ class TrustPanelMiddlewareTest {
     private lateinit var publicSuffixList: PublicSuffixList
     private lateinit var sessionUseCases: SessionUseCases
     private lateinit var trackingProtectionUseCases: TrackingProtectionUseCases
+    private lateinit var settings: Settings
+    private lateinit var permissionStorage: PermissionStorage
+    private lateinit var requestPermissionsLauncher: ActivityResultLauncher<Array<String>>
 
     @Before
     fun setup() {
@@ -56,6 +72,9 @@ class TrustPanelMiddlewareTest {
         publicSuffixList = mock()
         sessionUseCases = mock()
         trackingProtectionUseCases = mock()
+        settings = mock()
+        permissionStorage = mock()
+        requestPermissionsLauncher = mock()
     }
 
     @Test
@@ -147,9 +166,9 @@ class TrustPanelMiddlewareTest {
 
         store.dispatch(TrustPanelAction.RequestClearSiteDataDialog)
         store.waitUntilIdle()
+        store.waitUntilIdle() // Wait to ensure no calls to store.dispatch(TrustPanelAction.UpdateBaseDomain(...))
 
         verify(store, never()).dispatch(TrustPanelAction.UpdateBaseDomain(baseDomain))
-        verify(store, never()).dispatch(TrustPanelAction.Navigate.ClearSiteDataDialog)
     }
 
     @Test
@@ -167,17 +186,15 @@ class TrustPanelMiddlewareTest {
         whenever(publicSuffixList.getPublicSuffixPlusOne(urlHost)).thenReturn(publicSuffixDeferredString)
         whenever(publicSuffixDeferredString.await()).thenReturn(baseDomain)
 
-        val store = spy(
-            createStore(
-                trustPanelState = TrustPanelState(sessionState = sessionState),
-            ),
+        val store = createStore(
+            trustPanelState = TrustPanelState(sessionState = sessionState),
         )
 
         store.dispatch(TrustPanelAction.RequestClearSiteDataDialog)
         store.waitUntilIdle()
+        store.waitUntilIdle() // Wait for call to store.dispatch(TrustPanelAction.UpdateBaseDomain(...))
 
-        verify(store).dispatch(TrustPanelAction.UpdateBaseDomain(baseDomain))
-        verify(store).dispatch(TrustPanelAction.Navigate.ClearSiteDataDialog)
+        assertEquals(store.state.baseDomain, baseDomain)
     }
 
     @Test
@@ -201,6 +218,200 @@ class TrustPanelMiddlewareTest {
         verify(appStore).dispatch(AppAction.SiteDataCleared)
     }
 
+    @Test
+    fun `GIVEN toggleable permission is blocked by Android WHEN toggle toggleable permission action is dispatched THEN permission is requested`() = runTestOnMain {
+        val toggleablePermission = WebsitePermission.Toggleable(
+            isEnabled = true,
+            isBlockedByAndroid = true,
+            isVisible = true,
+            deviceFeature = PhoneFeature.CAMERA,
+        )
+        val store = createStore(
+            trustPanelState = TrustPanelState(
+                websitePermissionsState = mapOf(PhoneFeature.CAMERA to toggleablePermission),
+            ),
+        )
+
+        store.dispatch(TrustPanelAction.TogglePermission(toggleablePermission))
+        store.waitUntilIdle()
+
+        verify(requestPermissionsLauncher).launch(PhoneFeature.CAMERA.androidPermissionsList)
+    }
+
+    @Test
+    fun `GIVEN site permissions are null WHEN toggle toggleable permission action is dispatched THEN permissions are not updated`() = runTestOnMain {
+        val toggleablePermission = WebsitePermission.Toggleable(
+            isEnabled = true,
+            isBlockedByAndroid = false,
+            isVisible = true,
+            deviceFeature = PhoneFeature.CAMERA,
+        )
+
+        val trustPanelState = spy(TrustPanelState(sitePermissions = null))
+        val store = createStore(
+            trustPanelState = trustPanelState,
+        )
+
+        store.dispatch(TrustPanelAction.TogglePermission(toggleablePermission))
+        store.waitUntilIdle()
+
+        // Ensure request permissions launcher is not accessed to request permission
+        verify(requestPermissionsLauncher, never()).launch(any())
+        // Ensure session state is not accessed to update permissions
+        verify(trustPanelState, never()).sessionState
+    }
+
+    @Test
+    fun `GIVEN toggleable permission is not blocked by Android and site permissions are not null WHEN toggle toggleable permission action is dispatched THEN site permissions are updated`() = runTestOnMain {
+        val sessionId = "0"
+        val sessionUrl = "https://mozilla.org"
+        val sessionState: SessionState = mock()
+        val urlOrigin = sessionUrl.getOrigin()
+        val originalSitePermissions = SitePermissions(
+            origin = urlOrigin!!,
+            savedAt = 0,
+        )
+        val toggleablePermission = WebsitePermission.Toggleable(
+            isEnabled = true,
+            isBlockedByAndroid = false,
+            isVisible = true,
+            deviceFeature = PhoneFeature.CAMERA,
+        )
+
+        val sessionContentState: ContentState = mock()
+        val reloadUrlUseCase: SessionUseCases.ReloadUrlUseCase = mock()
+        val updatedSitePermissions = originalSitePermissions.toggle(PhoneFeature.CAMERA)
+
+        whenever(sessionState.id).thenReturn(sessionId)
+        whenever(sessionState.content).thenReturn(sessionContentState)
+        whenever(sessionUseCases.reload).thenReturn(reloadUrlUseCase)
+        whenever(sessionContentState.url).thenReturn(sessionUrl)
+        whenever(sessionContentState.private).thenReturn(false)
+
+        val store = createStore(
+            trustPanelState = TrustPanelState(
+                sitePermissions = originalSitePermissions,
+                sessionState = sessionState,
+                websitePermissionsState = mapOf(PhoneFeature.CAMERA to toggleablePermission),
+            ),
+        )
+
+        store.dispatch(TrustPanelAction.TogglePermission(toggleablePermission))
+        store.waitUntilIdle()
+
+        verify(permissionStorage).updateSitePermissions(updatedSitePermissions, false)
+        verify(reloadUrlUseCase).invoke(sessionId)
+    }
+
+    @Test
+    fun `GIVEN site permissions is null WHEN update autoplay value action is dispatched THEN site permissions are updated`() = runTestOnMain {
+        val sessionId = "0"
+        val sessionUrl = "https://mozilla.org"
+        val autoplayValue = AutoplayValue.AUTOPLAY_ALLOW_ALL
+        val sessionState: SessionState = mock()
+
+        val sessionContentState: ContentState = mock()
+        val reloadUrlUseCase: SessionUseCases.ReloadUrlUseCase = mock()
+
+        val updatedSitePermissions: SitePermissions = mock()
+        val newSitePermissions: SitePermissions = mock()
+        val sitePermissionsRules: SitePermissionsRules = mock()
+
+        whenever(sessionState.id).thenReturn(sessionId)
+        whenever(sessionState.content).thenReturn(sessionContentState)
+        whenever(sessionUseCases.reload).thenReturn(reloadUrlUseCase)
+        whenever(sessionContentState.url).thenReturn(sessionUrl)
+        whenever(sessionContentState.private).thenReturn(false)
+
+        whenever(settings.getSitePermissionsCustomSettingsRules()).thenReturn(sitePermissionsRules)
+        whenever(sitePermissionsRules.toSitePermissions(anyString(), anyLong())).thenReturn(newSitePermissions)
+        whenever(
+            newSitePermissions.copy(
+                autoplayAudible = autoplayValue.autoplayAudibleStatus,
+                autoplayInaudible = autoplayValue.autoplayInaudibleStatus,
+            ),
+        ).thenReturn(updatedSitePermissions)
+
+        val store = createStore(
+            trustPanelState = TrustPanelState(
+                sitePermissions = null,
+                sessionState = sessionState,
+            ),
+        )
+
+        store.dispatch(TrustPanelAction.UpdateAutoplayValue(autoplayValue))
+        store.waitUntilIdle()
+
+        verify(permissionStorage).add(updatedSitePermissions, false)
+        verify(reloadUrlUseCase).invoke(sessionId)
+    }
+
+    @Test
+    fun `GIVEN site permissions is not null WHEN update autoplay value action is dispatched THEN site permissions are updated`() = runTestOnMain {
+        val sessionId = "0"
+        val autoplayValue = AutoplayValue.AUTOPLAY_ALLOW_ALL
+        val sessionState: SessionState = mock()
+
+        val sessionContentState: ContentState = mock()
+        val reloadUrlUseCase: SessionUseCases.ReloadUrlUseCase = mock()
+
+        val originalSitePermissions: SitePermissions = mock()
+        val updatedSitePermissions: SitePermissions = mock()
+
+        whenever(sessionState.id).thenReturn(sessionId)
+        whenever(sessionState.content).thenReturn(sessionContentState)
+        whenever(sessionUseCases.reload).thenReturn(reloadUrlUseCase)
+        whenever(sessionContentState.private).thenReturn(false)
+        whenever(
+            originalSitePermissions.copy(
+                autoplayAudible = autoplayValue.autoplayAudibleStatus,
+                autoplayInaudible = autoplayValue.autoplayInaudibleStatus,
+            ),
+        ).thenReturn(updatedSitePermissions)
+
+        val store = createStore(
+            trustPanelState = TrustPanelState(
+                sitePermissions = originalSitePermissions,
+                sessionState = sessionState,
+            ),
+        )
+
+        store.dispatch(TrustPanelAction.UpdateAutoplayValue(autoplayValue))
+        store.waitUntilIdle()
+
+        verify(permissionStorage).updateSitePermissions(updatedSitePermissions, false)
+        verify(reloadUrlUseCase).invoke(sessionId)
+    }
+
+    @Test
+    fun `GIVEN autoplay value matches the current autoplay status WHEN update autoplay value action is dispatched THEN site permissions are not updated`() = runTestOnMain {
+        val sessionId = "0"
+        val autoplayValue = AutoplayValue.AUTOPLAY_ALLOW_ALL
+
+        val reloadUrlUseCase: SessionUseCases.ReloadUrlUseCase = mock()
+        val updatedSitePermissions: SitePermissions = mock()
+
+        whenever(sessionUseCases.reload).thenReturn(reloadUrlUseCase)
+
+        val store = createStore(
+            trustPanelState = TrustPanelState(
+                websitePermissionsState = mapOf(
+                    PhoneFeature.AUTOPLAY to WebsitePermission.Autoplay(
+                        autoplayValue = AutoplayValue.AUTOPLAY_ALLOW_ALL,
+                        isVisible = true,
+                        deviceFeature = PhoneFeature.AUTOPLAY,
+                    ),
+                ),
+            ),
+        )
+
+        store.dispatch(TrustPanelAction.UpdateAutoplayValue(autoplayValue))
+        store.waitUntilIdle()
+
+        verify(permissionStorage, never()).updateSitePermissions(updatedSitePermissions, false)
+        verify(reloadUrlUseCase, never()).invoke(sessionId)
+    }
+
     private fun createStore(
         trustPanelState: TrustPanelState = TrustPanelState(),
         onDismiss: suspend () -> Unit = {},
@@ -213,6 +424,9 @@ class TrustPanelMiddlewareTest {
                 publicSuffixList = publicSuffixList,
                 sessionUseCases = sessionUseCases,
                 trackingProtectionUseCases = trackingProtectionUseCases,
+                settings = settings,
+                permissionStorage = permissionStorage,
+                requestPermissionsLauncher = requestPermissionsLauncher,
                 onDismiss = onDismiss,
                 scope = scope,
             ),

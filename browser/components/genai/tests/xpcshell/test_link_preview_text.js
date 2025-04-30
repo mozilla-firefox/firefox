@@ -151,7 +151,7 @@ add_task(async function test_generateAI_with_blocklist() {
 
   // Mocked Blocked List Manager
   let manager = new BlockListManager({
-    blockNgrams: [BlockListManager.encodeBase64("Hello")],
+    blockNgrams: [BlockListManager.encodeBase64("hello")],
     language: "en",
   });
 

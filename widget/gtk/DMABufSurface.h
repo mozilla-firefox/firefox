@@ -125,8 +125,10 @@ class DMABufSurface {
   int32_t GetFOURCCFormat() const { return mFOURCCFormat; };
   virtual int GetTextureCount() = 0;
 
+#ifdef DEBUG
   bool IsMapped(int aPlane = 0) { return (mMappedRegion[aPlane] != nullptr); };
   void Unmap(int aPlane = 0);
+#endif
 
   virtual DMABufSurfaceRGBA* GetAsDMABufSurfaceRGBA() { return nullptr; }
   virtual DMABufSurfaceYUV* GetAsDMABufSurfaceYUV() { return nullptr; }
@@ -221,8 +223,10 @@ class DMABufSurface {
 
   void ReleaseDMABuf();
 
+#ifdef DEBUG
   void* MapInternal(uint32_t aX, uint32_t aY, uint32_t aWidth, uint32_t aHeight,
                     uint32_t* aStride, int aGbmFlags, int aPlane = 0);
+#endif
 
   // We want to keep number of opened file descriptors low so open/close
   // DMABuf file handles only when we need them, i.e. when DMABuf is exported
@@ -257,9 +261,12 @@ class DMABufSurface {
   int32_t mOffsets[DMABUF_BUFFER_PLANES];
 
   struct gbm_bo* mGbmBufferObject[DMABUF_BUFFER_PLANES];
+
+#ifdef DEBUG
   void* mMappedRegion[DMABUF_BUFFER_PLANES];
   void* mMappedRegionData[DMABUF_BUFFER_PLANES];
   uint32_t mMappedRegionStride[DMABUF_BUFFER_PLANES];
+#endif
 
   RefPtr<mozilla::gfx::FileHandleWrapper> mSyncFd;
   EGLSyncKHR mSync;
@@ -297,6 +304,7 @@ class DMABufSurfaceRGBA final : public DMABufSurface {
   mozilla::gfx::SurfaceFormat GetFormat() override;
   bool HasAlpha();
 
+#ifdef DEBUG
   void* MapReadOnly(uint32_t aX, uint32_t aY, uint32_t aWidth, uint32_t aHeight,
                     uint32_t* aStride = nullptr);
   void* MapReadOnly(uint32_t* aStride = nullptr);
@@ -307,6 +315,7 @@ class DMABufSurfaceRGBA final : public DMABufSurface {
   uint32_t GetMappedRegionStride(int aPlane = 0) {
     return mMappedRegionStride[aPlane];
   };
+#endif
 
   bool CreateTexture(mozilla::gl::GLContext* aGLContext,
                      int aPlane = 0) override;

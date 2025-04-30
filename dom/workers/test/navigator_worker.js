@@ -9,7 +9,7 @@ var supportedProps = [
   "appName",
   "appVersion",
   "globalPrivacyControl",
-  { name: "gpu", isNightly: true, isSecureContext: true },
+  { name: "gpu", isEarlyBetaOrEarlier: true, isSecureContext: true },
   "platform",
   "product",
   "userAgent",
@@ -46,6 +46,7 @@ function startTest(channelData) {
 
     if (
       prop.isNightly === !channelData.isNightly ||
+      prop.isEarlyBetaOrEarlier === !channelData.isEarlyBetaOrEarlier ||
       prop.release === !channelData.isRelease ||
       prop.isSecureContext === !isSecureContext ||
       prop.isAndroid === !channelData.isAndroid

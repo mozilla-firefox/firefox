@@ -404,7 +404,7 @@ void WindowContext::DidSet(FieldIndex<IDX_SHEntryHasUserInteraction>,
 }
 
 void WindowContext::DidSet(FieldIndex<IDX_UserActivationStateAndModifiers>) {
-  MOZ_ASSERT_IF(!IsInProcess(), mUserGestureStart.IsNull());
+  MOZ_ASSERT_IF(!IsInProcess(), mLastActivationTimestamp.IsNull());
   USER_ACTIVATION_LOG("Set user gesture activation 0x%02" PRIu8
                       " for %s browsing context 0x%08" PRIx64,
                       GetUserActivationStateAndModifiers(),
@@ -414,9 +414,9 @@ void WindowContext::DidSet(FieldIndex<IDX_UserActivationStateAndModifiers>) {
         "Set user gesture start time for %s browsing context 0x%08" PRIx64,
         XRE_IsParentProcess() ? "Parent" : "Child", Id());
     if (GetUserActivationState() == UserActivation::State::FullActivated) {
-      mUserGestureStart = TimeStamp::Now();
+      mLastActivationTimestamp = TimeStamp::Now();
     } else if (GetUserActivationState() == UserActivation::State::None) {
-      mUserGestureStart = TimeStamp();
+      mLastActivationTimestamp = TimeStamp();
     }
   }
 }
@@ -546,45 +546,68 @@ bool WindowContext::HasBeenUserGestureActivated() {
 
 const TimeStamp& WindowContext::GetUserGestureStart() const {
   MOZ_ASSERT(IsInProcess());
-  return mUserGestureStart;
+  return mLastActivationTimestamp;
 }
 
+// https://html.spec.whatwg.org/#transient-activation
 bool WindowContext::HasValidTransientUserGestureActivation() {
   MOZ_ASSERT(IsInProcess());
 
   if (GetUserActivationState() != UserActivation::State::FullActivated) {
-    // mUserGestureStart should be null if the document hasn't ever been
+    // mLastActivationTimestamp should be null if the document hasn't ever been
     // activated by user gesture
     MOZ_ASSERT_IF(GetUserActivationState() == UserActivation::State::None,
-                  mUserGestureStart.IsNull());
+                  mLastActivationTimestamp.IsNull());
     return false;
   }
 
-  MOZ_ASSERT(!mUserGestureStart.IsNull(),
-             "mUserGestureStart shouldn't be null if the document has ever "
-             "been activated by user gesture");
+  MOZ_ASSERT(
+      !mLastActivationTimestamp.IsNull(),
+      "mLastActivationTimestamp shouldn't be null if the document has ever "
+      "been activated by user gesture");
+
   TimeDuration timeout = TimeDuration::FromMilliseconds(
       StaticPrefs::dom_user_activation_transient_timeout());
 
+  // "When the current high resolution time given W is greater than or equal to
+  // the last activation timestamp in W, and less than the last activation
+  // timestamp in W plus the transient activation duration, then W is said to
+  // have transient activation."
   return timeout <= TimeDuration() ||
-         (TimeStamp::Now() - mUserGestureStart) <= timeout;
+         (TimeStamp::Now() - mLastActivationTimestamp) <= timeout;
 }
 
+// https://html.spec.whatwg.org/#consume-user-activation
 bool WindowContext::ConsumeTransientUserGestureActivation() {
   MOZ_ASSERT(IsInProcess());
   MOZ_ASSERT(IsCurrent());
+
+  // 1. If W's navigable is null, then return.
 
   if (!HasValidTransientUserGestureActivation()) {
     return false;
   }
 
+  // 2. Let top be W's navigable's top-level traversable.
   BrowsingContext* top = mBrowsingContext->Top();
+
+  // 3. Let navigables be the inclusive descendant navigables of top's active
+  // document.
   top->PreOrderWalk([&](BrowsingContext* aBrowsingContext) {
+    // 4. Let windows be the list of Window objects constructed by taking the
+    // active window of each item in navigables.
     WindowContext* windowContext = aBrowsingContext->GetCurrentWindowContext();
+
+    // 5. For each window in windows, if window's last activation timestamp is
+    // not positive infinity, then set window's last activation timestamp to
+    // negative infinity.
     if (windowContext && windowContext->GetUserActivationState() ==
                              UserActivation::State::FullActivated) {
       auto stateAndModifiers = UserActivation::StateAndModifiers(
           GetUserActivationStateAndModifiers());
+      // Setting UserActivationStateAndModifiers will trigger
+      // DidSet(FieldIndex<IDX_UserActivationStateAndModifiers>),
+      // which in turn updates mLastActivationTimestamp.
       stateAndModifiers.SetState(UserActivation::State::HasBeenActivated);
       Unused << windowContext->SetUserActivationStateAndModifiers(
           stateAndModifiers.GetRawData());
@@ -597,7 +620,7 @@ bool WindowContext::ConsumeTransientUserGestureActivation() {
 // https://html.spec.whatwg.org/multipage/interaction.html#history-action-activation
 bool WindowContext::HasValidHistoryActivation() const {
   MOZ_ASSERT(IsInProcess());
-  return mHistoryActivation != mUserGestureStart;
+  return mHistoryActivation != mLastActivationTimestamp;
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#consume-history-action-user-activation
@@ -608,8 +631,7 @@ void WindowContext::ConsumeHistoryActivation() {
     return;
   }
 
-  mHistoryActivation = mUserGestureStart;
-  return;
+  mHistoryActivation = mLastActivationTimestamp;
 }
 
 bool WindowContext::GetTransientUserGestureActivationModifiers(

@@ -2,7 +2,6 @@
 head = "head.js"
 tags = "condprof"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"] # bug 1730213
 support-files = [
   "data/sessionCheckpoints_all.json",
   "data/sessionstore_invalid.js",
@@ -10,19 +9,31 @@ support-files = [
 ]
 
 ["test_backup_once.js"]
-skip-if = ["condprof"]  # 1769154
+skip-if = [
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && opt && condprof", # Bug 1769154
+  "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && opt && condprof", # Bug 1769154
+]
 
 ["test_final_write_cleanup.js"]
 
 ["test_histogram_corrupt_files.js"]
 
 ["test_migration_lz4compression.js"]
-skip-if = ["condprof"]  # 1769154
+skip-if = [
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && opt && condprof", # Bug 1769154
+  "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && opt && condprof", # Bug 1769154
+]
 
 ["test_startup_invalid_session.js"]
-skip-if = ["condprof"]  # 1769154
+skip-if = [
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && opt && condprof", # Bug 1769154
+  "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && opt && condprof", # Bug 1769154
+]
 
 ["test_startup_nosession_async.js"]
-skip-if = ["condprof"]  # 1769154
+skip-if = [
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && opt && condprof", # Bug 1769154
+  "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && opt && condprof", # Bug 1769154
+]
 
 ["test_startup_session_async.js"]

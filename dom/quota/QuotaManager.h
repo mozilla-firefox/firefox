@@ -73,6 +73,7 @@ class ClearRequestBase;
 class ClientStorageScope;
 class ClientUsageArray;
 class ClientDirectoryLock;
+class ClientDirectoryLockHandle;
 class DirectoryLockImpl;
 class GroupInfo;
 class GroupInfoPair;
@@ -121,6 +122,9 @@ class QuotaManager final : public BackgroundThreadObject {
   class Observer;
 
  public:
+  using ClientDirectoryLockHandlePromise =
+      MozPromise<ClientDirectoryLockHandle, nsresult, true>;
+
   QuotaManager(const nsAString& aBasePath, const nsAString& aStorageName);
 
   NS_INLINE_DECL_REFCOUNTING(QuotaManager)
@@ -303,23 +307,29 @@ class QuotaManager final : public BackgroundThreadObject {
 
   // This is the main entry point into the QuotaManager API.
   // Any storage API implementation (quota client) that participates in
-  // centralized quota and storage handling should call this method to get
-  // a directory lock which will protect client's files from being deleted
-  // while they are still in use.
-  // After a lock is acquired, client is notified by resolving the returned
-  // promise. If the lock couldn't be acquired, client is notified by rejecting
-  // the returned promise. The returned lock could have been invalidated by a
-  // clear operation so consumers are supposed to check that and eventually
-  // release the lock as soon as possible (this is usually not needed for short
-  // lived operations).
-  // A lock is a reference counted object and at the time the returned promise
-  // is resolved, there are no longer other strong references except the one
-  // held by the resolve value itself. So it's up to client to add a new
-  // reference in order to keep the lock alive.
-  // Unlocking is simply done by calling lock object's Drop method. Unlocking
-  // must be always done explicitly before the lock object is destroyed (when
-  // the last strong reference is removed).
-  RefPtr<ClientDirectoryLockPromise> OpenClientDirectory(
+  // centralized quota and storage handling should call this method to obtain
+  // a directory lock, ensuring the client’s files are protected from deletion
+  // while in use.
+  //
+  // After a lock is acquired, the client is notified by resolving the returned
+  // promise. If the lock couldn't be acquired, the promise is rejected.
+  //
+  // The returned lock is encapsulated in ClientDirectoryLockHandle, which
+  // manages ownership and automatically drops the lock when destroyed. Clients
+  // should retain ownership of the handle for as long as the lock is needed.
+  //
+  // The lock may still be invalidated by a clear operation, so consumers
+  // should check its validity and release it as soon as it is no longer
+  // required.
+  //
+  // Internally, QuotaManager may perform various initialization steps before
+  // resolving the promise. This can include storage, temporary storage, group
+  // and origin initialization.
+  //
+  // Optionally, an output parameter (aPendingDirectoryLockOut) can be provided
+  // to receive a reference to the ClientDirectoryLock before wrapping it in
+  // ClientDirectoryLockHandle. This allows tracking pending locks separately.
+  RefPtr<ClientDirectoryLockHandlePromise> OpenClientDirectory(
       const ClientMetadata& aClientMetadata, bool aInitializeOrigins = true,
       bool aCreateIfNonExistent = true,
       Maybe<RefPtr<ClientDirectoryLock>&> aPendingDirectoryLockOut = Nothing());

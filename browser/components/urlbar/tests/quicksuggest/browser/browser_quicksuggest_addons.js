@@ -309,11 +309,16 @@ async function doDismissTest(command, allDismissed) {
   Assert.ok(UrlbarPrefs.get("suggest.addons"));
 
   // Click the command.
+  let dismissalPromise = TestUtils.topicObserved(
+    "quicksuggest-dismissals-changed"
+  );
   await UrlbarTestUtils.openResultMenuAndClickItem(
     window,
     ["[data-l10n-id=firefox-suggest-command-dont-show-this]", command],
     { resultIndex: EXPECTED_RESULT_INDEX, openByMouse: true }
   );
+  info("Awaiting dismissal promise");
+  await dismissalPromise;
 
   Assert.equal(
     UrlbarPrefs.get("suggest.addons"),
@@ -321,9 +326,9 @@ async function doDismissTest(command, allDismissed) {
     "suggest.addons should be true iff all suggestions weren't dismissed"
   );
   Assert.equal(
-    await QuickSuggest.blockedSuggestions.isResultBlocked(details.result),
+    await QuickSuggest.isResultDismissed(details.result),
     !allDismissed,
-    "Suggestion URL should be blocked iff all suggestions weren't dismissed"
+    "Result should be dismissed iff all suggestions weren't dismissed"
   );
 
   // The row should be a tip now.

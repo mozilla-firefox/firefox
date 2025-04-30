@@ -17,7 +17,6 @@ import mozilla.components.browser.state.state.searchEngines
 import mozilla.components.browser.state.state.selectedOrDefaultSearchEngine
 import mozilla.components.concept.awesomebar.AwesomeBar
 import mozilla.components.concept.engine.Engine
-import mozilla.components.concept.engine.EngineSession
 import mozilla.components.feature.awesomebar.provider.BookmarksStorageSuggestionProvider
 import mozilla.components.feature.awesomebar.provider.CombinedHistorySuggestionProvider
 import mozilla.components.feature.awesomebar.provider.DEFAULT_RECENT_SEARCH_SUGGESTION_LIMIT
@@ -72,58 +71,32 @@ class AwesomeBarView(
     private val defaultTopSitesSuggestionProvider: TopSitesSuggestionProvider
     private val defaultTrendingSearchProvider: TrendingSearchProvider
     private val defaultSearchActionProvider: SearchActionProvider
-    private val searchEngineSuggestionProvider: SearchEngineSuggestionProvider
+    private var searchEngineSuggestionProvider: SearchEngineSuggestionProvider?
     private val searchSuggestionProviderMap: MutableMap<SearchEngine, List<AwesomeBar.SuggestionProvider>>
 
-    private val loadUrlUseCase = object : SessionUseCases.LoadUrlUseCase {
-        override operator fun invoke(
-            url: String,
-            flags: EngineSession.LoadUrlFlags,
-            additionalHeaders: Map<String, String>?,
-            originalInput: String?,
-        ) {
-            interactor.onUrlTapped(url, flags)
-        }
-    }
+    private var _loadUrlUseCase: SessionUseCases.LoadUrlUseCase? = null
+    private val loadUrlUseCase get() = _loadUrlUseCase!!
 
-    private val searchUseCase = object : SearchUseCases.SearchUseCase {
-        override fun invoke(
-            searchTerms: String,
-            searchEngine: SearchEngine?,
-            parentSessionId: String?,
-        ) {
-            interactor.onSearchTermsTapped(searchTerms)
-        }
-    }
+    private var _searchUseCase: SearchUseCases.SearchUseCase? = null
+    private val searchUseCase get() = _searchUseCase!!
 
-    private val historySearchTermUseCase = object : SearchUseCases.SearchUseCase {
-        override fun invoke(
-            searchTerms: String,
-            searchEngine: SearchEngine?,
-            parentSessionId: String?,
-        ) {
-            interactor.onSearchTermsTapped(searchTerms)
-        }
-    }
+    private var _historySearchTermUseCase: SearchUseCases.SearchUseCase? = null
+    private val historySearchTermUseCase get() = _historySearchTermUseCase!!
 
-    private val shortcutSearchUseCase = object : SearchUseCases.SearchUseCase {
-        override fun invoke(
-            searchTerms: String,
-            searchEngine: SearchEngine?,
-            parentSessionId: String?,
-        ) {
-            interactor.onSearchTermsTapped(searchTerms)
-        }
-    }
+    private var _shortcutSearchUseCase: SearchUseCases.SearchUseCase? = null
+    private val shortcutSearchUseCase get() = _shortcutSearchUseCase!!
 
-    private val selectTabUseCase = object : TabsUseCases.SelectTabUseCase {
-        override fun invoke(tabId: String) {
-            interactor.onExistingSessionSelected(tabId)
-        }
-    }
+    private var _selectTabUseCase: TabsUseCases.SelectTabUseCase? = null
+    private val selectTabUseCase get() = _selectTabUseCase!!
 
     init {
         val primaryTextColor = activity.getColorFromAttr(R.attr.textPrimary)
+
+        _loadUrlUseCase = AwesomeBarLoadUrlUseCase(interactor)
+        _searchUseCase = AwesomeBarSearchUseCase(interactor)
+        _historySearchTermUseCase = AwesomeBarSearchUseCase(interactor)
+        _shortcutSearchUseCase = AwesomeBarSearchUseCase(interactor)
+        _selectTabUseCase = AwesomeBarSelectTabUseCase(interactor)
 
         engineForSpeculativeConnects = when (activity.browsingModeManager.mode) {
             BrowsingMode.Normal -> components.core.engine
@@ -400,7 +373,7 @@ class AwesomeBarView(
             )
         }
 
-        providersToAdd.add(searchEngineSuggestionProvider)
+        providersToAdd.add(requireNotNull(searchEngineSuggestionProvider))
 
         if (state.showShortcutsSuggestions) {
             providersToAdd.add(defaultTopSitesSuggestionProvider)
@@ -651,6 +624,20 @@ class AwesomeBarView(
         } else {
             null
         }
+
+    /**
+     * Handles clean up of the [org.mozilla.fenix.search.awesomebar.AwesomeBarView] since it holds
+     * concrete references to various life cycle sensitive elements
+     */
+    internal fun onDestroy() {
+        view.removeAllProviders()
+        searchEngineSuggestionProvider = null
+        _loadUrlUseCase = null
+        _searchUseCase = null
+        _historySearchTermUseCase = null
+        _shortcutSearchUseCase = null
+        _selectTabUseCase = null
+    }
 
     data class SearchProviderState(
         val showSearchShortcuts: Boolean,

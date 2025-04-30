@@ -1,11 +1,201 @@
 # Changelog
 
+## 0.14.0
+
+### Breaking
+- Increased MSRV to 1.63.0 (#960)
+- Removed generic parameter from `cons_tuples` (#988)
+
+### Added
+- Added `array_combinations` (#991)
+- Added `k_smallest_relaxed` and variants (#925)
+- Added `next_array` and `collect_array` (#560)
+- Implemented `DoubleEndedIterator` for `FilterOk` (#948)
+- Implemented `DoubleEndedIterator` for `FilterMapOk` (#950)
+
+### Changed
+- Allow `Q: ?Sized` in `Itertools::contains` (#971)
+- Improved hygiene of `chain!` (#943)
+- Improved `into_group_map_by` documentation (#1000)
+- Improved `tree_reduce` documentation (#955)
+- Improved discoverability of `merge_join_by` (#966)
+- Improved discoverability of `take_while_inclusive` (#972)
+- Improved documentation of `find_or_last` and `find_or_first` (#984)
+- Prevented exponentially large type sizes in `tuple_combinations` (#945)
+- Added `track_caller` attr for `asser_equal` (#976)
+
+### Notable Internal Changes
+- Fixed clippy lints (#956, #987, #1008)
+- Addressed warnings within doctests (#964)
+- CI: Run most tests with miri (#961)
+- CI: Speed up "cargo-semver-checks" action (#938)
+- Changed an instance of `default_features` in `Cargo.toml` to `default-features` (#985)
+
+## 0.13.0
+
+### Breaking
+- Removed implementation of `DoubleEndedIterator` for `ConsTuples` (#853)
+- Made `MultiProduct` fused and fixed on an empty iterator (#835, #834)
+- Changed `iproduct!` to return tuples for maxi one iterator too (#870)
+- Changed `PutBack::put_back` to return the old value (#880)
+- Removed deprecated `repeat_call, Itertools::{foreach, step, map_results, fold_results}` (#878)
+- Removed `TakeWhileInclusive::new` (#912)
+
+### Added
+- Added `Itertools::{smallest_by, smallest_by_key, largest, largest_by, largest_by_key}` (#654, #885)
+- Added `Itertools::tail` (#899)
+- Implemented `DoubleEndedIterator` for `ProcessResults` (#910)
+- Implemented `Debug` for `FormatWith` (#931)
+- Added `Itertools::get` (#891)
+
+### Changed
+- Deprecated `Itertools::group_by` (renamed `chunk_by`) (#866, #879)
+- Deprecated `unfold` (use `std::iter::from_fn` instead) (#871)
+- Optimized `GroupingMapBy` (#873, #876)
+- Relaxed `Fn` bounds to `FnMut` in `diff_with, Itertools::into_group_map_by` (#886)
+- Relaxed `Debug/Clone` bounds for `MapInto` (#889)
+- Documented the `use_alloc` feature (#887)
+- Optimized `Itertools::set_from` (#888)
+- Removed badges in `README.md` (#890)
+- Added "no-std" categories in `Cargo.toml` (#894)
+- Fixed `Itertools::k_smallest` on short unfused iterators (#900)
+- Deprecated `Itertools::tree_fold1` (renamed `tree_reduce`) (#895)
+- Deprecated `GroupingMap::fold_first` (renamed `reduce`) (#902)
+- Fixed `Itertools::k_smallest(0)` to consume the iterator, optimized `Itertools::k_smallest(1)` (#909)
+- Specialized `Combinations::nth` (#914)
+- Specialized `MergeBy::fold` (#920)
+- Specialized `CombinationsWithReplacement::nth` (#923)
+- Specialized `FlattenOk::{fold, rfold}` (#927)
+- Specialized `Powerset::nth` (#924)
+- Documentation fixes (#882, #936)
+- Fixed `assert_equal` for iterators longer than `i32::MAX` (#932)
+- Updated the `must_use` message of non-lazy `KMergeBy` and `TupleCombinations` (#939)
+
+### Notable Internal Changes
+- Tested iterator laziness (#792)
+- Created `CONTRIBUTING.md` (#767)
+
+## 0.12.1
+
+### Added
+- Documented iteration order guarantee for `Itertools::[tuple_]combinations` (#822)
+- Documented possible panic in `iterate` (#842)
+- Implemented `Clone` and `Debug` for `Diff` (#845)
+- Implemented `Debug` for `WithPosition` (#859)
+- Implemented `Eq` for `MinMaxResult` (#838)
+- Implemented `From<EitherOrBoth<A, B>>` for `Option<Either<A, B>>` (#843)
+- Implemented `PeekingNext` for `RepeatN` (#855)
+
+### Changed
+- Made `CoalesceBy` lazy (#801)
+- Optimized `Filter[Map]Ok::next`, `Itertools::partition`, `Unique[By]::next[_back]` (#818)
+- Optimized `Itertools::find_position` (#837)
+- Optimized `Positions::next[_back]` (#816)
+- Optimized `ZipLongest::fold` (#854)
+- Relaxed `Debug` bounds for `GroupingMapBy` (#860)
+- Specialized `ExactlyOneError::fold` (#826)
+- Specialized `Interleave[Shortest]::fold` (#849)
+- Specialized `MultiPeek::fold` (#820)
+- Specialized `PadUsing::[r]fold` (#825)
+- Specialized `PeekNth::fold` (#824)
+- Specialized `Positions::[r]fold` (#813)
+- Specialized `PutBackN::fold` (#823)
+- Specialized `RepeatN::[r]fold` (#821)
+- Specialized `TakeWhileInclusive::fold` (#851)
+- Specialized `ZipLongest::rfold` (#848)
+
+### Notable Internal Changes
+- Added test coverage in CI (#847, #856)
+- Added semver check in CI (#784)
+- Enforced `clippy` in CI (#740)
+- Enforced `rustdoc` in CI (#840)
+- Improved specialization tests (#807)
+- More specialization benchmarks (#806)
+
+## 0.12.0
+
+### Breaking
+- Made `take_while_inclusive` consume iterator by value (#709)
+- Added `Clone` bound to `Unique` (#777)
+
+### Added
+- Added `Itertools::try_len` (#723)
+- Added free function `sort_unstable` (#796)
+- Added `GroupMap::fold_with` (#778, #785)
+- Added `PeekNth::{peek_mut, peek_nth_mut}` (#716)
+- Added `PeekNth::{next_if, next_if_eq}` (#734)
+- Added conversion into `(Option<A>,Option<B>)` to `EitherOrBoth` (#713)
+- Added conversion from `Either<A, B>` to `EitherOrBoth<A, B>` (#715)
+- Implemented `ExactSizeIterator` for `Tuples` (#761)
+- Implemented `ExactSizeIterator` for `(Circular)TupleWindows` (#752)
+- Made `EitherOrBoth<T>` a shorthand for `EitherOrBoth<T, T>` (#719)
+
+### Changed
+- Added missing `#[must_use]` annotations on iterator adaptors (#794)
+- Made `Combinations` lazy (#795)
+- Made `Intersperse(With)` lazy (#797)
+- Made `Permutations` lazy (#793)
+- Made `Product` lazy (#800)
+- Made `TupleWindows` lazy (#602)
+- Specialized `Combinations::{count, size_hint}` (#729)
+- Specialized `CombinationsWithReplacement::{count, size_hint}` (#737)
+- Specialized `Powerset::fold` (#765)
+- Specialized `Powerset::count` (#735)
+- Specialized `TupleCombinations::{count, size_hint}` (#763)
+- Specialized `TupleCombinations::fold` (#775)
+- Specialized `WhileSome::fold` (#780)
+- Specialized `WithPosition::fold` (#772)
+- Specialized `ZipLongest::fold` (#774)
+- Changed `{min, max}_set*` operations require `alloc` feature, instead of `std` (#760)
+- Improved documentation of `tree_fold1` (#787)
+- Improved documentation of `permutations` (#724)
+- Fixed typo in documentation of `multiunzip` (#770)
+
+### Notable Internal Changes
+- Improved specialization tests (#799, #786, #782)
+- Simplified implementation of `Permutations` (#739, #748, #790)
+- Combined `Merge`/`MergeBy`/`MergeJoinBy` implementations (#736)
+- Simplified `Permutations::size_hint` (#739)
+- Fix wrapping arithmetic in benchmarks (#770)
+- Enforced `rustfmt` in CI (#751)
+- Disallowed compile warnings in CI (#720)
+- Used `cargo hack` to check MSRV (#754)
+
+## 0.11.0
+
+### Breaking
+- Make `Itertools::merge_join_by` also accept functions returning bool (#704)
+- Implement `PeekingNext` transitively over mutable references (#643)
+- Change `with_position` to yield `(Position, Item)` instead of `Position<Item>` (#699)
+
+### Added
+- Add `Itertools::take_while_inclusive` (#616)
+- Implement `PeekingNext` for `PeekingTakeWhile` (#644)
+- Add `EitherOrBoth::{just_left, just_right, into_left, into_right, as_deref, as_deref_mut, left_or_insert, right_or_insert, left_or_insert_with, right_or_insert_with, insert_left, insert_right, insert_both}` (#629)
+- Implement `Clone` for `CircularTupleWindows` (#686)
+- Implement `Clone` for `Chunks` (#683)
+- Add `Itertools::process_results` (#680)
+
+### Changed
+- Use `Cell` instead of `RefCell` in `Format` and `FormatWith` (#608)
+- CI tweaks (#674, #675)
+- Document and test the difference between stable and unstable sorts (#653)
+- Fix documentation error on `Itertools::max_set_by_key` (#692)
+- Move MSRV metadata to `Cargo.toml` (#672)
+- Implement `equal` with `Iterator::eq` (#591)
+
+## 0.10.5
+  - Maintenance
+
 ## 0.10.4
   - Add `EitherOrBoth::or` and `EitherOrBoth::or_else` (#593)
   - Add `min_set`, `max_set` et al. (#613, #323)
   - Use `either/use_std` (#628)
   - Documentation fixes (#612, #625, #632, #633, #634, #638)
   - Code maintenance (#623, #624, #627, #630)
+
+## 0.10.3
+  - Maintenance
 
 ## 0.10.2
   - Add `Itertools::multiunzip` (#362, #565)

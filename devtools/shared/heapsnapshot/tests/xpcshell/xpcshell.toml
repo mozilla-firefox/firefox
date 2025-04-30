@@ -2,7 +2,6 @@
 tags = "devtools heapsnapshot devtools-memory"
 head = "head_heapsnapshot.js"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
 support-files = [
   "Census.sys.mjs",
   "dominator-tree-worker.js",
@@ -33,6 +32,9 @@ support-files = [
 ["test_DominatorTree_01.js"]
 
 ["test_DominatorTree_02.js"]
+skip-if = [
+  "os == 'android' && android_version == '24' && processor == 'x86_64'",
+]
 
 ["test_DominatorTree_03.js"]
 
@@ -61,7 +63,6 @@ support-files = [
 ["test_HeapAnalyses_getDominatorTree_02.js"]
 
 ["test_HeapAnalyses_getImmediatelyDominated_01.js"]
-skip-if = ["tsan"] # Unreasonably slow, bug 1612707
 
 ["test_HeapAnalyses_readHeapSnapshot_01.js"]
 
@@ -122,12 +123,13 @@ skip-if = ["tsan"] # Unreasonably slow, bug 1612707
 ["test_ReadHeapSnapshot.js"]
 
 ["test_ReadHeapSnapshot_with_allocations.js"]
-skip-if = ["os == 'linux'"] # Bug 1176173
 
 ["test_ReadHeapSnapshot_with_utf8_paths.js"]
 
 ["test_ReadHeapSnapshot_worker.js"]
-skip-if = ["os == 'linux'"] # Bug 1176173
+skip-if = [
+  "os == 'android' && android_version == '24' && processor == 'x86_64'",
+]
 
 ["test_SaveHeapSnapshot.js"]
 
@@ -182,3 +184,4 @@ skip-if = ["os == 'linux'"] # Bug 1176173
 ["test_getReportLeaves_01.js"]
 
 ["test_saveHeapSnapshot_e10s_01.js"]
+# skip-if = ["os == 'mac' && os_version == '10.15' && processor == 'x86_64' && debug && socketprocess_networking"] # Bug TBD

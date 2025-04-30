@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2020 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2020 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_PARAM_PROFILER_H
 #define SPA_PARAM_PROFILER_H
@@ -59,7 +39,10 @@ enum spa_profiler {
 							  *      Long : clock duration,
 							  *      Long : clock delay,
 							  *      Double : clock rate_diff,
-							  *      Long : clock next_nsec)) */
+							  *      Long : clock next_nsec,
+							  *      Int : transport_state,
+							  *      Int : clock cycle,
+							  *      Long : xrun duration)) */
 	SPA_PROFILER_driverBlock,			/**< generic driver info block
 							  *  (Struct(
 							  *      Int : driver_id,
@@ -68,8 +51,9 @@ enum spa_profiler {
 							  *      Long : driver signal,
 							  *      Long : driver awake,
 							  *      Long : driver finish,
-							  *      Int : driver status),
-							  *      Fraction : latency))  */
+							  *      Int : driver status,
+							  *      Fraction : latency,
+							  *      Int : xrun_count))  */
 
 	SPA_PROFILER_START_Follower	= 0x20000,	/**< follower related profiler properties */
 	SPA_PROFILER_followerBlock,			/**< generic follower info block
@@ -81,8 +65,20 @@ enum spa_profiler {
 							  *      Long : awake,
 							  *      Long : finish,
 							  *      Int : status,
-							  *      Fraction : latency))  */
-
+							  *      Fraction : latency,
+							  *      Int : xrun_count))  */
+	SPA_PROFILER_followerClock,			/**< follower clock information
+							  *  (Struct(
+							  *      Int : clock id,
+							  *      String: clock name,
+							  *      Long : clock nsec,
+							  *      Fraction : clock rate,
+							  *      Long : clock position,
+							  *      Long : clock duration,
+							  *      Long : clock delay,
+							  *      Double : clock rate_diff,
+							  *      Long : clock next_nsec,
+							  *      Long : xrun duration)) */
 	SPA_PROFILER_START_CUSTOM	= 0x1000000,
 };
 

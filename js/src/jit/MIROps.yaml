@@ -441,6 +441,32 @@
 - name: Compare
   gen_boilerplate: false
 
+- name: StrictConstantCompareInt32
+  operands:
+    value: Value
+  arguments:
+    constant: int32_t
+    jsop: JSOp
+  can_recover: true
+  movable: true
+  alias_set: none
+  result_type: Boolean
+  generate_lir: true
+  lir_temps: 2
+
+- name: StrictConstantCompareBoolean
+  operands:
+    value: Value
+  arguments:
+    constant: bool
+    jsop: JSOp
+  can_recover: true
+  movable: true
+  alias_set: none
+  result_type: Boolean
+  generate_lir: true
+  lir_temps: 1
+
 - name: SameValueDouble
   operands:
     left: Double
@@ -657,6 +683,7 @@
   folds_to: custom
   congruent_to: if_operands_equal
   alias_set: none
+  clone: true
 
 - name: WasmUnsignedToFloat32
   gen_boilerplate: false
@@ -1373,17 +1400,6 @@
 
 - name: WasmTrap
   gen_boilerplate: false
-
-# Trap if the given ref is null
-- name: WasmTrapIfNull
-  operands:
-    ref: WasmAnyRef
-  arguments:
-    trap: wasm::Trap
-    trapSiteDesc: wasm::TrapSiteDesc
-  guard: true
-  type_policy: none
-  result_type: None
 
 - name: LexicalCheck
   gen_boilerplate: false
@@ -3722,10 +3738,19 @@
 - name: WasmStoreElementRef
   gen_boilerplate: false
 
-- name: WasmRefIsSubtypeOfConcrete
+- name: WasmRefAsNonNull
   gen_boilerplate: false
 
-- name: WasmRefIsSubtypeOfAbstract
+- name: WasmRefTestConcrete
+  gen_boilerplate: false
+
+- name: WasmRefTestAbstract
+  gen_boilerplate: false
+
+- name: WasmRefCastConcrete
+  gen_boilerplate: false
+
+- name: WasmRefCastAbstract
   gen_boilerplate: false
 
 - name: WasmRefConvertAnyExtern

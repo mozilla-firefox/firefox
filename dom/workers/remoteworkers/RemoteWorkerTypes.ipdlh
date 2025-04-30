@@ -21,6 +21,8 @@ using mozilla::StorageAccess from "mozilla/StorageAccess.h";
 using mozilla::OriginTrials from "mozilla/OriginTrialsIPCUtils.h";
 using mozilla::RFPTargetSet from "nsRFPService.h";
 
+[RefCounted] using class nsIPrincipal from "nsIPrincipal.h";
+
 namespace mozilla {
 namespace dom {
 
@@ -134,6 +136,27 @@ union ErrorValue {
   CSPViolation;
   ErrorMismatchOptions;
   void_t;
+};
+
+
+// Followings are data structures used to for RemoteWorkerDebugger
+
+struct RemoteWorkerDebuggerInfo {
+  bool isChrome;
+  uint32_t type;
+  nsString url;
+  uint64_t windowID;
+  nsIPrincipal principal;
+  uint64_t serviceWorkerID;
+  nsString Id;
+  nsString name;
+  nsString parentId;
+};
+
+struct RemoteWorkerDebuggerErrorInfo {
+  nsCString fileName;
+  uint32_t lineNo;
+  nsString message;
 };
 
 } // namespace dom

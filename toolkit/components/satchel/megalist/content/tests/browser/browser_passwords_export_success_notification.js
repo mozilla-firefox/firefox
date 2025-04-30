@@ -90,23 +90,7 @@ add_task(async function test_passwords_export_notification() {
     "Second row failed to render"
   );
   const originalPromptService = Services.prompt;
-  Services.prompt = {
-    confirmEx(
-      win,
-      title,
-      message,
-      _flags,
-      _button0,
-      _button1,
-      _button2,
-      _checkLabel,
-      _checkValue
-    ) {
-      info(`Prompt title ${title}`);
-      info(`Prompt message ${message}`);
-      return 0;
-    },
-  };
+  Services.prompt = mockServicePrompt();
 
   await clickExportAllPasswords(megalist, getMegalistParent());
   ok(true, "Export menu clicked.");

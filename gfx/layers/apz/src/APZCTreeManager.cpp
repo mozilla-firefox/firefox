@@ -891,7 +891,6 @@ void APZCTreeManager::SampleForWebRender(const Maybe<VsyncId>& aVsyncId,
       aTxn.AddMinimapData(scrollId, minimapData);
     }
 
-#if defined(MOZ_WIDGET_ANDROID)
     if (apzc->IsRootContent()) {
       // Send the root frame metrics to java through the UIController
       if (RefPtr<UiCompositorControllerParent> uiController =
@@ -902,7 +901,6 @@ void APZCTreeManager::SampleForWebRender(const Maybe<VsyncId>& aVsyncId,
         }
       }
     }
-#endif
   }
 
   // Now collect all the async transforms needed for the scrollthumbs.

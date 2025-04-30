@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_CLIENT_H
 #define PIPEWIRE_CLIENT_H
@@ -32,6 +12,7 @@ extern "C" {
 #include <spa/utils/defs.h>
 #include <spa/param/param.h>
 
+#include <pipewire/type.h>
 #include <pipewire/proxy.h>
 #include <pipewire/permission.h>
 
@@ -45,8 +26,14 @@ extern "C" {
  */
 #define PW_TYPE_INTERFACE_Client	PW_TYPE_INFO_INTERFACE_BASE "Client"
 
+#define PW_CLIENT_PERM_MASK		PW_PERM_RWXM
+
 #define PW_VERSION_CLIENT		3
 struct pw_client;
+
+#ifndef PW_API_CLIENT_IMPL
+#define PW_API_CLIENT_IMPL static inline
+#endif
 
 /* default ID of the current client after connect */
 #define PW_ID_CLIENT			1
@@ -125,12 +112,16 @@ struct pw_client_methods {
 	 * \param id the global id to report the error on
 	 * \param res an errno style error code
 	 * \param message an error string
+	 *
+	 * This requires W and X permissions on the client.
 	 */
 	int (*error) (void *object, uint32_t id, int res, const char *message);
 	/**
 	 * Update client properties
 	 *
 	 * \param props new properties
+	 *
+	 * This requires W and X permissions on the client.
 	 */
 	int (*update_properties) (void *object, const struct spa_dict *props);
 
@@ -141,6 +132,8 @@ struct pw_client_methods {
 	 *
 	 * \param index the first index to query, 0 for first
 	 * \param num the maximum number of items to get
+	 *
+	 * This requires W and X permissions on the client.
 	 */
 	int (*get_permissions) (void *object, uint32_t index, uint32_t num);
 	/**
@@ -155,25 +148,52 @@ struct pw_client_methods {
 	 *
 	 * \param n_permissions number of permissions
 	 * \param permissions array of permissions
+	 *
+	 * This requires W and X permissions on the client.
 	 */
 	int (*update_permissions) (void *object, uint32_t n_permissions,
 			const struct pw_permission *permissions);
 };
 
-#define pw_client_method(o,method,version,...)				\
-({									\
-	int _res = -ENOTSUP;						\
-	spa_interface_call_res((struct spa_interface*)o,		\
-			struct pw_client_methods, _res,			\
-			method, version, ##__VA_ARGS__);		\
-	_res;								\
-})
-
-#define pw_client_add_listener(c,...)		pw_client_method(c,add_listener,0,__VA_ARGS__)
-#define pw_client_error(c,...)			pw_client_method(c,error,0,__VA_ARGS__)
-#define pw_client_update_properties(c,...)	pw_client_method(c,update_properties,0,__VA_ARGS__)
-#define pw_client_get_permissions(c,...)	pw_client_method(c,get_permissions,0,__VA_ARGS__)
-#define pw_client_update_permissions(c,...)	pw_client_method(c,update_permissions,0,__VA_ARGS__)
+/** \copydoc pw_client_methods.add_listener
+ * \sa pw_client_methods.add_listener */
+PW_API_CLIENT_IMPL int pw_client_add_listener(struct pw_client *object,
+			struct spa_hook *listener,
+			const struct pw_client_events *events,
+			void *data)
+{
+	return spa_api_method_r(int, -ENOTSUP, pw_client, (struct spa_interface*)object, add_listener, 0,
+			listener, events, data);
+}
+/** \copydoc pw_client_methods.error
+ * \sa pw_client_methods.error */
+PW_API_CLIENT_IMPL int pw_client_error(struct pw_client *object, uint32_t id, int res, const char *message)
+{
+	return spa_api_method_r(int, -ENOTSUP, pw_client, (struct spa_interface*)object, error, 0,
+			id, res, message);
+}
+/** \copydoc pw_client_methods.update_properties
+ * \sa pw_client_methods.update_properties */
+PW_API_CLIENT_IMPL int pw_client_update_properties(struct pw_client *object, const struct spa_dict *props)
+{
+	return spa_api_method_r(int, -ENOTSUP, pw_client, (struct spa_interface*)object, update_properties, 0,
+			props);
+}
+/** \copydoc pw_client_methods.get_permissions
+ * \sa pw_client_methods.get_permissions */
+PW_API_CLIENT_IMPL int pw_client_get_permissions(struct pw_client *object, uint32_t index, uint32_t num)
+{
+	return spa_api_method_r(int, -ENOTSUP, pw_client, (struct spa_interface*)object, get_permissions, 0,
+			index, num);
+}
+/** \copydoc pw_client_methods.update_permissions
+ * \sa pw_client_methods.update_permissions */
+PW_API_CLIENT_IMPL int pw_client_update_permissions(struct pw_client *object, uint32_t n_permissions,
+			const struct pw_permission *permissions)
+{
+	return spa_api_method_r(int, -ENOTSUP, pw_client, (struct spa_interface*)object, update_permissions, 0,
+			n_permissions, permissions);
+}
 
 /**
  * \}

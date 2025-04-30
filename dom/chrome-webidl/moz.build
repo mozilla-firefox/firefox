@@ -29,10 +29,10 @@ with Files("WebExtension*.webidl"):
     BUG_COMPONENT = ("WebExtensions", "General")
 
 with Files("IOUtils.webidl"):
-    BUG_COMPONENT = ("Toolkit", "IOUtils and PathUtils")
+    BUG_COMPONENT = ("Core", "XPCOM")
 
 with Files("PathUtils.webidl"):
-    BUG_COMPONENT = ("Toolkit", "IOUtils and PathUtils")
+    BUG_COMPONENT = ("Core", "XPCOM")
 
 with Files("WidevineCDMManifest.webidl"):
     BUG_COMPONENT = ("Core", "Audio/Video: Playback")

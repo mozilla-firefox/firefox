@@ -1,4 +1,5 @@
 .ads-context-menu-wrapper {
+  margin-block-start: var(--space-xsmall);
   text-align: end;
 }
 
@@ -7,11 +8,11 @@
   position: relative;
 
   .context-menu {
-    width: auto;
-
     /* Position the menu just under and to the right of the context menu button */
+    inset-inline-end: 100%;
+    inset-inline-start: auto;
+    margin-inline-end: calc(-0.98 * var(--size-item-large));
     top: calc(2.25 * var(--size-item-small));
-    inset-inline-start: calc(-12.25 * var(--size-item-small));
   }
 
   > moz-button {

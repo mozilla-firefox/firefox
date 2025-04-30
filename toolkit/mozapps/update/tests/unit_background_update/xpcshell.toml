@@ -10,9 +10,6 @@ support-files = [
   "../data/sharedUpdateXML.js",
   "../data/xpcshellUtilsAUS.js",
 ]
-prefs = [
-  "app.update.multiSessionInstallLockout.enabled=false",
-]
 
 ["test_backgroundupdate_exitcodes.js"]
 run-sequentially = "very high failure rate in parallel"

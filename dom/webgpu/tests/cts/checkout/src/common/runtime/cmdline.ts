@@ -132,7 +132,7 @@ if (globalTestConfig.compatibility || globalTestConfig.forceFallbackAdapter) {
   setDefaultRequestAdapterOptions({
     featureLevel: globalTestConfig.compatibility ? 'compatibility' : 'core',
     forceFallbackAdapter: globalTestConfig.forceFallbackAdapter,
-  } as GPURequestAdapterOptions);
+  });
 }
 
 if (gpuProviderModule) {
@@ -284,6 +284,7 @@ Failed               = ${rpt(failed.length)}`);
   if (failed.length || warned.length) {
     sys.exit(1);
   }
+  sys.exit(0);
 })().catch(ex => {
   console.log(ex.stack ?? ex.toString());
   sys.exit(1);

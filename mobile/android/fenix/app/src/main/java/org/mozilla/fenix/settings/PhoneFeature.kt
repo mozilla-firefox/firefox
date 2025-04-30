@@ -9,6 +9,7 @@ import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.Manifest.permission.RECORD_AUDIO
 import android.content.Context
 import android.os.Parcelable
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import kotlinx.parcelize.Parcelize
 import mozilla.components.concept.engine.permission.SitePermissions
@@ -89,6 +90,40 @@ enum class PhoneFeature(val androidPermissionsList: Array<String>) : Parcelable 
             MEDIA_KEY_SYSTEM_ACCESS -> context.getString(R.string.preference_phone_feature_media_key_system_access)
             AUTOPLAY, AUTOPLAY_AUDIBLE, AUTOPLAY_INAUDIBLE ->
                 context.getString(R.string.preference_browser_feature_autoplay)
+        }
+    }
+
+    /**
+     * Returns the label ID representing the permission corresponding to this phone feature.
+     */
+    @StringRes
+    fun getLabelId(): Int {
+        return when (this) {
+            CAMERA -> R.string.preference_phone_feature_camera
+            LOCATION -> R.string.preference_phone_feature_location
+            MICROPHONE -> R.string.preference_phone_feature_microphone
+            NOTIFICATION -> R.string.preference_phone_feature_notification
+            PERSISTENT_STORAGE -> R.string.preference_phone_feature_persistent_storage
+            CROSS_ORIGIN_STORAGE_ACCESS -> R.string.preference_phone_feature_cross_origin_storage_access
+            MEDIA_KEY_SYSTEM_ACCESS -> R.string.preference_phone_feature_media_key_system_access
+            AUTOPLAY, AUTOPLAY_AUDIBLE, AUTOPLAY_INAUDIBLE -> R.string.preference_browser_feature_autoplay
+        }
+    }
+
+    /**
+     * Returns the icon ID representing the permission corresponding to this phone feature.
+     */
+    @DrawableRes
+    fun getIconId(): Int {
+        return when (this) {
+            CAMERA -> R.drawable.mozac_ic_camera_24
+            LOCATION -> R.drawable.mozac_ic_location_24
+            MICROPHONE -> R.drawable.mozac_ic_microphone_24
+            NOTIFICATION -> R.drawable.mozac_ic_notification_24
+            PERSISTENT_STORAGE -> R.drawable.mozac_ic_storage_24
+            CROSS_ORIGIN_STORAGE_ACCESS -> R.drawable.mozac_ic_cookies_24
+            MEDIA_KEY_SYSTEM_ACCESS -> R.drawable.mozac_ic_link_24
+            AUTOPLAY, AUTOPLAY_AUDIBLE, AUTOPLAY_INAUDIBLE -> R.drawable.mozac_ic_autoplay_24
         }
     }
 

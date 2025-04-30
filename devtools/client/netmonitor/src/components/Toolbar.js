@@ -470,6 +470,9 @@ class Toolbar extends Component {
       placeholder: SEARCH_PLACE_HOLDER,
       type: "filter",
       ref: "searchbox",
+      initialValue: Services.prefs.getCharPref(
+        "devtools.netmonitor.requestfilter"
+      ),
       onChange: setRequestFilterText,
       onFocusKeyboardShortcut: this.onSearchBoxFocusKeyboardShortcut,
       onFocus: this.onSearchBoxFocus,

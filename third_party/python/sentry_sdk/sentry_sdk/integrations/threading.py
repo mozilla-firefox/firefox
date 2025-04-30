@@ -51,7 +51,7 @@ class ThreadingIntegration(Integration):
                     new_run = _wrap_run(hub_, getattr(self.run, "__func__", self.run))
                     self.run = new_run  # type: ignore
 
-            return old_start(self, *a, **kw)  # type: ignore
+            return old_start(self, *a, **kw)
 
         Thread.start = sentry_start  # type: ignore
 

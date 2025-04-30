@@ -265,16 +265,16 @@ async function getRequestUserAgent(commands, browserOrBrowsingContext) {
         }
       }
     };
-
-    commands.resourceCommand.watchResources(
-      [commands.resourceCommand.TYPES.NETWORK_EVENT],
-      {
-        onAvailable,
-        onUpdated,
-        ignoreExistingResources: true,
-      }
-    );
   });
+
+  await commands.resourceCommand.watchResources(
+    [commands.resourceCommand.TYPES.NETWORK_EVENT],
+    {
+      onAvailable,
+      onUpdated,
+      ignoreExistingResources: true,
+    }
+  );
 
   info(`Fetch ${url}`);
   SpecialPowers.spawn(browserOrBrowsingContext, [url], innerUrl => {

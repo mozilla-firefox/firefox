@@ -1,0 +1,17 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+if CONFIG["COMPILE_ENVIRONMENT"]:
+    # This tells mach to run cbindgen and that this header-file should be created
+    CbindgenHeader(
+        "crash_helper_client_ffi_generated.h",
+        inputs=["/toolkit/crashreporter/crash_helper_client"],
+    )
+
+    # This tells mach to copy that generated file to obj/dist/mozilla
+    EXPORTS.mozilla += [
+        "!crash_helper_client_ffi_generated.h",
+    ]

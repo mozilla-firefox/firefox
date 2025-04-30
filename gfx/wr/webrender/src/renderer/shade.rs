@@ -614,8 +614,6 @@ pub struct Shaders {
     // These are "cache shaders". These shaders are used to
     // draw intermediate results to cache targets. The results
     // of these shaders are then used by the primitive shaders.
-    #[allow(unused)] // bug 1959761
-    cs_blur_a8: ShaderHandle,
     cs_blur_rgba8: ShaderHandle,
     cs_border_segment: ShaderHandle,
     cs_border_solid: ShaderHandle,
@@ -755,13 +753,6 @@ impl Shaders {
             false /* advanced blend */,
             false /* dual source */,
             &mut loader,
-        )?;
-
-        let cs_blur_a8 = loader.create_shader(
-            ShaderKind::Cache(VertexArrayKind::Blur),
-            "cs_blur",
-            &["ALPHA_TARGET"],
-            &shader_list,
         )?;
 
         let cs_blur_rgba8 = loader.create_shader(
@@ -1068,7 +1059,6 @@ impl Shaders {
         Ok(Shaders {
             loader,
 
-            cs_blur_a8,
             cs_blur_rgba8,
             cs_border_segment,
             cs_line_decoration,

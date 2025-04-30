@@ -73,9 +73,6 @@ def main(argv):
 
     config = {}
 
-    if "OLD_CONFIGURE" not in os.environ:
-        os.environ["OLD_CONFIGURE"] = os.path.join(base_dir, "old-configure")
-
     sandbox = ConfigureSandbox(config, os.environ, argv)
 
     if not sandbox._help:
@@ -144,28 +141,21 @@ def main(argv):
 
     buildstatus("START_configure config.status")
     logging.getLogger("moz.configure").info("Creating config.status")
-
-    old_js_configure_substs = config.pop("OLD_JS_CONFIGURE_SUBSTS", None)
-    old_js_configure_defines = config.pop("OLD_JS_CONFIGURE_DEFINES", None)
     try:
-        if old_js_configure_substs or old_js_configure_defines:
-            js_config = config.copy()
-            pwd = os.getcwd()
-            try:
-                os.makedirs("js/src", exist_ok=True)
-                os.chdir("js/src")
-                js_config["OLD_CONFIGURE_SUBSTS"] = old_js_configure_substs
-                js_config["OLD_CONFIGURE_DEFINES"] = old_js_configure_defines
-                # The build system frontend expects $objdir/js/src/config.status
-                # to have $objdir/js/src as topobjdir.
-                # We want forward slashes on all platforms.
-                js_config["TOPOBJDIR"] += "/js/src"
-                ret = config_status(js_config, execute=False)
-                if ret:
-                    return ret
-            finally:
-                os.chdir(pwd)
-
+        js_config = config.copy()
+        pwd = os.getcwd()
+        try:
+            os.makedirs("js/src", exist_ok=True)
+            os.chdir("js/src")
+            # The build system frontend expects $objdir/js/src/config.status
+            # to have $objdir/js/src as topobjdir.
+            # We want forward slashes on all platforms.
+            js_config["TOPOBJDIR"] += "/js/src"
+            ret = config_status(js_config, execute=False)
+            if ret:
+                return ret
+        finally:
+            os.chdir(pwd)
         return config_status(config)
     finally:
         buildstatus("END_configure config.status")
@@ -217,17 +207,11 @@ def config_status(config, execute=True):
             "TOPSRCDIR",
             "TOPOBJDIR",
             "CONFIG_STATUS_DEPS",
-            "OLD_CONFIGURE_SUBSTS",
-            "OLD_CONFIGURE_DEFINES",
         )
     }
-    for k, v in config["OLD_CONFIGURE_SUBSTS"]:
-        sanitized_config["substs"][k] = sanitize_config(v)
     sanitized_config["defines"] = {
         k: sanitize_config(v) for k, v in config["DEFINES"].items()
     }
-    for k, v in config["OLD_CONFIGURE_DEFINES"]:
-        sanitized_config["defines"][k] = sanitize_config(v)
     sanitized_config["topsrcdir"] = config["TOPSRCDIR"]
     sanitized_config["topobjdir"] = config["TOPOBJDIR"]
     sanitized_config["mozconfig"] = config.get("MOZCONFIG")

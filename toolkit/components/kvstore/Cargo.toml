@@ -21,7 +21,7 @@ xpcom = { path = "../../../xpcom/rust/xpcom" }
 tempfile = "3"
 thin-vec = { version = "0.2.1", features = ["gecko-ffi"] }
 thiserror = "1"
-rusqlite = "0.31.0"
+rusqlite = "0.33.0"
 hashbrown = "0.13"
 futures = "0.3"
 serde = "1"

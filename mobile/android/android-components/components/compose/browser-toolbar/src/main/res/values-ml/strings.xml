@@ -2,4 +2,6 @@
 <resources>
   <!-- Content description for the clear URL text button. -->
   <string name="mozac_clear_button_description">മായ്ക്കുക</string>
+  <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
+  <string name="mozac_browser_toolbar_search_hint">വിലാസം തിരയുക അല്ലെങ്കില്‍ നല്‍കുക</string>
 </resources>

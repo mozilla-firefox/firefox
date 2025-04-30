@@ -62,9 +62,14 @@ add_setup(() => {
 
 add_task(async function test_SelectableProfileLifecycle() {
   startProfileService();
+
   const SelectableProfileService = getSelectableProfileService();
+  const ProfilesDatastoreService = getProfilesDatastoreService();
+
+  await ProfilesDatastoreService.init();
 
   Services.prefs.setBoolPref("browser.profiles.enabled", false);
+  Services.prefs.setBoolPref("browser.profiles.created", false);
   await SelectableProfileService.init();
   Assert.ok(
     !SelectableProfileService.isEnabled,

@@ -10,20 +10,10 @@ skip-if = [
 
 ["browser_experiment_evaluate_jexl.js"]
 
-["browser_experiment_single_feature_enrollment.js"]
-
 ["browser_experimentapi_child.js"]
-
-["browser_experimentstore_load.js"]
-
-["browser_experimentstore_load_single_feature.js"]
-skip-if = [
-  "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && opt && socketprocess_networking", # bug 1781904
-]
 
 ["browser_nimbus_telemetry.js"]
 tags = "remote-settings"
-
 
 ["browser_prefs.js"]
 

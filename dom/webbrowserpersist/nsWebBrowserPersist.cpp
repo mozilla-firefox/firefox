@@ -1379,6 +1379,9 @@ nsresult nsWebBrowserPersist::SaveURIInternal(
 
   nsCOMPtr<nsILoadInfo> loadInfo = inputChannel->LoadInfo();
   loadInfo->SetIsUserTriggeredSave(true);
+  if (mPersistFlags & nsIWebBrowserPersist::PERSIST_FLAGS_DISABLE_HTTPS_ONLY) {
+    loadInfo->SetHttpsOnlyStatus(nsILoadInfo::HTTPS_ONLY_EXEMPT);
+  }
 
   // Set the referrer, post data and headers if any
   nsCOMPtr<nsIHttpChannel> httpChannel(do_QueryInterface(inputChannel));

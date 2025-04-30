@@ -32,7 +32,7 @@ lazy_static = "1.4"
 parking_lot = ">=0.11,<=0.12"
 
 [dependencies.rusqlite]
-version = "0.31.0"
+version = "0.33.0"
 features = [
     "functions",
     "limits",

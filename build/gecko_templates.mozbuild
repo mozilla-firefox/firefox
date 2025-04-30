@@ -109,6 +109,7 @@ def GeckoSharedLibrary(name, output_category=None, **kwargs):
     SharedLibrary(name, output_category)
 
     kwargs.setdefault("mozglue", "library")
+    kwargs.setdefault("linkage", None)
 
     GeckoBinary(**kwargs)
 
@@ -123,5 +124,6 @@ def GeckoFramework(name, output_category=None, **kwargs):
     Framework(name, output_category)
 
     kwargs.setdefault("mozglue", "library")
+    kwargs.setdefault("linkage", None)
 
     GeckoBinary(**kwargs)

@@ -102,6 +102,8 @@ const CM_MAPPING = [
   "undo",
 ];
 
+const ONLY_SPACES_REGEXP = /^\s*$/;
+
 const editors = new WeakMap();
 
 /**
@@ -1168,9 +1170,6 @@ class Editor extends EventEmitter {
    *   @property {Function}           marker.createLineElementNode
    *                                  This should return the DOM element which is used for the marker. The line number is passed as a parameter.
    *                                  This is optional.
-   *   @property {Function}           marker.getMarkerEqualityValue
-   *                                  Custom equality function. The line and column will be passed as arguments when this is called.
-   *                                  This should return a value used for an equality check. This is optional.
    */
   setLineContentMarker(marker) {
     const cm = editors.get(this);
@@ -1216,35 +1215,32 @@ class Editor extends EventEmitter {
       constructor({
         line,
         column,
+        isFirstNonSpaceColumn,
+        positionData,
         markerId,
         createElementNode,
-        getMarkerEqualityValue,
+        customEq,
       }) {
         super();
         this.line = line;
         this.column = column;
+        this.isFirstNonSpaceColumn = isFirstNonSpaceColumn;
+        this.positionData = positionData;
         this.markerId = markerId;
-        this.equalityValue = getMarkerEqualityValue
-          ? getMarkerEqualityValue(line, column)
-          : {};
-        this.toDOM = () => createElementNode(line, column);
+        this.customEq = customEq;
+        this.toDOM = () =>
+          createElementNode(line, column, isFirstNonSpaceColumn, positionData);
       }
 
       eq(widget) {
-        return (
+        let eq =
           this.line == widget.line &&
           this.column == widget.column &&
-          this.markerId == widget.markerId &&
-          this.#isCustomValueEqual(widget)
-        );
-      }
-
-      #isCustomValueEqual(widget) {
-        return Object.keys(this.equalityValue).every(
-          key =>
-            widget.equalityValue.hasOwnProperty(key) &&
-            widget.equalityValue[key] === this.equalityValue[key]
-        );
+          this.markerId == widget.markerId;
+        if (this.positionData && this.customEq) {
+          eq = eq && this.customEq(this.positionData, widget.positionData);
+        }
+        return eq;
       }
     }
 
@@ -1301,13 +1297,18 @@ class Editor extends EventEmitter {
           if (marker.createPositionElementNode) {
             // Markers used:
             // 1. column-breakpoint-marker
+            const isFirstNonSpaceColumn = ONLY_SPACES_REGEXP.test(
+              line.text.substr(0, column)
+            );
             const nodeDecoration = Decoration.widget({
               widget: new NodeWidget({
                 line: position.line,
                 column: position.column,
+                isFirstNonSpaceColumn,
+                positionData: position.positionData,
                 markerId: marker.id,
                 createElementNode: marker.createPositionElementNode,
-                getMarkerEqualityValue: marker.getMarkerEqualityValue,
+                customEq: marker.customEq,
               }),
               // Make sure the widget is rendered after the cursor
               // see https://codemirror.net/docs/ref/#view.Decoration^widget^spec.side for details.
@@ -1390,6 +1391,18 @@ class Editor extends EventEmitter {
     ) {
       const allNewDecorations = [];
 
+      // Sort the markers iterator thanks to `displayLast` boolean.
+      // This is typically used by the paused location marker to be shown after the column breakpoints.
+      markers = Array.from(markers).sort((a, b) => {
+        if (a.displayLast) {
+          return 1;
+        }
+        if (b.displayLast) {
+          return -1;
+        }
+        return 0;
+      });
+
       for (const marker of markers) {
         _buildDecorationsForPositionMarkers(
           marker,
@@ -1461,12 +1474,15 @@ class Editor extends EventEmitter {
   }
 
   /**
-   * This adds a marker used to decorate token / content at
-   * a specific position (defined by a line and column).
+   * This adds a marker used to decorate token / content at a specific position .
    * @param {Object} marker
    * @param {String} marker.id
-   * @param {Array} marker.positions
-   * @param {Function} marker.createPositionElementNode
+   * @param {Array<Object>} marker.positions - This includes the line / column and any optional positionData which defines each position.
+   * @param {Function} marker.createPositionElementNode - This describes how to render the marker.
+   *                                                      The position data (i.e line, column and positionData) are passed as arguments.
+   * @param {Function} marker.customEq - A custom function to determine the equality of the marker. This allows the user define special conditions
+   *                                     for when position details have changed and an update of the marker should happen.
+   *                                     The positionData defined for the current and the previous instance of the marker are passed as arguments.
    */
   setPositionContentMarker(marker) {
     const cm = editors.get(this);
@@ -1756,63 +1772,57 @@ class Editor extends EventEmitter {
 
   /**
    * Get the start and end locations of the current viewport
+   *
+   * @param {Number} offsetHorizontalCharacters - Offset of characters offscreen
+   * @param {Number} offsetVerticalLines - Offset of lines offscreen
    * @returns {Object}  - The location information for the current viewport
    */
-  getLocationsInViewport() {
+  getLocationsInViewport(
+    offsetHorizontalCharacters = 0,
+    offsetVerticalLines = 0
+  ) {
     if (this.isDestroyed()) {
       return null;
     }
     const cm = editors.get(this);
+    let startLine, endLine, scrollLeft, charWidth, rightPosition;
     if (this.config.cm6) {
       // Report no viewport until we show an actual source (and not a loading/error message)
       if (!this.#currentDocumentId) {
         return null;
       }
       const { from, to } = cm.viewport;
-      const lineFrom = cm.state.doc.lineAt(from);
-      const lineTo = cm.state.doc.lineAt(to);
-      // This returns boundary of the full viewport regardless of the horizontal
-      // scroll position.
-      return {
-        start: { line: lineFrom.number, column: 0 },
-        end: { line: lineTo.number, column: lineTo.to - lineTo.from },
-      };
-    }
-    // Offset represents an allowance of characters or lines offscreen to improve
-    // perceived performance of column breakpoint rendering
-    const offsetHorizontalCharacters = 100;
-    const offsetVerticalLines = 20;
-    // Get scroll position
-    if (!cm) {
-      return {
-        start: { line: 0, column: 0 },
-        end: { line: 0, column: 0 },
-      };
-    }
-    const charWidth = cm.defaultCharWidth();
-    const scrollArea = cm.getScrollInfo();
-    const { scrollLeft } = cm.doc;
-    const rect = cm.getWrapperElement().getBoundingClientRect();
-    const topVisibleLine =
-      cm.lineAtHeight(rect.top, "window") - offsetVerticalLines;
-    const bottomVisibleLine =
-      cm.lineAtHeight(rect.bottom, "window") + offsetVerticalLines;
+      startLine = cm.state.doc.lineAt(from).number - offsetVerticalLines;
+      endLine = cm.state.doc.lineAt(to).number + offsetVerticalLines;
+      scrollLeft = cm.scrollDOM.scrollLeft;
+      charWidth = cm.defaultCharacterWidth;
+      rightPosition = scrollLeft + cm.dom.getBoundingClientRect().width;
+    } else {
+      if (!cm) {
+        return null;
+      }
 
-    const leftColumn = Math.floor(
-      scrollLeft > 0 ? scrollLeft / charWidth - offsetHorizontalCharacters : 0
-    );
-    const rightPosition = scrollLeft + (scrollArea.clientWidth - 30);
-    const rightCharacter =
-      Math.floor(rightPosition / charWidth) + offsetHorizontalCharacters;
+      const scrollArea = cm.getScrollInfo();
+      const rect = cm.getWrapperElement().getBoundingClientRect();
+      startLine = cm.lineAtHeight(rect.top, "window") - offsetVerticalLines;
+      endLine = cm.lineAtHeight(rect.bottom, "window") + offsetVerticalLines;
+      scrollLeft = cm.doc.scrollLeft;
+      charWidth = cm.defaultCharWidth();
+      rightPosition = scrollLeft + (scrollArea.clientWidth - 30);
+    }
 
     return {
       start: {
-        line: topVisibleLine || 0,
-        column: leftColumn || 0,
+        line: startLine,
+        column:
+          scrollLeft > 0
+            ? Math.floor(scrollLeft / charWidth) - offsetHorizontalCharacters
+            : 0,
       },
       end: {
-        line: bottomVisibleLine || 0,
-        column: rightCharacter,
+        line: endLine,
+        column:
+          Math.floor(rightPosition / charWidth) + offsetHorizontalCharacters,
       },
     };
   }
@@ -2148,30 +2158,10 @@ class Editor extends EventEmitter {
     const cm = editors.get(this);
     if (this.config.cm6) {
       const el = this.getElementAtLine(line);
-      // Filter out SPAN which do not contain user-defined classes.
-      // Classes currently are "debug-expression" and "debug-expression-error"
-      const markedSpans = [...el.querySelectorAll("span")].filter(span =>
-        span.className.includes("debug-expression")
-      );
-
       return {
         text: el.innerText,
         // TODO: Expose those, or see usage for those and do things differently
         line: null,
-        handle: {
-          markedSpans: markedSpans
-            ? markedSpans.map(span => {
-                const { column } = lezerUtils.positionToLocation(
-                  cm.state.doc,
-                  cm.posAtDOM(span)
-                );
-                return {
-                  marker: { className: span.className },
-                  from: column,
-                };
-              })
-            : null,
-        },
         gutterMarkers: null,
         textClass: null,
         bgClass: null,

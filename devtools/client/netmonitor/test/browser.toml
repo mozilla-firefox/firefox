@@ -77,6 +77,7 @@ support-files = [
   "network-overrides-test-helpers.js",
   "sjs_content-type-test-server.sjs",
   "sjs_cors-test-server.sjs",
+  "sjs_delay-test-server.sjs",
   "sjs_early-hint-test-server.sjs",
   "sjs_https-redirect-test-server.sjs",
   "sjs_hsts-test-server.sjs",
@@ -112,6 +113,9 @@ support-files = [
 ]
 
 ["browser_net-ws-filter-freetext.js"]
+skip-if = [
+  "os == 'mac' && os_version == '14.70' && processor == 'x86_64' && opt", # Bug 1767662
+]
 
 ["browser_net_accessibility-01.js"]
 
@@ -234,6 +238,8 @@ fail-if = ["a11y_checks"] # Bug 1849028 clicked element may not be focusable and
 
 ["browser_net_domain-not-found.js"]
 
+["browser_net_duration-sort.js"]
+
 ["browser_net_duration.js"]
 
 ["browser_net_earlyhints.js"]
@@ -312,6 +318,8 @@ fail-if = ["a11y_checks"] # Bug 1849028 clicked element may not be focusable and
 ["browser_net_initiator.js"]
 
 ["browser_net_internal-stylesheet.js"]
+
+["browser_net_invalid-mime-types.js"]
 
 ["browser_net_json-b64.js"]
 
@@ -427,6 +435,8 @@ skip-if = [
 fail-if = ["a11y_checks"] # Bug 1849028 clicked element may not be focusable and/or labeled
 
 ["browser_net_save_response_as.js"]
+
+["browser_net_save_response_as_sanitization.js"]
 
 ["browser_net_script_cache.js"]
 

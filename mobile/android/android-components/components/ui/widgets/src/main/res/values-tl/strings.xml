@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Text for confirmation "snackbar" shown after copying an image to the clipboard. -->
+  <string name="snackbar_copy_image_to_clipboard_confirmation">Nakopya na sa clipboard ang larawan</string>
+</resources>

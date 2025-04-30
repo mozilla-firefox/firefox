@@ -1618,8 +1618,7 @@ const MESSAGES = () => {
                   {
                     type: "action",
                     label: {
-                      string_id:
-                        "shopping-callout-not-opted-in-integrated-reminder-do-not-show",
+                      string_id: "split-dismiss-button-dont-show-option",
                     },
                     action: {
                       type: "SET_PREF",
@@ -1631,13 +1630,12 @@ const MESSAGES = () => {
                       },
                       dismiss: true,
                     },
-                    id: "shopping-callout-not-opted-in-integrated-reminder-do-not-show",
+                    id: "split-dismiss-button-dont-show-option",
                   },
                   {
                     type: "action",
                     label: {
-                      string_id:
-                        "shopping-callout-not-opted-in-integrated-reminder-show-fewer",
+                      string_id: "split-dismiss-button-show-fewer-option",
                     },
                     action: {
                       type: "MULTI_ACTION",
@@ -1666,7 +1664,7 @@ const MESSAGES = () => {
                       },
                       dismiss: true,
                     },
-                    id: "shopping-callout-not-opted-in-integrated-reminder-show-fewer",
+                    id: "split-dismiss-button-show-fewer-option",
                   },
                   {
                     type: "separator",
@@ -1674,8 +1672,7 @@ const MESSAGES = () => {
                   {
                     type: "action",
                     label: {
-                      string_id:
-                        "shopping-callout-not-opted-in-integrated-reminder-manage-settings",
+                      string_id: "split-dismiss-button-manage-settings-option",
                     },
                     action: {
                       type: "OPEN_ABOUT_PAGE",
@@ -1685,7 +1682,7 @@ const MESSAGES = () => {
                       },
                       dismiss: true,
                     },
-                    id: "shopping-callout-not-opted-in-integrated-reminder-manage-settings",
+                    id: "split-dismiss-button-manage-settings-option",
                   },
                 ],
                 attached_to: "additional_button",
@@ -1887,8 +1884,7 @@ const MESSAGES = () => {
                   {
                     type: "action",
                     label: {
-                      string_id:
-                        "shopping-callout-not-opted-in-integrated-reminder-do-not-show",
+                      string_id: "split-dismiss-button-dont-show-option",
                     },
                     action: {
                       type: "SET_PREF",
@@ -1900,13 +1896,12 @@ const MESSAGES = () => {
                       },
                       dismiss: true,
                     },
-                    id: "shopping-callout-not-opted-in-integrated-reminder-do-not-show",
+                    id: "split-dismiss-button-dont-show-option",
                   },
                   {
                     type: "action",
                     label: {
-                      string_id:
-                        "shopping-callout-not-opted-in-integrated-reminder-show-fewer",
+                      string_id: "split-dismiss-button-show-fewer-option",
                     },
                     action: {
                       type: "MULTI_ACTION",
@@ -1935,7 +1930,7 @@ const MESSAGES = () => {
                       },
                       dismiss: true,
                     },
-                    id: "shopping-callout-not-opted-in-integrated-reminder-show-fewer",
+                    id: "split-dismiss-button-show-fewer-option",
                   },
                   {
                     type: "separator",
@@ -1943,8 +1938,7 @@ const MESSAGES = () => {
                   {
                     type: "action",
                     label: {
-                      string_id:
-                        "shopping-callout-not-opted-in-integrated-reminder-manage-settings",
+                      string_id: "split-dismiss-button-manage-settings-option",
                     },
                     action: {
                       type: "OPEN_ABOUT_PAGE",
@@ -1954,7 +1948,7 @@ const MESSAGES = () => {
                       },
                       dismiss: true,
                     },
-                    id: "shopping-callout-not-opted-in-integrated-reminder-manage-settings",
+                    id: "split-dismiss-button-manage-settings-option",
                   },
                 ],
                 attached_to: "additional_button",

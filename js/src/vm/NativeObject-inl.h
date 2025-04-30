@@ -237,7 +237,7 @@ inline bool NativeObject::initDenseElementsFromRange(JSContext* cx, Iter begin,
   MOZ_ASSERT(slot == count);
 
   getElementsHeader()->initializedLength = count;
-  as<ArrayObject>().setLength(count);
+  as<ArrayObject>().setLengthToInitializedLength();
   return true;
 }
 
@@ -457,7 +457,7 @@ inline DenseElementResult NativeObject::setOrExtendDenseElements(
   }
 
   if (is<ArrayObject>() && start + count >= as<ArrayObject>().length()) {
-    as<ArrayObject>().setLength(start + count);
+    as<ArrayObject>().setLengthToInitializedLength();
   }
 
   copyDenseElements(start, vp, count);

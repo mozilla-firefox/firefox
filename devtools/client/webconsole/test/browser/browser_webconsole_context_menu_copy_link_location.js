@@ -56,9 +56,7 @@ add_task(async function () {
     "test-console.html",
     ".network"
   );
-  await SpecialPowers.spawn(gBrowser.selectedBrowser, [], () => {
-    content.wrappedJSObject.location.reload();
-  });
+  await reloadBrowser(gBrowser.selectedBrowser);
 
   message = await onNetworkMessage;
   ok(message, "Network log found in the console");

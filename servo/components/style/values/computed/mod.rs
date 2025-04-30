@@ -18,6 +18,7 @@ use crate::computed_value_flags::ComputedValueFlags;
 use crate::context::QuirksMode;
 use crate::custom_properties::ComputedCustomProperties;
 use crate::font_metrics::{FontMetrics, FontMetricsOrientation};
+use crate::gecko::media_queries::QueryFontMetricsFlags;
 use crate::media_queries::Device;
 #[cfg(feature = "gecko")]
 use crate::properties;
@@ -363,7 +364,7 @@ impl<'a> Context<'a> {
         &self,
         base_size: FontBaseSize,
         orientation: FontMetricsOrientation,
-        retrieve_math_scales: bool,
+        mut flags: QueryFontMetricsFlags,
     ) -> FontMetrics {
         if self.for_non_inherited_property {
             self.rule_cache_conditions.borrow_mut().set_uncacheable();
@@ -390,12 +391,14 @@ impl<'a> Context<'a> {
             FontMetricsOrientation::MatchContextPreferVertical => wm.is_text_vertical(),
             FontMetricsOrientation::Horizontal => false,
         };
+        if !self.in_media_or_container_query() {
+            flags |= QueryFontMetricsFlags::USE_USER_FONT_SET
+        }
         self.device().query_font_metrics(
             vertical,
             font,
             size,
-            self.in_media_or_container_query(),
-            retrieve_math_scales,
+            flags,
         )
     }
 

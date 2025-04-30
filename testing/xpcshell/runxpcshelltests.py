@@ -131,7 +131,7 @@ def cleanup_encoding(s):
     points, etc.  If it is a byte string, it is assumed to be
     UTF-8, but it may not be *correct* UTF-8.  Return a
     sanitized unicode object."""
-    if not isinstance(s, (str,)):
+    if not isinstance(s, str):
         if isinstance(s, bytes):
             return six.ensure_str(s)
         else:
@@ -711,7 +711,7 @@ class XPCShellTestThread(Thread):
     def log_line(self, line):
         """Log a line of output (either a parser json object or text output from
         the test process"""
-        if isinstance(line, (str,)) or isinstance(line, bytes):
+        if isinstance(line, (str, bytes)):
             line = self.fix_text_output(line).rstrip("\r\n")
             self.log.process_output(self.proc_ident, line, command=self.command)
         else:
@@ -975,6 +975,7 @@ class XPCShellTestThread(Thread):
                 return_code_ok
                 and self.usingCrashReporter
                 and not self.saw_crash_reporter_init
+                and len(process_output) > 0
             )
 
             passed = (

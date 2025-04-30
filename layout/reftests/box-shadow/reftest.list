@@ -33,7 +33,7 @@ fuzzy(0-26,0-3610) fuzzy-if(winWidget,0-26,0-5910) fuzzy-if(!(swgl&&Android),0-6
 == boxshadow-inset-large-border-radius.html boxshadow-inset-large-border-radius-ref.html
 
 # fuzzy due to blur going inside, but as long as it's essentially black instead of a light gray its ok.
-fuzzy(12-15,9400-13267) == boxshadow-inset-large-offset.html boxshadow-inset-large-offset-ref.html
+fuzzy(12-15,9400-13267) fuzzy-if(cocoaWidget&&/^15\.30$/.test(os_version),15-15,13726-14412) == boxshadow-inset-large-offset.html boxshadow-inset-large-offset-ref.html
 
 == overflow-not-scrollable-1.html overflow-not-scrollable-1-ref.html
 == overflow-not-scrollable-1.html overflow-not-scrollable-1-ref2.html

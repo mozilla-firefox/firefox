@@ -276,22 +276,6 @@ export class MarionetteCommandsParent extends JSWindowActorParent {
     });
   }
 
-  performActions(actions) {
-    return this.sendQuery("MarionetteCommandsParent:performActions", {
-      actions,
-    });
-  }
-
-  /**
-   * The release actions command is used to release all the keys and pointer
-   * buttons that are currently depressed. This causes events to be fired
-   * as if the state was released by an explicit series of actions. It also
-   * clears all the internal state of the virtual devices.
-   */
-  releaseActions() {
-    return this.sendQuery("MarionetteCommandsParent:releaseActions");
-  }
-
   async switchToFrame(id) {
     const { browsingContextId } = await this.sendQuery(
       "MarionetteCommandsParent:switchToFrame",
@@ -370,8 +354,6 @@ export function getMarionetteCommandsActorProxy(browsingContextFn) {
   const NO_RETRY_METHODS = [
     "clickElement",
     "executeScript",
-    "performActions",
-    "releaseActions",
     "sendKeysToElement",
   ];
 

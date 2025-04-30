@@ -18,6 +18,7 @@
 #include "aom/aom_integer.h"
 #include "aom/internal/aom_image_internal.h"
 #include "aom_mem/aom_mem.h"
+#include "aom/aom_codec.h"
 
 static inline unsigned int align_image_dimension(unsigned int d,
                                                  unsigned int subsampling,
@@ -382,6 +383,15 @@ int aom_img_add_metadata(aom_image_t *img, uint32_t type, const uint8_t *data,
   if (!img->metadata) {
     img->metadata = aom_img_metadata_array_alloc(0);
     if (!img->metadata) return -1;
+  }
+  // Some metadata types are not allowed to be layer specific, according to
+  // the Table in Section 6.7.1 of the AV1 specifiction.
+  // Do not check for OBU_METADATA_TYPE_HDR_CLL or OBU_METADATA_TYPE_HDR_MDCV
+  // because there are plans to alow them to be layer specific.
+  if ((insert_flag & AOM_MIF_LAYER_SPECIFIC) &&
+      (type == OBU_METADATA_TYPE_SCALABILITY ||
+       type == OBU_METADATA_TYPE_TIMECODE)) {
+    return -1;
   }
   aom_metadata_t *metadata =
       aom_img_metadata_alloc(type, data, sz, insert_flag);

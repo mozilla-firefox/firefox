@@ -58,7 +58,7 @@ add_task(async function test_expand_minimal_and_full() {
 
   Assert.equal(
     fullConfig.length,
-    4,
-    "Should have 2 engines, defaultEngines and engineOrders."
+    5,
+    "Should have 2 engines, defaultEngines, engineOrders and availableLocales."
   );
 });

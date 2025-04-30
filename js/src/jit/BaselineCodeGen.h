@@ -201,6 +201,8 @@ class BaselineCodeGen {
   // Handles JSOp::Lt, JSOp::Gt, and friends
   [[nodiscard]] bool emitCompare();
 
+  [[nodiscard]] bool emitConstantStrictEq(JSOp op);
+
   // Handles JSOp::NewObject and JSOp::NewInit.
   [[nodiscard]] bool emitNewObject();
 

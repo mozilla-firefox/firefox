@@ -15,7 +15,7 @@ const TEST_URI_NO_DOCTYPE = `data:text/html,<meta charset="utf8"><h1>No DocType<
 const TEST_URI_STANDARD_DOCTYPE = `data:text/html,${STANDARD_DOCTYPE}<meta charset="utf8"><h1>Standard</h1>`;
 
 const LEARN_MORE_URI =
-  "https://developer.mozilla.org/docs/Web/HTML/Quirks_Mode_and_Standards_Mode" +
+  "https://developer.mozilla.org/docs/Web/HTML/Guides/Quirks_Mode_and_Standards_Mode" +
   DOCS_GA_PARAMS;
 
 add_task(async function () {

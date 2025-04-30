@@ -24,13 +24,12 @@ add_setup(async function setup() {
   await AddonTestUtils.manuallyInstall(xpi, distroDir);
 });
 
-async function systemAddonPreffedOff({ asBuiltIn = true } = {}) {
+add_task(async function systemAddonPreffedOff() {
   const id = "system1@tests.mozilla.org";
   Services.prefs.setBoolPref("extensions.system1.enabled", false);
 
   await overrideBuiltIns({
-    builtins: asBuiltIn ? [await getSystemBuiltin(1, "1.0")] : [],
-    system: !asBuiltIn ? [id] : [],
+    builtins: [await getSystemBuiltin(1, "1.0")],
   });
 
   await promiseStartupManager("1.0");
@@ -43,15 +42,14 @@ async function systemAddonPreffedOff({ asBuiltIn = true } = {}) {
   BootstrapMonitor.checkNotStarted(id);
 
   await promiseShutdownManager({ clearOverrides: false });
-}
+});
 
-async function systemAddonPreffedOn({ asBuiltIn = true } = {}) {
+add_task(async function systemAddonPreffedOn() {
   const id = "system1@tests.mozilla.org";
   Services.prefs.setBoolPref("extensions.system1.enabled", true);
 
   await overrideBuiltIns({
-    builtins: asBuiltIn ? [await getSystemBuiltin(1, "1.0")] : [],
-    system: !asBuiltIn ? [id] : [],
+    builtins: [await getSystemBuiltin(1, "1.0")],
   });
 
   await promiseStartupManager("2.0");
@@ -64,15 +62,4 @@ async function systemAddonPreffedOn({ asBuiltIn = true } = {}) {
   BootstrapMonitor.checkStarted(id);
 
   await promiseShutdownManager({ clearOverrides: false });
-}
-
-// TODO(Bug 1949847): remove this test along with removing the app-system-defaults location.
-add_task(async function systemPref_xpi() {
-  await systemAddonPreffedOff({ asBuiltIn: false });
-  await systemAddonPreffedOn({ asBuiltIn: false });
-});
-
-add_task(async function systemPref_builtin() {
-  await systemAddonPreffedOff();
-  await systemAddonPreffedOn();
 });

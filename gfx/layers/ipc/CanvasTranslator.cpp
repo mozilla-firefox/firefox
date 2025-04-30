@@ -17,6 +17,7 @@
 #include "mozilla/gfx/GPUParent.h"
 #include "mozilla/gfx/GPUProcessManager.h"
 #include "mozilla/gfx/Logging.h"
+#include "mozilla/gfx/Swizzle.h"
 #include "mozilla/ipc/Endpoint.h"
 #include "mozilla/ipc/SharedMemoryHandle.h"
 #include "mozilla/layers/BufferTexture.h"
@@ -29,6 +30,8 @@
 #include "mozilla/SyncRunnable.h"
 #include "mozilla/TaskQueue.h"
 #include "GLContext.h"
+#include "HostWebGLContext.h"
+#include "WebGLParent.h"
 #include "RecordedCanvasEventImpl.h"
 
 #if defined(XP_WIN)
@@ -697,7 +700,7 @@ bool CanvasTranslator::TranslateRecording() {
 
     mHeader->processedCount++;
 
-    if (mHeader->readerState == State::Paused) {
+    if (mHeader->readerState == State::Paused || PauseUntilSync()) {
       // We're waiting for an IPDL message return false, because we will resume
       // translation after it is received.
       Flush();
@@ -760,7 +763,7 @@ void CanvasTranslator::HandleCanvasTranslatorEvents() {
   {
     MutexAutoLock lock(mCanvasTranslatorEventsLock);
     MOZ_ASSERT_IF(mIPDLClosed, mPendingCanvasTranslatorEvents.empty());
-    if (mPendingCanvasTranslatorEvents.empty()) {
+    if (mPendingCanvasTranslatorEvents.empty() || PauseUntilSync()) {
       mCanvasTranslatorEventsRunnable = nullptr;
       return;
     }
@@ -798,6 +801,12 @@ void CanvasTranslator::HandleCanvasTranslatorEvents() {
       MutexAutoLock lock(mCanvasTranslatorEventsLock);
       MOZ_ASSERT_IF(mIPDLClosed, mPendingCanvasTranslatorEvents.empty());
       if (mIPDLClosed) {
+        return;
+      }
+      if (PauseUntilSync()) {
+        mCanvasTranslatorEventsRunnable = nullptr;
+        mPendingCanvasTranslatorEvents.push_front(
+            CanvasTranslatorEvent::TranslateRecording());
         return;
       }
       if (!mIPDLClosed && !dispatchTranslate &&
@@ -1619,6 +1628,175 @@ void CanvasTranslator::CheckpointReached() { CheckAndSignalWriter(); }
 
 void CanvasTranslator::PauseTranslation() {
   mHeader->readerState = State::Paused;
+}
+
+void CanvasTranslator::AwaitTranslationSync(uint64_t aSyncId) {
+  if (NS_WARN_IF(!UsePendingCanvasTranslatorEvents()) ||
+      NS_WARN_IF(!IsInTaskQueue()) || NS_WARN_IF(mAwaitSyncId >= aSyncId)) {
+    return;
+  }
+
+  mAwaitSyncId = aSyncId;
+}
+
+void CanvasTranslator::SyncTranslation(uint64_t aSyncId) {
+  if (NS_WARN_IF(!IsInTaskQueue()) || NS_WARN_IF(aSyncId <= mLastSyncId)) {
+    return;
+  }
+
+  bool wasPaused = PauseUntilSync();
+  mLastSyncId = aSyncId;
+  // If translation was previously paused waiting on a sync-id, check if sync-id
+  // encountered requires restarting translation.
+  if (wasPaused && !PauseUntilSync()) {
+    HandleCanvasTranslatorEvents();
+  }
+}
+
+class WebGLContextBackBufferAccess : public WebGLContext {
+ public:
+  already_AddRefed<gfx::SourceSurface> GetBackBufferSnapshot(
+      const bool requireAlphaPremult);
+};
+
+already_AddRefed<gfx::SourceSurface>
+WebGLContextBackBufferAccess::GetBackBufferSnapshot(
+    const bool requireAlphaPremult) {
+  if (IsContextLost()) {
+    return nullptr;
+  }
+
+  const auto surfSize = DrawingBufferSize();
+  if (surfSize.x <= 0 || surfSize.y <= 0) {
+    return nullptr;
+  }
+
+  const auto& options = Options();
+  const auto surfFormat = options.alpha ? gfx::SurfaceFormat::B8G8R8A8
+                                        : gfx::SurfaceFormat::B8G8R8X8;
+
+  RefPtr<gfx::DataSourceSurface> dataSurf =
+      gfx::Factory::CreateDataSourceSurface(
+          gfx::IntSize(surfSize.x, surfSize.y), surfFormat);
+  if (!dataSurf) {
+    NS_WARNING("Failed to alloc DataSourceSurface for GetBackBufferSnapshot");
+    return nullptr;
+  }
+
+  {
+    gfx::DataSourceSurface::ScopedMap map(dataSurf,
+                                          gfx::DataSourceSurface::READ_WRITE);
+    if (!map.IsMapped()) {
+      NS_WARNING("Failed to map DataSourceSurface for GetBackBufferSnapshot");
+      return nullptr;
+    }
+
+    // GetDefaultFBForRead might overwrite FB state if it needs to resolve a
+    // multisampled FB, so save/restore the FB state here just in case.
+    const gl::ScopedBindFramebuffer bindFb(GL());
+    const auto fb = GetDefaultFBForRead();
+    if (!fb) {
+      gfxCriticalNote << "GetDefaultFBForRead failed for GetBackBufferSnapshot";
+      return nullptr;
+    }
+    const auto byteCount = CheckedInt<size_t>(map.GetStride()) * surfSize.y;
+    if (!byteCount.isValid()) {
+      gfxCriticalNote << "Invalid byte count for GetBackBufferSnapshot";
+      return nullptr;
+    }
+    const Range<uint8_t> range = {map.GetData(), byteCount.value()};
+    if (!SnapshotInto(fb->mFB, fb->mSize, range,
+                      Some(size_t(map.GetStride())))) {
+      gfxCriticalNote << "SnapshotInto failed for GetBackBufferSnapshot";
+      return nullptr;
+    }
+
+    if (requireAlphaPremult && options.alpha && !options.premultipliedAlpha) {
+      bool rv = gfx::PremultiplyYFlipData(
+          map.GetData(), map.GetStride(), gfx::SurfaceFormat::R8G8B8A8,
+          map.GetData(), map.GetStride(), surfFormat, dataSurf->GetSize());
+      MOZ_RELEASE_ASSERT(rv, "PremultiplyYFlipData failed!");
+    } else {
+      bool rv = gfx::SwizzleYFlipData(
+          map.GetData(), map.GetStride(), gfx::SurfaceFormat::R8G8B8A8,
+          map.GetData(), map.GetStride(), surfFormat, dataSurf->GetSize());
+      MOZ_RELEASE_ASSERT(rv, "SwizzleYFlipData failed!");
+    }
+  }
+
+  return dataSurf.forget();
+}
+
+mozilla::ipc::IPCResult CanvasTranslator::RecvSnapshotExternalCanvas(
+    uint64_t aSyncId, uint32_t aManagerId, int32_t aCanvasId) {
+  if (NS_WARN_IF(!IsInTaskQueue())) {
+    return IPC_FAIL(this,
+                    "RecvSnapshotExternalCanvas used outside of task queue.");
+  }
+
+  // Verify that snapshot requests are not received out of order order.
+  if (NS_WARN_IF(aSyncId <= mLastSyncId)) {
+    return IPC_FAIL(this, "RecvSnapShotExternalCanvas received too late.");
+  }
+
+  // Attempt to snapshot an external canvas that is associated with the same
+  // content process as this canvas. On success, associate it with the sync-id.
+  RefPtr<gfx::SourceSurface> surf;
+  if (auto* actor = gfx::CanvasManagerParent::GetCanvasActor(
+          mContentId, aManagerId, aCanvasId)) {
+    switch (actor->GetProtocolId()) {
+      case ProtocolId::PWebGLMsgStart:
+        if (auto* hostContext =
+                static_cast<dom::WebGLParent*>(actor)->GetHostWebGLContext()) {
+          surf = static_cast<WebGLContextBackBufferAccess*>(
+                     hostContext->GetWebGLContext())
+                     ->GetBackBufferSnapshot(true);
+        }
+        break;
+      default:
+        MOZ_ASSERT_UNREACHABLE("Unsupported protocol");
+        break;
+    }
+  }
+
+  if (surf) {
+    mExternalSnapshots.InsertOrUpdate(aSyncId, surf);
+  }
+
+  // Regardless, sync translation so it may resume after attempting snapshot.
+  SyncTranslation(aSyncId);
+
+  if (!surf) {
+    return IPC_FAIL(this, "SnapshotExternalCanvas failed to get surface.");
+  }
+
+  return IPC_OK();
+}
+
+already_AddRefed<gfx::SourceSurface> CanvasTranslator::LookupExternalSnapshot(
+    uint64_t aSyncId) {
+  MOZ_ASSERT(IsInTaskQueue());
+  uint64_t prevSyncId = mLastSyncId;
+  if (NS_WARN_IF(aSyncId > mLastSyncId)) {
+    // If arriving here, a previous SnapshotExternalCanvas IPDL message never
+    // arrived for some reason. Sync translation here to avoid locking up.
+    SyncTranslation(aSyncId);
+  }
+  RefPtr<gfx::SourceSurface> surf;
+  // Check if the snapshot was added. This should only ever be called once per
+  // snapshot, as it is removed from the table when resolved.
+  if (mExternalSnapshots.Remove(aSyncId, getter_AddRefs(surf))) {
+    return surf.forget();
+  }
+  // There was no snapshot available, which can happen if this was called
+  // before or without a corresponding SnapshotExternalCanvas, or if called
+  // multiple times.
+  if (aSyncId > prevSyncId) {
+    gfxCriticalNoteOnce << "External canvas snapshot resolved before creation.";
+  } else {
+    gfxCriticalNoteOnce << "Exernal canvas snapshot already resolved.";
+  }
+  return nullptr;
 }
 
 already_AddRefed<gfx::GradientStops> CanvasTranslator::GetOrCreateGradientStops(

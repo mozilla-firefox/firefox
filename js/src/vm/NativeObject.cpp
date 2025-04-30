@@ -854,13 +854,10 @@ bool NativeObject::goodElementsAllocationAmount(JSContext* cx,
   // We will allocate these in large buffers so account for the header size
   // required there.
   static_assert(sizeof(Value) * Mebi >= gc::ChunkSize);
-  const size_t BufferHeaderCount = gc::LargeBufferHeaderSize / sizeof(Value);
-  reqAllocated += BufferHeaderCount;
 
   // Pick the first bucket that'll fit |reqAllocated|.
   for (uint32_t b : BigBuckets) {
     if (b >= reqAllocated) {
-      b -= BufferHeaderCount;
       MOZ_ASSERT(b == gc::GetGoodElementCount(b, sizeof(Value)));
       *goodAmount = b;
       return true;
@@ -868,7 +865,7 @@ bool NativeObject::goodElementsAllocationAmount(JSContext* cx,
   }
 
   // Otherwise, return the maximum bucket size.
-  *goodAmount = MAX_DENSE_ELEMENTS_ALLOCATION - BufferHeaderCount;
+  *goodAmount = MAX_DENSE_ELEMENTS_ALLOCATION;
   return true;
 }
 
@@ -1196,7 +1193,7 @@ static MOZ_ALWAYS_INLINE bool CallAddPropertyHookDense(
     ArrayObject* arr = &obj->as<ArrayObject>();
     uint32_t length = arr->length();
     if (index >= length) {
-      arr->setLength(index + 1);
+      arr->setLength(cx, index + 1);
     }
     return true;
   }

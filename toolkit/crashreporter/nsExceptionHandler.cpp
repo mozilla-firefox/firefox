@@ -6,27 +6,26 @@
 
 #include "nsExceptionHandler.h"
 #include "nsExceptionHandlerUtils.h"
+#include "ExtraFileParser.h"
 
 #include "json/json.h"
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsComponentManagerUtils.h"
 #include "nsDirectoryServiceDefs.h"
 #include "nsDirectoryService.h"
+#include "nsIFileStreams.h"
+#include "nsNetUtil.h"
 #include "nsString.h"
-#include "nsTHashMap.h"
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/EnumeratedRange.h"
 #include "mozilla/Services.h"
 #include "nsIObserverService.h"
 #include "mozilla/Unused.h"
-#include "mozilla/UniquePtr.h"
-#include "mozilla/Printf.h"
 #include "mozilla/RuntimeExceptionModule.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/Sprintf.h"
 #include "mozilla/StaticPrefs_browser.h"
-#include "mozilla/StaticMutex.h"
 #include "mozilla/SyncRunnable.h"
 #include "mozilla/ToString.h"
 #include "mozilla/TimeStamp.h"
@@ -36,12 +35,11 @@
 #include "nsThreadUtils.h"
 #include "nsThread.h"
 #include "jsfriendapi.h"
-#include "private/pprio.h"
 #include "base/process_util.h"
 #include "common/basictypes.h"
 
 #include "mozilla/toolkit/crashreporter/mozannotation_client_ffi_generated.h"
-#include "mozilla/toolkit/crashreporter/mozannotation_server_ffi_generated.h"
+#include "mozilla/crash_helper_client_ffi_generated.h"
 
 #ifdef MOZ_BACKGROUNDTASKS
 #  include "mozilla/BackgroundTasks.h"
@@ -83,12 +81,16 @@
 #  include "mac_utils.h"
 #elif defined(XP_LINUX)
 #  include "nsIINIParser.h"
+#  if defined(MOZ_WIDGET_ANDROID)
+#    include "common/linux/eintr_wrapper.h"
+#  else
+#    include <sys/prctl.h>  // For prctl() and PR_SET_PTRACER
+#  endif                    // defined(MOZ_WIDGET_ANDROID)
 #  include "common/linux/linux_libc_support.h"
 #  include "third_party/lss/linux_syscall_support.h"
 #  include "breakpad-client/linux/crash_generation/client_info.h"
 #  include "breakpad-client/linux/crash_generation/crash_generation_server.h"
 #  include "breakpad-client/linux/handler/exception_handler.h"
-#  include "common/linux/eintr_wrapper.h"
 #  include <fcntl.h>
 #  include <sys/types.h>
 #  include "sys/sysinfo.h"
@@ -118,7 +120,6 @@
 #include <prio.h>
 #include "mozilla/Mutex.h"
 #include "nsDebug.h"
-#include "nsCRT.h"
 #include "nsIFile.h"
 
 #include "mozilla/IOInterposer.h"
@@ -146,12 +147,16 @@ using google_breakpad::PageAllocator;
 #endif
 using namespace mozilla;
 
+#ifdef MOZ_PHC
+
 namespace mozilla::phc {
 
 // Global instance that is retrieved by the process generating the crash report
 MOZ_GLOBINIT mozilla::phc::AddrInfo gAddrInfo;
 
 }  // namespace mozilla::phc
+
+#endif  // defined(MOZ_PHC)
 
 namespace CrashReporter {
 
@@ -163,6 +168,7 @@ typedef std::wstring xpstring;
 #  define XP_STRLEN(x) wcslen(x)
 #  define my_strlen strlen
 #  define my_memchr memchr
+#  define CRASH_HELPER_FILENAME u"crashhelper.exe"_ns
 #  define CRASH_REPORTER_FILENAME u"crashreporter.exe"_ns
 #  define XP_PATH_SEPARATOR L"\\"
 #  define XP_PATH_SEPARATOR_CHAR L'\\'
@@ -176,6 +182,7 @@ typedef char XP_CHAR;
 typedef std::string xpstring;
 #  define XP_TEXT(x) x
 #  define CONVERT_XP_CHAR_TO_UTF16(x) NS_ConvertUTF8toUTF16(x)
+#  define CRASH_HELPER_FILENAME u"crashhelper"_ns
 #  define CRASH_REPORTER_FILENAME u"crashreporter"_ns
 #  define XP_PATH_SEPARATOR "/"
 #  define XP_PATH_SEPARATOR_CHAR '/'
@@ -206,51 +213,6 @@ typedef std::string xpstring;
 #  define MAYBE_UNUSED
 #endif  // defined(__GNUC__)
 
-#if defined(XP_LINUX) && defined(MOZ_OXIDIZED_BREAKPAD)
-class ChildProcessAuxvStore {
- public:
-  static ChildProcessAuxvStore& global() {
-    static ChildProcessAuxvStore instance;
-    return instance;
-  }
-  void Add(pid_t aChildPid, const DirectAuxvDumpInfo& aAuxvInfo) {
-    std::lock_guard lock(mMutex);
-    mMap.emplace(aChildPid, aAuxvInfo);
-  }
-  void Remove(pid_t aChildPid) {
-    std::lock_guard lock(mMutex);
-    mMap.erase(aChildPid);
-  }
-  bool Get(pid_t aChildPid, DirectAuxvDumpInfo* aAuxvInfo) {
-    std::lock_guard lock(mMutex);
-    auto entry = mMap.find(aChildPid);
-    if (entry == mMap.end()) {
-      return false;
-    }
-    *aAuxvInfo = entry->second;
-    return true;
-  }
-
- private:
-  std::mutex mMutex;
-  std::unordered_map<pid_t, DirectAuxvDumpInfo> mMap;
-};
-
-void GetCurrentProcessAuxvInfo(DirectAuxvDumpInfo* aAuxvInfo) {
-  aAuxvInfo->program_header_count = getauxval(AT_PHNUM);
-  aAuxvInfo->program_header_address = getauxval(AT_PHDR);
-  aAuxvInfo->linux_gate_address = getauxval(AT_SYSINFO_EHDR);
-  aAuxvInfo->entry_address = getauxval(AT_ENTRY);
-}
-void RegisterChildAuxvInfo(pid_t aChildPid,
-                           const DirectAuxvDumpInfo& aAuxvInfo) {
-  ChildProcessAuxvStore::global().Add(aChildPid, aAuxvInfo);
-}
-void UnregisterChildAuxvInfo(pid_t aChildPid) {
-  ChildProcessAuxvStore::global().Remove(aChildPid);
-}
-#endif  // defined(XP_LINUX) && defined(MOZ_OXIDIZED_BREAKPAD)
-
 #ifndef XP_LINUX
 static const XP_CHAR dumpFileExtension[] = XP_TEXT(".dmp");
 #endif
@@ -261,12 +223,14 @@ MOZ_RUNINIT static std::optional<xpstring> defaultMemoryReportPath = {};
 
 static const char kCrashMainID[] = "crash.main.3\n";
 
+static CrashHelperClient* gCrashHelperClient = nullptr;
 static google_breakpad::ExceptionHandler* gExceptionHandler = nullptr;
 static mozilla::Atomic<bool> gEncounteredChildException(false);
 MOZ_CONSTINIT static nsCString gServerURL;
 
 MOZ_RUNINIT static xpstring pendingDirectory;
 MOZ_RUNINIT static xpstring crashReporterPath;
+MOZ_RUNINIT static xpstring crashHelperPath;
 MOZ_RUNINIT static xpstring memoryReportPath;
 
 // Where crash events should go.
@@ -294,6 +258,8 @@ static char* androidUserSerial = nullptr;
 static const char* androidStartServiceCommand = nullptr;
 #endif
 
+static ProcessId gCrashHelperPid = 0;
+
 // this holds additional data sent via the API
 static Mutex* notesFieldLock;
 static nsCString* notesField = nullptr;
@@ -316,33 +282,20 @@ static bool isSafeToDump = false;
 // Whether to include heap regions of the crash context.
 static bool sIncludeContextHeap = false;
 
-// OOP crash reporting
-static CrashGenerationServer* crashServer;  // chrome process has this
-
 static std::terminate_handler oldTerminateHandler = nullptr;
 
 #if defined(XP_WIN) || defined(XP_MACOSX)
-static char* childCrashNotifyPipe;
+MOZ_RUNINIT static nsCString childCrashNotifyPipe;
 
 #elif defined(XP_LINUX)
 static int serverSocketFd = -1;
 static int clientSocketFd = -1;
-
+#  if defined(MOZ_WIDGET_ANDROID)
+static int crashHelperClientFd = -1;
+#  endif  // defined(MOZ_WIDGET_ANDROID)
 #endif
 
-// |dumpMapLock| must protect all access to |pidToMinidump|.
-static Mutex* dumpMapLock;
-struct ChildProcessData : public nsUint32HashKey {
-  explicit ChildProcessData(KeyTypePointer aKey)
-      : nsUint32HashKey(aKey), annotations(nullptr) {}
-
-  nsCOMPtr<nsIFile> minidump;
-  UniquePtr<AnnotationTable> annotations;
-};
-
-typedef nsTHashtable<ChildProcessData> ChildMinidumpMap;
-static ChildMinidumpMap* pidToMinidump;
-static bool OOPInitialized();
+static void OOPInit();
 
 void RecordMainThreadId() {
   gMainThreadId =
@@ -475,13 +428,18 @@ static void CreateFileFromPath(const xpstring& path, nsIFile** file) {
       DependentPathString(path.c_str(), path.size()), file);
 }
 
-[[nodiscard]] static std::optional<xpstring> CreatePathFromFile(nsIFile* file) {
-  AutoPathString path;
+nsresult GetNativePathFromFile(nsIFile* aFile, PathString& aPathString) {
 #ifdef XP_WIN
-  nsresult rv = file->GetPath(path);
+  return aFile->GetPath(aPathString);
 #else
-  nsresult rv = file->GetNativePath(path);
+  return aFile->GetNativePath(aPathString);
 #endif
+}
+
+[[nodiscard]]
+static std::optional<xpstring> CreatePathFromFile(nsIFile* file) {
+  AutoPathString path;
+  nsresult rv = GetNativePathFromFile(file, path);
   if (NS_FAILED(rv)) {
     return {};
   }
@@ -781,7 +739,7 @@ static void PHCStackTraceToString(char* aBuffer, size_t aBufferLen,
       strcat(aBuffer, ",");
     }
     XP_STOA(uintptr_t(aStack.mPcs[i]), addrString);
-    strncat(aBuffer, addrString, aBufferLen);
+    strncat(aBuffer, addrString, aBufferLen - 1);
   }
 }
 
@@ -838,55 +796,6 @@ static void WritePHCAddrInfo(AnnotationWriter& writer,
   }
 }
 
-static void PopulatePHCStackTraceAnnotation(
-    AnnotationTable& aAnnotations, const Annotation aName,
-    const Maybe<phc::StackTrace>& aStack) {
-  if (aStack.isNothing()) {
-    return;
-  }
-
-  char addrsString[phcStringifiedAnnotationSize];
-  PHCStackTraceToString(addrsString, sizeof(addrsString), *aStack);
-  aAnnotations[aName] = addrsString;
-}
-
-static void PopulatePHCAnnotations(AnnotationTable& aAnnotations,
-                                   const phc::AddrInfo* aAddrInfo) {
-  // Is this a PHC allocation needing special treatment?
-  if (aAddrInfo && aAddrInfo->mKind != phc::AddrInfo::Kind::Unknown) {
-    const char* kindString;
-    switch (aAddrInfo->mKind) {
-      case phc::AddrInfo::Kind::Unknown:
-        kindString = "Unknown(?!)";
-        break;
-      case phc::AddrInfo::Kind::NeverAllocatedPage:
-        kindString = "NeverAllocatedPage";
-        break;
-      case phc::AddrInfo::Kind::InUsePage:
-        kindString = "InUsePage(?!)";
-        break;
-      case phc::AddrInfo::Kind::FreedPage:
-        kindString = "FreedPage";
-        break;
-      case phc::AddrInfo::Kind::GuardPage:
-        kindString = "GuardPage";
-        break;
-      default:
-        kindString = "Unmatched(?!)";
-        break;
-    }
-
-    aAnnotations[Annotation::PHCKind] = kindString;
-    aAnnotations[Annotation::PHCBaseAddress] =
-        nsPrintfCString("%zu", uintptr_t(aAddrInfo->mBaseAddr));
-    aAnnotations[Annotation::PHCUsableSize] =
-        nsPrintfCString("%zu", aAddrInfo->mUsableSize);
-    PopulatePHCStackTraceAnnotation(aAnnotations, Annotation::PHCAllocStack,
-                                    aAddrInfo->mAllocStack);
-    PopulatePHCStackTraceAnnotation(aAnnotations, Annotation::PHCFreeStack,
-                                    aAddrInfo->mFreeStack);
-  }
-}
 #endif
 
 /**
@@ -1812,7 +1721,13 @@ static void PrepareForMinidump() {
 #  if defined(DEBUG) && defined(HAS_DLL_BLOCKLIST)
   DllBlocklist_Shutdown();
 #  endif
-#endif  // XP_WIN
+#elif defined(XP_LINUX) && !defined(MOZ_WIDGET_ANDROID)
+  if (gCrashHelperPid) {
+    // Ignore the return value because we're in the exception handler, so
+    // there's not much we can do safely, not even log the error.
+    Unused << prctl(PR_SET_PTRACER, gCrashHelperPid);
+  }
+#endif
 }
 
 #ifdef XP_WIN
@@ -1888,22 +1803,6 @@ static bool ChildFilter(void* context) {
 
 #endif  // !defined(XP_WIN)
 
-static bool ChildMinidumpCallback(
-#if defined(XP_WIN)
-    const wchar_t* dump_path, const wchar_t* minidump_id,
-#elif defined(XP_LINUX)
-    const MinidumpDescriptor& descriptor,
-#else  // defined(XP_MACOSX)
-    const char* dump_dir, const char* minidump_id,
-#endif
-    void* context,
-#if defined(XP_WIN)
-    EXCEPTION_POINTERS* exinfo, MDRawAssertionInfo* assertion,
-#endif  // defined(XP_WIN)
-    const mozilla::phc::AddrInfo* addr_info, bool succeeded) {
-  return succeeded;
-}
-
 static bool ShouldReport() {
   // this environment variable prevents us from launching
   // the crash reporter client
@@ -1933,10 +1832,12 @@ static nsresult LocateExecutable(nsIFile* aXREDirectory, const nsAString& aName,
   NS_ENSURE_SUCCESS(rv, rv);
 
 #  ifdef XP_MACOSX
-  exePath->SetNativeLeafName("MacOS"_ns);
-  exePath->Append(u"crashreporter.app"_ns);
-  exePath->Append(u"Contents"_ns);
-  exePath->Append(u"MacOS"_ns);
+  if (aName.Equals(CRASH_REPORTER_FILENAME)) {
+    exePath->SetNativeLeafName("MacOS"_ns);
+    exePath->Append(u"crashreporter.app"_ns);
+    exePath->Append(u"Contents"_ns);
+    exePath->Append(u"MacOS"_ns);
+  }
 #  endif
 
   exePath->Append(aName);
@@ -2028,8 +1929,16 @@ nsresult SetExceptionHandler(nsIFile* aXREDirectory, bool force /*=false*/) {
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
+  // Locate the crash helper executable
+  PathString crashHelperPath_temp;
+  rv = LocateExecutable(aXREDirectory, CRASH_HELPER_FILENAME,
+                        crashHelperPath_temp);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
 
   crashReporterPath = crashReporterPath_temp.get();
+  crashHelperPath = crashHelperPath_temp.get();
 #else
   // On Android, we launch a service defined via MOZ_ANDROID_CRASH_HANDLER
   const char* androidCrashHandler = PR_GetEnv("MOZ_ANDROID_CRASH_HANDLER");
@@ -2049,6 +1958,10 @@ nsresult SetExceptionHandler(nsIFile* aXREDirectory, bool force /*=false*/) {
       androidStartServiceCommand = (char*)"startservice";
     }
   }
+
+  const char* crashHelperPathEnv = PR_GetEnv("MOZ_ANDROID_PACKAGE_NAME");
+  MOZ_ASSERT(crashHelperPathEnv, "The application package name is required");
+  crashHelperPath = crashHelperPathEnv;
 #endif  // !defined(MOZ_WIDGET_ANDROID)
 
   // get temp path to use for minidump path
@@ -2160,6 +2073,8 @@ nsresult SetExceptionHandler(nsIFile* aXREDirectory, bool force /*=false*/) {
 
   oldTerminateHandler = std::set_terminate(&TerminateHandler);
 
+  OOPInit();
+
   return NS_OK;
 }
 
@@ -2178,17 +2093,33 @@ bool GetMinidumpPath(nsAString& aPath) {
 }
 
 nsresult SetMinidumpPath(const nsAString& aPath) {
-  if (!gExceptionHandler) return NS_ERROR_NOT_INITIALIZED;
+  if (!gExceptionHandler) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
 
+  AutoPathString path;
 #ifdef XP_WIN
-  gExceptionHandler->set_dump_path(
-      std::wstring(char16ptr_t(aPath.BeginReading())));
+  path = aPath;
+#else
+  path = NS_ConvertUTF16toUTF8(aPath);
+#endif
+
+  // Set the path for the in-process exception handler
+#ifdef XP_WIN
+  gExceptionHandler->set_dump_path(std::wstring(path.get()));
 #elif defined(XP_LINUX)
   gExceptionHandler->set_minidump_descriptor(
-      MinidumpDescriptor(NS_ConvertUTF16toUTF8(aPath).BeginReading()));
+      MinidumpDescriptor(path.BeginReading()));
 #else
-  gExceptionHandler->set_dump_path(NS_ConvertUTF16toUTF8(aPath).BeginReading());
+  gExceptionHandler->set_dump_path(path.BeginReading());
 #endif
+
+  // Set the path used by the crash helper for out-of-process crash generation
+  if (gCrashHelperClient) {
+    set_crash_report_path(gCrashHelperClient,
+                          (const BreakpadChar*)path.BeginReading());
+  }
+
   return NS_OK;
 }
 
@@ -2367,11 +2298,7 @@ nsresult SetupExtraData(nsIFile* aAppDataDirectory,
   memset(lastCrashTimeFilename, 0, sizeof(lastCrashTimeFilename));
 
   PathString filename;
-#if defined(XP_WIN)
-  rv = lastCrashFile->GetPath(filename);
-#else
-  rv = lastCrashFile->GetNativePath(filename);
-#endif
+  rv = GetNativePathFromFile(lastCrashFile, filename);
   NS_ENSURE_SUCCESS(rv, rv);
 
   if (filename.Length() < XP_PATH_MAX) {
@@ -2942,15 +2869,33 @@ void SetProfileDirectory(nsIFile* aDir) {
   SetCrashEventsDir(dir);
 }
 
-void SetUserAppDataDirectory(nsIFile* aDir) {
-  nsCOMPtr<nsIFile> dir;
-  aDir->Clone(getter_AddRefs(dir));
+static void PopulatePendingDir(nsIFile* aUserAppDataDir) {
+  if (!pendingDirectory.empty()) {
+    return;
+  }
 
-  dir->Append(u"Crash Reports"_ns);
-  EnsureDirectoryExists(dir);
-  dir->Append(u"events"_ns);
-  EnsureDirectoryExists(dir);
-  SetCrashEventsDir(dir);
+  nsCOMPtr<nsIFile> pendingDir;
+  aUserAppDataDir->Clone(getter_AddRefs(pendingDir));
+  pendingDir->Append(u"Crash Reports"_ns);
+  pendingDir->Append(u"pending"_ns);
+
+  PathString path;
+  if (NS_SUCCEEDED(GetNativePathFromFile(pendingDir, path))) {
+    pendingDirectory = xpstring(path.get());
+  }
+}
+
+void SetUserAppDataDirectory(nsIFile* aDir) {
+  nsCOMPtr<nsIFile> eventsDir;
+  aDir->Clone(getter_AddRefs(eventsDir));
+
+  eventsDir->Append(u"Crash Reports"_ns);
+  EnsureDirectoryExists(eventsDir);
+  eventsDir->Append(u"events"_ns);
+  EnsureDirectoryExists(eventsDir);
+  SetCrashEventsDir(eventsDir);
+
+  PopulatePendingDir(aDir);
 }
 
 void UpdateCrashEventsDir() {
@@ -2991,12 +2936,9 @@ void SetMemoryReportFile(nsIFile* aFile) {
   }
 
   PathString path;
-#ifdef XP_WIN
-  aFile->GetPath(path);
-#else
-  aFile->GetNativePath(path);
-#endif
-  memoryReportPath = xpstring(path.get());
+  if (NS_SUCCEEDED(GetNativePathFromFile(aFile, path))) {
+    memoryReportPath = xpstring(path.get());
+  }
 }
 
 nsresult GetDefaultMemoryReportFile(nsIFile** aFile) {
@@ -3023,36 +2965,10 @@ nsresult GetDefaultMemoryReportFile(nsIFile** aFile) {
   return NS_OK;
 }
 
-static void FindPendingDir() {
-  if (!pendingDirectory.empty()) {
-    return;
-  }
-  nsCOMPtr<nsIFile> pendingDir;
-  nsresult rv =
-      NS_GetSpecialDirectory(XRE_USER_APP_DATA_DIR, getter_AddRefs(pendingDir));
-  if (NS_FAILED(rv)) {
-    NS_WARNING(
-        "Couldn't get the user appdata directory, crash dumps will go in an "
-        "unusual location");
-  } else {
-    pendingDir->Append(u"Crash Reports"_ns);
-    pendingDir->Append(u"pending"_ns);
-
-    PathString path;
-#ifdef XP_WIN
-    pendingDir->GetPath(path);
-#else
-    pendingDir->GetNativePath(path);
-#endif
-    pendingDirectory = xpstring(path.get());
-  }
-}
-
 // The "pending" dir is Crash Reports/pending, from which minidumps
 // can be submitted. Because this method may be called off the main thread,
 // we store the pending directory as a path.
 static bool GetPendingDir(nsIFile** dir) {
-  // MOZ_ASSERT(OOPInitialized());
   if (pendingDirectory.empty()) {
     return false;
   }
@@ -3166,6 +3082,34 @@ bool GetExtraFileForMinidump(nsIFile* minidump, nsIFile** extraFile) {
   return true;
 }
 
+static nsresult ReadExtraFile(nsCOMPtr<nsIFile>& aFile,
+                              AnnotationTable& aAnnotations) {
+  const int64_t kExtraFileMaxSize = 1024 * 1024 * 1024;
+  int64_t fileSize;
+
+  nsresult rv = aFile->GetFileSize(&fileSize);
+  NS_ENSURE_SUCCESS(rv, rv);
+  // Reject humongous extra files, Socorro will discard them anyway
+  NS_ENSURE_TRUE((fileSize > 0) && (fileSize < kExtraFileMaxSize),
+                 NS_ERROR_OUT_OF_MEMORY);
+  nsTArray<uint8_t> buffer((size_t)rv);
+
+  nsCOMPtr<nsIInputStream> stream;
+  rv = NS_NewLocalFileInputStream(getter_AddRefs(stream), aFile);
+  NS_ENSURE_SUCCESS(rv, rv);
+  nsCString json;
+  rv = NS_ReadInputStreamToString(stream, json, fileSize);
+  NS_ENSURE_SUCCESS(rv, rv);
+  auto annotations = ExtraFileParser::Parse(json);
+
+  if (!annotations) {
+    return NS_ERROR_FAILURE;
+  }
+
+  aAnnotations = *annotations;
+  return NS_OK;
+}
+
 static bool WriteExtraFile(PlatformWriter& pw,
                            const AnnotationTable& aAnnotations) {
   if (!pw.Valid()) {
@@ -3187,11 +3131,7 @@ bool WriteExtraFile(const nsAString& id, const AnnotationTable& annotations) {
 
   extra->Append(id + u".extra"_ns);
   PathString path;
-#ifdef XP_WIN
-  NS_ENSURE_SUCCESS(extra->GetPath(path), false);
-#elif defined(XP_UNIX)
-  NS_ENSURE_SUCCESS(extra->GetNativePath(path), false);
-#endif
+  NS_ENSURE_SUCCESS(GetNativePathFromFile(extra, path), false);
 
   PlatformWriter pw(path.get());
   return WriteExtraFile(pw, annotations);
@@ -3286,82 +3226,6 @@ static void AddSharedAnnotations(AnnotationTable& aAnnotations) {
   AddCommonAnnotations(aAnnotations);
 }
 
-static void AddChildProcessAnnotations(
-    AnnotationTable& aAnnotations, nsTArray<CAnnotation>* aChildAnnotations) {
-  if (!aChildAnnotations) {
-    // TODO: We should probably make a list of errors that occurred when
-    // generating a crash report as more than one can occurr.
-    aAnnotations[Annotation::DumperError] = "MissingAnnotations";
-    return;
-  }
-
-  for (const auto& annotation : *aChildAnnotations) {
-    Annotation id = static_cast<Annotation>(annotation.id);
-    const AnnotationData& data = annotation.data;
-
-    if ((id == Annotation::PHCBaseAddress) &&
-        (data.tag == AnnotationData::Tag::ByteBuffer)) {
-      // PHC is special for now, let's deal with it here
-#ifdef MOZ_PHC
-      const auto& buffer = data.byte_buffer._0;
-      alignas(mozilla::phc::AddrInfo) char mem[sizeof(mozilla::phc::AddrInfo)];
-      memcpy(mem, buffer.Elements(), sizeof(mozilla::phc::AddrInfo));
-      const auto* addr_info =
-          reinterpret_cast<const mozilla::phc::AddrInfo*>(mem);
-      PopulatePHCAnnotations(aAnnotations, addr_info);
-#endif
-      continue;
-    }
-
-    if (data.tag == AnnotationData::Tag::Empty) {
-      continue;
-    }
-
-    nsAutoCString value;
-    const uint8_t* buffer = data.byte_buffer._0.Elements();
-    const size_t length = data.byte_buffer._0.Length();
-
-    switch (TypeOfAnnotation(id)) {
-      case AnnotationType::String:
-        value.Assign(reinterpret_cast<const char*>(buffer), length);
-        break;
-      case AnnotationType::Boolean:
-        if (length == sizeof(bool)) {
-          value.Assign(*reinterpret_cast<const bool*>(buffer) ? "1" : "0");
-        }
-        break;
-      case AnnotationType::U32:
-        if (length == sizeof(uint32_t)) {
-          value.AppendInt(*reinterpret_cast<const uint32_t*>(buffer));
-        }
-        break;
-      case AnnotationType::U64:
-        if (length == sizeof(uint64_t)) {
-          value.AppendInt(*reinterpret_cast<const uint64_t*>(buffer));
-        }
-        break;
-      case AnnotationType::USize:
-        if (length == sizeof(size_t)) {
-#ifdef XP_MACOSX
-          // macOS defines size_t as unsigned long, which causes ambiguity
-          // when it comes to function overload, use a 64-bit integer instead
-          value.AppendInt(*reinterpret_cast<const uint64_t*>(buffer));
-#else
-          value.AppendInt(*reinterpret_cast<const size_t*>(buffer));
-#endif
-        }
-        break;
-      case AnnotationType::Object:
-        // Object annotations are only produced later by minidump-analyzer.
-        break;
-    }
-
-    if (!value.IsEmpty() && ShouldIncludeAnnotation(id, value.get())) {
-      aAnnotations[id] = value;
-    }
-  }
-}
-
 // It really only makes sense to call this function when
 // ShouldReport() is true.
 // Uses dumpFile's filename to generate memoryReport's filename (same name
@@ -3369,7 +3233,9 @@ static void AddChildProcessAnnotations(
 static bool MoveToPending(nsIFile* dumpFile, nsIFile* extraFile,
                           nsIFile* memoryReport) {
   nsCOMPtr<nsIFile> pendingDir;
-  if (!GetPendingDir(getter_AddRefs(pendingDir))) return false;
+  if (!GetPendingDir(getter_AddRefs(pendingDir))) {
+    return false;
+  }
 
   if (NS_FAILED(dumpFile->MoveTo(pendingDir, u""_ns))) {
     return false;
@@ -3397,201 +3263,91 @@ static bool MoveToPending(nsIFile* dumpFile, nsIFile* extraFile,
   return true;
 }
 
-static void MaybeAnnotateDumperError(const ClientInfo& aClientInfo,
-                                     AnnotationTable& aAnnotations) {
-#if defined(MOZ_OXIDIZED_BREAKPAD)
-  if (aClientInfo.had_error()) {
-    aAnnotations[Annotation::DumperError] =
-        nsDependentCString(aClientInfo.error_msg());
-  }
-#endif
-}
-
-static void OnChildProcessDumpRequested(
-    void* aContext, const ClientInfo& aClientInfo,
-    const xpstring& aFilePath) MOZ_NO_THREAD_SAFETY_ANALYSIS {
-  nsCOMPtr<nsIFile> minidump;
-
-  // Hold the mutex until the current dump request is complete, to
-  // prevent UnsetExceptionHandler() from pulling the rug out from
-  // under us.
-  MutexAutoLock lock(*dumpSafetyLock);
-  if (!isSafeToDump) return;
-
-  CreateFileFromPath(aFilePath, getter_AddRefs(minidump));
-  MOZ_ASSERT(minidump);
-
-  ProcessId pid = aClientInfo.pid();
-  if (ShouldReport()) {
-    nsCOMPtr<nsIFile> memoryReport;
-    if (!memoryReportPath.empty()) {
-      CreateFileFromPath(memoryReportPath, getter_AddRefs(memoryReport));
-      MOZ_ASSERT(memoryReport);
-    }
-    MoveToPending(minidump, nullptr, memoryReport);
-  }
-
-#if XP_WIN
-  nsTArray<CAnnotation>* child_annotations = mozannotation_retrieve(
-      reinterpret_cast<uintptr_t>(aClientInfo.process_handle()),
-      static_cast<size_t>(Annotation::Count));
-#elif defined(XP_MACOSX)
-  nsTArray<CAnnotation>* child_annotations = mozannotation_retrieve(
-      aClientInfo.task(), static_cast<size_t>(Annotation::Count));
-#else
-  nsTArray<CAnnotation>* child_annotations =
-      mozannotation_retrieve(pid, static_cast<size_t>(Annotation::Count));
-#endif
-
-  // TODO: Write a minimal set of annotations if we fail to read them, and
-  // add an error to the minidump to highlight this fact.
-
-  {
-    MutexAutoLock lock(*dumpMapLock);
-    ChildProcessData* pd = pidToMinidump->PutEntry(pid);
-    MOZ_ASSERT(!pd->minidump);
-    pd->minidump = minidump;
-    pd->annotations = MakeUnique<AnnotationTable>();
-    AnnotationTable& annotations = *(pd->annotations);
-    AddSharedAnnotations(annotations);
-    AddChildProcessAnnotations(annotations, child_annotations);
-
-    MaybeAnnotateDumperError(aClientInfo, annotations);
-  }
-
-  if (child_annotations) {
-    mozannotation_free(child_annotations);
-  }
-}
-
-static bool OOPInitialized() { return pidToMinidump != nullptr; }
-
-void OOPInit() {
-  class ProxyToMainThread : public Runnable {
-   public:
-    ProxyToMainThread() : Runnable("nsExceptionHandler::ProxyToMainThread") {}
-    NS_IMETHOD Run() override {
-      OOPInit();
-      return NS_OK;
-    }
-  };
-  if (!NS_IsMainThread()) {
-    // This logic needs to run on the main thread
-    nsCOMPtr<nsIThread> mainThread = do_GetMainThread();
-    mozilla::SyncRunnable::DispatchToThread(mainThread,
-                                            new ProxyToMainThread());
-    return;
-  }
-
-  if (OOPInitialized()) return;
-
-  MOZ_ASSERT(NS_IsMainThread());
-
-  MOZ_ASSERT(gExceptionHandler != nullptr,
-             "attempt to initialize OOP crash reporter before in-process "
-             "crashreporter!");
+static void OOPInit() {
+  CrashHelperClient* crashHelperClient;
 
 #if defined(XP_WIN)
-  childCrashNotifyPipe =
-      mozilla::Smprintf("\\\\.\\pipe\\gecko-crash-server-pipe.%i",
-                        static_cast<int>(::GetCurrentProcessId()))
-          .release();
+  childCrashNotifyPipe = nsCString("\\\\.\\pipe\\gecko-crash-server-pipe.");
+  childCrashNotifyPipe.AppendInt(static_cast<int>(::GetCurrentProcessId()));
 
-  const std::wstring dumpPath = gExceptionHandler->dump_path();
-  crashServer = new CrashGenerationServer(
-      std::wstring(NS_ConvertASCIItoUTF16(childCrashNotifyPipe).get()),
-      nullptr,           // default security attributes
-      nullptr, nullptr,  // we don't care about process connect here
-      OnChildProcessDumpRequested, nullptr, nullptr, nullptr,
-      nullptr,           // we don't care about process exit here
-      nullptr, nullptr,  // we don't care about upload request here
-      true,              // automatically generate dumps
-      &dumpPath);
-
-  if (sIncludeContextHeap) {
-    crashServer->set_include_context_heap(sIncludeContextHeap);
-  }
-
+  // TODO: Create the crash server and set include_context_heap based on the
+  // value of sIncludeContextHeap. Also pass the release channel so we can set
+  // the appropriate type of minidump in the crash helper.
+  crashHelperClient = crash_helper_launch(
+      (const BreakpadChar*)crashHelperPath.c_str(),
+      (const BreakpadChar*)NS_ConvertUTF8toUTF16(childCrashNotifyPipe)
+          .BeginReading(),
+      (const BreakpadChar*)gExceptionHandler->dump_path().c_str());
 #elif defined(XP_LINUX)
-  if (!CrashGenerationServer::CreateReportChannel(&serverSocketFd,
-                                                  &clientSocketFd))
-    MOZ_CRASH("can't create crash reporter socketpair()");
-
   const std::string dumpPath =
       gExceptionHandler->minidump_descriptor().directory();
-  crashServer = new CrashGenerationServer(
-      serverSocketFd,
-#  if defined(MOZ_OXIDIZED_BREAKPAD)
-      [](pid_t aPid, DirectAuxvDumpInfo* aAuxvInfo) {
-        return ChildProcessAuxvStore::global().Get(aPid, aAuxvInfo);
-      },
-#  endif  // defined(MOZ_OXIDIZED_BREAKPAD)
-      [](const ClientInfo& aClientInfo, const xpstring& aFilePath) {
-        OnChildProcessDumpRequested(nullptr, aClientInfo, aFilePath);
-      },
-      &dumpPath);
+#  if !defined(MOZ_WIDGET_ANDROID)
+  if (!CrashGenerationServer::CreateReportChannel(&serverSocketFd,
+                                                  &clientSocketFd)) {
+    MOZ_CRASH("can't create crash reporter socketpair()");
+  }
 
+  crashHelperClient = crash_helper_launch(crashHelperPath.c_str(),
+                                          serverSocketFd, dumpPath.c_str());
+  close(serverSocketFd);
+#  else
+  crashHelperClient = crash_helper_connect(crashHelperClientFd);
+  set_crash_report_path(crashHelperClient, dumpPath.c_str());
+#  endif  // !defined(MOZ_WIDGET_ANDROID)
 #elif defined(XP_MACOSX)
-  childCrashNotifyPipe = mozilla::Smprintf("gecko-crash-server-pipe.%i",
-                                           static_cast<int>(getpid()))
-                             .release();
-  const std::string dumpPath = gExceptionHandler->dump_path();
+  childCrashNotifyPipe = nsCString("gecko-crash-server-pipe.");
+  childCrashNotifyPipe.AppendInt(static_cast<int>(getpid()));
 
-  crashServer = new CrashGenerationServer(childCrashNotifyPipe, nullptr,
-                                          nullptr, OnChildProcessDumpRequested,
-                                          nullptr, nullptr, nullptr,
-                                          true,  // automatically generate dumps
-                                          dumpPath);
+  crashHelperClient = crash_helper_launch(
+      crashHelperPath.c_str(), (BreakpadRawData)childCrashNotifyPipe.get(),
+      gExceptionHandler->dump_path().c_str());
 #endif
 
-  if (!crashServer->Start()) MOZ_CRASH("can't start crash reporter server()");
-
-  pidToMinidump = new ChildMinidumpMap();
-
-  dumpMapLock = new Mutex("CrashReporter::dumpMapLock");
-
-  FindPendingDir();
-  UpdateCrashEventsDir();
+  gCrashHelperClient = crashHelperClient;
 }
 
 static void OOPDeinit() {
-  if (!OOPInitialized()) {
-    NS_WARNING("OOPDeinit() without successful OOPInit()");
-    return;
-  }
-
-  delete crashServer;
-  crashServer = nullptr;
-
-  delete dumpMapLock;
-  dumpMapLock = nullptr;
-
-  delete pidToMinidump;
-  pidToMinidump = nullptr;
-
 #if defined(XP_WIN) || defined(XP_MACOSX)
-  free(childCrashNotifyPipe);
-  childCrashNotifyPipe = nullptr;
-#endif
+  childCrashNotifyPipe = ""_ns;
+#endif  // defined(XP_WIN) || defined(XP_MACOSX)
 }
 
 // Parent-side API for children
+#if defined(MOZ_WIDGET_ANDROID)
+void SetCrashHelperPipes(FileHandle breakpadFd, FileHandle crashHelperFd) {
+  clientSocketFd = breakpadFd;
+  crashHelperClientFd = crashHelperFd;
+}
+#endif  // defined(MOZ_WIDGET_ANDROID)
+
 CrashPipeType GetChildNotificationPipe() {
   if (!GetEnabled()) {
     return nullptr;
   }
 
-  MOZ_ASSERT(OOPInitialized());
-
 #if defined(XP_WIN) || defined(XP_MACOSX)
-  return childCrashNotifyPipe;
+  return childCrashNotifyPipe.get();
 #elif defined(XP_LINUX)
   return DuplicateFileHandle(clientSocketFd);
 #endif
 }
 
-bool SetRemoteExceptionHandler(CrashPipeType aCrashPipe) {
+#if defined(XP_LINUX) && !defined(MOZ_WIDGET_ANDROID)
+
+ProcessId GetCrashHelperPid() {
+  if (gCrashHelperClient) {
+    return crash_helper_pid(gCrashHelperClient);
+  }
+
+  return base::kInvalidProcessId;
+}
+
+#endif  // defined(XP_LINUX) && !defined(MOZ_WIDGET_ANDROID)
+
+bool SetRemoteExceptionHandler(CrashPipeType aCrashPipe,
+                               ProcessId aCrashHelperPid) {
   MOZ_ASSERT(!gExceptionHandler, "crash client already init'd");
+  gCrashHelperPid = aCrashHelperPid;
   RegisterRuntimeExceptionModule();
   InitializeAppNotes();
   RegisterAnnotations();
@@ -3606,13 +3362,15 @@ bool SetRemoteExceptionHandler(CrashPipeType aCrashPipe) {
       static_cast<uint32_t>(Annotation::PHCBaseAddress),
       &mozilla::phc::gAddrInfo, sizeof(mozilla::phc::gAddrInfo));
 #endif
-
 #if defined(XP_WIN)
   gExceptionHandler = new google_breakpad::ExceptionHandler(
-      L"", ChildFilter, ChildMinidumpCallback,
+      L"", ChildFilter,
+      nullptr,  // no callback
       nullptr,  // no callback context
       google_breakpad::ExceptionHandler::HANDLER_ALL, GetMinidumpType(),
-      NS_ConvertASCIItoUTF16(aCrashPipe).get(), nullptr);
+      (const wchar_t*)NS_ConvertUTF8toUTF16(aCrashPipe).BeginReading(),
+      nullptr  // no custom info
+  );
   gExceptionHandler->set_handle_debug_exceptions(true);
 
 #  if defined(HAVE_64BIT_BUILD)
@@ -3622,17 +3380,19 @@ bool SetRemoteExceptionHandler(CrashPipeType aCrashPipe) {
   // MinidumpDescriptor requires a non-empty path.
   google_breakpad::MinidumpDescriptor path(".");
 
-  gExceptionHandler = new google_breakpad::ExceptionHandler(
-      path, ChildFilter, ChildMinidumpCallback,
-      nullptr,  // no callback context
-      true,     // install signal handlers
-      aCrashPipe.release());
+  gExceptionHandler =
+      new google_breakpad::ExceptionHandler(path, ChildFilter,
+                                            nullptr,  // no callback
+                                            nullptr,  // no callback context
+                                            true,     // install signal handlers
+                                            aCrashPipe.release());
 #elif defined(XP_MACOSX)
-  gExceptionHandler = new google_breakpad::ExceptionHandler(
-      "", ChildFilter, ChildMinidumpCallback,
-      nullptr,  // no callback context
-      true,     // install signal handlers
-      aCrashPipe);
+  gExceptionHandler =
+      new google_breakpad::ExceptionHandler("", ChildFilter,
+                                            nullptr,  // no callback
+                                            nullptr,  // no callback context
+                                            true,     // install signal handlers
+                                            aCrashPipe);
 #endif
 
   RecordMainThreadId();
@@ -3643,37 +3403,59 @@ bool SetRemoteExceptionHandler(CrashPipeType aCrashPipe) {
   return gExceptionHandler->IsOutOfProcess();
 }
 
-void GetAnnotation(ProcessId childPid, Annotation annotation,
-                   nsACString& outStr) {
-  if (!GetEnabled()) {
-    return;
-  }
-
-  MutexAutoLock lock(*dumpMapLock);
-
-  ChildProcessData* pd = pidToMinidump->GetEntry(childPid);
-  if (!pd) {
-    return;
-  }
-
-  outStr = (*pd->annotations)[annotation];
-}
-
 bool TakeMinidumpForChild(ProcessId childPid, nsIFile** dump,
                           AnnotationTable& aAnnotations) {
-  if (!GetEnabled()) return false;
+  if (!GetEnabled()) {
+    return false;
+  }
 
-  MutexAutoLock lock(*dumpMapLock);
+  CrashReport* crash_report = nullptr;
 
-  ChildProcessData* pd = pidToMinidump->GetEntry(childPid);
-  if (!pd) return false;
+  if (gCrashHelperClient) {
+    crash_report = transfer_crash_report(gCrashHelperClient, childPid);
+  }
 
-  NS_IF_ADDREF(*dump = pd->minidump);
-  aAnnotations = *(pd->annotations);
+  if (!crash_report) {
+    return false;
+  }
 
-  pidToMinidump->RemoveEntry(pd);
+  CreateFileFromPath(xpstring((XP_CHAR*)crash_report->path), dump);
+  nsCString error =
+      crash_report->error ? nsCString(crash_report->error) : ""_ns;
+  release_crash_report(crash_report);
 
-  return !!*dump;
+  nsCOMPtr<nsIFile> extra = nullptr;
+  NS_ENSURE_TRUE(GetExtraFileForMinidump(*dump, getter_AddRefs(extra)), false);
+
+  if (ShouldReport()) {
+    nsCOMPtr<nsIFile> memoryReport;
+    if (!memoryReportPath.empty()) {
+      CreateFileFromPath(memoryReportPath, getter_AddRefs(memoryReport));
+      MOZ_ASSERT(memoryReport);
+    }
+
+    MoveToPending(*dump, extra, memoryReport);
+  }
+
+  nsresult rv = ReadExtraFile(extra, aAnnotations);
+
+  // Unconditionally remove the temporary .extra file, it will be regenarated
+  // later when we finalize the crash report.
+  extra->Remove(false);
+
+  if (rv != NS_OK) {
+    // TODO: We failed to read the annotations, this will leave an orphaned
+    // crash that we won't be able to submit. Clean everything up instead?
+    return false;
+  }
+
+  AddSharedAnnotations(aAnnotations);
+
+  if (error.Length() > 0) {
+    aAnnotations[Annotation::DumperError] = error;
+  }
+
+  return true;
 }
 
 bool FinalizeOrphanedMinidump(ProcessId aChildPid, GeckoProcessType aType,
@@ -3699,58 +3481,6 @@ bool FinalizeOrphanedMinidump(ProcessId aChildPid, GeckoProcessType aType,
 
   return WriteExtraFile(id, annotations);
 }
-
-#ifdef XP_WIN
-
-// Function invoked by the WER runtime exception handler running in an
-// external process. This function isn't used anywhere inside Gecko directly
-// but rather invoked via CreateRemoteThread() in the main process.
-
-// Store this global in a section called mozwerpt where we can find it by just
-// looking at the program headers.
-#  pragma section("mozwerpt", read, executable, shared)
-
-__declspec(allocate("mozwerpt")) MOZ_EXPORT DWORD WINAPI
-WerNotifyProc(LPVOID aParameter) {
-  const WindowsErrorReportingData* werData =
-      static_cast<const WindowsErrorReportingData*>(aParameter);
-
-  auto freeParameterOnExit = MakeScopeExit([&aParameter] {
-    VirtualFree(aParameter, sizeof(WindowsErrorReportingData), MEM_RELEASE);
-  });
-
-  // Hold the mutex until the current dump request is complete, to
-  // prevent UnsetExceptionHandler() from pulling the rug out from
-  // under us.
-  MutexAutoLock safetyLock(*dumpSafetyLock);
-  if (!isSafeToDump || !ShouldReport()) {
-    return S_OK;
-  }
-
-  ProcessId pid = werData->mChildPid;
-  nsCOMPtr<nsIFile> minidump;
-  if (!GetPendingDir(getter_AddRefs(minidump))) {
-    return S_OK;
-  }
-  xpstring minidump_native_name(werData->mMinidumpFile,
-                                werData->mMinidumpFile + 40);
-  nsString minidump_name(minidump_native_name.c_str());
-  minidump->Append(minidump_name);
-
-  {
-    MutexAutoLock lock(*dumpMapLock);
-    ChildProcessData* pd = pidToMinidump->PutEntry(pid);
-    MOZ_ASSERT(!pd->minidump);
-    pd->minidump = minidump;
-    pd->annotations = MakeUnique<AnnotationTable>();
-    (*pd->annotations)[Annotation::WindowsErrorReporting] = "1"_ns;
-    AddSharedAnnotations(*(pd->annotations));
-  }
-
-  return S_OK;
-}
-
-#endif  // XP_WIN
 
 //-----------------------------------------------------------------------------
 // CreateMinidumpsAndPair() and helpers
@@ -3878,17 +3608,11 @@ bool CreateMinidumpsAndPair(ProcessHandle aTargetHandle,
   // callback when generating a dump of the calling process.
   XP_CHAR minidumpPath[XP_PATH_MAX] = {};
 
-#if defined(XP_LINUX) && defined(MOZ_OXIDIZED_BREAKPAD)
-  DirectAuxvDumpInfo auxvInfo = {};
-  bool auxvInfoValid =
-      ChildProcessAuxvStore::global().Get(aTargetHandle, &auxvInfo);
-#endif  // defined(XP_LINUX) && defined(MOZ_OXIDIZED_BREAKPAD)
-
   // dump the target
   if (!google_breakpad::ExceptionHandler::WriteMinidumpForChild(
           aTargetHandle, targetThread,
 #if defined(XP_LINUX) && defined(MOZ_OXIDIZED_BREAKPAD)
-          auxvInfoValid ? &auxvInfo : nullptr,
+          /* auxvInfo */ nullptr,
 #endif  // defined(XP_LINUX) && defined(MOZ_OXIDIZED_BREAKPAD)
           dump_path, PairedDumpCallback, static_cast<void*>(minidumpPath)
 #ifdef XP_WIN
@@ -3934,18 +3658,7 @@ bool CreateMinidumpsAndPair(ProcessHandle aTargetHandle,
 #endif
 
   AddSharedAnnotations(aTargetAnnotations);
-#if XP_WIN
-  nsTArray<CAnnotation>* child_annotations =
-      mozannotation_retrieve(reinterpret_cast<uintptr_t>(aTargetHandle),
-                             static_cast<size_t>(Annotation::Count));
-#else
-  nsTArray<CAnnotation>* child_annotations = mozannotation_retrieve(
-      aTargetHandle, static_cast<size_t>(Annotation::Count));
-#endif
-  AddChildProcessAnnotations(aTargetAnnotations, child_annotations);
-  if (child_annotations) {
-    mozannotation_free(child_annotations);
-  }
+  // TODO: Retrieve annotations from child process
 
   targetMinidump.forget(aMainDumpOut);
 
@@ -3968,5 +3681,29 @@ bool UnsetRemoteExceptionHandler(bool wasSet) {
 
   return true;
 }
+
+#if defined(XP_LINUX) && defined(MOZ_OXIDIZED_BREAKPAD)
+
+void GetCurrentProcessAuxvInfo(DirectAuxvDumpInfo* aAuxvInfo) {
+  aAuxvInfo->program_header_count = getauxval(AT_PHNUM);
+  aAuxvInfo->program_header_address = getauxval(AT_PHDR);
+  aAuxvInfo->linux_gate_address = getauxval(AT_SYSINFO_EHDR);
+  aAuxvInfo->entry_address = getauxval(AT_ENTRY);
+}
+
+void RegisterChildAuxvInfo(pid_t aChildPid,
+                           const DirectAuxvDumpInfo& aAuxvInfo) {
+  if (gCrashHelperClient) {
+    register_child_auxv_info(gCrashHelperClient, aChildPid, &aAuxvInfo);
+  }
+}
+
+void UnregisterChildAuxvInfo(pid_t aChildPid) {
+  if (gCrashHelperClient) {
+    unregister_child_auxv_info(gCrashHelperClient, aChildPid);
+  }
+}
+
+#endif  // defined(XP_LINUX) && defined(MOZ_OXIDIZED_BREAKPAD)
 
 }  // namespace CrashReporter

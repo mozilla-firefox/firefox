@@ -180,6 +180,10 @@ bool RangeAnalysis::addBetaNodes() {
   JitSpew(JitSpew_Range, "Adding beta nodes");
 
   for (PostorderIterator i(graph_.poBegin()); i != graph_.poEnd(); i++) {
+    if (mir->shouldCancel("RangeAnalysis addBetaNodes")) {
+      return false;
+    }
+
     MBasicBlock* block = *i;
     JitSpew(JitSpew_Range, "Looking at block %u", block->id());
 
@@ -2010,6 +2014,10 @@ bool RangeAnalysis::analyzeLoop(const MBasicBlock* header) {
 
     for (ReversePostorderIterator iter(graph_.rpoBegin(header));
          iter != graph_.rpoEnd(); iter++) {
+      if (mir->shouldCancel("RangeAnalysis analyzeLoop")) {
+        return false;
+      }
+
       MBasicBlock* block = *iter;
       if (!block->isMarked()) {
         continue;
@@ -2411,6 +2419,10 @@ bool RangeAnalysis::analyze() {
 
   for (ReversePostorderIterator iter(graph_.rpoBegin());
        iter != graph_.rpoEnd(); iter++) {
+    if (mir->shouldCancel("RangeAnalysis analyze")) {
+      return false;
+    }
+
     MBasicBlock* block = *iter;
     // No blocks are supposed to be unreachable, except when we have an OSR
     // block, in which case the Value Numbering phase add fixup blocks which
@@ -3200,6 +3212,10 @@ bool RangeAnalysis::truncate() {
 
   for (PostorderIterator block(graph_.poBegin()); block != graph_.poEnd();
        block++) {
+    if (mir->shouldCancel("RangeAnalysis truncate")) {
+      return false;
+    }
+
     for (MInstructionReverseIterator iter(block->rbegin());
          iter != block->rend(); iter++) {
       if (iter->isRecoveredOnBailout()) {
@@ -3645,6 +3661,10 @@ bool RangeAnalysis::tryRemovingGuards() {
 
   for (ReversePostorderIterator block = graph_.rpoBegin();
        block != graph_.rpoEnd(); block++) {
+    if (mir->shouldCancel("RangeAnalysis tryRemovingGuards (block loop)")) {
+      return false;
+    }
+
     for (MDefinitionIterator iter(*block); iter; iter++) {
       if (!iter->isGuardRangeBailouts()) {
         continue;
@@ -3662,6 +3682,10 @@ bool RangeAnalysis::tryRemovingGuards() {
   // bailout-paths which are used to shrink the input range of the
   // operands of the condition.
   for (size_t i = 0; i < guards.length(); i++) {
+    if (mir->shouldCancel("RangeAnalysis tryRemovingGuards (guards loop)")) {
+      return false;
+    }
+
     MDefinition* guard = guards[i];
 
     // If this ins is a guard even without guardRangeBailouts,

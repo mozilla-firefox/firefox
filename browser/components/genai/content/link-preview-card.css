@@ -51,11 +51,24 @@
 .ai-content {
     padding: var(--og-padding);
 
-    > h3 {
+    h3 {
+        align-items: center;
+        display: flex;
         font-size: var(--og-main-font-size);
         font-weight: var(--font-weight-bold);
+        gap: var(--space-xs);
         margin: 0;
     }
+
+    img.icon {
+      -moz-context-properties: fill;
+      fill: currentColor;
+      height: var(--icon-size-default);
+      margin-inline-start: var(--space-xlarge);
+      pointer-events: none;
+      width: var(--icon-size-default);
+  }
+
 
   > ul {
       font-size: var(--og-main-font-size);
@@ -72,8 +85,25 @@
     }
   }
 
+  .visit-link-container {
+    align-items: center;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--space-xlarge);
+
+      .visit-link {
+        align-items: center;
+        display: flex;
+        gap: var(--space-xs);
+        font-size: var(--og-main-font-size);
+        font-weight: var(--font-weight-bold);
+      }
+  }
+
   > hr {
       border-color: var(--border-color-card);
+      margin-top: var(--space-xlarge);
+      margin-bottom: var(--space-xlarge);
   }
 
     > p {

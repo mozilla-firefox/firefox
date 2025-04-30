@@ -11,6 +11,7 @@
  * does not handle, such as pasting into a prompt() or pasting into
  * the GenAI chatbot shortcut menu.
  */
+// @ts-check
 
 export const ContentAnalysisUtils = {
   /**
@@ -18,10 +19,10 @@ export const ContentAnalysisUtils = {
    * and send the text on to Content Analysis for approval. This method
    * will check if Content Analysis is active and if not it will return early.
    *
-   * @param {Element} textElement The DOM element to monitor
-   * @param {BrowsingContext} browsingContext The browsing context that the textElement
-   *                                          is part of. Used to show the "DLP busy" dialog.
-   * @param {Function} url An nsIURI that indicates where the content would be sent to.
+   * @param {HTMLInputElement} textElement The DOM element to monitor
+   * @param {CanonicalBrowsingContext} browsingContext The browsing context that the textElement
+   *                                                   is part of. Used to show the "DLP busy" dialog.
+   * @param {nsIURI} url An nsIURI that indicates where the content would be sent to.
    *                       If this is undefined, this method will get the URI from the browsingContext.
    */
   setupContentAnalysisEventsForTextElement(textElement, browsingContext, url) {
@@ -56,7 +57,10 @@ export const ContentAnalysisUtils = {
       try {
         const response = await contentAnalysis.analyzeContentRequests(
           [
-            {
+            // Specify an explicit type here to suppress type errors about the missing
+            // properties, because there are a ton of them that make this hard to read.
+            /** @type {nsIContentAnalysisRequest} */
+            ({
               analysisType: Ci.nsIContentAnalysisRequest.eBulkDataEntry,
               reason: isPaste
                 ? Ci.nsIContentAnalysisRequest.eClipboardPaste
@@ -72,7 +76,7 @@ export const ContentAnalysisUtils = {
               /* browsingContext can sometimes be undefined in tests where content
                  is being pasted into chrome (specifically the GenAI custom chat shortcut) */
               windowGlobalParent: browsingContext?.currentWindowContext,
-            },
+            }),
           ],
           true
         );

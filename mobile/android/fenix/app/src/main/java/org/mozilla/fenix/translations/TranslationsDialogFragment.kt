@@ -86,11 +86,13 @@ class TranslationsDialogFragment : BottomSheetDialogFragment() {
             setOnShowListener {
                 runIfFragmentIsAttached {
                     val bottomSheet = findViewById<View?>(R.id.design_bottom_sheet)
-                    bottomSheet?.setBackgroundResource(android.R.color.transparent)
-                    behavior = BottomSheetBehavior.from(bottomSheet)
-                    behavior?.peekHeight = resources.displayMetrics.heightPixels
-                    behavior?.state = BottomSheetBehavior.STATE_EXPANDED
-                    behavior?.hideFriction = DIALOG_FRICTION
+                    bottomSheet?.let {
+                        it.setBackgroundResource(android.R.color.transparent)
+                        behavior = BottomSheetBehavior.from(it)
+                        behavior?.peekHeight = resources.displayMetrics.heightPixels
+                        behavior?.state = BottomSheetBehavior.STATE_EXPANDED
+                        behavior?.hideFriction = DIALOG_FRICTION
+                    }
                 }
             }
         }
@@ -302,6 +304,7 @@ class TranslationsDialogFragment : BottomSheetDialogFragment() {
             },
             onNegativeButtonClicked = {
                 if (translationsDialogState.isTranslated || translationsDialogState.isTranslationInProgress) {
+                    @Suppress("DEPRECATION")
                     localView.announceForAccessibility(
                         requireContext().getString(
                             R.string.translations_bottom_sheet_restore_accessibility_announcement,
@@ -431,6 +434,7 @@ class TranslationsDialogFragment : BottomSheetDialogFragment() {
                 )
 
                 if (checked) {
+                    @Suppress("DEPRECATION")
                     localView.announceForAccessibility(type.descriptionId?.let { getString(it) })
                 }
             },

@@ -107,6 +107,10 @@ genai-options-about-chatbot =
 
 ## Chatbot onboarding
 
+genai-chatbot-contextual-title = Use an AI chatbot without switching tabs
+genai-chatbot-contextual-subtitle = Chat and browse side-by-side when you add an AI chatbot in the { -brand-short-name } sidebar.
+genai-chatbot-contextual-button = Choose a chatbot
+
 genai-onboarding-header = Summarize, brainstorm, and more as you browse
 genai-onboarding-choose-header = Choose an AI chatbot to use in the { -brand-short-name } sidebar
 # "Switch anytime" refers to allowing the user to switch to a different chatbot.
@@ -169,3 +173,18 @@ genai-model-optin-optout =
 
 genai-model-optin-cancel =
   .label = Cancel
+
+## Link previews
+
+# ‘min’ is short for “minute”
+# ‘mins’ is short for “minutes”
+# An estimate for how long it takes to read an article,
+# expressed as a range covering both slow and fast readers.
+# Variables:
+#   $rangePlural (String): The plural category of the range, using the same set as for numbers.
+#   $range (String): The range of minutes as a localised string. Examples: "3-7", "~1".
+link-preview-reading-time =
+    { $rangePlural ->
+        [one] { $range } min reading time
+       *[other] { $range } mins reading time
+    }

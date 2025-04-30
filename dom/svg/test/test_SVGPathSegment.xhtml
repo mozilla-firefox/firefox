@@ -1,0 +1,44 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<!--
+https://bugzilla.mozilla.org/show_bug.cgi?id=1954044
+-->
+<head>
+  <title>Tests for SVG path.setPathData</title>
+  <script type="text/javascript" src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=1954044">Mozilla Bug 1954044</a>
+<p id="display"></p>
+<div id="content" style="display:none;">
+<svg id="svg" xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <path id="path"/>
+</svg>
+</div>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+<![CDATA[
+
+SimpleTest.waitForExplicitFinish();
+
+function run_tests()
+{
+  let path = document.getElementById("path");
+
+  // See https://github.com/w3c/editing/issues/483
+  path.setPathData([{"type":"M","values":[0,0]},{"type":"L","values":[100,100]}]);
+  is(path.getAttribute("d"), "M 0 0 L 100 100");
+
+  path.setPathData([{"type":"M","values":[0,0]},{"type":"Z","values":[]}]);
+  is(path.getAttribute("d"), "M 0 0 Z");
+
+  SimpleTest.finish();
+}
+
+window.addEventListener("load", run_tests);
+
+]]>
+</script>
+</pre>
+</body>
+</html>

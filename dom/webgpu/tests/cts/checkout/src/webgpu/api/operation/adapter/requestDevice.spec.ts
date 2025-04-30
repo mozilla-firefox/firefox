@@ -513,7 +513,7 @@ g.test('always_returns_device')
     const gpu = getGPU(t.rec);
     const adapter = await gpu.requestAdapter({
       featureLevel,
-    } as GPURequestAdapterOptions);
+    });
     if (adapter) {
       const device = await t.requestDeviceTracked(adapter);
       assert(device instanceof GPUDevice, 'requestDevice must return a device or throw');

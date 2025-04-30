@@ -207,8 +207,6 @@ class DMABufDevice {
 
   bool IsEnabled(nsACString& aFailureId);
 
-  // Use dmabuf for WebRender general web content
-  static bool IsDMABufTexturesEnabled();
   // Use dmabuf for WebGL content
   static bool IsDMABufWebGLEnabled();
   static void DisableDMABufWebGL();

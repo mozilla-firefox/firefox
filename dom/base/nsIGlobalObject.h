@@ -79,7 +79,6 @@ class nsIGlobalObject : public nsISupports {
   mozilla::LinkedList<mozilla::GlobalFreezeObserver> mGlobalFreezeObservers;
 
   bool mIsDying;
-  bool mIsScriptForbidden;
 
  protected:
   bool mIsInnerWindow;
@@ -395,9 +394,6 @@ class nsIGlobalObject : public nsISupports {
   virtual ~nsIGlobalObject();
 
   void StartDying() { mIsDying = true; }
-
-  void StartForbiddingScript() { mIsScriptForbidden = true; }
-  void StopForbiddingScript() { mIsScriptForbidden = false; }
 
   void DisconnectGlobalTeardownObservers();
   void DisconnectGlobalFreezeObservers();

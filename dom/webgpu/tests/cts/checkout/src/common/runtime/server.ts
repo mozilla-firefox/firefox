@@ -130,7 +130,7 @@ if (globalTestConfig.compatibility || globalTestConfig.forceFallbackAdapter) {
   setDefaultRequestAdapterOptions({
     featureLevel: globalTestConfig.compatibility ? 'compatibility' : 'core',
     forceFallbackAdapter: globalTestConfig.forceFallbackAdapter,
-  } as GPURequestAdapterOptions);
+  });
 }
 
 if (gpuProviderModule) {

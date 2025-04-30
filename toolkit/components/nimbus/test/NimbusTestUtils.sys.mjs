@@ -357,6 +357,7 @@ export const NimbusTestUtils = {
           "testFeature",
         ],
         targeting: "true",
+        isRollout: false,
         ...props,
       };
     },
@@ -386,7 +387,9 @@ export const NimbusTestUtils = {
     },
 
     rsLoader(manager) {
-      const loader = new lazy._RemoteSettingsExperimentLoader();
+      const loader = new lazy._RemoteSettingsExperimentLoader(
+        manager ?? NimbusTestUtils.stubs.manager()
+      );
 
       Object.defineProperties(loader.remoteSettingsClients, {
         experiments: {
@@ -403,8 +406,6 @@ export const NimbusTestUtils = {
           },
         },
       });
-
-      loader.manager = manager ?? NimbusTestUtils.stubs.manager();
 
       return loader;
     },
@@ -608,6 +609,133 @@ export const NimbusTestUtils = {
   },
 
   /**
+   * Save the store to disk
+   *
+   * @param {ExperimentStore} store
+   *        The store to save.
+   *
+   * @returns {string} The path to the file on disk.
+   */
+  async saveStore(store) {
+    const jsonFile = store._store;
+
+    if (jsonFile._saver.isRunning) {
+      // It is possible that the store has been updated since we started writing
+      // to disk. If we've already started writing, wait for that to finish.
+      await jsonFile._saver._runningPromise;
+    } else if (jsonFile._saver.isArmed) {
+      // Otherwise, if we have a pending write we cancel it.
+      jsonFile._saver.disarm();
+    }
+
+    await jsonFile._save();
+
+    return store._store.path;
+  },
+
+  /**
+   * @typedef {object} TestContext
+   *
+   * @property {object} sandbox
+   *           A sinon sandbox.
+   *
+   * @property {_RemoteSettingsExperimentLoader} loader
+   *           A RemoteSettingsExperimentLoader instance that has stubbed
+   *           RemoteSettings clients.
+   *
+   * @property {_ExperimentManager} maanger
+   *           An ExperimentManager instance that will validate all enrollments
+   *           added to its store.
+   *
+   * @property {(function(): void)?} initExperimentAPI
+   *           A function that will complete ExperimentAPI initialization.
+   *
+   * @property {function(): void} cleanup
+   *           A cleanup function that should be called at the end of the test.
+   */
+
+  /**
+   * Set a Nimbus testing environment.
+   *
+   * This is intended to be used inside xpcshell tests -- browser mochitests
+   * already have a Nimbus environment.
+   *
+   * @param {object?} options
+   *
+   * @param {boolean?} options.init
+   *        Initialize the Experiment API.
+   *
+   *        If false, the returned context will return an `initExperimentAPI` member that
+   *        will complete the initialization.
+   *
+   * @param {string?} options.storePath
+   *        An optional path to an existing ExperimentStore to use for the
+   *        ExperimentManager.
+   *
+   * @param {object[]?} options.experiments
+   *        If provided, these recipes will be returned by the RemoteSettings
+   *        experiments client.
+   *
+   * @param {object[]?} options.secureExperiments
+   *        If provided, these recipes will be returned by the RemoteSetings
+   *        secureExperiments client.
+   *
+   * @param {boolean?} clearTelemetry
+   *        If true, telemetry will be reset in the cleanup function.
+   *
+   * @returns {TestContext}
+   *          Everything you need to write a test using Nimbus.
+   */
+  async setupTest({
+    init = true,
+    storePath,
+    experiments,
+    secureExperiments,
+    clearTelemetry = false,
+  } = {}) {
+    const sandbox = lazy.sinon.createSandbox();
+
+    const store = NimbusTestUtils.stubs.store(storePath);
+    const manager = NimbusTestUtils.stubs.manager(store);
+    const loader = NimbusTestUtils.stubs.rsLoader(manager);
+
+    sandbox.stub(ExperimentAPI, "_rsLoader").get(() => loader);
+    sandbox.stub(ExperimentAPI, "_manager").get(() => manager);
+    sandbox
+      .stub(loader.remoteSettingsClients.experiments, "get")
+      .resolves(Array.isArray(experiments) ? experiments : []);
+    sandbox
+      .stub(loader.remoteSettingsClients.secureExperiments, "get")
+      .resolves(Array.isArray(secureExperiments) ? secureExperiments : []);
+
+    const ctx = {
+      sandbox,
+      loader,
+      manager,
+      cleanup() {
+        NimbusTestUtils.assert.storeIsEmpty(manager.store);
+        ExperimentAPI._resetForTests();
+        sandbox.restore();
+
+        if (clearTelemetry) {
+          Services.fog.testResetFOG();
+          Services.telemetry.clearEvents();
+        }
+      },
+    };
+
+    const initExperimentAPI = () => ExperimentAPI.init();
+
+    if (init) {
+      await initExperimentAPI();
+    } else {
+      ctx.initExperimentAPI = initExperimentAPI;
+    }
+
+    return ctx;
+  },
+
+  /**
    * Validate an enrollment matches the Nimbus enrollment schema.
    *
    * @params {object} enrollment
@@ -665,6 +793,54 @@ export const NimbusTestUtils = {
   },
 };
 
+Object.defineProperties(NimbusTestUtils.factories.experiment, {
+  withFeatureConfig: {
+    value: function NimbusTestUtils_factories_experiment_withFeatureConfig(
+      slug,
+      { branchSlug = "control", featureId, value = {} } = {},
+      props = {}
+    ) {
+      return NimbusTestUtils.factories.experiment(slug, {
+        branch: {
+          slug: branchSlug,
+          ratio: 1,
+          features: [
+            {
+              featureId,
+              value,
+            },
+          ],
+        },
+        ...props,
+      });
+    },
+  },
+});
+
+Object.defineProperties(NimbusTestUtils.factories.rollout, {
+  withFeatureConfig: {
+    value: function NimbusTestUtils_factories_rollout_withFeatureConfig(
+      slug,
+      { branchSlug = "control", featureId, value = {} } = {},
+      props = {}
+    ) {
+      return NimbusTestUtils.factories.rollout(slug, {
+        branch: {
+          slug: branchSlug,
+          ratio: 1,
+          features: [
+            {
+              featureId,
+              value,
+            },
+          ],
+        },
+        ...props,
+      });
+    },
+  },
+});
+
 Object.defineProperties(NimbusTestUtils.factories.recipe, {
   bucketConfig: {
     /**
@@ -710,6 +886,34 @@ Object.defineProperties(NimbusTestUtils.factories.recipe, {
           ],
         },
       ];
+    },
+  },
+
+  /**
+   * A helper for generating a recipe that has a single branch with the given
+   * feature config.
+   */
+  withFeatureConfig: {
+    value: function NimbusTestUtils_factories_recipe_withFeatureConfig(
+      slug,
+      { branchSlug = "control", featureId, value = {} } = {},
+      props = {}
+    ) {
+      return NimbusTestUtils.factories.recipe(slug, {
+        branches: [
+          {
+            slug: branchSlug,
+            ratio: 1,
+            features: [
+              {
+                featureId,
+                value,
+              },
+            ],
+          },
+        ],
+        ...props,
+      });
     },
   },
 });

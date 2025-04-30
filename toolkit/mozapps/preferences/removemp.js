@@ -13,11 +13,7 @@ var gRemovePasswordDialog = {
     document.l10n.setAttributes(this._okButton, "pw-remove-button");
 
     this._password = document.getElementById("password");
-    this._password.addEventListener("input", () => {
-      this._okButton.disabled = !this._token.checkPassword(
-        this._password.value
-      );
-    });
+    this._password.addEventListener("input", () => this.validateInput());
 
     var pk11db = Cc["@mozilla.org/security/pk11tokendb;1"].getService(
       Ci.nsIPK11TokenDB
@@ -27,9 +23,11 @@ var gRemovePasswordDialog = {
     // Initialize the enabled state of the Remove button by checking the
     // initial value of the password ("" should be incorrect).
     this.validateInput();
-    document.addEventListener("dialogaccept", function () {
-      gRemovePasswordDialog.removePassword();
-    });
+    document.addEventListener("dialogaccept", () => this.removePassword());
+  },
+
+  validateInput() {
+    this._okButton.disabled = !this._token.checkPassword(this._password.value);
   },
 
   async createAlert(titleL10nId, messageL10nId) {

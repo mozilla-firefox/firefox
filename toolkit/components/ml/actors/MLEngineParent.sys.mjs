@@ -518,17 +518,19 @@ export class MLEngineParent extends JSProcessActorParent {
 
     // If no records found and we searched by featureId, retry with taskName
     if (records.length === 0 && featureId) {
+      lazy.console.debug(`No record for feature id "${featureId}"`);
       const fallbackFilters = { taskName };
       if (modelId) {
         fallbackFilters.modelId = modelId;
       }
       records = await client.get({ filters: fallbackFilters });
+      lazy.console.debug(`fallbackFilters: "${fallbackFilters}"`);
     }
 
     // Handle case where multiple records exist
     if (records.length > 1) {
       throw new Error(
-        `Found more than one inference options record for ${featureId} and ${taskName}, and no matching modelId in pipelineOptions`
+        `Found more than one inference options record for "${featureId}" and "${taskName}", and no matching modelId in pipelineOptions`
       );
     }
 

@@ -18,7 +18,7 @@ import java.util.Locale
 
 class BaseLocaleViewHolderTest {
 
-    private val selectedLocale = Locale("en", "UK")
+    private val selectedLocale = Locale.Builder().setLanguage("en").setRegion("UK").build()
     private val view: View = mockk()
     private val context: Context = mockk()
 

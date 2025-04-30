@@ -1,10 +1,7 @@
 [DEFAULT]
 head = "head.js ../../../common/tests/unit/head_helpers.js ../../../common/tests/unit/head_http.js"
 firefox-appdir = "browser"
-skip-if = [
-  "os == 'android'",
-  "appname == 'thunderbird' && !nightly_build"
-]
+skip-if = ["appname == 'thunderbird' && !nightly_build"]
 support-files = [
   "!/services/common/tests/unit/head_helpers.js",
   "!/services/common/tests/unit/head_http.js",

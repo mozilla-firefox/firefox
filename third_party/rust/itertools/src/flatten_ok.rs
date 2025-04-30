@@ -72,6 +72,29 @@ where
         }
     }
 
+    fn fold<B, F>(self, init: B, mut f: F) -> B
+    where
+        Self: Sized,
+        F: FnMut(B, Self::Item) -> B,
+    {
+        // Front
+        let mut acc = match self.inner_front {
+            Some(x) => x.fold(init, |a, o| f(a, Ok(o))),
+            None => init,
+        };
+
+        acc = self.iter.fold(acc, |acc, x| match x {
+            Ok(it) => it.into_iter().fold(acc, |a, o| f(a, Ok(o))),
+            Err(e) => f(acc, Err(e)),
+        });
+
+        // Back
+        match self.inner_back {
+            Some(x) => x.fold(acc, |a, o| f(a, Ok(o))),
+            None => acc,
+        }
+    }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let inner_hint = |inner: &Option<T::IntoIter>| {
             inner
@@ -130,6 +153,29 @@ where
             }
         }
     }
+
+    fn rfold<B, F>(self, init: B, mut f: F) -> B
+    where
+        Self: Sized,
+        F: FnMut(B, Self::Item) -> B,
+    {
+        // Back
+        let mut acc = match self.inner_back {
+            Some(x) => x.rfold(init, |a, o| f(a, Ok(o))),
+            None => init,
+        };
+
+        acc = self.iter.rfold(acc, |acc, x| match x {
+            Ok(it) => it.into_iter().rfold(acc, |a, o| f(a, Ok(o))),
+            Err(e) => f(acc, Err(e)),
+        });
+
+        // Front
+        match self.inner_front {
+            Some(x) => x.rfold(acc, |a, o| f(a, Ok(o))),
+            None => acc,
+        }
+    }
 }
 
 impl<I, T, E> Clone for FlattenOk<I, T, E>
@@ -147,13 +193,7 @@ where
     T: IntoIterator,
     T::IntoIter: fmt::Debug,
 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("FlattenOk")
-            .field("iter", &self.iter)
-            .field("inner_front", &self.inner_front)
-            .field("inner_back", &self.inner_back)
-            .finish()
-    }
+    debug_fmt_fields!(FlattenOk, iter, inner_front, inner_back);
 }
 
 /// Only the iterator being flattened needs to implement [`FusedIterator`].

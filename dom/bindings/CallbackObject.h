@@ -63,48 +63,15 @@ class OwningNonNull;
 
 namespace dom {
 
-#define DOM_CALLBACKOBJECT_IID                       \
-  {                                                  \
-    0xbe74c190, 0x6d76, 0x4991, {                    \
-      0x84, 0xb9, 0x65, 0x06, 0x99, 0xe6, 0x93, 0x2b \
-    }                                                \
-  }
+#define DOM_CALLBACKOBJECT_IID \
+  {0xbe74c190, 0x6d76, 0x4991, {0x84, 0xb9, 0x65, 0x06, 0x99, 0xe6, 0x93, 0x2b}}
 
-class CallbackObject : public nsISupports, public JSHolderBase {
+class CallbackObjectBase {
  public:
-  NS_DECLARE_STATIC_IID_ACCESSOR(DOM_CALLBACKOBJECT_IID)
-
-  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-  NS_DECL_CYCLE_COLLECTION_SKIPPABLE_SCRIPT_HOLDER_CLASS(CallbackObject)
-
-  // The caller may pass a global object which will act as an override for the
-  // incumbent script settings object when the callback is invoked (overriding
-  // the entry point computed from aCallback). If no override is required, the
-  // caller should pass null.  |aCx| is used to capture the current
-  // stack, which is later used as an async parent when the callback
-  // is invoked.  aCx can be nullptr, in which case no stack is
-  // captured.
-  explicit CallbackObject(JSContext* aCx, JS::Handle<JSObject*> aCallback,
-                          JS::Handle<JSObject*> aCallbackGlobal,
-                          nsIGlobalObject* aIncumbentGlobal) {
-    if (aCx && JS::IsAsyncStackCaptureEnabledForRealm(aCx)) {
-      JS::Rooted<JSObject*> stack(aCx);
-      if (!JS::CaptureCurrentStack(aCx, &stack)) {
-        JS_ClearPendingException(aCx);
-      }
-      Init(aCallback, aCallbackGlobal, stack, aIncumbentGlobal);
-    } else {
-      Init(aCallback, aCallbackGlobal, nullptr, aIncumbentGlobal);
-    }
-  }
-
-  // Instead of capturing the current stack to use as an async parent when the
-  // callback is invoked, the caller can use this overload to pass in a stack
-  // for that purpose.
-  explicit CallbackObject(JSObject* aCallback, JSObject* aCallbackGlobal,
-                          JSObject* aAsyncStack,
-                          nsIGlobalObject* aIncumbentGlobal) {
-    Init(aCallback, aCallbackGlobal, aAsyncStack, aIncumbentGlobal);
+  CallbackObjectBase() = default;
+  CallbackObjectBase(JSObject* aCallback, JSObject* aCallbackGlobal,
+                     JSObject* aAsyncStack, nsIGlobalObject* aIncumbentGlobal) {
+    InitNoHold(aCallback, aCallbackGlobal, aAsyncStack, aIncumbentGlobal);
   }
 
   // This is guaranteed to be non-null from the time the CallbackObject is
@@ -177,10 +144,6 @@ class CallbackObject : public nsISupports, public JSHolderBase {
   // "<functionName> (<sourceURL>:<lineNumber>)"
   void GetDescription(nsACString& aOutString);
 
-  size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const {
-    return aMallocSizeOf(this);
-  }
-
   // Used for cycle collection optimization.  Should return true only if all our
   // outgoing edges are to known-live objects.  In that case, there's no point
   // traversing our edges to them, because we know they can't be collected
@@ -200,36 +163,27 @@ class CallbackObject : public nsISupports, public JSHolderBase {
   }
 
  protected:
-  virtual ~CallbackObject() { mozilla::DropJSObjectsWithKey(this); }
+  virtual ~CallbackObjectBase() = default;
 
-  explicit CallbackObject(CallbackObject* aCallbackObject) {
-    Init(aCallbackObject->mCallback, aCallbackObject->mCallbackGlobal,
-         aCallbackObject->mCreationStack, aCallbackObject->mIncumbentGlobal);
+  // Provide a way to clear this object's pointers to GC things after the
+  // callback has been run. Note that CallbackOrNull() will return null after
+  // this point. This should only be called if the object is known not to be
+  // used again, and no handles (e.g. those returned by CallbackPreserveColor)
+  // are in use.
+  virtual void Reset() {
+    ClearJSReferences();
+    mIncumbentGlobal = nullptr;
   }
 
-  bool operator==(const CallbackObject& aOther) const {
-    JSObject* wrappedThis = CallbackPreserveColor();
-    JSObject* wrappedOther = aOther.CallbackPreserveColor();
-    if (!wrappedThis || !wrappedOther) {
-      return this == &aOther;
-    }
+  friend class mozilla::PromiseJobRunnable;
 
-    JSObject* thisObj = js::UncheckedUnwrap(wrappedThis);
-    JSObject* otherObj = js::UncheckedUnwrap(wrappedOther);
-    return thisObj == otherObj;
+  inline void ClearJSReferences() {
+    mCallback = nullptr;
+    mCallbackGlobal = nullptr;
+    mCreationStack = nullptr;
+    mIncumbentJSGlobal = nullptr;
   }
 
-  class JSObjectsDropper final {
-   public:
-    explicit JSObjectsDropper(CallbackObject* aHolder) : mHolder(aHolder) {}
-
-    ~JSObjectsDropper() { mHolder->ClearJSObjects(); }
-
-   private:
-    RefPtr<CallbackObject> mHolder;
-  };
-
- private:
   inline void InitNoHold(JSObject* aCallback, JSObject* aCallbackGlobal,
                          JSObject* aCreationStack,
                          nsIGlobalObject* aIncumbentGlobal) {
@@ -250,37 +204,6 @@ class CallbackObject : public nsISupports, public JSHolderBase {
     }
   }
 
-  inline void Init(JSObject* aCallback, JSObject* aCallbackGlobal,
-                   JSObject* aCreationStack,
-                   nsIGlobalObject* aIncumbentGlobal) {
-    // Set script objects before we hold, on the off chance that a GC could
-    // somehow happen in there... (which would be pretty odd, granted).
-    InitNoHold(aCallback, aCallbackGlobal, aCreationStack, aIncumbentGlobal);
-    mozilla::HoldJSObjectsWithKey(this);
-  }
-
-  // Provide a way to clear this object's pointers to GC things after the
-  // callback has been run. Note that CallbackOrNull() will return null after
-  // this point. This should only be called if the object is known not to be
-  // used again, and no handles (e.g. those returned by CallbackPreserveColor)
-  // are in use.
-  void Reset() {
-    ClearJSReferences();
-    mozilla::DropJSObjectsWithKey(this);
-  }
-  friend class mozilla::PromiseJobRunnable;
-
-  inline void ClearJSReferences() {
-    mCallback = nullptr;
-    mCallbackGlobal = nullptr;
-    mCreationStack = nullptr;
-    mIncumbentJSGlobal = nullptr;
-  }
-
-  CallbackObject(const CallbackObject&) = delete;
-  CallbackObject& operator=(const CallbackObject&) = delete;
-
- protected:
   void ClearJSObjects() {
     MOZ_ASSERT_IF(mIncumbentJSGlobal, mCallback);
     if (mCallback) {
@@ -290,30 +213,6 @@ class CallbackObject : public nsISupports, public JSHolderBase {
 
   // For use from subclasses that want to be usable with Rooted.
   void Trace(JSTracer* aTracer);
-
-  // For use from subclasses that want to be traced for a bit then possibly
-  // switch to HoldJSObjects and do other slow JS-related init work we might do.
-  // If we have more than one owner, this will HoldJSObjects and do said slow
-  // init work; otherwise it will just forget all our JS references.
-  void FinishSlowJSInitIfMoreThanOneOwner(JSContext* aCx);
-
-  // Struct used as a way to force a CallbackObject constructor to not call
-  // HoldJSObjects. We're putting it here so that CallbackObject subclasses will
-  // have access to it, but outside code will not.
-  //
-  // Places that use this need to ensure that the callback is traced (e.g. via a
-  // Rooted) until the HoldJSObjects call happens.
-  struct FastCallbackConstructor {};
-
-  // Just like the public version without the FastCallbackConstructor argument,
-  // except for not calling HoldJSObjects and not capturing async stacks (on the
-  // assumption that we will do that last whenever we decide to actually
-  // HoldJSObjects; see FinishSlowJSInitIfMoreThanOneOwner).  If you use this,
-  // you MUST ensure that the object is traced until the HoldJSObjects happens!
-  CallbackObject(JSObject* aCallback, JSObject* aCallbackGlobal,
-                 const FastCallbackConstructor&) {
-    InitNoHold(aCallback, aCallbackGlobal, nullptr, nullptr);
-  }
 
   // mCallback is not unwrapped, so it can be a cross-compartment-wrapper.
   // This is done to ensure that, if JS code can't call a callback f(), or get
@@ -352,7 +251,7 @@ class CallbackObject : public nsISupports, public JSHolderBase {
     // to the realm in which exceptions will be rethrown.  In that case
     // they will only be rethrown if that realm's principal subsumes the
     // principal of our (unwrapped) callback.
-    CallSetup(CallbackObject* aCallback, ErrorResult& aRv,
+    CallSetup(CallbackObjectBase* aCallback, ErrorResult& aRv,
               const char* aExecutionReason,
               ExceptionHandling aExceptionHandling, JS::Realm* aRealm = nullptr,
               bool aIsJSImplementedWebIDL = false);
@@ -405,6 +304,122 @@ class CallbackObject : public nsISupports, public JSHolderBase {
     const ExceptionHandling mExceptionHandling;
     const bool mIsMainThread;
   };
+};
+
+class CallbackObject : public nsISupports,
+                       public CallbackObjectBase,
+                       public JSHolderBase {
+ public:
+  NS_DECLARE_STATIC_IID_ACCESSOR(DOM_CALLBACKOBJECT_IID)
+
+  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
+  NS_DECL_CYCLE_COLLECTION_SKIPPABLE_SCRIPT_HOLDER_CLASS(CallbackObject)
+
+  // The caller may pass a global object which will act as an override for the
+  // incumbent script settings object when the callback is invoked (overriding
+  // the entry point computed from aCallback). If no override is required, the
+  // caller should pass null.  |aCx| is used to capture the current
+  // stack, which is later used as an async parent when the callback
+  // is invoked.  aCx can be nullptr, in which case no stack is
+  // captured.
+  explicit CallbackObject(JSContext* aCx, JS::Handle<JSObject*> aCallback,
+                          JS::Handle<JSObject*> aCallbackGlobal,
+                          nsIGlobalObject* aIncumbentGlobal) {
+    if (aCx && JS::IsAsyncStackCaptureEnabledForRealm(aCx)) {
+      JS::Rooted<JSObject*> stack(aCx);
+      if (!JS::CaptureCurrentStack(aCx, &stack)) {
+        JS_ClearPendingException(aCx);
+      }
+      Init(aCallback, aCallbackGlobal, stack, aIncumbentGlobal);
+    } else {
+      Init(aCallback, aCallbackGlobal, nullptr, aIncumbentGlobal);
+    }
+  }
+
+  // Instead of capturing the current stack to use as an async parent when the
+  // callback is invoked, the caller can use this overload to pass in a stack
+  // for that purpose.
+  explicit CallbackObject(JSObject* aCallback, JSObject* aCallbackGlobal,
+                          JSObject* aAsyncStack,
+                          nsIGlobalObject* aIncumbentGlobal) {
+    Init(aCallback, aCallbackGlobal, aAsyncStack, aIncumbentGlobal);
+  }
+
+  size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const {
+    return aMallocSizeOf(this);
+  }
+
+  void Reset() final {
+    CallbackObjectBase::Reset();
+    mozilla::DropJSObjectsWithKey(this);
+  }
+
+ protected:
+  virtual ~CallbackObject() { mozilla::DropJSObjectsWithKey(this); }
+
+  explicit CallbackObject(CallbackObject* aCallbackObject) {
+    Init(aCallbackObject->mCallback, aCallbackObject->mCallbackGlobal,
+         aCallbackObject->mCreationStack, aCallbackObject->mIncumbentGlobal);
+  }
+
+  // For use from subclasses that want to be traced for a bit then possibly
+  // switch to HoldJSObjects and do other slow JS-related init work we might do.
+  // If we have more than one owner, this will HoldJSObjects and do said slow
+  // init work; otherwise it will just forget all our JS references.
+  void FinishSlowJSInitIfMoreThanOneOwner(JSContext* aCx);
+
+  // Struct used as a way to force a CallbackObject constructor to not call
+  // HoldJSObjects. We're putting it here so that CallbackObject subclasses will
+  // have access to it, but outside code will not.
+  //
+  // Places that use this need to ensure that the callback is traced (e.g. via a
+  // Rooted) until the HoldJSObjects call happens.
+  struct FastCallbackConstructor {};
+
+  // Just like the public version without the FastCallbackConstructor argument,
+  // except for not calling HoldJSObjects and not capturing async stacks (on the
+  // assumption that we will do that last whenever we decide to actually
+  // HoldJSObjects; see FinishSlowJSInitIfMoreThanOneOwner).  If you use this,
+  // you MUST ensure that the object is traced until the HoldJSObjects happens!
+  CallbackObject(JSObject* aCallback, JSObject* aCallbackGlobal,
+                 const FastCallbackConstructor&) {
+    InitNoHold(aCallback, aCallbackGlobal, nullptr, nullptr);
+  }
+
+  bool operator==(const CallbackObject& aOther) const {
+    JSObject* wrappedThis = CallbackPreserveColor();
+    JSObject* wrappedOther = aOther.CallbackPreserveColor();
+    if (!wrappedThis || !wrappedOther) {
+      return this == &aOther;
+    }
+
+    JSObject* thisObj = js::UncheckedUnwrap(wrappedThis);
+    JSObject* otherObj = js::UncheckedUnwrap(wrappedOther);
+    return thisObj == otherObj;
+  }
+
+  class JSObjectsDropper final {
+   public:
+    explicit JSObjectsDropper(CallbackObject* aHolder) : mHolder(aHolder) {}
+
+    ~JSObjectsDropper() { mHolder->ClearJSObjects(); }
+
+   private:
+    RefPtr<CallbackObject> mHolder;
+  };
+
+ private:
+  CallbackObject(const CallbackObject&) = delete;
+  CallbackObject& operator=(const CallbackObject&) = delete;
+
+  inline void Init(JSObject* aCallback, JSObject* aCallbackGlobal,
+                   JSObject* aCreationStack,
+                   nsIGlobalObject* aIncumbentGlobal) {
+    // Set script objects before we hold, on the off chance that a GC could
+    // somehow happen in there... (which would be pretty odd, granted).
+    InitNoHold(aCallback, aCallbackGlobal, aCreationStack, aIncumbentGlobal);
+    mozilla::HoldJSObjectsWithKey(this);
+  }
 };
 
 template <class WebIDLCallbackT, class XPCOMCallbackT>

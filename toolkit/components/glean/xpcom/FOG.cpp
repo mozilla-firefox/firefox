@@ -76,6 +76,11 @@ already_AddRefed<FOG> FOG::GetSingleton() {
     nsresult rv;
     nsCOMPtr<nsIUserIdleService> idleService =
         do_GetService("@mozilla.org/widget/useridleservice;1", &rv);
+    if (NS_FAILED(rv) && xpc::IsInAutomation()) {
+      // bug 1955429: In some tests the idle service is unavailable.
+      // They aren't even testing FOG, so let it slide.
+      return do_AddRef(gFOG);
+    }
     NS_ENSURE_SUCCESS(rv, nullptr);
     MOZ_ASSERT(idleService);
     if (NS_WARN_IF(NS_FAILED(idleService->AddIdleObserver(gFOG, kIdleSecs)))) {
@@ -472,6 +477,17 @@ FOG::TestRegisterRuntimeMetric(
 }
 
 NS_IMETHODIMP
+FOG::RegisterRuntimeMetric(const nsACString& aType, const nsACString& aCategory,
+                           const nsACString& aName,
+                           const nsTArray<nsCString>& aPings,
+                           const nsACString& aLifetime, const bool aDisabled,
+                           const nsACString& aExtraArgs) {
+  MOZ_ASSERT(XRE_IsParentProcess());
+  return glean::jog::jog_register_metric(&aType, &aCategory, &aName, &aPings,
+                                         &aLifetime, aDisabled, &aExtraArgs);
+}
+
+NS_IMETHODIMP
 FOG::TestRegisterRuntimePing(
     const nsACString& aName, const bool aIncludeClientId,
     const bool aSendIfEmpty, const bool aPreciseTimestamps,
@@ -486,6 +502,153 @@ FOG::TestRegisterRuntimePing(
       aIncludeInfoSections, aEnabled, &aSchedulesPings, &aReasonCodes,
       aFollowsCollectionEnabled, &aUploaderCapabilities);
   return NS_OK;
+}
+
+NS_IMETHODIMP
+FOG::RegisterRuntimePing(const nsACString& aName, const bool aIncludeClientId,
+                         const bool aSendIfEmpty, const bool aPreciseTimestamps,
+                         const bool aIncludeInfoSections, const bool aEnabled,
+                         const nsTArray<nsCString>& aSchedulesPings,
+                         const nsTArray<nsCString>& aReasonCodes,
+                         const bool aFollowsCollectionEnabled,
+                         const nsTArray<nsCString>& aUploaderCapabilities) {
+  MOZ_ASSERT(XRE_IsParentProcess());
+  return glean::jog::jog_register_ping(
+      &aName, aIncludeClientId, aSendIfEmpty, aPreciseTimestamps,
+      aIncludeInfoSections, aEnabled, &aSchedulesPings, &aReasonCodes,
+      aFollowsCollectionEnabled, &aUploaderCapabilities);
+}
+
+NS_IMETHODIMP
+FOG::UpdateAttribution(const nsACString& aSource, const nsACString& aMedium,
+                       const nsACString& aCampaign, const nsACString& aTerm,
+                       const nsACString& aContent) {
+  MOZ_ASSERT(XRE_IsParentProcess());
+  glean::impl::FogAttributionMetrics attr{.source = nsCString(aSource),
+                                          .medium = nsCString(aMedium),
+                                          .campaign = nsCString(aCampaign),
+                                          .term = nsCString(aTerm),
+                                          .content = nsCString(aContent)};
+  glean::impl::fog_update_attribution(&attr);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+FOG::TestGetAttribution(JSContext* aCx, JS::MutableHandleValue aResult) {
+#ifdef MOZ_GLEAN_ANDROID
+  NS_WARNING("Don't test attribution from Gecko in Android. Throwing.");
+  aResult.set(JS::UndefinedValue());
+  return NS_ERROR_FAILURE;
+#else
+  MOZ_ASSERT(XRE_IsParentProcess());
+  glean::impl::FogAttributionMetrics attr;
+  glean::impl::fog_test_get_attribution(&attr);
+
+  JS::RootedObject jsAttr(aCx, JS_NewPlainObject(aCx));
+  NS_ENSURE_TRUE(jsAttr, NS_ERROR_FAILURE);
+
+  JS::RootedValue jsSource(aCx);
+  if (attr.source.IsEmpty()) {
+    NS_ENSURE_TRUE(JS_DefineProperty(aCx, jsAttr, "source", JS::NullHandleValue,
+                                     JSPROP_ENUMERATE),
+                   NS_ERROR_FAILURE);
+  } else if (!dom::ToJSValue(aCx, attr.source, &jsSource) ||
+             !JS_DefineProperty(aCx, jsAttr, "source", jsSource,
+                                JSPROP_ENUMERATE)) {
+    NS_WARNING("Failed to define attribution.source.");
+    return NS_ERROR_FAILURE;
+  }
+
+  JS::RootedValue jsMedium(aCx);
+  if (attr.medium.IsEmpty()) {
+    NS_ENSURE_TRUE(JS_DefineProperty(aCx, jsAttr, "medium", JS::NullHandleValue,
+                                     JSPROP_ENUMERATE),
+                   NS_ERROR_FAILURE);
+  } else if (!dom::ToJSValue(aCx, attr.medium, &jsMedium) ||
+             !JS_DefineProperty(aCx, jsAttr, "medium", jsMedium,
+                                JSPROP_ENUMERATE)) {
+    NS_WARNING("Failed to define attribution.medium.");
+    return NS_ERROR_FAILURE;
+  }
+
+  JS::RootedValue jsCampaign(aCx);
+  if (attr.campaign.IsEmpty()) {
+    NS_ENSURE_TRUE(JS_DefineProperty(aCx, jsAttr, "campaign",
+                                     JS::NullHandleValue, JSPROP_ENUMERATE),
+                   NS_ERROR_FAILURE);
+  } else if (!dom::ToJSValue(aCx, attr.campaign, &jsCampaign) ||
+             !JS_DefineProperty(aCx, jsAttr, "campaign", jsCampaign,
+                                JSPROP_ENUMERATE)) {
+    NS_WARNING("Failed to define attribution.campaign.");
+    return NS_ERROR_FAILURE;
+  }
+
+  JS::RootedValue jsTerm(aCx);
+  if (attr.term.IsEmpty()) {
+    NS_ENSURE_TRUE(JS_DefineProperty(aCx, jsAttr, "term", JS::NullHandleValue,
+                                     JSPROP_ENUMERATE),
+                   NS_ERROR_FAILURE);
+  } else if (!dom::ToJSValue(aCx, attr.term, &jsTerm) ||
+             !JS_DefineProperty(aCx, jsAttr, "term", jsTerm,
+                                JSPROP_ENUMERATE)) {
+    NS_WARNING("Failed to define attribution.term.");
+    return NS_ERROR_FAILURE;
+  }
+
+  JS::RootedValue jsContent(aCx);
+  if (attr.content.IsEmpty()) {
+    NS_ENSURE_TRUE(JS_DefineProperty(aCx, jsAttr, "content",
+                                     JS::NullHandleValue, JSPROP_ENUMERATE),
+                   NS_ERROR_FAILURE);
+  } else if (!dom::ToJSValue(aCx, attr.content, &jsContent) ||
+             !JS_DefineProperty(aCx, jsAttr, "content", jsContent,
+                                JSPROP_ENUMERATE)) {
+    NS_WARNING("Failed to define attribution.content.");
+    return NS_ERROR_FAILURE;
+  }
+
+  aResult.setObject(*jsAttr);
+  return NS_OK;
+#endif  // MOZ_GLEAN_ANDROID
+}
+
+NS_IMETHODIMP
+FOG::UpdateDistribution(const nsACString& aName) {
+  MOZ_ASSERT(XRE_IsParentProcess());
+  glean::impl::FogDistributionMetrics dist{.name = nsCString(aName)};
+  glean::impl::fog_update_distribution(&dist);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+FOG::TestGetDistribution(JSContext* aCx, JS::MutableHandleValue aResult) {
+#ifdef MOZ_GLEAN_ANDROID
+  NS_WARNING("Don't test distribution from Gecko in Android. Throwing.");
+  aResult.set(JS::UndefinedValue());
+  return NS_ERROR_FAILURE;
+#else
+  MOZ_ASSERT(XRE_IsParentProcess());
+  glean::impl::FogDistributionMetrics dist;
+  glean::impl::fog_test_get_distribution(&dist);
+
+  JS::RootedObject jsDist(aCx, JS_NewPlainObject(aCx));
+  NS_ENSURE_TRUE(jsDist, NS_ERROR_FAILURE);
+
+  JS::RootedValue jsName(aCx);
+  if (dist.name.IsEmpty()) {
+    NS_ENSURE_TRUE(JS_DefineProperty(aCx, jsDist, "name", JS::NullHandleValue,
+                                     JSPROP_ENUMERATE),
+                   NS_ERROR_FAILURE);
+  } else if (!dom::ToJSValue(aCx, dist.name, &jsName) ||
+             !JS_DefineProperty(aCx, jsDist, "name", jsName,
+                                JSPROP_ENUMERATE)) {
+    NS_WARNING("Failed to define distribution.name.");
+    return NS_ERROR_FAILURE;
+  }
+
+  aResult.setObject(*jsDist);
+  return NS_OK;
+#endif  // MOZ_GLEAN_ANDROID
 }
 
 void FOG::InitMemoryReporter() { RegisterWeakMemoryReporter(this); }

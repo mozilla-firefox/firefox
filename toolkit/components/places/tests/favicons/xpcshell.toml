@@ -52,13 +52,9 @@ support-files = [
 
 ["test_favicons_protocols_ref.js"]
 
-["test_getFaviconDataForPage.js"]
-
 ["test_getFaviconForPage.js"]
 
 ["test_getFaviconLinkForIcon.js"]
-
-["test_getFaviconURLForPage.js"]
 
 ["test_heavy_favicon.js"]
 

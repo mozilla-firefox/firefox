@@ -10,9 +10,6 @@
 
 SimpleTest.waitForExplicitFinish();
 SimpleTest.waitForFocus(async () => {
-  await SpecialPowers.pushPrefEnv({
-    set: [["dom.element.contenteditable.plaintext-only.enabled", true]],
-  });
   document.body.contentEditable = "plaintext-only";
   document.body.focus();
   const tableEditor = getHTMLEditor();

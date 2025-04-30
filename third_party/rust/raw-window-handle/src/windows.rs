@@ -2,6 +2,8 @@ use core::ffi::c_void;
 use core::num::NonZeroIsize;
 use core::ptr::NonNull;
 
+use super::DisplayHandle;
+
 /// Raw display handle for Windows.
 ///
 /// It can be used regardless of Windows window backend.
@@ -24,6 +26,26 @@ impl WindowsDisplayHandle {
     }
 }
 
+impl DisplayHandle<'static> {
+    /// Create a Windows-based display handle.
+    ///
+    /// As no data is borrowed by this handle, it is completely safe to create. This function
+    /// may be useful to windowing framework implementations that want to avoid unsafe code.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use raw_window_handle::{DisplayHandle, HasDisplayHandle};
+    /// # fn do_something(rwh: impl HasDisplayHandle) { let _ = rwh; }
+    /// let handle = DisplayHandle::windows();
+    /// do_something(handle);
+    /// ```
+    pub fn windows() -> Self {
+        // SAFETY: No data is borrowed.
+        unsafe { Self::borrow_raw(WindowsDisplayHandle::new().into()) }
+    }
+}
+
 /// Raw window handle for Win32.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -37,6 +59,10 @@ pub struct Win32WindowHandle {
 impl Win32WindowHandle {
     /// Create a new handle to a window.
     ///
+    /// # Safety
+    ///
+    /// It is assumed that the Win32 handle belongs to the current thread. This
+    /// is necessary for the handle to be considered "valid" in all cases.
     ///
     /// # Example
     ///

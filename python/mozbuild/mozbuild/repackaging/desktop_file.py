@@ -210,17 +210,17 @@ def _generate_browser_desktop_entry(build_variables, localizations):
         {
             "name": "new-window",
             "message": "desktop-action-new-window-name",
-            "command": f"{build_variables['DEB_PKG_NAME']} --new-window %u",
+            "command": f"{build_variables['PKG_NAME']} --new-window %u",
         },
         {
             "name": "new-private-window",
             "message": "desktop-action-new-private-window-name",
-            "command": f"{build_variables['DEB_PKG_NAME']} --private-window %u",
+            "command": f"{build_variables['PKG_NAME']} --private-window %u",
         },
         {
             "name": "open-profile-manager",
             "message": "desktop-action-open-profile-manager",
-            "command": f"{build_variables['DEB_PKG_NAME']} --ProfileManager",
+            "command": f"{build_variables['PKG_NAME']} --ProfileManager",
         },
     ]
 
@@ -237,7 +237,7 @@ def _generate_browser_desktop_entry(build_variables, localizations):
             },
             {
                 "key": "Exec",
-                "value": f"{build_variables['DEB_PKG_NAME']} %u",
+                "value": f"{build_variables['PKG_NAME']} %u",
             },
             {
                 "key": "Terminal",
@@ -255,9 +255,9 @@ def _generate_browser_desktop_entry(build_variables, localizations):
                 "key": "StartupWMClass",
                 "value": (
                     "firefox-aurora"
-                    if build_variables["DEB_PKG_NAME"] == "firefox-devedition"
+                    if build_variables["PKG_NAME"] == "firefox-devedition"
                     else build_variables.get(
-                        "StartupWMClass", build_variables["DEB_PKG_NAME"]
+                        "StartupWMClass", build_variables["PKG_NAME"]
                     )
                 ),
             },

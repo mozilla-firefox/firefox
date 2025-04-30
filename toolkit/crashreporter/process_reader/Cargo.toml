@@ -10,7 +10,7 @@ license = "MPL-2.0"
 [dependencies]
 goblin = { version = "0.9", features = ["elf32", "elf64", "pe32", "pe64"] }
 memoffset = "0.9"
-thiserror = "1.0"
+thiserror = "2"
 
 [target."cfg(any(target_os = \"linux\", target_os = \"android\"))".dependencies]
 libc = "0.2"

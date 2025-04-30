@@ -1409,8 +1409,6 @@
     },
 
     "SearchEngines": {
-      "enterprise_only": true,
-
       "type": "object",
       "properties": {
         "Add": {
@@ -1498,6 +1496,10 @@
       "type": "boolean"
     },
 
+    "SkipTermsOfUse": {
+      "type": "boolean"
+    },
+
     "SSLVersionMax": {
       "type": "string",
       "enum": ["tls1", "tls1.1", "tls1.2", "tls1.3"]
@@ -1548,9 +1550,6 @@
           "type": "boolean"
         },
         "SkipOnboarding": {
-          "type": "boolean"
-        },
-        "SkipTermsOfUse": {
           "type": "boolean"
         },
         "MoreFromMozilla": {

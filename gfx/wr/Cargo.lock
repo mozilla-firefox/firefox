@@ -982,9 +982,9 @@ dependencies = [
 
 [[package]]
 name = "glean"
-version = "64.0.1"
+version = "64.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "251b9cb685554b96dcf785dba69ce90447006dd6d9229db783336c981c3777e1"
+checksum = "95024f4707705270208e36983976cbac235dd7fc33c9f1cb0dee396ec1ce295d"
 dependencies = [
  "crossbeam-channel",
  "glean-core",
@@ -996,9 +996,9 @@ dependencies = [
 
 [[package]]
 name = "glean-core"
-version = "64.0.1"
+version = "64.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a49d1d62648ddeed8cb996373046ea45de93f1d1ff956aba054b9304bc305753"
+checksum = "5ca0df94fb37669287b77e8aa300913ad1d14426d7f9e443b0ce1185349c817e"
 dependencies = [
  "android_logger",
  "bincode",
@@ -2333,9 +2333,9 @@ dependencies = [
 
 [[package]]
 name = "ron"
-version = "0.9.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63f3aa105dea217ef30d89581b65a4d527a19afc95ef5750be3890e8d3c5b837"
+checksum = "beceb6f7bf81c73e73aeef6dd1356d9a1b2b4909e1f0fc3e59b034f9572d7b7f"
 dependencies = [
  "base64",
  "bitflags 2.4.2",

@@ -8402,15 +8402,61 @@ std::pair<int32_t, int32_t> nsTextFrame::GetOffsets() const {
   return std::make_pair(GetContentOffset(), GetContentEnd());
 }
 
-static int32_t FindEndOfPunctuationRun(const nsTextFragment* aFrag,
-                                       const gfxTextRun* aTextRun,
-                                       gfxSkipCharsIterator* aIter,
-                                       int32_t aOffset, int32_t aStart,
-                                       int32_t aEnd) {
-  int32_t i;
+static bool IsFirstLetterPrefixPunctuation(uint32_t aChar) {
+  switch (mozilla::unicode::GetGeneralCategory(aChar)) {
+    case HB_UNICODE_GENERAL_CATEGORY_CONNECT_PUNCTUATION: /* Pc */
+    case HB_UNICODE_GENERAL_CATEGORY_DASH_PUNCTUATION:    /* Pd */
+    case HB_UNICODE_GENERAL_CATEGORY_CLOSE_PUNCTUATION:   /* Pe */
+    case HB_UNICODE_GENERAL_CATEGORY_FINAL_PUNCTUATION:   /* Pf */
+    case HB_UNICODE_GENERAL_CATEGORY_INITIAL_PUNCTUATION: /* Pi */
+    case HB_UNICODE_GENERAL_CATEGORY_OTHER_PUNCTUATION:   /* Po */
+    case HB_UNICODE_GENERAL_CATEGORY_OPEN_PUNCTUATION:    /* Ps */
+      return true;
+    default:
+      return false;
+  }
+}
 
+static bool IsFirstLetterSuffixPunctuation(uint32_t aChar) {
+  switch (mozilla::unicode::GetGeneralCategory(aChar)) {
+    case HB_UNICODE_GENERAL_CATEGORY_CONNECT_PUNCTUATION: /* Pc */
+    case HB_UNICODE_GENERAL_CATEGORY_CLOSE_PUNCTUATION:   /* Pe */
+    case HB_UNICODE_GENERAL_CATEGORY_FINAL_PUNCTUATION:   /* Pf */
+    case HB_UNICODE_GENERAL_CATEGORY_INITIAL_PUNCTUATION: /* Pi */
+    case HB_UNICODE_GENERAL_CATEGORY_OTHER_PUNCTUATION:   /* Po */
+      return true;
+    default:
+      return false;
+  }
+}
+
+static int32_t FindEndOfPrefixPunctuationRun(const nsTextFragment* aFrag,
+                                             const gfxTextRun* aTextRun,
+                                             gfxSkipCharsIterator* aIter,
+                                             int32_t aOffset, int32_t aStart,
+                                             int32_t aEnd) {
+  int32_t i;
   for (i = aStart; i < aEnd - aOffset; ++i) {
-    if (nsContentUtils::IsFirstLetterPunctuation(
+    if (IsFirstLetterPrefixPunctuation(
+            aFrag->ScalarValueAt(AssertedCast<uint32_t>(aOffset + i)))) {
+      aIter->SetOriginalOffset(aOffset + i);
+      FindClusterEnd(aTextRun, aEnd, aIter);
+      i = aIter->GetOriginalOffset() - aOffset;
+    } else {
+      break;
+    }
+  }
+  return i;
+}
+
+static int32_t FindEndOfSuffixPunctuationRun(const nsTextFragment* aFrag,
+                                             const gfxTextRun* aTextRun,
+                                             gfxSkipCharsIterator* aIter,
+                                             int32_t aOffset, int32_t aStart,
+                                             int32_t aEnd) {
+  int32_t i;
+  for (i = aStart; i < aEnd - aOffset; ++i) {
+    if (IsFirstLetterSuffixPunctuation(
             aFrag->ScalarValueAt(AssertedCast<uint32_t>(aOffset + i)))) {
       aIter->SetOriginalOffset(aOffset + i);
       FindClusterEnd(aTextRun, aEnd, aIter);
@@ -8440,7 +8486,6 @@ static bool FindFirstLetterRange(const nsTextFragment* aFrag,
                                  const gfxTextRun* aTextRun, int32_t aOffset,
                                  const gfxSkipCharsIterator& aIter,
                                  int32_t* aLength) {
-  int32_t i;
   int32_t length = *aLength;
   int32_t endOffset = aOffset + length;
   gfxSkipCharsIterator iter(aIter);
@@ -8464,25 +8509,39 @@ static bool FindFirstLetterRange(const nsTextFragment* aFrag,
     return false;
   };
 
-  // skip leading whitespace, then consume clusters that start with punctuation
-  i = FindEndOfPunctuationRun(
-      aFrag, aTextRun, &iter, aOffset,
-      GetTrimmableWhitespaceCount(aFrag, aOffset, length, 1), endOffset);
-  if (i == length) {
-    return false;
-  }
+  // Skip any trimmable leading whitespace.
+  int32_t i = GetTrimmableWhitespaceCount(aFrag, aOffset, length, 1);
+  while (true) {
+    // Scan past any leading punctuation. This leaves `j` at the first
+    // non-punctuation character.
+    int32_t j = FindEndOfPrefixPunctuationRun(aFrag, aTextRun, &iter, aOffset,
+                                              i, endOffset);
+    if (j == length) {
+      return false;
+    }
 
-  // skip space/no-break-space after punctuation
-  while (i < length) {
-    char16_t ch = aFrag->CharAt(AssertedCast<uint32_t>(aOffset + i));
-    if (ch == ' ' || ch == CH_NBSP) {
-      ++i;
-    } else {
+    // Scan past any Unicode whitespace characters after punctuation.
+    while (j < length) {
+      char16_t ch = aFrag->CharAt(AssertedCast<uint32_t>(aOffset + j));
+      // The spec says to allow "characters that belong to the `Zs` Unicode
+      // general category _other than_ U+3000" here.
+      if (unicode::GetGeneralCategory(ch) ==
+              HB_UNICODE_GENERAL_CATEGORY_SPACE_SEPARATOR &&
+          ch != 0x3000) {
+        ++j;
+      } else {
+        break;
+      }
+    }
+    if (j == length) {
+      return false;
+    }
+    if (j == i) {
+      // If no whitespace was found, we've finished the first-letter prefix;
+      // if there was some, then go back to check for more punctuation.
       break;
     }
-  }
-  if (i == length) {
-    return false;
+    i = j;
   }
 
   // If the next character is not a letter, number or symbol, there is no
@@ -8495,7 +8554,7 @@ static bool FindFirstLetterRange(const nsTextFragment* aFrag,
     return true;
   }
 
-  // consume another cluster (the actual first letter)
+  // Consume another cluster (the actual first letter):
 
   // For complex scripts such as Indic and SEAsian, where first-letter
   // should extend to entire orthographic "syllable" clusters, we don't
@@ -8566,9 +8625,12 @@ static bool FindFirstLetterRange(const nsTextFragment* aFrag,
       break;
   }
 
+  // NOTE that FindClusterEnd sets the iterator to the last character that is
+  // part of the cluster, NOT to the first character beyond it.
   iter.SetOriginalOffset(aOffset + i);
   FindClusterEnd(aTextRun, endOffset, &iter, allowSplitLigature);
 
+  // Index of the last character included in the first-letter cluster.
   i = iter.GetOriginalOffset() - aOffset;
 
   // Heuristic for Indic scripts that like to form conjuncts:
@@ -8616,9 +8678,44 @@ static bool FindFirstLetterRange(const nsTextFragment* aFrag,
     }
   }
 
-  // consume clusters that start with punctuation
-  i = FindEndOfPunctuationRun(aFrag, aTextRun, &iter, aOffset, i + 1,
-                              endOffset);
+  // When we reach here, `i` points to the last character of the first-letter
+  // cluster, NOT to the first character beyond it. Advance to the next char,
+  // ready to check for following whitespace/punctuation:
+  ++i;
+
+  while (i < length) {
+    // Skip over whitespace, except for word separator characters, before the
+    // check for following punctuation. But remember the position before the
+    // whitespace, in case we need to reset.
+    const int32_t preWS = i;
+    while (i < length) {
+      char16_t ch = aFrag->CharAt(AssertedCast<uint32_t>(aOffset + i));
+      // The spec says the first-letter suffix includes "any intervening
+      // typographic space -- characters belonging to the Zs Unicode general
+      // category other than U+3000 IDEOGRAPHIC SPACE or a word separator",
+      // where "word separator" includes U+0020 and U+00A0.
+      if (ch == 0x0020 || ch == 0x00A0 || ch == 0x3000 ||
+          unicode::GetGeneralCategory(ch) !=
+              HB_UNICODE_GENERAL_CATEGORY_SPACE_SEPARATOR) {
+        break;
+      } else {
+        ++i;
+      }
+    }
+
+    // Consume clusters that start with punctuation.
+    const int32_t prePunct = i;
+    i = FindEndOfSuffixPunctuationRun(aFrag, aTextRun, &iter, aOffset, i,
+                                      endOffset);
+
+    // If we didn't find punctuation here, then we also don't want to include
+    // any preceding whitespace, so reset our index.
+    if (i == prePunct) {
+      i = preWS;
+      break;
+    }
+  }
+
   if (i < length) {
     *aLength = i;
   }

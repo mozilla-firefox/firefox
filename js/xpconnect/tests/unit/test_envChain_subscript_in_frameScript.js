@@ -27,31 +27,10 @@ add_task(async function unique_scope_with_target() {
   const runInUniqueScope = true;
   const runInGlobalScope = !runInUniqueScope;
 
-  Services.mm.loadFrameScript(`data:,
+  Services.mm.loadFrameScript(
+    `data:,
 const target = {};
-Services.scriptloader.loadSubScript(\`data:,
-var unique_target_qualified = 10;
-unique_target_unqualified = 20;
-let unique_target_lexical = 30;
-this.unique_target_prop = 40;
-
-const funcs = Cu.getJSTestingFunctions();
-const envs = [];
-let env = funcs.getInnerMostEnvironmentObject();
-while (env) {
-  envs.push({
-    type: funcs.getEnvironmentObjectType(env) || "*SystemGlobal*",
-    qualified: !!Object.getOwnPropertyDescriptor(env, "unique_target_qualified"),
-    unqualified: !!Object.getOwnPropertyDescriptor(env, "unique_target_unqualified"),
-    lexical: !!Object.getOwnPropertyDescriptor(env, "unique_target_lexical"),
-    prop: !!Object.getOwnPropertyDescriptor(env, "unique_target_prop"),
-  });
-
-  env = funcs.getEnclosingEnvironmentObject(env);
-}
-
-this.ENVS = envs;
-\`, target);
+Services.scriptloader.loadSubScript("resource://test/file_envChain_subscript_unique_target.js", target);
 
 const envs = target.ENVS;
 
@@ -132,29 +111,7 @@ add_task(async function non_unique_scope_with_target() {
 
   Services.mm.loadFrameScript(`data:,
 const target = {};
-Services.scriptloader.loadSubScript(\`data:,
-var non_unique_target_qualified = 10;
-non_unique_target_unqualified = 20;
-let non_unique_target_lexical = 30;
-this.non_unique_target_prop = 40;
-
-const funcs = Cu.getJSTestingFunctions();
-const envs = [];
-let env = funcs.getInnerMostEnvironmentObject();
-while (env) {
-  envs.push({
-    type: funcs.getEnvironmentObjectType(env) || "*SystemGlobal*",
-    qualified: !!Object.getOwnPropertyDescriptor(env, "non_unique_target_qualified"),
-    unqualified: !!Object.getOwnPropertyDescriptor(env, "non_unique_target_unqualified"),
-    lexical: !!Object.getOwnPropertyDescriptor(env, "non_unique_target_lexical"),
-    prop: !!Object.getOwnPropertyDescriptor(env, "non_unique_target_prop"),
-  });
-
-  env = funcs.getEnclosingEnvironmentObject(env);
-}
-
-this.ENVS = envs;
-\`, target);
+Services.scriptloader.loadSubScript("resource://test/file_envChain_subscript_non_unique_target.js", target);
 
 const envs = target.ENVS;
 
@@ -213,29 +170,7 @@ add_task(async function unique_scope_no_target() {
   const runInGlobalScope = !runInUniqueScope;
 
   Services.mm.loadFrameScript(`data:,
-Services.scriptloader.loadSubScript(\`data:,
-var unique_no_target_qualified = 10;
-unique_no_target_unqualified = 20;
-let unique_no_target_lexical = 30;
-this.unique_no_target_prop = 40;
-
-const funcs = Cu.getJSTestingFunctions();
-const envs = [];
-let env = funcs.getInnerMostEnvironmentObject();
-while (env) {
-  envs.push({
-    type: funcs.getEnvironmentObjectType(env) || "*SystemGlobal*",
-    qualified: !!Object.getOwnPropertyDescriptor(env, "unique_no_target_qualified"),
-    unqualified: !!Object.getOwnPropertyDescriptor(env, "unique_no_target_unqualified"),
-    lexical: !!Object.getOwnPropertyDescriptor(env, "unique_no_target_lexical"),
-    prop: !!Object.getOwnPropertyDescriptor(env, "unique_no_target_prop"),
-  });
-
-  env = funcs.getEnclosingEnvironmentObject(env);
-}
-
-globalThis.ENVS = envs;
-\`);
+Services.scriptloader.loadSubScript("resource://test/file_envChain_subscript_unique_no_target.js");
 
 const outerEnvs = globalThis.ENVS;
 
@@ -301,29 +236,7 @@ add_task(async function non_unique_scope_no_target() {
   const runInGlobalScope = !runInUniqueScope;
 
   Services.mm.loadFrameScript(`data:,
-Services.scriptloader.loadSubScript(\`data:,
-var non_unique_no_target_qualified = 10;
-non_unique_no_target_unqualified = 20;
-let non_unique_no_target_lexical = 30;
-this.non_unique_no_target_prop = 40;
-
-const funcs = Cu.getJSTestingFunctions();
-const envs = [];
-let env = funcs.getInnerMostEnvironmentObject();
-while (env) {
-  envs.push({
-    type: funcs.getEnvironmentObjectType(env) || "*SystemGlobal*",
-    qualified: !!Object.getOwnPropertyDescriptor(env, "non_unique_no_target_qualified"),
-    unqualified: !!Object.getOwnPropertyDescriptor(env, "non_unique_no_target_unqualified"),
-    lexical: !!Object.getOwnPropertyDescriptor(env, "non_unique_no_target_lexical"),
-    prop: !!Object.getOwnPropertyDescriptor(env, "non_unique_no_target_prop"),
-  });
-
-  env = funcs.getEnclosingEnvironmentObject(env);
-}
-
-globalThis.ENVS = envs;
-\`);
+Services.scriptloader.loadSubScript("resource://test/file_envChain_subscript_non_unique_no_target.js");
 
 const outerEnvs = globalThis.ENVS;
 

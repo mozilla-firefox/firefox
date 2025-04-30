@@ -129,6 +129,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Deslize a barra de ferramentas para mudar de aba</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Deslize para esquerda ou direita para mudar. Na última aba, deslize para esquerda para abrir uma nova.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">Deslize a barra de ferramentas para direita ou esquerda para mudar de aba.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">É necessário acesso à câmera. Use as configurações do Android para mudar as permissões para permitir acesso.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -834,8 +836,6 @@
   <string name="preferences_override_account_server">Servidor personalizado de conta Mozilla</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Servidor personalizado de sincronização</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Modificado o servidor de conta Mozilla e sincronização. Saindo do aplicativo para aplicar as mudanças…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Conta</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1483,16 +1483,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Remover</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Excluir</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Página anterior</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Ir para o topo</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">Compartilhar URL</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Compartilhar arquivo</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Tem certeza que quer excluir os itens selecionados?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Tem certeza que quer excluir os itens selecionados?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Excluir</string>
+  <string name="download_delete_multi_select_dialog_confirm">Excluir</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Cancelar</string>
+  <string name="download_delete_multi_select_dialog_cancel">Cancelar</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Em andamento</string>
   <!--
@@ -1523,9 +1527,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Falha ao baixar arquivo</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Pesquisar nos arquivos baixados</string>
+  <string name="download_search_placeholder">Pesquisar nos arquivos baixados</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Nenhum resultado encontrado</string>
+  <string name="download_search_no_results_found">Nenhum resultado encontrado</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Selecionar tudo</string>
   <!--
@@ -2278,14 +2282,13 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Ícone de preferência de exceção de proteção aprimorada contra rastreamento</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
   <string name="preference_doh_title">DNS sobre HTTPS</string>
   <!-- Description of the preference to enable "DNS over HTTPS". %1$s is replaced by a link using `preference_doh_learn_more` at text ("Learn More"). -->
-  <string name="preference_doh_summary">O DNS (Domain Name System) sobre HTTPS envia sua requisição de nome de domínio através de uma conexão criptografada, fornecendo um DNS seguro e dificultando a outras pessoas ver qual site você irá acessar. %1$s
- , .</string>
+  <string name="preference_doh_summary">O DNS (Domain Name System) sobre HTTPS envia sua requisição de nome de domínio através de uma conexão criptografada, fornecendo um DNS seguro e dificultando a outras pessoas ver qual site você irá acessar. %1$s</string>
   <!-- Used as text for the link in `preference_doh_title`, points to documentation about "DNS over HTTPS" -->
   <string name="preference_doh_learn_more">Saiba mais</string>
   <!-- Content description for the toolbar "Navigate up" button -->
@@ -3194,6 +3197,8 @@
   <string name="protection_panel_no_trackers_blocked">Nenhum rastreador encontrado</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">Configurações de privacidade e segurança</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Permissões</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3379,6 +3384,26 @@
     The title of the glean debugging feature
   -->
   <string name="glean_debug_tools_title">Ferramentas de depuração Glean</string>
+  <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">Ferramentas de região</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">Substitui temporariamente os valores de região inicial e atual para fins de testes.</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">Região inicial</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">Região atual</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">Substituir região inicial</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">Substituir região atual</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">Substituir regiões inicial e atual</string>
   <!--
     Messages explaining how to exit fullscreen mode
 

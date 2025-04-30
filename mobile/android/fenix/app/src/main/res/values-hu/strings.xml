@@ -129,6 +129,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Lapok közti váltás az eszköztár csúsztatásával</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Csúsztassa balra vagy jobbra a váltáshoz. Új lap megnyitásához csúsztassa balra az utolsó lapon.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">A lapok közti váltáshoz csúsztassa az eszköztárat balra vagy jobbra.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Kamera-hozzáférés szükséges. Ugorjon az Android beállításokhoz, koppintson az engedélyekre, majd az engedélyezésre.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -834,8 +836,6 @@
   <string name="preferences_override_account_server">Egyéni Mozilla-fiókkiszolgáló</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Egyéni Sync kiszolgáló</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">A Mozilla-fiók/Sync-kiszolgáló módosítva. Kilépés az alkalmazásból a változások érvényesítéséhez…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Fiók</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1483,16 +1483,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Eltávolítás</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Törlés</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Navigálás visszafelé</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Navigálás fel</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">Webcím megosztása</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Fájl megosztása</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Biztos, hogy törli a kiválasztott elemeket?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Biztos, hogy törli a kiválasztott elemeket?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Törlés</string>
+  <string name="download_delete_multi_select_dialog_confirm">Törlés</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Mégse</string>
+  <string name="download_delete_multi_select_dialog_cancel">Mégse</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Folyamatban</string>
   <!--
@@ -1523,9 +1527,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Letöltés sikertelen</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Keresés a letöltések között</string>
+  <string name="download_search_placeholder">Keresés a letöltések között</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Nincs találat</string>
+  <string name="download_search_no_results_found">Nincs találat</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Összes kiválasztása</string>
   <!--
@@ -2278,7 +2282,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Fokozott követés elleni védelem kivételeinek beállítási ikonja</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3192,6 +3196,8 @@
   <string name="protection_panel_no_trackers_blocked">Nem találhatóak nyomkövetők</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">Adatvédelmi és biztonsági beállítások</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Engedélyek</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3377,6 +3383,26 @@
     The title of the glean debugging feature
   -->
   <string name="glean_debug_tools_title">Glean hibakeresési eszközök</string>
+  <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">Régióeszközök</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">Teszteléskor ideiglenesen felülbírálja a saját és a jelenlegi régió értékeit.</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">Saját régió</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">Jelenlegi régió</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">Saját régió felülbírálása</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">Jelenlegi régió felülbírálása</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">Saját és jelenlegi régió felülbírálása</string>
   <!--
     Messages explaining how to exit fullscreen mode
 

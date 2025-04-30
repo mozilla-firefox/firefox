@@ -2632,7 +2632,8 @@ struct hb_get_glyph_alternates_dispatch_t :
  * @alternate_glyphs: (out caller-allocates) (array length=alternate_count): A glyphs buffer.
  *                    Alternate glyphs associated with the glyph id.
  *
- * Fetches alternates of a glyph from a given GSUB lookup index.
+ * Fetches alternates of a glyph from a given GSUB lookup index. Note that for one-to-one GSUB
+ * glyph substitutions, this function fetches the substituted glyph.
  *
  * Return value: Total number of alternates found in the specific lookup index for the given glyph id.
  *

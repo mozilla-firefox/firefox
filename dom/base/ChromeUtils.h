@@ -331,6 +331,12 @@ class ChromeUtils {
 
   static void AndroidMoveTaskToBack(GlobalObject& aGlobal);
 
+  static already_AddRefed<nsIContentSecurityPolicy> CreateCSPFromHeader(
+      GlobalObject& aGlobal, const nsAString& aHeader, nsIURI* aSelfURI,
+      nsIPrincipal* aLoadingPrincipal, ErrorResult& aRv);
+
+  static bool IsJSIdentifier(GlobalObject& aGlobal, const nsAString& aStr);
+
  private:
   // Number of DevTools session debugging the current process
   static std::atomic<uint32_t> sDevToolsOpenedCount;

@@ -31,6 +31,7 @@ namespace mozilla::net {
 class EventTokenBucket;
 class NullHttpTransaction;
 struct HttpRetParams;
+struct Http3ConnectionStatsParams;
 
 //-----------------------------------------------------------------------------
 
@@ -102,6 +103,7 @@ class nsHttpConnectionMgr final : public HttpConnectionMgrShell,
   void ReportHttp3Connection(HttpConnectionBase*);
 
   bool GetConnectionData(nsTArray<HttpRetParams>*);
+  bool GetHttp3ConnectionStatsData(nsTArray<Http3ConnectionStatsParams>*);
 
   void ResetIPFamilyPreference(nsHttpConnectionInfo*);
 

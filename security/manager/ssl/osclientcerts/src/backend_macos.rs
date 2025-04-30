@@ -16,7 +16,7 @@ use core_foundation::string::*;
 use libloading::{Library, Symbol};
 use pkcs11_bindings::*;
 use rsclientcerts::error::{Error, ErrorType};
-use rsclientcerts::manager::{ClientCertsBackend, CryptokiObject, Sign, SlotType};
+use rsclientcerts::manager::{ClientCertsBackend, CryptokiObject, Sign};
 use rsclientcerts::util::*;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -352,17 +352,7 @@ impl Cert {
 }
 
 impl CryptokiObject for Cert {
-    fn matches(&self, slot_type: SlotType, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
-        // The modern/legacy slot distinction in theory enables differentiation
-        // between keys that are from modules that can use modern cryptography
-        // (namely EC keys and RSA-PSS signatures) and those that cannot.
-        // However, the function that would enable this
-        // (SecKeyIsAlgorithmSupported) causes a password dialog to appear on
-        // our test machines, so this backend pretends that everything supports
-        // modern crypto for now.
-        if slot_type != SlotType::Modern {
-            return false;
-        }
+    fn matches(&self, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
         for (attr_type, attr_value) in attrs {
             let comparison = match *attr_type {
                 CKA_CLASS => self.class(),
@@ -458,26 +448,33 @@ impl<'a> SignParams<'a> {
             return Ok(SignParams::RSA(algorithm, data));
         }
 
-        // Handle the case where this is a TLS 1.0 MD5/SHA1 hash.
+        // Handle the case where `data` is a DigestInfo.
+        if let Ok((digest_oid, hash)) = read_digest_info(data) {
+            let algorithm = unsafe {
+                CFString::wrap_under_create_rule(match digest_oid {
+                    OID_BYTES_SHA_256 => kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256,
+                    OID_BYTES_SHA_384 => kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384,
+                    OID_BYTES_SHA_512 => kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512,
+                    OID_BYTES_SHA_1 => kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1,
+                    _ => return Err(error_here!(ErrorType::UnsupportedInput)),
+                })
+            };
+            return Ok(SignParams::RSA(algorithm, hash));
+        }
+
+        // Handle the case where `data` is a TLS 1.0 MD5/SHA1 hash.
         if data.len() == 36 {
             let algorithm = unsafe {
                 CFString::wrap_under_get_rule(kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw)
             };
             return Ok(SignParams::RSA(algorithm, data));
         }
-        // Otherwise, `data` should be a DigestInfo.
-        let (digest_oid, hash) = read_digest_info(data)?;
-        let algorithm = unsafe {
-            CFString::wrap_under_create_rule(match digest_oid {
-                OID_BYTES_SHA_256 => kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256,
-                OID_BYTES_SHA_384 => kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384,
-                OID_BYTES_SHA_512 => kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512,
-                OID_BYTES_SHA_1 => kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1,
-                _ => return Err(error_here!(ErrorType::UnsupportedInput)),
-            })
-        };
 
-        Ok(SignParams::RSA(algorithm, hash))
+        // Otherwise, `data` will be an emsa-pss-encoded digest that should be signed with raw RSA.
+        Ok(SignParams::RSA(
+            unsafe { CFString::wrap_under_create_rule(kSecKeyAlgorithmRSASignatureRaw) },
+            data,
+        ))
     }
 
     fn get_algorithm(&self) -> SecKeyAlgorithm {
@@ -633,17 +630,7 @@ impl Key {
 }
 
 impl CryptokiObject for Key {
-    fn matches(&self, slot_type: SlotType, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
-        // The modern/legacy slot distinction in theory enables differentiation
-        // between keys that are from modules that can use modern cryptography
-        // (namely EC keys and RSA-PSS signatures) and those that cannot.
-        // However, the function that would enable this
-        // (SecKeyIsAlgorithmSupported) causes a password dialog to appear on
-        // our test machines, so this backend pretends that everything supports
-        // modern crypto for now.
-        if slot_type != SlotType::Modern {
-            return false;
-        }
+    fn matches(&self, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
         for (attr_type, attr_value) in attrs {
             let comparison = match *attr_type {
                 CKA_CLASS => self.class(),
@@ -713,7 +700,23 @@ impl Sign for Key {
         // Some devices appear to not work well when the key handle is held for too long or if a
         // card is inserted/removed while Firefox is running. Try refreshing the key handle.
         let _ = self.key_handle.take();
-        self.sign_internal(data, params)
+        let result = self.sign_internal(data, params);
+        // If this succeeded, return the result.
+        if result.is_ok() {
+            return result;
+        }
+        // If signing failed and this is an RSA-PSS signature, perhaps the token the key is on does
+        // not support RSA-PSS. In that case, emsa-pss-encode the data (hash, really) and try
+        // signing with raw RSA.
+        let Some(params) = params.as_ref() else {
+            return result;
+        };
+        // `params` should only be `Some` if this is an RSA key.
+        let Some(modulus) = self.modulus.as_ref() else {
+            return Err(error_here!(ErrorType::LibraryFailure));
+        };
+        let emsa_pss_encoded = emsa_pss_encode(data, modulus_bit_length(modulus) - 1, params)?;
+        self.sign_internal(&emsa_pss_encoded, &None)
     }
 }
 

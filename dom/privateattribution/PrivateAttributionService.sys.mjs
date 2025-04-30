@@ -272,8 +272,10 @@ export class PrivateAttributionService {
   async sendDapReport(id, index, size, value) {
     const task = {
       id,
+      vdaf: "sumvec",
+      bits: 8,
+      length: size,
       time_precision: 60,
-      measurement_type: "vecu8",
     };
 
     const measurement = new Array(size).fill(0);

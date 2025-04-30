@@ -13,6 +13,7 @@
 #include "mozilla/gfx/CanvasManagerChild.h"
 #include "mozilla/gfx/CanvasShutdownManager.h"
 #include "mozilla/gfx/DrawTargetRecording.h"
+#include "mozilla/gfx/gfxVars.h"
 #include "mozilla/gfx/Tools.h"
 #include "mozilla/gfx/Rect.h"
 #include "mozilla/gfx/Point.h"
@@ -25,7 +26,9 @@
 #include "mozilla/AppShutdown.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/Mutex.h"
+#include "mozilla/StaticPrefs_gfx.h"
 #include "nsIObserverService.h"
+#include "nsICanvasRenderingContextInternal.h"
 #include "RecordedCanvasEventImpl.h"
 
 namespace mozilla {
@@ -79,6 +82,11 @@ class RecorderHelpers final : public CanvasDrawEventRecorder::Helpers {
       return false;
     }
     return mCanvasChild->SendRestartTranslation();
+  }
+
+  already_AddRefed<CanvasChild> GetCanvasChild() const override {
+    RefPtr<CanvasChild> canvasChild(mCanvasChild);
+    return canvasChild.forget();
   }
 
  private:
@@ -157,7 +165,7 @@ class SourceSurfaceCanvasRecording final : public gfx::SourceSurface {
   bool GetSurfaceDescriptor(SurfaceDescriptor& aDesc) const final {
     aDesc = SurfaceDescriptorCanvasSurface(
         static_cast<gfx::CanvasManagerChild*>(mCanvasChild->Manager())->Id(),
-        uintptr_t(gfx::ReferencePtr(this)));
+        mCanvasChild->Id(), uintptr_t(gfx::ReferencePtr(this)));
     return true;
   }
 
@@ -717,6 +725,52 @@ ipc::IPCResult CanvasChild::RecvNotifyTextureDestruction(
 
   mTextureInfo.erase(aTextureOwnerId);
   return IPC_OK();
+}
+
+already_AddRefed<gfx::SourceSurface> CanvasChild::SnapshotExternalCanvas(
+    gfx::DrawTargetRecording* aTarget,
+    nsICanvasRenderingContextInternal* aCanvas,
+    mozilla::ipc::IProtocol* aActor) {
+  // SnapshotExternalCanvas is only valid to use if using Accelerated Canvas2D
+  // with the pending events queue enabled. This ensures WebGL and AC2D are
+  // running under the same thread, and that events can be paused or resumed
+  // while synchronizing between WebGL and AC2D.
+  if (!gfx::gfxVars::UseAcceleratedCanvas2D() ||
+      !StaticPrefs::gfx_canvas_remote_use_canvas_translator_event_AtStartup()) {
+    return nullptr;
+  }
+
+  gfx::SurfaceFormat format = aCanvas->GetIsOpaque()
+                                  ? gfx::SurfaceFormat::B8G8R8X8
+                                  : gfx::SurfaceFormat::B8G8R8A8;
+  gfx::IntSize size(aCanvas->GetWidth(), aCanvas->GetHeight());
+  // Create a source sourface that will be associated with the snapshot.
+  RefPtr<gfx::SourceSurface> surface =
+      aTarget->CreateExternalSourceSurface(size, format);
+  if (!surface) {
+    return nullptr;
+  }
+
+  // Pause translation until the sync-id identifying the snapshot is received.
+  uint64_t syncId = ++mLastSyncId;
+  mRecorder->RecordEvent(RecordedAwaitTranslationSync(syncId));
+
+  // Flush WebGL to cause any IPDL messages to get sent at this sync point.
+  aCanvas->SyncSnapshot();
+
+  // Once the IPDL message is sent to generate the snapshot, resolve the sync-id
+  // to a surface in the recording stream. The AwaitTranslationSync above will
+  // ensure this event is not translated until the snapshot is generated first.
+  mRecorder->RecordEvent(
+      RecordedResolveExternalSnapshot(syncId, gfx::ReferencePtr(surface)));
+
+  uint32_t managerId = static_cast<gfx::CanvasManagerChild*>(Manager())->Id();
+  int32_t canvasId = aActor->Id();
+
+  // Actually send the request via IPDL to snapshot the external WebGL canvas.
+  SendSnapshotExternalCanvas(syncId, managerId, canvasId);
+
+  return surface.forget();
 }
 
 }  // namespace layers

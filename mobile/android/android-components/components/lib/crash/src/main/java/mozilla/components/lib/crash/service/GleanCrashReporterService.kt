@@ -550,24 +550,33 @@ class GleanCrashReporterService(
     }
 
     private fun Throwable.toJson(): JsonElement {
-        val messages =
-            generateSequence(this) { it.cause }.mapNotNull { it.message }.map { JsonPrimitive(it) }
-                .toList()
-
-        val stack = this.stackTrace.map { element ->
-            mapOf(
-                "file" to element.fileName.let(::JsonPrimitive),
-                "line" to element.lineNumber.takeIf { it >= 0 }.let(::JsonPrimitive),
-                "className" to element.className.let(::JsonPrimitive),
-                "methodName" to element.methodName.let(::JsonPrimitive),
-                "isNative" to JsonPrimitive(element.isNativeMethod),
-            ).filterValues { it !is JsonNull }.let(::JsonObject)
-        }
+        val throwables = generateSequence(this) { it.cause }
+            .mapIndexed { index, throwable ->
+                JsonObject(
+                    mapOf(
+                        "typeName" to throwable.javaClass.kotlin.qualifiedName.let(::JsonPrimitive),
+                        "message" to throwable.message.let(::JsonPrimitive),
+                        "stack" to if (index != 0) { JsonNull } else {
+                            JsonArray(
+                                throwable.stackTrace.map { element ->
+                                    mapOf(
+                                        "file" to element.fileName.let(::JsonPrimitive),
+                                        "line" to element.lineNumber.takeIf { it >= 0 }.let(::JsonPrimitive),
+                                        "className" to element.className.let(::JsonPrimitive),
+                                        "methodName" to element.methodName.let(::JsonPrimitive),
+                                        "isNative" to JsonPrimitive(element.isNativeMethod),
+                                    ).filterValues { it !is JsonNull }.let(::JsonObject)
+                                },
+                            )
+                        },
+                    ).filterValues { it !is JsonNull },
+                )
+            }
+            .toList()
 
         return JsonObject(
             mapOf(
-                "messages" to JsonArray(messages),
-                "stack" to JsonArray(stack),
+                "throwables" to JsonArray(throwables),
             ),
         )
     }

@@ -221,10 +221,10 @@ class TabDescriptorActor extends Actor {
     }
 
     try {
-      const { data } = await lazy.PlacesUtils.promiseFaviconData(
-        this._getUrl()
+      const favicon = await lazy.PlacesUtils.favicons.getFaviconForPage(
+        lazy.PlacesUtils.toURI(this._getUrl())
       );
-      return data;
+      return favicon.rawData;
     } catch (e) {
       // Favicon unavailable for this url.
       return null;

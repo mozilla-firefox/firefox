@@ -832,8 +832,6 @@
   <string name="preferences_override_account_server">Serveur de compte Mozilla personnalisé</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Serveur de synchronisation personnalisé</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Serveur pour la synchronisation ou le compte Mozilla modifié. Fermeture de l’application pour appliquer les modifications…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Compte</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1481,16 +1479,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Supprimer</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Supprimer</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Précédent</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Remonter</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">Partager l’URL</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Partager le fichier</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Voulez-vous vraiment supprimer les éléments sélectionnés ?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Voulez-vous vraiment supprimer les éléments sélectionnés ?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Supprimer</string>
+  <string name="download_delete_multi_select_dialog_confirm">Supprimer</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Annuler</string>
+  <string name="download_delete_multi_select_dialog_cancel">Annuler</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">En cours</string>
   <!--
@@ -1521,9 +1523,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Échec du téléchargement</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Rechercher dans les téléchargements</string>
+  <string name="download_search_placeholder">Rechercher dans les téléchargements</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Aucun résultat</string>
+  <string name="download_search_no_results_found">Aucun résultat</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Tout sélectionner</string>
   <!--
@@ -2276,7 +2278,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Icône de préférence d’exception à la protection renforcée contre le pistage</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->

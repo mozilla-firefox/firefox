@@ -911,6 +911,13 @@ export var SessionStore = {
         : TabMetrics.METRIC_TABS_LAYOUT.HORIZONTAL,
       type: TabMetrics.METRIC_REOPEN_TYPE.SAVED,
     });
+    if (source == TabMetrics.METRIC_SOURCE.SUGGEST) {
+      Glean.tabgroup.groupInteractions.open_suggest.add(1);
+    } else if (source == TabMetrics.METRIC_SOURCE.TAB_OVERFLOW_MENU) {
+      Glean.tabgroup.groupInteractions.open_tabmenu.add(1);
+    } else if (source == TabMetrics.METRIC_SOURCE.RECENT_TABS) {
+      Glean.tabgroup.groupInteractions.open_recent.add(1);
+    }
 
     return SessionStoreInternal.openSavedTabGroup(tabGroupId, targetWindow);
   },
@@ -1101,7 +1108,7 @@ var SessionStoreInternal = {
 
   _log: null,
 
-  // When starting Firefox with a single private window, this is the place
+  // When starting Firefox with a single private window or web app window, this is the place
   // where we keep the session we actually wanted to restore in case the user
   // decides to later open a non-private window as well.
   _deferredInitialState: null,
@@ -2016,9 +2023,9 @@ var SessionStoreInternal = {
         // to disk to NOW() to enforce a full interval before the next write.
         lazy.SessionSaver.updateLastSaveTime();
 
-        if (isPrivateWindow) {
+        if (isPrivateWindow || isTaskbarTab) {
           this._log.debug(
-            "initializeWindow, the window is private. Saving SessionStartup.state for possibly restoring later"
+            "initializeWindow, the window is private or a web app. Saving SessionStartup.state for possibly restoring later"
           );
           // We're starting with a single private window. Save the state we
           // actually wanted to restore so that we can do it later in case
@@ -2063,14 +2070,10 @@ var SessionStoreInternal = {
       // We want to restore windows after all windows have opened (since bug
       // 1034036), so bail out here.
       return;
-      // The user opened another, non-private window after starting up with
-      // a single private one. Let's restore the session we actually wanted to
-      // restore at startup.
-    } else if (
-      this._deferredInitialState &&
-      !isPrivateWindow &&
-      aWindow.toolbar.visible
-    ) {
+      // The user opened another window that is not a popup, private window, or web app,
+      // after starting up with a single private or web app window.
+      // Let's restore the session we actually wanted to restore at startup.
+    } else if (this._deferredInitialState && isRegularWindow) {
       // global data must be restored before restoreWindow is called so that
       // it happens before observers are notified
       this._globalState.setFromState(this._deferredInitialState);
@@ -7256,12 +7259,19 @@ var SessionStoreInternal = {
         tIndex++;
       }
 
+      // Any tab groups that were in the tab strip at the end of the last
+      // session should be saved. If any tab groups were present in both
+      // saved groups and open groups in the last session, set the saved
+      // group's `removeAfterRestore` so that if the last session is restored,
+      // the group will be opened to the tab strip and removed from the list
+      // of saved tab groups.
       groupsToSave.forEach(groupState => {
-        if (
-          !defaultState.savedGroups.find(
-            existingGroup => existingGroup.id == groupState.id
-          )
-        ) {
+        const alreadySavedGroup = defaultState.savedGroups.find(
+          existingGroup => existingGroup.id == groupState.id
+        );
+        if (alreadySavedGroup) {
+          alreadySavedGroup.removeAfterRestore = true;
+        } else {
           defaultState.savedGroups.push(groupState);
         }
       });
@@ -8140,6 +8150,8 @@ var SessionStoreInternal = {
     );
     this.forgetClosedTabGroup(source, tabGroupId);
     sourceWinData.lastClosedTabGroupId = null;
+
+    Glean.tabgroup.groupInteractions.open_recent.add(1);
 
     group.select();
     return group;

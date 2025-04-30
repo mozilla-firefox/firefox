@@ -16,6 +16,8 @@
 #include "mozilla/gfx/DeviceManagerDx.h"
 #include "mozilla/layers/CompositableClient.h"
 #include "mozilla/layers/CompositableForwarder.h"
+#include "mozilla/layers/CompositeProcessD3D11FencesHolderMap.h"
+#include "mozilla/layers/FenceD3D11.h"
 #include "mozilla/layers/TextureClient.h"
 #include "mozilla/layers/TextureD3D11.h"
 
@@ -187,9 +189,12 @@ already_AddRefed<TextureClient> D3D11RecycleAllocator::CreateOrRecycleClient(
   }
   mImageDevice = device;
 
+  auto* fencesHolderMap = CompositeProcessD3D11FencesHolderMap::Get();
+  // XXX enable fence
+  const bool useFence = false;
   TextureAllocationFlags allocFlags = TextureAllocationFlags::ALLOC_DEFAULT;
-  if (StaticPrefs::media_wmf_use_sync_texture_AtStartup() ||
-      mDevice == DeviceManagerDx::Get()->GetCompositorDevice()) {
+  if (!useFence && (StaticPrefs::media_wmf_use_sync_texture_AtStartup() ||
+                    mDevice == DeviceManagerDx::Get()->GetCompositorDevice())) {
     // If our device is the compositor device, we don't need any synchronization
     // in practice.
     allocFlags = TextureAllocationFlags::ALLOC_MANUAL_SYNCHRONIZATION;
@@ -201,6 +206,16 @@ already_AddRefed<TextureClient> D3D11RecycleAllocator::CreateOrRecycleClient(
 
   RefPtr<TextureClient> textureClient =
       CreateOrRecycle(helper).unwrapOr(nullptr);
+
+  if (textureClient) {
+    auto* textureData = textureClient->GetInternalData()->AsD3D11TextureData();
+    MOZ_ASSERT(textureData);
+    if (textureData && textureData->mFencesHolderId.isSome() &&
+        fencesHolderMap) {
+      fencesHolderMap->WaitAllFencesAndForget(
+          textureData->mFencesHolderId.ref(), mDevice);
+    }
+  }
   return textureClient.forget();
 }
 

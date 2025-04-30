@@ -58,8 +58,8 @@ def android_sdk_version():
     # If you think you can't handle the whole set of changes, please reach out to the Release
     # Engineering team.
     return namespace(
-        build_tools_version="35.0.1",
-        compile_sdk_version="35",
+        build_tools_version="36.0.0",
+        compile_sdk_version="36",
         target_sdk_version="35",
         min_sdk_version="21",
     )

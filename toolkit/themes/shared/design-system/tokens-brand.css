@@ -39,6 +39,12 @@
     --font-size-xlarge: 1.467rem;
     --font-size-xxlarge: 1.6rem;
 
+    /** Link **/
+    --link-color: var(--color-accent-primary);
+    --link-color-hover: var(--color-accent-primary-hover);
+    --link-color-active: var(--color-accent-primary-active);
+    --link-color-visited: var(--link-color);
+
     /** Page **/
     --page-main-content-width: 664px;
 

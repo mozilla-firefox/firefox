@@ -39,7 +39,6 @@ ChannelEventSink.prototype = {
     }
   },
 
-  // eslint-disable-next-line no-shadow
   asyncOnChannelRedirect(oldChannel, newChannel, flags, callback) {
     for (const collector of this.collectors) {
       try {

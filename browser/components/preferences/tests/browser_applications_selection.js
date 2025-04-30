@@ -76,7 +76,7 @@ add_setup(async function () {
     Ci.nsIWebHandlerApp
   );
   handler2.name = "Handler 2";
-  handler2.uriTemplate = "http://example.org/second/%s";
+  handler2.uriTemplate = "https://example.org/second/%s";
   gDummyHandlers.push(handler1, handler2);
 
   function substituteWebHandlers(handlerInfo) {

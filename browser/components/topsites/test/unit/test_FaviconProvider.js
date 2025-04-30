@@ -110,9 +110,9 @@ add_task(async function test_fetchIcon_with_valid_favicon() {
   await feed.fetchIcon(TEST_PAGE_URL.spec);
 
   info("Check the database");
-  const result = await PlacesUtils.promiseFaviconData(TEST_PAGE_URL);
+  const result = await PlacesUtils.favicons.getFaviconForPage(TEST_PAGE_URL);
   Assert.equal(result.mimeType, "image/svg+xml");
-  Assert.equal(result.size, 65535);
+  Assert.equal(result.width, 65535);
 
   info("Clean up");
   await PlacesTestUtils.clearFavicons();
@@ -141,14 +141,13 @@ add_task(async function test_fetchIcon_with_invalid_favicon() {
     await feed.fetchIcon(TEST_PAGE_URL.spec);
 
     info("Check the database");
-    const result = await PlacesUtils.promiseFaviconData(TEST_PAGE_URL);
+    const result = await PlacesUtils.favicons.getFaviconForPage(TEST_PAGE_URL);
     // eslint-disable-next-line no-use-before-define
     const expectedFaviconData = readFileData(TEST_FAVICON_FILE);
     Assert.equal(result.uri.spec, `${TEST_FAVICON_URL.spec}#tippytop`);
-    Assert.equal(result.dataLen, expectedFaviconData.length);
-    Assert.deepEqual(result.data, expectedFaviconData);
+    Assert.deepEqual(result.rawData, expectedFaviconData);
     Assert.equal(result.mimeType, "image/png");
-    Assert.equal(result.size, 16);
+    Assert.equal(result.width, 16);
 
     info("Clean up");
     await PlacesTestUtils.clearFavicons();
@@ -186,15 +185,16 @@ add_task(async function test_fetchIconFromRedirects_with_valid_favicon() {
 
   info("Check the database");
   await TestUtils.waitForCondition(async () => {
-    const result = await PlacesUtils.promiseFaviconData(destination);
+    const result = await PlacesUtils.favicons.getFaviconForPage(destination);
     return !!result;
   });
-  const sourceResult = await PlacesUtils.promiseFaviconData(TEST_PAGE_URL);
-  const destinationResult = await PlacesUtils.promiseFaviconData(destination);
-  Assert.equal(destinationResult.dataLen, sourceResult.dataLen);
-  Assert.deepEqual(destinationResult.data, sourceResult.data);
+  const sourceResult =
+    await PlacesUtils.favicons.getFaviconForPage(TEST_PAGE_URL);
+  const destinationResult =
+    await PlacesUtils.favicons.getFaviconForPage(destination);
+  Assert.deepEqual(destinationResult.rawData, sourceResult.rawData);
   Assert.equal(destinationResult.mimeType, sourceResult.mimeType);
-  Assert.equal(destinationResult.size, sourceResult.size);
+  Assert.equal(destinationResult.width, sourceResult.width);
 
   info("Clean up");
   await PlacesTestUtils.clearFavicons();
@@ -264,9 +264,7 @@ add_task(async function test_fetchIcon_withNetworkFetch() {
 
   // Set up mocks
   PlacesUtils.favicons = {
-    getFaviconDataForPage: sandbox
-      .stub()
-      .callsArgWith(1, null, 0, null, null, 0),
+    getFaviconForPage: sandbox.stub().returns(Promise.resolve(null)),
     setFaviconForPage: sandbox.spy(),
     copyFavicons: sandbox.spy(),
   };
@@ -298,9 +296,10 @@ add_task(async function test_fetchIcon_withInvalidDataInDb() {
   const sandbox = sinon.createSandbox();
   // Set up mocks
   PlacesUtils.favicons = {
-    getFaviconDataForPage: sandbox
+    // Invalid since no width.
+    getFaviconForPage: sandbox
       .stub()
-      .callsArgWith(1, { spec: FAKE_SMALLPNG_DATA_URI }, 0, null, null, 0),
+      .returns(Promise.resolve({ iconUri: { spec: FAKE_SMALLPNG_DATA_URI } })),
     setFaviconForPage: sandbox.spy(),
     copyFavicons: sandbox.spy(),
   };
@@ -335,16 +334,12 @@ add_task(async function test_fetchIcon_withValidDataInDb() {
   const sandbox = sinon.createSandbox();
   // Set up mocks
   PlacesUtils.favicons = {
-    getFaviconDataForPage: sandbox
-      .stub()
-      .callsArgWith(
-        1,
-        { spec: FAKE_SMALLPNG_DATA_URI },
-        100,
-        ["dummy icon data"],
-        "image/png",
-        16
-      ),
+    getFaviconForPage: sandbox.stub().returns(
+      Promise.resolve({
+        iconUri: { spec: FAKE_SMALLPNG_DATA_URI },
+        width: 100,
+      })
+    ),
     setFaviconForPage: sandbox.spy(),
     copyFavicons: sandbox.spy(),
   };
@@ -370,9 +365,7 @@ add_task(async function test_fetchIcon_withNoTippyTopData() {
   let feed = new FaviconProvider();
   // Set up mocks
   PlacesUtils.favicons = {
-    getFaviconDataForPage: sandbox
-      .stub()
-      .callsArgWith(1, null, 0, null, null, 0),
+    getFaviconForPage: sandbox.stub().returns(Promise.resolve(null)),
     setFaviconForPage: sandbox.spy(),
     copyFavicons: sandbox.spy(),
   };

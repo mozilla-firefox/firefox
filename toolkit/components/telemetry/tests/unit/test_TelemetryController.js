@@ -923,11 +923,8 @@ add_task(async function test_newCanRecordsMatchTheOld() {
 add_task(function test_histogram_filtering() {
   const COUNT_ID = "TELEMETRY_TEST_COUNT";
   const KEYED_ID = "TELEMETRY_TEST_KEYED_COUNT";
-  const count = Telemetry.getHistogramById(COUNT_ID);
-  const keyed = Telemetry.getKeyedHistogramById(KEYED_ID);
-
-  count.add(1);
-  keyed.add("a", 1);
+  Glean.testOnlyIpc.aCounterForHgram.add();
+  Glean.testOnlyIpc.aLabeledCounterForKeyedCountHgram.a.add(1);
 
   let snapshot = Telemetry.getSnapshotForHistograms(
     "main",

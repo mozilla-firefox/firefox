@@ -1,31 +1,12 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_LOG_H
 #define PIPEWIRE_LOG_H
 
 #include <spa/support/log.h>
+#include <spa/utils/defs.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,7 +28,7 @@ extern "C" {
 /** The global log level */
 extern enum spa_log_level pw_log_level;
 
-extern struct spa_log_topic *PW_LOG_TOPIC_DEFAULT;
+extern struct spa_log_topic * const PW_LOG_TOPIC_DEFAULT;
 
 /** Configure a logging module. This is usually done automatically
  * in pw_init() but you can install a custom logger before calling
@@ -59,6 +40,14 @@ struct spa_log *pw_log_get(void);
 
 /** Configure the logging level */
 void pw_log_set_level(enum spa_log_level level);
+
+/**
+ * Configure the logging level using a string
+ * in PIPEWIRE_DEBUG format.
+ *
+ * \since 1.1.0
+ */
+int pw_log_set_level_string(const char *str);
 
 /** Log a message for a topic */
 void
@@ -92,16 +81,15 @@ pw_log_logv(enum spa_log_level level,
 	    int line, const char *func,
 	    const char *fmt, va_list args) SPA_PRINTF_FUNC(5, 0);
 
-/** Initialize the log topic. The returned topic is owned by the pipewire
- * context and the topic must not be modified or freed.
- * Do not use this function directly, use one of PW_LOG_TOPIC_* instead.
+/**
+ * Define a static \ref spa_log_topic and its constructor/destructor functions.
  *
- * \see PW_LOG_TOPIC_STATIC
- * \see PW_LOG_TOPIC_EXTERN
- * \see PW_LOG_TOPIC
+ * \since 1.1.0
  */
-void
-_pw_log_topic_new(struct spa_log_topic *topic);
+#define PW_LOG_TOPIC_DEFINE_STATIC(var, topic) \
+  static struct spa_log_topic var = SPA_LOG_TOPIC(SPA_VERSION_LOG_TOPIC, topic); \
+  static void __attribute__((constructor)) var ## _register_construct(void) { pw_log_topic_register(&var); } \
+  static void __attribute__((destructor)) var ## _register_destroy(void) { pw_log_topic_unregister(&var); }
 
 /**
  * Declare a static log topic named \a var. The usual usage is:
@@ -113,32 +101,60 @@ _pw_log_topic_new(struct spa_log_topic *topic);
  *      pw_log_debug("bar");
  *  }
  * \endcode
+ *
+ * This macro also emits GCC attribute constructor/destructor
+ * functions that automatically call pw_log_topic_register/unregister.
  */
 #define PW_LOG_TOPIC_STATIC(var, topic) \
-  static struct spa_log_topic var##__LINE__ = SPA_LOG_TOPIC(0, topic); \
-  static struct spa_log_topic *var = &(var##__LINE__)
+  PW_LOG_TOPIC_DEFINE_STATIC(var ## _value, topic) \
+  static struct spa_log_topic * const var = &(var ## _value)
 
 /**
  * Declare a static log topic named \a var.
  * See \ref PW_LOG_TOPIC_STATIC for an example usage.
  */
 #define PW_LOG_TOPIC_EXTERN(var) \
-  extern struct spa_log_topic *var
+  extern struct spa_log_topic * const var
 
 /**
  * Declare a static log topic named \a var.
  * See \ref PW_LOG_TOPIC_STATIC for an example usage.
  */
 #define PW_LOG_TOPIC(var, topic) \
-  struct spa_log_topic var##__LINE__ = SPA_LOG_TOPIC(0, topic); \
-  struct spa_log_topic *var = &(var##__LINE__)
+  PW_LOG_TOPIC_DEFINE_STATIC(var ## _value, topic) \
+  struct spa_log_topic * const var = &(var ## _value)
 
+/**
+ * \deprecated Use \ref pw_log_topic_register and \ref pw_log_topic_unregister
+ * instead, or rely on the auto-registration by \ref PW_LOG_TOPIC and
+ * \ref PW_LOG_TOPIC_STATIC.
+ */
 #define PW_LOG_TOPIC_INIT(var) \
    spa_log_topic_init(pw_log_get(), var);
+
+/**
+ * Register log topic with the logger, to enable dynamic log levels.
+ * Topic must be unregistered before freeing it or plugin unload.
+ * May be used instead of \ref PW_LOG_TOPIC_INIT
+ * This function is threadsafe.
+ *
+ * \since 1.1.0
+ */
+void pw_log_topic_register(struct spa_log_topic *t);
+
+/**
+ * Unregister log topic. This function is threadsafe.
+ *
+ * \since 1.1.0
+ */
+void pw_log_topic_unregister(struct spa_log_topic *t);
 
 /** Check if a loglevel is enabled */
 #define pw_log_level_enabled(lev) (pw_log_level >= (lev))
 #define pw_log_topic_enabled(lev,t) ((t) && (t)->has_custom_level ? (t)->level >= (lev) : pw_log_level_enabled((lev)))
+
+/* check is a custom level was assigned to a topic. \since 1.1.0 */
+#define pw_log_topic_custom_enabled(lev,t) ((t) && (t)->has_custom_level && (t)->level >= (lev))
 
 #define pw_logtv(lev,topic,fmt,ap)						\
 ({										\

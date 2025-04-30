@@ -9,8 +9,8 @@
 add_task(async function test_click_urlbar_results() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      ["sidebar.verticalTabs", true],
-      ["sidebar.visibility", "always-show"],
+      [VERTICAL_TABS_PREF, true],
+      [SIDEBAR_VISIBILITY_PREF, "always-show"],
     ],
   });
 

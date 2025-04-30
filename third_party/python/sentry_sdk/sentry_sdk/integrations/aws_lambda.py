@@ -1,14 +1,17 @@
 from datetime import datetime, timedelta
 from os import environ
 import sys
+from sentry_sdk.consts import OP
 
 from sentry_sdk.hub import Hub, _should_send_default_pii
+from sentry_sdk.tracing import TRANSACTION_SOURCE_COMPONENT, Transaction
 from sentry_sdk._compat import reraise
 from sentry_sdk.utils import (
     AnnotatedValue,
     capture_internal_exceptions,
     event_from_exception,
     logger,
+    TimeoutThread,
 )
 from sentry_sdk.integrations import Integration
 from sentry_sdk.integrations._wsgi_common import _filter_headers
@@ -25,36 +28,144 @@ if MYPY:
 
     F = TypeVar("F", bound=Callable[..., Any])
 
+# Constants
+TIMEOUT_WARNING_BUFFER = 1500  # Buffer time required to send timeout warning to Sentry
+MILLIS_TO_SECONDS = 1000.0
 
-def _wrap_handler(handler):
+
+def _wrap_init_error(init_error):
     # type: (F) -> F
-    def sentry_handler(event, context, *args, **kwargs):
-        # type: (Any, Any, *Any, **Any) -> Any
+    def sentry_init_error(*args, **kwargs):
+        # type: (*Any, **Any) -> Any
+
         hub = Hub.current
         integration = hub.get_integration(AwsLambdaIntegration)
         if integration is None:
-            return handler(event, context, *args, **kwargs)
+            return init_error(*args, **kwargs)
 
         # If an integration is there, a client has to be there.
         client = hub.client  # type: Any
 
-        with hub.push_scope() as scope:
-            with capture_internal_exceptions():
+        with capture_internal_exceptions():
+            with hub.configure_scope() as scope:
                 scope.clear_breadcrumbs()
-                scope.transaction = context.function_name
-                scope.add_event_processor(_make_request_event_processor(event, context))
 
-            try:
-                return handler(event, context, *args, **kwargs)
-            except Exception:
-                exc_info = sys.exc_info()
-                event, hint = event_from_exception(
+            exc_info = sys.exc_info()
+            if exc_info and all(exc_info):
+                sentry_event, hint = event_from_exception(
                     exc_info,
                     client_options=client.options,
                     mechanism={"type": "aws_lambda", "handled": False},
                 )
-                hub.capture_event(event, hint=hint)
-                reraise(*exc_info)
+                hub.capture_event(sentry_event, hint=hint)
+
+        return init_error(*args, **kwargs)
+
+    return sentry_init_error  # type: ignore
+
+
+def _wrap_handler(handler):
+    # type: (F) -> F
+    def sentry_handler(aws_event, aws_context, *args, **kwargs):
+        # type: (Any, Any, *Any, **Any) -> Any
+
+        # Per https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html,
+        # `event` here is *likely* a dictionary, but also might be a number of
+        # other types (str, int, float, None).
+        #
+        # In some cases, it is a list (if the user is batch-invoking their
+        # function, for example), in which case we'll use the first entry as a
+        # representative from which to try pulling request data. (Presumably it
+        # will be the same for all events in the list, since they're all hitting
+        # the lambda in the same request.)
+
+        if isinstance(aws_event, list):
+            request_data = aws_event[0]
+            batch_size = len(aws_event)
+        else:
+            request_data = aws_event
+            batch_size = 1
+
+        if not isinstance(request_data, dict):
+            # If we're not dealing with a dictionary, we won't be able to get
+            # headers, path, http method, etc in any case, so it's fine that
+            # this is empty
+            request_data = {}
+
+        hub = Hub.current
+        integration = hub.get_integration(AwsLambdaIntegration)
+        if integration is None:
+            return handler(aws_event, aws_context, *args, **kwargs)
+
+        # If an integration is there, a client has to be there.
+        client = hub.client  # type: Any
+        configured_time = aws_context.get_remaining_time_in_millis()
+
+        with hub.push_scope() as scope:
+            timeout_thread = None
+            with capture_internal_exceptions():
+                scope.clear_breadcrumbs()
+                scope.add_event_processor(
+                    _make_request_event_processor(
+                        request_data, aws_context, configured_time
+                    )
+                )
+                scope.set_tag(
+                    "aws_region", aws_context.invoked_function_arn.split(":")[3]
+                )
+                if batch_size > 1:
+                    scope.set_tag("batch_request", True)
+                    scope.set_tag("batch_size", batch_size)
+
+                # Starting the Timeout thread only if the configured time is greater than Timeout warning
+                # buffer and timeout_warning parameter is set True.
+                if (
+                    integration.timeout_warning
+                    and configured_time > TIMEOUT_WARNING_BUFFER
+                ):
+                    waiting_time = (
+                        configured_time - TIMEOUT_WARNING_BUFFER
+                    ) / MILLIS_TO_SECONDS
+
+                    timeout_thread = TimeoutThread(
+                        waiting_time,
+                        configured_time / MILLIS_TO_SECONDS,
+                    )
+
+                    # Starting the thread to raise timeout warning exception
+                    timeout_thread.start()
+
+            headers = request_data.get("headers")
+            # AWS Service may set an explicit `{headers: None}`, we can't rely on `.get()`'s default.
+            if headers is None:
+                headers = {}
+            transaction = Transaction.continue_from_headers(
+                headers,
+                op=OP.FUNCTION_AWS,
+                name=aws_context.function_name,
+                source=TRANSACTION_SOURCE_COMPONENT,
+            )
+            with hub.start_transaction(
+                transaction,
+                custom_sampling_context={
+                    "aws_event": aws_event,
+                    "aws_context": aws_context,
+                },
+            ):
+                try:
+                    return handler(aws_event, aws_context, *args, **kwargs)
+                except Exception:
+                    exc_info = sys.exc_info()
+                    sentry_event, hint = event_from_exception(
+                        exc_info,
+                        client_options=client.options,
+                        mechanism={"type": "aws_lambda", "handled": False},
+                    )
+                    hub.capture_event(sentry_event, hint=hint)
+                    reraise(*exc_info)
+                finally:
+                    if timeout_thread:
+                        timeout_thread.stop()
 
     return sentry_handler  # type: ignore
 
@@ -73,27 +184,30 @@ def _drain_queue():
 class AwsLambdaIntegration(Integration):
     identifier = "aws_lambda"
 
+    def __init__(self, timeout_warning=False):
+        # type: (bool) -> None
+        self.timeout_warning = timeout_warning
+
     @staticmethod
     def setup_once():
         # type: () -> None
-        import __main__ as lambda_bootstrap  # type: ignore
 
-        pre_37 = True  # Python 3.6 or 2.7
-
-        if not hasattr(lambda_bootstrap, "handle_http_request"):
-            try:
-                import bootstrap as lambda_bootstrap  # type: ignore
-
-                pre_37 = False  # Python 3.7
-            except ImportError:
-                pass
+        lambda_bootstrap = get_lambda_bootstrap()
+        if not lambda_bootstrap:
+            logger.warning(
+                "Not running in AWS Lambda environment, "
+                "AwsLambdaIntegration disabled (could not find bootstrap module)"
+            )
+            return
 
         if not hasattr(lambda_bootstrap, "handle_event_request"):
             logger.warning(
                 "Not running in AWS Lambda environment, "
-                "AwsLambdaIntegration disabled"
+                "AwsLambdaIntegration disabled (could not find handle_event_request)"
             )
             return
+
+        pre_37 = hasattr(lambda_bootstrap, "handle_http_request")  # Python 3.6 or 2.7
 
         if pre_37:
             old_handle_event_request = lambda_bootstrap.handle_event_request
@@ -126,6 +240,10 @@ class AwsLambdaIntegration(Integration):
 
             lambda_bootstrap.to_json = sentry_to_json
         else:
+            lambda_bootstrap.LambdaRuntimeClient.post_init_error = _wrap_init_error(
+                lambda_bootstrap.LambdaRuntimeClient.post_init_error
+            )
+
             old_handle_event_request = lambda_bootstrap.handle_event_request
 
             def sentry_handle_event_request(  # type: ignore
@@ -150,27 +268,74 @@ class AwsLambdaIntegration(Integration):
 
                 return inner  # type: ignore
 
-            lambda_bootstrap.LambdaRuntimeClient.post_invocation_result = _wrap_post_function(
-                lambda_bootstrap.LambdaRuntimeClient.post_invocation_result
+            lambda_bootstrap.LambdaRuntimeClient.post_invocation_result = (
+                _wrap_post_function(
+                    lambda_bootstrap.LambdaRuntimeClient.post_invocation_result
+                )
             )
-            lambda_bootstrap.LambdaRuntimeClient.post_invocation_error = _wrap_post_function(
-                lambda_bootstrap.LambdaRuntimeClient.post_invocation_error
+            lambda_bootstrap.LambdaRuntimeClient.post_invocation_error = (
+                _wrap_post_function(
+                    lambda_bootstrap.LambdaRuntimeClient.post_invocation_error
+                )
             )
 
 
-def _make_request_event_processor(aws_event, aws_context):
-    # type: (Any, Any) -> EventProcessor
-    start_time = datetime.now()
+def get_lambda_bootstrap():
+    # type: () -> Optional[Any]
 
-    def event_processor(event, hint, start_time=start_time):
+    # Python 2.7: Everything is in `__main__`.
+    #
+    # Python 3.7: If the bootstrap module is *already imported*, it is the
+    # one we actually want to use (no idea what's in __main__)
+    #
+    # Python 3.8: bootstrap is also importable, but will be the same file
+    # as __main__ imported under a different name:
+    #
+    #     sys.modules['__main__'].__file__ == sys.modules['bootstrap'].__file__
+    #     sys.modules['__main__'] is not sys.modules['bootstrap']
+    #
+    # Python 3.9: bootstrap is in __main__.awslambdaricmain
+    #
+    # On container builds using the `aws-lambda-python-runtime-interface-client`
+    # (awslamdaric) module, bootstrap is located in sys.modules['__main__'].bootstrap
+    #
+    # Such a setup would then make all monkeypatches useless.
+    if "bootstrap" in sys.modules:
+        return sys.modules["bootstrap"]
+    elif "__main__" in sys.modules:
+        module = sys.modules["__main__"]
+        # python3.9 runtime
+        if hasattr(module, "awslambdaricmain") and hasattr(
+            module.awslambdaricmain, "bootstrap"
+        ):
+            return module.awslambdaricmain.bootstrap
+        elif hasattr(module, "bootstrap"):
+            # awslambdaric python module in container builds
+            return module.bootstrap
+
+        # python3.8 runtime
+        return module
+    else:
+        return None
+
+
+def _make_request_event_processor(aws_event, aws_context, configured_timeout):
+    # type: (Any, Any, Any) -> EventProcessor
+    start_time = datetime.utcnow()
+
+    def event_processor(sentry_event, hint, start_time=start_time):
         # type: (Event, Hint, datetime) -> Optional[Event]
-        extra = event.setdefault("extra", {})
+        remaining_time_in_milis = aws_context.get_remaining_time_in_millis()
+        exec_duration = configured_timeout - remaining_time_in_milis
+
+        extra = sentry_event.setdefault("extra", {})
         extra["lambda"] = {
             "function_name": aws_context.function_name,
             "function_version": aws_context.function_version,
             "invoked_function_arn": aws_context.invoked_function_arn,
-            "remaining_time_in_millis": aws_context.get_remaining_time_in_millis(),
             "aws_request_id": aws_context.aws_request_id,
+            "execution_duration_in_millis": exec_duration,
+            "remaining_time_in_millis": remaining_time_in_milis,
         }
 
         extra["cloudwatch logs"] = {
@@ -179,7 +344,7 @@ def _make_request_event_processor(aws_event, aws_context):
             "log_stream": aws_context.log_stream_name,
         }
 
-        request = event.get("request", {})
+        request = sentry_event.get("request", {})
 
         if "httpMethod" in aws_event:
             request["method"] = aws_event["httpMethod"]
@@ -192,63 +357,76 @@ def _make_request_event_processor(aws_event, aws_context):
         if "headers" in aws_event:
             request["headers"] = _filter_headers(aws_event["headers"])
 
-        if aws_event.get("body", None):
-            # Unfortunately couldn't find a way to get structured body from AWS
-            # event. Meaning every body is unstructured to us.
-            request["data"] = AnnotatedValue("", {"rem": [["!raw", "x", 0, 0]]})
-
         if _should_send_default_pii():
-            user_info = event.setdefault("user", {})
+            user_info = sentry_event.setdefault("user", {})
 
-            id = aws_event.get("identity", {}).get("userArn")
+            identity = aws_event.get("identity")
+            if identity is None:
+                identity = {}
+
+            id = identity.get("userArn")
             if id is not None:
                 user_info.setdefault("id", id)
 
-            ip = aws_event.get("identity", {}).get("sourceIp")
+            ip = identity.get("sourceIp")
             if ip is not None:
                 user_info.setdefault("ip_address", ip)
 
-        event["request"] = request
+            if "body" in aws_event:
+                request["data"] = aws_event.get("body", "")
+        else:
+            if aws_event.get("body", None):
+                # Unfortunately couldn't find a way to get structured body from AWS
+                # event. Meaning every body is unstructured to us.
+                request["data"] = AnnotatedValue.removed_because_raw_data()
 
-        return event
+        sentry_event["request"] = request
+
+        return sentry_event
 
     return event_processor
 
 
-def _get_url(event, context):
+def _get_url(aws_event, aws_context):
     # type: (Any, Any) -> str
-    path = event.get("path", None)
-    headers = event.get("headers", {})
+    path = aws_event.get("path", None)
+
+    headers = aws_event.get("headers")
+    if headers is None:
+        headers = {}
+
     host = headers.get("Host", None)
     proto = headers.get("X-Forwarded-Proto", None)
     if proto and host and path:
         return "{}://{}{}".format(proto, host, path)
-    return "awslambda:///{}".format(context.function_name)
+    return "awslambda:///{}".format(aws_context.function_name)
 
 
-def _get_cloudwatch_logs_url(context, start_time):
+def _get_cloudwatch_logs_url(aws_context, start_time):
     # type: (Any, datetime) -> str
     """
     Generates a CloudWatchLogs console URL based on the context object
 
     Arguments:
-        context {Any} -- context from lambda handler
+        aws_context {Any} -- context from lambda handler
 
     Returns:
         str -- AWS Console URL to logs.
     """
-    formatstring = "%Y-%m-%dT%H:%M:%S"
+    formatstring = "%Y-%m-%dT%H:%M:%SZ"
+    region = environ.get("AWS_REGION", "")
 
     url = (
-        "https://console.aws.amazon.com/cloudwatch/home?region={region}"
+        "https://console.{domain}/cloudwatch/home?region={region}"
         "#logEventViewer:group={log_group};stream={log_stream}"
         ";start={start_time};end={end_time}"
     ).format(
-        region=environ.get("AWS_REGION"),
-        log_group=context.log_group_name,
-        log_stream=context.log_stream_name,
+        domain="amazonaws.cn" if region.startswith("cn-") else "aws.amazon.com",
+        region=region,
+        log_group=aws_context.log_group_name,
+        log_stream=aws_context.log_stream_name,
         start_time=(start_time - timedelta(seconds=1)).strftime(formatstring),
-        end_time=(datetime.now() + timedelta(seconds=2)).strftime(formatstring),
+        end_time=(datetime.utcnow() + timedelta(seconds=2)).strftime(formatstring),
     )
 
     return url

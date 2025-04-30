@@ -70,6 +70,21 @@ class HttpData : public nsISupports {
 
 NS_IMPL_ISUPPORTS0(HttpData)
 
+class Http3ConnectionStatsData : public nsISupports {
+  virtual ~Http3ConnectionStatsData() = default;
+
+ public:
+  NS_DECL_THREADSAFE_ISUPPORTS
+
+  Http3ConnectionStatsData() = default;
+
+  nsTArray<Http3ConnectionStatsParams> mData;
+  nsMainThreadPtrHandle<nsINetDashboardCallback> mCallback;
+  nsIEventTarget* mEventTarget{nullptr};
+};
+
+NS_IMPL_ISUPPORTS0(Http3ConnectionStatsData)
+
 class WebSocketRequest : public nsISupports {
   virtual ~WebSocketRequest() = default;
 
@@ -693,6 +708,127 @@ nsresult Dashboard::GetHttpConnections(HttpData* aHttpData) {
   }
 
   httpData->mCallback->OnDashboardDataAvailable(val);
+
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+Dashboard::RequestHttp3ConnectionStats(nsINetDashboardCallback* aCallback) {
+  RefPtr<Http3ConnectionStatsData> data = new Http3ConnectionStatsData();
+  data->mCallback = new nsMainThreadPtrHolder<nsINetDashboardCallback>(
+      "nsINetDashboardCallback", aCallback, true);
+  data->mEventTarget = GetCurrentSerialEventTarget();
+
+  if (nsIOService::UseSocketProcess()) {
+    if (!gIOService->SocketProcessReady()) {
+      return NS_ERROR_NOT_AVAILABLE;
+    }
+
+    RefPtr<Dashboard> self(this);
+    RefPtr<SocketProcessParent> socketParent =
+        SocketProcessParent::GetSingleton();
+    socketParent->SendGetHttp3ConnectionStatsData()->Then(
+        GetMainThreadSerialEventTarget(), __func__,
+        [self{std::move(self)},
+         data](nsTArray<Http3ConnectionStatsParams>&& params) {
+          data->mData.Assign(std::move(params));
+          self->GetHttp3ConnectionStats(data);
+          data->mEventTarget->Dispatch(
+              NewRunnableMethod<RefPtr<Http3ConnectionStatsData>>(
+                  "net::Dashboard::GetHttp3ConnectionStats", self,
+                  &Dashboard::GetHttp3ConnectionStats, data),
+              NS_DISPATCH_NORMAL);
+        },
+        [self](const mozilla::ipc::ResponseRejectReason) {});
+    return NS_OK;
+  }
+
+  gSocketTransportService->Dispatch(
+      NewRunnableMethod<RefPtr<Http3ConnectionStatsData>>(
+          "net::Dashboard::GetHttp3ConnectionStatsDispatch", this,
+          &Dashboard::GetHttp3ConnectionStatsDispatch, data),
+      NS_DISPATCH_NORMAL);
+  return NS_OK;
+}
+
+nsresult Dashboard::GetHttp3ConnectionStatsDispatch(
+    Http3ConnectionStatsData* aData) {
+  RefPtr<Http3ConnectionStatsData> data = aData;
+  HttpInfo::GetHttp3ConnectionStatsData(&data->mData);
+  data->mEventTarget->Dispatch(
+      NewRunnableMethod<RefPtr<Http3ConnectionStatsData>>(
+          "net::Dashboard::GetHttp3ConnectionStats", this,
+          &Dashboard::GetHttp3ConnectionStats, data),
+      NS_DISPATCH_NORMAL);
+  return NS_OK;
+}
+
+nsresult Dashboard::GetHttp3ConnectionStats(Http3ConnectionStatsData* aData) {
+  RefPtr<Http3ConnectionStatsData> data = aData;
+  AutoSafeJSContext cx;
+
+  mozilla::dom::Http3ConnStatsDict dict;
+  dict.mConnections.Construct();
+
+  using mozilla::dom::Http3ConnectionStatsElement;
+  using mozilla::dom::Http3ConnStats;
+  Sequence<Http3ConnectionStatsElement>& connections =
+      dict.mConnections.Value();
+
+  uint32_t length = data->mData.Length();
+  if (!connections.SetCapacity(length, fallible)) {
+    JS_ReportOutOfMemory(cx);
+    return NS_ERROR_OUT_OF_MEMORY;
+  }
+
+  for (uint32_t i = 0; i < data->mData.Length(); i++) {
+    Http3ConnectionStatsElement& connection =
+        *connections.AppendElement(fallible);
+
+    CopyASCIItoUTF16(data->mData[i].host, connection.mHost);
+    connection.mPort = data->mData[i].port;
+
+    connection.mStats.Construct();
+
+    Sequence<Http3ConnStats>& stats = connection.mStats.Value();
+
+    if (!stats.SetCapacity(data->mData[i].stats.Length(), fallible)) {
+      JS_ReportOutOfMemory(cx);
+      return NS_ERROR_OUT_OF_MEMORY;
+    }
+
+    for (uint32_t j = 0; j < data->mData[i].stats.Length(); j++) {
+      Http3ConnStats& info = *stats.AppendElement(fallible);
+      info.mPacketsRx = data->mData[i].stats[j].packetsRx;
+      info.mDupsRx = data->mData[i].stats[j].dupsRx;
+      info.mDroppedRx = data->mData[i].stats[j].droppedRx;
+      info.mSavedDatagrams = data->mData[i].stats[j].savedDatagrams;
+      info.mPacketsTx = data->mData[i].stats[j].packetsTx;
+      info.mLost = data->mData[i].stats[j].lost;
+      info.mLateAck = data->mData[i].stats[j].lateAck;
+      info.mPtoAck = data->mData[i].stats[j].ptoAck;
+      info.mWouldBlockRx = data->mData[i].stats[j].wouldBlockRx;
+      info.mWouldBlockTx = data->mData[i].stats[j].wouldBlockTx;
+      info.mPtoCounts.Construct();
+      Sequence<uint64_t>& ptoCounts = info.mPtoCounts.Value();
+      if (!ptoCounts.SetCapacity(data->mData[i].stats[j].ptoCounts.Length(),
+                                 fallible)) {
+        JS_ReportOutOfMemory(cx);
+        return NS_ERROR_OUT_OF_MEMORY;
+      }
+      for (auto pto : data->mData[i].stats[j].ptoCounts) {
+        uint64_t& element = *ptoCounts.AppendElement(fallible);
+        element = pto;
+      }
+    }
+  }
+
+  JS::Rooted<JS::Value> val(cx);
+  if (!ToJSValue(cx, dict, &val)) {
+    return NS_ERROR_FAILURE;
+  }
+
+  data->mCallback->OnDashboardDataAvailable(val);
 
   return NS_OK;
 }

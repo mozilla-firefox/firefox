@@ -51,24 +51,31 @@ public:
   // WARNING: callbacks may be invoked on a different thread
   // than that which creates the CrashGenerationServer.  They must
   // be thread safe.
-  using OnClientDumpRequestCallback = void (const ClientInfo& client_info,
+  using OnClientDumpRequestCallback = void (void* dump_context,
+                                            const ClientInfo& client_info,
                                             const string& file_path);
-
 #if defined(MOZ_OXIDIZED_BREAKPAD)
-  using GetAuxvInfo = bool (pid_t pid, DirectAuxvDumpInfo*);
+  using GetAuxvInfoCallback = bool (pid_t pid, DirectAuxvDumpInfo*);
 #endif // defined(MOZ_OXIDIZED_BREAKPAD)
 
-  // listen_fd: The server fd created by CreateReportChannel()
-  // get_auxv_info: Callback to retrieve the stored auxiliary vector for the given PID
-  // dump_callback: Callback for a client crash dump request.
-  // dump_path: Path for generating dumps
-  CrashGenerationServer(
-    const int listen_fd,
+  // Create an instance with the given parameters.
+  //
+  // Parameter listen_fd: The server fd created by CreateReportChannel().
+  // Parameter: get_auxv_info: Callback to retrieve the stored auxiliary vector for the given PID.
+  // Parameter dump_callback: Callback for a client crash dump request.
+  // Parameter dump_context: Context for client crash dump request callback.
+  //     Client code of this class might want to generate dumps explicitly
+  //     in the crash dump request callback. In that case, false can be
+  //     passed for this parameter.
+  // Parameter dump_path: Path for generating dumps; required only if true is
+  //     passed for generateDumps parameter; NULL can be passed otherwise.
+  CrashGenerationServer(const int listen_fd,
 #if defined(MOZ_OXIDIZED_BREAKPAD)
-    std::function<GetAuxvInfo> get_auxv_info,
+                        std::function<GetAuxvInfoCallback> get_auxv_info,
 #endif // defined(MOZ_OXIDIZED_BREAKPAD)
-    std::function<OnClientDumpRequestCallback> dump_callback,
-    const string* dump_path);
+                        std::function<OnClientDumpRequestCallback> dump_callback,
+                        void* dump_context,
+                        const string* dump_path);
 
   ~CrashGenerationServer();
 
@@ -79,6 +86,9 @@ public:
 
   // Stop the server.
   void Stop();
+
+  // Adjust the path where minidumps are placed, this is thread-safe
+  void SetPath(const char* dump_path);
 
   // Create a "channel" that can be used by clients to report crashes
   // to a CrashGenerationServer.  |*server_fd| should be passed to
@@ -107,19 +117,16 @@ private:
   // Return a unique filename at which a minidump can be written
   bool MakeMinidumpFilename(string& outFilename);
 
-  // Reserve a handful of file descriptors to make them available when we
-  // generate a minidump.
-  void ReserveFileDescriptors();
-  void ReleaseFileDescriptors();
-
   int server_fd_;
 
 #if defined(MOZ_OXIDIZED_BREAKPAD)
-  std::function<GetAuxvInfo> get_auxv_info_;
+  std::function<GetAuxvInfoCallback> get_auxv_info_;
 #endif // defined(MOZ_OXIDIZED_BREAKPAD)
 
   std::function<OnClientDumpRequestCallback> dump_callback_;
+  void* dump_context_;
 
+  pthread_mutex_t dump_dir_mutex_;
   string dump_dir_;
 
   bool started_;
@@ -127,9 +134,6 @@ private:
   pthread_t thread_;
   int control_pipe_in_;
   int control_pipe_out_;
-
-  static const size_t RESERVED_FDS_NUM = 2;
-  std::array<int, RESERVED_FDS_NUM> reserved_fds_;
 };
 
 } // namespace google_breakpad

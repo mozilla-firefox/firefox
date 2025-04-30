@@ -7,6 +7,7 @@ use crate::size_hint;
 ///
 /// Iterator element type is `I::Item`.
 #[derive(Debug, Clone)]
+#[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
 pub struct PutBackN<I: Iterator> {
     top: Vec<I::Item>,
     iter: I,
@@ -17,7 +18,8 @@ pub struct PutBackN<I: Iterator> {
 ///
 /// Iterator element type is `I::Item`.
 pub fn put_back_n<I>(iterable: I) -> PutBackN<I::IntoIter>
-    where I: IntoIterator
+where
+    I: IntoIterator,
 {
     PutBackN {
         top: Vec::new(),
@@ -26,7 +28,8 @@ pub fn put_back_n<I>(iterable: I) -> PutBackN<I::IntoIter>
 }
 
 impl<I: Iterator> PutBackN<I> {
-    /// Puts x in front of the iterator.
+    /// Puts `x` in front of the iterator.
+    ///
     /// The values are yielded in order of the most recently put back
     /// values first.
     ///
@@ -57,5 +60,12 @@ impl<I: Iterator> Iterator for PutBackN<I> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         size_hint::add_scalar(self.iter.size_hint(), self.top.len())
     }
-}
 
+    fn fold<B, F>(self, mut init: B, mut f: F) -> B
+    where
+        F: FnMut(B, Self::Item) -> B,
+    {
+        init = self.top.into_iter().rfold(init, &mut f);
+        self.iter.fold(init, f)
+    }
+}

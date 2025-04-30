@@ -388,13 +388,6 @@
 
       this.telemetrySelectedIndex = -1;
 
-      lazy.BrowserSearchTelemetry.recordSearch(
-        gBrowser.selectedBrowser,
-        engine,
-        "searchbar",
-        details
-      );
-
       // Record when the user uses the search bar
       Services.prefs.setStringPref(
         "browser.search.widget.lastUsed",
@@ -413,6 +406,28 @@
           params[key] = aParams[key];
         }
       }
+
+      if (aWhere == "tab") {
+        gBrowser.tabContainer.addEventListener(
+          "TabOpen",
+          event =>
+            lazy.BrowserSearchTelemetry.recordSearch(
+              event.target.linkedBrowser,
+              engine,
+              "searchbar",
+              details
+            ),
+          { once: true }
+        );
+      } else {
+        lazy.BrowserSearchTelemetry.recordSearch(
+          gBrowser.selectedBrowser,
+          engine,
+          "searchbar",
+          details
+        );
+      }
+
       openTrustedLinkIn(submission.uri.spec, aWhere, params);
     }
 
@@ -504,6 +519,7 @@
         this._needBrowserFocusAtEnterKeyUp = true;
       }
 
+      lazy.BrowserSearchTelemetry.recordSearchForm(engine, "searchbar");
       openTrustedLinkIn(searchForm, where, params);
     }
 

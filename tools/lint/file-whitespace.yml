@@ -4,6 +4,7 @@ file-whitespace:
     exclude:
         - accessible/tests/crashtests
         - accessible/tests/mochitest
+        - browser/extensions/newtab/webext-glue/locales/
         - browser/locales/en-US/chrome/browser/uiDensity.properties
         - build/pgo/blueprint
         - build/pgo/js-input

@@ -130,10 +130,6 @@ struct WorkerLoadInfoData {
   nsCOMPtr<nsIReferrerInfo> mReferrerInfo;
   OriginTrials mTrials;
   bool mFromWindow;
-  bool mEvalAllowed;
-  bool mReportEvalCSPViolations;
-  bool mWasmEvalAllowed;
-  bool mReportWasmEvalCSPViolations;
   bool mXHRParamsAllowed;
   bool mWatchedByDevTools;
   StorageAccess mStorageAccess;

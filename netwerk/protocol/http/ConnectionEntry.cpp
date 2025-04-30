@@ -18,6 +18,7 @@
 #include "mozilla/ChaosMode.h"
 #include "mozilla/StaticPrefs_network.h"
 #include "nsHttpHandler.h"
+#include "mozilla/net/neqo_glue_ffi_generated.h"
 
 namespace mozilla {
 namespace net {
@@ -886,6 +887,39 @@ HttpRetParams ConnectionEntry::GetConnectionData() {
     data.httpVersion = "HTTP <= 1.1"_ns;
   }
   data.ssl = mConnInfo->EndToEndSSL();
+  return data;
+}
+
+Http3ConnectionStatsParams ConnectionEntry::GetHttp3ConnectionStatsData() {
+  Http3ConnectionStatsParams data;
+  if (!mConnInfo->IsHttp3()) {
+    return data;
+  }
+  data.host = mConnInfo->Origin();
+  data.port = mConnInfo->OriginPort();
+
+  for (uint32_t i = 0; i < mActiveConns.Length(); i++) {
+    RefPtr<HttpConnectionUDP> connUDP = do_QueryObject(mActiveConns[i]);
+    if (!connUDP) {
+      continue;
+    }
+
+    Http3Stats stats = connUDP->GetStats();
+    Http3ConnStats res;
+    res.packetsRx = stats.packets_rx;
+    res.dupsRx = stats.dups_rx;
+    res.droppedRx = stats.dropped_rx;
+    res.savedDatagrams = stats.saved_datagrams;
+    res.packetsTx = stats.packets_tx;
+    res.lost = stats.lost;
+    res.lateAck = stats.late_ack;
+    res.ptoAck = stats.pto_ack;
+    res.wouldBlockRx = stats.would_block_rx;
+    res.wouldBlockTx = stats.would_block_tx;
+    res.ptoCounts.AppendElements(&stats.pto_counts[0], 16);
+
+    data.stats.AppendElement(std::move(res));
+  }
   return data;
 }
 

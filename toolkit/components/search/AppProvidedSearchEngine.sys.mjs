@@ -6,6 +6,7 @@
 
 /**
  * @typedef {import("resource://services-settings/RemoteSettingsClient.sys.mjs").RemoteSettingsClient} RemoteSettingsClient
+ * @typedef {import("../uniffi-bindgen-gecko-js/components/generated/RustSearch.sys.mjs").SearchEngineDefinition} SearchEngineDefinition
  */
 
 import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
@@ -622,7 +623,7 @@ export class AppProvidedSearchEngine extends SearchEngine {
   /**
    * Initializes the engine.
    *
-   * @param {object} engineConfig
+   * @param {SearchEngineDefinition} engineConfig
    *   The search engine configuration for application provided engines.
    */
   #init(engineConfig) {
@@ -631,7 +632,8 @@ export class AppProvidedSearchEngine extends SearchEngine {
     this.#isGeneralPurposeSearchEngine = lazy.SearchUtils
       .rustSelectorFeatureGate
       ? engineConfig.classification == lazy.SearchEngineClassification.GENERAL
-      : engineConfig.classification == "general";
+      : // @ts-ignore This is supporting the non-Rust search engine selector.
+        engineConfig.classification == "general";
 
     if (engineConfig.charset) {
       this._queryCharset = engineConfig.charset;
@@ -648,7 +650,7 @@ export class AppProvidedSearchEngine extends SearchEngine {
     this._name = engineConfig.name.trim();
     this._definedAliases =
       engineConfig.aliases?.map(alias => `@${alias}`) ?? [];
-    this.#partnerCode = engineConfig.partnerCode;
+    this.#partnerCode = engineConfig.partnerCode ?? "";
 
     for (const [type, urlData] of Object.entries(engineConfig.urls)) {
       if (urlData) {

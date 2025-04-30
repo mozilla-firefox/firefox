@@ -220,6 +220,7 @@ class BrowserToolbarTest {
 
         verify(root, times(5)).requestSendAccessibilityEvent(any(), captor.capture())
 
+        @Suppress("DEPRECATION")
         assertEquals(AccessibilityEvent.TYPE_ANNOUNCEMENT, captor.allValues[0].eventType)
         assertEquals(testContext.getString(R.string.mozac_browser_toolbar_progress_loading), captor.allValues[0].text[0])
 
@@ -262,6 +263,7 @@ class BrowserToolbarTest {
 
         verify(root, times(1)).requestSendAccessibilityEvent(any(), captor.capture())
 
+        @Suppress("DEPRECATION")
         assertEquals(AccessibilityEvent.TYPE_ANNOUNCEMENT, captor.allValues[0].eventType)
         assertEquals(testContext.getString(R.string.mozac_browser_toolbar_progress_loading), captor.allValues[0].text[0])
     }

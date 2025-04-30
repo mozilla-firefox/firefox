@@ -2,6 +2,9 @@
 firefox-appdir = "browser"
 head = "head.js"
 
+["test_AttributionDistribution.js"]
+skip-if = ["os == 'android'"] # FOG isn't responsible for attribution/distribution on Android.
+
 ["test_FOGIPCLimit.js"]
 
 ["test_FOGInit.js"]

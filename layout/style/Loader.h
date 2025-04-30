@@ -623,8 +623,6 @@ class Loader final {
   // warning in the console.
   void MaybeNotifyPreloadUsed(SheetLoadData&);
 
-  nsRefPtrHashtable<nsStringHashKey, StyleSheet> mInlineSheets;
-
   // A set with all the different loads we've done in a given document, for the
   // purpose of not posting duplicate performance entries for them.
   nsTHashtable<const SheetLoadDataHashKey> mLoadsPerformed;

@@ -10,7 +10,6 @@ support-files = ["data/**"]
 tags = "webextensions"
 
 ["test_ext_native_messaging.js"]
-skip-if = ["os == 'mac' && os_version == '11.20' && arch == 'aarch64'"] # bug 1729540
 run-sequentially = "very high failure rate in parallel"
 
 ["test_ext_native_messaging_perf.js"]

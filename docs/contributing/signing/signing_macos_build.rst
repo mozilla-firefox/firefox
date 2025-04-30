@@ -115,7 +115,7 @@ as the ``-s`` codesigning identity to ``mach macos-sign``:
     $ ./mach build package
     $ open <path-to-dmg>
     <drag Browser to the Desktop>
-    $ ./mach macos-sign -a ~/Desktop/Nightly.app -s <MOZILLA_DEVELOPER_CERT_ID>
+    $ ./mach macos-sign -a ~/Desktop/Nightly.app -s <MOZILLA_DEVELOPER_CERT_ID> -e production
 
 Example: Re-Signing Official Nightly
 ------------------------------------

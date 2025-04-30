@@ -26,7 +26,7 @@ if CONFIG["MOZ_SYSTEM_NSS"]:
 
 include("/build/gyp_base.mozbuild")
 if CONFIG["MOZ_FOLD_LIBS"]:
-    GeckoSharedLibrary("nss", linkage=None)
+    GeckoSharedLibrary("nss")
     # TODO: The library name can be changed when bug 845217 is fixed.
     SHARED_LIBRARY_NAME = "nss3"
 

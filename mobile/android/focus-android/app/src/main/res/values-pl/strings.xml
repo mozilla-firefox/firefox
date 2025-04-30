@@ -492,7 +492,7 @@
   <!-- New Onboarding flow first screen button label -->
   <string name="onboarding_first_screen_button_agree_and_continue">Zgadzam się, kontynuuj</string>
   <!-- In the first screen of new onboarding flow, additional accessibility description for content that contain urls. -->
-  <string name="a11y_link_available">Odnośnik dostępny</string>
+  <string name="a11y_link_available">Odnośnik jest dostępny</string>
   <!--
     Onboarding second screen: Title
 

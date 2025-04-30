@@ -1,25 +1,7 @@
-/* Simple Plugin API
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
+
 #ifndef SPA_BUFFER_ALLOC_H
 #define SPA_BUFFER_ALLOC_H
 
@@ -28,6 +10,14 @@ extern "C" {
 #endif
 
 #include <spa/buffer/buffer.h>
+
+#ifndef SPA_API_BUFFER_ALLOC
+ #ifdef SPA_API_IMPL
+  #define SPA_API_BUFFER_ALLOC SPA_API_IMPL
+ #else
+  #define SPA_API_BUFFER_ALLOC static inline
+ #endif
+#endif
 
 /**
  * \addtogroup spa_buffer
@@ -76,7 +66,7 @@ struct spa_buffer_alloc_info {
  * \param data_aligns \a n_datas alignments
  * \return 0 on success.
  * */
-static inline int spa_buffer_alloc_fill_info(struct spa_buffer_alloc_info *info,
+SPA_API_BUFFER_ALLOC int spa_buffer_alloc_fill_info(struct spa_buffer_alloc_info *info,
 					     uint32_t n_metas, struct spa_meta metas[],
 					     uint32_t n_datas, struct spa_data datas[],
 					     uint32_t data_aligns[])
@@ -161,8 +151,9 @@ static inline int spa_buffer_alloc_fill_info(struct spa_buffer_alloc_info *info,
 	*target += info->chunk_size;
 
 	for (i = 0, size = 0; i < n_datas; i++) {
+		int64_t align = data_aligns[i];
 		info->max_align = SPA_MAX(info->max_align, data_aligns[i]);
-		size = SPA_ROUND_UP_N(size, data_aligns[i]);
+		size = SPA_ROUND_UP_N(size, align);
 		size += datas[i].maxsize;
 	}
 	info->data_size = size;
@@ -196,7 +187,7 @@ static inline int spa_buffer_alloc_fill_info(struct spa_buffer_alloc_info *info,
  * \param data_mem memory to hold the meta, chunk and memory
  * \return a struct \ref spa_buffer in \a skel_mem
  */
-static inline struct spa_buffer *
+SPA_API_BUFFER_ALLOC struct spa_buffer *
 spa_buffer_alloc_layout(struct spa_buffer_alloc_info *info,
 			void *skel_mem, void *data_mem)
 {
@@ -274,7 +265,7 @@ spa_buffer_alloc_layout(struct spa_buffer_alloc_info *info,
  * \return 0 on success.
  *
  */
-static inline int
+SPA_API_BUFFER_ALLOC int
 spa_buffer_alloc_layout_array(struct spa_buffer_alloc_info *info,
 			      uint32_t n_buffers, struct spa_buffer *buffers[],
 			      void *skel_mem, void *data_mem)
@@ -309,7 +300,7 @@ spa_buffer_alloc_layout_array(struct spa_buffer_alloc_info *info,
  *     allocation failed.
  *
  */
-static inline struct spa_buffer **
+SPA_API_BUFFER_ALLOC struct spa_buffer **
 spa_buffer_alloc_array(uint32_t n_buffers, uint32_t flags,
 		       uint32_t n_metas, struct spa_meta metas[],
 		       uint32_t n_datas, struct spa_data datas[],
@@ -317,7 +308,8 @@ spa_buffer_alloc_array(uint32_t n_buffers, uint32_t flags,
 {
 
 	struct spa_buffer **buffers;
-	struct spa_buffer_alloc_info info = { flags | SPA_BUFFER_ALLOC_FLAG_INLINE_ALL, };
+	struct spa_buffer_alloc_info info = { flags | SPA_BUFFER_ALLOC_FLAG_INLINE_ALL,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	void *skel;
 
 	spa_buffer_alloc_fill_info(&info, n_metas, metas, n_datas, datas, data_aligns);

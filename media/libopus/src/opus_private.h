@@ -177,6 +177,8 @@ void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int 
 void downmix_int24(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C);
 int is_digital_silence(const opus_res* pcm, int frame_size, int channels, int lsb_depth);
 
+void opus_pcm_soft_clip_impl(float *_x, int N, int C, float *declip_mem, int arch);
+
 int encode_size(int size, unsigned char *data);
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs);

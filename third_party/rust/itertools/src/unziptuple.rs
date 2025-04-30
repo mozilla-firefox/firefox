@@ -1,6 +1,6 @@
 /// Converts an iterator of tuples into a tuple of containers.
 ///
-/// `unzip()` consumes an entire iterator of n-ary tuples, producing `n` collections, one for each
+/// `multiunzip()` consumes an entire iterator of n-ary tuples, producing `n` collections, one for each
 /// column.
 ///
 /// This function is, in some sense, the opposite of [`multizip`].

@@ -14,14 +14,12 @@ const {
 const {
   td,
 } = require("resource://devtools/client/shared/vendor/react-dom-factories.js");
-const {
-  L10N,
-} = require("resource://devtools/client/netmonitor/src/utils/l10n.js");
 const PropTypes = require("resource://devtools/client/shared/vendor/react-prop-types.mjs");
 const {
   getFormattedIPAndPort,
 } = require("resource://devtools/client/netmonitor/src/utils/format-utils.js");
 const {
+  getUrlToolTip,
   propertiesEqual,
 } = require("resource://devtools/client/netmonitor/src/utils/request-utils.js");
 const SecurityState = createFactory(
@@ -71,19 +69,7 @@ class RequestListColumnUrl extends Component {
 
     // deals with returning whole url
     const originalURL = urlDetails.url;
-    const decodedFileURL = urlDetails.unicodeUrl;
-    const ORIGINAL_FILE_URL = L10N.getFormatStr(
-      "netRequest.originalFileURL.tooltip",
-      originalURL
-    );
-    const DECODED_FILE_URL = L10N.getFormatStr(
-      "netRequest.decodedFileURL.tooltip",
-      decodedFileURL
-    );
-    const urlToolTip =
-      originalURL === decodedFileURL
-        ? originalURL
-        : ORIGINAL_FILE_URL + "\n\n" + DECODED_FILE_URL;
+    const urlToolTip = getUrlToolTip(urlDetails);
 
     // Build extra content for the title if this is a remote address.
     const remoteAddressTitle = remoteAddress

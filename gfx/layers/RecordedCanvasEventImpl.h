@@ -47,7 +47,9 @@ const EventType DROP_BUFFER = EventType(EventType::LAST + 16);
 const EventType PREPARE_SHMEM = EventType(EventType::LAST + 17);
 const EventType PRESENT_TEXTURE = EventType(EventType::LAST + 18);
 const EventType DEVICE_RESET_ACKNOWLEDGED = EventType(EventType::LAST + 19);
-const EventType LAST_CANVAS_EVENT_TYPE = DEVICE_RESET_ACKNOWLEDGED;
+const EventType AWAIT_TRANSLATION_SYNC = EventType(EventType::LAST + 20);
+const EventType RESOLVE_EXTERNAL_SNAPSHOT = EventType(EventType::LAST + 21);
+const EventType LAST_CANVAS_EVENT_TYPE = RESOLVE_EXTERNAL_SNAPSHOT;
 
 class RecordedCanvasBeginTransaction final
     : public RecordedEventDerived<RecordedCanvasBeginTransaction> {
@@ -668,6 +670,87 @@ class RecordedPauseTranslation final
   std::string GetName() const final { return "RecordedPauseTranslation"; }
 };
 
+class RecordedAwaitTranslationSync final
+    : public RecordedEventDerived<RecordedAwaitTranslationSync> {
+ public:
+  explicit RecordedAwaitTranslationSync(uint64_t aSyncId)
+      : RecordedEventDerived(AWAIT_TRANSLATION_SYNC), mSyncId(aSyncId) {}
+
+  template <class S>
+  MOZ_IMPLICIT RecordedAwaitTranslationSync(S& aStream);
+
+  bool PlayCanvasEvent(CanvasTranslator* aTranslator) const {
+    aTranslator->AwaitTranslationSync(mSyncId);
+    return true;
+  }
+
+  template <class S>
+  void Record(S& aStream) const;
+
+  std::string GetName() const final { return "RecordedAwaitTranslationSync"; }
+
+ private:
+  uint64_t mSyncId = 0;
+};
+
+template <class S>
+void RecordedAwaitTranslationSync::Record(S& aStream) const {
+  WriteElement(aStream, mSyncId);
+}
+
+template <class S>
+RecordedAwaitTranslationSync::RecordedAwaitTranslationSync(S& aStream)
+    : RecordedEventDerived(AWAIT_TRANSLATION_SYNC) {
+  ReadElement(aStream, mSyncId);
+}
+
+class RecordedResolveExternalSnapshot final
+    : public RecordedEventDerived<RecordedResolveExternalSnapshot> {
+ public:
+  explicit RecordedResolveExternalSnapshot(uint64_t aSyncId,
+                                           ReferencePtr aRefPtr)
+      : RecordedEventDerived(RESOLVE_EXTERNAL_SNAPSHOT),
+        mSyncId(aSyncId),
+        mRefPtr(aRefPtr) {}
+
+  template <class S>
+  MOZ_IMPLICIT RecordedResolveExternalSnapshot(S& aStream);
+
+  bool PlayCanvasEvent(CanvasTranslator* aTranslator) const {
+    RefPtr<gfx::SourceSurface> snapshot =
+        aTranslator->LookupExternalSnapshot(mSyncId);
+    if (!snapshot) {
+      return false;
+    }
+    aTranslator->AddSourceSurface(mRefPtr, snapshot);
+    return true;
+  }
+
+  template <class S>
+  void Record(S& aStream) const;
+
+  std::string GetName() const final {
+    return "RecordedResolveExternalSnapshot";
+  }
+
+ private:
+  uint64_t mSyncId = 0;
+  ReferencePtr mRefPtr;
+};
+
+template <class S>
+void RecordedResolveExternalSnapshot::Record(S& aStream) const {
+  WriteElement(aStream, mSyncId);
+  WriteElement(aStream, mRefPtr);
+}
+
+template <class S>
+RecordedResolveExternalSnapshot::RecordedResolveExternalSnapshot(S& aStream)
+    : RecordedEventDerived(RESOLVE_EXTERNAL_SNAPSHOT) {
+  ReadElement(aStream, mSyncId);
+  ReadElement(aStream, mRefPtr);
+}
+
 class RecordedRecycleBuffer final
     : public RecordedEventDerived<RecordedRecycleBuffer> {
  public:
@@ -811,7 +894,9 @@ RecordedPresentTexture::RecordedPresentTexture(S& aStream)
   f(DROP_BUFFER, RecordedDropBuffer);                               \
   f(PREPARE_SHMEM, RecordedPrepareShmem);                           \
   f(PRESENT_TEXTURE, RecordedPresentTexture);                       \
-  f(DEVICE_RESET_ACKNOWLEDGED, RecordedDeviceResetAcknowledged);
+  f(DEVICE_RESET_ACKNOWLEDGED, RecordedDeviceResetAcknowledged);    \
+  f(AWAIT_TRANSLATION_SYNC, RecordedAwaitTranslationSync);          \
+  f(RESOLVE_EXTERNAL_SNAPSHOT, RecordedResolveExternalSnapshot);
 
 }  // namespace layers
 }  // namespace mozilla

@@ -176,8 +176,6 @@ export class nsContextMenu {
       nsContextMenu.contentData = null;
     }
 
-    this.remoteType = this.actor?.domProcess?.remoteType;
-
     const { gBrowser } = this.window;
 
     this.shouldDisplay = context.shouldDisplay;
@@ -275,6 +273,8 @@ export class nsContextMenu {
           "ContextMenu"
         );
     }
+
+    this.remoteType = this.actor.manager.domProcess.remoteType;
 
     this.selectedText = this.selectionInfo.text;
     this.isTextSelected = !!this.selectedText.length;

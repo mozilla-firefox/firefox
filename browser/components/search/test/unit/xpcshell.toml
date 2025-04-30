@@ -3,7 +3,6 @@ support-files = [
   "../../../../../services/settings/dumps/main/search-config-v2.json",
 ]
 prefs = ["browser.search.log=true"]
-skip-if = ["os == 'android'"] # bug 1730213
 firefox-appdir = "browser"
 
 ["test_domain_to_categories_store.js"]

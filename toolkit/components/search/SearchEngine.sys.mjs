@@ -1187,6 +1187,13 @@ export class SearchEngine {
     return this._name;
   }
 
+  /**
+   * Anonymized path of where we initially loaded the engine from.
+   */
+  get loadPath() {
+    return this._loadPath;
+  }
+
   get queryCharset() {
     return this._queryCharset || lazy.SearchUtils.DEFAULT_QUERY_CHARSET;
   }

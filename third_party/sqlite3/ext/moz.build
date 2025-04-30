@@ -18,6 +18,7 @@ else:
 
 SOURCES += [
     "fts5.c",
+    "sqlite-vec/sqlite-vec.c",
 ]
 
 if CONFIG["OS_TARGET"] == "Linux" or CONFIG["OS_TARGET"] == "Android":

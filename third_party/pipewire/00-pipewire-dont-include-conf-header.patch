@@ -1,0 +1,12 @@
+diff --git a/pipewire/pipewire.h b/pipewire/pipewire.h
+index 0c495ed..870f2f1 100644
+--- a/pipewire/pipewire.h
++++ b/pipewire/pipewire.h
+@@ -13,7 +13,6 @@ extern "C" {
+ 
+ #include <pipewire/array.h>
+ #include <pipewire/client.h>
+-#include <pipewire/conf.h>
+ #include <pipewire/context.h>
+ #include <pipewire/device.h>
+ #include <pipewire/buffers.h>

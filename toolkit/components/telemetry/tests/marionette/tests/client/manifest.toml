@@ -10,6 +10,7 @@ skip-if = ["os == 'mac' && os_version == '14.70' && processor == 'x86_64' && deb
 skip-if = [
     "os == 'mac' && os_version == '14.70' && processor == 'x86_64' && debug", # Bug 1935204
     "os == 'win' && os_version == '11.26100' && processor == 'x86_64'", # Bug 1945328
+    "true" # Bug 1942416 & Bug 1944382
 ]
 
 ["test_fog_user_activity.py"]

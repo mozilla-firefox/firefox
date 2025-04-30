@@ -143,7 +143,7 @@ class MercurialRepoManipulationMixin:
         force=None,
         halt_on_failure=True,
     ):
-        if isinstance(tags, (str,)):
+        if isinstance(tags, str):
             tags = [tags]
         cmd = self.query_exe("hg", return_type="list") + ["tag"]
         if not message:

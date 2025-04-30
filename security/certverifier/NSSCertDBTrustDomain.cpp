@@ -1821,13 +1821,11 @@ bool LoadOSClientCertsModule() {
 #endif
 }
 
-#ifdef MOZ_SYSTEM_NSS
 bool LoadLoadableRoots(const nsCString& dir) {
   int unusedModType;
   Unused << SECMOD_DeleteModule("Root Certs", &unusedModType);
   return LoadUserModuleAt(kRootModuleName.get(), "nssckbi", dir, nullptr);
 }
-#endif  // MOZ_SYSTEM_NSS
 
 extern "C" {
 // Extern function to call trust-anchors module C_GetFunctionList.

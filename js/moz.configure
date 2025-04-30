@@ -44,7 +44,6 @@ include("../build/moz.configure/bindgen.configure", when="--enable-compile-envir
 
 set_config("JS_STANDALONE", js_standalone)
 set_define("JS_STANDALONE", js_standalone)
-add_old_configure_assignment("JS_STANDALONE", js_standalone)
 option(
     "--enable-js-shell", default=js_standalone, help="{Build|Do not build} the JS shell"
 )
@@ -1208,18 +1207,6 @@ set_config("MOZ_ICU_CFLAGS", [], when=in_tree_icu)
 set_config("MOZ_SYSTEM_ICU", True, when=system_icu)
 set_define("MOZ_SYSTEM_ICU", True, when=system_icu)
 
-option("--disable-icu4x", help="Disable using ICU4X")
-
-
-@depends("--enable-icu4x", js_standalone)
-def check_icu4x(enabled, js_standalone):
-    if not enabled and not js_standalone:
-        die("--disable-icu4x is not supported")
-
-
-set_config("MOZ_ICU4X", True, when="--enable-icu4x")
-set_define("MOZ_ICU4X", True, when="--enable-icu4x")
-
 option("--without-intl-api", help="Disable ECMAScript Internationalization API")
 
 
@@ -1231,6 +1218,18 @@ def check_intl_api(enabled, js_standalone):
 
 set_config("JS_HAS_INTL_API", True, when="--with-intl-api")
 set_define("JS_HAS_INTL_API", True, when="--with-intl-api")
+
+option("--disable-icu4x", help="Disable using ICU4X")
+
+
+@depends("--enable-icu4x", "--with-intl-api")
+def check_icu4x(enabled, intl_enabled):
+    if not enabled and intl_enabled:
+        die("Can't use --disable-icu4x with --with-intl-api")
+
+
+set_config("MOZ_ICU4X", True, when="--enable-icu4x")
+set_define("MOZ_ICU4X", True, when="--enable-icu4x")
 
 
 @depends(build_environment, when="--with-intl-api")
@@ -1262,25 +1261,6 @@ set_define("U_USING_ICU_NAMESPACE", "0", when="--with-intl-api")
 set_define("U_STATIC_IMPLEMENTATION", True, when=depends(system_icu)(lambda x: not x))
 
 
-# ECMAScript Temporal API Support (uses ICU and ICU4X)
-# ======================================================
-
-option(
-    "--with-temporal-api",
-    default=milestone.is_nightly,
-    help="{Enable|Disable} ECMAScript Temporal API",
-)
-
-set_config("JS_HAS_TEMPORAL_API", True, when="--with-temporal-api")
-set_define("JS_HAS_TEMPORAL_API", True, when="--with-temporal-api")
-
-
-@depends("--with-temporal-api", "--with-intl-api", "--enable-icu4x")
-def check_temporal_api(temporal_enabled, intl_enabled, icu4x_enabled):
-    if temporal_enabled and not (intl_enabled and icu4x_enabled):
-        die("Can't use --with-temporal-api with --without-intl-api or --disable-icu4x")
-
-
 # Initial support for WebAssembly JS-API Type Reflections
 # =======================================================
 
@@ -1303,6 +1283,30 @@ set_config(
 set_define(
     "ENABLE_WASM_TYPE_REFLECTIONS",
     depends_if("--enable-wasm-type-reflections")(lambda x: True),
+)
+
+# Support for resizable ArrayBuffer in Wasm
+# =========================================
+
+
+@depends(milestone.is_nightly)
+def default_wasm_resizable_arraybuffer(is_nightly):
+    return is_nightly
+
+
+option(
+    "--enable-wasm-resizable-arraybuffer",
+    default=default_wasm_resizable_arraybuffer,
+    help="{Enable|Disable} resizable ArrayBuffer in WASM",
+)
+
+set_config(
+    "ENABLE_WASM_RESIZABLE_ARRAYBUFFER",
+    depends_if("--enable-wasm-resizable-arraybuffer")(lambda x: True),
+)
+set_define(
+    "ENABLE_WASM_RESIZABLE_ARRAYBUFFER",
+    depends_if("--enable-wasm-resizable-arraybuffer")(lambda x: True),
 )
 
 # Wasi configuration

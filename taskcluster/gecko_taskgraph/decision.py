@@ -38,7 +38,7 @@ from .try_option_syntax import parse_message
 from .util.backstop import ANDROID_PERFTEST_BACKSTOP_INDEX, BACKSTOP_INDEX, is_backstop
 from .util.bugbug import push_schedules
 from .util.chunking import resolver
-from .util.hg import get_hg_commit_message, get_hg_revision_branch
+from .util.hg import get_hg_commit_message, get_hg_revision_branch, get_hg_revision_info
 from .util.partials import populate_release_history
 from .util.taskcluster import insert_index
 from .util.taskgraph import find_decision_task, find_existing_tasks_from_previous_kinds
@@ -310,6 +310,11 @@ def get_decision_parameters(graph_config, options):
         env_prefix=_get_env_prefix(graph_config),
     )
 
+    if head_git_rev := get_hg_revision_info(
+        GECKO, revision=parameters["head_rev"], info="extras.git_commit"
+    ):
+        parameters["head_git_rev"] = head_git_rev
+
     # Define default filter list, as most configurations shouldn't need
     # custom filters.
     parameters["filters"] = [
@@ -501,7 +506,7 @@ def write_artifact(filename, data):
             yaml.safe_dump(data, f, allow_unicode=True, default_flow_style=False)
     elif filename.endswith(".json"):
         with open(path, "w") as f:
-            json.dump(data, f, sort_keys=True, indent=2, separators=(",", ": "))
+            json.dump(data, f, separators=(",", ": "))
     elif filename.endswith(".json.gz"):
         import gzip
 

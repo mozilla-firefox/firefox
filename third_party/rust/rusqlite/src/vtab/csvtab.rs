@@ -91,14 +91,14 @@ unsafe impl<'vtab> VTab<'vtab> for CsvTab {
         db: &mut VTabConnection,
         _aux: Option<&()>,
         args: &[&[u8]],
-    ) -> Result<(String, CsvTab)> {
+    ) -> Result<(String, Self)> {
         if args.len() < 4 {
             return Err(Error::ModuleError("no CSV file specified".to_owned()));
         }
 
-        let mut vtab = CsvTab {
+        let mut vtab = Self {
             base: ffi::sqlite3_vtab::default(),
-            filename: "".to_owned(),
+            filename: String::new(),
             has_headers: false,
             delimiter: b',',
             quote: b'"',
@@ -115,7 +115,7 @@ unsafe impl<'vtab> VTab<'vtab> for CsvTab {
                     if !Path::new(value).exists() {
                         return Err(Error::ModuleError(format!("file '{value}' does not exist")));
                     }
-                    vtab.filename = value.to_owned();
+                    value.clone_into(&mut vtab.filename);
                 }
                 "schema" => {
                     schema = Some(value.to_owned());
@@ -148,7 +148,7 @@ unsafe impl<'vtab> VTab<'vtab> for CsvTab {
                     }
                 }
                 "delimiter" => {
-                    if let Some(b) = CsvTab::parse_byte(value) {
+                    if let Some(b) = Self::parse_byte(value) {
                         vtab.delimiter = b;
                     } else {
                         return Err(Error::ModuleError(format!(
@@ -157,7 +157,7 @@ unsafe impl<'vtab> VTab<'vtab> for CsvTab {
                     }
                 }
                 "quote" => {
-                    if let Some(b) = CsvTab::parse_byte(value) {
+                    if let Some(b) = Self::parse_byte(value) {
                         if b == b'0' {
                             vtab.quote = 0;
                         } else {
@@ -335,8 +335,8 @@ unsafe impl VTabCursor for CsvTabCursor<'_> {
 
 impl From<csv::Error> for Error {
     #[cold]
-    fn from(err: csv::Error) -> Error {
-        Error::ModuleError(err.to_string())
+    fn from(err: csv::Error) -> Self {
+        Self::ModuleError(err.to_string())
     }
 }
 
@@ -350,7 +350,9 @@ mod test {
     fn test_csv_module() -> Result<()> {
         let db = Connection::open_in_memory()?;
         csvtab::load_module(&db)?;
-        db.execute_batch("CREATE VIRTUAL TABLE vtab USING csv(filename='test.csv', header=yes)")?;
+        db.execute_batch(
+            "CREATE VIRTUAL TABLE vtab USING csv(filename = 'test.csv', header = yes)",
+        )?;
 
         {
             let mut s = db.prepare("SELECT rowid, * FROM vtab")?;

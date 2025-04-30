@@ -176,6 +176,8 @@ fn main() {
 
 ## Limitations
 
+RON requires struct, enum, and variant names to be valid Rust identifiers and will reject invalid ones created by `#[serde(rename = "...")]` at serialization / deserialization time.
+
 RON is not designed to be a fully self-describing format (unlike JSON) and is thus not guaranteed to work when [`deserialize_any`](https://docs.rs/serde/latest/serde/trait.Deserializer.html#tymethod.deserialize_any) is used instead of its typed alternatives. In particular, the following Serde attributes only have limited support:
 
 - `#[serde(tag = "tag")]`, i.e. internally tagged enums [^serde-enum-hack]

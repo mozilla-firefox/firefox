@@ -13,6 +13,7 @@
     - firefox-desktop
     - firefox-desktop-background-task
   hasExposure: false
+  allowCoenrollment: true
   variables: {}
 
 testFeature:
@@ -854,6 +855,39 @@ newtab:
       type: boolean
       description: Allow Contile to use additonal sponsored top sites
 
+newtabMobileDownloadPromotion:
+  description: Cross-sell promotion to download Firefox for mobile
+  owner: mcrawford@mozilla.com
+  hasExposure: false
+  variables:
+    showModal:
+      type: boolean
+      description: Display mobile download modal to users until dismissed
+      setPref:
+        branch: user
+        pref: browser.newtabpage.activity-stream.mobileDownloadModal.enabled
+    variantA:
+      type: boolean
+      setPref:
+        branch: user
+        pref: browser.newtabpage.activity-stream.mobileDownloadModal.variant-a
+      description: >-
+        Variant A modal message and QR code.
+    variantB:
+      type: boolean
+      setPref:
+        branch: user
+        pref: browser.newtabpage.activity-stream.mobileDownloadModal.variant-b
+      description: >-
+        Variant B modal message and QR code.
+    variantC:
+      type: boolean
+      setPref:
+        branch: user
+        pref: browser.newtabpage.activity-stream.mobileDownloadModal.variant-c
+      description: >-
+        Variant C modal message and QR code.
+
 newtabUnifiedAds:
   description: Mozilla Ad Routing Service (MARS) unified ads service
   owner: mcrawford@mozilla.com, sdowne@mozilla.com
@@ -893,7 +927,6 @@ newtabUnifiedAds:
       setPref:
         branch: user
         pref: browser.newtabpage.activity-stream.unifiedAds.adsFeed.tiles.enabled
-
 
 newtabSpocsCache:
   description: The about:newtab sponsored content cache.
@@ -984,7 +1017,6 @@ newtabInlineTopicSelection:
         pref: browser.newtabpage.activity-stream.discoverystream.sections.interestPicker.enabled
       description: >-
         Enables inline topic selection
-
 
 newtabLayoutExperiment:
   description: >-
@@ -1225,6 +1257,20 @@ newTabSectionsExperiment:
         pref:  browser.newtabpage.activity-stream.discoverystream.sections.cards.enabled
       description: >-
         Enable the revised pocket story card UI in recommended stories on newtab
+    regionPersonalizationInferredConfig:
+      type: string
+      setPref:
+        branch: user
+        pref: browser.newtabpage.activity-stream.discoverystream.sections.personalization.inferred.region-config
+      description: >-
+        A comma-separated list of regions that use inferred personalization.
+    localePersonalizationInferredConfig:
+      type: string
+      setPref:
+        branch: user
+        pref: browser.newtabpage.activity-stream.discoverystream.sections.personalization.inferred.locale-config
+      description: >-
+        A comma-separated list of locales that use inferred personalization.
     personalizationInferredEnabled:
       type: boolean
       setPref:
@@ -1232,6 +1278,13 @@ newTabSectionsExperiment:
         pref:  browser.newtabpage.activity-stream.discoverystream.sections.personalization.inferred.enabled
       description: >-
         Enable the inferred personalization for topics
+    personalizationInferredPosition:
+      type: string
+      setPref:
+        branch: user
+        pref:  browser.newtabpage.activity-stream.discoverystream.sections.personalization.inferred.position
+      description: >-
+        Inferred personalization card position.
     localeSectionstConfig:
       type: string
       setPref:
@@ -1260,6 +1313,32 @@ newTabSectionsExperiment:
         pref: browser.newtabpage.activity-stream.discoverystream.sections.customizeMenuPanel.enabled
       description: >-
         Enable personalized sections menu panel. Allow users to follow/unfollow topic sections.
+
+newtabPrivatePing:
+  description: The newtab-content ping, sent through OHTTP
+  owner: nbarrett@mozilla.com
+  hasExposure: false
+  variables:
+    privatePingEnabled:
+      type: string
+      setPref:
+        branch: user
+        pref: browser.newtabpage.activity-stream.telemetry.privatePing.enabled
+      description: >-
+        Enables the private newtab-content ping sent through OHTTP
+
+newtabTrainhop:
+  description: Experiment feature for the train-hopping newtab extension.
+  owner: mconley@mozilla.com
+  hasExposure: false
+  allowCoenrollment: true
+  variables:
+    type:
+      type: string
+      description: A discriminant to tell different kinds of trainhop experiments apart.
+    payload:
+      type: json
+      description: The experiment configuration.
 
 pocketNewtab:
   description: The Pocket section in newtab
@@ -1697,7 +1776,8 @@ email-autocomplete-relay:
 address-autofill-feature:
   description: Enabling address autofill feature
   owner: issozi@mozilla.com
-  hasExposure: false
+  hasExposure: true
+  exposureDescription: "Exposure is sent when an address is autofilled."
   variables:
     status:
       type: boolean
@@ -2369,30 +2449,6 @@ networking:
   owner: vgosu@mozilla.com
   hasExposure: false
   variables:
-    ehPreloadEnabled:
-      description: Whether Early Hints preload is enabled
-      type: boolean
-      setPref:
-        branch: default
-        pref: "network.early-hints.enabled"
-    ehPreconnectEnabled:
-      description: Whether Early Hints preconnect is enabled
-      type: boolean
-      setPref:
-        branch: default
-        pref: "network.early-hints.preconnect.enabled"
-    dnsMaxPriorityThreads:
-      description: The maximum number of high priority DNS threads that can be created.
-      type: int
-      setPref:
-        branch: default
-        pref: "network.dns.max_high_priority_threads"
-    dnsMaxAnyPriorityThreads:
-      description: The maximum number of DNS threads that can be created to handle any priority DNS requests.
-      type: int
-      setPref:
-        branch: default
-        pref: "network.dns.max_any_priority_threads"
     preconnect:
       description: Whether the rel=preconnect feature is enabled
       type: boolean
@@ -2411,6 +2467,103 @@ networking:
       setPref:
         branch: default
         pref: "network.http.http3.cc_algorithm"
+    enableOffMainThreadStreamDecompression:
+      description: Whether to enable decompression of network streams off-main-thread
+      type: boolean
+      setPref:
+        branch: default
+        pref: "network.decompression_off_mainthread2"
+    offMainThreadStreamDecompressionThreshold:
+      description: Minimum content length for off-main-thread decompression
+      type: int
+      setPref:
+        branch: default
+        pref: "network.decompression_off_mainthread_min_size"
+    dnsGracePeriod:
+      description: The grace period allows the DNS cache to use expired entries, while kicking off a revalidation in the background.
+      type: int
+      setPref:
+        branch: default
+        pref: "network.dnsCacheExpirationGracePeriod"
+    http3UseNSPRForIO:
+      description: true by default using legacy UDP IO via NSPR. When set to false, uses new UDP IO via Fast UDP for Firefox project.
+      type: boolean
+      setPref:
+        branch: default
+        pref: "network.http.http3.use_nspr_for_io"
+
+networkingEarlyHints:
+  description: "Networking (Necko) Early Hints"
+  owner: vgosu@mozilla.com
+  hasExposure: false
+  variables:
+    ehPreloadEnabled:
+      description: Whether Early Hints preload is enabled
+      type: boolean
+      setPref:
+        branch: default
+        pref: "network.early-hints.enabled"
+    ehPreconnectEnabled:
+      description: Whether Early Hints preconnect is enabled
+      type: boolean
+      setPref:
+        branch: default
+        pref: "network.early-hints.preconnect.enabled"
+
+networkingDNS:
+  description: "Networking (Necko) DNS"
+  owner: vgosu@mozilla.com
+  hasExposure: false
+  variables:
+    dnsMaxPriorityThreads:
+      description: The maximum number of high priority DNS threads that can be created.
+      type: int
+      setPref:
+        branch: default
+        pref: "network.dns.max_high_priority_threads"
+    dnsMaxAnyPriorityThreads:
+      description: The maximum number of DNS threads that can be created to handle any priority DNS requests.
+      type: int
+      setPref:
+        branch: default
+        pref: "network.dns.max_any_priority_threads"
+    maxDnsCacheEntries:
+      description: This is the number of dns cache entries allowed
+      type: int
+      setPref:
+        branch: default
+        pref: "network.dnsCacheEntries"
+
+networkingConnections:
+  description: "Networking (Necko) Connections"
+  owner: vgosu@mozilla.com
+  hasExposure: false
+  variables:
+    httpMaxConnections:
+      description: The maximum number of http connections.
+      type: int
+      setPref:
+        branch: default
+        pref: "network.http.max-connections"
+    httpMaxPersistentConnectionsPerServer:
+      description: The maximum number of persistent connections to a server
+      type: int
+      setPref:
+        branch: default
+        pref: "network.http.max-persistent-connections-per-server"
+    speculativeConnectionLimit:
+      description: The maximum number of half-open sockets allowed for speculative connections
+      type: int
+      setPref:
+        branch: default
+        pref: "network.http.speculative-parallel-limit"
+
+
+networkingSendOnDataFinished:
+  description: "Networking (Necko) OnDataFinished"
+  owner: vgosu@mozilla.com
+  hasExposure: false
+  variables:
     sendOnDataFinished:
       description: Whether we can send OnDataFinished in the content process
       type: boolean
@@ -2435,72 +2588,6 @@ networking:
       setPref:
         branch: default
         pref: "network.send_OnDataFinished.cssLoader"
-    enableOffMainThreadStreamDecompression:
-      description: Whether to enable decompression of network streams off-main-thread
-      type: boolean
-      setPref:
-        branch: default
-        pref: "network.decompression_off_mainthread2"
-    offMainThreadStreamDecompressionThreshold:
-      description: Minimum content length for off-main-thread decompression
-      type: int
-      setPref:
-        branch: default
-        pref: "network.decompression_off_mainthread_min_size"
-    httpMaxConnections:
-      description: The maximum number of http connections.
-      type: int
-      setPref:
-        branch: default
-        pref: "network.http.max-connections"
-    httpMaxPersistentConnectionsPerServer:
-      description: The maximum number of persistent connections to a server
-      type: int
-      setPref:
-        branch: default
-        pref: "network.http.max-persistent-connections-per-server"
-    speculativeConnectionLimit:
-      description: The maximum number of half-open sockets allowed for speculative connections
-      type: int
-      setPref:
-        branch: default
-        pref: "network.http.speculative-parallel-limit"
-    chipsPartitionLimitEnabled:
-      description: Whether we enforce CHIPS partition limit
-      type: boolean
-      setPref:
-        branch: default
-        pref: "network.cookie.chips.partitionLimitEnabled"
-    chipsPartitionLimitDryRun:
-      description: Whether we actually perform purging/rejection, used to report telemetry without webcompat issues
-      type: boolean
-      setPref:
-        branch: default
-        pref: "network.cookie.chips.partitionLimitDryRun"
-    chipsPartitionLimitByteCapacity:
-      description: The actual value of the CHIPS partition limit in bytes
-      type: boolean
-      setPref:
-        branch: default
-        pref: "network.cookie.chips.partitionLimitByteCapacity"
-    dnsGracePeriod:
-      description: The grace period allows the DNS cache to use expired entries, while kicking off a revalidation in the background.
-      type: int
-      setPref:
-        branch: default
-        pref: "network.dnsCacheExpirationGracePeriod"
-    maxDnsCacheEntries:
-      description: This is the number of dns cache entries allowed
-      type: int
-      setPref:
-        branch: default
-        pref: "network.dnsCacheEntries"
-    http3UseNSPRForIO:
-      description: true by default using legacy UDP IO via NSPR. When set to false, uses new UDP IO via Fast UDP for Firefox project.
-      type: boolean
-      setPref:
-        branch: default
-        pref: "network.http.http3.use_nspr_for_io"
 
 essentialFallbackDomains:
   description: "Whether to retry failing system requests with a backup domain"
@@ -3621,7 +3708,9 @@ shopping2023:
     enabled:
       description: True if the shopping sidebar is enabled (experimental treatment group)
       type: boolean
-      fallbackPref: browser.shopping.experience2023.enabled
+      setPref:
+        branch: default
+        pref: browser.shopping.experience2023.enabled
     control:
       description: True if the experiment is enabled but experience is disabled (experimental control group)
       type: boolean
@@ -3629,7 +3718,9 @@ shopping2023:
     integratedSidebar:
       description: True if the integrated sidebar is enabled.
       type: boolean
-      fallbackPref: browser.shopping.experience2023.integratedSidebar
+      setPref:
+        branch: default
+        pref: browser.shopping.experience2023.integratedSidebar
     adsEnabled:
       description: True if showing recommended products is enabled
       type: boolean
@@ -4441,6 +4532,18 @@ smartTabGroups:
         pref: browser.tabs.groups.smart.enabled
       description: Controls whether users can use ml features for suggesting tab group names or similar tabs
 
+smartTabGroupsClustering:
+  description: Prefs to control Smart Tab Groups Clustering Method
+  owner: rrando@mozilla.com
+  hasExposure: false
+  variables:
+    enabled:
+      type: string
+      setPref:
+        branch: user
+        pref: browser.tabs.groups.smart.suggestOtherTabsMethod
+      description: Controls clustering method used to suggest similar tabs feature
+
 smartblockEmbeds:
   description: Pref to control Smartblock Embeds
   owner: emz@mozilla.com
@@ -4528,6 +4631,24 @@ partitioned-cookie-attribute:
       setPref:
         branch: default
         pref: network.cookie.CHIPS.migrateDatabaseTarget
+    chipsPartitionLimitEnabled:
+      description: Whether we enforce CHIPS partition limit
+      type: boolean
+      setPref:
+        branch: default
+        pref: "network.cookie.chips.partitionLimitEnabled"
+    chipsPartitionLimitDryRun:
+      description: Whether we actually perform purging/rejection, used to report telemetry without webcompat issues
+      type: boolean
+      setPref:
+        branch: default
+        pref: "network.cookie.chips.partitionLimitDryRun"
+    chipsPartitionLimitByteCapacity:
+      description: The actual value of the CHIPS partition limit in bytes
+      type: boolean
+      setPref:
+        branch: default
+        pref: "network.cookie.chips.partitionLimitByteCapacity"
 
 auto-pip:
   description: "Automatic Picture-in-Picture"

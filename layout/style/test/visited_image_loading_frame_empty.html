@@ -1,15 +1,29 @@
 <!DOCTYPE HTML>
 <title>Test for :visited image loading</title>
-<style type="text/css">
+<style>
+:root {
+  /* Using variables forces a new load regardless of whether the inline stylesheet was cached. */
+  --image-1l: url("visited_image_loading.sjs?1l");
+  --image-1v: url("visited_image_loading.sjs?1v");
+  --image-2l: url("visited_image_loading.sjs?2l");
+  --image-2v: url("visited_image_loading.sjs?2v");
+}
 
 :link { background-color: blue }
 :visited { background-color: purple }
 
-#link:link       { background-image: url("visited_image_loading.sjs?1l"); }
-#link:visited    { background-image: url("visited_image_loading.sjs?1v"); }
-#visited:link    { background-image: url("visited_image_loading.sjs?2l"); }
-#visited:visited { background-image: url("visited_image_loading.sjs?2v"); }
-
+#link:link {
+  background-image: var(--image-1l);
+}
+#link:visited {
+  background-image: var(--image-1v);
+}
+#visited:link {
+  background-image: var(--image-2l);
+}
+#visited:visited {
+  background-image: var(--image-2v);
+}
 </style>
 <a id="link" href="do-not-visit-this-link.html"></a>
 <a id="visited" href="visited_image_loading_frame_empty.html"></a>

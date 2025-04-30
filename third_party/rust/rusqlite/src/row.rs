@@ -5,7 +5,7 @@ use std::convert;
 use super::{Error, Result, Statement};
 use crate::types::{FromSql, FromSqlError, ValueRef};
 
-/// An handle for the resulting rows of a query.
+/// A handle (lazy fallible streaming iterator) for the resulting rows of a query.
 #[must_use = "Rows is lazy and will do nothing unless consumed"]
 pub struct Rows<'stmt> {
     pub(crate) stmt: Option<&'stmt Statement<'stmt>>,
@@ -34,7 +34,7 @@ impl<'stmt> Rows<'stmt> {
     /// consider using [`query_map`](Statement::query_map) or
     /// [`query_and_then`](Statement::query_and_then) instead, which
     /// return types that implement `Iterator`.
-    #[allow(clippy::should_implement_trait)] // cannot implement Iterator
+    #[expect(clippy::should_implement_trait)] // cannot implement Iterator
     #[inline]
     pub fn next(&mut self) -> Result<Option<&Row<'stmt>>> {
         self.advance()?;
@@ -90,7 +90,7 @@ impl<'stmt> Rows<'stmt> {
 
 impl<'stmt> Rows<'stmt> {
     #[inline]
-    pub(crate) fn new(stmt: &'stmt Statement<'stmt>) -> Rows<'stmt> {
+    pub(crate) fn new(stmt: &'stmt Statement<'stmt>) -> Self {
         Rows {
             stmt: Some(stmt),
             row: None,
@@ -107,7 +107,7 @@ impl<'stmt> Rows<'stmt> {
 }
 
 impl Drop for Rows<'_> {
-    #[allow(unused_must_use)]
+    #[expect(unused_must_use)]
     #[inline]
     fn drop(&mut self) {
         self.reset();
@@ -247,7 +247,7 @@ pub struct Row<'stmt> {
     pub(crate) stmt: &'stmt Statement<'stmt>,
 }
 
-impl<'stmt> Row<'stmt> {
+impl Row<'_> {
     /// Get the value of a particular column of the result row.
     ///
     /// # Panics
@@ -305,7 +305,7 @@ impl<'stmt> Row<'stmt> {
     /// allowing data to be read out of a row without copying.
     ///
     /// This `ValueRef` is valid only as long as this Row, which is enforced by
-    /// it's lifetime. This means that while this method is completely safe,
+    /// its lifetime. This means that while this method is completely safe,
     /// it can be somewhat difficult to use, and most callers will be better
     /// served by [`get`](Row::get) or [`get_unwrap`](Row::get_unwrap).
     ///
@@ -329,7 +329,7 @@ impl<'stmt> Row<'stmt> {
     /// allowing data to be read out of a row without copying.
     ///
     /// This `ValueRef` is valid only as long as this Row, which is enforced by
-    /// it's lifetime. This means that while this method is completely safe,
+    /// its lifetime. This means that while this method is completely safe,
     /// it can be difficult to use, and most callers will be better served by
     /// [`get`](Row::get) or [`get_unwrap`](Row::get_unwrap).
     ///
@@ -355,11 +355,11 @@ impl<'stmt> AsRef<Statement<'stmt>> for Row<'stmt> {
 /// Debug `Row` like an ordered `Map<Result<&str>, Result<(Type, ValueRef)>>`
 /// with column name as key except that for `Type::Blob` only its size is
 /// printed (not its content).
-impl<'stmt> std::fmt::Debug for Row<'stmt> {
+impl std::fmt::Debug for Row<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut dm = f.debug_map();
         for c in 0..self.stmt.column_count() {
-            let name = self.stmt.column_name(c);
+            let name = self.stmt.column_name(c).expect("valid column index");
             dm.key(&name);
             let value = self.get_ref(c);
             match value {
@@ -438,7 +438,7 @@ macro_rules! tuple_try_from_row {
             fn try_from(row: &'a Row<'a>) -> Result<Self> {
                 let mut index = 0;
                 $(
-                    #[allow(non_snake_case)]
+                    #[expect(non_snake_case)]
                     let $field = row.get::<_, $field>(index)?;
                     index += 1;
                 )*
@@ -463,7 +463,6 @@ tuples_try_from_row!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P);
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::redundant_closure)] // false positives due to lifetime issues; clippy issue #5594
     use crate::{Connection, Result};
 
     #[test]
@@ -612,6 +611,31 @@ mod tests {
             let fallible_iterator_last = stmt.query([])?.map(|_| Ok(())).last();
             assert!(fallible_iterator_last.is_err());
         }
+        Ok(())
+    }
+
+    #[test]
+    fn as_ref() -> Result<()> {
+        let conn = Connection::open_in_memory()?;
+        let mut stmt = conn.prepare("SELECT 'Lisa' as name, 1 as id")?;
+        let rows = stmt.query([])?;
+        assert_eq!(rows.as_ref().unwrap().column_count(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn debug() -> Result<()> {
+        let conn = Connection::open_in_memory()?;
+        let mut stmt = conn.prepare(
+            "SELECT 'Lisa' as name, 1 as id, 3.14 as pi, X'53514C697465' as blob, NULL as void",
+        )?;
+        let mut rows = stmt.query([])?;
+        let row = rows.next()?.unwrap();
+        let s = format!("{row:?}");
+        assert_eq!(
+            s,
+            r#"{"name": (Text, "Lisa"), "id": (Integer, 1), "pi": (Real, 3.14), "blob": (Blob, 6), "void": (Null, ())}"#
+        );
         Ok(())
     }
 }

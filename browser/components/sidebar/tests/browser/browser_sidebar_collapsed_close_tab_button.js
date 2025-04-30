@@ -5,11 +5,11 @@
 
 add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
-    set: [["sidebar.verticalTabs", true]],
+    set: [[VERTICAL_TABS_PREF, true]],
   });
   await waitForTabstripOrientation("vertical");
   Assert.equal(
-    Services.prefs.getStringPref("sidebar.visibility"),
+    Services.prefs.getStringPref(SIDEBAR_VISIBILITY_PREF),
     "always-show",
     "Sanity check the visibilty pref when verticalTabs are enabled"
   );
@@ -23,7 +23,7 @@ add_task(async function test_toggle_collapse_close_button() {
   const sidebar = document.querySelector("sidebar-main");
   ok(sidebar, "Sidebar is shown.");
 
-  if (window.SidebarController._state.launcherExpanded) {
+  if (SidebarController._state.launcherExpanded) {
     await SidebarController.initializeUIState({ launcherExpanded: false });
     await sidebar.updateComplete;
   }

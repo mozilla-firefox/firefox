@@ -186,10 +186,6 @@ class WorkerGlobalScopeBase : public DOMEventTargetHelper,
 
   ClientSource& MutableClientSourceRef() const { return *mClientSource; }
 
-  // WorkerPrivate wants to be able to forbid script when its state machine
-  // demands it.
-  void WorkerPrivateSaysForbidScript() { StartForbiddingScript(); }
-  void WorkerPrivateSaysAllowScript() { StopForbiddingScript(); }
   bool IsBackgroundInternal() const override {
     MOZ_ASSERT(mWorkerPrivate);
     return mWorkerPrivate->IsRunningInBackground();

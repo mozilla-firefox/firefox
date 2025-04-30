@@ -127,6 +127,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Prevucite traku s alatima da promijenite tabove</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Prevucite lijevo ili desno za prebacivanje. Prevucite ulijevo na posljednji tab da otvorite novi tab.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">Prevucite traku s alatima ulijevo ili udesno za prijelaz između tabova.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Potreban pristup kameri. Idite na Android postavke, dodirnite dozvole i dodirnite dozvoli.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -832,8 +834,6 @@
   <string name="preferences_override_account_server">Prilagođeni server Mozilla računa</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Zaseban Sync server</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla račun/Sync server izmijenjen. Napuštanje aplikacije radi primjene promjena…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Račun</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1481,16 +1481,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Ukloni</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Izbriši</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Idite nazad</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Idi prema gore</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">Dijeli URL</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Dijeli fajl</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Jeste li sigurni da želite izbrisati odabrane stavke?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Jeste li sigurni da želite izbrisati odabrane stavke?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Izbriši</string>
+  <string name="download_delete_multi_select_dialog_confirm">Izbriši</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Otkaži</string>
+  <string name="download_delete_multi_select_dialog_cancel">Otkaži</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">U procesu</string>
   <!--
@@ -1521,9 +1525,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Neuspjelo preuzimanje</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Traži preuzimanja</string>
+  <string name="download_search_placeholder">Traži preuzimanja</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Nema pronađenih rezultata</string>
+  <string name="download_search_no_results_found">Nema pronađenih rezultata</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Označi sve</string>
   <!--
@@ -2276,7 +2280,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Ikona preferencije izuzetaka poboljšane zaštite od praćenja</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3191,6 +3195,8 @@
   <string name="protection_panel_no_trackers_blocked">Nisu pronađeni tragači</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">Podešavanja sigurnosti i privatnosti</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Dozvole</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3376,6 +3382,26 @@
     The title of the glean debugging feature
   -->
   <string name="glean_debug_tools_title">Glean alati za otklanjanje grešaka</string>
+  <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">Alati regije</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">Privremeno nadjačava početnu i trenutnu vrijednost regije za testiranje.</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">Matična regija</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">Trenutna regija</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">Poništi matičnu regiju</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">Poništi trenutnu regiju</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">Poništi matičnu i trenutnu regiju</string>
   <!--
     Messages explaining how to exit fullscreen mode
 

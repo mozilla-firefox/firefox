@@ -117,10 +117,6 @@ STDMETHODIMP TSFTextStoreBase::QueryInterface(REFIID riid, void** ppv) {
     AddRef();
     return S_OK;
   }
-
-  MOZ_LOG(gIMELog, LogLevel::Error,
-          ("0x%p TSFTextStoreBase::QueryInterface() FAILED, riid=%s", this,
-           AutoRiidCString(riid).get()));
   return E_NOINTERFACE;
 }
 
@@ -1164,8 +1160,8 @@ HRESULT TSFTextStoreBase::RetrieveRequestedAttrsInternal(
 void TSFTextStoreBase::SetInputContext(nsWindow* aWindow,
                                        const InputContext& aContext,
                                        const InputContextAction& aAction) {
-  MOZ_LOG(gIMELog, LogLevel::Debug,
-          ("TSFUtils::OnSetInputContext(aWidget=%p, "
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("TSFTextStoreBase::OnSetInputContext(aWidget=%p, "
            "aContext=%s, aAction.mFocusChange=%s), "
            "CurrentTextStore(0x%p)={ mWidget=0x%p, mContext=0x%p }",
            aWindow, mozilla::ToString(aContext).c_str(),
@@ -1178,7 +1174,7 @@ void TSFTextStoreBase::SetInputContext(nsWindow* aWindow,
                ? TSFUtils::GetCurrentTextStore()->GetContext()
                : nullptr));
 
-  const bool isEditable =
+  const bool actuallyEditable =
       aContext.mIMEState.IsEditable() && !aWindow->Destroyed();
   switch (aAction.mFocusChange) {
     case InputContextAction::WIDGET_CREATED:
@@ -1190,60 +1186,106 @@ void TSFTextStoreBase::SetInputContext(nsWindow* aWindow,
       // we need to reset text store for new state right now.
       break;
     default: {
-      // If IME enabled state is changed, we need to recreate proper
-      // TSFTextStoreBase instance.
-      if (isEditable != TSFUtils::CurrentTextStoreIsEditable()) {
-        break;
-      }
-      // If the editable state is not changed, we can just update the input
-      // scopes and the document URL.
       const RefPtr<TSFTextStoreBase> textStore =
           TSFUtils::GetCurrentTextStore();
       if (!textStore) {
         break;
       }
-      nsAutoString oldURL(textStore->mDocumentURL);
-      CopyableAutoTArray<InputScope, 5> oldInputScopes(textStore->mInputScopes);
-      textStore->mInPrivateBrowsing = aContext.mInPrivateBrowsing;
-      textStore->SetInputScope(aContext.mHTMLInputType,
-                               aContext.mHTMLInputMode);
-      if (aContext.mURI) {
-        nsAutoCString spec;
-        if (NS_SUCCEEDED(aContext.mURI->GetSpec(spec))) {
-          CopyUTF8toUTF16(spec, textStore->mDocumentURL);
-        } else {
-          textStore->mDocumentURL.Truncate();
-        }
-      } else {
-        textStore->mDocumentURL.Truncate();
+      if (NS_SUCCEEDED(
+              textStore->UpdateDocumentURLAndBrowsingMode(aWindow, aContext))) {
+        return;
       }
-      // Notify TSF of the URL and InputScope changes.
-      const auto& changedThings = [&]() -> AttrIndices {
-        const bool URLChanged = textStore->mDocumentURL != oldURL;
-        const bool inputScopeChanged =
-            textStore->mInputScopes != oldInputScopes;
-        if (URLChanged && inputScopeChanged) {
-          return URLAndInputScopeChanged;
-        }
-        if (URLChanged) {
-          return OnlyURLChanged;
-        }
-        return inputScopeChanged ? OnlyURLChanged : NothingChanged;
-      }();
-      if (changedThings != NothingChanged) {
-        textStore->NotifyTSFOfInputContextChange(changedThings);
-      }
-      return;
     }
   }
 
-  // Emulate a focus move to make a current TextStore to interact with TSF.
+  const bool alreadyEditable = TSFUtils::GetCurrentTextStore() &&
+                               TSFUtils::GetCurrentTextStore()->IsEditable() &&
+                               TSFUtils::GetCurrentTextStore()->MaybeHasFocus();
+  if (alreadyEditable == actuallyEditable) {
+    if (const RefPtr<TSFTextStoreBase> textStore =
+            TSFUtils::GetCurrentTextStore()) {
+      textStore->UpdateDocumentURLAndBrowsingMode(aWindow, aContext);
+    }
+    return;
+  }
+  // If focus isn't actually changed but the enabled state is changed, we beed
+  // to emulate the focus move.
+  if (!alreadyEditable && !IMEHandler::GetFocusedWindow()) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("  TSFTextStoreBase::SetInputContent() gets called to enable IME, "
+             "but IMEHandler has not received focus notification"));
+    if (const RefPtr<TSFTextStoreBase> textStore =
+            TSFUtils::GetCurrentTextStore()) {
+      textStore->UpdateDocumentURLAndBrowsingMode(aWindow, aContext);
+    }
+    return;
+  }
   TSFUtils::OnFocusChange(
-      isEditable ? TSFUtils::GotFocus::Yes : TSFUtils::GotFocus::No, aWindow,
-      aContext);
+      actuallyEditable ? TSFUtils::GotFocus::Yes : TSFUtils::GotFocus::No,
+      aWindow, aContext);
+}
+
+nsresult TSFTextStoreBase::UpdateDocumentURLAndBrowsingMode(
+    nsWindow* aWindow, const InputContext& aContext) {
+  MOZ_ASSERT(aWindow);
+  MOZ_LOG(gIMELog, LogLevel::Debug,
+          ("0x%p TSFTextStoreBase::UpdateDocumentURLAndBrowsingMode(aWindow=%p "
+           "(Destroyed()=%s), aContext=%s), "
+           "mIsEditable=%s",
+           this, aWindow, aWindow->Destroyed() ? "true" : "false",
+           mozilla::ToString(aContext).c_str(),
+           mozilla::ToString(mIsEditable).c_str()));
+
+  const bool isEditable =
+      aContext.mIMEState.IsEditable() && !aWindow->Destroyed();
+  // If IME enabled state is changed, we need to recreate proper
+  // TSFTextStoreBase instance.
+  if (isEditable != IsEditable()) {
+    return NS_ERROR_FAILURE;
+  }
+  // If the editable state is not changed, we can just update the input
+  // scopes and the document URL.
+  nsAutoString oldURL(mDocumentURL);
+  CopyableAutoTArray<InputScope, 5> oldInputScopes(mInputScopes);
+  mInPrivateBrowsing = aContext.mInPrivateBrowsing;
+  SetInputScope(aContext.mHTMLInputType, aContext.mHTMLInputMode);
+  if (aContext.mURI) {
+    nsAutoCString spec;
+    if (NS_SUCCEEDED(aContext.mURI->GetSpec(spec))) {
+      CopyUTF8toUTF16(spec, mDocumentURL);
+    } else {
+      mDocumentURL.Truncate();
+    }
+  } else {
+    mDocumentURL.Truncate();
+  }
+  // Notify TSF of the URL and InputScope changes.
+  const auto& changedThings = [&]() -> AttrIndices {
+    const bool URLChanged = mDocumentURL != oldURL;
+    const bool inputScopeChanged = mInputScopes != oldInputScopes;
+    if (URLChanged && inputScopeChanged) {
+      return URLAndInputScopeChanged;
+    }
+    if (URLChanged) {
+      return OnlyURLChanged;
+    }
+    return inputScopeChanged ? OnlyURLChanged : NothingChanged;
+  }();
+  if (changedThings != NothingChanged) {
+    NotifyTSFOfInputContextChange(changedThings);
+  }
+  return NS_OK;
 }
 
 void TSFTextStoreBase::NotifyTSFOfInputContextChange(AttrIndices aAttrIndices) {
+  MOZ_LOG(
+      gIMELog, LogLevel::Debug,
+      ("0x%p TSFTextStoreBase::NotifyTSFOfInputContextChange(), mSink=0x%p, "
+       "DocumentURL is changed=%s, InputScope is changed=%s",
+       this, mSink.get(),
+       aAttrIndices.contains(TSFUtils::AttrIndex::DocumentURL) ? "Yes" : "No",
+       aAttrIndices.contains(TSFUtils::AttrIndex::InputScope) ? "Yes" : "No"));
+
   if (!mSink) {
     return;
   }

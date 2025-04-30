@@ -2,7 +2,9 @@
 <style>
   img, object, svg, input { display: block }
   div {
-    content: url(nonexistent.png?1);
+    /* Defeats the stylesheet cache also caching our image responses */
+    --u: url(nonexistent.png?1);
+    content: var(--u);
     width: 32px;
     height: 32px;
   }

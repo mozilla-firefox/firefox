@@ -964,3 +964,553 @@ xpcom:
     data_sensitivity:
       - technical
     expires: never
+
+system.cpu:
+  name:
+    type: string
+    lifetime: application
+    description: >
+      The user readable CPU name.
+      (e.g. "Intel(R) Core(TM) i9-8950HK CPU @ 2.90GHz")
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1797587
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1797587
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+
+  vendor:
+    type: string
+    lifetime: application
+    description: >
+      The CPU vendor (e.g. "GenuineIntel").
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+
+  logical_cores:
+    type: quantity
+    lifetime: application
+    description: >
+      Logical CPU cores.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1122052
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1122052
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: core
+
+  physical_cores:
+    type: quantity
+    lifetime: application
+    description: >
+      Physical CPU cores.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: core
+
+  big_cores:
+    type: quantity
+    lifetime: application
+    description: >
+      Big (or Performance) CPU cores.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1926292
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1926292
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: core
+
+  medium_cores:
+    type: quantity
+    lifetime: application
+    description: >
+      Medium CPU cores.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1926292
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1926292
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: core
+
+  little_cores:
+    type: quantity
+    lifetime: application
+    description: >
+      Little (or Efficient) CPU cores.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1926292
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1926292
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: core
+
+  family:
+    type: quantity
+    lifetime: application
+    description: >
+      CPU family.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: cpu family number
+
+  model:
+    type: quantity
+    lifetime: application
+    description: >
+      CPU model.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: cpu model number
+
+  stepping:
+    type: quantity
+    lifetime: application
+    description: >
+      CPU stepping.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: cpu stepping number
+
+  l2_cache:
+    type: quantity
+    lifetime: application
+    description: >
+      L2 cache size (only on Windows and Mac).
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: kilobyte
+
+  l3_cache:
+    type: quantity
+    lifetime: application
+    description: >
+      L3 cache size.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: kilobyte
+
+  speed:
+    type: quantity
+    lifetime: application
+    description: >
+      CPU speed in MHz.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1128472
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950406
+    notification_emails:
+      - florian@mozilla.com
+    expires: never
+    unit: megahertz
+
+  extensions:
+    type: string_list
+    lifetime: application
+    description: >
+      Recognized CPU extensions.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1962547
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1962547
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+hdd:
+  profile: &hdd_object
+    type: object
+    lifetime: application
+    description: |
+      Information about the disk the profile is stored on.
+      Windows only.
+      * model - The disk's self-reported model string
+      * revision - The disk's self-reported revision string
+      * diskType - Either "HDD" or "SSD"
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950410
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950410
+    data_sensitivity:
+      - technical
+    structure:
+      type: object
+      properties:
+        model:
+          type: string
+        revision:
+          type: string
+        diskType:
+          type: string
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  binary:
+    <<: *hdd_object
+    description: |
+      Information about the disk the application binary is stored on.
+      Windows only.
+      * model - The disk's self-reported model string
+      * revision - The disk's self-reported revision string
+      * diskType - Either "HDD" or "SSD"
+
+  system:
+    <<: *hdd_object
+    description: |
+      Information about the disk the system files are stored on.
+      Windows only.
+      * model - The disk's self-reported model string
+      * revision - The disk's self-reported revision string
+      * diskType - Either "HDD" or "SSD"
+
+system.os:
+  name:
+    type: string
+    lifetime: application
+    description: |
+      The Operating System's name, according to sysinfo.
+      e.g. "Windows_NT"
+      Expected in most cases to be identical to `client_info.os`.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  version:
+    type: string
+    lifetime: application
+    description: |
+      The Operating System's version, according to sysinfo.
+      e.g. "6.3"
+      Expected in most cases to be identical to `client_info.os_version`.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  locale:
+    type: string
+    lifetime: application
+    description: |
+      The Operating System's local, according to ospreferences.
+      e.g. "en-US"
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  distro:
+    type: string
+    lifetime: application
+    description: |
+      The Operating System's distribution, according to sysinfo.
+      Linux only.
+      e.g. "Linuxmint"
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  distro_version:
+    type: string
+    lifetime: application
+    description: |
+      The Operating System's distribution's version, according to sysinfo.
+      Linux only.
+      e.g. "22"
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  service_pack_major:
+    type: quantity
+    unit: version
+    lifetime: application
+    description: |
+      The Windows service pack's major version, according to WindowsVersionInfo.
+      Windows only.
+      e.g. 0
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  service_pack_minor:
+    type: quantity
+    unit: version
+    lifetime: application
+    description: |
+      The Windows service pack's minor version, according to WindowsVersionInfo.
+      Windows only.
+      e.g. 0
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  windows_build_number:
+    type: quantity
+    unit: build number
+    lifetime: application
+    description: |
+      The Windows build number, according to WindowsVersionInfo.
+      Windows only.
+      e.g. 26100
+      Expected in most cases to be identical to `client_info.windows_build_number`.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  windows_ubr:
+    type: quantity
+    unit: build number
+    lifetime: application
+    description: |
+      The Windows update build revision number, according to
+      `SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion`.
+      Windows only.
+      e.g. 3775
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950409
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+system:
+  memory:
+    type: quantity
+    unit: MB
+    lifetime: application
+    description: |
+      The physical memory size in MB (2^20 bytes).
+      e.g. 32211
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - memshrink-telemetry-alerts@mozilla.com
+    expires: never
+
+  virtual_memory:
+    type: quantity
+    unit: MB
+    lifetime: application
+    description: |
+      The size of the user-mode portion of the virtual address space of the parent process.
+      Windows only.
+      e.g. 134217728
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - memshrink-telemetry-alerts@mozilla.com
+    expires: never
+
+  is_wow_64:
+    type: boolean
+    lifetime: application
+    description: |
+      Whether we're in Windows32-on-Windows64 mode.
+      Windows only.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  is_wow_arm_64:
+    type: boolean
+    lifetime: application
+    description: |
+      Whether we're in Windows32-on-WindowsForArm64 mode.
+      Windows only.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  has_win_package_id:
+    type: boolean
+    lifetime: application
+    description: |
+      Whether the app has a package identity.
+      Windows only.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@ozilla.com
+    expires: never
+
+  win_package_family_name:
+    type: string
+    lifetime: application
+    description: |
+      The full application package name without any of the components that might change
+      during the life cycle of the app (such as the version number or the architecture).
+      Uniquely identifies the application within one Windows installation.
+      Windows only.
+      Only included if it begins with "Mozilla." or "MozillaCorporation.".
+      e.g. "Mozilla.Firefox_n80bbvh6b1yt2"
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never
+
+  apple_model_id:
+    type: string
+    lifetime: application
+    description: |
+      The `hw.model` of the hardware running this software.
+      Mac only.
+      e.g. "MacBookPro14,1"
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950403
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gijs@mozilla.com
+    expires: never

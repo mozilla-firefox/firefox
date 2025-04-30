@@ -108,12 +108,16 @@ def get_json_pushchangedfiles(repository, revision):
 def get_hg_revision_branch(root, revision):
     """Given the parameters for a revision, find the hg_branch (aka
     relbranch) of the revision."""
+    return get_hg_revision_info(root, revision, "branch")
+
+
+def get_hg_revision_info(root, revision, info):
     return subprocess.check_output(
         [
             "hg",
             "identify",
             "-T",
-            "{branch}",
+            f"{{{info}}}",
             "--rev",
             revision,
         ],

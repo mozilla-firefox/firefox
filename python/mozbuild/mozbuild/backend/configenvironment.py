@@ -158,7 +158,7 @@ class ConfigEnvironment:
         )
 
         def serialize(name, obj):
-            if isinstance(obj, (str,)):
+            if isinstance(obj, str):
                 return obj
             if isinstance(obj, Iterable):
                 return " ".join(obj)

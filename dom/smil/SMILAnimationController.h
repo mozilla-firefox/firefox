@@ -16,7 +16,6 @@
 #include "nsTArray.h"
 #include "nsTHashtable.h"
 #include "nsHashKeys.h"
-#include "nsRefreshObservers.h"
 
 class nsRefreshDriver;
 
@@ -40,10 +39,11 @@ class SVGAnimationElement;
 // a compound document. These time containers can be paused individually or
 // here, at the document level.
 //
-class SMILAnimationController final : public SMILTimeContainer,
-                                      public nsARefreshObserver {
+class SMILAnimationController final : public SMILTimeContainer {
  public:
   explicit SMILAnimationController(mozilla::dom::Document* aDoc);
+
+  NS_INLINE_DECL_REFCOUNTING(SMILAnimationController)
 
   using DiscardArray = nsTObserverArray<RefPtr<dom::Element>>;
 
@@ -56,11 +56,9 @@ class SMILAnimationController final : public SMILTimeContainer,
   void Resume(uint32_t aType) override;
   SMILTime GetParentTime() const override;
 
-  // nsARefreshObserver
-  NS_IMETHOD_(MozExternalRefCountType) AddRef() override;
-  NS_IMETHOD_(MozExternalRefCountType) Release() override;
-
-  void WillRefresh(mozilla::TimeStamp aTime) override;
+  // Returns mDocument's refresh driver, if it's got one.
+  nsRefreshDriver* GetRefreshDriver();
+  void WillRefresh(mozilla::TimeStamp aTime);
 
   // Methods for registering and enumerating animation elements
   void RegisterAnimationElement(
@@ -96,10 +94,6 @@ class SMILAnimationController final : public SMILTimeContainer,
   void Traverse(nsCycleCollectionTraversalCallback* aCallback);
   void Unlink();
 
-  // Methods for relaying the availability of the refresh driver
-  void NotifyRefreshDriverCreated(nsRefreshDriver* aRefreshDriver);
-  void NotifyRefreshDriverDestroying(nsRefreshDriver* aRefreshDriver);
-
   // Helper to check if we have any animation elements at all
   bool HasRegisteredAnimations() const {
     return mAnimationElementTable.Count() != 0;
@@ -121,17 +115,9 @@ class SMILAnimationController final : public SMILTimeContainer,
   using AnimationElementPtrKey = nsPtrHashKey<dom::SVGAnimationElement>;
   using AnimationElementHashtable = nsTHashtable<AnimationElementPtrKey>;
 
-  // Returns mDocument's refresh driver, if it's got one.
-  nsRefreshDriver* GetRefreshDriver();
-
   // Methods for controlling whether we're sampling
   void UpdateSampling();
   bool ShouldSample() const;
-
-  void StopSampling(nsRefreshDriver* aRefreshDriver);
-
-  // Wrapper for StartSampling that defers if no animations are registered.
-  void MaybeStartSampling(nsRefreshDriver* aRefreshDriver);
 
   // Sample-related callbacks and implementation helpers
   void DoSample() override;
@@ -160,8 +146,6 @@ class SMILAnimationController final : public SMILTimeContainer,
   void FlagDocumentNeedsFlush();
 
   // Members
-  nsAutoRefCnt mRefCnt;
-  NS_DECL_OWNINGTHREAD
 
   AnimationElementHashtable mAnimationElementTable;
   TimeContainerHashtable mChildContainerTable;
@@ -189,11 +173,12 @@ class SMILAnimationController final : public SMILTimeContainer,
   bool mResampleNeeded = false;
   bool mRunningSample = false;
 
-  // Are we registered with our document's refresh driver?
-  bool mRegisteredWithRefreshDriver = false;
-
   // Have we updated animated values without adding them to the restyle tracker?
   bool mMightHavePendingStyleUpdates = false;
+
+  // Whether we've started sampling. This is only needed because the first
+  // sample is supposed to run sync.
+  bool mIsSampling = false;
 
   // Store raw ptr to mDocument.  It owns the controller, so controller
   // shouldn't outlive it

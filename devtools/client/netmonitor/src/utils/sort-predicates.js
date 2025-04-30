@@ -36,6 +36,12 @@ function compareValues(first, second) {
   if (first === second) {
     return 0;
   }
+  if (first === undefined) {
+    return 1;
+  }
+  if (second === undefined) {
+    return -1;
+  }
   return first > second ? 1 : -1;
 }
 
@@ -248,8 +254,8 @@ function cookies(first, second) {
 }
 
 function type(first, second) {
-  const firstType = getAbbreviatedMimeType(first.mimeType).toLowerCase();
-  const secondType = getAbbreviatedMimeType(second.mimeType).toLowerCase();
+  const firstType = getAbbreviatedMimeType(first.mimeType);
+  const secondType = getAbbreviatedMimeType(second.mimeType);
   const result = compareValues(firstType, secondType);
   return result || waterfall(first, second);
 }

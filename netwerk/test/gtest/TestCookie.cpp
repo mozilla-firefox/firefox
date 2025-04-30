@@ -132,7 +132,7 @@ void GetACookieNoHttp(nsICookieService* aCookieService, const char* aSpec,
                                   uri, uri, principal,
                                   false,    // aLoadedAsData
                                   nullptr,  // aEventObject
-                                  DocumentFlavorHTML);
+                                  DocumentFlavor::HTML);
   Unused << NS_WARN_IF(NS_FAILED(rv));
 
   nsAutoString cookie;
@@ -181,9 +181,9 @@ void InitPrefs(nsIPrefBranch* aPrefBranch) {
   // we use the most restrictive set of prefs we can;
   // however, we don't test third party blocking here.
   aPrefBranch->SetIntPref(kCookiesPermissions, 0);  // accept all
-  // Set quotaPerHost to maxPerHost - 1, so there is only one cookie
+  // Set quotaPerHost to maxPerHost, so there is only one cookie
   // will be evicted everytime.
-  aPrefBranch->SetIntPref(kPrefCookieQuotaPerHost, 49);
+  aPrefBranch->SetIntPref(kPrefCookieQuotaPerHost, 50);
   // Set the base domain limit to 50 so we have a known value.
   aPrefBranch->SetIntPref(kCookiesMaxPerHost, 50);
 

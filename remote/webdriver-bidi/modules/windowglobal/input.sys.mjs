@@ -7,7 +7,6 @@ import { WindowGlobalBiDiModule } from "chrome://remote/content/webdriver-bidi/m
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  actions: "chrome://remote/content/shared/webdriver/Actions.sys.mjs",
   AnimationFramePromise: "chrome://remote/content/shared/Sync.sys.mjs",
   assertTargetInViewPort:
     "chrome://remote/content/shared/webdriver/Actions.sys.mjs",
@@ -17,103 +16,11 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 class InputModule extends WindowGlobalBiDiModule {
-  #actionsOptions;
-  #actionState;
-
   constructor(messageHandler) {
     super(messageHandler);
-
-    // Bug 1920959: Remove if we no longer need to dispatch in content.
-    this.#actionState = null;
-    // Options for actions to pass through performActions and releaseActions.
-    this.#actionsOptions = {
-      // Callbacks as defined in the WebDriver specification.
-      getElementOrigin: this.#getElementOriginFromContent.bind(this),
-      isElementOrigin: this.#isElementOriginFromContent.bind(this),
-
-      // Custom callbacks.
-      assertInViewPort: this.#assertInViewPortFromContent.bind(this),
-      dispatchEvent: this.#dispatchEventFromContent.bind(this),
-      getClientRects: this.#getClientRectsFromContent.bind(this),
-      getInViewCentrePoint: this.#getInViewCentrePointFromContent.bind(this),
-    };
   }
 
   destroy() {}
-
-  //////////////////////////////////////////////////////////////
-  // Start: Wrapper callbacks for action dispatching in content
-
-  #dispatchEventFromContent(eventName, _context, details) {
-    return this._dispatchEvent({ eventName, details });
-  }
-
-  #assertInViewPortFromContent(target, _context) {
-    return lazy.assertTargetInViewPort(target, this.messageHandler.window);
-  }
-
-  #getClientRectsFromContent(element, _context) {
-    return element.getClientRects();
-  }
-
-  #getElementOriginFromContent(origin, _context) {
-    return origin;
-  }
-
-  #getInViewCentrePointFromContent(rect, _context) {
-    return lazy.dom.getInViewCentrePoint(rect, this.messageHandler.window);
-  }
-
-  #isElementOriginFromContent(origin, _context) {
-    return lazy.dom.isElement(origin);
-  }
-
-  // End: Wrapper callbacks for action dispatching in content
-  //////////////////////////////////////////////////////////////
-
-  /**
-   * In the provided array of input.SourceActions, replace all origins matching
-   * the input.ElementOrigin production with the Element corresponding to this
-   * origin.
-   *
-   * Note that this method replaces the content of the `actions` in place, and
-   * does not return a new array.
-   *
-   * @param {Array<input.SourceActions>} actions
-   *     The array of SourceActions to deserialize.
-   * @returns {Promise}
-   *     A promise which resolves when all ElementOrigin origins have been
-   *     deserialized.
-   */
-  async #deserializeActionOrigins(actions) {
-    const promises = [];
-
-    if (!Array.isArray(actions)) {
-      // Silently ignore invalid action chains because they are fully parsed later.
-      return Promise.resolve();
-    }
-
-    for (const actionsByTick of actions) {
-      if (!Array.isArray(actionsByTick?.actions)) {
-        // Silently ignore invalid actions because they are fully parsed later.
-        return Promise.resolve();
-      }
-
-      for (const action of actionsByTick.actions) {
-        if (action?.origin?.type === "element") {
-          promises.push(
-            (async () => {
-              action.origin = await this.#deserializeElementSharedReference(
-                action.origin.element
-              );
-            })()
-          );
-        }
-      }
-    }
-
-    return Promise.all(promises);
-  }
 
   async #deserializeElementSharedReference(sharedReference) {
     if (typeof sharedReference?.sharedId !== "string") {
@@ -289,38 +196,6 @@ class InputModule extends WindowGlobalBiDiModule {
       lazy.event.input(element);
       lazy.event.change(element);
     }
-  }
-
-  async performActions(options) {
-    const { actions } = options;
-
-    if (this.#actionState === null) {
-      this.#actionState = new lazy.actions.State();
-    }
-
-    await this.#deserializeActionOrigins(actions);
-
-    const actionChain = await lazy.actions.Chain.fromJSON(
-      this.#actionState,
-      actions,
-      this.#actionsOptions
-    );
-    await actionChain.dispatch(this.#actionState, this.#actionsOptions);
-
-    // Terminate the current wheel transaction if there is one. Wheel
-    // transactions should not live longer than a single action chain.
-    ChromeUtils.endWheelTransaction();
-  }
-
-  async releaseActions() {
-    if (this.#actionState === null) {
-      return;
-    }
-
-    const undoActions = this.#actionState.inputCancelList.reverse();
-    await undoActions.dispatch(this.#actionState, this.#actionsOptions);
-
-    this.#actionState = null;
   }
 }
 

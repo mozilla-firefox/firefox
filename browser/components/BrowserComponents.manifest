@@ -47,11 +47,15 @@ category browser-idle-startup resource:///modules/UrlbarSearchTermsPersistence.s
 category browser-idle-startup resource:///modules/ShoppingUtils.sys.mjs ShoppingUtils.init
 category browser-idle-startup moz-src:///browser/components/search/SERPCategorization.sys.mjs SERPCategorization.init
 category browser-idle-startup resource://gre/modules/ContentRelevancyManager.sys.mjs ContentRelevancyManager.init
+category browser-idle-startup resource://gre/modules/ColorwayThemeMigration.sys.mjs ColorwayThemeMigration.maybeWarn
 #ifdef MOZ_UPDATER
 category browser-idle-startup resource://gre/modules/UpdateListener.sys.mjs UpdateListener.maybeShowUnsupportedNotification
 #endif
 #ifdef XP_WIN
 category browser-idle-startup resource:///modules/WindowsJumpLists.sys.mjs WinTaskbarJumpList.startup
+#endif
+#if defined(XP_WIN) || defined(XP_MACOSX)
+category browser-idle-startup moz-src:///browser/components/shell/StartupOSIntegration.sys.mjs StartupOSIntegration.onStartupIdle
 #endif
 
 # Note that these telemetry entries schedule their own idle tasks,

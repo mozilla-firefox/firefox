@@ -101,25 +101,13 @@ export class AboutReaderParent extends JSWindowActorParent {
           let preferredWidth = message.data.preferredWidth || 0;
           let uri = Services.io.newURI(message.data.url);
 
-          let result = await new Promise(resolve => {
-            lazy.PlacesUtils.favicons.getFaviconURLForPage(
-              uri,
-              iconUri => {
-                if (iconUri) {
-                  resolve({
-                    url: message.data.url,
-                    faviconUrl: iconUri.spec,
-                  });
-                } else {
-                  resolve(null);
-                }
-              },
-              preferredWidth
-            );
-          });
+          let result = await lazy.PlacesUtils.favicons.getFaviconForPage(
+            uri,
+            preferredWidth
+          );
 
           this.callListeners(message);
-          return result;
+          return result && { url: uri.spec, faviconUrl: result.uri.spec };
         } catch (ex) {
           console.error(
             "Error requesting favicon URL for about:reader content: ",

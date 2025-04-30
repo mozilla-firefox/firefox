@@ -11,8 +11,9 @@
 
 [package]
 edition = "2018"
+rust-version = "1.65"
 name = "hashlink"
-version = "0.9.1"
+version = "0.10.0"
 authors = ["kyren <kerriganw@gmail.com>"]
 description = "HashMap-like containers that hold their key-value pairs in a user controllable order"
 documentation = "https://docs.rs/hashlink"
@@ -25,9 +26,9 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/kyren/hashlink"
 
 [dependencies.hashbrown]
-version = "0.14.3"
+version = "0.15"
 features = [
-    "ahash",
+    "default-hasher",
     "inline-more",
 ]
 default-features = false
@@ -38,7 +39,7 @@ optional = true
 default-features = false
 
 [dev-dependencies.rustc-hash]
-version = "1.1"
+version = "2"
 
 [dev-dependencies.serde_test]
 version = "1.0"

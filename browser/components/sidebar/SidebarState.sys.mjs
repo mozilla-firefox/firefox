@@ -44,7 +44,6 @@ const SIDEBAR_MAXIMUM_WIDTH = "75vw";
 
 const LEGACY_USED_PREF = "sidebar.old-sidebar.has-used";
 const REVAMP_USED_PREF = "sidebar.new-sidebar.has-used";
-const DEFAULT_LAUNCHER_VISIBLE_PREF = "sidebar.revamp.defaultLauncherVisible";
 
 /**
  * A reactive data store for the sidebar's UI state. Similar to Lit's
@@ -57,6 +56,7 @@ export class SidebarState {
   #props = {
     ...SidebarState.defaultProperties,
   };
+  #launcherEverVisible = false;
 
   /** @type {SidebarStateProps} */
   static defaultProperties = Object.freeze({
@@ -158,9 +158,19 @@ export class SidebarState {
    */
   loadInitialState(props) {
     // Override any initial launcher visible state when the pref is defined
-    if (Services.prefs.prefHasUserValue(DEFAULT_LAUNCHER_VISIBLE_PREF)) {
-      props.launcherVisible = this.defaultLauncherVisible;
+    // and the new sidebar has not been made visible yet
+    if (props.hasOwnProperty("hidden")) {
+      props.launcherVisible = !props.hidden;
       delete props.hidden;
+    }
+
+    const hasSidebarLauncherBeenVisible =
+      this.#controller.SidebarManager.hasSidebarLauncherBeenVisible;
+
+    // We override a falsey launcherVisible property with the default value if
+    // its not been visible before.
+    if (!props.launcherVisible && !hasSidebarLauncherBeenVisible) {
+      props.launcherVisible = this.defaultLauncherVisible;
     }
     for (const [key, value] of Object.entries(props)) {
       if (value === undefined) {
@@ -179,9 +189,6 @@ export class SidebarState {
           break;
         case "expanded":
           this.launcherExpanded = value;
-          break;
-        case "hidden":
-          this.launcherVisible = !value;
           break;
         case "panelOpen":
           // we need to know if we have a command value before finalizing panelOpen
@@ -292,6 +299,10 @@ export class SidebarState {
     return this.#props.launcherVisible;
   }
 
+  get launcherEverVisible() {
+    return this.#launcherEverVisible;
+  }
+
   /**
    * Update the launcher `visible` and `expanded` states
    *
@@ -328,6 +339,9 @@ export class SidebarState {
       return;
     }
     this.#props.launcherVisible = visible;
+    if (visible) {
+      this.#launcherEverVisible = true;
+    }
     this.#launcherContainerEl.hidden = !visible;
     this.#updateTabbrowser(visible);
     this.#sidebarBoxEl.style.paddingInlineStart =
@@ -378,25 +392,31 @@ export class SidebarState {
   set launcherDragActive(active) {
     this.#props.launcherDragActive = active;
     if (active) {
-      this.#launcherEl.toggleAttribute("customWidth", true);
-      if (
-        this.launcherExpanded &&
-        this.#controller.sidebarRevampVisibility === "expand-on-hover"
-      ) {
+      // Temporarily disable expand on hover functionality while dragging
+      if (this.#controller.sidebarRevampVisibility === "expand-on-hover") {
         this.#controller.toggleExpandOnHover(false);
       }
+
+      this.#launcherEl.toggleAttribute("customWidth", true);
     } else if (this.launcherWidth < LAUNCHER_MINIMUM_WIDTH) {
+      // Re-enable expand on hover if necessary
+      if (this.#controller.sidebarRevampVisibility === "expand-on-hover") {
+        this.#controller.toggleExpandOnHover(true, true);
+      }
+
       // Snap back to collapsed state when the new width is too narrow.
       this.launcherExpanded = false;
       if (this.revampVisibility === "hide-sidebar") {
         this.launcherVisible = false;
       }
     } else {
-      // Store the user-preferred launcher width.
-      this.expandedLauncherWidth = this.launcherWidth;
+      // Re-enable expand on hover if necessary
       if (this.#controller.sidebarRevampVisibility === "expand-on-hover") {
         this.#controller.toggleExpandOnHover(true, true);
       }
+
+      // Store the user-preferred launcher width.
+      this.expandedLauncherWidth = this.launcherWidth;
     }
     const rootEl = this.#controllerGlobal.document.documentElement;
     rootEl.toggleAttribute("sidebar-launcher-drag-active", active);

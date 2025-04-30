@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2021 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2021 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_PARAM_LATENCY_UTILS_H
 #define SPA_PARAM_LATENCY_UTILS_H
@@ -38,22 +18,18 @@ extern "C" {
 
 #include <spa/pod/builder.h>
 #include <spa/pod/parser.h>
-#include <spa/param/param.h>
+#include <spa/param/latency.h>
 
-struct spa_latency_info {
-	enum spa_direction direction;
-	float min_quantum;
-	float max_quantum;
-	uint32_t min_rate;
-	uint32_t max_rate;
-	uint64_t min_ns;
-	uint64_t max_ns;
-};
+#ifndef SPA_API_LATENCY_UTILS
+ #ifdef SPA_API_IMPL
+  #define SPA_API_LATENCY_UTILS SPA_API_IMPL
+ #else
+  #define SPA_API_LATENCY_UTILS static inline
+ #endif
+#endif
 
-#define SPA_LATENCY_INFO(dir,...) (struct spa_latency_info) { .direction = (dir), ## __VA_ARGS__ }
-
-static inline int
-spa_latency_info_compare(const struct spa_latency_info *a, struct spa_latency_info *b)
+SPA_API_LATENCY_UTILS int
+spa_latency_info_compare(const struct spa_latency_info *a, const struct spa_latency_info *b)
 {
 	if (a->min_quantum == b->min_quantum &&
 	    a->max_quantum == b->max_quantum &&
@@ -65,29 +41,35 @@ spa_latency_info_compare(const struct spa_latency_info *a, struct spa_latency_in
 	return 1;
 }
 
-static inline void
+SPA_API_LATENCY_UTILS void
 spa_latency_info_combine_start(struct spa_latency_info *info, enum spa_direction direction)
 {
 	*info = SPA_LATENCY_INFO(direction,
 			.min_quantum = FLT_MAX,
-			.max_quantum = 0.0f,
-			.min_rate = UINT32_MAX,
-			.max_rate = 0,
-			.min_ns = UINT64_MAX,
-			.max_ns = 0);
+			.max_quantum = FLT_MIN,
+			.min_rate = INT32_MAX,
+			.max_rate = INT32_MIN,
+			.min_ns = INT64_MAX,
+			.max_ns = INT64_MIN);
 }
-static inline void
+SPA_API_LATENCY_UTILS void
 spa_latency_info_combine_finish(struct spa_latency_info *info)
 {
 	if (info->min_quantum == FLT_MAX)
 		info->min_quantum = 0;
-	if (info->min_rate == UINT32_MAX)
+	if (info->max_quantum == FLT_MIN)
+		info->max_quantum = 0;
+	if (info->min_rate == INT32_MAX)
 		info->min_rate = 0;
-	if (info->min_ns == UINT64_MAX)
+	if (info->max_rate == INT32_MIN)
+		info->max_rate = 0;
+	if (info->min_ns == INT64_MAX)
 		info->min_ns = 0;
+	if (info->max_ns == INT64_MIN)
+		info->max_ns = 0;
 }
 
-static inline int
+SPA_API_LATENCY_UTILS int
 spa_latency_info_combine(struct spa_latency_info *info, const struct spa_latency_info *other)
 {
 	if (info->direction != other->direction)
@@ -107,7 +89,7 @@ spa_latency_info_combine(struct spa_latency_info *info, const struct spa_latency
 	return 0;
 }
 
-static inline int
+SPA_API_LATENCY_UTILS int
 spa_latency_parse(const struct spa_pod *latency, struct spa_latency_info *info)
 {
 	int res;
@@ -126,7 +108,7 @@ spa_latency_parse(const struct spa_pod *latency, struct spa_latency_info *info)
 	return 0;
 }
 
-static inline struct spa_pod *
+SPA_API_LATENCY_UTILS struct spa_pod *
 spa_latency_build(struct spa_pod_builder *builder, uint32_t id, const struct spa_latency_info *info)
 {
 	return (struct spa_pod *)spa_pod_builder_add_object(builder,
@@ -140,15 +122,7 @@ spa_latency_build(struct spa_pod_builder *builder, uint32_t id, const struct spa
 			SPA_PARAM_LATENCY_maxNs, SPA_POD_Long(info->max_ns));
 }
 
-struct spa_process_latency_info {
-	float quantum;
-	uint32_t rate;
-	uint64_t ns;
-};
-
-#define SPA_PROCESS_LATENCY_INFO_INIT(...)	(struct spa_process_latency_info) { __VA_ARGS__ }
-
-static inline int
+SPA_API_LATENCY_UTILS int
 spa_process_latency_parse(const struct spa_pod *latency, struct spa_process_latency_info *info)
 {
 	int res;
@@ -162,7 +136,7 @@ spa_process_latency_parse(const struct spa_pod *latency, struct spa_process_late
 	return 0;
 }
 
-static inline struct spa_pod *
+SPA_API_LATENCY_UTILS struct spa_pod *
 spa_process_latency_build(struct spa_pod_builder *builder, uint32_t id,
 		const struct spa_process_latency_info *info)
 {
@@ -173,7 +147,7 @@ spa_process_latency_build(struct spa_pod_builder *builder, uint32_t id,
 			SPA_PARAM_PROCESS_LATENCY_ns, SPA_POD_Long(info->ns));
 }
 
-static inline int
+SPA_API_LATENCY_UTILS int
 spa_process_latency_info_add(const struct spa_process_latency_info *process,
 		struct spa_latency_info *info)
 {
@@ -184,6 +158,17 @@ spa_process_latency_info_add(const struct spa_process_latency_info *process,
 	info->min_ns += process->ns;
 	info->max_ns += process->ns;
 	return 0;
+}
+
+SPA_API_LATENCY_UTILS int
+spa_process_latency_info_compare(const struct spa_process_latency_info *a,
+		const struct spa_process_latency_info *b)
+{
+	if (a->quantum == b->quantum &&
+	    a->rate == b->rate &&
+	    a->ns == b->ns)
+		return 0;
+	return 1;
 }
 
 /**

@@ -53,5 +53,8 @@ testInNewGlobal(`assertEq(intact("ArrayIteratorPrototypeHasIteratorProto"), true
 testInNewGlobal(`assertEq(intact("IteratorPrototypeHasObjectProto"), true); Object.setPrototypeOf( ( ([])[Symbol.iterator]().__proto__.__proto__ ), {a:10})`, `assertEq(intact("IteratorPrototypeHasObjectProto"), false);`);
 
 testInNewGlobal(`assertEq(intact("hasSeenObjectEmulateUndefinedFuse"), true); createIsHTMLDDA()`, `assertEq(intact("hasSeenObjectEmulateUndefinedFuse"), false);`);
+testInNewGlobal(`assertEq(intact("hasSeenArrayExceedsInt32LengthFuse"), true); const x = []; x[2147483649] = 1`, `assertEq(intact("hasSeenArrayExceedsInt32LengthFuse"), false);`);
+
 // Runtime wide fuse.
 assertEq(intact("hasSeenObjectEmulateUndefinedFuse"), false);
+assertEq(intact("hasSeenArrayExceedsInt32LengthFuse"), false);

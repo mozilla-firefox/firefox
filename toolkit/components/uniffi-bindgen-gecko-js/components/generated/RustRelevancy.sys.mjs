@@ -438,9 +438,9 @@ export class RelevancyStore {
      * This is non-blocking since databases and other resources are lazily opened.
      * @returns {RelevancyStore}
      */
-    static init(dbPath) {
+    static init(dbPath,remoteSettings) {
         const liftResult = (result) => FfiConverterTypeRelevancyStore.lift(result);
-        const liftError = (data) => FfiConverterTypeRelevancyApiError.lift(data);
+        const liftError = null;
         const functionCall = () => {
             try {
                 FfiConverterString.checkType(dbPath)
@@ -450,9 +450,18 @@ export class RelevancyStore {
                 }
                 throw e;
             }
+            try {
+                FfiConverterTypeRemoteSettingsService.checkType(remoteSettings)
+            } catch (e) {
+                if (e instanceof UniFFITypeError) {
+                    e.addItemDescriptionPart("remoteSettings");
+                }
+                throw e;
+            }
             return UniFFIScaffolding.callSync(
                 12, // relevancy:uniffi_relevancy_fn_constructor_relevancystore_new
                 FfiConverterString.lower(dbPath),
+                FfiConverterTypeRemoteSettingsService.lower(remoteSettings),
             )
         }
         return handleRustResult(functionCall(), liftResult, liftError);}
@@ -1948,7 +1957,13 @@ export class FfiConverterSequenceTypeInterest extends FfiConverterArrayBuffer {
     }
 }
 
+import {
+  FfiConverterTypeRemoteSettingsService,
+  RemoteSettingsService,
+} from "resource://gre/modules/RustRemoteSettings.sys.mjs";
 
+// Export the FFIConverter object to make external types work.
+export { FfiConverterTypeRemoteSettingsService, RemoteSettingsService };
 
 
 

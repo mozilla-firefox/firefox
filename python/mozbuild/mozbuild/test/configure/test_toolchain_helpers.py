@@ -39,7 +39,7 @@ class CompilerPreprocessor(Preprocessor):
         context = self.context
 
         def normalize_numbers(value):
-            if isinstance(value, (str,)):
+            if isinstance(value, str):
                 if value[-1:] == "L" and value[:-1].isdigit():
                     value = int(value[:-1])
             return value

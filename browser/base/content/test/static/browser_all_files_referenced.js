@@ -119,6 +119,10 @@ var gExceptionPaths = [
   "resource://builtin-addons/newtab/",
   "resource://newtab/",
   "chrome://newtab/",
+
+  // Bug 1957102 - Temporarily ignore until used by the URLBar provider
+  "resource://gre/modules/PlacesSemanticHistoryManager.sys.mjs",
+  "resource://gre/modules/PlacesSemanticHistoryDatabase.sys.mjs",
 ];
 
 // These are not part of the omni.ja file, so we find them only when running
@@ -324,6 +328,9 @@ var allowlist = [
   {
     file: "resource://gre/localization/en-US/netwerk/necko.ftl",
   },
+
+  // dom/xslt/xslt/txMozillaXSLTProcessor.cpp
+  { file: "resource://gre/localization/en-US/dom/xslt.ftl" },
 
   // A QA and dev debug tool.
   { file: "chrome://browser/content/places/interactionsViewer.html" },

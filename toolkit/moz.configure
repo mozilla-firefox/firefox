@@ -94,9 +94,6 @@ option(
     help="Set distribution-specific id",
 )
 set_config("MOZ_DISTRIBUTION_ID", depends("--with-distribution-id")(lambda v: v[0]))
-add_old_configure_assignment(
-    "MOZ_DISTRIBUTION_ID", depends("--with-distribution-id")(lambda v: v[0])
-)
 
 
 @depends("MOZ_APP_VENDOR", build_project)
@@ -119,9 +116,9 @@ def all_configure_options():
         # __sandbox__._options contains items for both option.name and
         # option.env. But it's also an OrderedDict, meaning both are
         # consecutive.
-        # Also ignore OLD_CONFIGURE and MOZCONFIG because they're not
+        # Also ignore MOZCONFIG because they're not
         # interesting.
-        if option == previous or option.env in ("OLD_CONFIGURE", "MOZCONFIG"):
+        if option == previous or option.env in ("MOZCONFIG",):
             continue
         previous = option
         value = __sandbox__._value_for(option)
@@ -1130,30 +1127,6 @@ project_flag(
     set_as_define=True,
 )
 
-
-# Child Process Name for IPC
-# ==============================================================
-@depends(toolkit, bin_suffix(target))
-def moz_child_process_name(toolkit, bin_suffix):
-    if toolkit != "android":
-        return f"plugin-container{bin_suffix}"
-    else:
-        # We want to let Android unpack the file at install time, but it only
-        # does so if the file is named libsomething.so. The lib/ path is also
-        # required because the unpacked file will be under the lib/ subdirectory
-        # and will need to be executed from that path.
-        return "libplugin-container.so"
-
-
-set_config("MOZ_CHILD_PROCESS_NAME", moz_child_process_name)
-
-with only_when(target_is_osx):
-    set_config("MOZ_CHILD_PROCESS_BUNDLE", "plugin-container.app/Contents/MacOS/")
-    set_config(
-        "MOZ_CHILD_PROCESS_BUNDLEID",
-        depends("--with-distribution-id")(lambda v: f"{v[0]}.plugincontainer"),
-    )
-    set_config("MOZ_CHILD_PROCESS_BUNDLENAME", "plugin-container.app")
 
 # Profile Management
 # ==============================================================
@@ -3232,8 +3205,6 @@ with only_when("--enable-official-branding"):
     set_config("MOZ_OFFICIAL_BRANDING", True)
     set_define("MOZ_OFFICIAL_BRANDING", True)
 
-    add_old_configure_assignment("MOZ_OFFICIAL_BRANDING", True)
-
 
 confvar(
     "MOZ_BRANDING_DIRECTORY",
@@ -3285,7 +3256,6 @@ def moz_branding_directory(
 
 
 set_config("MOZ_BRANDING_DIRECTORY", moz_branding_directory)
-add_old_configure_assignment("MOZ_BRANDING_DIRECTORY", moz_branding_directory)
 
 
 @depends(moz_branding_directory, build_project)
@@ -3353,8 +3323,9 @@ def moz_app_displayname(value, username):
     return value[0]
 
 
+set_define("MOZ_APP_UA_VERSION", depends(milestone.app_version)(lambda v: f'"{v}"'))
+
 set_config("MOZ_APP_DISPLAYNAME", moz_app_displayname)
-add_old_configure_assignment("MOZ_APP_DISPLAYNAME", moz_app_displayname)
 
 
 confvar(
@@ -3369,9 +3340,6 @@ confvar(
     nargs=1,
     set_as_config=False,
     help="ID of the associated mac bundle",
-)
-add_old_configure_assignment(
-    "MOZ_MACBUNDLE_ID", depends_if("MOZ_MACBUNDLE_ID")(lambda v: v[0])
 )
 
 option(
@@ -3395,11 +3363,40 @@ def moz_app_remotingname(value, moz_app_name, update_channel):
 set_config("MOZ_APP_REMOTINGNAME", moz_app_remotingname)
 
 
+# Child Process Name for IPC
+# ==============================================================
+@depends(toolkit, bin_suffix(target))
+def moz_child_process_name(toolkit, bin_suffix):
+    if toolkit != "android":
+        return f"plugin-container{bin_suffix}"
+    else:
+        # We want to let Android unpack the file at install time, but it only
+        # does so if the file is named libsomething.so. The lib/ path is also
+        # required because the unpacked file will be under the lib/ subdirectory
+        # and will need to be executed from that path.
+        return "libplugin-container.so"
+
+
+set_config("MOZ_CHILD_PROCESS_NAME", moz_child_process_name)
+
+set_config(
+    "MOZ_CHILD_PROCESS_APPNAME",
+    depends_if(moz_app_displayname)(lambda v: f"{v}CP"),
+)
+
+with only_when(target_is_osx):
+    set_config("MOZ_CHILD_PROCESS_BUNDLE", "plugin-container.app/Contents/MacOS/")
+    set_config(
+        "MOZ_CHILD_PROCESS_BUNDLEID",
+        depends("--with-distribution-id")(lambda v: f"{v[0]}.plugincontainer"),
+    )
+    set_config("MOZ_CHILD_PROCESS_BUNDLENAME", "plugin-container.app")
+
+
 # Miscellaneous options
 # ==============================================================
 option(env="MOZ_WINCONSOLE", nargs="?", help="Whether we can create a console window")
 set_define("MOZ_WINCONSOLE", True, when=depends("MOZ_WINCONSOLE")(lambda x: x))
-
 
 # Alternative Crashreporter setting
 option(
@@ -3683,14 +3680,59 @@ with only_when(target_is_osx):
         help="Prefix for the mac bundle name",
     )
 
-    @depends_if("--with-macbundlename-prefix")
-    def mac_bundle_name(value):
-        return value[0]
+    @depends(moz_app_displayname, "--with-macbundlename-prefix", moz_debug)
+    def mac_bundle_name(moz_app_displayname, mac_bundle_name_prefix, moz_debug):
+        suffix = "Debug" if moz_debug else ""
+        prefix = mac_bundle_name_prefix[0] if mac_bundle_name_prefix else ""
+        app_displayname = moz_app_displayname if moz_app_displayname else ""
+        return f"{prefix}{app_displayname}{suffix}.app"
 
-    add_old_configure_assignment("MOZ_MACBUNDLE_NAME_PREFIX", mac_bundle_name)
+    set_config("MOZ_MACBUNDLE_NAME", mac_bundle_name)
+
+    @depends(
+        "MOZ_MACBUNDLE_ID", moz_app_displayname, "--with-distribution-id", moz_debug
+    )
+    @imports("re")
+    def moz_mac_bundle_id(macbundle_id, app_displayname, distribution_id, moz_debug):
+        if macbundle_id:
+            bundle_id = macbundle_id[0]
+        elif app_displayname:
+            bundle_id = re.sub("[^a-z-]", "", app_displayname.lower())
+        else:
+            return
+
+        suffix = "debug" if moz_debug else ""
+        return f"{distribution_id[0]}.{bundle_id}{suffix}"
+
+    set_config("MOZ_MACBUNDLE_ID", moz_mac_bundle_id)
+    set_define("MOZ_MACBUNDLE_ID", moz_mac_bundle_id)
 
     option(env="DMG_TOOL", nargs=1, help="Path to the dmg tool")
     set_config("DMG_TOOL", depends_if("DMG_TOOL")(lambda x: x[0]))
+
+    moz_eme_process_name = dependable("media-plugin-helper")
+
+    set_config("MOZ_EME_PROCESS_NAME", moz_eme_process_name)
+    set_config(
+        "MOZ_EME_PROCESS_NAME_BRANDED",
+        depends_if(moz_app_displayname)(lambda name: f"{name} Media Plugin Helper"),
+    )
+    set_config(
+        "MOZ_EME_PROCESS_BUNDLENAME",
+        depends(moz_eme_process_name)(lambda name: f"{name}.app"),
+    )
+
+    # Generate a lower case string with no spaces to be used as the bundle ID
+    # for the EME helper .app of the form org.mozilla.<executable-name>.
+    @depends(moz_app_displayname, moz_eme_process_name, "--with-distribution-id")
+    def moz_eme_process_bundle_id(app_displayname, eme_process_name, distribution_id):
+        if not app_displayname:
+            return
+
+        eme_process_bundle_id = app_displayname.replace(" ", "-").lower()
+        return f"{distribution_id[0]}.{eme_process_bundle_id}-{eme_process_name}"
+
+    set_config("MOZ_EME_PROCESS_BUNDLEID", moz_eme_process_bundle_id)
 
 
 # JS Packaging

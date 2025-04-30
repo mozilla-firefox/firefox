@@ -6,8 +6,11 @@ package mozilla.components.support.utils
 
 import android.graphics.Color
 import androidx.annotation.ColorInt
+import androidx.annotation.FloatRange
+import androidx.compose.ui.graphics.lerp
 import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.toColorInt
+import androidx.compose.ui.graphics.Color as ComposeColor
 
 /**
  * Default color for disabled views in normal mode for light and dark theme.
@@ -73,4 +76,22 @@ object ColorUtils {
     fun calculateAlphaFromPercentage(opacity: Int): Int {
         return (opacity * 255 / 100).coerceIn(0, 255)
     }
+
+    /**
+     * Produce a lighter color than this using the given factor.
+     *
+     * @param factor How much lighter the new color should be.
+     * A higher value will produce a lighter color.
+     */
+    fun ComposeColor.lighten(@FloatRange(from = 0.0, to = 1.0) factor: Float) =
+        lerp(this, ComposeColor.White, factor)
+
+    /**
+     * Produce a darker color than this using the given factor.
+     *
+     * @param factor How much darken the new color should be.
+     * A higher value will produce a darker color.
+     */
+    fun ComposeColor.darken(@FloatRange(from = 0.0, to = 1.0) factor: Float) =
+        lerp(this, ComposeColor.Black, factor)
 }

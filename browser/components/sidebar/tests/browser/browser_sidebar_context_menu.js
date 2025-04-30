@@ -10,7 +10,7 @@ add_setup(async () => {
   });
 });
 
-const initialTabDirection = Services.prefs.getBoolPref("sidebar.verticalTabs")
+const initialTabDirection = Services.prefs.getBoolPref(VERTICAL_TABS_PREF)
   ? "vertical"
   : "horizontal";
 
@@ -61,6 +61,7 @@ add_task(async function test_extension_context_menu() {
       };
     }
   );
+  contextMenu.hidePopup();
 
   await openAndWaitForContextMenu(
     contextMenu,
@@ -74,6 +75,7 @@ add_task(async function test_extension_context_menu() {
     }
   );
   ok(manageStub.called, "Manage Extension called");
+  contextMenu.hidePopup();
 
   await openAndWaitForContextMenu(
     contextMenu,
@@ -87,6 +89,7 @@ add_task(async function test_extension_context_menu() {
     }
   );
   ok(reportStub.called, "Report Extension called");
+  contextMenu.hidePopup();
 
   await openAndWaitForContextMenu(
     contextMenu,
@@ -100,6 +103,7 @@ add_task(async function test_extension_context_menu() {
     }
   );
   ok(removeStub.called, "Remove Extension called");
+  contextMenu.hidePopup();
 
   info(
     "Verify report context menu disabled/enabled based on about:config pref"
@@ -121,6 +125,7 @@ add_task(async function test_extension_context_menu() {
       );
     }
   );
+  contextMenu.hidePopup();
   await SpecialPowers.popPrefEnv();
   await openAndWaitForContextMenu(
     contextMenu,
@@ -136,6 +141,7 @@ add_task(async function test_extension_context_menu() {
       );
     }
   );
+  contextMenu.hidePopup();
 
   info(
     "Verify remove context menu disabled/enabled based on addon uninstall permission"
@@ -165,6 +171,7 @@ add_task(async function test_extension_context_menu() {
     }
   );
   await EnterprisePolicyTesting.setupPolicyEngineWithJson("");
+  contextMenu.hidePopup();
   await openAndWaitForContextMenu(
     contextMenu,
     sidebar.extensionButtons[0],
@@ -179,6 +186,7 @@ add_task(async function test_extension_context_menu() {
       );
     }
   );
+  contextMenu.hidePopup();
 
   sinon.restore();
   await extension.unload();
@@ -190,7 +198,6 @@ add_task(async function test_extension_context_menu() {
 });
 
 add_task(async function test_sidebar_context_menu() {
-  const { document, SidebarController } = window;
   const { sidebarMain, sidebarContainer } = SidebarController;
   await SidebarController.initializeUIState({
     launcherVisible: true,
@@ -217,6 +224,7 @@ add_task(async function test_sidebar_context_menu() {
       );
     };
   });
+  contextMenu.hidePopup();
 
   await openAndWaitForContextMenu(contextMenu, sidebarMain, () => {
     // Click customize sidebar
@@ -230,6 +238,7 @@ add_task(async function test_sidebar_context_menu() {
     "viewCustomizeSidebar",
     "Customize sidebar panel is open"
   );
+  contextMenu.hidePopup();
 
   await openAndWaitForContextMenu(contextMenu, sidebarMain, () => {
     // Click hide sidebar
@@ -240,6 +249,8 @@ add_task(async function test_sidebar_context_menu() {
   });
   ok(sidebarContainer.hidden, "Sidebar is not visible");
   ok(!SidebarController.isOpen, "Sidebar panel is closed");
+  contextMenu.hidePopup();
+
   SidebarController._state.updateVisibility(true);
 
   await openAndWaitForContextMenu(contextMenu, sidebarMain, () => {
@@ -249,11 +260,12 @@ add_task(async function test_sidebar_context_menu() {
     );
     enableVerticalTabsMenuItem.click();
   });
+  contextMenu.hidePopup();
   ok(
-    Services.prefs.getBoolPref("sidebar.verticalTabs", false),
+    Services.prefs.getBoolPref(VERTICAL_TABS_PREF, false),
     "Vertical tabs disabled"
   );
-  Services.prefs.clearUserPref("sidebar.verticalTabs");
+  Services.prefs.clearUserPref(VERTICAL_TABS_PREF);
   await waitForTabstripOrientation(initialTabDirection);
 
   is(contextMenu.state, "closed", "Context menu closed for vertical tabs");
@@ -261,11 +273,11 @@ add_task(async function test_sidebar_context_menu() {
 
 add_task(async function test_toggle_vertical_tabs_from_sidebar_button() {
   await SpecialPowers.pushPrefEnv({
-    set: [["sidebar.verticalTabs", false]],
+    set: [[VERTICAL_TABS_PREF, false]],
   });
   await waitForTabstripOrientation("horizontal");
   Assert.equal(
-    Services.prefs.getStringPref("sidebar.visibility"),
+    Services.prefs.getStringPref(SIDEBAR_VISIBILITY_PREF),
     "hide-sidebar",
     "Sanity check the visibilty pref when verticalTabs are disabled"
   );
@@ -289,9 +301,10 @@ add_task(async function test_toggle_vertical_tabs_from_sidebar_button() {
   });
   await waitForTabstripOrientation("vertical");
   ok(gBrowser.tabContainer.verticalMode, "Vertical tabs are enabled.");
+  toolbarContextMenu.hidePopup();
 
   Assert.equal(
-    Services.prefs.getStringPref("sidebar.visibility"),
+    Services.prefs.getStringPref(SIDEBAR_VISIBILITY_PREF),
     "always-show",
     "Sanity check the visibilty pref when verticalTabs are enabled"
   );
@@ -300,12 +313,13 @@ add_task(async function test_toggle_vertical_tabs_from_sidebar_button() {
   await openAndWaitForContextMenu(toolbarContextMenu, sidebarButton, () => {
     customizeSidebarItem.click();
   });
-  ok(window.SidebarController.isOpen, "Sidebar is open");
+  ok(SidebarController.isOpen, "Sidebar is open");
   Assert.equal(
-    window.SidebarController.currentID,
+    SidebarController.currentID,
     "viewCustomizeSidebar",
     "Sidebar should have opened to the customize sidebar panel"
   );
+  toolbarContextMenu.hidePopup();
 
   info("Disable vertical tabs from right clicking the sidebar-button");
   await openAndWaitForContextMenu(toolbarContextMenu, sidebarButton, () => {
@@ -319,12 +333,13 @@ add_task(async function test_toggle_vertical_tabs_from_sidebar_button() {
   await waitForTabstripOrientation("horizontal");
   ok(!gBrowser.tabContainer.verticalMode, "Vertical tabs are disabled.");
   Assert.equal(
-    Services.prefs.getStringPref("sidebar.visibility"),
+    Services.prefs.getStringPref(SIDEBAR_VISIBILITY_PREF),
     "hide-sidebar",
     "Sanity check the visibilty pref when verticalTabs are disabled"
   );
+  toolbarContextMenu.hidePopup();
 
-  window.SidebarController.hide();
+  SidebarController.hide();
   await SpecialPowers.popPrefEnv();
-  await window.SidebarController.waitUntilStable();
+  await SidebarController.waitUntilStable();
 });

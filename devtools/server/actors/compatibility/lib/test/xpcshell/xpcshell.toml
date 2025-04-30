@@ -2,6 +2,5 @@
 tags = "devtools"
 head = "head.js"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
 
 ["test_mdn-compatibility.js"]

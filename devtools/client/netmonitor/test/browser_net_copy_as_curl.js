@@ -18,7 +18,7 @@ add_task(async function () {
   info("Starting test... ");
 
   // Different quote chars are used for Windows and POSIX
-  const QUOTE_WIN = '"';
+  const QUOTE_WIN = '^"';
   const QUOTE_POSIX = "'";
 
   const isWin = Services.appinfo.OS === "WINNT";
@@ -221,7 +221,7 @@ async function testForPlatform(tab, monitor, testData) {
         // This monster regexp parses the command line into an array of arguments,
         // recognizing quoted args with matching quotes and escaped quotes inside:
         // [ "curl 'url'", "--standalone-arg", "-arg-with-quoted-string 'value\'s'" ]
-        const matchRe = /[-A-Za-z1-9]+(?: ([\"'])(?:\\\1|.)*?\1)?/g;
+        const matchRe = /[-A-Za-z1-9]+(?: ([\^\\"']+)(?:\\\1|.)*?\1)?/g;
 
         const actual = result.match(matchRe);
         // Must begin with the same "curl 'URL'" segment

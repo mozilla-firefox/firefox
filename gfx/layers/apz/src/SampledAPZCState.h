@@ -10,6 +10,7 @@
 #include "FrameMetrics.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/ScrollGeneration.h"
+#include "mozilla/layers/CompositorScrollUpdate.h"
 
 namespace mozilla {
 namespace layers {
@@ -20,7 +21,8 @@ class SampledAPZCState {
   explicit SampledAPZCState(const FrameMetrics& aMetrics);
   SampledAPZCState(const FrameMetrics& aMetrics,
                    Maybe<CompositionPayload>&& aPayload,
-                   APZScrollGeneration aGeneration);
+                   APZScrollGeneration aGeneration,
+                   std::vector<CompositorScrollUpdate>&& aUpdates);
 
   bool operator==(const SampledAPZCState& aOther) const;
   bool operator!=(const SampledAPZCState& aOther) const;
@@ -30,6 +32,7 @@ class SampledAPZCState {
   CSSToParentLayerScale GetZoom() const { return mZoom; }
   Maybe<CompositionPayload> TakeScrollPayload();
   const APZScrollGeneration& Generation() const { return mGeneration; }
+  const std::vector<CompositorScrollUpdate> Updates() const { return mUpdates; }
 
   void UpdateScrollProperties(const FrameMetrics& aMetrics);
   void UpdateScrollPropertiesWithRelativeDelta(const FrameMetrics& aMetrics,
@@ -58,6 +61,8 @@ class SampledAPZCState {
   // An optional payload that rides along with the sampled state.
   Maybe<CompositionPayload> mScrollPayload;
   APZScrollGeneration mGeneration;
+  // Compositor scroll updates since the last sample.
+  std::vector<CompositorScrollUpdate> mUpdates;
 
   void RemoveFractionalAsyncDelta();
   // A handy wrapper to call

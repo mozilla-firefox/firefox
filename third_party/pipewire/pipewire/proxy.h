@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_PROXY_H
 #define PIPEWIRE_PROXY_H
@@ -32,6 +12,8 @@ extern "C" {
 #include <spa/utils/hook.h>
 
 /** \page page_proxy Proxy
+ *
+ * \see \ref pw_proxy
  *
  * \section sec_page_proxy_overview Overview
  *
@@ -96,7 +78,7 @@ extern "C" {
  * invoked by the client to PipeWire messages. Events will call the handlers
  * set in listener.
  *
- * See \ref page_proxy
+ * \see \ref page_proxy
  */
 
 /**
@@ -109,7 +91,7 @@ struct pw_proxy;
 
 /** Proxy events, use \ref pw_proxy_add_listener */
 struct pw_proxy_events {
-#define PW_VERSION_PROXY_EVENTS		0
+#define PW_VERSION_PROXY_EVENTS		1
         uint32_t version;
 
 	/** The proxy is destroyed */
@@ -127,6 +109,8 @@ struct pw_proxy_events {
 
 	/** an error occurred on the proxy */
         void (*error) (void *data, int seq, int res, const char *message);
+
+        void (*bound_props) (void *data, uint32_t global_id, const struct spa_dict *props);
 };
 
 /* Make a new proxy object. The id can be used to bind to a remote object and

@@ -1009,6 +1009,11 @@ uiaRawElmProvider::get_Value(__RPC__deref_out_opt BSTR* aRetVal) {
   }
   nsAutoString value;
   acc->Value(value);
+  if (value.IsEmpty() && acc->IsDoc()) {
+    // Exposing the URl via the Value pattern doesn't seem to be documented
+    // anywhere. However, Chromium does it, as does the IA2 -> UIA proxy.
+    nsAccUtils::DocumentURL(acc, value);
+  }
   *aRetVal = ::SysAllocStringLen(value.get(), value.Length());
   if (!*aRetVal) {
     return E_OUTOFMEMORY;
@@ -1391,7 +1396,7 @@ bool uiaRawElmProvider::HasValuePattern() const {
   Accessible* acc = Acc();
   MOZ_ASSERT(acc);
   if (acc->HasNumericValue() || acc->IsCombobox() || acc->IsHTMLLink() ||
-      acc->IsTextField()) {
+      acc->IsTextField() || acc->IsDoc()) {
     return true;
   }
   const nsRoleMapEntry* roleMapEntry = acc->ARIARoleMap();

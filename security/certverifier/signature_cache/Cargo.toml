@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-hashlink = "0.9"
+hashlink = "0.10"

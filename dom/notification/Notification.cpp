@@ -404,8 +404,8 @@ already_AddRefed<Notification> Notification::ValidateAndCreate(
   // Step 12: If options["icon"] exists, then parse it using baseURL, and if
   // that does not return failure, set notification’s icon URL to the return
   // value. (Otherwise icon URL is not set.)
-  nsString iconUrl = aOptions.mIcon;
-  ResolveIconURL(aGlobal, iconUrl);
+  nsAutoString iconUrl;
+  ResolveIconURL(aGlobal, aOptions.mIcon, iconUrl);
 
   // Step 19: Set notification’s actions to « ».
   nsTArray<IPCNotificationAction> actions;
@@ -573,7 +573,8 @@ uint32_t Notification::MaxActions(const GlobalObject& aGlobal) {
 }
 
 nsresult Notification::ResolveIconURL(nsIGlobalObject* aGlobal,
-                                      nsString& aIconUrl) {
+                                      const nsAString& aIconUrl,
+                                      nsString& aDecodedUrl) {
   nsresult rv = NS_OK;
 
   if (aIconUrl.IsEmpty()) {
@@ -613,7 +614,8 @@ nsresult Notification::ResolveIconURL(nsIGlobalObject* aGlobal,
   if (NS_SUCCEEDED(rv)) {
     nsAutoCString src;
     srcUri->GetSpec(src);
-    CopyUTF8toUTF16(src, aIconUrl);
+    // XXX(krosylight): We should be able to pass UTF8 as-is, or ideally the URI object itself.
+    CopyUTF8toUTF16(src, aDecodedUrl);
   }
 
   if (encoding == UTF_8_ENCODING) {
@@ -628,12 +630,12 @@ nsresult Notification::ResolveIconURL(nsIGlobalObject* aGlobal,
 
   nsCOMPtr<nsIURI> srcUriUtf8;
   nsresult rvUtf8 =
-      NS_NewURI(getter_AddRefs(srcUri), aIconUrl, UTF_8_ENCODING, baseUri);
+      NS_NewURI(getter_AddRefs(srcUriUtf8), aIconUrl, UTF_8_ENCODING, baseUri);
 
   if (NS_SUCCEEDED(rv)) {
     if (NS_SUCCEEDED(rvUtf8)) {
       bool equals = false;
-      if (NS_SUCCEEDED(baseUri->Equals(srcUri, &equals))) {
+      if (NS_SUCCEEDED(srcUri->Equals(srcUriUtf8, &equals))) {
         if (equals) {
           // Okay to be parsed with UTF8
           label = glean::web_notification::IconUrlEncodingLabel::eUtf8;

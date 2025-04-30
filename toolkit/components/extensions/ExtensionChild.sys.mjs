@@ -3,6 +3,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
 /**
  * This file handles addon logic that is independent of the chrome process and
@@ -15,22 +16,16 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 
-/** @type {Lazy} */
-const lazy = {};
-
-XPCOMUtils.defineLazyServiceGetter(
-  lazy,
-  "finalizationService",
-  "@mozilla.org/toolkit/finalizationwitness;1",
-  "nsIFinalizationWitnessService"
-);
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   ExtensionContent: "resource://gre/modules/ExtensionContent.sys.mjs",
   ExtensionPageChild: "resource://gre/modules/ExtensionPageChild.sys.mjs",
   ExtensionProcessScript:
     "resource://gre/modules/ExtensionProcessScript.sys.mjs",
   NativeApp: "resource://gre/modules/NativeMessaging.sys.mjs",
+  finalizationService: {
+    service: "@mozilla.org/toolkit/finalizationwitness;1",
+    iid: Ci.nsIFinalizationWitnessService,
+  },
 });
 
 import { ExtensionCommon } from "resource://gre/modules/ExtensionCommon.sys.mjs";

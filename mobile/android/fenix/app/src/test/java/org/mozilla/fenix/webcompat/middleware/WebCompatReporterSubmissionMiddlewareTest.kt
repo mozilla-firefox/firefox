@@ -12,6 +12,11 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import mozilla.components.browser.state.state.BrowserState
+import mozilla.components.browser.state.state.createTab
+import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.concept.engine.EngineSession
+import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.rule.MainCoroutineRule
 import mozilla.telemetry.glean.testing.GleanTestRule
@@ -397,21 +402,37 @@ class WebCompatReporterSubmissionMiddlewareTest {
         store.dispatch(WebCompatReporterAction.SendReportClicked)
     }
 
-    private fun createStore(service: WebCompatReporterRetrievalService) = WebCompatReporterStore(
-        initialState = WebCompatReporterState(
-            tabUrl = "https://www.mozilla.org",
-            enteredUrl = "https://www.mozilla.org/en-US/firefox/new/",
-            reason = WebCompatReporterState.BrokenSiteReason.Slow,
-            problemDescription = "",
-        ),
-        middleware = listOf(
-            WebCompatReporterSubmissionMiddleware(
-                appStore = appStore,
-                webCompatReporterRetrievalService = service,
-                scope = coroutinesTestRule.scope,
+    private fun createStore(service: WebCompatReporterRetrievalService): WebCompatReporterStore {
+        val engineSession: EngineSession = mock()
+        val tab = createTab(
+            url = "https://www.mozilla.org",
+            id = "test-tab",
+            engineSession = engineSession,
+        )
+        val browserStore = BrowserStore(
+            initialState = BrowserState(
+                tabs = listOf(tab),
+                selectedTabId = tab.id,
             ),
-        ),
-    )
+        )
+
+        return WebCompatReporterStore(
+            initialState = WebCompatReporterState(
+                tabUrl = "https://www.mozilla.org",
+                enteredUrl = "https://www.mozilla.org/en-US/firefox/new/",
+                reason = WebCompatReporterState.BrokenSiteReason.Slow,
+                problemDescription = "",
+            ),
+            middleware = listOf(
+                WebCompatReporterSubmissionMiddleware(
+                    appStore = appStore,
+                    browserStore = browserStore,
+                    webCompatReporterRetrievalService = service,
+                    scope = coroutinesTestRule.scope,
+                ),
+            ),
+        )
+    }
 
     private class FakeWebCompatReporterRetrievalService : WebCompatReporterRetrievalService {
 

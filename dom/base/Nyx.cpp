@@ -48,34 +48,22 @@ void Nyx::Release(const GlobalObject&, uint32_t aIterations) {
 /* static */
 void Nyx::GetRawData(const GlobalObject& aGlobal,
                      JS::MutableHandle<JSObject*> aRetval, ErrorResult& aRv) {
-  const size_t maxMsgSize = 4096;
-
-  FallibleTArray<uint8_t> data;
-
-  // Allocate memory for the buffer
-  if (!data.SetLength(maxMsgSize, fallible)) {
-    MOZ_FUZZING_NYX_ABORT("ERROR: Failed to initialize buffer!\n");
+  uint8_t* buf = nullptr;
+  uint32_t size = fuzzing::Nyx::instance().get_raw_data(&buf);
+  if (buf == nullptr) {
+    MOZ_FUZZING_NYX_PRINT("ERROR: Failed to get pointer to global payload.\n");
   }
 
-  // Retrieve raw data into the buffer
-  uint32_t bufsize =
-      fuzzing::Nyx::instance().get_raw_data(data.Elements(), data.Length());
+  auto* cx = aGlobal.Context();
+  JS::Rooted<JSObject*> arrayBuffer(
+      cx, JS::NewArrayBufferWithUserOwnedContents(cx, size, buf));
 
-  if (!data.SetLength(bufsize, fallible)) {
-    MOZ_FUZZING_NYX_ABORT("ERROR: Failed to resize buffer!\n");
-  }
-
-  if (bufsize == 0xFFFFFFFF) {
-    MOZ_FUZZING_NYX_DEBUG("Nyx: Out of data.\n");
-    fuzzing::Nyx::instance().release(0);
-  }
-
-  JS::Rooted<JSObject*> buffer(
-      aGlobal.Context(), ArrayBuffer::Create(aGlobal.Context(), data, aRv));
-  if (aRv.Failed()) {
+  if (!arrayBuffer) {
+    MOZ_FUZZING_NYX_PRINT("ERROR: Failed to create ArrayBuffer.\n");
     return;
   }
-  aRetval.set(buffer);
+
+  aRetval.set(arrayBuffer);
 }
 
 }  // namespace mozilla::dom

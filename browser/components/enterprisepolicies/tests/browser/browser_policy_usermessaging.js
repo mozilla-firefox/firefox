@@ -29,9 +29,7 @@ add_task(async function test_skip_terms_of_use_timestamp_set() {
   const startTime = Date.now();
   await setupPolicyEngineWithJson({
     policies: {
-      UserMessaging: {
-        SkipTermsOfUse: true,
-      },
+      SkipTermsOfUse: true,
     },
   });
   const endTime = Date.now();

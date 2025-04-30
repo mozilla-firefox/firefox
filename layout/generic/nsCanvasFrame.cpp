@@ -763,18 +763,14 @@ void nsCanvasFrame::Reflow(nsPresContext* aPresContext,
   NS_FRAME_TRACE_REFLOW_OUT("nsCanvasFrame::Reflow", aStatus);
 }
 
-nsresult nsCanvasFrame::GetContentForEvent(const WidgetEvent* aEvent,
-                                           nsIContent** aContent) {
-  NS_ENSURE_ARG_POINTER(aContent);
-  nsresult rv = nsIFrame::GetContentForEvent(aEvent, aContent);
-  if (NS_FAILED(rv) || !*aContent) {
-    nsIFrame* kid = mFrames.FirstChild();
-    if (kid) {
-      rv = kid->GetContentForEvent(aEvent, aContent);
-    }
+nsIContent* nsCanvasFrame::GetContentForEvent(const WidgetEvent* aEvent) const {
+  if (nsIContent* content = nsIFrame::GetContentForEvent(aEvent)) {
+    return content;
   }
-
-  return rv;
+  if (const nsIFrame* kid = mFrames.FirstChild()) {
+    return kid->GetContentForEvent(aEvent);
+  }
+  return nullptr;
 }
 
 #ifdef DEBUG_FRAME_DUMP

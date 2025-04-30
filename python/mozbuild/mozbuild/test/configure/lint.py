@@ -48,7 +48,6 @@ class Lint(unittest.TestCase):
     def lint(self, project):
         sandbox = LintSandbox(
             {
-                "OLD_CONFIGURE": os.path.join(topsrcdir, "old-configure"),
                 "MOZCONFIG": os.path.join(
                     os.path.dirname(test_path), "data", "empty_mozconfig"
                 ),

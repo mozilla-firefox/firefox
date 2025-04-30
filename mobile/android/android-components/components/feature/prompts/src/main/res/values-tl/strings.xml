@@ -16,14 +16,28 @@
   <string name="mozac_feature_prompt_username_hint">Username</string>
   <!-- Text for password field in an authentication dialog. -->
   <string name="mozac_feature_prompt_password_hint">Password</string>
+  <!-- Negative confirmation that we should not save the new or updated login -->
+  <string name="mozac_feature_prompt_dont_save_2">Hindi sa ngayon</string>
   <!-- Negative confirmation that we should never save a login for this site -->
   <string name="mozac_feature_prompt_never_save">Huwag kailanman i-save</string>
   <!-- Negative confirmation that we should not save a credit card for this site -->
   <string name="mozac_feature_prompt_not_now">Hindi Ngayon</string>
   <!-- Positive confirmation that we should save the new or updated login -->
   <string name="mozac_feature_prompt_save_confirmation">i-Save</string>
+  <!-- Negative confirmation that we should not save the updated login -->
+  <string name="mozac_feature_prompt_dont_update_2">Hindi sa ngayon</string>
   <!-- Positive confirmation that we should save the updated login -->
   <string name="mozac_feature_prompt_update_confirmation">I-update</string>
+  <!-- Error text displayed underneath the password field when it is in an error case -->
+  <string name="mozac_feature_prompt_error_empty_password_2">Maglagay ng password</string>
+  <!-- Error text displayed underneath the password field when it is in an error case -->
+  <string name="mozac_feature_prompt_error_unknown_cause_2">Hindi ma-save ang password</string>
+  <!-- Prompt message displayed when app detects a user has entered a new username and password and user decides if app should save the new password. -->
+  <string name="mozac_feature_prompt_login_save_headline_2">I-save ang password?</string>
+  <!-- Prompt message displayed when app detects a user has entered a new password for an existing login and user decides if app should update the password. -->
+  <string name="mozac_feature_prompt_login_update_headline_2">I-update and password?</string>
+  <!-- Prompt message displayed when app detects a user has entered a username for an existing login without a username and user decides if app should update the login. -->
+  <string name="mozac_feature_prompt_login_add_username_headline_2">I-update ang username?</string>
   <!--
     Text for a label for the field when prompt requesting a text is shown.
 
@@ -36,6 +50,8 @@
   <string name="mozac_feature_prompts_allow">Payagan</string>
   <!-- Text of a negative button in dialog requesting to open a new window. -->
   <string name="mozac_feature_prompts_deny">Tanggihan</string>
+  <!-- Text of the title of a dialog when a page is requesting to open a new window. -->
+  <string name="mozac_feature_prompts_popup_dialog_title">Payagan ang site na ito na magbukas?</string>
   <!-- Title of the dialog shown when a user is leaving a website and there is still data not saved yet. -->
   <string name="mozac_feature_prompt_before_unload_dialog_title">Sigurado ka ba?</string>
   <!-- Body text of the dialog shown when a user is leaving a website and there is still data not saved yet. -->
@@ -70,13 +86,49 @@
   <string name="mozac_feature_prompts_nov">Nob</string>
   <!-- December month of the year (short description), used on the month chooser dialog. -->
   <string name="mozac_feature_prompts_dec">Dis</string>
+  <!-- Title of the time picker dialog. -->
+  <string name="mozac_feature_prompts_set_time">Itakda ang oras</string>
+  <!-- Option in expanded select password prompt that links to password settings -->
+  <string name="mozac_feature_prompts_manage_logins_2">I-manage ang mga password</string>
+  <!-- Content description for expanding the saved passwords options in the select password prompt -->
+  <string name="mozac_feature_prompts_expand_logins_content_description_2">Palawakin ang mga naka-save na password</string>
+  <!-- Header for the select password prompt to allow users to fill a form with a saved password -->
+  <string name="mozac_feature_prompts_saved_logins_2">Mga naka-save na password</string>
+  <!-- Content description for the suggest strong password prompt to allow users to fill a form with a suggested strong password -->
+  <string name="mozac_feature_prompts_suggest_strong_password_content_description">Magmungkahi ng malakas na password</string>
+  <!-- Header for the suggest strong password prompt to allow users to fill a form with a suggested strong password -->
+  <string name="mozac_feature_prompts_suggest_strong_password_2">Gumamit ng malakas na password</string>
+  <!-- Title for using the suggest strong password confirmation dialog. %1$s will be replaced with the generated password -->
+  <string name="mozac_feature_prompts_suggest_strong_password_message">Gumamit ng malakas na password: %1$s</string>
+  <!-- Title for using the suggest strong password confirmation dialog -->
+  <string name="mozac_feature_prompts_suggest_strong_password_title">Gumamit ng malakas na password?</string>
+  <!-- Content description for the suggest strong password confirmation dialog -->
+  <string name="mozac_feature_prompts_suggest_strong_password_description_3">Protektahan ang iyong account sa pamamagitan ng paggamit ng malakas at random na generated password. Ise-save ito sa iyong account para paggamit sa hinaharap.</string>
+  <!-- Pressing this will use the suggested strong password -->
+  <string name="mozac_feature_prompts_suggest_strong_password_use_password">Gamitin ang password</string>
+  <!-- Pressing this will dismiss the suggested strong password dialog -->
+  <string name="mozac_feature_prompts_suggest_strong_password_dismiss">Hindi sa ngayon</string>
+  <!-- Title for showing the suggest strong password saved confirmation snackbar -->
+  <string name="mozac_feature_prompts_suggest_strong_password_saved_snackbar_title">Na-save na ang password</string>
+  <!-- Title for showing the suggest strong password updated confirmation snackbar -->
+  <string name="mozac_feature_prompts_suggest_strong_password_updated_snackbar_title">Na-update na ang password</string>
+  <!-- Title for showing the username updated confirmation snackbar -->
+  <string name="mozac_feature_prompt_login_snackbar_username_updated">Na-update na ang username</string>
   <!-- Strings shown in a dialog that appear when users try to refresh a certain kind of webpages -->
   <string name="mozac_feature_prompt_repost_title">Muling ipadala ang data sa site na ito?</string>
   <string name="mozac_feature_prompt_repost_message">Ang pag-refresh sa pahinang ito ay maaaring magpadoble ng mga aksyon, gaya ng pagpapadala ng bayad o mag-post ng komento nang dalawang beses.</string>
   <!-- Pressing this will dismiss the dialog and reload the page sending again the previous data -->
   <string name="mozac_feature_prompt_repost_positive_button_text">Ipadala muli ang data</string>
   <!-- Pressing this will dismiss the dialog and not refresh the webpage -->
-  <string name="mozac_feature_prompt_repost_negative_button_text">Kanselahin</string>
+  <string name="mozac_feature_prompt_repost_negative_button_text">Ikansela</string>
+  <!--
+    Credit Card Autofill
+
+    Header for the select card prompt to allow users to fill a form with a saved card.
+  -->
+  <string name="mozac_feature_prompts_select_credit_card_2">Gamitin ang naka-save na card</string>
+  <!-- Option in the expanded select card prompt that links to cards settings. -->
+  <string name="mozac_feature_prompts_manage_credit_cards_2">Pamahalaan ang mga card</string>
   <!-- Text for the title of a save credit card dialog. -->
   <string name="mozac_feature_prompts_save_credit_card_prompt_title">I save and Card</string>
   <!-- Text for the title of an update credit card dialog. -->
@@ -89,4 +141,20 @@
   <string name="mozac_feature_prompts_select_address_2">Mamili ng address</string>
   <!-- Text for the manage addresses button. -->
   <string name="mozac_feature_prompts_manage_address">Pamahalaan ang mga address</string>
+  <!--
+    Federated Credential Management prompts
+
+    Content description for the Account picture in the Select Account FedCM prompt
+  -->
+  <string name="mozac_feature_prompts_account_picture">Larawan ng account</string>
+  <!-- Title of the Identity Credential provider dialog chooser. -->
+  <string name="mozac_feature_prompts_identity_credentials_choose_provider">Pumili ng login provider</string>
+  <!-- Title of an account picker dialog for identity credentials. The %1$s will be replaced with the name of the provider -->
+  <string name="mozac_feature_prompts_identity_credentials_choose_account_for_provider">Mag-sign in gamit ang isang %1$s account</string>
+  <!-- Title of the Identity Credential privacy policy dialog title. The %1$s will be replaced with the name of the provider. -->
+  <string name="mozac_feature_prompts_identity_credentials_privacy_policy_title">Gamitin ang %1$s bilang login provider</string>
+  <!-- Text for the positive button of the Identity Credential dialogs. -->
+  <string name="mozac_feature_prompts_identity_credentials_continue">Magpatuloy</string>
+  <!-- Text for the cancel button of the Identity Credential dialogs. -->
+  <string name="mozac_feature_prompts_identity_credentials_cancel">Ikansela</string>
 </resources>

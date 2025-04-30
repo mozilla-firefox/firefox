@@ -57,7 +57,7 @@ impl Statement<'_> {
     }
 
     /// Check that column name reference lifetime is limited:
-    /// https://www.sqlite.org/c3ref/column_name.html
+    /// <https://www.sqlite.org/c3ref/column_name.html>
     /// > The returned string pointer is valid...
     ///
     /// `column_name` reference can become invalid if `stmt` is reprepared
@@ -104,7 +104,9 @@ impl Statement<'_> {
             // clippy::or_fun_call (nightly) vs clippy::unnecessary-lazy-evaluations (stable)
             .ok_or(Error::InvalidColumnIndex(col))
             .map(|slice| {
-                str::from_utf8(slice.to_bytes()).expect("Invalid UTF-8 sequence in column name")
+                slice
+                    .to_str()
+                    .expect("Invalid UTF-8 sequence in column name")
             })
     }
 
@@ -149,7 +151,8 @@ impl Statement<'_> {
             let name = self.column_name_unwrap(i);
             let slice = self.stmt.column_decltype(i);
             let decl_type = slice.map(|s| {
-                str::from_utf8(s.to_bytes()).expect("Invalid UTF-8 sequence in column declaration")
+                s.to_str()
+                    .expect("Invalid UTF-8 sequence in column declaration")
             });
             cols.push(Column { name, decl_type });
         }
@@ -228,7 +231,7 @@ mod test {
     /// `column_name` reference should stay valid until `stmt` is reprepared (or
     /// reset) even if DB schema is altered (SQLite documentation is
     /// ambiguous here because it says reference "is valid until (...) the next
-    /// call to sqlite3_column_name() or sqlite3_column_name16() on the same
+    /// call to `sqlite3_column_name()` or `sqlite3_column_name16()` on the same
     /// column.". We assume that reference is valid if only
     /// `sqlite3_column_name()` is used):
     #[test]

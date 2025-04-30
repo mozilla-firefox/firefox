@@ -392,6 +392,12 @@ bin/libfreebl_64int_3.so
 #endif
 #endif
 
+; [ crashhelper ]
+;
+#ifdef MOZ_CRASHREPORTER
+@BINPATH@/crashhelper@BIN_SUFFIX@
+#endif
+
 ; [ Ping Sender ]
 ;
 @BINPATH@/pingsender@BIN_SUFFIX@

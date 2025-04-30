@@ -16,15 +16,3 @@ extension-firefox-compact-dark-description=A theme with a dark color scheme.
 
 extension-firefox-alpenglow-name=Firefox Alpenglow
 extension-firefox-alpenglow-description=Use a colorful appearance for buttons, menus, and windows.
-
-## Colorway Themes
-## These themes are variants of a colorway. The colorway is specified in the
-## $colorway-name variable.
-## Variables
-##   $colorway-name (String) The name of a colorway (e.g. Graffiti, Elemental).
-
-extension-colorways-soft-name={ $colorway-name } — Soft
-extension-colorways-balanced-name={ $colorway-name } — Balanced
-# "Bold" is used in the sense of bravery or courage, not in the sense of
-# emphasized text.
-extension-colorways-bold-name={ $colorway-name } — Bold

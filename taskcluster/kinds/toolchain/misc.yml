@@ -454,6 +454,20 @@ eslint-plugin-mozilla:
         toolchain:
             - linux64-node
 
+stylelint-plugin-mozilla:
+    description: "npm install stylelint-plugin-mozilla node_modules"
+    treeherder:
+        symbol: TL(spm)
+    run:
+        script: stylelint-plugin-mozilla.sh
+        sparse-profile: null
+        resources:
+            - 'tools/lint/stylelint/stylelint-plugin-mozilla/package.json'
+            - 'tools/lint/stylelint/stylelint-plugin-mozilla/package-lock.json'
+        toolchain-artifact: public/build/stylelint-plugin-mozilla.tar.zst
+    fetches:
+        toolchain:
+            - linux64-node
 
 newtab-node-modules:
     description: "npm install newtab node_modules"

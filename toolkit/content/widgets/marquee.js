@@ -19,10 +19,13 @@ this.MarqueeWidget = class {
   }
 
   onsetup() {
-    // White-space isn't allowed because a marquee could be
-    // inside 'white-space: pre'
-    this.shadowRoot.innerHTML = `<link rel="stylesheet" href="chrome://global/content/elements/marquee.css"
-      /><slot></slot>`;
+    let link = this.shadowRoot.createElementAndAppendChildAt(
+      this.shadowRoot,
+      "link"
+    );
+    link.rel = "stylesheet";
+    link.href = "chrome://global/content/elements/marquee.css";
+    this.shadowRoot.createElementAndAppendChildAt(this.shadowRoot, "slot");
 
     this._mutationObserver = new this.window.MutationObserver(aMutations =>
       this._mutationActor(aMutations)

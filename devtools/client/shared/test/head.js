@@ -152,25 +152,6 @@ async function openAndCloseToolbox(nbOfTimes, usageTime, toolId) {
 }
 
 /**
- * Waits until a predicate returns true.
- *
- * @param function predicate
- *        Invoked once in a while until it returns true.
- * @param number interval [optional]
- *        How often the predicate is invoked, in milliseconds.
- */
-function waitUntil(predicate, interval = 10) {
-  if (predicate()) {
-    return Promise.resolve(true);
-  }
-  return new Promise(resolve => {
-    setTimeout(function () {
-      waitUntil(predicate).then(() => resolve(true));
-    }, interval);
-  });
-}
-
-/**
  * Show the presets list sidebar in the cssfilter widget popup
  * @param {CSSFilterWidget} widget
  * @return {Promise}

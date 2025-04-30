@@ -161,6 +161,13 @@ module.exports = function (config) {
               functions: 0,
               branches: 0,
             },
+            "content-src/components/DiscoveryStreamComponents/PersonalizedCard/PersonalizedCard.jsx":
+              {
+                statements: 0,
+                lines: 0,
+                functions: 0,
+                branches: 0,
+              },
             "content-src/components/Base/Base.jsx": {
               statements: 0,
               lines: 0,
@@ -168,6 +175,13 @@ module.exports = function (config) {
               branches: 0,
             },
             "content-src/components/DiscoveryStreamComponents/FeatureHighlight/WallpaperFeatureHighlight.jsx":
+              {
+                statements: 0,
+                lines: 0,
+                functions: 0,
+                branches: 0,
+              },
+            "content-src/components/DiscoveryStreamComponents/FeatureHighlight/DownloadMobilePromoHighlight.jsx":
               {
                 statements: 0,
                 lines: 0,
@@ -216,10 +230,10 @@ module.exports = function (config) {
               },
             "content-src/components/DiscoveryStreamComponents/CardSections/CardSections.jsx":
               {
-                statements: 86.55,
-                lines: 86.09,
-                functions: 81.48,
-                branches: 57.97,
+                statements: 86.05,
+                lines: 85.48,
+                functions: 79.31,
+                branches: 54.41,
               },
             "content-src/components/DiscoveryStreamComponents/SectionContextMenu/SectionContextMenu.jsx":
               {
@@ -234,10 +248,9 @@ module.exports = function (config) {
               },
             "content-src/components/DiscoveryStreamComponents/AdBannerContextMenu/AdBannerContextMenu.jsx":
               {
-                statements: 80,
-                lines: 80,
-                functions: 75,
-                branches: 75,
+                statements: 86,
+                lines: 86,
+                functions: 83,
               },
             "content-src/components/DiscoveryStreamComponents/**/*.jsx": {
               statements: 90.48,

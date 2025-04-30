@@ -2010,6 +2010,13 @@ class nsIWidget : public nsISupports {
     MOZ_ASSERT(false, "This function should only execute in Windows");
   }
 
+  /**
+   * NotifyCompositorScrollUpdate notify widget about an update to the
+   * composited scroll offset and zoom
+   */
+  virtual void NotifyCompositorScrollUpdate(
+      const mozilla::layers::CompositorScrollUpdate& aUpdate) = 0;
+
 #if defined(MOZ_WIDGET_ANDROID)
   /**
    * RecvToolbarAnimatorMessageFromCompositor receive message from compositor
@@ -2018,13 +2025,6 @@ class nsIWidget : public nsISupports {
    * @param aMessage message being sent to Android UI thread.
    */
   virtual void RecvToolbarAnimatorMessageFromCompositor(int32_t aMessage) = 0;
-
-  /**
-   * NotifyCompositorScrollUpdate notify widget about an update to the
-   * composited scroll offset and zoom
-   */
-  virtual void NotifyCompositorScrollUpdate(
-      const mozilla::layers::CompositorScrollUpdate& aUpdate) = 0;
 
   /**
    * RecvScreenPixels Buffer containing the pixel from the frame buffer. Used

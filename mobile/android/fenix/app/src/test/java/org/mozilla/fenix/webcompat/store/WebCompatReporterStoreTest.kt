@@ -174,6 +174,14 @@ class WebCompatReporterStoreTest {
     }
 
     @Test
+    fun `WHEN the send more info button is submitted THEN the state remains the same`() {
+        val expected = store.state
+
+        store.dispatch(WebCompatReporterAction.SendMoreInfoSubmitted)
+        assertEquals(expected, store.state)
+    }
+
+    @Test
     fun `WHEN the cancel button is clicked THEN the state remains the same`() {
         val expected = store.state
 

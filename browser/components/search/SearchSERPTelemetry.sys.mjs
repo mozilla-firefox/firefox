@@ -901,7 +901,7 @@ class TelemetryHandler {
       return null;
     }
 
-    let queries = new URLSearchParams(url.split("#")[0].split("?")[1]);
+    let queries = new URL(url).searchParams;
     queries.forEach((v, k) => {
       queries.set(k.toLowerCase(), v);
     });

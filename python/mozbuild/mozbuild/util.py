@@ -872,7 +872,7 @@ class HierarchicalStringList:
         if not isinstance(value, list):
             raise ValueError("Expected a list of strings, not %s" % type(value))
         for v in value:
-            if not isinstance(v, (str,)):
+            if not isinstance(v, str):
                 raise ValueError(
                     "Expected a list of strings, not an element of %s" % type(v)
                 )
@@ -1125,7 +1125,7 @@ def expand_variables(s, variables):
         value = variables.get(name)
         if not value:
             continue
-        if not isinstance(value, (str,)):
+        if not isinstance(value, str):
             value = " ".join(value)
         result += value
     return result

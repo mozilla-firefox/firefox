@@ -21,6 +21,7 @@ export default class FxAMenuMessage extends MozLitElement {
     buttonText: { type: String },
     primaryText: { type: String },
     secondaryText: { type: String },
+    layout: { type: String, reflect: true },
   };
   static queries = {
     signUpButton: "#sign-up-button",
@@ -29,6 +30,7 @@ export default class FxAMenuMessage extends MozLitElement {
 
   constructor() {
     super();
+    this.layout = "column"; // Default layout
     this.addEventListener(
       "keydown",
       event => {
@@ -69,39 +71,86 @@ export default class FxAMenuMessage extends MozLitElement {
     });
   }
 
+  get isRowLayout() {
+    return this.layout === "row";
+  }
+
   render() {
-    return html`
-      <link
+    return html`<link
         rel="stylesheet"
         href="chrome://browser/content/asrouter/components/fxa-menu-message.css"
       />
-      <div id="container" ?has-image=${this.imageURL}>
-        <moz-button
-          id="close-button"
-          @click=${this.handleClose}
-          type="ghost"
-          iconsrc="chrome://global/skin/icons/close-12.svg"
-          tabindex="2"
-          data-l10n-id="fxa-menu-message-close-button"
-        >
-        </moz-button>
-        <div id="illustration-container">
-          <img id="illustration" role="presentation" src=${this.imageURL} />
-        </div>
-        <div id="primary">${this.primaryText}</div>
-        <div id="secondary">${this.secondaryText}</div>
-        <moz-button
-          id="sign-up-button"
-          @click=${this.handleSignUp}
-          type="primary"
-          tabindex="1"
-          autofocus
-          title=${this.buttonText}
-          aria-label=${this.buttonText}
-          >${this.buttonText}</moz-button
-        >
-      </div>
-    `;
+      <div id="container" layout=${this.layout} ?has-image=${this.imageURL}>
+        ${this.isRowLayout
+          ? html`
+              <div id="top-row">
+                <moz-button
+                  id="close-button"
+                  @click=${this.handleClose}
+                  type="ghost"
+                  iconsrc="chrome://global/skin/icons/close-12.svg"
+                  tabindex="2"
+                  data-l10n-id="fxa-menu-message-close-button"
+                >
+                </moz-button>
+                <div id="primary">${this.primaryText}</div>
+              </div>
+              <div id="bottom-row">
+                <div id="body-container">
+                  <div id="secondary">${this.secondaryText}</div>
+                  <moz-button
+                    id="sign-up-button"
+                    @click=${this.handleSignUp}
+                    type="primary"
+                    tabindex="1"
+                    autofocus
+                    title=${this.buttonText}
+                    aria-label=${this.buttonText}
+                  >
+                    ${this.buttonText}
+                  </moz-button>
+                </div>
+                <div id="illustration-container">
+                  <img
+                    id="illustration"
+                    role="presentation"
+                    src=${this.imageURL}
+                  />
+                </div>
+              </div>
+            `
+          : html`
+              <moz-button
+                id="close-button"
+                @click=${this.handleClose}
+                type="ghost"
+                iconsrc="chrome://global/skin/icons/close-12.svg"
+                tabindex="2"
+                data-l10n-id="fxa-menu-message-close-button"
+              >
+              </moz-button>
+              <div id="illustration-container">
+                <img
+                  id="illustration"
+                  role="presentation"
+                  src=${this.imageURL}
+                />
+              </div>
+              <div id="primary">${this.primaryText}</div>
+              <div id="secondary">${this.secondaryText}</div>
+              <moz-button
+                id="sign-up-button"
+                @click=${this.handleSignUp}
+                type="primary"
+                tabindex="1"
+                autofocus
+                title=${this.buttonText}
+                aria-label=${this.buttonText}
+              >
+                ${this.buttonText}
+              </moz-button>
+            `}
+      </div>`;
   }
 }
 

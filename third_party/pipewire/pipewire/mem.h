@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_MEM_H
 #define PIPEWIRE_MEM_H
@@ -29,6 +9,10 @@
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifndef PW_API_MEM
+#define PW_API_MEM static inline
 #endif
 
 /** \defgroup pw_memblock Memory Blocks
@@ -49,6 +33,7 @@ enum pw_memblock_flags {
 	PW_MEMBLOCK_FLAG_MAP =		(1 << 3),	/**< mmap the fd */
 	PW_MEMBLOCK_FLAG_DONT_CLOSE =	(1 << 4),	/**< don't close fd */
 	PW_MEMBLOCK_FLAG_DONT_NOTIFY =	(1 << 5),	/**< don't notify events */
+	PW_MEMBLOCK_FLAG_UNMAPPABLE =	(1 << 6),	/**< the fd can not be mmapped */
 
 	PW_MEMBLOCK_FLAG_READWRITE = PW_MEMBLOCK_FLAG_READABLE | PW_MEMBLOCK_FLAG_WRITABLE,
 };
@@ -142,7 +127,7 @@ struct pw_memblock * pw_mempool_import(struct pw_mempool *pool,
 void pw_memblock_free(struct pw_memblock *mem);
 
 /** Unref a memblock */
-static inline void pw_memblock_unref(struct pw_memblock *mem)
+PW_API_MEM void pw_memblock_unref(struct pw_memblock *mem)
 {
 	if (--mem->ref == 0)
 		pw_memblock_free(mem);
@@ -192,7 +177,7 @@ struct pw_map_range {
 
 /** Calculate parameters to mmap() memory into \a range so that
  * \a size bytes at \a offset can be mapped with mmap().  */
-static inline void pw_map_range_init(struct pw_map_range *range,
+PW_API_MEM void pw_map_range_init(struct pw_map_range *range,
 				     uint32_t offset, uint32_t size,
 				     uint32_t page_size)
 {

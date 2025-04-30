@@ -13,7 +13,7 @@ function handleRequest(request, response) {
     case "1v":
     case "2l":
     case "2v":
-      setState(query, getState(query) + "load");
+      setState(query, "load");
       response.setStatusLine("1.1", 302, "Found");
       // redirect to a solid blue image
       response.setHeader(

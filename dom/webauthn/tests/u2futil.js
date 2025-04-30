@@ -72,6 +72,18 @@ async function addVirtualAuthenticator(
   return id;
 }
 
+async function setUserVerified(authenticatorId, isUserVerified) {
+  await SpecialPowers.spawnChrome(
+    [authenticatorId, isUserVerified],
+    (authenticatorId, isUserVerified) => {
+      let webauthnService = Cc["@mozilla.org/webauthn/service;1"].getService(
+        Ci.nsIWebAuthnService
+      );
+      webauthnService.setUserVerified(authenticatorId, isUserVerified);
+    }
+  );
+}
+
 function handleEventMessage(event) {
   if ("test" in event.data) {
     let summary = event.data.test + ": " + event.data.msg;

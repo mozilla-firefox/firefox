@@ -26,6 +26,7 @@ import androidx.test.uiautomator.Until
 import org.hamcrest.CoreMatchers.allOf
 import org.mozilla.fenix.R
 import org.mozilla.fenix.helpers.Constants.TAG
+import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
 import org.mozilla.fenix.helpers.TestHelper.appName
 import org.mozilla.fenix.helpers.TestHelper.mDevice
@@ -187,6 +188,7 @@ class SettingsSubMenuEnhancedTrackingProtectionRobot {
         Log.i(TAG, "verifyCustomTrackingProtectionSettings: Trying to verify that the \"Tracking content\" drop down is displayed")
         trackingcontentDropDownDefault().check(matches(isDisplayed()))
         Log.i(TAG, "verifyCustomTrackingProtectionSettings: Verified that the \"Tracking content\" drop down is displayed")
+        scrollToElementByText(getStringResource(R.string.preferences_tracking_protection_exceptions))
         Log.i(TAG, "verifyCustomTrackingProtectionSettings: Trying to verify that the \"Cryptominers\" check box is displayed")
         cryptominersCheckbox().check(matches(isDisplayed()))
         Log.i(TAG, "verifyCustomTrackingProtectionSettings: Verified that the \"Cryptominers\" check box is displayed")

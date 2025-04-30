@@ -16,8 +16,12 @@ exclude: true
 ## v139
 - ⚠️ Removed deprecated [`GeckoSession.requestAnalysis`][118.4], [`GeckoSession.requestCreateAnalysis`][122.2], [`GeckoSession.requestAnalysisStatus`][137.1], [`GeckoSession.sendPlacementAttributionEvent`][123.3], [`GeckoSession.pollForAnalysisCompleted`][137.2], [`GeckoSession.sendClickAttributionEvent`][121.4], [`GeckoSession.sendImpressionAttributionEvent`][121.5], [`GeckoSession.sendPlacementAttributionEvent`][123.3], [`GeckoSession.requestRecommendations`][118.5], [`GeckoSession.reportBackInStock`][122.1], `AnalysisStatusResponse`, [`ReviewAnalysis`][120.2] and [`Recommendation`][120.3].
 - Added [`CompositorController.onPipModeChanged`][139.1] to [`CompositorController`][65.1] to inform GeckoSession of changes to and from picture-in-picture mode.
+- ⚠️Increased `compileSdkVersion` to 36 (Android 16)
+- Added [`getLowMemoryDetection()`][139.2] on `GeckoRuntimeSettings` and [`lowMemoryDetection(boolean)`][139.3] on `GeckoRuntimeSettings.Builder` to control the low-memory detection machinery.
 
 [139.1]: {{javadoc_uri}}/CompositorController.html#onPipModeChanged
+[139.2]: {{javadoc_uri}}/GeckoRuntimeSettings.html#getLowMemoryDetection
+[139.3]: {{javadoc_uri}}/GeckoRuntimeSettings.Builder.html#lowMemoryDetection
 
 ## v138
 - Added [`GeckoSession.Loader.originalInput`][138.1] option, which allows passing through the original user address bar input
@@ -1705,4 +1709,4 @@ to allow adding gecko profiler markers.
 [65.24]: {{javadoc_uri}}/CrashReporter.html#sendCrashReport(android.content.Context,android.os.Bundle,java.lang.String)
 [65.25]: {{javadoc_uri}}/GeckoResult.html
 
-[api-version]: b51ff966a5b8afe9a5b130e2fc13f0aada807c90
+[api-version]: 3bd4ce6a972868cd2c50cce9047b0b4cb87376b7

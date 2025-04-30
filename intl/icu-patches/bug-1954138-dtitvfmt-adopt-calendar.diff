@@ -1,0 +1,69 @@
+diff --git a/intl/icu/source/i18n/dtitvfmt.cpp b/intl/icu/source/i18n/dtitvfmt.cpp
+--- a/intl/icu/source/i18n/dtitvfmt.cpp
++++ b/intl/icu/source/i18n/dtitvfmt.cpp
+@@ -631,16 +631,38 @@ DateIntervalFormat::getTimeZone() const
+     if (fDateFormat != nullptr) {
+         Mutex lock(&gFormatterMutex);
+         return fDateFormat->getTimeZone();
+     }
+     // If fDateFormat is nullptr (unexpected), create default timezone.
+     return *(TimeZone::createDefault());
+ }
+ 
++void DateIntervalFormat::adoptCalendar(Calendar *calendarToAdopt) {
++    if (fDateFormat != nullptr) {
++        fDateFormat->adoptCalendar(calendarToAdopt);
++    }
++
++    // The fDateFormat has the primary calendar for the DateIntervalFormat and has
++    // ownership of any adopted Calendar; fFromCalendar and fToCalendar are internal
++    // work clones of that calendar.
++
++    delete fFromCalendar;
++    fFromCalendar = nullptr;
++
++    delete fToCalendar;
++    fToCalendar = nullptr;
++
++    const Calendar *calendar = fDateFormat->getCalendar();
++    if (calendar != nullptr) {
++        fFromCalendar = calendar->clone();
++        fToCalendar = calendar->clone();
++    }
++}
++
+ void
+ DateIntervalFormat::setContext(UDisplayContext value, UErrorCode& status)
+ {
+     if (U_FAILURE(status))
+         return;
+     if (static_cast<UDisplayContextType>(static_cast<uint32_t>(value) >> 8) == UDISPCTX_TYPE_CAPITALIZATION) {
+         fCapitalizationContext = value;
+     } else {
+diff --git a/intl/icu/source/i18n/unicode/dtitvfmt.h b/intl/icu/source/i18n/unicode/dtitvfmt.h
+--- a/intl/icu/source/i18n/unicode/dtitvfmt.h
++++ b/intl/icu/source/i18n/unicode/dtitvfmt.h
+@@ -637,16 +637,23 @@ public:
+     /**
+      * Sets the time zone for the calendar used by this DateIntervalFormat object.
+      * @param zone the new time zone.
+      * @stable ICU 4.8
+      */
+     virtual void setTimeZone(const TimeZone& zone);
+ 
+     /**
++     * Sets the calendar used by this DateIntervalFormat object. The caller no longer owns
++     * the Calendar object and should not delete it after this call.
++     * @param calendarToAdopt the Calendar to be adopted.
++     */
++    virtual void adoptCalendar(Calendar *calendarToAdopt);
++
++    /**
+      * Set a particular UDisplayContext value in the formatter, such as
+      * UDISPCTX_CAPITALIZATION_FOR_STANDALONE. This causes the formatted
+      * result to be capitalized appropriately for the context in which
+      * it is intended to be used, considering both the locale and the
+      * type of field at the beginning of the formatted result.
+      * @param value The UDisplayContext value to set.
+      * @param status Input/output status. If at entry this indicates a failure
+      *               status, the function will do nothing; otherwise this will be

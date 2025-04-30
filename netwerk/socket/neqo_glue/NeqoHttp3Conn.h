@@ -19,13 +19,11 @@ class NeqoHttp3Conn final {
       uint32_t aMaxTableSize, uint16_t aMaxBlockedStreams, uint64_t aMaxData,
       uint64_t aMaxStreamData, bool aVersionNegotiation, bool aWebTransport,
       const nsACString& aQlogDir, uint32_t aDatagramSize,
-      uint32_t aMaxAccumulatedTime, uint32_t aProviderFlags,
-      uint32_t aIdleTimeout, NeqoHttp3Conn** aConn) {
+      uint32_t aProviderFlags, uint32_t aIdleTimeout, NeqoHttp3Conn** aConn) {
     return neqo_http3conn_new_use_nspr_for_io(
         &aOrigin, &aAlpn, &aLocalAddr, &aRemoteAddr, aMaxTableSize,
         aMaxBlockedStreams, aMaxData, aMaxStreamData, aVersionNegotiation,
-        aWebTransport, &aQlogDir, aDatagramSize, aMaxAccumulatedTime,
-        aProviderFlags, aIdleTimeout,
+        aWebTransport, &aQlogDir, aDatagramSize, aProviderFlags, aIdleTimeout,
         (const mozilla::net::NeqoHttp3Conn**)aConn);
   }
 
@@ -35,15 +33,13 @@ class NeqoHttp3Conn final {
                        uint64_t aMaxData, uint64_t aMaxStreamData,
                        bool aVersionNegotiation, bool aWebTransport,
                        const nsACString& aQlogDir, uint32_t aDatagramSize,
-                       uint32_t aMaxAccumulatedTime, uint32_t aProviderFlags,
-                       uint32_t aIdleTimeout, int64_t socket,
-                       NeqoHttp3Conn** aConn) {
+                       uint32_t aProviderFlags, uint32_t aIdleTimeout,
+                       int64_t socket, NeqoHttp3Conn** aConn) {
     return neqo_http3conn_new(
         &aOrigin, &aAlpn, &aLocalAddr, &aRemoteAddr, aMaxTableSize,
         aMaxBlockedStreams, aMaxData, aMaxStreamData, aVersionNegotiation,
-        aWebTransport, &aQlogDir, aDatagramSize, aMaxAccumulatedTime,
-        aProviderFlags, aIdleTimeout, socket,
-        (const mozilla::net::NeqoHttp3Conn**)aConn);
+        aWebTransport, &aQlogDir, aDatagramSize, aProviderFlags, aIdleTimeout,
+        socket, (const mozilla::net::NeqoHttp3Conn**)aConn);
   }
 
   void Close(uint64_t aError) { neqo_http3conn_close(this, aError); }

@@ -13,6 +13,13 @@ use proc_macro2::Span;
 use quote::ToTokens;
 use syn::spanned::Spanned;
 
+pub fn missing_parse_err_attr_error() -> syn::Error {
+    syn::Error::new(
+        Span::call_site(),
+        "`parse_err_ty` and `parse_err_fn` attributes are both required.",
+    )
+}
+
 pub fn non_enum_error() -> syn::Error {
     syn::Error::new(Span::call_site(), "This macro only supports enums.")
 }
@@ -22,6 +29,16 @@ pub fn non_unit_variant_error() -> syn::Error {
         Span::call_site(),
         "This macro only supports enums of strictly unit variants. Consider \
         using it in conjunction with [`EnumDiscriminants`]",
+    )
+}
+
+pub fn non_single_field_variant_error(attr: &str) -> syn::Error {
+    syn::Error::new(
+        Span::call_site(),
+        format_args!(
+            "The [`{}`] attribute only supports enum variants with a single field",
+            attr
+        ),
     )
 }
 

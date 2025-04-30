@@ -117,19 +117,10 @@ class ContentAnalysisTest : public testing::Test {
         .forget();
   }
 
-  enum class CancelMechanism {
-    // Wait for the service to assign our request tokens, then cancel using
-    // that (deprecated)
-    eCancelByRequestToken,
-    // Wait for the service to assign our requests a user action ID, then cancel
-    // using that.
-    eCancelByUserActionId,
-  };
-
   nsresult SendRequestsCancelAndExpectResponse(
       RefPtr<ContentAnalysis> contentAnalysis,
-      nsTArray<RefPtr<nsIContentAnalysisRequest>>& requests,
-      CancelMechanism aCancelMechanism, bool aExpectFailure);
+      nsTArray<RefPtr<nsIContentAnalysisRequest>>& requests, bool aDelayCancel,
+      bool aExpectFailure);
   // This is used to help tests clean up after terminating and restarting
   // the agent.
   void SendSimpleRequestAndWaitForResponse();
@@ -155,7 +146,17 @@ class ContentAnalysisTest : public testing::Test {
     auto map = mContentAnalysis->mUserActionIdToCanceledResponseMap.Lock();
     return map->Contains(aUserActionId);
   }
+
+  auto* GetCompoundUserActions() {
+    return &mContentAnalysis->mCompoundUserActions;
+  }
+  auto CancelAllRequestsAssociatedWithUserAction(
+      const nsACString& aUserActionId) {
+    return mContentAnalysis->CancelAllRequestsAssociatedWithUserAction(
+        aUserActionId);
+  };
 };
+
 MOZ_RUNINIT nsString ContentAnalysisTest::mPipeName;
 MOZ_RUNINIT MozAgentInfo ContentAnalysisTest::mAgentInfo;
 
@@ -443,10 +444,13 @@ NS_IMETHODIMP ResponseObserver::Observe(nsISupports* aSubject,
   return NS_OK;
 }
 
+// @param aDelayCancel   Internally, GetFinalRequests expands the request
+//                       list asynchronously.  If this is true, delay
+//                       canceling until that happens.
 nsresult ContentAnalysisTest::SendRequestsCancelAndExpectResponse(
     RefPtr<ContentAnalysis> contentAnalysis,
-    nsTArray<RefPtr<nsIContentAnalysisRequest>>& requests,
-    CancelMechanism aCancelMechanism, bool aExpectFailure) {
+    nsTArray<RefPtr<nsIContentAnalysisRequest>>& requests, bool aDelayCancel,
+    bool aExpectFailure) {
   bool gotResponse = false;
   // Make timedOut a RefPtr so if we get a response from content analysis
   // after this function has finished we can safely check that (and don't
@@ -496,7 +500,7 @@ nsresult ContentAnalysisTest::SendRequestsCancelAndExpectResponse(
   EXPECT_TRUE(!userActionId.IsEmpty());
 
   bool hasCanceledRequest = false;
-  if (aCancelMechanism == CancelMechanism::eCancelByUserActionId) {
+  if (!aDelayCancel) {
     MOZ_ALWAYS_SUCCEEDS(
         contentAnalysis->CancelRequestsByUserAction(userActionId));
     hasCanceledRequest = true;
@@ -508,22 +512,16 @@ nsresult ContentAnalysisTest::SendRequestsCancelAndExpectResponse(
           return true;
         }
         if (!hasCanceledRequest) {
-          // Internally, GetFinalRequests expands the request list
-          // asynchronously.  We need to wait for that.
           // (In the case of this test, nothing actually needs to be expanded.)
-          if (aCancelMechanism == CancelMechanism::eCancelByRequestToken) {
-            if (rawRequestObserver->GetRequests().size() > 0) {
-              nsAutoCString requestToken;
-              MOZ_ALWAYS_SUCCEEDS(requests[0]->GetRequestToken(requestToken));
-              EXPECT_FALSE(requestToken.IsEmpty());
-              MOZ_ALWAYS_SUCCEEDS(
-                  contentAnalysis->CancelRequestsByRequestToken(requestToken));
-              hasCanceledRequest = true;
-            }
+          if (!rawRequestObserver->GetRequests().empty()) {
+            MOZ_ALWAYS_SUCCEEDS(
+                contentAnalysis->CancelRequestsByUserAction(userActionId));
+            hasCanceledRequest = true;
           }
         }
         return gotResponse;
       });
+
   timer->Cancel();
   EXPECT_TRUE(gotResponse);
   EXPECT_FALSE(timedOut->mValue);
@@ -938,9 +936,9 @@ TEST_F(ContentAnalysisTest,
   MOZ_ALWAYS_SUCCEEDS(
       obsServ->AddObserver(rawRequestObserver, "dlp-request-sent-raw", false));
 
-  nsresult rv = SendRequestsCancelAndExpectResponse(
-      mContentAnalysis, requests, CancelMechanism::eCancelByRequestToken,
-      false /* aExpectFailure */);
+  nsresult rv = SendRequestsCancelAndExpectResponse(mContentAnalysis, requests,
+                                                    true /* aDelayCancel */,
+                                                    false /* aExpectFailure */);
   EXPECT_EQ(rv, NS_OK);
 
   auto rawRequests = rawRequestObserver->GetRequests();
@@ -969,9 +967,9 @@ TEST_F(ContentAnalysisTest, CheckAssignedUserActionIdCanCancel) {
       nsIContentAnalysisRequest::OperationType::eClipboard, nullptr);
   nsTArray<RefPtr<nsIContentAnalysisRequest>> requests{request1, request2};
 
-  nsresult rv = SendRequestsCancelAndExpectResponse(
-      mContentAnalysis, requests, CancelMechanism::eCancelByUserActionId,
-      false /* aExpectFailure */);
+  nsresult rv = SendRequestsCancelAndExpectResponse(mContentAnalysis, requests,
+                                                    false /* aDelayCancel*/,
+                                                    false /* aExpectFailure */);
   EXPECT_EQ(rv, NS_OK);
 }
 
@@ -996,9 +994,9 @@ TEST_F(ContentAnalysisTest, CheckGivenUserActionIdCanCancel) {
       nsIContentAnalysisRequest::OperationType::eClipboard, nullptr, nullptr,
       nsCString(userActionId));
   nsTArray<RefPtr<nsIContentAnalysisRequest>> requests{request1, request2};
-  nsresult rv = SendRequestsCancelAndExpectResponse(
-      mContentAnalysis, requests, CancelMechanism::eCancelByUserActionId,
-      false /* aExpectFailure */);
+  nsresult rv = SendRequestsCancelAndExpectResponse(mContentAnalysis, requests,
+                                                    false /* aDelayCancel */,
+                                                    false /* aExpectFailure */);
   EXPECT_EQ(rv, NS_OK);
 }
 
@@ -1025,9 +1023,9 @@ TEST_F(ContentAnalysisTest, CheckGivenUserActionIdsMustMatch) {
       nsCString(userActionId2));
   nsTArray<RefPtr<nsIContentAnalysisRequest>> requests{request1, request2};
 
-  nsresult rv = SendRequestsCancelAndExpectResponse(
-      mContentAnalysis, requests, CancelMechanism::eCancelByUserActionId,
-      true /* aExpectFailure */);
+  nsresult rv = SendRequestsCancelAndExpectResponse(mContentAnalysis, requests,
+                                                    false /* aDelayCancel */,
+                                                    true /* aExpectFailure */);
   EXPECT_EQ(rv, NS_ERROR_INVALID_ARG);
 }
 
@@ -1652,6 +1650,74 @@ TEST_F(ContentAnalysisTest,
   EXPECT_FALSE(HasOutstandingCanceledRequests(userActionId));
   EXPECT_EQ(3ull, rawRequestObserver->GetRequests().size());
   EXPECT_EQ(0ull, rawResponseObserver->GetResponses().size());
+}
+
+TEST_F(
+    ContentAnalysisTest,
+    SendBatchFileRequestThenCancelOneAndItsAssociatedRequests_CheckAllAreCanceled) {
+  // Sets the request thread pool to handle 2 simultaneous requests,
+  // sends 3 file requests, and cancels one at random before CA could
+  // process any responses, or even send them to the agent.
+  MOZ_ALWAYS_SUCCEEDS(Preferences::SetUint(kMaxConnections, 2));
+  auto removePref = MakeScopeExit(
+      [&] { MOZ_ALWAYS_SUCCEEDS(Preferences::ClearUser(kMaxConnections)); });
+
+  nsCOMPtr<nsIURI> uri = GetExampleDotComURI();
+
+  nsCOMPtr<nsIFile> allowFile = GetFileFromLocalDirectory(L"allowedFile.txt");
+  nsCOMArray<nsIFile> files;
+  files.AppendElement(allowFile);
+  files.AppendElement(allowFile);
+  files.AppendElement(allowFile);
+
+  bool gotResponse = false;
+  RefPtr timedOut = MakeRefPtr<media::Refcountable<BoolStruct>>();
+  RefPtr<CancelableRunnable> timer = QueueTimeoutToMainThread(timedOut);
+
+  auto promise = ContentAnalysis::CheckFilesInBatchMode(
+      std::move(files), nullptr,
+      nsIContentAnalysisRequest::Reason::eFilePickerDialog, uri);
+  promise->Then(
+      mozilla::GetMainThreadSerialEventTarget(), __func__,
+      [&, timedOut](nsCOMArray<nsIFile> aAllowedFiles) {
+        if (timedOut->mValue) {
+          return;
+        }
+        EXPECT_EQ(0, aAllowedFiles.Count());
+        gotResponse = true;
+      },
+      [&gotResponse, timedOut](nsresult error) {
+        if (timedOut->mValue) {
+          return;
+        }
+        const char* errorName = mozilla::GetStaticErrorName(error);
+        errorName = errorName ? errorName : "";
+        printf("Got error response code %s(%x)\n", errorName, error);
+        // Errors should not have errorCode NS_OK
+        EXPECT_NE(NS_OK, error);
+        gotResponse = true;
+        FAIL() << "Got error response";
+      });
+
+  auto* compoundActions = GetCompoundUserActions();
+  MOZ_ASSERT(compoundActions);
+  EXPECT_EQ(compoundActions->count(), 1u);
+  if (!compoundActions->empty()) {
+    const auto& compoundActionIds = compoundActions->iter().get();
+    EXPECT_EQ(compoundActionIds->count(), 3u);
+    if (!compoundActionIds->empty()) {
+      nsAutoCString userActionId(compoundActionIds->iter().get());
+      MOZ_ALWAYS_SUCCEEDS(
+          CancelAllRequestsAssociatedWithUserAction(userActionId));
+    }
+  }
+
+  mozilla::SpinEventLoopUntil(
+      "Waiting for ContentAnalysis cancel"_ns,
+      [&, timedOut]() { return gotResponse || timedOut->mValue; });
+  timer->Cancel();
+  EXPECT_FALSE(timedOut->mValue);
+  EXPECT_TRUE(gotResponse);
 }
 
 TEST_F(ContentAnalysisTest, GetDiagnosticInfo_Initial) {

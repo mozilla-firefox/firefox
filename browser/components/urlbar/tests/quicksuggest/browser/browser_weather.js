@@ -128,10 +128,15 @@ async function doDismissTest(command) {
   let details = await assertWeatherResultPresent();
 
   // Click the command.
+  let dismissalPromise = TestUtils.topicObserved(
+    "quicksuggest-dismissals-changed"
+  );
   await UrlbarTestUtils.openResultMenuAndClickItem(window, command, {
     resultIndex: EXPECTED_RESULT_INDEX,
     openByMouse: true,
   });
+  info("Awaiting dismissal promise");
+  await dismissalPromise;
 
   Assert.ok(
     !UrlbarPrefs.get("suggest.weather"),

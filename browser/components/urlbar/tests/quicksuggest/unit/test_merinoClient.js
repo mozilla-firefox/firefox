@@ -251,6 +251,20 @@ async function doFetchAndGetCalls(client, fetchArgs) {
   return callsByProvider;
 }
 
+// Checks a 204 "No content" response.
+add_task(async function noContent() {
+  MerinoTestUtils.server.response = { status: 204 };
+  await fetchAndCheckSuggestions({ expected: [] });
+
+  Assert.equal(
+    gClient.lastFetchStatus,
+    "no_suggestion",
+    "The request should have been recorded as no_suggestion"
+  );
+
+  MerinoTestUtils.server.reset();
+});
+
 // Checks a response that's valid but also has some unexpected properties.
 add_task(async function unexpectedResponseProperties() {
   MerinoTestUtils.server.response.body.unexpectedString = "some value";

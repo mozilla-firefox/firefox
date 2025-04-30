@@ -41,7 +41,7 @@ use webrender::{
     AsyncScreenshotHandle, Compositor, LayerCompositor, CompositorCapabilities, CompositorConfig, CompositorSurfaceTransform, Device,
     MappableCompositor, MappedTileInfo, NativeSurfaceId, NativeSurfaceInfo, NativeTileId, PartialPresentCompositor,
     PendingShadersToPrecache, PipelineInfo, ProfilerHooks, RecordedFrameHandle, RenderBackendHooks, Renderer, RendererStats,
-    SWGLCompositeSurfaceInfo, SceneBuilderHooks, ShaderPrecacheFlags, Shaders, SharedShaders, TextureCacheConfig,
+    ClipRadius, SWGLCompositeSurfaceInfo, SceneBuilderHooks, ShaderPrecacheFlags, Shaders, SharedShaders, TextureCacheConfig,
     UploadMethod, WebRenderOptions, WindowVisibility, WindowProperties, ONE_TIME_USAGE_HINT, CompositorInputConfig, CompositorSurfaceUsage,
 };
 use wr_malloc_size_of::MallocSizeOfOps;
@@ -557,11 +557,11 @@ unsafe impl Send for CppNotifier {}
 
 extern "C" {
     fn wr_notifier_wake_up(window_id: WrWindowId, composite_needed: bool);
-    fn wr_notifier_new_frame_ready(window_id: WrWindowId, composite_needed: bool, publish_id: FramePublishId);
+    fn wr_notifier_new_frame_ready(window_id: WrWindowId, publish_id: FramePublishId, params: &FrameReadyParams);
     fn wr_notifier_external_event(window_id: WrWindowId, raw_event: usize);
     fn wr_schedule_render(window_id: WrWindowId, reasons: RenderReasons);
     // NOTE: This moves away from pipeline_info.
-    fn wr_finished_scene_build(window_id: WrWindowId, pipeline_info: &mut WrPipelineInfo);
+    fn wr_schedule_frame_after_scene_build(window_id: WrWindowId, pipeline_info: &mut WrPipelineInfo);
 
     fn wr_transaction_notification_notified(handler: usize, when: Checkpoint);
 }
@@ -579,9 +579,9 @@ impl RenderNotifier for CppNotifier {
         }
     }
 
-    fn new_frame_ready(&self, _: DocumentId, _scrolled: bool, composite_needed: bool, publish_id: FramePublishId) {
+    fn new_frame_ready(&self, _: DocumentId, publish_id: FramePublishId, params: &FrameReadyParams) {
         unsafe {
-            wr_notifier_new_frame_ready(self.window_id, composite_needed, publish_id);
+            wr_notifier_new_frame_ready(self.window_id, publish_id, params);
         }
     }
 
@@ -1028,16 +1028,15 @@ impl SceneBuilderHooks for APZCallbacks {
         }
     }
 
-    fn post_scene_swap(&self, _document_ids: &Vec<DocumentId>, info: PipelineInfo) {
+    fn post_scene_swap(&self, _document_ids: &Vec<DocumentId>, info: PipelineInfo, schedule_frame: bool) {
         let mut info = WrPipelineInfo::new(&info);
         unsafe {
             apz_post_scene_swap(self.window_id, &info);
         }
 
-        // After a scene swap we should schedule a render for the next vsync,
-        // otherwise there's no guarantee that the new scene will get rendered
-        // anytime soon
-        unsafe { wr_finished_scene_build(self.window_id, &mut info) }
+        if schedule_frame {
+            unsafe { wr_schedule_frame_after_scene_build(self.window_id, &mut info) }
+        }
         gecko_profiler_end_marker("SceneBuilding");
     }
 
@@ -1311,6 +1310,8 @@ extern "C" {
         transform: &CompositorSurfaceTransform,
         clip_rect: DeviceIntRect,
         image_rendering: ImageRendering,
+        rounded_clip_rect: DeviceIntRect,
+        rounded_clip_radii: ClipRadius,
     );
     fn wr_compositor_start_compositing(
         compositor: *mut c_void,
@@ -1442,9 +1443,19 @@ impl Compositor for WrCompositor {
         transform: CompositorSurfaceTransform,
         clip_rect: DeviceIntRect,
         image_rendering: ImageRendering,
+        rounded_clip_rect: DeviceIntRect,
+        rounded_clip_radii: ClipRadius,
     ) {
         unsafe {
-            wr_compositor_add_surface(self.0, id, &transform, clip_rect, image_rendering);
+            wr_compositor_add_surface(
+                self.0,
+                id,
+                &transform,
+                clip_rect,
+                image_rendering,
+                rounded_clip_rect,
+                rounded_clip_radii,
+            );
         }
     }
 
@@ -1665,6 +1676,8 @@ impl LayerCompositor for WrLayerCompositor {
                 &transform,
                 clip_rect,
                 image_rendering,
+                clip_rect,
+                ClipRadius::EMPTY,
             );
         }
     }

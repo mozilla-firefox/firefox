@@ -11,7 +11,7 @@ import androidx.test.filters.SdkSuppress
 import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.R
-import org.mozilla.fenix.customannotations.DetectLeaks
+import org.mozilla.fenix.customannotations.SkipLeaks
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.AppAndSystemHelper.registerAndCleanupIdlingResources
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
@@ -58,6 +58,7 @@ class BookmarksTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/522919
     @Test
+    @SkipLeaks
     fun verifyEmptyBookmarksMenuTest() {
         homeScreen {
         }.openThreeDotMenu {
@@ -252,6 +253,7 @@ class BookmarksTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1919262
     @Test
+    @SkipLeaks
     fun verifyOpenAllInPrivateTabsTest() {
         val webPages = listOf(
             TestAssetHelper.getGenericAsset(mockWebServer, 1),
@@ -279,6 +281,7 @@ class BookmarksTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/325637
     @Test
+    @SkipLeaks
     fun openBookmarkInPrivateTabTest() {
         val defaultWebPage = TestAssetHelper.getGenericAsset(mockWebServer, 1)
 
@@ -299,6 +302,7 @@ class BookmarksTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/325635
     @Test
+    @SkipLeaks
     fun deleteBookmarkTest() {
         val defaultWebPage = TestAssetHelper.getGenericAsset(mockWebServer, 1)
 
@@ -713,7 +717,6 @@ class BookmarksTest : TestSetup() {
     // Verifies that deleting a Bookmarks folder also removes the item from inside it.
     @SmokeTest
     @Test
-    @DetectLeaks
     fun deleteBookmarkFoldersTest() {
         val website = TestAssetHelper.getGenericAsset(mockWebServer, 1)
 

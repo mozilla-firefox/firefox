@@ -1,7 +1,7 @@
 [DEFAULT]
 support-files = ["head.js"]
 
-prefs = ["browser.profiles.enabled=true"]
+prefs = ["browser.profiles.enabled=true","browser.profiles.created=false",]
 
 ["browser_activate.js"]
 run-if = [
@@ -34,21 +34,12 @@ head = "../unit/head.js head.js"
 
 ["browser_notify_changes.js"]
 run-if = ["os != 'linux'"] # Linux clients cannot remote themselves.
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt && !socketprocess_networking"] # Bug 1929273
 
 ["browser_preferences.js"]
 fail-if = ["a11y_checks"] # Bug 1955503
 
-["browser_test_db_lazily_created.js"]
-
 ["browser_test_last_tab.js"]
-skip-if = [
-  "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && asan", # Bug 1950795
-  "os == 'win' && os_version == '11.26100' && debug", # Bug 1950795
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && opt", # Bug 1950795
-  "os == 'mac' && os_version == '10.15' && processor == 'x86_64'", # Bug 1950795
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && socketprocess_networking", # Bug 1950795
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && swgl", # Bug 1950795
-]
 
 ["browser_test_nimbus_feature.js"]
 
@@ -58,6 +49,7 @@ skip-if = [
 skip-if = [
   "os == 'win' && os_version == '11.26100' && opt", # Bug 1948374
   "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && opt", # Bug 1948374
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1948374
   "os == 'mac' && os_version == '10.15' && processor == 'x86_64' && opt", # Bug 1948374
   "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && opt", # Bug 1948374
 ]

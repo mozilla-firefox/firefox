@@ -77,7 +77,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(AbstractRange)
   // This may introduce additional overhead which is not needed when unlinking,
   // therefore this is done here beforehand.
   if (tmp->mRegisteredClosestCommonInclusiveAncestor) {
-    tmp->UnregisterClosestCommonInclusiveAncestor(true);
+    tmp->UnregisterClosestCommonInclusiveAncestor(IsUnlinking::Yes);
   }
   MOZ_DIAGNOSTIC_ASSERT(!tmp->isInList(),
                         "Shouldn't be registered now that we're unlinking");
@@ -418,10 +418,11 @@ const nsTArray<WeakPtr<Selection>>& AbstractRange::GetSelections() const {
   return mSelections;
 }
 
-void AbstractRange::UnregisterSelection(const Selection& aSelection) {
+void AbstractRange::UnregisterSelection(const Selection& aSelection,
+                                        IsUnlinking aIsUnlinking) {
   mSelections.RemoveElement(&aSelection);
   if (mSelections.IsEmpty() && mRegisteredClosestCommonInclusiveAncestor) {
-    UnregisterClosestCommonInclusiveAncestor();
+    UnregisterClosestCommonInclusiveAncestor(aIsUnlinking);
     MOZ_DIAGNOSTIC_ASSERT(
         !mRegisteredClosestCommonInclusiveAncestor,
         "How can we have a registered common ancestor when we "
@@ -455,7 +456,7 @@ void AbstractRange::RegisterClosestCommonInclusiveAncestor(nsINode* aNode) {
 }
 
 void AbstractRange::UnregisterClosestCommonInclusiveAncestor(
-    bool aIsUnlinking) {
+    IsUnlinking aIsUnlinking) {
   if (!mRegisteredClosestCommonInclusiveAncestor) {
     return;
   }
@@ -483,7 +484,7 @@ void AbstractRange::UnregisterClosestCommonInclusiveAncestor(
 
   // We don't want to waste time unmarking flags on nodes that are
   // being unlinked anyway.
-  if (!aIsUnlinking && ranges->isEmpty()) {
+  if (aIsUnlinking == IsUnlinking::No && ranges->isEmpty()) {
     oldClosestCommonInclusiveAncestor
         ->ClearClosestCommonInclusiveAncestorForRangeInSelection();
     UnmarkDescendants(*oldClosestCommonInclusiveAncestor);

@@ -50,8 +50,6 @@
 #ifdef MOZ_WIDGET_GTK
 #  include <gtk/gtkx.h>
 #  include "gfxPlatformGtk.h"
-#  include "mozilla/layers/DMABUFTextureClientOGL.h"
-#  include "mozilla/widget/DMABufLibWrapper.h"
 #endif
 #ifdef MOZ_WAYLAND
 #  include "mozilla/widget/nsWaylandDisplay.h"
@@ -301,15 +299,6 @@ static TextureType ChooseTextureType(gfx::SurfaceFormat aFormat,
   }
 #endif
 
-#ifdef MOZ_WIDGET_GTK
-  if ((layersBackend == LayersBackend::LAYERS_WR &&
-       !aKnowsCompositor->UsingSoftwareWebRender()) &&
-      widget::DMABufDevice::IsDMABufTexturesEnabled() &&
-      aFormat != SurfaceFormat::A8) {
-    return TextureType::DMABUF;
-  }
-#endif
-
 #ifdef XP_MACOSX
   if (StaticPrefs::gfx_use_iosurface_textures_AtStartup() &&
       !aKnowsCompositor->UsingSoftwareWebRender()) {
@@ -343,11 +332,6 @@ TextureData* TextureData::Create(TextureType aTextureType,
 #ifdef XP_WIN
     case TextureType::D3D11:
       return D3D11TextureData::Create(aSize, aFormat, aAllocFlags);
-#endif
-
-#ifdef MOZ_WIDGET_GTK
-    case TextureType::DMABUF:
-      return DMABUFTextureData::Create(aSize, aFormat, aBackendType);
 #endif
 
 #ifdef XP_MACOSX

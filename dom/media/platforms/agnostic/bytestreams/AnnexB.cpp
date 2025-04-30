@@ -68,6 +68,7 @@ Result<Ok, nsresult> AnnexB::ConvertAVCCSampleToAnnexB(
   }
 
   // Prepend the Annex B NAL with SPS and PPS tables to keyframes.
+  // TODO: Avoid appending duplicate SPS and PPS NALUs. See bug 1961082.
   if (aAddSPS && aSample->mKeyframe) {
     RefPtr<MediaByteBuffer> annexB =
         ConvertAVCCExtraDataToAnnexB(aSample->mExtraData);
@@ -93,6 +94,7 @@ Result<Ok, nsresult> AnnexB::ConvertAVCCSampleToAnnexB(
         samplewriter->mCrypto.mPlainSizes[0] = newSize.value();
       }
     }
+    LOG("Appended extradata %zu bytes", annexB->Length());
   }
 
   return Ok();
@@ -142,6 +144,7 @@ Result<Ok, nsresult> AnnexB::ConvertHVCCSampleToAnnexB(
   }
 
   // Prepend the Annex B NAL with SPS and PPS tables to keyframes.
+  // TODO: Avoid appending duplicate SPS and PPS NALUs. See bug 1961082.
   if (aAddSPS && aSample->mKeyframe) {
     RefPtr<MediaByteBuffer> annexB =
         ConvertHVCCExtraDataToAnnexB(aSample->mExtraData);
@@ -172,6 +175,7 @@ Result<Ok, nsresult> AnnexB::ConvertHVCCSampleToAnnexB(
         samplewriter->mCrypto.mPlainSizes[0] = newSize.value();
       }
     }
+    LOG("Appended extradata %zu bytes", annexB->Length());
   }
   return Ok();
 }

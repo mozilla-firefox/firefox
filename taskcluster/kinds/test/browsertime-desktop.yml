@@ -1231,6 +1231,10 @@ browsertime-indexeddb:
         apps: [firefox, chrome]
         run-visual-metrics: false
         subtests:
+            - [idb-open-many-par, idb-opn-mp]
+            - [idb-open-many-seq, idb-opn-ms]
+            - [idb-open-few-par, idb-opn-fp]
+            - [idb-open-few-seq, idb-opn-fs]
             - addMab1
             - addMabN
             - addMar1
@@ -1261,7 +1265,18 @@ browsertime-indexeddb:
             default: 3
     mozharness:
         extra-options:
-            - --extra-profiler-run
+            by-subtest:
+                addMbl1:
+                    by-app:
+                        chrome:
+                            by-test-platform:
+                                linux.*shippable.*: []
+                                default:
+                                    - --extra-profiler-run
+                        default:
+                            - --extra-profiler-run
+                default:
+                    - --extra-profiler-run
 
 browsertime-trr-performance:
     raptor:

@@ -616,6 +616,9 @@ nsresult nsPrintJob::CleanupOnFailure(nsresult aResult, bool aIsPrinting) {
 
 //---------------------------------------------------------------------
 void nsPrintJob::FirePrintingErrorEvent(nsresult aPrintError) {
+  PROFILER_MARKER_TEXT("PrintJob", LAYOUT_Printing, MarkerStack::Capture(),
+                       "nsPrintJob::FirePrintingErrorEvent"_ns);
+
   if (mPrintPreviewCallback) {
     // signal error
     mPrintPreviewCallback(

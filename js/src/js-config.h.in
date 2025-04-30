@@ -41,9 +41,6 @@
 /* Define to 1 if SpiderMonkey should include support for the Intl API. */
 #undef JS_HAS_INTL_API
 
-/* Define to 1 if SpiderMonkey should include support for the Temporal API. */
-#undef JS_HAS_TEMPORAL_API
-
 /* Define to 1 if SpiderMonkey should include a breakpoint function for
  * artificial OOMs. */
 #undef JS_OOM_BREAKPOINT

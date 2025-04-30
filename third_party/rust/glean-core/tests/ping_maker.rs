@@ -4,6 +4,8 @@
 
 mod common;
 use crate::common::*;
+use glean_core::{AttributionMetrics, DistributionMetrics};
+use serde_json::json;
 
 use glean_core::metrics::*;
 use glean_core::ping::PingMaker;
@@ -305,4 +307,70 @@ fn metadata_is_correctly_added_when_necessary() {
     let (_, _, metadata) = &get_queued_pings(glean.get_data_path()).unwrap()[0];
     let headers = metadata.as_ref().unwrap().get("headers").unwrap();
     assert_eq!(headers.get("X-Debug-ID").unwrap(), "valid-tag");
+}
+
+#[test]
+fn attribution_and_distribution_appear_in_client_info() {
+    let (glean, ping_maker, ping_type, _t) = set_up_basic_ping();
+
+    let attribution = AttributionMetrics {
+        source: Some("source".into()),
+        medium: Some("medium".into()),
+        campaign: Some("campaign".into()),
+        term: Some("term".into()),
+        content: Some("content".into()),
+    };
+    let distribution = DistributionMetrics {
+        name: Some("name".into()),
+    };
+    glean.update_attribution(attribution);
+    glean.update_distribution(distribution);
+
+    let ping = ping_maker
+        .collect(&glean, &ping_type, None, "", "")
+        .unwrap();
+    let client_info = ping.content["client_info"].as_object().unwrap();
+
+    assert_eq!(json!({"name": "name"}), client_info["distribution"]);
+    assert_eq!(
+        json!({
+            "source": "source",
+            "medium": "medium",
+            "campaign": "campaign",
+            "term": "term",
+            "content": "content",
+        }),
+        client_info["attribution"]
+    );
+
+    // Now let's test updated values.
+    let attribution_update = AttributionMetrics {
+        content: Some("what a boring word".into()),
+        ..Default::default()
+    };
+    let distribution_update = DistributionMetrics {
+        name: Some("what's in a name".into()),
+    };
+    glean.update_attribution(attribution_update);
+    glean.update_distribution(distribution_update);
+
+    let ping = ping_maker
+        .collect(&glean, &ping_type, None, "", "")
+        .unwrap();
+    let client_info = ping.content["client_info"].as_object().unwrap();
+
+    assert_eq!(
+        json!({"name": "what's in a name"}),
+        client_info["distribution"]
+    );
+    assert_eq!(
+        json!({
+            "source": "source",
+            "medium": "medium",
+            "campaign": "campaign",
+            "term": "term",
+            "content": "what a boring word",
+        }),
+        client_info["attribution"]
+    );
 }

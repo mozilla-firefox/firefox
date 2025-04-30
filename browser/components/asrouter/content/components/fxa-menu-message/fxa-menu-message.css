@@ -5,7 +5,9 @@
 :host {
   margin-inline: var(--arrowpanel-menuitem-margin-inline, var(--space-xsmall));
   margin-block: var(--space-xsmall);
-  --illustration-margin-block-offset: 0px;
+  --illustration-margin-block-start-offset: 0px;
+  --illustration-margin-block-end-offset: 0px;
+  --container-margin-block-end-offset: 0px;
 }
 
 #container {
@@ -20,24 +22,48 @@
   color: var(--text-color);
 }
 
+#container[layout="row"] {
+  margin-block-end: var(--container-margin-block-end-offset);
+}
+
+#container[layout="row"] #bottom-row {
+  display: flex;
+  flex-direction: row;
+}
+
+#container[layout="row"] #body-container {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 #close-button {
   position: absolute;
   top: 0;
   inset-inline-end: 0;
-  padding-block: var(--arrowpanel-menuitem-padding-block, var(--space-small));
-  padding-inline: var(--arrowpanel-menuitem-padding-inline, var(--space-small));
 }
 
 #container:not([has-image]) > #illustration-container {
   display: none;
 }
 
-#container[has-image] > #illustration-container {
+#container[has-image][layout="column"] > #illustration-container {
   display: flex;
   justify-content: center;
-  margin-block-start: var(--illustration-margin-block-offset);
+  margin-block-start: var(--illustration-margin-block-start-offset);
   margin-block-end: var(--space-xsmall);
   pointer-events: none;
+}
+
+#container[has-image][layout="row"] #illustration-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  margin-block-end: var(--illustration-margin-block-end-offset);
+  pointer-events: none;
+}
+
+#container[has-image] #illustration-container img{
+  width: var(--image-width, 120px);
 }
 
 #primary {

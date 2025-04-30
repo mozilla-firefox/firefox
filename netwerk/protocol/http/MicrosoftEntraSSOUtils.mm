@@ -196,7 +196,7 @@ class API_AVAILABLE(macos(13.3)) MicrosoftEntraSSOUtils final {
 }
 - (void)invokeCallbackOnMainThread {
   NS_DispatchToMainThread(NS_NewRunnableFunction(
-      "SSORequestDelegate::didCompleteWithAuthorization failure",
+      "SSORequestDelegate::didCompleteWithAuthorization",
       [callback(mCallback)]() { callback->InvokeCallback(); }));
 }
 

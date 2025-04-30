@@ -1,0 +1,12 @@
+[DEFAULT]
+head = "head.js"
+firefox-appdir = "browser"
+support-files = ["../../../../../netwerk/test/unit/http2-ca.pem"]
+
+["test_DNSLookup.js"]
+
+["test_LookupAggregator.js"]
+
+["test_TRRRacer.js"]
+
+["test_heuristics.js"]

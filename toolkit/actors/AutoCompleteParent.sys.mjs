@@ -8,6 +8,7 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   GeckoViewAutocomplete: "resource://gre/modules/GeckoViewAutocomplete.sys.mjs",
+  clearTimeout: "resource://gre/modules/Timer.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
 });
 
@@ -471,10 +472,19 @@ export class AutoCompleteParent extends JSWindowActorParent {
     );
     items.forEach(item => (item.disabled = true));
 
-    lazy.setTimeout(
-      () => items.forEach(item => (item.disabled = false)),
-      popupDelay
-    );
+    let timerId;
+    const delay = () => {
+      if (timerId) {
+        lazy.clearTimeout(timerId);
+      }
+      timerId = lazy.setTimeout(() => {
+        items.forEach(item => (item.disabled = false));
+        this.openedPopup?.removeEventListener("click", delay);
+      }, popupDelay);
+    };
+
+    this.openedPopup.addEventListener("click", delay);
+    delay();
   }
 
   notifyListeners() {

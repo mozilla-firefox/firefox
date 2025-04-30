@@ -15,9 +15,9 @@ use authenticator::{
     ctap2::server::{
         AuthenticationExtensionsClientInputs, AuthenticationExtensionsPRFInputs,
         AuthenticationExtensionsPRFOutputs, AuthenticationExtensionsPRFValues,
-        AuthenticatorAttachment, PublicKeyCredentialDescriptor, PublicKeyCredentialParameters,
-        PublicKeyCredentialUserEntity, RelyingParty, ResidentKeyRequirement,
-        UserVerificationRequirement,
+        AuthenticatorAttachment, CredentialProtectionPolicy, PublicKeyCredentialDescriptor,
+        PublicKeyCredentialParameters, PublicKeyCredentialUserEntity, RelyingParty,
+        ResidentKeyRequirement, UserVerificationRequirement,
     },
     errors::AuthenticatorError,
     statecallback::StateCallback,
@@ -828,6 +828,30 @@ impl AuthrsService {
             }
         }
 
+        let mut credential_protection_policy = None;
+        let mut enforce_credential_protection_policy = None;
+        let mut cred_protect_policy_value = nsCString::new();
+        let mut enforce_cred_protect_value = false;
+        if unsafe { args.GetCredentialProtectionPolicy(&mut *cred_protect_policy_value) }
+            .to_result()
+            .is_ok()
+        {
+            unsafe { args.GetEnforceCredentialProtectionPolicy(&mut enforce_cred_protect_value) }
+                .to_result()?;
+            credential_protection_policy = if cred_protect_policy_value
+                .eq("userVerificationOptional")
+            {
+                Some(CredentialProtectionPolicy::UserVerificationOptional)
+            } else if cred_protect_policy_value.eq("userVerificationOptionalWithCredentialIDList") {
+                Some(CredentialProtectionPolicy::UserVerificationOptionalWithCredentialIDList)
+            } else if cred_protect_policy_value.eq("userVerificationRequired") {
+                Some(CredentialProtectionPolicy::UserVerificationRequired)
+            } else {
+                return Err(NS_ERROR_FAILURE);
+            };
+            enforce_credential_protection_policy = Some(enforce_cred_protect_value);
+        }
+
         let mut cred_props = false;
         unsafe { args.GetCredProps(&mut cred_props) }.to_result()?;
 
@@ -889,6 +913,8 @@ impl AuthrsService {
             user_verification_req,
             resident_key_req,
             extensions: AuthenticationExtensionsClientInputs {
+                credential_protection_policy,
+                enforce_credential_protection_policy,
                 cred_props: cred_props.then_some(true),
                 hmac_create_secret,
                 min_pin_length: min_pin_length.then_some(true),

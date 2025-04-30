@@ -77,22 +77,6 @@ NS_INTERFACE_MAP_END_INHERITING(DOMEventTargetHelper)
  * Below are helper classes
  */
 
-VideoColorSpaceInternal::VideoColorSpaceInternal(
-    const VideoColorSpaceInit& aColorSpaceInit)
-    : mFullRange(NullableToMaybe(aColorSpaceInit.mFullRange)),
-      mMatrix(NullableToMaybe(aColorSpaceInit.mMatrix)),
-      mPrimaries(NullableToMaybe(aColorSpaceInit.mPrimaries)),
-      mTransfer(NullableToMaybe(aColorSpaceInit.mTransfer)) {}
-
-VideoColorSpaceInit VideoColorSpaceInternal::ToColorSpaceInit() const {
-  VideoColorSpaceInit init;
-  init.mFullRange = MaybeToNullable(mFullRange);
-  init.mMatrix = MaybeToNullable(mMatrix);
-  init.mPrimaries = MaybeToNullable(mPrimaries);
-  init.mTransfer = MaybeToNullable(mTransfer);
-  return init;
-};
-
 VideoDecoderConfigInternal::VideoDecoderConfigInternal(
     const nsAString& aCodec, Maybe<uint32_t>&& aCodedHeight,
     Maybe<uint32_t>&& aCodedWidth, Maybe<VideoColorSpaceInternal>&& aColorSpace,
@@ -575,10 +559,10 @@ static RefPtr<VideoFrame> CreateVideoFrame(
     }
   }
 
-  return MakeRefPtr<VideoFrame>(
-      aGlobalObject, aData->mImage, format, aData->mImage->GetSize(),
-      aData->mImage->GetPictureRect(), displaySize, Some(aDuration), aTimestamp,
-      aColorSpace.ToColorSpaceInit());
+  return MakeRefPtr<VideoFrame>(aGlobalObject, aData->mImage, format,
+                                aData->mImage->GetSize(),
+                                aData->mImage->GetPictureRect(), displaySize,
+                                Some(aDuration), aTimestamp, aColorSpace);
 }
 
 /* static */

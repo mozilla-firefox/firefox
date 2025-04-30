@@ -73,7 +73,7 @@ ChromeUtils.defineLazyGetter(lazy, "gFluentStrings", function () {
 
 const DEFAULT_ACTIONS = {
   addons: {
-    l10nCommands: ["quickactions-cmd-addons2", "quickactions-addons"],
+    l10nCommands: ["quickactions-cmd-addons3"],
     icon: "chrome://mozapps/skin/extensions/category-extensions.svg",
     label: "quickactions-addons",
     onPick: openAddonsUrl("addons://discover/"),
@@ -189,7 +189,7 @@ const DEFAULT_ACTIONS = {
     onPick: restartBrowser,
   },
   savepdf: {
-    l10nCommands: ["quickactions-cmd-savepdf"],
+    l10nCommands: ["quickactions-cmd-savepdf2"],
     label: "quickactions-savepdf",
     icon: "chrome://global/skin/icons/print.svg",
     onPick: () => {
@@ -233,7 +233,7 @@ const DEFAULT_ACTIONS = {
     },
   },
   settings: {
-    l10nCommands: ["quickactions-cmd-settings"],
+    l10nCommands: ["quickactions-cmd-settings2"],
     icon: "chrome://global/skin/icons/settings.svg",
     label: "quickactions-settings2",
     onPick: openUrlFun("about:preferences"),

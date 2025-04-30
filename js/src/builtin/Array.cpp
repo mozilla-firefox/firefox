@@ -929,7 +929,7 @@ bool js::ArraySetLength(JSContext* cx, Handle<ArrayObject*> arr, HandleId id,
 
   // Update array length. Technically we should have been doing this
   // throughout the loop, in step 19.d.iii.
-  arr->setLength(newLen);
+  arr->setLength(cx, newLen);
 
   // Step 20.
   if (desc.hasWritable() && !desc.writable()) {
@@ -980,7 +980,7 @@ static bool array_addProperty(JSContext* cx, HandleObject obj, HandleId id,
   if (index >= length) {
     MOZ_ASSERT(arr->lengthIsWritable(),
                "how'd this element get added if length is non-writable?");
-    arr->setLength(index + 1);
+    arr->setLength(cx, index + 1);
   }
   return true;
 }
@@ -2123,7 +2123,7 @@ static bool FillWithUndefined(JSContext* cx, HandleObject obj, uint32_t start,
 
     if (obj->is<ArrayObject>() &&
         start + count >= obj->as<ArrayObject>().length()) {
-      obj->as<ArrayObject>().setLength(start + count);
+      obj->as<ArrayObject>().setLengthToInitializedLength();
     }
 
     for (uint32_t i = 0; i < count; i++) {
@@ -2567,7 +2567,7 @@ bool js::NewbornArrayPush(JSContext* cx, HandleObject obj, const Value& v) {
   }
 
   arr->setDenseInitializedLength(length + 1);
-  arr->setLength(length + 1);
+  arr->setLengthToInitializedLength();
   arr->initDenseElement(length, v);
   return true;
 }
@@ -2688,7 +2688,7 @@ void js::ArrayShiftMoveElements(ArrayObject* arr) {
   }
 
   MOZ_ASSERT(arr->getDenseInitializedLength() == initlen - 1);
-  arr->setLength(initlen - 1);
+  arr->setLengthToInitializedLength();
 }
 
 static inline void SetInitializedLength(JSContext* cx, NativeObject* obj,
@@ -3017,7 +3017,7 @@ static ArrayObject* CopyDenseArrayElements(JSContext* cx,
   }
 
   MOZ_ASSERT(count >= narr->length());
-  narr->setLength(count);
+  narr->setLength(cx, count);
 
   if (newlength > 0) {
     narr->initDenseElements(obj, begin, newlength);
@@ -3579,7 +3579,6 @@ static bool array_toSpliced(JSContext* cx, unsigned argc, Value* vp) {
     if (!arr) {
       return false;
     }
-    arr->setLength(newLength);
 
     // Below code doesn't handle the case when the storage has to grow,
     // therefore the capacity must fit for at least |newLength| elements.
@@ -3821,7 +3820,6 @@ static bool array_with(JSContext* cx, unsigned argc, Value* vp) {
     if (!arr) {
       return false;
     }
-    arr->setLength(length);
 
     CopyDenseElementsFillHoles(arr, nobj, length);
 
@@ -4245,7 +4243,7 @@ static bool ArraySliceDenseKernel(JSContext* cx, ArrayObject* arr,
   }
 
   MOZ_ASSERT(count >= result->length());
-  result->setLength(count);
+  result->setLength(cx, count);
 
   return true;
 }
@@ -4303,7 +4301,7 @@ JSObject* js::ArgumentsSliceDense(JSContext* cx, HandleObject obj,
         return nullptr;
       }
       resArray->setDenseInitializedLength(count);
-      resArray->setLength(count);
+      resArray->setLengthToInitializedLength();
 
       for (uint32_t index = 0; index < count; index++) {
         const Value& v = argsobj->element(actualBegin + index);

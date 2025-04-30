@@ -32,6 +32,9 @@ const {
   waitForPaused,
   waitForState,
   isCm6Enabled,
+  openEditorContextMenu,
+  selectEditorContextMenuItem,
+  scrollEditorIntoView,
 } = require("./debugger-helpers");
 
 const IFRAME_BASE_URL =
@@ -48,6 +51,7 @@ const EXPECTED_FUNCTION = "window.hitBreakpoint()";
 
 const TEST_URL = PAGES_BASE_URL + "custom/debugger/app-build/index.html";
 const MINIFIED_URL = `${IFRAME_BASE_URL}custom/debugger/app-build/static/js/minified.js`;
+const MAIN_URL = `${IFRAME_BASE_URL}custom/debugger/app-build/static/js/main.js`;
 
 /*
  * See testing/talos/talos/tests/devtools/addon/content/pages/custom/debugger/app/src for the details
@@ -107,6 +111,7 @@ module.exports = async function () {
   await testPreview(dbg, tab, EXPECTED_FUNCTION);
   await testOpeningLargeMinifiedFile(dbg);
   await testPrettyPrint(dbg, toolbox);
+  await testLargeFileWithWrapping(dbg, toolbox, tab);
 
   await testBigBundle(dbg, tab);
 
@@ -233,6 +238,52 @@ async function testOpeningLargeMinifiedFile(dbg) {
 
   // Also clear to prevent reselecting this source
   await dbg.actions.clearSelectedLocation();
+
+  await garbageCollect();
+}
+
+async function testLargeFileWithWrapping(dbg, toolbox) {
+  await selectSource(dbg, MAIN_URL);
+  dump("Turn on editor wrapping \n");
+  await openEditorContextMenu(dbg, toolbox);
+  await selectEditorContextMenuItem(dbg, toolbox, "editor-wrapping");
+  await waitUntil(() => {
+    if (isCm6Enabled()) {
+      return dbg.win.document
+        .querySelector(".cm-content")
+        .classList.contains("cm-lineWrapping");
+    }
+    // Waiting for the white-space property value to change from "pre" (before line wrapping) to
+    // "pre-wrap" (after line wrapping).
+    return (
+      dbg.win
+        .getComputedStyle(dbg.win.document.querySelector(".CodeMirror-line"))
+        .getPropertyValue("white-space") === "pre-wrap"
+    );
+  });
+
+  dump("Add breakpoint to main.js with wrap editor switched on\n");
+  const testBreakpoint = runTest(
+    "custom.jsdebugger.with-wrap-editor.add-breakpoint.DAMP"
+  );
+  await addBreakpoint(dbg, 1, MAIN_URL);
+  testBreakpoint.done();
+
+  dump("Scroll main.js with wrap editor switched on\n");
+  const testScroll = runTest("custom.jsdebugger.with-wrap-editor.scroll.DAMP");
+  // Scroll the document until line 2 becomes visible (which is also the bottom of the document)
+  await scrollEditorIntoView(dbg, 2);
+  testScroll.done();
+
+  dump("Turn off editor wrapping \n");
+  await openEditorContextMenu(dbg, toolbox);
+  await selectEditorContextMenuItem(dbg, toolbox, "editor-wrapping");
+  await waitUntil(
+    () => !Services.prefs.getBoolPref("devtools.debugger.ui.editor-wrapping")
+  );
+
+  await removeBreakpoints(dbg);
+  await dbg.actions.closeTabs([findSource(dbg, MAIN_URL)]);
 
   await garbageCollect();
 }

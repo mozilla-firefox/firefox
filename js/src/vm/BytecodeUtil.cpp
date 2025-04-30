@@ -42,6 +42,7 @@
 #include "vm/BytecodeIterator.h"  // for AllBytecodesIterable
 #include "vm/BytecodeLocation.h"
 #include "vm/CodeCoverage.h"
+#include "vm/ConstantCompareOperand.h"
 #include "vm/EnvironmentObject.h"
 #include "vm/FrameIter.h"    // js::{,Script}FrameIter
 #include "vm/JSAtomUtils.h"  // AtomToPrintableString, Atomize
@@ -1649,6 +1650,7 @@ struct ExpressionDecompiler {
   bool quote(JSString* s, char quote);
   bool write(const char* s);
   bool write(JSString* str);
+  bool write(ConstantCompareOperand* operand);
   UniqueChars getOutput();
 #if defined(DEBUG) || defined(JS_JITSPEW)
   void setStackDump() { isStackDump = true; }
@@ -1899,6 +1901,14 @@ bool ExpressionDecompiler::decompilePC(jsbytecode* pc, uint8_t defIndex) {
       return write("(typeof ") && decompilePCForStackOperand(pc, -1) &&
              write(compareOp == JSOp::Ne ? " != \"" : " == \"") &&
              write(JSTypeToString(type)) && write("\")");
+    }
+
+    case JSOp::StrictConstantEq:
+    case JSOp::StrictConstantNe: {
+      auto operand = ConstantCompareOperand::fromRawValue(GET_UINT16(pc));
+      return write("(") && decompilePCForStackOperand(pc, -1) && write(" ") &&
+             write(op == JSOp::StrictConstantEq ? "===" : "!==") &&
+             write(" ") && write(&operand) && write(")");
     }
 
     case JSOp::InitElemArray:
@@ -2214,6 +2224,25 @@ bool ExpressionDecompiler::quote(JSString* s, char quote) {
 
 JSAtom* ExpressionDecompiler::loadAtom(jsbytecode* pc) {
   return script->getAtom(pc);
+}
+
+bool ExpressionDecompiler::write(ConstantCompareOperand* operand) {
+  switch (operand->type()) {
+    case ConstantCompareOperand::EncodedType::Int32: {
+      sprinter.printf("%d", operand->toInt32());
+      return true;
+    }
+    case ConstantCompareOperand::EncodedType::Boolean: {
+      return write(operand->toBoolean() ? "true" : "false");
+    }
+    case ConstantCompareOperand::EncodedType::Null: {
+      return write("null");
+    }
+    case ConstantCompareOperand::EncodedType::Undefined: {
+      return write("undefined");
+    }
+  }
+  MOZ_CRASH("Unknown constant compare operand type");
 }
 
 JSString* ExpressionDecompiler::loadString(jsbytecode* pc) {

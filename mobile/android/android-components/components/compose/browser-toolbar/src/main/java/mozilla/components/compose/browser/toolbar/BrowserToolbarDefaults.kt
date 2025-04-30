@@ -18,11 +18,6 @@ object BrowserToolbarDefaults {
      */
     @Composable
     fun colors(
-        customTabToolbarColors: CustomTabToolbarColors = CustomTabToolbarColors(
-            background = AcornTheme.colors.layer1,
-            title = AcornTheme.colors.textPrimary,
-            url = AcornTheme.colors.textPrimary,
-        ),
         displayToolbarColors: BrowserDisplayToolbarColors = BrowserDisplayToolbarColors(
             background = AcornTheme.colors.layer1,
             urlBackground = AcornTheme.colors.layer3,
@@ -35,7 +30,6 @@ object BrowserToolbarDefaults {
             clearButton = AcornTheme.colors.iconPrimary,
         ),
     ) = BrowserToolbarColors(
-        customTabToolbarColor = customTabToolbarColors,
         displayToolbarColors = displayToolbarColors,
         editToolbarColors = editToolbarColors,
     )

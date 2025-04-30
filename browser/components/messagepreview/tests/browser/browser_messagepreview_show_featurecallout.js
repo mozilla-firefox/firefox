@@ -286,7 +286,7 @@ add_task(async function test_show_happy_feature_callout_message() {
   let tab = await BrowserTestUtils.openNewForegroundTab(
     win.gBrowser,
     "about:messagepreview",
-    false
+    true
   );
 
   let aboutMessagePreviewActor = await getAboutMessagePreviewParent(
@@ -330,7 +330,7 @@ add_task(async function test_show_feature_callout_without_trigger() {
   let tab = await BrowserTestUtils.openNewForegroundTab(
     win.gBrowser,
     "about:messagepreview",
-    false
+    true
   );
 
   let aboutMessagePreviewActor = await getAboutMessagePreviewParent(
@@ -374,7 +374,7 @@ add_task(async function test_show_feature_callout_anchors() {
   let tab = await BrowserTestUtils.openNewForegroundTab(
     win.gBrowser,
     "about:messagepreview",
-    false
+    true
   );
 
   let aboutMessagePreviewActor = await getAboutMessagePreviewParent(
@@ -418,7 +418,7 @@ add_task(async function test_show_bad_feature_callout_message() {
   let tab = await BrowserTestUtils.openNewForegroundTab(
     win.gBrowser,
     "about:messagepreview",
-    false
+    true
   );
 
   let aboutMessagePreviewActor = await getAboutMessagePreviewParent(

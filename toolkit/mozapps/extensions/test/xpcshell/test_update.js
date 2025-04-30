@@ -794,7 +794,7 @@ add_task(async function test_no_auto_update() {
 
 // Test that the update check returns nothing for addons in locked install
 // locations.
-async function run_test_locked_install({ asBuiltIn = true } = {}) {
+add_task(async function run_test_locked_install() {
   const ADDON_ID = "addon13@tests.mozilla.org";
   const testExtensionProps = {
     manifest: {
@@ -811,44 +811,27 @@ async function run_test_locked_install({ asBuiltIn = true } = {}) {
 
   await promiseShutdownManager();
 
-  if (!asBuiltIn) {
-    const lockedDir = gProfD.clone();
-    lockedDir.append("locked_extensions");
-    registerDirectory("XREAppFeat", lockedDir);
-
-    let xpi = await createTempWebExtensionFile(testExtensionProps);
-    xpi.copyTo(lockedDir, `${ADDON_ID}.xpi`);
-    await overrideBuiltIns({ system: [ADDON_ID] });
-  } else {
-    await setupBuiltinExtension(testExtensionProps, "builtin-addon13-ext");
-    await overrideBuiltIns({
-      builtins: [
-        {
-          addon_id: ADDON_ID,
-          addon_version: "1.0",
-          res_url: "resource://builtin-addon13-ext/",
-        },
-      ],
-    });
-  }
+  await setupBuiltinExtension(testExtensionProps, "builtin-addon13-ext");
+  await overrideBuiltIns({
+    builtins: [
+      {
+        addon_id: ADDON_ID,
+        addon_version: "1.0",
+        res_url: "resource://builtin-addon13-ext/",
+      },
+    ],
+  });
 
   await promiseStartupManager();
 
   let a13 = await AddonManager.getAddonByID(ADDON_ID);
   notEqual(a13, null);
 
-  if (asBuiltIn) {
-    equal(
-      a13.getResourceURI().spec,
-      "resource://builtin-addon13-ext/",
-      "Expect addon root uri to be a resource:// URI"
-    );
-  } else {
-    ok(
-      a13.getResourceURI() instanceof Ci.nsIJARURI,
-      "Expect addon root uri to be a jar uri"
-    );
-  }
+  equal(
+    a13.getResourceURI().spec,
+    "resource://builtin-addon13-ext/",
+    "Expect addon root uri to be a resource:// URI"
+  );
 
   let result = await AddonTestUtils.promiseFindAddonUpdates(a13);
   ok(
@@ -859,13 +842,4 @@ async function run_test_locked_install({ asBuiltIn = true } = {}) {
 
   let installs = await AddonManager.getAllInstalls();
   equal(installs.length, 0);
-}
-
-// TODO(Bug 1949847): remove this test along with removing the app-system-defaults location.
-add_task(async function test_locked_location_system_xpi() {
-  await run_test_locked_install({ asBuiltIn: false });
-});
-
-add_task(async function test_locked_location_system_builtin() {
-  await run_test_locked_install();
 });

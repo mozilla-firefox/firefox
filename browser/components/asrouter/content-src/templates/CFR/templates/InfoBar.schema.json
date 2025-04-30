@@ -11,8 +11,8 @@
       "properties": {
         "type": {
           "type": "string",
-          "description": "Should the message be global (persisted across tabs) or local (disappear when switching to a different tab).",
-          "enum": ["global", "tab"]
+          "description": "Specifies where the message should appear and persist: 'global' (persists across tabs in the current window), 'tab' (only visible in the current tab), or 'universal' (visible across all tabs and windows, current and future).",
+          "enum": ["global", "tab", "universal"]
         },
         "text": {
           "$ref": "file:///FxMSCommon.schema.json#/$defs/localizableText",

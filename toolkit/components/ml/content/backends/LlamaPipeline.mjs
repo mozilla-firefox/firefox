@@ -12,10 +12,11 @@ import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 
 /* eslint-disable mozilla/reject-import-system-module-from-non-system */
 import {
-  getFileHandleFromOPFS,
   createFileUrl,
   Progress,
 } from "chrome://global/content/ml/Utils.sys.mjs";
+
+import { OPFS } from "chrome://global/content/ml/OPFS.sys.mjs";
 
 /**
  * Log level set by the pipeline.
@@ -130,9 +131,7 @@ export class LlamaPipeline {
       logger: lazy.console,
     });
 
-    const blobs = [
-      await (await getFileHandleFromOPFS(modelFilePath)).getFile(),
-    ];
+    const blobs = [await (await OPFS.getFileHandle(modelFilePath)).getFile()];
 
     let options = {};
 

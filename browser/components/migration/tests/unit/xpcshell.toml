@@ -2,7 +2,6 @@
 head = "head_migration.js"
 tags = "condprof os_integration"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"] # bug 1730213
 prefs = ["browser.migrate.showBookmarksToolbarAfterMigration=true"]
 support-files = [
   "Library/**",
@@ -32,33 +31,21 @@ run-if = ["os == 'linux'"]
 ["test_Chrome_corrupt_history.js"]
 
 ["test_Chrome_credit_cards.js"]
-skip-if = [
-  "os == 'linux'",
-  "os == 'android'",
-  "condprof", # bug 1769154 - not realistic for condprof
-]
+skip-if = ["os == 'linux' && os_version == '18.04' && processor == 'x86_64'"]
 
 ["test_Chrome_extensions.js"]
 
 ["test_Chrome_formdata.js"]
 
 ["test_Chrome_history.js"]
-skip-if = ["os != 'mac'"] # Relies on ULibDir
+run-if = ["os == 'mac'"] # Relies on ULibDir
 
 ["test_Chrome_passwords.js"]
-skip-if = [
-  "os == 'linux'",
-  "os == 'android'",
-  "condprof", # bug 1769154 - not realistic for condprof
-]
+skip-if = ["os == 'linux' && os_version == '18.04' && processor == 'x86_64'"]
 
 ["test_Chrome_passwords_emptySource.js"]
-skip-if = [
-  "os == 'linux'",
-  "os == 'android'",
-  "condprof", # bug 1769154 - not realistic for condprof
-]
 support-files = ["LibraryWithNoData/**"]
+skip-if = ["os == 'linux' && os_version == '18.04' && processor == 'x86_64'"]
 
 ["test_Chrome_permissions.js"]
 
@@ -73,10 +60,11 @@ run-if = ["os == 'win' && bits == 64"] # bug 1392396
 
 ["test_IE_history.js"]
 run-if = ["os == 'win'"]
-skip-if = ["os == 'win' && msix"] # https://bugzilla.mozilla.org/show_bug.cgi?id=1807928
+skip-if = [
+  "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && msix", # Bug 1807928
+]
 
 ["test_MigrationUtils_timedRetry.js"]
-skip-if = ["os == 'mac' && !debug"] #Bug 1558330
 
 ["test_PasswordFileMigrator.js"]
 

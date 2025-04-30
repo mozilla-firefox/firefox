@@ -1,0 +1,40 @@
+# This test case contains a snapshotted picture with a single
+# child stacking context with a clip applied. In the general
+# clips are hoisted out of picture if all of their children share
+# it, but we rely on the clip being baked in the snapshot so
+# This test should that snapshotted picture and the snapshot image
+# both affected by the clip.
+---
+root:
+  items:
+    - type: stacking-context
+      bounds: [0, 0, 1000, 1000]
+      items:
+      - type: stacking-context
+        bounds: [0, 0, 200, 200]
+        snapshot:
+          name: "snap0"
+        items:
+          - type: clip
+            id: 101
+            complex:
+              - rect: [10, 10, 180, 180]
+                radius: [32, 16]
+                clip-mode: clip-out
+          - type: clip-chain
+            id: 201
+            clips: [101]
+          - type: stacking-context
+            bounds: [0, 0, 200, 200]
+            clip-chain: 201
+            items:
+            - type: rect
+              bounds: [0, 0, 200, 200]
+              color: green
+              clip-chain: 201
+            - type: rect
+              bounds: [100, 100, 100, 100]
+              color: [100, 100, 100]
+
+      - image: snapshot(snap0)
+        bounds: [200, 0, 200, 200]

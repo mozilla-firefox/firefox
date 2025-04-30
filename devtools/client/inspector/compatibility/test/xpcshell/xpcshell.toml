@@ -2,6 +2,6 @@
 tags = "devtools"
 head = "head.js"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
+run-if = ["os != 'android'"]
 
 ["test_default-browsers.js"]

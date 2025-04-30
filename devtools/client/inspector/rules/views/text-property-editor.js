@@ -1485,9 +1485,17 @@ TextPropertyEditor.prototype = {
 
     const dimensionObj = this._parseDimension(this.prop.value);
     const { value, unit } = dimensionObj.groups;
+    // `pointerdown.screenX` may be fractional value and we will compare it
+    // with `mousemove.screenX` which is always integer value and the difference
+    // will be used to compute the new value.  For making the difference always
+    // integer, we need to convert it to integer value with the same as
+    // MouseEvent does.
+    // https://searchfox.org/mozilla-central/rev/7857ea04d142f2abc0d777085f9e54526c7cedf9/dom/events/MouseEvent.cpp#314
+    // https://searchfox.org/mozilla-central/rev/7857ea04d142f2abc0d777085f9e54526c7cedf9/gfx/2d/Point.h#85-86
+    const intScreenX = Math.floor(event.screenX + 0.5);
     this._draggingValueCache = {
       isInDeadzone: true,
-      previousScreenX: event.screenX,
+      previousScreenX: intScreenX,
       value: parseFloat(value),
       unit,
     };

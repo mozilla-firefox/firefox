@@ -171,6 +171,31 @@ export const SidebarManager = {
   },
 
   /**
+   * Has the new sidebar launcher already been visible and "used" in this profile?
+   */
+  get hasSidebarLauncherBeenVisible() {
+    // Its possible sidebar.revamp was enabled previously, but we can effectively reset if its currently false
+    if (!lazy.sidebarRevampEnabled) {
+      return false;
+    }
+    if (lazy.verticalTabsEnabled) {
+      return true;
+    }
+    // this pref tells us a sidebar panel has been opened, so it implies the launcher has
+    // been visible, but can't reliably indicate that the launcher has *not* been visible.
+    if (Services.prefs.getBoolPref("sidebar.new-sidebar.has-used", false)) {
+      return true;
+    }
+    // check if the launcher has ever been visible (in this session) in any of our open windows,
+    for (let w of lazy.BrowserWindowTracker.getOrderedWindows()) {
+      if (w.SidebarController.launcherEverVisible) {
+        return true;
+      }
+    }
+    return false;
+  },
+
+  /**
    * Prepopulates default tools for new sidebar users and appends any new tools defined
    * on the sidebar.newTool.migration pref branch to the sidebar.main.tools pref.
    */

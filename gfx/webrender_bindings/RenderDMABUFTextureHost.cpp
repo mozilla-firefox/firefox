@@ -24,6 +24,17 @@ RenderDMABUFTextureHost::~RenderDMABUFTextureHost() {
 
 wr::WrExternalImage RenderDMABUFTextureHost::Lock(uint8_t aChannelIndex,
                                                   gl::GLContext* aGL) {
+  const gfx::IntSize size(mSurface->GetWidth(aChannelIndex),
+                          mSurface->GetHeight(aChannelIndex));
+
+  // Wayland native compositor doesn't use textures so pass zero
+  // there. It saves GPU resources.
+  if (!aGL) {
+    return NativeTextureToWrExternalImage(0, 0.0, 0.0,
+                                          static_cast<float>(size.width),
+                                          static_cast<float>(size.height));
+  }
+
   if (mGL.get() != aGL) {
     if (mGL) {
       // This should not happen. EGLImage is created only in
@@ -50,8 +61,6 @@ wr::WrExternalImage RenderDMABUFTextureHost::Lock(uint8_t aChannelIndex,
     mSurface->MaybeSemaphoreWait(texture);
   }
 
-  const gfx::IntSize size(mSurface->GetWidth(aChannelIndex),
-                          mSurface->GetHeight(aChannelIndex));
   return NativeTextureToWrExternalImage(
       mSurface->GetTexture(aChannelIndex), 0.0, 0.0,
       static_cast<float>(size.width), static_cast<float>(size.height));
@@ -79,10 +88,6 @@ void RenderDMABUFTextureHost::DeleteTextureHandle() {
 void RenderDMABUFTextureHost::ClearCachedResources() {
   DeleteTextureHandle();
   mGL = nullptr;
-}
-
-gfx::SurfaceFormat RenderDMABUFTextureHost::GetFormat() const {
-  return mSurface->GetFormat();
 }
 
 bool RenderDMABUFTextureHost::MapPlane(RenderCompositor* aCompositor,

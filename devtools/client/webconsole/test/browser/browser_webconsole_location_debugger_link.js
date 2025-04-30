@@ -48,4 +48,20 @@ add_task(async function () {
     text: "document.bar",
     typeSelector: ".error",
   });
+
+  info("Check location of evaluation error");
+  await toolbox.selectTool("webconsole");
+  await execute(
+    hud,
+    `const x = {};
+     x.foo.bar;`
+  );
+
+  await testOpenInDebugger(hud, {
+    text: "x.foo is undefined",
+    typeSelector: ".error",
+    // "debugger eval code" isn't an actual URL and is not stored as such in the Debugger
+    // state, so don't check it.
+    expectUrl: false,
+  });
 });

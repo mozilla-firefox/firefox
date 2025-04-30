@@ -6,7 +6,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 include protocol PNecko;
-include NeckoChannelParams;
 
 namespace mozilla {
 namespace net {
@@ -20,8 +19,6 @@ parent:
   // Note: channels are opened during construction, so no open method here:
   // see PNecko.ipdl
   async __delete__();
-  async NotifyListeners(DataChannelInfo aDataChannelInfo);
-  async SetChannelIdForRedirect(uint64_t aChannelId);
 };
 
 } // namespace net

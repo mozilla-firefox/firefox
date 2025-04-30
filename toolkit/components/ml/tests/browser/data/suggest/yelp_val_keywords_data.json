@@ -2890,14 +2890,7 @@
       "list of"
     ],
     "postModifiers": ["delivery"],
-    "locationSigns": [
-      { "keyword": "near me", "needLocation": false },
-      { "keyword": "in", "needLocation": true },
-      { "keyword": "nearby", "needLocation": false },
-      { "keyword": "near", "needLocation": true },
-      { "keyword": "near by", "needLocation": false },
-      { "keyword": "in area", "needLocation": false }
-    ],
+    "locationSigns": ["near me", "in", "nearby", "near", "near by", "in area"],
     "yelpModifiers": [
       "yekp",
       "yel",

@@ -10,7 +10,6 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.verify
 import mozilla.components.service.pocket.PocketStoriesService
@@ -34,7 +33,6 @@ import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.getIntentSource
-import org.mozilla.fenix.ext.openSetDefaultBrowserOption
 import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.helpers.FenixRobolectricTestRunner
@@ -52,7 +50,6 @@ class HomeActivityTest {
 
     @Before
     fun setup() {
-        mockkStatic("org.mozilla.fenix.ext.ActivityKt")
         activity = spyk(HomeActivity())
         settings = mockk(relaxed = true)
         appStore = mockk(relaxed = true)
@@ -64,7 +61,7 @@ class HomeActivityTest {
     private fun assertNoPromptWasShown() {
         assertNull(Metrics.setAsDefaultBrowserNativePromptShown.testGetValue())
         verify(exactly = 0) { settings.setAsDefaultPromptCalled() }
-        verify(exactly = 0) { activity.openSetDefaultBrowserOption() }
+        verify(exactly = 0) { activity.showSetDefaultBrowserPrompt() }
     }
 
     @Test
@@ -209,7 +206,7 @@ class HomeActivityTest {
     fun `GIVEN all conditions met WHEN maybeShowSetAsDefaultBrowserPrompt is called THEN dispatch action and record metrics`() {
         every { activity.applicationContext } returns testContext
         every { testContext.components.strictMode } returns TestStrictModeManager()
-        every { activity.openSetDefaultBrowserOption() } just Runs
+        every { activity.showSetDefaultBrowserPrompt() } just Runs
 
         assertNull(Metrics.setAsDefaultBrowserNativePromptShown.testGetValue())
 
@@ -222,7 +219,7 @@ class HomeActivityTest {
         verify { appStore.dispatch(AppAction.UpdateWasNativeDefaultBrowserPromptShown(true)) }
         assertNotNull(Metrics.setAsDefaultBrowserNativePromptShown.testGetValue())
         verify { settings.setAsDefaultPromptCalled() }
-        verify { activity.openSetDefaultBrowserOption() }
+        verify { activity.showSetDefaultBrowserPrompt() }
     }
 
     @Test

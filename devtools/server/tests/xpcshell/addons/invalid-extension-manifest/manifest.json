@@ -1,0 +1,5 @@
+{
+  "description": "manifest.json missing required field 'name'",
+  "manifest_version": 3,
+  "version": "1"
+}

@@ -391,10 +391,10 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
         &self,
         name: CowRcStr<'i>,
         parser: &mut Parser<'i, 't>,
-        after_part: bool,
+        _after_part: bool,
     ) -> Result<NonTSPseudoClass, ParseError<'i>> {
         let pseudo_class = match_ignore_ascii_case! { &name,
-            "lang" if !after_part => {
+            "lang" => {
                 let result = parser.parse_comma_separated(|input| {
                     Ok(AtomIdent::from(input.expect_ident_or_string()?.as_ref()))
                 })?;
@@ -407,10 +407,10 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 let result = AtomIdent::from(parser.expect_ident()?.as_ref());
                 NonTSPseudoClass::CustomState(CustomState(result))
             },
-            "-moz-locale-dir" if !after_part => {
+            "-moz-locale-dir" => {
                 NonTSPseudoClass::MozLocaleDir(Direction::parse(parser)?)
             },
-            "dir" if !after_part => {
+            "dir" => {
                 NonTSPseudoClass::Dir(Direction::parse(parser)?)
             },
             _ => return Err(parser.new_custom_error(

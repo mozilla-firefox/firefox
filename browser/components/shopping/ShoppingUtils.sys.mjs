@@ -11,7 +11,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   ASRouter: "resource:///modules/asrouter/ASRouter.sys.mjs",
   isProductURL: "chrome://global/content/shopping/ShoppingProduct.mjs",
   getProductIdFromURL: "chrome://global/content/shopping/ShoppingProduct.mjs",
-  NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
   EveryWindow: "resource:///modules/EveryWindow.sys.mjs",
 });
@@ -33,6 +32,7 @@ const SIDEBAR_CLOSED_COUNT_PREF =
 const CFR_FEATURES_PREF =
   "browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features";
 
+const ENABLED_PREF = "browser.shopping.experience2023.enabled";
 const INTEGRATED_SIDEBAR_PREF =
   "browser.shopping.experience2023.integratedSidebar";
 
@@ -40,32 +40,33 @@ export const ShoppingUtils = {
   initialized: false,
   registered: false,
   handledAutoActivate: false,
-  nimbusEnabled: false,
-  nimbusControl: false,
-  nimbusIntegratedSidebar: false,
+  enabled: false,
+  integratedSidebar: false,
   everyWindowCallbackId: `shoppingutils-${Services.uuid.generateUUID()}`,
   managers: new WeakMap(),
 
-  _updateNimbusVariables() {
-    this.nimbusIntegratedSidebar =
-      lazy.NimbusFeatures.shopping2023.getVariable("integratedSidebar");
-    this.nimbusEnabled =
-      this.nimbusIntegratedSidebar ||
-      lazy.NimbusFeatures.shopping2023.getVariable("enabled");
-    this.nimbusControl =
-      lazy.NimbusFeatures.shopping2023.getVariable("control");
+  _updatePrefVariables() {
+    this.integratedSidebar = Services.prefs.getBoolPref(
+      INTEGRATED_SIDEBAR_PREF,
+      false
+    );
+    this.enabled =
+      this.integratedSidebar || Services.prefs.getBoolPref(ENABLED_PREF, false);
   },
 
-  onNimbusUpdate() {
-    if (this.initialized) {
-      ShoppingUtils.uninit();
+  onPrefUpdate(_subject, topic) {
+    if (topic !== "nsPref:changed") {
+      return;
     }
-    this._updateNimbusVariables();
-    if (this.nimbusEnabled) {
+    if (this.initialized) {
+      ShoppingUtils.uninit(true);
+      Glean.shoppingSettings.nimbusDisabledShopping.set(true);
+    }
+    this._updatePrefVariables();
+
+    if (this.enabled) {
       ShoppingUtils.init();
       Glean.shoppingSettings.nimbusDisabledShopping.set(false);
-    } else {
-      Glean.shoppingSettings.nimbusDisabledShopping.set(true);
     }
   },
 
@@ -76,21 +77,22 @@ export const ShoppingUtils = {
     if (this.initialized) {
       return;
     }
-    this.onNimbusUpdate = this.onNimbusUpdate.bind(this);
+    this.onPrefUpdate = this.onPrefUpdate.bind(this);
     this.onActiveUpdate = this.onActiveUpdate.bind(this);
     this._addManagerForWindow = this._addManagerForWindow.bind(this);
     this._removeManagerForWindow = this._removeManagerForWindow.bind(this);
 
     if (!this.registered) {
       // Note (bug 1855545): we must set `this.registered` before calling
-      // `onUpdate`, as it will immediately invoke `this.onNimbusUpdate`,
+      // `onUpdate`, as it will immediately invoke `this.onPrefUpdate`,
       // which in turn calls `ShoppingUtils.init`, creating an infinite loop.
       this.registered = true;
-      lazy.NimbusFeatures.shopping2023.onUpdate(this.onNimbusUpdate);
-      this._updateNimbusVariables();
+      Services.prefs.addObserver(ENABLED_PREF, this.onPrefUpdate);
+      Services.prefs.addObserver(INTEGRATED_SIDEBAR_PREF, this.onPrefUpdate);
+      this._updatePrefVariables();
     }
 
-    if (!this.nimbusEnabled) {
+    if (!this.enabled) {
       return;
     }
 
@@ -101,7 +103,7 @@ export const ShoppingUtils = {
     this.recordUserAdsPreference();
     this.recordUserAutoOpenPreference();
 
-    if (this.nimbusIntegratedSidebar) {
+    if (this.integratedSidebar) {
       this._addReviewCheckerManagers();
     } else {
       if (this.isAutoOpenEligible()) {
@@ -115,10 +117,17 @@ export const ShoppingUtils = {
     this.initialized = true;
   },
 
-  // Runs once per session:
-  // * when the user is unenrolled from the Nimbus experiment,
-  // * or at shutdown, after quit-application-granted.
-  uninit() {
+  /**
+   * Runs when:
+   * - the shopping2023 enabled or integratedSidebar prefs are changed,
+   * - the user is unenrolled from the Nimbus experiment,
+   * - or at shutdown, after quit-application-granted.
+   *
+   * @param {boolean} soft
+   *    If this is a soft uninit, for a pref change, we want to keep the
+   *    pref listeners around incase they are changed again.
+   */
+  uninit(soft) {
     if (!this.initialized) {
       return;
     }
@@ -127,6 +136,12 @@ export const ShoppingUtils = {
     // prefs for onboarding.
 
     Services.prefs.removeObserver(ACTIVE_PREF, this.onActiveUpdate);
+
+    if (!soft) {
+      this.registered = false;
+      Services.prefs.removeObserver(ENABLED_PREF, this.onPrefUpdate);
+      Services.prefs.removeObserver(INTEGRATED_SIDEBAR_PREF, this.onPrefUpdate);
+    }
 
     if (this.managers.size) {
       this._removeReviewCheckerManagers();
@@ -224,10 +239,10 @@ export const ShoppingUtils = {
     return !isSameProduct;
   },
 
-  // For users in either the nimbus control or treatment groups, increment a
+  // For enabled users, increment a
   // counter when they visit supported product pages.
   recordExposure() {
-    if (this.nimbusEnabled || this.nimbusControl) {
+    if (this.enabled) {
       Glean.shopping.productPageVisits.add(1);
     }
   },
@@ -245,14 +260,6 @@ export const ShoppingUtils = {
     Glean.shoppingSettings.autoOpenUserDisabled.set(
       !ShoppingUtils.autoOpenUserEnabled
     );
-  },
-
-  onIntegratedSidebarUpdate(_pref, _prev, current) {
-    if (current && !this.managers.size) {
-      this._addReviewCheckerManagers();
-    } else if (this.managers.size) {
-      this._removeReviewCheckerManagers();
-    }
   },
 
   /**
@@ -341,7 +348,7 @@ export const ShoppingUtils = {
     }
 
     if (
-      !ShoppingUtils.integratedSidebar &&
+      !this.integratedSidebar &&
       this.isAutoOpenEligible() &&
       this.resetActiveOnNextProductPage &&
       isProductPageNavigation
@@ -469,11 +476,4 @@ XPCOMUtils.defineLazyPreferenceGetter(
   AUTO_OPEN_USER_ENABLED_PREF,
   false,
   ShoppingUtils.recordUserAutoOpenPreference
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  ShoppingUtils,
-  "integratedSidebar",
-  INTEGRATED_SIDEBAR_PREF,
-  false
 );

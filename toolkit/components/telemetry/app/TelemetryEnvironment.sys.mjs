@@ -82,8 +82,8 @@ export var Policy = {
 var gActiveExperimentStartupBuffer = new Map();
 
 // For Powering arewegleanyet.com (See bug 1944592)
-// Legacy Count: 110
-// Glean Count: 19
+// Legacy Count: 118
+// Glean Count: 117
 
 var gGlobalEnvironment;
 function getGlobal() {
@@ -479,7 +479,7 @@ function getRegionalPrefsLocales() {
 }
 
 function getIntlSettings() {
-  return {
+  let intl = {
     requestedLocales: Services.locale.requestedLocales,
     availableLocales: Services.locale.availableLocales,
     appLocales: Services.locale.appLocalesAsBCP47,
@@ -490,6 +490,13 @@ function getIntlSettings() {
       .data.split(",")
       .map(str => str.trim()),
   };
+  Glean.intl.requestedLocales.set(intl.requestedLocales);
+  Glean.intl.availableLocales.set(intl.availableLocales);
+  Glean.intl.appLocales.set(intl.appLocales);
+  Glean.intl.systemLocales.set(intl.systemLocales);
+  Glean.intl.regionalPrefsLocales.set(intl.regionalPrefsLocales);
+  Glean.intl.acceptLanguages.set(intl.acceptLanguages);
+  return intl;
 }
 
 /**
@@ -796,6 +803,20 @@ EnvironmentAddonBuilder.prototype = {
     }
     this._environment._currentEnvironment.addons = addons;
 
+    // Convert into the appropriate schema and record the addon environment
+    // data in Glean
+    let activeAddonsGlean = Object.entries(addons.activeAddons).map(
+      ([id, { type, ...rest }]) => ({ id, addonType: type, ...rest })
+    );
+    Glean.addons.activeAddons.set(activeAddonsGlean);
+    Glean.addons.theme.set(addons.theme);
+    Glean.addons.activeGMPlugins.set(
+      Object.entries(addons.activeGMPlugins).map(([id, value]) => ({
+        id,
+        ...value,
+      }))
+    );
+
     return result;
   },
 
@@ -822,8 +843,11 @@ EnvironmentAddonBuilder.prototype = {
       // Weird addon data in the wild can lead to exceptions while collecting
       // the data.
       try {
-        // Make sure to have valid dates.
-        let updateDate = new Date(Math.max(0, addon.updateDate));
+        // Make sure to have valid dates (built-in add-ons are
+        // expected to not have a valid update date).
+        let updateDate = isNaN(addon.updateDate?.valueOf())
+          ? new Date(0)
+          : new Date(Math.max(0, addon.updateDate));
 
         activeAddons[addon.id] = {
           version: limitStringToLength(addon.version, MAX_ADDON_STRING_LENGTH),
@@ -838,7 +862,12 @@ EnvironmentAddonBuilder.prototype = {
         // getActiveAddons() gives limited data during startup and full
         // data after the addons database is loaded.
         if (fullData) {
-          let installDate = new Date(Math.max(0, addon.installDate));
+          // Make sure to have valid dates (built-in add-ons are
+          // expected to not have a valid install date).
+          let installDate = isNaN(addon.installDate?.valueOf())
+            ? new Date(0)
+            : new Date(Math.max(0, addon.installDate));
+
           Object.assign(activeAddons[addon.id], {
             blocklisted:
               addon.blocklistState !== Ci.nsIBlocklistService.STATE_NOT_BLOCKED,
@@ -1087,6 +1116,15 @@ EnvironmentCache.prototype = {
 
     if (AppConstants.platform == "win") {
       this._hddData = await Services.sysinfo.diskInfo;
+      for (const [name, disk] of Object.entries(this._hddData)) {
+        if (!disk) {
+          continue;
+        }
+        // Glean `object` metrics don't like `type` as it's a reserved word.
+        let diskData = { ...disk, diskType: disk.type };
+        delete diskData.type;
+        Glean.hdd[name].set(diskData);
+      }
       let osData = await Services.sysinfo.osInfo;
 
       if (!this._initTask) {
@@ -1443,9 +1481,15 @@ EnvironmentCache.prototype = {
         break;
       case AUTO_UPDATE_PREF_CHANGE_TOPIC:
         this._currentEnvironment.settings.update.autoDownload = aData == "true";
+        Glean.updateSettings.autoDownload.set(
+          this._currentEnvironment.settings.update.autoDownload
+        );
         break;
       case BACKGROUND_UPDATE_PREF_CHANGE_TOPIC:
         this._currentEnvironment.settings.update.background = aData == "true";
+        Glean.updateSettings.background.set(
+          this._currentEnvironment.settings.update.background
+        );
         break;
       case SERVICES_INFO_CHANGE_TOPIC:
         this._updateServicesInfo();
@@ -1647,6 +1691,10 @@ EnvironmentCache.prototype = {
       userPrefs: this._getPrefData(),
       sandbox: this._getSandboxData(),
     };
+    Glean.updateSettings.channel.set(updateChannel);
+    Glean.updateSettings.enabled.set(
+      this._currentEnvironment.settings.update.enabled
+    );
 
     // Services.appinfo.launcherProcessState is not available in all build
     // configurations, in which case an exception may be thrown.
@@ -1706,6 +1754,14 @@ EnvironmentCache.prototype = {
       // enum in security/sandbox/common/SandboxSettings.h
       contentWin32kLockdownState = sandboxSettings.contentWin32kLockdownState;
     } catch (e) {}
+    if (effectiveContentProcessLevel !== null) {
+      Glean.sandbox.effectiveContentProcessLevel.set(
+        effectiveContentProcessLevel
+      );
+    }
+    if (contentWin32kLockdownState !== null) {
+      Glean.sandbox.contentWin32kLockdownState.set(contentWin32kLockdownState);
+    }
     return {
       effectiveContentProcessLevel,
       contentWin32kLockdownState,
@@ -1726,17 +1782,27 @@ EnvironmentCache.prototype = {
 
     this._currentEnvironment.profile.creationDate =
       Utils.millisecondsToDays(creationDate);
+    Glean.profiles.creationDate.set(
+      this._currentEnvironment.profile.creationDate
+    );
     if (resetDate) {
       this._currentEnvironment.profile.resetDate =
         Utils.millisecondsToDays(resetDate);
+      Glean.profiles.resetDate.set(this._currentEnvironment.profile.resetDate);
     }
     if (firstUseDate) {
       this._currentEnvironment.profile.firstUseDate =
         Utils.millisecondsToDays(firstUseDate);
+      Glean.profiles.firstUseDate.set(
+        this._currentEnvironment.profile.firstUseDate
+      );
     }
     if (recoveredFromBackup) {
       this._currentEnvironment.profile.recoveredFromBackup =
         Utils.millisecondsToDays(recoveredFromBackup);
+      Glean.profiles.recoveredFromBackup.set(
+        this._currentEnvironment.profile.recoveredFromBackup
+      );
     }
   },
 
@@ -1781,6 +1847,22 @@ EnvironmentCache.prototype = {
           : data[key];
     }
     this._currentEnvironment.settings.attribution = attributionData;
+    let extAttribution = {
+      experiment: attributionData.experiment,
+      variation: attributionData.variation,
+      ua: attributionData.ua,
+      dltoken: attributionData.dltoken,
+      msstoresignedin: attributionData.msstoresignedin,
+      dlsource: attributionData.dlsource,
+    };
+    Services.fog.updateAttribution(
+      attributionData.source,
+      attributionData.medium,
+      attributionData.campaign,
+      attributionData.term,
+      attributionData.content
+    );
+    Glean.gleanAttribution.ext.set(extAttribution);
   },
 
   /**
@@ -1809,10 +1891,12 @@ EnvironmentCache.prototype = {
     if (this._updateAutoDownloadCache !== undefined) {
       this._currentEnvironment.settings.update.autoDownload =
         this._updateAutoDownloadCache;
+      Glean.updateSettings.autoDownload.set(this._updateAutoDownloadCache);
     }
     if (this._updateBackgroundCache !== undefined) {
       this._currentEnvironment.settings.update.background =
         this._updateBackgroundCache;
+      Glean.updateSettings.background.set(this._updateBackgroundCache);
     }
   },
 
@@ -1861,6 +1945,8 @@ EnvironmentCache.prototype = {
       accountEnabled,
       syncEnabled,
     };
+    Glean.fxa.syncEnabled.set(syncEnabled);
+    Glean.fxa.accountEnabled.set(accountEnabled);
   },
 
   /**
@@ -1885,6 +1971,15 @@ EnvironmentCache.prototype = {
       PREF_APP_PARTNER_BRANCH
     );
     partnerData.partnerNames = partnerBranch.getChildList("");
+
+    Services.fog.updateDistribution(partnerData.distributionId);
+    Glean.gleanDistribution.ext.set({
+      distributionVersion: partnerData.distributionVersion,
+      partnerId: partnerData.partnerId,
+      distributor: partnerData.distributor,
+      distributorChannel: partnerData.distributorChannel,
+      partnerNames: partnerData.partnerNames,
+    });
 
     return partnerData;
   },
@@ -1930,6 +2025,8 @@ EnvironmentCache.prototype = {
 
     this._cpuData.extensions = availableExts;
 
+    Glean.systemCpu.extensions.set(availableExts);
+
     return this._cpuData;
   },
 
@@ -1959,6 +2056,9 @@ EnvironmentCache.prototype = {
       version: forceToStringOrNull(getSysinfoProperty("version", null)),
       locale: forceToStringOrNull(getSystemLocale()),
     };
+    Glean.systemOs.name.set(this._osData.name);
+    Glean.systemOs.version.set(this._osData.version);
+    Glean.systemOs.locale.set(this._osData.locale);
 
     if (AppConstants.platform == "android") {
       this._osData.kernelVersion = forceToStringOrNull(
@@ -1971,6 +2071,8 @@ EnvironmentCache.prototype = {
       this._osData.distroVersion = forceToStringOrNull(
         getSysinfoProperty("distroVersion", null)
       );
+      Glean.systemOs.distro.set(this._osData.distro);
+      Glean.systemOs.distroVersion.set(this._osData.distroVersion);
     } else if (AppConstants.platform === "win") {
       // The path to the "UBR" key, queried to get additional version details on Windows.
       const WINDOWS_UBR_KEY_PATH =
@@ -1980,6 +2082,9 @@ EnvironmentCache.prototype = {
       this._osData.servicePackMajor = versionInfo.servicePackMajor;
       this._osData.servicePackMinor = versionInfo.servicePackMinor;
       this._osData.windowsBuildNumber = versionInfo.buildNumber;
+      Glean.systemOs.servicePackMajor.set(this._osData.servicePackMajor);
+      Glean.systemOs.servicePackMinor.set(this._osData.servicePackMinor);
+      Glean.systemOs.windowsBuildNumber.set(this._osData.windowsBuildNumber);
       // We only need the UBR if we're at or above Windows 10.
       if (
         typeof this._osData.version === "string" &&
@@ -1993,6 +2098,9 @@ EnvironmentCache.prototype = {
           "UBR",
           Ci.nsIWindowsRegKey.WOW64_64
         );
+        if (Number.isInteger(ubr)) {
+          Glean.systemOs.windowsUbr.set(ubr);
+        }
         this._osData.windowsUBR = ubr !== undefined ? ubr : null;
       }
     }
@@ -2031,6 +2139,7 @@ EnvironmentCache.prototype = {
     for (let [inKey, outKey] of keys) {
       let prop = getSysinfoProperty(inKey, null);
       if (prop) {
+        Glean.windowsSecurity[outKey].set(prop.split(";"));
         prop = limitStringToLength(prop, maxStringLength).split(";");
       }
 
@@ -2057,11 +2166,42 @@ EnvironmentCache.prototype = {
       monitors: [],
       features: {},
     };
+    if (gfxData.D2DEnabled !== null) {
+      Glean.gfx.d2dEnabled.set(gfxData.D2DEnabled);
+    }
+    if (gfxData.DWriteEnabled !== null) {
+      Glean.gfx.dwriteEnabled.set(gfxData.DWriteEnabled);
+    }
+    if (gfxData.ContentBackend !== null) {
+      Glean.gfx.contentBackend.set(gfxData.ContentBackend);
+    }
+    if (gfxData.Headless !== null) {
+      Glean.gfx.headless.set(gfxData.Headless);
+    }
+    if (gfxData.TargetFrameRate !== null) {
+      Glean.gfx.targetFrameRate.set(gfxData.TargetFrameRate);
+    }
+    if (gfxData.textScaleFactor !== null) {
+      Glean.gfx.textScaleFactor.set(gfxData.textScaleFactor);
+    }
 
     if (AppConstants.platform !== "android") {
       let gfxInfo = Cc["@mozilla.org/gfx/info;1"].getService(Ci.nsIGfxInfo);
       try {
         gfxData.monitors = gfxInfo.getMonitors();
+        // Special handling because floats need to become strings.
+        let monitors = gfxInfo.getMonitors();
+        for (let monitor of monitors) {
+          if ("defaultCSSScaleFactor" in monitor) {
+            monitor.defaultCSSScaleFactor =
+              monitor.defaultCSSScaleFactor.toString();
+          }
+          if ("contentsScaleFactor" in monitor) {
+            monitor.contentsScaleFactor =
+              monitor.contentsScaleFactor.toString();
+          }
+        }
+        Glean.gfx.monitors.set(monitors);
       } catch (e) {
         this._log.error("nsIGfxInfo.getMonitors() caught error", e);
       }
@@ -2070,6 +2210,9 @@ EnvironmentCache.prototype = {
     try {
       let gfxInfo = Cc["@mozilla.org/gfx/info;1"].getService(Ci.nsIGfxInfo);
       gfxData.features = gfxInfo.getFeatures();
+      for (const [name, value] of Object.entries(gfxData.features)) {
+        Glean.gfxFeatures[name].set(value);
+      }
     } catch (e) {
       this._log.error("nsIGfxInfo.getFeatures() caught error", e);
     }
@@ -2082,6 +2225,7 @@ EnvironmentCache.prototype = {
     let hasGPU2 = getGfxField("adapterDeviceID2", null) !== null;
     if (!hasGPU2) {
       this._log.trace("_getGFXData - Only one display adapter detected.");
+      Glean.gfx.adapters.set(gfxData.adapters);
       return gfxData;
     }
 
@@ -2089,6 +2233,8 @@ EnvironmentCache.prototype = {
 
     gfxData.adapters.push(getGfxAdapter("2"));
     gfxData.adapters[1].GPUActive = getGfxField("isGPU2Active", null);
+
+    Glean.gfx.adapters.set(gfxData.adapters);
 
     return gfxData;
   },
@@ -2103,6 +2249,7 @@ EnvironmentCache.prototype = {
       // Send RAM size in megabytes. Rounding because sysinfo doesn't
       // always provide RAM in multiples of 1024.
       memoryMB = Math.round(memoryMB / 1024 / 1024);
+      Glean.system.memory.set(memoryMB);
     }
 
     let virtualMB = getSysinfoProperty("virtualmemsize", null);
@@ -2110,6 +2257,7 @@ EnvironmentCache.prototype = {
       // Send the total virtual memory size in megabytes. Rounding because
       // sysinfo doesn't always provide RAM in multiples of 1024.
       virtualMB = Math.round(virtualMB / 1024 / 1024);
+      Glean.system.virtualMemory.set(virtualMB);
     }
 
     let data = {
@@ -2122,6 +2270,10 @@ EnvironmentCache.prototype = {
       appleModelId: getSysinfoProperty("appleModelId", null),
       hasWinPackageId: getSysinfoProperty("hasWinPackageId", null),
     };
+    Glean.system.appleModelId.set(data.appleModelId);
+    if (data.hasWinPackageId !== null) {
+      Glean.system.hasWinPackageId.set(data.hasWinPackageId);
+    }
 
     if (AppConstants.platform === "win") {
       // This is only sent for Mozilla produced MSIX packages
@@ -2131,8 +2283,11 @@ EnvironmentCache.prototype = {
         winPackageFamilyName.startsWith("MozillaCorporation.")
       ) {
         data = { winPackageFamilyName, ...data };
+        Glean.system.winPackageFamilyName.set(winPackageFamilyName);
       }
       data = { ...this._getProcessData(), ...data };
+      Glean.system.isWow64.set(data.isWow64);
+      Glean.system.isWowArm64.set(data.isWowARM64);
       data.sec = this._getSecurityAppData();
     }
 

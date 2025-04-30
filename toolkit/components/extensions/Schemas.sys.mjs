@@ -3,6 +3,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
 import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
@@ -11,34 +12,20 @@ import { ExtensionUtils } from "resource://gre/modules/ExtensionUtils.sys.mjs";
 
 var { DefaultMap, DefaultWeakMap } = ExtensionUtils;
 
-/** @type {Lazy} */
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   ExtensionParent: "resource://gre/modules/ExtensionParent.sys.mjs",
   NetUtil: "resource://gre/modules/NetUtil.sys.mjs",
   ShortcutUtils: "resource://gre/modules/ShortcutUtils.sys.mjs",
+  StartupCache: "resource://gre/modules/ExtensionParent.sys.mjs",
+  contentPolicyService: {
+    service: "@mozilla.org/addons/content-policy;1",
+    iid: Ci.nsIAddonContentPolicy,
+  },
+  treatWarningsAsErrors: {
+    pref: "extensions.webextensions.warnings-as-errors",
+    default: false,
+  },
 });
-
-XPCOMUtils.defineLazyServiceGetter(
-  lazy,
-  "contentPolicyService",
-  "@mozilla.org/addons/content-policy;1",
-  "nsIAddonContentPolicy"
-);
-
-ChromeUtils.defineLazyGetter(
-  lazy,
-  "StartupCache",
-  () => lazy.ExtensionParent.StartupCache
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "treatWarningsAsErrors",
-  "extensions.webextensions.warnings-as-errors",
-  false
-);
 
 const KEY_CONTENT_SCHEMAS = "extensions-framework/schemas/content";
 const KEY_PRIVILEGED_SCHEMAS = "extensions-framework/schemas/privileged";
@@ -2489,6 +2476,13 @@ class ArrayType extends Type {
     }
     value = v.value;
 
+    // eslint-disable-next-line no-use-before-define
+    if (value && this.itemType instanceof FunctionType) {
+      // This needs special handling if we're expecting an array of functions,
+      // because iterating over (wrapped) callable items fails otherwise.
+      value = this.extractItems(value, context);
+    }
+
     let result = [];
     for (let [i, element] of value.entries()) {
       element = context.withPath(String(i), () =>
@@ -2520,6 +2514,29 @@ class ArrayType extends Type {
     }
 
     return this.postprocess({ value: result }, context);
+  }
+
+  /**
+   * Extracts all items of the given array, including callable
+   * ones which would normally be omitted by X-ray wrappers.
+   *
+   * @see ObjectType.extractProperties for more details.
+   *
+   * @param {Array} value
+   * @param {Context} context
+   * @returns {Array}
+   */
+  extractItems(value, context) {
+    let klass = ChromeUtils.getClassName(value, true);
+    if (klass !== "Array") {
+      throw context.error(
+        `Expected a plain JavaScript array, got a ${klass}`,
+        `be a plain JavaScript array`
+      );
+    }
+    let obj = ChromeUtils.shallowClone(value);
+    obj.length = value.length;
+    return Array.from(obj);
   }
 
   checkBaseType(baseType) {

@@ -863,6 +863,7 @@ skip-if = ["wmfme"] # Bug 1781539
 
 ["test_mediatrack_events.html"]
 scheme = "https"
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug"] # TIMEOUT
 
 ["test_mediatrack_parsing_ogg.html"]
 

@@ -1,3 +1,9 @@
+## [0.10.0]
+- API incompatible change: upgrade `hashbrown` to 0.15 (thank you @djc!).
+- API incompatible change: we now wrap `DefaultHashBuilder` and `DefaultHasher`
+  from `hashbrown` so that in the future upgrading `hashbrown` is not an API
+  incompatible change (thank you @djc!).
+
 ## [0.9.1]
 - Bugfix: `LruCache::contains_key` should take `&self` and not move the entry as
   though it is accessed.

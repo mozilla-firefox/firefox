@@ -36,28 +36,23 @@ assertEq(tByteSize({ w: 1, x: 2, y: 3, z:4 }),          s(48,  56));
 assertEq(tByteSize({ w: 1, x: 2, y: 3, z:4, a: 5 }),    s(80,  88));
 
 // Try objects with only indexed properties.
-assertEq(tByteSize({ 0:0 }),                            s(88,  96));
-assertEq(tByteSize({ 0:0, 1:1 }),                       s(88,  96));
-assertEq(tByteSize({ 0:0, 1:1, 2:2 }),                  s(104, 112));
-assertEq(tByteSize({ 0:0, 1:1, 2:2, 3:3 }),             s(104, 112));
-assertEq(tByteSize({ 0:0, 1:1, 2:2, 3:3, 4:4 }),        s(136, 144));
+assertEq(tByteSize({ 0:0 }),                            s(72,  80));
+assertEq(tByteSize({ 0:0, 1:1 }),                       s(72,  80));
+assertEq(tByteSize({ 0:0, 1:1, 2:2 }),                  s(72,  80));
+assertEq(tByteSize({ 0:0, 1:1, 2:2, 3:3 }),             s(72,  80));
+assertEq(tByteSize({ 0:0, 1:1, 2:2, 3:3, 4:4 }),        s(72,  80));
 
 // Mix indexed and named properties, exploring each combination of the size
 // classes above.
-//
-// Oddly, the changes here as the objects grow are not simply the sums of the
-// changes above: for example, with one named property, the objects with three
-// and five indexed properties are in different size classes; but with three
-// named properties, there's no break there.
 assertEq(tByteSize({ w:1,                     0:0                     }),  s(88,  96));
-assertEq(tByteSize({ w:1,                     0:0, 1:1, 2:2           }),  s(104, 112));
-assertEq(tByteSize({ w:1,                     0:0, 1:1, 2:2, 3:3, 4:4 }),  s(136, 144));
+assertEq(tByteSize({ w:1,                     0:0, 1:1, 2:2           }),  s(88,  96));
+assertEq(tByteSize({ w:1,                     0:0, 1:1, 2:2, 3:3, 4:4 }),  s(88,  96));
 assertEq(tByteSize({ w:1, x:2, y:3,           0:0                     }),  s(104, 112));
-assertEq(tByteSize({ w:1, x:2, y:3,           0:0, 1:1, 2:2           }),  s(136, 144));
-assertEq(tByteSize({ w:1, x:2, y:3,           0:0, 1:1, 2:2, 3:3, 4:4 }),  s(136, 144));
+assertEq(tByteSize({ w:1, x:2, y:3,           0:0, 1:1, 2:2           }),  s(104, 112));
+assertEq(tByteSize({ w:1, x:2, y:3,           0:0, 1:1, 2:2, 3:3, 4:4 }),  s(104, 112));
 assertEq(tByteSize({ w:1, x:2, y:3, z:4, a:6, 0:0                     }),  s(136, 144));
 assertEq(tByteSize({ w:1, x:2, y:3, z:4, a:6, 0:0, 1:1, 2:2           }),  s(136, 144));
-assertEq(tByteSize({ w:1, x:2, y:3, z:4, a:6, 0:0, 1:1, 2:2, 3:3, 4:4 }),  s(168, 176));
+assertEq(tByteSize({ w:1, x:2, y:3, z:4, a:6, 0:0, 1:1, 2:2, 3:3, 4:4 }),  s(136, 144));
 
 // Check various lengths of array.
 assertEq(tByteSize([]),                                 s(80,  88));

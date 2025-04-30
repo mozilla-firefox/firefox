@@ -15,7 +15,12 @@ const WITH_INSTALL_PROMPT = [
 ];
 const NO_INSTALL_PROMPT = [["extensions.originControls.grantByDefault", false]];
 
-Services.prefs.setBoolPref("extensions.manifestV3.enabled", true);
+// TODO: Bug 1960273 - Update this test and remove this pref set when we enable
+// the data collection permissions on all channels.
+Services.prefs.setBoolPref(
+  "extensions.dataCollectionPermissions.enabled",
+  false
+);
 
 // ExtensionParent.sys.mjs is being imported lazily because when it is imported Services.appinfo will be
 // retrieved and cached (as a side-effect of Schemas.sys.mjs being imported), and so Services.appinfo
@@ -771,7 +776,8 @@ if (AppConstants.platform == "android") {
     "menus",
     "menus.overrideContext",
     "normandyAddonStudy",
-    "search"
+    "search",
+    "tabGroups"
   );
 }
 GRANTED_WITHOUT_USER_PROMPT.sort();

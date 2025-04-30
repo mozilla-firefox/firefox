@@ -23,7 +23,7 @@ use sql_support::{
 ///     `clear_database()` by adding their names to `conditional_tables`, unless
 ///     they are cleared via a deletion trigger or there's some other good
 ///     reason not to do so.
-pub const VERSION: u32 = 34;
+pub const VERSION: u32 = 37;
 
 /// The current Suggest database schema.
 pub const SQL: &str = "
@@ -171,12 +171,6 @@ CREATE TABLE yelp_modifiers(
     PRIMARY KEY (type, keyword)
 ) WITHOUT ROWID;
 
-CREATE TABLE yelp_location_signs(
-    keyword TEXT PRIMARY KEY,
-    need_location INTEGER NOT NULL,
-    record_id TEXT NOT NULL
-) WITHOUT ROWID;
-
 CREATE TABLE yelp_custom_details(
     icon_id TEXT PRIMARY KEY,
     score REAL NOT NULL,
@@ -189,12 +183,13 @@ CREATE TABLE mdn_custom_details(
     FOREIGN KEY(suggestion_id) REFERENCES suggestions(id) ON DELETE CASCADE
 );
 
-CREATE TABLE exposure_custom_details(
+CREATE TABLE dynamic_custom_details(
     suggestion_id INTEGER PRIMARY KEY,
-    type TEXT NOT NULL,
+    suggestion_type TEXT NOT NULL,
+    json_data TEXT,
     FOREIGN KEY(suggestion_id) REFERENCES suggestions(id) ON DELETE CASCADE
 );
-CREATE INDEX exposure_custom_details_type ON exposure_custom_details(type);
+CREATE INDEX dynamic_custom_details_suggestion_type ON dynamic_custom_details(suggestion_type);
 
 CREATE TABLE geonames(
     id INTEGER PRIMARY KEY,
@@ -229,6 +224,8 @@ CREATE TABLE geonames_metrics(
     max_name_word_count INTEGER NOT NULL
 ) WITHOUT ROWID;
 
+-- `url` may be an opaque dismissal key rather than a URL depending on the
+-- suggestion type.
 CREATE TABLE dismissed_suggestions (
     url TEXT PRIMARY KEY
 ) WITHOUT ROWID;
@@ -624,6 +621,32 @@ impl ConnectionInitializer for SuggestConnectionInitializer<'_> {
                 clear_database(tx)?;
                 Ok(())
             }
+            34 => {
+                // Replace the exposure suggestions table and index with the
+                // dynamic suggestions table and index.
+                tx.execute_batch(
+                    r#"
+                    DROP INDEX exposure_custom_details_type;
+                    DROP TABLE exposure_custom_details;
+                    CREATE TABLE dynamic_custom_details(
+                        suggestion_id INTEGER PRIMARY KEY,
+                        suggestion_type TEXT NOT NULL,
+                        json_data TEXT,
+                        FOREIGN KEY(suggestion_id) REFERENCES suggestions(id) ON DELETE CASCADE
+                    );
+                    CREATE INDEX dynamic_custom_details_suggestion_type ON dynamic_custom_details(suggestion_type);
+                    "#,
+                )?;
+                Ok(())
+            }
+            35 => {
+                // The commit that added this migration was reverted.
+                Ok(())
+            }
+            36 => {
+                tx.execute_batch("DROP TABLE IF EXISTS yelp_location_signs;")?;
+                Ok(())
+            }
             _ => Err(open_database::Error::IncompatibleVersion(version)),
         }
     }
@@ -641,7 +664,6 @@ pub fn clear_database(db: &Connection) -> rusqlite::Result<()> {
         DELETE FROM icons;
         DELETE FROM yelp_subjects;
         DELETE FROM yelp_modifiers;
-        DELETE FROM yelp_location_signs;
         DELETE FROM yelp_custom_details;
         ",
     )?;
@@ -822,6 +844,28 @@ PRAGMA user_version=16;
             "ingested_records should be empty"
         );
         conn.close().expect("Connection should be closed");
+
+        Ok(())
+    }
+
+    /// Test that yelp_location_signs table could be removed correctly.
+    #[test]
+    fn test_remove_yelp_location_signs_table() -> anyhow::Result<()> {
+        // Start with the v16 schema.
+        let db_file =
+            MigratedDatabaseFile::new(SuggestConnectionInitializer::default(), V16_SCHEMA);
+
+        // Upgrade to v36.
+        db_file.upgrade_to(36);
+
+        // Drop the table to simulate old 35 > 36 migration.
+        let conn = db_file.open();
+        conn.execute("DROP table yelp_location_signs", ())?;
+        conn.close().expect("Connection should be closed");
+
+        // Finish upgrading to the current version.
+        db_file.upgrade_to(VERSION);
+        db_file.assert_schema_matches_new_database();
 
         Ok(())
     }

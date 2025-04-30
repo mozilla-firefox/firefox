@@ -1,0 +1,17 @@
+[package]
+name = "strum"
+version = "0.26.999"
+edition = "2018"
+license = "MIT OR Apache-2.0"
+
+[lib]
+path = "lib.rs"
+
+[dependencies.strum]
+version = "0.27.1"
+default-features = false
+
+[features]
+default = ["strum/default"]
+derive = ["strum/derive"]
+std = ["strum/std"]

@@ -40,9 +40,12 @@ namespace mozilla::wr {
 void wr_compositor_add_surface(void* aCompositor, wr::NativeSurfaceId aId,
                                const wr::CompositorSurfaceTransform* aTransform,
                                wr::DeviceIntRect aClipRect,
-                               wr::ImageRendering aImageRendering) {
+                               wr::ImageRendering aImageRendering,
+                               wr::DeviceIntRect aRoundedClipRect,
+                               wr::ClipRadius aRoundedClipRadius) {
   RenderCompositor* compositor = static_cast<RenderCompositor*>(aCompositor);
-  compositor->AddSurface(aId, *aTransform, aClipRect, aImageRendering);
+  compositor->AddSurface(aId, *aTransform, aClipRect, aImageRendering,
+                         aRoundedClipRect, aRoundedClipRadius);
 }
 
 void wr_compositor_begin_frame(void* aCompositor) {

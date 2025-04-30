@@ -212,7 +212,7 @@ impl ProcessReader {
         if res == KERN_SUCCESS {
             unsafe {
                 array.set_len(num);
-                Ok(std::mem::transmute(array))
+                Ok(std::mem::transmute::<Vec<MaybeUninit<T>>, Vec<T>>(array))
             }
         } else {
             Err(ReadError::MachError)

@@ -88,22 +88,6 @@ async function promiseMigration(
 
   return Promise.all(promises);
 }
-/**
- * Function that returns a favicon url for a given page url
- *
- * @param {string} uri
- * The Bookmark URI
- * @returns {string} faviconURI
- * The Favicon URI
- */
-async function getFaviconForPageURI(uri) {
-  let faviconURI = await new Promise(resolve => {
-    PlacesUtils.favicons.getFaviconDataForPage(uri, favURI => {
-      resolve(favURI);
-    });
-  });
-  return faviconURI;
-}
 
 /**
  * Takes an array of page URIs and checks that the favicon was imported for each page URI
@@ -112,8 +96,8 @@ async function getFaviconForPageURI(uri) {
  */
 async function assertFavicons(pageURIs) {
   for (let uri of pageURIs) {
-    let faviconURI = await getFaviconForPageURI(uri);
-    Assert.ok(faviconURI, `Got favicon for ${uri.spec}`);
+    let favicon = await PlacesUtils.favicons.getFaviconForPage(uri);
+    Assert.ok(favicon, `Got favicon for ${favicon.uri.spec}`);
   }
 }
 
@@ -128,17 +112,12 @@ async function assertFavicons(pageURIs) {
  *                 Expected mime type of the favicon.
  */
 async function assertFavicon(pageURI, expectedImageData, expectedMimeType) {
-  let result = await new Promise(resolve => {
-    PlacesUtils.favicons.getFaviconDataForPage(
-      Services.io.newURI(pageURI),
-      (faviconURI, dataLen, imageData, mimeType) => {
-        resolve({ faviconURI, dataLen, imageData, mimeType });
-      }
-    );
-  });
+  let result = await PlacesUtils.favicons.getFaviconForPage(
+    Services.io.newURI(pageURI)
+  );
   Assert.ok(!!result, `Got favicon for ${pageURI}`);
   Assert.equal(
-    result.imageData.join(","),
+    result.rawData.join(","),
     expectedImageData.join(","),
     "Image data is correct"
   );

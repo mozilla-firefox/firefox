@@ -5,24 +5,19 @@
 package org.mozilla.fenix.toolbar
 
 import android.content.Context
-import androidx.core.net.toUri
 import androidx.lifecycle.LifecycleOwner
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.spyk
-import io.mockk.unmockkStatic
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.storage.BookmarksStorage
 import mozilla.components.feature.top.sites.PinnedSiteStorage
 import mozilla.components.support.test.rule.MainCoroutineRule
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.components.toolbar.DefaultToolbarMenu
@@ -42,9 +37,6 @@ class DefaultToolbarMenuTest {
 
     @Before
     fun setUp() {
-        mockkStatic("androidx.core.net.UriKt")
-        every { any<String>().toUri() } returns mockk(relaxed = true)
-
         lifecycleOwner = mockk(relaxed = true)
         context = mockk(relaxed = true)
 
@@ -61,11 +53,6 @@ class DefaultToolbarMenuTest {
                 selectedTabId = "1",
             ),
         )
-    }
-
-    @After
-    fun tearDown() {
-        unmockkStatic("androidx.core.net.UriKt")
     }
 
     private fun createMenu() {
@@ -87,7 +74,6 @@ class DefaultToolbarMenuTest {
     }
 
     @Test
-    @Ignore("Intermittent test: https://github.com/mozilla-mobile/fenix/issues/18822")
     fun `WHEN the bottom toolbar is set THEN the first item in the list is not the navigation`() {
         every { context.settings().shouldUseBottomToolbar } returns true
         createMenu()
@@ -102,7 +88,6 @@ class DefaultToolbarMenuTest {
     }
 
     @Test
-    @Ignore("Intermittent test: https://github.com/mozilla-mobile/fenix/issues/18822")
     fun `WHEN the top toolbar is set THEN the first item in the list is the navigation`() {
         every { context.settings().shouldUseBottomToolbar } returns false
         createMenu()
@@ -117,7 +102,6 @@ class DefaultToolbarMenuTest {
     }
 
     @Test
-    @Ignore("Intermittent test: https://github.com/mozilla-mobile/fenix/issues/18822")
     fun `WHEN the bottom toolbar is set THEN the nav menu should be the last item`() {
         every { context.settings().shouldUseBottomToolbar } returns true
 
@@ -133,7 +117,6 @@ class DefaultToolbarMenuTest {
     }
 
     @Test
-    @Ignore("Intermittent test: https://github.com/mozilla-mobile/fenix/issues/18822")
     fun `WHEN the top toolbar is set THEN settings should be the last item`() {
         every { context.settings().shouldUseBottomToolbar } returns false
 

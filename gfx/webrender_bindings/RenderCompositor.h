@@ -149,7 +149,9 @@ class RenderCompositor {
   virtual void AddSurface(wr::NativeSurfaceId aId,
                           const wr::CompositorSurfaceTransform& aTransform,
                           wr::DeviceIntRect aClipRect,
-                          wr::ImageRendering aImageRendering) {}
+                          wr::ImageRendering aImageRendering,
+                          wr::DeviceIntRect aRoundedClipRect,
+                          wr::ClipRadius aClipRadius) {}
   // Called in the middle of a frame after all surfaces have been added but
   // before tiles are updated to signal that early compositing can start
   virtual void StartCompositing(wr::ColorF aClearColor,

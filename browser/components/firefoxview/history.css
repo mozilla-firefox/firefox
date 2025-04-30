@@ -27,6 +27,7 @@
   flex-direction: column;
   font-size: 0.95rem;
   gap: 6px;
+  padding: 0 8px;
 }
 
 .import-history-banner .banner-text span:first-child {
@@ -37,7 +38,7 @@
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 16px;
-  padding: 8px;
+  padding: 8px 0;
 }
 
 .import-history-banner .buttons {

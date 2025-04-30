@@ -1033,7 +1033,21 @@ async function check_results({
     richSuggestionIconVariation: { optional: true },
   };
 
-  let optionalPayloadProperties = new Set(["lastVisit"]);
+  // Payload properties to conditionally check. Properties not specified here
+  // will always be checked.
+  //
+  // ignore:
+  //   Always ignore the property.
+  // optional:
+  //   Ignore the property if it's not in the expected result.
+  let conditionalPayloadProperties = {
+    lastVisit: { optional: true },
+    // `suggestionObject` is only used for dismissing Suggest Rust results, and
+    // important properties in this object are reflected in the top-level
+    // payload object, so ignore it. There are Suggest tests specifically for
+    // dismissals that indirectly test the important aspects of this property.
+    suggestionObject: { ignore: true },
+  };
 
   for (let i = 0; i < matches.length; i++) {
     let actual = context.results[i];
@@ -1080,12 +1094,18 @@ async function check_results({
     }
 
     if (expected.payload) {
-      let expectedEntries = new Set(Object.keys(expected.payload));
-      let actualEntries = new Set(Object.keys(actual.payload)).difference(
-        optionalPayloadProperties
-      );
+      let expectedKeys = new Set(Object.keys(expected.payload));
+      let actualKeys = new Set(Object.keys(actual.payload));
 
-      for (let key of actualEntries.union(expectedEntries)) {
+      for (let key of actualKeys.union(expectedKeys)) {
+        let condition = conditionalPayloadProperties[key];
+        if (
+          condition?.ignore ||
+          (condition?.optional && !expected.hasOwnProperty(key))
+        ) {
+          continue;
+        }
+
         Assert.deepEqual(
           actual.payload[key],
           expected.payload[key],

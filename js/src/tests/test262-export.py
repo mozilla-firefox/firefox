@@ -132,7 +132,6 @@ UNSUPPORTED_FEATURES = [
 UNSUPPORTED_PATHS = [
     "Intl",
     "Temporal/Intl",
-    "ReadableStream",
     "reflect-parse",
     "extensions/empty.txt",
     "extensions/file-mapped-arraybuffers.txt",
@@ -198,7 +197,7 @@ def featureFromReftest(reftest: str) -> Optional[str]:
         return "async-iterator-helpers"
     if reftest == "Temporal":
         return "Temporal"
-    if reftest in ("Intl", "addIntlExtras", "ReadableStream"):
+    if reftest in ("Intl", "addIntlExtras"):
         return None
     raise Exception(f"Unexpected feature {reftest}")
 

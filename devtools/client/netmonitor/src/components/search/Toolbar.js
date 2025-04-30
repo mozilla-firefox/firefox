@@ -123,7 +123,7 @@ class Toolbar extends Component {
       type: "search",
       delay: FILTER_SEARCH_DELAY,
       ref: this.props.searchboxRef,
-      value: query,
+      initialValue: query,
       onClearButtonClick: () => clearSearchResultAndCancel(),
       onChange: newQuery => addSearchQuery(newQuery),
       onKeyDown: event => this.onKeyDown(event, connector),

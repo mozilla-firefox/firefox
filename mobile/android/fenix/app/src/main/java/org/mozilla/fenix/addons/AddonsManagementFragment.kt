@@ -27,8 +27,6 @@ import mozilla.components.feature.addons.AddonManager
 import mozilla.components.feature.addons.AddonManagerException
 import mozilla.components.feature.addons.ui.AddonsManagerAdapter
 import org.mozilla.fenix.BrowserDirection
-import org.mozilla.fenix.BuildConfig
-import org.mozilla.fenix.Config
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
@@ -102,14 +100,6 @@ class AddonsManagementFragment : Fragment(R.layout.fragment_add_ons_management) 
         lifecycleScope.launch(IO) {
             try {
                 addons = requireContext().components.addonManager.getAddons()
-                // Add-ons that should be excluded in Mozilla Online builds
-                val excludedAddonIDs = if (Config.channel.isMozillaOnline &&
-                    !BuildConfig.MOZILLA_ONLINE_ADDON_EXCLUSIONS.isNullOrEmpty()
-                ) {
-                    BuildConfig.MOZILLA_ONLINE_ADDON_EXCLUSIONS.toList()
-                } else {
-                    emptyList<String>()
-                }
                 lifecycleScope.launch(Dispatchers.Main) {
                     runIfFragmentIsAttached {
                         if (!shouldRefresh) {
@@ -117,7 +107,6 @@ class AddonsManagementFragment : Fragment(R.layout.fragment_add_ons_management) 
                                 addonsManagerDelegate = managementView,
                                 addons = addons,
                                 style = createAddonStyle(requireContext()),
-                                excludedAddonIDs = excludedAddonIDs,
                                 store = requireComponents.core.store,
                             )
                         }

@@ -19,4 +19,9 @@
     <string name="tab_counter_remove_10_tabs">Remove 10 tabs</string>
     <string name="page_action_refresh_description">Refresh</string>
     <string name="page_action_clear_input_description">Clear input</string>
+    <string name="browser_action_home_button_description">Stay home</string>
+    <string name="browser_action_security_lock_description">Webpage security information</string>
+    <string name="toolbar_search_hint">Search or enter address</string>
+    <string name="copy_url_button">Copy</string>
+    <string name="copy_url_button_description">Copy the current url</string>
 </resources>

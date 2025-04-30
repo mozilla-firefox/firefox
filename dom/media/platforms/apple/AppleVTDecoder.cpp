@@ -12,7 +12,6 @@
 
 #include "AOMDecoder.h"
 #include "AppleDecoderModule.h"
-#include "AppleUtils.h"
 #include "CallbackThreadRegistry.h"
 #include "H264.h"
 #include "H265.h"
@@ -187,8 +186,8 @@ void AppleVTDecoder::ProcessDecode(MediaRawData* aSample) {
                                "AppleVTDecoder"_ns, aId, flag);
   });
 
-  AutoCFRelease<CMBlockBufferRef> block = nullptr;
-  AutoCFRelease<CMSampleBufferRef> sample = nullptr;
+  AutoCFTypeRef<CMBlockBufferRef> block;
+  AutoCFTypeRef<CMSampleBufferRef> sample;
   VTDecodeInfoFlags infoFlags;
   OSStatus rv;
 
@@ -202,7 +201,7 @@ void AppleVTDecoder::ProcessDecode(MediaRawData* aSample) {
       kCFAllocatorNull,  // Block allocator.
       NULL,              // Block source.
       0,                 // Data offset.
-      aSample->Size(), false, block.receive());
+      aSample->Size(), false, block.Receive());
   if (rv != noErr) {
     NS_ERROR("Couldn't create CMBlockBuffer");
     MonitorAutoLock mon(mMonitor);
@@ -215,7 +214,7 @@ void AppleVTDecoder::ProcessDecode(MediaRawData* aSample) {
 
   CMSampleTimingInfo timestamp = TimingInfoFromSample(aSample);
   rv = CMSampleBufferCreate(kCFAllocatorDefault, block, true, 0, 0, mFormat, 1,
-                            1, &timestamp, 0, NULL, sample.receive());
+                            1, &timestamp, 0, NULL, sample.Receive());
   if (rv != noErr) {
     NS_ERROR("Couldn't create CMSampleBuffer");
     MonitorAutoLock mon(mMonitor);
@@ -253,15 +252,13 @@ void AppleVTDecoder::ProcessDecode(MediaRawData* aSample) {
 
 void AppleVTDecoder::ProcessShutdown() {
   if (mSession) {
-    LOG("%s: cleaning up session %p", __func__, mSession);
+    LOG("%s: cleaning up session", __func__);
     VTDecompressionSessionInvalidate(mSession);
-    CFRelease(mSession);
-    mSession = nullptr;
+    mSession.Reset();
   }
   if (mFormat) {
-    LOG("%s: releasing format %p", __func__, mFormat);
-    CFRelease(mFormat);
-    mFormat = nullptr;
+    LOG("%s: releasing format", __func__);
+    mFormat.Reset();
   }
 }
 
@@ -595,7 +592,7 @@ nsresult AppleVTDecoder::WaitForAsynchronousFrames() {
 MediaResult AppleVTDecoder::InitializeSession() {
   OSStatus rv;
 
-  AutoCFRelease<CFDictionaryRef> extensions = CreateDecoderExtensions();
+  AutoCFTypeRef<CFDictionaryRef> extensions(CreateDecoderExtensions());
   CMVideoCodecType streamType;
   if (mStreamType == StreamType::H264) {
     streamType = kCMVideoCodecType_H264;
@@ -609,25 +606,25 @@ MediaResult AppleVTDecoder::InitializeSession() {
 
   rv = CMVideoFormatDescriptionCreate(
       kCFAllocatorDefault, streamType, AssertedCast<int32_t>(mPictureWidth),
-      AssertedCast<int32_t>(mPictureHeight), extensions, &mFormat);
+      AssertedCast<int32_t>(mPictureHeight), extensions, mFormat.Receive());
   if (rv != noErr) {
     return MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
                        RESULT_DETAIL("Couldn't create format description!"));
   }
 
   // Contruct video decoder selection spec.
-  AutoCFRelease<CFDictionaryRef> spec = CreateDecoderSpecification();
+  AutoCFTypeRef<CFDictionaryRef> spec(CreateDecoderSpecification());
 
   // Contruct output configuration.
-  AutoCFRelease<CFDictionaryRef> outputConfiguration =
-      CreateOutputConfiguration();
+  AutoCFTypeRef<CFDictionaryRef> outputConfiguration(
+      CreateOutputConfiguration());
 
   VTDecompressionOutputCallbackRecord cb = {PlatformCallback, this};
   rv =
       VTDecompressionSessionCreate(kCFAllocatorDefault, mFormat,
                                    spec,  // Video decoder selection.
                                    outputConfiguration,  // Output video format.
-                                   &cb, &mSession);
+                                   &cb, mSession.Receive());
 
   if (rv != noErr) {
     LOG("AppleVTDecoder: VTDecompressionSessionCreate failed: %d", rv);
@@ -657,9 +654,9 @@ MediaResult AppleVTDecoder::InitializeSession() {
 }
 
 CFDictionaryRef AppleVTDecoder::CreateDecoderExtensions() {
-  AutoCFRelease<CFDataRef> data =
+  AutoCFTypeRef<CFDataRef> data(
       CFDataCreate(kCFAllocatorDefault, mExtraData->Elements(),
-                   AssertedCast<CFIndex>(mExtraData->Length()));
+                   AssertedCast<CFIndex>(mExtraData->Length())));
 
   const void* atomsKey[1];
   if (mStreamType == StreamType::H264) {
@@ -676,9 +673,9 @@ CFDictionaryRef AppleVTDecoder::CreateDecoderExtensions() {
   static_assert(std::size(atomsKey) == std::size(atomsValue),
                 "Non matching keys/values array size");
 
-  AutoCFRelease<CFDictionaryRef> atoms = CFDictionaryCreate(
+  AutoCFTypeRef<CFDictionaryRef> atoms(CFDictionaryCreate(
       kCFAllocatorDefault, atomsKey, atomsValue, std::size(atomsKey),
-      &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+      &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
 
   const void* extensionKeys[] = {
       kCVImageBufferChromaLocationBottomFieldKey,
@@ -718,8 +715,8 @@ CFDictionaryRef AppleVTDecoder::CreateOutputConfiguration() {
   if (mUseSoftwareImages) {
     // Output format type:
     SInt32 PixelFormatTypeValue = kCVPixelFormatType_420YpCbCr8Planar;
-    AutoCFRelease<CFNumberRef> PixelFormatTypeNumber = CFNumberCreate(
-        kCFAllocatorDefault, kCFNumberSInt32Type, &PixelFormatTypeValue);
+    AutoCFTypeRef<CFNumberRef> PixelFormatTypeNumber(CFNumberCreate(
+        kCFAllocatorDefault, kCFNumberSInt32Type, &PixelFormatTypeValue));
     const void* outputKeys[] = {kCVPixelBufferPixelFormatTypeKey};
     const void* outputValues[] = {PixelFormatTypeNumber};
     static_assert(std::size(outputKeys) == std::size(outputValues),
@@ -739,8 +736,8 @@ CFDictionaryRef AppleVTDecoder::CreateOutputConfiguration() {
                      : kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
           : (is10Bit ? kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
                      : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange);
-  AutoCFRelease<CFNumberRef> PixelFormatTypeNumber = CFNumberCreate(
-      kCFAllocatorDefault, kCFNumberSInt32Type, &PixelFormatTypeValue);
+  AutoCFTypeRef<CFNumberRef> PixelFormatTypeNumber(CFNumberCreate(
+      kCFAllocatorDefault, kCFNumberSInt32Type, &PixelFormatTypeValue));
   // Construct IOSurface Properties
   const void* IOSurfaceKeys[] = {kIOSurfaceIsGlobal};
   const void* IOSurfaceValues[] = {kCFBooleanTrue};
@@ -748,10 +745,10 @@ CFDictionaryRef AppleVTDecoder::CreateOutputConfiguration() {
                 "Non matching keys/values array size");
 
   // Contruct output configuration.
-  AutoCFRelease<CFDictionaryRef> IOSurfaceProperties = CFDictionaryCreate(
+  AutoCFTypeRef<CFDictionaryRef> IOSurfaceProperties(CFDictionaryCreate(
       kCFAllocatorDefault, IOSurfaceKeys, IOSurfaceValues,
       std::size(IOSurfaceKeys), &kCFTypeDictionaryKeyCallBacks,
-      &kCFTypeDictionaryValueCallBacks);
+      &kCFTypeDictionaryValueCallBacks));
 
   const void* outputKeys[] = {kCVPixelBufferIOSurfacePropertiesKey,
                               kCVPixelBufferPixelFormatTypeKey,

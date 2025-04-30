@@ -287,8 +287,6 @@ interface nsISHistory: nsISupports
   [noscript] void AddChildSHEntryHelper(in nsISHEntry aCloneRef, in nsISHEntry aNewEntry,
                                         in BrowsingContext aRootBC, in boolean aCloneChildren);
 
-  [noscript, notxpcom] boolean isEmptyOrHasEntriesForSingleTopLevelPage();
-
   /**
    * Determine if we can navigate back in history from the entry at aIndex
    * to an entry that has user interaction.

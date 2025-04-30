@@ -11,7 +11,7 @@
 "use strict";
 
 add_task(async function test_geolocation_nopermission() {
-  let GEO_URL = "http://mochi.test:8888/tests/dom/tests/mochitest/geolocation/network_geolocation.sjs";
+  let GEO_URL = "http://mochi.test:8888/tests/dom/geolocation/test/mochitest/network_geolocation.sjs";
   await SpecialPowers.pushPrefEnv({"set": [["geo.provider.network.url", GEO_URL]]});
 });
 

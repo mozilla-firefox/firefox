@@ -37,3 +37,11 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 pub type SuggestApiResult<T> = std::result::Result<T, SuggestApiError>;
 
 uniffi::setup_scaffolding!();
+
+use serde_json::Value as JsonValue;
+
+uniffi::custom_type!(JsonValue, String, {
+    remote,
+    try_lift: |val| serde_json::from_str(val.as_str()).map_err(Into::into),
+    lower: |obj| obj.to_string(),
+});

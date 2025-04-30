@@ -3604,7 +3604,7 @@ bool BaseCompiler::jumpConditionalWithResults(BranchState* b, Cond cond,
 }
 
 bool BaseCompiler::jumpConditionalWithResults(BranchState* b, RegRef object,
-                                              RefType sourceType,
+                                              MaybeRefType sourceType,
                                               RefType destType,
                                               bool onSuccess) {
   // Temporarily take the result registers so that branchIfRefSubtype
@@ -8891,7 +8891,7 @@ bool BaseCompiler::emitRefTest(bool nullable) {
 
   BranchIfRefSubtypeRegisters regs =
       allocRegistersForBranchIfRefSubtype(destType);
-  masm.branchWasmRefIsSubtype(ref, sourceType, destType, &success,
+  masm.branchWasmRefIsSubtype(ref, MaybeRefType(sourceType), destType, &success,
                               /*onSuccess=*/true, regs.superSTV, regs.scratch1,
                               regs.scratch2);
   freeRegistersForBranchIfRefSubtype(regs);
@@ -8925,7 +8925,7 @@ bool BaseCompiler::emitRefCast(bool nullable) {
   Label success;
   BranchIfRefSubtypeRegisters regs =
       allocRegistersForBranchIfRefSubtype(destType);
-  masm.branchWasmRefIsSubtype(ref, sourceType, destType, &success,
+  masm.branchWasmRefIsSubtype(ref, MaybeRefType(sourceType), destType, &success,
                               /*onSuccess=*/true, regs.superSTV, regs.scratch1,
                               regs.scratch2);
   freeRegistersForBranchIfRefSubtype(regs);
@@ -8940,7 +8940,8 @@ bool BaseCompiler::emitRefCast(bool nullable) {
 bool BaseCompiler::emitBrOnCastCommon(bool onSuccess,
                                       uint32_t labelRelativeDepth,
                                       const ResultType& labelType,
-                                      RefType sourceType, RefType destType) {
+                                      MaybeRefType sourceType,
+                                      RefType destType) {
   Control& target = controlItem(labelRelativeDepth);
   target.bceSafeOnExit &= bceSafe_;
 
@@ -8993,7 +8994,7 @@ bool BaseCompiler::emitBrOnCast(bool onSuccess) {
   }
 
   return emitBrOnCastCommon(onSuccess, labelRelativeDepth, labelType,
-                            sourceType, destType);
+                            MaybeRefType(sourceType), destType);
 }
 
 bool BaseCompiler::emitAnyConvertExtern() {

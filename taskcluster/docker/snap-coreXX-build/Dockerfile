@@ -17,6 +17,7 @@ RUN apt-get update && \
         build-essential \
         curl \
         $EXTRA_PACKAGES \
+        gnupg \
         jq \
         patch \
         patchelf \
@@ -63,14 +64,17 @@ ENV SNAP_NAME="snapcraft"
 ENV SNAP_ARCH="amd64"
 ENV SNAP_INSTANCE_KEY=
 ENV SNAP_INSTANCE_NAME=snapcraft
-ENV SNAPCRAFT_BUILD_FOR=amd64
-ENV SNAPCRAFT_PLATFORM=amd64
+ENV SNAPCRAFT_PLATFORM=
 
 RUN snapcraft --version
 
 # Snapcraft pull will need to sudo apt-get update ...
 RUN echo "worker ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/worker && \
     chmod 0440 /etc/sudoers.d/worker
+
+COPY system-setup.sh /builds/worker/system-setup.sh
+
+RUN /builds/worker/system-setup.sh "${SNAP_BASE}"
 
 COPY run.sh /builds/worker/run.sh
 

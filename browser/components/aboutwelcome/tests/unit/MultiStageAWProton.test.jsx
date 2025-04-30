@@ -108,6 +108,149 @@ describe("MultiStageAboutWelcomeProton module", () => {
       assert.equal(wrapper.find("main").prop("pos"), "center");
     });
 
+    it("should render simple hero text if hero_text is a string or object without string_id", () => {
+      // test simple hero text with hero_text string
+      const STRING_HERO_TEXT_PROPS = {
+        content: {
+          position: "split",
+          hero_text: "Simple hero text string",
+        },
+      };
+
+      const wrapper = mount(
+        <MultiStageProtonScreen {...STRING_HERO_TEXT_PROPS} />
+      );
+      assert.ok(wrapper.exists());
+      assert.equal(
+        wrapper.find(".section-secondary h1").text(),
+        "Simple hero text string"
+      );
+
+      // test with simple hero text with hero_text string_id
+      const STRING_ID_HERO_TEXT_PROPS = {
+        content: {
+          position: "split",
+          hero_text: { string_id: "hero-text-id" },
+        },
+      };
+      const stringIdWrapper = mount(
+        <MultiStageProtonScreen {...STRING_ID_HERO_TEXT_PROPS} />
+      );
+      assert.ok(stringIdWrapper.exists());
+      assert.equal(
+        stringIdWrapper.find(".section-secondary h1").prop("data-l10n-id"),
+        "hero-text-id"
+      );
+
+      // test that we're not using the hero-text class
+      assert.isFalse(
+        wrapper.find(".section-secondary .hero-text").exists(),
+        "Simple hero text should not use hero-text class"
+      );
+    });
+
+    it("should render complex hero text if hero text is an object with title property", () => {
+      const COMPLEX_HERO_TEXT_PROPS = {
+        content: {
+          position: "split",
+          hero_text: {
+            title: "Test title",
+          },
+        },
+      };
+      const wrapper = mount(
+        <MultiStageProtonScreen {...COMPLEX_HERO_TEXT_PROPS} />
+      );
+      assert.ok(wrapper.exists());
+
+      assert.isTrue(
+        wrapper.find(".section-secondary .hero-text").exists(),
+        "Text container should use hero-text class"
+      );
+
+      assert.equal(
+        wrapper.find(".section-secondary .hero-text h1").text(),
+        "Test title"
+      );
+
+      assert.isFalse(
+        wrapper.find(".section-secondary .hero-text h2").exists(),
+        "No subtitle should be rendered"
+      );
+    });
+
+    it("should render hero text subtitle if both title and subtitle properties are present", () => {
+      const HERO_TEXT_WITH_SUBTITLE_PROPS = {
+        content: {
+          position: "split",
+          hero_text: {
+            title: "Title text",
+            subtitle: "Subtitle text",
+          },
+        },
+      };
+      const wrapper = mount(
+        <MultiStageProtonScreen {...HERO_TEXT_WITH_SUBTITLE_PROPS} />
+      );
+      assert.ok(wrapper.exists());
+
+      assert.isTrue(
+        wrapper.find(".section-secondary .hero-text").exists(),
+        "Complex hero text should use hero-text class"
+      );
+
+      assert.equal(
+        wrapper.find(".section-secondary .hero-text h1").text(),
+        "Title text"
+      );
+
+      assert.isTrue(
+        wrapper.find(".section-secondary .hero-text h2").exists(),
+        "Subtitle should be rendered when provided"
+      );
+      assert.equal(
+        wrapper.find(".section-secondary .hero-text h2").text(),
+        "Subtitle text"
+      );
+    });
+
+    it("should render hero text title and subtitle with localization if string ids are present", () => {
+      const LOCALIZED_HERO_TEXT_PROPS = {
+        content: {
+          position: "split",
+          hero_text: {
+            title: { string_id: "hero-title-string-id" },
+            subtitle: { string_id: "hero-subtitle-string-id" },
+          },
+        },
+      };
+      const wrapper = mount(
+        <MultiStageProtonScreen {...LOCALIZED_HERO_TEXT_PROPS} />
+      );
+      assert.ok(wrapper.exists());
+
+      assert.isTrue(
+        wrapper.find(".section-secondary .hero-text").exists(),
+        "Text container should use hero-text class"
+      );
+
+      const titleElement = wrapper.find(".section-secondary .hero-text h1");
+      assert.isTrue(titleElement.exists(), "Title element should exist");
+      assert.equal(
+        titleElement.prop("data-l10n-id"),
+        "hero-title-string-id",
+        "Title should have correct string ID for localization"
+      );
+
+      const subtitleElement = wrapper.find(".section-secondary .hero-text h2");
+      assert.isTrue(subtitleElement.exists(), "Subtitle element should exist");
+      assert.equal(
+        subtitleElement.prop("data-l10n-id"),
+        "hero-subtitle-string-id",
+        "Subtitle should have correct string ID for localization"
+      );
+    });
+
     it("should not render multiple action buttons if an additional button does not exist", () => {
       const SCREEN_PROPS = {
         content: {

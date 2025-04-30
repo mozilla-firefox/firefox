@@ -6,9 +6,9 @@
 
 == paced-1.svg paced-1-ref.svg
 == pause-1.svg pause-1-ref.svg
-fails == removeChild-1.svg removeChild-1-ref.svg # rect needs to reset
-fails == removeChild-2.svg removeChild-2-ref.svg # rect needs to reset
-fails == appendChild-1a.svg appendChild-1a-ref.svg # first rect needs to reset
+== removeChild-1.svg removeChild-1-ref.svg
+== removeChild-2.svg removeChild-2-ref.svg
+== appendChild-1a.svg appendChild-1a-ref.svg
 == appendChild-1b.svg appendChild-1b-ref.svg
-fails == appendChild-2a.svg appendChild-2a-ref.svg # first rect needs to reset
+== appendChild-2a.svg appendChild-2a-ref.svg
 == appendChild-2b.svg appendChild-2b-ref.svg

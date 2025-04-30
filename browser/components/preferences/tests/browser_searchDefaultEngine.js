@@ -272,7 +272,7 @@ add_task(async function test_setDefaultEngine() {
       category: "search.engine.default",
       name: "changed",
       extra: {
-        change_source: "user",
+        change_reason: "user",
         previous_engine_id: engine1.telemetryId,
         new_engine_id: "other-engine2",
         new_display_name: "engine2",
@@ -319,7 +319,7 @@ add_task(async function test_setPrivateDefaultEngine() {
       category: "search.engine.private",
       name: "changed",
       extra: {
-        change_source: "user",
+        change_reason: "user",
         previous_engine_id: engine2.telemetryId,
         new_engine_id: "other-engine1",
         new_display_name: "engine1",

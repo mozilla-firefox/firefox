@@ -177,6 +177,10 @@ internal object AppStoreReducer {
             snackbarState = SnackbarState.SiteDataCleared,
         )
 
+        is AppAction.CurrentTabClosed -> state.copy(
+            snackbarState = SnackbarState.CurrentTabClosed(action.isPrivate),
+        )
+
         is AppAction.OpenInFirefoxStarted -> {
             state.copy(openInFirefoxRequested = true)
         }

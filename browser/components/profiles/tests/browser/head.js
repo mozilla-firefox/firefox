@@ -80,7 +80,7 @@ defProfRt.append("DefProfRt");
 let defProflLRt = testRoot.clone();
 defProflLRt.append("DefProfLRt");
 
-SelectableProfileService.overrideDirectoryService({
+ProfilesDatastoreService.overrideDirectoryService({
   UAppData: uAppData,
   DefProfRt: defProfRt,
   DefProfLRt: defProflLRt,
@@ -97,11 +97,19 @@ async function openDatabase() {
 }
 
 add_setup(async () => {
-  await SelectableProfileService.resetProfileService(gProfileService);
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.profiles.created", false]],
+  });
+  await ProfilesDatastoreService.resetProfileService(gProfileService);
+  await SelectableProfileService.uninit();
+  await SelectableProfileService.init();
 
   registerCleanupFunction(async () => {
-    SelectableProfileService.overrideDirectoryService(null);
-    await SelectableProfileService.resetProfileService(null);
+    await SpecialPowers.popPrefEnv();
+    ProfilesDatastoreService.overrideDirectoryService(null);
+    await ProfilesDatastoreService.resetProfileService(null);
+    await ProfilesDatastoreService.uninit();
+    await SelectableProfileService.uninit();
   });
 });
 

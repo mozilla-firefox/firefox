@@ -176,8 +176,7 @@ void SVGPathElement::GetPathData(const SVGPathDataSettings& aOptions,
                      aOptions.mNormalize);
 }
 
-void SVGPathElement::SetPathData(
-    const Sequence<OwningNonNull<SVGPathSegment>>& aValues) {
+void SVGPathElement::SetPathData(const Sequence<SVGPathSegmentInit>& aValues) {
   AutoChangePathSegListNotifier notifier(this);
   mD.SetBaseValueFromPathSegments(aValues);
 }

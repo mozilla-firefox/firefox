@@ -421,7 +421,8 @@ class PageStyleActor extends Actor {
         const opts = {
           previewText: options.previewText,
           previewFontSize: options.previewFontSize,
-          fontStyle: weight + " " + style,
+          fontStyle: style,
+          fontWeight: weight,
           fillStyle: options.previewFillStyle,
         };
         const { dataURL, size } = getFontPreviewData(
@@ -704,10 +705,10 @@ class PageStyleActor extends Actor {
     );
 
     // Now any pseudos.
-    if (showElementStyles && !options.skipPseudo) {
+    if (!pseudo && !options.skipPseudo) {
       const relevantPseudoElements = [];
       for (const readPseudo of PSEUDO_ELEMENTS) {
-        if (!this._pseudoIsRelevant(bindingElement, readPseudo)) {
+        if (!this._pseudoIsRelevant(bindingElement, readPseudo, inherited)) {
           continue;
         }
 
@@ -732,7 +733,17 @@ class PageStyleActor extends Actor {
           inherited,
           options
         );
-        rules.push(...pseudoRules);
+        // inherited element backed pseudo element rules (e.g. `::details-content`) should
+        // not be at the same "level" as rules inherited from the binding element (e.g. `<details>`),
+        // so we need to put them before the "regular" rules.
+        if (
+          SharedCssLogic.ELEMENT_BACKED_PSEUDO_ELEMENTS.has(readPseudo) &&
+          inherited
+        ) {
+          rules.unshift(...pseudoRules);
+        } else {
+          rules.push(...pseudoRules);
+        }
       }
     }
 
@@ -787,7 +798,7 @@ class PageStyleActor extends Actor {
   }
 
   // eslint-disable-next-line complexity
-  _pseudoIsRelevant(node, pseudo) {
+  _pseudoIsRelevant(node, pseudo, inherited = false) {
     switch (pseudo) {
       case "::after":
       case "::before":
@@ -796,35 +807,65 @@ class PageStyleActor extends Actor {
       case "::selection":
       case "::highlight":
       case "::target-text":
-        return true;
+        return !inherited;
       case "::marker":
-        return this._nodeIsListItem(node);
+        return !inherited && this._nodeIsListItem(node);
       case "::backdrop":
-        return node.matches(":modal, :popover-open");
+        return !inherited && node.matches(":modal, :popover-open");
       case "::cue":
-        return node.nodeName == "VIDEO";
+        return !inherited && node.nodeName == "VIDEO";
       case "::file-selector-button":
-        return node.nodeName == "INPUT" && node.type == "file";
-      case "::details-content":
-        return node.nodeName == "DETAILS";
+        return !inherited && node.nodeName == "INPUT" && node.type == "file";
+      case "::details-content": {
+        const isDetailsNode = node.nodeName == "DETAILS";
+        if (!isDetailsNode) {
+          return false;
+        }
+
+        if (!inherited) {
+          return true;
+        }
+
+        // If we're getting rules on a parent element, we need to check if the selected
+        // element is inside the ::details-content of node
+        // We traverse the flattened parent tree until we find the <slot> that implements
+        // the pseudo element, as it's easier to handle edge cases like nested <details>,
+        // multiple <summary>, etc …
+        let traversedNode = this.selectedElement;
+        while (traversedNode) {
+          if (
+            // if we found the <slot> implementing the pseudo element
+            traversedNode.implementedPseudoElement === "::details-content" &&
+            // and its parent <details> element is the element we're evaluating
+            traversedNode.flattenedTreeParentNode === node
+          ) {
+            // then include the ::details-content rules from that element
+            return true;
+          }
+          // otherwise keep looking up the tree
+          traversedNode = traversedNode.flattenedTreeParentNode;
+        }
+
+        return false;
+      }
       case "::placeholder":
       case "::-moz-placeholder":
-        return this._nodeIsTextfieldLike(node);
+        return !inherited && this._nodeIsTextfieldLike(node);
       case "::-moz-focus-inner":
-        return this._nodeIsButtonLike(node);
+        return !inherited && this._nodeIsButtonLike(node);
       case "::-moz-meter-bar":
-        return node.nodeName == "METER";
+        return !inherited && node.nodeName == "METER";
       case "::-moz-progress-bar":
-        return node.nodeName == "PROGRESS";
+        return !inherited && node.nodeName == "PROGRESS";
       case "::-moz-color-swatch":
-        return node.nodeName == "INPUT" && node.type == "color";
+        return !inherited && node.nodeName == "INPUT" && node.type == "color";
       case "::-moz-range-progress":
       case "::-moz-range-thumb":
       case "::-moz-range-track":
       case "::slider-fill":
       case "::slider-thumb":
       case "::slider-track":
-        return node.nodeName == "INPUT" && node.type == "range";
+        return !inherited && node.nodeName == "INPUT" && node.type == "range";
       case "::view-transition":
       case "::view-transition-group":
       case "::view-transition-image-pair":

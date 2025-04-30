@@ -551,6 +551,7 @@ class LinuxArtifactJob(ArtifactJob):
     product = "firefox"
 
     _package_artifact_patterns = {
+        "{product}/crashhelper",
         "{product}/crashreporter",
         "{product}/dependentlibs.list",
         "{product}/{product}",
@@ -647,6 +648,7 @@ class MacArtifactJob(ArtifactJob):
         (
             "Contents/MacOS",
             [
+                "crashhelper",
                 "crashreporter.app/Contents/MacOS/crashreporter",
                 "{product}",
                 "{product}-bin",
@@ -1167,6 +1169,51 @@ class Artifacts:
         kwargs["universal_newlines"] = True
         return subprocess.check_output([self._hg] + list(args), **kwargs)
 
+    @property
+    @functools.lru_cache(maxsize=None)
+    def _is_git_cinnabar(self):
+        if self._git:
+            try:
+                metadata = subprocess.check_output(
+                    [
+                        self._git,
+                        "rev-parse",
+                        "--revs-only",
+                        "refs/cinnabar/metadata",
+                    ],
+                    universal_newlines=True,
+                    cwd=self._topsrcdir,
+                )
+                return bool(metadata.strip())
+            except subprocess.CalledProcessError:
+                pass
+
+        return False
+
+    @property
+    @functools.lru_cache(maxsize=None)
+    def _git_repo_kind(self):
+        for kind, commit in (
+            ("firefox", "2ca566cd74d5d0863ba7ef0529a4f88b2823eb43"),
+            ("gecko-dev", "05e5d33a570d48aed58b2d38f5dfc0a7870ff8d3"),
+            ("pure-cinnabar", "028d2077b6267f634c161a8a68e2feeee0cfb663"),
+        ):
+            if (
+                subprocess.call(
+                    [
+                        self._git,
+                        "cat-file",
+                        "-e",
+                        f"{commit}^{{commit}}",
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    cwd=self._topsrcdir,
+                )
+                == 0
+            ):
+                return kind
+
     def _guess_artifact_job(self):
         # Add the "-debug" suffix to the guessed artifact job name
         # if MOZ_DEBUG is enabled.
@@ -1255,7 +1302,7 @@ class Artifacts:
 
         return candidate_pushheads
 
-    def _get_hg_revisions_from_git(self):
+    def _get_revisions_from_git(self):
         rev_list = subprocess.check_output(
             [
                 self._git,
@@ -1268,48 +1315,35 @@ class Artifacts:
             cwd=self._topsrcdir,
         )
 
-        hg_hash_list = subprocess.check_output(
-            [self._git, "cinnabar", "git2hg"] + rev_list.splitlines(),
-            universal_newlines=True,
-            cwd=self._topsrcdir,
-        )
+        if self._is_git_cinnabar:
+            hash_list = subprocess.check_output(
+                [self._git, "cinnabar", "git2hg"] + rev_list.splitlines(),
+                universal_newlines=True,
+                cwd=self._topsrcdir,
+            )
+        elif self._git_repo_kind == "firefox":
+            hash_list = rev_list
 
         zeroes = "0" * 40
 
         hashes = []
-        for hg_hash_unstripped in hg_hash_list.splitlines():
-            hg_hash = hg_hash_unstripped.strip()
-            if not hg_hash or hg_hash == zeroes:
+        for hash_unstripped in hash_list.splitlines():
+            hash = hash_unstripped.strip()
+            if not hash or hash == zeroes:
                 continue
-            hashes.append(hg_hash)
+            hashes.append(hash)
         if not hashes:
-            msg = (
-                "Could not list any recent revisions in your clone. Does "
-                "your clone have git-cinnabar metadata? If not, consider "
-                "re-cloning using the directions at "
-                "https://github.com/glandium/git-cinnabar/wiki/Mozilla:-A-"
-                "git-workflow-for-Gecko-development"
-            )
-            try:
-                subprocess.check_output(
-                    [
-                        self._git,
-                        "cat-file",
-                        "-e",
-                        "05e5d33a570d48aed58b2d38f5dfc0a7870ff8d3^{commit}",
-                    ],
-                    stderr=subprocess.STDOUT,
-                )
-                # If the above commit exists, we're probably in a clone of
-                # `gecko-dev`, and this documentation applies.
+            msg = "Could not list any recent revisions in your clone."
+            if self._git and not self._is_git_cinnabar:
                 msg += (
-                    "\n\nNOTE: Consider following the directions "
-                    "at https://github.com/glandium/git-cinnabar/wiki/"
-                    "Mozilla:-Using-a-git-clone-of-gecko%E2%80%90dev-"
-                    "to-push-to-mercurial to resolve this issue."
+                    "\n\nYour clone does not have git-cinnabar metadata,"
+                    " please ensure git-cinnabar is installed and run the following commands,"
+                    " replacing `origin` as necessary:"
+                    "\n  `git remote set-url origin hg://hg.mozilla.org/mozilla-unified`"
+                    "\n  `git config cinnabar.refs bookmarks`"
+                    "\n  `git config --add remote.origin.fetch refs/heads/central:refs/remotes/origin/main`"
+                    "\n  `git -c fetch.prune=true remote update origin`"
                 )
-            except subprocess.CalledProcessError:
-                pass
             raise UserError(msg)
         return hashes
 
@@ -1320,7 +1354,7 @@ class Artifacts:
         If we're using git, retrieves hg revisions from git-cinnabar.
         """
         if self._git:
-            return self._get_hg_revisions_from_git()
+            return self._get_revisions_from_git()
 
         # Mercurial updated the ordering of "last" in 4.3. We use revision
         # numbers to order here to accommodate multiple versions of hg.
@@ -1383,12 +1417,17 @@ https://firefox-source-docs.mozilla.org/contributing/vcs/mercurial_bundles.html
 
         last_revs = self._get_recent_public_revisions()
         candidate_pushheads = []
-        for rev in last_revs:
-            candidate_pushheads = self._pushheads_from_rev(
-                rev.rstrip(), NUM_PUSHHEADS_TO_QUERY_PER_PARENT
-            )
-            if candidate_pushheads:
-                break
+        if self._git and not self._is_git_cinnabar:
+            candidate_pushheads = {
+                rev: self._artifact_job.candidate_trees for rev in last_revs
+            }
+        else:
+            for rev in last_revs:
+                candidate_pushheads = self._pushheads_from_rev(
+                    rev.rstrip(), NUM_PUSHHEADS_TO_QUERY_PER_PARENT
+                )
+                if candidate_pushheads:
+                    break
         count = 0
         for rev_unstripped in last_revs:
             rev = rev_unstripped.rstrip()
@@ -1599,11 +1638,14 @@ https://firefox-source-docs.mozilla.org/contributing/vcs/mercurial_bundles.html
                 revision = revset
 
         if revision is None and self._git:
-            revision = subprocess.check_output(
-                [self._git, "cinnabar", "git2hg", revset],
-                universal_newlines=True,
-                cwd=self._topsrcdir,
-            ).strip()
+            if self._is_git_cinnabar:
+                revision = subprocess.check_output(
+                    [self._git, "cinnabar", "git2hg", revset],
+                    universal_newlines=True,
+                    cwd=self._topsrcdir,
+                ).strip()
+            elif self._git_repo_kind == "firefox":
+                revision = revset
 
         if revision == "0" * 40 or revision is None:
             raise ValueError(

@@ -368,7 +368,7 @@ struct VMFunctionDataHelper<R (*)(JSContext*, Args...)>
 // Generate VMFunctionData array.
 static constexpr VMFunctionData vmFunctions[] = {
 #define DEF_VMFUNCTION(name, fp, valuesToPop...) \
-  VMFunctionDataHelper<decltype(&(::fp))>(#name, PopValues(valuesToPop)),
+  VMFunctionDataHelper<decltype(&fp)>(#name, PopValues(valuesToPop)),
     VMFUNCTION_LIST(DEF_VMFUNCTION)
 #undef DEF_VMFUNCTION
 };
@@ -381,7 +381,7 @@ static constexpr VMFunctionData vmFunctions[] = {
 // in VMFunctionData because there's no good way to cast them to void* in
 // constexpr code. Compilers are smart enough to treat the const array below as
 // constexpr.
-#define DEF_VMFUNCTION(name, fp, ...) (void*)(::fp),
+#define DEF_VMFUNCTION(name, fp, ...) (void*)(fp),
 static void* const vmFunctionTargets[] = {VMFUNCTION_LIST(DEF_VMFUNCTION)};
 #undef DEF_VMFUNCTION
 
@@ -1214,7 +1214,7 @@ ArrayObject* InitRestParameter(JSContext* cx, uint32_t length, Value* rest,
       return nullptr;
     }
     arrRes->initDenseElements(rest, length);
-    arrRes->setLength(length);
+    arrRes->setLengthToInitializedLength();
     return arrRes;
   }
 

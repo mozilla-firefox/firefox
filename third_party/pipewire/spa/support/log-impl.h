@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_LOG_IMPL_H
 #define SPA_LOG_IMPL_H
@@ -39,7 +19,7 @@ extern "C" {
  * \{
  */
 
-static inline SPA_PRINTF_FUNC(7, 0) void spa_log_impl_logtv(void *object,
+static inline SPA_PRINTF_FUNC(7, 0) void spa_log_impl_logtv(void *object SPA_UNUSED,
 				     enum spa_log_level level,
 				     const struct spa_log_topic *topic,
 				     const char *file,
@@ -108,7 +88,7 @@ static inline SPA_PRINTF_FUNC(6,7) void spa_log_impl_log(void *object,
 	va_end(args);
 }
 
-static inline void spa_log_impl_topic_init(void *object, struct spa_log_topic *topic)
+static inline void spa_log_impl_topic_init(void *object SPA_UNUSED, struct spa_log_topic *topic SPA_UNUSED)
 {
 	/* noop */
 }
@@ -121,13 +101,14 @@ struct {					\
 
 #define SPA_LOG_IMPL_INIT(name)				\
 	{ { { SPA_TYPE_INTERFACE_Log, SPA_VERSION_LOG,	\
-	      SPA_CALLBACKS_INIT(&name.methods, &name) },	\
+	      SPA_CALLBACKS_INIT(&(name).methods, &(name)) },	\
 	    SPA_LOG_LEVEL_INFO,	},			\
 	  { SPA_VERSION_LOG_METHODS,			\
 	    spa_log_impl_log,				\
 	    spa_log_impl_logv,				\
 	    spa_log_impl_logt,				\
 	    spa_log_impl_logtv,				\
+	    spa_log_impl_topic_init,			\
 	  } }
 
 #define SPA_LOG_IMPL(name)			\

@@ -29,6 +29,23 @@ use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
 use std::{cmp, fmt};
 use style_traits::{CSSPixel, DevicePixel};
 
+/// Flags for the query_font_metrics() function.
+#[repr(C)]
+pub struct QueryFontMetricsFlags(u8);
+
+bitflags! {
+    impl QueryFontMetricsFlags: u8 {
+        /// Should we use the user font set?
+        const USE_USER_FONT_SET = 1 << 0;
+        /// Does the caller need the `ch` unit (width of the ZERO glyph)?
+        const NEEDS_CH = 1 << 1;
+        /// Does the caller need the `ic` unit (width of the WATER ideograph)?
+        const NEEDS_IC = 1 << 2;
+        /// Does the caller need math scales to be retrieved?
+        const NEEDS_MATH_SCALES = 1 << 3;
+    }
+}
+
 /// The `Device` in Gecko wraps a pres context, has a default values computed,
 /// and contains all the viewport rule state.
 pub struct Device {
@@ -227,8 +244,7 @@ impl Device {
         vertical: bool,
         font: &crate::properties::style_structs::Font,
         base_size: Length,
-        in_media_query: bool,
-        retrieve_math_scales: bool,
+        flags: QueryFontMetricsFlags,
     ) -> FontMetrics {
         self.used_font_metrics.store(true, Ordering::Relaxed);
         let pc = match self.pres_context() {
@@ -241,9 +257,7 @@ impl Device {
                 vertical,
                 &**font,
                 base_size,
-                // we don't use the user font set in a media query
-                !in_media_query,
-                retrieve_math_scales,
+                flags,
             )
         };
         FontMetrics {

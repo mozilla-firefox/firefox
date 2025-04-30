@@ -112,7 +112,6 @@ print("")
 rsync_filter_list = """
 # Top-level config and build files
 
-+ /aclocal.m4
 + /client.mk
 + /configure.py
 + /LICENSE
@@ -383,33 +382,6 @@ def copy_cargo_toml():
         f.write(content)
 
 
-def generate_configure():
-    """Generate configure files to avoid build dependency on autoconf-2.13"""
-
-    src_old_configure_in_file = topsrc_dir / "js" / "src" / "old-configure.in"
-    dest_old_configure_file = target_dir / "js" / "src" / "old-configure"
-
-    js_src_dir = topsrc_dir / "js" / "src"
-
-    env = os.environ.copy()
-    env["M4"] = m4
-    env["AWK"] = awk
-    env["AC_MACRODIR"] = topsrc_dir / "build" / "autoconf"
-
-    with dest_old_configure_file.open("w") as f:
-        subprocess.run(
-            [
-                "sh",
-                str(topsrc_dir / "build" / "autoconf" / "autoconf.sh"),
-                f"--localdir={js_src_dir}",
-                str(src_old_configure_in_file),
-            ],
-            stdout=f,
-            check=True,
-            env=env,
-        )
-
-
 def copy_file(filename, content):
     """Copy an existing file from the staging area, or create a new file
     with the given contents if it does not exist."""
@@ -452,7 +424,6 @@ def stage():
     create_target_dir()
     sync_files()
     copy_cargo_toml()
-    generate_configure()
     copy_file("INSTALL", INSTALL_CONTENT)
     copy_file("README", README_CONTENT)
     copy_file("mozconfig", MOZCONFIG_DEBUG_CONTENT)

@@ -614,8 +614,6 @@
   <string name="preferences_override_account_server">اؤزل موْزیلا حسابیْ سِروری</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">اؤزل دؤنگل سرور</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">موْزیلا حسابیْ/دؤنگل سروری دگیشدیریلدی. دگیشمه‌لری یئرینه سالماق اوچون اپلیکیشن‌دن چیخیلیر…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">حساب</string>
   <!-- Preference for changing where the AddressBar is positioned -->

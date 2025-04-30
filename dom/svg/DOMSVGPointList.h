@@ -245,6 +245,12 @@ class DOMSVGPointList final : public nsISupports, public nsWrapperCache {
   RefPtr<dom::SVGElement> mElement;
 
   bool mIsAnimValList;
+
+  // Tracks whether we're in the tearoff table. Initialized to true, since all
+  // new instances are added to the table right after construction. Updated to
+  // false when we're removed from the table (at which point we're being
+  // destructed or soon-to-be destructed).
+  bool mIsInTearoffTable = true;
 };
 
 NS_DEFINE_STATIC_IID_ACCESSOR(DOMSVGPointList, MOZILLA_DOMSVGPOINTLIST_IID)

@@ -1,0 +1,36 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+include RemoteWorkerTypes;
+
+namespace mozilla {
+namespace dom{
+
+[ChildProc=anydom]
+protocol PRemoteWorkerDebugger
+{
+parent:
+  async Unregister();
+
+  async PostMessageToDebugger(nsString aMessage);
+  async ReportErrorToDebugger(RemoteWorkerDebuggerErrorInfo aErrorInfo);
+
+  async SetAsInitialized();
+  async SetAsClosed();
+
+  // IPC for updating SharedWorker's WindowIDs 
+  async AddWindowID(uint64_t aWindowID);
+  async RemoveWindowID(uint64_t aWindowID);
+
+child:
+  async RegisterDone();
+  async UnregisterDone();
+
+  async Initialize(nsString aURL);
+  async PostMessage(nsString aMessage);
+  async SetDebuggerReady(bool aReady);
+};
+
+} // namespace dom
+} // namespace mozilla

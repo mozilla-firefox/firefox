@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_IMPL_PORT_H
 #define PIPEWIRE_IMPL_PORT_H
@@ -56,7 +36,7 @@ enum pw_impl_port_state {
 
 /** Port events, use \ref pw_impl_port_add_listener */
 struct pw_impl_port_events {
-#define PW_VERSION_IMPL_PORT_EVENTS 2
+#define PW_VERSION_IMPL_PORT_EVENTS 3
 	uint32_t version;
 
 	/** The port is destroyed */
@@ -92,6 +72,8 @@ struct pw_impl_port_events {
 
 	/** latency changed. Since version 2 */
 	void (*latency_changed) (void *data);
+	/** tag changed. Since version 3 */
+	void (*tag_changed) (void *data);
 };
 
 /** Create a new port
@@ -117,6 +99,9 @@ const struct pw_port_info *pw_impl_port_get_info(struct pw_impl_port *port);
 
 /** Get the port id */
 uint32_t pw_impl_port_get_id(struct pw_impl_port *port);
+
+/** Get the port state as a string */
+const char *pw_impl_port_state_as_string(enum pw_impl_port_state state);
 
 /** Get the port parent node or NULL when not yet set */
 struct pw_impl_node *pw_impl_port_get_node(struct pw_impl_port *port);

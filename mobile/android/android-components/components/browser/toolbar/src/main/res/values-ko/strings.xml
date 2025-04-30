@@ -13,7 +13,7 @@
   <!-- Content description: For the site security information icon (the site security icon). -->
   <string name="mozac_browser_toolbar_content_description_site_info">사이트 정보</string>
   <!-- Announcement made by the screen reader when the progress bar is shown and a page is loading -->
-  <string name="mozac_browser_toolbar_progress_loading">읽는 중</string>
+  <string name="mozac_browser_toolbar_progress_loading">로딩 중</string>
   <!-- Content description: For the autoplay toolbar icon, it is set when the auto play permission is blocking content playing. -->
   <string name="mozac_browser_toolbar_content_description_autoplay_blocked">자동 재생 설정에 의해 일부 콘텐츠가 차단되었습니다.</string>
 </resources>

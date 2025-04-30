@@ -2,19 +2,22 @@ import sys
 import weakref
 
 from sentry_sdk._compat import reraise
+from sentry_sdk.consts import OP
 from sentry_sdk.hub import Hub
 from sentry_sdk.integrations import Integration, DidNotEnable
 from sentry_sdk.integrations.logging import ignore_logger
+from sentry_sdk.sessions import auto_session_tracking
 from sentry_sdk.integrations._wsgi_common import (
     _filter_headers,
     request_body_within_bounds,
 )
-from sentry_sdk.tracing import Span
+from sentry_sdk.tracing import SOURCE_FOR_STYLE, Transaction, TRANSACTION_SOURCE_ROUTE
 from sentry_sdk.utils import (
     capture_internal_exceptions,
     event_from_exception,
     transaction_from_function,
     HAS_REAL_CONTEXTVARS,
+    CONTEXTVARS_ERROR_MESSAGE,
     AnnotatedValue,
 )
 
@@ -42,17 +45,29 @@ if MYPY:
     from sentry_sdk._types import EventProcessor
 
 
+TRANSACTION_STYLE_VALUES = ("handler_name", "method_and_path_pattern")
+
+
 class AioHttpIntegration(Integration):
     identifier = "aiohttp"
+
+    def __init__(self, transaction_style="handler_name"):
+        # type: (str) -> None
+        if transaction_style not in TRANSACTION_STYLE_VALUES:
+            raise ValueError(
+                "Invalid value for transaction_style: %s (must be in %s)"
+                % (transaction_style, TRANSACTION_STYLE_VALUES)
+            )
+        self.transaction_style = transaction_style
 
     @staticmethod
     def setup_once():
         # type: () -> None
 
         try:
-            version = tuple(map(int, AIOHTTP_VERSION.split(".")))
+            version = tuple(map(int, AIOHTTP_VERSION.split(".")[:2]))
         except (TypeError, ValueError):
-            raise DidNotEnable("AIOHTTP version unparseable: {}".format(version))
+            raise DidNotEnable("AIOHTTP version unparsable: {}".format(AIOHTTP_VERSION))
 
         if version < (3, 4):
             raise DidNotEnable("AIOHTTP 3.4 or newer required.")
@@ -60,9 +75,9 @@ class AioHttpIntegration(Integration):
         if not HAS_REAL_CONTEXTVARS:
             # We better have contextvars or we're going to leak state between
             # requests.
-            raise RuntimeError(
+            raise DidNotEnable(
                 "The aiohttp integration for Sentry requires Python 3.7+ "
-                " or aiocontextvars package"
+                " or aiocontextvars package." + CONTEXTVARS_ERROR_MESSAGE
             )
 
         ignore_logger("aiohttp.server")
@@ -71,46 +86,47 @@ class AioHttpIntegration(Integration):
 
         async def sentry_app_handle(self, request, *args, **kwargs):
             # type: (Any, Request, *Any, **Any) -> Any
-            async def inner():
-                # type: () -> Any
-                hub = Hub.current
-                if hub.get_integration(AioHttpIntegration) is None:
-                    return await old_handle(self, request, *args, **kwargs)
+            hub = Hub.current
+            if hub.get_integration(AioHttpIntegration) is None:
+                return await old_handle(self, request, *args, **kwargs)
 
-                weak_request = weakref.ref(request)
+            weak_request = weakref.ref(request)
 
-                with Hub(Hub.current) as hub:
+            with Hub(hub) as hub:
+                with auto_session_tracking(hub, session_mode="request"):
+                    # Scope data will not leak between requests because aiohttp
+                    # create a task to wrap each request.
                     with hub.configure_scope() as scope:
                         scope.clear_breadcrumbs()
                         scope.add_event_processor(_make_request_processor(weak_request))
 
-                    span = Span.continue_from_headers(request.headers)
-                    span.op = "http.server"
-                    # If this transaction name makes it to the UI, AIOHTTP's
-                    # URL resolver did not find a route or died trying.
-                    span.transaction = "generic AIOHTTP request"
-
-                    with hub.start_span(span):
+                    transaction = Transaction.continue_from_headers(
+                        request.headers,
+                        op=OP.HTTP_SERVER,
+                        # If this transaction name makes it to the UI, AIOHTTP's
+                        # URL resolver did not find a route or died trying.
+                        name="generic AIOHTTP request",
+                        source=TRANSACTION_SOURCE_ROUTE,
+                    )
+                    with hub.start_transaction(
+                        transaction,
+                        custom_sampling_context={"aiohttp_request": request},
+                    ):
                         try:
                             response = await old_handle(self, request)
                         except HTTPException as e:
-                            span.set_http_status(e.status_code)
+                            transaction.set_http_status(e.status_code)
                             raise
-                        except asyncio.CancelledError:
-                            span.set_status("cancelled")
+                        except (asyncio.CancelledError, ConnectionResetError):
+                            transaction.set_status("cancelled")
                             raise
                         except Exception:
                             # This will probably map to a 500 but seems like we
                             # have no way to tell. Do not set span status.
                             reraise(*_capture_exception(hub))
 
-                        span.set_http_status(response.status)
+                        transaction.set_http_status(response.status)
                         return response
-
-            # Explicitly wrap in task such that current contextvar context is
-            # copied. Just doing `return await inner()` will leak scope data
-            # between requests.
-            return await asyncio.get_event_loop().create_task(inner())
 
         Application._handle = sentry_app_handle
 
@@ -120,16 +136,27 @@ class AioHttpIntegration(Integration):
             # type: (UrlDispatcher, Request) -> AbstractMatchInfo
             rv = await old_urldispatcher_resolve(self, request)
 
+            hub = Hub.current
+            integration = hub.get_integration(AioHttpIntegration)
+
             name = None
 
             try:
-                name = transaction_from_function(rv.handler)
+                if integration.transaction_style == "handler_name":
+                    name = transaction_from_function(rv.handler)
+                elif integration.transaction_style == "method_and_path_pattern":
+                    route_info = rv.get_info()
+                    pattern = route_info.get("path") or route_info.get("formatter")
+                    name = "{} {}".format(request.method, pattern)
             except Exception:
                 pass
 
             if name is not None:
                 with Hub.current.configure_scope() as scope:
-                    scope.transaction = name
+                    scope.set_transaction_name(
+                        name,
+                        source=SOURCE_FOR_STYLE[integration.transaction_style],
+                    )
 
             return rv
 
@@ -195,11 +222,8 @@ def get_aiohttp_request_data(hub, request):
     if bytes_body is not None:
         # we have body to show
         if not request_body_within_bounds(hub.client, len(bytes_body)):
+            return AnnotatedValue.removed_because_over_size_limit()
 
-            return AnnotatedValue(
-                "",
-                {"rem": [["!config", "x", 0, len(bytes_body)]], "len": len(bytes_body)},
-            )
         encoding = request.charset or "utf-8"
         return bytes_body.decode(encoding, "replace")
 

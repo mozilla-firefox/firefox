@@ -137,8 +137,8 @@ def parse_memory_usage(mem_file, binary):
         final_mems[curr_mem][name] = round(float(mem_usage.replace(",", "")), 2)
 
     measurements = {
-        "rss": {"tab": 0, "gpu": 0, "main": 0},
-        "pss": {"tab": 0, "gpu": 0, "main": 0},
+        "rss": {"tab": 0, "gpu": 0, "main": 0, "crashhelper": 0},
+        "pss": {"tab": 0, "gpu": 0, "main": 0, "crashhelper": 0},
     }
     for mem_type, mem_info in final_mems.items():
         for name, mem_usage in mem_info.items():
@@ -180,7 +180,7 @@ def parse_cpu_usage(cpu_file, binary):
         final_times[name] = vals[-2]
 
     # Convert the final times to milliseconds
-    cpu_times = {"tab": 0, "gpu": 0, "main": 0}
+    cpu_times = {"tab": 0, "gpu": 0, "main": 0, "crashhelper": 0}
     for name, time in final_times.items():
         # adb shell ps -o time+= gives us MIN:SEC.HUNDREDTHS.
         # That's why we divide dt.microseconds by 1000 for measuring in milliseconds.

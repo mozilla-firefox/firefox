@@ -49,15 +49,26 @@ class GleanTelemetry:
     The "metrics" and "pings" properties may be replaced with no-op implementations if
     Glean isn't available. This allows consumers to report telemetry without having
     to guard against incompatible environments.
-
-    Also tracks whether an employee was just automatically opted into telemetry
-    during this mach invocation.
     """
 
     def __init__(
         self,
+        upload_enabled: bool,
+        data_dir: Path,
     ):
+        from glean import Glean, load_pings
+
         self._metrics_cache = {}
+        # We must call load_pings before Glean.initialize to load and register pings;
+        # otherwise, metrics won’t be recorded for them.
+        self._pings = load_pings(Path(__file__).parent.parent / "pings.yaml")
+
+        Glean.initialize(
+            application_id="mozilla.mach",
+            application_version="Unknown",
+            upload_enabled=upload_enabled,
+            data_dir=data_dir,
+        )
 
     def metrics(self, metrics_path: Union[str, Path]):
         if metrics_path not in self._metrics_cache:
@@ -69,9 +80,4 @@ class GleanTelemetry:
         return self._metrics_cache[metrics_path]
 
     def submit(self, _):
-        from pathlib import Path
-
-        from glean import load_pings
-
-        pings = load_pings(Path(__file__).parent.parent / "pings.yaml")
-        pings.usage.submit()
+        self._pings.usage.submit()

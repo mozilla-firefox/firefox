@@ -58,7 +58,7 @@ export default class MozCard extends MozLitElement {
       return "";
     }
     return html`
-      <div id="heading-wrapper">
+      <div id="heading-wrapper" part="moz-card-heading-wrapper">
         ${when(
           this.type == "accordion",
           () => html`<div class="chevron-icon"></div>`

@@ -1,0 +1,90 @@
+// Default overrides from Feature Highlight
+.download-firefox-feature-highlight {
+  .icon.icon-dismiss {
+    // change background property to use transparent background
+    background: transparent url('chrome://global/skin/icons/close.svg');
+    background-size: var(--size-item-small);
+    height: var(--size-item-small);
+    width: var(--size-item-small);
+    position: absolute;
+    margin: 0;
+    inset-block-start: calc(var(--space-medium) + 2px);
+    inset-inline-end: calc(var(--space-medium) + 2px);
+
+    @media (prefers-color-scheme: dark) {
+      // override color so that it is visible on white image background
+      --dark-icon-color: var(--color-gray-70);
+
+      color: var(--dark-icon-color);
+    }
+
+    &:hover {
+      --dark-icon-hover: var(--color-gray-60);
+
+      color: var(--dark-icon-hover);
+    }
+  }
+
+  .feature-highlight .feature-highlight-modal {
+    --arrow-size: 24px;
+
+    padding: var(--space-large);
+    width: 271px;
+
+    .content-wrapper {
+      margin-block: 0;
+
+      img {
+        display: block;
+        margin: 0 auto var(--space-large);
+      }
+    }
+
+    .message-icon {
+      display: none;
+    }
+
+    &.inset-block-end {
+      margin-top: var(--space-xxlarge);
+    }
+
+    &.inset-inline-end {
+      inset-inline-start: calc(var(--arrow-size) * -2);
+
+      &::after {
+        inset-inline-start: calc(var(--space-xxlarge) - 14px);
+      }
+    }
+
+    &.inset-inline-start {
+      inset-inline-end: calc(calc(calc(var(--arrow-size) / 2) * -1) - 6px);
+
+      &::after {
+        inset-inline-end: calc(var(--space-xxlarge) - 12px);
+      }
+    }
+
+    // Message Arrow Pointer
+    &::after {
+      height: var(--arrow-size);
+      width: var(--arrow-size);
+      box-shadow: 4px -4px 6px -2px rgba(0, 0, 0, 15%);
+      transform: rotate(-45deg);
+      pointer-events: none;
+    }
+
+    p {
+      margin: 0;
+      padding: 0;
+    }
+
+    .title {
+      font-weight: var(--font-weight-bold);
+      margin-block: var(--space-small);
+    }
+
+    .subtitle {
+      margin-block: 0;
+    }
+  }
+}

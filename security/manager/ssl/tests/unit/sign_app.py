@@ -17,7 +17,6 @@ import argparse
 from io import StringIO
 import os
 import re
-import six
 import sys
 import zipfile
 
@@ -245,9 +244,9 @@ def signZip(
         if len(coseAlgorithms) > 0:
             coseManifest = "\n".join(mfEntries)
             outZip.writestr("META-INF/cose.manifest", coseManifest)
-            coseManifest = six.ensure_binary(coseManifest)
+            coseManifestBytes = coseManifest.encode()
             addManifestEntry(
-                "META-INF/cose.manifest", manifestHashes, coseManifest, mfEntries
+                "META-INF/cose.manifest", manifestHashes, coseManifestBytes, mfEntries
             )
             intermediates = []
             coseIssuerName = issuerName
@@ -273,7 +272,7 @@ def signZip(
                 )
                 for coseAlgorithm in coseAlgorithms
             ]
-            coseSignatureBytes = coseSig(coseManifest, intermediates, signatures)
+            coseSignatureBytes = coseSig(coseManifestBytes, intermediates, signatures)
             outZip.writestr("META-INF/cose.sig", coseSignatureBytes)
             addManifestEntry(
                 "META-INF/cose.sig", manifestHashes, coseSignatureBytes, mfEntries
@@ -283,7 +282,7 @@ def signZip(
             mfContents = "\n".join(mfEntries)
             sfContents = "Signature-Version: 1.0\n"
             for hashFunc, name in signatureHashes:
-                hashed = hashFunc(six.ensure_binary(mfContents)).digest()
+                hashed = hashFunc(mfContents.encode()).digest()
                 base64hash = b64encode(hashed).decode("ascii")
                 sfContents += "%s-Digest-Manifest: %s\n" % (name, base64hash)
 
@@ -292,7 +291,7 @@ def signZip(
                 hashFunc, _ = hashNameToFunctionAndIdentifier(name)
                 cmsSpecification += "%s:%s\n" % (
                     name,
-                    hashFunc(six.ensure_binary(sfContents)).hexdigest(),
+                    hashFunc(sfContents.encode()).hexdigest(),
                 )
             cmsSpecification += (
                 "signer:\n"

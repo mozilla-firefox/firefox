@@ -10,12 +10,10 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 add_task(async function test_adopt_from_window() {
-  const win = await BrowserTestUtils.openNewBrowserWindow();
-  const { document } = win;
   const sidebar = document.querySelector("sidebar-main");
   ok(sidebar, "Sidebar is shown.");
   await sidebar.updateComplete;
-  await toggleSidebarPanel(win, "viewCustomizeSidebar");
+  await toggleSidebarPanel(window, "viewCustomizeSidebar");
 
   // Set width
   let sidebarBox = document.getElementById("sidebar-box");
@@ -27,7 +25,7 @@ add_task(async function test_adopt_from_window() {
 
   // Open a new window from the window containing the open sidebar
   const newWin = lazy.BrowserWindowTracker.openWindow({
-    openerWindow: win,
+    openerWindow: window,
   });
 
   // Check category of new window sidebar is that of opener window sidebar
@@ -66,7 +64,7 @@ add_task(async function test_adopt_from_window() {
 
   // Check that private windows do adopt UI state from non-private sources.
   const privateWin = await BrowserTestUtils.openNewBrowserWindow({
-    openerWindow: win,
+    openerWindow: window,
     private: true,
   });
   const privateSidebar = privateWin.SidebarController;
@@ -74,29 +72,25 @@ add_task(async function test_adopt_from_window() {
 
   Assert.equal(
     privateSidebar.currentID,
-    win.SidebarController.currentID,
+    SidebarController.currentID,
     "Category was adopted from opener window sidebar."
   );
   Assert.equal(
     privateSidebar._box.style.width,
-    win.SidebarController._box.style.width,
+    SidebarController._box.style.width,
     "Width was adopted from opener window sidebar."
   );
 
   await BrowserTestUtils.closeWindow(newWin);
   await BrowserTestUtils.closeWindow(privateWin);
-  await BrowserTestUtils.closeWindow(win);
 });
 
 add_task(async function test_focus_history_from_adopted() {
-  const win = await BrowserTestUtils.openNewBrowserWindow();
-  const { document } = win;
   const sidebar = document.querySelector("sidebar-main");
   ok(sidebar, "Sidebar is shown.");
   await sidebar.updateComplete;
-  await toggleSidebarPanel(win, "viewHistorySidebar");
+  await toggleSidebarPanel(window, "viewHistorySidebar");
 
-  const { SidebarController } = win;
   const { contentDocument } = SidebarController.browser;
   const historySidebar = contentDocument.querySelector("sidebar-history");
 
@@ -113,7 +107,7 @@ add_task(async function test_focus_history_from_adopted() {
 
   // Open a new window from the window containing the open sidebar
   const newWin = lazy.BrowserWindowTracker.openWindow({
-    openerWindow: win,
+    openerWindow: window,
   });
 
   let NewSidebarController;
@@ -143,5 +137,4 @@ add_task(async function test_focus_history_from_adopted() {
   );
 
   await BrowserTestUtils.closeWindow(newWin);
-  await BrowserTestUtils.closeWindow(win);
 });

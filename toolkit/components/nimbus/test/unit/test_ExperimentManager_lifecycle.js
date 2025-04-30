@@ -15,116 +15,80 @@ const { UnenrollmentCause } = ChromeUtils.importESModule(
   "resource://nimbus/lib/ExperimentManager.sys.mjs"
 );
 
-async function cleanupStore(store) {
-  Assert.deepEqual(
-    store.getAllActiveExperiments(),
-    [],
-    "There should be no experiments active."
-  );
-
-  Assert.deepEqual(
-    store.getAllActiveRollouts(),
-    [],
-    "There should be no rollouts active"
-  );
-
-  // We need to call finalize first to ensure that any pending saves from
-  // JSONFile.saveSoon overwrite files on disk.
-  await store._store.finalize();
-  await IOUtils.remove(store._store.path);
-}
-
 /**
  * onStartup()
  * - should set call setExperimentActive for each active experiment
  */
 add_task(async function test_onStartup_setExperimentActive_called() {
-  const manager = ExperimentFakes.manager();
-  const sandbox = sinon.createSandbox();
-  const experiments = [];
+  let storePath;
+
+  {
+    const store = NimbusTestUtils.stubs.store();
+    await store.init();
+
+    store.addEnrollment(NimbusTestUtils.factories.experiment("foo"));
+    store.addEnrollment(NimbusTestUtils.factories.rollout("bar"));
+    store.addEnrollment(
+      NimbusTestUtils.factories.experiment("baz", { active: false })
+    );
+    store.addEnrollment(
+      NimbusTestUtils.factories.rollout("qux", { active: false })
+    );
+
+    storePath = await NimbusTestUtils.saveStore(store);
+  }
+
+  const { sandbox, manager, initExperimentAPI, cleanup } =
+    await NimbusTestUtils.setupTest({ storePath, init: false });
+
   sandbox.stub(NimbusTelemetry, "setExperimentActive");
-  sandbox.stub(manager.store, "init").resolves();
-  sandbox.stub(manager.store, "getAll").returns(experiments);
-  sandbox
-    .stub(manager.store, "get")
-    .callsFake(slug => experiments.find(expt => expt.slug === slug));
-  sandbox.stub(manager.store, "set");
 
-  const active = ["foo", "bar"].map(ExperimentFakes.experiment);
+  await initExperimentAPI();
 
-  const inactive = ["baz", "qux"].map(slug =>
-    ExperimentFakes.experiment(slug, { active: false })
+  Assert.ok(
+    NimbusTelemetry.setExperimentActive.calledWith(sinon.match({ slug: "foo" }))
   );
-
-  [...active, ...inactive].forEach(exp => experiments.push(exp));
-
-  await manager.onStartup();
-
-  active.forEach(exp =>
-    Assert.equal(
-      NimbusTelemetry.setExperimentActive.calledWith(exp),
-      true,
-      `should call setExperimentActive for active experiment: ${exp.slug}`
+  Assert.ok(
+    NimbusTelemetry.setExperimentActive.calledWith(sinon.match({ slug: "bar" }))
+  );
+  Assert.ok(
+    !NimbusTelemetry.setExperimentActive.calledWith(
+      sinon.match({ slug: "baz" })
+    )
+  );
+  Assert.ok(
+    !NimbusTelemetry.setExperimentActive.calledWith(
+      sinon.match({ slug: "qux" })
     )
   );
 
-  inactive.forEach(exp =>
-    Assert.equal(
-      NimbusTelemetry.setExperimentActive.calledWith(exp),
-      false,
-      `should not call setExperimentActive for inactive experiment: ${exp.slug}`
-    )
-  );
+  manager.unenroll("foo");
+  manager.unenroll("bar");
 
-  sandbox.restore();
-  await cleanupStore(manager.store);
-});
-
-add_task(async function test_onStartup_setRolloutActive_called() {
-  const manager = ExperimentFakes.manager();
-  const sandbox = sinon.createSandbox();
-  sandbox.stub(NimbusTelemetry, "setExperimentActive");
-  sandbox.stub(manager.store, "init").resolves();
-
-  const active = ["foo", "bar"].map(ExperimentFakes.rollout);
-  sandbox.stub(manager.store, "getAll").returns(active);
-  sandbox
-    .stub(manager.store, "get")
-    .callsFake(slug => active.find(e => e.slug === slug));
-  sandbox.stub(manager.store, "set");
-
-  await manager.onStartup();
-
-  active.forEach(r =>
-    Assert.equal(
-      NimbusTelemetry.setExperimentActive.calledWith(r),
-      true,
-      `should call setExperimentActive for rollout: ${r.slug}`
-    )
-  );
-
-  sandbox.restore();
-  await cleanupStore(manager.store);
+  cleanup();
 });
 
 add_task(async function test_startup_unenroll() {
   Services.prefs.setBoolPref("app.shield.optoutstudies.enabled", false);
-  const store = ExperimentFakes.store();
-  const sandbox = sinon.createSandbox();
-  let recipe = ExperimentFakes.experiment("startup_unenroll", {
-    experimentType: "unittest",
-    source: "test",
-  });
-  // Test initializing ExperimentManager with an active
-  // recipe in the store. If the user has opted out it should
-  // unenroll.
-  await store.init();
-  store.addEnrollment(recipe);
 
-  const manager = ExperimentFakes.manager(store);
+  let storePath;
+  {
+    const store = NimbusTestUtils.stubs.store();
+    await store.init();
+
+    store.addEnrollment(
+      NimbusTestUtils.factories.experiment("startup_unenroll")
+    );
+
+    storePath = await NimbusTestUtils.saveStore(store);
+  }
+
+  const { sandbox, manager, initExperimentAPI, cleanup } =
+    await NimbusTestUtils.setupTest({ storePath, init: false });
+
   sandbox.spy(manager, "_unenroll");
 
-  await manager.onStartup();
+  await initExperimentAPI();
 
   Assert.ok(
     manager._unenroll.calledOnceWith(
@@ -138,19 +102,18 @@ add_task(async function test_startup_unenroll() {
 
   Services.prefs.clearUserPref("app.shield.optoutstudies.enabled");
 
-  await cleanupStore(manager.store);
+  cleanup();
 });
 
 add_task(async function test_onRecipe_enroll() {
-  const manager = ExperimentFakes.manager();
-  const sandbox = sinon.createSandbox();
+  const { sandbox, manager, cleanup } = await NimbusTestUtils.setupTest();
+
   sandbox.stub(manager, "isInBucketAllocation").resolves(true);
   sandbox.stub(Sampling, "bucketSample").resolves(true);
   sandbox.spy(manager, "enroll");
   sandbox.spy(manager, "updateEnrollment");
 
-  const fooRecipe = ExperimentFakes.recipe("foo");
-  await manager.onStartup();
+  const recipe = ExperimentFakes.recipe("foo");
 
   Assert.deepEqual(
     manager.store.getAllActiveExperiments(),
@@ -158,13 +121,13 @@ add_task(async function test_onRecipe_enroll() {
     "There should be no active experiments"
   );
 
-  await manager.onRecipe(fooRecipe, "test", {
+  await manager.onRecipe(recipe, "test", {
     ok: true,
     status: MatchStatus.TARGETING_AND_BUCKETING,
   });
 
   Assert.equal(
-    manager.enroll.calledWith(fooRecipe),
+    manager.enroll.calledWith(recipe),
     true,
     "should call .enroll() the first time a recipe is seen"
   );
@@ -174,72 +137,64 @@ add_task(async function test_onRecipe_enroll() {
     "should add recipe to the store"
   );
 
-  manager.unenroll(fooRecipe.slug);
+  manager.unenroll(recipe.slug);
 
-  await cleanupStore(manager.store);
+  cleanup();
 });
 
 add_task(async function test_onRecipe_update() {
-  const manager = ExperimentFakes.manager();
-  const sandbox = sinon.createSandbox();
+  const { sandbox, manager, cleanup } = await NimbusTestUtils.setupTest();
+
   sandbox.spy(manager, "enroll");
   sandbox.spy(manager, "updateEnrollment");
 
-  const fooRecipe = ExperimentFakes.recipe("foo", {
-    bucketConfig: {
-      ...ExperimentFakes.recipe.bucketConfig,
-      count: 1000,
-    },
-  });
+  const recipe = NimbusTestUtils.factories.recipe("foo");
 
   await manager.onStartup();
-  await manager.enroll(fooRecipe, "test");
-  await manager.onRecipe(fooRecipe, "test", {
+  await manager.enroll(recipe, "test");
+  await manager.onRecipe(recipe, "test", {
     ok: true,
     status: MatchStatus.TARGETING_AND_BUCKETING,
   });
 
   Assert.equal(
-    manager.updateEnrollment.calledWith(sinon.match.object, fooRecipe, "test", {
-      ok: true,
-      status: MatchStatus.TARGETING_AND_BUCKETING,
-    }),
+    manager.updateEnrollment.calledWith(
+      sinon.match({ slug: recipe.slug }),
+      recipe,
+      "test",
+      {
+        ok: true,
+        status: MatchStatus.TARGETING_AND_BUCKETING,
+      }
+    ),
     true,
     "should call .updateEnrollment() if the recipe has already been enrolled"
   );
 
-  manager.unenroll(fooRecipe.slug);
+  manager.unenroll(recipe.slug);
 
-  await cleanupStore(manager.store);
+  cleanup();
 });
 
 add_task(async function test_onRecipe_rollout_update() {
-  const manager = ExperimentFakes.manager();
-  const sandbox = sinon.createSandbox();
+  const { sandbox, manager, cleanup } = await NimbusTestUtils.setupTest();
+
   sandbox.spy(manager, "enroll");
   sandbox.spy(manager, "_unenroll");
   sandbox.spy(manager, "updateEnrollment");
 
-  const fooRecipe = ExperimentFakes.recipe("foo", {
-    isRollout: true,
-    bucketConfig: {
-      ...ExperimentFakes.recipe.bucketConfig,
-      count: 1000,
-    },
-    branches: [ExperimentFakes.recipe.branches[0]],
-  });
+  const recipe = NimbusTestUtils.factories.recipe("foo", { isRollout: true });
 
-  await manager.onStartup();
-  await manager.enroll(fooRecipe, "test");
-  await manager.onRecipe(fooRecipe, "test", {
+  await manager.enroll(recipe, "test");
+  await manager.onRecipe(recipe, "test", {
     ok: true,
     status: MatchStatus.TARGETING_AND_BUCKETING,
   });
 
   Assert.ok(
     manager.updateEnrollment.calledOnceWith(
-      sinon.match.object,
-      fooRecipe,
+      sinon.match({ slug: recipe.slug }),
+      recipe,
       "test",
       { ok: true, status: MatchStatus.TARGETING_AND_BUCKETING }
     ),
@@ -256,76 +211,59 @@ add_task(async function test_onRecipe_rollout_update() {
 
   manager.updateEnrollment.resetHistory();
 
-  const recipeClone = ExperimentFakes.recipe("foo", {
+  const updatedRecipe = NimbusTestUtils.factories.recipe(recipe.slug, {
     isRollout: true,
     branches: [
       {
-        ...ExperimentFakes.recipe.branches[0],
+        ...recipe.branches[0],
         slug: "control-v2",
       },
     ],
   });
-  await manager.onRecipe(recipeClone, "test", {
+  await manager.onRecipe(updatedRecipe, "test", {
     ok: true,
     status: MatchStatus.TARGETING_AND_BUCKETING,
   });
 
   Assert.ok(
     manager.updateEnrollment.calledOnceWith(
-      sinon.match.object,
-      recipeClone,
+      sinon.match({ slug: recipe.slug }),
+      updatedRecipe,
       "test",
       { ok: true, status: MatchStatus.TARGETING_AND_BUCKETING }
     ),
     "should call .updateEnrollment() if the recipe has already been enrolled"
   );
   Assert.ok(
-    manager._unenroll.calledOnceWith(sinon.match({ slug: fooRecipe.slug }), {
+    manager._unenroll.calledOnceWith(sinon.match({ slug: recipe.slug }), {
       reason: "branch-removed",
     }),
     "updateEnrollment will unenroll because the branch slug changed"
   );
 
-  await cleanupStore(manager.store);
+  cleanup();
 });
 
 add_task(async function test_onRecipe_isFirefoxLabsOptin_recipe() {
-  const manager = ExperimentFakes.manager();
-  const sandbox = sinon.createSandbox();
-  sandbox.spy(manager, "enroll");
+  const { sandbox, manager, cleanup } = await NimbusTestUtils.setupTest();
 
-  const fxLabsOptInRecipe = ExperimentFakes.recipe("fxLabsOptIn", {
+  sandbox.stub(manager, "enroll");
+
+  const optInRecipe = NimbusTestUtils.factories.recipe("opt-in", {
     isFirefoxLabsOptIn: true,
-    bucketConfig: {
-      ...ExperimentFakes.recipe.bucketConfig,
-      count: 10000,
-    },
     firefoxLabsTitle: "title",
     firefoxLabsDescription: "description",
     firefoxLabsDescriptionLinks: null,
     firefoxLabsGroup: "group",
     requiresRestart: false,
   });
-  const fxLabsOptOutRecipe = ExperimentFakes.recipe("fxLabsOptOut", {
-    isFirefoxLabsOptIn: false,
-    bucketConfig: {
-      ...ExperimentFakes.recipe.bucketConfig,
-      count: 1000,
-    },
-    firefoxLabsTitle: null,
-    firefoxLabsDescription: null,
-    firefoxLabsDescriptionLinks: null,
-    firefoxLabsGroup: null,
-    requiresRestart: false,
-  });
+  const recipe = NimbusTestUtils.factories.recipe("recipe");
 
-  await manager.onStartup();
-
-  await manager.onRecipe(fxLabsOptInRecipe, "test", {
+  await manager.onRecipe(optInRecipe, "test", {
     ok: true,
     status: MatchStatus.TARGETING_AND_BUCKETING,
   });
-  await manager.onRecipe(fxLabsOptOutRecipe, "test", {
+  await manager.onRecipe(recipe, "test", {
     ok: true,
     status: MatchStatus.TARGETING_AND_BUCKETING,
   });
@@ -333,39 +271,27 @@ add_task(async function test_onRecipe_isFirefoxLabsOptin_recipe() {
   Assert.equal(
     manager.optInRecipes.length,
     1,
-    "should only have one recipe i.e fxLabsOptInRecipe"
+    "should only have one opt-in recipe"
   );
   Assert.equal(
     manager.optInRecipes[0],
-    fxLabsOptInRecipe,
+    optInRecipe,
     "should add the recipe to OptInRecipes list if recipe is firefox labs opt-in"
   );
   Assert.equal(
-    manager.enroll.calledOnceWith(fxLabsOptOutRecipe, "test"),
+    manager.enroll.calledOnceWith(recipe, "test"),
     true,
     "should try to enroll the fxLabsOptOutRecipe since it is a targetting match"
   );
 
-  // unenrolling the fxLabsOptOutRecipe only
-  manager.unenroll(fxLabsOptOutRecipe.slug);
-  await cleanupStore(manager.store);
+  cleanup();
 });
 
 add_task(async function test_context_paramters() {
-  const manager = ExperimentFakes.manager();
+  const { manager, cleanup } = await NimbusTestUtils.setupTest();
 
-  await manager.onStartup();
-  await manager.store.ready();
-
-  const experiment = ExperimentFakes.recipe("experiment", {
-    bucketConfig: {
-      ...ExperimentFakes.recipe.bucketConfig,
-      count: 1000,
-    },
-  });
-
-  const rollout = ExperimentFakes.recipe("rollout", {
-    bucketConfig: experiment.bucketConfig,
+  const experiment = NimbusTestUtils.factories.recipe("experiment");
+  const rollout = NimbusTestUtils.factories.recipe("rollout", {
     isRollout: true,
   });
 
@@ -402,24 +328,18 @@ add_task(async function test_context_paramters() {
     "experiment",
     "rollout",
   ]);
+
+  cleanup();
 });
 
 add_task(async function test_experimentStore_updateEvent() {
-  const manager = ExperimentFakes.manager();
-  const stub = sinon.stub();
-
-  await manager.onStartup();
-  await manager.store.ready();
+  const { sandbox, manager, cleanup } = await NimbusTestUtils.setupTest();
+  const stub = sandbox.stub();
 
   manager.store.on("update", stub);
 
   await manager.enroll(
-    ExperimentFakes.recipe("experiment", {
-      bucketConfig: {
-        ...ExperimentFakes.recipe.bucketConfig,
-        count: 1000,
-      },
-    }),
+    NimbusTestUtils.factories.recipe("experiment"),
     "rs-loader"
   );
   Assert.ok(
@@ -441,5 +361,5 @@ add_task(async function test_experimentStore_updateEvent() {
     })
   );
 
-  assertEmptyStore(manager.store);
+  cleanup();
 });

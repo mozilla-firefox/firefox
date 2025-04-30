@@ -355,8 +355,9 @@ void ArenaChunk::releaseArena(GCRuntime* gc, Arena* arena,
     // The main thread is allocating out of this chunk without holding the
     // lock. Don't touch any data structures it is using but add the arena to a
     // pending set. This will be merged back by mergePendingFreeArenas.
-    MOZ_ASSERT(!pendingFreeCommittedArenas[arenaIndex(arena)]);
-    pendingFreeCommittedArenas[arenaIndex(arena)] = true;
+    auto& bitmap = gc->pendingFreeCommittedArenas.ref();
+    MOZ_ASSERT(!bitmap[arenaIndex(arena)]);
+    bitmap[arenaIndex(arena)] = true;
     return;
   }
 
@@ -465,7 +466,7 @@ void ArenaChunk::updateCurrentChunkAfterAlloc(GCRuntime* gc) {
 
   if (MOZ_UNLIKELY(isFull())) {
     AutoLockGC lock(gc);
-    mergePendingFreeArenas(lock);
+    mergePendingFreeArenas(gc, lock);
     if (isFull()) {
       gc->clearCurrentChunk(lock);
     }
@@ -504,9 +505,9 @@ void ArenaChunk::updateFreeCountsAfterFree(GCRuntime* gc, size_t numArenasFreed,
 
 void GCRuntime::setCurrentChunk(ArenaChunk* chunk, const AutoLockGC& lock) {
   MOZ_ASSERT(!currentChunk_);
+  MOZ_ASSERT(pendingFreeCommittedArenas.ref().IsEmpty());
   MOZ_ASSERT(chunk);
   MOZ_ASSERT(!chunk->info.isCurrentChunk);
-  MOZ_ASSERT(chunk->pendingFreeCommittedArenas.IsEmpty());
 
   currentChunk_ = chunk;
   chunk->info.isCurrentChunk = true;  // Lock needed here.
@@ -520,7 +521,7 @@ void GCRuntime::clearCurrentChunk(const AutoLockGC& lock) {
     return;
   }
 
-  chunk->mergePendingFreeArenas(lock);
+  chunk->mergePendingFreeArenas(this, lock);
 
   MOZ_ASSERT(chunk->info.isCurrentChunk);
   chunk->info.isCurrentChunk = false;  // Lock needed here.
@@ -540,17 +541,18 @@ void GCRuntime::clearCurrentChunk(const AutoLockGC& lock) {
   availableChunks(lock).push(chunk);
 }
 
-void ArenaChunk::mergePendingFreeArenas(const AutoLockGC& lock) {
+void ArenaChunk::mergePendingFreeArenas(GCRuntime* gc, const AutoLockGC& lock) {
   MOZ_ASSERT(info.isCurrentChunk);
 
-  if (pendingFreeCommittedArenas.IsEmpty()) {
+  auto& bitmap = gc->pendingFreeCommittedArenas.ref();
+  if (bitmap.IsEmpty()) {
     return;
   }
 
-  MOZ_ASSERT((freeCommittedArenas & pendingFreeCommittedArenas).IsEmpty());
-  size_t count = pendingFreeCommittedArenas.Count();
-  freeCommittedArenas |= pendingFreeCommittedArenas;
-  pendingFreeCommittedArenas.ResetAll();
+  MOZ_ASSERT((freeCommittedArenas & bitmap).IsEmpty());
+  size_t count = bitmap.Count();
+  freeCommittedArenas |= bitmap;
+  bitmap.ResetAll();
 
   info.numArenasFree += count;
   info.numArenasFreeCommitted += count;
@@ -708,7 +710,6 @@ void ChunkPool::verifyChunks() const {
   for (ArenaChunk* chunk = head_; chunk; chunk = chunk->info.next) {
     chunk->verify();
     MOZ_ASSERT(!chunk->info.isCurrentChunk);
-    MOZ_ASSERT(chunk->pendingFreeCommittedArenas.IsEmpty());
   }
 }
 

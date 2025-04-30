@@ -51,8 +51,6 @@ SMILAnimationController::~SMILAnimationController() {
   NS_ASSERTION(mAnimationElementTable.IsEmpty(),
                "Animation controller shouldn't be tracking any animation"
                " elements when it dies");
-  MOZ_RELEASE_ASSERT(!mRegisteredWithRefreshDriver,
-                     "Leaving stale entry in refresh driver's observer list");
 }
 
 void SMILAnimationController::Disconnect() {
@@ -61,9 +59,6 @@ void SMILAnimationController::Disconnect() {
              "Expecting to disconnect when doc is sole remaining owner");
   NS_ASSERTION(mPauseState & SMILTimeContainer::PAUSE_PAGEHIDE,
                "Expecting to be paused for pagehide before disconnect");
-
-  StopSampling(GetRefreshDriver());
-
   mDocument = nullptr;  // (raw pointer)
 }
 
@@ -92,13 +87,11 @@ SMILTime SMILAnimationController::GetParentTime() const {
   return (SMILTime)(mCurrentSampleTime - mStartTime).ToMilliseconds();
 }
 
-//----------------------------------------------------------------------
-// nsARefreshObserver methods:
-NS_IMPL_ADDREF(SMILAnimationController)
-NS_IMPL_RELEASE(SMILAnimationController)
-
 // nsRefreshDriver Callback function
 void SMILAnimationController::WillRefresh(mozilla::TimeStamp aTime) {
+  if (!mIsSampling) {
+    return;
+  }
   // Although we never expect aTime to go backwards, when we initialise the
   // animation controller, if we can't get hold of a refresh driver we
   // initialise mCurrentSampleTime to Now(). It may be possible that after
@@ -143,6 +136,7 @@ void SMILAnimationController::WillRefresh(mozilla::TimeStamp aTime) {
   mCurrentSampleTime = aTime;
 
   Sample();
+  UpdateSampling();
 }
 
 //----------------------------------------------------------------------
@@ -192,19 +186,6 @@ void SMILAnimationController::Traverse(
 void SMILAnimationController::Unlink() { mLastCompositorTable = nullptr; }
 
 //----------------------------------------------------------------------
-// Refresh driver lifecycle related methods
-
-void SMILAnimationController::NotifyRefreshDriverCreated(
-    nsRefreshDriver* aRefreshDriver) {
-  UpdateSampling();
-}
-
-void SMILAnimationController::NotifyRefreshDriverDestroying(
-    nsRefreshDriver* aRefreshDriver) {
-  StopSampling(aRefreshDriver);
-}
-
-//----------------------------------------------------------------------
 // Timer-related implementation helpers
 
 bool SMILAnimationController::ShouldSample() const {
@@ -214,36 +195,21 @@ bool SMILAnimationController::ShouldSample() const {
 
 void SMILAnimationController::UpdateSampling() {
   const bool shouldSample = ShouldSample();
-  const bool isSampling = mRegisteredWithRefreshDriver;
-  if (shouldSample == isSampling) {
+  if (!shouldSample) {
+    mIsSampling = false;
     return;
   }
-
-  nsRefreshDriver* driver = GetRefreshDriver();
-  if (!driver) {
-    return;
-  }
-
-  if (shouldSample) {
+  mDocument->MaybeScheduleRenderingPhases(
+      {RenderingPhase::UpdateAnimationsAndSendEvents});
+  if (!mIsSampling) {
+    mIsSampling = true;
     // We're effectively resuming from a pause so update our current sample time
     // or else it will confuse our "average time between samples" calculations.
     mCurrentSampleTime = mozilla::TimeStamp::Now();
-    driver->AddRefreshObserver(this, FlushType::Style, "SMIL animations");
-    mRegisteredWithRefreshDriver = true;
+    // TODO(emilio): Not doing the sync first sample breaks
+    // test_smilDynamicDelayedBeginElement.xhtml which tests for this
+    // explicitly. Maybe we can avoid this?
     Sample();  // Run the first sample manually.
-  } else {
-    StopSampling(driver);
-  }
-}
-
-void SMILAnimationController::StopSampling(nsRefreshDriver* aRefreshDriver) {
-  if (aRefreshDriver && mRegisteredWithRefreshDriver) {
-    // NOTE: The document might already have been detached from its PresContext
-    // (and RefreshDriver), which would make GetRefreshDriver() return null.
-    MOZ_ASSERT(!GetRefreshDriver() || aRefreshDriver == GetRefreshDriver(),
-               "Stopping sampling with wrong refresh driver");
-    aRefreshDriver->RemoveRefreshObserver(this, FlushType::Style);
-    mRegisteredWithRefreshDriver = false;
   }
 }
 

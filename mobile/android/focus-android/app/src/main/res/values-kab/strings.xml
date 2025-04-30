@@ -56,6 +56,7 @@
   <string name="menu_about">Γef</string>
   <string name="menu_help">Tallalt</string>
   <string name="menu_rights" moz:removedIn="137">Izerfan-inek</string>
+  <string name="menu_terms_of_use">Tiwtilin n useqdec</string>
   <!--
     Menu item: This is the label for a menu entry that shows how many trackers have been blocked
     for the currently loaded website. The number of blocked trackers is shown below this label.
@@ -469,6 +470,8 @@
   <string name="onboarding_first_screen_button_text" moz:removedIn="137" tools:ignore="UnusedResources">Bdu</string>
   <!-- New Onboarding flow first screen button label -->
   <string name="onboarding_first_screen_button_agree_and_continue">Qbel syen kemmel</string>
+  <!-- In the first screen of new onboarding flow, additional accessibility description for content that contain urls. -->
+  <string name="a11y_link_available">Aseɣwen yellan</string>
   <!--
     Onboarding second screen: Title
 

@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_THREAD_LOOP_H
 #define PIPEWIRE_THREAD_LOOP_H
@@ -32,6 +12,8 @@ extern "C" {
 #include <pipewire/loop.h>
 
 /** \page page_thread_loop Thread Loop
+ *
+ * \see \ref pw_thread_loop
  *
  * \section sec_thread_loop_overview Overview
  *
@@ -79,6 +61,11 @@ extern "C" {
  *
  * All events and callbacks are called with the thread lock held.
  *
+ * An exception to this is for the data processing callbacks, which are
+ * explcitly marked as being emitted from the data realtime threads. One
+ * such callback is the \ref pw_stream::process() callback when the
+ * \ref PW_STREAM_FLAG_RT_PROCESS is set.
+ *
  */
 /** \defgroup pw_thread_loop Thread Loop
  *
@@ -88,7 +75,7 @@ extern "C" {
  * All of the loop callbacks will be executed with the loop
  * lock held.
  *
- * See also \ref page_thread_loop
+ * \see \ref page_thread_loop
  */
 
 /**
@@ -153,7 +140,7 @@ int pw_thread_loop_get_time(struct pw_thread_loop *loop, struct timespec *abstim
 /** Release the lock and wait up to \a abstime until some thread calls
  * \ref pw_thread_loop_signal. Use \ref pw_thread_loop_get_time to make a timeout.
  * Since: 0.3.7 */
-int pw_thread_loop_timed_wait_full(struct pw_thread_loop *loop, struct timespec *abstime);
+int pw_thread_loop_timed_wait_full(struct pw_thread_loop *loop, const struct timespec *abstime);
 
 /** Signal all threads waiting with \ref pw_thread_loop_wait */
 void pw_thread_loop_signal(struct pw_thread_loop *loop, bool wait_for_accept);

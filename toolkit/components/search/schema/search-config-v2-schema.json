@@ -5,7 +5,7 @@
     "recordType": {
       "title": "Record Type",
       "description": "The type of details that this record contains.",
-      "enum": ["engine", "defaultEngines", "engineOrders"]
+      "enum": ["engine", "defaultEngines", "engineOrders", "availableLocales"]
     },
     "environment": {
       "title": "Environment",
@@ -468,6 +468,34 @@
           }
         },
         "required": ["recordType", "orders"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "recordType": {
+            "const": "availableLocales"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "recordType": {
+            "$ref": "#/definitions/recordType"
+          },
+          "locales": {
+            "title": "Locales",
+            "description": "All locales listed in the 'locales' field of each engine record. This is used so that we can choose the correct fallback locales on mobile which generally supplies locales of the form ab-CD. This record is an optimisation so that we can avoid parsing the configuration each time for all the locales.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(?:[a-z]{2,3}(-[a-zA-Z]{2,})?(?:-macos)?|default)$",
+              "minLength": 2
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": ["recordType", "locales"]
       }
     }
   ]

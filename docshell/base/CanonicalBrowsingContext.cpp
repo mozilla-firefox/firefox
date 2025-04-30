@@ -1301,7 +1301,6 @@ void CanonicalBrowsingContext::ReplaceActiveSessionHistoryEntry(
   nsSHistory* shistory = static_cast<nsSHistory*>(GetSessionHistory());
   if (shistory) {
     shistory->NotifyOnHistoryReplaceEntry();
-    shistory->UpdateRootBrowsingContextState();
   }
 
   ResetSHEntryHasUserInteractionCache();
@@ -2986,6 +2985,9 @@ static void LogBFCacheBlockingForDoc(BrowsingContext* aBrowsingContext,
   }
   if (aBFCacheCombo & BFCacheStatus::ACTIVE_LOCK) {
     MOZ_LOG(gSHIPBFCacheLog, LogLevel::Debug, (" * has active Web Locks"));
+  }
+  if (aBFCacheCombo & BFCacheStatus::PAGE_LOADING) {
+    MOZ_LOG(gSHIPBFCacheLog, LogLevel::Debug, (" * has page loading"));
   }
 }
 

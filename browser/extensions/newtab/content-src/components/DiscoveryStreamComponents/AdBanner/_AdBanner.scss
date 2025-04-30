@@ -36,14 +36,8 @@
     &.leaderboard {
       max-width: var(--leaderboard-width);
 
-      .ad-banner-dismiss {
-        width: var(--leaderboard-width);
-      }
-
       .ad-banner-content {
         height: var(--leaderboard-height);
-        width: var(--leaderboard-width);
-        margin: 0 auto;
       }
 
       .ad-banner-sponsored {
@@ -60,8 +54,6 @@
 
       .ad-banner-content {
         height: var(--billboard-height);
-        width: var(--billboard-width);
-        margin: 0 auto;
       }
 
       .ad-banner-sponsored {
@@ -71,6 +63,10 @@
       @media (width <= 1015px) {
         display: none;
       }
+    }
+
+    .ad-banner-link {
+      display: inline-block;
     }
 
     .ad-banner-sponsored {

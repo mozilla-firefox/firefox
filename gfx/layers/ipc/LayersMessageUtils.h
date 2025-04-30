@@ -1188,18 +1188,31 @@ struct ParamTraits<mozilla::layers::CompositorScrollUpdate::Source>
           mozilla::layers::CompositorScrollUpdate::Source::Other> {};
 
 template <>
-struct ParamTraits<mozilla::layers::CompositorScrollUpdate> {
-  typedef mozilla::layers::CompositorScrollUpdate paramType;
+struct ParamTraits<mozilla::layers::CompositorScrollUpdate::Metrics> {
+  typedef mozilla::layers::CompositorScrollUpdate::Metrics paramType;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
     WriteParam(aWriter, aParam.mVisualScrollOffset);
     WriteParam(aWriter, aParam.mZoom);
-    WriteParam(aWriter, aParam.mSource);
   }
 
   static bool Read(MessageReader* aReader, paramType* aResult) {
     return (ReadParam(aReader, &aResult->mVisualScrollOffset) &&
-            ReadParam(aReader, &aResult->mZoom) &&
+            ReadParam(aReader, &aResult->mZoom));
+  }
+};
+
+template <>
+struct ParamTraits<mozilla::layers::CompositorScrollUpdate> {
+  typedef mozilla::layers::CompositorScrollUpdate paramType;
+
+  static void Write(MessageWriter* aWriter, const paramType& aParam) {
+    WriteParam(aWriter, aParam.mMetrics);
+    WriteParam(aWriter, aParam.mSource);
+  }
+
+  static bool Read(MessageReader* aReader, paramType* aResult) {
+    return (ReadParam(aReader, &aResult->mMetrics) &&
             ReadParam(aReader, &aResult->mSource));
   }
 };

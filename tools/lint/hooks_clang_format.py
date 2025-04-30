@@ -13,11 +13,9 @@ topsrcdir = os.path.join(here, os.pardir, os.pardir)
 
 EXTRA_PATHS = (
     "python/mach",
-    "python/mozbuild",
     "python/mozversioncontrol",
     "testing/mozbase/mozfile",
     "third_party/python/jsmin",
-    "third_party/python/six",
 )
 sys.path[:0] = [os.path.join(topsrcdir, p) for p in EXTRA_PATHS]
 

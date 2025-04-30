@@ -49,10 +49,7 @@ class Analytics(
 ) {
     val crashReporter: CrashReporter by lazyMonitored {
         val services = mutableListOf<CrashReporterService>()
-        val distributionId = when (Config.channel.isMozillaOnline) {
-            true -> "MozillaOnline"
-            false -> "Mozilla"
-        }
+        val distributionId = "Mozilla"
 
         if (isSentryEnabled()) {
             // We treat caught exceptions similar to debug logging.

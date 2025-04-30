@@ -8,7 +8,10 @@
  */
 
 const REMOTE_SETTINGS_RESULTS = [
-  QuickSuggestTestUtils.ampRemoteSettings({ keywords: ["fra", "frab"] }),
+  QuickSuggestTestUtils.ampRemoteSettings({
+    keywords: ["fra", "frab"],
+    full_keywords: [["frab", 2]],
+  }),
   QuickSuggestTestUtils.wikipediaRemoteSettings(),
 ];
 

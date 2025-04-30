@@ -1,0 +1,37 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Library("breakpad_wrapper")
+
+if CONFIG["MOZ_PHC"]:
+    DEFINES["MOZ_PHC"] = True
+
+SOURCES = [
+    "breakpad_wrapper.cpp",
+]
+
+LOCAL_INCLUDES += [
+    "../breakpad-client/",
+    "../google-breakpad/src/",
+]
+
+if CONFIG["OS_ARCH"] == "WINNT":
+    USE_LIBS += [
+        "google_breakpad_libxul_s",
+    ]
+
+    OS_LIBS += [
+        "advapi32",
+        "bcrypt",
+        "dbghelp",
+        "ntdll",
+        "userenv",
+        "ws2_32",
+    ]
+else:
+    USE_LIBS += [
+        "breakpad_client",
+    ]

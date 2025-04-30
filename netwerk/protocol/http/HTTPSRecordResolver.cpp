@@ -23,9 +23,7 @@ namespace net {
 NS_IMPL_ISUPPORTS(HTTPSRecordResolver, nsIDNSListener)
 
 HTTPSRecordResolver::HTTPSRecordResolver(nsAHttpTransaction* aTransaction)
-    : mTransaction(aTransaction),
-      mConnInfo(aTransaction->ConnectionInfo()),
-      mCaps(aTransaction->Caps()) {}
+    : mTransaction(aTransaction), mConnInfo(aTransaction->ConnectionInfo()) {}
 
 HTTPSRecordResolver::~HTTPSRecordResolver() = default;
 
@@ -45,7 +43,7 @@ nsresult HTTPSRecordResolver::FetchHTTPSRRInternal(
 
   nsIDNSService::DNSFlags flags =
       nsIDNSService::GetFlagsFromTRRMode(mConnInfo->GetTRRMode());
-  if (mCaps & NS_HTTP_REFRESH_DNS) {
+  if (mTransaction->Caps() & NS_HTTP_REFRESH_DNS) {
     flags |= nsIDNSService::RESOLVE_BYPASS_CACHE;
   }
 
@@ -153,9 +151,11 @@ nsresult HTTPSRecordResolver::InvokeCallback() {
     Unused << mAddrRecord->GetCanonicalName(cname);
   }
 
+  // Make sure we use the updated caps from the transaction.
+  uint32_t caps = mTransaction->Caps();
   nsCOMPtr<nsISVCBRecord> svcbRecord;
   if (NS_FAILED(mHTTPSRecord->GetServiceModeRecordWithCname(
-          mCaps & NS_HTTP_DISALLOW_SPDY, mCaps & NS_HTTP_DISALLOW_HTTP3, cname,
+          caps & NS_HTTP_DISALLOW_SPDY, caps & NS_HTTP_DISALLOW_HTTP3, cname,
           getter_AddRefs(svcbRecord)))) {
     return mTransaction->OnHTTPSRRAvailable(mHTTPSRecord, nullptr, cname);
   }

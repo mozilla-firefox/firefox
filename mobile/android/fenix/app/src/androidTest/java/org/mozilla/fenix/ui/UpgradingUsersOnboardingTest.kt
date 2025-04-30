@@ -11,6 +11,7 @@ import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
 import org.mozilla.fenix.helpers.TestHelper.mDevice
 import org.mozilla.fenix.helpers.TestHelper.relaunchCleanApp
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.homeScreen
 
 /**
@@ -24,6 +25,9 @@ class UpgradingUsersOnboardingTest : TestSetup() {
     val activityTestRule = AndroidComposeTestRule(
         HomeActivityIntentTestRule(isHomeOnboardingDialogEnabled = true),
     ) { it.activity }
+
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1913592
     @Test

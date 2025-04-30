@@ -15,7 +15,11 @@ async function openCreatePanel(tabgroupPanel, tab) {
   await panelShown;
 }
 
-async function setup(enableSmartTab = true, optIn = true) {
+async function setup({
+  enableSmartTab = true,
+  optIn = true,
+  labelReason = "DEFAULT",
+} = {}) {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.tabs.groups.enabled", true],
@@ -36,6 +40,10 @@ async function setup(enableSmartTab = true, optIn = true) {
   sinon
     .stub(SmartTabGroupingManager.prototype, "preloadAllModels")
     .resolves([]);
+
+  sinon
+    .stub(SmartTabGroupingManager.prototype, "getLabelReason")
+    .returns(labelReason);
 
   let tab = BrowserTestUtils.addTab(gBrowser, "about:blank");
   const cleanup = () => {
@@ -74,6 +82,11 @@ add_task(async function test_saving_ml_suggested_label_telemetry() {
     events[0].extra.model_revision,
     "v0.3.4",
     "Model revision should be present"
+  );
+  Assert.equal(
+    events[0].extra.label_reason,
+    "DEFAULT",
+    "If suggested label had more than zero length, reason should be default"
   );
   cleanup();
 });
@@ -215,7 +228,7 @@ add_task(async function test_canceling_ml_suggested_tabs_with_ml_label() {
 });
 
 add_task(async function test_pref_off_should_not_create_events() {
-  let { tab, cleanup } = await setup(false);
+  let { tab, cleanup } = await setup({ enableSmartTab: false });
   let tabgroupEditor = document.getElementById("tab-group-editor");
   let tabgroupPanel = tabgroupEditor.panel;
   let nameField = tabgroupPanel.querySelector("#tab-group-name");
@@ -280,7 +293,7 @@ async function waitForUpdateComplete(element) {
 }
 
 add_task(async function test_optin_telemetry() {
-  let { tab, cleanup } = await setup(true, false);
+  let { tab, cleanup } = await setup({ enableSmartTab: true, optIn: false });
   let tabgroupEditor = document.getElementById("tab-group-editor");
   let tabgroupPanel = tabgroupEditor.panel;
 
@@ -348,3 +361,90 @@ add_task(async function test_saving_ml_suggested_empty_label_telemetry() {
   );
   cleanup();
 });
+
+add_task(async function test_user_not_opted_in_should_not_send_ml_events() {
+  let { tab, cleanup } = await setup({ enableSmartTab: true, optIn: false });
+  let tabgroupEditor = document.getElementById("tab-group-editor");
+  let tabgroupPanel = tabgroupEditor.panel;
+  let nameField = tabgroupPanel.querySelector("#tab-group-name");
+
+  await openCreatePanel(tabgroupPanel, tab);
+  // add the label
+  nameField.focus();
+  nameField.value = "Random ML Suggested Label"; // user label matching suggested label
+  tabgroupEditor.mlLabel = "Random ML Suggested Label"; // suggested label
+  // click on the suggest button
+  tabgroupPanel.querySelector("#tab-group-suggestion-button").click();
+  tabgroupEditor.hasSuggestedMlTabs = true;
+  tabgroupPanel.hidePopup();
+  let panelHidden = BrowserTestUtils.waitForPopupEvent(tabgroupPanel, "hidden");
+  await panelHidden;
+
+  Assert.equal(
+    Glean.tabgroup.smartTabTopic.testGetValue() ?? "none",
+    "none",
+    "No topic event should be sent"
+  );
+  Assert.equal(
+    Glean.tabgroup.smartTabSuggest.testGetValue() ?? "none",
+    "none",
+    "No suggest event should be sent"
+  );
+  cleanup();
+});
+
+add_task(
+  async function test_saving_ml_zero_length_low_confidence_label_telemetry() {
+    let { tab, cleanup } = await setup({ labelReason: "LOW_CONFIDENCE" });
+    let tabgroupEditor = document.getElementById("tab-group-editor");
+    let tabgroupPanel = tabgroupEditor.panel;
+    let nameField = tabgroupPanel.querySelector("#tab-group-name");
+
+    await openCreatePanel(tabgroupPanel, tab);
+    nameField.focus();
+    nameField.value = "Random Non-ML Label"; // user label matching suggested label
+    tabgroupEditor.mlLabel = ""; // empty label
+    tabgroupPanel.querySelector("#tab-group-editor-button-create").click();
+    let panelHidden = BrowserTestUtils.waitForPopupEvent(
+      tabgroupPanel,
+      "hidden"
+    );
+    await panelHidden;
+
+    const events = Glean.tabgroup.smartTabTopic.testGetValue();
+    Assert.equal(
+      events[0].extra.label_reason,
+      "LOW_CONFIDENCE",
+      "If suggested label zero length with low confidence, proper reason should be given"
+    );
+    cleanup();
+  }
+);
+
+add_task(
+  async function test_saving_ml_zero_length_dissimilar_label_telemetry() {
+    let { tab, cleanup } = await setup({ labelReason: "EXCLUDE" });
+    let tabgroupEditor = document.getElementById("tab-group-editor");
+    let tabgroupPanel = tabgroupEditor.panel;
+    let nameField = tabgroupPanel.querySelector("#tab-group-name");
+
+    await openCreatePanel(tabgroupPanel, tab);
+    nameField.focus();
+    nameField.value = "Random Non-ML Label"; // user label matching suggested label
+    tabgroupEditor.mlLabel = ""; // empty label
+    tabgroupPanel.querySelector("#tab-group-editor-button-create").click();
+    let panelHidden = BrowserTestUtils.waitForPopupEvent(
+      tabgroupPanel,
+      "hidden"
+    );
+    await panelHidden;
+
+    const events = Glean.tabgroup.smartTabTopic.testGetValue();
+    Assert.equal(
+      events[0].extra.label_reason,
+      "EXCLUDE",
+      "If suggested label zero length with dissimilar tabs, proper reason should be given"
+    );
+    cleanup();
+  }
+);

@@ -42,10 +42,12 @@ class MicrosurveyBottomSheetFragment : BottomSheetDialogFragment() {
         super.onCreateDialog(savedInstanceState).apply {
             setOnShowListener {
                 val bottomSheet = findViewById<View?>(R.id.design_bottom_sheet)
-                bottomSheet?.setBackgroundResource(android.R.color.transparent)
-                val behavior = BottomSheetBehavior.from(bottomSheet)
-                behavior.setPeekHeightToHalfScreenHeight()
-                behavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
+                bottomSheet?.let {
+                    it.setBackgroundResource(android.R.color.transparent)
+                    val behavior = BottomSheetBehavior.from(it)
+                    behavior.setPeekHeightToHalfScreenHeight()
+                    behavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
+                }
             }
         }
 

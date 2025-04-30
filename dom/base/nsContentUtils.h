@@ -810,11 +810,6 @@ class nsContentUtils {
                                                    bool aTrimTrailing = true);
 
   /**
-   * Returns true if aChar is of class Ps, Pi, Po, Pf, or Pe.
-   */
-  static bool IsFirstLetterPunctuation(uint32_t aChar);
-
-  /**
    * Returns true if aChar is of class Lu, Ll, Lt, Lm, Lo, Nd, Nl or No
    */
   static bool IsAlphanumeric(uint32_t aChar);
@@ -1777,6 +1772,12 @@ class nsContentUtils {
    * Return the event type atom for a given event message.
    */
   static nsAtom* GetEventTypeFromMessage(EventMessage aEventMessage);
+
+  /**
+   * Return the event type atom from a given event.
+   */
+  static already_AddRefed<nsAtom> GetEventType(
+      const mozilla::WidgetEvent* aEvent);
 
   /**
    * Returns the EventMessage and nsAtom to be used for event listener

@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_DEBUG_FORMAT_H
 #define SPA_DEBUG_FORMAT_H
@@ -35,18 +15,29 @@ extern "C" {
  */
 
 #include <spa/pod/parser.h>
-#include <spa/debug/log.h>
+#include <spa/utils/string.h>
+#include <spa/debug/context.h>
 #include <spa/debug/types.h>
 #include <spa/param/type-info.h>
 #include <spa/param/format-utils.h>
 
-static inline int
-spa_debug_format_value(const struct spa_type_info *info,
+#ifndef SPA_API_DEBUG_FORMAT
+ #ifdef SPA_API_IMPL
+  #define SPA_API_DEBUG_FORMAT SPA_API_IMPL
+ #else
+  #define SPA_API_DEBUG_FORMAT static inline
+ #endif
+#endif
+
+
+SPA_API_DEBUG_FORMAT int
+spa_debug_strbuf_format_value(struct spa_strbuf *buffer, const struct spa_type_info *info,
 		uint32_t type, void *body, uint32_t size)
 {
+
 	switch (type) {
 	case SPA_TYPE_Bool:
-		spa_debugn("%s", *(int32_t *) body ? "true" : "false");
+		spa_strbuf_append(buffer, "%s", *(int32_t *) body ? "true" : "false");
 		break;
 	case SPA_TYPE_Id:
 	{
@@ -56,41 +47,41 @@ spa_debug_format_value(const struct spa_type_info *info,
 			snprintf(tmp, sizeof(tmp), "%d", *(int32_t*)body);
 			str = tmp;
 		}
-		spa_debugn("%s", str);
+		spa_strbuf_append(buffer, "%s", str);
 		break;
 	}
 	case SPA_TYPE_Int:
-		spa_debugn("%d", *(int32_t *) body);
+		spa_strbuf_append(buffer, "%d", *(int32_t *) body);
 		break;
 	case SPA_TYPE_Long:
-		spa_debugn("%" PRIi64, *(int64_t *) body);
+		spa_strbuf_append(buffer, "%" PRIi64, *(int64_t *) body);
 		break;
 	case SPA_TYPE_Float:
-		spa_debugn("%f", *(float *) body);
+		spa_strbuf_append(buffer, "%f", *(float *) body);
 		break;
 	case SPA_TYPE_Double:
-		spa_debugn("%f", *(double *) body);
+		spa_strbuf_append(buffer, "%f", *(double *) body);
 		break;
 	case SPA_TYPE_String:
-		spa_debugn("%s", (char *) body);
+		spa_strbuf_append(buffer, "%s", (char *) body);
 		break;
 	case SPA_TYPE_Rectangle:
 	{
 		struct spa_rectangle *r = (struct spa_rectangle *)body;
-		spa_debugn("%" PRIu32 "x%" PRIu32, r->width, r->height);
+		spa_strbuf_append(buffer, "%" PRIu32 "x%" PRIu32, r->width, r->height);
 		break;
 	}
 	case SPA_TYPE_Fraction:
 	{
 		struct spa_fraction *f = (struct spa_fraction *)body;
-		spa_debugn("%" PRIu32 "/%" PRIu32, f->num, f->denom);
+		spa_strbuf_append(buffer, "%" PRIu32 "/%" PRIu32, f->num, f->denom);
 		break;
 	}
 	case SPA_TYPE_Bitmap:
-		spa_debugn("Bitmap");
+		spa_strbuf_append(buffer, "Bitmap");
 		break;
 	case SPA_TYPE_Bytes:
-		spa_debugn("Bytes");
+		spa_strbuf_append(buffer, "Bytes");
 		break;
 	case SPA_TYPE_Array:
 	{
@@ -98,23 +89,35 @@ spa_debug_format_value(const struct spa_type_info *info,
 		struct spa_pod_array_body *b = (struct spa_pod_array_body *)body;
 		int i = 0;
 		info = info && info->values ? info->values : info;
-		spa_debugn("< ");
+		spa_strbuf_append(buffer, "< ");
 		SPA_POD_ARRAY_BODY_FOREACH(b, size, p) {
 			if (i++ > 0)
-				spa_debugn(", ");
-			spa_debug_format_value(info, b->child.type, p, b->child.size);
+				spa_strbuf_append(buffer, ", ");
+			spa_debug_strbuf_format_value(buffer, info, b->child.type, p, b->child.size);
 		}
-		spa_debugn(" >");
+		spa_strbuf_append(buffer, " >");
 		break;
 	}
 	default:
-		spa_debugn("INVALID type %d", type);
+		spa_strbuf_append(buffer, "INVALID type %d", type);
 		break;
 	}
 	return 0;
 }
 
-static inline int spa_debug_format(int indent,
+SPA_API_DEBUG_FORMAT int
+spa_debug_format_value(const struct spa_type_info *info,
+		uint32_t type, void *body, uint32_t size)
+{
+	char buffer[1024];
+	struct spa_strbuf buf;
+	spa_strbuf_init(&buf, buffer, sizeof(buffer));
+	spa_debug_strbuf_format_value(&buf, info, type, body, size);
+	spa_debugn("%s", buffer);
+	return 0;
+}
+
+SPA_API_DEBUG_FORMAT int spa_debugc_format(struct spa_debug_context *ctx, int indent,
 		const struct spa_type_info *info, const struct spa_pod *format)
 {
 	const char *media_type;
@@ -134,7 +137,7 @@ static inline int spa_debug_format(int indent,
 	media_type = spa_debug_type_find_name(spa_type_media_type, mtype);
 	media_subtype = spa_debug_type_find_name(spa_type_media_subtype, mstype);
 
-	spa_debug("%*s %s/%s", indent, "",
+	spa_debugc(ctx, "%*s %s/%s", indent, "",
 		media_type ? spa_debug_type_short_name(media_type) : "unknown",
 		media_subtype ? spa_debug_type_short_name(media_subtype) : "unknown");
 
@@ -144,6 +147,8 @@ static inline int spa_debug_format(int indent,
 		uint32_t i, type, size, n_vals, choice;
 		const struct spa_pod *val;
 		void *vals;
+		char buffer[1024];
+		struct spa_strbuf buf;
 
 		if (prop->key == SPA_FORMAT_mediaType ||
 		    prop->key == SPA_FORMAT_mediaSubtype)
@@ -161,12 +166,13 @@ static inline int spa_debug_format(int indent,
 		ti = spa_debug_type_find(info, prop->key);
 		key = ti ? ti->name : NULL;
 
-		spa_debugn("%*s %16s : (%s) ", indent, "",
+		spa_strbuf_init(&buf, buffer, sizeof(buffer));
+		spa_strbuf_append(&buf, "%*s %16s : (%s) ", indent, "",
 			key ? spa_debug_type_short_name(key) : "unknown",
 			spa_debug_type_short_name(spa_types[type].name));
 
 		if (choice == SPA_CHOICE_None) {
-			spa_debug_format_value(ti ? ti->values : NULL, type, vals, size);
+			spa_debug_strbuf_format_value(&buf, ti ? ti->values : NULL, type, vals, size);
 		} else {
 			const char *ssep, *esep, *sep;
 
@@ -186,21 +192,26 @@ static inline int spa_debug_format(int indent,
 				break;
 			}
 
-			spa_debugn("%s", ssep);
+			spa_strbuf_append(&buf, "%s", ssep);
 
 			for (i = 1; i < n_vals; i++) {
 				vals = SPA_PTROFF(vals, size, void);
 				if (i > 1)
-					spa_debugn("%s", sep);
-				spa_debug_format_value(ti ? ti->values : NULL, type, vals, size);
+					spa_strbuf_append(&buf, "%s", sep);
+				spa_debug_strbuf_format_value(&buf, ti ? ti->values : NULL, type, vals, size);
 			}
-			spa_debugn("%s", esep);
+			spa_strbuf_append(&buf, "%s", esep);
 		}
-		spa_debugn("\n");
+		spa_debugc(ctx, "%s", buffer);
 	}
 	return 0;
 }
 
+SPA_API_DEBUG_FORMAT int spa_debug_format(int indent,
+		const struct spa_type_info *info, const struct spa_pod *format)
+{
+	return spa_debugc_format(NULL, indent, info, format);
+}
 /**
  * \}
  */

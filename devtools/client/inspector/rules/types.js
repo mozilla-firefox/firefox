@@ -132,14 +132,6 @@ exports.rule = {
   // An unique CSS rule id.
   id: PropTypes.string,
 
-  // An object containing information about the CSS rule's inheritance.
-  inheritance: PropTypes.shape({
-    // The NodeFront of the element this rule was inherited from.
-    inherited: PropTypes.object,
-    // A header label for where the element this rule was inherited from.
-    inheritedSource: PropTypes.string,
-  }),
-
   // Whether or not the rule does not match the current selected element.
   isUnmatched: PropTypes.bool,
 

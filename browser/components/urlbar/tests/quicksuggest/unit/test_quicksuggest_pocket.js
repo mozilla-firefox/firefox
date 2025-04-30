@@ -6,6 +6,10 @@
 
 "use strict";
 
+ChromeUtils.defineESModuleGetters(this, {
+  Suggestion: "resource://gre/modules/RustSuggest.sys.mjs",
+});
+
 const LOW_KEYWORD = "low one two";
 const HIGH_KEYWORD = "high three";
 
@@ -464,7 +468,7 @@ function makeExpectedResult({
     expectedSuggestedIndex = 1;
   }
 
-  return {
+  let result = {
     isBestMatch: isTopPick,
     suggestedIndex: expectedSuggestedIndex,
     type: UrlbarUtils.RESULT_TYPE.URL,
@@ -494,4 +498,15 @@ function makeExpectedResult({
       },
     },
   };
+
+  if (source == "rust") {
+    result.payload.suggestionObject = new Suggestion.Pocket(
+      suggestion.title,
+      suggestion.url,
+      0.2, // score
+      isTopPick
+    );
+  }
+
+  return result;
 }

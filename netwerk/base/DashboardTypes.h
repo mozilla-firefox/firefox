@@ -62,6 +62,39 @@ struct HttpRetParams {
   bool ssl;
 };
 
+struct Http3ConnStats {
+  // Total packets received, including all the bad ones.
+  uint64_t packetsRx;
+  // Duplicate packets received.
+  uint64_t dupsRx;
+  // Dropped packets or dropped garbage.
+  uint64_t droppedRx;
+  // The number of packet that were saved for later processing.
+  uint64_t savedDatagrams;
+  // Total packets sent.
+  uint64_t packetsTx;
+  // Total number of packets that are declared lost.
+  uint64_t lost;
+  // Late acknowledgments, for packets that were declared lost already.
+  uint64_t lateAck;
+  // Acknowledgments for packets that contained data that was marked
+  // for retransmission when the PTO timer popped.
+  uint64_t ptoAck;
+  // Count PTOs. Single PTOs, 2 PTOs in a row, 3 PTOs in row, etc. are counted
+  // separately.
+  CopyableTArray<uint64_t> ptoCounts;
+  // The count of WouldBlock errors encountered during receive operations.
+  uint64_t wouldBlockRx;
+  // The count of WouldBlock errors encountered during transmit operations.
+  uint64_t wouldBlockTx;
+};
+
+struct Http3ConnectionStatsParams {
+  nsCString host;
+  uint16_t port;
+  CopyableTArray<Http3ConnStats> stats;
+};
+
 }  // namespace net
 }  // namespace mozilla
 
@@ -171,6 +204,56 @@ struct ParamTraits<mozilla::net::HttpRetParams> {
            ReadParam(aReader, &aResult->port) &&
            ReadParam(aReader, &aResult->httpVersion) &&
            ReadParam(aReader, &aResult->ssl);
+  }
+};
+
+template <>
+struct ParamTraits<mozilla::net::Http3ConnStats> {
+  typedef mozilla::net::Http3ConnStats paramType;
+
+  static void Write(MessageWriter* aWriter, const paramType& aParam) {
+    WriteParam(aWriter, aParam.packetsRx);
+    WriteParam(aWriter, aParam.dupsRx);
+    WriteParam(aWriter, aParam.droppedRx);
+    WriteParam(aWriter, aParam.savedDatagrams);
+    WriteParam(aWriter, aParam.packetsTx);
+    WriteParam(aWriter, aParam.lost);
+    WriteParam(aWriter, aParam.lateAck);
+    WriteParam(aWriter, aParam.ptoAck);
+    WriteParam(aWriter, aParam.ptoCounts);
+    WriteParam(aWriter, aParam.wouldBlockRx);
+    WriteParam(aWriter, aParam.wouldBlockTx);
+  }
+
+  static bool Read(MessageReader* aReader, paramType* aResult) {
+    return ReadParam(aReader, &aResult->packetsRx) &&
+           ReadParam(aReader, &aResult->dupsRx) &&
+           ReadParam(aReader, &aResult->droppedRx) &&
+           ReadParam(aReader, &aResult->savedDatagrams) &&
+           ReadParam(aReader, &aResult->packetsTx) &&
+           ReadParam(aReader, &aResult->lost) &&
+           ReadParam(aReader, &aResult->lateAck) &&
+           ReadParam(aReader, &aResult->ptoAck) &&
+           ReadParam(aReader, &aResult->ptoCounts) &&
+           ReadParam(aReader, &aResult->wouldBlockRx) &&
+           ReadParam(aReader, &aResult->wouldBlockTx);
+  }
+};
+
+template <>
+struct ParamTraits<mozilla::net::Http3ConnectionStatsParams> {
+  typedef mozilla::net::Http3ConnectionStatsParams paramType;
+
+  static void Write(MessageWriter* aWriter, const paramType& aParam) {
+    WriteParam(aWriter, aParam.host);
+    WriteParam(aWriter, aParam.port);
+    WriteParam(aWriter, aParam.stats);
+  }
+
+  static bool Read(MessageReader* aReader, paramType* aResult) {
+    return ReadParam(aReader, &aResult->host) &&
+           ReadParam(aReader, &aResult->port) &&
+           ReadParam(aReader, &aResult->stats);
   }
 };
 

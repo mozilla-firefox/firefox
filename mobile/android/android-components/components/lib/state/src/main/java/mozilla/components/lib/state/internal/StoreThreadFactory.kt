@@ -6,6 +6,7 @@ package mozilla.components.lib.state.internal
 
 import mozilla.components.lib.state.Store
 import mozilla.components.support.base.utils.NamedThreadFactory
+import mozilla.components.support.utils.ext.threadIdCompat
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
 
@@ -32,7 +33,7 @@ internal class StoreThreadFactory(
     }
 
     val threadId: Long?
-        get() = thread?.id
+        get() = thread?.threadIdCompat()
 
     override fun newThread(r: Runnable): Thread {
         return actualFactory.newThread(r).also {

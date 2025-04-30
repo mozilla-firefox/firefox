@@ -29,11 +29,7 @@ impl JexlFilter {
     /// evaluated as `true` by default.
     pub(crate) fn new(context: Option<RemoteSettingsContext>) -> Self {
         let env_context = match context {
-            Some(ctx) => {
-                let serialized_context =
-                    serde_json::to_value(ctx).expect("Failed to serialize RemoteSettingsContext");
-                json!({ "env": serialized_context })
-            }
+            Some(ctx) => json!({ "env": ctx.into_env() }),
             None => json!({ "env": {} }),
         };
 

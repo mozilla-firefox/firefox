@@ -7,11 +7,9 @@
 #ifndef NS_DATACHANNELPARENT_H
 #define NS_DATACHANNELPARENT_H
 
-#include "nsDataChannel.h"
 #include "nsIParentChannel.h"
 #include "nsISupportsImpl.h"
 
-#include "mozilla/net/NeckoParent.h"
 #include "mozilla/net/PDataChannelParent.h"
 
 namespace mozilla {
@@ -27,10 +25,7 @@ class DataChannelParent : public nsIParentChannel, public PDataChannelParent {
   NS_DECL_NSIREQUESTOBSERVER
   NS_DECL_NSISTREAMLISTENER
 
-  virtual mozilla::ipc::IPCResult RecvNotifyListeners(
-      const DataChannelInfo& aDataChannelInfo);
-  virtual mozilla::ipc::IPCResult RecvSetChannelIdForRedirect(
-      const uint64_t& aChannelId);
+  [[nodiscard]] bool Init(const uint64_t& aChannelId);
 
  private:
   ~DataChannelParent() = default;

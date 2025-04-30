@@ -4,7 +4,7 @@
 
 // Don't manually modify this line, as it is automatically replaced on merge day
 // by the gecko_migration.py script.
-export const WEAVE_VERSION = "1.141.0";
+export const WEAVE_VERSION = "1.142.0";
 
 // Sync Server API version that the client supports.
 export const SYNC_API_VERSION = "1.5";

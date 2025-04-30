@@ -2185,35 +2185,57 @@ static bool IsMemory(HandleValue v) {
 }
 
 /* static */
-bool WasmMemoryObject::bufferGetterImpl(JSContext* cx, const CallArgs& args) {
-  Rooted<WasmMemoryObject*> memoryObj(
-      cx, &args.thisv().toObject().as<WasmMemoryObject>());
-  Rooted<ArrayBufferObjectMaybeShared*> buffer(cx, &memoryObj->buffer());
-
+ArrayBufferObjectMaybeShared* WasmMemoryObject::refreshBuffer(
+    JSContext* cx, Handle<WasmMemoryObject*> memoryObj,
+    Handle<ArrayBufferObjectMaybeShared*> buffer) {
   if (memoryObj->isShared()) {
     size_t memoryLength = memoryObj->volatileMemoryLength();
-    MOZ_ASSERT(memoryLength >= buffer->byteLength());
+    MOZ_ASSERT_IF(!buffer->is<GrowableSharedArrayBufferObject>(),
+                  memoryLength >= buffer->byteLength());
 
-    if (memoryLength > buffer->byteLength()) {
+    // The `length` field on a fixed length SAB cannot change even if
+    // the underlying memory has grown. The spec therefore requires that
+    // accessing the buffer property will create a new fixed length SAB
+    // with the current length if the underlying raw buffer's length has
+    // changed. We don't need to do this for growable SAB.
+    if (!buffer->is<GrowableSharedArrayBufferObject>() &&
+        memoryLength > buffer->byteLength()) {
       Rooted<SharedArrayBufferObject*> newBuffer(
           cx, SharedArrayBufferObject::New(
                   cx, memoryObj->sharedArrayRawBuffer(), memoryLength));
+      MOZ_ASSERT(newBuffer->is<FixedLengthSharedArrayBufferObject>());
       if (!newBuffer) {
-        return false;
+        return nullptr;
       }
       // OK to addReference after we try to allocate because the memoryObj
       // keeps the rawBuffer alive.
       if (!memoryObj->sharedArrayRawBuffer()->addReference()) {
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
                                   JSMSG_SC_SAB_REFCNT_OFLO);
-        return false;
+        return nullptr;
       }
-      buffer = newBuffer;
       memoryObj->setReservedSlot(BUFFER_SLOT, ObjectValue(*newBuffer));
+      return newBuffer;
     }
   }
+  return buffer;
+}
 
-  args.rval().setObject(*buffer);
+/* static */
+bool WasmMemoryObject::bufferGetterImpl(JSContext* cx, const CallArgs& args) {
+  Rooted<WasmMemoryObject*> memoryObj(
+      cx, &args.thisv().toObject().as<WasmMemoryObject>());
+
+  Rooted<ArrayBufferObjectMaybeShared*> buffer(cx, &memoryObj->buffer());
+  MOZ_RELEASE_ASSERT(buffer->isWasm() && !buffer->isPreparedForAsmJS());
+
+  ArrayBufferObjectMaybeShared* refreshedBuffer =
+      WasmMemoryObject::refreshBuffer(cx, memoryObj, buffer);
+  if (!refreshedBuffer) {
+    return false;
+  }
+
+  args.rval().setObject(*refreshedBuffer);
   return true;
 }
 
@@ -2311,11 +2333,110 @@ bool WasmMemoryObject::discard(JSContext* cx, unsigned argc, Value* vp) {
   return CallNonGenericMethod<IsMemory, discardImpl>(cx, args);
 }
 
+#ifdef ENABLE_WASM_RESIZABLE_ARRAYBUFFER
+/* static */
+bool WasmMemoryObject::toFixedLengthBufferImpl(JSContext* cx,
+                                               const CallArgs& args) {
+  Rooted<WasmMemoryObject*> memory(
+      cx, &args.thisv().toObject().as<WasmMemoryObject>());
+
+  Rooted<ArrayBufferObjectMaybeShared*> buffer(cx, &memory->buffer());
+  MOZ_RELEASE_ASSERT(buffer->isWasm() && !buffer->isPreparedForAsmJS());
+  // If IsFixedLengthArrayBuffer(buffer) is true, return buffer.
+  if (!buffer->isResizable()) {
+    ArrayBufferObjectMaybeShared* refreshedBuffer =
+        refreshBuffer(cx, memory, buffer);
+    args.rval().set(ObjectValue(*refreshedBuffer));
+    return true;
+  }
+
+  Rooted<ArrayBufferObjectMaybeShared*> fixedBuffer(cx);
+  if (memory->isShared()) {
+    Rooted<SharedArrayBufferObject*> oldBuffer(
+        cx, &buffer->as<SharedArrayBufferObject>());
+    fixedBuffer.set(SharedArrayBufferObject::createFromWasmObject<
+                    FixedLengthSharedArrayBufferObject>(cx, oldBuffer));
+  } else {
+    Rooted<ArrayBufferObject*> oldBuffer(cx, &buffer->as<ArrayBufferObject>());
+    fixedBuffer.set(
+        ArrayBufferObject::createFromWasmObject<FixedLengthArrayBufferObject>(
+            cx, oldBuffer));
+  }
+
+  if (!fixedBuffer) {
+    return false;
+  }
+  memory->setReservedSlot(BUFFER_SLOT, ObjectValue(*fixedBuffer));
+  args.rval().set(ObjectValue(*fixedBuffer));
+  return true;
+}
+
+/* static */
+bool WasmMemoryObject::toFixedLengthBuffer(JSContext* cx, unsigned argc,
+                                           Value* vp) {
+  CallArgs args = CallArgsFromVp(argc, vp);
+  return CallNonGenericMethod<IsMemory, toFixedLengthBufferImpl>(cx, args);
+}
+
+/* static */
+bool WasmMemoryObject::toResizableBufferImpl(JSContext* cx,
+                                             const CallArgs& args) {
+  Rooted<WasmMemoryObject*> memory(
+      cx, &args.thisv().toObject().as<WasmMemoryObject>());
+
+  Rooted<ArrayBufferObjectMaybeShared*> buffer(cx, &memory->buffer());
+  // If IsFixedLengthArrayBuffer(buffer) is false, return buffer.
+  if (buffer->isResizable()) {
+    args.rval().set(ObjectValue(*buffer));
+    return true;
+  }
+
+  if (buffer->wasmSourceMaxPages().isNothing()) {
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                              JSMSG_WASM_MEMORY_NOT_RESIZABLE);
+    return false;
+  }
+
+  Rooted<ArrayBufferObjectMaybeShared*> resizableBuffer(cx);
+  if (memory->isShared()) {
+    Rooted<SharedArrayBufferObject*> oldBuffer(
+        cx, &buffer->as<SharedArrayBufferObject>());
+    resizableBuffer.set(SharedArrayBufferObject::createFromWasmObject<
+                        GrowableSharedArrayBufferObject>(cx, oldBuffer));
+  } else {
+    Rooted<ArrayBufferObject*> oldBuffer(cx, &buffer->as<ArrayBufferObject>());
+    resizableBuffer.set(
+        ArrayBufferObject::createFromWasmObject<ResizableArrayBufferObject>(
+            cx, oldBuffer));
+  }
+
+  if (!resizableBuffer) {
+    return false;
+  }
+  memory->setReservedSlot(BUFFER_SLOT, ObjectValue(*resizableBuffer));
+  args.rval().set(ObjectValue(*resizableBuffer));
+  return true;
+}
+
+/* static */
+bool WasmMemoryObject::toResizableBuffer(JSContext* cx, unsigned argc,
+                                         Value* vp) {
+  CallArgs args = CallArgsFromVp(argc, vp);
+  return CallNonGenericMethod<IsMemory, toResizableBufferImpl>(cx, args);
+}
+#endif  // ENABLE_WASM_RESIZABLE_ARRAYBUFFER
+
 const JSFunctionSpec WasmMemoryObject::methods[] = {
 #ifdef ENABLE_WASM_TYPE_REFLECTIONS
     JS_FN("type", WasmMemoryObject::type, 0, JSPROP_ENUMERATE),
 #endif
     JS_FN("grow", WasmMemoryObject::grow, 1, JSPROP_ENUMERATE),
+#ifdef ENABLE_WASM_RESIZABLE_ARRAYBUFFER
+    JS_FN("toFixedLengthBuffer", WasmMemoryObject::toFixedLengthBuffer, 0,
+          JSPROP_ENUMERATE),
+    JS_FN("toResizableBuffer", WasmMemoryObject::toResizableBuffer, 0,
+          JSPROP_ENUMERATE),
+#endif
     JS_FS_END,
 };
 

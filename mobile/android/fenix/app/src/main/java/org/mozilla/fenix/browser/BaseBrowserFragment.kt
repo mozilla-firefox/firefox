@@ -22,6 +22,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.annotation.CallSuper
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
+import androidx.biometric.BiometricManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.Text
@@ -43,6 +44,7 @@ import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
@@ -166,12 +168,16 @@ import org.mozilla.fenix.biometricauthentication.AuthenticationStatus
 import org.mozilla.fenix.biometricauthentication.BiometricAuthenticationManager
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.browser.readermode.DefaultReaderModeController
+import org.mozilla.fenix.browser.store.BrowserScreenMiddleware
+import org.mozilla.fenix.browser.store.BrowserScreenMiddleware.LifecycleDependencies
+import org.mozilla.fenix.browser.store.BrowserScreenStore
 import org.mozilla.fenix.browser.tabstrip.TabStrip
 import org.mozilla.fenix.browser.tabstrip.isTabStripEnabled
 import org.mozilla.fenix.components.Components
 import org.mozilla.fenix.components.FenixAutocompletePrompt
 import org.mozilla.fenix.components.FenixSuggestStrongPasswordPrompt
 import org.mozilla.fenix.components.FindInPageIntegration
+import org.mozilla.fenix.components.StoreProvider
 import org.mozilla.fenix.components.accounts.FxaWebChannelIntegration
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction
@@ -359,6 +365,7 @@ abstract class BaseBrowserFragment :
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     internal var webAppToolbarShouldBeVisible = true
 
+    private lateinit var browserScreenStore: BrowserScreenStore
     internal val sharedViewModel: SharedViewModel by activityViewModels()
     private val homeViewModel: HomeScreenViewModel by activityViewModels()
 
@@ -651,6 +658,7 @@ abstract class BaseBrowserFragment :
                 appStore = context.components.appStore,
                 snackbarDelegate = FenixSnackbarDelegate(binding.dynamicSnackbarContainer),
                 navController = findNavController(),
+                tabsUseCases = context.components.useCases.tabsUseCases,
                 sendTabUseCases = SendTabUseCases(requireComponents.backgroundServices.accountManager),
                 customTabSessionId = customTabSessionId,
             ),
@@ -1230,16 +1238,30 @@ abstract class BaseBrowserFragment :
     private fun initializeBrowserToolbarComposable(
         activity: HomeActivity,
         store: BrowserStore,
-    ) = BrowserToolbarComposable(
-        context = activity,
-        lifecycleOwner = this,
-        container = binding.browserLayout,
-        navController = findNavController(),
-        browserStore = store,
-        settings = activity.settings(),
-        customTabSession = customTabSessionId?.let { store.state.findCustomTab(it) },
-        tabStripContent = buildTabStrip(activity),
-    )
+    ): BrowserToolbarComposable {
+        val middleware = getOrCreate<BrowserScreenMiddleware>()
+        val browserScreenStore = StoreProvider.get(this) {
+            BrowserScreenStore(
+                middleware = listOf(middleware),
+            )
+        }
+
+        return BrowserToolbarComposable(
+            context = activity,
+            lifecycleOwner = this,
+            container = binding.browserLayout,
+            navController = findNavController(),
+            appStore = activity.components.appStore,
+            browserScreenStore = browserScreenStore,
+            browserStore = store,
+            browsingModeManager = activity.browsingModeManager,
+            tabsUseCases = activity.components.useCases.tabsUseCases,
+            thumbnailsFeature = thumbnailsFeature.get(),
+            settings = activity.settings(),
+            customTabSession = customTabSessionId?.let { store.state.findCustomTab(it) },
+            tabStripContent = buildTabStrip(activity),
+        )
+    }
 
     private fun initializeBrowserToolbarView(
         activity: HomeActivity,
@@ -1352,7 +1374,7 @@ abstract class BaseBrowserFragment :
      * Shows a biometric prompt and fallback to prompting for the password.
      */
     private fun showBiometricPrompt(context: Context) {
-        if (BiometricPromptFeature.canUseFeature(context)) {
+        if (BiometricPromptFeature.canUseFeature(BiometricManager.from(context))) {
             biometricPromptFeature.get()
                 ?.requestAuthentication(getString(R.string.credit_cards_biometric_prompt_unlock_message_2))
             return
@@ -2091,10 +2113,19 @@ abstract class BaseBrowserFragment :
 
                 val context = requireContext()
                 resumeDownloadDialogState(selectedTab.id, context.components.core.store, context)
+                @Suppress("DEPRECATION")
                 it.announceForAccessibility(selectedTab.toDisplayTitle())
             }
         } else {
             view?.let { view -> initializeUI(view) }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        if ((requireActivity() as HomeActivity).shouldShowUnlockScreen()) {
+            findNavController().navigate(R.id.unlockPrivateTabsFragment)
         }
     }
 
@@ -2652,6 +2683,8 @@ abstract class BaseBrowserFragment :
         _browserToolbarView = null
         _browserToolbarInteractor = null
         _binding = null
+
+        requireContext().settings().isPrivateScreenBlocked = false
     }
 
     override fun onAttach(context: Context) {
@@ -2890,5 +2923,24 @@ abstract class BaseBrowserFragment :
                 // no-op
             }
         }
+    }
+
+    private inline fun <reified T> getOrCreate(): T = when (T::class.java) {
+        BrowserScreenMiddleware::class.java ->
+            ViewModelProvider(
+                this,
+                BrowserScreenMiddleware.viewModelFactory(
+                    crashReporter = requireComponents.analytics.crashReporter,
+                ),
+            ).get(BrowserScreenMiddleware::class.java).also {
+                it.updateLifecycleDependencies(
+                    LifecycleDependencies(
+                        context = requireContext(),
+                        fragmentManager = childFragmentManager,
+                    ),
+                )
+            } as T
+
+        else -> throw IllegalArgumentException("Unknown type: ${T::class.java}")
     }
 }

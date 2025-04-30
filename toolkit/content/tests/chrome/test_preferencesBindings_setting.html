@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>PreferencesBindings Setting Tests</title>
+    <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+    <link
+      rel="stylesheet"
+      href="chrome://mochikit/content/tests/SimpleTest/test.css"
+    />
+    <script
+      type="application/javascript"
+      src="chrome://global/content/preferencesBindings.js"
+    ></script>
+    <script>
+      /* import-globals-from /toolkit/content/preferencesBindings.js */
+      function waitForSettingChange(setting) {
+        return new Promise(resolve => {
+          setting.on("change", function handler() {
+            setting.off("change", handler);
+            resolve();
+          });
+        });
+      }
+
+      add_task(async function testSimplePrefSetting() {
+        const PREF_ID = "test.setting.bool";
+        const SETTING_ID = "testSettingBool";
+        await SpecialPowers.pushPrefEnv({
+          set: [[PREF_ID, false]],
+        });
+        Preferences.add({
+          id: PREF_ID,
+          type: "bool",
+        });
+        Preferences.addSetting({
+          id: SETTING_ID,
+          pref: PREF_ID,
+        });
+
+        let setting = Preferences.getSetting(SETTING_ID);
+        ok(setting, "Got a setting object");
+
+        is(Services.prefs.getBoolPref(PREF_ID), false, "Pref is false");
+        is(setting.value, false, "Setting read from prefs");
+
+        let settingChanged = waitForSettingChange(setting);
+        setting.userChange(true);
+        await settingChanged;
+
+        is(Services.prefs.getBoolPref(PREF_ID), true, "Pref is true");
+        is(setting.value, true, "Setting updated");
+
+        is(setting.visible, true, "Setting is visible by default");
+      });
+
+      add_task(async function testPrefSettingCustomValue() {
+        const PREF_ID = "test.setting.int";
+        const SETTING_ID = "testSettingInt";
+        await SpecialPowers.pushPrefEnv({
+          set: [[PREF_ID, 7]],
+        });
+        Preferences.add({
+          id: PREF_ID,
+          type: "int",
+        });
+        Preferences.addSetting({
+          id: SETTING_ID,
+          pref: PREF_ID,
+          get(prefVal) {
+            return prefVal == 3;
+          },
+          set(val) {
+            return val ? 3 : 7;
+          },
+        });
+
+        let setting = Preferences.getSetting(SETTING_ID);
+        ok(setting, "Got a setting object");
+
+        is(Services.prefs.getIntPref(PREF_ID), 7, "Pref is 7");
+        is(setting.value, false, "Setting read from prefs 7 is false");
+
+        let settingChanged = waitForSettingChange(setting);
+        setting.userChange(true);
+        await settingChanged;
+
+        is(setting.value, true, "Setting is now true");
+        is(Services.prefs.getIntPref(PREF_ID), 3, "Pref is 3 now");
+      });
+
+      add_task(async function testPrefSettingOnUserChange() {
+        const PREF_ID = "test.setting.int2";
+        const SETTING_ID = "testSettingOnUserChange";
+        await SpecialPowers.pushPrefEnv({
+          set: [[PREF_ID, 7]],
+        });
+        let inputValue;
+        Preferences.add({
+          id: PREF_ID,
+          type: "int",
+        });
+        Preferences.addSetting({
+          id: SETTING_ID,
+          pref: PREF_ID,
+          onUserChange: val => {
+            inputValue = val;
+          },
+        });
+
+        let setting = Preferences.getSetting(SETTING_ID);
+        ok(setting, "Got a setting object");
+
+        is(Services.prefs.getIntPref(PREF_ID), 7, "Pref is 7");
+        is(setting.value, 7, "Setting read from prefs is 7");
+        ok(!inputValue, "Callback has not fired");
+
+        let settingChanged = waitForSettingChange(setting);
+        setting.userChange(9);
+        await settingChanged;
+
+        is(setting.value, 9, "Setting is now 9");
+        is(Services.prefs.getIntPref(PREF_ID), 9, "Pref is 9 now");
+        is(inputValue, 9, "Callback set inputValue to 9");
+      });
+
+      add_task(async function testPrefSettingVisible() {
+        const PREF_ID = "test.setting.visible";
+        const SETTING_ID = "testSettingVisible";
+        await SpecialPowers.pushPrefEnv({
+          set: [[PREF_ID, 5]],
+        });
+        Preferences.add({
+          id: PREF_ID,
+          type: "int",
+        });
+        Preferences.addSetting({
+          id: SETTING_ID,
+          pref: PREF_ID,
+          visible: () => false,
+        });
+
+        let setting = Preferences.getSetting(SETTING_ID);
+        ok(setting, "Got a setting object");
+
+        is(setting.visible, false, "Setting is not visible");
+      });
+    </script>
+  </head>
+  <body>
+    <p id="display"></p>
+    <div id="content" style="display: none"></div>
+    <pre id="test"></pre>
+  </body>
+</html>

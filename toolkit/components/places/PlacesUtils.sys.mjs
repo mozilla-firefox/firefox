@@ -1622,37 +1622,6 @@ export var PlacesUtils = {
   },
 
   /**
-   * Gets favicon data for a given page url.
-   *
-   * @param {string|URL|nsIURI} aPageUrl
-   *   Url of the page to get favicon for.
-   * @param {number} [preferredWidth]
-   *   The preferred width of the favicon in pixels. The default value of 0
-   *   returns the largest icon available.
-   * @returns {Promise<{uri: nsIURI, dataLen: number, data: number[], mimeType: string, size: number}>}
-   *   Resolves an object representing a favicon entry.
-   *   Rejects if the given url has no associated favicon.
-   */
-  promiseFaviconData(aPageUrl, preferredWidth = 0) {
-    return new Promise((resolve, reject) => {
-      if (!(aPageUrl instanceof Ci.nsIURI)) {
-        aPageUrl = PlacesUtils.toURI(aPageUrl);
-      }
-      PlacesUtils.favicons.getFaviconDataForPage(
-        aPageUrl,
-        function (uri, dataLen, data, mimeType, size) {
-          if (uri) {
-            resolve({ uri, dataLen, data, mimeType, size });
-          } else {
-            reject();
-          }
-        },
-        preferredWidth
-      );
-    });
-  },
-
-  /**
    * Returns the passed URL with a #size ref for the specified size and
    * devicePixelRatio.
    *

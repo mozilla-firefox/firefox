@@ -64,6 +64,7 @@ object WebCompatReporterMiddlewareProvider {
         nimbusApi: NimbusApi,
     ) = WebCompatReporterSubmissionMiddleware(
         appStore = appStore,
+        browserStore = browserStore,
         webCompatReporterRetrievalService = DefaultWebCompatReporterRetrievalService(
             browserStore = browserStore,
             webCompatInfoDeserializer = webCompatInfoDeserializer,

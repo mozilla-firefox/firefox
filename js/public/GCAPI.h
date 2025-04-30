@@ -705,6 +705,12 @@ extern JS_PUBLIC_API bool InternalGCReason(JS::GCReason reason);
  */
 extern JS_PUBLIC_API const char* ExplainGCAbortReason(uint32_t reason);
 
+/**
+ * Get a statically allocated C string describing the Phase.
+ * Input is the integral value of the enum.
+ */
+extern JS_PUBLIC_API const char* GetGCPhaseName(uint32_t phase);
+
 /*
  * Zone GC:
  *

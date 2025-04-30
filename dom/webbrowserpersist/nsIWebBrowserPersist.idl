@@ -68,6 +68,8 @@ interface nsIWebBrowserPersist : nsICancelable
    * This can only be used when persisting to a local file.
    */
   const unsigned long PERSIST_FLAGS_APPEND_TO_FILE = 32768;
+  /** Unconditionally disable HTTPS-Only and HTTPS-First upgrades */
+  const unsigned long PERSIST_FLAGS_DISABLE_HTTPS_ONLY = 65536;
 
   /**
    * Flags governing how data is fetched and saved from the network.

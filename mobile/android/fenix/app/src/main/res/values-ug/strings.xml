@@ -129,6 +129,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">قورال بالداق سۈرۈلسە بەتكۈچ ئالماشتۇرىدۇ</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">ئوڭ ياكى سولغا سۈرۈلسە ئالماشتۇرىدۇ. ئاخىرقى بەتكۈچىڭىز سولغا سۈرۈلسە يېڭى بەتكۈچ ئېچىلىدۇ.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">قورال بالداق ئوڭ ياكى سولغا سۈرۈلسە بەتكۈچ ئالمىشىدۇ.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">كامېرا ئىجازىتى زۆرۈر. ئاندىرويىد تەڭشىكىگە يۆتكىلىپ، ئىجازەتنى چېكىپ، ئاندىن يول قوينى چېكىڭ.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -834,8 +836,6 @@
   <string name="preferences_override_account_server">ئىختىيارى Mozilla ھېسابات مۇلازىمېتىرى</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">ئىختىيارى قەدەمداش مۇلازىمېتىر</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla ھېسابات/قەدەمداش مۇلازىمېتىر تەڭشىكى ئۆزگەردى. ئۆزگىرىشنى قوللىنىش ئۈچۈن پىروگراممىدىن چېكىنىۋاتىدۇ…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">ھېسابات</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1483,16 +1483,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">چىقىرىۋەت</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">ئۆچۈر</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">كەينىگە قايت</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">ئۈستىگە يول باشلا</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">تور ئادرېسى ھەمبەھىر</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">ھۆججەت ھەمبەھىر</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">تاللىغان تۈرنى راستتىنلا ئۆچۈرەمسىز؟</string>
+  <string name="download_delete_multi_select_dialog_confirmation">تاللىغان تۈرنى راستتىنلا ئۆچۈرەمسىز؟</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">ئۆچۈر</string>
+  <string name="download_delete_multi_select_dialog_confirm">ئۆچۈر</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">ۋاز كەچ</string>
+  <string name="download_delete_multi_select_dialog_cancel">ۋاز كەچ</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">ئىلگىرىلەۋاتىدۇ</string>
   <!--
@@ -1523,9 +1527,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">چۈشۈرەلمىدى</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">چۈشۈرۈشنى ئىزدە</string>
+  <string name="download_search_placeholder">چۈشۈرۈشنى ئىزدە</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">ھېچقانداق نەتىجە تېپىلمىدى</string>
+  <string name="download_search_no_results_found">ھېچقانداق نەتىجە تېپىلمىدى</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">ھەممىنى تاللا</string>
   <!--
@@ -2278,7 +2282,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">كۈچەيتىلگەن ئىز قوغلاشتىن قوغداش مۇستەسنا مايىللىق سىنبەلگىسى</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3192,6 +3196,8 @@
   <string name="protection_panel_no_trackers_blocked">ھېچقانداق ئىزلىغۇچى تېپىلمىدى</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">شەخسىيەت ۋە بىخەتەرلىك تەڭشىكى</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">ئىجازەت</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3377,6 +3383,26 @@
     The title of the glean debugging feature
   -->
   <string name="glean_debug_tools_title">Glean سازلاش قورالى</string>
+  <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">رايون قورالى</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">سىناش ئۈچۈن باش بەت ۋە نۆۋەتتىكى رايون قىممىتىنى ۋاقىتلىق قاپلايدۇ.</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">يەرلىك رايون</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">نۆۋەتتىكى رايون</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">باش بەت رايوننى قاپلايدۇ</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">نۆۋەتتىكى رايوننى قاپلايدۇ</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">باش بەت ۋە نۆۋەتتىكى رايوننى قاپلايدۇ</string>
   <!--
     Messages explaining how to exit fullscreen mode
 

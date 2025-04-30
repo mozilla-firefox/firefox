@@ -2,7 +2,7 @@
 [![macoOS CI Status](https://github.com/harfbuzz/harfbuzz/actions/workflows/macos-ci.yml/badge.svg)](https://github.com/harfbuzz/harfbuzz/actions/workflows/macos-ci.yml)
 [![Windows CI Status](https://github.com/harfbuzz/harfbuzz/actions/workflows/msvc-ci.yml/badge.svg)](https://github.com/harfbuzz/harfbuzz/actions/workflows/msvc-ci.yml)
 [![CircleCI Build Status](https://circleci.com/gh/harfbuzz/harfbuzz/tree/main.svg?style=svg)](https://circleci.com/gh/harfbuzz/harfbuzz/tree/main)
-[![OSS-Fuzz Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/harfbuzz.svg)](https://oss-fuzz-build-logs.storage.googleapis.com/index.html)
+[![OSS-Fuzz Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/harfbuzz.svg)](https://oss-fuzz-build-logs.storage.googleapis.com/index.html#harfbuzz)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/15166/badge.svg)](https://scan.coverity.com/projects/harfbuzz)
 [![Packaging status](https://repology.org/badge/tiny-repos/harfbuzz.svg)](https://repology.org/project/harfbuzz/versions)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/harfbuzz/harfbuzz/badge)](https://securityscorecards.dev/viewer/?uri=github.com/harfbuzz/harfbuzz)
@@ -71,20 +71,24 @@ may want to read [State of Text Rendering 2024][6].
 Here are a few presentation slides about HarfBuzz at the
 Internationalization and Unicode Conference over the years:
 
--   November 2014, [Unicode, OpenType, and HarfBuzz: Closing the Circle][7],
--   October 2012, [HarfBuzz, The Free and Open Text Shaping Engine][8],
--   October 2009, [HarfBuzz: the Free and Open Shaping Engine][9].
+- 2014 – [Unicode, OpenType, and HarfBuzz: Closing the Circle][7]
+- 2012 – [HarfBuzz, The Free and Open Text Shaping Engine][8]
+- 2016 – [Ten Years of HarfBuzz][20]
+- 2009 – [HarfBuzz: the Free and Open Shaping Engine][9]
 
 More presentations and papers are available on [behdad][11]'s website.
-In particular, the following documents are relevant to HarfBuzz development:
+In particular, the following _studies_ are relevant to HarfBuzz development:
 
-- 2025 — HarfBuzz Study: Caching — [Paper][12]
-- 2025 — HarfBuzz Study: `hb-decycler` — [Paper][13]
-- 2022 — HarfBuzz Study: `hb-iter` — [Paper][14]
-- 2022 — HarfBuzz Study: A C library written in C++ — [Paper][15]
-- 2022 — HarfBuzz Study: PackTab: A static integer table packer — [Paper][16]
-- 2014 — Reflections on Building the HarfBuzz Indic Shaper — [Paper][17]
-- 2012 — HarfBuzz Memory Consumption — [Paper][10]
+- 2025 – [Subsetting][21]
+- 2025 – [Caching][12]
+- 2025 – [`hb-decycler`][13]
+- 2022 – [`hb-iter`][14]
+- 2022 – [A C library written in C++][15]
+- 2022 – [The case of the slow `hb-ft` `>h_advance` function][18]
+- 2022 – [PackTab: A static integer table packer][16]
+- 2020 – [HarfBuzz OT+AAT "Unishaper"][19]
+- 2014 – [Building the Indic Shaper][17]
+- 2012 – [Memory Consumption][10]
 
 
 ## Name
@@ -101,6 +105,8 @@ transliterated using the Latin script. It also means "talkative" or
 > Persian is written in the Arabic script, and OpenType is an extension of
 > TrueType that adds support for complex script rendering, and HarfBuzz is an
 > implementation of OpenType complex text shaping.
+
+## Distribution
 
 <details>
   <summary>Packaging status of HarfBuzz</summary>
@@ -125,3 +131,7 @@ transliterated using the Latin script. It also means "talkative" or
 [15]: https://docs.google.com/document/d/18hI56KJpvXtwWbc9QSaz9zzhJwIMnrJ-zkAaKS-W-8k/preview
 [16]: https://docs.google.com/document/d/1Xq3owVt61HVkJqbLFHl73il6pcTy6PdPJJ7bSouQiQw/preview
 [17]: https://docs.google.com/document/d/1wMPwVNBvsIriamcyBO5aNs7Cdr8lmbwLJ8GmZBAswF4/preview
+[18]: https://docs.google.com/document/d/1wskYbA-czBt57oH9gEuGf3sWbTx7bfOiEIcDs36-heo/preview
+[19]: https://prezi.com/view/THNPJGFVDUCWoM20syev/
+[20]: https://behdad.org/doc/harfbuzz10years-slides.pdf
+[21]: https://docs.google.com/document/d/1_vZrt97OorJ0jA1YzJ29LRcGr3YGrNJANdOABjVZGEs/preview

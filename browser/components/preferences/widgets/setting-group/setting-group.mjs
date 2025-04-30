@@ -36,6 +36,7 @@ export class SettingGroup extends MozLitElement {
     checkbox.addEventListener("command", e =>
       setting.userChange(e.target.checked)
     );
+    setting.on("change", () => (checkbox.checked = setting.value));
     checkbox.checked = setting.value;
     if (item.supportPage) {
       let container = document.createXULElement("hbox");

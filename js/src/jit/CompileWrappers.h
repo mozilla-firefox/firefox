@@ -91,6 +91,8 @@ class CompileRuntime {
   bool hasSeenObjectEmulateUndefinedFuseIntact();
   const void* addressOfHasSeenObjectEmulateUndefinedFuse();
 
+  bool hasSeenArrayExceedsInt32LengthFuseIntact();
+
 #ifdef DEBUG
   const void* addressOfIonBailAfterCounter();
 #endif

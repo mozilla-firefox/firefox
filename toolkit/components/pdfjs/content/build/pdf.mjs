@@ -363,6 +363,17 @@ function createValidAbsoluteUrl(url, baseUrl = null, options = null) {
   const absoluteUrl = baseUrl ? URL.parse(url, baseUrl) : URL.parse(url);
   return _isValidProtocol(absoluteUrl) ? absoluteUrl : null;
 }
+function updateUrlHash(url, hash, allowRel = false) {
+  const res = URL.parse(url);
+  if (res) {
+    res.hash = hash;
+    return res.href;
+  }
+  if (allowRel && createValidAbsoluteUrl(url, "http://example.com")) {
+    return url.split("#", 1)[0] + `${hash ? `#${hash}` : ""}`;
+  }
+  return "";
+}
 function shadow(obj, prop, value, nonSerializable = false) {
   Object.defineProperty(obj, prop, {
     value,
@@ -545,13 +556,13 @@ class Util {
   static transform(m1, m2) {
     return [m1[0] * m2[0] + m1[2] * m2[1], m1[1] * m2[0] + m1[3] * m2[1], m1[0] * m2[2] + m1[2] * m2[3], m1[1] * m2[2] + m1[3] * m2[3], m1[0] * m2[4] + m1[2] * m2[5] + m1[4], m1[1] * m2[4] + m1[3] * m2[5] + m1[5]];
   }
-  static applyTransform(p, m) {
-    const p0 = p[0];
-    const p1 = p[1];
-    p[0] = p0 * m[0] + p1 * m[2] + m[4];
-    p[1] = p0 * m[1] + p1 * m[3] + m[5];
+  static applyTransform(p, m, pos = 0) {
+    const p0 = p[pos];
+    const p1 = p[pos + 1];
+    p[pos] = p0 * m[0] + p1 * m[2] + m[4];
+    p[pos + 1] = p0 * m[1] + p1 * m[3] + m[5];
   }
-  static applyTransformToBezier(p, transform) {
+  static applyTransformToBezier(p, transform, pos = 0) {
     const m0 = transform[0];
     const m1 = transform[1];
     const m2 = transform[2];
@@ -559,10 +570,10 @@ class Util {
     const m4 = transform[4];
     const m5 = transform[5];
     for (let i = 0; i < 6; i += 2) {
-      const pI = p[i];
-      const pI1 = p[i + 1];
-      p[i] = pI * m0 + pI1 * m2 + m4;
-      p[i + 1] = pI * m1 + pI1 * m3 + m5;
+      const pI = p[pos + i];
+      const pI1 = p[pos + i + 1];
+      p[pos + i] = pI * m0 + pI1 * m2 + m4;
+      p[pos + i + 1] = pI * m1 + pI1 * m3 + m5;
     }
   }
   static applyInverseTransform(p, m) {
@@ -1167,6 +1178,7 @@ function getRGB(color) {
 function getColorValues(colors) {
   const span = document.createElement("span");
   span.style.visibility = "hidden";
+  span.style.colorScheme = "only light";
   document.body.append(span);
   for (const name of colors.keys()) {
     span.style.color = name;
@@ -8763,7 +8775,7 @@ class DOMFilterFactory extends BaseFilterFactory {
         if (isDataScheme(url)) {
           warn('#createUrl: ignore "data:"-URL for performance reasons.');
         } else {
-          this.#baseUrl = url.split("#", 1)[0];
+          this.#baseUrl = updateUrlHash(url, "");
         }
       }
     }
@@ -10074,7 +10086,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "5.2.87",
+    apiVersion: "5.2.135",
     data,
     password,
     disableAutoFetch,
@@ -11709,8 +11721,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "5.2.87";
-const build = "2f7d163df";
+const version = "5.2.135";
+const build = "b47b248e1";
 
 ;// ./src/shared/scripting_utils.js
 function makeColorComp(n) {
@@ -19166,7 +19178,7 @@ class SignatureOptions extends DrawingOptions {
   constructor() {
     super();
     super.updateProperties({
-      fill: "CanvasText",
+      fill: AnnotationEditor._defaultLineColor,
       "stroke-width": 0
     });
   }
@@ -19180,7 +19192,7 @@ class DrawnSignatureOptions extends InkDrawingOptions {
   constructor(viewerParameters) {
     super(viewerParameters);
     super.updateProperties({
-      stroke: "CanvasText",
+      stroke: AnnotationEditor._defaultLineColor,
       "stroke-width": 1
     });
   }
@@ -21090,8 +21102,8 @@ class DrawLayer {
 
 
 
-const pdfjsVersion = "5.2.87";
-const pdfjsBuild = "2f7d163df";
+const pdfjsVersion = "5.2.135";
+const pdfjsBuild = "b47b248e1";
 globalThis.pdfjsLib = {
   AbortException: AbortException,
   AnnotationEditorLayer: AnnotationEditorLayer,
@@ -21139,10 +21151,11 @@ globalThis.pdfjsLib = {
   SupportedImageMimeTypes: SupportedImageMimeTypes,
   TextLayer: TextLayer,
   TouchManager: TouchManager,
+  updateUrlHash: updateUrlHash,
   Util: Util,
   VerbosityLevel: VerbosityLevel,
   version: version,
   XfaLayer: XfaLayer
 };
 
-export { AbortException, AnnotationEditorLayer, AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationLayer, AnnotationMode, AnnotationType, ColorPicker, DOMSVGFactory, DrawLayer, util_FeatureTest as FeatureTest, GlobalWorkerOptions, util_ImageKind as ImageKind, InvalidPDFException, MathClamp, OPS, OutputScale, PDFDataRangeTransport, PDFDateString, PDFWorker, PasswordResponses, PermissionFlag, PixelsPerInch, RenderingCancelledException, ResponseException, SignatureExtractor, SupportedImageMimeTypes, TextLayer, TouchManager, Util, VerbosityLevel, XfaLayer, build, createValidAbsoluteUrl, fetchData, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getUuid, getXfaPageViewport, isDataScheme, isPdfFile, isValidExplicitDest, noContextMenu, normalizeUnicode, setLayerDimensions, shadow, stopEvent, version };
+export { AbortException, AnnotationEditorLayer, AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationLayer, AnnotationMode, AnnotationType, ColorPicker, DOMSVGFactory, DrawLayer, util_FeatureTest as FeatureTest, GlobalWorkerOptions, util_ImageKind as ImageKind, InvalidPDFException, MathClamp, OPS, OutputScale, PDFDataRangeTransport, PDFDateString, PDFWorker, PasswordResponses, PermissionFlag, PixelsPerInch, RenderingCancelledException, ResponseException, SignatureExtractor, SupportedImageMimeTypes, TextLayer, TouchManager, Util, VerbosityLevel, XfaLayer, build, createValidAbsoluteUrl, fetchData, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getUuid, getXfaPageViewport, isDataScheme, isPdfFile, isValidExplicitDest, noContextMenu, normalizeUnicode, setLayerDimensions, shadow, stopEvent, updateUrlHash, version };

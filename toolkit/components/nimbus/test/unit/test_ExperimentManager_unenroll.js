@@ -6,16 +6,13 @@ const { TelemetryEnvironment } = ChromeUtils.importESModule(
 const STUDIES_OPT_OUT_PREF = "app.shield.optoutstudies.enabled";
 const UPLOAD_ENABLED_PREF = "datareporting.healthreport.uploadEnabled";
 
-/**
- * FOG requires a little setup in order to test it
- */
 add_setup(function test_setup() {
-  // FOG needs a profile directory to put its data in.
-  do_get_profile();
-
-  // FOG needs to be initialized in order for data to flow.
   Services.fog.initializeFOG();
 });
+
+function setupTest({ ...args } = {}) {
+  return NimbusTestUtils.setupTest({ ...args, clearTelemetry: true });
+}
 
 /**
  * Normal unenrollment for experiments:
@@ -24,11 +21,9 @@ add_setup(function test_setup() {
  * - send unrollment event
  */
 add_task(async function test_set_inactive() {
-  const manager = ExperimentFakes.manager();
+  const { manager, cleanup } = await setupTest();
 
-  await manager.onStartup();
   await manager.store.addEnrollment(ExperimentFakes.experiment("foo"));
-
   manager.unenroll("foo");
 
   Assert.equal(
@@ -37,18 +32,14 @@ add_task(async function test_set_inactive() {
     "should set .active to false"
   );
 
-  assertEmptyStore(manager.store);
+  cleanup();
 });
 
 add_task(async function test_unenroll_opt_out() {
   Services.prefs.setBoolPref(STUDIES_OPT_OUT_PREF, true);
-  const manager = ExperimentFakes.manager();
+
+  const { manager, cleanup } = await setupTest();
   const experiment = ExperimentFakes.experiment("foo");
-
-  // Clear any pre-existing data in Glean
-  Services.fog.testResetFOG();
-
-  await manager.onStartup();
   await manager.store.addEnrollment(experiment);
 
   // Check that there aren't any Glean normandy unenrollNimbusExperiment events yet
@@ -99,22 +90,16 @@ add_task(async function test_unenroll_opt_out() {
     ]
   );
 
-  assertEmptyStore(manager.store);
-
-  // reset pref
+  cleanup();
   Services.prefs.clearUserPref(STUDIES_OPT_OUT_PREF);
 });
 
 add_task(async function test_unenroll_rollout_opt_out() {
   Services.prefs.setBoolPref(STUDIES_OPT_OUT_PREF, true);
-  const manager = ExperimentFakes.manager();
+
+  const { manager, cleanup } = await setupTest();
   const rollout = ExperimentFakes.rollout("foo");
-
-  // Clear any pre-existing data in Glean
-  Services.fog.testResetFOG();
-
-  await manager.onStartup();
-  await manager.store.addEnrollment(rollout);
+  manager.store.addEnrollment(rollout);
 
   // Check that there aren't any Glean normandy unenrollNimbusExperiment events yet
   Assert.equal(
@@ -164,14 +149,12 @@ add_task(async function test_unenroll_rollout_opt_out() {
     ]
   );
 
-  assertEmptyStore(manager.store);
-
-  // reset pref
+  cleanup();
   Services.prefs.clearUserPref(STUDIES_OPT_OUT_PREF);
 });
 
 add_task(async function test_unenroll_uploadPref() {
-  const manager = ExperimentFakes.manager();
+  const { manager, cleanup } = await setupTest();
   const recipe = ExperimentFakes.recipe("foo");
 
   await manager.onStartup();
@@ -191,16 +174,14 @@ add_task(async function test_unenroll_uploadPref() {
     "Should set .active to false"
   );
 
-  assertEmptyStore(manager.store);
-
+  cleanup();
   Services.prefs.clearUserPref(UPLOAD_ENABLED_PREF);
 });
 
 add_task(async function test_setExperimentInactive_called() {
-  const sandbox = sinon.createSandbox();
+  const { sandbox, manager, cleanup } = await setupTest();
   sandbox.spy(TelemetryEnvironment, "setExperimentInactive");
 
-  const manager = ExperimentFakes.manager();
   const experiment = ExperimentFakes.recipe("foo", {
     bucketConfig: {
       ...ExperimentFakes.recipe.bucketConfig,
@@ -208,10 +189,6 @@ add_task(async function test_setExperimentInactive_called() {
     },
   });
 
-  // Clear any pre-existing data in Glean
-  Services.fog.testResetFOG();
-
-  await manager.onStartup();
   await manager.enroll(experiment);
 
   // Test Glean experiment API interaction
@@ -235,20 +212,14 @@ add_task(async function test_setExperimentInactive_called() {
     "experiment should be inactive after unenroll"
   );
 
-  assertEmptyStore(manager.store);
-
-  sandbox.restore();
+  cleanup();
 });
 
 add_task(async function test_send_unenroll_event() {
-  const manager = ExperimentFakes.manager();
+  const { manager, cleanup } = await setupTest();
   const experiment = ExperimentFakes.experiment("foo");
 
-  // Clear any pre-existing data in Glean
-  Services.fog.testResetFOG();
-
-  await manager.onStartup();
-  await manager.store.addEnrollment(experiment);
+  manager.store.addEnrollment(experiment);
 
   // Check that there aren't any Glean normandy unenrollNimbusExperiment events yet
   Assert.equal(
@@ -291,17 +262,15 @@ add_task(async function test_send_unenroll_event() {
       },
     ]
   );
+
+  cleanup();
 });
 
 add_task(async function test_undefined_reason() {
-  const manager = ExperimentFakes.manager();
+  const { manager, cleanup } = await setupTest();
   const experiment = ExperimentFakes.experiment("foo");
 
-  // Clear any pre-existing data in Glean
-  Services.fog.testResetFOG();
-
-  await manager.onStartup();
-  await manager.store.addEnrollment(experiment);
+  manager.store.addEnrollment(experiment);
 
   manager.unenroll("foo");
 
@@ -320,6 +289,8 @@ add_task(async function test_undefined_reason() {
       .map(ev => ev.extra.reason),
     ["unknown"]
   );
+
+  cleanup();
 });
 
 /**
@@ -330,20 +301,23 @@ add_task(async function test_undefined_reason() {
  */
 
 add_task(async function test_remove_rollouts() {
-  const store = ExperimentFakes.store();
-  const manager = ExperimentFakes.manager(store);
+  const { sandbox, manager, cleanup } = await setupTest();
+  sandbox.spy(manager.store, "updateExperiment");
   const rollout = ExperimentFakes.rollout("foo");
 
-  sinon.stub(store, "get").returns(rollout);
-  sinon.spy(store, "updateExperiment");
-
-  await manager.onStartup();
+  await manager.enroll(
+    NimbusTestUtils.factories.recipe("foo", { isRollout: true })
+  );
+  Assert.ok(
+    manager.store.updateExperiment.notCalled,
+    "Should not have called updateExperiment when enrolling"
+  );
 
   manager.unenroll("foo", { reason: "some-reason" });
 
   Assert.ok(
     manager.store.updateExperiment.calledOnce,
-    "Called to set the rollout as !active"
+    "Called to set the rollout as inactive"
   );
   Assert.ok(
     manager.store.updateExperiment.calledWith(rollout.slug, {
@@ -353,15 +327,11 @@ add_task(async function test_remove_rollouts() {
     "Called with expected parameters"
   );
 
-  assertEmptyStore(manager.store);
+  cleanup();
 });
 
 add_task(async function test_unenroll_individualOptOut_statusTelemetry() {
-  Services.fog.testResetFOG();
-
-  const manager = ExperimentFakes.manager();
-
-  await manager.onStartup();
+  const { manager, cleanup } = await setupTest();
 
   await manager.enroll(
     ExperimentFakes.recipe("foo", {
@@ -396,4 +366,69 @@ add_task(async function test_unenroll_individualOptOut_statusTelemetry() {
       },
     ]
   );
+
+  cleanup();
+});
+
+add_task(async function testUnenrollBogusReason() {
+  const { manager, cleanup } = await setupTest();
+
+  await manager.enroll(
+    NimbusTestUtils.factories.recipe("bogus", {
+      branches: [NimbusTestUtils.factories.recipe.branches[0]],
+    })
+  );
+
+  Assert.ok(manager.store.get("bogus").active, "Enrollment active");
+
+  Services.fog.applyServerKnobsConfig(
+    JSON.stringify({
+      metrics_enabled: {
+        "nimbus_events.enrollment_status": true,
+      },
+    })
+  );
+
+  manager.unenroll("bogus", "bogus");
+
+  Assert.deepEqual(
+    Glean.nimbusEvents.enrollmentStatus
+      .testGetValue("events")
+      ?.map(ev => ev.extra),
+    [
+      {
+        slug: "bogus",
+        branch: "control",
+        status: "Disqualified",
+        reason: "Error",
+        error_string: "unknown",
+      },
+    ]
+  );
+
+  Assert.deepEqual(
+    Glean.nimbusEvents.unenrollment.testGetValue("events")?.map(ev => ev.extra),
+    [
+      {
+        experiment: "bogus",
+        branch: "control",
+        reason: "unknown",
+      },
+    ]
+  );
+
+  Assert.deepEqual(
+    Glean.normandy.unenrollNimbusExperiment
+      .testGetValue("events")
+      ?.map(ev => ev.extra),
+    [
+      {
+        value: "bogus",
+        branch: "control",
+        reason: "unknown",
+      },
+    ]
+  );
+
+  cleanup();
 });

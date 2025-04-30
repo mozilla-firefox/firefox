@@ -1874,6 +1874,9 @@ UrlbarUtils.RESULT_PAYLOAD_SCHEMA = {
         type: "string",
       },
       descriptionL10n: L10N_SCHEMA,
+      dismissalKey: {
+        type: "string",
+      },
       displayUrl: {
         type: "string",
       },
@@ -1949,6 +1952,9 @@ UrlbarUtils.RESULT_PAYLOAD_SCHEMA = {
       },
       subtype: {
         type: "string",
+      },
+      suggestionObject: {
+        type: "object",
       },
       tags: {
         type: "array",

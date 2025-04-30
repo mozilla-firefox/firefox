@@ -173,6 +173,7 @@ mod tests {
     use crate::record_types::{MetaGlobalEngine, MetaGlobalRecord};
     use crate::{telemetry, CollectionName};
     use anyhow::Result;
+    use nss::ensure_initialized;
     use std::cell::{Cell, RefCell};
     use std::collections::HashMap;
     use sync_guid::Guid;
@@ -278,6 +279,7 @@ mod tests {
 
     #[test]
     fn test_unknown() {
+        ensure_initialized();
         let root_key = KeyBundle::new_random().expect("should work");
         let gs = get_global_state(&root_key);
         let engine = TestSyncEngine::new("unknown", EngineSyncAssociation::Disconnected);
@@ -288,6 +290,7 @@ mod tests {
 
     #[test]
     fn test_known_no_state() {
+        ensure_initialized();
         let root_key = KeyBundle::new_random().expect("should work");
         let gs = get_global_state(&root_key);
         let engine = TestSyncEngine::new("bookmarks", EngineSyncAssociation::Disconnected);
@@ -305,6 +308,7 @@ mod tests {
 
     #[test]
     fn test_known_wrong_state() {
+        ensure_initialized();
         let root_key = KeyBundle::new_random().expect("should work");
         let gs = get_global_state(&root_key);
         let engine = TestSyncEngine::new(
@@ -328,6 +332,7 @@ mod tests {
 
     #[test]
     fn test_known_good_state() {
+        ensure_initialized();
         let root_key = KeyBundle::new_random().expect("should work");
         let gs = get_global_state(&root_key);
         let engine = TestSyncEngine::new(
@@ -344,6 +349,7 @@ mod tests {
 
     #[test]
     fn test_declined() {
+        ensure_initialized();
         let root_key = KeyBundle::new_random().expect("should work");
         let mut gs = get_global_state(&root_key);
         gs.global.declined.push("bookmarks".to_string());

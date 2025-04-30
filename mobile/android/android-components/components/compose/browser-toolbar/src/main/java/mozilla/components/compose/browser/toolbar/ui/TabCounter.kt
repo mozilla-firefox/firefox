@@ -31,6 +31,7 @@ import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarEvent
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarMenu
+import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.CombinedEventAndMenu
 import mozilla.components.support.ktx.android.util.dpToPx
 import mozilla.components.ui.tabcounter.TabCounter
 
@@ -61,7 +62,9 @@ fun TabCounter(
     val onLongClickMenu = key(onLongClick) { onLongClick.buildMenu(onInteraction) }
     val shouldReactToLongClicks = remember(onLongClick) {
         mutableStateOf(
-            onLongClick is BrowserToolbarEvent || (onLongClick is BrowserToolbarMenu && onLongClickMenu != null),
+            onLongClick is BrowserToolbarEvent ||
+                onLongClick is CombinedEventAndMenu ||
+                (onLongClick is BrowserToolbarMenu && onLongClickMenu != null),
         )
     }
     var showMenu by remember { mutableStateOf(false) }
@@ -74,6 +77,10 @@ fun TabCounter(
                 when (onLongClick) {
                     is BrowserToolbarEvent -> onInteraction(onLongClick)
                     is BrowserToolbarMenu -> showMenu = true
+                    is CombinedEventAndMenu -> {
+                        onInteraction(onLongClick.event)
+                        showMenu = true
+                    }
                     null -> {
                         // no-op. This case is not possible. Just making the compiler happy.
                     }

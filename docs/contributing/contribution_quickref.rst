@@ -54,13 +54,10 @@ To Setup Firefox On Windows
     $ cd c:/
     $ mkdir mozilla-source
     $ cd mozilla-source
-    $ wget https://hg.mozilla.org/mozilla-central/raw-file/default/python/mozboot/bin/bootstrap.py
+    $ wget https://raw.githubusercontent.com/mozilla-firefox/firefox/refs/heads/main/python/mozboot/bin/bootstrap.py
 
     # To use Git as your VCS
     $ python3 bootstrap.py --vcs=git
-
-    # To use Mercurial as your VCS
-    $ python3 bootstrap.py
 
 More information on :ref:`building Firefox for Windows <Building Firefox On Windows>`.
 
@@ -69,13 +66,10 @@ To Setup Firefox On macOS and Linux
 
 .. code-block:: shell
 
-    $ curl -L https://hg.mozilla.org/mozilla-central/raw-file/default/python/mozboot/bin/bootstrap.py -O
+    $ curl -L https://raw.githubusercontent.com/mozilla-firefox/firefox/refs/heads/main/python/mozboot/bin/bootstrap.py -O
 
     # To use Git as your VCS
     $ python3 bootstrap.py --vcs=git
-
-    # To use Mercurial as your VCS
-    $ python3 bootstrap.py
 
 More information on :ref:`building Firefox for Linux <Building Firefox On Linux>` and :ref:`building Firefox for MacOS <Building Firefox On MacOS>`.
 
@@ -84,13 +78,10 @@ To Setup Firefox for Android
 
 .. code-block:: shell
 
-    $ curl -L https://hg.mozilla.org/mozilla-central/raw-file/default/python/mozboot/bin/bootstrap.py -O
+    $ curl -L  https://raw.githubusercontent.com/mozilla-firefox/firefox/refs/heads/main/python/mozboot/bin/bootstrap.py -O
 
     # To use Git as your VCS
     $ python3 bootstrap.py --vcs=git
-
-    # To use Mercurial as your VCS
-    $ python3 bootstrap.py
 
 More information on :ref:`building Firefox for Android <Firefox for Android>`
 
@@ -163,14 +154,6 @@ After making your changes, visualize your changes to ensure you're including all
 
 .. code-block:: shell
 
-    # Mercurial
-    # For files changed/added/removed
-    $ hg status
-
-    # For detailed line changes
-    $ hg diff
-
-    # Git
     # For files changed/added/removed
     $ git status
 
@@ -180,9 +163,6 @@ After making your changes, visualize your changes to ensure you're including all
 Then commit your changes:
 
 .. code-block:: shell
-
-    # Mercurial
-    $ hg commit
 
     # Git
     $ git commit
@@ -204,8 +184,7 @@ For example, here is an example of a good commit message:
 during its own onclick handler. r=person"
 
 To :ref:`find a reviewer or a review group <Getting reviews>`, the easiest way is to run
-``hg log <modified-file>`` (or ``git log <modified-file>``, if
-you're using git) on the relevant files, and look who usually is
+`git log <modified-file>`` on the relevant files, and look who usually is
 reviewing the actual changes (ie not reformat, renaming of variables, etc).
 
 
@@ -213,15 +192,10 @@ To visualize your patch in the repository, run:
 
 .. code-block:: shell
 
-    # Mercurial
-    $ hg wip
-
     # Git
     $ git show
 
 :ref:`More information on how to work with stack of patches <Working with stack of patches Quick Reference>`
-
-:ref:`More information on Mercurial <Mercurial Overview>`
 
 To make sure the change follows the coding style
 ------------------------------------------------
@@ -327,8 +301,7 @@ If you're finished with a patch and would like to return to the tip to make a ne
 
 .. code-block:: shell
 
-    $ hg pull central
-    $ hg up central
+    $ git pull --rebase
 
 To update a submitted patch
 ---------------------------
@@ -350,9 +323,6 @@ Make your changes in the working folder and run:
 
 .. code-block:: shell
 
-   # Or, if you need to pass arguments, e.g., changing the commit message:
-   $ hg commit --amend
-
    # Git
    $ git commit --amend
 
@@ -360,7 +330,7 @@ After amending the patch, you will need to submit it using moz-phab again.
 
 .. warning::
 
-    Don't use ``hg commit --amend -m`` or ``git commit --amend -m``.
+    Don't use ``git commit --amend -m``.
 
     Phabricator tracks revision by editing the commit message when a
     revision is created to add a special ``Differential Revision:
@@ -375,9 +345,6 @@ command:
 
 .. code-block:: shell
 
-   # Mercurial
-   $ hg histedit
-
    # Git
    $ git rebase -i
 
@@ -391,9 +358,6 @@ Retrieve new changes from the repository
 To pull changes from the repository, run:
 
 .. code-block:: shell
-
-   # Mercurial
-   $ hg pull --rebase
 
    # Git
    $ git pull --rebase
@@ -431,5 +395,3 @@ More documentation about contribution
 https://mozilla-version-control-tools.readthedocs.io/en/latest/devguide/contributing.html
 
 https://moz-conduit.readthedocs.io/en/latest/phabricator-user.html
-
-https://mikeconley.github.io/documents/How_mconley_uses_Mercurial_for_Mozilla_code

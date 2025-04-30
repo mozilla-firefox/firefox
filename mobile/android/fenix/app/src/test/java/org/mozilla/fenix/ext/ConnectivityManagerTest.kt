@@ -9,7 +9,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -25,8 +24,6 @@ class ConnectivityManagerTest {
     @Before
     fun setup() {
         connectivityManager = mockk(relaxed = true)
-
-        mockkStatic("org.mozilla.fenix.ext.ConnectivityManagerKt")
     }
 
     @Test

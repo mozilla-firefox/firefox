@@ -368,6 +368,28 @@ ml-multi-perf:
             --hooks toolkit/components/ml/tests/tools/hooks_local_hub.py
             toolkit/components/ml/tests/browser/browser_ml_engine_multi_perf.js
 
+ml-perf-semantic-ft:
+    fetches:
+        fetch:
+            - ort.jsep.wasm
+            - xenova-all-minilm-l6-v2
+    description: Run ML Semantic Search Feature
+    treeherder:
+        symbol: perftest(win-ml-perf-semantic-ft)
+        tier: 2
+    run-on-projects: [autoland, mozilla-central]
+    run:
+        command: >-
+            mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
+            cd $MOZ_FETCHES_DIR &&
+            python3 python/mozperftest/mozperftest/runner.py
+            --mochitest-binary ${MOZ_FETCHES_DIR}/firefox/firefox.exe
+            --flavor mochitest
+            --output $MOZ_FETCHES_DIR/../artifacts
+            --hooks toolkit/components/ml/tests/tools/hooks_local_hub.py
+            --mochitest-name-change
+            toolkit/components/ml/tests/browser/browser_ml_semantic_history_search_perf.js
+
 ml-perf-suggest-ft:
     fetches:
         fetch:

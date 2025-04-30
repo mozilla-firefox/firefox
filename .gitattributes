@@ -1,2 +1,11 @@
 # Prevent line ending normalization to follow the mercurial behavior
 * -text
+
+# To show the test headers in WPT metadata diffs, you can combine the attributes below with the
+# following CLI invocation:
+#
+# ```
+# git config --local diff.wpt-metadata.xfuncname '^\[.*\]\s*$'
+# ```
+testing/web-platform/meta/**/*.ini diff=wpt-metadata
+testing/web-platform/mozilla/meta/**/*.ini diff=wpt-metadata

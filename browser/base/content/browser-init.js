@@ -274,6 +274,9 @@ var gBrowserInit = {
           gBrowser.adoptTabGroup(tabToAdopt.group, 0);
           gBrowser.removeTab(gBrowser.selectedTab);
         } else {
+          if (tabToAdopt.group) {
+            Glean.tabgroup.tabInteractions.remove_new_window.add();
+          }
           gBrowser.swapBrowsersAndCloseOther(gBrowser.selectedTab, tabToAdopt);
         }
 

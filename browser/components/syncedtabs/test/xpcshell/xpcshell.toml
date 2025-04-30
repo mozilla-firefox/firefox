@@ -1,5 +1,4 @@
 [DEFAULT]
-skip-if = ["os == 'android'"] # bug 1730213
 head = "head.js"
 firefox-appdir = "browser"
 

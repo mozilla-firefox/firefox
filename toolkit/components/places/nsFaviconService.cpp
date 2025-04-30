@@ -418,53 +418,6 @@ nsFaviconService::SetFaviconForPage(nsIURI* aPageURI, nsIURI* aFaviconURI,
 }
 
 NS_IMETHODIMP
-nsFaviconService::GetFaviconURLForPage(nsIURI* aPageURI,
-                                       nsIFaviconDataCallback* aCallback,
-                                       uint16_t aPreferredWidth) {
-  MOZ_ASSERT(NS_IsMainThread());
-  NS_ENSURE_ARG(aPageURI);
-  NS_ENSURE_ARG(aCallback);
-  // Use the default value, may be UINT16_MAX if a default is not set.
-  if (aPreferredWidth == 0) {
-    aPreferredWidth = mDefaultIconURIPreferredSize;
-  }
-
-  nsCOMPtr<nsIURI> pageURI = GetExposableURI(aPageURI);
-
-  RefPtr<AsyncGetFaviconURLForPage> event =
-      new AsyncGetFaviconURLForPage(pageURI, aPreferredWidth, aCallback);
-
-  RefPtr<Database> DB = Database::GetDatabase();
-  NS_ENSURE_STATE(DB);
-  DB->DispatchToAsyncThread(event);
-
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsFaviconService::GetFaviconDataForPage(nsIURI* aPageURI,
-                                        nsIFaviconDataCallback* aCallback,
-                                        uint16_t aPreferredWidth) {
-  MOZ_ASSERT(NS_IsMainThread());
-  NS_ENSURE_ARG(aPageURI);
-  NS_ENSURE_ARG(aCallback);
-  // Use the default value, may be UINT16_MAX if a default is not set.
-  if (aPreferredWidth == 0) {
-    aPreferredWidth = mDefaultIconURIPreferredSize;
-  }
-
-  nsCOMPtr<nsIURI> pageURI = GetExposableURI(aPageURI);
-
-  RefPtr<AsyncGetFaviconDataForPage> event =
-      new AsyncGetFaviconDataForPage(pageURI, aPreferredWidth, aCallback);
-  RefPtr<Database> DB = Database::GetDatabase();
-  NS_ENSURE_STATE(DB);
-  DB->DispatchToAsyncThread(event);
-
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 nsFaviconService::GetFaviconForPage(nsIURI* aPageURI, uint16_t aPreferredWidth,
                                     JSContext* aContext = nullptr,
                                     dom::Promise** _retval = nullptr) {

@@ -3,18 +3,20 @@ http://creativecommons.org/publicdomain/zero/1.0/ */
 "use strict";
 
 const {
-  getFileHandleFromOPFS,
   MultiProgressAggregator,
   ProgressAndStatusCallbackParams,
   ProgressStatusText,
   readResponse,
   modelToResponse,
   URLChecker,
-  removeFromOPFS,
   RejectionType,
   BlockListManager,
   RemoteSettingsManager,
 } = ChromeUtils.importESModule("chrome://global/content/ml/Utils.sys.mjs");
+
+const { OPFS } = ChromeUtils.importESModule(
+  "chrome://global/content/ml/OPFS.sys.mjs"
+);
 
 /**
  * Test that we can retrieve the correct content without a callback.
@@ -455,10 +457,10 @@ add_task(async function test_multi_aggregator() {
  */
 add_task(async function test_ml_utils_model_to_response() {
   const modelPath = "test.txt";
-  await getFileHandleFromOPFS(modelPath, { create: true });
+  await OPFS.getFileHandle(modelPath, { create: true });
 
   registerCleanupFunction(async () => {
-    await removeFromOPFS(modelPath);
+    await OPFS.remove(modelPath);
   });
 
   const cases = [

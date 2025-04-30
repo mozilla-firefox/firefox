@@ -40,7 +40,7 @@ import java.util.Locale
 class ContextTest {
 
     private lateinit var mockContext: Context
-    private val selectedLocale = Locale("ro", "RO")
+    private val selectedLocale = Locale.Builder().setLanguage("ro").setRegion("RO").build()
     private val appName = "Firefox Preview"
 
     private val mockId: Int = 11
@@ -74,7 +74,7 @@ class ContextTest {
     fun `getStringWithArgSafe returns English locale for incorrect formatted string`() {
         val englishString = "Try the new %1s"
         val incorrectlyFormattedString = "Incearca noul %1&amp;s"
-        every { getSystemDefault() } returns Locale("en")
+        every { getSystemDefault() } returns Locale.forLanguageTag("en")
         every { mockContext.getString(mockId) } returns incorrectlyFormattedString
         every { format(mockContext.getString(mockId), appName) } returns format(englishString, appName)
 

@@ -1,6 +1,5 @@
 [DEFAULT]
 head = ""
-skip-if = ["os == 'android'"]
 support-files = [
   "data/empty",
   "data/test_bug333423.zip",
@@ -47,8 +46,7 @@ support-files = [
 ["test_bug1328865.js"]
 
 ["test_bug1550815.js"]
-# recovering from SIGBUS is temporarily disabled by bug 1583735
-skip-if = ["true"]
+run-if = ["false"] # recovering from SIGBUS is temporarily disabled by bug 1583735
 
 ["test_corrupt_1211262.js"]
 
@@ -66,11 +64,10 @@ skip-if = ["true"]
 
 ["test_fault_handler.js"]
 head = "../../zipwriter/test/unit/head_zipwriter.js"
-run-if = ["os == 'win'"] # tests windows specific exception handling
-skip-if = ["true"] # Requires elevated priviledges. See bug 1707853 and comments in test
+# run-if = ["os == 'win'"] # tests windows specific exception handling
+run-if = ["false"] # Requires elevated priviledges. See bug 1707853 and comments in test
 
 ["test_jarchannel.js"]
-skip-if = ["os == 'mac'"]
 
 ["test_jarinput_stream_zipreader_reference.js"]
 

@@ -21,6 +21,26 @@ playback_pageset_manifest = "mitm8-linux-firefox-example.manifest"
 test_url = "https://www.example.com"
 use_live_sites = false
 
+# Meaning of the indexeddb_open names:
+# 1. Iterations - how many open requests are made? (many => iterations=10000, few => iterations=1000)
+# 2. Concurrency – should opens happen all at once (par => parallel=1) or one after another (seq => parallel=0)?
+
+["idb-open-many-par"]
+browsertime_args = "--browsertime.iterations=10000 --browsertime.parallel=1"
+test_script = "indexeddb_open.js"
+
+["idb-open-many-seq"]
+browsertime_args = "--browsertime.iterations=10000 --browsertime.parallel=0"
+test_script = "indexeddb_open.js"
+
+["idb-open-few-par"]
+browsertime_args = "--browsertime.iterations=1000 --browsertime.parallel=1"
+test_script = "indexeddb_open.js"
+
+["idb-open-few-seq"]
+browsertime_args = "--browsertime.iterations=1000 --browsertime.parallel=0"
+test_script = "indexeddb_open.js"
+
 # Meaning of the idb_write names:
 # 1. Iterations - how many add/put requests are made? (k ~ few, M ~ many)
 # 2. Buffer type - what kind of buffer is supplied to each add/put, Array (ar), ArrayBuffer (ab) or Blob (bl)?

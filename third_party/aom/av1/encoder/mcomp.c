@@ -102,6 +102,23 @@ void av1_make_default_fullpel_ms_params(
   ms_params->mv_limits = x->mv_limits;
   av1_set_mv_search_range(&ms_params->mv_limits, ref_mv);
 
+  if (cpi->oxcf.algo_cfg.sharpness) {
+    int top_margin = x->e_mbd.mi_row * MI_SIZE + 8;
+    int left_margin = x->e_mbd.mi_col * MI_SIZE + 8;
+    int bottom_margin = cpi->common.cur_frame->height -
+                        mi_size_high[bsize] * MI_SIZE - top_margin + 16;
+    int right_margin = cpi->common.cur_frame->width -
+                       mi_size_wide[bsize] * MI_SIZE - left_margin + 16;
+    if (ms_params->mv_limits.row_min < -top_margin)
+      ms_params->mv_limits.row_min = -top_margin;
+    if (ms_params->mv_limits.row_max > bottom_margin)
+      ms_params->mv_limits.row_max = bottom_margin;
+    if (ms_params->mv_limits.col_min < -left_margin)
+      ms_params->mv_limits.col_min = -left_margin;
+    if (ms_params->mv_limits.col_max > right_margin)
+      ms_params->mv_limits.col_max = right_margin;
+  }
+
   // Mvcost params
   init_mv_cost_params(&ms_params->mv_cost_params, x->mv_costs, ref_mv,
                       x->errorperbit, x->sadperbit);

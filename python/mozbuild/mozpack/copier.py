@@ -290,7 +290,7 @@ class FileCopier(FileRegistry):
 
         Returns a FileCopyResult that details what changed.
         """
-        assert isinstance(destination, (str,))
+        assert isinstance(destination, str)
         assert not os.path.exists(destination) or os.path.isdir(destination)
 
         result = FileCopyResult()
@@ -559,7 +559,7 @@ class Jarrer(FileRegistry, BaseFile):
             def exists(self):
                 return self.deflater is not None
 
-        if isinstance(dest, (str,)):
+        if isinstance(dest, str):
             dest = Dest(dest)
         assert isinstance(dest, Dest)
 

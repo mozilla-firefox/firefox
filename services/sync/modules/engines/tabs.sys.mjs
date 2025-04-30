@@ -425,9 +425,10 @@ export const TabProvider = {
         encoder.encode(thisTab.title + thisTab.lastUsed + url).byteLength + 100;
 
       // Use the favicon service for the icon url - we can wait for the promises at the end.
-      let iconPromise = lazy.PlacesUtils.promiseFaviconData(url)
-        .then(iconData => {
-          thisTab.icon = iconData.uri.spec;
+      let iconPromise = lazy.PlacesUtils.favicons
+        .getFaviconForPage(lazy.PlacesUtils.toURI(url))
+        .then(favicon => {
+          thisTab.icon = favicon.uri.spec;
         })
         .catch(() => {
           log.trace(

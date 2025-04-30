@@ -107,7 +107,6 @@ support-files = [
 ]
 skip-if = [
   "http3",
-  "http2",
 ]
 
 ["test_bug13871.html"]

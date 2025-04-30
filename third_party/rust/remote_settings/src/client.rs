@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use crate::config::RemoteSettingsConfig;
+use crate::config::{BaseUrl, RemoteSettingsConfig};
 use crate::error::{Error, Result};
 use crate::jexl_filter::JexlFilter;
 #[cfg(feature = "signatures")]
@@ -79,13 +79,16 @@ struct RemoteSettingsClientInner<C> {
     jexl_filter: JexlFilter,
 }
 
-// Add your local packaged data you want to work with here
-//
-// To download the dump, run:
+// To initially download the dump (and attachments, if any), run:
 //   $ cargo remote-settings dump-get --bucket main --collection-name <collection name>
+//
+// Then add the entry here.
+//
+// For subsequent updates, run the command above again.
 impl<C: ApiClient> RemoteSettingsClient<C> {
     // One line per bucket + collection
     packaged_collections! {
+        ("main", "search-config-icons"),
         ("main", "search-config-v2"),
         ("main", "search-telemetry-v2"),
         ("main", "regions"),
@@ -106,6 +109,78 @@ impl<C: ApiClient> RemoteSettingsClient<C> {
             "world",
             "world-buffered",
         ],
+        ("main", "search-config-icons") => [
+            "001500a9-1a6c-3f5a-ba15-a5f5a075d256",
+            "06cf7432-efd7-f244-927b-5e423005e1ea",
+            "0a57b0cf-34f0-4d09-96e4-dbd6e3355410",
+            "0d7668a8-c3f4-cfee-cbc8-536511528937",
+            "0eec5640-6fde-d6fe-322a-c72c6d5bd5a2",
+            "101ce01d-2691-b729-7f16-9d389803384b",
+            "177aba42-9bed-4078-e36b-580e8794cd7f",
+            "25de0352-aabb-d31f-15f7-bf9299fb004c",
+            "2bbe48f4-d3b8-c9e0-86e3-a54c37ec3335",
+            "2e835b0e-9709-d1bb-9725-87f59f3445ca",
+            "2ecca3f8-c1ef-43cc-b053-886d1ae46c36",
+            "32d26d19-aeb0-5c01-32e8-f8970be9246f",
+            "39d0b17d-c020-4890-932f-83c0f6ed130b",
+            "41135a88-093d-4077-873b-9de1ae133427",
+            "41f0d805-3775-4988-8d8c-5ad8ccd86d1c",
+            "47da97b5-600f-c450-fd15-a52bb2169c11",
+            "48c72361-cd67-412e-bd7f-f81a43c10791",
+            "4e271681-3e0f-91ac-9750-03f665efc171",
+            "50f6171f-8e7a-b41b-862e-f97397038fb2",
+            "5203dd03-2c55-4b53-9c60-58258d587be1",
+            "5914932e-66ba-4126-8be5-d37beadd9532",
+            "5ded611d-44b2-dc46-fd67-fb116888d75d",
+            "5e03d6f4-6ee9-8bc8-cf22-7a5f2cf55c41",
+            "6644f26f-28ea-4222-929d-5d43a02dae05",
+            "6d10d702-7bd6-1452-90a5-3df665a38f66",
+            "6e36a151-e4f4-4117-9067-1ca82c47d01a",
+            "6f4da442-d31e-28f8-03af-797d16bbdd27",
+            "7072564d-a573-4750-bf33-f0a07631c9eb",
+            "70fdd651-6c50-b7bb-09ec-7e85da259173",
+            "71f41a0c-5b70-4116-b30f-e62089083522",
+            "74793ce1-a918-a5eb-d3c0-2aadaff3c88c",
+            "74f94dc2-caf6-4b90-b3d2-f3e2f7714d88",
+            "764e3b14-fe16-4feb-8384-124c516a5afa",
+            "7bbe6c5c-fdb8-2845-a4f4-e1382e708a0e",
+            "7bf4ca37-e2b8-4d31-a1c3-979bc0e85131",
+            "7c81cf98-7c11-4afd-8279-db89118a6dfb",
+            "7cb4d88a-d4df-45b2-87e4-f896eaf1bbdb",
+            "7edaf4fe-a8a0-432b-86d2-bf75ebe80851",
+            "7efbed51-813c-581d-d8d3-f8758434e451",
+            "84bb4962-e571-227a-9ef6-2ac5f2aac361",
+            "87ac4cde-f581-398b-1e32-eb4079183b36",
+            "8831ce10-b1e4-6eb4-4975-83c67457288e",
+            "890de5c4-0941-a116-473a-5d240e79497a",
+            "8abb10a7-212f-46b5-a7b4-244f414e3810",
+            "91a9672d-e945-8e1e-0996-aefdb0190716",
+            "94a84724-c30f-4767-ba42-01cc37fc31a4",
+            "95ed201d-4ab8-4cb8-831d-454f53cab0f8",
+            "96327a73-c433-5eb4-a16d-b090cadfb80b",
+            "9802e63d-05ec-48ba-93f9-746e0981ad98",
+            "a06db97d-1210-ea2e-5474-0e2f7d295bfd",
+            "a06dc3fd-4bdb-41f3-2ebc-4cbed06a9bd3",
+            "a2c7d4e9-f770-51e1-0963-3c2c8401631d",
+            "a83f24e4-602c-47bd-930c-ad0947ee1adf",
+            "b64f09fd-52d1-c48e-af23-4ce918e7bf3b",
+            "b882b24d-1776-4ef9-9016-0bdbd935eda3",
+            "b8ca5a94-8fff-27ad-6e00-96e244a32e21",
+            "b9424309-f601-4a69-98ca-ca68e65633e6",
+            "c411adc1-9661-4fb5-a4c1-8cfe74911943",
+            "cbf9e891-d079-2b28-5617-283450d463dd",
+            "d87f251c-3e12-a8bf-e2d0-afd43d36c5f9",
+            "db0e1627-ae89-4c25-8944-a9481d8512d9",
+            "e02f23df-8d48-2b1b-3b5c-6dd27302c61c",
+            "e718e983-09aa-e8f6-b25f-cd4b395d4785",
+            "e7547f62-187b-b641-d462-e54a3f813d9a",
+            "eb62e768-151b-45d1-9fe5-9e1d2a5991c5",
+            "f312610a-ebfb-a106-ea92-fd643c5d3636",
+            "fa0fc42c-d91d-fca7-34eb-806ff46062dc",
+            "fca3e3ee-56cd-f474-dc31-307fd24a891d",
+            "fe75ce3f-1545-400c-b28c-ad771054e69f",
+            "fed4f021-ff3e-942a-010e-afa43fda2136",
+        ]
     }
 }
 
@@ -285,6 +360,10 @@ impl<C: ApiClient> RemoteSettingsClient<C> {
         Ok(())
     }
 
+    pub fn shutdown(&self) {
+        self.inner.lock().storage.close();
+    }
+
     #[cfg(not(feature = "signatures"))]
     fn verify_signature(&self) -> Result<()> {
         log::debug!("{0}: signature verification skipped.", self.collection_name);
@@ -375,7 +454,7 @@ impl<C: ApiClient> RemoteSettingsClient<C> {
 
         // Then try packaged data if we're in prod
         if inner.api_client.is_prod_server()? {
-            if let Some((data, manifest)) = self.load_packaged_attachment(&metadata.location) {
+            if let Some((data, manifest)) = self.load_packaged_attachment(&record.id) {
                 if let Ok(manifest_data) = serde_json::from_str::<serde_json::Value>(manifest) {
                     if metadata.hash == manifest_data["hash"].as_str().unwrap_or_default()
                         && metadata.size == manifest_data["size"].as_u64().unwrap_or_default()
@@ -416,26 +495,21 @@ impl<C: ApiClient> RemoteSettingsClient<C> {
 
 impl RemoteSettingsClient<ViaductApiClient> {
     pub fn new(
-        server_url: Url,
+        server_url: BaseUrl,
         bucket_name: String,
         collection_name: String,
         context: Option<RemoteSettingsContext>,
         storage: Storage,
-    ) -> Result<Self> {
-        let api_client = ViaductApiClient::new(server_url, &bucket_name, &collection_name)?;
+    ) -> Self {
+        let api_client = ViaductApiClient::new(server_url, &bucket_name, &collection_name);
         let jexl_filter = JexlFilter::new(context);
 
-        Ok(Self::new_from_parts(
-            collection_name,
-            storage,
-            jexl_filter,
-            api_client,
-        ))
+        Self::new_from_parts(collection_name, storage, jexl_filter, api_client)
     }
 
-    pub fn update_config(&self, server_url: Url, bucket_name: String) -> Result<()> {
+    pub fn update_config(&self, server_url: BaseUrl, bucket_name: String) -> Result<()> {
         let mut inner = self.inner.lock();
-        inner.api_client = ViaductApiClient::new(server_url, &bucket_name, &self.collection_name)?;
+        inner.api_client = ViaductApiClient::new(server_url, &bucket_name, &self.collection_name);
         inner.storage.empty()
     }
 }
@@ -471,11 +545,11 @@ pub struct ViaductApiClient {
 }
 
 impl ViaductApiClient {
-    fn new(base_url: Url, bucket_name: &str, collection_name: &str) -> Result<Self> {
-        Ok(Self {
-            endpoints: RemoteSettingsEndpoints::new(&base_url, bucket_name, collection_name)?,
+    fn new(base_url: BaseUrl, bucket_name: &str, collection_name: &str) -> Self {
+        Self {
+            endpoints: RemoteSettingsEndpoints::new(&base_url, bucket_name, collection_name),
             remote_state: RemoteState::default(),
-        })
+        }
     }
 
     fn make_request(&mut self, url: Url) -> Result<Response> {
@@ -624,10 +698,10 @@ impl Client {
 
         let bucket_name = config.bucket_name.unwrap_or_else(|| String::from("main"));
         let endpoints = RemoteSettingsEndpoints::new(
-            &server.get_url()?,
+            &server.get_base_url()?,
             &bucket_name,
             &config.collection_name,
-        )?;
+        );
 
         Ok(Self {
             endpoints,
@@ -831,41 +905,31 @@ impl RemoteSettingsEndpoints {
     /// Construct a new RemoteSettingsEndpoints
     ///
     /// `base_url` should have the form `https://[domain]/v1` (no trailing slash).
-    fn new(base_url: &Url, bucket_name: &str, collection_name: &str) -> Result<Self> {
+    fn new(base_url: &BaseUrl, bucket_name: &str, collection_name: &str) -> Self {
         let mut root_url = base_url.clone();
         // Push the empty string to add the trailing slash.
-        Self::path_segments_mut(&mut root_url)?.push("");
+        root_url.path_segments_mut().push("");
 
         let mut collection_url = base_url.clone();
-        Self::path_segments_mut(&mut collection_url)?
+        collection_url
+            .path_segments_mut()
             .push("buckets")
             .push(bucket_name)
             .push("collections")
             .push(collection_name);
 
         let mut records_url = collection_url.clone();
-        Self::path_segments_mut(&mut records_url)?.push("records");
+        records_url.path_segments_mut().push("records");
 
         let mut changeset_url = collection_url.clone();
-        Self::path_segments_mut(&mut changeset_url)?.push("changeset");
+        changeset_url.path_segments_mut().push("changeset");
 
-        Ok(Self {
-            root_url,
-            collection_url,
-            records_url,
-            changeset_url,
-        })
-    }
-
-    /// Utility method for calling [Url::path_segments_mut]
-    ///
-    /// The issue we're working around is that path_segments_mut uses `()` as the error type, which
-    /// can't be converted into our `Error` type.
-    fn path_segments_mut(url: &mut Url) -> Result<url::PathSegmentsMut<'_>> {
-        url.path_segments_mut()
-            // path_segments_mut uses `()` as the error type, but the docs say that it only will
-            // error for cannot-be-a-base URLs.
-            .map_err(|_| Error::UrlParsingError(url::ParseError::RelativeUrlWithCannotBeABaseBase))
+        Self {
+            root_url: root_url.into_inner(),
+            collection_url: collection_url.into_inner(),
+            records_url: records_url.into_inner(),
+            changeset_url: changeset_url.into_inner(),
+        }
     }
 }
 
@@ -1837,11 +1901,10 @@ mod test_new_client {
     #[test]
     fn test_endpoints() {
         let endpoints = RemoteSettingsEndpoints::new(
-            &Url::parse("http://rs.example.com/v1").unwrap(),
+            &BaseUrl::parse("http://rs.example.com/v1").unwrap(),
             "main",
             "test-collection",
-        )
-        .unwrap();
+        );
         assert_eq!(endpoints.root_url.to_string(), "http://rs.example.com/v1/");
         assert_eq!(
             endpoints.collection_url.to_string(),
@@ -1899,7 +1962,7 @@ mod jexl_tests {
             ..Default::default()
         };
 
-        let mut storage = Storage::new(":memory:".into()).expect("Error creating storage");
+        let mut storage = Storage::new(":memory:".into());
         let _ = storage.insert_collection_content(
             "http://rs.example.com/v1/buckets/main/collections/test-collection",
             &records,
@@ -1957,7 +2020,7 @@ mod jexl_tests {
             ..Default::default()
         };
 
-        let mut storage = Storage::new(":memory:".into()).expect("Error creating storage");
+        let mut storage = Storage::new(":memory:".into());
         let _ = storage.insert_collection_content(
             "http://rs.example.com/v1/buckets/main/collections/test-collection",
             &records,
@@ -1987,6 +2050,7 @@ mod test_signatures {
     use crate::RemoteSettingsContext;
 
     use super::*;
+    use nss::ensure_initialized;
 
     const VALID_CERTIFICATE: &str = "\
 -----BEGIN CERTIFICATE-----
@@ -2137,7 +2201,7 @@ IKdcFKAt3fFrpyMhlfIKkLfmm0iDjmfmIXbDGBJw9SE=
             .expect_fetch_cert()
             .returning(move |_| Ok(certificate.clone().into_bytes()));
 
-        let storage = Storage::new(":memory:".into())?;
+        let storage = Storage::new(":memory:".into());
         let jexl_filter = JexlFilter::new(Some(RemoteSettingsContext::default()));
         let rs_client = RemoteSettingsClient::new_from_parts(
             collection_name.to_string(),
@@ -2151,6 +2215,7 @@ IKdcFKAt3fFrpyMhlfIKkLfmm0iDjmfmIXbDGBJw9SE=
 
     #[test]
     fn test_valid_signature() -> Result<()> {
+        ensure_initialized();
         run_client_sync(
             &[],
             &[],
@@ -2165,6 +2230,7 @@ IKdcFKAt3fFrpyMhlfIKkLfmm0iDjmfmIXbDGBJw9SE=
 
     #[test]
     fn test_valid_signature_after_retry() -> Result<()> {
+        ensure_initialized();
         run_client_sync(
             &vec![RemoteSettingsRecord {
                 id: "bad-record".to_string(),
@@ -2185,6 +2251,7 @@ IKdcFKAt3fFrpyMhlfIKkLfmm0iDjmfmIXbDGBJw9SE=
 
     #[test]
     fn test_invalid_signature_value() -> Result<()> {
+        ensure_initialized();
         let err = run_client_sync(
             &[],
             &[],
@@ -2202,6 +2269,7 @@ IKdcFKAt3fFrpyMhlfIKkLfmm0iDjmfmIXbDGBJw9SE=
 
     #[test]
     fn test_invalid_certificate_value() -> Result<()> {
+        ensure_initialized();
         let err = run_client_sync(
             &[],
             &[],
@@ -2223,6 +2291,7 @@ IKdcFKAt3fFrpyMhlfIKkLfmm0iDjmfmIXbDGBJw9SE=
 
     #[test]
     fn test_invalid_signature_expired_cert() -> Result<()> {
+        ensure_initialized();
         let december_20_2024 = 1734651582;
 
         let err = run_client_sync(
@@ -2246,6 +2315,7 @@ IKdcFKAt3fFrpyMhlfIKkLfmm0iDjmfmIXbDGBJw9SE=
 
     #[test]
     fn test_invalid_signature_invalid_data() -> Result<()> {
+        ensure_initialized();
         // The signature is valid for an empty list of records.
         let records = vec![RemoteSettingsRecord {
             id: "unexpected-data".to_string(),
@@ -2272,6 +2342,7 @@ IKdcFKAt3fFrpyMhlfIKkLfmm0iDjmfmIXbDGBJw9SE=
 
     #[test]
     fn test_invalid_signature_invalid_signer_name() -> Result<()> {
+        ensure_initialized();
         let err = run_client_sync(
             &[],
             &[],

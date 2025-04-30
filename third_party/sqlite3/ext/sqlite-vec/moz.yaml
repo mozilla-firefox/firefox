@@ -1,0 +1,50 @@
+schema: 1
+
+bugzilla:
+  product: Toolkit
+  component: Storage
+
+origin:
+  name: sqlite-vec
+  description: >
+    An extremely small, "fast enough" vector search SQLite extension that runs
+    anywhere!
+  url: https://github.com/asg017/sqlite-vec
+  release: v0.1.7-alpha.2 (2025-01-10T14:54:13-08:00).
+  revision: v0.1.7-alpha.2
+  license: MIT
+  license-file: LICENSE-MIT
+  notes: >
+    Please check for eventual limitations of this extension on the Github page
+    official documentation.
+
+vendoring:
+  url: https://github.com/asg017/sqlite-vec
+  source-hosting: github
+  tracking: tag
+  vendor-directory: third_party/sqlite3/ext/sqlite-vec
+  skip-vendoring-steps:
+    - update-moz-build
+  exclude:
+    - "**"
+  include:
+    - LICENSE-MIT
+    - VERSION
+    - sqlite-vec.c
+  keep:
+    - moz.yaml
+    - vendor.sh
+
+  update-actions:
+    - action: move-file
+      from: '{vendor_dir}/VERSION'
+      to: '{vendor_dir}/VERSION.txt'
+    # Linking multiple extensions in the same library ends up defining
+    # sqlite3_api multiple times, INIT3 is just an extern declaration.
+    - action: replace-in-file
+      pattern: 'SQLITE_EXTENSION_INIT1'
+      with: 'SQLITE_EXTENSION_INIT3'
+      file: '{vendor_dir}/sqlite-vec.c'
+    - action: run-script
+      script: '{yaml_dir}/vendor.sh'
+      cwd: '{vendor_dir}'

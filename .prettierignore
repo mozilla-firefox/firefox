@@ -15,6 +15,8 @@
 # Include Widget test files in formatting
 !toolkit/content/tests/widgets/*.xhtml
 !toolkit/content/tests/widgets/*.html
+!toolkit/content/tests/chrome/test_preferencesBindings_setting.html
+!browser/components/preferences/tests/chrome/*.html
 
 # This should be re-enabled in bug 1827456.
 js/src/builtin
@@ -1076,6 +1078,7 @@ devtools/client/performance-new/shared/profiler_get_symbols.js
 devtools/client/aboutdebugging/test/browser/resources/bad-extensions/invalid-json/manifest.json
 devtools/client/jsonview/test/invalid_json.json
 devtools/client/webconsole/test/browser/test-syntaxerror-worklet.js
+devtools/server/tests/xpcshell/addons/invalid-extension-manifest-badjson/manifest.json
 
 # devtools specific format test file
 devtools/server/tests/xpcshell/xpcshell_debugging_script.js
@@ -1481,6 +1484,9 @@ browser/extensions/newtab/data/content/activity-stream.bundle.js
 browser/extensions/newtab/logs/
 browser/extensions/newtab/node_modules/
 browser/extensions/newtab/prerendered/
+browser/extensions/newtab/webext-glue/builtin-newtab.js
+browser/extensions/newtab/webext-glue/locales/locales-report.json
+browser/extensions/newtab/webext-glue/locales/supported-locales.json
 browser/locales/l10n-changesets.json
 browser/locales/l10n-onchange-changesets.json
 devtools/client/aboutdebugging/test/jest/node_modules/

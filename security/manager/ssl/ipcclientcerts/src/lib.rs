@@ -12,7 +12,8 @@ extern crate rsclientcerts;
 extern crate sha2;
 
 use pkcs11_bindings::*;
-use rsclientcerts::manager::{Manager, SlotType};
+use rsclientcerts::manager::Manager;
+use std::convert::TryInto;
 use std::sync::Mutex;
 
 mod backend;
@@ -79,23 +80,22 @@ extern "C" fn C_GetInfo(pInfo: CK_INFO_PTR) -> CK_RV {
     if pInfo.is_null() {
         return CKR_ARGUMENTS_BAD;
     }
-    let mut info = CK_INFO::default();
-    info.cryptokiVersion.major = 2;
-    info.cryptokiVersion.minor = 2;
-    info.manufacturerID = *MANUFACTURER_ID_BYTES;
-    info.libraryDescription = *LIBRARY_DESCRIPTION_BYTES;
+    let info = CK_INFO {
+        cryptokiVersion: CK_VERSION { major: 2, minor: 2 },
+        manufacturerID: *MANUFACTURER_ID_BYTES,
+        flags: 0,
+        libraryDescription: *LIBRARY_DESCRIPTION_BYTES,
+        libraryVersion: CK_VERSION::default(),
+    };
     unsafe {
         *pInfo = info;
     }
     CKR_OK
 }
 
-/// This module has two slots.
-const SLOT_COUNT: CK_ULONG = 2;
-/// The slot with ID 1 supports modern mechanisms like RSA-PSS.
-const SLOT_ID_MODERN: CK_SLOT_ID = 1;
-/// The slot with ID 2 only supports legacy mechanisms.
-const SLOT_ID_LEGACY: CK_SLOT_ID = 2;
+/// This module has one slot.
+const SLOT_COUNT: CK_ULONG = 1;
+const SLOT_ID: CK_SLOT_ID = 1;
 
 /// This gets called twice: once with a null `pSlotList` to get the number of slots (returned via
 /// `pulCount`) and a second time to get the ID for each slot.
@@ -112,8 +112,7 @@ extern "C" fn C_GetSlotList(
             return CKR_BUFFER_TOO_SMALL;
         }
         unsafe {
-            *pSlotList = SLOT_ID_MODERN;
-            *pSlotList.offset(1) = SLOT_ID_LEGACY;
+            *pSlotList = SLOT_ID;
         }
     };
     unsafe {
@@ -122,24 +121,17 @@ extern "C" fn C_GetSlotList(
     CKR_OK
 }
 
-const SLOT_DESCRIPTION_MODERN_BYTES: &[u8; 64] =
-    b"IPC Client Cert Slot (Modern)                                   ";
-const SLOT_DESCRIPTION_LEGACY_BYTES: &[u8; 64] =
-    b"IPC Client Cert Slot (Legacy)                                   ";
+const SLOT_DESCRIPTION_BYTES: &[u8; 64] =
+    b"IPC Client Cert Slot                                            ";
 
 /// This gets called to obtain information about slots. In this implementation, the tokens are
 /// always present in the slots.
 extern "C" fn C_GetSlotInfo(slotID: CK_SLOT_ID, pInfo: CK_SLOT_INFO_PTR) -> CK_RV {
-    if (slotID != SLOT_ID_MODERN && slotID != SLOT_ID_LEGACY) || pInfo.is_null() {
+    if slotID != SLOT_ID || pInfo.is_null() {
         return CKR_ARGUMENTS_BAD;
     }
-    let description = if slotID == SLOT_ID_MODERN {
-        SLOT_DESCRIPTION_MODERN_BYTES
-    } else {
-        SLOT_DESCRIPTION_LEGACY_BYTES
-    };
     let slot_info = CK_SLOT_INFO {
-        slotDescription: *description,
+        slotDescription: *SLOT_DESCRIPTION_BYTES,
         manufacturerID: *MANUFACTURER_ID_BYTES,
         flags: CKF_TOKEN_PRESENT,
         hardwareVersion: CK_VERSION::default(),
@@ -151,60 +143,64 @@ extern "C" fn C_GetSlotInfo(slotID: CK_SLOT_ID, pInfo: CK_SLOT_INFO_PTR) -> CK_R
     CKR_OK
 }
 
-const TOKEN_LABEL_MODERN_BYTES: &[u8; 32] = b"IPC Client Cert Token (Modern)  ";
-const TOKEN_LABEL_LEGACY_BYTES: &[u8; 32] = b"IPC Client Cert Token (Legacy)  ";
+const TOKEN_LABEL_BYTES: &[u8; 32] = b"IPC Client Cert Token           ";
 const TOKEN_MODEL_BYTES: &[u8; 16] = b"ipcclientcerts  ";
 const TOKEN_SERIAL_NUMBER_BYTES: &[u8; 16] = b"0000000000000000";
 
 /// This gets called to obtain some information about tokens. This implementation has two slots,
 /// so it has two tokens. This information is primarily for display purposes.
 extern "C" fn C_GetTokenInfo(slotID: CK_SLOT_ID, pInfo: CK_TOKEN_INFO_PTR) -> CK_RV {
-    if (slotID != SLOT_ID_MODERN && slotID != SLOT_ID_LEGACY) || pInfo.is_null() {
+    if slotID != SLOT_ID || pInfo.is_null() {
         return CKR_ARGUMENTS_BAD;
     }
-    let mut token_info = CK_TOKEN_INFO::default();
-    let label = if slotID == SLOT_ID_MODERN {
-        TOKEN_LABEL_MODERN_BYTES
-    } else {
-        TOKEN_LABEL_LEGACY_BYTES
+    let token_info = CK_TOKEN_INFO {
+        label: *TOKEN_LABEL_BYTES,
+        manufacturerID: *MANUFACTURER_ID_BYTES,
+        model: *TOKEN_MODEL_BYTES,
+        serialNumber: *TOKEN_SERIAL_NUMBER_BYTES,
+        flags: 0,
+        ulMaxSessionCount: CK_ULONG::MAX,
+        ulSessionCount: 0,
+        ulMaxRwSessionCount: CK_ULONG::MAX,
+        ulRwSessionCount: 0,
+        ulMaxPinLen: CK_ULONG::MAX,
+        ulMinPinLen: 0,
+        ulTotalPublicMemory: 0,
+        ulFreePublicMemory: CK_ULONG::MAX,
+        ulTotalPrivateMemory: 0,
+        ulFreePrivateMemory: CK_ULONG::MAX,
+        hardwareVersion: CK_VERSION::default(),
+        firmwareVersion: CK_VERSION::default(),
+        utcTime: [0; 16],
     };
-    token_info.label = *label;
-    token_info.manufacturerID = *MANUFACTURER_ID_BYTES;
-    token_info.model = *TOKEN_MODEL_BYTES;
-    token_info.serialNumber = *TOKEN_SERIAL_NUMBER_BYTES;
     unsafe {
         *pInfo = token_info;
     }
     CKR_OK
 }
 
-/// This gets called to determine what mechanisms a slot supports. The modern slot supports ECDSA,
-/// RSA PKCS, and RSA PSS. The legacy slot only supports RSA PKCS.
+/// This gets called to determine what mechanisms a slot supports. The slot supports ECDSA, RSA
+/// PKCS, and RSA PSS.
 extern "C" fn C_GetMechanismList(
     slotID: CK_SLOT_ID,
     pMechanismList: CK_MECHANISM_TYPE_PTR,
     pulCount: CK_ULONG_PTR,
 ) -> CK_RV {
-    if (slotID != SLOT_ID_MODERN && slotID != SLOT_ID_LEGACY) || pulCount.is_null() {
+    if slotID != SLOT_ID || pulCount.is_null() {
         return CKR_ARGUMENTS_BAD;
     }
-    let mechanisms = if slotID == SLOT_ID_MODERN {
-        vec![CKM_ECDSA, CKM_RSA_PKCS, CKM_RSA_PKCS_PSS]
-    } else {
-        vec![CKM_RSA_PKCS]
-    };
+    let mechanisms = &[CKM_ECDSA, CKM_RSA_PKCS, CKM_RSA_PKCS_PSS];
+    let mechanisms_len: CK_ULONG = mechanisms.len().try_into().unwrap();
     if !pMechanismList.is_null() {
-        if unsafe { *pulCount as usize } < mechanisms.len() {
+        if unsafe { *pulCount } < mechanisms_len {
             return CKR_ARGUMENTS_BAD;
         }
-        for i in 0..mechanisms.len() {
-            unsafe {
-                *pMechanismList.offset(i as isize) = mechanisms[i];
-            }
-        }
+        let mechanism_list =
+            unsafe { std::slice::from_raw_parts_mut(pMechanismList, mechanisms.len()) };
+        mechanism_list.copy_from_slice(mechanisms);
     }
     unsafe {
-        *pulCount = mechanisms.len() as CK_ULONG;
+        *pulCount = mechanisms_len;
     }
     CKR_OK
 }
@@ -253,17 +249,12 @@ extern "C" fn C_OpenSession(
     _Notify: CK_NOTIFY,
     phSession: CK_SESSION_HANDLE_PTR,
 ) -> CK_RV {
-    if (slotID != SLOT_ID_MODERN && slotID != SLOT_ID_LEGACY) || phSession.is_null() {
+    if slotID != SLOT_ID || phSession.is_null() {
         return CKR_ARGUMENTS_BAD;
     }
     let mut manager_guard = try_to_get_manager_guard!();
     let manager = manager_guard_to_manager!(manager_guard);
-    let slot_type = if slotID == SLOT_ID_MODERN {
-        SlotType::Modern
-    } else {
-        SlotType::Legacy
-    };
-    let session_handle = match manager.open_session(slot_type) {
+    let session_handle = match manager.open_session() {
         Ok(session_handle) => session_handle,
         Err(_) => return CKR_DEVICE_ERROR,
     };
@@ -285,17 +276,12 @@ extern "C" fn C_CloseSession(hSession: CK_SESSION_HANDLE) -> CK_RV {
 
 /// This gets called to close all open sessions at once. This is handled by the `ManagerProxy`.
 extern "C" fn C_CloseAllSessions(slotID: CK_SLOT_ID) -> CK_RV {
-    if slotID != SLOT_ID_MODERN && slotID != SLOT_ID_LEGACY {
+    if slotID != SLOT_ID {
         return CKR_ARGUMENTS_BAD;
     }
     let mut manager_guard = try_to_get_manager_guard!();
     let manager = manager_guard_to_manager!(manager_guard);
-    let slot_type = if slotID == SLOT_ID_MODERN {
-        SlotType::Modern
-    } else {
-        SlotType::Legacy
-    };
-    match manager.close_all_sessions(slot_type) {
+    match manager.close_all_sessions() {
         Ok(()) => CKR_OK,
         Err(_) => CKR_DEVICE_ERROR,
     }

@@ -14,6 +14,7 @@ import mozilla.components.feature.accounts.FirefoxAccountsAuthFeature
 import mozilla.components.feature.app.links.AppLinksInterceptor
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import org.mozilla.fenix.R
+import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.perf.lazyMonitored
 import org.mozilla.fenix.settings.SupportUtils
@@ -57,6 +58,7 @@ class Services(
             },
             launchFromInterceptor = true,
             store = store,
+            loadUrlUseCase = context.components.useCases.sessionUseCases.loadUrl,
         )
     }
 }

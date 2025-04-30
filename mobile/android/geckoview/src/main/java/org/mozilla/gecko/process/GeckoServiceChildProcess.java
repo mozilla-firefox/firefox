@@ -28,7 +28,6 @@ public class GeckoServiceChildProcess extends Service {
 
   private static IProcessManager sProcessManager;
   private static String sOwnerProcessId;
-  private final MemoryController mMemoryController = new MemoryController();
 
   private enum ProcessState {
     NEW,
@@ -135,7 +134,7 @@ public class GeckoServiceChildProcess extends Service {
                   GeckoThread.InitInfo.builder()
                       .args(args)
                       .extras(extras)
-                      .flags(flags)
+                      .flags(flags | GeckoThread.FLAG_CHILD)
                       .userSerialNumber(userSerialNumber)
                       .fds(fds)
                       .build();
@@ -199,20 +198,6 @@ public class GeckoServiceChildProcess extends Service {
     stopSelf();
     sState = ProcessState.BOUND;
     return mBinder;
-  }
-
-  @Override
-  public void onTrimMemory(final int level) {
-    mMemoryController.onTrimMemory(level);
-
-    // This is currently a no-op in Service, but let's future-proof.
-    super.onTrimMemory(level);
-  }
-
-  @Override
-  public void onLowMemory() {
-    mMemoryController.onLowMemory();
-    super.onLowMemory();
   }
 
   /**

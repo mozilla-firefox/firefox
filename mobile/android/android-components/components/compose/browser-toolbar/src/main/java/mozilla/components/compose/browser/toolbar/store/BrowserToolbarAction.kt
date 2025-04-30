@@ -4,6 +4,7 @@
 
 package mozilla.components.compose.browser.toolbar.store
 
+import mozilla.components.compose.browser.toolbar.concept.PageOrigin
 import mozilla.components.lib.state.Action
 import mozilla.components.compose.browser.toolbar.concept.Action as ToolbarAction
 
@@ -37,34 +38,50 @@ sealed interface BrowserToolbarAction : Action {
  */
 sealed class BrowserDisplayToolbarAction : BrowserToolbarAction {
     /**
-     * Adds a navigation [Action] to be displayed to the left side of the URL of the display toolbar
-     * (outside of the URL bounding box).
-     *
-     * @property action The [Action] to be added.
-     */
-    data class AddNavigationAction(val action: ToolbarAction) : BrowserDisplayToolbarAction()
-
-    /**
-     * Adds a page [Action] to be displayed to the right side of the URL of the display toolbar.
-     *
-     * @property action The [Action] to be added.
-     */
-    data class AddPageAction(val action: ToolbarAction) : BrowserDisplayToolbarAction()
-
-    /**
-     * Adds a browser [Action] to be displayed to the right side of the URL of the display toolbar
-     * (outside of the URL bounding box).
-     *
-     * @property action The [Action] to be added.
-     */
-    data class AddBrowserAction(val action: ToolbarAction) : BrowserDisplayToolbarAction()
-
-    /**
-     * Replaces the currently displayed list of browser actions with the provided list of actions.
+     * Replaces the currently displayed list of start browser actions with the provided list of actions.
+     * These are displayed to the left side of the URL, outside of the URL bounding box.
      *
      * @property actions The new list of [ToolbarAction]s.
      */
-    data class UpdateBrowserActions(val actions: List<ToolbarAction>) : BrowserDisplayToolbarAction()
+    data class BrowserActionsStartUpdated(val actions: List<ToolbarAction>) : BrowserDisplayToolbarAction()
+
+    /**
+     * Replaces the currently displayed list of start page actions with the provided list of actions.
+     * These are displayed to the left side of the URL, inside of the URL bounding box.
+     *
+     * @property actions The new list of [ToolbarAction]s.
+     */
+    data class PageActionsStartUpdated(val actions: List<ToolbarAction>) : BrowserDisplayToolbarAction()
+
+    /**
+     * Replace the currently displayed details of the page with the newly provided details.
+     *
+     * @property pageOrigin The new details of the current webpage.
+     */
+    data class PageOriginUpdated(val pageOrigin: PageOrigin) : BrowserDisplayToolbarAction()
+
+    /**
+     * Replaces the currently displayed list of end page actions with the provided list of actions.
+     * These are displayed to the right side of the URL, inside of the URL bounding box.
+     *
+     * @property actions The new list of [ToolbarAction]s.
+     */
+    data class PageActionsEndUpdated(val actions: List<ToolbarAction>) : BrowserDisplayToolbarAction()
+
+    /**
+     * Replaces the currently displayed list of end browser actions with the provided list of actions.
+     * These are displayed to the right side of the URL, outside of the URL bounding box.
+     *
+     * @property actions The new list of [ToolbarAction]s.
+     */
+    data class BrowserActionsEndUpdated(val actions: List<ToolbarAction>) : BrowserDisplayToolbarAction()
+
+    /**
+     * Updates the [ProgressBarConfig] of the display toolbar.
+     *
+     * @property config The new configuration for what progress bar to show.
+     */
+    data class UpdateProgressBarConfig(val config: ProgressBarConfig?) : BrowserDisplayToolbarAction()
 }
 
 /**

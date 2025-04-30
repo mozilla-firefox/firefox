@@ -13,7 +13,6 @@ import sqlite3
 import subprocess
 
 import requests
-import six
 from mach.util import get_state_dir
 from mozbuild.base import MozbuildObject
 from mozpack.files import FileFinder
@@ -37,9 +36,10 @@ def setup_globals():
     build = MozbuildObject.from_environment(cwd=here)
     vcs = get_repository_object(build.topsrcdir)
 
-    root_hash = hashlib.sha256(
-        six.ensure_binary(os.path.abspath(build.topsrcdir))
-    ).hexdigest()
+    topsrcdir = build.topsrcdir
+    if isinstance(topsrcdir, str):
+        topsrcdir = topsrcdir.encode()
+    root_hash = hashlib.sha256(os.path.abspath(topsrcdir)).hexdigest()
     cache_dir = os.path.join(get_state_dir(), "cache", root_hash, "chunk_mapping")
     if not os.path.isdir(cache_dir):
         os.makedirs(cache_dir)
@@ -421,11 +421,7 @@ def run(
     print("Found " + test_count_message)
 
     # Set the test paths to be run by setting MOZHARNESS_TEST_PATHS.
-    path_env = {
-        "MOZHARNESS_TEST_PATHS": six.ensure_text(
-            json.dumps(resolve_tests_by_suite(test_files))
-        )
-    }
+    path_env = {"MOZHARNESS_TEST_PATHS": json.dumps(resolve_tests_by_suite(test_files))}
     try_config_params.setdefault("try_task_config", {}).setdefault("env", {}).update(
         path_env
     )

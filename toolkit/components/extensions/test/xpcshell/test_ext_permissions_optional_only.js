@@ -298,3 +298,72 @@ add_task(
     await extension.unload();
   }
 );
+
+add_task(
+  {
+    pref_set: [
+      // Here we do not care about the prompt, only about the validation.
+      ["extensions.webextOptionalPermissionPrompts", false],
+      [
+        // This pref controls the Cu.isInAutomation flag that is needed to use
+        // browser.test.withHandlingUserInput in xpcshell tests (bug 1598804):
+        "security.turn_off_all_security_so_that_viruses_can_take_over_this_computer",
+        true,
+      ],
+      ["extensions.dataCollectionPermissions.enabled", true],
+    ],
+  },
+  async function at_most_one_optional_only_permission_in_request_with_data_collection() {
+    let extension = ExtensionTestUtils.loadExtension({
+      manifest: {
+        manifest_version: 3,
+        optional_permissions: [
+          // Optional-only permission:
+          "trialML",
+          // Optional-only permission:
+          "userScripts",
+        ],
+        browser_specific_settings: {
+          gecko: {
+            data_collection_permissions: {
+              optional: ["technicalAndInteraction"],
+            },
+          },
+        },
+      },
+      async background() {
+        async function testPermissionsRequest(permissions) {
+          return new Promise(resolve => {
+            browser.test.withHandlingUserInput(() =>
+              resolve(browser.permissions.request(permissions))
+            );
+          });
+        }
+
+        await browser.test.assertRejects(
+          testPermissionsRequest({
+            permissions: ["trialML"],
+            data_collection: ["technicalAndInteraction"],
+          }),
+          "Cannot request permission trialML with another permission",
+          "Should reject data collection permission + optional-only permission"
+        );
+
+        await browser.test.assertRejects(
+          testPermissionsRequest({
+            permissions: ["userScripts"],
+            data_collection: ["technicalAndInteraction"],
+          }),
+          "Cannot request permission userScripts with another permission",
+          "Should reject data collection permission + optional-only permission"
+        );
+
+        browser.test.sendMessage("done");
+      },
+    });
+
+    await extension.startup();
+    await extension.awaitMessage("done");
+    await extension.unload();
+  }
+);

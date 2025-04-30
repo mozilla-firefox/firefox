@@ -36,7 +36,6 @@ manifest.force = True
 
 if CONFIG["MOZ_BUILD_APP"] == "browser":
     manifest.flags = [
-        "--features=browser/features",
         "--builtin-addons=browser/chrome/browser/builtin-addons",
     ]
 
@@ -44,14 +43,18 @@ if CONFIG["MOZ_BUILD_APP"] == "browser":
         "!%s" % built_in_addons,
     ]
 elif CONFIG["MOZ_BUILD_APP"] == "mobile/android":
-    manifest.flags = ["--features=features"]
-
+    # TODO: double-chek if GeckoView is really not using the default en-US dictionary
+    # as mentioned in test_dictionary_webextension.js skip-if comment here
+    # https://searchfox.org/mozilla-central/rev/f3c8c63a09/toolkit/mozapps/extensions/test/xpcshell/xpcshell.toml#101
+    #
+    # mobile/shared/actors/ContentDelegateChild.sys.mjs seems to be importing
+    # toolkit/modules/InlineSpellChecker.sys.mjs which includes a call to
+    # `spellchecker.GetDictionaryList()` internally.
     FINAL_TARGET_FILES.chrome.chrome.content += [
         "!%s" % built_in_addons,
     ]
 elif CONFIG["MOZ_BUILD_APP"] == "comm/mail":
-    manifest.flags = ["--features=features"]
-
+    # NOTE: used by Thunderbird to auto-install the default en-US dictionary.
     FINAL_TARGET_FILES.chrome.browser.content += [
         "!%s" % built_in_addons,
     ]
@@ -68,6 +71,7 @@ EXTRA_JS_MODULES += [
     "amManager.sys.mjs",
     "amWebAPI.sys.mjs",
     "Blocklist.sys.mjs",
+    "ColorwayThemeMigration.sys.mjs",
     "LightweightThemeManager.sys.mjs",
 ]
 

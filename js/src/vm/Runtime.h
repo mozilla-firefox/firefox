@@ -311,6 +311,17 @@ class HasSeenObjectEmulateUndefinedFuse : public js::InvalidatingRuntimeFuse {
   virtual void popFuse(JSContext* cx) override;
 };
 
+class HasSeenArrayExceedsInt32LengthFuse : public js::InvalidatingRuntimeFuse {
+  virtual const char* name() override {
+    return "HasSeenArrayExceedsInt32LengthFuse";
+  }
+
+  virtual bool checkInvariant(JSContext* cx) override { return true; }
+
+ public:
+  virtual void popFuse(JSContext* cx) override;
+};
+
 }  // namespace js
 
 struct JSRuntime {
@@ -1121,6 +1132,9 @@ struct JSRuntime {
 
   js::MainThreadData<js::HasSeenObjectEmulateUndefinedFuse>
       hasSeenObjectEmulateUndefinedFuse;
+
+  js::MainThreadData<js::HasSeenArrayExceedsInt32LengthFuse>
+      hasSeenArrayExceedsInt32LengthFuse;
 };
 
 namespace js {

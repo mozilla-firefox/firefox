@@ -460,17 +460,18 @@ async function getPageFavicons(pageUrls) {
   }
 
   // Get the data of favicons and return them.
-  const { promiseFaviconData } = lazy.PlacesUtils();
+  const { favicons, toURI } = lazy.PlacesUtils();
 
   const promises = pageUrls.map(pageUrl =>
-    promiseFaviconData(pageUrl, /* preferredWidth = */ 32)
+    favicons
+      .getFaviconForPage(toURI(pageUrl), /* preferredWidth = */ 32)
       .then(favicon => {
         // Check if data is found in the database and return it if so.
-        if (favicon.dataLen > 0 && favicon.data) {
+        if (favicon.rawData.length) {
           return {
             // PlacesUtils returns a number array for the data. Converting it to
             // the Uint8Array here to send it to the tab more efficiently.
-            data: new Uint8Array(favicon.data).buffer,
+            data: new Uint8Array(favicon.rawData).buffer,
             mimeType: favicon.mimeType,
           };
         }

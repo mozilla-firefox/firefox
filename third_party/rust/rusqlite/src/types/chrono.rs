@@ -20,7 +20,7 @@ impl FromSql for NaiveDate {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         value
             .as_str()
-            .and_then(|s| match NaiveDate::parse_from_str(s, "%F") {
+            .and_then(|s| match Self::parse_from_str(s, "%F") {
                 Ok(dt) => Ok(dt),
                 Err(err) => Err(FromSqlError::Other(Box::new(err))),
             })
@@ -45,7 +45,7 @@ impl FromSql for NaiveTime {
                 8 => "%T",
                 _ => "%T%.f",
             };
-            match NaiveTime::parse_from_str(s, fmt) {
+            match Self::parse_from_str(s, fmt) {
                 Ok(dt) => Ok(dt),
                 Err(err) => Err(FromSqlError::Other(Box::new(err))),
             }
@@ -75,7 +75,7 @@ impl FromSql for NaiveDateTime {
                 "%F %T%.f"
             };
 
-            match NaiveDateTime::parse_from_str(s, fmt) {
+            match Self::parse_from_str(s, fmt) {
                 Ok(dt) => Ok(dt),
                 Err(err) => Err(FromSqlError::Other(Box::new(err))),
             }
@@ -238,7 +238,7 @@ mod test {
         assert_eq!(utc, v2);
 
         let v3: DateTime<Utc> = db.one_column("SELECT '2016-02-23 23:56:04'")?;
-        assert_eq!(utc - Duration::milliseconds(789), v3);
+        assert_eq!(utc - Duration::try_milliseconds(789).unwrap(), v3);
 
         let v4: DateTime<Utc> = db.one_column("SELECT '2016-02-23 23:56:04.789+00:00'")?;
         assert_eq!(utc, v4);
@@ -285,13 +285,13 @@ mod test {
     fn test_sqlite_functions() -> Result<()> {
         let db = checked_memory_handle()?;
         let result: Result<NaiveTime> = db.one_column("SELECT CURRENT_TIME");
-        result.unwrap();
+        result?;
         let result: Result<NaiveDate> = db.one_column("SELECT CURRENT_DATE");
-        result.unwrap();
+        result?;
         let result: Result<NaiveDateTime> = db.one_column("SELECT CURRENT_TIMESTAMP");
-        result.unwrap();
+        result?;
         let result: Result<DateTime<Utc>> = db.one_column("SELECT CURRENT_TIMESTAMP");
-        result.unwrap();
+        result?;
         Ok(())
     }
 
@@ -299,7 +299,7 @@ mod test {
     fn test_naive_date_time_param() -> Result<()> {
         let db = checked_memory_handle()?;
         let result: Result<bool> = db.query_row("SELECT 1 WHERE ?1 BETWEEN datetime('now', '-1 minute') AND datetime('now', '+1 minute')", [Utc::now().naive_utc()], |r| r.get(0));
-        result.unwrap();
+        result?;
         Ok(())
     }
 
@@ -307,7 +307,7 @@ mod test {
     fn test_date_time_param() -> Result<()> {
         let db = checked_memory_handle()?;
         let result: Result<bool> = db.query_row("SELECT 1 WHERE ?1 BETWEEN datetime('now', '-1 minute') AND datetime('now', '+1 minute')", [Utc::now()], |r| r.get(0));
-        result.unwrap();
+        result?;
         Ok(())
     }
 

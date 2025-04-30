@@ -128,6 +128,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Ներդիրները փոխելու համար սահեցրեք գործիքագոտին</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Փոխարկելու համար սահեցրեք ձախ կամ աջ: Ձեր վերջին ներդիրի վրա սահեցրեք ձախ՝ նոր ներդիր բացելու համար:</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">Սահեցրեք գործիքագոտին դեպի ձախ կամ աջ՝ ներդիրները փոխարկելու համար:</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Անհրաժեշտ է հասանելիություն տեսախցիկին: Անցեք Android-ի կարգավորումներ, հպեք՝ Թույլտվություններ, այնուհետև՝ Թույլատրել:</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -833,8 +835,6 @@
   <string name="preferences_override_account_server">Mozilla հաշվի հարմարեցված սպասարկիչ</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Ընտրովի համաժամեցման սերվեր</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla հաշիվը/Համաժամեցման սպասարկիչը փոփոխվել են: Դուրս եկեք հավելվածից՝ փոփոխությունները գորխադրելու համար…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Հաշիվ</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1242,7 +1242,7 @@
   -->
   <string name="open_all_warning_message">Այսքան ներդիրներ բացելը կարող է դանդաղեցնել %s-ը, մինչ էջերը բեռնվում են: Վստա՞հ եք, որ ցանկանում եք շարունակել:</string>
   <!-- Dialog button text for confirming open all tabs -->
-  <string name="open_all_warning_confirm">Բաց ներդիրներ</string>
+  <string name="open_all_warning_confirm">Բացել ներդիրները</string>
   <!-- Dialog button text for canceling open all tabs -->
   <string name="open_all_warning_cancel">Չեղարկել</string>
   <!--
@@ -1383,6 +1383,8 @@
   <string name="tab_tray_multiselect_share_content_description">Տարածել ընտրված ներդիրները</string>
   <!-- Content description for tabs tray multiselect menu -->
   <string name="tab_tray_multiselect_menu_content_description">Ընտրված ներդիրների ցանկը</string>
+  <!-- Title text displayed for a homepage tab in the tabs tray. -->
+  <string name="tab_tray_homepage_tab">Տնային էջ</string>
   <!-- Content description (not visible, for screen readers etc.): Removes tab from collection button. Removes the selected tab from collection when pressed -->
   <string name="remove_tab_from_collection">Հեռացնել ներդիրը հավաքածուից</string>
   <!-- Text for button to enter multiselect mode in tabs tray -->
@@ -1480,16 +1482,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Հեռացնել</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Ջնջել</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Նավարկել ետ</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Նավարկել վերև</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">Համօգտագործել URL-ը</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Համօգտագործել ֆայլը</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Ցանկանո՞ւմ եք ջնջել ընտրված միույթները։</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Ցանկանո՞ւմ եք ջնջել ընտրված միույթները։</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Ջնջել</string>
+  <string name="download_delete_multi_select_dialog_confirm">Ջնջել</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Չեղարկել</string>
+  <string name="download_delete_multi_select_dialog_cancel">Չեղարկել</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Ընթացքում</string>
   <!--
@@ -1520,9 +1526,11 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Ներբեռնումը ձախողվեց</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Որոնել ներբեռնում</string>
+  <string name="download_search_placeholder">Որոնել ներբեռնում</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Արդյունքներ չկան</string>
+  <string name="download_search_no_results_found">Արդյունքներ չկան</string>
+  <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
+  <string name="download_select_all_items">Նշել բոլորը</string>
   <!--
     Downloads Content Type Filters
 
@@ -2273,7 +2281,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Ընդլայնված հետագծման պաշտպանության բացառության նախապատվության պատկերակ</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3187,6 +3195,8 @@
   <string name="protection_panel_no_trackers_blocked">Հետագծողներ չեն գտնվել</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">Գաղտնիության և անվտանգության հավելումներ</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Թույլտվություններ</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3373,6 +3383,26 @@
   -->
   <string name="glean_debug_tools_title">Glean վրիպազերծման գործիքներ</string>
   <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">Տարածաշրջանային գործիքներ</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">Ժամանակավորապես անտեսում է տան և ընթացիկ տարածաշրջանի արժեքները փորձարկման համար:</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">Տնային տարածաշրջան</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">Ներկայիս տարածաշրջան</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">Գերազդել տնային տարածաշրջանը</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">Գերազդել ներկայիս տարածաշրջանը</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">Գերազդել տնային և ներկայիս տարածաշրջանը</string>
+  <!--
     Messages explaining how to exit fullscreen mode
 
     Message shown to explain how to exit fullscreen mode when gesture navigation is enabled.
@@ -3435,6 +3465,46 @@
   <!-- The default content description for the cross trailing icon button in TextField -->
   <string name="text_field_cross_trailing_icon_default_content_description" moz:removedIn="139" tools:ignore="UnusedResources">Մաքրել տեքստը</string>
   <!--
+    Setup checklist feature
+
+    ===== Setup checklist feature: Title =====
+
+    Title for the setup checklist feature when the state is 'incomplete'. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_title_state_incomplete">Ավարտեք %1$s-ի կարգավորումը</string>
+  <!-- Title for the setup checklist feature when the state is 'completed' -->
+  <string name="setup_checklist_title_state_completed">Շնորհավորանքնե՜ր</string>
+  <!--
+    ===== Setup checklist feature: Subtitles for 3 steps =====
+
+    Subtitle for a setup checklist with 3 steps initial step. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_subtitle_3_steps_initial_state">Կատարեք այս 3 քայլերը՝ %1$s-ը կարգավորելու և դիտարկումների լավագույն փորձառության համար:</string>
+  <!-- Subtitle for a setup checklist with 3 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_3_steps_first_step">Հիանալի սկիզբ: Դուք կատարել եք 3 քայլերից 1-ը:</string>
+  <!-- Subtitle for a setup checklist with 3 steps when two of the tasks are completed. -->
+  <string name="setup_checklist_subtitle_3_steps_second_step">Գրեթե պատրաստ է: Երկու քայլ ավարտվեց, և մնում է 1-ը:</string>
+  <!-- Subtitle for a setup checklist with 3 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_subtitle_3_steps_completed_state">Դուք ավարտել եք բոլոր 3 քայլերը: Վայելեք %1$s-ի արագությունը, գաղտնիությունը և անվտանգությունը:</string>
+  <!--
+    ===== Setup checklist feature: Subtitles for 6 steps =====
+
+    Subtitle for a setup checklist with 6 steps initial state. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_subtitle_6_steps_initial_state">Կատարեք բոլոր 6 քայլերը՝ %1$s-ը կարգավորելու և դիտարկումների լավագույն փորձառության համար:</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_first_step">Հիանալի սկիզբ: Դուք կատարել եք 6 քայլերից 1-ը:</string>
+  <!-- Subtitle for the setup checklist when the second task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_second_step">Դուք կատարել եք 6 քայլերից 2-ը: Մեծ առաջընթաց:</string>
+  <!-- Subtitle for a setup checklist with 6 steps when three of the tasks are completed. -->
+  <string name="setup_checklist_subtitle_6_steps_third_step">Գրեթե պատրաստ է: Երեք քայլ ավարտվեց, և մնում է 3-ը:</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the fourth task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_fourth_step">Դուք 4 քայլ առաջ եք: Մնացել է ևս 2-ը:</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the fifth task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_fifth_step">Գրեթե պատրաստ է: Դուք ընդամենը 1 քայլ եք հեռու ավարտելուց:</string>
+  <!-- Subtitle for a setup checklist with 6 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_subtitle_6_steps_completed_state">Դուք ավարտել եք բոլոր 6 քայլերը: Վայելեք %1$s-ի արագությունը, գաղտնիությունը և անվտանգությունը:</string>
+  <!--
     ===== Setup checklist feature: Task titles =====
 
     The title of the default browser task for the setup checklist
@@ -3460,6 +3530,12 @@
   <string name="setup_checklist_group_customize">Հարմարեցրեք Ձեր %1$s-ը</string>
   <!-- The title of the 'helpful tools' group in the setup checklist -->
   <string name="setup_checklist_group_helpful_tools">Օգտակար գործիքներ</string>
+  <!--
+    ===== Setup checklist feature: Button =====
+
+    Text for the 'remove' button for the setup checklist
+  -->
+  <string name="setup_checklist_button_remove">Հեռացնել ստուգաթերթը</string>
   <!--
     ===== Setup checklist feature: Accessibility =====
 

@@ -63,20 +63,6 @@ nsresult ProcessUpdates(nsIFile* greDir, nsIFile* appDir, nsIFile* updRootDir,
                         bool restart = true, ProcessType* pid = nullptr);
 
 /**
- * Checks if the Multi Session Install Lockout is active. This is a window after
- * an update is downloaded where we won't install updates at startup if another
- * application instance is running.
- *
- * @param  updRootDir
- *         The root update directory for this installation.
- * @param  isActive
- *         Outparam. On success, it is set to `true` if the MSIL lockout is
- *         active or `false` if it is not.
- */
-nsresult IsMultiSessionInstallLockoutActive(nsIFile* updRootDir,
-                                            bool& isActive);
-
-/**
  * This function is only needed for testing. When Firefox is started up with
  * `--test-process-updates`, we go through all the "update at startup" logic,
  * apply an update and restart, if applicable, and then, instead of starting

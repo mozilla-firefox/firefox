@@ -59,7 +59,7 @@ mod fd_logger;
 
 pub use crate::common_metric_data::{CommonMetricData, Lifetime};
 pub use crate::core::Glean;
-pub use crate::core_metrics::ClientInfoMetrics;
+pub use crate::core_metrics::{AttributionMetrics, ClientInfoMetrics, DistributionMetrics};
 pub use crate::error::{Error, ErrorKind, Result};
 pub use crate::error_recording::{test_get_num_recorded_errors, ErrorType};
 pub use crate::histogram::HistogramType;
@@ -101,6 +101,10 @@ static PRE_INIT_SOURCE_TAGS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 /// Keep track of pings registered before Glean is initialized.
 static PRE_INIT_PING_REGISTRATION: Mutex<Vec<metrics::PingType>> = Mutex::new(Vec::new());
 static PRE_INIT_PING_ENABLED: Mutex<Vec<(metrics::PingType, bool)>> = Mutex::new(Vec::new());
+
+/// Keep track of attribution and distribution supplied before Glean is initialized.
+static PRE_INIT_ATTRIBUTION: Mutex<Option<AttributionMetrics>> = Mutex::new(None);
+static PRE_INIT_DISTRIBUTION: Mutex<Option<DistributionMetrics>> = Mutex::new(None);
 
 /// Global singleton of the handles of the glean.init threads.
 /// For joining. For tests.
@@ -446,6 +450,15 @@ fn initialize_inner(
                 let pings = PRE_INIT_PING_ENABLED.lock().unwrap();
                 for (ping, enabled) in pings.iter() {
                     glean.set_ping_enabled(ping, *enabled);
+                }
+
+                // The attribution and distribution might have been set before initialize,
+                // take the cached values and set them.
+                if let Some(attribution) = PRE_INIT_ATTRIBUTION.lock().unwrap().take() {
+                    glean.update_attribution(attribution);
+                }
+                if let Some(distribution) = PRE_INIT_DISTRIBUTION.lock().unwrap().take() {
+                    glean.update_distribution(distribution);
                 }
 
                 // If this is the first time ever the Glean SDK runs, make sure to set
@@ -874,7 +887,7 @@ pub fn glean_set_collection_enabled(enabled: bool) {
 /// and all pending pings of that type to be deleted.
 pub fn set_ping_enabled(ping: &PingType, enabled: bool) {
     let ping = ping.clone();
-    if was_initialize_called() {
+    if was_initialize_called() && core::global_glean().is_some() {
         crate::launch_with_glean_mut(move |glean| glean.set_ping_enabled(&ping, enabled));
     } else {
         let m = &PRE_INIT_PING_ENABLED;
@@ -889,7 +902,7 @@ pub(crate) fn register_ping_type(ping: &PingType) {
     // we dispatch ping registration on the thread pool.
     // Registering a ping should not block the application.
     // Submission itself is also dispatched, so it will always come after the registration.
-    if was_initialize_called() {
+    if was_initialize_called() && core::global_glean().is_some() {
         let ping = ping.clone();
         crate::launch_with_glean_mut(move |glean| {
             glean.register_ping_type(&ping);
@@ -1003,7 +1016,7 @@ pub fn glean_apply_server_knobs_config(json: String) {
 /// This will return `false` in case `tag` is not a valid tag and `true` otherwise.
 /// If called before Glean is initialized it will always return `true`.
 pub fn glean_set_debug_view_tag(tag: String) -> bool {
-    if was_initialize_called() {
+    if was_initialize_called() && core::global_glean().is_some() {
         crate::launch_with_glean_mut(move |glean| {
             glean.set_debug_view_tag(&tag);
         });
@@ -1041,7 +1054,7 @@ pub fn glean_get_debug_view_tag() -> Option<String> {
 /// * `tags` - A vector of at most 5 valid HTTP header values. Individual
 ///   tags must match the regex: "[a-zA-Z0-9-]{1,20}".
 pub fn glean_set_source_tags(tags: Vec<String>) -> bool {
-    if was_initialize_called() {
+    if was_initialize_called() && core::global_glean().is_some() {
         crate::launch_with_glean_mut(|glean| {
             glean.set_source_tags(tags);
         });
@@ -1066,7 +1079,7 @@ pub fn glean_set_source_tags(tags: Vec<String>) -> bool {
 ///
 /// * `value` - The value of the log pings option
 pub fn glean_set_log_pings(value: bool) {
-    if was_initialize_called() {
+    if was_initialize_called() && core::global_glean().is_some() {
         crate::launch_with_glean_mut(move |glean| {
             glean.set_log_pings(value);
         });
@@ -1163,7 +1176,8 @@ pub fn glean_submit_ping_by_name_sync(ping_name: String, reason: Option<String>)
         return false;
     }
 
-    core::with_glean(|glean| glean.submit_ping_by_name(&ping_name, reason.as_deref()))
+    core::with_opt_glean(|glean| glean.submit_ping_by_name(&ping_name, reason.as_deref()))
+        .unwrap_or(false)
 }
 
 /// EXPERIMENTAL: Register a listener object to recieve notifications of event recordings.
@@ -1253,6 +1267,52 @@ pub fn glean_process_ping_upload_response(uuid: String, result: UploadResult) ->
 /// Set the dirty flag
 pub fn glean_set_dirty_flag(new_value: bool) {
     core::with_glean(|glean| glean.set_dirty_flag(new_value))
+}
+
+/// Updates attribution fields with new values.
+/// AttributionMetrics fields with `None` values will not overwrite older values.
+pub fn glean_update_attribution(attribution: AttributionMetrics) {
+    if was_initialize_called() && core::global_glean().is_some() {
+        core::with_glean(|glean| glean.update_attribution(attribution));
+    } else {
+        PRE_INIT_ATTRIBUTION
+            .lock()
+            .unwrap()
+            .get_or_insert(Default::default())
+            .update(attribution);
+    }
+}
+
+/// **TEST-ONLY Method**
+///
+/// Returns the current attribution metrics.
+/// Panics if called before init.
+pub fn glean_test_get_attribution() -> AttributionMetrics {
+    join_init();
+    core::with_glean(|glean| glean.test_get_attribution())
+}
+
+/// Updates distribution fields with new values.
+/// DistributionMetrics fields with `None` values will not overwrite older values.
+pub fn glean_update_distribution(distribution: DistributionMetrics) {
+    if was_initialize_called() && core::global_glean().is_some() {
+        core::with_glean(|glean| glean.update_distribution(distribution));
+    } else {
+        PRE_INIT_DISTRIBUTION
+            .lock()
+            .unwrap()
+            .get_or_insert(Default::default())
+            .update(distribution);
+    }
+}
+
+/// **TEST-ONLY Method**
+///
+/// Returns the current distribution metrics.
+/// Panics if called before init.
+pub fn glean_test_get_distribution() -> DistributionMetrics {
+    join_init();
+    core::with_glean(|glean| glean.test_get_distribution())
 }
 
 #[cfg(all(not(target_os = "android"), not(target_os = "ios")))]

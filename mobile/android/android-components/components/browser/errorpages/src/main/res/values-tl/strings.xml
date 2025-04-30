@@ -150,6 +150,12 @@
         &lt;li&gt;Kung hindi ka talaga makapag-load ng kahit anong pahina, tingnan mo ang iyong device data o koneksyon sa Wi-Fi.&lt;/li&gt;
       &lt;/ul&gt;
     </string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_no_internet_title_2">Mukhang may problema sa iyong internet connection</string>
+  <!-- The main body text of this error page. It will be shown beneath the title -->
+  <string name="mozac_browser_errorpages_no_internet_message_2">Subukang kumonekta gamit ang ibang device. I-check mo ang iyong modem o router. Mag-disconnect at mag-reconnect sa Wi-Fi.</string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_no_internet_error_code">Error Code: NS_ERROR_OFFLINE</string>
   <!-- Text that will show up on the button at the bottom of the error page -->
   <string name="mozac_browser_errorpages_no_internet_refresh_button">Mag-reload</string>
   <!-- The document title and heading of an error page. -->

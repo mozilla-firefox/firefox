@@ -301,8 +301,11 @@ search-one-offs-actions =
 ## the action.
 
 # Opens the about:addons page in the home / recommendations section
-quickactions-addons = View Add-ons
-quickactions-cmd-addons2 = add-ons
+quickactions-addons = View add-ons
+# In English we provide multiple spellings for "add-ons". If that's not
+# applicable to your language, only use the correct spelling (don't repeat the
+# same word).
+quickactions-cmd-addons3 = extensions, themes, addons, add-ons
 
 # Opens the bookmarks library window
 quickactions-bookmarks2 = Manage bookmarks
@@ -345,7 +348,7 @@ quickactions-cmd-print = print
 
 # Opens the print dialog at the save to PDF option
 quickactions-savepdf = Save page as PDF
-quickactions-cmd-savepdf = pdf
+quickactions-cmd-savepdf2 = pdf, save page
 
 # Opens a new private browsing window
 quickactions-private2 = Open private window
@@ -365,7 +368,8 @@ quickactions-cmd-screenshot2 = screenshot, take a screenshot
 
 # Opens about:preferences
 quickactions-settings2 = Manage settings
-quickactions-cmd-settings = settings, preferences, options
+# "manage" should match the corresponding command, which is “Manage settings” in English.
+quickactions-cmd-settings2 = settings, preferences, options, manage
 
 # Opens about:addons page in the themes section
 quickactions-themes = Manage themes
@@ -1166,10 +1170,10 @@ popup-notification-xpinstall-prompt-learn-more = Learn more about installing add
 
 popup-notification-xpinstall-prompt-block-url = See details
 
-# Note: Access key is set to P to match "Private" in the corresponding localized label.
-popup-notification-addon-privatebrowsing-checkbox =
-    .label = Run in Private Windows
-    .accesskey = P
+# Note: Access key is set to p to match "private" in the corresponding localized label.
+popup-notification-addon-privatebrowsing-checkbox2 =
+    .label = Allow extension to run in private windows
+    .accesskey = p
 
 ## Pop-up warning
 
@@ -1225,3 +1229,7 @@ file-picker-crashed-save-nowhere = The Windows file-dialog has crashed. No defau
 file-picker-crashed-show-in-folder =
     .label = Show in Folder
     .accessKey = F
+
+## Onboarding Finish Setup checklist
+
+onboarding-checklist-button-label = Finish setup

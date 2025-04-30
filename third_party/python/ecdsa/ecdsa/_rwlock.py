@@ -66,6 +66,7 @@ class RWLock:
 class _LightSwitch:
     """An auxiliary "light switch"-like object. The first thread turns on the
     "switch", the last one turns it off (see [1, sec. 4.2.2] for details)."""
+
     def __init__(self):
         self.__counter = 0
         self.__mutex = threading.Lock()

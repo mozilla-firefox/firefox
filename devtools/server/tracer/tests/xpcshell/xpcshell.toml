@@ -1,6 +1,5 @@
 [DEFAULT]
 tags = "devtools"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
 
 ["test_tracer.js"]

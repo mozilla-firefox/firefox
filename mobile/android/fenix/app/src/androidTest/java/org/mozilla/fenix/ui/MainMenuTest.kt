@@ -27,6 +27,7 @@ import org.mozilla.fenix.helpers.TestHelper.mDevice
 import org.mozilla.fenix.helpers.TestHelper.restartApp
 import org.mozilla.fenix.helpers.TestHelper.verifySnackBarText
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.nimbus.Translations
 import org.mozilla.fenix.ui.robots.browserScreen
@@ -42,6 +43,9 @@ class MainMenuTest : TestSetup() {
 
     @get:Rule
     val composeTestRule = AndroidComposeTestRule(activityTestRule) { it.activity }
+
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/233849
     @Test
@@ -80,7 +84,7 @@ class MainMenuTest : TestSetup() {
         }.openThreeDotMenu {
         }.openDownloadsManager {
             verifyEmptyDownloadsList(composeTestRule)
-        }.goBack {
+        }.goBack(composeTestRule) {
         }.openThreeDotMenu {
         }.openPasswords {
             verifySecurityPromptForLogins()

@@ -8,6 +8,7 @@ run-if = ["!socketprocess_networking"]
 skip-if = [
   "os == 'android' && android_version == '24' && processor == 'x86_64'",
   "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && msix", # https://bugzilla.mozilla.org/show_bug.cgi?id=1807925
+  "os == 'win' && os_version == '11.2009' && processor == 'x86_64' && msix && appname == 'thunderbird'", # https://bugzilla.mozilla.org/show_bug.cgi?id=1960463
 ]
 
 ["test_close.js"]

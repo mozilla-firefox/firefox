@@ -188,13 +188,8 @@ addAccessibleTask(
   { chrome: true, topLevel: false /* bug 1834129 */ }
 );
 
-if (
-  Services.prefs.getBoolPref(
-    "dom.element.contenteditable.plaintext-only.enabled"
-  )
-) {
-  addAccessibleTask(
-    `<style>
+addAccessibleTask(
+  `<style>
   #input {
     white-space: pre;
   }
@@ -206,17 +201,16 @@ if (
   }
 </style>
 <div id="input" contenteditable="plaintext-only" role="textbox"></div>`,
-    async function (browser, docAcc) {
-      await testEditable(
-        browser,
-        findAccessibleChildByID(docAcc, "input"),
-        "before",
-        "after"
-      );
-    },
-    { chrome: true, topLevel: false /* bug 1834129 */ }
-  );
-}
+  async function (browser, docAcc) {
+    await testEditable(
+      browser,
+      findAccessibleChildByID(docAcc, "input"),
+      "before",
+      "after"
+    );
+  },
+  { chrome: true, topLevel: false /* bug 1834129 */ }
+);
 
 addAccessibleTask(
   ``,

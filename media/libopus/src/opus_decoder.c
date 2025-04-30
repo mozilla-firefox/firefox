@@ -814,7 +814,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       OPUS_PRINT_INT(nb_samples);
 #ifndef FIXED_POINT
    if (soft_clip)
-      opus_pcm_soft_clip(pcm, nb_samples, st->channels, st->softclip_mem);
+      opus_pcm_soft_clip_impl(pcm, nb_samples, st->channels, st->softclip_mem, st->arch);
    else
       st->softclip_mem[0]=st->softclip_mem[1]=0;
 #endif

@@ -12,6 +12,7 @@ import mozilla.components.lib.state.Store
 import mozilla.components.support.test.robolectric.createAddedTestFragment
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -88,4 +89,36 @@ class StoreProviderTest {
         fragment.lazyStore(createStore).value
         assertFalse(createCalled)
     }
+
+    @Test
+    fun `GIVEN different stores are persisted WHEN requesting them THEN get their unique instances`() {
+        val fragment = createAddedTestFragment { Fragment() }
+        var createACalled = false
+        val storeAFactory: (CoroutineScope) -> Store<BasicState, Action> = {
+            createACalled = true
+            basicStore
+        }
+        var createBCalled = false
+        val storeBFactory: (CoroutineScope) -> StoreB = {
+            createBCalled = true
+            StoreB(BasicState())
+        }
+
+        val storeA: Store<BasicState, Action> = StoreProvider.get(fragment, storeAFactory)
+        val storeB: StoreB = StoreProvider.get(fragment, storeBFactory)
+        assertTrue(createACalled)
+        assertTrue(createBCalled)
+
+        createACalled = false
+        createBCalled = false
+        assertSame(storeA, StoreProvider.get(fragment, storeAFactory))
+        assertSame(storeB, StoreProvider.get(fragment, storeBFactory))
+        assertFalse(createACalled)
+        assertFalse(createBCalled)
+    }
+
+    private class StoreB(initialState: BasicState) : Store<BasicState, Action>(
+        initialState,
+        { state, _: Action -> state },
+    )
 }

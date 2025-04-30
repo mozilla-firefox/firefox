@@ -252,7 +252,7 @@ class TenuredCell : public Cell {
   // The return value indicates if the cell went from unmarked to marked.
   MOZ_ALWAYS_INLINE bool markIfUnmarked(
       MarkColor color = MarkColor::Black) const;
-  MOZ_ALWAYS_INLINE bool markIfUnmarkedAtomic(MarkColor color) const;
+  MOZ_ALWAYS_INLINE bool markIfUnmarkedThreadSafe(MarkColor color) const;
   MOZ_ALWAYS_INLINE void markBlack() const;
   MOZ_ALWAYS_INLINE void markBlackAtomic() const;
   MOZ_ALWAYS_INLINE void copyMarkBitsFrom(const TenuredCell* src);
@@ -901,6 +901,8 @@ class alignas(gc::CellAlignBytes) SmallBuffer : public TenuredCell {
     // GCRuntime::checkForCompartmentMismatches ends up calling this because it
     // iterates all GC cells.
   }
+
+  size_t allocBytes() const;
   void* data() { return this + 1; }
 };
 template <size_t bytes>

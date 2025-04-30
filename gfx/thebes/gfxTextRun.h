@@ -1072,7 +1072,11 @@ class gfxFontGroup final : public gfxTextRunFactory {
   // to render specific characters, not simply the "first available" font.
   // https://drafts.csswg.org/css-values-4/#ch
   // https://drafts.csswg.org/css-values-4/#ic
-  gfxFont::Metrics GetMetricsForCSSUnits(gfxFont::Orientation aOrientation);
+  // Whether extra font resources may be loaded to resolve 'ch' and 'ic'
+  // depends on the corresponding flags passed by the caller.
+  gfxFont::Metrics GetMetricsForCSSUnits(
+      gfxFont::Orientation aOrientation,
+      mozilla::StyleQueryFontMetricsFlags aFlags);
 
  protected:
   friend class mozilla::PostTraversalTask;

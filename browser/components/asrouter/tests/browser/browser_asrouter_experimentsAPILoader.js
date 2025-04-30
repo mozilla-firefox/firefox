@@ -201,7 +201,7 @@ add_task(async function test_loading_experimentsAPI() {
   // Fetch the new recipe from RS
   await RemoteSettingsExperimentLoader.updateRecipes();
   await BrowserTestUtils.waitForCondition(
-    () => ExperimentAPI.getExperiment({ featureId: "cfr" }),
+    () => ExperimentAPI.getExperimentMetaData({ featureId: "cfr" }),
     "ExperimentAPI should return an experiment"
   );
 
@@ -219,7 +219,7 @@ add_task(async function test_loading_fxms_message_1_feature() {
   // Fetch the new recipe from RS
   await RemoteSettingsExperimentLoader.updateRecipes();
   await BrowserTestUtils.waitForCondition(
-    () => ExperimentAPI.getExperiment({ featureId: "fxms-message-1" }),
+    () => ExperimentAPI.getExperimentMetaData({ featureId: "fxms-message-1" }),
     "ExperimentAPI should return an experiment"
   );
 
@@ -253,7 +253,7 @@ add_task(async function test_exposure_ping() {
   // Fetch the new recipe from RS
   await RemoteSettingsExperimentLoader.updateRecipes();
   await BrowserTestUtils.waitForCondition(
-    () => ExperimentAPI.getExperiment({ featureId: "cfr" }),
+    () => ExperimentAPI.getExperimentMetaData({ featureId: "cfr" }),
     "ExperimentAPI should return an experiment"
   );
 
@@ -312,7 +312,7 @@ add_task(async function test_update_on_enrollments_changed() {
   await RemoteSettingsExperimentLoader.updateRecipes();
 
   await BrowserTestUtils.waitForCondition(
-    () => ExperimentAPI.getExperiment({ featureId: "cfr" }),
+    () => ExperimentAPI.getExperimentMetaData({ featureId: "cfr" }),
     "ExperimentAPI should return an experiment"
   );
   await enrollmentChanged;
@@ -349,7 +349,7 @@ add_task(async function test_emptyMessage() {
   await setup(experiment);
   await RemoteSettingsExperimentLoader.updateRecipes();
   await BrowserTestUtils.waitForCondition(
-    () => ExperimentAPI.getExperiment({ featureId: "cfr" }),
+    () => ExperimentAPI.getExperimentMetaData({ featureId: "cfr" }),
     "ExperimentAPI should return an experiment"
   );
 
@@ -404,7 +404,7 @@ add_task(async function test_multiMessageTreatment() {
   await setup(recipe);
   await RemoteSettingsExperimentLoader.updateRecipes();
   await BrowserTestUtils.waitForCondition(
-    () => ExperimentAPI.getExperiment({ featureId }),
+    () => ExperimentAPI.getExperimentMetaData({ featureId }),
     "ExperimentAPI should return an experiment"
   );
 

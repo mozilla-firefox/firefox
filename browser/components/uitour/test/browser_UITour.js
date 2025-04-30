@@ -671,7 +671,7 @@ var tests = [
         category: "search.engine.default",
         name: "changed",
         extra: {
-          change_source: "uitour",
+          change_reason: "uitour",
           previous_engine_id: defaultEngine.telemetryId,
           new_engine_id: engine.telemetryId,
           new_display_name: engine.name,

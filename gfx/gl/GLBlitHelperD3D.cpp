@@ -14,6 +14,7 @@
 #include "GPUVideoImage.h"
 #include "ScopedGLHelpers.h"
 
+#include "mozilla/layers/CompositeProcessD3D11FencesHolderMap.h"
 #include "mozilla/layers/D3D11ShareHandleImage.h"
 #include "mozilla/layers/D3D11ZeroCopyTextureImage.h"
 #include "mozilla/layers/D3D11YCbCrImage.h"
@@ -228,6 +229,7 @@ bool GLBlitHelper::BlitDescriptor(const layers::SurfaceDescriptorD3D10& desc,
   const auto srcOrigin = OriginPos::BottomLeft;
   const gfx::IntRect clipRect(0, 0, clipSize.width, clipSize.height);
   const auto colorSpace = desc.colorSpace();
+  const auto fencesHolderId = desc.fencesHolderId();
 
   if (format != gfx::SurfaceFormat::NV12 &&
       format != gfx::SurfaceFormat::P010 &&
@@ -255,6 +257,13 @@ bool GLBlitHelper::BlitDescriptor(const layers::SurfaceDescriptorD3D10& desc,
     MOZ_GL_ASSERT(mGL, false);  // Get a nullptr from OpenSharedResource1.
     return false;
   }
+
+  auto* fencesHolderMap = layers::CompositeProcessD3D11FencesHolderMap::Get();
+  MOZ_ASSERT(fencesHolderMap);
+  if (fencesHolderMap && fencesHolderId.isSome()) {
+    fencesHolderMap->WaitWriteFence(fencesHolderId.ref(), d3d);
+  }
+
   const RefPtr<ID3D11Texture2D> texList[2] = {tex, tex};
   const EGLAttrib postAttribs0[] = {LOCAL_EGL_NATIVE_BUFFER_PLANE_OFFSET_IMG, 0,
                                     LOCAL_EGL_D3D_TEXTURE_SUBRESOURCE_ID_ANGLE,

@@ -315,6 +315,7 @@
           user: {id: new Uint8Array(), name: "none", icon: "none", displayName: "none"},
           challenge: crypto.getRandomValues(new Uint8Array(16)),
           pubKeyCredParams: [{type: "public-key", alg: cose_alg_ECDSA_w_SHA256}],
+          extensions: { prf: { enabled: true } }
         },
       };
       let registrationResponse = await navigator.credentials.create(registrationRequest);
@@ -323,6 +324,7 @@
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(16)),
           allowCredentials: [{ type: "public-key", id: registrationResponse.rawId }],
+          extensions: { prf: { eval: { first: new Uint8Array([1,2,3,4,5]).buffer } } }
         },
       };
       let assertionResponse = await navigator.credentials.get(assertionRequest);
@@ -335,7 +337,9 @@
       ok(isUrlsafeBase64(assertionResponseJSON.response.authenticatorData), "assertionResponseJSON.response.authenticatorData should be urlsafe base64");
       ok(isUrlsafeBase64(assertionResponseJSON.response.signature), "assertionResponseJSON.response.signature should be urlsafe base64");
       is(assertionResponseJSON.authenticatorAttachment, "platform", "assertionResponseJSON.authenticatorAttachment should be platform");
-      is(Object.keys(assertionResponseJSON.clientExtensionResults).length, 0, "assertionResponseJSON.clientExtensionResults should be an empty dictionary");
+      is(Object.keys(assertionResponseJSON.clientExtensionResults).length, 1, "assertionResponseJSON.clientExtensionResults should have one entry");
+      ok(isUrlsafeBase64(assertionResponseJSON.clientExtensionResults.prf.results.first), "assertionResponseJSON.clientExtensionResults.prf.results should be urlsafe base64");
+      is(assertionResponseJSON.clientExtensionResults.prf.results.first.length, 43, "assertionResponseJSON.clientExtensionResults.prf.results should be of length 43");
       is(assertionResponseJSON.type, "public-key", "assertionResponseJSON.type should be public-key");
     });
   </script>

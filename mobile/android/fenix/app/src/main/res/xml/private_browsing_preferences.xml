@@ -17,7 +17,7 @@
         android:title="@string/preferences_allow_screenshots_in_private_mode" />
     <SwitchPreference
         android:defaultValue="false"
-        android:key="pref_key_private_browsing_biometrics_enabled"
+        android:key="pref_key_private_browsing_locked_enabled"
         android:summary="@string/preferences_pbm_lock_screen_summary"
         android:title="@string/preferences_pbm_lock_screen_title"/>
 </PreferenceScreen>

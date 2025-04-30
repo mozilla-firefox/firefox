@@ -56,7 +56,7 @@ interface Animation : EventTarget {
   [Throws]
   undefined reverse();
   undefined persist();
-  [CEReactions, Throws]
+  [CEReactions, Throws, UseCounter]
   undefined commitStyles();
 };
 

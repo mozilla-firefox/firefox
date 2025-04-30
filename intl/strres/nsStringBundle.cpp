@@ -5,7 +5,6 @@
 
 #include "nsStringBundle.h"
 
-#include "netCore.h"
 #include "nsID.h"
 #include "nsString.h"
 #include "nsIStringBundle.h"
@@ -26,7 +25,6 @@
 #include "nsQueryObject.h"
 #include "nsSimpleEnumerator.h"
 #include "nsStringStream.h"
-#include "mozilla/dom/txXSLTMsgsURL.h"
 #include "mozilla/ipc/SharedMemoryHandle.h"
 #include "mozilla/BinarySearch.h"
 #include "mozilla/ClearOnShutdown.h"
@@ -846,8 +844,9 @@ void nsStringBundleService::RegisterContentBundle(
   mSharedBundles.insertBack(cacheEntry);
 }
 
-void nsStringBundleService::getStringBundle(const char* aURLSpec,
-                                            nsIStringBundle** aResult) {
+NS_IMETHODIMP
+nsStringBundleService::CreateBundle(const char* aURLSpec,
+                                    nsIStringBundle** aResult) {
   nsDependentCString key(aURLSpec);
   bundleCacheEntry_t* cacheEntry = mBundleMap.Get(key);
 
@@ -899,6 +898,8 @@ void nsStringBundleService::getStringBundle(const char* aURLSpec,
   // finally, return the value
   *aResult = cacheEntry->mBundle;
   NS_ADDREF(*aResult);
+
+  return NS_OK;
 }
 
 UniquePtr<bundleCacheEntry_t> nsStringBundleService::evictOneEntry() {
@@ -931,86 +932,4 @@ bundleCacheEntry_t* nsStringBundleService::insertIntoCache(
   mBundleMap.InsertOrUpdate(cacheEntry->mHashKey, cacheEntry.get());
 
   return cacheEntry.release();
-}
-
-NS_IMETHODIMP
-nsStringBundleService::CreateBundle(const char* aURLSpec,
-                                    nsIStringBundle** aResult) {
-  getStringBundle(aURLSpec, aResult);
-  return NS_OK;
-}
-
-#define GLOBAL_PROPERTIES "chrome://global/locale/global-strres.properties"
-
-nsresult nsStringBundleService::FormatWithBundle(
-    nsIStringBundle* bundle, nsresult aStatus,
-    const nsTArray<nsString>& argArray, nsAString& result) {
-  nsresult rv;
-
-  // try looking up the error message with the int key:
-  uint16_t code = NS_ERROR_GET_CODE(aStatus);
-  rv = bundle->FormatStringFromID(code, argArray, result);
-
-  // If the int key fails, try looking up the default error message. E.g. print:
-  //   An unknown error has occurred (0x804B0003).
-  if (NS_FAILED(rv)) {
-    AutoTArray<nsString, 1> otherArgArray;
-    otherArgArray.AppendElement()->AppendInt(static_cast<uint32_t>(aStatus),
-                                             16);
-    uint16_t code = NS_ERROR_GET_CODE(NS_ERROR_FAILURE);
-    rv = bundle->FormatStringFromID(code, otherArgArray, result);
-  }
-
-  return rv;
-}
-
-NS_IMETHODIMP
-nsStringBundleService::FormatStatusMessage(nsresult aStatus,
-                                           const char16_t* aStatusArg,
-                                           nsAString& result) {
-  uint32_t i, argCount = 0;
-  nsCOMPtr<nsIStringBundle> bundle;
-
-  // XXX hack for mailnews who has already formatted their messages:
-  if (aStatus == NS_OK && aStatusArg) {
-    result.Assign(aStatusArg);
-    return NS_OK;
-  }
-
-  if (aStatus == NS_OK) {
-    return NS_ERROR_FAILURE;  // no message to format
-  }
-
-  // format the arguments:
-  const nsDependentString args(aStatusArg);
-  argCount = args.CountChar(char16_t('\n')) + 1;
-  NS_ENSURE_ARG(argCount <= 10);  // enforce 10-parameter limit
-  AutoTArray<nsString, 10> argArray;
-
-  // convert the aStatusArg into an nsString array
-  if (argCount == 1) {
-    argArray.AppendElement(aStatusArg);
-  } else if (argCount > 1) {
-    int32_t offset = 0;
-    for (i = 0; i < argCount; i++) {
-      int32_t pos = args.FindChar('\n', offset);
-      if (pos == -1) pos = args.Length();
-      argArray.AppendElement(Substring(args, offset, pos - offset));
-      offset = pos + 1;
-    }
-  }
-
-  switch (NS_ERROR_GET_MODULE(aStatus)) {
-    case NS_ERROR_MODULE_XSLT:
-      getStringBundle(XSLT_MSGS_URL, getter_AddRefs(bundle));
-      break;
-    case NS_ERROR_MODULE_NETWORK:
-      getStringBundle(NECKO_MSGS_URL, getter_AddRefs(bundle));
-      break;
-    default:
-      getStringBundle(GLOBAL_PROPERTIES, getter_AddRefs(bundle));
-      break;
-  }
-
-  return FormatWithBundle(bundle, aStatus, argArray, result);
 }

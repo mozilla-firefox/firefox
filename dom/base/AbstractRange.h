@@ -45,6 +45,8 @@ class AbstractRange : public nsISupports,
   virtual ~AbstractRange();
 
  public:
+  enum class IsUnlinking : bool { No, Yes };
+
   AbstractRange() = delete;
   explicit AbstractRange(const AbstractRange& aOther) = delete;
 
@@ -168,7 +170,8 @@ class AbstractRange : public nsISupports,
   MOZ_CAN_RUN_SCRIPT void RegisterSelection(
       mozilla::dom::Selection& aSelection);
 
-  void UnregisterSelection(const mozilla::dom::Selection& aSelection);
+  void UnregisterSelection(const mozilla::dom::Selection& aSelection,
+                           IsUnlinking aIsUnlinking = IsUnlinking::No);
 
   /**
    * Returns a list of all Selections the range is associated with.
@@ -219,7 +222,8 @@ class AbstractRange : public nsISupports,
   /**
    * https://dom.spec.whatwg.org/#concept-tree-inclusive-ancestor
    */
-  void UnregisterClosestCommonInclusiveAncestor(bool aIsUnlinking = false);
+  void UnregisterClosestCommonInclusiveAncestor(
+      IsUnlinking aIsUnlinking = IsUnlinking::No);
 
   void UpdateCommonAncestorIfNecessary();
 

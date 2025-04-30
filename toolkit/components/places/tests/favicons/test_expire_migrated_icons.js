@@ -28,10 +28,10 @@ add_task(async function test_storing_a_normal_16x16_icon() {
     return db.execute(`UPDATE moz_icons SET expire_ms = 0, data = "test"`);
   });
 
-  let { data, mimeType } = await getFaviconDataForPage(PAGE_URL);
-  Assert.equal(mimeType, "image/png");
+  let favicon = await PlacesTestUtils.getFaviconForPage(PAGE_URL);
+  Assert.equal(favicon.mimeType, "image/png");
   Assert.deepEqual(
-    data,
+    favicon.rawData,
     "test".split("").map(c => c.charCodeAt(0))
   );
 

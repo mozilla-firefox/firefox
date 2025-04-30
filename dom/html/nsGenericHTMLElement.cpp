@@ -974,9 +974,7 @@ void nsGenericHTMLElement::AfterSetAttr(int32_t aNamespaceID, nsAtom* aName,
       const auto IsEditableExceptInherit = [](const nsAttrValue& aValue) {
         return aValue.Equals(EmptyString(), eCaseMatters) ||
                aValue.Equals(u"true"_ns, eIgnoreCase) ||
-               (StaticPrefs::
-                    dom_element_contenteditable_plaintext_only_enabled() &&
-                aValue.Equals(u"plaintext-only"_ns, eIgnoreCase));
+               aValue.Equals(u"plaintext-only"_ns, eIgnoreCase);
       };
       // FYI: Now, both HasContentEditableAttrTrueOrPlainTextOnly() and
       // HasContentEditableAttrFalse() return true.  Therefore, we need to clear

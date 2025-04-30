@@ -130,22 +130,22 @@ def test_cli_run_with_stdin_filename(run, filedir, capfd, monkeypatch, tmp_path)
             run(["--stdin-filename=foo.txt", arg])
 
     capfd.readouterr()
-    monkeypatch.setattr("sys.stdin", io.StringIO("foobar"))
+    monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(b"foobar\n")))
     run(["-l", "string", f"--stdin-filename={filedir}/foobar.py"])
     out, err = capfd.readouterr()
     assert out == "✖ 0 problems (0 errors, 0 warnings, 0 fixed)\n"
 
-    monkeypatch.setattr("sys.stdin", io.StringIO("foobar"))
+    monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(b"foobar\n")))
     run(["-l", "string", f"--stdin-filename={filedir}/foobar.py", "--dump-stdin-file"])
     out, err = capfd.readouterr()
     assert out == "foobar\n"
 
-    monkeypatch.setattr("sys.stdin", io.StringIO("foobar"))
+    monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(b"foobar\n")))
     run(["-l", "string", f"--stdin-filename={filedir}/foobar.py", "--fix"])
     out, err = capfd.readouterr()
     assert out == "foobar\n"
 
-    monkeypatch.setattr("sys.stdin", io.StringIO("foobar"))
+    monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(b"foobar\n")))
     tmpfile = tmp_path / "temp"
     run(
         [

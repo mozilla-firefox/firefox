@@ -130,6 +130,9 @@ add_task(async function test_telemetry_reporting() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "other",
+      partnerCode: "",
+      overriddenByThirdParty: false,
       engineId: "other-simple",
       displayName: "simple",
       loadPath: "[http]localhost/simple.xml",

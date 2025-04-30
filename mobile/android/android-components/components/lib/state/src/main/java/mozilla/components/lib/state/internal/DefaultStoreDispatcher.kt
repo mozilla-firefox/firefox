@@ -13,6 +13,7 @@ import kotlinx.coroutines.cancel
 import mozilla.components.lib.state.Action
 import mozilla.components.lib.state.Store
 import mozilla.components.lib.state.StoreException
+import mozilla.components.support.utils.ext.threadIdCompat
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
 
@@ -53,7 +54,7 @@ internal class DefaultStoreDispatcher(
      */
     override fun assertOnThread() {
         val currentThread = Thread.currentThread()
-        val currentThreadId = currentThread.id
+        val currentThreadId = currentThread.threadIdCompat()
         val expectedThreadId = storeThreadFactory.threadId
 
         if (currentThreadId == expectedThreadId) {

@@ -17,7 +17,7 @@ add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["sidebar.animation.enabled", false],
-      ["sidebar.verticalTabs", false],
+      [VERTICAL_TABS_PREF, false],
     ],
   });
   Services.telemetry.clearScalars();
@@ -25,9 +25,7 @@ add_setup(async () => {
 });
 registerCleanupFunction(async () => {
   await SpecialPowers.popPrefEnv();
-  while (gBrowser.tabs.length > 1) {
-    BrowserTestUtils.removeTab(gBrowser.tabs.at(-1));
-  }
+  cleanUpExtraTabs();
   NonPrivateTabs.stop();
 });
 
@@ -130,7 +128,7 @@ add_task(async function test_toggle_vertical_tabs() {
   );
 
   // flip the pref to move the tabstrip into the sidebar
-  await SpecialPowers.pushPrefEnv({ set: [["sidebar.verticalTabs", true]] });
+  await SpecialPowers.pushPrefEnv({ set: [[VERTICAL_TABS_PREF, true]] });
   await waitForTabstripOrientation("vertical");
 
   for (let selector of expectedElementsWhenVertical) {
@@ -167,6 +165,7 @@ add_task(async function test_toggle_vertical_tabs() {
   await openAndWaitForContextMenu(contextMenu, gBrowser.selectedTab, () => {
     document.getElementById("context_openANewTab").click();
   });
+  contextMenu.hidePopup();
 
   let keyedScalars = TelemetryTestUtils.getProcessScalars("parent", true);
   TelemetryTestUtils.assertKeyedScalar(
@@ -194,6 +193,7 @@ add_task(async function test_toggle_vertical_tabs() {
   await openAndWaitForContextMenu(contextMenu, gBrowser.selectedTab, () => {
     document.getElementById("context_pinTab").click();
   });
+  contextMenu.hidePopup();
 
   scalars = await getTelemetryScalars([
     "browser.engagement.max_concurrent_vertical_tab_pinned_count",
@@ -286,6 +286,7 @@ add_task(async function test_toggle_vertical_tabs() {
       );
     }
   );
+  toolbarContextMenu.hidePopup();
 
   await openAndWaitForContextMenu(
     toolbarContextMenu,
@@ -297,6 +298,7 @@ add_task(async function test_toggle_vertical_tabs() {
       );
     }
   );
+  toolbarContextMenu.hidePopup();
 
   await openAndWaitForContextMenu(
     toolbarContextMenu,
@@ -312,6 +314,7 @@ add_task(async function test_toggle_vertical_tabs() {
       );
     }
   );
+  toolbarContextMenu.hidePopup();
 
   await openAndWaitForContextMenu(
     toolbarContextMenu,
@@ -323,6 +326,7 @@ add_task(async function test_toggle_vertical_tabs() {
       );
     }
   );
+  toolbarContextMenu.hidePopup();
 
   let newTabButton = document.getElementById("tabs-newtab-button");
   info("Open a new tab using the new tab button.");
@@ -350,7 +354,7 @@ add_task(async function test_toggle_vertical_tabs() {
   );
 
   // flip the pref to move the tabstrip horizontally
-  await SpecialPowers.pushPrefEnv({ set: [["sidebar.verticalTabs", false]] });
+  await SpecialPowers.pushPrefEnv({ set: [[VERTICAL_TABS_PREF, false]] });
   await waitForTabstripOrientation("horizontal");
 
   ok(
@@ -392,14 +396,14 @@ add_task(async function test_enabling_vertical_tabs_enables_sidebar_revamp() {
     "sidebar.revamp pref is false initially."
   );
   ok(
-    !Services.prefs.getBoolPref("sidebar.verticalTabs", false),
+    !Services.prefs.getBoolPref(VERTICAL_TABS_PREF, false),
     "sidebar.verticalTabs pref is false initially."
   );
 
-  await SpecialPowers.pushPrefEnv({ set: [["sidebar.verticalTabs", true]] });
+  await SpecialPowers.pushPrefEnv({ set: [[VERTICAL_TABS_PREF, true]] });
   await waitForTabstripOrientation("vertical");
   ok(
-    Services.prefs.getBoolPref("sidebar.verticalTabs", false),
+    Services.prefs.getBoolPref(VERTICAL_TABS_PREF, false),
     "sidebar.verticalTabs pref is enabled after we've enabled it."
   );
   ok(
@@ -452,16 +456,14 @@ add_task(async function test_vertical_tabs_overflow() {
     1
   );
 
-  while (gBrowser.tabs.length > 1) {
-    await BrowserTestUtils.removeTab(gBrowser.tabs.at(-1));
-  }
+  cleanUpExtraTabs();
 });
 
 add_task(async function test_vertical_tabs_expanded() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["sidebar.revamp", true],
-      ["sidebar.verticalTabs", true],
+      [VERTICAL_TABS_PREF, true],
     ],
   });
   await waitForTabstripOrientation("vertical");
@@ -475,7 +477,7 @@ add_task(async function test_vertical_tabs_expanded() {
   );
 
   info("Enable vertical tabs.");
-  Services.prefs.setBoolPref("sidebar.verticalTabs", true);
+  Services.prefs.setBoolPref(VERTICAL_TABS_PREF, true);
   await waitForTabstripOrientation("vertical");
   ok(
     BrowserTestUtils.isVisible(document.getElementById("sidebar-main")),
@@ -496,7 +498,7 @@ add_task(async function test_vertical_tabs_expanded() {
 
 add_task(async function test_vertical_tabs_min_width() {
   await SpecialPowers.pushPrefEnv({
-    set: [["sidebar.verticalTabs", true]],
+    set: [[VERTICAL_TABS_PREF, true]],
   });
   await waitForTabstripOrientation("vertical");
 
@@ -565,7 +567,7 @@ add_task(async function test_vertical_tabs_min_width() {
 
   // Switch to horizontal tabs
   await SpecialPowers.pushPrefEnv({
-    set: [["sidebar.verticalTabs", false]],
+    set: [[VERTICAL_TABS_PREF, false]],
   });
   await waitForTabstripOrientation("horizontal");
 
@@ -580,16 +582,14 @@ add_task(async function test_vertical_tabs_min_width() {
   );
 
   // clean up extra tabs
-  while (gBrowser.tabs.length > 1) {
-    await BrowserTestUtils.removeTab(gBrowser.tabs.at(-1));
-  }
+  cleanUpExtraTabs();
   await SpecialPowers.popPrefEnv();
 });
 
 add_task(
   async function test_launcher_collapsed_entering_horiz_tabs_with_hide_sidebar() {
     const { sidebarMain } = SidebarController;
-    await SpecialPowers.pushPrefEnv({ set: [["sidebar.verticalTabs", true]] });
+    await SpecialPowers.pushPrefEnv({ set: [[VERTICAL_TABS_PREF, true]] });
     await waitForTabstripOrientation("vertical");
     ok(
       BrowserTestUtils.isVisible(sidebarMain),
@@ -622,7 +622,7 @@ add_task(
     );
 
     // switch back to horizontal tabs and confirm the launcher get un-expanded
-    await SpecialPowers.pushPrefEnv({ set: [["sidebar.verticalTabs", false]] });
+    await SpecialPowers.pushPrefEnv({ set: [[VERTICAL_TABS_PREF, false]] });
     await waitForTabstripOrientation("horizontal");
 
     ok(

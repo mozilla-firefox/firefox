@@ -270,7 +270,6 @@ async function doDismissOneTest({
       removeResult: 1,
     },
   });
-  await QuickSuggest.blockedSuggestions._test_readyPromise;
 
   info("Awaiting dismissals-changed promise");
   await changedPromise;
@@ -280,8 +279,8 @@ async function doDismissOneTest({
     "canClearDismissedSuggestions should return true after triggering command"
   );
   Assert.ok(
-    await QuickSuggest.blockedSuggestions.isResultBlocked(result),
-    "The result's URL should be dismissed"
+    await QuickSuggest.isResultDismissed(result),
+    "The result should be dismissed"
   );
 
   for (let { query } of queriesForDismissals) {

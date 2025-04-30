@@ -1522,16 +1522,12 @@ function Intl_DurationFormat_format(durationLike) {
   }
 
   // Step 3.
-#ifdef JS_HAS_TEMPORAL_API
   var duration = ToTemporalDuration(durationLike);
 
   // Fallback if Temporal is disabled.
   if (duration === null) {
     duration = ToDurationRecord(durationLike);
   }
-#else
-  var duration = ToDurationRecord(durationLike);
-#endif
 
   // Steps 4-7.
   return PartitionDurationFormatPattern(
@@ -1559,16 +1555,12 @@ function Intl_DurationFormat_formatToParts(durationLike) {
   }
 
   // Step 3.
-#ifdef JS_HAS_TEMPORAL_API
   var duration = ToTemporalDuration(durationLike);
 
   // Fallback if Temporal is disabled.
   if (duration === null) {
     duration = ToDurationRecord(durationLike);
   }
-#else
-  var duration = ToDurationRecord(durationLike);
-#endif
 
   // Steps 4-8.
   return PartitionDurationFormatPattern(df, duration, /* formatToParts = */ true);

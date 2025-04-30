@@ -321,9 +321,11 @@ void DMABufSurface::GlobalRefCountDelete() {
 
 void DMABufSurface::ReleaseDMABuf() {
   LOGDMABUF("DMABufSurface::ReleaseDMABuf() UID %d", mUID);
+#ifdef DEBUG
   for (int i = 0; i < mBufferPlaneCount; i++) {
     Unmap(i);
   }
+#endif
 
   MutexAutoLock lockFD(mSurfaceLock);
   CloseFileDescriptors(lockFD, /* aForceClose */ true);
@@ -343,12 +345,15 @@ DMABufSurface::DMABufSurface(SurfaceType aSurfaceType)
       mStrides(),
       mOffsets(),
       mGbmBufferObject(),
+#ifdef DEBUG
       mMappedRegion(),
       mMappedRegionStride(),
+#endif
       mSync(nullptr),
       mGlobalRefCountFd(0),
       mUID(gNewSurfaceUID++),
-      mSurfaceLock("DMABufSurface") {}
+      mSurfaceLock("DMABufSurface") {
+}
 
 DMABufSurface::~DMABufSurface() {
   FenceDelete();
@@ -1180,6 +1185,7 @@ wl_buffer* DMABufSurfaceRGBA::CreateWlBuffer() {
 }
 #endif
 
+#ifdef DEBUG
 // We should synchronize DMA Buffer object access from CPU to avoid potential
 // cache incoherency and data loss.
 // See
@@ -1187,12 +1193,12 @@ wl_buffer* DMABufSurfaceRGBA::CreateWlBuffer() {
 struct dma_buf_sync {
   uint64_t flags;
 };
-#define DMA_BUF_SYNC_READ (1 << 0)
-#define DMA_BUF_SYNC_WRITE (2 << 0)
-#define DMA_BUF_SYNC_START (0 << 2)
-#define DMA_BUF_SYNC_END (1 << 2)
-#define DMA_BUF_BASE 'b'
-#define DMA_BUF_IOCTL_SYNC _IOW(DMA_BUF_BASE, 0, struct dma_buf_sync)
+#  define DMA_BUF_SYNC_READ (1 << 0)
+#  define DMA_BUF_SYNC_WRITE (2 << 0)
+#  define DMA_BUF_SYNC_START (0 << 2)
+#  define DMA_BUF_SYNC_END (1 << 2)
+#  define DMA_BUF_BASE 'b'
+#  define DMA_BUF_IOCTL_SYNC _IOW(DMA_BUF_BASE, 0, struct dma_buf_sync)
 
 static void SyncDmaBuf(int aFd, uint64_t aFlags) {
   struct dma_buf_sync sync = {0};
@@ -1282,6 +1288,7 @@ void DMABufSurface::Unmap(int aPlane) {
     mMappedRegionStride[aPlane] = 0;
   }
 }
+#endif  // DEBUG
 
 nsresult DMABufSurface::BuildSurfaceDescriptorBuffer(
     SurfaceDescriptorBuffer& aSdBuffer, Image::BuildSdbFlags aFlags,

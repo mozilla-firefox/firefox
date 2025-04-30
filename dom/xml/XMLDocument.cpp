@@ -65,18 +65,18 @@ nsresult NS_NewDOMDocument(Document** aInstancePtrResult,
   nsCOMPtr<Document> d;
   bool isHTML = false;
   bool isXHTML = false;
-  if (aFlavor == DocumentFlavorSVG) {
+  if (aFlavor == DocumentFlavor::SVG) {
     rv = NS_NewSVGDocument(getter_AddRefs(d), aPrincipal, aPrincipal);
-  } else if (aFlavor == DocumentFlavorHTML) {
+  } else if (aFlavor == DocumentFlavor::HTML) {
     rv = NS_NewHTMLDocument(getter_AddRefs(d), aPrincipal, aPrincipal);
     isHTML = true;
-  } else if (aFlavor == DocumentFlavorXML) {
+  } else if (aFlavor == DocumentFlavor::XML) {
     rv = NS_NewXMLDocument(getter_AddRefs(d), aPrincipal, aPrincipal);
-  } else if (aFlavor == DocumentFlavorPlain) {
+  } else if (aFlavor == DocumentFlavor::Plain) {
     rv = NS_NewXMLDocument(getter_AddRefs(d), aPrincipal, aPrincipal,
                            aLoadedAsData, true);
   } else if (aDoctype) {
-    MOZ_ASSERT(aFlavor == DocumentFlavorLegacyGuess);
+    MOZ_ASSERT(aFlavor == DocumentFlavor::LegacyGuess);
     nsAutoString publicId, name;
     aDoctype->GetPublicId(publicId);
     if (publicId.IsEmpty()) {
@@ -100,13 +100,11 @@ nsresult NS_NewDOMDocument(Document** aInstancePtrResult,
       isXHTML = true;
     } else if (publicId.EqualsLiteral("-//W3C//DTD SVG 1.1//EN")) {
       rv = NS_NewSVGDocument(getter_AddRefs(d), aPrincipal, aPrincipal);
-    }
-    // XXX Add support for XUL documents.
-    else {
+    } else {
       rv = NS_NewXMLDocument(getter_AddRefs(d), aPrincipal, aPrincipal);
     }
   } else {
-    MOZ_ASSERT(aFlavor == DocumentFlavorLegacyGuess);
+    MOZ_ASSERT(aFlavor == DocumentFlavor::LegacyGuess);
     rv = NS_NewXMLDocument(getter_AddRefs(d), aPrincipal, aPrincipal);
   }
 

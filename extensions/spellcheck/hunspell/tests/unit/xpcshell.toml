@@ -1,6 +1,5 @@
 [DEFAULT]
 head = ""
-skip-if = ["os == 'android'"]
 support-files = ["data/**"]
 firefox-appdir = "browser"
 

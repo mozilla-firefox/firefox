@@ -41,13 +41,50 @@ StyleDictionary.registerTransform({
   transformer: token => token.path.join("/").replace("/@base", ""),
 });
 
+/**
+ * Determines if a given value is an arbitrarily deeply nested object
+ * that satisfies the following conditions:
+ * - Each object in the nesting hierarchy has exactly one key-value pair.
+ * - The last key in the nesting hierarchy is "default".
+ * - The value associated with the "default" key is a primitive (not an object).
+ * - The value associated with the "default" key is not "currentColor".
+ *
+ * @param {object} value - The value to check, expected to be an object.
+ * @returns {boolean} Returns `true` if the object matches the criteria,
+ */
+function isNestedDefaultObject(value) {
+  let current = value;
+  while (typeof current === "object") {
+    const keys = Object.keys(current);
+    if (keys.length !== 1) {
+      return false;
+    }
+    const key = keys[0];
+    if (key === "default") {
+      if (typeof current[key] === "object") {
+        return false;
+      }
+      if (current[key] === "currentColor") {
+        return false;
+      }
+      return true;
+    }
+    current = current[key];
+  }
+  return false;
+}
+
 StyleDictionary.registerTransform({
   type: "attribute",
   name: "attribute/figma",
   transformer: token => {
     // Collection attribute
     let collection = COLLECTIONS.theme;
-    if (typeof token.value === "string" && token.value !== "currentColor") {
+
+    if (
+      (typeof token.value !== "object" || isNestedDefaultObject(token.value)) &&
+      token.value !== "currentColor"
+    ) {
       if (token.path[0] === "color") {
         collection = COLLECTIONS.colors;
       } else {
@@ -76,12 +113,18 @@ StyleDictionary.registerTransform({
 /**
  * Formats design tokens based on the provided arguments and options.
  *
- * @param {object} args - The arguments object from Style Dictionary. *
- * @returns {string} A formatted JSON string of the tokens, or an empty string if no tokens remain after filtering.
+ * @param {string} collection - The name of the token collection to filter by.
+ * @returns {Function} A function that takes an object with `dictionary` and `options` properties
+ * and returns a formatted JSON string of the tokens.
  */
-function formatTokens(args) {
+const formatTokens = collection => args => {
   let dictionary = Object.assign({}, args.dictionary);
   let tokens = [];
+
+  const filter = mergeFilters(
+    defaultFilter,
+    token => token.attributes?.collection === collection
+  );
 
   dictionary.allTokens.forEach(token => {
     let originalVal = token.original.value;
@@ -113,6 +156,10 @@ function formatTokens(args) {
     if (potentialShadowTokens) {
       potentialShadowTokens.forEach(
         ({ token: sToken, originalVal: sOriginalVal }) => {
+          // Check if the subtoken should be filtered out
+          if (!filter(sToken)) {
+            return;
+          }
           // Transform the subtoken value and add it to the tokens array
           let formattedToken = transformTokenValue(
             sToken,
@@ -133,6 +180,10 @@ function formatTokens(args) {
     if (potentialPaddingMarginTokens) {
       potentialPaddingMarginTokens.forEach(
         ({ token: sToken, originalVal: sOriginalVal }) => {
+          // Check if the subtoken should be filtered out
+          if (!filter(sToken)) {
+            return;
+          }
           // Transform the subtoken value and add it to the tokens array
           let formattedToken = transformTokenValue(
             sToken,
@@ -145,6 +196,10 @@ function formatTokens(args) {
       return;
     }
 
+    // Check if the token should be filtered out
+    if (!filter(token)) {
+      return;
+    }
     // Otherwise transform the original token value and add it to the tokens array
     let formattedToken = transformTokenValue(token, originalVal, dictionary);
     tokens.push(formattedToken);
@@ -169,7 +224,7 @@ function formatTokens(args) {
     "\n}" +
     "\n"
   );
-}
+};
 
 /**
  * Transforms the value of a design token by resolving references, handling `calc()` expressions,
@@ -187,48 +242,66 @@ function transformTokenValue(token, originalVal, dictionary) {
     const brandValue = getNestedBrandColor(originalVal);
     const forcedColorsValue = getNestedSystemColor(originalVal);
 
-    newValue = {
-      light: brandValue?.light
-        ? replaceReferences(dictionary, brandValue?.light)
-        : "transparent",
-      dark: brandValue?.dark
-        ? replaceReferences(dictionary, brandValue?.dark)
-        : "transparent",
-      forcedColors: replaceReferences(dictionary, forcedColorsValue),
-    };
+    // If this token got assigned to the primitive collection, we know it
+    // only contains a single value, so we can just the light value
+    if (token.attributes?.collection === COLLECTIONS.primitives) {
+      newValue = brandValue?.light;
+    } else {
+      newValue = {
+        light: brandValue?.light
+          ? replaceReferences(dictionary, brandValue?.light)
+          : "transparent",
+        dark: brandValue?.dark
+          ? replaceReferences(dictionary, brandValue?.dark)
+          : "transparent",
+        forcedColors: replaceReferences(dictionary, forcedColorsValue),
+      };
 
-    if (
-      newValue.forcedColors === undefined &&
-      newValue.light === newValue.dark
-    ) {
-      newValue.forcedColors = newValue.light;
-    } else if (newValue.forcedColors === undefined) {
-      newValue.forcedColors = "transparent";
+      if (
+        newValue.forcedColors === undefined &&
+        newValue.light === newValue.dark
+      ) {
+        newValue.forcedColors = newValue.light;
+      } else if (newValue.forcedColors === undefined) {
+        newValue.forcedColors = "transparent";
+      }
     }
   } else if (dictionary.usesReference(newValue)) {
     newValue = replaceReferences(dictionary, newValue);
   }
 
-  // If the value is a string and ends with "px", parse it to a number
-  if (typeof newValue === "string" && newValue.endsWith("px")) {
-    const numberValue = parseFloat(newValue);
-    if (isNaN(numberValue)) {
-      throw new Error(`Failed to parse pixel value: ${newValue}`);
-    }
-    newValue = numberValue;
-  }
-
-  // If the value is a string and ends with "px", parse it to a number
-  const numberOrPxRegex = /^-?\d*\.?\d+(px)?$/;
-  if (typeof newValue === "string" && numberOrPxRegex.test(newValue)) {
-    const numberValue = parseFloat(newValue);
-    if (isNaN(numberValue)) {
-      throw new Error(`Failed to parse value: ${newValue}`);
-    }
-    newValue = numberValue;
+  if (typeof newValue === "object") {
+    Object.keys(newValue).forEach(key => {
+      newValue[key] = potentiallyTransformValue(token, newValue[key]);
+    });
+  } else {
+    newValue = potentiallyTransformValue(token, newValue);
   }
 
   return { ...token, value: newValue };
+}
+
+function potentiallyTransformValue(token, value) {
+  // We convert number strings without units to numbers and since Figma's
+  // spaces everything in pixels, we convert pixel values to numbers too
+  const numberOrPxRegex = /^-?\d*\.?\d+(px)?$/;
+  if (typeof value === "string" && numberOrPxRegex.test(value)) {
+    const numberValue = parseFloat(value);
+    if (isNaN(numberValue)) {
+      throw new Error(`Failed to parse value: ${value}`);
+    }
+    return numberValue;
+  }
+  // Figma expects opacity values to be in the range of 0-100
+  if (
+    typeof value === "number" &&
+    value >= 0 &&
+    value <= 1 &&
+    token.path.includes("opacity")
+  ) {
+    return Math.round(value * 100);
+  }
+  return value;
 }
 
 /**
@@ -369,12 +442,23 @@ function attemptShadowDestructuring(token, originalVal) {
     const path =
       shadows.length > 1 ? [...token.path, `shadow-${index + 1}`] : token.path;
     return Object.entries(shadow).map(([key, value]) => {
+      // Every part of the shadow but the color can be put
+      // in the primitive collection
+      let collection = token.attributes?.collection;
+      if (key !== "color") {
+        collection = COLLECTIONS.primitives;
+      }
+
       const copy = {
         ...token,
         path: [...path, key].filter(filterBase),
         name: [...path, key].filter(filterBase).join("/"),
         value,
         original: { ...token.original, value },
+        attributes: {
+          ...token.attributes,
+          collection,
+        },
       };
       return { token: copy, originalVal: value };
     });
@@ -562,7 +646,6 @@ const DEFAULT_SHADOW = {
   blur: "0",
   spread: "0",
   color: "transparent",
-  inset: false,
 };
 
 /**
@@ -586,18 +669,13 @@ function parseBoxShadow(input) {
   return input.split(shadowSplitRegex).map(shadow => {
     shadow = shadow.trim();
     const parts = shadow.match(shadowPartsRegex);
-    let inset = undefined;
     let x, y, blur, spread, color;
     let lengthValues = [];
 
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
 
-      if (part === "inset") {
-        inset = true;
-      } else if (part === "outset") {
-        inset = false;
-      } else if (lengthValueRegex.test(part)) {
+      if (lengthValueRegex.test(part)) {
         lengthValues.push(part);
       } else {
         color = parts.slice(i).join(" ");
@@ -614,11 +692,9 @@ function parseBoxShadow(input) {
     if (color) {
       const colorParts = color.split(" ");
       if (colorParts.includes("inset")) {
-        inset = true;
         colorParts.splice(colorParts.indexOf("inset"), 1);
       }
       if (colorParts.includes("outset")) {
-        inset = false;
         colorParts.splice(colorParts.indexOf("outset"), 1);
       }
       color = colorParts.length ? colorParts.join(" ") : undefined;
@@ -630,7 +706,6 @@ function parseBoxShadow(input) {
       blur: blur || DEFAULT_SHADOW.blur,
       spread: spread || DEFAULT_SHADOW.spread,
       color: color || DEFAULT_SHADOW.color,
-      inset: inset !== undefined ? inset : DEFAULT_SHADOW.inset,
     };
   });
 }
@@ -681,27 +756,15 @@ const platform = {
   files: [
     {
       destination: "tokens-figma-colors.json",
-      format: "json/figma",
-      filter: mergeFilters(
-        defaultFilter,
-        token => token.attributes?.collection === COLLECTIONS.colors
-      ),
+      format: "json/figma/colors",
     },
     {
       destination: "tokens-figma-primitives.json",
-      format: "json/figma",
-      filter: mergeFilters(
-        defaultFilter,
-        token => token.attributes?.collection === COLLECTIONS.primitives
-      ),
+      format: "json/figma/primitives",
     },
     {
       destination: "tokens-figma-theme.json",
-      format: "json/figma",
-      filter: mergeFilters(
-        defaultFilter,
-        token => token.attributes?.collection === COLLECTIONS.theme
-      ),
+      format: "json/figma/theme",
     },
   ],
 };
@@ -709,6 +772,8 @@ const platform = {
 module.exports = {
   platform,
   formats: {
-    "json/figma": formatTokens,
+    "json/figma/colors": formatTokens(COLLECTIONS.colors),
+    "json/figma/primitives": formatTokens(COLLECTIONS.primitives),
+    "json/figma/theme": formatTokens(COLLECTIONS.theme),
   },
 };

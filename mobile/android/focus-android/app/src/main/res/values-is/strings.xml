@@ -213,7 +213,7 @@
     Summary for the toggle to enable autocomplete for the topsites list
     %s is the name of the app (for example "Firefox Focus" or "Firefox Klar").
   -->
-  <string name="preference_autocomplete_topsite_summary2">Virkja sjálfvirka útfyllingu í staðsetningarslá %s á rúmlega 450 vinsælum slóðum.</string>
+  <string name="preference_autocomplete_topsite_summary2">Virkja sjálfvirka útfyllingu í veffangastiku %s á rúmlega 450 vinsælum slóðum.</string>
   <!-- Title of "switch" preference that enables/disables autocomplete for the user-defined list -->
   <string name="preference_switch_autocomplete_user_list">Fyrir vefsvæði sem þú bætir við</string>
   <!--

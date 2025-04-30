@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_CPU_H
 #define SPA_CPU_H
@@ -30,9 +10,18 @@ extern "C" {
 #endif
 
 #include <stdarg.h>
+#include <errno.h>
 
 #include <spa/utils/defs.h>
 #include <spa/utils/hook.h>
+
+#ifndef SPA_API_CPU
+ #ifdef SPA_API_IMPL
+  #define SPA_API_CPU SPA_API_IMPL
+ #else
+  #define SPA_API_CPU static inline
+ #endif
+#endif
 
 /** \defgroup spa_cpu CPU
  * Querying CPU properties
@@ -88,6 +77,9 @@ struct spa_cpu { struct spa_interface iface; };
 #define SPA_CPU_FLAG_NEON		(1 << 5)
 #define SPA_CPU_FLAG_ARMV8		(1 << 6)
 
+/* RISCV specific */
+#define SPA_CPU_FLAG_RISCV_V		(1 << 0)
+
 #define SPA_CPU_FORCE_AUTODETECT	((uint32_t)-1)
 
 #define SPA_CPU_VM_NONE			(0)
@@ -106,6 +98,46 @@ struct spa_cpu { struct spa_interface iface; };
 #define SPA_CPU_VM_QNX			(1 << 12)
 #define SPA_CPU_VM_ACRN			(1 << 13)
 #define SPA_CPU_VM_POWERVM		(1 << 14)
+
+SPA_API_CPU const char *spa_cpu_vm_type_to_string(uint32_t vm_type)
+{
+	switch(vm_type) {
+	case SPA_CPU_VM_NONE:
+		return NULL;
+	case SPA_CPU_VM_KVM:
+		return "kvm";
+	case SPA_CPU_VM_QEMU:
+		return "qemu";
+	case SPA_CPU_VM_BOCHS:
+		return "bochs";
+	case SPA_CPU_VM_XEN:
+		return "xen";
+	case SPA_CPU_VM_UML:
+		return "uml";
+	case SPA_CPU_VM_VMWARE:
+		return "vmware";
+	case SPA_CPU_VM_ORACLE:
+		return "oracle";
+	case SPA_CPU_VM_MICROSOFT:
+		return "microsoft";
+	case SPA_CPU_VM_ZVM:
+		return "zvm";
+	case SPA_CPU_VM_PARALLELS:
+		return "parallels";
+	case SPA_CPU_VM_BHYVE:
+		return "bhyve";
+	case SPA_CPU_VM_QNX:
+		return "qnx";
+	case SPA_CPU_VM_ACRN:
+		return "acrn";
+	case SPA_CPU_VM_POWERVM:
+		return "powervm";
+	case SPA_CPU_VM_OTHER:
+		return "other";
+	default:
+		return "unknown";
+	}
+}
 
 /**
  * methods
@@ -136,21 +168,30 @@ struct spa_cpu_methods {
 	int (*zero_denormals) (void *object, bool enable);
 };
 
-#define spa_cpu_method(o,method,version,...)				\
-({									\
-	int _res = -ENOTSUP;						\
-	struct spa_cpu *_c = o;						\
-	spa_interface_call_res(&_c->iface,				\
-			struct spa_cpu_methods, _res,			\
-			method, version, ##__VA_ARGS__);		\
-	_res;								\
-})
-#define spa_cpu_get_flags(c)		spa_cpu_method(c, get_flags, 0)
-#define spa_cpu_force_flags(c,f)	spa_cpu_method(c, force_flags, 0, f)
-#define spa_cpu_get_count(c)		spa_cpu_method(c, get_count, 0)
-#define spa_cpu_get_max_align(c)	spa_cpu_method(c, get_max_align, 0)
-#define spa_cpu_get_vm_type(c)		spa_cpu_method(c, get_vm_type, 1)
-#define spa_cpu_zero_denormals(c,e)	spa_cpu_method(c, zero_denormals, 2, e)
+SPA_API_CPU uint32_t spa_cpu_get_flags(struct spa_cpu *c)
+{
+	return spa_api_method_r(uint32_t, 0, spa_cpu, &c->iface, get_flags, 0);
+}
+SPA_API_CPU int spa_cpu_force_flags(struct spa_cpu *c, uint32_t flags)
+{
+	return spa_api_method_r(int, -ENOTSUP, spa_cpu, &c->iface, force_flags, 0, flags);
+}
+SPA_API_CPU uint32_t spa_cpu_get_count(struct spa_cpu *c)
+{
+	return spa_api_method_r(uint32_t, 0, spa_cpu, &c->iface, get_count, 0);
+}
+SPA_API_CPU uint32_t spa_cpu_get_max_align(struct spa_cpu *c)
+{
+	return spa_api_method_r(uint32_t, 0, spa_cpu, &c->iface, get_max_align, 0);
+}
+SPA_API_CPU uint32_t spa_cpu_get_vm_type(struct spa_cpu *c)
+{
+	return spa_api_method_r(uint32_t, 0, spa_cpu, &c->iface, get_vm_type, 1);
+}
+SPA_API_CPU int spa_cpu_zero_denormals(struct spa_cpu *c, bool enable)
+{
+	return spa_api_method_r(int, -ENOTSUP, spa_cpu, &c->iface, zero_denormals, 2, enable);
+}
 
 /** keys can be given when initializing the cpu handle */
 #define SPA_KEY_CPU_FORCE		"cpu.force"		/**< force cpu flags */

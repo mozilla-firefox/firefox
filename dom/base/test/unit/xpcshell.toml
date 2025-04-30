@@ -40,6 +40,8 @@ prefs = ["network.xhr.block_sync_system_requests=false"] # Bug 721336
 
 ["test_chromeutils_defineLazyGetter.js"]
 
+["test_chromeutils_isJSIdentifier.js"]
+
 ["test_chromeutils_getXPCOMErrorName.js"]
 
 ["test_chromeutils_shallowclone.js"]

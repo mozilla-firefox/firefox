@@ -121,7 +121,7 @@ class QuantizeTestBase
   }
 
   void InitQuantizer() {
-    av1_build_quantizer(bd_, 0, 0, 0, 0, 0, &qtab_->quant, &qtab_->dequant);
+    av1_build_quantizer(bd_, 0, 0, 0, 0, 0, &qtab_->quant, &qtab_->dequant, 0);
   }
 
   virtual void RunQuantizeFunc(

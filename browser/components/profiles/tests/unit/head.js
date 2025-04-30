@@ -18,11 +18,19 @@ ChromeUtils.defineLazyGetter(lazy, "SelectableProfileService", () => {
     "resource:///modules/profiles/SelectableProfileService.sys.mjs"
   );
 
-  SelectableProfileService.overrideDirectoryService({
+  return SelectableProfileService;
+});
+
+ChromeUtils.defineLazyGetter(lazy, "ProfilesDatastoreService", () => {
+  const { ProfilesDatastoreService } = ChromeUtils.importESModule(
+    "resource:///modules/profiles/ProfilesDatastoreService.sys.mjs"
+  );
+
+  ProfilesDatastoreService.overrideDirectoryService({
     ProfD: getProfileService().currentProfile.rootDir,
   });
 
-  return SelectableProfileService;
+  return ProfilesDatastoreService;
 });
 
 let gProfileServiceInitialised = false;
@@ -43,6 +51,10 @@ function getSelectableProfileService() {
   return lazy.SelectableProfileService;
 }
 
+function getProfilesDatastoreService() {
+  return lazy.ProfilesDatastoreService;
+}
+
 /**
  * Starts the selectable profile service and creates the group store for the
  * current profile.
@@ -51,8 +63,12 @@ async function initSelectableProfileService() {
   startProfileService();
 
   const SelectableProfileService = getSelectableProfileService();
+  const ProfilesDatastoreService = getProfilesDatastoreService();
+
+  await ProfilesDatastoreService.init();
 
   await SelectableProfileService.init();
+
   await SelectableProfileService.maybeSetupDataStore();
 }
 

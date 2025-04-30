@@ -185,6 +185,9 @@
     <action
         android:id="@+id/action_global_trustPanelFragment"
         app:destination="@id/trust_panel_graph" />
+    <action
+        android:id="@+id/action_global_unlockPrivateTabsFragment"
+        app:destination="@+id/unlockPrivateTabsFragment"/>
 
     <dialog
         android:id="@+id/tabsTrayFragment"
@@ -222,6 +225,11 @@
         android:id="@+id/homeFragment"
         android:name="org.mozilla.fenix.home.HomeFragment"
         tools:layout="@layout/fragment_home">
+        <argument
+            android:name="sessionToDelete"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
         <argument
             android:name="focusOnAddressBar"
             android:defaultValue="false"
@@ -1200,6 +1208,11 @@
     <fragment
         android:id="@+id/gleanDebugToolsFragment"
         android:name="org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsFragment" />
+
+    <fragment
+        android:id="@+id/unlockPrivateTabsFragment"
+        android:name="org.mozilla.fenix.biometricauthentication.UnlockPrivateTabsFragment">
+    </fragment>
 
     <navigation
         android:id="@+id/site_permissions_exceptions_graph"

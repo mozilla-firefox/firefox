@@ -96,8 +96,7 @@
 /*  Custom root */
 /****************/
 
-.sources-clear-root {
-  padding: 4px 8px;
+.sources-clear-root-container {
   width: 100%;
   text-align: start;
   white-space: nowrap;
@@ -106,19 +105,21 @@
   border-bottom: 1px solid var(--theme-splitter-color);
 }
 
-.sources-clear-root .home {
-  background-color: var(--theme-icon-dimmed-color);
+.sources-clear-root {
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  outline-offset: -2px;
 }
 
-.sources-clear-root .breadcrumb {
-  width: 5px;
-  margin: 0 2px 0 6px;
-  vertical-align: bottom;
-  background: var(--theme-text-color-alt);
+.sources-clear-root-container .devtools-separator {
+  height: 20px;
+  margin: 2px 4px;
 }
 
 .sources-clear-root-label {
-  margin-left: 5px;
+  width: 100%;
+  padding: 4px;
   line-height: 16px;
 }
 

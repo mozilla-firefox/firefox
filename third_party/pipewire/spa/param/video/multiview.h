@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_VIDEO_MULTIVIEW_H
 #define SPA_VIDEO_MULTIVIEW_H
@@ -79,12 +59,11 @@ enum spa_video_multiview_mode {
 							    *   sequence. This method only applies to
 							    *   raw video buffers at the moment.
 							    *   Specific view identification is via
-							    *   \ref spa_video_multiview_meta on raw
-							    *   video buffers. */
+							    *   metadata on raw video buffers. */
 	SPA_VIDEO_MULTIVIEW_MODE_SEPARATED,		/**< Multiple views are provided as separate
 							 *   \ref spa_data framebuffers attached
 							 *   to each \ref spa_buffer, described
-							 *   by the \ref spa_video_multiview_meta */
+							 *   by the metadata */
 	/* future expansion for annotated modes */
 };
 
@@ -117,9 +96,7 @@ enum spa_video_multiview_flags {
 	SPA_VIDEO_MULTIVIEW_FLAGS_MIXED_MONO = (1 << 15),	/**< The video stream contains both
 								 *   mono and multiview portions,
 								 *   signalled on each buffer by the
-								 *   absence or presence of the
-								 *   \ref SPA_VIDEO_BUFFER_FLAG_MULTIPLE_VIEW
-								 *   buffer flag. */
+								 *   absence or presence of a buffer flag. */
 };
 
 

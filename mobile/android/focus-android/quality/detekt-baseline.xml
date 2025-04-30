@@ -61,7 +61,6 @@
     <ID>UndocumentedPublicClass:DefaultSitePermissionOptionsScreenInteractor.kt$DefaultSitePermissionOptionsScreenInteractor</ID>
     <ID>UndocumentedPublicClass:DefaultTopSitesStorage.kt$DefaultTopSitesStorage$Companion</ID>
     <ID>UndocumentedPublicClass:DownloadService.kt$DownloadService : AbstractFetchDownloadService</ID>
-    <ID>UndocumentedPublicClass:EngineProvider.kt$EngineProvider</ID>
     <ID>UndocumentedPublicClass:EngineSharedPreferencesListener.kt$EngineSharedPreferencesListener$ChangeSource</ID>
     <ID>UndocumentedPublicClass:EngineSharedPreferencesListener.kt$EngineSharedPreferencesListener$TrackerChanged</ID>
     <ID>UndocumentedPublicClass:EraseAndOpenShortcutActivity.kt$EraseAndOpenShortcutActivity : Activity</ID>
@@ -254,9 +253,6 @@
     <ID>UndocumentedPublicFunction:DefaultBrowserPreference.kt$DefaultBrowserPreference$fun update()</ID>
     <ID>UndocumentedPublicFunction:DefaultLanguageScreenInteractor.kt$DefaultLanguageScreenInteractor$fun handleLanguageSelected(language: Language)</ID>
     <ID>UndocumentedPublicFunction:DefaultSitePermissionOptionsScreenInteractor.kt$DefaultSitePermissionOptionsScreenInteractor$fun handleSitePermissionOptionSelected(sitePermissionOption: SitePermissionOption)</ID>
-    <ID>UndocumentedPublicFunction:EngineProvider.kt$EngineProvider$fun createClient(context: Context): Client</ID>
-    <ID>UndocumentedPublicFunction:EngineProvider.kt$EngineProvider$fun createCookieBannerStorage(context: Context): GeckoCookieBannersStorage</ID>
-    <ID>UndocumentedPublicFunction:EngineProvider.kt$EngineProvider$fun createEngine(context: Context, defaultSettings: DefaultSettings): Engine</ID>
     <ID>UndocumentedPublicFunction:ExceptionsListFragment.kt$ExceptionsListFragment.DomainListAdapter$fun move(from: Int, to: Int)</ID>
     <ID>UndocumentedPublicFunction:ExceptionsListFragment.kt$ExceptionsListFragment.DomainListAdapter$fun refresh(context: Context, body: (() -&gt; Unit)? = null)</ID>
     <ID>UndocumentedPublicFunction:ExceptionsListFragment.kt$ExceptionsListFragment.DomainListAdapter$fun selection(): List&lt;TrackingProtectionException&gt;</ID>
@@ -335,7 +331,6 @@
     <ID>UndocumentedPublicFunction:SearchUtils.kt$SearchUtils$fun createSearchUrl(context: Context?, text: String): String</ID>
     <ID>UndocumentedPublicFunction:SecretSettingsUnlocker.kt$SecretSettingsUnlocker$fun increment()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun addSearchWidgetInstalled(count: Int)</ID>
-    <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun createTrackingProtectionPolicy( shouldBlockCookiesValue: String = shouldBlockCookiesValue(), ): EngineSession.TrackingProtectionPolicy</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun getAppLaunchCount()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun getClearBrowsingSessions()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun getCurrentCookieBannerOptionFromSharePref(): CookieBannerOption</ID>
@@ -347,12 +342,10 @@
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun hasSocialBlocked()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun saveCurrentCookieBannerOptionInSharePref( cookieBannerOption: CookieBannerOption, )</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun setDefaultSearchEngineByName(name: String)</ID>
-    <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun setupSafeBrowsing(engine: Engine, shouldUseSafeBrowsing: Boolean = shouldUseSafeBrowsing())</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun shouldAutocompleteFromCustomDomainList()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun shouldAutocompleteFromShippedDomainList()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun shouldBlockAdTrackers()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun shouldBlockAnalyticTrackers()</ID>
-    <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun shouldBlockCookiesValue(): String</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun shouldBlockJavaScript(): Boolean</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun shouldBlockOtherTrackers()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun shouldBlockSocialTrackers()</ID>

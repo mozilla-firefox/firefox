@@ -6,7 +6,7 @@
 "use strict";
 
 const TEST_URI =
-  "http://example.com/browser/devtools/client/webconsole/" +
+  "https://example.com/browser/devtools/client/webconsole/" +
   "test/browser/test-console-workers.html";
 
 add_task(async function () {
@@ -15,6 +15,7 @@ add_task(async function () {
     "dom.postMessage.sharedArrayBuffer.bypassCOOP_COEP.insecure.enabled",
     true
   );
+  await pushPref("devtools.toolbox.footer.height", 500);
 
   info("Run the test with worker events dispatched to main thread");
   await pushPref("dom.worker.console.dispatch_events_to_main_thread", true);
@@ -87,10 +88,6 @@ async function testWorkerMessage(directConnectionToWorkerThread = false) {
     );
 
     info("Check that Symbol are properly logged");
-    await SpecialPowers.spawn(gBrowser.selectedBrowser, [], () => {
-      content.wrappedJSObject.logFromWorker("live-message");
-    });
-
     const symbolMessage = await waitFor(() =>
       findConsoleAPIMessage(hud, 'Symbol("logged-symbol-from-worker")')
     );

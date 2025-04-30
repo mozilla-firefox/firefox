@@ -4,8 +4,8 @@
 add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
     set: [
-      ["sidebar.verticalTabs", true],
-      ["sidebar.visibility", "always-show"],
+      [VERTICAL_TABS_PREF, true],
+      [SIDEBAR_VISIBILITY_PREF, "always-show"],
       ["browser.ml.chat.enabled", true],
       ["browser.shopping.experience2023.integratedSidebar", true],
       ["sidebar.main.tools", "aichat,reviewchecker,syncedtabs,history"],
@@ -14,9 +14,7 @@ add_setup(async () => {
 });
 registerCleanupFunction(async () => {
   await SpecialPowers.popPrefEnv();
-  while (gBrowser.tabs.length > 1) {
-    BrowserTestUtils.removeTab(gBrowser.tabs.at(-1));
-  }
+  cleanUpExtraTabs();
 });
 
 add_task(async function test_tools_overflow() {

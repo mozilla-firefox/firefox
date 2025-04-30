@@ -60,7 +60,7 @@ class Mitmproxy(Playback):
                 )
                 raise Exception("Please provide a playback_files list.")
 
-            if not isinstance(self.config.get("recording_file"), (str,)):
+            if not isinstance(self.config.get("recording_file"), str):
                 LOG.error("recording_file argument type is not str!")
                 raise Exception("recording_file argument type invalid!")
 

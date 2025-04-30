@@ -11,7 +11,7 @@ ChromeUtils.defineESModuleGetters(
     NetworkHelper:
       "resource://devtools/shared/network-observer/NetworkHelper.sys.mjs",
     NetworkTimings:
-      "resource://devtools/shared/network-observer/NetworkObserver.sys.mjs",
+      "resource://devtools/shared/network-observer/NetworkTimings.sys.mjs",
     NetworkUtils:
       "resource://devtools/shared/network-observer/NetworkUtils.sys.mjs",
     getResponseCacheObject:

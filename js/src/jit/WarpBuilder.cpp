@@ -1074,6 +1074,87 @@ bool WarpBuilder::build_StrictNe(BytecodeLocation loc) {
   return buildCompareOp(loc);
 }
 
+bool WarpBuilder::buildStrictConstantEqOp(BytecodeLocation loc,
+                                          JSOp compareOp) {
+  auto operand = loc.getConstantCompareOperand();
+  MDefinition* value = current->pop();
+  switch (operand.type()) {
+    case ConstantCompareOperand::EncodedType::Int32: {
+      if (value->type() == MIRType::Int32) {
+        MConstant* constant =
+            MConstant::New(alloc(), Int32Value(operand.toInt32()));
+        current->add(constant);
+
+        auto* compare = MCompare::New(alloc(), value, constant, compareOp,
+                                      MCompare::Compare_Int32);
+        current->add(compare);
+        current->push(compare);
+        return true;
+      }
+
+      auto* ins = MStrictConstantCompareInt32::New(
+          alloc(), value, operand.toInt32(), compareOp);
+      current->add(ins);
+      current->push(ins);
+      return true;
+    }
+
+    case ConstantCompareOperand::EncodedType::Boolean: {
+      if (value->type() == MIRType::Boolean) {
+        MConstant* constant =
+            MConstant::New(alloc(), Int32Value(operand.toBoolean()));
+        current->add(constant);
+
+        auto* toBoolToInt32 = MBooleanToInt32::New(alloc(), value);
+        current->add(toBoolToInt32);
+
+        auto* compare = MCompare::New(alloc(), toBoolToInt32, constant,
+                                      compareOp, MCompare::Compare_Int32);
+        current->add(compare);
+        current->push(compare);
+        return true;
+      }
+
+      auto* ins = MStrictConstantCompareBoolean::New(
+          alloc(), value, operand.toBoolean(), compareOp);
+      current->add(ins);
+      current->push(ins);
+      return true;
+    }
+
+    case ConstantCompareOperand::EncodedType::Null: {
+      MConstant* constant = MConstant::New(alloc(), NullValue());
+      current->add(constant);
+
+      auto* ins = MCompare::New(alloc(), value, constant, compareOp,
+                                MCompare::Compare_Null);
+      current->add(ins);
+      current->push(ins);
+      return true;
+    }
+
+    case ConstantCompareOperand::EncodedType::Undefined: {
+      MConstant* constant = MConstant::New(alloc(), UndefinedValue());
+      current->add(constant);
+
+      auto* ins = MCompare::New(alloc(), value, constant, compareOp,
+                                MCompare::Compare_Undefined);
+      current->add(ins);
+      current->push(ins);
+      return true;
+    }
+  }
+  return true;
+}
+
+bool WarpBuilder::build_StrictConstantEq(BytecodeLocation loc) {
+  return buildStrictConstantEqOp(loc, JSOp::StrictEq);
+}
+
+bool WarpBuilder::build_StrictConstantNe(BytecodeLocation loc) {
+  return buildStrictConstantEqOp(loc, JSOp::StrictNe);
+}
+
 #ifdef ENABLE_EXPLICIT_RESOURCE_MANAGEMENT
 bool WarpBuilder::build_AddDisposable(BytecodeLocation loc) {
   MOZ_ASSERT(usesEnvironmentChain());

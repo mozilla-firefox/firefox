@@ -8,8 +8,6 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
-  SelectableProfileService:
-    "resource:///modules/profiles/SelectableProfileService.sys.mjs",
 });
 
 /**
@@ -597,29 +595,6 @@ let JSWINDOWACTORS = {
     },
     matches: ["about:editprofile", "about:deleteprofile", "about:newprofile"],
     remoteTypes: ["privilegedabout"],
-    onAddActor(register, unregister) {
-      let registered = false;
-
-      const maybeRegister = () => {
-        let isEnabled = lazy.SelectableProfileService.isEnabled;
-
-        if (isEnabled && !registered) {
-          register();
-        } else if (!isEnabled && registered) {
-          unregister();
-        }
-
-        registered = isEnabled;
-      };
-
-      // Defer all this logic until a little later in startup
-      Services.obs.addObserver(() => {
-        // Update when the pref changes
-        lazy.SelectableProfileService.on("enableChanged", maybeRegister);
-
-        maybeRegister();
-      }, "final-ui-startup");
-    },
   },
 
   Prompt: {

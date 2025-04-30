@@ -37,7 +37,7 @@
 #include <stdarg.h>
 #include <sys/types.h>
 #include <stdint.h>
-#include <libdrm/drm.h>
+#include <drm.h>
 
 #if defined(__cplusplus)
 extern "C" {

@@ -147,7 +147,7 @@ internal class SearchDialogFragmentTest {
 
     @Test
     fun `GIVEN the currently selected search engine is unknown WHEN checking the need to update the current search engine THEN don't do anything`() {
-        fragment.interactor = mockk()
+        fragment.nullableInteractor = mockk()
 
         fragment.maybeSelectShortcutEngine(null)
 

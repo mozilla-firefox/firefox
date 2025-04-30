@@ -77,17 +77,6 @@ const MICROSEC_PER_SEC = 1000000;
 
 const EXPORT_INDENT = "    "; // four spaces
 
-function base64EncodeString(aString) {
-  let stream = Cc["@mozilla.org/io/string-input-stream;1"].createInstance(
-    Ci.nsIStringInputStream
-  );
-  stream.setByteStringData(aString);
-  let encoder = Cc["@mozilla.org/scriptablebase64encoder;1"].createInstance(
-    Ci.nsIScriptableBase64Encoder
-  );
-  return encoder.encodeToString(stream, aString.length);
-}
-
 /**
  * Provides HTML escaping for use in HTML attributes and body of the bookmarks
  * file, compatible with the old bookmarks system.
@@ -1054,21 +1043,19 @@ BookmarkExporter.prototype = {
     if (!aItem.iconUri) {
       return;
     }
-    let favicon;
+
     try {
-      favicon = await PlacesUtils.promiseFaviconData(aItem.uri);
+      let favicon = await PlacesUtils.favicons.getFaviconForPage(
+        PlacesUtils.toURI(aItem.uri)
+      );
+
+      this._writeAttribute("ICON_URI", escapeUrl(favicon.uri.spec));
+
+      if (favicon?.rawData.length && !favicon.uri.schemeIs("chrome")) {
+        this._writeAttribute("ICON", favicon.dataURI.spec);
+      }
     } catch (ex) {
       console.error("Unexpected Error trying to fetch icon data");
-      return;
-    }
-
-    this._writeAttribute("ICON_URI", escapeUrl(favicon.uri.spec));
-
-    if (!favicon.uri.schemeIs("chrome") && favicon.dataLen > 0) {
-      let faviconContents =
-        "data:image/png;base64," +
-        base64EncodeString(String.fromCharCode.apply(String, favicon.data));
-      this._writeAttribute("ICON", faviconContents);
     }
   },
 };

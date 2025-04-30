@@ -1239,6 +1239,60 @@ bool RCompare::recover(JSContext* cx, SnapshotIterator& iter) const {
   return true;
 }
 
+bool MStrictConstantCompareInt32::writeRecoverData(
+    CompactBufferWriter& writer) const {
+  MOZ_ASSERT(canRecoverOnBailout());
+  writer.writeUnsigned(
+      uint32_t(RInstruction::Recover_StrictConstantCompareInt32));
+
+  writer.writeByte(uint8_t(jsop_));
+  writer.writeSigned(constant_);
+  return true;
+}
+
+RStrictConstantCompareInt32::RStrictConstantCompareInt32(
+    CompactBufferReader& reader) {
+  jsop_ = JSOp(reader.readByte());
+  constant_ = reader.readSigned();
+  MOZ_ASSERT(IsStrictEqualityOp(jsop_));
+}
+
+bool RStrictConstantCompareInt32::recover(JSContext* cx,
+                                          SnapshotIterator& iter) const {
+  JS::Rooted<JS::Value> lhs(cx, iter.read());
+
+  iter.storeInstructionResult(
+      BooleanValue(lhs.isNumber() && lhs.toNumber() == constant_));
+  return true;
+}
+
+bool MStrictConstantCompareBoolean::writeRecoverData(
+    CompactBufferWriter& writer) const {
+  MOZ_ASSERT(canRecoverOnBailout());
+  writer.writeUnsigned(
+      uint32_t(RInstruction::Recover_StrictConstantCompareBoolean));
+
+  writer.writeByte(uint8_t(jsop_));
+  writer.writeUnsigned(constant_);
+  return true;
+}
+
+RStrictConstantCompareBoolean::RStrictConstantCompareBoolean(
+    CompactBufferReader& reader) {
+  jsop_ = JSOp(reader.readByte());
+  constant_ = reader.readUnsigned();
+  MOZ_ASSERT(IsStrictEqualityOp(jsop_));
+}
+
+bool RStrictConstantCompareBoolean::recover(JSContext* cx,
+                                            SnapshotIterator& iter) const {
+  JS::Rooted<JS::Value> lhs(cx, iter.read());
+
+  iter.storeInstructionResult(
+      BooleanValue(lhs.isBoolean() && lhs.toBoolean() == constant_));
+  return true;
+}
+
 bool MConcat::writeRecoverData(CompactBufferWriter& writer) const {
   MOZ_ASSERT(canRecoverOnBailout());
   writer.writeUnsigned(uint32_t(RInstruction::Recover_Concat));

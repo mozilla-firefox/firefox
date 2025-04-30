@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2019 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2019 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_UTILS_NAMES_H
 #define SPA_UTILS_NAMES_H
@@ -93,6 +73,8 @@ extern "C" {
 #define SPA_NAME_VIDEO_CONVERT		"video.convert"			/**< converts raw video from one format
 									  *  to another. Must include at least
 									  *  format and scaling */
+#define SPA_NAME_VIDEO_CONVERT_DUMMY	"video.convert.dummy"		/**< a dummy converter as fallback for the
+									  *  videoadapter node */
 #define SPA_NAME_VIDEO_ADAPT		"video.adapt"			/**< combination of a node and a
 									  *  video.convert. */
 /** keys for alsa factory names */
@@ -110,17 +92,25 @@ extern "C" {
 #define SPA_NAME_API_ALSA_SEQ_BRIDGE	"api.alsa.seq.bridge"		/**< an alsa Node interface for
 									  *  bridging midi ports */
 #define SPA_NAME_API_ALSA_ACP_DEVICE	"api.alsa.acp.device"		/**< an alsa ACP Device interface */
+#define SPA_NAME_API_ALSA_COMPRESS_OFFLOAD_DEVICE	"api.alsa.compress.offload.device"	/**< an alsa Device interface for
+												  * compressed audio */
+#define SPA_NAME_API_ALSA_COMPRESS_OFFLOAD_SINK		"api.alsa.compress.offload.sink"	/**< an alsa Node interface for
+												  * compressed audio */
 
 /** keys for bluez5 factory names */
 #define SPA_NAME_API_BLUEZ5_ENUM_DBUS	"api.bluez5.enum.dbus"		/**< a dbus Device interface */
 #define SPA_NAME_API_BLUEZ5_DEVICE	"api.bluez5.device"		/**< a Device interface */
-#define SPA_NAME_API_BLUEZ5_A2DP_SINK	"api.bluez5.a2dp.sink"		/**< a playback Node interface for A2DP profiles */
-#define SPA_NAME_API_BLUEZ5_A2DP_SOURCE	"api.bluez5.a2dp.source"	/**< a capture Node interface for A2DP profiles */
+#define SPA_NAME_API_BLUEZ5_MEDIA_SINK	"api.bluez5.media.sink"		/**< a playback Node interface for A2DP/BAP profiles */
+#define SPA_NAME_API_BLUEZ5_MEDIA_SOURCE	"api.bluez5.media.source"	/**< a capture Node interface for A2DP/BAP profiles */
+#define SPA_NAME_API_BLUEZ5_A2DP_SINK	"api.bluez5.a2dp.sink"		/**< alias for media.sink */
+#define SPA_NAME_API_BLUEZ5_A2DP_SOURCE	"api.bluez5.a2dp.source"	/**< alias for media.source */
 #define SPA_NAME_API_BLUEZ5_SCO_SINK	"api.bluez5.sco.sink"		/**< a playback Node interface for HSP/HFP profiles */
 #define SPA_NAME_API_BLUEZ5_SCO_SOURCE	"api.bluez5.sco.source"		/**< a capture Node interface for HSP/HFP profiles */
+#define SPA_NAME_API_BLUEZ5_MIDI_ENUM	"api.bluez5.midi.enum"		/**< a dbus midi Device interface */
+#define SPA_NAME_API_BLUEZ5_MIDI_NODE	"api.bluez5.midi.node"		/**< a midi Node interface */
 
 /** keys for codec factory names */
-#define SPA_NAME_API_CODEC_BLUEZ5_A2DP	"api.codec.bluez5.a2dp"		/**< Bluez5 A2DP codec plugin */
+#define SPA_NAME_API_CODEC_BLUEZ5_MEDIA	"api.codec.bluez5.media"	/**< Bluez5 Media codec plugin */
 
 /** keys for v4l2 factory names */
 #define SPA_NAME_API_V4L2_ENUM_UDEV	"api.v4l2.enum.udev"		/**< a v4l2 udev Device interface */
@@ -146,6 +136,10 @@ extern "C" {
 					"api.vulkan.compute.source"	/**< a vulkan compute source. */
 #define SPA_NAME_API_VULKAN_COMPUTE_FILTER	\
 					"api.vulkan.compute.filter"	/**< a vulkan compute filter. */
+#define SPA_NAME_API_VULKAN_BLIT_FILTER	\
+					"api.vulkan.blit.filter"	/**< a vulkan blit filter. */
+#define SPA_NAME_API_VULKAN_BLIT_DSP_FILTER	\
+					"api.vulkan.blit.dsp-filter"	/**< a vulkan blit dsp-filter. */
 
 /**
  * \}

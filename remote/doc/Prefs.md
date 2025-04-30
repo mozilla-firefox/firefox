@@ -17,6 +17,9 @@ This preference determines whether processing of action sequences happens in the
 parent process and dispatching of individual actions is forwarded to the content
 process. Starting with Firefox 135 its value is set to `true` by default.
 
+The preference and fallback to process actions entirely in the content process
+were removed in Firefox 139.
+
 ### `remote.experimental.enabled`
 
 Defines if WebDriver BiDi experimental commands and events are available for usage.

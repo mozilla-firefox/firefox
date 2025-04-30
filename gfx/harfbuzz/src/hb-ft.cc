@@ -667,10 +667,10 @@ hb_ft_get_glyph_extents (hb_font_t *font,
   float x2 = x1 + x_mult *  ft_face->glyph->metrics.width;
   float y2 = y1 + y_mult * -ft_face->glyph->metrics.height;
 
-  extents->x_bearing = round (x1);
-  extents->y_bearing = round (y1);
-  extents->width = round (x2) - extents->x_bearing;
-  extents->height = round (y2) - extents->y_bearing;
+  extents->x_bearing = roundf (x1);
+  extents->y_bearing = roundf (y1);
+  extents->width = roundf (x2) - extents->x_bearing;
+  extents->height = roundf (y2) - extents->y_bearing;
 
   return true;
 }

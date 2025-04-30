@@ -132,6 +132,11 @@ nsresult nsDataChannel::Init() {
 }
 
 nsresult nsDataChannel::MaybeSendDataChannelOpenNotification() {
+  nsCOMPtr<nsIObserverService> obsService = services::GetObserverService();
+  if (!obsService) {
+    return NS_OK;
+  }
+
   nsCOMPtr<nsILoadInfo> loadInfo;
   nsresult rv = GetLoadInfo(getter_AddRefs(loadInfo));
   if (NS_FAILED(rv)) {
@@ -152,14 +157,9 @@ nsresult nsDataChannel::MaybeSendDataChannelOpenNotification() {
 
   if ((browsingContextID != 0 && isTopLevel) ||
       !loadInfo->TriggeringPrincipal()->IsSystemPrincipal()) {
-    NotifyListeners();
+    obsService->NotifyObservers(static_cast<nsIIdentChannel*>(this),
+                                "data-channel-opened", nullptr);
   }
-  return NS_OK;
-}
-
-nsresult nsDataChannel::NotifyListeners() {
-  // Nothing to do here, this will be handled in
-  // DataChannelChild::NotifyListeners.
   return NS_OK;
 }
 

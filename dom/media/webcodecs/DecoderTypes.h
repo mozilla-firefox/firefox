@@ -26,22 +26,6 @@ class MediaByteBuffer;
 
 namespace dom {
 
-struct VideoColorSpaceInternal {
-  explicit VideoColorSpaceInternal(const VideoColorSpaceInit& aColorSpaceInit);
-  VideoColorSpaceInternal() = default;
-  VideoColorSpaceInit ToColorSpaceInit() const;
-
-  bool operator==(const VideoColorSpaceInternal& aOther) const {
-    return mFullRange == aOther.mFullRange && mMatrix == aOther.mMatrix &&
-           mPrimaries == aOther.mPrimaries && mTransfer == aOther.mTransfer;
-  }
-
-  Maybe<bool> mFullRange;
-  Maybe<VideoMatrixCoefficients> mMatrix;
-  Maybe<VideoColorPrimaries> mPrimaries;
-  Maybe<VideoTransferCharacteristics> mTransfer;
-};
-
 class VideoDecoderConfigInternal {
  public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(VideoDecoderConfigInternal);

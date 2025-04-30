@@ -176,7 +176,7 @@ fail-if = ["a11y_checks"] # Bug 1849028 clicked element may not be focusable and
 ["browser_dbg-event-breakpoints.js"]
 fail-if = ["a11y_checks"] # Bug 1849028 clicked element may not be focusable and/or labeled
 skip-if = [
-  "os == 'mac' && os_version == '14.70' && processor == 'x86_64' && debug", # Bug 1959062
+  "os == 'mac' && os_version == '14.70' && processor == 'x86_64'", # Bug 1959062
 ]
 
 ["browser_dbg-event-handler.js"]
@@ -253,6 +253,9 @@ fail-if = ["a11y_checks"] # Bug 1849028 clicked element may not be focusable and
 ["browser_dbg-inline-exceptions.js"]
 
 ["browser_dbg-inline-preview.js"]
+skip-if = [
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && tsan", # Bug 1607636
+]
 
 ["browser_dbg-inline-script-offset.js"]
 

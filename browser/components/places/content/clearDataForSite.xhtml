@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?csp default-src chrome: ?>
+
+<window
+  id="clearDataForSiteDialogWindow"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  aria-describedby="infoTitle"
+>
+  <dialog
+    id="clearDataForSiteDialog"
+    buttons="accept,cancel"
+    defaultButton="accept"
+    buttonidaccept="clear-data-for-site-dialog-accept-button"
+    buttonidcancel="clear-data-for-site-dialog-cancel-button"
+  >
+    <linkset>
+      <html:link rel="stylesheet" href="chrome://global/skin/global.css" />
+      <html:link
+        rel="stylesheet"
+        href="chrome://global/skin/commonDialog.css"
+      />
+      <html:link
+        rel="stylesheet"
+        href="chrome://browser/content/places/clearDataForSite.css"
+      />
+      <html:link rel="localization" href="browser/clearDataForSite.ftl" />
+    </linkset>
+
+    <div xmlns="http://www.w3.org/1999/xhtml" id="dialogGrid">
+      <h4 data-l10n-id="clear-data-for-site-title" id="infoTitle"></h4>
+      <!-- Use placeholder l10n arg "this site" so dialog height is calculated correctly
+       at dialog opening before l10n args are updated with actual site name in clearDataForSite.js -->
+      <p
+        data-l10n-id="clear-data-for-site-list"
+        data-l10n-args='{"site": "URL"}'
+        id="clear-data-for-site-list"
+      ></p>
+      <ul>
+        <li data-l10n-id="clear-data-for-site-browsing-history"></li>
+        <li data-l10n-id="clear-data-for-site-cookies"></li>
+        <li data-l10n-id="clear-data-for-site-cache"></li>
+        <li data-l10n-id="cclear-data-for-site-permissions"></li>
+      </ul>
+      <p data-l10n-id="clear-data-for-site-exceptions"></p>
+    </div>
+
+    <script src="chrome://browser/content/places/clearDataForSite.js" />
+  </dialog>
+</window>

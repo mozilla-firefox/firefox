@@ -149,7 +149,7 @@ class SnapDesktopFile:
             wmclass = f"{appname}-{branchname}"
 
         build_variables = {
-            "DEB_PKG_NAME": appname,
+            "PKG_NAME": appname,
             "DBusActivatable": "false",
             "Icon": "/default256.png",
             "StartupWMClass": wmclass,

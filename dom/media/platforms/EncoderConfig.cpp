@@ -50,9 +50,7 @@ nsCString EncoderConfig::ToString() const {
     } else {
       rv.AppendLiteral(", hw: no preference");
     }
-    rv.AppendPrintf(
-        " format: %s (%s-range)", GetEnumString(mFormat.mPixelFormat).get(),
-        mFormat.mColorRange == gfx::ColorRange::FULL ? "full" : "limited");
+    rv.AppendPrintf(" format: %s ", mFormat.ToString().get());
     if (mScalabilityMode == ScalabilityMode::L1T2) {
       rv.AppendLiteral(" (L1T2)");
     } else if (mScalabilityMode == ScalabilityMode::L1T3) {
@@ -68,15 +66,83 @@ nsCString EncoderConfig::ToString() const {
   return rv;
 };
 
-nsCString EncoderConfig::SampleFormat::ToString() const {
-  nsCString str;
-  str.AppendPrintf("SampleFormat: %s", dom::GetEnumString(mPixelFormat).get());
-  if (mColorRange == gfx::ColorRange::FULL) {
-    str.AppendLiteral(" (full-range)");
-  } else {
-    str.AppendLiteral(" (limited-range)");
+static nsCString ColorRangeToString(const gfx::ColorRange& aColorRange) {
+  switch (aColorRange) {
+    case gfx::ColorRange::FULL:
+      return "FULL"_ns;
+    case gfx::ColorRange::LIMITED:
+      return "LIMITED"_ns;
   }
-  return str;
+  MOZ_ASSERT_UNREACHABLE("unknown ColorRange");
+  return "unknown"_ns;
+}
+
+static nsCString YUVColorSpaceToString(
+    const gfx::YUVColorSpace& aYUVColorSpace) {
+  switch (aYUVColorSpace) {
+    case gfx::YUVColorSpace::BT601:
+      return "BT601"_ns;
+    case gfx::YUVColorSpace::BT709:
+      return "BT709"_ns;
+    case gfx::YUVColorSpace::BT2020:
+      return "BT2020"_ns;
+    case gfx::YUVColorSpace::Identity:
+      return "Identity"_ns;
+  }
+  MOZ_ASSERT_UNREACHABLE("unknown YUVColorSpace");
+  return "unknown"_ns;
+}
+
+static nsCString ColorSpace2ToString(const gfx::ColorSpace2& aColorSpace2) {
+  switch (aColorSpace2) {
+    case gfx::ColorSpace2::Display:
+      return "Display"_ns;
+    case gfx::ColorSpace2::SRGB:
+      return "SRGB"_ns;
+    case gfx::ColorSpace2::DISPLAY_P3:
+      return "DISPLAY_P3"_ns;
+    case gfx::ColorSpace2::BT601_525:
+      return "BT601_525"_ns;
+    case gfx::ColorSpace2::BT709:
+      return "BT709"_ns;
+    case gfx::ColorSpace2::BT2020:
+      return "BT2020"_ns;
+  }
+  MOZ_ASSERT_UNREACHABLE("unknown ColorSpace2");
+  return "unknown"_ns;
+}
+
+static nsCString TransferFunctionToString(
+    const gfx::TransferFunction& aTransferFunction) {
+  switch (aTransferFunction) {
+    case gfx::TransferFunction::BT709:
+      return "BT709"_ns;
+    case gfx::TransferFunction::SRGB:
+      return "SRGB"_ns;
+    case gfx::TransferFunction::PQ:
+      return "PQ"_ns;
+    case gfx::TransferFunction::HLG:
+      return "HLG"_ns;
+  }
+  MOZ_ASSERT_UNREACHABLE("unknown TransferFunction");
+  return "unknown"_ns;
+}
+
+nsCString EncoderConfig::VideoColorSpace::ToString() const {
+  return nsPrintfCString(
+      "VideoColorSpace: [range: %s, matrix: %s, primaries: %s, transfer: %s]",
+      mRange ? ColorRangeToString(mRange.value()).get() : "none",
+      mMatrix ? YUVColorSpaceToString(mMatrix.value()).get() : "none",
+      mPrimaries ? ColorSpace2ToString(mPrimaries.value()).get() : "none",
+      mTransferFunction
+          ? TransferFunctionToString(mTransferFunction.value()).get()
+          : "none");
+}
+
+nsCString EncoderConfig::SampleFormat::ToString() const {
+  return nsPrintfCString("SampleFormat - [PixelFormat: %s, %s]",
+                         dom::GetEnumString(mPixelFormat).get(),
+                         mColorSpace.ToString().get());
 }
 
 Result<EncoderConfig::SampleFormat, MediaResult>
@@ -96,13 +162,16 @@ EncoderConfig::SampleFormat::FromImage(layers::Image* aImage) {
 
   if (layers::PlanarYCbCrImage* image = aImage->AsPlanarYCbCrImage()) {
     if (const layers::PlanarYCbCrImage::Data* yuv = image->GetData()) {
-      return EncoderConfig::SampleFormat{format.ref(), yuv->mColorRange};
+      return EncoderConfig::SampleFormat(
+          format.ref(), EncoderConfig::VideoColorSpace(
+                            yuv->mColorRange, yuv->mYUVColorSpace,
+                            yuv->mColorPrimaries, yuv->mTransferFunction));
     }
     return Err(MediaResult(NS_ERROR_UNEXPECTED,
                            "failed to get YUV data from a YUV image"));
   }
 
-  return EncoderConfig::SampleFormat{format.ref(), gfx::ColorRange::FULL};
+  return EncoderConfig::SampleFormat(format.ref());
 }
 
 }  // namespace mozilla

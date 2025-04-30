@@ -25,10 +25,6 @@ assertThrowsObjectError(() => Map.prototype.has.call(Date.prototype), "Date.prot
 assertThrowsObjectError(() => Map.prototype.has.call(FinalizationRegistry.prototype), "FinalizationRegistry.prototype");
 assertThrowsObjectError(() => Map.prototype.has.call(Int32Array.prototype), "Int32Array.prototype");
 assertThrowsObjectError(() => Map.prototype.has.call(Promise.prototype), "Promise.prototype");
-if (this.hasOwnProperty("ReadableStream")) {
-    // ReadableStream is only present for the JS Streams implementation
-    assertThrowsObjectError(() => Map.prototype.has.call(ReadableStream.prototype), "ReadableStream.prototype");
-}
 assertThrowsObjectError(() => Map.prototype.has.call(RegExp.prototype), "RegExp.prototype");
 assertThrowsObjectError(() => Map.prototype.has.call(Set.prototype), "Set.prototype");
 assertThrowsObjectError(() => Map.prototype.has.call(TypeError.prototype), "TypeError.prototype");

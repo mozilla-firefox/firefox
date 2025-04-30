@@ -35,9 +35,13 @@ function debug(...args) {
   console.log(msg);
 }
 
-async function sha1(message) {
+function sha1(message) {
   const msgUint8 = new TextEncoder().encode(message);
-  const hashBuffer = await window.crypto.subtle.digest("SHA-1", msgUint8);
+  return sha1Uint8Array(msgUint8);
+}
+
+async function sha1Uint8Array(bytes) {
+  const hashBuffer = await crypto.subtle.digest("SHA-1", bytes);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
   return hashHex;
@@ -436,7 +440,19 @@ function populateWebGLCanvases(contextOptions = {}) {
   drawScene(gl, programInfo, buffers);
 
   // Write to the fields
-  data["canvasdata11Webgl" + suffix] = sha1(canvas.toDataURL());
+  const pixels = new Uint8Array(
+    gl.drawingBufferWidth * gl.drawingBufferHeight * 4
+  );
+  gl.readPixels(
+    0,
+    0,
+    gl.drawingBufferWidth,
+    gl.drawingBufferHeight,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    pixels
+  );
+  data["canvasdata11Webgl" + suffix] = sha1Uint8Array(pixels);
 
   return data;
 }

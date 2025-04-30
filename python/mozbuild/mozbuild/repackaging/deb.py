@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import datetime
 import json
 import os
 import shutil
@@ -10,16 +9,21 @@ import subprocess
 import tarfile
 import tempfile
 import zipfile
-from email.utils import format_datetime
-from pathlib import Path
-from string import Template
 
 import mozfile
 import mozpack.path as mozpath
 from mozilla_version.gecko import GeckoVersion
 
-from mozbuild.repackaging.application_ini import get_application_ini_values
-from mozbuild.repackaging.desktop_file import generate_browser_desktop_entry_file_text
+from mozbuild.repackaging.utils import (
+    copy_plain_config,
+    get_build_variables,
+    inject_desktop_entry_file,
+    inject_distribution_folder,
+    inject_prefs_file,
+    load_application_ini_data,
+    mv_manpage_files,
+    render_templates,
+)
 
 
 class NoDebPackageFound(Exception):
@@ -88,17 +92,20 @@ def repackage_deb(
     try:
         mozfile.extract_tarball(infile, source_dir)
         application_ini_data = _load_application_ini_data(infile, version, build_number)
-        build_variables = _get_build_variables(
+        build_variables = get_build_variables(
             application_ini_data,
-            arch,
+            _DEB_ARCH[arch],
+            application_ini_data["pkg_version"],
             depends="${shlibs:Depends},",
             release_product=release_product,
         )
 
-        _copy_plain_deb_config(template_dir, source_dir)
-        _render_deb_templates(
+        deb_dir = mozpath.join(source_dir, "debian")
+
+        copy_plain_config(template_dir, deb_dir)
+        render_templates(
             template_dir,
-            source_dir,
+            deb_dir,
             build_variables,
             exclude_file_names=["package-prefs.js"],
         )
@@ -109,18 +116,18 @@ def repackage_deb(
         ) as f:
             f.write("This is a packaged app.\n")
 
-        _inject_deb_distribution_folder(source_dir, app_name)
-        _inject_deb_desktop_entry_file(
+        inject_distribution_folder(source_dir, "debian", app_name)
+        inject_desktop_entry_file(
             log,
-            source_dir,
+            deb_dir,
             build_variables,
             release_product,
             release_type,
             fluent_localization,
             fluent_resource_loader,
         )
-        _mv_manpage_files(source_dir, build_variables)
-        _inject_deb_prefs_file(source_dir, app_name, template_dir)
+        mv_manpage_files(deb_dir, build_variables)
+        inject_prefs_file(source_dir, app_name, template_dir)
         _generate_deb_archive(
             source_dir,
             target_dir=tmpdir,
@@ -154,22 +161,24 @@ def repackage_deb_l10n(
         )
         langpack_id = langpack_metadata["langpack_id"]
         if release_product == "devedition":
-            depends = (
-                f"firefox-devedition (= {application_ini_data['deb_pkg_version']})"
-            )
+            depends = f"firefox-devedition (= {application_ini_data['pkg_version']})"
         else:
-            depends = f"{application_ini_data['remoting_name']} (= {application_ini_data['deb_pkg_version']})"
-        build_variables = _get_build_variables(
+            depends = f"{application_ini_data['remoting_name']} (= {application_ini_data['pkg_version']})"
+        build_variables = get_build_variables(
             application_ini_data,
-            arch,
+            _DEB_ARCH[arch],
+            application_ini_data["pkg_version"],
             depends=depends,
             # Debian package names are only lowercase
             package_name_suffix=f"-l10n-{langpack_id.lower()}",
             description_suffix=f" - {langpack_metadata['description']}",
             release_product=release_product,
         )
-        _copy_plain_deb_config(template_dir, source_dir)
-        _render_deb_templates(template_dir, source_dir, build_variables)
+
+        deb_dir = mozpath.join(source_dir, "debian")
+
+        copy_plain_config(template_dir, deb_dir)
+        render_templates(template_dir, deb_dir, build_variables)
 
         os.makedirs(langpack_dir, exist_ok=True)
         shutil.copy(
@@ -180,7 +189,7 @@ def repackage_deb_l10n(
             ),
         )
         _generate_deb_archive(
-            source_dir=source_dir,
+            source_dir,
             target_dir=tmpdir,
             output_file_path=output,
             build_variables=build_variables,
@@ -190,49 +199,11 @@ def repackage_deb_l10n(
         shutil.rmtree(tmpdir)
 
 
-def _extract_application_ini_data(input_tar_file):
-    with tempfile.TemporaryDirectory() as d:
-        with tarfile.open(input_tar_file) as tar:
-            application_ini_files = [
-                tar_info
-                for tar_info in tar.getmembers()
-                if tar_info.name.endswith("/application.ini")
-            ]
-            if len(application_ini_files) == 0:
-                raise ValueError(
-                    f"Cannot find any application.ini file in archive {input_tar_file}"
-                )
-            if len(application_ini_files) > 1:
-                raise ValueError(
-                    f"Too many application.ini files found in archive {input_tar_file}. "
-                    f"Found: {application_ini_files}"
-                )
-
-            tar.extract(application_ini_files[0], path=d)
-
-        application_ini_data = _extract_application_ini_data_from_directory(d)
-
-        return application_ini_data
-
-
 def _load_application_ini_data(infile, version, build_number):
-    extracted_application_ini_data = _extract_application_ini_data(infile)
-    parsed_application_ini_data = _parse_application_ini_data(
-        extracted_application_ini_data, version, build_number
-    )
-    return parsed_application_ini_data
+    application_ini_data = load_application_ini_data(infile, version, build_number)
 
-
-def _parse_application_ini_data(application_ini_data, version, build_number):
-    application_ini_data["timestamp"] = datetime.datetime.strptime(
-        application_ini_data["build_id"], "%Y%m%d%H%M%S"
-    )
-
-    application_ini_data["remoting_name"] = application_ini_data[
-        "remoting_name"
-    ].lower()
-
-    application_ini_data["deb_pkg_version"] = _get_deb_pkg_version(
+    # Replace the pkg_version with the Debian version format
+    application_ini_data["pkg_version"] = _get_deb_pkg_version(
         version, application_ini_data["build_id"], build_number
     )
 
@@ -249,187 +220,15 @@ def _get_deb_pkg_version(version, build_id, build_number):
     return deb_pkg_version
 
 
-def _extract_application_ini_data_from_directory(application_directory):
-    values = get_application_ini_values(
-        application_directory,
-        dict(section="App", value="Name"),
-        dict(section="App", value="CodeName", fallback="Name"),
-        dict(section="App", value="Vendor"),
-        dict(section="App", value="RemotingName"),
-        dict(section="App", value="BuildID"),
-    )
-
-    data = {
-        "name": next(values),
-        "display_name": next(values),
-        "vendor": next(values),
-        "remoting_name": next(values),
-        "build_id": next(values),
-    }
-
-    return data
-
-
-def _get_build_variables(
-    application_ini_data,
-    arch,
-    depends,
-    package_name_suffix="",
-    description_suffix="",
-    release_product="",
-):
-    if release_product == "devedition":
-        deb_pkg_install_path = "usr/lib/firefox-devedition"
-        deb_pkg_name = f"firefox-devedition{package_name_suffix}"
-    else:
-        deb_pkg_install_path = f"usr/lib/{application_ini_data['remoting_name']}"
-        deb_pkg_name = f"{application_ini_data['remoting_name']}{package_name_suffix}"
-    return {
-        "DEB_DESCRIPTION": f"{application_ini_data['vendor']} {application_ini_data['display_name']}"
-        f"{description_suffix}",
-        "DEB_PKG_INSTALL_PATH": deb_pkg_install_path,
-        "DEB_PKG_NAME": deb_pkg_name,
-        "DEB_PRODUCT_NAME": application_ini_data["name"],
-        "DEB_DISPLAY_NAME": application_ini_data["display_name"],
-        "DEB_PKG_VERSION": application_ini_data["deb_pkg_version"],
-        "DEB_CHANGELOG_DATE": format_datetime(application_ini_data["timestamp"]),
-        "DEB_MANPAGE_DATE": application_ini_data["timestamp"].strftime("%B %d, %Y"),
-        "DEB_ARCH_NAME": _DEB_ARCH[arch],
-        "DEB_DEPENDS": depends,
-        "Icon": deb_pkg_name,
-    }
-
-
-def _copy_plain_deb_config(input_template_dir, source_dir):
-    template_dir_filenames = os.listdir(input_template_dir)
-    plain_filenames = [
-        mozpath.basename(filename)
-        for filename in template_dir_filenames
-        if not filename.endswith(".in") and not filename.endswith(".js")
-    ]
-    os.makedirs(mozpath.join(source_dir, "debian"), exist_ok=True)
-
-    for filename in plain_filenames:
-        shutil.copy(
-            mozpath.join(input_template_dir, filename),
-            mozpath.join(source_dir, "debian", filename),
-        )
-
-
-def _render_deb_templates(
-    input_template_dir, source_dir, build_variables, exclude_file_names=None
-):
-    exclude_file_names = [] if exclude_file_names is None else exclude_file_names
-
-    template_dir_filenames = os.listdir(input_template_dir)
-    template_filenames = [
-        mozpath.basename(filename)
-        for filename in template_dir_filenames
-        if filename.endswith(".in") and filename not in exclude_file_names
-    ]
-    os.makedirs(mozpath.join(source_dir, "debian"), exist_ok=True)
-
-    for file_name in template_filenames:
-        with open(mozpath.join(input_template_dir, file_name)) as f:
-            template = Template(f.read())
-        with open(mozpath.join(source_dir, "debian", Path(file_name).stem), "w") as f:
-            f.write(template.substitute(build_variables))
-
-
-def _inject_deb_distribution_folder(source_dir, app_name):
-    distribution_ini_path = mozpath.join(source_dir, "debian", "distribution.ini")
-
-    # Check to see if a distribution.ini file is already supplied in the debian templates directory
-    # If not, continue to download default Firefox distribution.ini from GitHub
-    if os.path.exists(distribution_ini_path):
-        os.makedirs(
-            mozpath.join(source_dir, app_name.lower(), "distribution"), exist_ok=True
-        )
-        shutil.move(
-            distribution_ini_path,
-            mozpath.join(source_dir, app_name.lower(), "distribution"),
-        )
-
-        return
-
-    with tempfile.TemporaryDirectory() as git_clone_dir:
-        subprocess.check_call(
-            [
-                "git",
-                "clone",
-                "https://github.com/mozilla-partners/deb.git",
-                git_clone_dir,
-            ],
-        )
-        shutil.copytree(
-            mozpath.join(git_clone_dir, "desktop/deb/distribution"),
-            mozpath.join(source_dir, app_name.lower(), "distribution"),
-        )
-
-
-def _inject_deb_prefs_file(source_dir, app_name, template_dir):
-    src = mozpath.join(template_dir, "package-prefs.js")
-    dst = mozpath.join(source_dir, app_name.lower(), "defaults/pref")
-    shutil.copy(src, dst)
-
-
-def _mv_manpage_files(source_dir, build_variables):
-    src = mozpath.join(source_dir, "debian", "manpage.1")
-    dst = mozpath.join(source_dir, "debian", f"{build_variables['DEB_PKG_NAME']}.1")
-    shutil.move(src, dst)
-    src = mozpath.join(source_dir, "debian", "manpages")
-    dst = mozpath.join(
-        source_dir, "debian", f"{build_variables['DEB_PKG_NAME']}.manpages"
-    )
-    shutil.move(src, dst)
-
-
-def _inject_deb_desktop_entry_file(
-    log,
-    source_dir,
-    build_variables,
-    release_product,
-    release_type,
-    fluent_localization,
-    fluent_resource_loader,
-):
-    desktop_entry_template_path = mozpath.join(
-        source_dir, "debian", f"{build_variables['DEB_PRODUCT_NAME'].lower()}.desktop"
-    )
-    desktop_entry_file_filename = f"{build_variables['DEB_PKG_NAME']}.desktop"
-
-    # Check to see if a .desktop file is already supplied in the debian templates directory
-    # If not, continue to generate default Firefox .desktop file
-    if os.path.exists(desktop_entry_template_path):
-        shutil.move(
-            desktop_entry_template_path,
-            mozpath.join(source_dir, "debian", desktop_entry_file_filename),
-        )
-
-        return
-
-    desktop_entry_file_text = generate_browser_desktop_entry_file_text(
-        log,
-        build_variables,
-        release_product,
-        release_type,
-        fluent_localization,
-        fluent_resource_loader,
-    )
-    os.makedirs(mozpath.join(source_dir, "debian"), exist_ok=True)
-    with open(
-        mozpath.join(source_dir, "debian", desktop_entry_file_filename), "w"
-    ) as f:
-        f.write(desktop_entry_file_text)
-
-
 def _generate_deb_archive(
     source_dir, target_dir, output_file_path, build_variables, arch
 ):
     command = _get_command(arch)
     subprocess.check_call(command, cwd=source_dir)
     deb_arch = _DEB_ARCH[arch]
-    deb_file_name = f"{build_variables['DEB_PKG_NAME']}_{build_variables['DEB_PKG_VERSION']}_{deb_arch}.deb"
+    deb_file_name = (
+        f"{build_variables['PKG_NAME']}_{build_variables['PKG_VERSION']}_{deb_arch}.deb"
+    )
     deb_file_path = mozpath.join(target_dir, deb_file_name)
 
     if not os.path.exists(deb_file_path):

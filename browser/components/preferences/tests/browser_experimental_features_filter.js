@@ -25,10 +25,7 @@ add_task(async function testFilterFeatures() {
     {
       ...DEFAULT_LABS_RECIPES[3],
       slug: "test-featureD",
-      bucketConfig: {
-        ...ExperimentFakes.recipe.bucketConfig,
-        count: 1000,
-      },
+      bucketConfig: NimbusTestUtils.factories.recipe.bucketConfig,
     },
   ];
   const cleanup = await setupLabsTest(recipes);

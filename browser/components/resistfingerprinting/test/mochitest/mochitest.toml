@@ -6,7 +6,7 @@ support-files = [
   "file_animation_api.html",
   "worker_child.js",
   "worker_grandchild.js",
-  "!/dom/tests/mochitest/geolocation/network_geolocation.sjs",
+  "!/dom/geolocation/test/mochitest/network_geolocation.sjs",
 ]
 
 ["test_animation_api.html"]

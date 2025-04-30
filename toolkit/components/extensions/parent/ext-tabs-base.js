@@ -1613,7 +1613,7 @@ class WindowTrackerBase extends EventEmitter {
    *
    * @param {integer} id
    *        The ID of the window to return.
-   * @param {BaseContext} context
+   * @param {BaseContext} [context]
    *        The extension context for which the matching is being performed.
    *        Used to determine the current window for relevant properties.
    * @param {boolean} [strict = true]

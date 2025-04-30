@@ -154,6 +154,7 @@ function waitForSource(dbg, url) {
 }
 
 async function waitForElement(dbg, name, ...args) {
+  info(`Waiting for debugger element by name: ${name}`);
   await waitUntil(() => findElement(dbg, name, ...args));
   return findElement(dbg, name, ...args);
 }
@@ -175,6 +176,7 @@ async function waitForAllElements(
   count = 1,
   countStrictlyEqual = false
 ) {
+  info(`Waiting for N=${count} debugger elements by name: ${name}`);
   await waitUntil(() => {
     const elsCount = findAllElements(dbg, name).length;
     return countStrictlyEqual ? elsCount === count : elsCount >= count;
@@ -183,6 +185,7 @@ async function waitForAllElements(
 }
 
 async function waitForElementWithSelector(dbg, selector) {
+  info(`Waiting for debugger element by selector: ${selector}`);
   await waitUntil(() => findElementWithSelector(dbg, selector));
   return findElementWithSelector(dbg, selector);
 }
@@ -422,20 +425,35 @@ async function _assertDebugLine(dbg, line, column) {
 
   ok(isVisibleInEditor(dbg, pausedLine), "debug line is visible");
 
-  const markedSpans = lineInfo.handle.markedSpans;
-  if (markedSpans && markedSpans.length && !isWasmBinarySource(source)) {
-    const hasExpectedDebugLine = markedSpans.some(
-      span =>
-        span.marker.className?.includes("debug-expression") &&
-        // When a precise column is expected, ensure that we have at least
-        // one "debug line" for the column we expect.
-        // (See the React Component: DebugLine.setDebugLine)
-        (!column || span.from == column)
+  if (isCm6Enabled) {
+    const editorLineEl = getCMEditor(dbg).getElementAtLine(line);
+    const pauseLocationMarker = editorLineEl.querySelector(".paused-location");
+    is(
+      pauseLocationMarker.cmView.widget.line,
+      line,
+      "The paused caret is at the right line"
     );
-    ok(
-      hasExpectedDebugLine,
-      "Got the expected DebugLine. i.e. got the right marker in codemirror visualizing the breakpoint"
+    is(
+      pauseLocationMarker.cmView.widget.column,
+      column,
+      "The paused caret is at the right column"
     );
+  } else {
+    const markedSpans = lineInfo.handle.markedSpans;
+    if (markedSpans && markedSpans.length && !isWasmBinarySource(source)) {
+      const hasExpectedDebugLine = markedSpans.some(
+        span =>
+          span.marker.className?.includes("debug-expression") &&
+          // When a precise column is expected, ensure that we have at least
+          // one "debug line" for the column we expect.
+          // (See the React Component: DebugLine.setDebugLine)
+          (!column || span.from == column)
+      );
+      ok(
+        hasExpectedDebugLine,
+        "Got the expected DebugLine. i.e. got the right marker in codemirror visualizing the breakpoint"
+      );
+    }
   }
   info(`Paused on line ${line}`);
 }
@@ -467,7 +485,12 @@ async function assertPausedAtSourceAndLine(
     expectedLine,
     "Redux state for currently selected frame's line is correct"
   );
-  const pauseColumn = getVisibleSelectedFrameColumn(dbg);
+
+  const selectedSource = dbg.selectors.getSelectedSource();
+  // WASM binary source is pausing at 0 column, whereas visible selected frame returns 1
+  const pauseColumn = isWasmBinarySource(selectedSource)
+    ? 0
+    : getVisibleSelectedFrameColumn(dbg);
   if (expectedColumn) {
     // `pauseColumn` is 0-based, coming from internal state,
     // while `expectedColumn` is manually passed from test scripts and so is 1-based.
@@ -482,7 +505,6 @@ async function assertPausedAtSourceAndLine(
   ok(isVisibleInEditor(dbg, findElement(dbg, "gutters")), "gutter is visible");
 
   const frames = dbg.selectors.getCurrentThreadFrames();
-  const selectedSource = dbg.selectors.getSelectedSource();
 
   // WASM support is limited when we are on the generated binary source
   if (isWasmBinarySource(selectedSource)) {
@@ -526,6 +548,7 @@ async function waitForLoadedScopes(dbg) {
   const scopes = await waitForElement(dbg, "scopes");
   // Since scopes auto-expand, we can assume they are loaded when there is a tree node
   // with the aria-level attribute equal to "2".
+  info("Wait for loaded scopes - ie when a tree node has aria-level=2");
   await waitUntil(() => scopes.querySelector('.tree-node[aria-level="2"]'));
 }
 
@@ -2298,8 +2321,10 @@ function toggleObjectInspectorNode(node) {
   const objectInspector = node.closest(".object-inspector");
   const properties = objectInspector.querySelectorAll(".node").length;
 
-  info(`Toggling node ${node.innerText}`);
+  info(`Toggle node ${node.innerText}`);
   node.click();
+
+  info(`Waiting for object inspector properties update`);
   return waitUntil(
     () => objectInspector.querySelectorAll(".node").length !== properties
   );
@@ -2312,6 +2337,7 @@ function rightClickObjectInspectorNode(dbg, node) {
   info(`Right clicking node ${node.innerText}`);
   rightClickEl(dbg, node);
 
+  info(`Waiting for object inspector properties update`);
   return waitUntil(
     () => objectInspector.querySelectorAll(".node").length !== properties
   );
@@ -2690,6 +2716,7 @@ async function closePreviewForToken(
     element.ownerGlobal
   );
 
+  info(`Waiting for preview to be closed (preview type=${previewType})`);
   await waitUntil(() => findElement(dbg, previewType) == null);
   info("Preview closed");
 }
@@ -3005,6 +3032,7 @@ async function assertInlineExceptionPreview(
  * @param {String} result
  */
 async function waitForPreviewWithResult(dbg, result) {
+  info(`Wait for preview popup with result ${result}`);
   await waitUntil(async () => {
     const previewEl = await waitForElement(dbg, "previewPopup");
     return previewEl.innerText.includes(result);
@@ -3050,7 +3078,7 @@ async function waitForBreakableLine(dbg, source, lineNumber) {
 }
 
 async function waitForSourceTreeThreadsCount(dbg, i) {
-  info(`waiting for ${i} threads in the source tree`);
+  info(`Waiting for ${i} threads in the source tree`);
   await waitUntil(() => {
     return findAllElements(dbg, "sourceTreeThreads").length === i;
   });
@@ -3138,6 +3166,7 @@ async function waitForSourcesInSourceTree(
 }
 
 async function waitForNodeToGainFocus(dbg, index) {
+  info(`Waiting for source node #${index} to be focused`);
   await waitUntil(() => {
     const element = findElement(dbg, "sourceNode", index);
 
@@ -3146,7 +3175,7 @@ async function waitForNodeToGainFocus(dbg, index) {
     }
 
     return false;
-  }, `waiting for source node ${index} to be focused`);
+  });
 }
 
 async function assertNodeIsFocused(dbg, index) {
@@ -3327,6 +3356,7 @@ function getEagerEvaluationElement(hud) {
 }
 
 async function waitForEagerEvaluationResult(hud, text) {
+  info(`Waiting for eager evaluation result: ${text}`);
   await waitUntil(() => {
     const elem = getEagerEvaluationElement(hud);
     if (elem) {
@@ -3487,7 +3517,7 @@ async function doProjectSearch(dbg, searchTerm, expectedResults) {
 }
 
 /**
- * Waits for the search resluts node to render
+ * Waits for the search results node to render
  *
  * @param {Object} dbg
  * @param {Number} expectedResults - The expected no of results to wait for
@@ -3496,7 +3526,7 @@ async function doProjectSearch(dbg, searchTerm, expectedResults) {
  */
 async function waitForSearchResults(dbg, expectedResults) {
   if (expectedResults) {
-    info(`Wait for ${expectedResults} project search results`);
+    info(`Waiting for ${expectedResults} project search results`);
     await waitUntil(
       () =>
         findAllElements(dbg, "projectSearchFileResults").length ==

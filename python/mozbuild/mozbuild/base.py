@@ -296,7 +296,7 @@ class MozbuildObject(ProcessExecutionMixin):
                 args = tuple(
                     (
                         a
-                        if not isinstance(a, (str,)) or a != "--help"
+                        if not isinstance(a, str) or a != "--help"
                         else self._always.sandboxed
                     )
                     for a in args

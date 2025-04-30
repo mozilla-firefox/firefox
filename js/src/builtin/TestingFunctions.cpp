@@ -8835,6 +8835,21 @@ static bool GetFuseState(JSContext* cx, unsigned argc, Value* vp) {
     return false;
   }
 
+  fuseObj = JS_NewPlainObject(cx);
+  if (!fuseObj) {
+    return false;
+  }
+  intactValue.setBoolean(
+      cx->runtime()->hasSeenArrayExceedsInt32LengthFuse.ref().intact());
+  if (!JS_DefineProperty(cx, fuseObj, "intact", intactValue,
+                         JSPROP_ENUMERATE)) {
+    return false;
+  }
+  if (!JS_DefineProperty(cx, returnObj, "hasSeenArrayExceedsInt32LengthFuse",
+                         fuseObj, JSPROP_ENUMERATE)) {
+    return false;
+  }
+
   args.rval().setObject(*returnObj);
   return true;
 }

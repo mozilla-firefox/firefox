@@ -7,8 +7,8 @@
 #ifndef js_Tracer_h
 #define js_Tracer_h
 
+#include "gc/Allocator.h"
 #include "gc/Barrier.h"
-#include "gc/BufferAllocator.h"
 #include "gc/TraceKind.h"
 #include "js/HashTable.h"
 #include "js/TracingAPI.h"
@@ -335,7 +335,7 @@ template <typename T>
 void TraceBufferEdge(JSTracer* trc, gc::Cell* owner, T** bufferp,
                      const char* name) {
   void** ptrp = reinterpret_cast<void**>(bufferp);
-  gc::BufferAllocator::TraceEdge(trc, owner, ptrp, name);
+  gc::TraceBufferEdgeInternal(trc, owner, ptrp, name);
 }
 
 // As below but with manual barriers.

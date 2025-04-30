@@ -397,6 +397,58 @@ fn client_id_is_set_to_random_value_when_uploading_enabled_at_start() {
 }
 
 #[test]
+fn attribution_and_distribution_are_correctly_stored() {
+    let dir = tempfile::tempdir().unwrap();
+    let tmpname = dir.path().display().to_string();
+    let glean = Glean::with_options(&tmpname, GLOBAL_APPLICATION_ID, true, true);
+
+    // On a fresh Glean, no attribution or distribution information is set.
+    assert_eq!(
+        <AttributionMetrics as Default>::default(),
+        glean.test_get_attribution()
+    );
+    assert_eq!(
+        <DistributionMetrics as Default>::default(),
+        glean.test_get_distribution()
+    );
+
+    let mut attribution = AttributionMetrics {
+        source: Some("source".into()),
+        medium: Some("medium".into()),
+        campaign: Some("campaign".into()),
+        term: Some("term".into()),
+        content: Some("content".into()),
+    };
+    let distribution = DistributionMetrics {
+        name: Some("name".into()),
+    };
+
+    // Set them all at once.
+    glean.update_attribution(attribution.clone());
+    glean.update_distribution(distribution.clone());
+
+    assert_eq!(attribution, glean.test_get_attribution());
+    assert_eq!(distribution, glean.test_get_distribution());
+
+    let attribution_update = AttributionMetrics {
+        campaign: Some("new campaign".into()),
+        ..Default::default()
+    };
+    let distribution_update = DistributionMetrics {
+        name: Some("new name".into()),
+    };
+
+    // Perform updates.
+    glean.update_attribution(attribution_update);
+    glean.update_distribution(distribution_update.clone());
+
+    // Ensure only the updated fields took over
+    attribution.campaign = Some("new campaign".into());
+    assert_eq!(attribution, glean.test_get_attribution());
+    assert_eq!(distribution_update, glean.test_get_distribution());
+}
+
+#[test]
 fn enabling_when_already_enabled_is_a_noop() {
     let dir = tempfile::tempdir().unwrap();
     let tmpname = dir.path().display().to_string();

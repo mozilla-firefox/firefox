@@ -19,4 +19,20 @@ fxview-search-textbox {
 .nested-card {
   --card-accordion-closed-icon: url("chrome://global/skin/icons/arrow-right.svg");
   --card-accordion-open-icon: url("chrome://global/skin/icons/arrow-down.svg");
+  background-color: transparent;
+  border: none;
+  margin-block-start: var(--space-xsmall);
+
+  &::part(heading) {
+    font-weight: var(--font-weight);
+  }
+
+  &::part(moz-card-heading-wrapper) {
+    padding-inline: var(--space-xsmall);
+  }
+
+  &::part(summary) {
+    border-radius: var(--border-radius-medium);
+    padding-block: var(--space-xsmall);
+  }
 }

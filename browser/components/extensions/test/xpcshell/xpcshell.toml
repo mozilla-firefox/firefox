@@ -1,17 +1,14 @@
 [DEFAULT]
-skip-if = ["os == 'android'"] # bug 1730213
 head = "head.js"
 firefox-appdir = "browser"
 tags = "webextensions"
 dupe-manifest = ""
 
 ["test_ext_bookmarks.js"]
-skip-if = ["condprof"] # Bug 1769184 - by design for now
 
 ["test_ext_browsingData_downloads.js"]
 
 ["test_ext_browsingData_passwords.js"]
-skip-if = ["tsan"] # Times out, bug 1612707
 
 ["test_ext_browsingData_settings.js"]
 
@@ -44,7 +41,6 @@ skip-if = ["tsan"] # Times out, bug 1612707
 ["test_ext_pkcs11_management.js"]
 
 ["test_ext_settings_overrides_defaults.js"]
-skip-if = ["condprof"] # Bug 1776135 - by design, modifies search settings at start of test
 
 ["test_ext_settings_overrides_search.js"]
 
@@ -53,7 +49,6 @@ skip-if = ["condprof"] # Bug 1776135 - by design, modifies search settings at st
 ["test_ext_settings_validate.js"]
 
 ["test_ext_topSites.js"]
-skip-if = ["condprof"] # Bug 1769184 - by design for now
 
 ["test_ext_url_overrides_newtab.js"]
 

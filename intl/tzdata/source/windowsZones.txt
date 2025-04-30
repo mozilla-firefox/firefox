@@ -362,7 +362,7 @@ windowsZones:table(nofallback){
         }
         "Magallanes Standard Time"{
             001{"America/Punta_Arenas"}
-            CL{"America/Punta_Arenas"}
+            CL{"America/Punta_Arenas America/Coyhaique"}
         }
         "Marquesas Standard Time"{
             001{"Pacific/Marquesas"}

@@ -18,8 +18,9 @@
   <script class="testbody" type="text/javascript">
     "use strict";
 
+    let authenticatorId = null;
     add_task(async () => {
-      await addVirtualAuthenticator();
+      authenticatorId = await addVirtualAuthenticator();
     });
 
     is(navigator.authentication, undefined, "navigator.authentication does not exist any longer");
@@ -44,6 +45,8 @@
     add_task(test_too_many_credentials);
     add_task(test_unexpected_option_unknown_credential_type);
     add_task(test_empty_credential_list);
+    add_task(test_credential_protection_policy_uv_optional_with_list);
+    add_task(test_credential_protection_policy_uv_required);
 
     function requestGetAssertion(params) {
       return navigator.credentials.get(params);
@@ -205,6 +208,90 @@
       await requestGetAssertion({publicKey})
         .then(arrivingHereIsBad)
         .catch(expectNotAllowedError);
+    }
+
+    async function test_credential_protection_policy_uv_optional_with_list() {
+      let publicKey = {
+        rp: {id: document.domain, name: "none"},
+        user: {id: new Uint8Array(), name: "none", displayName: "none"},
+        challenge: crypto.getRandomValues(new Uint8Array(16)),
+        authenticatorSelection: { residentKey: "required"},
+        pubKeyCredParams: [{type: "public-key", alg: cose_alg_ECDSA_w_SHA256}],
+        extensions: { credentialProtectionPolicy: "userVerificationOptionalWithCredentialIDList" },
+      };
+
+      let protectedCred = null;
+      await navigator.credentials.create({publicKey})
+      .then(res => protectedCred = {type: "public-key", id: res.rawId} );
+
+      publicKey = {
+        challenge: gAssertionChallenge,
+        allowCredentials: [protectedCred],
+        userVerification: "discouraged"
+      };
+
+      // User verification is optional for this request. So it should succeed
+      // both with and without user verification as long as the credential ID
+      // is provided in allowCredentials.
+      setUserVerified(authenticatorId, true)
+      await requestGetAssertion({publicKey})
+        .then(arrivingHereIsGood)
+        .catch(arrivingHereIsBad);
+
+      setUserVerified(authenticatorId, false)
+      await requestGetAssertion({publicKey})
+        .then(arrivingHereIsGood)
+        .catch(arrivingHereIsBad);
+
+      // User verification is required if the credential ID is not provided in
+      // allowCredentials.
+      publicKey = {
+        challenge: gAssertionChallenge,
+        allowCredentials: [],
+        userVerification: "discouraged"
+      };
+      await requestGetAssertion({publicKey})
+        .then(arrivingHereIsBad)
+        .catch(arrivingHereIsGood);
+
+      setUserVerified(authenticatorId, true)
+      await requestGetAssertion({publicKey})
+        .then(arrivingHereIsGood)
+        .catch(arrivingHereIsBad);
+    }
+
+    async function test_credential_protection_policy_uv_required() {
+      let publicKey = {
+        rp: {id: document.domain, name: "none"},
+        user: {id: new Uint8Array(), name: "none", displayName: "none"},
+        challenge: crypto.getRandomValues(new Uint8Array(16)),
+        pubKeyCredParams: [{type: "public-key", alg: cose_alg_ECDSA_w_SHA256}],
+        extensions: { credentialProtectionPolicy: "userVerificationRequired" },
+      };
+
+      let protectedCred = null;
+      await navigator.credentials.create({publicKey})
+      .then(res => protectedCred = {type: "public-key", id: res.rawId} );
+
+      publicKey = {
+        challenge: gAssertionChallenge,
+        allowCredentials: [protectedCred],
+        userVerification: "discouraged"
+      };
+
+      // User verification is required; this should succeed.
+      setUserVerified(authenticatorId, true)
+      await requestGetAssertion({publicKey})
+        .then(arrivingHereIsGood)
+        .catch(arrivingHereIsBad);
+
+      // The same request should fail without user verification.
+      setUserVerified(authenticatorId, false)
+      await requestGetAssertion({publicKey})
+        .then(arrivingHereIsBad)
+        .catch(arrivingHereIsGood);
+
+      setUserVerified(authenticatorId, true)
     }
   </script>
 

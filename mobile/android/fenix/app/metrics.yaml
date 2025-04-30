@@ -3486,6 +3486,24 @@ metrics:
     metadata:
       tags:
         - Experiments
+  is_large_device:
+    type: boolean
+    lifetime: application
+    description: True if the device is a large screen device.
+    send_in_pings:
+      - metrics
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1962163
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D246425
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Experiments
 
 customize_home:
   most_visited_sites:

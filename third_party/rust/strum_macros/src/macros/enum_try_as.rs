@@ -23,7 +23,7 @@ pub fn enum_try_as_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
                 syn::Fields::Unnamed(values) => {
                     let variant_name = &variant.ident;
                     let types: Vec<_> = values.unnamed.iter().map(|field| {
-                        field.to_token_stream()
+                        field.ty.to_token_stream()
                     }).collect();
                     let field_names: Vec<_> = values.unnamed.iter().enumerate().map(|(i, _)| {
                         let name = "x".repeat(i + 1);

@@ -6,6 +6,7 @@
 #include "Instance.h"
 
 #include "Adapter.h"
+#include "js/Value.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/gfx/Logging.h"
@@ -19,8 +20,9 @@
 #include "mozilla/gfx/gfxVars.h"
 #include "mozilla/StaticPrefs_dom.h"
 #include "nsString.h"
+#include "nsStringFwd.h"
 
-#ifdef RELEASE_OR_BETA
+#ifndef EARLY_BETA_OR_EARLIER
 #  include "mozilla/dom/WorkerPrivate.h"
 #endif
 
@@ -103,37 +105,36 @@ already_AddRefed<dom::Promise> Instance::RequestAdapter(
   // -
   // Check if we should allow the request.
 
-  const auto errStr = [&]() -> std::optional<std::string_view> {
-#ifdef RELEASE_OR_BETA
-    if (true) {
-      return "WebGPU is not yet available in Release or Beta builds.";
+  std::optional<std::string_view> rejectionMessage = {};
+  const auto rejectIf = [&rejectionMessage](bool condition,
+                                            const char* message) {
+    if (condition && !rejectionMessage.has_value()) {
+      rejectionMessage = message;
     }
+  };
 
-    // NOTE: Deliberately left after the above check so that we only enter
-    // here if it's removed. Above is a more informative diagnostic, while the
-    // check is still present.
-    //
-    // Follow-up to remove this check:
-    // <https://bugzilla.mozilla.org/show_bug.cgi?id=1942431>
-    if (dom::WorkerPrivate* wp = dom::GetCurrentThreadWorkerPrivate()) {
-      if (wp->IsServiceWorker()) {
-        return "WebGPU in service workers is not yet available in Release or "
-               "Beta builds; see "
-               "<https://bugzilla.mozilla.org/show_bug.cgi?id=1942431>.";
-      }
-    }
+#ifndef EARLY_BETA_OR_EARLIER
+  rejectIf(true, "WebGPU is not yet available in Release or late Beta builds.");
+
+  // NOTE: Deliberately left after the above check so that we only enter
+  // here if it's removed. Above is a more informative diagnostic, while the
+  // check is still present.
+  //
+  // Follow-up to remove this check:
+  // <https://bugzilla.mozilla.org/show_bug.cgi?id=1942431>
+  if (dom::WorkerPrivate* wp = dom::GetCurrentThreadWorkerPrivate()) {
+    rejectIf(wp->IsServiceWorker(),
+             "WebGPU in service workers is not yet available in Release or "
+             "late Beta builds; see "
+             "<https://bugzilla.mozilla.org/show_bug.cgi?id=1942431>.");
+  }
 #endif
-    if (!gfx::gfxVars::AllowWebGPU()) {
-      return "WebGPU is disabled by blocklist.";
-    }
-    if (!StaticPrefs::dom_webgpu_enabled()) {
-      return "WebGPU is disabled because the `dom.webgpu.enabled` pref. is set "
-             "to `false`.";
-    }
-    return {};
-  }();
-  if (errStr) {
-    promise->MaybeRejectWithNotSupportedError(ToCString(*errStr));
+  rejectIf(!gfx::gfxVars::AllowWebGPU(), "WebGPU is disabled by blocklist.");
+  rejectIf(!StaticPrefs::dom_webgpu_enabled(),
+           "WebGPU is disabled because the `dom.webgpu.enabled` pref. is set "
+           "to `false`.");
+  if (rejectionMessage) {
+    promise->MaybeRejectWithNotSupportedError(ToCString(*rejectionMessage));
     return promise.forget();
   }
 
@@ -154,6 +155,31 @@ already_AddRefed<dom::Promise> Instance::RequestAdapter(
   }
 
   RefPtr<Instance> instance = this;
+
+  if (aOptions.mFeatureLevel.EqualsASCII("core")) {
+    // Good! That's all we support.
+  } else if (aOptions.mFeatureLevel.EqualsASCII("compatibility")) {
+    dom::AutoJSAPI api;
+    if (api.Init(mOwner)) {
+      JS::WarnUTF8(api.cx(),
+                   "User requested a WebGPU adapter with `featureLevel: "
+                   "\"compatibility\"`, which is not yet supported; returning "
+                   "a \"core\"-defaulting adapter for now. Subscribe to "
+                   "<https://bugzilla.mozilla.org/show_bug.cgi?id=1905951>"
+                   " for updates on its development in Firefox.");
+    }
+  } else {
+    NS_ConvertUTF16toUTF8 featureLevel(aOptions.mFeatureLevel);
+    dom::AutoJSAPI api;
+    if (api.Init(mOwner)) {
+      JS::WarnUTF8(api.cx(),
+                   "expected one of `\"core\"` or `\"compatibility\"` for "
+                   "`GPUAdapter.featureLevel`, got %s",
+                   featureLevel.get());
+    }
+    promise->MaybeResolve(JS::NullValue());
+    return promise.forget();
+  }
 
   bridge->InstanceRequestAdapter(aOptions)->Then(
       GetCurrentSerialEventTarget(), __func__,

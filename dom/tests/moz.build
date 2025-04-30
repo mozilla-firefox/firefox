@@ -16,15 +16,6 @@ with Files("browser/*autofocus*"):
 with Files("browser/*unload*"):
     BUG_COMPONENT = ("Core", "DOM: Events")
 
-with Files("browser/*1238427*"):
-    BUG_COMPONENT = ("Core", "DOM: Geolocation")
-
-with Files("browser/*Geolocation*"):
-    BUG_COMPONENT = ("Core", "DOM: Geolocation")
-
-with Files("browser/*geo_*"):
-    BUG_COMPONENT = ("Core", "DOM: Geolocation")
-
 with Files("browser/browser_cancel_keydown_keypress_event.js"):
     BUG_COMPONENT = ("Core", "DOM: UI Events & Focus Handling")
 
@@ -75,9 +66,6 @@ with Files("mochitest/gamepad/**"):
 # TODO: big mix of components here
 with Files("mochitest/general/**"):
     BUG_COMPONENT = ("Core", "DOM: Core & HTML")
-
-with Files("mochitest/geolocation/**"):
-    BUG_COMPONENT = ("Core", "DOM: Geolocation")
 
 with Files("mochitest/localstorage/**"):
     BUG_COMPONENT = ("Core", "Storage: localStorage & sessionStorage")
@@ -136,9 +124,6 @@ with Files("reftest/xml-stylesheet/**"):
 with Files("unit/**"):
     BUG_COMPONENT = ("Core", "DOM: Core & HTML")
 
-with Files("unit/*geolocation*"):
-    BUG_COMPONENT = ("Core", "DOM: Geolocation")
-
 with Files("unit/test_bug465752.js"):
     BUG_COMPONENT = ("Core", "CSS Parsing and Computation")
 
@@ -160,7 +145,6 @@ MOCHITEST_MANIFESTS += [
     "mochitest/fetch/mochitest.toml",
     "mochitest/gamepad/mochitest.toml",
     "mochitest/general/mochitest.toml",
-    "mochitest/geolocation/mochitest.toml",
     "mochitest/integer-gemm/mochitest.toml",
     "mochitest/keyhandling/mochitest.toml",
     "mochitest/localstorage/mochitest.toml",
@@ -178,7 +162,6 @@ MOCHITEST_CHROME_MANIFESTS += [
     "mochitest/chrome/chrome.toml",
     "mochitest/fs/chrome.toml",
     "mochitest/general/chrome.toml",
-    "mochitest/geolocation/chrome.toml",
     "mochitest/keyhandling/chrome.toml",
     "mochitest/localstorage/chrome.toml",
     "mochitest/sessionstorage/chrome.toml",

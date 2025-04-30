@@ -8,4 +8,6 @@
   <string name="text_field_eye_trailing_icon_default_content_description">显示隐藏文本</string>
   <!-- The default content description (not visible, for screen readers etc.): Cross trailing icon button in TextField used to clear input. -->
   <string name="text_field_cross_trailing_icon_default_content_description">清空文本</string>
+  <!-- Announcement made by the screen reader when the progress bar is shown and a page is loading -->
+  <string name="mozac_compose_base_progress_loading">正在加载</string>
 </resources>

@@ -22,6 +22,7 @@ sqlite3_bind_value
 sqlite3_bind_zeroblob
 sqlite3_busy_handler
 sqlite3_busy_timeout
+sqlite3_cancel_auto_extension
 sqlite3_carray_bind
 sqlite3_carray_init
 sqlite3_changes
@@ -65,6 +66,7 @@ sqlite3_db_config
 sqlite3_db_filename
 sqlite3_db_handle
 sqlite3_db_mutex
+sqlite3_db_name
 sqlite3_db_readonly
 sqlite3_db_status
 sqlite3_declare_vtab
@@ -74,6 +76,7 @@ sqlite3_errcode
 sqlite3_errmsg
 sqlite3_errmsg16
 sqlite3_error_offset
+sqlite3_errstr
 sqlite3_exec
 sqlite3_expanded_sql
 sqlite3_extended_errcode
@@ -87,6 +90,7 @@ sqlite3_get_auxdata
 sqlite3_get_table
 sqlite3_initialize
 sqlite3_interrupt
+sqlite3_is_interrupted
 sqlite3_last_insert_rowid
 sqlite3_libversion
 sqlite3_libversion_number

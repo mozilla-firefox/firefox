@@ -45,9 +45,14 @@ tags = "remote-settings"
 tags = "remote-settings"
 skip-if = ["a11y_checks"] # Bug 1854515 and 1858041 to investigate intermittent a11y_checks results (fails on Autoland, passes on Try)
 
+["browser_asrouter_universal_infobar.js"]
+
 ["browser_bookmarks_bar_button.js"]
 
 ["browser_feature_callout.js"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1796720
+]
 
 ["browser_feature_callout_in_chrome.js"]
 skip-if = [

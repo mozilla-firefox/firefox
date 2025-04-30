@@ -128,31 +128,6 @@ add_task(async function test_allTabsView() {
 });
 
 /**
- * @param {XULToolbarButton} triggerNode
- * @param {string} contextMenuId
- * @returns {Promise<XULMenuElement|XULPopupElement>}
- */
-async function getContextMenu(triggerNode, contextMenuId) {
-  let win = triggerNode.ownerGlobal;
-  triggerNode.scrollIntoView();
-  const contextMenu = win.document.getElementById(contextMenuId);
-  Assert.equal(contextMenu.state, "closed", "context menu is initially closed");
-  const contextMenuShown = BrowserTestUtils.waitForPopupEvent(
-    contextMenu,
-    "shown"
-  );
-
-  EventUtils.synthesizeMouseAtCenter(
-    triggerNode,
-    { type: "contextmenu", button: 2 },
-    win
-  );
-  await contextMenuShown;
-  Assert.equal(contextMenu.state, "open", "context menu has been opened");
-  return contextMenu;
-}
-
-/**
  * Tests that groups appear in the supplementary group menu
  * when they are saved (and closed,) or open in any window.
  * Clicking an open group in this menu focuses it,
@@ -655,5 +630,59 @@ add_task(async function test_tabGroupsIsolatedByPrivateness() {
   await closeTabsMenu(privateWindow);
 
   await BrowserTestUtils.closeWindow(privateWindow, { animate: false });
+  forgetSavedTabGroups();
+});
+
+/**
+ * Tests that creating a new tab group using the tab context menu in the
+ * all tabs list will correctly update the all tabs list when it is next opened.
+ */
+add_task(async function test_createGroupFromTabContextMenu() {
+  let tabs = [];
+  for (let i = 1; i <= 2; i++) {
+    tabs.push(
+      await addTab(`data:text/plain,tab${i}`, {
+        skipAnimation: true,
+      })
+    );
+  }
+  await assertTabMenuContains([
+    "New Tab",
+    "data:text/plain,tab1",
+    "data:text/plain,tab2",
+  ]);
+  let allTabsMenu = await openTabsMenu();
+  let tabsButtons = Array.from(
+    allTabsMenu.querySelectorAll(
+      "#allTabsMenu-allTabsView-tabs .all-tabs-button"
+    )
+  );
+  let tab1Button = tabsButtons.find(
+    button => button.label == "data:text/plain,tab1"
+  );
+  Assert.ok(tab1Button, "tab1 is present in the all tabs menu");
+  info("open tab1's tab context menu and create a new tab group from it");
+  let tabContextMenu = await getContextMenu(tab1Button, "tabContextMenu");
+  let createNewGroupButton = document.getElementById(
+    "context_moveTabToNewGroup"
+  );
+  let tabGroupCreatePromise = BrowserTestUtils.waitForEvent(
+    gBrowser.tabContainer,
+    "TabGroupCreate"
+  );
+  createNewGroupButton.click();
+  await tabGroupCreatePromise;
+  await closeContextMenu(tabContextMenu);
+
+  await assertTabMenuContains([
+    "New Tab",
+    "Unnamed Group",
+    "data:text/plain,tab1",
+    "data:text/plain,tab2",
+  ]);
+
+  for (let tab of tabs) {
+    BrowserTestUtils.removeTab(tab);
+  }
   forgetSavedTabGroups();
 });

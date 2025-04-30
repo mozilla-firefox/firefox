@@ -1938,15 +1938,6 @@ uint64_t RestyleManager::GetAnimationGenerationForFrame(nsIFrame* aStyleFrame) {
   return effectSet ? effectSet->GetAnimationGeneration() : 0;
 }
 
-void RestyleManager::IncrementAnimationGeneration() {
-  // We update the animation generation at start of each call to
-  // ProcessPendingRestyles so we should ignore any subsequent (redundant)
-  // calls that occur while we are still processing restyles.
-  if (!mInStyleRefresh) {
-    ++mAnimationGeneration;
-  }
-}
-
 /* static */
 void RestyleManager::AddLayerChangesForAnimation(
     nsIFrame* aStyleFrame, nsIFrame* aPrimaryFrame, Element* aElement,
@@ -3241,10 +3232,6 @@ void RestyleManager::DoProcessPendingRestyles(ServoTraversalFlags aFlags) {
 
   ServoStyleSet* styleSet = StyleSet();
   Document* doc = presContext->Document();
-
-  // Ensure the refresh driver is active during traversal to avoid mutating
-  // mActiveTimer and mMostRecentRefresh time.
-  presContext->RefreshDriver()->MostRecentRefresh();
 
   if (!doc->GetServoRestyleRoot()) {
     // This might post new restyles, so need to do it here. Don't do it if we're

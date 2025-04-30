@@ -109,7 +109,11 @@ parent:
                               OriginAttributes originAttributes,
                               DNSFlags flags, nsresult reason);
 
-  async PDataChannel();
+  /**
+   * channelId is used to establish a connection between redirect channels in
+   * the parent and the child when we're redirecting to a data: URI.
+   */
+  async PDataChannel(uint32_t channelId);
 #ifdef MOZ_WIDGET_GTK
   async PGIOChannel(nullable PBrowser browser, SerializedLoadContext loadContext, GIOChannelCreationArgs args);
 #endif

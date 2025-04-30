@@ -18,7 +18,10 @@ export const g = makeTestGroup(AllFeaturesMaxLimitsGPUTest);
 
 interface TypeConfig {
   // The value to store the workgroup variable.
-  store_val: string;
+  store_val?: string;
+  // The complete declaration used to initialize the workgroup variable,
+  // overriding the default assignment using 'store_val'.
+  store_decl?: string;
   // The expected values once the variable has been copied back to the host.
   expected: TypedArrayBufferView;
   // The type used for the host-visible buffer, if different from the workgroup variable.
@@ -87,6 +90,16 @@ const kTypes: Record<string, TypeConfig> = {
       0xdeadbeef, 0xdeadbeef, 0xdeadbeef, 0x12345678,
     ]),
   },
+  'atomic<u32>': {
+    store_decl: `atomicStore(&(wgvar), 42u);`,
+    host_type: 'u32',
+    expected: new Uint32Array([42]),
+  },
+  'atomic<i32>': {
+    store_decl: `atomicStore(&(wgvar), -42i);`,
+    host_type: 'i32',
+    expected: new Int32Array([-42]),
+  },
 };
 
 g.test('types')
@@ -135,7 +148,7 @@ g.test('types')
     @compute @workgroup_size(${wgsize_x}, ${wgsize_y})
     fn main(@builtin(local_invocation_index) lid: u32) {
       if (lid == ${num_invocations - 1}) {
-        wgvar = ${type.store_val};
+        ${type.store_decl ?? `wgvar = ${type.store_val};`}
       }
       buffer[lid] = ${load};
     }

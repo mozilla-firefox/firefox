@@ -533,7 +533,7 @@ class TargetCompileFlags(BaseCompileFlags):
                 "`%s` may not be set in COMPILE_FLAGS from moz.build, this "
                 "value is resolved from the emitter." % key
             )
-        if not (isinstance(value, list) and all(isinstance(v, (str,)) for v in value)):
+        if not (isinstance(value, list) and all(isinstance(v, str) for v in value)):
             raise ValueError(
                 "A list of strings must be provided as a value for a compile "
                 "flags category."

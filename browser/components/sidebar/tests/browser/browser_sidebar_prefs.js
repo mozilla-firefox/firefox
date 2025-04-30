@@ -170,7 +170,7 @@ add_task(async function test_flip_revamp_pref() {
   // Open history sidebar
   await toggleSidebarPanel(win, "viewHistorySidebar");
 
-  await SpecialPowers.pushPrefEnv({ set: [["sidebar.verticalTabs", true]] });
+  await SpecialPowers.pushPrefEnv({ set: [[VERTICAL_TABS_PREF, true]] });
   await waitForTabstripOrientation("vertical", win);
   ok(BrowserTestUtils.isVisible(verticalTabs), "Vertical tabs slot is visible");
   ok(
@@ -182,7 +182,7 @@ add_task(async function test_flip_revamp_pref() {
     "Revamped sidebar container is shown initially."
   );
   Assert.equal(
-    Services.prefs.getStringPref("sidebar.visibility"),
+    Services.prefs.getStringPref(SIDEBAR_VISIBILITY_PREF),
     "always-show",
     "Sanity check the visibilty pref when verticalTabs are enabled"
   );

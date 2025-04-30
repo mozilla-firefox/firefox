@@ -865,78 +865,25 @@ class AppStoreTest {
     }
 
     @Test
-    fun `WHEN the close action is dispatched THEN the setup checklist state remains the same`() {
+    fun `WHEN init action is dispatched THEN the setup checklist state remains the same`() {
         val appState = AppState(setupChecklistState = SetupChecklistState())
 
-        appStore.testDispatch(AppAction.SetupChecklistAction.Closed)
+        appStore.testDispatch(AppAction.SetupChecklistAction.Init)
 
         assertEquals(SetupChecklistState(), appState.setupChecklistState)
     }
 
     @Test
+    fun `WHEN closed action is dispatched THEN the setup checklist state visible value is updated`() {
+        val appState = AppState(setupChecklistState = SetupChecklistState())
+
+        appStore.testDispatch(AppAction.SetupChecklistAction.Closed)
+
+        assertEquals(SetupChecklistState(isVisible = true), appState.setupChecklistState)
+    }
+
+    @Test
     fun `WHEN a group item is clicked action is dispatched THEN the group's expanded state is updated`() {
-        val group = ChecklistItem.Group(
-            title = R.string.setup_checklist_group_essentials,
-            tasks = listOf(),
-            isExpanded = false,
-        )
-
-        val appState =
-            AppState(setupChecklistState = SetupChecklistState(checklistItems = listOf(group)))
-        val store = AppStore(appState)
-        store.testDispatch(AppAction.SetupChecklistAction.ChecklistItemClicked(group))
-
-        assertTrue((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Group).isExpanded)
-    }
-
-    @Test
-    fun `WHEN a task item is clicked action is dispatched THEN the task's completed state is updated`() {
-        val task = ChecklistItem.Task(
-            type = ChecklistItem.Task.Type.EXPLORE_EXTENSION,
-            title = R.string.setup_checklist_task_default_browser,
-            icon = R.drawable.ic_addons_extensions,
-            isCompleted = false,
-        )
-
-        val appState =
-            AppState(setupChecklistState = SetupChecklistState(checklistItems = listOf(task)))
-        val store = AppStore(appState)
-        store.testDispatch(AppAction.SetupChecklistAction.ChecklistItemClicked(task))
-
-        assertTrue((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Task).isCompleted)
-    }
-
-    @Test
-    fun `GIVEN tasks in a group WHEN a task is clicked THEN only the clicked task's completed state is updated`() {
-        val clickedTask = ChecklistItem.Task(
-            type = ChecklistItem.Task.Type.SET_AS_DEFAULT,
-            title = R.string.setup_checklist_task_default_browser,
-            icon = R.drawable.ic_addons_extensions,
-            isCompleted = false,
-        )
-        val notClickedTask = ChecklistItem.Task(
-            type = ChecklistItem.Task.Type.INSTALL_SEARCH_WIDGET,
-            title = R.string.setup_checklist_task_search_widget,
-            icon = R.drawable.ic_addons_extensions,
-            isCompleted = false,
-        )
-        val group = ChecklistItem.Group(
-            title = R.string.setup_checklist_group_essentials,
-            tasks = listOf(clickedTask, notClickedTask),
-            isExpanded = true,
-        )
-
-        val appState =
-            AppState(setupChecklistState = SetupChecklistState(checklistItems = listOf(group)))
-        val store = AppStore(appState)
-        store.testDispatch(AppAction.SetupChecklistAction.ChecklistItemClicked(clickedTask))
-
-        assertTrue((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Group).tasks[0].isCompleted)
-        assertFalse((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Group).tasks[1].isCompleted)
-    }
-
-    @Test
-    fun `GIVEN a group is expanded WHEN a different group is clicked THEN the clicked group becomes expanded and the previously expanded group collapses`() {
         val expandedGroup = ChecklistItem.Group(
             title = R.string.setup_checklist_group_essentials,
             tasks = listOf(
@@ -981,5 +928,77 @@ class AppStoreTest {
         // Verify that the expanded group was collapsed, and the other one got expanded
         assertFalse((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Group).isExpanded)
         assertTrue((store.state.setupChecklistState!!.checklistItems[1] as ChecklistItem.Group).isExpanded)
+    }
+
+    @Test
+    fun `WHEN a task item is clicked action is dispatched THEN the task's completed state is not updated`() {
+        val task = ChecklistItem.Task(
+            type = ChecklistItem.Task.Type.EXPLORE_EXTENSION,
+            title = R.string.setup_checklist_task_default_browser,
+            icon = R.drawable.ic_addons_extensions,
+            isCompleted = false,
+        )
+
+        val appState =
+            AppState(setupChecklistState = SetupChecklistState(checklistItems = listOf(task)))
+        val store = AppStore(appState)
+        store.testDispatch(AppAction.SetupChecklistAction.ChecklistItemClicked(task))
+
+        assertFalse((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Task).isCompleted)
+    }
+
+    @Test
+    fun `WHEN a task preference updated action is dispatched THEN the task's completed state is updated`() {
+        val task = ChecklistItem.Task(
+            type = ChecklistItem.Task.Type.EXPLORE_EXTENSION,
+            title = R.string.setup_checklist_task_default_browser,
+            icon = R.drawable.ic_addons_extensions,
+            isCompleted = false,
+        )
+
+        val appState =
+            AppState(setupChecklistState = SetupChecklistState(checklistItems = listOf(task)))
+        val store = AppStore(appState)
+        store.testDispatch(AppAction.SetupChecklistAction.TaskPreferenceUpdated(task.type, true))
+
+        assertTrue((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Task).isCompleted)
+
+        store.testDispatch(AppAction.SetupChecklistAction.TaskPreferenceUpdated(task.type, false))
+
+        assertFalse((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Task).isCompleted)
+    }
+
+    @Test
+    fun `WHEN a groups task preference is updated THEN only the updated task's completed state is updated`() {
+        val updatedTask = ChecklistItem.Task(
+            type = ChecklistItem.Task.Type.SET_AS_DEFAULT,
+            title = R.string.setup_checklist_task_default_browser,
+            icon = R.drawable.ic_addons_extensions,
+            isCompleted = false,
+        )
+        val nonUpdatedTask = ChecklistItem.Task(
+            type = ChecklistItem.Task.Type.INSTALL_SEARCH_WIDGET,
+            title = R.string.setup_checklist_task_search_widget,
+            icon = R.drawable.ic_addons_extensions,
+            isCompleted = false,
+        )
+        val group = ChecklistItem.Group(
+            title = R.string.setup_checklist_group_essentials,
+            tasks = listOf(updatedTask, nonUpdatedTask),
+            isExpanded = true,
+        )
+
+        val appState =
+            AppState(setupChecklistState = SetupChecklistState(checklistItems = listOf(group)))
+        val store = AppStore(appState)
+        store.testDispatch(AppAction.SetupChecklistAction.TaskPreferenceUpdated(updatedTask.type, true))
+
+        assertTrue((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Group).tasks[0].isCompleted)
+        assertFalse((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Group).tasks[1].isCompleted)
+
+        store.testDispatch(AppAction.SetupChecklistAction.TaskPreferenceUpdated(updatedTask.type, false))
+
+        assertFalse((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Group).tasks[0].isCompleted)
+        assertFalse((store.state.setupChecklistState!!.checklistItems[0] as ChecklistItem.Group).tasks[1].isCompleted)
     }
 }

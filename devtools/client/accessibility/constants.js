@@ -116,13 +116,13 @@ exports.ACCESSIBLE_EVENTS = [
 exports.A11Y_LEARN_MORE_LINK =
   "https://firefox-source-docs.mozilla.org/devtools-user/accessibility_inspector/";
 exports.A11Y_CONTRAST_LEARN_MORE_LINK =
-  "https://developer.mozilla.org/docs/Web/Accessibility/Understanding_WCAG/Perceivable/" +
+  "https://developer.mozilla.org/docs/Web/Accessibility/Guides/Understanding_WCAG/Perceivable/" +
   "Color_contrast?utm_source=devtools&utm_medium=a11y-panel-checks-color-contrast";
 exports.A11Y_SIMULATION_DOCUMENTATION_LINK =
   "https://firefox-source-docs.mozilla.org/devtools-user/accessibility_inspector/simulation/";
 
 const A11Y_TEXT_LABEL_LINK_BASE =
-  "https://developer.mozilla.org/docs/Web/Accessibility/Understanding_WCAG/Text_labels_and_names" +
+  "https://developer.mozilla.org/docs/Web/Accessibility/Guides/Understanding_WCAG/Text_labels_and_names" +
   "?utm_source=devtools&utm_medium=a11y-panel-checks-text-label";
 
 const A11Y_TEXT_LABEL_LINK_IDS = {
@@ -157,7 +157,7 @@ for (const key in A11Y_TEXT_LABEL_LINK_IDS) {
 exports.A11Y_TEXT_LABEL_LINKS = A11Y_TEXT_LABEL_LINKS;
 
 const A11Y_KEYBOARD_LINK_BASE =
-  "https://developer.mozilla.org/docs/Web/Accessibility/Understanding_WCAG/Keyboard" +
+  "https://developer.mozilla.org/docs/Web/Accessibility/Guides/Understanding_WCAG/Keyboard" +
   "?utm_source=devtools&utm_medium=a11y-panel-checks-keyboard";
 
 const A11Y_KEYBOARD_LINK_IDS = {

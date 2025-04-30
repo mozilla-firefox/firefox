@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-GeckoSharedLibrary("AccessibleMarshal", linkage=None)
+GeckoSharedLibrary("AccessibleMarshal")
 
 # Missing here, is the notion that changes to the idl files included by
 # ISimpleDOM.idl (e.g. ISimpleDOMNode.idl) should rebuild the outputs.

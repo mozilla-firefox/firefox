@@ -13,7 +13,7 @@ import java.util.Locale
 class LocaleSettingsStoreTest {
 
     private lateinit var localeSettingsStore: LocaleSettingsStore
-    private val selectedLocale = Locale("en", "UK")
+    private val selectedLocale = Locale.Builder().setLanguage("en").setRegion("UK").build()
     private val otherLocale = Locale.Builder().setLanguage("fr").build()
 
     @Before

@@ -7,15 +7,12 @@ support-files = [
   "page_localstorage_coop+coep.html",
   "page_localstorage_coop+coep.html^headers^",
   "page_localstorage_snapshotting.html",
-  "position.html",
   "test-console-api.html",
   "test_bug1004814.html",
   "worker_bug1004814.js",
-  "geo_leak_test.html",
   "dummy.html",
   "dummy.png",
   "helper_localStorage.js",
-  "!/dom/tests/mochitest/geolocation/network_geolocation.sjs",
 ]
 
 ["browser_ConsoleAPI_originAttributes.js"]
@@ -37,14 +34,8 @@ https_first_disabled = true
 
 ["browser_bug1004814.js"]
 
-["browser_bug1008941_dismissGeolocationHanger.js"]
-tags = "geolocation"
-
 ["browser_bug1236512.js"]
 skip-if = ["os == 'linux' && os_version == '18.04' && processor == 'x86_64'"]
-
-["browser_bug1238427.js"]
-https_first_disabled = true
 
 ["browser_bug1316330.js"]
 
@@ -79,9 +70,6 @@ support-files = ["prevent_return_key.html"]
 support-files = ["file_empty.html"]
 
 ["browser_frame_elements.js"]
-
-["browser_geolocation_override.js"]
-support-files = ["file_empty.html"]
 
 ["browser_hasActivePeerConnections.js"]
 support-files = ["create_webrtc_peer_connection.html"]

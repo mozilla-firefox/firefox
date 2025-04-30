@@ -258,6 +258,10 @@ class WasmMemoryObject : public NativeObject {
   static bool discardImpl(JSContext* cx, const CallArgs& args);
   static bool discard(JSContext* cx, unsigned argc, Value* vp);
   static uint64_t growShared(Handle<WasmMemoryObject*> memory, uint64_t delta);
+  static bool toFixedLengthBufferImpl(JSContext* cx, const CallArgs& args);
+  static bool toFixedLengthBuffer(JSContext* cx, unsigned argc, Value* vp);
+  static bool toResizableBufferImpl(JSContext* cx, const CallArgs& args);
+  static bool toResizableBuffer(JSContext* cx, unsigned argc, Value* vp);
 
   using InstanceSet = JS::WeakCache<GCHashSet<
       WeakHeapPtr<WasmInstanceObject*>,
@@ -265,6 +269,13 @@ class WasmMemoryObject : public NativeObject {
   bool hasObservers() const;
   InstanceSet& observers() const;
   InstanceSet* getOrCreateObservers(JSContext* cx);
+
+  // The spec requires that the buffer property will create a new fixed length
+  // SAB if the underlying raw buffer's length has changed. The method creates
+  // new objects and updates the BUFFER_SLOT slot.
+  static ArrayBufferObjectMaybeShared* refreshBuffer(
+      JSContext* cx, Handle<WasmMemoryObject*> memoryObj,
+      Handle<ArrayBufferObjectMaybeShared*> buffer);
 
  public:
   static const unsigned RESERVED_SLOTS = 3;

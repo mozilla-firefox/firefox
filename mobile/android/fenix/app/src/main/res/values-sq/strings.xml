@@ -834,8 +834,6 @@
   <string name="preferences_override_account_server">Shërbyes vetjak llogarish Mozilla</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Shërbyes vetjak Sync</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">U ndryshua llogari Mozilla/shërbyes Njëkohësimesh. Po mbyllet aplikacioni, për të aplikuar ndryshimet…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Llogari</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1486,11 +1484,11 @@
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Ndani kartelën me të tjerë</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Jeni i sigurt se doni të fshihen objektet e përzgjedhur?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Jeni i sigurt se doni të fshihen objektet e përzgjedhur?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Fshije</string>
+  <string name="download_delete_multi_select_dialog_confirm">Fshije</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Anuloje</string>
+  <string name="download_delete_multi_select_dialog_cancel">Anuloje</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Në punë e sipër</string>
   <!--
@@ -1521,9 +1519,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Shkarkimi dështoi</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Kërko te shkarkimet</string>
+  <string name="download_search_placeholder">Kërko te shkarkimet</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">S’u gjetën përfundime</string>
+  <string name="download_search_no_results_found">S’u gjetën përfundime</string>
   <!--
     Downloads Content Type Filters
 
@@ -2274,7 +2272,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Ikonë parapëlqimi përjashtimi nga mbrojtje e thelluar nga gjurmimi</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->

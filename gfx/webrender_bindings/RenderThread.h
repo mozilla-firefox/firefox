@@ -209,7 +209,8 @@ class RenderThread final {
 
   /// Can only be called from the render thread.
   void UpdateAndRender(wr::WindowId aWindowId, const VsyncId& aStartId,
-                       const TimeStamp& aStartTime, bool aRender,
+                       const TimeStamp& aStartTime,
+                       const wr::FrameReadyParams& aParams,
                        const Maybe<gfx::IntSize>& aReadbackSize,
                        const Maybe<wr::ImageFormat>& aReadbackFormat,
                        const Maybe<Range<uint8_t>>& aReadbackBuffer,
@@ -274,8 +275,8 @@ class RenderThread final {
   // RenderNotifier implementation
   void WrNotifierEvent_WakeUp(WrWindowId aWindowId, bool aCompositeNeeded);
   void WrNotifierEvent_NewFrameReady(WrWindowId aWindowId,
-                                     bool aCompositeNeeded,
-                                     FramePublishId aPublishId);
+                                     wr::FramePublishId aPublishId,
+                                     const wr::FrameReadyParams* aParams);
   void WrNotifierEvent_ExternalEvent(WrWindowId aWindowId, size_t aRawEvent);
 
   /// Can be called from any thread.
@@ -371,34 +372,41 @@ class RenderThread final {
     const Tag mTag;
 
    private:
-    WrNotifierEvent(const Tag aTag, const bool aCompositeNeeded)
-        : mTag(aTag), mCompositeNeeded(aCompositeNeeded) {
-      MOZ_ASSERT(mTag == Tag::WakeUp);
-    }
-    WrNotifierEvent(const Tag aTag, bool aCompositeNeeded,
-                    FramePublishId aPublishId)
-        : mTag(aTag),
-          mCompositeNeeded(aCompositeNeeded),
-          mPublishId(aPublishId) {
+    WrNotifierEvent(const Tag aTag, wr::FramePublishId aPublishId,
+                    wr::FrameReadyParams aParams)
+        : mTag(aTag), mPublishId(aPublishId), mParams(aParams) {
       MOZ_ASSERT(mTag == Tag::NewFrameReady);
+    }
+    WrNotifierEvent(const Tag aTag, wr::FrameReadyParams aParams)
+        : mTag(aTag), mParams(aParams) {
+      MOZ_ASSERT(mTag == Tag::WakeUp);
     }
     WrNotifierEvent(const Tag aTag, UniquePtr<RendererEvent>&& aRendererEvent)
         : mTag(aTag), mRendererEvent(std::move(aRendererEvent)) {
       MOZ_ASSERT(mTag == Tag::ExternalEvent);
     }
 
-    const bool mCompositeNeeded = false;
-    const FramePublishId mPublishId = FramePublishId::INVALID;
+    const wr::FramePublishId mPublishId = wr::FramePublishId::INVALID;
+    const wr::FrameReadyParams mParams = {
+        .present = false,
+        .render = false,
+        .scrolled = false,
+    };
     UniquePtr<RendererEvent> mRendererEvent;
 
    public:
     static WrNotifierEvent WakeUp(const bool aCompositeNeeded) {
-      return WrNotifierEvent(Tag::WakeUp, aCompositeNeeded);
+      wr::FrameReadyParams params = {
+          .present = aCompositeNeeded,
+          .render = aCompositeNeeded,
+          .scrolled = false,
+      };
+      return WrNotifierEvent(Tag::WakeUp, params);
     }
 
-    static WrNotifierEvent NewFrameReady(const bool aCompositeNeeded,
-                                         const FramePublishId aPublishId) {
-      return WrNotifierEvent(Tag::NewFrameReady, aCompositeNeeded, aPublishId);
+    static WrNotifierEvent NewFrameReady(FramePublishId aPublishId,
+                                         const wr::FrameReadyParams* aParams) {
+      return WrNotifierEvent(Tag::NewFrameReady, aPublishId, *aParams);
     }
 
     static WrNotifierEvent ExternalEvent(
@@ -406,18 +414,16 @@ class RenderThread final {
       return WrNotifierEvent(Tag::ExternalEvent, std::move(aRendererEvent));
     }
 
-    bool CompositeNeeded() {
-      if (mTag == Tag::WakeUp || mTag == Tag::NewFrameReady) {
-        return mCompositeNeeded;
-      }
-      MOZ_ASSERT_UNREACHABLE("unexpected to be called");
-      return false;
+    const wr::FrameReadyParams& FrameReadyParams() const {
+      MOZ_ASSERT(mTag == Tag::NewFrameReady || mTag == Tag::WakeUp,
+                 "Unexpected NotiferEvent tag");
+      return mParams;
     }
     FramePublishId PublishId() {
       if (mTag == Tag::NewFrameReady) {
         return mPublishId;
       }
-      MOZ_ASSERT_UNREACHABLE("unexpected to be called");
+      MOZ_ASSERT_UNREACHABLE("Unexpected NotiferEvent tag");
       return FramePublishId::INVALID;
     }
     UniquePtr<RendererEvent> ExternalEvent() {
@@ -425,14 +431,15 @@ class RenderThread final {
         MOZ_ASSERT(mRendererEvent);
         return std::move(mRendererEvent);
       }
-      MOZ_ASSERT_UNREACHABLE("unexpected to be called");
+      MOZ_ASSERT_UNREACHABLE("Unexpected NotiferEvent tag");
       return nullptr;
     }
   };
 
   explicit RenderThread(RefPtr<nsIThread> aThread);
 
-  void HandleFrameOneDocInner(wr::WindowId aWindowId, bool aRender,
+  void HandleFrameOneDocInner(wr::WindowId aWindowId,
+                              const wr::FrameReadyParams& aParams,
                               bool aTrackedFrame,
                               Maybe<FramePublishId> aPublishId);
 
@@ -441,7 +448,7 @@ class RenderThread final {
   void InitDeviceTask();
   void PostResumeShaderWarmupRunnable();
   void ResumeShaderWarmup();
-  void HandleFrameOneDoc(wr::WindowId aWindowId, bool aRender,
+  void HandleFrameOneDoc(wr::WindowId aWindowId, const wr::FrameReadyParams&,
                          bool aTrackedFrame, Maybe<FramePublishId> aPublishId);
   void RunEvent(wr::WindowId aWindowId, UniquePtr<RendererEvent> aEvent,
                 bool aViaWebRender);
@@ -463,10 +470,10 @@ class RenderThread final {
   void PostWrNotifierEvents(WrWindowId aWindowId, WindowInfo* aInfo);
   void HandleWrNotifierEvents(WrWindowId aWindowId);
   void WrNotifierEvent_HandleWakeUp(wr::WindowId aWindowId,
-                                    bool aCompositeNeeded);
+                                    const wr::FrameReadyParams& aParams);
   void WrNotifierEvent_HandleNewFrameReady(wr::WindowId aWindowId,
-                                           bool aCompositeNeeded,
-                                           FramePublishId aPublishId);
+                                           wr::FramePublishId aPublishId,
+                                           const wr::FrameReadyParams& aParams);
   void WrNotifierEvent_HandleExternalEvent(
       wr::WindowId aWindowId, UniquePtr<RendererEvent> aRendererEvent);
 

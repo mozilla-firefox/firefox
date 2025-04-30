@@ -313,9 +313,6 @@ shopping-callout-not-opted-in-integrated-paragraph1 = Turn on Review Checker fro
 shopping-callout-not-opted-in-integrated-paragraph2 = By selecting “{ shopping-opt-in-integrated-button }” you agree to { -brand-product-name }’s <a data-l10n-name="privacy_policy">privacy notice</a> and { -fakespot-brand-full-name }’s <a data-l10n-name="terms_of_use">terms of use</a>.
 shopping-callout-not-opted-in-integrated-reminder-dismiss-button = Dismiss
 shopping-callout-not-opted-in-integrated-reminder-accept-button = Turn on Review Checker
-shopping-callout-not-opted-in-integrated-reminder-do-not-show = Don’t show this recommendation again
-shopping-callout-not-opted-in-integrated-reminder-show-fewer = Show fewer recommendations
-shopping-callout-not-opted-in-integrated-reminder-manage-settings = Manage settings
 
 shopping-opt-in-integrated-privacy-policy-and-terms-of-use = Review Checker is powered by { -fakespot-brand-full-name }. By selecting “{ shopping-opt-in-integrated-button }” you agree to { -brand-product-name }’s <a data-l10n-name="privacy_policy">privacy notice</a> and { -fakespot-brand-name }’s <a data-l10n-name="terms_of_use">terms of use</a>.
 shopping-opt-in-integrated-button = Try Review Checker

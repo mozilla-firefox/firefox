@@ -1,12 +1,10 @@
 [versions]
 # AGP
-android-gradle-plugin = "8.9.1" # Keep lint version in sync
-lint = "31.9.1"
+android-gradle-plugin = "8.9.2" # Keep lint version in sync
+lint = "31.9.2"
 
 python-envs-plugin = "0.0.31"
 maven-ant-tasks = "2.1.3"
-okhttp = "4.12.0"
-okio = "3.10.1"
 androidsvg = "1.4"
 detekt = "1.23.8"
 ktlint = "0.49.1"
@@ -30,7 +28,7 @@ concurrent = "1.2.0"
 constraintlayout = "2.2.1"
 constraintlayout-compose = "1.1.1"
 coordinatorlayout = "1.3.0"
-core = "1.15.0"
+core = "1.16.0"
 core-splashscreen = "1.0.1"
 datastore = "1.1.4"
 drawerlayout = "1.2.0"
@@ -52,15 +50,15 @@ viewpager2 = "1.1.0"
 work = "2.10.0"
 
 # Google versions
-accompanist = "0.37.0"
+accompanist = "0.37.3"
 desugar-jdk-libs = "2.1.5"
 firebase-messaging = "24.1.1"
 installreferrer = "2.2"
 material = "1.12.0"
 osslicenses-plugin = "0.10.6"
 play-review = "2.0.2"
-play-services-ads-id = "18.1.0"
-play-services-base = "18.6.0"
+play-services-ads-id = "18.2.0"
+play-services-base = "18.7.0"
 play-services-fido = "21.2.0"
 protobuf = "4.30.2" # Keep Protobuf in sync with the version used by AppServices.
 
@@ -72,6 +70,7 @@ jacoco = "0.8.13"
 kotlin-dsl = "5.2.0"
 protobuf-plugin = "0.9.5"
 scip-java = "0.10.4"
+semanticdb-kotlinc = "0.5.0"
 
 # Kotlin versions
 coroutines = "1.10.2"
@@ -81,7 +80,7 @@ serialization = "1.8.1"
 
 # Mozilla versions
 apilint = "0.5.4"
-mozilla-glean = "64.0.1"
+mozilla-glean = "64.1.1"
 
 # Testing versions
 androidx-test = "1.6.1"
@@ -97,11 +96,13 @@ mockk = "1.14.0"
 robolectric = "4.14.1"
 
 # Third party library versions
-adjust = "5.1.0"
-sentry = "8.6.0"
+adjust = "5.3.0"
+okhttp = "4.12.0"
+okio = "3.11.0"
+sentry = "8.9.0"
 
 commons-exec = "1.3"
-spotless = "6.25.0"
+spotless = "7.0.2"
 tomlj = "1.1.0"
 
 [libraries]
@@ -245,6 +246,7 @@ jna = { group = "net.java.dev.jna", name = "jna", version.ref = "jna" }
 
 # Gradle plugins
 semanticdb-java = { group = "com.sourcegraph", name = "semanticdb-javac", version.ref = "scip-java" }
+semanticdb-kotlin = { group = "com.github.mozsearch", name = "semanticdb-kotlinc", version.ref = "semanticdb-kotlinc" }
 
 glean-gradle-plugin = { group = "org.mozilla.telemetry", name = "glean-gradle-plugin", version.ref = "mozilla-glean" }
 kotlin-annotations-jvm = { group = "org.jetbrains.kotlin", name = "kotlin-annotations-jvm", version.ref = "kotlin" }

@@ -6,6 +6,7 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   PanelMultiView: "resource:///modules/PanelMultiView.sys.mjs",
+  TabMetrics: "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs",
 });
 
 const TAB_DROP_TYPE = "application/x-moz-tabbrowser-tab";
@@ -163,9 +164,14 @@ class TabsListBase {
     if (!this.#domRefreshPending) {
       this.#domRefreshPending = true;
       this.containerNode.ownerGlobal.requestAnimationFrame(() => {
-        this.#domRefreshPending = false;
-        this._cleanupDOM();
-        this._populateDOM();
+        if (this.#domRefreshPending) {
+          this.#domRefreshPending = false;
+          if (this.listenersRegistered) {
+            // Only re-render the menu DOM if the menu is still open.
+            this._cleanupDOM();
+            this._populateDOM();
+          }
+        }
       });
     }
   }
@@ -318,7 +324,9 @@ export class TabsPanel extends TabsListBase {
           break;
         }
         if (event.target.classList.contains("all-tabs-close-button")) {
-          this.gBrowser.removeTab(event.target.tab);
+          this.gBrowser.removeTab(event.target.tab, {
+            telemetrySource: lazy.TabMetrics.METRIC_SOURCE.TAB_OVERFLOW_MENU,
+          });
           break;
         }
         if ("tabGroupId" in event.target.dataset) {

@@ -77,7 +77,7 @@ struct MinimalFunc : MinimalAlloc {
       return false;
     }
     RenumberBlocks(graph);
-    if (!BuildDominatorTree(graph)) {
+    if (!BuildDominatorTree(&mir, graph)) {
       return false;
     }
     if (!BuildPhiReverseMapping(graph)) {
@@ -95,7 +95,7 @@ struct MinimalFunc : MinimalAlloc {
       return false;
     }
     RenumberBlocks(graph);
-    if (!BuildDominatorTree(graph)) {
+    if (!BuildDominatorTree(&mir, graph)) {
       return false;
     }
     if (!BuildPhiReverseMapping(graph)) {

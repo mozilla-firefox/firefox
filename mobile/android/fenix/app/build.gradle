@@ -54,9 +54,9 @@ android {
 
     defaultConfig {
         applicationId "org.mozilla"
-        minSdkVersion = config.minSdkVersion
-        compileSdk = config.compileSdkVersion
-        targetSdkVersion = config.targetSdkVersion
+        minSdkVersion config.minSdkVersion
+        compileSdk config.compileSdkVersion
+        targetSdkVersion config.targetSdkVersion
         versionCode 1
         versionName Config.generateDebugVersionName()
         vectorDrawables.useSupportLibrary = true
@@ -70,39 +70,13 @@ android {
         buildConfigField "String", "AMO_BASE_URL", "\"https://addons.mozilla.org\""
         buildConfigField "String", "AMO_COLLECTION_NAME", "\"Extensions-for-Android\""
         buildConfigField "String", "AMO_COLLECTION_USER", "\"mozilla\""
-        // These add-ons should be excluded for Mozilla Online builds.
-        buildConfigField "String[]", "MOZILLA_ONLINE_ADDON_EXCLUSIONS",
-                "{" +
-                        "\"uBlock0@raymondhill.net\"," +
-                        "\"firefox@ghostery.com\"," +
-                        "\"jid1-MnnxcxisBPnSXQ@jetpack\"," +
-                        "\"adguardadblocker@adguard.com\"," +
-                        "\"foxyproxy@eric.h.jung\"," +
-                        "\"{73a6fe31-595d-460b-a920-fcc0f8843232}\"," +
-                        "\"jid1-BoFifL9Vbdl2zQ@jetpack\"," +
-                        "\"woop-NoopscooPsnSXQ@jetpack\"," +
-                        "\"adnauseam@rednoise.org\"" +
-                "}"
         // This should be the base URL used to call the AMO API.
         buildConfigField "String", "AMO_SERVER_URL", "\"https://services.addons.mozilla.org\""
 
         def deepLinkSchemeValue = "fenix-dev"
         buildConfigField "String", "DEEP_LINK_SCHEME", "\"$deepLinkSchemeValue\""
 
-        // This allows overriding the target activity for MozillaOnline builds, which happens
-        // as part of the defaultConfig below.
-        def targetActivity = "HomeActivity"
-
-        // Build flag for "Mozilla Online" variants. See `Config.isMozillaOnline`.
-        if (project.hasProperty("mozillaOnline") || gradle.hasProperty("localProperties.mozillaOnline")) {
-            buildConfigField "boolean", "MOZILLA_ONLINE", "true"
-            targetActivity = "MozillaOnlineHomeActivity"
-        } else {
-            buildConfigField "boolean", "MOZILLA_ONLINE", "false"
-        }
-
         manifestPlaceholders = [
-                "targetActivity": targetActivity,
                 "deepLinkScheme": deepLinkSchemeValue
         ]
 
@@ -276,9 +250,11 @@ android {
         baseline = file("lint-baseline.xml")
     }
 
+    // https://issuetracker.google.com/issues/379732901
     packaging {
         resources {
-            excludes += ["META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"]
+            excludes += ["META-INF/LICENSE.md", "META-INF/LICENSE-notice.md",
+                         "META-INF/versions/9/OSGI-INF/MANIFEST.MF"]
         }
         jniLibs {
             useLegacyPackaging = true
@@ -304,7 +280,7 @@ android {
         compose = true
     }
 
-    compileOptions{
+    compileOptions {
         coreLibraryDesugaringEnabled = true
     }
 
@@ -338,18 +314,15 @@ android.applicationVariants.configureEach { variant ->
         project.logger.debug("versionName override: $versionName")
 
         variant.outputs.each { output ->
-            def isMozillaOnline = project.hasProperty("mozillaOnline") || gradle.hasProperty("localProperties.mozillaOnline")
             def abi = output.getFilter(FilterConfiguration.FilterType.ABI.name())
             if (isAppBundle) {
                 abi = "AAB"
             }
-            // If it is a Mozilla Online build, use a unified version code of armeabi-v7a
-            def arch = (isMozillaOnline) ? "armeabi-v7a" : abi
             // We use the same version code generator, that we inherited from Fennec, across all channels - even on
             // channels that never shipped a Fennec build.
-            def versionCodeOverride = Config.generateFennecVersionCode(arch, isAppBundle )
+            def versionCodeOverride = Config.generateFennecVersionCode(abi, isAppBundle )
 
-            project.logger.debug("versionCode for $abi = $versionCodeOverride, isMozillaOnline = $isMozillaOnline")
+            project.logger.debug("versionCode for $abi = $versionCodeOverride")
 
             if (versionName != null) {
                 output.versionNameOverride = versionName
@@ -726,6 +699,7 @@ dependencies {
     implementation libs.play.review.ktx
 
     implementation ComponentsDependencies.mozilla_appservices_init_rust_components
+    implementation ComponentsDependencies.mozilla_appservices_search
 
     androidTestImplementation(libs.androidx.espresso.contrib) {
         exclude module: 'protobuf-lite'

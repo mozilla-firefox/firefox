@@ -127,6 +127,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Беттерді ауыстыру үшін құралдар тақтасы үстінен өткізіңіз</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Ауыстыру үшін солға немесе оңға өткізіңіз. Жаңа бетті ашу үшін соңғы бетте солға өткізіңіз.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">Беттерді ауыстыру үшін құралдар тақтасын солға немесе оңға сырғытыңыз.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Камера рұқсаты керек. Android баптауларына өтіп, Рұқсаттарды ашып, "Рұқсат ету" таңдаңыз.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -652,6 +654,8 @@
   <string name="onboarding_marketing_positive_button" tools:ignore="UnusedResources">Растау және шолуды бастау</string>
   <!-- Marketing onboarding page title variant. “One last thing” refers to the final step or action in the onboarding process that we’re asking users to take before they can start using the browser. -->
   <string name="onboarding_marketing_title_1" tools:ignore="UnusedResources">Соңғы бір нәрсе</string>
+  <!-- Marketing onboarding page body variant. 'Firefox' is intentionally hardcoded. -->
+  <string name="onboarding_marketing_body_1" tools:ignore="BrandUsage,UnusedResources">Firefox-ты өзіңіз үшін қалай ашқаныңызды және оны қалай пайдаланғаныңызды Mozilla маркетинг серіктестерімен бөлісіңіз. Бұл деректер ешқашан сатылмайды.</string>
   <!-- Marketing onboarding page button label variant. Button to confirm choice and start browsing. -->
   <string name="onboarding_marketing_positive_button_1" tools:ignore="UnusedResources">Келісу және шолуды бастау</string>
   <!-- Onboarding header for the toolbar selection card, used by Nimbus experiments. -->
@@ -766,6 +770,8 @@
   <string name="preferences_add_private_browsing_shortcut">Жеке шолу жарлығын қосу</string>
   <!-- Preference for enabling "HTTPS-Only" mode -->
   <string name="preferences_https_only_title">Тек-HTTPS режимі</string>
+  <!-- Preference title for using the screen lock to hide tabs in private browsing -->
+  <string name="preferences_pbm_lock_screen_title">Жекелік шолуда беттерді жасыру үшін экран құлпын пайдаланыңыз</string>
   <!-- Label for cookie banner section in quick settings panel. -->
   <string name="cookie_banner_blocker">Cookie баннерлерін бұғаттаушы</string>
   <!-- Preference for removing cookie/consent banners from sites automatically in private mode. See reduce_cookie_banner_summary for additional context. -->
@@ -826,8 +832,6 @@
   <string name="preferences_override_account_server">Таңдауыңызша Mozilla тіркелгі сервері</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Таңдауыңызша синхрондау сервері</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla тіркелгісі/синхрондау сервері өзгертілген. Өзгерістерді іске асыру үшін қолданба жұмысын аяқтау…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Тіркелгі</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1437,8 +1441,17 @@
     Text for the snackbar to confirm that multiple downloads items have been removed
   -->
   <string name="download_delete_multiple_items_snackbar_1" moz:removedIn="138" tools:ignore="UnusedResources">Жүктемелер өшірілді</string>
+  <!--
+    Text for the snackbar to confirm that a multiple download items have been removed. %1$s is the number of removed download items.
+    %1$d is the number of items deleted.
+  -->
+  <string name="download_delete_multiple_items_snackbar_2">Өшірілген нәрсе саны: %1$d</string>
   <!-- Text for the snackbar to confirm that a single download item has been removed. %1$s is the name of the download item. -->
   <string name="download_delete_single_item_snackbar" moz:removedIn="138" tools:ignore="UnusedResources">%1$s өшірілді</string>
+  <!-- Text for the snackbar to confirm that a single download item has been removed. %1$s is the name of the download item. -->
+  <string name="download_delete_single_item_snackbar_2">“%1$s” өшірілді</string>
+  <!-- Text for the snackbar to confirm that downloads are in progress. -->
+  <string name="download_in_progress_snackbar" tools:ignore="UnusedResources">Жүктеп алу орындалуда…</string>
   <!-- Text for the snackbar action button to view in progress download details. -->
   <string name="download_in_progress_snackbar_action_details" tools:ignore="UnusedResources">Ақпараты</string>
   <!-- Text for the snackbar to confirm that a download has completed. -->
@@ -1462,16 +1475,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Өшіру</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Өшіру</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Артқа өту</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Жоғарыға өту</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">URL адресін бөлісу</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Файлды бөлісу</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Таңдалған нәрселерді өшіруді шынымен қалайсыз ба?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Таңдалған нәрселерді өшіруді шынымен қалайсыз ба?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Өшіру</string>
+  <string name="download_delete_multi_select_dialog_confirm">Өшіру</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Бас тарту</string>
+  <string name="download_delete_multi_select_dialog_cancel">Бас тарту</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Орындалуда</string>
   <!--
@@ -1502,9 +1519,11 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Жүктеп алу сәтсіз аяқталды</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Жүктемелер ішінен іздеу</string>
+  <string name="download_search_placeholder">Жүктемелер ішінен іздеу</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Нәтижелер табылмады</string>
+  <string name="download_search_no_results_found">Нәтижелер табылмады</string>
+  <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
+  <string name="download_select_all_items">Барлығын таңдау</string>
   <!--
     Downloads Content Type Filters
 
@@ -2251,7 +2270,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Бақылаудан жақсартылған қорғаныстың ережеден тыс жағдайының баптау таңбашасы</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -2270,6 +2289,18 @@
   <string name="preference_doh_add_site_description">Сайтты қосу</string>
   <!-- Title displayed for "Default Protection" option under "DNS over HTTPS" -->
   <string name="preference_doh_default_protection">Қалыпты қорғаныс</string>
+  <!-- Title displayed for "Max Protection" option under "DNS over HTTPS" -->
+  <string name="preference_doh_max_protection">Максималды қорғаныс</string>
+  <!-- Summary displayed for "Max Protection" option under "DNS over HTTPS". %1$s is the name of the application (e.g. Fenix). -->
+  <string name="preference_doh_max_protection_summary">%1$s әрқашан қауіпсіз DNS пайдаланады. Жүйенің DNS жүйесін пайдаланбас бұрын қауіпсіздік тәуекел қаупі туралы ескертуді көресіз.</string>
+  <!-- Bullet point 1 for "Max Protection" information page under "DNS over HTTPS" -->
+  <string name="preference_doh_max_protection_info_1">Тек сіз тандаған провайдерді пайдалану</string>
+  <!-- Bullet point 2 for "Max Protection" information page under "DNS over HTTPS" -->
+  <string name="preference_doh_max_protection_info_2">Қауіпсіз DNS қолжетімді болмаса, әрқашан ескерту</string>
+  <!-- Bullet point 3 for "Max Protection" information page under "DNS over HTTPS" -->
+  <string name="preference_doh_max_protection_info_3">Қауіпсіз DNS қолжетімді болмаса, сайттар жүктелмейді немесе дұрыс жұмыс істемейді</string>
+  <!-- Title displayed for "Off" option under "DNS over HTTPS" -->
+  <string name="preference_doh_off">Сөндірулі</string>
   <!-- Summary displayed for "Off" option under "DNS over HTTPS" -->
   <string name="preference_doh_off_summary">Үнсіз келісім DNS шешушісін қолдану</string>
   <!-- Text displayed above provider dropdown under "DNS over HTTPS" -->
@@ -2292,6 +2323,8 @@
   <string name="preference_doh_provider_custom_dialog_add">Қосу</string>
   <!-- Preference to access list of login exceptions that we don't use DNS over HTTPS -->
   <string name="preference_doh_exceptions">Ережеден тыс</string>
+  <!-- Description of "exceptions" for "DNS over HTTPS". %1$s is the name of the app (for example "Firefox"). -->
+  <string name="preference_doh_exceptions_summary">%1$s бұл сайттарда және олардың ішкі домендерінде қауіпсіз DNS пайдаланбайды.</string>
   <!-- Text displayed that links to adding website domain for "DNS over HTTPS" exceptions. -->
   <string name="preference_doh_exceptions_add">Сайтты қосу</string>
   <!-- Text displayed above the input field when adding exceptions for "DNS over HTTPS". -->
@@ -2608,6 +2641,8 @@
   <string name="quick_settings_sheet_secure_connection_2">Байланыс қауіпсіз</string>
   <!-- Label that indicates a site is using a insecure connection -->
   <string name="quick_settings_sheet_insecure_connection_2">Байланыс қауіпсіз емес</string>
+  <!-- Label that indicates a site is displaying a local document -->
+  <string name="quick_settings_sheet_local_page">Бұл парақ сіздің құрылғыңызда сақталған.</string>
   <!-- Label to clear site data -->
   <string name="clear_site_data">Cookies файлдары және сайт деректерін тазарту</string>
   <!-- Confirmation message for a dialog confirming if the user wants to delete all data for current site. %s is the domain of the site. -->
@@ -2769,6 +2804,8 @@
   <string name="google_search_engine_suggestion_header">Google іздеу</string>
   <!-- Title for search suggestions when the default search suggestion engine is anything other than Google. %s is default search engine name. -->
   <string name="other_default_search_engine_suggestion_header">%s іздеуі</string>
+  <!-- Title for recent search suggestions. -->
+  <string name="recent_searches_header">Жуырдағы іздеулер</string>
   <!--
     Default browser experiment
 
@@ -3122,6 +3159,8 @@
   <string name="protection_panel_no_trackers_blocked">Трекерлер табылмады</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">Жекелік және қауіпсіздік баптаулары</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Рұқсаттар</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3308,6 +3347,24 @@
   -->
   <string name="glean_debug_tools_title">Glean жөндеу құралдары</string>
   <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">Аймақ құралдары</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">Үй аймағы</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">Ағымдағы аймақ</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">Үй аймағын қайта анықтау</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">Ағымдағы аймақты қайта анықтау</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">Үй және ағымдағы аймақты қайта анықтау</string>
+  <!--
     Messages explaining how to exit fullscreen mode
 
     Message shown to explain how to exit fullscreen mode when gesture navigation is enabled.
@@ -3369,6 +3426,44 @@
   <string name="text_field_eye_trailing_icon_default_content_description" moz:removedIn="139" tools:ignore="UnusedResources">Жасырын мәтінді көрсету</string>
   <!-- The default content description for the cross trailing icon button in TextField -->
   <string name="text_field_cross_trailing_icon_default_content_description" moz:removedIn="139" tools:ignore="UnusedResources">Мәтінді тазарту</string>
+  <!--
+    Setup checklist feature
+
+    ===== Setup checklist feature: Title =====
+
+    Title for the setup checklist feature when the state is 'incomplete'. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_title_state_incomplete">%1$s баптауды аяқтау</string>
+  <!-- Title for the setup checklist feature when the state is 'completed' -->
+  <string name="setup_checklist_title_state_completed">Құттықтаймыз!</string>
+  <!-- Subtitle for a setup checklist with 3 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_3_steps_first_step">Керемет бастама! Сіз 3 қадамның 1-ін орындадыңыз.</string>
+  <!-- Subtitle for a setup checklist with 3 steps when two of the tasks are completed. -->
+  <string name="setup_checklist_subtitle_3_steps_second_step">Жақында! Екі қадам аяқталды, 1 қадам қалды.</string>
+  <!--
+    ===== Setup checklist feature: Task titles =====
+
+    The title of the default browser task for the setup checklist
+  -->
+  <string name="setup_checklist_task_default_browser">Негізгі браузер қылу</string>
+  <!-- The title of the sign-in task for the setup checklist -->
+  <string name="setup_checklist_task_account_sync">Тіркелгіңізге кіріңіз</string>
+  <!-- The title of the theme selection task for the setup checklist -->
+  <string name="setup_checklist_task_theme_selection">Теманы таңдау</string>
+  <!-- The title of the toolbar selection task for the setup checklist -->
+  <string name="setup_checklist_task_toolbar_selection">Құралдар панелінің орналасуын таңдау</string>
+  <!-- The title of the explore extensions task for the setup checklist -->
+  <string name="setup_checklist_task_explore_extensions">Кеңейтулерді шолу</string>
+  <!-- The title of the search widget task for the setup checklist -->
+  <string name="setup_checklist_task_search_widget">Іздеу виджетін орнату</string>
+  <!--
+    ===== Setup checklist feature: Group titles =====
+
+    The title of the 'essentials' group in the setup checklist. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_group_essentials">%1$s маңыздысы</string>
+  <!-- The title of the 'customize' group in the setup checklist. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_group_customize">Өз %1$s өнімін баптаңыз</string>
   <!-- The title of the 'helpful tools' group in the setup checklist -->
   <string name="setup_checklist_group_helpful_tools">Пайдалы құралдар</string>
   <!--
@@ -3377,4 +3472,16 @@
     Accessibility description for a check mark on a completed task
   -->
   <string name="a11y_completed_task_description">Аяқталған тапсырма</string>
+  <!-- Accessibility description for the task icon -->
+  <string name="a11y_task_icon_description">Тапсырма таңбашасы</string>
+  <!--
+    Private browsing mode authentication screen
+
+    Label for the secondary action to exit private browsing mode
+  -->
+  <string name="pbm_authentication_leave_private_tabs">Жекелік беттерден шығу</string>
+  <!-- Label for the primary action button to unlock private tabs -->
+  <string name="pbm_authentication_unlock">Босату</string>
+  <!-- Title text instructing the user to unlock private tabs -->
+  <string name="pbm_authentication_unlock_private_tabs">Жекелік беттер бұғаттауын ашу</string>
 </resources>

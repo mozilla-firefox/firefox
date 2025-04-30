@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_FACTORY_H
 #define PIPEWIRE_FACTORY_H
@@ -47,8 +27,14 @@ extern "C" {
  */
 #define PW_TYPE_INTERFACE_Factory	PW_TYPE_INFO_INTERFACE_BASE "Factory"
 
+#define PW_FACTORY_PERM_MASK		PW_PERM_R|PW_PERM_M
+
 #define PW_VERSION_FACTORY		3
 struct pw_factory;
+
+#ifndef PW_API_FACTORY_IMPL
+#define PW_API_FACTORY_IMPL static inline
+#endif
 
 /** The factory information. Extra information can be added in later versions */
 struct pw_factory_info {
@@ -101,16 +87,17 @@ struct pw_factory_methods {
 			void *data);
 };
 
-#define pw_factory_method(o,method,version,...)				\
-({									\
-	int _res = -ENOTSUP;						\
-	spa_interface_call_res((struct spa_interface*)o,		\
-			struct pw_factory_methods, _res,		\
-			method, version, ##__VA_ARGS__);		\
-	_res;								\
-})
-
-#define pw_factory_add_listener(c,...)	pw_factory_method(c,add_listener,0,__VA_ARGS__)
+/** \copydoc pw_factory_methods.add_listener
+ * \sa pw_factory_methods.add_listener */
+PW_API_FACTORY_IMPL int pw_factory_add_listener(struct pw_factory *object,
+			struct spa_hook *listener,
+			const struct pw_factory_events *events,
+			void *data)
+{
+	return spa_api_method_r(int, -ENOTSUP,
+			pw_factory, (struct spa_interface*)object, add_listener, 0,
+			listener, events, data);
+}
 
 /**
  * \}

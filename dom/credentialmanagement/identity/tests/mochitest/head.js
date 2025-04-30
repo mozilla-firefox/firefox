@@ -5,11 +5,10 @@
 
 "use strict";
 
-var idp_host = "https://example.net";
-var test_path = "/tests/dom/credentialmanagement/identity/tests/mochitest";
-var idp_api = idp_host + test_path;
+let test_path = "/tests/dom/credentialmanagement/identity/tests/mochitest";
 
-async function setupTest(testName) {
+async function setupTest(testName, idp_origin = "https://example.net") {
+  let idp_api = idp_origin + test_path;
   ok(
     window.location.pathname.includes(testName),
     `Must set the right test name when setting up. Test name "${testName}" must be in URL path "${window.location.pathname}"`

@@ -315,10 +315,22 @@ export class MerinoClient {
       this.#timeoutTimer = null;
     }
 
+    if (!response?.ok) {
+      // `recordResponse()` was already called above, no need to call it here.
+      return [];
+    }
+
+    if (response.status == 204) {
+      // No content. We check for this because `response.json()` (below) throws
+      // in this case, and since we log the error it can spam the console.
+      recordResponse?.("no_suggestion");
+      return [];
+    }
+
     // Get the response body as an object.
     let body;
     try {
-      body = await response?.json();
+      body = await response.json();
     } catch (error) {
       this.logger.error("Error getting response as JSON", error);
     }

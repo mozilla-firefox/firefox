@@ -1,0 +1,28 @@
+header = """/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */"""
+autogen_warning = """/* DO NOT MODIFY THIS MANUALLY! This file was generated using cbindgen. See RunCbindgen.py */
+"""
+include_version = true
+braces = "SameLine"
+line_length = 100
+tab_width = 2
+language = "C++"
+include_guard = "crash_helper_ffi_generated_h"
+
+[defines]
+"target_os = android" = "MOZ_WIDGET_ANDROID"
+"target_os = linux" = "XP_LINUX"
+"target_os = macos" = "XP_MACOSX"
+"target_os = windows" = "XP_WIN"
+
+[export]
+exclude = [
+  "CrashGenerationServer_init",
+  "CrashGenerationServer_shutdown",
+  "CrashGenerationServer_set_path",
+]
+
+[parse]
+parse_deps = true
+include = ["crash_helper_common"]

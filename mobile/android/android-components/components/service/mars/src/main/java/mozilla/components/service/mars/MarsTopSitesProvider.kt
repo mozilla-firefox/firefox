@@ -97,7 +97,7 @@ class MarsTopSitesProvider(
      * Refreshes the cache with the latest tiles response from [endPointURL] if the cache
      * is expired.
      */
-    suspend fun refreshTopSitesIfCacheExpired() {
+    override suspend fun refreshTopSitesIfCacheExpired() {
         if (!isCacheExpired()) return
 
         getTopSites(allowCache = false)

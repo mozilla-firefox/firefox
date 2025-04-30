@@ -15,7 +15,7 @@ pub type ProcessHandle = windows_sys::Win32::Foundation::HANDLE;
 #[cfg(any(target_os = "linux", target_os = "android"))]
 pub type ProcessHandle = libc::pid_t;
 
-#[cfg(any(target_os = "macos"))]
+#[cfg(target_os = "macos")]
 pub type ProcessHandle = mach2::mach_types::task_t;
 
 pub struct ProcessReader {
@@ -64,7 +64,7 @@ impl ProcessReader {
             let array = self.copy_array::<u8>(address + length, WORD_SIZE)?;
             let null_terminator = array.iter().position(|&e| e == 0);
             length += null_terminator.unwrap_or(WORD_SIZE);
-            string.extend(array.into_iter());
+            string.extend(array);
 
             if null_terminator.is_some() {
                 string.truncate(length + 1);

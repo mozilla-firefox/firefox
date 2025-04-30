@@ -9,43 +9,46 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.get
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import mozilla.components.lib.state.Store
 
 /**
- * Generic ViewModel to wrap a State object for state restoration.
+ * Generic ViewModel wrapper of a [Store] helping to persist it across process/activity recreations.
  *
- * @param createStore Function that creates a [Store] instance that receives [CoroutineScope] param
- * that's tied to the lifecycle of the [StoreProvider] i.e it will cancel when
- * [StoreProvider.onCleared] is called.
+ * @param createStore [Store] factory receiving also the [ViewModel.viewModelScope] associated with this [ViewModel].
  */
 class StoreProvider<T : Store<*, *>>(
     createStore: (CoroutineScope) -> T,
 ) : ViewModel() {
 
     @VisibleForTesting
+    @PublishedApi
     internal val store: T = createStore(viewModelScope)
 
     companion object {
         /**
-         * Returns an existing [Store] instance or creates a new one scoped to a
-         * [ViewModelStoreOwner].
+         * Returns an existing [Store] instance or creates a new one scoped to a [ViewModelStoreOwner].
+         *
          * @see [ViewModelProvider.get].
          */
-        fun <T : Store<*, *>> get(owner: ViewModelStoreOwner, createStore: (CoroutineScope) -> T): T {
+        inline fun <reified T : Store<*, *>> get(
+            owner: ViewModelStoreOwner,
+            noinline createStore: (CoroutineScope) -> T,
+        ): T {
             val factory = StoreProviderFactory(createStore)
-            val viewModel: StoreProvider<T> = ViewModelProvider(owner, factory).get()
-            return viewModel.store
+            val viewModel: StoreProvider<*> =
+                ViewModelProvider(owner, factory).get(T::class.java.name, StoreProvider::class.java)
+            return viewModel.store as T
         }
     }
 }
 
 /**
- * ViewModel factory to create [StoreProvider] instances.
+ * [ViewModel] factory to create [StoreProvider] instances that will wrap a [Store] instance
+ * helping to persist it across process/activity recreations.
  *
- * @param createStore Callback to create a new [Store], used when the [ViewModel] is first created.
+ * @param createStore [Store] factory receiving also the [ViewModel.viewModelScope] associated with this [ViewModel].
  */
 @VisibleForTesting
 class StoreProviderFactory<T : Store<*, *>>(
@@ -61,9 +64,7 @@ class StoreProviderFactory<T : Store<*, *>>(
 /**
  * Helper function for lazy creation of a [Store] instance scoped to a [ViewModelStoreOwner].
  *
- * @param createStore Function that creates a [Store] instance that receives [CoroutineScope] param
- * that's tied to the lifecycle of the [StoreProvider] i.e it will cancel when
- * [StoreProvider.onCleared] is called.
+ * @param createStore [Store] factory receiving also the [ViewModel.viewModelScope] associated with this [ViewModel].
  *
  * Example:
  * ```
@@ -80,8 +81,8 @@ class StoreProviderFactory<T : Store<*, *>>(
  * }
  */
 @MainThread
-fun <T : Store<*, *>> ViewModelStoreOwner.lazyStore(
-    createStore: (CoroutineScope) -> T,
+inline fun <reified T : Store<*, *>> ViewModelStoreOwner.lazyStore(
+    noinline createStore: (CoroutineScope) -> T,
 ): Lazy<T> {
     return lazy(mode = LazyThreadSafetyMode.NONE) {
         StoreProvider.get(this, createStore)

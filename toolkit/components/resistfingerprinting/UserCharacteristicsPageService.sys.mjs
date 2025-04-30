@@ -162,7 +162,9 @@ export class UserCharacteristicsPageService {
       [this.populateGamepads, [data.gamepads]],
       [this.populateClientInfo, []],
       [this.populateCPUInfo, []],
-      [this.populateWindowInfo, []],
+      [this.populateScreenInfo, []],
+      [this.populatePointerInfo, []],
+      [this.initWindowInfoActor, []],
       [
         this.populateWebGlInfo,
         [browser.ownerGlobal, browser.ownerDocument, 1, false],
@@ -263,7 +265,7 @@ export class UserCharacteristicsPageService {
     }
   }
 
-  async populateWindowInfo() {
+  async initWindowInfoActor() {
     // We use two different methods to get any loaded document.
     // First one is, DOMContentLoaded event. If the user loads
     // a new document after actor registration, we will get it.
@@ -277,27 +279,12 @@ export class UserCharacteristicsPageService {
     // existing tabs and continue on a new one before the page
     // is loaded. This is a rare case, but we want to cover it.
 
-    const { promise: screenInfoPromise, resolve: screenInfoResolve } =
-      Promise.withResolvers();
-    const { promise: pointerInfoPromise, resolve: pointerInfoResolve } =
-      Promise.withResolvers();
-
-    Services.obs.addObserver(function observe(_subject, topic, data) {
-      Services.obs.removeObserver(observe, topic);
-      screenInfoResolve(JSON.parse(data));
-    }, "user-characteristics-screen-info-done");
-
-    Services.obs.addObserver(function observe(_subject, topic, data) {
-      Services.obs.removeObserver(observe, topic);
-      pointerInfoResolve(JSON.parse(data));
-    }, "user-characteristics-pointer-info-done");
-
-    const actorName = "UserCharacteristicsWindowInfo";
     Services.obs.addObserver(function observe(_subject, topic, _data) {
       Services.obs.removeObserver(observe, topic);
       ChromeUtils.unregisterWindowActor(actorName);
     }, "user-characteristics-window-info-done");
 
+    const actorName = "UserCharacteristicsWindowInfo";
     ChromeUtils.registerWindowActor(actorName, {
       parent: {
         esModuleURI: "resource://gre/actors/UserCharacteristicsParent.sys.mjs",
@@ -322,11 +309,28 @@ export class UserCharacteristicsPageService {
         this.handledErrors.push(await stringifyError(error));
       }
     }
+  }
 
-    await Promise.all([
-      screenInfoPromise.then(data => this.collectGleanMetricsFromMap(data)),
-      pointerInfoPromise.then(data => this.collectGleanMetricsFromMap(data)),
-    ]);
+  async populateScreenInfo() {
+    const { promise, resolve } = Promise.withResolvers();
+
+    Services.obs.addObserver(function observe(_subject, topic, data) {
+      Services.obs.removeObserver(observe, topic);
+      resolve(JSON.parse(data));
+    }, "user-characteristics-screen-info-done");
+
+    await promise.then(data => this.collectGleanMetricsFromMap(data));
+  }
+
+  async populatePointerInfo() {
+    const { promise, resolve } = Promise.withResolvers();
+
+    Services.obs.addObserver(function observe(_subject, topic, data) {
+      Services.obs.removeObserver(observe, topic);
+      resolve(JSON.parse(data));
+    }, "user-characteristics-pointer-info-done");
+
+    await promise.then(data => this.collectGleanMetricsFromMap(data));
   }
 
   async populateCanvasData() {

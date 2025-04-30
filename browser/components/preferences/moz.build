@@ -7,6 +7,7 @@
 DIRS += ["dialogs"]
 
 BROWSER_CHROME_MANIFESTS += ["tests/browser.toml", "tests/siteData/browser.toml"]
+MOCHITEST_CHROME_MANIFESTS += ["tests/chrome/chrome.toml"]
 
 for var in ("MOZ_APP_NAME", "MOZ_MACBUNDLE_NAME"):
     DEFINES[var] = CONFIG[var]

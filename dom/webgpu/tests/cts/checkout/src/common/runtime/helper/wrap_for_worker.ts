@@ -1,4 +1,5 @@
 import { Fixture } from '../../framework/fixture.js';
+import { runShutdownTasks } from '../../framework/on_shutdown.js';
 import { LogMessageWithStack } from '../../internal/logging/log_message.js';
 import { comparePaths, comparePublicParamsPaths, Ordering } from '../../internal/query/compare.js';
 import { parseQuery } from '../../internal/query/parseQuery.js';
@@ -17,7 +18,17 @@ import { setupWorkerEnvironment, WorkerTestRunRequest } from './utils_worker.js'
  */
 export function wrapTestGroupForWorker(g: TestGroup<Fixture>) {
   self.onmessage = async (ev: MessageEvent) => {
+    if (ev.data === 'shutdown') {
+      // The host page is unloading. Clean up as best we can, even though we're in a service worker
+      // that's also being unregistered. In Chromium, this seems to actually work. In Safari, it's
+      // hard to tell, because console.log doesn't work in service workers. In Firefox, it hasn't
+      // been verified, because we use { type: 'module' } workers, which aren't implemented.
+      runShutdownTasks();
+      return;
+    }
+
     const { query, expectations, ctsOptions } = ev.data as WorkerTestRunRequest;
+
     try {
       const log = setupWorkerEnvironment(ctsOptions);
 

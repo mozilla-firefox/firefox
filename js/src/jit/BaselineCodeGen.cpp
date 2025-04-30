@@ -33,6 +33,7 @@
 #include "vm/AsyncFunction.h"
 #include "vm/AsyncIteration.h"
 #include "vm/BuiltinObjectKind.h"
+#include "vm/ConstantCompareOperand.h"
 #include "vm/EnvironmentObject.h"
 #include "vm/FunctionFlags.h"  // js::FunctionFlags
 #include "vm/Interpreter.h"
@@ -435,6 +436,20 @@ static void LoadUint8Operand(MacroAssembler& masm, Register dest) {
 static void LoadUint16Operand(MacroAssembler& masm, Register dest) {
   Register pc = LoadBytecodePC(masm, dest);
   masm.load16ZeroExtend(Address(pc, sizeof(jsbytecode)), dest);
+}
+
+static void LoadConstantCompareOperand(MacroAssembler& masm,
+                                       Register constantType,
+                                       Register payload) {
+  // Note: In baseline interpreter on 32-bit we dont
+  // have a separate pc register see HasInterpreterPCReg()
+  // so we use the payload reg as scratch first and then rewrite the
+  // actual payload on to it after loading the type
+  Register pc = LoadBytecodePC(masm, payload);
+  masm.load8ZeroExtend(Address(pc, ConstantCompareOperand::OFFSET_OF_TYPE),
+                       constantType);
+  masm.load8SignExtend(Address(pc, ConstantCompareOperand::OFFSET_OF_VALUE),
+                       payload);
 }
 
 static void LoadInt32Operand(MacroAssembler& masm, Register dest) {
@@ -2902,6 +2917,194 @@ bool BaselineCodeGen<Handler>::emit_StrictEq() {
 template <typename Handler>
 bool BaselineCodeGen<Handler>::emit_StrictNe() {
   return emitCompare();
+}
+
+template <>
+bool BaselineCompilerCodeGen::emitConstantStrictEq(JSOp op) {
+  ConstantCompareOperand data =
+      ConstantCompareOperand::fromRawValue(GET_UINT16(handler.pc()));
+
+  frame.popRegsAndSync(1);
+
+  ValueOperand value = R0;
+  Label fail, pass, done;
+
+  switch (data.type()) {
+    case ConstantCompareOperand::EncodedType::Int32: {
+      int32_t constantVal = data.toInt32();
+
+      Label maybeDouble;
+      masm.branchTestInt32(Assembler::NotEqual, value, &maybeDouble);
+      masm.branch32(JSOpToCondition(op, true), value.payloadOrValueReg(),
+                    Imm32(constantVal), &pass);
+      masm.jump(&fail);
+
+      masm.bind(&maybeDouble);
+      {
+        FloatRegister unboxedValue = FloatReg0;
+        FloatRegister floatPayload = FloatReg1;
+
+        masm.branchTestDouble(Assembler::NotEqual, value,
+                              op == JSOp::StrictEq ? &fail : &pass);
+
+        masm.unboxDouble(value, unboxedValue);
+        masm.loadConstantDouble(double(constantVal), floatPayload);
+        masm.branchDouble(JSOpToDoubleCondition(op), unboxedValue, floatPayload,
+                          &pass);
+      }
+      break;
+    }
+
+    case ConstantCompareOperand::EncodedType::Boolean: {
+      bool constantVal = data.toBoolean();
+      Register boolUnboxed = R1.scratchReg();
+      masm.fallibleUnboxBoolean(value, boolUnboxed,
+                                op == JSOp::StrictEq ? &fail : &pass);
+      masm.branch32(JSOpToCondition(op, true), boolUnboxed, Imm32(constantVal),
+                    &pass);
+      break;
+    }
+
+    case ConstantCompareOperand::EncodedType::Null: {
+      masm.branchTestNull(Assembler::NotEqual, value,
+                          op == JSOp::StrictEq ? &fail : &pass);
+      if (op == JSOp::StrictEq) {
+        masm.jump(&pass);
+      }
+      break;
+    }
+
+    case ConstantCompareOperand::EncodedType::Undefined: {
+      masm.branchTestUndefined(Assembler::NotEqual, value,
+                               op == JSOp::StrictEq ? &fail : &pass);
+      if (op == JSOp::StrictEq) {
+        masm.jump(&pass);
+      }
+      break;
+    }
+  }
+
+  masm.bind(&fail);
+  {
+    masm.moveValue(BooleanValue(false), R0);
+    masm.jump(&done);
+  }
+
+  masm.bind(&pass);
+  {
+    masm.moveValue(BooleanValue(true), R0);
+  }
+
+  masm.bind(&done);
+  frame.push(R0, JSVAL_TYPE_BOOLEAN);
+  return true;
+}
+
+template <>
+bool BaselineCompilerCodeGen::emit_StrictConstantEq() {
+  return emitConstantStrictEq(JSOp::StrictEq);
+}
+
+template <>
+bool BaselineCompilerCodeGen::emit_StrictConstantNe() {
+  return emitConstantStrictEq(JSOp::StrictNe);
+}
+
+template <>
+bool BaselineInterpreterCodeGen::emitConstantStrictEq(JSOp op) {
+  frame.popRegsAndSync(1);
+
+  ValueOperand value = R0;
+  Register constantType = R1.scratchReg();
+  Register payload = R2.scratchReg();
+
+  LoadConstantCompareOperand(masm, constantType, payload);
+  Label isInt32, isBool, isNull, isUndefined;
+  Label pass, fail, done;
+
+  masm.branch32(Assembler::Equal, constantType,
+                Imm32(int32_t(ConstantCompareOperand::EncodedType::Int32)),
+                &isInt32);
+  masm.branch32(Assembler::Equal, constantType,
+                Imm32(int32_t(ConstantCompareOperand::EncodedType::Boolean)),
+                &isBool);
+  masm.branch32(Assembler::Equal, constantType,
+                Imm32(int32_t(ConstantCompareOperand::EncodedType::Null)),
+                &isNull);
+  masm.branch32(Assembler::Equal, constantType,
+                Imm32(int32_t(ConstantCompareOperand::EncodedType::Undefined)),
+                &isUndefined);
+  masm.assumeUnreachable("Unexpected constant compare type");
+
+  masm.bind(&isInt32);
+  {
+    Label maybeDouble;
+    masm.branchTestInt32(Assembler::NotEqual, value, &maybeDouble);
+    masm.branch32(JSOpToCondition(op, true), value.payloadOrValueReg(), payload,
+                  &pass);
+    masm.jump(&fail);
+
+    masm.bind(&maybeDouble);
+    {
+      FloatRegister unboxedValue = FloatReg0;
+      FloatRegister floatPayload = FloatReg1;
+      masm.branchTestDouble(Assembler::NotEqual, value,
+                            op == JSOp::StrictEq ? &fail : &pass);
+      masm.unboxDouble(value, unboxedValue);
+      masm.convertInt32ToDouble(payload, floatPayload);
+      masm.branchDouble(JSOpToDoubleCondition(op), unboxedValue, floatPayload,
+                        &pass);
+      masm.jump(&fail);
+    }
+  }
+
+  masm.bind(&isBool);
+  {
+    Register boolUnboxed = R1.scratchReg();
+    masm.fallibleUnboxBoolean(value, boolUnboxed,
+                              op == JSOp::StrictEq ? &fail : &pass);
+    masm.branch32(JSOpToCondition(op, true), boolUnboxed, payload, &pass);
+    masm.jump(&fail);
+  }
+
+  masm.bind(&isNull);
+  {
+    masm.branchTestNull(Assembler::NotEqual, value,
+                        op == JSOp::StrictEq ? &fail : &pass);
+    masm.jump(op == JSOp::StrictEq ? &pass : &fail);
+  }
+
+  masm.bind(&isUndefined);
+  {
+    masm.branchTestUndefined(Assembler::NotEqual, value,
+                             op == JSOp::StrictEq ? &fail : &pass);
+    masm.jump(op == JSOp::StrictEq ? &pass : &fail);
+  }
+
+  masm.bind(&pass);
+  {
+    masm.moveValue(BooleanValue(true), value);
+    masm.jump(&done);
+  }
+
+  masm.bind(&fail);
+  {
+    masm.moveValue(BooleanValue(false), value);
+  }
+
+  masm.bind(&done);
+  frame.push(R0, JSVAL_TYPE_BOOLEAN);
+  return true;
+}
+
+template <>
+bool BaselineInterpreterCodeGen::emit_StrictConstantEq() {
+  return emitConstantStrictEq(JSOp::StrictEq);
+}
+
+template <>
+bool BaselineInterpreterCodeGen::emit_StrictConstantNe() {
+  return emitConstantStrictEq(JSOp::StrictNe);
 }
 
 template <typename Handler>

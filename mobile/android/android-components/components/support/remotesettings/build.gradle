@@ -47,11 +47,16 @@ dependencies {
     implementation project(':support-utils')
     implementation ComponentsDependencies.mozilla_remote_settings
     implementation libs.kotlin.json
+    implementation libs.androidx.work.runtime
+
+    testImplementation project(':support-test')
 
     testImplementation libs.testing.mockito
+    testImplementation libs.androidx.test.core
     testImplementation libs.androidx.test.junit
     testImplementation libs.testing.coroutines
     testImplementation libs.testing.robolectric
+    testImplementation libs.androidx.work.testing
     testImplementation ComponentsDependencies.mozilla_remote_settings
 }
 

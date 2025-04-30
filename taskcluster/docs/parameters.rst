@@ -47,6 +47,10 @@ Push Information
 ``head_rev``
    The revision to check out; this can be a short revision string
 
+``head_git_rev``
+   Optionally, the git commit corresponding to the head_rev when it's in a Mercurial
+   repository.
+
 ``base_ref``
    Reference where ``head_rev`` got merged into. It is usually a branch or a tag.
 

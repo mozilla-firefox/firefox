@@ -565,7 +565,7 @@ definitions:
           Use is limited to Firefox Desktop only.
           Has no effect when used with non-FOG outputters.
           See FOG's documentation on mirroring for details -
-          https://firefox-source-docs.mozilla.org/toolkit/components/glean/mirroring.html
+          https://firefox-source-docs.mozilla.org/toolkit/components/glean/user/gifft.html
         type: string
         minLength: 6
 

@@ -46,6 +46,10 @@ struct loopfilter {
   int filter_level_u;
   int filter_level_v;
 
+  int backup_filter_level[2];
+  int backup_filter_level_u;
+  int backup_filter_level_v;
+
   int sharpness_level;
 
   uint8_t mode_ref_delta_enabled;

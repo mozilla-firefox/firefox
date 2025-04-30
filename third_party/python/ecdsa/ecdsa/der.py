@@ -4,8 +4,8 @@ import binascii
 import base64
 import warnings
 from itertools import chain
-from six import int2byte, b, text_type
-from ._compat import str_idx_as_int
+from six import int2byte, text_type
+from ._compat import compat26_str, str_idx_as_int
 
 
 class UnexpectedDER(Exception):
@@ -13,23 +13,49 @@ class UnexpectedDER(Exception):
 
 
 def encode_constructed(tag, value):
-    return int2byte(0xa0+tag) + encode_length(len(value)) + value
+    return int2byte(0xA0 + tag) + encode_length(len(value)) + value
+
+
+def encode_implicit(tag, value, cls="context-specific"):
+    """
+    Encode and IMPLICIT value using :term:`DER`.
+
+    :param int tag: the tag value to encode, must be between 0 an 31 inclusive
+    :param bytes value: the data to encode
+    :param str cls: the class of the tag to encode: "application",
+      "context-specific", or "private"
+    :rtype: bytes
+    """
+    if cls not in ("application", "context-specific", "private"):
+        raise ValueError("invalid tag class")
+    if tag > 31:
+        raise ValueError("Long tags not supported")
+
+    if cls == "application":
+        tag_class = 0b01000000
+    elif cls == "context-specific":
+        tag_class = 0b10000000
+    else:
+        assert cls == "private"
+        tag_class = 0b11000000
+
+    return int2byte(tag_class + tag) + encode_length(len(value)) + value
 
 
 def encode_integer(r):
     assert r >= 0  # can't support negative numbers yet
     h = ("%x" % r).encode()
     if len(h) % 2:
-        h = b("0") + h
+        h = b"0" + h
     s = binascii.unhexlify(h)
     num = str_idx_as_int(s, 0)
-    if num <= 0x7f:
-        return b("\x02") + encode_length(len(s)) + s
+    if num <= 0x7F:
+        return b"\x02" + encode_length(len(s)) + s
     else:
         # DER integers are two's complement, so if the first byte is
         # 0x80-0xff then we need an extra 0x00 byte to prevent it from
         # looking negative.
-        return b("\x02") + encode_length(len(s)+1) + b("\x00") + s
+        return b"\x02" + encode_length(len(s) + 1) + b"\x00" + s
 
 
 # sentry object to check if an argument was specified (used to detect
@@ -73,12 +99,13 @@ def encode_bitstring(s, unused=_sentry):
     :return: `s` encoded using DER
     :rtype: bytes
     """
-    encoded_unused = b''
+    encoded_unused = b""
     len_extra = 0
     if unused is _sentry:
-        warnings.warn("Legacy call convention used, unused= needs to be "
-                      "specified",
-                      DeprecationWarning)
+        warnings.warn(
+            "Legacy call convention used, unused= needs to be specified",
+            DeprecationWarning,
+        )
     elif unused is not None:
         if not 0 <= unused <= 7:
             raise ValueError("unused must be integer between 0 and 7")
@@ -86,49 +113,101 @@ def encode_bitstring(s, unused=_sentry):
             if not s:
                 raise ValueError("unused is non-zero but s is empty")
             last = str_idx_as_int(s, -1)
-            if last & (2 ** unused - 1):
+            if last & (2**unused - 1):
                 raise ValueError("unused bits must be zeros in DER")
         encoded_unused = int2byte(unused)
         len_extra = 1
-    return b("\x03") + encode_length(len(s) + len_extra) + encoded_unused + s
+    return b"\x03" + encode_length(len(s) + len_extra) + encoded_unused + s
 
 
 def encode_octet_string(s):
-    return b("\x04") + encode_length(len(s)) + s
+    return b"\x04" + encode_length(len(s)) + s
 
 
 def encode_oid(first, second, *pieces):
     assert 0 <= first < 2 and 0 <= second <= 39 or first == 2 and 0 <= second
-    body = b''.join(chain([encode_number(40*first+second)],
-                          (encode_number(p) for p in pieces)))
-    return b'\x06' + encode_length(len(body)) + body
+    body = b"".join(
+        chain(
+            [encode_number(40 * first + second)],
+            (encode_number(p) for p in pieces),
+        )
+    )
+    return b"\x06" + encode_length(len(body)) + body
 
 
 def encode_sequence(*encoded_pieces):
     total_len = sum([len(p) for p in encoded_pieces])
-    return b('\x30') + encode_length(total_len) + b('').join(encoded_pieces)
+    return b"\x30" + encode_length(total_len) + b"".join(encoded_pieces)
 
 
 def encode_number(n):
     b128_digits = []
     while n:
-        b128_digits.insert(0, (n & 0x7f) | 0x80)
+        b128_digits.insert(0, (n & 0x7F) | 0x80)
         n = n >> 7
     if not b128_digits:
         b128_digits.append(0)
-    b128_digits[-1] &= 0x7f
-    return b('').join([int2byte(d) for d in b128_digits])
+    b128_digits[-1] &= 0x7F
+    return b"".join([int2byte(d) for d in b128_digits])
+
+
+def is_sequence(string):
+    return string and string[:1] == b"\x30"
 
 
 def remove_constructed(string):
     s0 = str_idx_as_int(string, 0)
-    if (s0 & 0xe0) != 0xa0:
-        raise UnexpectedDER("wanted type 'constructed tag' (0xa0-0xbf), "
-                            "got 0x%02x" % s0)
-    tag = s0 & 0x1f
+    if (s0 & 0xE0) != 0xA0:
+        raise UnexpectedDER(
+            "wanted type 'constructed tag' (0xa0-0xbf), got 0x%02x" % s0
+        )
+    tag = s0 & 0x1F
     length, llen = read_length(string[1:])
-    body = string[1+llen:1+llen+length]
-    rest = string[1+llen+length:]
+    body = string[1 + llen : 1 + llen + length]
+    rest = string[1 + llen + length :]
+    return tag, body, rest
+
+
+def remove_implicit(string, exp_class="context-specific"):
+    """
+    Removes an IMPLICIT tagged value from ``string`` following :term:`DER`.
+
+    :param bytes string: a byte string that can have one or more
+      DER elements.
+    :param str exp_class: the expected tag class of the implicitly
+      encoded value. Possible values are: "context-specific", "application",
+      and "private".
+    :return: a tuple with first value being the tag without indicator bits,
+      second being the raw bytes of the value and the third one being
+      remaining bytes (or an empty string if there are none)
+    :rtype: tuple(int,bytes,bytes)
+    """
+    if exp_class not in ("context-specific", "application", "private"):
+        raise ValueError("invalid `exp_class` value")
+    if exp_class == "application":
+        tag_class = 0b01000000
+    elif exp_class == "context-specific":
+        tag_class = 0b10000000
+    else:
+        assert exp_class == "private"
+        tag_class = 0b11000000
+    tag_mask = 0b11000000
+
+    s0 = str_idx_as_int(string, 0)
+
+    if (s0 & tag_mask) != tag_class:
+        raise UnexpectedDER(
+            "wanted class {0}, got 0x{1:02x} tag".format(exp_class, s0)
+        )
+    if s0 & 0b00100000 != 0:
+        raise UnexpectedDER(
+            "wanted type primitive, got 0x{0:02x} tag".format(s0)
+        )
+
+    tag = s0 & 0x1F
+    length, llen = read_length(string[1:])
+    body = string[1 + llen : 1 + llen + length]
+    rest = string[1 + llen + length :]
     return tag, body, rest
 
 
@@ -141,8 +220,8 @@ def remove_sequence(string):
     length, lengthlength = read_length(string[1:])
     if length > len(string) - 1 - lengthlength:
         raise UnexpectedDER("Length longer than the provided buffer")
-    endseq = 1+lengthlength+length
-    return string[1+lengthlength:endseq], string[endseq:]
+    endseq = 1 + lengthlength + length
+    return string[1 + lengthlength : endseq], string[endseq:]
 
 
 def remove_octet_string(string):
@@ -150,26 +229,28 @@ def remove_octet_string(string):
         n = str_idx_as_int(string, 0)
         raise UnexpectedDER("wanted type 'octetstring' (0x04), got 0x%02x" % n)
     length, llen = read_length(string[1:])
-    body = string[1+llen:1+llen+length]
-    rest = string[1+llen+length:]
+    body = string[1 + llen : 1 + llen + length]
+    rest = string[1 + llen + length :]
     return body, rest
 
 
 def remove_object(string):
     if not string:
         raise UnexpectedDER(
-            "Empty string does not encode an object identifier")
+            "Empty string does not encode an object identifier"
+        )
     if string[:1] != b"\x06":
         n = str_idx_as_int(string, 0)
         raise UnexpectedDER("wanted type 'object' (0x06), got 0x%02x" % n)
     length, lengthlength = read_length(string[1:])
-    body = string[1+lengthlength:1+lengthlength+length]
-    rest = string[1+lengthlength+length:]
+    body = string[1 + lengthlength : 1 + lengthlength + length]
+    rest = string[1 + lengthlength + length :]
     if not body:
         raise UnexpectedDER("Empty object identifier")
     if len(body) != length:
         raise UnexpectedDER(
-            "Length of object identifier longer than the provided buffer")
+            "Length of object identifier longer than the provided buffer"
+        )
     numbers = []
     while body:
         n, ll = read_number(body)
@@ -188,8 +269,9 @@ def remove_object(string):
 
 def remove_integer(string):
     if not string:
-        raise UnexpectedDER("Empty string is an invalid encoding of an "
-                            "integer")
+        raise UnexpectedDER(
+            "Empty string is an invalid encoding of an integer"
+        )
     if string[:1] != b"\x02":
         n = str_idx_as_int(string, 0)
         raise UnexpectedDER("wanted type 'integer' (0x02), got 0x%02x" % n)
@@ -198,8 +280,8 @@ def remove_integer(string):
         raise UnexpectedDER("Length longer than provided buffer")
     if length == 0:
         raise UnexpectedDER("0-byte long encoding of integer")
-    numberbytes = string[1+llen:1+llen+length]
-    rest = string[1+llen+length:]
+    numberbytes = string[1 + llen : 1 + llen + length]
+    rest = string[1 + llen + length :]
     msb = str_idx_as_int(numberbytes, 0)
     if not msb < 0x80:
         raise UnexpectedDER("Negative integers are not supported")
@@ -209,8 +291,10 @@ def remove_integer(string):
         # considered a negative number otherwise
         smsb = str_idx_as_int(numberbytes, 1)
         if smsb < 0x80:
-            raise UnexpectedDER("Invalid encoding of integer, unnecessary "
-                                "zero padding bytes")
+            raise UnexpectedDER(
+                "Invalid encoding of integer, unnecessary "
+                "zero padding bytes"
+            )
     return int(binascii.hexlify(numberbytes), 16), rest
 
 
@@ -226,7 +310,7 @@ def read_number(string):
             raise UnexpectedDER("ran out of length bytes")
         number = number << 7
         d = str_idx_as_int(string, llen)
-        number += (d & 0x7f)
+        number += d & 0x7F
         llen += 1
         if not d & 0x80:
             break
@@ -239,7 +323,7 @@ def encode_length(l):
         return int2byte(l)
     s = ("%x" % l).encode()
     if len(s) % 2:
-        s = b("0") + s
+        s = b"0" + s
     s = binascii.unhexlify(s)
     llen = len(s)
     return int2byte(0x80 | llen) + s
@@ -251,19 +335,19 @@ def read_length(string):
     num = str_idx_as_int(string, 0)
     if not (num & 0x80):
         # short form
-        return (num & 0x7f), 1
+        return (num & 0x7F), 1
     # else long-form: b0&0x7f is number of additional base256 length bytes,
     # big-endian
-    llen = num & 0x7f
+    llen = num & 0x7F
     if not llen:
         raise UnexpectedDER("Invalid length encoding, length of length is 0")
-    if llen > len(string)-1:
+    if llen > len(string) - 1:
         raise UnexpectedDER("Length of length longer than provided buffer")
     # verify that the encoding is minimal possible (DER requirement)
     msb = str_idx_as_int(string, 1)
     if not msb or llen == 1 and msb < 0x80:
         raise UnexpectedDER("Not minimal encoding of length")
-    return int(binascii.hexlify(string[1:1+llen]), 16), 1+llen
+    return int(binascii.hexlify(string[1 : 1 + llen]), 16), 1 + llen
 
 
 def remove_bitstring(string, expect_unused=_sentry):
@@ -308,17 +392,19 @@ def remove_bitstring(string, expect_unused=_sentry):
     if not string:
         raise UnexpectedDER("Empty string does not encode a bitstring")
     if expect_unused is _sentry:
-        warnings.warn("Legacy call convention used, expect_unused= needs to be"
-                      " specified",
-                      DeprecationWarning)
+        warnings.warn(
+            "Legacy call convention used, expect_unused= needs to be"
+            " specified",
+            DeprecationWarning,
+        )
     num = str_idx_as_int(string, 0)
     if string[:1] != b"\x03":
         raise UnexpectedDER("wanted bitstring (0x03), got 0x%02x" % num)
     length, llen = read_length(string[1:])
     if not length:
         raise UnexpectedDER("Invalid length of bit string, can't be 0")
-    body = string[1+llen:1+llen+length]
-    rest = string[1+llen+length:]
+    body = string[1 + llen : 1 + llen + length]
+    rest = string[1 + llen + length :]
     if expect_unused is not _sentry:
         unused = str_idx_as_int(body, 0)
         if not 0 <= unused <= 7:
@@ -331,11 +417,12 @@ def remove_bitstring(string, expect_unused=_sentry):
                 raise UnexpectedDER("Invalid encoding of empty bit string")
             last = str_idx_as_int(body, -1)
             # verify that all the unused bits are set to zero (DER requirement)
-            if last & (2 ** unused - 1):
+            if last & (2**unused - 1):
                 raise UnexpectedDER("Non zero padding bits in bit string")
         if expect_unused is None:
             body = (body, unused)
     return body, rest
+
 
 # SEQUENCE([1, STRING(secexp), cont[0], OBJECT(curvename), cont[1], BINTSTRING)
 
@@ -348,8 +435,8 @@ def remove_bitstring(string, expect_unused=_sentry):
 #       ansi-X9-62 signatures(4) }
 #  ecdsa-with-SHA1  OBJECT IDENTIFIER ::= {
 #       id-ecSigType 1 }
-## so 1,2,840,10045,4,1
-## so 0x42, .. ..
+# so 1,2,840,10045,4,1
+# so 0x42, .. ..
 
 #  Ecdsa-Sig-Value  ::=  SEQUENCE  {
 #       r     INTEGER,
@@ -366,19 +453,26 @@ def remove_bitstring(string, expect_unused=_sentry):
 #  secp384r1 OBJECT IDENTIFIER ::= {
 #  iso(1) identified-organization(3) certicom(132) curve(0) 34 }
 
+
 def unpem(pem):
-    if isinstance(pem, text_type):
+    if isinstance(pem, text_type):  # pragma: no branch
         pem = pem.encode()
 
-    d = b("").join([l.strip() for l in pem.split(b("\n"))
-                    if l and not l.startswith(b("-----"))])
+    d = b"".join(
+        [
+            l.strip()
+            for l in pem.split(b"\n")
+            if l and not l.startswith(b"-----")
+        ]
+    )
     return base64.b64decode(d)
 
 
 def topem(der, name):
-    b64 = base64.b64encode(der)
+    b64 = base64.b64encode(compat26_str(der))
     lines = [("-----BEGIN %s-----\n" % name).encode()]
-    lines.extend([b64[start:start+64]+b("\n")
-                  for start in range(0, len(b64), 64)])
+    lines.extend(
+        [b64[start : start + 76] + b"\n" for start in range(0, len(b64), 76)]
+    )
     lines.append(("-----END %s-----\n" % name).encode())
-    return b("").join(lines)
+    return b"".join(lines)

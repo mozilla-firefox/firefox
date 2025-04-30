@@ -12,6 +12,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import mozilla.components.concept.base.crash.Breadcrumb
 import mozilla.components.lib.crash.Crash
@@ -714,7 +715,7 @@ class GleanCrashReporterServiceTest {
 
         val crash = Crash.UncaughtExceptionCrash(
             12340000,
-            RuntimeException("Test"),
+            RuntimeException("Test", java.io.IOException("IO")),
             arrayListOf(),
         )
 
@@ -748,8 +749,31 @@ class GleanCrashReporterServiceTest {
                 assertEquals("java_exception", GleanCrash.cause.testGetValue())
                 val exc = GleanCrash.javaException.testGetValue()
                 assertNotNull(exc)
-                assertNotNull(exc?.jsonObject?.get("messages"))
-                assertNotNull(exc?.jsonObject?.get("stack"))
+                val throwables = exc?.jsonObject?.get("throwables")
+                assertNotNull(throwables)
+                throwables?.jsonArray?.let { arr ->
+                    assertEquals(2, arr.size)
+                    val first = arr.get(0).jsonObject.toMutableMap()
+                    assertNotNull(first.remove("stack"))
+                    assertEquals(
+                        JsonObject(
+                            mapOf(
+                                "typeName" to JsonPrimitive("java.lang.RuntimeException"),
+                                "message" to JsonPrimitive("Test"),
+                            ),
+                        ),
+                        first,
+                    )
+                    assertEquals(
+                        JsonObject(
+                            mapOf(
+                                "typeName" to JsonPrimitive("java.io.IOException"),
+                                "message" to JsonPrimitive("IO"),
+                            ),
+                        ),
+                        arr.get(1),
+                    )
+                }
                 pingReceived = true
             }
 

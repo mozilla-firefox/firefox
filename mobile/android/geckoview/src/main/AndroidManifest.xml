@@ -87,6 +87,14 @@
                 android:isolatedProcess="false"
                 android:process=":ipdlunittest">
         </service>
+        <service
+                android:name="org.mozilla.gecko.crashhelper.CrashHelper"
+                android:enabled="true"
+                android:exported="false"
+                android:isolatedProcess="false"
+                android:process=":crashhelper"
+                android:stopWithTask="true">
+        </service>
     </application>
 
 </manifest>

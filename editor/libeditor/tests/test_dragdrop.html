@@ -70,12 +70,6 @@ function checkInputEvent(aEvent, aExpectedTarget, aInputType, aData, aDataTransf
 
 // eslint-disable-next-line complexity
 async function doTest() {
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      ["dom.element.contenteditable.plaintext-only.enabled", true],
-    ],
-  });
-
   const container = document.getElementById("container");
   const dropZone = document.getElementById("dropZone");
 

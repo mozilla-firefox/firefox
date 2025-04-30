@@ -74,14 +74,16 @@ serialize = [
 ]
 spv-in = [
     "dep:petgraph",
+    "petgraph/graphmap",
     "dep:spirv",
 ]
 spv-out = ["dep:spirv"]
+stderr = ["codespan-reporting/std"]
+termcolor = ["codespan-reporting/termcolor"]
 wgsl-in = [
     "dep:hexf-parse",
     "dep:strum",
     "dep:unicode-ident",
-    "indexmap/std",
     "compact",
 ]
 wgsl-out = []
@@ -109,12 +111,11 @@ default-features = false
 [dependencies.bitflags]
 version = "2.9"
 
+[dependencies.cfg-if]
+version = "1"
+
 [dependencies.codespan-reporting]
 version = "0.12"
-features = [
-    "std",
-    "termcolor",
-]
 default-features = false
 
 [dependencies.half]
@@ -153,6 +154,7 @@ default-features = false
 [dependencies.petgraph]
 version = "0.8"
 optional = true
+default-features = false
 
 [dependencies.pp-rs]
 version = "0.2.1"
@@ -165,17 +167,18 @@ default-features = false
 [dependencies.serde]
 version = "1.0.219"
 features = [
-    "default",
+    "alloc",
     "derive",
 ]
 optional = true
+default-features = false
 
 [dependencies.spirv]
 version = "0.3"
 optional = true
 
 [dependencies.strum]
-version = "0.26.3"
+version = "0.27.1"
 features = ["derive"]
 optional = true
 default-features = false
@@ -208,10 +211,10 @@ default-features = false
 path = "./hlsl-snapshots"
 
 [dev-dependencies.itertools]
-version = "0.13.0"
+version = "0.14.0"
 
 [dev-dependencies.ron]
-version = "0.9"
+version = "0.10"
 
 [dev-dependencies.rspirv]
 version = "0.11"

@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import mozilla.components.support.utils.ext.isLandscape
 import mozilla.components.ui.colors.PhotonColors
 import org.mozilla.focus.R
 import org.mozilla.focus.ui.theme.FocusTheme
@@ -74,6 +75,20 @@ fun OnBoardingFirstScreenCompose(
     ) {
         Spacer(Modifier.weight(TOP_SPACER_WEIGHT))
 
+        Image(
+            painter = painterResource(R.drawable.onboarding_logo),
+            contentDescription = LocalContext.current.getString(R.string.app_name),
+            modifier = Modifier
+                .size(150.dp, 150.dp)
+                .then(
+                    if (LocalContext.current.isLandscape()) {
+                        Modifier.weight(1f, false)
+                    } else {
+                        Modifier
+                    },
+                ),
+        )
+
         TitleContent()
 
         Spacer(Modifier.weight(MIDDLE_SPACER_WEIGHT))
@@ -102,12 +117,6 @@ fun OnBoardingFirstScreenCompose(
 
 @Composable
 private fun TitleContent() {
-    Image(
-        painter = painterResource(R.drawable.onboarding_logo),
-        contentDescription = LocalContext.current.getString(R.string.app_name),
-        modifier = Modifier.size(150.dp, 150.dp),
-    )
-
     Text(
         text = stringResource(
             R.string.onboarding_first_screen_title,

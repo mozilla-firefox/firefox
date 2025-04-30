@@ -2,6 +2,7 @@
 fluent-lint:
     description: Linter for Fluent files
     exclude:
+        - browser/extensions/newtab/webext-glue/locales/
         - dom/l10n/tests/mochitest/document_l10n/non-system-principal/localization/test.ftl
     extensions: ['ftl']
     support-files:

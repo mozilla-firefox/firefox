@@ -131,6 +131,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Fei oer de arkbalke om fan ljepblêd te wikseljen</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Fei nei links of rjochts om te wikseljen. Fei nei links op jo lêste ljepblêd om in nij ljepblêd te iepenjen.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">Fei de arkbalke nei links of rjochts om fan ljepblêd te wikseljen.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Kameratagong fereaske. Gean nei jo Android-ynstellingen, tik op machtigingen en tik op toestaan.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -836,8 +838,6 @@
   <string name="preferences_override_account_server">Oanpaste Mozilla-accountserver</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Oanpaste Syncserver</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla-account-/Syngronisaasjeserver oanpast. Tapassing wurdt ôfsluten om wizigingen ta te passen…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Account</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1485,16 +1485,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Fuortsmite</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Fuortsmite</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Werom blêdzje</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Omheech</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">URL diele</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Bestân diele</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Binne jo wis dat jo de selektearre items fuortsmite wolle?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Binne jo wis dat jo de selektearre items fuortsmite wolle?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Fuortsmite</string>
+  <string name="download_delete_multi_select_dialog_confirm">Fuortsmite</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Annulearje</string>
+  <string name="download_delete_multi_select_dialog_cancel">Annulearje</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Wurdt útfierd</string>
   <!--
@@ -1525,9 +1529,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Downloaden mislearre</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Downloads trochsykje</string>
+  <string name="download_search_placeholder">Downloads trochsykje</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Gjin resultaten fûn</string>
+  <string name="download_search_no_results_found">Gjin resultaten fûn</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Alles selektearje</string>
   <!--
@@ -2280,7 +2284,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Piktogram foar de foarkar foar Ferbettere beskerming tsjin folgjen-útsûndering</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3195,6 +3199,8 @@
   <string name="protection_panel_no_trackers_blocked">Gjin trackers fûn</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">Privacy- en befeiligingsynstellingen</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Tastimmingen</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3380,6 +3386,26 @@
     The title of the glean debugging feature
   -->
   <string name="glean_debug_tools_title">Glean-debugark</string>
+  <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">Regiohelpmiddelen</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">Oerskriuwt tydlik de wearden foar de thúsregio en de aktuele regio foar testen.</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">Thúsregio</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">Aktuele regio</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">Thúsregio oerskriuwe</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">Aktuele regio oerskriuwe</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">Thúsregio en aktuele regio oerskriuwe</string>
   <!--
     Messages explaining how to exit fullscreen mode
 

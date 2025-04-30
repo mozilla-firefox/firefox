@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Web Compatibility Interventions",
   "description": "Urgent post-release fixes for web compatibility.",
-  "version": "139.4.0",
+  "version": "140.0.0",
   "browser_specific_settings": {
     "gecko": {
       "id": "webcompat@mozilla.org",
@@ -98,6 +98,7 @@
       "lib/custom_functions.js",
       "lib/interventions.js",
       "lib/shims.js",
+      "lib/smartblock_embeds_helper.js",
       "run.js"
     ]
   },
@@ -142,6 +143,7 @@
     "shims/instagram-embed.js",
     "shims/instagram.js",
     "shims/instagram.svg",
+    "shims/jira-zendesk-support.js",
     "shims/kinja.js",
     "shims/live-test-shim.js",
     "shims/maxmind-geoip.js",
@@ -170,6 +172,7 @@
     "shims/vidible.js",
     "shims/vmad.xml",
     "shims/webtrends.js",
-    "shims/x-logo.svg"
+    "shims/x-logo.svg",
+    "shims/zendesk-asana-support.js"
   ]
 }

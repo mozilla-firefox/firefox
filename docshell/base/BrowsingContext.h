@@ -224,9 +224,6 @@ struct EmbedderColorSchemes {
    * This is only ever set to true on the top BC, so consumers need to get    \
    * the value from the top BC! */                                            \
   FIELD(HasSessionHistory, bool)                                              \
-  /* Tracks if this context is the only top-level document in the session     \
-   * history of the context. */                                               \
-  FIELD(IsSingleToplevelInHistory, bool)                                      \
   FIELD(UseErrorPages, bool)                                                  \
   FIELD(PlatformOverride, nsString)                                           \
   /* Specifies if this BC has loaded documents besides the initial            \

@@ -480,7 +480,7 @@ bool WebTaskScheduler::DispatchTask(WebTask* aTask,
   MOZ_ASSERT(!aTask->HasScheduled());
 
   auto taskQueue = mWebTaskQueues.Lookup(aTask->TaskQueueHashKey());
-  MOZ_ASSERT(taskQueue);
+  MOZ_DIAGNOSTIC_ASSERT(taskQueue);
 
   if (IsNormalOrHighPriority(aTask->Priority()) &&
       !taskQueue->HasScheduledTasks()) {

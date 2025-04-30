@@ -111,7 +111,7 @@ add_task(async function test_messagesLoaded_reach_experiment() {
   });
   await RemoteSettingsExperimentLoader.updateRecipes();
   await BrowserTestUtils.waitForCondition(
-    () => ExperimentAPI.getExperiment({ featureId }),
+    () => ExperimentAPI.getExperimentMetaData({ featureId }),
     "ExperimentAPI should return an experiment"
   );
 

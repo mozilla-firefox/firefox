@@ -56,6 +56,7 @@ add_setup(async function () {
         attachment: REMOTE_SETTINGS_RESULTS.filter(s => !isAmp(s)),
       },
     ],
+    prefs: [["quicksuggest.ampTopPickCharThreshold", 0]],
   });
 
   registerCleanupFunction(async () => {

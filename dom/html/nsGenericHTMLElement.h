@@ -150,9 +150,7 @@ class nsGenericHTMLElement : public nsGenericHTMLElementBase {
       SetHTMLAttr(nsGkAtoms::contenteditable, u"true"_ns, aError);
     } else if (aContentEditable.LowerCaseEqualsLiteral("false")) {
       SetHTMLAttr(nsGkAtoms::contenteditable, u"false"_ns, aError);
-    } else if (mozilla::StaticPrefs::
-                   dom_element_contenteditable_plaintext_only_enabled() &&
-               aContentEditable.LowerCaseEqualsLiteral("plaintext-only")) {
+    } else if (aContentEditable.LowerCaseEqualsLiteral("plaintext-only")) {
       SetHTMLAttr(nsGkAtoms::contenteditable, u"plaintext-only"_ns, aError);
     } else {
       aError.Throw(NS_ERROR_DOM_SYNTAX_ERR);
@@ -183,10 +181,7 @@ class nsGenericHTMLElement : public nsGenericHTMLElementBase {
       case 1:
         return ContentEditableState::True;
       case 2:
-        return mozilla::StaticPrefs::
-                       dom_element_contenteditable_plaintext_only_enabled()
-                   ? ContentEditableState::PlainTextOnly
-                   : ContentEditableState::Inherit;
+        return ContentEditableState::PlainTextOnly;
       case 3:
         return ContentEditableState::False;
       default:
@@ -984,9 +979,6 @@ class nsGenericHTMLElement : public nsGenericHTMLElementBase {
 
   [[nodiscard]] inline static bool IsEditableState(
       ContentEditableState aState) {
-    MOZ_ASSERT_IF(aState == ContentEditableState::PlainTextOnly,
-                  mozilla::StaticPrefs::
-                      dom_element_contenteditable_plaintext_only_enabled());
     return aState == ContentEditableState::True ||
            aState == ContentEditableState::PlainTextOnly;
   }

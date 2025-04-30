@@ -43,6 +43,7 @@ import kotlin.coroutines.suspendCoroutine
 class TranslationsMiddleware(
     private val engine: Engine,
     private val scope: CoroutineScope,
+    private val automaticallyInitialize: Boolean = true,
 ) : Middleware<BrowserState, BrowserAction> {
     private val logger = Logger("TranslationsMiddleware")
 
@@ -54,9 +55,9 @@ class TranslationsMiddleware(
     ) {
         // Pre process actions
         when (action) {
-            is InitAction ->
+            is InitAction -> if (automaticallyInitialize) {
                 context.store.dispatch(TranslationsAction.InitTranslationsBrowserState)
-
+            }
             is LocaleAction.UpdateLocaleAction -> {
                 logger.info("Detected app locale change.")
                 scope.launch {

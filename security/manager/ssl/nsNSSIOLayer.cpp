@@ -1882,22 +1882,19 @@ void DoFindObjects(FindObjectsCallback cb, void* ctx) {
         cb(kIPCClientCertsObjectTypeECKey, object.get_ECKey().params().Length(),
            object.get_ECKey().params().Elements(),
            object.get_ECKey().cert().Length(),
-           object.get_ECKey().cert().Elements(), object.get_ECKey().slotType(),
-           ctx);
+           object.get_ECKey().cert().Elements(), ctx);
         break;
       case IPCClientCertObject::TRSAKey:
         cb(kIPCClientCertsObjectTypeRSAKey,
            object.get_RSAKey().modulus().Length(),
            object.get_RSAKey().modulus().Elements(),
            object.get_RSAKey().cert().Length(),
-           object.get_RSAKey().cert().Elements(),
-           object.get_RSAKey().slotType(), ctx);
+           object.get_RSAKey().cert().Elements(), ctx);
         break;
       case IPCClientCertObject::TCertificate:
         cb(kIPCClientCertsObjectTypeCert,
            object.get_Certificate().der().Length(),
-           object.get_Certificate().der().Elements(), 0, nullptr,
-           object.get_Certificate().slotType(), ctx);
+           object.get_Certificate().der().Elements(), 0, nullptr, ctx);
         break;
       default:
         MOZ_ASSERT_UNREACHABLE("unhandled IPCClientCertObject type");
@@ -1960,11 +1957,11 @@ void AndroidDoFindObjects(FindObjectsCallback cb, void* ctx) {
         clientAuthCertificate->GetKeyParameters();
     cb(kIPCClientCertsObjectTypeCert, der->Length(),
        reinterpret_cast<uint8_t*>(der->GetElements().Elements()), 0, nullptr,
-       kIPCClientCertsSlotTypeModern, ctx);
+       ctx);
     cb(clientAuthCertificate->GetType(), keyParameters->Length(),
        reinterpret_cast<uint8_t*>(keyParameters->GetElements().Elements()),
        der->Length(), reinterpret_cast<uint8_t*>(der->GetElements().Elements()),
-       kIPCClientCertsSlotTypeModern, ctx);
+       ctx);
     jni::ObjectArray::LocalRef issuersBytes =
         clientAuthCertificate->GetIssuersBytes();
     if (issuersBytes) {
@@ -1972,7 +1969,7 @@ void AndroidDoFindObjects(FindObjectsCallback cb, void* ctx) {
         jni::ByteArray::LocalRef issuer = issuersBytes->GetElement(i);
         cb(kIPCClientCertsObjectTypeCert, issuer->Length(),
            reinterpret_cast<uint8_t*>(issuer->GetElements().Elements()), 0,
-           nullptr, kIPCClientCertsSlotTypeModern, ctx);
+           nullptr, ctx);
       }
     }
   }

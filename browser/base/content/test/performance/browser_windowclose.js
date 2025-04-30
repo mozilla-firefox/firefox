@@ -42,6 +42,8 @@ add_task(async function () {
     "We shouldn't have added any new expected reflows for window close."
   );
 
+  let inRange = (val, min, max) => min <= val && val <= max;
+  let tabBoundingRect = undefined;
   await withPerfObserver(
     async function () {
       let promiseOrigBrowserFocused = TestUtils.waitForCondition(() => {
@@ -60,6 +62,24 @@ add_task(async function () {
           }
           return rects;
         },
+        exceptions: [
+          {
+            name: "Shadow around active tab should not flicker on macOS (bug 1960967)",
+            condition(r) {
+              const tabRect = tabBoundingRect
+                ? tabBoundingRect
+                : (tabBoundingRect = win.gBrowser.tabContainer
+                    .querySelector("tab[selected=true] .tab-background")
+                    .getBoundingClientRect());
+              return (
+                inRange(r.x1, tabRect.x - 2, tabRect.x + 2) &&
+                inRange(r.y1, tabRect.y - 2, tabRect.y + 2) &&
+                inRange(r.w, tabRect.width - 4, tabRect.width + 4) &&
+                inRange(r.h, tabRect.height - 4, tabRect.height + 4)
+              );
+            },
+          },
+        ],
       },
     },
     win

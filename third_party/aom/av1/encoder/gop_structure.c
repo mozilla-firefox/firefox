@@ -618,13 +618,31 @@ static int construct_multi_layer_gf_structure(
   const int use_altref = gf_group->max_layer_depth_allowed > 0;
   int is_fwd_kf = rc->frames_to_fwd_kf == gf_interval;
 
+  const int sframe_dist = cpi->oxcf.kf_cfg.sframe_dist;
+  const int sframe_mode = cpi->oxcf.kf_cfg.sframe_mode;
+  const int sframe_enabled = (sframe_mode > 0) && (sframe_dist > 0);
+
+  if (sframe_enabled) {
+    switch (sframe_mode) {
+      case 1: gf_group->is_sframe_due = use_altref; break;
+      case 2:
+        gf_group->is_sframe_due |=
+            (frame_index && !(frame_index % sframe_dist));
+        break;
+    }
+  }
+
   if (use_altref) {
     gf_group->update_type[frame_index] = ARF_UPDATE;
     gf_group->arf_src_offset[frame_index] = gf_interval - cur_frame_index;
     gf_group->cur_frame_idx[frame_index] = cur_frame_index;
     gf_group->layer_depth[frame_index] = 1;
     gf_group->arf_boost[frame_index] = cpi->ppi->p_rc.gfu_boost;
-    gf_group->frame_type[frame_index] = is_fwd_kf ? KEY_FRAME : INTER_FRAME;
+    gf_group->frame_type[frame_index] = is_fwd_kf                 ? KEY_FRAME
+                                        : gf_group->is_sframe_due ? S_FRAME
+                                                                  : INTER_FRAME;
+    gf_group->is_sframe_due =
+        sframe_enabled && !(gf_group->frame_type[frame_index] == S_FRAME);
     gf_group->refbuf_state[frame_index] = REFBUF_UPDATE;
     gf_group->max_layer_depth = 1;
     gf_group->arf_index = frame_index;

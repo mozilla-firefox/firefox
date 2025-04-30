@@ -1,3 +1,4 @@
+import { runShutdownTasks } from '../../framework/on_shutdown.js';
 import { setBaseResourcePath } from '../../framework/resources.js';
 import { DefaultTestFileLoader } from '../../internal/file_loader.js';
 import { parseQuery } from '../../internal/query/parseQuery.js';
@@ -13,7 +14,16 @@ const loader = new DefaultTestFileLoader();
 
 setBaseResourcePath('../../../resources');
 
-async function reportTestResults(this: MessagePort | Worker, ev: MessageEvent) {
+// MessagePort, DedicatedWorkerGlobalScope, etc.
+type Sender = { postMessage: (x: unknown) => void };
+
+async function handleOnMessage(port: Sender, ev: MessageEvent) {
+  if (ev.data === 'shutdown') {
+    runShutdownTasks();
+    self.close();
+    return;
+  }
+
   const { query, expectations, ctsOptions } = ev.data as WorkerTestRunRequest;
 
   const log = setupWorkerEnvironment(ctsOptions);
@@ -25,7 +35,7 @@ async function reportTestResults(this: MessagePort | Worker, ev: MessageEvent) {
   const [rec, result] = log.record(testcase.query.toString());
   await testcase.run(rec, expectations);
 
-  this.postMessage({
+  port.postMessage({
     query,
     result: {
       ...result,
@@ -35,13 +45,13 @@ async function reportTestResults(this: MessagePort | Worker, ev: MessageEvent) {
 }
 
 self.onmessage = (ev: MessageEvent) => {
-  void reportTestResults.call(ev.source || self, ev);
+  void handleOnMessage(ev.source || self, ev);
 };
 
 self.onconnect = (event: MessageEvent) => {
   const port = event.ports[0];
 
   port.onmessage = (ev: MessageEvent) => {
-    void reportTestResults.call(port, ev);
+    void handleOnMessage(port, ev);
   };
 };

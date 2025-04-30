@@ -32,7 +32,6 @@ support-files = [
   "!/dom/tests/mochitest/general/file_clonewrapper.html",
   "!/dom/tests/mochitest/general/file_moving_nodeList.html",
   "!/dom/tests/mochitest/general/file_moving_xhr.html",
-  "!/dom/tests/mochitest/geolocation/network_geolocation.sjs",
 ]
 prefs = [ "layout.css.at-scope.enabled=true" ]
 

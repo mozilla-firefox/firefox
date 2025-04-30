@@ -103,6 +103,8 @@ void celt_fatal(const char *str, const char *file, int line)
 #define MAX32(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum 32-bit value.   */
 #define IMIN(a,b) ((a) < (b) ? (a) : (b))   /**< Minimum int value.   */
 #define IMAX(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum int value.   */
+#define FMIN(a,b) ((a) < (b) ? (a) : (b))   /**< Minimum float value.   */
+#define FMAX(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum float value.   */
 #define UADD32(a,b) ((a)+(b))
 #define USUB32(a,b) ((a)-(b))
 #define MAXG(a,b) MAX32(a, b)

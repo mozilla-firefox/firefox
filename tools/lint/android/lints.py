@@ -107,36 +107,37 @@ def format(config, fix=None, **lintargs):
 
     results = []
     for path in lintargs["substs"]["GRADLE_ANDROID_FORMAT_LINT_FOLDERS"]:
-        folder = os.path.join(
-            topobjdir, "gradle", "build", path, "spotless", "spotlessJava"
-        )
-        for filename in glob.iglob(folder + "/**/*.java", recursive=True):
-            err = {
-                "rule": "spotless-java",
-                "path": os.path.join(
-                    topsrcdir, path, mozpath.relpath(filename, folder)
-                ),
-                "lineno": 0,
-                "column": 0,
-                "message": "Formatting error, please run ./mach lint -l android-format --fix",
-                "level": "error",
-            }
-            results.append(result.from_config(config, **err))
-        folder = os.path.join(
-            topobjdir, "gradle", "build", path, "spotless", "spotlessKotlin"
-        )
-        for filename in glob.iglob(folder + "/**/*.kt", recursive=True):
-            err = {
-                "rule": "spotless-kt",
-                "path": os.path.join(
-                    topsrcdir, path, mozpath.relpath(filename, folder)
-                ),
-                "lineno": 0,
-                "column": 0,
-                "message": "Formatting error, please run ./mach lint -l android-format --fix",
-                "level": "error",
-            }
-            results.append(result.from_config(config, **err))
+        for outdir in ("spotless-clean", "spotless-lints"):
+            folder = os.path.join(
+                topobjdir, "gradle", "build", path, outdir, "spotlessJava"
+            )
+            for filename in glob.iglob(folder + "/**/*.java", recursive=True):
+                err = {
+                    "rule": "spotless-java",
+                    "path": os.path.join(
+                        topsrcdir, path, mozpath.relpath(filename, folder)
+                    ),
+                    "lineno": 0,
+                    "column": 0,
+                    "message": "Formatting error, please run ./mach lint -l android-format --fix",
+                    "level": "error",
+                }
+                results.append(result.from_config(config, **err))
+            folder = os.path.join(
+                topobjdir, "gradle", "build", path, outdir, "spotlessKotlin"
+            )
+            for filename in glob.iglob(folder + "/**/*.kt", recursive=True):
+                err = {
+                    "rule": "spotless-kt",
+                    "path": os.path.join(
+                        topsrcdir, path, mozpath.relpath(filename, folder)
+                    ),
+                    "lineno": 0,
+                    "column": 0,
+                    "message": "Formatting error, please run ./mach lint -l android-format --fix",
+                    "level": "error",
+                }
+                results.append(result.from_config(config, **err))
 
     if len(results) == 0 and ret != 0:
         # spotless seems to hit unfixed error.

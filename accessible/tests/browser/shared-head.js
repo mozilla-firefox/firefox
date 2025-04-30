@@ -351,8 +351,10 @@ function wrapWithIFrame(doc, options = {}) {
   if (options.contentSetup) {
     // Hide the body initially so we can ensure that any changes made by
     // contentSetup are included when the body's content is initially added to
-    // the accessibility tree.
-    iframeDocBodyAttrs["aria-hidden"] = "true";
+    // the accessibility tree. Use `hidden` instead of `aria-hidden` because the
+    // latter is ignored when applied to top level docs/<body> elements and we
+    // want to remain consistent with our handling for non-iframe docs.
+    iframeDocBodyAttrs.hidden = true;
   }
   if (options.remoteIframe) {
     // eslint-disable-next-line @microsoft/sdl/no-insecure-url
@@ -427,8 +429,9 @@ function snippetToURL(doc, options = {}) {
   } else if (options.contentSetup) {
     // Hide the body initially so we can ensure that any changes made by
     // contentSetup are included when the body's content is initially added to
-    // the accessibility tree.
-    attrs["aria-hidden"] = "true";
+    // the accessibility tree. Use `hidden` instead of `aria-hidden` because the
+    // latter is ignored when applied to top level docs/<body> elements.
+    attrs.hidden = true;
   }
 
   const encodedDoc = encodeURIComponent(
@@ -614,13 +617,13 @@ function accessibleTask(doc, task, options = {}) {
           info("Executing contentSetup");
           const ready = waitForEvent(EVENT_REORDER, currentContentDoc());
           await invokeContentTask(browser, [], options.contentSetup);
-          // snippetToURL set aria-hidden on the body. We now Remove aria-hidden
+          // snippetToURL set hidden on the body. We now Remove hidden
           // and wait for a reorder on the body. This guarantees that any
           // changes made by contentSetup are included when the body's content
           // is initially added to the accessibility tree and that the
           // accessibility tree is up to date.
           await invokeContentTask(browser, [], () => {
-            content.document.body.removeAttribute("aria-hidden");
+            content.document.body.removeAttribute("hidden");
           });
           await ready;
           info("contentSetup done");

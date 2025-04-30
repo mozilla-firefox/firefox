@@ -259,7 +259,7 @@ class D3DSharedTexturesReporter final : public nsIMemoryReporter {
 
 NS_IMPL_ISUPPORTS(D3DSharedTexturesReporter, nsIMemoryReporter)
 
-gfxWindowsPlatform::gfxWindowsPlatform() : mRenderMode(RENDER_GDI) {
+gfxWindowsPlatform::gfxWindowsPlatform() {
   // If win32k is locked down then we can't use COM STA and shouldn't need it.
   // Also, we won't be using any GPU memory in this process.
   if (!IsWin32kLockedDown()) {
@@ -612,9 +612,7 @@ already_AddRefed<gfxASurface> gfxWindowsPlatform::CreateOffscreenSurface(
 
 #ifdef CAIRO_HAS_WIN32_SURFACE
   if (!XRE_IsContentProcess()) {
-    if (mRenderMode == RENDER_GDI || mRenderMode == RENDER_DIRECT2D) {
-      surf = new gfxWindowsSurface(aSize, aFormat);
-    }
+    surf = new gfxWindowsSurface(aSize, aFormat);
   }
 #endif
 

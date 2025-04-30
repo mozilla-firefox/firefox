@@ -42,10 +42,6 @@ skip-if = [
 ["test_ext_scripting_contentScripts.js"]
 
 ["test_ext_scripting_contentScripts_css.js"]
-skip-if = [
-  "os == 'linux' && debug && fission", # Bug 1762638
-  "os == 'mac' && debug && fission", # Bug 1762638
-]
 run-sequentially = "very high failure rate in parallel"
 
 ["test_ext_scripting_contentScripts_file.js"]

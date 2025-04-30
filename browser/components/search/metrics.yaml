@@ -217,6 +217,34 @@ sap:
     expires: never
     telemetry_mirror: h#SEARCH_COUNTS
 
+  search_form_counts:
+    type: event
+    description: >
+      Records how often users visit the homepages of search engines (also
+      known as SearchForm) using a SAP. It only counts how many visits were
+      initiated, not how many homepages were loaded successfully.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1915252
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1915252
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+    expires: never
+    extra_keys:
+      source:
+        description: >
+          The search access point from which the user initiated the search.
+          Possible values are `searchbar` and `urlbar`.
+        type: string
+      provider_id:
+        description: >
+          The identifier of the search engine provider that is being used for the
+          search. Note this may be different to the identifier of the provider in
+          SERP reports. For user installed engines, this will be the string `other`.
+        type: string
+
 serp:
   impression:
     type: event

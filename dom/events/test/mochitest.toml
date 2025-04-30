@@ -473,6 +473,8 @@ skip-if = [
 
 ["test_legacy_event.html"]
 
+["test_legacy_mouse_events_prevent_default_wheel.html"]
+
 ["test_legacy_touch_api.html"]
 tags = "os_integration"
 

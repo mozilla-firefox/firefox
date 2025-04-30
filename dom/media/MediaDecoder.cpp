@@ -12,7 +12,6 @@
 
 #include "AudioDeviceInfo.h"
 #include "DOMMediaStream.h"
-#include "DecoderBenchmark.h"
 #include "ImageContainer.h"
 #include "MediaDecoderStateMachineBase.h"
 #include "MediaFormatReader.h"
@@ -239,7 +238,6 @@ MediaDecoder::MediaDecoder(MediaDecoderInit& aInit)
       mOwner(aInit.mOwner),
       mAbstractMainThread(aInit.mOwner->AbstractMainThread()),
       mFrameStats(new FrameStatistics()),
-      mDecoderBenchmark(new DecoderBenchmark()),
       mVideoFrameContainer(aInit.mOwner->GetVideoFrameContainer()),
       mMinimizePreroll(aInit.mMinimizePreroll),
       mFiredMetadataLoaded(false),
@@ -546,29 +544,6 @@ void MediaDecoder::OnSecondaryVideoContainerInstalled(
   GetOwner()->OnSecondaryVideoContainerInstalled(aSecondaryVideoContainer);
 }
 
-void MediaDecoder::OnStoreDecoderBenchmark(const VideoInfo& aInfo) {
-  MOZ_ASSERT(NS_IsMainThread());
-
-  int32_t videoFrameRate = aInfo.GetFrameRate().ref();
-
-  if (mFrameStats && videoFrameRate) {
-    DecoderBenchmarkInfo benchmarkInfo{
-        aInfo.mMimeType,
-        aInfo.mDisplay.width,
-        aInfo.mDisplay.height,
-        videoFrameRate,
-        BitDepthForColorDepth(aInfo.mColorDepth),
-    };
-
-    LOG("Store benchmark: Video width=%d, height=%d, frameRate=%d, content "
-        "type = %s\n",
-        benchmarkInfo.mWidth, benchmarkInfo.mHeight, benchmarkInfo.mFrameRate,
-        benchmarkInfo.mContentType.BeginReading());
-
-    mDecoderBenchmark->Store(benchmarkInfo, mFrameStats);
-  }
-}
-
 void MediaDecoder::ShutdownInternal() {
   MOZ_ASSERT(NS_IsMainThread());
   mVideoFrameContainer = nullptr;
@@ -630,9 +605,6 @@ void MediaDecoder::SetStateMachineParameters() {
       mDecoderStateMachine->OnSecondaryVideoContainerInstalled().Connect(
           mAbstractMainThread, this,
           &MediaDecoder::OnSecondaryVideoContainerInstalled);
-  mOnStoreDecoderBenchmark = mReader->OnStoreDecoderBenchmark().Connect(
-      mAbstractMainThread, this, &MediaDecoder::OnStoreDecoderBenchmark);
-
   mOnEncrypted = mReader->OnEncrypted().Connect(
       mAbstractMainThread, GetOwner(), &MediaDecoderOwner::DispatchEncrypted);
   mOnWaitingForKey = mReader->OnWaitingForKey().Connect(
@@ -656,7 +628,6 @@ void MediaDecoder::DisconnectEvents() {
   mOnNextFrameStatus.Disconnect();
   mOnTrackInfoUpdated.Disconnect();
   mOnSecondaryVideoContainerInstalled.Disconnect();
-  mOnStoreDecoderBenchmark.Disconnect();
 }
 
 RefPtr<ShutdownPromise> MediaDecoder::ShutdownStateMachine() {

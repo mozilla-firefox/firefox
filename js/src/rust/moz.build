@@ -18,9 +18,6 @@ if CONFIG["MOZ_MEMORY"]:
 if CONFIG["MOZ_ICU4X"]:
     features += ["icu4x"]
 
-if CONFIG["JS_HAS_TEMPORAL_API"]:
-    features += ["icu4x_calendar"]
-
 RustLibrary("jsrust", features)
 
 if CONFIG["JS_SHARED_LIBRARY"]:

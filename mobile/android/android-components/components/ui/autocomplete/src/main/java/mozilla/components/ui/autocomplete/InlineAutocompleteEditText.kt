@@ -464,6 +464,7 @@ open class InlineAutocompleteEditText @JvmOverloads constructor(
             addAutocompleteText(result)
         }
 
+        @Suppress("DEPRECATION")
         announceForAccessibility(text.toString())
     }
 

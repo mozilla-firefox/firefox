@@ -5,6 +5,8 @@
 import argparse
 import logging
 import os
+import platform
+import shutil
 import sys
 import tarfile
 import time
@@ -719,6 +721,96 @@ def emulator(
                 "Unable to retrieve Android emulator return code.",
             )
     return 0
+
+
+@SubCommand(
+    command="android-emulator",
+    subcommand="reset",
+    description="Resets the emulator and Android Virtual Device (AVD) by removing the "
+    "'ANDROID_AVD_HOME' directory and re-bootstrapping the emulator and AVD.",
+)
+def emulator_reset(command_context):
+    from mozboot import android
+
+    os_arch = platform.machine()
+    os_name = None
+    if platform.system() == "Windows":
+        os_name = "windows"
+    elif platform.system() == "Linux":
+        os_name = "linux"
+    elif platform.system() == "Darwin":
+        os_name = "macosx"
+    else:
+        raise Exception("Can't reset AVD on an unknown system")
+
+    avd_home_path = android.AVD_HOME_PATH
+
+    if avd_home_path.exists():
+        command_context.log(
+            logging.INFO, "emulator", {}, f"Removing AVD directory: '{avd_home_path}'"
+        )
+        try:
+            shutil.rmtree(avd_home_path)
+            command_context.log(
+                logging.INFO,
+                "emulator",
+                {},
+                f"Successfully removed AVD directory: '{avd_home_path}'",
+            )
+        except FileNotFoundError:
+            pass  # Directory doesn't exist, do nothing
+        except Exception as e:
+            command_context.log(
+                logging.ERROR,
+                "emulator",
+                {},
+                f"Failed to remove the AVD directory: '{avd_home_path}': {e}",
+            )
+
+    sdk_manager_tool_path = android.get_sdkmanager_tool_path(
+        android.get_sdk_path(os_name)
+    )
+    if not sdk_manager_tool_path.exists():
+        command_context.log(
+            logging.ERROR,
+            "emulator",
+            {},
+            f"Unable to proceed – 'sdkmanager' not found at {sdk_manager_tool_path}. "
+            f"Please run './mach bootstrap' to reinstall your Android SDK.",
+        )
+        return 1
+
+    normalized_arch = os_arch.lower()
+
+    if "x86" in normalized_arch or "amd64" in normalized_arch:
+        avd_manifest_path_for_arch = android.AVD_MANIFEST_X86_64
+    else:
+        avd_manifest_path_for_arch = android.AVD_MANIFEST_ARM64
+
+    command_context.log(
+        logging.INFO,
+        "emulator",
+        {},
+        f"Resetting emulator and AVD. AVD_MANIFEST_PATH='{avd_manifest_path_for_arch}'",
+    )
+
+    packages = android.get_android_packages(android.AndroidPackageList.EMULATOR)
+    avd_manifest = android.get_avd_manifest(avd_manifest_path_for_arch)
+
+    android.ensure_android_packages(
+        os_name,
+        os_arch,
+        packages,
+        no_interactive=True,
+        avd_manifest=avd_manifest,
+    )
+
+    android.ensure_android_avd(
+        os_name,
+        os_arch,
+        no_interactive=True,
+        avd_manifest=avd_manifest,
+    )
 
 
 @Command(

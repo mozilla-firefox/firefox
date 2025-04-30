@@ -858,3 +858,9 @@ void js::HasSeenObjectEmulateUndefinedFuse::popFuse(JSContext* cx) {
   MOZ_ASSERT(cx->global());
   cx->runtime()->setUseCounter(cx->global(), JSUseCounter::ISHTMLDDA_FUSE);
 }
+
+void js::HasSeenArrayExceedsInt32LengthFuse::popFuse(JSContext* cx) {
+  if (intact()) {
+    js::InvalidatingRuntimeFuse::popFuse(cx);
+  }
+}

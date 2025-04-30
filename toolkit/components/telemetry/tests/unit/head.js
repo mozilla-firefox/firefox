@@ -9,6 +9,7 @@ const { AppConstants } = ChromeUtils.importESModule(
 );
 
 ChromeUtils.defineESModuleGetters(this, {
+  AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
   AddonTestUtils: "resource://testing-common/AddonTestUtils.sys.mjs",
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
   HttpServer: "resource://testing-common/httpd.sys.mjs",
@@ -290,14 +291,44 @@ async function loadAddonManager(...args) {
   AddonTestUtils.overrideCertDB();
   createAppInfo(...args);
 
-  // As we're not running in application, we need to setup the features directory
-  // used by system add-ons.
-  const distroDir = FileUtils.getDir("ProfD", ["sysfeatures", "app0"]);
-  AddonTestUtils.registerDirectory("XREAppFeat", distroDir);
-  await AddonTestUtils.overrideBuiltIns({
-    system: ["tel-system-xpi@tests.mozilla.org"],
-  });
-  return AddonTestUtils.promiseStartupManager();
+  // As we're not running in application, we need to setup the built-in
+  // add-ons to reseamble a setup similar to a Firefox Desktop instance.
+
+  // Enable SCOPE_APPLICATION for builtin testing.  Default in tests is only SCOPE_PROFILE.
+  let scopes = AddonManager.SCOPE_PROFILE | AddonManager.SCOPE_APPLICATION;
+  Services.prefs.setIntPref("extensions.enabledScopes", scopes);
+
+  // Disable XPIProvider auto-installed default theme logic
+  // for the unit tests using this helper.
+  Services.prefs.setBoolPref(
+    "extensions.skipInstallDefaultThemeForTests",
+    true
+  );
+
+  // NOTE: keep the addon id and version in sync with the content of
+  // toolkit/components/telemetry/tests/addons/system/manifest.json
+  const addon_id = "tel-system-xpi@tests.mozilla.org";
+  const addon_version = "1.0";
+  const addon_res_url_path = "telemetry-test-builtin-addon";
+  // The built-in location requires a resource: URL that maps to a
+  // jar: or file: URL.  This would typically be something bundled
+  // into omni.ja but for testing we just use a temp file.
+  const xpi = do_get_file("system.xpi");
+  let base = Services.io.newURI(`jar:file:${xpi.path}!/`);
+  let resProto = Services.io
+    .getProtocolHandler("resource")
+    .QueryInterface(Ci.nsIResProtocolHandler);
+  resProto.setSubstitution(addon_res_url_path, base);
+  let builtins = [
+    {
+      addon_id,
+      addon_version,
+      res_url: `resource://${addon_res_url_path}/`,
+    },
+  ];
+  await AddonTestUtils.overrideBuiltIns({ builtins });
+  await AddonTestUtils.promiseStartupManager();
+  return { builtins };
 }
 
 function finishAddonManagerStartup() {
@@ -582,6 +613,3 @@ const DISTRIBUTION_CUSTOMIZATION_COMPLETE_TOPIC =
 const PLUGIN2_NAME = "Quicktime";
 const PLUGIN2_DESC = "A mock Quicktime plugin";
 const PLUGIN2_VERSION = "2.3";
-//
-// system add-ons are enabled at startup, so record date when the test starts
-const SYSTEM_ADDON_INSTALL_DATE = Date.now();

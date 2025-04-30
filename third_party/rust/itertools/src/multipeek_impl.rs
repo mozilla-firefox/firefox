@@ -1,14 +1,16 @@
-use std::iter::Fuse;
-use alloc::collections::VecDeque;
 use crate::size_hint;
-use crate::PeekingNext;
 #[cfg(doc)]
 use crate::Itertools;
+use crate::PeekingNext;
+use alloc::collections::VecDeque;
+use std::iter::Fuse;
 
 /// See [`multipeek()`] for more information.
 #[derive(Clone, Debug)]
+#[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
 pub struct MultiPeek<I>
-    where I: Iterator
+where
+    I: Iterator,
 {
     iter: Fuse<I>,
     buf: VecDeque<I::Item>,
@@ -20,7 +22,8 @@ pub struct MultiPeek<I>
 ///
 /// [`IntoIterator`] enabled version of [`Itertools::multipeek`].
 pub fn multipeek<I>(iterable: I) -> MultiPeek<I::IntoIter>
-    where I: IntoIterator
+where
+    I: IntoIterator,
 {
     MultiPeek {
         iter: iterable.into_iter().fuse(),
@@ -30,7 +33,8 @@ pub fn multipeek<I>(iterable: I) -> MultiPeek<I::IntoIter>
 }
 
 impl<I> MultiPeek<I>
-    where I: Iterator
+where
+    I: Iterator,
 {
     /// Reset the peeking “cursor”
     pub fn reset_peek(&mut self) {
@@ -62,24 +66,31 @@ impl<I: Iterator> MultiPeek<I> {
 }
 
 impl<I> PeekingNext for MultiPeek<I>
-    where I: Iterator,
+where
+    I: Iterator,
 {
     fn peeking_next<F>(&mut self, accept: F) -> Option<Self::Item>
-        where F: FnOnce(&Self::Item) -> bool
+    where
+        F: FnOnce(&Self::Item) -> bool,
     {
         if self.buf.is_empty() {
             if let Some(r) = self.peek() {
-                if !accept(r) { return None }
+                if !accept(r) {
+                    return None;
+                }
             }
-        } else if let Some(r) = self.buf.get(0) {
-            if !accept(r) { return None }
+        } else if let Some(r) = self.buf.front() {
+            if !accept(r) {
+                return None;
+            }
         }
         self.next()
     }
 }
 
 impl<I> Iterator for MultiPeek<I>
-    where I: Iterator
+where
+    I: Iterator,
 {
     type Item = I::Item;
 
@@ -91,11 +102,15 @@ impl<I> Iterator for MultiPeek<I>
     fn size_hint(&self) -> (usize, Option<usize>) {
         size_hint::add_scalar(self.iter.size_hint(), self.buf.len())
     }
+
+    fn fold<B, F>(self, mut init: B, mut f: F) -> B
+    where
+        F: FnMut(B, Self::Item) -> B,
+    {
+        init = self.buf.into_iter().fold(init, &mut f);
+        self.iter.fold(init, f)
+    }
 }
 
 // Same size
-impl<I> ExactSizeIterator for MultiPeek<I>
-    where I: ExactSizeIterator
-{}
-
-
+impl<I> ExactSizeIterator for MultiPeek<I> where I: ExactSizeIterator {}

@@ -32,11 +32,6 @@ class SVGPathSegment final : public nsWrapperCache {
   JSObject* WrapObject(JSContext* aCx,
                        JS::Handle<JSObject*> aGivenProto) override;
 
-  bool IsMove() const;
-  bool IsArc() const;
-  bool IsValid() const;
-  StylePathCommand ToStylePathCommand() const;
-
   void GetType(DOMString& aType);
   void SetType(const nsAString& aType);
 

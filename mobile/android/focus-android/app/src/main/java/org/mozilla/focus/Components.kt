@@ -124,7 +124,7 @@ class Components(
     val engineDefaultSettings by lazy {
         DefaultSettings(
             requestInterceptor = AppContentInterceptor(context),
-            trackingProtectionPolicy = settings.createTrackingProtectionPolicy(),
+            trackingProtectionPolicy = EngineProvider.createTrackingProtectionPolicy(context),
             javascriptEnabled = !settings.shouldBlockJavaScript(),
             remoteDebuggingEnabled = settings.shouldEnableRemoteDebugging(),
             webFontsEnabled = !settings.shouldBlockWebFonts(),
@@ -136,7 +136,7 @@ class Components(
 
     val engine: Engine by lazy {
         engineOverride ?: EngineProvider.createEngine(context, engineDefaultSettings).apply {
-            this@Components.settings.setupSafeBrowsing(this)
+            EngineProvider.setupSafeBrowsing(this, this@Components.settings.shouldUseSafeBrowsing())
             WebCompatFeature.install(this)
             WebCompatReporterFeature.install(this, "focus-geckoview")
         }

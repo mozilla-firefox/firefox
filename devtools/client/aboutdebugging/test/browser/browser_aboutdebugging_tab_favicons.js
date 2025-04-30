@@ -42,10 +42,11 @@ add_task(async function () {
     ".qa-debug-target-item-icon"
   );
 
-  // Note this relies on PlaceUtils.promiseFaviconData returning the same data-url as the
-  // one provided in the test page. If the implementation changes and PlaceUtils returns a
-  // different base64 from the one we defined, we can instead load the image and check a
-  // few pixels to verify it matches the expected icon.
+  // Note this relies on PlaceUtils.favicons.getFaviconForPage() returning the
+  // favicon that has same data-url as the one provided in the test page. If the
+  // implementation changes and PlaceUtils returns a different base64 from the
+  // one we defined, we can instead load the image and check a few pixels to
+  // verify it matches the expected icon.
   is(
     faviconTabIcon.src,
     EXPECTED_FAVICON,

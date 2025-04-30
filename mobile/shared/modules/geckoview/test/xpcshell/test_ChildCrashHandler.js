@@ -14,8 +14,8 @@ const { makeFakeAppDir } = ChromeUtils.importESModule(
 
 add_setup(async function () {
   await makeFakeAppDir();
-  // The test harness sets MOZ_CRASHREPORTER_NO_REPORT, which disables crash
-  // reports. This test needs them enabled.
+  // The test harness sets MOZ_CRASHREPORTER_NO_REPORT, which disables
+  // reporting crashes to the user. This test needs them enabled.
   const noReport = Services.env.get("MOZ_CRASHREPORTER_NO_REPORT");
   Services.env.set("MOZ_CRASHREPORTER_NO_REPORT", "");
 

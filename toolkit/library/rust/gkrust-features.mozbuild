@@ -80,9 +80,6 @@ if CONFIG["MOZ_UNIFFI_FIXTURES"]:
 if CONFIG["MOZ_ICU4X"]:
     gkrust_features += ["icu4x"]
 
-if CONFIG["JS_HAS_TEMPORAL_API"]:
-    gkrust_features += ["icu4x_calendar"]
-
 if CONFIG["USE_LIBZ_RS"]:
     gkrust_features += ["libz-rs-sys"]
 

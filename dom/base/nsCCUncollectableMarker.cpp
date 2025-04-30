@@ -29,6 +29,7 @@
 #include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/CycleCollectedJSRuntime.h"
 #include "mozilla/EventListenerManager.h"
+#include "mozilla/StaticPtr.h"
 #include "mozilla/dom/ChromeMessageBroadcaster.h"
 #include "mozilla/dom/ContentFrameMessageManager.h"
 #include "mozilla/dom/ContentProcessMessageManager.h"
@@ -46,7 +47,8 @@
 using namespace mozilla;
 using namespace mozilla::dom;
 
-static bool sInited = 0;
+static StaticRefPtr<nsCCUncollectableMarker> sInstance;
+
 // The initial value of sGeneration should not be the same as the
 // value it is given at xpcom-shutdown, because this will make any GCs
 // before we first CC benignly violate the black-gray invariant, due
@@ -58,11 +60,11 @@ NS_IMPL_ISUPPORTS(nsCCUncollectableMarker, nsIObserver)
 
 /* static */
 nsresult nsCCUncollectableMarker::Init() {
-  if (sInited) {
+  if (sInstance) {
     return NS_OK;
   }
 
-  nsCOMPtr<nsIObserver> marker = new nsCCUncollectableMarker;
+  RefPtr<nsCCUncollectableMarker> marker = new nsCCUncollectableMarker();
 
   nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
   if (!obs) return NS_ERROR_FAILURE;
@@ -75,10 +77,8 @@ nsresult nsCCUncollectableMarker::Init() {
 
   rv = obs->AddObserver(marker, "cycle-collector-begin", false);
   NS_ENSURE_SUCCESS(rv, rv);
-  rv = obs->AddObserver(marker, "cycle-collector-forget-skippable", false);
-  NS_ENSURE_SUCCESS(rv, rv);
 
-  sInited = true;
+  sInstance = marker;
 
   return NS_OK;
 }
@@ -303,26 +303,27 @@ nsresult nsCCUncollectableMarker::Observe(nsISupports* aSubject,
     // No need for kungFuDeathGrip here, yay observerservice!
     obs->RemoveObserver(this, "xpcom-shutdown");
     obs->RemoveObserver(this, "cycle-collector-begin");
-    obs->RemoveObserver(this, "cycle-collector-forget-skippable");
 
+    sInstance = nullptr;
     sGeneration = 0;
 
     return NS_OK;
   }
 
-  NS_ASSERTION(!strcmp(aTopic, "cycle-collector-begin") ||
-                   !strcmp(aTopic, "cycle-collector-forget-skippable"),
-               "wrong topic");
+  MOZ_ASSERT(!strcmp(aTopic, "cycle-collector-begin"), "wrong topic");
 
+  Element::ClearContentUnbinder();
+  return Cleanup(/* aPrepareForCC = */ true);
+}
+
+// Don't call this with aPrepareForCC = false from an observer, as apparently
+// calling UnmarkGrayStrongObservers() from inside an observer can cause
+// problems. See bug 1958292.
+nsresult nsCCUncollectableMarker::Cleanup(bool aPrepareForCC) {
   // JS cleanup can be slow. Do it only if this is the first forget-skippable
   // after a GC.
-  const bool cleanupJS = nsJSContext::HasHadCleanupSinceLastGC() &&
-                         !strcmp(aTopic, "cycle-collector-forget-skippable");
-
-  const bool prepareForCC = !strcmp(aTopic, "cycle-collector-begin");
-  if (prepareForCC) {
-    Element::ClearContentUnbinder();
-  }
+  const bool cleanupJS =
+      nsJSContext::HasHadCleanupSinceLastGC() && !aPrepareForCC;
 
   // Increase generation to effectively unmark all current objects
   if (!++sGeneration) {
@@ -383,7 +384,7 @@ nsresult nsCCUncollectableMarker::Observe(nsISupports* aSubject,
                 "There must be one forgetSkippable call per cleanup state.");
 
   static uint32_t sFSState = eDone;
-  if (prepareForCC) {
+  if (aPrepareForCC) {
     sFSState = eDone;
     return NS_OK;
   }
@@ -395,9 +396,8 @@ nsresult nsCCUncollectableMarker::Observe(nsISupports* aSubject,
     // frame message managers and docshells.
     sFSState = eInitial;
     return NS_OK;
-  } else {
-    ++sFSState;
   }
+  ++sFSState;
 
   switch (sFSState) {
     case eUnmarkJSEventListeners: {
@@ -424,6 +424,12 @@ nsresult nsCCUncollectableMarker::Observe(nsISupports* aSubject,
   }
 
   return NS_OK;
+}
+
+void nsCCUncollectableMarker::CleanupForForgetSkippable() {
+  if (sInstance) {
+    (void)sInstance->Cleanup(/* aPrepareForCC = */ false);
+  }
 }
 
 void mozilla::dom::TraceBlackJS(JSTracer* aTrc) {

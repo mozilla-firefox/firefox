@@ -7,9 +7,6 @@
  * "Couldn't get the user appdata directory. Crash events may not be produced."
  * in nsExceptionHandler.cpp (possibly bug 619104)
  *
- * Test log warnings that happen after the test has finished
- * "OOPDeinit() without successful OOPInit()" in nsExceptionHandler.cpp
- * (bug 619104)
  * "XPCOM objects created/destroyed from static ctor/dtor" in nsTraceRefcnt.cpp
  * (possibly bug 457479)
  *
@@ -1103,9 +1100,18 @@ function setupTestCommon(aAppUpdateAutoEnabled = false, aAllowBits = false) {
 }
 
 /**
- * Cleans up all the files we may have created by simulating an update.
+ * Nulls out the most commonly used global vars used by tests to prevent leaks
+ * as needed and attempts to restore the system to its original state.
  */
-function cleanupUpdateFiles() {
+function cleanupTestCommon() {
+  debugDump("start - general test cleanup");
+
+  if (gChannel) {
+    gPrefRoot.removeObserver(PREF_APP_UPDATE_CHANNEL, observer);
+  }
+
+  gTestserver = null;
+
   if (AppConstants.platform == "macosx" || AppConstants.platform == "linux") {
     // This will delete the launch script if it exists.
     getLaunchScript();
@@ -1121,6 +1127,36 @@ function cleanupUpdateFiles() {
         } catch (e) {}
       }
     }
+  }
+
+  if (AppConstants.platform == "win" && MOZ_APP_BASENAME) {
+    let appDir = getApplyDirFile();
+    let vendor = MOZ_APP_VENDOR ? MOZ_APP_VENDOR : "Mozilla";
+    const REG_PATH =
+      "SOFTWARE\\" + vendor + "\\" + MOZ_APP_BASENAME + "\\TaskBarIDs";
+    let key = Cc["@mozilla.org/windows-registry-key;1"].createInstance(
+      Ci.nsIWindowsRegKey
+    );
+    try {
+      key.open(
+        Ci.nsIWindowsRegKey.ROOT_KEY_LOCAL_MACHINE,
+        REG_PATH,
+        Ci.nsIWindowsRegKey.ACCESS_ALL
+      );
+      if (key.hasValue(appDir.path)) {
+        key.removeValue(appDir.path);
+      }
+    } catch (e) {}
+    try {
+      key.open(
+        Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER,
+        REG_PATH,
+        Ci.nsIWindowsRegKey.ACCESS_ALL
+      );
+      if (key.hasValue(appDir.path)) {
+        key.removeValue(appDir.path);
+      }
+    } catch (e) {}
   }
 
   // The updates directory is located outside of the application directory and
@@ -1191,52 +1227,6 @@ function cleanupUpdateFiles() {
   }
   // We just deleted this.
   gUpdateBin = null;
-}
-
-/**
- * Nulls out the most commonly used global vars used by tests to prevent leaks
- * as needed and attempts to restore the system to its original state.
- */
-function cleanupTestCommon() {
-  debugDump("start - general test cleanup");
-
-  if (gChannel) {
-    gPrefRoot.removeObserver(PREF_APP_UPDATE_CHANNEL, observer);
-  }
-
-  gTestserver = null;
-
-  if (AppConstants.platform == "win" && MOZ_APP_BASENAME) {
-    let appDir = getApplyDirFile();
-    let vendor = MOZ_APP_VENDOR ? MOZ_APP_VENDOR : "Mozilla";
-    const REG_PATH =
-      "SOFTWARE\\" + vendor + "\\" + MOZ_APP_BASENAME + "\\TaskBarIDs";
-    let key = Cc["@mozilla.org/windows-registry-key;1"].createInstance(
-      Ci.nsIWindowsRegKey
-    );
-    try {
-      key.open(
-        Ci.nsIWindowsRegKey.ROOT_KEY_LOCAL_MACHINE,
-        REG_PATH,
-        Ci.nsIWindowsRegKey.ACCESS_ALL
-      );
-      if (key.hasValue(appDir.path)) {
-        key.removeValue(appDir.path);
-      }
-    } catch (e) {}
-    try {
-      key.open(
-        Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER,
-        REG_PATH,
-        Ci.nsIWindowsRegKey.ACCESS_ALL
-      );
-      if (key.hasValue(appDir.path)) {
-        key.removeValue(appDir.path);
-      }
-    } catch (e) {}
-  }
-
-  cleanupUpdateFiles();
 
   resetEnvironment();
   Services.prefs.clearUserPref(PREF_APP_UPDATE_BITS_ENABLED);

@@ -38,6 +38,7 @@
 class nsWindow;
 
 namespace mozilla::widget {
+class TSFEmptyTextStore;
 class TSFTextStore;
 class TSFTextStoreBase;
 struct IMENotificationRequests;
@@ -73,6 +74,8 @@ class TSFUtils final {
    */
   static void OnSetInputContext(nsWindow* aWindow, const InputContext& aContext,
                                 const InputContextAction& aAction);
+
+  // FIXME: Simplify the following APIs with TSFTextStoreBase::IsEditable().
 
   /**
    * Active TextStore is a TSFTextStoreBase instance which is for editable
@@ -277,6 +280,9 @@ class TSFUtils final {
 
   // Current text store which may be an empty one for disabled state.
   static StaticRefPtr<TSFTextStoreBase> sCurrentTextStore;
+
+  // Global instance for non-editable state.
+  static StaticRefPtr<TSFEmptyTextStore> sEmptyTextStore;
 
   // TSF client ID for the current application
   static DWORD sClientId;

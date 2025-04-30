@@ -13040,7 +13040,7 @@ bool SetGlobalOptionsPreJSInit(const OptionParser& op) {
     JS::Prefs::set_experimental_explicit_resource_management(false);
   }
 #endif
-#ifdef JS_HAS_TEMPORAL_API
+#ifdef JS_HAS_INTL_API
   if (op.getBoolOption("enable-temporal")) {
     JS::Prefs::setAtStartup_experimental_temporal(true);
   }

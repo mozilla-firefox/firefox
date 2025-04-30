@@ -89,70 +89,77 @@ class EmulationModule extends RootBiDiModule {
         latitude,
         longitude,
         accuracy = 1,
-        // For platform API if we want to set values to null
-        // we have to set them to NaN.
-        altitude = NaN,
-        altitudeAccuracy = NaN,
-        heading = NaN,
-        speed = NaN,
+        altitude = null,
+        altitudeAccuracy = null,
+        heading = null,
+        speed = null,
       } = coordinates;
 
-      lazy.assert.number(
+      lazy.assert.numberInRange(
         latitude,
-        lazy.pprint`Expected "latitude" to be a number, got ${latitude}`
+        [-90, 90],
+        lazy.pprint`Expected "latitude" to be in the range of -90 to 90, got ${latitude}`
       );
 
-      lazy.assert.number(
+      lazy.assert.numberInRange(
         longitude,
-        lazy.pprint`Expected "longitude" to be a number, got ${longitude}`
+        [-180, 180],
+        lazy.pprint`Expected "longitude" to be in the range of -180 to 180, got ${longitude}`
       );
 
-      lazy.assert.number(
+      lazy.assert.positiveNumber(
         accuracy,
-        lazy.pprint`Expected "accuracy" to be a number, got ${accuracy}`
+        lazy.pprint`Expected "accuracy" to be a positive number, got ${accuracy}`
       );
 
-      if (!Number.isNaN(altitude)) {
+      if (altitude !== null) {
         lazy.assert.number(
           altitude,
           lazy.pprint`Expected "altitude" to be a number, got ${altitude}`
         );
       }
 
-      if (!Number.isNaN(altitudeAccuracy)) {
-        lazy.assert.number(
+      if (altitudeAccuracy !== null) {
+        lazy.assert.positiveNumber(
           altitudeAccuracy,
-          lazy.pprint`Expected "altitudeAccuracy" to be a number, got ${altitudeAccuracy}`
+          lazy.pprint`Expected "altitudeAccuracy" to be a positive number, got ${altitudeAccuracy}`
         );
 
-        if (Number.isNaN(altitude)) {
+        if (altitude === null) {
           throw new lazy.error.InvalidArgumentError(
             `When "altitudeAccuracy" is provided it's required to provide "altitude" as well`
           );
         }
       }
 
-      if (!Number.isNaN(heading)) {
+      if (heading !== null) {
         lazy.assert.number(
           heading,
           lazy.pprint`Expected "heading" to be a number, got ${heading}`
         );
+
+        lazy.assert.that(
+          number => number >= 0 && number < 360,
+          lazy.pprint`Expected "heading" to be >= 0 and < 360, got ${heading}`
+        )(heading);
       }
 
-      if (!Number.isNaN(speed)) {
-        lazy.assert.number(
+      if (speed !== null) {
+        lazy.assert.positiveNumber(
           speed,
-          lazy.pprint`Expected "speed" to be a number, got ${speed}`
+          lazy.pprint`Expected "speed" to be a positive number, got ${speed}`
         );
       }
 
       coordinates = {
         ...coordinates,
         accuracy,
-        altitude,
-        altitudeAccuracy,
-        heading,
-        speed,
+        // For platform API if we want to set values to null
+        // we have to set them to NaN.
+        altitude: altitude === null ? NaN : altitude,
+        altitudeAccuracy: altitudeAccuracy === null ? NaN : altitudeAccuracy,
+        heading: heading === null ? NaN : heading,
+        speed: speed === null ? NaN : speed,
       };
     }
 

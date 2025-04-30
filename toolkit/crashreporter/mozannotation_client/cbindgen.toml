@@ -11,5 +11,5 @@ language = "C++"
 include_guard = "mozannotation_client_ffi_generated_h"
 includes = ["nsStringFwd.h"]
 
-[export.rename]
-"ThinVec" = "nsTArray"
+[export]
+exclude = ["nsCString"]

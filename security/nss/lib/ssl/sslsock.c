@@ -313,6 +313,13 @@ ssl_DupSocket(sslSocket *os)
 
     ss->ssl3.dheWeakGroupEnabled = os->ssl3.dheWeakGroupEnabled;
 
+    PORT_Memcpy(ss->ssl3.supportedCertCompressionAlgorithms,
+                os->ssl3.supportedCertCompressionAlgorithms,
+                sizeof(ss->ssl3.supportedCertCompressionAlgorithms[0]) *
+                    os->ssl3.supportedCertCompressionAlgorithmsCount);
+    ss->ssl3.supportedCertCompressionAlgorithmsCount =
+        os->ssl3.supportedCertCompressionAlgorithmsCount;
+
     if (ss->opt.useSecurity) {
         PRCList *cursor;
 

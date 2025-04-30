@@ -59,7 +59,7 @@ namespace mozilla::widget {
 /* TSFEmptyTextStore                                              */
 /******************************************************************/
 
-TSFEmptyTextStore::TSFEmptyTextStore() {
+TSFEmptyTextStore::TSFEmptyTextStore() : TSFTextStoreBase(Editable::No) {
   MOZ_LOG(gIMELog, LogLevel::Info,
           ("0x%p TSFEmptyTextStore instance is created", this));
 }
@@ -434,86 +434,67 @@ TSFEmptyTextStore::CreateAndSetFocus(nsWindow* aFocusedWindow,
   const RefPtr<TSFEmptyTextStore> textStore = new TSFEmptyTextStore();
   if (NS_WARN_IF(!textStore->Init(aFocusedWindow, aContext))) {
     MOZ_LOG(gIMELog, LogLevel::Error,
-            ("  TSFTextStore::CreateAndSetFocus() FAILED due to "
-             "TSFTextStore::Init() failure"));
+            ("  TSFEmptyTextStore::CreateAndSetFocus() FAILED due to "
+             "TSFEmptyTextStore::Init() failure"));
     textStore->Destroy();
     TSFUtils::ClearStoringTextStoresIf(textStore);
     return Err(NS_ERROR_FAILURE);
   }
-  const RefPtr<ITfDocumentMgr> newDocMgr = textStore->mDocumentMgr;
-  if (NS_WARN_IF(!newDocMgr)) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("  TSFTextStore::CreateAndSetFocus() FAILED due to "
-             "invalid TSFTextStore::mDocumentMgr"));
+  nsresult rv = textStore->SetFocus(aFocusedWindow, aContext);
+  if (NS_FAILED(rv)) {
     textStore->Destroy();
     TSFUtils::ClearStoringTextStoresIf(textStore);
-    return Err(NS_ERROR_FAILURE);
-  }
-  const RefPtr<ITfThreadMgr> threadMgr = TSFUtils::GetThreadMgr();
-  if (NS_WARN_IF(FAILED(threadMgr->SetFocus(newDocMgr)))) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("  TSFTextStore::CreateAndSetFocus() FAILED due to "
-             "ITfTheadMgr::SetFocus() failure"));
-    textStore->Destroy();
-    TSFUtils::ClearStoringTextStoresIf(textStore);
-    return Err(NS_ERROR_FAILURE);
-  }
-  if (NS_WARN_IF(!TSFUtils::GetThreadMgr())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("  TSFTextStore::CreateAndSetFocus() FAILED due to "
-             "sThreadMgr being destroyed during calling "
-             "ITfTheadMgr::SetFocus()"));
-    textStore->Destroy();
-    TSFUtils::ClearStoringTextStoresIf(textStore);
-    return Err(NS_ERROR_FAILURE);
-  }
-  if (NS_WARN_IF(TSFUtils::GetCurrentTextStore())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("  TSFTextStore::CreateAndSetFocus() FAILED due to "
-             "creating TextStore has lost focus during calling "
-             "ITfThreadMgr::SetFocus()"));
-    textStore->Destroy();
-    TSFUtils::ClearStoringTextStoresIf(textStore);
-    return Err(NS_ERROR_FAILURE);
-  }
-  // Use AssociateFocus() for ensuring that any native focus event
-  // never steal focus from our documentMgr.
-  {
-    RefPtr<ITfDocumentMgr> prevFocusedDocumentMgr;
-    if (NS_WARN_IF(FAILED(threadMgr->AssociateFocus(
-            aFocusedWindow->GetWindowHandle(), newDocMgr,
-            getter_AddRefs(prevFocusedDocumentMgr))))) {
-      MOZ_LOG(gIMELog, LogLevel::Error,
-              ("  TSFTextStore::CreateAndSetFocus() FAILED due to "
-               "ITfTheadMgr::AssociateFocus() failure"));
-      textStore->Destroy();
-      TSFUtils::ClearStoringTextStoresIf(textStore);
-      return Err(NS_ERROR_FAILURE);
-    }
-  }
-  if (NS_WARN_IF(!TSFUtils::GetThreadMgr())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("  TSFTextStore::CreateAndSetFocus() FAILED due to "
-             "sThreadMgr being destroyed during calling "
-             "ITfTheadMgr::AssociateFocus()"));
-    textStore->Destroy();
-    TSFUtils::ClearStoringTextStoresIf(textStore);
-    return Err(NS_ERROR_FAILURE);
-  }
-  if (NS_WARN_IF(TSFUtils::GetCurrentTextStore())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("  TSFTextStore::CreateAndSetFocus() FAILED due to "
-             "creating TextStore has lost focus during calling "
-             "ITfTheadMgr::AssociateFocus()"));
-    textStore->Destroy();
-    TSFUtils::ClearStoringTextStoresIf(textStore);
-    return Err(NS_ERROR_FAILURE);
+    return Err(rv);
   }
   return textStore;
 }
 
-// static
-IMENotificationRequests TSFEmptyTextStore::GetIMENotificationRequests() {
+nsresult TSFEmptyTextStore::SetFocus(nsWindow* aFocusedWindow,
+                                     const InputContext& aContext) {
+  const RefPtr<ITfDocumentMgr> docMgr = mDocumentMgr;
+  if (NS_WARN_IF(!docMgr)) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("  TSFEmptyTextStore::SetFocus() FAILED due to "
+             "invalid TSFEmptyTextStore::mDocumentMgr"));
+    return NS_ERROR_FAILURE;
+  }
+  const RefPtr<ITfThreadMgr> threadMgr = TSFUtils::GetThreadMgr();
+  if (NS_WARN_IF(FAILED(threadMgr->SetFocus(docMgr)))) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("  TSFEmptyTextStore::SetFocus() FAILED due to "
+             "ITfTheadMgr::SetFocus() failure"));
+    return NS_ERROR_FAILURE;
+  }
+  if (NS_WARN_IF(!TSFUtils::GetThreadMgr())) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("  TSFEmptyTextStore::SetFocus() FAILED due to "
+             "sThreadMgr being destroyed during calling "
+             "ITfTheadMgr::SetFocus()"));
+    return NS_ERROR_FAILURE;
+  }
+  if (NS_WARN_IF(TSFUtils::GetCurrentTextStore())) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("  TSFEmptyTextStore::SetFocus() FAILED due to "
+             "creating TextStore has lost focus during calling "
+             "ITfThreadMgr::SetFocus()"));
+    return NS_ERROR_FAILURE;
+  }
+  return NS_OK;
+}
+
+nsresult TSFEmptyTextStore::SetFocusAndUpdateDocumentURLAndBrowsingMode(
+    nsWindow* aFocusedWindow, const InputContext& aContext) {
+  if (NS_WARN_IF(NS_FAILED(
+          UpdateDocumentURLAndBrowsingMode(aFocusedWindow, aContext)))) {
+    return NS_ERROR_FAILURE;
+  }
+  if (NS_WARN_IF(NS_FAILED(SetFocus(aFocusedWindow, aContext)))) {
+    return NS_ERROR_FAILURE;
+  }
+  return NS_OK;
+}
+
+IMENotificationRequests TSFEmptyTextStore::GetIMENotificationRequests() const {
   return IMENotificationRequests();
 }
 

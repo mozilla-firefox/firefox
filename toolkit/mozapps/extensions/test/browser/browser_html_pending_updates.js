@@ -6,6 +6,7 @@ const { AddonTestUtils } = ChromeUtils.importESModule(
 
 ChromeUtils.defineESModuleGetters(this, {
   PERMISSION_L10N: "resource://gre/modules/ExtensionPermissionMessages.sys.mjs",
+  ExtensionPermissions: "resource://gre/modules/ExtensionPermissions.sys.mjs",
 });
 
 AddonTestUtils.initMochitest(this);
@@ -591,3 +592,80 @@ add_task(async function test_pending_update_with_no_prompted_permission() {
 
   await SpecialPowers.popPrefEnv();
 });
+
+add_task(
+  async function test_pending_update_does_not_grant_technicalAndInteraction() {
+    await SpecialPowers.pushPrefEnv({
+      set: [["extensions.dataCollectionPermissions.enabled", true]],
+    });
+
+    const id = "@test-id";
+    const { extension } = createTestExtension({
+      id,
+      oldManifest: {
+        browser_specific_settings: {
+          gecko: {
+            id,
+            data_collection_permissions: {},
+          },
+        },
+      },
+      newManifest: {
+        permissions: ["bookmarks"],
+        browser_specific_settings: {
+          gecko: {
+            id,
+            data_collection_permissions: {
+              optional: ["technicalAndInteraction"],
+            },
+          },
+        },
+      },
+    });
+
+    await extension.startup();
+    await extension.awaitMessage("bgpage-ready");
+    const win = await loadInitialView("extension");
+
+    const dialogPromise = promisePopupNotificationShown(
+      "addon-webext-permissions"
+    );
+    win.checkForUpdates();
+    const popupContentEl = await dialogPromise;
+
+    // Confirm the update, and proceed.
+    const waitForManagementUpdate = new Promise(resolve => {
+      const { Management } = ChromeUtils.importESModule(
+        "resource://gre/modules/Extension.sys.mjs"
+      );
+      Management.once("update", resolve);
+    });
+    popupContentEl.button.click();
+    await promiseUpdateAvailable(extension);
+    await completePostponedUpdate({ id, win });
+    // Ensure that the bootstrap scope update method has been executed
+    // successfully and emitted the update Management event.
+    info("Wait for the Management update to be emitted");
+    await waitForManagementUpdate;
+
+    // This test verifies that we don't accidentally grant the
+    // "technicalAndInteraction" data collection permission on update because
+    // that's controlled by the `showTechnicalAndInteractionCheckbox` value in
+    // `ExtensionUI.showPermissionsPrompt()`.
+    const perms = await ExtensionPermissions.get(id);
+    Assert.deepEqual(
+      perms,
+      {
+        permissions: [],
+        origins: [],
+        data_collection: [],
+      },
+      "Expected no stored permission"
+    );
+
+    await closeView(win);
+    await extension.unload();
+
+    await SpecialPowers.popPrefEnv();
+  }
+);

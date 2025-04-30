@@ -32,4 +32,3 @@ support-files = [
 
 ["test_dmd.js"]
 dmd = true
-skip-if = ["!(os=='linux' || os=='mac' || (os=='win' && !pgo))"]

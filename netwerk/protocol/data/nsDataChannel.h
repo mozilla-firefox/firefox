@@ -23,7 +23,7 @@ class nsDataChannel : public nsBaseChannel,
   NS_FORWARD_NSICHANNEL(nsBaseChannel::)
   NS_DECL_NSIIDENTCHANNEL
 
-  explicit nsDataChannel(nsIURI* uri) { SetURI(uri); };
+  explicit nsDataChannel(nsIURI* uri) { SetURI(uri); }
 
   nsresult Init();
 
@@ -31,7 +31,6 @@ class nsDataChannel : public nsBaseChannel,
   virtual ~nsDataChannel() = default;
   [[nodiscard]] virtual nsresult OpenContentStream(
       bool async, nsIInputStream** result, nsIChannel** channel) override;
-  virtual nsresult NotifyListeners();
   uint64_t mChannelId = 0;
 
  private:

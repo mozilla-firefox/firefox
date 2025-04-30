@@ -83,10 +83,8 @@ class BiometricPromptFeature(
         /**
          * Checks if the appropriate SDK version and hardware capabilities are met to use the feature.
          */
-        fun canUseFeature(context: Context): Boolean {
+        fun canUseFeature(manager: BiometricManager): Boolean {
             return if (SDK_INT >= M) {
-                val manager = BiometricManager.from(context)
-
                 manager.isHardwareAvailable() && manager.isEnrolled()
             } else {
                 false

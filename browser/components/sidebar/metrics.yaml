@@ -687,3 +687,24 @@ contextual_manager:
       opened:
         type: boolean
         description: Whether the sidebar is opening.
+  passwords_enabled:
+    type: event
+    description: >
+      User clicked on the checkbox corresponding to the "Passwords" entry on sidebar customization settings.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1956952
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1947634
+    data_sensitivity:
+      - interaction
+    expires: never
+    notification_emails:
+      - issozi@mozilla.com
+      - tthorne@mozilla.com
+      - passwords-dev@mozilla.org
+    send_in_pings:
+      - events
+    extra_keys:
+      checked:
+        type: boolean
+        description: Whether the Passwords box was checked.

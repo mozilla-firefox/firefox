@@ -33,10 +33,10 @@ The structure has the following fields:
    64-bit size, in bytes, of file's contents.
 ``creationTime``
    Creation time per definition of :ref:`PRTime`. See
-   `prtime.h <https://dxr.mozilla.org/mozilla-central/source/nsprpub/pr/include/prtime.h>`__.
+   `prtime.h <https://searchfox.org/mozilla-central/source/nsprpub/pr/include/prtime.h>`__.
 ``modifyTime``
    Last modification time per definition of :ref:`PRTime`. See
-   `prtime.h <https://dxr.mozilla.org/mozilla-central/source/nsprpub/pr/include/prtime.h>`__.
+   `prtime.h <https://searchfox.org/mozilla-central/source/nsprpub/pr/include/prtime.h>`__.
 
 
 Description

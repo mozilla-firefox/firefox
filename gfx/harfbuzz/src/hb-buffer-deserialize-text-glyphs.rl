@@ -76,7 +76,9 @@ glyph	= (glyph_id | glyph_name) >tok %parse_glyph;
 cluster	= '=' (unum >tok %parse_cluster);
 offsets	= '@' (num >tok %parse_x_offset)   ',' (num >tok %parse_y_offset );
 advances= '+' (num >tok %parse_x_advance) (',' (num >tok %parse_y_advance))?;
-glyphflags= '#' (unum >tok %parse_glyph_flags);
+glyphflags = '#' (unum >tok %parse_glyph_flags);
+# Not parsed. Ignored.
+glyphextents = '<' (num ',' num ',' num ',' num) '>';
 
 glyph_item	=
 	(
@@ -85,6 +87,7 @@ glyph_item	=
 		offsets?
 		advances?
 		glyphflags?
+		glyphextents?
 		( '|' | ']')
 	)
 	>clear_item

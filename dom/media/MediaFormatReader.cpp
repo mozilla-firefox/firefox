@@ -14,7 +14,6 @@
 #ifdef MOZ_AV1
 #  include "AOMDecoder.h"
 #endif
-#include "DecoderBenchmark.h"
 #include "MediaData.h"
 #include "MediaDataDecoderProxy.h"
 #include "MediaInfo.h"
@@ -483,10 +482,6 @@ void MediaFormatReader::DecoderFactory::DoInitDecoder(Data& aData) {
                 ownerData.mDecoder.get());
             mOwner->SetVideoDecodeThreshold();
             mOwner->ScheduleUpdate(aTrack);
-            if (aTrack == TrackInfo::kVideoTrack) {
-              DecoderBenchmark::CheckVersion(
-                  ownerData.GetCurrentInfo()->mMimeType);
-            }
             if (aTrack == TrackInfo::kAudioTrack) {
               ownerData.mProcessName = ownerData.mDecoder->GetProcessName();
               ownerData.mCodecName = ownerData.mDecoder->GetCodecName();
@@ -1019,19 +1014,6 @@ void MediaFormatReader::ShutdownDecoder(TrackType aTrack) {
 
   // Shut down the decoder if any.
   decoder.ShutdownDecoder();
-}
-
-void MediaFormatReader::NotifyDecoderBenchmarkStore() {
-  MOZ_ASSERT(OnTaskQueue());
-  if (!StaticPrefs::media_mediacapabilities_from_database()) {
-    return;
-  }
-  auto& decoder = GetDecoderData(TrackInfo::kVideoTrack);
-  if (decoder.GetCurrentInfo() && decoder.GetCurrentInfo()->GetAsVideoInfo()) {
-    VideoInfo info = *(decoder.GetCurrentInfo()->GetAsVideoInfo());
-    info.SetFrameRate(static_cast<int32_t>(ceil(decoder.mMeanRate.Mean())));
-    mOnStoreDecoderBenchmark.Notify(std::move(info));
-  }
 }
 
 void MediaFormatReader::NotifyTrackInfoUpdated() {
@@ -2200,11 +2182,6 @@ void MediaFormatReader::HandleDemuxedSamples(
     PROFILER_MARKER_TEXT("StreamID Change", MEDIA_PLAYBACK, {}, markerString);
     LOG("%s", markerString.get());
 
-    if (aTrack == TrackInfo::kVideoTrack) {
-      // We are about to create a new decoder thus the benchmark,
-      // up to this point, is stored.
-      NotifyDecoderBenchmarkStore();
-    }
     decoder.mNextStreamSourceID.reset();
     decoder.mLastStreamSourceID = info->GetID();
     decoder.mInfo = info;
@@ -2500,10 +2477,6 @@ void MediaFormatReader::Update(TrackType aTrack) {
     } else if (decoder.HasCompletedDrain()) {
       if (decoder.mDemuxEOS) {
         LOG("Rejecting %s promise: EOS", TrackTypeToStr(aTrack));
-        if (aTrack == TrackInfo::kVideoTrack) {
-          // End of video, store the benchmark of the decoder.
-          NotifyDecoderBenchmarkStore();
-        }
         decoder.RejectPromise(NS_ERROR_DOM_MEDIA_END_OF_STREAM, __func__);
       } else if (decoder.mWaitingForDataStartTime) {
         if (decoder.mDrainState == DrainState::DrainCompleted &&

@@ -796,11 +796,8 @@ FxAccountsWebChannelHelpers.prototype = {
     // with FxA as part of a Sync flow should work all the time. If
     // Sync is broken in PB mode, users will think Firefox is broken.
     // See https://bugzilla.mozilla.org/show_bug.cgi?id=1323853
-    //
-    // XXX - This hard-coded context seems bad?
     let pb = this.isPrivateBrowsingMode(sendingContext);
-    let ok =
-      !pb || service === "sync" || context === "fx_desktop_v3" || isPairing;
+    let ok = !pb || service === "sync" || isPairing;
     log.debug(
       `fxa status ok=${ok} - private=${pb}, service=${service}, context=${context}, pairing=${isPairing}`
     );

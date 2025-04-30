@@ -587,7 +587,7 @@ mod test {
             None,
         );
 
-        metric.get(&"1".repeat(72)).set(true);
+        metric.get(&"1".repeat(112)).set(true);
 
         assert_eq!(
             1,

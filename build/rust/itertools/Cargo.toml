@@ -1,0 +1,17 @@
+[package]
+name = "itertools"
+version = "0.10.999"
+edition = "2018"
+license = "MIT OR Apache-2.0"
+
+[lib]
+path = "lib.rs"
+
+[dependencies.itertools]
+version = "0.14.0"
+default-features = false
+
+[features]
+default = ["itertools/default"]
+use_alloc = ["itertools/use_alloc"]
+use_std = ["itertools/use_std"]

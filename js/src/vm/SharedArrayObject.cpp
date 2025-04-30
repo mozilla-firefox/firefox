@@ -273,8 +273,9 @@ void SharedArrayRawBuffer::dropReference() {
   }
 }
 
-bool SharedArrayRawBuffer::grow(size_t newByteLength) {
-  MOZ_RELEASE_ASSERT(isGrowable());
+bool SharedArrayRawBuffer::growJS(size_t newByteLength) {
+  MOZ_ASSERT(!isWasm());
+  MOZ_RELEASE_ASSERT(isGrowableJS());
 
   // The caller is responsible to ensure |newByteLength| doesn't exceed the
   // maximum allowed byte length.
@@ -386,7 +387,31 @@ bool SharedArrayBufferObject::growImpl(JSContext* cx, const CallArgs& args) {
                               JSMSG_ARRAYBUFFER_LENGTH_LARGER_THAN_MAXIMUM);
     return false;
   }
-  if (!buffer->rawBufferObject()->grow(newByteLength)) {
+
+  if (buffer->isWasm()) {
+    // Special case for resizing of Wasm buffers.
+    if (newByteLength % wasm::PageSize != 0) {
+      JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                                JSMSG_WASM_ARRAYBUFFER_PAGE_MULTIPLE);
+      return false;
+    }
+
+    mozilla::Maybe<WasmSharedArrayRawBuffer::Lock> lock(
+        mozilla::Some(buffer->rawWasmBufferObject()));
+
+    if (newByteLength < buffer->rawWasmBufferObject()->volatileByteLength()) {
+      lock.reset();
+      JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                                JSMSG_WASM_ARRAYBUFFER_CANNOT_SHRINK);
+      return false;
+    }
+
+    Pages newPages = Pages::fromByteLengthExact(newByteLength);
+    return buffer->rawWasmBufferObject()->wasmGrowToPagesInPlace(
+        *lock, buffer->wasmAddressType(), newPages);
+  }
+
+  if (!buffer->rawBufferObject()->growJS(newByteLength)) {
     JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
                               JSMSG_SHARED_ARRAY_LENGTH_SMALLER_THAN_CURRENT);
     return false;
@@ -546,11 +571,13 @@ SharedArrayBufferType* SharedArrayBufferObject::NewWith(
                      FixedLengthSharedArrayBufferObject> ||
       std::is_same_v<SharedArrayBufferType, GrowableSharedArrayBufferObject>);
 
-  if constexpr (std::is_same_v<SharedArrayBufferType,
-                               FixedLengthSharedArrayBufferObject>) {
-    MOZ_ASSERT(!buffer->isGrowable());
-  } else {
-    MOZ_ASSERT(buffer->isGrowable());
+  if (!buffer->isWasm()) {
+    if constexpr (std::is_same_v<SharedArrayBufferType,
+                                 FixedLengthSharedArrayBufferObject>) {
+      MOZ_ASSERT(!buffer->isGrowableJS());
+    } else {
+      MOZ_ASSERT(buffer->isGrowableJS());
+    }
   }
 
   AutoSetNewObjectMetadata metadata(cx);
@@ -683,6 +710,46 @@ SharedArrayBufferObject* SharedArrayBufferObject::createFromNewRawBuffer(
 
   return obj;
 }
+
+template <typename SharedArrayBufferType>
+SharedArrayBufferType* SharedArrayBufferObject::createFromWasmObject(
+    JSContext* cx, Handle<SharedArrayBufferObject*> wasmBuffer) {
+  MOZ_ASSERT(cx->realm()->creationOptions().getSharedMemoryAndAtomicsEnabled());
+  MOZ_ASSERT(wasmBuffer->isWasm());
+
+  SharedArrayRawBuffer* rawBuffer = wasmBuffer->rawBufferObject();
+  size_t byteLengthOrMaximum;
+  if constexpr (std::is_same_v<SharedArrayBufferType,
+                               GrowableSharedArrayBufferObject>) {
+    byteLengthOrMaximum = rawBuffer->toWasmBuffer()->wasmClampedMaxByteLength();
+  } else {
+    static_assert(std::is_same_v<SharedArrayBufferType,
+                                 FixedLengthSharedArrayBufferObject>);
+    byteLengthOrMaximum = rawBuffer->volatileByteLength();
+  }
+
+  if (!rawBuffer->addReference()) {
+    JS_ReportErrorASCII(cx, "Reference count overflow on SharedArrayBuffer");
+    return nullptr;
+  }
+
+  SharedArrayBufferType* obj = NewWith<SharedArrayBufferType>(
+      cx, rawBuffer, byteLengthOrMaximum, nullptr);
+  if (!obj) {
+    rawBuffer->dropReference();
+    return nullptr;
+  }
+
+  return obj;
+}
+
+template FixedLengthSharedArrayBufferObject* SharedArrayBufferObject::
+    createFromWasmObject<FixedLengthSharedArrayBufferObject>(
+        JSContext* cx, Handle<SharedArrayBufferObject*> wasmBuffer);
+
+template GrowableSharedArrayBufferObject*
+SharedArrayBufferObject::createFromWasmObject<GrowableSharedArrayBufferObject>(
+    JSContext* cx, Handle<SharedArrayBufferObject*> wasmBuffer);
 
 /* static */
 void SharedArrayBufferObject::wasmDiscard(Handle<SharedArrayBufferObject*> buf,

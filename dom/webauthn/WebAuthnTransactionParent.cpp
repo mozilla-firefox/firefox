@@ -85,6 +85,16 @@ bool GetAssertionRequestIncludesLargeBlobRead(
   return false;
 }
 
+bool MakeCredentialRequestIncludesPrfExtension(
+    const WebAuthnMakeCredentialInfo& aInfo) {
+  for (const WebAuthnExtension& ext : aInfo.Extensions()) {
+    if (ext.type() == WebAuthnExtension::TWebAuthnExtensionPrf) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void WebAuthnTransactionParent::CompleteTransaction() {
   if (mTransactionId.isSome()) {
     if (mRegisterPromiseRequest.Exists()) {
@@ -158,6 +168,9 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestRegister(
     return IPC_OK();
   }
 
+  bool requestIncludesPrfExtension =
+      MakeCredentialRequestIncludesPrfExtension(aTransactionInfo);
+
   RefPtr<WebAuthnRegisterPromiseHolder> promiseHolder =
       new WebAuthnRegisterPromiseHolder(GetCurrentSerialEventTarget());
 
@@ -166,7 +179,7 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestRegister(
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
           [self = RefPtr{this}, inputClientData = clientDataJSON,
-           resolver = std::move(aResolver)](
+           requestIncludesPrfExtension, resolver = std::move(aResolver)](
               const WebAuthnRegisterPromise::ResolveOrRejectValue& aValue) {
             self->CompleteTransaction();
 
@@ -250,17 +263,13 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestRegister(
                   largeBlobSupported, blob, false));
             }
 
-            {
-              Maybe<bool> prfEnabledMaybe = Nothing();
+            if (requestIncludesPrfExtension) {
               Maybe<WebAuthnExtensionPrfValues> prfResults = Nothing();
 
-              bool prfEnabled;
+              bool prfEnabled = false;
               rv = registerResult->GetPrfEnabled(&prfEnabled);
-              if (rv != NS_ERROR_NOT_AVAILABLE) {
-                if (NS_WARN_IF(NS_FAILED(rv))) {
-                  return;
-                }
-                prfEnabledMaybe = Some(prfEnabled);
+              if (rv != NS_ERROR_NOT_AVAILABLE && NS_FAILED(rv)) {
+                return;
               }
 
               nsTArray<uint8_t> prfResultsFirst;
@@ -284,10 +293,8 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestRegister(
                     prfResultsFirst, prfResultsSecondMaybe, prfResultsSecond));
               }
 
-              if (prfEnabledMaybe.isSome() || prfResults.isSome()) {
-                extensions.AppendElement(
-                    WebAuthnExtensionResultPrf(prfEnabledMaybe, prfResults));
-              }
+              extensions.AppendElement(
+                  WebAuthnExtensionResultPrf(Some(prfEnabled), prfResults));
             }
 
             WebAuthnMakeCredentialResult result(
@@ -365,6 +372,8 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestSign(
     return IPC_OK();
   }
 
+  bool requestIncludesAppId = aTransactionInfo.AppId().isSome();
+
   bool requestIncludesLargeBlobRead =
       GetAssertionRequestIncludesLargeBlobRead(aTransactionInfo);
 
@@ -376,7 +385,8 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestSign(
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
           [self = RefPtr{this}, inputClientData = clientDataJSON,
-           requestIncludesLargeBlobRead, resolver = std::move(aResolver)](
+           requestIncludesAppId, requestIncludesLargeBlobRead,
+           resolver = std::move(aResolver)](
               const WebAuthnSignPromise::ResolveOrRejectValue& aValue) {
             self->CompleteTransaction();
 
@@ -431,10 +441,10 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestSign(
             }
 
             nsTArray<WebAuthnExtensionResult> extensions;
-            bool usedAppId;
-            rv = signResult->GetUsedAppId(&usedAppId);
-            if (rv != NS_ERROR_NOT_AVAILABLE) {
-              if (NS_FAILED(rv)) {
+            if (requestIncludesAppId) {
+              bool usedAppId = false;
+              rv = signResult->GetUsedAppId(&usedAppId);
+              if (rv != NS_ERROR_NOT_AVAILABLE && NS_FAILED(rv)) {
                 return;
               }
               extensions.AppendElement(WebAuthnExtensionResultAppId(usedAppId));

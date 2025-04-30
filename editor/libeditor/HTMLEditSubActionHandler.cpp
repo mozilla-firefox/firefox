@@ -1199,6 +1199,10 @@ Result<EditActionResult, nsresult> HTMLEditor::HandleInsertText(
       }
       InsertTextResult insertEmptyTextResult =
           insertEmptyTextResultOrError.unwrap();
+      // InsertTextWithTransaction() doesn not suggest caret position if it's
+      // called for IME composition. However, for the safety, let's ignore the
+      // caret position explicitly.
+      insertEmptyTextResult.IgnoreCaretPointSuggestion();
       nsresult rv = EnsureNoFollowingUnnecessaryLineBreak(
           insertEmptyTextResult.EndOfInsertedTextRef());
       if (NS_FAILED(rv)) {
@@ -1236,21 +1240,20 @@ Result<EditActionResult, nsresult> HTMLEditor::HandleInsertText(
       if (MOZ_UNLIKELY(insertPaddingBRElementResultOrError.isErr())) {
         NS_WARNING(
             "HTMLEditor::InsertPaddingBRElementIfNeeded(eNoStrip) failed");
-        insertEmptyTextResult.IgnoreCaretPointSuggestion();
         return insertPaddingBRElementResultOrError.propagateErr();
       }
       insertPaddingBRElementResultOrError.unwrap().IgnoreCaretPointSuggestion();
-      rv = insertEmptyTextResult.SuggestCaretPointTo(
-          *this, {SuggestCaret::OnlyIfHasSuggestion,
-                  SuggestCaret::OnlyIfTransactionsAllowedToDoIt,
-                  SuggestCaret::AndIgnoreTrivialError});
-      if (NS_FAILED(rv)) {
-        NS_WARNING("CaretPoint::SuggestCaretPointTo() failed");
-        return Err(rv);
+      // Then, collapse caret after the empty text inserted position, i.e.,
+      // whether the removed composition string was.
+      if (AllowsTransactionsToChangeSelection()) {
+        nsresult rv = CollapseSelectionTo(endOfInsertedText);
+        if (NS_WARN_IF(rv == NS_ERROR_EDITOR_DESTROYED)) {
+          return Err(rv);
+        }
+        NS_WARNING_ASSERTION(
+            rv != NS_SUCCESS_EDITOR_BUT_IGNORED_TRIVIAL_ERROR,
+            "CaretPoint::SuggestCaretPointTo() failed, but ignored");
       }
-      NS_WARNING_ASSERTION(
-          rv != NS_SUCCESS_EDITOR_BUT_IGNORED_TRIVIAL_ERROR,
-          "CaretPoint::SuggestCaretPointTo() failed, but ignored");
       return EditActionResult::HandledResult();
     }
 

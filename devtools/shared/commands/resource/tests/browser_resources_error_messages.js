@@ -41,7 +41,7 @@ async function testErrorMessagesResources() {
     "Log some errors *before* calling ResourceCommand.watchResources in order to assert" +
       " the behavior of already existing messages."
   );
-  await triggerErrors(tab);
+  await triggerErrors(tab, resourceCommand);
 
   let done;
   const onAllErrorReceived = new Promise(resolve => (done = resolve));
@@ -93,7 +93,7 @@ async function testErrorMessagesResources() {
     "Now log errors *after* the call to ResourceCommand.watchResources and after having" +
       " received all existing messages"
   );
-  await triggerErrors(tab);
+  await triggerErrors(tab, resourceCommand);
 
   info("Waiting for all expected errors to be received");
   await onAllErrorReceived;
@@ -114,7 +114,7 @@ async function testErrorMessagesResourcesWithIgnoreExistingResources() {
   info(
     "Check whether onAvailable will not be called with existing error messages"
   );
-  await triggerErrors(tab);
+  await triggerErrors(tab, resourceCommand);
 
   const availableResources = [];
   await resourceCommand.watchResources([resourceCommand.TYPES.ERROR_MESSAGE], {
@@ -130,7 +130,7 @@ async function testErrorMessagesResourcesWithIgnoreExistingResources() {
   info(
     "Check whether onAvailable will be called with the future error messages"
   );
-  await triggerErrors(tab);
+  await triggerErrors(tab, resourceCommand);
 
   const expectedMessages = Array.from(expectedPageErrors.values());
   await waitUntil(() => availableResources.length === expectedMessages.length);
@@ -154,7 +154,7 @@ async function testErrorMessagesResourcesWithIgnoreExistingResources() {
 /**
  * Triggers all the errors in the content page.
  */
-async function triggerErrors(tab) {
+async function triggerErrors(tab, resourceCommand) {
   for (const [expression, expected] of expectedPageErrors.entries()) {
     if (
       !expected[noUncaughtException] &&
@@ -162,6 +162,24 @@ async function triggerErrors(tab) {
     ) {
       expectUncaughtException();
     }
+
+    const { promise: onErrorMessage, resolve } = Promise.withResolvers();
+    const onAvailable = resources => {
+      if (
+        resources.some(r =>
+          expected.errorMessage.test(r.pageError.errorMessage)
+        )
+      ) {
+        resolve();
+      }
+    };
+    await resourceCommand.watchResources(
+      [resourceCommand.TYPES.ERROR_MESSAGE],
+      {
+        onAvailable,
+        ignoreExistingResources: true,
+      }
+    );
 
     await ContentTask.spawn(
       tab.linkedBrowser,
@@ -174,13 +192,13 @@ async function triggerErrors(tab) {
       }
     );
 
-    if (expected.isPromiseRejection) {
-      // Wait a bit after an uncaught promise rejection error, as they are not emitted
-      // right away.
-
-      // eslint-disable-next-line mozilla/no-arbitrary-setTimeout
-      await new Promise(res => setTimeout(res, 10));
-    }
+    await onErrorMessage;
+    await resourceCommand.unwatchResources(
+      [resourceCommand.TYPES.ERROR_MESSAGE],
+      {
+        onAvailable,
+      }
+    );
   }
 }
 

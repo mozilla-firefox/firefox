@@ -437,9 +437,9 @@ void RenderThread::WrNotifierEvent_WakeUp(WrWindowId aWindowId,
   PostWrNotifierEvents(aWindowId, info);
 }
 
-void RenderThread::WrNotifierEvent_NewFrameReady(WrWindowId aWindowId,
-                                                 bool aCompositeNeeded,
-                                                 FramePublishId aPublishId) {
+void RenderThread::WrNotifierEvent_NewFrameReady(
+    WrWindowId aWindowId, wr::FramePublishId aPublishId,
+    const wr::FrameReadyParams* aParams) {
   auto windows = mWindowInfos.Lock();
   auto it = windows->find(AsUint64(aWindowId));
   if (it == windows->end()) {
@@ -449,7 +449,7 @@ void RenderThread::WrNotifierEvent_NewFrameReady(WrWindowId aWindowId,
   WindowInfo* info = it->second.get();
 
   info->mPendingWrNotifierEvents.emplace(
-      WrNotifierEvent::NewFrameReady(aCompositeNeeded, aPublishId));
+      WrNotifierEvent::NewFrameReady(aPublishId, aParams));
   PostWrNotifierEvents(aWindowId, info);
 }
 
@@ -529,12 +529,12 @@ void RenderThread::HandleWrNotifierEvents(WrWindowId aWindowId) {
     auto& front = events->front();
     switch (front.mTag) {
       case WrNotifierEvent::Tag::WakeUp:
-        WrNotifierEvent_HandleWakeUp(aWindowId, front.CompositeNeeded());
+        WrNotifierEvent_HandleWakeUp(aWindowId, front.FrameReadyParams());
         handleNext = false;
         break;
       case WrNotifierEvent::Tag::NewFrameReady:
-        WrNotifierEvent_HandleNewFrameReady(aWindowId, front.CompositeNeeded(),
-                                            front.PublishId());
+        WrNotifierEvent_HandleNewFrameReady(aWindowId, front.PublishId(),
+                                            front.FrameReadyParams());
         handleNext = false;
         break;
       case WrNotifierEvent::Tag::ExternalEvent:
@@ -558,21 +558,21 @@ void RenderThread::HandleWrNotifierEvents(WrWindowId aWindowId) {
   }
 }
 
-void RenderThread::WrNotifierEvent_HandleWakeUp(wr::WindowId aWindowId,
-                                                bool aCompositeNeeded) {
+void RenderThread::WrNotifierEvent_HandleWakeUp(
+    wr::WindowId aWindowId, const wr::FrameReadyParams& aParams) {
   MOZ_ASSERT(IsInRenderThread());
 
   bool isTrackedFrame = false;
-  HandleFrameOneDoc(aWindowId, aCompositeNeeded, isTrackedFrame, Nothing());
+  HandleFrameOneDoc(aWindowId, aParams, isTrackedFrame, Nothing());
 }
 
 void RenderThread::WrNotifierEvent_HandleNewFrameReady(
-    wr::WindowId aWindowId, bool aCompositeNeeded, FramePublishId aPublishId) {
+    wr::WindowId aWindowId, wr::FramePublishId aPublishId,
+    const wr::FrameReadyParams& aParams) {
   MOZ_ASSERT(IsInRenderThread());
 
   bool isTrackedFrame = true;
-  HandleFrameOneDoc(aWindowId, aCompositeNeeded, isTrackedFrame,
-                    Some(aPublishId));
+  HandleFrameOneDoc(aWindowId, aParams, isTrackedFrame, Some(aPublishId));
 }
 
 void RenderThread::WrNotifierEvent_HandleExternalEvent(
@@ -601,7 +601,8 @@ Maybe<layers::FrameRecording> RenderThread::EndRecordingForWindow(
   return renderer->EndRecording();
 }
 
-void RenderThread::HandleFrameOneDoc(wr::WindowId aWindowId, bool aRender,
+void RenderThread::HandleFrameOneDoc(wr::WindowId aWindowId,
+                                     const wr::FrameReadyParams& aParams,
                                      bool aTrackedFrame,
                                      Maybe<FramePublishId> aPublishId) {
   MOZ_ASSERT(IsInRenderThread());
@@ -610,14 +611,15 @@ void RenderThread::HandleFrameOneDoc(wr::WindowId aWindowId, bool aRender,
     return;
   }
 
-  HandleFrameOneDocInner(aWindowId, aRender, aTrackedFrame, aPublishId);
+  HandleFrameOneDocInner(aWindowId, aParams, aTrackedFrame, aPublishId);
 
   if (aTrackedFrame) {
     DecPendingFrameCount(aWindowId);
   }
 }
 
-void RenderThread::HandleFrameOneDocInner(wr::WindowId aWindowId, bool aRender,
+void RenderThread::HandleFrameOneDocInner(wr::WindowId aWindowId,
+                                          const wr::FrameReadyParams& aParams,
                                           bool aTrackedFrame,
                                           Maybe<FramePublishId> aPublishId) {
   if (IsDestroyed(aWindowId)) {
@@ -628,7 +630,6 @@ void RenderThread::HandleFrameOneDocInner(wr::WindowId aWindowId, bool aRender,
     return;
   }
 
-  bool render = aRender;
   PendingFrameInfo frame;
   if (aTrackedFrame) {
     // scope lock
@@ -663,7 +664,7 @@ void RenderThread::HandleFrameOneDocInner(wr::WindowId aWindowId, bool aRender,
 
   RendererStats stats = {0};
 
-  UpdateAndRender(aWindowId, frame.mStartId, frame.mStartTime, render,
+  UpdateAndRender(aWindowId, frame.mStartId, frame.mStartTime, aParams,
                   /* aReadbackSize */ Nothing(),
                   /* aReadbackFormat */ Nothing(),
                   /* aReadbackBuffer */ Nothing(), &stats);
@@ -812,14 +813,14 @@ void RenderThread::SetFramePublishId(wr::WindowId aWindowId,
 
 void RenderThread::UpdateAndRender(
     wr::WindowId aWindowId, const VsyncId& aStartId,
-    const TimeStamp& aStartTime, bool aRender,
+    const TimeStamp& aStartTime, const wr::FrameReadyParams& aParams,
     const Maybe<gfx::IntSize>& aReadbackSize,
     const Maybe<wr::ImageFormat>& aReadbackFormat,
     const Maybe<Range<uint8_t>>& aReadbackBuffer, RendererStats* aStats,
     bool* aNeedsYFlip) {
   AUTO_PROFILER_LABEL("RenderThread::UpdateAndRender", GRAPHICS);
   MOZ_ASSERT(IsInRenderThread());
-  MOZ_ASSERT(aRender || aReadbackBuffer.isNothing());
+  MOZ_ASSERT(aParams.render || aReadbackBuffer.isNothing());
 
   auto it = mRenderers.find(aWindowId);
   MOZ_ASSERT(it != mRenderers.end());
@@ -836,20 +837,22 @@ void RenderThread::UpdateAndRender(
       "Paint", markerName.c_str(), geckoprofiler::category::GRAPHICS,
       Some(renderer->GetCompositorBridge()->GetInnerWindowId()));
 
+  bool render = aParams.render;
   if (renderer->IsPaused()) {
-    aRender = false;
+    render = false;
   }
   LOG("RenderThread::UpdateAndRender() aWindowId %" PRIx64 " aRender %d",
-      AsUint64(aWindowId), aRender);
+      AsUint64(aWindowId), render);
 
   layers::CompositorThread()->Dispatch(
       NewRunnableFunction("NotifyDidStartRenderRunnable", &NotifyDidStartRender,
                           renderer->GetCompositorBridge()));
 
   wr::RenderedFrameId latestFrameId;
-  if (aRender) {
-    latestFrameId = renderer->UpdateAndRender(
-        aReadbackSize, aReadbackFormat, aReadbackBuffer, aNeedsYFlip, aStats);
+  if (render) {
+    latestFrameId = renderer->UpdateAndRender(aReadbackSize, aReadbackFormat,
+                                              aReadbackBuffer, aNeedsYFlip,
+                                              aParams, aStats);
   } else {
     renderer->Update();
   }
@@ -864,7 +867,7 @@ void RenderThread::UpdateAndRender(
   layers::CompositorThread()->Dispatch(
       NewRunnableFunction("NotifyDidRenderRunnable", &NotifyDidRender,
                           renderer->GetCompositorBridge(), info, aStartId,
-                          aStartTime, start, end, aRender, *aStats));
+                          aStartTime, start, end, render, *aStats));
 
   RefPtr<layers::Fence> fence;
 
@@ -1738,14 +1741,13 @@ void wr_notifier_wake_up(mozilla::wr::WrWindowId aWindowId,
                                                            aCompositeNeeded);
 }
 
-void wr_notifier_new_frame_ready(mozilla::wr::WrWindowId aWindowId,
-                                 bool aCompositeNeeded,
-                                 mozilla::wr::FramePublishId aPublishId) {
+void wr_notifier_new_frame_ready(wr::WrWindowId aWindowId,
+                                 wr::FramePublishId aPublishId,
+                                 const wr::FrameReadyParams* aParams) {
   auto* renderThread = mozilla::wr::RenderThread::Get();
   renderThread->DecPendingFrameBuildCount(aWindowId);
 
-  renderThread->WrNotifierEvent_NewFrameReady(aWindowId, aCompositeNeeded,
-                                              aPublishId);
+  renderThread->WrNotifierEvent_NewFrameReady(aWindowId, aPublishId, aParams);
 }
 
 void wr_notifier_external_event(mozilla::wr::WrWindowId aWindowId,
@@ -1769,22 +1771,24 @@ void wr_schedule_render(mozilla::wr::WrWindowId aWindowId,
       "NotifyScheduleRender", &NotifyScheduleRender, aWindowId, aReasons));
 }
 
-static void NotifyDidSceneBuild(
+static void ScheduleFrameAfterSceneBuild(
     mozilla::wr::WrWindowId aWindowId,
     const RefPtr<const wr::WebRenderPipelineInfo>& aInfo) {
   RefPtr<mozilla::layers::CompositorBridgeParent> cbp = mozilla::layers::
       CompositorBridgeParent::GetCompositorBridgeParentFromWindowId(aWindowId);
   if (cbp) {
-    cbp->NotifyDidSceneBuild(aInfo);
+    cbp->ScheduleFrameAfterSceneBuild(aInfo);
   }
 }
 
-void wr_finished_scene_build(mozilla::wr::WrWindowId aWindowId,
-                             mozilla::wr::WrPipelineInfo* aPipelineInfo) {
+void wr_schedule_frame_after_scene_build(
+    mozilla::wr::WrWindowId aWindowId,
+    mozilla::wr::WrPipelineInfo* aPipelineInfo) {
   RefPtr<wr::WebRenderPipelineInfo> info = new wr::WebRenderPipelineInfo();
   info->Raw() = std::move(*aPipelineInfo);
-  layers::CompositorThread()->Dispatch(NewRunnableFunction(
-      "NotifyDidSceneBuild", &NotifyDidSceneBuild, aWindowId, info));
+  layers::CompositorThread()->Dispatch(
+      NewRunnableFunction("ScheduleFrameAfterSceneBuild",
+                          &ScheduleFrameAfterSceneBuild, aWindowId, info));
 }
 
 }  // extern C

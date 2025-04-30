@@ -345,7 +345,7 @@ class DelayedWebTaskHandler final : public TimeoutHandler {
   NS_DECL_CYCLE_COLLECTION_CLASS(DelayedWebTaskHandler)
 
   MOZ_CAN_RUN_SCRIPT bool Call(const char* /* unused */) override {
-    if (mScheduler && mWebTask) {
+    if (mScheduler && mWebTask && mWebTask->isInList()) {
       MOZ_ASSERT(!mWebTask->HasScheduled());
       if (!mScheduler->DispatchTask(mWebTask, mPriority)) {
         return false;

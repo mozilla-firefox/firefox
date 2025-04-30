@@ -411,90 +411,31 @@ typedef struct CK_NSS_HKDFParams {
 /*
  * CK_NSS_IKE_PRF_PLUS_PARAMS is a structure that provides the parameters to
  * the CKM_NSS_IKE_PRF_PLUS_DERIVE mechanism.
- * The fields of the structure have the following meanings:
- *      prfMechanism    underlying MAC mechanism used to generate the prf.
- *      bHasSeedKey     hSeed key is present.
- *      hSeedKey        optional seed from key
- *      pSeedData       optional seed from data.
- *      ulSeedDataLen   length of optional seed data.
- *        If no seed data is present this value is NULL.
+ * It is now standardized, so The struct is just an alias for the standard
+ * struct in pkcs11t.h.
  */
-typedef struct CK_NSS_IKE_PRF_PLUS_DERIVE_PARAMS {
-    CK_MECHANISM_TYPE prfMechanism;
-    CK_BBOOL bHasSeedKey;
-    CK_OBJECT_HANDLE hSeedKey;
-    CK_BYTE_PTR pSeedData;
-    CK_ULONG ulSeedDataLen;
-} CK_NSS_IKE_PRF_PLUS_DERIVE_PARAMS;
+typedef struct CK_IKE2_PRF_PLUS_DERIVE_PARAMS CK_NSS_IKE_PRF_PLUS_DERIVE_PARAMS;
 
 /* CK_NSS_IKE_PRF_DERIVE_PARAMS is a structure that provides the parameters to
- *  the CKM_NSS_IKE_PRF_DERIVE mechanism.
- *
- * The fields of the structure have the following meanings:
- *     prfMechanism underlying MAC mechanism used to generate the prf.
- *     bRekey       hNewKey is present.
- *     pNi          Ni value
- *     ulNiLen      length of Ni
- *     pNr          Nr value
- *     ulNrLen      length of Nr
- *     hNewKey      New key value to drive the rekey.
+ * the CKM_NSS_IKE_PRF_DERIVE mechanism.
+ * It is now standardized, so The struct is just an alias for the standard
+ * struct in pkcs11t.h.
  */
-typedef struct CK_NSS_IKE_PRF_DERIVE_PARAMS {
-    CK_MECHANISM_TYPE prfMechanism;
-    CK_BBOOL bDataAsKey;
-    CK_BBOOL bRekey;
-    CK_BYTE_PTR pNi;
-    CK_ULONG ulNiLen;
-    CK_BYTE_PTR pNr;
-    CK_ULONG ulNrLen;
-    CK_OBJECT_HANDLE hNewKey;
-} CK_NSS_IKE_PRF_DERIVE_PARAMS;
+typedef struct CK_IKE_PRF_DERIVE_PARAMS CK_NSS_IKE_PRF_DERIVE_PARAMS;
 
 /* CK_NSS_IKE1_PRF_DERIVE_PARAMS is a structure that provides the parameters
  * to the CKM_NSS_IKE_PRF_DERIVE mechanism.
- *
- * The fields of the structure have the following meanings:
- *     prfMechanism  underlying MAC mechanism used to generate the prf.
- *     bRekey        hNewKey is present.
- *     pCKYi         CKYi value
- *     ulCKYiLen     length of CKYi
- *     pCKYr         CKYr value
- *     ulCKYrLen     length of CKYr
- *     hNewKey       New key value to drive the rekey.
+ * It is now standardized, so The struct is just an alias for the standard
+ * struct in pkcs11t.h.
  */
-typedef struct CK_NSS_IKE1_PRF_DERIVE_PARAMS {
-    CK_MECHANISM_TYPE prfMechanism;
-    CK_BBOOL bHasPrevKey;
-    CK_OBJECT_HANDLE hKeygxy;
-    CK_OBJECT_HANDLE hPrevKey;
-    CK_BYTE_PTR pCKYi;
-    CK_ULONG ulCKYiLen;
-    CK_BYTE_PTR pCKYr;
-    CK_ULONG ulCKYrLen;
-    CK_BYTE keyNumber;
-} CK_NSS_IKE1_PRF_DERIVE_PARAMS;
+typedef struct CK_IKE1_PRF_DERIVE_PARAMS CK_NSS_IKE1_PRF_DERIVE_PARAMS;
 
 /* CK_NSS_IKE1_APP_B_PRF_DERIVE_PARAMS is a structure that provides the
  * parameters to the CKM_NSS_IKE_APP_B_PRF_DERIVE mechanism.
- *
- * The fields of the structure have the following meanings:
- *     prfMechanism  underlying MAC mechanism used to generate the prf.
- *     bHasKeygxy    hKeygxy exists
- *     hKeygxy       optional key to hash in the prf
- *     pExtraData    optional extra data to hash in the prf
- *     ulExtraData   length of the optional extra data.
- *
- * CK_NSS_IKE_APP_B_PRF_DERIVE can take wither CK_NSS_IKE1_APP_B_PRF_DRIVE_PARAMS
- * or a single CK_MECHANISM_TYPE. In the latter cases bHashKeygx is assumed to
- * be false and ulExtraDataLen is assumed to be '0'.
+ * It is now standardized, so The struct is just an alias for the standard
+ * struct in pkcs11t.h.
  */
-typedef struct CK_NSS_IKE1_APP_B_PRF_DERIVE_PARAMS {
-    CK_MECHANISM_TYPE prfMechanism;
-    CK_BBOOL bHasKeygxy;
-    CK_OBJECT_HANDLE hKeygxy;
-    CK_BYTE_PTR pExtraData;
-    CK_ULONG ulExtraDataLen;
-} CK_NSS_IKE1_APP_B_PRF_DERIVE_PARAMS;
+typedef struct CK_IKE1_EXTENDED_DERIVE_PARAMS CK_NSS_IKE1_APP_B_PRF_DERIVE_PARAMS;
 
 /*
  * Parameter for the TLS extended master secret key derivation mechanisms:

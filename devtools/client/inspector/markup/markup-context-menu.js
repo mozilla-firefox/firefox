@@ -740,7 +740,7 @@ class MarkupContextMenu {
     const isScreenshotable =
       isElement && this.selection.nodeFront.isTreeDisplayed;
 
-    const menu = new Menu();
+    const menu = new Menu({ id: "markup-context-menu" });
     menu.append(
       new MenuItem({
         id: "node-menu-edithtml",

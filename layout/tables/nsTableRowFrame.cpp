@@ -675,9 +675,15 @@ void nsTableRowFrame::ReflowChildren(nsPresContext* aPresContext,
   // Reflow each of our existing cell frames
   WritingMode wm = aReflowInput.GetWritingMode();
   nsSize containerSize = aReflowInput.ComputedSizeAsContainerIfConstrained();
+  bool hasOrthogonalCell = false;
 
   for (nsTableCellFrame* kidFrame = GetFirstCell(); kidFrame;
        kidFrame = kidFrame->GetNextCell()) {
+    // If we have any cells with orthogonal content, we'll need to handle them
+    // later; record the presence of any such cells.
+    if (kidFrame->Inner()->GetWritingMode().IsOrthogonalTo(wm)) {
+      hasOrthogonalCell = true;
+    }
     // See if we should only reflow the dirty child frames
     bool doReflowChild = true;
     if (!aReflowInput.ShouldReflowAllKids() && !aTableFrame.IsGeometryDirty() &&
@@ -912,6 +918,29 @@ void nsTableRowFrame::ReflowChildren(nsPresContext* aPresContext,
 
   aDesiredSize.UnionOverflowAreasWithDesiredBounds();
   FinishAndStoreOverflow(&aDesiredSize);
+
+  if (hasOrthogonalCell) {
+    for (nsTableCellFrame* kidFrame = GetFirstCell(); kidFrame;
+         kidFrame = kidFrame->GetNextCell()) {
+      if (kidFrame->Inner()->GetWritingMode().IsOrthogonalTo(wm)) {
+        LogicalSize kidAvailSize(wm, kidFrame->GetRectRelativeToSelf().Size());
+
+        // Reflow the child
+        TableCellReflowInput kidReflowInput(
+            aPresContext, aReflowInput, kidFrame, kidAvailSize,
+            ReflowInput::InitFlag::CallerWillInit);
+        kidReflowInput.mFlags.mOrthogonalCellFinalReflow = true;
+        InitChildReflowInput(*aPresContext, kidAvailSize, borderCollapse,
+                             kidReflowInput);
+
+        nsReflowStatus status;
+        ReflowOutput reflowOutput(wm);
+        ReflowChild(kidFrame, aPresContext, reflowOutput, kidReflowInput, wm,
+                    kidFrame->GetLogicalPosition(containerSize), containerSize,
+                    ReflowChildFlags::Default, status);
+      }
+    }
+  }
 }
 
 /** Layout the entire row.

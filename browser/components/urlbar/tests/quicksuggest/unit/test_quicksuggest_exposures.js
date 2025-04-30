@@ -57,6 +57,7 @@ add_setup(async function () {
     prefs: [
       ["quicksuggest.exposureSuggestionTypes", "aaa,bbb"],
       ["suggest.quicksuggest.nonsponsored", true],
+      ["quicksuggest.ampTopPickCharThreshold", 0],
     ],
   });
 });

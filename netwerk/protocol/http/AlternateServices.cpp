@@ -98,7 +98,10 @@ void AltSvcMapping::ProcessHeader(
     return;
   }
 
-  MOZ_ASSERT(NS_IsMainThread());
+  // AltSvcMapping::ProcessHeader is not thread-safe.
+  if (!NS_IsMainThread()) {
+    return;
+  }
 
   if (StaticPrefs::network_http_altsvc_proxy_checks() &&
       !AcceptableProxy(proxyInfo)) {

@@ -14,6 +14,7 @@ pub fn los_pollos_amp() -> JsonValue {
         "advertiser": "Los Pollos Hermanos",
         "iab_category": "8 - Food & Drink",
         "keywords": ["lo", "los", "los p", "los pollos", "los pollos h", "los pollos hermanos"],
+        "full_keywords": [("los pollos", 4), ("los pollos hermanos", 2)],
         "title": "Los Pollos Hermanos - Albuquerque",
         "url": "https://www.lph-nm.biz",
         "icon": "los-pollos-favicon",
@@ -59,6 +60,7 @@ pub fn good_place_eats_amp() -> JsonValue {
         "advertiser": "Good Place Eats",
         "iab_category": "8 - Food & Drink",
         "keywords": ["la", "las", "lasa", "lasagna", "lasagna come out tomorrow"],
+        "full_keywords": [("lasagna", 2), ("lasagna come out tomorrow", 2)],
         "title": "Lasagna Come Out Tomorrow",
         "url": "https://www.lasagna.restaurant",
         "icon": "good-place-eats-favicon",
@@ -295,10 +297,12 @@ pub fn ramen_yelp() -> JsonValue {
         "preModifiers": ["best", "super best", "same_modifier"],
         "postModifiers": ["delivery", "super delivery", "same_modifier"],
         "locationSigns": [
+            // V1 format also can be used as location sign.
             { "keyword": "in", "needLocation": true },
-            { "keyword": "near", "needLocation": true },
             { "keyword": "near by", "needLocation": false },
-            { "keyword": "near me", "needLocation": false },
+            // V2 format.
+            "near",
+            "near me",
         ],
         "yelpModifiers": ["yelp", "yelp keyword"],
         "icon": "yelp-favicon",

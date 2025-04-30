@@ -167,7 +167,6 @@ class PrivacySecuritySettingsFragment :
     }
 
     override fun onPreferenceTreeClick(preference: Preference): Boolean {
-        val settings = requireContext().settings
         val engineSharedPreferencesListener = EngineSharedPreferencesListener(requireContext())
         when (preference.key) {
             resources.getString(R.string.pref_key_screen_exceptions) -> {
@@ -188,28 +187,24 @@ class PrivacySecuritySettingsFragment :
                 engineSharedPreferencesListener.updateTrackingProtectionPolicy(
                     EngineSharedPreferencesListener.ChangeSource.SETTINGS.source,
                     EngineSharedPreferencesListener.TrackerChanged.SOCIAL.tracker,
-                    settings.shouldBlockSocialTrackers(),
                 )
 
             resources.getString(R.string.pref_key_privacy_block_ads) ->
                 engineSharedPreferencesListener.updateTrackingProtectionPolicy(
                     EngineSharedPreferencesListener.ChangeSource.SETTINGS.source,
                     EngineSharedPreferencesListener.TrackerChanged.ADVERTISING.tracker,
-                    settings.shouldBlockAdTrackers(),
                 )
 
             resources.getString(R.string.pref_key_privacy_block_analytics) ->
                 engineSharedPreferencesListener.updateTrackingProtectionPolicy(
                     EngineSharedPreferencesListener.ChangeSource.SETTINGS.source,
                     EngineSharedPreferencesListener.TrackerChanged.ANALYTICS.tracker,
-                    settings.shouldBlockAnalyticTrackers(),
                 )
 
             resources.getString(R.string.pref_key_privacy_block_other3) ->
                 engineSharedPreferencesListener.updateTrackingProtectionPolicy(
                     EngineSharedPreferencesListener.ChangeSource.SETTINGS.source,
                     EngineSharedPreferencesListener.TrackerChanged.CONTENT.tracker,
-                    settings.shouldBlockOtherTrackers(),
                 )
             resources.getString(R.string.pref_key_cookie_banner_settings) -> {
                 CookieBanner.visitedSetting.record(NoExtras())

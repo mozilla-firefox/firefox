@@ -14,9 +14,15 @@ const DEFAULT_THEME_ID = "default-theme@mozilla.org";
 
 ChromeUtils.defineESModuleGetters(this, {
   PERMISSION_L10N: "resource://gre/modules/ExtensionPermissionMessages.sys.mjs",
+  ExtensionPermissions: "resource://gre/modules/ExtensionPermissions.sys.mjs",
 });
 
 AddonTestUtils.initMochitest(this);
+
+const LABEL_FOR_TECHNICAL_AND_INTERACTION_DATA_CHECKBOX =
+  PERMISSION_L10N.formatMessagesSync([
+    "popup-notification-addon-technicalAndInteraction-checkbox",
+  ])[0].attributes.find(attr => attr.name === "label").value;
 
 function assertDisabledSideloadedExtensionElement(managerWindow, addonElement) {
   const doc = addonElement.ownerDocument;
@@ -849,17 +855,14 @@ add_task(async function testInstallDialogShowsDataCollectionPermissions() {
           2,
           "Expected two permission entries in the list"
         );
-        Assert.ok(
-          popupContentEl.permsListEl.querySelector(
-            "li.webext-data-collection-perm-optional > checkbox"
-          ),
-          "Expected technical and interaction checkbox"
+        let checkbox = popupContentEl.permsListEl.querySelector(
+          "li.webext-data-collection-perm-optional > checkbox"
         );
+        Assert.ok(checkbox, "Expected technical and interaction checkbox");
+        Assert.ok(checkbox.checked, "Expected checkbox to be checked");
         Assert.equal(
           popupContentEl.permsListEl.firstChild.textContent,
-          PERMISSION_L10N.formatValueSync(
-            "webext-perms-description-data-long-technicalAndInteraction"
-          ),
+          LABEL_FOR_TECHNICAL_AND_INTERACTION_DATA_CHECKBOX,
           "Expected formatted data collection permission string"
         );
         Assert.ok(
@@ -895,9 +898,7 @@ add_task(async function testInstallDialogShowsDataCollectionPermissions() {
         );
         Assert.equal(
           popupContentEl.permsListEl.textContent,
-          PERMISSION_L10N.formatValueSync(
-            "webext-perms-description-data-long-technicalAndInteraction"
-          ),
+          LABEL_FOR_TECHNICAL_AND_INTERACTION_DATA_CHECKBOX,
           "Expected formatted data collection permission string"
         );
         Assert.ok(
@@ -930,9 +931,7 @@ add_task(async function testInstallDialogShowsDataCollectionPermissions() {
         Assert.ok(checkboxEl, "Expected technical and interaction checkbox");
         Assert.equal(
           checkboxEl.parentNode.textContent,
-          PERMISSION_L10N.formatValueSync(
-            "webext-perms-description-data-long-technicalAndInteraction"
-          ),
+          LABEL_FOR_TECHNICAL_AND_INTERACTION_DATA_CHECKBOX,
           "Expected formatted data collection permission string"
         );
         Assert.ok(
@@ -1039,9 +1038,7 @@ add_task(async function testInstallDialogShowsDataCollectionPermissions() {
         Assert.ok(checkboxEl, "Expected technical and interaction checkbox");
         Assert.equal(
           checkboxEl.parentNode.textContent,
-          PERMISSION_L10N.formatValueSync(
-            "webext-perms-description-data-long-technicalAndInteraction"
-          ),
+          LABEL_FOR_TECHNICAL_AND_INTERACTION_DATA_CHECKBOX,
           "Expected formatted data collection permission string"
         );
         // Make sure the incognito checkbox is the last item.
@@ -1098,6 +1095,110 @@ add_task(async function testInstallDialogShowsDataCollectionPermissions() {
       });
     }
   }
+
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function testTechnicalAndInteractionData() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["extensions.dataCollectionPermissions.enabled", true]],
+  });
+
+  const extensionId = "@test-id";
+  const extension = AddonTestUtils.createTempWebExtensionFile({
+    manifest: {
+      version: "1.0",
+      browser_specific_settings: {
+        gecko: {
+          id: extensionId,
+          data_collection_permissions: {
+            optional: ["technicalAndInteraction"],
+          },
+        },
+      },
+    },
+  });
+
+  let perms = await ExtensionPermissions.get(extensionId);
+  Assert.deepEqual(
+    perms,
+    { permissions: [], origins: [], data_collection: [] },
+    "Expected no permissions"
+  );
+
+  await BrowserTestUtils.withNewTab("about:blank", async () => {
+    const dialogPromise = promisePopupNotificationShown(
+      "addon-webext-permissions"
+    );
+
+    gURLBar.value = extension.path;
+    gURLBar.focus();
+    EventUtils.synthesizeKey("KEY_Enter");
+    const popupContentEl = await dialogPromise;
+
+    // Install the add-on.
+    let notificationPromise = acceptAppMenuNotificationWhenShown(
+      "addon-installed",
+      extensionId
+    );
+    popupContentEl.button.click();
+    await notificationPromise;
+
+    perms = await ExtensionPermissions.get(extensionId);
+    Assert.deepEqual(
+      perms,
+      {
+        permissions: [],
+        origins: [],
+        data_collection: ["technicalAndInteraction"],
+      },
+      "Expected data collection permission"
+    );
+
+    const addon = await AddonManager.getAddonByID(extensionId);
+    Assert.ok(addon, "Expected add-on");
+    await addon.uninstall();
+  });
+
+  // Repeat but uncheck the checkbox this time.
+  await BrowserTestUtils.withNewTab("about:blank", async () => {
+    const dialogPromise = promisePopupNotificationShown(
+      "addon-webext-permissions"
+    );
+
+    gURLBar.value = extension.path;
+    gURLBar.focus();
+    EventUtils.synthesizeKey("KEY_Enter");
+    const popupContentEl = await dialogPromise;
+
+    const checkboxEl = popupContentEl.permsListEl.querySelector(
+      "li.webext-data-collection-perm-optional > checkbox"
+    );
+    checkboxEl.click();
+
+    // Install the add-on.
+    let notificationPromise = acceptAppMenuNotificationWhenShown(
+      "addon-installed",
+      extensionId
+    );
+    popupContentEl.button.click();
+    await notificationPromise;
+
+    perms = await ExtensionPermissions.get(extensionId);
+    Assert.deepEqual(
+      perms,
+      {
+        permissions: [],
+        origins: [],
+        data_collection: [],
+      },
+      "Expected no data collection permission"
+    );
+
+    const addon = await AddonManager.getAddonByID(extensionId);
+    Assert.ok(addon, "Expected add-on");
+    await addon.uninstall();
+  });
 
   await SpecialPowers.popPrefEnv();
 });

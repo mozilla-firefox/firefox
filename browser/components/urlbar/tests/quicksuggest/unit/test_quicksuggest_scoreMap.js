@@ -159,6 +159,7 @@ add_setup(async function init() {
     prefs: [
       ["suggest.quicksuggest.sponsored", true],
       ["suggest.quicksuggest.nonsponsored", true],
+      ["quicksuggest.ampTopPickCharThreshold", 0],
     ],
   });
 });

@@ -21,6 +21,7 @@
 #include "nsReadableUtils.h"
 #include "nsWindowsHelpers.h"
 #include "nsXULAppAPI.h"
+#include "prenv.h"
 
 namespace mozilla {
 
@@ -197,7 +198,11 @@ Maybe<ModuleTrustFlags> ModuleEvaluator::GetTrust(
   // The JIT profiling module doesn't really have any other practical way to
   // match; hard-code it as being trusted.
   if (dllLeafLower.EqualsLiteral("jitpi.dll")) {
-    return Some(ModuleTrustFlags::JitPI);
+    if (PR_GetEnvSecure("JS_LOAD_VTUNE_LIB")) {
+      return Some(ModuleTrustFlags::JitPI);
+    } else {
+      return Some(ModuleTrustFlags::None);
+    }
   }
 
   ModuleTrustFlags result = ModuleTrustFlags::None;

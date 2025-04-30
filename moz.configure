@@ -142,9 +142,6 @@ def moz_debug(debug):
 
 set_config("MOZ_DEBUG", moz_debug)
 set_define("MOZ_DEBUG", moz_debug)
-# Override any value MOZ_DEBUG may have from the environment when passing it
-# down to old-configure.
-add_old_configure_assignment("MOZ_DEBUG", depends("--enable-debug")(lambda x: bool(x)))
 
 
 set_config(
@@ -947,11 +944,25 @@ with only_when(cross_compiling):
 
 # Please do not add configure checks from here on.
 
-# Fallthrough to autoconf-based configure
-include("build/moz.configure/old.configure")
 
-# JS Subconfigure.
-include("js/sub.configure", when=compile_environment & toolkit)
+# Assuming no other option is declared after this function, handle the
+# env options that were injected by mozconfig_options by creating dummy
+# Option instances and having the sandbox's CommandLineHelper handle
+# them. We only do so for options that haven't been declared so far,
+# which should be a proxy for the options that old-configure handles
+# and that we don't know anything about.
+@depends("--help")
+@imports("__sandbox__")
+@imports(_from="mozbuild.configure.options", _import="Option")
+def remaining_mozconfig_options(_):
+    helper = __sandbox__._helper
+    for arg in list(helper):
+        if helper._origins[arg] != "mozconfig":
+            continue
+        name = arg.split("=", 1)[0]
+        if name.isupper() and name not in __sandbox__._options:
+            option = Option(env=name, nargs="*", help=name)
+            helper.handle(option)
 
 
 @depends(build_environment, configure_cache)
@@ -997,10 +1008,6 @@ def config_status_deps(build_env, build_project):
             os.path.join(topsrcdir, "python", "sites", "common.txt"),
             os.path.join(topsrcdir, "python", "sites", "mach.txt"),
             os.path.join(topsrcdir, "python", "mach", "mach", "site.py"),
-            os.path.join(topsrcdir, "aclocal.m4"),
-            os.path.join(topsrcdir, "old-configure.in"),
-            os.path.join(topsrcdir, "js", "src", "aclocal.m4"),
-            os.path.join(topsrcdir, "js", "src", "old-configure.in"),
         ]
         + glob.glob(os.path.join(topsrcdir, "build", "autoconf", "*.m4"))
     )

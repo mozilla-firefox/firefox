@@ -146,7 +146,11 @@ nsresult nsContentAreaDragDropDataProvider::SaveURIToFile(
   NS_ENSURE_SUCCESS(rv, rv);
 
   persist->SetPersistFlags(
-      nsIWebBrowserPersist::PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION);
+      nsIWebBrowserPersist::PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION |
+      // Do not HTTPS-Only/-First upgrade this request. If we reach this point,
+      // any potential upgrades should have already happened, or the URI may
+      // have already been exempt.
+      nsIWebBrowserPersist::PERSIST_FLAGS_DISABLE_HTTPS_ONLY);
 
   // referrer policy can be anything since the referrer is nullptr
   return persist->SaveURI(inSourceURI, inTriggeringPrincipal, 0, nullptr,

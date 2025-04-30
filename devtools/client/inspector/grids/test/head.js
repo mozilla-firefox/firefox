@@ -38,3 +38,41 @@ function synthesizeMouseOverOnGridCell(doc, gridCellIndex = 0) {
     doc.defaultView
   );
 }
+
+/**
+ * Returns the number of visible grid highlighters
+ *
+ * @param {Object} options
+ * @param {Boolean} options.isParent: Pass false/true if only the parent/child grid highlighter
+ *                                    should be counted.
+ * @returns {Number}
+ */
+function getNumberOfVisibleGridHighlighters({ isParent } = {}) {
+  return SpecialPowers.spawn(
+    gBrowser.selectedBrowser,
+    [isParent],
+    _isParent => {
+      const roots = content.document.getConnectedShadowRoots();
+      return roots.filter(root => {
+        // We want to check that the highlighter canvas is actually visible
+        const gridHighlighterEl = root.querySelector(
+          `#css-grid-root:has(canvas:not([hidden]))`
+        );
+
+        if (!gridHighlighterEl) {
+          return false;
+        }
+
+        if (typeof _isParent === "boolean") {
+          return (
+            gridHighlighterEl.getAttribute("data-is-parent-grid") ===
+            _isParent.toString()
+          );
+        }
+
+        // If isParent wasn't passed, we return all grid highlighters, parent and child.
+        return true;
+      }).length;
+    }
+  );
+}

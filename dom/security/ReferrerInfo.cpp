@@ -1304,6 +1304,18 @@ nsresult ReferrerInfo::ComputeReferrer(nsIHttpChannel* aChannel) {
   // referrer.
   mComputedReferrer.emplace(""_ns);
 
+  nsCOMPtr<nsILoadInfo> loadInfo = aChannel->LoadInfo();
+  nsCOMPtr<nsIPrincipal> triggeringPrincipal = loadInfo->TriggeringPrincipal();
+
+  // Special treatment for resources injected by add-ons.
+  if (triggeringPrincipal &&
+      StaticPrefs::privacy_antitracking_isolateContentScriptResources() &&
+      triggeringPrincipal->GetIsAddonOrExpandedAddonPrincipal()) {
+    mPolicy = ReferrerPolicy::No_referrer;
+    mOverridePolicyByDefault = true;
+    return NS_OK;
+  }
+
   if (!mSendReferrer || !mOriginalReferrer ||
       mPolicy == ReferrerPolicy::No_referrer) {
     return NS_OK;
@@ -1311,7 +1323,6 @@ nsresult ReferrerInfo::ComputeReferrer(nsIHttpChannel* aChannel) {
 
   if (mPolicy == ReferrerPolicy::_empty ||
       ShouldIgnoreLessRestrictedPolicies(aChannel, mOriginalPolicy)) {
-    nsCOMPtr<nsILoadInfo> loadInfo = aChannel->LoadInfo();
     OriginAttributes attrs = loadInfo->GetOriginAttributes();
     bool isPrivate = attrs.IsPrivateBrowsing();
 

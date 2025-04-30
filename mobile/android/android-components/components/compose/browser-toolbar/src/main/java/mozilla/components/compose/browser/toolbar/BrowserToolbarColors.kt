@@ -9,27 +9,12 @@ import androidx.compose.ui.graphics.Color
 /**
  * Represents the colors used by the browser toolbar.
  *
- * @property customTabToolbarColor The color scheme to use in the custom tab toolbar.
  * @property displayToolbarColors The color scheme to use in browser display toolbar.
  * @property editToolbarColors The color scheme to use in the browser edit toolbar.
  */
 data class BrowserToolbarColors(
-    val customTabToolbarColor: CustomTabToolbarColors,
     val displayToolbarColors: BrowserDisplayToolbarColors,
     val editToolbarColors: BrowserEditToolbarColors,
-)
-
-/**
- * Represents the colors used by the custom tab toolbar.
- *
- * @property background Background color of the toolbar.
- * @property title Text color of the title.
- * @property url Text color of the URL.
- */
-data class CustomTabToolbarColors(
-    val background: Color,
-    val title: Color,
-    val url: Color,
 )
 
 /**

@@ -6,8 +6,6 @@ support-files = ["config_broken_json.json"]
 
 ["browser_policies_broken_json.js"]
 
-["browser_policies_enterprise_only.js"]
-
 ["browser_policies_gpo.js"]
 run-if = ["os == 'win'"]
 

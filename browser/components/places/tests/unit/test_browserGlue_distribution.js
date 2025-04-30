@@ -89,17 +89,8 @@ add_task(async function () {
   Assert.equal(menuItem.title, "Menu Link After");
 
   // Check no favicon exists for this bookmark
-  await Assert.rejects(
-    waitForResolvedPromise(
-      () => {
-        return PlacesUtils.promiseFaviconData(menuItem.url.href);
-      },
-      "Favicon not found",
-      10
-    ),
-    /Favicon\snot\sfound/,
-    "Favicon not found"
-  );
+  let favicon = await PlacesUtils.favicons.getFaviconForPage(menuItem.url.URI);
+  Assert.equal(favicon, null, "Favicon should not be found");
 
   // Check the custom bookmarks exist on toolbar.
   let toolbarItem = await PlacesUtils.bookmarks.fetch({
@@ -109,21 +100,12 @@ add_task(async function () {
   Assert.equal(toolbarItem.title, "Toolbar Link Before");
 
   // Check the custom favicon exist for this bookmark
-  let faviconItem = await waitForResolvedPromise(
-    () => {
-      return PlacesUtils.promiseFaviconData(toolbarItem.url.href);
-    },
-    "Favicon not found",
-    10
-  );
-  Assert.equal(faviconItem.uri.spec, "https://example.org/favicon.png");
-  Assert.greater(faviconItem.dataLen, 0);
-  Assert.equal(faviconItem.mimeType, "image/png");
-
-  let base64Icon =
-    "data:image/png;base64," +
-    base64EncodeString(String.fromCharCode.apply(String, faviconItem.data));
-  Assert.equal(base64Icon, SMALLPNG_DATA_URI.spec);
+  favicon = await PlacesUtils.favicons.getFaviconForPage(toolbarItem.url.URI);
+  Assert.ok(favicon, "Favicon should be found");
+  Assert.equal(favicon.uri.spec, "https://example.org/favicon.png");
+  Assert.greater(favicon.rawData.length, 0);
+  Assert.equal(favicon.mimeType, "image/png");
+  Assert.equal(favicon.dataURI.spec, SMALLPNG_DATA_URI.spec);
 
   toolbarItem = await PlacesUtils.bookmarks.fetch({
     parentGuid: PlacesUtils.bookmarks.toolbarGuid,

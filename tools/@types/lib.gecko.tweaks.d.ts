@@ -101,6 +101,10 @@ interface nsXPCComponents_Utils {
 
 type Sandbox = typeof globalThis & nsISupports;
 
+interface WindowGlobalParent extends WindowContext {
+  readonly browsingContext: CanonicalBrowsingContext;
+}
+
 // Hand-crafted artisanal types.
 interface XULBrowserElement extends XULFrameElement, FrameLoader {
   currentURI: nsIURI;

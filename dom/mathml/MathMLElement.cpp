@@ -67,7 +67,7 @@ nsresult MathMLElement::BindToTree(BindContext& aContext, nsINode& aParent) {
 
   // Set the bit in the document for telemetry.
   if (Document* doc = aContext.GetComposedDoc()) {
-    doc->SetMathMLEnabled();
+    doc->SetUseCounter(eUseCounter_custom_MathMLUsed);
   }
 
   return rv;

@@ -18,10 +18,9 @@ const FEATURES = {
   AddonSuggestions:
     "resource:///modules/urlbar/private/AddonSuggestions.sys.mjs",
   AmpSuggestions: "resource:///modules/urlbar/private/AmpSuggestions.sys.mjs",
-  BlockedSuggestions:
-    "resource:///modules/urlbar/private/BlockedSuggestions.sys.mjs",
-  ExposureSuggestions:
-    "resource:///modules/urlbar/private/ExposureSuggestions.sys.mjs",
+  // TODO Bug 1961040: Convert ExposureSuggestions to DynamicSuggestions.
+  // ExposureSuggestions:
+  //  "resource:///modules/urlbar/private/ExposureSuggestions.sys.mjs",
   FakespotSuggestions:
     "resource:///modules/urlbar/private/FakespotSuggestions.sys.mjs",
   ImpressionCaps: "resource:///modules/urlbar/private/ImpressionCaps.sys.mjs",
@@ -145,14 +144,6 @@ class _QuickSuggest {
    */
   get config() {
     return this.rustBackend?.config || {};
-  }
-
-  /**
-   * @returns {BlockedSuggestions}
-   *   The blocked suggestions feature.
-   */
-  get blockedSuggestions() {
-    return this.#featuresByName.get("BlockedSuggestions");
   }
 
   /**
@@ -357,8 +348,70 @@ class _QuickSuggest {
   }
 
   /**
+   * Registers a dismissal with the Rust backend. A
+   * `quicksuggest-dismissals-changed` notification topic is sent when done.
+   *
+   * @param {UrlbarResult} result
+   *   The result to dismiss.
+   */
+  async dismissResult(result) {
+    if (result.payload.source == "rust") {
+      await this.rustBackend?.dismissRustSuggestion(
+        result.payload.suggestionObject
+      );
+    } else {
+      let key = getDismissalKey(result);
+      if (key) {
+        await this.rustBackend?.dismissByKey(key);
+      }
+    }
+
+    Services.obs.notifyObservers(null, "quicksuggest-dismissals-changed");
+  }
+
+  /**
+   * Returns whether a dismissal is recorded for a result.
+   *
+   * @param {UrlbarResult} result
+   *   The result to check.
+   * @returns {boolean}
+   *   Whether the result has been dismissed.
+   */
+  async isResultDismissed(result) {
+    let promises = [
+      // Check whether the result was dismissed using the old API, where
+      // dismissals were recorded as URL digests.
+      getDigest(result.payload.originalUrl || result.payload.url).then(digest =>
+        this.rustBackend?.isDismissedByKey(digest)
+      ),
+    ];
+
+    if (result.payload.source == "rust") {
+      promises.push(
+        this.rustBackend?.isRustSuggestionDismissed(
+          result.payload.suggestionObject
+        )
+      );
+    } else {
+      let key = getDismissalKey(result);
+      if (key) {
+        promises.push(this.rustBackend?.isDismissedByKey(key));
+      }
+    }
+
+    let values = await Promise.all(promises);
+    return values.some(v => !!v);
+  }
+
+  /**
    * Clears all dismissed suggestions, including individually dismissed
-   * suggestions and dismissed suggestion types.
+   * suggestions and dismissed suggestion types. The following notification
+   * topics are sent when done, in this order:
+   *
+   * ```
+   * quicksuggest-dismissals-changed
+   * quicksuggest-dismissals-cleared
+   * ```
    */
   async clearDismissedSuggestions() {
     // Clear the user value of each feature's primary user-controlled pref if
@@ -380,9 +433,11 @@ class _QuickSuggest {
       }
     }
 
-    // Clear individually dismissed suggestions.
-    await this.blockedSuggestions?.clear();
+    // Clear individually dismissed suggestions, which are stored in the Rust
+    // component regardless of their source.
+    await this.rustBackend?.clearDismissedSuggestions();
 
+    Services.obs.notifyObservers(null, "quicksuggest-dismissals-changed");
     Services.obs.notifyObservers(null, "quicksuggest-dismissals-cleared");
   }
 
@@ -418,8 +473,7 @@ class _QuickSuggest {
     }
 
     // Return true if there are any individually dismissed suggestions.
-    let { blockedSuggestions } = this;
-    if (blockedSuggestions && !(await blockedSuggestions.isEmpty())) {
+    if (await this.rustBackend?.anyDismissedSuggestions()) {
       return true;
     }
 
@@ -791,6 +845,21 @@ class _QuickSuggest {
   // A plain JS object that maps pref names relative to `browser.urlbar.` to
   // their original unmodified values as defined in `firefox.js`.
   #unmodifiedDefaultPrefs;
+}
+
+function getDismissalKey(result) {
+  return (
+    result.payload.dismissalKey ||
+    result.payload.originalUrl ||
+    result.payload.url
+  );
+}
+
+async function getDigest(string) {
+  let stringArray = new TextEncoder().encode(string);
+  let hashBuffer = await crypto.subtle.digest("SHA-1", stringArray);
+  let hashArray = new Uint8Array(hashBuffer);
+  return Array.from(hashArray, b => b.toString(16).padStart(2, "0")).join("");
 }
 
 export const QuickSuggest = new _QuickSuggest();

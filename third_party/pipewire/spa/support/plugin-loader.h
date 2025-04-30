@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2021 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2021 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_PLUGIN_LOADER_H
 #define SPA_PLUGIN_LOADER_H
@@ -31,6 +11,14 @@ extern "C" {
 
 #include <spa/utils/hook.h>
 #include <spa/utils/dict.h>
+
+#ifndef SPA_API_PLUGIN_LOADER
+ #ifdef SPA_API_IMPL
+  #define SPA_API_PLUGIN_LOADER SPA_API_IMPL
+ #else
+  #define SPA_API_PLUGIN_LOADER static inline
+ #endif
+#endif
 
 /** \defgroup spa_plugin_loader Plugin Loader
  * SPA plugin loader
@@ -68,26 +56,18 @@ struct spa_plugin_loader_methods {
 	int (*unload)(void *object, struct spa_handle *handle);
 };
 
-static inline struct spa_handle *
+SPA_API_PLUGIN_LOADER struct spa_handle *
 spa_plugin_loader_load(struct spa_plugin_loader *loader, const char *factory_name, const struct spa_dict *info)
 {
-	struct spa_handle *res = NULL;
-	if (SPA_LIKELY(loader != NULL))
-		spa_interface_call_res(&loader->iface,
-				struct spa_plugin_loader_methods, res,
-				load, 0, factory_name, info);
-	return res;
+	return spa_api_method_null_r(struct spa_handle *, NULL, spa_plugin_loader, loader, &loader->iface,
+			load, 0, factory_name, info);
 }
 
-static inline int
+SPA_API_PLUGIN_LOADER int
 spa_plugin_loader_unload(struct spa_plugin_loader *loader, struct spa_handle *handle)
 {
-	int res = -1;
-	if (SPA_LIKELY(loader != NULL))
-		spa_interface_call_res(&loader->iface,
-				struct spa_plugin_loader_methods, res,
-				unload, 0, handle);
-	return res;
+	return spa_api_method_null_r(int, -1, spa_plugin_loader, loader, &loader->iface,
+			unload, 0, handle);
 }
 
 /**

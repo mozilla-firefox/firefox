@@ -1,11 +1,11 @@
-Source: ${DEB_PKG_NAME}
+Source: ${PKG_NAME}
 Maintainer: Mozilla <release@mozilla.com>
 Priority: optional
 Section: web
 Build-Depends: debhelper (>= 9)
 
-Package: ${DEB_PKG_NAME}
-Architecture: ${DEB_ARCH_NAME}
-Depends: ${DEB_DEPENDS}
+Package: ${PKG_NAME}
+Architecture: ${ARCH_NAME}
+Depends: ${DEPENDS}
 Provides: gnome-www-browser, www-browser
-Description: ${DEB_DESCRIPTION}
+Description: ${DESCRIPTION}

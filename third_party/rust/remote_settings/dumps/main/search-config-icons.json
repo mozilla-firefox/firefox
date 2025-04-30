@@ -1,0 +1,1176 @@
+{
+  "data": [
+    {
+      "attachment": {
+        "filename": "daum-kr_mobile.png",
+        "hash": "c2718c5e416670426475dd8cc496f5464bf95224e8f8f0a72b695360ddc917c0",
+        "location": "main-workspace/search-config-icons/d992fe72-6c09-4fb4-aec3-97206bb906c1.png",
+        "mimetype": "image/png",
+        "size": 344
+      },
+      "engineIdentifiers": [
+        "daum-kr"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "41135a88-093d-4077-873b-9de1ae133427",
+      "imageSize": 96,
+      "last_modified": 1744118264981,
+      "schema": 1743687934706
+    },
+    {
+      "attachment": {
+        "filename": "reddit.png",
+        "hash": "755b8939c63b1fcc9acd05cd33ffed675397516d37b5bd8f3a03875e25d3fb43",
+        "location": "main-workspace/search-config-icons/3f1e8b4b-0328-4247-bb3f-e190472e794f.png",
+        "mimetype": "image/png",
+        "size": 1070
+      },
+      "engineIdentifiers": [
+        "reddit"
+      ],
+      "id": "41f0d805-3775-4988-8d8c-5ad8ccd86d1c",
+      "imageSize": 48,
+      "last_modified": 1744118264979,
+      "schema": 1743687941442
+    },
+    {
+      "attachment": {
+        "filename": "leo_ende_de_mobile.png",
+        "hash": "97a68f0b948b68bbf389a9ef43e2fe6c31ff8dc7889c939fdfdea79378576c67",
+        "location": "main-workspace/search-config-icons/b23b1194-59af-4e91-9b44-2a887d27220b.png",
+        "mimetype": "image/png",
+        "size": 3211
+      },
+      "engineIdentifiers": [
+        "leo_ende_de"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "db0e1627-ae89-4c25-8944-a9481d8512d9",
+      "imageSize": 96,
+      "last_modified": 1744118264976,
+      "schema": 1743687927700
+    },
+    {
+      "attachment": {
+        "filename": "mapy-cz_mobile.png",
+        "hash": "92da7ef030e1d3ed97235748156383e5d75fa6d2744bd124334ab47dc0b689a1",
+        "location": "main-workspace/search-config-icons/63c435c1-78a4-49cb-8e03-79d9595d2d3b.png",
+        "mimetype": "image/png",
+        "size": 984
+      },
+      "engineIdentifiers": [
+        "mapy-cz"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "48c72361-cd67-412e-bd7f-f81a43c10791",
+      "imageSize": 96,
+      "last_modified": 1744118264974,
+      "schema": 1743687926793
+    },
+    {
+      "attachment": {
+        "filename": "youtube.png",
+        "hash": "6b1b073183eb0012daea0dce351a94d395c8a0b531b610e56eac52b3d1d1da0e",
+        "location": "main-workspace/search-config-icons/4e534ddf-5fc9-4913-9994-dacd80b2b3d6.png",
+        "mimetype": "image/png",
+        "size": 420
+      },
+      "engineIdentifiers": [
+        "youtube"
+      ],
+      "id": "9802e63d-05ec-48ba-93f9-746e0981ad98",
+      "imageSize": 48,
+      "last_modified": 1744118264972,
+      "schema": 1743687971186
+    },
+    {
+      "attachment": {
+        "filename": "salidzinilv_mobile.png",
+        "hash": "e988445d87afe0d285bea251705fc23eb70ac42426ab0d7a69d9276585c5573c",
+        "location": "main-workspace/search-config-icons/79622d89-5cdc-445b-91b4-dc56307e93b2.png",
+        "mimetype": "image/png",
+        "size": 3322
+      },
+      "engineIdentifiers": [
+        "salidzinilv"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "7c81cf98-7c11-4afd-8279-db89118a6dfb",
+      "imageSize": 96,
+      "last_modified": 1744118264969,
+      "schema": 1743687922382
+    },
+    {
+      "attachment": {
+        "filename": "amazon_mobile.png",
+        "hash": "076352591c7077af4af5771918f80b5da9c6bf479327cc68390abdb158f3ec03",
+        "location": "main-workspace/search-config-icons/6343f182-d4ca-4865-a12c-62f3861524b9.png",
+        "mimetype": "image/png",
+        "size": 1261
+      },
+      "engineIdentifiers": [
+        "amazon*"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "b882b24d-1776-4ef9-9016-0bdbd935eda3",
+      "imageSize": 96,
+      "last_modified": 1744118264967,
+      "schema": 1743687939650
+    },
+    {
+      "attachment": {
+        "filename": "wiktionary_mobile.png",
+        "hash": "4f1bfbfec1441bd9a304ca7f3b8fd54130e94df185f7b28bb17c86ba517e13b7",
+        "location": "main-workspace/search-config-icons/a38c58c7-8ea3-4532-b120-64dc0654a96c.png",
+        "mimetype": "image/png",
+        "size": 1021
+      },
+      "engineIdentifiers": [
+        "wiktionary*"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "6644f26f-28ea-4222-929d-5d43a02dae05",
+      "imageSize": 96,
+      "last_modified": 1744118264964,
+      "schema": 1743687897341
+    },
+    {
+      "attachment": {
+        "filename": "azerdict_mobile.png",
+        "hash": "3426b5100a6bdb45f8039f0c71a6b68193750ba7bae5b36e5ed31b2b7f372cda",
+        "location": "main-workspace/search-config-icons/1229ffe4-7a6f-46d7-b664-5596df0aa730.png",
+        "mimetype": "image/png",
+        "size": 1357
+      },
+      "engineIdentifiers": [
+        "azerdict"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "95ed201d-4ab8-4cb8-831d-454f53cab0f8",
+      "imageSize": 96,
+      "last_modified": 1744118264962,
+      "schema": 1743687938695
+    },
+    {
+      "attachment": {
+        "filename": "ceneji_mobile.png",
+        "hash": "a7493c6a9d70d60acccf73f62dcbc127a580469570aee60b7482cd42cdb59f69",
+        "location": "main-workspace/search-config-icons/47936bf8-71bd-4c9a-9a00-58920177458b.png",
+        "mimetype": "image/png",
+        "size": 724
+      },
+      "engineIdentifiers": [
+        "ceneji"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "0a57b0cf-34f0-4d09-96e4-dbd6e3355410",
+      "imageSize": 96,
+      "last_modified": 1744118264959,
+      "schema": 1743687936599
+    },
+    {
+      "attachment": {
+        "filename": "faclair-beag_mobile.png",
+        "hash": "adb29f6fd95956401630d94967381ac473f57215d96a5bcf500a00e747731380",
+        "location": "main-workspace/search-config-icons/6c6e0ca2-8870-423e-ac7c-1abae0b71fdf.png",
+        "mimetype": "image/png",
+        "size": 3393
+      },
+      "engineIdentifiers": [
+        "faclair-beag"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "5203dd03-2c55-4b53-9c60-58258d587be1",
+      "imageSize": 96,
+      "last_modified": 1744118264956,
+      "schema": 1743687931932
+    },
+    {
+      "attachment": {
+        "filename": "yahoo-jp_mobile.png",
+        "hash": "3a9d06951c7c9d2c19cd00533a760b0f8755b1e2e718af81c710297d030fbe44",
+        "location": "main-workspace/search-config-icons/3a69bfc6-9d32-4d30-981e-96b83d26e8a7.png",
+        "mimetype": "image/png",
+        "size": 972
+      },
+      "engineIdentifiers": [
+        "yahoo-jp"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "fe75ce3f-1545-400c-b28c-ad771054e69f",
+      "imageSize": 96,
+      "last_modified": 1744118264953,
+      "schema": 1743687846822
+    },
+    {
+      "attachment": {
+        "filename": "ecosia_mobile.png",
+        "hash": "774f0a7a613c6c5bea642e3628fa7436851de79e7da9713ad0c96d5db7f44300",
+        "location": "main-workspace/search-config-icons/f58670d9-93b2-413e-a2fa-ba29c401d669.png",
+        "mimetype": "image/png",
+        "size": 694
+      },
+      "engineIdentifiers": [
+        "ecosia"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "2ecca3f8-c1ef-43cc-b053-886d1ae46c36",
+      "imageSize": 48,
+      "last_modified": 1744118264951,
+      "schema": 1743687932852
+    },
+    {
+      "attachment": {
+        "filename": "seznam-cz_mobile.png",
+        "hash": "66612f999921d892645c8a2b37aa5dad17b134e7fdaed375a683baec7fc10697",
+        "location": "main-workspace/search-config-icons/30e08748-6ddf-47ec-928d-f50e2d90d1de.png",
+        "mimetype": "image/png",
+        "size": 902
+      },
+      "engineIdentifiers": [
+        "seznam-cz"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "a83f24e4-602c-47bd-930c-ad0947ee1adf",
+      "imageSize": 96,
+      "last_modified": 1744118264948,
+      "schema": 1743687921559
+    },
+    {
+      "attachment": {
+        "filename": "gulesider-NO_mobile.png",
+        "hash": "0a653ea57472694ac05623d9b237e479232a0d65683d05f89661f996054e3276",
+        "location": "main-workspace/search-config-icons/3481d42d-8933-4ea7-a84e-84fc1090762c.png",
+        "mimetype": "image/png",
+        "size": 409
+      },
+      "engineIdentifiers": [
+        "gulesider-NO"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "7072564d-a573-4750-bf33-f0a07631c9eb",
+      "imageSize": 96,
+      "last_modified": 1744118264946,
+      "schema": 1743687928614
+    },
+    {
+      "attachment": {
+        "filename": "odpiralni_mobile.png",
+        "hash": "f8780adb4d7b28f2f881db4ca7b697d8fc916cd9fa834ccc445fe7d4b72a6cc7",
+        "location": "main-workspace/search-config-icons/de273151-2a00-42f7-9970-3989866429ba.png",
+        "mimetype": "image/png",
+        "size": 4919
+      },
+      "engineIdentifiers": [
+        "odpiralni"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "8abb10a7-212f-46b5-a7b4-244f414e3810",
+      "imageSize": 96,
+      "last_modified": 1744118264944,
+      "schema": 1743687924094
+    },
+    {
+      "attachment": {
+        "filename": "pazaruvaj_mobile.png",
+        "hash": "98dca7e24cad0a1be96ef2c323e9759beb63c72440756f887e2482d9ce8e8969",
+        "location": "main-workspace/search-config-icons/280984aa-729a-46c8-b019-4f6b1e4146a5.png",
+        "mimetype": "image/png",
+        "size": 2871
+      },
+      "engineIdentifiers": [
+        "pazaruvaj"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "94a84724-c30f-4767-ba42-01cc37fc31a4",
+      "imageSize": 96,
+      "last_modified": 1744118264941,
+      "schema": 1743687940531
+    },
+    {
+      "attachment": {
+        "filename": "baidu_mobile.png",
+        "hash": "601d72e7abde5ec864b3d8ca0031896f769107670b84c66053062481a56d8665",
+        "location": "main-workspace/search-config-icons/e771d394-309f-43e4-9f60-0ae8cef96662.png",
+        "mimetype": "image/png",
+        "size": 3107
+      },
+      "engineIdentifiers": [
+        "baidu"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "b9424309-f601-4a69-98ca-ca68e65633e6",
+      "imageSize": 96,
+      "last_modified": 1744118264939,
+      "schema": 1743687937748
+    },
+    {
+      "attachment": {
+        "filename": "ebay_mobile.jpg",
+        "hash": "aa46b3d1ed8557e5bc7e71988cc6c46b00363b890d2a781973f9dc9073f8dd31",
+        "location": "main-workspace/search-config-icons/2c3520e6-a54b-490f-84bc-fb759f7f0e79.jpg",
+        "mimetype": "image/jpeg",
+        "size": 2465
+      },
+      "engineIdentifiers": [
+        "ebay*"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "eb62e768-151b-45d1-9fe5-9e1d2a5991c5",
+      "imageSize": 68,
+      "last_modified": 1744118264936,
+      "schema": 1743687933774
+    },
+    {
+      "attachment": {
+        "filename": "qwant-16.pdf",
+        "hash": "02f54211387baa59e4246356dc7344e48f39a412f2e5993d7f403aa538df7276",
+        "location": "main-workspace/search-config-icons/b407dc78-50ae-41c4-95d2-25a442c4bd59.pdf",
+        "mimetype": "application/pdf",
+        "size": 4172
+      },
+      "engineIdentifiers": [
+        "qwant"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\"",
+      "id": "5914932e-66ba-4126-8be5-d37beadd9532",
+      "imageSize": 16,
+      "last_modified": 1744118264933,
+      "schema": 1743688004947
+    },
+    {
+      "attachment": {
+        "filename": "coccoc_mobile.png",
+        "hash": "71413ef23ac14ce2b7bb76f7f5d16b2df267239841a88ddab36b129481e00616",
+        "location": "main-workspace/search-config-icons/48ee1c5c-9251-4ee2-af65-52eed830812e.png",
+        "mimetype": "image/png",
+        "size": 2533
+      },
+      "engineIdentifiers": [
+        "coccoc"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "764e3b14-fe16-4feb-8384-124c516a5afa",
+      "imageSize": 96,
+      "last_modified": 1744118264931,
+      "schema": 1743687935690
+    },
+    {
+      "attachment": {
+        "filename": "mercadoli_mobile.png",
+        "hash": "8dc2e75e6792b8374b20621fa2151ac24b4626e5c1f6a1abec4f912746441859",
+        "location": "main-workspace/search-config-icons/5ce8899a-56a5-4e20-a84d-8010bf48c898.png",
+        "mimetype": "image/png",
+        "size": 3202
+      },
+      "engineIdentifiers": [
+        "mercadoli*"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "7cb4d88a-d4df-45b2-87e4-f896eaf1bbdb",
+      "imageSize": 96,
+      "last_modified": 1744118264929,
+      "schema": 1743687925793
+    },
+    {
+      "attachment": {
+        "filename": "vatera_mobile.png",
+        "hash": "3376e14529ed2e96c7dc491b3bf11914d7c8ff47a068311b2432c086c2ae0f28",
+        "location": "main-workspace/search-config-icons/afe38f84-b99d-418b-b721-9a9615e7f2a0.png",
+        "mimetype": "image/png",
+        "size": 1490
+      },
+      "engineIdentifiers": [
+        "vatera"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "74f94dc2-caf6-4b90-b3d2-f3e2f7714d88",
+      "imageSize": 96,
+      "last_modified": 1744118264926,
+      "schema": 1743687920664
+    },
+    {
+      "attachment": {
+        "filename": "wikipedia_mobile.png",
+        "hash": "e9849089ffced59563896974afee0fceedac7fc8455bbeaa5bae230f54c933d9",
+        "location": "main-workspace/search-config-icons/38dc27d1-ee3d-4f69-b74c-ee9b90b7c936.png",
+        "mimetype": "image/png",
+        "size": 1100
+      },
+      "engineIdentifiers": [
+        "wikipedia*"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "6e36a151-e4f4-4117-9067-1ca82c47d01a",
+      "imageSize": 96,
+      "last_modified": 1744118264924,
+      "schema": 1743687919606
+    },
+    {
+      "attachment": {
+        "filename": "naver-kr_mobile.png",
+        "hash": "5aad083bfcef256d433c1ffa571b814d16f61832bcd7565bf03909011f6a0bfc",
+        "location": "main-workspace/search-config-icons/35e03899-b7d2-446e-87fb-c721f97c0227.png",
+        "mimetype": "image/png",
+        "size": 2350
+      },
+      "engineIdentifiers": [
+        "naver-kr"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "71f41a0c-5b70-4116-b30f-e62089083522",
+      "imageSize": 96,
+      "last_modified": 1744118264921,
+      "schema": 1743687924936
+    },
+    {
+      "attachment": {
+        "filename": "google_mobile.png",
+        "hash": "27541cb376bdda829a6cf9cefd13da112728881e3daa4ac3c1178d4ce15f1e8b",
+        "location": "main-workspace/search-config-icons/d9917c97-4593-4596-8ef0-cf0635e8aa36.png",
+        "mimetype": "image/png",
+        "size": 1571
+      },
+      "engineIdentifiers": [
+        "google"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "7edaf4fe-a8a0-432b-86d2-bf75ebe80851",
+      "imageSize": 96,
+      "last_modified": 1744118264918,
+      "schema": 1743687930970
+    },
+    {
+      "attachment": {
+        "filename": "prisjakt-sv-SE_mobile.png",
+        "hash": "4f409c3ffc67cfa870b05e4089b6ffc3fc81448fa60afba447f0177cd1192b1e",
+        "location": "main-workspace/search-config-icons/02277a17-bb75-4e5f-94a8-abb34005298c.png",
+        "mimetype": "image/png",
+        "size": 3370
+      },
+      "engineIdentifiers": [
+        "prisjakt-sv-SE"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
+      "id": "39d0b17d-c020-4890-932f-83c0f6ed130b",
+      "imageSize": 96,
+      "last_modified": 1744118264916,
+      "schema": 1743687923256
+    },
+    {
+      "attachment": {
+        "filename": "Icon%2016x16.svg",
+        "hash": "912d20feefcba57d43bffff5e245b8c1e3865155ed686d8ad253bbab71116e83",
+        "location": "main-workspace/search-config-icons/59fbd815-ba40-494a-b56a-40b3531dd10b.svg",
+        "mimetype": "image/svg+xml",
+        "size": 1054
+      },
+      "engineIdentifiers": [
+        "qwant"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\"",
+      "id": "7bf4ca37-e2b8-4d31-a1c3-979bc0e85131",
+      "imageSize": 16,
+      "last_modified": 1744118264912,
+      "schema": 1743687972090
+    },
+    {
+      "attachment": {
+        "filename": "yahoo-jp-16-firefox.ico",
+        "hash": "ca8f102ac4f35189ebcb786d080843b603b234f89b8d8b1c0ef27a0ab7148182",
+        "location": "main-workspace/search-config-icons/b071a229-712f-4e13-99f4-61283d1c3fb4.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "yahoo-jp"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "74793ce1-a918-a5eb-d3c0-2aadaff3c88c",
+      "imageSize": 16,
+      "last_modified": 1744118264908,
+      "schema": 1743687739689
+    },
+    {
+      "attachment": {
+        "filename": "wolnelektury-pl-16-firefox.png",
+        "hash": "809697f48848e7c3638d5f3e0b224ea60b3800504e7bd8417854d55989b85196",
+        "location": "main-workspace/search-config-icons/4665f707-e315-4ac0-a12e-2455f0123758.png",
+        "mimetype": "image/png",
+        "size": 304
+      },
+      "engineIdentifiers": [
+        "wolnelektury-pl"
+      ],
+      "id": "e718e983-09aa-e8f6-b25f-cd4b395d4785",
+      "imageSize": 16,
+      "last_modified": 1744118264906,
+      "schema": 1743687680020
+    },
+    {
+      "attachment": {
+        "filename": "wiktionary-16-firefox.ico",
+        "hash": "5d53ef1866a08cc29011f5f2a9ce99bbf37cf42e80de7f0e8cc30d13337e8187",
+        "location": "main-workspace/search-config-icons/22d846d9-468d-457b-9e3a-01166e4cc404.ico",
+        "mimetype": "image/x-icon",
+        "size": 318
+      },
+      "engineIdentifiers": [
+        "wiktionary*"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "91a9672d-e945-8e1e-0996-aefdb0190716",
+      "imageSize": 16,
+      "last_modified": 1744118264904,
+      "schema": 1743687818052
+    },
+    {
+      "attachment": {
+        "filename": "wikipedia-16-firefox.ico",
+        "hash": "62d2faa3a8322b1f643aab6e045837500ebe3049c5cb140cb44c4dfc7290337a",
+        "location": "main-workspace/search-config-icons/bcdcafec-9b52-4f8b-82fe-abdb2c533cdb.ico",
+        "mimetype": "image/x-icon",
+        "size": 884
+      },
+      "engineIdentifiers": [
+        "wikipedia*"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "101ce01d-2691-b729-7f16-9d389803384b",
+      "imageSize": 16,
+      "last_modified": 1744118264902,
+      "schema": 1743687826368
+    },
+    {
+      "attachment": {
+        "filename": "webde-16-firefox.ico",
+        "hash": "dd5cab3711f778677859e86000a127ed07a6175e8e58aecb0fba71b825ce76d7",
+        "location": "main-workspace/search-config-icons/45da3463-8c66-4b48-a422-00c54f44a96b.ico",
+        "mimetype": "image/x-icon",
+        "size": 3638
+      },
+      "engineIdentifiers": [
+        "webde"
+      ],
+      "id": "6f4da442-d31e-28f8-03af-797d16bbdd27",
+      "imageSize": 16,
+      "last_modified": 1744118264900,
+      "schema": 1743687697875
+    },
+    {
+      "attachment": {
+        "filename": "vatera-16-firefox.ico",
+        "hash": "9cd3da38e3938549434d1c3cba6fed249ffa7d91d9a6d7ffb5f4184f527cac76",
+        "location": "main-workspace/search-config-icons/c7aa740f-cef2-45da-aaba-331a74425985.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "vatera"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "5e03d6f4-6ee9-8bc8-cf22-7a5f2cf55c41",
+      "imageSize": 16,
+      "last_modified": 1744118264898,
+      "schema": 1743687827197
+    },
+    {
+      "attachment": {
+        "filename": "yahoo-jp-auctions-16-firefox.ico",
+        "hash": "617dec5d635efb0a12d0de935c6999ef0249f4a63c62bdcb96551518bc3d1812",
+        "location": "main-workspace/search-config-icons/d424ae0b-82e7-42fc-a10a-a607bba3642a.ico",
+        "mimetype": "image/x-icon",
+        "size": 2672
+      },
+      "engineIdentifiers": [
+        "yahoo-jp-auctions"
+      ],
+      "id": "a06db97d-1210-ea2e-5474-0e2f7d295bfd",
+      "imageSize": 16,
+      "last_modified": 1744118264896,
+      "schema": 1743687505962
+    },
+    {
+      "attachment": {
+        "filename": "tyda-sv-SE-16-firefox.png",
+        "hash": "1bf68aca7bfc75ca8485c3dac9a1daa13c1a3eb480688c32262096af6076adfa",
+        "location": "main-workspace/search-config-icons/7d783537-313f-46db-bb4b-8878118884e4.png",
+        "mimetype": "image/png",
+        "size": 379
+      },
+      "engineIdentifiers": [
+        "tyda-sv-SE"
+      ],
+      "id": "a2c7d4e9-f770-51e1-0963-3c2c8401631d",
+      "imageSize": 16,
+      "last_modified": 1744118264895,
+      "schema": 1743687702309
+    },
+    {
+      "attachment": {
+        "filename": "seznam-cz-16-firefox.ico",
+        "hash": "a1fd5d127a5f2590ddcd439b7a2abb3456b48217ea11daf0345b26e108f520e6",
+        "location": "main-workspace/search-config-icons/aae88ab5-7f9e-4bd6-80cd-9bb0f6638a19.ico",
+        "mimetype": "image/x-icon",
+        "size": 1743
+      },
+      "engineIdentifiers": [
+        "seznam-cz"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "84bb4962-e571-227a-9ef6-2ac5f2aac361",
+      "imageSize": 16,
+      "last_modified": 1744118264893,
+      "schema": 1743687827516
+    },
+    {
+      "attachment": {
+        "filename": "salidzinilv-16-firefox.ico",
+        "hash": "c4d88cfa5262f6d2cf76b167281d25821c9e1770684b739ed6ad3cf7277a121b",
+        "location": "main-workspace/search-config-icons/bc06c6d4-019c-4aa8-8958-813dc644452a.ico",
+        "mimetype": "image/x-icon",
+        "size": 3638
+      },
+      "engineIdentifiers": [
+        "salidzinilv"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "fca3e3ee-56cd-f474-dc31-307fd24a891d",
+      "imageSize": 16,
+      "last_modified": 1744118264891,
+      "schema": 1743687827915
+    },
+    {
+      "attachment": {
+        "filename": "readmoo-16-firefox.ico",
+        "hash": "247aa26993083705ce99a8e5612cdf262aca98cde86ba19afc964329ba95986a",
+        "location": "main-workspace/search-config-icons/46bf2594-7779-42b7-be7b-212232ba2ba0.ico",
+        "mimetype": "image/x-icon",
+        "size": 2468
+      },
+      "engineIdentifiers": [
+        "readmoo"
+      ],
+      "id": "e02f23df-8d48-2b1b-3b5c-6dd27302c61c",
+      "imageSize": 16,
+      "last_modified": 1744118264888,
+      "schema": 1743687711996
+    },
+    {
+      "attachment": {
+        "filename": "rakuten-16-firefox.ico",
+        "hash": "b75ef04a805325e303c4195833cdd077d3d406f360b25b72502fc55880b9150b",
+        "location": "main-workspace/search-config-icons/3d9337c7-0654-475b-bc03-710e0400b35e.ico",
+        "mimetype": "image/x-icon",
+        "size": 2053
+      },
+      "engineIdentifiers": [
+        "rakuten"
+      ],
+      "id": "06cf7432-efd7-f244-927b-5e423005e1ea",
+      "imageSize": 16,
+      "last_modified": 1744118264886,
+      "schema": 1743687716567
+    },
+    {
+      "attachment": {
+        "filename": "qwantjr-16-firefox.ico",
+        "hash": "91d17ba44192a6430ffdb447ff3a11533ef964628f67c13480cc9470212d3d65",
+        "location": "main-workspace/search-config-icons/360f7074-bda7-4906-bd66-db38d4770056.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "qwantjr"
+      ],
+      "id": "f312610a-ebfb-a106-ea92-fd643c5d3636",
+      "imageSize": 16,
+      "last_modified": 1744118264884,
+      "schema": 1743687728916
+    },
+    {
+      "attachment": {
+        "filename": "prisjakt-sv-SE-16-firefox.ico",
+        "hash": "3b88f3ef3cbfaed127d679ec7e44a44fe8dcad688feb89a70a1a9447c1460d15",
+        "location": "main-workspace/search-config-icons/84ce4b9c-3998-4ca7-9856-3c9cb019da95.ico",
+        "mimetype": "image/x-icon",
+        "size": 1406
+      },
+      "engineIdentifiers": [
+        "prisjakt-sv-SE"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "177aba42-9bed-4078-e36b-580e8794cd7f",
+      "imageSize": 16,
+      "last_modified": 1744118264882,
+      "schema": 1743687828800
+    },
+    {
+      "attachment": {
+        "filename": "priberam-16-firefox.png",
+        "hash": "64800e32b24b2c8c0582750e1657426d56abd74b65682e20e892f82710d120b6",
+        "location": "main-workspace/search-config-icons/e9432c7b-e80b-49ad-9c4f-8a69df8a63b4.png",
+        "mimetype": "image/png",
+        "size": 790
+      },
+      "engineIdentifiers": [
+        "priberam"
+      ],
+      "id": "0eec5640-6fde-d6fe-322a-c72c6d5bd5a2",
+      "imageSize": 16,
+      "last_modified": 1744118264880,
+      "schema": 1743687730153
+    },
+    {
+      "attachment": {
+        "filename": "pazaruvaj-16-firefox.ico",
+        "hash": "b0c6d1850265e3c946917232ca6c6ace3dad23347bfab4f81351eac569326d34",
+        "location": "main-workspace/search-config-icons/2951bdf6-b440-4543-83ba-4ca1318db69e.ico",
+        "mimetype": "image/x-icon",
+        "size": 2584
+      },
+      "engineIdentifiers": [
+        "pazaruvaj"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "7efbed51-813c-581d-d8d3-f8758434e451",
+      "imageSize": 16,
+      "last_modified": 1744118264878,
+      "schema": 1743687829547
+    },
+    {
+      "attachment": {
+        "filename": "odpiralni-16-firefox.png",
+        "hash": "189ed3031a2cefd3150c9e5b37bee1ffbc1f7850f7ac0621e4b8d262f2c1048c",
+        "location": "main-workspace/search-config-icons/2323c216-89f9-43e7-a519-9a23a256aa45.png",
+        "mimetype": "image/png",
+        "size": 2639
+      },
+      "engineIdentifiers": [
+        "odpiralni"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "4e271681-3e0f-91ac-9750-03f665efc171",
+      "imageSize": 16,
+      "last_modified": 1744118264876,
+      "schema": 1743687830257
+    },
+    {
+      "attachment": {
+        "filename": "naver-kr-16-firefox.ico",
+        "hash": "723ac3228124926537d5a61284d60e198a52895195f9f69b967c578ef7a012ad",
+        "location": "main-workspace/search-config-icons/4111bef2-7258-4c9b-9f64-77cf545b697f.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "naver-kr"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "2bbe48f4-d3b8-c9e0-86e3-a54c37ec3335",
+      "imageSize": 16,
+      "last_modified": 1744118264874,
+      "schema": 1743687830946
+    },
+    {
+      "attachment": {
+        "filename": "mercadolivre-16-firefox.ico",
+        "hash": "d7fdfd971d874f2ec6f209df6f6b8173d126cd3f7a25daacb94de4259efbcf16",
+        "location": "main-workspace/search-config-icons/f8d4c276-9b04-4c70-8ff9-5c1faf55978c.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "mercadolivre"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "fed4f021-ff3e-942a-010e-afa43fda2136",
+      "imageSize": 16,
+      "last_modified": 1744118264872,
+      "schema": 1743687832067
+    },
+    {
+      "attachment": {
+        "filename": "mercadolibre-16-firefox.ico",
+        "hash": "d7fdfd971d874f2ec6f209df6f6b8173d126cd3f7a25daacb94de4259efbcf16",
+        "location": "main-workspace/search-config-icons/33e52a1d-1883-4a4b-aaf6-7e4f5b52cdfb.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "mercadolibre*"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "47da97b5-600f-c450-fd15-a52bb2169c11",
+      "imageSize": 16,
+      "last_modified": 1744118264870,
+      "schema": 1743687832901
+    },
+    {
+      "attachment": {
+        "filename": "mapy-cz-16-firefox.ico",
+        "hash": "1474c93e49c209aca2a2df2acb61b64574805106bead6edebd67287de21920e0",
+        "location": "main-workspace/search-config-icons/e94ddd93-1c38-42c0-847a-741f49305d7b.ico",
+        "mimetype": "image/x-icon",
+        "size": 1812
+      },
+      "engineIdentifiers": [
+        "mapy-cz"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "b8ca5a94-8fff-27ad-6e00-96e244a32e21",
+      "imageSize": 16,
+      "last_modified": 1744118264868,
+      "schema": 1743687833772
+    },
+    {
+      "attachment": {
+        "filename": "mailcom-16-firefox.ico",
+        "hash": "33ca72f1eac56793d1fd811189cedef98004a067c85b1143083b564814a4b0db",
+        "location": "main-workspace/search-config-icons/4c43dc1a-e163-4560-9713-fae61c9c59b9.ico",
+        "mimetype": "image/x-icon",
+        "size": 1150
+      },
+      "engineIdentifiers": [
+        "mailcom"
+      ],
+      "id": "87ac4cde-f581-398b-1e32-eb4079183b36",
+      "imageSize": 16,
+      "last_modified": 1744118264866,
+      "schema": 1743687731350
+    },
+    {
+      "attachment": {
+        "filename": "longdo-16-firefox.png",
+        "hash": "a64f553b79fbb8c45734310dac401ad253ccd05aeabfa58bb5541daa6d8caf70",
+        "location": "main-workspace/search-config-icons/9526a092-69d3-4010-bf09-d426f5574c5b.png",
+        "mimetype": "image/png",
+        "size": 252
+      },
+      "engineIdentifiers": [
+        "longdo"
+      ],
+      "id": "32d26d19-aeb0-5c01-32e8-f8970be9246f",
+      "imageSize": 16,
+      "last_modified": 1744118264864,
+      "schema": 1743687732245
+    },
+    {
+      "attachment": {
+        "filename": "leo_ende_de-16-firefox.png",
+        "hash": "c3e8300801c5c585662f14fd8e819d635efd9830783dc3c631212927866e9898",
+        "location": "main-workspace/search-config-icons/57b3cf6a-9cb2-4d3a-8839-54a3e62f49ec.png",
+        "mimetype": "image/png",
+        "size": 749
+      },
+      "engineIdentifiers": [
+        "leo_ende_de"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "b64f09fd-52d1-c48e-af23-4ce918e7bf3b",
+      "imageSize": 16,
+      "last_modified": 1744118264861,
+      "schema": 1743687834703
+    },
+    {
+      "attachment": {
+        "filename": "gulesider-NO-16-firefox.ico",
+        "hash": "c971ee33b8c0a57349669d957bf73070b0632b128c94748e845b57d5e15221a4",
+        "location": "main-workspace/search-config-icons/f3a89a46-c15c-4622-9035-cdf6773139cb.ico",
+        "mimetype": "image/x-icon",
+        "size": 1150
+      },
+      "engineIdentifiers": [
+        "gulesider-NO"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "e7547f62-187b-b641-d462-e54a3f813d9a",
+      "imageSize": 16,
+      "last_modified": 1744118264859,
+      "schema": 1743687835622
+    },
+    {
+      "attachment": {
+        "filename": "google-16-firefox.ico",
+        "hash": "6da5620880159634213e197fafca1dde0272153be3e4590818533fab8d040770",
+        "location": "main-workspace/search-config-icons/644faa05-4deb-491b-ae95-0962aefabe55.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "google"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "fa0fc42c-d91d-fca7-34eb-806ff46062dc",
+      "imageSize": 16,
+      "last_modified": 1744118264857,
+      "schema": 1743687836435
+    },
+    {
+      "attachment": {
+        "filename": "gmx-16-firefox.png",
+        "hash": "828c3ca82e9be483ae583e5a705dde57b24fd8431e192e3a2d0809871992afa5",
+        "location": "main-workspace/search-config-icons/a0cb1b08-4911-4db8-90f3-ee87da5bb9b5.png",
+        "mimetype": "image/png",
+        "size": 1122
+      },
+      "engineIdentifiers": [
+        "gmx*"
+      ],
+      "id": "25de0352-aabb-d31f-15f7-bf9299fb004c",
+      "imageSize": 16,
+      "last_modified": 1744118264855,
+      "schema": 1743687733779
+    },
+    {
+      "attachment": {
+        "filename": "faclair-beag-16-firefox.jpg",
+        "hash": "f895a965b68d02e7391cc4504d9be75e1ba7f9b50a1dd59af77bb44a7769c08c",
+        "location": "main-workspace/search-config-icons/d0e5c407-7b88-4030-8870-f44498141ec7.jpg",
+        "mimetype": "image/jpeg",
+        "size": 1091
+      },
+      "engineIdentifiers": [
+        "faclair-beag"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "6d10d702-7bd6-1452-90a5-3df665a38f66",
+      "imageSize": 16,
+      "last_modified": 1744118264853,
+      "schema": 1743687837216
+    },
+    {
+      "attachment": {
+        "filename": "eudict-16-firefox.ico",
+        "hash": "150765e8e9b985ba5b820ac9b8e7623023d5a0e24f94663d5e9203d8d7598059",
+        "location": "main-workspace/search-config-icons/93c06725-f10f-44f6-b7db-05e22a6ab676.ico",
+        "mimetype": "image/x-icon",
+        "size": 1785
+      },
+      "engineIdentifiers": [
+        "eudict"
+      ],
+      "id": "c411adc1-9661-4fb5-a4c1-8cfe74911943",
+      "imageSize": 16,
+      "last_modified": 1744118264851,
+      "schema": 1743687734735
+    },
+    {
+      "attachment": {
+        "filename": "ecosia-16-firefox.ico",
+        "hash": "fdadf15c6eae7933c3d254ae6311112e0bc8a422c38c758189dbe6a4d7f6b718",
+        "location": "main-workspace/search-config-icons/d0ab8a9e-0dc4-476b-bdb0-81b1d9b8f6cf.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "ecosia"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "001500a9-1a6c-3f5a-ba15-a5f5a075d256",
+      "imageSize": 16,
+      "last_modified": 1744118264849,
+      "schema": 1743687838278
+    },
+    {
+      "attachment": {
+        "filename": "ebay-16-firefox.ico",
+        "hash": "31a793dad95b5ffd02d39ebf14fc40877596f418f5926247487265034181dc8f",
+        "location": "main-workspace/search-config-icons/5a9068cd-a4fa-4600-97fc-59f380e3d651.ico",
+        "mimetype": "image/x-icon",
+        "size": 1455
+      },
+      "engineIdentifiers": [
+        "ebay*"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "70fdd651-6c50-b7bb-09ec-7e85da259173",
+      "imageSize": 16,
+      "last_modified": 1744118264847,
+      "schema": 1743687839058
+    },
+    {
+      "attachment": {
+        "filename": "ddg-16-firefox.ico",
+        "hash": "d994f806b1e4225b50be5ab681b2cecf845cc216a19a432d878cea3cb815bafd",
+        "location": "main-workspace/search-config-icons/c6ae7df5-0396-4892-b76a-b35a00044a13.ico",
+        "mimetype": "image/x-icon",
+        "size": 2799
+      },
+      "engineIdentifiers": [
+        "ddg"
+      ],
+      "id": "a06dc3fd-4bdb-41f3-2ebc-4cbed06a9bd3",
+      "imageSize": 16,
+      "last_modified": 1744118264845,
+      "schema": 1743687735700
+    },
+    {
+      "attachment": {
+        "filename": "daum-kr-16-firefox.ico",
+        "hash": "ca3cc8786977f6ffeb0546ff8f3bb2b7fd240d1956fbf86777dbf0e8bec9c03b",
+        "location": "main-workspace/search-config-icons/3ce9df7f-3e0a-4b26-add1-18e2857f6213.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "daum-kr"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "8831ce10-b1e4-6eb4-4975-83c67457288e",
+      "imageSize": 16,
+      "last_modified": 1744118264843,
+      "schema": 1743687839798
+    },
+    {
+      "attachment": {
+        "filename": "coccoc-16-firefox.ico",
+        "hash": "7042293af6b04e421cb7b68dc599ac644b76939cdcf5970159e44f658dd6a0cc",
+        "location": "main-workspace/search-config-icons/82083e19-25c5-4c3c-b269-3d8c0173e4e2.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "coccoc"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "0d7668a8-c3f4-cfee-cbc8-536511528937",
+      "imageSize": 16,
+      "last_modified": 1744118264841,
+      "schema": 1743687840864
+    },
+    {
+      "attachment": {
+        "filename": "ceneji-16-firefox.png",
+        "hash": "9140bd1b30953f41bc758d2c0ecc873f5163e4f51126c278991eccd38589c541",
+        "location": "main-workspace/search-config-icons/1e37d101-2191-45e3-8d61-9c1bea44ebce.png",
+        "mimetype": "image/png",
+        "size": 283
+      },
+      "engineIdentifiers": [
+        "ceneji"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "50f6171f-8e7a-b41b-862e-f97397038fb2",
+      "imageSize": 16,
+      "last_modified": 1744118264839,
+      "schema": 1743687841692
+    },
+    {
+      "attachment": {
+        "filename": "bok-NO-16-firefox.png",
+        "hash": "6ba1f0fd1d12014cab32f74daab24dfa16fb26613ace20a1e595267621038a07",
+        "location": "main-workspace/search-config-icons/bcf53867-215e-40f1-9a6e-bc4c5768c5c4.png",
+        "mimetype": "image/png",
+        "size": 530
+      },
+      "engineIdentifiers": [
+        "bok-NO"
+      ],
+      "id": "890de5c4-0941-a116-473a-5d240e79497a",
+      "imageSize": 16,
+      "last_modified": 1744118264837,
+      "schema": 1743687736535
+    },
+    {
+      "attachment": {
+        "filename": "bing-16-firefox.ico",
+        "hash": "5b2c34b3c4e8dd898b664dba6c3786e2ff9869eff55d673aa48361f11325ed07",
+        "location": "main-workspace/search-config-icons/5ed361f5-5b94-4899-896a-747d107f7392.ico",
+        "mimetype": "image/x-icon",
+        "size": 4286
+      },
+      "engineIdentifiers": [
+        "bing"
+      ],
+      "id": "cbf9e891-d079-2b28-5617-283450d463dd",
+      "imageSize": 16,
+      "last_modified": 1744118264835,
+      "schema": 1743687737308
+    },
+    {
+      "attachment": {
+        "filename": "baidu-16-firefox.ico",
+        "hash": "877fb3aca13d2a7c656df1f94df3fa052afbb40b65c99ba5382392ff5499016e",
+        "location": "main-workspace/search-config-icons/4ffe56b6-6f76-4841-9f79-cd5e7dac0e10.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "baidu"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "5ded611d-44b2-dc46-fd67-fb116888d75d",
+      "imageSize": 16,
+      "last_modified": 1744118264833,
+      "schema": 1743687842467
+    },
+    {
+      "attachment": {
+        "filename": "azerdict-16-firefox.ico",
+        "hash": "24daa27a3234d01b5add42e027b0a34000d0ab47c17fe3924c2ca267b7b61c19",
+        "location": "main-workspace/search-config-icons/4d6f988d-8905-4aa7-aeea-5b04a6197767.ico",
+        "mimetype": "image/x-icon",
+        "size": 5430
+      },
+      "engineIdentifiers": [
+        "azerdict"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "7bbe6c5c-fdb8-2845-a4f4-e1382e708a0e",
+      "imageSize": 16,
+      "last_modified": 1744118264831,
+      "schema": 1743687843227
+    },
+    {
+      "attachment": {
+        "filename": "amazon-16-firefox.ico",
+        "hash": "16ea89d4baa39529d7a84d5152867a4c6ed6867198c4dfa1648b1f43ce6a3f6f",
+        "location": "main-workspace/search-config-icons/9b60e56c-34cc-4447-a20d-21b4ecad7e8a.ico",
+        "mimetype": "image/x-icon",
+        "size": 1407
+      },
+      "engineIdentifiers": [
+        "amazon*"
+      ],
+      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
+      "id": "2e835b0e-9709-d1bb-9725-87f59f3445ca",
+      "imageSize": 16,
+      "last_modified": 1744118264829,
+      "schema": 1743687843968
+    },
+    {
+      "attachment": {
+        "filename": "allegro-pl-16-firefox.ico",
+        "hash": "ca6e972004f62355c1ea97656bc2328e1643971bdecab9c6b563d45593b8122e",
+        "location": "main-workspace/search-config-icons/26f2abe5-ac6b-4375-822e-b86fb75637a3.ico",
+        "mimetype": "image/x-icon",
+        "size": 1150
+      },
+      "engineIdentifiers": [
+        "allegro-pl"
+      ],
+      "id": "96327a73-c433-5eb4-a16d-b090cadfb80b",
+      "imageSize": 16,
+      "last_modified": 1744118264827,
+      "schema": 1743687738096
+    },
+    {
+      "attachment": {
+        "filename": "1und1-16-firefox.gif",
+        "hash": "865d76c8175a8f11dedc93f0bc212242a97a8a76adac870e8249368cecc81402",
+        "location": "main-workspace/search-config-icons/d4eeae67-e96c-4fd0-bbbd-c05ff235f622.gif",
+        "mimetype": "image/gif",
+        "size": 159
+      },
+      "engineIdentifiers": [
+        "1und1"
+      ],
+      "id": "d87f251c-3e12-a8bf-e2d0-afd43d36c5f9",
+      "imageSize": 16,
+      "last_modified": 1744118264825,
+      "schema": 1743687738876
+    }
+  ],
+  "timestamp": 1744118264981
+}

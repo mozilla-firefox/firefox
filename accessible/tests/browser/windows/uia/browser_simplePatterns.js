@@ -447,6 +447,29 @@ addUiaTask(
   }
 );
 
+/**
+ * Test the Value pattern on a document.
+ */
+addUiaTask(``, async function testValueDoc(browser) {
+  // A test snippet is a data: URI. The accessibility engine won't return these.
+  let url = new URL("https://example.net/document-builder.sjs");
+  url.searchParams.append("html", `<body id=${DEFAULT_CONTENT_DOC_BODY_ID}>`);
+  let loaded = waitForEvent(
+    EVENT_DOCUMENT_LOAD_COMPLETE,
+    DEFAULT_CONTENT_DOC_BODY_ID
+  );
+  BrowserTestUtils.startLoadingURIString(browser, url.href);
+  await loaded;
+  await definePyVar("doc", `getDocUia()`);
+  await definePyVar("pattern", `getUiaPattern(doc, "Value")`);
+  ok(await runPython(`bool(pattern)`), "doc has Value pattern");
+  is(
+    await runPython(`pattern.CurrentValue`),
+    url.href,
+    "doc has correct Value"
+  );
+});
+
 async function testRangeValueProps(id, ro, val, min, max, small, large) {
   await assignPyVarToUiaWithId(id);
   await definePyVar("pattern", `getUiaPattern(${id}, "RangeValue")`);

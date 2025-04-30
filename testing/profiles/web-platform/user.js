@@ -19,6 +19,10 @@ user_pref("dom.testing.testutils.enabled", true);
 user_pref("extensions.autoDisableScopes", 10);
 // Don't open a dialog to show available add-on updates
 user_pref("extensions.update.notifyUser", false);
+// For cross-browser tests, don't fail on manifest warnings like unknown keys.
+user_pref("extensions.webextensions.warnings-as-errors", false);
+// Adjust behavior of browser.test API to be compatible across engines.
+user_pref("extensions.wpt.enabled", true);
 // Enable test mode to run multiple tests in parallel
 user_pref("focusmanager.testmode", true);
 // Enable fake media streams for getUserMedia

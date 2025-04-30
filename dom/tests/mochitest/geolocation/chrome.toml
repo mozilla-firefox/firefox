@@ -1,8 +1,0 @@
-[DEFAULT]
-support-files = [
-  "geolocation_common.js",
-  "network_geolocation.sjs",
-]
-
-["test_handlerSpinsEventLoop.html"]
-prefs = ["network.xhr.block_sync_system_requests=false"] # Bug 721336

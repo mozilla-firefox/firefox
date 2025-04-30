@@ -4,13 +4,11 @@
 
 #[cfg(feature = "trace")]
 fn main() {
-    use lazy_static::lazy_static;
     use std::os::raw::c_int;
-    use std::sync::Mutex;
+    use std::sync::{LazyLock, Mutex};
 
-    lazy_static! {
-        static ref LOGS_RECEIVED: Mutex<Vec<(c_int, String)>> = Mutex::new(Vec::new());
-    }
+    static LOGS_RECEIVED: LazyLock<Mutex<Vec<(c_int, String)>>> =
+        LazyLock::new(|| Mutex::new(Vec::new()));
 
     fn log_handler(err: c_int, message: &str) {
         let mut logs_received = LOGS_RECEIVED.lock().unwrap();

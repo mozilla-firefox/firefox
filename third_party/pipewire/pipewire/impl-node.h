@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_IMPL_NODE_H
 #define PIPEWIRE_IMPL_NODE_H
@@ -95,6 +75,23 @@ struct pw_impl_node_events {
 	void (*peer_removed) (void *data, struct pw_impl_node *peer);
 };
 
+struct pw_impl_node_rt_events {
+#define PW_VERSION_IMPL_NODE_RT_EVENTS	0
+	uint32_t version;
+	/** the node is drained */
+	void (*drained) (void *data);
+	/** the node had an xrun */
+	void (*xrun) (void *data);
+	/** the driver node starts processing */
+	void (*start) (void *data);
+	/** the driver node completed processing */
+	void (*complete) (void *data);
+	/** the driver node did not complete processing */
+	void (*incomplete) (void *data);
+	/** the node had a timeout */
+	void (*timeout) (void *data);
+};
+
 /** Create a new node */
 struct pw_impl_node *
 pw_context_create_node(struct pw_context *context,	/**< the context */
@@ -138,6 +135,14 @@ void pw_impl_node_add_listener(struct pw_impl_node *node,
 			  const struct pw_impl_node_events *events,
 			  void *data);
 
+/** Add an rt_event listener */
+void pw_impl_node_add_rt_listener(struct pw_impl_node *node,
+			  struct spa_hook *listener,
+			  const struct pw_impl_node_rt_events *events,
+			  void *data);
+void pw_impl_node_remove_rt_listener(struct pw_impl_node *node,
+			  struct spa_hook *listener);
+
 /** Iterate the ports in the given direction. The callback should return
  * 0 to fetch the next item, any other value stops the iteration and returns
  * the value. When all callbacks return 0, this function returns 0 when all
@@ -175,6 +180,10 @@ bool pw_impl_node_is_active(struct pw_impl_node *node);
 
 /** Check if a node is active, Since 0.3.39 */
 int pw_impl_node_send_command(struct pw_impl_node *node, const struct spa_command *command);
+
+/** Set a param on the node, Since 0.3.65 */
+int pw_impl_node_set_param(struct pw_impl_node *node,
+		uint32_t id, uint32_t flags, const struct spa_pod *param);
 /**
  * \}
  */

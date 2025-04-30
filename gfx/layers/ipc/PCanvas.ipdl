@@ -66,6 +66,11 @@ parent:
    */
   async DropFreeBuffersWhenDormant();
 
+  /**
+   * Snapshot an external canvas and label it for later lookup under a sync-id.
+   */
+  async SnapshotExternalCanvas(uint64_t aSyncId, uint32_t aManagerId, int32_t aCanvasId);
+
   async __delete__();
 
 child:

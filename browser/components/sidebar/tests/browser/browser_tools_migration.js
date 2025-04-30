@@ -56,7 +56,7 @@ add_task(async function test_one_time_tool_migration() {
   );
 
   await toggleSidebarPanel(window, "viewCustomizeSidebar");
-  let customizeDocument = window.SidebarController.browser.contentDocument;
+  let customizeDocument = SidebarController.browser.contentDocument;
   const customizeComponent =
     customizeDocument.querySelector("sidebar-customize");
   let bookmarksInput = Array.from(customizeComponent.toolInputs).find(
@@ -107,7 +107,7 @@ add_task(async function test_check_visibility_enabled() {
     set: [["browser.ml.chat.enabled", true]],
   });
 
-  let customizeDocument = window.SidebarController.browser.contentDocument;
+  let customizeDocument = SidebarController.browser.contentDocument;
   const customizeComponent =
     customizeDocument.querySelector("sidebar-customize");
 

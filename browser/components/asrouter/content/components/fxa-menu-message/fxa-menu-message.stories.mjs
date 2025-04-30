@@ -18,7 +18,11 @@ const Template = ({
   imageURL,
   primaryText,
   secondaryText,
-  imageVerticalOffset,
+  imageVerticalTopOffset,
+  imageVerticalBottomOffset,
+  containerVerticalBottomOffset,
+  layout,
+  imageHeight,
 }) => html`
   <moz-card style="width: 22.5rem;">
     <fxa-menu-message
@@ -26,7 +30,13 @@ const Template = ({
       primaryText=${primaryText}
       secondaryText=${secondaryText}
       imageURL=${imageURL}
-      style="--illustration-margin-block-offset: ${imageVerticalOffset}px"
+      style="
+        --illustration-margin-block-start-offset: ${imageVerticalTopOffset}px;
+        --illustration-margin-block-end-offset: ${imageVerticalBottomOffset}px;
+        --container-margin-block-end-offset: ${containerVerticalBottomOffset}px;
+        --image-height: ${imageHeight}px;
+      "
+      layout=${layout}
     >
     </fxa-menu-message>
   </moz-card>
@@ -40,5 +50,9 @@ Default.args = {
   primaryText: "Bounce between devices",
   secondaryText:
     "Sync and encrypt your bookmarks, passwords, and more on all your devices.",
-  imageVerticalOffset: -20,
+  imageVerticalTopOffset: -20,
+  imageVerticalBottomOffset: 0,
+  containerVerticalBottomOffset: 0,
+  layout: "column",
+  imageHeight: 120,
 };

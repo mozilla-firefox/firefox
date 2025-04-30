@@ -16,6 +16,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   ModelHub: "chrome://global/content/ml/ModelHub.sys.mjs",
   getInferenceProcessInfo: "chrome://global/content/ml/Utils.sys.mjs",
   getOptimalCPUConcurrency: "chrome://global/content/ml/Utils.sys.mjs",
+  BACKENDS: "chrome://global/content/ml/EngineProcess.sys.mjs",
 });
 
 const { ExecutionPriority, EngineProcess, PipelineOptions } =
@@ -141,6 +142,18 @@ const INFERENCE_PAD_PRESETS = {
 };
 
 const PREDEFINED = Object.keys(INFERENCE_PAD_PRESETS);
+
+/**
+ * Measures the execution time of a function.
+ *
+ * @param {Function} func - The function to measure.
+ * @returns {number} The execution time in milliseconds.
+ */
+async function measure(func) {
+  const start = performance.now();
+  await func();
+  return performance.now() - start;
+}
 
 /**
  * Gets an instance of ModelHub. Initializes it if it doesn't already exist.
@@ -373,6 +386,8 @@ async function updateModels() {
   let fragment = document.createDocumentFragment();
 
   for (const { name: model, revision } of models) {
+    const icon = await hub.getOwnerIcon(model);
+
     let files = await hub.listFiles({ model, revision });
 
     // Create a new table for the current model
@@ -382,6 +397,13 @@ async function updateModels() {
     let caption = document.createElement("caption");
     let modelInfo = document.createElement("div");
     modelInfo.textContent = `${model} (${revision})`;
+    if (icon) {
+      let iconImage = document.createElement("img");
+      iconImage.src = icon;
+      iconImage.width = 16;
+      iconImage.height = 16;
+      modelInfo.appendChild(iconImage);
+    }
     let deleteButton = document.createElement("button");
     document.l10n.setAttributes(deleteButton, "about-inference-delete-button");
     deleteButton.onclick = async () => {
@@ -607,6 +629,9 @@ function findTotalTime(metrics) {
 }
 
 async function runInference() {
+  const resultsConsole = new TextareaConsole("console");
+  resultsConsole.reset();
+
   document.getElementById("console").value = "";
   const inferencePadValue = document.getElementById("inferencePad").value;
   const modelId = document.getElementById("modelId").value;
@@ -643,7 +668,7 @@ async function runInference() {
     executionPriority: ExecutionPriority.LOW,
   };
 
-  appendTextConsole("Creating engine if needed");
+  resultsConsole.addLine("Creating engine if needed");
   let engine;
   try {
     const pipelineOptions = new PipelineOptions(initData);
@@ -655,11 +680,11 @@ async function runInference() {
       });
     });
   } catch (e) {
-    appendTextConsole(e);
+    resultsConsole.addLine(e);
     throw e;
   }
 
-  appendTextConsole("Running inference request");
+  resultsConsole.addLine("Running inference request");
 
   const request = { args: inputData.inputArgs, options: inputData.runOptions };
 
@@ -668,11 +693,11 @@ async function runInference() {
     try {
       res = await engine.run(request);
     } catch (e) {
-      appendTextConsole(e);
+      resultsConsole.addLine(e);
       if (
         e.message.includes("Invalid model hub root url: https://huggingface.co")
       ) {
-        appendTextConsole(
+        resultsConsole.addLine(
           "Make sure you started Firefox with MOZ_ALLOW_EXTERNAL_ML_HUB=1"
         );
       }
@@ -687,17 +712,19 @@ async function runInference() {
       return value;
     };
 
-    appendTextConsole(`Results: ${JSON.stringify(res, results_filter, 2)}`);
+    resultsConsole.addLine(
+      `Results: ${JSON.stringify(res, results_filter, 2)}`
+    );
   }
 
-  appendTextConsole(`Metrics: ${JSON.stringify(res.metrics, null, 2)}`);
+  resultsConsole.addLine(`Metrics: ${JSON.stringify(res.metrics, null, 2)}`);
   const maxMemory = findMaxMemory(res.metrics);
-  appendTextConsole(
+  resultsConsole.addLine(
     `Resident Set Size (RSS) approximative peak usage: ${formatBytes(
       maxMemory
     )}`
   );
-  appendTextConsole(
+  resultsConsole.addLine(
     `Timers: ${JSON.stringify(findTotalTime(res.metrics), null, 2)}`
   );
   await refreshPage();
@@ -763,10 +790,92 @@ async function engineNotification(data) {
   await refreshPage();
 }
 
-function appendTextConsole(text) {
-  const textarea = document.getElementById("console");
-  textarea.value += (textarea.value ? "\n" : "") + text;
-  textarea.scrollTop = textarea.scrollHeight;
+/**
+ * Encapsulates a textarea that works as a console
+ */
+class TextareaConsole {
+  /**
+   * @param {string} id - The ID of the textarea element.
+   * @param {number} bufferFlushInterval - Time in milliseconds to batch updates.
+   */
+  constructor(id, bufferFlushInterval = 100) {
+    this.textarea = document.getElementById(id);
+    if (!this.textarea) {
+      throw new Error(`Element with id "${id}" not found.`);
+    }
+    this.buffer = [];
+    this.bufferFlushInterval = bufferFlushInterval;
+    this.flushTimeout = null;
+    this.reset();
+  }
+
+  /**
+   * Schedules a flush of buffered content if one isn't already scheduled.
+   */
+  scheduleFlush() {
+    if (this.flushTimeout !== null) {
+      return;
+    }
+    this.flushTimeout = setTimeout(() => {
+      this.flush();
+      this.flushTimeout = null;
+    }, this.bufferFlushInterval);
+  }
+
+  /**
+   * Flushes the buffered lines to the textarea in a single update and scrolls to the bottom.
+   */
+  flush() {
+    if (this.buffer.length) {
+      // Append new buffered lines to existing content.
+      this.textarea.value +=
+        (this.textarea.value ? "\n" : "") + this.buffer.join("\n");
+      // Update scroll position.
+      this.textarea.scrollTop = this.textarea.scrollHeight;
+      // Clear the buffer.
+      this.buffer = [];
+    }
+  }
+
+  /**
+   * Appends a line to the buffer. The update to the textarea is deferred.
+   *
+   * @param {string} text - The text to append as a new line.
+   */
+  addLine(text) {
+    this.buffer.push(text);
+    this.scheduleFlush();
+  }
+
+  /**
+   * Appends text immediately to the textarea without buffering.
+   * Flushes any pending buffered updates before appending.
+   *
+   * @param {string} text - The text to append.
+   */
+  addText(text) {
+    // Flush any buffered content first.
+    if (this.buffer.length) {
+      this.flush();
+      if (this.flushTimeout) {
+        clearTimeout(this.flushTimeout);
+        this.flushTimeout = null;
+      }
+    }
+    this.textarea.value += text;
+  }
+
+  /**
+   * Clears both the buffered lines and the textarea content.
+   */
+  reset() {
+    if (this.flushTimeout) {
+      clearTimeout(this.flushTimeout);
+      this.flushTimeout = null;
+    }
+    this.buffer = [];
+    this.textarea.value = "";
+  }
 }
 
 async function runHttpInference() {
@@ -855,6 +964,149 @@ async function getEngineParent() {
   return engineParent;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function runBenchmark() {
+  const benchmarkConsole = new TextareaConsole("benchmark.output");
+  benchmarkConsole.reset();
+
+  benchmarkConsole.addText("Starting benchmark...\n");
+  let backend = document.getElementById("benchmark.backend").value;
+  if (backend === "all") {
+    backend = lazy.BACKENDS;
+  } else {
+    backend = [backend];
+  }
+
+  const baseSentences = [
+    "This is an example sentence",
+    "Each sentence is converted",
+  ];
+  const repeatedSentences = [];
+
+  for (let i = 0; i < 128; i++) {
+    repeatedSentences.push(...baseSentences);
+  }
+
+  const workloads = [
+    {
+      name: "ner-small",
+      inputArgs: ["Sarah lives in the United States of America"],
+      runOptions: {},
+      compatibleBackends: ["onnx"],
+      pipelineOptions: {
+        taskName: "token-classification",
+        modelId: "Xenova/bert-base-NER",
+        modelRevision: "main",
+        modelHub: "huggingface",
+        dtype: "q8",
+        device: "wasm",
+      },
+    },
+    {
+      name: "feature-extraction-large",
+      inputArgs: [repeatedSentences],
+      compatibleBackends: ["onnx"],
+      runOptions: { pooling: "mean", normalize: true },
+      pipelineOptions: {
+        taskName: "feature-extraction",
+        modelId: "Xenova/all-MiniLM-L6-v2",
+        modelRevision: "main",
+        modelHub: "huggingface",
+        dtype: "q8",
+        device: "wasm",
+      },
+    },
+    {
+      name: "image-to-text",
+      compatibleBackends: ["onnx"],
+      inputArgs: [
+        "https://huggingface.co/datasets/mishig/sample_images/resolve/main/football-match.jpg",
+      ],
+      runOptions: {},
+      pipelineOptions: {
+        taskName: "image-to-text",
+        modelId: "mozilla/distilvit",
+        modelRevision: "main",
+        modelHub: "huggingface",
+        dtype: "q8",
+        device: "wasm",
+      },
+    },
+  ];
+
+  let results = [];
+
+  for (const currentBackend of backend) {
+    for (const workload of workloads) {
+      if (!workload.compatibleBackends.includes(currentBackend)) {
+        break;
+      }
+
+      workload.pipelineOptions.engineId = "about-inference-benchmark";
+      const bench = { name: workload.name, backend: currentBackend, runs: [] };
+      let engine = null;
+      let engineParent = null;
+
+      bench.processCreationDuration = await measure(async () => {
+        engineParent = await EngineProcess.getMLEngineParent();
+      });
+
+      benchmarkConsole.addText(
+        `Running ${workload.name} test on backend ${currentBackend}\n`
+      );
+
+      try {
+        benchmarkConsole.addText("Initialization...");
+
+        workload.pipelineOptions.backend = currentBackend;
+
+        bench.initDuration = await measure(async () => {
+          const pipelineOptions = new PipelineOptions(workload.pipelineOptions);
+          engine = await engineParent.getEngine(pipelineOptions);
+        });
+
+        benchmarkConsole.addText("\nRunning 25 iterations ");
+        const request = {
+          args: workload.inputArgs,
+          options: workload.runOptions,
+        };
+
+        for (let i = 0; i < 25; i++) {
+          benchmarkConsole.addText(".");
+          try {
+            bench.runs.push(
+              await measure(async () => {
+                await engine.run(request);
+              })
+            );
+          } catch (e) {
+            benchmarkConsole.addText(e);
+            throw e;
+          }
+        }
+
+        benchmarkConsole.addText(" OK!\n");
+        results.push(bench);
+
+        // we terminate the engine and destroy the inference process
+        await engine.terminate(true, false);
+        // let the dust settle before a new run
+        await sleep(2000);
+      } catch (e) {
+        benchmarkConsole.addText(e);
+        throw e;
+      }
+    }
+  }
+  benchmarkConsole.addText("Results:\n");
+  benchmarkConsole.addText(JSON.stringify(results, null, 2));
+  navigator.clipboard.writeText(JSON.stringify(results, null, 2));
+  benchmarkConsole.addText("\nResults copied to the clipboard\n");
+}
+
 /**
  * Initializes the pad on window load.
  *
@@ -874,6 +1126,7 @@ window.onload = async function () {
   fillSelect("taskName", TASKS);
   fillSelect("numThreads", getNumThreadsArray());
   fillSelect("predefined", PREDEFINED);
+  fillSelect("benchmark.backend", ["all"].concat(lazy.BACKENDS));
 
   document.getElementById("predefined").value = "summary";
   loadExample("summary");
@@ -898,6 +1151,12 @@ window.onload = async function () {
   document
     .getElementById("http.limit")
     .addEventListener("change", updateHttpContext);
+
+  document
+    .getElementById("benchmark.button")
+    .addEventListener("click", runBenchmark);
+
+  document.getElementById("benchmark.output").value = "";
 
   updateHttpContext();
   await refreshPage();

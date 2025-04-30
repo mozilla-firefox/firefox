@@ -133,8 +133,9 @@ GeckoFontMetrics UserSpaceMetrics::GetFontMetrics(const Element* aElement) {
           metrics = Gecko_GetFontMetrics(
               presContext, WritingMode(style).IsVertical(), style->StyleFont(),
               style->StyleFont()->mFont.size,
-              /* aUseUserFontSet = */ true,
-              /* aRetrieveMathScales */ false);
+              StyleQueryFontMetricsFlags::USE_USER_FONT_SET |
+                  StyleQueryFontMetricsFlags::NEEDS_CH |
+                  StyleQueryFontMetricsFlags::NEEDS_IC);
         });
   }
   return metrics;
@@ -290,8 +291,9 @@ GeckoFontMetrics NonSVGFrameUserSpaceMetrics::GetFontMetricsForType(
       return Gecko_GetFontMetrics(
           mFrame->PresContext(), mFrame->GetWritingMode().IsVertical(),
           mFrame->StyleFont(), mFrame->StyleFont()->mFont.size,
-          /* aUseUserFontSet = */ true,
-          /* aRetrieveMathScales */ false);
+          StyleQueryFontMetricsFlags::USE_USER_FONT_SET |
+              StyleQueryFontMetricsFlags::NEEDS_CH |
+              StyleQueryFontMetricsFlags::NEEDS_IC);
     case Type::Root:
       return GetFontMetrics(
           mFrame->PresContext()->Document()->GetRootElement());

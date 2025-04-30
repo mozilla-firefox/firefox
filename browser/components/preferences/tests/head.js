@@ -15,7 +15,7 @@ ChromeUtils.defineLazyGetter(this, "QuickSuggestTestUtils", () => {
 
 ChromeUtils.defineESModuleGetters(this, {
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
-  ExperimentFakes: "resource://testing-common/NimbusTestUtils.sys.mjs",
+  NimbusTestUtils: "resource://testing-common/NimbusTestUtils.sys.mjs",
 });
 
 const kDefaultWait = 2000;
@@ -403,11 +403,7 @@ async function assertSuggestVisibility(expectedByElementId) {
 }
 
 const DEFAULT_LABS_RECIPES = [
-  ExperimentFakes.recipe("nimbus-qa-1", {
-    bucketConfig: {
-      ...ExperimentFakes.recipe.bucketConfig,
-      count: 1000,
-    },
+  NimbusTestUtils.factories.recipe("nimbus-qa-1", {
     targeting: "true",
     isRollout: true,
     isFirefoxLabsOptIn: true,
@@ -432,11 +428,7 @@ const DEFAULT_LABS_RECIPES = [
     ],
   }),
 
-  ExperimentFakes.recipe("nimbus-qa-2", {
-    bucketConfig: {
-      ...ExperimentFakes.recipe.bucketConfig,
-      count: 1000,
-    },
+  NimbusTestUtils.factories.recipe("nimbus-qa-2", {
     targeting: "true",
     isRollout: true,
     isFirefoxLabsOptIn: true,
@@ -462,11 +454,7 @@ const DEFAULT_LABS_RECIPES = [
     ],
   }),
 
-  ExperimentFakes.recipe("targeting-false", {
-    bucketConfig: {
-      ...ExperimentFakes.recipe.bucketConfig,
-      count: 1000,
-    },
+  NimbusTestUtils.factories.recipe("targeting-false", {
     targeting: "false",
     isRollout: true,
     isFirefoxLabsOptIn: true,
@@ -477,11 +465,12 @@ const DEFAULT_LABS_RECIPES = [
     requiresRestart: false,
   }),
 
-  ExperimentFakes.recipe("bucketing-false", {
+  NimbusTestUtils.factories.recipe("bucketing-false", {
     bucketConfig: {
-      ...ExperimentFakes.recipe.bucketConfig,
+      ...NimbusTestUtils.factories.recipe.bucketConfig,
       count: 0,
     },
+    isRollout: true,
     targeting: "true",
     isFirefoxLabsOptIn: true,
     firefoxLabsTitle: "experimental-features-ime-search",

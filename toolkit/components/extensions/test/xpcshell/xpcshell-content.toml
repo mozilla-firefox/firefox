@@ -1,14 +1,10 @@
 [DEFAULT]
 
 ["test_ext_adoption_with_private_field_xrays.js"]
-skip-if = [
-  "!nightly_build",
-  "os == 'linux' && socketprocess_networking && !fission && debug", # Bug 1759035
-]
+skip-if = ["!nightly_build"]
 run-sequentially = "very high failure rate in parallel"
 
 ["test_ext_adoption_with_xrays.js"]
-skip-if = ["os == 'linux' && socketprocess_networking && !fission && debug"] # Bug 1759035
 
 ["test_ext_contentScripts_register.js"]
 
@@ -19,63 +15,36 @@ run-sequentially = "very high failure rate in parallel"
 ["test_ext_contentscript_about_blank_start.js"]
 
 ["test_ext_contentscript_canvas_tainting.js"]
-skip-if = ["os == 'linux' && socketprocess_networking && !fission && debug"] # Bug 1759035
 run-sequentially = "very high failure rate in parallel"
 
 ["test_ext_contentscript_errors.js"]
-skip-if = [
-  "socketprocess_networking", # Bug 1759035
-]
+skip-if = ["socketprocess_networking"] # Bug 1759035
 run-sequentially = "very high failure rate in parallel"
 
 ["test_ext_contentscript_permissions_change.js"]
-skip-if = [
-  "os == 'linux' && socketprocess_networking && !fission && debug", # Bug 1759035
-  "os == 'linux' && tsan && fission", # bug 1762638
-]
 
 ["test_ext_contentscript_permissions_fetch.js"]
-skip-if = ["os == 'linux' && socketprocess_networking && !fission && debug"] # Bug 1759035
 
 ["test_ext_contentscript_scriptCreated.js"]
-skip-if = ["os == 'linux' && socketprocess_networking && !fission && debug"] # Bug 1759035
 
 ["test_ext_contentscript_triggeringPrincipal.js"]
 skip-if = ["tsan"] # Bug 1612707
 
 ["test_ext_contentscript_xrays.js"]
-skip-if = ["os == 'linux' && socketprocess_networking && !fission && debug"] # Bug 1759035
 run-sequentially = "very high failure rate in parallel"
 
 ["test_ext_contexts_gc.js"]
-skip-if = ["os == 'linux' && socketprocess_networking && !fission && debug"] # Bug 1759035
 run-sequentially = "very high failure rate in parallel"
 
 ["test_ext_i18n.js"]
-skip-if = ["(os == 'win' && debug) || (os == 'linux')"]
 
 ["test_ext_i18n_css.js"]
-skip-if = [
-  "os == 'mac' && os_version == '10.15' && processor == 'x86_64' && debug", # Bug 1762638
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && debug", # Bug 1762638
-  "os == 'linux' && debug && socketprocess_networking", # Bug 1759035
-  "os == 'linux' && debug && fission", # Bug 1759035
-]
 run-sequentially = "very high failure rate in parallel"
 
 ["test_ext_shadowdom.js"]
-skip-if = [
-  "ccov && os == 'linux'", # bug 1607581
-  "os == 'linux' && socketprocess_networking && !fission && debug", # Bug 1759035
-]
 
 ["test_ext_web_accessible_resources.js"]
-skip-if = [
-  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Disabled due to bleedover with other tests when run in regular suites; passes in "failures" jobs
-  "os == 'linux' && socketprocess_networking && !fission && debug", # Bug 1759035
-  "sessionHistoryInParent", # Bug 1762638
-]
+skip-if = ["sessionHistoryInParent"] # Bug 1762638
 
 ["test_ext_web_accessible_resources_matches.js"]
-skip-if = ["os == 'linux' && socketprocess_networking && !fission && debug"] # Bug 1759035
 run-sequentially = "very high failure rate in parallel"

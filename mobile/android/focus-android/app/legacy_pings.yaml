@@ -1,0 +1,31 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+$schema: moz://mozilla.org/schemas/glean/pings/2-0-0
+
+activation:
+  description: |
+    This ping is intended to provide a measure of the activation of mobile
+    products. It's generated when Focus starts, right after Glean is
+    initialized.
+  include_client_id: false
+  bugs:
+    - https://github.com/mozilla-mobile/focus-android/issues/4545
+  data_reviews:
+    - https://github.com/mozilla-mobile/focus-android/issues/4901
+  notification_emails:
+    - jalmeida@mozilla.com
+
+cookie-banner-report-site:
+  description: |
+    This ping is needed when the cookie banner reducer doesn't work on
+    a website, and the user wants to report the site.
+    This ping doesn't include a client id.
+  include_client_id: false
+  bugs:
+    - https://bugzilla.mozilla.org/show_bug.cgi?id=1803589
+  data_reviews:
+    - https://github.com/mozilla-mobile/firefox-android/pull/389#pullrequestreview-1341440145
+  notification_emails:
+    - android-probes@mozilla.com

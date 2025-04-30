@@ -206,8 +206,7 @@ async function doTest(testFn) {
   await PlacesTestUtils.clearHistoryVisits();
   await PlacesTestUtils.clearInputHistory();
   await UrlbarTestUtils.formHistory.clear(window);
-  await QuickSuggest.blockedSuggestions.clear();
-  await QuickSuggest.blockedSuggestions._test_readyPromise;
+  await QuickSuggest.clearDismissedSuggestions();
   await updateTopSites(() => true);
   await BrowserTestUtils.withNewTab(gBrowser, testFn);
 }

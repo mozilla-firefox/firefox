@@ -88,17 +88,22 @@ export function getColumnBreakpoints(
       continue;
     }
     for (const breakpointPosition of positionsPerLine) {
-      const location = getSelectedLocation(breakpointPosition, selectedSource);
-      const { line } = location;
-
-      // Ignore any further computation if there is no breakpoint on that line.
-      const breakpointsPerColumn = breakpointsPerLine.get(line);
-      if (!breakpointsPerColumn) {
+      // For minified sources we want to limit the amount of displayed column breakpoints
+      // This is nice to have for perf reasons
+      if (columnBreakpoints.length >= 100) {
         continue;
       }
 
+      const location = getSelectedLocation(breakpointPosition, selectedSource);
       // Only consider positions visible in the current CodeMirror viewport
       if (!contains(location, viewport)) {
+        continue;
+      }
+
+      const { line } = location;
+      // Ignore any further computation if there is no breakpoint on that line.
+      const breakpointsPerColumn = breakpointsPerLine.get(line);
+      if (!breakpointsPerColumn) {
         continue;
       }
 

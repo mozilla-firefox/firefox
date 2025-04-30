@@ -53,11 +53,11 @@ class Rule {
     this.compatibilityIssues = null;
 
     this.matchedSelectorIndexes = options.matchedSelectorIndexes || [];
-    this.pseudoElement = options.pseudoElement || "";
     this.isSystem = options.isSystem;
     this.isUnmatched = options.isUnmatched || false;
     this.darkColorScheme = options.darkColorScheme;
     this.inherited = options.inherited || null;
+    this.pseudoElement = options.pseudoElement || "";
     this.keyframes = options.keyframes || null;
     this.userAdded = options.rule.userAdded;
 
@@ -90,17 +90,6 @@ class Rule {
     return this.textProps;
   }
 
-  get inheritance() {
-    if (!this.inherited) {
-      return null;
-    }
-
-    return {
-      inherited: this.inherited,
-      inheritedSource: this.inheritedSource,
-    };
-  }
-
   get selector() {
     return {
       getUniqueSelector: this.getUniqueSelector,
@@ -125,22 +114,25 @@ class Rule {
     return title;
   }
 
-  get inheritedSource() {
-    if (this._inheritedSource) {
-      return this._inheritedSource;
+  get inheritedSectionLabel() {
+    if (this._inheritedSectionLabel) {
+      return this._inheritedSectionLabel;
     }
-    this._inheritedSource = "";
+    this._inheritedSectionLabel = "";
     if (this.inherited) {
       let eltText = this.inherited.displayName;
       if (this.inherited.id) {
         eltText += "#" + this.inherited.id;
       }
-      this._inheritedSource = STYLE_INSPECTOR_L10N.getFormatStr(
+      if (CssLogic.ELEMENT_BACKED_PSEUDO_ELEMENTS.has(this.pseudoElement)) {
+        eltText += this.pseudoElement;
+      }
+      this._inheritedSectionLabel = STYLE_INSPECTOR_L10N.getFormatStr(
         "rule.inheritedFrom",
         eltText
       );
     }
-    return this._inheritedSource;
+    return this._inheritedSectionLabel;
   }
 
   get keyframesName() {

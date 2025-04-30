@@ -58,7 +58,7 @@ pub fn enum_table_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         }
 
         // Error on variants with data
-        if variant.fields != Fields::Unit {
+        if !matches!(variant.fields, Fields::Unit) {
             return Err(syn::Error::new(
                 variant.fields.span(),
                 "`EnumTable` doesn't support enums with non-unit variants",
@@ -133,6 +133,7 @@ pub fn enum_table_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
 
         impl<T> #table_name<T> {
             #[doc = #doc_new]
+            #[inline]
             #vis fn new(
                 #(#snake_idents: T,)*
             ) -> #table_name<T> {
@@ -142,6 +143,7 @@ pub fn enum_table_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
             }
 
             #[doc = #doc_closure]
+            #[inline]
             #vis fn from_closure<F: Fn(#name)->T>(func: F) -> #table_name<T> {
               #table_name {
                 #(#closure_fields)*
@@ -149,6 +151,7 @@ pub fn enum_table_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
             }
 
             #[doc = #doc_transform]
+            #[inline]
             #vis fn transform<U, F: Fn(#name, &T)->U>(&self, func: F) -> #table_name<U> {
               #table_name {
                 #(#transform_fields)*
@@ -160,6 +163,7 @@ pub fn enum_table_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         impl<T> ::core::ops::Index<#name> for #table_name<T> {
             type Output = T;
 
+            #[inline]
             fn index(&self, idx: #name) -> &T {
                 match idx {
                     #(#get_matches)*
@@ -169,6 +173,7 @@ pub fn enum_table_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         }
 
         impl<T> ::core::ops::IndexMut<#name> for #table_name<T> {
+            #[inline]
             fn index_mut(&mut self, idx: #name) -> &mut T {
                 match idx {
                     #(#get_matches_mut)*
@@ -179,6 +184,7 @@ pub fn enum_table_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
 
         impl<T> #table_name<::core::option::Option<T>> {
             #[doc = #doc_option_all]
+            #[inline]
             #vis fn all(self) -> ::core::option::Option<#table_name<T>> {
                 if let #table_name {
                     #(#snake_idents: ::core::option::Option::Some(#snake_idents),)*
@@ -194,6 +200,7 @@ pub fn enum_table_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
 
         impl<T, E> #table_name<::core::result::Result<T, E>> {
             #[doc = #doc_result_all_ok]
+            #[inline]
             #vis fn all_ok(self) -> ::core::result::Result<#table_name<T>, E> {
                 ::core::result::Result::Ok(#table_name {
                     #(#snake_idents: self.#snake_idents?,)*

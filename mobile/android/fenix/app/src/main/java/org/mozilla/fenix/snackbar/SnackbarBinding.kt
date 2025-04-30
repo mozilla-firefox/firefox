@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.findCustomTabOrSelectedTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.accounts.push.SendTabUseCases
+import mozilla.components.feature.tabs.TabsUseCases
 import mozilla.components.lib.state.helpers.AbstractBinding
 import mozilla.components.ui.widgets.SnackbarDelegate
 import org.mozilla.fenix.GleanMetrics.SentFromFirefox
@@ -31,6 +32,7 @@ import org.mozilla.fenix.components.appstate.snackbar.SnackbarState
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.navigateWithBreadcrumb
 import org.mozilla.fenix.ext.settings
+import org.mozilla.fenix.ext.tabClosedUndoMessage
 import org.mozilla.fenix.library.bookmarks.friendlyRootTitle
 
 const val WEBCOMPAT_SNACKBAR_DURATION_MS = 20000
@@ -43,6 +45,7 @@ const val WEBCOMPAT_SNACKBAR_DURATION_MS = 20000
  * @param appStore The [AppStore] used to observe the [SnackbarState].
  * @param snackbarDelegate The [SnackbarDelegate] used to display a snackbar.
  * @param navController [NavController] used for navigation.
+ * @param tabsUseCases [TabsUseCases] used to manage tabs.
  * @param sendTabUseCases [SendTabUseCases] used to send tabs to other devices.
  * @param customTabSessionId Optional custom tab session ID if navigating from a custom tab or null
  * if the selected session should be used.
@@ -56,6 +59,7 @@ class SnackbarBinding(
     private val appStore: AppStore,
     private val snackbarDelegate: FenixSnackbarDelegate,
     private val navController: NavController,
+    private val tabsUseCases: TabsUseCases,
     private val sendTabUseCases: SendTabUseCases?,
     private val customTabSessionId: String?,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -245,6 +249,17 @@ class SnackbarBinding(
                             text = R.string.clear_site_data_snackbar,
                             duration = Snackbar.LENGTH_LONG,
                         )
+
+                        appStore.dispatch(SnackbarAction.SnackbarShown)
+                    }
+
+                    is SnackbarState.CurrentTabClosed -> {
+                        snackbarDelegate.show(
+                            text = context.tabClosedUndoMessage(state.isPrivate),
+                            action = context.getString(R.string.snackbar_deleted_undo),
+                        ) {
+                            tabsUseCases.undo()
+                        }
 
                         appStore.dispatch(SnackbarAction.SnackbarShown)
                     }

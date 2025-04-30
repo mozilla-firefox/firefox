@@ -71,6 +71,9 @@ add_task(async function test_enterprise_policy_engine() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "other",
+      partnerCode: "",
+      overriddenByThirdParty: false,
       engineId: "other-policy",
       displayName: "policy",
       loadPath: "[policy]",

@@ -226,7 +226,7 @@ export const DAPVisitCounter = new (class {
       if (!collected_measurements.has(counter.experiment.task_id)) {
         collected_measurements.set(
           counter.experiment.task_id,
-          new Uint8Array(counter.experiment.task_veclen)
+          new Array(counter.experiment.task_veclen).fill(0)
         );
       }
       collected_measurements.get(counter.experiment.task_id)[
@@ -252,8 +252,10 @@ export const DAPVisitCounter = new (class {
 
       let task = {
         id: task_id,
+        vdaf: "sumvec",
+        bits: 8,
+        length: 20,
         time_precision: 60,
-        measurement_type: "vecu8",
       };
 
       send_promises.push(

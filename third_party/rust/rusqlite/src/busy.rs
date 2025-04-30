@@ -1,5 +1,4 @@
 //! Busy handler (when the database is locked)
-use std::convert::TryInto;
 use std::mem;
 use std::os::raw::{c_int, c_void};
 use std::panic::catch_unwind;
@@ -81,12 +80,8 @@ impl InnerConnection {
 
 #[cfg(test)]
 mod test {
-    use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::mpsc::sync_channel;
-    use std::thread;
-    use std::time::Duration;
-
     use crate::{Connection, ErrorCode, Result, TransactionBehavior};
+    use std::sync::atomic::{AtomicBool, Ordering};
 
     #[test]
     fn test_default_busy() -> Result<()> {
@@ -105,66 +100,28 @@ mod test {
     }
 
     #[test]
-    #[ignore] // FIXME: unstable
-    fn test_busy_timeout() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let path = temp_dir.path().join("test.db3");
-
-        let db2 = Connection::open(&path).unwrap();
-        db2.busy_timeout(Duration::from_secs(1)).unwrap();
-
-        let (rx, tx) = sync_channel(0);
-        let child = thread::spawn(move || {
-            let mut db1 = Connection::open(&path).unwrap();
-            let tx1 = db1
-                .transaction_with_behavior(TransactionBehavior::Exclusive)
-                .unwrap();
-            rx.send(1).unwrap();
-            thread::sleep(Duration::from_millis(100));
-            tx1.rollback().unwrap();
-        });
-
-        assert_eq!(tx.recv().unwrap(), 1);
-        let _ = db2
-            .query_row("PRAGMA schema_version", [], |row| row.get::<_, i32>(0))
-            .expect("unexpected error");
-
-        child.join().unwrap();
-    }
-
-    #[test]
-    #[ignore] // FIXME: unstable
-    fn test_busy_handler() {
+    fn test_busy_handler() -> Result<()> {
         static CALLED: AtomicBool = AtomicBool::new(false);
-        fn busy_handler(_: i32) -> bool {
-            CALLED.store(true, Ordering::Relaxed);
-            thread::sleep(Duration::from_millis(100));
-            true
+        fn busy_handler(n: i32) -> bool {
+            if n > 2 {
+                false
+            } else {
+                CALLED.swap(true, Ordering::Relaxed)
+            }
         }
 
         let temp_dir = tempfile::tempdir().unwrap();
-        let path = temp_dir.path().join("test.db3");
+        let path = temp_dir.path().join("busy-handler.db3");
 
-        let db2 = Connection::open(&path).unwrap();
-        db2.busy_handler(Some(busy_handler)).unwrap();
-
-        let (rx, tx) = sync_channel(0);
-        let child = thread::spawn(move || {
-            let mut db1 = Connection::open(&path).unwrap();
-            let tx1 = db1
-                .transaction_with_behavior(TransactionBehavior::Exclusive)
-                .unwrap();
-            rx.send(1).unwrap();
-            thread::sleep(Duration::from_millis(100));
-            tx1.rollback().unwrap();
-        });
-
-        assert_eq!(tx.recv().unwrap(), 1);
-        let _ = db2
-            .query_row("PRAGMA schema_version", [], |row| row.get::<_, i32>(0))
-            .expect("unexpected error");
+        let db1 = Connection::open(&path)?;
+        db1.execute_batch("CREATE TABLE IF NOT EXISTS t(a)")?;
+        let db2 = Connection::open(&path)?;
+        db2.busy_handler(Some(busy_handler))?;
+        db1.execute_batch("BEGIN EXCLUSIVE")?;
+        let err = db2.prepare("SELECT * FROM t").unwrap_err();
+        assert_eq!(err.sqlite_error_code(), Some(ErrorCode::DatabaseBusy));
         assert!(CALLED.load(Ordering::Relaxed));
-
-        child.join().unwrap();
+        db1.busy_handler(None)?;
+        Ok(())
     }
 }

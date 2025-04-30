@@ -730,7 +730,7 @@ static hb_blob_t* get_charstrings_data(accel_t& accel, hb_codepoint_t glyph_inde
   const char* cff_data = hb_blob_get_data(cff_blob, &length) ;
 
   long int offset = (const char*) bytes.arrayZ - cff_data;
-  if (offset < 0 || offset > UINT32_MAX) {
+  if (offset < 0 || offset > INT32_MAX) {
     return hb_blob_get_empty ();
   }
 
@@ -751,7 +751,7 @@ static hb_blob_t* get_charstrings_index(accel_t& accel) {
   const char* cff_data = hb_blob_get_data(cff_blob, &length) ;
 
   long int offset = charstrings_start - cff_data;
-  if (offset < 0 || offset > UINT32_MAX) {
+  if (offset < 0 || offset > INT32_MAX) {
     return hb_blob_get_empty ();
   }
 

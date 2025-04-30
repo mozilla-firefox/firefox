@@ -29,6 +29,7 @@ export const markerTypes = {
   DEBUG_POSITION_MARKER: "debug-position-marker",
   EXCEPTION_POSITION_MARKER: "exception-position-marker",
   ACTIVE_SELECTION_MARKER: "active-selection-marker",
+  PAUSED_LOCATION_MARKER: "paused-location-marker",
   /* Gutter Markers */
   EMPTY_LINE_MARKER: "empty-line-marker",
   BLACKBOX_LINE_GUTTER_MARKER: "blackbox-line-gutter-marker",

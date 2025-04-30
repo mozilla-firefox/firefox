@@ -49,6 +49,12 @@ add_task(async function test_submit_creditCard_update() {
         }
 
         await waitForAutofill(browser, "#cc-name", "John Doe");
+
+        /* eslint-disable mozilla/no-arbitrary-setTimeout */
+        await new Promise(resolve => {
+          setTimeout(resolve, FormAutofill.fillOnDynamicFormChangeTimeout);
+        });
+
         await focusUpdateSubmitForm(browser, {
           focusSelector: "#cc-name",
           newValues: {

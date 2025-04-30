@@ -8,6 +8,7 @@ import android.os.Looper
 import kotlinx.coroutines.Dispatchers
 import mozilla.components.lib.state.Action
 import mozilla.components.lib.state.UiStore
+import mozilla.components.support.utils.ext.threadIdCompat
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -26,9 +27,9 @@ internal class UiStoreDispatcher : StoreDispatcher {
      */
     override fun assertOnThread() {
         val currentThread = Thread.currentThread()
-        val expectedThreadId = Looper.getMainLooper().thread.id
+        val expectedThreadId = Looper.getMainLooper().thread.threadIdCompat()
 
-        if (currentThread.id == expectedThreadId) {
+        if (currentThread.threadIdCompat() == expectedThreadId) {
             return
         }
 

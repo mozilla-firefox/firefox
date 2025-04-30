@@ -30,11 +30,7 @@
         data-l10n-sync="true">
 <head>
   <!-- CSP might be disabled by C++ code. -->
-#if defined(EARLY_BETA_OR_EARLIER)
   <meta http-equiv="Content-Security-Policy" content="script-src chrome: moz-src: resource: 'report-sample'" />
-#else
-  <meta http-equiv="Content-Security-Policy" content="script-src-attr 'none' 'report-sample'" />
-#endif
 
   <!-- The "global.css" stylesheet is imported first to allow other stylesheets to
       override rules using selectors with the same specificity. This applies to

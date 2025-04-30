@@ -197,4 +197,109 @@ interface nsIFOG : nsISupports
                                    in Array<ACString> aReasonCodes,
                                    in boolean aFollowsCollectionEnabled,
                                    in Array<ACString> aUploaderCapabilities);
+
+  /**
+   * Update the core attribution metrics in Glean.
+   *
+   * @param aSource - The product's attribution source (e.g. "google-play").
+   * @param aMedium - The product's attribution medium (e.g. "organic" for a search engine).
+   * @param aCampaign - The product's attribution campaign (e.g. "mozilla-org").
+   * @param aTerm - The product's attribution term (e.g. "browser with developer tools for android").
+   * @param aContent - The product's attribution content (e.g. "firefoxview").
+   */
+  void updateAttribution(in ACString aSource,
+                         in ACString aMedium,
+                         in ACString aCampaign,
+                         in ACString aTerm,
+                         in ACString aContent);
+
+  /**
+   * ** Test-only Method **
+   *
+   * Returns the core attribution data from Glean.
+   *
+   * @returns the core attribution data from Glean in the form
+   *          `{source, medium, campaign, term, content}`.
+   */
+  [implicit_jscontext]
+  jsval testGetAttribution();
+
+  /**
+   * Update the core distribution metrics in Glean.
+   *
+   * @param aName - The product's distribution name (e.g. "MozillaOnline").
+   */
+  void updateDistribution(in ACString aName);
+
+  /**
+   * ** Test-only Method **
+   *
+   * Returns the core distribution data from Glean.
+   *
+   * @returns the core distribution data from Glean in the form `{name}`.
+   */
+  [implicit_jscontext]
+  jsval testGetDistribution();
+
+  /**
+   * Creates and registers a metric as specified,
+   * making it and its APIs available on the JS Glean global.
+   *
+   * Main process only.
+   *
+   * Not necessary for most uses of FOG and Glean.
+   * If you're not sure if you should call this,
+   * err on the side of not calling it.
+   *
+   * @param aType - The metric's type (e.g., "counter", "string", etc.)
+   * @param aCategory - The metric's category (namespace)
+   * @param aName - The metric's name
+   * @param aPings - The pings to send this metric in
+   * @param aLifetime - The metric's lifetime (e.g., "ping", "application", "user")
+   * @param aDisabled - Whether the metric is disabled
+   * @param aExtraArgs - Optional JSON string of additional configuration
+   * @throws NS_ERROR_INVALID_ARG if required arguments are missing
+   * @throws NS_ERROR_FAILURE if registration fails
+   */
+  void registerRuntimeMetric(in ACString aType,
+                            in ACString aCategory,
+                            in ACString aName,
+                            in Array<ACString> aPings,
+                            in ACString aLifetime,
+                            in boolean aDisabled,
+                            [optional] in ACString aExtraArgs);
+
+  /**
+   * Creates and registers a ping as specified,
+   * making it and its APIs available on the JS GleanPings global.
+   *
+   * Main process only.
+   *
+   * Not necessary for most uses of FOG and Glean.
+   * If you're not sure if you should call this,
+   * err on the side of not calling it.
+   *
+   * @param aName - The ping's name
+   * @param aIncludeClientId - Whether the ping should include the client_id
+   * @param aSendIfEmpty - Whether the ping should send even if empty
+   * @param aPreciseTimestamps - Whether to use precise timestamps
+   * @param aIncludeInfoSections - Whether to include client_info and ping_info sections
+   * @param aEnabled - Whether the ping is enabled
+   * @param aSchedulesPings - Array of pings that this ping schedules
+   * @param aReasonCodes - Array of valid reason codes for this ping
+   * @param aFollowsCollectionEnabled - Whether this ping follows the collection enabled setting
+   * @param aUploaderCapabilities - Array of capabilities that the uploader must support to handle this ping
+   * @throws NS_ERROR_INVALID_ARG if required arguments are missing
+   * @throws NS_ERROR_FAILURE if registration fails
+   */
+  void registerRuntimePing(in ACString aName,
+                          in boolean aIncludeClientId,
+                          in boolean aSendIfEmpty,
+                          in boolean aPreciseTimestamps,
+                          in boolean aIncludeInfoSections,
+                          in boolean aEnabled,
+                          in Array<ACString> aSchedulesPings,
+                          in Array<ACString> aReasonCodes,
+                          in boolean aFollowsCollectionEnabled,
+                          in Array<ACString> aUploaderCapabilities);
 };

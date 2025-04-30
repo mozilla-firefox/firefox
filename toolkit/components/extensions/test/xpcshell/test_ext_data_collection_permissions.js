@@ -3,8 +3,11 @@ https://creativecommons.org/publicdomain/zero/1.0/ */
 
 "use strict";
 
-let { ExtensionTestCommon } = ChromeUtils.importESModule(
+const { ExtensionTestCommon } = ChromeUtils.importESModule(
   "resource://testing-common/ExtensionTestCommon.sys.mjs"
+);
+const { PERMISSION_L10N, permissionToL10nId } = ChromeUtils.importESModule(
+  "resource://gre/modules/ExtensionPermissionMessages.sys.mjs"
 );
 
 Services.prefs.setBoolPref(
@@ -199,5 +202,28 @@ add_task(async function test_requested_permissions() {
     );
 
     await extension.cleanupGeneratedFile();
+  }
+});
+
+add_task(async function test_permissions_have_localization_strings() {
+  for (const perm of Schemas.getPermissionNames([
+    "CommonDataCollectionPermission",
+    "DataCollectionPermission",
+    "OptionalDataCollectionPermission",
+  ])) {
+    if (perm === "none") {
+      let str = await PERMISSION_L10N.formatValue(
+        "webext-perms-description-data-none"
+      );
+      ok(str.length, `Found localization string for '${perm}'`);
+    } else {
+      let permId = permissionToL10nId(perm);
+      let str = await PERMISSION_L10N.formatValue(permId);
+      ok(str.length, `Found long localization string for '${perm}'`);
+
+      permId = permissionToL10nId(perm, /* short */ true);
+      str = await PERMISSION_L10N.formatValue(permId);
+      ok(str.length, `Found short localization string for '${perm}'`);
+    }
   }
 });

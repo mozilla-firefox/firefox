@@ -2,4 +2,8 @@
 <resources>
   <string name="mozac_feature_customtabs_exit_button">Bumalik sa nakaraang app</string>
   <string name="mozac_feature_customtabs_share_link">Ibahagi ang link</string>
+  <!-- Content description (not visible, for screen readers etc.): Description of the refresh button in the Custom Tabs toolbar -->
+  <string name="mozac_feature_customtabs_refresh_button">i-Refresh</string>
+  <!-- Content description (not visible, for screen readers etc.): Description of the menu button in the Custom Tabs toolbar. -->
+  <string name="mozac_feature_customtabs_menu_button">Karagdagang pagpipilian</string>
 </resources>

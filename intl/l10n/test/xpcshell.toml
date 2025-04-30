@@ -16,6 +16,6 @@ head = ""
 ["test_messagecontext.js"]
 
 ["test_missing_variables.js"]
-skip-if = ["debug"] # Intentionally triggers a debug assert for missing Fluent arguments.
+run-if = ["!debug"] # Intentionally triggers a debug assert for missing Fluent arguments.
 
 ["test_pseudo.js"]

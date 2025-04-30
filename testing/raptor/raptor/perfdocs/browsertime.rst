@@ -250,13 +250,7 @@ For example, the following will select all ``Pageload`` categories to run on des
 
 ::
 
-  ./mach try perf -q "'Pageload"
-
-If you need to target android tasks, include the ``--android`` flag like so (remove the ``'android`` from the query string to target desktop tests at the same time):
-
-::
-
-  ./mach try perf --android -q "'Pageload 'android"
+  ./mach try perf -q "'Pageload 'desktop"
 
 If you exclude the ``-q "..."`` option, an interface similar to the fuzzy interface will open, and show all available categories.
 

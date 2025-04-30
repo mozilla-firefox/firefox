@@ -23,6 +23,10 @@
 #include "nsISupportsImpl.h"
 
 namespace mozilla {
+namespace layers {
+class CanvasChild;
+}  // namespace layers
+
 namespace gfx {
 
 class DrawTargetRecording;
@@ -223,6 +227,10 @@ class DrawEventRecorderPrivate : public DrawEventRecorder {
   };
 
   using ExternalImagesHolder = std::deque<ExternalImageEntry>;
+
+  virtual already_AddRefed<layers::CanvasChild> GetCanvasChild() const {
+    return nullptr;
+  }
 
  protected:
   NS_DECL_OWNINGTHREAD

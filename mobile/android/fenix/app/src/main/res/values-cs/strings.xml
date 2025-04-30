@@ -129,6 +129,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Přepínání panelů přejetím po panelu nástrojů</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Přejetím doleva nebo doprava přepínáte. Přejetím doleva na posledním panelu otevřete nový panel.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">Tažením po nástrojové liště doleva nebo doprava přepínáte panely.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Pro tuto funkci je potřeba povolit přístup k fotoaparátu. Ten můžete povolit v nastavení oprávnění aplikací v systému Android.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -834,8 +836,6 @@
   <string name="preferences_override_account_server">Vlastní server pro účet Mozilly</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Vlastní server pro synchronizaci</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Server pro účet Mozilly nebo synchronizaci byl změněn. Pro aplikování změn se nyní aplikace ukončí…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Účet</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1384,6 +1384,8 @@
   <string name="tab_tray_multiselect_share_content_description">Sdílet vybrané panely</string>
   <!-- Content description for tabs tray multiselect menu -->
   <string name="tab_tray_multiselect_menu_content_description">Nabídka pro vybrané panely</string>
+  <!-- Title text displayed for a homepage tab in the tabs tray. -->
+  <string name="tab_tray_homepage_tab">Domovská stránka</string>
   <!-- Content description (not visible, for screen readers etc.): Removes tab from collection button. Removes the selected tab from collection when pressed -->
   <string name="remove_tab_from_collection">Odstranit panel ze sbírky</string>
   <!-- Text for button to enter multiselect mode in tabs tray -->
@@ -1481,16 +1483,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Smazat</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Smazat</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Návrat zpět</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Přejít nahoru</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">Sdílet URL</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Sdílet soubor</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Opravdu chcete smazat vybrané položky?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Opravdu chcete smazat vybrané položky?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Smazat</string>
+  <string name="download_delete_multi_select_dialog_confirm">Smazat</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Zrušit</string>
+  <string name="download_delete_multi_select_dialog_cancel">Zrušit</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Probíhá</string>
   <!--
@@ -1521,9 +1527,11 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Stahování selhalo</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Vyhledávání stažených souborů</string>
+  <string name="download_search_placeholder">Vyhledávání stažených souborů</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Nenalezeny žádné výsledky</string>
+  <string name="download_search_no_results_found">Nenalezeny žádné výsledky</string>
+  <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
+  <string name="download_select_all_items">Vybrat vše</string>
   <!--
     Downloads Content Type Filters
 
@@ -2274,7 +2282,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Ikona nastavení výjimek z rozšířené ochrany proti sledování</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3188,6 +3196,8 @@
   <string name="protection_panel_no_trackers_blocked">Nebyly nalezeny žádné sledovací prvky</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">Nastavení soukromí a bezpečnosti</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Oprávnění</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3374,6 +3384,26 @@
   -->
   <string name="glean_debug_tools_title">Nástroje ladění Glean</string>
   <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">Nastavení regionu</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">Dočasně přepíše hodnoty domovského a aktuálního regionu pro testování.</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">Domovský region</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">Aktuální region</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">Přepsat domovský region</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">Přepsat aktuální region</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">Přepsat domovský a aktuální region</string>
+  <!--
     Messages explaining how to exit fullscreen mode
 
     Message shown to explain how to exit fullscreen mode when gesture navigation is enabled.
@@ -3435,8 +3465,46 @@
   <string name="text_field_eye_trailing_icon_default_content_description" moz:removedIn="139" tools:ignore="UnusedResources">Zobrazit skrytý text</string>
   <!-- The default content description for the cross trailing icon button in TextField -->
   <string name="text_field_cross_trailing_icon_default_content_description" moz:removedIn="139" tools:ignore="UnusedResources">Smazat text</string>
+  <!--
+    Setup checklist feature
+
+    ===== Setup checklist feature: Title =====
+
+    Title for the setup checklist feature when the state is 'incomplete'. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_title_state_incomplete">Dokončete nastavení aplikace %1$s</string>
   <!-- Title for the setup checklist feature when the state is 'completed' -->
   <string name="setup_checklist_title_state_completed">Gratulujeme!</string>
+  <!--
+    ===== Setup checklist feature: Subtitles for 3 steps =====
+
+    Subtitle for a setup checklist with 3 steps initial step. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_subtitle_3_steps_initial_state">Dokončete tyto 3 kroky a nastavte si aplikaci %1$s na co nejlepší zážitek z prohlížení.</string>
+  <!-- Subtitle for a setup checklist with 3 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_3_steps_first_step">Skvělý začátek! Dokončili jste 1 ze 3 kroků.</string>
+  <!-- Subtitle for a setup checklist with 3 steps when two of the tasks are completed. -->
+  <string name="setup_checklist_subtitle_3_steps_second_step">Téměř hotovo! Dva kroky dokončeny a jeden zbývá.</string>
+  <!-- Subtitle for a setup checklist with 3 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_subtitle_3_steps_completed_state">Dokončili jste všechny 3 kroky. Užívejte si rychlost, soukromí a bezpečnost aplikace %1$s.</string>
+  <!--
+    ===== Setup checklist feature: Subtitles for 6 steps =====
+
+    Subtitle for a setup checklist with 6 steps initial state. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_subtitle_6_steps_initial_state">Dokončete všech 6 kroků a nastavte si aplikaci %1$s pro to nejlepší prohlížení.</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_first_step">Skvělý začátek! Dokončili jste 1 z 6 kroků.</string>
+  <!-- Subtitle for the setup checklist when the second task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_second_step">Dokončili jste 2 z 6 kroků. Velký pokrok!</string>
+  <!-- Subtitle for a setup checklist with 6 steps when three of the tasks are completed. -->
+  <string name="setup_checklist_subtitle_6_steps_third_step">Jste na půli cesty! Tři kroky dokončeny a zbývají 3.</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the fourth task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_fourth_step">Máte za sebou 4 kroky. Už zbývají jen 2!</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the fifth task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_fifth_step">Téměř hotovo! Už vás dělí jen jeden krok od cílové čáry.</string>
+  <!-- Subtitle for a setup checklist with 6 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_subtitle_6_steps_completed_state">Dokončili jste všech 6 kroků nastavení. Užívejte si rychlost, soukromí a bezpečnost aplikace %1$s.</string>
   <!--
     ===== Setup checklist feature: Task titles =====
 
@@ -3463,6 +3531,12 @@
   <string name="setup_checklist_group_customize">Přizpůsobte si svůj %1$s</string>
   <!-- The title of the 'helpful tools' group in the setup checklist -->
   <string name="setup_checklist_group_helpful_tools">Užitečné nástroje</string>
+  <!--
+    ===== Setup checklist feature: Button =====
+
+    Text for the 'remove' button for the setup checklist
+  -->
+  <string name="setup_checklist_button_remove">Odstranit kontrolní seznam</string>
   <!--
     ===== Setup checklist feature: Accessibility =====
 

@@ -26,7 +26,6 @@
 //! }
 //! ```
 
-use std::default::Default;
 use std::marker::PhantomData;
 use std::os::raw::{c_char, c_int, c_void};
 use std::rc::Rc;
@@ -41,7 +40,7 @@ use crate::{Connection, Result};
 
 // http://sqlite.org/bindptr.html
 
-pub(crate) const ARRAY_TYPE: *const c_char = (b"rarray\0" as *const u8).cast::<c_char>();
+pub(crate) const ARRAY_TYPE: *const c_char = c"rarray".as_ptr();
 
 pub(crate) unsafe extern "C" fn free_array(p: *mut c_void) {
     drop(Rc::from_raw(p as *const Vec<Value>));
@@ -82,8 +81,8 @@ unsafe impl<'vtab> VTab<'vtab> for ArrayTab {
         _: &mut VTabConnection,
         _aux: Option<&()>,
         _args: &[&[u8]],
-    ) -> Result<(String, ArrayTab)> {
-        let vtab = ArrayTab {
+    ) -> Result<(String, Self)> {
+        let vtab = Self {
             base: ffi::sqlite3_vtab::default(),
         };
         Ok(("CREATE TABLE x(value,pointer hidden)".to_owned(), vtab))

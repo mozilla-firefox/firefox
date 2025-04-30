@@ -377,16 +377,15 @@ interface nsIContentAnalysis : nsISupports
   void cancelRequestsByUserAction(in ACString aUserActionId);
 
   /**
-   * Cancels the request that is in progress.  This will also cancel any other
-   * request that has the same user_action_id.
+   * Like cancelRequestsByUserAction but does the same for any other user
+   * actions when aUserActionId is part of a "compound action" ("batch mode")
+   * -- one actually made up of several user actions.  See
+   * ContentAnalysis::CheckFilesInBatchMode for an explanation.
    *
-   * This is deprecated and will be removed.  Use cancelRequestsByUserAction
-   * instead.
-   *
-   * @param aRequestToken
-   *        The token for the request to cancel.
+   * @param aUserActionId
+   *        The primary user action ID for the batch request to cancel.
    */
-  void cancelRequestsByRequestToken(in ACString aRequestToken);
+  void cancelAllRequestsAssociatedWithUserAction(in ACString aUserActionId);
 
   /**
    * Indicates that the user has responded to a WARN dialog. aAllowContent represents

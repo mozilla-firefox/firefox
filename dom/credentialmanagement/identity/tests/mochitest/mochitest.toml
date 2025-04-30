@@ -21,6 +21,8 @@ support-files = [
   "/.well-known/web-identity",
   "/.well-known/web-identity^headers^",
   "server_manifest.sjs",
+  "server_manifest_account_label.sjs",
+  "server_manifest_same_site.sjs",
   "server_manifest_wrong_provider_in_manifest.sjs",
   "server_simple_accounts.sjs",
   "server_simple_idtoken.sjs",
@@ -32,6 +34,9 @@ support-files = [
   "server_two_providers_idtoken.sjs",
   "server_accounts_error_accounts.sjs",
   "server_accounts_error_idtoken.sjs",
+  "server_account_label_accounts.sjs",
+  "server_hint_filter_accounts.sjs",
+  "server_hint_filter_idtoken.sjs",
   "server_idtoken_error_accounts.sjs",
   "server_idtoken_error_idtoken.sjs",
   "server_accounts_redirect_accounts.sjs",
@@ -40,11 +45,15 @@ support-files = [
   "server_idtoken_redirect_idtoken.sjs",
 ]
 
+["test_account_label.html"]
+
 ["test_accounts_error.html"]
 
 ["test_accounts_redirect.html"]
 
 ["test_delay_reject.html"]
+
+["test_domain_hint_filter.html"]
 
 ["test_empty_provider_list.html"]
 
@@ -53,6 +62,10 @@ support-files = [
 ["test_idtoken_error.html"]
 
 ["test_idtoken_redirect.html"]
+
+["test_login_hint_filter.html"]
+
+["test_manifest_same_site_ignores_well_known.html"]
 
 ["test_mediation.html"]
 

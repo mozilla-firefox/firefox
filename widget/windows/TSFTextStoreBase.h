@@ -71,12 +71,22 @@ class TSFTextStoreBase : public ITextStoreACP {
  public:
   [[nodiscard]] bool MaybeHasFocus() const { return mContext; }
 
+  /**
+   * Return true if this is for editable content, i.e., supporting retrieving
+   * and modifying the content.  I.e., when this is a TSFTextStore instance,
+   * returns true.  Otherwise, this is a TSFEmptyTextStoreInstance, returns
+   * false.
+   */
+  [[nodiscard]] bool IsEditable() const {
+    return static_cast<bool>(mIsEditable);
+  }
+
   [[nodiscard]] ITfDocumentMgr* GetDocumentMgr() const { return mDocumentMgr; }
   [[nodiscard]] ITfContext* GetContext() const { return mContext; }
   [[nodiscard]] nsWindow* GetWindow() const { return mWidget; }
 
-  [[nodiscard]] virtual IMENotificationRequests
-  GetIMENotificationRequests() = 0;
+  [[nodiscard]] virtual IMENotificationRequests GetIMENotificationRequests()
+      const = 0;
 
   virtual void Destroy() = 0;
 
@@ -84,7 +94,13 @@ class TSFTextStoreBase : public ITextStoreACP {
                               const InputContextAction& aAction);
 
  protected:
-  TSFTextStoreBase() = default;
+  enum class Editable : bool { No, Yes };
+  friend inline std::ostream& operator<<(std::ostream& aStream,
+                                         const Editable& aEditable) {
+    return aStream << (static_cast<bool>(aEditable) ? "Editable::Yes"
+                                                    : "Editable::No");
+  };
+  explicit TSFTextStoreBase(Editable aIsEditable) : mIsEditable(aIsEditable) {}
   virtual ~TSFTextStoreBase() = default;
 
   [[nodiscard]] bool InitBase(nsWindow* aWidget, const InputContext& aContext);
@@ -169,6 +185,14 @@ class TSFTextStoreBase : public ITextStoreACP {
     return mDispatcher && mDispatcher->IsHandlingComposition();
   }
 
+  /**
+   * Return error if editable state does not match with this instance.
+   * Otherwise, updates mDocumentURL and mInPrivateBrowsing and notify TSF of
+   * the changes.
+   */
+  nsresult UpdateDocumentURLAndBrowsingMode(nsWindow* aWindow,
+                                            const InputContext& aContext);
+
   // Holds the pointer to our current win32 widget
   RefPtr<nsWindow> mWidget;
   // mDispatcher is a helper class to dispatch composition events.
@@ -226,6 +250,8 @@ class TSFTextStoreBase : public ITextStoreACP {
   bool mBeingDestroyed = false;
   // Whether we're in the private browsing mode.
   bool mInPrivateBrowsing = true;
+  // Whether this is for editable content or not.
+  Editable mIsEditable;
 };
 
 }  // namespace mozilla::widget

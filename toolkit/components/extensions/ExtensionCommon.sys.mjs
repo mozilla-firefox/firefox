@@ -3,6 +3,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
 /**
  * This module contains utilities and base classes for logic which is
@@ -14,22 +15,20 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 
-/** @type {Lazy} */
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   ConsoleAPI: "resource://gre/modules/Console.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   SchemaRoot: "resource://gre/modules/Schemas.sys.mjs",
   Schemas: "resource://gre/modules/Schemas.sys.mjs",
+  styleSheetService: {
+    service: "@mozilla.org/content/style-sheet-service;1",
+    iid: Ci.nsIStyleSheetService,
+  },
+  wptEnabled: {
+    pref: "extensions.wpt.enabled",
+    default: false,
+  },
 });
-
-XPCOMUtils.defineLazyServiceGetter(
-  lazy,
-  "styleSheetService",
-  "@mozilla.org/content/style-sheet-service;1",
-  "nsIStyleSheetService"
-);
 
 const ScriptError = Components.Constructor(
   "@mozilla.org/scripterror;1",
@@ -1904,6 +1903,8 @@ class SchemaAPIManager extends EventEmitter {
       Glean,
       GleanPings,
       IOUtils,
+      L10nFileSource,
+      L10nRegistry,
       MatchGlob,
       MatchPattern,
       MatchPatternSet,
@@ -3153,4 +3154,10 @@ export var ExtensionCommon = {
 
   MultiAPIManager,
   LazyAPIManager,
+
+  // Whether we're running under Web Platform Tests mode,
+  // required to adjust some cross-browser behaviors.
+  get isInWPT() {
+    return Cu.isInAutomation && lazy.wptEnabled;
+  },
 };

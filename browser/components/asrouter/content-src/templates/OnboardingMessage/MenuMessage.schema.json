@@ -64,9 +64,26 @@
           "type": "string",
           "description": "URL for image to use with the content."
         },
-        "imageVerticalOffset": {
+        "imageWidth": {
           "type": "number",
-          "description": "The margin-block-start value to apply to the image in pixels."
+          "description": "The image width in pixels. Default is 120px."
+        },
+        "imageVerticalTopOffset": {
+          "type": "number",
+          "description": "The margin-block-start value to apply to the image in pixels, used in 'column' layouts."
+        },
+        "imageVerticalBottomOffset": {
+          "type": "number",
+          "description": "The margin-block-end value to apply to the image in pixels, used in 'row' layouts."
+        },
+        "containerVerticalBottomOffset": {
+          "type": "number",
+          "description": "The container's margin-block-end value in pixels. Used to visually offset the image in 'row' layouts when 'imageVerticalBottomOffset' is applied."
+        },
+        "layout": {
+          "type": "string",
+          "description": "The layout of the message content and illustration. Row displays the image to the inline to the right of the text, column displays the image above the text.",
+          "enum": ["row", "column"]
         }
       }
     },

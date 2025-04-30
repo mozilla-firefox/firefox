@@ -18,7 +18,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -115,11 +114,14 @@ class DownloadUIStoreTest {
     }
 
     @Test
-    fun allItemsAddedForRemoval() {
+    fun `WHEN all items are visible and all items selected for removal THEN all items are selected`() {
         val initialState = DownloadUIState(
             items = listOf(fileItem1, fileItem2),
             mode = DownloadUIState.Mode.Normal,
             pendingDeletionIds = emptySet(),
+            userSelectedContentTypeFilter = FileItem.ContentTypeFilter.All,
+            searchQuery = "",
+            isSearchEnabled = true,
         )
         val store = DownloadUIStore(initialState)
 
@@ -129,6 +131,121 @@ class DownloadUIStoreTest {
             items = listOf(fileItem1, fileItem2),
             mode = DownloadUIState.Mode.Editing(setOf(fileItem1, fileItem2)),
             pendingDeletionIds = emptySet(),
+        )
+
+        assertEquals(expected, store.state)
+    }
+
+    @Test
+    fun `WHEN only filtered items are visible and all items selected for removal THEN only those filtered items are selected`() {
+        val image = FileItem(
+            id = "1",
+            url = "url",
+            fileName = "title",
+            filePath = "url",
+            formattedSize = "77",
+            displayedShortUrl = "url",
+            contentType = "image/jpeg",
+            status = DownloadState.Status.COMPLETED,
+            createdTime = CreatedTime.TODAY,
+        )
+
+        val document = FileItem(
+            id = "2",
+            url = "docurl",
+            fileName = "doc",
+            filePath = "docPath",
+            formattedSize = "77",
+            displayedShortUrl = "url",
+            contentType = "application/pdf",
+            status = DownloadState.Status.COMPLETED,
+            createdTime = CreatedTime.TODAY,
+        )
+
+        val initialState = DownloadUIState(
+            items = listOf(image, document),
+            mode = DownloadUIState.Mode.Normal,
+            pendingDeletionIds = emptySet(),
+            userSelectedContentTypeFilter = FileItem.ContentTypeFilter.All,
+            searchQuery = "",
+            isSearchEnabled = true,
+        )
+        val store = DownloadUIStore(initialState)
+
+        store.dispatch(DownloadUIAction.ContentTypeSelected(FileItem.ContentTypeFilter.Image))
+        store.dispatch(DownloadUIAction.AddAllItemsForRemoval)
+
+        val expected = DownloadUIState(
+            items = listOf(image, document),
+            mode = DownloadUIState.Mode.Editing(setOf(image)),
+            pendingDeletionIds = emptySet(),
+            userSelectedContentTypeFilter = FileItem.ContentTypeFilter.Image,
+            searchQuery = "",
+            isSearchEnabled = true,
+        )
+
+        assertEquals(expected, store.state)
+    }
+
+    @Test
+    fun `WHEN items are filtered by content type and search and all items selected for removal THEN only those filtered items are selected`() {
+        val image1 = FileItem(
+            id = "1",
+            url = "url",
+            fileName = "title",
+            filePath = "filePath",
+            formattedSize = "77",
+            displayedShortUrl = "url",
+            contentType = "image/jpeg",
+            status = DownloadState.Status.COMPLETED,
+            createdTime = CreatedTime.TODAY,
+        )
+
+        val image2 = FileItem(
+            id = "2",
+            url = "image2",
+            fileName = "image2",
+            filePath = "filePath2",
+            formattedSize = "1234",
+            displayedShortUrl = "image2",
+            contentType = "image/jpg",
+            status = DownloadState.Status.COMPLETED,
+            createdTime = CreatedTime.TODAY,
+        )
+
+        val document = FileItem(
+            id = "3",
+            url = "docurl",
+            fileName = "doc",
+            filePath = "docPath",
+            formattedSize = "77",
+            displayedShortUrl = "url",
+            contentType = "application/pdf",
+            status = DownloadState.Status.COMPLETED,
+            createdTime = CreatedTime.TODAY,
+        )
+
+        val initialState = DownloadUIState(
+            items = listOf(image1, image2, document),
+            mode = DownloadUIState.Mode.Normal,
+            pendingDeletionIds = emptySet(),
+            userSelectedContentTypeFilter = FileItem.ContentTypeFilter.All,
+            searchQuery = "",
+            isSearchEnabled = true,
+        )
+        val store = DownloadUIStore(initialState)
+
+        store.dispatch(DownloadUIAction.ContentTypeSelected(FileItem.ContentTypeFilter.Image))
+        store.dispatch(DownloadUIAction.SearchQueryEntered("url"))
+        store.dispatch(DownloadUIAction.AddAllItemsForRemoval)
+
+        val expected = DownloadUIState(
+            items = listOf(image1, image2, document),
+            mode = DownloadUIState.Mode.Editing(setOf(image1)),
+            pendingDeletionIds = emptySet(),
+            userSelectedContentTypeFilter = FileItem.ContentTypeFilter.Image,
+            searchQuery = "url",
+            isSearchEnabled = true,
         )
 
         assertEquals(expected, store.state)
@@ -180,17 +297,14 @@ class DownloadUIStoreTest {
         )
 
         assertEquals(expectedUIStateBeforeDeleteAction, store.state)
-        assertTrue(store.state.itemsToDisplay.contains(fileItem1))
 
         store.dispatch(DownloadUIAction.AddPendingDeletionSet(deleteItemSet))
         assertEquals(store.state.pendingDeletionIds, deleteItemSet)
         assertEquals(expectedUIStateAfterDeleteAction, store.state)
-        assertEquals(listOf<DownloadListItem>(), store.state.itemsToDisplay)
 
         dispatcher.scheduler.advanceTimeBy(UNDO_DELAY_PASSED.milliseconds)
         assertEquals(store.state.pendingDeletionIds, deleteItemSet)
         assertEquals(expectedUIStateAfterDeleteAction, store.state)
-        assertEquals(listOf<DownloadListItem>(), store.state.itemsToDisplay)
 
         browserStoreMiddleware.assertLastAction(DownloadAction.RemoveDownloadAction::class) { action ->
             assertEquals(fileItem1.id, action.downloadId)
@@ -211,15 +325,12 @@ class DownloadUIStoreTest {
             pendingDeletionIds = deleteItemSet,
         )
         assertEquals(expectedUIState, store.state)
-        assertEquals(0, store.state.itemsToDisplay.size)
 
         store.dispatch(DownloadUIAction.UndoPendingDeletionSet(deleteItemSet))
         assertEquals(store.state.pendingDeletionIds, emptySet<String>())
-        assertTrue(store.state.itemsToDisplay.contains(fileItem1))
 
         dispatcher.scheduler.advanceTimeBy(UNDO_DELAY_PASSED.milliseconds)
         assertEquals(store.state.pendingDeletionIds, emptySet<String>())
-        assertTrue(store.state.itemsToDisplay.contains(fileItem1))
 
         browserStoreMiddleware.assertNotDispatched(DownloadAction.RemoveDownloadAction::class)
     }
@@ -238,7 +349,6 @@ class DownloadUIStoreTest {
             pendingDeletionIds = deleteItemSet,
         )
         assertEquals(expectedUIState, store.state)
-        assertEquals(0, store.state.itemsToDisplay.size)
 
         dispatcher.scheduler.advanceTimeBy(UNDO_DELAY_PASSED.milliseconds)
         store.dispatch(DownloadUIAction.UndoPendingDeletionSet(deleteItemSet))
@@ -330,7 +440,7 @@ class DownloadUIStoreTest {
         )
         downloadsStore.waitUntilIdle()
 
-        val expectedList =
+        val expectedList = DownloadUIState.ItemsState.Items(
             listOf(
                 HeaderItem(CreatedTime.TODAY),
                 FileItem(
@@ -356,9 +466,10 @@ class DownloadUIStoreTest {
                     status = DownloadState.Status.COMPLETED,
                     createdTime = CreatedTime.OLDER,
                 ),
-            )
+            ),
+        )
 
-        assertEquals(expectedList, downloadsStore.state.itemsToDisplay)
+        assertEquals(expectedList, downloadsStore.state.itemsState)
     }
 
     @Test
@@ -401,22 +512,24 @@ class DownloadUIStoreTest {
         )
         downloadsStore.waitUntilIdle()
 
-        val expectedList = listOf(
-            HeaderItem(CreatedTime.OLDER),
-            FileItem(
-                id = "1",
-                url = "https://www.google.com",
-                fileName = "1.pdf",
-                filePath = "downloads/1.pdf",
-                formattedSize = "10000",
-                displayedShortUrl = "google.com",
-                contentType = "application/pdf",
-                status = DownloadState.Status.COMPLETED,
-                createdTime = CreatedTime.OLDER,
+        val expectedList = DownloadUIState.ItemsState.Items(
+            listOf(
+                HeaderItem(CreatedTime.OLDER),
+                FileItem(
+                    id = "1",
+                    url = "https://www.google.com",
+                    fileName = "1.pdf",
+                    filePath = "downloads/1.pdf",
+                    formattedSize = "10000",
+                    displayedShortUrl = "google.com",
+                    contentType = "application/pdf",
+                    status = DownloadState.Status.COMPLETED,
+                    createdTime = CreatedTime.OLDER,
+                ),
             ),
         )
 
-        assertEquals(expectedList, downloadsStore.state.itemsToDisplay)
+        assertEquals(expectedList, downloadsStore.state.itemsState)
     }
 
     private fun LocalDate.toEpochMilli(zoneId: ZoneId): Long {

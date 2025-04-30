@@ -205,6 +205,7 @@ add_task(async function testAnchorClustering() {
 });
 
 add_task(function processTopicModelResult() {
+  const smartTabGroupingManager = new SmartTabGroupingManager();
   const input_phrases = [
     "",
     "None", // Target of model if uncertain
@@ -225,7 +226,7 @@ add_task(function processTopicModelResult() {
   ];
   for (let i = 0; i < input_phrases.length; i++) {
     Assert.equal(
-      SmartTabGroupingManager.processTopicModelResult(input_phrases[i]),
+      smartTabGroupingManager.processTopicModelResult(input_phrases[i]),
       output_phrases[i]
     );
   }

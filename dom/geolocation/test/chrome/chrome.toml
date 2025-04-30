@@ -1,0 +1,8 @@
+[DEFAULT]
+support-files = [
+  "!/dom/geolocation/test/mochitest/geolocation_common.js",
+  "!/dom/geolocation/test/mochitest/network_geolocation.sjs",
+]
+
+["test_handlerSpinsEventLoop.html"]
+prefs = ["network.xhr.block_sync_system_requests=false"] # Bug 721336

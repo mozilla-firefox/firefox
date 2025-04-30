@@ -46,6 +46,30 @@ static inline int32x4_t vroundf(float32x4_t x)
 #  endif
 }
 
+static inline float vminvf(float32x4_t a)
+{
+#if defined(__aarch64__)
+   return vminvq_f32(a);
+#else
+    float32x2_t xy = vmin_f32(vget_low_f32(a), vget_high_f32(a));
+    float x = vget_lane_f32(xy, 0);
+    float y = vget_lane_f32(xy, 1);
+    return x < y ? x : y;
+#endif
+}
+
+static inline float vmaxvf(float32x4_t a)
+{
+#if defined(__aarch64__)
+   return vmaxvq_f32(a);
+#else
+    float32x2_t xy = vmax_f32(vget_low_f32(a), vget_high_f32(a));
+    float x = vget_lane_f32(xy, 0);
+    float y = vget_lane_f32(xy, 1);
+    return x > y ? x : y;
+#endif
+}
+
 void celt_float2int16_neon(const float * OPUS_RESTRICT in, short * OPUS_RESTRICT out, int cnt);
 #  if defined(OPUS_HAVE_RTCD) && \
     (defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR))
@@ -59,6 +83,20 @@ extern void
 #  elif defined(OPUS_ARM_PRESUME_NEON_INTR)
 #   define OVERRIDE_FLOAT2INT16 (1)
 #   define celt_float2int16(in, out, cnt, arch) ((void)(arch), celt_float2int16_neon(in, out, cnt))
+#  endif
+
+int opus_limit2_checkwithin1_neon(float * samples, int cnt);
+#  if defined(OPUS_HAVE_RTCD) && \
+      (defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR))
+extern int (*const OPUS_LIMIT2_CHECKWITHIN1_IMPL[OPUS_ARCHMASK+1])(float * samples, int cnt);
+
+#   define OVERRIDE_LIMIT2_CHECKWITHIN1 (1)
+#   define opus_limit2_checkwithin1(samples, cnt, arch) \
+   ((*OPUS_LIMIT2_CHECKWITHIN1_IMPL[(arch)&OPUS_ARCHMASK])(samples, cnt))
+
+#  elif defined(OPUS_ARM_PRESUME_NEON_INTR)
+#   define OVERRIDE_LIMIT2_CHECKWITHIN1 (1)
+#   define opus_limit2_checkwithin1(samples, cnt, arch) ((void)(arch), opus_limit2_checkwithin1_neon(samples, cnt))
 #  endif
 # endif
 

@@ -62,16 +62,10 @@ set_config("TOPSRCDIR", build_environment.topsrcdir)
 set_config("TOPOBJDIR", build_environment.topobjdir)
 set_config("DIST", build_environment.dist)
 
-add_old_configure_assignment("_topsrcdir", build_environment.topsrcdir)
-
 option(env="MOZ_AUTOMATION", help="Enable options for automated builds")
 set_config("MOZ_AUTOMATION", depends_if("MOZ_AUTOMATION")(lambda x: True))
 
-
-option(env="OLD_CONFIGURE", nargs=1, help="Path to the old configure script")
-
 option(env="MOZCONFIG", nargs=1, help="Mozconfig location")
-
 
 # Read user mozconfig
 # ==============================================================
@@ -80,11 +74,11 @@ option(env="MOZCONFIG", nargs=1, help="Mozconfig location")
 # be called when --help is passed, and the mozconfig wouldn't be read.
 
 
-@depends("MOZCONFIG", "OLD_CONFIGURE", build_environment, "--help")
+@depends("MOZCONFIG", build_environment, "--help")
 @imports(_from="mozbuild.mozconfig", _import="MozconfigLoader")
 @imports(_from="mozboot.mozconfig", _import="find_mozconfig")
 @imports("os")
-def mozconfig(mozconfig, old_configure, build_env, help):
+def mozconfig(mozconfig, build_env, help):
     # Don't read the mozconfig for the js configure (yay backwards
     # compatibility)
     # While the long term goal is that js and top-level use the same configure
@@ -96,16 +90,8 @@ def mozconfig(mozconfig, old_configure, build_env, help):
     # mozconfig for the js configure.
     # Separately to the immediate problem for js developers, there is also the
     # need to not load a mozconfig when running js configure as a subconfigure.
-    # Unfortunately, there is no direct way to tell whether the running
-    # configure is the js configure. The indirect way is to look at the
-    # OLD_CONFIGURE path, which points to js/src/old-configure.
-    # I expect we'll have figured things out for mozconfigs well before
-    # old-configure dies.
-    if (
-        old_configure
-        and os.path.dirname(os.path.abspath(old_configure[0])).endswith("/js/src")
-        or (mozconfig and mozconfig[0] == os.devnull)
-    ):
+    is_js_configure = "MOZ_JS_CONFIGURE" in os.environ
+    if is_js_configure or (mozconfig and mozconfig[0] == os.devnull):
         return {"path": None}
 
     topsrcdir = build_env.topsrcdir
@@ -157,6 +143,7 @@ def help_shell(help, shell):
 
 
 shell = help_shell | shell
+set_config("SHELL", shell)
 
 
 # Python 3
@@ -995,7 +982,6 @@ def build_project(project):
 
 set_config("MOZ_BUILD_APP", build_project)
 set_define("MOZ_BUILD_APP", build_project)
-add_old_configure_assignment("MOZ_BUILD_APP", build_project)
 
 
 option(env="MOZILLA_OFFICIAL", help="Build an official release")
@@ -1178,7 +1164,6 @@ set_define("MOZILLA_UAVERSION", depends(milestone)(lambda m: '"%s"' % m.uaversio
 set_config("MOZ_APP_VERSION", milestone.app_version)
 set_config("MOZ_APP_VERSION_DISPLAY", milestone.app_version_display)
 set_config("MOZ_APP_MAXVERSION", moz_app_maxversion)
-add_old_configure_assignment("MOZ_APP_VERSION", milestone.app_version)
 
 
 # The app update channel is 'default' when not supplied. The value is used in
@@ -1330,6 +1315,17 @@ set_config("prefix", depends("--prefix")(lambda prefix: prefix[0]))
 # Unlike autoconf, we don't offer these as a customisation point.
 set_config("exec_prefix", depends("--prefix")(lambda prefix: prefix[0]))
 set_config("datadir", depends("--prefix")(lambda prefix: f"{prefix[0]}/share"))
+set_config("bindir", depends("--prefix")(lambda prefix: f"{prefix[0]}/bin"))
+set_config("sbindir", depends("--prefix")(lambda prefix: f"{prefix[0]}/sbin"))
+set_config("infodir", depends("--prefix")(lambda prefix: f"{prefix[0]}/info"))
+set_config("libexec", depends("--prefix")(lambda prefix: f"{prefix[0]}/libexec"))
+set_config("localstatedir", depends("--prefix")(lambda prefix: f"{prefix[0]}/var"))
+set_config("sharedstatedir", depends("--prefix")(lambda prefix: f"{prefix[0]}/com"))
+set_config("sysconfdir", depends("--prefix")(lambda prefix: f"{prefix[0]}/etc"))
+set_config("mandir", depends("--prefix")(lambda prefix: f"{prefix[0]}/man"))
+set_config("oldincludedir", depends("--prefix")(lambda prefix: f"{prefix[0]}/include"))
+set_config("top_srcdir", build_environment.topsrcdir)
+set_config("program_transform_name", "s,x,x,")
 
 option(
     "--includedir",

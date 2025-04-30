@@ -58,5 +58,6 @@ skip-if = ["artifact"]
 ["test_policy.js"]
 
 ["test_prefFlips.js"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64'"] # Bug 1960885
 
 ["test_schema_uris.js"]

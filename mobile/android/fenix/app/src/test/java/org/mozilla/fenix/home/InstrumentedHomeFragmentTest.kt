@@ -45,7 +45,7 @@ class InstrumentedHomeFragmentTest {
         val homeBinding = FragmentHomeBinding.inflate(LayoutInflater.from(testContext))
         val toolbarView = HomeToolbarView(homeBinding, mockk(), homeFragment, mockk())
         toolbarView.homeMenuView = homeMenuView
-        homeFragment.toolbarView = toolbarView
+        homeFragment.nullableToolbarView = toolbarView
 
         homeFragment.onConfigurationChanged(mockk(relaxed = true))
 

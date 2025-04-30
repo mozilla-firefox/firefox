@@ -18,6 +18,8 @@
   <string name="mozac_feature_contextmenu_copy_image_location">Koyahin ang lokasyon ng larawan</string>
   <!-- Text for context menu item to save / download the image. -->
   <string name="mozac_feature_contextmenu_save_image">I-save ang imahe</string>
+  <!-- Text for context menu item to copy the image to the clipboard. -->
+  <string name="mozac_feature_contextmenu_copy_image">Kopyahin ang larawan</string>
   <!-- Text for context menu item to save / download the file. -->
   <string name="mozac_feature_contextmenu_save_file_to_device">i-Save ang file sa device</string>
   <!-- Text for confirmation "snackbar" shown after opening a link in a new tab. -->

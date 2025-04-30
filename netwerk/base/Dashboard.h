@@ -17,6 +17,7 @@ namespace net {
 
 class SocketData;
 class HttpData;
+class Http3ConnectionStatsData;
 class DnsData;
 class WebSocketRequest;
 class ConnectionData;
@@ -72,12 +73,14 @@ class Dashboard final : public nsIDashboard, public nsIDashboardEventNotifier {
 
   nsresult GetSocketsDispatch(SocketData*);
   nsresult GetHttpDispatch(HttpData*);
+  nsresult GetHttp3ConnectionStatsDispatch(Http3ConnectionStatsData*);
   nsresult GetDnsInfoDispatch(DnsData*);
   nsresult TestNewConnection(ConnectionData*);
 
   /* Helper methods that pass the JSON to the callback function. */
   nsresult GetSockets(SocketData*);
   nsresult GetHttpConnections(HttpData*);
+  nsresult GetHttp3ConnectionStats(Http3ConnectionStatsData*);
   nsresult GetDNSCacheEntries(DnsData*);
   nsresult GetWebSocketConnections(WebSocketRequest*);
   nsresult GetRcwnData(RcwnData*);

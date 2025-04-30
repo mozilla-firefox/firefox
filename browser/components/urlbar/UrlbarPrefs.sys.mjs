@@ -90,11 +90,6 @@ const PREF_URLBAR_DEFAULTS = new Map([
   // "heuristic" result).  We fetch it as fast as possible.
   ["delay", 50],
 
-  // Some performance tests disable this because extending the urlbar needs
-  // layout information that we can't get before the first paint. (Or we could
-  // but this would mean flushing layout.)
-  ["disableExtendForTests", false],
-
   // Ensure we use trailing dots for DNS lookups for single words that could
   // be hosts.
   ["dnsResolveFullyQualifiedNames", true],
@@ -231,12 +226,8 @@ const PREF_URLBAR_DEFAULTS = new Map([
   // When non-zero, this is the character-count threshold (inclusive) for
   // showing AMP suggestions as top picks. If an AMP suggestion is triggered by
   // a keyword at least this many characters long, it will be shown as a top
-  // pick. Full keywords will also show AMP suggestions as top picks even if
-  // they have fewer characters than this threshold.
-  ["quicksuggest.ampTopPickCharThreshold", 0],
-
-  // JSON'ed array of blocked quick suggest URL digests.
-  ["quicksuggest.blockedDigests", ""],
+  // pick.
+  ["quicksuggest.ampTopPickCharThreshold", 5],
 
   // Whether the Firefox Suggest data collection opt-in result is enabled.
   ["quicksuggest.contextualOptIn", false],
@@ -543,7 +534,7 @@ const PREF_URLBAR_DEFAULTS = new Map([
   ["unifiedSearchButton.always", false],
 
   // Feature gate pref for weather suggestions in the urlbar.
-  ["weather.featureGate", false],
+  ["weather.featureGate", true],
 
   // The minimum prefix length of a weather keyword the user must type to
   // trigger the suggestion. 0 means the min length should be taken from Nimbus

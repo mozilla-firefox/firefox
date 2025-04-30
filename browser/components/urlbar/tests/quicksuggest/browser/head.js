@@ -102,6 +102,7 @@ async function initQuickSuggestPingTest({
       // button and closes the new tab, which interferes with the expected
       // indexes of quick suggest results, so disable them.
       ["browser.urlbar.suggest.openpage", false],
+      ["browser.urlbar.quicksuggest.ampTopPickCharThreshold", 0],
     ],
   });
 

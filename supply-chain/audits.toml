@@ -298,6 +298,14 @@ user-id = 84794 # Jamie Nicol (jamienicol)
 start = "2020-04-07"
 end = "2025-08-30"
 
+[[wildcard-audits.hawk]]
+who = "Ryan Safaeian <rsafaeian@mozilla.com>"
+criteria = "safe-to-deploy"
+user-id = 158511
+start = "2022-05-05"
+end = "2026-04-24"
+notes = "Hawk is written and maintained by mozilla employees."
+
 [[wildcard-audits.io-surface]]
 who = "Bobby Holley <bobbyholley@gmail.com>"
 criteria = "safe-to-deploy"
@@ -646,6 +654,12 @@ who = "Mike Hommey <mh+mozilla@glandium.org>"
 criteria = "safe-to-deploy"
 delta = "0.7.0 -> 0.8.1"
 
+[[audits.android-tzdata]]
+who = "Mark Hammond <mhammond@skippinet.com.au>"
+criteria = "safe-to-deploy"
+version = "0.1.1"
+notes = "Small crate parsing a file. No unsafe code"
+
 [[audits.android_logger]]
 who = "Jan-Erik Rediger <jrediger@mozilla.com>"
 criteria = "safe-to-deploy"
@@ -904,6 +918,11 @@ criteria = "safe-to-deploy"
 version = "1.1.0"
 notes = "All code written or reviewed by Josh Stone."
 
+[[audits.base16]]
+who = "Ryan Safaeian <rsafaeian@mozilla.com>"
+criteria = "safe-to-deploy"
+version = "0.2.1"
+
 [[audits.base64]]
 who = "Mike Hommey <mh+mozilla@glandium.org>"
 criteria = "safe-to-deploy"
@@ -1158,6 +1177,12 @@ notes = "I, Henri Sivonen, wrote this crate for Gecko even though it is publishe
 who = "Bobby Holley <bobbyholley@gmail.com>"
 criteria = "safe-to-deploy"
 delta = "0.1.2 -> 0.1.2@git:ed8a4c6f900a90d4dbc1d64b856e61490a1c3570"
+
+[[audits.chrono]]
+who = "Mark Hammond <mhammond@skippinet.com.au>"
+criteria = "safe-to-deploy"
+delta = "0.4.19 -> 0.4.40"
+notes = "Significant refactor of both implementation and dependencies."
 
 [[audits.circular]]
 who = "Alex Franchuk <afranchuk@mozilla.com>"
@@ -2728,6 +2753,11 @@ who = "Mike Hommey <mh+mozilla@glandium.org>"
 criteria = "safe-to-run"
 delta = "0.14.23 -> 0.14.24"
 
+[[audits.iana-time-zone]]
+who = "Mark Hammond <mhammond@skippinet.com.au>"
+criteria = "safe-to-deploy"
+delta = "0.1.61 -> 0.1.63"
+
 [[audits.icu_calendar]]
 who = "André Bargull <andre.bargull@gmail.com>"
 criteria = "safe-to-deploy"
@@ -3358,6 +3388,11 @@ who = "Erich Gubler <erichdongubler@gmail.com>"
 criteria = "safe-to-deploy"
 delta = "0.30.0 -> 0.31.0"
 
+[[audits.metal]]
+who = "Erich Gubler <erichdongubler@gmail.com>"
+criteria = "safe-to-deploy"
+delta = "0.31.0 -> 0.32.0"
+
 [[audits.midir]]
 who = "Bobby Holley <bobbyholley@gmail.com>"
 criteria = "safe-to-deploy"
@@ -3691,24 +3726,17 @@ criteria = "safe-to-deploy"
 delta = "23.1.0 -> 24.0.0"
 
 [[audits.naga]]
-who = [
-    "Teodor Tanasoaia <ttanasoaia@mozilla.com>",
-    "Erich Gubler <erichdongubler@gmail.com>",
-    "Jim Blandy <jimb@red-bean.com>",
-]
-criteria = "safe-to-deploy"
-delta = "24.0.0 -> 24.0.0@git:a0dbe5ebc6fa24422fb84b2e0fea1cc94dee5109"
-importable = false
-
-[[audits.naga]]
 who = "Erich Gubler <erichdongubler@gmail.com>"
 criteria = "safe-to-deploy"
 delta = "24.0.0 -> 25.0.0"
 
 [[audits.naga]]
-who = "Erich Gubler <erichdongubler@gmail.com>"
+who = [
+    "Erich Gubler <erichdongubler@gmail.com>",
+    "Jim Blandy <jimb@red-bean.com>",
+]
 criteria = "safe-to-deploy"
-delta = "25.0.0 -> 25.0.0@git:f1c496523ff0aa10c162fd01ad606960e925a5a4"
+delta = "25.0.0 -> 25.0.0@git:35f131ff10153e48b790e1f156c864734063ce71"
 importable = false
 
 [[audits.net2]]
@@ -4403,6 +4431,11 @@ who = "Nicolas Silva <nical@fastmail.com>"
 criteria = "safe-to-deploy"
 delta = "0.5.2 -> 0.6.0"
 
+[[audits.raw-window-handle]]
+who = "Erich Gubler <erichdongubler@gmail.com>"
+criteria = "safe-to-deploy"
+delta = "0.6.0 -> 0.6.2"
+
 [[audits.rayon]]
 who = "Josh Stone <jistone@redhat.com>"
 criteria = "safe-to-deploy"
@@ -4532,6 +4565,11 @@ delta = "0.8.0 -> 0.8.1"
 who = "Erich Gubler <erichdongubler@gmail.com>"
 criteria = "safe-to-deploy"
 delta = "0.8.1 -> 0.9.0"
+
+[[audits.ron]]
+who = "Erich Gubler <erichdongubler@gmail.com>"
+criteria = "safe-to-deploy"
+delta = "0.9.0 -> 0.10.1"
 
 [[audits.rure]]
 who = "Nika Layzell <nika@thelayzells.com>"
@@ -5004,10 +5042,20 @@ who = "Teodor Tanasoaia <ttanasoaia@mozilla.com>"
 criteria = "safe-to-deploy"
 delta = "0.25.0 -> 0.26.3"
 
+[[audits.strum]]
+who = "Erich Gubler <erichdongubler@gmail.com>"
+criteria = "safe-to-deploy"
+delta = "0.26.3 -> 0.27.1"
+
 [[audits.strum_macros]]
 who = "Teodor Tanasoaia <ttanasoaia@mozilla.com>"
 criteria = "safe-to-deploy"
 delta = "0.25.3 -> 0.26.4"
+
+[[audits.strum_macros]]
+who = "Erich Gubler <erichdongubler@gmail.com>"
+criteria = "safe-to-deploy"
+delta = "0.26.4 -> 0.27.1"
 
 [[audits.subtle]]
 who = "Simon Friedberger <simon@mozilla.com>"
@@ -5967,24 +6015,17 @@ criteria = "safe-to-deploy"
 delta = "23.0.1 -> 24.0.0"
 
 [[audits.wgpu-core]]
-who = [
-    "Teodor Tanasoaia <ttanasoaia@mozilla.com>",
-    "Erich Gubler <erichdongubler@gmail.com>",
-    "Jim Blandy <jimb@red-bean.com>",
-]
-criteria = "safe-to-deploy"
-delta = "24.0.0 -> 24.0.0@git:a0dbe5ebc6fa24422fb84b2e0fea1cc94dee5109"
-importable = false
-
-[[audits.wgpu-core]]
 who = "Erich Gubler <erichdongubler@gmail.com>"
 criteria = "safe-to-deploy"
 delta = "24.0.0 -> 25.0.0"
 
 [[audits.wgpu-core]]
-who = "Erich Gubler <erichdongubler@gmail.com>"
+who = [
+    "Erich Gubler <erichdongubler@gmail.com>",
+    "Jim Blandy <jimb@red-bean.com>",
+]
 criteria = "safe-to-deploy"
-delta = "25.0.0 -> 25.0.0@git:f1c496523ff0aa10c162fd01ad606960e925a5a4"
+delta = "25.0.0 -> 25.0.0@git:35f131ff10153e48b790e1f156c864734063ce71"
 importable = false
 
 [[audits.wgpu-core-deps-apple]]
@@ -5993,9 +6034,12 @@ criteria = "safe-to-deploy"
 version = "25.0.0"
 
 [[audits.wgpu-core-deps-apple]]
-who = "Erich Gubler <erichdongubler@gmail.com>"
+who = [
+    "Erich Gubler <erichdongubler@gmail.com>",
+    "Jim Blandy <jimb@red-bean.com>",
+]
 criteria = "safe-to-deploy"
-delta = "25.0.0 -> 25.0.0@git:f1c496523ff0aa10c162fd01ad606960e925a5a4"
+delta = "25.0.0 -> 25.0.0@git:35f131ff10153e48b790e1f156c864734063ce71"
 importable = false
 
 [[audits.wgpu-core-deps-windows-linux-android]]
@@ -6004,9 +6048,12 @@ criteria = "safe-to-deploy"
 version = "25.0.0"
 
 [[audits.wgpu-core-deps-windows-linux-android]]
-who = "Erich Gubler <erichdongubler@gmail.com>"
+who = [
+    "Erich Gubler <erichdongubler@gmail.com>",
+    "Jim Blandy <jimb@red-bean.com>",
+]
 criteria = "safe-to-deploy"
-delta = "25.0.0 -> 25.0.0@git:f1c496523ff0aa10c162fd01ad606960e925a5a4"
+delta = "25.0.0 -> 25.0.0@git:35f131ff10153e48b790e1f156c864734063ce71"
 importable = false
 
 [[audits.wgpu-hal]]
@@ -6088,24 +6135,17 @@ criteria = "safe-to-deploy"
 delta = "23.0.1 -> 24.0.0"
 
 [[audits.wgpu-hal]]
-who = [
-    "Teodor Tanasoaia <ttanasoaia@mozilla.com>",
-    "Erich Gubler <erichdongubler@gmail.com>",
-    "Jim Blandy <jimb@red-bean.com>",
-]
-criteria = "safe-to-deploy"
-delta = "24.0.0 -> 24.0.0@git:a0dbe5ebc6fa24422fb84b2e0fea1cc94dee5109"
-importable = false
-
-[[audits.wgpu-hal]]
 who = "Erich Gubler <erichdongubler@gmail.com>"
 criteria = "safe-to-deploy"
 delta = "24.0.0 -> 25.0.0"
 
 [[audits.wgpu-hal]]
-who = "Erich Gubler <erichdongubler@gmail.com>"
+who = [
+    "Erich Gubler <erichdongubler@gmail.com>",
+    "Jim Blandy <jimb@red-bean.com>",
+]
 criteria = "safe-to-deploy"
-delta = "25.0.0 -> 25.0.0@git:f1c496523ff0aa10c162fd01ad606960e925a5a4"
+delta = "25.0.0 -> 25.0.0@git:35f131ff10153e48b790e1f156c864734063ce71"
 importable = false
 
 [[audits.wgpu-types]]
@@ -6182,24 +6222,17 @@ criteria = "safe-to-deploy"
 delta = "23.0.0 -> 24.0.0"
 
 [[audits.wgpu-types]]
-who = [
-    "Teodor Tanasoaia <ttanasoaia@mozilla.com>",
-    "Erich Gubler <erichdongubler@gmail.com>",
-    "Jim Blandy <jimb@red-bean.com>",
-]
-criteria = "safe-to-deploy"
-delta = "24.0.0 -> 24.0.0@git:a0dbe5ebc6fa24422fb84b2e0fea1cc94dee5109"
-importable = false
-
-[[audits.wgpu-types]]
 who = "Erich Gubler <erichdongubler@gmail.com>"
 criteria = "safe-to-deploy"
 delta = "24.0.0 -> 25.0.0"
 
 [[audits.wgpu-types]]
-who = "Erich Gubler <erichdongubler@gmail.com>"
+who = [
+    "Erich Gubler <erichdongubler@gmail.com>",
+    "Jim Blandy <jimb@red-bean.com>",
+]
 criteria = "safe-to-deploy"
-delta = "25.0.0 -> 25.0.0@git:f1c496523ff0aa10c162fd01ad606960e925a5a4"
+delta = "25.0.0 -> 25.0.0@git:35f131ff10153e48b790e1f156c864734063ce71"
 importable = false
 
 [[audits.whatsys]]
@@ -6217,6 +6250,12 @@ who = "Jan-Erik Rediger <jrediger@mozilla.com>"
 criteria = "safe-to-deploy"
 delta = "0.1.2 -> 0.3.1"
 notes = "Maintained by me. I have written or reviewed all of the code."
+
+[[audits.windows-link]]
+who = "Mark Hammond <mhammond@skippinet.com.au>"
+criteria = "safe-to-deploy"
+version = "0.1.1"
+notes = "A microsoft crate allowing unsafe calls to windows apis."
 
 [[audits.winreg]]
 who = "Ray Kraesig <rkraesig@mozilla.com>"

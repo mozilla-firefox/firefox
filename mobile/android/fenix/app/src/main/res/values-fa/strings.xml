@@ -129,6 +129,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">نوار ابزار را به چپ یا راست بکشید تا زبانه‌ها تغییر کنند</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">به چپ یا راست بکشید تا زبانه تغییر کنید. روی زبانه آخر خود به چپ بکشید تا یک زبانه جدید باز کنید.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">با کشیدن نوارابزار به چپ و راست، میان زبانه‌ها جابجا شوید.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">دسترسی به دوربین مورد نیاز است. به تنظیمات اندروید بروید، روی مجوزها ضربه بزنید و بعد روی اجازه ضربه بزنید.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -652,6 +654,12 @@
   <string name="onboarding_marketing_learn_more" tools:ignore="UnusedResources">نحوه استفاده ما از داده‌ها</string>
   <!-- Marketing onboarding page button label. Button to confirm choice and start browsing. -->
   <string name="onboarding_marketing_positive_button" tools:ignore="UnusedResources">تایید و آغاز به مرور</string>
+  <!-- Marketing onboarding page title variant. “One last thing” refers to the final step or action in the onboarding process that we’re asking users to take before they can start using the browser. -->
+  <string name="onboarding_marketing_title_1" tools:ignore="UnusedResources">نکته پایانی</string>
+  <!-- Marketing onboarding page body variant. 'Firefox' is intentionally hardcoded. -->
+  <string name="onboarding_marketing_body_1" tools:ignore="BrandUsage,UnusedResources">نحوه آشنایی خود با Firefox و اینکه از آن استفاده می‌کنید را با همکاران بازاریابی Mozilla هم‌رسانی کنید. این داده‌ها هرگز فروخته نمی‌شوند.</string>
+  <!-- Marketing onboarding page button label variant. Button to confirm choice and start browsing. -->
+  <string name="onboarding_marketing_positive_button_1" tools:ignore="UnusedResources">اعلام موافقت و آغاز مرور</string>
   <!-- Onboarding header for the toolbar selection card, used by Nimbus experiments. -->
   <string name="onboarding_customize_toolbar_title" tools:ignore="UnusedResources">انتخاب محل قرارگیری نوار ابزار</string>
   <!-- Onboarding sub header for toolbar selection card, used by Nimbus experiments. -->
@@ -667,6 +675,8 @@
   <!-- Onboarding toolbar selection card content description for the toolbar placement image. -->
   <string name="onboarding_customize_toolbar_placement_bottom_content_description">تصویر نوار ابزار پایین</string>
   <string name="onboarding_customize_toolbar_placement_top_content_description">تصویر نوار ابزار بالا</string>
+  <!-- Action label for toolbar options that can be selected. Talkback will append this to say "Double tap to select". -->
+  <string name="onboarding_customize_toolbar_a11y_action_label_select">انتخاب</string>
   <!-- Onboarding header for the theme selection card, used by Nimbus experiments. -->
   <string name="onboarding_customize_theme_title" tools:ignore="UnusedResources">انتخاب یک زمینه</string>
   <!-- Onboarding sub header for theme selection card, used by Nimbus experiments. -->
@@ -683,6 +693,14 @@
   <string name="onboarding_customize_theme_main_image_content_description">تصویر بزرگ سربرگ نمای انتخاب زمینه که ابزارهای هنرمند و سازنده را نشان می‌دهد.</string>
   <!-- Onboarding theme selection card content description for the theme selection image. %1$s is placeholder for either 'system', 'light' or 'dark'. -->
   <string name="onboarding_customize_theme_content_description">تصویر زمینه %1$s</string>
+  <!-- Action label for options that can be selected. Talkback will append this to say "Double tap to select". -->
+  <string name="onboarding_customize_theme_a11y_action_label_select">انتخاب</string>
+  <!--
+    Widget Picker
+
+    Widget description for widget picker screen
+  -->
+  <string name="widget_picket_description">شروع یک جستجوی سریع</string>
   <!--
     Search Widget
 
@@ -754,6 +772,10 @@
   <string name="preferences_add_private_browsing_shortcut">افزودن میان‌بر مرور خصوصی</string>
   <!-- Preference for enabling "HTTPS-Only" mode -->
   <string name="preferences_https_only_title">حالت فقط-Https</string>
+  <!-- Preference title for using the screen lock to hide tabs in private browsing -->
+  <string name="preferences_pbm_lock_screen_title">استفاده از قفل صفحه برای پنهان کردن زبانه‌ها در مرور خصوصی</string>
+  <!-- Informs the user how to access the tabs when "Use screen lock to hide tabs in private browsing" is enabled -->
+  <string name="preferences_pbm_lock_screen_summary">زبانه‌ها را با اثر انگشت، بازگشایی با چهره یا پین مشاهده کنید.</string>
   <!-- Label for cookie banner section in quick settings panel. -->
   <string name="cookie_banner_blocker">مسدودکننده برنمای کلوچک</string>
   <!-- Preference for removing cookie/consent banners from sites automatically in private mode. See reduce_cookie_banner_summary for additional context. -->
@@ -814,8 +836,6 @@
   <string name="preferences_override_account_server">کارساز حساب کاربری سفارشی Mozilla</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">کارساز همگام‌سازی سفارشی</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">کارساز حساب/همگام‌سازی Mozilla تغییر کرد. برای اعمال تغییرات برنامه را ببندید…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">حساب کاربری</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -850,12 +870,18 @@
   <string name="preferences_show_voice_search">نمایش جست‌وجوی صوتی</string>
   <!-- Preference title for switch preference to show search suggestions also in private mode -->
   <string name="preferences_show_search_suggestions_in_private">نمایش در جلسات خصوصی</string>
+  <!-- Preference title for switch preference to show trending search suggestions -->
+  <string name="preferences_show_trending_search_suggestions">نمایش پیشنهادهای پرطرفدار</string>
+  <!-- Preference title for switch preference to show recent search suggestions -->
+  <string name="preferences_show_recent_search_suggestions">نمایش جستجوهای اخیر</string>
   <!-- Preference title for switch preference to show a clipboard suggestion when searching -->
   <string name="preferences_show_clipboard_suggestions">نمایش پیشنهادات تخته‌گیره</string>
   <!-- Preference title for switch preference to suggest browsing history when searching -->
   <string name="preferences_search_browsing_history">جست‌وجوی تاریخچهٔ مرور</string>
   <!-- Preference title for switch preference to suggest bookmarks when searching -->
   <string name="preferences_search_bookmarks">جست‌و‌جو نشانک‌ها</string>
+  <!-- Preference title for switch preference to show shortcuts when searching -->
+  <string name="preferences_show_shortcuts">نمایش میانبرها</string>
   <!-- Preference title for switch preference to suggest synced tabs when searching -->
   <string name="preferences_search_synced_tabs">جست‌وجو در زبانه‌های همگام‌سازی شده</string>
   <!-- Preference for account settings -->
@@ -876,6 +902,12 @@
   <string name="preferences_show_nonsponsored_suggestions">پیشنهادات از %1$s</string>
   <!-- Summary for preference to show Firefox Suggest search suggestions for web content -->
   <string name="preferences_show_nonsponsored_suggestions_summary">دریافت پیشنهادات از وب مرتبط با جستجوی شما</string>
+  <!-- Preference for link sharing -->
+  <string name="preferences_link_sharing">هم‌رسانی پیوند</string>
+  <!-- Snackbar message shown when user shares a link -->
+  <string name="link_shared_snackbar_message">پیوند هم‌رسانی شد</string>
+  <!-- Snackbar action label shown when user shares a link -->
+  <string name="link_shared_snackbar_action">مدیریت تنظیمات</string>
   <!-- Preference for open links in third party apps -->
   <string name="preferences_open_links_in_apps">پیوندها را در برنامه ها باز کنید</string>
   <!-- Preference for open links in third party apps always open in apps option -->
@@ -1348,6 +1380,8 @@
   <string name="tab_tray_multiselect_share_content_description">هم‌رسانی زبانه‌های انتخاب شده</string>
   <!-- Content description for tabs tray multiselect menu -->
   <string name="tab_tray_multiselect_menu_content_description">منوی زبانه‌های انتخاب شده</string>
+  <!-- Title text displayed for a homepage tab in the tabs tray. -->
+  <string name="tab_tray_homepage_tab">صفحه اصلی</string>
   <!-- Content description (not visible, for screen readers etc.): Removes tab from collection button. Removes the selected tab from collection when pressed -->
   <string name="remove_tab_from_collection">حذف زبانه از مجموعه</string>
   <!-- Text for button to enter multiselect mode in tabs tray -->
@@ -1413,6 +1447,12 @@
   <string name="download_delete_multiple_items_snackbar_1" moz:removedIn="138" tools:ignore="UnusedResources">بارگیری‌ها حذف شدند</string>
   <!-- Text for the snackbar to confirm that a single download item has been removed. %1$s is the name of the download item. -->
   <string name="download_delete_single_item_snackbar" moz:removedIn="138" tools:ignore="UnusedResources">%1$s حذف شد</string>
+  <!-- Text for the snackbar action button to view in progress download details. -->
+  <string name="download_in_progress_snackbar_action_details" tools:ignore="UnusedResources">جزئیات</string>
+  <!-- Text for the snackbar action button to open a completed download. -->
+  <string name="download_completed_snackbar_action_open" tools:ignore="UnusedResources">باز کردن</string>
+  <!-- Text for the snackbar action button to undo deleting a download. -->
+  <string name="download_undo_delete_snackbar_action">برگردان</string>
   <!-- Text shown when no download exists -->
   <string name="download_empty_message_1" moz:removedIn="138" tools:ignore="UnusedResources">تا به حال پرونده‌ای بارگیری نشده است</string>
   <!--
@@ -1422,6 +1462,46 @@
   <string name="download_multi_select_title">%1$d انتخاب شد</string>
   <!-- Text for the button to remove a single download item -->
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">حذف</string>
+  <!-- Text for the button to delete a single downloaded file item -->
+  <string name="download_delete_item">حذف</string>
+  <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
+  <string name="download_delete_multi_select_dialog_confirm">حذف</string>
+  <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
+  <string name="download_delete_multi_select_dialog_cancel">انصراف</string>
+  <!-- Text for the header of in progress downloads -->
+  <string name="download_header_in_progress" tools:ignore="UnusedResources">در حال پیشرفت</string>
+  <!--
+    Time period headers for downloads
+
+    Text for the header that groups the downloads for today
+  -->
+  <string name="download_time_period_today">امروز</string>
+  <!-- Text for the header that groups the downloads for yesterday -->
+  <string name="download_time_period_yesterday">دیروز</string>
+  <!-- Text for the header that groups the downloads the past 7 days -->
+  <string name="download_time_period_last_7_days">۷ روز گذشته</string>
+  <!-- Text for the header that groups the downloads the past 30 days -->
+  <string name="download_time_period_last_30_days">۳۰ روز گذشته</string>
+  <!-- Text for the header that groups the downloads older than other groups -->
+  <string name="download_time_period_older">‏‏قدیمی‌تر</string>
+  <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
+  <string name="download_select_all_items">انتخاب همه</string>
+  <!--
+    Downloads Content Type Filters
+
+    Text for the filter button to show all files in the downloads list
+  -->
+  <string name="download_content_type_filter_all">همه</string>
+  <!-- Text for the filter button to show only images in the downloads list -->
+  <string name="download_content_type_filter_image">تصاویر</string>
+  <!-- Text for the filter button to show only video files in the downloads list -->
+  <string name="download_content_type_filter_video">ویدیوها</string>
+  <!--
+    Description of a downloaded item, displayed in the downloads list.
+    %1$s: The size of the downloaded file.
+    %2$s: The URL of the downloaded file.
+  -->
+  <string name="download_item_description" moz:removedIn="138" tools:ignore="UnusedResources">%1$s • %2$s</string>
   <!--
     WebCompat Reporter
 
@@ -2137,6 +2217,38 @@
     Enhanced tracking protection exception preference icon for ETP settings.
   -->
   <string name="preference_etp_exceptions_icon_description">نقشک ترجیحات استثناهای محافظت در برابر ردیابی ارتقا یافته</string>
+  <!-- Used as text for the link in `preference_doh_title`, points to documentation about "DNS over HTTPS" -->
+  <string name="preference_doh_learn_more">بیشتر بدانید</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="preference_doh_up_description">پیمایش به بالا</string>
+  <!-- Content description for the "Exceptions" button -->
+  <string name="preference_doh_exceptions_description">استثناها</string>
+  <!-- Content description for the "Info" button -->
+  <string name="preference_doh_info_description">اطلاعات</string>
+  <!-- Content description for the "Add Site" button -->
+  <string name="preference_doh_add_site_description">افزودن وبگاه</string>
+  <!-- Title displayed for "Off" option under "DNS over HTTPS" -->
+  <string name="preference_doh_off">خاموش</string>
+  <!-- Text displayed for "Default provider" under "DNS over HTTPS" providers -->
+  <string name="preference_doh_provider_default">(پیش‌فرض)</string>
+  <!-- Text displayed for "Custom" under "DNS over HTTPS" providers -->
+  <string name="preference_doh_provider_custom">سفارشی</string>
+  <!-- Error text displayed for provider textfield under "DNS over HTTPS" if the URL is invalid -->
+  <string name="preference_doh_provider_custom_dialog_error_invalid">نشانی اینترنتی معتبر نیست</string>
+  <!-- Cancel button text for provider textfield under "DNS over HTTPS" -->
+  <string name="preference_doh_provider_custom_dialog_cancel">انصراف</string>
+  <!-- Add button text for provider textfield under "DNS over HTTPS" -->
+  <string name="preference_doh_provider_custom_dialog_add">افزودن</string>
+  <!-- Preference to access list of login exceptions that we don't use DNS over HTTPS -->
+  <string name="preference_doh_exceptions">استثناها</string>
+  <!-- Text displayed that links to adding website domain for "DNS over HTTPS" exceptions. -->
+  <string name="preference_doh_exceptions_add">افزودن وبگاه</string>
+  <!-- Text displayed above the input field when adding exceptions for "DNS over HTTPS". -->
+  <string name="preference_doh_exceptions_add_site">وبگاه</string>
+  <!-- Placeholder URL displayed in the input field when adding exceptions for "DNS over HTTPS". -->
+  <string name="preference_doh_exceptions_add_placeholder">example.com</string>
+  <!-- Text displayed on the button within the input field for adding exceptions to "DNS over HTTPS" -->
+  <string name="preference_doh_exceptions_add_save">ذخیره</string>
   <!-- About page link text to open support link -->
   <string name="about_support">پشتیبانی</string>
   <!-- About page link text to list of past crashes (like about:crashes on desktop) -->
@@ -2912,6 +3024,12 @@
   <string name="download_language_file_dialog_positive_button_text_all_languages">بارگیری و ترجمه</string>
   <!-- Button text on the data saving mode warning dialog used by the translations feature to allow users to cancel the action and not perform a download of the language file. -->
   <string name="download_language_file_dialog_negative_button_text">انصراف</string>
+  <!--
+    Unified Trust Panel
+
+    Text for the protection panel header when the site is secure.
+  -->
+  <string name="protection_panel_header_secure">ایمن</string>
   <!-- Title text for the protection panel banner when the site is not secure. -->
   <string name="protection_panel_banner_not_secure_title">مواظب این وبگاه باشید</string>
   <!-- Description text for the protection panel banner when the site is not secure. -->
@@ -2936,6 +3054,16 @@
   <string name="protection_panel_etp_toggle_enabled_description">اگر چیزی در این وبگاه خراب به نظر می‌رسد، سعی کنید محافظت‌ها را خاموش کنید.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description">محافظ‌ها خاموش هستند. پیشنهاد می‌کنیم آن‌ها را دوباره فعال کنید.</string>
+  <!--
+    Text for displaying the number of trackers blocked for a specific tracker category in the trackers blocked panel.
+    %s is a placeholder for the name of the tracker category.
+    %d is a placeholder for the number of trackers blocked.
+  -->
+  <string name="trackers_blocked_panel_categorical_num_trackers_blocked">%s: %d</string>
+  <!-- Button text on the clear site data dialog to allow users to confirm they wish to clear the site data. -->
+  <string name="clear_site_data_dialog_positive_button_text">پاک کردن</string>
+  <!-- Button text on the clear site data dialog to allow users to cancel the action and not clear the site data. -->
+  <string name="clear_site_data_dialog_negative_button_text">انصراف</string>
   <!--
     Debug drawer
 

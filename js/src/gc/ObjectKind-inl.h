@@ -30,6 +30,8 @@ inline constexpr AllocKind slotsToThingKind[] = {
 
 extern const uint32_t slotsToAllocKindBytes[];
 
+static constexpr uint32_t MaxGCObjectFixedSlots = std::size(slotsToThingKind);
+
 /* Get the best kind to use when making an object with the given slot count. */
 static constexpr AllocKind GetGCObjectKind(size_t numSlots) {
   if (numSlots >= std::size(slotsToThingKind)) {

@@ -7,18 +7,14 @@ package org.mozilla.fenix.browser
 import android.app.Activity
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.content.res.AppCompatResources
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import mozilla.components.support.test.libstate.ext.waitUntilIdle
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.rule.MainCoroutineRule
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -46,9 +42,6 @@ class StandardSnackbarErrorBindingTest {
         MockKAnnotations.init(this)
         mockkObject(Snackbar)
 
-        mockkStatic(AppCompatResources::class)
-        every { AppCompatResources.getDrawable(any(), any()) } returns mockk(relaxed = true)
-
         snackbarContainer = mockk()
         snackbar = mockk(relaxed = true)
         every { Snackbar.make(any(), any()) } returns snackbar
@@ -57,11 +50,6 @@ class StandardSnackbarErrorBindingTest {
             every { findViewById<View>(android.R.id.content) } returns rootView
             every { getRootView() } returns rootView
         }
-    }
-
-    @After
-    fun teardown() {
-        unmockkStatic(AppCompatResources::class)
     }
 
     @Test

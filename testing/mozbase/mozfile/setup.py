@@ -29,6 +29,6 @@ setup(
     packages=["mozfile"],
     include_package_data=True,
     zip_safe=False,
-    install_requires=["six >= 1.13.0"],
+    install_requires=[],
     tests_require=["wptserve"],
 )

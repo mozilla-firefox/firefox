@@ -9,6 +9,8 @@ ChromeUtils.defineESModuleGetters(
   {
     NetworkHelper:
       "resource://devtools/shared/network-observer/NetworkHelper.sys.mjs",
+    NetworkTimings:
+      "resource://devtools/shared/network-observer/NetworkTimings.sys.mjs",
   },
   { global: "contextual" }
 );
@@ -99,6 +101,14 @@ function isChromeFileChannel(channel) {
   return (
     channel.originalURI.spec.startsWith("chrome://") ||
     channel.originalURI.spec.startsWith("resource://")
+  );
+}
+
+function isPrivilegedChannel(channel) {
+  return (
+    isChannelFromSystemPrincipal(channel) ||
+    isChromeFileChannel(channel) ||
+    channel.loadInfo.isInDevToolsContext
   );
 }
 
@@ -527,9 +537,7 @@ function matchRequest(channel, filters) {
     // Ignore requests from chrome or add-on code when we don't monitor the whole browser
     if (
       channel.loadInfo?.loadingDocument === null &&
-      (isChannelFromSystemPrincipal(channel) ||
-        isChromeFileChannel(channel) ||
-        channel.loadInfo.isInDevToolsContext)
+      isPrivilegedChannel(channel)
     ) {
       return false;
     }
@@ -569,6 +577,14 @@ function matchRequest(channel, filters) {
   // NetworkEventContentWatcher and NetworkEventStackTraces pass a target actor instead, from the content processes
   // Because of EFT, we can't use session context as we have to know what exact windows the target actor covers.
   if (filters.targetActor) {
+    // Ignore requests from chrome or add-on code when we don't monitor the whole browser
+    if (
+      filters.targetActor.sessionContext?.type !== "all" &&
+      isPrivilegedChannel(channel)
+    ) {
+      return false;
+    }
+
     // Bug 1769982 the target actor might be destroying and accessing windows will throw.
     // Ignore all further request when this happens.
     let windows;
@@ -711,19 +727,93 @@ function getCharset(channel) {
   return win ? win.document.characterSet : null;
 }
 
+/**
+ * Data channels are either handled in the parent process NetworkObserver for
+ * navigation requests, or in content processes for any other request.
+ *
+ * This function allows to apply the same logic to build the network event actor
+ * in both cases.
+ *
+ * @param {nsIDataChannel} channel
+ *     The data channel for which we are creating a network event actor.
+ * @param {object} networkEventActor
+ *     The network event actor owning this resource.
+ */
+function handleDataChannel(channel, networkEventActor) {
+  networkEventActor.addResponseStart({
+    channel,
+    fromCache: false,
+    // According to the fetch spec for data URLs we can just hardcode
+    // "Content-Type" header.
+    rawHeaders: "content-type: " + channel.contentType,
+  });
+
+  // For data URLs we can not set up a stream listener as for http,
+  // so we have to create a response manually and complete it.
+  const response = {
+    // TODO: Bug 1903807. Re-evaluate if it's correct to just return
+    // zero for `bodySize` and `decodedBodySize`.
+    bodySize: 0,
+    decodedBodySize: 0,
+    contentCharset: channel.contentCharset,
+    contentLength: channel.contentLength,
+    contentType: channel.contentType,
+    mimeType: lazy.NetworkHelper.addCharsetToMimeType(
+      channel.contentType,
+      channel.contentCharset
+    ),
+    transferredSize: 0,
+  };
+
+  // For data URIs all timings can be set to zero.
+  const result = lazy.NetworkTimings.getEmptyHARTimings();
+  networkEventActor.addEventTimings(
+    result.total,
+    result.timings,
+    result.offsets
+  );
+
+  const url = channel.URI.spec;
+  response.text = url.substring(url.indexOf(",") + 1);
+  if (
+    !response.mimeType ||
+    !lazy.NetworkHelper.isTextMimeType(response.mimeType)
+  ) {
+    response.encoding = "base64";
+    try {
+      response.text = btoa(response.text);
+    } catch (err) {
+      // Ignore.
+    }
+  }
+
+  // Note: `size`` is only used by DevTools, WebDriverBiDi relies on
+  // `bodySize` and `decodedBodySize`. Waiting on Bug 1903807 to decide
+  // if those fields should have non-0 values as well.
+  response.size = response.text.length;
+
+  // Security information is not relevant for data channel, but it should
+  // not be considered as insecure either. Set empty string as security
+  // state.
+  networkEventActor.addSecurityInfo({ state: "" });
+  networkEventActor.addResponseContent(response, {});
+}
+
 export const NetworkUtils = {
   causeTypeToString,
   fetchRequestHeadersAndCookies,
-  parseEarlyHintsResponseHeaders,
   fetchResponseHeadersAndCookies,
+  getBlockedReason,
   getCauseDetails,
   getChannelBrowsingContextID,
   getChannelInnerWindowId,
   getChannelPriority,
+  getCharset,
   getHttpVersion,
   getProtocol,
   getReferrerPolicy,
   getWebSocketChannel,
+  handleDataChannel,
   isChannelFromSystemPrincipal,
   isChannelPrivate,
   isFromCache,
@@ -732,7 +822,6 @@ export const NetworkUtils = {
   isRedirectedChannel,
   isThirdPartyTrackingResource,
   matchRequest,
+  parseEarlyHintsResponseHeaders,
   stringToCauseType,
-  getBlockedReason,
-  getCharset,
 };

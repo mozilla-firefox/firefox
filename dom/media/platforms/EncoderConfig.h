@@ -125,17 +125,66 @@ class EncoderConfig final {
   using CodecSpecific =
       Variant<H264Specific, OpusSpecific, VP8Specific, VP9Specific>;
 
+  struct VideoColorSpace {
+    Maybe<gfx::ColorRange> mRange;
+    Maybe<gfx::YUVColorSpace> mMatrix;
+    Maybe<gfx::ColorSpace2> mPrimaries;
+    Maybe<gfx::TransferFunction> mTransferFunction;
+
+    VideoColorSpace() = default;
+    VideoColorSpace(const gfx::ColorRange& aColorRange,
+                    const gfx::YUVColorSpace& aMatrix,
+                    const gfx::ColorSpace2& aPrimaries,
+                    const gfx::TransferFunction& aTransferFunction)
+        : mRange(Some(aColorRange)),
+          mMatrix(Some(aMatrix)),
+          mPrimaries(Some(aPrimaries)),
+          mTransferFunction(Some(aTransferFunction)) {}
+
+    bool operator==(const VideoColorSpace& aOther) const {
+      return mRange == aOther.mRange && mMatrix == aOther.mMatrix &&
+             mPrimaries == aOther.mPrimaries &&
+             mTransferFunction == aOther.mTransferFunction;
+    }
+    bool operator!=(const VideoColorSpace& aOther) const {
+      return !(*this == aOther);
+    }
+    nsCString ToString() const;
+  };
+
   struct SampleFormat {
     dom::ImageBitmapFormat mPixelFormat;
-    gfx::ColorRange mColorRange;
+    VideoColorSpace mColorSpace;
+
+    SampleFormat(const dom::ImageBitmapFormat& aPixelFormat,
+                 const VideoColorSpace& aColorSpace)
+        : mPixelFormat(aPixelFormat), mColorSpace(aColorSpace) {}
+    explicit SampleFormat(const dom::ImageBitmapFormat& aPixelFormat)
+        : mPixelFormat(aPixelFormat) {}
+    SampleFormat() = default;
+
     bool operator==(const SampleFormat& aOther) const {
       return mPixelFormat == aOther.mPixelFormat &&
-             mColorRange == aOther.mColorRange;
+             mColorSpace == aOther.mColorSpace;
     }
     bool operator!=(const SampleFormat& aOther) const {
       return !(*this == aOther);
     }
+
     nsCString ToString() const;
+
+    bool IsRGB32() const {
+      return mPixelFormat == dom::ImageBitmapFormat::BGRA32 ||
+             mPixelFormat == dom::ImageBitmapFormat::RGBA32;
+    }
+    bool IsYUV() const {
+      return mPixelFormat == dom::ImageBitmapFormat::YUV444P ||
+             mPixelFormat == dom::ImageBitmapFormat::YUV422P ||
+             mPixelFormat == dom::ImageBitmapFormat::YUV420P ||
+             mPixelFormat == dom::ImageBitmapFormat::YUV420SP_NV12 ||
+             mPixelFormat == dom::ImageBitmapFormat::YUV420SP_NV21;
+    }
+
     static Result<SampleFormat, MediaResult> FromImage(layers::Image* aImage);
   };
 

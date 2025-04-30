@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_DEBUG_MEM_H
 #define SPA_DEBUG_MEM_H
@@ -36,9 +16,17 @@ extern "C" {
  * \{
  */
 
-#include <spa/debug/log.h>
+#include <spa/debug/context.h>
 
-static inline int spa_debug_mem(int indent, const void *data, size_t size)
+#ifndef SPA_API_DEBUG_MEM
+ #ifdef SPA_API_IMPL
+  #define SPA_API_DEBUG_MEM SPA_API_IMPL
+ #else
+  #define SPA_API_DEBUG_MEM static inline
+ #endif
+#endif
+
+SPA_API_DEBUG_MEM int spa_debugc_mem(struct spa_debug_context *ctx, int indent, const void *data, size_t size)
 {
 	const uint8_t *t = (const uint8_t*)data;
 	char buffer[512];
@@ -50,12 +38,16 @@ static inline int spa_debug_mem(int indent, const void *data, size_t size)
 			pos = sprintf(buffer, "%p: ", &t[i]);
 		pos += sprintf(buffer + pos, "%02x ", t[i]);
 		if (i % 16 == 15 || i == size - 1) {
-			spa_debug("%*s" "%s", indent, "", buffer);
+			spa_debugc(ctx, "%*s" "%s", indent, "", buffer);
 		}
 	}
 	return 0;
 }
 
+SPA_API_DEBUG_MEM int spa_debug_mem(int indent, const void *data, size_t size)
+{
+	return spa_debugc_mem(NULL, indent, data, size);
+}
 /**
  * \}
  */

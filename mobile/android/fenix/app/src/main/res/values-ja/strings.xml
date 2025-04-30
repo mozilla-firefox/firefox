@@ -129,6 +129,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">ツールバーをスワイプすると、タブを切り替えられます</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">左右にスワイプするとタブが切り替わります。最後のタブを左にスワイプすると、新しいタブを開きます。</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">ツールバーを左または右にスワイプして、タブを切り替えます。</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">カメラへのアクセスが必要です。Android の設定から、権限をタップし、許可をタップしてください。</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -834,8 +836,6 @@
   <string name="preferences_override_account_server">カスタム Mozilla アカウントサーバー</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">カスタム Sync サーバー</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla アカウント/Sync サーバーが変更されました。変更を適用するためにアプリケーションを終了しています…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">アカウント</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1483,16 +1483,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">削除</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">削除</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">前のページへ戻ります</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">上へ移動します</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">URL を共有</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">ファイルを共有</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">本当に選択したアイテムを削除してもよろしいですか？</string>
+  <string name="download_delete_multi_select_dialog_confirmation">本当に選択したアイテムを削除してもよろしいですか？</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">削除</string>
+  <string name="download_delete_multi_select_dialog_confirm">削除</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">キャンセル</string>
+  <string name="download_delete_multi_select_dialog_cancel">キャンセル</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">ダウンロード中</string>
   <!--
@@ -1523,9 +1527,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">ダウンロードに失敗しました</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">ダウンロードを検索</string>
+  <string name="download_search_placeholder">ダウンロードを検索</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">検索結果はありません</string>
+  <string name="download_search_no_results_found">検索結果はありません</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">すべて選択</string>
   <!--
@@ -2278,7 +2282,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">強化型トラッキング防止の例外設定のアイコン</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3378,6 +3382,26 @@
   -->
   <string name="glean_debug_tools_title">Glean デバッグツール</string>
   <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">リージョンツール</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">テストのためホームと現在の地域値を一時的に上書きします。</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">ホームリージョン</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">現在のリージョン</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">ホームリージョンを上書きします</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">現在のリージョンを上書きします</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">ホームと現在のリージョンを上書き</string>
+  <!--
     Messages explaining how to exit fullscreen mode
 
     Message shown to explain how to exit fullscreen mode when gesture navigation is enabled.
@@ -3449,6 +3473,36 @@
   <string name="setup_checklist_title_state_incomplete">%1$s の設定を完了してください</string>
   <!-- Title for the setup checklist feature when the state is 'completed' -->
   <string name="setup_checklist_title_state_completed">おめでとうございます！</string>
+  <!--
+    ===== Setup checklist feature: Subtitles for 3 steps =====
+
+    Subtitle for a setup checklist with 3 steps initial step. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_subtitle_3_steps_initial_state">これらの 3 ステップを完了して、最適なブラウジング体験のために %1$s をセットアップしましょう。</string>
+  <!-- Subtitle for a setup checklist with 3 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_3_steps_first_step">素晴らしいスタートです！ 3 ステップ中 、1 ステップを完了しました。</string>
+  <!-- Subtitle for a setup checklist with 3 steps when two of the tasks are completed. -->
+  <string name="setup_checklist_subtitle_3_steps_second_step">もうすぐです！ 2 つのステップが完了し、残り 1 つです。</string>
+  <!-- Subtitle for a setup checklist with 3 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_subtitle_3_steps_completed_state">3 つのステップがすべて完了しました。%1$s のスピード、プライバシー、セキュリティをお楽しみください。</string>
+  <!--
+    ===== Setup checklist feature: Subtitles for 6 steps =====
+
+    Subtitle for a setup checklist with 6 steps initial state. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_subtitle_6_steps_initial_state">6 ステップすべてを完了して、最適なブラウジング体験のために %1$s をセットアップしましょう。</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_first_step">素晴らしいスタートです！ 6 ステップ中 、1 ステップを完了しました。</string>
+  <!-- Subtitle for the setup checklist when the second task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_second_step">6 ステップ中、2 ステップを完了しました。順調です！</string>
+  <!-- Subtitle for a setup checklist with 6 steps when three of the tasks are completed. -->
+  <string name="setup_checklist_subtitle_6_steps_third_step">半分まで来ました！ 3 つのステップが完了し、残りは 3 つです。</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the fourth task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_fourth_step">4 ステップが完了しました。あと 2 ステップです。</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the fifth task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_fifth_step">ゴールはすぐそこ！ あと 1 ステップです。</string>
+  <!-- Subtitle for a setup checklist with 6 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_subtitle_6_steps_completed_state">6 つのステップがすべて完了しました。%1$s のスピード、プライバシー、セキュリティをお楽しみください。</string>
   <!--
     ===== Setup checklist feature: Task titles =====
 

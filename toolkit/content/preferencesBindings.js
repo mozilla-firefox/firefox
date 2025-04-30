@@ -700,7 +700,7 @@ const Preferences = (window.Preferences = (function () {
     };
 
     get value() {
-      let prefVal = this.pref.value;
+      let prefVal = this.pref?.value;
       if (this.config.get) {
         return this.config.get(prefVal);
       }
@@ -708,7 +708,10 @@ const Preferences = (window.Preferences = (function () {
     }
 
     set value(val) {
-      this.pref.value = this.config.set ? this.config.set(val) : val;
+      let newVal = this.config.set ? this.config.set(val) : val;
+      if (this.pref) {
+        this.pref.value = newVal;
+      }
     }
 
     get visible() {

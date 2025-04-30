@@ -112,14 +112,8 @@ export class DevicePool {
       // created for the next test.
       if (!(ex instanceof TestFailedButDeviceReusable)) {
         this.holders.delete(holder);
-        if ('destroy' in holder.device) {
-          holder.device.destroy();
-          // Wait for destruction (or actual device loss if any) to complete.
-          await holder.device.lost;
-        }
-
-        // Release the (hopefully only) ref to the GPUDevice.
-        holder.releaseGPUDevice();
+        // Wait for destruction (or actual device loss if any) to complete.
+        await holder.device.lost;
 
         // Try to clean up, in case there are stray GPU resources in need of collection.
         if (ex instanceof TestOOMedShouldAttemptGC) {
@@ -142,6 +136,17 @@ export class DevicePool {
       holder.state = 'free';
     }
   }
+
+  /**
+   * Destroy the pool, moving it to the persistent 'failed' state and destroy()ing any devices
+   * in the pool, regardless of whether they're in use by a test.
+   */
+  destroy() {
+    if (this.holders instanceof DescriptorToHolderMap) {
+      this.holders.clear();
+    }
+    this.holders = 'failed';
+  }
 }
 
 /**
@@ -156,6 +161,7 @@ class DescriptorToHolderMap {
   delete(holder) {
     for (const [k, v] of this.holders) {
       if (v === holder) {
+        holder.device.destroy();
         this.holders.delete(k);
         return;
       }
@@ -215,18 +221,30 @@ class DescriptorToHolderMap {
     return value;
   }
 
-  /** Insert an entry, then remove the least-recently-used items if there are too many. */
+  /**
+   * Insert an entry, then remove and destroy() the least-recently-used devices
+   * if there are too many.
+   */
   insertAndCleanUp(key, value) {
     this.holders.set(key, value);
 
     const kMaxEntries = 5;
     if (this.holders.size > kMaxEntries) {
       // Delete the first (least recently used) item in the set.
-      for (const [key] of this.holders) {
+      for (const [key, value] of this.holders) {
+        value.device.destroy();
         this.holders.delete(key);
-        return;
+        break;
       }
     }
+  }
+
+  /** Destroy all the devices and clear the map. This destroys devices even if they're in use. */
+  clear() {
+    for (const [, value] of this.holders) {
+      value.device.destroy();
+    }
+    this.holders.clear();
   }
 }
 
@@ -261,11 +279,8 @@ desc)
   /** Canonicalized version of the requested limits: in canonical order, with only values which are
    * specified _and_ non-default. */
   const limitsCanonicalized = {};
-  // MAINTENANCE_TODO: Remove cast when @webgpu/types includes compatibilityMode
-  const adapterOptions = getDefaultRequestAdapterOptions();
-
-
-  const featureLevel = adapterOptions?.compatibilityMode ? 'compatibility' : 'core';
+  const featureLevel = getDefaultRequestAdapterOptions()?.featureLevel ?? 'core';
+  assert(featureLevel === 'compatibility' || featureLevel === 'core');
   const defaultLimits = getDefaultLimits(featureLevel);
   if (desc.requiredLimits) {
     for (const limit of kLimits) {
@@ -410,7 +425,7 @@ class DeviceHolder {
       this.device.popErrorScope()]
       );
     } catch (ex) {
-      assert(this.lostInfo !== undefined, 'popErrorScope failed; did beginTestScope get missed?');
+      assert(this.lostInfo !== undefined, 'popErrorScope failed; did the test body steal it?');
       throw ex;
     }
 
@@ -443,13 +458,5 @@ class DeviceHolder {
         `Unexpected validation error occurred: ${gpuValidationError.message}`
       );
     }
-  }
-
-  /**
-   * Release the ref to the GPUDevice. This should be the only ref held by the DevicePool or
-   * GPUTest, so in theory it can get garbage collected.
-   */
-  releaseGPUDevice() {
-    this._device = undefined;
   }
 }

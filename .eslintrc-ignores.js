@@ -82,6 +82,8 @@ module.exports = [
 
   // Ignore newtab files
   "browser/extensions/newtab/logs/",
+  // JS file using the #include pre-processor macro, leading to syntax errors.
+  "browser/extensions/newtab/webext-glue/builtin-newtab.js",
 
   // Ignore devtools debugger files which aren't intended for linting.
   "devtools/client/debugger/bin/",
@@ -126,6 +128,7 @@ module.exports = [
   "devtools/client/aboutdebugging/test/browser/resources/bad-extensions/invalid-json/manifest.json",
   "devtools/client/jsonview/test/invalid_json.json",
   "devtools/client/webconsole/test/browser/test-syntaxerror-worklet.js",
+  "devtools/server/tests/xpcshell/addons/invalid-extension-manifest-badjson/manifest.json",
 
   // devtools specific format test file
   "devtools/server/tests/xpcshell/xpcshell_debugging_script.js",

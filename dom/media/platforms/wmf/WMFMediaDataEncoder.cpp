@@ -343,7 +343,8 @@ already_AddRefed<MediaRawData> WMFMediaDataEncoder::IMFSampleToMediaData(
 
   auto frame = MakeRefPtr<MediaRawData>();
 
-  if (mConfig.mScalabilityMode != ScalabilityMode::None) {
+  if (mConfig.mCodec == CodecType::H264 &&
+      mConfig.mScalabilityMode != ScalabilityMode::None) {
     auto maybeId =
         H264::ExtractSVCTemporalId(lockBuffer.Data(), lockBuffer.Length());
     frame->mTemporalLayerId = Some(maybeId.unwrapOr(0));

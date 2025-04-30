@@ -5,13 +5,9 @@ head = "head.js"
 # to be run in CI.
 
 ["perftest_dateTimeFormat.js"]
-skip-if = ["true"]
 
 ["perftest_locale.js"]
-skip-if = ["true"]
 
 ["perftest_numberFormat.js"]
-skip-if = ["true"]
 
 ["perftest_pluralRules.js"]
-skip-if = ["true"]

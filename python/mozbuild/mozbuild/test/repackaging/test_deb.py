@@ -2,18 +2,15 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import datetime
 import json
 import logging
 import os
-import tarfile
 import tempfile
 import zipfile
 from contextlib import nullcontext as does_not_raise
 from io import StringIO
-from unittest.mock import MagicMock, Mock, call
+from unittest.mock import Mock
 
-import mozpack.path as mozpath
 import mozunit
 import pytest
 
@@ -34,366 +31,6 @@ _APPLICATION_INI_CONTENT_DATA = {
     "remoting_name": "firefox-nightly-try",
     "build_id": "20230222000000",
 }
-
-
-@pytest.mark.parametrize(
-    "number_of_application_ini_files, expectaction, expected_result",
-    (
-        (0, pytest.raises(ValueError), None),
-        (1, does_not_raise(), _APPLICATION_INI_CONTENT_DATA),
-        (2, pytest.raises(ValueError), None),
-    ),
-)
-def test_extract_application_ini_data(
-    number_of_application_ini_files, expectaction, expected_result
-):
-    with tempfile.TemporaryDirectory() as d:
-        tar_path = os.path.join(d, "input.tar")
-        with tarfile.open(tar_path, "w") as tar:
-            application_ini_path = os.path.join(d, "application.ini")
-            with open(application_ini_path, "w") as application_ini_file:
-                application_ini_file.write(_APPLICATION_INI_CONTENT)
-
-            for i in range(number_of_application_ini_files):
-                tar.add(application_ini_path, f"{i}/application.ini")
-
-        with expectaction:
-            assert deb._extract_application_ini_data(tar_path) == expected_result
-
-
-def test_extract_application_ini_data_from_directory():
-    with tempfile.TemporaryDirectory() as d:
-        with open(os.path.join(d, "application.ini"), "w") as f:
-            f.write(_APPLICATION_INI_CONTENT)
-
-        assert (
-            deb._extract_application_ini_data_from_directory(d)
-            == _APPLICATION_INI_CONTENT_DATA
-        )
-
-
-@pytest.mark.parametrize(
-    "version, build_number, package_name_suffix, description_suffix, release_product, application_ini_data, expected, raises",
-    (
-        (
-            "112.0a1",
-            1,
-            "",
-            "",
-            "firefox",
-            {
-                "name": "Firefox",
-                "display_name": "Firefox",
-                "vendor": "Mozilla",
-                "remoting_name": "firefox-nightly-try",
-                "build_id": "20230222000000",
-            },
-            {
-                "DEB_DESCRIPTION": "Mozilla Firefox",
-                "DEB_PRODUCT_NAME": "Firefox",
-                "DEB_DISPLAY_NAME": "Firefox",
-                "DEB_PKG_INSTALL_PATH": "usr/lib/firefox-nightly-try",
-                "DEB_PKG_NAME": "firefox-nightly-try",
-                "DEB_PKG_VERSION": "112.0a1~20230222000000",
-                "DEB_MANPAGE_DATE": "February 22, 2023",
-                "Icon": "firefox-nightly-try",
-            },
-            does_not_raise(),
-        ),
-        (
-            "112.0a1",
-            1,
-            "-l10n-fr",
-            " - Language pack for Firefox Nightly for fr",
-            "firefox",
-            {
-                "name": "Firefox",
-                "display_name": "Firefox",
-                "vendor": "Mozilla",
-                "remoting_name": "firefox-nightly-try",
-                "build_id": "20230222000000",
-            },
-            {
-                "DEB_DESCRIPTION": "Mozilla Firefox - Language pack for Firefox Nightly for fr",
-                "DEB_PRODUCT_NAME": "Firefox",
-                "DEB_DISPLAY_NAME": "Firefox",
-                "DEB_PKG_INSTALL_PATH": "usr/lib/firefox-nightly-try",
-                "DEB_PKG_NAME": "firefox-nightly-try-l10n-fr",
-                "DEB_PKG_VERSION": "112.0a1~20230222000000",
-                "DEB_MANPAGE_DATE": "February 22, 2023",
-                "Icon": "firefox-nightly-try-l10n-fr",
-            },
-            does_not_raise(),
-        ),
-        (
-            "112.0b1",
-            1,
-            "",
-            "",
-            "firefox",
-            {
-                "name": "Firefox",
-                "display_name": "Firefox",
-                "vendor": "Mozilla",
-                "remoting_name": "firefox-nightly-try",
-                "build_id": "20230222000000",
-            },
-            {
-                "DEB_DESCRIPTION": "Mozilla Firefox",
-                "DEB_PRODUCT_NAME": "Firefox",
-                "DEB_DISPLAY_NAME": "Firefox",
-                "DEB_PKG_INSTALL_PATH": "usr/lib/firefox-nightly-try",
-                "DEB_PKG_NAME": "firefox-nightly-try",
-                "DEB_PKG_VERSION": "112.0b1~build1",
-                "DEB_MANPAGE_DATE": "February 22, 2023",
-                "Icon": "firefox-nightly-try",
-            },
-            does_not_raise(),
-        ),
-        (
-            "112.0",
-            2,
-            "",
-            "",
-            "firefox",
-            {
-                "name": "Firefox",
-                "display_name": "Firefox",
-                "vendor": "Mozilla",
-                "remoting_name": "firefox-nightly-try",
-                "build_id": "20230222000000",
-            },
-            {
-                "DEB_DESCRIPTION": "Mozilla Firefox",
-                "DEB_PRODUCT_NAME": "Firefox",
-                "DEB_DISPLAY_NAME": "Firefox",
-                "DEB_PKG_INSTALL_PATH": "usr/lib/firefox-nightly-try",
-                "DEB_PKG_NAME": "firefox-nightly-try",
-                "DEB_PKG_VERSION": "112.0~build2",
-                "DEB_MANPAGE_DATE": "February 22, 2023",
-                "Icon": "firefox-nightly-try",
-            },
-            does_not_raise(),
-        ),
-        (
-            "120.0b9",
-            1,
-            "",
-            "",
-            "devedition",
-            {
-                "name": "Firefox",
-                "display_name": "Firefox Developer Edition",
-                "vendor": "Mozilla",
-                "remoting_name": "firefox-aurora",
-                "build_id": "20230222000000",
-            },
-            {
-                "DEB_DESCRIPTION": "Mozilla Firefox Developer Edition",
-                "DEB_PRODUCT_NAME": "Firefox",
-                "DEB_DISPLAY_NAME": "Firefox Developer Edition",
-                "DEB_PKG_INSTALL_PATH": "usr/lib/firefox-devedition",
-                "DEB_PKG_NAME": "firefox-devedition",
-                "DEB_PKG_VERSION": "120.0b9~build1",
-                "DEB_MANPAGE_DATE": "February 22, 2023",
-                "Icon": "firefox-devedition",
-            },
-            does_not_raise(),
-        ),
-        (
-            "120.0b9",
-            1,
-            "-l10n-ach",
-            " - Firefox Developer Edition Language Pack for Acholi (ach) – Acoli",
-            "devedition",
-            {
-                "name": "Firefox",
-                "display_name": "Firefox Developer Edition",
-                "vendor": "Mozilla",
-                "remoting_name": "firefox-aurora",
-                "build_id": "20230222000000",
-            },
-            {
-                "DEB_DESCRIPTION": "Mozilla Firefox Developer Edition - Firefox Developer Edition Language Pack for Acholi (ach) – Acoli",
-                "DEB_PRODUCT_NAME": "Firefox",
-                "DEB_DISPLAY_NAME": "Firefox Developer Edition",
-                "DEB_PKG_INSTALL_PATH": "usr/lib/firefox-devedition",
-                "DEB_PKG_NAME": "firefox-devedition-l10n-ach",
-                "DEB_PKG_VERSION": "120.0b9~build1",
-                "DEB_MANPAGE_DATE": "February 22, 2023",
-                "Icon": "firefox-devedition-l10n-ach",
-            },
-            does_not_raise(),
-        ),
-        (
-            "120.0b9",
-            1,
-            "-l10n-ach",
-            " - Firefox Developer Edition Language Pack for Acholi (ach) – Acoli",
-            "devedition",
-            {
-                "name": "Firefox",
-                "display_name": "Firefox Developer Edition",
-                "vendor": "Mozilla",
-                "remoting_name": "firefox-aurora",
-                "build_id": "20230222000000",
-            },
-            {
-                "DEB_DESCRIPTION": "Mozilla Firefox Developer Edition - Firefox Developer Edition Language Pack for Acholi (ach) – Acoli",
-                "DEB_PRODUCT_NAME": "Firefox",
-                "DEB_DISPLAY_NAME": "Firefox Developer Edition",
-                "DEB_PKG_INSTALL_PATH": "usr/lib/firefox-devedition",
-                "DEB_PKG_NAME": "firefox-devedition-l10n-ach",
-                "DEB_PKG_VERSION": "120.0b9~build1",
-                "DEB_MANPAGE_DATE": "February 22, 2023",
-                "Icon": "firefox-devedition-l10n-ach",
-            },
-            does_not_raise(),
-        ),
-        (
-            "120.0b9",
-            1,
-            "-l10n-ach",
-            " - Firefox Developer Edition Language Pack for Acholi (ach) – Acoli",
-            "devedition",
-            {
-                "name": "Firefox",
-                "display_name": "Firefox Developer Edition",
-                "vendor": "Mozilla",
-                "remoting_name": "firefox-aurora",
-                "build_id": "20230222000000",
-            },
-            {
-                "DEB_DESCRIPTION": "Mozilla Firefox Developer Edition - Firefox Developer Edition Language Pack for Acholi (ach) – Acoli",
-                "DEB_PRODUCT_NAME": "Firefox",
-                "DEB_DISPLAY_NAME": "Firefox Developer Edition",
-                "DEB_PKG_INSTALL_PATH": "usr/lib/firefox-aurora",
-                "DEB_PKG_NAME": "firefox-aurora-l10n-ach",
-                "DEB_PKG_VERSION": "120.0b9~build1",
-                "DEB_MANPAGE_DATE": "February 22, 2023",
-                "Icon": "firefox-aurora-l10n-ach",
-            },
-            pytest.raises(AssertionError),
-        ),
-    ),
-)
-def test_get_build_variables(
-    version,
-    build_number,
-    package_name_suffix,
-    description_suffix,
-    release_product,
-    application_ini_data,
-    expected,
-    raises,
-):
-    application_ini_data = deb._parse_application_ini_data(
-        application_ini_data,
-        version,
-        build_number,
-    )
-    with raises:
-        if not package_name_suffix:
-            depends = "${shlibs:Depends},"
-        elif release_product == "devedition":
-            depends = (
-                f"firefox-devedition (= {application_ini_data['deb_pkg_version']})"
-            )
-        else:
-            depends = f"{application_ini_data['remoting_name']} (= {application_ini_data['deb_pkg_version']})"
-
-        build_variables = deb._get_build_variables(
-            application_ini_data,
-            "x86",
-            depends=depends,
-            package_name_suffix=package_name_suffix,
-            description_suffix=description_suffix,
-            release_product=release_product,
-        )
-
-        assert build_variables == {
-            **{
-                "DEB_CHANGELOG_DATE": "Wed, 22 Feb 2023 00:00:00 -0000",
-                "DEB_ARCH_NAME": "i386",
-                "DEB_DEPENDS": depends,
-            },
-            **expected,
-        }
-
-
-def test_copy_plain_deb_config(monkeypatch):
-    def mock_listdir(dir):
-        assert dir == "/template_dir"
-        return [
-            "/template_dir/debian_file1.in",
-            "/template_dir/debian_file2.in",
-            "/template_dir/debian_file3",
-            "/template_dir/debian_file4",
-        ]
-
-    monkeypatch.setattr(deb.os, "listdir", mock_listdir)
-
-    def mock_makedirs(dir, exist_ok):
-        assert dir == "/source_dir/debian"
-        assert exist_ok is True
-
-    monkeypatch.setattr(deb.os, "makedirs", mock_makedirs)
-
-    mock_copy = MagicMock()
-    monkeypatch.setattr(deb.shutil, "copy", mock_copy)
-
-    deb._copy_plain_deb_config("/template_dir", "/source_dir")
-    assert mock_copy.call_args_list == [
-        call("/template_dir/debian_file3", "/source_dir/debian/debian_file3"),
-        call("/template_dir/debian_file4", "/source_dir/debian/debian_file4"),
-    ]
-
-
-def test_render_deb_templates():
-    with tempfile.TemporaryDirectory() as template_dir, tempfile.TemporaryDirectory() as source_dir:
-        with open(os.path.join(template_dir, "debian_file1.in"), "w") as f:
-            f.write("${some_build_variable}")
-
-        with open(os.path.join(template_dir, "debian_file2.in"), "w") as f:
-            f.write("Some hardcoded value")
-
-        with open(os.path.join(template_dir, "ignored_file.in"), "w") as f:
-            f.write("Must not be copied")
-
-        deb._render_deb_templates(
-            template_dir,
-            source_dir,
-            {"some_build_variable": "some_value"},
-            exclude_file_names=["ignored_file.in"],
-        )
-
-        with open(os.path.join(source_dir, "debian", "debian_file1")) as f:
-            assert f.read() == "some_value"
-
-        with open(os.path.join(source_dir, "debian", "debian_file2")) as f:
-            assert f.read() == "Some hardcoded value"
-
-        assert not os.path.exists(os.path.join(source_dir, "debian", "ignored_file"))
-        assert not os.path.exists(os.path.join(source_dir, "debian", "ignored_file.in"))
-
-
-def test_inject_deb_distribution_folder(monkeypatch):
-    def mock_check_call(command):
-        global clone_dir
-        clone_dir = command[-1]
-        os.makedirs(os.path.join(clone_dir, "desktop/deb/distribution"))
-
-    monkeypatch.setattr(deb.subprocess, "check_call", mock_check_call)
-
-    def mock_copytree(source_tree, destination_tree):
-        global clone_dir
-        assert source_tree == mozpath.join(clone_dir, "desktop/deb/distribution")
-        assert destination_tree == "/source_dir/firefox/distribution"
-
-    monkeypatch.setattr(deb.shutil, "copytree", mock_copytree)
-
-    deb._inject_deb_distribution_folder("/source_dir", "Firefox")
-
 
 ZH_TW_FTL = """\
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -503,62 +140,6 @@ Name[zh_TW]=zh-TW-desktop-action-open-profile-manager
 """
 
 
-def test_inject_deb_desktop_entry_file(monkeypatch):
-    source_dir = "/source_dir"
-    build_variables = {
-        "DEB_PRODUCT_NAME": "Firefox",
-        "DEB_PKG_NAME": "firefox-nightly",
-    }
-    release_product = "firefox"
-    release_type = "nightly"
-
-    desktop_entry_template_path = mozpath.join(
-        source_dir, "debian", f"{build_variables['DEB_PRODUCT_NAME'].lower()}.desktop"
-    )
-    desktop_entry_file_filename = f"{build_variables['DEB_PKG_NAME']}.desktop"
-
-    # Check if pre-supplied .desktop file is being copied to the correct location
-    def mock_move(source_path, destination_path):
-        assert source_path == desktop_entry_template_path
-        assert destination_path == f"/source_dir/debian/{desktop_entry_file_filename}"
-
-    monkeypatch.setattr(deb.shutil, "move", mock_move)
-
-    # Bypass generating the .desktop file's contents,
-    # since that is tested in test_generate_deb_desktop_entry_file_text()
-    def mock_generate_browser_desktop_entry_file_text(
-        log,
-        build_variables,
-        release_product,
-        release_type,
-        fluent_localization,
-        fluent_resource_loader,
-    ):
-        return DEVEDITION_DESKTOP_ENTRY_FILE_TEXT
-
-    monkeypatch.setattr(
-        deb,
-        "generate_browser_desktop_entry_file_text",
-        mock_generate_browser_desktop_entry_file_text,
-    )
-
-    # Check if the .desktop file exists in its final location
-    with tempfile.TemporaryDirectory() as source_dir:
-        deb._inject_deb_desktop_entry_file(
-            None,
-            source_dir,
-            build_variables,
-            release_product,
-            release_type,
-            None,
-            None,
-        )
-
-        assert os.path.exists(
-            os.path.join(source_dir, "debian", desktop_entry_file_filename)
-        )
-
-
 def test_generate_deb_desktop_entry_file_text(monkeypatch):
     def responsive(url):
         assert "zh-TW" in url
@@ -599,7 +180,7 @@ def test_generate_deb_desktop_entry_file_text(monkeypatch):
     )
 
     build_variables = {
-        "DEB_PKG_NAME": "firefox-nightly",
+        "PKG_NAME": "firefox-nightly",
         "Icon": "firefox-nightly",
     }
     release_product = "firefox"
@@ -617,7 +198,7 @@ def test_generate_deb_desktop_entry_file_text(monkeypatch):
     assert desktop_entry_file_text == NIGHTLY_DESKTOP_ENTRY_FILE_TEXT
 
     build_variables = {
-        "DEB_PKG_NAME": "firefox-devedition",
+        "PKG_NAME": "firefox-devedition",
         "Icon": "firefox-devedition",
     }
     release_product = "devedition"
@@ -683,8 +264,8 @@ def test_generate_deb_archive(
             target_dir="/target_dir",
             output_file_path="/output/target.deb",
             build_variables={
-                "DEB_PKG_NAME": "firefox",
-                "DEB_PKG_VERSION": "111.0",
+                "PKG_NAME": "firefox",
+                "PKG_VERSION": "111.0",
             },
             arch="x86_64",
         )
@@ -829,64 +410,6 @@ def test_extract_langpack_metadata():
             zip.writestr("manifest.json", json.dumps(_MANIFEST_JSON_DATA))
 
         assert deb._extract_langpack_metadata(langpack_path) == _MANIFEST_JSON_DATA
-
-
-@pytest.mark.parametrize(
-    "version, build_number, expected",
-    (
-        (
-            "112.0a1",
-            1,
-            {
-                "build_id": "20230222000000",
-                "deb_pkg_version": "112.0a1~20230222000000",
-                "display_name": "Firefox Nightly",
-                "name": "Firefox",
-                "remoting_name": "firefox-nightly-try",
-                "timestamp": datetime.datetime(2023, 2, 22, 0, 0),
-                "vendor": "Mozilla",
-            },
-        ),
-        (
-            "112.0b1",
-            1,
-            {
-                "build_id": "20230222000000",
-                "deb_pkg_version": "112.0b1~build1",
-                "display_name": "Firefox Nightly",
-                "name": "Firefox",
-                "remoting_name": "firefox-nightly-try",
-                "timestamp": datetime.datetime(2023, 2, 22, 0, 0),
-                "vendor": "Mozilla",
-            },
-        ),
-        (
-            "112.0",
-            2,
-            {
-                "build_id": "20230222000000",
-                "deb_pkg_version": "112.0~build2",
-                "display_name": "Firefox Nightly",
-                "name": "Firefox",
-                "remoting_name": "firefox-nightly-try",
-                "timestamp": datetime.datetime(2023, 2, 22, 0, 0),
-                "vendor": "Mozilla",
-            },
-        ),
-    ),
-)
-def test_load_application_ini_data(version, build_number, expected):
-    with tempfile.TemporaryDirectory() as d:
-        tar_path = os.path.join(d, "input.tar")
-        with tarfile.open(tar_path, "w") as tar:
-            application_ini_path = os.path.join(d, "application.ini")
-            with open(application_ini_path, "w") as application_ini_file:
-                application_ini_file.write(_APPLICATION_INI_CONTENT)
-            tar.add(application_ini_path)
-        application_ini_data = deb._load_application_ini_data(
-            tar_path, version, build_number
-        )
-        assert application_ini_data == expected
 
 
 if __name__ == "__main__":

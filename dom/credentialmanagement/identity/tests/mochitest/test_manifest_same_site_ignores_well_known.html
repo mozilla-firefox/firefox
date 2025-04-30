@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SameSite ignores well-known Test</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="head.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+  <script>
+    SimpleTest.waitForExplicitFinish();
+    setupTest("same_site_ignores_well_known", "https://test1.example.com").then(
+      function () {
+        return navigator.credentials.get({
+          identity: {
+            providers: [{
+              configURL: "https://test1.example.com/tests/dom/credentialmanagement/identity/tests/mochitest/server_manifest_same_site.sjs",
+              clientId: "mochitest",
+              nonce: "nonce"
+            }]
+          }
+        });
+      }
+    ).then((cred) => {
+      ok(true, "successfully got a credential");
+      is(cred.token,
+        "account_id=1234&client_id=mochitest&nonce=nonce&disclosure_text_shown=false&is_auto_selected=false",
+        "Correct token on the credential.");
+      is(cred.id,
+        "1234",
+        "Correct id on the credential");
+      is(cred.type,
+        "identity",
+        "Correct type on the credential");
+    }).catch(() => {
+      ok(false, "must not have an error");
+    }).finally(() => {
+      SimpleTest.finish();
+    })
+  </script>
+</head>
+<body>
+<p id="display"></p>
+<div id="content" style="display: none">This test makes sure that if we use an IDP that is same-site to the RP, we don't check the well-known constraints. If we checked them, this FedCM flow would not succeeed because the manifest for `https://test1.example.com` does not have the right configURL to match the argument here.</div>
+<pre id="test"></pre>
+</body>
+</html>

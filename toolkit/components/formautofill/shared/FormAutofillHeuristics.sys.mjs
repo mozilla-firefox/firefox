@@ -123,6 +123,39 @@ export const FormAutofillHeuristics = {
   },
 
   /**
+   * Return a set of additonal attributes related to a field.
+   *
+   * @param {Element} element
+   *        Form element to examine.
+   * @param {list} fieldNames
+   *        String or list of field names for the element.
+   * @returns {map}
+   *        Returns a map of extra attributes.
+   */
+  parseAdditionalAttributes(element, fieldNames) {
+    let attributes = { isLookup: false };
+    const INTERESTED_FIELDS = [
+      "street-address",
+      "address-line1",
+      "address-line2",
+      "address-line3",
+    ];
+
+    if (typeof fieldNames == "string") {
+      fieldNames = [fieldNames];
+    }
+
+    if (fieldNames?.some(fieldName => INTERESTED_FIELDS.includes(fieldName))) {
+      const regExpLookup = HeuristicsRegExp.getExtraRules("lookup");
+      if (this._matchRegexp(element, regExpLookup)) {
+        attributes.isLookup = true;
+      }
+    }
+
+    return attributes;
+  },
+
+  /**
    * This function handles the case when two adjacent fields are incorrectly
    * identified with the same field name. Currently, only given-name and
    * family-name are handled as possible errors.
@@ -378,6 +411,9 @@ export const FormAutofillHeuristics = {
     // Store the index of fields that are recognized as 'address-housenumber'
     let houseNumberFields = [];
 
+    // The number of address-related lookup fields found.
+    let lookupFieldsCount = 0;
+
     // We need to build a list of the address fields. A list of the indicies
     // is also needed as the fields with a given name can change positions
     // during the update.
@@ -400,6 +436,12 @@ export const FormAutofillHeuristics = {
       if (!INTERESTED_FIELDS.includes(detail?.fieldName)) {
         break;
       }
+
+      if (detail?.isLookup) {
+        lookupFieldsCount++;
+        continue; // Skip address lookup fields
+      }
+
       fields.push(detail);
       fieldIndicies.push(idx);
     }
@@ -477,7 +519,8 @@ export const FormAutofillHeuristics = {
     for (const idx of houseNumberFields) {
       scanner.updateFieldName(idx, "address-housenumber");
     }
-    scanner.parsingIndex += fields.length + houseNumberFields.length;
+    scanner.parsingIndex +=
+      fields.length + houseNumberFields.length + lookupFieldsCount;
     return true;
   },
 
@@ -812,6 +855,7 @@ export const FormAutofillHeuristics = {
       }
 
       const [fieldName, inferInfo] = this.inferFieldInfo(element, elements);
+      const attributes = this.parseAdditionalAttributes(element, fieldName);
 
       // For cases where the heuristic has determined the field name without
       // running Fathom, still run Fathom so we can compare the results between
@@ -836,6 +880,7 @@ export const FormAutofillHeuristics = {
           isVisible,
           mlHeaderInput: closestHeaders?.[idx] ?? null,
           mlButtonInput: closestButtons?.[idx] ?? null,
+          isLookup: attributes.isLookup,
         })
       );
     }

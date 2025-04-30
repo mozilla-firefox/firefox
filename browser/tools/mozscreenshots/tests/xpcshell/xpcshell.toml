@@ -1,5 +1,4 @@
 [DEFAULT]
-skip-if = ["os == 'android'"] # bug 1730213
 support-files = ["../../mozscreenshots/extension/TestRunner.sys.mjs"]
 
 ["test_testConfigurations.js"]

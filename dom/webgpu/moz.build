@@ -8,10 +8,11 @@ with Files("**"):
     BUG_COMPONENT = ("Core", "Graphics: WebGPU")
 
 MOCHITEST_MANIFESTS += [
-    "mochitest/mochitest-no-pref.toml",
-    "mochitest/mochitest-resistfingerprinting.toml",
-    "mochitest/mochitest.toml",
-    "mochitest/perftest.toml",
+    "tests/mochitest/mochitest-disabled.toml",
+    "tests/mochitest/mochitest-no-pref.toml",
+    "tests/mochitest/mochitest-resistfingerprinting.toml",
+    "tests/mochitest/mochitest.toml",
+    "tests/mochitest/perftest.toml",
 ]
 
 DIRS += []

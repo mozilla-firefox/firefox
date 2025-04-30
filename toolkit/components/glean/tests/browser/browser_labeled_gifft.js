@@ -30,7 +30,7 @@ add_task(async () => {
     undefined,
     Glean.testOnlyIpc.aLabeledCounter.__other__.testGetValue()
   );
-  Glean.testOnlyIpc.aLabeledCounter["1".repeat(72)].add(3);
+  Glean.testOnlyIpc.aLabeledCounter["1".repeat(112)].add(3);
   Assert.throws(
     () => Glean.testOnlyIpc.aLabeledCounter.__other__.testGetValue(),
     /DataError/,
@@ -44,7 +44,6 @@ add_task(async () => {
     {
       a_label: 1,
       another_label: 2,
-      ["1".repeat(72)]: 3,
     },
     value
   );

@@ -23,6 +23,8 @@ struct ParamTraits<mozilla::dom::IdentityProviderConfig> {
     WriteParam(aWriter, aParam.mConfigURL);
     WriteParam(aWriter, aParam.mClientId);
     WriteParam(aWriter, aParam.mNonce);
+    WriteParam(aWriter, aParam.mLoginHint);
+    WriteParam(aWriter, aParam.mDomainHint);
     WriteParam(aWriter, aParam.mOrigin);
     WriteParam(aWriter, aParam.mLoginURL);
     WriteParam(aWriter, aParam.mLoginTarget);
@@ -34,6 +36,8 @@ struct ParamTraits<mozilla::dom::IdentityProviderConfig> {
     return ReadParam(aReader, &aResult->mConfigURL) &&
            ReadParam(aReader, &aResult->mClientId) &&
            ReadParam(aReader, &aResult->mNonce) &&
+           ReadParam(aReader, &aResult->mLoginHint) &&
+           ReadParam(aReader, &aResult->mDomainHint) &&
            ReadParam(aReader, &aResult->mOrigin) &&
            ReadParam(aReader, &aResult->mLoginURL) &&
            ReadParam(aReader, &aResult->mLoginTarget) &&

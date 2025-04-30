@@ -1212,7 +1212,6 @@ export namespace schema {
             enum: string[];
         };
         SearchEngines: {
-            enterprise_only: boolean;
             type: string;
             properties: {
                 Add: {
@@ -1299,6 +1298,9 @@ export namespace schema {
         ShowHomeButton: {
             type: string;
         };
+        SkipTermsOfUse: {
+            type: string;
+        };
         SSLVersionMax: {
             type: string;
             enum: string[];
@@ -1344,9 +1346,6 @@ export namespace schema {
                     type: string;
                 };
                 SkipOnboarding: {
-                    type: string;
-                };
-                SkipTermsOfUse: {
                     type: string;
                 };
                 MoreFromMozilla: {

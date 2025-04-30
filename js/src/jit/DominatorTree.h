@@ -9,9 +9,10 @@
 
 namespace js::jit {
 
+class MIRGenerator;
 class MIRGraph;
 
-[[nodiscard]] bool BuildDominatorTree(MIRGraph& graph);
+[[nodiscard]] bool BuildDominatorTree(const MIRGenerator* mir, MIRGraph& graph);
 void ClearDominatorTree(MIRGraph& graph);
 
 }  // namespace js::jit

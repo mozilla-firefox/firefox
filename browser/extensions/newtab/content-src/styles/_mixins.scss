@@ -1,3 +1,5 @@
+@use 'sass:map';
+
 // Shared styling of article images shown as background
 @mixin image-as-background {
   background-color: var(--newtab-element-secondary-color);
@@ -58,5 +60,17 @@
 
   .darkWallpaper & {
     color-scheme: dark;
+  }
+}
+
+// Used to visualize the different breakpoints on an applied element
+// See variables.scss for $debug-breakpoints
+@mixin debug-breakpoints {
+  @each $name, $value in $debug-breakpoints {
+    $color: map.get($debug-breakpoint-colors, $name);
+
+    @media (min-width: $value) {
+      outline: 1px solid #{$color};
+    }
   }
 }

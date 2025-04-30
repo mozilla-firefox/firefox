@@ -70,6 +70,34 @@ export class DebugLine extends PureComponent {
 
       const { lineClass, markTextClass } = this.getTextClasses(why);
       const editorLocation = toEditorPosition(location);
+
+      // Show the paused "caret", to highlight on which particular line **and column** we are paused.
+      //
+      // Using only a `positionClassName` wouldn't only be applied to the immediate
+      // token after the position and force to use ::before to show the paused location.
+      // Using ::before prevents using :hover to be able to hide the icon on mouse hovering.
+      //
+      // So we have to use `createPositionElementNode`, similarly to column breakpoints
+      // to have a new dedicated DOM element for the paused location.
+      editor.setPositionContentMarker({
+        id: markerTypes.PAUSED_LOCATION_MARKER,
+
+        // Ensure displaying the marker after all the other markers and especially the column breakpoint markers
+        displayLast: true,
+
+        positions: [editorLocation],
+        createPositionElementNode(_line, _column, isFirstNonSpaceColumn) {
+          const pausedLocation = document.createElement("span");
+          pausedLocation.className = `paused-location${isFirstNonSpaceColumn ? " first-column" : ""}`;
+
+          const bar = document.createElement("span");
+          bar.className = `vertical-bar`;
+          pausedLocation.appendChild(bar);
+
+          return pausedLocation;
+        },
+      });
+
       editor.setLineContentMarker({
         id: markerTypes.DEBUG_LINE_MARKER,
         lineClassName: lineClass,
@@ -119,6 +147,7 @@ export class DebugLine extends PureComponent {
       ) {
         editor.removeLineContentMarker(markerTypes.DEBUG_LINE_MARKER);
         editor.removePositionContentMarker(markerTypes.DEBUG_POSITION_MARKER);
+        editor.removePositionContentMarker(markerTypes.PAUSED_LOCATION_MARKER);
       }
     } else {
       const { why, location } = otherProps;
@@ -147,7 +176,12 @@ export class DebugLine extends PureComponent {
       };
     }
 
-    return { markTextClass: "debug-expression", lineClass: "paused-line" };
+    // In CM6, we no longer highlight the next token via debug-expression
+    // and only highlight the line via paused-line.
+    return {
+      markTextClass: features.codemirrorNext ? null : "debug-expression",
+      lineClass: "paused-line",
+    };
   }
 
   render() {

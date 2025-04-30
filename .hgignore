@@ -144,8 +144,9 @@ _OPT\.OBJ/
 # Android Monitor in Android Studio creates a captures/ directory.
 ^captures/
 
-# Gradle cache.
+# Gradle caches.
 ^\.gradle/
+^\.kotlin/
 
 # Local Gradle configuration properties.
 ^local\.properties$

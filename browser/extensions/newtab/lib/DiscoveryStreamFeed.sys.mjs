@@ -4,6 +4,8 @@
 
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
+  ClientEnvironmentBase:
+    "resource://gre/modules/components-utils/ClientEnvironment.sys.mjs",
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   NewTabUtils: "resource://gre/modules/NewTabUtils.sys.mjs",
@@ -125,6 +127,8 @@ const PREF_INTEREST_PICKER_ENABLED =
   "discoverystream.sections.interestPicker.enabled";
 const PREF_VISIBLE_SECTIONS =
   "discoverystream.sections.interestPicker.visibleSections";
+const PREF_PRIVATE_PING_ENABLED = "telemetry.privatePing.enabled";
+const PREF_SURFACE_ID = "telemetry.surfaceId";
 
 let getHardcodedLayout;
 
@@ -389,6 +393,54 @@ export class DiscoveryStreamFeed {
         meta: {
           isStartup,
         },
+      })
+    );
+  }
+
+  async configureFollowedSections() {
+    const prefs = this.store.getState().Prefs.values;
+    const cachedData = (await this.cache.get()) || {};
+    let { sectionPersonalization } = cachedData;
+
+    // if sectionPersonalization is empty, populate it with data from the followed and blocked prefs
+    // eventually we could remove this (maybe once more of sections is added to release)
+    if (
+      sectionPersonalization &&
+      Object.keys(sectionPersonalization).length === 0
+    ) {
+      // Raw string of followed/blocked topics, ex: "entertainment, news"
+      const followedSectionsString = prefs[PREF_SECTIONS_FOLLOWING];
+      const blockedSectionsString = prefs[PREF_SECTIONS_BLOCKED];
+      // Format followed sections
+      const followedSections = followedSectionsString
+        ? followedSectionsString.split(",").map(s => s.trim())
+        : [];
+
+      // Format blocked sections
+      const blockedSections = blockedSectionsString
+        ? blockedSectionsString.split(",").map(s => s.trim())
+        : [];
+
+      const sectionTopics = new Set([...followedSections, ...blockedSections]);
+      sectionPersonalization = Array.from(sectionTopics).reduce(
+        (acc, section) => {
+          acc[section] = {
+            isFollowed: followedSections.includes(section),
+            isBlocked: blockedSections.includes(section),
+          };
+          return acc;
+        },
+        {}
+      );
+      await this.cache.set(
+        "sectionPersonalization",
+        sectionPersonalization || {}
+      );
+    }
+    this.store.dispatch(
+      ac.AlsoToMain({
+        type: at.SECTION_PERSONALIZATION_UPDATE,
+        data: sectionPersonalization || {},
       })
     );
   }
@@ -1626,7 +1678,9 @@ export class DiscoveryStreamFeed {
 
     let feed = feeds ? feeds[feedUrl] : null;
     if (this.isExpired({ cachedData, key: "feed", url: feedUrl, isStartup })) {
-      const options = this.formatComponentFeedRequest();
+      const options = this.formatComponentFeedRequest(
+        cachedData.sectionPersonalization
+      );
 
       const feedResponse = await this.fetchFromEndpoint(feedUrl, options);
 
@@ -1647,6 +1701,7 @@ export class DiscoveryStreamFeed {
             received_rank: item.receivedRank,
             recommended_at: feedResponse.recommendedAt,
             icon_src: item.iconUrl,
+            isTimeSensitive: item.isTimeSensitive,
           }));
           if (feedResponse.feeds && selectedFeedPref && !sectionsEnabled) {
             isFakespot = selectedFeedPref === "fakespot";
@@ -1673,6 +1728,7 @@ export class DiscoveryStreamFeed {
                 feedName: selectedFeedPref,
                 category: item.category,
                 icon_src: item.iconUrl,
+                isTimeSensitive: item.isTimeSensitive,
               })
             );
 
@@ -1708,9 +1764,9 @@ export class DiscoveryStreamFeed {
                     raw_image_src: item.imageUrl,
                     received_rank: item.receivedRank,
                     recommended_at: feedResponse.recommendedAt,
-                    // property to determine if rec is used in ListFeed or not
                     section: sectionKey,
                     icon_src: item.iconUrl,
+                    isTimeSensitive: item.isTimeSensitive,
                   });
                 }
                 sections.push({
@@ -1789,12 +1845,19 @@ export class DiscoveryStreamFeed {
             sections,
             interestPicker: feedResponse.interestPicker || {},
             recommendations: filteredResults,
+            surfaceId: feedResponse.surfaceId || "",
             status: "success",
           },
         };
       } else {
         console.error("No response for feed");
       }
+    }
+
+    // if surfaceID is availible either through the cache or the response set value in Glean
+    if (prefs[PREF_PRIVATE_PING_ENABLED] && feed.data.surfaceId) {
+      Glean.newtabContent.surfaceId.set(feed.data.surfaceId);
+      this.store.dispatch(ac.SetPref(PREF_SURFACE_ID, feed.data.surfaceId));
     }
 
     // If we have no feed at this point, both fetch and cache failed for some reason.
@@ -1846,7 +1909,7 @@ export class DiscoveryStreamFeed {
     }
   }
 
-  formatComponentFeedRequest() {
+  formatComponentFeedRequest(sectionPersonalization = {}) {
     const prefs = this.store.getState().Prefs.values;
     const headers = new Headers();
     if (this.isMerino) {
@@ -1864,40 +1927,30 @@ export class DiscoveryStreamFeed {
         PREF_MERINO_FEED_EXPERIMENT
       );
 
-      // Raw string of followed/blocked topics, ex: "entertainment, news"
-      const followedSectionsString = prefs[PREF_SECTIONS_FOLLOWING];
-      const blockedSectionsString = prefs[PREF_SECTIONS_BLOCKED];
-
-      // Format followed sections
-      const followedSections = followedSectionsString
-        ? followedSectionsString.split(",").map(s => s.trim())
-        : [];
-
-      // Format blocked sections
-      const blockedSections = blockedSectionsString
-        ? blockedSectionsString.split(",").map(s => s.trim())
-        : [];
-
-      // Combine followed and blocked sections and format into desired JSON shape for merino.
-      // Example:
-      // {
-      //   "sectionId": "business",
-      //   "isFollowed": true,
-      //   "isBlocked": false
-      // }
-      const sectionTopics = new Set([...followedSections, ...blockedSections]);
-      const sections = Array.from(sectionTopics).map(section => ({
-        sectionId: section,
-        isFollowed: followedSections.includes(section),
-        isBlocked: blockedSections.includes(section),
-      }));
+      // convert section to array to match what merino is expecting
+      const sections = Object.entries(sectionPersonalization).map(
+        ([sectionId, data]) => ({
+          sectionId,
+          isFollowed: data.isFollowed,
+          isBlocked: data.isBlocked,
+          ...(data.followedAt && { followedAt: data.followedAt }),
+        })
+      );
 
       // To display the inline interest picker pass `enableInterestPicker` into the request
       const interestPickerEnabled = prefs[PREF_INTEREST_PICKER_ENABLED];
 
+      const requestMetadata = {
+        utc_offset: lazy.NewTabUtils.getUtcOffset(),
+        coarse_os: lazy.NewTabUtils.normalizeOs(),
+        coarse_os_version: lazy.ClientEnvironmentBase.os.version,
+        surface_id: prefs[PREF_SURFACE_ID] || "",
+      };
+
       headers.append("content-type", "application/json");
       let body = {
         ...(prefMerinoFeedExperiment ? this.getExperimentInfo() : {}),
+        ...requestMetadata,
         locale: this.locale,
         region: this.region,
         topics,
@@ -2519,6 +2572,7 @@ export class DiscoveryStreamFeed {
         if (this.config.enabled) {
           await this.enable({ updateOpenTabs: true, isStartup: true });
         }
+        await this.configureFollowedSections();
         Services.prefs.addObserver(PREF_POCKET_BUTTON, this);
         // This function is async but just for devtools,
         // so we don't need to wait for it.
@@ -2784,6 +2838,8 @@ export class DiscoveryStreamFeed {
       case at.TOPIC_SELECTION_IMPRESSION:
         this.topicSelectionImpressionEvent();
         break;
+      case at.SECTION_PERSONALIZATION_UPDATE:
+        await this.cache.set("sectionPersonalization", action.data);
     }
   }
 }

@@ -15,10 +15,13 @@ import mozilla.components.browser.state.selector.findTabOrCustomTab
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.engine.EngineSession.LoadUrlFlags.Companion.EXTERNAL
+import mozilla.components.concept.engine.EngineSession.LoadUrlFlags.Companion.LOAD_FLAGS_BYPASS_LOAD_URI_DELEGATE
 import mozilla.components.concept.engine.request.RequestInterceptor
 import mozilla.components.feature.app.links.AppLinksUseCases.Companion.ALWAYS_DENY_SCHEMES
 import mozilla.components.feature.app.links.AppLinksUseCases.Companion.ENGINE_SUPPORTED_SCHEMES
 import mozilla.components.feature.app.links.RedirectDialogFragment.Companion.FRAGMENT_TAG
+import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.support.ktx.android.content.appName
 import mozilla.components.support.ktx.android.net.isHttpOrHttps
 import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
@@ -83,6 +86,7 @@ class AppLinksInterceptor(
     private val store: BrowserStore? = null,
     private val shouldPrompt: () -> Boolean = { true },
     private val failedToLaunchAction: (fallbackUrl: String?) -> Unit = {},
+    private val loadUrlUseCase: SessionUseCases.DefaultLoadUrlUseCase? = null,
     private val checkboxCheckedAction: () -> Unit = {},
 ) : RequestInterceptor {
     private var fragmentManager: FragmentManager? = null
@@ -167,11 +171,12 @@ class AppLinksInterceptor(
                 result is RequestInterceptor.InterceptionResponse.AppIntent
             ) {
                 handleIntent(
-                    tabSessionState,
-                    uri,
-                    redirect.appIntent,
-                    redirect.marketplaceIntent,
-                    redirect.appName,
+                    sessionState = tabSessionState,
+                    url = uri,
+                    appIntent = redirect.appIntent,
+                    fallbackUrl = redirect.fallbackUrl,
+                    marketingIntent = redirect.marketplaceIntent,
+                    appName = redirect.appName,
                 )
                 // We can avoid loading the page only if openInApp settings is set to Always
                 return if (shouldPrompt()) null else result
@@ -248,6 +253,7 @@ class AppLinksInterceptor(
         sessionState: SessionState?,
         url: String,
         appIntent: Intent?,
+        fallbackUrl: String?,
         marketingIntent: Intent?,
         appName: String,
     ) {
@@ -271,6 +277,9 @@ class AppLinksInterceptor(
         val isPrivate = sessionState?.content?.private == true
         val doNotOpenApp = {
             addUserDoNotIntercept(url, targetIntent, sessionState?.id)
+            if (sessionState != null && fallbackUrl != null) {
+                loadUrlIfSchemeSupported(sessionState, fallbackUrl)
+            }
         }
 
         val doOpenApp = {
@@ -346,6 +355,18 @@ class AppLinksInterceptor(
             showCheckbox = if (isPrivate) false else showCheckbox,
             maxSuccessiveDialogMillisLimit = MAX_SUCCESSIVE_DIALOG_MILLIS_LIMIT,
         )
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun loadUrlIfSchemeSupported(tab: SessionState, url: String) {
+        val schemeSupported = engineSupportedSchemes.contains(url.toUri().scheme)
+        if (schemeSupported) {
+            loadUrlUseCase?.invoke(
+                url = url,
+                sessionId = tab.id,
+                flags = EngineSession.LoadUrlFlags.select(EXTERNAL, LOAD_FLAGS_BYPASS_LOAD_URI_DELEGATE),
+            )
+        }
     }
 
     private fun isADialogAlreadyCreated(): Boolean {

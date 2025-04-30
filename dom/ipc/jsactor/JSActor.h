@@ -79,7 +79,7 @@ class JSActor : public nsISupports, public nsWrapperCache {
 
   virtual ~JSActor() = default;
 
-  void SetName(const nsACString& aName);
+  void Init(const nsACString& aName);
 
   bool CanSend() const { return mCanSend; }
 

@@ -907,8 +907,8 @@ export var PlacesUIUtils = {
   ) {
     if (
       aNode &&
-      lazy.PlacesUtils.nodeIsURI(aNode) &&
-      this.checkURLSecurity(aNode, aWindow)
+      this.checkURLSecurity(aNode, aWindow) &&
+      this.isURILike(aNode)
     ) {
       let isBookmark = lazy.PlacesUtils.nodeIsBookmark(aNode);
 
@@ -938,6 +938,16 @@ export var PlacesUIUtils = {
         aWindow.updateTelemetry([aNode]);
       }
     }
+  },
+
+  /**
+   * Determines whether a node contains a uri
+   *
+   * @param {nsINavHistoryResultNode | DOMElement} aNode A result node.
+   * @returns {boolean} whether the node contains a uri
+   */
+  isURILike(aNode) {
+    return lazy.PlacesUtils.nodeIsURI(aNode) || !!aNode.uri;
   },
 
   /**
@@ -1391,8 +1401,16 @@ export var PlacesUIUtils = {
 
   placesContextShowing(event) {
     let menupopup = event.target;
-    if (menupopup.id != "placesContext") {
+    if (
+      !["placesContext", "sidebar-history-context-menu"].includes(menupopup.id)
+    ) {
       // Ignore any popupshowing events from submenus
+      return;
+    }
+
+    if (menupopup.id == "sidebar-history-context-menu") {
+      PlacesUIUtils.lastContextMenuTriggerNode =
+        menupopup.triggerNode.triggerNode;
       return;
     }
 
@@ -1443,7 +1461,13 @@ export var PlacesUIUtils = {
       menupopup._view.destroyContextMenu();
     }
 
-    if (menupopup.id == "placesContext") {
+    if (
+      [
+        "sidebar-history-context-menu",
+        "placesContext",
+        "sidebar-synced-tabs-context-menu",
+      ].includes(menupopup.id)
+    ) {
       PlacesUIUtils.lastContextMenuTriggerNode = null;
       PlacesUIUtils.lastContextMenuCommand = null;
     }
@@ -1467,9 +1491,14 @@ export var PlacesUIUtils = {
       return;
     }
     let view = this.getViewForNode(triggerNode);
-    this._openNodeIn(view.selectedNode, "tab", view.ownerWindow, {
-      userContextId,
-    });
+    this._openNodeIn(
+      view?.selectedNode || triggerNode,
+      "tab",
+      view?.ownerWindow || triggerNode.ownerGlobal.top,
+      {
+        userContextId,
+      }
+    );
   },
 
   openSelectionInTabs(event) {

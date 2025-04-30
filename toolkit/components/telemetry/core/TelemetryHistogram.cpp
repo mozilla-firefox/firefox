@@ -1675,7 +1675,6 @@ void internal_ClearHistogram(const StaticMutexAutoLock& aLock, HistogramID id,
 
 // NOTE: the functions in this section:
 //
-//   internal_JSHistogram_Add
 //   internal_JSHistogram_Name
 //   internal_JSHistogram_Snapshot
 //   internal_JSHistogram_Clear
@@ -1859,42 +1858,6 @@ static JSHistogramData* GetJSHistogramData(JSObject* obj) {
       obj, HistogramObjectDataSlot);
 }
 
-bool internal_JSHistogram_Add(JSContext* cx, unsigned argc, JS::Value* vp) {
-  JS::CallArgs args = CallArgsFromVp(argc, vp);
-
-  if (!args.thisv().isObject() ||
-      JS::GetClass(&args.thisv().toObject()) != &sJSHistogramClass) {
-    JS_ReportErrorASCII(cx, "Wrong JS class, expected JSHistogram class");
-    return false;
-  }
-
-  JSObject* obj = &args.thisv().toObject();
-  JSHistogramData* data = GetJSHistogramData(obj);
-  MOZ_ASSERT(data);
-  HistogramID id = data->histogramId;
-  MOZ_ASSERT(internal_IsHistogramEnumId(id));
-  uint32_t type = gHistogramInfos[id].histogramType;
-
-  // This function should always return |undefined| and never fail but
-  // rather report failures using the console.
-  args.rval().setUndefined();
-
-  nsTArray<uint32_t> values;
-  if (!internal_JSHistogram_GetValueArray(cx, args, type, id, false, values)) {
-    // Either GetValueArray or CoerceValue utility function will have printed a
-    // meaningful error message, so we simply return true
-    return true;
-  }
-
-  {
-    StaticMutexAutoLock locker(gTelemetryHistogramMutex);
-    for (uint32_t aValue : values) {
-      internal_Accumulate(locker, id, aValue);
-    }
-  }
-  return true;
-}
-
 bool internal_JSHistogram_Name(JSContext* cx, unsigned argc, JS::Value* vp) {
   JS::CallArgs args = CallArgsFromVp(argc, vp);
 
@@ -2072,8 +2035,7 @@ nsresult internal_WrapAndReturnHistogram(HistogramID id, JSContext* cx,
 
   // The 3 functions that are wrapped up here are eventually called
   // by the same thread that runs this function.
-  if (!(JS_DefineFunction(cx, obj, "add", internal_JSHistogram_Add, 1, 0) &&
-        JS_DefineFunction(cx, obj, "name", internal_JSHistogram_Name, 1, 0) &&
+  if (!(JS_DefineFunction(cx, obj, "name", internal_JSHistogram_Name, 1, 0) &&
         JS_DefineFunction(cx, obj, "snapshot", internal_JSHistogram_Snapshot, 1,
                           0) &&
         JS_DefineFunction(cx, obj, "clear", internal_JSHistogram_Clear, 1,

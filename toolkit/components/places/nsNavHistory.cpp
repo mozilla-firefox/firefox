@@ -10,6 +10,7 @@
 #include "mozilla/DebugOnly.h"
 #include "mozilla/IntegerPrintfMacros.h"
 #include "mozilla/intl/LocaleService.h"
+#include "mozilla/StaticPrefs_places.h"
 
 #include "nsNavHistory.h"
 
@@ -1827,6 +1828,13 @@ nsNavHistory::GetIsFrecencyDecaying(bool* _out) {
 NS_IMETHODIMP
 nsNavHistory::SetIsFrecencyDecaying(bool aVal) {
   nsNavHistory::sIsFrecencyDecaying = aVal;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsNavHistory::GetIsAlternativeFrecencyEnabled(bool* _out) {
+  *_out =
+      StaticPrefs::places_frecency_pages_alternative_featureGate_AtStartup();
   return NS_OK;
 }
 

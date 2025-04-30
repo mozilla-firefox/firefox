@@ -274,7 +274,7 @@ fun FaviconListItem(
 
 /**
  * List item used to display a label and an icon at the beginning with an optional description
- * text and an optional [IconButton] or [Icon] at the end.
+ * text and an optional [IconButton], [Icon], or Composable at the end.
  *
  * @param label The label in the list item.
  * @param modifier [Modifier] to be applied to the layout.
@@ -298,6 +298,7 @@ fun FaviconListItem(
  * @param afterIconTint Tint applied to [afterIconPainter].
  * @param onAfterIconClick Called when the user clicks on the icon. An [IconButton] will be
  * displayed if this is provided. Otherwise, an [Icon] will be displayed.
+ * @param afterListAction Optional Composable for adding UI to the end of the list item.
  */
 @Composable
 fun IconListItem(
@@ -320,6 +321,7 @@ fun IconListItem(
     afterIconDescription: String? = null,
     afterIconTint: Color = FirefoxTheme.colors.iconPrimary,
     onAfterIconClick: (() -> Unit)? = null,
+    afterListAction: (@Composable RowScope.() -> Unit)? = null,
 ) {
     ListItem(
         label = label,
@@ -343,6 +345,11 @@ fun IconListItem(
             Spacer(modifier = Modifier.width(16.dp))
         },
         afterListAction = {
+            afterListAction?.let {
+                it()
+                return@ListItem
+            }
+
             if (afterIconPainter == null) {
                 return@ListItem
             }

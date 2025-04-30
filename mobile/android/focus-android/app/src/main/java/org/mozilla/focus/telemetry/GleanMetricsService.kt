@@ -121,6 +121,7 @@ class GleanMetricsService(context: Context) : MetricsService {
                 httpClient = ConceptFetchHttpUploader(
                     client = lazy(LazyThreadSafetyMode.NONE) { components.client },
                     usePrivateRequest = true,
+                    supportsOhttp = true,
                 ),
             ),
             buildInfo = GleanBuildInfo.buildInfo,

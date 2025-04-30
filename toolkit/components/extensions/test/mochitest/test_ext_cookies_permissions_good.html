@@ -17,9 +17,9 @@ add_task(async function init() {
   // We need to trigger a cookie eviction in order to test our batch delete
   // observer.
 
-  // Set quotaPerHost to maxPerHost - 1, so there is only one cookie
+  // Set quotaPerHost to maxPerHost, so there is only one cookie
   // will be evicted everytime.
-  SpecialPowers.setIntPref("network.cookie.quotaPerHost", 2);
+  SpecialPowers.setIntPref("network.cookie.quotaPerHost", 3);
   SpecialPowers.setIntPref("network.cookie.maxPerHost", 3);
   SimpleTest.registerCleanupFunction(() => {
     SpecialPowers.clearUserPref("network.cookie.quotaPerHost");

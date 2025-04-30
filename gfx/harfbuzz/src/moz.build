@@ -29,6 +29,7 @@ EXPORTS.harfbuzz += [
     'hb-ot-var.h',
     'hb-ot.h',
     'hb-paint.h',
+    'hb-script-list.h',
     'hb-set.h',
     'hb-shape-plan.h',
     'hb-shape.h',
@@ -39,6 +40,7 @@ EXPORTS.harfbuzz += [
 ]
 
 UNIFIED_SOURCES += [
+    'graph/gsubgpos-context.cc',
     'hb-aat-layout.cc',
     'hb-aat-map.cc',
     'hb-blob.cc',
@@ -91,6 +93,17 @@ UNIFIED_SOURCES += [
     'hb-shaper.cc',
     'hb-static.cc',
     'hb-style.cc',
+    'hb-subset-cff-common.cc',
+    'hb-subset-cff1.cc',
+    'hb-subset-cff2.cc',
+    'hb-subset-input.cc',
+    'hb-subset-instancer-iup.cc',
+    'hb-subset-instancer-solver.cc',
+    'hb-subset-plan-layout.cc',
+    'hb-subset-plan-var.cc',
+    'hb-subset-plan.cc',
+    'hb-subset-serialize.cc',
+    'hb-subset.cc',
     'hb-unicode.cc',
 ]
 

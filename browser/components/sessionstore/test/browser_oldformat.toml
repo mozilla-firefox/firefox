@@ -204,6 +204,7 @@ https_first_disabled = true
 ["browser_590268.js"]
 
 ["browser_590563.js"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64'"]
 
 ["browser_595601-restore_hidden.js"]
 

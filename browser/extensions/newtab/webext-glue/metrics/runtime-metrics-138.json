@@ -1,0 +1,45 @@
+{
+  "metrics": {
+    "newtab": {
+      "wallpaper_click": {
+        "type": "text",
+        "description": "Number of clicks",
+        "lifetime": "ping",
+        "pings": ["newtab"],
+        "disabled": false
+      },
+      "load_time": {
+        "type": "event",
+        "description": "Time taken to load and render",
+        "lifetime": "ping",
+        "pings": ["spoc-1"],
+        "disabled": false,
+        "extraArgs": {
+          "allowed_extra_keys": ["is_page_followed", "newtab_visit_id"]
+        }
+      }
+    }
+  },
+  "pings": {
+    "messaging-system": {
+      "includeClientId": false,
+      "sendIfEmpty": false,
+      "preciseTimestamps": true,
+      "includeInfoSections": true,
+      "enabled": true,
+      "schedulesPings": [],
+      "reasonCodes": [],
+      "followsCollectionEnabled": true
+    },
+    "spoc-1": {
+      "includeClientId": false,
+      "sendIfEmpty": false,
+      "preciseTimestamps": true,
+      "includeInfoSections": true,
+      "enabled": true,
+      "schedulesPings": [],
+      "reasonCodes": ["click", "impression", "save"],
+      "followsCollectionEnabled": true
+    }
+  }
+}

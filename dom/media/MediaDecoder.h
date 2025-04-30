@@ -39,7 +39,6 @@ namespace mozilla {
 
 class AbstractThread;
 class DOMMediaStream;
-class DecoderBenchmark;
 class ProcessedMediaTrack;
 class FrameStatistics;
 class VideoFrameContainer;
@@ -562,8 +561,6 @@ class MediaDecoder : public DecoderDoctorLifeLogger<MediaDecoder> {
   void OnSecondaryVideoContainerInstalled(
       const RefPtr<VideoFrameContainer>& aSecondaryVideoContainer);
 
-  void OnStoreDecoderBenchmark(const VideoInfo& aInfo);
-
   void FinishShutdown();
 
   void ConnectMirrors(MediaDecoderStateMachineBase* aObject);
@@ -606,9 +603,6 @@ class MediaDecoder : public DecoderDoctorLifeLogger<MediaDecoder> {
 
   // Counters related to decode and presentation of frames.
   const RefPtr<FrameStatistics> mFrameStats;
-
-  // Store a benchmark of the decoder based on FrameStatistics.
-  RefPtr<DecoderBenchmark> mDecoderBenchmark;
 
   RefPtr<VideoFrameContainer> mVideoFrameContainer;
 
@@ -674,7 +668,6 @@ class MediaDecoder : public DecoderDoctorLifeLogger<MediaDecoder> {
   MediaEventListener mOnNextFrameStatus;
   MediaEventListener mOnTrackInfoUpdated;
   MediaEventListener mOnSecondaryVideoContainerInstalled;
-  MediaEventListener mOnStoreDecoderBenchmark;
 
   // True if we have suspended video decoding.
   bool mIsVideoDecodingSuspended = false;

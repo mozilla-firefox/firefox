@@ -52,15 +52,19 @@ class PointerInfo final {
   bool mPrimaryState;
   bool mFromTouchEvent;
   bool mPreventMouseEventByContent;
+  // Set to true if the pointer is activated only by synthesized mouse events.
+  bool mIsSynthesizedForTests;
   WeakPtr<dom::Document> mActiveDocument;
   explicit PointerInfo(bool aActiveState, uint16_t aPointerType,
                        bool aPrimaryState, bool aFromTouchEvent,
-                       dom::Document* aActiveDocument)
+                       dom::Document* aActiveDocument,
+                       bool aIsSynthesizedForTests = false)
       : mPointerType(aPointerType),
         mActiveState(aActiveState),
         mPrimaryState(aPrimaryState),
         mFromTouchEvent(aFromTouchEvent),
         mPreventMouseEventByContent(false),
+        mIsSynthesizedForTests(aIsSynthesizedForTests),
         mActiveDocument(aActiveDocument) {}
 };
 
@@ -103,6 +107,8 @@ class PointerEventHandler final {
 
   // Return the PointerInfo if the pointer with aPointerId is situated in device
   // , nullptr otherwise.
+  // Note that the result may be activated only by synthesized events for test.
+  // If you don't want it, check PointerInfo::mIsSynthesizedForTests.
   static const PointerInfo* GetPointerInfo(uint32_t aPointerId);
 
   // CheckPointerCaptureState checks cases, when got/lostpointercapture events

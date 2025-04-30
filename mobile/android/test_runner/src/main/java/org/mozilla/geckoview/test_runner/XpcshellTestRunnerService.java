@@ -81,6 +81,7 @@ public class XpcshellTestRunnerService extends Service {
                 new ContentBlocking.Settings.Builder()
                     .safeBrowsingProviders(google, googleLegacy)
                     .build())
+            .lowMemoryDetection(false) // Avoid unpredictability in tests
             .build();
 
     sRuntime = GeckoRuntime.create(this, runtimeSettings);

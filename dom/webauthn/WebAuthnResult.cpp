@@ -101,8 +101,8 @@ WebAuthnRegisterResult::GetLargeBlobSupported(bool* aLargeBlobSupported) {
 
 NS_IMETHODIMP
 WebAuthnRegisterResult::GetPrfEnabled(bool* aPrfEnabled) {
-  if (mPrf.isSome()) {
-    *aPrfEnabled = mPrf.ref();
+  if (mPrfSupported.isSome()) {
+    *aPrfEnabled = mPrfSupported.ref();
     return NS_OK;
   }
   return NS_ERROR_NOT_AVAILABLE;
@@ -111,12 +111,20 @@ WebAuthnRegisterResult::GetPrfEnabled(bool* aPrfEnabled) {
 NS_IMETHODIMP
 WebAuthnRegisterResult::GetPrfResultsFirst(
     nsTArray<uint8_t>& aPrfResultsFirst) {
+  if (mPrfFirst.isSome()) {
+    aPrfResultsFirst.Assign(mPrfFirst.ref());
+    return NS_OK;
+  }
   return NS_ERROR_NOT_AVAILABLE;
 }
 
 NS_IMETHODIMP
 WebAuthnRegisterResult::GetPrfResultsSecond(
     nsTArray<uint8_t>& aPrfResultsSecond) {
+  if (mPrfSecond.isSome()) {
+    aPrfResultsSecond.Assign(mPrfSecond.ref());
+    return NS_OK;
+  }
   return NS_ERROR_NOT_AVAILABLE;
 }
 

@@ -2567,6 +2567,101 @@ def repackage_deb_l10n(
     )
 
 
+@SubCommand(
+    "repackage",
+    "rpm",
+    description="Repackage a tar file into a .rpm for Linux",
+    virtualenv_name="repackage-desktop-file",
+)
+@CommandArgument(
+    "--input", "-i", type=str, required=True, help="Input tarfile filename"
+)
+@CommandArgument(
+    "--input-xpi-dir",
+    "-x",
+    type=str,
+    required=True,
+    help="Directory which contains the .xpi langpacks",
+)
+@CommandArgument(
+    "--output",
+    "-o",
+    type=str,
+    required=True,
+    help="Output directory for the .rpm files",
+)
+@CommandArgument("--arch", type=str, required=True, help="One of ['x86', 'x86_64']")
+@CommandArgument(
+    "--version",
+    type=str,
+    required=True,
+    help="The Firefox version used to create the installer",
+)
+@CommandArgument(
+    "--build-number",
+    type=str,
+    required=True,
+    help="The release's build number",
+)
+@CommandArgument(
+    "--templates",
+    type=str,
+    required=True,
+    help="Location of the templates used to generate the rpm/ directory files",
+)
+@CommandArgument(
+    "--release-product",
+    type=str,
+    required=True,
+    help="The product being shipped. Used to disambiguate beta/devedition etc.",
+)
+@CommandArgument(
+    "--release-type",
+    type=str,
+    required=True,
+    help="The release being shipped. Used to disambiguate nightly/try etc.",
+)
+def repackage_rpm(
+    command_context,
+    input,
+    input_xpi_dir,
+    output,
+    arch,
+    version,
+    build_number,
+    templates,
+    release_product,
+    release_type,
+):
+    if not os.path.exists(input):
+        print("Input file does not exist: %s" % input)
+        return 1
+
+    template_dir = os.path.join(
+        command_context.topsrcdir,
+        templates,
+    )
+
+    from fluent.runtime.fallback import FluentLocalization, FluentResourceLoader
+
+    from mozbuild.repackaging.rpm import repackage_rpm
+
+    repackage_rpm(
+        command_context.log,
+        input,
+        input_xpi_dir,
+        output,
+        template_dir,
+        arch,
+        version,
+        build_number,
+        release_product,
+        release_type,
+        FluentLocalization,
+        FluentResourceLoader,
+    )
+
+
 @SubCommand("repackage", "dmg", description="Repackage a tar file into a .dmg for OSX")
 @CommandArgument("--input", "-i", type=str, required=True, help="Input filename")
 @CommandArgument("--output", "-o", type=str, required=True, help="Output filename")
@@ -3343,7 +3438,7 @@ def repackage_desktop_file(
         # debian repackage code that serves the same purpose on Flatpak, so
         # it is just directly re-used here.
         build_variables = {
-            "DEB_PKG_NAME": release_product,
+            "PKG_NAME": release_product,
             "DBusActivatable": "false",
             "Icon": "org.mozilla.firefox",
             "StartupWMClass": release_product,

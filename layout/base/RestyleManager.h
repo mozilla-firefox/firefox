@@ -432,8 +432,11 @@ class RestyleManager {
   //
   // This is normally performed automatically by ProcessPendingRestyles
   // but it is also called when we have out-of-band changes to animations
-  // such as changes made through the Web Animations API.
-  void IncrementAnimationGeneration();
+  // such as changes made through the Web Animations API or cascading result
+  // changes by modifying classes, etc.
+  void IncrementAnimationGeneration() {
+    ++mAnimationGeneration;
+  }
 
   // Apply change hints for animations on the compositor.
   //

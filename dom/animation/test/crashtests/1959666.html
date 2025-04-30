@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<style>
+@keyframes anim {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+#target {
+  background-color: blue;
+  animation: anim 2s infinite;
+}
+#target:hover {
+  opacity: 1 !important;
+}
+</style>
+<div id="target">target</div>
+<script>
+  addEventListener("load", () => {
+    setTimeout(() => {
+      SpecialPowers.wrap(window).InspectorUtils.addPseudoClassLock(document.querySelector("#target"), ":hover", true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document.documentElement.classList.remove("reftest-wait");
+        });
+      });
+    }, 500);
+  });
+</script>
+</html>

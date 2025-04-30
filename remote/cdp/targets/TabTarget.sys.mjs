@@ -2,8 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
-
 import { Target } from "chrome://remote/content/cdp/targets/Target.sys.mjs";
 
 const lazy = {};
@@ -13,13 +11,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   TabManager: "chrome://remote/content/shared/TabManager.sys.mjs",
   TabSession: "chrome://remote/content/cdp/sessions/TabSession.sys.mjs",
 });
-
-XPCOMUtils.defineLazyServiceGetter(
-  lazy,
-  "Favicons",
-  "@mozilla.org/browser/favicon-service;1",
-  "nsIFaviconService"
-);
 
 /**
  * Target for a local tab or a remoted frame.
@@ -90,19 +81,6 @@ export class TabTarget extends Target {
 
   get frontendURL() {
     return null;
-  }
-
-  /** @returns {Promise<string|null>} */
-  get faviconUrl() {
-    return new Promise(resolve => {
-      lazy.Favicons.getFaviconURLForPage(this.browser.currentURI, url => {
-        if (url) {
-          resolve(url.spec);
-        } else {
-          resolve(null);
-        }
-      });
-    });
   }
 
   get title() {

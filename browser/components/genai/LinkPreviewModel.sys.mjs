@@ -16,7 +16,7 @@ const DEFAULT_INPUT_SENTENCES = 6;
 const MIN_SENTENCE_LENGTH = 14;
 const MIN_WORD_COUNT = 5;
 const DEFAULT_INPUT_PROMPT =
-  "Provide a concise, objective summary of the input text in up to three sentences, focusing on key actions and intentions without using second or third person pronouns.";
+  "You're an AI assistant for text re-writing and summarization. Rewrite the input text focusing on the main key point in at most three very short sentences.";
 
 // All tokens taken from the model's vocabulary at https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct/raw/main/vocab.json
 // Token id for end of text
@@ -528,7 +528,10 @@ export class SentencePostProcessor {
       // If the sentence contains a block word, abort
       if (
         this.blockListManager &&
-        this.blockListManager.matchAtWordBoundary({ text: sentence })
+        this.blockListManager.matchAtWordBoundary({
+          // Blocklist is always lowercase
+          text: sentence.toLowerCase(),
+        })
       ) {
         sentence = "";
         abort = true;

@@ -86,7 +86,84 @@ void celt_float2int16_neon(const float * OPUS_RESTRICT in, short * OPUS_RESTRICT
       out[i] = FLOAT2INT16(in[i]);
    }
 }
+
+int opus_limit2_checkwithin1_neon(float *samples, int cnt)
+{
+   const float hardclipMin = -2.0f;
+   const float hardclipMax = 2.0f;
+
+   int i = 0;
+   int exceeding1 = 0;
+   int nextIndex = 0;
+
+#if defined(__ARM_NEON)
+   const int BLOCK_SIZE = 16;
+   const int blockedSize = cnt / BLOCK_SIZE * BLOCK_SIZE;
+
+   float32x4_t min_all_0 = vdupq_n_f32(0.0f);
+   float32x4_t min_all_1 = vdupq_n_f32(0.0f);
+   float32x4_t max_all_0 = vdupq_n_f32(0.0f);
+   float32x4_t max_all_1 = vdupq_n_f32(0.0f);
+
+   float max, min;
+
+   for (i = 0; i < blockedSize; i += BLOCK_SIZE)
+   {
+      const float32x4_t orig_a = vld1q_f32(&samples[i +  0]);
+      const float32x4_t orig_b = vld1q_f32(&samples[i +  4]);
+      const float32x4_t orig_c = vld1q_f32(&samples[i +  8]);
+      const float32x4_t orig_d = vld1q_f32(&samples[i + 12]);
+      max_all_0 = vmaxq_f32(max_all_0, vmaxq_f32(orig_a, orig_b));
+      max_all_1 = vmaxq_f32(max_all_1, vmaxq_f32(orig_c, orig_d));
+      min_all_0 = vminq_f32(min_all_0, vminq_f32(orig_a, orig_b));
+      min_all_1 = vminq_f32(min_all_1, vminq_f32(orig_c, orig_d));
+   }
+
+   max = vmaxvf(vmaxq_f32(max_all_0, max_all_1));
+   min = vminvf(vminq_f32(min_all_0, min_all_1));
+
+   if (min < hardclipMin || max > hardclipMax)
+   {
+      const float32x4_t hardclipMinReg = vdupq_n_f32(hardclipMin);
+      const float32x4_t hardclipMaxReg = vdupq_n_f32(hardclipMax);
+      for (i = 0; i < blockedSize; i += BLOCK_SIZE)
+      {
+         const float32x4_t orig_a = vld1q_f32(&samples[i +  0]);
+         const float32x4_t orig_b = vld1q_f32(&samples[i +  4]);
+         const float32x4_t orig_c = vld1q_f32(&samples[i +  8]);
+         const float32x4_t orig_d = vld1q_f32(&samples[i + 12]);
+         const float32x4_t clipped_a = vminq_f32(hardclipMaxReg, vmaxq_f32(orig_a, hardclipMinReg));
+         const float32x4_t clipped_b = vminq_f32(hardclipMaxReg, vmaxq_f32(orig_b, hardclipMinReg));
+         const float32x4_t clipped_c = vminq_f32(hardclipMaxReg, vmaxq_f32(orig_c, hardclipMinReg));
+         const float32x4_t clipped_d = vminq_f32(hardclipMaxReg, vmaxq_f32(orig_d, hardclipMinReg));
+         vst1q_f32(&samples[i + 0], clipped_a);
+         vst1q_f32(&samples[i + 4], clipped_b);
+         vst1q_f32(&samples[i + 8], clipped_c);
+         vst1q_f32(&samples[i + 12], clipped_d);
+      }
+   }
+
+   nextIndex = blockedSize;
+   exceeding1 |= max > 1.0f || min < -1.0f;
+
 #endif
+
+   for (i = nextIndex; i < cnt; i++)
+   {
+      const float origVal = samples[i];
+      float clippedVal = origVal;
+      clippedVal = MAX16(hardclipMin, clippedVal);
+      clippedVal = MIN16(hardclipMax, clippedVal);
+      samples[i] = clippedVal;
+
+      exceeding1 |= origVal > 1.0f || origVal < -1.0f;
+   }
+
+   return !exceeding1;
+}
+
+#endif
+
 
 #if defined(FIXED_POINT)
 #include <string.h>

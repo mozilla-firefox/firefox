@@ -154,14 +154,20 @@ async function checkFormChangeHappened(formId) {
         0
       );
 
-      const fieldDetectedAfterFieldMutations =
+      const fieldDetectedAfterRemovingField =
         getFieldDetectionCompletedPromiseResolver();
 
       // This is for checking the changes of element removed and added then.
       removeInputField(browser, `#${formId} input[name=address-level2]`);
+
+      await fieldDetectedAfterRemovingField;
+
+      const fieldDetectedAfterAddingField =
+        getFieldDetectionCompletedPromiseResolver();
+
       addInputField(browser, formId, "address-level2");
 
-      await fieldDetectedAfterFieldMutations;
+      await fieldDetectedAfterAddingField;
 
       await openPopupOn(browser, `#${formId} input[name=address-level2]`);
 

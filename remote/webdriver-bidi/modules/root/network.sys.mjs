@@ -1980,8 +1980,8 @@ class NetworkModule extends RootBiDiModule {
     }
   }
 
-  _sendEventsForCachedResource(params) {
-    this.#onBeforeRequestSent("beforerequest-sent", params);
+  _sendEventsForWindowGlobalNetworkResource(params) {
+    this.#onBeforeRequestSent("before-request-sent", params);
     this.#onResponseEvent("response-started", params);
     this.#onResponseEvent("response-completed", params);
   }

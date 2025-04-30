@@ -13,3 +13,4 @@ prefs = [
 ]
 
 ["../browser_devices_get_user_media_grace.js"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug"] # Bug 1961543

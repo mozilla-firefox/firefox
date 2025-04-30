@@ -2,7 +2,9 @@ use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::{punctuated::Punctuated, Data, DeriveInput, Fields, LitStr, Token};
 
-use crate::helpers::{non_enum_error, HasStrumVariantProperties, HasTypeProperties};
+use crate::helpers::{
+    non_enum_error, non_single_field_variant_error, HasStrumVariantProperties, HasTypeProperties,
+};
 
 pub fn display_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
     let name = &ast.ident;
@@ -23,6 +25,16 @@ pub fn display_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
             continue;
         }
 
+        if let Some(..) = variant_properties.transparent {
+            let arm = super::extract_single_field_variant_and_then(name, variant, |tok| {
+                quote! { ::core::fmt::Display::fmt(#tok, f) }
+            })
+            .map_err(|_| non_single_field_variant_error("transparent"))?;
+
+            arms.push(arm);
+            continue;
+        }
+
         // Look at all the serialize attributes.
         let output = variant_properties
             .get_preferred_name(type_properties.case_style, type_properties.prefix.as_ref());
@@ -37,7 +49,8 @@ pub fn display_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
                     .enumerate()
                     .map(|(index, field)| {
                         assert!(field.ident.is_none());
-                        let ident = syn::parse_str::<Ident>(format!("field{}", index).as_str()).unwrap();
+                        let ident =
+                            syn::parse_str::<Ident>(format!("field{}", index).as_str()).unwrap();
                         quote! { ref #ident }
                     })
                     .collect();
@@ -59,86 +72,87 @@ pub fn display_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         };
 
         if variant_properties.to_string.is_none() && variant_properties.default.is_some() {
-            match &variant.fields {
-                Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
-                    arms.push(quote! { #name::#ident(ref s) => ::core::fmt::Display::fmt(s, f) });
-                }
-                _ => {
-                    return Err(syn::Error::new_spanned(
-                        variant,
-                        "Default only works on newtype structs with a single String field",
-                    ))
-                }
-            }
-        } else {
-            let arm = match variant.fields {
-                Fields::Named(ref field_names) => {
-                    let used_vars = capture_format_string_idents(&output)?;
-                    if used_vars.is_empty() {
-                        quote! { #name::#ident #params => ::core::fmt::Display::fmt(#output, f) }
-                    } else {
-                        // Create args like 'name = name, age = age' for format macro
-                        let args: Punctuated<_, Token!(,)> = field_names
-                            .named
-                            .iter()
-                            .filter_map(|field| {
-                                let ident = field.ident.as_ref().unwrap();
-                                // Only contain variables that are used in format string
-                                if !used_vars.contains(ident) {
-                                    None
-                                } else {
-                                    Some(quote! { #ident = #ident })
-                                }
-                            })
-                            .collect();
-
-                        quote! {
-                            #[allow(unused_variables)]
-                            #name::#ident #params => ::core::fmt::Display::fmt(&format!(#output, #args), f)
-                        }
-                    }
-                },
-                Fields::Unnamed(ref unnamed_fields) => {
-                    let used_vars = capture_format_strings(&output)?;
-                    if used_vars.iter().any(String::is_empty) {
-                        return Err(syn::Error::new_spanned(
-                            &output,
-                            "Empty {} is not allowed; Use manual numbering ({0})",
-                        ))
-                    }
-                    if used_vars.is_empty() {
-                        quote! { #name::#ident #params => ::core::fmt::Display::fmt(#output, f) }
-                    } else {
-                        let args: Punctuated<_, Token!(,)> = unnamed_fields
-                            .unnamed
-                            .iter()
-                            .enumerate()
-                            .map(|(index, field)| {
-                                assert!(field.ident.is_none());
-                                syn::parse_str::<Ident>(format!("field{}", index).as_str()).unwrap()
-                            })
-                            .collect();
-                        quote! {
-                            #[allow(unused_variables)]
-                            #name::#ident #params => ::core::fmt::Display::fmt(&format!(#output, #args), f)
-                        }
-                    }
-                }
-                Fields::Unit => {
-                    let used_vars = capture_format_strings(&output)?;
-                    if !used_vars.is_empty() {
-                        return Err(syn::Error::new_spanned(
-                            &output,
-                            "Unit variants do not support interpolation",
-                        ));
-                    }
-
-                    quote! { #name::#ident #params => ::core::fmt::Display::fmt(#output, f) }
-                }
-            };
+            let arm = super::extract_single_field_variant_and_then(name, variant, |tok| {
+                quote! { ::core::fmt::Display::fmt(#tok, f)}
+            })
+            .map_err(|_| {
+                syn::Error::new_spanned(
+                    variant,
+                    "Default only works on newtype structs with a single String field",
+                )
+            })?;
 
             arms.push(arm);
+            continue;
         }
+
+        let arm = match variant.fields {
+            Fields::Named(ref field_names) => {
+                let used_vars = capture_format_string_idents(&output)?;
+                if used_vars.is_empty() {
+                    quote! { #name::#ident #params => ::core::fmt::Display::fmt(#output, f) }
+                } else {
+                    // Create args like 'name = name, age = age' for format macro
+                    let args: Punctuated<_, Token!(,)> = field_names
+                        .named
+                        .iter()
+                        .filter_map(|field| {
+                            let ident = field.ident.as_ref().unwrap();
+                            // Only contain variables that are used in format string
+                            if !used_vars.contains(ident) {
+                                None
+                            } else {
+                                Some(quote! { #ident = #ident })
+                            }
+                        })
+                        .collect();
+
+                    quote! {
+                        #[allow(unused_variables)]
+                        #name::#ident #params => ::core::fmt::Display::fmt(&format_args!(#output, #args), f)
+                    }
+                }
+            }
+            Fields::Unnamed(ref unnamed_fields) => {
+                let used_vars = capture_format_strings(&output)?;
+                if used_vars.iter().any(String::is_empty) {
+                    return Err(syn::Error::new_spanned(
+                        &output,
+                        "Empty {} is not allowed; Use manual numbering ({0})",
+                    ));
+                }
+                if used_vars.is_empty() {
+                    quote! { #name::#ident #params => ::core::fmt::Display::fmt(#output, f) }
+                } else {
+                    let args: Punctuated<_, Token!(,)> = unnamed_fields
+                        .unnamed
+                        .iter()
+                        .enumerate()
+                        .map(|(index, field)| {
+                            assert!(field.ident.is_none());
+                            syn::parse_str::<Ident>(format!("field{}", index).as_str()).unwrap()
+                        })
+                        .collect();
+                    quote! {
+                        #[allow(unused_variables)]
+                        #name::#ident #params => ::core::fmt::Display::fmt(&format!(#output, #args), f)
+                    }
+                }
+            }
+            Fields::Unit => {
+                let used_vars = capture_format_strings(&output)?;
+                if !used_vars.is_empty() {
+                    return Err(syn::Error::new_spanned(
+                        &output,
+                        "Unit variants do not support interpolation",
+                    ));
+                }
+
+                quote! { #name::#ident #params => ::core::fmt::Display::fmt(#output, f) }
+            }
+        };
+
+        arms.push(arm);
     }
 
     if arms.len() < variants.len() {
@@ -157,14 +171,17 @@ pub fn display_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
 }
 
 fn capture_format_string_idents(string_literal: &LitStr) -> syn::Result<Vec<Ident>> {
-    capture_format_strings(string_literal)?.into_iter().map(|ident| {
-        syn::parse_str::<Ident>(ident.as_str()).map_err(|_| {
-            syn::Error::new_spanned(
-                string_literal,
-                "Invalid identifier inside format string bracket",
-            )
+    capture_format_strings(string_literal)?
+        .into_iter()
+        .map(|ident| {
+            syn::parse_str::<Ident>(ident.as_str()).map_err(|_| {
+                syn::Error::new_spanned(
+                    string_literal,
+                    "Invalid identifier inside format string bracket",
+                )
+            })
         })
-    }).collect()
+        .collect()
 }
 
 fn capture_format_strings(string_literal: &LitStr) -> syn::Result<Vec<String>> {

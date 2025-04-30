@@ -763,7 +763,9 @@ public final class GeckoProcessManager extends IProcessManager.Stub {
                 .args(args)
                 .userSerialNumber(System.getenv("MOZ_ANDROID_USER_SERIAL_NUMBER"))
                 .extras(GeckoThread.getActiveExtras())
-                .flags(filterFlagsForChild(GeckoThread.getActiveFlags()))
+                .flags(
+                    filterFlagsForChild(
+                        GeckoThread.getActiveFlags(), type != GeckoProcessType.PARENT))
                 .fds(fds)
                 .build());
 
@@ -778,8 +780,9 @@ public final class GeckoProcessManager extends IProcessManager.Stub {
     return result;
   }
 
-  private static int filterFlagsForChild(final int flags) {
-    return flags & GeckoThread.FLAG_ENABLE_NATIVE_CRASHREPORTER;
+  private static int filterFlagsForChild(final int flags, final boolean child) {
+    return (flags & GeckoThread.FLAG_ENABLE_NATIVE_CRASHREPORTER)
+        | (child ? GeckoThread.FLAG_CHILD : 0);
   }
 
   private static class StartInfo {

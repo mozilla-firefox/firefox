@@ -8,6 +8,7 @@
 UNIFIED_SOURCES += [
     "TestAccessibleCaretEventHub.cpp",
     "TestAccessibleCaretManager.cpp",
+    "TestUniqueOrNonOwningPtr.cpp",
 ]
 
 # THE MOCK_METHOD2 macro from gtest triggers this clang warning and it's hard

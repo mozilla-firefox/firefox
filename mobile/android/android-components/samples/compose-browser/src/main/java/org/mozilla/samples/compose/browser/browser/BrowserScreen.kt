@@ -93,9 +93,6 @@ fun BrowserScreen(navController: NavController) {
                 onTextEdit = { text ->
                     toolbarStore.dispatch(BrowserEditToolbarAction.UpdateEditText(text))
                 },
-                onDisplayToolbarClick = {
-                    toolbarStore.dispatch(BrowserToolbarAction.ToggleEditMode(true))
-                },
             )
 
             Box {

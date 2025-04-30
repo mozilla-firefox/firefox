@@ -39,6 +39,39 @@ struct FaviconMetadata {
   uint16_t mWidth = 0;
 };
 
+static nsresult GetFaviconMetadata(
+    const FaviconPromise::ResolveOrRejectValue& aResult,
+    FaviconMetadata& aMetadata) {
+  if (aResult.IsReject()) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
+  nsCOMPtr<nsIFavicon> favicon = aResult.ResolveValue();
+  if (!favicon) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
+  nsTArray<uint8_t> rawData;
+  favicon->GetRawData(rawData);
+
+  if (rawData.IsEmpty()) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
+  nsCOMPtr<nsIInputStream> stream;
+  nsresult rv = NS_NewByteInputStream(
+      getter_AddRefs(stream),
+      AsChars(Span{rawData.Elements(), rawData.Length()}), NS_ASSIGNMENT_COPY);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  favicon->GetWidth(&aMetadata.mWidth);
+  favicon->GetMimeType(aMetadata.mContentType);
+  aMetadata.mStream = stream;
+  aMetadata.mContentLength = rawData.Length();
+
+  return NS_OK;
+}
+
 void RecordIconSizeTelemetry(nsIURI* uri, const FaviconMetadata& metadata) {
   uint16_t preferredSize = INT16_MAX;
   auto* faviconService = nsFaviconService::GetFaviconService();
@@ -133,66 +166,6 @@ static nsresult StreamDefaultFavicon(nsIURI* aURI, nsILoadInfo* aLoadInfo,
   return NS_OK;
 }
 
-namespace {
-
-class FaviconDataCallback final : public nsIFaviconDataCallback {
- public:
-  FaviconDataCallback(nsIURI* aURI, nsILoadInfo* aLoadInfo)
-      : mURI(aURI), mLoadInfo(aLoadInfo) {
-    MOZ_ASSERT(aURI);
-    MOZ_ASSERT(aLoadInfo);
-  }
-
-  NS_DECL_ISUPPORTS
-  NS_DECL_NSIFAVICONDATACALLBACK
-
-  RefPtr<FaviconMetadataPromise> Promise() {
-    return mPromiseHolder.Ensure(__func__);
-  }
-
- private:
-  ~FaviconDataCallback();
-  nsCOMPtr<nsIURI> mURI;
-  MozPromiseHolder<FaviconMetadataPromise> mPromiseHolder;
-  nsCOMPtr<nsILoadInfo> mLoadInfo;
-};
-
-NS_IMPL_ISUPPORTS(FaviconDataCallback, nsIFaviconDataCallback);
-
-FaviconDataCallback::~FaviconDataCallback() {
-  mPromiseHolder.RejectIfExists(NS_ERROR_FAILURE, __func__);
-}
-
-NS_IMETHODIMP FaviconDataCallback::OnComplete(nsIURI* aURI, uint32_t aDataLen,
-                                              const uint8_t* aData,
-                                              const nsACString& aMimeType,
-                                              uint16_t aWidth) {
-  if (!aDataLen) {
-    mPromiseHolder.Reject(NS_ERROR_NOT_AVAILABLE, __func__);
-    return NS_OK;
-  }
-
-  nsCOMPtr<nsIInputStream> inputStream;
-  nsresult rv =
-      NS_NewByteInputStream(getter_AddRefs(inputStream),
-                            AsChars(Span{aData, aDataLen}), NS_ASSIGNMENT_COPY);
-  if (NS_FAILED(rv)) {
-    mPromiseHolder.Reject(rv, __func__);
-    return rv;
-  }
-
-  FaviconMetadata metadata;
-  metadata.mStream = inputStream;
-  metadata.mContentType = aMimeType;
-  metadata.mContentLength = aDataLen;
-  metadata.mWidth = aWidth;
-  mPromiseHolder.Resolve(std::move(metadata), __func__);
-
-  return NS_OK;
-}
-
-}  // namespace
-
 NS_IMPL_ISUPPORTS(PageIconProtocolHandler, nsIProtocolHandler,
                   nsISupportsWeakReference);
 
@@ -262,52 +235,49 @@ nsresult PageIconProtocolHandler::NewChannelInternal(nsIURI* aURI,
   nsresult rv = channel->SetLoadInfo(aLoadInfo);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  GetFaviconData(aURI, aLoadInfo)
-      ->Then(
-          GetMainThreadSerialEventTarget(), __func__,
-          [pipeOut, channel,
-           uri = nsCOMPtr{aURI}](const FaviconMetadata& aMetadata) {
-            channel->SetContentType(aMetadata.mContentType);
-            channel->SetContentLength(aMetadata.mContentLength);
+  GetFaviconData(aURI)->Then(
+      GetMainThreadSerialEventTarget(), __func__,
+      [pipeOut, channel, uri = nsCOMPtr{aURI}, loadInfo = nsCOMPtr{aLoadInfo}](
+          const FaviconPromise::ResolveOrRejectValue& aResult) {
+        FaviconMetadata metadata;
+        if (NS_SUCCEEDED(GetFaviconMetadata(aResult, metadata))) {
+          channel->SetContentType(metadata.mContentType);
+          channel->SetContentLength(metadata.mContentLength);
 
-            nsresult rv;
-            const nsCOMPtr<nsIEventTarget> target =
-                do_GetService(NS_STREAMTRANSPORTSERVICE_CONTRACTID, &rv);
+          nsresult rv;
+          const nsCOMPtr<nsIEventTarget> target =
+              do_GetService(NS_STREAMTRANSPORTSERVICE_CONTRACTID, &rv);
+          if (NS_WARN_IF(NS_FAILED(rv))) {
+            channel->CancelWithReason(NS_BINDING_ABORTED,
+                                      "GetFaviconData failed"_ns);
+            return;
+          }
 
-            if (NS_WARN_IF(NS_FAILED(rv))) {
-              channel->CancelWithReason(NS_BINDING_ABORTED,
-                                        "GetFaviconData failed"_ns);
-              return;
-            }
+          rv = NS_AsyncCopy(metadata.mStream, pipeOut, target);
+          if (NS_WARN_IF(NS_FAILED(rv))) {
+            return;
+          }
+          RecordIconSizeTelemetry(uri, metadata);
+        } else {
+          // There are a few reasons why this might fail. For example, one
+          // reason is that the URI might not actually be properly parsable.
+          // In that case, we'll try one last time to stream the default
+          // favicon before giving up.
+          channel->SetContentType(nsLiteralCString(FAVICON_DEFAULT_MIMETYPE));
+          channel->SetContentLength(-1);
+          Unused << StreamDefaultFavicon(uri, loadInfo, pipeOut);
+        }
+      });
 
-            rv = NS_AsyncCopy(aMetadata.mStream, pipeOut, target);
-
-            if (NS_WARN_IF(NS_FAILED(rv))) {
-              return;
-            }
-
-            RecordIconSizeTelemetry(uri, aMetadata);
-          },
-          [uri = nsCOMPtr{aURI}, loadInfo = nsCOMPtr{aLoadInfo}, pipeOut,
-           channel](nsresult aRv) {
-            // There are a few reasons why this might fail. For example, one
-            // reason is that the URI might not actually be properly parsable.
-            // In that case, we'll try one last time to stream the default
-            // favicon before giving up.
-            channel->SetContentType(nsLiteralCString(FAVICON_DEFAULT_MIMETYPE));
-            channel->SetContentLength(-1);
-            Unused << StreamDefaultFavicon(uri, loadInfo, pipeOut);
-          });
   channel.forget(aOutChannel);
   return NS_OK;
 }
 
-RefPtr<FaviconMetadataPromise> PageIconProtocolHandler::GetFaviconData(
-    nsIURI* aPageIconURI, nsILoadInfo* aLoadInfo) {
+RefPtr<FaviconPromise> PageIconProtocolHandler::GetFaviconData(
+    nsIURI* aPageIconURI) {
   auto* faviconService = nsFaviconService::GetFaviconService();
   if (MOZ_UNLIKELY(!faviconService)) {
-    return FaviconMetadataPromise::CreateAndReject(NS_ERROR_UNEXPECTED,
-                                                   __func__);
+    return FaviconPromise::CreateAndReject(NS_ERROR_UNEXPECTED, __func__);
   }
 
   uint16_t preferredSize = 0;
@@ -315,26 +285,16 @@ RefPtr<FaviconMetadataPromise> PageIconProtocolHandler::GetFaviconData(
 
   nsCOMPtr<nsIURI> pageURI;
   nsresult rv;
-  {
-    // NOTE: We don't need to strip #size= fragments because
-    // GetFaviconDataForPage strips them when doing the database lookup.
-    nsAutoCString pageQuery;
-    aPageIconURI->GetPathQueryRef(pageQuery);
-    rv = NS_NewURI(getter_AddRefs(pageURI), pageQuery);
-    if (NS_FAILED(rv)) {
-      return FaviconMetadataPromise::CreateAndReject(rv, __func__);
-    }
-  }
-
-  auto faviconCallback =
-      MakeRefPtr<FaviconDataCallback>(aPageIconURI, aLoadInfo);
-  rv = faviconService->GetFaviconDataForPage(pageURI, faviconCallback,
-                                             preferredSize);
+  // NOTE: We don't need to strip #size= fragments because
+  // GetFaviconDataForPage strips them when doing the database lookup.
+  nsAutoCString pageQuery;
+  aPageIconURI->GetPathQueryRef(pageQuery);
+  rv = NS_NewURI(getter_AddRefs(pageURI), pageQuery);
   if (NS_FAILED(rv)) {
-    return FaviconMetadataPromise::CreateAndReject(rv, __func__);
+    return FaviconPromise::CreateAndReject(rv, __func__);
   }
 
-  return faviconCallback->Promise();
+  return faviconService->AsyncGetFaviconForPage(pageURI, preferredSize);
 }
 
 RefPtr<RemoteStreamPromise> PageIconProtocolHandler::NewStream(
@@ -369,26 +329,28 @@ RefPtr<RemoteStreamPromise> PageIconProtocolHandler::NewStream(
   nsCOMPtr<nsILoadInfo> loadInfo(aLoadInfo);
   RefPtr<PageIconProtocolHandler> self = this;
 
-  GetFaviconData(uri, loadInfo)
-      ->Then(
-          GetMainThreadSerialEventTarget(), __func__,
-          [outerPromise,
-           childURI = nsCOMPtr{aChildURI}](const FaviconMetadata& aMetadata) {
-            RecordIconSizeTelemetry(childURI, aMetadata);
-            RemoteStreamInfo info(aMetadata.mStream, aMetadata.mContentType,
-                                  aMetadata.mContentLength);
-            outerPromise->Resolve(std::move(info), __func__);
-          },
-          [self, uri, loadInfo, outerPromise](nsresult aRv) {
-            nsCOMPtr<nsIAsyncInputStream> pipeIn;
-            nsCOMPtr<nsIAsyncOutputStream> pipeOut;
-            self->GetStreams(getter_AddRefs(pipeIn), getter_AddRefs(pipeOut));
+  GetFaviconData(uri)->Then(
+      GetMainThreadSerialEventTarget(), __func__,
+      [self, uri, loadInfo, outerPromise, childURI = nsCOMPtr{aChildURI}](
+          const FaviconPromise::ResolveOrRejectValue& aResult) {
+        FaviconMetadata metadata;
+        if (NS_SUCCEEDED(GetFaviconMetadata(aResult, metadata))) {
+          RecordIconSizeTelemetry(childURI, metadata);
+          RemoteStreamInfo info(metadata.mStream, metadata.mContentType,
+                                metadata.mContentLength);
+          outerPromise->Resolve(std::move(info), __func__);
+        } else {
+          nsCOMPtr<nsIAsyncInputStream> pipeIn;
+          nsCOMPtr<nsIAsyncOutputStream> pipeOut;
+          self->GetStreams(getter_AddRefs(pipeIn), getter_AddRefs(pipeOut));
 
-            RemoteStreamInfo info(
-                pipeIn, nsLiteralCString(FAVICON_DEFAULT_MIMETYPE), -1);
-            Unused << StreamDefaultFavicon(uri, loadInfo, pipeOut);
-            outerPromise->Resolve(std::move(info), __func__);
-          });
+          RemoteStreamInfo info(pipeIn,
+                                nsLiteralCString(FAVICON_DEFAULT_MIMETYPE), -1);
+          Unused << StreamDefaultFavicon(uri, loadInfo, pipeOut);
+          outerPromise->Resolve(std::move(info), __func__);
+        }
+      });
+
   return outerPromise;
 }
 

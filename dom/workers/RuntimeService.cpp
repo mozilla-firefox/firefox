@@ -53,6 +53,7 @@
 #include "mozilla/dom/ShadowRealmGlobalScope.h"
 #include "mozilla/dom/TrustedTypeUtils.h"
 #include "mozilla/dom/IndexedDatabaseManager.h"
+#include "mozilla/extensions/WebExtensionPolicy.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/ScopeExit.h"
@@ -511,8 +512,9 @@ MOZ_CAN_RUN_SCRIPT_FOR_DEFINITION bool ContentSecurityPolicyAllows(
   WorkerPrivate* worker = GetWorkerPrivateFromContext(aCx);
   worker->AssertIsOnWorkerThread();
 
-  bool evalOK;
-  bool reportViolation;
+  // Allow eval by default without a CSP.
+  bool evalOK = true;
+  bool reportViolation = false;
   uint16_t violationType;
   nsAutoJSString scriptSample;
   if (aKind == JS::RuntimeCode::JS) {
@@ -539,12 +541,27 @@ MOZ_CAN_RUN_SCRIPT_FOR_DEFINITION bool ContentSecurityPolicyAllows(
       return true;
     }
 
-    evalOK = worker->IsEvalAllowed();
-    reportViolation = worker->GetReportEvalCSPViolations();
+    if (WorkerCSPContext* ctx = worker->GetCSPContext()) {
+      evalOK = ctx->IsEvalAllowed(reportViolation);
+    }
     violationType = nsIContentSecurityPolicy::VIOLATION_TYPE_EVAL;
   } else {
-    evalOK = worker->IsWasmEvalAllowed();
-    reportViolation = worker->GetReportWasmEvalCSPViolations();
+    if (WorkerCSPContext* ctx = worker->GetCSPContext()) {
+      evalOK = ctx->IsWasmEvalAllowed(reportViolation);
+    }
+
+    // As for nsScriptSecurityManager::ContentSecurityPolicyPermitsJSAction,
+    // for MV2 extensions we have to allow wasm by default and report violations
+    // for historical reasons.
+    // TODO bug 1770909: remove this exception.
+    auto* principal = BasePrincipal::Cast(worker->GetPrincipal());
+    RefPtr<extensions::WebExtensionPolicyCore> policy =
+        principal ? principal->AddonPolicyCore() : nullptr;
+    if (!evalOK && policy && policy->ManifestVersion() == 2) {
+      evalOK = true;
+      reportViolation = true;
+    }
+
     violationType = nsIContentSecurityPolicy::VIOLATION_TYPE_WASM_EVAL;
   }
 
@@ -842,7 +859,7 @@ class WorkerJSRuntime final : public mozilla::CycleCollectedJSRuntime {
     }
   }
 
-  void TraceNativeBlackRoots(JSTracer* aTracer) override {
+  void TraceAdditionalNativeBlackRoots(JSTracer* aTracer) override {
     if (!mWorkerPrivate || !mWorkerPrivate->MayContinueRunning()) {
       return;
     }
@@ -957,6 +974,10 @@ class WorkerJSContext final : public mozilla::CycleCollectedJSContext {
     }
 
     JS::JobQueueMayNotBeEmpty(cx);
+    if (!runnable->isInList()) {
+      // A recycled object may be in the list already.
+      mMicrotasksToTrace.insertBack(runnable);
+    }
     microTaskQueue->push_back(std::move(runnable));
   }
 
@@ -1195,6 +1216,8 @@ bool RuntimeService::RegisterWorker(WorkerPrivate& aWorkerPrivate) {
     }
   }
 
+  aWorkerPrivate.SetIsQueued(queued);
+
   // From here on out we must call UnregisterWorker if something fails!
   if (parent) {
     if (!parent->AddChildWorker(aWorkerPrivate)) {
@@ -1362,12 +1385,19 @@ bool RuntimeService::ScheduleWorker(WorkerPrivate& aWorkerPrivate) {
 
   aWorkerPrivate.SetThread(thread.unsafeGetRawPtr());
   JSContext* cx = CycleCollectedJSContext::Get()->Context();
+
   nsCOMPtr<nsIRunnable> runnable = new WorkerThreadPrimaryRunnable(
       &aWorkerPrivate, thread.clonePtr(), JS_GetParentRuntime(cx));
   if (NS_FAILED(
           thread->DispatchPrimaryRunnable(friendKey, runnable.forget()))) {
     UnregisterWorker(aWorkerPrivate);
     return false;
+  }
+
+  // The worker was queued when creating, so enable remote debugger now.
+  if (aWorkerPrivate.IsQueued()) {
+    aWorkerPrivate.SetIsQueued(false);
+    aWorkerPrivate.EnableRemoteDebugger();
   }
 
   return true;
@@ -2162,6 +2192,11 @@ WorkerThreadPrimaryRunnable::Run() {
       }
 
       failureCleanup.release();
+
+      // Binding the RemoteWorkerDebugger child endpoint after initailzation
+      // successfully.
+      // mWorkerPrivate->BindRemoteWorkerDebuggerChild();
+
       runLoopRan = true;
 
       {

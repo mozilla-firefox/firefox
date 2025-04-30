@@ -6,7 +6,7 @@
   <head>
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src chrome:;img-src data:; object-src 'none'"
+      content="default-src chrome:;img-src data: blob:; object-src 'none'"
     />
     <meta name="color-scheme" content="light dark" />
     <title data-l10n-id="about-inference-title"></title>
@@ -36,6 +36,12 @@
         <span
           class="category-name"
           data-l10n-id="about-inference-category-models-storage"
+        ></span>
+      </div>
+      <div class="category category-no-icon" id="category-benchmark">
+        <span
+          class="category-name"
+          data-l10n-id="about-inference-category-benchmark"
         ></span>
       </div>
     </div>
@@ -257,6 +263,27 @@
               <legend data-l10n-id="about-inference-models-title"></legend>
               <p data-l10n-id="about-inference-downloads-description"></p>
               <div id="modelFiles"></div>
+            </fieldset>
+          </div>
+        </div>
+
+        <!-- benchmark -->
+        <div id="benchmark" class="tab" hidden="true">
+          <div class="fieldset-container">
+            <fieldset class="large">
+              <legend data-l10n-id="about-inference-benchmark-title"></legend>
+              <p data-l10n-id="about-inference-benchmark-description"></p>
+              <div id="benchmark">
+                <input
+                  id="benchmark.button"
+                  type="button"
+                  data-l10n-id="about-inference-benchmark-button"
+                  value="Run Benchmark"
+                />
+                <label for="benchmark.backend">Backend:</label>
+                <select id="benchmark.backend"></select>
+                <textarea id="benchmark.output" readonly></textarea>
+              </div>
             </fieldset>
           </div>
         </div>

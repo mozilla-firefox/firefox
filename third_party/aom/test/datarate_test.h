@@ -57,6 +57,7 @@ class DatarateTest : public ::libaom_test::EncoderTest {
       bits_total_dynamic_[i] = 0;
       effective_datarate_dynamic_[i] = 0.0;
     }
+    avif_mode_ = 0;
   }
 
   void PreEncodeFrameHook(::libaom_test::VideoSource *video,
@@ -89,6 +90,21 @@ class DatarateTest : public ::libaom_test::EncoderTest {
         encoder->Control(AV1E_SET_TUNE_CONTENT, AOM_CONTENT_SCREEN);
         encoder->Control(AV1E_SET_ENABLE_PALETTE, 1);
         encoder->Control(AV1E_SET_ENABLE_INTRABC, 0);
+      }
+      if (avif_mode_) {
+        encoder->Control(AV1E_SET_COEFF_COST_UPD_FREQ, 0);
+        encoder->Control(AV1E_SET_MODE_COST_UPD_FREQ, 0);
+        encoder->Control(AV1E_SET_MV_COST_UPD_FREQ, 0);
+#if !CONFIG_REALTIME_ONLY
+        encoder->Control(AV1E_SET_DELTAQ_MODE, 3);
+#endif
+#if CONFIG_QUANT_MATRIX
+        encoder->Control(AV1E_SET_ENABLE_QM, 1);
+#endif
+        encoder->Control(AOME_SET_SHARPNESS, 1);
+        encoder->Control(AV1E_SET_ENABLE_CHROMA_DELTAQ, 1);
+        encoder->Control(AOME_SET_CQ_LEVEL, 0);
+        encoder->Control(AV1E_SET_AQ_MODE, (aq_mode_ > 0) ? 1 : 0);
       }
     }
 
@@ -227,6 +243,7 @@ class DatarateTest : public ::libaom_test::EncoderTest {
   double effective_datarate_dynamic_[3];
   int64_t bits_total_dynamic_[3];
   int frame_number_dynamic_[3];
+  int avif_mode_;
 };
 
 }  // namespace

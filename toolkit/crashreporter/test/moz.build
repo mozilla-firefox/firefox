@@ -51,7 +51,7 @@ else:
 if CONFIG["MOZ_PHC"]:
     DEFINES["MOZ_PHC"] = True
 
-GeckoSharedLibrary("testcrasher")
+GeckoSharedLibrary("testcrasher", linkage="dependent")
 
 DEFINES["SHARED_LIBRARY"] = "%s%s%s" % (
     CONFIG["DLL_PREFIX"],

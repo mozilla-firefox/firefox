@@ -14,6 +14,8 @@
 #include "mozilla/layers/SourceSurfaceSharedData.h"
 #include "mozilla/WeakPtr.h"
 
+class nsICanvasRenderingContextInternal;
+
 namespace mozilla {
 
 namespace dom {
@@ -166,6 +168,11 @@ class CanvasChild final : public PCanvasChild, public SupportsWeakPtr {
   void ReturnDataSurfaceShmem(
       std::shared_ptr<ipc::ReadOnlySharedMemoryMapping>&& aDataSurfaceShmem);
 
+  already_AddRefed<gfx::SourceSurface> SnapshotExternalCanvas(
+      gfx::DrawTargetRecording* aTarget,
+      nsICanvasRenderingContextInternal* aCanvas,
+      mozilla::ipc::IProtocol* aActor);
+
  protected:
   void ActorDestroy(ActorDestroyReason aWhy) final;
 
@@ -201,6 +208,7 @@ class CanvasChild final : public PCanvasChild, public SupportsWeakPtr {
   bool mIsInTransaction = false;
   bool mDormant = false;
   bool mBlocked = false;
+  uint64_t mLastSyncId = 0;
 };
 
 }  // namespace layers

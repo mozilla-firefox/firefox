@@ -29,6 +29,7 @@ EXPORTS.mozilla.dom += [
     "AuthenticatorResponse.h",
     "PublicKeyCredential.h",
     "WebAuthnHandler.h",
+    "WebAuthnIPCUtils.h",
     "WebAuthnPromiseHolder.h",
     "WebAuthnTransactionChild.h",
     "WebAuthnTransactionParent.h",

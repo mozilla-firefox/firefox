@@ -428,6 +428,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat() {
 
         override fun onStarted() {
             viewLifecycleOwner.lifecycleScope.launch {
+                @Suppress("DEPRECATION")
                 view?.announceForAccessibility(getString(R.string.sync_syncing_in_progress))
                 pref.title = getString(R.string.sync_syncing_in_progress)
                 pref.isEnabled = false

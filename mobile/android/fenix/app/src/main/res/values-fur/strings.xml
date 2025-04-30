@@ -130,6 +130,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Scor la sbare dai struments par cambiâ schede</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Scor viers çampe o drete par cambiâ. Scor a çampe su la ultime schede par vierzint une gnove.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">Scor la sbare dai struments a çampe o a diestre par cambiâ schede.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Al covente l’acès ae fotocjamare. Va tes impostazions di Android, va te schede dai permès e tocje permet.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -835,8 +837,6 @@
   <string name="preferences_override_account_server">Servidôr di account Mozilla personalizât </string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Servidôr personalizât par Sync</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Modificât servidôr par account Mozilla e sincronizazion. Daûr a sierâ la aplicazion par aplicâ lis modifichis…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Account</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1489,11 +1489,11 @@
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Condivît file</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Pardabon vuelistu eliminâ i elements selezionâts?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Pardabon vuelistu eliminâ i elements selezionâts?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Elimine</string>
+  <string name="download_delete_multi_select_dialog_confirm">Elimine</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Anule</string>
+  <string name="download_delete_multi_select_dialog_cancel">Anule</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">In cors</string>
   <!--
@@ -1524,9 +1524,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Discjariament falît</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Cîr tai discjariâts</string>
+  <string name="download_search_placeholder">Cîr tai discjariâts</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Nissun risultât cjatât</string>
+  <string name="download_search_no_results_found">Nissun risultât cjatât</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Selezione dut</string>
   <!--
@@ -2279,7 +2279,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Icone des preferencis pes ecezions pe protezion des spiis miorade</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3379,6 +3379,26 @@
     The title of the glean debugging feature
   -->
   <string name="glean_debug_tools_title">Struments di debug par Glean</string>
+  <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">Struments pes regjons</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">Al sostituìs in mût temporani i valôrs des regjons di cjase (home) e atuâl (current) par fâ provis.</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">Regjon di cjase (home)</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">Regjon atuâl (current)</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">Sostituìs regjon di cjase</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">Sostituìs regjon atuâl</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">Sostituìs regjons di cjase e atuâl</string>
   <!--
     Messages explaining how to exit fullscreen mode
 

@@ -1,7 +1,7 @@
 skip-if(Android) fuzzy-if(cocoaWidget,0-80,0-76800) fuzzy-if(appleSilicon,0-80,0-76800) fuzzy-if(winWidget,0-63,0-76799) fuzzy-if(gtkWidget,0-70,0-2032) HTTP(..) == short.mp4.firstframe.html short.mp4.firstframe-ref.html
 pref(media.seekToNextFrame.enabled,true) skip-if(Android) fuzzy-if(cocoaWidget,0-87,0-76797) fuzzy-if(appleSilicon,0-87,0-76797) fuzzy-if(winWidget,0-60,0-76797) fuzzy-if(gtkWidget,0-60,0-6070) HTTP(..) == short.mp4.lastframe.html short.mp4.lastframe-ref.html
 skip-if(Android) skip-if(cocoaWidget) skip-if(winWidget) fuzzy-if(gtkWidget,0-57,0-4282) fuzzy-if(cocoaWidget,55-80,4173-4417) HTTP(..) == bipbop_300_215kbps.mp4.lastframe.html bipbop_300_215kbps.mp4.lastframe-ref.html
-skip-if(Android) fuzzy-if(cocoaWidget,0-25,0-175921) fuzzy-if(appleSilicon,34-34,40100-40100) fuzzy-if(winWidget,0-71,0-179198) fuzzy-if(gtkWidget,0-46,0-173482) HTTP(..) == gizmo.mp4.seek.html gizmo.mp4.55thframe-ref.html
+skip-if(Android) fuzzy-if(cocoaWidget,0-25,0-175921) fuzzy-if(appleSilicon,0-34,0-40100) fuzzy-if(winWidget,0-71,0-179198) fuzzy-if(gtkWidget,0-46,0-173482) HTTP(..) == gizmo.mp4.seek.html gizmo.mp4.55thframe-ref.html
 # Bug 1758718
 skip-if(Android) skip-if(cocoaWidget) fuzzy(0-10,0-778236) == image-10bits-rendering-video.html image-10bits-rendering-ref.html
 skip-if(Android) fuzzy(0-10,0-778536) fuzzy-if(appleSilicon,0-37,0-699614) == image-10bits-rendering-90-video.html image-10bits-rendering-90-ref.html

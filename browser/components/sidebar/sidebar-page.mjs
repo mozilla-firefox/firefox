@@ -6,6 +6,8 @@ const lazy = {};
 
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 import { html } from "chrome://global/content/vendor/lit.all.mjs";
+// eslint-disable-next-line mozilla/reject-import-system-module-from-non-system
+import { PlacesUtils } from "resource://gre/modules/PlacesUtils.sys.mjs";
 // eslint-disable-next-line import/no-unassigned-import
 import "chrome://browser/content/sidebar/sidebar-panel-header.mjs";
 
@@ -14,6 +16,7 @@ const { LightweightThemeConsumer } = ChromeUtils.importESModule(
 );
 ChromeUtils.defineESModuleGetters(lazy, {
   BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
+  PlacesUIUtils: "resource:///modules/PlacesUIUtils.sys.mjs",
 });
 
 export class SidebarPage extends MozLitElement {
@@ -49,11 +52,24 @@ export class SidebarPage extends MozLitElement {
   addContextMenuListeners() {
     this.addEventListener("contextmenu", this);
     this._contextMenu.addEventListener("command", this);
+    this._contextMenu.addEventListener(
+      "popupshowing",
+      this.placesContextShowing
+    );
+    this._contextMenu.addEventListener("popuphiding", this.placesContextHiding);
   }
 
   removeContextMenuListeners() {
     this.removeEventListener("contextmenu", this);
     this._contextMenu.removeEventListener("command", this);
+    this._contextMenu.removeEventListener(
+      "popupshowing",
+      this.placesContextShowing
+    );
+    this._contextMenu.removeEventListener(
+      "popuphiding",
+      this.placesContextHiding
+    );
   }
 
   addSidebarFocusedListeners() {
@@ -78,6 +94,14 @@ export class SidebarPage extends MozLitElement {
     }
   }
 
+  placesContextShowing(e) {
+    lazy.PlacesUIUtils.placesContextShowing(e);
+  }
+
+  placesContextHiding(e) {
+    lazy.PlacesUIUtils.placesContextHiding(e);
+  }
+
   /**
    * Check if this event comes from an element of the specified type. If it
    * does, return that element.
@@ -97,7 +121,7 @@ export class SidebarPage extends MozLitElement {
       e.explicitOriginalTarget.flattenedTreeParentNode.getRootNode().host,
     ];
     for (let el of elements) {
-      if (el.localName == localName) {
+      if (el?.localName == localName) {
         return el;
       }
     }
@@ -113,6 +137,12 @@ export class SidebarPage extends MozLitElement {
    */
   handleCommandEvent(e) {
     switch (e.target.id) {
+      case "sidebar-history-context-open-in-tab":
+        this.topWindow.openTrustedLinkIn(this.triggerNode.url, "tab");
+        break;
+      case "sidebar-history-context-forget-site":
+        this.forgetAboutThisSite().catch(console.error);
+        break;
       case "sidebar-history-context-open-in-window":
       case "sidebar-synced-tabs-context-open-in-window":
         this.topWindow.openTrustedLinkIn(this.triggerNode.url, "window", {
@@ -132,7 +162,33 @@ export class SidebarPage extends MozLitElement {
           this.triggerNode.title
         );
         break;
+      case "sidebar-synced-tabs-context-bookmark-tab":
+      case "sidebar-history-context-bookmark-page":
+        this.topWindow.PlacesCommandHook.bookmarkLink(
+          this.triggerNode.url,
+          this.triggerNode.title
+        );
+        break;
     }
+  }
+
+  async forgetAboutThisSite() {
+    let host;
+    if (PlacesUtils.nodeIsHost(this.triggerNode)) {
+      host = this.triggerNode.query.domain;
+    } else {
+      host = Services.io.newURI(this.triggerNode.url).host;
+    }
+    let baseDomain;
+    try {
+      baseDomain = Services.eTLD.getBaseDomainFromHost(host);
+    } catch (e) {
+      // If there is no baseDomain we fall back to host
+    }
+    await this.topWindow.gDialogBox.open(
+      "chrome://browser/content/places/clearDataForSite.xhtml",
+      { host, hostOrBaseDomain: baseDomain ?? host }
+    );
   }
 
   /**

@@ -53,6 +53,8 @@ support-files = [
   "csp_iframe.sjs",
 ]
 
+["browser_aboutNetError_internet_connection_offline.js"]
+
 ["browser_aboutNetError_invalid_header.js"]
 support-files = [
   "invalid_header.sjs",

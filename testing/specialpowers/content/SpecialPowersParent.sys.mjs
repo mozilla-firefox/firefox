@@ -1261,6 +1261,9 @@ export class SpecialPowersParent extends JSWindowActorParent {
           extension.on("test-eq", resultListener);
           extension.on("test-log", resultListener);
           extension.on("test-done", resultListener);
+          // Web Platform Test subtest started and finished events.
+          extension.on("test-task-start", resultListener);
+          extension.on("test-task-done", resultListener);
 
           extension.on("test-message", messageListener);
 

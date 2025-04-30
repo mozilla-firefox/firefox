@@ -1558,56 +1558,25 @@ def _get_clang_tools_from_source(command_context, clang_paths, filename):
     return 0, clang_paths
 
 
-def _get_clang_format_diff_command(command_context, commit):
-    if command_context.repository.name == "hg":
-        args = ["hg", "diff", "-U0"]
-        if commit:
-            args += ["-c", commit]
-        else:
-            args += ["-r", ".^"]
-        for dot_extension in _format_include_extensions:
-            args += ["--include", f"glob:**{dot_extension}"]
-        args += ["--exclude", f"listfile:{_format_ignore_file}"]
-    else:
-        commit_range = "HEAD"  # All uncommitted changes.
-        if commit:
-            commit_range = commit if ".." in commit else f"{commit}~..{commit}"
-        args = ["git", "diff", "--no-color", "-U0", commit_range, "--"]
-        for dot_extension in _format_include_extensions:
-            args += [f"*{dot_extension}"]
-        # git-diff doesn't support an 'exclude-from-files' param, but
-        # allow to add individual exclude pattern since v1.9, see
-        # https://git-scm.com/docs/gitglossary#gitglossary-aiddefpathspecapathspec
-        with open(_format_ignore_file, "rb") as exclude_pattern_file:
-            for pattern in exclude_pattern_file.readlines():
-                pattern = six.ensure_str(pattern.rstrip())
-                pattern = pattern.replace(".*", "**")
-                if not pattern or pattern.startswith("#"):
-                    continue  # empty or comment
-                magics = ["exclude"]
-                if pattern.startswith("^"):
-                    magics += ["top"]
-                    pattern = pattern[1:]
-                args += [":({0}){1}".format(",".join(magics), pattern)]
-    return args
-
-
 def _run_clang_format_diff(
     command_context, clang_format_diff, clang_format, commit, output_file
 ):
     # Run clang-format on the diff
     # Note that this will potentially miss a lot things
-    from subprocess import PIPE, CalledProcessError, Popen, check_output
+    from subprocess import CalledProcessError, check_output
 
-    diff_process = Popen(
-        _get_clang_format_diff_command(command_context, commit), stdout=PIPE
+    diff_stream = command_context.repository.diff_stream(
+        rev=commit,
+        extensions=_format_include_extensions,
+        exclude_file=_format_ignore_file,
+        context=0,
     )
     args = [sys.executable, clang_format_diff, "-p1", "-binary=%s" % clang_format]
 
     if not output_file:
         args.append("-i")
     try:
-        output = check_output(args, stdin=diff_process.stdout)
+        output = check_output(args, stdin=diff_stream)
         if output_file:
             # We want to print the diffs
             print(output, file=output_file)

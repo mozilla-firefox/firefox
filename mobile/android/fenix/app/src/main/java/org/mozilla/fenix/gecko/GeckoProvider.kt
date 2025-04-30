@@ -19,17 +19,11 @@ import org.mozilla.fenix.Config
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.nimbus.FxNimbus
-import org.mozilla.geckoview.ContentBlocking
-import org.mozilla.geckoview.ContentBlocking.SafeBrowsingProvider
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
 
 object GeckoProvider {
     private var runtime: GeckoRuntime? = null
-    private const val CN_UPDATE_URL =
-        "https://sb.firefox.com.cn/downloads?client=SAFEBROWSING_ID&appver=%MAJOR_VERSION%&pver=2.2"
-    private const val CN_GET_HASH_URL =
-        "https://sb.firefox.com.cn/gethash?client=SAFEBROWSING_ID&appver=%MAJOR_VERSION%&pver=2.2"
 
     @Synchronized
     fun getOrCreateRuntime(
@@ -59,31 +53,6 @@ object GeckoProvider {
             runtimeSettings.automaticFontSizeAdjustment = false
             val fontSize = settings.fontSizeFactor
             runtimeSettings.fontSizeFactor = fontSize
-        }
-
-        // Add safebrowsing providers for China
-        if (Config.channel.isMozillaOnline) {
-            val mozcn = SafeBrowsingProvider
-                .withName("mozcn")
-                .version("2.2")
-                .lists("m6eb-phish-shavar", "m6ib-phish-shavar")
-                .updateUrl(CN_UPDATE_URL)
-                .getHashUrl(CN_GET_HASH_URL)
-                .build()
-
-            runtimeSettings.contentBlocking.setSafeBrowsingProviders(
-                mozcn,
-                // Keep the existing configuration
-                ContentBlocking.GOOGLE_SAFE_BROWSING_PROVIDER,
-                ContentBlocking.GOOGLE_LEGACY_SAFE_BROWSING_PROVIDER,
-            )
-
-            runtimeSettings.contentBlocking.setSafeBrowsingPhishingTable(
-                "m6eb-phish-shavar",
-                "m6ib-phish-shavar",
-                // Existing configuration
-                "goog-phish-proto",
-            )
         }
 
         val geckoRuntime = GeckoRuntime.create(context, runtimeSettings)

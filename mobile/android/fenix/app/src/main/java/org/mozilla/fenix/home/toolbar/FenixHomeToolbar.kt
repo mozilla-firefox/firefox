@@ -39,6 +39,13 @@ interface FenixHomeToolbar {
     fun updateButtonVisibility(browserState: BrowserState, shouldAddNavigationBar: Boolean)
 
     /**
+     * Updates the visibility of the address bar.
+     *
+     * @param isVisible Whether the address bar should be visible or not.
+     */
+    fun updateAddressBarVisibility(isVisible: Boolean)
+
+    /**
      * Updates the tab counter view based on the current browser state.
      *
      * @param browserState [BrowserState] is passed down to tab counter view to calculate the view state.

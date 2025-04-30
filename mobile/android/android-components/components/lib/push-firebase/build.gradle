@@ -19,10 +19,16 @@ android {
         }
     }
 
+    compileOptions {
+        coreLibraryDesugaringEnabled = true
+    }
+
     namespace = 'mozilla.components.lib.push.firebase'
 }
 
 dependencies {
+    coreLibraryDesugaring libs.desugar.jdk.libs
+
     implementation libs.kotlin.coroutines
     implementation libs.play.services.base
 

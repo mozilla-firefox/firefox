@@ -318,7 +318,7 @@ add_task(function test_gifft_labeled_counter() {
     undefined,
     Glean.testOnlyIpc.aLabeledCounter.__other__.testGetValue()
   );
-  Glean.testOnlyIpc.aLabeledCounter["1".repeat(72)].add(3);
+  Glean.testOnlyIpc.aLabeledCounter["1".repeat(112)].add(3);
   Assert.throws(
     () => Glean.testOnlyIpc.aLabeledCounter.__other__.testGetValue(),
     /DataError/,
@@ -332,7 +332,6 @@ add_task(function test_gifft_labeled_counter() {
     {
       a_label: 4,
       another_label: 2,
-      ["1".repeat(72)]: 3,
     },
     value
   );
@@ -497,7 +496,7 @@ add_task(async function test_gifft_labeled_boolean() {
     undefined,
     Glean.testOnly.mirrorsForLabeledBools.__other__.testGetValue()
   );
-  Glean.testOnly.mirrorsForLabeledBools["1".repeat(72)].set(true);
+  Glean.testOnly.mirrorsForLabeledBools["1".repeat(112)].set(true);
   Assert.throws(
     () => Glean.testOnly.mirrorsForLabeledBools.__other__.testGetValue(),
     /DataError/,
@@ -510,7 +509,6 @@ add_task(async function test_gifft_labeled_boolean() {
     {
       a_label: true,
       another_label: false,
-      ["1".repeat(72)]: true,
     },
     value
   );
@@ -809,7 +807,7 @@ add_task(async function test_gifft_labeled_quantity() {
   Assert.equal(1, Glean.testOnly.buttonJars.whoseGot.testGetValue());
   // What about invalid/__other__?
   Assert.equal(undefined, Glean.testOnly.buttonJars.__other__.testGetValue());
-  Glean.testOnly.buttonJars["1".repeat(72)].set(9000);
+  Glean.testOnly.buttonJars["1".repeat(112)].set(9000);
   Assert.throws(
     () => Glean.testOnly.buttonJars.__other__.testGetValue(),
     /DataError/,
@@ -823,7 +821,6 @@ add_task(async function test_gifft_labeled_quantity() {
     {
       pants: 42,
       whoseGot: 1,
-      ["1".repeat(72)]: 9000,
     },
     value
   );

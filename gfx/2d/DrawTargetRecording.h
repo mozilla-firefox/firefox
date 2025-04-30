@@ -10,8 +10,16 @@
 #include "2D.h"
 #include "DrawEventRecorder.h"
 
+class nsICanvasRenderingContextInternal;
+
 namespace mozilla {
+
+namespace ipc {
+class IProtocol;
+}  // namespace ipc
+
 namespace layers {
+class CanvasChild;
 class CanvasDrawEventRecorder;
 class RecordedTextureData;
 struct RemoteTextureOwnerId;
@@ -391,6 +399,17 @@ class DrawTargetRecording final : public DrawTarget {
   }
 
   layers::RecordedTextureData* mTextureData = nullptr;
+
+  friend class layers::CanvasChild;
+
+  already_AddRefed<SourceSurface> CreateExternalSourceSurface(
+      const IntSize& aSize, SurfaceFormat aFormat);
+
+  friend class ::nsICanvasRenderingContextInternal;
+
+  already_AddRefed<SourceSurface> SnapshotExternalCanvas(
+      nsICanvasRenderingContextInternal* aCanvas,
+      mozilla::ipc::IProtocol* aActor);
 
  private:
   /**

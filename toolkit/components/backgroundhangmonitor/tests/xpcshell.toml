@@ -1,15 +1,15 @@
 [DEFAULT]
 
 ["test_BHRObserver.js"]
-# BHR is disabled on android and outside of nightly
+# BHR is disabled outside of nightly
 support-files = ["child_cause_hang.js"]
 run-sequentially = "very high failure rate in parallel"
 skip-if = [
   "debug",
-  "os == 'android'",
   "os == 'mac' && os_version == '10.15' && processor == 'x86_64' && opt", # Bug 1417723
   "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && opt", # Bug 1417723
   "os == 'mac' && os_version == '14.70' && processor == 'x86_64' && opt", # Bug 1417723
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1417723
   "os == 'win' && msix",
   "release_or_beta",
   "win11_2009 && bits == 32", # Bug 1760134

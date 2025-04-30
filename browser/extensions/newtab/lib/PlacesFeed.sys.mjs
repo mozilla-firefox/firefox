@@ -298,9 +298,14 @@ export class PlacesFeed {
       lazy.NimbusFeatures.pocketNewtab.getVariable("sendToPocket");
     // An experiment to send the user directly to Pocket's signup page.
     if (sendToPocket && !lazy.pktApi.isUserLoggedIn()) {
-      const pocketNewtabExperiment = lazy.ExperimentAPI.getExperiment({
+      let pocketNewtabExperiment = lazy.ExperimentAPI.getExperimentMetaData({
         featureId: "pocketNewtab",
       });
+      if (!pocketNewtabExperiment) {
+        pocketNewtabExperiment = lazy.ExperimentAPI.getRolloutMetaData({
+          featureId: "pocketNewtab",
+        });
+      }
       const pocketSiteHost = Services.prefs.getStringPref(
         "extensions.pocket.site"
       ); // getpocket.com

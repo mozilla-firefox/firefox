@@ -2690,7 +2690,7 @@ bool nsImageFrame::IsServerImageMap() {
   return mContent->AsElement()->HasAttr(nsGkAtoms::ismap);
 }
 
-CSSIntPoint nsImageFrame::TranslateEventCoords(const nsPoint& aPoint) {
+CSSIntPoint nsImageFrame::TranslateEventCoords(const nsPoint& aPoint) const {
   const nsRect contentRect = GetContentRectRelativeToSelf();
   // Subtract out border and padding here so that the coordinates are
   // now relative to the content area of this frame.
@@ -2736,39 +2736,23 @@ bool nsImageFrame::IsLeafDynamic() const {
   return !shadow;
 }
 
-nsresult nsImageFrame::GetContentForEvent(const WidgetEvent* aEvent,
-                                          nsIContent** aContent) {
-  NS_ENSURE_ARG_POINTER(aContent);
-
-  nsIFrame* f = nsLayoutUtils::GetNonGeneratedAncestor(this);
-  if (f != this) {
-    return f->GetContentForEvent(aEvent, aContent);
-  }
-
-  // XXX We need to make this special check for area element's capturing the
-  // mouse due to bug 135040. Remove it once that's fixed.
-  nsIContent* capturingContent = aEvent->HasMouseEventMessage()
-                                     ? PresShell::GetCapturingContent()
-                                     : nullptr;
-  if (capturingContent && capturingContent->GetPrimaryFrame() == this) {
-    *aContent = capturingContent;
-    NS_IF_ADDREF(*aContent);
-    return NS_OK;
-  }
-
-  if (nsImageMap* map = GetImageMap()) {
+nsIContent* nsImageFrame::GetContentForEvent(const WidgetEvent* aEvent) const {
+  if (mImageMap) {
+    // XXX We need to make this special check for area element's capturing the
+    // mouse due to bug 135040. Remove it once that's fixed.
+    nsIContent* capturingContent = aEvent->HasMouseEventMessage()
+                                       ? PresShell::GetCapturingContent()
+                                       : nullptr;
+    if (capturingContent && capturingContent->GetPrimaryFrame() == this) {
+      return capturingContent;
+    }
     const CSSIntPoint p = TranslateEventCoords(
         nsLayoutUtils::GetEventCoordinatesRelativeTo(aEvent, RelativeTo{this}));
-    nsCOMPtr<nsIContent> area = map->GetArea(p);
-    if (area) {
-      area.forget(aContent);
-      return NS_OK;
+    if (auto* area = mImageMap->GetArea(p)) {
+      return area;
     }
   }
-
-  *aContent = GetContent();
-  NS_IF_ADDREF(*aContent);
-  return NS_OK;
+  return nsIFrame::GetContentForEvent(aEvent);
 }
 
 // XXX what should clicks on transparent pixels do?

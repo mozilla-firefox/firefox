@@ -4,8 +4,6 @@
 
 package org.mozilla.fenix.distributions
 
-import io.mockk.every
-import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.After
@@ -88,22 +86,6 @@ class DistributionIdManagerTest {
         val distributionId = subject.getDistributionId()
 
         assertEquals("Mozilla", distributionId)
-    }
-
-    @Test
-    fun `WHEN the config channel is mozilla online THEN the proper id is returned`() {
-        val subject = DistributionIdManager(
-            testContext,
-            testBrowserStoreProvider,
-            testDistributionProviderChecker,
-        )
-
-        mockkObject(Config)
-        every { Config.channel.isMozillaOnline } returns true
-
-        val distributionId = subject.getDistributionId()
-
-        assertEquals("MozillaOnline", distributionId)
     }
 
     @Test
@@ -222,21 +204,6 @@ class DistributionIdManagerTest {
         val distributionId = subject.getDistributionId()
 
         assertEquals("Mozilla", distributionId)
-    }
-
-    @Test
-    fun `WHEN the distribution is default or mozilla online THEN the distribution is not from a deal`() {
-        val subject = DistributionIdManager(
-            testContext,
-            testBrowserStoreProvider,
-            testDistributionProviderChecker,
-        )
-
-        testBrowserStoreProvider.updateDistributionId(DistributionIdManager.Distribution.DEFAULT.id)
-        assertEquals(false, subject.isPartnershipDistribution())
-
-        testBrowserStoreProvider.updateDistributionId(DistributionIdManager.Distribution.MOZILLA_ONLINE.id)
-        assertEquals(false, subject.isPartnershipDistribution())
     }
 
     @Test

@@ -9,7 +9,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import mozilla.components.support.base.log.logger.Logger
-import org.mozilla.fenix.Config
 import org.mozilla.fenix.GleanMetrics.Partnerships
 import java.io.File
 import java.util.Locale
@@ -60,7 +59,6 @@ class DistributionIdManager(
             isProviderDigitalTurbine(provider) && isDtTelefonicaInstalled() -> Distribution.DT_001.id
             isProviderAura(provider) -> Distribution.AURA_001.id
             isDeviceVivo() && appPreinstalledOnVivoDevice() -> Distribution.VIVO_001.id
-            Config.channel.isMozillaOnline -> Distribution.MOZILLA_ONLINE.id
             else -> Distribution.DEFAULT.id
         }
 
@@ -79,7 +77,6 @@ class DistributionIdManager(
 
         return when (id) {
             Distribution.DEFAULT -> false
-            Distribution.MOZILLA_ONLINE -> false
             Distribution.VIVO_001 -> true
             Distribution.DT_001 -> true
             Distribution.AURA_001 -> true
@@ -100,7 +97,6 @@ class DistributionIdManager(
     @VisibleForTesting
     internal enum class Distribution(val id: String) {
         DEFAULT(id = "Mozilla"),
-        MOZILLA_ONLINE(id = "MozillaOnline"),
         VIVO_001(id = "vivo-001"),
         DT_001(id = "dt-001"),
         AURA_001(id = "aura-001"),

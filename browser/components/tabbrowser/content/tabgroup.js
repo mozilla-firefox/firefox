@@ -7,6 +7,10 @@
 // This is loaded into chrome windows with the subscript loader. Wrap in
 // a block to prevent accidentally leaking globals onto `window`.
 {
+  const { TabMetrics } = ChromeUtils.importESModule(
+    "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs"
+  );
+
   class MozTabbrowserTabGroup extends MozXULElement {
     static markup = `
       <vbox class="tab-group-label-container" pack="center">
@@ -83,22 +87,33 @@
         this.#tabChangeObserver = new window.MutationObserver(mutationList => {
           for (let mutation of mutationList) {
             mutation.addedNodes.forEach(node => {
-              node.tagName === "tab" &&
+              if (node.tagName === "tab") {
                 node.dispatchEvent(
                   new CustomEvent("TabGrouped", {
                     bubbles: true,
                     detail: this,
                   })
                 );
+                node.setAttribute("aria-level", 2);
+              }
             });
             mutation.removedNodes.forEach(node => {
-              node.tagName === "tab" &&
+              if (node.tagName === "tab") {
                 node.dispatchEvent(
                   new CustomEvent("TabUngrouped", {
                     bubbles: true,
                     detail: this,
                   })
                 );
+                // Tab could have moved to be ungrouped (level 1)
+                // or to a different group (level 2).
+                node.setAttribute("aria-level", node.group ? 2 : 1);
+                // `posinset` and `setsize` only need to be set explicitly
+                // on grouped tabs so that a11y tools can tell users that a
+                // given tab is "2 of 7" in the group, for example.
+                node.removeAttribute("aria-posinset");
+                node.removeAttribute("aria-setsize");
+              }
             });
           }
           if (!this.tabs.length) {
@@ -110,6 +125,15 @@
               this,
               "browser-tabgroup-removed-from-dom"
             );
+          } else {
+            // Renumber tabs so that a11y tools can tell users that a given
+            // tab is "2 of 7" in the group, for example.
+            let tabs = this.tabs;
+            let tabCount = tabs.length;
+            tabs.forEach((tab, index) => {
+              tab.setAttribute("aria-posinset", index + 1);
+              tab.setAttribute("aria-setsize", tabCount);
+            });
           }
         });
       }
@@ -121,6 +145,7 @@
     }
 
     set color(code) {
+      let diff = code !== this.#colorCode;
       this.#colorCode = code;
       this.style.setProperty(
         "--tab-group-color",
@@ -134,6 +159,11 @@
         "--tab-group-color-pale",
         `var(--tab-group-color-${code}-pale)`
       );
+      if (diff) {
+        this.dispatchEvent(
+          new CustomEvent("TabGroupUpdate", { bubbles: true })
+        );
+      }
     }
 
     get id() {
@@ -149,6 +179,7 @@
     }
 
     set label(val) {
+      let diff = val !== this.#label;
       this.#label = val;
 
       // If the group name is empty, use a zero width space so we
@@ -158,6 +189,11 @@
       this.dataset.tooltip = val;
 
       this.#updateLabelAriaAttributes();
+      if (diff) {
+        this.dispatchEvent(
+          new CustomEvent("TabGroupUpdate", { bubbles: true })
+        );
+      }
     }
 
     // alias for label
@@ -213,6 +249,7 @@
       );
       this.#labelElement?.setAttribute("aria-label", tabGroupName);
       this.#labelElement?.setAttribute("aria-description", tabGroupDescription);
+      this.#labelElement?.setAttribute("aria-level", 1);
     }
 
     #updateCollapsedAriaAttributes() {
@@ -254,9 +291,20 @@
 
     /**
      * Remove all tabs from the group and delete the group.
-     *
+     * @param {TabMetricsContext} [metricsContext]
      */
-    ungroupTabs() {
+    ungroupTabs(
+      metricsContext = {
+        isUserTriggered: false,
+        telemetrySource: TabMetrics.METRIC_SOURCE.UNKNOWN,
+      }
+    ) {
+      this.dispatchEvent(
+        new CustomEvent("TabGroupUngroup", {
+          bubbles: true,
+          detail: metricsContext,
+        })
+      );
       for (let i = this.tabs.length - 1; i >= 0; i--) {
         gBrowser.ungroupTab(this.tabs[i]);
       }
@@ -293,6 +341,12 @@
         event.preventDefault();
         this.collapsed = !this.collapsed;
         gBrowser.tabGroupMenu.close();
+
+        /** @type {GleanCounter} */
+        let interactionMetric = this.collapsed
+          ? Glean.tabgroup.groupInteractions.collapse
+          : Glean.tabgroup.groupInteractions.expand;
+        interactionMetric.add(1);
       }
     }
 

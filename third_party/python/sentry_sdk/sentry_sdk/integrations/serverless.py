@@ -1,9 +1,9 @@
-import functools
 import sys
 
 from sentry_sdk.hub import Hub
 from sentry_sdk.utils import event_from_exception
 from sentry_sdk._compat import reraise
+from sentry_sdk._functools import wraps
 
 
 from sentry_sdk._types import MYPY
@@ -32,8 +32,8 @@ def serverless_function(f, flush=True):
     pass
 
 
-@overload  # noqa
-def serverless_function(f=None, flush=True):
+@overload
+def serverless_function(f=None, flush=True):  # noqa: F811
     # type: (None, bool) -> Callable[[F], F]
     pass
 
@@ -42,7 +42,7 @@ def serverless_function(f=None, flush=True):  # noqa
     # type: (Optional[F], bool) -> Union[F, Callable[[F], F]]
     def wrapper(f):
         # type: (F) -> F
-        @functools.wraps(f)
+        @wraps(f)
         def inner(*args, **kwargs):
             # type: (*Any, **Any) -> Any
             with Hub(Hub.current) as hub:
@@ -69,7 +69,7 @@ def _capture_and_reraise():
     # type: () -> None
     exc_info = sys.exc_info()
     hub = Hub.current
-    if hub is not None and hub.client is not None:
+    if hub.client is not None:
         event, hint = event_from_exception(
             exc_info,
             client_options=hub.client.options,
@@ -82,6 +82,4 @@ def _capture_and_reraise():
 
 def _flush_client():
     # type: () -> None
-    hub = Hub.current
-    if hub is not None:
-        hub.flush()
+    return Hub.current.flush()

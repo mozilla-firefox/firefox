@@ -1226,7 +1226,7 @@ bool js::GCMarker::mark(T* thing) {
       TraceKindCanBeGray<T>::value ? markColor() : MarkColor::Black;
 
   if constexpr (bool(opts & MarkingOptions::ParallelMarking)) {
-    return thing->asTenured().markIfUnmarkedAtomic(color);
+    return thing->asTenured().markIfUnmarkedThreadSafe(color);
   }
 
   return thing->asTenured().markIfUnmarked(color);
@@ -1657,12 +1657,12 @@ scan_obj: {
 
   if (nobj->hasDynamicSlots()) {
     ObjectSlots* slots = nobj->getSlotsHeader();
-    BufferAllocator::MarkTenuredAlloc(slots);
+    MarkTenuredBuffer(nobj->zone(), slots);
   }
 
   if (nobj->hasDynamicElements()) {
     void* elements = nobj->getUnshiftedElementsHeader();
-    BufferAllocator::MarkTenuredAlloc(elements);
+    MarkTenuredBuffer(nobj->zone(), elements);
   }
 
   if (!nobj->hasEmptyElements()) {

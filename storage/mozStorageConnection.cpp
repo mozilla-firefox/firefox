@@ -2786,6 +2786,9 @@ Connection::LoadExtension(const nsACString& aExtensionName,
   static constexpr nsLiteralCString sSupportedExtensions[] = {
       // clang-format off
       "fts5"_ns,
+  #ifdef MOZ_SQLITE_VEC0_EXT
+      "vec"_ns,
+  #endif
       // clang-format on
   };
   if (std::find(std::begin(sSupportedExtensions),

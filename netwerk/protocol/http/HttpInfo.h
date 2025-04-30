@@ -16,6 +16,8 @@ class HttpInfo {
  public:
   /* Calls getConnectionData method in nsHttpConnectionMgr. */
   static void GetHttpConnectionData(nsTArray<HttpRetParams>*);
+  static void GetHttp3ConnectionStatsData(
+      nsTArray<Http3ConnectionStatsParams>*);
 };
 
 }  // namespace net

@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_PLUGIN_H
 #define SPA_PLUGIN_H
@@ -29,8 +9,19 @@
 extern "C" {
 #endif
 
+#include <errno.h>
+
 #include <spa/utils/defs.h>
+#include <spa/utils/hook.h>
 #include <spa/utils/dict.h>
+
+#ifndef SPA_API_PLUGIN
+ #ifdef SPA_API_IMPL
+  #define SPA_API_PLUGIN SPA_API_IMPL
+ #else
+  #define SPA_API_PLUGIN static inline
+ #endif
+#endif
 
 /**
  * \defgroup spa_handle Plugin Handle
@@ -55,12 +46,12 @@ struct spa_handle {
 	 *
 	 * \param handle a spa_handle
 	 * \param type the interface type
-	 * \param interface result to hold the interface.
+	 * \param iface result to hold the interface.
 	 * \return 0 on success
 	 *         -ENOTSUP when there are no interfaces
 	 *         -EINVAL when handle or info is NULL
 	 */
-	int (*get_interface) (struct spa_handle *handle, const char *type, void **interface);
+	int (*get_interface) (struct spa_handle *handle, const char *type, void **iface);
 	/**
 	 * Clean up the memory of \a handle. After this, \a handle should not be used
 	 * anymore.
@@ -71,8 +62,17 @@ struct spa_handle {
 	int (*clear) (struct spa_handle *handle);
 };
 
-#define spa_handle_get_interface(h,...)	(h)->get_interface((h),__VA_ARGS__)
-#define spa_handle_clear(h)		(h)->clear((h))
+SPA_API_PLUGIN int
+spa_handle_get_interface(struct spa_handle *object,
+		const char *type, void **iface)
+{
+	return spa_api_func_r(int, -ENOTSUP, object, get_interface, 0, type, iface);
+}
+SPA_API_PLUGIN int
+spa_handle_clear(struct spa_handle *object)
+{
+	return spa_api_func_r(int, -ENOTSUP, object, clear, 0);
+}
 
 /**
  * This structure lists the information about available interfaces on
@@ -93,7 +93,7 @@ struct spa_support {
 };
 
 /** Find a support item of the given type */
-static inline void *spa_support_find(const struct spa_support *support,
+SPA_API_PLUGIN void *spa_support_find(const struct spa_support *support,
 				     uint32_t n_support,
 				     const char *type)
 {
@@ -105,7 +105,7 @@ static inline void *spa_support_find(const struct spa_support *support,
 	return NULL;
 }
 
-#define SPA_SUPPORT_INIT(type,data) (struct spa_support) { (type), (data) }
+#define SPA_SUPPORT_INIT(type,data) ((struct spa_support) { (type), (data) })
 
 struct spa_handle_factory {
 	/** The version of this structure */
@@ -178,9 +178,27 @@ struct spa_handle_factory {
 				    uint32_t *index);
 };
 
-#define spa_handle_factory_get_size(h,...)		(h)->get_size((h),__VA_ARGS__)
-#define spa_handle_factory_init(h,...)			(h)->init((h),__VA_ARGS__)
-#define spa_handle_factory_enum_interface_info(h,...)	(h)->enum_interface_info((h),__VA_ARGS__)
+SPA_API_PLUGIN size_t
+spa_handle_factory_get_size(const struct spa_handle_factory *object,
+		const struct spa_dict *params)
+{
+	return spa_api_func_r(size_t, 0, object, get_size, 1, params);
+}
+SPA_API_PLUGIN int
+spa_handle_factory_init(const struct spa_handle_factory *object,
+		struct spa_handle *handle, const struct spa_dict *info,
+		const struct spa_support *support, uint32_t n_support)
+{
+	return spa_api_func_r(int, -ENOTSUP, object, init, 1, handle, info,
+			support, n_support);
+}
+SPA_API_PLUGIN int
+spa_handle_factory_enum_interface_info(const struct spa_handle_factory *object,
+		const struct spa_interface_info **info, uint32_t *index)
+{
+	return spa_api_func_r(int, -ENOTSUP, object, enum_interface_info, 1,
+			info, index);
+}
 
 /**
  * The function signature of the entry point in a plugin.

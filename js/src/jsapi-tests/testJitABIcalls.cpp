@@ -48,10 +48,10 @@ using namespace js::jit;
 
 // Convert the content of each macro list to a single and unique format which is
 // (Name, Type).
-#define ABIFUN_TO_ALLFUN(Fun) (#Fun, decltype(&::Fun))
+#define ABIFUN_TO_ALLFUN(Fun) (#Fun, decltype(&Fun))
 #define ABIFUN_AND_SIG_TO_ALLFUN(Fun, Sig) (#Fun " as " #Sig, Sig)
 #define ABISIG_TO_ALLFUN(Sig) ("(none) as " #Sig, Sig)
-#define VMFUN_TO_ALLFUN(Name, Fun, Pop...) (#Fun, decltype(&::Fun))
+#define VMFUN_TO_ALLFUN(Name, Fun, Pop...) (#Fun, decltype(&Fun))
 
 #define APPLY(A, B) A B
 

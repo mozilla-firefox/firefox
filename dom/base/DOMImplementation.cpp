@@ -100,7 +100,7 @@ nsresult DOMImplementation::CreateDocument(const nsAString& aNamespaceURI,
   rv = NS_NewDOMDocument(getter_AddRefs(doc), aNamespaceURI, aQualifiedName,
                          aDoctype, mDocumentURI, mBaseURI,
                          mOwner->NodePrincipal(), true, scriptHandlingObject,
-                         DocumentFlavorXML);
+                         DocumentFlavor::XML);
   NS_ENSURE_SUCCESS(rv, rv);
 
   // When DOMImplementation's createDocument method is invoked with
@@ -153,7 +153,7 @@ nsresult DOMImplementation::CreateHTMLDocument(const nsAString& aTitle,
   nsresult rv =
       NS_NewDOMDocument(getter_AddRefs(doc), u""_ns, u""_ns, doctype,
                         mDocumentURI, mBaseURI, mOwner->NodePrincipal(), true,
-                        scriptHandlingObject, DocumentFlavorLegacyGuess);
+                        scriptHandlingObject, DocumentFlavor::LegacyGuess);
   NS_ENSURE_SUCCESS(rv, rv);
 
   ErrorResult error;

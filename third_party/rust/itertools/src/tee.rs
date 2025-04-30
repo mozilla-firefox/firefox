@@ -1,8 +1,8 @@
 use super::size_hint;
 
-use std::cell::RefCell;
 use alloc::collections::VecDeque;
 use alloc::rc::Rc;
+use std::cell::RefCell;
 
 /// Common buffer object for the two tee halves
 #[derive(Debug)]
@@ -19,24 +19,37 @@ struct TeeBuffer<A, I> {
 #[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
 #[derive(Debug)]
 pub struct Tee<I>
-    where I: Iterator
+where
+    I: Iterator,
 {
     rcbuffer: Rc<RefCell<TeeBuffer<I::Item, I>>>,
     id: bool,
 }
 
 pub fn new<I>(iter: I) -> (Tee<I>, Tee<I>)
-    where I: Iterator
+where
+    I: Iterator,
 {
-    let buffer = TeeBuffer{backlog: VecDeque::new(), iter, owner: false};
-    let t1 = Tee{rcbuffer: Rc::new(RefCell::new(buffer)), id: true};
-    let t2 = Tee{rcbuffer: t1.rcbuffer.clone(), id: false};
+    let buffer = TeeBuffer {
+        backlog: VecDeque::new(),
+        iter,
+        owner: false,
+    };
+    let t1 = Tee {
+        rcbuffer: Rc::new(RefCell::new(buffer)),
+        id: true,
+    };
+    let t2 = Tee {
+        rcbuffer: t1.rcbuffer.clone(),
+        id: false,
+    };
     (t1, t2)
 }
 
 impl<I> Iterator for Tee<I>
-    where I: Iterator,
-          I::Item: Clone
+where
+    I: Iterator,
+    I::Item: Clone,
 {
     type Item = I::Item;
     fn next(&mut self) -> Option<Self::Item> {
@@ -73,6 +86,8 @@ impl<I> Iterator for Tee<I>
 }
 
 impl<I> ExactSizeIterator for Tee<I>
-    where I: ExactSizeIterator,
-          I::Item: Clone
-{}
+where
+    I: ExactSizeIterator,
+    I::Item: Clone,
+{
+}

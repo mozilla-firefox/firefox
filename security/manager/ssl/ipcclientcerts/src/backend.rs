@@ -5,7 +5,7 @@
 
 use pkcs11_bindings::*;
 use rsclientcerts::error::{Error, ErrorType};
-use rsclientcerts::manager::{ClientCertsBackend, CryptokiObject, Sign, SlotType};
+use rsclientcerts::manager::{ClientCertsBackend, CryptokiObject, Sign};
 use rsclientcerts::util::*;
 use sha2::{Digest, Sha256};
 use std::ffi::c_void;
@@ -17,7 +17,6 @@ type FindObjectsCallback = Option<
         data: *const u8,
         extra_len: usize,
         extra: *const u8,
-        slot_type: u32,
         ctx: *mut c_void,
     ),
 >;
@@ -87,11 +86,10 @@ pub struct Cert {
     issuer: Vec<u8>,
     serial_number: Vec<u8>,
     subject: Vec<u8>,
-    slot_type: SlotType,
 }
 
 impl Cert {
-    fn new(der: &[u8], slot_type: SlotType) -> Result<Cert, Error> {
+    fn new(der: &[u8]) -> Result<Cert, Error> {
         let (serial_number, issuer, subject) = read_encoded_certificate_identifiers(der)?;
         let id = Sha256::digest(der).to_vec();
         Ok(Cert {
@@ -103,7 +101,6 @@ impl Cert {
             issuer,
             serial_number,
             subject,
-            slot_type,
         })
     }
 
@@ -141,10 +138,7 @@ impl Cert {
 }
 
 impl CryptokiObject for Cert {
-    fn matches(&self, slot_type: SlotType, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
-        if self.slot_type != slot_type {
-            return false;
-        }
+    fn matches(&self, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
         for (attr_type, attr_value) in attrs {
             let comparison = match *attr_type {
                 CKA_CLASS => self.class(),
@@ -189,16 +183,10 @@ pub struct Key {
     key_type: Vec<u8>,
     modulus: Option<Vec<u8>>,
     ec_params: Option<Vec<u8>>,
-    slot_type: SlotType,
 }
 
 impl Key {
-    fn new(
-        modulus: Option<&[u8]>,
-        ec_params: Option<&[u8]>,
-        cert: &[u8],
-        slot_type: SlotType,
-    ) -> Result<Key, Error> {
+    fn new(modulus: Option<&[u8]>, ec_params: Option<&[u8]>, cert: &[u8]) -> Result<Key, Error> {
         let id = Sha256::digest(cert).to_vec();
         let key_type = if modulus.is_some() { CKK_RSA } else { CKK_EC };
         Ok(Key {
@@ -210,7 +198,6 @@ impl Key {
             key_type: serialize_uint(key_type)?,
             modulus: modulus.map(|b| b.to_vec()),
             ec_params: ec_params.map(|b| b.to_vec()),
-            slot_type,
         })
     }
 
@@ -250,10 +237,7 @@ impl Key {
 }
 
 impl CryptokiObject for Key {
-    fn matches(&self, slot_type: SlotType, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
-        if self.slot_type != slot_type {
-            return false;
-        }
+    fn matches(&self, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
         for (attr_type, attr_value) in attrs {
             let comparison = match *attr_type {
                 CKA_CLASS => self.class(),
@@ -316,7 +300,7 @@ impl Sign for Key {
         params: &Option<CK_RSA_PKCS_PSS_PARAMS>,
     ) -> Result<Vec<u8>, Error> {
         let mut signature = Vec::new();
-        let (params_len, params) = match params {
+        let (sign_params_len, sign_params) = match params {
             Some(params) => (
                 std::mem::size_of::<CK_RSA_PKCS_PSS_PARAMS>(),
                 params as *const _ as *const u8,
@@ -328,8 +312,33 @@ impl Sign for Key {
             self.cert.as_ptr(),
             data.len(),
             data.as_ptr(),
-            params_len,
-            params,
+            sign_params_len,
+            sign_params,
+            Some(sign_callback),
+            &mut signature,
+        );
+        // If this succeeded, return the result.
+        if signature.len() > 0 {
+            return Ok(signature);
+        }
+        // If signing failed and this is an RSA-PSS signature, perhaps the token the key is on does
+        // not support RSA-PSS. In that case, emsa-pss-encode the data (hash, really) and try
+        // signing with raw RSA.
+        let Some(params) = params.as_ref() else {
+            return Err(error_here!(ErrorType::LibraryFailure));
+        };
+        // `params` should only be `Some` if this is an RSA key.
+        let Some(modulus) = self.modulus.as_ref() else {
+            return Err(error_here!(ErrorType::LibraryFailure));
+        };
+        let emsa_pss_encoded = emsa_pss_encode(data, modulus_bit_length(modulus) - 1, params)?;
+        DoSignWrapper(
+            self.cert.len(),
+            self.cert.as_ptr(),
+            emsa_pss_encoded.len(),
+            emsa_pss_encoded.as_ptr(),
+            0,
+            std::ptr::null(),
             Some(sign_callback),
             &mut signature,
         );
@@ -355,7 +364,6 @@ unsafe extern "C" fn find_objects_callback(
     data: *const u8,
     extra_len: usize,
     extra: *const u8,
-    slot_type: u32,
     ctx: *mut c_void,
 ) {
     let data = if data_len == 0 {
@@ -368,22 +376,17 @@ unsafe extern "C" fn find_objects_callback(
     } else {
         std::slice::from_raw_parts(extra, extra_len)
     };
-    let slot_type = match slot_type {
-        1 => SlotType::Modern,
-        2 => SlotType::Legacy,
-        _ => return,
-    };
     let find_objects_context: &mut FindObjectsContext = std::mem::transmute(ctx);
     match typ {
-        1 => match Cert::new(data, slot_type) {
+        1 => match Cert::new(data) {
             Ok(cert) => find_objects_context.certs.push(cert),
             Err(_) => {}
         },
-        2 => match Key::new(Some(data), None, extra, slot_type) {
+        2 => match Key::new(Some(data), None, extra) {
             Ok(key) => find_objects_context.keys.push(key),
             Err(_) => {}
         },
-        3 => match Key::new(None, Some(data), extra, slot_type) {
+        3 => match Key::new(None, Some(data), extra) {
             Ok(key) => find_objects_context.keys.push(key),
             Err(_) => {}
         },

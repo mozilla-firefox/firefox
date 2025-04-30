@@ -464,6 +464,9 @@
   @media -moz-pref("browser.tabs.fadeOutUnloadedTabs") {
     &[pending] {
       filter: grayscale(100%);
+      @media (prefers-color-scheme: dark) {
+        filter: grayscale(100%) invert();
+      }
       opacity: 0.5;
       /* Fade the favicon out */
       transition-property: filter, opacity;
@@ -481,6 +484,9 @@
   @media -moz-pref("browser.tabs.fadeOutExplicitlyUnloadedTabs") {
     &[pending][discarded] {
       filter: grayscale(100%);
+      @media (prefers-color-scheme: dark) {
+        filter: grayscale(100%) invert();
+      }
       opacity: 0.5;
       /* Fade the favicon out */
       transition-property: filter, opacity;
@@ -759,13 +765,13 @@
 
   &[textoverflow] {
     &[labeldirection=ltr],
-    &:not([labeldirection], [pinned]):-moz-locale-dir(ltr) {
+    &:not([labeldirection]):-moz-locale-dir(ltr) {
       direction: ltr;
       mask-image: linear-gradient(to left, transparent, black var(--tab-label-mask-size));
     }
 
     &[labeldirection=rtl],
-    &:not([labeldirection], [pinned]):-moz-locale-dir(rtl) {
+    &:not([labeldirection]):-moz-locale-dir(rtl) {
       direction: rtl;
       mask-image: linear-gradient(to right, transparent, black var(--tab-label-mask-size));
     }
@@ -1133,7 +1139,7 @@ tab-group {
 }
 
 .tab-group-editor-panel {
-  --panel-width: 20em;
+  --panel-width: 22em;
   --panel-padding: var(--space-large);
   --panel-separator-margin: var(--panel-separator-margin-vertical) 0;
   font: menu;

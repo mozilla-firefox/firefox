@@ -102,6 +102,12 @@ nsresult nsDataObj::CStream::Init(nsIURI* pSourceURI,
     Unused << NS_WARN_IF(NS_FAILED(rv));
   }
 
+  // Do not HTTPS-Only/-First upgrade this request. If we reach this point, any
+  // potential upgrades should have already happened, or the URI may have
+  // already been exempt.
+  nsCOMPtr<nsILoadInfo> loadInfo = mChannel->LoadInfo();
+  loadInfo->SetHttpsOnlyStatus(nsILoadInfo::HTTPS_ONLY_EXEMPT);
+
   rv = mChannel->AsyncOpen(this);
   NS_ENSURE_SUCCESS(rv, rv);
   return NS_OK;

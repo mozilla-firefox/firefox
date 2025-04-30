@@ -522,7 +522,7 @@ def export_target(target_full_name) -> Set[str]:
 
     lib_type = desc["type"]
     if lib_type == "shared_library":
-        lines.append(f'GeckoSharedLibrary("{name}", linkage=None)')
+        lines.append(f'GeckoSharedLibrary("{name}")')
     elif lib_type == "static_library":
         lines.append(f'Library("{name}")')
     else:

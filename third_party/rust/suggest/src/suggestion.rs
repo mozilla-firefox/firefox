@@ -97,8 +97,14 @@ pub enum Suggestion {
         // and therefore the only one we'll collect metrics for.
         match_info: Option<FtsMatchInfo>,
     },
-    Exposure {
+    Dynamic {
         suggestion_type: String,
+        data: Option<serde_json::Value>,
+        /// This value is optionally defined in the suggestion's remote settings
+        /// data and is an opaque token used for dismissing the suggestion in
+        /// lieu of a URL. If `Some`, the suggestion can be dismissed by passing
+        /// the wrapped string to [crate::SuggestStore::dismiss_suggestion].
+        dismissal_key: Option<String>,
         score: f64,
     },
 }
@@ -128,6 +134,29 @@ impl Ord for Suggestion {
 }
 
 impl Suggestion {
+    /// Get the suggestion's dismissal key, which should be stored in the
+    /// `dismissed_suggestions` table when the suggestion is dismissed. Some
+    /// suggestions may not have dismissal keys and cannot be dismissed.
+    pub fn dismissal_key(&self) -> Option<&str> {
+        match self {
+            Self::Amp { full_keyword, .. } => {
+                if !full_keyword.is_empty() {
+                    Some(full_keyword)
+                } else {
+                    self.raw_url()
+                }
+            }
+            Self::Dynamic { dismissal_key, .. } => dismissal_key.as_deref(),
+            Self::Pocket { .. }
+            | Self::Wikipedia { .. }
+            | Self::Amo { .. }
+            | Self::Yelp { .. }
+            | Self::Mdn { .. }
+            | Self::Weather { .. }
+            | Self::Fakespot { .. } => self.raw_url(),
+        }
+    }
+
     /// Get the URL for this suggestion, if present
     pub fn url(&self) -> Option<&str> {
         match self {
@@ -138,7 +167,7 @@ impl Suggestion {
             | Self::Yelp { url, .. }
             | Self::Mdn { url, .. }
             | Self::Fakespot { url, .. } => Some(url),
-            _ => None,
+            Self::Weather { .. } | Self::Dynamic { .. } => None,
         }
     }
 
@@ -148,13 +177,15 @@ impl Suggestion {
     /// "cooked" using template interpolation, while `raw_url` is the URL template.
     pub fn raw_url(&self) -> Option<&str> {
         match self {
-            Self::Amp { raw_url: url, .. }
-            | Self::Pocket { url, .. }
-            | Self::Wikipedia { url, .. }
-            | Self::Amo { url, .. }
-            | Self::Yelp { url, .. }
-            | Self::Mdn { url, .. } => Some(url),
-            _ => None,
+            Self::Amp { raw_url, .. } => Some(raw_url),
+            Self::Pocket { .. }
+            | Self::Wikipedia { .. }
+            | Self::Amo { .. }
+            | Self::Yelp { .. }
+            | Self::Mdn { .. }
+            | Self::Weather { .. }
+            | Self::Fakespot { .. }
+            | Self::Dynamic { .. } => self.url(),
         }
     }
 
@@ -190,7 +221,7 @@ impl Suggestion {
             | Self::Mdn { score, .. }
             | Self::Weather { score, .. }
             | Self::Fakespot { score, .. }
-            | Self::Exposure { score, .. } => *score,
+            | Self::Dynamic { score, .. } => *score,
             Self::Wikipedia { .. } => DEFAULT_SUGGESTION_SCORE,
         }
     }

@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2019 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2019 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_UTILS_KEYS_H
 #define SPA_UTILS_KEYS_H
@@ -62,6 +42,17 @@ extern "C" {
 #define SPA_KEY_API_ALSA_USE_UCM	"api.alsa.use-ucm"		/**< if UCM should be used */
 #define SPA_KEY_API_ALSA_IGNORE_DB	"api.alsa.ignore-dB"		/**< if decibel info should be ignored */
 #define SPA_KEY_API_ALSA_OPEN_UCM	"api.alsa.open.ucm"		/**< if UCM should be opened card */
+#define SPA_KEY_API_ALSA_DISABLE_LONGNAME	\
+					"api.alsa.disable-longname"	/**< if card long name should not be passed to MIDI port */
+#define SPA_KEY_API_ALSA_BIND_CTLS	"api.alsa.bind-ctls"		/**< alsa controls to bind as params */
+#define SPA_KEY_API_ALSA_SPLIT_ENABLE	"api.alsa.split-enable"		/**< For UCM devices with split PCMs, don't split to
+									 * multiple PCMs using alsa-lib plugins, but instead
+									 * add api.alsa.split properties to emitted nodes
+									 * with PCM splitting information.
+									 */
+#define SPA_KEY_API_ALSA_SPLIT_PARENT	"api.alsa.split.parent"		/**< PCM is UCM SplitPCM parent PCM,
+									 * to be opened with SplitPCM set.
+									 */
 
 /** info from alsa card_info */
 #define SPA_KEY_API_ALSA_CARD_ID	"api.alsa.card.id"		/**< id from card_info */
@@ -84,6 +75,15 @@ extern "C" {
 #define SPA_KEY_API_ALSA_PCM_SUBCLASS	"api.alsa.pcm.subclass"		/**< subclass from pcm_info as string */
 #define SPA_KEY_API_ALSA_PCM_SYNC_ID	"api.alsa.pcm.sync-id"		/**< sync id */
 
+#define SPA_KEY_API_ALSA_SPLIT_POSITION "api.alsa.split.position"	/**< (SPA JSON list) If present, this is a
+									 * virtual device corresponding to a subset of
+									 * channels in an underlying PCM, listed in this
+									 * property. The \ref SPA_KEY_API_ALSA_PATH
+									 * contains the underlying split PCM. */
+#define SPA_KEY_API_ALSA_SPLIT_HW_POSITION \
+					"api.alsa.split.hw-position"	/**< (SPA JSON list) Channel map of the
+									 * underlying split PCM. */
+
 /** keys for v4l2 api */
 #define SPA_KEY_API_V4L2		"api.v4l2"			/**< key for the v4l2 api */
 #define SPA_KEY_API_V4L2_PATH		"api.v4l2.path"			/**< v4l2 device path as can be
@@ -95,6 +95,8 @@ extern "C" {
 									  *  used in open() */
 #define SPA_KEY_API_LIBCAMERA_LOCATION	"api.libcamera.location"	/**< location of the camera:
 									  * "front", "back" or "external" */
+#define SPA_KEY_API_LIBCAMERA_ROTATION	"api.libcamera.rotation"	/**< rotation of the camera:
+									  * "0", "90", "180" or "270" */
 
 /** info from libcamera_capability */
 #define SPA_KEY_API_LIBCAMERA_CAP_DRIVER	"api.libcamera.cap.driver"	/**< driver from capbility */
@@ -127,11 +129,16 @@ extern "C" {
 #define SPA_KEY_API_BLUEZ5_CODEC	"api.bluez5.codec"		/**< a bluetooth codec */
 #define SPA_KEY_API_BLUEZ5_CLASS	"api.bluez5.class"		/**< a bluetooth class */
 #define SPA_KEY_API_BLUEZ5_ICON		"api.bluez5.icon"		/**< a bluetooth icon */
+#define SPA_KEY_API_BLUEZ5_ROLE		"api.bluez5.role"		/**< "client" or "server" */
 
 /** keys for jack api */
 #define SPA_KEY_API_JACK		"api.jack"			/**< key for the JACK api */
 #define SPA_KEY_API_JACK_SERVER		"api.jack.server"		/**< a jack server name */
 #define SPA_KEY_API_JACK_CLIENT		"api.jack.client"		/**< an internal jack client */
+
+/** keys for glib api */
+#define SPA_KEY_API_GLIB_MAINLOOP	"api.glib.mainloop"		/**< whether glib mainloop runs
+									 * in same thread as PW loop */
 
 /**
  * \}

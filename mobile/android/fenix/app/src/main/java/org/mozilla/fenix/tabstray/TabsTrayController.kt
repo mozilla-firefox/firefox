@@ -285,7 +285,6 @@ class DefaultTabsTrayController(
                 Page.SyncedTabs -> TabsTray.syncedModeTapped.record(NoExtras())
             }
         }
-
         tabsTrayStore.dispatch(TabsTrayAction.PageSelected(page))
     }
 

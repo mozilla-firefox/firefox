@@ -294,7 +294,11 @@
 # * 2: Enable unless incompatible accessibility clients are detected.
 - name: accessibility.uia.enable
   type: uint32_t
+#ifdef NIGHTLY_BUILD
+  value: 2
+#else
   value: 0
+#endif
   mirror: always
   do_not_use_directly: true
 
@@ -2452,7 +2456,7 @@
 # Should CommitStyles use the end-point inclusive timing?
 - name: dom.animations.commit-styles-endpoint-inclusive
   type: bool
-  value: false
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 # Is support for Navigator.getBattery enabled?
@@ -2631,15 +2635,16 @@
   value: false
   mirror: always
 
-# Enable/disable contenteditable="plaintext-only".
-- name: dom.element.contenteditable.plaintext-only.enabled
+# Whether Dialog elements emit beforetoggle and toggle events during opening and closing.
+# See https://github.com/whatwg/html/pull/10091
+- name: dom.element.dialog.toggle_events.enabled
   type: bool
   value: true
   mirror: always
 
-# Whether Dialog elements emit beforetoggle and toggle events during opening and closing.
-# See https://github.com/whatwg/html/pull/10091
-- name: dom.element.dialog.toggle_events.enabled
+# HTMLDialogElement.prototype.requestClose
+# See https://html.spec.whatwg.org/#dom-dialog-requestclose
+- name: dom.element.dialog.request_close.enabled
   type: bool
   value: true
   mirror: always
@@ -3807,6 +3812,19 @@
   value: -1
   mirror: always
 
+# Controls whether the quota manager updates the last access time for origins
+# in temporary storage. When enabled, the access time is updated only when an
+# origin is accessed by a quota client for the first time during a session or
+# when the last quota client stops accessing the origin. This allows eviction
+# based on the LRU policy. When disabled, the access time is stored only once
+# when the corresponding origin directory is created for the first time.
+#
+# This setting is currently intended for manual testing purposes only.
+- name: dom.quotaManager.temporaryStorage.updateOriginAccessTime
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+
 # Should we do lazy initialization of origins ?
 # When enabled, origins for temporary storage are not initialized during
 # temporary storage initialization, they are initialized lazily instead.
@@ -4215,6 +4233,13 @@
   value: false
   mirror: always
 
+
+# Serialize < as &lt; and > as &gt; in attribute values for getHTML, innerHTML etc.
+- name: dom.security.html_serialization_escape_lt_gt
+  type: RelaxedAtomicBool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+
 # For testing purposes only; Flipping this pref to true allows
 # to skip the assertion that remote scripts can not be loaded
 # in system privileged contexts.
@@ -4505,7 +4530,7 @@
 # is encrypted in PBM.
 - name: dom.serviceWorkers.privateBrowsing.enabled
   type: RelaxedAtomicBool
-  value: @IS_NIGHTLY_BUILD@
+  value: true
   mirror: always
 
 - name: dom.serviceWorkers.testing.enabled
@@ -4783,7 +4808,7 @@
 
 - name: dom.hidden_until_found.enabled
   type: bool
-  value: @IS_NIGHTLY_BUILD@
+  value: true
   mirror: always
 
 - name: dom.text_fragments.enabled
@@ -4959,7 +4984,7 @@
 # Is support for View Transitions Level 1 enabled?
 - name: dom.viewTransitions.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
   rust: true
 
@@ -5329,13 +5354,13 @@
 # Is support for the Web GPU API enabled?
 - name: dom.webgpu.enabled
   type: RelaxedAtomicBool
-  value: @IS_NIGHTLY_BUILD@
+  value: @IS_EARLY_BETA_OR_EARLIER@
   mirror: always
 
 # Is support for the Web GPU API enabled on DOM workers?
 - name: dom.webgpu.workers.enabled
   type: RelaxedAtomicBool
-  value: @IS_NIGHTLY_BUILD@
+  value: @IS_EARLY_BETA_OR_EARLIER@
   mirror: always
 
 # Comma-separated list of wgpu backend names to permit in WebGPU adapters.
@@ -5663,7 +5688,7 @@
 # Gecko's traditional white-space normalizer.
 - name: editor.white_space_normalization.blink_compatible
   type: bool
-  value: @IS_EARLY_BETA_OR_EARLIER@
+  value: true
   mirror: always
 
 # General prefs for editor, indicating whether Gecko-specific editing UI is
@@ -8613,14 +8638,12 @@
 
 #endif  // NIGHTLY_BUILD
 
-#ifdef JS_HAS_TEMPORAL_API
   # Experimental support for Temporal in JavaScript.
 - name: javascript.options.experimental.temporal
   type: bool
   value: true
   mirror: always
   set_spidermonkey_pref: startup
-#endif  // JS_HAS_TEMPORAL_API
 
 #ifdef ENABLE_EXPLICIT_RESOURCE_MANAGEMENT
   # Experimental support for Explicit Resource Management in JavaScript.
@@ -8924,6 +8947,24 @@
 - name: javascript.options.wasm_call_ref_inlining_percent
   type: uint32_t
   value: 40
+  mirror: always
+  set_spidermonkey_pref: always
+
+# Support for wasm loop unrolling and peeling in wasm-via-Ion.  This enables
+# both unrolling and peeling.
+- name: javascript.options.wasm_unroll_loops
+  type: bool
+  value: false
+  mirror: always
+  set_spidermonkey_pref: always
+
+# The number of times a loop is unrolled, not counting the peeled iteration.
+# Minimum is 2 -- otherwise we're not unrolling at all.  From testing with
+# JetStream3 (wasm tests), it's hard to get consistently better performance
+# than simply by unrolling by 3, regardless of loop size.
+- name: javascript.options.wasm_unroll_factor
+  type: uint32_t
+  value: 3
   mirror: always
   set_spidermonkey_pref: always
 
@@ -9861,19 +9902,6 @@
   value: true
   mirror: always
 
-# Enables support for the page-orientation  property inside of CSS @page rules.
-- name: layout.css.page-orientation.enabled
-  type: RelaxedAtomicBool
-  value: true
-  mirror: always
-  rust: true
-
-# Enables support for different CSS page sizes on each page when printing.
-- name: layout.css.allow-mixed-page-sizes
-  type: RelaxedAtomicBool
-  value: true
-  mirror: always
-
 # Enables support for @margin rules.
 - name: layout.css.margin-rules.enabled
   type: RelaxedAtomicBool
@@ -9951,7 +9979,7 @@
 # Is support for -moz-prefixed transition properties enabled?
 - name: layout.css.prefixes.transitions
   type: bool
-  value: false
+  value: true
   mirror: always
 
 # Enable relative color syntax: https://drafts.csswg.org/css-color-5/#relative-colors
@@ -10547,7 +10575,7 @@
 # Is matching video-dynamic-range: high allowed?
 - name: layout.css.video-dynamic-range.allows-high
   type: RelaxedAtomicBool
-#if defined(XP_MACOSX) || defined(MOZ_WAYLAND)
+#if defined(XP_MACOSX)
   value: true
 #else
   value: false
@@ -13974,13 +14002,6 @@
   value: 60
   mirror: always
 
-# When true, the DNS code will always set the AI_CANONNAME
-# when calling getaddrinfo
-- name: network.dns.always_ai_canonname
-  type: RelaxedAtomicBool
-  value: true
-  mirror: always
-
 # The proxy type. See nsIProtocolProxyService.idl
 #     PROXYCONFIG_DIRECT   = 0
 #     PROXYCONFIG_MANUAL   = 1
@@ -14754,16 +14775,6 @@
 # 0 => NewReno
 # 1 => Cubic
 - name: network.http.http3.cc_algorithm
-  type: RelaxedAtomicUint32
-  value: 1
-  mirror: always
-  rust: true
-
-# It represents the maximum duration that we used to accumulate
-# callback timeouts before we set a timer and break out of the loop.
-#
-# Note the typo in accumlated. Not worth fixing.
-- name: network.http.http3.max_accumlated_time_ms
   type: RelaxedAtomicUint32
   value: 1
   mirror: always
@@ -15772,12 +15783,6 @@
   value: false
   mirror: always
 
-# Check if the caller is system. Only used during user char data collection.
-- name:  privacy.resistFingerprinting.randomization.canvas.disable_for_chrome
-  type: RelaxedAtomicBool
-  value: false
-  mirror: always
-
 # Anti-tracking permission expiration.
 - name: privacy.restrict3rdpartystorage.expiration
   type: uint32_t
@@ -15842,6 +15847,12 @@
 - name: privacy.antitracking.testing
   type: bool
   value: false
+  mirror: always
+
+  # Full isolation (referrer, cookie jar, etc) of resources injected by content-scripts.
+- name: privacy.antitracking.isolateContentScriptResources
+  type: bool
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 # Controls the anti-tracking webcompat features. This includes:
@@ -16058,7 +16069,7 @@
 # Whether only bounces that access storage should be considered trackers.
 - name: privacy.bounceTrackingProtection.requireStatefulBounces
   type: bool
-  value: @IS_NOT_NIGHTLY_BUILD@
+  value: true
   mirror: always
 
 # To be used in automated test environments to enable observer messages.
@@ -16230,25 +16241,25 @@
 
 # Prerequisite pref for mixed display content upgrading (images, audio, video).
 - name: security.mixed_content.upgrade_display_content
-  type: bool
+  type: RelaxedAtomicBool
   value: true
   mirror: always
 
 # Upgrade images when the upgrading is enabled.
 - name: security.mixed_content.upgrade_display_content.image
-  type: bool
+  type: RelaxedAtomicBool
   value: true
   mirror: always
 
 # Upgrade audio when the upgrading is enabled.
 - name: security.mixed_content.upgrade_display_content.audio
-  type: bool
+  type: RelaxedAtomicBool
   value: true
   mirror: always
 
 # Upgrade videos when the upgrading is enabled.
 - name: security.mixed_content.upgrade_display_content.video
-  type: bool
+  type: RelaxedAtomicBool
   value: true
   mirror: always
 
@@ -16623,18 +16634,6 @@
   type: RelaxedAtomicBool
   value: true
   mirror: always
-
-# If true, assume tokens accessed via osclientcerts implement RSA-PSS. If a
-# given token does not support RSA-PSS, users may see the error
-# 'SEC_ERROR_PKCS11_GENERAL_ERROR' if a server indicates it will accept an
-# RSA-PSS signature in the client's certificate verify message.
-# Setting this to false may allow such connections to succeed, if the server
-# also accepts RSA-PKCS1 signatures.
-- name: security.osclientcerts.assume_rsa_pss_support
-  type: RelaxedAtomicBool
-  value: true
-  mirror: always
-  rust: true
 
 - name: security.pki.cert_short_lifetime_in_days
   type: RelaxedAtomicUint32
@@ -17593,6 +17592,13 @@
 #endif
   mirror: always
 
+# If this pref and ui.touch.radious.enabled are both true, clickable content is
+# also treated as touchable content if and only if a sigle touch.
+- name: ui.touch.radius.single_touch.treat_clickable_as_touchable
+  type: bool
+  value: true
+  mirror: always
+
 - name: ui.touch.radius.visitedWeight
   type: uint32_t
   value: 120
@@ -18426,13 +18432,6 @@
   type: bool
   value: false
   mirror: once
-
-# Use DMABuf for content textures.
-# For testing purposes only.
-- name: widget.dmabuf-textures.enabled
-  type: RelaxedAtomicBool
-  value: false
-  mirror: always
 
 # Get DMABuf format feedback from compositor.
 # For testing only

@@ -90,10 +90,6 @@ WorkerLoadInfoData::WorkerLoadInfoData()
       mAssociatedBrowsingContextID(0),
       mReferrerInfo(new ReferrerInfo(nullptr)),
       mFromWindow(false),
-      mEvalAllowed(false),
-      mReportEvalCSPViolations(false),
-      mWasmEvalAllowed(false),
-      mReportWasmEvalCSPViolations(false),
       mXHRParamsAllowed(false),
       mWatchedByDevTools(false),
       mStorageAccess(StorageAccess::eDeny),
@@ -116,19 +112,12 @@ nsresult WorkerLoadInfo::SetPrincipalsAndCSPOnMainThread(
   mCSP = aCsp;
 
   if (mCSP) {
-    mCSP->GetAllowsEval(&mReportEvalCSPViolations, &mEvalAllowed);
-    mCSP->GetAllowsWasmEval(&mReportWasmEvalCSPViolations, &mWasmEvalAllowed);
     Result<UniquePtr<WorkerCSPContext>, nsresult> ctx =
         WorkerCSPContext::CreateFromCSP(aCsp);
     if (NS_WARN_IF(ctx.isErr())) {
       return ctx.unwrapErr();
     }
     mCSPContext = ctx.unwrap();
-  } else {
-    mEvalAllowed = true;
-    mReportEvalCSPViolations = false;
-    mWasmEvalAllowed = true;
-    mReportWasmEvalCSPViolations = false;
   }
 
   mLoadGroup = aLoadGroup;

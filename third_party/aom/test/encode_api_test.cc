@@ -118,7 +118,7 @@ TEST(EncodeAPI, TuneIqNotAllIntra) {
   aom_codec_ctx_t enc;
   ASSERT_EQ(aom_codec_enc_init(&enc, iface, &cfg, 0), AOM_CODEC_OK);
 
-  ASSERT_EQ(aom_codec_control(&enc, AOME_SET_TUNING, AOM_TUNE_IQ),
+  ASSERT_EQ(aom_codec_control(&enc, AOME_SET_TUNING, AOM_TUNE_SSIMULACRA2),
             AOM_CODEC_INCAPABLE);
 
   ASSERT_EQ(aom_codec_destroy(&enc), AOM_CODEC_OK);
@@ -1035,7 +1035,7 @@ TEST(EncodeAPI, AllIntraAndTuneIq) {
   aom_codec_ctx_t enc;
   ASSERT_EQ(aom_codec_enc_init(&enc, iface, &cfg, 0), AOM_CODEC_OK);
 
-  ASSERT_EQ(aom_codec_control(&enc, AOME_SET_TUNING, AOM_TUNE_IQ),
+  ASSERT_EQ(aom_codec_control(&enc, AOME_SET_TUNING, AOM_TUNE_SSIMULACRA2),
             AOM_CODEC_OK);
 
   aom_image_t *image = CreateGrayImage(AOM_IMG_FMT_I420, cfg.g_w, cfg.g_h);

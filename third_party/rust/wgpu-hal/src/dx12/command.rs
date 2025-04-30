@@ -1,4 +1,5 @@
-use std::{mem, ops::Range, vec::Vec};
+use alloc::vec::Vec;
+use core::{mem, ops::Range};
 
 use windows::Win32::{
     Foundation,
@@ -104,7 +105,7 @@ impl super::CommandEncoder {
         self.pass.clear();
     }
 
-    unsafe fn prepare_draw(&mut self, first_vertex: i32, first_instance: u32) {
+    unsafe fn prepare_vertex_buffers(&mut self) {
         while self.pass.dirty_vertex_buffers != 0 {
             let list = self.list.as_ref().unwrap();
             let index = self.pass.dirty_vertex_buffers.trailing_zeros();
@@ -115,6 +116,12 @@ impl super::CommandEncoder {
                     Some(&self.pass.vertex_buffers[index as usize..][..1]),
                 );
             }
+        }
+    }
+
+    unsafe fn prepare_draw(&mut self, first_vertex: i32, first_instance: u32) {
+        unsafe {
+            self.prepare_vertex_buffers();
         }
         if let Some(root_index) = self
             .pass
@@ -778,7 +785,7 @@ impl crate::CommandEncoder for super::CommandEncoder {
                 desc.color_attachments.len() as u32,
                 Some(color_views.as_ptr()),
                 false,
-                ds_view.as_ref().map(std::ptr::from_ref),
+                ds_view.as_ref().map(core::ptr::from_ref),
             )
         };
 
@@ -837,7 +844,7 @@ impl crate::CommandEncoder for super::CommandEncoder {
                             ds.clear_value.0,
                             ds.clear_value.1 as u8,
                             0,
-                            std::ptr::null(),
+                            core::ptr::null(),
                         )
                     }
                 }
@@ -858,8 +865,8 @@ impl crate::CommandEncoder for super::CommandEncoder {
             right: desc.extent.width as i32,
             bottom: desc.extent.height as i32,
         };
-        unsafe { list.RSSetViewports(std::slice::from_ref(&raw_vp)) };
-        unsafe { list.RSSetScissorRects(std::slice::from_ref(&raw_rect)) };
+        unsafe { list.RSSetViewports(core::slice::from_ref(&raw_vp)) };
+        unsafe { list.RSSetScissorRects(core::slice::from_ref(&raw_rect)) };
     }
 
     unsafe fn end_render_pass(&mut self) {
@@ -1121,7 +1128,7 @@ impl crate::CommandEncoder for super::CommandEncoder {
             self.list
                 .as_ref()
                 .unwrap()
-                .RSSetViewports(std::slice::from_ref(&raw_vp))
+                .RSSetViewports(core::slice::from_ref(&raw_vp))
         }
     }
     unsafe fn set_scissor_rect(&mut self, rect: &crate::Rect<u32>) {
@@ -1135,7 +1142,7 @@ impl crate::CommandEncoder for super::CommandEncoder {
             self.list
                 .as_ref()
                 .unwrap()
-                .RSSetScissorRects(std::slice::from_ref(&raw_rect))
+                .RSSetScissorRects(core::slice::from_ref(&raw_rect))
         }
     }
     unsafe fn set_stencil_reference(&mut self, value: u32) {
@@ -1195,10 +1202,31 @@ impl crate::CommandEncoder for super::CommandEncoder {
         offset: wgt::BufferAddress,
         draw_count: u32,
     ) {
-        unsafe { self.prepare_draw(0, 0) };
+        if self
+            .pass
+            .layout
+            .special_constants
+            .as_ref()
+            .and_then(|sc| sc.indirect_cmd_signatures.as_ref())
+            .is_some()
+        {
+            unsafe { self.prepare_vertex_buffers() };
+            self.update_root_elements();
+        } else {
+            unsafe { self.prepare_draw(0, 0) };
+        }
+
+        let cmd_signature = &self
+            .pass
+            .layout
+            .special_constants
+            .as_ref()
+            .and_then(|sc| sc.indirect_cmd_signatures.as_ref())
+            .unwrap_or_else(|| &self.shared.cmd_signatures)
+            .draw;
         unsafe {
             self.list.as_ref().unwrap().ExecuteIndirect(
-                &self.shared.cmd_signatures.draw,
+                cmd_signature,
                 draw_count,
                 &buffer.resource,
                 offset,
@@ -1213,10 +1241,31 @@ impl crate::CommandEncoder for super::CommandEncoder {
         offset: wgt::BufferAddress,
         draw_count: u32,
     ) {
-        unsafe { self.prepare_draw(0, 0) };
+        if self
+            .pass
+            .layout
+            .special_constants
+            .as_ref()
+            .and_then(|sc| sc.indirect_cmd_signatures.as_ref())
+            .is_some()
+        {
+            unsafe { self.prepare_vertex_buffers() };
+            self.update_root_elements();
+        } else {
+            unsafe { self.prepare_draw(0, 0) };
+        }
+
+        let cmd_signature = &self
+            .pass
+            .layout
+            .special_constants
+            .as_ref()
+            .and_then(|sc| sc.indirect_cmd_signatures.as_ref())
+            .unwrap_or_else(|| &self.shared.cmd_signatures)
+            .draw_indexed;
         unsafe {
             self.list.as_ref().unwrap().ExecuteIndirect(
-                &self.shared.cmd_signatures.draw_indexed,
+                cmd_signature,
                 draw_count,
                 &buffer.resource,
                 offset,

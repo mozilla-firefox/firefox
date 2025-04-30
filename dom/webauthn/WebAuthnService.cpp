@@ -156,26 +156,31 @@ WebAuthnService::GetAssertion(uint64_t aTransactionId,
   nsresult rv;
 
 #if defined(XP_MACOSX)
-  // The macOS security key API doesn't handle the AppID extension. So we'll
-  // use authenticator-rs if it's likely that the request requires AppID. We
-  // consider it likely if 1) the AppID extension is present, 2) the allow list
-  // is non-empty, and 3) none of the allowed credentials use the
-  // "internal" or "hybrid" transport.
-  nsString appId;
-  rv = aArgs->GetAppId(appId);
-  if (rv == NS_OK) {  // AppID is set
-    uint8_t transportSet = 0;
-    nsTArray<uint8_t> allowListTransports;
-    Unused << aArgs->GetAllowListTransports(allowListTransports);
-    for (const uint8_t& transport : allowListTransports) {
-      transportSet |= transport;
-    }
-    uint8_t passkeyTransportMask =
-        MOZ_WEBAUTHN_AUTHENTICATOR_TRANSPORT_ID_INTERNAL |
-        MOZ_WEBAUTHN_AUTHENTICATOR_TRANSPORT_ID_HYBRID;
-    if (allowListTransports.Length() > 0 &&
-        (transportSet & passkeyTransportMask) == 0) {
-      guard->ref().service = AuthrsService();
+  if (__builtin_available(macos 14.5, *)) {
+    // This branch is intentionally empty; using `!__builtin_available(...)`
+    // results in a compiler warning.
+  } else {
+    // On macOS < 14.5 the security key API doesn't handle the AppID extension.
+    // So we'll use authenticator-rs if it's likely that the request requires
+    // AppID. We consider it likely if 1) the AppID extension is present, 2)
+    // the allow list is non-empty, and 3) none of the allowed credentials use
+    // the "internal" or "hybrid" transport.
+    nsString appId;
+    rv = aArgs->GetAppId(appId);
+    if (rv == NS_OK) {  // AppID is set
+      uint8_t transportSet = 0;
+      nsTArray<uint8_t> allowListTransports;
+      Unused << aArgs->GetAllowListTransports(allowListTransports);
+      for (const uint8_t& transport : allowListTransports) {
+        transportSet |= transport;
+      }
+      uint8_t passkeyTransportMask =
+          MOZ_WEBAUTHN_AUTHENTICATOR_TRANSPORT_ID_INTERNAL |
+          MOZ_WEBAUTHN_AUTHENTICATOR_TRANSPORT_ID_HYBRID;
+      if (allowListTransports.Length() > 0 &&
+          (transportSet & passkeyTransportMask) == 0) {
+        guard->ref().service = AuthrsService();
+      }
     }
   }
 #endif

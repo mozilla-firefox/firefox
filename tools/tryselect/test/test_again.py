@@ -3,10 +3,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
+from importlib import reload
 
 import mozunit
 import pytest
-from six.moves import reload_module as reload
 from tryselect import push
 from tryselect.selectors import again
 

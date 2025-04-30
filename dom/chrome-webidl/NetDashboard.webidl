@@ -154,3 +154,28 @@ dictionary RcwnStatus {
   // Sequence is indexed by CachePerfStats::EDataType
   sequence<RcwnPerfStats> perfStats;
 };
+
+dictionary Http3ConnStats {
+  unsigned long long packetsRx = 0;
+  unsigned long long dupsRx = 0;
+  unsigned long long droppedRx = 0;
+  unsigned long long savedDatagrams = 0;
+  unsigned long long packetsTx = 0;
+  unsigned long long lost = 0;
+  unsigned long long lateAck = 0;
+  unsigned long long ptoAck = 0;
+  unsigned long long wouldBlockRx = 0;
+  unsigned long long wouldBlockTx = 0;
+  sequence<unsigned long long> ptoCounts;
+};
+
+dictionary Http3ConnectionStatsElement {
+  DOMString host = "";
+  unsigned long port = 0;
+  sequence<Http3ConnStats> stats;
+};
+
+[GenerateConversionToJS]
+dictionary Http3ConnStatsDict {
+  sequence<Http3ConnectionStatsElement> connections;
+};

@@ -26,7 +26,6 @@ support-files = [
 ["test_libPrefs.js"]
 
 ["test_locked_file_prefs.js"]
-skip-if = ["os == 'win' && socketprocess_networking"]
 support-files = [
   "data/testPrefLocked.js", "data/testPrefLockedUser.js",
 ]
@@ -39,7 +38,6 @@ head = ""
 support-files = ["data/testParser.js"]
 
 ["test_stickyprefs.js"]
-skip-if = ["os == 'win' && socketprocess_networking"]
 support-files = [
   "data/testPrefSticky.js", "data/testPrefStickyUser.js",
 ]

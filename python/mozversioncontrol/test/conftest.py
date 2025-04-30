@@ -6,9 +6,13 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import List
 
 import pytest
 
+# Execute the first element in each list of steps within a `repo` directory,
+# then copy the whole directory to a `remoterepo`, and finally execute the
+# second element on just `repo`.
 SETUP = {
     "hg": [
         """
@@ -40,11 +44,32 @@ SETUP = {
         git branch -u upstream/master
         """,
     ],
+    "jj": [
+        """
+        echo "foo" > foo
+        echo "bar" > bar
+        git init
+        git config user.name "Testing McTesterson"
+        git config user.email "<test@example.org>"
+        git add *
+        git commit -am "Initial commit"
+        """,
+        """
+        # Pass in user name/email via env vars because the initial commit
+        # will use them before we have a chance to configure them.
+        JJ_USER="Testing McTesterson" JJ_EMAIL="test@example.org" jj git init --colocate
+        jj config set --repo user.name "Testing McTesterson"
+        jj config set --repo user.email "test@example.org"
+        jj git remote add upstream ../remoterepo
+        jj git fetch --remote upstream
+        jj bookmark track master@upstream
+        """,
+    ],
 }
 
 
 class RepoTestFixture:
-    def __init__(self, repo_dir: Path, vcs: str, steps: [str]):
+    def __init__(self, repo_dir: Path, vcs: str, steps: List[str]):
         self.dir = repo_dir
         self.vcs = vcs
 
@@ -61,8 +86,16 @@ def shell(cmd, working_dir):
         subprocess.check_call(step, shell=True, cwd=working_dir)
 
 
-@pytest.fixture(params=["git", "hg"])
+@pytest.fixture(params=["git", "hg", "jj"])
 def repo(tmpdir, request):
+    if request.param == "jj":
+        if os.getenv("MOZ_AVOID_JJ_VCS") not in (None, "0", ""):
+            pytest.skip("jj support disabled")
+        try:
+            subprocess.call(["jj", "--version"], stdout=subprocess.DEVNULL)
+        except OSError:
+            pytest.skip("jj unavailable")
+
     tmpdir = Path(tmpdir)
     vcs = request.param
     steps = SETUP[vcs]

@@ -150,9 +150,12 @@ skip-if = ["inc_origin_init"]
 ["test_specialOrigins.js"]
 
 ["test_storagePressure.js"]
+run-if = ["!condprof"] # Bug 1960788
 skip-if = ["inc_origin_init"]
 
 ["test_tempMetadataCleanup.js"]
+
+["test_temporaryStorageEviction.js"]
 
 ["test_unaccessedOrigins.js"]
 

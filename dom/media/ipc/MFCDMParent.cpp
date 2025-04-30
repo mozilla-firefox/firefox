@@ -7,6 +7,7 @@
 #include <mfmediaengine.h>
 #include <unknwnbase.h>
 #include <wtypes.h>
+#include "mozilla/Likely.h"
 #define INITGUID          // Enable DEFINE_PROPERTYKEY()
 #include <propkeydef.h>   // For DEFINE_PROPERTYKEY() definition
 #include <propvarutil.h>  // For InitPropVariantFrom*()
@@ -16,6 +17,7 @@
 #include "RemoteDecodeUtils.h"       // For GetCurrentSandboxingKind()
 #include "SpecialSystemDirectory.h"  // For temp dir
 #include "WMFUtils.h"
+#include "mozilla/DataMutex.h"
 #include "mozilla/EMEUtils.h"
 #include "mozilla/ProfilerMarkers.h"
 #include "mozilla/KeySystemConfig.h"
@@ -90,13 +92,13 @@ DEFINE_PROPERTYKEY(EME_CONTENTDECRYPTIONMODULE_ORIGIN_ID, 0x1218a3e2, 0xcfb0,
     }                                                                        \
   } while (false)
 
-StaticMutex sFactoryMutex;
-MOZ_RUNINIT static nsTHashMap<nsStringHashKey,
-                              ComPtr<IMFContentDecryptionModuleFactory>>
-    sFactoryMap;
-MOZ_RUNINIT static CopyableTArray<MFCDMCapabilitiesIPDL> sCapabilities;
-StaticMutex sCapabilitesMutex;
-MOZ_RUNINIT static ComPtr<IUnknown> sMediaEngineClassFactory;
+MOZ_RUNINIT static StaticDataMutex<
+    nsTHashMap<nsStringHashKey, ComPtr<IMFContentDecryptionModuleFactory>>>
+    sFactoryMap("sFactoryMap");
+MOZ_RUNINIT static StaticDataMutex<CopyableTArray<MFCDMCapabilitiesIPDL>>
+    sCapabilities("sCapabilities");
+MOZ_RUNINIT static StaticDataMutex<ComPtr<IUnknown>> sMediaEngineClassFactory(
+    "sMediaEngineClassFactory");
 
 // RAIIized PROPVARIANT. See
 // third_party/libwebrtc/modules/audio_device/win/core_audio_utility_win.h
@@ -486,24 +488,32 @@ LPCWSTR MFCDMParent::GetCDMLibraryName(const nsString& aKeySystem) {
 
 /* static */
 void MFCDMParent::Shutdown() {
-  StaticMutexAutoLock lock(sCapabilitesMutex);
-  sFactoryMap.Clear();
-  sCapabilities.Clear();
-  sMediaEngineClassFactory.Reset();
+  {
+    auto factoryMap = sFactoryMap.Lock();
+    factoryMap->Clear();
+  }
+  {
+    auto capabilities = sCapabilities.Lock();
+    capabilities->Clear();
+  }
+  {
+    auto mediaEngineClassFactory = sMediaEngineClassFactory.Lock();
+    mediaEngineClassFactory->Reset();
+  }
 }
 
 /* static */
 HRESULT MFCDMParent::GetOrCreateFactory(
     const nsString& aKeySystem,
     ComPtr<IMFContentDecryptionModuleFactory>& aFactoryOut) {
-  StaticMutexAutoLock lock(sFactoryMutex);
-  auto rv = sFactoryMap.MaybeGet(aKeySystem);
+  auto factoryMap = sFactoryMap.Lock();
+  auto rv = factoryMap->MaybeGet(aKeySystem);
   if (!rv) {
     MFCDM_PARENT_SLOG("No factory %s, creating...",
                       NS_ConvertUTF16toUTF8(aKeySystem).get());
     ComPtr<IMFContentDecryptionModuleFactory> factory;
     MFCDM_RETURN_IF_FAILED(LoadFactory(aKeySystem, factory));
-    sFactoryMap.InsertOrUpdate(aKeySystem, factory);
+    factoryMap->InsertOrUpdate(aKeySystem, factory);
     aFactoryOut.Swap(factory);
   } else {
     aFactoryOut = *rv;
@@ -524,15 +534,29 @@ HRESULT MFCDMParent::LoadFactory(
                     NS_ConvertUTF16toUTF8(aKeySystem).get());
   ComPtr<IMFContentDecryptionModuleFactory> cdmFactory;
   if (loadFromPlatform) {
-    if (!sMediaEngineClassFactory) {
-      MFCDM_RETURN_IF_FAILED(CoCreateInstance(
-          CLSID_MFMediaEngineClassFactory, nullptr, CLSCTX_INPROC_SERVER,
-          IID_PPV_ARGS(&sMediaEngineClassFactory)));
-    }
     ComPtr<IMFMediaEngineClassFactory4> clsFactory;
-    MFCDM_RETURN_IF_FAILED(sMediaEngineClassFactory.As(&clsFactory));
+    {
+      auto mediaEngineClassFactory = sMediaEngineClassFactory.Lock();
+      if (!*mediaEngineClassFactory) {
+        MFCDM_RETURN_IF_FAILED(CoCreateInstance(
+            CLSID_MFMediaEngineClassFactory, nullptr, CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(&*mediaEngineClassFactory)));
+      }
+      MFCDM_RETURN_IF_FAILED((*mediaEngineClassFactory).As(&clsFactory));
+    }
     MFCDM_RETURN_IF_FAILED(clsFactory->CreateContentDecryptionModuleFactory(
         MapKeySystem(aKeySystem).get(), IID_PPV_ARGS(&cdmFactory)));
+    if (MOZ_UNLIKELY(!cdmFactory)) {
+      if (IsBeingProfiledOrLogEnabled()) {
+        nsPrintfCString msg(
+            "CreateContentDecryptionModuleFactory succeeded, but still no "
+            "factory?!");
+        MFCDM_PARENT_SLOG("%s", msg.get());
+        PROFILER_MARKER_TEXT("MFCDMParent::LoadFactoryFailed", MEDIA_PLAYBACK,
+                             {}, msg);
+      }
+      return E_UNEXPECTED;
+    }
     aFactoryOut.Swap(cdmFactory);
     MFCDM_PARENT_SLOG("Created factory for %s from platform!",
                       NS_ConvertUTF16toUTF8(aKeySystem).get());
@@ -645,19 +669,65 @@ static bool FactorySupports(ComPtr<IMFContentDecryptionModuleFactory>& aFactory,
   if (IsPlayReadyKeySystemAndSupported(aKeySystem) &&
       StaticPrefs::media_eme_playready_istypesupportedex()) {
     ComPtr<IMFExtendedDRMTypeSupport> spDrmTypeSupport;
-    MFCDM_RETURN_BOOL_IF_FAILED(sMediaEngineClassFactory.As(&spDrmTypeSupport));
+    {
+      auto mediaEngineClassFactory = sMediaEngineClassFactory.Lock();
+      MFCDM_RETURN_BOOL_IF_FAILED(
+          (*mediaEngineClassFactory).As(&spDrmTypeSupport));
+    }
     BSTR keySystem = aIsHWSecure
                          ? CreateBSTRFromConstChar(kPlayReadyKeySystemHardware)
                          : CreateBSTRFromConstChar(kPlayReadyKeySystemName);
     MF_MEDIA_ENGINE_CANPLAY canPlay;
     spDrmTypeSupport->IsTypeSupportedEx(SysAllocString(contentType.get()),
                                         keySystem, &canPlay);
-    const bool support =
+    bool support =
         canPlay !=
         MF_MEDIA_ENGINE_CANPLAY::MF_MEDIA_ENGINE_CANPLAY_NOT_SUPPORTED;
     MFCDM_PARENT_SLOG("IsTypeSupportedEx=%d (key-system=%ls, content-type=%s)",
                       support, keySystem,
                       NS_ConvertUTF16toUTF8(contentType).get());
+    if (aIsHWSecure && support) {
+      // For HWDRM, `IsTypeSupportedEx` might still return the wrong answer on
+      // certain devices, so we need to create a dummy CDM to see if the HWDRM
+      // is really usable or not.
+      nsTArray<nsString> dummyInitDataType{nsString(u"cenc"),
+                                           nsString(u"keyids")};
+      nsString mimeType(u"video/mp4;codecs=\"");
+      mimeType.AppendASCII(aVideoCodec);
+      MFCDMMediaCapability dummyVideoCapability{
+          mimeType,
+          {CryptoScheme::None},  // No specific scheme
+          nsString(u"3000")};
+      MFCDMInitParamsIPDL dummyParam{
+          nsString(u"dummy"),
+          dummyInitDataType,
+          KeySystemConfig::Requirement::Required /* distinctiveID */,
+          KeySystemConfig::Requirement::Required /* persistent */,
+          {} /* audio capabilities */,
+          {dummyVideoCapability} /* video capabilities */,
+      };
+      ComPtr<IMFContentDecryptionModule> dummyCDM = nullptr;
+      if (FAILED(CreateContentDecryptionModule(
+              aFactory, MapKeySystem(aKeySystem), dummyParam, dummyCDM)) ||
+          !dummyCDM) {
+        if (IsBeingProfiledOrLogEnabled()) {
+          nsPrintfCString msg(
+              "HWDRM actually not supported (key-system=%ls, content-type=%s)",
+              keySystem, NS_ConvertUTF16toUTF8(contentType).get());
+          PROFILER_MARKER_TEXT("MFCDMParent::FailedToUseHWDRM", MEDIA_PLAYBACK,
+                               {}, msg);
+          MFCDM_PARENT_SLOG("%s", msg.get());
+        }
+        support = false;
+      }
+      MFCDM_PARENT_SLOG(
+          "After HWDRM creation check, support=%d (key-system=%ls, "
+          "content-type=%s)",
+          support, keySystem, NS_ConvertUTF16toUTF8(contentType).get());
+      if (dummyCDM) {
+        SHUTDOWN_IF_POSSIBLE(dummyCDM);
+      }
+    }
     return support;
   }
 
@@ -799,8 +869,8 @@ void MFCDMParent::GetCapabilities(const nsString& aKeySystem,
     RETURN_VOID_IF_FAILED(GetOrCreateFactory(aKeySystem, factory));
   }
 
-  StaticMutexAutoLock lock(sCapabilitesMutex);
-  for (auto& capabilities : sCapabilities) {
+  auto capabilitiesUnlocked = sCapabilities.Lock();
+  for (auto& capabilities : *capabilitiesUnlocked) {
     if (capabilities.keySystem().Equals(aKeySystem) &&
         capabilities.isHardwareDecryption() == isHardwareDecryption) {
       MFCDM_PARENT_SLOG(
@@ -1018,7 +1088,7 @@ void MFCDMParent::GetCapabilities(const nsString& aKeySystem,
       KeySystemConfig::SessionType::PersistentLicense);
 
   // Cache capabilities for reuse.
-  sCapabilities.AppendElement(aCapabilitiesOut);
+  capabilitiesUnlocked->AppendElement(aCapabilitiesOut);
 }
 
 mozilla::ipc::IPCResult MFCDMParent::RecvGetCapabilities(

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <!-- Description for the button to accept the search suggestion and continue editing the search. -->
-  <string name="mozac_browser_awesomebar_edit_suggestion">Tanggapin at i-edit ang mungkahi</string>
+  <string name="mozac_browser_awesomebar_edit_suggestion">Tanggapin at baguhin ang mungkahi</string>
 </resources>

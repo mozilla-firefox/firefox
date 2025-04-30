@@ -745,8 +745,6 @@
     <string name="preferences_override_account_server">Custom Mozilla account server</string>
     <!-- Preference to override the Sync token server -->
     <string name="preferences_override_sync_tokenserver">Custom Sync server</string>
-    <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-    <string name="toast_override_account_sync_server_done">Mozilla account/Sync server modified. Quitting the application to apply changes…</string>
     <!-- Preference category for account information -->
     <string name="preferences_category_account">Account</string>
     <!-- Preference for changing where the AddressBar is positioned -->
@@ -1324,16 +1322,20 @@
     <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Remove</string>
     <!-- Text for the button to delete a single downloaded file item -->
     <string name="download_delete_item">Delete</string>
+    <!-- Content description for the toolbar "Navigate back" button -->
+    <string name="download_navigate_back_description">Navigate back</string>
+    <!-- Content description for the toolbar "Navigate up" button -->
+    <string name="download_navigate_up_description">Navigate up</string>
     <!-- Text for the button to share the download URL -->
     <string name="download_share_url">Share URL</string>
     <!-- Text for the button to share the download file -->
     <string name="download_share_file">Share file</string>
     <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-    <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Are you sure you want to delete the selected items?</string>
+    <string name="download_delete_multi_select_dialog_confirmation">Are you sure you want to delete the selected items?</string>
     <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-    <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Delete</string>
+    <string name="download_delete_multi_select_dialog_confirm">Delete</string>
     <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-    <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Cancel</string>
+    <string name="download_delete_multi_select_dialog_cancel">Cancel</string>
     <!-- Text for the header of in progress downloads -->
     <string name="download_header_in_progress" tools:ignore="UnusedResources">In progress</string>
     <!-- Time period headers for downloads -->
@@ -1359,9 +1361,9 @@
     <!-- Text to indicate that a download has failed to download. -->
     <string name="download_item_status_failed" tools:ignore="UnusedResources">Download failed</string>
     <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-    <string name="download_search_placeholder" tools:ignore="UnusedResources">Search downloads</string>
+    <string name="download_search_placeholder">Search downloads</string>
     <!-- Text to indicate that no downloads match the search query. -->
-    <string name="download_search_no_results_found" tools:ignore="UnusedResources">No results found</string>
+    <string name="download_search_no_results_found">No results found</string>
     <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
     <string name="download_select_all_items">Select all</string>
 
@@ -2055,9 +2057,9 @@
     Enhanced tracking protection exception preference icon for ETP settings. -->
     <string name="preference_etp_exceptions_icon_description">Enhanced tracking protection exception preference icon</string>
 
-    <!-- DNS Over HTTPS (DoH) -->
+    <!-- DNS over HTTPS (DoH) -->
     <!-- Preference title for DNS over HTTPS settings -->
-    <string name="preference_doh_title">DNS Over HTTPS</string>
+    <string name="preference_doh_title">DNS over HTTPS</string>
     <!-- Description of the preference to enable "DNS over HTTPS". %1$s is replaced by a link using `preference_doh_learn_more` at text ("Learn More"). -->
     <string name="preference_doh_summary">Domain Name System (DNS) over HTTPS sends your request for a domain name through an encrypted connection, providing a secure DNS and making it harder for others to see which website you’re about to access. %1$s</string>
     <!-- Used as text for the link in `preference_doh_title`, points to documentation about "DNS over HTTPS" -->
@@ -2920,6 +2922,8 @@
     <string name="protection_panel_no_trackers_blocked">No trackers found</string>
     <!-- Link text to navigate to privacy and security settings from the protection panel. -->
     <string name="protection_panel_privacy_and_security_settings">Privacy and security settings</string>
+    <!-- Title text for the protection panel permissions section. -->
+    <string name="protection_panel_permissions_title">Permissions</string>
     <!-- Text for displaying the total number of trackers blocked in the trackers blocked panel.
         %d is a placeholder for the number of trackers blocked. -->
     <string name="trackers_blocked_panel_total_num_trackers_blocked">Trackers blocked: %d</string>
@@ -3174,6 +3178,20 @@
     <string name="setup_checklist_subtitle_6_steps_fifth_step">Almost there! You’re just 1 step away from the finish line.</string>
     <!-- Subtitle for a setup checklist with 6 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
     <string name="setup_checklist_subtitle_6_steps_completed_state">You’ve completed all 6 setup steps. Enjoy the speed, privacy, and security of %1$s.</string>
+
+    <!-- ===== Setup checklist feature: Subtitles for 5 steps (Large screen devices don't support toolbar placement) ===== -->
+    <!-- Subtitle for a setup checklist with 5 steps initial state. %1$s is the name of the app (for example "Firefox"). -->
+    <string name="setup_checklist_subtitle_5_steps_initial_state">Complete all 5 steps to set up %1$s for the best browsing experience.</string>
+    <!-- Subtitle for a setup checklist with 5 steps when the first task is completed. -->
+    <string name="setup_checklist_subtitle_5_steps_first_step">Great start! You’ve completed 1 out of 5 steps.</string>
+    <!-- Subtitle for the setup checklist when the second task is completed. -->
+    <string name="setup_checklist_subtitle_5_steps_second_step">You’ve completed 2 out of 5 steps. Great progress!</string>
+    <!-- Subtitle for a setup checklist with 5 steps when three of the tasks are completed. -->
+    <string name="setup_checklist_subtitle_5_steps_third_step">You’re halfway there! Three steps finished and 2 to go.</string>
+    <!-- Subtitle for a setup checklist with 5 steps when the fifth task is completed. -->
+    <string name="setup_checklist_subtitle_5_steps_fourth_step">Almost there! You’re just 1 step away from the finish line.</string>
+    <!-- Subtitle for a setup checklist with 5 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+    <string name="setup_checklist_subtitle_5_steps_completed_state">You’ve completed all 5 setup steps. Enjoy the speed, privacy, and security of %1$s.</string>
 
     <!-- ===== Setup checklist feature: Task titles ===== -->
     <!-- The title of the default browser task for the setup checklist -->

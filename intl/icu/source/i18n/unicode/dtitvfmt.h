@@ -642,6 +642,13 @@ public:
     virtual void setTimeZone(const TimeZone& zone);
 
     /**
+     * Sets the calendar used by this DateIntervalFormat object. The caller no longer owns
+     * the Calendar object and should not delete it after this call.
+     * @param calendarToAdopt the Calendar to be adopted.
+     */
+    virtual void adoptCalendar(Calendar *calendarToAdopt);
+
+    /**
      * Set a particular UDisplayContext value in the formatter, such as
      * UDISPCTX_CAPITALIZATION_FOR_STANDALONE. This causes the formatted
      * result to be capitalized appropriately for the context in which

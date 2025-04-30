@@ -114,34 +114,36 @@ add_task(async function testHorizontalScrolling() {
   await waitForPaused(dbg);
 
   const lastColumn = getLastVisibleColumn();
-  is(lastColumn, 55);
+  is(lastColumn, 54);
   ok(
     isScrolledPositionVisible(dbg, 2, 1),
     "The 2nd line, first column is visible"
   );
   ok(
-    !isScrolledPositionVisible(dbg, 2, lastColumn),
-    "The 2nd line, last column is partially visible and considered hidden"
+    isScrolledPositionVisible(dbg, 2, lastColumn),
+    "The 2nd line, last column is visible"
   );
   ok(
-    isScrolledPositionVisible(dbg, 2, lastColumn - 1),
-    "The column before the last column is visible"
+    !isScrolledPositionVisible(dbg, 2, lastColumn + 1),
+    "The column after the last column is hidden"
   );
 
   info("Step to the last visible column, the editor shouldn't scroll");
-  // This breakpoint location is on the last visible column and would not cause a scroll.
-  await addBreakpoint(dbg, "horizontal-scroll.js", 2, lastColumn);
+  // There is one breakable position every two column.
+  // We can see the column breakpoint for the column after the last visible one.
+  // Setting a breakpoint on that column and pausing shouldn't cause to scroll the viewport.
+  await addBreakpoint(dbg, "horizontal-scroll.js", 2, lastColumn + 1);
   await resume(dbg);
   await waitForPaused(dbg);
 
   is(getLastVisibleColumn(), lastColumn, "We did not scroll horizontaly");
   ok(
-    !isScrolledPositionVisible(dbg, 2, lastColumn),
-    "The last column is still considered hidden"
+    isScrolledPositionVisible(dbg, 2, lastColumn),
+    "The last column is still visible"
   );
   ok(
-    isScrolledPositionVisible(dbg, 2, lastColumn - 1),
-    "The column before the last colunm is still visible"
+    !isScrolledPositionVisible(dbg, 2, lastColumn + 1),
+    "The column after the last colunm is still hidden"
   );
 
   info(
@@ -149,8 +151,9 @@ add_task(async function testHorizontalScrolling() {
   );
 
   info("Step into the next breakable column, the editor should now scroll");
-  // Set a breakpoint to the next breakable position (there is one every two columns, and lastColumn was breakable)
-  await addBreakpoint(dbg, "horizontal-scroll.js", 2, lastColumn + 2);
+  // Set a breakpoint on the first column that would cause a scroll
+  // (there is one breakable position every two column)
+  await addBreakpoint(dbg, "horizontal-scroll.js", 2, lastColumn + 3);
   await resume(dbg);
   await waitForPaused(dbg);
 
@@ -177,4 +180,50 @@ add_task(async function testHorizontalScrolling() {
   );
 
   await resume(dbg);
+});
+
+// Tests the limit of the no of column breakpoint markers in a minified source with a long line.
+add_task(async function testColumnBreakpointsLimitAfterHorizontalScroll() {
+  // Keep the layout consistent
+  await pushPref("devtools.debugger.end-panel-size", 300);
+
+  const dbg = await initDebugger(
+    "doc-large-sources.html",
+    "codemirror-bundle.js"
+  );
+
+  info("Select the minified bundle and add a breakpoint");
+  await selectSource(dbg, "codemirror-bundle.js");
+  await addBreakpoint(dbg, "codemirror-bundle.js", 1);
+
+  let columnBreakpointMarkers = await waitForAllElements(
+    dbg,
+    "columnBreakpoints"
+  );
+
+  is(
+    columnBreakpointMarkers.length,
+    100,
+    "We have the expected limit of column breakpoint markers on the minified source"
+  );
+
+  info("Scroll horizintally far to the right of the file");
+  await scrollEditorIntoView(dbg, 0, 300000);
+
+  columnBreakpointMarkers = findAllElements(dbg, "columnBreakpoints");
+  is(
+    columnBreakpointMarkers.length,
+    0,
+    "There are no column breakpoint marker as the source has horizontally scrolled the viewport over the limit"
+  );
+
+  info("Scroll back to the start of the line");
+  await scrollEditorIntoView(dbg, 0, 0);
+
+  columnBreakpointMarkers = await waitForAllElements(dbg, "columnBreakpoints");
+  is(
+    columnBreakpointMarkers.length,
+    100,
+    "We still have the expected limit of column breakpoint markers on the minified source"
+  );
 });

@@ -19,10 +19,10 @@ transforms = TransformSequence()
 @transforms.add
 def fill_template(config, tasks):
     for task in tasks:
+        assert "snap-upstream-test-" in task.get("label")
+
         test_type = task.get("attributes")["snap_test_type"]
         test_release = task.get("attributes")["snap_test_release"]
-
-        assert "-test-" in task.get("label")
         task["label"] = task.get("label").replace(
             "-test-", "-test-" + test_type + "-" + test_release + "-"
         )
@@ -31,30 +31,18 @@ def fill_template(config, tasks):
         assert dep
 
         inherit_treeherder_from_dep(task, dep)
-        task_platform = task["task"]["extra"]["treeherder"]["machine"]["platform"]
 
-        # Disambiguate the treeherder symbol.
-        full_platform_collection = (
-            task_platform
-            + "-snap-"
-            + task.get("label").split("-")[-2]
-            + "-"
-            + test_release
-            + "-"
-            + task.get("label").split("-")[-1]
+        th_group = dep.task["extra"]["treeherder"]["groupSymbol"].replace("B", "Sel")
+        th_symbol = (
+            f"{test_type}-{test_release}-{dep.task['extra']['treeherder']['symbol']}"
         )
-
-        (platform, collection) = full_platform_collection.split("/")
-        task["task"]["extra"]["treeherder"]["collection"] = {collection: True}
-        task["task"]["extra"]["treeherder"]["machine"]["platform"] = platform
-        task["task"]["extra"]["treeherder-platform"] = full_platform_collection
-        task["task"]["metadata"]["name"] = task["label"]
+        task["treeherder"]["symbol"] = f"{th_group}({th_symbol})"
 
         timeout = 10
-        if collection != "opt":
+        if dep.attributes.get("build_type") != "opt":
             timeout = 60
-            task["task"]["payload"]["env"]["BUILD_IS_DEBUG"] = "1"
+            task["worker"]["env"]["BUILD_IS_DEBUG"] = "1"
 
-        task["task"]["payload"]["env"]["TEST_TIMEOUT"] = f"{timeout}"
+        task["worker"]["env"]["TEST_TIMEOUT"] = f"{timeout}"
 
         yield task

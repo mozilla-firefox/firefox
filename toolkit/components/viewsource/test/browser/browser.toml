@@ -27,4 +27,7 @@ skip-if = ["os == 'mac' && !debug"]  # Bug 1713913 - new Fission platform triage
 https_first_disabled = true
 
 ["browser_viewsourceprefs.js"]
-skip-if = ["socketprocess_networking && os == 'linux' && !debug"]
+skip-if = [
+  "socketprocess_networking && os == 'linux' && !debug",
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1775670
+]

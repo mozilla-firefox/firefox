@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+    </head>
+    <body>
+        <!-- Address form adding and removing nodes dynamically on user input -->
+        <form id="address-form-node-addition">
+                <label for="name-node-addition">Name</label>
+                <input type="text" id="name-node-addition" autocomplete="name">
+
+                <label for="email-node-addition">Email</label>
+                <input type="email" id="email-node-addition" autocomplete="email">
+
+                <label for="phone-node-addition">Phone</label>
+                <input type="tel" id="phone-node-addition" autocomplete="tel">
+
+                <label for="country-node-addition">Country</label>
+                <input type="text" id="country-node-addition" autocomplete="country">
+
+                <label for="street-address-node-addition">Street Address</label>
+                <input id="street-address-node-addition" type="text" autocomplete="street-address">
+
+                <label for="address-level1-node-addition">Address Level 1</label>
+                <input id="address-level1-node-addition" type="text" autocomplete="address-level1">
+
+                <label for="address-level2-node-addition">Address Level 2</label>
+                <input id="address-level2-node-addition" type="text" autocomplete="address-level2">
+
+                <label for="postal-code-node-addition">Postal Code</label>
+                <input id="postal-code-node-addition" type="text" autocomplete="postal-code">
+        </form>
+
+    <script>
+        const countryInputNodeAddition = document.getElementById("country-node-addition");
+        countryInputNodeAddition.addEventListener('input', () => {
+            const form = document.getElementById("address-form-node-addition");
+            const children = Array.from(form.children);
+            form.replaceChildren();
+            children.forEach((child, _) => {
+                // Alter the children to simulate fields replacement
+                const newChild = child.cloneNode(true);
+                newChild.id = newChild.id + "-after-form-change";
+                newChild.value = ""
+                form.append(newChild);
+            });
+        });
+    </script>
+</html>

@@ -1,6 +1,60 @@
 {
   "data": [
     {
+      "name": "model.aren.intgemm.alphas.bin",
+      "schema": 1744308102556,
+      "toLang": "en",
+      "version": "2.0",
+      "fileType": "model",
+      "fromLang": "ar",
+      "attachment": {
+        "hash": "f3888b9db780da4d681aaf987adfcd6ea54f82dd14ed2594b2b7ac7d253b6290",
+        "size": 42992955,
+        "filename": "model.aren.intgemm.alphas.bin",
+        "location": "main-workspace/translations-models/220f2b36-071b-470b-85b1-5fc7ea433857.bin",
+        "mimetype": "application/octet-stream"
+      },
+      "filter_expression": "env.appinfo.OS != 'Android' || env.channel != 'release'",
+      "id": "e73e3e94-df53-4114-939a-aa8a8e9ab085",
+      "last_modified": 1744657514269
+    },
+    {
+      "name": "lex.50.50.aren.s2t.bin",
+      "schema": 1744308109983,
+      "toLang": "en",
+      "version": "2.0",
+      "fileType": "lex",
+      "fromLang": "ar",
+      "attachment": {
+        "hash": "8aef44303621870863d20a27f3606470dc4677214374ad6ba56c2abe07b4f428",
+        "size": 4624316,
+        "filename": "lex.50.50.aren.s2t.bin",
+        "location": "main-workspace/translations-models/404331ae-3a6c-4108-a995-41ef2803945f.bin",
+        "mimetype": "application/octet-stream"
+      },
+      "filter_expression": "env.appinfo.OS != 'Android' || env.channel != 'release'",
+      "id": "b3209aef-80d7-4441-a8b5-4f71258bb315",
+      "last_modified": 1744657514266
+    },
+    {
+      "name": "vocab.aren.spm",
+      "schema": 1744308037564,
+      "toLang": "en",
+      "version": "2.0",
+      "fileType": "vocab",
+      "fromLang": "ar",
+      "attachment": {
+        "hash": "51b4ee3f828d10015464523d0b4f5a6c086b0b2a9bde716a581001cf6c260366",
+        "size": 860035,
+        "filename": "vocab.aren.spm",
+        "location": "main-workspace/translations-models/3b7a69e6-4883-4e03-9bef-8f1d065d3b61.spm",
+        "mimetype": "text/plain"
+      },
+      "filter_expression": "env.appinfo.OS != 'Android' || env.channel != 'release'",
+      "id": "854ecc82-7e83-4336-9d3e-6bbf255f4af3",
+      "last_modified": 1744657514262
+    },
+    {
       "name": "lex.50.50.enzh.s2t.bin",
       "schema": 1743094306967,
       "toLang": "zh-Hans",
@@ -6403,5 +6457,5 @@
       "last_modified": 1701186751412
     }
   ],
-  "timestamp": 1743096530030
+  "timestamp": 1744657514269
 }

@@ -2,7 +2,7 @@
 tags = "devtools"
 head = ""
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
+run-if = ["os != 'android'"]
 
 ["test_doc-utils.js"]
 

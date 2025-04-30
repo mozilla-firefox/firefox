@@ -257,6 +257,17 @@ already_AddRefed<Promise> WebAuthnHandler::MakeCredential(
     }
   }
 
+  if (aOptions.mExtensions.mCredentialProtectionPolicy.WasPassed()) {
+    bool enforceCredProtect = false;
+    if (aOptions.mExtensions.mEnforceCredentialProtectionPolicy.WasPassed()) {
+      enforceCredProtect =
+          aOptions.mExtensions.mEnforceCredentialProtectionPolicy.Value();
+    }
+    extensions.AppendElement(WebAuthnExtensionCredProtect(
+        aOptions.mExtensions.mCredentialProtectionPolicy.Value(),
+        enforceCredProtect));
+  }
+
   if (aOptions.mExtensions.mCredProps.WasPassed()) {
     bool credProps = aOptions.mExtensions.mCredProps.Value();
     if (credProps) {

@@ -15,6 +15,7 @@ import mozilla.components.support.test.mock
 import mozilla.telemetry.glean.config.Configuration
 import mozilla.telemetry.glean.net.CapablePingUploadRequest
 import mozilla.telemetry.glean.net.HttpStatus
+import mozilla.telemetry.glean.net.Incapable
 import mozilla.telemetry.glean.net.PingUploadRequest
 import mozilla.telemetry.glean.net.RecoverableFailure
 import okhttp3.mockwebserver.Dispatcher
@@ -352,5 +353,43 @@ class ConceptFetchHttpUploaderTest {
         verify(mockClient).fetch(captor.capture())
 
         assertTrue(captor.value.private)
+    }
+
+    @Test
+    fun `upload() respects the uploader capabilities`() {
+        val mockClient: Client = mock()
+        `when`(mockClient.fetch(any())).thenReturn(
+            Response(
+                "URL",
+                200,
+                mock(),
+                mock(),
+            ),
+        )
+
+        // Ensure that an empty capabilities list succeed
+        val incapableUploader = spy<ConceptFetchHttpUploader>(ConceptFetchHttpUploader(lazy { mockClient }))
+
+        val plainPing = CapablePingUploadRequest(PingUploadRequest(url = testPath, data = testPing.toByteArray(), emptyMap(), emptyList()))
+        assertEquals(HttpStatus(200), incapableUploader.upload(plainPing))
+
+        // Ensure that we get Incapable when we have unsupported capabilities
+        val pingWUnsupportedCapability = CapablePingUploadRequest(PingUploadRequest(url = testPath, data = testPing.toByteArray(), emptyMap(), listOf("some-unsupported-capability")))
+        assertEquals(Incapable(0), incapableUploader.upload(pingWUnsupportedCapability))
+
+        // Ensure that we don't submit OHTTP pings when supportsOhttp is false
+        val pingWOhttpCapability = CapablePingUploadRequest(PingUploadRequest(url = testPath, data = testPing.toByteArray(), emptyMap(), listOf("ohttp")))
+        assertEquals(Incapable(0), incapableUploader.upload(pingWOhttpCapability))
+
+        // Ensure that when supportsOhttp is true, we are able to submit ohttp pings
+        val ohttpCapableUploader = spy<ConceptFetchHttpUploader>(ConceptFetchHttpUploader(lazy { mockClient }, supportsOhttp = true))
+        assertEquals(HttpStatus(200), ohttpCapableUploader.upload(pingWOhttpCapability))
+
+        // Ensure that OHTTP capable uploader doesn't accept all capabilities
+        assertEquals(Incapable(0), ohttpCapableUploader.upload(pingWUnsupportedCapability))
+
+        // Ensure that OHTTP capable uploader doesn't accept all capabilities when there's ohttp in the list
+        val pingWOhttpAndUnsupportedCapability = CapablePingUploadRequest(PingUploadRequest(url = testPath, data = testPing.toByteArray(), emptyMap(), listOf("ohttp", "some-unsupported-capability")))
+        assertEquals(Incapable(0), ohttpCapableUploader.upload(pingWOhttpAndUnsupportedCapability))
     }
 }

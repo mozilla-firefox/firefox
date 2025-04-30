@@ -12,8 +12,9 @@
 [package]
 edition = "2021"
 name = "rusqlite"
-version = "0.31.0"
+version = "0.33.0"
 authors = ["The rusqlite developers"]
+build = false
 exclude = [
     "/.github/*",
     "/.gitattributes",
@@ -22,6 +23,11 @@ exclude = [
     "/clippy.toml",
     "/codecov.yml",
 ]
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
 description = "Ergonomic wrapper for SQLite"
 documentation = "https://docs.rs/rusqlite/"
 readme = "README.md"
@@ -51,119 +57,14 @@ rustdoc-args = [
 all-features = false
 features = ["bundled-full"]
 
-[lib]
-name = "rusqlite"
+[badges.appveyor]
+repository = "rusqlite/rusqlite"
 
-[[example]]
-name = "loadable_extension"
-crate-type = ["cdylib"]
-required-features = [
-    "loadable_extension",
-    "functions",
-    "trace",
-]
+[badges.codecov]
+repository = "rusqlite/rusqlite"
 
-[[example]]
-name = "load_extension"
-required-features = [
-    "load_extension",
-    "bundled",
-    "functions",
-    "trace",
-]
-
-[[test]]
-name = "config_log"
-harness = false
-
-[[test]]
-name = "deny_single_threaded_sqlite_config"
-
-[[test]]
-name = "vtab"
-
-[[bench]]
-name = "cache"
-harness = false
-
-[[bench]]
-name = "exec"
-harness = false
-
-[dependencies.bitflags]
-version = "2.0"
-
-[dependencies.chrono]
-version = "0.4"
-features = ["clock"]
-optional = true
-default-features = false
-
-[dependencies.csv]
-version = "1.1"
-optional = true
-
-[dependencies.fallible-iterator]
-version = "0.3"
-
-[dependencies.fallible-streaming-iterator]
-version = "0.1"
-
-[dependencies.hashlink]
-version = "0.9"
-
-[dependencies.libsqlite3-sys]
-version = "0.28.0"
-
-[dependencies.rusqlite-macros]
-version = "0.2.0"
-optional = true
-
-[dependencies.serde_json]
-version = "1.0"
-optional = true
-
-[dependencies.smallvec]
-version = "1.6.1"
-
-[dependencies.time]
-version = "0.3.0"
-features = [
-    "formatting",
-    "macros",
-    "parsing",
-]
-optional = true
-
-[dependencies.url]
-version = "2.1"
-optional = true
-
-[dependencies.uuid]
-version = "1.0"
-optional = true
-
-[dev-dependencies.bencher]
-version = "0.1"
-
-[dev-dependencies.doc-comment]
-version = "0.3"
-
-[dev-dependencies.lazy_static]
-version = "1.4"
-
-[dev-dependencies.regex]
-version = "1.5.5"
-
-[dev-dependencies.tempfile]
-version = "3.1.0"
-
-[dev-dependencies.unicase]
-version = "2.6.0"
-
-[dev-dependencies.uuid]
-version = "1.0"
-features = ["v4"]
+[badges.maintenance]
+status = "actively-developed"
 
 [features]
 array = ["vtab"]
@@ -217,9 +118,11 @@ modern-full = [
     "functions",
     "hooks",
     "i128_blob",
+    "jiff",
     "limits",
     "load_extension",
     "serde_json",
+    "serialize",
     "series",
     "time",
     "trace",
@@ -230,7 +133,10 @@ modern-full = [
     "window",
 ]
 modern_sqlite = ["libsqlite3-sys/bundled_bindings"]
-release_memory = []
+preupdate_hook = [
+    "libsqlite3-sys/preupdate_hook",
+    "hooks",
+]
 serialize = ["modern_sqlite"]
 series = ["vtab"]
 session = [
@@ -245,11 +151,153 @@ wasm32-wasi-vfs = ["libsqlite3-sys/wasm32-wasi-vfs"]
 window = ["functions"]
 with-asan = ["libsqlite3-sys/with-asan"]
 
-[badges.appveyor]
-repository = "rusqlite/rusqlite"
+[lib]
+name = "rusqlite"
+path = "src/lib.rs"
 
-[badges.codecov]
-repository = "rusqlite/rusqlite"
+[[example]]
+name = "load_extension"
+path = "examples/load_extension.rs"
+required-features = [
+    "load_extension",
+    "bundled",
+    "functions",
+    "trace",
+]
 
-[badges.maintenance]
-status = "actively-developed"
+[[example]]
+name = "loadable_extension"
+crate-type = ["cdylib"]
+path = "examples/loadable_extension.rs"
+required-features = [
+    "loadable_extension",
+    "functions",
+    "trace",
+]
+
+[[example]]
+name = "owning_rows"
+path = "examples/owning_rows.rs"
+
+[[example]]
+name = "owning_rows_self_cell"
+path = "examples/owning_rows_self_cell.rs"
+
+[[example]]
+name = "owning_statement"
+path = "examples/owning_statement.rs"
+
+[[example]]
+name = "persons"
+path = "examples/persons/main.rs"
+
+[[test]]
+name = "auto_ext"
+path = "tests/auto_ext.rs"
+
+[[test]]
+name = "config_log"
+path = "tests/config_log.rs"
+harness = false
+
+[[test]]
+name = "deny_single_threaded_sqlite_config"
+path = "tests/deny_single_threaded_sqlite_config.rs"
+
+[[test]]
+name = "vtab"
+path = "tests/vtab.rs"
+
+[[bench]]
+name = "cache"
+path = "benches/cache.rs"
+harness = false
+
+[[bench]]
+name = "exec"
+path = "benches/exec.rs"
+harness = false
+
+[dependencies.bitflags]
+version = "2.6.0"
+
+[dependencies.chrono]
+version = "0.4.38"
+features = ["clock"]
+optional = true
+default-features = false
+
+[dependencies.csv]
+version = "1.1"
+optional = true
+
+[dependencies.fallible-iterator]
+version = "0.3"
+
+[dependencies.fallible-streaming-iterator]
+version = "0.1"
+
+[dependencies.hashlink]
+version = "0.10"
+
+[dependencies.jiff]
+version = "0.1"
+features = ["std"]
+optional = true
+default-features = false
+
+[dependencies.libsqlite3-sys]
+version = "0.31.0"
+
+[dependencies.rusqlite-macros]
+version = "0.4.0"
+optional = true
+
+[dependencies.serde_json]
+version = "1.0"
+optional = true
+
+[dependencies.smallvec]
+version = "1.6.1"
+
+[dependencies.time]
+version = "0.3.36"
+features = [
+    "formatting",
+    "macros",
+    "parsing",
+]
+optional = true
+
+[dependencies.url]
+version = "2.1"
+optional = true
+
+[dependencies.uuid]
+version = "1.0"
+optional = true
+
+[dev-dependencies.bencher]
+version = "0.1"
+
+[dev-dependencies.doc-comment]
+version = "0.3"
+
+[dev-dependencies.ouroboros]
+version = "0.18"
+
+[dev-dependencies.regex]
+version = "1.5.5"
+
+[dev-dependencies.self_cell]
+version = "1.1.0"
+
+[dev-dependencies.tempfile]
+version = "3.1.0"
+
+[dev-dependencies.unicase]
+version = "2.6.0"
+
+[dev-dependencies.uuid]
+version = "1.0"
+features = ["v4"]

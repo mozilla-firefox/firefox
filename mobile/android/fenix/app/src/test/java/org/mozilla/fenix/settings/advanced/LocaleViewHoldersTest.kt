@@ -29,7 +29,7 @@ import java.util.Locale
 @RunWith(FenixRobolectricTestRunner::class)
 class LocaleViewHoldersTest {
 
-    private val selectedLocale = Locale("en", "US")
+    private val selectedLocale = Locale.Builder().setLanguage("en").setRegion("US").build()
     private lateinit var view: View
     private lateinit var interactor: LocaleSettingsViewInteractor
     private lateinit var localeViewHolder: LocaleViewHolder
@@ -72,7 +72,7 @@ class LocaleViewHoldersTest {
     // Note that after we can run tests on SDK 30 the result of the locale.getDisplayName(locale) could differ and this test will fail
     @Test
     fun `GIVEN a locale is not properly identified in Android WHEN we bind locale THEN the title and subtitle are set from locale maps`() {
-        val otherLocale = Locale("vec")
+        val otherLocale = Locale.forLanguageTag("vec")
 
         localeViewHolder.bind(otherLocale)
 
@@ -82,7 +82,7 @@ class LocaleViewHoldersTest {
 
     @Test
     fun `GIVEN a locale is not properly identified in Android and it is not mapped  WHEN we bind locale THEN the text is the capitalised code`() {
-        val otherLocale = Locale("yyy")
+        val otherLocale = Locale.forLanguageTag("yyy")
 
         localeViewHolder.bind(otherLocale)
 

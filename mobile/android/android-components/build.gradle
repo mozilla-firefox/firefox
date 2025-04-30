@@ -167,9 +167,11 @@ subprojects {
                     }
                 }
 
+                // https://issuetracker.google.com/issues/379732901
                 packaging {
                     resources {
-                        excludes += ["META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"]
+                        excludes += ['META-INF/LICENSE.md', 'META-INF/LICENSE-notice.md',
+                                     'META-INF/versions/9/OSGI-INF/MANIFEST.MF']
                     }
                 }
 

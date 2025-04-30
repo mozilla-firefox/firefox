@@ -53,7 +53,7 @@ JSObject* CloseWatcher::WrapObject(JSContext* aCx,
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#close-watcher-request-close
-bool CloseWatcher::RequestToClose() {
+bool CloseWatcher::RequestToClose(bool aRequireHistoryActionActivation) {
   // 1. If closeWatcher is not active, then return true.
   // 2. If closeWatcher's is running cancel action is true, then return true.
   // 3. Let window be closeWatcher's window.
@@ -70,7 +70,7 @@ bool CloseWatcher::RequestToClose() {
   // 5. Let canPreventClose be true if window's close watcher manager's groups's
   // size is less than window's close watcher manager's allowed number of
   // groups, and window has history-action activation; otherwise false.
-  init.mCancelable = manager->CanGrow() && winCtx->HasValidHistoryActivation();
+  init.mCancelable = !aRequireHistoryActionActivation || (manager->CanGrow() && winCtx->HasValidHistoryActivation());
   RefPtr<Event> event = Event::Constructor(this, u"cancel"_ns, init);
   event->SetTrusted(true);
   // 6. Set closeWatcher's is running cancel action to true.

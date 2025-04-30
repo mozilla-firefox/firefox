@@ -575,7 +575,7 @@ class Talos(
         kw_options.update(kw)
         # talos expects tests to be in the format (e.g.) 'ts:tp5:tsvg'
         tests = kw_options.get("activeTests")
-        if tests and not isinstance(tests, (str,)):
+        if tests and not isinstance(tests, str):
             tests = ":".join(tests)  # Talos expects this format
             kw_options["activeTests"] = tests
         for key, value in kw_options.items():

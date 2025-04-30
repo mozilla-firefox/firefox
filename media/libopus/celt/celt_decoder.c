@@ -1042,8 +1042,34 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       st->end = end = IMAX(1, mode->effEBands-2*(data0>>5));
       LM = (data0>>3)&0x3;
       C = 1 + ((data0>>2)&0x1);
-      data++;
-      len--;
+      if ((data[0] & 0x03) == 0x03) {
+         data++;
+         len--;
+         if (len<=0)
+            return OPUS_INVALID_PACKET;
+         if (data[0] & 0x40) {
+            int p;
+            int padding=0;
+            data++;
+            len--;
+            do {
+               int tmp;
+               if (len<=0)
+                  return OPUS_INVALID_PACKET;
+               p = *data++;
+               len--;
+               tmp = p==255 ? 254: p;
+               len -= tmp;
+               padding += tmp;
+            } while (p==255);
+            padding--;
+            if (len <= 0 || padding<0) return OPUS_INVALID_PACKET;
+         }
+      } else
+      {
+         data++;
+         len--;
+      }
       if (LM>mode->maxLM)
          return OPUS_INVALID_PACKET;
       if (frame_size < mode->shortMdctSize<<LM)

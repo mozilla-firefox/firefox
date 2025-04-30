@@ -268,9 +268,6 @@ WinWebAuthnService::MakeCredential(uint64_t aTransactionId,
           return;
         }
 
-        BOOL HmacCreateSecret = FALSE;
-        BOOL MinPinLength = FALSE;
-
         // RP Information
         nsString rpId;
         Unused << aArgs->GetRpId(rpId);
@@ -449,39 +446,82 @@ WinWebAuthnService::MakeCredential(uint64_t aTransactionId,
           winAttestation = WEBAUTHN_ATTESTATION_CONVEYANCE_PREFERENCE_ANY;
         }
 
-        bool requestedPrf;
-        Unused << aArgs->GetPrf(&requestedPrf);
-        if (requestedPrf) {
-          winEnablePrf = TRUE;
+        // Extensions that might require an entry in the extensions array:
+        // credProtect, hmac-secret, minPinLength.
+        nsTArray<WEBAUTHN_EXTENSION> rgExtension(3);
+        WEBAUTHN_CRED_PROTECT_EXTENSION_IN winCredProtect = {
+            .dwCredProtect = WEBAUTHN_USER_VERIFICATION_ANY,
+            .bRequireCredProtect = FALSE,
+        };
+        BOOL winHmacCreateSecret = FALSE;
+        BOOL winMinPinLength = FALSE;
+
+        nsCString credProtectPolicy;
+        if (NS_SUCCEEDED(
+                aArgs->GetCredentialProtectionPolicy(credProtectPolicy))) {
+          Maybe<CredentialProtectionPolicy> policy(
+              StringToEnum<CredentialProtectionPolicy>(credProtectPolicy));
+          if (policy.isNothing()) {
+            aPromise->Reject(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+            return;
+          }
+          switch (policy.ref()) {
+            case CredentialProtectionPolicy::UserVerificationOptional:
+              winCredProtect.dwCredProtect =
+                  WEBAUTHN_USER_VERIFICATION_OPTIONAL;
+              break;
+            case CredentialProtectionPolicy::
+                UserVerificationOptionalWithCredentialIDList:
+              winCredProtect.dwCredProtect =
+                  WEBAUTHN_USER_VERIFICATION_OPTIONAL_WITH_CREDENTIAL_ID_LIST;
+              break;
+            case CredentialProtectionPolicy::UserVerificationRequired:
+              winCredProtect.dwCredProtect =
+                  WEBAUTHN_USER_VERIFICATION_REQUIRED;
+              break;
+          }
+
+          bool enforceCredProtectPolicy;
+          if (NS_SUCCEEDED(aArgs->GetEnforceCredentialProtectionPolicy(
+                  &enforceCredProtectPolicy)) &&
+              enforceCredProtectPolicy) {
+            winCredProtect.bRequireCredProtect = TRUE;
+          }
+
+          rgExtension.AppendElement(WEBAUTHN_EXTENSION{
+              .pwszExtensionIdentifier =
+                  WEBAUTHN_EXTENSIONS_IDENTIFIER_CRED_PROTECT,
+              .cbExtension = sizeof(WEBAUTHN_CRED_PROTECT_EXTENSION_IN),
+              .pvExtension = &winCredProtect,
+          });
         }
 
-        bool requestedCredProps;
-        Unused << aArgs->GetCredProps(&requestedCredProps);
+        bool requestedPrf;
+        bool requestedHmacCreateSecret;
+        if (NS_SUCCEEDED(aArgs->GetPrf(&requestedPrf)) &&
+            NS_SUCCEEDED(
+                aArgs->GetHmacCreateSecret(&requestedHmacCreateSecret)) &&
+            (requestedPrf || requestedHmacCreateSecret)) {
+          winEnablePrf = requestedPrf ? TRUE : FALSE;
+          winHmacCreateSecret = TRUE;
+          rgExtension.AppendElement(WEBAUTHN_EXTENSION{
+              .pwszExtensionIdentifier =
+                  WEBAUTHN_EXTENSIONS_IDENTIFIER_HMAC_SECRET,
+              .cbExtension = sizeof(BOOL),
+              .pvExtension = &winHmacCreateSecret,
+          });
+        }
 
         bool requestedMinPinLength;
-        Unused << aArgs->GetMinPinLength(&requestedMinPinLength);
-
-        bool requestedHmacCreateSecret;
-        Unused << aArgs->GetHmacCreateSecret(&requestedHmacCreateSecret);
-
-        // Extensions that might require an entry: hmac-secret, minPinLength.
-        WEBAUTHN_EXTENSION rgExtension[2] = {};
-        DWORD cExtensions = 0;
-        if (requestedPrf || requestedHmacCreateSecret) {
-          HmacCreateSecret = TRUE;
-          rgExtension[cExtensions].pwszExtensionIdentifier =
-              WEBAUTHN_EXTENSIONS_IDENTIFIER_HMAC_SECRET;
-          rgExtension[cExtensions].cbExtension = sizeof(BOOL);
-          rgExtension[cExtensions].pvExtension = &HmacCreateSecret;
-          cExtensions++;
-        }
-        if (requestedMinPinLength) {
-          MinPinLength = TRUE;
-          rgExtension[cExtensions].pwszExtensionIdentifier =
-              WEBAUTHN_EXTENSIONS_IDENTIFIER_MIN_PIN_LENGTH;
-          rgExtension[cExtensions].cbExtension = sizeof(BOOL);
-          rgExtension[cExtensions].pvExtension = &MinPinLength;
-          cExtensions++;
+        if (NS_SUCCEEDED(aArgs->GetMinPinLength(&requestedMinPinLength)) &&
+            requestedMinPinLength) {
+          winMinPinLength = TRUE;
+          rgExtension.AppendElement(WEBAUTHN_EXTENSION{
+              .pwszExtensionIdentifier =
+                  WEBAUTHN_EXTENSIONS_IDENTIFIER_MIN_PIN_LENGTH,
+              .cbExtension = sizeof(BOOL),
+              .pvExtension = &winMinPinLength,
+          });
         }
 
         WEBAUTHN_COSE_CREDENTIAL_PARAMETERS WebAuthNCredentialParameters = {
@@ -578,9 +618,11 @@ WinWebAuthnService::MakeCredential(uint64_t aTransactionId,
             NULL,                  // JsonExt
         };
 
-        if (cExtensions != 0) {
-          WebAuthNCredentialOptions.Extensions.cExtensions = cExtensions;
-          WebAuthNCredentialOptions.Extensions.pExtensions = rgExtension;
+        if (rgExtension.Length() != 0) {
+          WebAuthNCredentialOptions.Extensions.cExtensions =
+              rgExtension.Length();
+          WebAuthNCredentialOptions.Extensions.pExtensions =
+              rgExtension.Elements();
         }
 
         PWEBAUTHN_CREDENTIAL_ATTESTATION pWebAuthNCredentialAttestation =
@@ -603,6 +645,8 @@ WinWebAuthnService::MakeCredential(uint64_t aTransactionId,
           // include a flag to indicate whether a resident key was created. We
           // copy that flag to the credProps extension output only if the RP
           // requested the credProps extension.
+          bool requestedCredProps;
+          Unused << aArgs->GetCredProps(&requestedCredProps);
           if (requestedCredProps &&
               pWebAuthNCredentialAttestation->dwVersion >=
                   WEBAUTHN_CREDENTIAL_ATTESTATION_VERSION_4) {

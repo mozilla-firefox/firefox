@@ -38,12 +38,12 @@ class TrustPanelTelemetryMiddleware : Middleware<TrustPanelState, TrustPanelActi
             is TrustPanelAction.UpdateDetailedTrackerCategory,
             is TrustPanelAction.UpdateNumberOfTrackersBlocked,
             is TrustPanelAction.UpdateTrackersBlocked,
-            TrustPanelAction.Navigate.Back,
-            is TrustPanelAction.Navigate.ClearSiteDataDialog,
-            is TrustPanelAction.Navigate.TrackerCategoryDetailsPanel,
-            TrustPanelAction.Navigate.TrackersPanel,
-            TrustPanelAction.Navigate.ConnectionSecurityPanel,
+            is TrustPanelAction.TogglePermission,
+            is TrustPanelAction.UpdateAutoplayValue,
+            is TrustPanelAction.UpdateSitePermissions,
+            is TrustPanelAction.WebsitePermissionAction,
             TrustPanelAction.Navigate.PrivacySecuritySettings,
+            is TrustPanelAction.Navigate.ManagePhoneFeature,
             -> Unit
         }
     }

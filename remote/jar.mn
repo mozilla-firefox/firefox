@@ -48,6 +48,7 @@ remote.jar:
   content/shared/listeners/ConsoleAPIListener.sys.mjs (shared/listeners/ConsoleAPIListener.sys.mjs)
   content/shared/listeners/ConsoleListener.sys.mjs (shared/listeners/ConsoleListener.sys.mjs)
   content/shared/listeners/ContextualIdentityListener.sys.mjs (shared/listeners/ContextualIdentityListener.sys.mjs)
+  content/shared/listeners/DataChannelListener.sys.mjs (shared/listeners/DataChannelListener.sys.mjs)
   content/shared/listeners/LoadListener.sys.mjs (shared/listeners/LoadListener.sys.mjs)
   content/shared/listeners/NavigationListener.sys.mjs (shared/listeners/NavigationListener.sys.mjs)
   content/shared/listeners/NetworkEventRecord.sys.mjs (shared/listeners/NetworkEventRecord.sys.mjs)

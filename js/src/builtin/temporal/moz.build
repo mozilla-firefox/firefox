@@ -12,28 +12,26 @@ LOCAL_INCLUDES += ["!../..", "../.."]
 include("../../js-config.mozbuild")
 include("../../js-cxxflags.mozbuild")
 
-if CONFIG["MOZ_ICU4X"]:
-    LOCAL_INCLUDES += [
-        "/intl/icu_capi/bindings/c",
-    ]
+LOCAL_INCLUDES += [
+    "/intl/icu_capi/bindings/c",
+]
 
-if CONFIG["JS_HAS_TEMPORAL_API"]:
-    UNIFIED_SOURCES += [
-        "Calendar.cpp",
-        "CalendarFields.cpp",
-        "Duration.cpp",
-        "Instant.cpp",
-        "Int128.cpp",
-        "Int96.cpp",
-        "PlainDate.cpp",
-        "PlainDateTime.cpp",
-        "PlainMonthDay.cpp",
-        "PlainTime.cpp",
-        "PlainYearMonth.cpp",
-        "Temporal.cpp",
-        "TemporalNow.cpp",
-        "TemporalParser.cpp",
-        "TimeZone.cpp",
-        "ToString.cpp",
-        "ZonedDateTime.cpp",
-    ]
+UNIFIED_SOURCES += [
+    "Calendar.cpp",
+    "CalendarFields.cpp",
+    "Duration.cpp",
+    "Instant.cpp",
+    "Int128.cpp",
+    "Int96.cpp",
+    "PlainDate.cpp",
+    "PlainDateTime.cpp",
+    "PlainMonthDay.cpp",
+    "PlainTime.cpp",
+    "PlainYearMonth.cpp",
+    "Temporal.cpp",
+    "TemporalNow.cpp",
+    "TemporalParser.cpp",
+    "TimeZone.cpp",
+    "ToString.cpp",
+    "ZonedDateTime.cpp",
+]

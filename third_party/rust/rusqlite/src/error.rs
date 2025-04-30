@@ -9,7 +9,6 @@ use std::str;
 
 /// Enum listing possible errors from rusqlite.
 #[derive(Debug)]
-#[allow(clippy::enum_variant_names)]
 #[non_exhaustive]
 pub enum Error {
     /// An error from an underlying SQLite call.
@@ -84,7 +83,6 @@ pub enum Error {
     /// [`create_scalar_function`](crate::Connection::create_scalar_function)).
     #[cfg(feature = "functions")]
     #[cfg_attr(docsrs, doc(cfg(feature = "functions")))]
-    #[allow(dead_code)]
     UserFunctionError(Box<dyn error::Error + Send + Sync + 'static>),
 
     /// Error available for the implementors of the
@@ -98,12 +96,9 @@ pub enum Error {
     /// [`create_module`](crate::Connection::create_module)).
     #[cfg(feature = "vtab")]
     #[cfg_attr(docsrs, doc(cfg(feature = "vtab")))]
-    #[allow(dead_code)]
     ModuleError(String),
 
-    /// An unwinding panic occurs in an UDF (user-defined function).
-    #[cfg(feature = "functions")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "functions")))]
+    /// An unwinding panic occurs in a UDF (user-defined function).
     UnwindingPanic,
 
     /// An error returned when
@@ -145,59 +140,63 @@ pub enum Error {
     #[cfg(feature = "loadable_extension")]
     #[cfg_attr(docsrs, doc(cfg(feature = "loadable_extension")))]
     InitError(ffi::InitError),
+    /// Error when the schema of a particular database is requested, but the index
+    /// is out of range.
+    #[cfg(feature = "modern_sqlite")] // 3.39.0
+    #[cfg_attr(docsrs, doc(cfg(feature = "modern_sqlite")))]
+    InvalidDatabaseIndex(usize),
 }
 
 impl PartialEq for Error {
-    fn eq(&self, other: &Error) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Error::SqliteFailure(e1, s1), Error::SqliteFailure(e2, s2)) => e1 == e2 && s1 == s2,
-            (Error::SqliteSingleThreadedMode, Error::SqliteSingleThreadedMode) => true,
-            (Error::IntegralValueOutOfRange(i1, n1), Error::IntegralValueOutOfRange(i2, n2)) => {
+            (Self::SqliteFailure(e1, s1), Self::SqliteFailure(e2, s2)) => e1 == e2 && s1 == s2,
+            (Self::SqliteSingleThreadedMode, Self::SqliteSingleThreadedMode) => true,
+            (Self::IntegralValueOutOfRange(i1, n1), Self::IntegralValueOutOfRange(i2, n2)) => {
                 i1 == i2 && n1 == n2
             }
-            (Error::Utf8Error(e1), Error::Utf8Error(e2)) => e1 == e2,
-            (Error::NulError(e1), Error::NulError(e2)) => e1 == e2,
-            (Error::InvalidParameterName(n1), Error::InvalidParameterName(n2)) => n1 == n2,
-            (Error::InvalidPath(p1), Error::InvalidPath(p2)) => p1 == p2,
-            (Error::ExecuteReturnedResults, Error::ExecuteReturnedResults) => true,
-            (Error::QueryReturnedNoRows, Error::QueryReturnedNoRows) => true,
-            (Error::InvalidColumnIndex(i1), Error::InvalidColumnIndex(i2)) => i1 == i2,
-            (Error::InvalidColumnName(n1), Error::InvalidColumnName(n2)) => n1 == n2,
-            (Error::InvalidColumnType(i1, n1, t1), Error::InvalidColumnType(i2, n2, t2)) => {
+            (Self::Utf8Error(e1), Self::Utf8Error(e2)) => e1 == e2,
+            (Self::NulError(e1), Self::NulError(e2)) => e1 == e2,
+            (Self::InvalidParameterName(n1), Self::InvalidParameterName(n2)) => n1 == n2,
+            (Self::InvalidPath(p1), Self::InvalidPath(p2)) => p1 == p2,
+            (Self::ExecuteReturnedResults, Self::ExecuteReturnedResults) => true,
+            (Self::QueryReturnedNoRows, Self::QueryReturnedNoRows) => true,
+            (Self::InvalidColumnIndex(i1), Self::InvalidColumnIndex(i2)) => i1 == i2,
+            (Self::InvalidColumnName(n1), Self::InvalidColumnName(n2)) => n1 == n2,
+            (Self::InvalidColumnType(i1, n1, t1), Self::InvalidColumnType(i2, n2, t2)) => {
                 i1 == i2 && t1 == t2 && n1 == n2
             }
-            (Error::StatementChangedRows(n1), Error::StatementChangedRows(n2)) => n1 == n2,
+            (Self::StatementChangedRows(n1), Self::StatementChangedRows(n2)) => n1 == n2,
             #[cfg(feature = "functions")]
             (
-                Error::InvalidFunctionParameterType(i1, t1),
-                Error::InvalidFunctionParameterType(i2, t2),
+                Self::InvalidFunctionParameterType(i1, t1),
+                Self::InvalidFunctionParameterType(i2, t2),
             ) => i1 == i2 && t1 == t2,
             #[cfg(feature = "vtab")]
             (
-                Error::InvalidFilterParameterType(i1, t1),
-                Error::InvalidFilterParameterType(i2, t2),
+                Self::InvalidFilterParameterType(i1, t1),
+                Self::InvalidFilterParameterType(i2, t2),
             ) => i1 == i2 && t1 == t2,
-            (Error::InvalidQuery, Error::InvalidQuery) => true,
+            (Self::InvalidQuery, Self::InvalidQuery) => true,
             #[cfg(feature = "vtab")]
-            (Error::ModuleError(s1), Error::ModuleError(s2)) => s1 == s2,
+            (Self::ModuleError(s1), Self::ModuleError(s2)) => s1 == s2,
+            (Self::UnwindingPanic, Self::UnwindingPanic) => true,
             #[cfg(feature = "functions")]
-            (Error::UnwindingPanic, Error::UnwindingPanic) => true,
-            #[cfg(feature = "functions")]
-            (Error::GetAuxWrongType, Error::GetAuxWrongType) => true,
-            (Error::InvalidParameterCount(i1, n1), Error::InvalidParameterCount(i2, n2)) => {
+            (Self::GetAuxWrongType, Self::GetAuxWrongType) => true,
+            (Self::InvalidParameterCount(i1, n1), Self::InvalidParameterCount(i2, n2)) => {
                 i1 == i2 && n1 == n2
             }
             #[cfg(feature = "blob")]
-            (Error::BlobSizeError, Error::BlobSizeError) => true,
+            (Self::BlobSizeError, Self::BlobSizeError) => true,
             #[cfg(feature = "modern_sqlite")]
             (
-                Error::SqlInputError {
+                Self::SqlInputError {
                     error: e1,
                     msg: m1,
                     sql: s1,
                     offset: o1,
                 },
-                Error::SqlInputError {
+                Self::SqlInputError {
                     error: e2,
                     msg: m2,
                     sql: s2,
@@ -205,7 +204,9 @@ impl PartialEq for Error {
                 },
             ) => e1 == e2 && m1 == m2 && s1 == s2 && o1 == o2,
             #[cfg(feature = "loadable_extension")]
-            (Error::InitError(e1), Error::InitError(e2)) => e1 == e2,
+            (Self::InitError(e1), Self::InitError(e2)) => e1 == e2,
+            #[cfg(feature = "modern_sqlite")]
+            (Self::InvalidDatabaseIndex(i1), Self::InvalidDatabaseIndex(i2)) => i1 == i2,
             (..) => false,
         }
     }
@@ -213,15 +214,15 @@ impl PartialEq for Error {
 
 impl From<str::Utf8Error> for Error {
     #[cold]
-    fn from(err: str::Utf8Error) -> Error {
-        Error::Utf8Error(err)
+    fn from(err: str::Utf8Error) -> Self {
+        Self::Utf8Error(err)
     }
 }
 
 impl From<std::ffi::NulError> for Error {
     #[cold]
-    fn from(err: std::ffi::NulError) -> Error {
-        Error::NulError(err)
+    fn from(err: std::ffi::NulError) -> Self {
+        Self::NulError(err)
     }
 }
 
@@ -231,18 +232,18 @@ const UNKNOWN_COLUMN: usize = usize::MAX;
 /// to allow use of `get_raw(…).as_…()?` in callbacks that take `Error`.
 impl From<FromSqlError> for Error {
     #[cold]
-    fn from(err: FromSqlError) -> Error {
+    fn from(err: FromSqlError) -> Self {
         // The error type requires index and type fields, but they aren't known in this
         // context.
         match err {
-            FromSqlError::OutOfRange(val) => Error::IntegralValueOutOfRange(UNKNOWN_COLUMN, val),
+            FromSqlError::OutOfRange(val) => Self::IntegralValueOutOfRange(UNKNOWN_COLUMN, val),
             FromSqlError::InvalidBlobSize { .. } => {
-                Error::FromSqlConversionFailure(UNKNOWN_COLUMN, Type::Blob, Box::new(err))
+                Self::FromSqlConversionFailure(UNKNOWN_COLUMN, Type::Blob, Box::new(err))
             }
             FromSqlError::Other(source) => {
-                Error::FromSqlConversionFailure(UNKNOWN_COLUMN, Type::Null, source)
+                Self::FromSqlConversionFailure(UNKNOWN_COLUMN, Type::Null, source)
             }
-            _ => Error::FromSqlConversionFailure(UNKNOWN_COLUMN, Type::Null, Box::new(err)),
+            _ => Self::FromSqlConversionFailure(UNKNOWN_COLUMN, Type::Null, Box::new(err)),
         }
     }
 }
@@ -250,83 +251,84 @@ impl From<FromSqlError> for Error {
 #[cfg(feature = "loadable_extension")]
 impl From<ffi::InitError> for Error {
     #[cold]
-    fn from(err: ffi::InitError) -> Error {
-        Error::InitError(err)
+    fn from(err: ffi::InitError) -> Self {
+        Self::InitError(err)
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            Error::SqliteFailure(ref err, None) => err.fmt(f),
-            Error::SqliteFailure(_, Some(ref s)) => write!(f, "{s}"),
-            Error::SqliteSingleThreadedMode => write!(
+            Self::SqliteFailure(ref err, None) => err.fmt(f),
+            Self::SqliteFailure(_, Some(ref s)) => write!(f, "{s}"),
+            Self::SqliteSingleThreadedMode => write!(
                 f,
                 "SQLite was compiled or configured for single-threaded use only"
             ),
-            Error::FromSqlConversionFailure(i, ref t, ref err) => {
+            Self::FromSqlConversionFailure(i, ref t, ref err) => {
                 if i != UNKNOWN_COLUMN {
                     write!(f, "Conversion error from type {t} at index: {i}, {err}")
                 } else {
                     err.fmt(f)
                 }
             }
-            Error::IntegralValueOutOfRange(col, val) => {
+            Self::IntegralValueOutOfRange(col, val) => {
                 if col != UNKNOWN_COLUMN {
                     write!(f, "Integer {val} out of range at index {col}")
                 } else {
                     write!(f, "Integer {val} out of range")
                 }
             }
-            Error::Utf8Error(ref err) => err.fmt(f),
-            Error::NulError(ref err) => err.fmt(f),
-            Error::InvalidParameterName(ref name) => write!(f, "Invalid parameter name: {name}"),
-            Error::InvalidPath(ref p) => write!(f, "Invalid path: {}", p.to_string_lossy()),
-            Error::ExecuteReturnedResults => {
+            Self::Utf8Error(ref err) => err.fmt(f),
+            Self::NulError(ref err) => err.fmt(f),
+            Self::InvalidParameterName(ref name) => write!(f, "Invalid parameter name: {name}"),
+            Self::InvalidPath(ref p) => write!(f, "Invalid path: {}", p.to_string_lossy()),
+            Self::ExecuteReturnedResults => {
                 write!(f, "Execute returned results - did you mean to call query?")
             }
-            Error::QueryReturnedNoRows => write!(f, "Query returned no rows"),
-            Error::InvalidColumnIndex(i) => write!(f, "Invalid column index: {i}"),
-            Error::InvalidColumnName(ref name) => write!(f, "Invalid column name: {name}"),
-            Error::InvalidColumnType(i, ref name, ref t) => {
+            Self::QueryReturnedNoRows => write!(f, "Query returned no rows"),
+            Self::InvalidColumnIndex(i) => write!(f, "Invalid column index: {i}"),
+            Self::InvalidColumnName(ref name) => write!(f, "Invalid column name: {name}"),
+            Self::InvalidColumnType(i, ref name, ref t) => {
                 write!(f, "Invalid column type {t} at index: {i}, name: {name}")
             }
-            Error::InvalidParameterCount(i1, n1) => write!(
+            Self::InvalidParameterCount(i1, n1) => write!(
                 f,
                 "Wrong number of parameters passed to query. Got {i1}, needed {n1}"
             ),
-            Error::StatementChangedRows(i) => write!(f, "Query changed {i} rows"),
+            Self::StatementChangedRows(i) => write!(f, "Query changed {i} rows"),
 
             #[cfg(feature = "functions")]
-            Error::InvalidFunctionParameterType(i, ref t) => {
+            Self::InvalidFunctionParameterType(i, ref t) => {
                 write!(f, "Invalid function parameter type {t} at index {i}")
             }
             #[cfg(feature = "vtab")]
-            Error::InvalidFilterParameterType(i, ref t) => {
+            Self::InvalidFilterParameterType(i, ref t) => {
                 write!(f, "Invalid filter parameter type {t} at index {i}")
             }
             #[cfg(feature = "functions")]
-            Error::UserFunctionError(ref err) => err.fmt(f),
-            Error::ToSqlConversionFailure(ref err) => err.fmt(f),
-            Error::InvalidQuery => write!(f, "Query is not read-only"),
+            Self::UserFunctionError(ref err) => err.fmt(f),
+            Self::ToSqlConversionFailure(ref err) => err.fmt(f),
+            Self::InvalidQuery => write!(f, "Query is not read-only"),
             #[cfg(feature = "vtab")]
-            Error::ModuleError(ref desc) => write!(f, "{desc}"),
+            Self::ModuleError(ref desc) => write!(f, "{desc}"),
+            Self::UnwindingPanic => write!(f, "unwinding panic"),
             #[cfg(feature = "functions")]
-            Error::UnwindingPanic => write!(f, "unwinding panic"),
-            #[cfg(feature = "functions")]
-            Error::GetAuxWrongType => write!(f, "get_aux called with wrong type"),
-            Error::MultipleStatement => write!(f, "Multiple statements provided"),
+            Self::GetAuxWrongType => write!(f, "get_aux called with wrong type"),
+            Self::MultipleStatement => write!(f, "Multiple statements provided"),
             #[cfg(feature = "blob")]
-            Error::BlobSizeError => "Blob size is insufficient".fmt(f),
+            Self::BlobSizeError => "Blob size is insufficient".fmt(f),
             #[cfg(feature = "modern_sqlite")]
-            Error::SqlInputError {
+            Self::SqlInputError {
                 ref msg,
                 offset,
                 ref sql,
                 ..
             } => write!(f, "{msg} in {sql} at offset {offset}"),
             #[cfg(feature = "loadable_extension")]
-            Error::InitError(ref err) => err.fmt(f),
+            Self::InitError(ref err) => err.fmt(f),
+            #[cfg(feature = "modern_sqlite")]
+            Self::InvalidDatabaseIndex(i) => write!(f, "Invalid database index: {i}"),
         }
     }
 }
@@ -334,50 +336,51 @@ impl fmt::Display for Error {
 impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self {
-            Error::SqliteFailure(ref err, _) => Some(err),
-            Error::Utf8Error(ref err) => Some(err),
-            Error::NulError(ref err) => Some(err),
+            Self::SqliteFailure(ref err, _) => Some(err),
+            Self::Utf8Error(ref err) => Some(err),
+            Self::NulError(ref err) => Some(err),
 
-            Error::IntegralValueOutOfRange(..)
-            | Error::SqliteSingleThreadedMode
-            | Error::InvalidParameterName(_)
-            | Error::ExecuteReturnedResults
-            | Error::QueryReturnedNoRows
-            | Error::InvalidColumnIndex(_)
-            | Error::InvalidColumnName(_)
-            | Error::InvalidColumnType(..)
-            | Error::InvalidPath(_)
-            | Error::InvalidParameterCount(..)
-            | Error::StatementChangedRows(_)
-            | Error::InvalidQuery
-            | Error::MultipleStatement => None,
+            Self::IntegralValueOutOfRange(..)
+            | Self::SqliteSingleThreadedMode
+            | Self::InvalidParameterName(_)
+            | Self::ExecuteReturnedResults
+            | Self::QueryReturnedNoRows
+            | Self::InvalidColumnIndex(_)
+            | Self::InvalidColumnName(_)
+            | Self::InvalidColumnType(..)
+            | Self::InvalidPath(_)
+            | Self::InvalidParameterCount(..)
+            | Self::StatementChangedRows(_)
+            | Self::InvalidQuery
+            | Self::MultipleStatement => None,
 
             #[cfg(feature = "functions")]
-            Error::InvalidFunctionParameterType(..) => None,
+            Self::InvalidFunctionParameterType(..) => None,
             #[cfg(feature = "vtab")]
-            Error::InvalidFilterParameterType(..) => None,
+            Self::InvalidFilterParameterType(..) => None,
 
             #[cfg(feature = "functions")]
-            Error::UserFunctionError(ref err) => Some(&**err),
+            Self::UserFunctionError(ref err) => Some(&**err),
 
-            Error::FromSqlConversionFailure(_, _, ref err)
-            | Error::ToSqlConversionFailure(ref err) => Some(&**err),
+            Self::FromSqlConversionFailure(_, _, ref err)
+            | Self::ToSqlConversionFailure(ref err) => Some(&**err),
 
             #[cfg(feature = "vtab")]
-            Error::ModuleError(_) => None,
+            Self::ModuleError(_) => None,
+
+            Self::UnwindingPanic => None,
 
             #[cfg(feature = "functions")]
-            Error::UnwindingPanic => None,
-
-            #[cfg(feature = "functions")]
-            Error::GetAuxWrongType => None,
+            Self::GetAuxWrongType => None,
 
             #[cfg(feature = "blob")]
-            Error::BlobSizeError => None,
+            Self::BlobSizeError => None,
             #[cfg(feature = "modern_sqlite")]
-            Error::SqlInputError { ref error, .. } => Some(error),
+            Self::SqlInputError { ref error, .. } => Some(error),
             #[cfg(feature = "loadable_extension")]
-            Error::InitError(ref err) => Some(err),
+            Self::InitError(ref err) => Some(err),
+            #[cfg(feature = "modern_sqlite")]
+            Self::InvalidDatabaseIndex(_) => None,
         }
     }
 }
@@ -409,14 +412,45 @@ pub fn error_from_sqlite_code(code: c_int, message: Option<String>) -> Error {
     Error::SqliteFailure(ffi::Error::new(code), message)
 }
 
+macro_rules! err {
+    ($code:expr $(,)?) => {
+        $crate::error::error_from_sqlite_code($code, None)
+    };
+    ($code:expr, $msg:literal $(,)?) => {
+        $crate::error::error_from_sqlite_code($code, Some(format!($msg)))
+    };
+    ($code:expr, $err:expr $(,)?) => {
+        $crate::error::error_from_sqlite_code($code, Some(format!($err)))
+    };
+    ($code:expr, $fmt:expr, $($arg:tt)*) => {
+        $crate::error::error_from_sqlite_code($code, Some(format!($fmt, $($arg)*)))
+    };
+}
+
 #[cold]
 pub unsafe fn error_from_handle(db: *mut ffi::sqlite3, code: c_int) -> Error {
-    let message = if db.is_null() {
-        None
+    error_from_sqlite_code(code, error_msg(db, code))
+}
+
+unsafe fn error_msg(db: *mut ffi::sqlite3, code: c_int) -> Option<String> {
+    if db.is_null() || ffi::sqlite3_errcode(db) != code {
+        let err_str = ffi::sqlite3_errstr(code);
+        if err_str.is_null() {
+            None
+        } else {
+            Some(errmsg_to_string(err_str))
+        }
     } else {
         Some(errmsg_to_string(ffi::sqlite3_errmsg(db)))
-    };
-    error_from_sqlite_code(code, message)
+    }
+}
+
+pub unsafe fn decode_result_raw(db: *mut ffi::sqlite3, code: c_int) -> Result<()> {
+    if code == ffi::SQLITE_OK {
+        Ok(())
+    } else {
+        Err(error_from_handle(db, code))
+    }
 }
 
 #[cold]
@@ -432,24 +466,24 @@ pub unsafe fn error_with_offset(db: *mut ffi::sqlite3, code: c_int, sql: &str) -
         error_from_sqlite_code(code, None)
     } else {
         let error = ffi::Error::new(code);
-        let msg = errmsg_to_string(ffi::sqlite3_errmsg(db));
+        let msg = error_msg(db, code);
         if ffi::ErrorCode::Unknown == error.code {
             let offset = ffi::sqlite3_error_offset(db);
             if offset >= 0 {
                 return Error::SqlInputError {
                     error,
-                    msg,
+                    msg: msg.unwrap_or("error".to_owned()),
                     sql: sql.to_owned(),
                     offset,
                 };
             }
         }
-        Error::SqliteFailure(error, Some(msg))
+        Error::SqliteFailure(error, msg)
     }
 }
 
 pub fn check(code: c_int) -> Result<()> {
-    if code != crate::ffi::SQLITE_OK {
+    if code != ffi::SQLITE_OK {
         Err(error_from_sqlite_code(code, None))
     } else {
         Ok(())

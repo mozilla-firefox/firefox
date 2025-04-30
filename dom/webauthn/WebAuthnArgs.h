@@ -26,6 +26,7 @@ class WebAuthnRegisterArgs final : public nsIWebAuthnRegisterArgs {
         mClientDataJSON(aClientDataJSON),
         mPrivateBrowsing(aPrivateBrowsing),
         mInfo(aInfo),
+        mEnforceCredentialProtectionPolicy(false),
         mCredProps(false),
         mHmacCreateSecret(false),
         mLargeBlobSupportRequired(Nothing()),
@@ -33,6 +34,12 @@ class WebAuthnRegisterArgs final : public nsIWebAuthnRegisterArgs {
         mPrf(false) {
     for (const WebAuthnExtension& ext : mInfo.Extensions()) {
       switch (ext.type()) {
+        case WebAuthnExtension::TWebAuthnExtensionCredProtect:
+          mCredentialProtectionPolicy.emplace(
+              ext.get_WebAuthnExtensionCredProtect().policy());
+          mEnforceCredentialProtectionPolicy =
+              ext.get_WebAuthnExtensionCredProtect().required();
+          break;
         case WebAuthnExtension::TWebAuthnExtensionCredProps:
           mCredProps = ext.get_WebAuthnExtensionCredProps().credProps();
           break;
@@ -65,6 +72,9 @@ class WebAuthnRegisterArgs final : public nsIWebAuthnRegisterArgs {
   const bool mPrivateBrowsing;
   const WebAuthnMakeCredentialInfo mInfo;
 
+  Maybe<CredentialProtectionPolicy> mCredentialProtectionPolicy;
+  bool mEnforceCredentialProtectionPolicy;
+
   // Flags to indicate whether an extension is being requested.
   bool mCredProps;
   bool mHmacCreateSecret;
@@ -89,6 +99,8 @@ class WebAuthnSignArgs final : public nsIWebAuthnSignArgs {
         mPrf(false) {
     for (const WebAuthnExtension& ext : mInfo.Extensions()) {
       switch (ext.type()) {
+        case WebAuthnExtension::TWebAuthnExtensionCredProtect:
+          break;
         case WebAuthnExtension::TWebAuthnExtensionCredProps:
           break;
         case WebAuthnExtension::TWebAuthnExtensionHmacSecret:

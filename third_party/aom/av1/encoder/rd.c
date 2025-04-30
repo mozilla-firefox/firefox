@@ -400,7 +400,7 @@ int av1_compute_rd_mult_based_on_qindex(aom_bit_depth_t bit_depth,
     rdmult = (int64_t)((double)rdmult * def_rd_q_mult);
   }
 
-  if (tuning == AOM_TUNE_IQ) {
+  if (tuning == AOM_TUNE_IQ || tuning == AOM_TUNE_SSIMULACRA2) {
     // Further multiply rdmult (by up to 200/128 = 1.5625) to improve image
     // quality. The most noticeable effect is a mild bias towards choosing
     // larger transform sizes (e.g. one 16x16 transform instead of 4 8x8

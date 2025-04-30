@@ -1,19 +1,26 @@
-use quickcheck as qc;
-use rand::{distributions::{Distribution, Standard}, Rng, SeedableRng, rngs::StdRng};
-use rand::{seq::SliceRandom, thread_rng};
-use std::{cmp::min, fmt::Debug, marker::PhantomData};
-use itertools as it;
-use crate::it::Itertools;
-use crate::it::ExactlyOneError;
-use crate::it::multizip;
-use crate::it::multipeek;
-use crate::it::peek_nth;
-use crate::it::free::rciter;
-use crate::it::free::put_back_n;
-use crate::it::FoldWhile;
+#![allow(unstable_name_collisions)]
+
 use crate::it::cloned;
+use crate::it::free::put_back_n;
+use crate::it::free::rciter;
 use crate::it::iproduct;
 use crate::it::izip;
+use crate::it::multipeek;
+use crate::it::multizip;
+use crate::it::peek_nth;
+use crate::it::repeat_n;
+use crate::it::ExactlyOneError;
+use crate::it::FoldWhile;
+use crate::it::Itertools;
+use itertools as it;
+use quickcheck as qc;
+use rand::{
+    distributions::{Distribution, Standard},
+    rngs::StdRng,
+    Rng, SeedableRng,
+};
+use rand::{seq::SliceRandom, thread_rng};
+use std::{cmp::min, fmt::Debug, marker::PhantomData};
 
 #[test]
 fn product3() {
@@ -27,28 +34,26 @@ fn product3() {
             }
         }
     }
-    for (_, _, _, _) in iproduct!(0..3, 0..2, 0..2, 0..3) {
-        /* test compiles */
-    }
+    for (_, _, _, _) in iproduct!(0..3, 0..2, 0..2, 0..3) { /* test compiles */ }
 }
 
 #[test]
 fn interleave_shortest() {
     let v0: Vec<i32> = vec![0, 2, 4];
     let v1: Vec<i32> = vec![1, 3, 5, 7];
-    let it = v0.into_iter().interleave_shortest(v1.into_iter());
+    let it = v0.into_iter().interleave_shortest(v1);
     assert_eq!(it.size_hint(), (6, Some(6)));
     assert_eq!(it.collect_vec(), vec![0, 1, 2, 3, 4, 5]);
 
     let v0: Vec<i32> = vec![0, 2, 4, 6, 8];
     let v1: Vec<i32> = vec![1, 3, 5];
-    let it = v0.into_iter().interleave_shortest(v1.into_iter());
+    let it = v0.into_iter().interleave_shortest(v1);
     assert_eq!(it.size_hint(), (7, Some(7)));
     assert_eq!(it.collect_vec(), vec![0, 1, 2, 3, 4, 5, 6]);
 
     let i0 = ::std::iter::repeat(0);
     let v1: Vec<_> = vec![1, 3, 5];
-    let it = i0.interleave_shortest(v1.into_iter());
+    let it = i0.interleave_shortest(v1);
     assert_eq!(it.size_hint(), (7, Some(7)));
 
     let v0: Vec<_> = vec![0, 2, 4];
@@ -62,9 +67,15 @@ fn duplicates_by() {
     let xs = ["aaa", "bbbbb", "aa", "ccc", "bbbb", "aaaaa", "cccc"];
     let ys = ["aa", "bbbb", "cccc"];
     it::assert_equal(ys.iter(), xs.iter().duplicates_by(|x| x[..2].to_string()));
-    it::assert_equal(ys.iter(), xs.iter().rev().duplicates_by(|x| x[..2].to_string()).rev());
+    it::assert_equal(
+        ys.iter(),
+        xs.iter().rev().duplicates_by(|x| x[..2].to_string()).rev(),
+    );
     let ys_rev = ["ccc", "aa", "bbbbb"];
-    it::assert_equal(ys_rev.iter(), xs.iter().duplicates_by(|x| x[..2].to_string()).rev());
+    it::assert_equal(
+        ys_rev.iter(),
+        xs.iter().duplicates_by(|x| x[..2].to_string()).rev(),
+    );
 }
 
 #[test]
@@ -83,10 +94,13 @@ fn duplicates() {
     let ys_rev = [1, 0];
     it::assert_equal(ys_rev.iter(), xs.iter().duplicates().rev());
 
-    let xs = vec![0, 1, 2, 1, 2];
+    let xs = [0, 1, 2, 1, 2];
     let ys = vec![1, 2];
     assert_eq!(ys, xs.iter().duplicates().cloned().collect_vec());
-    assert_eq!(ys, xs.iter().rev().duplicates().rev().cloned().collect_vec());
+    assert_eq!(
+        ys,
+        xs.iter().rev().duplicates().rev().cloned().collect_vec()
+    );
     let ys_rev = vec![2, 1];
     assert_eq!(ys_rev, xs.iter().duplicates().rev().cloned().collect_vec());
 }
@@ -96,9 +110,15 @@ fn unique_by() {
     let xs = ["aaa", "bbbbb", "aa", "ccc", "bbbb", "aaaaa", "cccc"];
     let ys = ["aaa", "bbbbb", "ccc"];
     it::assert_equal(ys.iter(), xs.iter().unique_by(|x| x[..2].to_string()));
-    it::assert_equal(ys.iter(), xs.iter().rev().unique_by(|x| x[..2].to_string()).rev());
+    it::assert_equal(
+        ys.iter(),
+        xs.iter().rev().unique_by(|x| x[..2].to_string()).rev(),
+    );
     let ys_rev = ["cccc", "aaaaa", "bbbb"];
-    it::assert_equal(ys_rev.iter(), xs.iter().unique_by(|x| x[..2].to_string()).rev());
+    it::assert_equal(
+        ys_rev.iter(),
+        xs.iter().unique_by(|x| x[..2].to_string()).rev(),
+    );
 }
 
 #[test]
@@ -127,7 +147,7 @@ fn intersperse() {
 
     let ys = [0, 1, 2, 3];
     let mut it = ys[..0].iter().copied().intersperse(1);
-    assert!(it.next() == None);
+    assert!(it.next().is_none());
 }
 
 #[test]
@@ -148,14 +168,14 @@ fn dedup() {
 
 #[test]
 fn coalesce() {
-    let data = vec![-1., -2., -3., 3., 1., 0., -1.];
-    let it = data.iter().cloned().coalesce(|x, y|
+    let data = [-1., -2., -3., 3., 1., 0., -1.];
+    let it = data.iter().cloned().coalesce(|x, y| {
         if (x >= 0.) == (y >= 0.) {
             Ok(x + y)
         } else {
             Err((x, y))
         }
-    );
+    });
     itertools::assert_equal(it.clone(), vec![-6., 4., -1.]);
     assert_eq!(
         it.fold(vec![], |mut v, n| {
@@ -168,17 +188,37 @@ fn coalesce() {
 
 #[test]
 fn dedup_by() {
-    let xs = [(0, 0), (0, 1), (1, 1), (2, 1), (0, 2), (3, 1), (0, 3), (1, 3)];
+    let xs = [
+        (0, 0),
+        (0, 1),
+        (1, 1),
+        (2, 1),
+        (0, 2),
+        (3, 1),
+        (0, 3),
+        (1, 3),
+    ];
     let ys = [(0, 0), (0, 1), (0, 2), (3, 1), (0, 3)];
-    it::assert_equal(ys.iter(), xs.iter().dedup_by(|x, y| x.1==y.1));
+    it::assert_equal(ys.iter(), xs.iter().dedup_by(|x, y| x.1 == y.1));
     let xs = [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)];
     let ys = [(0, 1)];
-    it::assert_equal(ys.iter(), xs.iter().dedup_by(|x, y| x.0==y.0));
+    it::assert_equal(ys.iter(), xs.iter().dedup_by(|x, y| x.0 == y.0));
 
-    let xs = [(0, 0), (0, 1), (1, 1), (2, 1), (0, 2), (3, 1), (0, 3), (1, 3)];
+    let xs = [
+        (0, 0),
+        (0, 1),
+        (1, 1),
+        (2, 1),
+        (0, 2),
+        (3, 1),
+        (0, 3),
+        (1, 3),
+    ];
     let ys = [(0, 0), (0, 1), (0, 2), (3, 1), (0, 3)];
     let mut xs_d = Vec::new();
-    xs.iter().dedup_by(|x, y| x.1==y.1).fold((), |(), &elt| xs_d.push(elt));
+    xs.iter()
+        .dedup_by(|x, y| x.1 == y.1)
+        .fold((), |(), &elt| xs_d.push(elt));
     assert_eq!(&xs_d, &ys);
 }
 
@@ -195,18 +235,38 @@ fn dedup_with_count() {
     it::assert_equal(ys.iter().cloned(), xs.iter().dedup_with_count());
 }
 
-
 #[test]
 fn dedup_by_with_count() {
-    let xs = [(0, 0), (0, 1), (1, 1), (2, 1), (0, 2), (3, 1), (0, 3), (1, 3)];
-    let ys = [(1, &(0, 0)), (3, &(0, 1)), (1, &(0, 2)), (1, &(3, 1)), (2, &(0, 3))];
+    let xs = [
+        (0, 0),
+        (0, 1),
+        (1, 1),
+        (2, 1),
+        (0, 2),
+        (3, 1),
+        (0, 3),
+        (1, 3),
+    ];
+    let ys = [
+        (1, &(0, 0)),
+        (3, &(0, 1)),
+        (1, &(0, 2)),
+        (1, &(3, 1)),
+        (2, &(0, 3)),
+    ];
 
-    it::assert_equal(ys.iter().cloned(), xs.iter().dedup_by_with_count(|x, y| x.1==y.1));
+    it::assert_equal(
+        ys.iter().cloned(),
+        xs.iter().dedup_by_with_count(|x, y| x.1 == y.1),
+    );
 
     let xs = [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)];
-    let ys = [( 5, &(0, 1))];
+    let ys = [(5, &(0, 1))];
 
-    it::assert_equal(ys.iter().cloned(), xs.iter().dedup_by_with_count(|x, y| x.0==y.0));
+    it::assert_equal(
+        ys.iter().cloned(),
+        xs.iter().dedup_by_with_count(|x, y| x.0 == y.0),
+    );
 }
 
 #[test]
@@ -215,8 +275,24 @@ fn all_equal() {
     assert!("A".chars().all_equal());
     assert!(!"AABBCCC".chars().all_equal());
     assert!("AAAAAAA".chars().all_equal());
-    for (_key, mut sub) in &"AABBCCC".chars().group_by(|&x| x) {
+    for (_key, mut sub) in &"AABBCCC".chars().chunk_by(|&x| x) {
         assert!(sub.all_equal());
+    }
+}
+
+#[test]
+fn all_equal_value() {
+    assert_eq!("".chars().all_equal_value(), Err(None));
+    assert_eq!("A".chars().all_equal_value(), Ok('A'));
+    assert_eq!("AABBCCC".chars().all_equal_value(), Err(Some(('A', 'B'))));
+    assert_eq!("AAAAAAA".chars().all_equal_value(), Ok('A'));
+    {
+        let mut it = [1, 2, 3].iter().copied();
+        let result = it.all_equal_value();
+        assert_eq!(result, Err(Some((1, 2))));
+        let remaining = it.next();
+        assert_eq!(remaining, Some(3));
+        assert!(it.next().is_none());
     }
 }
 
@@ -240,7 +316,7 @@ fn test_put_back_n() {
 
 #[test]
 fn tee() {
-    let xs  = [0, 1, 2, 3];
+    let xs = [0, 1, 2, 3];
     let (mut t1, mut t2) = xs.iter().cloned().tee();
     assert_eq!(t1.next(), Some(0));
     assert_eq!(t2.next(), Some(0));
@@ -264,7 +340,6 @@ fn tee() {
     it::assert_equal(t1.zip(t2), xs.iter().cloned().zip(xs.iter().cloned()));
 }
 
-
 #[test]
 fn test_rciter() {
     let xs = [0, 1, 1, 1, 2, 1, 3, 5, 6];
@@ -285,26 +360,24 @@ fn test_rciter() {
     assert_eq!(z.next(), Some((0, 1)));
 }
 
-#[allow(deprecated)]
 #[test]
 fn trait_pointers() {
-    struct ByRef<'r, I: ?Sized>(&'r mut I) ;
+    struct ByRef<'r, I: ?Sized>(&'r mut I);
 
-    impl<'r, X, I: ?Sized> Iterator for ByRef<'r, I> where
-        I: 'r + Iterator<Item=X>
+    impl<'r, X, I> Iterator for ByRef<'r, I>
+    where
+        I: ?Sized + 'r + Iterator<Item = X>,
     {
         type Item = X;
-        fn next(&mut self) -> Option<Self::Item>
-        {
+        fn next(&mut self) -> Option<Self::Item> {
             self.0.next()
         }
     }
 
-    let mut it = Box::new(0..10) as Box<dyn Iterator<Item=i32>>;
+    let mut it = Box::new(0..10) as Box<dyn Iterator<Item = i32>>;
     assert_eq!(it.next(), Some(0));
 
     {
-        /* make sure foreach works on non-Sized */
         let jt: &mut dyn Iterator<Item = i32> = &mut *it;
         assert_eq!(jt.next(), Some(1));
 
@@ -314,15 +387,22 @@ fn trait_pointers() {
         }
 
         assert_eq!(jt.find_position(|x| *x == 4), Some((1, 4)));
-        jt.foreach(|_| ());
+        jt.for_each(|_| ());
     }
 }
 
 #[test]
 fn merge_by() {
-    let odd : Vec<(u32, &str)> = vec![(1, "hello"), (3, "world"), (5, "!")];
-    let even = vec![(2, "foo"), (4, "bar"), (6, "baz")];
-    let expected = vec![(1, "hello"), (2, "foo"), (3, "world"), (4, "bar"), (5, "!"), (6, "baz")];
+    let odd: Vec<(u32, &str)> = vec![(1, "hello"), (3, "world"), (5, "!")];
+    let even = [(2, "foo"), (4, "bar"), (6, "baz")];
+    let expected = [
+        (1, "hello"),
+        (2, "foo"),
+        (3, "world"),
+        (4, "bar"),
+        (5, "!"),
+        (6, "baz"),
+    ];
     let results = odd.iter().merge_by(even.iter(), |a, b| a.0 <= b.0);
     it::assert_equal(results, expected.iter());
 }
@@ -336,23 +416,21 @@ fn merge_by_btree() {
     let mut bt2 = BTreeMap::new();
     bt2.insert("foo", 2);
     bt2.insert("bar", 4);
-    let results = bt1.into_iter().merge_by(bt2.into_iter(), |a, b| a.0 <= b.0 );
+    let results = bt1.into_iter().merge_by(bt2, |a, b| a.0 <= b.0);
     let expected = vec![("bar", 4), ("foo", 2), ("hello", 1), ("world", 3)];
-    it::assert_equal(results, expected.into_iter());
+    it::assert_equal(results, expected);
 }
 
-#[allow(deprecated)]
 #[test]
 fn kmerge() {
-    let its = (0..4).map(|s| (s..10).step(4));
+    let its = (0..4).map(|s| (s..10).step_by(4));
 
     it::assert_equal(its.kmerge(), 0..10);
 }
 
-#[allow(deprecated)]
 #[test]
 fn kmerge_2() {
-    let its = vec![3, 2, 1, 0].into_iter().map(|s| (s..10).step(4));
+    let its = vec![3, 2, 1, 0].into_iter().map(|s| (s..10).step_by(4));
 
     it::assert_equal(its.kmerge(), 0..10);
 }
@@ -378,19 +456,17 @@ fn kmerge_empty_size_hint() {
 #[test]
 fn join() {
     let many = [1, 2, 3];
-    let one  = [1];
+    let one = [1];
     let none: Vec<i32> = vec![];
 
     assert_eq!(many.iter().join(", "), "1, 2, 3");
-    assert_eq!( one.iter().join(", "), "1");
+    assert_eq!(one.iter().join(", "), "1");
     assert_eq!(none.iter().join(", "), "");
 }
 
 #[test]
 fn sorted_unstable_by() {
-    let sc = [3, 4, 1, 2].iter().cloned().sorted_by(|&a, &b| {
-        a.cmp(&b)
-    });
+    let sc = [3, 4, 1, 2].iter().cloned().sorted_by(|&a, &b| a.cmp(&b));
     it::assert_equal(sc, vec![1, 2, 3, 4]);
 
     let v = (0..5).sorted_unstable_by(|&a, &b| a.cmp(&b).reverse());
@@ -408,33 +484,85 @@ fn sorted_unstable_by_key() {
 
 #[test]
 fn sorted_by() {
-    let sc = [3, 4, 1, 2].iter().cloned().sorted_by(|&a, &b| {
-        a.cmp(&b)
-    });
+    let sc = [3, 4, 1, 2].iter().cloned().sorted_by(|&a, &b| a.cmp(&b));
     it::assert_equal(sc, vec![1, 2, 3, 4]);
 
     let v = (0..5).sorted_by(|&a, &b| a.cmp(&b).reverse());
     it::assert_equal(v, vec![4, 3, 2, 1, 0]);
 }
 
+#[cfg(not(miri))]
 qc::quickcheck! {
-    fn k_smallest_range(n: u64, m: u16, k: u16) -> () {
+    fn k_smallest_range(n: i64, m: u16, k: u16) -> () {
         // u16 is used to constrain k and m to 0..2¹⁶,
         //  otherwise the test could use too much memory.
-        let (k, m) = (k as u64, m as u64);
+        let (k, m) = (k as usize, m as u64);
 
+        let mut v: Vec<_> = (n..n.saturating_add(m as _)).collect();
         // Generate a random permutation of n..n+m
-        let i = {
-            let mut v: Vec<u64> = (n..n.saturating_add(m)).collect();
-            v.shuffle(&mut thread_rng());
-            v.into_iter()
-        };
+        v.shuffle(&mut thread_rng());
 
-        // Check that taking the k smallest elements yields n..n+min(k, m)
-        it::assert_equal(
-            i.k_smallest(k as usize),
-            n..n.saturating_add(min(k, m))
-        );
+        // Construct the right answers for the top and bottom elements
+        let mut sorted = v.clone();
+        sorted.sort();
+        // how many elements are we checking
+        let num_elements = min(k, m as _);
+
+        // Compute the top and bottom k in various combinations
+        let sorted_smallest = sorted[..num_elements].iter().cloned();
+        let smallest = v.iter().cloned().k_smallest(k);
+        let smallest_by = v.iter().cloned().k_smallest_by(k, Ord::cmp);
+        let smallest_by_key = v.iter().cloned().k_smallest_by_key(k, |&x| x);
+
+        let sorted_largest = sorted[sorted.len() - num_elements..].iter().rev().cloned();
+        let largest = v.iter().cloned().k_largest(k);
+        let largest_by = v.iter().cloned().k_largest_by(k, Ord::cmp);
+        let largest_by_key = v.iter().cloned().k_largest_by_key(k, |&x| x);
+
+        // Check the variations produce the same answers and that they're right
+        it::assert_equal(smallest, sorted_smallest.clone());
+        it::assert_equal(smallest_by, sorted_smallest.clone());
+        it::assert_equal(smallest_by_key, sorted_smallest);
+
+        it::assert_equal(largest, sorted_largest.clone());
+        it::assert_equal(largest_by, sorted_largest.clone());
+        it::assert_equal(largest_by_key, sorted_largest);
+    }
+
+    fn k_smallest_relaxed_range(n: i64, m: u16, k: u16) -> () {
+        // u16 is used to constrain k and m to 0..2¹⁶,
+        //  otherwise the test could use too much memory.
+        let (k, m) = (k as usize, m as u64);
+
+        let mut v: Vec<_> = (n..n.saturating_add(m as _)).collect();
+        // Generate a random permutation of n..n+m
+        v.shuffle(&mut thread_rng());
+
+        // Construct the right answers for the top and bottom elements
+        let mut sorted = v.clone();
+        sorted.sort();
+        // how many elements are we checking
+        let num_elements = min(k, m as _);
+
+        // Compute the top and bottom k in various combinations
+        let sorted_smallest = sorted[..num_elements].iter().cloned();
+        let smallest = v.iter().cloned().k_smallest_relaxed(k);
+        let smallest_by = v.iter().cloned().k_smallest_relaxed_by(k, Ord::cmp);
+        let smallest_by_key = v.iter().cloned().k_smallest_relaxed_by_key(k, |&x| x);
+
+        let sorted_largest = sorted[sorted.len() - num_elements..].iter().rev().cloned();
+        let largest = v.iter().cloned().k_largest_relaxed(k);
+        let largest_by = v.iter().cloned().k_largest_relaxed_by(k, Ord::cmp);
+        let largest_by_key = v.iter().cloned().k_largest_relaxed_by_key(k, |&x| x);
+
+        // Check the variations produce the same answers and that they're right
+        it::assert_equal(smallest, sorted_smallest.clone());
+        it::assert_equal(smallest_by, sorted_smallest.clone());
+        it::assert_equal(smallest_by_key, sorted_smallest);
+
+        it::assert_equal(largest, sorted_largest.clone());
+        it::assert_equal(largest_by, sorted_largest.clone());
+        it::assert_equal(largest_by_key, sorted_largest);
     }
 }
 
@@ -443,11 +571,13 @@ struct RandIter<T: 'static + Clone + Send, R: 'static + Clone + Rng + SeedableRn
     idx: usize,
     len: usize,
     rng: R,
-    _t: PhantomData<T>
+    _t: PhantomData<T>,
 }
 
 impl<T: Clone + Send, R: Clone + Rng + SeedableRng + Send> Iterator for RandIter<T, R>
-where Standard: Distribution<T> {
+where
+    Standard: Distribution<T>,
+{
     type Item = T;
     fn next(&mut self) -> Option<T> {
         if self.idx == self.len {
@@ -461,11 +591,11 @@ where Standard: Distribution<T> {
 
 impl<T: Clone + Send, R: Clone + Rng + SeedableRng + Send> qc::Arbitrary for RandIter<T, R> {
     fn arbitrary<G: qc::Gen>(g: &mut G) -> Self {
-        RandIter {
+        Self {
             idx: 0,
             len: g.size(),
             rng: R::seed_from_u64(g.next_u64()),
-            _t : PhantomData{},
+            _t: PhantomData {},
         }
     }
 }
@@ -478,11 +608,25 @@ where
     I::Item: Ord + Debug,
 {
     let j = i.clone();
+    let i1 = i.clone();
+    let j1 = i.clone();
     let k = k as usize;
-    it::assert_equal(
-        i.k_smallest(k),
-        j.sorted().take(k)
-    )
+    it::assert_equal(i.k_smallest(k), j.sorted().take(k));
+    it::assert_equal(i1.k_smallest_relaxed(k), j1.sorted().take(k));
+}
+
+// Similar to `k_smallest_sort` but for our custom heap implementation.
+fn k_smallest_by_sort<I>(i: I, k: u16)
+where
+    I: Iterator + Clone,
+    I::Item: Ord + Debug,
+{
+    let j = i.clone();
+    let i1 = i.clone();
+    let j1 = i.clone();
+    let k = k as usize;
+    it::assert_equal(i.k_smallest_by(k, Ord::cmp), j.sorted().take(k));
+    it::assert_equal(i1.k_smallest_relaxed_by(k, Ord::cmp), j1.sorted().take(k));
 }
 
 macro_rules! generic_test {
@@ -497,7 +641,10 @@ macro_rules! generic_test {
     };
 }
 
+#[cfg(not(miri))]
 generic_test!(k_smallest_sort, u8, u16, u32, u64, i8, i16, i32, i64);
+#[cfg(not(miri))]
+generic_test!(k_smallest_by_sort, u8, u16, u32, u64, i8, i16, i32, i64);
 
 #[test]
 fn sorted_by_key() {
@@ -534,7 +681,7 @@ fn sorted_by_cached_key() {
 
 #[test]
 fn test_multipeek() {
-    let nums = vec![1u8,2,3,4,5];
+    let nums = vec![1u8, 2, 3, 4, 5];
 
     let mp = multipeek(nums.iter().copied());
     assert_eq!(nums, mp.collect::<Vec<_>>());
@@ -575,7 +722,7 @@ fn test_multipeek_reset() {
 #[test]
 fn test_multipeek_peeking_next() {
     use crate::it::PeekingNext;
-    let nums = vec![1u8,2,3,4,5,6,7];
+    let nums = [1u8, 2, 3, 4, 5, 6, 7];
 
     let mut mp = multipeek(nums.iter().copied());
     assert_eq!(mp.peeking_next(|&x| x != 0), Some(1));
@@ -599,8 +746,23 @@ fn test_multipeek_peeking_next() {
 }
 
 #[test]
+fn test_repeat_n_peeking_next() {
+    use crate::it::PeekingNext;
+    let mut rn = repeat_n(0, 5);
+    assert_eq!(rn.peeking_next(|&x| x != 0), None);
+    assert_eq!(rn.peeking_next(|&x| x <= 0), Some(0));
+    assert_eq!(rn.next(), Some(0));
+    assert_eq!(rn.peeking_next(|&x| x <= 0), Some(0));
+    assert_eq!(rn.peeking_next(|&x| x != 0), None);
+    assert_eq!(rn.peeking_next(|&x| x >= 0), Some(0));
+    assert_eq!(rn.next(), Some(0));
+    assert_eq!(rn.peeking_next(|&x| x <= 0), None);
+    assert_eq!(rn.next(), None);
+}
+
+#[test]
 fn test_peek_nth() {
-    let nums = vec![1u8,2,3,4,5];
+    let nums = vec![1u8, 2, 3, 4, 5];
 
     let iter = peek_nth(nums.iter().copied());
     assert_eq!(nums, iter.collect::<Vec<_>>());
@@ -635,7 +797,7 @@ fn test_peek_nth() {
 #[test]
 fn test_peek_nth_peeking_next() {
     use it::PeekingNext;
-    let nums = vec![1u8,2,3,4,5,6,7];
+    let nums = [1u8, 2, 3, 4, 5, 6, 7];
     let mut iter = peek_nth(nums.iter().copied());
 
     assert_eq!(iter.peeking_next(|&x| x != 0), Some(1));
@@ -663,6 +825,35 @@ fn test_peek_nth_peeking_next() {
 }
 
 #[test]
+fn test_peek_nth_next_if() {
+    let nums = [1u8, 2, 3, 4, 5, 6, 7];
+    let mut iter = peek_nth(nums.iter().copied());
+
+    assert_eq!(iter.next_if(|&x| x != 0), Some(1));
+    assert_eq!(iter.next(), Some(2));
+
+    assert_eq!(iter.peek_nth(0), Some(&3));
+    assert_eq!(iter.peek_nth(1), Some(&4));
+    assert_eq!(iter.next_if_eq(&3), Some(3));
+    assert_eq!(iter.peek(), Some(&4));
+
+    assert_eq!(iter.next_if(|&x| x != 4), None);
+    assert_eq!(iter.next_if_eq(&4), Some(4));
+    assert_eq!(iter.peek_nth(0), Some(&5));
+    assert_eq!(iter.peek_nth(1), Some(&6));
+
+    assert_eq!(iter.next_if(|&x| x != 5), None);
+    assert_eq!(iter.peek(), Some(&5));
+
+    assert_eq!(iter.next_if(|&x| x % 2 == 1), Some(5));
+    assert_eq!(iter.next_if_eq(&6), Some(6));
+    assert_eq!(iter.peek_nth(0), Some(&7));
+    assert_eq!(iter.peek_nth(1), None);
+    assert_eq!(iter.next(), Some(7));
+    assert_eq!(iter.peek(), None);
+}
+
+#[test]
 fn pad_using() {
     it::assert_equal((0..0).pad_using(1, |_| 1), 1..2);
 
@@ -676,14 +867,14 @@ fn pad_using() {
 }
 
 #[test]
-fn group_by() {
-    for (ch1, sub) in &"AABBCCC".chars().group_by(|&x| x) {
+fn chunk_by() {
+    for (ch1, sub) in &"AABBCCC".chars().chunk_by(|&x| x) {
         for ch2 in sub {
             assert_eq!(ch1, ch2);
         }
     }
 
-    for (ch1, sub) in &"AAABBBCCCCDDDD".chars().group_by(|&x| x) {
+    for (ch1, sub) in &"AAABBBCCCCDDDD".chars().chunk_by(|&x| x) {
         for ch2 in sub {
             assert_eq!(ch1, ch2);
             if ch1 == 'C' {
@@ -696,24 +887,24 @@ fn group_by() {
 
     // try all possible orderings
     for indices in permutohedron::Heap::new(&mut [0, 1, 2, 3]) {
-        let groups = "AaaBbbccCcDDDD".chars().group_by(&toupper);
-        let mut subs = groups.into_iter().collect_vec();
+        let chunks = "AaaBbbccCcDDDD".chars().chunk_by(&toupper);
+        let mut subs = chunks.into_iter().collect_vec();
 
         for &idx in &indices[..] {
             let (key, text) = match idx {
-                 0 => ('A', "Aaa".chars()),
-                 1 => ('B', "Bbb".chars()),
-                 2 => ('C', "ccCc".chars()),
-                 3 => ('D', "DDDD".chars()),
-                 _ => unreachable!(),
+                0 => ('A', "Aaa".chars()),
+                1 => ('B', "Bbb".chars()),
+                2 => ('C', "ccCc".chars()),
+                3 => ('D', "DDDD".chars()),
+                _ => unreachable!(),
             };
             assert_eq!(key, subs[idx].0);
             it::assert_equal(&mut subs[idx].1, text);
         }
     }
 
-    let groups = "AAABBBCCCCDDDD".chars().group_by(|&x| x);
-    let mut subs = groups.into_iter().map(|(_, g)| g).collect_vec();
+    let chunks = "AAABBBCCCCDDDD".chars().chunk_by(|&x| x);
+    let mut subs = chunks.into_iter().map(|(_, g)| g).collect_vec();
 
     let sd = subs.pop().unwrap();
     let sc = subs.pop().unwrap();
@@ -730,9 +921,11 @@ fn group_by() {
     {
         let mut ntimes = 0;
         let text = "AABCCC";
-        for (_, sub) in &text.chars().group_by(|&x| { ntimes += 1; x}) {
-            for _ in sub {
-            }
+        for (_, sub) in &text.chars().chunk_by(|&x| {
+            ntimes += 1;
+            x
+        }) {
+            for _ in sub {}
         }
         assert_eq!(ntimes, text.len());
     }
@@ -740,91 +933,95 @@ fn group_by() {
     {
         let mut ntimes = 0;
         let text = "AABCCC";
-        for _ in &text.chars().group_by(|&x| { ntimes += 1; x}) {
-        }
+        for _ in &text.chars().chunk_by(|&x| {
+            ntimes += 1;
+            x
+        }) {}
         assert_eq!(ntimes, text.len());
     }
 
     {
         let text = "ABCCCDEEFGHIJJKK";
-        let gr = text.chars().group_by(|&x| x);
+        let gr = text.chars().chunk_by(|&x| x);
         it::assert_equal(gr.into_iter().flat_map(|(_, sub)| sub), text.chars());
     }
 }
 
 #[test]
-fn group_by_lazy_2() {
-    let data = vec![0, 1];
-    let groups = data.iter().group_by(|k| *k);
-    let gs = groups.into_iter().collect_vec();
+fn chunk_by_lazy_2() {
+    let data = [0, 1];
+    let chunks = data.iter().chunk_by(|k| *k);
+    let gs = chunks.into_iter().collect_vec();
     it::assert_equal(data.iter(), gs.into_iter().flat_map(|(_k, g)| g));
 
-    let data = vec![0, 1, 1, 0, 0];
-    let groups = data.iter().group_by(|k| *k);
-    let mut gs = groups.into_iter().collect_vec();
+    let data = [0, 1, 1, 0, 0];
+    let chunks = data.iter().chunk_by(|k| *k);
+    let mut gs = chunks.into_iter().collect_vec();
     gs[1..].reverse();
     it::assert_equal(&[0, 0, 0, 1, 1], gs.into_iter().flat_map(|(_, g)| g));
 
-    let grouper = data.iter().group_by(|k| *k);
-    let mut groups = Vec::new();
-    for (k, group) in &grouper {
+    let grouper = data.iter().chunk_by(|k| *k);
+    let mut chunks = Vec::new();
+    for (k, chunk) in &grouper {
         if *k == 1 {
-            groups.push(group);
+            chunks.push(chunk);
         }
     }
-    it::assert_equal(&mut groups[0], &[1, 1]);
+    it::assert_equal(&mut chunks[0], &[1, 1]);
 
-    let data = vec![0, 0, 0, 1, 1, 0, 0, 2, 2, 3, 3];
-    let grouper = data.iter().group_by(|k| *k);
-    let mut groups = Vec::new();
-    for (i, (_, group)) in grouper.into_iter().enumerate() {
+    let data = [0, 0, 0, 1, 1, 0, 0, 2, 2, 3, 3];
+    let grouper = data.iter().chunk_by(|k| *k);
+    let mut chunks = Vec::new();
+    for (i, (_, chunk)) in grouper.into_iter().enumerate() {
         if i < 2 {
-            groups.push(group);
+            chunks.push(chunk);
         } else if i < 4 {
-            for _ in group {
-            }
+            for _ in chunk {}
         } else {
-            groups.push(group);
+            chunks.push(chunk);
         }
     }
-    it::assert_equal(&mut groups[0], &[0, 0, 0]);
-    it::assert_equal(&mut groups[1], &[1, 1]);
-    it::assert_equal(&mut groups[2], &[3, 3]);
+    it::assert_equal(&mut chunks[0], &[0, 0, 0]);
+    it::assert_equal(&mut chunks[1], &[1, 1]);
+    it::assert_equal(&mut chunks[2], &[3, 3]);
 
-    // use groups as chunks
-    let data = vec![0, 0, 0, 1, 1, 0, 0, 2, 2, 3, 3];
+    let data = [0, 0, 0, 1, 1, 0, 0, 2, 2, 3, 3];
     let mut i = 0;
-    let grouper = data.iter().group_by(move |_| { let k = i / 3; i += 1; k });
-    for (i, group) in &grouper {
+    let grouper = data.iter().chunk_by(move |_| {
+        let k = i / 3;
+        i += 1;
+        k
+    });
+    for (i, chunk) in &grouper {
         match i {
-            0 => it::assert_equal(group, &[0, 0, 0]),
-            1 => it::assert_equal(group, &[1, 1, 0]),
-            2 => it::assert_equal(group, &[0, 2, 2]),
-            3 => it::assert_equal(group, &[3, 3]),
+            0 => it::assert_equal(chunk, &[0, 0, 0]),
+            1 => it::assert_equal(chunk, &[1, 1, 0]),
+            2 => it::assert_equal(chunk, &[0, 2, 2]),
+            3 => it::assert_equal(chunk, &[3, 3]),
             _ => unreachable!(),
         }
     }
 }
 
 #[test]
-fn group_by_lazy_3() {
-    // test consuming each group on the lap after it was produced
-    let data = vec![0, 0, 0, 1, 1, 0, 0, 1, 1, 2, 2];
-    let grouper = data.iter().group_by(|elt| *elt);
+fn chunk_by_lazy_3() {
+    // test consuming each chunk on the lap after it was produced
+    let data = [0, 0, 0, 1, 1, 0, 0, 1, 1, 2, 2];
+    let grouper = data.iter().chunk_by(|elt| *elt);
     let mut last = None;
-    for (key, group) in &grouper {
+    for (key, chunk) in &grouper {
         if let Some(gr) = last.take() {
             for elt in gr {
                 assert!(elt != key && i32::abs(elt - key) == 1);
             }
         }
-        last = Some(group);
+        last = Some(chunk);
     }
 }
 
 #[test]
 fn chunks() {
-    let data = vec![0, 0, 0, 1, 1, 0, 0, 2, 2, 3, 3];
+    let data = [0, 0, 0, 1, 1, 0, 0, 2, 2, 3, 3];
     let grouper = data.iter().chunks(3);
     for (i, chunk) in grouper.into_iter().enumerate() {
         match i {
@@ -845,8 +1042,8 @@ fn concat_empty() {
 
 #[test]
 fn concat_non_empty() {
-    let data = vec![vec![1,2,3], vec![4,5,6], vec![7,8,9]];
-    assert_eq!(data.into_iter().concat(), vec![1,2,3,4,5,6,7,8,9])
+    let data = vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]];
+    assert_eq!(data.into_iter().concat(), vec![1, 2, 3, 4, 5, 6, 7, 8, 9])
 }
 
 #[test]
@@ -854,19 +1051,20 @@ fn combinations() {
     assert!((1..3).combinations(5).next().is_none());
 
     let it = (1..3).combinations(2);
-    it::assert_equal(it, vec![
-        vec![1, 2],
-        ]);
+    it::assert_equal(it, vec![vec![1, 2]]);
 
     let it = (1..5).combinations(2);
-    it::assert_equal(it, vec![
-        vec![1, 2],
-        vec![1, 3],
-        vec![1, 4],
-        vec![2, 3],
-        vec![2, 4],
-        vec![3, 4],
-        ]);
+    it::assert_equal(
+        it,
+        vec![
+            vec![1, 2],
+            vec![1, 3],
+            vec![1, 4],
+            vec![2, 3],
+            vec![2, 4],
+            vec![3, 4],
+        ],
+    );
 
     it::assert_equal((0..0).tuple_combinations::<(_, _)>(), <Vec<_>>::new());
     it::assert_equal((0..1).tuple_combinations::<(_, _)>(), <Vec<_>>::new());
@@ -886,11 +1084,86 @@ fn combinations_of_too_short() {
     }
 }
 
-
 #[test]
 fn combinations_zero() {
     it::assert_equal((1..3).combinations(0), vec![vec![]]);
     it::assert_equal((0..0).combinations(0), vec![vec![]]);
+}
+
+fn binomial(n: usize, k: usize) -> usize {
+    if k > n {
+        0
+    } else {
+        (n - k + 1..=n).product::<usize>() / (1..=k).product::<usize>()
+    }
+}
+
+#[test]
+fn combinations_range_count() {
+    for n in 0..=7 {
+        for k in 0..=7 {
+            let len = binomial(n, k);
+            let mut it = (0..n).combinations(k);
+            assert_eq!(len, it.clone().count());
+            assert_eq!(len, it.size_hint().0);
+            assert_eq!(Some(len), it.size_hint().1);
+            for count in (0..len).rev() {
+                let elem = it.next();
+                assert!(elem.is_some());
+                assert_eq!(count, it.clone().count());
+                assert_eq!(count, it.size_hint().0);
+                assert_eq!(Some(count), it.size_hint().1);
+            }
+            let should_be_none = it.next();
+            assert!(should_be_none.is_none());
+        }
+    }
+}
+
+#[test]
+fn combinations_inexact_size_hints() {
+    for k in 0..=7 {
+        let mut numbers = (0..18).filter(|i| i % 2 == 0); // 9 elements
+        let mut it = numbers.clone().combinations(k);
+        let real_n = numbers.clone().count();
+        let len = binomial(real_n, k);
+        assert_eq!(len, it.clone().count());
+
+        let mut nb_loaded = 0;
+        let sh = numbers.size_hint();
+        assert_eq!(binomial(sh.0 + nb_loaded, k), it.size_hint().0);
+        assert_eq!(sh.1.map(|n| binomial(n + nb_loaded, k)), it.size_hint().1);
+
+        for next_count in 1..=len {
+            let elem = it.next();
+            assert!(elem.is_some());
+            assert_eq!(len - next_count, it.clone().count());
+            if next_count == 1 {
+                // The very first time, the lazy buffer is prefilled.
+                nb_loaded = numbers.by_ref().take(k).count();
+            } else {
+                // Then it loads one item each time until exhausted.
+                let nb = numbers.next();
+                if nb.is_some() {
+                    nb_loaded += 1;
+                }
+            }
+            let sh = numbers.size_hint();
+            if next_count > real_n - k + 1 {
+                assert_eq!(0, sh.0);
+                assert_eq!(Some(0), sh.1);
+                assert_eq!(real_n, nb_loaded);
+                // Once it's fully loaded, size hints of `it` are exacts.
+            }
+            assert_eq!(binomial(sh.0 + nb_loaded, k) - next_count, it.size_hint().0);
+            assert_eq!(
+                sh.1.map(|n| binomial(n + nb_loaded, k) - next_count),
+                it.size_hint().1
+            );
+        }
+        let should_be_none = it.next();
+        assert!(should_be_none.is_none());
+    }
 }
 
 #[test]
@@ -900,6 +1173,41 @@ fn permutations_zero() {
 }
 
 #[test]
+fn permutations_range_count() {
+    for n in 0..=4 {
+        for k in 0..=4 {
+            let len = if k <= n { (n - k + 1..=n).product() } else { 0 };
+            let mut it = (0..n).permutations(k);
+            assert_eq!(len, it.clone().count());
+            assert_eq!(len, it.size_hint().0);
+            assert_eq!(Some(len), it.size_hint().1);
+            for count in (0..len).rev() {
+                let elem = it.next();
+                assert!(elem.is_some());
+                assert_eq!(count, it.clone().count());
+                assert_eq!(count, it.size_hint().0);
+                assert_eq!(Some(count), it.size_hint().1);
+            }
+            let should_be_none = it.next();
+            assert!(should_be_none.is_none());
+        }
+    }
+}
+
+#[test]
+fn permutations_overflowed_size_hints() {
+    let mut it = std::iter::repeat(()).permutations(2);
+    assert_eq!(it.size_hint().0, usize::MAX);
+    assert_eq!(it.size_hint().1, None);
+    for nb_generated in 1..=1000 {
+        it.next();
+        assert!(it.size_hint().0 >= usize::MAX - nb_generated);
+        assert_eq!(it.size_hint().1, None);
+    }
+}
+
+#[test]
+#[cfg(not(miri))]
 fn combinations_with_replacement() {
     // Pool smaller than n
     it::assert_equal((0..1).combinations_with_replacement(2), vec![vec![0, 0]]);
@@ -916,15 +1224,9 @@ fn combinations_with_replacement() {
         ],
     );
     // Zero size
-    it::assert_equal(
-        (0..3).combinations_with_replacement(0),
-        vec![vec![]],
-    );
+    it::assert_equal((0..3).combinations_with_replacement(0), vec![vec![]]);
     // Zero size on empty pool
-    it::assert_equal(
-        (0..0).combinations_with_replacement(0),
-        vec![vec![]],
-    );
+    it::assert_equal((0..0).combinations_with_replacement(0), vec![vec![]]);
     // Empty pool
     it::assert_equal(
         (0..0).combinations_with_replacement(2),
@@ -933,25 +1235,74 @@ fn combinations_with_replacement() {
 }
 
 #[test]
+fn combinations_with_replacement_range_count() {
+    for n in 0..=4 {
+        for k in 0..=4 {
+            let len = binomial(usize::saturating_sub(n + k, 1), k);
+            let mut it = (0..n).combinations_with_replacement(k);
+            assert_eq!(len, it.clone().count());
+            assert_eq!(len, it.size_hint().0);
+            assert_eq!(Some(len), it.size_hint().1);
+            for count in (0..len).rev() {
+                let elem = it.next();
+                assert!(elem.is_some());
+                assert_eq!(count, it.clone().count());
+                assert_eq!(count, it.size_hint().0);
+                assert_eq!(Some(count), it.size_hint().1);
+            }
+            let should_be_none = it.next();
+            assert!(should_be_none.is_none());
+        }
+    }
+}
+
+#[test]
 fn powerset() {
     it::assert_equal((0..0).powerset(), vec![vec![]]);
     it::assert_equal((0..1).powerset(), vec![vec![], vec![0]]);
-    it::assert_equal((0..2).powerset(), vec![vec![], vec![0], vec![1], vec![0, 1]]);
-    it::assert_equal((0..3).powerset(), vec![
-        vec![],
-        vec![0], vec![1], vec![2],
-        vec![0, 1], vec![0, 2], vec![1, 2],
-        vec![0, 1, 2]
-    ]);
+    it::assert_equal(
+        (0..2).powerset(),
+        vec![vec![], vec![0], vec![1], vec![0, 1]],
+    );
+    it::assert_equal(
+        (0..3).powerset(),
+        vec![
+            vec![],
+            vec![0],
+            vec![1],
+            vec![2],
+            vec![0, 1],
+            vec![0, 2],
+            vec![1, 2],
+            vec![0, 1, 2],
+        ],
+    );
 
     assert_eq!((0..4).powerset().count(), 1 << 4);
     assert_eq!((0..8).powerset().count(), 1 << 8);
     assert_eq!((0..16).powerset().count(), 1 << 16);
+
+    for n in 0..=4 {
+        let mut it = (0..n).powerset();
+        let len = 2_usize.pow(n);
+        assert_eq!(len, it.clone().count());
+        assert_eq!(len, it.size_hint().0);
+        assert_eq!(Some(len), it.size_hint().1);
+        for count in (0..len).rev() {
+            let elem = it.next();
+            assert!(elem.is_some());
+            assert_eq!(count, it.clone().count());
+            assert_eq!(count, it.size_hint().0);
+            assert_eq!(Some(count), it.size_hint().1);
+        }
+        let should_be_none = it.next();
+        assert!(should_be_none.is_none());
+    }
 }
 
 #[test]
 fn diff_mismatch() {
-    let a = vec![1, 2, 3, 4];
+    let a = [1, 2, 3, 4];
     let b = vec![1.0, 5.0, 3.0, 4.0];
     let b_map = b.into_iter().map(|f| f as i32);
     let diff = it::diff_with(a.iter(), b_map, |a, b| *a == b);
@@ -965,21 +1316,20 @@ fn diff_mismatch() {
 
 #[test]
 fn diff_longer() {
-    let a = vec![1, 2, 3, 4];
+    let a = [1, 2, 3, 4];
     let b = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
     let b_map = b.into_iter().map(|f| f as i32);
     let diff = it::diff_with(a.iter(), b_map, |a, b| *a == b);
 
     assert!(match diff {
-        Some(it::Diff::Longer(_, remaining)) =>
-            remaining.collect::<Vec<_>>() == vec![5, 6],
+        Some(it::Diff::Longer(_, remaining)) => remaining.collect::<Vec<_>>() == vec![5, 6],
         _ => false,
     });
 }
 
 #[test]
 fn diff_shorter() {
-    let a = vec![1, 2, 3, 4];
+    let a = [1, 2, 3, 4];
     let b = vec![1.0, 2.0];
     let b_map = b.into_iter().map(|f| f as i32);
     let diff = it::diff_with(a.iter(), b_map, |a, b| *a == b);
@@ -999,14 +1349,14 @@ fn extrema_set() {
     #[derive(Clone, Debug, PartialEq, Eq)]
     struct Val(u32, u32);
 
-    impl PartialOrd<Val> for Val {
-        fn partial_cmp(&self, other: &Val) -> Option<Ordering> {
-            self.0.partial_cmp(&other.0)
+    impl PartialOrd<Self> for Val {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
         }
     }
 
     impl Ord for Val {
-        fn cmp(&self, other: &Val) -> Ordering {
+        fn cmp(&self, other: &Self) -> Ordering {
             self.0.cmp(&other.0)
         }
     }
@@ -1017,7 +1367,7 @@ fn extrema_set() {
     assert_eq!(Some(1u32).iter().min_set(), vec![&1]);
     assert_eq!(Some(1u32).iter().max_set(), vec![&1]);
 
-    let data = vec![Val(0, 1), Val(2, 0), Val(0, 2), Val(1, 0), Val(2, 1)];
+    let data = [Val(0, 1), Val(2, 0), Val(0, 2), Val(1, 0), Val(2, 1)];
 
     let min_set = data.iter().min_set();
     assert_eq!(min_set, vec![&Val(0, 1), &Val(0, 2)]);
@@ -1040,31 +1390,34 @@ fn extrema_set() {
 
 #[test]
 fn minmax() {
-    use std::cmp::Ordering;
     use crate::it::MinMaxResult;
+    use std::cmp::Ordering;
 
     // A peculiar type: Equality compares both tuple items, but ordering only the
     // first item.  This is so we can check the stability property easily.
     #[derive(Clone, Debug, PartialEq, Eq)]
     struct Val(u32, u32);
 
-    impl PartialOrd<Val> for Val {
-        fn partial_cmp(&self, other: &Val) -> Option<Ordering> {
-            self.0.partial_cmp(&other.0)
+    impl PartialOrd<Self> for Val {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
         }
     }
 
     impl Ord for Val {
-        fn cmp(&self, other: &Val) -> Ordering {
+        fn cmp(&self, other: &Self) -> Ordering {
             self.0.cmp(&other.0)
         }
     }
 
-    assert_eq!(None::<Option<u32>>.iter().minmax(), MinMaxResult::NoElements);
+    assert_eq!(
+        None::<Option<u32>>.iter().minmax(),
+        MinMaxResult::NoElements
+    );
 
     assert_eq!(Some(1u32).iter().minmax(), MinMaxResult::OneElement(&1));
 
-    let data = vec![Val(0, 1), Val(2, 0), Val(0, 2), Val(1, 0), Val(2, 1)];
+    let data = [Val(0, 1), Val(2, 0), Val(0, 2), Val(1, 0), Val(2, 1)];
 
     let minmax = data.iter().minmax();
     assert_eq!(minmax, MinMaxResult::MinMax(&Val(0, 1), &Val(2, 1)));
@@ -1073,7 +1426,11 @@ fn minmax() {
     assert_eq!(min, &Val(2, 0));
     assert_eq!(max, &Val(0, 2));
 
-    let (min, max) = data.iter().minmax_by(|x, y| x.1.cmp(&y.1)).into_option().unwrap();
+    let (min, max) = data
+        .iter()
+        .minmax_by(|x, y| x.1.cmp(&y.1))
+        .into_option()
+        .unwrap();
     assert_eq!(min, &Val(2, 0));
     assert_eq!(max, &Val(0, 2));
 }
@@ -1096,31 +1453,34 @@ fn format() {
 
 #[test]
 fn while_some() {
-    let ns = (1..10).map(|x| if x % 5 != 0 { Some(x) } else { None })
-                    .while_some();
+    let ns = (1..10)
+        .map(|x| if x % 5 != 0 { Some(x) } else { None })
+        .while_some();
     it::assert_equal(ns, vec![1, 2, 3, 4]);
 }
 
-#[allow(deprecated)]
 #[test]
 fn fold_while() {
     let mut iterations = 0;
     let vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    let sum = vec.into_iter().fold_while(0, |acc, item| {
-        iterations += 1;
-        let new_sum = acc + item;
-        if new_sum <= 20 {
-            FoldWhile::Continue(new_sum)
-        } else {
-            FoldWhile::Done(acc)
-        }
-    }).into_inner();
+    let sum = vec
+        .into_iter()
+        .fold_while(0, |acc, item| {
+            iterations += 1;
+            let new_sum = acc + item;
+            if new_sum <= 20 {
+                FoldWhile::Continue(new_sum)
+            } else {
+                FoldWhile::Done(acc)
+            }
+        })
+        .into_inner();
     assert_eq!(iterations, 6);
     assert_eq!(sum, 15);
 }
 
 #[test]
-fn tree_fold1() {
+fn tree_reduce() {
     let x = [
         "",
         "0",
@@ -1141,9 +1501,13 @@ fn tree_fold1() {
         "0 1 x 2 3 x x 4 5 x 6 7 x x x 8 9 x 10 11 x x 12 13 x 14 15 x x x x",
     ];
     for (i, &s) in x.iter().enumerate() {
-        let expected = if s.is_empty() { None } else { Some(s.to_string()) };
+        let expected = if s.is_empty() {
+            None
+        } else {
+            Some(s.to_string())
+        };
         let num_strings = (0..i).map(|x| x.to_string());
-        let actual = num_strings.tree_fold1(|a, b| format!("{} {} x", a, b));
+        let actual = num_strings.tree_reduce(|a, b| format!("{} {} x", a, b));
         assert_eq!(actual, expected);
     }
 }
@@ -1153,16 +1517,53 @@ fn exactly_one_question_mark_syntax_works() {
     exactly_one_question_mark_return().unwrap_err();
 }
 
-fn exactly_one_question_mark_return() -> Result<(), ExactlyOneError<std::slice::Iter<'static, ()>>> {
+fn exactly_one_question_mark_return() -> Result<(), ExactlyOneError<std::slice::Iter<'static, ()>>>
+{
     [].iter().exactly_one()?;
     Ok(())
 }
 
 #[test]
 fn multiunzip() {
-    let (a, b, c): (Vec<_>, Vec<_>, Vec<_>) = [(0, 1, 2), (3, 4, 5), (6, 7, 8)].iter().cloned().multiunzip();    
+    let (a, b, c): (Vec<_>, Vec<_>, Vec<_>) = [(0, 1, 2), (3, 4, 5), (6, 7, 8)]
+        .iter()
+        .cloned()
+        .multiunzip();
     assert_eq!((a, b, c), (vec![0, 3, 6], vec![1, 4, 7], vec![2, 5, 8]));
     let (): () = [(), (), ()].iter().cloned().multiunzip();
-    let t: (Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>) = [(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)].iter().cloned().multiunzip();    
-    assert_eq!(t, (vec![0], vec![1], vec![2], vec![3], vec![4], vec![5], vec![6], vec![7], vec![8], vec![9], vec![10], vec![11]));
+    #[allow(clippy::type_complexity)]
+    let t: (
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+    ) = [(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)]
+        .iter()
+        .cloned()
+        .multiunzip();
+    assert_eq!(
+        t,
+        (
+            vec![0],
+            vec![1],
+            vec![2],
+            vec![3],
+            vec![4],
+            vec![5],
+            vec![6],
+            vec![7],
+            vec![8],
+            vec![9],
+            vec![10],
+            vec![11]
+        )
+    );
 }

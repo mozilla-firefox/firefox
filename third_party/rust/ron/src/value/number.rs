@@ -5,8 +5,34 @@ use std::{
 
 use serde::{de::Visitor, Serialize, Serializer};
 
-/// A wrapper for any numeric primitive type in Rust
+/// A wrapper for any numeric primitive type in Rust.
+///
+/// Some varints of the `Number` enum are enabled by features:
+/// - `Number::I128` and `Number::U128` by the `integer128` feature
+///
+/// To ensure that feature unification does not break `match`ing over `Number`,
+/// the `Number` enum is non-exhaustive.
+///
+/// <details>
+/// <summary>Exhaustively matching on <code>Number</code> in tests</summary>
+///
+/// If you want to ensure that you exhaustively handle every variant, you can
+/// match on the hidden `Number::__NonExhaustive` variant.
+///
+/// <div class="warning">
+/// Matching on this variant means that your code may break when RON is
+/// upgraded or when feature unification enables further variants in the
+/// <code>Number</code> enum than your code expects.
+/// </div>
+///
+/// It is your responsibility to only *ever* match on `Number::__NonExhaustive`
+/// inside tests, e.g. by using `#[cfg(test)]` on the particular match arm, to
+/// ensure that only your tests break (e.g. in CI) when your code is not
+/// exhaustively matching on every variant, e.g. after a version upgrade or
+/// feature unification.
+/// </details>
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Hash, Ord)]
+#[cfg_attr(doc, non_exhaustive)]
 pub enum Number {
     I8(i8),
     I16(i16),
@@ -22,6 +48,14 @@ pub enum Number {
     U128(u128),
     F32(F32),
     F64(F64),
+    #[cfg(not(doc))]
+    #[allow(private_interfaces)]
+    __NonExhaustive(private::Never),
+}
+
+mod private {
+    #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Hash, Ord)]
+    pub enum Never {}
 }
 
 impl Serialize for Number {
@@ -41,6 +75,8 @@ impl Serialize for Number {
             Self::U128(v) => serializer.serialize_u128(*v),
             Self::F32(v) => serializer.serialize_f32(v.get()),
             Self::F64(v) => serializer.serialize_f64(v.get()),
+            #[cfg(not(doc))]
+            Self::__NonExhaustive(never) => match *never {},
         }
     }
 }
@@ -65,6 +101,8 @@ impl Number {
             Self::U128(v) => visitor.visit_u128(*v),
             Self::F32(v) => visitor.visit_f32(v.get()),
             Self::F64(v) => visitor.visit_f64(v.get()),
+            #[cfg(not(doc))]
+            Self::__NonExhaustive(never) => match *never {},
         }
     }
 }
@@ -216,6 +254,8 @@ impl Number {
             Number::U128(v) => v as f64,
             Number::F32(v) => f64::from(v.get()),
             Number::F64(v) => v.get(),
+            #[cfg(not(doc))]
+            Self::__NonExhaustive(never) => match never {},
         }
     }
 }

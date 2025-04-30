@@ -9,19 +9,21 @@ import sys
 import yaml
 
 
-def has_pkg_section(p, section):
+def has_pkg_section(p, section, arch):
     has_section = section in p.keys()
     if has_section:
         for pkg in p[section]:
             if type(pkg) is str:
                 yield pkg
             else:
-                yield from has_pkg_section(pkg, next(iter(pkg.keys())))
+                next_section = next(iter(pkg.keys()))
+                if "on " in next_section or f"to {arch}" in next_section:
+                    yield from has_pkg_section(pkg, next(iter(pkg.keys())), arch)
 
 
 def iter_pkgs(part, all_pkgs, arch):
     for section in ["build-packages", "stage-packages"]:
-        for pkg in has_pkg_section(part, section):
+        for pkg in has_pkg_section(part, section, arch):
             if pkg not in all_pkgs:
                 if ":" in pkg and pkg.split(":")[1] != arch:
                     continue

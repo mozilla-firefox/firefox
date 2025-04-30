@@ -387,7 +387,7 @@ fn dynamic_labels_too_long() {
         None,
     );
 
-    let metric = labeled.get("1".repeat(72));
+    let metric = labeled.get("1".repeat(112));
     metric.add_sync(&glean, 1);
 
     let snapshot = StorageManager

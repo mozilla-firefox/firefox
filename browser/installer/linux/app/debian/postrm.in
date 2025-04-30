@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-if [ ${DEB_PKG_NAME} = firefox-esr ]; then
+if [ ${PKG_NAME} = firefox-esr ]; then
     if [ "$$1" = "remove" ]; then
         dpkg-divert --package firefox-esr --rename --remove /usr/bin/firefox
     fi
@@ -13,6 +13,6 @@ fi
 #
 # The correct AppArmor configuration for that package lives at
 # /etc/apparmor.d/firefox, and properly covers all the alternatives.
-if [ ${DEB_PKG_NAME} = firefox ] ; then
+if [ ${PKG_NAME} = firefox ] ; then
   dpkg-maintscript-helper rm_conffile /etc/apparmor.d/usr.bin.firefox -- "$$@"
 fi

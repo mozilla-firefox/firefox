@@ -201,6 +201,11 @@ interface nsIIOService : nsISupports
     readonly attribute boolean connectivity;
 
     /**
+     * This is a method to set connectivity for testing purposes
+     */
+    void setConnectivityForTesting(in boolean connectivity);
+
+    /**
      * Checks if a port number is banned. This involves consulting a list of
      * unsafe ports, corresponding to network services that may be easily
      * exploitable. If the given port is considered unsafe, then the protocol

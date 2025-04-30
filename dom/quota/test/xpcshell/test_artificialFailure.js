@@ -13,7 +13,7 @@ const { SimpleDBUtils } = ChromeUtils.importESModule(
   "resource://testing-common/dom/simpledb/test/modules/SimpleDBUtils.sys.mjs"
 );
 
-async function testSteps() {
+async function testArtificialFailure() {
   const categories = [
     Ci.nsIQuotaArtificialFailure.CATEGORY_NONE,
     Ci.nsIQuotaArtificialFailure.CATEGORY_INITIALIZE_ORIGIN,
@@ -79,4 +79,13 @@ async function testSteps() {
       await QuotaUtils.requestFinished(request);
     }
   }
+}
+
+async function testSteps() {
+  add_task(
+    {
+      pref_set: [["dom.quotaManager.loadQuotaFromCache", false]],
+    },
+    testArtificialFailure
+  );
 }

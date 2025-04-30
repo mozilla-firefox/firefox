@@ -9,6 +9,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.DeepLinkRobot
 
 /**
@@ -35,6 +36,9 @@ class DeepLinkTest : TestSetup() {
         isMenuRedesignEnabled = false,
         isMenuRedesignCFREnabled = false,
     )
+
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
 
     @Test
     fun openHomeScreen() {

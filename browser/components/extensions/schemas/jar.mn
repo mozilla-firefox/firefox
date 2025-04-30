@@ -20,6 +20,7 @@ browser.jar:
     content/browser/schemas/search.json
     content/browser/schemas/sessions.json
     content/browser/schemas/sidebar_action.json
+    content/browser/schemas/tabGroups.json
     content/browser/schemas/tabs.json
     content/browser/schemas/top_sites.json
     content/browser/schemas/url_overrides.json

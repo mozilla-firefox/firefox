@@ -27,10 +27,14 @@ STEPS = {
         git commit -am "Remove foo; modify bar; touch baz (but don't add it)"
         """,
     ],
+    "jj": [],
 }
 
 
 def test_working_directory_clean_untracked_files(repo):
+    if repo.vcs == "jj":
+        return
+
     vcs = get_repository_object(repo.dir)
     assert vcs.working_directory_clean()
 

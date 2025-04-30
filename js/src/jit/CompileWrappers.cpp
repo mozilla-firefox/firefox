@@ -120,6 +120,10 @@ bool CompileRuntime::hasSeenObjectEmulateUndefinedFuseIntact() {
   return runtime()->hasSeenObjectEmulateUndefinedFuse.ref().intact();
 }
 
+bool CompileRuntime::hasSeenArrayExceedsInt32LengthFuseIntact() {
+  return runtime()->hasSeenArrayExceedsInt32LengthFuse.ref().intact();
+}
+
 const DOMCallbacks* CompileRuntime::DOMcallbacks() {
   return runtime()->DOMcallbacks;
 }

@@ -36,6 +36,8 @@ mod init;
 
 pub use init::fog_init;
 
+use glean::{AttributionMetrics, DistributionMetrics};
+
 #[no_mangle]
 pub extern "C" fn fog_shutdown() {
     glean::shutdown();
@@ -267,4 +269,96 @@ pub extern "C" fn fog_apply_serverknobs(serverknobs_path: &nsAString) -> bool {
     glean::glean_apply_server_knobs_config(config_json);
 
     true
+}
+
+#[repr(C)]
+pub struct FogAttributionMetrics {
+    source: nsCString,
+    medium: nsCString,
+    campaign: nsCString,
+    term: nsCString,
+    content: nsCString,
+}
+
+impl FogAttributionMetrics {
+    fn take(&mut self, other: AttributionMetrics) {
+        if let Some(source) = other.source {
+            self.source = source.into();
+        }
+        if let Some(medium) = other.medium {
+            self.medium = medium.into();
+        }
+        if let Some(campaign) = other.campaign {
+            self.campaign = campaign.into();
+        }
+        if let Some(term) = other.term {
+            self.term = term.into();
+        }
+        if let Some(content) = other.content {
+            self.content = content.into();
+        }
+    }
+}
+
+impl From<&FogAttributionMetrics> for AttributionMetrics {
+    fn from(value: &FogAttributionMetrics) -> Self {
+        let to_opt_string = |s: &nsCString| {
+            if s.is_empty() {
+                None
+            } else {
+                Some(s.to_utf8().into_owned())
+            }
+        };
+
+        AttributionMetrics {
+            source: to_opt_string(&value.source),
+            medium: to_opt_string(&value.medium),
+            campaign: to_opt_string(&value.campaign),
+            term: to_opt_string(&value.term),
+            content: to_opt_string(&value.content),
+        }
+    }
+}
+
+#[repr(C)]
+pub struct FogDistributionMetrics {
+    name: nsCString,
+}
+
+impl FogDistributionMetrics {
+    fn take(&mut self, other: DistributionMetrics) {
+        if let Some(name) = other.name {
+            self.name = name.into();
+        }
+    }
+}
+
+impl From<&FogDistributionMetrics> for DistributionMetrics {
+    fn from(value: &FogDistributionMetrics) -> Self {
+        let name = if value.name.is_empty() {
+            None
+        } else {
+            Some(value.name.to_utf8().into_owned())
+        };
+        DistributionMetrics { name }
+    }
+}
+#[no_mangle]
+pub extern "C" fn fog_update_attribution(attr: &FogAttributionMetrics) {
+    glean::update_attribution(attr.into());
+}
+
+#[no_mangle]
+pub extern "C" fn fog_test_get_attribution(value: &mut FogAttributionMetrics) {
+    value.take(glean::test_get_attribution());
+}
+
+#[no_mangle]
+pub extern "C" fn fog_update_distribution(dist: &FogDistributionMetrics) {
+    glean::update_distribution(dist.into());
+}
+
+#[no_mangle]
+pub extern "C" fn fog_test_get_distribution(value: &mut FogDistributionMetrics) {
+    value.take(glean::test_get_distribution());
 }

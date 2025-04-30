@@ -6,7 +6,6 @@ import React, { useState, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import { useIntersectionObserver } from "../../../lib/utils";
-const PREF_FOLLOWED_SECTIONS = "discoverystream.sections.following";
 const PREF_VISIBLE_SECTIONS =
   "discoverystream.sections.interestPicker.visibleSections";
 
@@ -23,13 +22,12 @@ function InterestPicker({ title, subtitle, interests, receivedFeedRank }) {
   const focusRef = useRef(null);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const prefs = useSelector(state => state.Prefs.values);
+  const { sectionPersonalization } = useSelector(
+    state => state.DiscoveryStream
+  );
   const visibleSections = prefs[PREF_VISIBLE_SECTIONS]?.split(",")
     .map(item => item.trim())
     .filter(item => item);
-  const following =
-    prefs[PREF_FOLLOWED_SECTIONS]?.split(",")
-      .map(item => item.trim())
-      .filter(item => item) || [];
 
   const handleIntersection = useCallback(() => {
     dispatch(
@@ -80,11 +78,13 @@ function InterestPicker({ title, subtitle, interests, receivedFeedRank }) {
   // by selecting them from the list
   function handleChange(e, index) {
     const { name: topic, checked } = e.target;
-    let updatedTopics = following;
+    let updatedSections = { ...sectionPersonalization };
     if (checked) {
-      updatedTopics = updatedTopics.length
-        ? [...updatedTopics, topic]
-        : [topic];
+      updatedSections[topic] = {
+        isFollowed: true,
+        isBlocked: false,
+        followedAt: new Date().toISOString(),
+      };
       if (!visibleSections.includes(topic)) {
         // add section to visible sections and place after the inline picker
         // subtract 1 from the rank so that it is normalized with array index
@@ -92,7 +92,7 @@ function InterestPicker({ title, subtitle, interests, receivedFeedRank }) {
         dispatch(ac.SetPref(PREF_VISIBLE_SECTIONS, visibleSections.join(", ")));
       }
     } else {
-      updatedTopics = updatedTopics.filter(t => t !== topic);
+      delete updatedSections[topic];
     }
     dispatch(
       ac.OnlyToMain({
@@ -105,7 +105,12 @@ function InterestPicker({ title, subtitle, interests, receivedFeedRank }) {
         },
       })
     );
-    dispatch(ac.SetPref(PREF_FOLLOWED_SECTIONS, updatedTopics.join(", ")));
+    dispatch(
+      ac.AlsoToMain({
+        type: at.SECTION_PERSONALIZATION_UPDATE,
+        data: updatedSections,
+      })
+    );
   }
   return (
     <section
@@ -127,7 +132,8 @@ function InterestPicker({ title, subtitle, interests, receivedFeedRank }) {
         ref={focusRef}
       >
         {interests.map((interest, index) => {
-          const checked = following.includes(interest.sectionId);
+          const checked =
+            sectionPersonalization[interest.sectionId]?.isFollowed;
           return (
             <li
               key={interest.sectionId}

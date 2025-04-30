@@ -281,3 +281,33 @@ async function resetTelemetryIfKeyStoreTestable() {
   await Services.fog.testFlushAllChildren();
   return true;
 }
+
+function mockServicePrompt(buttonClicked = 0, checked = true) {
+  return {
+    async asyncConfirmEx(
+      browsingContext,
+      win,
+      title,
+      message,
+      _flags,
+      _button0,
+      _button1,
+      _button2,
+      _checkLabel,
+      _checkValue,
+      _extraArgs
+    ) {
+      info(`Prompt title ${title}`);
+      info(`Prompt message ${message}`);
+      return {
+        // eslint-disable-next-line mozilla/use-chromeutils-generateqi
+        QueryInterface() {
+          const propBag = new Map();
+          propBag.set("buttonNumClicked", buttonClicked);
+          propBag.set("checked", checked);
+          return propBag;
+        },
+      };
+    },
+  };
+}

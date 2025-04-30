@@ -205,6 +205,22 @@ class TranslationsMiddlewareTest {
     }
 
     @Test
+    fun `GIVEN automaticallyInitialize is false WHEN InitAction is dispatched THEN do nothing`() = runTest {
+        val middleware = TranslationsMiddleware(
+            engine = engine,
+            automaticallyInitialize = false,
+            scope = scope,
+        )
+        middleware.invoke(context = context, next = {}, action = InitAction)
+        waitForIdle()
+
+        verify(store, never()).dispatch(
+            TranslationsAction.InitTranslationsBrowserState,
+        )
+        waitForIdle()
+    }
+
+    @Test
     fun `WHEN InitTranslationsBrowserState is dispatched AND the engine is supported THEN SetSupportedLanguagesAction is also dispatched`() = runTest {
         // Send Action
         translationsMiddleware.invoke(context = context, next = {}, action = TranslationsAction.InitTranslationsBrowserState)

@@ -41,6 +41,6 @@ add_task(async function test_expireAllFavicons() {
   await promise;
 
   // Check that the favicons for the pages we added were removed.
-  await promiseFaviconMissingForPage(TEST_PAGE_URI);
-  await promiseFaviconMissingForPage(BOOKMARKED_PAGE_URI);
+  await checkFaviconMissingForPage(TEST_PAGE_URI);
+  await checkFaviconMissingForPage(BOOKMARKED_PAGE_URI);
 });

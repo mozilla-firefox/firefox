@@ -1,0 +1,19 @@
+[DEFAULT]
+subsuite = "webgpu"
+
+# This file's tests should run when WebGPU is disabled by the logic in
+# `gfxPlatform::InitWebGPUConfig`.
+#
+# This condition should be the exact complement of the `run-if` condition
+# in `mochitest.toml`.
+run-if = ["!(nightly_build || (os == 'win' && early_beta_or_earlier))"]
+
+# `test-verify` jobs don't guarantee a GPU, so skip them.
+skip-if = ["verify"]
+
+# Even if the pref were enabled, WebGPU is only available in secure contexts.
+#
+# See spec WebIDL, like this: https://www.w3.org/TR/webgpu/#navigatorgpu
+scheme = "https"
+
+["test_adapter_disabled.html"]

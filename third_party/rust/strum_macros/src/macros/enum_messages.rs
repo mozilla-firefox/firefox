@@ -113,24 +113,28 @@ pub fn enum_message_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
 
     Ok(quote! {
         impl #impl_generics #strum_module_path::EnumMessage for #name #ty_generics #where_clause {
+            #[inline]
             fn get_message(&self) -> ::core::option::Option<&'static str> {
                 match self {
                     #(#arms),*
                 }
             }
 
+            #[inline]
             fn get_detailed_message(&self) -> ::core::option::Option<&'static str> {
                 match self {
                     #(#detailed_arms),*
                 }
             }
 
+            #[inline]
             fn get_documentation(&self) -> ::core::option::Option<&'static str> {
                 match self {
                     #(#documentation_arms),*
                 }
             }
 
+            #[inline]
             fn get_serializations(&self) -> &'static [&'static str] {
                 match self {
                     #(#serializations),*

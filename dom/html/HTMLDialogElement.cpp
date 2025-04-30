@@ -48,6 +48,7 @@ class DialogCloseWatcherListener : public nsIDOMEventListener {
         }
       } else if (eventType.EqualsLiteral("close")) {
         Optional<nsAString> retValue;
+        retValue = &dialog->RequestCloseReturnValue();
         dialog->Close(retValue);
       }
     }
@@ -104,35 +105,105 @@ void HTMLDialogElement::Close(
   }
 }
 
+// https://html.spec.whatwg.org/#dom-dialog-requestclose
+void HTMLDialogElement::RequestClose(
+    const mozilla::dom::Optional<nsAString>& aReturnValue) {
+  // 1. If this does not have an open attribute, then return.
+  if (!Open()) {
+    return;
+  }
+
+  // 2. Assert: this's close watcher is not null.
+  // TODO(keithamus): RequestClose uses CloseWatcher's requestClose to dispatch
+  // cancel & close events, but there are also several issues with the spec
+  // which make it untenable to implement until they're resolved. Instead, we
+  // can use `RunCancelDialogSteps` to cause the same behaviour, but when
+  // https://github.com/whatwg/html/issues/11230 is resolved we will need to
+  // revisit this.
+
+  // 3. Set dialog's enable close watcher for requestClose() to true.
+  // TODO(keithamus): CloseWatcher does not have this flag yet.
+
+  // 4. If returnValue is not given, then set it to null.
+  // 5. Set this's request close return value to returnValue.
+  if (aReturnValue.WasPassed()) {
+    mRequestCloseReturnValue = aReturnValue.Value();
+  } else {
+    mRequestCloseReturnValue.SetIsVoid(true);
+  }
+
+  // 6. Request to close dialog's close watcher with false.
+  RunCancelDialogSteps();
+
+  // 7. Set dialog's enable close watcher for requestClose() to false.
+  // TODO(keithamus): CloseWatcher does not have this flag yet.
+}
+
+// https://html.spec.whatwg.org/#dom-dialog-show
 void HTMLDialogElement::Show(ErrorResult& aError) {
+
+  // 1. If this has an open attribute and is modal of this is false, then return.
   if (Open()) {
     if (!IsInTopLayer()) {
       return;
     }
+
+    // 2. If this has an open attribute, then throw an "InvalidStateError" DOMException.
     return aError.ThrowInvalidStateError(
         "Cannot call show() on an open modal dialog.");
   }
 
+  // 3. If the result of firing an event named beforetoggle, using ToggleEvent,
+  // with the cancelable attribute initialized to true, the oldState attribute
+  // initialized to "closed", and the newState attribute initialized to "open"
+  // at this is false, then return.
   if (StaticPrefs::dom_element_dialog_toggle_events_enabled()) {
     if (FireToggleEvent(u"closed"_ns, u"open"_ns, u"beforetoggle"_ns)) {
       return;
     }
+
+    // 4. If this has an open attribute, then return.
     if (Open()) {
       return;
     }
+
+    // 5. Queue a dialog toggle event task given this, "closed", and "open".
     QueueToggleEventTask();
   }
 
+  // 6. Add an open attribute to this, whose value is the empty string.
   SetOpen(true, IgnoreErrors());
 
+  // 7. Assert: this's node document's open dialogs list does not contain this.
+
+  // 8. Add this to this's node document's open dialogs list.
+  // TODO: This is part of dialog light dismiss (bug 1936940)
+
+  // 9. Set the dialog close watcher with this.
+  if (StaticPrefs::dom_closewatcher_enabled()) {
+    SetDialogCloseWatcher();
+  }
+
+  // 10. Set this's previously focused element to the focused element.
   StorePreviouslyFocusedElement();
 
+  // 11. Let document be this's node document.
+
+  // 12. Let hideUntil be the result of running topmost popover ancestor given
+  // this, document's showing hint popover list, null, and false.
   RefPtr<nsINode> hideUntil = GetTopmostPopoverAncestor(nullptr, false);
+
+  // 13. If hideUntil is null, then set hideUntil to the result of running
+  // topmost popover ancestor given this, document's showing auto popover list,
+  // null, and false.
   if (!hideUntil) {
     hideUntil = OwnerDoc();
   }
 
+  // 14. If hideUntil is null, then set hideUntil to document.
   OwnerDoc()->HideAllPopoversUntil(*hideUntil, false, true);
+
+  // 15. Run the dialog focusing steps given this.
   FocusDialog();
 }
 
@@ -181,64 +252,96 @@ void HTMLDialogElement::UnbindFromTree(UnbindContext& aContext) {
   nsGenericHTMLElement::UnbindFromTree(aContext);
 }
 
+// https://html.spec.whatwg.org/#show-a-modal-dialog
 void HTMLDialogElement::ShowModal(ErrorResult& aError) {
+
+  // 1. If subject has an open attribute and is modal of subject is true, then
+  // return.
   if (Open()) {
     if (IsInTopLayer()) {
       return;
     }
+
+    // 2. If subject has an open attribute, then throw an "InvalidStateError"
+    // DOMException.
     return aError.ThrowInvalidStateError(
         "Cannot call showModal() on an open non-modal dialog.");
   }
 
+  // 3. If subject's node document is not fully active, then throw an
+  // "InvalidStateError" DOMException.
+  // 4. If subject is not connected, then throw an "InvalidStateError" DOMException.
   if (!IsInComposedDoc()) {
     return aError.ThrowInvalidStateError("Dialog element is not connected");
   }
 
+  // 5. If subject is in the popover showing state, then throw an
+  // "InvalidStateError" DOMException.
   if (IsPopoverOpen()) {
     return aError.ThrowInvalidStateError(
         "Dialog element is already an open popover.");
   }
 
   if (StaticPrefs::dom_element_dialog_toggle_events_enabled()) {
+    // 6. If the result of firing an event named beforetoggle, using ToggleEvent,
+    // with the cancelable attribute initialized to true, the oldState attribute
+    // initialized to "closed", and the newState attribute initialized to "open"
+    // at subject is false, then return.
     if (FireToggleEvent(u"closed"_ns, u"open"_ns, u"beforetoggle"_ns)) {
       return;
     }
+
+    // 7. If subject has an open attribute, then return.
+    // 8. If subject is not connected, then return.
+    // 9. If subject is in the popover showing state, then return.
     if (Open() || !IsInComposedDoc() || IsPopoverOpen()) {
       return;
     }
+
+    // 10. Queue a dialog toggle event task given subject, "closed", and "open".
     QueueToggleEventTask();
   }
 
-  AddToTopLayerIfNeeded();
+  // 12. Set is modal of subject to true.
 
+  // 11. Add an open attribute to subject, whose value is the empty string.
   SetOpen(true, aError);
 
-  StorePreviouslyFocusedElement();
+  // 13. Assert: subject's node document's open dialogs list does not contain
+  // subject.
+  // 14. Add subject to subject's node document's open dialogs list.
+  // 15. Let subject's node document be blocked by the modal dialog subject.
+  // TODO(https://bugzilla.mozilla.org/show_bug.cgi?id=1936940)
+
+  // 16. If subject's node document's top layer does not already contain
+  // subject, then add an element to the top layer given subject.
+  AddToTopLayerIfNeeded();
 
   if (StaticPrefs::dom_closewatcher_enabled()) {
-    RefPtr<Document> doc = OwnerDoc();
-    if (doc->IsActive() && doc->IsCurrentActiveDocument()) {
-      if (RefPtr window = OwnerDoc()->GetInnerWindow()) {
-        mCloseWatcher = new CloseWatcher(window);
-        RefPtr<DialogCloseWatcherListener> eventListener =
-            new DialogCloseWatcherListener(this);
-        mCloseWatcher->AddSystemEventListener(u"cancel"_ns, eventListener,
-                                              false /* aUseCapture */,
-                                              false /* aWantsUntrusted */);
-        mCloseWatcher->AddSystemEventListener(u"close"_ns, eventListener,
-                                              false /* aUseCapture */,
-                                              false /* aWantsUntrusted */);
-        window->EnsureCloseWatcherManager()->Add(*mCloseWatcher);
-      }
-    }
+    // 17. Set the dialog close watcher with subject.
+    SetDialogCloseWatcher();
   }
 
+  // 18. Set subject's previously focused element to the focused element.
+  StorePreviouslyFocusedElement();
+
+  // 19. Let document be subject's node document.
+  // 20. Let hideUntil be the result of running topmost popover ancestor given
+  // subject, document's showing hint popover list, null, and false.
+  // 21. If hideUntil is null, then set hideUntil to the result of running
+  // topmost popover ancestor given subject, document's showing auto popover
+  // list, null, and false.
   RefPtr<nsINode> hideUntil = GetTopmostPopoverAncestor(nullptr, false);
+
+  // 22. If hideUntil is null, then set hideUntil to document.
   if (!hideUntil) {
     hideUntil = OwnerDoc();
   }
 
+  // 23. Run hide all popovers until given hideUntil, false, and true.
   OwnerDoc()->HideAllPopoversUntil(*hideUntil, false, true);
+
+  // 24. Run the dialog focusing steps given subject.
   FocusDialog();
 
   aError.SuppressException();
@@ -302,9 +405,14 @@ void HTMLDialogElement::RunCancelDialogSteps() {
                                        &defaultAction);
 
   // 2) If close is true and dialog has an open attribute, then close the dialog
-  // with no return value.
+  // with ~~no return value.~~
+  // XXX(keithamus): RequestClose's steps expect the return value to be
+  // RequestCloseReturnValue. RunCancelDialogSteps has been refactored out of
+  // the spec, over CloseWatcher though, so one day this code will need to be
+  // refactored when the CloseWatcher specifications settle.
   if (defaultAction) {
     Optional<nsAString> retValue;
+    retValue = &RequestCloseReturnValue();
     Close(retValue);
   }
 }
@@ -357,6 +465,43 @@ void HTMLDialogElement::QueueToggleEventTask() {
       CreateToggleEvent(u"toggle"_ns, oldState, newState, Cancelable::eNo);
   mToggleEventDispatcher = new AsyncEventDispatcher(this, toggleEvent.forget());
   mToggleEventDispatcher->PostDOMEvent();
+}
+
+// https://html.spec.whatwg.org/#set-the-dialog-close-watcher
+void HTMLDialogElement::SetDialogCloseWatcher() {
+  MOZ_ASSERT(StaticPrefs::dom_closewatcher_enabled(), "CloseWatcher enabled");
+  if (mCloseWatcher) {
+    return;
+  }
+
+  RefPtr<Document> doc = OwnerDoc();
+  RefPtr window = doc->GetInnerWindow();
+  MOZ_ASSERT(window);
+
+  // 1. Set dialog's close watcher to the result of establishing a close watcher
+  // given dialog's relevant global object, with:
+  mCloseWatcher = new CloseWatcher(window);
+  RefPtr<DialogCloseWatcherListener> eventListener =
+      new DialogCloseWatcherListener(this);
+
+  // - cancelAction given canPreventClose being to return the result of firing
+  // an event named cancel at dialog, with the cancelable attribute initialized
+  // to canPreventClose.
+  mCloseWatcher->AddSystemEventListener(u"cancel"_ns, eventListener,
+                                        false /* aUseCapture */,
+                                        false /* aWantsUntrusted */);
+
+  // - closeAction being to close the dialog given dialog and dialog's request close return value.
+  mCloseWatcher->AddSystemEventListener(u"close"_ns, eventListener,
+                                        false /* aUseCapture */,
+                                        false /* aWantsUntrusted */);
+
+  // - getEnabledState being to return true if dialog's enable close watcher for
+  // requestClose() is true or dialog's computed closed-by state is not None;
+  // otherwise false.
+  // TODO: getEnabledState is not yet implemented.
+
+  window->EnsureCloseWatcherManager()->Add(*mCloseWatcher);
 }
 
 JSObject* HTMLDialogElement::WrapNode(JSContext* aCx,

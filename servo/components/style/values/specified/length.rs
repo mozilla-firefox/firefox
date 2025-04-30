@@ -9,6 +9,7 @@
 use super::{AllowQuirks, Number, Percentage, ToComputedValue};
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::font_metrics::{FontMetrics, FontMetricsOrientation};
+use crate::gecko::media_queries::QueryFontMetricsFlags;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::GeckoFontMetrics;
 use crate::parser::{Parse, ParserContext};
@@ -249,9 +250,13 @@ impl FontRelativeLength {
             context: &Context,
             base_size: FontBaseSize,
             orientation: FontMetricsOrientation,
+            flags: QueryFontMetricsFlags,
         ) -> FontMetrics {
-            let retrieve_math_scales = false;
-            context.query_font_metrics(base_size, orientation, retrieve_math_scales)
+            context.query_font_metrics(
+                base_size,
+                orientation,
+                flags,
+            )
         }
 
         let reference_font_size = base_size.resolve(context);
@@ -268,8 +273,12 @@ impl FontRelativeLength {
             },
             Self::Ex(length) => {
                 // The x-height is an intrinsically horizontal metric.
-                let metrics =
-                    query_font_metrics(context, base_size, FontMetricsOrientation::Horizontal);
+                let metrics = query_font_metrics(
+                    context,
+                    base_size,
+                    FontMetricsOrientation::Horizontal,
+                    QueryFontMetricsFlags::empty(),
+                );
                 let reference_size = metrics.x_height.unwrap_or_else(|| {
                     // https://drafts.csswg.org/css-values/#ex
                     //
@@ -295,6 +304,7 @@ impl FontRelativeLength {
                     context,
                     base_size,
                     FontMetricsOrientation::MatchContextPreferHorizontal,
+                    QueryFontMetricsFlags::NEEDS_CH,
                 );
                 let reference_size = metrics.zero_advance_measure.unwrap_or_else(|| {
                     // https://drafts.csswg.org/css-values/#ch
@@ -319,8 +329,12 @@ impl FontRelativeLength {
                 (reference_size, length)
             },
             Self::Cap(length) => {
-                let metrics =
-                    query_font_metrics(context, base_size, FontMetricsOrientation::Horizontal);
+                let metrics = query_font_metrics(
+                    context,
+                    base_size,
+                    FontMetricsOrientation::Horizontal,
+                    QueryFontMetricsFlags::empty(),
+                );
                 let reference_size = metrics.cap_height.unwrap_or_else(|| {
                     // https://drafts.csswg.org/css-values/#cap
                     //
@@ -337,6 +351,7 @@ impl FontRelativeLength {
                     context,
                     base_size,
                     FontMetricsOrientation::MatchContextPreferVertical,
+                    QueryFontMetricsFlags::NEEDS_IC,
                 );
                 let reference_size = metrics.ic_width.unwrap_or_else(|| {
                     // https://drafts.csswg.org/css-values/#ic

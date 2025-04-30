@@ -218,6 +218,8 @@ class Http3Session final : public nsAHttpTransaction, public nsAHttpConnection {
 
   void CloseWebTransportConn();
 
+  Http3Stats GetStats();
+
  private:
   ~Http3Session();
 

@@ -897,6 +897,7 @@ package org.mozilla.geckoview {
     method @NonNull public int getLargeKeepaliveFactor();
     method @Nullable public String[] getLocales();
     method public boolean getLoginAutofillEnabled();
+    method public boolean getLowMemoryDetection();
     method public boolean getParallelMarkingEnabled();
     method public boolean getPauseForDebuggerEnabled();
     method @NonNull public boolean getPostQuantumKeyExchangeEnabled();
@@ -1005,6 +1006,7 @@ package org.mozilla.geckoview {
     method @NonNull public GeckoRuntimeSettings.Builder largeKeepaliveFactor(int);
     method @NonNull public GeckoRuntimeSettings.Builder locales(@Nullable String[]);
     method @NonNull public GeckoRuntimeSettings.Builder loginAutofillEnabled(boolean);
+    method @NonNull public GeckoRuntimeSettings.Builder lowMemoryDetection(boolean);
     method @NonNull public GeckoRuntimeSettings.Builder pauseForDebugger(boolean);
     method @NonNull public GeckoRuntimeSettings.Builder preferredColorScheme(int);
     method @NonNull public GeckoRuntimeSettings.Builder remoteDebuggingEnabled(boolean);

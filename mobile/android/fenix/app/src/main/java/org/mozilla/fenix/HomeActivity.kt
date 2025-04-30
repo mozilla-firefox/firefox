@@ -22,6 +22,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.ViewGroup
 import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import androidx.activity.BackEventCompat
 import androidx.annotation.CallSuper
@@ -52,6 +53,7 @@ import mozilla.components.browser.state.action.MediaSessionAction
 import mozilla.components.browser.state.action.SearchAction
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.selector.getNormalOrPrivateTabs
+import mozilla.components.browser.state.selector.privateTabs
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.WebExtensionState
 import mozilla.components.concept.engine.EngineSession
@@ -67,7 +69,6 @@ import mozilla.components.service.pocket.PocketStoriesService
 import mozilla.components.support.base.feature.ActivityResultHandler
 import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.UserInteractionOnBackPressedCallback
-import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.android.arch.lifecycle.addObservers
 import mozilla.components.support.ktx.android.content.call
 import mozilla.components.support.ktx.android.content.email
@@ -121,6 +122,7 @@ import org.mozilla.fenix.ext.setNavigationIcon
 import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.extension.WebExtensionPromptFeature
 import org.mozilla.fenix.home.HomeFragment
+import org.mozilla.fenix.home.TopSitesRefresher
 import org.mozilla.fenix.home.intent.AssistIntentProcessor
 import org.mozilla.fenix.home.intent.CrashReporterIntentProcessor
 import org.mozilla.fenix.home.intent.HomeDeepLinkIntentProcessor
@@ -368,6 +370,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
                     nimbus = components.nimbus.sdk,
                 )
             },
+            scope = lifecycleScope,
             splashScreenTimeout = FxNimbus.features.splashScreen.value().maximumDurationMs.toLong(),
             isDeviceSupported = { Build.VERSION.SDK_INT > Build.VERSION_CODES.M },
             storage = DefaultSplashScreenStorage(components.settings),
@@ -492,6 +495,14 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
             extensionsProcessDisabledBackgroundController,
             serviceWorkerSupport,
             crashReporterBinding,
+            TopSitesRefresher(
+                settings = settings(),
+                topSitesProvider = if (settings().marsAPIEnabled) {
+                    components.core.marsTopSitesProvider
+                } else {
+                    components.core.contileTopSitesProvider
+                },
+            ),
         )
 
         if (!isCustomTabIntent(intent)) {
@@ -599,12 +610,16 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
             // This is to avoid disk read violations on some devices such as samsung and pixel for android 9/10
             components.strictMode.resetAfter(StrictMode.allowThreadDiskReads()) {
                 components.appStore.dispatch(AppAction.UpdateWasNativeDefaultBrowserPromptShown(true))
-                openSetDefaultBrowserOption().also {
-                    Metrics.setAsDefaultBrowserNativePromptShown.record()
-                    settings().setAsDefaultPromptCalled()
-                }
+                showSetDefaultBrowserPrompt()
+                Metrics.setAsDefaultBrowserNativePromptShown.record()
+                settings().setAsDefaultPromptCalled()
             }
         }
+    }
+
+    @VisibleForTesting
+    internal fun showSetDefaultBrowserPrompt() {
+        openSetDefaultBrowserOption()
     }
 
     /**
@@ -637,7 +652,6 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
     }
 
     @CallSuper
-    @Suppress("TooGenericExceptionCaught")
     override fun onResume() {
         super.onResume()
 
@@ -648,18 +662,6 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
         )
 
         lifecycleScope.launch(IO) {
-            try {
-                if (settings().showContileFeature) {
-                    if (settings().marsAPIEnabled) {
-                        components.core.marsTopSitesProvider.refreshTopSitesIfCacheExpired()
-                    } else {
-                        components.core.contileTopSitesProvider.refreshTopSitesIfCacheExpired()
-                    }
-                }
-            } catch (e: Exception) {
-                Logger.error("Failed to refresh contile top sites", e)
-            }
-
             if (settings().checkIfFenixIsDefaultBrowserOnAppResume()) {
                 if (components.appStore.state.wasNativeDefaultBrowserPromptShown) {
                     Metrics.defaultBrowserChangedViaNativeSystemPrompt.record(NoExtras())
@@ -688,6 +690,18 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
         components.core.store.dispatch(SearchAction.RefreshSearchEnginesAction)
     }
 
+    /**
+     * We verify if all conditions are met to display the unlock private mode screen
+     */
+    fun shouldShowUnlockScreen(): Boolean {
+        val hasPrivateTabs = components.core.store.state.privateTabs.isNotEmpty()
+        val biometricLockEnabled = settings().privateBrowsingLockedEnabled
+        val isPrivateMode = browsingModeManager.mode.isPrivate
+        val isScreenBlocked = settings().isPrivateScreenBlocked
+
+        return isPrivateMode && hasPrivateTabs && biometricLockEnabled && isScreenBlocked
+    }
+
     final override fun onStart() {
         // DO NOT MOVE ANYTHING ABOVE THIS getProfilerTime CALL.
         val startProfilerTime = components.core.engine.profiler?.getProfilerTime()
@@ -713,6 +727,8 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
         val startTimeProfiler = components.core.engine.profiler?.getProfilerTime()
 
         super.onStop()
+
+        settings().isPrivateScreenBlocked = true
 
         // Diagnostic breadcrumb for "Display already aquired" crash:
         // https://github.com/mozilla-mobile/android-components/issues/7960
@@ -809,6 +825,10 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
         privateNotificationObserver?.stop()
         components.notificationsDelegate.unBindActivity(this)
         MarketingAttributionService(applicationContext).stop()
+
+        // clear hierarchy change listener set by AndroidX SplashScreen
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1950295
+        (window.decorView as? ViewGroup)?.setOnHierarchyChangeListener(null)
 
         val activityStartedWithLink = startupPathProvider.startupPathForActivity == StartupPathProvider.StartupPath.VIEW
         if (this !is ExternalAppBrowserActivity && !activityStartedWithLink) {

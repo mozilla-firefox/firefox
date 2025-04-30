@@ -79,6 +79,14 @@ option(
 
 
 option(
+    env="LIBS",
+    help="Extra libraries for linking object files",
+    nargs=1,
+    default="",
+)
+
+
+option(
     env="MOZ_OPTIMIZE_FLAGS",
     help="Extra optimization flags",
     nargs=1,

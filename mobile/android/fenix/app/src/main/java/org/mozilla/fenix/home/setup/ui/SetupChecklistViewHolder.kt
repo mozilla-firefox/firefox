@@ -32,7 +32,7 @@ class SetupChecklistViewHolder(
         val setupChecklistState =
             appStore.observeAsComposableState { state -> state.setupChecklistState }.value
 
-        if (setupChecklistState != null) {
+        if (setupChecklistState != null && setupChecklistState.isVisible) {
             SetupChecklist(
                 setupChecklistState = setupChecklistState,
                 interactor = interactor,

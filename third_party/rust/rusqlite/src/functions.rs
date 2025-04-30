@@ -176,6 +176,11 @@ impl Context<'_> {
     ///
     /// See `https://www.sqlite.org/c3ref/get_auxdata.html` for a discussion of
     /// this feature, or the unit tests of this module for an example.
+    ///
+    /// # Failure
+    ///
+    /// Will panic if `arg` is greater than or equal to
+    /// [`self.len()`](Context::len).
     pub fn get_or_create_aux<T, E, F>(&self, arg: c_int, func: F) -> Result<Arc<T>>
     where
         T: Send + Sync + 'static,
@@ -196,7 +201,13 @@ impl Context<'_> {
     /// Sets the auxiliary data associated with a particular parameter. See
     /// `https://www.sqlite.org/c3ref/get_auxdata.html` for a discussion of
     /// this feature, or the unit tests of this module for an example.
+    ///
+    /// # Failure
+    ///
+    /// Will panic if `arg` is greater than or equal to
+    /// [`self.len()`](Context::len).
     pub fn set_aux<T: Send + Sync + 'static>(&self, arg: c_int, value: T) -> Result<Arc<T>> {
+        assert!(arg < self.len() as i32);
         let orig: Arc<T> = Arc::new(value);
         let inner: AuxInner = orig.clone();
         let outer = Box::new(inner);
@@ -216,7 +227,13 @@ impl Context<'_> {
     /// [`set_aux`](Context::set_aux). Returns `Ok(None)` if no data has been
     /// associated, and Ok(Some(v)) if it has. Returns an error if the
     /// requested type does not match.
+    ///
+    /// # Failure
+    ///
+    /// Will panic if `arg` is greater than or equal to
+    /// [`self.len()`](Context::len).
     pub fn get_aux<T: Send + Sync + 'static>(&self, arg: c_int) -> Result<Option<Arc<T>>> {
+        assert!(arg < self.len() as i32);
         let p = unsafe { ffi::sqlite3_get_auxdata(self.ctx, arg) as *const AuxInner };
         if p.is_null() {
             Ok(None)
@@ -267,7 +284,7 @@ pub type SubType = Option<std::os::raw::c_uint>;
 
 /// Result of an SQL function
 pub trait SqlFnOutput {
-    /// Converts Rust value to SQLite value with an optional sub-type
+    /// Converts Rust value to SQLite value with an optional subtype
     fn to_sql(&self) -> Result<(ToSqlOutput<'_>, SubType)>;
 }
 
@@ -368,7 +385,7 @@ bitflags::bitflags! {
     /// and [Function Flags](https://sqlite.org/c3ref/c_deterministic.html) for details.
     #[derive(Clone, Copy, Debug)]
     #[repr(C)]
-    pub struct FunctionFlags: ::std::os::raw::c_int {
+    pub struct FunctionFlags: c_int {
         /// Specifies UTF-8 as the text encoding this SQL function prefers for its parameters.
         const SQLITE_UTF8     = ffi::SQLITE_UTF8;
         /// Specifies UTF-16 using little-endian byte order as the text encoding this SQL function prefers for its parameters.
@@ -381,19 +398,21 @@ bitflags::bitflags! {
         const SQLITE_DETERMINISTIC = ffi::SQLITE_DETERMINISTIC; // 3.8.3
         /// Means that the function may only be invoked from top-level SQL.
         const SQLITE_DIRECTONLY    = 0x0000_0008_0000; // 3.30.0
-        /// Indicates to SQLite that a function may call `sqlite3_value_subtype()` to inspect the sub-types of its arguments.
+        /// Indicates to SQLite that a function may call `sqlite3_value_subtype()` to inspect the subtypes of its arguments.
         const SQLITE_SUBTYPE       = 0x0000_0010_0000; // 3.30.0
         /// Means that the function is unlikely to cause problems even if misused.
         const SQLITE_INNOCUOUS     = 0x0000_0020_0000; // 3.31.0
-        /// Indicates to SQLite that a function might call `sqlite3_result_subtype()` to cause a sub-type to be associated with its result.
+        /// Indicates to SQLite that a function might call `sqlite3_result_subtype()` to cause a subtype to be associated with its result.
         const SQLITE_RESULT_SUBTYPE     = 0x0000_0100_0000; // 3.45.0
+        /// Indicates that the function is an aggregate that internally orders the values provided to the first argument.
+        const SQLITE_SELFORDER1 = 0x0000_0200_0000; // 3.47.0
     }
 }
 
 impl Default for FunctionFlags {
     #[inline]
-    fn default() -> FunctionFlags {
-        FunctionFlags::SQLITE_UTF8
+    fn default() -> Self {
+        Self::SQLITE_UTF8
     }
 }
 
@@ -444,7 +463,7 @@ impl Connection {
         x_func: F,
     ) -> Result<()>
     where
-        F: FnMut(&Context<'_>) -> Result<T> + Send + UnwindSafe + 'static,
+        F: Fn(&Context<'_>) -> Result<T> + Send + 'static,
         T: SqlFnOutput,
     {
         self.db
@@ -518,6 +537,27 @@ impl Connection {
 }
 
 impl InnerConnection {
+    /// ```compile_fail
+    /// use rusqlite::{functions::FunctionFlags, Connection, Result};
+    /// fn main() -> Result<()> {
+    ///     let db = Connection::open_in_memory()?;
+    ///     {
+    ///         let mut called = std::sync::atomic::AtomicBool::new(false);
+    ///         db.create_scalar_function(
+    ///             "test",
+    ///             0,
+    ///             FunctionFlags::SQLITE_UTF8 | FunctionFlags::SQLITE_DETERMINISTIC,
+    ///             |_| {
+    ///                 called.store(true, std::sync::atomic::Ordering::Relaxed);
+    ///                 Ok(true)
+    ///             },
+    ///         );
+    ///     }
+    ///     let result: Result<bool> = db.query_row("SELECT test()", [], |r| r.get(0));
+    ///     assert!(result?);
+    ///     Ok(())
+    /// }
+    /// ```
     fn create_scalar_function<F, T>(
         &mut self,
         fn_name: &str,
@@ -526,7 +566,7 @@ impl InnerConnection {
         x_func: F,
     ) -> Result<()>
     where
-        F: FnMut(&Context<'_>) -> Result<T> + Send + UnwindSafe + 'static,
+        F: Fn(&Context<'_>) -> Result<T> + Send + 'static,
         T: SqlFnOutput,
     {
         unsafe extern "C" fn call_boxed_closure<F, T>(
@@ -534,12 +574,12 @@ impl InnerConnection {
             argc: c_int,
             argv: *mut *mut sqlite3_value,
         ) where
-            F: FnMut(&Context<'_>) -> Result<T>,
+            F: Fn(&Context<'_>) -> Result<T>,
             T: SqlFnOutput,
         {
             let args = slice::from_raw_parts(argv, argc as usize);
             let r = catch_unwind(|| {
-                let boxed_f: *mut F = ffi::sqlite3_user_data(ctx).cast::<F>();
+                let boxed_f: *const F = ffi::sqlite3_user_data(ctx).cast::<F>();
                 assert!(!boxed_f.is_null(), "Internal error - null function pointer");
                 let ctx = Context { ctx, args };
                 (*boxed_f)(&ctx)
@@ -670,9 +710,7 @@ unsafe extern "C" fn call_boxed_step<A, D, T>(
     D: Aggregate<A, T>,
     T: SqlFnOutput,
 {
-    let pac = if let Some(pac) = aggregate_context(ctx, std::mem::size_of::<*mut A>()) {
-        pac
-    } else {
+    let Some(pac) = aggregate_context(ctx, size_of::<*mut A>()) else {
         ffi::sqlite3_result_error_nomem(ctx);
         return;
     };
@@ -688,7 +726,7 @@ unsafe extern "C" fn call_boxed_step<A, D, T>(
             args: slice::from_raw_parts(argv, argc as usize),
         };
 
-        #[allow(clippy::unnecessary_cast)]
+        #[expect(clippy::unnecessary_cast)]
         if (*pac as *mut A).is_null() {
             *pac = Box::into_raw(Box::new((*boxed_aggr).init(&mut ctx)?));
         }
@@ -718,9 +756,7 @@ unsafe extern "C" fn call_boxed_inverse<A, W, T>(
     W: WindowAggregate<A, T>,
     T: SqlFnOutput,
 {
-    let pac = if let Some(pac) = aggregate_context(ctx, std::mem::size_of::<*mut A>()) {
-        pac
-    } else {
+    let Some(pac) = aggregate_context(ctx, size_of::<*mut A>()) else {
         ffi::sqlite3_result_error_nomem(ctx);
         return;
     };
@@ -761,7 +797,7 @@ where
     let a: Option<A> = match aggregate_context(ctx, 0) {
         Some(pac) =>
         {
-            #[allow(clippy::unnecessary_cast)]
+            #[expect(clippy::unnecessary_cast)]
             if (*pac as *mut A).is_null() {
                 None
             } else {
@@ -801,7 +837,7 @@ where
     // Within the xValue callback, it is customary to set N=0 in calls to
     // sqlite3_aggregate_context(C,N) so that no pointless memory allocations occur.
     let pac = aggregate_context(ctx, 0).filter(|&pac| {
-        #[allow(clippy::unnecessary_cast)]
+        #[expect(clippy::unnecessary_cast)]
         !(*pac as *mut A).is_null()
     });
 
@@ -834,7 +870,14 @@ mod test {
     use crate::{Connection, Error, Result};
 
     fn half(ctx: &Context<'_>) -> Result<c_double> {
+        assert!(!ctx.is_empty());
         assert_eq!(ctx.len(), 1, "called with unexpected number of arguments");
+        assert!(unsafe {
+            ctx.get_connection()
+                .as_ref()
+                .map(::std::ops::Deref::deref)
+                .is_ok()
+        });
         let value = ctx.get::<c_double>(0)?;
         Ok(value / 2f64)
     }

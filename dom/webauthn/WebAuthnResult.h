@@ -34,14 +34,26 @@ class WebAuthnRegisterResult final : public nsIWebAuthnRegisterResult {
                          const nsTArray<uint8_t>& aCredentialId,
                          const nsTArray<nsString>& aTransports,
                          const Maybe<nsString>& aAuthenticatorAttachment,
-                         const Maybe<bool>& aLargeBlobSupported)
+                         const Maybe<bool>& aLargeBlobSupported,
+                         const Maybe<bool>& aPrfSupported,
+                         const Maybe<nsTArray<uint8_t>>& aPrfFirst,
+                         const Maybe<nsTArray<uint8_t>>& aPrfSecond)
       : mClientDataJSON(aClientDataJSON),
         mCredPropsRk(Nothing()),
         mAuthenticatorAttachment(aAuthenticatorAttachment),
-        mLargeBlobSupported(aLargeBlobSupported) {
+        mLargeBlobSupported(aLargeBlobSupported),
+        mPrfSupported(aPrfSupported) {
     mAttestationObject.AppendElements(aAttestationObject);
     mCredentialId.AppendElements(aCredentialId);
     mTransports.AppendElements(aTransports);
+    if (aPrfFirst.isSome()) {
+      mPrfFirst.emplace(aPrfFirst->Length());
+      mPrfFirst->Assign(aPrfFirst.ref());
+    }
+    if (aPrfSecond.isSome()) {
+      mPrfSecond.emplace(aPrfSecond->Length());
+      mPrfSecond->Assign(aPrfSecond.ref());
+    }
   }
 
 #ifdef MOZ_WIDGET_ANDROID
@@ -98,7 +110,7 @@ class WebAuthnRegisterResult final : public nsIWebAuthnRegisterResult {
                 (BOOL*)pExtension->pvExtension;
             if (*pCredentialCreatedWithHmacSecret) {
               mHmacCreateSecret = Some(true);
-              mPrf = Some(true);
+              mPrfSupported = Some(true);
             }
           }
         }
@@ -144,7 +156,7 @@ class WebAuthnRegisterResult final : public nsIWebAuthnRegisterResult {
 
     if (aResponse->dwVersion >= WEBAUTHN_CREDENTIAL_ATTESTATION_VERSION_5) {
       if (aResponse->bPrfEnabled) {
-        mPrf = Some(true);
+        mPrfSupported = Some(true);
       }
     }
   }
@@ -161,7 +173,9 @@ class WebAuthnRegisterResult final : public nsIWebAuthnRegisterResult {
   Maybe<bool> mHmacCreateSecret;
   Maybe<nsString> mAuthenticatorAttachment;
   Maybe<bool> mLargeBlobSupported;
-  Maybe<bool> mPrf;
+  Maybe<bool> mPrfSupported;
+  Maybe<nsTArray<uint8_t>> mPrfFirst;
+  Maybe<nsTArray<uint8_t>> mPrfSecond;
 };
 
 class WebAuthnSignResult final : public nsIWebAuthnSignResult {
@@ -175,10 +189,14 @@ class WebAuthnSignResult final : public nsIWebAuthnSignResult {
                      const nsTArray<uint8_t>& aSignature,
                      const nsTArray<uint8_t>& aUserHandle,
                      const Maybe<nsString>& aAuthenticatorAttachment,
+                     const Maybe<bool>& aUsedAppId,
                      const Maybe<nsTArray<uint8_t>>& aLargeBlobValue,
-                     const Maybe<bool>& aLargeBlobWritten)
+                     const Maybe<bool>& aLargeBlobWritten,
+                     const Maybe<nsTArray<uint8_t>>& aPrfFirst,
+                     const Maybe<nsTArray<uint8_t>>& aPrfSecond)
       : mClientDataJSON(aClientDataJSON),
         mAuthenticatorAttachment(aAuthenticatorAttachment),
+        mUsedAppId(aUsedAppId),
         mLargeBlobWritten(aLargeBlobWritten) {
     mAuthenticatorData.AppendElements(aAuthenticatorData);
     mCredentialId.AppendElements(aCredentialId);
@@ -187,6 +205,14 @@ class WebAuthnSignResult final : public nsIWebAuthnSignResult {
     if (aLargeBlobValue.isSome()) {
       mLargeBlobValue.emplace(aLargeBlobValue->Length());
       mLargeBlobValue->Assign(aLargeBlobValue.ref());
+    }
+    if (aPrfFirst.isSome()) {
+      mPrfFirst.emplace(aPrfFirst.ref().Length());
+      mPrfFirst->Assign(aPrfFirst.ref());
+    }
+    if (aPrfSecond.isSome()) {
+      mPrfSecond.emplace(aPrfSecond.ref().Length());
+      mPrfSecond->Assign(aPrfSecond.ref());
     }
   }
 

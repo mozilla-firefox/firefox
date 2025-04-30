@@ -476,14 +476,22 @@ export class LoginDataSource extends DataSourceBase {
       ? "contextual-manager-passwords-remove-all-message-sync"
       : "contextual-manager-passwords-remove-all-message";
 
-    const confirmed = await this.#showWindowPrompt(
+    const { confirmed, checked } = await this.#showWindowPrompt(
       { id: "contextual-manager-passwords-remove-all-title", args: { total } },
       { id: messageId, args: { total } },
       {
         id: "contextual-manager-passwords-remove-all-confirm-button",
         args: { total },
+      },
+      {
+        id: "contextual-manager-passwords-remove-all-passwords-checkbox",
+        args: { total },
       }
     );
+
+    if (!confirmed || !checked) {
+      return;
+    }
 
     if (confirmed) {
       Services.logins.removeAllLogins();
@@ -536,7 +544,7 @@ export class LoginDataSource extends DataSourceBase {
       return;
     }
 
-    const confirmed = await this.#showWindowPrompt(
+    const { confirmed } = await this.#showWindowPrompt(
       { id: "contextual-manager-export-passwords-dialog-title" },
       { id: "contextual-manager-export-passwords-dialog-message" },
       { id: "contextual-manager-export-passwords-dialog-confirm-button" }
@@ -584,7 +592,12 @@ export class LoginDataSource extends DataSourceBase {
     });
   }
 
-  async #showWindowPrompt(titleL10n, messageL10n, confirmButtonL10n) {
+  async #showWindowPrompt(
+    titleL10n,
+    messageL10n,
+    confirmButtonL10n,
+    checkboxL10n = null
+  ) {
     const { BrowserWindowTracker } = ChromeUtils.importESModule(
       "resource:///modules/BrowserWindowTracker.sys.mjs"
     );
@@ -596,28 +609,44 @@ export class LoginDataSource extends DataSourceBase {
       confirmButton: confirmButtonL10n,
     });
 
+    let checkbox = null;
+    if (checkboxL10n) {
+      const { checkboxArg } = await this.localizeStrings({
+        checkboxArg: checkboxL10n,
+      });
+      checkbox = checkboxArg;
+    }
+
     // For more context on what these flags mean:
     // https://firefox-source-docs.mozilla.org/toolkit/components/prompts/prompts/nsIPromptService-reference.html#Prompter.confirmEx
     const flags =
       Services.prompt.BUTTON_TITLE_IS_STRING * Services.prompt.BUTTON_POS_0 +
       Services.prompt.BUTTON_TITLE_CANCEL * Services.prompt.BUTTON_POS_1;
 
-    // buttonPressed will be:
-    //  - 0 for confirm
-    //  - 1 for cancelling/declining.
-    const buttonPressed = Services.prompt.confirmEx(
-      win,
+    const result = await Services.prompt.asyncConfirmEx(
+      win.browsingContext,
+      Services.prompt.MODAL_TYPE_INTERNAL_WINDOW,
       title,
       message,
       flags,
       confirmButton,
       null,
       null,
-      null,
+      checkbox,
+      false,
       {}
     );
 
-    return buttonPressed == 0;
+    const propBag = result.QueryInterface(Ci.nsIPropertyBag2);
+    const options = {
+      // buttonNumClicked will be:
+      //  - 0 for confirm
+      //  - 1 for cancelling/declining.
+      confirmed: propBag.get("buttonNumClicked") == 0,
+      checked: propBag.get("checked"),
+    };
+
+    return options;
   }
 
   async #addLogin(newLogin) {

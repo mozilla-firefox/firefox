@@ -39,7 +39,7 @@ class nsThreadSafeAutoRefCntRunner final : public Runnable {
   ~nsThreadSafeAutoRefCntRunner() = default;
 };
 
-MOZ_RUNINIT ThreadSafeAutoRefCnt nsThreadSafeAutoRefCntRunner::sRefCnt;
+ThreadSafeAutoRefCnt nsThreadSafeAutoRefCntRunner::sRefCnt;
 Atomic<uint32_t, Relaxed> nsThreadSafeAutoRefCntRunner::sIncToOne(0);
 Atomic<uint32_t, Relaxed> nsThreadSafeAutoRefCntRunner::sDecToZero(0);
 

@@ -102,12 +102,25 @@ async function assertNoPreviews(dbg, expression, line, column) {
   // token elements have been rendered
   await waitForDocumentLoadComplete(dbg);
 
+  const tokenElement = await getTokenFromPosition(dbg, { line, column });
+  is(
+    tokenElement.textContent,
+    expression,
+    `The token at ${line} and ${column} has the expected content`
+  );
+
+  hoverToken(tokenElement);
+
   // Hover the token
   const result = await Promise.race([
-    tryHoverTokenAtLine(dbg, expression, line, column, "previewPopup"),
-    wait(500).then(() => "TIMEOUT"),
+    waitForElement(dbg, "previewPopup"),
+    wait(500).then(() => "NO POPUP AFTER TIMEOUT"),
   ]);
-  is(result, "TIMEOUT", `No popup was displayed when hovering "${expression}"`);
+  is(
+    result,
+    "NO POPUP AFTER TIMEOUT",
+    `No popup was displayed when hovering "${expression}"`
+  );
 }
 
 function resetCursorPositionToTopLeftCorner(dbg) {

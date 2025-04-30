@@ -50,6 +50,7 @@ dependencies {
 
     implementation project(':support-base')
     implementation project(':support-ktx')
+    implementation project(':support-utils')
 
     testImplementation platform(libs.androidx.compose.bom)
     testImplementation project(':support-test')

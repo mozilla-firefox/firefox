@@ -62,6 +62,7 @@ export type TestConfig = {
   logToWebSocket: boolean;
 };
 
+/** Test configuration options. Globally modifiable global state. */
 export const globalTestConfig: TestConfig = {
   enableDebugLogs: false,
   maxSubcasesInFlight: 100,

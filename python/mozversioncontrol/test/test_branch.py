@@ -25,11 +25,15 @@ STEPS = {
         git commit -a -m "second commit"
         """,
     ],
+    "jj": [],
 }
 
 
 def test_branch(repo):
     vcs = get_repository_object(repo.dir)
+    if vcs.name == "jj":
+        mozunit.pytest.skip("jj does not have an active branch")
+
     if vcs.name == "git":
         assert vcs.branch == "master"
     else:

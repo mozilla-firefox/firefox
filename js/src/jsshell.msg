@@ -23,3 +23,4 @@ MSG_DEF(JSSMSG_BAD_ALIGNMENT,           0, JSEXN_ERR, "serialized data must be 8
 MSG_DEF(JSSMSG_NESTED_FAIL,             0, JSEXN_ERR, "error executing nested JS shell")
 MSG_DEF(JSSMSG_CACHE_EQ_SIZE_FAILED,    2, JSEXN_ERR, "cache does not have the same size: got {0}, expected {1}")
 MSG_DEF(JSSMSG_CACHE_EQ_CONTENT_FAILED, 0, JSEXN_ERR, "cache does not have the same content.")
+MSG_DEF(JSMSG_STREAM_CONSUME_ERROR,     0, JSEXN_ERR, "error consuming stream body")

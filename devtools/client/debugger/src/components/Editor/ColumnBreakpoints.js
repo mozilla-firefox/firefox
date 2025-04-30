@@ -20,7 +20,6 @@ import actions from "../../actions/index";
 import { markerTypes } from "../../constants";
 import { connect } from "devtools/client/shared/vendor/react-redux";
 import { makeBreakpointId } from "../../utils/breakpoint/index";
-import { fromEditorLine } from "../../utils/editor/index";
 
 const breakpointButton = document.createElement("button");
 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -72,40 +71,44 @@ class ColumnBreakpoints extends Component {
 
     editor.setPositionContentMarker({
       id: markerTypes.COLUMN_BREAKPOINT_MARKER,
-      positions: columnBreakpoints.map(bp => bp.location),
-      createPositionElementNode: (line, column) => {
-        const lineNumber = fromEditorLine(selectedSource, line);
-        const columnBreakpoint = columnBreakpoints.find(
-          bp => bp.location.line === lineNumber && bp.location.column === column
-        );
+      positions: columnBreakpoints.map(cbp => {
+        return {
+          line: cbp.location.line,
+          column: cbp.location.column,
+          positionData: cbp,
+        };
+      }),
+      createPositionElementNode: (
+        line,
+        column,
+        isFirstNonSpaceColumn,
+        positionData
+      ) => {
         const breakpointNode = breakpointButton.cloneNode(true);
         breakpointNode.className = classnames("column-breakpoint", {
-          "has-condition": columnBreakpoint.breakpoint?.options.condition,
-          "has-log": columnBreakpoint.breakpoint?.options.logValue,
-          active:
-            columnBreakpoint.breakpoint &&
-            !columnBreakpoint.breakpoint.disabled,
-          disabled: columnBreakpoint.breakpoint?.disabled,
+          "has-condition": positionData.breakpoint?.options.condition,
+          "has-log": positionData.breakpoint?.options.logValue,
+          active: positionData.breakpoint && !positionData.breakpoint.disabled,
+          disabled: positionData.breakpoint?.disabled,
         });
         breakpointNode.addEventListener("click", event =>
-          this.onClick(event, columnBreakpoint)
+          this.onClick(event, positionData)
         );
         breakpointNode.addEventListener("contextmenu", event =>
-          this.onContextMenu(event, columnBreakpoint)
+          this.onContextMenu(event, positionData)
         );
         return breakpointNode;
       },
-      getMarkerEqualityValue: (line, column) => {
-        const lineNumber = fromEditorLine(selectedSource, line);
-        const columnBreakpoint = columnBreakpoints.find(
-          bp => bp.location.line === lineNumber && bp.location.column === column
+      customEq: (positionData, prevPositionData) => {
+        return (
+          positionData?.breakpoint?.id == prevPositionData?.breakpoint?.id &&
+          positionData?.breakpoint?.options.condition ==
+            prevPositionData?.breakpoint?.options.condition &&
+          positionData?.breakpoint?.options.logValue ==
+            prevPositionData?.breakpoint?.options.logValue &&
+          positionData?.breakpoint?.disabled ==
+            prevPositionData?.breakpoint?.disabled
         );
-        return {
-          id: columnBreakpoint?.breakpoint?.id,
-          condition: columnBreakpoint?.breakpoint?.options.condition,
-          log: columnBreakpoint?.breakpoint?.options.logValue,
-          disabled: columnBreakpoint?.breakpoint?.disabled,
-        };
       },
     });
   }

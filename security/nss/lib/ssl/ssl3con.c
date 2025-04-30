@@ -12492,6 +12492,9 @@ ssl3_FillInCachedSID(sslSocket *ss, sslSessionID *sid, PK11SymKey *secret)
     sid->sigScheme = ss->sec.signatureScheme;
     sid->lastAccessTime = sid->creationTime = ssl_Time(ss);
     sid->expirationTime = sid->creationTime + (ssl_ticket_lifetime * PR_USEC_PER_SEC);
+    if (sid->localCert) {
+        CERT_DestroyCertificate(sid->localCert);
+    }
     sid->localCert = CERT_DupCertificate(ss->sec.localCert);
     if (ss->sec.isServer) {
         sid->namedCurve = ss->sec.serverCert->namedCurve;

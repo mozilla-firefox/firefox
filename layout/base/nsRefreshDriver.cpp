@@ -36,6 +36,7 @@
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/dom/MediaQueryList.h"
 #include "mozilla/CycleCollectedJSContext.h"
+#include "mozilla/SMILAnimationController.h"
 #include "mozilla/DisplayPortUtils.h"
 #include "mozilla/Hal.h"
 #include "mozilla/InputTaskManager.h"
@@ -1308,8 +1309,8 @@ void nsRefreshDriver::RunRenderingPhase(RenderingPhase aPhase,
     if (ShouldCollect(mPresContext->Document())) {
       documents.AppendElement(mPresContext->Document());
     }
-    mPresContext->Document()->CollectDescendantDocuments(documents,
-                                                         ShouldCollect);
+    mPresContext->Document()->CollectDescendantDocuments(
+        documents, Document::IncludeSubResources::Yes, ShouldCollect);
     for (auto& doc : documents) {
       aCallback(*doc);
     }
@@ -1495,16 +1496,6 @@ void nsRefreshDriver::RestoreNormalRefresh() {
   mTestControllingRefreshes = false;
   EnsureTimerStarted(eAllowTimeToGoBackwards);
   mPendingTransactions.Clear();
-}
-
-TimeStamp nsRefreshDriver::MostRecentRefresh(bool aEnsureTimerStarted) const {
-  // In case of stylo traversal, we have already activated the refresh driver in
-  // RestyleManager::ProcessPendingRestyles().
-  if (aEnsureTimerStarted && !ServoStyleSet::IsInServoTraversal()) {
-    const_cast<nsRefreshDriver*>(this)->EnsureTimerStarted();
-  }
-
-  return mMostRecentRefresh;
 }
 
 void nsRefreshDriver::AddRefreshObserver(nsARefreshObserver* aObserver,
@@ -2187,7 +2178,8 @@ void nsRefreshDriver::RunVideoAndFrameRequestCallbacks(TimeStamp aNowTime) {
   if (ShouldCollect(mPresContext->Document())) {
     docs.AppendElement(mPresContext->Document());
   }
-  mPresContext->Document()->CollectDescendantDocuments(docs, ShouldCollect);
+  mPresContext->Document()->CollectDescendantDocuments(
+      docs, Document::IncludeSubResources::Yes, ShouldCollect);
   if (skippedAnyThrottledDoc) {
     // FIXME(emilio): It's a bit subtle to just set this here, but matches
     // pre-existing behavior for throttled docs. It seems at least we should
@@ -2419,6 +2411,11 @@ void nsRefreshDriver::Tick(VsyncId aId, TimeStamp aNowTime,
   // Step 11. For each doc of docs, update animations and send events for doc.
   RunRenderingPhase(RenderingPhase::UpdateAnimationsAndSendEvents,
                     [&](Document& aDoc) MOZ_CAN_RUN_SCRIPT_BOUNDARY_LAMBDA {
+                      if (aDoc.HasAnimationController()) {
+                        RefPtr controller = aDoc.GetAnimationController();
+                        controller->WillRefresh(aNowTime);
+                      }
+
                       {
                         // Animation updates may queue Promise resolution
                         // microtasks. We shouldn't run these, however, until we

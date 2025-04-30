@@ -20,24 +20,7 @@ add_setup(() => {
   });
 });
 
-// Test with a missing features directory
-async function test_app_addons({ asBuiltIn = true } = {}) {
-  // Build the test set xpis
-  if (!asBuiltIn) {
-    var distroDir = FileUtils.getDir("ProfD", ["sysfeatures"]);
-    distroDir.create(Ci.nsIFile.DIRECTORY_TYPE, FileUtils.PERMS_DIRECTORY);
-    let xpi = await getSystemAddonXPI(1, "1.0");
-    xpi.copyTo(distroDir, "system1@tests.mozilla.org.xpi");
-
-    xpi = await getSystemAddonXPI(2, "1.0");
-    xpi.copyTo(distroDir, "system2@tests.mozilla.org.xpi");
-
-    xpi = await getSystemAddonXPI(3, "1.0");
-    xpi.copyTo(distroDir, "system3@tests.mozilla.org.xpi");
-
-    registerDirectory("XREAppFeat", distroDir);
-  }
-
+add_task(async function test_app_addons_systembuiltin() {
   Services.prefs.setBoolPref(PREF_GETADDONS_CACHE_ENABLED, true);
   Services.prefs.setCharPref(
     PREF_GETADDONS_BYIDS,
@@ -45,20 +28,11 @@ async function test_app_addons({ asBuiltIn = true } = {}) {
   );
 
   await overrideBuiltIns({
-    builtins: asBuiltIn
-      ? [
-          await getSystemBuiltin(1),
-          await getSystemBuiltin(2),
-          await getSystemBuiltin(3),
-        ]
-      : [],
-    system: asBuiltIn
-      ? []
-      : [
-          "system1@tests.mozilla.org",
-          "system2@tests.mozilla.org",
-          "system3@tests.mozilla.org",
-        ],
+    builtins: [
+      await getSystemBuiltin(1),
+      await getSystemBuiltin(2),
+      await getSystemBuiltin(3),
+    ],
   });
 
   await promiseStartupManager();
@@ -85,13 +59,4 @@ async function test_app_addons({ asBuiltIn = true } = {}) {
   Assert.equal(cached, null);
 
   await promiseShutdownManager();
-}
-
-// TODO(Bug 1949847): remove this test along with removing the app-system-defaults location.
-add_task(async function test_app_addons_xpi() {
-  await test_app_addons({ asBuiltIn: false });
-});
-
-add_task(async function test_app_addons_systembuiltin() {
-  await test_app_addons();
 });

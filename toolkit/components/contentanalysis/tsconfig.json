@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tools/@types/tsconfig.json",
+  "include": ["*.mjs", "types/*.ts"],
+
+  "compilerOptions": {
+    "checkJs": true,
+    "plugins": [
+      {
+        "transform": "../../../tools/ts/plugins/checkRootOnly.js",
+        "transformProgram": true
+      }
+    ]
+  }
+}

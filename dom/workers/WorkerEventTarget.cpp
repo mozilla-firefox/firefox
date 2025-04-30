@@ -84,6 +84,48 @@ class WrappedControlRunnable final : public WorkerControlRunnable {
 #endif
 };
 
+class WrappedDebuggerRunnable final : public WorkerDebuggerRunnable {
+  nsCOMPtr<nsIRunnable> mInner;
+
+  ~WrappedDebuggerRunnable() = default;
+
+ public:
+  WrappedDebuggerRunnable(WorkerPrivate* aWorkerPrivate,
+                          nsCOMPtr<nsIRunnable>&& aInner)
+      : WorkerDebuggerRunnable("WrappedDebuggerRunnable"),
+        mInner(std::move(aInner)) {}
+
+  virtual bool PreDispatch(WorkerPrivate* aWorkerPrivate) override {
+    // Silence bad assertions, this can be dispatched from any thread.
+    return true;
+  }
+
+  virtual void PostDispatch(WorkerPrivate* aWorkerPrivate,
+                            bool aDispatchResult) override {
+    // Silence bad assertions, this can be dispatched from any thread.
+  }
+
+  bool WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate) override {
+    mInner->Run();
+    return true;
+  }
+
+#ifdef MOZ_COLLECTING_RUNNABLE_TELEMETRY
+  NS_IMETHOD GetName(nsACString& aName) override {
+    aName.AssignLiteral("WrappedDebuggerRunnable(");
+    if (nsCOMPtr<nsINamed> named = do_QueryInterface(mInner)) {
+      nsAutoCString containedName;
+      named->GetName(containedName);
+      aName.Append(containedName);
+    } else {
+      aName.AppendLiteral("?");
+    }
+    aName.AppendLiteral(")");
+    return NS_OK;
+  }
+#endif
+};
+
 }  // anonymous namespace
 
 NS_IMPL_ISUPPORTS(WorkerEventTarget, nsIEventTarget, nsISerialEventTarget)
@@ -125,6 +167,23 @@ WorkerEventTarget::Dispatch(already_AddRefed<nsIRunnable> aRunnable,
 
   if (!mWorkerPrivate) {
     return NS_ERROR_FAILURE;
+  }
+
+  if (mBehavior == Behavior::DebuggerOnly) {
+    RefPtr<WorkerDebuggerRunnable> r =
+        new WrappedDebuggerRunnable(mWorkerPrivate, std::move(runnable));
+    LOGV(
+        ("WorkerEventTarget::Dispatch [%p] Wrapped runnable as debugger "
+         "runnable(%p)",
+         this, r.get()));
+    if (!r->Dispatch(mWorkerPrivate)) {
+      LOGV(
+          ("WorkerEventTarget::Dispatch [%p] Dispatch as debugger runnable(%p) "
+           "fail",
+           this, r.get()));
+      return NS_ERROR_FAILURE;
+    }
+    return NS_OK;
   }
 
   if (mBehavior == Behavior::Hybrid) {

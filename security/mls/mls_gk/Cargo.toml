@@ -16,5 +16,5 @@ mls-platform-api = { git = "https://github.com/beurdouche/mls-platform-api", rev
 nss-gk-api = { git = "https://github.com/beurdouche/nss-gk-api", rev = "e48a946811ffd64abc78de3ee284957d8d1c0d63", default-features = false }
 thin-vec = { version = "^0.2.12", features = ["gecko-ffi"] }
 hex = "^0.4.3"
-rusqlite = "^0.31.0"
+rusqlite = "^0.33.0"
 log = "^0.4.20"

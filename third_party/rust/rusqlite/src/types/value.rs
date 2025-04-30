@@ -21,22 +21,22 @@ pub enum Value {
 
 impl From<Null> for Value {
     #[inline]
-    fn from(_: Null) -> Value {
-        Value::Null
+    fn from(_: Null) -> Self {
+        Self::Null
     }
 }
 
 impl From<bool> for Value {
     #[inline]
-    fn from(i: bool) -> Value {
-        Value::Integer(i as i64)
+    fn from(i: bool) -> Self {
+        Self::Integer(i as i64)
     }
 }
 
 impl From<isize> for Value {
     #[inline]
-    fn from(i: isize) -> Value {
-        Value::Integer(i as i64)
+    fn from(i: isize) -> Self {
+        Self::Integer(i as i64)
     }
 }
 
@@ -44,10 +44,10 @@ impl From<isize> for Value {
 #[cfg_attr(docsrs, doc(cfg(feature = "i128_blob")))]
 impl From<i128> for Value {
     #[inline]
-    fn from(i: i128) -> Value {
+    fn from(i: i128) -> Self {
         // We store these biased (e.g. with the most significant bit flipped)
         // so that comparisons with negative numbers work properly.
-        Value::Blob(i128::to_be_bytes(i ^ (1_i128 << 127)).to_vec())
+        Self::Blob(i128::to_be_bytes(i ^ (1_i128 << 127)).to_vec())
     }
 }
 
@@ -55,8 +55,8 @@ impl From<i128> for Value {
 #[cfg_attr(docsrs, doc(cfg(feature = "uuid")))]
 impl From<uuid::Uuid> for Value {
     #[inline]
-    fn from(id: uuid::Uuid) -> Value {
-        Value::Blob(id.as_bytes().to_vec())
+    fn from(id: uuid::Uuid) -> Self {
+        Self::Blob(id.as_bytes().to_vec())
     }
 }
 
@@ -80,48 +80,48 @@ from_i64!(u32);
 
 impl From<i64> for Value {
     #[inline]
-    fn from(i: i64) -> Value {
-        Value::Integer(i)
+    fn from(i: i64) -> Self {
+        Self::Integer(i)
     }
 }
 
 impl From<f32> for Value {
     #[inline]
-    fn from(f: f32) -> Value {
-        Value::Real(f.into())
+    fn from(f: f32) -> Self {
+        Self::Real(f.into())
     }
 }
 
 impl From<f64> for Value {
     #[inline]
-    fn from(f: f64) -> Value {
-        Value::Real(f)
+    fn from(f: f64) -> Self {
+        Self::Real(f)
     }
 }
 
 impl From<String> for Value {
     #[inline]
-    fn from(s: String) -> Value {
-        Value::Text(s)
+    fn from(s: String) -> Self {
+        Self::Text(s)
     }
 }
 
 impl From<Vec<u8>> for Value {
     #[inline]
-    fn from(v: Vec<u8>) -> Value {
-        Value::Blob(v)
+    fn from(v: Vec<u8>) -> Self {
+        Self::Blob(v)
     }
 }
 
 impl<T> From<Option<T>> for Value
 where
-    T: Into<Value>,
+    T: Into<Self>,
 {
     #[inline]
-    fn from(v: Option<T>) -> Value {
+    fn from(v: Option<T>) -> Self {
         match v {
             Some(x) => x.into(),
-            None => Value::Null,
+            None => Self::Null,
         }
     }
 }
@@ -132,11 +132,33 @@ impl Value {
     #[must_use]
     pub fn data_type(&self) -> Type {
         match *self {
-            Value::Null => Type::Null,
-            Value::Integer(_) => Type::Integer,
-            Value::Real(_) => Type::Real,
-            Value::Text(_) => Type::Text,
-            Value::Blob(_) => Type::Blob,
+            Self::Null => Type::Null,
+            Self::Integer(_) => Type::Integer,
+            Self::Real(_) => Type::Real,
+            Self::Text(_) => Type::Text,
+            Self::Blob(_) => Type::Blob,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Value;
+    use crate::types::Type;
+
+    #[test]
+    fn from() {
+        assert_eq!(Value::from(2f32), Value::Real(2f64));
+        assert_eq!(Value::from(3.), Value::Real(3.));
+        assert_eq!(Value::from(vec![0u8]), Value::Blob(vec![0u8]));
+    }
+
+    #[test]
+    fn data_type() {
+        assert_eq!(Value::Null.data_type(), Type::Null);
+        assert_eq!(Value::Integer(0).data_type(), Type::Integer);
+        assert_eq!(Value::Real(0.).data_type(), Type::Real);
+        assert_eq!(Value::Text(String::new()).data_type(), Type::Text);
+        assert_eq!(Value::Blob(vec![]).data_type(), Type::Blob);
     }
 }

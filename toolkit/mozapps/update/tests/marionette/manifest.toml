@@ -1,7 +1,4 @@
 [DEFAULT]
-prefs = [
-  "app.update.multiSessionInstallLockout.enabled=false",
-]
 
 ["test_no_window_update_restart.py"]
 run-if = ["os == 'mac'"]

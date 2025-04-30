@@ -6,7 +6,9 @@ package org.mozilla.fenix.home
 
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.spyk
@@ -57,8 +59,10 @@ import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.components.Analytics
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.TabCollectionStorage
+import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppState
+import org.mozilla.fenix.components.appstate.setup.checklist.ChecklistItem
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.helpers.FenixGleanTestRule
@@ -71,6 +75,7 @@ import org.mozilla.fenix.messaging.MessageController
 import org.mozilla.fenix.onboarding.WallpaperOnboardingDialogFragment.Companion.THUMBNAILS_SELECTION_COUNT
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.utils.Settings
+import org.mozilla.fenix.utils.showAddSearchWidgetPrompt
 import org.mozilla.fenix.wallpapers.Wallpaper
 import org.mozilla.fenix.wallpapers.WallpaperState
 import java.io.File
@@ -307,7 +312,7 @@ class DefaultSessionControlControllerTest {
 
     @Test
     fun `handleCollectionRemoveTab one tab`() {
-        val tab = mockk<ComponentTab> ()
+        val tab = mockk<ComponentTab>()
 
         val expectedCollection = mockk<TabCollection> {
             every { id } returns 123L
@@ -1520,6 +1525,141 @@ class DefaultSessionControlControllerTest {
         verify {
             messageController.onMessageDismissed(message)
         }
+    }
+
+    @Test
+    fun `GIVEN item is a group WHEN onChecklistItemClicked is called THEN dispatch checklist performs the expected actions`() {
+        val controller = createController()
+        val group = mockk<ChecklistItem.Group>()
+
+        controller.onChecklistItemClicked(group)
+
+        verify { appStore.dispatch(AppAction.SetupChecklistAction.ChecklistItemClicked(group)) }
+    }
+
+    @Test
+    fun `GIVEN item is a task WHEN onChecklistItemClicked is called THEN performs the expected actions`() {
+        every { activity.showSetDefaultBrowserPrompt() } just Runs
+        val controller = createController()
+        val task = mockk<ChecklistItem.Task>()
+        every { task.type } returns ChecklistItem.Task.Type.SET_AS_DEFAULT
+
+        controller.onChecklistItemClicked(task)
+
+        verify { activity.showSetDefaultBrowserPrompt() }
+        verify { appStore.dispatch(AppAction.SetupChecklistAction.ChecklistItemClicked(task)) }
+    }
+
+    @Test
+    fun `WHEN set as default task THEN navigationActionFor calls the set to default prompt`() {
+        val controller = createController()
+        val task = mockk<ChecklistItem.Task>()
+        every { activity.showSetDefaultBrowserPrompt() } just Runs
+        every { task.type } returns ChecklistItem.Task.Type.SET_AS_DEFAULT
+
+        controller.navigationActionFor(task)
+
+        verify { activity.showSetDefaultBrowserPrompt() }
+    }
+
+    @Test
+    fun `WHEN sign in task THEN navigationActionFor navigates to the expected fragment`() {
+        val controller = createController()
+        val task = mockk<ChecklistItem.Task>()
+        every { task.type } returns ChecklistItem.Task.Type.SIGN_IN
+        every { navController.currentDestination } returns mockk {
+            every { id } returns R.id.homeFragment
+        }
+
+        controller.navigationActionFor(task)
+
+        verify {
+            navController.navigate(
+                HomeFragmentDirections.actionGlobalTurnOnSync(FenixFxAEntryPoint.NewUserOnboarding),
+                null,
+            )
+        }
+    }
+
+    @Test
+    fun `WHEN select theme task THEN navigationActionFor navigates to the expected fragment`() {
+        val controller = createController()
+        val task = mockk<ChecklistItem.Task>()
+        every { task.type } returns ChecklistItem.Task.Type.SELECT_THEME
+        every { navController.currentDestination } returns mockk {
+            every { id } returns R.id.homeFragment
+        }
+
+        controller.navigationActionFor(task)
+
+        verify {
+            navController.navigate(
+                HomeFragmentDirections.actionGlobalCustomizationFragment(),
+                null,
+            )
+        }
+    }
+
+    @Test
+    fun `WHEN toolbar placement task THEN navigationActionFor navigates to the expected fragment`() {
+        val controller = createController()
+        val task = mockk<ChecklistItem.Task>()
+        every { task.type } returns ChecklistItem.Task.Type.CHANGE_TOOLBAR_PLACEMENT
+        every { navController.currentDestination } returns mockk {
+            every { id } returns R.id.homeFragment
+        }
+
+        controller.navigationActionFor(task)
+
+        verify {
+            navController.navigate(
+                HomeFragmentDirections.actionGlobalCustomizationFragment(),
+                null,
+            )
+        }
+    }
+
+    @Test
+    fun `WHEN install search widget task THEN navigationActionFor calls the add search widget prompt`() {
+        val controller = createController()
+        val task = mockk<ChecklistItem.Task>()
+        mockkStatic("org.mozilla.fenix.utils.AddSearchWidgetPromptKt")
+        every { showAddSearchWidgetPrompt(activity) } just Runs
+        every { task.type } returns ChecklistItem.Task.Type.INSTALL_SEARCH_WIDGET
+
+        controller.navigationActionFor(task)
+
+        verify {
+            showAddSearchWidgetPrompt(activity)
+        }
+    }
+
+    @Test
+    fun `WHEN extensions task THEN navigationActionFor navigates to the expected fragment`() {
+        val controller = createController()
+        val task = mockk<ChecklistItem.Task>()
+        every { task.type } returns ChecklistItem.Task.Type.EXPLORE_EXTENSION
+        every { navController.currentDestination } returns mockk {
+            every { id } returns R.id.homeFragment
+        }
+
+        controller.navigationActionFor(task)
+
+        verify {
+            navController.navigate(
+                HomeFragmentDirections.actionGlobalAddonsManagementFragment(),
+                null,
+            )
+        }
+    }
+
+    @Test
+    fun `WHEN on remove checklist button clicked THEN onRemoveChecklistButtonClicked dispatches the expected action to the app store `() {
+        val controller = createController()
+
+        controller.onRemoveChecklistButtonClicked()
+
+        verify { appStore.dispatch(AppAction.SetupChecklistAction.Closed) }
     }
 
     private fun createController(

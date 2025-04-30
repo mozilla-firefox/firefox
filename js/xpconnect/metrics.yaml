@@ -764,7 +764,7 @@ javascript.gc:
       - FINALIZE_START
       - UPDATE_ATOMS_BITMAP
       - SWEEP_ATOMS_TABLE
-      - SWEEP_DISCARD_CODE
+      - SWEEP_JIT_SCRIPTS
       - SWEEP_INNER_VIEWS
       - SWEEP_CC_WRAPPER
       - SWEEP_BASE_SHAPE
@@ -779,8 +779,6 @@ javascript.gc:
       - SWEEP_WEAK_CACHES
       - SWEEP_MISC
       - SWEEP_COMPARTMENTS
-      - FINALIZE_OBJECT
-      - FINALIZE_NON_OBJECT
       - SWEEP_PROP_MAP
       - FINALIZE_END
       - DESTROY

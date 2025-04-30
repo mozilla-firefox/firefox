@@ -14,3 +14,10 @@ void mozilla::net::HttpInfo::GetHttpConnectionData(
     gHttpHandler->ConnMgr()->GetConnectionData(args);
   }
 }
+
+void mozilla::net::HttpInfo::GetHttp3ConnectionStatsData(
+    nsTArray<Http3ConnectionStatsParams>* args) {
+  if (gHttpHandler && gHttpHandler->ConnMgr()) {
+    gHttpHandler->ConnMgr()->GetHttp3ConnectionStatsData(args);
+  }
+}

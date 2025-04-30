@@ -739,7 +739,7 @@ static aom_codec_err_t validate_config(aom_codec_alg_priv_t *ctx,
   RANGE_CHECK_HI(extra_cfg, enable_auto_alt_ref, 1);
   RANGE_CHECK_HI(extra_cfg, enable_auto_bwd_ref, 2);
   RANGE_CHECK(extra_cfg, cpu_used, 0,
-              (cfg->g_usage == AOM_USAGE_REALTIME) ? 11 : 9);
+              (cfg->g_usage == AOM_USAGE_REALTIME) ? 12 : 9);
   RANGE_CHECK_HI(extra_cfg, noise_sensitivity, 6);
   RANGE_CHECK(extra_cfg, superblock_size, AOM_SUPERBLOCK_SIZE_64X64,
               AOM_SUPERBLOCK_SIZE_DYNAMIC);
@@ -856,7 +856,7 @@ static aom_codec_err_t validate_config(aom_codec_alg_priv_t *ctx,
   }
 #endif
 
-  RANGE_CHECK(extra_cfg, tuning, AOM_TUNE_PSNR, AOM_TUNE_IQ);
+  RANGE_CHECK(extra_cfg, tuning, AOM_TUNE_PSNR, AOM_TUNE_SSIMULACRA2);
 
   RANGE_CHECK(extra_cfg, dist_metric, AOM_DIST_METRIC_PSNR,
               AOM_DIST_METRIC_QM_PSNR);
@@ -1573,11 +1573,14 @@ static aom_codec_err_t encoder_set_config(aom_codec_alg_priv_t *ctx,
     // Note: function encoder_set_config() is allowed to be called multiple
     // times. However, when the original frame width or height is less than two
     // times of the new frame width or height, a forced key frame should be
-    // used. To make sure the correct detection of a forced key frame, we need
+    // used (for the case of single spatial layer, since otherwise a previous
+    // encoded frame at a lower layer may be the desired reference). To make
+    // sure the correct detection of a forced key frame, we need
     // to update the frame width and height only when the actual encoding is
     // performed. cpi->last_coded_width and cpi->last_coded_height are used to
     // track the actual coded frame size.
-    if (ctx->ppi->cpi->last_coded_width && ctx->ppi->cpi->last_coded_height &&
+    if (ctx->ppi->cpi->svc.number_spatial_layers == 1 &&
+        ctx->ppi->cpi->last_coded_width && ctx->ppi->cpi->last_coded_height &&
         (!valid_ref_frame_size(ctx->ppi->cpi->last_coded_width,
                                ctx->ppi->cpi->last_coded_height, cfg->g_w,
                                cfg->g_h) ||
@@ -1819,16 +1822,17 @@ static aom_codec_err_t ctrl_set_arnr_strength(aom_codec_alg_priv_t *ctx,
 
 static aom_codec_err_t handle_tuning(aom_codec_alg_priv_t *ctx,
                                      struct av1_extracfg *extra_cfg) {
-  if (extra_cfg->tuning == AOM_TUNE_IQ) {
+  if (extra_cfg->tuning == AOM_TUNE_IQ ||
+      extra_cfg->tuning == AOM_TUNE_SSIMULACRA2) {
     if (ctx->cfg.g_usage != AOM_USAGE_ALL_INTRA) return AOM_CODEC_INCAPABLE;
     // Enable QMs as they've been found to be beneficial for images, when used
     // with alternative QM formulas:
     // - aom_get_qmlevel_allintra()
-    // - aom_get_qmlevel_luma_iq()
-    // - aom_get_qmlevel_444_chroma_iq()
+    // - aom_get_qmlevel_luma_ssimulacra2()
+    // - aom_get_qmlevel_444_chroma()
     extra_cfg->enable_qm = 1;
-    extra_cfg->qm_min = QM_FIRST_IQ;
-    extra_cfg->qm_max = QM_LAST_IQ;
+    extra_cfg->qm_min = QM_FIRST_IQ_SSIMULACRA2;
+    extra_cfg->qm_max = QM_LAST_IQ_SSIMULACRA2;
     // We can turn on loop filter sharpness, as frames do not have to serve as
     // references to others.
     extra_cfg->sharpness = 7;

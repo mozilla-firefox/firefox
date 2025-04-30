@@ -113,6 +113,7 @@ class ResponsePanel extends Component {
     const { request, connector } = this.props;
     fetchNetworkUpdatePacket(connector.requestData, request, [
       "responseContent",
+      "responseHeaders",
     ]);
   }
 
@@ -121,6 +122,7 @@ class ResponsePanel extends Component {
     const { request, connector } = nextProps;
     fetchNetworkUpdatePacket(connector.requestData, request, [
       "responseContent",
+      "responseHeaders",
     ]);
 
     // If the response contains XSSI stripped chars default to raw view
@@ -272,7 +274,7 @@ class ResponsePanel extends Component {
    */
   renderJsonHtmlAndSource() {
     const { request, targetSearchResult } = this.props;
-    const { responseContent } = request;
+    const { responseContent, responseHeaders, url } = request;
     let { encoding, mimeType, text } = responseContent.content;
     const { filterText, rawResponsePayloadDisplayed } = this.state;
 
@@ -323,7 +325,7 @@ class ResponsePanel extends Component {
       // Display HTML
       responsePayloadLabel = HTML_RESPONSE;
       component = HtmlPreview;
-      componentProps = { responseContent };
+      componentProps = { responseContent, responseHeaders, url };
       hasFormattedDisplay = true;
     }
     if (!hasFormattedDisplay || rawResponsePayloadDisplayed) {
@@ -476,7 +478,7 @@ class ResponsePanel extends Component {
             type: "filter",
             onChange: filter => this.setState({ filterText: filter }),
             placeholder: JSON_FILTER_TEXT,
-            value: filterText,
+            initialValue: filterText,
           })
         ),
       div({ tabIndex: "0" }, CORSBlockedReasonDetails),

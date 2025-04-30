@@ -209,7 +209,7 @@ impl RenderNotifier for Notifier {
 
     fn wake_up(&self, _composite_needed: bool) {}
 
-    fn new_frame_ready(&self, _: DocumentId, _scrolled: bool, _composite_needed: bool, _: FramePublishId) {
+    fn new_frame_ready(&self, _: DocumentId, _: FramePublishId, _params: &FrameReadyParams) {
         self.tx.send(()).ok();
     }
 }

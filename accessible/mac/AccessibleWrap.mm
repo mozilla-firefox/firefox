@@ -307,6 +307,9 @@ Class a11y::GetTypeFromRole(roles::Role aRole) {
     case roles::OUTLINEITEM:
       return [mozOutlineRowAccessible class];
 
+    case roles::LABEL:
+      return [MOXLabelAccessible class];
+
     default:
       return [mozAccessible class];
   }

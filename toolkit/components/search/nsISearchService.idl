@@ -42,6 +42,16 @@ interface nsISearchEngine : nsISupports
    */
   nsISearchSubmission getSubmission(in AString searchTerms,
                                     [optional] in AString responseType);
+
+  /**
+   * Returns a search URL with no search terms. This is typically used for
+   * purposes where we want to check something on the URL, but not use it for
+   * an actual submission to the search engine.
+   *
+   * @returns {nsIURI}
+   */
+  readonly attribute nsIURI searchURLWithNoTerms;
+
   /**
    * Returns the search term of a possible search result URI if and only if:
    * - The URI has the same scheme, host, and path as the engine.
@@ -152,6 +162,11 @@ interface nsISearchEngine : nsISupports
    * the distribution, as provided by the distributing entity.
    */
   readonly attribute AString identifier;
+
+  /**
+   * Anonymized path of where we initially loaded the engine from.
+   */
+  readonly attribute AString loadPath;
 
   /**
    * Whether or not this engine is provided by the application, e.g. it is
@@ -505,7 +520,7 @@ interface nsISearchService : nsISupports
   attribute nsISearchEngine defaultEngine;
 
   Promise getDefault();
-  Promise setDefault(in nsISearchEngine engine, in unsigned short changeSource);
+  Promise setDefault(in nsISearchEngine engine, in unsigned short changeReason);
 
   /**
    * The currently active search engine for private browsing mode.
@@ -516,7 +531,7 @@ interface nsISearchService : nsISupports
   Promise getDefaultPrivate();
   Promise setDefaultPrivate(
     in nsISearchEngine engine,
-    in unsigned short changeSource);
+    in unsigned short changeReason);
 
   /**
    * Whether to display the "Search in Private Window" result in the urlbar.

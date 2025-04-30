@@ -15,6 +15,7 @@
 #include "mozilla/dom/FileSystemHelpers.h"
 #include "mozilla/dom/FileSystemTypes.h"
 #include "mozilla/dom/quota/CheckedUnsafePtr.h"
+#include "mozilla/dom/quota/ClientDirectoryLockHandle.h"
 #include "mozilla/dom/quota/CommonMetadata.h"
 #include "mozilla/dom/quota/ForwardDecls.h"
 #include "nsCOMPtr.h"
@@ -100,7 +101,7 @@ class FileSystemDataManager
   }
 
   Maybe<quota::ClientDirectoryLock&> MaybeDirectoryLockRef() const {
-    return ToMaybeRef(mDirectoryLock.get());
+    return ToMaybeRef(mDirectoryLockHandle.get());
   }
 
   FileSystemDatabaseManager* MutableDatabaseManagerPtr() const {
@@ -178,7 +179,7 @@ class FileSystemDataManager
   const NotNull<nsCOMPtr<nsISerialEventTarget>> mBackgroundTarget;
   const NotNull<nsCOMPtr<nsIEventTarget>> mIOTarget;
   const NotNull<RefPtr<TaskQueue>> mIOTaskQueue;
-  RefPtr<quota::ClientDirectoryLock> mDirectoryLock;
+  quota::ClientDirectoryLockHandle mDirectoryLockHandle;
   UniquePtr<FileSystemDatabaseManager> mDatabaseManager;
   MozPromiseHolder<BoolPromise> mOpenPromiseHolder;
   MozPromiseHolder<BoolPromise> mClosePromiseHolder;

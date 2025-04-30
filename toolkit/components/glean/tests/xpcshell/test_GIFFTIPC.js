@@ -103,7 +103,9 @@ add_task({ skip_if: () => runningInParent }, async function run_child_stuff() {
 
   // Has to be different from aLabeledCounter so the error we record doesn't
   // get in the way.
-  Glean.testOnlyIpc.anotherLabeledCounter["1".repeat(72)].add(INVALID_COUNTERS);
+  Glean.testOnlyIpc.anotherLabeledCounter["1".repeat(112)].add(
+    INVALID_COUNTERS
+  );
 
   Glean.testOnlyIpc.aLabeledCounterForHgram.true.add(1);
   Glean.testOnlyIpc.aLabeledCounterForHgram.false.add(1);
@@ -277,12 +279,7 @@ add_task(
       "telemetry.test.mirror_for_labeled_counter",
       "content"
     );
-    Assert.deepEqual(
-      {
-        ["1".repeat(72)]: INVALID_COUNTERS,
-      },
-      value
-    );
+    Assert.deepEqual(undefined, value);
 
     const boolHgramCounters = Glean.testOnlyIpc.aLabeledCounterForHgram;
     Assert.equal(boolHgramCounters.true.testGetValue(), 1);

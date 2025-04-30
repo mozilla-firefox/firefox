@@ -4,7 +4,12 @@
 
 package mozilla.components.compose.browser.toolbar.store
 
+import androidx.annotation.IntRange
+import androidx.compose.ui.graphics.Color
+import mozilla.components.compose.browser.toolbar.R
 import mozilla.components.compose.browser.toolbar.concept.Action
+import mozilla.components.compose.browser.toolbar.concept.PageOrigin
+import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarEvent
 import mozilla.components.lib.state.State
 
 /**
@@ -39,33 +44,72 @@ enum class Mode {
      * Edit mode - Allows the user to edit the URL.
      */
     EDIT,
-
-    /**
-     * Custom tab - Displays the URL and title of a custom tab.
-     */
-    CUSTOM_TAB,
 }
 
 /**
  * Wrapper containing the toolbar display state.
  *
- * @property hint Text displayed in the toolbar when there's no URL to display
- * (no tab or empty URL).
- * @param navigationActions List of navigation [Action]s to be displayed on left side of the
- * display toolbar (outside of the URL bounding box).
- * @param pageActions List of page [Action]s to be displayed to the right side of the URL of the
- * display toolbar. Also see:
- * [MDN docs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/pageAction)
- * @param browserActions List of browser [Action]s to be displayed on the right side of the
- * display toolbar (outside of the URL bounding box). Also see:
- * [MDN docs](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/user_interface/Browser_action)
+ * @property browserActionsStart List of browser [Action]s to be displayed at the start of the
+ * toolbar, outside of the URL bounding box.
+ * These should be actions relevant to the browser as a whole.
+ * See [MDN docs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/browserAction).
+ * @property pageActionsStart List of navigation [Action]s to be displayed between [browserActionsStart]
+ * and the current webpage's details, inside of the URL bounding box.
+ * These should be actions relevant to specific webpages as opposed to [browserActionsStart].
+ * See [MDN docs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/pageAction).
+ * @property pageOrigin Details about the current website.
+ * @property pageActionsEnd List of page [Action]s to be displayed between [pageOrigin] and [browserActionsEnd],
+ * inside of the URL bounding box.
+ * These should be actions relevant to specific webpages as opposed to [browserActionsStart].
+ * See [MDN docs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/pageAction).
+ * @param browserActionsEnd List of browser [Action]s to be displayed at the end of the toolbar,
+ * outside of the URL bounding box.
+ * These should be actions relevant to the browser as a whole.
+ * See [MDN docs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/browserAction).
+ * @property progressBarConfig [ProgressBarConfig] configuration for the progress bar.
+ * If `null` a progress bar will not be displayed.
  */
 data class DisplayState(
-    val hint: String = "",
-    val navigationActions: List<Action> = emptyList(),
-    val pageActions: List<Action> = emptyList(),
-    val browserActions: List<Action> = emptyList(),
+    val browserActionsStart: List<Action> = emptyList(),
+    val pageActionsStart: List<Action> = emptyList(),
+    val pageOrigin: PageOrigin = PageOrigin(
+        hint = R.string.mozac_browser_toolbar_search_hint,
+        title = null,
+        url = null,
+        onClick = object : BrowserToolbarEvent {},
+    ),
+    val pageActionsEnd: List<Action> = emptyList(),
+    val browserActionsEnd: List<Action> = emptyList(),
+    val progressBarConfig: ProgressBarConfig? = null,
 ) : State
+
+/**
+ * @property progress `[0 - 100]` progress to show.
+ * @property gravity Top/bottom gravity of the progress bar.
+ * @property color List of colors to use for the progress bar.
+ * If more are provided then the progress bar will show them as a gradient.
+ * If `null` is provided the default colors will be used.
+ */
+data class ProgressBarConfig(
+    @IntRange(from = 0, to = 100) val progress: Int,
+    val gravity: ProgressBarGravity,
+    val color: List<Color>? = null,
+)
+
+/**
+ * Where should the progress bar be shown in relation to the browser toolbar.
+ */
+sealed class ProgressBarGravity {
+    /**
+     * Show the progress bar at the top of the browser toolbar.
+     */
+    data object Top : ProgressBarGravity()
+
+    /**
+     * Show the progress bar at the bottom of the browser toolbar.
+     */
+    data object Bottom : ProgressBarGravity()
+}
 
 /**
  * Wrapper containing the toolbar edit state.

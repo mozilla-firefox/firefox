@@ -20,7 +20,7 @@ Description
 
 :ref:`PR_IMPLEMENT` is used to define implementations of externally visible
 routines and globals. For syntax details for each platform, see
-`prtypes.h <https://dxr.mozilla.org/mozilla-central/source/nsprpub/pr/include/prtypes.h>`__.
+`prtypes.h <https://searchfox.org/mozilla-central/source/nsprpub/pr/include/prtypes.h>`__.
 
 .. warning::
 

@@ -8,6 +8,7 @@ import {
   TestCaseRecorder,
   TestParams,
 } from '../common/framework/fixture.js';
+import { registerShutdownTask } from '../common/framework/on_shutdown.js';
 import { globalTestConfig, isCompatibilityDevice } from '../common/framework/test_config.js';
 import { getGPU } from '../common/util/navigator_gpu.js';
 import {
@@ -88,6 +89,13 @@ const devicePool = new DevicePool();
 // MAINTENANCE_TODO: When DevicePool becomes able to provide multiple devices at once, use the
 // usual one instead of a new one.
 const mismatchedDevicePool = new DevicePool();
+
+// On shutdown, try to explicitly destroy() the device pools (and devices) used by GPUTest,
+// so they don't keep using system resources until they're fully garbage collected.
+registerShutdownTask(() => {
+  devicePool.destroy();
+  mismatchedDevicePool.destroy();
+});
 
 const kResourceStateValues = ['valid', 'invalid', 'destroyed'] as const;
 export type ResourceState = (typeof kResourceStateValues)[number];

@@ -98,8 +98,19 @@ struct FrameInfo {
 
 void ScaleForFrameNumber(unsigned int frame, unsigned int initial_w,
                          unsigned int initial_h, int flag_codec,
-                         bool change_start_resln, unsigned int *w,
+                         bool change_start_resln,
+                         bool random_input_one_half_only_, unsigned int *w,
                          unsigned int *h) {
+  if (random_input_one_half_only_) {
+    if (frame < 50) {
+      *w = initial_w;
+      *h = initial_h;
+      return;
+    }
+    *w = initial_w / 2;
+    *h = initial_h / 2;
+    return;
+  }
   if (frame < 10) {
     if (change_start_resln) {
       *w = initial_w / 4;
@@ -181,12 +192,19 @@ void ScaleForFrameNumber(unsigned int frame, unsigned int initial_w,
 
 class ResizingVideoSource : public ::libaom_test::DummyVideoSource {
  public:
-  ResizingVideoSource() {
-    SetSize(kInitialWidth, kInitialHeight);
+  ResizingVideoSource(int width, int height)
+      : change_start_resln_(false), random_input_one_half_only_(false),
+        top_width_(width), top_height_(height) {
+    SetSize(top_width_, top_height_);
     limit_ = 150;
   }
   int flag_codec_;
   bool change_start_resln_;
+  bool random_input_one_half_only_;
+  // top_width_/height_ is the configured resolution when codec is created.
+  int top_width_;
+  int top_height_;
+
   ~ResizingVideoSource() override = default;
 
  protected:
@@ -194,19 +212,35 @@ class ResizingVideoSource : public ::libaom_test::DummyVideoSource {
     frame_ = 0;
     unsigned int width;
     unsigned int height;
-    ScaleForFrameNumber(frame_, kInitialWidth, kInitialHeight, flag_codec_,
-                        change_start_resln_, &width, &height);
+    ScaleForFrameNumber(frame_, top_width_, top_height_, flag_codec_,
+                        change_start_resln_, random_input_one_half_only_,
+                        &width, &height);
     SetSize(width, height);
     FillFrame();
   }
+
   void Next() override {
     ++frame_;
     unsigned int width;
     unsigned int height;
-    ScaleForFrameNumber(frame_, kInitialWidth, kInitialHeight, flag_codec_,
-                        change_start_resln_, &width, &height);
+    ScaleForFrameNumber(frame_, top_width_, top_height_, flag_codec_,
+                        change_start_resln_, random_input_one_half_only_,
+                        &width, &height);
     SetSize(width, height);
     FillFrame();
+  }
+
+  void FillFrame() override {
+    if (img_) {
+      memset(img_->img_data, 0, raw_sz_);
+      if (random_input_one_half_only_) {
+        libaom_test::ACMRandom rnd(libaom_test::ACMRandom::DeterministicSeed());
+        unsigned char *image = img_->planes[0];
+        for (size_t i = 0; i < raw_sz_; ++i) {
+          image[i] = rnd.Rand8();
+        }
+      }
+    }
   }
 };
 
@@ -227,6 +261,18 @@ class ResizeTest
         encoder->Control(AV1E_SET_AQ_MODE, 3);
         encoder->Control(AOME_SET_CPUUSED, 5);
         encoder->Control(AV1E_SET_FRAME_PARALLEL_DECODING, 1);
+      } else if (GET_PARAM(1) == ::libaom_test::kOnePassGood) {
+        encoder->Control(AV1E_SET_AQ_MODE, 3);
+        encoder->Control(AOME_SET_CPUUSED, 4);
+        encoder->Control(AV1E_SET_ENABLE_GLOBAL_MOTION, 0);
+        encoder->Control(AV1E_SET_ENABLE_WARPED_MOTION, 0);
+        encoder->Control(AV1E_SET_ENABLE_RESTORATION, 0);
+        encoder->Control(AV1E_SET_ENABLE_OBMC, 0);
+      }
+      if (cfg_.g_threads > 0) {
+        encoder->Control(AV1E_SET_ROW_MT, 1);
+        encoder->Control(AV1E_SET_TILE_COLUMNS, cfg_.g_threads >> 1);
+        encoder->Control(AV1E_SET_TILE_ROWS, 0);
       }
     }
   }
@@ -240,7 +286,7 @@ class ResizeTest
 };
 
 TEST_P(ResizeTest, TestExternalResizeWorks) {
-  ResizingVideoSource video;
+  ResizingVideoSource video(kInitialWidth, kInitialHeight);
   video.flag_codec_ = 0;
   video.change_start_resln_ = false;
   cfg_.g_lag_in_frames = 0;
@@ -254,16 +300,48 @@ TEST_P(ResizeTest, TestExternalResizeWorks) {
   // Check we decoded the same number of frames as we attempted to encode
   ASSERT_EQ(frame_info_list_.size(), video.limit());
 
-  for (std::vector<FrameInfo>::const_iterator info = frame_info_list_.begin();
-       info != frame_info_list_.end(); ++info) {
-    const unsigned int frame = static_cast<unsigned>(info->pts);
+  for (const auto &info : frame_info_list_) {
+    const unsigned int frame = static_cast<unsigned>(info.pts);
     unsigned int expected_w;
     unsigned int expected_h;
     ScaleForFrameNumber(frame, kInitialWidth, kInitialHeight, video.flag_codec_,
-                        video.change_start_resln_, &expected_w, &expected_h);
-    EXPECT_EQ(expected_w, info->w)
+                        video.change_start_resln_, false, &expected_w,
+                        &expected_h);
+    EXPECT_EQ(expected_w, info.w)
         << "Frame " << frame << " had unexpected width";
-    EXPECT_EQ(expected_h, info->h)
+    EXPECT_EQ(expected_h, info.h)
+        << "Frame " << frame << " had unexpected height";
+  }
+#endif
+}
+
+TEST_P(ResizeTest, TestExternalResizeWorks4Threads) {
+  ResizingVideoSource video(640, 480);
+  video.flag_codec_ = 0;
+  video.random_input_one_half_only_ = true;
+  cfg_.g_lag_in_frames = 0;
+  cfg_.g_forced_max_frame_width = 640;
+  cfg_.g_forced_max_frame_height = 480;
+  cfg_.g_threads = 4;
+  cfg_.kf_max_dist = 40;
+  cfg_.kf_min_dist = 40;
+  cfg_.rc_dropframe_thresh = 0;
+  ASSERT_NO_FATAL_FAILURE(RunLoop(&video));
+
+#if CONFIG_AV1_DECODER
+  // Check we decoded the same number of frames as we attempted to encode
+  ASSERT_EQ(frame_info_list_.size(), video.limit());
+
+  for (const auto &info : frame_info_list_) {
+    const unsigned int frame = static_cast<unsigned>(info.pts);
+    unsigned int expected_w;
+    unsigned int expected_h;
+    ScaleForFrameNumber(frame, 640, 480, video.flag_codec_, false,
+                        video.random_input_one_half_only_, &expected_w,
+                        &expected_h);
+    EXPECT_EQ(expected_w, info.w)
+        << "Frame " << frame << " had unexpected width";
+    EXPECT_EQ(expected_h, info.h)
         << "Frame " << frame << " had unexpected height";
   }
 #endif
@@ -368,18 +446,14 @@ TEST_P(ResizeInternalTestLarge, TestInternalResizeWorks) {
   cfg_.g_lag_in_frames = 0;
   ASSERT_NO_FATAL_FAILURE(RunLoop(&video));
 
-  for (std::vector<FrameInfo>::const_iterator info = frame_info_list_.begin();
-       info != frame_info_list_.end(); ++info) {
-  }
-  for (std::vector<FrameInfo>::const_iterator info = frame_info_list_.begin();
-       info != frame_info_list_.end(); ++info) {
-    const aom_codec_pts_t pts = info->pts;
+  for (const auto &info : frame_info_list_) {
+    const aom_codec_pts_t pts = info.pts;
     if (pts >= kStepDownFrame && pts < kStepUpFrame) {
-      ASSERT_EQ(282U, info->w) << "Frame " << pts << " had unexpected width";
-      ASSERT_EQ(173U, info->h) << "Frame " << pts << " had unexpected height";
+      ASSERT_EQ(282U, info.w) << "Frame " << pts << " had unexpected width";
+      ASSERT_EQ(173U, info.h) << "Frame " << pts << " had unexpected height";
     } else {
-      EXPECT_EQ(352U, info->w) << "Frame " << pts << " had unexpected width";
-      EXPECT_EQ(288U, info->h) << "Frame " << pts << " had unexpected height";
+      EXPECT_EQ(352U, info.w) << "Frame " << pts << " had unexpected width";
+      EXPECT_EQ(288U, info.h) << "Frame " << pts << " had unexpected height";
     }
   }
 }
@@ -418,6 +492,11 @@ class ResizeRealtimeTest
       encoder->Control(AV1E_SET_ENABLE_OBMC, 0);
       encoder->Control(AOME_SET_CPUUSED, set_cpu_used_);
       encoder->Control(AV1E_SET_FRAME_PARALLEL_DECODING, 1);
+      if (cfg_.g_threads > 0) {
+        encoder->Control(AV1E_SET_ROW_MT, 1);
+        encoder->Control(AV1E_SET_TILE_COLUMNS, cfg_.g_threads >> 1);
+        encoder->Control(AV1E_SET_TILE_ROWS, 0);
+      }
       if (is_screen_)
         encoder->Control(AV1E_SET_TUNE_CONTENT, AOM_CONTENT_SCREEN);
     }
@@ -532,9 +611,8 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeSetScaleMode1) {
 #if CONFIG_AV1_DECODER
   // Check we decoded the same number of frames as we attempted to encode
   ASSERT_EQ(frame_info_list_.size(), video.limit());
-  for (std::vector<FrameInfo>::const_iterator info = frame_info_list_.begin();
-       info != frame_info_list_.end(); ++info) {
-    const auto frame = static_cast<unsigned>(info->pts);
+  for (const auto &info : frame_info_list_) {
+    const auto frame = static_cast<unsigned>(info.pts);
     unsigned int expected_w = 1280 >> 1;
     unsigned int expected_h = 720 >> 1;
     if (frame > 40) {
@@ -544,9 +622,9 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeSetScaleMode1) {
       expected_w = 1280 >> 2;
       expected_h = 720 >> 2;
     }
-    EXPECT_EQ(expected_w, info->w)
+    EXPECT_EQ(expected_w, info.w)
         << "Frame " << frame << " had unexpected width";
-    EXPECT_EQ(expected_h, info->h)
+    EXPECT_EQ(expected_h, info.h)
         << "Frame " << frame << " had unexpected height";
     EXPECT_EQ(static_cast<unsigned int>(0), GetMismatchFrames());
   }
@@ -572,9 +650,8 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeSetScaleMode1QVGA) {
 #if CONFIG_AV1_DECODER
   // Check we decoded the same number of frames as we attempted to encode
   ASSERT_EQ(frame_info_list_.size(), video.limit());
-  for (std::vector<FrameInfo>::const_iterator info = frame_info_list_.begin();
-       info != frame_info_list_.end(); ++info) {
-    const auto frame = static_cast<unsigned>(info->pts);
+  for (const auto &info : frame_info_list_) {
+    const auto frame = static_cast<unsigned>(info.pts);
     unsigned int expected_w = 320 >> 1;
     unsigned int expected_h = 180 >> 1;
     if (frame > 40) {
@@ -584,9 +661,9 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeSetScaleMode1QVGA) {
       expected_w = 320 >> 2;
       expected_h = 180 >> 2;
     }
-    EXPECT_EQ(expected_w, info->w)
+    EXPECT_EQ(expected_w, info.w)
         << "Frame " << frame << " had unexpected width";
-    EXPECT_EQ(expected_h, info->h)
+    EXPECT_EQ(expected_h, info.h)
         << "Frame " << frame << " had unexpected height";
     EXPECT_EQ(static_cast<unsigned int>(0), GetMismatchFrames());
   }
@@ -611,9 +688,8 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeSetScaleMode2) {
 #if CONFIG_AV1_DECODER
   // Check we decoded the same number of frames as we attempted to encode
   ASSERT_EQ(frame_info_list_.size(), video.limit());
-  for (std::vector<FrameInfo>::const_iterator info = frame_info_list_.begin();
-       info != frame_info_list_.end(); ++info) {
-    const auto frame = static_cast<unsigned>(info->pts);
+  for (const auto &info : frame_info_list_) {
+    const auto frame = static_cast<unsigned>(info.pts);
     unsigned int expected_w = 1280 >> 2;
     unsigned int expected_h = 720 >> 2;
     if (frame > 40) {
@@ -623,9 +699,9 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeSetScaleMode2) {
       expected_w = 1280 >> 1;
       expected_h = 720 >> 1;
     }
-    EXPECT_EQ(expected_w, info->w)
+    EXPECT_EQ(expected_w, info.w)
         << "Frame " << frame << " had unexpected width";
-    EXPECT_EQ(expected_h, info->h)
+    EXPECT_EQ(expected_h, info.h)
         << "Frame " << frame << " had unexpected height";
     EXPECT_EQ(static_cast<unsigned int>(0), GetMismatchFrames());
   }
@@ -650,18 +726,17 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeSetScaleMode3) {
 #if CONFIG_AV1_DECODER
   // Check we decoded the same number of frames as we attempted to encode
   ASSERT_EQ(frame_info_list_.size(), video.limit());
-  for (std::vector<FrameInfo>::const_iterator info = frame_info_list_.begin();
-       info != frame_info_list_.end(); ++info) {
-    const auto frame = static_cast<unsigned>(info->pts);
+  for (const auto &info : frame_info_list_) {
+    const auto frame = static_cast<unsigned>(info.pts);
     unsigned int expected_w = 640;
     unsigned int expected_h = 720;
     if (frame > 30) {
       expected_w = 1280;
       expected_h = 720;
     }
-    EXPECT_EQ(expected_w, info->w)
+    EXPECT_EQ(expected_w, info.w)
         << "Frame " << frame << " had unexpected width";
-    EXPECT_EQ(expected_h, info->h)
+    EXPECT_EQ(expected_h, info.h)
         << "Frame " << frame << " had unexpected height";
     EXPECT_EQ(static_cast<unsigned int>(0), GetMismatchFrames());
   }
@@ -671,7 +746,7 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeSetScaleMode3) {
 }
 
 TEST_P(ResizeRealtimeTest, TestExternalResizeWorks) {
-  ResizingVideoSource video;
+  ResizingVideoSource video(kInitialWidth, kInitialHeight);
   video.flag_codec_ = 1;
   change_bitrate_ = false;
   set_scale_mode_ = false;
@@ -695,7 +770,7 @@ TEST_P(ResizeRealtimeTest, TestExternalResizeWorks) {
       unsigned int expected_w;
       unsigned int expected_h;
       ScaleForFrameNumber(frame, kInitialWidth, kInitialHeight,
-                          video.flag_codec_, video.change_start_resln_,
+                          video.flag_codec_, video.change_start_resln_, false,
                           &expected_w, &expected_h);
       EXPECT_EQ(expected_w, info.w)
           << "Frame " << frame << " had unexpected width";
@@ -710,8 +785,44 @@ TEST_P(ResizeRealtimeTest, TestExternalResizeWorks) {
   }
 }
 
+// This tests uses 4 threads with small keyframe spacing, random input,
+// and uses 640x480 as initial resolution.
+TEST_P(ResizeRealtimeTest, TestExternalResizeWorks4Threads) {
+  ResizingVideoSource video(640, 480);
+  video.flag_codec_ = true;
+  video.random_input_one_half_only_ = true;
+  change_bitrate_ = false;
+  set_scale_mode_ = false;
+  set_scale_mode2_ = false;
+  set_scale_mode3_ = false;
+  mismatch_psnr_ = 0.0;
+  mismatch_nframes_ = 0;
+  DefaultConfig();
+  cfg_.g_forced_max_frame_width = 640;
+  cfg_.g_forced_max_frame_height = 480;
+  cfg_.g_threads = 4;
+  cfg_.kf_max_dist = 40;
+  cfg_.kf_min_dist = 40;
+  cfg_.rc_dropframe_thresh = 0;
+  ASSERT_NO_FATAL_FAILURE(RunLoop(&video));
+
+  for (const auto &info : frame_info_list_) {
+    const unsigned int frame = static_cast<unsigned>(info.pts);
+    unsigned int expected_w;
+    unsigned int expected_h;
+    ScaleForFrameNumber(frame, 640, 480, video.flag_codec_, false,
+                        video.random_input_one_half_only_, &expected_w,
+                        &expected_h);
+    EXPECT_EQ(expected_w, info.w)
+        << "Frame " << frame << " had unexpected width";
+    EXPECT_EQ(expected_h, info.h)
+        << "Frame " << frame << " had unexpected height";
+    EXPECT_EQ(static_cast<unsigned int>(0), GetMismatchFrames());
+  }
+}
+
 TEST_P(ResizeRealtimeTest, TestExternalResizeWorksUsePSNR) {
-  ResizingVideoSource video;
+  ResizingVideoSource video(kInitialWidth, kInitialHeight);
   video.flag_codec_ = 1;
   change_bitrate_ = false;
   set_scale_mode_ = false;
@@ -737,7 +848,7 @@ TEST_P(ResizeRealtimeTest, TestExternalResizeWorksUsePSNR) {
       unsigned int expected_w;
       unsigned int expected_h;
       ScaleForFrameNumber(frame, kInitialWidth, kInitialHeight,
-                          video.flag_codec_, video.change_start_resln_,
+                          video.flag_codec_, video.change_start_resln_, false,
                           &expected_w, &expected_h);
       EXPECT_EQ(expected_w, info.w)
           << "Frame " << frame << " had unexpected width";
@@ -780,15 +891,14 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeDown) {
   unsigned int last_w = cfg_.g_w;
   unsigned int last_h = cfg_.g_h;
   int resize_down_count = 0;
-  for (std::vector<FrameInfo>::const_iterator info = frame_info_list_.begin();
-       info != frame_info_list_.end(); ++info) {
-    if (info->w != last_w || info->h != last_h) {
+  for (const auto &info : frame_info_list_) {
+    if (info.w != last_w || info.h != last_h) {
       // Verify that resize down occurs.
-      if (info->w < last_w && info->h < last_h) {
+      if (info.w < last_w && info.h < last_h) {
         resize_down_count++;
       }
-      last_w = info->w;
-      last_h = info->h;
+      last_w = info.w;
+      last_h = info.h;
     }
   }
 
@@ -833,22 +943,21 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeDownUpChangeBitRate) {
   unsigned int frame_number = 0;
   int resize_down_count = 0;
   int resize_up_count = 0;
-  for (std::vector<FrameInfo>::const_iterator info = frame_info_list_.begin();
-       info != frame_info_list_.end(); ++info) {
-    if (info->w != last_w || info->h != last_h) {
+  for (const auto &info : frame_info_list_) {
+    if (info.w != last_w || info.h != last_h) {
       if (frame_number < frame_change_bitrate_) {
         // Verify that resize down occurs, before bitrate is increased.
-        ASSERT_LT(info->w, last_w);
-        ASSERT_LT(info->h, last_h);
+        ASSERT_LT(info.w, last_w);
+        ASSERT_LT(info.h, last_h);
         resize_down_count++;
       } else {
         // Verify that resize up occurs, after bitrate is increased.
-        ASSERT_GT(info->w, last_w);
-        ASSERT_GT(info->h, last_h);
+        ASSERT_GT(info.w, last_w);
+        ASSERT_GT(info.h, last_h);
         resize_up_count++;
       }
-      last_w = info->w;
-      last_h = info->h;
+      last_w = info.w;
+      last_h = info.h;
     }
     frame_number++;
   }
@@ -896,17 +1005,16 @@ TEST_P(ResizeRealtimeTest, TestInternalResizeDownUpChangeBitRateScreen) {
   unsigned int last_h = cfg_.g_h;
   unsigned int frame_number = 0;
   int resize_down_count = 0;
-  for (std::vector<FrameInfo>::const_iterator info = frame_info_list_.begin();
-       info != frame_info_list_.end(); ++info) {
-    if (info->w != last_w || info->h != last_h) {
+  for (const auto &info : frame_info_list_) {
+    if (info.w != last_w || info.h != last_h) {
       if (frame_number < frame_change_bitrate_) {
         // Verify that resize down occurs, before bitrate is increased.
-        ASSERT_LT(info->w, last_w);
-        ASSERT_LT(info->h, last_h);
+        ASSERT_LT(info.w, last_w);
+        ASSERT_LT(info.h, last_h);
         resize_down_count++;
       }
-      last_w = info->w;
-      last_h = info->h;
+      last_w = info.w;
+      last_h = info.h;
     }
     frame_number++;
   }
@@ -1063,8 +1171,15 @@ AV1_INSTANTIATE_TEST_SUITE(ResizeModeTestLarge,
                            ::testing::Values(10, 14), ::testing::Values(3, 6));
 #endif  // !CONFIG_REALTIME_ONLY
 
+#if CONFIG_REALTIME_ONLY
 AV1_INSTANTIATE_TEST_SUITE(ResizeTest,
                            ::testing::Values(::libaom_test::kRealTime));
+#else
+AV1_INSTANTIATE_TEST_SUITE(ResizeTest,
+                           ::testing::Values(::libaom_test::kRealTime,
+                                             ::libaom_test::kOnePassGood));
+#endif
+
 AV1_INSTANTIATE_TEST_SUITE(ResizeRealtimeTest,
                            ::testing::Values(::libaom_test::kRealTime),
                            ::testing::Range(6, 10), ::testing::Values(1, 2, 4));

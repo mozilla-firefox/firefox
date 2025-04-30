@@ -30,9 +30,11 @@ bool Initialize() {
   VTuneMutex = js_new<Mutex>(mutexid::VTuneLock);
   if (!VTuneMutex) return false;
 
-  // Load the VTune shared library, if present.
-  int loaded = loadiJIT_Funcs();
-  if (loaded == 1) VTuneLoaded = true;
+  if (getenv("JS_LOAD_VTUNE_LIB")) {
+    // Load the VTune shared library, if present.
+    int loaded = loadiJIT_Funcs();
+    if (loaded == 1) VTuneLoaded = true;
+  }
 
   return true;
 }

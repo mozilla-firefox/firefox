@@ -1,9 +1,7 @@
 //! Arithmetic on `Iterator.size_hint()` values.
 //!
 
-use std::usize;
 use std::cmp;
-use std::u32;
 
 /// `SizeHint` is the return type of `Iterator::size_hint()`.
 pub type SizeHint = (usize, Option<usize>);
@@ -31,7 +29,6 @@ pub fn add_scalar(sh: SizeHint, x: usize) -> SizeHint {
 
 /// Subtract `x` correctly from a `SizeHint`.
 #[inline]
-#[allow(dead_code)]
 pub fn sub_scalar(sh: SizeHint, x: usize) -> SizeHint {
     let (mut low, mut hi) = sh;
     low = low.saturating_sub(x);
@@ -39,22 +36,7 @@ pub fn sub_scalar(sh: SizeHint, x: usize) -> SizeHint {
     (low, hi)
 }
 
-
 /// Multiply `SizeHint` correctly
-///
-/// ```ignore
-/// use std::usize;
-/// use itertools::size_hint;
-///
-/// assert_eq!(size_hint::mul((3, Some(4)), (3, Some(4))),
-///            (9, Some(16)));
-///
-/// assert_eq!(size_hint::mul((3, Some(4)), (usize::MAX, None)),
-///            (usize::MAX, None));
-///
-/// assert_eq!(size_hint::mul((3, None), (0, Some(0))),
-///            (0, Some(0)));
-/// ```
 #[inline]
 pub fn mul(a: SizeHint, b: SizeHint) -> SizeHint {
     let low = a.0.saturating_mul(b.0);
@@ -72,20 +54,6 @@ pub fn mul_scalar(sh: SizeHint, x: usize) -> SizeHint {
     let (mut low, mut hi) = sh;
     low = low.saturating_mul(x);
     hi = hi.and_then(|elt| elt.checked_mul(x));
-    (low, hi)
-}
-
-/// Raise `base` correctly by a `SizeHint` exponent.
-#[inline]
-pub fn pow_scalar_base(base: usize, exp: SizeHint) -> SizeHint {
-    let exp_low = cmp::min(exp.0, u32::MAX as usize) as u32;
-    let low = base.saturating_pow(exp_low);
-
-    let hi = exp.1.and_then(|exp| {
-        let exp_hi = cmp::min(exp, u32::MAX as usize) as u32;
-        base.checked_pow(exp_hi)
-    });
-
     (low, hi)
 }
 
@@ -116,4 +84,11 @@ pub fn min(a: SizeHint, b: SizeHint) -> SizeHint {
         _ => a_upper.or(b_upper),
     };
     (lower, upper)
+}
+
+#[test]
+fn mul_size_hints() {
+    assert_eq!(mul((3, Some(4)), (3, Some(4))), (9, Some(16)));
+    assert_eq!(mul((3, Some(4)), (usize::MAX, None)), (usize::MAX, None));
+    assert_eq!(mul((3, None), (0, Some(0))), (0, Some(0)));
 }

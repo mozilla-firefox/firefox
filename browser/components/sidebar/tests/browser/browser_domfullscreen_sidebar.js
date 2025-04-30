@@ -3,26 +3,18 @@
 const { DOMFullscreenTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/DOMFullscreenTestUtils.sys.mjs"
 );
-let win;
 
 add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
-    set: [["sidebar.verticalTabs", true]],
+    set: [[VERTICAL_TABS_PREF, true]],
   });
   DOMFullscreenTestUtils.init(this, window);
-  win = await BrowserTestUtils.openNewBrowserWindow();
-  await waitForBrowserWindowActive(win);
   await waitForTabstripOrientation("vertical");
-});
-
-registerCleanupFunction(async () => {
-  await BrowserTestUtils.closeWindow(win);
 });
 
 add_task(async function test_dom_fullscreen() {
   // ensure the sidebar becomes hidden in dom fullscreen
   const url = "https://example.com/";
-  const { SidebarController, gBrowser } = win;
   const { sidebarMain } = SidebarController;
   await SidebarController.promiseInitialized;
 
@@ -44,7 +36,7 @@ add_task(async function test_dom_fullscreen() {
     // the newly opened tab should have focus
     await DOMFullscreenTestUtils.changeFullscreen(browser, true);
 
-    is(win.document.fullscreenElement, browser, "Entered DOM fullscreen");
+    is(window.document.fullscreenElement, browser, "Entered DOM fullscreen");
     ok(
       BrowserTestUtils.isHidden(sidebarMain),
       "Sidebar main is hidden in DOMFullscreen"

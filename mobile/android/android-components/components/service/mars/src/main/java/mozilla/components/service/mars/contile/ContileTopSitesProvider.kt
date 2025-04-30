@@ -92,7 +92,7 @@ class ContileTopSitesProvider(
      * Refreshes the cache with the latest top sites response from [endPointURL]
      * if the cache is expired.
      */
-    suspend fun refreshTopSitesIfCacheExpired() {
+    override suspend fun refreshTopSitesIfCacheExpired() {
         if (!isCacheExpired(shouldUseServerMaxAge = false)) return
 
         getTopSites(allowCache = false)

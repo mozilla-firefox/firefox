@@ -6,16 +6,14 @@
 add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
     set: [
-      ["sidebar.verticalTabs", true],
+      [VERTICAL_TABS_PREF, true],
       ["sidebar.expandOnHover", true],
     ],
   });
 });
 registerCleanupFunction(async () => {
   await SpecialPowers.popPrefEnv();
-  while (gBrowser.tabs.length > 1) {
-    BrowserTestUtils.removeTab(gBrowser.tabs.at(-1));
-  }
+  cleanUpExtraTabs();
 });
 
 async function mouseOverSidebarToExpand() {
@@ -247,6 +245,7 @@ add_task(async function test_expand_on_hover_context_menu() {
       );
     }
   );
+  toolbarContextMenu.hidePopup();
   await mouseOutSidebarToCollapse();
   await SidebarController.toggleExpandOnHover(false);
   await SidebarController.waitUntilStable();

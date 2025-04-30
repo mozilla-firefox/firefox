@@ -38,6 +38,9 @@ skip-if = [
   "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && opt && a11y_checks", # Bugs 1849028 and 1858041 to investigate intermittent a11y_checks results
 ]
 
+["browser_computed_inherited-element-backed-pseudo-elements.js"]
+fail-if = ["a11y_checks"] # Bug 1849028 clicked element may not be focusable and/or labeled
+
 ["browser_computed_keybindings_01.js"]
 fail-if = ["a11y_checks"] # Bug 1849028 clicked element may not be focusable and/or labeled
 

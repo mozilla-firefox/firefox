@@ -1,0 +1,102 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Adding a new metric? We have docs for that!
+# https://firefox-source-docs.mozilla.org/toolkit/components/glean/user/new_definitions_file.html
+
+---
+$schema: moz://mozilla.org/schemas/glean/metrics/2-0-0
+$tags:
+  - 'Toolkit :: Telemetry'
+
+glean.attribution:
+  ext:
+    type: object
+    lifetime: user
+    # Permit long description lines
+    # yamllint disable
+    description: |
+      Extended attribution information.
+      Mapped to client_info.attribution.ext in datasets.
+      * `experiment`: name/id of the enrolled funnel experiment
+      * `variation`: name/id of the variation cohort used in the enrolled funnel experiment
+      * `ua`: identifier derived from the user agent downloading the installer
+              e.g. chrome, Google Chrome 123
+      * `dltoken`: Unique token created at Firefox download time.
+                   e.g. c18f86a3-f228-4d98-91bb-f90135c0aa9c
+      * `msstoresignedin`: only present if the installation was done through the Microsoft Store,
+                           and was able to retrieve the "campaign ID" it was first installed with.
+                           This value is "true" if the user was signed into the Microsoft Store
+                           when they first installed, and false otherwise.
+      * `dlsource`: identifier that indicate where installations of Firefox originate
+    # yamllint enable
+    bugs:
+      - https://bugzilla.mozilla.org/1955429
+    data_reviews:
+      - https://bugzilla.mozilla.org/1955429
+    notification_emails:
+      - chutten@mozilla.com
+    send_in_pings:
+      - metrics
+      - baseline
+      - events
+    expires: never
+    no_lint:
+      - BASELINE_PING
+    structure:
+      type: object
+      properties:
+        experiment:
+          type: string
+        variation:
+          type: string
+        ua:
+          type: string
+        dltoken:
+          type: string
+        msstoresignedin:
+          type: boolean
+        dlsource:
+          type: string
+
+glean.distribution:
+  ext:
+    type: object
+    lifetime: user
+    description: |
+      Extended distribution information.
+      Mapped to client_info.distribution.ext in datasets.
+      * `distributionVersion`: pref `distribution.version`, `null` on failure
+      * `partnerId`: pref `mozilla.partner.id`, `null` on failure
+      * `distributor`:  pref `app.distributor`, `null` on failure
+      * `distributorChannel`: pref `app.distributor.channel`, `null` on failure
+      * `partnerNames`: list from prefs `app.partner.<name>=<name>`
+    bugs:
+      - https://bugzilla.mozilla.org/1955429
+    data_reviews:
+      - https://bugzilla.mozilla.org/1955429
+    notification_emails:
+      - chutten@mozilla.com
+    send_in_pings:
+      - metrics
+      - baseline
+      - events
+    expires: never
+    no_lint:
+      - BASELINE_PING
+    structure:
+      type: object
+      properties:
+        distributionVersion:
+          type: string
+        partnerId:
+          type: string
+        distributor:
+          type: string
+        distributorChannel:
+          type: string
+        partnerNames:
+          type: array
+          items:
+            type: string

@@ -19,7 +19,7 @@ use crate::vtab::array::{free_array, ARRAY_TYPE};
 #[inline]
 pub(super) unsafe fn set_result(
     ctx: *mut sqlite3_context,
-    args: &[*mut sqlite3_value],
+    #[allow(unused_variables)] args: &[*mut sqlite3_value],
     result: &ToSqlOutput<'_>,
 ) {
     let value = match *result {
@@ -55,10 +55,9 @@ pub(super) unsafe fn set_result(
             if length > c_int::MAX as usize {
                 ffi::sqlite3_result_error_toobig(ctx);
             } else {
-                let (c_str, len, destructor) = match str_for_sqlite(s) {
-                    Ok(c_str) => c_str,
+                let Ok((c_str, len, destructor)) = str_for_sqlite(s) else {
                     // TODO sqlite3_result_error
-                    Err(_) => return ffi::sqlite3_result_error_code(ctx, ffi::SQLITE_MISUSE),
+                    return ffi::sqlite3_result_error_code(ctx, ffi::SQLITE_MISUSE);
                 };
                 // TODO sqlite3_result_text64 // 3.8.7
                 ffi::sqlite3_result_text(ctx, c_str, len, destructor);

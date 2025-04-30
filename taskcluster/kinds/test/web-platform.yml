@@ -76,7 +76,6 @@ web-platform-tests:
     variants:
         - no-fission
         - geckoview-no-fission-ship
-        - async-event-dispatching
         - privatebrowsing
         - inc-origin-init
         - privatebrowsing-inc-origin-init
@@ -94,10 +93,6 @@ web-platform-tests:
                     linux1804-64(-qr)?/debug: ['mozilla-central']
                     linux1804-64(-shippable)?(-qr)?/opt: ['mozilla-central']
                     linux1804-64-asan(-qr)?/opt: ['mozilla-central']
-                    default: []
-            async-event-dispatching:
-                by-test-platform:
-                    .*/debug: []
                     default: []
             privatebrowsing:
                 by-test-platform:
@@ -548,7 +543,6 @@ web-platform-tests-wdspec:
         - no-fission
         - geckoview-no-fission-ship
         - headless
-        - async-event-dispatching
     run-on-projects:
         by-variant:
             headless:
@@ -566,11 +560,6 @@ web-platform-tests-wdspec:
                 by-test-platform:
                     android-em-7.0-x86_64(-qr)?/debug-isolated-process: []
                     android-em.*: built-projects
-                    default: []
-            async-event-dispatching:
-                by-test-platform:
-                    .*-32.*: []
-                    .*/debug: []
                     default: []
             default: built-projects
     tier:

@@ -150,6 +150,10 @@ const FEATURES = {
   "smart-tab-topic": {
     engineId: "smart-tab-topic-engine",
   },
+  // see toolkit/components/ml/content/nlp/EmbeddingsGenerator.sys.mjs
+  "simple-text-embedder": {
+    engineId: "simple-text-embedder-engine",
+  },
 };
 
 /**

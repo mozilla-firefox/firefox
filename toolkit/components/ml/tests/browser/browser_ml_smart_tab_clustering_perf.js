@@ -87,8 +87,9 @@ async function generateEmbeddings(textList) {
 
 const singleTabMetrics = {};
 singleTabMetrics["SINGLE-TAB-LATENCY"] = [];
+singleTabMetrics["SINGLE-TAB-LOGISTIC-REGRESSION-LATENCY"] = [];
 
-add_task(async function test_clustering() {
+add_task(async function test_clustering_nearest_neighbors() {
   const modelHubRootUrl = Services.env.get("MOZ_MODELS_HUB");
   const { cleanup } = await perfSetup({
     prefs: [["browser.ml.modelHubRootUrl", modelHubRootUrl]],
@@ -121,7 +122,63 @@ add_task(async function test_clustering() {
   const titles = similarTabs.map(s => s.label);
   Assert.equal(
     titles.length,
-    4,
+    5,
+    "Proper number of similar tabs should be returned"
+  );
+  Assert.equal(
+    titles[0],
+    "Tourist Behavior and Decision Making: A Research Overview"
+  );
+  Assert.equal(
+    titles[1],
+    "Impact of Tourism on Local Communities - Google Scholar"
+  );
+  Assert.equal(titles[2], "Cheap Flights, Airline Tickets & Airfare Deals");
+  Assert.equal(titles[3], "Hotel Deals: Save Big on Hotels with Expedia");
+  Assert.equal(
+    titles[4],
+    "The Influence of Travel Restrictions on the Spread of COVID-19 - Nature"
+  );
+  generateEmbeddingsStub.restore();
+  await EngineProcess.destroyMLEngine();
+  await cleanup();
+});
+
+add_task(async function test_clustering_logistic_regression() {
+  const modelHubRootUrl = Services.env.get("MOZ_MODELS_HUB");
+  const { cleanup } = await perfSetup({
+    prefs: [["browser.ml.modelHubRootUrl", modelHubRootUrl]],
+  });
+
+  const stgManager = new SmartTabGroupingManager();
+
+  let generateEmbeddingsStub = sinon.stub(
+    SmartTabGroupingManager.prototype,
+    "_generateEmbeddings"
+  );
+  generateEmbeddingsStub.callsFake(async textList => {
+    return await generateEmbeddings(textList);
+  });
+
+  const labelsPath = `gen_set_2_labels.tsv`;
+  const rawLabels = await fetchFile(ROOT_URL, labelsPath);
+  let labels = parseTsvStructured(rawLabels);
+  labels = labels.map(l => ({ ...l, label: l.smart_group_label }));
+  const startTime = performance.now();
+  const similarTabs = await stgManager.findSimilarTabsLogisticRegression({
+    allTabs: labels,
+    groupedIndices: [1],
+    alreadyGroupedIndices: [],
+    groupLabel: "Travel Planning",
+  });
+  const endTime = performance.now();
+  singleTabMetrics["SINGLE-TAB-LOGISTIC-REGRESSION-LATENCY"].push(
+    endTime - startTime
+  );
+  const titles = similarTabs.map(s => s.label);
+  Assert.equal(
+    titles.length,
+    5,
     "Proper number of similar tabs should be returned"
   );
   Assert.equal(
@@ -137,6 +194,7 @@ add_task(async function test_clustering() {
     titles[3],
     "The Influence of Travel Restrictions on the Spread of COVID-19 - Nature"
   );
+  Assert.equal(titles[4], "Hotel Deals: Save Big on Hotels with Expedia");
   reportMetrics(singleTabMetrics);
   generateEmbeddingsStub.restore();
   await EngineProcess.destroyMLEngine();
@@ -144,7 +202,11 @@ add_task(async function test_clustering() {
 });
 
 const N_TABS = [25];
-const methods = ["KMEANS_ANCHOR", "NEAREST_NEIGHBORS_ANCHOR"];
+const methods = [
+  "KMEANS_ANCHOR",
+  "NEAREST_NEIGHBORS_ANCHOR",
+  "LOGISTIC_REGRESSION_ANCHOR",
+];
 const nTabMetrics = {};
 
 for (let method of methods) {
@@ -195,6 +257,14 @@ add_task(async function test_n_clustering() {
             allTabs: samples.labels,
             groupedIndices: [0],
             alreadyGroupedIndices: [],
+            groupLabel: "Random Group Name",
+          });
+        } else if (method === "LOGISTIC_REGRESSION_ANCHOR") {
+          await stgManager.findSimilarTabsLogisticRegression({
+            allTabs: samples.labels,
+            groupedIndices: [0],
+            alreadyGroupedIndices: [],
+            groupLabel: "Random Group Name",
           });
         }
         let endTime = performance.now();

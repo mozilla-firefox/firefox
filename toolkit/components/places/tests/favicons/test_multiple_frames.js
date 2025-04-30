@@ -38,9 +38,9 @@ add_task(async function () {
     let data = readFileData(file);
 
     info("Check getFaviconDataForPage");
-    let icon = await getFaviconDataForPage(pageURI, size);
+    let icon = await PlacesTestUtils.getFaviconForPage(pageURI, size);
     Assert.equal(icon.mimeType, "image/png");
-    Assert.deepEqual(icon.data, data);
+    Assert.deepEqual(icon.rawData, data);
 
     info("Check cached-favicon protocol");
     await compareFavicons(

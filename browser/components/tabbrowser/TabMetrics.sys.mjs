@@ -11,6 +11,7 @@ const METRIC_SOURCE = Object.freeze({
   TAB_OVERFLOW_MENU: "tab_overflow",
   TAB_GROUP_MENU: "tab_group",
   TAB_MENU: "tab_menu",
+  TAB_STRIP: "tab_strip",
   DRAG_AND_DROP: "drag",
   SUGGEST: "suggest",
   RECENT_TABS: "recent",

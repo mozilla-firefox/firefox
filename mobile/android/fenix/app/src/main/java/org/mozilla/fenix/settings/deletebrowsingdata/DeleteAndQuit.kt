@@ -29,7 +29,6 @@ fun deleteAndQuit(activity: Activity, coroutineScope: CoroutineScope) {
             activity.components.core.historyStorage,
             activity.components.core.permissionStorage,
             activity.components.core.store,
-            activity.components.core.icons,
             activity.components.core.engine,
             coroutineContext,
         )

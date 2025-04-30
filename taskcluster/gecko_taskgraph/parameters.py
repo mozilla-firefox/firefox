@@ -89,6 +89,7 @@ gecko_parameters_schema = {
         Optional("routes"): [str],
     },
     Required("version"): str,
+    Optional("head_git_rev"): str,
 }
 
 

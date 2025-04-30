@@ -75,7 +75,9 @@ export class UserCharacteristicsCanvasRenderingChild extends JSWindowActorChild 
         };
       }
 
-      return sha1(canvas.toDataURL("image/png", 1)).catch(stringifyError);
+      return sha1Uint8Array(
+        ctx.getImageData(0, 0, canvas.width, canvas.height).data
+      ).catch(stringifyError);
     };
 
     const errors = [];
@@ -131,6 +133,18 @@ export class UserCharacteristicsCanvasRenderingChild extends JSWindowActorChild 
 
   async getDebugInfo() {
     const canvas = this.document.createElement("canvas");
+
+    if (canvas == null) {
+      throw new Error("Canvas is ${canvas}");
+    }
+
+    if (typeof canvas.getContext !== "function") {
+      // Huh? How? Why?
+      throw new Error(
+        `Canvas is ${canvas} and doesn't have getContext. TagName: ${canvas.tagName}`
+      );
+    }
+
     const ctx = canvas.getContext("2d");
 
     if (!ctx) {
@@ -360,9 +374,8 @@ ChromeUtils.defineLazyGetter(lazy, "recipes", () => {
   };
 });
 
-async function sha1(message) {
-  const msgUint8 = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest("SHA-1", msgUint8);
+async function sha1Uint8Array(bytes) {
+  const hashBuffer = await crypto.subtle.digest("SHA-1", bytes);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
   return hashHex;

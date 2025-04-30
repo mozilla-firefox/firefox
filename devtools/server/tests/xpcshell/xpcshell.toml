@@ -2,7 +2,7 @@
 tags = "devtools"
 head = "head_dbg.js"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 # While not every devtools test uses evalInSandbox over 80 do, so it's easier to
 # set allow_parent_unrestricted_js_loads for all the tests here.
 # Similar story for the eval restrictions
@@ -39,6 +39,9 @@ support-files = [
   "setBreakpoint-on-line-with-multiple-statements.js",
   "setBreakpoint-on-line-with-no-offsets.js",
   "setBreakpoint-on-line-with-no-offsets-in-gcd-script.js",
+  "addons/invalid-extension-manifest/manifest.json",
+  "addons/invalid-extension-manifest-badjson/manifest.json",
+  "addons/invalid-extension-missing-locales/manifest.json",
   "addons/web-extension/manifest.json",
   "addons/web-extension-upgrade/manifest.json",
   "addons/web-extension2/manifest.json",
@@ -81,21 +84,21 @@ support-files = [
 ["test_breakpoint-01.js"]
 
 ["test_breakpoint-03.js"]
-skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
+run-if = ["false"] # breakpoint sliding is not supported bug 1525685
 
 ["test_breakpoint-04.js"]
 
 ["test_breakpoint-05.js"]
-skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
+run-if = ["false"] # breakpoint sliding is not supported bug 1525685
 
 ["test_breakpoint-06.js"]
-skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
+run-if = ["false"] # breakpoint sliding is not supported bug 1525685
 
 ["test_breakpoint-07.js"]
-skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
+run-if = ["false"] # breakpoint sliding is not supported bug 1525685
 
 ["test_breakpoint-08.js"]
-skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
+run-if = ["false"] # breakpoint sliding is not supported bug 1525685
 
 ["test_breakpoint-09.js"]
 
@@ -104,7 +107,7 @@ skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
 ["test_breakpoint-11.js"]
 
 ["test_breakpoint-12.js"]
-skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
+run-if = ["false"] # breakpoint sliding is not supported bug 1525685
 
 ["test_breakpoint-13.js"]
 
@@ -113,19 +116,18 @@ skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
 ["test_breakpoint-16.js"]
 
 ["test_breakpoint-17.js"]
-skip-if = ["true"] # tests for breakpoint actors are obsolete bug 1524374
+run-if = ["false"] # tests for breakpoint actors are obsolete bug 1524374
 
 ["test_breakpoint-18.js"]
 
 ["test_breakpoint-19.js"]
-skip-if = ["true"] # bug 1104838
 
 ["test_breakpoint-20.js"]
 
 ["test_breakpoint-21.js"]
 
 ["test_breakpoint-22.js"]
-skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
+run-if = ["false"] # breakpoint sliding is not supported bug 1525685
 
 ["test_breakpoint-23.js"]
 
@@ -136,7 +138,7 @@ skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
 ["test_breakpoint-26.js"]
 
 ["test_breakpoint-actor-map.js"]
-skip-if = ["true"] # tests for breakpoint actors are obsolete bug 1524374
+run-if = ["false"] # tests for breakpoint actors are obsolete bug 1524374
 
 ["test_client_request.js"]
 
@@ -162,9 +164,9 @@ skip-if = ["true"] # tests for breakpoint actors are obsolete bug 1524374
 
 ["test_extension_storage_actor.js"]
 skip-if = [
-  "tsan", # Unreasonably slow, bug 1612707
-  "os == 'mac' && os_version == '10.15' && processor == 'x86_64'", # Bug 1813406
   "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1813406
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && tsan", # Bug 1612707
+  "os == 'mac' && os_version == '10.15' && processor == 'x86_64'", # Bug 1813406
 ]
 
 ["test_extension_storage_actor_upgrade.js"]
@@ -340,10 +342,10 @@ skip-if = [
 ["test_setBreakpoint-on-line-with-multiple-statements.js"]
 
 ["test_setBreakpoint-on-line-with-no-offsets-in-gcd-script.js"]
-skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
+run-if = ["false"] # breakpoint sliding is not supported bug 1525685
 
 ["test_setBreakpoint-on-line-with-no-offsets.js"]
-skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
+run-if = ["false"] # breakpoint sliding is not supported bug 1525685
 
 ["test_setBreakpoint-on-line.js"]
 
@@ -420,7 +422,6 @@ skip-if = ["true"] # breakpoint sliding is not supported bug 1525685
 ["test_watchpoint-03.js"]
 
 ["test_watchpoint-04.js"]
-skip-if = ["os == 'mac' && os_version == '11.20' && arch == 'aarch64'"] # Disabled due to bleedover with other tests when run in regular suites; passes in "failures" jobs
 
 ["test_watchpoint-05.js"]
 

@@ -418,12 +418,8 @@ nsDOMWindowUtils::GetDocumentMetadata(const nsAString& aName,
 
 NS_IMETHODIMP
 nsDOMWindowUtils::UpdateLayerTree() {
+  FlushLayoutWithoutThrottledAnimations();
   if (RefPtr<PresShell> presShell = GetPresShell()) {
-    // Don't flush throttled animations since it might fire MozAfterPaint event
-    // (in WebRender it constantly does), thus the reftest harness can't take
-    // any snapshot until the throttled animations finished.
-    presShell->FlushPendingNotifications(
-        ChangesToFlush(FlushType::Layout, false /* flush animations */));
     RefPtr<nsViewManager> vm = presShell->GetViewManager();
     if (nsView* view = vm->GetRootView()) {
       nsAutoScriptBlocker scriptBlocker;
@@ -2172,12 +2168,11 @@ nsDOMWindowUtils::NeedsFlush(int32_t aFlushType, bool* aResult) {
 
 NS_IMETHODIMP
 nsDOMWindowUtils::FlushLayoutWithoutThrottledAnimations() {
-  nsCOMPtr<Document> doc = GetDocument();
-  if (doc) {
+  if (nsCOMPtr<Document> doc = GetDocument()) {
     doc->FlushPendingNotifications(
-        ChangesToFlush(FlushType::Layout, false /* flush animations */));
+        ChangesToFlush(FlushType::Layout, /* aFlushAnimations = */ false,
+                       /* aUpdateRelevancy = */ true));
   }
-
   return NS_OK;
 }
 

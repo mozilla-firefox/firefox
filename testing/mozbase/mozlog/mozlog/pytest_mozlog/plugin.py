@@ -87,7 +87,7 @@ class MozLog:
             status = "SKIP" if not hasattr(report, "wasxfail") else "FAIL"
         if report.longrepr is not None:
             longrepr = report.longrepr
-            if isinstance(longrepr, (str,)):
+            if isinstance(longrepr, str):
                 # When using pytest-xdist, longrepr is serialised as a str
                 message = stack = longrepr
                 if longrepr.startswith("[XPASS(strict)]"):

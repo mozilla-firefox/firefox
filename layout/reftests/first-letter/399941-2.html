@@ -2,7 +2,8 @@
 <html>
  <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
-  <title>Reference: Test case for bug 399941, revised in bug 1260366 due to spec changes</title>
+  <title>Test case for bug 399941, revised in bug 1260366 and again in
+         bug 1957384 due to spec changes</title>
   <style type="text/css">
    p:first-letter {
      color: lime;
@@ -13,7 +14,7 @@
  <body>
  <!-- Punctuation in class Pc should be included: there is a first-letter here -->
   <p>_I_, said the Fly,</p>
- <!-- Punctuation in class Pd should be included: there is a first-letter here -->
+ <!-- Punctuation in class Pd should be included before the letter, but not after it -->
   <p>-I-, said the Fly,</p>
  </body>
 </html>

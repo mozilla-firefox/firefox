@@ -143,7 +143,7 @@ skip-if = ["artifact"] # See bug 1945662.
 ["test_UserInteraction.js"]
 
 ["test_UserInteraction_annotations.js"]
-# BHR is disabled on tsan, asan, android and outside of Nightly.
+# BHR is disabled on tsan, asan and outside of Nightly.
 run-sequentially = "very high failure rate in parallel"
 skip-if = [
   "debug",

@@ -672,7 +672,7 @@ hb_face_make_immutable (hb_face_t *face)
  * Since: 0.9.2
  **/
 hb_bool_t
-hb_face_is_immutable (const hb_face_t *face)
+hb_face_is_immutable (hb_face_t *face)
 {
   return hb_object_is_immutable (face);
 }

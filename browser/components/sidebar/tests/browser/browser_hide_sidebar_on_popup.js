@@ -9,7 +9,7 @@ const TOP_PAGE = DOMAIN + PATH + "empty_file.html";
 
 async function test_sidebar_hidden_on_popup() {
   await SpecialPowers.pushPrefEnv({
-    set: [["sidebar.verticalTabs", true]],
+    set: [[VERTICAL_TABS_PREF, true]],
   });
   await waitForTabstripOrientation("vertical");
   const win = await BrowserTestUtils.openNewBrowserWindow();

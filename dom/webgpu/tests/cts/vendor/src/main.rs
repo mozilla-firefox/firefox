@@ -1,22 +1,26 @@
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, BTreeSet},
     env::set_current_dir,
     path::PathBuf,
-    process::ExitCode,
+    process::{ExitCode, Stdio},
 };
 
 use clap::Parser;
+use ezcmd::EasyCommand;
 use itertools::Itertools;
+use joinery::JoinableIterator;
 use miette::{ensure, miette, Context, Diagnostic, IntoDiagnostic, Report, SourceSpan};
 use regex::Regex;
 
 use crate::{
     fs::{create_dir_all, remove_file, FileRoot},
-    process::{which, EasyCommand},
+    process::which,
 };
 
 mod fs;
 mod process;
+mod test_split;
 
 /// Vendor WebGPU CTS tests from a local Git checkout of [our `gpuweb/cts` fork].
 ///
@@ -55,22 +59,24 @@ fn run(args: CliArgs) -> miette::Result<()> {
 
     let npm_bin = which("npm", "NPM binary")?;
 
+    let node_bin = which("node", "Node.js binary")?;
+
     set_current_dir(&*cts_ckt)
         .into_diagnostic()
         .wrap_err("failed to change working directory to CTS checkout")?;
     log::debug!("changed CWD to {cts_ckt}");
 
-    let mut npm_ci_cmd = EasyCommand::new(&npm_bin, |cmd| cmd.arg("ci"));
+    let mut npm_ci_cmd = EasyCommand::simple(&npm_bin, ["ci"]);
     log::info!(
         "ensuring a clean {} directory with {npm_ci_cmd}…",
         cts_ckt.child("node_modules"),
     );
-    npm_ci_cmd.spawn()?;
+    npm_ci_cmd.run().into_diagnostic()?;
 
     let out_wpt_dir = cts_ckt.regen_dir("out-wpt", |out_wpt_dir| {
-        let mut npm_run_wpt_cmd = EasyCommand::new(&npm_bin, |cmd| cmd.args(["run", "wpt"]));
+        let mut npm_run_wpt_cmd = EasyCommand::simple(&npm_bin, ["run", "wpt"]);
         log::info!("generating WPT test cases into {out_wpt_dir} with {npm_run_wpt_cmd}…");
-        npm_run_wpt_cmd.spawn()
+        npm_run_wpt_cmd.run().into_diagnostic()
     })?;
 
     let cts_https_html_path = out_wpt_dir.child("cts-withsomeworkers.https.html");
@@ -161,11 +167,13 @@ fn run(args: CliArgs) -> miette::Result<()> {
                     "<script type=module src=/webgpu/common/runtime/wpt.js></script>";
                 ensure!(
                     boilerplate.contains(expected_wpt_script_tag),
-                    concat!(
-                        "failed to find expected `script` tag for `wpt.js` ",
-                        "({:?}); did something change upstream?",
+                    format!(
+                        concat!(
+                            "failed to find expected `script` tag for `wpt.js` ",
+                            "({:?}); did something change upstream?"
+                        ),
+                        expected_wpt_script_tag
                     ),
-                    expected_wpt_script_tag
                 );
                 let mut boilerplate = boilerplate.replacen(
                     expected_wpt_script_tag,
@@ -205,7 +213,7 @@ fn run(args: CliArgs) -> miette::Result<()> {
                 "<meta name=variant content='",
                 r"\?",
                 r"(:?worker=(?P<worker_type>\w+)&)?",
-                r"q=(?P<test_path>[^']*?):\*",
+                r"q=(?P<test_path>[^']*?:\*)",
                 "'>",
                 "$"
             ))
@@ -256,57 +264,143 @@ fn run(args: CliArgs) -> miette::Result<()> {
         log::info!("  …found {} test cases", cts_cases.len());
     }
 
+    let test_listing_buf;
+    let mut tests_to_split = {
+        log::info!("generating index of tests to split…");
+
+        let test_split_config = {
+            use test_split::*;
+            [(
+                "webgpu:api,operation,command_buffer,image_copy:mip_levels",
+                Config {
+                    new_sibling_basename: "image_copy__mip_levels",
+                    split_by: SplitBy::first_param(
+                        "initMethod",
+                        SplitParamsTo::SeparateTestsInSameFile,
+                    ),
+                },
+            )]
+        };
+
+        let mut tests_to_split = test_split_config
+            .into_iter()
+            .map(|(test_path, config)| (test_path, test_split::Entry::from_config(config)))
+            .collect::<BTreeMap<_, _>>();
+
+        let mut cmd = EasyCommand::new_with(&node_bin, |cmd| {
+            cmd.args(["tools/run_node", "--list", "webgpu:*"])
+                .stderr(Stdio::inherit())
+        });
+        log::info!("  requesting exhaustive list of tests using {cmd}…");
+        test_listing_buf = {
+            let stdout = cmd.output().into_diagnostic()?.stdout;
+            String::from_utf8(stdout)
+                .into_diagnostic()
+                .context("failed to read output of exhaustive test listing command")?
+        };
+
+        log::info!("  building index from list of tests…");
+        for full_path in test_listing_buf.lines() {
+            let (subtest_path, params) = split_at_nth_colon(2, full_path)
+                .wrap_err_with(|| "failed to parse configured split entry")?;
+            if let Some(entry) = tests_to_split.get_mut(subtest_path) {
+                entry.process_listing_line(params)?;
+            }
+        }
+        test_split::assert_seen(tests_to_split.iter(), |seen| &seen.listing);
+
+        tests_to_split
+    };
+
     cts_ckt.regen_dir(out_wpt_dir.join("cts"), |cts_tests_dir| {
         log::info!("re-distributing tests into single file per test path…");
         let mut failed_writing = false;
         let mut cts_cases_by_spec_file_dir = BTreeMap::<_, BTreeMap<_, BTreeSet<_>>>::new();
         for (path, worker_type, meta) in cts_cases {
-            let case_dir = {
-                // Context: We want to mirror CTS upstream's `src/webgpu/**/*.spec.ts` paths as
-                // entire WPT tests, with each subtest being a WPT variant. Here's a diagram of
-                // a CTS path to explain why the logic below is correct:
-                //
-                // ```sh
-                // webgpu:this,is,the,spec.ts,file,path:subtest_in_file:…
-                // \____/ \___________________________/^\_____________/
-                //  test      `*.spec.ts` file path    |       |
-                // \__________________________________/|       |
-                //                   |                 |       |
-                //              We want this…          | …but not this. CTS upstream generates
-                //                                     | this too, but we don't want to divide
-                //         second ':' character here---/ here (yet).
-                // ```
-                let subtest_and_later_start_idx =
-                    match path.match_indices(':').nth(1).map(|(idx, _s)| idx) {
-                        Some(some) => some,
-                        None => {
-                            failed_writing = true;
-                            log::error!(
-                                concat!(
-                                    "failed to split suite and test path segments ",
-                                    "from CTS path `{}`"
-                                ),
-                                path
-                            );
-                            continue;
-                        }
-                    };
-                let slashed = path[..subtest_and_later_start_idx].replace([':', ','], "/");
-                cts_tests_dir.child(slashed)
-            };
-            if !cts_cases_by_spec_file_dir
-                .entry(case_dir)
-                .or_default()
-                .entry(worker_type)
-                .or_default()
-                .insert(meta)
-            {
-                log::warn!("duplicate entry {meta:?} detected")
+            macro_rules! insert {
+                ($path:expr, $meta:expr $(,)?) => {{
+                    let dir = cts_tests_dir.child($path);
+                    if !cts_cases_by_spec_file_dir
+                        .entry(dir)
+                        .or_default()
+                        .entry(worker_type)
+                        .or_default()
+                        .insert($meta)
+                    {
+                        log::warn!("duplicate entry {meta:?} detected")
+                    }
+                }};
             }
+
+            // Context: We want to mirror CTS upstream's `src/webgpu/**/*.spec.ts` paths as
+            // entire WPT tests, with each subtest being a WPT variant. Here's a diagram of
+            // a CTS path to explain why the logic below is correct:
+            //
+            // ```sh
+            // webgpu:this,is,the,spec.ts,file,path:test_in_file:…
+            // \____/ \___________________________/^\__________/
+            //  test      `*.spec.ts` file path    |       |
+            // \__________________________________/|       |
+            //                   |                 |       |
+            //              We want this…          | …but not this. CTS upstream generates
+            //                                     | this too, but we don't want to divide
+            //         second ':' character here---/ here (yet).
+            // ```
+            let (test_path, _cases) = match split_at_nth_colon(2, &path) {
+                Ok(ok) => ok,
+                Err(e) => {
+                    failed_writing = true;
+                    log::error!("{e}");
+                    continue;
+                }
+            };
+            let (test_group_path, _test_name) = test_path.rsplit_once(':').unwrap();
+            let test_group_path_components = test_group_path.split([':', ',']);
+
+            if let Some(entry) = tests_to_split.get_mut(test_path) {
+                let test_split::Entry { seen, ref config } = entry;
+                let test_split::Config {
+                    new_sibling_basename,
+                    split_by,
+                } = config;
+
+                let file_path = test_group_path_components
+                    .chain([*new_sibling_basename])
+                    .join_with("/")
+                    .to_string();
+
+                seen.wpt_files = true;
+
+                match split_by {
+                    test_split::SplitBy::FirstParam {
+                        expected_name,
+                        split_to,
+                        observed_values,
+                    } => match split_to {
+                        test_split::SplitParamsTo::SeparateTestsInSameFile => {
+                            for value in observed_values {
+                                let new_meta = meta.replace(
+                                    &*path,
+                                    &format!("{test_path}:{expected_name}={value};*"),
+                                );
+                                assert_ne!(meta, new_meta);
+                                insert!(&file_path, new_meta.into());
+                            }
+                        }
+                    },
+                }
+            } else {
+                insert!(
+                    &test_group_path_components.join_with("/").to_string(),
+                    meta.into()
+                )
+            };
         }
 
+        test_split::assert_seen(tests_to_split.iter(), |seen| &seen.wpt_files);
+
         struct WptEntry<'a> {
-            cases: BTreeSet<&'a str>,
+            cases: BTreeSet<Cow<'a, str>>,
             timeout_length: TimeoutLength,
         }
         #[derive(Clone, Copy, Debug)]
@@ -319,7 +413,7 @@ fn run(args: CliArgs) -> miette::Result<()> {
             fn insert_with_default_name<'a>(
                 split_cases: &mut BTreeMap<fs::Child<'a>, WptEntry<'a>>,
                 spec_file_dir: fs::Child<'a>,
-                cases: BTreeMap<Option<WorkerType>, BTreeSet<&'a str>>,
+                cases: BTreeMap<Option<WorkerType>, BTreeSet<Cow<'a, str>>>,
                 timeout_length: TimeoutLength,
             ) {
                 for (worker_type, cases) in cases {
@@ -454,4 +548,13 @@ fn run(args: CliArgs) -> miette::Result<()> {
     log::info!("All done! Now get your CTS _ON_! :)");
 
     Ok(())
+}
+
+fn split_at_nth_colon(nth: usize, path: &str) -> miette::Result<(&str, &str)> {
+    path.match_indices(':')
+        .nth(nth)
+        .map(|(idx, s)| (&path[..idx], &path[idx + s.len()..]))
+        .ok_or_else(move || {
+            miette::diagnostic!("failed to split at colon {nth} from CTS path `{path}`").into()
+        })
 }

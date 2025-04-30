@@ -1,8 +1,6 @@
 """
 Thin wrappers around `itertools`.
 """
-from __future__ import absolute_import
-
 import itertools
 
 from ..auto import tqdm as tqdm_auto
@@ -31,6 +29,7 @@ def product(*iterables, **tqdm_kwargs):
             total *= i
         kwargs.setdefault("total", total)
     with tqdm_class(**kwargs) as t:
-        for i in itertools.product(*iterables):
+        it = itertools.product(*iterables)
+        for i in it:
             yield i
             t.update()

@@ -784,17 +784,6 @@ void nsSHistory::HandleEntriesToSwapInDocShell(
   }
 }
 
-void nsSHistory::UpdateRootBrowsingContextState(BrowsingContext* aRootBC) {
-  if (aRootBC && aRootBC->EverAttached()) {
-    bool sameDocument = IsEmptyOrHasEntriesForSingleTopLevelPage();
-    if (sameDocument != aRootBC->GetIsSingleToplevelInHistory()) {
-      // If the browsing context is discarded then its session history is
-      // invalid and will go away.
-      Unused << aRootBC->SetIsSingleToplevelInHistory(sameDocument);
-    }
-  }
-}
-
 NS_IMETHODIMP
 nsSHistory::AddToRootSessionHistory(bool aCloneChildren, nsISHEntry* aOSHE,
                                     BrowsingContext* aRootBC,
@@ -883,7 +872,6 @@ nsSHistory::AddEntry(nsISHEntry* aSHEntry, bool aPersist) {
       NotifyListeners(mListeners, [](auto l) { l->OnHistoryReplaceEntry(); });
       aSHEntry->SetPersist(aPersist);
       mEntries[mIndex] = aSHEntry;
-      UpdateRootBrowsingContextState();
       return NS_OK;
     }
   }
@@ -914,8 +902,6 @@ nsSHistory::AddEntry(nsISHEntry* aSHEntry, bool aPersist) {
   if (gHistoryMaxSize >= 0 && Length() > gHistoryMaxSize) {
     PurgeHistory(Length() - gHistoryMaxSize);
   }
-
-  UpdateRootBrowsingContextState();
 
   return NS_OK;
 }
@@ -1150,8 +1136,6 @@ nsSHistory::PurgeHistory(int32_t aNumEntries) {
     rootBC->GetDocShell()->HistoryPurged(aNumEntries);
   }
 
-  UpdateRootBrowsingContextState(rootBC);
-
   return NS_OK;
 }
 
@@ -1212,8 +1196,6 @@ nsSHistory::ReplaceEntry(int32_t aIndex, nsISHEntry* aReplaceEntry) {
 
   aReplaceEntry->SetPersist(true);
   mEntries[aIndex] = aReplaceEntry;
-
-  UpdateRootBrowsingContextState();
 
   return NS_OK;
 }
@@ -2026,8 +2008,6 @@ void nsSHistory::RemoveEntries(nsTArray<nsID>& aIDs, int32_t aStartIndex,
     }
     --index;
   }
-
-  UpdateRootBrowsingContextState();
 }
 
 void nsSHistory::RemoveFrameEntries(nsISHEntry* aEntry) {
@@ -2415,25 +2395,6 @@ nsSHistory::CreateEntry(nsISHEntry** aEntry) {
   }
   entry.forget(aEntry);
   return NS_OK;
-}
-
-NS_IMETHODIMP_(bool)
-nsSHistory::IsEmptyOrHasEntriesForSingleTopLevelPage() {
-  if (mEntries.IsEmpty()) {
-    return true;
-  }
-
-  nsISHEntry* entry = mEntries[0];
-  size_t length = mEntries.Length();
-  for (size_t i = 1; i < length; ++i) {
-    bool sharesDocument = false;
-    mEntries[i]->SharesDocumentWith(entry, &sharesDocument);
-    if (!sharesDocument) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 static void CollectEntries(

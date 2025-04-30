@@ -221,6 +221,12 @@ add_task(async function check_canCreateSelectableProfiles() {
     return;
   }
 
+  // Reset profiles prefs
+  await pushPrefs(
+    ["browser.profiles.enabled", false],
+    ["browser.profiles.created", false]
+  );
+
   is(
     await ASRouterTargeting.Environment.canCreateSelectableProfiles,
     false,
@@ -228,8 +234,13 @@ add_task(async function check_canCreateSelectableProfiles() {
   );
 
   // We have to fake there being a real profile available and enable the profiles feature
-  await pushPrefs(["browser.profiles.enabled", "someValue"]);
-  await SelectableProfileService.resetProfileService({ currentProfile: {} });
+  await pushPrefs(
+    ["browser.profiles.enabled", true],
+    ["browser.profiles.created", false]
+  );
+  await ProfilesDatastoreService.resetProfileService({ currentProfile: {} });
+  await SelectableProfileService.uninit();
+  await SelectableProfileService.init();
 
   is(
     await ASRouterTargeting.Environment.canCreateSelectableProfiles,
@@ -244,7 +255,7 @@ add_task(async function check_canCreateSelectableProfiles() {
     "should select correct item by canCreateSelectableProfiles"
   );
 
-  await SelectableProfileService.resetProfileService(null);
+  await ProfilesDatastoreService.resetProfileService(null);
 });
 
 add_task(async function check_hasSelectableProfiles() {
@@ -254,7 +265,7 @@ add_task(async function check_hasSelectableProfiles() {
     "should return false before the pref is set"
   );
 
-  await pushPrefs(["toolkit.profiles.storeID", "someValue"]);
+  await pushPrefs(["browser.profiles.created", true]);
   is(
     await ASRouterTargeting.Environment.hasSelectableProfiles,
     true,

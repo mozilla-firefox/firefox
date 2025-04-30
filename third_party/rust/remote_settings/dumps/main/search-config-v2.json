@@ -60,9 +60,9 @@
       },
       "id": "7ace4aa1-e762-4f4b-87b9-b23b3c3a930b",
       "identifier": "google",
-      "last_modified": 1738595538915,
+      "last_modified": 1742996759044,
       "recordType": "engine",
-      "schema": 1738577315091,
+      "schema": 1742915469472,
       "variants": [
         {
           "environment": {
@@ -232,12 +232,198 @@
         },
         {
           "environment": {
+            "applications": [
+              "firefox-android",
+              "focus-android"
+            ],
             "distributions": [
               "vivo-001"
             ]
           },
           "partnerCode": "firefox-b-vv",
           "telemetrySuffix": "b-vv"
+        },
+        {
+          "environment": {
+            "applications": [
+              "firefox-android",
+              "focus-android"
+            ],
+            "distributions": [
+              "dt-001"
+            ]
+          },
+          "partnerCode": "firefox-b-tf",
+          "telemetrySuffix": "b-tf"
+        }
+      ]
+    },
+    {
+      "base": {
+        "aliases": [
+          "bing"
+        ],
+        "classification": "general",
+        "name": "Bing",
+        "partnerCode": "MOZI",
+        "urls": {
+          "search": {
+            "base": "https://www.bing.com/search",
+            "params": [
+              {
+                "name": "pc",
+                "value": "{partnerCode}"
+              },
+              {
+                "name": "form",
+                "value": "MOZLBR"
+              }
+            ],
+            "searchTermParamName": "q"
+          },
+          "suggestions": {
+            "base": "https://www.bing.com/osjson.aspx",
+            "params": [
+              {
+                "name": "form",
+                "value": "OSDJAS"
+              }
+            ],
+            "searchTermParamName": "query"
+          },
+          "trending": {
+            "base": "https://www.bing.com/osjson.aspx"
+          }
+        }
+      },
+      "id": "05645095-d26e-4f20-9137-f24a14a23f28",
+      "identifier": "bing",
+      "last_modified": 1742996759040,
+      "recordType": "engine",
+      "schema": 1742810344329,
+      "variants": [
+        {
+          "environment": {
+            "allRegionsAndLocales": true,
+            "applications": [
+              "firefox",
+              "firefox-android",
+              "firefox-ios"
+            ]
+          },
+          "subVariants": [
+            {
+              "environment": {
+                "channels": [
+                  "esr"
+                ]
+              },
+              "partnerCode": "MOZR",
+              "telemetrySuffix": "esr"
+            },
+            {
+              "environment": {
+                "applications": [
+                  "firefox-android"
+                ]
+              },
+              "partnerCode": "MOZB",
+              "urls": {
+                "search": {
+                  "params": [
+                    {
+                      "name": "pc",
+                      "value": "{partnerCode}"
+                    },
+                    {
+                      "name": "form",
+                      "value": "MOZMBA"
+                    }
+                  ],
+                  "searchTermParamName": "q"
+                }
+              }
+            },
+            {
+              "environment": {
+                "applications": [
+                  "firefox-ios"
+                ]
+              },
+              "partnerCode": "MOZW",
+              "urls": {
+                "search": {
+                  "params": [
+                    {
+                      "name": "pc",
+                      "value": "{partnerCode}"
+                    },
+                    {
+                      "name": "form",
+                      "value": "MOZWSB"
+                    }
+                  ],
+                  "searchTermParamName": "q"
+                }
+              }
+            },
+            {
+              "environment": {
+                "applications": [
+                  "firefox-android",
+                  "focus-android"
+                ],
+                "distributions": [
+                  "dt-001"
+                ]
+              },
+              "partnerCode": "MZTOF",
+              "telemetrySuffix": "MZTOF",
+              "urls": {
+                "search": {
+                  "params": [
+                    {
+                      "name": "pc",
+                      "value": "{partnerCode}"
+                    },
+                    {
+                      "name": "form",
+                      "value": "MZTOFO"
+                    }
+                  ],
+                  "searchTermParamName": "q"
+                }
+              }
+            },
+            {
+              "environment": {
+                "applications": [
+                  "firefox-android",
+                  "focus-android"
+                ],
+                "distributions": [
+                  "vivo-001"
+                ]
+              },
+              "partnerCode": "MZCP",
+              "telemetrySuffix": "MZCP",
+              "urls": {
+                "search": {
+                  "params": [
+                    {
+                      "name": "pc",
+                      "value": "{partnerCode}"
+                    },
+                    {
+                      "name": "form",
+                      "value": "MZVIVO"
+                    }
+                  ],
+                  "searchTermParamName": "q"
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -4055,119 +4241,6 @@
           },
           "partnerCode": "firefoxqwant",
           "telemetrySuffix": "qwant"
-        }
-      ]
-    },
-    {
-      "base": {
-        "aliases": [
-          "bing"
-        ],
-        "classification": "general",
-        "name": "Bing",
-        "partnerCode": "MOZI",
-        "urls": {
-          "search": {
-            "base": "https://www.bing.com/search",
-            "params": [
-              {
-                "name": "pc",
-                "value": "{partnerCode}"
-              },
-              {
-                "name": "form",
-                "value": "MOZLBR"
-              }
-            ],
-            "searchTermParamName": "q"
-          },
-          "suggestions": {
-            "base": "https://www.bing.com/osjson.aspx",
-            "params": [
-              {
-                "name": "form",
-                "value": "OSDJAS"
-              }
-            ],
-            "searchTermParamName": "query"
-          },
-          "trending": {
-            "base": "https://www.bing.com/osjson.aspx"
-          }
-        }
-      },
-      "id": "05645095-d26e-4f20-9137-f24a14a23f28",
-      "identifier": "bing",
-      "last_modified": 1718719100291,
-      "recordType": "engine",
-      "schema": 1718698353718,
-      "variants": [
-        {
-          "environment": {
-            "allRegionsAndLocales": true,
-            "applications": [
-              "firefox",
-              "firefox-android",
-              "firefox-ios"
-            ]
-          },
-          "subVariants": [
-            {
-              "environment": {
-                "channels": [
-                  "esr"
-                ]
-              },
-              "partnerCode": "MOZR",
-              "telemetrySuffix": "esr"
-            },
-            {
-              "environment": {
-                "applications": [
-                  "firefox-android"
-                ]
-              },
-              "partnerCode": "MOZB",
-              "urls": {
-                "search": {
-                  "params": [
-                    {
-                      "name": "pc",
-                      "value": "{partnerCode}"
-                    },
-                    {
-                      "name": "form",
-                      "value": "MOZMBA"
-                    }
-                  ],
-                  "searchTermParamName": "q"
-                }
-              }
-            },
-            {
-              "environment": {
-                "applications": [
-                  "firefox-ios"
-                ]
-              },
-              "partnerCode": "MOZW",
-              "urls": {
-                "search": {
-                  "params": [
-                    {
-                      "name": "pc",
-                      "value": "{partnerCode}"
-                    },
-                    {
-                      "name": "form",
-                      "value": "MOZWSB"
-                    }
-                  ],
-                  "searchTermParamName": "q"
-                }
-              }
-            }
-          ]
         }
       ]
     },
@@ -8033,5 +8106,5 @@
       ]
     }
   ],
-  "timestamp": 1738595538915
+  "timestamp": 1742996759044
 }

@@ -4,7 +4,7 @@
 "use strict";
 
 registerCleanupFunction(() =>
-  Services.prefs.clearUserPref("sidebar.position_start")
+  Services.prefs.clearUserPref(POSITION_SETTING_PREF)
 );
 
 add_task(async function test_sidebar_position_start() {
@@ -22,7 +22,7 @@ add_task(async function test_sidebar_position_start() {
 });
 
 add_task(async function test_sidebar_position_end() {
-  Services.prefs.setBoolPref("sidebar.position_start", false);
+  Services.prefs.setBoolPref(POSITION_SETTING_PREF, false);
 
   const win = await BrowserTestUtils.openNewBrowserWindow();
   const { document } = win;

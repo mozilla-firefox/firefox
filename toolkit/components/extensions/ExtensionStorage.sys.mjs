@@ -3,26 +3,21 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
 import { ExtensionUtils } from "resource://gre/modules/ExtensionUtils.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 const { DefaultWeakMap, ExtensionError } = ExtensionUtils;
 
-/** @type {Lazy} */
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   ExtensionCommon: "resource://gre/modules/ExtensionCommon.sys.mjs",
   JSONFile: "resource://gre/modules/JSONFile.sys.mjs",
+  enforceSessionQuota: {
+    pref: "webextensions.storage.session.enforceQuota",
+    default: false,
+  },
 });
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "enforceSessionQuota",
-  "webextensions.storage.session.enforceQuota",
-  false
-);
 
 function isStructuredCloneHolder(value) {
   return (

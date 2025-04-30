@@ -82,6 +82,14 @@ export function getProjectDirectoryRootName(state) {
   return state.sourcesTree.projectDirectoryRootName;
 }
 
+export function getProjectDirectoryRootFullName(state) {
+  return state.sourcesTree.projectDirectoryRootFullName;
+}
+
+export function getMainThreadProjectDirectoryRoots(state) {
+  return state.sourcesTree.mainThreadProjectDirectoryRoots;
+}
+
 /**
  * Lookup for project root item, matching the given "unique path".
  */
@@ -89,12 +97,7 @@ function getDirectoryForUniquePath(projectRoot, threadItems) {
   const sections = projectRoot.split("|");
   const thread = sections.shift();
 
-  const threadItem = threadItems.find(item => {
-    return (
-      item.uniquePath == thread ||
-      (thread == "top-level" && item.thread.isTopLevel)
-    );
-  });
+  const threadItem = threadItems.find(item => item.uniquePath == thread);
   if (!threadItem) {
     dump(
       `No thread item for: ${projectRoot} -- ${thread} -- ${Object.keys(
@@ -125,7 +128,6 @@ function getDirectoryForUniquePath(projectRoot, threadItems) {
     const path = sections.shift();
     return findPathInDirectory(child, path);
   }
-  dump(` Unable to find group: ${group}\n`);
   return null;
 
   function findPathInDirectory(directory, path) {
@@ -145,7 +147,6 @@ function getDirectoryForUniquePath(projectRoot, threadItems) {
         }
       }
     }
-    dump(`Unable to find directory: ${path}\n`);
     return null;
   }
 }

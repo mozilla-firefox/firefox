@@ -14,44 +14,42 @@
 /* globals exportFunction */
 
 console.info(
-  "exitFullscreen and pause have been overridden for compatibility reasons. See https://bugzilla.mozilla.org/show_bug.cgi?id=1956165 for details."
+  "exitFullscreen and window.outerWidth|Height have been overridden for compatibility reasons. See https://bugzilla.mozilla.org/show_bug.cgi?id=1956165 for details."
 );
 
-const originalPause = window.wrappedJSObject.HTMLMediaElement.prototype.pause;
+const win = window.wrappedJSObject;
+const outerWidthDesc = Object.getOwnPropertyDescriptor(win, "outerWidth");
+const outerHeightDesc = Object.getOwnPropertyDescriptor(win, "outerHeight");
+const originalOuterWidth = outerWidthDesc.get;
+const originalOuterHeight = outerHeightDesc.get;
+outerWidthDesc.get = exportFunction(() => {
+  const actual = originalOuterWidth();
+  if (actual < screen.width / 2) {
+    return screen.width;
+  }
+  return actual;
+}, window);
+outerHeightDesc.get = exportFunction(() => {
+  const actual = originalOuterHeight();
+  if (actual < screen.height / 2) {
+    return screen.height;
+  }
+  return actual;
+}, window);
+Object.defineProperty(win, "outerWidth", outerWidthDesc);
+Object.defineProperty(win, "outerHeight", outerHeightDesc);
 
-const newPause = exportFunction(function (...args) {
-  if (this.ownerDocument.inAndroidPipMode) {
+const originalExitFullscreen = win.Document.prototype.exitFullscreen;
+
+const newExitFullscreen = exportFunction(function () {
+  if (this.inAndroidPipMode) {
     return undefined;
   }
-  return originalPause.apply(this, args);
+  return originalExitFullscreen.apply(this);
 }, window);
 
-Object.defineProperty(
-  window.wrappedJSObject.HTMLMediaElement.prototype,
-  "pause",
-  {
-    value: newPause,
-    writable: true,
-    configurable: true,
-  }
-);
-
-const originalExitFullscreen =
-  window.wrappedJSObject.Document.prototype.exitFullscreen;
-
-const newExitFullscreen = exportFunction(function (...args) {
-  if (!this.ownerDocument.inAndroidPipMode) {
-    return undefined;
-  }
-  return originalExitFullscreen.apply(this, args);
-}, window);
-
-Object.defineProperty(
-  window.wrappedJSObject.Document.prototype,
-  "exitFullscreen",
-  {
-    value: newExitFullscreen,
-    writable: true,
-    configurable: true,
-  }
-);
+Object.defineProperty(win.Document.prototype, "exitFullscreen", {
+  value: newExitFullscreen,
+  writable: true,
+  configurable: true,
+});

@@ -1,0 +1,134 @@
+.personalized-card-wrapper {
+  background-color: var(--background-color-canvas);
+  border: 2px solid var(--border-color-card);
+  color: var(--text-color);
+  padding: var(--space-medium) var(--space-xlarge);
+  border-radius: var(--border-radius-large);
+  margin: var(--space-xlarge) 0;
+  position: relative;
+
+  .personalized-card-dismiss {
+    text-align: end;
+    margin-bottom: var(--space-small);
+    margin-inline-end: calc(var(--space-medium) * -1);
+  }
+
+  .personalized-card-inner {
+    display: grid;
+    grid-template-columns: 0.5fr 1fr 1fr 1fr;
+    align-items: start;
+
+
+    img {
+      max-width: 200px;
+      max-height: 200px;
+      object-fit: contain;
+      justify-self: center;
+      align-self: start;
+    }
+
+    h2, p {
+      margin-top: 0;
+    }
+
+    h2 {
+      font-size: var(--font-size-xxlarge);
+      font-weight: var(--font-weight-bold);
+    }
+
+    a {
+      color: var(--link-color);
+      font-size: var(--font-size-small);
+    }
+
+    // 1-column layout
+    @media (max-width: $break-point-layout-variant) {
+      grid-template-columns: 1fr;
+      gap: 10px;
+
+      img {
+        justify-self: initial;
+      }
+
+      a {
+        margin-top: 8px;
+        margin-bottom: 15px;
+      }
+    }
+
+    // 2-column layout
+    @media (min-width: $break-point-layout-variant){
+      grid-template-columns: 0.2fr 1fr 1fr;
+      gap: 20px;
+
+      h2 {
+        width: 200px;
+      }
+
+      img {
+        width: 80px;
+      }
+
+      .personalized-card-cta {
+        grid-column: 2 / span 2;
+        grid-row: span 2;
+        margin-top: -30px;
+        width: 195px;
+      }
+
+      a {
+        margin-top: -60px;
+        grid-column: 3;
+      }
+    }
+
+    // 3 and 4-column layout
+    @media (min-width: $break-point-widest) {
+      grid-template-columns: 0.2fr 1fr 1fr 1fr;
+      gap: 10px;
+
+      img {
+        width: 100px;
+      }
+
+      h2 {
+        grid-column:  2;
+        width: initial;
+      }
+
+      p {
+        grid-column:  3;
+      }
+
+      .personalized-card-cta {
+        grid-column:  4;
+        margin-top: initial;
+        width: 220px;
+      }
+
+      a {
+        grid-column:  4;
+        margin-top: -50px;
+      }
+    }
+
+    @media (min-width: $break-point-widest) and (max-width: $break-point-sections-variant) {
+      h2 {
+        max-width: 200px;
+      }
+
+      p {
+        width: 300px;
+      }
+
+      .personalized-card-cta {
+        margin-inline-end: 40px;
+      }
+
+      a {
+        width: 290px;
+        margin-top: -60px;
+      }
+    }
+  }
+}

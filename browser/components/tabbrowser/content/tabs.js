@@ -868,7 +868,7 @@
           : event.screenY - window.screenY,
         scrollPos:
           this.verticalMode && tab.pinned
-            ? this.verticalPinnedTabsContainer.scrollTop
+            ? this.verticalPinnedTabsContainer.scrollPosition
             : this.arrowScrollbox.scrollPosition,
         screenX: event.screenX,
         screenY: event.screenY,
@@ -1384,7 +1384,7 @@
         : [event.screenX, window.screenX, window.screenX + window.outerWidth];
 
       if (tabAxisPos > tabAxisStart && tabAxisPos < tabAxisEnd) {
-        // also avoid detaching if the the tab was dropped too close to
+        // also avoid detaching if the tab was dropped too close to
         // the tabbar (half a tab)
         let rect = window.windowUtils.getBoundsWithoutFlushing(
           this.arrowScrollbox
@@ -1396,15 +1396,17 @@
             (RTL_UI && this._sidebarPositionStart) ||
             (!RTL_UI && !this._sidebarPositionStart)
           ) {
-            crossAxisStart = window.screenX + rect.right - 1.5 * rect.width;
-            crossAxisEnd = window.screenX;
+            crossAxisStart =
+              window.mozInnerScreenX + rect.right - 1.5 * rect.width;
+            crossAxisEnd = window.screenX + window.outerWidth;
           } else {
             crossAxisStart = window.screenX;
-            crossAxisEnd = window.screenX + rect.left + 1.5 * rect.width;
+            crossAxisEnd =
+              window.mozInnerScreenX + rect.left + 1.5 * rect.width;
           }
         } else {
           crossAxisStart = window.screenY;
-          crossAxisEnd = window.screenY + rect.top + 1.5 * rect.height;
+          crossAxisEnd = window.mozInnerScreenY + rect.top + 1.5 * rect.height;
         }
         if (crossAxisPos > crossAxisStart && crossAxisPos < crossAxisEnd) {
           return;
@@ -2239,7 +2241,7 @@
       let translateX = screenX - dragData.screenX;
       let translateY = screenY - dragData.screenY;
       translateY +=
-        this.verticalPinnedTabsContainer.scrollTop - dragData.scrollPos;
+        this.verticalPinnedTabsContainer.scrollPosition - dragData.scrollPos;
       let firstBoundX = firstTabInRow.screenX - firstMovingTabScreenX;
       let firstBoundY = firstTabInRow.screenY - firstMovingTabScreenY;
       let lastBoundX =
@@ -2427,7 +2429,7 @@
           this.arrowScrollbox.scrollbox[scrollDirection] - dragData.scrollPos;
       } else if (isPinned && this.verticalMode) {
         translate +=
-          this.verticalPinnedTabsContainer.scrollTop - dragData.scrollPos;
+          this.verticalPinnedTabsContainer.scrollPosition - dragData.scrollPos;
       }
       // Constrain the range over which the moving tabs can move:
       // - for pinned tabs, between the first and last pinned tab

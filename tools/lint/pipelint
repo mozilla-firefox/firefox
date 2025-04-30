@@ -10,6 +10,7 @@ a file.
 
 import importlib.machinery
 import importlib.util
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -20,33 +21,53 @@ sys.stdout = sys.stderr
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 
+def main():
+    mach_path = REPO_ROOT / "mach"
+    loader = importlib.machinery.SourceFileLoader("mach", str(mach_path))
+    spec = importlib.util.spec_from_loader("mach", loader)
+    assert spec
+    assert spec.loader
 
-mach_path = REPO_ROOT / "mach"
-loader = importlib.machinery.SourceFileLoader("mach", str(mach_path))
-spec = importlib.util.spec_from_loader("mach", loader)
-assert spec
-assert spec.loader
+    mach = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mach)
 
-mach = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mach)
-
-assert len(sys.argv) == 2
-with tempfile.NamedTemporaryFile(mode="w+") as temp:
-    args = [
-        "lint",
-        "--fix",
-        "--stdin-filename",
-        sys.argv[1],
-        "--dump-stdin-file",
-        temp.name,
-    ]
-
+    assert len(sys.argv) == 2
+    temp = tempfile.NamedTemporaryFile(mode="wb+", delete=False)
     try:
-        mach.main(args)
-    except SystemExit as e:
-        if e.code != 0:
-            raise
+        # Close the file so we don't run into permissions errors trying to read
+        # the file later when other processes have written to it.
+        # See https://bugzilla.mozilla.org/show_bug?cgi?id=1948069
+        temp.close()
 
-    # Restore stdout and dump the file.
-    sys.stdout = old_stdout
-    print(temp.read(), end="")
+        args = [
+            "lint",
+            "--fix",
+            "--stdin-filename",
+            sys.argv[1],
+            "--dump-stdin-file",
+            temp.name,
+        ]
+
+        try:
+            mach.main(args)
+        except SystemExit as e:
+            if e.code != 0:
+                raise
+
+        # Restore stdout and dump the file.
+        sys.stdout = old_stdout
+
+        # Now that the other processes have written to the file, we can re-open
+        # it and read it.
+        #
+        # We have to write directly to stdout's buffer with bytes because
+        # otherwise writing text will automatically convert LF to CRLF on
+        # Windows.
+        with open(temp.name, "rb") as f:
+            sys.stdout.buffer.write(f.read())
+    finally:
+        os.unlink(temp.name)
+
+
+if __name__ == "__main__":
+    main()

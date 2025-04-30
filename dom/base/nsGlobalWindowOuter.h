@@ -965,8 +965,6 @@ class nsGlobalWindowOuter final : public mozilla::dom::EventTarget,
 
   void MaybeAllowStorageForOpenedWindow(nsIURI* aURI);
 
-  bool IsOnlyTopLevelDocumentInSHistory();
-
   void MaybeResetWindowName(Document* aNewDocument);
 
  public:

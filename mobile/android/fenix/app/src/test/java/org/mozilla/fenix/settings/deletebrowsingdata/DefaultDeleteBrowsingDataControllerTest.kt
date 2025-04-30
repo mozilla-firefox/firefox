@@ -10,7 +10,6 @@ import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import mozilla.components.browser.icons.BrowserIcons
 import mozilla.components.browser.state.action.EngineAction
 import mozilla.components.browser.state.action.RecentlyClosedAction
 import mozilla.components.browser.state.store.BrowserStore
@@ -40,7 +39,6 @@ class DefaultDeleteBrowsingDataControllerTest {
     private var historyStorage: HistoryStorage = mockk(relaxed = true)
     private var permissionStorage: PermissionStorage = mockk(relaxed = true)
     private var store: BrowserStore = mockk(relaxed = true)
-    private var iconsStorage: BrowserIcons = mockk(relaxed = true)
     private val engine: Engine = mockk(relaxed = true)
     private lateinit var controller: DefaultDeleteBrowsingDataController
 
@@ -53,7 +51,6 @@ class DefaultDeleteBrowsingDataControllerTest {
             historyStorage = historyStorage,
             store = store,
             permissionStorage = permissionStorage,
-            iconsStorage = iconsStorage,
             engine = engine,
             coroutineContext = coroutinesTestRule.testDispatcher,
         )
@@ -77,7 +74,6 @@ class DefaultDeleteBrowsingDataControllerTest {
             historyStorage.deleteEverything()
             store.dispatch(EngineAction.PurgeHistoryAction)
             store.dispatch(RecentlyClosedAction.RemoveAllClosedTabAction)
-            iconsStorage.clear()
         }
     }
 

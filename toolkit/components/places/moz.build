@@ -73,6 +73,8 @@ if CONFIG["MOZ_PLACES"]:
         "PlacesFrecencyRecalculator.sys.mjs",
         "PlacesPreviews.sys.mjs",
         "PlacesQuery.sys.mjs",
+        "PlacesSemanticHistoryDatabase.sys.mjs",
+        "PlacesSemanticHistoryManager.sys.mjs",
         "PlacesSyncUtils.sys.mjs",
         "PlacesTransactions.sys.mjs",
         "PlacesUtils.sys.mjs",

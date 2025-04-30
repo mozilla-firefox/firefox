@@ -13,8 +13,13 @@
 edition = "2021"
 rust-version = "1.64"
 name = "raw-window-handle"
-version = "0.6.0"
+version = "0.6.2"
 authors = ["Osspial <osspial@gmail.com>"]
+build = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
 description = "Interoperability library for Rust Windowing applications."
 documentation = "https://docs.rs/raw-window-handle"
 readme = "README.md"
@@ -28,6 +33,13 @@ rustdoc-args = [
     "--cfg",
     "docsrs",
 ]
+
+[lib]
+name = "raw_window_handle"
+path = "src/lib.rs"
+
+[dev-dependencies.static_assertions]
+version = "1.1.0"
 
 [features]
 alloc = []

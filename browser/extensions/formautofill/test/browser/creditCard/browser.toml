@@ -103,6 +103,10 @@ support-files = ["browser_telemetry_utils.js"]
 
 ["browser_creditCard_telemetry_manage.js"]
 support-files = ["browser_telemetry_utils.js"]
+skip-if = [
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && opt", # Bug 1960313
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && asan", # Bug 1960313
+]
 
 ["browser_creditCard_telemetry_popup.js"]
 support-files = ["browser_telemetry_utils.js"]

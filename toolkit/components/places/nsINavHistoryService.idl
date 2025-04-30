@@ -1122,6 +1122,14 @@ interface nsINavHistoryService : nsISupports
   attribute boolean isFrecencyDecaying;
 
   /**
+   * Whether alternative frecency is enabled. This is preferred over directly
+   * checking the feature gating preference, as it ensures consistency between
+   * the backend and frontend by avoiding discrepancies in preference values
+   * that could occur after startup.
+   */
+  readonly attribute boolean isAlternativeFrecencyEnabled;
+
+  /**
    * This is set to true when a frecency is invalidated and set back to false
    * when all the outdated values have been recalculated.
    */

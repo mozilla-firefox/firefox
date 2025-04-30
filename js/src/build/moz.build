@@ -26,7 +26,7 @@ LIBRARY_DEFINES["MOZ_SUPPORT_LEAKCHECKING"] = True
 # JS shell would like to link to the static library.
 
 if CONFIG["JS_SHARED_LIBRARY"]:
-    GeckoSharedLibrary("js", linkage=None)
+    GeckoSharedLibrary("js")
     SHARED_LIBRARY_NAME = CONFIG["JS_LIBRARY_NAME"]
 
     # Ensure symbol versions of shared library on Linux do not conflict

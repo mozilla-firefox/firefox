@@ -29,8 +29,10 @@ html|*.addon-webext-perm-list {
 
     /* Required data collection permission shouldn't have a list style. */
     &.webext-perm-granted:not(.webext-data-collection-perm-granted) {
-      list-style-position: inside;
       list-style-type: disc;
+      /* Align the list with the rest of the page, and use `list-style-position:
+       * outside` to keep long string correctly wrapped. */
+      margin-inline-start: 1em;
     }
 
     /* Add some space between the list of permissions and the data collection

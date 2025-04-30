@@ -49,7 +49,7 @@ class LocaleSettingsControllerTest {
 
     @Test
     fun `don't set locale if same locale is chosen`() {
-        val selectedLocale = Locale("en", "UK")
+        val selectedLocale = Locale.Builder().setLanguage("en").setRegion("UK").build()
         every { localeSettingsStore.state } returns mockState.copy(selectedLocale = selectedLocale)
         every { LocaleManager.getCurrentLocale(activity) } returns mockk()
 
@@ -70,7 +70,7 @@ class LocaleSettingsControllerTest {
 
     @Test
     fun `set a new locale from the list if other locale is chosen`() {
-        val selectedLocale = Locale("en", "UK")
+        val selectedLocale = Locale.Builder().setLanguage("en").setRegion("UK").build()
         val otherLocale: Locale = mockk()
         every { localeUseCases.notifyLocaleChanged } returns mockk()
         every { localeSettingsStore.state } returns mockState.copy(selectedLocale = otherLocale)
@@ -97,7 +97,7 @@ class LocaleSettingsControllerTest {
 
     @Test
     fun `set a new locale from the list if default locale is not selected`() {
-        val selectedLocale = Locale("en", "UK")
+        val selectedLocale = Locale.Builder().setLanguage("en").setRegion("UK").build()
         every { localeUseCases.notifyLocaleChanged } returns mockk()
         every { localeSettingsStore.state } returns mockState.copy(selectedLocale = selectedLocale)
         every { LocaleManager.getCurrentLocale(activity) } returns null
@@ -125,7 +125,7 @@ class LocaleSettingsControllerTest {
 
     @Test
     fun `don't set default locale if default locale is already chosen`() {
-        val selectedLocale = Locale("en", "UK")
+        val selectedLocale = Locale.Builder().setLanguage("en").setRegion("UK").build()
         every { localeSettingsStore.state } returns mockState.copy(localeList = listOf(selectedLocale))
         every { LocaleManager.getCurrentLocale(activity) } returns null
 
@@ -144,7 +144,7 @@ class LocaleSettingsControllerTest {
 
     @Test
     fun `set the default locale as the new locale`() {
-        val selectedLocale = Locale("en", "UK")
+        val selectedLocale = Locale.Builder().setLanguage("en").setRegion("UK").build()
         every { localeUseCases.notifyLocaleChanged } returns mockk()
         every { localeSettingsStore.state } returns mockState.copy(localeList = listOf(selectedLocale))
         every { LocaleManager.resetToSystemDefault(activity, localeUseCases) } just Runs

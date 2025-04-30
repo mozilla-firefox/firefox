@@ -2,20 +2,20 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+use crash_helper_client::report_external_exception;
 use ini::Ini;
 use libc::time;
-use process_reader::ProcessReader;
 use serde::Serialize;
 use serde_json::ser::to_writer;
 use std::convert::TryInto;
 use std::ffi::{c_void, OsString};
 use std::fs::{read_to_string, DirBuilder, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
-use std::mem::{size_of, transmute, zeroed};
+use std::mem::{size_of, zeroed};
 use std::os::windows::ffi::{OsStrExt, OsStringExt};
-use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle, RawHandle};
+use std::os::windows::io::AsRawHandle;
 use std::path::{Path, PathBuf};
-use std::ptr::{addr_of, null, null_mut};
+use std::ptr::{null, null_mut};
 use std::slice::from_raw_parts;
 use uuid::Uuid;
 use windows_sys::core::{HRESULT, PWSTR};
@@ -24,7 +24,7 @@ use windows_sys::Win32::{
     Foundation::{
         CloseHandle, GetLastError, SetLastError, BOOL, ERROR_INSUFFICIENT_BUFFER, ERROR_SUCCESS,
         EXCEPTION_BREAKPOINT, E_UNEXPECTED, FALSE, FILETIME, HANDLE, HWND, LPARAM, MAX_PATH,
-        STATUS_SUCCESS, S_OK, TRUE, WAIT_OBJECT_0,
+        STATUS_SUCCESS, S_OK, TRUE,
     },
     Security::{
         GetSidSubAuthority, GetSidSubAuthorityCount, GetTokenInformation, IsTokenRestricted,
@@ -34,12 +34,9 @@ use windows_sys::Win32::{
     System::Diagnostics::Debug::{
         GetThreadContext, MiniDumpWithFullMemoryInfo, MiniDumpWithIndirectlyReferencedMemory,
         MiniDumpWithProcessThreadData, MiniDumpWithUnloadedModules, MiniDumpWriteDump,
-        WriteProcessMemory, EXCEPTION_POINTERS, MINIDUMP_EXCEPTION_INFORMATION, MINIDUMP_TYPE,
+        EXCEPTION_POINTERS, MINIDUMP_EXCEPTION_INFORMATION, MINIDUMP_TYPE,
     },
     System::ErrorReporting::WER_RUNTIME_EXCEPTION_INFORMATION,
-    System::Memory::{
-        VirtualAllocEx, VirtualFreeEx, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE,
-    },
     System::ProcessStatus::K32GetModuleFileNameExW,
     System::SystemInformation::{
         VerSetConditionMask, VerifyVersionInfoW, OSVERSIONINFOEXW, VER_MAJORVERSION,
@@ -47,9 +44,8 @@ use windows_sys::Win32::{
     },
     System::SystemServices::{SECURITY_MANDATORY_MEDIUM_RID, VER_GREATER_EQUAL},
     System::Threading::{
-        CreateProcessW, CreateRemoteThread, GetProcessId, GetProcessTimes, GetThreadId,
-        OpenProcess, OpenProcessToken, OpenThread, TerminateProcess, WaitForSingleObject,
-        CREATE_NO_WINDOW, CREATE_UNICODE_ENVIRONMENT, LPTHREAD_START_ROUTINE,
+        CreateProcessW, GetProcessId, GetProcessTimes, GetThreadId, OpenProcess, OpenProcessToken,
+        OpenThread, TerminateProcess, CREATE_NO_WINDOW, CREATE_UNICODE_ENVIRONMENT,
         NORMAL_PRIORITY_CLASS, PROCESS_ALL_ACCESS, PROCESS_BASIC_INFORMATION, PROCESS_INFORMATION,
         STARTUPINFOW, THREAD_GET_CONTEXT,
     },
@@ -66,15 +62,6 @@ type PBOOL = *mut BOOL;
 type PDWORD = *mut DWORD;
 #[allow(non_camel_case_types)]
 type PWER_RUNTIME_EXCEPTION_INFORMATION = *mut WER_RUNTIME_EXCEPTION_INFORMATION;
-
-/* The following struct must be kept in sync with the identically named one in
- * nsExceptionHandler.h. WER will use it to communicate with the main process
- * when a child process is encountered. */
-#[repr(C)]
-struct WindowsErrorReportingData {
-    child_pid: DWORD,
-    minidump_name: [u8; 40],
-}
 
 // This value comes from GeckoProcessTypes.h
 static MAIN_PROCESS_TYPE: u32 = 0;
@@ -174,14 +161,17 @@ fn out_of_process_exception_event_callback(
     }
 
     let process = exception_information.hProcess;
-    let application_info = ApplicationInformation::from_process(process)?;
     let process_type: u32 = (context as usize).try_into().map_err(|_| ())?;
-    let startup_time = get_startup_time(process)?;
-    let crash_report = CrashReport::new(&application_info, startup_time, is_ui_hang);
-    crash_report.write_minidump(exception_information)?;
     if process_type == MAIN_PROCESS_TYPE {
         match is_sandboxed_process(process) {
-            Ok(false) => handle_main_process_crash(crash_report, &application_info),
+            Ok(false) => {
+                let application_info = ApplicationInformation::from_process(process)?;
+                let startup_time = get_startup_time(process)?;
+                let crash_report = CrashReport::new(&application_info, startup_time, is_ui_hang);
+                crash_report.write_minidump(exception_information)?;
+
+                handle_main_process_crash(crash_report, &application_info)
+            }
             _ => {
                 // The parent process should never be sandboxed, bail out so the
                 // process which is impersonating it gets killed right away. Also
@@ -190,7 +180,7 @@ fn out_of_process_exception_event_callback(
             }
         }
     } else {
-        handle_child_process_crash(crash_report, process)
+        handle_child_process_crash(exception_information)
     }
 }
 
@@ -245,87 +235,24 @@ fn handle_main_process_crash(
     Ok(())
 }
 
-fn handle_child_process_crash(crash_report: CrashReport, child_process: HANDLE) -> Result<()> {
-    let parent_process = get_parent_process(child_process)?;
-    let process_reader = ProcessReader::new(parent_process).map_err(|_e| ())?;
-    let libxul_address = process_reader.find_module("xul.dll").map_err(|_e| ())?;
-    let wer_notify_proc = process_reader
-        .find_section(libxul_address, b"mozwerpt")
-        .map_err(|_e| ())?;
-    let wer_notify_proc = unsafe { transmute::<_, LPTHREAD_START_ROUTINE>(wer_notify_proc) };
-
-    let wer_data = WindowsErrorReportingData {
-        child_pid: get_process_id(child_process)?,
-        minidump_name: crash_report.get_minidump_name(),
-    };
-    let address = copy_object_into_process(parent_process, wer_data)?;
-    notify_main_process(parent_process, wer_notify_proc, address)
-}
-
-fn copy_object_into_process<T>(process: HANDLE, data: T) -> Result<*mut T> {
-    let address = unsafe {
-        VirtualAllocEx(
-            process,
-            null(),
-            size_of::<T>(),
-            MEM_RESERVE | MEM_COMMIT,
-            PAGE_READWRITE,
-        )
-    };
-
-    if address.is_null() {
-        return Err(());
-    }
-
-    let res = unsafe {
-        WriteProcessMemory(
-            process,
-            address,
-            addr_of!(data) as *const _,
-            size_of::<T>(),
-            null_mut(),
-        )
-    };
-
-    if res == 0 {
-        unsafe { VirtualFreeEx(process, address as *mut _, 0, MEM_RELEASE) };
-        Err(())
-    } else {
-        Ok(address as *mut T)
-    }
-}
-
-fn notify_main_process(
-    process: HANDLE,
-    wer_notify_proc: LPTHREAD_START_ROUTINE,
-    address: *mut WindowsErrorReportingData,
+fn handle_child_process_crash(
+    exception_information: PWER_RUNTIME_EXCEPTION_INFORMATION,
 ) -> Result<()> {
-    let thread = unsafe {
-        CreateRemoteThread(
-            process,
-            null_mut(),
-            0,
-            wer_notify_proc,
-            address as LPVOID,
-            0,
-            null_mut(),
-        )
-    };
+    let process = unsafe { (*exception_information).hProcess };
+    let process_id = get_process_id(process)?;
+    let thread = unsafe { (*exception_information).hThread };
+    let thread_id = get_thread_id(thread)?;
+    let parent_process = get_parent_process(process)?;
+    let parent_pid = get_process_id(parent_process)?;
 
-    if thread == 0 {
-        unsafe { VirtualFreeEx(process, address as *mut _, 0, MEM_RELEASE) };
-        return Err(());
-    }
-
-    // From this point on the memory pointed to by address is owned by the
-    // thread we've created in the main process, so we don't free it.
-
-    let thread = unsafe { OwnedHandle::from_raw_handle(thread as RawHandle) };
-
-    // Don't wait forever as we want the process to get killed eventually
-    let res = unsafe { WaitForSingleObject(thread.as_raw_handle() as HANDLE, 5000) };
-    if res != WAIT_OBJECT_0 {
-        return Err(());
+    unsafe {
+        report_external_exception(
+            parent_pid,
+            process_id,
+            thread_id,
+            &raw mut (*exception_information).exceptionRecord,
+            &raw mut (*exception_information).context,
+        );
     }
 
     Ok(())
@@ -363,6 +290,13 @@ fn get_process_id(process: HANDLE) -> Result<DWORD> {
     match unsafe { GetProcessId(process) } {
         0 => Err(()),
         pid => Ok(pid),
+    }
+}
+
+fn get_thread_id(thread: HANDLE) -> Result<DWORD> {
+    match unsafe { GetThreadId(thread) } {
+        0 => Err(()),
+        tid => Ok(tid),
     }
 }
 
@@ -691,11 +625,6 @@ impl CrashReport {
 
     fn get_minidump_path(&self) -> PathBuf {
         self.get_pending_path().join(self.uuid.to_string() + ".dmp")
-    }
-
-    fn get_minidump_name(&self) -> [u8; 40] {
-        let bytes = (self.uuid.to_string() + ".dmp").into_bytes();
-        bytes[0..40].try_into().unwrap()
     }
 
     fn get_extra_file_path(&self) -> PathBuf {

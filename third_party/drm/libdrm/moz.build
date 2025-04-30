@@ -10,7 +10,7 @@ else:
     SOURCES += ['mozdrm.cpp']
     LOCAL_INCLUDES += [
         '/third_party/drm/drm/',
-        '/third_party/drm/drm/include/',
+        '/third_party/drm/drm/include/libdrm',
     ]
 
 FINAL_LIBRARY = 'xul'

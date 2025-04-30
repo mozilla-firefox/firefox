@@ -52,8 +52,11 @@ class CanvasManagerParent final : public PCanvasManagerParent {
       const Maybe<RawId>& aCommandEncoderId,
       webgl::FrontBufferSnapshotIpc* aResult);
 
+  static mozilla::ipc::IProtocol* GetCanvasActor(
+      dom::ContentParentId aContentId, uint32_t aManagerId, int32_t aCanvasId);
+
   static already_AddRefed<DataSourceSurface> GetCanvasSurface(
-      dom::ContentParentId aContentId, uint32_t aManagerId,
+      dom::ContentParentId aContentId, uint32_t aManagerId, int32_t aCanvasId,
       uintptr_t aSurfaceId);
 
  private:

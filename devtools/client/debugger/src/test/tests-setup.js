@@ -44,7 +44,5 @@ afterAll(() => {
 afterEach(() => {});
 
 beforeEach(async () => {
-  prefs.projectDirectoryRoot = "";
-  prefs.projectDirectoryRootName = "";
   prefs.expressions = [];
 });

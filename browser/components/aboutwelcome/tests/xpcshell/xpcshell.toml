@@ -1,5 +1,4 @@
 [DEFAULT]
-skip-if = ["os == 'android'"]
 firefox-appdir = "browser"
 
 ["test_AboutWelcomeAttribution.js"]

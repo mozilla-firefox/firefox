@@ -71,6 +71,13 @@ pref("extensions.webextensions.remote", true);
 pref("extensions.langpacks.signatures.required", true);
 pref("xpinstall.signatures.required", true);
 
+// Enable data collection permissions.
+#ifdef NIGHTLY_BUILD
+  pref("extensions.dataCollectionPermissions.enabled", true);
+#else
+  pref("extensions.dataCollectionPermissions.enabled", false);
+#endif
+
 // Dictionary download preference
 pref("browser.dictionaries.download.url", "https://addons.mozilla.org/%LOCALE%/firefox/language-tools/");
 
@@ -200,19 +207,6 @@ pref("app.update.langpack.enabled", true);
   // in milliseconds. 5 min = 300000 ms
   pref("app.update.noWindowAutoRestart.delayMs", 300000);
 #endif
-
-// The Multi Session Install Lockout prevents updates from being installed at
-// startup when they normally would be if there are other instances using the
-// installation. We only do this for a limited amount of time before we go ahead
-// and apply the update anyways.
-// Hopefully, at some point, updating Firefox while it is running will not break
-// things and this mechanism can be removed.
-// Note that these prefs are bit dangerous because having different values in
-// different profiles could cause erratic behavior.
-// This feature is also affected by
-// `app.update.multiSessionInstallLockout.timeoutMs`, which is in the branding
-// section.
-pref("app.update.multiSessionInstallLockout.enabled", false);
 
 #if defined(MOZ_BACKGROUNDTASKS)
   // The amount of time, in seconds, before background tasks time out and exit.
@@ -381,20 +375,11 @@ pref("browser.overlink-delay", 80);
 
 pref("browser.taskbarTabs.enabled", false);
 
-pref("browser.theme.colorway-closet", true);
-
 #if defined(MOZ_WIDGET_GTK)
   pref("browser.theme.native-theme", true);
 #else
   pref("browser.theme.native-theme", false);
 #endif
-
-// Whether expired built-in colorways themes that are active or retained
-// should be allowed to check for updates and be updated to an AMO hosted
-// theme with the same id (as part of preparing to remove from mozilla-central
-// all the expired built-in colorways themes, after existing users have been
-// migrated to colorways themes hosted on AMO).
-pref("browser.theme.colorway-migration", true);
 
 // Whether using `ctrl` when hitting return/enter in the URL bar
 // (or clicking 'go') should prefix 'www.' and suffix
@@ -480,11 +465,7 @@ pref("browser.urlbar.richSuggestions.featureGate", true);
 pref("browser.search.param.search_rich_suggestions", "fen");
 
 // Feature gate pref for weather suggestions in the urlbar.
-#ifdef NIGHTLY_BUILD
 pref("browser.urlbar.weather.featureGate", true);
-#else
-pref("browser.urlbar.weather.featureGate", false);
-#endif
 
 // Enable clipboard suggestions feature, the pref should be removed once stable.
 pref("browser.urlbar.clipboard.featureGate", false);
@@ -578,10 +559,8 @@ pref("browser.urlbar.quicksuggest.impressionCaps.sponsoredEnabled", false);
 
 // When non-zero, this is the character-count threshold (inclusive) for showing
 // AMP suggestions as top picks. If an AMP suggestion is triggered by a keyword
-// at least this many characters long, it will be shown as a top pick. Full
-// keywords will also show AMP suggestions as top picks even if they have fewer
-// characters than this threshold.
-pref("browser.urlbar.quicksuggest.ampTopPickCharThreshold", 0);
+// at least this many characters long, it will be shown as a top pick.
+pref("browser.urlbar.quicksuggest.ampTopPickCharThreshold", 5);
 
 // The matching strategy for AMP suggestions. Zero is the usual default
 // exact-keyword strategy. Other values are the integers defined on
@@ -1054,17 +1033,16 @@ pref("browser.tabs.tooltipsShowPidAndActiveness", false);
 pref("browser.tabs.hoverPreview.enabled", true);
 pref("browser.tabs.hoverPreview.showThumbnails", true);
 
-#ifdef EARLY_BETA_OR_EARLIER
 pref("browser.tabs.groups.enabled", true);
-#else
-pref("browser.tabs.groups.enabled", false);
-#endif
 
 #ifdef NIGHTLY_BUILD
 pref("browser.tabs.groups.smart.enabled", true);
 #else
 pref("browser.tabs.groups.smart.enabled", false);
 #endif
+
+// KMEANS_WITH_ANCHOR or NEAREST_NEIGHBOR
+pref("browser.tabs.groups.smart.suggestOtherTabsMethod", "NEAREST_NEIGHBOR");
 
 pref("browser.tabs.groups.smart.optin", false);
 
@@ -1815,6 +1793,12 @@ pref("browser.newtab.preload", true);
 // population (2500 / 10000).
 pref("browser.preonboarding.onTrainRolloutPopulation",  2500);
 
+// Show "Download Firefox for mobile" QR code modal on newtab
+pref("browser.newtabpage.activity-stream.mobileDownloadModal.enabled", false);
+pref("browser.newtabpage.activity-stream.mobileDownloadModal.variant-a", false);
+pref("browser.newtabpage.activity-stream.mobileDownloadModal.variant-b", false);
+pref("browser.newtabpage.activity-stream.mobileDownloadModal.variant-c", false);
+
 // Mozilla Ad Routing Service (MARS) unified ads service
 pref("browser.newtabpage.activity-stream.unifiedAds.tiles.enabled", true);
 pref("browser.newtabpage.activity-stream.unifiedAds.spocs.enabled", true);
@@ -1866,8 +1850,7 @@ pref("browser.newtabpage.activity-stream.newNewtabExperience.colors", "#004CA4,#
 pref("browser.newtabpage.activity-stream.newtabLayouts.variant-a", false);
 pref("browser.newtabpage.activity-stream.newtabLayouts.variant-b", true);
 
-// Shortcuts experiment
-pref("browser.newtabpage.activity-stream.newtabShortcuts.refresh", false);
+pref("browser.newtabpage.activity-stream.newtabShortcuts.refresh", true);
 
 // Discovery stream ad size experiment
 pref("browser.newtabpage.activity-stream.newtabAdSize.variant-a", false);
@@ -1988,8 +1971,14 @@ pref("browser.newtabpage.activity-stream.discoverystream.sections.locale-content
 pref("browser.newtabpage.activity-stream.discoverystream.sections.region-content-config", "");
 
 pref("browser.newtabpage.activity-stream.discoverystream.sections.cards.enabled", true);
-pref("browser.newtabpage.activity-stream.discoverystream.sections.personalization.inferred.enabled", false);
+
+// List of regions that use inferred personalization.
+pref("browser.newtabpage.activity-stream.discoverystream.sections.personalization.inferred.region-config", "");
+// List of locales that use inferred personalization.
+pref("browser.newtabpage.activity-stream.discoverystream.sections.personalization.inferred.locale-config", "en-US,en-GB,en-CA");
+
 pref("browser.newtabpage.activity-stream.discoverystream.sections.personalization.inferred.user.enabled", true);
+pref("browser.newtabpage.activity-stream.discoverystream.sections.personalization.inferred.blocked", false);
 
 pref("browser.newtabpage.activity-stream.discoverystream.sections.interestPicker.enabled", false);
 pref("browser.newtabpage.activity-stream.discoverystream.sections.interestPicker.visibleSections", "");
@@ -2022,6 +2011,11 @@ pref("browser.newtabpage.activity-stream.discoverystream.onboardingExperience.en
 
 // List of locales that get thumbs up/down on recommended stories by default.
 pref("browser.newtabpage.activity-stream.discoverystream.thumbsUpDown.locale-thumbs-config", "en-US, en-GB, en-CA");
+
+pref("browser.newtabpage.activity-stream.telemetry.privatePing.enabled", false);
+
+// surface ID sent from merino to the client from the curated-recommendations request
+pref("browser.newtabpage.activity-stream.telemetry.surfaceId", "");
 
 // List of regions that get thumbs up/down on recommended stories by default.
 #ifdef EARLY_BETA_OR_EARLIER
@@ -2143,6 +2137,7 @@ pref("browser.ml.linkPreview.allowedLanguages", "en");
 pref("browser.ml.linkPreview.enabled", false);
 pref("browser.ml.linkPreview.outputSentences", 3);
 pref("browser.ml.linkPreview.blockListEnabled", true);
+pref("browser.ml.linkPreview.noKeyPointsRegions", "AD,AT,BE,BG,CH,CY,CZ,DE,DK,EE,ES,FI,FR,GR,HR,HU,IE,IS,IT,LI,LT,LU,LV,MT,NL,NO,PL,PT,RO,SE,SI,SK");
 
 // Block insecure active content on https pages
 pref("security.mixed_content.block_active_content", true);
@@ -2554,23 +2549,23 @@ pref("browser.tabs.crashReporting.sendReport", true);
 pref("browser.tabs.crashReporting.includeURL", false);
 
 // Enables the "Unload Tab" context menu item
-#ifdef NIGHTLY_BUILD
+#ifdef EARLY_BETA_OR_EARLIER
 pref("browser.tabs.unloadTabInContextMenu", true);
 #else
 pref("browser.tabs.unloadTabInContextMenu", false);
 #endif
 
-// Whether unloaded tabs (either from session restore or because
-// they are explicitly unloaded) are faded out in the tab bar.
-pref("browser.tabs.fadeOutUnloadedTabs", false);
-
 // Whether tabs that have been explicitly unloaded
 // are faded out in the tab bar.
-#ifdef NIGHTLY_BUILD
+#ifdef EARLY_BETA_OR_EARLIER
 pref("browser.tabs.fadeOutExplicitlyUnloadedTabs", true);
 #else
 pref("browser.tabs.fadeOutExplicitlyUnloadedTabs", false);
 #endif
+
+// Whether unloaded tabs (either from session restore or because
+// they are explicitly unloaded) are faded out in the tab bar.
+pref("browser.tabs.fadeOutUnloadedTabs", false);
 
 // If true, unprivileged extensions may use experimental APIs on
 // nightly and developer edition.
@@ -2988,6 +2983,7 @@ pref("devtools.netmonitor.panes-network-details-height", 450);
 pref("devtools.netmonitor.panes-search-width", 550);
 pref("devtools.netmonitor.panes-search-height", 450);
 pref("devtools.netmonitor.filters", "[\"all\"]");
+pref("devtools.netmonitor.requestfilter", "");
 pref("devtools.netmonitor.visibleColumns",
     "[\"override\",\"status\",\"method\",\"domain\",\"file\",\"initiator\",\"type\",\"transferred\",\"contentSize\",\"waterfall\"]"
 );

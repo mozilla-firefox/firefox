@@ -101,11 +101,14 @@ fun List<ChecklistItem>.checklistItemsAreGroups() = all { it is ChecklistItem.Gr
 /**
  * Gets the checklist items for the given [SetupChecklistType].
  */
-fun getSetupChecklistCollection(settings: Settings, collection: SetupChecklistType) =
-    when (collection) {
-        SetupChecklistType.COLLECTION_1 -> createTasksCollection(settings)
-        SetupChecklistType.COLLECTION_2 -> createGroupsCollection(settings)
-    }
+fun getSetupChecklistCollection(
+    settings: Settings,
+    collection: SetupChecklistType,
+    tabStripEnabled: Boolean = false,
+) = when (collection) {
+    SetupChecklistType.COLLECTION_1 -> createTasksCollection(settings)
+    SetupChecklistType.COLLECTION_2 -> createGroupsCollection(settings, tabStripEnabled)
+}
 
 private fun createTasksCollection(settings: Settings) = with(settings) {
     listOf(
@@ -136,8 +139,12 @@ private fun signInTask(isCompleted: Boolean) = ChecklistItem.Task(
     isCompleted = isCompleted,
 )
 
-private fun createGroupsCollection(settings: Settings) =
-    listOf(essentialsGroup(settings), customizeGroup(settings), helpfulToolsGroup(settings))
+private fun createGroupsCollection(settings: Settings, tabStripEnabled: Boolean) =
+    listOf(
+        essentialsGroup(settings),
+        customizeGroup(settings, tabStripEnabled),
+        helpfulToolsGroup(settings),
+    )
 
 private fun essentialsGroup(settings: Settings) = ChecklistItem.Group(
     title = R.string.setup_checklist_group_essentials,
@@ -149,25 +156,34 @@ private fun essentialsGroup(settings: Settings) = ChecklistItem.Group(
     },
 )
 
-private fun customizeGroup(settings: Settings) = ChecklistItem.Group(
-    title = R.string.setup_checklist_group_customize,
-    tasks = with(settings) {
-        listOf(
+private fun customizeGroup(settings: Settings, tabStripEnabled: Boolean): ChecklistItem.Group =
+    with(settings) {
+        val tasks = mutableListOf(
             ChecklistItem.Task(
                 type = ChecklistItem.Task.Type.SELECT_THEME,
                 title = R.string.setup_checklist_task_theme_selection,
                 icon = R.drawable.mozac_ic_themes_24,
                 isCompleted = hasCompletedSetupStepTheme,
             ),
-            ChecklistItem.Task(
-                type = ChecklistItem.Task.Type.CHANGE_TOOLBAR_PLACEMENT,
-                title = R.string.setup_checklist_task_toolbar_selection,
-                icon = R.drawable.mozac_ic_tool_24,
-                isCompleted = hasCompletedSetupStepToolbar,
-            ),
         )
-    },
-)
+
+        // Toolbar placement cannot be changed when the tab strip is enabled.
+        if (!tabStripEnabled) {
+            tasks.add(
+                ChecklistItem.Task(
+                    type = ChecklistItem.Task.Type.CHANGE_TOOLBAR_PLACEMENT,
+                    title = R.string.setup_checklist_task_toolbar_selection,
+                    icon = R.drawable.mozac_ic_tool_24,
+                    isCompleted = hasCompletedSetupStepToolbar,
+                ),
+            )
+        }
+
+        ChecklistItem.Group(
+            title = R.string.setup_checklist_group_customize,
+            tasks = tasks,
+        )
+    }
 
 private fun helpfulToolsGroup(settings: Settings) = ChecklistItem.Group(
     title = R.string.setup_checklist_group_helpful_tools,

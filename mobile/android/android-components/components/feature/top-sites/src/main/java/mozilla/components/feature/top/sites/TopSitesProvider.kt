@@ -17,4 +17,9 @@ interface TopSitesProvider {
      * @return a list of top sites from the provider.
      */
     suspend fun getTopSites(allowCache: Boolean = true): List<TopSite>
+
+    /**
+     * Refreshes the cache with the latest top sites response if the cache is expired.
+     */
+    suspend fun refreshTopSitesIfCacheExpired()
 }

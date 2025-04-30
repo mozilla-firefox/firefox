@@ -611,10 +611,6 @@ void GeckoChildProcessHost::SetEnv(const char* aKey, const char* aValue) {
 
 bool GeckoChildProcessHost::PrepareLaunch(
     geckoargs::ChildProcessArgs& aExtraOpts) {
-  if (CrashReporter::GetEnabled()) {
-    CrashReporter::OOPInit();
-  }
-
 #if defined(XP_LINUX) && defined(MOZ_SANDBOX)
   if (!SandboxLaunch::Configure(mProcessType, mSandbox, aExtraOpts,
                                 mLaunchOptions.get())) {
@@ -1125,13 +1121,20 @@ Result<Ok, LaunchError> BaseProcessLauncher::DoSetup() {
 #if defined(MOZ_WIDGET_COCOA) || defined(XP_WIN)
     geckoargs::sCrashReporter.Put(CrashReporter::GetChildNotificationPipe(),
                                   mChildArgs);
-#elif defined(XP_UNIX)
+#elif defined(XP_UNIX) && !defined(XP_IOS)
     UniqueFileHandle childCrashFd = CrashReporter::GetChildNotificationPipe();
     if (!childCrashFd) {
       return Err(LaunchError("DuplicateFileHandle failed"));
     }
     geckoargs::sCrashReporter.Put(std::move(childCrashFd), mChildArgs);
-#endif
+
+#  if !defined(MOZ_WIDGET_ANDROID)
+    CrashReporter::ProcessId pid = CrashReporter::GetCrashHelperPid();
+    if (pid != base::kInvalidProcessId) {
+      geckoargs::sCrashHelperPid.Put(pid, mChildArgs);
+    }
+#  endif  // !defined(MOZ_WIDGET_ANDROID)
+#endif    // XP_UNIX && !XP_IOS
   }
 
   return Ok();

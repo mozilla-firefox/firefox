@@ -1,7 +1,7 @@
 //! Add, remove, or modify a collation
 use std::cmp::Ordering;
 use std::os::raw::{c_char, c_int, c_void};
-use std::panic::{catch_unwind, UnwindSafe};
+use std::panic::catch_unwind;
 use std::ptr;
 use std::slice;
 
@@ -18,7 +18,7 @@ impl Connection {
     #[inline]
     pub fn create_collation<C>(&self, collation_name: &str, x_compare: C) -> Result<()>
     where
-        C: Fn(&str, &str) -> Ordering + Send + UnwindSafe + 'static,
+        C: Fn(&str, &str) -> Ordering + Send + 'static,
     {
         self.db
             .borrow_mut()
@@ -27,10 +27,7 @@ impl Connection {
 
     /// Collation needed callback
     #[inline]
-    pub fn collation_needed(
-        &self,
-        x_coll_needed: fn(&Connection, &str) -> Result<()>,
-    ) -> Result<()> {
+    pub fn collation_needed(&self, x_coll_needed: fn(&Self, &str) -> Result<()>) -> Result<()> {
         self.db.borrow_mut().collation_needed(x_coll_needed)
     }
 
@@ -42,9 +39,31 @@ impl Connection {
 }
 
 impl InnerConnection {
+    /// ```compile_fail
+    /// use rusqlite::{Connection, Result};
+    /// fn main() -> Result<()> {
+    ///     let db = Connection::open_in_memory()?;
+    ///     {
+    ///         let mut called = std::sync::atomic::AtomicBool::new(false);
+    ///         db.create_collation("foo", |_, _| {
+    ///             called.store(true, std::sync::atomic::Ordering::Relaxed);
+    ///             std::cmp::Ordering::Equal
+    ///         })?;
+    ///     }
+    ///     let value: String = db.query_row(
+    ///         "WITH cte(bar) AS
+    ///        (VALUES ('v1'),('v2'),('v3'),('v4'),('v5'))
+    ///         SELECT DISTINCT bar COLLATE foo FROM cte;",
+    ///         [],
+    ///         |row| row.get(0),
+    ///     )?;
+    ///     assert_eq!(value, "v1");
+    ///     Ok(())
+    /// }
+    /// ```
     fn create_collation<C>(&mut self, collation_name: &str, x_compare: C) -> Result<()>
     where
-        C: Fn(&str, &str) -> Ordering + Send + UnwindSafe + 'static,
+        C: Fn(&str, &str) -> Ordering + Send + 'static,
     {
         unsafe extern "C" fn call_boxed_closure<C>(
             arg1: *mut c_void,
@@ -110,7 +129,7 @@ impl InnerConnection {
         x_coll_needed: fn(&Connection, &str) -> Result<()>,
     ) -> Result<()> {
         use std::mem;
-        #[allow(clippy::needless_return)]
+        #[expect(clippy::needless_return)]
         unsafe extern "C" fn collation_needed_callback(
             arg1: *mut c_void,
             arg2: *mut ffi::sqlite3,
@@ -128,10 +147,9 @@ impl InnerConnection {
             let callback: fn(&Connection, &str) -> Result<()> = mem::transmute(arg1);
             let res = catch_unwind(|| {
                 let conn = Connection::from_handle(arg2).unwrap();
-                let collation_name = {
-                    let c_slice = CStr::from_ptr(arg3).to_bytes();
-                    str::from_utf8(c_slice).expect("illegal collation sequence name")
-                };
+                let collation_name = CStr::from_ptr(arg3)
+                    .to_str()
+                    .expect("illegal collation sequence name");
                 callback(&conn, collation_name)
             });
             if res.is_err() {
@@ -180,9 +198,7 @@ mod test {
     #[test]
     fn test_unicase() -> Result<()> {
         let db = Connection::open_in_memory()?;
-
         db.create_collation("unicase", unicase_compare)?;
-
         collate(db)
     }
 
@@ -211,5 +227,12 @@ mod test {
         let db = Connection::open_in_memory()?;
         db.collation_needed(collation_needed)?;
         collate(db)
+    }
+
+    #[test]
+    fn remove_collation() -> Result<()> {
+        let db = Connection::open_in_memory()?;
+        db.create_collation("unicase", unicase_compare)?;
+        db.remove_collation("unicase")
     }
 }

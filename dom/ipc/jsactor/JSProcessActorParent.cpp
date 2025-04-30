@@ -27,10 +27,8 @@ JSObject* JSProcessActorParent::WrapObject(JSContext* aCx,
 void JSProcessActorParent::Init(const nsACString& aName,
                                 nsIDOMProcessParent* aManager) {
   MOZ_ASSERT(!mManager, "Cannot Init() a JSProcessActorParent twice!");
-  SetName(aName);
   mManager = aManager;
-
-  InvokeCallback(CallbackFunction::ActorCreated);
+  JSActor::Init(aName);
 }
 
 JSProcessActorParent::~JSProcessActorParent() { MOZ_ASSERT(!mManager); }

@@ -831,7 +831,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(Selection)
   }
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mSelectionChangeEventDispatcher)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mSelectionListeners)
-  MOZ_KnownLive(tmp)->RemoveAllRangesInternal(IgnoreErrors());
+  MOZ_KnownLive(tmp)->RemoveAllRangesInternal(IgnoreErrors(), IsUnlinking::Yes);
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mFrameSelection)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mHighlightData.mHighlight)
   NS_IMPL_CYCLE_COLLECTION_UNLINK_PRESERVED_WRAPPER
@@ -1467,7 +1467,7 @@ nsresult Selection::StyledRanges::RemoveCollapsedRanges() {
   return NS_OK;
 }
 
-void Selection::Clear(nsPresContext* aPresContext) {
+void Selection::Clear(nsPresContext* aPresContext, IsUnlinking aIsUnlinking) {
   RemoveAnchorFocusRange();
 
   mStyledRanges.UnregisterSelection();
@@ -2230,10 +2230,10 @@ void Selection::SetAncestorLimiter(Element* aLimiter) {
   }
 }
 
-void Selection::StyledRanges::UnregisterSelection() {
+void Selection::StyledRanges::UnregisterSelection(IsUnlinking aIsUnlinking) {
   uint32_t count = mRanges.Length();
   for (uint32_t i = 0; i < count; ++i) {
-    mRanges[i].mRange->UnregisterSelection(mSelection);
+    mRanges[i].mRange->UnregisterSelection(mSelection, aIsUnlinking);
   }
 }
 
@@ -2438,14 +2438,15 @@ void Selection::GetComposedRanges(
   }
 }
 
-void Selection::RemoveAllRangesInternal(ErrorResult& aRv) {
+void Selection::RemoveAllRangesInternal(ErrorResult& aRv,
+                                        IsUnlinking aIsUnlinking) {
   if (!mFrameSelection) {
     aRv.Throw(NS_ERROR_NOT_INITIALIZED);
     return;
   }
 
   RefPtr<nsPresContext> presContext = GetPresContext();
-  Clear(presContext);
+  Clear(presContext, aIsUnlinking);
 
   // Turn off signal for table selection
   RefPtr<nsFrameSelection> frameSelection = mFrameSelection;

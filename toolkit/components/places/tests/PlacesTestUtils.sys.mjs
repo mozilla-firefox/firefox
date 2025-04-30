@@ -176,6 +176,22 @@ export var PlacesTestUtils = Object.freeze({
     );
   },
 
+  /*
+   * Helper function to call PlacesUtils.favicons.getFaviconForPage(). This
+   * function throws an error if the status of
+   * PlacesUtils.favicons.setFaviconForPage() is not success.
+   *
+   * @param {string or URL or nsIURI} pageURI
+   * @param {Number} [optional] preferredWidth
+   * @return {Promise<nsIFavicon>} resolved with favicon data
+   */
+  getFaviconForPage(pageURI, preferredWidth = 0) {
+    return lazy.PlacesUtils.favicons.getFaviconForPage(
+      lazy.PlacesUtils.toURI(pageURI),
+      preferredWidth
+    );
+  },
+
   /**
    * Get favicon data for given URL from database.
    *

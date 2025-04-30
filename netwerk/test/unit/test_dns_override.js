@@ -50,8 +50,6 @@ const OTHER = "example.com";
 
 add_setup(async function setup() {
   trr_test_setup();
-  // For canon-name flags
-  Services.prefs.setBoolPref("network.dns.always_ai_canonname", false);
 
   registerCleanupFunction(async () => {
     trr_clear_prefs();

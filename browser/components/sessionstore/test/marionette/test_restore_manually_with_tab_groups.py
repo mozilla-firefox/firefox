@@ -243,6 +243,69 @@ class TestSessionRestoreWithTabGroups(SessionStoreTestCase):
             """
         )
 
+    def test_saved_groups_no_longer_saved_if_restored_to_tab_strip_bug1956254(self):
+        self.wait_for_windows(
+            self.all_windows, "Not all requested windows have been opened"
+        )
+
+        self.marionette.execute_async_script(
+            """
+            let resolve = arguments[0];
+            gBrowser.addTabGroup([gBrowser.tabs[3], gBrowser.tabs[4]], { id: "not-saved-after-restore-1", label: "open-1" });
+            gBrowser.addTabGroup([gBrowser.tabs[1], gBrowser.tabs[2]], { id: "not-saved-after-restore-2", label: "open-2" });
+
+            let { TabStateFlusher } = ChromeUtils.importESModule("resource:///modules/sessionstore/TabStateFlusher.sys.mjs");
+            TabStateFlusher.flushWindow(gBrowser.ownerGlobal).then(resolve);
+            """
+        )
+
+        self.marionette.quit()
+        self.marionette.start_session()
+        self.marionette.set_context("chrome")
+
+        self.assertEqual(
+            self.marionette.execute_script(
+                """
+                return SessionStore.savedGroups.length;
+                """
+            ),
+            2,
+            "There are two saved groups in the default state before restoration",
+        )
+
+        self.marionette.execute_script(
+            """
+            SessionStore.restoreLastSession();
+            """
+        )
+        self.wait_for_tabcount(5, "Waiting for 5 tabs")
+
+        self.assertEqual(
+            self.marionette.execute_script(
+                """
+                return SessionStore.savedGroups.length;
+                """
+            ),
+            0,
+            "The two saved groups should no longer be saved because they were restored to the tab strip",
+        )
+
+        tab_group_ids = set(
+            self.marionette.execute_script(
+                """
+                return gBrowser.getAllTabGroups().map(tabGroup => tabGroup.id);
+                """
+            )
+        )
+        self.assertTrue(
+            "not-saved-after-restore-1" in tab_group_ids,
+            "the first saved tab group should now be in the tab strip",
+        )
+        self.assertTrue(
+            "not-saved-after-restore-2" in tab_group_ids,
+            "the second saved tab group should now be in the tab strip",
+        )
+
     def wait_for_tabcount(self, expected_tabcount, message, timeout=5):
         current_tabcount = None
 

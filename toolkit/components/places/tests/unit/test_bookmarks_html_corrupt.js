@@ -109,18 +109,11 @@ var database_check = async function () {
   root.containerOpen = false;
 
   // favicons
-  await new Promise(resolve => {
-    PlacesUtils.favicons.getFaviconDataForPage(
-      uri(TEST_FAVICON_PAGE_URL),
-      (aURI, aDataLen) => {
-        // aURI should never be null when aDataLen > 0.
-        Assert.notEqual(aURI, null);
-        // Favicon data is stored in the bookmarks file as a "data:" URI.  For
-        // simplicity, instead of converting the data we receive to a "data:" URI
-        // and comparing it, we just check the data size.
-        Assert.equal(TEST_FAVICON_DATA_SIZE, aDataLen);
-        resolve();
-      }
-    );
-  });
+  let favicon = await PlacesTestUtils.getFaviconForPage(TEST_FAVICON_PAGE_URL);
+  // aURI should never be null when rawData.length > 0.
+  Assert.notEqual(favicon.uri, null);
+  // Favicon data is stored in the bookmarks file as a "data:" URI.  For
+  // simplicity, instead of converting the data we receive to a "data:" URI
+  // and comparing it, we just check the data size.
+  Assert.equal(TEST_FAVICON_DATA_SIZE, favicon.rawData.length);
 };

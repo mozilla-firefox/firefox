@@ -82,11 +82,15 @@ def _tag_task_context():
                     return event
 
                 event.setdefault("tags", {}).setdefault(
-                    "stageId", task_context.stageId()
+                    "stageId", str(task_context.stageId())
                 )
-                event["tags"].setdefault("partitionId", task_context.partitionId())
-                event["tags"].setdefault("attemptNumber", task_context.attemptNumber())
-                event["tags"].setdefault("taskAttemptId", task_context.taskAttemptId())
+                event["tags"].setdefault("partitionId", str(task_context.partitionId()))
+                event["tags"].setdefault(
+                    "attemptNumber", str(task_context.attemptNumber())
+                )
+                event["tags"].setdefault(
+                    "taskAttemptId", str(task_context.taskAttemptId())
+                )
 
                 if task_context._localProperties:
                     if "sentry_app_name" in task_context._localProperties:

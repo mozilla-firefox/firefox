@@ -39,6 +39,10 @@ export function AdBannerContextMenu({
   const [contextMenuClassNames, setContextMenuClassNames] =
     useState("ads-context-menu");
 
+  // The keyboard access parameter is passed down to LinkMenu component
+  // that uses it to focus on the first context menu option for accessibility.
+  const [isKeyboardAccess, setIsKeyboardAccess] = useState(false);
+
   /**
    * Toggles the style fix for context menu hover/active styles.
    * This allows us to have unobtrusive, transparent button background by default,
@@ -54,11 +58,28 @@ export function AdBannerContextMenu({
     }
   };
 
-  const onClick = e => {
-    e.preventDefault();
-
+  /**
+   * Toggles the context menu to open or close. Sets state depending on whether
+   * the context menu is accessed by mouse or keyboard.
+   *
+   * @param isKeyBoard
+   */
+  const toggleContextMenu = isKeyBoard => {
     toggleContextMenuStyleSwitch(!showContextMenu);
     setShowContextMenu(!showContextMenu);
+    setIsKeyboardAccess(isKeyBoard);
+  };
+
+  const onClick = e => {
+    e.preventDefault();
+    toggleContextMenu(false);
+  };
+
+  const onKeyDown = e => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleContextMenu(true);
+    }
   };
 
   const onUpdate = () => {
@@ -74,11 +95,13 @@ export function AdBannerContextMenu({
           size="default"
           iconsrc="chrome://global/skin/icons/more.svg"
           onClick={onClick}
+          onKeyDown={onKeyDown}
         />
         {showContextMenu && (
           <LinkMenu
             onUpdate={onUpdate}
             dispatch={dispatch}
+            keyboardAccess={isKeyboardAccess}
             options={ADBANNER_CONTEXT_MENU_OPTIONS}
             shouldSendImpressionStats={true}
             userEvent={ac.DiscoveryStreamUserEvent}

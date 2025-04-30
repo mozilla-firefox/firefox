@@ -12,10 +12,15 @@
 [package]
 edition = "2021"
 name = "libsqlite3-sys"
-version = "0.28.0"
+version = "0.31.0"
 authors = ["The rusqlite developers"]
 build = "build.rs"
 links = "sqlite3"
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
 description = "Native bindings to the libsqlite3 library"
 readme = "README.md"
 keywords = [
@@ -26,46 +31,6 @@ keywords = [
 categories = ["external-ffi-bindings"]
 license = "MIT"
 repository = "https://github.com/rusqlite/rusqlite"
-
-[dependencies.openssl-sys]
-version = "0.9"
-optional = true
-
-[build-dependencies.bindgen]
-version = "0.69"
-features = ["runtime"]
-optional = true
-default-features = false
-
-[build-dependencies.cc]
-version = "1.0"
-optional = true
-
-[build-dependencies.pkg-config]
-version = "0.3.19"
-optional = true
-
-[build-dependencies.prettyplease]
-version = "0.2"
-optional = true
-
-[build-dependencies.quote]
-version = "1"
-optional = true
-default-features = false
-
-[build-dependencies.syn]
-version = "2.0"
-features = [
-    "full",
-    "extra-traits",
-    "visit-mut",
-]
-optional = true
-
-[build-dependencies.vcpkg]
-version = "0.2"
-optional = true
 
 [features]
 buildtime_bindgen = [
@@ -107,3 +72,47 @@ sqlcipher = []
 unlock_notify = []
 wasm32-wasi-vfs = []
 with-asan = []
+
+[lib]
+name = "libsqlite3_sys"
+path = "src/lib.rs"
+
+[dependencies.openssl-sys]
+version = "0.9.103"
+optional = true
+
+[build-dependencies.bindgen]
+version = "0.71"
+features = ["runtime"]
+optional = true
+default-features = false
+
+[build-dependencies.cc]
+version = "1.1.6"
+optional = true
+
+[build-dependencies.pkg-config]
+version = "0.3.19"
+optional = true
+
+[build-dependencies.prettyplease]
+version = "0.2.20"
+optional = true
+
+[build-dependencies.quote]
+version = "1.0.36"
+optional = true
+default-features = false
+
+[build-dependencies.syn]
+version = "2.0.72"
+features = [
+    "full",
+    "extra-traits",
+    "visit-mut",
+]
+optional = true
+
+[build-dependencies.vcpkg]
+version = "0.2.15"
+optional = true

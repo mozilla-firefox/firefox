@@ -1,9 +1,5 @@
 [DEFAULT]
 head = ""
-skip-if = [
-  "os == 'android'",
-  "os == 'win' && msix", # Does not work in MSIX builds.
-]
 support-files = [
   "autoconfig-all.cfg",
   "autoconfig-latin1.cfg",
@@ -13,6 +9,8 @@ support-files = [
   "autoconfig.js",
   "autoconfig-no-sandbox.js",
 ]
+run-if = ["!msix"] # Does not work in MSIX builds.
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64' && debug"]
 
 ["test_autoconfig.js"]
 

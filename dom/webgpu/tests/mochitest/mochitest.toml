@@ -1,0 +1,81 @@
+[DEFAULT]
+subsuite = "webgpu"
+
+# This test suite should run when WebGPU is enabled by the preprocessor
+# conditionals in `gfxPlatform::InitWebGPUConfig`.
+#
+# This condition should be the exact complement of the `run-if`
+# condition in `mochitest-disabled.html`.
+run-if = ["nightly_build || (os == 'win' && early_beta_or_earlier)"]
+
+# `test-verify` jobs don't guarantee a GPU, so skip them.
+skip-if = ["verify"]
+
+prefs = [
+  "dom.webgpu.enabled=true",
+  "dom.webgpu.workers.enabled=true",
+]
+support-files = [
+  "worker_wrapper.js",
+  "test_basic_canvas.worker.js",
+  "test_submit_render_empty.worker.js",
+]
+
+# WebGPU is only available in secure contexts.
+#
+# See spec WebIDL, like this: https://www.w3.org/TR/webgpu/#navigatorgpu
+scheme = "https"
+
+["test_basic_canvas.worker.html"]
+
+["test_buffer_mapping.html"]
+
+["test_buffer_mapping_invalid_device.html"]
+
+["test_buffer_mapping_overlapping_views.html"]
+
+["test_command_buffer_creation.html"]
+
+["test_compilation_message_pos.html"]
+
+["test_context_configure.html"]
+
+["test_core_features_and_limits.html"]
+
+["test_device_creation.html"]
+
+["test_device_lost.html"]
+
+["test_double_encoder_finish.html"]
+
+["test_enabled.html"]
+
+["test_encoder_cycle_collection.html"]
+
+["test_error_scope.html"]
+
+["test_insecure_context.html"]
+# This test checks that WebGPU is not available in insecure contexts.
+scheme = "http"
+
+["test_navigator_gpu_not_replaceable.html"]
+
+["test_queue_copyExternalImageToTexture.html"]
+
+["test_queue_write.html"]
+
+["test_queue_write_invalid_device.html"]
+
+["test_rfp_clamp_limits_off.html"]
+
+["test_set_bind_group_null.html"]
+
+["test_shared_array_buffer.html"]
+
+["test_submit_compute_empty.html"]
+
+["test_submit_render_empty.html"]
+
+["test_submit_render_empty.worker.html"]
+
+["test_adapter_enabled.html"]

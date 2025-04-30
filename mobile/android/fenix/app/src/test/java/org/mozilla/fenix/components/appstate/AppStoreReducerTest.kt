@@ -229,4 +229,18 @@ class AppStoreReducerTest {
             appStore.state.snackbarState,
         )
     }
+
+    @Test
+    fun `WHEN the current tab is closed THEN show a snackbar`() {
+        val appStore = AppStore()
+
+        appStore.dispatch(
+            AppAction.CurrentTabClosed(true),
+        ).joinBlocking()
+
+        assertEquals(
+            SnackbarState.CurrentTabClosed(true),
+            appStore.state.snackbarState,
+        )
+    }
 }

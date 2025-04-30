@@ -81,6 +81,24 @@ export class ErrorTest extends Fixture {
   }
 
   /**
+   * Pop `count` error scopes, and assert they all return `null`. Chunks the
+   * awaits so we only `Promise.all` 200 scopes at a time, instead of stalling
+   * on a huge `Promise.all` all at once. This helps Chromium's "heartbeat"
+   * mechanism know that the test is still running (and not hung).
+   */
+  async chunkedPopManyErrorScopes(count: number) {
+    const promises = [];
+    for (let i = 0; i < count; i++) {
+      promises.push(this.device.popErrorScope());
+      if (promises.length >= 200) {
+        this.expect((await Promise.all(promises)).every(e => e === null));
+        promises.length = 0;
+      }
+    }
+    this.expect((await Promise.all(promises)).every(e => e === null));
+  }
+
+  /**
    * Expect an uncapturederror event to occur. Note: this MUST be awaited, because
    * otherwise it could erroneously pass by capturing an error from later in the test.
    */

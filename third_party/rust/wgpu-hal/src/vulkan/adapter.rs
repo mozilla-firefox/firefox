@@ -1,4 +1,5 @@
-use std::{borrow::ToOwned as _, collections::BTreeMap, ffi::CStr, sync::Arc, vec::Vec};
+use alloc::{borrow::ToOwned as _, collections::BTreeMap, sync::Arc, vec::Vec};
+use core::ffi::CStr;
 
 use ash::{amd, ext, google, khr, vk};
 use parking_lot::Mutex;
@@ -559,8 +560,7 @@ impl PhysicalDeviceFeatures {
             | Df::INDIRECT_EXECUTION
             | Df::VIEW_FORMATS
             | Df::UNRESTRICTED_EXTERNAL_TEXTURE_COPIES
-            | Df::NONBLOCKING_QUERY_RESOLVE
-            | Df::VERTEX_AND_INSTANCE_INDEX_RESPECTS_RESPECTIVE_FIRST_VALUE_IN_INDIRECT_DRAW;
+            | Df::NONBLOCKING_QUERY_RESOLVE;
 
         dl_flags.set(
             Df::SURFACE_VIEW_FORMATS,
@@ -1061,6 +1061,13 @@ impl PhysicalDeviceProperties {
         // Optional `VK_EXT_external_memory_dma`
         if self.supports_extension(ext::external_memory_dma_buf::NAME) {
             extensions.push(ext::external_memory_dma_buf::NAME);
+        }
+
+        // Optional `VK_EXT_memory_budget`
+        if self.supports_extension(ext::memory_budget::NAME) {
+            extensions.push(ext::memory_budget::NAME);
+        } else {
+            log::warn!("VK_EXT_memory_budget is not available.")
         }
 
         // Require `VK_KHR_draw_indirect_count` if the associated feature was requested

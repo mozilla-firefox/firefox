@@ -1,6 +1,8 @@
 use core::ffi::c_void;
 use core::ptr::NonNull;
 
+use super::DisplayHandle;
+
 /// Raw display handle for the Web.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -18,6 +20,26 @@ impl WebDisplayHandle {
     /// ```
     pub fn new() -> Self {
         Self {}
+    }
+}
+
+impl DisplayHandle<'static> {
+    /// Create a Web-based display handle.
+    ///
+    /// As no data is borrowed by this handle, it is completely safe to create. This function
+    /// may be useful to windowing framework implementations that want to avoid unsafe code.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use raw_window_handle::{DisplayHandle, HasDisplayHandle};
+    /// # fn do_something(rwh: impl HasDisplayHandle) { let _ = rwh; }
+    /// let handle = DisplayHandle::web();
+    /// do_something(handle);
+    /// ```
+    pub fn web() -> Self {
+        // SAFETY: No data is borrowed.
+        unsafe { Self::borrow_raw(WebDisplayHandle::new().into()) }
     }
 }
 

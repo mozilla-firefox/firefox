@@ -12,11 +12,11 @@
 import os
 import pprint
 import re
-import shutil
 import sys
 import tempfile
 import unittest
 
+import mozfile
 import mozinfo
 import six
 from mozlog import structured
@@ -485,7 +485,7 @@ class XPCShellTestsTests(unittest.TestCase):
         self.x.harness_timeout = 30 if not mozinfo.info["ccov"] else 60
 
     def tearDown(self):
-        shutil.rmtree(self.tempdir)
+        mozfile.remove(self.tempdir)
         self.x.shutdownNode()
 
     def writeFile(self, name, contents, mode="w"):
@@ -509,7 +509,7 @@ class XPCShellTestsTests(unittest.TestCase):
         """
         testlines = []
         for t in tests:
-            testlines.append('["%s"]' % (t if isinstance(t, (str,)) else t[0]))
+            testlines.append('["%s"]' % (t if isinstance(t, str) else t[0]))
             if isinstance(t, tuple):
                 testlines.extend(t[1:])
         prefslines = []

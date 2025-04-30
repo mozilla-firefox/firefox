@@ -70,7 +70,7 @@ add_task(async function testEnhancedTrackingProtectionMessage() {
 
   await testLearnMoreClickOpenNewTab(
     message,
-    "https://developer.mozilla.org/Firefox/Privacy/Tracking_Protection" +
+    "https://developer.mozilla.org/Firefox/Privacy/Guides/Tracking_Protection" +
       DOCS_GA_PARAMS
   );
 });
@@ -238,10 +238,84 @@ add_task(async function testCookieBlockedByPermissionMessage() {
   Services.perms.removeFromPrincipal(p, "cookie");
 });
 
+add_task(async function testCookieBlockedForUserContentResourceMessage() {
+  info("Test usercontent resource cookie blocking");
+  // Bug 1518138: GC heuristics are broken for this test, so that the test
+  // ends up running out of memory. Try to work-around the problem by GCing
+  // before the test begins.
+  Cu.forceShrinkingGC();
+  await pushPref("privacy.antitracking.isolateContentScriptResources", true);
+
+  const extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      content_scripts: [
+        {
+          matches: [`*://example.com/*/test-blank.html`],
+          js: ["content_scripts.js"],
+          all_frames: true,
+        },
+      ],
+    },
+    files: {
+      "content_scripts.js": `
+            // An image
+            const img = document.createElement("img");
+            img.src = "https://example.com/${TEST_PATH}test-image.png";
+            document.body.appendChild(img);
+
+            // A script
+            const script = document.createElement("script");
+            script.src = "https://example.com/${TEST_PATH}empty-with-cookie.js";
+            document.body.appendChild(script);
+
+            // An iframe
+            const iframe = document.createElement("iframe");
+            iframe.src = "https://example.com/${TEST_PATH}test-blank-with-cookie.html";
+            document.body.appendChild(iframe);
+          `,
+    },
+  });
+
+  await extension.startup();
+
+  const { hud, win } = await openNewWindowAndConsole(
+    "https://example.com/" + TEST_PATH + "test-blank.html"
+  );
+
+  await waitFor(
+    () =>
+      findWarningMessage(
+        hud,
+        "Request to access cookie or storage on “https://example.com/" +
+          `${TEST_PATH}test-image.png” was blocked because we are blocking all ` +
+          "storage access requests."
+      ) &&
+      findWarningMessage(
+        hud,
+        "Request to access cookie or storage on “https://example.com/" +
+          `${TEST_PATH}empty-with-cookie.js” was blocked because we are ` +
+          "blocking all storage access requests."
+      ) &&
+      findWarningMessage(
+        hud,
+        "Request to access cookie or storage on “https://example.com/" +
+          `${TEST_PATH}test-blank-with-cookie.html” was blocked because ` +
+          "we are blocking all storage access requests."
+      )
+  );
+  ok(true, "Third-party storage access blocked message was displayed");
+
+  // We explicitely destroy the toolbox in order to ensure waiting for its full destruction
+  // and avoid leak / pending requests
+  await hud.toolbox.destroy();
+  win.close();
+
+  await extension.unload();
+});
+
 function getStorageErrorUrl(category) {
   const BASE_STORAGE_ERROR_URL =
-    "https://developer.mozilla.org/docs/Mozilla/Firefox/" +
-    "Privacy/Storage_access_policy/Errors/";
+    "https://developer.mozilla.org/docs/Web/Privacy/Guides/Storage_Access_Policy/Errors/";
   const STORAGE_ERROR_URL_PARAMS = new URLSearchParams({
     utm_source: "devtools",
     utm_medium: "firefox-cookie-errors",

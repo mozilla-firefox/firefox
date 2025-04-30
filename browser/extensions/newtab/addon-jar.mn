@@ -10,7 +10,7 @@ browser.jar:
   builtin-addons/newtab/manifest.json (./manifest.json)
   builtin-addons/newtab/webext-glue/background.js (./webext-glue/background.js)
   builtin-addons/newtab/webext-glue/schema.json (./webext-glue/schema.json)
-  builtin-addons/newtab/webext-glue/builtin-newtab.js (./webext-glue/builtin-newtab.js)
+* builtin-addons/newtab/webext-glue/builtin-newtab.js (./webext-glue/builtin-newtab.js)
   builtin-addons/newtab/lib/ (./lib/*)
   builtin-addons/newtab/common/ (./common/*)
 * builtin-addons/newtab/data/content/abouthomecache/page.html.template (./data/content/abouthomecache/page.html.template)

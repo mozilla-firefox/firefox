@@ -66,7 +66,7 @@ describe("MessageWrapper Component", () => {
     assert.ok(wrapper.find(".message-wrapper").exists());
   });
 
-  it("should not render if `Messages.isHidden` is true", () => {
+  it("should not render if `Messages.isHidden` is true and hiddenOverride is false", () => {
     wrapper = mount(
       <WrapWithProvider
         state={{
@@ -78,6 +78,7 @@ describe("MessageWrapper Component", () => {
         }}
       >
         <MessageWrapper
+          hiddenOverride={false}
           dispatch={dispatch}
           document={{
             visibilityState: "visible",

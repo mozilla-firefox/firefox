@@ -134,7 +134,8 @@ add_task(async function test_json_data() {
       );
 
       ok(
-        !!matches && Array.isArray(matches) && matches.length,
+        !interventions.find(i => i.content_scripts || i.ua_string) ||
+          (!!matches && Array.isArray(matches) && matches.length),
         `matches key exists and is an array with items for id ${id}`
       );
       try {
@@ -167,6 +168,7 @@ add_task(async function test_json_data() {
       "skip_if",
       "ua_string",
     ];
+    let custom_found = false;
     for (let intervention of interventions) {
       for (const name in intervention) {
         const is_custom = name in custom_fns;
@@ -176,18 +178,22 @@ add_task(async function test_json_data() {
           `key '${name}' is actually expected for id ${id}`
         );
         if (is_custom) {
-          const { details } = custom_fns[name];
-          for (const detailName in intervention[name]) {
-            ok(
-              details.includes(detailName),
-              `detail '${detailName}' is actually expected for custom function ${name} in id ${id}`
-            );
-          }
-          for (const detailName of details) {
-            ok(
-              detailName in intervention[name],
-              `expected detail '${detailName}' is being passed to custom function ${name} in id ${id}`
-            );
+          custom_found = true;
+          const { details, optionalDetails } = custom_fns[name];
+          for (const customArgs of intervention[name]) {
+            for (const detailName in customArgs) {
+              ok(
+                details.includes(detailName) ||
+                  optionalDetails.includes(detailName),
+                `detail '${detailName}' is actually expected for custom function ${name} in id ${id}`
+              );
+            }
+            for (const detailName of details) {
+              ok(
+                detailName in customArgs,
+                `expected detail '${detailName}' is being passed to custom function ${name} in id ${id}`
+              );
+            }
           }
         }
       }
@@ -268,7 +274,7 @@ add_task(async function test_json_data() {
         }
       }
       ok(
-        content_scripts || skip_if || ua_string,
+        content_scripts || skip_if || ua_string || custom_found,
         `Interventions are defined for id ${id}`
       );
       if (check_valid_array(skip_if, "skip_if", id)) {

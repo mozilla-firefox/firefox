@@ -2549,6 +2549,11 @@ void ChromeUtils::NotifyDevToolsClosed(GlobalObject& aGlobal) {
   ChromeUtils::sDevToolsOpenedCount--;
 }
 
+/* static */
+bool ChromeUtils::IsJSIdentifier(GlobalObject& aGlobal, const nsAString& aStr) {
+  return JS_IsIdentifier(aStr.BeginReading(), aStr.Length());
+}
+
 #ifdef MOZ_WMF_CDM
 /* static */
 already_AddRefed<Promise> ChromeUtils::GetWMFContentDecryptionModuleInformation(
@@ -2583,6 +2588,13 @@ void ChromeUtils::AndroidMoveTaskToBack(GlobalObject& aGlobal) {
   MOZ_RELEASE_ASSERT(XRE_IsParentProcess());
   java::GeckoAppShell::MoveTaskToBack();
 #endif
+}
+
+already_AddRefed<nsIContentSecurityPolicy> ChromeUtils::CreateCSPFromHeader(
+    GlobalObject& aGlobal, const nsAString& aHeader, nsIURI* aSelfURI,
+    nsIPrincipal* aLoadingPrincipal, ErrorResult& aRv) {
+  return CSP_CreateFromHeader(aHeader, aSelfURI, aLoadingPrincipal,
+                             aRv);
 }
 
 }  // namespace mozilla::dom

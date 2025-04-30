@@ -134,7 +134,6 @@ def check_unit_in_name(
 
     time_unit = getattr(metric, "time_unit", None)
     memory_unit = getattr(metric, "memory_unit", None)
-    unit = getattr(metric, "unit", None)
 
     if time_unit is not None:
         if (
@@ -173,14 +172,6 @@ def check_unit_in_name(
                 f"Suffix '{unit_in_name}' doesn't match memory_unit "
                 f"{memory_unit.name}'. "
                 "Confirm the unit is correct and only include memory_unit."
-            )
-
-    elif unit is not None:
-        if unit_in_name == unit:
-            yield (
-                f"Suffix '{unit_in_name}' is redundant with unit param "
-                f"'{unit}'. "
-                "Only include unit."
             )
 
 

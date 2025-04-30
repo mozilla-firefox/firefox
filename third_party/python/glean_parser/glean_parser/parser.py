@@ -188,19 +188,32 @@ def _instantiate_metrics(
         if category_key == "no_lint":
             continue
         if not config.get("allow_reserved") and category_key.split(".")[0] == "glean":
-            yield util.format_error(
-                filepath,
-                f"For category '{category_key}'",
-                "Categories beginning with 'glean' are reserved for "
-                "Glean internal use.",
-            )
-            continue
+            if category_key not in ("glean.attribution", "glean.distribution"):
+                yield util.format_error(
+                    filepath,
+                    f"For category '{category_key}'",
+                    "Categories beginning with 'glean' are reserved for "
+                    "Glean internal use.",
+                )
+                continue
         all_objects.setdefault(category_key, DictWrapper())
 
         if not isinstance(category_val, dict):
             raise TypeError(f"Invalid content for {category_key}")
 
         for metric_key, metric_val in sorted(category_val.items()):
+            if (
+                not config.get("allow_reserved")
+                and category_key in ("glean.attribution", "glean.distribution")
+                and metric_key != "ext"
+            ):
+                yield util.format_error(
+                    filepath,
+                    f"For {category_key}.{metric_key}",
+                    f"May only use semi-reserved category {category_key} with metric name 'ext'",
+                    metric_val.defined_in["line"],
+                )
+                continue
             try:
                 metric_obj = Metric.make_metric(
                     category_key, metric_key, metric_val, validated=True, config=config
@@ -214,18 +227,28 @@ def _instantiate_metrics(
                 )
                 metric_obj = None
             else:
-                if (
-                    not config.get("allow_reserved")
-                    and "all-pings" in metric_obj.send_in_pings
-                ):
-                    yield util.format_error(
-                        filepath,
-                        f"On instance {category_key}.{metric_key}",
-                        'Only internal metrics may specify "all-pings" '
-                        'in "send_in_pings"',
-                        metric_val.defined_in["line"],
-                    )
-                    metric_obj = None
+                if not config.get("allow_reserved"):
+                    if "all-pings" in metric_obj.send_in_pings:
+                        yield util.format_error(
+                            filepath,
+                            f"On instance {category_key}.{metric_key}",
+                            'Only internal metrics may specify "all-pings" '
+                            'in "send_in_pings"',
+                            metric_val.defined_in["line"],
+                        )
+                        metric_obj = None
+                    elif (
+                        metric_obj.identifier()
+                        in ("glean.attribution.ext", "glean.distribution.ext")
+                        and metric_obj.type != "object"
+                    ):
+                        yield util.format_error(
+                            filepath,
+                            f"On instance {category_key}.{metric_key}",
+                            "Extended attribution/distribution metrics must be of type 'object'",
+                            metric_val.defined_in["line"],
+                        )
+                        metric_obj = None
 
             if metric_obj is not None:
                 metric_obj.no_lint = sorted(set(metric_obj.no_lint + global_no_lint))
@@ -481,16 +504,16 @@ def parse_objects(
                 raise TypeError(f"Invalid content for {filepath}")
 
             for category_key, category_val in sorted(content.items()):
-              if category_key.startswith("$"):
-                  continue
+                if category_key.startswith("$"):
+                    continue
 
-              interesting_metrics_dict.setdefault(category_key, DictWrapper())
+                interesting_metrics_dict.setdefault(category_key, DictWrapper())
 
-              if not isinstance(category_val, dict):
-                  raise TypeError(f"Invalid category_val for {category_key}")
+                if not isinstance(category_val, dict):
+                    raise TypeError(f"Invalid category_val for {category_key}")
 
-              for metric_key, metric_val in sorted(category_val.items()):
-                  interesting_metrics_dict[category_key][metric_key] = metric_val
+                for metric_key, metric_val in sorted(category_val.items()):
+                    interesting_metrics_dict[category_key][metric_key] = metric_val
 
         for category_key, category_val in all_objects.items():
             if category_key == "tags":

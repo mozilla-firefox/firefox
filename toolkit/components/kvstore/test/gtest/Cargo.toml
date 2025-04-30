@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 kvstore = { path = "../..", features = ["gtest"] }
 moz_task = { path = "../../../../../xpcom/rust/moz_task" }
-rusqlite = "0.31.0"
+rusqlite = "0.33.0"
 tempfile = "3"

@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_UTILS_RESULT_H
 #define SPA_UTILS_RESULT_H
@@ -39,8 +19,18 @@ extern "C" {
  * \{
  */
 
+#include <errno.h>
+
 #include <spa/utils/defs.h>
-#include <spa/utils/list.h>
+
+#ifndef SPA_API_RESULT
+ #ifdef SPA_API_IMPL
+  #define SPA_API_RESULT SPA_API_IMPL
+ #else
+  #define SPA_API_RESULT static inline
+ #endif
+#endif
+
 
 #define SPA_ASYNC_BIT			(1 << 30)
 #define SPA_ASYNC_SEQ_MASK		(SPA_ASYNC_BIT - 1)
@@ -53,13 +43,13 @@ extern "C" {
 #define SPA_RESULT_ASYNC_SEQ(res)	((res) & SPA_ASYNC_SEQ_MASK)
 #define SPA_RESULT_RETURN_ASYNC(seq)	(SPA_ASYNC_BIT | SPA_RESULT_ASYNC_SEQ(seq))
 
-#define spa_strerror(err)		\
-({					\
-	int _err = -err;		\
-	if (SPA_RESULT_IS_ASYNC(err))	\
-		_err = EINPROGRESS;	\
-	strerror(_err);			\
-})
+SPA_API_RESULT const char *spa_strerror(int err)
+{
+	int _err = -(err);
+	if (SPA_RESULT_IS_ASYNC(err))
+		_err = EINPROGRESS;
+	return strerror(_err);
+}
 
 /**
  * \}

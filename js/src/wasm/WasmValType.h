@@ -979,6 +979,19 @@ class MaybeRefType {
     return inner_;
   };
 
+  RefType& valueOr(RefType& aDefault) {
+    if (isSome()) {
+      return value();
+    }
+    return aDefault;
+  }
+  const RefType& valueOr(const RefType& aDefault) {
+    if (isSome()) {
+      return value();
+    }
+    return aDefault;
+  }
+
   bool operator==(const MaybeRefType& other) { return inner_ == other.inner_; }
   bool operator!=(const MaybeRefType& other) { return inner_ != other.inner_; }
 

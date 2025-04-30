@@ -219,6 +219,7 @@ V2_ROUTE_TEMPLATES = [
     "index.{trust-domain}.v2.{project}.pushdate.{build_date}.latest.{product}.{job-name}",
     "index.{trust-domain}.v2.{project}.pushlog-id.{pushlog_id}.{product}.{job-name}",
     "index.{trust-domain}.v2.{project}.revision.{branch_rev}.{product}.{job-name}",
+    "index.{trust-domain}.v2.{project}.revision.{branch_git_rev}.{product}.{job-name}",
 ]
 
 # {central, inbound, autoland} write to a "trunk" index prefix. This facilitates
@@ -232,6 +233,7 @@ V2_SHIPPABLE_TEMPLATES = [
     "index.{trust-domain}.v2.{project}.shippable.{build_date}.revision.{branch_rev}.{product}.{job-name}",  # noqa - too long
     "index.{trust-domain}.v2.{project}.shippable.{build_date}.latest.{product}.{job-name}",
     "index.{trust-domain}.v2.{project}.shippable.revision.{branch_rev}.{product}.{job-name}",
+    "index.{trust-domain}.v2.{project}.shippable.revision.{branch_git_rev}.{product}.{job-name}",
 ]
 
 V2_SHIPPABLE_L10N_TEMPLATES = [
@@ -259,6 +261,12 @@ TREEHERDER_ROUTE_ROOT = "tc-treeherder"
 def get_branch_rev(config):
     return config.params[
         "{}head_rev".format(config.graph_config["project-repo-param-prefix"])
+    ]
+
+
+def get_branch_git_rev(config):
+    return config.params[
+        "{}head_git_rev".format(config.graph_config["project-repo-param-prefix"])
     ]
 
 
@@ -1719,11 +1727,19 @@ def add_generic_index_routes(config, task):
     subs["product"] = index["product"]
     subs["trust-domain"] = config.graph_config["trust-domain"]
     subs["branch_rev"] = get_branch_rev(config)
+    try:
+        subs["branch_git_rev"] = get_branch_git_rev(config)
+    except KeyError:
+        pass
 
     project = config.params.get("project")
 
     for tpl in V2_ROUTE_TEMPLATES:
-        routes.append(tpl.format(**subs))
+        try:
+            routes.append(tpl.format(**subs))
+        except KeyError:
+            # Ignore errors that arise from branch_git_rev not being set.
+            pass
 
     # Additionally alias all tasks for "trunk" repos into a common
     # namespace.
@@ -1752,9 +1768,17 @@ def add_shippable_index_routes(config, task):
     subs["product"] = index["product"]
     subs["trust-domain"] = config.graph_config["trust-domain"]
     subs["branch_rev"] = get_branch_rev(config)
+    try:
+        subs["branch_git_rev"] = get_branch_git_rev(config)
+    except KeyError:
+        pass
 
     for tpl in V2_SHIPPABLE_TEMPLATES:
-        routes.append(tpl.format(**subs))
+        try:
+            routes.append(tpl.format(**subs))
+        except KeyError:
+            # Ignore errors that arise from branch_git_rev not being set.
+            pass
 
     # Also add routes for en-US
     task = add_shippable_l10n_index_routes(config, task, force_locale="en-US")

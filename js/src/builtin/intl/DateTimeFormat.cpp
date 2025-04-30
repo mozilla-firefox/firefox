@@ -25,19 +25,17 @@
 #include "builtin/intl/FormatBuffer.h"
 #include "builtin/intl/LanguageTag.h"
 #include "builtin/intl/SharedIntlData.h"
-#ifdef JS_HAS_TEMPORAL_API
-#  include "builtin/temporal/Calendar.h"
-#  include "builtin/temporal/Instant.h"
-#  include "builtin/temporal/PlainDate.h"
-#  include "builtin/temporal/PlainDateTime.h"
-#  include "builtin/temporal/PlainMonthDay.h"
-#  include "builtin/temporal/PlainTime.h"
-#  include "builtin/temporal/PlainYearMonth.h"
-#  include "builtin/temporal/Temporal.h"
-#  include "builtin/temporal/TemporalParser.h"
-#  include "builtin/temporal/TimeZone.h"
-#  include "builtin/temporal/ZonedDateTime.h"
-#endif
+#include "builtin/temporal/Calendar.h"
+#include "builtin/temporal/Instant.h"
+#include "builtin/temporal/PlainDate.h"
+#include "builtin/temporal/PlainDateTime.h"
+#include "builtin/temporal/PlainMonthDay.h"
+#include "builtin/temporal/PlainTime.h"
+#include "builtin/temporal/PlainYearMonth.h"
+#include "builtin/temporal/Temporal.h"
+#include "builtin/temporal/TemporalParser.h"
+#include "builtin/temporal/TimeZone.h"
+#include "builtin/temporal/ZonedDateTime.h"
 #include "gc/GCContext.h"
 #include "js/Date.h"
 #include "js/experimental/Intl.h"     // JS::AddMozDateTimeFormatConstructor
@@ -58,10 +56,7 @@
 #include "vm/NativeObject-inl.h"
 
 using namespace js;
-
-#ifdef JS_HAS_TEMPORAL_API
 using namespace js::temporal;
-#endif
 
 using JS::AutoStableStringChars;
 using JS::ClippedTime;
@@ -1643,10 +1638,6 @@ static mozilla::intl::DateTimeFormat* NewDateTimeFormat(
     df = dfResult.unwrap();
   }
 
-  // ECMAScript requires the Gregorian calendar to be used from the beginning
-  // of ECMAScript time.
-  df->SetStartTimeIfGregorian(StartOfTime);
-
   return df.release();
 }
 
@@ -1819,7 +1810,6 @@ bool js::intl_resolveDateTimeFormatComponents(JSContext* cx, unsigned argc,
  * https://tc39.es/proposal-temporal/#sec-todatetimeformattable
  */
 static auto ToDateTimeFormattable(const Value& value) {
-#ifdef JS_HAS_TEMPORAL_API
   // Step 1. (Inlined IsTemporalObject)
   if (value.isObject()) {
     auto* obj = CheckedUnwrapStatic(&value.toObject());
@@ -1848,13 +1838,11 @@ static auto ToDateTimeFormattable(const Value& value) {
       return DateTimeValueKind::Number;
     }
   }
-#endif
 
   // Step 2. (ToNumber performed in caller)
   return DateTimeValueKind::Number;
 }
 
-#ifdef JS_HAS_TEMPORAL_API
 static bool ResolveCalendarAndTimeZone(
     JSContext* cx, Handle<DateTimeFormatObject*> dateTimeFormat) {
   Rooted<JSObject*> internals(cx, intl::GetInternalsObject(cx, dateTimeFormat));
@@ -2178,7 +2166,6 @@ static bool HandleDateTimeTemporalZonedDateTime(
   *result = JS::TimeClip(double(milliseconds));
   return true;
 }
-#endif
 
 /**
  * HandleDateTimeOthers ( dateTimeFormat, x )
@@ -2214,7 +2201,6 @@ static bool HandleDateTimeValue(JSContext* cx, const char* method,
                                 Handle<Value> x, ClippedTime* result) {
   MOZ_ASSERT(x.isObject() || x.isNumber());
 
-#ifdef JS_HAS_TEMPORAL_API
   // Step 1.
   if (x.isObject()) {
     Rooted<JSObject*> unwrapped(cx, CheckedUnwrapStatic(&x.toObject()));
@@ -2268,7 +2254,6 @@ static bool HandleDateTimeValue(JSContext* cx, const char* method,
                               unwrapped->getClass()->name);
     return false;
   }
-#endif
 
   // Step 2.
   return HandleDateTimeOthers(cx, method, x.toNumber(), result);
@@ -2589,51 +2574,12 @@ static bool PartitionDateTimeRangePattern(
   MOZ_ASSERT(x.isValid());
   MOZ_ASSERT(y.isValid());
 
-  // We can't access the calendar used by UDateIntervalFormat to change it to a
-  // proleptic Gregorian calendar. Instead we need to call a different formatter
-  // function which accepts UCalendar instead of UDate.
-  // But creating new UCalendar objects for each call is slow, so when we can
-  // ensure that the input dates are later than the Gregorian change date,
-  // directly call the formatter functions taking UDate.
-
-  // The Gregorian change date "1582-10-15T00:00:00.000Z".
-  constexpr double GregorianChangeDate = -12219292800000.0;
-
-  // Add a full day to account for time zone offsets.
-  constexpr double GregorianChangeDatePlusOneDay =
-      GregorianChangeDate + msPerDay;
-
-  mozilla::intl::ICUResult result = Ok();
-  if (x.toDouble() < GregorianChangeDatePlusOneDay ||
-      y.toDouble() < GregorianChangeDatePlusOneDay) {
-    // Create calendar objects for the start and end date by cloning the date
-    // formatter calendar. The date formatter calendar already has the correct
-    // time zone set and was changed to use a proleptic Gregorian calendar.
-    auto startCal = df->CloneCalendar(x.toDouble());
-    if (startCal.isErr()) {
-      intl::ReportInternalError(cx, startCal.unwrapErr());
-      return false;
-    }
-
-    auto endCal = df->CloneCalendar(y.toDouble());
-    if (endCal.isErr()) {
-      intl::ReportInternalError(cx, endCal.unwrapErr());
-      return false;
-    }
-
-    result = dif->TryFormatCalendar(*startCal.unwrap(), *endCal.unwrap(),
-                                    formatted, equal);
-  } else {
-    // The common fast path which doesn't require creating calendar objects.
-    result =
-        dif->TryFormatDateTime(x.toDouble(), y.toDouble(), formatted, equal);
-  }
-
+  auto result =
+      dif->TryFormatDateTime(x.toDouble(), y.toDouble(), df, formatted, equal);
   if (result.isErr()) {
     intl::ReportInternalError(cx, result.unwrapErr());
     return false;
   }
-
   return true;
 }
 
@@ -2818,16 +2764,12 @@ bool js::TemporalObjectToLocaleString(JSContext* cx, const CallArgs& args,
 
   JS::ClippedTime x;
   if (kind == DateTimeValueKind::TemporalZonedDateTime) {
-#ifdef JS_HAS_TEMPORAL_API
     Rooted<ZonedDateTimeObject*> zonedDateTime(
         cx, &args.thisv().toObject().as<ZonedDateTimeObject>());
     if (!HandleDateTimeTemporalZonedDateTime(cx, dateTimeFormat, zonedDateTime,
                                              &x)) {
       return false;
     }
-#else
-    MOZ_CRASH("Temporal disabled");
-#endif
   } else {
     if (!HandleDateTimeValue(cx, "toLocaleString", dateTimeFormat, args.thisv(),
                              &x)) {

@@ -11,6 +11,7 @@ import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
 import org.mozilla.fenix.helpers.TestAssetHelper.TestAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.getGPCTestAsset
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.homeScreen
 import org.mozilla.fenix.ui.robots.navigationToolbar
 
@@ -26,6 +27,9 @@ class GlobalPrivacyControlTest : TestSetup() {
         isWallpaperOnboardingEnabled = false,
         skipOnboarding = true,
     )
+
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
 
     @Before
     override fun setUp() {

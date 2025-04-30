@@ -40,12 +40,12 @@ import stat
 import subprocess
 import sys
 import time
+from io import StringIO
 
 import mozpack.path as mozpath
 from mach.decorators import Command, CommandArgument
 from mozbuild.base import BinaryNotFoundException, MachCommandBase
 from mozbuild.dirutils import mkdir
-from six import StringIO
 
 AUTOMATION = "MOZ_AUTOMATION" in os.environ
 BROWSERTIME_ROOT = os.path.dirname(__file__)

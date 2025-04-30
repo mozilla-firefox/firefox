@@ -343,12 +343,22 @@ internal class BookmarksMiddleware(
                     rootNode.children?.find { it.guid == BookmarkRoot.Mobile.id }?.let {
                         val newChildren = listOf(desktopRoot) + it.children.orEmpty()
                         it.copy(children = newChildren)
-                    }?.let { collectFolders(it, shouldCollect = { node -> !state.isGuidBeingMoved(node.guid) }) }
+                    }?.let {
+                        collectFolders(
+                            node = it,
+                            comparator = state.sortOrder.comparator,
+                            shouldCollect = { node -> !state.isGuidBeingMoved(node.guid) },
+                        )
+                    }
                 }
             } else {
                 bookmarksStorage.getTree(BookmarkRoot.Mobile.id, recursive = true)
-                    ?.let { rootNode ->
-                        collectFolders(rootNode, shouldCollect = { node -> !state.isGuidBeingMoved(node.guid) })
+                    ?.let {
+                        collectFolders(
+                            node = it,
+                            comparator = state.sortOrder.comparator,
+                            shouldCollect = { node -> !state.isGuidBeingMoved(node.guid) },
+                        )
                     }
             }
 
@@ -429,6 +439,7 @@ internal class BookmarksMiddleware(
 
     private fun collectFolders(
         node: BookmarkNode,
+        comparator: Comparator<BookmarkItem>,
         indentation: Int = 0,
         shouldCollect: (BookmarkNode) -> Boolean = { _ -> true },
         folders: MutableList<SelectFolderItem> = mutableListOf(),
@@ -444,8 +455,11 @@ internal class BookmarksMiddleware(
                 ),
             )
 
-            node.children?.forEach { child ->
-                folders.addAll(collectFolders(child, indentation + 1, shouldCollect))
+            val sortedChildren = node.childItems().folders().sortedWith(comparator)
+            sortedChildren.forEach { child ->
+                val childNode = node.children!!.first { it.guid == child.guid }
+                val children = collectFolders(childNode, comparator, indentation + 1, shouldCollect)
+                folders.addAll(children)
             }
         }
 

@@ -182,7 +182,7 @@ function getFilterBoxURL() {
  * @return {string} The MDN URL for the documentation of Tracking Protection.
  */
 function getTrackingProtectionURL() {
-  return `${MDN_URL}Mozilla/Firefox/Privacy/Tracking_Protection${getGAParams()}`;
+  return `${MDN_URL}Mozilla/Firefox/Privacy/Guides/Tracking_Protection${getGAParams()}`;
 }
 
 /**

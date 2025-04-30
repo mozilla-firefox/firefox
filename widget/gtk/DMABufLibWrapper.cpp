@@ -226,14 +226,6 @@ void DMABufDevice::Configure() {
   LOGDMABUF(("DMABuf is enabled"));
 }
 
-#ifdef NIGHTLY_BUILD
-bool DMABufDevice::IsDMABufTexturesEnabled() {
-  return gfx::gfxVars::UseDMABuf() &&
-         StaticPrefs::widget_dmabuf_textures_enabled();
-}
-#else
-bool DMABufDevice::IsDMABufTexturesEnabled() { return false; }
-#endif
 bool DMABufDevice::IsDMABufWebGLEnabled() {
   LOGDMABUF(
       ("DMABufDevice::IsDMABufWebGLEnabled: UseDMABuf %d "

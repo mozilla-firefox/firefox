@@ -30,6 +30,17 @@ STEPS = {
         git commit -m "SECOND PATCH"
         """,
     ],
+    "jj": [
+        """
+        jj new -m "FIRST PATCH"
+        echo bar >> bar
+        """,
+        """
+        jj new -m "SECOND PATCH"
+        printf "baz\\r\\nqux" > baz
+        jj log -n0 # snapshot, since bug 1962245 suppresses automatic ones
+       """,
+    ],
 }
 
 

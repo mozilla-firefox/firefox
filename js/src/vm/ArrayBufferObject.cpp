@@ -685,6 +685,28 @@ bool ArrayBufferObject::resizeImpl(JSContext* cx, const CallArgs& args) {
     return false;
   }
 
+  if (obj->isWasm()) {
+    // Special case for resizing of Wasm buffers.
+    if (newByteLength % wasm::PageSize != 0) {
+      JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                                JSMSG_WASM_ARRAYBUFFER_PAGE_MULTIPLE);
+      return false;
+    }
+    if (newByteLength < obj->byteLength()) {
+      JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                                JSMSG_WASM_ARRAYBUFFER_CANNOT_SHRINK);
+      return false;
+    }
+
+    Pages newPages = Pages::fromByteLengthExact(newByteLength);
+    MOZ_RELEASE_ASSERT(WasmArrayBufferSourceMaxPages(obj).isSome());
+    Rooted<ArrayBufferObject*> res(
+        cx,
+        obj->wasmGrowToPagesInPlace(obj->wasmAddressType(), newPages, obj, cx));
+    MOZ_ASSERT_IF(res, res == obj);
+    return !!res;
+  }
+
   // Steps 7-15.
   obj->resize(size_t(newByteLength));
 
@@ -1606,8 +1628,6 @@ ArrayBufferObject* ArrayBufferObject::wasmGrowToPagesInPlace(
     return nullptr;
   }
 
-  CheckStealPreconditions(oldBuf, cx);
-
   MOZ_ASSERT(oldBuf->isWasm());
 
   // Check that the new pages is within our allowable range. This will
@@ -1618,6 +1638,25 @@ ArrayBufferObject* ArrayBufferObject::wasmGrowToPagesInPlace(
   }
   MOZ_ASSERT(newPages <= wasm::MaxMemoryPages(t) &&
              newPages.byteLength() <= ArrayBufferObject::ByteLengthLimit);
+
+  if (oldBuf->is<ResizableArrayBufferObject>()) {
+    RemoveCellMemory(oldBuf, oldBuf->byteLength(),
+                     MemoryUse::ArrayBufferContents);
+
+    if (!oldBuf->contents().wasmBuffer()->growToPagesInPlace(newPages)) {
+      // If fails, the buffer still exists on oldBuf, keep tracking
+      // cell memory there.
+      AddCellMemory(oldBuf, oldBuf->byteLength(),
+                    MemoryUse::ArrayBufferContents);
+      return nullptr;
+    }
+    oldBuf->setByteLength(newPages.byteLength());
+    AddCellMemory(oldBuf, newPages.byteLength(),
+                  MemoryUse::ArrayBufferContents);
+    return oldBuf;
+  }
+
+  CheckStealPreconditions(oldBuf, cx);
 
   // We have checked against the clamped maximum and so we know we can convert
   // to byte lengths now.
@@ -1662,6 +1701,8 @@ ArrayBufferObject* ArrayBufferObject::wasmGrowToPagesInPlace(
 ArrayBufferObject* ArrayBufferObject::wasmMovingGrowToPages(
     AddressType t, Pages newPages, Handle<ArrayBufferObject*> oldBuf,
     JSContext* cx) {
+  MOZ_ASSERT(oldBuf->is<FixedLengthArrayBufferObject>());
+
   // On failure, do not throw and ensure that the original buffer is
   // unmodified and valid.
   if (oldBuf->isLengthPinned()) {
@@ -2338,6 +2379,51 @@ ArrayBufferObject* ArrayBufferObject::createFromNewRawBuffer(
 
   return buffer;
 }
+
+template <typename ArrayBufferType>
+ArrayBufferType* ArrayBufferObject::createFromWasmObject(
+    JSContext* cx, Handle<ArrayBufferObject*> donor) {
+  // Similar to NewResizableArrayBufferObject/NewArrayBufferObject
+  constexpr auto allocKind =
+      GetArrayBufferGCObjectKind(ArrayBufferType::RESERVED_SLOTS);
+  ArrayBufferType* buffer =
+      NewArrayBufferObject<ArrayBufferType>(cx, nullptr, allocKind);
+  if (!buffer) {
+    return nullptr;
+  }
+
+  RemoveCellMemory(donor, donor->byteLength(), MemoryUse::ArrayBufferContents);
+
+  MOZ_RELEASE_ASSERT(donor->isWasm());
+  // The only flag allowed to be set on the `donor` is the resizable flag.
+  MOZ_RELEASE_ASSERT((donor->flags() & ~KIND_MASK & ~RESIZABLE) == 0);
+  BufferContents contents(donor->dataPointer(), WASM);
+  size_t byteLength = donor->byteLength();
+  [[maybe_unused]] size_t maxByteLength = donor->wasmClampedMaxByteLength();
+
+  // Overwrite |oldBuf|'s data pointer *without* releasing old data.
+  donor->setDataPointer(BufferContents::createNoData());
+  ArrayBufferObject::detach(cx, donor);
+
+  if constexpr (std::is_same_v<ArrayBufferType, ResizableArrayBufferObject>) {
+    buffer->initialize(byteLength, maxByteLength, contents);
+  } else {
+    static_assert(
+        std::is_same_v<ArrayBufferType, FixedLengthArrayBufferObject>);
+    buffer->initialize(byteLength, contents);
+  }
+
+  AddCellMemory(buffer, buffer->byteLength(), MemoryUse::ArrayBufferContents);
+  return buffer;
+}
+
+template FixedLengthArrayBufferObject*
+ArrayBufferObject::createFromWasmObject<FixedLengthArrayBufferObject>(
+    JSContext* cx, Handle<ArrayBufferObject*> donor);
+
+template ResizableArrayBufferObject*
+ArrayBufferObject::createFromWasmObject<ResizableArrayBufferObject>(
+    JSContext* cx, Handle<ArrayBufferObject*> donor);
 
 /* static */ uint8_t* ArrayBufferObject::stealMallocedContents(
     JSContext* cx, Handle<ArrayBufferObject*> buffer) {

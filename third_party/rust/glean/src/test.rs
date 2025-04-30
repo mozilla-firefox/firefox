@@ -1501,3 +1501,49 @@ fn pings_ride_along_builtin_pings() {
     let url = r.recv().unwrap();
     assert!(url.contains("ride-along"));
 }
+
+#[test]
+fn test_attribution_and_distribution_updates_before_glean_inits() {
+    let _lock = lock_test();
+    let dir = tempfile::tempdir().unwrap();
+    let tmpname = dir.path().to_path_buf();
+
+    destroy_glean(true, &tmpname);
+
+    // No Glean, let's set and update some attribution + distribution.
+    let mut attribution = AttributionMetrics {
+        source: Some("source".into()),
+        medium: Some("medium".into()),
+        campaign: Some("campaign".into()),
+        term: Some("term".into()),
+        content: Some("content".into()),
+    };
+    let distribution = DistributionMetrics {
+        name: Some("name".into()),
+    };
+    update_attribution(attribution.clone());
+    update_distribution(distribution);
+
+    let attribution_update = AttributionMetrics {
+        term: Some("new term".into()),
+        ..Default::default()
+    };
+    let distribution_update = DistributionMetrics {
+        name: Some("different name".into()),
+    };
+    update_attribution(attribution_update);
+    update_distribution(distribution_update.clone());
+
+    test_reset_glean(
+        ConfigurationBuilder::new(true, tmpname, GLOBAL_APPLICATION_ID)
+            .with_server_endpoint("invalid-test-host")
+            .build(),
+        ClientInfoMetrics::unknown(),
+        false,
+    );
+
+    // Ensure the updated attribution + distribution are correctly stored.
+    attribution.term = Some("new term".into());
+    assert_eq!(attribution, test_get_attribution());
+    assert_eq!(distribution_update, test_get_distribution());
+}

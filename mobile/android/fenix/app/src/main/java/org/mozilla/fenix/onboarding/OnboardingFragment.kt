@@ -26,7 +26,9 @@ import mozilla.components.service.nimbus.evalJexlSafe
 import mozilla.components.service.nimbus.messaging.use
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.utils.BrowsersCache
+import org.mozilla.fenix.FenixApplication
 import org.mozilla.fenix.GleanMetrics.Pings
+import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.components.initializeGlean
@@ -153,6 +155,21 @@ class OnboardingFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         hideToolbar()
+        maybeResetBrowserCache()
+    }
+
+    /**
+     * If the user was shown the default browser prompt, we reset the browsers cache.
+     *
+     * In a general case, the cache is cleared every [HomeActivity.onPause] to guarantee correct
+     * data, but in a case of a default browser prompt during onboarding, a queued
+     * [FenixApplication.setStartupMetrics] call breaks that mechanism. The call repopulates
+     * the cache while the user is still choosing a browser.
+     */
+    private fun maybeResetBrowserCache() {
+        if (defaultBrowserPromptStorage.promptToSetAsDefaultBrowserDisplayedInOnboarding) {
+            BrowsersCache.resetAll()
+        }
     }
 
     @SuppressLint("SourceLockedOrientationActivity")

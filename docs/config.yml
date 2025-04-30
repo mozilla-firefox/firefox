@@ -97,12 +97,11 @@ categories:
 
 redirects:
     browser/browser: browser
+    browser/components/newtab/docs/index.html: browser/extensions/newtab/docs/index.html
     contributing/how_to_contribute_firefox.html: contributing/contribution_quickref.html
     contributing/artifact_builds.html: contributing/build/artifact_builds.html
     contributing/linux_build.html: setup/linux_build.html
     contributing/build/linux_build.html: setup/linux_build.html
-    contributing/mercurial.html: contributing/vcs/mercurial.html
-    contributing/mercurial_bundles.html: contributing/vcs/mercurial_bundles.html
     contributing/vscode.html: contributing/editors/vscode.html
     dom/dom: dom
     layout/layout: layout

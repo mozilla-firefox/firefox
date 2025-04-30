@@ -89,6 +89,7 @@ support-files = ["bookmarklet_windowOpen_dummy.html"]
 ["browser_bookmarksProperties.js"]
 
 ["browser_bookmarks_change_title.js"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt"] # Bug 1961550
 
 ["browser_bookmarks_change_url.js"]
 

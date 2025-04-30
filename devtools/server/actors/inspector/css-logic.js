@@ -36,6 +36,7 @@ const {
   isAuthorStylesheet,
   isUserStylesheet,
   shortSource,
+  ELEMENT_BACKED_PSEUDO_ELEMENTS,
   FILTER,
   STATUS,
 } = require("resource://devtools/shared/inspector/css-logic.js");
@@ -482,6 +483,12 @@ class CssLogic {
     do {
       if (domRule.selectorMatchesElement(idx, element)) {
         return true;
+      }
+
+      for (const pseudoElement of ELEMENT_BACKED_PSEUDO_ELEMENTS) {
+        if (domRule.selectorMatchesElement(idx, element, pseudoElement)) {
+          return true;
+        }
       }
     } while (
       // Loop on flattenedTreeParentNode instead of parentNode to reach the

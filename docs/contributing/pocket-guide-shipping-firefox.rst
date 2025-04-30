@@ -77,7 +77,7 @@ Landing Code and Shipping Features
 
 Mozillians (those employed by MoCo and the broader community) land lots of code in
 the Mozilla repositories: fixes, enhancements, compatibility, new features, etc. which are
-managed by :ref:`Mercurial <Mercurial Overview>` (aka hg). All code development is tracked in
+managed by git. All code development is tracked in
 :ref:`Bugzilla <bugzilla>`, reviewed in :ref:`Phabricator <Phabricator>`, and then checked
 into the mozilla-central repository using :ref:`Lando <Lando>`.
 
@@ -107,9 +107,22 @@ There are a variety of reasons for this; critical fixes, security concerns, stab
 that’s already in Beta, shipping high-priority features/enhancements faster, and so on.
 
 In these situations, an uplift can be requested to take a recent landing in mozilla-central and
-merge specific bits to another repository outside the standard train model. After the request is made,
-:ref:`Release Management <release management>` will assess the potential risk and make a decision on
-whether it will be accepted or not.
+merge specific bits to the Beta or Release repository outside the standard train model. After the
+request is made, :ref:`Release Management <release management>` will assess the potential risk and
+make a decision on whether it will be accepted or not.
+
+While uplifts are generally not the preferred way to ship new feature work, it is understood that there
+are times when business needs to do so justify the required effort. Our release process is designed to
+have the flexibility to accommodate these requests, though in general they need to be handled on a case
+by case basis to determine the suitability. Teams are encouraged to reach out to Release Management in
+the `#release-coordination` channel on Slack or `@relman` so their specific needs can be assessed.
+
+Factors that will need to be taken into account include:
+
+-  Size and scope of patches to be uplifted
+-  QA availability to test prior to shipping and during development
+-  Engineering resources to resolve any conflicts between different development branches
+-  String additions/changes which may impact available locales
 
 Further Reading/Useful links:
 
@@ -318,12 +331,6 @@ particular source code repository
 **Lando** - Automated code lander for Mozilla. It is integrated with
 our `Phabricator instance <https://phabricator.services.mozilla.com>`__
 and can be used to land revisions to various repositories.
-
-.. _mercurial:
-
-**Mercurial** - A source-code management tool (just like git)
-which allows users to keep track of changes to the source code
-locally and share their changes with others. It is also called hg.
 
 .. _merge:
 

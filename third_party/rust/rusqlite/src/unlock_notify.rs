@@ -12,10 +12,10 @@ struct UnlockNotification {
     mutex: Mutex<bool>, // Mutex to protect structure
 }
 
-#[allow(clippy::mutex_atomic)]
+#[expect(clippy::mutex_atomic)]
 impl UnlockNotification {
-    fn new() -> UnlockNotification {
-        UnlockNotification {
+    fn new() -> Self {
+        Self {
             cond: Condvar::new(),
             mutex: Mutex::new(false),
         }

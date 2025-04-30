@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.edit
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -16,7 +17,10 @@ import org.mozilla.fenix.GleanMetrics.Activation
 import org.mozilla.fenix.GleanMetrics.Pings
 import org.mozilla.fenix.components.metrics.MetricsUtils.getHashedIdentifier
 
-class ActivationPing(private val context: Context) {
+class ActivationPing(
+    private val context: Context,
+    private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     private val prefs: SharedPreferences by lazy {
         context.getSharedPreferences(
             "${this.javaClass.canonicalName}.prefs",
@@ -58,7 +62,7 @@ class ActivationPing(private val context: Context) {
         // Generate the activation_id.
         Activation.activationId.generateAndSet()
 
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(backgroundDispatcher).launch {
             val hashedId = getHashedIdentifier(context)
             if (hashedId != null) {
                 Logger.info("ActivationPing - generating ping with the hashed id")

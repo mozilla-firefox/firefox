@@ -139,7 +139,6 @@ allprojects {
     }
 
     // Use the semanticdb-javac and semanticdb-kotlinc plugins to generate semanticdb files for Searchfox
-    // NOTE: Kotlin code indexing is currently removed due to lack of Kotlin 2.x support (see bug 1938622)
     if (mozconfig.substs.ENABLE_MOZSEARCH_PLUGIN || mozconfig.substs.DOWNLOAD_ALL_GRADLE_DEPENDENCIES) {
         def targetRoot = new File(topobjdir, "mozsearch_java_index")
 
@@ -154,12 +153,20 @@ allprojects {
             addDependencyToConfigurationIfExists("compileOnly", libs.semanticdb.java)
             addDependencyToConfigurationIfExists("testCompileOnly", libs.semanticdb.java)
             addDependencyToConfigurationIfExists("androidTestCompileOnly", libs.semanticdb.java)
+            addDependencyToConfigurationIfExists("kotlinCompilerPluginClasspath", libs.semanticdb.kotlin)
         }
 
         tasks.withType(JavaCompile) {
             options.compilerArgs += [
                 "-Xplugin:semanticdb -sourceroot:${topsrcdir} -targetroot:${targetRoot}",
             ]
+        }
+
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
+            compilerOptions.freeCompilerArgs.addAll([
+                "-P", "plugin:semanticdb-kotlinc:sourceroot=${topsrcdir}".toString(),
+                "-P", "plugin:semanticdb-kotlinc:targetroot=${targetRoot}".toString(),
+            ])
         }
     }
 

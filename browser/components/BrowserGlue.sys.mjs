@@ -38,12 +38,10 @@ ChromeUtils.defineESModuleGetters(lazy, {
   DesktopActorRegistry:
     "moz-src:///browser/components/DesktopActorRegistry.sys.mjs",
   Discovery: "resource:///modules/Discovery.sys.mjs",
-  DoHController: "resource:///modules/DoHController.sys.mjs",
+  DoHController: "resource://gre/modules/DoHController.sys.mjs",
   DownloadsViewableInternally:
     "resource:///modules/DownloadsViewableInternally.sys.mjs",
   ExtensionsUI: "resource:///modules/ExtensionsUI.sys.mjs",
-  FirefoxBridgeExtensionUtils:
-    "resource:///modules/FirefoxBridgeExtensionUtils.sys.mjs",
   // FilePickerCrashed is used by the `listeners` object below.
   // eslint-disable-next-line mozilla/valid-lazy
   FilePickerCrashed: "resource:///modules/FilePickerCrashed.sys.mjs",
@@ -70,6 +68,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   ProcessHangMonitor: "resource:///modules/ProcessHangMonitor.sys.mjs",
   ProfileDataUpgrader:
     "moz-src:///browser/components/ProfileDataUpgrader.sys.mjs",
+  ProfilesDatastoreService:
+    "resource:///modules/profiles/ProfilesDatastoreService.sys.mjs",
   RemoteSecuritySettings:
     "resource://gre/modules/psm/RemoteSecuritySettings.sys.mjs",
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
@@ -83,10 +83,11 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "resource:///modules/profiles/SelectableProfileService.sys.mjs",
   SessionStartup: "resource:///modules/sessionstore/SessionStartup.sys.mjs",
   SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
-  ShellService: "resource:///modules/ShellService.sys.mjs",
   ShortcutUtils: "resource://gre/modules/ShortcutUtils.sys.mjs",
   SpecialMessageActions:
     "resource://messaging-system/lib/SpecialMessageActions.sys.mjs",
+  StartupOSIntegration:
+    "moz-src:///browser/components/shell/StartupOSIntegration.sys.mjs",
   TelemetryReportingPolicy:
     "resource://gre/modules/TelemetryReportingPolicy.sys.mjs",
   TRRRacer: "resource:///modules/TRRPerformance.sys.mjs",
@@ -94,9 +95,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   WebChannel: "resource://gre/modules/WebChannel.sys.mjs",
   WebProtocolHandlerRegistrar:
     "resource:///modules/WebProtocolHandlerRegistrar.sys.mjs",
-  WindowsLaunchOnLogin: "resource://gre/modules/WindowsLaunchOnLogin.sys.mjs",
   WindowsRegistry: "resource://gre/modules/WindowsRegistry.sys.mjs",
-  WindowsGPOParser: "resource://gre/modules/policies/WindowsGPOParser.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
 });
 
@@ -126,13 +125,6 @@ if (AppConstants.ENABLE_WEBDRIVER) {
 
 const PREF_PDFJS_ISDEFAULT_CACHE_STATE = "pdfjs.enabledCache.state";
 
-const PRIVATE_BROWSING_BINARY = "private_browsing.exe";
-// Index of Private Browsing icon in private_browsing.exe
-// Must line up with IDI_PBICON_PB_PB_EXE in nsNativeAppSupportWin.h.
-const PRIVATE_BROWSING_EXE_ICON_INDEX = 1;
-const PREF_PRIVATE_BROWSING_SHORTCUT_CREATED =
-  "browser.privacySegmentation.createdShortcut";
-
 ChromeUtils.defineLazyGetter(
   lazy,
   "WeaveService",
@@ -155,21 +147,6 @@ ChromeUtils.defineLazyGetter(lazy, "gBrowserBundle", function () {
   return Services.strings.createBundle(
     "chrome://browser/locale/browser.properties"
   );
-});
-
-ChromeUtils.defineLazyGetter(lazy, "log", () => {
-  let { ConsoleAPI } = ChromeUtils.importESModule(
-    "resource://gre/modules/Console.sys.mjs"
-  );
-  let consoleOptions = {
-    // tip: set maxLogLevel to "debug" and use lazy.log.debug() to create
-    // detailed messages during development. See LOG_LEVELS in Console.sys.mjs
-    // for details.
-    maxLogLevel: "error",
-    maxLogLevelPref: "browser.policies.loglevel",
-    prefix: "BrowserGlue.sys.mjs",
-  };
-  return new ConsoleAPI(consoleOptions);
 });
 
 const listeners = {
@@ -253,77 +230,6 @@ export function BrowserGlue() {
   });
 
   this._init();
-}
-
-function WindowsRegPoliciesGetter(wrk, root, regLocation) {
-  wrk.open(root, regLocation, wrk.ACCESS_READ);
-  let policies;
-  if (wrk.hasChild("Mozilla\\" + Services.appinfo.name)) {
-    policies = lazy.WindowsGPOParser.readPolicies(wrk, policies);
-  }
-  wrk.close();
-  return policies;
-}
-
-function isPrivateBrowsingAllowedInRegistry() {
-  // If there is an attempt to open Private Browsing before
-  // EnterprisePolicies are initialized the Windows registry
-  // can be checked to determine if it is enabled
-  if (Services.policies.status > Ci.nsIEnterprisePolicies.UNINITIALIZED) {
-    // Yield to policies engine if initialized
-    let privateAllowed = Services.policies.isAllowed("privatebrowsing");
-    lazy.log.debug(
-      `Yield to initialized policies engine: Private Browsing Allowed = ${privateAllowed}`
-    );
-    return privateAllowed;
-  }
-  if (AppConstants.platform !== "win") {
-    // Not using Windows so no registry, return true
-    lazy.log.debug(
-      "AppConstants.platform is not 'win': Private Browsing allowed"
-    );
-    return true;
-  }
-  // If all other checks fail only then do we check registry
-  let wrk = Cc["@mozilla.org/windows-registry-key;1"].createInstance(
-    Ci.nsIWindowsRegKey
-  );
-  let regLocation = "SOFTWARE\\Policies";
-  let userPolicies, machinePolicies;
-  // Only check HKEY_LOCAL_MACHINE if not in testing
-  if (!Cu.isInAutomation) {
-    machinePolicies = WindowsRegPoliciesGetter(
-      wrk,
-      wrk.ROOT_KEY_LOCAL_MACHINE,
-      regLocation
-    );
-  }
-  // Check machine policies before checking user policies
-  // HKEY_LOCAL_MACHINE supersedes HKEY_CURRENT_USER so only check
-  // HKEY_CURRENT_USER if the registry key is not present in
-  // HKEY_LOCAL_MACHINE at all
-  if (machinePolicies && "DisablePrivateBrowsing" in machinePolicies) {
-    lazy.log.debug(
-      `DisablePrivateBrowsing in HKEY_LOCAL_MACHINE is ${machinePolicies.DisablePrivateBrowsing}`
-    );
-    return !(machinePolicies.DisablePrivateBrowsing === 1);
-  }
-  userPolicies = WindowsRegPoliciesGetter(
-    wrk,
-    wrk.ROOT_KEY_CURRENT_USER,
-    regLocation
-  );
-  if (userPolicies && "DisablePrivateBrowsing" in userPolicies) {
-    lazy.log.debug(
-      `DisablePrivateBrowsing in HKEY_CURRENT_USER is ${userPolicies.DisablePrivateBrowsing}`
-    );
-    return !(userPolicies.DisablePrivateBrowsing === 1);
-  }
-  // Private browsing allowed if no registry entry exists
-  lazy.log.debug(
-    "No DisablePrivateBrowsing registry entry: Private Browsing allowed"
-  );
-  return true;
 }
 
 BrowserGlue.prototype = {
@@ -513,30 +419,8 @@ BrowserGlue.prototype = {
           "os-autostart",
           false
         );
-        let launchOnLoginPref = "browser.startup.windowsLaunchOnLogin.enabled";
-        let profileSvc = Cc[
-          "@mozilla.org/toolkit/profile-service;1"
-        ].getService(Ci.nsIToolkitProfileService);
-        if (
-          AppConstants.platform == "win" &&
-          !profileSvc.startWithLastProfile
-        ) {
-          // If we don't start with last profile, the user
-          // likely sees the profile selector on launch.
-          if (Services.prefs.getBoolPref(launchOnLoginPref)) {
-            Glean.launchOnLogin.lastProfileDisableStartup.record();
-            // Disable launch on login messaging if we are disabling the
-            // feature.
-            Services.prefs.setBoolPref(
-              "browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt",
-              true
-            );
-          }
-          // To reduce confusion when running multiple Gecko profiles,
-          // delete launch on login shortcuts and registry keys so that
-          // users are not presented with the outdated profile selector
-          // dialog.
-          lazy.WindowsLaunchOnLogin.removeLaunchOnLogin();
+        if (AppConstants.platform == "win") {
+          lazy.StartupOSIntegration.checkForLaunchOnLogin();
         }
         break;
       }
@@ -904,7 +788,7 @@ BrowserGlue.prototype = {
 
     let makeWindowPrivate =
       cmdLine.findFlag("private-window", false) != -1 &&
-      isPrivateBrowsingAllowedInRegistry();
+      lazy.StartupOSIntegration.isPrivateBrowsingAllowedInRegistry();
     if (!shouldCreateWindow(makeWindowPrivate)) {
       return;
     }
@@ -1035,9 +919,8 @@ BrowserGlue.prototype = {
 
     lazy.DoHController.init();
 
-    if (AppConstants.MOZ_SELECTABLE_PROFILES) {
-      lazy.SelectableProfileService.init().catch(console.error);
-    }
+    lazy.ProfilesDatastoreService.init().catch(console.error);
+    lazy.SelectableProfileService.init().catch(console.error);
 
     this._firstWindowTelemetry(aWindow);
     this._firstWindowLoaded();
@@ -1410,129 +1293,6 @@ BrowserGlue.prototype = {
       },
 
       {
-        name: "firefoxBridgeNativeMessaging",
-        condition:
-          (AppConstants.platform == "macosx" ||
-            AppConstants.platform == "win") &&
-          Services.prefs.getBoolPref("browser.firefoxbridge.enabled", false),
-        task: async () => {
-          let profileService = Cc[
-            "@mozilla.org/toolkit/profile-service;1"
-          ].getService(Ci.nsIToolkitProfileService);
-          if (
-            profileService.defaultProfile &&
-            profileService.currentProfile == profileService.defaultProfile
-          ) {
-            await lazy.FirefoxBridgeExtensionUtils.ensureRegistered();
-          } else {
-            lazy.log.debug(
-              "FirefoxBridgeExtensionUtils failed to register due to non-default current profile."
-            );
-          }
-        },
-      },
-
-      // Kick off an idle task that will silently pin Firefox to the start menu on
-      // first run when using MSIX on a new profile.
-      // If not first run, check if Firefox is no longer pinned to the Start Menu
-      // when it previously was and send telemetry.
-      {
-        name: "maybePinToStartMenuFirstRun",
-        condition:
-          AppConstants.platform === "win" &&
-          Services.sysinfo.getProperty("hasWinPackageId"),
-        task: async () => {
-          if (
-            lazy.BrowserHandler.firstRunProfile &&
-            (await lazy.ShellService.doesAppNeedStartMenuPin())
-          ) {
-            await lazy.ShellService.pinToStartMenu();
-            return;
-          }
-          await lazy.ShellService.recordWasPreviouslyPinnedToStartMenu();
-        },
-      },
-
-      // Ensure a Private Browsing Shortcut exists. This is needed in case
-      // a user tries to use Windows functionality to pin our Private Browsing
-      // mode icon to the Taskbar (eg: the "Pin to Taskbar" context menu item).
-      // This is also created by the installer, but it's possible that a user
-      // has removed it, or is running out of a zip build. The consequences of not
-      // having a Shortcut for this are that regular Firefox will be pinned instead
-      // of the Private Browsing version -- so it's quite important we do our best
-      // to make sure one is available.
-      // See https://bugzilla.mozilla.org/show_bug.cgi?id=1762994 for additional
-      // background.
-      {
-        name: "ensurePrivateBrowsingShortcutExists",
-        condition:
-          AppConstants.platform == "win" &&
-          Services.prefs.getBoolPref(
-            "browser.privateWindowSeparation.enabled",
-            true
-          ) &&
-          // We don't want a shortcut if it's been disabled, eg: by enterprise policy.
-          lazy.PrivateBrowsingUtils.enabled &&
-          // Private Browsing shortcuts for packaged builds come with the package,
-          // if they exist at all. We shouldn't try to create our own.
-          !Services.sysinfo.getProperty("hasWinPackageId") &&
-          // If we've ever done this successfully before, don't try again. The
-          // user may have deleted the shortcut, and we don't want to force it
-          // on them.
-          !Services.prefs.getBoolPref(
-            PREF_PRIVATE_BROWSING_SHORTCUT_CREATED,
-            false
-          ),
-        task: async () => {
-          let shellService = Cc[
-            "@mozilla.org/browser/shell-service;1"
-          ].getService(Ci.nsIWindowsShellService);
-          let winTaskbar = Cc["@mozilla.org/windows-taskbar;1"].getService(
-            Ci.nsIWinTaskbar
-          );
-
-          if (
-            !(await shellService.hasPinnableShortcut(
-              winTaskbar.defaultPrivateGroupId,
-              true
-            ))
-          ) {
-            let appdir = Services.dirsvc.get("GreD", Ci.nsIFile);
-            let exe = appdir.clone();
-            exe.append(PRIVATE_BROWSING_BINARY);
-            let strings = new Localization(
-              ["branding/brand.ftl", "browser/browser.ftl"],
-              true
-            );
-            let [desc] = await strings.formatValues([
-              "private-browsing-shortcut-text-2",
-            ]);
-            await shellService.createShortcut(
-              exe,
-              [],
-              desc,
-              exe,
-              // The code we're calling indexes from 0 instead of 1
-              PRIVATE_BROWSING_EXE_ICON_INDEX - 1,
-              winTaskbar.defaultPrivateGroupId,
-              "Programs",
-              desc + ".lnk",
-              appdir
-            );
-          }
-          // We always set this as long as no exception has been thrown. This
-          // ensure that it is `true` both if we created one because it didn't
-          // exist, or if it already existed (most likely because it was created
-          // by the installer). This avoids the need to call `hasPinnableShortcut`
-          // again, which necessarily does pointless I/O.
-          Services.prefs.setBoolPref(
-            PREF_PRIVATE_BROWSING_SHORTCUT_CREATED,
-            true
-          );
-        },
-      },
-
-      {
         name: "BrowserGlue._maybeShowDefaultBrowserPrompt",
         task: () => {
           this._maybeShowDefaultBrowserPrompt();
@@ -1738,6 +1498,15 @@ BrowserGlue.prototype = {
         task: () => {
           lazy.BackupService.init();
         },
+      },
+
+      {
+        name: "Init hasSSD for SystemInfo",
+        condition: AppConstants.platform == "win",
+        // Initializes diskInfo to be able to get hasSSD which is part
+        // of the PageLoad event. Only runs on windows, since diskInfo
+        // is a no-op on other platforms
+        task: () => Services.sysinfo.diskInfo,
       },
 
       {

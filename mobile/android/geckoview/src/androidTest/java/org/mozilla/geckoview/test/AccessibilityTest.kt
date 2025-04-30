@@ -13,6 +13,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityNodeInfo.CHECKED_STATE_FALSE
+import android.view.accessibility.AccessibilityNodeInfo.CHECKED_STATE_TRUE
 import android.view.accessibility.AccessibilityNodeProvider
 import android.view.accessibility.AccessibilityRecord
 import android.widget.EditText
@@ -128,6 +130,7 @@ class AccessibilityTest : BaseSessionTest() {
         mainSession.accessibility.view = view
 
         // Set up an external delegate that will intercept accessibility events.
+        @Suppress("DEPRECATION") // TYPE_ANNOUNCEMENT is deprecated but triggered by live regions
         sessionRule.addExternalDelegateUntilTestEnd(
             EventDelegate::class,
             { newDelegate ->
@@ -521,7 +524,14 @@ class AccessibilityTest : BaseSessionTest() {
                 var nodeId = getSourceId(event)
                 var node = createNodeInfo(nodeId)
                 assertThat("Event's checked state matches", event.isChecked, equalTo(checked))
-                assertThat("Checkbox node has correct checked state", node.isChecked, equalTo(checked))
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+                    val checkedState = if (checked) CHECKED_STATE_TRUE else CHECKED_STATE_FALSE
+                    assertThat("Checkbox node has correct checked state", node.checked, equalTo(checkedState))
+                } else {
+                    @Suppress("DEPRECATION")
+                    assertThat("Checkbox node has correct checked state", node.isChecked, equalTo(checked))
+                }
             }
         })
     }
@@ -980,7 +990,14 @@ class AccessibilityTest : BaseSessionTest() {
                 assertThat("Checkbox node is checkable", node.isCheckable, equalTo(true))
                 assertThat("Checkbox node is clickable", node.isClickable, equalTo(true))
                 assertThat("Checkbox node is focusable", node.isFocusable, equalTo(true))
-                assertThat("Checkbox node is not checked", node.isChecked, equalTo(false))
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+                    assertThat("Checkbox node is not checked", node.checked, equalTo(CHECKED_STATE_FALSE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    assertThat("Checkbox node is not checked", node.isChecked, equalTo(false))
+                }
+
                 assertThat("Checkbox node has correct role", node.text.toString(), equalTo("many option"))
                 assertThat(
                     "Hint has description",

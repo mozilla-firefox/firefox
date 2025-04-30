@@ -23,7 +23,6 @@ import mozilla.components.support.ktx.android.content.hasCamera
 import mozilla.components.support.ktx.android.content.isPermissionGranted
 import mozilla.components.support.ktx.android.view.hideKeyboard
 import mozilla.telemetry.glean.private.NoExtras
-import org.mozilla.fenix.Config
 import org.mozilla.fenix.GleanMetrics.SyncAuth
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
@@ -133,11 +132,7 @@ class TurnOnSyncFragment : Fragment(), AccountObserver {
         binding.signInScanButton.setOnClickListener(paringClickListener)
         binding.signInEmailButton.setOnClickListener(signInClickListener)
         binding.signInInstructions.text = HtmlCompat.fromHtml(
-            if (requireContext().settings().allowDomesticChinaFxaServer && Config.channel.isMozillaOnline) {
-                getString(R.string.sign_in_instructions_cn)
-            } else {
-                getString(R.string.sign_in_instructions)
-            },
+            getString(R.string.sign_in_instructions),
             HtmlCompat.FROM_HTML_MODE_LEGACY,
         )
 

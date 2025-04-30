@@ -39,6 +39,7 @@ object EngineMiddleware {
         engine: Engine,
         scope: CoroutineScope = MainScope(),
         trimMemoryAutomatically: Boolean = true,
+        automaticallyInitializeTranslations: Boolean = true,
     ): List<Middleware<BrowserState, BrowserAction>> {
         return listOf(
             EngineDelegateMiddleware(scope),
@@ -52,7 +53,7 @@ object EngineMiddleware {
             WebExtensionMiddleware(),
             CrashMiddleware(),
             ExtensionsProcessMiddleware(engine),
-            TranslationsMiddleware(engine, scope),
+            TranslationsMiddleware(engine, scope, automaticallyInitializeTranslations),
             PdfStateMiddleware(scope),
         ) + if (trimMemoryAutomatically) {
             listOf(TrimMemoryMiddleware())

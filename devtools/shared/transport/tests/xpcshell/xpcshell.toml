@@ -2,7 +2,7 @@
 tags = "devtools"
 head = "head_dbg.js"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 support-files = ["testactors.js"]
 
 ["test_bulk_error.js"]

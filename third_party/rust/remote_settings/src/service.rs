@@ -9,11 +9,10 @@ use std::{
 
 use camino::Utf8PathBuf;
 use parking_lot::Mutex;
-use url::Url;
 
 use crate::{
-    storage::Storage, RemoteSettingsClient, RemoteSettingsConfig2, RemoteSettingsContext,
-    RemoteSettingsServer, Result,
+    config::BaseUrl, storage::Storage, RemoteSettingsClient, RemoteSettingsConfig2,
+    RemoteSettingsContext, RemoteSettingsServer, Result,
 };
 
 /// Internal Remote settings service API
@@ -23,7 +22,7 @@ pub struct RemoteSettingsService {
 
 struct RemoteSettingsServiceInner {
     storage_dir: Utf8PathBuf,
-    base_url: Url,
+    base_url: BaseUrl,
     bucket_name: String,
     app_context: Option<RemoteSettingsContext>,
     /// Weakrefs for all clients that we've created.  Note: this stores the
@@ -38,15 +37,15 @@ impl RemoteSettingsService {
     /// Construct a [RemoteSettingsService]
     ///
     /// This is typically done early in the application-startup process
-    pub fn new(storage_dir: String, config: RemoteSettingsConfig2) -> Result<Self> {
+    pub fn new(storage_dir: String, config: RemoteSettingsConfig2) -> Self {
         let storage_dir = storage_dir.into();
         let base_url = config
             .server
             .unwrap_or(RemoteSettingsServer::Prod)
-            .get_url()?;
+            .get_base_url_with_prod_fallback();
         let bucket_name = config.bucket_name.unwrap_or_else(|| String::from("main"));
 
-        Ok(Self {
+        Self {
             inner: Mutex::new(RemoteSettingsServiceInner {
                 storage_dir,
                 base_url,
@@ -54,16 +53,16 @@ impl RemoteSettingsService {
                 app_context: config.app_context,
                 clients: vec![],
             }),
-        })
+        }
     }
 
-    pub fn make_client(&self, collection_name: String) -> Result<Arc<RemoteSettingsClient>> {
+    pub fn make_client(&self, collection_name: String) -> Arc<RemoteSettingsClient> {
         let mut inner = self.inner.lock();
         // Allow using in-memory databases for testing of external crates.
         let storage = if inner.storage_dir == ":memory:" {
-            Storage::new(inner.storage_dir.clone())?
+            Storage::new(inner.storage_dir.clone())
         } else {
-            Storage::new(inner.storage_dir.join(format!("{collection_name}.sql")))?
+            Storage::new(inner.storage_dir.join(format!("{collection_name}.sql")))
         };
 
         let client = Arc::new(RemoteSettingsClient::new(
@@ -72,9 +71,9 @@ impl RemoteSettingsService {
             collection_name.clone(),
             inner.app_context.clone(),
             storage,
-        )?);
+        ));
         inner.clients.push(Arc::downgrade(&client));
-        Ok(client)
+        client
     }
 
     /// Sync collections for all active clients
@@ -102,7 +101,7 @@ impl RemoteSettingsService {
         let base_url = config
             .server
             .unwrap_or(RemoteSettingsServer::Prod)
-            .get_url()?;
+            .get_base_url()?;
         let bucket_name = config.bucket_name.unwrap_or_else(|| String::from("main"));
         let mut inner = self.inner.lock();
         for client in inner.active_clients() {

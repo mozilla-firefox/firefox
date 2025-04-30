@@ -46,8 +46,8 @@
  * It's recommend to switch back to 0 after having reached version 98/99.
  */
 #define NSS_BUILTINS_LIBRARY_VERSION_MAJOR 2
-#define NSS_BUILTINS_LIBRARY_VERSION_MINOR 74
-#define NSS_BUILTINS_LIBRARY_VERSION "2.74"
+#define NSS_BUILTINS_LIBRARY_VERSION_MINOR 76
+#define NSS_BUILTINS_LIBRARY_VERSION "2.76"
 
 /* These version numbers detail the semantic changes to the ckfw engine. */
 #define NSS_BUILTINS_HARDWARE_VERSION_MAJOR 1

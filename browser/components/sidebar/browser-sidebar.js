@@ -627,7 +627,8 @@ var SidebarController = {
     let observer = this._observer;
     if (!observer) {
       observer = new MutationObserver(() => {
-        this.title = this.sidebars.get(this.lastOpenedId).title;
+        // it's possible for lastOpenedId to be null here
+        this.title = this.sidebars.get(this.lastOpenedId)?.title;
       });
       // Re-use the observer.
       this._observer = observer;
@@ -967,6 +968,10 @@ var SidebarController = {
     return this._state?.launcherVisible;
   },
 
+  get launcherEverVisible() {
+    return this._state?.launcherEverVisible;
+  },
+
   get title() {
     return this._title.value;
   },
@@ -1080,13 +1085,12 @@ var SidebarController = {
 
     let fromRects = this._getRects(animatingElements);
 
-    // We need to wait for rAF for lit to re-render, and us to get the final
-    // width. This is a bit unfortunate but alas...
-    let toRects = await new Promise(resolve => {
-      requestAnimationFrame(() => {
-        resolve(this._getRects(animatingElements));
-      });
+    // We need to wait for lit to re-render, and us to get the final width.
+    // This is a bit unfortunate but alas...
+    await new Promise(resolve => {
+      queueMicrotask(() => resolve(this.sidebarMain.updateComplete));
     });
+    let toRects = this._getRects(animatingElements);
 
     const options = {
       duration: document.documentElement.hasAttribute("sidebar-expand-on-hover")

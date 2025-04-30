@@ -55,7 +55,7 @@ class BrowserSearchTelemetryHandler {
    * Determines if we should record a search for this browser instance.
    * Private Browsing mode is normally skipped.
    *
-   * @param {browser} browser
+   * @param {XULBrowserElement} browser
    *   The browser where the search was loaded.
    * @returns {boolean}
    *   True if the search should be recorded, false otherwise.
@@ -127,7 +127,7 @@ class BrowserSearchTelemetryHandler {
    * Telemetry records only search counts per engine and action origin, but
    * nothing pertaining to the search contents themselves.
    *
-   * @param {browser} browser
+   * @param {XULBrowserElement} browser
    *        The browser where the search originated.
    * @param {nsISearchEngine} engine
    *        The engine handling the search.
@@ -233,10 +233,26 @@ class BrowserSearchTelemetryHandler {
   }
 
   /**
+   * Records visits to a search engine's search form.
+   *
+   * @param {nsISearchEngine} engine
+   *   The engine whose search form is being visited.
+   * @param {string} source
+   *   Where the search form was opened from.
+   *   This can be "urlbar" or "searchbar".
+   */
+  recordSearchForm(engine, source) {
+    Glean.sap.searchFormCounts.record({
+      source,
+      provider_id: engine.isAppProvided ? engine.id : "other",
+    });
+  }
+
+  /**
    * This function handles the "urlbar", "urlbar-oneoff", "searchbar" and
    * "searchbar-oneoff" sources.
    *
-   * @param {browser} browser
+   * @param {XULBrowserElement} browser
    *   The browser where the search originated.
    * @param {nsISearchEngine} engine
    *   The engine handling the search.

@@ -6,13 +6,8 @@
 const { RemoteSettings } = ChromeUtils.importESModule(
   "resource://services-settings/remote-settings.sys.mjs"
 );
-const {
-  _ExperimentFeature: ExperimentFeature,
-
-  ExperimentAPI,
-} = ChromeUtils.importESModule("resource://nimbus/ExperimentAPI.sys.mjs");
-const { ExperimentManager } = ChromeUtils.importESModule(
-  "resource://nimbus/lib/ExperimentManager.sys.mjs"
+const { FeatureManifest } = ChromeUtils.importESModule(
+  "resource://nimbus/FeatureManifest.sys.mjs"
 );
 const { RemoteSettingsExperimentLoader } = ChromeUtils.importESModule(
   "resource://nimbus/lib/RemoteSettingsExperimentLoader.sys.mjs"
@@ -62,7 +57,6 @@ const REMOTE_CONFIGURATION_FOO = ExperimentFakes.recipe("foo-rollout", {
       features: [
         {
           featureId: "foo",
-          isEarlyStartup: true,
           value: { remoteValue: 42, enabled: true },
         },
       ],
@@ -79,7 +73,6 @@ const REMOTE_CONFIGURATION_BAR = ExperimentFakes.recipe("bar-rollout", {
       features: [
         {
           featureId: "bar",
-          isEarlyStartup: true,
           value: { remoteValue: 3, enabled: true },
         },
       ],
@@ -112,6 +105,10 @@ add_task(async function test_remote_fetch_and_ready() {
   const fooInstance = new ExperimentFeature("foo", FOO_FAKE_FEATURE_MANIFEST);
   const barInstance = new ExperimentFeature("bar", BAR_FAKE_FEATURE_MANIFEST);
 
+  // TODO(bug 1959831): isEarlyStartup is checked directly on the feature
+  // manifest, not NimbusFeatures.
+  FeatureManifest.foo = FOO_FAKE_FEATURE_MANIFEST;
+  FeatureManifest.bar = BAR_FAKE_FEATURE_MANIFEST;
   const cleanupTestFeatures = ExperimentTestUtils.addTestFeatures(
     fooInstance,
     barInstance
@@ -133,11 +130,6 @@ add_task(async function test_remote_fetch_and_ready() {
     "This prop does not exist before we sync"
   );
 
-  // Create to promises that get resolved when the features update
-  // with the remote setting rollouts
-  let fooUpdate = new Promise(resolve => fooInstance.onUpdate(resolve));
-  let barUpdate = new Promise(resolve => barInstance.onUpdate(resolve));
-
   await ExperimentAPI.ready();
 
   let { cleanup } = await setup();
@@ -148,10 +140,6 @@ add_task(async function test_remote_fetch_and_ready() {
   await RemoteSettingsExperimentLoader.updateRecipes(
     "browser_rsel_remote_defaults"
   );
-
-  // We need to await here because remote configurations are processed
-  // async to evaluate targeting
-  await Promise.all([fooUpdate, barUpdate]);
 
   Assert.equal(
     fooInstance.getVariable("remoteValue"),
@@ -255,6 +243,8 @@ add_task(async function test_remote_fetch_and_ready() {
   ExperimentAPI._manager.store._deleteForTests(REMOTE_CONFIGURATION_BAR.slug);
   sandbox.restore();
 
+  delete FeatureManifest.foo;
+  delete FeatureManifest.bar;
   cleanupTestFeatures();
   await cleanup();
 });
@@ -300,12 +290,14 @@ add_task(async function test_remote_fetch_on_updateRecipes() {
 add_task(async function test_finalizeRemoteConfigs_cleanup() {
   const featureFoo = new ExperimentFeature("foo", {
     description: "mochitests",
+    isEarlyStartup: true,
     variables: {
       foo: { type: "boolean" },
     },
   });
   const featureBar = new ExperimentFeature("bar", {
     description: "mochitests",
+    isEarlyStartup: true,
     variables: {
       bar: { type: "boolean" },
     },
@@ -316,10 +308,14 @@ add_task(async function test_finalizeRemoteConfigs_cleanup() {
     featureBar
   );
 
+  // TODO(bug 1959831): isEarlyStartup is checked directly on the feature
+  // manifest, not NimbusFeatures.
+  FeatureManifest.foo = featureFoo.manifest;
+  FeatureManifest.bar = featureBar.manifest;
+
   let fooCleanup = await ExperimentFakes.enrollWithFeatureConfig(
     {
       featureId: "foo",
-      isEarlyStartup: true,
       value: { foo: true },
     },
     {
@@ -332,7 +328,6 @@ add_task(async function test_finalizeRemoteConfigs_cleanup() {
   await ExperimentFakes.enrollWithFeatureConfig(
     {
       featureId: "bar",
-      isEarlyStartup: true,
       value: { bar: true },
     },
     {
@@ -346,7 +341,6 @@ add_task(async function test_finalizeRemoteConfigs_cleanup() {
   let stubBar = sinon.stub();
   featureFoo.onUpdate(stubFoo);
   featureBar.onUpdate(stubBar);
-  let cleanupPromise = new Promise(resolve => featureBar.onUpdate(resolve));
 
   // stubFoo and stubBar will be called because the store is ready. We are not interested in these calls.
   // Reset call history and check calls stats after cleanup.
@@ -390,7 +384,6 @@ add_task(async function test_finalizeRemoteConfigs_cleanup() {
   const { cleanup } = await setup([remoteConfiguration]);
   RemoteSettingsExperimentLoader._enabled = true;
   await RemoteSettingsExperimentLoader.updateRecipes();
-  await cleanupPromise;
 
   Assert.ok(
     stubFoo.notCalled,
@@ -414,6 +407,9 @@ add_task(async function test_finalizeRemoteConfigs_cleanup() {
   ExperimentAPI._manager.store._deleteForTests("foo-rollout");
 
   cleanupTestFeatures();
+
+  delete FeatureManifest.foo;
+  delete FeatureManifest.bar;
   cleanup();
 });
 
@@ -521,6 +517,7 @@ add_task(async function remote_defaults_active_remote_defaults() {
 add_task(async function remote_defaults_variables_storage() {
   let barFeature = new ExperimentFeature("bar", {
     description: "mochitest",
+    isEarlyStartup: true,
     variables: {
       enabled: {
         type: "boolean",
@@ -547,10 +544,14 @@ add_task(async function remote_defaults_variables_storage() {
     enabled: true,
   };
 
+  // TODO(bug 1959831): isEarlyStartup is checked directly on the feature
+  // manifest, not NimbusFeatures.
+  const featureCleanup = ExperimentTestUtils.addTestFeatures(barFeature);
+  FeatureManifest.bar = barFeature.manifest;
+
   let doCleanup = await ExperimentFakes.enrollWithFeatureConfig(
     {
       featureId: "bar",
-      isEarlyStartup: true,
       value: rolloutValue,
     },
     { isRollout: true }
@@ -585,4 +586,7 @@ add_task(async function remote_defaults_variables_storage() {
   Assert.ok(!barFeature.getVariable("string"), "Variable is no longer defined");
   ExperimentAPI._manager.store._deleteForTests("bar");
   ExperimentAPI._manager.store._deleteForTests("bar-rollout");
+
+  delete NimbusFeatures.bar;
+  featureCleanup();
 });

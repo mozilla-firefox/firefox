@@ -30,11 +30,13 @@ import org.mozilla.fenix.GleanMetrics.RecentSyncedTabs
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
+import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.home.HomeFragmentDirections
 import org.mozilla.fenix.home.recentsyncedtabs.RecentSyncedTab
 import org.mozilla.fenix.tabstray.Page
 import org.mozilla.fenix.tabstray.TabsTrayAccessPoint
+import org.mozilla.fenix.utils.Settings
 
 @RunWith(AndroidJUnit4::class)
 class DefaultRecentSyncedTabControllerTest {
@@ -42,9 +44,11 @@ class DefaultRecentSyncedTabControllerTest {
     @get:Rule
     val gleanTestRule = FenixGleanTestRule(testContext)
 
+    private val fenixBrowserUseCases: FenixBrowserUseCases = mockk(relaxed = true)
     private val tabsUseCases: TabsUseCases = mockk()
     private val navController: NavController = mockk()
     private val appStore: AppStore = mockk(relaxed = true)
+    private val settings: Settings = mockk(relaxed = true)
     private val accessPoint = TabsTrayAccessPoint.HomeRecentSyncedTab
 
     private lateinit var controller: RecentSyncedTabController
@@ -52,10 +56,12 @@ class DefaultRecentSyncedTabControllerTest {
     @Before
     fun setup() {
         controller = DefaultRecentSyncedTabController(
+            fenixBrowserUseCases = fenixBrowserUseCases,
             tabsUseCase = tabsUseCases,
             navController = navController,
             accessPoint = accessPoint,
             appStore = appStore,
+            settings = settings,
         )
     }
 
@@ -92,6 +98,32 @@ class DefaultRecentSyncedTabControllerTest {
         assertNotEquals(nonSyncId, store.state.selectedTabId)
         assertEquals(2, store.state.tabs.size)
         verify { navController.navigate(R.id.browserFragment) }
+    }
+
+    @Test
+    fun `GIVEN homepage as a new tab is enabled WHEN synced tab clicked THEN open synced tab in the existing tab`() {
+        val url = "url"
+        val tab = RecentSyncedTab(
+            deviceDisplayName = "display",
+            deviceType = DeviceType.DESKTOP,
+            title = "title",
+            url = url,
+            previewImageUrl = null,
+        )
+
+        every { settings.enableHomepageAsNewTab } returns true
+        every { navController.navigate(any<Int>()) } just runs
+
+        controller.handleRecentSyncedTabClick(tab)
+
+        verify {
+            fenixBrowserUseCases.loadUrlOrSearch(
+                searchTermOrURL = url,
+                newTab = false,
+                private = false,
+            )
+            navController.navigate(R.id.browserFragment)
+        }
     }
 
     @Test

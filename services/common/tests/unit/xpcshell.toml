@@ -10,10 +10,10 @@ support-files = ["test_storage_adapter/**"]
 ["test_async_foreach.js"]
 
 ["test_hawkclient.js"]
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_hawkrequest.js"]
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_kinto.js"]
 tags = "blocklist"
@@ -33,7 +33,7 @@ tags = "remote-settings blocklist"
 ["test_tokenauthenticatedrequest.js"]
 
 ["test_tokenserverclient.js"]
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_uptake_telemetry.js"]
 tags = "remote-settings"

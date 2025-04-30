@@ -12,6 +12,7 @@
 #include "prio.h"
 #include "mozilla/SSE.h"
 #include "mozilla/arm.h"
+#include "mozilla/dom/DOMMozPromiseRequestHolder.h"
 #include "mozilla/Hal.h"
 #include "mozilla/LazyIdleThread.h"
 #include "mozilla/LookAndFeel.h"
@@ -21,6 +22,7 @@
 #include "jsapi.h"
 #include "js/PropertyAndElement.h"  // JS_SetProperty
 #include "mozilla/dom/Promise.h"
+#include "mozilla/glean/XpcomMetrics.h"
 
 #ifdef XP_WIN
 #  include <comutil.h>
@@ -1162,20 +1164,20 @@ nsresult CollectProcessInfo(ProcessInfo& info) {
 
     for (auto& hw_impl : hw_implementer) {
       if (hw_impl.id == (int)cpuFamily) {
-        info.cpuVendor.Assign(hw_impl.name);
+        cpuVendor.Assign(hw_impl.name);
         for (auto* p = &hw_impl.parts[0]; p->id != -1; ++p) {
           if (p->id == (int)cpuModel) {
-            info.cpuName.Assign(p->name);
+            cpuName.Assign(p->name);
           }
         }
       }
     }
 #  else
     // cpuVendor from "vendor_id"
-    info.cpuVendor.Assign(keyValuePairs["vendor_id"_ns]);
+    cpuVendor.Assign(keyValuePairs["vendor_id"_ns]);
 
     // cpuName from "model name"
-    info.cpuName.Assign(keyValuePairs["model name"_ns]);
+    cpuName.Assign(keyValuePairs["model name"_ns]);
 
     // cpuFamily from "cpu family"
     (void)Tokenizer(keyValuePairs["cpu family"_ns]).ReadInteger(&cpuFamily);
@@ -1218,6 +1220,9 @@ nsresult CollectProcessInfo(ProcessInfo& info) {
   }
 
   info.cpuCount = PR_GetNumberOfProcessors();
+  if (XRE_IsParentProcess()) {
+    glean::system_cpu::logical_cores.Set(info.cpuCount);
+  }
   int max_cpu_bits = [&] {
     // PR_GetNumberOfProcessors gets the value from
     // /sys/devices/system/cpu/present, but the number of bits in the CPU masks
@@ -1320,51 +1325,92 @@ nsresult CollectProcessInfo(ProcessInfo& info) {
 
 #else
   info.cpuCount = PR_GetNumberOfProcessors();
+  if (XRE_IsParentProcess()) {
+    glean::system_cpu::logical_cores.Set(info.cpuCount);
+  }
 #endif
   if (Maybe<hal::HeterogeneousCpuInfo> hetCpuInfo =
           hal::GetHeterogeneousCpuInfo()) {
     info.cpuPCount = int32_t(hetCpuInfo->mBigCpus.Count());
     info.cpuMCount = int32_t(hetCpuInfo->mMediumCpus.Count());
     info.cpuECount = int32_t(hetCpuInfo->mLittleCpus.Count());
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::big_cores.Set(info.cpuPCount);
+      glean::system_cpu::medium_cores.Set(info.cpuMCount);
+      glean::system_cpu::little_cores.Set(info.cpuECount);
+    }
   } else {
     info.cpuPCount = physicalCPUs;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::big_cores.Set(physicalCPUs);
+    }
     info.cpuMCount = 0;
     info.cpuECount = 0;
   }
 
   if (cpuSpeed >= 0) {
     info.cpuSpeed = cpuSpeed;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::speed.Set(cpuSpeed);
+    }
   } else {
     info.cpuSpeed = 0;
   }
   if (!cpuVendor.IsEmpty()) {
     info.cpuVendor = cpuVendor;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::vendor.Set(cpuVendor);
+    }
   }
   if (!cpuName.IsEmpty()) {
     info.cpuName = cpuName;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::name.Set(cpuName);
+    }
   }
   if (cpuFamily >= 0) {
     info.cpuFamily = cpuFamily;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::family.Set(cpuFamily);
+    }
   }
   if (cpuModel >= 0) {
     info.cpuModel = cpuModel;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::model.Set(cpuModel);
+    }
   }
   if (cpuStepping >= 0) {
     info.cpuStepping = cpuStepping;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::stepping.Set(cpuStepping);
+    }
   }
 
   if (logicalCPUs >= 0) {
     info.cpuCount = logicalCPUs;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::logical_cores.Set(logicalCPUs);
+    }
   }
   if (physicalCPUs >= 0) {
     info.cpuCores = physicalCPUs;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::physical_cores.Set(physicalCPUs);
+    }
   }
 
   if (cacheSizeL2 >= 0) {
     info.l2cacheKB = cacheSizeL2;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::l2_cache.Set(cacheSizeL2);
+    }
   }
   if (cacheSizeL3 >= 0) {
     info.l3cacheKB = cacheSizeL3;
+    if (XRE_IsParentProcess()) {
+      glean::system_cpu::l3_cache.Set(cacheSizeL3);
+    }
   }
 
   return NS_OK;
@@ -1928,25 +1974,33 @@ nsSystemInfo::GetOsInfo(JSContext* aCx, Promise** aResult) {
     });
   };
 
+  auto requestHolder =
+      MakeRefPtr<dom::DOMMozPromiseRequestHolder<OSInfoPromise>>(global);
+
   // Chain the new promise to the extant mozpromise
   RefPtr<Promise> capturedPromise = promise;
-  mOSInfoPromise->Then(
-      GetMainThreadSerialEventTarget(), __func__,
-      [capturedPromise](const OSInfo& info) {
-        AutoJSAPI jsapi;
-        if (NS_WARN_IF(!jsapi.Init(capturedPromise->GetGlobalObject()))) {
-          capturedPromise->MaybeReject(NS_ERROR_UNEXPECTED);
-          return;
-        }
-        JSContext* cx = jsapi.cx();
-        JS::Rooted<JS::Value> val(
-            cx, JS::ObjectValue(*GetJSObjForOSInfo(cx, info)));
-        capturedPromise->MaybeResolve(val);
-      },
-      [capturedPromise](const nsresult rv) {
-        // Resolve with null when installYear is not available from the system
-        capturedPromise->MaybeResolve(JS::NullHandleValue);
-      });
+  mOSInfoPromise
+      ->Then(
+          GetMainThreadSerialEventTarget(), __func__,
+          [requestHolder, capturedPromise](const OSInfo& info) {
+            requestHolder->Complete();
+            AutoJSAPI jsapi;
+            if (NS_WARN_IF(!jsapi.Init(capturedPromise->GetGlobalObject()))) {
+              capturedPromise->MaybeReject(NS_ERROR_UNEXPECTED);
+              return;
+            }
+            JSContext* cx = jsapi.cx();
+            JS::Rooted<JS::Value> val(
+                cx, JS::ObjectValue(*GetJSObjForOSInfo(cx, info)));
+            capturedPromise->MaybeResolve(val);
+          },
+          [requestHolder, capturedPromise](const nsresult rv) {
+            requestHolder->Complete();
+            // Resolve with null when installYear is not available from the
+            // system
+            capturedPromise->MaybeResolve(JS::NullHandleValue);
+          })
+      ->Track(*requestHolder);
 
   promise.forget(aResult);
 #endif
@@ -2001,36 +2055,49 @@ nsSystemInfo::GetDiskInfo(JSContext* aCx, Promise** aResult) {
         });
   }
 
+  auto requestHolder =
+      MakeRefPtr<dom::DOMMozPromiseRequestHolder<DiskInfoPromise>>(global);
+
   // Chain the new promise to the extant mozpromise.
   RefPtr<Promise> capturedPromise = promise;
-  mDiskInfoPromise->Then(
-      GetMainThreadSerialEventTarget(), __func__,
-      [capturedPromise](const DiskInfo& info) {
-        AutoJSAPI jsapi;
-        if (NS_WARN_IF(!jsapi.Init(capturedPromise->GetGlobalObject()))) {
-          capturedPromise->MaybeReject(NS_ERROR_UNEXPECTED);
-          return;
-        }
-        JSContext* cx = jsapi.cx();
-        JS::Rooted<JSObject*> jsInfo(cx, JS_NewPlainObject(cx));
-        // Store data in the rv:
-        bool succeededSettingAllObjects =
-            jsInfo && GetJSObjForDiskInfo(cx, jsInfo, info.binary, "binary") &&
-            GetJSObjForDiskInfo(cx, jsInfo, info.profile, "profile") &&
-            GetJSObjForDiskInfo(cx, jsInfo, info.system, "system");
-        // The above can fail due to OOM
-        if (!succeededSettingAllObjects) {
-          JS_ClearPendingException(cx);
-          capturedPromise->MaybeReject(NS_ERROR_FAILURE);
-          return;
-        }
+  mDiskInfoPromise
+      ->Then(
+          GetMainThreadSerialEventTarget(), __func__,
+          [requestHolder, capturedPromise,
+           self = RefPtr{this}](const DiskInfo& info) {
+            requestHolder->Complete();
+            AutoJSAPI jsapi;
+            if (NS_WARN_IF(!jsapi.Init(capturedPromise->GetGlobalObject()))) {
+              capturedPromise->MaybeReject(NS_ERROR_UNEXPECTED);
+              return;
+            }
+            JSContext* cx = jsapi.cx();
+            JS::Rooted<JSObject*> jsInfo(cx, JS_NewPlainObject(cx));
+            // Store data in the rv:
+            bool succeededSettingAllObjects =
+                jsInfo &&
+                GetJSObjForDiskInfo(cx, jsInfo, info.binary, "binary") &&
+                GetJSObjForDiskInfo(cx, jsInfo, info.profile, "profile") &&
+                GetJSObjForDiskInfo(cx, jsInfo, info.system, "system");
+            // The above can fail due to OOM
+            if (!succeededSettingAllObjects) {
+              JS_ClearPendingException(cx);
+              capturedPromise->MaybeReject(NS_ERROR_FAILURE);
+              return;
+            }
 
-        JS::Rooted<JS::Value> val(cx, JS::ObjectValue(*jsInfo));
-        capturedPromise->MaybeResolve(val);
-      },
-      [capturedPromise](const nsresult rv) {
-        capturedPromise->MaybeReject(rv);
-      });
+            bool hasSSD =
+                info.binary.isSSD || info.system.isSSD || info.profile.isSSD;
+            self->SetPropertyAsBool(u"hasSSD"_ns, hasSSD);
+
+            JS::Rooted<JS::Value> val(cx, JS::ObjectValue(*jsInfo));
+            capturedPromise->MaybeResolve(val);
+          },
+          [requestHolder, capturedPromise](const nsresult rv) {
+            requestHolder->Complete();
+            capturedPromise->MaybeReject(rv);
+          })
+      ->Track(*requestHolder);
 
   promise.forget(aResult);
 #endif
@@ -2078,26 +2145,34 @@ nsSystemInfo::GetCountryCode(JSContext* aCx, Promise** aResult) {
     });
   }
 
-  RefPtr<Promise> capturedPromise = promise;
-  mCountryCodePromise->Then(
-      GetMainThreadSerialEventTarget(), __func__,
-      [capturedPromise](const nsString& countryCode) {
-        AutoJSAPI jsapi;
-        if (NS_WARN_IF(!jsapi.Init(capturedPromise->GetGlobalObject()))) {
-          capturedPromise->MaybeReject(NS_ERROR_UNEXPECTED);
-          return;
-        }
-        JSContext* cx = jsapi.cx();
-        JS::Rooted<JSString*> jsCountryCode(
-            cx, JS_NewUCStringCopyZ(cx, countryCode.get()));
+  auto requestHolder =
+      MakeRefPtr<dom::DOMMozPromiseRequestHolder<CountryCodePromise>>(global);
 
-        JS::Rooted<JS::Value> val(cx, JS::StringValue(jsCountryCode));
-        capturedPromise->MaybeResolve(val);
-      },
-      [capturedPromise](const nsresult rv) {
-        // Resolve with null when countryCode is not available from the system
-        capturedPromise->MaybeResolve(JS::NullHandleValue);
-      });
+  RefPtr<Promise> capturedPromise = promise;
+  mCountryCodePromise
+      ->Then(
+          GetMainThreadSerialEventTarget(), __func__,
+          [requestHolder, capturedPromise](const nsString& countryCode) {
+            requestHolder->Complete();
+            AutoJSAPI jsapi;
+            if (NS_WARN_IF(!jsapi.Init(capturedPromise->GetGlobalObject()))) {
+              capturedPromise->MaybeReject(NS_ERROR_UNEXPECTED);
+              return;
+            }
+            JSContext* cx = jsapi.cx();
+            JS::Rooted<JSString*> jsCountryCode(
+                cx, JS_NewUCStringCopyZ(cx, countryCode.get()));
+
+            JS::Rooted<JS::Value> val(cx, JS::StringValue(jsCountryCode));
+            capturedPromise->MaybeResolve(val);
+          },
+          [requestHolder, capturedPromise](const nsresult rv) {
+            requestHolder->Complete();
+            // Resolve with null when countryCode is not available from the
+            // system
+            capturedPromise->MaybeResolve(JS::NullHandleValue);
+          })
+      ->Track(*requestHolder);
 
   promise.forget(aResult);
 #endif
@@ -2137,25 +2212,33 @@ nsSystemInfo::GetProcessInfo(JSContext* aCx, Promise** aResult) {
     });
   };
 
+  auto requestHolder =
+      MakeRefPtr<dom::DOMMozPromiseRequestHolder<ProcessInfoPromise>>(global);
+
   // Chain the new promise to the extant mozpromise
   RefPtr<Promise> capturedPromise = promise;
-  mProcessInfoPromise->Then(
-      GetMainThreadSerialEventTarget(), __func__,
-      [capturedPromise](const ProcessInfo& info) {
-        AutoJSAPI jsapi;
-        if (NS_WARN_IF(!jsapi.Init(capturedPromise->GetGlobalObject()))) {
-          capturedPromise->MaybeReject(NS_ERROR_UNEXPECTED);
-          return;
-        }
-        JSContext* cx = jsapi.cx();
-        JS::Rooted<JS::Value> val(
-            cx, JS::ObjectValue(*GetJSObjForProcessInfo(cx, info)));
-        capturedPromise->MaybeResolve(val);
-      },
-      [capturedPromise](const nsresult rv) {
-        // Resolve with null when installYear is not available from the system
-        capturedPromise->MaybeResolve(JS::NullHandleValue);
-      });
+  mProcessInfoPromise
+      ->Then(
+          GetMainThreadSerialEventTarget(), __func__,
+          [requestHolder, capturedPromise](const ProcessInfo& info) {
+            requestHolder->Complete();
+            AutoJSAPI jsapi;
+            if (NS_WARN_IF(!jsapi.Init(capturedPromise->GetGlobalObject()))) {
+              capturedPromise->MaybeReject(NS_ERROR_UNEXPECTED);
+              return;
+            }
+            JSContext* cx = jsapi.cx();
+            JS::Rooted<JS::Value> val(
+                cx, JS::ObjectValue(*GetJSObjForProcessInfo(cx, info)));
+            capturedPromise->MaybeResolve(val);
+          },
+          [requestHolder, capturedPromise](const nsresult rv) {
+            requestHolder->Complete();
+            // Resolve with null when installYear is not available from the
+            // system
+            capturedPromise->MaybeResolve(JS::NullHandleValue);
+          })
+      ->Track(*requestHolder);
 
   promise.forget(aResult);
 

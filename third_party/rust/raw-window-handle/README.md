@@ -9,3 +9,14 @@ raw window handle and display's platform-specific raw display handle. This does
 not provide any utilities for creating and managing windows; instead, it
 provides a common interface that window creation libraries (e.g. Winit, SDL)
 can use to easily talk with graphics libraries (e.g. gfx-hal).
+
+## MSRV Policy
+
+The Minimum Safe Rust Version (MSRV) of this crate as of the time of writing is
+**1.64.0**. For pre-`1.0` releases of `raw-window-handle`, this version will not
+be changed without a patch bump to the version of `raw-window-handle`. After
+version `1.0.0` is released, changes to the MSRV will necessitate a minor
+version bump.
+
+When the `wasm-bindgen-0-2` feature is enabled, the MSRV of this crate will be
+raised to the MSRV of the latest version of `wasm-bindgen`.

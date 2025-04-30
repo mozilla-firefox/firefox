@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import sys
 import types
-from functools import wraps
+from sentry_sdk._functools import wraps
 
 from sentry_sdk.hub import Hub
 from sentry_sdk._compat import reraise
@@ -80,7 +80,6 @@ class BeamIntegration(Integration):
 
 def _wrap_inspect_call(cls, func_name):
     # type: (Any, Any) -> Any
-    from apache_beam.typehints.decorators import getfullargspec  # type: ignore
 
     if not hasattr(cls, func_name):
         return None
@@ -105,6 +104,8 @@ def _wrap_inspect_call(cls, func_name):
 
             return get_function_args_defaults(process_func)
         except ImportError:
+            from apache_beam.typehints.decorators import getfullargspec  # type: ignore
+
             return getfullargspec(process_func)
 
     setattr(_inspect, USED_FUNC, True)

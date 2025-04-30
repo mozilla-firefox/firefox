@@ -34,7 +34,7 @@
 #include "jsnum.h"
 #include "jstypes.h"
 
-#ifdef JS_HAS_TEMPORAL_API
+#ifdef JS_HAS_INTL_API
 #  include "builtin/temporal/Instant.h"
 #endif
 #include "jit/InlinableNatives.h"
@@ -4416,7 +4416,7 @@ bool js::date_toPrimitive(JSContext* cx, unsigned argc, Value* vp) {
   return OrdinaryToPrimitive(cx, obj, hint, args.rval());
 }
 
-#if JS_HAS_TEMPORAL_API
+#if JS_HAS_INTL_API
 /**
  * Date.prototype.toTemporalInstant ( )
  */
@@ -4453,7 +4453,7 @@ static bool date_toTemporalInstant(JSContext* cx, unsigned argc, Value* vp) {
   args.rval().setObject(*result);
   return true;
 }
-#endif /* JS_HAS_TEMPORAL_API */
+#endif /* JS_HAS_INTL_API */
 
 static const JSFunctionSpec date_static_methods[] = {
     JS_FN("UTC", date_UTC, 7, 0),
@@ -4499,10 +4499,8 @@ static const JSFunctionSpec date_methods[] = {
     JS_FN("setMilliseconds", date_setMilliseconds, 1, 0),
     JS_FN("setUTCMilliseconds", date_setUTCMilliseconds, 1, 0),
     JS_FN("toUTCString", date_toUTCString, 0, 0),
-#if JS_HAS_TEMPORAL_API
-    JS_FN("toTemporalInstant", date_toTemporalInstant, 0, 0),
-#endif
 #if JS_HAS_INTL_API
+    JS_FN("toTemporalInstant", date_toTemporalInstant, 0, 0),
     JS_SELF_HOSTED_FN("toLocaleString", "Date_toLocaleString", 0, 0),
     JS_SELF_HOSTED_FN("toLocaleDateString", "Date_toLocaleDateString", 0, 0),
     JS_SELF_HOSTED_FN("toLocaleTimeString", "Date_toLocaleTimeString", 0, 0),

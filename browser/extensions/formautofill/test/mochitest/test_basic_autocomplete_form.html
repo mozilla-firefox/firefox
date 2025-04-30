@@ -49,7 +49,7 @@ initPopupListener();
 add_task(async function history_only_menu_checking() {
   await setupFormHistory();
 
-  await setInput("#tel", "");
+  await setInput("#tel", "", true);
   await notExpectPopup();
   synthesizeKey("KEY_ArrowDown");
   await expectPopup();
@@ -65,7 +65,7 @@ add_task(async function all_saved_fields_less_than_threshold() {
     email,
   });
 
-  await setInput("#email", "");
+  await setInput("#email", "", true);
   await notExpectPopup();
   synthesizeKey("KEY_ArrowDown");
   await expectPopup();
@@ -83,7 +83,7 @@ add_task(async function all_saved_fields_less_than_threshold() {
 add_task(async function check_menu_when_both_existed() {
   await setupAddressStorage();
 
-  await setInput("#organization", "");
+  await setInput("#organization", "", true);
   await notExpectPopup();
   synthesizeKey("KEY_ArrowDown");
   await expectPopup();
@@ -95,7 +95,7 @@ add_task(async function check_menu_when_both_existed() {
     })
   ), 2);
 
-  await setInput("#street-address", "");
+  await setInput("#street-address", "", true);
   await notExpectPopup();
   synthesizeKey("KEY_ArrowDown");
   await expectPopup();
@@ -107,7 +107,7 @@ add_task(async function check_menu_when_both_existed() {
     })
   ), 2);
 
-  await setInput("#tel", "");
+  await setInput("#tel", "", true);
   await notExpectPopup();
   synthesizeKey("KEY_ArrowDown");
   await expectPopup();
@@ -119,7 +119,7 @@ add_task(async function check_menu_when_both_existed() {
     })
   ), 2);
 
-  await setInput("#address-line1", "");
+  await setInput("#address-line1", "", true);
   await notExpectPopup();
   synthesizeKey("KEY_ArrowDown");
   await expectPopup();
@@ -134,7 +134,7 @@ add_task(async function check_menu_when_both_existed() {
 
 // Display history search result if no matched data in addresses.
 add_task(async function check_fallback_for_mismatched_field() {
-  await setInput("#email", "");
+  await setInput("#email", "", true);
   await notExpectPopup();
   synthesizeKey("KEY_ArrowDown");
   await expectPopup();
@@ -147,7 +147,7 @@ add_task(async function check_search_result_for_pref_off() {
     set: [["extensions.formautofill.addresses.enabled", false]],
   });
 
-  await setInput("#tel", "");
+  await setInput("#tel", "", true);
   await notExpectPopup();
   synthesizeKey("KEY_ArrowDown");
   await expectPopup();
@@ -158,7 +158,7 @@ add_task(async function check_search_result_for_pref_off() {
 
 // Autofill the address from dropdown menu.
 add_task(async function check_fields_after_form_autofill() {
-  const focusedInput = await setInput("#organization", "Moz");
+  const focusedInput = await setInput("#organization", "Moz", true);
   await notExpectPopup();
   synthesizeKey("KEY_ArrowDown");
   await expectPopup();

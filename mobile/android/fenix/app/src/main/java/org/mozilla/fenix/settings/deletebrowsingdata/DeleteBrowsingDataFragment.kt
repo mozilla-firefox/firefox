@@ -53,7 +53,6 @@ class DeleteBrowsingDataFragment : Fragment(R.layout.fragment_delete_browsing_da
             requireComponents.core.historyStorage,
             requireComponents.core.permissionStorage,
             requireComponents.core.store,
-            requireComponents.core.icons,
             requireComponents.core.engine,
         )
         settings = requireContext().settings()

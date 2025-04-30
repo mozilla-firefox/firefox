@@ -230,7 +230,7 @@ static inline void init_src_params(int *src_stride, int *width, int *height,
   *width = block_size_wide[bsize];
   *height = block_size_high[bsize];
   *width_log2 = MI_SIZE_LOG2 + mi_size_wide_log2[bsize];
-  *height_log2 = MI_SIZE_LOG2 + mi_size_wide_log2[bsize];
+  *height_log2 = MI_SIZE_LOG2 + mi_size_high_log2[bsize];
 }
 #if CONFIG_AV1_HIGHBITDEPTH
 /* Compute MSE only on the blocks we filtered. */

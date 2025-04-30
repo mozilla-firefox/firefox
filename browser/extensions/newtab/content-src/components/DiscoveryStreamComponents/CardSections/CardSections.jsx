@@ -11,6 +11,8 @@ import { useIntersectionObserver } from "../../../lib/utils";
 import { SectionContextMenu } from "../SectionContextMenu/SectionContextMenu";
 import { InterestPicker } from "../InterestPicker/InterestPicker";
 import { AdBanner } from "../AdBanner/AdBanner.jsx";
+import { PersonalizedCard } from "../PersonalizedCard/PersonalizedCard";
+
 // Prefs
 const PREF_SECTIONS_CARDS_ENABLED = "discoverystream.sections.cards.enabled";
 const PREF_SECTIONS_CARDS_THUMBS_UP_DOWN_ENABLED =
@@ -19,8 +21,6 @@ const PREF_SECTIONS_PERSONALIZATION_ENABLED =
   "discoverystream.sections.personalization.enabled";
 const PREF_TOPICS_ENABLED = "discoverystream.topicLabels.enabled";
 const PREF_TOPICS_SELECTED = "discoverystream.topicSelection.selectedTopics";
-const PREF_FOLLOWED_SECTIONS = "discoverystream.sections.following";
-const PREF_BLOCKED_SECTIONS = "discoverystream.sections.blocked";
 const PREF_TOPICS_AVAILABLE = "discoverystream.topicSelection.topics";
 const PREF_THUMBS_UP_DOWN_ENABLED = "discoverystream.thumbsUpDown.enabled";
 const PREF_INTEREST_PICKER_ENABLED =
@@ -32,6 +32,14 @@ const PREF_BILLBOARD_ENABLED = "newtabAdSize.billboard";
 const PREF_LEADERBOARD_ENABLED = "newtabAdSize.leaderboard";
 const PREF_LEADERBOARD_POSITION = "newtabAdSize.leaderboard.position";
 const PREF_BILLBOARD_POSITION = "newtabAdSize.billboard.position";
+const PREF_INFERRED_PERSONALIZATION_ENABLED =
+  "discoverystream.sections.personalization.inferred.enabled";
+const PREF_INFERRED_PERSONALIZATION_USER_ENABLED =
+  "discoverystream.sections.personalization.inferred.user.enabled";
+const PREF_INFERRED_PERSONALIZATION_POSITION =
+  "discoverystream.sections.personalization.inferred.position";
+const PREF_INFERRED_PERSONALIZATION_BLOCKED =
+  "discoverystream.sections.personalization.inferred.blocked";
 
 function getLayoutData(responsiveLayouts, index) {
   let layoutData = {
@@ -104,6 +112,9 @@ function CardSection({
   ctaButtonSponsors,
 }) {
   const prefs = useSelector(state => state.Prefs.values);
+  const { sectionPersonalization } = useSelector(
+    state => state.DiscoveryStream
+  );
   const showTopics = prefs[PREF_TOPICS_ENABLED];
   const mayHaveSectionsCards = prefs[PREF_SECTIONS_CARDS_ENABLED];
   const mayHaveSectionsCardsThumbsUpDown =
@@ -111,8 +122,6 @@ function CardSection({
   const mayHaveThumbsUpDown = prefs[PREF_THUMBS_UP_DOWN_ENABLED];
   const selectedTopics = prefs[PREF_TOPICS_SELECTED];
   const availableTopics = prefs[PREF_TOPICS_AVAILABLE];
-  const followedSectionsPref = prefs[PREF_FOLLOWED_SECTIONS] || "";
-  const blockedSectionsPref = prefs[PREF_BLOCKED_SECTIONS] || "";
 
   const { saveToPocketCard } = useSelector(state => state.DiscoveryStream);
   const mayHaveSectionsPersonalization =
@@ -121,9 +130,7 @@ function CardSection({
   const { sectionKey, title, subtitle } = section;
   const { responsiveLayouts } = section.layout;
 
-  const followedSections = prefToArray(followedSectionsPref);
-  const following = followedSections.includes(sectionKey);
-  const blockedSections = prefToArray(blockedSectionsPref);
+  const following = sectionPersonalization[sectionKey]?.isFollowed;
 
   const handleIntersection = useCallback(() => {
     dispatch(
@@ -146,11 +153,19 @@ function CardSection({
     mayHaveSectionsCardsThumbsUpDown && mayHaveThumbsUpDown;
 
   const onFollowClick = useCallback(() => {
+    const updatedSectionData = {
+      ...sectionPersonalization,
+      [sectionKey]: {
+        isFollowed: true,
+        isBlocked: false,
+        followedAt: new Date().toISOString(),
+      },
+    };
     dispatch(
-      ac.SetPref(
-        PREF_FOLLOWED_SECTIONS,
-        [...followedSections, sectionKey].join(", ")
-      )
+      ac.AlsoToMain({
+        type: at.SECTION_PERSONALIZATION_UPDATE,
+        data: updatedSectionData,
+      })
     );
     // Telemetry Event Dispatch
     dispatch(
@@ -163,15 +178,18 @@ function CardSection({
         },
       })
     );
-  }, [dispatch, followedSections, sectionKey, sectionPosition]);
+  }, [dispatch, sectionPersonalization, sectionKey, sectionPosition]);
 
   const onUnfollowClick = useCallback(() => {
+    const updatedSectionData = { ...sectionPersonalization };
+    delete updatedSectionData[sectionKey];
     dispatch(
-      ac.SetPref(
-        PREF_FOLLOWED_SECTIONS,
-        [...followedSections.filter(item => item !== sectionKey)].join(", ")
-      )
+      ac.AlsoToMain({
+        type: at.SECTION_PERSONALIZATION_UPDATE,
+        data: updatedSectionData,
+      })
     );
+
     // Telemetry Event Dispatch
     dispatch(
       ac.OnlyToMain({
@@ -183,7 +201,7 @@ function CardSection({
         },
       })
     );
-  }, [dispatch, followedSections, sectionKey, sectionPosition]);
+  }, [dispatch, sectionPersonalization, sectionKey, sectionPosition]);
 
   const { maxTile } = getMaxTiles(responsiveLayouts);
   const displaySections = section.data.slice(0, maxTile);
@@ -223,8 +241,7 @@ function CardSection({
         dispatch={dispatch}
         index={sectionPosition}
         following={following}
-        followedSections={followedSections}
-        blockedSections={blockedSections}
+        sectionPersonalization={sectionPersonalization}
         sectionKey={sectionKey}
         title={title}
         type={type}
@@ -318,6 +335,7 @@ function CardSection({
               section={sectionKey}
               sectionPosition={sectionPosition}
               sectionFollowed={following}
+              isTimeSensitive={rec.isTimeSensitive}
             />
           );
         })}
@@ -338,7 +356,9 @@ function CardSections({
   ctaButtonSponsors,
 }) {
   const prefs = useSelector(state => state.Prefs.values);
-  const { spocs } = useSelector(state => state.DiscoveryStream);
+  const { spocs, sectionPersonalization } = useSelector(
+    state => state.DiscoveryStream
+  );
   const personalizationEnabled = prefs[PREF_SECTIONS_PERSONALIZATION_ENABLED];
   const interestPickerEnabled = prefs[PREF_INTEREST_PICKER_ENABLED];
 
@@ -348,11 +368,10 @@ function CardSections({
   }
 
   const visibleSections = prefToArray(prefs[PREF_VISIBLE_SECTIONS]);
-  const blockedSections = prefToArray(prefs[PREF_BLOCKED_SECTIONS] || "");
   const { interestPicker } = data;
 
   let filteredSections = data.sections.filter(
-    section => !blockedSections.includes(section.sectionKey)
+    section => !sectionPersonalization[section.sectionKey]?.isBlocked
   );
 
   if (interestPickerEnabled && visibleSections.length) {
@@ -441,6 +460,27 @@ function CardSections({
       />
     );
   }
+
+  const handleDismissP13nCard = () => {
+    dispatch(ac.SetPref(PREF_INFERRED_PERSONALIZATION_BLOCKED, true));
+  };
+
+  function displayP13nCard() {
+    const row = prefs[PREF_INFERRED_PERSONALIZATION_POSITION];
+    const cardBlocked = prefs[PREF_INFERRED_PERSONALIZATION_BLOCKED];
+    const cardEnabled = prefs[PREF_INFERRED_PERSONALIZATION_ENABLED];
+    const userEnabled = prefs[PREF_INFERRED_PERSONALIZATION_USER_ENABLED];
+
+    if (!cardBlocked && cardEnabled && userEnabled) {
+      sectionsToRender.splice(
+        row,
+        0,
+        <PersonalizedCard row={row} onDismiss={handleDismissP13nCard} />
+      );
+    }
+  }
+
+  displayP13nCard();
 
   const isEmpty = sectionsToRender.length === 0;
 

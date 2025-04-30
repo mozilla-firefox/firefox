@@ -143,6 +143,20 @@ treeherder:
         'ms-stage': 'Autograph-stage MAR signing test'
         'Rel': 'Release promotion'
         'Snap': 'Snap image generation'
+        'B-local': 'Snap builds local gecko checkout'
+        'B-nightly': 'Snap builds Nightly'
+        'B-beta': 'Snap builds Beta'
+        'B-beta24': 'Snap builds Beta Core24'
+        'B-stable': 'Snap builds Stable'
+        'B-stable24': 'Snap builds Stable Core24'
+        'B-esr': 'Snap builds ESR'
+        'Sel-nightly': 'Snap selenium Nightly'
+        'Sel-local': 'Snap selenium local gecko checkout'
+        'Sel-beta': 'Snap selenium Beta'
+        'Sel-beta24': 'Snap selenium Beta Core24'
+        'Sel-stable': 'Snap selenium Stable'
+        'Sel-stable24': 'Snap selenium Stable Core24'
+        'Sel-esr': 'Snap selenium ESR'
         'Flatpak': 'Flatpak image generation'
         'langpack': 'Langpack sigatures and uploads'
         'TPS': 'Sync tests'
@@ -161,7 +175,6 @@ treeherder:
         'rust': 'Rust checks'
         'Static-Analysis': 'Full tree static-analysis'
         'SS': 'Shadow scheduler'
-        'Sel': 'Selenium Snap tests'
         'Sentry': 'Sentry synchronization'
         'test-info': 'Test manifest skip/fail information'
         'condprof': 'Conditioned Profile Builder'
@@ -779,12 +792,20 @@ workers:
             implementation: treescript
             os: linux
             worker-type:
-                by-release-level:
-                    production: '{trust-domain}-3-tree'
-                    staging:
-                        by-project:
-                            autoland: '{trust-domain}-3-tree'
-                            default: '{trust-domain}-1-tree'
+                by-project:
+                    # Autoland is treated specially here because any treescript
+                    # tasks that run on it must be done on level 3 workers
+                    # (so they can actually push changes). On other projects
+                    # `release-level` would handle this just fine, but
+                    # `autoland` is considered a "staging" release level for
+                    # historical reasons.
+                    # https://bugzilla.mozilla.org/show_bug.cgi?id=1960918
+                    # seeks to improve this situation.
+                    autoland: '{trust-domain}-3-tree'
+                    default:
+                        by-release-level:
+                            production: '{trust-domain}-3-tree'
+                            staging: '{trust-domain}-1-tree'
         tree-dev:
             provisioner: scriptworker-k8s
             implementation: treescript
@@ -876,6 +897,11 @@ workers:
             os: macosx
             worker-type: 'gecko-{alias}'
         t-osx-1400-m2:
+            provisioner: releng-hardware
+            implementation: generic-worker
+            os: macosx
+            worker-type: 'gecko-{alias}'
+        t-osx-1500-m4:
             provisioner: releng-hardware
             implementation: generic-worker
             os: macosx
@@ -1010,6 +1036,7 @@ mac-signing:
                   force: true
                   # These files are signed without entitlements
                   globs:
+                      - "/Contents/MacOS/crashhelper"
                       - "/Contents/MacOS/crashreporter.app"
                       - "/Contents/MacOS/updater.app/Contents/Frameworks/UpdateSettings.framework"
                       - "/Contents/MacOS/updater.app"
@@ -1054,6 +1081,7 @@ mac-signing:
                   force: true
                   entitlements: security/mac/hardenedruntime/v2/developer/utility.xml
                   globs:
+                      - "/Contents/MacOS/crashhelper"
                       - "/Contents/MacOS/crashreporter.app"
                       - "/Contents/MacOS/updater.app/Contents/Frameworks/UpdateSettings.framework"
                       - "/Contents/MacOS/updater.app"

@@ -11,6 +11,7 @@ import androidx.test.filters.SdkSuppress
 import mozilla.components.concept.engine.mediasession.MediaSession
 import org.junit.Rule
 import org.junit.Test
+import org.mozilla.fenix.customannotations.SkipLeaks
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.AppAndSystemHelper.grantSystemPermission
 import org.mozilla.fenix.helpers.HomeActivityTestRule
@@ -20,6 +21,7 @@ import org.mozilla.fenix.helpers.TestAssetHelper.getMutedVideoPageAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.getVideoPageAsset
 import org.mozilla.fenix.helpers.TestHelper.exitMenu
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.browserScreen
 import org.mozilla.fenix.ui.robots.clickPageObject
 import org.mozilla.fenix.ui.robots.homeScreen
@@ -44,6 +46,9 @@ class SettingsSitePermissionsTest : TestSetup() {
             isDeleteSitePermissionsEnabled = true,
         ),
     ) { it.activity }
+
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/246974
     @Test
@@ -178,6 +183,7 @@ class SettingsSitePermissionsTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2095124
     @Test
+    @SkipLeaks
     fun verifyAutoplayAllowAudioVideoSettingOnNotMutedVideoTestTest() {
         val genericPage = getGenericAsset(mockWebServer, 1)
         val videoTestPage = getVideoPageAsset(mockWebServer)
@@ -241,6 +247,7 @@ class SettingsSitePermissionsTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2095126
     @Test
+    @SkipLeaks
     fun verifyAutoplayBlockAudioAndVideoSettingOnNotMutedVideoTest() {
         val videoTestPage = getVideoPageAsset(mockWebServer)
 
@@ -272,6 +279,7 @@ class SettingsSitePermissionsTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2286808
     @Test
+    @SkipLeaks
     fun verifyAutoplayBlockAudioAndVideoSettingOnMutedVideoTest() {
         val mutedVideoTestPage = getMutedVideoPageAsset(mockWebServer)
 

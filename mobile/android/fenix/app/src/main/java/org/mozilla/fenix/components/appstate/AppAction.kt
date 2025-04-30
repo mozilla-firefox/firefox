@@ -145,6 +145,15 @@ sealed class AppAction : Action {
     data object SiteDataCleared : AppAction()
 
     /**
+     * Action dispatched when the current tab has been closed.
+     *
+     * @property isPrivate Whether the closed tab was private or not.
+     */
+    data class CurrentTabClosed(
+        val isPrivate: Boolean,
+    ) : AppAction()
+
+    /**
      * Action dispatched when open in firefox action is selected from custom tab.
      */
     data object OpenInFirefoxStarted : AppAction()
@@ -628,6 +637,11 @@ sealed class AppAction : Action {
      */
     sealed class SetupChecklistAction : AppAction() {
         /**
+         * When the setup checklist feature is initialised.
+         */
+        data object Init : SetupChecklistAction()
+
+        /**
          * When the setup checklist is closed.
          */
         data object Closed : SetupChecklistAction()
@@ -636,5 +650,16 @@ sealed class AppAction : Action {
          * When a setup checklist item is clicked.
          */
         data class ChecklistItemClicked(val item: ChecklistItem) : SetupChecklistAction()
+
+        /**
+         * When a checklist task preference is updated.
+         *
+         * @property taskType The type of task whose preference was updated.
+         * @property prefValue The new value of the preference.
+         */
+        data class TaskPreferenceUpdated(
+            val taskType: ChecklistItem.Task.Type,
+            val prefValue: Boolean,
+        ) : SetupChecklistAction()
     }
 }

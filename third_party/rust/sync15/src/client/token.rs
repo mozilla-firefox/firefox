@@ -402,11 +402,11 @@ pub struct TokenProvider {
 }
 
 impl TokenProvider {
-    pub fn new(url: Url, access_token: String, key_id: String) -> Result<Self> {
+    pub fn new(url: Url, access_token: String, key_id: String) -> Self {
         let fetcher = TokenServerFetcher::new(url, access_token, key_id);
-        Ok(Self {
+        Self {
             imp: TokenProviderImpl::new(fetcher),
-        })
+        }
     }
 
     pub fn hashed_uid(&self) -> Result<String> {
@@ -448,17 +448,18 @@ mod tests {
         }
     }
 
-    fn make_tsc<FF, FN>(fetch: FF, now: FN) -> TokenProviderImpl<TestFetcher<FF, FN>>
+    fn make_tsc<FF, FN>(fetch: FF, now: FN) -> Result<TokenProviderImpl<TestFetcher<FF, FN>>>
     where
         FF: Fn() -> Result<TokenFetchResult>,
         FN: Fn() -> SystemTime,
     {
         let fetcher: TestFetcher<FF, FN> = TestFetcher { fetch, now };
-        TokenProviderImpl::new(fetcher)
+        Ok(TokenProviderImpl::new(fetcher))
     }
 
     #[test]
     fn test_endpoint() {
+        nss::ensure_initialized();
         // Use a cell to avoid the closure having a mutable ref to this scope.
         let counter: Cell<u32> = Cell::new(0);
         let fetch = || {
@@ -476,7 +477,7 @@ mod tests {
             })
         };
 
-        let tsc = make_tsc(fetch, SystemTime::now);
+        let tsc = make_tsc(fetch, SystemTime::now).unwrap();
 
         let e = tsc.api_endpoint().expect("should work");
         assert_eq!(e, "api_endpoint".to_string());
@@ -490,6 +491,7 @@ mod tests {
 
     #[test]
     fn test_backoff() {
+        nss::ensure_initialized();
         let counter: Cell<u32> = Cell::new(0);
         let fetch = || {
             counter.set(counter.get() + 1);
@@ -497,7 +499,7 @@ mod tests {
             Err(ErrorKind::BackoffError(when))
         };
         let now: Cell<SystemTime> = Cell::new(SystemTime::now());
-        let tsc = make_tsc(fetch, || now.get());
+        let tsc = make_tsc(fetch, || now.get()).unwrap();
 
         tsc.api_endpoint().expect_err("should bail");
         // XXX - check error type.
@@ -518,6 +520,7 @@ mod tests {
 
     #[test]
     fn test_validity() {
+        nss::ensure_initialized();
         let counter: Cell<u32> = Cell::new(0);
         let fetch = || {
             counter.set(counter.get() + 1);
@@ -534,7 +537,7 @@ mod tests {
             })
         };
         let now: Cell<SystemTime> = Cell::new(SystemTime::now());
-        let tsc = make_tsc(fetch, || now.get());
+        let tsc = make_tsc(fetch, || now.get()).unwrap();
 
         tsc.api_endpoint().expect("should get a valid token");
         assert_eq!(counter.get(), 1);

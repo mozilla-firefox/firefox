@@ -152,30 +152,32 @@ static void GetPidString(nsACString& output) {
 }
 
 /**
- * Get the contents of the file when it can be opened with read and write
- * access. The reason it is opened for both read and write is to prevent trying
- * to update when the user doesn't have write access to the update directory.
- * Otherwise we will loop infinitely and try to install it over and over.
+ * Get the contents of the update.status file when the update.status file can
+ * be opened with read and write access. The reason it is opened for both read
+ * and write is to prevent trying to update when the user doesn't have write
+ * access to the update directory.
  *
- * @param  file
- *         The file object.
- * @param  buf
- *         The buffer holding the file contents.
+ * @param statusFile the status file object.
+ * @param buf        the buffer holding the file contents
  *
- * @return The result of `PR_Read`: number of characters read or -1 on error.
+ * @return true if successful, false otherwise.
  */
 template <size_t Size>
-static int32_t ReadWritableFile(nsIFile* file, char (&buf)[Size]) {
+static bool GetStatusFileContents(nsIFile* statusFile, char (&buf)[Size]) {
+  static_assert(
+      Size > 16,
+      "Buffer needs to be large enough to hold the known status codes");
+
   PRFileDesc* fd = nullptr;
-  nsresult rv = file->OpenNSPRFileDesc(PR_RDWR, 0660, &fd);
+  nsresult rv = statusFile->OpenNSPRFileDesc(PR_RDWR, 0660, &fd);
   if (NS_FAILED(rv)) {
-    return 0;
+    return false;
   }
 
   const int32_t n = PR_Read(fd, buf, Size);
   PR_Close(fd);
 
-  return n;
+  return (n >= 0);
 }
 
 static nsresult WriteFile(nsIFile* file, nsACString& toWrite) {
@@ -212,9 +214,8 @@ enum UpdateStatus {
 static UpdateStatus GetUpdateStatus(nsIFile* dir,
                                     nsCOMPtr<nsIFile>& statusFile) {
   if (GetStatusFile(dir, statusFile)) {
-    // This buffer must be big enough to hold all valid status codes
     char buf[32];
-    if (ReadWritableFile(statusFile, buf) >= 0) {
+    if (GetStatusFileContents(statusFile, buf)) {
       const char kPending[] = "pending";
       const char kPendingService[] = "pending-service";
       const char kPendingElevate[] = "pending-elevate";
@@ -274,61 +275,6 @@ static bool IsOlderVersion(nsIFile* versionFile, const char* appVersion) {
   }
 
   return mozilla::Version(appVersion) > buf;
-}
-
-nsresult GetUpdatePatchDir(nsIFile* updRootDir, nsIFile** updatesDirOut) {
-  nsresult rv;
-  nsCOMPtr<nsIFile> updatesDir;
-  rv = updRootDir->Clone(getter_AddRefs(updatesDir));
-  rv = updatesDir->AppendNative("updates"_ns);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = updatesDir->AppendNative("0"_ns);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  updatesDir.forget(updatesDirOut);
-  return NS_OK;
-}
-
-nsresult IsMultiSessionInstallLockoutActive(nsIFile* updRootDir,
-                                            bool& isActive) {
-  nsresult rv;
-
-  nsCOMPtr<nsIFile> timestampFile;
-  rv = GetUpdatePatchDir(updRootDir, getter_AddRefs(timestampFile));
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = timestampFile->AppendNative("update.timestamp"_ns);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  // Let's make sure we can hold any valid, unsigned 64 bit integer plus a null.
-  // Maximum 64 bit integer: 18446744073709551615 (20 characters)
-  const size_t bufferSize = 21;
-  char buffer[bufferSize];
-  int32_t readLen = ReadWritableFile(timestampFile, buffer);
-  NS_ENSURE_TRUE(readLen >= 0 && readLen < static_cast<int32_t>(bufferSize),
-                 NS_ERROR_FAILURE);
-  buffer[readLen] = '\0';
-
-  // If we couldn't read anything from the file, the lockout is not active.
-  if (readLen == 0) {
-    isActive = false;
-    return NS_OK;
-  }
-
-  nsDependentCString timestampString(buffer);
-  // This timestamp represents the end of the Multi Session Install Lockout.
-  uint64_t msilEnd = timestampString.ToInteger64(&rv);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  uint64_t now = PR_Now() / PR_USEC_PER_MSEC;
-
-  isActive = now < msilEnd;
-
-#ifdef DEBUG
-  printf_stderr("Multi Session Install Lockout %s active\n",
-                isActive ? "is" : "is not");
-#endif
-
-  return NS_OK;
 }
 
 nsresult WriteUpdateCompleteTestFile(nsIFile* updRootDir) {
@@ -767,7 +713,11 @@ nsresult ProcessUpdates(nsIFile* greDir, nsIFile* appDir, nsIFile* updRootDir,
 #endif
 
   nsCOMPtr<nsIFile> updatesDir;
-  rv = GetUpdatePatchDir(updRootDir, getter_AddRefs(updatesDir));
+  rv = updRootDir->Clone(getter_AddRefs(updatesDir));
+  NS_ENSURE_SUCCESS(rv, rv);
+  rv = updatesDir->AppendNative("updates"_ns);
+  NS_ENSURE_SUCCESS(rv, rv);
+  rv = updatesDir->AppendNative("0"_ns);
   NS_ENSURE_SUCCESS(rv, rv);
 
   // Return early since there isn't a valid update when the update application

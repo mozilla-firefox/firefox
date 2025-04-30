@@ -141,7 +141,7 @@ class MachFormatter(base.BaseFormatter):
         return test_id
 
     def _get_file_name(self, test_id):
-        if isinstance(test_id, (str, str)):
+        if isinstance(test_id, str):
             return test_id
 
         if isinstance(test_id, tuple):

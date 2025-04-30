@@ -76,14 +76,7 @@ class PairFragment : Fragment(R.layout.fragment_pair), UserInteractionHandler {
                         false,
                     )
                 },
-                scanMessage =
-                if (requireContext().settings().allowDomesticChinaFxaServer &&
-                    org.mozilla.fenix.Config.channel.isMozillaOnline
-                ) {
-                    R.string.pair_instructions_2_cn
-                } else {
-                    R.string.pair_instructions_2
-                },
+                scanMessage = R.string.pair_instructions_2,
             ),
             owner = this,
             view = view,

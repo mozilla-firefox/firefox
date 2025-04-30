@@ -18,9 +18,10 @@ members = [
   "testing/geckodriver",
   "toolkit/components/uniffi-bindgen-gecko-js",
   "toolkit/crashreporter/client/app",
+  "toolkit/crashreporter/crash_helper_server",
+  "toolkit/crashreporter/crash_helper_client",
   "toolkit/crashreporter/minidump-analyzer/android/export",
   "toolkit/crashreporter/mozwer-rust",
-  "toolkit/crashreporter/rust_minidump_writer_linux",
   "toolkit/library/gtest/rust",
   "toolkit/library/rust/",
 ]
@@ -65,9 +66,9 @@ rust-version = "1.82.0"
 uniffi = "0.29.1"
 uniffi_bindgen = "0.29.1"
 # Shared across multiple application-services consumers.
-rusqlite = "0.31.0"
+rusqlite = "0.33.0"
 # Shared across multiple glean consumers.
-glean = "=64.0.1"
+glean = "=64.1.1"
 
 # Explicitly specify what our profiles use.  The opt-level setting here is
 # a total fiction; see the setup of MOZ_RUST_DEFAULT_FLAGS for what the
@@ -204,12 +205,20 @@ web-sys = { path = "build/rust/dummy-web/web-sys" }
 
 # Upgrade `core-foundation` 0.9.* to 0.10.
 core-foundation = { path = "build/rust/core-foundation" }
-
 # Patch `core-graphics-types` 0.1.* to 0.2.
 core-graphics-types = { path = "build/rust/core-graphics-types" }
 
 # Patch `half` 1.* to 2.
 half = { path = "build/rust/half" }
+
+# Upgrade `rusqlite` 0.31 to 0.33.
+rusqlite = { path = "build/rust/rusqlite" }
+
+# Patch `strum` 0.26.* to 0.27.
+strum = { path = "build/rust/strum" }
+
+# Patch `itertools` 0.10.* to 0.14.
+itertools = { path = "build/rust/itertools" }
 
 # Overrides to allow easier use of common internal crates.
 moz_asserts = { path = "mozglue/static/rust/moz_asserts" }
@@ -251,14 +260,14 @@ malloc_size_of_derive = { path = "xpcom/rust/malloc_size_of_derive" }
 objc = { git = "https://github.com/glandium/rust-objc", rev = "4de89f5aa9851ceca4d40e7ac1e2759410c04324" }
 
 # application-services overrides to make updating them all simpler.
-interrupt-support = { git = "https://github.com/mozilla/application-services", rev = "8e84c588a5cc2686973c5026ecd240d6275d7e94" }
-relevancy = { git = "https://github.com/mozilla/application-services", rev = "8e84c588a5cc2686973c5026ecd240d6275d7e94" }
-search = { git = "https://github.com/mozilla/application-services", rev = "8e84c588a5cc2686973c5026ecd240d6275d7e94" }
-sql-support = { git = "https://github.com/mozilla/application-services", rev = "8e84c588a5cc2686973c5026ecd240d6275d7e94" }
-suggest = { git = "https://github.com/mozilla/application-services", rev = "8e84c588a5cc2686973c5026ecd240d6275d7e94" }
-sync15 = { git = "https://github.com/mozilla/application-services", rev = "8e84c588a5cc2686973c5026ecd240d6275d7e94" }
-tabs = { git = "https://github.com/mozilla/application-services", rev = "8e84c588a5cc2686973c5026ecd240d6275d7e94" }
-viaduct = { git = "https://github.com/mozilla/application-services", rev = "8e84c588a5cc2686973c5026ecd240d6275d7e94" }
-webext-storage = { git = "https://github.com/mozilla/application-services", rev = "8e84c588a5cc2686973c5026ecd240d6275d7e94" }
+interrupt-support = { git = "https://github.com/mozilla/application-services", rev = "280db3a3a06a8f517151ff0b84b5ce67fcc7afd6" }
+relevancy = { git = "https://github.com/mozilla/application-services", rev = "280db3a3a06a8f517151ff0b84b5ce67fcc7afd6" }
+search = { git = "https://github.com/mozilla/application-services", rev = "280db3a3a06a8f517151ff0b84b5ce67fcc7afd6" }
+sql-support = { git = "https://github.com/mozilla/application-services", rev = "280db3a3a06a8f517151ff0b84b5ce67fcc7afd6" }
+suggest = { git = "https://github.com/mozilla/application-services", rev = "280db3a3a06a8f517151ff0b84b5ce67fcc7afd6" }
+sync15 = { git = "https://github.com/mozilla/application-services", rev = "280db3a3a06a8f517151ff0b84b5ce67fcc7afd6" }
+tabs = { git = "https://github.com/mozilla/application-services", rev = "280db3a3a06a8f517151ff0b84b5ce67fcc7afd6" }
+viaduct = { git = "https://github.com/mozilla/application-services", rev = "280db3a3a06a8f517151ff0b84b5ce67fcc7afd6" }
+webext-storage = { git = "https://github.com/mozilla/application-services", rev = "280db3a3a06a8f517151ff0b84b5ce67fcc7afd6" }
 
 allocator-api2 = { path = "third_party/rust/allocator-api2" }

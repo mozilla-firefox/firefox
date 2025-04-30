@@ -1,0 +1,7 @@
+vendored:third_party/python/colorama
+vendored:third_party/python/fluent.syntax
+vendored:third_party/python/gitignorant
+vendored:third_party/python/iniparse
+vendored:third_party/python/moz.l10n
+vendored:third_party/python/polib
+vendored:third_party/python/tomli

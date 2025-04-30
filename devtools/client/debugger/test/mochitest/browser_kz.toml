@@ -128,11 +128,7 @@ skip-if = ["cm5"]
 fail-if = ["a11y_checks"] # Bug 1849028 clicked element may not be focusable and/or labeled
 
 ["browser_dbg-preview-invalid-tokens.js"]
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64'", # This specific test is heavily intermittent, and sometimes leaks on debug.
-  "os == 'mac' && os_version == '14.70' && processor == 'x86_64'", # Bug 1958748
-  "os == 'win' && os_version == '11.26100' && processor == 'x86_64'",
-]
+skip-if = ["debug"] # Bug 1958748 intermittent toolbox documents leaks
 
 ["browser_dbg-preview-jump-to-definition.js"]
 fail-if = ["a11y_checks"] # Bug 1849028 clicked element may not be focusable and/or labeled

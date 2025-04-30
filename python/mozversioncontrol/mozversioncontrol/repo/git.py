@@ -180,6 +180,33 @@ class GitRepository(Repository):
         ]
         return FileListFinder(files)
 
+    def _translate_exclude_expr(self, pattern):
+        if not pattern or pattern.startswith("#"):
+            return None  # empty or comment
+        pattern = pattern.replace(".*", "**")
+        magics = ["exclude"]
+        if pattern.startswith("^"):
+            magics += ["top"]
+            pattern = pattern[1:]
+        return ":({0}){1}".format(",".join(magics), pattern)
+
+    def diff_stream(self, rev=None, extensions=(), exclude_file=None, context=8):
+        commit_range = "HEAD"  # All uncommitted changes.
+        if rev:
+            commit_range = rev if ".." in rev else f"{rev}~..{rev}"
+        args = ["diff", "--no-color", f"-U{context}", commit_range, "--"]
+        for dot_extension in extensions:
+            args += [f"*{dot_extension}"]
+        # git-diff doesn't support an 'exclude-from-files' param, but
+        # allow to add individual exclude pattern since v1.9, see
+        # https://git-scm.com/docs/gitglossary#gitglossary-aiddefpathspecapathspec
+        with open(exclude_file) as exclude_pattern_file:
+            for pattern in exclude_pattern_file.readlines():
+                pattern = self._translate_exclude_expr(pattern.rstrip())
+                if pattern is not None:
+                    args.append(pattern)
+        return self._pipefrom(*args)
+
     def working_directory_clean(self, untracked=False, ignored=False):
         args = ["status", "--porcelain"]
 

@@ -30,6 +30,9 @@ function String_match(regexp) {
 
     // Step 2.b.
     if (matcher !== undefined) {
+      if (!IsObject(regexp)) {
+        RegExpSymbolProtocolOnPrimitiveCounter();
+      }
       return callContentFunction(matcher, regexp, this);
     }
   }
@@ -94,6 +97,9 @@ function String_matchAll(regexp) {
 
     // Step 2.d.
     if (matcher !== undefined) {
+      if (!IsObject(regexp)) {
+        RegExpSymbolProtocolOnPrimitiveCounter();
+      }
       return callContentFunction(matcher, regexp, this);
     }
   }
@@ -221,6 +227,9 @@ function String_replace(searchValue, replaceValue) {
 
     // Step 2.b.
     if (replacer !== undefined) {
+      if (!IsObject(searchValue)) {
+        RegExpSymbolProtocolOnPrimitiveCounter();
+      }
       return callContentFunction(replacer, searchValue, this, replaceValue);
     }
   }
@@ -313,6 +322,9 @@ function String_replaceAll(searchValue, replaceValue) {
 
     // Step 2.b.
     if (replacer !== undefined) {
+      if (!IsObject(searchValue)) {
+        RegExpSymbolProtocolOnPrimitiveCounter();
+      }
       return callContentFunction(replacer, searchValue, this, replaceValue);
     }
   }
@@ -428,6 +440,9 @@ function String_search(regexp) {
 
     // Step 2.b.
     if (searcher !== undefined) {
+      if (!IsObject(regexp)) {
+        RegExpSymbolProtocolOnPrimitiveCounter();
+      }
       return callContentFunction(searcher, regexp, this);
     }
   }
@@ -491,6 +506,9 @@ function String_split(separator, limit) {
 
     // Step 2.b.
     if (splitter !== undefined) {
+      if (!IsObject(separator)) {
+        RegExpSymbolProtocolOnPrimitiveCounter();
+      }
       return callContentFunction(splitter, separator, this, limit);
     }
   }

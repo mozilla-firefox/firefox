@@ -167,7 +167,13 @@ add_task(async function testSuccessfulConversion() {
   );
 
   const expectedMeasurement = {
-    task: { id: TASK_ID, time_precision: 60, measurement_type: "vecu8" },
+    task: {
+      id: TASK_ID,
+      vdaf: "sumvec",
+      bits: 8,
+      length: HISTOGRAM_SIZE,
+      time_precision: 60,
+    },
     measurement: [0, 1, 0, 0, 0],
     timeout: 30000,
   };

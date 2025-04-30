@@ -42,6 +42,7 @@ add_setup(async () => {
     prefs: [
       ["suggest.quicksuggest.nonsponsored", true],
       ["suggest.quicksuggest.sponsored", true],
+      ["quicksuggest.ampTopPickCharThreshold", 0],
     ],
   });
   await resetRemoteSettingsData();
@@ -338,30 +339,399 @@ add_task(async function suggestedDisabled_dataCollectionEnabled() {
   merinoClient().resetSession();
 });
 
-// Test whether the blocking for Merino results works.
-add_task(async function block() {
+// Tests dismissals of managed Merino suggestions (suggestions that are managed
+// by a `SuggestFeature`).
+add_task(async function dismissals_managed() {
   UrlbarPrefs.set(PREF_DATA_COLLECTION_ENABLED, true);
 
-  // Make sure the Merino suggestions have different URLs from the remote
-  // settings suggestion.
-  let { suggestions } = MerinoTestUtils.server.response.body;
-  for (let i = 0; i < suggestions.length; i++) {
-    let suggestion = suggestions[i];
-    suggestion.url = "https://example.com/merino-url-" + i;
-    await QuickSuggest.blockedSuggestions.add(suggestion.url);
-  }
+  // Set up a single Merino AMP suggestion with a unique URL.
+  let url = "https://example.com/merino-amp-url";
+  MerinoTestUtils.server.response =
+    MerinoTestUtils.server.makeDefaultResponse();
+  MerinoTestUtils.server.response.body.suggestions[0].url = url;
 
+  let expectedMerinoResult = QuickSuggestTestUtils.ampResult({
+    url,
+    source: "merino",
+    provider: "adm",
+    requestId: "request_id",
+  });
+
+  // Do a search. The Merino suggestion should be matched.
   const context = createContext(SEARCH_STRING, {
     providers: [UrlbarProviderQuickSuggest.name],
     isPrivate: false,
   });
-
   await check_results({
     context,
+    matches: [expectedMerinoResult],
+  });
+
+  let result = context.results[0];
+  Assert.ok(
+    QuickSuggest.getFeatureByResult(result),
+    "Sanity check: The actual result should be managed by a feature"
+  );
+
+  // Dismiss the Merino result.
+  await QuickSuggest.dismissResult(result);
+  Assert.ok(
+    await QuickSuggest.isResultDismissed(result),
+    "isResultDismissed should return true after dismissing result"
+  );
+
+  // Do another search. The remote settings suggestion should now be matched.
+  await check_results({
+    context: createContext(SEARCH_STRING, {
+      providers: [UrlbarProviderQuickSuggest.name],
+      isPrivate: false,
+    }),
     matches: [EXPECTED_REMOTE_SETTINGS_URLBAR_RESULT],
   });
 
+  // Clear dismissals.
   await QuickSuggest.clearDismissedSuggestions();
+  Assert.ok(
+    !(await QuickSuggest.isResultDismissed(result)),
+    "isResultDismissed should return false after clearing dismissals"
+  );
+
+  // The Merino suggestion should be matched again.
+  await check_results({
+    context: createContext(SEARCH_STRING, {
+      providers: [UrlbarProviderQuickSuggest.name],
+      isPrivate: false,
+    }),
+    matches: [expectedMerinoResult],
+  });
+
+  MerinoTestUtils.server.reset();
+  merinoClient().resetSession();
+});
+
+// Tests dismissals of unmanaged Merino suggestions (suggestions that are not
+// managed by a `SuggestFeature`).
+add_task(async function dismissals_unmanaged_1() {
+  UrlbarPrefs.set(PREF_DATA_COLLECTION_ENABLED, true);
+
+  let provider = "some-unknown-merino-provider";
+  let tests = [
+    {
+      suggestion: {
+        provider,
+        url: "https://example.com/0",
+        score: 1,
+      },
+      expected: {
+        // dismissal key should be the `url` value
+        dismissalKey: "https://example.com/0",
+      },
+    },
+    {
+      suggestion: {
+        provider,
+        url: "https://example.com/1",
+        original_url: "https://example.com/1-original-url",
+        score: 1,
+      },
+      expected: {
+        // dismissal key should be the `original_url` value
+        dismissalKey: "https://example.com/1-original-url",
+        notDismissalKeys: ["https://example.com/1"],
+      },
+    },
+    {
+      suggestion: {
+        provider,
+        url: "https://example.com/2",
+        original_url: "https://example.com/2-original-url",
+        dismissal_key: "2-dismissal-key",
+        score: 1,
+      },
+      expected: {
+        // dismissal key should be the `dismissal_key` value
+        dismissalKey: "2-dismissal-key",
+        notDismissalKeys: [
+          "https://example.com/2",
+          "https://example.com/2-original-url",
+        ],
+      },
+    },
+  ];
+
+  for (let test of tests) {
+    info("Doing subtest: " + JSON.stringify(test));
+
+    let { suggestion, expected } = test;
+
+    MerinoTestUtils.server.response =
+      MerinoTestUtils.server.makeDefaultResponse();
+    MerinoTestUtils.server.response.body.suggestions = [suggestion];
+
+    let expectedResult = {
+      type: UrlbarUtils.RESULT_TYPE.URL,
+      source: UrlbarUtils.RESULT_SOURCE.SEARCH,
+      heuristic: false,
+      payload: {
+        provider,
+        title: "example.com",
+        url: suggestion.url,
+        originalUrl: suggestion.original_url,
+        displayUrl: suggestion.url.replace(/^https:\/\//, ""),
+        dismissalKey: suggestion.dismissal_key,
+        source: "merino",
+        isSponsored: false,
+        shouldShowUrl: true,
+        isBlockable: true,
+        isManageable: true,
+        telemetryType: provider,
+      },
+    };
+
+    // Do a search. The Merino suggestion should be matched.
+    let context = createContext(SEARCH_STRING, {
+      providers: [UrlbarProviderQuickSuggest.name],
+      isPrivate: false,
+    });
+    await check_results({
+      context,
+      matches: [expectedResult],
+    });
+
+    let result = context.results[0];
+    Assert.ok(
+      !QuickSuggest.getFeatureByResult(result),
+      "Sanity check: The actual result should not be managed by a feature"
+    );
+
+    // Dismiss the Merino result.
+    await QuickSuggest.dismissResult(result);
+    Assert.ok(
+      await QuickSuggest.isResultDismissed(result),
+      "isResultDismissed should return true after dismissing result"
+    );
+
+    Assert.ok(
+      await QuickSuggest.rustBackend.isDismissedByKey(expected.dismissalKey),
+      "isDismissedByKey should return true after dismissing result"
+    );
+    if (expected.notDismissalKeys) {
+      for (let value of expected.notDismissalKeys) {
+        Assert.ok(
+          !(await QuickSuggest.rustBackend.isDismissedByKey(value)),
+          "isDismissedByKey should return false for notDismissalKey: " + value
+        );
+      }
+    }
+
+    // Do another search. The remote settings suggestion should now be matched.
+    await check_results({
+      context: createContext(SEARCH_STRING, {
+        providers: [UrlbarProviderQuickSuggest.name],
+        isPrivate: false,
+      }),
+      matches: [EXPECTED_REMOTE_SETTINGS_URLBAR_RESULT],
+    });
+
+    // Clear dismissals.
+    await QuickSuggest.clearDismissedSuggestions();
+    Assert.ok(
+      !(await QuickSuggest.isResultDismissed(result)),
+      "isResultDismissed should return false after clearing dismissals"
+    );
+
+    // The Merino suggestion should be matched again.
+    await check_results({
+      context: createContext(SEARCH_STRING, {
+        providers: [UrlbarProviderQuickSuggest.name],
+        isPrivate: false,
+      }),
+      matches: [expectedResult],
+    });
+  }
+
+  MerinoTestUtils.server.reset();
+  merinoClient().resetSession();
+});
+
+// Tests dismissals of unmanaged Merino suggestions (suggestions that are not
+// managed by a `SuggestFeature`) that all have the same URL but different
+// original URLs and dismissal keys.
+add_task(async function dismissals_unmanaged_2() {
+  UrlbarPrefs.set(PREF_DATA_COLLECTION_ENABLED, true);
+
+  let provider = "some-unknown-merino-provider";
+
+  MerinoTestUtils.server.response =
+    MerinoTestUtils.server.makeDefaultResponse();
+  MerinoTestUtils.server.response.body.suggestions = [
+    // all three: url, original_url, dismissal_key
+    {
+      provider,
+      url: "https://example.com/url",
+      original_url: "https://example.com/original_url",
+      dismissal_key: "dismissal-key",
+      score: 1.0,
+    },
+    // two: url, original_url
+    {
+      provider,
+      url: "https://example.com/url",
+      original_url: "https://example.com/original_url",
+      score: 0.9,
+    },
+    // only one: url
+    {
+      provider,
+      url: "https://example.com/url",
+      score: 0.8,
+    },
+  ];
+
+  let expectedBaseResult = {
+    type: UrlbarUtils.RESULT_TYPE.URL,
+    source: UrlbarUtils.RESULT_SOURCE.SEARCH,
+    heuristic: false,
+    payload: {
+      provider,
+      title: "example.com",
+      url: "https://example.com/url",
+      displayUrl: "example.com/url",
+      source: "merino",
+      isSponsored: false,
+      shouldShowUrl: true,
+      isBlockable: true,
+      isManageable: true,
+      telemetryType: provider,
+    },
+  };
+
+  // Do a search. The first Merino suggestion should be matched.
+  info("Doing search 1");
+  let context = createContext(SEARCH_STRING, {
+    providers: [UrlbarProviderQuickSuggest.name],
+    isPrivate: false,
+  });
+  await check_results({
+    context,
+    matches: [
+      {
+        ...expectedBaseResult,
+        payload: {
+          ...expectedBaseResult.payload,
+          originalUrl: "https://example.com/original_url",
+          dismissalKey: "dismissal-key",
+        },
+      },
+    ],
+  });
+
+  let result = context.results[0];
+  Assert.ok(
+    !QuickSuggest.getFeatureByResult(result),
+    "Sanity check: The actual result should not be managed by a feature"
+  );
+
+  // Dismiss it.
+  await QuickSuggest.dismissResult(result);
+  Assert.ok(
+    await QuickSuggest.isResultDismissed(result),
+    "isResultDismissed should return true after dismissing result 1"
+  );
+
+  Assert.ok(
+    await QuickSuggest.rustBackend.isDismissedByKey("dismissal-key"),
+    "isDismissedByKey should return true after dismissing suggestion 1"
+  );
+
+  for (let value of [
+    "https://example.com/url",
+    "https://example.com/original_url",
+  ]) {
+    Assert.ok(
+      !(await QuickSuggest.rustBackend.isDismissedByKey(value)),
+      "isDismissedByKey should return false after dismissing suggestion 1: " +
+        value
+    );
+  }
+
+  // Do another search. The second suggestion should be matched.
+  info("Doing search 2");
+  context = createContext(SEARCH_STRING, {
+    providers: [UrlbarProviderQuickSuggest.name],
+    isPrivate: false,
+  });
+  await check_results({
+    context,
+    matches: [
+      {
+        ...expectedBaseResult,
+        payload: {
+          ...expectedBaseResult.payload,
+          originalUrl: "https://example.com/original_url",
+          // no dismissal_key
+        },
+      },
+    ],
+  });
+
+  // Dismiss it.
+  result = context.results[0];
+  await QuickSuggest.dismissResult(result);
+  Assert.ok(
+    await QuickSuggest.isResultDismissed(result),
+    "isResultDismissed should return true after dismissing result 2"
+  );
+
+  for (let value of ["dismissal-key", "https://example.com/original_url"]) {
+    Assert.ok(
+      await QuickSuggest.rustBackend.isDismissedByKey(value),
+      "isDismissedByKey should return true after dismissing suggestion 2: " +
+        value
+    );
+  }
+
+  Assert.ok(
+    !(await QuickSuggest.rustBackend.isDismissedByKey(
+      "https://example.com/url"
+    )),
+    "isDismissedByKey should return false after dismissing suggestion 2"
+  );
+
+  // Do another search. The third suggestion should be matched.
+  info("Doing search 3");
+  context = createContext(SEARCH_STRING, {
+    providers: [UrlbarProviderQuickSuggest.name],
+    isPrivate: false,
+  });
+  await check_results({
+    context,
+    matches: [
+      // no dismissal_key or original_url
+      expectedBaseResult,
+    ],
+  });
+
+  // Dismiss it.
+  result = context.results[0];
+  await QuickSuggest.dismissResult(result);
+  Assert.ok(
+    await QuickSuggest.isResultDismissed(result),
+    "isResultDismissed should return true after dismissing result 3"
+  );
+
+  for (let value of [
+    "dismissal-key",
+    "https://example.com/original_url",
+    "https://example.com/url",
+  ]) {
+    Assert.ok(
+      await QuickSuggest.rustBackend.isDismissedByKey(value),
+      "isDismissedByKey should return true after dismissing suggestion 3: " +
+        value
+    );
+  }
+
   MerinoTestUtils.server.reset();
   merinoClient().resetSession();
 });
@@ -513,6 +883,9 @@ async function doUnmanagedTest({ pref, suggestion }) {
   });
 
   // Trigger the dismiss command on the result.
+  let dismissalPromise = TestUtils.topicObserved(
+    "quicksuggest-dismissals-changed"
+  );
   triggerCommand({
     feature: UrlbarProviderQuickSuggest,
     command: "dismiss",
@@ -521,14 +894,14 @@ async function doUnmanagedTest({ pref, suggestion }) {
       removeResult: 1,
     },
   });
-  await QuickSuggest.blockedSuggestions._test_readyPromise;
+  await dismissalPromise;
 
   Assert.ok(
-    await QuickSuggest.blockedSuggestions.isResultBlocked(context.results[0]),
-    "The suggestion URL should be blocked"
+    await QuickSuggest.isResultDismissed(context.results[0]),
+    "The result should be dismissed"
   );
 
-  await QuickSuggest.blockedSuggestions.clear();
+  await QuickSuggest.clearDismissedSuggestions();
   MerinoTestUtils.server.reset();
   merinoClient().resetSession();
 }

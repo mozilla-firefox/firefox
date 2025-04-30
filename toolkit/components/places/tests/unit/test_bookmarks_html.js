@@ -240,21 +240,13 @@ add_task(async function test_import_chromefavicon() {
     dataURL
   );
 
-  let data = await new Promise(resolve => {
-    PlacesUtils.favicons.getFaviconDataForPage(
-      PAGE_URI,
-      (uri, dataLen, faviconData) => resolve(faviconData)
-    );
-  });
-
-  let base64Icon =
-    "data:image/png;base64," +
-    base64EncodeString(String.fromCharCode.apply(String, data));
+  let { dataURI: base64Icon } =
+    await PlacesTestUtils.getFaviconForPage(PAGE_URI);
 
   test_bookmarks.unfiled.push({
     title: "Test",
     url: PAGE_URI.spec,
-    icon: base64Icon,
+    icon: base64Icon.spec,
   });
 
   info("Export to html");
@@ -361,11 +353,10 @@ function checkItem(aExpected, aNode) {
           Assert.equal(aNode.uri, aExpected.url);
           break;
         case "icon": {
-          let { data } = await getFaviconDataForPage(aExpected.url);
-          let base64Icon =
-            "data:image/png;base64," +
-            base64EncodeString(String.fromCharCode.apply(String, data));
-          Assert.ok(base64Icon == aExpected.icon);
+          let { dataURI: base64Icon } = await PlacesTestUtils.getFaviconForPage(
+            aExpected.url
+          );
+          Assert.ok(base64Icon.spec == aExpected.icon);
           break;
         }
         case "keyword": {

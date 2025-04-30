@@ -70,6 +70,7 @@ class Repackage(BaseScript):
             "installer-tag": config["installer-tag"],
             "stub-installer-tag": config["stub-installer-tag"],
             "deb-templates": config["deb-templates"],
+            "rpm-templates": config["rpm-templates"],
             "deb-l10n-templates": config["deb-l10n-templates"],
             "flatpak-templates": config.get("flatpak-templates"),
             "wsx-stub": config["wsx-stub"],

@@ -303,7 +303,6 @@ class BaseConfigureTest(unittest.TestCase):
         try:
             environ = dict(
                 environ,
-                OLD_CONFIGURE=os.path.join(topsrcdir, "old-configure"),
                 MOZCONFIG=mozconfig_path,
             )
 

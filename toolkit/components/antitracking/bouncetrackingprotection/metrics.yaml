@@ -108,6 +108,9 @@ bounce.tracking.protection:
       is_dry_run:
         description: Whether we just pretended to purge since the client is in dry-run mode.
         type: boolean
+      require_stateful_bounces:
+        description: Whether BTP is set to require stateful bounces a.k.a. stateful mode (true) or stateless mode (false). This mirrors the pref privacy.bounceTrackingProtection.requireStatefulBounces.
+        type: boolean
       success:
         description: Whether the purge data call was successful. false indicates an error in ClearDataService.
         type: boolean

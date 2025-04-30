@@ -13,6 +13,7 @@ support-files = [
 ["browser_pocket_panel.js"]
 skip-if = [
   "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && opt", # Bug 1781272
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1781272
 ]
 
 ["browser_pocket_panel_closemenu.js"]

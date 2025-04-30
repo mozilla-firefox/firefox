@@ -18,6 +18,7 @@ import org.mozilla.fenix.components.metrics.UTMParams.Companion.UTM_SOURCE
 import org.mozilla.fenix.components.metrics.UTMParams.Companion.UTM_TERM
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.settings
+import org.mozilla.fenix.utils.isLargeScreenSize
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -57,6 +58,7 @@ object CustomAttributeProvider : JexlAttributeProvider {
                 "install_referrer_response_utm_term" to settings.utmTerm,
                 "install_referrer_response_utm_content" to settings.utmContent,
                 "number_of_app_launches" to settings.numberOfAppLaunches,
+                "is_large_device" to context.isLargeScreenSize(),
                 // This camelCase attribute is a boolean value represented as a string.
                 // This is left for backwards compatibility.
                 "isFirstRun" to isFirstRun.toString(),

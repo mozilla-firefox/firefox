@@ -12,14 +12,29 @@
 
 extern "C" {
 
+#if defined(__ANDROID_API__) && (__ANDROID_API__ < 28)
+
+// Bionic introduced support for syncfs only in version 28 (that is
+// Android Pie / 9). Since GeckoView is built with version 21, those functions
+// aren't defined, but nix needs them and the crash helper relies on nix. These
+// functions should never be called in practice hence we implement them only to
+// satisfy nix linking requirements but we crash if we accidentally enter them.
+
+int syncfs(int fd) {
+  MOZ_CRASH("syncfs() is not available");
+  return EPERM;
+}
+
+#endif  // __ANDROID_API__ && (__ANDROID_API__ < 28)
+
 #if defined(__ANDROID_API__) && (__ANDROID_API__ < 24)
 
 // Bionic introduced support for getgrgid_r() and getgrnam_r() only in version
 // 24 (that is Android Nougat / 7.0). Since GeckoView is built with version 21,
-// those functions aren't defined, but nix needs them and minidump-writer
-// relies on nix. These functions should never be called in practice hence we
-// implement them only to satisfy nix linking requirements but we crash if we
-// accidentally enter them.
+// those functions aren't defined, but the nix crate needs them and
+// minidump-writer relies on nix. These functions should never be called in
+// practice hence we implement them only to satisfy nix linking requirements
+// but we crash if we accidentally enter them.
 
 int getgrgid_r(gid_t gid, struct group* grp, char* buf, size_t buflen,
                struct group** result) {

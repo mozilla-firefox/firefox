@@ -115,3 +115,83 @@ startup:
     expires: 147
     unit: profiles
     telemetry_mirror: STARTUP_PROFILE_COUNT
+
+profiles:
+  creation_date:
+    type: quantity
+    unit: days since Jan 1 1970
+    lifetime: application
+    description: |
+      The day the profile was created,
+      as determined by checking various file metadata in the profile directory.
+      Not considered to be particularly reliable in practice.
+      Prefer `client_info.first_run_date` in most cases.
+      e.g. 16446
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950400
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950400
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - dtownsend@mozilla.com
+    expires: never
+
+  reset_date:
+    type: quantity
+    unit: days since Jan 1 1970
+    lifetime: application
+    description: |
+      Optional.
+      The day the profile was most recently reset,
+      persisted in `times.json`.
+      e.g. 16446
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950400
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950400
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - dtownsend@mozilla.com
+    expires: never
+
+  first_use_date:
+    type: quantity
+    unit: days since Jan 1 1970
+    lifetime: application
+    description: |
+      Optional.
+      The day the profile was first used,
+      as determined by noticing that `times.json` wasn't present.
+      Prefer `client_info.first_run_date` in most cases.
+      e.g. 16446
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950400
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950400
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - dtownsend@mozilla.com
+    expires: never
+
+  recovered_from_backup:
+    type: quantity
+    unit: days since Jan 1 1970
+    lifetime: application
+    description: |
+      Optional.
+      The day the profile was recovered from backup,
+      persisted in `times.json`.
+      e.g. 16446
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950400
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950400
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - mconley@mozilla.com
+      - dtownsend@mozilla.com
+    expires: never

@@ -692,23 +692,15 @@ addon-permissions-list > .addon-detail-row {
   background-repeat: no-repeat;
   word-break: break-all;
 
-  .addon-permissions-required & {
-    --checkmark-width: var(--size-item-small);
-    --checkmark-height: var(--size-item-small);
-    padding-inline-start: calc(var(--checkmark-width) + var(--space-small));
-    background-position: 0 center;
-    background-size: var(--checkmark-width) var(--checkmark-height);
-    /* using a list-style-image prevents aligning the image */
-    background-image: url("chrome://global/skin/icons/check.svg");
-    -moz-context-properties: fill;
-    fill: var(--green-60);
-
-    &:dir(rtl) {
-      background-position-x: right 0;
-    }
+  .addon-permissions-required &.permission-checked {
+    list-style-type: disc;
+    /* Align the list with the rest of the page, and use `list-style-position:
+     * outside` to keep long string correctly wrapped. */
+    margin-inline-start: 1em;
   }
 
-  .addon-permissions-optional & {
+  .addon-permissions-optional &,
+  .addon-data-collection-permissions-optional & {
     padding-inline-start: 0;
 
     moz-toggle > moz-message-bar {
@@ -722,11 +714,6 @@ addon-permissions-list > .addon-detail-row {
 
 .permission-header {
   font-size: 1em;
-
-  /* Increase margin between the required and optional permissions lists. */
-  .addon-permissions-optional > & {
-    margin-top: var(--space-xlarge);
-  }
 }
 
 .tab-group {

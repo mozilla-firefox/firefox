@@ -177,9 +177,9 @@ XPCOMUtils.defineLazyPreferenceGetter(
 );
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
-  "profileStoreID",
-  "toolkit.profiles.storeID",
-  null
+  "profilesCreated",
+  "browser.profiles.created",
+  false
 );
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
@@ -616,7 +616,7 @@ const TargetingGetters = {
     return lazy.SelectableProfileService?.isEnabled ?? false;
   },
   get hasSelectableProfiles() {
-    return !!lazy.profileStoreID;
+    return lazy.profilesCreated;
   },
   get profileAgeCreated() {
     return lazy.ProfileAge().then(times => times.created);

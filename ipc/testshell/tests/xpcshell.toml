@@ -1,6 +1,5 @@
 [DEFAULT]
 head = ""
-skip-if = ["os == 'android'"]
 
 ["test_ipcshell.js"]
 # Bug 676963: test fails consistently on Android

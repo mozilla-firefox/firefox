@@ -549,8 +549,6 @@
   <string name="preferences_override_account_server">Ichinan ruk\'u\'x rusamaj Mozilla account</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Ichinan ruk\'u\'x rusamaj Sync</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Xjal ruk\'u\'x kisamaj Mozilla Account/Sync. Nitz\'apïx chokoy richin yesamajïx ri taq jaloj…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Rub\'i\' taqoya\'l</string>
   <!-- Preference for changing default theme to dark or light mode -->

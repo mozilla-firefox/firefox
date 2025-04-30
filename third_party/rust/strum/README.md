@@ -11,7 +11,7 @@ Strum is a set of macros and traits for working with enums and strings easier in
 
 # Compatibility
 
-Strum is currently compatible with versions of rustc >= 1.56.1. Pull Requests that improve compatibility with older
+Strum is currently compatible with versions of rustc >= 1.66.1. Pull Requests that improve compatibility with older
 versions are welcome. The project goal is to support a rust version for at least 2 years after release 
 and even longer is preferred since this project changes slowly.
 
@@ -22,11 +22,11 @@ Cargo.toml. Strum_macros contains the macros needed to derive all the traits in 
 
 ```toml
 [dependencies]
-strum = "0.26"
-strum_macros = "0.26"
+strum = "0.27"
+strum_macros = "0.27"
 
 # You can also use the "derive" feature, and import the macros directly from "strum"
-# strum = { version = "0.26", features = ["derive"] }
+# strum = { version = "0.27", features = ["derive"] }
 ```
 
 # Strum Macros

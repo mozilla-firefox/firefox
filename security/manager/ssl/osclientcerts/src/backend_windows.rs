@@ -7,7 +7,7 @@
 
 use pkcs11_bindings::*;
 use rsclientcerts::error::{Error, ErrorType};
-use rsclientcerts::manager::{ClientCertsBackend, CryptokiObject, Sign, SlotType};
+use rsclientcerts::manager::{ClientCertsBackend, CryptokiObject, Sign};
 use rsclientcerts::util::*;
 use sha2::{Digest, Sha256};
 use std::convert::TryInto;
@@ -86,8 +86,6 @@ pub struct Cert {
     serial_number: Vec<u8>,
     /// The DER bytes of the subject distinguished name of the certificate.
     subject: Vec<u8>,
-    /// Which slot this certificate should be exposed on.
-    slot_type: SlotType,
 }
 
 impl Cert {
@@ -109,7 +107,6 @@ impl Cert {
             issuer,
             serial_number,
             subject,
-            slot_type: SlotType::Modern,
         })
     }
 
@@ -147,10 +144,7 @@ impl Cert {
 }
 
 impl CryptokiObject for Cert {
-    fn matches(&self, slot_type: SlotType, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
-        if slot_type != self.slot_type {
-            return false;
-        }
+    fn matches(&self, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
         for (attr_type, attr_value) in attrs {
             let comparison = match *attr_type {
                 CKA_CLASS => self.class(),
@@ -552,8 +546,6 @@ pub struct Key {
     ec_params: Option<Vec<u8>>,
     /// An enum identifying this key's type.
     key_type_enum: KeyType,
-    /// Which slot this key should be exposed on.
-    slot_type: SlotType,
     /// A handle on the OS mechanism that represents this key.
     key_handle: Option<KeyHandle>,
 }
@@ -603,7 +595,6 @@ impl Key {
             modulus,
             ec_params,
             key_type_enum,
-            slot_type: SlotType::Modern,
             key_handle: None,
         })
     }
@@ -684,10 +675,7 @@ impl Key {
 }
 
 impl CryptokiObject for Key {
-    fn matches(&self, slot_type: SlotType, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
-        if slot_type != self.slot_type {
-            return false;
-        }
+    fn matches(&self, attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> bool {
         for (attr_type, attr_value) in attrs {
             let comparison = match *attr_type {
                 CKA_CLASS => self.class(),

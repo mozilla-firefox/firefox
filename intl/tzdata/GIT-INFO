@@ -1,5 +1,5 @@
-commit 22428453df80492b31f32da309410d23a23c32b6
-Author: Almaz Mingaleev <mingaleev@google.com>
-Date:   Thu Jan 30 19:06:01 2025 +0000
+commit d6a3a85e988251a7e4966035e618c6d203f1bb7c
+Author: Almaz <mingaleev@google.com>
+Date:   Fri Apr 11 18:26:16 2025 +0100
 
-    ICU-23022 Update ICU data to TZDB 2025a.
+    ICU-23096 Update ICU data to TZDB 2025b. (#45)

@@ -313,11 +313,10 @@ async function checkItem(aExpected, aNode) {
         Assert.equal(aNode.uri, aExpected.url);
         break;
       case "icon": {
-        let { data } = await getFaviconDataForPage(aExpected.url);
-        let base64Icon =
-          "data:image/png;base64," +
-          base64EncodeString(String.fromCharCode.apply(String, data));
-        Assert.equal(base64Icon, aExpected.icon);
+        let { dataURI: base64Icon } = await PlacesTestUtils.getFaviconForPage(
+          aExpected.url
+        );
+        Assert.equal(base64Icon.spec, aExpected.icon);
         break;
       }
       case "keyword": {

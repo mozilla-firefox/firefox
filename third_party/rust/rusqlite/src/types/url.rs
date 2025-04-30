@@ -1,4 +1,4 @@
-//! [`ToSql`] and [`FromSql`] implementation for [`url::Url`].
+//! [`ToSql`] and [`FromSql`] implementation for [`Url`].
 use crate::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use crate::Result;
 use url::Url;
@@ -18,7 +18,7 @@ impl FromSql for Url {
         match value {
             ValueRef::Text(s) => {
                 let s = std::str::from_utf8(s).map_err(|e| FromSqlError::Other(Box::new(e)))?;
-                Url::parse(s).map_err(|e| FromSqlError::Other(Box::new(e)))
+                Self::parse(s).map_err(|e| FromSqlError::Other(Box::new(e)))
             }
             _ => Err(FromSqlError::InvalidType),
         }

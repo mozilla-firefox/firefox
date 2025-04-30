@@ -60,3 +60,391 @@ widget:
       - froydnj@mozilla.com
     expires: never
     telemetry_mirror: IDLE_NOTIFY_IDLE_MS
+
+gfx.features:
+  compositor:
+    type: string
+    lifetime: application
+    description: |
+      Layers backend for compositing.
+      One of "d3d9", "d3d11", "opengl", "basic", or "none".
+      "none" indicates no compositors have been created.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950412
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950412
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  d3d11:
+    type: object
+    lifetime: application
+    description: |
+      (Windows-only) information about the D3D11 compositor.
+      * status - One of
+        * "unused"      - This feature has not been requested.
+        * "unavailable" - Safe Mode or OS restriction prevents use.
+        * "blocked"     - An internal condition (such as safe mode) prevents use.
+        * "blocklisted" - Blocked due to a blocklist restriction.
+        * "denied"      - Blocked due to allowlist restrictions.
+        * "disabled"    - User explicitly disabled this default feature.
+        * "failed"      - Feature failed to initialize.
+        * "available"   - User has this feature available by default.
+                  optionally including ":" followed by a reason
+                  e.g. "FEATURE_FAILURE_WEBRENDER_VIDEO_CRASH_INTEL_23.20.16.4973".
+      * warp - Software rendering (WARP) mode was chosen.
+      * textureSharing - Whether or not texture sharing works.
+      * version - The D3D11 device feature level.
+      * blocklisted - Whether D3D11 is blocklisted; use to see whether WARP
+                      was blacklist induced or driver-failure induced.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950412
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950412
+    data_sensitivity:
+      - technical
+    structure:
+      type: object
+      properties:
+        status:
+          type: string
+        warp:
+          type: boolean
+        textureSharing:
+          type: boolean
+        version:
+          type: number
+        blocklisted:
+          type: boolean
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  d2d:
+    type: object
+    lifetime: application
+    description: |
+      (Windows-only) information about the D2D compositor.
+      * status - One of
+        * "unused"      - This feature has not been requested.
+        * "unavailable" - Safe Mode or OS restriction prevents use.
+        * "blocked"     - An internal condition (such as safe mode) prevents use.
+        * "blocklisted" - Blocked due to a blocklist restriction.
+        * "denied"      - Blocked due to allowlist restrictions.
+        * "disabled"    - User explicitly disabled this default feature.
+        * "failed"      - Feature failed to initialize.
+        * "available"   - User has this feature available by default.
+                  optionally including ":" followed by a reason
+                  e.g. "FEATURE_FAILURE_WEBRENDER_VIDEO_CRASH_INTEL_23.20.16.4973".
+      * version - The feature version, either "1.0" or "1.1"
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950412
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950412
+    data_sensitivity:
+      - technical
+    structure:
+      type: object
+      properties:
+        status:
+          type: string
+        version:
+          type: number
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  hw_compositing: &basic_gfx_feature
+    type: object
+    lifetime: application
+    description: |
+      Information about the hardware acceleration GFX feature.
+      (i.e. whether we try using the GPU)
+      * status - One of
+        * "unused"      - This feature has not been requested.
+        * "unavailable" - Safe Mode or OS restriction prevents use.
+        * "blocked"     - An internal condition (such as safe mode) prevents use.
+        * "blocklisted" - Blocked due to a blocklist restriction.
+        * "denied"      - Blocked due to allowlist restrictions.
+        * "disabled"    - User explicitly disabled this default feature.
+        * "failed"      - Feature failed to initialize.
+        * "available"   - User has this feature available by default.
+                  optionally including ":" followed by a reason
+                  e.g. "FEATURE_FAILURE_WEBRENDER_VIDEO_CRASH_INTEL_23.20.16.4973".
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950412
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950412
+    data_sensitivity:
+      - technical
+    structure:
+      type: object
+      properties:
+        status:
+          type: string
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  gpu_process:
+    <<: *basic_gfx_feature
+    description: |
+      Information about the out-of-process compositing ("GPU Process") GFX feature.
+      * status - One of
+        * "unused"      - This feature has not been requested.
+        * "unavailable" - Safe Mode or OS restriction prevents use.
+        * "blocked"     - An internal condition (such as safe mode) prevents use.
+        * "blocklisted" - Blocked due to a blocklist restriction.
+        * "denied"      - Blocked due to allowlist restrictions.
+        * "disabled"    - User explicitly disabled this default feature.
+        * "failed"      - Feature failed to initialize.
+        * "available"   - User has this feature available by default and it's in use.
+                  optionally including ":" followed by a reason
+                  e.g. "FEATURE_FAILURE_WEBRENDER_VIDEO_CRASH_INTEL_23.20.16.4973".
+
+  webrender:
+    <<: *basic_gfx_feature
+    description: |
+      Information about the Webrender GFX feature.
+      * status - One of
+        * "unused"      - This feature has not been requested.
+        * "unavailable" - Safe Mode or OS restriction prevents use.
+        * "blocked"     - An internal condition (such as safe mode) prevents use.
+        * "blocklisted" - Blocked due to a blocklist restriction.
+        * "denied"      - Blocked due to allowlist restrictions.
+        * "disabled"    - User explicitly disabled this default feature.
+        * "failed"      - Feature failed to initialize.
+        * "available"   - User has this feature available by default.
+                  optionally including ":" followed by a reason
+                  e.g. "FEATURE_FAILURE_WEBRENDER_VIDEO_CRASH_INTEL_23.20.16.4973".
+
+  wr_compositor:
+    <<: *basic_gfx_feature
+    description: |
+      Information about the native OS compositor (CA, DCamp, etc.).
+      * status - One of
+        * "unused"      - This feature has not been requested.
+        * "unavailable" - Safe Mode or OS restriction prevents use.
+        * "blocked"     - An internal condition (such as safe mode) prevents use.
+        * "blocklisted" - Blocked due to a blocklist restriction.
+        * "denied"      - Blocked due to allowlist restrictions.
+        * "disabled"    - User explicitly disabled this default feature.
+        * "failed"      - Feature failed to initialize.
+        * "available"   - User has this feature available by default.
+                  optionally including ":" followed by a reason
+                  e.g. "FEATURE_FAILURE_WEBRENDER_VIDEO_CRASH_INTEL_23.20.16.4973".
+
+  opengl_compositing:
+    <<: *basic_gfx_feature
+    description: |
+      Information about the OpenGL Compositing GFX feature.
+      * status - One of
+        * "unused"      - This feature has not been requested.
+        * "unavailable" - Safe Mode or OS restriction prevents use.
+        * "blocked"     - An internal condition (such as safe mode) prevents use.
+        * "blocklisted" - Blocked due to a blocklist restriction.
+        * "denied"      - Blocked due to allowlist restrictions.
+        * "disabled"    - User explicitly disabled this default feature.
+        * "failed"      - Feature failed to initialize.
+        * "available"   - User has this feature available by default.
+                  optionally including ":" followed by a reason
+                  e.g. "FEATURE_FAILURE_WEBRENDER_VIDEO_CRASH_INTEL_23.20.16.4973".
+
+  omtp:
+    <<: *basic_gfx_feature
+    description: |
+      Information about the Off Main Thread Painting GFX feature.
+      * status - One of
+        * "unused"      - This feature has not been requested.
+        * "unavailable" - Safe Mode or OS restriction prevents use.
+        * "blocked"     - An internal condition (such as safe mode) prevents use.
+        * "blocklisted" - Blocked due to a blocklist restriction.
+        * "denied"      - Blocked due to allowlist restrictions.
+        * "disabled"    - User explicitly disabled this default feature.
+        * "failed"      - Feature failed to initialize.
+        * "available"   - User has this feature available by default.
+                  optionally including ":" followed by a reason
+                  e.g. "FEATURE_FAILURE_WEBRENDER_VIDEO_CRASH_INTEL_23.20.16.4973".
+gfx:
+  d2d_enabled:
+    type: boolean
+    lifetime: application
+    description: |
+      Whether Direct2D is enabled. (Windows-only)
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  dwrite_enabled:
+    type: boolean
+    lifetime: application
+    description: |
+      Whether DirectWrite is enabled. (Windows-only)
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  content_backend:
+    type: string
+    lifetime: application
+    description: |
+      The content backend (e.g. "Direct2D 1.1", "Skia", "Cairo").
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  headless:
+    type: boolean
+    lifetime: application
+    description: |
+      Whether the app's running in headless mode (e.g. via `MOZ_HEADLESS`).
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  target_frame_rate:
+    type: quantity
+    unit: hertz
+    lifetime: application
+    description: |
+      The frame rate in Hz, typically 60 or more.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  text_scale_factor:
+    type: string
+    lifetime: application
+    description: |
+      The text scale factor.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  monitors:
+    type: object
+    lifetime: application
+    description: |
+      Information about connected monitors.
+      On Linux only a single monitor is returned for the primary screen.
+      * screenWidth - Screen width in pixels
+      * screenHeight - Screen height in pixels
+      * defaultCSSScaleFactor - The default number of device pixels per unscaled CSS pixel for this screen.
+      * contentsScaleFactor - The number of device pixels per desktop pixel for this screen.
+      * refreshRate - (Windows only) The target screen refresh rate, in Hz, or 0 if unknown.
+      * pseudoDislay - (Windows only) Whether the screen is a pseudo display.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_sensitivity:
+      - technical
+    structure:
+      type: array
+      items:
+        type: object
+        properties:
+          screenWidth:
+            type: number
+          screenHeight:
+            type: number
+          defaultCSSScaleFactor:
+            type: string
+          contentsScaleFactor:
+            type: string
+          refreshRate:
+            type: number
+          pseudoDisplay:
+            type: boolean
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never
+
+  adapters:
+    type: object
+    lifetime: application
+    description: |
+      Information about the primary (and secondary, if available) graphics adapter.
+      * description - e.g. "Intel(R) HD Graphics 4600"
+      * vendorID - Hex vendor id
+      * deviceID - Hex device id
+      * subsysID - Hex subsys id
+      * RAM - reported RAM in megabytes.
+      * driver - Platform-specific driver information.
+      * driverVendor - Driver vendor information.
+      * driverVersion - Driver version.
+      * driverDate - Driver date.
+      * GPUActive - Whether this adapter is active.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1950411
+    data_sensitivity:
+      - technical
+    structure:
+      type: array
+      items:
+        type: object
+        properties:
+          description:
+            type: string
+          vendorID:
+            type: string
+          deviceID:
+            type: string
+          subsysID:
+            type: string
+          RAM:
+            type: number
+          driver:
+            type: string
+          driverVendor:
+            type: string
+          driverVersion:
+            type: string
+          driverDate:
+            type: string
+          GPUActive:
+            type: boolean
+    notification_emails:
+      - gfx-telemetry-alerts@mozilla.com
+    expires: never

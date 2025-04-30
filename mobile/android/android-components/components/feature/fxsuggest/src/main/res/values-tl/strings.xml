@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- The description for a sponsored suggestion from Firefox Suggest. -->
+  <string name="sponsored_suggestion_description">Naka-sponsor</string>
+</resources>

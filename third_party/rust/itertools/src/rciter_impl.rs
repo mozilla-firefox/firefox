@@ -1,10 +1,10 @@
-
-use std::iter::{FusedIterator, IntoIterator};
 use alloc::rc::Rc;
 use std::cell::RefCell;
+use std::iter::{FusedIterator, IntoIterator};
 
 /// A wrapper for `Rc<RefCell<I>>`, that implements the `Iterator` trait.
 #[derive(Debug)]
+#[must_use = "iterator adaptors are lazy and do nothing unless consumed"]
 pub struct RcIter<I> {
     /// The boxed iterator.
     pub rciter: Rc<RefCell<I>>,
@@ -45,9 +45,12 @@ pub struct RcIter<I> {
 /// `.next()`, i.e. if it somehow participates in an “iterator knot”
 /// where it is an adaptor of itself.
 pub fn rciter<I>(iterable: I) -> RcIter<I::IntoIter>
-    where I: IntoIterator
+where
+    I: IntoIterator,
 {
-    RcIter { rciter: Rc::new(RefCell::new(iterable.into_iter())) }
+    RcIter {
+        rciter: Rc::new(RefCell::new(iterable.into_iter())),
+    }
 }
 
 impl<I> Clone for RcIter<I> {
@@ -55,7 +58,8 @@ impl<I> Clone for RcIter<I> {
 }
 
 impl<A, I> Iterator for RcIter<I>
-    where I: Iterator<Item = A>
+where
+    I: Iterator<Item = A>,
 {
     type Item = A;
     #[inline]
@@ -73,7 +77,8 @@ impl<A, I> Iterator for RcIter<I>
 }
 
 impl<I> DoubleEndedIterator for RcIter<I>
-    where I: DoubleEndedIterator
+where
+    I: DoubleEndedIterator,
 {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -82,8 +87,9 @@ impl<I> DoubleEndedIterator for RcIter<I>
 }
 
 /// Return an iterator from `&RcIter<I>` (by simply cloning it).
-impl<'a, I> IntoIterator for &'a RcIter<I>
-    where I: Iterator
+impl<I> IntoIterator for &RcIter<I>
+where
+    I: Iterator,
 {
     type Item = I::Item;
     type IntoIter = RcIter<I>;
@@ -93,7 +99,4 @@ impl<'a, I> IntoIterator for &'a RcIter<I>
     }
 }
 
-
-impl<A, I> FusedIterator for RcIter<I>
-    where I: FusedIterator<Item = A>
-{}
+impl<A, I> FusedIterator for RcIter<I> where I: FusedIterator<Item = A> {}

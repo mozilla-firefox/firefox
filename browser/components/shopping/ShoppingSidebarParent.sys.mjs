@@ -7,7 +7,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
   EveryWindow: "resource:///modules/EveryWindow.sys.mjs",
   isProductURL: "chrome://global/content/shopping/ShoppingProduct.mjs",
-  NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   ShoppingUtils: "resource:///modules/ShoppingUtils.sys.mjs",
 });
@@ -28,6 +27,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
 );
 
 export class ShoppingSidebarParent extends JSWindowActorParent {
+  static SHOPPING_ENABLED_PREF = "browser.shopping.experience2023.enabled";
   static SHOPPING_ACTIVE_PREF = "browser.shopping.experience2023.active";
   static SHOPPING_OPTED_IN_PREF = "browser.shopping.experience2023.optedIn";
   static SIDEBAR_CLOSED_COUNT_PREF =
@@ -188,7 +188,13 @@ class ShoppingSidebarManagerClass {
     }
 
     this.updateSidebarVisibility = this.updateSidebarVisibility.bind(this);
-    lazy.NimbusFeatures.shopping2023.onUpdate(this.updateSidebarVisibility);
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "isEnabled",
+      ShoppingSidebarParent.SHOPPING_ENABLED_PREF,
+      false,
+      this.updateSidebarVisibility
+    );
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
       "optedInPref",
@@ -238,9 +244,7 @@ class ShoppingSidebarManagerClass {
   }
 
   updateSidebarVisibility() {
-    this.enabled =
-      lazy.NimbusFeatures.shopping2023.getVariable("enabled") &&
-      !this.isIntegratedSidebarPanel;
+    this.enabled = this.isEnabled && !this.isIntegratedSidebarPanel;
     for (let window of lazy.BrowserWindowTracker.orderedWindows) {
       let isPBM = lazy.PrivateBrowsingUtils.isWindowPrivate(window);
       if (isPBM) {

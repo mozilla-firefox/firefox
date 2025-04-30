@@ -8,6 +8,7 @@ const XHTML_NS = "http://www.w3.org/1999/xhtml";
 const FONT_PREVIEW_TEXT = "Abc";
 const FONT_PREVIEW_FONT_SIZE = 40;
 const FONT_PREVIEW_FILLSTYLE = "black";
+const FONT_PREVIEW_FONT_FALLBACK = "serif";
 // Offset (in px) to avoid cutting off text edges of italic fonts.
 const FONT_PREVIEW_OFFSET = 4;
 // Factor used to resize the canvas in order to get better text quality.
@@ -36,6 +37,7 @@ function getFontPreviewData(font, doc, options) {
   const previewFontSize = options.previewFontSize || FONT_PREVIEW_FONT_SIZE;
   const fillStyle = options.fillStyle || FONT_PREVIEW_FILLSTYLE;
   const fontStyle = options.fontStyle || "";
+  const fontWeight = options.fontWeight || "";
 
   const canvas = doc.createElementNS(XHTML_NS, "canvas");
   const ctx = canvas.getContext("2d");
@@ -59,7 +61,24 @@ function getFontPreviewData(font, doc, options) {
     }
     fontParts.push(f);
   }
-  const fontValue = `${fontStyle} ${previewFontSize}px ${fontParts.join(", ")}, serif`;
+  // Add a fallback value
+  fontParts.push(FONT_PREVIEW_FONT_FALLBACK);
+
+  // Apply individual font properties to the canvas element so we can easily compute the
+  // canvas context font
+  // First, we need to start with a default shorthand to make it work
+  canvas.style.font = `${FONT_PREVIEW_FONT_SIZE}px ${FONT_PREVIEW_FONT_FALLBACK}`;
+  // Then we can set the different properties
+  canvas.style.fontFamily = fontParts.join(", ");
+  canvas.style.fontSize = `${previewFontSize}px`;
+  if (fontWeight) {
+    canvas.style.fontWeight = fontWeight;
+  }
+  if (fontStyle) {
+    canvas.style.fontStyle = fontStyle;
+  }
+
+  const fontValue = canvas.style.font;
 
   // Get the correct preview text measurements and set the canvas dimensions
   ctx.font = fontValue;

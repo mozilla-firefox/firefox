@@ -92,6 +92,7 @@ class SearchEngineFragment : PreferenceFragmentCompat() {
 
         val searchSuggestionsInPrivatePreference =
             requirePreference<CheckBoxPreference>(R.string.pref_key_show_search_suggestions_in_private).apply {
+                isChecked = context.settings().shouldShowSearchSuggestionsInPrivate
                 isEnabled = context.settings().shouldShowSearchSuggestions
             }
 

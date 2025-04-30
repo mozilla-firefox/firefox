@@ -24,8 +24,9 @@ use crate::storage::{StorageManager, INTERNAL_STORAGE};
 use crate::upload::{PingUploadManager, PingUploadTask, UploadResult, UploadTaskAction};
 use crate::util::{local_now_with_offset, sanitize_application_id};
 use crate::{
-    scheduler, system, CommonMetricData, ErrorKind, InternalConfiguration, Lifetime, PingRateLimit,
-    Result, DEFAULT_MAX_EVENTS, GLEAN_SCHEMA_VERSION, GLEAN_VERSION, KNOWN_CLIENT_ID,
+    scheduler, system, AttributionMetrics, CommonMetricData, DistributionMetrics, ErrorKind,
+    InternalConfiguration, Lifetime, PingRateLimit, Result, DEFAULT_MAX_EVENTS,
+    GLEAN_SCHEMA_VERSION, GLEAN_VERSION, KNOWN_CLIENT_ID,
 };
 
 static GLEAN: OnceCell<Mutex<Glean>> = OnceCell::new();
@@ -1082,6 +1083,78 @@ impl Glean {
     pub fn start_metrics_ping_scheduler(&self) {
         if self.schedule_metrics_pings {
             scheduler::schedule(self);
+        }
+    }
+
+    /// Updates attribution fields with new values.
+    /// AttributionMetrics fields with `None` values will not overwrite older values.
+    pub fn update_attribution(&self, attribution: AttributionMetrics) {
+        if let Some(source) = attribution.source {
+            self.core_metrics.attribution_source.set_sync(self, source);
+        }
+        if let Some(medium) = attribution.medium {
+            self.core_metrics.attribution_medium.set_sync(self, medium);
+        }
+        if let Some(campaign) = attribution.campaign {
+            self.core_metrics
+                .attribution_campaign
+                .set_sync(self, campaign);
+        }
+        if let Some(term) = attribution.term {
+            self.core_metrics.attribution_term.set_sync(self, term);
+        }
+        if let Some(content) = attribution.content {
+            self.core_metrics
+                .attribution_content
+                .set_sync(self, content);
+        }
+    }
+
+    /// **TEST-ONLY Method**
+    ///
+    /// Returns the current attribution metrics.
+    pub fn test_get_attribution(&self) -> AttributionMetrics {
+        AttributionMetrics {
+            source: self
+                .core_metrics
+                .attribution_source
+                .get_value(self, Some("glean_client_info")),
+            medium: self
+                .core_metrics
+                .attribution_medium
+                .get_value(self, Some("glean_client_info")),
+            campaign: self
+                .core_metrics
+                .attribution_campaign
+                .get_value(self, Some("glean_client_info")),
+            term: self
+                .core_metrics
+                .attribution_term
+                .get_value(self, Some("glean_client_info")),
+            content: self
+                .core_metrics
+                .attribution_content
+                .get_value(self, Some("glean_client_info")),
+        }
+    }
+
+    /// Updates distribution fields with new values.
+    /// DistributionMetrics fields with `None` values will not overwrite older values.
+    pub fn update_distribution(&self, distribution: DistributionMetrics) {
+        if let Some(name) = distribution.name {
+            self.core_metrics.distribution_name.set_sync(self, name);
+        }
+    }
+
+    /// **TEST-ONLY Method**
+    ///
+    /// Returns the current distribution metrics.
+    pub fn test_get_distribution(&self) -> DistributionMetrics {
+        DistributionMetrics {
+            name: self
+                .core_metrics
+                .distribution_name
+                .get_value(self, Some("glean_client_info")),
         }
     }
 }

@@ -17,6 +17,11 @@ webext-perms-description-data-some = The developer says this extension collects:
 # Variables:
 #    $permissions (String): a list of data collection permissions formatted with `Intl.ListFormat` using the "narrow" style.
 webext-perms-description-data-some-update = The developer says the extension will collect: { $permissions }.
+
+# Variables:
+#    $permissions (String): a list of data collection permissions formatted with `Intl.ListFormat` using the "narrow" style.
+webext-perms-description-data-some-optional = The developer says the extension wants to collect: { $permissions }.
+
 # Variables:
 #   $extension (String): replaced with the localized name of the extension.
 webext-perms-update-data-collection-text = { $extension } has been updated. You must approve new settings before the updated version will install. Choosing “Cancel” will maintain your current extension version. This extension will have permission to:
@@ -24,6 +29,14 @@ webext-perms-update-data-collection-text = { $extension } has been updated. You 
 # Variables:
 #   $extension (String): replaced with the localized name of the extension.
 webext-perms-update-data-collection-only-text = { $extension } has been updated. You must approve new settings before the updated version will install. Choosing “Cancel” will maintain your current extension version.
+
+# Variables:
+#   $extension (String): replaced with the localized name of the extension.
+webext-perms-optional-data-collection-text = { $extension } requests additional settings
+
+# Variables:
+#   $extension (String): replaced with the localized name of the extension.
+webext-perms-optional-data-collection-only-text = { $extension } requests additional data collection
 
 ## Short form to be used in lists or in a string (`webext-perms-description-data-some`)
 ## that formats some of these permissions below using `Intl.ListFormat`.
@@ -43,9 +56,6 @@ webext-perms-description-data-short-websiteActivity = website activity
 webext-perms-description-data-short-websiteContent = website content
 
 ## Long form to be used in `about:addons` when these permissions are optional.
-##
-## Note that for `technicalAndInteraction`, the long form is also used in the
-## install prompt.
 
 webext-perms-description-data-long-authenticationInfo = Share authentication information with extension developer
 webext-perms-description-data-long-bookmarksInfo = Share bookmarks information with extension developer
@@ -58,3 +68,17 @@ webext-perms-description-data-long-personallyIdentifyingInfo = Share personally 
 webext-perms-description-data-long-technicalAndInteraction = Share technical and interaction data with extension developer
 webext-perms-description-data-long-websiteActivity = Share website activity with extension developer
 webext-perms-description-data-long-websiteContent = Share website content with extension developer
+
+## Headings for the Permissions tab in `about:addons`
+
+addon-permissions-required-data-collection = Required data collection:
+addon-permissions-optional-data-collection = Optional data collection:
+
+# Name of the Permissions tab in `about:addons` when the data collection feature is enabled.
+permissions-data-addon-button = Permissions and data
+
+# This string is similar to `webext-perms-description-data-long-technicalAndInteraction`
+# but it is used in the install prompt, and it needs an access key.
+popup-notification-addon-technicalAndInteraction-checkbox =
+    .label = Share technical and interaction data with extension developer
+    .accesskey = S

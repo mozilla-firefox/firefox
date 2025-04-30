@@ -98,7 +98,7 @@ export class ProfileSelector extends MozLitElement {
       this.selectableProfileService.groupToolkitProfile.showProfileSelector;
 
     if (!this.profiles.length) {
-      this.selectableProfileService.setShowProfileSelectorWindow(false);
+      await this.selectableProfileService.setShowProfileSelectorWindow(false);
     }
 
     this.initialized = true;

@@ -3,6 +3,97 @@
     {
       "urls": [
         {
+          "search_url": "https://www.bing.com/search?FORM=U506DF&PC=U506&q={searchTerms}"
+        }
+      ],
+      "schema": 1744740937637,
+      "overridesId": "bing@search.mozilla.org",
+      "thirdPartyId": "{9b43dad5-885b-4f0d-882f-e945b7e4b96f}",
+      "overridesAppIdv2": "bing",
+      "id": "3c252ad3-ecf8-4adc-8d94-4a35e81617c8",
+      "last_modified": 1744749743529
+    },
+    {
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=BWMFDF&PC=W250&q={searchTerms}"
+        }
+      ],
+      "schema": 1744740858731,
+      "overridesId": "bing@search.mozilla.org",
+      "thirdPartyId": "bingwallpaperdse@microsoft.com",
+      "overridesAppIdv2": "bing",
+      "id": "4a049bd8-0e8b-4153-a0fb-171e8c8bb2ad",
+      "last_modified": 1744749743527
+    },
+    {
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=U523DF&PC=U523&q={searchTerms}"
+        }
+      ],
+      "schema": 1744368014364,
+      "overridesId": "bing@search.mozilla.org",
+      "thirdPartyId": "MicrosoftRewards@microsoft.com",
+      "overridesAppIdv2": "bing",
+      "id": "6d49a07a-cd38-4da1-a04f-57659f8d4793",
+      "last_modified": 1744749743524
+    },
+    {
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=U521DF&PC=U521&q={searchTerms}"
+        }
+      ],
+      "schema": 1744740859512,
+      "overridesId": "bing@search.mozilla.org",
+      "thirdPartyId": "{de0a6401-5089-4e02-920c-97a3bf70f644}",
+      "overridesAppIdv2": "bing",
+      "id": "9b73a729-565f-45ba-8b54-318b77282745",
+      "last_modified": 1744749743522
+    },
+    {
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=U528DF&PC=U528&q={searchTerms}"
+        }
+      ],
+      "schema": 1744740858923,
+      "overridesId": "bing@search.mozilla.org",
+      "thirdPartyId": "{3e06d96e-26f5-4a68-ac64-2b6bc583a35d}",
+      "overridesAppIdv2": "bing",
+      "id": "c53efa63-72dc-4c5b-b0fe-c14532843b52",
+      "last_modified": 1744749743519
+    },
+    {
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=HIBFDF&PC=HIBF&q={searchTerms}"
+        }
+      ],
+      "schema": 1744740859116,
+      "overridesId": "bing@search.mozilla.org",
+      "thirdPartyId": "bingsearch_HIBF@microsoft.com",
+      "overridesAppIdv2": "bing",
+      "id": "5fb6770b-f77d-4544-8d2a-01bb52968488",
+      "last_modified": 1744749743517
+    },
+    {
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=U504DF&PC=U504&q={searchTerms}"
+        }
+      ],
+      "schema": 1744740937435,
+      "overridesId": "bing@search.mozilla.org",
+      "thirdPartyId": "{8d8ca802-6b23-43ed-9445-e05d48579542}",
+      "overridesAppIdv2": "bing",
+      "id": "7fa4d87d-c6da-4f64-a8cd-6221ff2772c9",
+      "last_modified": 1744749743514
+    },
+    {
+      "urls": [
+        {
           "search_url": "https://www.qwant.com/?q={searchTerms}&client=p1-firefox-sb"
         }
       ],
@@ -84,5 +175,5 @@
       "last_modified": 1721063513237
     }
   ],
-  "timestamp": 1721063513248
+  "timestamp": 1744749743529
 }

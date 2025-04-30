@@ -24,3 +24,5 @@ BROWSER_CHROME_MANIFESTS += [
     "test/browser/tabMediaIndicator/browser.toml",
     "test/browser/tabs/browser.toml",
 ]
+
+XPCSHELL_TESTS_MANIFESTS += ["test/xpcshell/smarttabgrouping/xpcshell.toml"]

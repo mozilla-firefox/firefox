@@ -12,8 +12,12 @@ using namespace mozilla;
 
 extern "C" void dap_test_hpke_encrypt();
 TEST(DAPTelemetryTests, TestHpkeEnc)
-{ dap_test_hpke_encrypt(); }
+{
+  dap_test_hpke_encrypt();
+}
 
 extern "C" void dap_test_encoding();
 TEST(DAPTelemetryTests, TestReportSerialization)
-{ dap_test_encoding(); }
+{
+  dap_test_encoding();
+}

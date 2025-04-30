@@ -7,6 +7,7 @@
 #ifndef vm_ArrayObject_h
 #define vm_ArrayObject_h
 
+#include "vm/JSContext.h"
 #include "vm/NativeObject.h"
 
 namespace js {
@@ -31,14 +32,35 @@ class ArrayObject : public NativeObject {
 
   void setNonWritableLength(JSContext* cx) {
     shrinkCapacityToInitializedLength(cx);
+    assertInt32LengthFuse(cx);
     getElementsHeader()->setNonwritableArrayLength();
   }
 
-  void setLength(uint32_t length) {
+  void setLengthToInitializedLength() {
+    MOZ_ASSERT(lengthIsWritable());
+    MOZ_ASSERT_IF(length() != getElementsHeader()->length,
+                  !denseElementsAreFrozen());
+    getElementsHeader()->length = getDenseInitializedLength();
+    static_assert(MAX_DENSE_ELEMENTS_COUNT <= INT32_MAX,
+                  "No need to check HasSeenArrayExceedsInt32LengthFuse");
+  }
+
+  void setLength(JSContext* cx, uint32_t length) {
     MOZ_ASSERT(lengthIsWritable());
     MOZ_ASSERT_IF(length != getElementsHeader()->length,
                   !denseElementsAreFrozen());
+    assertInt32LengthFuse(cx);
+    NativeObject::elementsSizeMustNotOverflow();
+    if (MOZ_UNLIKELY(length > INT32_MAX)) {
+      cx->runtime()->hasSeenArrayExceedsInt32LengthFuse.ref().popFuse(cx);
+    }
     getElementsHeader()->length = length;
+  }
+
+  void assertInt32LengthFuse(JSContext* cx) {
+    MOZ_ASSERT_IF(
+        length() > INT32_MAX,
+        !cx->runtime()->hasSeenArrayExceedsInt32LengthFuse.ref().intact());
   }
 
   // Try to add a new dense element to this array. The array must be extensible.

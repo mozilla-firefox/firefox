@@ -4,14 +4,11 @@ Extra iterator adaptors, functions and macros.
 
 Please read the [API documentation here](https://docs.rs/itertools/).
 
-[![build_status](https://github.com/rust-itertools/itertools/actions/workflows/ci.yml/badge.svg)](https://github.com/rust-itertools/itertools/actions)
-[![crates.io](https://img.shields.io/crates/v/itertools.svg)](https://crates.io/crates/itertools)
-
 How to use with Cargo:
 
 ```toml
 [dependencies]
-itertools = "0.10.5"
+itertools = "0.14.0"
 ```
 
 How to use in your crate:
@@ -21,17 +18,9 @@ use itertools::Itertools;
 ```
 
 ## How to contribute
+If you're not sure what to work on, try checking the [help wanted](https://github.com/rust-itertools/itertools/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22) label.
 
-- Fix a bug or implement a new thing
-- Include tests for your new feature, preferably a QuickCheck test
-- Make a Pull Request
-
-For new features, please first consider filing a PR to [rust-lang/rust](https://github.com/rust-lang/rust),
-adding your new feature to the `Iterator` trait of the standard library, if you believe it is reasonable.
-If it isn't accepted there, proposing it for inclusion in ``itertools`` is a good idea.
-The reason for doing is this is so that we avoid future breakage as with ``.flatten()``.
-However, if your feature involves heap allocation, such as storing elements in a ``Vec<T>``,
-then it can't be accepted into ``libcore``, and you should propose it for ``itertools`` directly instead.
+See our [CONTRIBUTING.md](https://github.com/rust-itertools/itertools/blob/master/CONTRIBUTING.md) for a detailed guide.
 
 ## License
 

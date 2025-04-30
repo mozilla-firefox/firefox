@@ -27,6 +27,7 @@
 
 // We expose a singleton from this module. Some tests may import the
 // constructor via the system global.
+import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 import { FormAutofill } from "resource://autofill/FormAutofill.sys.mjs";
 import { FormAutofillUtils } from "resource://gre/modules/shared/FormAutofillUtils.sys.mjs";
 
@@ -50,6 +51,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   FirefoxRelay: "resource://gre/modules/FirefoxRelay.sys.mjs",
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
   MLAutofill: "resource://autofill/MLAutofill.sys.mjs",
+  NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   OSKeyStore: "resource://gre/modules/OSKeyStore.sys.mjs",
 });
 
@@ -1006,6 +1008,11 @@ export class FormAutofillParent extends JSWindowActorParent {
       return null;
     }
 
+    const fieldDetail = section.getFieldDetailByElementId(elementId);
+    if (!section.shouldAutofillField(fieldDetail)) {
+      return null;
+    }
+
     const relayPromise = lazy.FirefoxRelay.autocompleteItemsAsync({
       origin: this.formOrigin,
       scenarioName,
@@ -1229,6 +1236,12 @@ export class FormAutofillParent extends JSWindowActorParent {
       // For testing only
       Services.obs.notifyObservers(null, "formautofill-autofill-complete");
       return;
+    }
+
+    if (AppConstants.platform !== "android") {
+      lazy.NimbusFeatures["address-autofill-feature"].recordExposureEvent({
+        once: true,
+      });
     }
 
     const msg = "FormAutofill:FillFields";

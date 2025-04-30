@@ -212,6 +212,38 @@ module.exports = logTest(
         }
       });
 
+      if (browserName === "firefox") {
+        const statsScript = `
+        const gDashboard = Cc["@mozilla.org/network/dashboard;1"].getService(
+          Ci.nsIDashboard
+        );
+        let promise = new Promise((resolve, reject) => {
+          gDashboard.requestHttp3ConnectionStats((data) => {
+            resolve(data);
+          });
+        });
+        let done = false;
+        let result = null;
+        let error = null;
+        promise
+          .catch(e => {
+            error = e;
+          })
+          .then(r => {
+            result = r;
+            done = true;
+          });
+        // Spin the event loop until done becomes true.
+        Services.tm.spinEventLoopUntil(
+          "requestHttpConnections",
+          () => done
+        );
+        return result;
+        `;
+        let res = await commands.js.runPrivileged(statsScript);
+        context.log.info("HTTP/3 Connection Stats" + JSON.stringify(res));
+      }
+
       // No need to close the connection at the last run.
       if (iteration != iterations - 1) {
         await commands.navigate("about:blank");

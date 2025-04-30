@@ -2369,6 +2369,7 @@ tls13_HandleClientHelloPart2(sslSocket *ss,
             }
             tls13_RestoreCipherInfo(ss, sid);
 
+            PORT_Assert(!ss->sec.localCert);
             ss->sec.localCert = CERT_DupCertificate(ss->sec.serverCert->serverCert);
             if (sid->peerCert != NULL) {
                 ss->sec.peerCert = CERT_DupCertificate(sid->peerCert);

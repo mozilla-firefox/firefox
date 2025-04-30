@@ -10,6 +10,7 @@
 #include "CacheCipherKeyManager.h"
 #include "mozilla/dom/SafeRefPtr.h"
 #include "mozilla/dom/cache/Types.h"
+#include "mozilla/dom/quota/ClientDirectoryLockHandle.h"
 #include "mozilla/dom/quota/StringifyUtils.h"
 #include "nsCOMPtr.h"
 #include "nsISupportsImpl.h"
@@ -66,6 +67,8 @@ class Manager;
 // via the code in ShutdownObserver.cpp.
 class Context final : public SafeRefCounted<Context>, public Stringifyable {
   using ClientDirectoryLock = mozilla::dom::quota::ClientDirectoryLock;
+  using ClientDirectoryLockHandle =
+      mozilla::dom::quota::ClientDirectoryLockHandle;
 
  public:
   // Define a class allowing other threads to hold the Context alive.  This also
@@ -184,7 +187,7 @@ class Context final : public SafeRefCounted<Context>, public Stringifyable {
   void DispatchAction(SafeRefPtr<Action> aAction, bool aDoomData = false);
   void OnQuotaInit(nsresult aRv,
                    const Maybe<CacheDirectoryMetadata>& aDirectoryMetadata,
-                   RefPtr<ClientDirectoryLock> aDirectoryLock,
+                   ClientDirectoryLockHandle aDirectoryLockHandle,
                    RefPtr<CipherKeyManager> aCipherKeyManager);
 
   SafeRefPtr<ThreadsafeHandle> CreateThreadsafeHandle();
@@ -214,7 +217,7 @@ class Context final : public SafeRefCounted<Context>, public Stringifyable {
   // when ThreadsafeHandle::AllowToClose() is called.
   SafeRefPtr<ThreadsafeHandle> mThreadsafeHandle;
 
-  RefPtr<ClientDirectoryLock> mDirectoryLock;
+  ClientDirectoryLockHandle mDirectoryLockHandle;
   RefPtr<CipherKeyManager> mCipherKeyManager;
   SafeRefPtr<Context> mNextContext;
 

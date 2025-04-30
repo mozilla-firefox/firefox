@@ -22,12 +22,12 @@ add_task(async function test_purge_counting_per_host() {
 
   let host = "cookie-host1.com";
 
-  let manyCookies = 180;
-  let cookieMax = 150;
-  let cookiesPurged = manyCookies - cookieMax;
+  let cookieCountMax = 180;
+  let cookieCountPurgeTo = 150;
+  let cookiesPurged = cookieCountMax - cookieCountPurgeTo + 1;
 
   // add many expired cookies for a single host
-  for (let i = 0; i < manyCookies; i++) {
+  for (let i = 0; i < cookieCountMax; i++) {
     let cookie = new Cookie(
       "cookie-name" + i,
       "cookie-value" + i,
@@ -44,15 +44,15 @@ add_task(async function test_purge_counting_per_host() {
   }
 
   // check that the cookies were added to the db
-  Assert.equal(do_count_cookies_in_db(schema12db.db), manyCookies);
+  Assert.equal(do_count_cookies_in_db(schema12db.db), cookieCountMax);
   Assert.equal(
     do_count_cookies_in_db(schema12db.db, "cookie-host1.com"),
-    manyCookies
+    cookieCountMax
   );
 
   // startup the cookie service and check the cookie count
   let validCookies = Services.cookies.countCookiesFromHost(host); // includes expired cookies
-  Assert.equal(validCookies, manyCookies);
+  Assert.equal(validCookies, cookieCountMax);
 
   // add a cookie - this will trigger the purge
   Services.cookies.add(
@@ -71,7 +71,7 @@ add_task(async function test_purge_counting_per_host() {
 
   // check that we purge down to the cookieMax (plus the cookie added)
   validCookies = Services.cookies.countCookiesFromHost(host);
-  Assert.equal(validCookies, cookieMax + 1);
+  Assert.equal(validCookies, cookieCountPurgeTo);
 
   // check that the telemetry fired
   let cpem = await Glean.networking.cookiePurgeEntryMax.testGetValue();

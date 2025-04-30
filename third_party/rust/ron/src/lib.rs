@@ -13,7 +13,7 @@
 #![deny(unsafe_code)]
 #![allow(clippy::missing_errors_doc)] // FIXME
 #![doc = include_str!("../README.md")]
-#![doc(html_root_url = "https://docs.rs/ron/0.9.0")]
+#![doc(html_root_url = "https://docs.rs/ron/0.10.1")]
 
 pub mod de;
 pub mod ser;

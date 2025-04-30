@@ -37,7 +37,7 @@ impl LoadExtensionGuard<'_> {
     }
 }
 
-#[allow(unused_must_use)]
+#[expect(unused_must_use)]
 impl Drop for LoadExtensionGuard<'_> {
     #[inline]
     fn drop(&mut self) {

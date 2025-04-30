@@ -63,9 +63,7 @@ class Settings final
 SessionAccessibility::SessionAccessibility(
     jni::NativeWeakPtr<widget::GeckoViewSupport> aWindow,
     java::SessionAccessibility::NativeProvider::Param aSessionAccessibility)
-    : mWindow(aWindow), mSessionAccessibility(aSessionAccessibility) {
-  SetAttached(true, nullptr);
-}
+    : mWindow(aWindow), mSessionAccessibility(aSessionAccessibility) {}
 
 void SessionAccessibility::SetAttached(bool aAttached,
                                        already_AddRefed<Runnable> aRunnable) {

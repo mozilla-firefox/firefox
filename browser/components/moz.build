@@ -36,7 +36,6 @@ DIRS += [
     "contentanalysis",
     "contextualidentity",
     "customizableui",
-    "doh",
     "downloads",
     "enterprisepolicies",
     "extensions",

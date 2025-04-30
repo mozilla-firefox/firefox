@@ -34,6 +34,7 @@
 #include "util/Text.h"
 #include "util/Unicode.h"
 #include "vm/BigIntType.h"
+#include "vm/ConstantCompareOperand.h"
 #include "vm/Float16.h"
 #include "vm/Iteration.h"    // js::NativeIterator
 #include "vm/PlainObject.h"  // js::PlainObject

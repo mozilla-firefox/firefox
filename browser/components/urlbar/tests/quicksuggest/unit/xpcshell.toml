@@ -1,5 +1,4 @@
 [DEFAULT]
-skip-if = ["os == 'android'"] # bug 1730213
 head = "../../unit/head.js head.js"
 firefox-appdir = "browser"
 
@@ -14,8 +13,10 @@ firefox-appdir = "browser"
 ["test_quicksuggest_dynamicWikipedia.js"]
 
 ["test_quicksuggest_exposures.js"]
+skip-if = ["true"] # Bug 1961040
 
 ["test_quicksuggest_exposures_locales.js"]
+skip-if = ["true"] # Bug 1961040
 
 ["test_quicksuggest_fakespot.js"]
 
@@ -27,6 +28,8 @@ skip-if = ["true"] # Bug 1880214
 ["test_quicksuggest_merino.js"]
 
 ["test_quicksuggest_merinoSessions.js"]
+
+["test_quicksuggest_migrateBlockedDigests.js"]
 
 ["test_quicksuggest_migrate_v1.js"]
 

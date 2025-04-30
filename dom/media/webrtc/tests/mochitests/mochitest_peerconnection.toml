@@ -397,7 +397,10 @@ skip-if = ["os == 'android'"] # Bug 1614460
 ["test_peerConnection_simulcastOffer_oldSetParameters.html"]
 
 ["test_peerConnection_simulcastOffer_screenshare.html"]
-skip-if = ["os == 'android'"] # no screenshare on android
+skip-if = [
+  "os == 'android'", # no screenshare on android
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1941688
+]
 
 ["test_peerConnection_stats.html"]
 

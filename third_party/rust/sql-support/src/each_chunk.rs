@@ -21,7 +21,7 @@ pub fn default_max_variable_number() -> usize {
             let conn = rusqlite::Connection::open_in_memory()
                 .expect("Failed to initialize in-memory connection (out of memory?)");
 
-            let limit = conn.limit(Limit::SQLITE_LIMIT_VARIABLE_NUMBER);
+            let limit = conn.limit(Limit::SQLITE_LIMIT_VARIABLE_NUMBER).unwrap();
             assert!(
                 limit > 0,
                 "Illegal value for SQLITE_LIMIT_VARIABLE_NUMBER (must be > 0) {}",

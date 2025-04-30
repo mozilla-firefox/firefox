@@ -1142,6 +1142,11 @@ already_AddRefed<gfx::SourceSurface> ClientWebGLContext::GetSurfaceSnapshot(
   return ret.forget();
 }
 
+mozilla::ipc::IProtocol* ClientWebGLContext::SupportsSnapshotExternalCanvas()
+    const {
+  return GetChild();
+}
+
 RefPtr<gfx::SourceSurface> ClientWebGLContext::GetFrontBufferSnapshot(
     const bool requireAlphaPremult) {
   const FuncScope funcScope(*this, "<GetSurfaceSnapshot>");

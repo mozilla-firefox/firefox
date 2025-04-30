@@ -197,7 +197,11 @@ export function updateViewport() {
   const editor = getEditor();
   return {
     type: "SET_VIEWPORT",
-    viewport: editor.getLocationsInViewport(),
+    // The viewport locations are set and used for rendering  column breakpoints
+    // markers correctly within the viewport.
+    // The offsets value represents an allowance of characters or lines offscreen to improve
+    // perceived performance of column breakpoint rendering.
+    viewport: editor.getLocationsInViewport(100, 20),
   };
 }
 

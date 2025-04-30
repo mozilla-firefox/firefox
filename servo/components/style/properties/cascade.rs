@@ -1355,6 +1355,8 @@ impl<'b> Cascade<'b> {
         }
 
         let (new_size, new_unconstrained_size) = {
+            use crate::gecko::media_queries::QueryFontMetricsFlags;
+
             let builder = &context.builder;
             let font = builder.get_font();
             let parent_font = builder.get_parent_font();
@@ -1376,7 +1378,7 @@ impl<'b> Cascade<'b> {
                 let font_metrics = context.query_font_metrics(
                     FontBaseSize::InheritedStyle,
                     FontMetricsOrientation::Horizontal,
-                    /* retrieve_math_scales = */ true,
+                    QueryFontMetricsFlags::NEEDS_MATH_SCALES,
                 );
                 scale_factor_for_math_depth_change(
                     parent_font.mMathDepth as i32,

@@ -5,62 +5,6 @@
 use std::fmt;
 use std::mem;
 
-/// See [`repeat_call`](crate::repeat_call) for more information.
-#[derive(Clone)]
-#[deprecated(note="Use std repeat_with() instead", since="0.8.0")]
-pub struct RepeatCall<F> {
-    f: F,
-}
-
-impl<F> fmt::Debug for RepeatCall<F>
-{
-    debug_fmt_fields!(RepeatCall, );
-}
-
-/// An iterator source that produces elements indefinitely by calling
-/// a given closure.
-///
-/// Iterator element type is the return type of the closure.
-///
-/// ```
-/// use itertools::repeat_call;
-/// use itertools::Itertools;
-/// use std::collections::BinaryHeap;
-///
-/// let mut heap = BinaryHeap::from(vec![2, 5, 3, 7, 8]);
-///
-/// // extract each element in sorted order
-/// for element in repeat_call(|| heap.pop()).while_some() {
-///     print!("{}", element);
-/// }
-///
-/// itertools::assert_equal(
-///     repeat_call(|| 1).take(5),
-///     vec![1, 1, 1, 1, 1]
-/// );
-/// ```
-#[deprecated(note="Use std repeat_with() instead", since="0.8.0")]
-pub fn repeat_call<F, A>(function: F) -> RepeatCall<F>
-    where F: FnMut() -> A
-{
-    RepeatCall { f: function }
-}
-
-impl<A, F> Iterator for RepeatCall<F>
-    where F: FnMut() -> A
-{
-    type Item = A;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        Some((self.f)())
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (usize::max_value(), None)
-    }
-}
-
 /// Creates a new unfold source with the specified closure as the "iterator
 /// function" and an initial state to eventually pass to the closure
 ///
@@ -97,8 +41,13 @@ impl<A, F> Iterator for RepeatCall<F>
 ///                         vec![1, 1, 2, 3, 5, 8, 13, 21]);
 /// assert_eq!(fibonacci.last(), Some(2_971_215_073))
 /// ```
+#[deprecated(
+    note = "Use [std::iter::from_fn](https://doc.rust-lang.org/std/iter/fn.from_fn.html) instead",
+    since = "0.13.0"
+)]
 pub fn unfold<A, St, F>(initial_state: St, f: F) -> Unfold<St, F>
-    where F: FnMut(&mut St) -> Option<A>
+where
+    F: FnMut(&mut St) -> Option<A>,
 {
     Unfold {
         f,
@@ -107,7 +56,8 @@ pub fn unfold<A, St, F>(initial_state: St, f: F) -> Unfold<St, F>
 }
 
 impl<St, F> fmt::Debug for Unfold<St, F>
-    where St: fmt::Debug,
+where
+    St: fmt::Debug,
 {
     debug_fmt_fields!(Unfold, state);
 }
@@ -115,6 +65,10 @@ impl<St, F> fmt::Debug for Unfold<St, F>
 /// See [`unfold`](crate::unfold) for more information.
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[deprecated(
+    note = "Use [std::iter::FromFn](https://doc.rust-lang.org/std/iter/struct.FromFn.html) instead",
+    since = "0.13.0"
+)]
 pub struct Unfold<St, F> {
     f: F,
     /// Internal state that will be passed to the closure on the next iteration
@@ -122,7 +76,8 @@ pub struct Unfold<St, F> {
 }
 
 impl<A, St, F> Iterator for Unfold<St, F>
-    where F: FnMut(&mut St) -> Option<A>
+where
+    F: FnMut(&mut St) -> Option<A>,
 {
     type Item = A;
 
@@ -144,13 +99,15 @@ pub struct Iterate<St, F> {
 }
 
 impl<St, F> fmt::Debug for Iterate<St, F>
-    where St: fmt::Debug,
+where
+    St: fmt::Debug,
 {
     debug_fmt_fields!(Iterate, state);
 }
 
 impl<St, F> Iterator for Iterate<St, F>
-    where F: FnMut(&St) -> St
+where
+    F: FnMut(&St) -> St,
 {
     type Item = St;
 
@@ -162,7 +119,7 @@ impl<St, F> Iterator for Iterate<St, F>
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (usize::max_value(), None)
+        (usize::MAX, None)
     }
 }
 
@@ -171,10 +128,23 @@ impl<St, F> Iterator for Iterate<St, F>
 /// ```
 /// use itertools::iterate;
 ///
-/// itertools::assert_equal(iterate(1, |&i| i * 3).take(5), vec![1, 3, 9, 27, 81]);
+/// itertools::assert_equal(iterate(1, |i| i % 3 + 1).take(5), vec![1, 2, 3, 1, 2]);
 /// ```
+///
+/// **Panics** if compute the next value does.
+///
+/// ```should_panic
+/// # use itertools::iterate;
+/// let mut it = iterate(25u32, |x| x - 10).take_while(|&x| x > 10);
+/// assert_eq!(it.next(), Some(25)); // `Iterate` holds 15.
+/// assert_eq!(it.next(), Some(15)); // `Iterate` holds 5.
+/// it.next(); // `5 - 10` overflows.
+/// ```
+///
+/// You can alternatively use [`core::iter::successors`] as it better describes a finite iterator.
 pub fn iterate<St, F>(initial_value: St, f: F) -> Iterate<St, F>
-    where F: FnMut(&St) -> St
+where
+    F: FnMut(&St) -> St,
 {
     Iterate {
         state: initial_value,

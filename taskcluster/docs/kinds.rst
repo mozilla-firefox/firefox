@@ -559,6 +559,10 @@ repackage-deb-l10n
 ------------------
 These repackage tasks take the signed langpacks (.xpi) binaries and puts them in Debian packages.
 
+repackage-rpm
+----------------
+These repackage tasks take signed Firefox Linux binaries and puts them in RPM packages.
+
 repackage-flatpak
 -----------------
 These repackage tasks take signed Firefox Linux binaries and langpacks, and builds a flatpak.

@@ -1247,6 +1247,7 @@ static bool GenerateJitEntry(MacroAssembler& masm, size_t funcExportIndex,
       case ValType::I32:
         GenPrintIsize(DebugChannel::Function, masm, ReturnReg);
 #ifdef JS_64BIT
+        // boxNonDouble requires a widened int32 value.
         masm.widenInt32(ReturnReg);
 #endif
         masm.boxNonDouble(JSVAL_TYPE_INT32, ReturnReg, JSReturnOperand);

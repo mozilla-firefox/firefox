@@ -1342,8 +1342,12 @@ static const hb_tag_t defaultFeatures[] = {
 void gfxFont::CheckForFeaturesInvolvingSpace() const {
   gfxFontEntry::SpaceFeatures flags = gfxFontEntry::SpaceFeatures::None;
 
+  // mFontEntry->mHasSpaceFeatures is a std::atomic<>, so we set it with
+  // `exchange` to avoid a potential data race. It's ok if two threads both
+  // try to set it; they'll end up with the same value, so it doesn't matter
+  // that one will overwrite the other.
   auto setFlags =
-      MakeScopeExit([&]() { mFontEntry->mHasSpaceFeatures = flags; });
+      MakeScopeExit([&]() { mFontEntry->mHasSpaceFeatures.exchange(flags); });
 
   bool log = LOG_FONTINIT_ENABLED();
   TimeStamp start;

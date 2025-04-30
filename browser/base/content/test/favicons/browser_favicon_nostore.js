@@ -31,17 +31,10 @@ add_task(async function browser_loader() {
   // Ensure the favicon has not been stored.
   /* eslint-disable mozilla/no-arbitrary-setTimeout */
   await new Promise(resolve => setTimeout(resolve, 1000));
-  await new Promise((resolve, reject) => {
-    PlacesUtils.favicons.getFaviconURLForPage(
-      Services.io.newURI(PAGE_URL),
-      foundIconURI => {
-        if (foundIconURI) {
-          reject(new Error("An icon has been stored " + foundIconURI.spec));
-        }
-        resolve();
-      }
-    );
-  });
+  let favicon = await PlacesUtils.favicons.getFaviconForPage(
+    Services.io.newURI(PAGE_URL)
+  );
+  Assert.ok(!favicon);
   BrowserTestUtils.removeTab(tab);
 });
 
@@ -68,17 +61,10 @@ async function later_addition(iconUrl) {
   // Ensure the favicon has not been stored.
   /* eslint-disable mozilla/no-arbitrary-setTimeout */
   await new Promise(resolve => setTimeout(resolve, 1000));
-  await new Promise((resolve, reject) => {
-    PlacesUtils.favicons.getFaviconURLForPage(
-      Services.io.newURI(PAGE_URL),
-      foundIconURI => {
-        if (foundIconURI) {
-          reject(new Error("An icon has been stored " + foundIconURI.spec));
-        }
-        resolve();
-      }
-    );
-  });
+  let favicon = await PlacesUtils.favicons.getFaviconForPage(
+    Services.io.newURI(PAGE_URL)
+  );
+  Assert.ok(!favicon);
   BrowserTestUtils.removeTab(tab);
 }
 
@@ -127,13 +113,10 @@ add_task(async function root_icon_stored() {
     },
     async function () {
       await TestUtils.waitForCondition(async () => {
-        let uri = await new Promise(resolve =>
-          PlacesUtils.favicons.getFaviconURLForPage(
-            Services.io.newURI("http://www.nostore.com/page"),
-            resolve
-          )
+        let favicon = await PlacesUtils.favicons.getFaviconForPage(
+          Services.io.newURI("http://www.nostore.com/page")
         );
-        return uri?.spec == "http://www.nostore.com/favicon.ico";
+        return favicon?.uri.spec == "http://www.nostore.com/favicon.ico";
       }, "wait for the favicon to be stored");
       Assert.ok(await noStorePromise, "Should have received no-store header");
     }
@@ -174,13 +157,10 @@ add_task(async function root_icon_after_pageshow_stored() {
     },
     async function () {
       await TestUtils.waitForCondition(async () => {
-        let uri = await new Promise(resolve =>
-          PlacesUtils.favicons.getFaviconURLForPage(
-            Services.io.newURI("http://rootafterpageshow.com/page"),
-            resolve
-          )
+        let favicon = await PlacesUtils.favicons.getFaviconForPage(
+          Services.io.newURI("http://rootafterpageshow.com/page")
         );
-        return uri?.spec == "http://rootafterpageshow.com/favicon.ico";
+        return favicon?.uri.spec == "http://rootafterpageshow.com/favicon.ico";
       }, "wait for the favicon to be stored");
     }
   );

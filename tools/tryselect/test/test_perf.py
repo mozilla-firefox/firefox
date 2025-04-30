@@ -225,7 +225,7 @@ def setup_perfparser():
         # except for when there are requested apps/variants/platforms
         (
             {},
-            66,
+            96,
             {
                 "Benchmarks desktop": {
                     "raptor": [
@@ -287,7 +287,7 @@ def setup_perfparser():
         ),  # Default settings
         (
             {"live_sites": True},
-            74,
+            110,
             {
                 "Benchmarks desktop": {
                     "raptor": [
@@ -338,7 +338,7 @@ def setup_perfparser():
         ),
         (
             {"live_sites": True, "safari": True},
-            80,
+            116,
             {
                 "Benchmarks desktop": {
                     "raptor": [
@@ -378,7 +378,7 @@ def setup_perfparser():
         ),
         (
             {"safari-tp": True},
-            66,
+            96,
             {
                 "Benchmarks desktop": {
                     "raptor": [
@@ -415,7 +415,7 @@ def setup_perfparser():
         ),
         (
             {"live_sites": True, "chrome": True},
-            98,
+            146,
             {
                 "Benchmarks desktop": {
                     "raptor": [
@@ -599,13 +599,6 @@ def setup_perfparser():
         # Can't have fenix on the windows platform
         (
             {"requested_platforms": ["windows"], "requested_apps": ["fenix"]},
-            0,
-            {},
-            ["Benchmarks desktop"],
-        ),
-        # Android flag also needs to be supplied
-        (
-            {"requested_platforms": ["android"], "requested_apps": ["fenix"]},
             0,
             {},
             ["Benchmarks desktop"],
@@ -906,7 +899,7 @@ def test_category_expansion(
         ),
         (
             {"non_pgo": True},
-            58,
+            88,
         ),
     ],
 )
@@ -1096,6 +1089,132 @@ def test_full_run(options, call_counts, log_ind, expected_log_message):
     ) as tests_mock, mock.patch(
         "tryselect.selectors.perf.requests"
     ) as requests_mock:
+
+        def test_mock_func(*args, **kwargs):
+            """Used for testing any --test functionality."""
+            PerfParser.categories = {
+                "test 1": {
+                    "query": {"raptor": ["test 1"]},
+                    "suites": ["raptor"],
+                    "tasks": [],
+                    "description": "",
+                },
+                "test 2": {
+                    "query": {"raptor": ["test 2"]},
+                    "suites": ["raptor"],
+                    "tasks": [],
+                    "description": "",
+                },
+                "amazon": {
+                    "query": {"raptor": ["amazon"]},
+                    "suites": ["raptor"],
+                    "tasks": [],
+                    "description": "",
+                },
+            }
+            fzf.side_effect = [
+                ["", ["test 1 windows firefox"]],
+                ["", TASKS],
+                ["", TASKS],
+                ["", TASKS],
+                ["", TASKS],
+                ["", TASKS],
+                ["", TASKS],
+                ["", TASKS],
+                ["", TASKS],
+                ["", TASKS],
+                ["", TASKS],
+                ["", TASKS],
+            ]
+            return ["task 1", "task 2", "amazon"]
+
+        tests_mock.side_effect = test_mock_func
+
+        get_mock = mock.MagicMock()
+        get_mock.status_code.return_value = 200
+        get_mock.json.return_value = {"tasks": ["task 1", "task 2"]}
+        requests_mock.get.return_value = get_mock
+
+        fzf_side_effects = [
+            ["", ["Benchmarks linux"]],
+            ["", TASKS],
+            ["", TASKS],
+            ["", TASKS],
+            ["", TASKS],
+            ["", TASKS],
+            ["", TASKS],
+            ["", TASKS],
+            ["", TASKS],
+            ["", TASKS],
+            ["", ["Perftest Change Detector"]],
+        ]
+        # Number of side effects for fzf should always be greater than
+        # or equal to the number of calls expected
+        assert len(fzf_side_effects) >= call_counts[0]
+
+        fzf.side_effect = fzf_side_effects
+        ccr.return_value = options.get("cached_revision", "")
+
+        with category_reset():
+            run(**options)
+
+        assert fzf.call_count == call_counts[0]
+        assert ptt.call_count == call_counts[1]
+        assert logger.call_count == call_counts[2]
+        assert perf_print.call_count == call_counts[3]
+        assert ccr.call_count == call_counts[4]
+        assert srt.call_count == call_counts[5]
+        assert perf_print.call_args_list[log_ind][0][0] == expected_log_message
+
+
+@pytest.mark.parametrize(
+    "options, call_counts, log_ind, expected_log_message",
+    [
+        (
+            {"tests": ["amazon"], "show_all": True},
+            [1, 2, 2, 8, 2, 1],
+            0,
+            (
+                "\n!!!NOTE!!!\n You'll be able to find a performance comparison "
+                "here once the tests are complete (ensure you select the right framework):\n"
+                " https://perf.compare/compare-results?"
+                f"baseHash={hash('mockedmocked')}&newHash={hash('mocked100')}&baseRepo=try&newRepo=try&framework=1\n\n"
+                " The old comparison tool is still available at this URL:\n"
+                " https://treeherder.mozilla.org/perfherder/compare?originalProject=try&original"
+                f"Hash={hash('mockedmocked')}&newProject=try&newHash={hash('mocked100')}&framework=1\n"
+            ),
+        ),
+    ],
+)
+@pytest.mark.skipif(os.name == "nt", reason="fzf not installed on host")
+def test_full_run_git_migration(options, call_counts, log_ind, expected_log_message):
+    with mock.patch("tryselect.selectors.perf.push_to_try") as ptt, mock.patch(
+        "tryselect.selectors.perf.run_fzf"
+    ) as fzf, mock.patch(
+        "tryselect.selectors.perf.get_repository_object", new=mock.MagicMock()
+    ), mock.patch(
+        "tryselect.selectors.perf.LogProcessor.revision",
+        new_callable=mock.PropertyMock,
+        return_value="revision",
+    ) as logger, mock.patch(
+        "tryselect.selectors.perf.PerfParser.check_cached_revision",
+    ) as ccr, mock.patch(
+        "tryselect.selectors.perf.PerfParser.save_revision_treeherder"
+    ) as srt, mock.patch(
+        "tryselect.selectors.perf.print",
+    ) as perf_print, mock.patch(
+        "tryselect.selectors.perf.PerfParser.set_categories_for_test"
+    ) as tests_mock, mock.patch(
+        "tryselect.selectors.perf.requests"
+    ) as requests_mock, mock.patch(
+        "tryselect.selectors.perf.HG_TO_GIT_MIGRATION_COMPLETE", return_value=True
+    ), mock.patch(
+        "tryselect.selectors.perf.ON_GIT", return_value=True
+    ), mock.patch(
+        "tryselect.selectors.perf.time.time", return_value=100
+    ), mock.patch(
+        "tryselect.selectors.perf.subprocess.getoutput", return_value="mocked"
+    ):
 
         def test_mock_func(*args, **kwargs):
             """Used for testing any --test functionality."""

@@ -139,7 +139,8 @@ class TSFTextStore final : public TSFTextStoreBase,
     return NS_OK;
   }
 
-  [[nodiscard]] IMENotificationRequests GetIMENotificationRequests() final;
+  [[nodiscard]] IMENotificationRequests GetIMENotificationRequests()
+      const final;
 
   static bool IsComposing() {
     return TSFUtils::GetActiveTextStore() &&

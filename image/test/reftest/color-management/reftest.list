@@ -7,4 +7,4 @@
 == trc-type.html trc-type-ref.html # Bug 1560617
 # test for bug 1951423, bt709/bt601/bt2020/bt1886
 fuzzy(0-4,0-182740) == 720p-CCWH.png 720p-CCWH_yuv444p_pc-1-13-6.avif
-fuzzy(0-16,0-268977) == 720p-CCWH.png 720p-CCWH_yuv444p_tv-1-1-1.avif
+fuzzy(0-16,0-282508) == 720p-CCWH.png 720p-CCWH_yuv444p_tv-1-1-1.avif

@@ -2863,8 +2863,13 @@ struct VarData
                   const hb_vector_t<const hb_vector_t<int>*>& rows)
   {
     TRACE_SERIALIZE (this);
-    if (unlikely (!c->extend_min (this))) return_trace (false);
     unsigned row_count = rows.length;
+    if (!row_count) {
+      // Nothing to serialize, will be empty.
+      return false;
+    }
+
+    if (unlikely (!c->extend_min (this))) return_trace (false);    
     itemCount = row_count;
 
     int min_threshold = has_long ? -65536 : -128;
@@ -4779,12 +4784,12 @@ struct VariationDevice
   hb_position_t get_x_delta (hb_font_t *font,
 			     const ItemVariationStore &store,
 			     ItemVariationStore::cache_t *store_cache = nullptr) const
-  { return font->em_scalef_x (get_delta (font, store, store_cache)); }
+  { return !font->num_coords ? 0 : font->em_scalef_x (get_delta (font, store, store_cache)); }
 
   hb_position_t get_y_delta (hb_font_t *font,
 			     const ItemVariationStore &store,
 			     ItemVariationStore::cache_t *store_cache = nullptr) const
-  { return font->em_scalef_y (get_delta (font, store, store_cache)); }
+  { return !font->num_coords ? 0 : font->em_scalef_y (get_delta (font, store, store_cache)); }
 
   VariationDevice* copy (hb_serialize_context_t *c,
                          const hb_hashmap_t<unsigned, hb_pair_t<unsigned, int>> *layout_variation_idx_delta_map) const

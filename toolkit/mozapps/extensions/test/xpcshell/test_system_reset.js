@@ -21,21 +21,7 @@ const SYSTEM_DEFAULTS_ADDON_IDS = [
 ];
 
 // Setup app1 pre-installed system addons: system1 1.0, system2 1.0, system3/system5 missing
-async function setupOverrideBuiltinsApp1({ asBuiltIn = true }) {
-  if (!asBuiltIn) {
-    let dir = FileUtils.getDir("ProfD", ["sysfeatures", "app1"]);
-    if (!dir.exists()) {
-      dir.create(Ci.nsIFile.DIRECTORY_TYPE, FileUtils.PERMS_DIRECTORY);
-      let xpi = await getSystemAddonXPI(1, "1.0");
-      xpi.copyTo(dir, "system1@tests.mozilla.org.xpi");
-      xpi = await getSystemAddonXPI(2, "1.0");
-      xpi.copyTo(dir, "system2@tests.mozilla.org.xpi");
-    }
-    distroDir.leafName = "app1";
-    await overrideBuiltIns({ system: SYSTEM_DEFAULTS_ADDON_IDS });
-    return;
-  }
-
+async function setupOverrideBuiltinsApp1() {
   const builtins = [
     await getSystemBuiltin(1, "1.0", "app1-builtin-system1"),
     await getSystemBuiltin(2, "1.0", "app1-builtin-system2"),
@@ -57,21 +43,7 @@ async function setupOverrideBuiltinsApp1({ asBuiltIn = true }) {
 }
 
 // Setup app2 pre-installed system addons: system1 2.0, system3 1.0, system2/system5 missing
-async function setupOverrideBuiltinsApp2({ asBuiltIn = true }) {
-  if (!asBuiltIn) {
-    let dir = FileUtils.getDir("ProfD", ["sysfeatures", "app2"]);
-    if (!dir.exists()) {
-      dir.create(Ci.nsIFile.DIRECTORY_TYPE, FileUtils.PERMS_DIRECTORY);
-      let xpi = await getSystemAddonXPI(1, "2.0");
-      xpi.copyTo(dir, "system1@tests.mozilla.org.xpi");
-      xpi = await getSystemAddonXPI(3, "1.0");
-      xpi.copyTo(dir, "system3@tests.mozilla.org.xpi");
-    }
-    distroDir.leafName = "app2";
-    await overrideBuiltIns({ system: SYSTEM_DEFAULTS_ADDON_IDS });
-    return;
-  }
-
+async function setupOverrideBuiltinsApp2() {
   const builtins = [
     await getSystemBuiltin(1, "2.0", "app2-builtin-system1"),
     await getSystemBuiltin(3, "1.0", "app2-builtin-system3"),
@@ -91,21 +63,7 @@ async function setupOverrideBuiltinsApp2({ asBuiltIn = true }) {
 }
 
 // setup app3 pre-installed system addons: system1 1.0, system3 1.0, system2/system5 missing
-async function setupOverrideBuiltinsApp3({ asBuiltIn = true }) {
-  if (!asBuiltIn) {
-    let dir = FileUtils.getDir("ProfD", ["sysfeatures", "app3"]);
-    if (!dir.exists()) {
-      dir.create(Ci.nsIFile.DIRECTORY_TYPE, FileUtils.PERMS_DIRECTORY);
-      let xpi = await getSystemAddonXPI(1, "1.0");
-      xpi.copyTo(dir, "system1@tests.mozilla.org.xpi");
-      xpi = await getSystemAddonXPI(3, "1.0");
-      xpi.copyTo(dir, "system3@tests.mozilla.org.xpi");
-    }
-    distroDir.leafName = "app3";
-    await overrideBuiltIns({ system: SYSTEM_DEFAULTS_ADDON_IDS });
-    return;
-  }
-
+async function setupOverrideBuiltinsApp3() {
   const builtins = [
     await getSystemBuiltin(1, "1.0", "app3-builtin-system1"),
     await getSystemBuiltin(3, "1.0", "app3-builtin-system3"),
@@ -145,8 +103,6 @@ async function check_installed(conditions) {
       AddonTestUtils.getXPIExports().XPIProvider.builtInAddons;
     const foundAsBuiltIn = builtins?.find(entry => entry.addon_id === id);
 
-    let expectedDir = isUpgrade ? updatesDir : distroDir;
-
     if (version) {
       // Add-on should be installed
       Assert.notEqual(addon, null);
@@ -167,17 +123,14 @@ async function check_installed(conditions) {
       }
 
       // Verify that the add-on file is in the right place
-      if (!!foundAsBuiltIn && !isUpgrade) {
+      if (!isUpgrade) {
         Assert.equal(addon.getResourceURI("").spec, foundAsBuiltIn.res_url);
       } else {
-        let file = expectedDir.clone();
+        let file = updatesDir.clone();
         file.append(id + ".xpi");
         Assert.ok(file.exists());
         Assert.ok(file.isFile());
         Assert.equal(getAddonFile(addon).path, file.path);
-      }
-
-      if (isUpgrade) {
         Assert.equal(addon.signedState, AddonManager.SIGNEDSTATE_SYSTEM);
       }
     } else if (isUpgrade) {
@@ -192,7 +145,7 @@ async function check_installed(conditions) {
 
 // Test with a missing features directory or system builtin bundled
 // assets.
-async function test_default_missing({ asBuiltIn = true } = {}) {
+async function test_default_missing() {
   let overrideBuiltInsData = {
     builtins: SYSTEM_DEFAULTS_ADDON_IDS.map(id => {
       return {
@@ -202,12 +155,6 @@ async function test_default_missing({ asBuiltIn = true } = {}) {
       };
     }),
   };
-
-  if (!asBuiltIn) {
-    overrideBuiltInsData = {
-      system: SYSTEM_DEFAULTS_ADDON_IDS,
-    };
-  }
 
   await overrideBuiltIns(overrideBuiltInsData);
   await promiseStartupManager();
@@ -226,10 +173,10 @@ async function test_default_missing({ asBuiltIn = true } = {}) {
 }
 
 // Add some features in a new version
-async function test_new_version({ asBuiltIn = true } = {}) {
+async function test_new_version() {
   gAppInfo.version = "1";
 
-  await setupOverrideBuiltinsApp1({ asBuiltIn });
+  await setupOverrideBuiltinsApp1();
   await promiseStartupManager();
 
   let conditions = [
@@ -246,9 +193,9 @@ async function test_new_version({ asBuiltIn = true } = {}) {
 }
 
 // Another new version swaps one feature and upgrades another
-async function test_upgrade({ asBuiltIn = true } = {}) {
+async function test_upgrade() {
   gAppInfo.version = "2";
-  await setupOverrideBuiltinsApp2({ asBuiltIn });
+  await setupOverrideBuiltinsApp2();
   await promiseStartupManager();
 
   let conditions = [
@@ -265,9 +212,9 @@ async function test_upgrade({ asBuiltIn = true } = {}) {
 }
 
 // Downgrade
-async function test_downgrade({ asBuiltIn = true } = {}) {
+async function test_downgrade() {
   gAppInfo.version = "1";
-  await setupOverrideBuiltinsApp1({ asBuiltIn });
+  await setupOverrideBuiltinsApp1();
   await promiseStartupManager();
 
   let conditions = [
@@ -284,7 +231,7 @@ async function test_downgrade({ asBuiltIn = true } = {}) {
 }
 
 // Fake a mid-cycle install
-async function test_updated({ asBuiltIn = true } = {}) {
+async function test_updated() {
   // Create a random dir to install into
   let dirname = makeUUID();
   let dir = FileUtils.getDir("ProfD", ["features", dirname]);
@@ -312,7 +259,7 @@ async function test_updated({ asBuiltIn = true } = {}) {
   };
   Services.prefs.setCharPref(PREF_SYSTEM_ADDON_SET, JSON.stringify(addonSet));
 
-  await setupOverrideBuiltinsApp1({ asBuiltIn });
+  await setupOverrideBuiltinsApp1();
   await promiseStartupManager();
 
   let conditions = [
@@ -328,10 +275,10 @@ async function test_updated({ asBuiltIn = true } = {}) {
 
 // Entering safe mode should disable the updated system add-ons and use the
 // default system add-ons
-async function safe_mode_disabled({ asBuiltIn = true } = {}) {
+async function safe_mode_disabled() {
   gAppInfo.inSafeMode = true;
 
-  await setupOverrideBuiltinsApp1({ asBuiltIn });
+  await setupOverrideBuiltinsApp1();
   await promiseStartupManager();
 
   let conditions = [
@@ -346,10 +293,10 @@ async function safe_mode_disabled({ asBuiltIn = true } = {}) {
 }
 
 // Leaving safe mode should re-enable the updated system add-ons
-async function normal_mode_enabled({ asBuiltIn = true } = {}) {
+async function normal_mode_enabled() {
   gAppInfo.inSafeMode = false;
 
-  await setupOverrideBuiltinsApp1({ asBuiltIn });
+  await setupOverrideBuiltinsApp1();
   await promiseStartupManager();
 
   let conditions = [
@@ -364,12 +311,12 @@ async function normal_mode_enabled({ asBuiltIn = true } = {}) {
 }
 
 // An additional add-on in the directory should be ignored
-async function test_skips_additional({ asBuiltIn = true } = {}) {
+async function test_skips_additional() {
   // Copy in the system add-ons
   let file = await getSystemAddonXPI(4, "1.0");
   file.copyTo(updatesDir, "system4@tests.mozilla.org.xpi");
 
-  await setupOverrideBuiltinsApp1({ asBuiltIn });
+  await setupOverrideBuiltinsApp1();
   await promiseStartupManager();
 
   let conditions = [
@@ -384,10 +331,10 @@ async function test_skips_additional({ asBuiltIn = true } = {}) {
 }
 
 // Missing add-on should revert to the default set
-async function test_revert({ asBuiltIn = true } = {}) {
+async function test_revert() {
   manuallyUninstall(updatesDir, "system2@tests.mozilla.org");
 
-  await setupOverrideBuiltinsApp1({ asBuiltIn });
+  await setupOverrideBuiltinsApp1();
   await promiseStartupManager();
 
   // With system add-on 2 gone the updated set is now invalid so it reverts to
@@ -404,11 +351,11 @@ async function test_revert({ asBuiltIn = true } = {}) {
 }
 
 // Putting it back will make the set work again
-async function test_reuse({ asBuiltIn = true } = {}) {
+async function test_reuse() {
   let file = await getSystemAddonXPI(2, "2.0");
   file.copyTo(updatesDir, "system2@tests.mozilla.org.xpi");
 
-  await setupOverrideBuiltinsApp1({ asBuiltIn });
+  await setupOverrideBuiltinsApp1();
   await promiseStartupManager();
 
   let conditions = [
@@ -423,10 +370,10 @@ async function test_reuse({ asBuiltIn = true } = {}) {
 }
 
 // Making the pref corrupt should revert to the default set
-async function test_corrupt_pref({ asBuiltIn = true } = {}) {
+async function test_corrupt_pref() {
   Services.prefs.setCharPref(PREF_SYSTEM_ADDON_SET, "foo");
 
-  await setupOverrideBuiltinsApp1({ asBuiltIn });
+  await setupOverrideBuiltinsApp1();
   await promiseStartupManager();
 
   let conditions = [
@@ -441,7 +388,7 @@ async function test_corrupt_pref({ asBuiltIn = true } = {}) {
 }
 
 // An add-on with a bad certificate should cause us to use the default set
-async function test_bad_profile_cert({ asBuiltIn = true } = {}) {
+async function test_bad_profile_cert() {
   let file = await getSystemAddonXPI(1, "1.0");
   file.copyTo(updatesDir, "system1@tests.mozilla.org.xpi");
 
@@ -463,7 +410,7 @@ async function test_bad_profile_cert({ asBuiltIn = true } = {}) {
   };
   Services.prefs.setCharPref(PREF_SYSTEM_ADDON_SET, JSON.stringify(addonSet));
 
-  await setupOverrideBuiltinsApp1({ asBuiltIn });
+  await setupOverrideBuiltinsApp1();
   await promiseStartupManager();
 
   let conditions = [
@@ -478,14 +425,14 @@ async function test_bad_profile_cert({ asBuiltIn = true } = {}) {
 }
 
 // Switching to app defaults that contain a bad certificate should still work
-async function test_bad_app_cert({ asBuiltIn = true } = {}) {
+async function test_bad_app_cert() {
   gAppInfo.version = "3";
 
   AddonTestUtils.usePrivilegedSignatures = id => {
     return id === "system1@tests.mozilla.org" ? false : "system";
   };
 
-  await setupOverrideBuiltinsApp3({ asBuiltIn });
+  await setupOverrideBuiltinsApp3();
   await promiseStartupManager();
 
   // Since we updated the app version, the system addon set should be reset as well.
@@ -511,7 +458,7 @@ async function test_bad_app_cert({ asBuiltIn = true } = {}) {
 }
 
 // A failed upgrade should revert to the default set.
-async function test_updated_bad_update_set({ asBuiltIn = true } = {}) {
+async function test_updated_bad_update_set() {
   // Create a random dir to install into
   let dirname = makeUUID();
   let dir = FileUtils.getDir("ProfD", ["features", dirname]);
@@ -539,7 +486,7 @@ async function test_updated_bad_update_set({ asBuiltIn = true } = {}) {
   };
   Services.prefs.setCharPref(PREF_SYSTEM_ADDON_SET, JSON.stringify(addonSet));
 
-  await setupOverrideBuiltinsApp3({ asBuiltIn });
+  await setupOverrideBuiltinsApp3();
   await promiseStartupManager();
 
   let conditions = [{ isUpgrade: false, version: "1.0" }];
@@ -549,7 +496,7 @@ async function test_updated_bad_update_set({ asBuiltIn = true } = {}) {
   await promiseShutdownManager();
 }
 
-async function run_system_reset_scenarios({ asBuiltIn = true } = {}) {
+add_task(async function run_system_reset_scenarios() {
   createAppInfo("xpcshell@tests.mozilla.org", "XPCShell", "0");
   clearSystemAddonUpdatesDir();
   // NOTE: these test scenarios are not independent from each other,
@@ -573,16 +520,7 @@ async function run_system_reset_scenarios({ asBuiltIn = true } = {}) {
   ];
   for (const test_fn of test_scenarios) {
     info(`===== Entering test scenario: ${test_fn.name} =====`);
-    await test_fn({ asBuiltIn });
+    await test_fn();
     info(`===== Exiting test scenario: ${test_fn.name} =====`);
   }
-}
-
-// TODO(Bug 1949847): remove this test along with removing the app-system-defaults location.
-add_task(async function test_with_systemdefault_as_xpi() {
-  await run_system_reset_scenarios({ asBuiltIn: false });
-});
-
-add_task(async function test_with_systemdefault_as_builtin() {
-  await run_system_reset_scenarios();
 });

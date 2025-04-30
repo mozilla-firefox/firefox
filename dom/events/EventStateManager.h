@@ -530,10 +530,9 @@ class EventStateManager : public nsSupportsWeakReference, public nsIObserver {
     return mGestureDownContent;
   }
 
-  // If the current frame is for the current gesture down content (being
-  // dragged), when it's destroyed, we should continue the gesture on its
-  // parent.
-  void NotifyDestroyingFrameForGesture(nsIFrame* aFrame);
+  // Update the tracked gesture content to the parent of its frame when it's
+  // removed, so that the gesture can be continued.
+  void NotifyContentWillBeRemovedForGesture(nsIContent& aContent);
 
   bool IsTrackingDragGesture() const { return mGestureDownContent != nullptr; }
 

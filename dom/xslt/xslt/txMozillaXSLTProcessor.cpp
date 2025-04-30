@@ -17,7 +17,6 @@
 #include "txURIUtils.h"
 #include "txXMLUtils.h"
 #include "txUnknownHandler.h"
-#include "txXSLTMsgsURL.h"
 #include "txXSLTProcessor.h"
 #include "nsIPrincipal.h"
 #include "nsThreadUtils.h"
@@ -31,6 +30,7 @@
 #include "mozilla/Components.h"
 #include "mozilla/dom/DocumentFragment.h"
 #include "mozilla/dom/XSLTProcessorBinding.h"
+#include "mozilla/intl/Localization.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -987,6 +987,77 @@ nsresult txMozillaXSLTProcessor::setStylesheet(txStylesheet* aStylesheet) {
   return NS_OK;
 }
 
+static mozilla::Maybe<nsLiteralCString> StatusCodeToL10nId(nsresult aStatus) {
+  switch (aStatus) {
+    case NS_ERROR_XSLT_PARSE_FAILURE:
+      return mozilla::Some("xslt-parse-failure"_ns);
+    case NS_ERROR_XPATH_PARSE_FAILURE:
+      return mozilla::Some("xpath-parse-failure"_ns);
+    case NS_ERROR_XSLT_ALREADY_SET:
+      return mozilla::Some("xslt-var-already-set"_ns);
+    case NS_ERROR_XSLT_EXECUTION_FAILURE:
+      return mozilla::Some("xslt-execution-failure"_ns);
+    case NS_ERROR_XPATH_UNKNOWN_FUNCTION:
+      return mozilla::Some("xpath-unknown-function"_ns);
+    case NS_ERROR_XSLT_BAD_RECURSION:
+      return mozilla::Some("xslt-bad-recursion"_ns);
+    case NS_ERROR_XSLT_BAD_VALUE:
+      return mozilla::Some("xslt-bad-value"_ns);
+    case NS_ERROR_XSLT_NODESET_EXPECTED:
+      return mozilla::Some("xslt-nodeset-expected"_ns);
+    case NS_ERROR_XSLT_ABORTED:
+      return mozilla::Some("xslt-aborted"_ns);
+    case NS_ERROR_XSLT_NETWORK_ERROR:
+      return mozilla::Some("xslt-network-error"_ns);
+    case NS_ERROR_XSLT_WRONG_MIME_TYPE:
+      return mozilla::Some("xslt-wrong-mime-type"_ns);
+    case NS_ERROR_XSLT_LOAD_RECURSION:
+      return mozilla::Some("xslt-load-recursion"_ns);
+    case NS_ERROR_XPATH_BAD_ARGUMENT_COUNT:
+      return mozilla::Some("xpath-bad-argument-count"_ns);
+    case NS_ERROR_XPATH_BAD_EXTENSION_FUNCTION:
+      return mozilla::Some("xpath-bad-extension-function"_ns);
+    case NS_ERROR_XPATH_PAREN_EXPECTED:
+      return mozilla::Some("xpath-paren-expected"_ns);
+    case NS_ERROR_XPATH_INVALID_AXIS:
+      return mozilla::Some("xpath-invalid-axis"_ns);
+    case NS_ERROR_XPATH_NO_NODE_TYPE_TEST:
+      return mozilla::Some("xpath-no-node-type-test"_ns);
+    case NS_ERROR_XPATH_BRACKET_EXPECTED:
+      return mozilla::Some("xpath-bracket-expected"_ns);
+    case NS_ERROR_XPATH_INVALID_VAR_NAME:
+      return mozilla::Some("xpath-invalid-var-name"_ns);
+    case NS_ERROR_XPATH_UNEXPECTED_END:
+      return mozilla::Some("xpath-unexpected-end"_ns);
+    case NS_ERROR_XPATH_OPERATOR_EXPECTED:
+      return mozilla::Some("xpath-operator-expected"_ns);
+    case NS_ERROR_XPATH_UNCLOSED_LITERAL:
+      return mozilla::Some("xpath-unclosed-literal"_ns);
+    case NS_ERROR_XPATH_BAD_COLON:
+      return mozilla::Some("xpath-bad-colon"_ns);
+    case NS_ERROR_XPATH_BAD_BANG:
+      return mozilla::Some("xpath-bad-bang"_ns);
+    case NS_ERROR_XPATH_ILLEGAL_CHAR:
+      return mozilla::Some("xpath-illegal-char"_ns);
+    case NS_ERROR_XPATH_BINARY_EXPECTED:
+      return mozilla::Some("xpath-binary-expected"_ns);
+    case NS_ERROR_XSLT_LOAD_BLOCKED_ERROR:
+      return mozilla::Some("xslt-load-blocked-error"_ns);
+    case NS_ERROR_XPATH_INVALID_EXPRESSION_EVALUATED:
+      return mozilla::Some("xpath-invalid-expression-evaluated"_ns);
+    case NS_ERROR_XPATH_UNBALANCED_CURLY_BRACE:
+      return mozilla::Some("xpath-unbalanced-curly-brace"_ns);
+    case NS_ERROR_XSLT_BAD_NODE_NAME:
+      return mozilla::Some("xslt-bad-node-name"_ns);
+    case NS_ERROR_XSLT_VAR_ALREADY_SET:
+      return mozilla::Some("xslt-var-already-set"_ns);
+    case NS_ERROR_XSLT_CALL_TO_KEY_NOT_ALLOWED:
+      return mozilla::Some("xslt-call-to-key-not-allowed"_ns);
+    default:
+      return mozilla::Nothing();
+  }
+}
+
 void txMozillaXSLTProcessor::reportError(nsresult aResult,
                                          const char16_t* aErrorText,
                                          const char16_t* aSourceText) {
@@ -999,25 +1070,38 @@ void txMozillaXSLTProcessor::reportError(nsresult aResult,
   if (aErrorText) {
     mErrorText.Assign(aErrorText);
   } else {
-    nsCOMPtr<nsIStringBundleService> sbs =
-        mozilla::components::StringBundle::Service();
-    if (sbs) {
-      nsString errorText;
-      sbs->FormatStatusMessage(aResult, u"", errorText);
-
-      nsAutoString errorMessage;
-      nsCOMPtr<nsIStringBundle> bundle;
-      sbs->CreateBundle(XSLT_MSGS_URL, getter_AddRefs(bundle));
-
-      if (bundle) {
-        AutoTArray<nsString, 1> error = {errorText};
-        if (mStylesheet) {
-          bundle->FormatStringFromName("TransformError", error, errorMessage);
-        } else {
-          bundle->FormatStringFromName("LoadingError", error, errorMessage);
-        }
+    AutoTArray<nsCString, 1> resIds = {
+        "dom/xslt.ftl"_ns,
+    };
+    RefPtr<mozilla::intl::Localization> l10n =
+        mozilla::intl::Localization::Create(resIds, true);
+    if (l10n) {
+      nsAutoCString errorText;
+      auto statusId = StatusCodeToL10nId(aResult);
+      if (statusId) {
+        l10n->FormatValueSync(*statusId, {}, errorText, IgnoreErrors());
+      } else {
+        dom::Optional<intl::L10nArgs> l10nArgs;
+        l10nArgs.Construct();
+        auto errorArg = l10nArgs.Value().Entries().AppendElement();
+        errorArg->mKey = "errorCode";
+        errorArg->mValue.SetValue().SetAsUTF8String().AppendInt(
+            static_cast<uint32_t>(aResult), 16);
+        l10n->FormatValueSync("xslt-unknown-error"_ns, l10nArgs, errorText,
+                              IgnoreErrors());
       }
-      mErrorText.Assign(errorMessage);
+
+      dom::Optional<intl::L10nArgs> l10nArgs;
+      l10nArgs.Construct();
+      auto errorArg = l10nArgs.Value().Entries().AppendElement();
+      errorArg->mKey = "error";
+      errorArg->mValue.SetValue().SetAsUTF8String().Assign(errorText);
+
+      nsLiteralCString messageId =
+          mStylesheet ? "xslt-transform-error"_ns : "xslt-loading-error"_ns;
+      nsAutoCString errorMessage;
+      l10n->FormatValueSync(messageId, l10nArgs, errorMessage, IgnoreErrors());
+      mErrorText = NS_ConvertUTF8toUTF16(errorMessage);
     }
   }
 

@@ -10,7 +10,7 @@ import mozilla.components.browser.state.helper.Target
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarStore
-import mozilla.components.compose.browser.toolbar.store.Mode
+import mozilla.components.lib.state.ext.observeAsComposableState
 import mozilla.components.lib.state.ext.observeAsState
 
 /**
@@ -27,8 +27,6 @@ import mozilla.components.lib.state.ext.observeAsState
  * "edit" mode.
  * @param onTextCommit Function to get executed when the user has finished editing the URL and wants
  * to load the entered text.
- * @param onDisplayToolbarClick Function to get executed when the user clicks on the URL in "display"
- * mode.
  * @param colors The color scheme the browser toolbar will use for the UI.
  */
 @Composable
@@ -38,7 +36,6 @@ fun BrowserToolbar(
     target: Target,
     onTextEdit: (String) -> Unit,
     onTextCommit: (String) -> Unit,
-    onDisplayToolbarClick: () -> Unit,
     colors: BrowserToolbarColors = BrowserToolbarDefaults.colors(),
 ) {
     val uiState by store.observeAsState(initialValue = store.state) { it }
@@ -46,6 +43,7 @@ fun BrowserToolbar(
         store = browserStore,
         observe = { tab -> tab?.content?.url },
     )
+    val progressBarConfig = store.observeAsComposableState { it.displayState.progressBarConfig }.value
 
     val url = selectedTab?.content?.url ?: ""
     val input = when (val editText = uiState.editState.editText) {
@@ -53,42 +51,26 @@ fun BrowserToolbar(
         else -> editText
     }
 
-    when (uiState.mode) {
-        Mode.EDIT -> {
-            BrowserEditToolbar(
-                url = input,
-                colors = colors.editToolbarColors,
-                editActionsStart = uiState.editState.editActionsStart,
-                editActionsEnd = uiState.editState.editActionsEnd,
-                onUrlCommitted = { text -> onTextCommit(text) },
-                onUrlEdit = { text -> onTextEdit(text) },
-                onInteraction = { store.dispatch(it) },
-            )
-        }
-
-        Mode.DISPLAY -> {
-            BrowserDisplayToolbar(
-                url = selectedTab?.content?.url ?: uiState.displayState.hint,
-                colors = colors.displayToolbarColors,
-                navigationActions = uiState.displayState.navigationActions,
-                pageActions = uiState.displayState.pageActions,
-                browserActions = uiState.displayState.browserActions,
-                onUrlClicked = {
-                    onDisplayToolbarClick()
-                },
-                onInteraction = { store.dispatch(it) },
-            )
-        }
-
-        Mode.CUSTOM_TAB -> {
-            CustomTabToolbar(
-                url = selectedTab?.content?.url ?: "",
-                title = selectedTab?.content?.title ?: "",
-                colors = colors.customTabToolbarColor,
-                navigationActions = uiState.displayState.navigationActions,
-                pageActions = uiState.displayState.pageActions,
-                browserActions = uiState.displayState.browserActions,
-            )
-        }
+    if (uiState.isEditMode()) {
+        BrowserEditToolbar(
+            url = input,
+            colors = colors.editToolbarColors,
+            editActionsStart = uiState.editState.editActionsStart,
+            editActionsEnd = uiState.editState.editActionsEnd,
+            onUrlCommitted = { text -> onTextCommit(text) },
+            onUrlEdit = { text -> onTextEdit(text) },
+            onInteraction = { store.dispatch(it) },
+        )
+    } else {
+        BrowserDisplayToolbar(
+            pageOrigin = uiState.displayState.pageOrigin,
+            colors = colors.displayToolbarColors,
+            progressBarConfig = progressBarConfig,
+            browserActionsStart = uiState.displayState.browserActionsStart,
+            pageActionsStart = uiState.displayState.pageActionsStart,
+            pageActionsEnd = uiState.displayState.pageActionsEnd,
+            browserActionsEnd = uiState.displayState.browserActionsEnd,
+            onInteraction = { store.dispatch(it) },
+        )
     }
 }

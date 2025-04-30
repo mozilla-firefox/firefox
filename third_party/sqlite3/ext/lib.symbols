@@ -3,3 +3,4 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 sqlite3_fts5_init
+sqlite3_vec_init

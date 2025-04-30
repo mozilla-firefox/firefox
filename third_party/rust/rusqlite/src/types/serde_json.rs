@@ -18,9 +18,9 @@ impl ToSql for Value {
     #[inline]
     fn to_sql(&self) -> Result<ToSqlOutput<'_>> {
         match self {
-            Value::Null => Ok(ToSqlOutput::Borrowed(ValueRef::Null)),
-            Value::Number(n) if n.is_i64() => Ok(ToSqlOutput::from(n.as_i64().unwrap())),
-            Value::Number(n) if n.is_f64() => Ok(ToSqlOutput::from(n.as_f64().unwrap())),
+            Self::Null => Ok(ToSqlOutput::Borrowed(ValueRef::Null)),
+            Self::Number(n) if n.is_i64() => Ok(ToSqlOutput::from(n.as_i64().unwrap())),
+            Self::Number(n) if n.is_f64() => Ok(ToSqlOutput::from(n.as_f64().unwrap())),
             _ => serde_json::to_string(self)
                 .map(ToSqlOutput::from)
                 .map_err(|err| Error::ToSqlConversionFailure(err.into())),
@@ -47,14 +47,14 @@ impl FromSql for Value {
         match value {
             ValueRef::Text(s) => serde_json::from_slice(s), // KO for b"text"
             ValueRef::Blob(b) => serde_json::from_slice(b),
-            ValueRef::Integer(i) => Ok(Value::Number(Number::from(i))),
+            ValueRef::Integer(i) => Ok(Self::Number(Number::from(i))),
             ValueRef::Real(f) => {
                 match Number::from_f64(f) {
-                    Some(n) => Ok(Value::Number(n)),
+                    Some(n) => Ok(Self::Number(n)),
                     _ => return Err(FromSqlError::InvalidType), // FIXME
                 }
             }
-            ValueRef::Null => Ok(Value::Null),
+            ValueRef::Null => Ok(Self::Null),
         }
         .map_err(|err| FromSqlError::Other(Box::new(err)))
     }

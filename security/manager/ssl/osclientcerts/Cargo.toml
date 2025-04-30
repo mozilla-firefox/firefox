@@ -13,7 +13,6 @@ lazy_static = "1"
 log = "0.4"
 
 pkcs11-bindings = "0.1"
-rand = "0.8"
 rsclientcerts = { path = "../rsclientcerts" }
 sha2 = "0.10.2"
 static_prefs = { path = "../../../../modules/libpref/init/static_prefs"}
@@ -31,6 +30,3 @@ features = ["errhandlingapi", "wincrypt"]
 [target.'cfg(target_os = "android")'.dependencies.android_logger]
 version = "0.12.0"
 default-features = false
-
-[target.'cfg(target_os = "android")'.dependencies.digest]
-version = "0.10.2"

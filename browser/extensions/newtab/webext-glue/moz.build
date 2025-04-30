@@ -14,14 +14,19 @@ DIST_SUBDIR = ""
 # NOTE: Please keep the files listed in here in sync with the ones listed in
 # ../addon-jar.mn, as this ensures that the XPI generated at build time
 # shares the same structure as the built-in instance. (bug 1955994)
+#
+# The exception is the "locales" folder, which is only included in the XPI.
 
 FINAL_TARGET_FILES += [
     "../manifest.json",
 ]
 FINAL_TARGET_FILES["webext-glue"] += [
     "background.js",
-    "builtin-newtab.js",
+    "metrics/**",
     "schema.json",
+]
+FINAL_TARGET_PP_FILES["webext-glue"] += [
+    "builtin-newtab.js",
 ]
 FINAL_TARGET_FILES.lib += [
     "../lib/**",
@@ -47,6 +52,10 @@ FINAL_TARGET_FILES.prerendered += [
     "../prerendered/activity-stream-noscripts.html",
     "../prerendered/activity-stream.html",
 ]
+
+# This doesn't need to be in sync with the addon-jar.mn file, as the locales
+# are only included when we build newtab as an XPI.
+FINAL_TARGET_FILES += ["locales/**"]
 
 if not CONFIG["RELEASE_OR_BETA"]:
     FINAL_TARGET_FILES.prerendered += [

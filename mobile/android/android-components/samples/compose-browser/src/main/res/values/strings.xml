@@ -9,4 +9,5 @@
     <string name="menu_item_settings">Settings</string>
     <string name="menu_item_settings_description">Open browser settings</string>
     <string name="clear_input_description">Clear input</string>
+    <string name="toolbar_search_hint">Search or enter address</string>
 </resources>

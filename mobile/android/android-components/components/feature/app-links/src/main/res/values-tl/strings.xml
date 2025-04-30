@@ -4,8 +4,27 @@
   <string name="mozac_feature_applinks_open_in">Buksan sa…</string>
   <!-- The description to warn users that their private browsing session changes -->
   <string name="mozac_feature_applinks_confirm_dialog_title">Buksan sa app? Maaaring hindi na maging pribado ang iyong aktibidad.</string>
+  <!--
+    The description to warn users that their private browsing session changes
+    %s is a placeholder that will be replaced by an app name
+  -->
+  <string name="mozac_feature_applinks_confirm_dialog_title_with_app_name">Buksan sa %s? Maaaring hindi na manatiling pribado ang aktibidad mo.</string>
+  <!-- The title of the prompt that warns users their normal browsing session is trying to open another app -->
+  <string name="mozac_feature_applinks_normal_confirm_dialog_title">Buksan sa ibang app</string>
+  <!--
+    The title of the prompt that warns users their normal browsing session is trying to open another app
+    %s is a placeholder that will be replaced by an app name
+  -->
+  <string name="mozac_feature_applinks_normal_confirm_dialog_title_with_app_name">Buksan sa %s</string>
+  <!--
+    The message of the prompt to confirm with users that they want to open the link in another app
+    %s is a placeholder that will be replaced by the app name
+  -->
+  <string name="mozac_feature_applinks_normal_confirm_dialog_message">Gusto mo bang umalis sa %s upang tingnan ang nilalamang ito?</string>
   <!-- Opens the selected time -->
   <string name="mozac_feature_applinks_confirm_dialog_confirm">Buksan</string>
   <!-- Cancels the prompt -->
   <string name="mozac_feature_applinks_confirm_dialog_deny">Kanselahin</string>
+  <!-- The label of the checkbox that, depending of user's choice, can change the Open links in apps setting -->
+  <string name="mozac_feature_applinks_confirm_dialog_checkbox_label">Palaging buksan sa app ang mga link</string>
 </resources>

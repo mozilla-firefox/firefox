@@ -1569,7 +1569,9 @@ void DrawTargetCairo::PushClipRect(const Rect& aRect) {
 }
 
 void DrawTargetCairo::PopClip() {
-  MOZ_ASSERT(mClipDepth > 0);
+  if (NS_WARN_IF(mClipDepth <= 0)) {
+    return;
+  }
 
   // save/restore does not affect the path, so no need to call WillChange()
 

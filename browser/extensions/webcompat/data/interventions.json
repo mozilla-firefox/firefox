@@ -3387,5 +3387,36 @@
         }
       }
     ]
+  },
+  "1961710": {
+    "label": "Office 365 email attachment download filename fix",
+    "bugs": {
+      "1961710": {
+        "issue": "user-interface-frustration",
+        "matches": [
+          "*://*.live.com/*/GetFileAttachment*",
+          "*://*.live.net/*/GetFileAttachment*",
+          "*://*.office.com/*/GetFileAttachment*",
+          "*://*.office.net/*/GetFileAttachment*",
+          "*://*.office365.com/*/GetFileAttachment*",
+          "*://*.office365.us/*/GetFileAttachment*",
+          "*://*.outlook.cn/*/GetFileAttachment*",
+          "*://*.outlook.com/*/GetFileAttachment*",
+          "*://*.sharepoint.com/*/GetFileAttachment*"
+        ]
+      }
+    },
+    "interventions": [
+      {
+        "platforms": ["all"],
+        "alter_response_headers": [
+          {
+            "headers": ["content-disposition"],
+            "replace": "filename\\*=UTF-8''([^;]+)",
+            "replacement": "filename=\"$1\""
+          }
+        ]
+      }
+    ]
   }
 }

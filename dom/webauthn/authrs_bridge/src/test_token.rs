@@ -26,8 +26,8 @@ use authenticator::ctap2::{
     },
     preflight::CheckKeyHandle,
     server::{
-        AuthenticatorAttachment, PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity,
-        RelyingParty,
+        AuthenticatorAttachment, CredentialProtectionPolicy, PublicKeyCredentialDescriptor,
+        PublicKeyCredentialUserEntity, RelyingParty,
     },
 };
 use authenticator::errors::{AuthenticatorError, CommandError, HIDError, U2FTokenError};
@@ -62,6 +62,7 @@ struct TestTokenCredential {
     sign_count: AtomicU32,
     is_discoverable_credential: bool,
     rp: RelyingParty,
+    credential_protection_policy: CredentialProtectionPolicy,
 }
 
 impl TestTokenCredential {
@@ -153,6 +154,7 @@ impl TestToken {
         is_discoverable_credential: bool,
         user_handle: &[u8],
         sign_count: u32,
+        credential_protection_policy: CredentialProtectionPolicy,
     ) {
         let c = TestTokenCredential {
             id: id.to_vec(),
@@ -161,6 +163,7 @@ impl TestToken {
             is_discoverable_credential,
             user_handle: user_handle.to_vec(),
             sign_count: AtomicU32::new(sign_count),
+            credential_protection_policy,
         };
 
         let mut credlist = self.credentials.borrow_mut();
@@ -425,6 +428,13 @@ impl VirtualFidoDevice for TestToken {
             // 11. Non-discoverable credential case
             // return at most one assertion matching an allowed credential ID
             for credential in eligible_cred_iter {
+                if !self.is_user_verified
+                    && credential.credential_protection_policy
+                        == CredentialProtectionPolicy::UserVerificationRequired
+                {
+                    // Enforce the credential protection policy given that we have an allow list.
+                    continue;
+                }
                 if req.allow_list.iter().any(|x| x.id == credential.id) {
                     let mut assertion: GetAssertionResponse =
                         credential.assert(&req.client_data_hash, flags)?;
@@ -453,6 +463,13 @@ impl VirtualFidoDevice for TestToken {
             // 12. Discoverable credential case
             // return any number of assertions from credentials bound to this RP ID
             for credential in eligible_cred_iter.filter(|x| x.is_discoverable_credential) {
+                if !(self.is_user_verified
+                    || credential.credential_protection_policy
+                        == CredentialProtectionPolicy::UserVerificationOptional)
+                {
+                    // Enforce the credential protection policy given that we do not have an allow list.
+                    continue;
+                }
                 let mut assertion: GetAssertionResponse =
                     credential.assert(&req.client_data_hash, flags)?.into();
                 assertion.auth_data.extensions = Extension::default();
@@ -593,6 +610,7 @@ impl VirtualFidoDevice for TestToken {
             extensions.min_pin_length = Some(4);
         }
 
+        extensions.cred_protect = req.extensions.cred_protect;
         if let Some(req_hmac_or_prf) = &req.extensions.hmac_secret {
             match req_hmac_or_prf {
                 HmacCreateSecretOrPrf::HmacCreateSecret(true) | HmacCreateSecretOrPrf::Prf => {
@@ -625,6 +643,9 @@ impl VirtualFidoDevice for TestToken {
             req.options.resident_key.unwrap_or(false),
             &req.user.clone().unwrap_or_default().id,
             counter,
+            req.extensions
+                .cred_protect
+                .unwrap_or(CredentialProtectionPolicy::UserVerificationOptional),
         );
 
         // 19. Generate attestation statement
@@ -821,6 +842,7 @@ impl TestTokenManager {
             is_resident_credential,
             user_handle,
             sign_count,
+            CredentialProtectionPolicy::UserVerificationOptional,
         );
         Ok(())
     }

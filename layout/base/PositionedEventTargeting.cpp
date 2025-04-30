@@ -96,6 +96,7 @@ enum class SearchType {
   None,
   Clickable,
   Touchable,
+  TouchableOrClickable,
 };
 
 struct EventRadiusPrefs {
@@ -109,8 +110,8 @@ struct EventRadiusPrefs {
   bool mReposition;
   SearchType mSearchType;
 
-  explicit EventRadiusPrefs(EventClassID aEventClassID) {
-    if (aEventClassID == eTouchEventClass) {
+  explicit EventRadiusPrefs(WidgetGUIEvent* aMouseOrTouchEvent) {
+    if (aMouseOrTouchEvent->mClass == eTouchEventClass) {
       mEnabled = StaticPrefs::ui_touch_radius_enabled();
       mVisitedWeight = StaticPrefs::ui_touch_radius_visitedWeight();
       mRadiusTopmm = StaticPrefs::ui_touch_radius_topmm();
@@ -119,9 +120,19 @@ struct EventRadiusPrefs {
       mRadiusLeftmm = StaticPrefs::ui_touch_radius_leftmm();
       mTouchOnly = false;   // Always false, unlike mouse events.
       mReposition = false;  // Always false, unlike mouse events.
-      mSearchType = SearchType::Touchable;
+      if (StaticPrefs::
+              ui_touch_radius_single_touch_treat_clickable_as_touchable() &&
+          aMouseOrTouchEvent->mMessage == eTouchStart &&
+          aMouseOrTouchEvent->AsTouchEvent()->mTouches.Length() == 1) {
+        // If it may cause a single tap, we need to refer clickable target too
+        // because the touchstart target will be captured implicitly if the
+        // web app does not capture the touch explicitly.
+        mSearchType = SearchType::TouchableOrClickable;
+      } else {
+        mSearchType = SearchType::Touchable;
+      }
 
-    } else if (aEventClassID == eMouseEventClass) {
+    } else if (aMouseOrTouchEvent->mClass == eMouseEventClass) {
       mEnabled = StaticPrefs::ui_mouse_radius_enabled();
       mVisitedWeight = StaticPrefs::ui_mouse_radius_visitedWeight();
       mRadiusTopmm = StaticPrefs::ui_mouse_radius_topmm();
@@ -146,7 +157,7 @@ struct EventRadiusPrefs {
   }
 };
 
-static bool HasMouseListener(nsIContent* aContent) {
+static bool HasMouseListener(const nsIContent* aContent) {
   if (EventListenerManager* elm = aContent->GetExistingListenerManager()) {
     return elm->HasListenersFor(nsGkAtoms::onclick) ||
            elm->HasListenersFor(nsGkAtoms::onmousedown) ||
@@ -156,7 +167,7 @@ static bool HasMouseListener(nsIContent* aContent) {
   return false;
 }
 
-static bool HasTouchListener(nsIContent* aContent) {
+static bool HasTouchListener(const nsIContent* aContent) {
   EventListenerManager* elm = aContent->GetExistingListenerManager();
   if (!elm) {
     return false;
@@ -172,7 +183,7 @@ static bool HasTouchListener(nsIContent* aContent) {
          elm->HasNonSystemGroupListenersFor(nsGkAtoms::ontouchend);
 }
 
-static bool HasPointerListener(nsIContent* aContent) {
+static bool HasPointerListener(const nsIContent* aContent) {
   EventListenerManager* elm = aContent->GetExistingListenerManager();
   if (!elm) {
     return false;
@@ -212,6 +223,46 @@ static nsIContent* GetTouchableAncestor(nsIFrame* aFrame,
   return nullptr;
 }
 
+static bool IsClickableContent(const nsIContent* aContent,
+                               nsAutoString* aLabelTargetId = nullptr) {
+  if (HasTouchListener(aContent) || HasMouseListener(aContent) ||
+      HasPointerListener(aContent)) {
+    return true;
+  }
+  if (aContent->IsAnyOfHTMLElements(nsGkAtoms::button, nsGkAtoms::input,
+                                    nsGkAtoms::select, nsGkAtoms::textarea)) {
+    return true;
+  }
+  if (aContent->IsHTMLElement(nsGkAtoms::label)) {
+    if (aLabelTargetId) {
+      aContent->AsElement()->GetAttr(nsGkAtoms::_for, *aLabelTargetId);
+    }
+    return aContent;
+  }
+
+  // See nsCSSFrameConstructor::FindXULTagData. This code is not
+  // really intended to be used with XUL, though.
+  if (aContent->IsAnyOfXULElements(
+          nsGkAtoms::button, nsGkAtoms::checkbox, nsGkAtoms::radio,
+          nsGkAtoms::menu, nsGkAtoms::menuitem, nsGkAtoms::menulist,
+          nsGkAtoms::scrollbarbutton, nsGkAtoms::resizer)) {
+    return true;
+  }
+
+  static Element::AttrValuesArray clickableRoles[] = {nsGkAtoms::button,
+                                                      nsGkAtoms::key, nullptr};
+  if (const auto* element = Element::FromNode(*aContent)) {
+    if (element->IsLink()) {
+      return true;
+    }
+    if (element->FindAttrValueIn(kNameSpaceID_None, nsGkAtoms::role,
+                                 clickableRoles, eIgnoreCase) >= 0) {
+      return true;
+    }
+  }
+  return aContent->IsEditable();
+}
+
 static nsIContent* GetClickableAncestor(
     nsIFrame* aFrame, nsAtom* aStopAt = nullptr,
     nsAutoString* aLabelTargetId = nullptr) {
@@ -230,6 +281,7 @@ static nsIContent* GetClickableAncestor(
   // like contenteditable or input fields, which can then be removed from the
   // loop below, and would have better performance.
   if (aFrame->StyleUI()->Cursor().keyword == StyleCursorKind::Pointer) {
+    // XXX Shouldn't we set aLabelTargetId if aFrame is for a <label>?
     return aFrame->GetContent();
   }
 
@@ -240,46 +292,42 @@ static nsIContent* GetClickableAncestor(
     if (aStopAt && content->IsHTMLElement(aStopAt)) {
       break;
     }
-    if (HasTouchListener(content) || HasMouseListener(content) ||
-        HasPointerListener(content)) {
-      return content;
-    }
-    if (content->IsAnyOfHTMLElements(nsGkAtoms::button, nsGkAtoms::input,
-                                     nsGkAtoms::select, nsGkAtoms::textarea)) {
-      return content;
-    }
-    if (content->IsHTMLElement(nsGkAtoms::label)) {
-      if (aLabelTargetId) {
-        content->AsElement()->GetAttr(nsGkAtoms::_for, *aLabelTargetId);
-      }
-      return content;
-    }
-
-    // See nsCSSFrameConstructor::FindXULTagData. This code is not
-    // really intended to be used with XUL, though.
-    if (content->IsAnyOfXULElements(
-            nsGkAtoms::button, nsGkAtoms::checkbox, nsGkAtoms::radio,
-            nsGkAtoms::menu, nsGkAtoms::menuitem, nsGkAtoms::menulist,
-            nsGkAtoms::scrollbarbutton, nsGkAtoms::resizer)) {
-      return content;
-    }
-
-    static Element::AttrValuesArray clickableRoles[] = {
-        nsGkAtoms::button, nsGkAtoms::key, nullptr};
-    if (auto* element = Element::FromNode(*content)) {
-      if (element->IsLink()) {
-        return content;
-      }
-      if (element->FindAttrValueIn(kNameSpaceID_None, nsGkAtoms::role,
-                                   clickableRoles, eIgnoreCase) >= 0) {
-        return content;
-      }
-    }
-    if (content->IsEditable()) {
+    if (IsClickableContent(content, aLabelTargetId)) {
       return content;
     }
   }
   return nullptr;
+}
+
+static nsIContent* GetTouchableOrClickableAncestor(
+    nsIFrame* aFrame, nsAtom* aStopAt = nullptr,
+    nsAutoString* aLabelTargetId = nullptr) {
+  nsIContent* deepestClickableTarget = nullptr;
+  // See comment in GetClickableAncestor for the detail of referring CSS
+  // `cursor`.
+  if (aFrame->StyleUI()->Cursor().keyword == StyleCursorKind::Pointer) {
+    deepestClickableTarget = aFrame->GetContent();
+  }
+  for (nsIContent* content = aFrame->GetContent(); content;
+       content = content->GetFlattenedTreeParent()) {
+    if (aStopAt && content->IsHTMLElement(aStopAt)) {
+      break;
+    }
+    // If we find a touchable content, let's target it.
+    if (HasTouchListener(content)) {
+      if (aLabelTargetId) {
+        aLabelTargetId->Truncate();
+      }
+      return content;
+    }
+    // If we find a clickable content, let's store it and use it as the last
+    // resort if there is no touchable ancestor.
+    if (!deepestClickableTarget &&
+        IsClickableContent(content, aLabelTargetId)) {
+      deepestClickableTarget = content;
+    }
+  }
+  return deepestClickableTarget;
 }
 
 static Scale2D AppUnitsToMMScale(RelativeTo aFrame) {
@@ -431,19 +479,35 @@ static nsIFrame* GetClosest(RelativeTo aRoot,
       continue;
     }
 
-    if (aPrefs.mSearchType == SearchType::Clickable) {
-      nsIContent* clickableContent =
-          GetClickableAncestor(f, nsGkAtoms::body, &labelTargetId);
-      if (!aClickableAncestor && !clickableContent) {
-        PET_LOG("  candidate %p was not clickable\n", f);
-        continue;
+    switch (aPrefs.mSearchType) {
+      case SearchType::Clickable: {
+        nsIContent* clickableContent =
+            GetClickableAncestor(f, nsGkAtoms::body, &labelTargetId);
+        if (!aClickableAncestor && !clickableContent) {
+          PET_LOG("  candidate %p was not clickable\n", f);
+          continue;
+        }
+        break;
       }
-    } else if (aPrefs.mSearchType == SearchType::Touchable) {
-      nsIContent* touchableContent = GetTouchableAncestor(f, nsGkAtoms::body);
-      if (!touchableContent) {
-        PET_LOG("  candidate %p was not touchable\n", f);
-        continue;
+      case SearchType::Touchable: {
+        nsIContent* touchableContent = GetTouchableAncestor(f, nsGkAtoms::body);
+        if (!touchableContent) {
+          PET_LOG("  candidate %p was not touchable\n", f);
+          continue;
+        }
+        break;
       }
+      case SearchType::TouchableOrClickable: {
+        nsIContent* touchableOrClickableContent =
+            GetTouchableOrClickableAncestor(f, nsGkAtoms::body, &labelTargetId);
+        if (!touchableOrClickableContent) {
+          PET_LOG("  candidate %p was not touchable nor clickable\n", f);
+          continue;
+        }
+        break;
+      }
+      case SearchType::None:
+        break;
     }
 
     // If our current closest frame is a descendant of 'f', skip 'f' (prefer
@@ -469,6 +533,8 @@ static nsIFrame* GetClosest(RelativeTo aRoot,
             ElementState(ElementState::VISITED))) {
       distance *= aPrefs.mVisitedWeight / 100.0f;
     }
+    // XXX When we look for a touchable or clickable target, should we give
+    // lower weight for clickable target?
     if (distance < bestDistance) {
       PET_LOG("  candidate %p is the new best\n", f);
       bestDistance = distance;
@@ -511,7 +577,7 @@ nsIFrame* FindFrameTargetedByInputEvent(
       ToString(aPointRelativeToRootFrame).c_str(),
       ToString(aRootFrame).c_str());
 
-  EventRadiusPrefs prefs(aEvent->mClass);
+  EventRadiusPrefs prefs(aEvent);
   if (!prefs.mEnabled || EventRetargetSuppression::IsActive()) {
     PET_LOG("Retargeting disabled\n");
     return target;

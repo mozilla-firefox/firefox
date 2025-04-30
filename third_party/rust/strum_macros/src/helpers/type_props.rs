@@ -11,8 +11,10 @@ pub trait HasTypeProperties {
     fn get_type_properties(&self) -> syn::Result<StrumTypeProperties>;
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct StrumTypeProperties {
+    pub parse_err_ty: Option<Path>,
+    pub parse_err_fn: Option<Path>,
     pub case_style: Option<CaseStyle>,
     pub ascii_case_insensitive: bool,
     pub crate_module_path: Option<Path>,
@@ -23,6 +25,7 @@ pub struct StrumTypeProperties {
     pub use_phf: bool,
     pub prefix: Option<LitStr>,
     pub enum_repr: Option<TokenStream>,
+    pub const_into_str: bool,
 }
 
 impl HasTypeProperties for DeriveInput {
@@ -32,11 +35,15 @@ impl HasTypeProperties for DeriveInput {
         let strum_meta = self.get_metadata()?;
         let discriminants_meta = self.get_discriminants_metadata()?;
 
+        let mut parse_err_ty_kw = None;
+        let mut parse_err_fn_kw = None;
         let mut serialize_all_kw = None;
         let mut ascii_case_insensitive_kw = None;
         let mut use_phf_kw = None;
         let mut crate_module_path_kw = None;
         let mut prefix_kw = None;
+        let mut const_into_str = None;
+
         for meta in strum_meta {
             match meta {
                 EnumMeta::SerializeAll { case_style, kw } => {
@@ -81,6 +88,30 @@ impl HasTypeProperties for DeriveInput {
 
                     prefix_kw = Some(kw);
                     output.prefix = Some(prefix);
+                }
+                EnumMeta::ParseErrTy { path, kw } => {
+                    if let Some(fst_kw) = parse_err_ty_kw {
+                        return Err(occurrence_error(fst_kw, kw, "parse_err_ty"));
+                    }
+
+                    parse_err_ty_kw = Some(kw);
+                    output.parse_err_ty = Some(path);
+                }
+                EnumMeta::ParseErrFn { path, kw } => {
+                    if let Some(fst_kw) = parse_err_fn_kw {
+                        return Err(occurrence_error(fst_kw, kw, "parse_err_fn"));
+                    }
+
+                    parse_err_fn_kw = Some(kw);
+                    output.parse_err_fn = Some(path);
+                }
+                EnumMeta::ConstIntoStr(kw) => {
+                    if let Some(fst_kw) = const_into_str {
+                        return Err(occurrence_error(fst_kw, kw, "const_into_str"));
+                    }
+
+                    const_into_str = Some(kw);
+                    output.const_into_str = true;
                 }
             }
         }

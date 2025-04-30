@@ -38,6 +38,7 @@ MOZ_EXPORT __attribute__((weak)) uint32_t nyx_get_next_fuzz_data(void*,
                                                                  uint32_t);
 MOZ_EXPORT __attribute__((weak)) uint32_t nyx_get_raw_fuzz_data(void*,
                                                                 uint32_t);
+MOZ_EXPORT __attribute__((weak)) uint32_t nyx_get_owned_raw_fuzz_data(void**);
 MOZ_EXPORT __attribute__((weak)) void nyx_release(uint32_t);
 MOZ_EXPORT __attribute__((weak)) void nyx_handle_event(const char*, const char*,
                                                        int, const char*);
@@ -129,6 +130,7 @@ void Nyx::start(void) {
   NYX_CHECK_API(nyx_start);
   NYX_CHECK_API(nyx_get_next_fuzz_data);
   NYX_CHECK_API(nyx_get_raw_fuzz_data);
+  NYX_CHECK_API(nyx_get_owned_raw_fuzz_data);
   NYX_CHECK_API(nyx_release);
   NYX_CHECK_API(nyx_handle_event);
   NYX_CHECK_API(nyx_puts);
@@ -181,6 +183,18 @@ uint32_t Nyx::get_raw_data(uint8_t* data, uint32_t size) {
   }
 
   return nyx_get_raw_fuzz_data(data, size);
+}
+
+uint32_t Nyx::get_raw_data(uint8_t** data) {
+  MOZ_RELEASE_ASSERT(mInited);
+
+  if (mReplayMode) {
+    MOZ_FUZZING_NYX_PRINT("[Replay Mode] Nyx::get_raw_data() called.\n");
+    *data = mRawReplayBuffer->begin();
+    return mRawReplayBuffer->length();
+  }
+
+  return nyx_get_owned_raw_fuzz_data(reinterpret_cast<void**>(data));
 }
 
 void Nyx::release(uint32_t iterations) {

@@ -1,13 +1,12 @@
 use super::Blob;
 
-use std::convert::TryFrom;
 use std::mem::MaybeUninit;
 use std::slice::from_raw_parts_mut;
 
 use crate::ffi;
 use crate::{Error, Result};
 
-impl<'conn> Blob<'conn> {
+impl Blob<'_> {
     /// Write `buf` to `self` starting at `write_start`, returning an error if
     /// `write_start + buf.len()` is past the end of the blob.
     ///
@@ -117,7 +116,7 @@ impl<'conn> Blob<'conn> {
 
         if read_len == 0 {
             // We could return `Ok(&mut [])`, but it seems confusing that the
-            // pointers don't match, so fabricate a empty slice of u8 with the
+            // pointers don't match, so fabricate an empty slice of u8 with the
             // same base pointer as `buf`.
             let empty = unsafe { from_raw_parts_mut(buf.as_mut_ptr().cast::<u8>(), 0) };
             return Ok(empty);
@@ -209,21 +208,21 @@ mod test {
         blob.seek(std::io::SeekFrom::Start(1)).unwrap();
 
         let one2ten: [u8; 10] = [1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        blob.write_at(&one2ten, 0).unwrap();
+        blob.write_at(&one2ten, 0)?;
 
         let mut s = [0u8; 10];
-        blob.read_at_exact(&mut s, 0).unwrap();
+        blob.read_at_exact(&mut s, 0)?;
         assert_eq!(&s, &one2ten, "write should go through");
         blob.read_at_exact(&mut s, 1).unwrap_err();
 
-        blob.read_at_exact(&mut s, 0).unwrap();
+        blob.read_at_exact(&mut s, 0)?;
         assert_eq!(&s, &one2ten, "should be unchanged");
 
         let mut fives = [0u8; 5];
-        blob.read_at_exact(&mut fives, 0).unwrap();
+        blob.read_at_exact(&mut fives, 0)?;
         assert_eq!(&fives, &[1u8, 2, 3, 4, 5]);
 
-        blob.read_at_exact(&mut fives, 5).unwrap();
+        blob.read_at_exact(&mut fives, 5)?;
         assert_eq!(&fives, &[6u8, 7, 8, 9, 10]);
         blob.read_at_exact(&mut fives, 7).unwrap_err();
         blob.read_at_exact(&mut fives, 12).unwrap_err();
@@ -234,12 +233,12 @@ mod test {
             .unwrap_err();
 
         // zero length writes are fine if in bounds
-        blob.read_at_exact(&mut [], 10).unwrap();
-        blob.read_at_exact(&mut [], 0).unwrap();
-        blob.read_at_exact(&mut [], 5).unwrap();
+        blob.read_at_exact(&mut [], 10)?;
+        blob.read_at_exact(&mut [], 0)?;
+        blob.read_at_exact(&mut [], 5)?;
 
-        blob.write_all_at(&[16, 17, 18, 19, 20], 5).unwrap();
-        blob.read_at_exact(&mut s, 0).unwrap();
+        blob.write_all_at(&[16, 17, 18, 19, 20], 5)?;
+        blob.read_at_exact(&mut s, 0)?;
         assert_eq!(&s, &[1u8, 2, 3, 4, 5, 16, 17, 18, 19, 20]);
 
         blob.write_at(&[100, 99, 98, 97, 96], 6).unwrap_err();
@@ -248,19 +247,19 @@ mod test {
         blob.write_at(&[100, 99, 98, 97, 96], i32::MAX as usize + 1)
             .unwrap_err();
 
-        blob.read_at_exact(&mut s, 0).unwrap();
+        blob.read_at_exact(&mut s, 0)?;
         assert_eq!(&s, &[1u8, 2, 3, 4, 5, 16, 17, 18, 19, 20]);
 
         let mut s2: [std::mem::MaybeUninit<u8>; 10] = [std::mem::MaybeUninit::uninit(); 10];
         {
-            let read = blob.raw_read_at_exact(&mut s2, 0).unwrap();
+            let read = blob.raw_read_at_exact(&mut s2, 0)?;
             assert_eq!(read, &s);
             assert!(std::ptr::eq(read.as_ptr(), s2.as_ptr().cast()));
         }
 
         let mut empty = [];
         assert!(std::ptr::eq(
-            blob.raw_read_at_exact(&mut empty, 0).unwrap().as_ptr(),
+            blob.raw_read_at_exact(&mut empty, 0)?.as_ptr(),
             empty.as_ptr().cast(),
         ));
         blob.raw_read_at_exact(&mut s2, 5).unwrap_err();

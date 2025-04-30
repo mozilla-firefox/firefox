@@ -46,6 +46,12 @@ struct BootstrapConfig {
    * When the pointer above is non-null, may indicate the directory where
    * application files are, relative to the XRE. */
   const char* appDataPath;
+#if defined(MOZ_WIDGET_ANDROID)
+  /* Crash notification socket used by Breakpad. */
+  int crashChildNotificationSocket;
+  /* Crash socket used to communicate with the crash helper. */
+  int crashHelperSocket;
+#endif
 };
 
 /**

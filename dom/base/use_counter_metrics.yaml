@@ -107,8 +107,8 @@ use.counter:
     send_in_pings:
       - use-counters
 
-# Total of 2389 use counter metrics (excludes denominators).
-# Total of 354 'page' use counters.
+# Total of 2397 use counter metrics (excludes denominators).
+# Total of 358 'page' use counters.
 use.counter.page:
   svgsvgelement_getelementbyid:
     type: counter
@@ -794,6 +794,23 @@ use.counter.page:
     type: counter
     description: >
       Whether a page call to Date.parse used implementation defined behaviour.
+      Compare against `use.counter.top_level_content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+  js_regexp_symbol_protocol_on_primitive:
+    type: counter
+    description: >
+      Whether a page passed a primitive with a custom implementation of the regexp protocol symbols to one of the String methods that accept a regexp.
       Compare against `use.counter.top_level_content_documents_destroyed`
       to calculate the rate.
     bugs:
@@ -5295,6 +5312,40 @@ use.counter.page:
     send_in_pings:
       - use-counters
 
+  animation_commitstyles:
+    type: counter
+    description: >
+      Whether a page called called Animation.commitStyles.
+      Compare against `use.counter.top_level_content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+  commit_styles_non_filling_final_value:
+    type: counter
+    description: >
+      Whether a page calls commitStyles and its result differs depending on whether the endpoint-inclusive pref is enabled or not.
+      Compare against `use.counter.top_level_content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
   fe_blend:
     type: counter
     description: >
@@ -6128,7 +6179,24 @@ use.counter.page:
     send_in_pings:
       - use-counters
 
-# Total of 354 'document' use counters.
+  math_mlused:
+    type: counter
+    description: >
+      Whether a page has used MathML.
+      Compare against `use.counter.top_level_content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+# Total of 358 'document' use counters.
 use.counter.doc:
   svgsvgelement_getelementbyid:
     type: counter
@@ -6814,6 +6882,23 @@ use.counter.doc:
     type: counter
     description: >
       Whether a document call to Date.parse used implementation defined behaviour.
+      Compare against `use.counter.content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+  js_regexp_symbol_protocol_on_primitive:
+    type: counter
+    description: >
+      Whether a document passed a primitive with a custom implementation of the regexp protocol symbols to one of the String methods that accept a regexp.
       Compare against `use.counter.content_documents_destroyed`
       to calculate the rate.
     bugs:
@@ -11315,6 +11400,40 @@ use.counter.doc:
     send_in_pings:
       - use-counters
 
+  animation_commitstyles:
+    type: counter
+    description: >
+      Whether a document called called Animation.commitStyles.
+      Compare against `use.counter.content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+  commit_styles_non_filling_final_value:
+    type: counter
+    description: >
+      Whether a document calls commitStyles and its result differs depending on whether the endpoint-inclusive pref is enabled or not.
+      Compare against `use.counter.content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
   fe_blend:
     type: counter
     description: >
@@ -12135,6 +12254,23 @@ use.counter.doc:
     type: counter
     description: >
       Whether a document has not succeeded in creating a text fragment.
+      Compare against `use.counter.content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+  math_mlused:
+    type: counter
+    description: >
+      Whether a document has used MathML.
       Compare against `use.counter.content_documents_destroyed`
       to calculate the rate.
     bugs:

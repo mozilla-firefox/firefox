@@ -9,6 +9,7 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   LinkPreviewModel:
     "moz-src:///browser/components/genai/LinkPreviewModel.sys.mjs",
+  Region: "resource://gre/modules/Region.sys.mjs",
 });
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
@@ -27,6 +28,11 @@ XPCOMUtils.defineLazyPreferenceGetter(
   "prefetchOnEnable",
   "browser.ml.linkPreview.prefetchOnEnable",
   true
+);
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "noKeyPointsRegions",
+  "browser.ml.linkPreview.noKeyPointsRegions"
 );
 
 export const LinkPreview = {
@@ -50,7 +56,7 @@ export const LinkPreview = {
     }
 
     // Prefetch the model when enabling by simulating a request.
-    if (enabled && lazy.prefetchOnEnable) {
+    if (enabled && lazy.prefetchOnEnable && this._isRegionSupported()) {
       this.generateKeyPoints();
     }
 
@@ -177,6 +183,20 @@ export const LinkPreview = {
   },
 
   /**
+   * Checks if the user's region is supported for key points generation.
+   *
+   * @returns {boolean} True if the region is supported, false otherwise.
+   */
+  _isRegionSupported() {
+    const disallowedRegions = lazy.noKeyPointsRegions
+      .split(",")
+      .map(region => region.trim().toUpperCase());
+
+    const userRegion = lazy.Region.home?.toUpperCase();
+    return !disallowedRegions.includes(userRegion);
+  },
+
+  /**
    * Creates an Open Graph (OG) card using meta information from the page.
    *
    * @param {Document} doc - The document object where the OG card will be
@@ -208,10 +228,13 @@ export const LinkPreview = {
     // Generate key points if we have content, language and configured for any
     // language or restricted.
     if (
+      this._isRegionSupported() &&
       pageData.article.textContent &&
-      pageData.article.language &&
+      pageData.article.detectedLanguage &&
       (!lazy.allowedLanguages ||
-        lazy.allowedLanguages.split(",").includes(pageData.article.language))
+        lazy.allowedLanguages
+          .split(",")
+          .includes(pageData.article.detectedLanguage))
     ) {
       this.generateKeyPoints(ogCard);
     }

@@ -157,6 +157,10 @@ is a function proxy or not debuggee code, this is `undefined`.
 ### `isError`
 `true` if the referent is any potentially wrapped Error; `false` otherwise.
 
+### `isMutedError`
+`true` if the referent is any potentially wrapped Error associated with a muted
+error report; `false` otherwise.
+
 ### `errorMessageName`
 If the referent is an error created with an engine internal message template
 this is a string which is the name of the template; `undefined` otherwise.

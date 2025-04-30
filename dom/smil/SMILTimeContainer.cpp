@@ -155,7 +155,9 @@ void SMILTimeContainer::SyncPauseTime() {
 }
 
 void SMILTimeContainer::Sample() {
-  if (!NeedsSample()) return;
+  if (!NeedsSample()) {
+    return;
+  }
 
   UpdateCurrentTime();
   DoSample();

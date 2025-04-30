@@ -2915,7 +2915,7 @@ bool JSStructuredCloneReader::readSharedArrayBuffer(StructuredDataType type,
   bool isGrowable = type == SCTAG_GROWABLE_SHARED_ARRAY_BUFFER_OBJECT;
 
   SharedArrayRawBuffer* rawbuf = reinterpret_cast<SharedArrayRawBuffer*>(p);
-  MOZ_RELEASE_ASSERT(isGrowable == rawbuf->isGrowable());
+  MOZ_RELEASE_ASSERT(rawbuf->isWasm() || isGrowable == rawbuf->isGrowableJS());
 
   // There's no guarantee that the receiving agent has enabled shared memory
   // even if the transmitting agent has done so.  Ideally we'd check at the

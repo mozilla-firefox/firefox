@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<script src="util.js"></script>
+
+<!-- This test is ported from layout/generic/crashtests/1682686-1.html -->
+
+<style>
+div {
+  display: grid;
+}
+</style>
+
+<div style="padding: 10px; grid-template-rows: min-content auto;">
+  <div>
+    <div>
+      <div>
+        <div>
+          <div>
+            <div>
+              <div>
+                <div>
+                  <div>
+                    <div>
+                      <div>
+                        <div>
+                          <div>
+                            <div>
+                              <div>
+                                <div>
+                                  <div>
+                                    <div>
+                                      <div>
+                                        <div>
+                                          <div>
+                                            <div>
+                                              <div>
+                                                <div>
+                                                  <div>
+                                                    <div>
+                                                      <span>TEST</span>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+onload = function() {
+  flush_layout();
+  perf_start();
+  document.body.style.width = '95%'
+  flush_layout();
+  perf_finish();
+};
+</script>

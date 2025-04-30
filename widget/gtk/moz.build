@@ -178,7 +178,8 @@ CXXFLAGS += CONFIG["MOZ_LIBDRM_CFLAGS"]
 if not CONFIG["MOZ_SYSTEM_LIBDRM"]:
     LOCAL_INCLUDES += [
         "/third_party/drm/drm/",
-        "/third_party/drm/drm/include/",
+        "/third_party/drm/drm/include",
+        "/third_party/drm/drm/include/libdrm",
     ]
 
 DEFINES["CAIRO_GFX"] = True

@@ -96,6 +96,7 @@ class ConnectionEntry {
   void CloseAllDnsAndConnectSockets();
 
   HttpRetParams GetConnectionData();
+  Http3ConnectionStatsParams GetHttp3ConnectionStatsData();
   void LogConnections();
 
   const RefPtr<nsHttpConnectionInfo> mConnInfo;

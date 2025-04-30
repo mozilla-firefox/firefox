@@ -15,6 +15,7 @@ FINAL_TARGET_FILES.actors += [
 ]
 
 EXTRA_JS_MODULES.profiles += [
+    "ProfilesDatastoreService.sys.mjs",
     "SelectableProfile.sys.mjs",
     "SelectableProfileService.sys.mjs",
 ]

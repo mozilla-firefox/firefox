@@ -52,6 +52,7 @@ let expectedCommonApis = [
   "test.notifyFail",
   "test.notifyPass",
   "test.onMessage",
+  "test.runTests",
   "test.sendMessage",
   "test.succeed",
   "test.withHandlingUserInput",

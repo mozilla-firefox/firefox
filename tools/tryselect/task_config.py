@@ -18,7 +18,6 @@ from textwrap import dedent
 
 import mozpack.path as mozpath
 import requests
-import six
 from mozbuild.base import BuildEnvironmentNotFoundException, MozbuildObject
 from taskgraph.util import taskcluster
 
@@ -224,9 +223,7 @@ class Path(TryConfig):
         ]
         return {
             "env": {
-                "MOZHARNESS_TEST_PATHS": six.ensure_text(
-                    json.dumps(resolve_tests_by_suite(paths))
-                ),
+                "MOZHARNESS_TEST_PATHS": json.dumps(resolve_tests_by_suite(paths)),
             }
         }
 

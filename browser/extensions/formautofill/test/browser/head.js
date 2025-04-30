@@ -86,6 +86,8 @@ const FORM_IFRAME_SANDBOXED_URL =
   "https://example.org" + HTTP_TEST_PATH + "autocomplete_iframe_sandboxed.html";
 const FORMS_WITH_DYNAMIC_FORM_CHANGE =
   "https://example.org" + HTTP_TEST_PATH + "dynamic_forms.html";
+const FORMS_REPLACING_ALL_FIELDS_ON_INPUT =
+  "https://example.org" + HTTP_TEST_PATH + "dynamic_forms.html";
 const FORM_WITH_USER_INITIATED_FORM_CHANGE =
   "https://example.org" +
   HTTP_TEST_PATH +
@@ -270,7 +272,7 @@ const TEST_ADDRESS_IE_1 = {
   "street-address": "123 Kilkenny St.",
   "address-level3": "Some Townland",
   "address-level2": "Dublin",
-  "address-level1": "Co. Dublin",
+  "address-level1": "D",
   "postal-code": "A65 F4E2",
   country: "IE",
   tel: "+13534564947391",

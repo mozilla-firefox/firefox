@@ -3,13 +3,11 @@ Sends updates to a Discord bot.
 
 Usage:
 >>> from tqdm.contrib.discord import tqdm, trange
->>> for i in tqdm(iterable, token='{token}', channel_id='{channel_id}'):
+>>> for i in trange(10, token='{token}', channel_id='{channel_id}'):
 ...     ...
 
-![screenshot](https://img.tqdm.ml/screenshot-discord.png)
+![screenshot](https://tqdm.github.io/img/screenshot-discord.png)
 """
-from __future__ import absolute_import
-
 import logging
 from os import getenv
 
@@ -19,7 +17,6 @@ except ImportError:
     raise ImportError("Please `pip install disco-py`")
 
 from ..auto import tqdm as tqdm_auto
-from ..utils import _range
 from .utils_worker import MonoWorker
 
 __author__ = {"github.com/": ["casperdcl"]}
@@ -39,6 +36,7 @@ class DiscordIO(MonoWorker):
             self.message = client.api.channels_messages_create(channel_id, self.text)
         except Exception as e:
             tqdm_auto.write(str(e))
+            self.message = None
 
     def write(self, s):
         """Replaces internal `message`'s text with `s`."""
@@ -47,9 +45,12 @@ class DiscordIO(MonoWorker):
         s = s.replace('\r', '').strip()
         if s == self.text:
             return  # skip duplicate message
+        message = self.message
+        if message is None:
+            return
         self.text = s
         try:
-            future = self.submit(self.message.edit, '`' + s + '`')
+            future = self.submit(message.edit, '`' + s + '`')
         except Exception as e:
             tqdm_auto.write(str(e))
         else:
@@ -109,11 +110,8 @@ class tqdm_discord(tqdm_auto):
 
 
 def tdrange(*args, **kwargs):
-    """
-    A shortcut for `tqdm.contrib.discord.tqdm(xrange(*args), **kwargs)`.
-    On Python3+, `range` is used instead of `xrange`.
-    """
-    return tqdm_discord(_range(*args), **kwargs)
+    """Shortcut for `tqdm.contrib.discord.tqdm(range(*args), **kwargs)`."""
+    return tqdm_discord(range(*args), **kwargs)
 
 
 # Aliases

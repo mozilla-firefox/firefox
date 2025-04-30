@@ -1463,6 +1463,11 @@ nsIOService::SetConnectivity(bool aConnectivity) {
   return SetConnectivityInternal(aConnectivity);
 }
 
+NS_IMETHODIMP
+nsIOService::SetConnectivityForTesting(bool aConnectivity) {
+  return SetConnectivityInternal(aConnectivity);
+}
+
 nsresult nsIOService::SetConnectivityInternal(bool aConnectivity) {
   LOG(("nsIOService::SetConnectivityInternal aConnectivity=%d\n",
        aConnectivity));

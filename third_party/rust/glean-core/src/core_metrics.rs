@@ -42,6 +42,58 @@ pub struct ClientInfoMetrics {
     pub locale: Option<String>,
 }
 
+/// Optional product attribution metrics carried in `client_info.attribution`.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct AttributionMetrics {
+    /// The attribution source (e.g. "google-play").
+    pub source: Option<String>,
+    /// The attribution medium (e.g. "organic" for a search engine).
+    pub medium: Option<String>,
+    /// The attribution campaign (e.g. "mozilla-org").
+    pub campaign: Option<String>,
+    /// The attribution term (e.g. "browser with developer tools for android").
+    pub term: Option<String>,
+    /// The attribution content (e.g. "firefoxview").
+    pub content: Option<String>,
+}
+
+impl AttributionMetrics {
+    /// Update self with any non-`None` fields from `other`.
+    pub fn update(&mut self, other: AttributionMetrics) {
+        if let Some(source) = other.source {
+            self.source = Some(source);
+        }
+        if let Some(medium) = other.medium {
+            self.medium = Some(medium);
+        }
+        if let Some(campaign) = other.campaign {
+            self.campaign = Some(campaign);
+        }
+        if let Some(term) = other.term {
+            self.term = Some(term);
+        }
+        if let Some(content) = other.content {
+            self.content = Some(content);
+        }
+    }
+}
+
+/// Optional product distribution metrics carried in `client_info.distribution`.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct DistributionMetrics {
+    /// The distribution name (e.g. "MozillaOnline").
+    pub name: Option<String>,
+}
+
+impl DistributionMetrics {
+    /// Update self with any non-`None` fields from `other`.
+    pub fn update(&mut self, other: DistributionMetrics) {
+        if let Some(name) = other.name {
+            self.name = Some(name);
+        }
+    }
+}
+
 /// Metrics included in every ping as `client_info`.
 impl ClientInfoMetrics {
     /// Creates the client info with dummy values for all.
@@ -203,4 +255,63 @@ pub mod internal_metrics {
             TimeUnit::Second,
         )
     });
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn update_attribution() {
+        let mut attr: AttributionMetrics = Default::default();
+        let empty: AttributionMetrics = Default::default();
+
+        // Ensure the identity operation works.
+        attr.update(empty.clone());
+        assert_eq!(None, attr.source);
+
+        // Ensure simple updates work.
+        attr.update(AttributionMetrics {
+            source: Some("a source".into()),
+            ..Default::default()
+        });
+        assert_eq!(Some("a source".into()), attr.source);
+
+        // Ensure None doesn't overwrite.
+        attr.update(empty);
+        assert_eq!(Some("a source".into()), attr.source);
+
+        // Ensure updates of Some work.
+        attr.update(AttributionMetrics {
+            source: Some("another source".into()),
+            ..Default::default()
+        });
+        assert_eq!(Some("another source".into()), attr.source);
+    }
+
+    #[test]
+    fn update_distribution() {
+        let mut dist: DistributionMetrics = Default::default();
+        let empty: DistributionMetrics = Default::default();
+
+        // Ensure the identity operation works.
+        dist.update(empty.clone());
+        assert_eq!(None, dist.name);
+
+        // Ensure simple updates work.
+        dist.update(DistributionMetrics {
+            name: Some("a name".into()),
+        });
+        assert_eq!(Some("a name".into()), dist.name);
+
+        // Ensure None doesn't overwrite.
+        dist.update(empty);
+        assert_eq!(Some("a name".into()), dist.name);
+
+        // Ensure updates of Some work.
+        dist.update(DistributionMetrics {
+            name: Some("another name".into()),
+        });
+        assert_eq!(Some("another name".into()), dist.name);
+    }
 }

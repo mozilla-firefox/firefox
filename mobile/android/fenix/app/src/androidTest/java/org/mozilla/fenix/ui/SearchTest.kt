@@ -19,6 +19,7 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.R
+import org.mozilla.fenix.customannotations.SkipLeaks
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.helpers.AppAndSystemHelper
@@ -42,6 +43,7 @@ import org.mozilla.fenix.helpers.TestHelper.exitMenu
 import org.mozilla.fenix.helpers.TestHelper.verifySnackBarText
 import org.mozilla.fenix.helpers.TestHelper.waitForAppWindowToBeUpdated
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.clickContextMenuItem
 import org.mozilla.fenix.ui.robots.clickPageObject
 import org.mozilla.fenix.ui.robots.homeScreen
@@ -81,6 +83,9 @@ class SearchTest : TestSetup() {
             shouldUseBottomToolbar = true,
         ),
     ) { it.activity }
+
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
 
     @Before
     override fun setUp() {
@@ -593,6 +598,7 @@ class SearchTest : TestSetup() {
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1232633
     // Default search code for Google-US
     @Test
+    @SkipLeaks
     fun defaultSearchCodeGoogleUS() {
         homeScreen {
         }.openSearch {
@@ -643,6 +649,7 @@ class SearchTest : TestSetup() {
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1232638
     // Default search code for DuckDuckGo-US
     @Test
+    @SkipLeaks
     fun defaultSearchCodeDuckDuckGoUS() {
         homeScreen {
         }.openThreeDotMenu {
@@ -919,7 +926,7 @@ class SearchTest : TestSetup() {
     // Expected for app language set to Arabic
     @Test
     fun verifySearchEnginesFunctionalityUsingRTLLocaleTest() {
-        val arabicLocale = Locale("ar", "AR")
+        val arabicLocale = Locale.Builder().setLanguage("ar").setRegion("AR").build()
 
         AppAndSystemHelper.runWithAppLocaleChanged(arabicLocale, activityTestRule.activityRule) {
             homeScreen {

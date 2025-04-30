@@ -50,6 +50,9 @@ add_task(async function test_user_engine() {
 
   await assertGleanDefaultEngine({
     normal: {
+      providerId: "other",
+      partnerCode: "",
+      overriddenByThirdParty: false,
       engineId: "other-user",
       displayName: "user",
       loadPath: "[user]",

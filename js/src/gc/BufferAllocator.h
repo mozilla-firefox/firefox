@@ -12,6 +12,7 @@
 #include "mozilla/Array.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/BitSet.h"
+#include "mozilla/HashTable.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/TimeStamp.h"
 
@@ -45,7 +46,6 @@ enum class AllocKind : uint8_t;
 struct BufferChunk;
 struct Cell;
 class GCRuntime;
-struct MediumBuffer;
 struct LargeBuffer;
 
 // BufferAllocator allocates dynamically sized blocks of memory which can be
@@ -181,8 +181,15 @@ struct LargeBuffer;
 //
 // These are implemented using the OS page allocator. Allocations of this size
 // are relatively rare and not much attempt is made to optimize them. They are
-// stored with a chunk header at the front to allow them to be distinguished
-// from the other allocation kinds easily.
+// chunk aligned which allows them to be distinguished from the other allocation
+// kinds by checking the low bits the pointer.
+//
+// Naming conventions
+// ------------------
+//
+// The following conventions are used in the code:
+//  - alloc:  client pointer to allocated memory
+//  - buffer: pointer to per-allocation metadata
 //
 
 class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
@@ -198,6 +205,7 @@ class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
    public:
     explicit AutoLock(GCRuntime* gc);
     explicit AutoLock(BufferAllocator* allocator);
+    friend class UnlockGuard<AutoLock>;
   };
 
   // A lock guard that is locked only when needed.
@@ -250,6 +258,9 @@ class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
 
   using LargeAllocList = SlimLinkedList<LargeBuffer>;
 
+  using LargeAllocMap =
+      mozilla::HashMap<void*, LargeBuffer*, PointerHasher<void*>>;
+
   enum class State : uint8_t { NotCollecting, Marking, Sweeping };
 
   enum class OwnerKind : uint8_t { Tenured = 0, Nursery, None };
@@ -287,11 +298,15 @@ class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
   // List of large tenured-owned buffers.
   MainThreadData<LargeAllocList> largeTenuredAllocs;
 
+  // Map from allocation pointer to buffer metadata for large buffers.
+  // Access requires holding the mutex during sweeping.
+  MainThreadOrGCTaskData<LargeAllocMap> largeAllocMap;
+
   // Large buffers waiting to be swept.
+  MainThreadOrGCTaskData<LargeAllocList> largeNurseryAllocsToSweep;
   MainThreadOrGCTaskData<LargeAllocList> largeTenuredAllocsToSweep;
 
   // Large buffers that have been swept.
-  MainThreadData<LargeAllocList> sweptLargeNurseryAllocs;
   MutexData<LargeAllocList> sweptLargeTenuredAllocs;
 
   // Flag to indicate that swept chunks are available to be merged in the
@@ -302,6 +317,11 @@ class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
   MainThreadData<State> minorState;
   MainThreadData<State> majorState;
 
+  // Flags to tell the main thread that sweeping has finished and the state
+  // should be updated.
+  MutexData<bool> minorSweepingFinished;
+  MutexData<bool> majorSweepingFinished;
+
   // A major GC was started while a minor GC was still sweeping. Chunks by the
   // minor GC will be moved directly to the list of chunks to sweep for the
   // major GC. This happens for the minor GC at the start of every major GC.
@@ -311,9 +331,9 @@ class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
   // cleanup will be deferred to the end of the minor sweeping.
   MainThreadData<bool> majorFinishedWhileMinorSweeping;
 
-  // Flag to tell the main thread that minor sweeping has finished and
-  // minorState should be updated.
-  MutexData<bool> minorSweepingFinished;
+#ifdef DEBUG
+  MainThreadData<bool> movingGCInProgress;
+#endif
 
  public:
   explicit BufferAllocator(JS::Zone* zone);
@@ -326,36 +346,31 @@ class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
   static inline size_t GetGoodPower2ElementCount(size_t requiredElements,
                                                  size_t elementSize);
   static bool IsBufferAlloc(void* alloc);
-  static size_t GetAllocSize(void* alloc);
-  static JS::Zone* GetAllocZone(void* alloc);
-  static bool IsNurseryOwned(void* alloc);
-  static bool IsMarkedBlack(void* alloc);
-  static void TraceEdge(JSTracer* trc, Cell* owner, void** bufferp,
-                        const char* name);
 
   void* alloc(size_t bytes, bool nurseryOwned);
   void* allocInGC(size_t bytes, bool nurseryOwned);
-  void* realloc(void* ptr, size_t bytes, bool nurseryOwned);
-  void free(void* ptr);
+  void* realloc(void* alloc, size_t bytes, bool nurseryOwned);
+  void free(void* alloc);
+  size_t getAllocSize(void* alloc);
+  bool isNurseryOwned(void* alloc);
 
   void startMinorCollection(MaybeLock& lock);
-  bool startMinorSweeping(LargeAllocList& largeAllocsToFree);
+  bool startMinorSweeping();
   void sweepForMinorCollection();
-
-  static void FreeLargeAllocs(LargeAllocList& largeAllocsToFree);
 
   void startMajorCollection(MaybeLock& lock);
   void startMajorSweeping(MaybeLock& lock);
   void sweepForMajorCollection(bool shouldDecommit);
   void finishMajorCollection(const AutoLock& lock);
+  void prepareForMovingGC();
+  void fixupAfterMovingGC();
   void clearMarkStateAfterBarrierVerification();
 
-  void maybeMergeSweptData();
-  void maybeMergeSweptData(MaybeLock& lock);
-  void mergeSweptData();
-  void mergeSweptData(const AutoLock& lock);
-
   bool isEmpty() const;
+
+  void traceEdge(JSTracer* trc, Cell* owner, void** bufferp, const char* name);
+  bool markTenuredAlloc(void* alloc);
+  bool isMarkedBlack(void* alloc);
 
   // For debugging, used to implement GetMarkInfo. Returns false for allocations
   // being swept on another thread.
@@ -383,20 +398,30 @@ class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
 #endif
 
  private:
-  // GC-internal APIs:
-  static bool MarkTenuredAlloc(void* alloc);
-  friend class js::GCMarker;
-
   void markNurseryOwnedAlloc(void* alloc, bool ownerWasTenured);
   friend class js::Nursery;
+
+  void maybeMergeSweptData();
+  void maybeMergeSweptData(MaybeLock& lock);
+  void mergeSweptData();
+  void mergeSweptData(const AutoLock& lock);
+  void abortMajorSweeping(const AutoLock& lock);
+  void clearAllocatedDuringCollectionState(const AutoLock& lock);
 
   // Small allocation methods:
 
   static inline bool IsSmallAllocSize(size_t bytes);
   static bool IsSmallAlloc(void* alloc);
 
+  static SmallBuffer* GetSmallBuffer(void* alloc);
+  friend struct LargeBuffer;
+
   void* allocSmall(size_t bytes, bool nurseryOwned);
   void* allocSmallInGC(size_t bytes, bool nurseryOwned);
+  void traceSmallAlloc(JSTracer* trc, Cell* owner, void** allocp,
+                       const char* name);
+  void markSmallNurseryOwnedBuffer(SmallBuffer* buffer, bool ownerWasTenured);
+  bool markSmallTenuredAlloc(void* alloc);
 
   static AllocKind AllocKindForSmallAlloc(size_t bytes);
 
@@ -432,6 +457,11 @@ class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
                              uintptr_t newStart);
   FreeLists* getChunkFreeLists(BufferChunk* chunk);
   bool isSweepingChunk(BufferChunk* chunk);
+  void traceMediumAlloc(JSTracer* trc, Cell* owner, void** allocp,
+                        const char* name);
+  bool isMediumBufferNurseryOwned(void* alloc) const;
+  void markMediumNurseryOwnedBuffer(void* alloc, bool ownerWasTenured);
+  bool markMediumTenuredAlloc(void* alloc);
 
   // Get the size class for an allocation. This rounds up to a class that is
   // large enough to hold the required size.
@@ -442,20 +472,28 @@ class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
   static size_t SizeClassForFreeRegion(size_t bytes);
 
   static size_t SizeClassBytes(size_t sizeClass);
-  friend struct MediumBuffer;
+  friend struct BufferChunk;
 
   // Large allocation methods:
 
   static inline bool IsLargeAllocSize(size_t bytes);
   static bool IsLargeAlloc(void* alloc);
-  static bool IsLargeAllocMarked(void* alloc);
-  static bool MarkLargeAlloc(void* alloc);
 
   void* allocLarge(size_t bytes, bool nurseryOwned, bool inGC);
-  bool sweepLargeTenured(LargeBuffer* header);
+  bool sweepLargeTenured(LargeBuffer* buffer);
   void freeLarge(void* alloc);
-  bool shrinkLarge(void* alloc, size_t newBytes);
-  void unmapLarge(LargeBuffer* header, bool isSweeping);
+  bool shrinkLarge(LargeBuffer* buffer, size_t newBytes);
+  void unmapLarge(LargeBuffer* buffer, bool isSweeping, MaybeLock& lock);
+  void traceLargeAlloc(JSTracer* trc, Cell* owner, void** allocp,
+                       const char* name);
+  void markLargeNurseryOwnedBuffer(LargeBuffer* buffer, bool ownerWasTenured);
+  bool markLargeTenuredBuffer(LargeBuffer* buffer);
+  bool isLargeAllocMarked(void* alloc);
+
+  // Lookup a large buffer by pointer in the map.
+  LargeBuffer* lookupLargeBuffer(void* alloc);
+  LargeBuffer* lookupLargeBuffer(void* alloc, MaybeLock& lock);
+  bool needLockToAccessBufferMap() const;
 
   void updateHeapSize(size_t bytes, bool checkThresholds,
                       bool updateRetainedSize);
@@ -477,49 +515,9 @@ class BufferAllocator : public SlimLinkedListElement<BufferAllocator> {
 
 #ifdef DEBUG
 // Magic check values used debug builds.
-static constexpr uint16_t MediumBufferCheckValue = 0xBFA1;
 static constexpr uint32_t LargeBufferCheckValue = 0xBFA110C2;
 static constexpr uint32_t FreeRegionCheckValue = 0xBFA110C3;
 #endif
-
-struct alignas(CellAlignBytes) MediumBuffer {
-  uint8_t sizeClass;
-  bool isNurseryOwned = false;
-
-#ifdef DEBUG
-  uint16_t checkValue = MediumBufferCheckValue;
-#endif
-
-  MediumBuffer(uint8_t sizeClass, bool nurseryOwned);
-  static MediumBuffer* from(BufferChunk* chunk, uintptr_t offset);
-  void check() const;
-  size_t bytesIncludingHeader() const;
-  void* data();
-};
-
-struct alignas(CellAlignBytes) LargeBuffer
-    : protected ChunkBase,
-      public SlimLinkedListElement<LargeBuffer> {
-  JS::Zone* const zone;
-  size_t bytesIncludingHeader;
-  mozilla::Atomic<bool, mozilla::Relaxed> marked;
-  bool isNurseryOwned;
-  bool allocatedDuringCollection = false;
-
-#ifdef DEBUG
-  uint32_t checkValue = LargeBufferCheckValue;
-#endif
-
-  inline LargeBuffer(JS::Zone* zone, size_t bytes, bool nurseryOwned);
-
-  inline void check() const;
-
-  inline bool markAtomic();
-  inline void* data();
-  bool isPointerWithinAllocation(void* ptr) const;
-};
-
-static constexpr size_t LargeBufferHeaderSize = sizeof(LargeBuffer);
 
 }  // namespace gc
 }  // namespace js

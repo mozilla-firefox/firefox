@@ -148,7 +148,6 @@ class SimpleperfProfiler(Layer):
 
             from mozboot import android
 
-            os_arch = platform.machine()
             os_name = None
             if platform.system() == "Windows":
                 os_name = "windows"
@@ -161,17 +160,9 @@ class SimpleperfProfiler(Layer):
                     "Unknown system in order to install Android NDK"
                 )
 
-            android.ensure_android(
-                os_name,
-                os_arch,
-                ndk_only=True,
-                artifact_mode=False,
-            )
+            android.ensure_android_ndk(os_name)
 
-            mozbuild_path, sdk_path, ndk_path, avd_home_path = android.get_paths(
-                os_name
-            )
-            self.set_arg("path", str(Path(ndk_path, "simpleperf")))
+            self.set_arg("path", str(Path(android.NDK_PATH, "simpleperf")))
 
         # Make sure the arm64 binary exists in the NDK path.
         binary_path = Path(

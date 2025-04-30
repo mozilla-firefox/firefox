@@ -129,15 +129,17 @@ void FreeBuffer(JS::Zone* zone, void* alloc);
 // cell. Does not work for malloced memory.
 bool IsBufferAlloc(void* alloc);
 
-bool IsNurseryOwned(void* alloc);
+bool IsNurseryOwned(JS::Zone* zone, void* alloc);
 
-size_t GetAllocSize(void* alloc);
-JS::Zone* GetAllocZone(void* alloc);
+size_t GetAllocSize(JS::Zone* zone, void* alloc);
 
 // Buffer allocator GC-internal API.
 
 void* AllocBufferInGC(JS::Zone* zone, size_t bytes, bool nurseryOwned);
-bool IsBufferAllocMarkedBlack(void* alloc);
+bool IsBufferAllocMarkedBlack(JS::Zone* zone, void* alloc);
+void TraceBufferEdgeInternal(JSTracer* trc, Cell* owner, void** bufferp,
+                             const char* name);
+void MarkTenuredBuffer(JS::Zone* zone, void* alloc);
 
 }  // namespace gc
 }  // namespace js

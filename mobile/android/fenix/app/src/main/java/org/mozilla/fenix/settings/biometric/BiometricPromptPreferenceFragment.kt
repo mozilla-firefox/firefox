@@ -10,6 +10,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.result.ActivityResultLauncher
+import androidx.biometric.BiometricManager
 import androidx.core.content.getSystemService
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
@@ -100,7 +101,7 @@ abstract class BiometricPromptPreferenceFragment : PreferenceFragmentCompat() {
      */
     fun verifyCredentialsOrShowSetupWarning(context: Context, prefList: List<Int>) {
         // Use the BiometricPrompt if available
-        if (BiometricPromptFeature.canUseFeature(context)) {
+        if (BiometricPromptFeature.canUseFeature(BiometricManager.from(context))) {
             togglePrefsEnabled(prefList, false)
             biometricPromptFeature.get()?.requestAuthentication(unlockMessage())
             return

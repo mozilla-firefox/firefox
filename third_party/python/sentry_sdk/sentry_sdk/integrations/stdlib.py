@@ -2,12 +2,13 @@ import os
 import subprocess
 import sys
 import platform
+from sentry_sdk.consts import OP
 
 from sentry_sdk.hub import Hub
 from sentry_sdk.integrations import Integration
 from sentry_sdk.scope import add_global_event_processor
-from sentry_sdk.tracing import EnvironHeaders
-from sentry_sdk.utils import capture_internal_exceptions, safe_repr
+from sentry_sdk.tracing_utils import EnvironHeaders
+from sentry_sdk.utils import capture_internal_exceptions, logger, safe_repr
 
 from sentry_sdk._types import MYPY
 
@@ -70,7 +71,7 @@ def _install_httplib():
         default_port = self.default_port
 
         real_url = url
-        if not real_url.startswith(("http://", "https://")):
+        if real_url is None or not real_url.startswith(("http://", "https://")):
             real_url = "%s://%s%s%s" % (
                 default_port == 443 and "https" or "http",
                 host,
@@ -78,14 +79,21 @@ def _install_httplib():
                 url,
             )
 
-        span = hub.start_span(op="http", description="%s %s" % (method, real_url))
+        span = hub.start_span(
+            op=OP.HTTP_CLIENT, description="%s %s" % (method, real_url)
+        )
 
         span.set_data("method", method)
         span.set_data("url", real_url)
 
         rv = real_putrequest(self, method, url, *args, **kwargs)
 
-        for key, value in hub.iter_trace_propagation_headers():
+        for key, value in hub.iter_trace_propagation_headers(span):
+            logger.debug(
+                "[Tracing] Adding `{key}` header {value} to outgoing request to {real_url}.".format(
+                    key=key, value=value, real_url=real_url
+                )
+            )
             self.putheader(key, value)
 
         self._sentrysdk_span = span
@@ -152,7 +160,7 @@ def _install_subprocess():
 
         hub = Hub.current
         if hub.get_integration(StdlibIntegration) is None:
-            return old_popen_init(self, *a, **kw)  # type: ignore
+            return old_popen_init(self, *a, **kw)
 
         # Convert from tuple to list to be able to set values.
         a = list(a)
@@ -178,16 +186,18 @@ def _install_subprocess():
 
         env = None
 
-        for k, v in hub.iter_trace_propagation_headers():
-            if env is None:
-                env = _init_argument(a, kw, "env", 10, lambda x: dict(x or os.environ))
-            env["SUBPROCESS_" + k.upper().replace("-", "_")] = v
+        with hub.start_span(op=OP.SUBPROCESS, description=description) as span:
+            for k, v in hub.iter_trace_propagation_headers(span):
+                if env is None:
+                    env = _init_argument(
+                        a, kw, "env", 10, lambda x: dict(x or os.environ)
+                    )
+                env["SUBPROCESS_" + k.upper().replace("-", "_")] = v
 
-        with hub.start_span(op="subprocess", description=description) as span:
             if cwd:
                 span.set_data("subprocess.cwd", cwd)
 
-            rv = old_popen_init(self, *a, **kw)  # type: ignore
+            rv = old_popen_init(self, *a, **kw)
 
             span.set_tag("subprocess.pid", self.pid)
             return rv
@@ -203,7 +213,7 @@ def _install_subprocess():
         if hub.get_integration(StdlibIntegration) is None:
             return old_popen_wait(self, *a, **kw)
 
-        with hub.start_span(op="subprocess.wait") as span:
+        with hub.start_span(op=OP.SUBPROCESS_WAIT) as span:
             span.set_tag("subprocess.pid", self.pid)
             return old_popen_wait(self, *a, **kw)
 
@@ -218,7 +228,7 @@ def _install_subprocess():
         if hub.get_integration(StdlibIntegration) is None:
             return old_popen_communicate(self, *a, **kw)
 
-        with hub.start_span(op="subprocess.communicate") as span:
+        with hub.start_span(op=OP.SUBPROCESS_COMMUNICATE) as span:
             span.set_tag("subprocess.pid", self.pid)
             return old_popen_communicate(self, *a, **kw)
 

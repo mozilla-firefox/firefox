@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_DEVICE_H
 #define SPA_DEVICE_H
@@ -33,6 +13,14 @@ extern "C" {
 #include <spa/utils/hook.h>
 #include <spa/utils/dict.h>
 #include <spa/pod/event.h>
+
+#ifndef SPA_API_DEVICE
+ #ifdef SPA_API_IMPL
+  #define SPA_API_DEVICE SPA_API_IMPL
+ #else
+  #define SPA_API_DEVICE static inline
+ #endif
+#endif
 
 /**
  * \defgroup spa_device Device
@@ -71,7 +59,7 @@ struct spa_device_info {
 	uint32_t n_params;			/**< number of elements in params */
 };
 
-#define SPA_DEVICE_INFO_INIT()	(struct spa_device_info){ SPA_VERSION_DEVICE_INFO, }
+#define SPA_DEVICE_INFO_INIT()	((struct spa_device_info){ SPA_VERSION_DEVICE_INFO, })
 
 /**
  * Information about a device object
@@ -92,7 +80,7 @@ struct spa_device_object_info {
 	const struct spa_dict *props;		/**< extra object properties */
 };
 
-#define SPA_DEVICE_OBJECT_INFO_INIT()	(struct spa_device_object_info){ SPA_VERSION_DEVICE_OBJECT_INFO, }
+#define SPA_DEVICE_OBJECT_INFO_INIT()	((struct spa_device_object_info){ SPA_VERSION_DEVICE_OBJECT_INFO, })
 
 /** the result of spa_device_enum_params() */
 #define SPA_RESULT_TYPE_DEVICE_PARAMS	1
@@ -240,20 +228,34 @@ struct spa_device_methods {
 			  const struct spa_pod *param);
 };
 
-#define spa_device_method(o,method,version,...)				\
-({									\
-	int _res = -ENOTSUP;						\
-	struct spa_device *_o = o;					\
-	spa_interface_call_res(&_o->iface,				\
-			struct spa_device_methods, _res,		\
-			method, version, ##__VA_ARGS__);		\
-	_res;								\
-})
+SPA_API_DEVICE int spa_device_add_listener(struct spa_device *object,
+			struct spa_hook *listener,
+			const struct spa_device_events *events,
+			void *data)
+{
+	return spa_api_method_r(int, -ENOTSUP, spa_device, &object->iface, add_listener, 0,
+			listener, events, data);
 
-#define spa_device_add_listener(d,...)	spa_device_method(d, add_listener, 0, __VA_ARGS__)
-#define spa_device_sync(d,...)		spa_device_method(d, sync, 0, __VA_ARGS__)
-#define spa_device_enum_params(d,...)	spa_device_method(d, enum_params, 0, __VA_ARGS__)
-#define spa_device_set_param(d,...)	spa_device_method(d, set_param, 0, __VA_ARGS__)
+}
+SPA_API_DEVICE int spa_device_sync(struct spa_device *object, int seq)
+{
+	return spa_api_method_r(int, -ENOTSUP, spa_device, &object->iface, sync, 0,
+			seq);
+}
+SPA_API_DEVICE int spa_device_enum_params(struct spa_device *object, int seq,
+			    uint32_t id, uint32_t index, uint32_t max,
+			    const struct spa_pod *filter)
+{
+	return spa_api_method_r(int, -ENOTSUP, spa_device, &object->iface, enum_params, 0,
+			seq, id, index, max, filter);
+}
+SPA_API_DEVICE int spa_device_set_param(struct spa_device *object,
+			  uint32_t id, uint32_t flags,
+			  const struct spa_pod *param)
+{
+	return spa_api_method_r(int, -ENOTSUP, spa_device, &object->iface, set_param, 0,
+			id, flags, param);
+}
 
 #define SPA_KEY_DEVICE_ENUM_API		"device.enum.api"	/**< the api used to discover this
 								  *  device */
@@ -291,11 +293,12 @@ struct spa_device_methods {
 								  *  "webcam", "microphone", "headset",
 								  *  "headphone", "hands-free", "car", "hifi",
 								  *  "computer", "portable" */
-#define SPA_KEY_DEVICE_PROFILE		"device.profile	"	/**< profile for the device */
+#define SPA_KEY_DEVICE_PROFILE		"device.profile"	/**< profile for the device */
 #define SPA_KEY_DEVICE_PROFILE_SET	"device.profile-set"	/**< profile set for the device */
 #define SPA_KEY_DEVICE_STRING		"device.string"		/**< device string in the underlying
 								  *  layer's format. E.g. "surround51:0" */
-
+#define SPA_KEY_DEVICE_DEVIDS		"device.devids"		/**< space separated list of device ids (dev_t) of the
+								  *  underlying device(s) if applicable */
 /**
  * \}
  */

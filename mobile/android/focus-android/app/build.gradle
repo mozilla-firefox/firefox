@@ -179,7 +179,11 @@ android {
         klarNightly.root = 'src/klarNightly'
     }
 
+    // https://issuetracker.google.com/issues/379732901
     packaging {
+        resources {
+            pickFirsts += ['META-INF/versions/9/OSGI-INF/MANIFEST.MF']
+        }
         jniLibs {
             useLegacyPackaging = true
         }
@@ -196,6 +200,13 @@ ext {
     gleanExpireByVersion = 1
     gleanNamespace = "mozilla.telemetry.glean"
     gleanPythonEnvDir = gradle.mozconfig.substs.GRADLE_GLEAN_PARSER_VENV
+    gleanYamlFiles = [
+        "${project.projectDir}/metrics.yaml",
+        "${project.projectDir}/legacy_metrics.yaml",
+        "${project.projectDir}/pings.yaml",
+        "${project.projectDir}/legacy_pings.yaml",
+        "${project.projectDir}/tags.yaml",
+    ]
 }
 apply plugin: "org.mozilla.telemetry.glean-gradle-plugin"
 apply plugin: "org.mozilla.appservices.nimbus-gradle-plugin"

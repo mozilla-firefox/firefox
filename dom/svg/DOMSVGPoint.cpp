@@ -168,6 +168,7 @@ already_AddRefed<DOMSVGPoint> DOMSVGPoint::GetTranslateTearOff(
   if (!domPoint) {
     domPoint = new DOMSVGPoint(aVal, aSVGSVGElement);
     sSVGTranslateTearOffTable.AddTearoff(aVal, domPoint);
+    domPoint->mIsInTearoffTable = true;
   }
 
   return domPoint.forget();
@@ -204,12 +205,18 @@ void DOMSVGPoint::CleanupWeakRefs() {
     pointList->mItems[mListIndex] = nullptr;
   }
 
+  if (mIsInTearoffTable) {
+    // Similarly, we must update the tearoff table to remove its (non-owning)
+    // pointer to mVal.
+    MOZ_ASSERT(mVal && mIsTranslatePoint,
+               "Tearoff table should only be used for translate-point objects "
+               "with non-null mVal (see GetTranslateTearOff and its callers)");
+    sSVGTranslateTearOffTable.RemoveTearoff(mVal);
+    mIsInTearoffTable = false;
+  }
+
   if (mVal) {
-    if (mIsTranslatePoint) {
-      // Similarly, we must update the tearoff table to remove its (non-owning)
-      // pointer to mVal.
-      sSVGTranslateTearOffTable.RemoveTearoff(mVal);
-    } else {
+    if (!mIsTranslatePoint) {
       // In this case we own mVal
       delete mVal;
     }

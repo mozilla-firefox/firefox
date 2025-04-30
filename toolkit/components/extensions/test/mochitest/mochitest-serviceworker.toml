@@ -32,3 +32,4 @@ skip-if = ["true"] # Bug 1748318 - Add WebIDL bindings for `tabs`
 skip-if = ["true"] # Bug 1748318 - Add WebIDL bindings for `tabs`
 
 ["test_ext_test.html"]
+skip-if = ["true"] # Bug 1950639 - Fix webidl version once WPT design stabilizes.

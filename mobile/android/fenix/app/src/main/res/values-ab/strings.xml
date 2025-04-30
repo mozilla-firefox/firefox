@@ -699,8 +699,6 @@
   <string name="preferences_override_account_server">Мозилла ахатә хыԥхьаӡара асервер</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Ахатә синхронизациа асервер</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Мозилла ахыԥхьаӡара/асинхронизациа асервер ԥсахуп. Аԥсахрақәа рхархәаразы апликациа ааныжьра…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Аԥхьаӡара</string>
   <!-- Preference for changing where the AddressBar is positioned -->

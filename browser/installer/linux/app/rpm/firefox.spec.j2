@@ -1,0 +1,59 @@
+Name:           {{ PKG_NAME }}
+Version:        {{ PKG_VERSION }}
+Release:        {{ PKG_BUILD_NUMBER }}%{?dist}
+Summary:        {{ DESCRIPTION }}
+URL:            https://www.mozilla.org/firefox/
+Group:          Applications/Internet
+License:        MPL-2
+Vendor:         Mozilla
+Source0:        %{name}.tar.xz
+Source1:        %{name}.desktop
+Source2:        %{name}.1
+{%- for codename in LANGUAGES %}
+Source{{ loop.index + 2 }}:        {{ codename }}.langpack.xpi
+{%- endfor %}
+
+%global mozappdir /{{ PKG_INSTALL_PATH }}
+%global appdir %{_datadir}/applications/
+
+%description
+{{ DESCRIPTION }}
+
+%prep
+%setup -q -n firefox
+%{__mkdir_p} %{buildroot}/%{mozappdir} %{buildroot}%{appdir} %{buildroot}%{_bindir} %{buildroot}%{_mandir}/man1/
+%{__cp} -r . %{buildroot}/%{mozappdir}
+%{__install} -m 0644 %{SOURCE1} %{buildroot}%{_datadir}/applications/
+%{__install} -m 0644 %{SOURCE2} %{buildroot}%{_mandir}/man1/%{name}.1
+%{__ln_s} %{mozappdir}/firefox %{buildroot}%{_bindir}/%{name}
+%{__mkdir_p} %{buildroot}/%{mozappdir}/distribution/extensions
+{%- for codename in LANGUAGES %}
+%{__install} -m 0644 %{SOURCE{{ loop.index + 2 }}} %{buildroot}%{mozappdir}/distribution/extensions/langpack-{{ codename }}@{{ PKG_NAME }}.mozilla.org.xpi
+{%- endfor %}
+
+{% for codename, description in LANGUAGES.items() %}
+%package l10n-{{ codename }}
+Summary:       {{ description }}
+BuildArch:     noarch
+Requires:      %{name} = %{version}-%{release}
+Supplements:   (%{name} = %{version}-%{release} and %{name}-langpacks-{{ codename }})
+
+%description l10n-{{ codename }}
+{{ description }}
+
+%files l10n-{{ codename }}
+%{mozappdir}/distribution/extensions/langpack-{{ codename }}@{{ PKG_NAME }}.mozilla.org.xpi
+{% endfor %}
+
+%files
+%dir %{mozappdir}
+%{mozappdir}/*
+%exclude %dir %{mozappdir}/distribution/extensions
+%exclude %{mozappdir}/distribution/extensions/*.xpi
+%{appdir}/%{name}.desktop
+%{_bindir}/%{name}
+%{_mandir}/man1/%{name}.1*
+
+%changelog
+* {{ CHANGELOG_DATE }} Mozilla <release@mozilla.com> {{ PKG_VERSION }}-{{ PKG_BUILD_NUMBER }}
+  - N/A

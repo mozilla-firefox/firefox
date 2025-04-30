@@ -354,31 +354,6 @@ export class FfiConverterU64 extends FfiConverter {
 }
 
 // Export the FFIConverter object to make external types work.
-export class FfiConverterI64 extends FfiConverter {
-    static checkType(value) {
-        super.checkType(value);
-        if (!Number.isSafeInteger(value)) {
-            throw new UniFFITypeError(`${value} exceeds the safe integer bounds`);
-        }
-    }
-    static computeSize(_value) {
-        return 8;
-    }
-    static lift(value) {
-        return value;
-    }
-    static lower(value) {
-        return value;
-    }
-    static write(dataStream, value) {
-        dataStream.writeInt64(value)
-    }
-    static read(dataStream) {
-        return dataStream.readInt64()
-    }
-}
-
-// Export the FFIConverter object to make external types work.
 export class FfiConverterBool extends FfiConverter {
     static computeSize(_value) {
         return 1;
@@ -766,6 +741,25 @@ export class RemoteSettingsClient {
     }
 
     /**
+     * Shutdown the client, releasing the SQLite connection used to cache records.
+     */
+    shutdown() {
+        const liftResult = (result) => undefined;
+        const liftError = null;
+        const functionCall = () => {
+            return UniFFIScaffolding.callAsyncWrapper(
+                21, // remote_settings:uniffi_remote_settings_fn_method_remotesettingsclient_shutdown
+                FfiConverterTypeRemoteSettingsClient.lower(this),
+            )
+        }
+        try {
+            return functionCall().then((result) => handleRustResult(result, liftResult, liftError));
+        }  catch (error) {
+            return Promise.reject(error)
+        }
+    }
+
+    /**
      * sync
      */
     sync() {
@@ -773,7 +767,7 @@ export class RemoteSettingsClient {
         const liftError = (data) => FfiConverterTypeRemoteSettingsError.lift(data);
         const functionCall = () => {
             return UniFFIScaffolding.callAsyncWrapper(
-                21, // remote_settings:uniffi_remote_settings_fn_method_remotesettingsclient_sync
+                22, // remote_settings:uniffi_remote_settings_fn_method_remotesettingsclient_sync
                 FfiConverterTypeRemoteSettingsClient.lower(this),
             )
         }
@@ -837,12 +831,19 @@ export class RemoteSettingsService {
     /**
      * Construct a [RemoteSettingsService]
      *
-     * This is typically done early in the application-startup process
+     * This is typically done early in the application-startup process.
+     *
+     * This method performs no IO or network requests and is safe to run in a main thread that
+     * can't be blocked.
+     *
+     * `storage_dir` is a directory to store SQLite files in -- one per collection. If the
+     * directory does not exist, it will be created when the storage is first used. Only the
+     * directory and the SQLite files will be created, any parent directories must already exist.
      * @returns {RemoteSettingsService}
      */
     static init(storageDir,config) {
         const liftResult = (result) => FfiConverterTypeRemoteSettingsService.lift(result);
-        const liftError = (data) => FfiConverterTypeRemoteSettingsError.lift(data);
+        const liftError = null;
         const functionCall = () => {
             try {
                 FfiConverterString.checkType(storageDir)
@@ -861,7 +862,7 @@ export class RemoteSettingsService {
                 throw e;
             }
             return UniFFIScaffolding.callSync(
-                25, // remote_settings:uniffi_remote_settings_fn_constructor_remotesettingsservice_new
+                26, // remote_settings:uniffi_remote_settings_fn_constructor_remotesettingsservice_new
                 FfiConverterString.lower(storageDir),
                 FfiConverterTypeRemoteSettingsConfig2.lower(config),
             )
@@ -870,11 +871,13 @@ export class RemoteSettingsService {
 
     /**
      * Create a new Remote Settings client
+     *
+     * This method performs no IO or network requests and is safe to run in a main thread that can't be blocked.
      * @returns {RemoteSettingsClient}
      */
     makeClient(collectionName) {
         const liftResult = (result) => FfiConverterTypeRemoteSettingsClient.lift(result);
-        const liftError = (data) => FfiConverterTypeRemoteSettingsError.lift(data);
+        const liftError = null;
         const functionCall = () => {
             try {
                 FfiConverterString.checkType(collectionName)
@@ -885,7 +888,7 @@ export class RemoteSettingsService {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                22, // remote_settings:uniffi_remote_settings_fn_method_remotesettingsservice_make_client
+                23, // remote_settings:uniffi_remote_settings_fn_method_remotesettingsservice_make_client
                 FfiConverterTypeRemoteSettingsService.lower(this),
                 FfiConverterString.lower(collectionName),
             )
@@ -906,7 +909,7 @@ export class RemoteSettingsService {
         const liftError = (data) => FfiConverterTypeRemoteSettingsError.lift(data);
         const functionCall = () => {
             return UniFFIScaffolding.callAsyncWrapper(
-                23, // remote_settings:uniffi_remote_settings_fn_method_remotesettingsservice_sync
+                24, // remote_settings:uniffi_remote_settings_fn_method_remotesettingsservice_sync
                 FfiConverterTypeRemoteSettingsService.lower(this),
             )
         }
@@ -939,7 +942,7 @@ export class RemoteSettingsService {
                 throw e;
             }
             return UniFFIScaffolding.callAsyncWrapper(
-                24, // remote_settings:uniffi_remote_settings_fn_method_remotesettingsservice_update_config
+                25, // remote_settings:uniffi_remote_settings_fn_method_remotesettingsservice_update_config
                 FfiConverterTypeRemoteSettingsService.lower(this),
                 FfiConverterTypeRemoteSettingsConfig2.lower(config),
             )
@@ -1389,34 +1392,19 @@ export class FfiConverterTypeRemoteSettingsConfig2 extends FfiConverterArrayBuff
 }
 
 /**
- * The `RemoteSettingsContext` object represents the parameters and characteristics of the
- * consuming application. For `remote-settings`, it is used to filter locally stored `records`.
+ * Remote settings context object
  *
- * We always fetch all `records` from the remote-settings storage. Some records could have a `filter_expression`
- * attached to them, which will be matched against the `RemoteSettingsContext`.
+ * This is used to filter the records returned. We always fetch all `records` from the
+ * remote-settings storage. Some records could have a `filter_expression`.  If this is passed in
+ * and the record has a `filter_expression`, then only returns where the expression is true will
+ * be returned.
  *
- * When set, only records where the expression is true will be returned.
+ * See https://remote-settings.readthedocs.io/en/latest/target-filters.html for details.
  */
 export class RemoteSettingsContext {
-    constructor({ appName, appId, channel, appVersion, appBuild, architecture, deviceManufacturer, deviceModel, locale, os, osVersion, androidSdkVersion, debugTag, installationDate, homeDirectory, customTargetingAttributes } = { appName: undefined, appId: undefined, channel: undefined, appVersion: undefined, appBuild: undefined, architecture: undefined, deviceManufacturer: undefined, deviceModel: undefined, locale: undefined, os: undefined, osVersion: undefined, androidSdkVersion: undefined, debugTag: undefined, installationDate: undefined, homeDirectory: undefined, customTargetingAttributes: undefined }) {
+    constructor({ channel = null, appVersion = null, appId = null, locale = null, os = null, osVersion = null, formFactor = null, country = null, customTargettingAttributes = null } = { channel: undefined, appVersion: undefined, appId: undefined, locale: undefined, os: undefined, osVersion: undefined, formFactor: undefined, country: undefined, customTargettingAttributes: undefined }) {
         try {
-            FfiConverterString.checkType(appName)
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("appName");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterString.checkType(appId)
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("appId");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterString.checkType(channel)
+            FfiConverterOptionalstring.checkType(channel)
         } catch (e) {
             if (e instanceof UniFFITypeError) {
                 e.addItemDescriptionPart("channel");
@@ -1432,34 +1420,10 @@ export class RemoteSettingsContext {
             throw e;
         }
         try {
-            FfiConverterOptionalstring.checkType(appBuild)
+            FfiConverterOptionalstring.checkType(appId)
         } catch (e) {
             if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("appBuild");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterOptionalstring.checkType(architecture)
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("architecture");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterOptionalstring.checkType(deviceManufacturer)
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("deviceManufacturer");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterOptionalstring.checkType(deviceModel)
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("deviceModel");
+                e.addItemDescriptionPart("appId");
             }
             throw e;
         }
@@ -1488,58 +1452,32 @@ export class RemoteSettingsContext {
             throw e;
         }
         try {
-            FfiConverterOptionalstring.checkType(androidSdkVersion)
+            FfiConverterOptionalstring.checkType(formFactor)
         } catch (e) {
             if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("androidSdkVersion");
+                e.addItemDescriptionPart("formFactor");
             }
             throw e;
         }
         try {
-            FfiConverterOptionalstring.checkType(debugTag)
+            FfiConverterOptionalstring.checkType(country)
         } catch (e) {
             if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("debugTag");
+                e.addItemDescriptionPart("country");
             }
             throw e;
         }
         try {
-            FfiConverterOptionali64.checkType(installationDate)
+            FfiConverterOptionalMapStringString.checkType(customTargettingAttributes)
         } catch (e) {
             if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("installationDate");
+                e.addItemDescriptionPart("customTargettingAttributes");
             }
             throw e;
         }
-        try {
-            FfiConverterOptionalstring.checkType(homeDirectory)
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("homeDirectory");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterOptionalTypeRsJsonObject.checkType(customTargetingAttributes)
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart("customTargetingAttributes");
-            }
-            throw e;
-        }
-        /**
-         * Name of the application (e.g. "Fenix" or "Firefox iOS")
-         * @type {string}
-         */
-        this.appName = appName;
-        /**
-         * Application identifier, especially for mobile (e.g. "org.mozilla.fenix")
-         * @type {string}
-         */
-        this.appId = appId;
         /**
          * The delivery channel of the application (e.g "nightly")
-         * @type {string}
+         * @type {?string}
          */
         this.channel = channel;
         /**
@@ -1548,32 +1486,17 @@ export class RemoteSettingsContext {
          */
         this.appVersion = appVersion;
         /**
-         * Build identifier generated by the CI system (e.g. "1234/A")
+         * String containing the XUL application app_id
          * @type {?string}
          */
-        this.appBuild = appBuild;
-        /**
-         * The architecture of the device, (e.g. "arm", "x86")
-         * @type {?string}
-         */
-        this.architecture = architecture;
-        /**
-         * The manufacturer of the device the application is running on
-         * @type {?string}
-         */
-        this.deviceManufacturer = deviceManufacturer;
-        /**
-         * The model of the device the application is running on
-         * @type {?string}
-         */
-        this.deviceModel = deviceModel;
+        this.appId = appId;
         /**
          * The locale of the application during initialization (e.g. "es-ES")
          * @type {?string}
          */
         this.locale = locale;
         /**
-         * The name of the operating system (e.g. "Android", "iOS", "Darwin", "Windows")
+         * The name of the operating system (e.g. "Android", "iOS", "Darwin", "WINNT")
          * @type {?string}
          */
         this.os = os;
@@ -1583,50 +1506,42 @@ export class RemoteSettingsContext {
          */
         this.osVersion = osVersion;
         /**
-         * Android specific for targeting specific sdk versions
+         * Form-factor of the device ("phone", "tablet", or "desktop")
          * @type {?string}
          */
-        this.androidSdkVersion = androidSdkVersion;
+        this.formFactor = formFactor;
         /**
-         * Used for debug purposes as a way to match only developer builds, etc.
+         * Country of the user.
+         *
+         * This is usually populated in one of two ways:
+         * - The second component of the locale
+         * - By using a geolocation service, which determines country via the user's IP.
+         * Firefox apps usually have a module that integrates with these services,
+         * for example `Region` on Desktop and `RegionMiddleware` on Android.
          * @type {?string}
          */
-        this.debugTag = debugTag;
+        this.country = country;
         /**
-         * The date the application installed the app
-         * @type {?number}
+         * Extra attributes to add to the env for JEXL filtering.
+         *
+         * Use this for prototyping / testing new features.  In the long-term, new fields should be
+         * added to the official list and supported by both the Rust and Gecko clients.
+         * @type {?object}
          */
-        this.installationDate = installationDate;
-        /**
-         * The application's home directory
-         * @type {?string}
-         */
-        this.homeDirectory = homeDirectory;
-        /**
-         * Contains attributes specific to the application, derived by the application
-         * @type {?RsJsonObject}
-         */
-        this.customTargetingAttributes = customTargetingAttributes;
+        this.customTargettingAttributes = customTargettingAttributes;
     }
 
     equals(other) {
         return (
-            this.appName == other.appName &&
-            this.appId == other.appId &&
             this.channel == other.channel &&
             this.appVersion == other.appVersion &&
-            this.appBuild == other.appBuild &&
-            this.architecture == other.architecture &&
-            this.deviceManufacturer == other.deviceManufacturer &&
-            this.deviceModel == other.deviceModel &&
+            this.appId == other.appId &&
             this.locale == other.locale &&
             this.os == other.os &&
             this.osVersion == other.osVersion &&
-            this.androidSdkVersion == other.androidSdkVersion &&
-            this.debugTag == other.debugTag &&
-            this.installationDate == other.installationDate &&
-            this.homeDirectory == other.homeDirectory &&
-            this.customTargetingAttributes == other.customTargetingAttributes
+            this.formFactor == other.formFactor &&
+            this.country == other.country &&
+            this.customTargettingAttributes == other.customTargettingAttributes
         )
     }
 }
@@ -1635,61 +1550,40 @@ export class RemoteSettingsContext {
 export class FfiConverterTypeRemoteSettingsContext extends FfiConverterArrayBuffer {
     static read(dataStream) {
         return new RemoteSettingsContext({
-            appName: FfiConverterString.read(dataStream),
-            appId: FfiConverterString.read(dataStream),
-            channel: FfiConverterString.read(dataStream),
+            channel: FfiConverterOptionalstring.read(dataStream),
             appVersion: FfiConverterOptionalstring.read(dataStream),
-            appBuild: FfiConverterOptionalstring.read(dataStream),
-            architecture: FfiConverterOptionalstring.read(dataStream),
-            deviceManufacturer: FfiConverterOptionalstring.read(dataStream),
-            deviceModel: FfiConverterOptionalstring.read(dataStream),
+            appId: FfiConverterOptionalstring.read(dataStream),
             locale: FfiConverterOptionalstring.read(dataStream),
             os: FfiConverterOptionalstring.read(dataStream),
             osVersion: FfiConverterOptionalstring.read(dataStream),
-            androidSdkVersion: FfiConverterOptionalstring.read(dataStream),
-            debugTag: FfiConverterOptionalstring.read(dataStream),
-            installationDate: FfiConverterOptionali64.read(dataStream),
-            homeDirectory: FfiConverterOptionalstring.read(dataStream),
-            customTargetingAttributes: FfiConverterOptionalTypeRsJsonObject.read(dataStream),
+            formFactor: FfiConverterOptionalstring.read(dataStream),
+            country: FfiConverterOptionalstring.read(dataStream),
+            customTargettingAttributes: FfiConverterOptionalMapStringString.read(dataStream),
         });
     }
     static write(dataStream, value) {
-        FfiConverterString.write(dataStream, value.appName);
-        FfiConverterString.write(dataStream, value.appId);
-        FfiConverterString.write(dataStream, value.channel);
+        FfiConverterOptionalstring.write(dataStream, value.channel);
         FfiConverterOptionalstring.write(dataStream, value.appVersion);
-        FfiConverterOptionalstring.write(dataStream, value.appBuild);
-        FfiConverterOptionalstring.write(dataStream, value.architecture);
-        FfiConverterOptionalstring.write(dataStream, value.deviceManufacturer);
-        FfiConverterOptionalstring.write(dataStream, value.deviceModel);
+        FfiConverterOptionalstring.write(dataStream, value.appId);
         FfiConverterOptionalstring.write(dataStream, value.locale);
         FfiConverterOptionalstring.write(dataStream, value.os);
         FfiConverterOptionalstring.write(dataStream, value.osVersion);
-        FfiConverterOptionalstring.write(dataStream, value.androidSdkVersion);
-        FfiConverterOptionalstring.write(dataStream, value.debugTag);
-        FfiConverterOptionali64.write(dataStream, value.installationDate);
-        FfiConverterOptionalstring.write(dataStream, value.homeDirectory);
-        FfiConverterOptionalTypeRsJsonObject.write(dataStream, value.customTargetingAttributes);
+        FfiConverterOptionalstring.write(dataStream, value.formFactor);
+        FfiConverterOptionalstring.write(dataStream, value.country);
+        FfiConverterOptionalMapStringString.write(dataStream, value.customTargettingAttributes);
     }
 
     static computeSize(value) {
         let totalSize = 0;
-        totalSize += FfiConverterString.computeSize(value.appName);
-        totalSize += FfiConverterString.computeSize(value.appId);
-        totalSize += FfiConverterString.computeSize(value.channel);
+        totalSize += FfiConverterOptionalstring.computeSize(value.channel);
         totalSize += FfiConverterOptionalstring.computeSize(value.appVersion);
-        totalSize += FfiConverterOptionalstring.computeSize(value.appBuild);
-        totalSize += FfiConverterOptionalstring.computeSize(value.architecture);
-        totalSize += FfiConverterOptionalstring.computeSize(value.deviceManufacturer);
-        totalSize += FfiConverterOptionalstring.computeSize(value.deviceModel);
+        totalSize += FfiConverterOptionalstring.computeSize(value.appId);
         totalSize += FfiConverterOptionalstring.computeSize(value.locale);
         totalSize += FfiConverterOptionalstring.computeSize(value.os);
         totalSize += FfiConverterOptionalstring.computeSize(value.osVersion);
-        totalSize += FfiConverterOptionalstring.computeSize(value.androidSdkVersion);
-        totalSize += FfiConverterOptionalstring.computeSize(value.debugTag);
-        totalSize += FfiConverterOptionali64.computeSize(value.installationDate);
-        totalSize += FfiConverterOptionalstring.computeSize(value.homeDirectory);
-        totalSize += FfiConverterOptionalTypeRsJsonObject.computeSize(value.customTargetingAttributes);
+        totalSize += FfiConverterOptionalstring.computeSize(value.formFactor);
+        totalSize += FfiConverterOptionalstring.computeSize(value.country);
+        totalSize += FfiConverterOptionalMapStringString.computeSize(value.customTargettingAttributes);
         return totalSize
     }
 
@@ -1699,23 +1593,7 @@ export class FfiConverterTypeRemoteSettingsContext extends FfiConverterArrayBuff
             throw new UniFFITypeError(`Expected 'RemoteSettingsContext', found '${typeof value}'`);
         }
         try {
-            FfiConverterString.checkType(value.appName);
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".appName");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterString.checkType(value.appId);
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".appId");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterString.checkType(value.channel);
+            FfiConverterOptionalstring.checkType(value.channel);
         } catch (e) {
             if (e instanceof UniFFITypeError) {
                 e.addItemDescriptionPart(".channel");
@@ -1731,34 +1609,10 @@ export class FfiConverterTypeRemoteSettingsContext extends FfiConverterArrayBuff
             throw e;
         }
         try {
-            FfiConverterOptionalstring.checkType(value.appBuild);
+            FfiConverterOptionalstring.checkType(value.appId);
         } catch (e) {
             if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".appBuild");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterOptionalstring.checkType(value.architecture);
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".architecture");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterOptionalstring.checkType(value.deviceManufacturer);
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".deviceManufacturer");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterOptionalstring.checkType(value.deviceModel);
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".deviceModel");
+                e.addItemDescriptionPart(".appId");
             }
             throw e;
         }
@@ -1787,42 +1641,26 @@ export class FfiConverterTypeRemoteSettingsContext extends FfiConverterArrayBuff
             throw e;
         }
         try {
-            FfiConverterOptionalstring.checkType(value.androidSdkVersion);
+            FfiConverterOptionalstring.checkType(value.formFactor);
         } catch (e) {
             if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".androidSdkVersion");
+                e.addItemDescriptionPart(".formFactor");
             }
             throw e;
         }
         try {
-            FfiConverterOptionalstring.checkType(value.debugTag);
+            FfiConverterOptionalstring.checkType(value.country);
         } catch (e) {
             if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".debugTag");
+                e.addItemDescriptionPart(".country");
             }
             throw e;
         }
         try {
-            FfiConverterOptionali64.checkType(value.installationDate);
+            FfiConverterOptionalMapStringString.checkType(value.customTargettingAttributes);
         } catch (e) {
             if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".installationDate");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterOptionalstring.checkType(value.homeDirectory);
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".homeDirectory");
-            }
-            throw e;
-        }
-        try {
-            FfiConverterOptionalTypeRsJsonObject.checkType(value.customTargetingAttributes);
-        } catch (e) {
-            if (e instanceof UniFFITypeError) {
-                e.addItemDescriptionPart(".customTargetingAttributes");
+                e.addItemDescriptionPart(".customTargettingAttributes");
             }
             throw e;
         }
@@ -2307,43 +2145,6 @@ export class FfiConverterTypeRemoteSettingsServer extends FfiConverterArrayBuffe
 
 
 // Export the FFIConverter object to make external types work.
-export class FfiConverterOptionali64 extends FfiConverterArrayBuffer {
-    static checkType(value) {
-        if (value !== undefined && value !== null) {
-            FfiConverterI64.checkType(value)
-        }
-    }
-
-    static read(dataStream) {
-        const code = dataStream.readUint8(0);
-        switch (code) {
-            case 0:
-                return null
-            case 1:
-                return FfiConverterI64.read(dataStream)
-            default:
-                throw new UniFFIError(`Unexpected code: ${code}`);
-        }
-    }
-
-    static write(dataStream, value) {
-        if (value === null || value === undefined) {
-            dataStream.writeUint8(0);
-            return;
-        }
-        dataStream.writeUint8(1);
-        FfiConverterI64.write(dataStream, value)
-    }
-
-    static computeSize(value) {
-        if (value === null || value === undefined) {
-            return 1;
-        }
-        return 1 + FfiConverterI64.computeSize(value)
-    }
-}
-
-// Export the FFIConverter object to make external types work.
 export class FfiConverterOptionalstring extends FfiConverterArrayBuffer {
     static checkType(value) {
         if (value !== undefined && value !== null) {
@@ -2529,6 +2330,43 @@ export class FfiConverterOptionalSequenceTypeRemoteSettingsRecord extends FfiCon
 }
 
 // Export the FFIConverter object to make external types work.
+export class FfiConverterOptionalMapStringString extends FfiConverterArrayBuffer {
+    static checkType(value) {
+        if (value !== undefined && value !== null) {
+            FfiConverterMapStringString.checkType(value)
+        }
+    }
+
+    static read(dataStream) {
+        const code = dataStream.readUint8(0);
+        switch (code) {
+            case 0:
+                return null
+            case 1:
+                return FfiConverterMapStringString.read(dataStream)
+            default:
+                throw new UniFFIError(`Unexpected code: ${code}`);
+        }
+    }
+
+    static write(dataStream, value) {
+        if (value === null || value === undefined) {
+            dataStream.writeUint8(0);
+            return;
+        }
+        dataStream.writeUint8(1);
+        FfiConverterMapStringString.write(dataStream, value)
+    }
+
+    static computeSize(value) {
+        if (value === null || value === undefined) {
+            return 1;
+        }
+        return 1 + FfiConverterMapStringString.computeSize(value)
+    }
+}
+
+// Export the FFIConverter object to make external types work.
 export class FfiConverterOptionalMapStringTypeRemoteSettingsRecord extends FfiConverterArrayBuffer {
     static checkType(value) {
         if (value !== undefined && value !== null) {
@@ -2562,43 +2400,6 @@ export class FfiConverterOptionalMapStringTypeRemoteSettingsRecord extends FfiCo
             return 1;
         }
         return 1 + FfiConverterMapStringTypeRemoteSettingsRecord.computeSize(value)
-    }
-}
-
-// Export the FFIConverter object to make external types work.
-export class FfiConverterOptionalTypeRsJsonObject extends FfiConverterArrayBuffer {
-    static checkType(value) {
-        if (value !== undefined && value !== null) {
-            FfiConverterTypeRsJsonObject.checkType(value)
-        }
-    }
-
-    static read(dataStream) {
-        const code = dataStream.readUint8(0);
-        switch (code) {
-            case 0:
-                return null
-            case 1:
-                return FfiConverterTypeRsJsonObject.read(dataStream)
-            default:
-                throw new UniFFIError(`Unexpected code: ${code}`);
-        }
-    }
-
-    static write(dataStream, value) {
-        if (value === null || value === undefined) {
-            dataStream.writeUint8(0);
-            return;
-        }
-        dataStream.writeUint8(1);
-        FfiConverterTypeRsJsonObject.write(dataStream, value)
-    }
-
-    static computeSize(value) {
-        if (value === null || value === undefined) {
-            return 1;
-        }
-        return 1 + FfiConverterTypeRsJsonObject.computeSize(value)
     }
 }
 
@@ -2687,6 +2488,61 @@ export class FfiConverterSequenceTypeRemoteSettingsRecord extends FfiConverterAr
                 throw e;
             }
         })
+    }
+}
+
+// Export the FFIConverter object to make external types work.
+export class FfiConverterMapStringString extends FfiConverterArrayBuffer {
+    static read(dataStream) {
+        const len = dataStream.readInt32();
+        const map = {};
+        for (let i = 0; i < len; i++) {
+            const key = FfiConverterString.read(dataStream);
+            const value = FfiConverterString.read(dataStream);
+            map[key] = value;
+        }
+
+        return map;
+    }
+
+    static write(dataStream, value) {
+        dataStream.writeInt32(Object.keys(value).length);
+        for (const key in value) {
+            FfiConverterString.write(dataStream, key);
+            FfiConverterString.write(dataStream, value[key]);
+        }
+    }
+
+    static computeSize(value) {
+        // The size of the length
+        let size = 4;
+        for (const key in value) {
+            size += FfiConverterString.computeSize(key);
+            size += FfiConverterString.computeSize(value[key]);
+        }
+        return size;
+    }
+
+    static checkType(value) {
+        for (const key in value) {
+            try {
+                FfiConverterString.checkType(key);
+            } catch (e) {
+                if (e instanceof UniFFITypeError) {
+                    e.addItemDescriptionPart("(key)");
+                }
+                throw e;
+            }
+
+            try {
+                FfiConverterString.checkType(value[key]);
+            } catch (e) {
+                if (e instanceof UniFFITypeError) {
+                    e.addItemDescriptionPart(`[${key}]`);
+                }
+                throw e;
+            }
+        }
     }
 }
 

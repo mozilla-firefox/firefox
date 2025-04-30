@@ -3,28 +3,22 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AsyncShutdown: "resource://gre/modules/AsyncShutdown.sys.mjs",
   DeferredTask: "resource://gre/modules/DeferredTask.sys.mjs",
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
   KeyValueService: "resource://gre/modules/kvstore.sys.mjs",
+  MENU_STORE_WRITE_DEBOUNCE_TIME: {
+    pref: "extensions.webextensions.menus.writeDebounceTime",
+    // Minimum 0ms, max 1min
+    transform: value => Math.min(Math.max(value, 0), 1 * 60 * 1000),
+    default: 5000, // Default to 5s
+  },
 });
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "MENU_STORE_WRITE_DEBOUNCE_TIME",
-  "extensions.webextensions.menus.writeDebounceTime",
-  // TODO: agree on the default value to set on this pref.
-  5000, // Default to 5s
-  null,
-  // Minimum 0ms, max 1min
-  value => Math.min(Math.max(value, 0), 1 * 60 * 1000)
-);
 
 const SCHEMA_VERSION = 1;
 const KVSTORE_DIRNAME = "extension-store-menus";

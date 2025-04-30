@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_PARAM_PROPS_H
 #define SPA_PARAM_PROPS_H
@@ -74,31 +54,47 @@ enum spa_prop {
 	SPA_PROP_rate,
 	SPA_PROP_quality,
 	SPA_PROP_bluetoothAudioCodec,
+	SPA_PROP_bluetoothOffloadActive,
 
 	SPA_PROP_START_Audio	= 0x10000,	/**< audio related properties */
 	SPA_PROP_waveType,
 	SPA_PROP_frequency,
-	SPA_PROP_volume,			/**< a volume (Float), 0.0 silence, 1.0 normal */
+	SPA_PROP_volume,			/**< a volume (Float), 0.0 silence, 1.0 no attenutation */
 	SPA_PROP_mute,				/**< mute (Bool) */
 	SPA_PROP_patternType,
 	SPA_PROP_ditherType,
 	SPA_PROP_truncate,
-	SPA_PROP_channelVolumes,		/**< a volume array, one volume per
-						  *  channel (Array of Float) */
+	SPA_PROP_channelVolumes,		/**< a volume array, one (linear) volume per channel
+						  * (Array of Float). 0.0 is silence, 1.0 is
+						  *  without attenuation. This is the effective
+						  *  volume that is applied. It can result
+						  *  in a hardware volume and software volume
+						  *  (see softVolumes) */
 	SPA_PROP_volumeBase,			/**< a volume base (Float) */
 	SPA_PROP_volumeStep,			/**< a volume step (Float) */
 	SPA_PROP_channelMap,			/**< a channelmap array
 						  * (Array (Id enum spa_audio_channel)) */
 	SPA_PROP_monitorMute,			/**< mute (Bool) */
-	SPA_PROP_monitorVolumes,		/**< a volume array, one volume per
+	SPA_PROP_monitorVolumes,		/**< a volume array, one (linear) volume per
 						  *  channel (Array of Float) */
 	SPA_PROP_latencyOffsetNsec,		/**< delay adjustment */
-	SPA_PROP_softMute,			/**< mute (Bool) */
-	SPA_PROP_softVolumes,			/**< a volume array, one volume per
-						  *  channel (Array of Float) */
+	SPA_PROP_softMute,			/**< mute (Bool) applied in software */
+	SPA_PROP_softVolumes,			/**< a volume array, one (linear) volume per channel
+						  * (Array of Float). 0.0 is silence, 1.0 is without
+						  * attenuation. This is the volume applied in
+						  * software, there might be a part applied in
+						  * hardware. */
 
 	SPA_PROP_iec958Codecs,			/**< enabled IEC958 (S/PDIF) codecs,
 						  *  (Array (Id enum spa_audio_iec958_codec) */
+	SPA_PROP_volumeRampSamples,		/**< Samples to ramp the volume over */
+	SPA_PROP_volumeRampStepSamples,		/**< Step or incremental Samples to ramp
+						  *  the volume over */
+	SPA_PROP_volumeRampTime,		/**< Time in millisec to ramp the volume over */
+	SPA_PROP_volumeRampStepTime,		/**< Step or incremental Time in nano seconds
+						  *  to ramp the */
+	SPA_PROP_volumeRampScale,		/**< the scale or graph to used to ramp the
+						  *  volume */
 
 	SPA_PROP_START_Video	= 0x20000,	/**< video related properties */
 	SPA_PROP_brightness,

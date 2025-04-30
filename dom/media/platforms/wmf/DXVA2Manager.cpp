@@ -28,8 +28,10 @@
 #include "mozilla/StaticPrefs_media.h"
 #include "mozilla/glean/DomMediaPlatformsWmfMetrics.h"
 #include "mozilla/gfx/DeviceManagerDx.h"
+#include "mozilla/layers/CompositeProcessD3D11FencesHolderMap.h"
 #include "mozilla/layers/D3D11ShareHandleImage.h"
 #include "mozilla/layers/D3D11ZeroCopyTextureImage.h"
+#include "mozilla/layers/FenceD3D11.h"
 #include "mozilla/layers/ImageBridgeChild.h"
 #include "mozilla/layers/TextureD3D11.h"
 #include "mozilla/layers/TextureForwarder.h"
@@ -424,6 +426,7 @@ class D3D11DXVA2Manager : public DXVA2Manager {
   std::list<ThreadSafeWeakPtr<layers::IMFSampleWrapper>> mIMFSampleWrappers;
   RefPtr<layers::ZeroCopyUsageInfo> mZeroCopyUsageInfo;
   uint32_t mVendorID = 0;
+  RefPtr<layers::FenceD3D11> mWriteFence;
 };
 
 bool D3D11DXVA2Manager::SupportsConfig(const VideoInfo& aInfo,
@@ -666,6 +669,12 @@ D3D11DXVA2Manager::InitInternal(layers::KnowsCompositor* aKnowsCompositor,
     }
   }
 
+  // XXX enable fence
+  const bool useFence = false;
+  if (useFence) {
+    mWriteFence = layers::FenceD3D11::Create(mDevice);
+  }
+
   RefPtr<ID3D10Multithread> mt;
   hr = mDevice->QueryInterface((ID3D10Multithread**)getter_AddRefs(mt));
   NS_ENSURE_TRUE(SUCCEEDED(hr) && mt, hr);
@@ -851,7 +860,8 @@ HRESULT D3D11DXVA2Manager::WrapTextureWithImage(IMFSample* aVideoSample,
   RefPtr<D3D11TextureIMFSampleImage> image = new D3D11TextureIMFSampleImage(
       aVideoSample, texture, arrayIndex, gfx::IntSize(mWidth, mHeight), aRegion,
       ToColorSpace2(mYUVColorSpace), mColorRange, mColorDepth);
-  image->AllocateTextureClient(mKnowsCompositor, mZeroCopyUsageInfo);
+  image->AllocateTextureClient(mKnowsCompositor, mZeroCopyUsageInfo,
+                               mWriteFence);
 
   RefPtr<IMFSampleWrapper> wrapper = image->GetIMFSampleWrapper();
   ThreadSafeWeakPtr<IMFSampleWrapper> weak(wrapper);
@@ -869,7 +879,8 @@ HRESULT D3D11DXVA2Manager::WrapTextureWithImage(
   RefPtr<D3D11TextureAVFrameImage> image = new D3D11TextureAVFrameImage(
       aTextureWrapper, gfx::IntSize(mWidth, mHeight), aRegion,
       ToColorSpace2(mYUVColorSpace), mColorRange, mColorDepth);
-  image->AllocateTextureClient(mKnowsCompositor, mZeroCopyUsageInfo);
+  image->AllocateTextureClient(mKnowsCompositor, mZeroCopyUsageInfo,
+                               mWriteFence);
   image.forget(aOutImage);
   return S_OK;
 }
@@ -1207,8 +1218,16 @@ HRESULT D3D11DXVA2Manager::CopyTextureToImage(
     perfRecorder.Record();
   }
 
-  if (!mutex && mDevice != DeviceManagerDx::Get()->GetCompositorDevice() &&
-      mSyncObject) {
+  auto* textureData = client->GetInternalData()->AsD3D11TextureData();
+  auto* fencesHolderMap = CompositeProcessD3D11FencesHolderMap::Get();
+  MOZ_ASSERT(textureData);
+  const bool useFence =
+      textureData && textureData->mFencesHolderId.isSome() && fencesHolderMap;
+  if (useFence) {
+    textureData->IncrementAndSignalWriteFence();
+  } else if (!mutex &&
+             mDevice != DeviceManagerDx::Get()->GetCompositorDevice() &&
+             mSyncObject) {
     static StaticMutex sMutex MOZ_UNANNOTATED;
     // Ensure that we only ever attempt to synchronise via the sync object
     // serially as when using the same D3D11 device for multiple video decoders

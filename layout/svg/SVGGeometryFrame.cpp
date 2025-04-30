@@ -121,7 +121,8 @@ void SVGGeometryFrame::DidSetComputedStyle(ComputedStyle* aOldComputedStyle) {
     NotifySVGChanged(TRANSFORM_CHANGED);
   }
 
-  if (element->IsGeometryChangedViaCSS(*Style(), *aOldComputedStyle)) {
+  if (element->IsGeometryChangedViaCSS(*Style(), *aOldComputedStyle) ||
+      aOldComputedStyle->EffectiveZoom() != Style()->EffectiveZoom()) {
     element->ClearAnyCachedPath();
     SVGObserverUtils::InvalidateRenderingObservers(this);
   }

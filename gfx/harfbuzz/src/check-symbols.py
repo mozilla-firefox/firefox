@@ -17,6 +17,7 @@ IGNORED_SYMBOLS += [
     'rust_eh_personality',
     '_ZN3std9panicking11EMPTY_PANIC.*', # 'std::panicking::EMPTY_PANIC::.*'
     '_ZN3std3sys3pal4unix4args3imp15ARGV_INIT_ARRAY.*', # 'std::sys::pal::unix::args::imp::ARGV_INIT_ARRAY::.*'
+    '_ZN3std3sys4args4unix3imp15ARGV_INIT_ARRAY.*', # std::sys::args::unix::imp::ARGV_INIT_ARRAY::.*
     '_ZN17compiler_builtins4math4libm7generic4sqrt9RSQRT_TAB.*', # 'compiler_builtins::math::libm::generic::sqrt::RSQRT_TAB::.*'
 ]
 

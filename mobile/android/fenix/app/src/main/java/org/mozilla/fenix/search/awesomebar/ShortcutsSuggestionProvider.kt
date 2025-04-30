@@ -5,6 +5,8 @@
 package org.mozilla.fenix.search.awesomebar
 
 import android.content.Context
+import android.graphics.Bitmap
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.BlendModeColorFilterCompat.createBlendModeColorFilterCompat
 import androidx.core.graphics.BlendModeCompat.SRC_IN
@@ -28,14 +30,22 @@ class ShortcutsSuggestionProvider(
 ) : AwesomeBar.SuggestionProvider {
     override val id: String = UUID.randomUUID().toString()
 
-    private val settingsIcon by lazy {
+    /**
+     * Retrieves a tinted settings icon Bitmap.
+     *
+     * @return A [Bitmap] representing the tinted settings icon, or `null` if the drawable
+     *         resource cannot be found or accessed.
+     * @see R.drawable.mozac_ic_settings_24
+     * @see R.attr.textPrimary
+     */
+    @VisibleForTesting
+    internal fun settingsIcon(): Bitmap? =
         AppCompatResources.getDrawable(context, R.drawable.mozac_ic_settings_24)?.apply {
             colorFilter = createBlendModeColorFilterCompat(
                 context.getColorFromAttr(R.attr.textPrimary),
                 SRC_IN,
             )
         }?.toBitmap()
-    }
 
     override suspend fun onInputChanged(text: String): List<AwesomeBar.Suggestion> {
         val suggestions = mutableListOf<AwesomeBar.Suggestion>()
@@ -56,7 +66,7 @@ class ShortcutsSuggestionProvider(
             AwesomeBar.Suggestion(
                 provider = this,
                 id = context.getString(R.string.search_shortcuts_engine_settings),
-                icon = settingsIcon,
+                icon = settingsIcon(),
                 title = context.getString(R.string.search_shortcuts_engine_settings),
                 onSuggestionClicked = {
                     selectShortcutEngineSettings()

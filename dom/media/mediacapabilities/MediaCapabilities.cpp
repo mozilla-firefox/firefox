@@ -11,8 +11,6 @@
 #include <utility>
 
 #include "AllocationPolicy.h"
-#include "Benchmark.h"
-#include "DecoderBenchmark.h"
 #include "DecoderTraits.h"
 #include "MediaInfo.h"
 #include "MediaRecorder.h"
@@ -463,7 +461,7 @@ void MediaCapabilities::CreateMediaCapabilitiesDecodingInfo(
           return AllocationWrapper::CreateDecoder(params, sVideoAllocPolicy)
               ->Then(
                   taskQueue, __func__,
-                  [taskQueue, frameRate, shouldResistFingerprinting,
+                  [taskQueue, shouldResistFingerprinting,
                    config = std::move(config)](
                       AllocationWrapper::AllocateDecoderPromise::
                           ResolveOrRejectValue&& aValue) mutable {
@@ -477,7 +475,7 @@ void MediaCapabilities::CreateMediaCapabilitiesDecodingInfo(
                     // efficient.
                     RefPtr<CapabilitiesPromise> p = decoder->Init()->Then(
                         taskQueue, __func__,
-                        [taskQueue, decoder, frameRate,
+                        [taskQueue, decoder,
                          shouldResistFingerprinting,
                          config = std::move(config)](
                             MediaDataDecoder::InitPromise::
@@ -494,39 +492,7 @@ void MediaCapabilities::CreateMediaCapabilitiesDecodingInfo(
                             p = CapabilitiesPromise::CreateAndResolve(std::move(info), __func__);
                           } else {
                             MOZ_ASSERT(config->IsVideo());
-                            if (StaticPrefs::media_mediacapabilities_from_database()) {
-                              nsAutoCString reason;
-                              bool powerEfficient =
-                                  decoder->IsHardwareAccelerated(reason);
-
-                              int32_t videoFrameRate = std::clamp<int32_t>(frameRate, 1, INT32_MAX);
-
-                              DecoderBenchmarkInfo benchmarkInfo{
-                                  config->mMimeType,
-                                  config->GetAsVideoInfo()->mImage.width,
-                                  config->GetAsVideoInfo()->mImage.height,
-                                  videoFrameRate, 8};
-
-                              p = DecoderBenchmark::Get(benchmarkInfo)->Then(
-                                  GetMainThreadSerialEventTarget(),
-                                  __func__,
-                                  [powerEfficient](int32_t score) {
-                                    // score < 0 means no entry found.
-                                    bool smooth = score < 0 || score >
-                                      StaticPrefs::
-                                        media_mediacapabilities_drop_threshold();
-                                    MediaCapabilitiesDecodingInfo info;
-                                    info.mSupported = true;
-                                    info.mSmooth = smooth;
-                                    info.mPowerEfficient = powerEfficient;
-                                    return CapabilitiesPromise::
-                                        CreateAndResolve(std::move(info), __func__);
-                                  },
-                                  [](nsresult rv) {
-                                    return CapabilitiesPromise::
-                                        CreateAndReject(rv, __func__);
-                                  });
-                            } else if (config->GetAsVideoInfo()->mImage.height < 480) {
+                            if (config->GetAsVideoInfo()->mImage.height < 480) {
                               // Assume that we can do stuff at 480p or less in
                               // a power efficient manner and smoothly. If
                               // greater than 480p we assume that if the video
@@ -543,28 +509,6 @@ void MediaCapabilities::CreateMediaCapabilitiesDecodingInfo(
                               bool smooth = true;
                               bool powerEfficient =
                                   decoder->IsHardwareAccelerated(reason);
-                              if (!powerEfficient &&
-                                  VPXDecoder::IsVP9(config->mMimeType)) {
-                                smooth = VP9Benchmark::IsVP9DecodeFast(
-                                    true /* default */);
-                                uint32_t fps =
-                                    VP9Benchmark::MediaBenchmarkVp9Fps();
-                                if (!smooth && fps > 0) {
-                                  // The VP9 estimizer decode a 1280x720 video.
-                                  // Let's adjust the result for the resolution
-                                  // and frame rate of what we actually want. If
-                                  // the result is twice that we need we assume
-                                  // it will be smooth.
-                                  const auto& videoConfig =
-                                      *config->GetAsVideoInfo();
-                                  double needed = ((1280.0 * 720.0) /
-                                                   (videoConfig.mImage.width *
-                                                    videoConfig.mImage.height) *
-                                                   fps) /
-                                                  frameRate;
-                                  smooth = needed > 2;
-                                }
-                              }
                               MediaCapabilitiesDecodingInfo info;
                               info.mSupported = true;
                               info.mSmooth = smooth;

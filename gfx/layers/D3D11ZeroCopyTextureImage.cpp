@@ -12,6 +12,7 @@
 #include "D3D11TextureWrapper.h"
 #include "WMF.h"
 #include "mozilla/gfx/SourceSurfaceRawData.h"
+#include "mozilla/layers/FenceD3D11.h"
 #include "mozilla/layers/KnowsCompositor.h"
 #include "mozilla/layers/TextureForwarder.h"
 
@@ -48,11 +49,19 @@ D3D11ZeroCopyTextureImage::D3D11ZeroCopyTextureImage(
   MOZ_ASSERT(XRE_IsGPUProcess());
 }
 
+D3D11ZeroCopyTextureImage::~D3D11ZeroCopyTextureImage() {
+  // XXX add shutdown check for fence?
+}
+
 void D3D11ZeroCopyTextureImage::AllocateTextureClient(
-    KnowsCompositor* aKnowsCompositor, RefPtr<ZeroCopyUsageInfo> aUsageInfo) {
+    KnowsCompositor* aKnowsCompositor, RefPtr<ZeroCopyUsageInfo> aUsageInfo,
+    const RefPtr<FenceD3D11> aWriteFence) {
+  if (aWriteFence) {
+    aWriteFence->IncrementAndSignal();
+  }
   mTextureClient = D3D11TextureData::CreateTextureClient(
       mTexture, mArrayIndex, mSize, gfx::SurfaceFormat::NV12, mColorSpace,
-      mColorRange, aKnowsCompositor, aUsageInfo);
+      mColorRange, aKnowsCompositor, aUsageInfo, aWriteFence);
   MOZ_ASSERT(mTextureClient);
 }
 

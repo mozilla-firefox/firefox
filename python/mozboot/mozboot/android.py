@@ -5,26 +5,30 @@
 import errno
 import json
 import os
+import platform
 import stat
 import subprocess
 import sys
 import time
+from enum import Enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Set, Union
 
 import requests
+from mach.util import get_state_dir
 from tqdm import tqdm
+
+from mozboot.bootstrap import MOZCONFIG_SUGGESTION_TEMPLATE
 
 # We need the NDK version in multiple different places, and it's inconvenient
 # to pass down the NDK version to all relevant places, so we have this global
 # variable.
-from mozboot.bootstrap import MOZCONFIG_SUGGESTION_TEMPLATE
-
-NDK_VERSION = "r28"
+NDK_VERSION = "r28b"
 CMDLINE_TOOLS_VERSION_STRING = "19.0"
 CMDLINE_TOOLS_VERSION = "13114758"
 
 BUNDLETOOL_VERSION = "1.18.1"
+BUNDLETOOL_URL = f"https://github.com/google/bundletool/releases/download/{BUNDLETOOL_VERSION}/bundletool-all-{BUNDLETOOL_VERSION}.jar"
 
 # We expect the emulator AVD definitions to be platform agnostic
 X86_64_ANDROID_AVD = "linux64-android-avd-x86_64-repack"
@@ -33,9 +37,17 @@ ARM64_ANDROID_AVD = "linux64-android-avd-arm64-repack"
 AVD_MANIFEST_X86_64 = Path(__file__).resolve().parent / "android-avds/x86_64.json"
 AVD_MANIFEST_ARM64 = Path(__file__).resolve().parent / "android-avds/arm64.json"
 
+MOZBUILD_PATH = Path(get_state_dir())
+NDK_PATH = Path(
+    os.environ.get("ANDROID_NDK_HOME", MOZBUILD_PATH / f"android-ndk-{NDK_VERSION}")
+)
+AVD_HOME_PATH = Path(
+    os.environ.get("ANDROID_AVD_HOME", MOZBUILD_PATH / "android-device" / "avd")
+)
+
 JAVA_VERSION_MAJOR = "17"
-JAVA_VERSION_MINOR = "0.14"
-JAVA_VERSION_PATCH = "7"
+JAVA_VERSION_MINOR = "0.15"
+JAVA_VERSION_PATCH = "6"
 
 ANDROID_NDK_EXISTS = """
 Looks like you have the correct version of the Android NDK installed at:
@@ -90,7 +102,7 @@ class GetNdkVersionError(Exception):
     pass
 
 
-def install_mobile_android_sdk_or_ndk(url, path: Path):
+def install_mobile_android_sdk_or_ndk(url: str, path: Path):
     """
     Fetch an Android SDK or NDK from |url| and unpack it into the given |path|.
 
@@ -144,7 +156,7 @@ def install_mobile_android_sdk_or_ndk(url, path: Path):
 
 
 def download(
-    url,
+    url: str,
     download_file_path: Path,
 ):
     with requests.Session() as session:
@@ -176,7 +188,7 @@ def download(
 def download_internal(
     download_file_path: Path,
     session,
-    url,
+    url: str,
     remote_file_size,
     resume_from_byte_pos: int = None,
 ):
@@ -242,37 +254,32 @@ def get_ndk_version(ndk_path: Union[str, Path]):
         int_minor = int(minor)
         alphas = "abcdefghijklmnop"
         ascii_minor = alphas[int_minor] if int_minor > 0 else ""
-        human = "r%s%s" % (major, ascii_minor)
+        human = f"r{major}{ascii_minor}"
         return (major, minor, human)
 
 
-def get_paths(os_name):
-    mozbuild_path = Path(
-        os.environ.get("MOZBUILD_STATE_PATH", Path("~/.mozbuild").expanduser())
+def get_sdk_path(os_name: str) -> Path:
+    # The user may have an external Android SDK (in which case we
+    # save them a lengthy download), or they may have already
+    # completed the download. We unpack to
+    # ~/.mozbuild/android-sdk-$OS_NAME.
+    return Path(
+        os.environ.get("ANDROID_SDK_HOME", MOZBUILD_PATH / f"android-sdk-{os_name}"),
     )
-    sdk_path = Path(
-        os.environ.get("ANDROID_SDK_HOME", mozbuild_path / f"android-sdk-{os_name}"),
-    )
-    ndk_path = Path(
-        os.environ.get(
-            "ANDROID_NDK_HOME", mozbuild_path / f"android-ndk-{NDK_VERSION}"
-        ),
-    )
-    avd_home_path = Path(
-        os.environ.get("ANDROID_AVD_HOME", mozbuild_path / "android-device" / "avd")
-    )
-    return mozbuild_path, sdk_path, ndk_path, avd_home_path
 
 
-def sdkmanager_tool(sdk_path: Path):
+def get_sdkmanager_tool_path(sdk_path: Path) -> Path:
     # sys.platform is win32 even if Python/Win64.
     sdkmanager = "sdkmanager.bat" if sys.platform.startswith("win") else "sdkmanager"
+
+    # We expect the |sdkmanager| tool to be at
+    # ~/.mozbuild/android-sdk-$OS_NAME/tools/cmdline-tools/$CMDLINE_TOOLS_VERSION_STRING/bin/sdkmanager # NOQA: E501
     return (
         sdk_path / "cmdline-tools" / CMDLINE_TOOLS_VERSION_STRING / "bin" / sdkmanager
     )
 
 
-def avdmanager_tool(sdk_path: Path):
+def get_avdmanager_tool_path(sdk_path: Path) -> Path:
     # sys.platform is win32 even if Python/Win64.
     sdkmanager = "avdmanager.bat" if sys.platform.startswith("win") else "avdmanager"
     return (
@@ -280,32 +287,59 @@ def avdmanager_tool(sdk_path: Path):
     )
 
 
-def adb_tool(sdk_path: Path):
+def get_adb_tool_path(sdk_path: Path) -> Path:
     adb = "adb.bat" if sys.platform.startswith("win") else "adb"
     return sdk_path / "platform-tools" / adb
 
 
-def emulator_tool(sdk_path: Path):
+def get_emulator_tool_path(sdk_path: Path) -> Path:
     emulator = "emulator.bat" if sys.platform.startswith("win") else "emulator"
     return sdk_path / "emulator" / emulator
 
 
+def get_avd_manifest(avd_manifest_path: Path):
+    avd_manifest = None
+    if avd_manifest_path is not None:
+        with open(avd_manifest_path) as f:
+            avd_manifest = json.load(f)
+
+    return avd_manifest
+
+
+def get_os_name_for_android():
+    os_name_map = {
+        "Darwin": "macosx",
+        "Linux": "linux",
+        "Windows": "windows",
+    }
+    os_name = os_name_map.get(platform.system())
+    if os_name is None:
+        raise NotImplementedError(f"Unsupported platform: {platform.system()}")
+    return os_name
+
+
+def get_os_tag_for_android(os_name: str):
+    os_tag_map = {
+        "macosx": "mac",
+        "windows": "win",
+    }
+    return os_tag_map.get(os_name, os_name)
+
+
 def ensure_android(
-    os_name,
-    os_arch,
+    os_name: str,
+    os_arch: str,
+    packages: Optional[Set[str]] = None,
     artifact_mode=False,
-    ndk_only=False,
-    system_images_only=False,
-    emulator_only=False,
     avd_manifest_path: Optional[Path] = None,
     prewarm_avd=False,
     no_interactive=False,
     list_packages=False,
 ):
     """
-    Ensure the Android SDK (and NDK, if `artifact_mode` is falsy) are
-    installed.  If not, fetch and unpack the SDK and/or NDK from the
-    given URLs.  Ensure the required Android SDK packages are
+    Ensure the Android SDK (and NDK, if `artifact_mode` is false) are
+    installed. If not, fetch and unpack the SDK and/or NDK from the
+    expected URLs. Ensure the required Android SDK packages are
     installed.
 
     `os_name` can be 'linux', 'macosx' or 'windows'.
@@ -317,121 +351,74 @@ def ensure_android(
             "Google does not distribute emulator binary for ARM64 Windows. "
             "See also https://issuetracker.google.com/issues/264614669."
         )
+    os_tag = get_os_tag_for_android(os_name)
 
-    # The user may have an external Android SDK (in which case we
-    # save them a lengthy download), or they may have already
-    # completed the download. We unpack to
-    # ~/.mozbuild/{android-sdk-$OS_NAME, android-ndk-$VER}.
-    mozbuild_path, sdk_path, ndk_path, avd_home_path = get_paths(os_name)
+    # Check for Android NDK only if we are not in artifact mode.
+    if not artifact_mode:
+        ensure_android_ndk(os_name)
 
-    if os_name == "macosx":
-        os_tag = "mac"
-    elif os_name == "windows":
-        os_tag = "win"
-    else:
-        os_tag = os_name
+    ensure_android_sdk(os_name, os_tag)
+    ensure_bundletool()
 
-    sdk_url = f"https://dl.google.com/android/repository/commandlinetools-{os_tag}-{CMDLINE_TOOLS_VERSION}_latest.zip"
-    ndk_url = android_ndk_url(os_name)
-    bundletool_url = f"https://github.com/google/bundletool/releases/download/{BUNDLETOOL_VERSION}/bundletool-all-{BUNDLETOOL_VERSION}.jar"
+    avd_manifest = get_avd_manifest(avd_manifest_path)
 
-    ensure_android_sdk_and_ndk(
-        mozbuild_path,
-        os_name,
-        sdk_path=sdk_path,
-        sdk_url=sdk_url,
-        ndk_path=ndk_path,
-        ndk_url=ndk_url,
-        bundletool_url=bundletool_url,
-        artifact_mode=artifact_mode,
-        ndk_only=ndk_only,
-        emulator_only=emulator_only,
-    )
-
-    if ndk_only:
-        return
-
-    avd_manifest = None
-    if avd_manifest_path is not None:
-        with open(avd_manifest_path) as f:
-            avd_manifest = json.load(f)
-        # Some AVDs cannot be prewarmed in CI because they cannot run on linux64
-        # (like the arm64 AVD).
-        if "emulator_prewarm" in avd_manifest:
-            prewarm_avd = prewarm_avd and avd_manifest["emulator_prewarm"]
-
-    # We expect the |sdkmanager| tool to be at
-    # ~/.mozbuild/android-sdk-$OS_NAME/tools/cmdline-tools/$CMDLINE_TOOLS_VERSION_STRING/bin/sdkmanager. # NOQA: E501
     ensure_android_packages(
         os_name,
         os_arch,
-        sdkmanager_tool=sdkmanager_tool(sdk_path),
-        emulator_only=emulator_only,
-        system_images_only=system_images_only,
+        packages=packages,
         avd_manifest=avd_manifest,
         no_interactive=no_interactive,
         list_packages=list_packages,
     )
 
-    if emulator_only or system_images_only:
-        return
-
     ensure_android_avd(
-        avdmanager_tool=avdmanager_tool(sdk_path),
-        adb_tool=adb_tool(sdk_path),
-        emulator_tool=emulator_tool(sdk_path),
-        avd_home_path=avd_home_path,
-        sdk_path=sdk_path,
+        os_name,
+        os_arch,
         no_interactive=no_interactive,
         avd_manifest=avd_manifest,
         prewarm_avd=prewarm_avd,
     )
 
 
-def ensure_android_sdk_and_ndk(
-    mozbuild_path: Path,
-    os_name,
-    sdk_path: Path,
-    sdk_url,
-    ndk_path: Path,
-    ndk_url,
-    bundletool_url,
-    artifact_mode,
-    ndk_only,
-    emulator_only,
-):
+def ensure_android_ndk(os_name: str):
     """
-    Ensure the Android SDK and NDK are found at the given paths.  If not, fetch
-    and unpack the SDK and/or NDK from the given URLs into
-    |mozbuild_path/{android-sdk-$OS_NAME,android-ndk-$VER}|.
+    Ensure the Android NDK is installed. If it is not found,
+    fetch and unpack the NDK from the URL into
+    'mozbuild_path/{android-ndk-$VER}'.
     """
+    ndk_url = android_ndk_url(os_name)
 
     # It's not particularly bad to overwrite the NDK toolchain, but it does take
     # a while to unpack, so let's avoid the disk activity if possible.  The SDK
     # may prompt about licensing, so we do this first.
-    # Check for Android NDK only if we are not in artifact mode.
-    if not artifact_mode and not emulator_only:
-        install_ndk = True
-        if ndk_path.is_dir():
-            try:
-                _, _, human = get_ndk_version(ndk_path)
-                if human == NDK_VERSION:
-                    print(ANDROID_NDK_EXISTS % ndk_path)
-                    install_ndk = False
-            except GetNdkVersionError:
-                pass  # Just do the install.
-        if install_ndk:
-            # The NDK archive unpacks into a top-level android-ndk-$VER directory.
-            install_mobile_android_sdk_or_ndk(ndk_url, mozbuild_path)
+    install_ndk = True
+    if NDK_PATH.is_dir():
+        try:
+            _, _, human = get_ndk_version(NDK_PATH)
+            if human == NDK_VERSION:
+                print(ANDROID_NDK_EXISTS % NDK_PATH)
+                install_ndk = False
+        except GetNdkVersionError:
+            pass  # Just do the install.
+    if install_ndk:
+        # The NDK archive unpacks into a top-level android-ndk-$VER directory.
+        install_mobile_android_sdk_or_ndk(ndk_url, MOZBUILD_PATH)
 
-    if ndk_only:
-        return
+
+def ensure_android_sdk(os_name: str, os_tag: str):
+    """
+    Ensure the Android SDK is installed. If it is not found,
+    fetch and unpack the SDK from the URL into
+    'mozbuild_path/{android-sdk-$OS_NAME}'.
+    """
+    sdk_path = get_sdk_path(os_name)
+    sdk_url = f"https://dl.google.com/android/repository/commandlinetools-{os_tag}-{CMDLINE_TOOLS_VERSION}_latest.zip"
 
     # We don't want to blindly overwrite, since we use the
     # |sdkmanager| tool to install additional parts of the Android
     # toolchain.  If we overwrite, we lose whatever Android packages
     # the user may have already installed.
-    if sdkmanager_tool(sdk_path).is_file():
+    if get_sdkmanager_tool_path(sdk_path).is_file():
         print(ANDROID_SDK_EXISTS % sdk_path)
     else:
         if sdk_path.is_dir():
@@ -440,30 +427,22 @@ def ensure_android_sdk_and_ndk(
         # android-sdk-$OS_NAME directory; it no longer does so.  We
         # preserve the old convention to smooth detecting existing SDK
         # installations.
-        cmdline_tools_path = mozbuild_path / f"android-sdk-{os_name}" / "cmdline-tools"
+        cmdline_tools_path = MOZBUILD_PATH / f"android-sdk-{os_name}" / "cmdline-tools"
         install_mobile_android_sdk_or_ndk(sdk_url, cmdline_tools_path)
         # The tools package *really* wants to be in
         # <sdk>/cmdline-tools/$CMDLINE_TOOLS_VERSION_STRING
         (cmdline_tools_path / "cmdline-tools").rename(
             cmdline_tools_path / CMDLINE_TOOLS_VERSION_STRING
         )
-        download(bundletool_url, mozbuild_path / "bundletool.jar")
 
 
-def get_packages_to_install(packages_file_content, avd_manifest):
-    packages = []
-    packages += map(lambda package: package.strip(), packages_file_content)
-    if avd_manifest is not None:
-        packages += [avd_manifest["emulator_package"]]
-    return packages
+def ensure_bundletool():
+    download(BUNDLETOOL_URL, MOZBUILD_PATH / "bundletool.jar")
 
 
 def ensure_android_avd(
-    avdmanager_tool: Path,
-    adb_tool: Path,
-    emulator_tool: Path,
-    avd_home_path: Path,
-    sdk_path: Path,
+    os_name: str,
+    os_arch: str,
     no_interactive=False,
     avd_manifest=None,
     prewarm_avd=False,
@@ -475,9 +454,22 @@ def ensure_android_avd(
     if avd_manifest is None:
         return
 
-    avd_home_path.mkdir(parents=True, exist_ok=True)
+    # avdmanager needs Java
+    ensure_java(os_name, os_arch)
+
+    sdk_path = get_sdk_path(os_name)
+    avdmanager_tool = get_avdmanager_tool_path(sdk_path)
+    adb_tool = get_adb_tool_path(sdk_path)
+    emulator_tool = get_emulator_tool_path(sdk_path)
+
+    AVD_HOME_PATH.mkdir(parents=True, exist_ok=True)
     # The AVD needs this folder to boot, so make sure it exists here.
     (sdk_path / "platforms").mkdir(parents=True, exist_ok=True)
+
+    java_bin_path = get_java_bin_path(os_name, MOZBUILD_PATH)
+    env = os.environ.copy()
+    env["JAVA_HOME"] = str(java_bin_path.parent)
+    env["ANDROID_AVD_HOME"] = str(AVD_HOME_PATH)
 
     avd_name = avd_manifest["emulator_avd_name"]
     args = [
@@ -493,13 +485,11 @@ def ensure_android_avd(
     ]
 
     if not no_interactive:
-        subprocess.check_call(args)
+        subprocess.check_call(args, env=env)
         return
 
     # Flush outputs before running sdkmanager.
     sys.stdout.flush()
-    env = os.environ.copy()
-    env["ANDROID_AVD_HOME"] = str(avd_home_path)
     proc = subprocess.Popen(args, stdin=subprocess.PIPE, env=env)
     proc.communicate(b"no\n")
 
@@ -509,7 +499,7 @@ def ensure_android_avd(
         e = subprocess.CalledProcessError(retcode, cmd)
         raise e
 
-    avd_path = avd_home_path / (str(avd_name) + ".avd")
+    avd_path = AVD_HOME_PATH / (str(avd_name) + ".avd")
     config_file_name = avd_path / "config.ini"
 
     print(f"Writing config at {config_file_name}")
@@ -517,11 +507,17 @@ def ensure_android_avd(
     if config_file_name.is_file():
         with open(config_file_name, "a") as config:
             for key, value in avd_manifest["emulator_extra_config"].items():
-                config.write("%s=%s\n" % (key, value))
+                config.write(f"{key}={value}\n")
     else:
         raise NotImplementedError(
             f"Could not find config file at {config_file_name}, something went wrong"
         )
+
+    # Some AVDs cannot be prewarmed in CI because they cannot run on linux64
+    # (like the arm64 AVD).
+    if avd_manifest and "emulator_prewarm" in avd_manifest:
+        prewarm_avd = prewarm_avd and avd_manifest["emulator_prewarm"]
+
     if prewarm_avd:
         run_prewarm_avd(adb_tool, emulator_tool, env, avd_name, avd_manifest)
     # When running in headless mode, the emulator does not run the cleanup
@@ -556,13 +552,17 @@ def run_prewarm_avd(
     booted = False
     for i in range(100):
         boot_completed_cmd = [str(adb_tool), "shell", "getprop", "sys.boot_completed"]
-        completed_proc = subprocess.Popen(
-            boot_completed_cmd, env=env, stdout=subprocess.PIPE
-        )
         try:
-            out, err = completed_proc.communicate(timeout=30)
-            boot_completed = out.decode("UTF-8").strip()
-            print("sys.boot_completed = %s" % boot_completed)
+            result = subprocess.run(
+                boot_completed_cmd,
+                env=env,
+                capture_output=True,
+                timeout=30,
+                text=True,
+                check=False,
+            )
+            boot_completed = result.stdout.strip()
+            print(f"sys.boot_completed = {boot_completed}")
             time.sleep(30)
             if boot_completed == "1":
                 booted = True
@@ -579,12 +579,27 @@ def run_prewarm_avd(
     proc.wait()
 
 
+class AndroidPackageList(Enum):
+    ALL = "android-packages.txt"
+    SYSTEM = "android-system-images-packages.txt"
+    EMULATOR = "android-emulator-packages.txt"
+
+
+def get_android_packages(
+    package_list_type: AndroidPackageList = AndroidPackageList.ALL,
+) -> Set[str]:
+    packages_file_path = (Path(__file__).parent / package_list_type.value).resolve()
+
+    content = packages_file_path.read_text()
+    packages = {line.strip() for line in content.splitlines()}
+
+    return packages
+
+
 def ensure_android_packages(
-    os_name,
-    os_arch,
-    sdkmanager_tool: Path,
-    emulator_only=False,
-    system_images_only=False,
+    os_name: str,
+    os_arch: str,
+    packages: Optional[Set[str]],
     avd_manifest=None,
     no_interactive=False,
     list_packages=False,
@@ -593,24 +608,18 @@ def ensure_android_packages(
     Use the given sdkmanager tool (like 'sdkmanager') to install required
     Android packages.
     """
+    if not packages:
+        packages = get_android_packages(AndroidPackageList.ALL)
+
+    sdkmanager_tool = get_sdkmanager_tool_path(sdk_path=get_sdk_path(os_name))
+
+    if avd_manifest is not None:
+        packages.add(avd_manifest["emulator_package"])
+
+    print(INSTALLING_ANDROID_PACKAGES % "\n".join(packages))
 
     # This tries to install all the required Android packages.  The user
     # may be prompted to agree to the Android license.
-    if system_images_only:
-        packages_file_name = "android-system-images-packages.txt"
-    elif emulator_only:
-        packages_file_name = "android-emulator-packages.txt"
-    else:
-        packages_file_name = "android-packages.txt"
-
-    packages_file_path = (Path(__file__).parent / packages_file_name).resolve()
-
-    with open(packages_file_path) as packages_file:
-        packages_file_content = packages_file.readlines()
-
-    packages = get_packages_to_install(packages_file_content, avd_manifest)
-    print(INSTALLING_ANDROID_PACKAGES % "\n".join(packages))
-
     args = [str(sdkmanager_tool)]
     if os_name == "macosx" and os_arch == "arm64":
         # Support for Apple Silicon is still in nightly
@@ -618,7 +627,8 @@ def ensure_android_packages(
     args.extend(packages)
 
     # sdkmanager needs JAVA_HOME
-    java_bin_path = ensure_java(os_name, os_arch)
+    ensure_java(os_name, os_arch)
+    java_bin_path = get_java_bin_path(os_name, MOZBUILD_PATH)
     env = os.environ.copy()
     env["JAVA_HOME"] = str(java_bin_path.parent)
 
@@ -644,9 +654,7 @@ def ensure_android_packages(
         subprocess.check_call([str(sdkmanager_tool), "--list"])
 
 
-def generate_mozconfig(os_name, artifact_mode=False):
-    moz_state_dir, sdk_path, ndk_path, avd_home_path = get_paths(os_name)
-
+def generate_mozconfig(os_name: str, artifact_mode=False):
     extra_lines = []
     if extra_lines:
         extra_lines.append("")
@@ -657,16 +665,16 @@ def generate_mozconfig(os_name, artifact_mode=False):
         template = MOBILE_ANDROID_MOZCONFIG_TEMPLATE
 
     kwargs = dict(
-        sdk_path=sdk_path,
-        ndk_path=ndk_path,
-        avd_home_path=avd_home_path,
-        moz_state_dir=moz_state_dir,
+        sdk_path=get_sdk_path(os_name),
+        ndk_path=NDK_PATH,
+        avd_home_path=AVD_HOME_PATH,
+        moz_state_dir=MOZBUILD_PATH,
         extra_lines="\n".join(extra_lines),
     )
     return template.format(**kwargs).strip()
 
 
-def android_ndk_url(os_name, ver=NDK_VERSION):
+def android_ndk_url(os_name: str, ver=NDK_VERSION):
     # Produce a URL like
     # 'https://dl.google.com/android/repository/android-ndk-$VER-linux.zip
     base_url = "https://dl.google.com/android/repository/android-ndk"
@@ -675,70 +683,74 @@ def android_ndk_url(os_name, ver=NDK_VERSION):
         # |mach bootstrap| uses 'macosx', but Google uses 'darwin'.
         os_name = "darwin"
 
-    return "%s-%s-%s.zip" % (base_url, ver, os_name)
+    return f"{base_url}-{ver}-{os_name}.zip"
 
 
-def main(argv):
-    import optparse  # No argparse, which is new in Python 2.7.
-    import platform
+def main():
+    import argparse
 
-    parser = optparse.OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser(
+        description="Install Android SDK/NDK and other components based on the given flags."
+    )
+    parser.add_argument(
         "-a",
         "--artifact-mode",
         dest="artifact_mode",
         action="store_true",
         help="If true, install only the Android SDK (and not the Android NDK).",
     )
-    parser.add_option(
-        "--jdk-only",
-        dest="jdk_only",
-        action="store_true",
-        help="If true, install only the Java JDK.",
-    )
-    parser.add_option(
-        "--ndk-only",
-        dest="ndk_only",
-        action="store_true",
-        help="If true, install only the Android NDK (and not the Android SDK).",
-    )
-    parser.add_option(
+    parser.add_argument(
         "--system-images-only",
         dest="system_images_only",
         action="store_true",
         help="If true, install only the system images for the AVDs.",
     )
-    parser.add_option(
+    parser.add_argument(
         "--no-interactive",
         dest="no_interactive",
         action="store_true",
         help="Accept the Android SDK licenses without user interaction.",
     )
-    parser.add_option(
-        "--emulator-only",
-        dest="emulator_only",
-        action="store_true",
-        help="If true, install only the Android emulator (and not the SDK or NDK).",
-    )
-    parser.add_option(
+    parser.add_argument(
         "--avd-manifest",
         dest="avd_manifest_path",
         help="If present, generate AVD from the manifest pointed by this argument.",
     )
-    parser.add_option(
+    parser.add_argument(
         "--prewarm-avd",
         dest="prewarm_avd",
         action="store_true",
         help="If true, boot the AVD and wait until completed to speed up subsequent boots.",
     )
-    parser.add_option(
+    parser.add_argument(
         "--list-packages",
         dest="list_packages",
         action="store_true",
         help="If true, list installed packages.",
     )
 
-    options, _ = parser.parse_args(argv)
+    exclusive_group = parser.add_mutually_exclusive_group()
+
+    exclusive_group.add_argument(
+        "--emulator-only",
+        dest="emulator_only",
+        action="store_true",
+        help="If true, install only the Android emulator (and not the SDK or NDK).",
+    )
+    exclusive_group.add_argument(
+        "--jdk-only",
+        dest="jdk_only",
+        action="store_true",
+        help="If true, install only the Java JDK.",
+    )
+    exclusive_group.add_argument(
+        "--ndk-only",
+        dest="ndk_only",
+        action="store_true",
+        help="If true, install only the Android NDK (and not the Android SDK).",
+    )
+
+    options = parser.parse_args()
 
     if options.artifact_mode and options.ndk_only:
         raise NotImplementedError("Use no options to install the NDK and the SDK.")
@@ -746,36 +758,49 @@ def main(argv):
     if options.artifact_mode and options.emulator_only:
         raise NotImplementedError("Use no options to install the SDK and emulators.")
 
-    os_name = None
-    if platform.system() == "Darwin":
-        os_name = "macosx"
-    elif platform.system() == "Linux":
-        os_name = "linux"
-    elif platform.system() == "Windows":
-        os_name = "windows"
-    else:
-        raise NotImplementedError(
-            "We don't support bootstrapping the Android SDK (or Android "
-            f"NDK) on {platform.system()} yet!"
-        )
-
+    os_name = get_os_name_for_android()
+    os_tag = get_os_tag_for_android(os_name)
     os_arch = platform.machine()
-
-    if options.jdk_only:
-        ensure_java(os_name, os_arch)
-        return 0
 
     avd_manifest_path = (
         Path(options.avd_manifest_path) if options.avd_manifest_path else None
     )
 
+    if options.emulator_only:
+        # We need the sdk to install the emulator
+        ensure_android_sdk(os_name, os_tag)
+        ensure_bundletool()
+
+        packages = get_android_packages(AndroidPackageList.EMULATOR)
+
+        ensure_android_packages(
+            os_name,
+            os_arch,
+            packages=packages,
+            avd_manifest=get_avd_manifest(avd_manifest_path),
+            no_interactive=options.no_interactive,
+            list_packages=options.list_packages,
+        )
+        return 0
+
+    if options.jdk_only:
+        ensure_java(os_name, os_arch)
+        return 0
+
+    if options.ndk_only:
+        ensure_android_ndk(os_name)
+        return 0
+
+    packages = None
+
+    if options.system_images_only:
+        packages = get_android_packages(AndroidPackageList.SYSTEM)
+
     ensure_android(
         os_name,
         os_arch,
+        packages=packages,
         artifact_mode=options.artifact_mode,
-        ndk_only=options.ndk_only,
-        system_images_only=options.system_images_only,
-        emulator_only=options.emulator_only,
         avd_manifest_path=avd_manifest_path,
         prewarm_avd=options.prewarm_avd,
         no_interactive=options.no_interactive,
@@ -794,8 +819,6 @@ def main(argv):
 
 
 def ensure_java(os_name: str, os_arch: str):
-    mozbuild_path, _, _, _ = get_paths(os_name)
-
     if os_name == "macosx":
         os_tag = "mac"
     else:
@@ -808,26 +831,25 @@ def ensure_java(os_name: str, os_arch: str):
     else:
         arch = os_arch
 
-    ext = "zip" if os_name == "windows" else "tar.gz"
-
-    java_path = java_bin_path(os_name, mozbuild_path)
+    java_path = get_java_bin_path(os_name, MOZBUILD_PATH)
     if not java_path:
         raise NotImplementedError(f"Could not bootstrap java for {os_name}.")
 
     if not java_path.exists():
+        ext = "zip" if os_name == "windows" else "tar.gz"
+
         # e.g. https://github.com/adoptium/temurin17-binaries/releases/
-        #      download/jdk-17.0.14%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.14_7.tar.gz
+        #      download/jdk-17.0.15%2B6/OpenJDK17U-jdk_x64_linux_hotspot_17.0.15_6.tar.gz
         java_url = (
             f"https://github.com/adoptium/temurin{JAVA_VERSION_MAJOR}-binaries/releases/"
             f"download/jdk-{JAVA_VERSION_MAJOR}.{JAVA_VERSION_MINOR}%2B{JAVA_VERSION_PATCH}/"
             f"OpenJDK{JAVA_VERSION_MAJOR}U-jdk_{arch}_{os_tag}_hotspot_{JAVA_VERSION_MAJOR}.{JAVA_VERSION_MINOR}_{JAVA_VERSION_PATCH}.{ext}"
         )
-        install_mobile_android_sdk_or_ndk(java_url, mozbuild_path / "jdk")
-    return java_path
+        install_mobile_android_sdk_or_ndk(java_url, MOZBUILD_PATH / "jdk")
 
 
-def java_bin_path(os_name, toolchain_path: Path):
-    # Like jdk-17.0.14+7
+def get_java_bin_path(os_name: str, toolchain_path: Path):
+    # Like jdk-17.0.15+6
     jdk_folder = f"jdk-{JAVA_VERSION_MAJOR}.{JAVA_VERSION_MINOR}+{JAVA_VERSION_PATCH}"
 
     java_path = toolchain_path / "jdk" / jdk_folder
@@ -842,7 +864,7 @@ def java_bin_path(os_name, toolchain_path: Path):
         return None
 
 
-def locate_java_bin_path(host_kernel, toolchain_path: Union[str, Path]):
+def locate_java_bin_path(host_kernel: str, toolchain_path: Union[str, Path]):
     if host_kernel == "WINNT":
         os_name = "windows"
     elif host_kernel == "Darwin":
@@ -852,7 +874,7 @@ def locate_java_bin_path(host_kernel, toolchain_path: Union[str, Path]):
     else:
         # Default to Linux
         os_name = "linux"
-    path = java_bin_path(os_name, Path(toolchain_path))
+    path = get_java_bin_path(os_name, Path(toolchain_path))
     if not path.is_dir():
         raise JavaLocationFailedException(
             f"Could not locate Java at {path}, please run "
@@ -866,4 +888,4 @@ class JavaLocationFailedException(Exception):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(main())

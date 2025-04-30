@@ -6,6 +6,7 @@ package org.mozilla.fenix
 
 import android.content.Context
 import android.net.ConnectivityManager
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.getSystemService
 import androidx.navigation.NavController
 import mozilla.components.browser.errorpages.ErrorPages
@@ -89,14 +90,20 @@ class AppRequestInterceptor(
         // This is not an ideal solution. For context, see:
         // https://github.com/mozilla-mobile/android-components/pull/5068#issuecomment-558415367
 
-        val isConnected: Boolean = context.getSystemService<ConnectivityManager>()!!.isOnline()
-
         return when {
-            errorType == ErrorType.ERROR_UNKNOWN_HOST && !isConnected -> ErrorType.ERROR_NO_INTERNET
+            errorType == ErrorType.ERROR_UNKNOWN_HOST && !isConnected() -> ErrorType.ERROR_NO_INTERNET
             errorType == ErrorType.ERROR_HTTPS_ONLY -> ErrorType.ERROR_HTTPS_ONLY
             else -> errorType
         }
     }
+
+    /**
+     * Checks for network availability.
+     *
+     * */
+    @VisibleForTesting
+    internal fun isConnected(): Boolean =
+        context.getSystemService<ConnectivityManager>()!!.isOnline()
 
     private fun getRiskLevel(errorType: ErrorType): RiskLevel = when (errorType) {
         ErrorType.UNKNOWN,

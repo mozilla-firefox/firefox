@@ -165,35 +165,6 @@ add_task(async function () {
       let test = TESTS[testName];
 
       await execSystemAddonTest(setupName, setup, test, distroDir);
-
-      // TODO(Bug 1949847): update this part along with removing the app-system-defaults location.
-      // Running the same test case again but with the default
-      // system addon installed as a system builtin.
-      info("Running test " + setupName + " " + testName + " (asBuiltIn)");
-      const setupAsBuiltIn = {
-        setup: setup.setup,
-        initialState: setup.initialState.map(stateEntry => {
-          return !stateEntry.version
-            ? stateEntry
-            : { ...stateEntry, asBuiltin: true };
-        }),
-      };
-      const testAsBuiltIn = {
-        updateList: test.updateList,
-        finalState: {
-          [setupName]: test.finalState[setupName].map(stateEntry => {
-            return stateEntry.isUpgrade
-              ? stateEntry
-              : { ...stateEntry, asBuiltin: true };
-          }),
-        },
-      };
-      await execSystemAddonTest(
-        setupName,
-        setupAsBuiltIn,
-        testAsBuiltIn,
-        distroDir
-      );
     }
   }
 });

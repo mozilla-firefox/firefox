@@ -45,4 +45,6 @@
 % http://localhost/tests/perf-reftest-singletons/remove-child-with-lengthy-text.html
 % http://localhost/tests/perf-reftest-singletons/resize-lengthy-textarea.html
 % http://localhost/tests/perf-reftest-singletons/thai-reflow.html
+% http://localhost/tests/perf-reftest-singletons/deeply-nested-grid-1.html
+% http://localhost/tests/perf-reftest-singletons/deeply-nested-grid-2.html
 # When modifying this list, please also update build/pgo/index.html (If relevant to profile-guided optimzation).

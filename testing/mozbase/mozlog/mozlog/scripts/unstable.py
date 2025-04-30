@@ -17,7 +17,7 @@ class StatusHandler(reader.LogHandler):
         )
 
     def test_id(self, test):
-        if type(test) in (str, str):
+        if isinstance(test, str):
             return test
         else:
             return tuple(test)

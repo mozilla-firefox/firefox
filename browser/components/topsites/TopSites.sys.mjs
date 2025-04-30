@@ -1199,18 +1199,16 @@ export class FaviconProvider {
    * @param {nsIURI} uri
    *        Page to check for favicon data
    * @returns {object}
-   *        A promise of an object (possibly null) containing the data
+   *        Favicon info object. If there is no data in DB, return null.
    */
-  getFaviconInfo(uri) {
-    return new Promise(resolve =>
-      lazy.PlacesUtils.favicons.getFaviconDataForPage(
-        uri,
-        // Package up the icon data in an object if we have it; otherwise null
-        (iconUri, faviconLength, favicon, mimeType, faviconSize) =>
-          resolve(iconUri ? { iconUri, faviconSize } : null),
-        lazy.NewTabUtils.activityStreamProvider.THUMB_FAVICON_SIZE
-      )
+  async getFaviconInfo(uri) {
+    let favicon = await lazy.PlacesUtils.favicons.getFaviconForPage(
+      uri,
+      lazy.NewTabUtils.activityStreamProvider.THUMB_FAVICON_SIZE
     );
+    return favicon
+      ? { iconUri: favicon.uri, faviconSize: favicon.width }
+      : null;
   }
 
   /**

@@ -60,6 +60,8 @@ for patch in \
  bug-1790071-ICU-22132-standardize-vtzone-output.diff \
  double-conversion.diff \
  bug-1856290-ICU-20548-dateinterval-timezone.diff \
+ bug-1954138-dtitvfmt-adopt-calendar.diff \
+ bug-1954138-ICU-23069-rosh-hashanah-postponement.diff \
 ; do
   echo "Applying local patch $patch"
   patch -d ${icu_dir}/../../ -p1 --no-backup-if-mismatch < ${icu_dir}/../icu-patches/$patch

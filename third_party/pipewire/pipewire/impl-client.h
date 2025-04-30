@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_IMPL_CLIENT_H
 #define PIPEWIRE_IMPL_CLIENT_H
@@ -32,6 +12,8 @@ extern "C" {
 #include <spa/utils/hook.h>
 
 /** \page page_client_impl Client Implementation
+ *
+ * \see \ref pw_impl_client
  *
  * \section sec_page_client_impl_overview Overview
  *
@@ -71,7 +53,7 @@ extern "C" {
  * Each client has its own list of resources it is bound to along with
  * a mapping between the client types and server types.
  *
- * See: \ref page_client_impl
+ * \see \ref page_client_impl
  */
 
 /**
@@ -162,6 +144,9 @@ struct pw_resource *pw_impl_client_find_resource(struct pw_impl_client *client, 
 
 /** Get the global associated with this client */
 struct pw_global *pw_impl_client_get_global(struct pw_impl_client *client);
+
+/** Get the mempool associated with this client, Since 0.3.74 */
+struct pw_mempool *pw_impl_client_get_mempool(struct pw_impl_client *client);
 
 /** listen to events from this client */
 void pw_impl_client_add_listener(struct pw_impl_client *client,

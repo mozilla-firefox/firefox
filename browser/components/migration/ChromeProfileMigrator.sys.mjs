@@ -611,18 +611,25 @@ export class ChromeProfileMigrator extends MigratorBase {
 
         let cards = [];
         for (let row of rows) {
-          cards.push({
-            "cc-name": row.getResultByName("name_on_card"),
-            "cc-number": await loginCrypto.decryptData(
-              row.getResultByName("card_number_encrypted"),
-              null
-            ),
-            "cc-exp-month": parseInt(
-              row.getResultByName("expiration_month"),
-              10
-            ),
-            "cc-exp-year": parseInt(row.getResultByName("expiration_year"), 10),
-          });
+          try {
+            cards.push({
+              "cc-name": row.getResultByName("name_on_card"),
+              "cc-number": await loginCrypto.decryptData(
+                row.getResultByName("card_number_encrypted"),
+                null
+              ),
+              "cc-exp-month": parseInt(
+                row.getResultByName("expiration_month"),
+                10
+              ),
+              "cc-exp-year": parseInt(
+                row.getResultByName("expiration_year"),
+                10
+              ),
+            });
+          } catch (e) {
+            console.error(e);
+          }
         }
 
         await MigrationUtils.insertCreditCardsWrapper(cards);

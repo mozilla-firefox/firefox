@@ -1,5 +1,4 @@
 //! Serialize a database.
-use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ptr::NonNull;
@@ -52,7 +51,7 @@ pub enum Data<'conn> {
     Owned(OwnedData),
 }
 
-impl<'conn> Deref for Data<'conn> {
+impl Deref for Data<'_> {
     type Target = [u8];
 
     fn deref(&self) -> &[u8] {
@@ -67,7 +66,7 @@ impl<'conn> Deref for Data<'conn> {
 impl Connection {
     /// Serialize a database.
     pub fn serialize(&self, schema: DatabaseName) -> Result<Data> {
-        let schema = schema.as_cstring()?;
+        let schema = schema.as_cstr()?;
         let mut sz = 0;
         let mut ptr: *mut u8 = unsafe {
             ffi::sqlite3_serialize(
@@ -103,7 +102,7 @@ impl Connection {
         data: OwnedData,
         read_only: bool,
     ) -> Result<()> {
-        let schema = schema.as_cstring()?;
+        let schema = schema.as_cstr()?;
         let (data, sz) = data.into_raw();
         let sz = sz.try_into().unwrap();
         let flags = if read_only {
@@ -136,7 +135,6 @@ impl Connection {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Connection, DatabaseName, Result};
 
     #[test]
     fn serialize() -> Result<()> {

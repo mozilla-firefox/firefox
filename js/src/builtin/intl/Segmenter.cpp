@@ -10,16 +10,13 @@
 
 #include "mozilla/Assertions.h"
 #include "mozilla/IntegerTypeTraits.h"
+#include "mozilla/intl/ICU4XGeckoDataProvider.h"
 #include "mozilla/Range.h"
 #include "mozilla/UniquePtr.h"
 
-#if defined(MOZ_ICU4X)
-#  include "mozilla/intl/ICU4XGeckoDataProvider.h"
-#  include "ICU4XGraphemeClusterSegmenter.h"
-#  include "ICU4XSentenceSegmenter.h"
-#  include "ICU4XWordSegmenter.h"
-#endif
-
+#include "ICU4XGraphemeClusterSegmenter.h"
+#include "ICU4XSentenceSegmenter.h"
+#include "ICU4XWordSegmenter.h"
 #include "jspubtd.h"
 #include "NamespaceImports.h"
 
@@ -300,7 +297,6 @@ class SegmenterBreakIteratorType {
   bool isWordLike() const { return Interface::isWordLike(impl_); }
 };
 
-#if defined(MOZ_ICU4X)
 // Each SegmenterBreakIterator interface contains the following definitions:
 //
 // - BreakIterator: Type of the ICU4X break iterator.
@@ -445,7 +441,6 @@ static typename Interface::Segmenter* CreateSegmenter(JSContext* cx) {
   }
   return result.ok;
 }
-#endif
 
 static bool EnsureInternalsResolved(JSContext* cx,
                                     Handle<SegmenterObject*> segmenter) {
@@ -486,7 +481,6 @@ static bool EnsureInternalsResolved(JSContext* cx,
     }
   }
 
-#if defined(MOZ_ICU4X)
   switch (granularity) {
     case SegmenterGranularity::Grapheme: {
       auto* seg = CreateSegmenter<GraphemeClusterSegmenter>(cx);
@@ -513,7 +507,6 @@ static bool EnsureInternalsResolved(JSContext* cx,
       break;
     }
   }
-#endif
 
   segmenter->setLocale(locale);
   segmenter->setGranularity(granularity);
@@ -535,7 +528,6 @@ void SegmenterObject::finalize(JS::GCContext* gcx, JSObject* obj) {
 
   auto& segmenter = obj->as<SegmenterObject>();
   if (void* seg = segmenter.getSegmenter()) {
-#if defined(MOZ_ICU4X)
     switch (segmenter.getGranularity()) {
       case SegmenterGranularity::Grapheme: {
         DestroySegmenter<GraphemeClusterSegmenter>(seg);
@@ -550,9 +542,6 @@ void SegmenterObject::finalize(JS::GCContext* gcx, JSObject* obj) {
         break;
       }
     }
-#else
-    MOZ_CRASH("ICU4X disabled");
-#endif
   }
 }
 
@@ -570,7 +559,6 @@ static void DestroyBreakIterator(void* brk) {
  */
 template <typename T>
 static void DestroyBreakIterator(const T* segments) {
-#if defined(MOZ_ICU4X)
   void* brk = segments->getBreakIterator();
   MOZ_ASSERT(brk);
 
@@ -602,9 +590,6 @@ static void DestroyBreakIterator(const T* segments) {
       break;
     }
   }
-#else
-  MOZ_CRASH("ICU4X disabled");
-#endif
 }
 
 void SegmentsObject::finalize(JS::GCContext* gcx, JSObject* obj) {
@@ -659,43 +644,31 @@ static Boundaries FindBoundaryFrom(Handle<T*> segments, int32_t index) {
 
 template <typename T>
 static Boundaries GraphemeBoundaries(Handle<T*> segments, int32_t index) {
-#if defined(MOZ_ICU4X)
   if (segments->hasLatin1StringChars()) {
     return FindBoundaryFrom<GraphemeClusterSegmenter::BreakIteratorLatin1>(
         segments, index);
   }
   return FindBoundaryFrom<GraphemeClusterSegmenter::BreakIteratorTwoByte>(
       segments, index);
-#else
-  MOZ_CRASH("ICU4X disabled");
-#endif
 }
 
 template <typename T>
 static Boundaries WordBoundaries(Handle<T*> segments, int32_t index) {
-#if defined(MOZ_ICU4X)
   if (segments->hasLatin1StringChars()) {
     return FindBoundaryFrom<WordSegmenter::BreakIteratorLatin1>(segments,
                                                                 index);
   }
   return FindBoundaryFrom<WordSegmenter::BreakIteratorTwoByte>(segments, index);
-#else
-  MOZ_CRASH("ICU4X disabled");
-#endif
 }
 
 template <typename T>
 static Boundaries SentenceBoundaries(Handle<T*> segments, int32_t index) {
-#if defined(MOZ_ICU4X)
   if (segments->hasLatin1StringChars()) {
     return FindBoundaryFrom<SentenceSegmenter::BreakIteratorLatin1>(segments,
                                                                     index);
   }
   return FindBoundaryFrom<SentenceSegmenter::BreakIteratorTwoByte>(segments,
                                                                    index);
-#else
-  MOZ_CRASH("ICU4X disabled");
-#endif
 }
 
 /**
@@ -781,7 +754,6 @@ static bool EnsureBreakIterator(JSContext* cx, Handle<T*> segments,
     return false;
   }
 
-#if defined(MOZ_ICU4X)
   bool isLatin1 = segments->hasLatin1StringChars();
 
   // Create a new break iterator based on the granularity and character type.
@@ -823,9 +795,6 @@ static bool EnsureBreakIterator(JSContext* cx, Handle<T*> segments,
   MOZ_ASSERT(segments->getIndex() == 0, "index is initially zero");
 
   return true;
-#else
-  MOZ_CRASH("ICU4X disabled");
-#endif
 }
 
 /**

@@ -46,31 +46,18 @@ class OSXAndroidBootstrapper:
 
         from mozboot import android
 
+        if os_arch == "x86_64" or os_arch == "x86":
+            avd_manifest_path = android.AVD_MANIFEST_X86_64
+        else:
+            avd_manifest_path = android.AVD_MANIFEST_ARM64
+
         android.ensure_android(
             "macosx",
             os_arch,
             artifact_mode=artifact_mode,
             no_interactive=self.no_interactive,
+            avd_manifest_path=avd_manifest_path,
         )
-
-        if os_arch == "x86_64" or os_arch == "x86":
-            android.ensure_android(
-                "macosx",
-                os_arch,
-                system_images_only=True,
-                artifact_mode=artifact_mode,
-                no_interactive=self.no_interactive,
-                avd_manifest_path=android.AVD_MANIFEST_X86_64,
-            )
-        else:
-            android.ensure_android(
-                "macosx",
-                os_arch,
-                system_images_only=True,
-                artifact_mode=artifact_mode,
-                no_interactive=self.no_interactive,
-                avd_manifest_path=android.AVD_MANIFEST_ARM64,
-            )
 
     def ensure_mobile_android_packages(self):
         from mozboot import android

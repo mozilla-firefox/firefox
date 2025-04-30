@@ -5,11 +5,16 @@
 package org.mozilla.fenix.home.setup.store
 
 import androidx.annotation.StringRes
+import mozilla.components.support.test.mock
+import mozilla.components.support.test.whenever
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.appstate.setup.checklist.ChecklistItem
+import org.mozilla.fenix.components.appstate.setup.checklist.getSetupChecklistCollection
 import org.mozilla.fenix.components.appstate.setup.checklist.getTaskProgress
+import org.mozilla.fenix.nimbus.SetupChecklistType
+import org.mozilla.fenix.utils.Settings
 
 class ChecklistItemTest {
 
@@ -112,6 +117,182 @@ class ChecklistItemTest {
 
         assertEquals(3, progress.totalTasks)
         assertEquals(2, progress.completedTasks)
+    }
+
+    @Test
+    fun `WHEN collection 1 THEN getSetupChecklistCollection returns a list of the expected tasks`() {
+        val settings = mock<Settings>()
+        val isCompleted = false
+        whenever(settings.isDefaultBrowserBlocking()).thenReturn(isCompleted)
+        whenever(settings.hasCompletedSetupStepExtensions).thenReturn(isCompleted)
+        whenever(settings.signedInFxaAccount).thenReturn(isCompleted)
+
+        val result = getSetupChecklistCollection(
+            settings = settings,
+            collection = SetupChecklistType.COLLECTION_1,
+        )
+
+        val expected = listOf(
+            ChecklistItem.Task(
+                type = ChecklistItem.Task.Type.SET_AS_DEFAULT,
+                title = R.string.setup_checklist_task_default_browser,
+                icon = R.drawable.mozac_ic_globe_24,
+                isCompleted = isCompleted,
+            ),
+            ChecklistItem.Task(
+                type = ChecklistItem.Task.Type.EXPLORE_EXTENSION,
+                title = R.string.setup_checklist_task_explore_extensions,
+                icon = R.drawable.ic_addons_extensions,
+                isCompleted = isCompleted,
+            ),
+            ChecklistItem.Task(
+                type = ChecklistItem.Task.Type.SIGN_IN,
+                title = R.string.setup_checklist_task_account_sync,
+                icon = R.drawable.ic_fx_accounts_avatar,
+                isCompleted = isCompleted,
+            ),
+        )
+
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun `WHEN collection 2 THEN getSetupChecklistCollection returns a list of the expected groups`() {
+        val settings = mock<Settings>()
+        val isCompleted = false
+        whenever(settings.isDefaultBrowserBlocking()).thenReturn(isCompleted)
+        whenever(settings.hasCompletedSetupStepExtensions).thenReturn(isCompleted)
+        whenever(settings.hasCompletedSetupStepTheme).thenReturn(isCompleted)
+        whenever(settings.hasCompletedSetupStepToolbar).thenReturn(isCompleted)
+        whenever(settings.signedInFxaAccount).thenReturn(isCompleted)
+
+        val result = getSetupChecklistCollection(
+            settings = settings,
+            collection = SetupChecklistType.COLLECTION_2,
+        )
+
+        val expected = listOf(
+            ChecklistItem.Group(
+                title = R.string.setup_checklist_group_essentials,
+                tasks = listOf(
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.SET_AS_DEFAULT,
+                        title = R.string.setup_checklist_task_default_browser,
+                        icon = R.drawable.mozac_ic_globe_24,
+                        isCompleted = isCompleted,
+                    ),
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.SIGN_IN,
+                        title = R.string.setup_checklist_task_account_sync,
+                        icon = R.drawable.ic_fx_accounts_avatar,
+                        isCompleted = isCompleted,
+                    ),
+                ),
+            ),
+            ChecklistItem.Group(
+                title = R.string.setup_checklist_group_customize,
+                tasks = listOf(
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.SELECT_THEME,
+                        title = R.string.setup_checklist_task_theme_selection,
+                        icon = R.drawable.mozac_ic_themes_24,
+                        isCompleted = isCompleted,
+                    ),
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.CHANGE_TOOLBAR_PLACEMENT,
+                        title = R.string.setup_checklist_task_toolbar_selection,
+                        icon = R.drawable.mozac_ic_tool_24,
+                        isCompleted = isCompleted,
+                    ),
+                ),
+            ),
+            ChecklistItem.Group(
+                title = R.string.setup_checklist_group_helpful_tools,
+                tasks = listOf(
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.INSTALL_SEARCH_WIDGET,
+                        title = R.string.setup_checklist_task_search_widget,
+                        icon = R.drawable.ic_search,
+                        isCompleted = isCompleted,
+                    ),
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.EXPLORE_EXTENSION,
+                        title = R.string.setup_checklist_task_explore_extensions,
+                        icon = R.drawable.ic_addons_extensions,
+                        isCompleted = isCompleted,
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun `WHEN collection 2 and tab strip enabled THEN getSetupChecklistCollection returns a list of the expected groups`() {
+        val settings = mock<Settings>()
+        val isCompleted = false
+        whenever(settings.isDefaultBrowserBlocking()).thenReturn(isCompleted)
+        whenever(settings.hasCompletedSetupStepExtensions).thenReturn(isCompleted)
+        whenever(settings.hasCompletedSetupStepTheme).thenReturn(isCompleted)
+        whenever(settings.hasCompletedSetupStepToolbar).thenReturn(isCompleted)
+        whenever(settings.signedInFxaAccount).thenReturn(isCompleted)
+
+        val result = getSetupChecklistCollection(
+            settings = settings,
+            collection = SetupChecklistType.COLLECTION_2,
+            tabStripEnabled = true,
+        )
+
+        val expected = listOf(
+            ChecklistItem.Group(
+                title = R.string.setup_checklist_group_essentials,
+                tasks = listOf(
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.SET_AS_DEFAULT,
+                        title = R.string.setup_checklist_task_default_browser,
+                        icon = R.drawable.mozac_ic_globe_24,
+                        isCompleted = isCompleted,
+                    ),
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.SIGN_IN,
+                        title = R.string.setup_checklist_task_account_sync,
+                        icon = R.drawable.ic_fx_accounts_avatar,
+                        isCompleted = isCompleted,
+                    ),
+                ),
+            ),
+            ChecklistItem.Group(
+                title = R.string.setup_checklist_group_customize,
+                tasks = listOf(
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.SELECT_THEME,
+                        title = R.string.setup_checklist_task_theme_selection,
+                        icon = R.drawable.mozac_ic_themes_24,
+                        isCompleted = isCompleted,
+                    ),
+                ),
+            ),
+            ChecklistItem.Group(
+                title = R.string.setup_checklist_group_helpful_tools,
+                tasks = listOf(
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.INSTALL_SEARCH_WIDGET,
+                        title = R.string.setup_checklist_task_search_widget,
+                        icon = R.drawable.ic_search,
+                        isCompleted = isCompleted,
+                    ),
+                    ChecklistItem.Task(
+                        type = ChecklistItem.Task.Type.EXPLORE_EXTENSION,
+                        title = R.string.setup_checklist_task_explore_extensions,
+                        icon = R.drawable.ic_addons_extensions,
+                        isCompleted = isCompleted,
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(expected, result)
     }
 
     private fun buildTask(

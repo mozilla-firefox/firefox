@@ -10,19 +10,18 @@ const { RemoteSettingsExperimentLoader } = ChromeUtils.importESModule(
 );
 
 async function setup(recipes) {
+  const sandbox = sinon.createSandbox();
+
+  sandbox.stub(ExperimentManager, "forceEnroll");
+
   const client = RemoteSettings("nimbus-desktop-experiments");
   await client.db.importChanges({}, Date.now(), recipes, {
     clear: true,
   });
 
-  await BrowserTestUtils.waitForCondition(
-    async () => (await client.get()).length,
-    "RS is ready"
-  );
-
-  return {
-    client,
-    cleanup: () => client.db.clear(),
+  return async function cleanup() {
+    await client.db.clear();
+    sandbox.restore();
   };
 }
 
@@ -36,49 +35,48 @@ add_setup(async function () {
     ],
   });
 
+  await RemoteSettingsExperimentLoader.finishedUpdating();
+
   registerCleanupFunction(async () => {
     await SpecialPowers.popPrefEnv();
   });
 });
 
 add_task(async function test_fetch_recipe_and_branch_no_debug() {
-  const sandbox = sinon.createSandbox();
   Services.prefs.setBoolPref("nimbus.debug", false);
-  let stub = sandbox.stub(ExperimentManager, "forceEnroll");
-  let recipes = [ExperimentFakes.recipe("slug123")];
 
-  const { cleanup } = await setup(recipes);
+  const slug = "test_fetch_recipe_and_branch_no_debug";
+  const recipe = NimbusTestUtils.factories.recipe(slug, { targeting: "false" });
+  const cleanup = await setup([recipe]);
 
   await Assert.rejects(
     RemoteSettingsExperimentLoader.optInToExperiment({
-      slug: "slug123",
+      slug,
       branch: "control",
     }),
     /Could not opt in/,
     "should throw an error"
   );
 
-  Assert.ok(stub.notCalled, "forceEnroll is not called");
+  Assert.ok(
+    ExperimentManager.forceEnroll.notCalled,
+    "forceEnroll is not called"
+  );
 
   Services.prefs.setBoolPref("nimbus.debug", true);
 
   await RemoteSettingsExperimentLoader.optInToExperiment({
-    slug: "slug123",
+    slug,
     branch: "control",
   });
 
-  Assert.ok(stub.called, "forceEnroll is called");
+  Assert.ok(ExperimentManager.forceEnroll.called, "forceEnroll is called");
 
-  sandbox.restore();
   await cleanup();
 });
 
 add_task(async function test_fetch_recipe_and_branch_badslug() {
-  const sandbox = sinon.createSandbox();
-  let stub = sandbox.stub(ExperimentManager, "forceEnroll");
-  let recipes = [ExperimentFakes.recipe("slug123")];
-
-  const { cleanup } = await setup(recipes);
+  const cleanup = await setup([]);
 
   await Assert.rejects(
     RemoteSettingsExperimentLoader.optInToExperiment({
@@ -89,156 +87,179 @@ add_task(async function test_fetch_recipe_and_branch_badslug() {
     "should throw an error"
   );
 
-  Assert.ok(stub.notCalled, "forceEnroll is not called");
+  Assert.ok(
+    ExperimentManager.forceEnroll.notCalled,
+    "forceEnroll is not called"
+  );
 
-  sandbox.restore();
   await cleanup();
 });
 
 add_task(async function test_fetch_recipe_and_branch_badbranch() {
-  const sandbox = sinon.createSandbox();
-  let stub = sandbox.stub(ExperimentManager, "forceEnroll");
-  let recipes = [ExperimentFakes.recipe("slug123")];
-
-  const { cleanup } = await setup(recipes);
+  const slug = "test_fetch_recipe_and_branch_badbranch";
+  const recipe = NimbusTestUtils.factories.recipe(slug, { targeting: "false" });
+  const cleanup = await setup([recipe]);
 
   await Assert.rejects(
     RemoteSettingsExperimentLoader.optInToExperiment({
-      slug: "slug123",
+      slug,
       branch: "other_branch",
     }),
-    /Could not find branch slug other_branch in slug123/,
+    new RegExp(`Could not find branch slug other_branch in ${slug}`),
     "should throw an error"
   );
 
-  Assert.ok(stub.notCalled, "forceEnroll is not called");
+  Assert.ok(
+    ExperimentManager.forceEnroll.notCalled,
+    "forceEnroll is not called"
+  );
 
-  sandbox.restore();
   await cleanup();
 });
 
 add_task(async function test_fetch_recipe_and_branch() {
-  const sandbox = sinon.createSandbox();
-  let stub = sandbox.stub(ExperimentManager, "forceEnroll");
-  let recipes = [ExperimentFakes.recipe("slug_fetch_recipe")];
+  const slug = "test_fetch_recipe_and_branch";
+  const recipe = NimbusTestUtils.factories.recipe(slug, { targeting: "false" });
+  const cleanup = await setup([recipe]);
 
-  const { cleanup } = await setup(recipes);
   await RemoteSettingsExperimentLoader.optInToExperiment({
-    slug: "slug_fetch_recipe",
+    slug,
     branch: "control",
   });
 
-  Assert.ok(stub.called, "Called forceEnroll");
-  Assert.deepEqual(stub.firstCall.args[0], recipes[0], "Called with recipe");
-  Assert.deepEqual(
-    stub.firstCall.args[1],
-    recipes[0].branches[0],
-    "Called with branch"
+  Assert.ok(
+    ExperimentManager.forceEnroll.calledOnceWithExactly(
+      recipe,
+      recipe.branches[0]
+    ),
+    "Called forceEnroll"
   );
 
-  sandbox.restore();
   await cleanup();
 });
 
 add_task(async function test_invalid_recipe() {
-  const sandbox = sinon.createSandbox();
-  const stub = sandbox.stub(ExperimentManager, "forceEnroll");
-  const recipe = ExperimentFakes.recipe("invalid-recipe");
+  const slug = "test_invalid_recipe";
+  const recipe = NimbusTestUtils.factories.recipe("test_invalid_recipe", {
+    targeting: "false",
+  });
   delete recipe.branches;
 
-  const { cleanup } = await setup([recipe]);
+  const cleanup = await setup([recipe]);
 
   await Assert.rejects(
     RemoteSettingsExperimentLoader.optInToExperiment({
-      slug: "invalid-recipe",
+      slug,
       branch: "control",
     }),
     /failed validation/
   );
 
-  Assert.ok(stub.notCalled, "forceEnroll not called");
+  Assert.ok(ExperimentManager.forceEnroll.notCalled, "forceEnroll not called");
 
-  sandbox.restore();
   await cleanup();
 });
 
 add_task(async function test_invalid_branch_variablesOnly() {
-  const sandbox = sinon.createSandbox();
-  const stub = sandbox.stub(ExperimentManager, "forceEnroll");
-  const recipe = ExperimentFakes.recipe("invalid-value");
-  recipe.featureIds = ["testFeature"];
-  recipe.branches = [recipe.branches[0]];
-  recipe.branches[0].features[0].featureId = "testFeature";
-  recipe.branches[0].features[0].value = {
-    enabled: "foo",
-    testInt: true,
-    testSetString: 123,
-  };
+  const slug = "test_invalid_branch_variablesonly";
+  const recipe = NimbusTestUtils.factories.recipe(slug, {
+    branches: [
+      {
+        ratio: 1,
+        slug: "control",
+        features: [
+          {
+            featureId: "testFeature",
+            value: {
+              enabled: "foo",
+              testInt: true,
+              testSetString: 123,
+            },
+          },
+        ],
+      },
+    ],
+    targeting: "false",
+  });
 
-  const { cleanup } = await setup([recipe]);
+  const cleanup = await setup([recipe]);
 
   await Assert.rejects(
     RemoteSettingsExperimentLoader.optInToExperiment({
-      slug: "invalid-value",
+      slug,
       branch: "control",
     }),
     /failed validation/
   );
 
-  Assert.ok(stub.notCalled, "forceEnroll not called");
+  Assert.ok(ExperimentManager.forceEnroll.notCalled, "forceEnroll not called");
 
-  sandbox.restore();
   await cleanup();
 });
 
 add_task(async function test_invalid_branch_schema() {
-  const sandbox = sinon.createSandbox();
-  const stub = sandbox.stub(ExperimentManager, "forceEnroll");
+  const slug = "test_invalid_branch_schema";
+  const recipe = NimbusTestUtils.factories.recipe(slug, {
+    branches: [
+      {
+        ratio: 1,
+        slug: "control",
+        features: [
+          {
+            featureId: "legacyHeartbeat",
+            value: {
+              foo: "bar",
+            },
+          },
+        ],
+      },
+    ],
+  });
 
-  const recipe = ExperimentFakes.recipe("invalid-value");
-  recipe.featureIds = ["legacyHeartbeat"];
-  recipe.branches = [recipe.branches[0]];
-  recipe.branches[0].features[0].featureId = "legacyHeartbeat";
-  recipe.branches[0].features[0].value = {
-    foo: "bar",
-  };
-
-  const { cleanup } = await setup([recipe]);
+  const cleanup = await setup([recipe]);
 
   await Assert.rejects(
     RemoteSettingsExperimentLoader.optInToExperiment({
-      slug: "invalid-value",
+      slug,
       branch: "control",
     }),
     /failed validation/
   );
 
-  Assert.ok(stub.notCalled, "forceEnroll not called");
+  Assert.ok(ExperimentManager.forceEnroll.notCalled, "forceEnroll not called");
 
-  sandbox.restore();
   await cleanup();
 });
 
 add_task(async function test_invalid_branch_featureId() {
-  const sandbox = sinon.createSandbox();
-  const stub = sandbox.stub(ExperimentManager, "forceEnroll");
-  const recipe = ExperimentFakes.recipe("invalid-value");
-  recipe.featureIds = ["UNKNOWN"];
-  recipe.branches = [recipe.branches[0]];
-  recipe.branches[0].features[0].featureId = "UNKNOWN";
+  const slug = "test_invalid_branch_featureId";
+  const recipe = NimbusTestUtils.factories.recipe(slug, {
+    branches: [
+      {
+        slug: "control",
+        ratio: 1,
+        features: [
+          {
+            featureId: "UNKNOWN",
+            value: {},
+          },
+        ],
+      },
+    ],
+    targeting: "false",
+  });
 
-  const { cleanup } = await setup([recipe]);
+  const cleanup = await setup([recipe]);
 
   await Assert.rejects(
     RemoteSettingsExperimentLoader.optInToExperiment({
-      slug: "invalid-value",
+      slug,
       branch: "control",
     }),
     /failed validation/
   );
 
-  Assert.ok(stub.notCalled, "forceEnroll not called");
+  Assert.ok(ExperimentManager.forceEnroll.notCalled, "forceEnroll not called");
 
-  sandbox.restore();
   await cleanup();
 });

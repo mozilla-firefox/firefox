@@ -145,6 +145,7 @@ async function testHARWithNavigation({ enableMultipage, filter }) {
   }
 
   // Clean up
+  store.dispatch(Actions.setRequestFilterText(""));
   return teardown(monitor);
 }
 

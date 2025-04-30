@@ -565,15 +565,15 @@ void av1_cyclic_refresh_setup(AV1_COMP *const cpi) {
   const int layer_depth = AOMMIN(gf_group->layer_depth[cpi->gf_frame_index], 6);
   const FRAME_TYPE frame_type = cm->current_frame.frame_type;
 
-  // Set resolution_change flag: for svc only set it when the
-  // number of spatial layers has not changed.
-  const int resolution_change =
-      cm->prev_frame &&
-      (cm->width != cm->prev_frame->width ||
-       cm->height != cm->prev_frame->height) &&
-      cpi->svc.prev_number_spatial_layers == cpi->svc.number_spatial_layers;
+  // Set resolution_change flag: for single spatial layers only.
+  const int resolution_change = !cpi->rc.rtc_external_ratectrl &&
+                                cm->prev_frame &&
+                                cpi->svc.number_spatial_layers == 1 &&
+                                (cm->width != cm->prev_frame->width ||
+                                 cm->height != cm->prev_frame->height);
 
-  if (resolution_change) cyclic_refresh_reset_resize(cpi);
+  if (resolution_change && cpi->svc.temporal_layer_id == 0)
+    cyclic_refresh_reset_resize(cpi);
   if (!cr->apply_cyclic_refresh) {
     // Don't disable and set seg_map to 0 if active_maps is enabled, unless
     // whole frame is set as inactive (since we only apply cyclic_refresh to

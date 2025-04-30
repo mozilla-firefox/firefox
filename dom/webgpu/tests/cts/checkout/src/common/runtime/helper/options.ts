@@ -60,7 +60,7 @@ export interface CTSOptions {
   logToWebSocket: boolean;
 }
 
-export const kDefaultCTSOptions: CTSOptions = {
+export const kDefaultCTSOptions: Readonly<CTSOptions> = {
   worker: null,
   debug: false,
   compatibility: false,

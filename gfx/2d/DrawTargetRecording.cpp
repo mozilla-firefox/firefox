@@ -486,6 +486,24 @@ already_AddRefed<SourceSurface> DrawTargetRecording::Snapshot() {
   return retSurf.forget();
 }
 
+already_AddRefed<SourceSurface>
+DrawTargetRecording::CreateExternalSourceSurface(const IntSize& aSize,
+                                                 SurfaceFormat aFormat) {
+  RefPtr<SourceSurface> retSurf =
+      new SourceSurfaceRecording(aSize, aFormat, mRecorder);
+
+  return retSurf.forget();
+}
+
+already_AddRefed<SourceSurface> DrawTargetRecording::SnapshotExternalCanvas(
+    nsICanvasRenderingContextInternal* aCanvas,
+    mozilla::ipc::IProtocol* aActor) {
+  if (RefPtr<layers::CanvasChild> canvasChild = mRecorder->GetCanvasChild()) {
+    return canvasChild->SnapshotExternalCanvas(this, aCanvas, aActor);
+  }
+  return nullptr;
+}
+
 already_AddRefed<SourceSurface> DrawTargetRecording::IntoLuminanceSource(
     LuminanceType aLuminanceType, float aOpacity) {
   RefPtr<SourceSurface> retSurf =

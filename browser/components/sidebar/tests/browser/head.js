@@ -14,6 +14,9 @@ function imageBufferFromDataURI(encodedImageData) {
   return Uint8Array.from(decodedImageData, byte => byte.charCodeAt(0)).buffer;
 }
 
+const SIDEBAR_VISIBILITY_PREF = "sidebar.visibility";
+const POSITION_SETTING_PREF = "sidebar.position_start";
+const VERTICAL_TABS_PREF = "sidebar.verticalTabs";
 const kPrefCustomizationState = "browser.uiCustomization.state";
 const kPrefCustomizationHorizontalTabstrip =
   "browser.uiCustomization.horizontalTabstrip";
@@ -102,6 +105,8 @@ async function resetSidebarToInitialState() {
 }
 registerCleanupFunction(async () => {
   await resetSidebarToInitialState();
+  // Reset the Glean events after each test.
+  Services.fog.testResetFOG();
 });
 
 function waitForBrowserWindowActive(win) {
@@ -115,24 +120,13 @@ function waitForBrowserWindowActive(win) {
   });
 }
 
-function openAndWaitForContextMenu(popup, button, onShown, onHidden) {
+function openAndWaitForContextMenu(popup, button, onShown) {
   return new Promise(resolve => {
     function onPopupShown() {
       info("onPopupShown");
       popup.removeEventListener("popupshown", onPopupShown);
 
       onShown && onShown();
-
-      // Use setTimeout() to get out of the popupshown event.
-      popup.addEventListener("popuphidden", onPopupHidden);
-      setTimeout(() => popup.hidePopup(), 0);
-    }
-    function onPopupHidden() {
-      info("onPopupHidden");
-      popup.removeEventListener("popuphidden", onPopupHidden);
-
-      onHidden && onHidden();
-
       resolve(popup);
     }
 
@@ -181,11 +175,6 @@ async function waitForTabstripOrientation(
   await win.SidebarController.sidebarMain?.updateComplete;
 }
 
-// Reset the Glean events after each test.
-registerCleanupFunction(() => {
-  Services.fog.testResetFOG();
-});
-
 /**
  * Wait until Style and Layout information have been calculated and the paint
  * has occurred.
@@ -199,4 +188,10 @@ async function waitForRepaint() {
       Services.tm.dispatchToMainThread(resolve);
     })
   );
+}
+
+function cleanUpExtraTabs() {
+  while (window.gBrowser.tabs.length > 1) {
+    BrowserTestUtils.removeTab(window.gBrowser.tabs.at(-1));
+  }
 }

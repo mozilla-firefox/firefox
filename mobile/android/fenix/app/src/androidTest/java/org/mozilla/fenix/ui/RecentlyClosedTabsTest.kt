@@ -9,6 +9,7 @@ import androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu
 import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.R
+import org.mozilla.fenix.customannotations.SkipLeaks
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.AppAndSystemHelper.registerAndCleanupIdlingResources
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
@@ -17,6 +18,7 @@ import org.mozilla.fenix.helpers.TestAssetHelper.getGenericAsset
 import org.mozilla.fenix.helpers.TestHelper.longTapSelectItem
 import org.mozilla.fenix.helpers.TestHelper.mDevice
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.browserScreen
 import org.mozilla.fenix.ui.robots.homeScreen
 import org.mozilla.fenix.ui.robots.navigationToolbar
@@ -31,10 +33,14 @@ class RecentlyClosedTabsTest : TestSetup() {
         HomeActivityIntentTestRule.withDefaultSettingsOverrides(),
     ) { it.activity }
 
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
+
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1065414
     // Verifies that a recently closed item is properly opened
     @SmokeTest
     @Test
+    @SkipLeaks(reasons = ["https://bugzilla.mozilla.org/show_bug.cgi?id=1956220"])
     fun openRecentlyClosedItemTest() {
         val website = getGenericAsset(mockWebServer, 1)
 
@@ -66,6 +72,7 @@ class RecentlyClosedTabsTest : TestSetup() {
     // Verifies that tapping the "x" button removes a recently closed item from the list
     @SmokeTest
     @Test
+    @SkipLeaks(reasons = ["https://bugzilla.mozilla.org/show_bug.cgi?id=1956220"])
     fun deleteRecentlyClosedTabsItemTest() {
         val website = getGenericAsset(mockWebServer, 1)
 
@@ -163,6 +170,7 @@ class RecentlyClosedTabsTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1605514
     @Test
+    @SkipLeaks(reasons = ["https://bugzilla.mozilla.org/show_bug.cgi?id=1956220"])
     fun shareMultipleRecentlyClosedTabsTest() {
         val firstPage = getGenericAsset(mockWebServer, 1)
         val secondPage = getGenericAsset(mockWebServer, 2)
@@ -193,6 +201,7 @@ class RecentlyClosedTabsTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1065438
     @Test
+    @SkipLeaks(reasons = ["https://bugzilla.mozilla.org/show_bug.cgi?id=1956220"])
     fun closedPrivateTabsAreNotSavedInRecentlyClosedTabsTest() {
         val firstPage = getGenericAsset(mockWebServer, 1)
         val secondPage = getGenericAsset(mockWebServer, 2)
@@ -217,6 +226,7 @@ class RecentlyClosedTabsTest : TestSetup() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1065439
     @Test
+    @SkipLeaks(reasons = ["https://bugzilla.mozilla.org/show_bug.cgi?id=1956220"])
     fun deletingBrowserHistoryClearsRecentlyClosedTabsListTest() {
         val firstPage = getGenericAsset(mockWebServer, 1)
         val secondPage = getGenericAsset(mockWebServer, 2)

@@ -125,9 +125,9 @@ test_update.html
 **Test updating.**
 
 
-dom/webgpu/mochitest
---------------------
-Performance tests from the 'dom/webgpu/mochitest' folder.
+dom/webgpu/tests/mochitest
+--------------------------
+Performance tests from the 'dom/webgpu/tests/mochitest' folder.
 
 test_queue_write_perf.html
 ==========================
@@ -402,6 +402,24 @@ This mozperftest gets webpagetest to run pageload tests on Firefox against the 5
 toolkit/components/ml/tests/browser
 -----------------------------------
 Performance tests running through Mochitest for ML Models
+
+browser_ml_semantic_history_search_perf.js
+==========================================
+
+:owner: GenAI Team
+:name: ML Semantic History Search
+:Default options:
+
+::
+
+ --perfherder
+ --perfherder-metrics name:latency,unit:ms,shouldAlert:True, name:memory,unit:MB,shouldAlert:True
+ --verbose
+ --manifest perftest.toml
+ --manifest-flavor browser-chrome
+ --try-platform linux, mac, win
+
+**Test for latency for ML Semantic Search History Feature**
 
 browser_ml_smart_tab_clustering_perf.js
 =======================================

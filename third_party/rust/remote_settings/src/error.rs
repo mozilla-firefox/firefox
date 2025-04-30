@@ -49,6 +49,8 @@ pub enum Error {
     ConfigError(String),
     #[error("Database error: {0}")]
     DatabaseError(#[from] rusqlite::Error),
+    #[error("Database closed")]
+    DatabaseClosed,
     #[error("No attachment in given record: {0}")]
     RecordAttachmentMismatchError(String),
     #[error("Incomplete signature data: {0}")]

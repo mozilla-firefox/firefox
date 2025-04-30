@@ -11,6 +11,12 @@ pub struct CoreMetrics {
     pub client_id: UuidMetric,
     pub first_run_date: DatetimeMetric,
     pub os: StringMetric,
+    pub attribution_source: StringMetric,
+    pub attribution_medium: StringMetric,
+    pub attribution_campaign: StringMetric,
+    pub attribution_term: StringMetric,
+    pub attribution_content: StringMetric,
+    pub distribution_name: StringMetric,
 }
 
 #[derive(Debug)]
@@ -62,6 +68,60 @@ impl CoreMetrics {
                 category: "".into(),
                 send_in_pings: vec!["glean_client_info".into()],
                 lifetime: Lifetime::Application,
+                disabled: false,
+                dynamic_label: None,
+            }),
+
+            attribution_source: StringMetric::new(CommonMetricData {
+                name: "source".into(),
+                category: "attribution".into(),
+                send_in_pings: vec!["glean_client_info".into()],
+                lifetime: Lifetime::User,
+                disabled: false,
+                dynamic_label: None,
+            }),
+
+            attribution_medium: StringMetric::new(CommonMetricData {
+                name: "medium".into(),
+                category: "attribution".into(),
+                send_in_pings: vec!["glean_client_info".into()],
+                lifetime: Lifetime::User,
+                disabled: false,
+                dynamic_label: None,
+            }),
+
+            attribution_campaign: StringMetric::new(CommonMetricData {
+                name: "campaign".into(),
+                category: "attribution".into(),
+                send_in_pings: vec!["glean_client_info".into()],
+                lifetime: Lifetime::User,
+                disabled: false,
+                dynamic_label: None,
+            }),
+
+            attribution_term: StringMetric::new(CommonMetricData {
+                name: "term".into(),
+                category: "attribution".into(),
+                send_in_pings: vec!["glean_client_info".into()],
+                lifetime: Lifetime::User,
+                disabled: false,
+                dynamic_label: None,
+            }),
+
+            attribution_content: StringMetric::new(CommonMetricData {
+                name: "content".into(),
+                category: "attribution".into(),
+                send_in_pings: vec!["glean_client_info".into()],
+                lifetime: Lifetime::User,
+                disabled: false,
+                dynamic_label: None,
+            }),
+
+            distribution_name: StringMetric::new(CommonMetricData {
+                name: "name".into(),
+                category: "distribution".into(),
+                send_in_pings: vec!["glean_client_info".into()],
+                lifetime: Lifetime::User,
                 disabled: false,
                 dynamic_label: None,
             }),

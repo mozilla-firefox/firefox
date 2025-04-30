@@ -53,7 +53,7 @@ $calculated-max-width-twice-widest: $break-point-widest + 2 * $card-width;
       background: var(--newtab-element-hover-color);
 
       // Bug 1908010 - This overwrites the design system color because of a
-      // know transparency issue with color-mix syntax when a wallpaper is set
+      // known transparency issue with color-mix syntax when a wallpaper is set
       .lightWallpaper &,
       .darkWallpaper & {
         background-color: var(--newtab-weather-background-color);

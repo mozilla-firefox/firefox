@@ -7,7 +7,7 @@
 with Files("**"):
     BUG_COMPONENT = ("Core", "Audio/Video: GMP")
 
-GeckoSharedLibrary("clearkey", linkage=None)
+GeckoSharedLibrary("clearkey")
 
 FINAL_TARGET = "dist/bin/gmp-clearkey/0.1"
 

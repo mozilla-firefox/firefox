@@ -256,5 +256,6 @@
   "gFindBarPromise",
   "SelectableProfileService",
   "ActionsProviderContextualSearch",
-  "ToolbarDropHandler"
+  "ToolbarDropHandler",
+  "ProfilesDatastoreService"
 ]

@@ -1,49 +1,17 @@
 /* Any copyright is dedicated to the Public Domain.
  * http://creativecommons.org/publicdomain/zero/1.0/ */
 
-const { ExperimentAPI } = ChromeUtils.importESModule(
-  "resource://nimbus/ExperimentAPI.sys.mjs"
-);
 const { FirefoxLabs } = ChromeUtils.importESModule(
   "resource://nimbus/FirefoxLabs.sys.mjs"
 );
 
-add_setup(function () {
-  do_get_profile();
-});
-
-function setupTest({ recipes }) {
-  const sandbox = sinon.createSandbox();
-  const loader = ExperimentFakes.rsLoader();
-  const manager = loader.manager;
-
-  sandbox.stub(ExperimentAPI, "_manager").get(() => manager);
-  sandbox.stub(ExperimentAPI, "_rsLoader").get(() => loader);
-
-  if (Array.isArray(recipes)) {
-    sandbox
-      .stub(loader.remoteSettingsClients.experiments, "get")
-      .resolves(recipes);
-  }
-
-  return {
-    sandbox,
-    loader,
-    manager,
-    cleanup() {
-      assertEmptyStore(manager.store);
-
-      ExperimentAPI._resetForTests();
-      sandbox.restore();
-
-      Services.fog.testResetFOG();
-    },
-  };
+function setupTest({ ...ctx }) {
+  return NimbusTestUtils.setupTest({ ...ctx, clearTelemetry: true });
 }
 
 add_task(async function test_all() {
-  const { sandbox, manager, cleanup } = setupTest({
-    recipes: [
+  const { sandbox, manager, initExperimentAPI, cleanup } = await setupTest({
+    experiments: [
       ExperimentFakes.recipe("opt-in-rollout", {
         bucketConfig: {
           ...ExperimentFakes.recipe.bucketConfig,
@@ -105,13 +73,13 @@ add_task(async function test_all() {
       ExperimentFakes.recipe("experiment"),
       ExperimentFakes.recipe("rollout", { isRollout: true }),
     ],
+    init: false,
   });
 
   // Stub out enrollment because we don't care.
   sandbox.stub(manager, "enroll");
 
-  await ExperimentAPI.init();
-  await ExperimentAPI.ready();
+  await initExperimentAPI();
 
   const labs = await FirefoxLabs.create();
   const availableSlugs = Array.from(labs.all(), recipe => recipe.slug).sort();
@@ -147,12 +115,14 @@ add_task(async function test_enroll() {
     requiresRestart: false,
   });
 
-  const { sandbox, manager, cleanup } = setupTest({ recipes: [recipe] });
+  const { sandbox, manager, initExperimentAPI, cleanup } = await setupTest({
+    experiments: [recipe],
+    init: false,
+  });
 
   const enrollSpy = sandbox.spy(manager, "enroll");
 
-  await ExperimentAPI.init();
-  await ExperimentAPI.ready();
+  await initExperimentAPI();
 
   const labs = await FirefoxLabs.create();
 
@@ -233,12 +203,11 @@ add_task(async function test_reenroll() {
     firefoxLabsDescriptionLinks: null,
     firefoxLabsGroup: "placeholder",
     requiresRestart: false,
+    isRollout: true,
   });
 
-  const { manager, cleanup } = setupTest({ recipes: [recipe] });
+  const { manager, cleanup } = await setupTest({ experiments: [recipe] });
 
-  await ExperimentAPI.init();
-  await ExperimentAPI.ready();
   const labs = await FirefoxLabs.create();
 
   Assert.ok(
@@ -276,8 +245,8 @@ add_task(async function test_reenroll() {
 });
 
 add_task(async function test_unenroll() {
-  const { manager, cleanup } = setupTest({
-    recipes: [
+  const { manager, cleanup } = await setupTest({
+    experiments: [
       ExperimentFakes.recipe("rollout", {
         bucketConfig: {
           ...ExperimentFakes.recipe.bucketConfig,
@@ -325,8 +294,6 @@ add_task(async function test_unenroll() {
     ],
   });
 
-  await ExperimentAPI.init();
-  await ExperimentAPI.ready();
   const labs = await FirefoxLabs.create();
 
   Assert.ok(manager.store.get("rollout")?.active, "Enrolled in rollout");

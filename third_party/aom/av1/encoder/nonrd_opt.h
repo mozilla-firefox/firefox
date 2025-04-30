@@ -524,12 +524,14 @@ static inline int get_pred_buffer(PRED_BUFFER *p, int len) {
 
 static inline bool prune_palette_testing_inter(AV1_COMP *cpi,
                                                unsigned int source_variance) {
-  return (cpi->oxcf.tune_cfg.content == AOM_CONTENT_SCREEN &&
-          cpi->oxcf.speed >= 11 && cpi->rc.high_source_sad &&
-          cpi->sf.rt_sf.rc_compute_spatial_var_sc &&
-          cpi->rc.frame_spatial_variance < 1200 &&
-          cpi->rc.perc_spatial_flat_blocks < 5 &&
-          cpi->rc.percent_blocks_with_motion > 98 && source_variance < 4000);
+  return (
+      cpi->oxcf.tune_cfg.content == AOM_CONTENT_SCREEN &&
+      cpi->oxcf.speed >= 11 && cpi->rc.high_source_sad &&
+      ((cpi->sf.rt_sf.prune_palette_search_nonrd > 2) ||
+       (cpi->sf.rt_sf.rc_compute_spatial_var_sc &&
+        cpi->rc.frame_spatial_variance < 1200 &&
+        cpi->rc.perc_spatial_flat_blocks < 5 &&
+        cpi->rc.percent_blocks_with_motion > 98 && source_variance < 4000)));
 }
 
 static inline void free_pred_buffer(PRED_BUFFER *p) {

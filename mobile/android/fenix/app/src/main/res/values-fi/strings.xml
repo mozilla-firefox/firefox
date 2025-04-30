@@ -129,6 +129,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">Vaihda välilehtiä pyyhkäisemällä työkalupalkkia</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Vaihda pyyhkäisemällä vasemmalle tai oikealle. Avaa uusi välilehti pyyhkäisemällä vasemmalle viimeisellä välilehdelläsi.</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">Vaihda välilehtiä pyyhkäisemällä työkalupalkkia vasemmalle tai oikealle.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Kameran käyttöoikeus vaaditaan. Siirry Androidin asetuksiin, napauta käyttöoikeudet ja napauta salli.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -826,8 +828,6 @@
   <string name="preferences_override_account_server">Mukautettu Mozilla-tilin palvelin</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Mukautettu synkronointipalvelin</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla-tilin tai synkronoinnin palvelinta muutettu. Lopetetaan sovellus, jotta muutokset tulevat voimaan…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Tili</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1476,11 +1476,11 @@
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Jaa tiedosto</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Haluatko varmasti poistaa valitut kohteet?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Haluatko varmasti poistaa valitut kohteet?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Poista</string>
+  <string name="download_delete_multi_select_dialog_confirm">Poista</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Peruuta</string>
+  <string name="download_delete_multi_select_dialog_cancel">Peruuta</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Käynnissä</string>
   <!--
@@ -1511,9 +1511,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Lataus epäonnistui</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Etsi latauksista</string>
+  <string name="download_search_placeholder">Etsi latauksista</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Tuloksia ei löytynyt</string>
+  <string name="download_search_no_results_found">Tuloksia ei löytynyt</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Valitse kaikki</string>
   <!--
@@ -2258,7 +2258,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Tehostetun seurannan suojauksen poikkeusasetuskuvake</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3473,6 +3473,8 @@
   <string name="setup_checklist_task_toolbar_selection">Valitse työkalupalkin sijoitus</string>
   <!-- The title of the explore extensions task for the setup checklist -->
   <string name="setup_checklist_task_explore_extensions">Selaa laajennuksia</string>
+  <!-- The title of the search widget task for the setup checklist -->
+  <string name="setup_checklist_task_search_widget">Asenna hakuwidget</string>
   <!-- The title of the 'customize' group in the setup checklist. %1$s is the name of the app (for example "Firefox"). -->
   <string name="setup_checklist_group_customize">Mukauta %1$sia</string>
   <!-- The title of the 'helpful tools' group in the setup checklist -->

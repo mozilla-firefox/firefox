@@ -111,7 +111,7 @@ fuzzy(0-1,0-1024) == downscale-32px.html?.jpg downscale-32px-ref.html
 fuzzy(0-1,0-50) == downscale-orient.html downscale-orient-ref.html
 
 # be careful changing fuzzy, the bug this test is testing is if the shade of orange is too dark
-fuzzy(0-1,0-144) == 1919368-1.html 1919368-1-ref.html
+fuzzy(0-1,0-164) == 1919368-1.html 1919368-1-ref.html
 
 
 
@@ -219,7 +219,7 @@ fuzzy(0-4,0-18) == downscale-orient.html downscale-orient-ref.html
 == huge-1.html?32768x100.jpg,32768,100 huge-1.html?100x100.jpg,32768,100
 
 # be careful changing fuzzy, the bug this test is testing is if the shade of orange is too dark
-fuzzy(0-1,0-144) == 1919368-1.html 1919368-1-ref.html
+fuzzy(0-1,0-164) == 1919368-1.html 1919368-1-ref.html
 
 # Only need to run these with downscaling on
 != 1421191-1.html about:blank

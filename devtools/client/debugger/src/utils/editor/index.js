@@ -109,7 +109,7 @@ export function toEditorPosition(location) {
   // and are 0-based. But only CodeMirror consider the line to be 0-based while the two others
   // consider lines to be 1-based.
   const isSourceWasm = features.codemirrorNext
-    ? editor.isWasm
+    ? editor.isWasm && !location.source.isOriginal
     : isWasm(location.source.id);
   return {
     line: toEditorLine(location.source, location.line),

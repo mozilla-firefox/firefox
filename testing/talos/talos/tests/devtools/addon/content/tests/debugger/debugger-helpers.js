@@ -226,6 +226,49 @@ async function waitForLoadedScopes(dbg) {
   return waitForElement(dbg, element);
 }
 
+/**
+ * Waits for the currently triggered scroll to complete
+ *
+ * @param {*} dbg
+ * @param {Object} options
+ * @param {Boolean} options.useTimeoutFallback - defaults to true. When set to false
+ *                                               a scroll must happen for the wait for scrolling to complete
+ * @returns
+ */
+async function waitForScrolling(dbg, { useTimeoutFallback = true } = {}) {
+  return new Promise(resolve => {
+    const editor = getCMEditor(dbg);
+    if (isCm6Enabled()) {
+      editor.once("cm-editor-scrolled", resolve);
+    } else {
+      function onScroll() {
+        editor.codeMirror.off("scroll", onScroll);
+        resolve();
+      }
+      editor.codeMirror.on("scroll", onScroll);
+    }
+    if (useTimeoutFallback) {
+      setTimeout(resolve, 500);
+    }
+  });
+}
+
+/**
+ * Scrolls a specific line and column into view in the editor
+ *
+ * @param {*} dbg
+ * @param {Number} line
+ * @param {Number} column
+ * @returns
+ */
+async function scrollEditorIntoView(dbg, line, column) {
+  const onScrolled = waitForScrolling(dbg);
+  line = isCm6Enabled() ? line : line - 1;
+  getCMEditor(dbg).scrollTo(line, column);
+  return onScrolled;
+}
+exports.scrollEditorIntoView = scrollEditorIntoView;
+
 function clickElement(dbg, selector) {
   const clickEvent = new dbg.win.MouseEvent("click", {
     bubbles: true,
@@ -467,3 +510,67 @@ async function hoverOnToken(dbg, textToWaitFor, textToHover) {
   );
 }
 exports.hoverOnToken = hoverOnToken;
+
+async function openEditorContextMenu(dbg, toolbox) {
+  const waitForOpen = waitForContextMenu(dbg, toolbox);
+  dump(`Open the editor context menu \n`);
+  showContextMenuForElement(
+    dbg,
+    isCm6Enabled() ? ".cm-content" : ".CodeMirror-lines"
+  );
+  return waitForOpen;
+}
+exports.openEditorContextMenu = openEditorContextMenu;
+
+async function selectEditorContextMenuItem(dbg, toolbox, itemName) {
+  const dispatchEvents = { "editor-wrapping": "TOGGLE_EDITOR_WRAPPING" };
+  let wait = waitForDispatch(dbg, dispatchEvents[itemName]);
+  dump(`Select the ${itemName} context menu item\n`);
+  const item = findContextMenu(dbg, toolbox, `#node-menu-${itemName}`);
+  item.closest("menupopup").activateItem(item);
+  return wait;
+}
+exports.selectEditorContextMenuItem = selectEditorContextMenuItem;
+
+async function waitForContextMenu(dbg, toolbox) {
+  // the context menu is in the toolbox window
+  const doc = toolbox.topDoc;
+
+  // there are several context menus, we want the one with the menu-api
+  const popup = await waitUntil(() =>
+    doc.querySelector('menupopup[menu-api="true"]')
+  );
+
+  if (popup.state == "open") {
+    return popup;
+  }
+
+  await new Promise(resolve => {
+    popup.addEventListener("popupshown", () => resolve(), { once: true });
+  });
+
+  return popup;
+}
+
+function findContextMenu(dbg, toolbox, selector) {
+  // the context menu is in the toolbox window
+  const doc = toolbox.topDoc;
+
+  // there are several context menus, we want the one with the menu-api
+  const popup = doc.querySelector('menupopup[menu-api="true"]');
+
+  return popup.querySelector(selector);
+}
+
+function showContextMenuForElement(dbg, selector) {
+  const doc = dbg.win.document;
+  const el = doc.querySelector(selector);
+  el.scrollIntoView();
+  el.dispatchEvent(
+    new dbg.win.MouseEvent("contextmenu", {
+      bubbles: true,
+      cancelable: true,
+      view: dbg.win,
+    })
+  );
+}

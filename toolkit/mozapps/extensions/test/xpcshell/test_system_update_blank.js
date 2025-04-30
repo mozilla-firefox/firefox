@@ -44,8 +44,8 @@ const TEST_CONDITIONS = {
     },
     initialState: [
       { isUpgrade: false, version: null },
-      { isUpgrade: false, version: "2.0", asBuiltin: true },
-      { isUpgrade: false, version: "2.0", asBuiltin: false },
+      { isUpgrade: false, version: "2.0" },
+      { isUpgrade: false, version: "2.0" },
       { isUpgrade: false, version: null },
       { isUpgrade: false, version: null },
     ],
@@ -73,7 +73,7 @@ const TEST_CONDITIONS = {
       distroDir.leafName = "hidden";
     },
     initialState: [
-      { isUpgrade: false, version: "1.0", asBuiltin: true },
+      { isUpgrade: false, version: "1.0" },
       { isUpgrade: true, version: "2.0" },
       { isUpgrade: true, version: "2.0" },
       { isUpgrade: false, version: null },

@@ -24,7 +24,7 @@ use crate::{
     metrics::{MetricsContext, SuggestIngestionMetrics, SuggestQueryMetrics},
     provider::{SuggestionProvider, SuggestionProviderConstraints, DEFAULT_INGEST_PROVIDERS},
     rs::{
-        Client, Collection, DownloadedExposureRecord, Record, SuggestAttachment, SuggestRecord,
+        Client, Collection, DownloadedDynamicRecord, Record, SuggestAttachment, SuggestRecord,
         SuggestRecordId, SuggestRecordType, SuggestRemoteSettingsClient,
     },
     QueryWithMetricsResult, Result, SuggestApiResult, Suggestion, SuggestionQuery,
@@ -122,7 +122,7 @@ impl SuggestStoreBuilder {
             inner: SuggestStoreInner::new(
                 data_path,
                 extensions_to_load,
-                SuggestRemoteSettingsClient::new(&rs_service)?,
+                SuggestRemoteSettingsClient::new(&rs_service),
             ),
         }))
     }
@@ -134,7 +134,7 @@ pub enum InterruptKind {
     /// Interrupt read operations like [SuggestStore::query]
     Read,
     /// Interrupt write operations.  This mostly means [SuggestStore::ingest], but
-    /// [SuggestStore::dismiss_suggestion] may also be interrupted.
+    /// other operations may also be interrupted.
     Write,
     /// Interrupt both read and write operations,
     ReadWrite,
@@ -176,16 +176,12 @@ pub struct SuggestStore {
 #[uniffi::export]
 impl SuggestStore {
     /// Creates a Suggest store.
-    #[handle_error(Error)]
     #[uniffi::constructor()]
-    pub fn new(
-        path: &str,
-        remote_settings_service: Arc<RemoteSettingsService>,
-    ) -> SuggestApiResult<Self> {
-        let client = SuggestRemoteSettingsClient::new(&remote_settings_service)?;
-        Ok(Self {
+    pub fn new(path: &str, remote_settings_service: Arc<RemoteSettingsService>) -> Self {
+        let client = SuggestRemoteSettingsClient::new(&remote_settings_service);
+        Self {
             inner: SuggestStoreInner::new(path.to_owned(), vec![], client),
-        })
+        }
     }
 
     /// Queries the database for suggestions.
@@ -203,11 +199,32 @@ impl SuggestStore {
         self.inner.query(query)
     }
 
+    /// Dismiss a suggestion.
+    ///
+    /// Dismissed suggestions cannot be fetched again.
+    #[handle_error(Error)]
+    pub fn dismiss_by_suggestion(&self, suggestion: &Suggestion) -> SuggestApiResult<()> {
+        self.inner.dismiss_by_suggestion(suggestion)
+    }
+
+    /// Dismiss a suggestion by its dismissal key.
+    ///
+    /// Dismissed suggestions cannot be fetched again.
+    ///
+    /// Prefer [SuggestStore::dismiss_by_suggestion] if you have a
+    /// `crate::Suggestion`. This method is intended for cases where a
+    /// suggestion originates outside this component.
+    #[handle_error(Error)]
+    pub fn dismiss_by_key(&self, key: &str) -> SuggestApiResult<()> {
+        self.inner.dismiss_by_key(key)
+    }
+
+    /// Deprecated, use [SuggestStore::dismiss_by_suggestion] or
+    /// [SuggestStore::dismiss_by_key] instead.
+    ///
     /// Dismiss a suggestion
     ///
     /// Dismissed suggestions will not be returned again
-    ///
-    /// In the case of AMP suggestions this should be the raw URL.
     #[handle_error(Error)]
     pub fn dismiss_suggestion(&self, suggestion_url: String) -> SuggestApiResult<()> {
         self.inner.dismiss_suggestion(suggestion_url)
@@ -217,6 +234,33 @@ impl SuggestStore {
     #[handle_error(Error)]
     pub fn clear_dismissed_suggestions(&self) -> SuggestApiResult<()> {
         self.inner.clear_dismissed_suggestions()
+    }
+
+    /// Return whether a suggestion has been dismissed.
+    ///
+    /// [SuggestStore::query] will never return dismissed suggestions, so
+    /// normally you never need to know whether a `Suggestion` has been
+    /// dismissed, but this method can be used to do so.
+    #[handle_error(Error)]
+    pub fn is_dismissed_by_suggestion(&self, suggestion: &Suggestion) -> SuggestApiResult<bool> {
+        self.inner.is_dismissed_by_suggestion(suggestion)
+    }
+
+    /// Return whether a suggestion has been dismissed given its dismissal key.
+    ///
+    /// [SuggestStore::query] will never return dismissed suggestions, so
+    /// normally you never need to know whether a suggestion has been dismissed.
+    /// This method is intended for cases where a dismissal key originates
+    /// outside this component.
+    #[handle_error(Error)]
+    pub fn is_dismissed_by_key(&self, key: &str) -> SuggestApiResult<bool> {
+        self.inner.is_dismissed_by_key(key)
+    }
+
+    /// Return whether any suggestions have been dismissed.
+    #[handle_error(Error)]
+    pub fn any_dismissed_suggestions(&self) -> SuggestApiResult<bool> {
+        self.inner.any_dismissed_suggestions()
     }
 
     /// Interrupts any ongoing queries.
@@ -341,17 +385,17 @@ impl SuggestIngestionConstraints {
                 SuggestionProvider::Mdn,
                 SuggestionProvider::Weather,
                 SuggestionProvider::Fakespot,
-                SuggestionProvider::Exposure,
+                SuggestionProvider::Dynamic,
             ]),
             ..Self::default()
         }
     }
 
-    fn matches_exposure_record(&self, record: &DownloadedExposureRecord) -> bool {
+    fn matches_dynamic_record(&self, record: &DownloadedDynamicRecord) -> bool {
         match self
             .provider_constraints
             .as_ref()
-            .and_then(|c| c.exposure_suggestion_types.as_ref())
+            .and_then(|c| c.dynamic_suggestion_types.as_ref())
         {
             None => false,
             Some(suggestion_types) => suggestion_types
@@ -422,7 +466,7 @@ impl<S> SuggestStoreInner<S> {
                     SuggestionProvider::Mdn => dao.fetch_mdn_suggestions(&query),
                     SuggestionProvider::Weather => dao.fetch_weather_suggestions(&query),
                     SuggestionProvider::Fakespot => dao.fetch_fakespot_suggestions(&query),
-                    SuggestionProvider::Exposure => dao.fetch_exposure_suggestions(&query),
+                    SuggestionProvider::Dynamic => dao.fetch_dynamic_suggestions(&query),
                 })
             })?;
             suggestions.extend(new_suggestions);
@@ -442,6 +486,17 @@ impl<S> SuggestStoreInner<S> {
         })
     }
 
+    fn dismiss_by_suggestion(&self, suggestion: &Suggestion) -> Result<()> {
+        if let Some(key) = suggestion.dismissal_key() {
+            self.dismiss_by_key(key)?;
+        }
+        Ok(())
+    }
+
+    fn dismiss_by_key(&self, key: &str) -> Result<()> {
+        self.dbs()?.writer.write(|dao| dao.insert_dismissal(key))
+    }
+
     fn dismiss_suggestion(&self, suggestion_url: String) -> Result<()> {
         self.dbs()?
             .writer
@@ -451,6 +506,22 @@ impl<S> SuggestStoreInner<S> {
     fn clear_dismissed_suggestions(&self) -> Result<()> {
         self.dbs()?.writer.write(|dao| dao.clear_dismissals())?;
         Ok(())
+    }
+
+    fn is_dismissed_by_suggestion(&self, suggestion: &Suggestion) -> Result<bool> {
+        if let Some(key) = suggestion.dismissal_key() {
+            self.dbs()?.reader.read(|dao| dao.has_dismissal(key))
+        } else {
+            Ok(false)
+        }
+    }
+
+    fn is_dismissed_by_key(&self, key: &str) -> Result<bool> {
+        self.dbs()?.reader.read(|dao| dao.has_dismissal(key))
+    }
+
+    fn any_dismissed_suggestions(&self) -> Result<bool> {
+        self.dbs()?.reader.read(|dao| dao.any_dismissals())
     }
 
     fn interrupt(&self, kind: Option<InterruptKind>) {
@@ -693,18 +764,14 @@ where
                     dao.insert_fakespot_suggestions(record_id, suggestions)
                 })?;
             }
-            SuggestRecord::Exposure(r) => {
-                if constraints.matches_exposure_record(r) {
+            SuggestRecord::Dynamic(r) => {
+                if constraints.matches_dynamic_record(r) {
                     self.download_attachment(
                         dao,
                         record,
                         context,
                         |dao, record_id, suggestions| {
-                            dao.insert_exposure_suggestions(
-                                record_id,
-                                &r.suggestion_type,
-                                suggestions,
-                            )
+                            dao.insert_dynamic_suggestions(record_id, r, suggestions)
                         },
                     )?;
                 }
@@ -746,15 +813,9 @@ where
         constraints: &SuggestIngestionConstraints,
     ) -> Result<bool> {
         match &record.payload {
-            SuggestRecord::Exposure(r) => {
-                // Even though the record was previously ingested, its
-                // suggestion wouldn't have been if it never matched the
-                // provider constraints of any ingest. Return true if the
-                // suggestion is not ingested and the provider constraints of
-                // the current ingest do match the suggestion.
-                Ok(!dao.is_exposure_suggestion_ingested(&record.id)?
-                    && constraints.matches_exposure_record(r))
-            }
+            SuggestRecord::Dynamic(r) => Ok(!dao
+                .are_suggestions_ingested_for_record(&record.id)?
+                && constraints.matches_dynamic_record(r)),
             SuggestRecord::Amp => {
                 Ok(constraints.amp_matching_uses_fts()
                     && !dao.is_amp_fts_data_ingested(&record.id)?)
@@ -918,7 +979,8 @@ pub(crate) mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     use crate::{
-        provider::AmpMatchingStrategy, suggestion::FtsMatchInfo, testing::*, SuggestionProvider,
+        db::DEFAULT_SUGGESTION_SCORE, provider::AmpMatchingStrategy, suggestion::FtsMatchInfo,
+        testing::*, SuggestionProvider,
     };
 
     // Extra methods for the tests
@@ -1031,7 +1093,7 @@ pub(crate) mod tests {
         store.ingest(SuggestIngestionConstraints::all_providers());
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::amp("lo")),
-            vec![los_pollos_suggestion("los", None)],
+            vec![los_pollos_suggestion("los pollos", None)],
         );
         Ok(())
     }
@@ -1091,7 +1153,7 @@ pub(crate) mod tests {
 
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::amp("lo")),
-            vec![los_pollos_suggestion("los", None)]
+            vec![los_pollos_suggestion("los pollos", None)]
         );
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::amp("la")),
@@ -1119,25 +1181,107 @@ pub(crate) mod tests {
                     ],
                 })),
                 // AMP attachment without full keyword data
-                good_place_eats_amp(),
+                good_place_eats_amp().remove("full_keywords"),
             ])))
             .with_record(SuggestionProvider::Amp.icon(los_pollos_icon()))
             .with_record(SuggestionProvider::Amp.icon(good_place_eats_icon()))
         );
         store.ingest(SuggestIngestionConstraints::all_providers());
 
-        assert_eq!(
-            store.fetch_suggestions(SuggestionQuery::amp("lo")),
-            // This keyword comes from the provided full_keywords list
-            vec![los_pollos_suggestion("los pollos", None)],
-        );
+        // (query string, expected suggestion, expected dismissal key)
+        let tests = [
+            (
+                "lo",
+                los_pollos_suggestion("los pollos", None),
+                Some("los pollos"),
+            ),
+            (
+                "los pollos",
+                los_pollos_suggestion("los pollos", None),
+                Some("los pollos"),
+            ),
+            (
+                "los pollos h",
+                los_pollos_suggestion("los pollos hermanos (restaurant)", None),
+                Some("los pollos hermanos (restaurant)"),
+            ),
+            (
+                "la",
+                good_place_eats_suggestion("", None),
+                Some("https://www.lasagna.restaurant"),
+            ),
+            (
+                "lasagna",
+                good_place_eats_suggestion("", None),
+                Some("https://www.lasagna.restaurant"),
+            ),
+            (
+                "lasagna come out tomorrow",
+                good_place_eats_suggestion("", None),
+                Some("https://www.lasagna.restaurant"),
+            ),
+        ];
+        for (query, expected_suggestion, expected_dismissal_key) in tests {
+            // Do a query and check the returned suggestions.
+            let suggestions = store.fetch_suggestions(SuggestionQuery::amp(query));
+            assert_eq!(suggestions, vec![expected_suggestion.clone()]);
 
-        assert_eq!(
-            store.fetch_suggestions(SuggestionQuery::amp("la")),
-            // Good place eats did not have full keywords, so this one is
-            // calculated at runtime
-            vec![good_place_eats_suggestion("lasagna", None)],
-        );
+            // Check the returned suggestion's dismissal key.
+            assert_eq!(suggestions[0].dismissal_key(), expected_dismissal_key);
+
+            // Dismiss the suggestion.
+            let dismissal_key = suggestions[0].dismissal_key().unwrap();
+            store.inner.dismiss_by_suggestion(&suggestions[0])?;
+            assert_eq!(store.fetch_suggestions(SuggestionQuery::amp(query)), vec![]);
+            assert!(store.inner.is_dismissed_by_suggestion(&suggestions[0])?);
+            assert!(store.inner.is_dismissed_by_key(dismissal_key)?);
+            assert!(store.inner.any_dismissed_suggestions()?);
+
+            // Clear dismissals and fetch again.
+            store.inner.clear_dismissed_suggestions()?;
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::amp(query)),
+                vec![expected_suggestion.clone()]
+            );
+            assert!(!store.inner.is_dismissed_by_suggestion(&suggestions[0])?);
+            assert!(!store.inner.is_dismissed_by_key(dismissal_key)?);
+            assert!(!store.inner.any_dismissed_suggestions()?);
+
+            // Dismiss the suggestion by its dismissal key.
+            store.inner.dismiss_by_key(dismissal_key)?;
+            assert_eq!(store.fetch_suggestions(SuggestionQuery::amp(query)), vec![]);
+            assert!(store.inner.is_dismissed_by_suggestion(&suggestions[0])?);
+            assert!(store.inner.is_dismissed_by_key(dismissal_key)?);
+            assert!(store.inner.any_dismissed_suggestions()?);
+
+            // Clear dismissals and fetch again.
+            store.inner.clear_dismissed_suggestions()?;
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::amp(query)),
+                vec![expected_suggestion.clone()]
+            );
+            assert!(!store.inner.is_dismissed_by_suggestion(&suggestions[0])?);
+            assert!(!store.inner.is_dismissed_by_key(dismissal_key)?);
+            assert!(!store.inner.any_dismissed_suggestions()?);
+
+            // Dismiss the suggestion by its raw URL using the deprecated API.
+            let raw_url = expected_suggestion.raw_url().unwrap();
+            store.inner.dismiss_suggestion(raw_url.to_string())?;
+            assert_eq!(store.fetch_suggestions(SuggestionQuery::amp(query)), vec![]);
+            assert!(store.inner.is_dismissed_by_key(raw_url)?);
+            assert!(store.inner.any_dismissed_suggestions()?);
+
+            // Clear dismissals and fetch again.
+            store.inner.clear_dismissed_suggestions()?;
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::amp(query)),
+                vec![expected_suggestion.clone()]
+            );
+            assert!(!store.inner.is_dismissed_by_suggestion(&suggestions[0])?);
+            assert!(!store.inner.is_dismissed_by_key(dismissal_key)?);
+            assert!(!store.inner.is_dismissed_by_key(raw_url)?);
+            assert!(!store.inner.any_dismissed_suggestions()?);
+        }
 
         Ok(())
     }
@@ -1308,7 +1452,7 @@ pub(crate) mod tests {
         store.ingest(SuggestIngestionConstraints::all_providers());
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::amp("lo")),
-            vec![los_pollos_suggestion("los", None)],
+            vec![los_pollos_suggestion("los pollos", None)],
         );
 
         Ok(())
@@ -1536,7 +1680,7 @@ pub(crate) mod tests {
         store.ingest(SuggestIngestionConstraints::all_providers());
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::amp("lo")),
-            vec![los_pollos_suggestion("los", None)],
+            vec![los_pollos_suggestion("los pollos", None)],
         );
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::amp("la")),
@@ -1792,8 +1936,20 @@ pub(crate) mod tests {
             ),],
         );
         assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("ramen invalid_delivery")),
+            vec![ramen_suggestion(
+                "ramen invalid_delivery",
+                "https://www.yelp.com/search?find_desc=ramen&find_loc=invalid_delivery"
+            )
+            .has_location_sign(false),],
+        );
+        assert_eq!(
             store.fetch_suggestions(SuggestionQuery::yelp("ramen invalid_delivery in tokyo")),
-            vec![],
+            vec![ramen_suggestion(
+                "ramen invalid_delivery in tokyo",
+                "https://www.yelp.com/search?find_desc=ramen&find_loc=invalid_delivery+in+tokyo"
+            )
+            .has_location_sign(false),],
         );
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::yelp("ramen in tokyo")),
@@ -1811,7 +1967,11 @@ pub(crate) mod tests {
         );
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::yelp("ramen invalid_in tokyo")),
-            vec![],
+            vec![ramen_suggestion(
+                "ramen invalid_in tokyo",
+                "https://www.yelp.com/search?find_desc=ramen&find_loc=invalid_in+tokyo"
+            )
+            .has_location_sign(false),],
         );
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::yelp("ramen in San Francisco")),
@@ -1831,21 +1991,22 @@ pub(crate) mod tests {
             store.fetch_suggestions(SuggestionQuery::yelp("ramen near by")),
             vec![ramen_suggestion(
                 "ramen near by",
-                "https://www.yelp.com/search?find_desc=ramen+near+by"
-            )
-            .has_location_sign(false),],
+                "https://www.yelp.com/search?find_desc=ramen"
+            )],
         );
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::yelp("ramen near me")),
             vec![ramen_suggestion(
                 "ramen near me",
-                "https://www.yelp.com/search?find_desc=ramen+near+me"
-            )
-            .has_location_sign(false),],
+                "https://www.yelp.com/search?find_desc=ramen"
+            )],
         );
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::yelp("ramen near by tokyo")),
-            vec![],
+            vec![ramen_suggestion(
+                "ramen near by tokyo",
+                "https://www.yelp.com/search?find_desc=ramen&find_loc=tokyo"
+            )],
         );
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::yelp("ramen")),
@@ -1934,6 +2095,15 @@ pub(crate) mod tests {
             .subject_exact_match(false)],
         );
         assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("spi")),
+            vec![ramen_suggestion(
+                "spicy ramen",
+                "https://www.yelp.com/search?find_desc=spicy+ramen"
+            )
+            .has_location_sign(false)
+            .subject_exact_match(false)],
+        );
+        assert_eq!(
             store.fetch_suggestions(SuggestionQuery::yelp("BeSt             Ramen")),
             vec![ramen_suggestion(
                 "BeSt Ramen",
@@ -1992,6 +2162,91 @@ pub(crate) mod tests {
             .has_location_sign(false)
             .subject_exact_match(false)],
         );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("best sp")),
+            vec![ramen_suggestion(
+                "best spicy ramen",
+                "https://www.yelp.com/search?find_desc=best+spicy+ramen"
+            )
+            .has_location_sign(false)
+            .subject_exact_match(false)],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("ramenabc")),
+            vec![],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("ramenabc xyz")),
+            vec![],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("best ramenabc")),
+            vec![],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("bestabc ra")),
+            vec![],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("bestabc ramen")),
+            vec![],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("bestabc ramen xyz")),
+            vec![],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("best spi ram")),
+            vec![],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("bes ram")),
+            vec![],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("bes ramen")),
+            vec![],
+        );
+        // Test for prefix match.
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("ramen D")),
+            vec![ramen_suggestion(
+                "ramen Delivery",
+                "https://www.yelp.com/search?find_desc=ramen+Delivery"
+            )
+            .has_location_sign(false)],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("ramen I")),
+            vec![ramen_suggestion(
+                "ramen In",
+                "https://www.yelp.com/search?find_desc=ramen"
+            )],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("ramen Y")),
+            vec![
+                ramen_suggestion("ramen", "https://www.yelp.com/search?find_desc=ramen")
+                    .has_location_sign(false)
+            ],
+        );
+        // Prefix match is available only for last words.
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("ramen D Yelp")),
+            vec![ramen_suggestion(
+                "ramen D",
+                "https://www.yelp.com/search?find_desc=ramen&find_loc=D"
+            )
+            .has_location_sign(false)],
+        );
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::yelp("ramen I Tokyo")),
+            vec![ramen_suggestion(
+                "ramen I Tokyo",
+                "https://www.yelp.com/search?find_desc=ramen&find_loc=I+Tokyo"
+            )
+            .has_location_sign(false)],
+        );
 
         Ok(())
     }
@@ -2011,10 +2266,12 @@ pub(crate) mod tests {
                     json!([
                         los_pollos_amp().merge(json!({
                             "keywords": ["amp wiki match"],
+                            "full_keywords": [("amp wiki match", 1)],
                             "score": 0.3,
                         })),
                         good_place_eats_amp().merge(json!({
                             "keywords": ["amp wiki match"],
+                            "full_keywords": [("amp wiki match", 1)],
                             "score": 0.1,
                         })),
                     ]),
@@ -2156,7 +2413,7 @@ pub(crate) mod tests {
         // This should have been ingested
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::amp("lo")),
-            vec![los_pollos_suggestion("los", None)]
+            vec![los_pollos_suggestion("los pollos", None)]
         );
         // This should not have been ingested, since it wasn't in the providers list
         assert_eq!(
@@ -2391,18 +2648,31 @@ pub(crate) mod tests {
         let results = store.fetch_suggestions(query.clone());
         assert_eq!(results.len(), 5);
 
-        for result in results {
-            store
-                .inner
-                .dismiss_suggestion(result.raw_url().unwrap().to_string())?;
+        assert!(!store.inner.any_dismissed_suggestions()?);
+
+        for result in &results {
+            let dismissal_key = result.dismissal_key().unwrap();
+            assert!(!store.inner.is_dismissed_by_suggestion(result)?);
+            assert!(!store.inner.is_dismissed_by_key(dismissal_key)?);
+            store.inner.dismiss_by_suggestion(result)?;
+            assert!(store.inner.is_dismissed_by_suggestion(result)?);
+            assert!(store.inner.is_dismissed_by_key(dismissal_key)?);
+            assert!(store.inner.any_dismissed_suggestions()?);
         }
 
         // After dismissing the suggestions, the next query shouldn't return them
-        assert_eq!(store.fetch_suggestions(query.clone()).len(), 0);
+        assert_eq!(store.fetch_suggestions(query.clone()), vec![]);
 
         // Clearing the dismissals should cause them to be returned again
         store.inner.clear_dismissed_suggestions()?;
         assert_eq!(store.fetch_suggestions(query.clone()).len(), 5);
+
+        for result in &results {
+            let dismissal_key = result.dismissal_key().unwrap();
+            assert!(!store.inner.is_dismissed_by_suggestion(result)?);
+            assert!(!store.inner.is_dismissed_by_key(dismissal_key)?);
+        }
+        assert!(!store.inner.any_dismissed_suggestions()?);
 
         Ok(())
     }
@@ -2617,7 +2887,7 @@ pub(crate) mod tests {
         );
         assert_eq!(
             store.fetch_suggestions(SuggestionQuery::amp("lo")),
-            vec![los_pollos_suggestion("los", None)],
+            vec![los_pollos_suggestion("los pollos", None)],
         );
         // Test deleting one of the records
         store
@@ -2659,74 +2929,112 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn exposure_basic() -> anyhow::Result<()> {
+    fn dynamic_basic() -> anyhow::Result<()> {
         before_each();
 
         let store = TestStore::new(
             MockRemoteSettingsClient::default()
-                .with_record(SuggestionProvider::Exposure.full_record(
-                    "exposure-0",
+                // A dynamic record whose attachment is a JSON object that only
+                // contains keywords
+                .with_record(SuggestionProvider::Dynamic.full_record(
+                    "dynamic-0",
                     Some(json!({
                         "suggestion_type": "aaa",
                     })),
                     Some(MockAttachment::Json(json!({
                         "keywords": [
                             "aaa keyword",
-                            "both keyword",
+                            "common keyword",
                             ["common prefix", [" aaa"]],
                             ["choco", ["bo", "late"]],
                             ["dup", ["licate 1", "licate 2"]],
                         ],
                     }))),
                 ))
-                .with_record(SuggestionProvider::Exposure.full_record(
-                    "exposure-1",
+                // A dynamic record with a score whose attachment is a JSON
+                // array with multiple suggestions with various properties
+                .with_record(SuggestionProvider::Dynamic.full_record(
+                    "dynamic-1",
                     Some(json!({
                         "suggestion_type": "bbb",
+                        "score": 1.0,
                     })),
-                    Some(MockAttachment::Json(json!({
-                        "keywords": [
-                            "bbb keyword",
-                            "both keyword",
-                            ["common prefix", [" bbb"]],
-                        ],
-                    }))),
+                    Some(MockAttachment::Json(json!([
+                        {
+                            "keywords": [
+                                "bbb keyword 0",
+                                "common keyword",
+                                "common bbb keyword",
+                                ["common prefix", [" bbb 0"]],
+                            ],
+                        },
+                        {
+                            "keywords": [
+                                "bbb keyword 1",
+                                "common keyword",
+                                "common bbb keyword",
+                                ["common prefix", [" bbb 1"]],
+                            ],
+                            "dismissal_key": "bbb-1-dismissal-key",
+                        },
+                        {
+                            "keywords": [
+                                "bbb keyword 2",
+                                "common keyword",
+                                "common bbb keyword",
+                                ["common prefix", [" bbb 2"]],
+                            ],
+                            "data": json!("bbb-2-data"),
+                            "dismissal_key": "bbb-2-dismissal-key",
+                        },
+                        {
+                            "keywords": [
+                                "bbb keyword 3",
+                                "common keyword",
+                                "common bbb keyword",
+                                ["common prefix", [" bbb 3"]],
+                            ],
+                            "data": json!("bbb-3-data"),
+                        },
+                    ]))),
                 )),
         );
         store.ingest(SuggestIngestionConstraints {
-            providers: Some(vec![SuggestionProvider::Exposure]),
+            providers: Some(vec![SuggestionProvider::Dynamic]),
             provider_constraints: Some(SuggestionProviderConstraints {
-                exposure_suggestion_types: Some(vec!["aaa".to_string(), "bbb".to_string()]),
+                dynamic_suggestion_types: Some(vec!["aaa".to_string(), "bbb".to_string()]),
                 ..SuggestionProviderConstraints::default()
             }),
             ..SuggestIngestionConstraints::all_providers()
         });
 
-        let no_matches = vec!["aaa", "both", "common prefi", "choc", "chocolate extra"];
-        for query in &no_matches {
+        // queries that shouldn't match anything
+        let no_match_queries = vec!["aaa", "common", "common prefi", "choc", "chocolate extra"];
+        for query in &no_match_queries {
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa"])),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
                 vec![],
             );
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["bbb"])),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["bbb"])),
                 vec![],
             );
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa", "bbb"])),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa", "bbb"])),
                 vec![],
             );
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa", "zzz"])),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa", "zzz"])),
                 vec![],
             );
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["zzz"])),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["zzz"])),
                 vec![],
             );
         }
 
-        let aaa_only_matches = vec![
+        // queries that should match only the "aaa" suggestion
+        let aaa_queries = [
             "aaa keyword",
             "common prefix a",
             "common prefix aa",
@@ -2743,301 +3051,614 @@ pub(crate) mod tests {
             "duplicate 1",
             "duplicate 2",
         ];
-        for query in &aaa_only_matches {
+        for query in aaa_queries {
+            for suggestion_types in [
+                ["aaa"].as_slice(),
+                &["aaa", "bbb"],
+                &["bbb", "aaa"],
+                &["aaa", "zzz"],
+                &["zzz", "aaa"],
+            ] {
+                assert_eq!(
+                    store.fetch_suggestions(SuggestionQuery::dynamic(query, suggestion_types)),
+                    vec![Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: None,
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    }],
+                );
+            }
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "aaa".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa", "bbb"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "aaa".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["bbb", "aaa"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "aaa".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa", "zzz"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "aaa".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["zzz", "aaa"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "aaa".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["bbb"])),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["bbb"])),
                 vec![],
             );
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["zzz"])),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["zzz"])),
                 vec![],
             );
         }
 
-        let bbb_only_matches = vec![
-            "bbb keyword",
+        // queries that should match only the "bbb 0" suggestion
+        let bbb_0_queries = ["bbb keyword 0", "common prefix bbb 0"];
+        for query in &bbb_0_queries {
+            for suggestion_types in [
+                ["bbb"].as_slice(),
+                &["bbb", "aaa"],
+                &["aaa", "bbb"],
+                &["bbb", "zzz"],
+                &["zzz", "bbb"],
+            ] {
+                assert_eq!(
+                    store.fetch_suggestions(SuggestionQuery::dynamic(query, suggestion_types)),
+                    vec![Suggestion::Dynamic {
+                        suggestion_type: "bbb".into(),
+                        data: None,
+                        dismissal_key: None,
+                        score: 1.0,
+                    }],
+                );
+            }
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![],
+            );
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["zzz"])),
+                vec![],
+            );
+        }
+
+        // queries that should match only the "bbb 1" suggestion
+        let bbb_1_queries = ["bbb keyword 1", "common prefix bbb 1"];
+        for query in &bbb_1_queries {
+            for suggestion_types in [
+                ["bbb"].as_slice(),
+                &["bbb", "aaa"],
+                &["aaa", "bbb"],
+                &["bbb", "zzz"],
+                &["zzz", "bbb"],
+            ] {
+                assert_eq!(
+                    store.fetch_suggestions(SuggestionQuery::dynamic(query, suggestion_types)),
+                    vec![Suggestion::Dynamic {
+                        suggestion_type: "bbb".into(),
+                        data: None,
+                        dismissal_key: Some("bbb-1-dismissal-key".to_string()),
+                        score: 1.0,
+                    }],
+                );
+            }
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![],
+            );
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["zzz"])),
+                vec![],
+            );
+        }
+
+        // queries that should match only the "bbb 2" suggestion
+        let bbb_2_queries = ["bbb keyword 2", "common prefix bbb 2"];
+        for query in &bbb_2_queries {
+            for suggestion_types in [
+                ["bbb"].as_slice(),
+                &["bbb", "aaa"],
+                &["aaa", "bbb"],
+                &["bbb", "zzz"],
+                &["zzz", "bbb"],
+            ] {
+                assert_eq!(
+                    store.fetch_suggestions(SuggestionQuery::dynamic(query, suggestion_types)),
+                    vec![Suggestion::Dynamic {
+                        suggestion_type: "bbb".into(),
+                        data: Some(json!("bbb-2-data")),
+                        dismissal_key: Some("bbb-2-dismissal-key".to_string()),
+                        score: 1.0,
+                    }],
+                );
+            }
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![],
+            );
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["zzz"])),
+                vec![],
+            );
+        }
+
+        // queries that should match only the "bbb 3" suggestion
+        let bbb_3_queries = ["bbb keyword 3", "common prefix bbb 3"];
+        for query in &bbb_3_queries {
+            for suggestion_types in [
+                ["bbb"].as_slice(),
+                &["bbb", "aaa"],
+                &["aaa", "bbb"],
+                &["bbb", "zzz"],
+                &["zzz", "bbb"],
+            ] {
+                assert_eq!(
+                    store.fetch_suggestions(SuggestionQuery::dynamic(query, suggestion_types)),
+                    vec![Suggestion::Dynamic {
+                        suggestion_type: "bbb".into(),
+                        data: Some(json!("bbb-3-data")),
+                        dismissal_key: None,
+                        score: 1.0,
+                    }],
+                );
+            }
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![],
+            );
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["zzz"])),
+                vec![],
+            );
+        }
+
+        // queries that should match only the "bbb" suggestions
+        let bbb_queries = [
+            "common bbb keyword",
             "common prefix b",
             "common prefix bb",
             "common prefix bbb",
+            "common prefix bbb ",
         ];
-        for query in &bbb_only_matches {
+        for query in &bbb_queries {
+            for suggestion_types in [
+                ["bbb"].as_slice(),
+                &["bbb", "aaa"],
+                &["aaa", "bbb"],
+                &["bbb", "zzz"],
+                &["zzz", "bbb"],
+            ] {
+                assert_eq!(
+                    store.fetch_suggestions(SuggestionQuery::dynamic(query, suggestion_types)),
+                    vec![
+                        Suggestion::Dynamic {
+                            suggestion_type: "bbb".into(),
+                            data: None,
+                            dismissal_key: None,
+                            score: 1.0,
+                        },
+                        Suggestion::Dynamic {
+                            suggestion_type: "bbb".into(),
+                            data: None,
+                            dismissal_key: Some("bbb-1-dismissal-key".to_string()),
+                            score: 1.0,
+                        },
+                        Suggestion::Dynamic {
+                            suggestion_type: "bbb".into(),
+                            data: Some(json!("bbb-2-data")),
+                            dismissal_key: Some("bbb-2-dismissal-key".to_string()),
+                            score: 1.0,
+                        },
+                        Suggestion::Dynamic {
+                            suggestion_type: "bbb".into(),
+                            data: Some(json!("bbb-3-data")),
+                            dismissal_key: None,
+                            score: 1.0,
+                        }
+                    ],
+                );
+            }
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["bbb"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "bbb".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["bbb", "aaa"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "bbb".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa", "bbb"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "bbb".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["bbb", "zzz"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "bbb".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["zzz", "bbb"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "bbb".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa"])),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
                 vec![],
             );
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["zzz"])),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["zzz"])),
                 vec![],
             );
         }
 
-        let both_matches = vec!["both keyword", "common prefix", "common prefix "];
-        for query in &both_matches {
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "aaa".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["bbb"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "bbb".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa", "bbb"])),
-                vec![
-                    Suggestion::Exposure {
-                        suggestion_type: "aaa".into(),
-                        score: 1.0,
-                    },
-                    Suggestion::Exposure {
-                        suggestion_type: "bbb".into(),
-                        score: 1.0,
-                    },
-                ],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["bbb", "aaa"])),
-                vec![
-                    Suggestion::Exposure {
-                        suggestion_type: "aaa".into(),
-                        score: 1.0,
-                    },
-                    Suggestion::Exposure {
-                        suggestion_type: "bbb".into(),
-                        score: 1.0,
-                    },
-                ],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa", "zzz"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "aaa".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["zzz", "aaa"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "aaa".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["bbb", "zzz"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "bbb".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["zzz", "bbb"])),
-                vec![Suggestion::Exposure {
-                    suggestion_type: "bbb".into(),
-                    score: 1.0,
-                }],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa", "zzz", "bbb"])),
-                vec![
-                    Suggestion::Exposure {
-                        suggestion_type: "aaa".into(),
-                        score: 1.0,
-                    },
-                    Suggestion::Exposure {
-                        suggestion_type: "bbb".into(),
-                        score: 1.0,
-                    },
-                ],
-            );
-            assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["zzz"])),
-                vec![],
-            );
+        // queries that should match all suggestions
+        let common_queries = ["common keyword", "common prefix", "common prefix "];
+        for query in &common_queries {
+            for suggestion_types in [
+                ["aaa", "bbb"].as_slice(),
+                &["bbb", "aaa"],
+                &["zzz", "aaa", "bbb"],
+                &["aaa", "zzz", "bbb"],
+                &["aaa", "bbb", "zzz"],
+            ] {
+                assert_eq!(
+                    store.fetch_suggestions(SuggestionQuery::dynamic(query, suggestion_types)),
+                    vec![
+                        Suggestion::Dynamic {
+                            suggestion_type: "bbb".into(),
+                            data: None,
+                            dismissal_key: None,
+                            score: 1.0,
+                        },
+                        Suggestion::Dynamic {
+                            suggestion_type: "bbb".into(),
+                            data: None,
+                            dismissal_key: Some("bbb-1-dismissal-key".to_string()),
+                            score: 1.0,
+                        },
+                        Suggestion::Dynamic {
+                            suggestion_type: "bbb".into(),
+                            data: Some(json!("bbb-2-data")),
+                            dismissal_key: Some("bbb-2-dismissal-key".to_string()),
+                            score: 1.0,
+                        },
+                        Suggestion::Dynamic {
+                            suggestion_type: "bbb".into(),
+                            data: Some(json!("bbb-3-data")),
+                            dismissal_key: None,
+                            score: 1.0,
+                        },
+                        Suggestion::Dynamic {
+                            suggestion_type: "aaa".into(),
+                            data: None,
+                            dismissal_key: None,
+                            score: DEFAULT_SUGGESTION_SCORE,
+                        },
+                    ],
+                );
+                assert_eq!(
+                    store.fetch_suggestions(SuggestionQuery::dynamic(query, &["zzz"])),
+                    vec![],
+                );
+            }
         }
 
         Ok(())
     }
 
     #[test]
-    fn exposure_spread_across_multiple_records() -> anyhow::Result<()> {
+    fn dynamic_same_type_in_different_records() -> anyhow::Result<()> {
         before_each();
 
+        // Make a store with the same dynamic suggestion type in three different
+        // records.
         let mut store = TestStore::new(
             MockRemoteSettingsClient::default()
-                .with_record(SuggestionProvider::Exposure.full_record(
-                    "exposure-0",
+                // A record whose attachment is a JSON object
+                .with_record(SuggestionProvider::Dynamic.full_record(
+                    "dynamic-0",
                     Some(json!({
                         "suggestion_type": "aaa",
                     })),
                     Some(MockAttachment::Json(json!({
                         "keywords": [
                             "record 0 keyword",
-                            ["sug", ["gest"]],
+                            "common keyword",
+                            ["common prefix", [" 0"]],
                         ],
+                        "data": json!("record-0-data"),
                     }))),
                 ))
-                .with_record(SuggestionProvider::Exposure.full_record(
-                    "exposure-1",
+                // Another record whose attachment is a JSON object
+                .with_record(SuggestionProvider::Dynamic.full_record(
+                    "dynamic-1",
                     Some(json!({
                         "suggestion_type": "aaa",
                     })),
                     Some(MockAttachment::Json(json!({
                         "keywords": [
                             "record 1 keyword",
-                            ["sug", ["arplum"]],
+                            "common keyword",
+                            ["common prefix", [" 1"]],
                         ],
+                        "data": json!("record-1-data"),
                     }))),
+                ))
+                // A record whose attachment is a JSON array with some
+                // suggestions
+                .with_record(SuggestionProvider::Dynamic.full_record(
+                    "dynamic-2",
+                    Some(json!({
+                        "suggestion_type": "aaa",
+                    })),
+                    Some(MockAttachment::Json(json!([
+                        {
+                            "keywords": [
+                                "record 2 keyword",
+                                "record 2 keyword 0",
+                                "common keyword",
+                                ["common prefix", [" 2-0"]],
+                            ],
+                            "data": json!("record-2-data-0"),
+                        },
+                        {
+                            "keywords": [
+                                "record 2 keyword",
+                                "record 2 keyword 1",
+                                "common keyword",
+                                ["common prefix", [" 2-1"]],
+                            ],
+                            "data": json!("record-2-data-1"),
+                        },
+                    ]))),
                 )),
         );
         store.ingest(SuggestIngestionConstraints {
-            providers: Some(vec![SuggestionProvider::Exposure]),
+            providers: Some(vec![SuggestionProvider::Dynamic]),
             provider_constraints: Some(SuggestionProviderConstraints {
-                exposure_suggestion_types: Some(vec!["aaa".to_string()]),
+                dynamic_suggestion_types: Some(vec!["aaa".to_string()]),
                 ..SuggestionProviderConstraints::default()
             }),
             ..SuggestIngestionConstraints::all_providers()
         });
 
-        let matches = vec![
-            "record 0 keyword",
-            "sug",
-            "sugg",
-            "sugge",
-            "sugges",
-            "suggest",
-            "record 1 keyword",
-            "suga",
-            "sugar",
-            "sugarp",
-            "sugarpl",
-            "sugarplu",
-            "sugarplum",
-        ];
-        for query in &matches {
+        // queries that should match only the suggestion in record 0
+        let record_0_queries = ["record 0 keyword", "common prefix 0"];
+        for query in record_0_queries {
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa"])),
-                vec![Suggestion::Exposure {
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![Suggestion::Dynamic {
                     suggestion_type: "aaa".into(),
-                    score: 1.0,
+                    data: Some(json!("record-0-data")),
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
                 }],
             );
         }
 
-        // Delete the first record.
+        // queries that should match only the suggestion in record 1
+        let record_1_queries = ["record 1 keyword", "common prefix 1"];
+        for query in record_1_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![Suggestion::Dynamic {
+                    suggestion_type: "aaa".into(),
+                    data: Some(json!("record-1-data")),
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
+                }],
+            );
+        }
+
+        // queries that should match only the suggestions in record 2
+        let record_2_queries = ["record 2 keyword", "common prefix 2", "common prefix 2-"];
+        for query in record_2_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-2-data-0")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-2-data-1")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                ],
+            );
+        }
+
+        // queries that should match only record 2 suggestion 0
+        let record_2_0_queries = ["record 2 keyword 0", "common prefix 2-0"];
+        for query in record_2_0_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![Suggestion::Dynamic {
+                    suggestion_type: "aaa".into(),
+                    data: Some(json!("record-2-data-0")),
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
+                }],
+            );
+        }
+
+        // queries that should match only record 2 suggestion 1
+        let record_2_1_queries = ["record 2 keyword 1", "common prefix 2-1"];
+        for query in record_2_1_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![Suggestion::Dynamic {
+                    suggestion_type: "aaa".into(),
+                    data: Some(json!("record-2-data-1")),
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
+                }],
+            );
+        }
+
+        // queries that should match all suggestions
+        let common_queries = ["common keyword", "common prefix", "common prefix "];
+        for query in common_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-0-data")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-1-data")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-2-data-0")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-2-data-1")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                ],
+            );
+        }
+
+        // Delete record 0.
         store
             .client_mut()
-            .delete_record(SuggestionProvider::Exposure.empty_record("exposure-0"));
+            .delete_record(SuggestionProvider::Dynamic.empty_record("dynamic-0"));
         store.ingest(SuggestIngestionConstraints {
-            providers: Some(vec![SuggestionProvider::Exposure]),
+            providers: Some(vec![SuggestionProvider::Dynamic]),
             provider_constraints: Some(SuggestionProviderConstraints {
-                exposure_suggestion_types: Some(vec!["aaa".to_string()]),
+                dynamic_suggestion_types: Some(vec!["aaa".to_string()]),
                 ..SuggestionProviderConstraints::default()
             }),
             ..SuggestIngestionConstraints::all_providers()
         });
 
-        // Keywords from the second record should still return the suggestion.
-        let record_1_matches = vec![
-            "record 1 keyword",
-            "sug",
-            "suga",
-            "sugar",
-            "sugarp",
-            "sugarpl",
-            "sugarplu",
-            "sugarplum",
-        ];
-        for query in &record_1_matches {
+        // Keywords from record 0 should not match anything.
+        for query in record_0_queries {
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["aaa"])),
-                vec![Suggestion::Exposure {
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![],
+            );
+        }
+
+        // The suggestion in record 1 should remain fetchable.
+        for query in record_1_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![Suggestion::Dynamic {
                     suggestion_type: "aaa".into(),
-                    score: 1.0,
+                    data: Some(json!("record-1-data")),
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
                 }],
             );
         }
 
-        // Keywords from the first record should not return the suggestion.
-        let record_0_matches = vec!["record 0 keyword", "sugg", "sugge", "sugges", "suggest"];
-        for query in &record_0_matches {
+        // The suggestions in record 2 should remain fetchable.
+        for query in record_2_queries {
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, &["exposure-test"])),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-2-data-0")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-2-data-1")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                ],
+            );
+        }
+        for query in record_2_0_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![Suggestion::Dynamic {
+                    suggestion_type: "aaa".into(),
+                    data: Some(json!("record-2-data-0")),
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
+                }],
+            );
+        }
+        for query in record_2_1_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![Suggestion::Dynamic {
+                    suggestion_type: "aaa".into(),
+                    data: Some(json!("record-2-data-1")),
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
+                }],
+            );
+        }
+
+        // All remaining suggestions should remain fetchable via the common
+        // keywords.
+        for query in common_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-1-data")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-2-data-0")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                    Suggestion::Dynamic {
+                        suggestion_type: "aaa".into(),
+                        data: Some(json!("record-2-data-1")),
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
+                    },
+                ],
+            );
+        }
+
+        // Delete record 2.
+        store
+            .client_mut()
+            .delete_record(SuggestionProvider::Dynamic.empty_record("dynamic-2"));
+        store.ingest(SuggestIngestionConstraints {
+            providers: Some(vec![SuggestionProvider::Dynamic]),
+            provider_constraints: Some(SuggestionProviderConstraints {
+                dynamic_suggestion_types: Some(vec!["aaa".to_string()]),
+                ..SuggestionProviderConstraints::default()
+            }),
+            ..SuggestIngestionConstraints::all_providers()
+        });
+
+        // Keywords from record 0 still should not match anything.
+        for query in record_0_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![],
+            );
+        }
+
+        // The suggestion in record 1 should remain fetchable.
+        for query in record_1_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![Suggestion::Dynamic {
+                    suggestion_type: "aaa".into(),
+                    data: Some(json!("record-1-data")),
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
+                }],
+            );
+        }
+
+        // The suggestions in record 2 should not be fetchable.
+        for query in record_2_queries
+            .iter()
+            .chain(record_2_0_queries.iter().chain(record_2_1_queries.iter()))
+        {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
                 vec![]
+            );
+        }
+
+        // The one remaining suggestion, from record 1, should remain fetchable
+        // via the common keywords.
+        for query in common_queries {
+            assert_eq!(
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, &["aaa"])),
+                vec![Suggestion::Dynamic {
+                    suggestion_type: "aaa".into(),
+                    data: Some(json!("record-1-data")),
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
+                },],
             );
         }
 
@@ -3045,14 +3666,14 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn exposure_ingest() -> anyhow::Result<()> {
+    fn dynamic_ingest_provider_constraints() -> anyhow::Result<()> {
         before_each();
 
         // Create suggestions with types "aaa" and "bbb".
         let store = TestStore::new(
             MockRemoteSettingsClient::default()
-                .with_record(SuggestionProvider::Exposure.full_record(
-                    "exposure-0",
+                .with_record(SuggestionProvider::Dynamic.full_record(
+                    "dynamic-0",
                     Some(json!({
                         "suggestion_type": "aaa",
                     })),
@@ -3060,8 +3681,8 @@ pub(crate) mod tests {
                         "keywords": ["aaa keyword", "both keyword"],
                     }))),
                 ))
-                .with_record(SuggestionProvider::Exposure.full_record(
-                    "exposure-1",
+                .with_record(SuggestionProvider::Dynamic.full_record(
+                    "dynamic-1",
                     Some(json!({
                         "suggestion_type": "bbb",
                     })),
@@ -3075,7 +3696,7 @@ pub(crate) mod tests {
         // be ingested but their attachments won't be, so fetches shouldn't
         // return any suggestions.
         store.ingest(SuggestIngestionConstraints {
-            providers: Some(vec![SuggestionProvider::Exposure]),
+            providers: Some(vec![SuggestionProvider::Dynamic]),
             provider_constraints: None,
             ..SuggestIngestionConstraints::all_providers()
         });
@@ -3093,7 +3714,7 @@ pub(crate) mod tests {
         ];
         for (query, types) in &ingest_1_queries {
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, types)),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, types)),
                 vec![],
             );
         }
@@ -3101,9 +3722,9 @@ pub(crate) mod tests {
         // Ingest only the "bbb" suggestion. The "bbb" attachment should be
         // ingested, so "bbb" fetches should return the "bbb" suggestion.
         store.ingest(SuggestIngestionConstraints {
-            providers: Some(vec![SuggestionProvider::Exposure]),
+            providers: Some(vec![SuggestionProvider::Dynamic]),
             provider_constraints: Some(SuggestionProviderConstraints {
-                exposure_suggestion_types: Some(vec!["bbb".to_string()]),
+                dynamic_suggestion_types: Some(vec!["bbb".to_string()]),
                 ..SuggestionProviderConstraints::default()
             }),
             ..SuggestIngestionConstraints::all_providers()
@@ -3122,12 +3743,14 @@ pub(crate) mod tests {
         ];
         for (query, types, expected_types) in &ingest_2_queries {
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, types)),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, types)),
                 expected_types
                     .iter()
-                    .map(|t| Suggestion::Exposure {
+                    .map(|t| Suggestion::Dynamic {
                         suggestion_type: t.to_string(),
-                        score: 1.0,
+                        data: None,
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
                     })
                     .collect::<Vec<Suggestion>>(),
             );
@@ -3135,9 +3758,9 @@ pub(crate) mod tests {
 
         // Now ingest the "aaa" suggestion.
         store.ingest(SuggestIngestionConstraints {
-            providers: Some(vec![SuggestionProvider::Exposure]),
+            providers: Some(vec![SuggestionProvider::Dynamic]),
             provider_constraints: Some(SuggestionProviderConstraints {
-                exposure_suggestion_types: Some(vec!["aaa".to_string()]),
+                dynamic_suggestion_types: Some(vec!["aaa".to_string()]),
                 ..SuggestionProviderConstraints::default()
             }),
             ..SuggestIngestionConstraints::all_providers()
@@ -3156,12 +3779,14 @@ pub(crate) mod tests {
         ];
         for (query, types, expected_types) in &ingest_3_queries {
             assert_eq!(
-                store.fetch_suggestions(SuggestionQuery::exposure(query, types)),
+                store.fetch_suggestions(SuggestionQuery::dynamic(query, types)),
                 expected_types
                     .iter()
-                    .map(|t| Suggestion::Exposure {
+                    .map(|t| Suggestion::Dynamic {
                         suggestion_type: t.to_string(),
-                        score: 1.0,
+                        data: None,
+                        dismissal_key: None,
+                        score: DEFAULT_SUGGESTION_SCORE,
                     })
                     .collect::<Vec<Suggestion>>(),
             );
@@ -3171,13 +3796,13 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn exposure_ingest_new_record() -> anyhow::Result<()> {
+    fn dynamic_ingest_new_record() -> anyhow::Result<()> {
         before_each();
 
-        // Create an exposure suggestion and ingest it.
+        // Create a dynamic suggestion and ingest it.
         let mut store = TestStore::new(MockRemoteSettingsClient::default().with_record(
-            SuggestionProvider::Exposure.full_record(
-                "exposure-0",
+            SuggestionProvider::Dynamic.full_record(
+                "dynamic-0",
                 Some(json!({
                     "suggestion_type": "aaa",
                 })),
@@ -3187,19 +3812,19 @@ pub(crate) mod tests {
             ),
         ));
         store.ingest(SuggestIngestionConstraints {
-            providers: Some(vec![SuggestionProvider::Exposure]),
+            providers: Some(vec![SuggestionProvider::Dynamic]),
             provider_constraints: Some(SuggestionProviderConstraints {
-                exposure_suggestion_types: Some(vec!["aaa".to_string()]),
+                dynamic_suggestion_types: Some(vec!["aaa".to_string()]),
                 ..SuggestionProviderConstraints::default()
             }),
             ..SuggestIngestionConstraints::all_providers()
         });
 
-        // Add a new record of the same exposure type.
+        // Add a new record of the same dynamic type.
         store
             .client_mut()
-            .add_record(SuggestionProvider::Exposure.full_record(
-                "exposure-1",
+            .add_record(SuggestionProvider::Dynamic.full_record(
+                "dynamic-1",
                 Some(json!({
                     "suggestion_type": "aaa",
                 })),
@@ -3208,24 +3833,24 @@ pub(crate) mod tests {
                 }))),
             ));
 
-        // Ingest, but don't ingest the exposure type. The store will download
+        // Ingest, but don't ingest the dynamic type. The store will download
         // the new record but shouldn't ingest its attachment.
         store.ingest(SuggestIngestionConstraints {
-            providers: Some(vec![SuggestionProvider::Exposure]),
+            providers: Some(vec![SuggestionProvider::Dynamic]),
             provider_constraints: None,
             ..SuggestIngestionConstraints::all_providers()
         });
         assert_eq!(
-            store.fetch_suggestions(SuggestionQuery::exposure("new keyword", &["aaa"])),
+            store.fetch_suggestions(SuggestionQuery::dynamic("new keyword", &["aaa"])),
             vec![],
         );
 
-        // Ingest again with the exposure type. The new record will be
+        // Ingest again with the dynamic type. The new record will be
         // unchanged, but the store should now ingest its attachment.
         store.ingest(SuggestIngestionConstraints {
-            providers: Some(vec![SuggestionProvider::Exposure]),
+            providers: Some(vec![SuggestionProvider::Dynamic]),
             provider_constraints: Some(SuggestionProviderConstraints {
-                exposure_suggestion_types: Some(vec!["aaa".to_string()]),
+                dynamic_suggestion_types: Some(vec!["aaa".to_string()]),
                 ..SuggestionProviderConstraints::default()
             }),
             ..SuggestIngestionConstraints::all_providers()
@@ -3234,11 +3859,136 @@ pub(crate) mod tests {
         // The keyword in the new attachment should match the suggestion,
         // confirming that the new record's attachment was ingested.
         assert_eq!(
-            store.fetch_suggestions(SuggestionQuery::exposure("new keyword", &["aaa"])),
-            vec![Suggestion::Exposure {
+            store.fetch_suggestions(SuggestionQuery::dynamic("new keyword", &["aaa"])),
+            vec![Suggestion::Dynamic {
                 suggestion_type: "aaa".to_string(),
-                score: 1.0,
+                data: None,
+                dismissal_key: None,
+                score: DEFAULT_SUGGESTION_SCORE,
             }]
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn dynamic_dismissal() -> anyhow::Result<()> {
+        before_each();
+
+        let store = TestStore::new(MockRemoteSettingsClient::default().with_record(
+            SuggestionProvider::Dynamic.full_record(
+                "dynamic-0",
+                Some(json!({
+                    "suggestion_type": "aaa",
+                })),
+                Some(MockAttachment::Json(json!([
+                    {
+                        "keywords": ["aaa"],
+                        "dismissal_key": "dk0",
+                    },
+                    {
+                        "keywords": ["aaa"],
+                        "dismissal_key": "dk1",
+                    },
+                    {
+                        "keywords": ["aaa"],
+                    },
+                ]))),
+            ),
+        ));
+        store.ingest(SuggestIngestionConstraints {
+            providers: Some(vec![SuggestionProvider::Dynamic]),
+            provider_constraints: Some(SuggestionProviderConstraints {
+                dynamic_suggestion_types: Some(vec!["aaa".to_string()]),
+                ..SuggestionProviderConstraints::default()
+            }),
+            ..SuggestIngestionConstraints::all_providers()
+        });
+
+        // Make sure the suggestions are initially fetchable.
+        let suggestions = store.fetch_suggestions(SuggestionQuery::dynamic("aaa", &["aaa"]));
+        assert_eq!(
+            suggestions,
+            vec![
+                Suggestion::Dynamic {
+                    suggestion_type: "aaa".to_string(),
+                    data: None,
+                    dismissal_key: Some("dk0".to_string()),
+                    score: DEFAULT_SUGGESTION_SCORE,
+                },
+                Suggestion::Dynamic {
+                    suggestion_type: "aaa".to_string(),
+                    data: None,
+                    dismissal_key: Some("dk1".to_string()),
+                    score: DEFAULT_SUGGESTION_SCORE,
+                },
+                Suggestion::Dynamic {
+                    suggestion_type: "aaa".to_string(),
+                    data: None,
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
+                },
+            ],
+        );
+
+        // Dismiss the first suggestion.
+        assert_eq!(suggestions[0].dismissal_key(), Some("dk0"));
+        store.inner.dismiss_by_suggestion(&suggestions[0])?;
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::dynamic("aaa", &["aaa"])),
+            vec![
+                Suggestion::Dynamic {
+                    suggestion_type: "aaa".to_string(),
+                    data: None,
+                    dismissal_key: Some("dk1".to_string()),
+                    score: DEFAULT_SUGGESTION_SCORE,
+                },
+                Suggestion::Dynamic {
+                    suggestion_type: "aaa".to_string(),
+                    data: None,
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
+                },
+            ],
+        );
+
+        // Dismiss the second suggestion.
+        assert_eq!(suggestions[1].dismissal_key(), Some("dk1"));
+        store.inner.dismiss_by_suggestion(&suggestions[1])?;
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::dynamic("aaa", &["aaa"])),
+            vec![Suggestion::Dynamic {
+                suggestion_type: "aaa".to_string(),
+                data: None,
+                dismissal_key: None,
+                score: DEFAULT_SUGGESTION_SCORE,
+            },],
+        );
+
+        // Clear dismissals. All suggestions should be fetchable again.
+        store.inner.clear_dismissed_suggestions()?;
+        assert_eq!(
+            store.fetch_suggestions(SuggestionQuery::dynamic("aaa", &["aaa"])),
+            vec![
+                Suggestion::Dynamic {
+                    suggestion_type: "aaa".to_string(),
+                    data: None,
+                    dismissal_key: Some("dk0".to_string()),
+                    score: DEFAULT_SUGGESTION_SCORE,
+                },
+                Suggestion::Dynamic {
+                    suggestion_type: "aaa".to_string(),
+                    data: None,
+                    dismissal_key: Some("dk1".to_string()),
+                    score: DEFAULT_SUGGESTION_SCORE,
+                },
+                Suggestion::Dynamic {
+                    suggestion_type: "aaa".to_string(),
+                    data: None,
+                    dismissal_key: None,
+                    score: DEFAULT_SUGGESTION_SCORE,
+                },
+            ],
         );
 
         Ok(())

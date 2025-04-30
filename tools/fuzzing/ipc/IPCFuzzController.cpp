@@ -82,6 +82,8 @@ IPCFuzzController::IPCFuzzController()
   portNameToIndex["PBackgroundLSDatabase"] = 11;
   portNameToIndex["PRemoteWorkerNonLifeCycleOpController"] = 12;
   portNameToIndex["PNotification"] = 13;
+  portNameToIndex["PRemoteWorkerDebuggerManager"] = 14;
+  portNameToIndex["PRemoteWorkerDebugger"] = 15;
 
   // Used to select the n-th trigger message as a starting point for fuzzing
   // in single message mode. A value of 1 will skip the first matching message

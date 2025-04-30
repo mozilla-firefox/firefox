@@ -146,4 +146,9 @@ function updatePrefs(state, oldState) {
   if (hasChanged(selectors.getBlackBoxRanges)) {
     asyncStore.blackboxedRanges = selectors.getBlackBoxRanges(state);
   }
+
+  if (hasChanged(selectors.getMainThreadProjectDirectoryRoots)) {
+    asyncStore.directoryRoots =
+      selectors.getMainThreadProjectDirectoryRoots(state);
+  }
 }

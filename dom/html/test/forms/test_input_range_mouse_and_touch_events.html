@@ -39,12 +39,108 @@ const { AppConstants } = SpecialPowers.ChromeUtils.importESModule(
  * This test checks how the value of <input type=range> changes in response to
  * various mouse and touch events.
  **/
-SimpleTest.expectAssertions(0, 2); // bug 1917867
+SimpleTest.expectAssertions(0, 4); // bug 1917867
 SimpleTest.waitForExplicitFinish();
-SimpleTest.waitForFocus(function() {
+SimpleTest.waitForFocus(async function() {
+  const kTouchRadius = {
+    desktop: {
+      enabled: false,
+      top: 12,
+      right: 8,
+      bottom: 4,
+      left: 8,
+    },
+    mobile: {
+      enabled: true,
+      top: 2,
+      right: 3,
+      bottom: 2,
+      left: 3,
+    },
+  };
+  const kMouseRadius = {
+    desktop: {
+      enabled: false,
+      top: 12,
+      right: 8,
+      bottom: 4,
+      left: 8,
+    },
+    mobile: {
+      enabled: true,
+      top: 2,
+      right: 3,
+      bottom: 2,
+      left: 3,
+    },
+  };
+  const kIsAndroid = AppConstants.platform == "android";
+  {
+    const kTouchDefault = kIsAndroid ? kTouchRadius.mobile : kTouchRadius.desktop;
+    const kMouseDefault = kIsAndroid ? kMouseRadius.mobile : kMouseRadius.desktop;
+    for (const checkDefaultPref of [
+      { pref: "ui.touch.radius.enabled", expected: kTouchDefault.enabled },
+      { pref: "ui.touch.radius.topmm", expected: kTouchDefault.top },
+      { pref: "ui.touch.radius.rightmm", expected: kTouchDefault.right },
+      { pref: "ui.touch.radius.bottommm", expected: kTouchDefault.bottom },
+      { pref: "ui.touch.radius.leftmm", expected: kTouchDefault.left },
+      { pref: "ui.mouse.radius.enabled", expected: kMouseDefault.enabled },
+      { pref: "ui.mouse.radius.topmm", expected: kMouseDefault.top },
+      { pref: "ui.mouse.radius.rightmm", expected: kMouseDefault.right },
+      { pref: "ui.mouse.radius.bottommm", expected: kMouseDefault.bottom },
+      { pref: "ui.mouse.radius.leftmm", expected: kMouseDefault.left },
+    ]) {
+      if (checkDefaultPref.pref == "ui.touch.radius.enabled" ||
+          checkDefaultPref.pref == "ui.mouse.radius.enabled") {
+        is(
+          SpecialPowers.getBoolPref(checkDefaultPref.pref),
+          checkDefaultPref.expected,
+          `"${checkDefaultPref.pref}" value should be update to match with the default value`
+        );
+      } else {
+        is(
+          SpecialPowers.getIntPref(checkDefaultPref.pref),
+          checkDefaultPref.expected,
+          `"${checkDefaultPref.pref}" value should be update to match with the default value`
+        );
+      }
+    }
+  }
   for (let element of document.querySelectorAll("input[type=range]")) {
-    test(element, synthesizeMouse, "click", "mousedown", "mousemove", "mouseup");
-    test(element, synthesizeTouch, "tap", "touchstart", "touchmove", "touchend");
+    // For Desktop
+    await SpecialPowers.pushPrefEnv({
+      set: [
+        ["ui.touch.radius.enabled", kTouchRadius.desktop.enabled],
+        ["ui.touch.radius.topmm", kTouchRadius.desktop.top],
+        ["ui.touch.radius.rightmm", kTouchRadius.desktop.right],
+        ["ui.touch.radius.bottommm", kTouchRadius.desktop.bottom],
+        ["ui.touch.radius.leftmm", kTouchRadius.desktop.left],
+        ["ui.mouse.radius.enabled", kMouseRadius.desktop.enabled],
+        ["ui.mouse.radius.topmm", kMouseRadius.desktop.top],
+        ["ui.mouse.radius.rightmm", kMouseRadius.desktop.right],
+        ["ui.mouse.radius.bottommm", kMouseRadius.desktop.bottom],
+        ["ui.mouse.radius.leftmm", kMouseRadius.desktop.left],
+      ],
+    });
+    test(element, synthesizeMouse, "click", "mousedown", "mousemove", "mouseup", "desktop");
+    test(element, synthesizeTouch, "tap", "touchstart", "touchmove", "touchend", "desktop");
+    // For Android
+    await SpecialPowers.pushPrefEnv({
+      set: [
+        ["ui.touch.radius.enabled", kTouchRadius.mobile.enabled],
+        ["ui.touch.radius.topmm", kTouchRadius.mobile.top],
+        ["ui.touch.radius.rightmm", kTouchRadius.mobile.right],
+        ["ui.touch.radius.bottommm", kTouchRadius.mobile.bottom],
+        ["ui.touch.radius.leftmm", kTouchRadius.mobile.left],
+        ["ui.mouse.radius.enabled", kMouseRadius.mobile.enabled],
+        ["ui.mouse.radius.topmm", kMouseRadius.mobile.top],
+        ["ui.mouse.radius.rightmm", kMouseRadius.mobile.right],
+        ["ui.mouse.radius.bottommm", kMouseRadius.mobile.bottom],
+        ["ui.mouse.radius.leftmm", kMouseRadius.mobile.left],
+      ],
+    });
+    test(element, synthesizeMouse, "click", "mousedown", "mousemove", "mouseup", "mobile");
+    test(element, synthesizeTouch, "tap", "touchstart", "touchmove", "touchend", "mobile");
   }
   // Work around leaks caused by bug 1917867 leaving stale pointer info.
   synthesizeTouch(document.body, 1, 1, { type: "touchstart" });
@@ -71,8 +167,8 @@ function flush() {
   document.body.clientWidth;
 }
 
-function test(elem, synthesizeFunc, clickOrTap, startName, moveName, endName) {
-  info(`Testing ${elem.id}`);
+function test(elem, synthesizeFunc, clickOrTap, startName, moveName, endName, platform) {
+  info(`Testing ${elem.id} (${platform})`);
 
   elem.focus();
   flush();
@@ -96,6 +192,8 @@ function test(elem, synthesizeFunc, clickOrTap, startName, moveName, endName) {
   var minX = borderLeft + paddingLeft;
   var midX = minX + width / 2;
   var maxX = minX + width;
+
+  const enoughDistance = 200;
 
   // Test click/tap in the middle of the range:
   elem.value = QUARTER_OF_RANGE;
@@ -137,10 +235,10 @@ function test(elem, synthesizeFunc, clickOrTap, startName, moveName, endName) {
   elem.value = QUARTER_OF_RANGE;
   synthesizeFunc(elem, midX, midY, { type: startName });
   is(elem.value, MIDDLE_OF_RANGE, "Test " + startName + " in middle of range");
-  synthesizeFunc(elem, maxX+100, midY, { type: moveName });
+  synthesizeFunc(elem, maxX + enoughDistance, midY, { type: moveName });
   is(elem.value, MAXIMUM_OF_RANGE, "Test dragging of range to position outside range (" + moveName + ")");
 
-  synthesizeFunc(elem, maxX+100, midY, { type: endName });
+  synthesizeFunc(elem, maxX + enoughDistance, midY, { type: endName });
   is(elem.value, MAXIMUM_OF_RANGE, "Test dragging of range to position outside range (" + endName + ")");
 
   // Test mouse/touch capturing by moving pointer to a position outside a rtl range:
@@ -149,10 +247,10 @@ function test(elem, synthesizeFunc, clickOrTap, startName, moveName, endName) {
   flush();
   synthesizeFunc(elem, midX, midY, { type: startName });
   is(elem.value, MIDDLE_OF_RANGE, "Test " + startName + " in middle of rtl range");
-  synthesizeFunc(elem, maxX+100, midY, { type: moveName });
+  synthesizeFunc(elem, maxX + enoughDistance, midY, { type: moveName });
   is(elem.value, MINIMUM_OF_RANGE, "Test dragging of range to position outside range (" + moveName + ")");
 
-  synthesizeFunc(elem, maxX+100, midY, { type: endName });
+  synthesizeFunc(elem, maxX + enoughDistance, midY, { type: endName });
   is(elem.value, MINIMUM_OF_RANGE, "Test dragging of range to position outside range (" + endName + ")");
 
   elem.style.direction = "ltr"; // reset direction
@@ -206,7 +304,7 @@ function test(elem, synthesizeFunc, clickOrTap, startName, moveName, endName) {
 
   // Check that we do not drag when the mousedown/touchstart occurs outside the range:
   elem.value = QUARTER_OF_RANGE;
-  synthesizeFunc(elem, maxX+100, midY, { type: startName });
+  synthesizeFunc(elem, maxX + enoughDistance, midY, { type: startName });
   is(elem.value, QUARTER_OF_RANGE, "Test " + startName + " outside range doesn't change its value");
   synthesizeFunc(elem, midX, midY, { type: moveName });
   is(elem.value, QUARTER_OF_RANGE, "Test dragging is not occurring when " + startName + " was outside range");
@@ -223,13 +321,13 @@ function test(elem, synthesizeFunc, clickOrTap, startName, moveName, endName) {
   synthesizeKey("KEY_Home");
   // The KEY_Home tests are disabled until I can figure out why they fail on Android -jwatt
   //is(elem.value, MINIMUM_OF_RANGE, "Test KEY_Home during a drag sets the value to the minimum of the range");
-  synthesizeFunc(elem, maxX+100, midY, { type: moveName });
+  synthesizeFunc(elem, maxX + enoughDistance, midY, { type: moveName });
   is(elem.value, MAXIMUM_OF_RANGE, "Test " + moveName + " outside range after key press that occurred during a drag changes the value");
   synthesizeFunc(elem, midX, midY, { type: moveName });
   is(elem.value, MIDDLE_OF_RANGE, "Test " + moveName + " in middle of range");
   synthesizeKey("KEY_Home");
   //is(elem.value, MINIMUM_OF_RANGE, "Test KEY_Home during a drag sets the value to the minimum of the range (second time)");
-  synthesizeFunc(elem, maxX+100, midY, { type: endName });
+  synthesizeFunc(elem, maxX + enoughDistance, midY, { type: endName });
   is(elem.value, MAXIMUM_OF_RANGE, "Test " + endName + " outside range after key press that occurred during a drag changes the value");
 
   function hideElement() {

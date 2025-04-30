@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import mozilla.appservices.Megazord
 import mozilla.appservices.autofill.AutofillApiException
 import mozilla.components.browser.state.action.SystemAction
+import mozilla.components.browser.state.action.TranslationsAction
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.searchEngines
 import mozilla.components.browser.state.state.selectedOrDefaultSearchEngine
@@ -63,6 +64,7 @@ import mozilla.components.support.ktx.android.arch.lifecycle.addObservers
 import mozilla.components.support.ktx.android.content.isMainProcess
 import mozilla.components.support.ktx.android.content.runOnlyInMainProcess
 import mozilla.components.support.locale.LocaleAwareApplication
+import mozilla.components.support.remotesettings.GlobalRemoteSettingsDependencyProvider
 import mozilla.components.support.rusterrors.initializeRustErrors
 import mozilla.components.support.rusthttp.RustHttpConfig
 import mozilla.components.support.rustlog.RustLog
@@ -94,6 +96,8 @@ import org.mozilla.fenix.ext.containsQueryParameters
 import org.mozilla.fenix.ext.isCustomEngine
 import org.mozilla.fenix.ext.isKnownSearchDomain
 import org.mozilla.fenix.ext.settings
+import org.mozilla.fenix.home.topsites.TopSitesConfigConstants.TOP_SITES_PROVIDER_LIMIT
+import org.mozilla.fenix.home.topsites.TopSitesConfigConstants.TOP_SITES_PROVIDER_MAX_THRESHOLD
 import org.mozilla.fenix.lifecycle.StoreLifecycleObserver
 import org.mozilla.fenix.lifecycle.VisibilityLifecycleObserver
 import org.mozilla.fenix.nimbus.FxNimbus
@@ -109,8 +113,7 @@ import org.mozilla.fenix.push.WebPushEngineIntegration
 import org.mozilla.fenix.session.PerformanceActivityLifecycleCallbacks
 import org.mozilla.fenix.session.VisibilityLifecycleCallback
 import org.mozilla.fenix.utils.Settings
-import org.mozilla.fenix.utils.Settings.Companion.TOP_SITES_PROVIDER_LIMIT
-import org.mozilla.fenix.utils.Settings.Companion.TOP_SITES_PROVIDER_MAX_THRESHOLD
+import org.mozilla.fenix.utils.isLargeScreenSize
 import org.mozilla.fenix.wallpapers.Wallpaper
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -143,12 +146,6 @@ open class FenixApplication : LocaleAwareApplication(), Provider {
 
     override fun onCreate() {
         super.onCreate()
-
-        if (shouldShowPrivacyNotice()) {
-            // For Mozilla Online build: Delay initialization on first run until privacy notice
-            // is accepted by the user.
-            return
-        }
 
         initialize()
     }
@@ -239,6 +236,8 @@ open class FenixApplication : LocaleAwareApplication(), Provider {
             GlobalPlacesDependencyProvider.initialize(components.core.historyStorage)
 
             GlobalSyncedTabsCommandsProvider.initialize(lazy { components.backgroundServices.syncedTabsCommands })
+
+            initializeRemoteSettingsSupport()
 
             restoreBrowserState()
             restoreDownloads()
@@ -427,6 +426,12 @@ open class FenixApplication : LocaleAwareApplication(), Provider {
             }
         }
 
+        fun queueInitializingTranslations() {
+            queue.runIfReadyOrQueue {
+                components.core.store.dispatch(TranslationsAction.InitTranslationsBrowserState)
+            }
+        }
+
         @OptIn(DelicateCoroutinesApi::class) // GlobalScope usage
         fun queueSuggestIngest() {
             queue.runIfReadyOrQueue {
@@ -446,6 +451,7 @@ open class FenixApplication : LocaleAwareApplication(), Provider {
         queueRestoreLocale()
         queueStorageMaintenance()
         queueNimbusFetchInForeground()
+        queueInitializingTranslations()
         if (settings().enableFxSuggest) {
             queueSuggestIngest()
         }
@@ -642,6 +648,11 @@ open class FenixApplication : LocaleAwareApplication(), Provider {
         }
     }
 
+    private fun initializeRemoteSettingsSupport() {
+        GlobalRemoteSettingsDependencyProvider.initialize(components.remoteSettingsService.value)
+        components.remoteSettingsSyncScheduler.registerForSync()
+    }
+
     @Suppress("ForbiddenComment")
     private fun initializeWebExtensionSupport() {
         try {
@@ -812,6 +823,8 @@ open class FenixApplication : LocaleAwareApplication(), Provider {
 
             ramMoreThanThreshold.set(isDeviceRamAboveThreshold)
             deviceTotalRam.set(getDeviceTotalRAM())
+
+            isLargeDevice.set(isLargeScreenSize())
         }
 
         with(AndroidAutofill) {
@@ -1028,15 +1041,5 @@ open class FenixApplication : LocaleAwareApplication(), Provider {
         GlobalScope.launch {
             components.useCases.wallpaperUseCases.initialize()
         }
-    }
-
-    /**
-     * Checks whether or not a privacy notice needs to be displayed before
-     * the application can continue to initialize.
-     */
-    internal fun shouldShowPrivacyNotice(): Boolean {
-        return Config.channel.isMozillaOnline &&
-            settings().shouldShowPrivacyPopWindow &&
-            !components.fenixOnboarding.userHasBeenOnboarded()
     }
 }

@@ -69,6 +69,27 @@ dom.quota.try:
           Optionally, the stack within process_id.
         type: string
     telemetry_mirror: DomQuotaTry_Error_Step
+quotamanager:
+  restore_origin_directory_metadata_counter:
+    type: counter
+    description: >
+      Increments each time QuotaManager::RestoreDirectoryMetadata2 is called to
+      restore origin directory metadata. This typically occurs when expected
+      directory metadata is missing or needs to be regenerated. The counter is
+      incremented regardless of whether the restoration ultimately succeeds or
+      fails.
+      This can provide insight into the impacts of specific code changes,
+      including potential optimizations or regressions.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961884
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961884
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - jvarga@mozilla.com
+      - storage-telemetry@mozilla.com
+    expires: 142
 quotamanager.initialize.repository:
   number_of_iterations:
     type: labeled_custom_distribution

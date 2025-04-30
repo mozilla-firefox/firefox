@@ -35,6 +35,12 @@ const uint8_t kMetadataPayloadT35[kMetadataPayloadSizeT35] = {
   0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17
 };
 
+const size_t kMetadataPayloadSizeT35Two = 10;
+// 0xB5 stands for the itut t35 metadata country code for the Unites States
+const uint8_t kMetadataPayloadT35Two[kMetadataPayloadSizeT35] = {
+  0xB5, 0x01, 0x02, 0x42, 0xff, 0xff, 0x00, 0x07, 0x08, 0x09
+};
+
 const size_t kMetadataPayloadSizeMdcv = 24;
 // Arbitrary content.
 const uint8_t kMetadataPayloadMdcv[kMetadataPayloadSizeMdcv] = {
@@ -96,10 +102,17 @@ class MetadataEncodeTest
     ASSERT_EQ(aom_img_add_metadata(current_frame, OBU_METADATA_TYPE_ITUT_T35,
                                    nullptr, 0, AOM_MIF_ANY_FRAME),
               -1);
+
     ASSERT_EQ(aom_img_add_metadata(current_frame, OBU_METADATA_TYPE_ITUT_T35,
                                    kMetadataPayloadT35, kMetadataPayloadSizeT35,
                                    AOM_MIF_ANY_FRAME),
               0);
+
+    ASSERT_EQ(
+        aom_img_add_metadata(current_frame, OBU_METADATA_TYPE_ITUT_T35,
+                             kMetadataPayloadT35Two, kMetadataPayloadSizeT35Two,
+                             AOM_MIF_ANY_FRAME_LAYER_SPECIFIC),
+        0);
 
     ASSERT_EQ(aom_img_add_metadata(current_frame, OBU_METADATA_TYPE_HDR_MDCV,
                                    kMetadataPayloadMdcv,
@@ -143,32 +156,42 @@ class MetadataEncodeTest
 
     ASSERT_NE(img.metadata, nullptr);
 
-    ASSERT_EQ(img.metadata->sz, is_key_frame ? 3 : 1);
+    ASSERT_EQ(img.metadata->sz, is_key_frame ? 4 : 2);
 
-    ASSERT_EQ(OBU_METADATA_TYPE_ITUT_T35,
-              img.metadata->metadata_array[0]->type);
-    ASSERT_EQ(kMetadataPayloadSizeT35, img.metadata->metadata_array[0]->sz);
+    aom_metadata_t *metadata = img.metadata->metadata_array[0];
+    ASSERT_EQ(metadata->type, OBU_METADATA_TYPE_ITUT_T35);
+    ASSERT_EQ(metadata->insert_flag, AOM_MIF_ANY_FRAME);
+    ASSERT_EQ(metadata->sz, kMetadataPayloadSizeT35);
     EXPECT_EQ(
-        memcmp(kMetadataPayloadT35, img.metadata->metadata_array[0]->payload,
-               kMetadataPayloadSizeT35),
+        memcmp(kMetadataPayloadT35, metadata->payload, kMetadataPayloadSizeT35),
         0);
 
-    if (is_key_frame) {
-      ASSERT_EQ(OBU_METADATA_TYPE_HDR_MDCV,
-                img.metadata->metadata_array[1]->type);
-      ASSERT_EQ(kMetadataPayloadSizeMdcv, img.metadata->metadata_array[1]->sz);
-      EXPECT_EQ(
-          memcmp(kMetadataPayloadMdcv, img.metadata->metadata_array[1]->payload,
-                 kMetadataPayloadSizeMdcv),
-          0);
+    metadata = img.metadata->metadata_array[1];
+    ASSERT_EQ(metadata->type, OBU_METADATA_TYPE_ITUT_T35);
+    // AOM_MIF_ANY_FRAME and not AOM_MIF_ANY_FRAME_LAYER_SPECIFIC because the
+    // stream does not contain layers.
+    ASSERT_EQ(metadata->insert_flag, AOM_MIF_ANY_FRAME);
+    ASSERT_EQ(metadata->sz, kMetadataPayloadSizeT35Two);
+    EXPECT_EQ(memcmp(kMetadataPayloadT35Two, metadata->payload,
+                     kMetadataPayloadSizeT35Two),
+              0);
 
-      ASSERT_EQ(OBU_METADATA_TYPE_HDR_CLL,
-                img.metadata->metadata_array[2]->type);
-      ASSERT_EQ(kMetadataPayloadSizeCll, img.metadata->metadata_array[2]->sz);
-      EXPECT_EQ(
-          memcmp(kMetadataPayloadCll, img.metadata->metadata_array[2]->payload,
-                 kMetadataPayloadSizeCll),
-          0);
+    if (is_key_frame) {
+      metadata = img.metadata->metadata_array[2];
+      ASSERT_EQ(metadata->type, OBU_METADATA_TYPE_HDR_MDCV);
+      ASSERT_EQ(metadata->insert_flag, AOM_MIF_ANY_FRAME);
+      ASSERT_EQ(metadata->sz, kMetadataPayloadSizeMdcv);
+      EXPECT_EQ(memcmp(kMetadataPayloadMdcv, metadata->payload,
+                       kMetadataPayloadSizeMdcv),
+                0);
+
+      metadata = img.metadata->metadata_array[3];
+      ASSERT_EQ(metadata->type, OBU_METADATA_TYPE_HDR_CLL);
+      ASSERT_EQ(metadata->insert_flag, AOM_MIF_ANY_FRAME);
+      ASSERT_EQ(metadata->sz, kMetadataPayloadSizeCll);
+      EXPECT_EQ(memcmp(kMetadataPayloadCll, metadata->payload,
+                       kMetadataPayloadSizeCll),
+                0);
     }
   }
 
@@ -243,6 +266,12 @@ class MetadataMultilayerEncodeTest
                                    AOM_MIF_ANY_FRAME),
               0);
 
+    ASSERT_EQ(
+        aom_img_add_metadata(current_frame, OBU_METADATA_TYPE_ITUT_T35,
+                             kMetadataPayloadT35Two, kMetadataPayloadSizeT35Two,
+                             AOM_MIF_ANY_FRAME_LAYER_SPECIFIC),
+        0);
+
     ASSERT_EQ(aom_img_add_metadata(current_frame, OBU_METADATA_TYPE_HDR_MDCV,
                                    kMetadataPayloadMdcv,
                                    kMetadataPayloadSizeMdcv, AOM_MIF_KEY_FRAME),
@@ -288,32 +317,40 @@ class MetadataMultilayerEncodeTest
 
     ASSERT_NE(img.metadata, nullptr);
 
-    ASSERT_EQ(img.metadata->sz, is_key_frame ? 3 : 1);
+    ASSERT_EQ(img.metadata->sz, is_key_frame ? 4 : 2);
 
-    ASSERT_EQ(OBU_METADATA_TYPE_ITUT_T35,
-              img.metadata->metadata_array[0]->type);
-    ASSERT_EQ(kMetadataPayloadSizeT35, img.metadata->metadata_array[0]->sz);
+    aom_metadata_t *metadata = img.metadata->metadata_array[0];
+    ASSERT_EQ(metadata->type, OBU_METADATA_TYPE_ITUT_T35);
+    ASSERT_EQ(metadata->insert_flag, AOM_MIF_ANY_FRAME);
+    ASSERT_EQ(metadata->sz, kMetadataPayloadSizeT35);
     EXPECT_EQ(
-        memcmp(kMetadataPayloadT35, img.metadata->metadata_array[0]->payload,
-               kMetadataPayloadSizeT35),
+        memcmp(kMetadataPayloadT35, metadata->payload, kMetadataPayloadSizeT35),
         0);
 
-    if (is_key_frame) {
-      ASSERT_EQ(OBU_METADATA_TYPE_HDR_MDCV,
-                img.metadata->metadata_array[1]->type);
-      ASSERT_EQ(kMetadataPayloadSizeMdcv, img.metadata->metadata_array[1]->sz);
-      EXPECT_EQ(
-          memcmp(kMetadataPayloadMdcv, img.metadata->metadata_array[1]->payload,
-                 kMetadataPayloadSizeMdcv),
-          0);
+    metadata = img.metadata->metadata_array[1];
+    ASSERT_EQ(metadata->type, OBU_METADATA_TYPE_ITUT_T35);
+    ASSERT_EQ(metadata->insert_flag, AOM_MIF_ANY_FRAME_LAYER_SPECIFIC);
+    ASSERT_EQ(metadata->sz, kMetadataPayloadSizeT35Two);
+    EXPECT_EQ(memcmp(kMetadataPayloadT35Two, metadata->payload,
+                     kMetadataPayloadSizeT35Two),
+              0);
 
-      ASSERT_EQ(OBU_METADATA_TYPE_HDR_CLL,
-                img.metadata->metadata_array[2]->type);
-      ASSERT_EQ(kMetadataPayloadSizeCll, img.metadata->metadata_array[2]->sz);
-      EXPECT_EQ(
-          memcmp(kMetadataPayloadCll, img.metadata->metadata_array[2]->payload,
-                 kMetadataPayloadSizeCll),
-          0);
+    if (is_key_frame) {
+      metadata = img.metadata->metadata_array[2];
+      ASSERT_EQ(metadata->type, OBU_METADATA_TYPE_HDR_MDCV);
+      ASSERT_EQ(metadata->insert_flag, AOM_MIF_ANY_FRAME);
+      ASSERT_EQ(metadata->sz, kMetadataPayloadSizeMdcv);
+      EXPECT_EQ(memcmp(kMetadataPayloadMdcv, metadata->payload,
+                       kMetadataPayloadSizeMdcv),
+                0);
+
+      metadata = img.metadata->metadata_array[3];
+      ASSERT_EQ(metadata->type, OBU_METADATA_TYPE_HDR_CLL);
+      ASSERT_EQ(metadata->insert_flag, AOM_MIF_ANY_FRAME);
+      ASSERT_EQ(metadata->sz, kMetadataPayloadSizeCll);
+      EXPECT_EQ(memcmp(kMetadataPayloadCll, metadata->payload,
+                       kMetadataPayloadSizeCll),
+                0);
     }
   }
 
@@ -402,6 +439,33 @@ TEST(MetadataTest, AddMetadataToImage) {
             -1);
 }
 
+TEST(MetadataTest, AddLayerSpecificMetadataToImage) {
+  aom_image_t image;
+  image.metadata = nullptr;
+
+  ASSERT_EQ(
+      aom_img_add_metadata(
+          &image, OBU_METADATA_TYPE_ITUT_T35, kMetadataPayloadT35,
+          kMetadataPayloadSizeT35,
+          (aom_metadata_insert_flags_t)(AOM_MIF_ANY_FRAME_LAYER_SPECIFIC)),
+      0);
+  aom_img_metadata_array_free(image.metadata);
+}
+
+TEST(MetadataTest, AddLayerSpecificMetadataToImageNotAllowed) {
+  aom_image_t image;
+  image.metadata = nullptr;
+
+  // OBU_METADATA_TYPE_SCALABILITY cannot be layer specific.
+  ASSERT_EQ(
+      aom_img_add_metadata(
+          &image, OBU_METADATA_TYPE_SCALABILITY, kMetadataPayloadT35,
+          kMetadataPayloadSizeT35,
+          (aom_metadata_insert_flags_t)(AOM_MIF_ANY_FRAME_LAYER_SPECIFIC)),
+      -1);
+  aom_img_metadata_array_free(image.metadata);
+}
+
 TEST(MetadataTest, RemoveMetadataFromImage) {
   aom_image_t image;
   image.metadata = nullptr;
@@ -454,9 +518,13 @@ TEST(MetadataTest, GetMetadataFromImage) {
                                  kMetadataPayloadT35, kMetadataPayloadSizeT35,
                                  AOM_MIF_ANY_FRAME),
             0);
+  ASSERT_EQ(aom_img_add_metadata(&image, OBU_METADATA_TYPE_ITUT_T35,
+                                 kMetadataPayloadT35, kMetadataPayloadSizeT35,
+                                 AOM_MIF_ANY_FRAME_LAYER_SPECIFIC),
+            0);
 
   EXPECT_EQ(aom_img_get_metadata(nullptr, 0), nullptr);
-  EXPECT_EQ(aom_img_get_metadata(&image, 1u), nullptr);
+  EXPECT_EQ(aom_img_get_metadata(&image, 2u), nullptr);
   EXPECT_EQ(aom_img_get_metadata(&image, 10u), nullptr);
 
   const aom_metadata_t *metadata = aom_img_get_metadata(&image, 0);
@@ -465,6 +533,15 @@ TEST(MetadataTest, GetMetadataFromImage) {
   EXPECT_EQ(
       memcmp(kMetadataPayloadT35, metadata->payload, kMetadataPayloadSizeT35),
       0);
+  EXPECT_EQ(metadata->insert_flag, AOM_MIF_ANY_FRAME);
+
+  metadata = aom_img_get_metadata(&image, 1);
+  ASSERT_NE(metadata, nullptr);
+  ASSERT_EQ(metadata->sz, kMetadataPayloadSizeT35);
+  EXPECT_EQ(
+      memcmp(kMetadataPayloadT35, metadata->payload, kMetadataPayloadSizeT35),
+      0);
+  EXPECT_EQ(metadata->insert_flag, AOM_MIF_ANY_FRAME_LAYER_SPECIFIC);
 
   aom_img_metadata_array_free(image.metadata);
 }

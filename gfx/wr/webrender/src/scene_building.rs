@@ -751,19 +751,43 @@ impl<'a> SceneBuilder<'a> {
         // scroll event (for tile caching to work usefully we specifically
         // want to draw things even if they are outside the viewport).
         let mut shared_clip_node_id = None;
-        for cluster in &prim_list.clusters {
-            for prim_instance in &prim_instances[cluster.prim_range()] {
-                let leaf = clip_tree_builder.get_leaf(prim_instance.clip_leaf_id);
 
-                shared_clip_node_id = match shared_clip_node_id {
-                    Some(current) => {
-                        Some(clip_tree_builder.find_lowest_common_ancestor(
-                            current,
-                            leaf.node_id,
-                        ))
-                    }
-                    None => Some(leaf.node_id)
-                };
+        // Snapshot picture are special. All clips belonging to parents
+        // *must* be extracted from the snapshot, so we rely on this optimization
+        // taking out parent clips and it overrides other conditions.
+        // In addition we need to ensure that only parent clips are extracted.
+        let is_snapshot = pictures[pic_index.0].snapshot.is_some();
+
+        if is_snapshot {
+            // In the general case, if all of the children of a picture share the
+            // same clips, then these clips are hoisted up in the parent picture,
+            // however we rely on child clips of snapshotted pictures to be baked
+            // into the snapshot.
+            // Snapshotted pictures use the parent of their clip node (if any)
+            // as the clip root, to ensure that the parent clip hierarchy is
+            // extracted from clip chains inside the snapshot, and to make sure
+            // that child clips of the snapshots are not hoisted out of the
+            // snapshot even when all children of the snapshotted picture share
+            // a clip.
+            if let Some(idx) = prim_index {
+                let clip_node = clip_tree_builder.get_leaf(prim_instances[idx].clip_leaf_id).node_id;
+                shared_clip_node_id = clip_tree_builder.get_parent(clip_node);
+            }
+        } else {
+            for cluster in &prim_list.clusters {
+                for prim_instance in &prim_instances[cluster.prim_range()] {
+                    let leaf = clip_tree_builder.get_leaf(prim_instance.clip_leaf_id);
+
+                    shared_clip_node_id = match shared_clip_node_id {
+                        Some(current) => {
+                            Some(clip_tree_builder.find_lowest_common_ancestor(
+                                current,
+                                leaf.node_id,
+                            ))
+                        }
+                        None => Some(leaf.node_id)
+                    };
+                }
             }
         }
 
@@ -791,11 +815,6 @@ impl<'a> SceneBuilder<'a> {
             Some(PictureCompositeMode::SVGFEGraph( .. )) => true,
             _ => false,
         };
-
-        // Snapshot picture are special. All clips belonging to parents
-        // *must* be extracted from the snapshot, so we rely on this optimization
-        // taking out parent clips and it overrides other conditions.
-        let is_snapshot = pictures[pic_index.0].snapshot.is_some();
 
         // It is only safe to apply this optimisation if the old pic clip node
         // is the direct parent of the new LCA node.  If this is not the case

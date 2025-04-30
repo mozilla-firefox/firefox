@@ -26,6 +26,7 @@ export class NetErrorChild extends RemotePageChild {
       "RPMIsTRROnlyFailure",
       "RPMIsFirefox",
       "RPMOpenPreferences",
+      "RPMHasConnectivity",
       "RPMGetTRRSkipReason",
       "RPMGetTRRDomain",
       "RPMIsSiteSpecificTRRError",
@@ -173,6 +174,11 @@ export class NetErrorChild extends RemotePageChild {
 
   RPMIsFirefox() {
     return lazy.AppInfo.isFirefox;
+  }
+
+  RPMHasConnectivity() {
+    // Whether the browser has active network interfaces or not.
+    return Services.io.connectivity;
   }
 
   _getTRRSkipReason() {

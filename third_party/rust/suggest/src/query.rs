@@ -117,12 +117,12 @@ impl SuggestionQuery {
         }
     }
 
-    pub fn exposure(keyword: &str, suggestion_types: &[&str]) -> Self {
+    pub fn dynamic(keyword: &str, suggestion_types: &[&str]) -> Self {
         Self {
             keyword: keyword.into(),
-            providers: vec![SuggestionProvider::Exposure],
+            providers: vec![SuggestionProvider::Dynamic],
             provider_constraints: Some(SuggestionProviderConstraints {
-                exposure_suggestion_types: Some(
+                dynamic_suggestion_types: Some(
                     suggestion_types.iter().map(|s| s.to_string()).collect(),
                 ),
                 ..SuggestionProviderConstraints::default()

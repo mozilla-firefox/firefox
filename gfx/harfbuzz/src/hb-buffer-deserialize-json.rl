@@ -91,6 +91,8 @@ yoffset	=  "\"dy\"" colon (num  >tok %parse_y_offset);
 xadvance=  "\"ax\"" colon (num  >tok %parse_x_advance);
 yadvance=  "\"ay\"" colon (num  >tok %parse_y_advance);
 glyphflags="\"fl\"" colon (unum >tok %parse_glyph_flags);
+# Not parsed. Ignored.
+glyphextents="\""("xb"|"yb"|"w"|"h")"\"" colon (num >tok);
 
 element = glyph @ensure_glyphs
 	| unicode @ensure_unicode
@@ -99,7 +101,9 @@ element = glyph @ensure_glyphs
 	| yoffset
 	| xadvance
 	| yadvance
-	| glyphflags;
+	| glyphflags
+	| glyphextents
+	;
 item	=
 	( '{' space* element (comma element)* space* '}' space* (','|']') space* )
 	>clear_item

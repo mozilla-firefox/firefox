@@ -837,8 +837,6 @@
   <string name="preferences_override_account_server">사용자 지정  Mozilla 계정 서버</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">사용자 지정 동기화 서버</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla 계정/동기화 서버가 수정되었습니다. 변경사항을 적용하기 위해 애플리케이션을 종료하는 중…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">계정</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1486,16 +1484,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">삭제</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">삭제</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">뒤로</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">위로</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">URL 공유</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">파일 공유</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">선택한 항목을 삭제하시겠습니까?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">선택한 항목을 삭제하시겠습니까?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">삭제</string>
+  <string name="download_delete_multi_select_dialog_confirm">삭제</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">취소</string>
+  <string name="download_delete_multi_select_dialog_cancel">취소</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">진행 중</string>
   <!--
@@ -1526,9 +1528,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">다운로드 실패</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">다운로드 검색</string>
+  <string name="download_search_placeholder">다운로드 검색</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">결과 없음</string>
+  <string name="download_search_no_results_found">결과 없음</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">모두 선택</string>
   <!--
@@ -2281,7 +2283,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">향상된 추적 방지 기능의 예외 설정 아이콘</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -2291,7 +2293,7 @@
   <!-- Used as text for the link in `preference_doh_title`, points to documentation about "DNS over HTTPS" -->
   <string name="preference_doh_learn_more">더 알아보기</string>
   <!-- Content description for the toolbar "Navigate up" button -->
-  <string name="preference_doh_up_description">위로 이동</string>
+  <string name="preference_doh_up_description">위로</string>
   <!-- Content description for the "Exceptions" button -->
   <string name="preference_doh_exceptions_description">예외</string>
   <!-- Content description for the "Info" button -->
@@ -2855,7 +2857,7 @@
   <!-- Content description radio buttons with a link to more information -->
   <string name="radio_preference_info_content_description">상세 정보</string>
   <!-- Content description for the action bar "up" button -->
-  <string name="action_bar_up_description">위로 이동</string>
+  <string name="action_bar_up_description">위로</string>
   <!-- Content description for privacy content close button -->
   <string name="privacy_content_close_button_content_description">닫기</string>
   <!--
@@ -3195,6 +3197,8 @@
   <string name="protection_panel_no_trackers_blocked">추적기 없음</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">개인 정보 및 보안 설정</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">권한</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.

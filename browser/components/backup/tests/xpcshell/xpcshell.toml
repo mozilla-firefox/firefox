@@ -1,7 +1,6 @@
 [DEFAULT]
 head = "head.js"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
 prefs = [
   "browser.backup.log=true",
 ]

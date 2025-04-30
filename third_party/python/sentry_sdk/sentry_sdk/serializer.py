@@ -1,4 +1,5 @@
 import sys
+import math
 
 from datetime import datetime
 
@@ -6,28 +7,43 @@ from sentry_sdk.utils import (
     AnnotatedValue,
     capture_internal_exception,
     disable_capture_event,
+    format_timestamp,
+    json_dumps,
     safe_repr,
     strip_string,
-    format_timestamp,
 )
 
-from sentry_sdk._compat import text_type, PY2, string_types, number_types, iteritems
+import sentry_sdk.utils
+
+from sentry_sdk._compat import (
+    text_type,
+    PY2,
+    string_types,
+    number_types,
+    iteritems,
+    binary_sequence_types,
+)
 
 from sentry_sdk._types import MYPY
 
 if MYPY:
+    from datetime import timedelta
+
     from types import TracebackType
 
     from typing import Any
+    from typing import Callable
+    from typing import ContextManager
     from typing import Dict
     from typing import List
     from typing import Optional
-    from typing import Callable
-    from typing import Union
-    from typing import ContextManager
+    from typing import Tuple
     from typing import Type
+    from typing import Union
 
     from sentry_sdk._types import NotImplementedType, Event
+
+    Span = Dict[str, Any]
 
     ReprProcessor = Callable[[Any, Dict[str, Any]], Union[NotImplementedType, str]]
     Segment = Union[str, int]
@@ -36,21 +52,32 @@ if MYPY:
 if PY2:
     # Importing ABCs from collections is deprecated, and will stop working in 3.8
     # https://github.com/python/cpython/blob/master/Lib/collections/__init__.py#L49
-    from collections import Mapping, Sequence
+    from collections import Mapping, Sequence, Set
 
-    serializable_str_types = string_types
+    serializable_str_types = string_types + binary_sequence_types
 
 else:
     # New in 3.3
     # https://docs.python.org/3/library/collections.abc.html
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Mapping, Sequence, Set
 
     # Bytes are technically not strings in Python 3, but we can serialize them
-    serializable_str_types = (str, bytes)
+    serializable_str_types = string_types + binary_sequence_types
+
+
+# Maximum length of JSON-serialized event payloads that can be safely sent
+# before the server may reject the event due to its size. This is not intended
+# to reflect actual values defined server-side, but rather only be an upper
+# bound for events sent by the SDK.
+#
+# Can be overwritten if wanting to send more bytes, e.g. with a custom server.
+# When changing this, keep in mind that events may be a little bit larger than
+# this value due to attached metadata, so keep the number conservative.
+MAX_EVENT_BYTES = 10**6
 
 MAX_DATABAG_DEPTH = 5
 MAX_DATABAG_BREADTH = 10
-CYCLE_MARKER = u"<cyclic>"
+CYCLE_MARKER = "<cyclic>"
 
 
 global_repr_processors = []  # type: List[ReprProcessor]
@@ -93,11 +120,12 @@ class Memo(object):
         self._ids.pop(id(self._objs.pop()), None)
 
 
-def serialize(event, **kwargs):
-    # type: (Event, **Any) -> Event
+def serialize(event, smart_transaction_trimming=False, **kwargs):
+    # type: (Event, bool, **Any) -> Event
     memo = Memo()
     path = []  # type: List[Segment]
     meta_stack = []  # type: List[Dict[str, Any]]
+    span_description_bytes = []  # type: List[int]
 
     def _annotate(**meta):
         # type: (**Any) -> None
@@ -167,8 +195,8 @@ def serialize(event, **kwargs):
             if p0 == "request" and path[1] == "data":
                 return True
 
-            if p0 == "breadcrumbs":
-                path[1]
+            if p0 == "breadcrumbs" and path[1] == "values":
+                path[2]
                 return True
 
             if p0 == "extra":
@@ -207,7 +235,7 @@ def serialize(event, **kwargs):
             capture_internal_exception(sys.exc_info())
 
             if is_databag:
-                return u"<failed to serialize, use init(debug=True) to see error logs>"
+                return "<failed to serialize, use init(debug=True) to see error logs>"
 
             return None
         finally:
@@ -252,8 +280,18 @@ def serialize(event, **kwargs):
                 if result is not NotImplemented:
                     return _flatten_annotated(result)
 
+        sentry_repr = getattr(type(obj), "__sentry_repr__", None)
+
         if obj is None or isinstance(obj, (bool, number_types)):
-            return obj if not should_repr_strings else safe_repr(obj)
+            if should_repr_strings or (
+                isinstance(obj, float) and (math.isinf(obj) or math.isnan(obj))
+            ):
+                return safe_repr(obj)
+            else:
+                return obj
+
+        elif callable(sentry_repr):
+            return sentry_repr(obj)
 
         elif isinstance(obj, datetime):
             return (
@@ -291,7 +329,9 @@ def serialize(event, **kwargs):
 
             return rv_dict
 
-        elif not isinstance(obj, serializable_str_types) and isinstance(obj, Sequence):
+        elif not isinstance(obj, serializable_str_types) and isinstance(
+            obj, (Set, Sequence)
+        ):
             rv_list = []
 
             for i, v in enumerate(obj):
@@ -317,13 +357,82 @@ def serialize(event, **kwargs):
         if should_repr_strings:
             obj = safe_repr(obj)
         else:
-            if isinstance(obj, bytes):
+            if isinstance(obj, bytes) or isinstance(obj, bytearray):
                 obj = obj.decode("utf-8", "replace")
 
             if not isinstance(obj, string_types):
                 obj = safe_repr(obj)
 
+        # Allow span descriptions to be longer than other strings.
+        #
+        # For database auto-instrumented spans, the description contains
+        # potentially long SQL queries that are most useful when not truncated.
+        # Because arbitrarily large events may be discarded by the server as a
+        # protection mechanism, we dynamically limit the description length
+        # later in _truncate_span_descriptions.
+        if (
+            smart_transaction_trimming
+            and len(path) == 3
+            and path[0] == "spans"
+            and path[-1] == "description"
+        ):
+            span_description_bytes.append(len(obj))
+            return obj
         return _flatten_annotated(strip_string(obj))
+
+    def _truncate_span_descriptions(serialized_event, event, excess_bytes):
+        # type: (Event, Event, int) -> None
+        """
+        Modifies serialized_event in-place trying to remove excess_bytes from
+        span descriptions. The original event is used read-only to access the
+        span timestamps (represented as RFC3399-formatted strings in
+        serialized_event).
+
+        It uses heuristics to prioritize preserving the description of spans
+        that might be the most interesting ones in terms of understanding and
+        optimizing performance.
+        """
+        # When truncating a description, preserve a small prefix.
+        min_length = 10
+
+        def shortest_duration_longest_description_first(args):
+            # type: (Tuple[int, Span]) -> Tuple[timedelta, int]
+            i, serialized_span = args
+            span = event["spans"][i]
+            now = datetime.utcnow()
+            start = span.get("start_timestamp") or now
+            end = span.get("timestamp") or now
+            duration = end - start
+            description = serialized_span.get("description") or ""
+            return (duration, -len(description))
+
+        # Note: for simplicity we sort spans by exact duration and description
+        # length. If ever needed, we could have a more involved heuristic, e.g.
+        # replacing exact durations with "buckets" and/or looking at other span
+        # properties.
+        path.append("spans")
+        for i, span in sorted(
+            enumerate(serialized_event.get("spans") or []),
+            key=shortest_duration_longest_description_first,
+        ):
+            description = span.get("description") or ""
+            if len(description) <= min_length:
+                continue
+            excess_bytes -= len(description) - min_length
+            path.extend([i, "description"])
+            # Note: the last time we call strip_string we could preserve a few
+            # more bytes up to a total length of MAX_EVENT_BYTES. Since that's
+            # not strictly required, we leave it out for now for simplicity.
+            span["description"] = _flatten_annotated(
+                strip_string(description, max_length=min_length)
+            )
+            del path[-2:]
+            del meta_stack[len(path) + 1 :]
+
+            if excess_bytes <= 0:
+                break
+        path.pop()
+        del meta_stack[len(path) + 1 :]
 
     disable_capture_event.set(True)
     try:
@@ -331,6 +440,36 @@ def serialize(event, **kwargs):
         if meta_stack and isinstance(rv, dict):
             rv["_meta"] = meta_stack[0]
 
+        sum_span_description_bytes = sum(span_description_bytes)
+        if smart_transaction_trimming and sum_span_description_bytes > 0:
+            span_count = len(event.get("spans") or [])
+            # This is an upper bound of how many bytes all descriptions would
+            # consume if the usual string truncation in _serialize_node_impl
+            # would have taken place, not accounting for the metadata attached
+            # as event["_meta"].
+            descriptions_budget_bytes = span_count * sentry_sdk.utils.MAX_STRING_LENGTH
+
+            # If by not truncating descriptions we ended up with more bytes than
+            # per the usual string truncation, check if the event is too large
+            # and we need to truncate some descriptions.
+            #
+            # This is guarded with an if statement to avoid JSON-encoding the
+            # event unnecessarily.
+            if sum_span_description_bytes > descriptions_budget_bytes:
+                original_bytes = len(json_dumps(rv))
+                excess_bytes = original_bytes - MAX_EVENT_BYTES
+                if excess_bytes > 0:
+                    # Event is too large, will likely be discarded by the
+                    # server. Trim it down before sending.
+                    _truncate_span_descriptions(rv, event, excess_bytes)
+
+                    # Span descriptions truncated, set or reset _meta.
+                    #
+                    # We run the same code earlier because we want to account
+                    # for _meta when calculating original_bytes, the number of
+                    # bytes in the JSON-encoded event.
+                    if meta_stack and isinstance(rv, dict):
+                        rv["_meta"] = meta_stack[0]
         return rv
     finally:
         disable_capture_event.set(False)

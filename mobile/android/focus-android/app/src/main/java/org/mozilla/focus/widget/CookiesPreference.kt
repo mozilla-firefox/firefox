@@ -34,7 +34,7 @@ class CookiesPreference(context: Context, attrs: AttributeSet?) : ListPreference
 
         val cookieOptionIndex =
             context.resources.getStringArray(R.array.cookies_options_entry_values)
-                .asList().indexOf(settings.shouldBlockCookiesValue())
+                .asList().indexOf(settings.shouldBlockCookiesValue)
         this.summary =
             context.resources.getStringArray(R.array.cookies_options_entries)[cookieOptionIndex]
     }

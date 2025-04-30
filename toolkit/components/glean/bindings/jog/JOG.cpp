@@ -261,6 +261,13 @@ extern "C" void jog_test_clear_registered_metrics_and_pings();
 extern "C" NS_EXPORT void JOG_MaybeReload() {
   MOZ_ASSERT(NS_IsMainThread());
 
+  // Don't clear JOG's registries if there's no jogfile.
+  // There might be registered pings and metrics in here that won't know they
+  // need to re-register.
+  if (!mozilla::glean::sFoundAndLoadedJogfile.valueOr(false)) {
+    return;
+  }
+
   gCategories = nullptr;
   gMetricNames = nullptr;
   gMetrics = nullptr;

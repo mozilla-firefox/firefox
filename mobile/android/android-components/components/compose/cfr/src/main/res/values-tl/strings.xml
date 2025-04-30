@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Content description (not visible, for screen readers etc.): Description for the close button of a Contextual Feature Recommendation Popup. -->
+  <string name="mozac_cfr_dismiss_button_content_description">I-dismiss</string>
+</resources>

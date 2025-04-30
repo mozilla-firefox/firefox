@@ -127,6 +127,8 @@
   <string name="address_bar_swipe_cfr_title" tools:ignore="UnusedResources" moz:removedIn="139">滑动工具栏切换标签页</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">向左或向右滑动以切换，于最后一个标签页向左滑动可打开新标签页。</string>
+  <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
+  <string name="address_bar_swipe_cfr_message_2">向左或向右滑动工具栏即可切换标签页。</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">需要访问相机。请前往 Android 设置，点按“权限”，然后点按“允许”。</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -768,6 +770,10 @@
   <string name="preferences_add_private_browsing_shortcut">添加隐私浏览快捷方式</string>
   <!-- Preference for enabling "HTTPS-Only" mode -->
   <string name="preferences_https_only_title">HTTPS-Only 模式</string>
+  <!-- Preference title for using the screen lock to hide tabs in private browsing -->
+  <string name="preferences_pbm_lock_screen_title">使用屏幕锁定方式隐藏隐私浏览中的标签页</string>
+  <!-- Informs the user how to access the tabs when "Use screen lock to hide tabs in private browsing" is enabled -->
+  <string name="preferences_pbm_lock_screen_summary">用指纹、人脸解锁或 PIN 码查看标签页。</string>
   <!-- Label for cookie banner section in quick settings panel. -->
   <string name="cookie_banner_blocker">Cookie 横幅拦截器</string>
   <!-- Preference for removing cookie/consent banners from sites automatically in private mode. See reduce_cookie_banner_summary for additional context. -->
@@ -807,13 +813,13 @@
   <!-- Summary of https only preference if https only is set to off -->
   <string name="preferences_https_only_off">关闭</string>
   <!-- Summary of https only preference if https only is set to on in all tabs -->
-  <string name="preferences_https_only_on_all">在所有标签页启用</string>
+  <string name="preferences_https_only_on_all">对所有标签页开启</string>
   <!-- Summary of https only preference if https only is set to on in private tabs only -->
   <string name="preferences_https_only_on_private">仅在隐私标签页启用</string>
   <!-- Text displayed that links to website containing documentation about "HTTPS-Only" mode -->
   <string name="preferences_http_only_learn_more">详细了解</string>
   <!-- Option for the https only setting -->
-  <string name="preferences_https_only_in_all_tabs">在所有标签页启用</string>
+  <string name="preferences_https_only_in_all_tabs">对所有标签页启用</string>
   <!-- Option for the https only setting -->
   <string name="preferences_https_only_in_private_tabs">仅在隐私标签页启用</string>
   <!-- Title shown in the error page for when trying to access a http website while https only mode is enabled. -->
@@ -828,8 +834,6 @@
   <string name="preferences_override_account_server">自定义 Mozilla 账户服务器</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">自定义同步服务器</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">已更改 Mozilla 账户/同步服务器设置。正在退出应用程序以应用更改…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">账户</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1450,8 +1454,12 @@
   <string name="download_delete_multiple_items_snackbar_2">已删除 %1$d 个项目</string>
   <!-- Text for the snackbar to confirm that a single download item has been removed. %1$s is the name of the download item. -->
   <string name="download_delete_single_item_snackbar" moz:removedIn="138" tools:ignore="UnusedResources">已移除 %1$s</string>
+  <!-- Text for the snackbar to confirm that a single download item has been removed. %1$s is the name of the download item. -->
+  <string name="download_delete_single_item_snackbar_2">已删除“%1$s”</string>
   <!-- Text for the snackbar to confirm that downloads are in progress. -->
   <string name="download_in_progress_snackbar" tools:ignore="UnusedResources">正在下载…</string>
+  <!-- Text for the snackbar action button to view in progress download details. -->
+  <string name="download_in_progress_snackbar_action_details" tools:ignore="UnusedResources">详细信息</string>
   <!-- Text for the snackbar to confirm that a download has completed. -->
   <string name="download_completed_snackbar" tools:ignore="UnusedResources">下载完成</string>
   <!-- Text for the snackbar action button to open a completed download. -->
@@ -1460,6 +1468,10 @@
   <string name="download_undo_delete_snackbar_action">撤销</string>
   <!-- Text shown when no download exists -->
   <string name="download_empty_message_1" moz:removedIn="138" tools:ignore="UnusedResources">暂无下载的文件</string>
+  <!-- Text shown when no download exists -->
+  <string name="download_empty_message_2">暂无下载</string>
+  <!-- Text description shown when no download exists -->
+  <string name="download_empty_description">下载的文件将显示在这里。</string>
   <!--
     History multi select title in app bar
     %1$d is the number of downloads selected
@@ -1469,16 +1481,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">移除</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">删除</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">浏览上一页</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">向上导航</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">分享 URL</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">分享文件</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">确定要删除选中的项目吗？</string>
+  <string name="download_delete_multi_select_dialog_confirmation">确定要删除选中的项目吗？</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">删除</string>
+  <string name="download_delete_multi_select_dialog_confirm">删除</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">取消</string>
+  <string name="download_delete_multi_select_dialog_cancel">取消</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">进行中</string>
   <!--
@@ -1502,10 +1518,16 @@
     %3$s is the amount of time remaining to complete the download.
   -->
   <string name="download_item_in_progress_description" tools:ignore="UnusedResources">%1$s / %2$s • 剩余 %3$s</string>
+  <!-- Text to indicate that an in progress download is paused. -->
+  <string name="download_item_status_paused" tools:ignore="UnusedResources">已暂停</string>
+  <!-- Text to indicate that the download speed of an in progress download is being calculated. -->
+  <string name="download_item_download_speed_pending" tools:ignore="UnusedResources">测算中</string>
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">下载失败</string>
+  <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
+  <string name="download_search_placeholder">搜索下载项</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">未找到结果</string>
+  <string name="download_search_no_results_found">未找到结果</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">全选</string>
   <!--
@@ -2258,7 +2280,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">增强型跟踪保护例外首选项图标</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3173,6 +3195,8 @@
   <string name="protection_panel_no_trackers_blocked">未发现跟踪器</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">隐私与安全设置</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">权限</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3359,6 +3383,26 @@
   -->
   <string name="glean_debug_tools_title">Glean 调试工具</string>
   <!--
+    Debug drawer region tools
+
+    Title of the Region tools in the Debug Drawer.
+    This tool allows temporarily overriding the home region (user's default locale)
+    and the current region (device's detected location) for testing purposes.
+  -->
+  <string name="debug_drawer_region_tools_title">地区工具</string>
+  <!-- The description of the Region tools in the Debug Drawer -->
+  <string name="debug_drawer_regin_tools_description">暂时覆盖主地区和当前地区的值以进行测试。</string>
+  <!-- The text label for displaying home region. -->
+  <string name="debug_drawer_home_region_label">主地区</string>
+  <!-- The text label for displaying current region. -->
+  <string name="debug_drawer_current_region_label">当前地区</string>
+  <!-- The text field label for overriding home region. -->
+  <string name="debug_drawer_override_home_region_label">覆盖主地区</string>
+  <!-- The text field label for overriding current region. -->
+  <string name="debug_drawer_override_current_region_label">覆盖当前地区</string>
+  <!-- The title of the button for overriding home and current region. -->
+  <string name="debug_drawer_override_region">覆盖主地区和当前地区</string>
+  <!--
     Messages explaining how to exit fullscreen mode
 
     Message shown to explain how to exit fullscreen mode when gesture navigation is enabled.
@@ -3430,8 +3474,36 @@
   <string name="setup_checklist_title_state_incomplete">完成 %1$s 的设置</string>
   <!-- Title for the setup checklist feature when the state is 'completed' -->
   <string name="setup_checklist_title_state_completed">恭喜！</string>
+  <!--
+    ===== Setup checklist feature: Subtitles for 3 steps =====
+
+    Subtitle for a setup checklist with 3 steps initial step. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_subtitle_3_steps_initial_state">完成以下 3 个步骤进行 %1$s 的设置，以获得最佳浏览体验。</string>
+  <!-- Subtitle for a setup checklist with 3 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_3_steps_first_step">很棒的开始！您已完成 3 个步骤中的第 1 步。</string>
+  <!-- Subtitle for a setup checklist with 3 steps when two of the tasks are completed. -->
+  <string name="setup_checklist_subtitle_3_steps_second_step">快完成了！已完成 2 个步骤，还差 1 步。</string>
+  <!-- Subtitle for a setup checklist with 3 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_subtitle_3_steps_completed_state">您已完成全部 3 个步骤。敬请享受 %1$s 带来的速度、隐私和安全。</string>
+  <!--
+    ===== Setup checklist feature: Subtitles for 6 steps =====
+
+    Subtitle for a setup checklist with 6 steps initial state. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="setup_checklist_subtitle_6_steps_initial_state">完成全部 6 个步骤进行 %1$s 的设置，以获得最佳浏览体验。</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_first_step">很棒的开始！您已完成 6 个步骤中的第 1 步。</string>
+  <!-- Subtitle for the setup checklist when the second task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_second_step">6 个步骤中您已完成 2 个。进展神速！</string>
   <!-- Subtitle for a setup checklist with 6 steps when three of the tasks are completed. -->
   <string name="setup_checklist_subtitle_6_steps_third_step">进程过半！已完成 3 个步骤，还有 3 步。</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the fourth task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_fourth_step">已完成 4 步，只剩 2 步了！</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the fifth task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_fifth_step">成功在即！距离终点仅 1 步之遥。</string>
+  <!-- Subtitle for a setup checklist with 6 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="setup_checklist_subtitle_6_steps_completed_state">您已完成全部 6 个设置步骤，敬请享受 %1$s 带来的速度、隐私和安全。</string>
   <!--
     ===== Setup checklist feature: Task titles =====
 
@@ -3458,6 +3530,12 @@
   <string name="setup_checklist_group_customize">定制 %1$s</string>
   <!-- The title of the 'helpful tools' group in the setup checklist -->
   <string name="setup_checklist_group_helpful_tools">实用工具</string>
+  <!--
+    ===== Setup checklist feature: Button =====
+
+    Text for the 'remove' button for the setup checklist
+  -->
+  <string name="setup_checklist_button_remove">移除核对清单</string>
   <!--
     ===== Setup checklist feature: Accessibility =====
 

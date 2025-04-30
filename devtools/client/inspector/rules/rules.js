@@ -1411,12 +1411,11 @@ CssRuleView.prototype = {
   _createEditors() {
     // Run through the current list of rules, attaching
     // their editors in order.  Create editors if needed.
-    let lastInheritedSource = "";
-    let lastKeyframes = null;
-    let seenPseudoElement = false;
+    let lastInherited = null;
+    let lastinheritedSectionLabel = "";
     let seenNormalElement = false;
     let seenSearchTerm = false;
-    let container = null;
+    const containers = new Map();
 
     if (!this._elementStyle.rules) {
       return Promise.resolve();
@@ -1443,8 +1442,14 @@ CssRuleView.prototype = {
         }
       }
 
+      const isNonInheritedPseudo = !!rule.pseudoElement && !rule.inherited;
+
       // Only print header for this element if there are pseudo elements
-      if (seenPseudoElement && !seenNormalElement && !rule.pseudoElement) {
+      if (
+        containers.has(PSEUDO_ELEMENTS_CONTAINER_ID) &&
+        !seenNormalElement &&
+        !rule.pseudoElement
+      ) {
         seenNormalElement = true;
         const div = this.styleDocument.createElementNS(HTML_NS, "div");
         div.className = RULE_VIEW_HEADER_CLASSNAME;
@@ -1453,8 +1458,20 @@ CssRuleView.prototype = {
         this.element.appendChild(div);
       }
 
-      const inheritedSource = rule.inherited;
-      if (inheritedSource && inheritedSource !== lastInheritedSource) {
+      const { inherited, inheritedSectionLabel } = rule;
+      // We need to check both `inherited` (a NodeFront) and `inheritedSectionLabel` (string),
+      // as element-backed pseudo element rules (e.g. `::details-content`) can have the same
+      // `inherited` property as a regular rule (e.g. on `<details>`), but the element is
+      // to be considered as a child of the binding element.
+      // e.g. we want to have
+      // This element
+      // Inherited by details::details-content
+      // Inherited by details
+      if (
+        inherited &&
+        (inherited !== lastInherited ||
+          inheritedSectionLabel !== lastinheritedSectionLabel)
+      ) {
         const div = this.styleDocument.createElementNS(HTML_NS, "div");
         div.classList.add(
           RULE_VIEW_HEADER_CLASSNAME,
@@ -1462,31 +1479,46 @@ CssRuleView.prototype = {
         );
         div.setAttribute("role", "heading");
         div.setAttribute("aria-level", "3");
-        div.textContent = rule.inheritedSource;
-        lastInheritedSource = inheritedSource;
+        div.textContent = rule.inheritedSectionLabel;
+        lastInherited = inherited;
+        lastinheritedSectionLabel = inheritedSectionLabel;
         this.element.appendChild(div);
       }
 
-      if (!seenPseudoElement && rule.pseudoElement) {
-        seenPseudoElement = true;
-        container = this.createExpandableContainer(
-          this.pseudoElementLabel,
-          PSEUDO_ELEMENTS_CONTAINER_ID,
-          true
-        );
-      }
-
       const keyframes = rule.keyframes;
-      if (keyframes && keyframes !== lastKeyframes) {
-        lastKeyframes = keyframes;
-        container = this.createExpandableContainer(
-          rule.keyframesName,
-          `keyframes-container-${keyframes.name}`
-        );
+
+      let containerKey = null;
+
+      // Don't display inherited pseudo element rules (e.g. ::details-content) inside
+      // the pseudo element container
+      if (isNonInheritedPseudo) {
+        containerKey = PSEUDO_ELEMENTS_CONTAINER_ID;
+        if (!containers.has(containerKey)) {
+          containers.set(
+            containerKey,
+            this.createExpandableContainer(
+              this.pseudoElementLabel,
+              containerKey,
+              true
+            )
+          );
+        }
+      } else if (keyframes) {
+        containerKey = keyframes;
+        if (!containers.has(containerKey)) {
+          containers.set(
+            containerKey,
+            this.createExpandableContainer(
+              rule.keyframesName,
+              `keyframes-container-${keyframes.name}`
+            )
+          );
+        }
       }
 
       rule.editor.element.setAttribute("role", "article");
-      if (container && (rule.pseudoElement || keyframes)) {
+      const container = containers.get(containerKey);
+      if (container) {
         container.appendChild(rule.editor.element);
       } else {
         this.element.appendChild(rule.editor.element);

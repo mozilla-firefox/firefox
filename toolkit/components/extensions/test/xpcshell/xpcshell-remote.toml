@@ -1,11 +1,7 @@
 [DEFAULT]
 head = "head.js head_remote.js head_telemetry.js head_sync.js head_storage.js"
 firefox-appdir = "browser"
-skip-if = [
-  "os == 'win' && socketprocess_networking && fission", # Bug 1759035
-  "os == 'mac' && socketprocess_networking && fission", # Bug 1759035
-  "os == 'mac' && debug", # Bug 1814779
-]
+skip-if = ["os == 'win' && socketprocess_networking && fission"] # Bug 1759035
 # I would put linux here, but debug has too many chunks and only runs this manifest, so I need 1 test to pass
 dupe-manifest = ""
 support-files = [
@@ -23,30 +19,20 @@ tags = "webextensions remote-webextensions"
 prefs = ["services.settings.server='data:,#remote-settings-dummy/v1'"]
 
 ["include:xpcshell-common-e10s.toml"]
-skip-if = ["os == 'linux' && socketprocess_networking"] # Bug 1759035
 
 ["include:xpcshell-common.toml"]
-skip-if = ["os == 'linux' && socketprocess_networking"] # Bug 1759035
 
 ["include:xpcshell-content.toml"]
-skip-if = ["os == 'linux' && socketprocess_networking"] # Bug 1759035
 
 ["test_WebExtensionContentScript.js"]
 
 ["test_ext_contentscript_perf_observers.js"] # Inexplicably, PerformanceObserver used in the test doesn't fire in non-e10s mode.
-skip-if = [
-  "tsan",
-  "os == 'linux' && socketprocess_networking", # Bug 1759035
-]
+skip-if = ["tsan"]
 
 ["test_ext_contentscript_xorigin_frame.js"]
-skip-if = ["os == 'linux' && socketprocess_networking"] # Bug 1759035
 
 ["test_ext_ipcBlob.js"]
-skip-if = [
-  "os == 'android' && processor == 'x86_64'",
-  "os == 'linux' && socketprocess_networking", # Bug 1759035
-]
+skip-if = ["os == 'android' && processor == 'x86_64'"]
 
 ["test_extension_process_alive.js"]
 

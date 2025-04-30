@@ -4,12 +4,14 @@
 package org.mozilla.fenix.ui.robots
 
 import android.util.Log
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyChild
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -437,8 +439,10 @@ class ThreeDotMenuMainRobotCompose(private val composeTestRule: ComposeTestRule)
             return SettingsSubMenuLoginsAndPasswordsSavedLoginsRobot.Transition()
         }
 
+        @OptIn(ExperimentalTestApi::class)
         fun openExtensionsFromMainMenu(interact: SettingsSubMenuAddonsManagerRobot.() -> Unit): SettingsSubMenuAddonsManagerRobot.Transition {
             Log.i(TAG, "openExtensionsFromMainMenu: Trying to click the \"Extensions\" button")
+            composeTestRule.waitUntilAtLeastOneExists(hasTestTag(EXTENSIONS))
             composeTestRule.extensionsButton().performClick()
             Log.i(TAG, "openExtensionsFromMainMenu: Clicked the \"Extensions\" button")
             composeTestRule.waitForIdle()

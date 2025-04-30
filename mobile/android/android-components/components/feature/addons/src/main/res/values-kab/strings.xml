@@ -84,6 +84,8 @@
   <string name="mozac_feature_addons_permissions_user_scripts_description">Sireg iskripten n wis kraḍ ur nettwasneqden ara akken ad tkecmeḍ ɣer yisefka-k</string>
   <!-- Description for devtools permission. -->
   <string name="mozac_feature_addons_permissions_devtools_description">Siγzef anekcum i yifecka n uneflay ɣer isefka-inek/inem deg waccaren yeldin</string>
+  <!-- Description for text button that expands the list of domain permissions -->
+  <string name="mozac_feature_addons_permissions_show_all_sites">Sken akk ismal</string>
   <!-- Description for text button that hides the majority of the list of domain permissions -->
   <string name="mozac_feature_addons_permissions_show_fewer_sites">Sken-d drus ismal</string>
   <!-- The version on of add-on. -->

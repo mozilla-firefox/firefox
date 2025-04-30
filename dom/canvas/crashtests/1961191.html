@@ -1,0 +1,17 @@
+<html>
+</html>
+<canvas id="htmlvar00024">
+<script>
+function rdfuzz1(){
+  try { window.var02848 = htmlvar00024.transferControlToOffscreen();} catch(e) {  }
+  try { window.var03001 = window.var02848.getContext('webgl2',window.var02753); } catch(e) {}
+}
+setTimeout(rdfuzz1, 1000);
+</script>
+<script>
+function rdfuzz2(){
+  try {window.var04217 = window.var02848.transferToImageBitmap();}catch(e) {}
+  window.var04231 = htmlvar00024.toDataURL();
+}
+setTimeout(rdfuzz2, 2000);
+</script>

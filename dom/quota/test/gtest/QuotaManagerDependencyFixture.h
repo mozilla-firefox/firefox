@@ -11,6 +11,7 @@
 #include "mozilla/MozPromise.h"
 #include "mozilla/SpinEventLoopUntil.h"
 #include "mozilla/dom/quota/ClientDirectoryLock.h"
+#include "mozilla/dom/quota/ClientDirectoryLockHandle.h"
 #include "mozilla/dom/quota/DirectoryLock.h"
 #include "mozilla/dom/quota/DirectoryLockInlines.h"
 #include "mozilla/dom/quota/ForwardDecls.h"
@@ -156,7 +157,7 @@ class QuotaManagerDependencyFixture : public testing::Test {
                                          Task&& aTask) {
     PerformOnBackgroundThread([clientMetadata = aClientMetadata,
                                task = std::forward<Task>(aTask)]() mutable {
-      RefPtr<ClientDirectoryLock> directoryLock;
+      ClientDirectoryLockHandle directoryLockHandle;
 
       QuotaManager* quotaManager = QuotaManager::Get();
       ASSERT_TRUE(quotaManager);
@@ -166,9 +167,9 @@ class QuotaManagerDependencyFixture : public testing::Test {
       quotaManager->OpenClientDirectory(clientMetadata)
           ->Then(
               GetCurrentSerialEventTarget(), __func__,
-              [&directoryLock,
-               &done](RefPtr<ClientDirectoryLock> aResolveValue) {
-                directoryLock = std::move(aResolveValue);
+              [&directoryLockHandle,
+               &done](ClientDirectoryLockHandle&& aResolveValue) {
+                directoryLockHandle = std::move(aResolveValue);
 
                 done = true;
               },
@@ -180,11 +181,13 @@ class QuotaManagerDependencyFixture : public testing::Test {
 
       SpinEventLoopUntil("Promise is fulfilled"_ns, [&done]() { return done; });
 
-      ASSERT_TRUE(directoryLock);
+      ASSERT_TRUE(directoryLockHandle);
 
-      PerformOnIOThread(std::move(task), directoryLock->Id());
+      PerformOnIOThread(std::move(task), directoryLockHandle->Id());
 
-      DropDirectoryLock(directoryLock);
+      {
+        auto destroyingDirectoryLockHandle = std::move(directoryLockHandle);
+      }
     });
   }
 

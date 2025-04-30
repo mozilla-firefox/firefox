@@ -72,8 +72,35 @@ class SharedStyleSheetCache final
                     const Maybe<OriginAttributesPattern>& aPattern = Nothing(),
                     const Maybe<nsCString>& aURL = Nothing());
 
+  void EvictPrincipal(nsIPrincipal* aPrincipal) {
+    Base::EvictPrincipal(aPrincipal);
+    mInlineSheets.Remove(aPrincipal);
+  }
+
+  void ClearInProcess(const Maybe<bool>& aChrome,
+                      const Maybe<nsCOMPtr<nsIPrincipal>>& aPrincipal,
+                      const Maybe<nsCString>& aSchemelessSite,
+                      const Maybe<OriginAttributesPattern>& aPattern,
+                      const Maybe<nsCString>& aURL);
+
+  size_t SizeOfIncludingThis(MallocSizeOf) const;
+
+  auto LookupInline(nsIPrincipal* aPrincipal, const nsAString& aBuffer) {
+    auto& principalMap = mInlineSheets.LookupOrInsert(aPrincipal);
+    return principalMap.Lookup(aBuffer);
+  }
+
+  void InsertInline(nsIPrincipal* aPrincipal, const nsAString& aBuffer,
+                    RefPtr<StyleSheet> aSheet) {
+    auto& principalMap = mInlineSheets.LookupOrInsert(aPrincipal);
+    principalMap.InsertOrUpdate(aBuffer, std::move(aSheet));
+  }
+
  protected:
   void InsertIfNeeded(css::SheetLoadData&);
+
+  nsTHashMap<PrincipalHashKey, nsRefPtrHashtable<nsStringHashKey, StyleSheet>>
+      mInlineSheets;
 
   ~SharedStyleSheetCache();
 };

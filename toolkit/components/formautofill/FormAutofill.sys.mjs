@@ -45,6 +45,10 @@ const AUTOFILL_FILL_ON_DYNAMIC_FORM_CHANGES_TIMEOUT_PREF =
   "extensions.formautofill.heuristics.fillOnDynamicFormChanges.timeout";
 const AUTOFILL_FILL_ON_DYNAMIC_FORM_CHANGES_PREF =
   "extensions.formautofill.heuristics.fillOnDynamicFormChanges";
+const AUTOFILL_REFILL_ON_SITE_CLEARING_VALUE_PREF =
+  "extensions.formautofill.heuristics.refillOnSiteClearingFields";
+const AUTOFILL_REFILL_ON_SITE_CLEARING_VALUE_TIMEOUT_PREF =
+  "extensions.formautofill.heuristics.refillOnSiteClearingFields.timeout";
 
 export const FormAutofill = {
   ENABLED_AUTOFILL_ADDRESSES_PREF,
@@ -59,6 +63,8 @@ export const FormAutofill = {
   AUTOFILL_ADDRESSES_AUTOCOMPLETE_OFF_PREF,
   AUTOFILL_FILL_ON_DYNAMIC_FORM_CHANGES_PREF,
   AUTOFILL_FILL_ON_DYNAMIC_FORM_CHANGES_TIMEOUT_PREF,
+  AUTOFILL_REFILL_ON_SITE_CLEARING_VALUE_PREF,
+  AUTOFILL_REFILL_ON_SITE_CLEARING_VALUE_TIMEOUT_PREF,
 
   _region: null,
 
@@ -363,6 +369,20 @@ XPCOMUtils.defineLazyPreferenceGetter(
   FormAutofill,
   "fillOnDynamicFormChangeTimeout",
   "extensions.formautofill.heuristics.fillOnDynamicFormChanges.timeout",
+  0
+);
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  FormAutofill,
+  "refillOnSiteClearingFields",
+  "extensions.formautofill.heuristics.refillOnSiteClearingFields",
+  false
+);
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  FormAutofill,
+  "refillOnSiteClearingFieldsTimeout",
+  "extensions.formautofill.heuristics.refillOnSiteClearingFields.timeout",
   0
 );
 

@@ -215,7 +215,7 @@ class WindowContext : public nsISupports, public nsWrapperCache {
   // out.
   bool HasValidTransientUserGestureActivation();
 
-  // See `mUserGestureStart`.
+  // See `mLastActivationTimestamp`.
   const TimeStamp& GetUserGestureStart() const;
 
   // Return true if the corresponding window has valid transient user gesture
@@ -401,13 +401,14 @@ class WindowContext : public nsISupports, public nsWrapperCache {
   // BrowsingContext.
   bool mCanExecuteScripts = true;
 
+  // https://html.spec.whatwg.org/multipage/interaction.html#last-activation-timestamp
   // The start time of user gesture, this is only available if the window
   // context is in process.
-  TimeStamp mUserGestureStart;
+  TimeStamp mLastActivationTimestamp;
 
   // https://html.spec.whatwg.org/#history-action-activation
-  // This is set to mUserGestureStart every time ConsumeHistoryActivation is
-  // called.
+  // This is set to mLastActivationTimestamp every time ConsumeHistoryActivation
+  // is called.
   TimeStamp mHistoryActivation;
 };
 

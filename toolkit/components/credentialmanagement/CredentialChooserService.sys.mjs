@@ -39,7 +39,9 @@ XPCOMUtils.defineLazyPreferenceGetter(
  */
 async function setIconToFavicon(icon, origin) {
   try {
-    let iconData = await lazy.PlacesUtils.promiseFaviconData(origin);
+    let iconData = await lazy.PlacesUtils.favicons.getFaviconForPage(
+      lazy.PlacesUtils.toURI(origin)
+    );
     icon.src = iconData.uri.spec;
   } catch {
     icon.src = "chrome://global/skin/icons/defaultFavicon.svg";

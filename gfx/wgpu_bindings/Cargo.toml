@@ -17,7 +17,7 @@ default = []
 [dependencies.wgc]
 package = "wgpu-core"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "f1c496523ff0aa10c162fd01ad606960e925a5a4"
+rev = "35f131ff10153e48b790e1f156c864734063ce71"
 # TODO: remove the replay feature on the next update containing https://github.com/gfx-rs/wgpu/pull/5182
 features = [
   "serde",
@@ -33,33 +33,33 @@ features = [
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies.wgc]
 package = "wgpu-core"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "f1c496523ff0aa10c162fd01ad606960e925a5a4"
+rev = "35f131ff10153e48b790e1f156c864734063ce71"
 features = ["metal"]
 
 # We want the wgpu-core Direct3D backends on Windows.
 [target.'cfg(windows)'.dependencies.wgc]
 package = "wgpu-core"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "f1c496523ff0aa10c162fd01ad606960e925a5a4"
+rev = "35f131ff10153e48b790e1f156c864734063ce71"
 features = ["dx12"]
 
 # We want the wgpu-core Vulkan backend on Linux and Windows.
 [target.'cfg(any(windows, all(unix, not(any(target_os = "macos", target_os = "ios")))))'.dependencies.wgc]
 package = "wgpu-core"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "f1c496523ff0aa10c162fd01ad606960e925a5a4"
+rev = "35f131ff10153e48b790e1f156c864734063ce71"
 features = ["vulkan"]
 
 [dependencies.wgt]
 package = "wgpu-types"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "f1c496523ff0aa10c162fd01ad606960e925a5a4"
+rev = "35f131ff10153e48b790e1f156c864734063ce71"
 
 [dependencies.wgh]
 package = "wgpu-hal"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "f1c496523ff0aa10c162fd01ad606960e925a5a4"
-features = ["oom_panic", "device_lost_panic", "internal_error_panic"]
+rev = "35f131ff10153e48b790e1f156c864734063ce71"
+features = ["device_lost_panic", "internal_error_panic"]
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.58", default-features = false, features = [

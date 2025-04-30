@@ -6,12 +6,12 @@ const { sinon } = ChromeUtils.importESModule(
   "resource://testing-common/Sinon.sys.mjs"
 );
 
-const {
-  getDirectoryHandleFromOPFS,
-  ProgressStatusText,
-  ProgressType,
-  removeFromOPFS,
-} = ChromeUtils.importESModule("chrome://global/content/ml/Utils.sys.mjs");
+const { ProgressStatusText, ProgressType } = ChromeUtils.importESModule(
+  "chrome://global/content/ml/Utils.sys.mjs"
+);
+const { OPFS } = ChromeUtils.importESModule(
+  "chrome://global/content/ml/OPFS.sys.mjs"
+);
 
 const { URLChecker } = ChromeUtils.importESModule(
   "chrome://global/content/ml/Utils.sys.mjs"
@@ -568,7 +568,7 @@ add_task(async function testTooFewParts() {
 async function initializeCache() {
   const randomSuffix = Math.floor(Math.random() * 10000);
   const dbName = `modelFiles-${randomSuffix}`;
-  await getDirectoryHandleFromOPFS(dbName, { create: true });
+  await OPFS.getDirectoryHandle(dbName, { create: true });
   return await IndexedDBCache.init({ dbName });
 }
 
@@ -579,7 +579,7 @@ async function deleteCache(cache) {
   await cache.dispose();
   indexedDB.deleteDatabase(cache.dbName);
   try {
-    await removeFromOPFS(cache.dbName, { recursive: true });
+    await OPFS.remove(cache.dbName, { recursive: true });
   } catch (e) {
     // can be empty
   }
@@ -1796,4 +1796,32 @@ add_task(async function test_migrateStore_emptyDatabase() {
   );
 
   await deleteCache(cache);
+});
+
+add_task(async function test_getOwnerIcon() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.ml.logLevel", "All"]],
+  });
+
+  const hub = new ModelHub({
+    rootUrl: FAKE_HUB,
+    urlTemplate: FAKE_URL_TEMPLATE,
+  });
+
+  const fullyQualifiedModelName = "mochitests/mozilla/distilvit";
+
+  // first call will get the icon from the web
+  const icon = await hub.getOwnerIcon(fullyQualifiedModelName);
+  Assert.notEqual(icon, null);
+
+  // second call will get it from the cache
+  let spy = sinon.spy(OPFS.File.prototype, "getBlobFromOPFS");
+
+  const icon2 = await hub.getOwnerIcon(fullyQualifiedModelName);
+  Assert.notEqual(icon2, null);
+
+  // check that it cames from OPFS
+  Assert.notEqual(await spy.lastCall.returnValue, null);
+
+  sinon.restore();
 });

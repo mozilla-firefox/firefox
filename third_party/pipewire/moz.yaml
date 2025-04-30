@@ -1,0 +1,71 @@
+# Version of this schema
+schema: 1
+
+bugzilla:
+  # Bugzilla product and component for this directory and subdirectories
+  product: "Core"
+  component: "WebRTC"
+
+origin:
+  name: "pipewire"
+  description: "PipeWire is a server and user space API to deal with multimedia pipelines"
+
+  url: "https://pipewire.org/"
+  license: MIT
+  release: version 1.4.2
+  revision: d20a1523b6770dfa93a270bdda5d7c800d7ec191
+  license-file: COPYING
+
+vendoring:
+  url: https://gitlab.freedesktop.org/pipewire/pipewire
+  source-hosting: gitlab
+  tracking: tag
+  vendor-directory: third_party/pipewire/
+  skip-vendoring-steps: ['update-moz-build']
+  include:
+    - 'spa/include/spa/*/*.h'
+    - 'spa/include/spa/*/*/*.h'
+    - 'src/pipewire/*.h'
+    - 'src/pipewire/version.h.in'
+    - 'meson.build'
+    - 'COPYING'
+  exclude:
+    - '.*'
+    - '*'
+    - 'doc'
+    - 'include'
+    - 'pipewire-alsa'
+    - 'pipewire-jack'
+    - 'pipewire-v4l2'
+    - 'po'
+    - 'spa'
+    - 'src'
+    - 'subprojects'
+    - 'test'
+  keep:
+    - 'libpipewire'
+    - 'generate_version.sh'
+    - 'README.md'
+  patches:
+    # Don't include <pipewire/conf.h> to avoid build failures
+    - '00-pipewire-dont-include-conf-header.patch'
+  update-actions:
+    - action: run-script
+      script: generate_version.sh
+      cwd: .
+    - action: delete-path
+      path: '{yaml_dir}/src/pipewire/version.h.in'
+    - action: delete-path
+      path: '{yaml_dir}/meson.build'
+    # Move src/pipewire to the root directory
+    - action: move-dir
+      from: '{yaml_dir}/src/pipewire'
+      to: '{yaml_dir}/pipewire'
+    - action: delete-path
+      path: '{yaml_dir}/src'
+    # Move src/spa/include/spa to the root directory
+    - action: move-dir
+      from: '{yaml_dir}/spa/include/spa'
+      to: '{yaml_dir}/spa'
+    - action: delete-path
+      path: '{yaml_dir}/spa/include'

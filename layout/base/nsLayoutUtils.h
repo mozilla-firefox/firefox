@@ -1392,12 +1392,6 @@ class nsLayoutUtils {
    */
   static nsBlockFrame* FindNearestBlockAncestor(nsIFrame* aFrame);
 
-  /**
-   * Find the nearest ancestor that's not for generated content. Will return
-   * aFrame if aFrame is not for generated content.
-   */
-  static nsIFrame* GetNonGeneratedAncestor(nsIFrame* aFrame);
-
   /*
    * Whether the frame is an nsBlockFrame which is not a wrapper block.
    */

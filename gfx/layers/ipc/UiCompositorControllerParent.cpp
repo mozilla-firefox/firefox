@@ -207,12 +207,10 @@ void UiCompositorControllerParent::NotifyFirstPaint() {
 
 void UiCompositorControllerParent::NotifyCompositorScrollUpdate(
     const CompositorScrollUpdate& aUpdate) {
-#if defined(MOZ_WIDGET_ANDROID)
   CompositorThread()->Dispatch(NewRunnableMethod<CompositorScrollUpdate>(
       "UiCompositorControllerParent::SendNotifyCompositorScrollUpdate", this,
       &UiCompositorControllerParent::SendNotifyCompositorScrollUpdate,
       aUpdate));
-#endif
 }
 
 UiCompositorControllerParent::UiCompositorControllerParent(

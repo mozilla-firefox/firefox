@@ -32,6 +32,8 @@ android {
 
 dependencies {
     implementation platform(libs.androidx.compose.bom)
+    implementation project(":support-ktx")
+    implementation project(":support-utils")
     implementation project(":ui-colors")
     implementation project(":ui-icons")
 

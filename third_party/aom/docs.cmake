@@ -13,7 +13,7 @@ if(AOM_DOCS_CMAKE_)
 endif() # AOM_DOCS_CMAKE_
 set(AOM_DOCS_CMAKE_ 1)
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 set(AOM_DOXYFILE "${AOM_CONFIG_DIR}/doxyfile")
 set(AOM_DOXYGEN_CONFIG_TEMPLATE "libs.doxy_template")

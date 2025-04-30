@@ -236,11 +236,8 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=933681
     "setUTCMinutes", "setSeconds", "setUTCSeconds", "setMilliseconds",
     "setUTCMilliseconds", "toUTCString", "toLocaleString",
     "toLocaleDateString", "toLocaleTimeString", "toDateString", "toTimeString",
-    "toISOString", "toJSON", "toSource", "toString", "valueOf", "constructor",
-    "toGMTString", Symbol.toPrimitive];
-  if (isNightlyBuild) {
-    gPrototypeProperties.Date.push("toTemporalInstant");
-  }
+    "toISOString", "toJSON", "toSource", "toString", "toTemporalInstant",
+    "valueOf", "constructor", "toGMTString", Symbol.toPrimitive];
   gConstructorProperties.Date = constructorProps(["UTC", "parse", "now"]);
   gPrototypeProperties.Object =
     ["constructor", "toSource", "toString", "toLocaleString", "valueOf",

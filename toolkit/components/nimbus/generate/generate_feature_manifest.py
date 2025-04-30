@@ -95,30 +95,38 @@ def validate_feature_manifest(schema_path, manifest_path, manifest):
                     print("Please remove it from generate_feature_manifest.py")
                 raise Exception("isEarlyStartup is deprecated")
 
+            if is_early_startup and feature.get("allowCoenrollment", False):
+                raise Exception(
+                    "A feature cannot use isEarlyStartup and allowCoenrollment"
+                )
+
             for variable, variable_def in feature.get("variables", {}).items():
                 set_pref = variable_def.get("setPref", {}).get("pref")
+                if set_pref is None:
+                    continue
 
-                if set_pref is not None:
-                    reason = DISALLOWED_PREFS.get(set_pref)
-                    if reason:
-                        raise Exception(
-                            f"Pref {set_pref} cannot be controlled by Nimbus: {reason}"
-                        )
+                if reason := DISALLOWED_PREFS.get(set_pref):
+                    raise Exception(
+                        f"Pref {set_pref} cannot be controlled by Nimbus: {reason}"
+                    )
 
-                    if set_pref in set_prefs:
-                        other_feature = set_prefs[set_pref][0]
-                        other_variable = set_prefs[set_pref][1]
-                        print("Multiple variables cannot declare the same setPref")
-                        print(
-                            f"{feature_id} variable {variable} wants to set pref {set_pref}"
-                        )
-                        print(
-                            f"{other_feature} variable {other_variable} wants to set pref "
-                            f"{set_pref}"
-                        )
-                        raise Exception("Set prefs are exclusive")
+                if feature.get("allowCoenrollment", False):
+                    raise Exception("A feature cannot use co-enrollment and setPref")
 
-                    set_prefs[set_pref] = (feature_id, variable)
+                if set_pref in set_prefs:
+                    other_feature = set_prefs[set_pref][0]
+                    other_variable = set_prefs[set_pref][1]
+                    print("Multiple variables cannot declare the same setPref")
+                    print(
+                        f"{feature_id} variable {variable} wants to set pref {set_pref}"
+                    )
+                    print(
+                        f"{other_feature} variable {other_variable} wants to set pref "
+                        f"{set_pref}"
+                    )
+                    raise Exception("Set prefs are exclusive")
+
+                set_prefs[set_pref] = (feature_id, variable)
 
                 fallback_pref = variable_def.get("fallbackPref")
                 if fallback_pref is not None:

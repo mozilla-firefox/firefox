@@ -51,7 +51,19 @@ class LitTestHelpers {
         return lit.noChange;
       }
     };
+    this.PropertySpreadDirective = class extends lit.Directive {
+      render() {
+        return lit.nothing;
+      }
+      update(part, [attrs]) {
+        for (let [key, value] of Object.entries(attrs)) {
+          part[key] = value;
+        }
+        return lit.noChange;
+      }
+    };
     this.spread = lit.directive(this.SpreadDirective);
+    this.propertySpread = lit.directive(this.PropertySpreadDirective);
     return lit;
   }
 

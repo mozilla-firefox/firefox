@@ -1,6 +1,60 @@
 {
   "data": [
     {
+      "name": "Opera",
+      "schema": 1745625903818,
+      "status": "nightly",
+      "version": "120",
+      "browserid": "opera",
+      "id": "24abaee4-eb98-4eee-8b27-209a3dedac71",
+      "last_modified": 1745821148206
+    },
+    {
+      "name": "Opera",
+      "schema": 1745625903758,
+      "status": "beta",
+      "version": "119",
+      "browserid": "opera",
+      "id": "06763118-b650-4937-8d4c-55de017faa53",
+      "last_modified": 1745821148202
+    },
+    {
+      "name": "Opera",
+      "schema": 1745625903694,
+      "status": "current",
+      "version": "118",
+      "browserid": "opera",
+      "id": "d74028a6-ebea-45fa-a9f2-ae5aeaf86801",
+      "last_modified": 1745821148194
+    },
+    {
+      "name": "Edge",
+      "schema": 1745021104092,
+      "status": "planned",
+      "version": "138",
+      "browserid": "edge",
+      "id": "c9aa191e-ce6c-4f14-89b3-67877f64bc92",
+      "last_modified": 1745313990778
+    },
+    {
+      "name": "Edge",
+      "schema": 1745021104031,
+      "status": "nightly",
+      "version": "137",
+      "browserid": "edge",
+      "id": "fd0c0e43-c139-4526-8f78-16d479f71267",
+      "last_modified": 1745313990774
+    },
+    {
+      "name": "Edge",
+      "schema": 1745006845954,
+      "status": "beta",
+      "version": "136",
+      "browserid": "edge",
+      "id": "debb081e-a0a2-45ed-9431-605493ad9400",
+      "last_modified": 1745313990771
+    },
+    {
       "name": "WebView on iOS",
       "schema": 1743811504360,
       "status": "beta",
@@ -244,15 +298,6 @@
       "last_modified": 1743663287829
     },
     {
-      "name": "Edge",
-      "schema": 1742601903701,
-      "status": "planned",
-      "version": "137",
-      "browserid": "edge",
-      "id": "fd0c0e43-c139-4526-8f78-16d479f71267",
-      "last_modified": 1742798647607
-    },
-    {
       "name": "Opera Android",
       "schema": 1742601903817,
       "status": "current",
@@ -262,15 +307,6 @@
       "last_modified": 1742798647604
     },
     {
-      "name": "Edge",
-      "schema": 1742601903639,
-      "status": "nightly",
-      "version": "136",
-      "browserid": "edge",
-      "id": "debb081e-a0a2-45ed-9431-605493ad9400",
-      "last_modified": 1742798647600
-    },
-    {
       "name": "Deno",
       "schema": 1740182702831,
       "status": "current",
@@ -278,33 +314,6 @@
       "browserid": "deno",
       "id": "9e4229e7-0c63-4134-8dc1-fb52bbb3cf80",
       "last_modified": 1740474638731
-    },
-    {
-      "name": "Opera",
-      "schema": 1738368303957,
-      "status": "nightly",
-      "version": "118",
-      "browserid": "opera",
-      "id": "d74028a6-ebea-45fa-a9f2-ae5aeaf86801",
-      "last_modified": 1738569469681
-    },
-    {
-      "name": "Opera",
-      "schema": 1738368303798,
-      "status": "current",
-      "version": "116",
-      "browserid": "opera",
-      "id": "c4c6d639-2e3a-47f9-bac5-1e89d12654df",
-      "last_modified": 1738569469636
-    },
-    {
-      "name": "Opera",
-      "schema": 1738368303877,
-      "status": "beta",
-      "version": "117",
-      "browserid": "opera",
-      "id": "23c4c5ac-a4ca-4f6c-b486-6fe64db2f72c",
-      "last_modified": 1738569469630
     },
     {
       "name": "Node.js",
@@ -361,5 +370,5 @@
       "last_modified": 1665656484764
     }
   ],
-  "timestamp": 1744003666413
+  "timestamp": 1745821148206
 }

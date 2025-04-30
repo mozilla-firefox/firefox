@@ -59,6 +59,9 @@ skip-if = ["os == 'linux' && os_version == '18.04' && processor == 'x86_64' && r
 ["browser_877447_skip_missing_ids.js"]
 
 ["browser_878452_drag_to_panel.js"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1961559
+]
 
 ["browser_884402_customize_from_overflow.js"]
 tags = "overflowable-toolbar"
@@ -92,6 +95,7 @@ skip-if = ["os == 'linux'"]
 ["browser_918049_skipintoolbarset_dnd.js"]
 
 ["browser_923857_customize_mode_event_wrapping_during_reset.js"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt && socketprocess_networking"] # Bug 1961545
 
 ["browser_927717_customize_drag_empty_toolbar.js"]
 
@@ -160,6 +164,7 @@ tags = "overflowable-toolbar"
 ["browser_963639_customizing_attribute_non_customizable_toolbar.js"]
 
 ["browser_968565_insert_before_hidden_items.js"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt"] # Bug 1961547
 
 ["browser_969427_recreate_destroyed_widget_after_reset.js"]
 
@@ -373,5 +378,9 @@ skip-if = [
 ["browser_vertical_tabs_customize_navbar.js"]
 
 ["browser_widget_animation.js"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt"] # Bug 1961548
 
 ["browser_widget_recreate_events.js"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1961546
+]

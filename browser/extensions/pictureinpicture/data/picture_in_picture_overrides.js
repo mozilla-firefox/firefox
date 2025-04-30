@@ -473,5 +473,17 @@ let AVAILABLE_PIP_OVERRIDES;
         videoWrapperScriptPath: "video-wrappers/washingtonpost.js",
       },
     },
+
+    zdf: {
+      "https://*.zdf.de/*": {
+        videoWrapperScriptPath: "video-wrappers/zdf.js",
+      },
+      "https://*.3sat.de/*": {
+        videoWrapperScriptPath: "video-wrappers/zdf.js",
+      },
+      "https://*.phoenix.de/*": {
+        videoWrapperScriptPath: "video-wrappers/zdf.js",
+      },
+    },
   };
 }

@@ -4448,11 +4448,6 @@ const AppearanceChooser = {
   handleEvent(e) {
     if (e.type == "click") {
       switch (e.target.id) {
-        // Forward the click to the "colors" button.
-        case "web-appearance-manage-colors-button":
-          document.getElementById("colors").click();
-          e.preventDefault();
-          break;
         case "web-appearance-manage-themes-link":
           window.browsingContext.topChromeWindow.BrowserAddonUI.openAddonsMgr(
             "addons://list/theme"

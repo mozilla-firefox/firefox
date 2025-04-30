@@ -85,7 +85,6 @@ enum class ChunkKind : uint8_t {
   Invalid = 0,
   TenuredArenas,
   MediumBuffers,
-  LargeBuffer,
   NurseryToSpace,
   NurseryFromSpace
 };
@@ -138,8 +137,7 @@ class ChunkBase {
   }
 
   bool isTenuredChunk() const {
-    return kind == ChunkKind::TenuredArenas ||
-           kind == ChunkKind::MediumBuffers || kind == ChunkKind::LargeBuffer;
+    return kind == ChunkKind::TenuredArenas || kind == ChunkKind::MediumBuffers;
   }
 
   // The store buffer for pointers from tenured things to things in this
@@ -305,7 +303,7 @@ class alignas(TypicalCacheLineSize) MarkBitmap {
   }
 
   inline bool markIfUnmarked(const void* cell, MarkColor color);
-  inline bool markIfUnmarkedAtomic(const void* cell, MarkColor color);
+  inline bool markIfUnmarkedThreadSafe(const void* cell, MarkColor color);
   inline void markBlack(const void* cell);
   inline void markBlackAtomic(const void* cell);
   inline void copyMarkBit(TenuredCell* dst, const TenuredCell* src,
@@ -332,7 +330,6 @@ class ArenaChunkBase : public ChunkBase {
   ArenaChunkInfo info;
   ChunkMarkBitmap markBits;
   ChunkArenaBitmap freeCommittedArenas;
-  ChunkArenaBitmap pendingFreeCommittedArenas;
   ChunkPageBitmap decommittedPages;
 
  protected:

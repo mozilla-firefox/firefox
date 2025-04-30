@@ -465,11 +465,6 @@ private fun FaviconImage(painter: Painter) {
 private fun TopSiteFavicon(url: String, imageUrl: String? = null) {
     when (url) {
         SupportUtils.POCKET_TRENDING_URL -> FaviconImage(painterResource(R.drawable.ic_pocket))
-        SupportUtils.BAIDU_URL -> FaviconImage(painterResource(R.drawable.ic_baidu))
-        SupportUtils.JD_URL -> FaviconImage(painterResource(R.drawable.ic_jd))
-        SupportUtils.PDD_URL -> FaviconImage(painterResource(R.drawable.ic_pdd))
-        SupportUtils.TC_URL -> FaviconImage(painterResource(R.drawable.ic_tc))
-        SupportUtils.MEITUAN_URL -> FaviconImage(painterResource(R.drawable.ic_meituan))
         else -> Favicon(url = url, size = TOP_SITES_FAVICON_SIZE.dp, imageUrl = imageUrl)
     }
 }

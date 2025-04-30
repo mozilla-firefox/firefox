@@ -532,6 +532,7 @@ StaticRefPtr<ITfCompartment> TSFUtils::sCompartmentForOpenClose;
 StaticRefPtr<ITfInputProcessorProfiles> TSFUtils::sInputProcessorProfiles;
 StaticRefPtr<TSFTextStore> TSFUtils::sActiveTextStore;
 StaticRefPtr<TSFTextStoreBase> TSFUtils::sCurrentTextStore;
+StaticRefPtr<TSFEmptyTextStore> TSFUtils::sEmptyTextStore;
 DWORD TSFUtils::sClientId = 0;
 
 template void TSFUtils::ClearStoringTextStoresIf(
@@ -583,6 +584,10 @@ void TSFUtils::Shutdown() {
 
   sDisplayAttrMgr = nullptr;
   sCategoryMgr = nullptr;
+  if (RefPtr<TSFEmptyTextStore> emptyTextStore = sEmptyTextStore.forget()) {
+    emptyTextStore->Destroy();
+    MOZ_ASSERT(!sEmptyTextStore);
+  }
   sActiveTextStore = nullptr;
   if (RefPtr<TSFTextStoreBase> textStore = sCurrentTextStore.forget()) {
     textStore->Destroy();
@@ -644,34 +649,39 @@ nsresult TSFUtils::OnFocusChange(GotFocus aGotFocus, nsWindow* aFocusedWindow,
   const RefPtr<TSFTextStoreBase> oldTextStore = sCurrentTextStore.forget();
   sActiveTextStore = nullptr;
 
-  // If currently oldTextStore still has focus, notifies TSF of losing focus.
-  if (oldTextStore && oldTextStore->MaybeHasFocus()) {
-    const RefPtr<ITfThreadMgr> threadMgr(sThreadMgr);
-    // If active window is switched, threadMgr has already handled the focus
-    // change, then, we'll fail AssociateFocus() and the following assertions
-    // will fail.  To avoid the latter, we should check whether the focused
-    // documentMgr is still what oldTextStore set to.
-    RefPtr<ITfDocumentMgr> focusedDocumentMgr;
-    threadMgr->GetFocus(getter_AddRefs(focusedDocumentMgr));
-    if (focusedDocumentMgr) {
-      RefPtr<ITfDocumentMgr> prevFocusedDocumentMgr;
-      DebugOnly<HRESULT> hr = threadMgr->AssociateFocus(
-          oldTextStore->GetWindow()->GetWindowHandle(), nullptr,
-          getter_AddRefs(prevFocusedDocumentMgr));
-      NS_WARNING_ASSERTION(SUCCEEDED(hr), "Disassociating focus failed");
-      NS_ASSERTION(FAILED(hr) ||
-                       prevFocusedDocumentMgr == oldTextStore->GetDocumentMgr(),
-                   nsPrintfCString("different documentMgr has been associated "
-                                   "with the window: expected: %p, but got: %p",
-                                   oldTextStore->GetDocumentMgr(),
-                                   prevFocusedDocumentMgr.get())
-                       .get());
+  // If the oldTextStore is editable and still has focus, disassociate document
+  // manager from the window handle.
+  // NOTE: We never associate the document manager of TSFEmptyTextStore with
+  // a window handle.  Therefore, we don't need to do this if the oldTextStore
+  // is not editable.
+  if (oldTextStore && oldTextStore->IsEditable()) {
+    if (oldTextStore->MaybeHasFocus()) {
+      const RefPtr<ITfThreadMgr> threadMgr(sThreadMgr);
+      // If active window is switched, threadMgr has already handled the focus
+      // change, then, we'll fail AssociateFocus() and the following assertions
+      // will fail.  To avoid the latter, we should check whether the focused
+      // documentMgr is still what oldTextStore set to.
+      RefPtr<ITfDocumentMgr> focusedDocumentMgr;
+      threadMgr->GetFocus(getter_AddRefs(focusedDocumentMgr));
+      if (focusedDocumentMgr) {
+        RefPtr<ITfDocumentMgr> prevFocusedDocumentMgr;
+        DebugOnly<HRESULT> hr = threadMgr->AssociateFocus(
+            oldTextStore->GetWindow()->GetWindowHandle(), nullptr,
+            getter_AddRefs(prevFocusedDocumentMgr));
+        NS_WARNING_ASSERTION(SUCCEEDED(hr), "Disassociating focus failed");
+        NS_ASSERTION(
+            FAILED(hr) ||
+                prevFocusedDocumentMgr == oldTextStore->GetDocumentMgr(),
+            nsPrintfCString("different documentMgr has been associated "
+                            "with the window: expected: %p, but got: %p",
+                            oldTextStore->GetDocumentMgr(),
+                            prevFocusedDocumentMgr.get())
+                .get());
+      }
     }
-  }
 
-  // Even if there was a focused TextStore, we won't use it with new focused
-  // editor.  So, release it now.
-  if (oldTextStore) {
+    // Even if there was an editable focused TextStore, we won't use it with new
+    // focused editor.  So, release it now.
     oldTextStore->Destroy();
   }
 
@@ -696,6 +706,22 @@ nsresult TSFUtils::OnFocusChange(GotFocus aGotFocus, nsWindow* aFocusedWindow,
     if (aFocusedWindow->Destroyed()) {
       return NS_OK;
     }
+    if (!aContext.mIMEState.IsEditable()) {
+      if (RefPtr<TSFEmptyTextStore> emptyTextStore = sEmptyTextStore) {
+        nsresult rv =
+            emptyTextStore->SetFocusAndUpdateDocumentURLAndBrowsingMode(
+                aFocusedWindow, aContext);
+        if (NS_SUCCEEDED(rv)) {
+          sCurrentTextStore = emptyTextStore.forget();
+          return NS_OK;
+        }
+        MOZ_LOG(gIMELog, LogLevel::Error,
+                ("  TSFUtils::OnFocusChange() FAILED due to the failure of "
+                 "TSFEmptyTextStore::"
+                 "SetFocusAndUpdateDocumentURLAndBrowsingMode(), trying to "
+                 "create new TSFEmptyTextStore..."));
+      }
+    }
     Result<RefPtr<TSFEmptyTextStore>, nsresult> ret =
         TSFEmptyTextStore::CreateAndSetFocus(aFocusedWindow, aContext);
     if (NS_WARN_IF(ret.isErr())) {
@@ -704,7 +730,12 @@ nsresult TSFUtils::OnFocusChange(GotFocus aGotFocus, nsWindow* aFocusedWindow,
                "create and set focus to new TSFEmptyTextStore"));
       return ret.unwrapErr();
     }
-    sCurrentTextStore = ret.unwrap().forget();
+    if (const RefPtr<TSFEmptyTextStore> oldEmptyTextStore =
+            sEmptyTextStore.forget()) {
+      oldEmptyTextStore->Destroy();
+    }
+    sEmptyTextStore = ret.unwrap().forget();
+    sCurrentTextStore = sEmptyTextStore;
     return NS_OK;
   }
 

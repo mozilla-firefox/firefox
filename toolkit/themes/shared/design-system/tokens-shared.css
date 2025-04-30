@@ -30,11 +30,11 @@
     /** Box Shadow **/
     --box-shadow-card: var(--box-shadow-level-2);
     --box-shadow-card-hover: var(--box-shadow-level-4);
-    --box-shadow-color-darker-layer-1: light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4));
-    --box-shadow-color-darker-layer-2: light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8));
+    --box-shadow-color-darker-layer-1: light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.2));
+    --box-shadow-color-darker-layer-2: light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4));
     --box-shadow-color-lighter-layer-1: light-dark(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.2));
     --box-shadow-color-lighter-layer-2: light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4));
-    --box-shadow-level-1: 0 0.125px 0.25px var(--box-shadow-color-darker-layer-1), 0 1px 2px var(--box-shadow-color-darker-layer-2);
+    --box-shadow-level-1: 0 0 1px var(--box-shadow-color-darker-layer-1), 0 1px 2px var(--box-shadow-color-darker-layer-2);
     --box-shadow-level-2: 0 0.25px 0.75px var(--box-shadow-color-lighter-layer-1), 0 2px 6px var(--box-shadow-color-lighter-layer-2);
     --box-shadow-level-3: 0 0.375px 1.5px var(--box-shadow-color-lighter-layer-1), 0 3px 12px var(--box-shadow-color-lighter-layer-2);
     --box-shadow-level-4: 0 0.5px 2px var(--box-shadow-color-lighter-layer-1), 0 4px 16px var(--box-shadow-color-lighter-layer-2);
@@ -253,10 +253,6 @@
     --input-space-block: var(--space-xsmall);
 
     /** Link **/
-    --link-color: var(--color-accent-primary);
-    --link-color-hover: var(--color-accent-primary-hover);
-    --link-color-active: var(--color-accent-primary-active);
-    --link-color-visited: var(--link-color);
     /**
      * Not using --force-outline-offset for links because that's intended for
      * elements with a background, and we only want a slight offset here while

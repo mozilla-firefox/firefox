@@ -2,7 +2,7 @@
 tags = "devtools"
 head = "head.js"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
+run-if = ["os != 'android'"]
 
 support-files = ["../helper_color_data.js"]
 

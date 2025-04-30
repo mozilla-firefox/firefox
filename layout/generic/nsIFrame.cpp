@@ -1060,12 +1060,6 @@ void nsIFrame::RemoveDisplayItemDataForDeletion() {
     delete userDataTable;
   }
 
-  if (!nsLayoutUtils::AreRetainedDisplayListsEnabled()) {
-    // Retained display lists are disabled, no need to update
-    // RetainedDisplayListData.
-    return;
-  }
-
   auto* builder = nsLayoutUtils::GetRetainedDisplayListBuilder(this);
   if (!builder) {
     MOZ_ASSERT(DisplayItems().IsEmpty());
@@ -4428,12 +4422,20 @@ void nsIFrame::MarkAbsoluteFramesForDisplayList(
   }
 }
 
-nsresult nsIFrame::GetContentForEvent(const WidgetEvent* aEvent,
-                                      nsIContent** aContent) {
-  nsIFrame* f = nsLayoutUtils::GetNonGeneratedAncestor(this);
-  *aContent = f->GetContent();
-  NS_IF_ADDREF(*aContent);
-  return NS_OK;
+nsIContent* nsIFrame::GetContentForEvent(const WidgetEvent* aEvent) const {
+  if (!IsGeneratedContentFrame()) {
+    return GetContent();
+  }
+  const nsIFrame* generatedRoot = this;
+  while (true) {
+    auto* parent = nsLayoutUtils::GetParentOrPlaceholderFor(generatedRoot);
+    if (!parent || !parent->IsGeneratedContentFrame()) {
+      break;
+    }
+    generatedRoot = parent;
+  }
+  // Return the non-generated ancestor.
+  return generatedRoot->GetContent()->GetParent();
 }
 
 void nsIFrame::FireDOMEvent(const nsAString& aDOMEventName,
@@ -5477,7 +5479,8 @@ static bool IsRelevantBlockFrame(const nsIFrame* aFrame) {
   if (!aFrame->IsBlockOutside()) {
     return false;
   }
-  if (aFrame->GetContent()->IsInNativeAnonymousSubtree()) {
+  if (aFrame->GetContent() &&
+      aFrame->GetContent()->IsInNativeAnonymousSubtree()) {
     // This helps skipping things like scrollbar parts.
     return false;
   }
@@ -6099,11 +6102,13 @@ void nsIFrame::MarkIntrinsicISizesDirty() {
     nsFlexContainerFrame::MarkCachedFlexMeasurementsDirty(this);
   }
 
+  if (IsGridItem()) {
+    nsGridContainerFrame::MarkCachedGridMeasurementsDirty(this);
+  }
+
   if (HasAnyStateBits(NS_FRAME_FONT_INFLATION_FLOW_ROOT)) {
     nsFontInflationData::MarkFontInflationDataTextDirty(this);
   }
-
-  RemoveProperty(nsGridContainerFrame::CachedBAxisMeasurement::Prop());
 }
 
 void nsIFrame::MarkSubtreeDirty() {
@@ -9243,9 +9248,10 @@ static nsresult GetNextPrevLineFromBlockFrame(PeekOffsetStruct* aPos,
       if (!aPos->FrameContentIsInAncestorLimiter(resultFrame)) {
         return NS_ERROR_FAILURE;
       }
-      // check to see if this is ANOTHER blockframe inside the other one if so
-      // then call into its lines
-      if (resultFrame->CanProvideLineIterator()) {
+      // Check to see if this is ANOTHER blockframe inside the other one that
+      // we should look inside.
+      if (resultFrame->CanProvideLineIterator() &&
+          IsRelevantBlockFrame(resultFrame)) {
         aPos->mResultFrame = resultFrame;
         return NS_OK;
       }
@@ -9521,12 +9527,14 @@ nsresult nsIFrame::PeekOffsetForParagraph(PeekOffsetStruct* aPos) {
 
   if (reachedLimit) {  // no "stop frame" found
     aPos->mResultContent = frame->GetContent();
-    if (ShadowRoot* shadowRoot =
-            aPos->mResultContent->GetShadowRootForSelection()) {
-      // Even if there's no children for this node,
-      // the elements inside the shadow root is still
-      // selectable
-      aPos->mResultContent = shadowRoot;
+    if (aPos->mResultContent) {
+      if (ShadowRoot* shadowRoot =
+              aPos->mResultContent->GetShadowRootForSelection()) {
+        // Even if there's no children for this node,
+        // the elements inside the shadow root is still
+        // selectable
+        aPos->mResultContent = shadowRoot;
+      }
     }
     if (aPos->mDirection == eDirPrevious) {
       aPos->mContentOffset = 0;

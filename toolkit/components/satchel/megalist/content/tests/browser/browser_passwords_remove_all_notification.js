@@ -44,23 +44,7 @@ add_task(async function test_passwords_remove_all_notification() {
   );
 
   const originalPromptService = Services.prompt;
-  Services.prompt = {
-    confirmEx(
-      win,
-      title,
-      message,
-      _flags,
-      _button0,
-      _button1,
-      _button2,
-      _checkLabel,
-      _checkValue
-    ) {
-      info(`Prompt title ${title}`);
-      info(`Prompt message ${message}`);
-      return 0;
-    },
-  };
+  Services.prompt = mockServicePrompt();
 
   await clickRemoveAllPasswords(megalist);
   const notifMsgBar = await checkNotificationAndTelemetry(
@@ -109,23 +93,7 @@ add_task(
     );
 
     const originalPromptService = Services.prompt;
-    Services.prompt = {
-      confirmEx(
-        win,
-        title,
-        message,
-        _flags,
-        _button0,
-        _button1,
-        _button2,
-        _checkLabel,
-        _checkValue
-      ) {
-        info(`Prompt title ${title}`);
-        info(`Prompt message ${message}`);
-        return 0;
-      },
-    };
+    Services.prompt = mockServicePrompt();
 
     await clickRemoveAllPasswords(megalist);
     const notifMsgBar = await checkNotificationAndTelemetry(
@@ -153,3 +121,26 @@ add_task(
     Services.prompt = originalPromptService;
   }
 );
+
+add_task(async function test_remove_all_passwords_checkbox() {
+  info("Check that passwords are not removed when prompt checkbox is checked");
+  const megalist = await openPasswordsSidebar();
+  await addMockPasswords();
+  await checkAllLoginsRendered(megalist);
+  await BrowserTestUtils.waitForCondition(
+    () => megalist.querySelector(".second-row"),
+    "Second row failed to render"
+  );
+
+  const originalPromptService = Services.prompt;
+  Services.prompt = mockServicePrompt(0, true);
+  await clickRemoveAllPasswords(megalist);
+
+  const logins = await Services.logins.getAllLogins();
+
+  ok(!!logins.length, "Logins were not removed");
+
+  info("Closing the sidebar");
+  SidebarController.hide();
+  Services.prompt = originalPromptService;
+});

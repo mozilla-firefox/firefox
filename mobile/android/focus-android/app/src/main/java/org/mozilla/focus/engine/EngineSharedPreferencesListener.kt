@@ -8,8 +8,8 @@ import android.content.Context
 import androidx.preference.Preference
 import org.mozilla.focus.GleanMetrics.TrackingProtection
 import org.mozilla.focus.R
+import org.mozilla.focus.components.EngineProvider
 import org.mozilla.focus.ext.components
-import org.mozilla.focus.ext.settings
 
 /**
  * SharedPreference listener that will update the engine whenever the user changes settings.
@@ -21,7 +21,7 @@ class EngineSharedPreferencesListener(
     override fun onPreferenceChange(preference: Preference, newValue: Any?): Boolean {
         when (preference.key) {
             context.getString(R.string.pref_key_performance_enable_cookies) ->
-                updateTrackingProtectionPolicy(shouldBlockCookiesValue = newValue as String)
+                updateTrackingProtectionPolicy(newValue as String)
 
             context.getString(R.string.pref_key_safe_browsing) ->
                 updateSafeBrowsingPolicy(newValue as Boolean)
@@ -40,9 +40,8 @@ class EngineSharedPreferencesListener(
         source: String? = null,
         tracker: String? = null,
         isEnabled: Boolean = false,
-        shouldBlockCookiesValue: String = context.settings.shouldBlockCookiesValue(),
     ) {
-        val policy = context.settings.createTrackingProtectionPolicy(shouldBlockCookiesValue)
+        val policy = EngineProvider.createTrackingProtectionPolicy(context)
         val components = context.components
 
         components.engineDefaultSettings.trackingProtectionPolicy = policy
@@ -61,7 +60,7 @@ class EngineSharedPreferencesListener(
     }
 
     private fun updateSafeBrowsingPolicy(newValue: Boolean) {
-        context.settings.setupSafeBrowsing(context.components.engine, newValue)
+        EngineProvider.setupSafeBrowsing(context.components.engine, newValue)
         context.components.sessionUseCases.reload()
     }
 

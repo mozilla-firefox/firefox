@@ -9,7 +9,12 @@ path = "lib.rs"
 [features]
 default = ["hashbrown/default"]
 allocator-api2 = ["hashbrown/allocator-api2"]
-ahash = [] # No direct equivalent in 0.15.*.
+ahash = [
+    # No direct equivalent in 0.15.*.  However, the `ahash` feature made it so `DefaultHashBuilder`
+    # was a real struct that implemented `BuildHasher`, `Default`, etc.
+    # Enable 0.15.* `default-hasher` feature, which does the same.
+    "hashbrown/default-hasher"
+]
 inline-more = ["hashbrown/inline-more"]
 raw = ["hashbrown/raw-entry"]
 serde = ["hashbrown/serde"]

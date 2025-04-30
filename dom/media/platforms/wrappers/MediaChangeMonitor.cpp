@@ -168,8 +168,18 @@ class H264ChangeMonitor : public MediaChangeMonitor::CodecChangeMonitor {
     aSample->mExtraData = mCurrentConfig.mExtraData;
     aSample->mTrackInfo = mTrackInfo;
 
+    bool appendExtradata = aNeedKeyFrame;
+    if (aSample->mCrypto.IsEncrypted() && !mReceivedFirstEncryptedSample) {
+      LOG("Detected first encrypted sample [%" PRId64 ",%" PRId64
+          "], keyframe=%d",
+          aSample->mTime.ToMicroseconds(),
+          aSample->GetEndTime().ToMicroseconds(), aSample->mKeyframe);
+      mReceivedFirstEncryptedSample = true;
+      appendExtradata = true;
+    }
+
     if (aConversion == MediaDataDecoder::ConversionRequired::kNeedAnnexB) {
-      auto res = AnnexB::ConvertAVCCSampleToAnnexB(aSample, aNeedKeyFrame);
+      auto res = AnnexB::ConvertAVCCSampleToAnnexB(aSample, appendExtradata);
       if (res.isErr()) {
         return MediaResult(res.unwrapErr(),
                            RESULT_DETAIL("ConvertSampleToAnnexB"));
@@ -178,6 +188,8 @@ class H264ChangeMonitor : public MediaChangeMonitor::CodecChangeMonitor {
 
     return NS_OK;
   }
+
+  void Flush() override { mReceivedFirstEncryptedSample = false; }
 
  private:
   void UpdateConfigFromExtraData(MediaByteBuffer* aExtraData) {
@@ -215,6 +227,11 @@ class H264ChangeMonitor : public MediaChangeMonitor::CodecChangeMonitor {
   bool mGotSPS = false;
   RefPtr<TrackInfoSharedPtr> mTrackInfo;
   RefPtr<MediaByteBuffer> mPreviousExtraData;
+
+  // This ensures the first encrypted sample always includes all necessary
+  // information for decoding, as some decoders, such as MediaEngine, require
+  // SPS/PPS to be appended during the clearlead-to-encrypted transition.
+  bool mReceivedFirstEncryptedSample = false;
 };
 
 class HEVCChangeMonitor : public MediaChangeMonitor::CodecChangeMonitor {
@@ -308,8 +325,18 @@ class HEVCChangeMonitor : public MediaChangeMonitor::CodecChangeMonitor {
     aSample->mExtraData = mCurrentConfig.mExtraData;
     aSample->mTrackInfo = mTrackInfo;
 
+    bool appendExtradata = aNeedKeyFrame;
+    if (aSample->mCrypto.IsEncrypted() && !mReceivedFirstEncryptedSample) {
+      LOG("Detected first encrypted sample [%" PRId64 ",%" PRId64
+          "], keyframe=%d",
+          aSample->mTime.ToMicroseconds(),
+          aSample->GetEndTime().ToMicroseconds(), aSample->mKeyframe);
+      mReceivedFirstEncryptedSample = true;
+      appendExtradata = true;
+    }
+
     if (aConversion == MediaDataDecoder::ConversionRequired::kNeedAnnexB) {
-      auto res = AnnexB::ConvertHVCCSampleToAnnexB(aSample, aNeedKeyFrame);
+      auto res = AnnexB::ConvertHVCCSampleToAnnexB(aSample, appendExtradata);
       if (res.isErr()) {
         return MediaResult(res.unwrapErr(),
                            RESULT_DETAIL("ConvertSampleToAnnexB"));
@@ -322,6 +349,8 @@ class HEVCChangeMonitor : public MediaChangeMonitor::CodecChangeMonitor {
     // We only support HEVC via hardware decoding.
     return true;
   }
+
+  void Flush() override { mReceivedFirstEncryptedSample = false; }
 
  private:
   void UpdateConfigFromExtraData(MediaByteBuffer* aExtraData) {
@@ -409,6 +438,11 @@ class HEVCChangeMonitor : public MediaChangeMonitor::CodecChangeMonitor {
 
   uint32_t mStreamID = 0;
   RefPtr<TrackInfoSharedPtr> mTrackInfo;
+
+  // This ensures the first encrypted sample always includes all necessary
+  // information for decoding, as some decoders, such as MediaEngine, require
+  // SPS/PPS to be appended during the clearlead-to-encrypted transition.
+  bool mReceivedFirstEncryptedSample = false;
 };
 
 class VPXChangeMonitor : public MediaChangeMonitor::CodecChangeMonitor {
@@ -909,6 +943,7 @@ RefPtr<MediaDataDecoder::FlushPromise> MediaChangeMonitor::Flush() {
   mDecodePromiseRequest.DisconnectIfExists();
   mDecodePromise.RejectIfExists(NS_ERROR_DOM_MEDIA_CANCELED, __func__);
   mNeedKeyframe = true;
+  mChangeMonitor->Flush();
   mPendingFrames.Clear();
 
   MOZ_RELEASE_ASSERT(mFlushPromise.IsEmpty(), "Previous flush didn't complete");

@@ -71,6 +71,18 @@ namespace glean {
 
     PingUploadTask glean_get_upload_task();
     UploadTaskAction glean_process_ping_upload_response(string uuid, UploadResult result);
+
+    // Updates attribution fields with new values.
+    // AttributionMetrics fields with no values will not overwrite older values.
+    void glean_update_attribution(AttributionMetrics attribution);
+    // Returns the current attribution metrics, if any.
+    AttributionMetrics glean_test_get_attribution();
+
+    // Updates distribution fields with new values.
+    // DistributionMetrics fields with no values will not overwrite older values.
+    void glean_update_distribution(DistributionMetrics distribution);
+    // Returns the current distribution metrics, if any.
+    DistributionMetrics glean_test_get_distribution();
 };
 
 // A `Cow<'static, str>`, but really it's always the owned part.
@@ -136,6 +148,18 @@ dictionary ClientInfoMetrics {
     string? device_model = null;
     string? android_sdk_version = null;
     i64? windows_build_number = null;
+};
+
+dictionary AttributionMetrics {
+    string? source = null;
+    string? medium = null;
+    string? campaign = null;
+    string? term = null;
+    string? content = null;
+};
+
+dictionary DistributionMetrics {
+    string? name = null;
 };
 
 [Error]

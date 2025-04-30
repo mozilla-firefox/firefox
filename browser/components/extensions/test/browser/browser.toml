@@ -114,6 +114,7 @@ https_first_disabled = true
 ["browser_ext_browsingData_history.js"]
 
 ["browser_ext_canOpenModalPicker.js"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt"] # Bug 1949651
 
 ["browser_ext_chrome_settings_overrides_home.js"]
 
@@ -279,6 +280,7 @@ https_first_disabled = true
 ["browser_ext_menus_refresh.js"]
 
 ["browser_ext_menus_replace_menu.js"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt"] # Bug 1775561
 
 ["browser_ext_menus_replace_menu_context.js"]
 https_first_disabled = true
@@ -319,6 +321,7 @@ skip-if = [
   "os == 'linux' && os_version == '18.04' && !debug && verify",
   "os == 'mac' && os_version == '10.15' && processor == 'x86_64' && !debug && verify",
   "os == 'mac' && os_version == '11.20' && arch == 'aarch64' && !debug && verify",
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1775565
 ]
 
 ["browser_ext_optionsPage_activity.js"]
@@ -335,6 +338,7 @@ skip-if = [
 https_first_disabled = true
 
 ["browser_ext_originControls.js"]
+# skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt"] # Bug TBD
 
 ["browser_ext_originControls_internals.js"]
 
@@ -477,6 +481,14 @@ skip-if = ["true"] # Bug 1575369
 ["browser_ext_slow_script.js"]
 https_first_disabled = true
 
+["browser_ext_tabGroups.js"]
+
+["browser_ext_tabGroups_move_event_order.js"]
+
+["browser_ext_tabGroups_move_onMoved.js"]
+
+["browser_ext_tabGroups_query.js"]
+
 ["browser_ext_tab_runtimeConnect.js"]
 
 ["browser_ext_tabs_attention.js"]
@@ -541,6 +553,8 @@ https_first_disabled = true
 ["browser_ext_tabs_groupId.js"]
 
 ["browser_ext_tabs_group_ungroup.js"]
+
+["browser_ext_tabs_group_windowId.js"]
 
 ["browser_ext_tabs_hide.js"]
 https_first_disabled = true

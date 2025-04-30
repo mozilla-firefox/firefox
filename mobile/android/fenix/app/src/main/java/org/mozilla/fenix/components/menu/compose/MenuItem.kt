@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -62,6 +63,7 @@ private val ROUNDED_CORNER_SHAPE = RoundedCornerShape(4.dp)
  * @param labelModifier [Modifier] to be applied to the label.
  * @param onAfterIconClick Invoked when the user clicks on the icon. An [IconButton] will be
  * displayed if this is provided. Otherwise, an [Icon] will be displayed.
+ * @param afterContent Optional Composable for adding UI to the end of the list item.
  */
 @Composable
 internal fun MenuItem(
@@ -78,6 +80,7 @@ internal fun MenuItem(
     modifier: Modifier = Modifier,
     labelModifier: Modifier = Modifier,
     onAfterIconClick: (() -> Unit)? = null,
+    afterContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val labelTextColor = getLabelTextColor(state = state)
     val descriptionTextColor = getDescriptionTextColor(state = descriptionState)
@@ -121,6 +124,7 @@ internal fun MenuItem(
         afterIconDescription = afterIconDescription,
         afterIconTint = iconTint,
         onAfterIconClick = onAfterIconClick,
+        afterListAction = afterContent,
     )
 }
 

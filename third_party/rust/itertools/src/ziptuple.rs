@@ -7,7 +7,7 @@ pub struct Zip<T> {
     t: T,
 }
 
-/// An iterator that generalizes *.zip()* and allows running multiple iterators in lockstep.
+/// An iterator that generalizes `.zip()` and allows running multiple iterators in lockstep.
 ///
 /// The iterator `Zip<(I, J, ..., M)>` is formed from a tuple of iterators (or values that
 /// implement [`IntoIterator`]) and yields elements
@@ -16,11 +16,11 @@ pub struct Zip<T> {
 /// The iterator element type is a tuple like like `(A, B, ..., E)` where `A` to `E` are the
 /// element types of the subiterator.
 ///
-/// **Note:** The result of this macro is a value of a named type (`Zip<(I, J,
+/// **Note:** The result of this function is a value of a named type (`Zip<(I, J,
 /// ..)>` of each component iterator `I, J, ...`) if each component iterator is
 /// nameable.
 ///
-/// Prefer [`izip!()`] over `multizip` for the performance benefits of using the
+/// Prefer [`izip!()`](crate::izip) over `multizip` for the performance benefits of using the
 /// standard library `.zip()`. Prefer `multizip` if a nameable type is needed.
 ///
 /// ```
@@ -36,10 +36,9 @@ pub struct Zip<T> {
 ///
 /// assert_eq!(results, [0 + 3, 10 + 7, 29, 36]);
 /// ```
-/// [`izip!()`]: crate::izip
 pub fn multizip<T, U>(t: U) -> Zip<T>
-    where Zip<T>: From<U>,
-          Zip<T>: Iterator,
+where
+    Zip<T>: From<U> + Iterator,
 {
     Zip::from(t)
 }
@@ -82,7 +81,7 @@ macro_rules! impl_zip_iter {
 
             fn size_hint(&self) -> (usize, Option<usize>)
             {
-                let sh = (::std::usize::MAX, None);
+                let sh = (usize::MAX, None);
                 let ($(ref $B,)*) = self.t;
                 $(
                     let sh = size_hint::min($B.size_hint(), sh);

@@ -844,6 +844,8 @@ void av1_setup_frame_buf_refs(AV1_COMMON *cm) {
   cm->cur_frame->order_hint = cm->current_frame.order_hint;
   cm->cur_frame->display_order_hint = cm->current_frame.display_order_hint;
   cm->cur_frame->pyramid_level = cm->current_frame.pyramid_level;
+  cm->cur_frame->filter_level[0] = -1;
+  cm->cur_frame->filter_level[1] = -1;
   MV_REFERENCE_FRAME ref_frame;
   for (ref_frame = LAST_FRAME; ref_frame <= ALTREF_FRAME; ++ref_frame) {
     const RefCntBuffer *const buf = get_ref_frame_buf(cm, ref_frame);

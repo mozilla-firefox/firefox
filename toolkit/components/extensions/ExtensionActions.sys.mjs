@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
 import { ExtensionUtils } from "resource://gre/modules/ExtensionUtils.sys.mjs";
 
@@ -12,14 +13,12 @@ const { IconDetails, StartupCache } = ExtensionParent;
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "MV2_ACTION_POPURL_RESTRICTED",
-  "extensions.manifestV2.actionsPopupURLRestricted",
-  false
-);
+const lazy = XPCOMUtils.declareLazy({
+  MV2_ACTION_POPURL_RESTRICTED: {
+    pref: "extensions.manifestV2.actionsPopupURLRestricted",
+    default: false,
+  },
+});
 
 const PERSONAL_TOOLBAR_VISIBILITY_PREF =
   "browser.toolbars.bookmarks.visibility";

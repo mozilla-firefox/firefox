@@ -52,6 +52,23 @@ XPCOMUtils.defineLazyPreferenceGetter(
  */
 
 export const DAPTelemetrySender = new (class {
+  /**
+   * @typedef { 'sum' | 'sumvec' | 'histogram' } VDAF
+   */
+
+  /**
+   * Task configuration must match a configured task on the DAP server.
+   *
+   * @typedef {object} Task
+   * @property {string} id - The task ID in urlsafe_base64 encoding.
+   * @property {VDAF} vdaf - The VDAF used by the task.
+   * @property {number} [bits] - The bit-width of integers in sum/sumvec measurements.
+   * @property {number} [length] - The number of vector/histogram elements.
+   * @property {number} time_precision - The rounding granularity in seconds
+   *                                     that is applied to timestamps attached
+   *                                     to the report.
+   */
+
   async startup() {
     if (
       Services.startup.isInOrBeyondShutdownPhase(
@@ -78,19 +95,13 @@ export const DAPTelemetrySender = new (class {
       let task1_id =
         lazy.NimbusFeatures.dapTelemetry.getVariable("task1TaskId");
       if (task1_id !== undefined && task1_id != "") {
-        /** @typedef { 'u8' | 'vecu8' | 'vecu16' } measurementtype */
-
-        /**
-         * @typedef {object} Task
-         * @property {string} id - The task ID, base 64 encoded.
-         * @property {number} time_precision - Timestamps (in s) are rounded to the nearest multiple of this.
-         * @property {measurementtype} measurement_type - Defines measurements and aggregations used by this task. Effectively specifying the VDAF.
-         */
         let task = {
           // this is testing task 1
           id: task1_id,
+          vdaf: "sumvec",
+          bits: 8,
+          length: 20,
           time_precision: 300,
-          measurement_type: "vecu8",
         };
         tasks.push(task);
 
@@ -125,13 +136,17 @@ export const DAPTelemetrySender = new (class {
   async sendTestReports(tasks, options = {}) {
     for (let task of tasks) {
       let measurement;
-      if (task.measurement_type == "u8") {
+      if (task.vdaf == "sum") {
         measurement = 3;
-      } else if (task.measurement_type == "vecu8") {
-        measurement = new Uint8Array(20);
+      } else if (task.vdaf == "sumvec") {
+        measurement = new Array(20).fill(0);
         let r = Math.floor(Math.random() * 10);
         measurement[r] += 1;
         measurement[19] += 1;
+      } else if (task.vdaf == "histogram") {
+        measurement = Math.floor(Math.random() * 15);
+      } else {
+        throw new Error(`Unknown VDAF ${task.vdaf}`);
       }
 
       await this.sendDAPMeasurement(task, measurement, options);
@@ -243,36 +258,53 @@ export const DAPTelemetrySender = new (class {
    * @returns {ArrayBuffer} The generated binary report data.
    */
   generateReport(task, measurement, keys) {
-    let encoder = null;
-    switch (task.measurement_type) {
-      case "u8":
-        encoder = Services.DAPTelemetry.GetReportU8;
-        break;
-      case "vecu8":
-        encoder = Services.DAPTelemetry.GetReportVecU8;
-        break;
-      case "vecu16":
-        encoder = Services.DAPTelemetry.GetReportVecU16;
-        break;
-      default:
-        throw new Error(
-          `Unknown measurement type for task ${task.id}: ${task.measurement_type}`
-        );
-    }
-
     let task_id = new Uint8Array(
       ChromeUtils.base64URLDecode(task.id, { padding: "ignore" })
     );
 
     let reportOut = {};
-    encoder(
-      keys.leader_hpke,
-      keys.helper_hpke,
-      measurement,
-      task_id,
-      task.time_precision,
-      reportOut
-    );
+
+    if (task.vdaf === "sum") {
+      Services.DAPTelemetry.GetReportPrioSum(
+        keys.leader_hpke,
+        keys.helper_hpke,
+        measurement,
+        task_id,
+        task.bits,
+        task.time_precision,
+        reportOut
+      );
+    } else if (task.vdaf === "sumvec") {
+      if (measurement.length != task.length) {
+        throw new Error(
+          "Measurement vector length doesn't match task configuration"
+        );
+      }
+      Services.DAPTelemetry.GetReportPrioSumVec(
+        keys.leader_hpke,
+        keys.helper_hpke,
+        measurement,
+        task_id,
+        task.bits,
+        task.time_precision,
+        reportOut
+      );
+    } else if (task.vdaf === "histogram") {
+      Services.DAPTelemetry.GetReportPrioHistogram(
+        keys.leader_hpke,
+        keys.helper_hpke,
+        measurement,
+        task_id,
+        task.length,
+        task.time_precision,
+        reportOut
+      );
+    } else {
+      throw new Error(
+        `Unknown measurement type for task ${task.id}: ${task.vdaf} ${task.bits}`
+      );
+    }
+
     return new Uint8Array(reportOut.value).buffer;
   }
 

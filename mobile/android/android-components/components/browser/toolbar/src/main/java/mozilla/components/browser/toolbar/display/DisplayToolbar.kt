@@ -600,6 +600,7 @@ class DisplayToolbar internal constructor(
 
             // Announce "loading" for accessibility if it has not been completed
             if (progress < views.progress.max) {
+                @Suppress("DEPRECATION")
                 views.progress.announceForAccessibility(
                     context.getString(R.string.mozac_browser_toolbar_progress_loading),
                 )

@@ -27,7 +27,7 @@ static already_AddRefed<Document> SetUpDocument() {
                                   uri, uri, principal,
                                   false,    // aLoadedAsData
                                   nullptr,  // aEventObject
-                                  DocumentFlavorHTML);
+                                  DocumentFlavor::HTML);
 
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return nullptr;

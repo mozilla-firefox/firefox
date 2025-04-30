@@ -3,17 +3,15 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* eslint-disable mozilla/valid-lazy */
 
-const lazy = {};
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
+  // xpcshell doesn't handle idle callbacks well.
+  idleTimeout: () => (Services.appinfo.name === "XPCShell" ? 500 : undefined),
 });
-
-// xpcshell doesn't handle idle callbacks well.
-ChromeUtils.defineLazyGetter(lazy, "idleTimeout", () =>
-  Services.appinfo.name === "XPCShell" ? 500 : undefined
-);
 
 // It would be nicer to go through `Services.appinfo`, but some tests need to be
 // able to replace that field with a custom implementation before it is first

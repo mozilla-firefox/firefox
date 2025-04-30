@@ -17,12 +17,10 @@
 // this macro filters out any flags that are not used when constructing the
 // host key.  the significant flags are those that would affect the resulting
 // host record (i.e., the flags that are passed down to PR_GetAddrInfoByName).
-#define RES_KEY_FLAGS(_f)                           \
-  ((_f) &                                           \
-   ((StaticPrefs::network_dns_always_ai_canonname() \
-         ? 0                                        \
-         : nsIDNSService::RESOLVE_CANONICAL_NAME) | \
-    nsIDNSService::RESOLVE_DISABLE_TRR |            \
+#define RES_KEY_FLAGS(_f)                   \
+  ((_f) &                                   \
+   (nsIDNSService::RESOLVE_CANONICAL_NAME | \
+    nsIDNSService::RESOLVE_DISABLE_TRR |    \
     nsIDNSService::RESOLVE_TRR_MODE_MASK | nsIDNSService::RESOLVE_IP_HINT))
 
 #define IS_ADDR_TYPE(_type) ((_type) == nsIDNSService::RESOLVE_TYPE_DEFAULT)

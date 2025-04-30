@@ -2,4 +2,6 @@
 <resources>
   <!-- Content description for the clear URL text button. -->
   <string name="mozac_clear_button_description">Մաքրել</string>
+  <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
+  <string name="mozac_browser_toolbar_search_hint">Որոնեք կամ մուտքագրեք հասցեն</string>
 </resources>

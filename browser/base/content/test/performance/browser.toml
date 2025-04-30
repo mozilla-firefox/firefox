@@ -13,7 +13,6 @@ prefs = [
   # The form autofill framescript is only used in certain locales if this
   # pref is set to 'detect', which is the default value on non-Nightly.
   "extensions.formautofill.addresses.available='on'",
-  "browser.urlbar.disableExtendForTests=true",
   # For perfomance tests do not enable the remote control cue, which gets set
   # when Marionette is enabled, but users normally don't see.
   "browser.chrome.disableRemoteControlCueForTests=true",
@@ -67,6 +66,9 @@ run-if = [
   "debug",
   "nightly_build", # Requires StartupRecorder.sys.mjs, which isn't shipped everywhere by default
 ]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1889278
+]
 
 ["browser_tabclose.js"]
 skip-if = [
@@ -102,10 +104,8 @@ skip-if = ["os == 'win'"] #Bug 1455054
 ["browser_toolbariconcolor_restyles.js"]
 
 ["browser_urlbar_keyed_search.js"]
-skip-if = ["true"]  # Bug 1926118: Disabled until the test can be revisited to measure performance under representative conditions.
 
 ["browser_urlbar_search.js"]
-skip-if = ["true"]  # Bug 1926118: Disabled until the test can be revisited to measure performance under representative conditions.
 
 ["browser_vsync_accessibility.js"]
 

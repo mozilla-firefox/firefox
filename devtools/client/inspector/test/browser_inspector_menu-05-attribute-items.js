@@ -7,7 +7,7 @@ http://creativecommons.org/publicdomain/zero/1.0/ */
 const TEST_URL = URL_ROOT + "doc_inspector_menu.html";
 
 add_task(async function () {
-  const { inspector } = await openInspectorForURL(TEST_URL);
+  const { inspector, toolbox } = await openInspectorForURL(TEST_URL);
   await selectNode("#attributes", inspector);
 
   await testAddAttribute();
@@ -18,7 +18,8 @@ add_task(async function () {
 
   async function testAddAttribute() {
     info("Triggering 'Add Attribute' and waiting for mutation to occur");
-    const addAttribute = getMenuItem("node-menu-add-attribute");
+    const addAttribute = await getMenuItem("node-menu-add-attribute");
+
     addAttribute.click();
 
     EventUtils.sendString('class="u-hidden"');
@@ -36,7 +37,7 @@ add_task(async function () {
     info(
       "Testing 'Copy Attribute Value' and waiting for clipboard promise to resolve"
     );
-    const copyAttributeValue = getMenuItem("node-menu-copy-attribute");
+    const copyAttributeValue = await getMenuItem("node-menu-copy-attribute");
 
     info(
       "Triggering 'Copy Attribute Value' and waiting for clipboard to copy the value"
@@ -52,7 +53,7 @@ add_task(async function () {
 
   async function testCopyLongAttributeValue() {
     info("Testing 'Copy Attribute Value' copies very long attribute values");
-    const copyAttributeValue = getMenuItem("node-menu-copy-attribute");
+    const copyAttributeValue = await getMenuItem("node-menu-copy-attribute");
     const longAttribute =
       "#01234567890123456789012345678901234567890123456789" +
       "12345678901234567890123456789012345678901234567890123456789012345678901" +
@@ -73,7 +74,7 @@ add_task(async function () {
 
   async function testEditAttribute() {
     info("Testing 'Edit Attribute' menu item");
-    const editAttribute = getMenuItem("node-menu-edit-attribute");
+    const editAttribute = await getMenuItem("node-menu-edit-attribute");
 
     info("Triggering 'Edit Attribute' and waiting for mutation to occur");
     inspector.markup.contextMenu.nodeMenuTriggerInfo = {
@@ -94,7 +95,7 @@ add_task(async function () {
 
   async function testRemoveAttribute() {
     info("Testing 'Remove Attribute' menu item");
-    const removeAttribute = getMenuItem("node-menu-remove-attribute");
+    const removeAttribute = await getMenuItem("node-menu-remove-attribute");
 
     info("Triggering 'Remove Attribute' and waiting for mutation to occur");
     inspector.markup.contextMenu.nodeMenuTriggerInfo = {
@@ -111,14 +112,23 @@ add_task(async function () {
     ok(!hasAttribute, "attribute was successfully removed");
   }
 
-  function getMenuItem(id) {
+  async function getMenuItem(id) {
     const allMenuItems = openContextMenuAndGetAllItems(inspector, {
       target: getContainerForSelector("#attributes", inspector).tagLine,
     });
     const menuItem = allMenuItems.find(i => i.id === id);
     ok(menuItem, "Menu item '" + id + "' found");
+
     // Close the menu so synthesizing future keys won't select menu items.
-    EventUtils.synthesizeKey("KEY_Escape");
+    const contextMenu = toolbox.topDoc.querySelector("#markup-context-menu");
+    const popupHiddenPromise = BrowserTestUtils.waitForEvent(
+      contextMenu,
+      "popuphidden"
+    );
+
+    contextMenu.hidePopup();
+    await popupHiddenPromise;
+
     return menuItem;
   }
 });

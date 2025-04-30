@@ -76,7 +76,7 @@ void ImageTrack::OnDecodeFramesSuccess(
                              aResult.mFrames.Length());
 
   for (const auto& f : aResult.mFrames) {
-    VideoColorSpaceInit colorSpace;
+    VideoColorSpaceInternal colorSpace;
     gfx::IntSize size = f.mSurface->GetSize();
     gfx::IntRect rect(gfx::IntPoint(0, 0), size);
 

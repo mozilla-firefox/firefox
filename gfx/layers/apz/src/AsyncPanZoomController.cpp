@@ -561,6 +561,57 @@ UniquePtr<VelocityTracker> PlatformSpecificStateBase::CreateVelocityTracker(
   return MakeUnique<SimpleVelocityTracker>(aAxis);
 }
 
+// This is a helper class for populating
+// AsyncPanZoomController::mUpdatesSinceLastSample when the visual scroll offset
+// or zoom level changes.
+//
+// The class records the current offset and zoom level in its constructor, and
+// again in the destructor, and if they have changed, records a compositor
+// scroll update with the Source provided in the constructor.
+//
+// This allows tracking the source of compositor scroll updates in higher-level
+// functions such as AttemptScroll or NotifyLayersUpdated, rather than having
+// to propagate the source into lower-level functions such as
+// SetVisualScrollOffset.
+//
+// Note however that there is a limit to how far up the call stack this class
+// can be used: mRecursiveMutex must be held for the duration of the object's
+// lifetime (and to ensure this, the constructor takes a proof-of-lock
+// parameter). This is necessary because otherwise, the class could record
+// a change to the scroll offset or zoom made by another thread in between
+// construction and destruction, for which the source would be incorrect.
+class MOZ_STACK_CLASS AsyncPanZoomController::AutoRecordCompositorScrollUpdate
+    final {
+ public:
+  AutoRecordCompositorScrollUpdate(
+      AsyncPanZoomController* aApzc, CompositorScrollUpdate::Source aSource,
+      const RecursiveMutexAutoLock& aProofOfApzcLock)
+      : mApzc(aApzc),
+        mProofOfApzcLock(aProofOfApzcLock),
+        mSource(aSource),
+        mPreviousMetrics(aApzc->GetCurrentMetricsForCompositorScrollUpdate(
+            aProofOfApzcLock)) {}
+  ~AutoRecordCompositorScrollUpdate() {
+    if (!mApzc->IsRootContent()) {
+      // Compositor scroll updates are only recorded for the root content APZC.
+      // This check may need to be relaxed in bug 1861329, if we start to allow
+      // some subframes to move the dynamic toolbar.
+      return;
+    }
+    CompositorScrollUpdate::Metrics newMetrics =
+        mApzc->GetCurrentMetricsForCompositorScrollUpdate(mProofOfApzcLock);
+    if (newMetrics != mPreviousMetrics) {
+      mApzc->mUpdatesSinceLastSample.push_back({newMetrics, mSource});
+    }
+  }
+
+ private:
+  AsyncPanZoomController* mApzc;
+  const RecursiveMutexAutoLock& mProofOfApzcLock;
+  CompositorScrollUpdate::Source mSource;
+  CompositorScrollUpdate::Metrics mPreviousMetrics;
+};
+
 SampleTime AsyncPanZoomController::GetFrameTime() const {
   APZCTreeManager* treeManagerLocal = GetApzcTreeManager();
   return treeManagerLocal ? treeManagerLocal->GetFrameTime()
@@ -1687,6 +1738,10 @@ nsEventStatus AsyncPanZoomController::OnScale(const PinchGestureInput& aEvent) {
 
   {
     RecursiveMutexAutoLock lock(mRecursiveMutex);
+
+    AutoRecordCompositorScrollUpdate csu(
+        this, CompositorScrollUpdate::Source::UserInteraction, lock);
+
     // Only the root APZC is zoomable, and the root APZC is not allowed to have
     // different x and y scales. If it did, the calculations in this function
     // would have to be adjusted (as e.g. it would no longer be valid to take
@@ -3772,6 +3827,9 @@ bool AsyncPanZoomController::AttemptScroll(
   ParentLayerPoint adjustedDisplacement;
   if (scrollThisApzc) {
     RecursiveMutexAutoLock lock(mRecursiveMutex);
+    AutoRecordCompositorScrollUpdate csu(
+        this, CompositorScrollUpdate::Source::UserInteraction, lock);
+
     bool respectDisregardedDirections =
         ScrollSourceRespectsDisregardedDirections(
             aOverscrollHandoffState.mScrollSource);
@@ -4916,6 +4974,12 @@ bool AsyncPanZoomController::UpdateAnimation(
   }
 
   if (mAnimation) {
+    AutoRecordCompositorScrollUpdate csu(
+        this,
+        mAnimation->WasTriggeredByScript()
+            ? CompositorScrollUpdate::Source::Other
+            : CompositorScrollUpdate::Source::UserInteraction,
+        aProofOfLock);
     bool continueAnimation = mAnimation->Sample(Metrics(), sampleTimeDelta);
     bool wantsRepaints = mAnimation->WantsRepaints();
     *aOutDeferredTasks = mAnimation->TakeDeferredTasks();
@@ -5233,8 +5297,10 @@ bool AsyncPanZoomController::SampleCompositedAsyncTransform(
     const RecursiveMutexAutoLock& aProofOfLock) {
   MOZ_ASSERT(mSampledState.size() <= 2);
   bool sampleChanged = (mSampledState.back() != SampledAPZCState(Metrics()));
-  mSampledState.emplace_back(Metrics(), std::move(mScrollPayload),
-                             mScrollGeneration);
+  mSampledState.emplace_back(
+      Metrics(), std::move(mScrollPayload), mScrollGeneration,
+      // Will consume mUpdatesSinceLastSample and leave it empty
+      std::move(mUpdatesSinceLastSample));
   return sampleChanged;
 }
 
@@ -5246,7 +5312,10 @@ void AsyncPanZoomController::ResampleCompositedAsyncTransform(
   if (APZCTreeManager* treeManagerLocal = GetApzcTreeManager()) {
     mScrollGeneration = treeManagerLocal->NewAPZScrollGeneration();
   }
-  mSampledState.front() = SampledAPZCState(Metrics(), {}, mScrollGeneration);
+  mSampledState.front() = SampledAPZCState(
+      Metrics(), {}, mScrollGeneration,
+      // Will consume mUpdatesSinceLastSample and leave it empty
+      std::move(mUpdatesSinceLastSample));
 }
 
 void AsyncPanZoomController::ApplyAsyncTestAttributes(
@@ -5498,6 +5567,12 @@ void AsyncPanZoomController::NotifyLayersUpdated(
     APZC_LOGV("%p NotifyLayersUpdated short-circuit\n", this);
     return;
   }
+
+  // FIXME: CompositorScrollUpdate::Source::Other is not accurate for every
+  //        change made by NotifyLayersUpdated. We may need to track different
+  //        sources for different ScrollPositionUpdates.
+  AutoRecordCompositorScrollUpdate updater(
+      this, CompositorScrollUpdate::Source::Other, lock);
 
   // If the Metrics scroll offset is different from the last scroll offset
   // that the main-thread sent us, then we know that the user has been doing
@@ -6092,34 +6167,34 @@ const FrameMetrics& AsyncPanZoomController::Metrics() const {
   return mScrollMetadata.GetMetrics();
 }
 
-bool CompositorScrollUpdate::operator==(
-    const CompositorScrollUpdate& aOther) const {
-  // FIXME: RoundedToInt is used to preserve existing behaviour
-  //        added in bug 1600652. It can probably be removed.
-  return RoundedToInt(mVisualScrollOffset) ==
-             RoundedToInt(aOther.mVisualScrollOffset) &&
-         mZoom == aOther.mZoom && mSource == aOther.mSource;
+bool CompositorScrollUpdate::Metrics::operator==(const Metrics& aOther) const {
+  // Consider two metrcs to be the same if the scroll offsets are the same
+  // when rounded to the nearest screen pixel. This avoids spurious updates
+  // due to small rounding errors, which consumers do not care about because
+  // if the scroll offset does not change in screen pixels, what is composited
+  // should not change either.
+  return RoundedToInt(mVisualScrollOffset * mZoom) ==
+             RoundedToInt(aOther.mVisualScrollOffset * aOther.mZoom) &&
+         mZoom == aOther.mZoom;
 }
 
-#ifdef MOZ_WIDGET_ANDROID
+bool CompositorScrollUpdate::operator==(
+    const CompositorScrollUpdate& aOther) const {
+  return mMetrics == aOther.mMetrics && mSource == aOther.mSource;
+}
+
 std::vector<CompositorScrollUpdate>
 AsyncPanZoomController::GetCompositorScrollUpdates() {
   RecursiveMutexAutoLock lock(mRecursiveMutex);
   MOZ_ASSERT(Metrics().IsRootContent());
-
-  // FIXME(bug 1940581): Propagate an accurate source.
-  CompositorScrollUpdate current{
-      GetEffectiveScrollOffset(eForCompositing, lock),
-      GetEffectiveZoom(eForCompositing, lock),
-      CompositorScrollUpdate::Source::UserInteraction};
-  if (current != mLastCompositorScrollUpdate) {
-    mLastCompositorScrollUpdate = current;
-    return {current};
-  }
-
-  return {};
+  return mSampledState[0].Updates();
 }
-#endif  // defined(MOZ_WIDGET_ANDROID)
+
+CompositorScrollUpdate::Metrics
+AsyncPanZoomController::GetCurrentMetricsForCompositorScrollUpdate(
+    const RecursiveMutexAutoLock& aProofOfApzcLock) const {
+  return {Metrics().GetVisualScrollOffset(), Metrics().GetZoom()};
+}
 
 wr::MinimapData AsyncPanZoomController::GetMinimapData() const {
   RecursiveMutexAutoLock lock(mRecursiveMutex);

@@ -27,8 +27,7 @@ def _generate_default_integrations_iterator(integrations, auto_enabling_integrat
 
     def iter_default_integrations(with_auto_enabling_integrations):
         # type: (bool) -> Iterator[Type[Integration]]
-        """Returns an iterator of the default integration classes:
-        """
+        """Returns an iterator of the default integration classes:"""
         from importlib import import_module
 
         if with_auto_enabling_integrations:
@@ -55,6 +54,8 @@ def _generate_default_integrations_iterator(integrations, auto_enabling_integrat
 _AUTO_ENABLING_INTEGRATIONS = (
     "sentry_sdk.integrations.django.DjangoIntegration",
     "sentry_sdk.integrations.flask.FlaskIntegration",
+    "sentry_sdk.integrations.starlette.StarletteIntegration",
+    "sentry_sdk.integrations.fastapi.FastApiIntegration",
     "sentry_sdk.integrations.bottle.BottleIntegration",
     "sentry_sdk.integrations.falcon.FalconIntegration",
     "sentry_sdk.integrations.sanic.SanicIntegration",
@@ -63,6 +64,9 @@ _AUTO_ENABLING_INTEGRATIONS = (
     "sentry_sdk.integrations.aiohttp.AioHttpIntegration",
     "sentry_sdk.integrations.tornado.TornadoIntegration",
     "sentry_sdk.integrations.sqlalchemy.SqlalchemyIntegration",
+    "sentry_sdk.integrations.redis.RedisIntegration",
+    "sentry_sdk.integrations.pyramid.PyramidIntegration",
+    "sentry_sdk.integrations.boto3.Boto3Integration",
 )
 
 
@@ -144,7 +148,7 @@ def setup_integrations(
     return integrations
 
 
-class DidNotEnable(Exception):
+class DidNotEnable(Exception):  # noqa: N818
     """
     The integration could not be enabled due to a trivial user error like
     `flask` not being installed for the `FlaskIntegration`.

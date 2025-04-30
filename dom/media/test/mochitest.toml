@@ -815,6 +815,7 @@ scheme = "https"
 ["test_mediatrack_consuming_mediastream.html"]
 scheme = "https"
 tags = "mtg"
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug"] # TIMEOUT
 
 ["test_mediatrack_replay_from_end.html"]
 
@@ -831,6 +832,7 @@ skip-if = [
 ["test_mp4a_32bit_samplesize.html"] # bug 1924052
 
 ["test_multiple_mediastreamtracks.html"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug"] # TIMEOUT
 scheme = "https"
 
 ["test_play_events_2.html"]
@@ -897,6 +899,7 @@ skip-if = ["os == 'android'"] # Android has black frames issue.
 
 ["test_setSinkId_after_loop.html"]
 scheme = "https"
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug"] # Bug 1961557
 
 ["test_temporary_file_blob_video_plays.html"]
 skip-if = ["os == 'android'"] # bug 1533534 # android(bug 1232305)

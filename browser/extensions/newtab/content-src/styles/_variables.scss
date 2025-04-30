@@ -100,7 +100,8 @@ $scrollbar-width: 16px;
 
 // Breakpoints
 // If updating these breakpoints, don't forget to update uses of DSImage, which
-// might choose the right image src to use depending on the viewport size.
+// might choose the right image src to use depending on the viewport size
+// and the $debug-breakpoints list below
 $break-point-small: 510px;
 $break-point-medium: $wrapper-max-width-medium + $base-gutter * 2 + $scrollbar-width; // 610px
 // A temporary breakpoint for a new layout experiment.
@@ -111,6 +112,27 @@ $break-point-widest: $wrapper-max-width-widest + $base-gutter * 2 + $scrollbar-w
 $break-point-sections-variant: 1310px + $base-gutter * 2 + $scrollbar-width; // 1374px
 $break-point-weather: $wrapper-max-width-weather + $base-gutter * 2 + $scrollbar-width; // 1506px
 $break-point-ultra-wide: $wrapper-max-width-ultra-wide + $base-gutter * 2 + $scrollbar-width; // 1698px
+
+// Used for @include debug-breakpoints in mixins.scss
+$debug-breakpoints: (
+  small: $break-point-small,
+  medium: $break-point-medium,
+  large: $break-point-large,
+  widest: $break-point-widest,
+  sections-variant: $break-point-sections-variant,
+  weather: $break-point-weather,
+  ultra-wide: $break-point-ultra-wide
+);
+
+$debug-breakpoint-colors: (
+  small: red,
+  medium: orange,
+  large: yellow,
+  widest: green,
+  sections-variant: blue,
+  weather: purple,
+  ultra-wide: violet
+);
 
 $section-title-font-size: 17px;
 

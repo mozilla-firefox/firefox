@@ -5,7 +5,6 @@ import { INITIAL_STATE, reducers } from "common/Reducers.sys.mjs";
 import { CardSections } from "content-src/components/DiscoveryStreamComponents/CardSections/CardSections";
 import { combineReducers, createStore } from "redux";
 import { DSCard } from "../../../../../content-src/components/DiscoveryStreamComponents/DSCard/DSCard";
-const PREF_FOLLOWED_SECTIONS = "discoverystream.sections.following";
 const PREF_SECTIONS_PERSONALIZATION_ENABLED =
   "discoverystream.sections.personalization.enabled";
 
@@ -206,7 +205,9 @@ describe("<CardSections />", () => {
     });
   });
 
-  it("should dispatch PREF_FOLLOWED_SECTIONS updates with follow and unfollow", () => {
+  it("should dispatch SECTION_PERSONALIZATION_UPDATE updates with follow and unfollow", () => {
+    const fakeDate = "2020-01-01T00:00:00.000Z";
+    sandbox.useFakeTimers(new Date(fakeDate));
     const layout = {
       title: "layout_name",
       responsiveLayouts: [
@@ -244,11 +245,19 @@ describe("<CardSections />", () => {
     // mock the pref for followed section
     const state = {
       ...INITIAL_STATE,
+      DiscoveryStream: {
+        ...INITIAL_STATE.DiscoveryStream,
+        sectionPersonalization: {
+          section_key_2: {
+            isFollowed: true,
+            isBlocked: false,
+          },
+        },
+      },
       Prefs: {
         ...INITIAL_STATE.Prefs,
         values: {
           ...INITIAL_STATE.Prefs.values,
-          [PREF_FOLLOWED_SECTIONS]: "section_key_2",
           [PREF_SECTIONS_PERSONALIZATION_ENABLED]: true,
         },
       },
@@ -297,11 +306,18 @@ describe("<CardSections />", () => {
     let button = wrapper.find(".section-follow moz-button").first();
     button.simulate("click", {});
 
-    assert.calledWith(dispatch.getCall(0), {
-      type: "SET_PREF",
+    assert.deepEqual(dispatch.getCall(0).firstArg, {
+      type: "SECTION_PERSONALIZATION_UPDATE",
       data: {
-        name: "discoverystream.sections.following",
-        value: "section_key_2, section_key_1",
+        section_key_2: {
+          isFollowed: true,
+          isBlocked: false,
+        },
+        section_key_1: {
+          isFollowed: true,
+          isBlocked: false,
+          followedAt: fakeDate,
+        },
       },
       meta: {
         from: "ActivityStream:Content",
@@ -327,11 +343,8 @@ describe("<CardSections />", () => {
     button.simulate("click", {});
 
     assert.calledWith(dispatch.getCall(2), {
-      type: "SET_PREF",
-      data: {
-        name: "discoverystream.sections.following",
-        value: "",
-      },
+      type: "SECTION_PERSONALIZATION_UPDATE",
+      data: {},
       meta: {
         from: "ActivityStream:Content",
         to: "ActivityStream:Main",

@@ -43,6 +43,7 @@
 #include "certt.h"
 #include "ocsp.h"
 #include "nssb64.h"
+#include "zlib.h"
 
 #ifndef PORT_Strstr
 #define PORT_Strstr strstr
@@ -167,7 +168,7 @@ PrintUsageHeader(const char *progName)
             "         [ T <good|revoked|unknown|badsig|corrupted|none|ocsp>] [-A ca]\n"
             "         [-C SSLCacheEntries] [-S dsa_nickname] [-Q]\n"
             "         [-I groups] [-J signatureschemes] [-e ec_nickname]\n"
-            "         -U [0|1] -H [0|1|2] -W [0|1] [-z externalPsk]\n"
+            "         -U [0|1] -H [0|1|2] -W [0|1] [-z externalPsk] -q\n"
             "\n",
             progName);
 }
@@ -253,7 +254,8 @@ PrintParameterUsage()
         "         \"publicname:\". For example, \"publicname:example.com\". In this mode,\n"
         "         an ephemeral ECH keypair is generated and ECHConfigs are printed to stdout.\n"
         "      2. As a Base64 tuple of <ECHRawPrivateKey> || <ECHConfigs>. In this mode, the\n"
-        "         raw private key is used to bootstrap the HPKE context.\n",
+        "         raw private key is used to bootstrap the HPKE context.\n"
+        "-q Enable zlib certificate compression\n",
         stderr);
 }
 
@@ -821,6 +823,7 @@ PRBool NoReuse = PR_FALSE;
 PRBool hasSidCache = PR_FALSE;
 PRBool disableLocking = PR_FALSE;
 PRBool enableSessionTickets = PR_FALSE;
+PRBool enableZlibCertificateCompression = PR_FALSE;
 PRBool failedToNegotiateName = PR_FALSE;
 PRBool enableExtendedMasterSecret = PR_FALSE;
 PRBool zeroRTT = PR_FALSE;
@@ -2067,6 +2070,57 @@ configureEch(PRFileDesc *model_sock)
     return configureEchWithData(model_sock);
 }
 
+static SECStatus
+zlibCertificateDecode(const SECItem *input,
+                      unsigned char *output, size_t outputLen,
+                      size_t *usedLen)
+{
+    if (!input || !input->data || input->len == 0 || !output || outputLen == 0) {
+        PR_SetError(SEC_ERROR_INVALID_ARGS, 0);
+        return SECFailure;
+    }
+
+    *usedLen = outputLen;
+
+    int ret = uncompress(output, (unsigned long *)usedLen, input->data, input->len);
+    if (ret != Z_OK) {
+        PR_SetError(SEC_ERROR_BAD_DATA, 0);
+        return SECFailure;
+    }
+
+    return SECSuccess;
+}
+
+static SECStatus
+zlibCertificateEncode(const SECItem *input, SECItem *output)
+{
+    if (!input || !input->data || input->len == 0 || !output) {
+        PR_SetError(SEC_ERROR_INVALID_ARGS, 0);
+        return SECFailure;
+    }
+
+    unsigned long maxCompressedLen = compressBound(input->len);
+    SECITEM_AllocItem(NULL, output, maxCompressedLen);
+
+    int ret = compress(output->data, (unsigned long *)&output->len, input->data, input->len);
+    if (ret != Z_OK) {
+        PR_SetError(SEC_ERROR_LIBRARY_FAILURE, 0);
+        return SECFailure;
+    }
+
+    return SECSuccess;
+}
+
+static SECStatus
+configureZlibCompression(PRFileDesc *model_sock)
+{
+    SSLCertificateCompressionAlgorithm zlibAlg = { 1, "zlib",
+                                                   zlibCertificateEncode,
+                                                   zlibCertificateDecode };
+
+    return SSL_SetCertificateCompressionAlgorithm(model_sock, zlibAlg);
+}
+
 void
 server_main(
     PRFileDesc *listen_sock,
@@ -2120,6 +2174,13 @@ server_main(
         rv = SSL_OptionSet(model_sock, SSL_ENABLE_SESSION_TICKETS, PR_TRUE);
         if (rv != SECSuccess) {
             errExit("error enabling Session Ticket extension ");
+        }
+    }
+
+    if (enableZlibCertificateCompression) {
+        rv = configureZlibCompression(model_sock);
+        if (rv != SECSuccess) {
+            errExit("error enabling Zlib Certificate Compression");
         }
     }
 
@@ -2533,7 +2594,7 @@ main(int argc, char **argv)
     ** XXX: 'B', and 'q' were used in the past but removed
     **      in 3.28, please leave some time before resuing those. */
     optstate = PL_CreateOptState(argc, argv,
-                                 "2:A:C:DEGH:I:J:L:M:NP:QRS:T:U:V:W:X:YZa:bc:d:e:f:g:hi:jk:lmn:op:rst:uvw:x:yz:");
+                                 "2:A:C:DEGH:I:J:L:M:NP:QRS:T:U:V:W:X:YZa:bc:d:e:f:g:hi:jk:lmn:op:qrst:uvw:x:yz:");
     while ((status = PL_GetNextOpt(optstate)) == PL_OPT_OK) {
         ++optionsFound;
         switch (optstate->option) {
@@ -2716,6 +2777,10 @@ main(int argc, char **argv)
 
             case 'p':
                 port = PORT_Atoi(optstate->value);
+                break;
+
+            case 'q':
+                enableZlibCertificateCompression = PR_TRUE;
                 break;
 
             case 'r':

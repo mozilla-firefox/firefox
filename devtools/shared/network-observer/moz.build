@@ -16,6 +16,7 @@ DevToolsModules(
     "NetworkOverride.sys.mjs",
     "NetworkResponseListener.sys.mjs",
     "NetworkThrottleManager.sys.mjs",
+    "NetworkTimings.sys.mjs",
     "NetworkUtils.sys.mjs",
     "WildcardToRegexp.sys.mjs",
 )

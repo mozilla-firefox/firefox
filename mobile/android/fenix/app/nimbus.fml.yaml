@@ -639,6 +639,16 @@ features:
           Whether or not to enable tab strip.
         type: Boolean
         default: false
+    defaults:
+      - channel: developer
+        value:
+          enabled: true
+      - channel: nightly
+        value:
+          enabled: true
+      - channel: beta
+        value:
+          enabled: true
 
   trending-searches:
     description: Enables trending searches.

@@ -120,7 +120,10 @@ tags = "os_integration"
 ["test_jsesc.js"]
 
 ["test_osKeyStore.js"]
-skip-if = ["os == 'mac' && os_version == '11.20' && arch == 'aarch64'"] # bug 1729538
+skip-if = [
+  "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # bug 1729538
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # bug 1729538
+]
 tags = "os_integration"
 
 ["test_propertyListsUtils.js"]

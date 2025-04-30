@@ -584,32 +584,3 @@ def confvar(
 @imports(_from="mozbuild.configure.constants", _import="RaiseErrorOnUse")
 def obsolete_config(name, *, replacement):
     set_config(name, RaiseErrorOnUse(f"{name} is obsolete. Use {replacement} instead."))
-
-
-# Hacks related to old-configure
-# ==============================
-
-
-@dependable
-def old_configure_assignments():
-    return []
-
-
-@template
-def add_old_configure_assignment(var, value, when=None):
-    var = dependable(var)
-    value = dependable(value)
-
-    @depends(old_configure_assignments, var, value, when=when)
-    @imports(_from="mozbuild.shellutil", _import="quote")
-    def add_assignment(assignments, var, value):
-        if var is None or value is None:
-            return
-        if value is True:
-            assignments.append((var, "1"))
-        elif value is False:
-            assignments.append((var, ""))
-        else:
-            if isinstance(value, (list, tuple)):
-                value = quote(*value)
-            assignments.append((var, str(value)))

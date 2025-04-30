@@ -61,7 +61,7 @@ support-files = ["head_abuse_report.js"]
 
 ["browser_checkAddonCompatibility.js"]
 
-["browser_colorwaybuiltins_migration.js"]
+["browser_colorwaybuiltins_notification.js"]
 run-if = ["appname == 'firefox'"]
 
 ["browser_dragdrop.js"]

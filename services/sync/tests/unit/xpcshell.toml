@@ -26,16 +26,10 @@ support-files = [
 ["test_addon_utils.js"]
 run-sequentially = "Restarts server, can't change pref."
 tags = "addons"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_addons_engine.js"]
 run-sequentially = "Frequent timeouts, bug 1395148"
 tags = "addons"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_addons_reconciler.js"]
 skip-if = ["appname == 'thunderbird'"]
@@ -44,9 +38,6 @@ tags = "addons"
 ["test_addons_store.js"]
 run-sequentially = "Frequent timeouts, bug 1395148"
 tags = "addons"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_addons_tracker.js"]
 tags = "addons"
@@ -61,10 +52,7 @@ skip-if = ["appname == 'thunderbird'"]
 skip-if = ["appname == 'thunderbird'"]
 
 ["test_bookmark_engine.js"]
-skip-if = [
-  "appname == 'thunderbird'",
-  "tsan", # Runs unreasonably slow on TSan, bug 1612707
-]
+skip-if = ["appname == 'thunderbird'"]
 
 ["test_bookmark_order.js"]
 skip-if = ["appname == 'thunderbird'"]
@@ -79,19 +67,13 @@ skip-if = ["appname == 'thunderbird'"]
 skip-if = ["appname == 'thunderbird'"]
 
 ["test_bookmark_tracker.js"]
-skip-if = [
-  "appname == 'thunderbird'",
-  "tsan", # Runs unreasonably slow on TSan, bug 1612707
-]
+skip-if = ["appname == 'thunderbird'"]
 requesttimeoutfactor = 4
 
 ["test_bridged_engine.js"]
 
 ["test_clients_engine.js"]
 run-sequentially = "Frequent timeouts, bug 1395148"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_clients_escape.js"]
 
@@ -117,15 +99,10 @@ skip-if = ["appname == 'thunderbird'"]
 
 ["test_errorhandler_1.js"]
 run-sequentially = "Frequent timeouts, bug 1395148"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt"] # Bug 1864117
 
 ["test_errorhandler_2.js"]
 run-sequentially = "Frequent timeouts, bug 1395148"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_errorhandler_filelog.js"]
 
@@ -133,17 +110,11 @@ skip-if = [
 
 ["test_extension_storage_engine.js"]
 run-sequentially = "extension-storage migration happens only once, and must be tested first."
-skip-if = [
-  "appname == 'thunderbird'",
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
+skip-if = ["appname == 'thunderbird'"]
 
 ["test_extension_storage_engine_kinto.js"]
 run-sequentially = "extension-storage migration happens only once, and must be tested first."
-skip-if = [
-  "appname == 'thunderbird'",
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
+skip-if = ["appname == 'thunderbird'"]
 
 ["test_extension_storage_tracker_kinto.js"]
 skip-if = ["appname == 'thunderbird'"]
@@ -159,9 +130,6 @@ skip-if = ["appname == 'thunderbird'"]
 
 ["test_fxa_node_reassignment.js"]
 run-sequentially = "Frequent timeouts, bug 1395148"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_fxa_service_cluster.js"]
 # Finally, we test each engine.
@@ -226,10 +194,6 @@ skip-if = ["appname == 'thunderbird'"]
 
 ["test_service_attributes.js"]
 # Bug 752243: Profile cleanup frequently fails
-skip-if = [
-  "os == 'mac'",
-  "os == 'linux'",
-]
 
 ["test_service_cluster.js"]
 
@@ -248,17 +212,11 @@ skip-if = ["appname == 'thunderbird'"]
 
 ["test_service_sync_remoteSetup.js"]
 run-sequentially = "Frequent timeouts, bug 1395148"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_service_sync_specified.js"]
 
 ["test_service_sync_updateEnabledEngines.js"]
 run-sequentially = "Frequent timeouts, bug 1395148"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_service_verifyLogin.js"]
 
@@ -266,10 +224,6 @@ skip-if = [
 
 ["test_service_wipeServer.js"]
 # Bug 752243: Profile cleanup frequently fails
-skip-if = [
-  "os == 'mac'",
-  "os == 'linux'",
-]
 
 ["test_status.js"]
 
@@ -284,15 +238,9 @@ skip-if = [
 
 ["test_syncengine_sync.js"]
 run-sequentially = "Frequent timeouts, bug 1395148"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_syncscheduler.js"]
 run-sequentially = "Frequent timeouts, bug 1395148"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 # Firefox Accounts specific tests
 
 ["test_tab_engine.js"]
@@ -302,16 +250,16 @@ skip-if = ["appname == 'thunderbird'"]
 skip-if = ["appname == 'thunderbird'"]
 
 ["test_tab_quickwrite.js"]
-skip-if = ["appname == 'thunderbird'"]
+skip-if = [
+  "appname == 'thunderbird'",
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1819545
+]
 
 ["test_tab_tracker.js"]
 skip-if = ["appname == 'thunderbird'"]
 
 ["test_telemetry.js"]
-skip-if = [
-  "appname == 'thunderbird'",
-  "tsan", # Unreasonably slow, bug 1612707
-]
+skip-if = ["appname == 'thunderbird'"]
 requesttimeoutfactor = 4
 
 ["test_tracker_addChanged.js"]
@@ -333,9 +281,6 @@ requesttimeoutfactor = 4
 
 ["test_utils_makeGUID.js"]
 run-sequentially = "Disproportionately slows down full test run, bug 1450316"
-skip-if = [
-  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && ccov", # Bug 1933914
-]
 
 ["test_utils_notify.js"]
 

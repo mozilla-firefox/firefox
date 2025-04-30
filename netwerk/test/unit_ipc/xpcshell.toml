@@ -156,6 +156,7 @@ skip-if = [
   "os == 'mac' && os_version == '10.15' && processor == 'x86_64'", # Will be reenabled in bug 1865394
   "os == 'mac' && os_version == '11.20' && arch == 'aarch64'", # Will be reenabled in bug 1865394
   "os == 'mac' && os_version == '14.70' && processor == 'x86_64'", # Will be reenabled in bug 1865394
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Will be reenabled in bug 1865394
   "os == 'win' && os_version == '10.2009' && processor == 'x86_64'", # Will be reenabled in bug 1865394
   "os == 'win' && os_version == '11.26100' && processor == 'x86'", # Will be reenabled in bug 1865394
   "os == 'win' && os_version == '11.26100' && processor == 'x86_64'", # Will be reenabled in bug 1865394
@@ -210,6 +211,7 @@ skip-if = [
   "os == 'mac' && os_version == '10.15' && processor == 'x86_64'",
   "os == 'mac' && os_version == '11.20' && arch == 'aarch64'",
   "os == 'mac' && os_version == '14.70' && processor == 'x86_64'",
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'",
   "os == 'win' && os_version == '10.2009' && processor == 'x86_64'",
   "os == 'win' && os_version == '11.26100' && processor == 'x86'",
   "os == 'win' && os_version == '11.26100' && processor == 'x86_64'",

@@ -21,7 +21,6 @@ import mozilla.components.concept.engine.EngineSession.CookieBannerHandlingMode
 import mozilla.components.feature.sitepermissions.SitePermissionsRules
 import mozilla.components.feature.sitepermissions.SitePermissionsRules.Action
 import mozilla.components.feature.sitepermissions.SitePermissionsRules.AutoplayAction
-import mozilla.components.feature.top.sites.TopSitesProvider
 import mozilla.components.support.ktx.android.content.PreferencesHolder
 import mozilla.components.support.ktx.android.content.booleanPreference
 import mozilla.components.support.ktx.android.content.floatPreference
@@ -45,6 +44,7 @@ import org.mozilla.fenix.components.toolbar.navbar.shouldAddNavigationBar
 import org.mozilla.fenix.debugsettings.addresses.SharedPrefsAddressesDebugLocalesRepository
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.getPreferenceKey
+import org.mozilla.fenix.home.topsites.TopSitesConfigConstants.TOP_SITES_MAX_COUNT
 import org.mozilla.fenix.nimbus.CookieBannersSection
 import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.nimbus.HomeScreenSection
@@ -97,20 +97,6 @@ class Settings(private val appContext: Context) : PreferencesHolder {
          */
         @VisibleForTesting
         internal var SEARCH_GROUP_MINIMUM_SITES: Int = 2
-
-        // The maximum number of top sites to display.
-        const val TOP_SITES_MAX_COUNT = 16
-
-        /**
-         * Only fetch top sites from the [TopSitesProvider] when the number of default and
-         * pinned sites are below this maximum threshold.
-         */
-        const val TOP_SITES_PROVIDER_MAX_THRESHOLD = 8
-
-        /**
-         * Number of top sites to take from the [TopSitesProvider].
-         */
-        const val TOP_SITES_PROVIDER_LIMIT = 2
 
         /**
          * Minimum number of days between Set as default Browser prompt displays in home page.
@@ -345,8 +331,13 @@ class Settings(private val appContext: Context) : PreferencesHolder {
         default = false,
     )
 
-    var privateBrowsingBiometricsEnabled by booleanPreference(
-        appContext.getPreferenceKey(R.string.pref_key_private_browsing_biometrics_enabled),
+    var privateBrowsingLockedEnabled by booleanPreference(
+        appContext.getPreferenceKey(R.string.pref_key_private_browsing_locked_enabled),
+        default = false,
+    )
+
+    var isPrivateScreenBlocked by booleanPreference(
+        appContext.getPreferenceKey(R.string.pref_key_private_screen_locked),
         default = false,
     )
 
@@ -484,9 +475,10 @@ class Settings(private val appContext: Context) : PreferencesHolder {
     /**
      * Returns true if shortcut suggestions feature should be shown to the user.
      */
-    val isShortcutSuggestionsVisible by booleanPreference(
-        appContext.getPreferenceKey(R.string.pref_key_enable_shortcuts_suggestions),
-        default = FxNimbus.features.topSitesSuggestions.value().enabled,
+    var isShortcutSuggestionsVisible by lazyFeatureFlagPreference(
+        key = appContext.getPreferenceKey(R.string.pref_key_enable_shortcuts_suggestions),
+        default = { FxNimbus.features.topSitesSuggestions.value().enabled },
+        featureFlag = true,
     )
 
     /**
@@ -1465,11 +1457,6 @@ class Settings(private val appContext: Context) : PreferencesHolder {
         },
     )
 
-    var allowDomesticChinaFxaServer by booleanPreference(
-        appContext.getPreferenceKey(R.string.pref_key_allow_domestic_china_fxa_server),
-        default = true,
-    )
-
     var overrideFxAServer by stringPreference(
         appContext.getPreferenceKey(R.string.pref_key_override_fxa_server),
         default = "",
@@ -2061,17 +2048,19 @@ class Settings(private val appContext: Context) : PreferencesHolder {
     /**
      * Indicates if Trending Search Suggestions are enabled.
      */
-    var isTrendingSearchesVisible by booleanPreference(
+    var isTrendingSearchesVisible by lazyFeatureFlagPreference(
         key = appContext.getPreferenceKey(R.string.pref_key_enable_trending_searches),
-        default = FxNimbus.features.trendingSearches.value().enabled,
+        default = { FxNimbus.features.trendingSearches.value().enabled },
+        featureFlag = true,
     )
 
     /**
      * Indicates if Recent Search Suggestions are enabled.
      */
-    var isRecentSearchesVisible by booleanPreference(
+    var isRecentSearchesVisible by lazyFeatureFlagPreference(
         key = appContext.getPreferenceKey(R.string.pref_key_enable_recent_searches),
-        default = FxNimbus.features.recentSearches.value().enabled,
+        default = { FxNimbus.features.recentSearches.value().enabled },
+        featureFlag = true,
     )
 
     /**
@@ -2479,15 +2468,6 @@ class Settings(private val appContext: Context) : PreferencesHolder {
     }
 
     /**
-     * Indicates whether or not to show the tab strip.
-     */
-    var tabStripEnabled by lazyFeatureFlagPreference(
-        key = appContext.getPreferenceKey(R.string.pref_key_tab_strip),
-        default = { FxNimbus.features.tabStrip.value().enabled },
-        featureFlag = true,
-    )
-
-    /**
      * Indicates if the user has completed the setup step for choosing the toolbar location
      */
     var hasCompletedSetupStepToolbar by booleanPreference(
@@ -2512,8 +2492,18 @@ class Settings(private val appContext: Context) : PreferencesHolder {
     )
 
     /**
+     * Indicates if this is the default browser.
+     */
+    var isDefaultBrowser by booleanPreference(
+        key = appContext.getPreferenceKey(R.string.pref_key_default_browser),
+        default = false,
+    )
+
+    /**
      * Indicates whether or not to show the checklist feature.
      */
-    val showSetupChecklist: Boolean
-        get() = FxNimbus.features.setupChecklist.value().enabled
+    var showSetupChecklist by booleanPreference(
+        key = appContext.getPreferenceKey(R.string.pref_key_setup_checklist_complete),
+        default = FxNimbus.features.setupChecklist.value().enabled,
+    )
 }

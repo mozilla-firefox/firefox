@@ -27,14 +27,6 @@ development process and source code documentation.
 
 
 .. toctree::
-   :caption: The Mercurial Version Control System
-   :maxdepth: 1
-   :glob:
-
-   vcs/*
-
-
-.. toctree::
    :caption: Debugging
    :maxdepth: 1
    :glob:

@@ -62,6 +62,7 @@
 
 
 
+/** Test configuration options. Globally modifiable global state. */
 export const globalTestConfig = {
   enableDebugLogs: false,
   maxSubcasesInFlight: 100,

@@ -119,9 +119,8 @@ impl ProcessReader {
 
     fn get_module_name(&self, module: HMODULE) -> Option<String> {
         let mut path: [u16; MAX_PATH as usize] = [0; MAX_PATH as usize];
-        let res = unsafe {
-            K32GetModuleBaseNameW(self.process, module, (&mut path).as_mut_ptr(), MAX_PATH)
-        };
+        let res =
+            unsafe { K32GetModuleBaseNameW(self.process, module, path.as_mut_ptr(), MAX_PATH) };
 
         if res == 0 {
             None

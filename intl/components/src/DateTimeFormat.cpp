@@ -279,6 +279,8 @@ Result<UniquePtr<DateTimeFormat>, ICUError> DateTimeFormat::TryCreateFromStyle(
     return Err(ToICUError(status));
   }
 
+  MOZ_TRY(ApplyCalendarOverride(dateFormat));
+
   auto df = UniquePtr<DateTimeFormat>(new DateTimeFormat(dateFormat));
 
   if (aStyleBag.time && (aStyleBag.hour12 || aStyleBag.hourCycle)) {
@@ -564,10 +566,11 @@ DateTimeFormat::TryCreateFromPattern(
   UDateFormat* dateFormat = udat_open(
       UDAT_PATTERN, UDAT_PATTERN, IcuLocale(aLocale), tzID, tzIDLength,
       aPattern.data(), static_cast<int32_t>(aPattern.size()), &status);
-
   if (U_FAILURE(status)) {
     return Err(ToICUError(status));
   }
+
+  MOZ_TRY(ApplyCalendarOverride(dateFormat));
 
   // The DateTimeFormat wrapper will control the life cycle of the ICU
   // dateFormat object.
@@ -610,13 +613,6 @@ ICUResult DateTimeFormat::CacheSkeleton(Span<const char16_t> aSkeleton) {
     return Ok();
   }
   return Err(ICUError::OutOfMemory);
-}
-
-void DateTimeFormat::SetStartTimeIfGregorian(double aTime) {
-  UErrorCode status = U_ZERO_ERROR;
-  UCalendar* cal = const_cast<UCalendar*>(udat_getCalendar(mDateFormat));
-  ucal_setGregorianChange(cal, aTime, &status);
-  // An error here means the calendar is not Gregorian, and can be ignored.
 }
 
 /* static */

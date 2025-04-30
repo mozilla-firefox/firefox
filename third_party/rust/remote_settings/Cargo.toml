@@ -71,7 +71,7 @@ path = "../support/rc_crypto"
 optional = true
 
 [dependencies.rusqlite]
-version = "0.31.0"
+version = "0.33.0"
 features = ["bundled"]
 
 [dependencies.serde]
@@ -91,6 +91,9 @@ path = "../viaduct"
 expect-test = "1.4"
 mockall = "0.11"
 mockito = "0.31"
+
+[dev-dependencies.nss]
+path = "../support/rc_crypto/nss"
 
 [dev-dependencies.serde_json]
 version = "1"

@@ -3,8 +3,6 @@
 
 "use strict";
 
-const SIDEBAR_VISIBILITY_PREF = "sidebar.visibility";
-
 add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
     set: [[SIDEBAR_VISIBILITY_PREF, "hide-sidebar"]],

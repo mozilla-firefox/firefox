@@ -32,11 +32,15 @@ class nsCCUncollectableMarker final : public nsIObserver {
     return InGeneration(aGeneration) && !aCb.WantAllTraces();
   }
 
+  static void CleanupForForgetSkippable();
+
   static uint32_t sGeneration;
 
  private:
   nsCCUncollectableMarker() = default;
   ~nsCCUncollectableMarker() = default;
+
+  nsresult Cleanup(bool aPrepareForCC);
 };
 
 namespace mozilla::dom {

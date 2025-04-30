@@ -13,7 +13,12 @@ AddonTestUtils.initMochitest(this);
 
 add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
-    set: [["extensions.userScripts.mv3.enabled", true]],
+    set: [
+      ["extensions.userScripts.mv3.enabled", true],
+      // TODO: Bug 1960273 - Update this test and remove this pref set when we
+      // enable the data collection permissions on all channels.
+      ["extensions.dataCollectionPermissions.enabled", false],
+    ],
   });
 });
 

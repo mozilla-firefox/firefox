@@ -5,14 +5,10 @@
 
 requestLongerTimeout(2);
 
-const SIDEBAR_VISIBILITY_PREF = "sidebar.visibility";
-const POSITION_SETTING_PREF = "sidebar.position_start";
-const TAB_DIRECTION_PREF = "sidebar.verticalTabs";
-
 registerCleanupFunction(() => {
   Services.prefs.clearUserPref(SIDEBAR_VISIBILITY_PREF);
   Services.prefs.clearUserPref(POSITION_SETTING_PREF);
-  Services.prefs.clearUserPref(TAB_DIRECTION_PREF);
+  Services.prefs.clearUserPref(VERTICAL_TABS_PREF);
 });
 
 async function showCustomizePanel(win) {
@@ -49,7 +45,6 @@ async function showCustomizePanel(win) {
 }
 
 add_task(async function test_customize_sidebar_actions() {
-  const { document } = window;
   const customizeComponent = await showCustomizePanel(window);
   const sidebar = document.querySelector("sidebar-main");
   let toolEntrypointsCount = sidebar.toolButtons.length;
@@ -72,7 +67,7 @@ add_task(async function test_customize_sidebar_actions() {
     toolInput.click();
     await BrowserTestUtils.waitForCondition(
       () => {
-        let toggledTool = window.SidebarController.toolsAndExtensions.get(
+        let toggledTool = SidebarController.toolsAndExtensions.get(
           toolInput.name
         );
         return toggledTool.disabled === !toolDisabledInitialState;
@@ -93,7 +88,7 @@ add_task(async function test_customize_sidebar_actions() {
     toolInput.click();
     await BrowserTestUtils.waitForCondition(
       () => {
-        let toggledTool = window.SidebarController.toolsAndExtensions.get(
+        let toggledTool = SidebarController.toolsAndExtensions.get(
           toolInput.name
         );
         return toggledTool.disabled === toolDisabledInitialState;
@@ -125,7 +120,6 @@ add_task(async function test_customize_sidebar_actions() {
 });
 
 add_task(async function test_customize_not_added_in_menubar() {
-  const { document } = window;
   if (document.hasPendingL10nMutations) {
     await BrowserTestUtils.waitForEvent(document, "L10nMutationsFinished");
   }
@@ -162,7 +156,6 @@ add_task(async function test_manage_preferences_navigation() {
 });
 
 add_task(async function test_customize_position_setting() {
-  const { document } = window;
   const panel = await showCustomizePanel(window);
   const sidebarBox = document.getElementById("sidebar-box");
   ok(BrowserTestUtils.isVisible(sidebarBox), "Sidebar panel is visible");
@@ -179,7 +172,7 @@ add_task(async function test_customize_position_setting() {
   EventUtils.synthesizeMouseAtCenter(
     panel.positionInput,
     {},
-    window.SidebarController.browser.contentWindow
+    SidebarController.browser.contentWindow
   );
   await panel.updateComplete;
   ok(panel.positionInput.checked, "Sidebar is positioned on the right");
@@ -205,12 +198,12 @@ add_task(async function test_customize_position_setting() {
   );
 
   await BrowserTestUtils.closeWindow(newWin);
-  Services.prefs.clearUserPref("sidebar.position_start");
+  Services.prefs.clearUserPref(POSITION_SETTING_PREF);
 });
 
 add_task(async function test_customize_visibility_setting() {
   await SpecialPowers.pushPrefEnv({
-    set: [[TAB_DIRECTION_PREF, true]],
+    set: [[VERTICAL_TABS_PREF, true]],
   });
   await waitForTabstripOrientation("vertical");
 
@@ -224,17 +217,17 @@ add_task(async function test_customize_visibility_setting() {
   const panel = await showCustomizePanel(window);
   ok(!panel.visibilityInput.checked, "Always show is enabled by default.");
   ok(
-    !window.SidebarController.sidebarContainer.hidden,
+    !SidebarController.sidebarContainer.hidden,
     "Launcher is shown by default."
   );
   panel.visibilityInput.click();
   await panel.updateComplete;
   ok(panel.visibilityInput.checked, "Hide sidebar is enabled.");
   ok(
-    window.SidebarController.sidebarContainer.hidden,
+    SidebarController.sidebarContainer.hidden,
     "Launcher is hidden by default."
   );
-  window.SidebarController.hide();
+  SidebarController.hide();
   await deferredPrefChange.promise;
   const newPrefValue = Services.prefs.getStringPref(SIDEBAR_VISIBILITY_PREF);
   is(newPrefValue, "hide-sidebar", "Visibility preference updated.");
@@ -270,7 +263,7 @@ add_task(async function test_vertical_tabs_setting() {
   ok(panel.verticalTabsInput.checked, "Vertical tabs is enabled.");
   await waitForTabstripOrientation("vertical", window);
 
-  const newPrefValue = Services.prefs.getBoolPref(TAB_DIRECTION_PREF);
+  const newPrefValue = Services.prefs.getBoolPref(VERTICAL_TABS_PREF);
   is(newPrefValue, true, "Vertical tabs pref updated.");
 
   const newWin = await BrowserTestUtils.openNewBrowserWindow();
@@ -286,7 +279,7 @@ add_task(async function test_vertical_tabs_setting() {
 
   await BrowserTestUtils.closeWindow(newWin);
 
-  Services.prefs.clearUserPref(TAB_DIRECTION_PREF);
+  Services.prefs.clearUserPref(VERTICAL_TABS_PREF);
 });
 
 add_task(async function test_keyboard_navigation_away_from_settings_link() {

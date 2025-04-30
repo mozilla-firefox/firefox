@@ -20,6 +20,17 @@ namespace layers {
  */
 struct CompositorScrollUpdate {
   /**
+   * The compositor state (scroll offset and zoom level) after the update.
+   */
+  struct Metrics {
+    CSSPoint mVisualScrollOffset;
+    CSSToParentLayerScale mZoom;
+
+    bool operator==(const Metrics& aOther) const;
+    bool operator!=(const Metrics& aOther) const { return !(*this == aOther); }
+  };
+
+  /**
    * Describes the source of a CompositorScrollUpdate.
    *
    * This is used for populating the `source` field of
@@ -35,8 +46,7 @@ struct CompositorScrollUpdate {
     Other
   };
 
-  CSSPoint mVisualScrollOffset;
-  CSSToParentLayerScale mZoom;
+  Metrics mMetrics;
   Source mSource;
 
   bool operator==(const CompositorScrollUpdate& aOther) const;

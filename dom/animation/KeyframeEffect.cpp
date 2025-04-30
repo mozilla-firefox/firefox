@@ -1460,9 +1460,6 @@ bool KeyframeEffect::CanThrottle() const {
                  "CanThrottle should be called on an effect "
                  "associated with a target element");
     }
-    MOZ_ASSERT(HasEffectiveAnimationOfProperty(property.mProperty, *effectSet),
-               "There should be an effective animation of the property while "
-               "it is marked as being run on the compositor");
 
     DisplayItemType displayItemType =
         LayerAnimationInfo::GetDisplayItemTypeForProperty(
@@ -1476,6 +1473,10 @@ bool KeyframeEffect::CanThrottle() const {
     if (!generation || effectSet->GetAnimationGeneration() != *generation) {
       return false;
     }
+
+    MOZ_ASSERT(HasEffectiveAnimationOfProperty(property.mProperty, *effectSet),
+               "There should be an effective animation of the property while "
+               "it is marked as being run on the compositor");
 
     // If this is a transform animation that affects the overflow region,
     // we should unthrottle the animation periodically.

@@ -63,13 +63,13 @@ public:
   uint64_t RegisterFontFileStream (IDWriteFontFileStream *fontFileStream)
   {
     fontFileStream->AddRef ();
-    auto lock = hb_lock_t (mutex);
+    hb_lock_t lock {mutex};
     mFontStreams.set (mNextFontFileKey, fontFileStream);
     return mNextFontFileKey++;
   }
   void UnregisterFontFileStream (uint64_t fontFileKey)
   {
-    auto lock = hb_lock_t (mutex);
+    hb_lock_t lock {mutex};
     IDWriteFontFileStream *stream = mFontStreams.get (fontFileKey);
     if (stream)
     {

@@ -616,7 +616,8 @@ static void setup_block_rdmult(const AV1_COMP *const cpi, MACROBLOCK *const x,
 #endif  // !CONFIG_REALTIME_ONLY
 
   if (cpi->oxcf.tune_cfg.tuning == AOM_TUNE_SSIM ||
-      cpi->oxcf.tune_cfg.tuning == AOM_TUNE_IQ) {
+      cpi->oxcf.tune_cfg.tuning == AOM_TUNE_IQ ||
+      cpi->oxcf.tune_cfg.tuning == AOM_TUNE_SSIMULACRA2) {
     av1_set_ssim_rdmult(cpi, &x->errorperbit, bsize, mi_row, mi_col,
                         &x->rdmult);
   }

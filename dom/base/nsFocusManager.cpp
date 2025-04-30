@@ -2580,6 +2580,9 @@ void nsFocusManager::FixUpFocusAfterFrameLoaderChange(Element& aElement) {
     // If we're remote, activate the frame.
     ActivateRemoteFrameIfNeeded(aElement, GenerateFocusActionId());
   }
+  RefPtr<nsPresContext> presContext = aElement.OwnerDoc()->GetPresContext();
+  IMEStateManager::OnChangeFocus(presContext, &aElement,
+                                 InputContextAction::CAUSE_UNKNOWN);
 }
 
 void nsFocusManager::Focus(

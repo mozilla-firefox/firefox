@@ -2,7 +2,6 @@
 tags = "devtools"
 head = "head_devtools.js"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
 support-files = [
   "exposeLoader.js",
   "throwing-module-1.js",
@@ -16,6 +15,7 @@ support-files = [
 ["test_csslexer.js"]
 
 ["test_debugger_client.js"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_defineLazyPrototypeGetter.js"]
 
@@ -28,6 +28,7 @@ support-files = [
 ["test_eventemitter_static.js"]
 
 ["test_executeSoon.js"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_fetch-bom.js"]
 
@@ -52,18 +53,21 @@ support-files = [
 ["test_loader.js"]
 
 ["test_natural-sort.js"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_pluralForm-english.js"]
 
 ["test_pluralForm-makeGetter.js"]
 
 ["test_prettifyCSS.js"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_require.js"]
 
 ["test_require_lazy.js"]
 
 ["test_require_raw.js"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_safeErrorString.js"]
 

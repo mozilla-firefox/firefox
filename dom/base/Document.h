@@ -325,6 +325,7 @@ enum BFCacheStatus {
   BEFOREUNLOAD_LISTENER = 1 << 15,       // Status 15
   ACTIVE_LOCK = 1 << 16,                 // Status 16
   ACTIVE_WEBTRANSPORT = 1 << 17,         // Status 17
+  PAGE_LOADING = 1 << 18,                // Status 18
 };
 
 }  // namespace dom
@@ -358,9 +359,10 @@ enum class DeprecatedOperations : uint16_t {
 #undef DEPRECATED_OPERATION
 
 class ExternalResourceMap {
-  using SubDocEnumFunc = FunctionRef<CallState(Document&)>;
-
  public:
+  using SubDocEnumFunc = FunctionRef<CallState(Document&)>;
+  using SubDocTestFunc = FunctionRef<bool(const Document* aDocument)>;
+
   /**
    * A class that represents an external resource load that has begun but
    * doesn't have a document yet.  Observers can be registered on this object,
@@ -401,7 +403,11 @@ class ExternalResourceMap {
    * Enumerate the resource documents.  See
    * Document::EnumerateExternalResources.
    */
-  void EnumerateResources(SubDocEnumFunc aCallback);
+  void EnumerateResources(SubDocEnumFunc aCallback) const;
+
+  /** Recursively collect subresources and their subdocuments too */
+  void CollectDescendantDocuments(nsTArray<RefPtr<Document>>& aDocs,
+                                  SubDocTestFunc) const;
 
   /**
    * Traverse ourselves for cycle-collection
@@ -999,8 +1005,6 @@ class Document : public nsINode,
    * the document no longer contains bidi data.
    */
   void SetBidiEnabled() { mBidiEnabled = true; }
-
-  void SetMathMLEnabled() { mMathMLEnabled = true; }
 
   /**
    * Ask this document whether it's the initial document in its window.
@@ -2323,16 +2327,19 @@ class Document : public nsINode,
    * enumerating, or CallState::Stop to stop.  This will never get passed a null
    * aDocument.
    */
-  using SubDocEnumFunc = FunctionRef<CallState(Document&)>;
+  using SubDocEnumFunc = dom::ExternalResourceMap::SubDocEnumFunc;
   void EnumerateSubDocuments(SubDocEnumFunc aCallback);
 
   /**
    * Collect all the descendant documents for which |aCalback| returns true.
    * The callback function must not mutate any state for the given document.
+   * Note that, unlike EnumerateSubDocuments, this recurses into nested
+   * subdocuments.
    */
-  using nsDocTestFunc = mozilla::FunctionRef<bool(const Document* aDocument)>;
+  using SubDocTestFunc = dom::ExternalResourceMap::SubDocTestFunc;
+  enum class IncludeSubResources : bool { No, Yes };
   void CollectDescendantDocuments(nsTArray<RefPtr<Document>>& aDescendants,
-                                  nsDocTestFunc aCallback) const;
+                                  IncludeSubResources, SubDocTestFunc) const;
 
   /**
    * Check whether it is safe to cache the presentation of this document
@@ -2652,7 +2659,7 @@ class Document : public nsINode,
    * enumerating, or CallState::Stop to stop.  This callback will never get
    * passed a null aDocument.
    */
-  void EnumerateExternalResources(SubDocEnumFunc aCallback);
+  void EnumerateExternalResources(SubDocEnumFunc aCallback) const;
 
   dom::ExternalResourceMap& ExternalResourceMap() {
     return mExternalResourceMap;
@@ -4143,12 +4150,15 @@ class Document : public nsINode,
     --mThrowOnDynamicMarkupInsertionCounter;
   }
 
+  // https://html.spec.whatwg.org/#unload-counter
   bool ShouldIgnoreOpens() const { return mIgnoreOpensDuringUnloadCounter; }
 
+  // https://html.spec.whatwg.org/#unload-counter
   void IncrementIgnoreOpensDuringUnloadCounter() {
     ++mIgnoreOpensDuringUnloadCounter;
   }
 
+  // https://html.spec.whatwg.org/#unload-counter
   void DecrementIgnoreOpensDuringUnloadCounter() {
     MOZ_ASSERT(mIgnoreOpensDuringUnloadCounter);
     --mIgnoreOpensDuringUnloadCounter;
@@ -4750,8 +4760,6 @@ class Document : public nsINode,
   bool mBidiEnabled : 1;
   // True if we may need to recompute the language prefs for this document.
   bool mMayNeedFontPrefsUpdate : 1;
-  // True if a MathML element has ever been owned by this document.
-  bool mMathMLEnabled : 1;
 
   // True if this document is the initial document for a window.  This should
   // basically be true only for documents that exist in newly-opened windows or
@@ -5576,6 +5584,11 @@ class Document : public nsINode,
   MOZ_CAN_RUN_SCRIPT static already_AddRefed<Document> ParseHTMLUnsafe(
       GlobalObject& aGlobal, const TrustedHTMLOrString& aHTML,
       ErrorResult& aError);
+
+  static already_AddRefed<Document> ParseHTML(GlobalObject& aGlobal,
+                                              const nsAString& aHTML,
+                                              const SetHTMLOptions& aOptions,
+                                              ErrorResult& aError);
 };
 
 NS_DEFINE_STATIC_IID_ACCESSOR(Document, NS_IDOCUMENT_IID)
@@ -5715,12 +5728,12 @@ nsresult NS_NewVideoDocument(mozilla::dom::Document** aInstancePtrResult,
                              nsIPrincipal* aPartitionedPrincipal);
 
 // Enum for requesting a particular type of document when creating a doc
-enum DocumentFlavor {
-  DocumentFlavorLegacyGuess,  // compat with old code until made HTML5-compliant
-  DocumentFlavorHTML,         // HTMLDocument with HTMLness bit set to true
-  DocumentFlavorSVG,          // SVGDocument
-  DocumentFlavorXML,          // XMLDocument
-  DocumentFlavorPlain,        // Just a Document
+enum class DocumentFlavor : uint8_t {
+  LegacyGuess,  // compat with old code until made HTML5-compliant
+  HTML,         // HTMLDocument with HTMLness bit set to true
+  SVG,          // SVGDocument
+  XML,          // XMLDocument
+  Plain,        // Just a Document
 };
 
 // Note: it's the caller's responsibility to create or get aPrincipal as needed

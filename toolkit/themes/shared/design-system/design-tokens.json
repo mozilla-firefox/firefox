@@ -1127,26 +1127,46 @@
     "color": {
       "@base": {
         "value": {
-          "default": "{color.accent.primary.@base}",
-          "forcedColors": "LinkText"
+          "forcedColors": "LinkText",
+          "brand": {
+            "default": "{color.accent.primary.@base}"
+          },
+          "platform": {
+            "default": "LinkText"
+          }
         }
       },
       "hover": {
         "value": {
-          "default": "{color.accent.primary.hover}",
-          "forcedColors": "LinkText"
+          "forcedColors": "LinkText",
+          "brand": {
+            "default": "{color.accent.primary.hover}"
+          },
+          "platform": {
+            "default": "color-mix(in srgb, black 10%, {link.color.@base})"
+          }
         }
       },
       "active": {
         "value": {
-          "default": "{color.accent.primary.active}",
-          "forcedColors": "ActiveText"
+          "forcedColors": "ActiveText",
+          "brand": {
+            "default": "{color.accent.primary.active}"
+          },
+          "platform": {
+            "default": "color-mix(in srgb, black 20%, {link.color.@base})"
+          }
         }
       },
       "visited": {
         "value": {
-          "default": "{link.color.@base}",
-          "forcedColors": "{link.color.@base}"
+          "forcedColors": "{link.color.@base}",
+          "brand": {
+            "default": "{link.color.@base}"
+          },
+          "platform": {
+            "default": "{link.color.@base}"
+          }
         }
       }
     },
@@ -1229,7 +1249,7 @@
   "box": {
     "shadow": {
       "level-1": {
-        "value": "0 0.125px 0.25px {box.shadow.color.darker.layer-1}, 0 1px 2px {box.shadow.color.darker.layer-2}"
+        "value": "0 0 1px {box.shadow.color.darker.layer-1}, 0 1px 2px {box.shadow.color.darker.layer-2}"
       },
       "level-2": {
         "value": "0 0.25px 0.75px {box.shadow.color.lighter.layer-1}, 0 2px 6px {box.shadow.color.lighter.layer-2}"
@@ -1256,14 +1276,14 @@
         "darker": {
           "layer-1": {
             "value": {
-              "light": "rgba(0, 0, 0, 0.1)",
-              "dark": "rgba(0, 0, 0, 0.4)"
+              "light": "rgba(0, 0, 0, 0.15)",
+              "dark": "rgba(0, 0, 0, 0.2)"
             }
           },
           "layer-2": {
             "value": {
               "light": "rgba(0, 0, 0, 0.2)",
-              "dark": "rgba(0, 0, 0, 0.8)"
+              "dark": "rgba(0, 0, 0, 0.4)"
             }
           }
         },

@@ -5,7 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 with Files("**/*"):
-    BUG_COMPONENT = ("Toolkit", "IOUtils and PathUtils")
+    BUG_COMPONENT = ("Core", "XPCOM")
 
 EXPORTS.mozilla += [
     "IOUtils.h",

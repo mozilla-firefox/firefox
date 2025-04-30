@@ -41,6 +41,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 
 use crate::{error::Error, query::full_keywords_to_fts_content, Result};
+use rusqlite::{types::ToSqlOutput, ToSql};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Collection {
@@ -86,12 +87,12 @@ pub struct SuggestRemoteSettingsClient {
 }
 
 impl SuggestRemoteSettingsClient {
-    pub fn new(rs_service: &RemoteSettingsService) -> Result<Self> {
-        Ok(Self {
-            amp_client: rs_service.make_client(Collection::Amp.name().to_owned())?,
-            other_client: rs_service.make_client(Collection::Other.name().to_owned())?,
-            fakespot_client: rs_service.make_client(Collection::Fakespot.name().to_owned())?,
-        })
+    pub fn new(rs_service: &RemoteSettingsService) -> Self {
+        Self {
+            amp_client: rs_service.make_client(Collection::Amp.name().to_owned()),
+            other_client: rs_service.make_client(Collection::Other.name().to_owned()),
+            fakespot_client: rs_service.make_client(Collection::Fakespot.name().to_owned()),
+        }
     }
 
     fn client_for_collection(&self, collection: Collection) -> &RemoteSettingsClient {
@@ -197,8 +198,8 @@ pub(crate) enum SuggestRecord {
     GlobalConfig(DownloadedGlobalConfig),
     #[serde(rename = "fakespot-suggestions")]
     Fakespot,
-    #[serde(rename = "exposure-suggestions")]
-    Exposure(DownloadedExposureRecord),
+    #[serde(rename = "dynamic-suggestions")]
+    Dynamic(DownloadedDynamicRecord),
     #[serde(rename = "geonames")]
     Geonames,
 }
@@ -227,7 +228,7 @@ pub enum SuggestRecordType {
     Weather,
     GlobalConfig,
     Fakespot,
-    Exposure,
+    Dynamic,
     Geonames,
 }
 
@@ -244,7 +245,7 @@ impl From<&SuggestRecord> for SuggestRecordType {
             SuggestRecord::Yelp => Self::Yelp,
             SuggestRecord::GlobalConfig(_) => Self::GlobalConfig,
             SuggestRecord::Fakespot => Self::Fakespot,
-            SuggestRecord::Exposure(_) => Self::Exposure,
+            SuggestRecord::Dynamic(_) => Self::Dynamic,
             SuggestRecord::Geonames => Self::Geonames,
         }
     }
@@ -273,7 +274,7 @@ impl SuggestRecordType {
             Self::Weather,
             Self::GlobalConfig,
             Self::Fakespot,
-            Self::Exposure,
+            Self::Dynamic,
             Self::Geonames,
         ]
     }
@@ -290,7 +291,7 @@ impl SuggestRecordType {
             Self::Weather => "weather",
             Self::GlobalConfig => "configuration",
             Self::Fakespot => "fakespot-suggestions",
-            Self::Exposure => "exposure-suggestions",
+            Self::Dynamic => "dynamic-suggestions",
             Self::Geonames => "geonames",
         }
     }
@@ -453,12 +454,21 @@ pub(crate) struct DownloadedPocketSuggestion {
     pub high_confidence_keywords: Vec<String>,
     pub score: f64,
 }
-/// A location sign for Yelp to ingest from a Yelp Attachment
+/// Yelp location sign data type
 #[derive(Clone, Debug, Deserialize)]
-pub(crate) struct DownloadedYelpLocationSign {
-    pub keyword: String,
-    #[serde(rename = "needLocation")]
-    pub need_location: bool,
+#[serde(untagged)]
+pub enum DownloadedYelpLocationSign {
+    V1 { keyword: String },
+    V2(String),
+}
+impl ToSql for DownloadedYelpLocationSign {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        let keyword = match self {
+            DownloadedYelpLocationSign::V1 { keyword } => keyword,
+            DownloadedYelpLocationSign::V2(keyword) => keyword,
+        };
+        Ok(ToSqlOutput::from(keyword.as_str()))
+    }
 }
 /// A Yelp suggestion to ingest from a Yelp Attachment
 #[derive(Clone, Debug, Deserialize)]
@@ -501,19 +511,22 @@ pub(crate) struct DownloadedFakespotSuggestion {
     pub url: String,
 }
 
-/// An exposure suggestion record's inline data
+/// A dynamic suggestion record's inline data
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub(crate) struct DownloadedExposureRecord {
+pub(crate) struct DownloadedDynamicRecord {
     pub suggestion_type: String,
+    pub score: Option<f64>,
 }
 
-/// An exposure suggestion to ingest from an attachment
+/// A dynamic suggestion to ingest from an attachment
 #[derive(Clone, Debug, Deserialize)]
-pub(crate) struct DownloadedExposureSuggestion {
+pub(crate) struct DownloadedDynamicSuggestion {
     keywords: Vec<FullOrPrefixKeywords<String>>,
+    pub dismissal_key: Option<String>,
+    pub data: Option<Value>,
 }
 
-impl DownloadedExposureSuggestion {
+impl DownloadedDynamicSuggestion {
     /// Iterate over all keywords for this suggestion. Iteration may contain
     /// duplicate keywords depending on the structure of the data, so do not
     /// assume keywords are unique. Duplicates are not filtered out because
@@ -726,8 +739,8 @@ mod test {
     }
 
     #[test]
-    fn test_exposure_keywords() {
-        let suggestion = DownloadedExposureSuggestion {
+    fn test_dynamic_keywords() {
+        let suggestion = DownloadedDynamicSuggestion {
             keywords: full_or_prefix_keywords_to_owned(vec![
                 "no suffixes".into(),
                 ("empty suffixes", vec![]).into(),
@@ -740,6 +753,8 @@ mod test {
                 ("duplic", vec!["ate 3", "ar", "ate 4"]).into(),
                 ("du", vec!["plicate 4", "plicate 5", "nk"]).into(),
             ]),
+            data: None,
+            dismissal_key: None,
         };
 
         assert_eq!(

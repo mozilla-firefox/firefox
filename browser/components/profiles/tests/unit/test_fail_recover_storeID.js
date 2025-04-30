@@ -8,10 +8,18 @@ add_task(async function test_recover_storeID() {
   Services.prefs.setCharPref("toolkit.profiles.storeID", "foobar");
 
   const SelectableProfileService = getSelectableProfileService();
+  const ProfilesDatastoreService = getProfilesDatastoreService();
+
+  await ProfilesDatastoreService.init();
   await SelectableProfileService.init();
+
+  Assert.ok(
+    !ProfilesDatastoreService.initialized,
+    "Didn't initialize the datastore service"
+  );
   Assert.ok(
     !SelectableProfileService.initialized,
-    "Didn't initialize the service"
+    "Didn't initialize the profiles service"
   );
 
   let profile = SelectableProfileService.currentProfile;
@@ -20,10 +28,5 @@ add_task(async function test_recover_storeID() {
     getProfileService().currentProfile.storeID,
     null,
     "Should not have updated the store ID on the profile"
-  );
-
-  Assert.ok(
-    !Services.prefs.prefHasUserValue("toolkit.profiles.storeID"),
-    "Should have cleared the storeID pref"
   );
 });

@@ -72,7 +72,7 @@ add_task({ skip_if: () => runningInParent }, async function run_child_stuff() {
     COUNTERS_WITH_JUNK_ON_THEM
   );
 
-  Glean.testOnly.mabelsBathroomCounters["1".repeat(72)].add(INVALID_COUNTERS);
+  Glean.testOnly.mabelsBathroomCounters["1".repeat(112)].add(INVALID_COUNTERS);
 
   Glean.testOnlyIpc.irate.addToNumerator(44);
   Glean.testOnlyIpc.irate.addToDenominator(14);

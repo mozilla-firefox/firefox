@@ -267,11 +267,15 @@ this.tabs = class extends ExtensionAPIPersistent {
       let moveListener = event => {
         let nativeTab = event.originalTarget;
         let { previousTabState, currentTabState } = event.detail;
-        if (tabManager.canAccessTab(nativeTab)) {
+        let fromIndex = previousTabState.tabIndex;
+        let toIndex = currentTabState.tabIndex;
+        // TabMove also fires if its tab group changes; we should only fire
+        // event if the position actually moved.
+        if (fromIndex !== toIndex && tabManager.canAccessTab(nativeTab)) {
           fire.async(tabTracker.getId(nativeTab), {
             windowId: windowTracker.getId(nativeTab.ownerGlobal),
-            fromIndex: previousTabState.tabIndex,
-            toIndex: currentTabState.tabIndex,
+            fromIndex,
+            toIndex,
           });
         }
       };

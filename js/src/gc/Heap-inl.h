@@ -83,8 +83,8 @@ inline size_t& js::gc::Arena::atomBitmapStart() {
 
 // Mark bitmap API:
 
-// The following methods that update the mark bits are not thread safe and must
-// not be called in parallel with each other.
+// Unless noted otherwise, the following methods that update the mark bits are
+// not thread safe and must not be called in parallel with each other.
 //
 // They use separate read and write operations to avoid an unnecessarily strict
 // atomic update on the marking bitmap.
@@ -120,14 +120,16 @@ js::gc::MarkBitmap<BytesPerMarkBit, FirstThingOffset>::markIfUnmarked(
   return true;
 }
 
+// This version of the method is safe in the face of concurrent writes to the
+// mark bitmap but if two threads attempt to mark the same cell at the same time
+// then both calls can succeed and return true.
+//
+// This method is used for parallel marking where the extra synchronization
+// required to avoid this results in worse performance overall.
 template <size_t BytesPerMarkBit, size_t FirstThingOffset>
 MOZ_ALWAYS_INLINE bool
-js::gc::MarkBitmap<BytesPerMarkBit, FirstThingOffset>::markIfUnmarkedAtomic(
+js::gc::MarkBitmap<BytesPerMarkBit, FirstThingOffset>::markIfUnmarkedThreadSafe(
     const void* cell, MarkColor color) {
-  // This version of the method is safe in the face of concurrent writes to the
-  // mark bitmap but may return false positives. The extra synchronisation
-  // necessary to avoid this resulted in worse performance overall.
-
   MarkBitmapWord* word;
   uintptr_t mask;
   getMarkWordAndMask(cell, ColorBit::BlackBit, &word, &mask);
@@ -244,8 +246,8 @@ bool js::gc::TenuredCell::markIfUnmarked(MarkColor color /* = Black */) const {
   return chunk()->markBits.markIfUnmarked(this, color);
 }
 
-bool js::gc::TenuredCell::markIfUnmarkedAtomic(MarkColor color) const {
-  return chunk()->markBits.markIfUnmarkedAtomic(this, color);
+bool js::gc::TenuredCell::markIfUnmarkedThreadSafe(MarkColor color) const {
+  return chunk()->markBits.markIfUnmarkedThreadSafe(this, color);
 }
 
 void js::gc::TenuredCell::markBlack() const {

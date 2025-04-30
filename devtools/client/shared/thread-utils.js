@@ -15,6 +15,7 @@ const asyncStore = asyncStoreHelper("debugger", {
   xhrBreakpoints: ["xhr-breakpoints", []],
   eventListenerBreakpoints: ["event-listener-breakpoints", undefined],
   blackboxedRanges: ["blackboxedRanges", {}],
+  directoryRoots: ["directory-roots", {}],
 });
 exports.asyncStore = asyncStore;
 

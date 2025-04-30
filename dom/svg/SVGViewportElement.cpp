@@ -256,16 +256,12 @@ gfxMatrix SVGViewportElement::ChildToUserSpaceTransform() const {
   return ThebesMatrix(viewBox);
 }
 
-bool SVGViewportElement::AreWidthAndHeightUnsetOrPositive() const {
+/* virtual */
+bool SVGViewportElement::HasValidDimensions() const {
   return (!mLengthAttributes[ATTR_WIDTH].IsExplicitlySet() ||
           mLengthAttributes[ATTR_WIDTH].GetAnimValInSpecifiedUnits() > 0) &&
          (!mLengthAttributes[ATTR_HEIGHT].IsExplicitlySet() ||
           mLengthAttributes[ATTR_HEIGHT].GetAnimValInSpecifiedUnits() > 0);
-}
-
-/* virtual */
-bool SVGViewportElement::HasValidDimensions() const {
-  return !IsInner() || AreWidthAndHeightUnsetOrPositive();
 }
 
 SVGAnimatedViewBox* SVGViewportElement::GetAnimatedViewBox() {
@@ -284,7 +280,7 @@ bool SVGViewportElement::ShouldSynthesizeViewBox() const {
   // document (and lack an explicit viewBox), as long as our width &
   // height attributes wouldn't yield an empty synthesized viewbox.
   return IsRootSVGSVGElement() && OwnerDoc()->IsBeingUsedAsImage() &&
-         AreWidthAndHeightUnsetOrPositive();
+         HasValidDimensions();
 }
 
 //----------------------------------------------------------------------

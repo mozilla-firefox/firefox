@@ -30,6 +30,8 @@
     %1$d will be replaced by an integer indicating the number of additional domains for which this web extension is requesting permission.
   -->
   <string name="mozac_feature_addons_permissions_extra_domains_description_plural" tools:ignore="PluralsCandidate">i-Access ang iyong data sa %1$d pang mga domain</string>
+  <!-- Content description for a permission item, for an installed add-on details page. %1$s will be replaced with the permission text name, %2$d will be replaced with the permission position in the list and %3$d will be replaced with the total number of permissions in the list.Taking as an example "Read and modify privacy settings" the whole text will read Read and modify privacy settings, 2 of 6. -->
+  <string name="mozac_feature_addons_permissions_content_description_item">%1$s, %2$d ng %3$d</string>
   <!-- Description for tabs add-on permission. -->
   <string name="mozac_feature_addons_permissions_tabs_description">i-Access ang mga browser tab</string>
   <!-- Description for unlimited_storage permission. -->
@@ -48,6 +50,8 @@
   <string name="mozac_feature_addons_permissions_clipboard_write_description">Maglagay ng data sa clipboard</string>
   <!-- Description for declarativeNetRequest permission. -->
   <string name="mozac_feature_addons_permissions_declarative_net_request_description">I-block ang nilalaman sa anumang pahina</string>
+  <!-- Description for declarativeNetRequestFeedback permission. -->
+  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description">Basahin ang iyong kasaysayan ng pag-browse</string>
   <!-- Description for downloads permission. -->
   <string name="mozac_feature_addons_permissions_downloads_description">Mag-download ng mga file at basahin at baguhin ang kasaysayan ng mga download ng browser</string>
   <!-- Description for downloads_open permission. -->
@@ -74,10 +78,20 @@
   <string name="mozac_feature_addons_permissions_tab_hide_description">Itago at ipakita ang mga browser tab</string>
   <!-- Description for top_sites permission. -->
   <string name="mozac_feature_addons_permissions_top_sites_description">I-access ang kasaysayan ng pag-browse</string>
+  <!-- Description for trialML permission. -->
+  <string name="mozac_feature_addons_permissions_trial_ml_description">Mag-download at magpatakbo ng mga AI model sa iyong device</string>
+  <!-- Description for userScripts permission. -->
+  <string name="mozac_feature_addons_permissions_user_scripts_description">Payagan ang mga hindi beripikadong third-party script para ma-access ang iyong data</string>
   <!-- Description for devtools permission. -->
   <string name="mozac_feature_addons_permissions_devtools_description">i-Extend ang mga developer tool para ma-access sa iyong data sa mga nakabukas na tab</string>
+  <!-- Description for text button that expands the list of domain permissions -->
+  <string name="mozac_feature_addons_permissions_show_all_sites">Ipakita lahat ng mga site</string>
+  <!-- Description for text button that hides the majority of the list of domain permissions -->
+  <string name="mozac_feature_addons_permissions_show_fewer_sites">Magpakita ng mas kaunting mga site</string>
   <!-- The version on of add-on. -->
   <string name="mozac_feature_addons_version">Bersyon</string>
+  <!-- The author of an add-on. -->
+  <string name="mozac_feature_addons_author">May-akda</string>
   <!-- The last date that the add-on was updated. -->
   <string name="mozac_feature_addons_last_updated">Huling na-update</string>
   <!-- The developer website (Homepage) of the add-on. -->
@@ -86,6 +100,8 @@
   <string name="mozac_feature_addons_learn_more">Alamin ang tungkol sa mga permiso</string>
   <!-- The rating of the add-on. -->
   <string name="mozac_feature_addons_rating">Marka</string>
+  <!-- A link that points to the detail page of the extension. -->
+  <string name="mozac_feature_addons_more_info_link_2">Karagdagang tungkol sa extension na ito</string>
   <!-- The settings of the add-on. -->
   <string name="mozac_feature_addons_settings">Mga Setting</string>
   <!-- Indicates the add-on is enabled. -->
@@ -94,6 +110,8 @@
   <string name="mozac_feature_addons_settings_allow_in_private_browsing">Payagan sa private browsing</string>
   <!-- Indicates the add-on is allowed in private browsing mode. -->
   <string name="mozac_feature_addons_settings_run_in_private_browsing">Patakbuhin sa private browsing</string>
+  <!-- This is displayed when the add-on is not allowed to run in private browsing. -->
+  <string name="mozac_feature_addons_not_allowed_in_private_browsing">Hindi pinapayagan sa mga pribadong window</string>
   <!-- Indicates the add-on is enabled. -->
   <string name="mozac_feature_addons_enabled">Pinagana</string>
   <!-- This is displayed in a page where the user can see the installed and recommended(not installed yet) add-ons, this string indicates the installed section. -->
@@ -112,22 +130,44 @@
   <string name="mozac_feature_addons_permissions">Mga Pahintulot</string>
   <!-- This is a button to remove (i.e. uninstall) an add-on. -->
   <string name="mozac_feature_addons_remove">Alisin</string>
+  <!-- This is a button to report an add-on. -->
+  <string name="mozac_feature_addons_report">Iulat</string>
   <!-- This is the title of a dialog that asks the users if they to install or not an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_permissions_dialog_title">Idagdag ang %1$s?</string>
+  <!-- This is the title of a dialog that asks the users to grant optional permissions. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_optional_permissions_dialog_title">Nangangailangan ang %1$s ng karagdagang pahintulot.</string>
   <!-- This is the subtitle of a dialog that asks the users if they want to install or not an add-on, the subtitle lists the permissions that this add-on requires, the permissions will dynamically be listed after the ":". -->
   <string name="mozac_feature_addons_permissions_dialog_subtitle">Nangangailangan ito ng iyong pahintulot na:</string>
+  <!-- This is the subtitle of a dialog that asks the users to grant optional permissions, the subtitle lists the permissions that this add-on requests, the permissions will dynamically be listed after the ":". -->
+  <string name="mozac_feature_addons_optional_permissions_dialog_subtitle">Nais nitong:</string>
   <!-- This is a button to add (install) an add-on . -->
   <string name="mozac_feature_addons_permissions_dialog_add">Idagdag</string>
+  <!-- This is a button to allow the optional permissions requested by an add-on . -->
+  <string name="mozac_feature_addons_permissions_dialog_allow">Payagan</string>
+  <!-- This is a button to deny the optional permissions requested by an add-on . -->
+  <string name="mozac_feature_addons_permissions_dialog_deny">Tanggihan</string>
+  <!-- Text link to learn more about permission requests on the add-on permissions dialog . -->
+  <string name="mozac_feature_addons_permissions_dialog_learn_more">Alamin</string>
   <!-- This is a button to cancel the add-on installation . -->
-  <string name="mozac_feature_addons_permissions_dialog_cancel">Kanselahin</string>
+  <string name="mozac_feature_addons_permissions_dialog_cancel">Ikansela</string>
+  <!-- Accessibility content description to install add-on button. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_install_addon_content_description_2">I-install ang %1$s</string>
   <!-- This is the label of a button to cancel an ongoing add-on installation. -->
   <string name="mozac_feature_addons_install_addon_dialog_cancel">Kanselahin</string>
   <!-- Indicates how many users have rated an add-on. %1$s will be replaced with number of reviews -->
   <string name="mozac_feature_addons_user_rating_count_2">Mga Review: %1$s</string>
+  <!-- Accessibility content description for the amount of stars that add-on has, where %1$.02f will be the amount of stars. -->
+  <string name="mozac_feature_addons_rating_content_description_2">Marka: %1$.02f / 5</string>
   <!-- This is the title of page where all the add-ons are listed -->
   <string name="mozac_feature_addons_addons">Mga Add-on</string>
   <!-- Label for add-ons sub menu item for add-ons manager -->
   <string name="mozac_feature_addons_addons_manager">Add-ons Manager</string>
+  <!-- The title of the "crash" notification in the extensions manager -->
+  <string name="mozac_feature_extensions_manager_notification_title_text">Pansamantalang naka-disable ang mga extension</string>
+  <!-- Button to re-enable the extensions in the "crash" notification -->
+  <string name="mozac_feature_extensions_manager_notification_restart_button">Mag-restart ng mga extension</string>
+  <!-- Button in the extensions manager that opens AMO in a tab -->
+  <string name="mozac_feature_addons_find_more_extensions_button_text">Maghanap pa ng ibang mga extension</string>
   <!-- The label of the allow button, this will be shown to the user when an add-on needs new permissions, with the button the user will indicate that they want to accept the new permissions and update the add-on -->
   <string name="mozac_feature_addons_updater_notification_allow_button">Payagan</string>
   <!-- The label of the deny button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated -->
@@ -138,6 +178,8 @@
   <string name="mozac_feature_addons_updater_notification_content" tools:ignore="PluralsCandidate">May %1$d bagong permisong kinakailangan</string>
   <!-- The content of the notification displayed when an add-on needs a new permission -->
   <string name="mozac_feature_addons_updater_notification_content_singular">May bagong permisong kinakailangan</string>
+  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
+  <string name="mozac_feature_addons_updater_notification_channel_2">Mga extension update</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">Tagasuri ng mga suportadong add-on</string>
   <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->
@@ -152,12 +194,32 @@
   <string name="mozac_feature_addons_supported_checker_notification_content_more_than_two">Idagdag sila sa %1$s</string>
   <!-- This is the caption for not yet supported screen caption -->
   <string name="mozac_feature_addons_not_yet_supported_caption2">Kasalukuyan kaming bumubuo ng suporta para sa piling seleksyon ng Mga Inirerekomendang Extension.</string>
+  <!-- This is the caption for the extension installation progress overlay -->
+  <string name="mozac_extension_install_progress_caption">Dina-download at vine-verify ang extension…</string>
+  <!-- Error shown when something unexpected happened while trying to get the extension list from the server -->
+  <string name="mozac_feature_addons_failed_to_query_extensions">Bigong mag-query ng mga extension!</string>
   <!-- Error shown when unable to find a translation for an add-on field. %1$s is the locale of the user and %2$s is the default language of the add-on -->
   <string name="mozac_feature_addons_failed_to_translate">Hindi natagpuan ang pagsalin para sa locale na %1$s o sa wikang %2$s</string>
   <!-- Text shown after successfully installed an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_successfully_installed">Matagumpay na na-install ang %1$s</string>
   <!-- Text shown after failing to install an add-on (when add-on type isn't supported or an unknown has errored). %1$s is the add-on name. -->
   <string name="mozac_feature_addons_failed_to_install">Hindi nag-install ang %1$s</string>
+  <!-- Text shown after failing to install an extension for which we don't have its name (when add-on type isn't supported or an unknown has errored). -->
+  <string name="mozac_feature_addons_extension_failed_to_install">Nabigong i-install ang extension na ito.</string>
+  <!-- Text shown when installing an add-on has failed. -->
+  <string name="mozac_feature_addons_cant_install_extension">Hindi ma-install ang extension</string>
+  <!-- Text shown when attempting to install an extension and a network error happened. -->
+  <string name="mozac_feature_addons_extension_failed_to_install_network_error">Hindi ma-download ang extension dahil nagkaproblema sa koneksyon.</string>
+  <!-- Text shown when attempting to install an extension and the downloaded file is corrupted. -->
+  <string name="mozac_feature_addons_extension_failed_to_install_corrupt_error">Hindi ma-install ang extension dahil mukhang sira ito.</string>
+  <!-- Text shown when attempting to install an add-on and an error occurred because the extension was not signed. -->
+  <string name="mozac_feature_addons_extension_failed_to_install_not_signed_error">Hindi ma-install ang extension dahil hindi pa ito na-verify.</string>
+  <!-- Text shown when attempting to install an add-on and an error occurred because the extension was incompatible. %1$s is the add-on name, %2$s is the app name and %3$s is the app version. -->
+  <string name="mozac_feature_addons_failed_to_install_incompatible_error">Hindi ma-install ang %1$s dahil hindi ito angkop sa %2$s %3$s.</string>
+  <!-- Text shown when attempting to install a (hard) blocked add-on. %1$s is the add-on name. %2$s is the app name. -->
+  <string name="mozac_feature_addons_blocklisted_2">Nilalabag ng %1$s ang mga polisiya ng Mozilla kaya hindi ito mai-install sa %2$s.</string>
+  <!-- Text shown when attempting to install an add-on that is soft-blocked. %1$s is the add-on name. %2$s is the app name. -->
+  <string name="mozac_feature_addons_soft_blocked_1">Nilalabag ng %1$s ang mga polisiya ng Mozilla kaya hindi ito mai-install sa %2$s.</string>
   <!-- Text shown after successfully enabled an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_successfully_enabled">Matagumpay na na-install ang %1$s</string>
   <!-- Text shown after failed to enable an add-on. %1$s is the add-on name. -->
@@ -176,6 +238,10 @@
   <string name="mozac_feature_addons_failed_to_remove" tools:ignore="UnusedResources">Bigong tanggalin ang %1$s</string>
   <!-- Label shown to indicate that the add-on was migrated from a previous version of the app. %1$s is the app name most of the case it will be Firefox. -->
   <string name="mozac_feature_addons_migrated_from_a_previous_version_label" tools:ignore="UnusedResources">Ang add-on na ito ay na-migrate mula sa lumang bersyon ng %1$s</string>
+  <!-- Text shown in not yet supported add-ons section. -->
+  <string name="mozac_feature_addons_unsupported_caption_2">1 extension</string>
+  <!-- Text shown in not yet supported add-ons section - plural. %1$s is the number of unsupported extensions. -->
+  <string name="mozac_feature_addons_unsupported_caption_plural_2">%1$s extension</string>
   <!-- Text link to a sumo page for learning more about unsupported add-ons. -->
   <string name="mozac_feature_addons_unsupported_learn_more">Alamin</string>
   <!-- Displayed in the "Status" field for the updater when an add-on has been correctly updated. -->
@@ -192,4 +258,12 @@
   <string name="mozac_feature_addons_updater_dialog_status">Katayuan:</string>
   <!-- Text shown in the dialog when add-on installation is completed. %1$s is the add-on name. %2$s is the app name. -->
   <string name="mozac_feature_addons_installed_dialog_title">Naidagdag na ang %1$s sa %2$s</string>
+  <!-- Confirmation button text for the dialog when add-on installation is completed. -->
+  <string name="mozac_feature_addons_installed_dialog_okay_button_2">OK</string>
+  <!-- "Learn more" link displayed below an add-on status message. -->
+  <string name="mozac_feature_addons_status_learn_more">Alamin</string>
+  <!-- "See details" link displayed below an add-on status message. -->
+  <string name="mozac_feature_addons_status_see_details">Tingnan ang detalye</string>
+  <!-- Status message below an add-on in the add-ons manager when this add-on has been blocklisted. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_status_blocklisted_1">Hinarang at na-disable ang extension na ito dahil sa paglabag sa polisiya ng Mozilla.</string>
 </resources>

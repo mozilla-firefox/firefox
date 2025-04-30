@@ -258,12 +258,18 @@ export var UpdateListener = {
   },
 
   showRestartNotification(update, dismissed) {
+    let notification = lazy.AppUpdateService.isOtherInstanceHandlingUpdates
+      ? "other-instance"
+      : "restart";
     if (!dismissed) {
       this.restartDoorhangerShown = true;
     }
-    this.showUpdateNotification("restart", () => this.requestRestart(), true, {
-      dismissed,
-    });
+    this.showUpdateNotification(
+      notification,
+      () => this.requestRestart(),
+      true,
+      { dismissed }
+    );
   },
 
   showUpdateAvailableNotification(update, dismissed) {

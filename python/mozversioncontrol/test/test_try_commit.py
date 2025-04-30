@@ -6,17 +6,20 @@ import mozunit
 import pytest
 
 from mozversioncontrol import get_repository_object
+from mozversioncontrol.errors import MissingVCSExtension
 
 
-@pytest.mark.xfail(reason="Requires the Mercurial evolve extension.", strict=False)
 def test_try_commit(repo):
     commit_message = "try commit message"
     vcs = get_repository_object(repo.dir)
     initial_head_ref = vcs.head_ref
 
     # Create a non-empty commit.
-    with vcs.try_commit(commit_message, {"try_task_config.json": "{}"}) as head:
-        assert vcs.get_changed_files(rev=head) == ["try_task_config.json"]
+    try:
+        with vcs.try_commit(commit_message, {"try_task_config.json": "{}"}) as head:
+            assert vcs.get_changed_files(rev=head) == ["try_task_config.json"]
+    except MissingVCSExtension:
+        pytest.xfail("Requires the Mercurial evolve extension.")
 
     assert (
         vcs.head_ref == initial_head_ref

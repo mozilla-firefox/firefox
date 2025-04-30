@@ -7,8 +7,6 @@
  * Web IDL infrastructure.
  */
 
-callback PromiseJobCallback = undefined();
-
 [TreatNonCallableAsNull]
 callback AnyCallback = any (any value);
 

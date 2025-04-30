@@ -2,7 +2,7 @@
 tags = "devtools devtools-memory"
 head = "../../../shared/test/shared-head.js head.js"
 firefox-appdir = "browser"
-skip-if = ["os == 'android'"]
+run-if = ["os != 'android'"]
 
 ["test_action-clear-snapshots_01.js"]
 
@@ -37,7 +37,6 @@ skip-if = ["os == 'android'"]
 ["test_action-set-display.js"]
 
 ["test_action-take-census.js"]
-skip-if = ["tsan"] # Unreasonably slow, bug 1612707
 
 ["test_action-take-snapshot-and-census.js"]
 
@@ -68,7 +67,6 @@ skip-if = ["tsan"] # Unreasonably slow, bug 1612707
 ["test_dominator_trees_03.js"]
 
 ["test_dominator_trees_04.js"]
-skip-if = ["tsan"] # Unreasonably slow, bug 1612707
 
 ["test_dominator_trees_05.js"]
 
@@ -91,7 +89,6 @@ skip-if = ["tsan"] # Unreasonably slow, bug 1612707
 ["test_individuals_04.js"]
 
 ["test_individuals_05.js"]
-skip-if = ["tsan"] # Times out, bug 1612707
 
 ["test_individuals_06.js"]
 

@@ -251,6 +251,21 @@ $glyph-forward: url('chrome://browser/skin/forward.svg');
     }
   }
 
+  // Bug 1960519 - Custom override for mobile icon next to weather
+  &.has-mobile-download-promo {
+    .search-inner-wrapper {
+      @media (min-width: $break-point-widest) {
+        // Set to smaller breakpoint to fit weather
+        width: 497px;
+      }
+
+      @media (min-width: $break-point-weather) {
+        // Reset back to default length
+        width: 720px;
+      }
+    }
+  }
+
   .logo {
     width: 52px;
     height: 52px;

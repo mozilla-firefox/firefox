@@ -1210,30 +1210,28 @@ void LIRGenerator::visitTest(MTest* test) {
     return;
   }
 
-  if (opd->isWasmRefIsSubtypeOfAbstract() && opd->isEmittedAtUses()) {
-    MWasmRefIsSubtypeOfAbstract* isSubTypeOf =
-        opd->toWasmRefIsSubtypeOfAbstract();
+  if (opd->isWasmRefTestAbstract() && opd->isEmittedAtUses()) {
+    MWasmRefTestAbstract* refTest = opd->toWasmRefTestAbstract();
 
-    LAllocation ref = useRegister(isSubTypeOf->ref());
+    LAllocation ref = useRegister(refTest->ref());
     WasmRefIsSubtypeDefs regs =
-        useWasmRefIsSubtype(isSubTypeOf->destType(), /*superSTV=*/nullptr);
-    add(new (alloc()) LWasmRefIsSubtypeOfAbstractAndBranch(
-            ifTrue, ifFalse, ref, regs.scratch1, isSubTypeOf->sourceType(),
-            isSubTypeOf->destType()),
+        useWasmRefIsSubtype(refTest->destType(), /*superSTV=*/nullptr);
+    add(new (alloc()) LWasmRefTestAbstractAndBranch(
+            ifTrue, ifFalse, ref, regs.scratch1, refTest->ref()->wasmRefType(),
+            refTest->destType()),
         test);
     return;
   }
 
-  if (opd->isWasmRefIsSubtypeOfConcrete() && opd->isEmittedAtUses()) {
-    MWasmRefIsSubtypeOfConcrete* isSubTypeOf =
-        opd->toWasmRefIsSubtypeOfConcrete();
+  if (opd->isWasmRefTestConcrete() && opd->isEmittedAtUses()) {
+    MWasmRefTestConcrete* refTest = opd->toWasmRefTestConcrete();
 
-    LAllocation ref = useRegister(isSubTypeOf->ref());
+    LAllocation ref = useRegister(refTest->ref());
     WasmRefIsSubtypeDefs regs =
-        useWasmRefIsSubtype(isSubTypeOf->destType(), isSubTypeOf->superSTV());
-    add(new (alloc()) LWasmRefIsSubtypeOfConcreteAndBranch(
+        useWasmRefIsSubtype(refTest->destType(), refTest->superSTV());
+    add(new (alloc()) LWasmRefTestConcreteAndBranch(
             ifTrue, ifFalse, ref, regs.superSTV, regs.scratch1, regs.scratch2,
-            isSubTypeOf->sourceType(), isSubTypeOf->destType()),
+            refTest->ref()->wasmRefType(), refTest->destType()),
         test);
     return;
   }
@@ -1511,6 +1509,24 @@ void LIRGenerator::visitCompare(MCompare* comp) {
   }
 
   MOZ_CRASH("Unrecognized compare type.");
+}
+
+void LIRGenerator::visitStrictConstantCompareInt32(
+    MStrictConstantCompareInt32* ins) {
+  MDefinition* value = ins->value();
+
+  auto* lir = new (alloc())
+      LStrictConstantCompareInt32(useBox(value), tempDouble(), tempDouble());
+  define(lir, ins);
+}
+
+void LIRGenerator::visitStrictConstantCompareBoolean(
+    MStrictConstantCompareBoolean* ins) {
+  MDefinition* value = ins->value();
+
+  auto* lir =
+      new (alloc()) LStrictConstantCompareBoolean(useBox(value), temp());
+  define(lir, ins);
 }
 
 void LIRGenerator::visitSameValueDouble(MSameValueDouble* ins) {
@@ -4104,9 +4120,9 @@ void LIRGenerator::visitWasmTrap(MWasmTrap* ins) {
   add(new (alloc()) LWasmTrap, ins);
 }
 
-void LIRGenerator::visitWasmTrapIfNull(MWasmTrapIfNull* ins) {
-  auto* lir = new (alloc()) LWasmTrapIfNull(useRegister(ins->ref()));
-  add(lir, ins);
+void LIRGenerator::visitWasmRefAsNonNull(MWasmRefAsNonNull* ins) {
+  defineReuseInput(
+      new (alloc()) LWasmRefAsNonNull(useRegisterAtStart(ins->ref())), ins, 0);
 }
 
 void LIRGenerator::visitReinterpretCast(MReinterpretCast* ins) {
@@ -8050,6 +8066,9 @@ bool LIRGenerator::visitBlock(MBasicBlock* block) {
   MOZ_ASSERT_IF(block->unreachable(), !mir()->optimizationInfo().gvnEnabled());
   for (MInstructionIterator iter = block->begin(); *iter != block->lastIns();
        iter++) {
+    if (gen->shouldCancel("Lowering (instruction loop)")) {
+      return false;
+    }
     if (!visitInstruction(*iter)) {
       return false;
     }
@@ -8364,8 +8383,7 @@ WasmRefIsSubtypeDefs LIRGenerator::useWasmRefIsSubtype(wasm::RefType destType,
   };
 }
 
-void LIRGenerator::visitWasmRefIsSubtypeOfAbstract(
-    MWasmRefIsSubtypeOfAbstract* ins) {
+void LIRGenerator::visitWasmRefTestAbstract(MWasmRefTestAbstract* ins) {
   if (CanEmitAtUseForSingleTest(ins)) {
     emitAtUses(ins);
     return;
@@ -8374,11 +8392,10 @@ void LIRGenerator::visitWasmRefIsSubtypeOfAbstract(
   LAllocation ref = useRegister(ins->ref());
   WasmRefIsSubtypeDefs regs =
       useWasmRefIsSubtype(ins->destType(), /*superSTV=*/nullptr);
-  define(new (alloc()) LWasmRefIsSubtypeOfAbstract(ref, regs.scratch1), ins);
+  define(new (alloc()) LWasmRefTestAbstract(ref, regs.scratch1), ins);
 }
 
-void LIRGenerator::visitWasmRefIsSubtypeOfConcrete(
-    MWasmRefIsSubtypeOfConcrete* ins) {
+void LIRGenerator::visitWasmRefTestConcrete(MWasmRefTestConcrete* ins) {
   if (CanEmitAtUseForSingleTest(ins)) {
     emitAtUses(ins);
     return;
@@ -8387,9 +8404,26 @@ void LIRGenerator::visitWasmRefIsSubtypeOfConcrete(
   LAllocation ref = useRegister(ins->ref());
   WasmRefIsSubtypeDefs regs =
       useWasmRefIsSubtype(ins->destType(), ins->superSTV());
-  define(new (alloc()) LWasmRefIsSubtypeOfConcrete(
-             ref, regs.superSTV, regs.scratch1, regs.scratch2),
+  define(new (alloc()) LWasmRefTestConcrete(ref, regs.superSTV, regs.scratch1,
+                                            regs.scratch2),
          ins);
+}
+
+void LIRGenerator::visitWasmRefCastAbstract(MWasmRefCastAbstract* ins) {
+  LAllocation ref = useRegisterAtStart(ins->ref());
+  WasmRefIsSubtypeDefs regs =
+      useWasmRefIsSubtype(ins->destType(), /*superSTV=*/nullptr);
+  defineReuseInput(new (alloc()) LWasmRefCastAbstract(ref, regs.scratch1), ins,
+                   0);
+}
+
+void LIRGenerator::visitWasmRefCastConcrete(MWasmRefCastConcrete* ins) {
+  LAllocation ref = useRegisterAtStart(ins->ref());
+  WasmRefIsSubtypeDefs regs =
+      useWasmRefIsSubtype(ins->destType(), ins->superSTV());
+  defineReuseInput(new (alloc()) LWasmRefCastConcrete(
+                       ref, regs.superSTV, regs.scratch1, regs.scratch2),
+                   ins, 0);
 }
 
 void LIRGenerator::visitWasmRefConvertAnyExtern(MWasmRefConvertAnyExtern* ins) {

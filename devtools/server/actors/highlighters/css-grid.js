@@ -183,6 +183,8 @@ const gCachedGridPattern = new Map();
  * @param {Boolean} options.showInfiniteLines
  *        Displays an infinite line to represent the grid lines if isShown is
  *        true.
+ * @param {Number} options.isParent
+ *        Set to true if this is a "parent" grid, i.e. a grid with a subgrid.
  * @param {Number} options.zIndex
  *        The z-index to decide the displaying order.
  *
@@ -729,6 +731,11 @@ class CssGridHighlighter extends AutoRefreshHighlighter {
 
     // Hide the canvas, grid element highlights and infobar.
     this._hide();
+
+    this.getElement("root").setAttribute(
+      "data-is-parent-grid",
+      !!this.options.isParent
+    );
 
     // Set z-index.
     this.markup.content.root.firstElementChild.style.setProperty(

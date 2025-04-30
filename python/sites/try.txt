@@ -32,6 +32,7 @@ vendored:third_party/python/frozenlist
 vendored:third_party/python/giturlparse
 vendored:third_party/python/glean_parser
 vendored:third_party/python/gyp/pylib
+vendored:third_party/python/jinja2
 vendored:third_party/python/json_e
 vendored:third_party/python/jsonschema
 vendored:third_party/python/markdown_it_py

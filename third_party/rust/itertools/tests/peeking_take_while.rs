@@ -48,3 +48,22 @@ fn peeking_take_while_slice_iter_rev() {
     r.peeking_take_while(|_| true).count();
     assert_eq!(r.next(), None);
 }
+
+#[test]
+fn peeking_take_while_nested() {
+    let mut xs = (0..10).peekable();
+    let ys: Vec<_> = xs
+        .peeking_take_while(|x| *x < 6)
+        .peeking_take_while(|x| *x != 3)
+        .collect();
+    assert_eq!(ys, vec![0, 1, 2]);
+    assert_eq!(xs.next(), Some(3));
+
+    let mut xs = (4..10).peekable();
+    let ys: Vec<_> = xs
+        .peeking_take_while(|x| *x != 3)
+        .peeking_take_while(|x| *x < 6)
+        .collect();
+    assert_eq!(ys, vec![4, 5]);
+    assert_eq!(xs.next(), Some(6));
+}

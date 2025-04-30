@@ -120,11 +120,11 @@ const ErrorDocs = {
 const MIXED_CONTENT_LEARN_MORE =
   "https://developer.mozilla.org/docs/Web/Security/Mixed_content";
 const TRACKING_PROTECTION_LEARN_MORE =
-  "https://developer.mozilla.org/Firefox/Privacy/Tracking_Protection";
+  "https://developer.mozilla.org/Firefox/Privacy/Guides/Tracking_Protection";
 const INSECURE_PASSWORDS_LEARN_MORE =
   "https://developer.mozilla.org/docs/Web/Security/Insecure_passwords";
 const PUBLIC_KEY_PINS_LEARN_MORE =
-  "https://developer.mozilla.org/docs/Web/HTTP/Public_Key_Pinning";
+  "https://developer.mozilla.org/docs/Web/Security/Certificate_Transparency";
 const STRICT_TRANSPORT_SECURITY_LEARN_MORE =
   "https://developer.mozilla.org/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security";
 const MIME_TYPE_MISMATCH_LEARN_MORE =
@@ -138,7 +138,7 @@ const X_FRAME_OPTIONS_LEARN_MORE =
 const REQUEST_STORAGE_ACCESS_LEARN_MORE =
   "https://developer.mozilla.org/docs/Web/API/Document/requestStorageAccess";
 const DOCTYPE_MODES_LEARN_MORE =
-  "https://developer.mozilla.org/docs/Web/HTML/Quirks_Mode_and_Standards_Mode";
+  "https://developer.mozilla.org/docs/Web/HTML/Guides/Quirks_Mode_and_Standards_Mode";
 const BOUNCE_TRACKING_PROTECTION_LEARN_MORE =
   "https://firefox-source-docs.mozilla.org/toolkit/components/antitracking/anti-tracking/bounce-tracking-protection/index.html";
 
@@ -183,7 +183,7 @@ const CorsErrorDocs = {
 };
 
 const baseStorageAccessPolicyErrorUrl =
-  "https://developer.mozilla.org/docs/Mozilla/Firefox/Privacy/Storage_access_policy/Errors/";
+  "https://developer.mozilla.org/docs/Web/Privacy/Guides/Storage_Access_Policy/Errors/";
 const storageAccessPolicyParams =
   "?utm_source=devtools&utm_medium=firefox-cookie-errors&utm_campaign=default";
 const StorageAccessPolicyErrorDocs = {

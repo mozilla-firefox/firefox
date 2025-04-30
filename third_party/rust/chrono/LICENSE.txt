@@ -1,5 +1,5 @@
 Rust-chrono is dual-licensed under The MIT License [1] and
-Apache 2.0 License [2]. Copyright (c) 2014--2017, Kang Seonghoon and
+Apache 2.0 License [2]. Copyright (c) 2014--2025, Kang Seonghoon and
 contributors.
 
 Nota Bene: This is same as the Rust Project's own license.

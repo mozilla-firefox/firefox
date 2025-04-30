@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import logging
 import datetime
+from fnmatch import fnmatch
 
 from sentry_sdk.hub import Hub
 from sentry_sdk.utils import (
@@ -23,8 +24,26 @@ if MYPY:
 
 DEFAULT_LEVEL = logging.INFO
 DEFAULT_EVENT_LEVEL = logging.ERROR
+LOGGING_TO_EVENT_LEVEL = {
+    logging.NOTSET: "notset",
+    logging.DEBUG: "debug",
+    logging.INFO: "info",
+    logging.WARN: "warning",  # WARN is same a WARNING
+    logging.WARNING: "warning",
+    logging.ERROR: "error",
+    logging.FATAL: "fatal",
+    logging.CRITICAL: "fatal",  # CRITICAL is same as FATAL
+}
 
-_IGNORED_LOGGERS = set(["sentry_sdk.errors"])
+# Capturing events from those loggers causes recursion errors. We cannot allow
+# the user to unconditionally create events from those loggers under any
+# circumstances.
+#
+# Note: Ignoring by logger name here is better than mucking with thread-locals.
+# We do not necessarily know whether thread-locals work 100% correctly in the user's environment.
+_IGNORED_LOGGERS = set(
+    ["sentry_sdk.errors", "urllib3.connectionpool", "urllib3.connection"]
+)
 
 
 def ignore_logger(
@@ -69,7 +88,7 @@ class LoggingIntegration(Integration):
     @staticmethod
     def setup_once():
         # type: () -> None
-        old_callhandlers = logging.Logger.callHandlers  # type: ignore
+        old_callhandlers = logging.Logger.callHandlers
 
         def sentry_patched_callhandlers(self, record):
             # type: (Any, LogRecord) -> Any
@@ -90,14 +109,18 @@ class LoggingIntegration(Integration):
 
 def _can_record(record):
     # type: (LogRecord) -> bool
-    return record.name not in _IGNORED_LOGGERS
+    """Prevents ignored loggers from recording"""
+    for logger in _IGNORED_LOGGERS:
+        if fnmatch(record.name, logger):
+            return False
+    return True
 
 
 def _breadcrumb_from_record(record):
     # type: (LogRecord) -> Dict[str, Any]
     return {
-        "ty": "log",
-        "level": _logging_to_event_level(record.levelname),
+        "type": "log",
+        "level": _logging_to_event_level(record),
         "category": record.name,
         "message": record.message,
         "timestamp": datetime.datetime.utcfromtimestamp(record.created),
@@ -105,9 +128,11 @@ def _breadcrumb_from_record(record):
     }
 
 
-def _logging_to_event_level(levelname):
-    # type: (str) -> str
-    return {"critical": "fatal"}.get(levelname.lower(), levelname.lower())
+def _logging_to_event_level(record):
+    # type: (LogRecord) -> str
+    return LOGGING_TO_EVENT_LEVEL.get(
+        record.levelno, record.levelname.lower() if record.levelname else ""
+    )
 
 
 COMMON_RECORD_ATTRS = frozenset(
@@ -175,7 +200,12 @@ class EventHandler(logging.Handler, object):
         client_options = hub.client.options
 
         # exc_info might be None or (None, None, None)
-        if record.exc_info is not None and record.exc_info[0] is not None:
+        #
+        # exc_info may also be any falsy value due to Python stdlib being
+        # liberal with what it receives and Celery's billiard being "liberal"
+        # with what it sends. See
+        # https://github.com/getsentry/sentry-python/issues/904
+        if record.exc_info and record.exc_info[0] is not None:
             event, hint = event_from_exception(
                 record.exc_info,
                 client_options=client_options,
@@ -202,9 +232,29 @@ class EventHandler(logging.Handler, object):
 
         hint["log_record"] = record
 
-        event["level"] = _logging_to_event_level(record.levelname)
+        event["level"] = _logging_to_event_level(record)
         event["logger"] = record.name
-        event["logentry"] = {"message": to_string(record.msg), "params": record.args}
+
+        # Log records from `warnings` module as separate issues
+        record_caputured_from_warnings_module = (
+            record.name == "py.warnings" and record.msg == "%s"
+        )
+        if record_caputured_from_warnings_module:
+            # use the actual message and not "%s" as the message
+            # this prevents grouping all warnings under one "%s" issue
+            msg = record.args[0]  # type: ignore
+
+            event["logentry"] = {
+                "message": msg,
+                "params": (),
+            }
+
+        else:
+            event["logentry"] = {
+                "message": to_string(record.msg),
+                "params": record.args,
+            }
+
         event["extra"] = _extra_from_record(record)
 
         hub.capture_event(event, hint=hint)

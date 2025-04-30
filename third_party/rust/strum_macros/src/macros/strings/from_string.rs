@@ -1,10 +1,10 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, Fields};
+use syn::{parse_quote, Data, DeriveInput, Fields, Path};
 
 use crate::helpers::{
-    non_enum_error, occurrence_error, HasInnerVariantProperties, HasStrumVariantProperties,
-    HasTypeProperties,
+    missing_parse_err_attr_error, non_enum_error, occurrence_error, HasInnerVariantProperties,
+    HasStrumVariantProperties, HasTypeProperties,
 };
 
 pub fn from_string_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
@@ -19,9 +19,25 @@ pub fn from_string_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
     let strum_module_path = type_properties.crate_module_path();
 
     let mut default_kw = None;
-    let mut default =
-        quote! { ::core::result::Result::Err(#strum_module_path::ParseError::VariantNotFound) };
+    let (mut default_err_ty, mut default) = match (
+        type_properties.parse_err_ty,
+        type_properties.parse_err_fn,
+    ) {
+        (None, None) => (
+            quote! { #strum_module_path::ParseError },
+            quote! { ::core::result::Result::Err(#strum_module_path::ParseError::VariantNotFound) },
+        ),
+        (Some(ty), Some(f)) => {
+            let ty_path: Path = parse_quote!(#ty);
+            let fn_path: Path = parse_quote!(#f);
 
+            (
+                quote! { #ty_path },
+                quote! { ::core::result::Result::Err(#fn_path(s)) },
+            )
+        }
+        _ => return Err(missing_parse_err_attr_error()),
+    };
     let mut phf_exact_match_arms = Vec::new();
     let mut standard_match_arms = Vec::new();
     for variant in variants {
@@ -37,8 +53,21 @@ pub fn from_string_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
                 return Err(occurrence_error(fst_kw, kw, "default"));
             }
 
+            default_kw = Some(kw);
+            default_err_ty = quote! { #strum_module_path::ParseError };
+
             match &variant.fields {
-                Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {}
+                Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
+                    default = quote! {
+                        ::core::result::Result::Ok(#name::#ident(s.into()))
+                    };
+                }
+                Fields::Named(ref f) if f.named.len() == 1 => {
+                    let field_name = f.named.last().unwrap().ident.as_ref().unwrap();
+                    default = quote! {
+                        ::core::result::Result::Ok(#name::#ident { #field_name : s.into() } )
+                    };
+                }
                 _ => {
                     return Err(syn::Error::new_spanned(
                         variant,
@@ -46,10 +75,7 @@ pub fn from_string_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
                     ))
                 }
             }
-            default_kw = Some(kw);
-            default = quote! {
-                ::core::result::Result::Ok(#name::#ident(s.into()))
-            };
+
             continue;
         }
 
@@ -146,7 +172,9 @@ pub fn from_string_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
     let from_str = quote! {
         #[allow(clippy::use_self)]
         impl #impl_generics ::core::str::FromStr for #name #ty_generics #where_clause {
-            type Err = #strum_module_path::ParseError;
+            type Err = #default_err_ty;
+
+            #[inline]
             fn from_str(s: &str) -> ::core::result::Result< #name #ty_generics , <Self as ::core::str::FromStr>::Err> {
                 #phf_body
                 #standard_match_body
@@ -158,7 +186,7 @@ pub fn from_string_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         &impl_generics,
         &ty_generics,
         where_clause,
-        &strum_module_path,
+        &default_err_ty,
     );
 
     Ok(quote! {
@@ -184,12 +212,14 @@ fn try_from_str(
     impl_generics: &syn::ImplGenerics,
     ty_generics: &syn::TypeGenerics,
     where_clause: Option<&syn::WhereClause>,
-    strum_module_path: &syn::Path,
+    default_err_ty: &TokenStream,
 ) -> TokenStream {
     quote! {
         #[allow(clippy::use_self)]
         impl #impl_generics ::core::convert::TryFrom<&str> for #name #ty_generics #where_clause {
-            type Error = #strum_module_path::ParseError;
+            type Error = #default_err_ty;
+
+            #[inline]
             fn try_from(s: &str) -> ::core::result::Result< #name #ty_generics , <Self as ::core::convert::TryFrom<&str>>::Error> {
                 ::core::str::FromStr::from_str(s)
             }

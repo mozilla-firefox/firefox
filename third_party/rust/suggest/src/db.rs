@@ -23,9 +23,9 @@ use crate::{
     provider::{AmpMatchingStrategy, SuggestionProvider},
     query::{full_keywords_to_fts_content, FtsQuery},
     rs::{
-        DownloadedAmoSuggestion, DownloadedAmpSuggestion, DownloadedExposureSuggestion,
-        DownloadedFakespotSuggestion, DownloadedMdnSuggestion, DownloadedPocketSuggestion,
-        DownloadedWikipediaSuggestion, Record, SuggestRecordId,
+        DownloadedAmoSuggestion, DownloadedAmpSuggestion, DownloadedDynamicRecord,
+        DownloadedDynamicSuggestion, DownloadedFakespotSuggestion, DownloadedMdnSuggestion,
+        DownloadedPocketSuggestion, DownloadedWikipediaSuggestion, Record, SuggestRecordId,
     },
     schema::{clear_database, SuggestConnectionInitializer},
     suggestion::{cook_raw_suggestion_url, FtsMatchInfo, Suggestion},
@@ -308,7 +308,12 @@ impl<'a> SuggestDao<'a> {
                   s.provider = :provider
                   AND k.keyword = :keyword
                   {where_extra}
-                AND NOT EXISTS (SELECT 1 FROM dismissed_suggestions WHERE url=s.url)
+                  AND NOT EXISTS (
+                    -- For AMP suggestions dismissed with the deprecated URL-based dismissal API,
+                    -- `dismissed_suggestions.url` will be the suggestion URL. With the new
+                    -- `Suggestion`-based API, it will be the full keyword.
+                    SELECT 1 FROM dismissed_suggestions WHERE url IN (fk.full_keyword, s.url)
+                  )
                 "#
             ),
             named_params! {
@@ -322,24 +327,6 @@ impl<'a> SuggestDao<'a> {
                 let score: f64 = row.get("score")?;
                 let full_keyword_from_db: Option<String> = row.get("full_keyword")?;
 
-                let keywords: Vec<String> = self.conn.query_rows_and_then_cached(
-                    r#"
-                    SELECT
-                        keyword
-                    FROM
-                        keywords
-                    WHERE
-                        suggestion_id = :suggestion_id
-                        AND rank >= :rank
-                    ORDER BY
-                        rank ASC
-                    "#,
-                    named_params! {
-                        ":suggestion_id": suggestion_id,
-                        ":rank": row.get::<_, i64>("rank")?,
-                    },
-                    |row| row.get(0),
-                )?;
                 self.conn.query_row_and_then(
                     r#"
                     SELECT
@@ -372,8 +359,7 @@ impl<'a> SuggestDao<'a> {
                             title,
                             url: cooked_url,
                             raw_url,
-                            full_keyword: full_keyword_from_db
-                                .unwrap_or_else(|| full_keyword(keyword_lowercased, &keywords)),
+                            full_keyword: full_keyword_from_db.unwrap_or_default(),
                             icon: row.get("icon")?,
                             icon_mimetype: row.get("icon_mimetype")?,
                             impression_url: row.get("impression_url")?,
@@ -927,68 +913,66 @@ impl<'a> SuggestDao<'a> {
         })
     }
 
-    /// Fetches exposure suggestions
-    pub fn fetch_exposure_suggestions(&self, query: &SuggestionQuery) -> Result<Vec<Suggestion>> {
-        // A single exposure suggestion can be spread across multiple remote
-        // settings records, for example if it has very many keywords. On ingest
-        // we will insert one row in `exposure_custom_details` and one row in
-        // `suggestions` per record, but that's only an implementation detail.
-        // Logically, and for consumers, there's only ever at most one exposure
-        // suggestion with a given exposure suggestion type.
-        //
-        // Why do insertions this way? It's how other suggestions work, and it
-        // lets us perform relational operations on suggestions, records, and
-        // keywords. For example, when a record is deleted we can look up its ID
-        // in `suggestions`, join the keywords table on the suggestion ID, and
-        // delete the keywords that were added by that record.
-
+    /// Fetches dynamic suggestions
+    pub fn fetch_dynamic_suggestions(&self, query: &SuggestionQuery) -> Result<Vec<Suggestion>> {
         let Some(suggestion_types) = query
             .provider_constraints
             .as_ref()
-            .and_then(|c| c.exposure_suggestion_types.as_ref())
+            .and_then(|c| c.dynamic_suggestion_types.as_ref())
         else {
             return Ok(vec![]);
         };
 
         let keyword = query.keyword.to_lowercase();
         let params = rusqlite::params_from_iter(
-            std::iter::once(&SuggestionProvider::Exposure as &dyn ToSql)
+            std::iter::once(&SuggestionProvider::Dynamic as &dyn ToSql)
                 .chain(std::iter::once(&keyword as &dyn ToSql))
                 .chain(suggestion_types.iter().map(|t| t as &dyn ToSql)),
         );
         self.conn.query_rows_and_then_cached(
             &format!(
                 r#"
-                    SELECT DISTINCT
-                      d.type
-                    FROM
-                      suggestions s
-                    JOIN
-                      exposure_custom_details d
-                      ON d.suggestion_id = s.id
-                    JOIN
-                      keywords k
-                      ON k.suggestion_id = s.id
-                    WHERE
-                      s.provider = ?
-                      AND k.keyword = ?
-                      AND d.type IN ({})
-                    ORDER BY
-                      d.type
-                    "#,
+                SELECT
+                  s.url,
+                  s.score,
+                  d.suggestion_type,
+                  d.json_data
+                FROM
+                  suggestions s
+                JOIN
+                  dynamic_custom_details d
+                  ON d.suggestion_id = s.id
+                JOIN
+                  keywords k
+                  ON k.suggestion_id = s.id
+                WHERE
+                  s.provider = ?
+                  AND k.keyword = ?
+                  AND d.suggestion_type IN ({})
+                  AND NOT EXISTS (SELECT 1 FROM dismissed_suggestions WHERE url = s.url)
+                ORDER BY
+                  s.score ASC, d.suggestion_type ASC, s.id ASC
+                "#,
                 repeat_sql_vars(suggestion_types.len())
             ),
             params,
             |row| -> Result<Suggestion> {
-                Ok(Suggestion::Exposure {
-                    suggestion_type: row.get("type")?,
-                    score: 1.0,
+                let dismissal_key: String = row.get("url")?;
+                let json_data: Option<String> = row.get("json_data")?;
+                Ok(Suggestion::Dynamic {
+                    suggestion_type: row.get("suggestion_type")?,
+                    data: match json_data {
+                        None => None,
+                        Some(j) => serde_json::from_str(&j)?,
+                    },
+                    score: row.get("score")?,
+                    dismissal_key: (!dismissal_key.is_empty()).then_some(dismissal_key),
                 })
             },
         )
     }
 
-    pub fn is_exposure_suggestion_ingested(&self, record_id: &SuggestRecordId) -> Result<bool> {
+    pub fn are_suggestions_ingested_for_record(&self, record_id: &SuggestRecordId) -> Result<bool> {
         Ok(self.conn.exists(
             r#"
             SELECT
@@ -1229,31 +1213,34 @@ impl<'a> SuggestDao<'a> {
         Ok(())
     }
 
-    /// Inserts exposure suggestion records data into the database.
-    pub fn insert_exposure_suggestions(
+    /// Inserts dynamic suggestion records data into the database.
+    pub fn insert_dynamic_suggestions(
         &mut self,
         record_id: &SuggestRecordId,
-        suggestion_type: &str,
-        suggestions: &[DownloadedExposureSuggestion],
+        record: &DownloadedDynamicRecord,
+        suggestions: &[DownloadedDynamicSuggestion],
     ) -> Result<()> {
-        // `suggestion.keywords()` can yield duplicates for exposure
+        // `suggestion.keywords()` can yield duplicates for dynamic
         // suggestions, so ignore failures on insert in the uniqueness
         // constraint on `(suggestion_id, keyword)`.
         let mut keyword_insert = KeywordInsertStatement::new_with_or_ignore(self.conn)?;
         let mut suggestion_insert = SuggestionInsertStatement::new(self.conn)?;
-        let mut exposure_insert = ExposureInsertStatement::new(self.conn)?;
+        let mut dynamic_insert = DynamicInsertStatement::new(self.conn)?;
         for suggestion in suggestions {
             self.scope.err_if_interrupted()?;
             let suggestion_id = suggestion_insert.execute(
                 record_id,
-                "", // title, not used by exposure suggestions
-                "", // url, not used by exposure suggestions
-                DEFAULT_SUGGESTION_SCORE,
-                SuggestionProvider::Exposure,
+                // title - Not used by dynamic suggestions.
+                "",
+                // url - Dynamic suggestions store their dismissal key here
+                // instead.
+                suggestion.dismissal_key.as_deref().unwrap_or(""),
+                record.score.unwrap_or(DEFAULT_SUGGESTION_SCORE),
+                SuggestionProvider::Dynamic,
             )?;
-            exposure_insert.execute(suggestion_id, suggestion_type)?;
+            dynamic_insert.execute(suggestion_id, &record.suggestion_type, suggestion)?;
 
-            // Exposure suggestions don't use `rank` but `(suggestion_id, rank)`
+            // Dynamic suggestions don't use `rank` but `(suggestion_id, rank)`
             // must be unique since there's an index on that tuple.
             for (rank, keyword) in suggestion.keywords().enumerate() {
                 keyword_insert.execute(suggestion_id, &keyword, None, rank)?;
@@ -1284,12 +1271,12 @@ impl<'a> SuggestDao<'a> {
         Ok(())
     }
 
-    pub fn insert_dismissal(&self, url: &str) -> Result<()> {
+    pub fn insert_dismissal(&self, key: &str) -> Result<()> {
         self.conn.execute(
             "INSERT OR IGNORE INTO dismissed_suggestions(url)
              VALUES(:url)",
             named_params! {
-                ":url": url,
+                ":url": key,
             },
         )?;
         Ok(())
@@ -1298,6 +1285,21 @@ impl<'a> SuggestDao<'a> {
     pub fn clear_dismissals(&self) -> Result<()> {
         self.conn.execute("DELETE FROM dismissed_suggestions", ())?;
         Ok(())
+    }
+
+    pub fn has_dismissal(&self, key: &str) -> Result<bool> {
+        Ok(self.conn.exists(
+            "SELECT 1 FROM dismissed_suggestions WHERE url = :url",
+            named_params! {
+                ":url": key,
+            },
+        )?)
+    }
+
+    pub fn any_dismissals(&self) -> Result<bool> {
+        Ok(self
+            .conn
+            .exists("SELECT 1 FROM dismissed_suggestions LIMIT 1", ())?)
     }
 
     /// Deletes all suggestions associated with a Remote Settings record from
@@ -1350,11 +1352,6 @@ impl<'a> SuggestDao<'a> {
         self.scope.err_if_interrupted()?;
         self.conn.execute_cached(
             "DELETE FROM yelp_modifiers WHERE record_id = :record_id",
-            named_params! { ":record_id": record_id.as_str() },
-        )?;
-        self.scope.err_if_interrupted()?;
-        self.conn.execute_cached(
-            "DELETE FROM yelp_location_signs WHERE record_id = :record_id",
             named_params! { ":record_id": record_id.as_str() },
         )?;
         self.scope.err_if_interrupted()?;
@@ -1726,24 +1723,37 @@ impl<'conn> FakespotInsertStatement<'conn> {
     }
 }
 
-struct ExposureInsertStatement<'conn>(rusqlite::Statement<'conn>);
+struct DynamicInsertStatement<'conn>(rusqlite::Statement<'conn>);
 
-impl<'conn> ExposureInsertStatement<'conn> {
+impl<'conn> DynamicInsertStatement<'conn> {
     fn new(conn: &'conn Connection) -> Result<Self> {
         Ok(Self(conn.prepare(
-            "INSERT INTO exposure_custom_details(
+            "INSERT INTO dynamic_custom_details(
                  suggestion_id,
-                 type
+                 suggestion_type,
+                 json_data
              )
-             VALUES(?, ?)
+             VALUES(?, ?, ?)
              ",
         )?))
     }
 
-    fn execute(&mut self, suggestion_id: i64, suggestion_type: &str) -> Result<()> {
+    fn execute(
+        &mut self,
+        suggestion_id: i64,
+        suggestion_type: &str,
+        suggestion: &DownloadedDynamicSuggestion,
+    ) -> Result<()> {
         self.0
-            .execute((suggestion_id, suggestion_type))
-            .with_context("exposure insert")?;
+            .execute((
+                suggestion_id,
+                suggestion_type,
+                match &suggestion.data {
+                    None => None,
+                    Some(d) => Some(serde_json::to_string(&d)?),
+                },
+            ))
+            .with_context("dynamic insert")?;
         Ok(())
     }
 }

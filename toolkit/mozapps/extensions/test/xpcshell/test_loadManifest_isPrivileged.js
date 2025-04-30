@@ -12,7 +12,6 @@ const {
   XPIInternal: {
     KEY_APP_PROFILE,
     KEY_APP_SYSTEM_BUILTINS,
-    KEY_APP_SYSTEM_DEFAULTS,
     KEY_APP_SYSTEM_PROFILE,
   },
 } = XPIExports;
@@ -45,7 +44,6 @@ function getInstallLocation({
   isBuiltin = false,
   isSystem = false,
   isTemporary = false,
-  isSystemBuiltin = false,
 }) {
   if (isTemporary) {
     // Temporary installation. Signatures will not be verified.
@@ -54,11 +52,9 @@ function getInstallLocation({
   let location;
   if (isSystem) {
     if (isBuiltin) {
-      location = isSystemBuiltin
-        ? // System app bundled directory location. Signatures will not be verified.
-          XPIExports.XPIInternal.XPIStates.getLocation(KEY_APP_SYSTEM_BUILTINS)
-        : // System Defaults directory location. Signatures will not be verified.
-          XPIExports.XPIInternal.XPIStates.getLocation(KEY_APP_SYSTEM_DEFAULTS);
+      location = XPIExports.XPIInternal.XPIStates.getLocation(
+        KEY_APP_SYSTEM_BUILTINS
+      );
     } else {
       // Normandy installations. Signatures will be verified.
       location = XPIExports.XPIInternal.XPIStates.getLocation(
@@ -193,15 +189,6 @@ add_task(async function test_system_location() {
   });
 });
 
-// TODO(Bug 1949847): remove this test along with removing the app-system-defaults location.
-add_task(async function test_builtin_system_location_directory() {
-  AddonTestUtils.usePrivilegedSignatures = false;
-  await testLoadManifest({
-    expectPrivileged: true,
-    location: getInstallLocation({ isSystem: true, isBuiltin: true }),
-  });
-});
-
 add_task(async function test_builtin_system_location() {
   AddonTestUtils.usePrivilegedSignatures = false;
   await testLoadManifest({
@@ -209,7 +196,6 @@ add_task(async function test_builtin_system_location() {
     location: getInstallLocation({
       isSystem: true,
       isBuiltin: true,
-      isSystemBuiltin: true,
     }),
   });
 });

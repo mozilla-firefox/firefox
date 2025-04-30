@@ -176,44 +176,49 @@ bool dapHpkeEncryptOneshot(const uint8_t* aKey, uint32_t aKeyLength,
   return dapHpkeEncrypt(context.get(), aAad, aAadLength, aPlaintext,
                         aPlaintextLength, aOutputShare);
 }
+}  // extern "C"
+
+NS_IMETHODIMP DAPTelemetry::GetReportPrioSum(
+    const nsTArray<uint8_t>& aLeaderHpkeConfig,
+    const nsTArray<uint8_t>& aHelperHpkeConfig, uint32_t aMeasurement,
+    const nsTArray<uint8_t>& aTaskID, const uint32_t aBits,
+    const uint64_t aTimePrecision, nsTArray<uint8_t>& aOutReport) {
+  MOZ_RELEASE_ASSERT(aBits <= 32, "Currently only support up to 32-bit values");
+  MOZ_RELEASE_ASSERT(aTaskID.Length() == 32, "TaskID must have 32 bytes.");
+  if (!dapGetReportPrioSum(&aLeaderHpkeConfig, &aHelperHpkeConfig, aMeasurement,
+                           &aTaskID, aBits, aTimePrecision, &aOutReport)) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return NS_OK;
 }
 
-NS_IMETHODIMP DAPTelemetry::GetReportU8(
+NS_IMETHODIMP DAPTelemetry::GetReportPrioSumVec(
     const nsTArray<uint8_t>& aLeaderHpkeConfig,
-    const nsTArray<uint8_t>& aHelperHpkeConfig, uint8_t aMeasurement,
-    const nsTArray<uint8_t>& aTaskID, const uint64_t aTimePrecision,
+    const nsTArray<uint8_t>& aHelperHpkeConfig,
+    const nsTArray<uint32_t>& aMeasurement, const nsTArray<uint8_t>& aTaskID,
+    const uint32_t aBits, const uint64_t aTimePrecision,
     nsTArray<uint8_t>& aOutReport) {
+  MOZ_RELEASE_ASSERT(aBits <= 32, "Currently only support up to 32-bit values");
   MOZ_RELEASE_ASSERT(aTaskID.Length() == 32, "TaskID must have 32 bytes.");
-  if (!dapGetReportU8(&aLeaderHpkeConfig, &aHelperHpkeConfig, aMeasurement,
-                      &aTaskID, aTimePrecision, &aOutReport)) {
+  if (!dapGetReportPrioSumVec(&aLeaderHpkeConfig, &aHelperHpkeConfig,
+                              &aMeasurement, &aTaskID, aBits, aTimePrecision,
+                              &aOutReport)) {
     return NS_ERROR_FAILURE;
   }
 
   return NS_OK;
 }
 
-NS_IMETHODIMP DAPTelemetry::GetReportVecU8(
+NS_IMETHODIMP DAPTelemetry::GetReportPrioHistogram(
     const nsTArray<uint8_t>& aLeaderHpkeConfig,
-    const nsTArray<uint8_t>& aHelperHpkeConfig,
-    const nsTArray<uint8_t>& aMeasurement, const nsTArray<uint8_t>& aTaskID,
+    const nsTArray<uint8_t>& aHelperHpkeConfig, const uint32_t aMeasurement,
+    const nsTArray<uint8_t>& aTaskID, const uint32_t aLength,
     const uint64_t aTimePrecision, nsTArray<uint8_t>& aOutReport) {
   MOZ_RELEASE_ASSERT(aTaskID.Length() == 32, "TaskID must have 32 bytes.");
-  if (!dapGetReportVecU8(&aLeaderHpkeConfig, &aHelperHpkeConfig, &aMeasurement,
-                         &aTaskID, aTimePrecision, &aOutReport)) {
-    return NS_ERROR_FAILURE;
-  }
-
-  return NS_OK;
-}
-
-NS_IMETHODIMP DAPTelemetry::GetReportVecU16(
-    const nsTArray<uint8_t>& aLeaderHpkeConfig,
-    const nsTArray<uint8_t>& aHelperHpkeConfig,
-    const nsTArray<uint16_t>& aMeasurement, const nsTArray<uint8_t>& aTaskID,
-    const uint64_t aTimePrecision, nsTArray<uint8_t>& aOutReport) {
-  MOZ_RELEASE_ASSERT(aTaskID.Length() == 32, "TaskID must have 32 bytes.");
-  if (!dapGetReportVecU16(&aLeaderHpkeConfig, &aHelperHpkeConfig, &aMeasurement,
-                          &aTaskID, aTimePrecision, &aOutReport)) {
+  if (!dapGetReportPrioHistogram(&aLeaderHpkeConfig, &aHelperHpkeConfig,
+                                 aMeasurement, &aTaskID, aLength,
+                                 aTimePrecision, &aOutReport)) {
     return NS_ERROR_FAILURE;
   }
 

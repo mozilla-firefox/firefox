@@ -654,19 +654,6 @@ union GIOChannelCreationArgs
 };
 
 //-----------------------------------------------------------------------------
-// Data IPDL structs
-//-----------------------------------------------------------------------------
-
-struct DataChannelInfo
-{
-  nullable nsIURI        uri;
-  uint32_t               loadFlags;
-  LoadInfoArgs           loadInfo;
-  nsCString              contentType;
-  uint64_t               channelId;
-};
-
-//-----------------------------------------------------------------------------
 // File IPDL structs
 //-----------------------------------------------------------------------------
 

@@ -82,6 +82,10 @@ EXTRA_JS_MODULES += [
     "ShellService.sys.mjs",
 ]
 
+MOZ_SRC_FILES += [
+    "StartupOSIntegration.sys.mjs",
+]
+
 for var in (
     "MOZ_APP_DISPLAYNAME",
     "MOZ_APP_NAME",

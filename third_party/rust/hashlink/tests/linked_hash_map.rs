@@ -354,7 +354,7 @@ fn test_consuming_iter_with_free_list() {
 fn test_into_iter_drop() {
     struct Counter<'a>(&'a mut usize);
 
-    impl<'a> Drop for Counter<'a> {
+    impl Drop for Counter<'_> {
         fn drop(&mut self) {
             *self.0 += 1;
         }
@@ -386,7 +386,7 @@ fn test_drain() {
 
     struct Counter(Rc<Cell<u32>>);
 
-    impl<'a> Drop for Counter {
+    impl Drop for Counter {
         fn drop(&mut self) {
             self.0.set(self.0.get() + 1);
         }
@@ -476,7 +476,7 @@ fn test_retain() {
 
     struct Counter(Rc<Cell<u32>>);
 
-    impl<'a> Drop for Counter {
+    impl Drop for Counter {
         fn drop(&mut self) {
             self.0.set(self.0.get() + 1);
         }

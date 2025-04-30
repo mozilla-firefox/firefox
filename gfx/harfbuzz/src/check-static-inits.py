@@ -22,30 +22,30 @@ if not OBJS:
 stat = 0
 tested = 0
 
-for obj in OBJS:
-	result = subprocess.run(objdump.split () + ['-t', obj], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+result = subprocess.run(objdump.split () + ['-t'] + OBJS, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-	if result.returncode:
-		if result.stderr.find (b'not recognized') != -1:
-			# https://github.com/harfbuzz/harfbuzz/issues/3019
-			print ('objdump %s returned "not recognized", skipping' % obj)
-			continue
-		print ('objdump %s returned error:\n%s' % (obj, result.stderr.decode ('utf-8')))
-		stat = 2
+if result.returncode:
+    if result.stderr.find (b'not recognized') != -1:
+        # https://github.com/harfbuzz/harfbuzz/issues/3019
+        print ('objdump %s returned "not recognized", skipping')
+    else:
+        print ('objdump returned error:\n%s' % (result.stderr.decode ('utf-8')))
+        stat = 2
+else:
+    tested = 1
 
-	result = result.stdout.decode ('utf-8')
+result = result.stdout.decode ('utf-8')
 
-	# Checking that no object file has static initializers
-	for l in re.findall (r'^.*\.[cd]tors.*$', result, re.MULTILINE):
-		if not re.match (r'.*\b0+\b', l):
-			print ('Ouch, %s has static initializers/finalizers' % obj)
-			stat = 1
+# Checking that no object file has static initializers
+for l in re.findall (r'^.*\.[cd]tors.*$', result, re.MULTILINE):
+    if not re.match (r'.*\b0+\b', l):
+        print ('Ouch, library has static initializers/finalizers')
+        stat = 1
 
-	# Checking that no object file has lazy static C++ constructors/destructors or other such stuff
-	if ('__cxa_' in result) and ('__ubsan_handle' not in result):
-		print ('Ouch, %s has lazy static C++ constructors/destructors or other such stuff' % obj)
-		stat = 1
+# Checking that no object file has lazy static C++ constructors/destructors or other such stuff
+if ('__cxa_' in result) and ('__ubsan_handle' not in result):
+    print ('Ouch, library has lazy static C++ constructors/destructors or other such stuff')
+    stat = 1
 
-	tested += 1
 
 sys.exit (stat if tested else 77)

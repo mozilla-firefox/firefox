@@ -10,11 +10,13 @@ if MYPY:
     from typing import Callable
     from typing import Any
     from typing import Type
+    from typing import Optional
 
     from types import TracebackType
 
     Excepthook = Callable[
-        [Type[BaseException], BaseException, TracebackType], Any,
+        [Type[BaseException], BaseException, Optional[TracebackType]],
+        Any,
     ]
 
 
@@ -42,7 +44,7 @@ class ExcepthookIntegration(Integration):
 def _make_excepthook(old_excepthook):
     # type: (Excepthook) -> Excepthook
     def sentry_sdk_excepthook(type_, value, traceback):
-        # type: (Type[BaseException], BaseException, TracebackType) -> None
+        # type: (Type[BaseException], BaseException, Optional[TracebackType]) -> None
         hub = Hub.current
         integration = hub.get_integration(ExcepthookIntegration)
 

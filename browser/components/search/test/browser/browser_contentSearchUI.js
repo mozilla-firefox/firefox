@@ -780,7 +780,7 @@ add_task(async function cycleEngines() {
       extra: {
         new_load_path: TEST_ENGINE2.loadPath,
         previous_engine_id: TEST_ENGINE1.id,
-        change_source: "user_searchbar",
+        change_reason: "user_searchbar",
         new_engine_id: TEST_ENGINE2.id,
         new_display_name: TEST_ENGINE2.name,
         new_submission_url: "",
@@ -811,7 +811,7 @@ add_task(async function cycleEngines() {
       extra: {
         new_load_path: TEST_ENGINE1.loadPath,
         previous_engine_id: TEST_ENGINE2.id,
-        change_source: "user_searchbar",
+        change_reason: "user_searchbar",
         new_engine_id: TEST_ENGINE1.id,
         new_display_name: TEST_ENGINE1.name,
         new_submission_url: "",

@@ -834,8 +834,6 @@
   <string name="preferences_override_account_server">Penyedia akun Mozilla khusus</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Penyedia Sync khusus</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Akun Mozilla/server Sync diubah. Keluar dari aplikasi untuk menerapkan perubahan…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Akun</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1486,11 +1484,11 @@
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Bagikan berkas</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Yakin ingin menghapus item yang dipilih?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Yakin ingin menghapus item yang dipilih?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Hapus</string>
+  <string name="download_delete_multi_select_dialog_confirm">Hapus</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Batal</string>
+  <string name="download_delete_multi_select_dialog_cancel">Batal</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Sedang berlangsung</string>
   <!--
@@ -1521,9 +1519,9 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Unduhan gagal</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Cari di unduhan</string>
+  <string name="download_search_placeholder">Cari di unduhan</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Tidak ada yang ditemukan</string>
+  <string name="download_search_no_results_found">Tidak ada yang ditemukan</string>
   <!--
     Downloads Content Type Filters
 
@@ -2274,7 +2272,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Ikon preferensi pengecualian perlindungan pelacakan yang ditingkatkan</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->

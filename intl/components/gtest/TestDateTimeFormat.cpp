@@ -574,9 +574,6 @@ TEST(IntlDateTimeFormat, SetStartTimeIfGregorian)
 
   auto timeZone = Some(MakeStringSpan(u"UTC"));
 
-  // Beginning of ECMAScript time.
-  constexpr double StartOfTime = -8.64e15;
-
   // Gregorian change date defaults to October 15, 1582 in ICU. Test with a date
   // before the default change date, in this case January 1, 1582.
   constexpr double FirstJanuary1582 = -12244089600000.0;
@@ -597,38 +594,25 @@ TEST(IntlDateTimeFormat, SetStartTimeIfGregorian)
                         MakeStringSpan(locale), style, gen.get(), timeZone)
                         .unwrap();
 
-    const char* Dec22_1581;
     const char* Jan01_1582;
     const char* Jan01_1583;
     if (locale == "en-US-u-ca-iso8601"sv) {
-      Dec22_1581 = "1581 December 22";
       Jan01_1582 = "1582 January 1";
       Jan01_1583 = "1583 January 1";
     } else {
-      Dec22_1581 = "December 22, 1581";
       Jan01_1582 = "January 1, 1582";
       Jan01_1583 = "January 1, 1583";
     }
 
     TestBuffer<char> buffer;
 
-    // Before the default Gregorian change date, so interpreted in the Julian
-    // calendar, which is December 22, 1581.
-    dtFormat->TryFormat(FirstJanuary1582, buffer).unwrap();
-    ASSERT_TRUE(buffer.verboseMatches(Dec22_1581));
-
-    // After default Gregorian change date, so January 1, 1583.
-    dtFormat->TryFormat(FirstJanuary1582 + oneYear, buffer).unwrap();
-    ASSERT_TRUE(buffer.verboseMatches(Jan01_1583));
-
-    // Adjust the start time to use a proleptic Gregorian calendar.
-    dtFormat->SetStartTimeIfGregorian(StartOfTime);
-
-    // Now interpreted in proleptic Gregorian calendar at January 1, 1582.
+    // Before the default Gregorian change date, but not interpreted in the
+    // Julian calendar, which is December 22, 1581. Instead interpreted in
+    // proleptic Gregorian calendar at January 1, 1582.
     dtFormat->TryFormat(FirstJanuary1582, buffer).unwrap();
     ASSERT_TRUE(buffer.verboseMatches(Jan01_1582));
 
-    // Still January 1, 1583.
+    // After default Gregorian change date, so January 1, 1583.
     dtFormat->TryFormat(FirstJanuary1582 + oneYear, buffer).unwrap();
     ASSERT_TRUE(buffer.verboseMatches(Jan01_1583));
   }

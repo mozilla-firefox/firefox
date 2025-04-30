@@ -123,6 +123,7 @@
 #include "mozilla/dom/quota/CheckedUnsafePtr.h"
 #include "mozilla/dom/quota/Client.h"
 #include "mozilla/dom/quota/ClientDirectoryLock.h"
+#include "mozilla/dom/quota/ClientDirectoryLockHandle.h"
 #include "mozilla/dom/quota/ClientImpl.h"
 #include "mozilla/dom/quota/ConditionalCompilation.h"
 #include "mozilla/dom/quota/DirectoryLock.h"
@@ -2137,7 +2138,7 @@ class Database final
   SafeRefPtr<Factory> mFactory;
   SafeRefPtr<FullDatabaseMetadata> mMetadata;
   SafeRefPtr<DatabaseFileManager> mFileManager;
-  RefPtr<ClientDirectoryLock> mDirectoryLock;
+  ClientDirectoryLockHandle mDirectoryLockHandle;
   nsTHashSet<TransactionBase*> mTransactions;
   nsTHashMap<nsIDHashKey, SafeRefPtr<DatabaseFileInfo>> mMappedBlobs;
   RefPtr<DatabaseConnection> mConnection;
@@ -2168,8 +2169,8 @@ class Database final
            const quota::OriginMetadata& aOriginMetadata, uint32_t aTelemetryId,
            SafeRefPtr<FullDatabaseMetadata> aMetadata,
            SafeRefPtr<DatabaseFileManager> aFileManager,
-           RefPtr<ClientDirectoryLock> aDirectoryLock, bool aInPrivateBrowsing,
-           const Maybe<const CipherKey>& aMaybeKey);
+           ClientDirectoryLockHandle aDirectoryLockHandle,
+           bool aInPrivateBrowsing, const Maybe<const CipherKey>& aMaybeKey);
 
   void AssertIsOnConnectionThread() const {
 #ifdef DEBUG
@@ -2216,7 +2217,7 @@ class Database final
   Maybe<ClientDirectoryLock&> MaybeDirectoryLockRef() const {
     AssertIsOnBackgroundThread();
 
-    return ToMaybeRef(mDirectoryLock.get());
+    return ToMaybeRef(mDirectoryLockHandle.get());
   }
 
   int64_t DirectoryLockId() const { return mDirectoryLockId; }
@@ -3036,10 +3037,10 @@ class FactoryOp
   Maybe<ContentParentId> mContentParentId;
 
   // Must be released on the main thread!
-  RefPtr<ClientDirectoryLock> mDirectoryLock;
+  ClientDirectoryLockHandle mDirectoryLockHandle;
 
   nsTArray<NotNull<RefPtr<FactoryOp>>> mBlocking;
-  nsTArray<NotNull<RefPtr<FactoryOp>>> mBlockedOn;
+  nsTHashSet<RefPtr<FactoryOp>> mBlockedOn;
 
   nsTArray<MaybeBlockedDatabaseInfo> mMaybeBlockedDatabases;
 
@@ -3152,7 +3153,7 @@ class FactoryOp
   NS_IMETHOD
   Run() final;
 
-  void DirectoryLockAcquired(ClientDirectoryLock* aLock);
+  void DirectoryLockAcquired(ClientDirectoryLockHandle aLockHandle);
 
   void DirectoryLockFailed();
 
@@ -3171,13 +3172,13 @@ class FactoryOp
   void AddBlockedOnOp(FactoryOp& aOp) {
     AssertIsOnOwningThread();
 
-    mBlockedOn.AppendElement(WrapNotNull(&aOp));
+    mBlockedOn.Insert(&aOp);
   }
 
   void MaybeUnblock(FactoryOp& aOp) {
     AssertIsOnOwningThread();
 
-    mBlockedOn.RemoveElement(&aOp);
+    mBlockedOn.Remove(&aOp);
     if (mBlockedOn.IsEmpty()) {
       MOZ_ALWAYS_SUCCEEDS(NS_DispatchToCurrentThread(this));
     }
@@ -4967,7 +4968,7 @@ class DeleteFilesRunnable final : public Runnable {
 
   nsCOMPtr<nsIEventTarget> mOwningEventTarget;
   SafeRefPtr<DatabaseFileManager> mFileManager;
-  RefPtr<ClientDirectoryLock> mDirectoryLock;
+  ClientDirectoryLockHandle mDirectoryLockHandle;
   nsTArray<int64_t> mFileIds;
   State mState;
   DEBUGONLY(bool mDEBUGCountsAsPending = false);
@@ -4999,7 +5000,7 @@ class DeleteFilesRunnable final : public Runnable {
 
   NS_DECL_NSIRUNNABLE
 
-  void DirectoryLockAcquired(ClientDirectoryLock* aLock);
+  void DirectoryLockAcquired(ClientDirectoryLockHandle aLockHandle);
 
   void DirectoryLockFailed();
 };
@@ -9240,13 +9241,13 @@ Database::Database(SafeRefPtr<Factory> aFactory,
                    uint32_t aTelemetryId,
                    SafeRefPtr<FullDatabaseMetadata> aMetadata,
                    SafeRefPtr<DatabaseFileManager> aFileManager,
-                   RefPtr<ClientDirectoryLock> aDirectoryLock,
+                   ClientDirectoryLockHandle aDirectoryLockHandle,
                    bool aInPrivateBrowsing,
                    const Maybe<const CipherKey>& aMaybeKey)
     : mFactory(std::move(aFactory)),
       mMetadata(std::move(aMetadata)),
       mFileManager(std::move(aFileManager)),
-      mDirectoryLock(std::move(aDirectoryLock)),
+      mDirectoryLockHandle(std::move(aDirectoryLockHandle)),
       mPrincipalInfo(aPrincipalInfo),
       mOptionalContentParentId(aOptionalContentParentId),
       mOriginMetadata(aOriginMetadata),
@@ -9267,9 +9268,9 @@ Database::Database(SafeRefPtr<Factory> aFactory,
   MOZ_ASSERT(mMetadata);
   MOZ_ASSERT(mFileManager);
 
-  MOZ_ASSERT(mDirectoryLock);
-  MOZ_ASSERT(mDirectoryLock->Id() >= 0);
-  mDirectoryLockId = mDirectoryLock->Id();
+  MOZ_ASSERT(mDirectoryLockHandle);
+  MOZ_ASSERT(mDirectoryLockHandle->Id() >= 0);
+  mDirectoryLockId = mDirectoryLockHandle->Id();
 }
 
 template <typename T>
@@ -9334,7 +9335,7 @@ nsresult Database::EnsureConnection() {
 bool Database::RegisterTransaction(TransactionBase& aTransaction) {
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(!mTransactions.Contains(&aTransaction));
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(!mInvalidated);
   MOZ_ASSERT(!mClosed);
 
@@ -9389,7 +9390,7 @@ void Database::Stringify(nsACString& aResult) const {
   constexpr auto kQuotaGenericDelimiterString = "|"_ns;
 
   aResult.Append(
-      "DirectoryLock:"_ns + IntToCString(!!mDirectoryLock) +
+      "DirectoryLock:"_ns + IntToCString(!!mDirectoryLockHandle) +
       kQuotaGenericDelimiterString +
       //
       "Transactions:"_ns + IntToCString(mTransactions.Count()) +
@@ -9511,7 +9512,7 @@ bool Database::CloseInternal() {
 void Database::MaybeCloseConnection() {
   AssertIsOnBackgroundThread();
 
-  if (!mTransactions.Count() && IsClosed() && mDirectoryLock) {
+  if (!mTransactions.Count() && IsClosed() && mDirectoryLockHandle) {
     nsCOMPtr<nsIRunnable> callback =
         NewRunnableMethod("dom::indexedDB::Database::ConnectionClosedCallback",
                           this, &Database::ConnectionClosedCallback);
@@ -9527,7 +9528,9 @@ void Database::ConnectionClosedCallback() {
   MOZ_ASSERT(mClosed);
   MOZ_ASSERT(!mTransactions.Count());
 
-  DropDirectoryLock(mDirectoryLock);
+  {
+    auto destroyingDirectoryLockHandle = std::move(mDirectoryLockHandle);
+  }
 
   CleanupMetadata();
 
@@ -12878,10 +12881,10 @@ void DeleteFilesRunnable::Open() {
           {mFileManager->OriginMetadata(), quota::Client::IDB})
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
-          [self = RefPtr(this)](
-              const ClientDirectoryLockPromise::ResolveOrRejectValue& aValue) {
+          [self = RefPtr(this)](QuotaManager::ClientDirectoryLockHandlePromise::
+                                    ResolveOrRejectValue&& aValue) {
             if (aValue.IsResolve()) {
-              self->DirectoryLockAcquired(aValue.ResolveValue());
+              self->DirectoryLockAcquired(std::move(aValue.ResolveValue()));
             } else {
               self->DirectoryLockFailed();
             }
@@ -12917,7 +12920,9 @@ void DeleteFilesRunnable::UnblockOpen() {
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(mState == State_UnblockingOpen);
 
-  SafeDropDirectoryLock(mDirectoryLock);
+  {
+    auto destroyingDirectoryLockHandle = std::move(mDirectoryLockHandle);
+  }
 
   MOZ_ASSERT(mDEBUGCountsAsPending);
   sPendingRunnables--;
@@ -12949,12 +12954,13 @@ DeleteFilesRunnable::Run() {
   return NS_OK;
 }
 
-void DeleteFilesRunnable::DirectoryLockAcquired(ClientDirectoryLock* aLock) {
+void DeleteFilesRunnable::DirectoryLockAcquired(
+    ClientDirectoryLockHandle aLockHandle) {
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(mState == State_DirectoryOpenPending);
-  MOZ_ASSERT(!mDirectoryLock);
+  MOZ_ASSERT(!mDirectoryLockHandle);
 
-  mDirectoryLock = aLock;
+  mDirectoryLockHandle = std::move(aLockHandle);
 
   QuotaManager* const quotaManager = QuotaManager::Get();
   MOZ_ASSERT(quotaManager);
@@ -12970,7 +12976,7 @@ void DeleteFilesRunnable::DirectoryLockAcquired(ClientDirectoryLock* aLock) {
 void DeleteFilesRunnable::DirectoryLockFailed() {
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(mState == State_DirectoryOpenPending);
-  MOZ_ASSERT(!mDirectoryLock);
+  MOZ_ASSERT(!mDirectoryLockHandle);
 
   Finish();
 }
@@ -14757,7 +14763,7 @@ nsresult FactoryOp::Open() {
   AssertIsOnOwningThread();
   MOZ_ASSERT(mState == State::Initial);
   MOZ_ASSERT(mOriginMetadata.mOrigin.IsEmpty());
-  MOZ_ASSERT(!mDirectoryLock);
+  MOZ_ASSERT(!mDirectoryLockHandle);
 
   if (NS_WARN_IF(QuotaClient::IsShuttingDownOnBackgroundThread()) ||
       IsActorDestroyed()) {
@@ -14849,10 +14855,10 @@ nsresult FactoryOp::Open() {
   quotaManager->OpenClientDirectory({mOriginMetadata, Client::IDB})
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
-          [self = RefPtr(this)](
-              const ClientDirectoryLockPromise::ResolveOrRejectValue& aValue) {
+          [self = RefPtr(this)](QuotaManager::ClientDirectoryLockHandlePromise::
+                                    ResolveOrRejectValue&& aValue) {
             if (aValue.IsResolve()) {
-              self->DirectoryLockAcquired(aValue.ResolveValue());
+              self->DirectoryLockAcquired(std::move(aValue.ResolveValue()));
             } else {
               self->DirectoryLockFailed();
             }
@@ -14864,7 +14870,7 @@ nsresult FactoryOp::Open() {
 nsresult FactoryOp::DirectoryOpen() {
   AssertIsOnOwningThread();
   MOZ_ASSERT(mState == State::DirectoryOpenPending);
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
 
   if (mDatabaseName.isNothing()) {
     QuotaManager* const quotaManager = QuotaManager::Get();
@@ -14890,7 +14896,7 @@ nsresult FactoryOp::DirectoryOpen() {
 nsresult FactoryOp::DirectoryWorkDone() {
   AssertIsOnOwningThread();
   MOZ_ASSERT(mState == State::DirectoryWorkDone);
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(gFactoryOps);
 
   // See if this FactoryOp needs to wait.
@@ -15142,16 +15148,16 @@ FactoryOp::Run() {
   return NS_OK;
 }
 
-void FactoryOp::DirectoryLockAcquired(ClientDirectoryLock* aLock) {
+void FactoryOp::DirectoryLockAcquired(ClientDirectoryLockHandle aLockHandle) {
   AssertIsOnOwningThread();
-  MOZ_ASSERT(aLock);
+  MOZ_ASSERT(aLockHandle);
   MOZ_ASSERT(mState == State::DirectoryOpenPending);
-  MOZ_ASSERT(!mDirectoryLock);
+  MOZ_ASSERT(!mDirectoryLockHandle);
 
-  mDirectoryLock = aLock;
+  mDirectoryLockHandle = std::move(aLockHandle);
 
-  MOZ_ASSERT(mDirectoryLock->Id() >= 0);
-  mDirectoryLockId = mDirectoryLock->Id();
+  MOZ_ASSERT(mDirectoryLockHandle->Id() >= 0);
+  mDirectoryLockId = mDirectoryLockHandle->Id();
 
   auto cleanupAndReturn = [self = RefPtr(this)](const nsresult rv) {
     self->SetFailureCodeIfUnset(rv);
@@ -15163,7 +15169,7 @@ void FactoryOp::DirectoryLockAcquired(ClientDirectoryLock* aLock) {
     MOZ_ALWAYS_SUCCEEDS(self->Run());
   };
 
-  if (mDirectoryLock->Invalidated()) {
+  if (mDirectoryLockHandle->Invalidated()) {
     return cleanupAndReturn(NS_ERROR_DOM_INDEXEDDB_ABORT_ERR);
   }
 
@@ -15173,7 +15179,7 @@ void FactoryOp::DirectoryLockAcquired(ClientDirectoryLock* aLock) {
 void FactoryOp::DirectoryLockFailed() {
   AssertIsOnOwningThread();
   MOZ_ASSERT(mState == State::DirectoryOpenPending);
-  MOZ_ASSERT(!mDirectoryLock);
+  MOZ_ASSERT(!mDirectoryLockHandle);
 
   if (!HasFailed()) {
     IDB_REPORT_INTERNAL_ERR();
@@ -15999,7 +16005,7 @@ void OpenDatabaseOp::SendResults() {
   }
 
   if (mDatabase) {
-    MOZ_ASSERT(!mDirectoryLock);
+    MOZ_ASSERT(!mDirectoryLockHandle);
 
     if (HasFailed()) {
       mDatabase->Invalidate();
@@ -16009,7 +16015,7 @@ void OpenDatabaseOp::SendResults() {
     mDatabase = nullptr;
 
     CleanupMetadata();
-  } else if (mDirectoryLock) {
+  } else if (mDirectoryLockHandle) {
     // ConnectionClosedCallback will call CleanupMetadata().
     nsCOMPtr<nsIRunnable> callback = NewRunnableMethod(
         "dom::indexedDB::OpenDatabaseOp::ConnectionClosedCallback", this,
@@ -16028,9 +16034,11 @@ void OpenDatabaseOp::SendResults() {
 void OpenDatabaseOp::ConnectionClosedCallback() {
   AssertIsOnOwningThread();
   MOZ_ASSERT(HasFailed());
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
 
-  DropDirectoryLock(mDirectoryLock);
+  {
+    auto destroyingDirectoryLockHandle = std::move(mDirectoryLockHandle);
+  }
 
   CleanupMetadata();
 }
@@ -16066,7 +16074,7 @@ void OpenDatabaseOp::EnsureDatabaseActor() {
 
   MOZ_RELEASE_ASSERT(mInPrivateBrowsing == maybeKey.isSome());
 
-  const bool directoryLockInvalidated = mDirectoryLock->Invalidated();
+  const bool directoryLockInvalidated = mDirectoryLockHandle->Invalidated();
 
   // XXX Shouldn't Manager() return already_AddRefed when
   // PBackgroundIDBFactoryParent is declared refcounted?
@@ -16075,7 +16083,7 @@ void OpenDatabaseOp::EnsureDatabaseActor() {
                  AcquireStrongRefFromRawPtr{}},
       mCommonParams.principalInfo(), mContentParentId, mOriginMetadata,
       mTelemetryId, mMetadata.clonePtr(), mFileManager.clonePtr(),
-      std::move(mDirectoryLock), mInPrivateBrowsing, maybeKey);
+      std::move(mDirectoryLockHandle), mInPrivateBrowsing, maybeKey);
 
   if (info) {
     info->mLiveDatabases.AppendElement(
@@ -16627,7 +16635,9 @@ void DeleteDatabaseOp::SendResults() {
                                                                  response);
   }
 
-  SafeDropDirectoryLock(mDirectoryLock);
+  {
+    auto destroyingDirectoryLockHandle = std::move(mDirectoryLockHandle);
+  }
 
   CleanupMetadata();
 
@@ -16987,7 +16997,9 @@ void GetDatabasesOp::SendResults() {
     mResolver(mDatabaseMetadataArray);
   }
 
-  SafeDropDirectoryLock(mDirectoryLock);
+  {
+    auto destroyingDirectoryLockHandle = std::move(mDirectoryLockHandle);
+  }
 
   CleanupMetadata();
 

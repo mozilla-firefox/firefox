@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_MODULE_H
 #define PIPEWIRE_MODULE_H
@@ -44,8 +24,14 @@ extern "C" {
  */
 #define PW_TYPE_INTERFACE_Module	PW_TYPE_INFO_INTERFACE_BASE "Module"
 
+#define PW_MODULE_PERM_MASK		PW_PERM_R|PW_PERM_M
+
 #define PW_VERSION_MODULE		3
 struct pw_module;
+
+#ifndef PW_API_MODULE_IMPL
+#define PW_API_MODULE_IMPL static inline
+#endif
 
 /** The module information. Extra information can be added in later versions */
 struct pw_module_info {
@@ -99,16 +85,17 @@ struct pw_module_methods {
 			void *data);
 };
 
-#define pw_module_method(o,method,version,...)				\
-({									\
-	int _res = -ENOTSUP;						\
-	spa_interface_call_res((struct spa_interface*)o,		\
-			struct pw_module_methods, _res,			\
-			method, version, ##__VA_ARGS__);		\
-	_res;								\
-})
-
-#define pw_module_add_listener(c,...)	pw_module_method(c,add_listener,0,__VA_ARGS__)
+/** \copydoc pw_module_methods.add_listener
+ * \sa pw_module_methods.add_listener */
+PW_API_MODULE_IMPL int pw_module_add_listener(struct pw_module *object,
+			struct spa_hook *listener,
+			const struct pw_module_events *events,
+			void *data)
+{
+	return spa_api_method_r(int, -ENOTSUP,
+			pw_module, (struct spa_interface*)object, add_listener, 0,
+			listener, events, data);
+}
 
 /**
  * \}

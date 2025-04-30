@@ -7,7 +7,6 @@
 #include "MediaSource.h"
 
 #include "AsyncEventRunner.h"
-#include "Benchmark.h"
 #include "DecoderDoctorDiagnostics.h"
 #include "DecoderTraits.h"
 #include "MP4Decoder.h"
@@ -80,10 +79,10 @@ static bool IsVP9Forced(DecoderDoctorDiagnostics* aDiagnostics) {
       MediaContainerType(MEDIAMIMETYPE(VIDEO_MP4)), aDiagnostics);
   bool hwsupported = gfx::gfxVars::CanUseHardwareVideoDecoding();
 #ifdef MOZ_WIDGET_ANDROID
-  return !mp4supported || !hwsupported || VP9Benchmark::IsVP9DecodeFast() ||
+  return !mp4supported || !hwsupported ||
          java::HardwareCodecCapabilityUtils::HasHWVP9(false /* aIsEncoder */);
 #else
-  return !mp4supported || !hwsupported || VP9Benchmark::IsVP9DecodeFast();
+  return !mp4supported || !hwsupported;
 #endif
 }
 

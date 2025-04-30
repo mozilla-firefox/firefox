@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_DBUS_H
 #define SPA_DBUS_H
@@ -30,6 +10,14 @@ extern "C" {
 #endif
 
 #include <spa/support/loop.h>
+
+#ifndef SPA_API_DBUS
+ #ifdef SPA_API_IMPL
+  #define SPA_API_DBUS SPA_API_IMPL
+ #else
+  #define SPA_API_DBUS static inline
+ #endif
+#endif
 
 /** \defgroup spa_dbus DBus
  * DBus communication
@@ -99,29 +87,27 @@ struct spa_dbus_connection {
 			void *data);
 };
 
-#define spa_dbus_connection_call(c,method,vers,...)			\
-({									\
-	if (SPA_LIKELY(SPA_CALLBACK_CHECK(c,method,vers)))		\
-		c->method((c), ## __VA_ARGS__);				\
-})
-
-#define spa_dbus_connection_call_vp(c,method,vers,...)			\
-({									\
-	void *_res = NULL;						\
-	if (SPA_LIKELY(SPA_CALLBACK_CHECK(c,method,vers)))		\
-		_res = c->method((c), ## __VA_ARGS__);			\
-	_res;								\
-})
-
 /** \copydoc spa_dbus_connection.get
  * \sa spa_dbus_connection.get */
-#define spa_dbus_connection_get(c)		spa_dbus_connection_call_vp(c,get,0)
+SPA_API_DBUS void *spa_dbus_connection_get(struct spa_dbus_connection *conn)
+{
+	return spa_api_func_r(void *, NULL, conn, get, 0);
+}
 /** \copydoc spa_dbus_connection.destroy
  * \sa spa_dbus_connection.destroy */
-#define spa_dbus_connection_destroy(c)		spa_dbus_connection_call(c,destroy,0)
+SPA_API_DBUS void spa_dbus_connection_destroy(struct spa_dbus_connection *conn)
+{
+	spa_api_func_v(conn, destroy, 0);
+}
 /** \copydoc spa_dbus_connection.add_listener
  * \sa spa_dbus_connection.add_listener */
-#define spa_dbus_connection_add_listener(c,...)	spa_dbus_connection_call(c,add_listener,1,__VA_ARGS__)
+SPA_API_DBUS void spa_dbus_connection_add_listener(struct spa_dbus_connection *conn,
+		struct spa_hook *listener,
+		const struct spa_dbus_connection_events *events,
+		void *data)
+{
+	spa_api_func_v(conn, add_listener, 1, listener, events, data);
+}
 
 struct spa_dbus_methods {
 #define SPA_VERSION_DBUS_METHODS	0
@@ -146,14 +132,11 @@ struct spa_dbus_methods {
 /** \copydoc spa_dbus_methods.get_connection
  * \sa spa_dbus_methods.get_connection
  */
-static inline struct spa_dbus_connection *
+SPA_API_DBUS struct spa_dbus_connection *
 spa_dbus_get_connection(struct spa_dbus *dbus, enum spa_dbus_type type)
 {
-	struct spa_dbus_connection *res = NULL;
-	spa_interface_call_res(&dbus->iface,
-                        struct spa_dbus_methods, res,
-			get_connection, 0, type);
-	return res;
+	return spa_api_method_r(struct spa_dbus_connection *, NULL,
+			spa_dbus, &dbus->iface, get_connection, 0, type);
 }
 
 /**

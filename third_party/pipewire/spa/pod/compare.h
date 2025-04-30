@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2018 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2018 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_POD_COMPARE_H
 #define SPA_POD_COMPARE_H
@@ -40,27 +20,36 @@ extern "C" {
 #include <spa/pod/iter.h>
 #include <spa/pod/builder.h>
 
+#ifndef SPA_API_POD_COMPARE
+ #ifdef SPA_API_IMPL
+  #define SPA_API_POD_COMPARE SPA_API_IMPL
+ #else
+  #define SPA_API_POD_COMPARE static inline
+ #endif
+#endif
+
 /**
  * \addtogroup spa_pod
  * \{
  */
 
-static inline int spa_pod_compare_value(uint32_t type, const void *r1, const void *r2, uint32_t size)
+SPA_API_POD_COMPARE int spa_pod_compare_value(uint32_t type, const void *r1, const void *r2, uint32_t size)
 {
 	switch (type) {
 	case SPA_TYPE_None:
 		return 0;
 	case SPA_TYPE_Bool:
+		return SPA_CMP(!!*(int32_t *)r1, !!*(int32_t *)r2);
 	case SPA_TYPE_Id:
-		return *(uint32_t *) r1 == *(uint32_t *) r2 ? 0 : 1;
+		return SPA_CMP(*(uint32_t *)r1, *(uint32_t *)r2);
 	case SPA_TYPE_Int:
-		return *(int32_t *) r1 - *(int32_t *) r2;
+		return SPA_CMP(*(int32_t *)r1, *(int32_t *)r2);
 	case SPA_TYPE_Long:
-		return *(int64_t *) r1 - *(int64_t *) r2;
+		return SPA_CMP(*(int64_t *)r1, *(int64_t *)r2);
 	case SPA_TYPE_Float:
-		return *(float *) r1 - *(float *) r2;
+		return SPA_CMP(*(float *)r1, *(float *)r2);
 	case SPA_TYPE_Double:
-		return *(double *) r1 - *(double *) r2;
+		return SPA_CMP(*(double *)r1, *(double *)r2);
 	case SPA_TYPE_String:
 		return strcmp((char *)r1, (char *)r2);
 	case SPA_TYPE_Bytes:
@@ -80,15 +69,10 @@ static inline int spa_pod_compare_value(uint32_t type, const void *r1, const voi
 	{
 		const struct spa_fraction *f1 = (struct spa_fraction *) r1,
 		    *f2 = (struct spa_fraction *) r2;
-		int64_t n1, n2;
-		n1 = ((int64_t) f1->num) * f2->denom;
-		n2 = ((int64_t) f2->num) * f1->denom;
-		if (n1 < n2)
-			return -1;
-		else if (n1 > n2)
-			return 1;
-		else
-			return 0;
+		uint64_t n1, n2;
+		n1 = ((uint64_t) f1->num) * f2->denom;
+		n2 = ((uint64_t) f2->num) * f1->denom;
+		return SPA_CMP(n1, n2);
 	}
 	default:
 		break;
@@ -96,7 +80,7 @@ static inline int spa_pod_compare_value(uint32_t type, const void *r1, const voi
 	return 0;
 }
 
-static inline int spa_pod_compare(const struct spa_pod *pod1,
+SPA_API_POD_COMPARE int spa_pod_compare(const struct spa_pod *pod1,
 				  const struct spa_pod *pod2)
 {
 	int res = 0;

@@ -181,6 +181,39 @@
   }
 }
 
+// Bug 1959189 - Show mobile QR code modal toggle next to weather widget
+.has-mobile-download-promo {
+  $mobile-download-promo-width: 32px;
+  // No Variant Layout, Var A Layout
+  .weather, &.layout-variant-a .weather {
+    // Default spacing (--space-xlarge) + width of .mobile-download-promo (32px) + gap
+    @media (min-width: $break-point-medium) {
+      inset-inline-start: calc($mobile-download-promo-width + var(--space-xxlarge));
+    }
+  }
+
+  &.layout-variant-b .weather {
+    // Var B: width of .mobile-download-promo (32px) + gap
+    @media (min-width: $break-point-medium) {
+      inset-inline-start: auto;
+      inset-inline-end: calc($mobile-download-promo-width + var(--space-medium));
+    }
+
+    // Var B offset (40px) + width of .mobile-download-promo (32px) + gap
+    @media (min-width: $break-point-layout-variant) {
+      inset-inline-end: calc(40px + $mobile-download-promo-width + var(--space-medium));
+    }
+  }
+
+  // Layout when search has been turned off. It will show one breakpoint later than `has-search`
+  &.layout-variant-b.no-search .weather {
+    // Var B offset (40px) + width of .mobile-download-promo (32px) + gap
+    @media (min-width: $break-point-large) {
+      inset-inline-end: calc(40px + $mobile-download-promo-width + var(--space-medium));
+    }
+  }
+}
+
 .no-search.layout-variant-b {
   .weather {
     inset-inline-end: 20px;
@@ -293,7 +326,7 @@
   }
 
   // Bug 1908010 - This overwrites the design system color because of a
-  // know transparency issue with color-mix syntax when a wallpaper is set
+  // known transparency issue with color-mix syntax when a wallpaper is set
   .lightWallpaper &,
   .darkWallpaper & {
     background-color: var(--newtab-weather-background-color);
@@ -369,7 +402,7 @@
   }
 
   // Bug 1908010 - This overwrites the design system color because of a
-  // know transparency issue with color-mix syntax when a wallpaper is set
+  // known transparency issue with color-mix syntax when a wallpaper is set
   .lightWallpaper &,
   .darkWallpaper & {
     background-color: var(--newtab-weather-background-color);
@@ -668,7 +701,7 @@
   position: relative;
 
   // Bug 1908010 - This overwrites the design system color because of a
-  // know transparency issue with color-mix syntax when a wallpaper is set
+  // known transparency issue with color-mix syntax when a wallpaper is set
   .lightWallpaper &,
   .darkWallpaper & {
     background-color: var(--newtab-weather-background-color);

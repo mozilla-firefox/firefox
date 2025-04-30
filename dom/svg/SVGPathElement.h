@@ -18,6 +18,7 @@ nsresult NS_NewSVGPathElement(
 namespace mozilla::dom {
 
 struct SVGPathDataSettings;
+struct SVGPathSegmentInit;
 class SVGPathSegment;
 
 using SVGPathElementBase = SVGGeometryElement;
@@ -85,7 +86,7 @@ class SVGPathElement final : public SVGPathElementBase {
   MOZ_CAN_RUN_SCRIPT
   void GetPathData(const SVGPathDataSettings& aOptions,
                    nsTArray<RefPtr<SVGPathSegment>>& aValues);
-  void SetPathData(const Sequence<OwningNonNull<SVGPathSegment>>& aValues);
+  void SetPathData(const Sequence<SVGPathSegmentInit>& aValues);
 
   static bool IsDPropertyChangedViaCSS(const ComputedStyle& aNewStyle,
                                        const ComputedStyle& aOldStyle);

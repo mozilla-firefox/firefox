@@ -2,7 +2,7 @@
    http://creativecommons.org/publicdomain/zero/1.0/ */
 
 /*
- * Tests that the StoreID is restored if available in prefs.
+ * Tests that the StoreID is restored if in profiles.ini.
  */
 add_task(
   {
@@ -16,6 +16,7 @@ add_task(
         {
           name: "default",
           path: defaultProfile.leafName,
+          storeID: "bishbashbosh",
           default: true,
         },
       ],
@@ -27,15 +28,16 @@ add_task(
     };
     writeProfilesIni(profilesIni);
 
-    Services.prefs.setCharPref("toolkit.profiles.storeID", "bishbashbosh");
-
     let service = getProfileService();
     let { profile } = selectStartupProfile();
+
+    let storeID = Services.prefs.getCharPref("toolkit.profiles.storeID");
 
     Assert.equal(profile.rootDir.path, defaultProfile.path);
     Assert.equal(service.currentProfile, profile);
     Assert.equal(service.groupProfile, profile);
     Assert.equal(profile.storeID, "bishbashbosh");
+    Assert.equal(storeID, "bishbashbosh");
 
     checkProfileService();
   }

@@ -13,11 +13,6 @@
         android:title="@string/preferences_sync_2"
         app:allowDividerBelow="false" />
 
-    <androidx.preference.SwitchPreference
-        android:key="@string/pref_key_allow_domestic_china_fxa_server"
-        android:title="@string/preferences_allow_domestic_china_fxa_server"
-        android:defaultValue="true"/>
-
     <androidx.preference.PreferenceCategory
         android:key="@string/pref_key_account_category"
         android:title="@string/preferences_category_account"

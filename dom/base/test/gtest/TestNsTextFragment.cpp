@@ -31,7 +31,7 @@ static already_AddRefed<Document> CreateHTMLDoc() {
                                         uri, uri, principal,
                                         false,    // aLoadedAsData
                                         nullptr,  // aEventObject
-                                        DocumentFlavorHTML));
+                                        DocumentFlavor::HTML));
   MOZ_RELEASE_ASSERT(doc);
   return doc.forget();
 }

@@ -42,6 +42,8 @@ import kotlinx.coroutines.launch
 import mozilla.components.compose.base.annotation.LightDarkPreview
 import mozilla.components.lib.state.ext.observeAsComposableState
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.appstate.AppAction
+import org.mozilla.fenix.components.appstate.setup.checklist.ChecklistItem
 import org.mozilla.fenix.components.components
 import org.mozilla.fenix.compose.LinkTextState
 import org.mozilla.fenix.compose.PagerIndicator
@@ -378,26 +380,42 @@ private fun OnboardingPageForType(
         OnboardingPageUiData.Type.NOTIFICATION_PERMISSION,
         -> OnboardingPage(state)
 
-        OnboardingPageUiData.Type.TOOLBAR_PLACEMENT,
-        -> onboardingStore?.let { store ->
-            ToolbarOnboardingPage(
-                onboardingStore = store,
-                pageState = state,
-                onToolbarSelectionClicked = {
-                    store.dispatch(OnboardingToolbarAction.UpdateSelected(it))
-                },
-            )
+        OnboardingPageUiData.Type.TOOLBAR_PLACEMENT -> {
+            val context = LocalContext.current
+            onboardingStore?.let { store ->
+                ToolbarOnboardingPage(
+                    onboardingStore = store,
+                    pageState = state,
+                    onToolbarSelectionClicked = {
+                        store.dispatch(OnboardingToolbarAction.UpdateSelected(it))
+                        context.components.appStore.dispatch(
+                            AppAction.SetupChecklistAction.TaskPreferenceUpdated(
+                                ChecklistItem.Task.Type.CHANGE_TOOLBAR_PLACEMENT,
+                                true,
+                            ),
+                        )
+                    },
+                )
+            }
         }
 
-        OnboardingPageUiData.Type.THEME_SELECTION,
-        -> onboardingStore?.let { store ->
-            ThemeOnboardingPage(
-                onboardingStore = store,
-                pageState = state,
-                onThemeSelectionClicked = {
-                    store.dispatch(OnboardingThemeAction.UpdateSelected(it))
-                },
-            )
+        OnboardingPageUiData.Type.THEME_SELECTION -> {
+            val context = LocalContext.current
+            onboardingStore?.let { store ->
+                ThemeOnboardingPage(
+                    onboardingStore = store,
+                    pageState = state,
+                    onThemeSelectionClicked = {
+                        store.dispatch(OnboardingThemeAction.UpdateSelected(it))
+                        context.components.appStore.dispatch(
+                            AppAction.SetupChecklistAction.TaskPreferenceUpdated(
+                                ChecklistItem.Task.Type.SELECT_THEME,
+                                true,
+                            ),
+                        )
+                    },
+                )
+            }
         }
 
         OnboardingPageUiData.Type.MARKETING_DATA -> MarketingDataOnboardingPage(

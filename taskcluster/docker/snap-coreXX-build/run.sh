@@ -7,7 +7,6 @@ mkdir -p /builds/worker/artifacts/
 export UPLOAD_PATH=/builds/worker/artifacts/
 
 mkdir -p /builds/worker/.local/state/snapcraft/
-ln -s /builds/worker/artifacts /builds/worker/.local/state/snapcraft/log
 
 BRANCH=$1
 ARCH=$2
@@ -98,6 +97,10 @@ if [ "${USE_SNAP_FROM_STORE_OR_MC}" = "0" ]; then
     sed -ri 's/ac_add_options MOZ_PGO=1//g' snapcraft.yaml
   fi
 
+  # Until launchpad is able to handle platforms definition, the snapcraft yaml
+  # hides them and we want to unhide.
+  sed -ri 's/^##CROSS-COMPILATION##//g' snapcraft.yaml
+
   MAX_MEMORY_GB=$(free -g | awk '/Mem:/ { print $2 - 1 }')
 
   # setting parallelism does not work with core24 ?
@@ -111,19 +114,8 @@ if [ "${USE_SNAP_FROM_STORE_OR_MC}" = "0" ]; then
   sed -ri "s|\\\$CRAFT_PARALLEL_BUILD_COUNT|${MAX_CPUS}|g" snapcraft.yaml
   grep "make -j" snapcraft.yaml
 
-  # CRAFT_PARTS_PACKAGE_REFRESH required to avoid snapcraft running apt-get update
-  # especially for stage-packages
-  #
-  # Passing --build-for=amd64 when building on amd64 fails with the following
-  # when running on a non-multiarch-ready snapcraft.yaml:
-  # Could not make build plan: build-on architectures in snapcraft.yaml does not match host architecture (amd64).
-  if [ "${BRANCH}" != "esr" ] && [ "${BRANCH}" != "esr-128" ]; then
-    MAYBE_BUILD_FOR_ARCH="--build-for=${ARCH}"
-  fi;
-
   SNAPCRAFT_BUILD_ENVIRONMENT_MEMORY="${MAX_MEMORY_GB}G" \
-  CRAFT_PARTS_PACKAGE_REFRESH=0 \
-    snapcraft --destructive-mode --verbose "${MAYBE_BUILD_FOR_ARCH}"
+    snapcraft --destructive-mode --verbosity verbose --build-for "${ARCH}"
 elif [ "${USE_SNAP_FROM_STORE_OR_MC}" = "store" ]; then
   mkdir from-snap-store && cd from-snap-store
 
@@ -159,7 +151,7 @@ else
 
   TASKCLUSTER_API_ROOT="https://firefox-ci-tc.services.mozilla.com/api"
 
-  URL_TASK="${TASKCLUSTER_API_ROOT}/index/v1/task/gecko.v2.mozilla-central.${USE_SNAP_FROM_STORE_OR_MC}.firefox.amd64-${INDEX_NAME}"
+  URL_TASK="${TASKCLUSTER_API_ROOT}/index/v1/task/gecko.v2.mozilla-central.${USE_SNAP_FROM_STORE_OR_MC}.firefox.${ARCH}-${INDEX_NAME}"
   PKGS_TASK_ID=$(curl "${URL_TASK}" | jq -r '.taskId')
 
   if [ -z "${PKGS_TASK_ID}" ]; then

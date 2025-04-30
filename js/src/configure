@@ -6,8 +6,7 @@
 SRCDIR=$(dirname $0)
 TOPSRCDIR="$SRCDIR"/../..
 PYTHON3="${PYTHON3:-python3}"
-export OLD_CONFIGURE="$SRCDIR"/old-configure
 
 set -- "$@" --enable-project=js
-
+export MOZ_JS_CONFIGURE=1
 exec "$PYTHON3" "$TOPSRCDIR/configure.py" "$@"

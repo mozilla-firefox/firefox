@@ -100,11 +100,17 @@ class ObjectActor extends Actor {
    *        the caller:
    *        - {Number} customFormatterObjectTagDepth: See `processObjectTag`
    *        - {Debugger.Object} customFormatterConfigDbgObj
+   *        - {bool} allowSideEffect: allow side effectful operations while
+   *                                  constructing a preview
    */
   constructor(
     threadActor,
     obj,
-    { customFormatterObjectTagDepth, customFormatterConfigDbgObj }
+    {
+      customFormatterObjectTagDepth,
+      customFormatterConfigDbgObj,
+      allowSideEffect = true,
+    }
   ) {
     super(threadActor.conn, objectSpec);
 
@@ -118,6 +124,7 @@ class ObjectActor extends Actor {
     this.threadActor = threadActor;
     this.rawObj = obj.unsafeDereference();
     this.safeRawObj = this.#getSafeRawObject();
+    this.allowSideEffect = allowSideEffect;
 
     // Cache obj.class as it can be costly when queried from previewers if this is in a hot path
     // (e.g. logging objects within a for loops).

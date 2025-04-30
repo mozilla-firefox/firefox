@@ -232,6 +232,20 @@ pkcs11:
       - dkeeler@mozilla.com
     expires: never
     unit: modules
+  external_trust_anchor_module_loaded:
+    type: boolean
+    description:
+      Whether or not an external trust anchor module was loaded.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1958977
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1958977
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - anna.weine@mozilla.com
+      - dkeeler@mozilla.com
+    expires: never
 
 cert_verification_time:
   success:

@@ -437,21 +437,15 @@ function useCustomGeoServer(region, waitToRespond = Promise.resolve()) {
  *   An object with the expected details for the private search engine.
  */
 async function assertGleanDefaultEngine(expected) {
-  await TestUtils.waitForCondition(
-    () =>
-      Glean.searchEngineDefault.engineId.testGetValue() ==
-      (expected.normal.engineId ?? ""),
-    "Should have set the correct telemetry id for the normal engine"
-  );
-
-  await TestUtils.waitForCondition(
-    () =>
-      Glean.searchEnginePrivate.engineId.testGetValue() ==
-      (expected.private?.engineId ?? ""),
-    "Should have set the correct telemetry id for the private engine"
-  );
-
-  for (let property of ["displayName", "loadPath", "submissionUrl"]) {
+  for (let property of [
+    "providerId",
+    "partnerCode",
+    "overriddenByThirdParty",
+    "engineId",
+    "displayName",
+    "loadPath",
+    "submissionUrl",
+  ]) {
     if (property in expected.normal) {
       Assert.equal(
         Glean.searchEngineDefault[property].testGetValue(),

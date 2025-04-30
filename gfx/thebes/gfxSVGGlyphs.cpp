@@ -375,7 +375,7 @@ nsresult gfxSVGGlyphsDocument::ParseDocument(const uint8_t* aBuffer,
                          uri, uri, principal,
                          false,    // aLoadedAsData
                          nullptr,  // aEventObject
-                         DocumentFlavorSVG);
+                         DocumentFlavor::SVG);
   NS_ENSURE_SUCCESS(rv, rv);
 
   nsCOMPtr<nsIChannel> channel;

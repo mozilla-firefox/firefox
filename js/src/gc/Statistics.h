@@ -478,8 +478,9 @@ struct Statistics {
   void sccDurations(TimeDuration* total, TimeDuration* maxPause) const;
   void printStats();
 
-  template <typename Fn>
-  void reportLongestPhaseInMajorGC(PhaseKind longest, Fn reportFn);
+  template <typename LegacyFn, typename GleanFn>
+  void reportLongestPhaseInMajorGC(PhaseKind longest, LegacyFn legacyReportFn,
+                                   GleanFn gleanReportFn);
 
   UniqueChars formatCompactSlicePhaseTimes(const PhaseTimes& phaseTimes) const;
 

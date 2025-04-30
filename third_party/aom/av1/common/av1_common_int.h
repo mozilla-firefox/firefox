@@ -169,6 +169,8 @@ typedef struct RefCntBuffer {
   int8_t mode_deltas[MAX_MODE_LF_DELTAS];
 
   FRAME_CONTEXT frame_context;
+
+  int filter_level[2];
 } RefCntBuffer;
 
 typedef struct BufferPool {
@@ -618,6 +620,11 @@ struct CommonQuantParams {
    * Base qindex of the frame in the range 0 to 255.
    */
   int base_qindex;
+
+  /*!
+   * Sharpness adjustment in the quantization process.
+   */
+  int sharpness;
 
   /*!
    * Delta of qindex (from base_qindex) for Y plane DC coefficient.

@@ -12,35 +12,13 @@ const MESSAGE_CHILD_TEST_DONE = "ChildTest:Done";
 
 function run_child_test() {
   // Setup histograms with some fixed values.
-  let countHist = Telemetry.getHistogramById("TELEMETRY_TEST_COUNT");
-  countHist.add();
-  countHist.add();
-  let categHist = Telemetry.getHistogramById("TELEMETRY_TEST_CATEGORICAL");
-  categHist.add("Label2");
-  categHist.add("Label3");
-
-  let countKeyed = Telemetry.getKeyedHistogramById(
-    "TELEMETRY_TEST_KEYED_COUNT"
-  );
-  countKeyed.add("a");
-  countKeyed.add("b");
-  countKeyed.add("b");
-
-  // Test record_in_processes
-  let contentLinear = Telemetry.getHistogramById(
-    "TELEMETRY_TEST_CONTENT_PROCESS"
-  );
-  contentLinear.add(10);
-  let contentKeyed = Telemetry.getKeyedHistogramById(
-    "TELEMETRY_TEST_KEYED_CONTENT_PROCESS"
-  );
-  contentKeyed.add("content", 1);
-  let allLinear = Telemetry.getHistogramById("TELEMETRY_TEST_ALL_PROCESSES");
-  allLinear.add(10);
-  let allChildLinear = Telemetry.getHistogramById(
-    "TELEMETRY_TEST_ALL_CHILD_PROCESSES"
-  );
-  allChildLinear.add(10);
+  Glean.testOnlyIpc.aCounterForHgram.add();
+  Glean.testOnlyIpc.aCounterForHgram.add();
+  Glean.testOnlyIpc.aLabeledCounterForCategorical.Label4.add(1);
+  Glean.testOnlyIpc.aLabeledCounterForCategorical.Label5.add(1);
+  Glean.testOnlyIpc.aLabeledCounterForKeyedCountHgram.a.add(1);
+  Glean.testOnlyIpc.aLabeledCounterForKeyedCountHgram.b.add(1);
+  Glean.testOnlyIpc.aLabeledCounterForKeyedCountHgram.b.add(1);
 
   // Test snapshot APIs.
   // Should be forbidden in content processes.
@@ -86,7 +64,7 @@ function check_histogram_values(payload) {
   const hs = payload.histograms;
   Assert.ok("TELEMETRY_TEST_COUNT" in hs, "Should have count test histogram.");
   Assert.ok(
-    "TELEMETRY_TEST_CATEGORICAL" in hs,
+    "TELEMETRY_TEST_CATEGORICAL_OPTOUT" in hs,
     "Should have categorical test histogram."
   );
   Assert.equal(
@@ -95,7 +73,7 @@ function check_histogram_values(payload) {
     "Count test histogram should have the right value."
   );
   Assert.equal(
-    hs.TELEMETRY_TEST_CATEGORICAL.sum,
+    hs.TELEMETRY_TEST_CATEGORICAL_OPTOUT.sum,
     3,
     "Categorical test histogram should have the right sum."
   );
@@ -152,25 +130,7 @@ add_task(async function () {
     );
   });
 
-  // Test record_in_processes in main process, too
-  let contentLinear = Telemetry.getHistogramById(
-    "TELEMETRY_TEST_CONTENT_PROCESS"
-  );
-  contentLinear.add(20);
-  let contentKeyed = Telemetry.getKeyedHistogramById(
-    "TELEMETRY_TEST_KEYED_CONTENT_PROCESS"
-  );
-  contentKeyed.add("parent", 1);
-  let allLinear = Telemetry.getHistogramById("TELEMETRY_TEST_ALL_PROCESSES");
-  allLinear.add(20);
-  let allChildLinear = Telemetry.getHistogramById(
-    "TELEMETRY_TEST_ALL_CHILD_PROCESSES"
-  );
-  allChildLinear.add(20);
-  let countKeyed = Telemetry.getKeyedHistogramById(
-    "TELEMETRY_TEST_KEYED_COUNT"
-  );
-  countKeyed.add("a");
+  Glean.testOnlyIpc.aLabeledCounterForKeyedCountHgram.a.add(1);
 
   const payload = TelemetrySession.getPayload("test-ping");
   Assert.ok("processes" in payload, "Should have processes section");
@@ -188,73 +148,8 @@ add_task(async function () {
   );
   check_histogram_values(payload.processes.content);
 
-  // Check record_in_processes
-  // Content Process
-  let hs = payload.processes.content.histograms;
-  let khs = payload.processes.content.keyedHistograms;
-  Assert.ok(
-    "TELEMETRY_TEST_CONTENT_PROCESS" in hs,
-    "Should have content process histogram"
-  );
   Assert.equal(
-    hs.TELEMETRY_TEST_CONTENT_PROCESS.sum,
-    10,
-    "Should have correct value"
-  );
-  Assert.ok(
-    "TELEMETRY_TEST_KEYED_CONTENT_PROCESS" in khs,
-    "Should have keyed content process histogram"
-  );
-  Assert.equal(
-    khs.TELEMETRY_TEST_KEYED_CONTENT_PROCESS.content.sum,
-    1,
-    "Should have correct value"
-  );
-  Assert.ok(
-    "TELEMETRY_TEST_ALL_PROCESSES" in hs,
-    "Should have content process histogram"
-  );
-  Assert.equal(
-    hs.TELEMETRY_TEST_ALL_PROCESSES.sum,
-    10,
-    "Should have correct value"
-  );
-  Assert.ok(
-    "TELEMETRY_TEST_ALL_CHILD_PROCESSES" in hs,
-    "Should have content process histogram"
-  );
-  Assert.equal(
-    hs.TELEMETRY_TEST_ALL_CHILD_PROCESSES.sum,
-    10,
-    "Should have correct value"
-  );
-
-  // Main Process
-  let mainHs = payload.histograms;
-  let mainKhs = payload.keyedHistograms;
-  Assert.ok(
-    !("TELEMETRY_TEST_CONTENT_PROCESS" in mainHs),
-    "Should not have content process histogram in main process payload"
-  );
-  Assert.ok(
-    !("TELEMETRY_TEST_KEYED_CONTENT_PROCESS" in mainKhs),
-    "Should not have keyed content process histogram in main process payload"
-  );
-  Assert.ok(
-    "TELEMETRY_TEST_ALL_PROCESSES" in mainHs,
-    "Should have all-process histogram in main process payload"
-  );
-  Assert.equal(
-    mainHs.TELEMETRY_TEST_ALL_PROCESSES.sum,
-    20,
-    "Should have correct value"
-  );
-  Assert.ok(
-    !("TELEMETRY_TEST_ALL_CHILD_PROCESSES" in mainHs),
-    "Should not have all-child process histogram in main process payload"
-  );
-  Assert.equal(
-    mainKhs.TELEMETRY_TEST_KEYED_COUNT.a.sum,
+    payload.keyedHistograms.TELEMETRY_TEST_KEYED_COUNT.a.sum,
     1,
     "Should have correct value in parent"
   );

@@ -1,7 +1,7 @@
 [DEFAULT]
 head = "head_libmar.js"
 support-files = ["data/**"]
-skip-if = ["os == 'win' && msix"] # Updates are disabled for MSIX builds
+run-if = ["!msix"] # Updates are disabled for MSIX builds
 
 ["test_create.js"]
 

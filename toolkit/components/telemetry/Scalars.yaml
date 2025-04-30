@@ -164,7 +164,7 @@ installation.firstSeen:
       value "NotFoundError" if file not found or other values
       depending on the failure reason.
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: string
     notification_emails:
       - rtestard@mozilla.com
@@ -184,7 +184,7 @@ installation.firstSeen:
       The type of installer used to install Firefox.
       The value is one of "stub", "full", or "msix"
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: string
     notification_emails:
       - rtestard@mozilla.com
@@ -204,7 +204,7 @@ installation.firstSeen:
       The application version installed by the installer
       (not necessarily the current version)
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: string
     notification_emails:
       - rtestard@mozilla.com
@@ -223,7 +223,7 @@ installation.firstSeen:
     description: >
       Whether the installer is running from an elevated admin user
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: boolean
     notification_emails:
       - rtestard@mozilla.com
@@ -242,7 +242,7 @@ installation.firstSeen:
     description: >
       'Whether there was already an install in this location'
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: boolean
     notification_emails:
       - rtestard@mozilla.com
@@ -261,7 +261,7 @@ installation.firstSeen:
     description: >
       'Whether the top-level profile directory existed'
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: boolean
     notification_emails:
       - rtestard@mozilla.com
@@ -280,7 +280,7 @@ installation.firstSeen:
     description: >
       'Whether there was already any non-MSIX install on this system'
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: boolean
     notification_emails:
       - rtestard@mozilla.com
@@ -299,7 +299,7 @@ installation.firstSeen:
     description: >
       'Whether there was already any MSIX install on this system'
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: boolean
     notification_emails:
       - rtestard@mozilla.com
@@ -319,7 +319,7 @@ installation.firstSeen:
       (optional, present if installer_type is "full")
       Whether this was a silent install
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: boolean
     notification_emails:
       - rtestard@mozilla.com
@@ -339,7 +339,7 @@ installation.firstSeen:
       (optional, present if installer_type is "full")
       Whether this was an MSI install
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: boolean
     notification_emails:
       - rtestard@mozilla.com
@@ -359,7 +359,7 @@ installation.firstSeen:
       (optional, present if installer_type is "full")
       Whether the default path was used
     keyed: false
-    expires: "140"
+    expires: "152"
     kind: boolean
     notification_emails:
       - rtestard@mozilla.com
@@ -2871,27 +2871,6 @@ webrtc.video:
     notification_emails:
       - dminor@mozilla.com
       - nohlmeier@mozilla.com
-    release_channel_collection: opt-out
-    products:
-      - 'firefox'
-      - 'fennec'
-    record_in_processes:
-      - 'content'
-
-mathml:
-  doc_count:
-    bug_numbers:
-      - 1362187
-      - 1538985
-      - 1590350
-    description: >
-      The number of documents that contained enabled MathML elements.
-    expires: never
-    kind: uint
-    notification_emails:
-      - emilio@mozilla.com
-      - fred.wang@free.fr
-      - dev-tech-layout@lists.mozilla.org
     release_channel_collection: opt-out
     products:
       - 'firefox'

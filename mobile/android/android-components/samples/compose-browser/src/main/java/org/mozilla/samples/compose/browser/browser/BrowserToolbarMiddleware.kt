@@ -10,10 +10,12 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import mozilla.components.compose.browser.toolbar.concept.Action.ActionButton
 import mozilla.components.compose.browser.toolbar.concept.Action.TabCounterAction
+import mozilla.components.compose.browser.toolbar.concept.PageOrigin
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarAction
+import mozilla.components.compose.browser.toolbar.store.BrowserToolbarAction.ToggleEditMode
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarEvent
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarMenu
-import mozilla.components.compose.browser.toolbar.store.BrowserToolbarMenuItem
+import mozilla.components.compose.browser.toolbar.store.BrowserToolbarMenuItem.BrowserToolbarMenuButton
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarState
 import mozilla.components.compose.browser.toolbar.store.DisplayState
 import mozilla.components.compose.browser.toolbar.store.EditState
@@ -24,12 +26,17 @@ import mozilla.components.lib.state.Store
 import org.mozilla.samples.compose.browser.BrowserComposeActivity.Companion.ROUTE_SETTINGS
 import org.mozilla.samples.compose.browser.R
 import org.mozilla.samples.compose.browser.browser.DisplayBrowserActionsInteractions.TabCounterClicked
-import org.mozilla.samples.compose.browser.browser.DisplayPageActionsInteractions.RefreshClicked
+import org.mozilla.samples.compose.browser.browser.DisplayPageActionsEndInteractions.RefreshClicked
+import org.mozilla.samples.compose.browser.browser.DisplayPageOriginInteractions.PageOriginClicked
 import org.mozilla.samples.compose.browser.browser.EditActionsInteractions.ClearClicked
 import mozilla.components.ui.icons.R as iconsR
 
-private sealed class DisplayPageActionsInteractions : BrowserToolbarEvent {
-    data object RefreshClicked : DisplayPageActionsInteractions()
+private sealed class DisplayPageOriginInteractions : BrowserToolbarEvent {
+    data object PageOriginClicked : DisplayPageOriginInteractions()
+}
+
+private sealed class DisplayPageActionsEndInteractions : BrowserToolbarEvent {
+    data object RefreshClicked : DisplayPageActionsEndInteractions()
 }
 
 private sealed class DisplayBrowserActionsInteractions : BrowserToolbarEvent {
@@ -59,6 +66,10 @@ internal class BrowserToolbarMiddleware(
                 next(buildInitialState())
             }
 
+            is PageOriginClicked -> {
+                next(ToggleEditMode(true))
+            }
+
             is TabCounterClicked -> {
                 dependencies.browserScreenStore.dispatch(BrowserScreenAction.ShowTabs)
             }
@@ -76,9 +87,14 @@ internal class BrowserToolbarMiddleware(
     private fun buildInitialState() = BrowserToolbarAction.Init(
         mode = Mode.DISPLAY,
         displayState = DisplayState(
-            hint = "Search or enter address",
-            pageActions = buildDisplayPageActions(),
-            browserActions = buildDisplayBrowserActions(),
+            pageOrigin = PageOrigin(
+                hint = R.string.toolbar_search_hint,
+                title = null,
+                url = null,
+                onClick = PageOriginClicked,
+            ),
+            pageActionsEnd = buildDisplayPageActions(),
+            browserActionsEnd = buildDisplayBrowserActions(),
         ),
         editState = EditState(
             editActionsEnd = buildEditPageActionsEnd(),
@@ -108,7 +124,7 @@ internal class BrowserToolbarMiddleware(
             tint = getColor(R.color.icon_tint),
             onClick = BrowserToolbarMenu {
                 listOf(
-                    BrowserToolbarMenuItem(
+                    BrowserToolbarMenuButton(
                         iconResource = iconsR.drawable.mozac_ic_settings_24,
                         text = R.string.menu_item_settings,
                         contentDescription = R.string.menu_item_settings_description,

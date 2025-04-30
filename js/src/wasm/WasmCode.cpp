@@ -896,25 +896,32 @@ static JS::UniqueChars DescribeCodeRangeForProfiler(
     return nullptr;
   }
 
+  const char* category = "";
   const char* filename = codeMeta.scriptedCaller().filename.get();
   const char* suffix = "";
   if (codeRange.isFunction()) {
+    category = "Wasm";
     if (codeBlockKind == CodeBlockKind::BaselineTier) {
-      suffix = " (baseline)";
+      suffix = " [baseline]";
     } else if (codeBlockKind == CodeBlockKind::OptimizedTier) {
-      suffix = " (optimized)";
+      suffix = " [optimized]";
     }
   } else if (codeRange.isInterpEntry()) {
+    category = "WasmTrampoline";
     suffix = " slow entry";
   } else if (codeRange.isJitEntry()) {
+    category = "WasmTrampoline";
     suffix = " fast entry";
   } else if (codeRange.isImportInterpExit()) {
+    category = "WasmTrampoline";
     suffix = " slow exit";
   } else if (codeRange.isImportJitExit()) {
+    category = "WasmTrampoline";
     suffix = " fast exit";
   }
 
-  return JS_smprintf("%s: Function %s%s", filename, name.begin(), suffix);
+  return JS_smprintf("%s: %s: Function %s%s (WASM:%u)", category, filename,
+                     name.begin(), suffix, funcIndex);
 }
 
 void CodeBlock::sendToProfiler(

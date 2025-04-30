@@ -6,6 +6,7 @@
 
 #include "mozilla/dom/quota/Client.h"
 #include "mozilla/dom/quota/ClientDirectoryLock.h"
+#include "mozilla/dom/quota/ClientDirectoryLockHandle.h"
 #include "mozilla/dom/quota/CommonMetadata.h"
 #include "mozilla/dom/quota/FileStreams.h"
 #include "mozilla/dom/quota/QuotaManager.h"
@@ -181,7 +182,7 @@ TEST_F(TestFileOutputStream, extendFileStreamWithSetEOF) {
       ASSERT_TRUE(0 == avail);
     };
 
-    RefPtr<ClientDirectoryLock> directoryLock;
+    ClientDirectoryLockHandle directoryLockHandle;
 
     QuotaManager* quotaManager = QuotaManager::Get();
     ASSERT_TRUE(quotaManager);
@@ -193,8 +194,9 @@ TEST_F(TestFileOutputStream, extendFileStreamWithSetEOF) {
             {GetOutputStreamTestOriginMetadata(), Client::SDB})
         ->Then(
             GetCurrentSerialEventTarget(), __func__,
-            [&directoryLock, &done](RefPtr<ClientDirectoryLock> aResolveValue) {
-              directoryLock = std::move(aResolveValue);
+            [&directoryLockHandle,
+             &done](ClientDirectoryLockHandle&& aResolveValue) {
+              directoryLockHandle = std::move(aResolveValue);
 
               done = true;
             },
@@ -206,11 +208,13 @@ TEST_F(TestFileOutputStream, extendFileStreamWithSetEOF) {
 
     SpinEventLoopUntil("Promise is fulfilled"_ns, [&done]() { return done; });
 
-    ASSERT_TRUE(directoryLock);
+    ASSERT_TRUE(directoryLockHandle);
 
     PerformOnIOThread(std::move(ioTask));
 
-    DropDirectoryLock(directoryLock);
+    {
+      auto destroyingDirectoryLockHandle = std::move(directoryLockHandle);
+    }
   };
 
   PerformOnBackgroundThread(std::move(backgroundTask));

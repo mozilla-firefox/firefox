@@ -1,14 +1,15 @@
 import os
+import threading
 
-from threading import Thread, Lock
 from time import sleep, time
-from sentry_sdk._compat import queue, check_thread_support
+from sentry_sdk._compat import check_thread_support
+from sentry_sdk._queue import Queue, FullError
 from sentry_sdk.utils import logger
+from sentry_sdk.consts import DEFAULT_QUEUE_SIZE
 
 from sentry_sdk._types import MYPY
 
 if MYPY:
-    from queue import Queue
     from typing import Any
     from typing import Optional
     from typing import Callable
@@ -18,12 +19,12 @@ _TERMINATOR = object()
 
 
 class BackgroundWorker(object):
-    def __init__(self):
-        # type: () -> None
+    def __init__(self, queue_size=DEFAULT_QUEUE_SIZE):
+        # type: (int) -> None
         check_thread_support()
-        self._queue = queue.Queue(30)  # type: Queue[Any]
-        self._lock = Lock()
-        self._thread = None  # type: Optional[Thread]
+        self._queue = Queue(queue_size)  # type: Queue
+        self._lock = threading.Lock()
+        self._thread = None  # type: Optional[threading.Thread]
         self._thread_for_pid = None  # type: Optional[int]
 
     @property
@@ -45,41 +46,27 @@ class BackgroundWorker(object):
         deadline = time() + timeout
         queue = self._queue
 
-        real_all_tasks_done = getattr(
-            queue, "all_tasks_done", None
-        )  # type: Optional[Any]
-        if real_all_tasks_done is not None:
-            real_all_tasks_done.acquire()
-            all_tasks_done = real_all_tasks_done  # type: Optional[Any]
-        elif queue.__module__.startswith("eventlet."):
-            all_tasks_done = getattr(queue, "_cond", None)
-        else:
-            all_tasks_done = None
+        queue.all_tasks_done.acquire()
 
         try:
             while queue.unfinished_tasks:
                 delay = deadline - time()
                 if delay <= 0:
                     return False
-                if all_tasks_done is not None:
-                    all_tasks_done.wait(timeout=delay)
-                else:
-                    # worst case, we just poll the number of remaining tasks
-                    sleep(0.1)
+                queue.all_tasks_done.wait(timeout=delay)
 
             return True
         finally:
-            if real_all_tasks_done is not None:
-                real_all_tasks_done.release()
+            queue.all_tasks_done.release()
 
     def start(self):
         # type: () -> None
         with self._lock:
             if not self.is_alive:
-                self._thread = Thread(
+                self._thread = threading.Thread(
                     target=self._target, name="raven-sentry.BackgroundWorker"
                 )
-                self._thread.setDaemon(True)
+                self._thread.daemon = True
                 self._thread.start()
                 self._thread_for_pid = os.getpid()
 
@@ -94,7 +81,7 @@ class BackgroundWorker(object):
             if self._thread:
                 try:
                     self._queue.put_nowait(_TERMINATOR)
-                except queue.Full:
+                except FullError:
                     logger.debug("background worker queue full, kill failed")
 
                 self._thread = None
@@ -112,19 +99,23 @@ class BackgroundWorker(object):
         # type: (float, Optional[Any]) -> None
         initial_timeout = min(0.1, timeout)
         if not self._timed_queue_join(initial_timeout):
-            pending = self._queue.qsize()
+            pending = self._queue.qsize() + 1
             logger.debug("%d event(s) pending on flush", pending)
             if callback is not None:
                 callback(pending, timeout)
-            self._timed_queue_join(timeout - initial_timeout)
+
+            if not self._timed_queue_join(timeout - initial_timeout):
+                pending = self._queue.qsize() + 1
+                logger.error("flush timed out, dropped %s events", pending)
 
     def submit(self, callback):
-        # type: (Callable[[], None]) -> None
+        # type: (Callable[[], None]) -> bool
         self._ensure_thread()
         try:
             self._queue.put_nowait(callback)
-        except queue.Full:
-            logger.debug("background worker queue full, dropping event")
+            return True
+        except FullError:
+            return False
 
     def _target(self):
         # type: () -> None

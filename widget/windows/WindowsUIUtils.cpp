@@ -892,7 +892,7 @@ Result<HStringUniquePtr, HRESULT> ConvertToWindowsString(
 }
 
 static Result<Ok, nsresult> RequestShare(
-    const std::function<HRESULT(IDataRequestedEventArgs* pArgs)>& aCallback) {
+    std::function<HRESULT(IDataRequestedEventArgs* pArgs)>&& aCallback) {
   HWND hwnd = GetForegroundWindow();
   if (!hwnd) {
     return Err(NS_ERROR_FAILURE);

@@ -27,8 +27,8 @@ fn test_dummy_module() -> rusqlite::Result<()> {
             _: &mut VTabConnection,
             _aux: Option<&()>,
             _args: &[&[u8]],
-        ) -> Result<(String, DummyTab)> {
-            let vtab = DummyTab {
+        ) -> Result<(String, Self)> {
+            let vtab = Self {
                 base: sqlite3_vtab::default(),
             };
             Ok(("CREATE TABLE x(value)".to_owned(), vtab))

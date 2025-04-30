@@ -5920,9 +5920,12 @@ void nsGlobalWindowOuter::CloseOuter(bool aTrustedCaller) {
     nsresult rv = mDoc->GetURL(url);
     NS_ENSURE_SUCCESS_VOID(rv);
 
+    RefPtr<ChildSHistory> csh =
+        nsDocShell::Cast(mDocShell)->GetSessionHistory();
+
     if (!StringBeginsWith(url, u"about:neterror"_ns) &&
         !mBrowsingContext->GetTopLevelCreatedByWebContent() &&
-        !aTrustedCaller && !IsOnlyTopLevelDocumentInSHistory()) {
+        !aTrustedCaller && csh && csh->Count() > 1) {
       bool allowClose =
           mAllowScriptsToClose ||
           Preferences::GetBool("dom.allow_scripts_to_close_windows", true);
@@ -5963,23 +5966,6 @@ void nsGlobalWindowOuter::CloseOuter(bool aTrustedCaller) {
   }
 
   FinalClose();
-}
-
-bool nsGlobalWindowOuter::IsOnlyTopLevelDocumentInSHistory() {
-  NS_ENSURE_TRUE(mDocShell && mBrowsingContext, false);
-  // Disabled since IsFrame() is buggy in Fission
-  // MOZ_ASSERT(mBrowsingContext->IsTop());
-
-  if (mozilla::SessionHistoryInParent()) {
-    return mBrowsingContext->GetIsSingleToplevelInHistory();
-  }
-
-  RefPtr<ChildSHistory> csh = nsDocShell::Cast(mDocShell)->GetSessionHistory();
-  if (csh && csh->LegacySHistory()) {
-    return csh->LegacySHistory()->IsEmptyOrHasEntriesForSingleTopLevelPage();
-  }
-
-  return false;
 }
 
 nsresult nsGlobalWindowOuter::Close() {

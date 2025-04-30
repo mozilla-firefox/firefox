@@ -8,14 +8,12 @@ const {
   Component,
 } = require("resource://devtools/client/shared/vendor/react.js");
 const dom = require("resource://devtools/client/shared/vendor/react-dom-factories.js");
-const {
-  L10N,
-} = require("resource://devtools/client/netmonitor/src/utils/l10n.js");
 const PropTypes = require("resource://devtools/client/shared/vendor/react-prop-types.js");
 const {
   connect,
 } = require("resource://devtools/client/shared/vendor/react-redux.js");
 const {
+  getUrlToolTip,
   propertiesEqual,
 } = require("resource://devtools/client/netmonitor/src/utils/request-utils.js");
 const { truncateString } = require("resource://devtools/shared/string.js");
@@ -51,22 +49,8 @@ class RequestListColumnPath extends Component {
       isOverridden,
       overriddenUrl,
     } = this.props;
-
-    const originalFileURL = urlDetails.url;
-    const decodedFileURL = urlDetails.unicodeUrl;
-    const ORIGINAL_FILE_URL = L10N.getFormatStr(
-      "netRequest.originalFileURL.tooltip",
-      originalFileURL
-    );
-    const DECODED_FILE_URL = L10N.getFormatStr(
-      "netRequest.decodedFileURL.tooltip",
-      decodedFileURL
-    );
     const requestedPath = urlDetails.path;
-    const fileToolTip =
-      originalFileURL === decodedFileURL
-        ? originalFileURL
-        : ORIGINAL_FILE_URL + "\n\n" + DECODED_FILE_URL;
+    const pathToolTip = getUrlToolTip(urlDetails);
 
     // Build extra content for the title if the request is overridden.
     const overrideTitle = isOverridden ? ` → ${overriddenUrl}` : "";
@@ -75,7 +59,7 @@ class RequestListColumnPath extends Component {
       {
         className: "requests-list-column requests-list-path",
         title:
-          truncateString(fileToolTip, MAX_UI_STRING_LENGTH) + overrideTitle,
+          truncateString(pathToolTip, MAX_UI_STRING_LENGTH) + overrideTitle,
       },
       dom.div({}, truncateString(requestedPath, MAX_UI_STRING_LENGTH))
     );

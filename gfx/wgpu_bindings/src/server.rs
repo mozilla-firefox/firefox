@@ -136,7 +136,6 @@ pub extern "C" fn wgpu_server_new(owner: *mut c_void, use_dxc: bool) -> *mut Glo
     let dx12_shader_compiler = if use_dxc {
         wgt::Dx12Compiler::DynamicDxc {
             dxc_path: "dxcompiler.dll".into(),
-            dxil_path: "dxil.dll".into(),
             max_shader_model: wgt::DxcShaderModel::V6_6,
         }
     } else {
@@ -157,6 +156,10 @@ pub extern "C" fn wgpu_server_new(owner: *mut c_void, use_dxc: bool) -> *mut Glo
                     shader_compiler: dx12_shader_compiler,
                 },
                 noop: wgt::NoopBackendOptions { enable: false },
+            },
+            memory_budget_thresholds: wgt::MemoryBudgetThresholds {
+                for_resource_creation: Some(95),
+                for_device_loss: Some(99),
             },
         },
     );

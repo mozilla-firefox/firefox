@@ -14,6 +14,10 @@ export class SettingControl extends MozLitElement {
     value: {},
   };
 
+  static queries = {
+    inputEl: "#input",
+  };
+
   createRenderRoot() {
     return this;
   }
@@ -48,6 +52,7 @@ export class SettingControl extends MozLitElement {
       case "checkbox":
       default:
         return html`<moz-checkbox
+          id="input"
           data-l10n-id=${config.l10nId}
           .iconSrc=${config.iconSrc}
           .checked=${this.value}

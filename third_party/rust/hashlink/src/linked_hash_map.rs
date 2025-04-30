@@ -12,8 +12,9 @@ use core::{
 };
 
 use alloc::boxed::Box;
-use hashbrown::hash_map::DefaultHashBuilder;
 use hashbrown::hash_table::{self, HashTable};
+
+use crate::DefaultHashBuilder;
 
 pub enum TryReserveError {
     CapacityOverflow,
@@ -972,7 +973,7 @@ where
     }
 }
 
-unsafe impl<'a, K, V, S> Send for RawEntryBuilder<'a, K, V, S>
+unsafe impl<K, V, S> Send for RawEntryBuilder<'_, K, V, S>
 where
     K: Send,
     V: Send,
@@ -980,7 +981,7 @@ where
 {
 }
 
-unsafe impl<'a, K, V, S> Sync for RawEntryBuilder<'a, K, V, S>
+unsafe impl<K, V, S> Sync for RawEntryBuilder<'_, K, V, S>
 where
     K: Sync,
     V: Sync,
@@ -1043,7 +1044,7 @@ where
     }
 }
 
-unsafe impl<'a, K, V, S> Send for RawEntryBuilderMut<'a, K, V, S>
+unsafe impl<K, V, S> Send for RawEntryBuilderMut<'_, K, V, S>
 where
     K: Send,
     V: Send,
@@ -1051,7 +1052,7 @@ where
 {
 }
 
-unsafe impl<'a, K, V, S> Sync for RawEntryBuilderMut<'a, K, V, S>
+unsafe impl<K, V, S> Sync for RawEntryBuilderMut<'_, K, V, S>
 where
     K: Sync,
     V: Sync,
@@ -1346,7 +1347,7 @@ impl<K, V, S> fmt::Debug for RawEntryBuilder<'_, K, V, S> {
     }
 }
 
-unsafe impl<'a, K, V, S> Send for RawOccupiedEntryMut<'a, K, V, S>
+unsafe impl<K, V, S> Send for RawOccupiedEntryMut<'_, K, V, S>
 where
     K: Send,
     V: Send,
@@ -1354,7 +1355,7 @@ where
 {
 }
 
-unsafe impl<'a, K, V, S> Sync for RawOccupiedEntryMut<'a, K, V, S>
+unsafe impl<K, V, S> Sync for RawOccupiedEntryMut<'_, K, V, S>
 where
     K: Sync,
     V: Sync,
@@ -1362,7 +1363,7 @@ where
 {
 }
 
-unsafe impl<'a, K, V, S> Send for RawVacantEntryMut<'a, K, V, S>
+unsafe impl<K, V, S> Send for RawVacantEntryMut<'_, K, V, S>
 where
     K: Send,
     V: Send,
@@ -1370,7 +1371,7 @@ where
 {
 }
 
-unsafe impl<'a, K, V, S> Sync for RawVacantEntryMut<'a, K, V, S>
+unsafe impl<K, V, S> Sync for RawVacantEntryMut<'_, K, V, S>
 where
     K: Sync,
     V: Sync,
@@ -1444,14 +1445,14 @@ impl<K, V> Drain<'_, K, V> {
     }
 }
 
-unsafe impl<'a, K, V> Send for Iter<'a, K, V>
+unsafe impl<K, V> Send for Iter<'_, K, V>
 where
     K: Send,
     V: Send,
 {
 }
 
-unsafe impl<'a, K, V> Send for IterMut<'a, K, V>
+unsafe impl<K, V> Send for IterMut<'_, K, V>
 where
     K: Send,
     V: Send,
@@ -1465,21 +1466,21 @@ where
 {
 }
 
-unsafe impl<'a, K, V> Send for Drain<'a, K, V>
+unsafe impl<K, V> Send for Drain<'_, K, V>
 where
     K: Send,
     V: Send,
 {
 }
 
-unsafe impl<'a, K, V> Sync for Iter<'a, K, V>
+unsafe impl<K, V> Sync for Iter<'_, K, V>
 where
     K: Sync,
     V: Sync,
 {
 }
 
-unsafe impl<'a, K, V> Sync for IterMut<'a, K, V>
+unsafe impl<K, V> Sync for IterMut<'_, K, V>
 where
     K: Sync,
     V: Sync,
@@ -1493,14 +1494,14 @@ where
 {
 }
 
-unsafe impl<'a, K, V> Sync for Drain<'a, K, V>
+unsafe impl<K, V> Sync for Drain<'_, K, V>
 where
     K: Sync,
     V: Sync,
 {
 }
 
-impl<'a, K, V> Clone for Iter<'a, K, V> {
+impl<K, V> Clone for Iter<'_, K, V> {
     #[inline]
     fn clone(&self) -> Self {
         Iter { ..*self }
@@ -1617,7 +1618,7 @@ impl<K, V> Iterator for IntoIter<K, V> {
     }
 }
 
-impl<'a, K, V> Iterator for Drain<'a, K, V> {
+impl<K, V> Iterator for Drain<'_, K, V> {
     type Item = (K, V);
 
     #[inline]
@@ -1690,7 +1691,7 @@ impl<K, V> DoubleEndedIterator for IntoIter<K, V> {
     }
 }
 
-impl<'a, K, V> DoubleEndedIterator for Drain<'a, K, V> {
+impl<K, V> DoubleEndedIterator for Drain<'_, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<(K, V)> {
         if self.remaining == 0 {
@@ -1707,9 +1708,9 @@ impl<'a, K, V> DoubleEndedIterator for Drain<'a, K, V> {
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {}
+impl<K, V> ExactSizeIterator for Iter<'_, K, V> {}
 
-impl<'a, K, V> ExactSizeIterator for IterMut<'a, K, V> {}
+impl<K, V> ExactSizeIterator for IterMut<'_, K, V> {}
 
 impl<K, V> ExactSizeIterator for IntoIter<K, V> {}
 
@@ -1727,7 +1728,7 @@ impl<K, V> Drop for IntoIter<K, V> {
     }
 }
 
-impl<'a, K, V> Drop for Drain<'a, K, V> {
+impl<K, V> Drop for Drain<'_, K, V> {
     #[inline]
     fn drop(&mut self) {
         for _ in 0..self.remaining {
@@ -1762,7 +1763,7 @@ pub struct CursorMut<'a, K, V, S> {
     table: &'a mut hashbrown::HashTable<NonNull<Node<K, V>>>,
 }
 
-impl<'a, K, V, S> CursorMut<'a, K, V, S> {
+impl<K, V, S> CursorMut<'_, K, V, S> {
     /// Returns an `Option` of the current element in the list, provided it is not the
     /// _guard_ node, and `None` overwise.
     #[inline]
@@ -1944,7 +1945,7 @@ impl<'a, K, V> DoubleEndedIterator for Keys<'a, K, V> {
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for Keys<'a, K, V> {
+impl<K, V> ExactSizeIterator for Keys<'_, K, V> {
     #[inline]
     fn len(&self) -> usize {
         self.inner.len()
@@ -1992,7 +1993,7 @@ impl<'a, K, V> DoubleEndedIterator for Values<'a, K, V> {
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for Values<'a, K, V> {
+impl<K, V> ExactSizeIterator for Values<'_, K, V> {
     #[inline]
     fn len(&self) -> usize {
         self.inner.len()
@@ -2035,7 +2036,7 @@ impl<'a, K, V> DoubleEndedIterator for ValuesMut<'a, K, V> {
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for ValuesMut<'a, K, V> {
+impl<K, V> ExactSizeIterator for ValuesMut<'_, K, V> {
     #[inline]
     fn len(&self) -> usize {
         self.inner.len()
@@ -2163,6 +2164,7 @@ impl<K, V> Node<K, V> {
 }
 
 trait OptNonNullExt<T> {
+    #[allow(clippy::wrong_self_convention)]
     fn as_ptr(self) -> *mut T;
 }
 
@@ -2321,7 +2323,7 @@ struct DropFilteredValues<'a, K, V> {
     cur_free: Option<NonNull<Node<K, V>>>,
 }
 
-impl<'a, K, V> DropFilteredValues<'a, K, V> {
+impl<K, V> DropFilteredValues<'_, K, V> {
     #[inline]
     fn drop_later(&mut self, node: NonNull<Node<K, V>>) {
         unsafe {
@@ -2331,7 +2333,7 @@ impl<'a, K, V> DropFilteredValues<'a, K, V> {
     }
 }
 
-impl<'a, K, V> Drop for DropFilteredValues<'a, K, V> {
+impl<K, V> Drop for DropFilteredValues<'_, K, V> {
     fn drop(&mut self) {
         unsafe {
             let end_free = self.cur_free;

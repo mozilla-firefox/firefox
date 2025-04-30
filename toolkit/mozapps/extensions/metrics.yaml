@@ -10,6 +10,177 @@ $schema: moz://mozilla.org/schemas/glean/metrics/2-0-0
 $tags:
   - 'Toolkit :: Add-ons Manager'
 
+addons:
+  active_addons:
+    type: object
+    description: |
+      The list of currently enabled addons.
+
+      Some of the addon fields are not available during startup. The fields
+      that will always be present are id, version, addonType, updateDay, scope,
+      isSystem, isWebExtension, and multiprocessCompatible. All the other
+      fields become present shortly after the `sessionstore-windows-restored`
+      observer topic is notified.
+
+      This metric is an echo of the Legacy Telemetry Environment field
+      addons.activeAddons. Like its counterpart, it will only have data in
+      Firefox Desktop and at times and on platforms where the environment would
+      have values.
+    bugs:
+      - https://bugzilla.mozilla.org/1950416
+    data_reviews:
+      - https://bugzilla.mozilla.org/1950416
+    data_sensitivity:
+      - technical
+      - interaction
+    notification_emails:
+      - addons-dev-internal@mozilla.com
+    expires: never
+    no_lint:
+      - COMMON_PREFIX
+    structure:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          blocklisted:
+            type: boolean
+          description:
+            type: string
+          name:
+            type: string
+          userDisabled:
+            type: boolean
+          appDisabled:
+            type: boolean
+          version:
+            type: string
+          scope:
+            type: number
+          addonType:
+            type: string
+          foreignInstall:
+            type: boolean
+          hasBinaryComponents:
+            type: boolean
+          installDay:
+            type: number
+          updateDay:
+            type: number
+          signedState:
+            type: number
+          signedTypes:
+            type: string
+          isSystem:
+            type: boolean
+          isWebExtension:
+            type: boolean
+          multiprocessCompatible:
+            type: boolean
+          quarantineIgnoredByApp:
+            type: boolean
+          quarantineIgnoredByUser:
+            type: boolean
+
+  theme:
+    type: object
+    description: |
+      The currently active theme.
+
+      Some of the addon fields are not available during startup. The fields
+      that will always be present are id, version, updateDay, and scope. All
+      the other fields become present shortly after the
+      `sessionstore-windows-restored` observer topic is notified.
+
+      This metric is an echo of the Legacy Telemetry Environment field
+      addons.theme. Like its counterpart, it will only have data in Firefox
+      Desktop and at times and on platforms where the environment would have
+      values.
+    bugs:
+      - https://bugzilla.mozilla.org/1950416
+    data_reviews:
+      - https://bugzilla.mozilla.org/1950416
+    data_sensitivity:
+      - technical
+      - interaction
+    notification_emails:
+      - addons-dev-internal@mozilla.com
+    expires: never
+    structure:
+      type: object
+      properties:
+         id:
+           type: string
+         blocklisted:
+           type: boolean
+         description:
+           type: string
+         name:
+           type: string
+         userDisabled:
+           type: boolean
+         appDisabled:
+           type: boolean
+         version:
+           type: string
+         scope:
+           type: number
+         foreignInstall:
+           type: boolean
+         hasBinaryComponents:
+           type: boolean
+         installDay:
+           type: number
+         updateDay:
+           type: number
+         signedState:
+           type: number
+         signedTypes:
+           type: string
+
+  active_g_m_plugins:
+    type: object
+    description: |
+      The list of currently enabled Gecko Media Plugins.
+
+      Some of the addon fields are not available during startup. The fields
+      that will always be present are id and version. All the other
+      fields become present shortly after the `sessionstore-windows-restored`
+      observer topic is notified.
+
+      This metric is an echo of the Legacy Telemetry Environment field
+      addons.activeGMPlugins. Like its counterpart, it will only have data in
+      Firefox Desktop and at times and on platforms where the environment would
+      have values.
+    bugs:
+      - https://bugzilla.mozilla.org/1950416
+    data_reviews:
+      - https://bugzilla.mozilla.org/1950416
+    data_sensitivity:
+      - technical
+      - interaction
+    notification_emails:
+      - addons-dev-internal@mozilla.com
+    expires: never
+    no_lint:
+      - COMMON_PREFIX
+    structure:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          version:
+            type: string
+          userDisabled:
+            type: boolean
+          applyBackgroundUpdates:
+            type: number
+
+
 addons_manager:
   install: &install_update_event
     type: event

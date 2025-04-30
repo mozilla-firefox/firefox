@@ -340,6 +340,22 @@ export var TelemetryEnvironmentTesting = {
     lazy.Assert.equal(typeof update.enabled, "boolean");
     lazy.Assert.equal(typeof update.autoDownload, "boolean");
     lazy.Assert.equal(typeof update.background, "boolean");
+    lazy.Assert.equal(
+      update.channel,
+      Glean.updateSettings.channel.testGetValue()
+    );
+    lazy.Assert.equal(
+      update.enabled,
+      Glean.updateSettings.enabled.testGetValue()
+    );
+    lazy.Assert.equal(
+      update.autoDownload,
+      Glean.updateSettings.autoDownload.testGetValue()
+    );
+    lazy.Assert.equal(
+      update.background,
+      Glean.updateSettings.background.testGetValue()
+    );
 
     // Check sandbox settings exist and make sense
     if (data.settings.sandbox.effectiveContentProcessLevel !== null) {
@@ -347,6 +363,10 @@ export var TelemetryEnvironmentTesting = {
         typeof data.settings.sandbox.effectiveContentProcessLevel,
         "number",
         "sandbox.effectiveContentProcessLevel must have the correct type"
+      );
+      lazy.Assert.equal(
+        data.settings.sandbox.effectiveContentProcessLevel,
+        Glean.sandbox.effectiveContentProcessLevel.testGetValue()
       );
     }
 
@@ -360,6 +380,11 @@ export var TelemetryEnvironmentTesting = {
       let win32kLockdownState =
         data.settings.sandbox.contentWin32kLockdownState;
       lazy.Assert.ok(win32kLockdownState >= 1 && win32kLockdownState <= 17);
+
+      lazy.Assert.equal(
+        win32kLockdownState,
+        Glean.sandbox.contentWin32kLockdownState.testGetValue()
+      );
     }
 
     // Check "defaultSearchEngine" separately, as it can either be undefined or string.
@@ -379,6 +404,18 @@ export var TelemetryEnvironmentTesting = {
       lazy.Assert.equal(typeof data.settings.attribution, "object");
       lazy.Assert.equal(data.settings.attribution.source, "google.com");
       lazy.Assert.equal(data.settings.attribution.dlsource, "unittest");
+      let attr = Services.fog.testGetAttribution();
+      lazy.Assert.equal(
+        attr.source,
+        "google.com",
+        "Must have correct attribution.source."
+      );
+      let attrExt = Glean.gleanAttribution.ext.testGetValue();
+      lazy.Assert.equal(
+        attrExt.dlsource,
+        "unittest",
+        "Must have correct dlsource."
+      );
     }
 
     this.checkIntlSettings(data.settings);
@@ -394,6 +431,7 @@ export var TelemetryEnvironmentTesting = {
 
     for (let field of fields) {
       lazy.Assert.ok(Array.isArray(intl[field]), `${field} is an array`);
+      lazy.Assert.deepEqual(intl[field], Glean.intl[field].testGetValue());
     }
 
     // These fields may be null if they aren't ready yet. This is mostly to deal
@@ -404,6 +442,7 @@ export var TelemetryEnvironmentTesting = {
       let isArray = Array.isArray(intl[field]);
       let isNull = intl[field] === null;
       lazy.Assert.ok(isArray || isNull, `${field} is an array or null`);
+      lazy.Assert.deepEqual(intl[field], Glean.intl[field].testGetValue());
     }
   },
 
@@ -428,6 +467,22 @@ export var TelemetryEnvironmentTesting = {
       data.profile.recoveredFromBackup,
       truncateToDays(PROFILE_RECOVERED_FROM_BACKUP)
     );
+    lazy.Assert.equal(
+      data.profile.creationDate,
+      Glean.profiles.creationDate.testGetValue()
+    );
+    lazy.Assert.equal(
+      data.profile.resetDate,
+      Glean.profiles.resetDate.testGetValue()
+    );
+    lazy.Assert.equal(
+      data.profile.firstUseDate,
+      Glean.profiles.firstUseDate.testGetValue()
+    );
+    lazy.Assert.equal(
+      data.profile.recoveredFromBackup,
+      Glean.profiles.recoveredFromBackup.testGetValue()
+    );
   },
 
   checkPartnerSection(data, isInitial) {
@@ -444,6 +499,8 @@ export var TelemetryEnvironmentTesting = {
       "There must be a partner section in Environment."
     );
 
+    let dist = Services.fog.testGetDistribution();
+    let distExt = Glean.gleanDistribution.ext.testGetValue();
     for (let f in EXPECTED_FIELDS) {
       let expected = isInitial ? null : EXPECTED_FIELDS[f];
       lazy.Assert.strictEqual(
@@ -451,14 +508,32 @@ export var TelemetryEnvironmentTesting = {
         expected,
         f + " must have the correct value."
       );
+      if (f == "distributionId") {
+        lazy.Assert.strictEqual(
+          dist.name,
+          expected,
+          "Core Glean distribution must be correct."
+        );
+      } else {
+        lazy.Assert.equal(
+          distExt[f],
+          expected,
+          `Extended Glean distribution field "${f}" must be correct.`
+        );
+      }
     }
 
     // Check that "partnerNames" exists and contains the correct element.
     lazy.Assert.ok(Array.isArray(data.partner.partnerNames));
     if (isInitial) {
       lazy.Assert.equal(data.partner.partnerNames.length, 0);
+      lazy.Assert.equal(distExt.partnerNames, null);
     } else {
       lazy.Assert.ok(data.partner.partnerNames.includes(PARTNER_NAME));
+      lazy.Assert.ok(
+        distExt.partnerNames.includes(PARTNER_NAME),
+        "Glean partner names contain expected partner name."
+      );
     }
   },
 
@@ -514,6 +589,7 @@ export var TelemetryEnvironmentTesting = {
       Number.isFinite(data.system.memoryMB),
       "MemoryMB must be a number."
     );
+    lazy.Assert.equal(data.system.memoryMB, Glean.system.memory.testGetValue());
 
     if (assertProcessData) {
       if (gIsWindows || gIsMac || gIsLinux) {
@@ -569,6 +645,28 @@ export var TelemetryEnvironmentTesting = {
             Number.isFinite(data.system.virtualMaxMB),
             "virtualMaxMB must be a number."
           );
+          lazy.Assert.equal(
+            data.system.isWow64,
+            Glean.system.isWow64.testGetValue()
+          );
+          lazy.Assert.equal(
+            data.system.isWowARM64,
+            Glean.system.isWowArm64.testGetValue()
+          );
+          lazy.Assert.equal(
+            data.system.hasWinPackageId,
+            Glean.system.hasWinPackageId.testGetValue()
+          );
+          if (data.system.winPackageFamilyName) {
+            lazy.Assert.equal(
+              data.system.winPackageFamilyName,
+              Glean.system.winPackageFamilyName.testGetValue()
+            );
+          }
+          lazy.Assert.equal(
+            data.system.virtualMaxMB,
+            Glean.system.virtualMemory.testGetValue()
+          );
 
           for (let f of [
             "count",
@@ -620,11 +718,24 @@ export var TelemetryEnvironmentTesting = {
       Array.isArray(cpuData.extensions),
       "CPU extensions must be available."
     );
+    lazy.Assert.deepEqual(
+      cpuData.extensions,
+      Glean.systemCpu.extensions.testGetValue()
+    );
 
     let osData = data.system.os;
     lazy.Assert.ok(this.checkNullOrString(osData.name));
     lazy.Assert.ok(this.checkNullOrString(osData.version));
     lazy.Assert.ok(this.checkNullOrString(osData.locale));
+    if (osData.name !== null) {
+      lazy.Assert.equal(osData.name, Glean.systemOs.name.testGetValue());
+    }
+    if (osData.version !== null) {
+      lazy.Assert.equal(osData.version, Glean.systemOs.version.testGetValue());
+    }
+    if (osData.locale !== null) {
+      lazy.Assert.equal(osData.locale, Glean.systemOs.locale.testGetValue());
+    }
 
     // Service pack is only available on Windows.
     if (gIsWindows) {
@@ -636,11 +747,23 @@ export var TelemetryEnvironmentTesting = {
         Number.isFinite(osData.servicePackMinor),
         "ServicePackMinor must be a number."
       );
+      lazy.Assert.equal(
+        osData.servicePackMajor,
+        Glean.systemOs.servicePackMajor.testGetValue()
+      );
+      lazy.Assert.equal(
+        osData.servicePackMinor,
+        Glean.systemOs.servicePackMinor.testGetValue()
+      );
       if ("windowsBuildNumber" in osData) {
         // This might not be available on all Windows platforms.
         lazy.Assert.ok(
           Number.isFinite(osData.windowsBuildNumber),
           "windowsBuildNumber must be a number."
+        );
+        lazy.Assert.equal(
+          osData.windowsBuildNumber,
+          Glean.systemOs.windowsBuildNumber.testGetValue()
         );
       }
       if ("windowsUBR" in osData) {
@@ -649,25 +772,58 @@ export var TelemetryEnvironmentTesting = {
           osData.windowsUBR === null || Number.isFinite(osData.windowsUBR),
           "windowsUBR must be null or a number."
         );
+        lazy.Assert.equal(
+          osData.windowsUBR,
+          Glean.systemOs.windowsUbr.testGetValue()
+        );
       }
     } else if (gIsLinux) {
       lazy.Assert.ok(this.checkNullOrString(osData.distro));
       lazy.Assert.ok(this.checkNullOrString(osData.distroVersion));
+      lazy.Assert.equal(osData.distro, Glean.systemOs.distro.testGetValue());
+      lazy.Assert.equal(
+        osData.distroVersion,
+        Glean.systemOs.distroVersion.testGetValue()
+      );
     }
 
     for (let disk of EXPECTED_HDD_FIELDS) {
+      let diskData = Glean.hdd[disk].testGetValue();
       lazy.Assert.ok(this.checkNullOrString(data.system.hdd[disk].model));
       lazy.Assert.ok(this.checkNullOrString(data.system.hdd[disk].revision));
       lazy.Assert.ok(this.checkNullOrString(data.system.hdd[disk].type));
+      if (data.system.hdd[disk].model !== null) {
+        lazy.Assert.equal(data.system.hdd[disk].model, diskData.model);
+      }
+      if (data.system.hdd[disk].revision !== null) {
+        lazy.Assert.equal(data.system.hdd[disk].revision, diskData.revision);
+      }
+      if (data.system.hdd[disk].type !== null) {
+        lazy.Assert.equal(data.system.hdd[disk].type, diskData.diskType);
+      }
     }
 
     let gfxData = data.system.gfx;
     lazy.Assert.ok("D2DEnabled" in gfxData);
+    lazy.Assert.equal(gfxData.D2DEnabled, Glean.gfx.d2dEnabled.testGetValue());
     lazy.Assert.ok("DWriteEnabled" in gfxData);
+    lazy.Assert.equal(
+      gfxData.DWriteEnabled,
+      Glean.gfx.dwriteEnabled.testGetValue()
+    );
     lazy.Assert.ok("Headless" in gfxData);
+    lazy.Assert.equal(gfxData.Headless, Glean.gfx.headless.testGetValue());
     lazy.Assert.ok("TargetFrameRate" in gfxData);
     lazy.Assert.equal(typeof gfxData.TargetFrameRate, "number");
+    lazy.Assert.equal(
+      gfxData.TargetFrameRate,
+      Glean.gfx.targetFrameRate.testGetValue()
+    );
     lazy.Assert.ok("textScaleFactor" in gfxData);
+    lazy.Assert.equal(
+      gfxData.textScaleFactor,
+      Glean.gfx.textScaleFactor.testGetValue()
+    );
     if (gIsWindows) {
       lazy.Assert.equal(typeof gfxData.D2DEnabled, "boolean");
       lazy.Assert.equal(typeof gfxData.DWriteEnabled, "boolean");
@@ -686,6 +842,16 @@ export var TelemetryEnvironmentTesting = {
       gfxData.adapters[0].GPUActive,
       "The first GFX adapter must be active."
     );
+    const adapters = Glean.gfx.adapters.testGetValue();
+    gfxData.adapters.forEach((adapter, index) => {
+      for (const [k, v] of Object.entries(adapter)) {
+        if (v === null) {
+          // Glean doesn't bother with `null`s
+          continue;
+        }
+        lazy.Assert.equal(v, adapters[index][k]);
+      }
+    });
 
     lazy.Assert.ok(Array.isArray(gfxData.monitors));
     if (gIsWindows || gIsMac || gIsLinux) {
@@ -708,12 +874,15 @@ export var TelemetryEnvironmentTesting = {
         lazy.Assert.equal(typeof gfxData.monitors[0].pseudoDisplay, "boolean");
       }
     }
+    lazy.Assert.deepEqual(gfxData.monitors, Glean.gfx.monitors.testGetValue());
 
     lazy.Assert.equal(typeof gfxData.features, "object");
     lazy.Assert.equal(typeof gfxData.features.compositor, "string");
+    lazy.Assert.ok(!!Glean.gfxFeatures.compositor.testGetValue());
 
     lazy.Assert.equal(typeof gfxData.features.gpuProcess, "object");
     lazy.Assert.equal(typeof gfxData.features.gpuProcess.status, "string");
+    lazy.Assert.ok(!!Glean.gfxFeatures.gpuProcess.testGetValue().status);
 
     try {
       // If we've not got nsIGfxInfoDebug, then this will throw and stop us doing
@@ -733,14 +902,25 @@ export var TelemetryEnvironmentTesting = {
         features.gpuProcess.status,
         gfxData.features.gpuProcess.status
       );
-      lazy.Assert.equal(features.opengl, gfxData.features.opengl);
-      lazy.Assert.equal(features.webgl, gfxData.features.webgl);
+      lazy.Assert.equal(
+        features.compositor,
+        Glean.gfxFeatures.compositor.testGetValue()
+      );
+      lazy.Assert.equal(
+        features.gpuProcess.status,
+        Glean.gfxFeatures.gpuProcess.testGetValue().status
+      );
     } catch (e) {}
 
     if (gIsMac) {
       lazy.Assert.ok(this.checkString(data.system.appleModelId));
+      lazy.Assert.equal(
+        data.system.appleModelId,
+        Glean.system.appleModelId.testGetValue()
+      );
     } else {
       lazy.Assert.ok(this.checkNullOrString(data.system.appleModelId));
+      lazy.Assert.equal(null, Glean.system.appleModelId.testGetValue());
     }
 
     // This feature is only available on Windows
@@ -752,6 +932,7 @@ export var TelemetryEnvironmentTesting = {
 
       let SEC_FIELDS = ["antivirus", "antispyware", "firewall"];
       for (let f of SEC_FIELDS) {
+        let products = Glean.windowsSecurity[f].testGetValue();
         lazy.Assert.ok(
           f in data.system.sec,
           f + " must be available under data.system.sec"
@@ -765,6 +946,10 @@ export var TelemetryEnvironmentTesting = {
         );
         if (Array.isArray(value)) {
           for (let product of value) {
+            // It is posssible that this will fail if either the Legacy or
+            // Glean string limits are hit. If the Glean string_list limits are
+            // hit, `testGetValue` above will throw, though.
+            lazy.Assert.ok(products.includes(product), `${f} data must match.`);
             lazy.Assert.equal(
               typeof product,
               "string",
@@ -776,7 +961,7 @@ export var TelemetryEnvironmentTesting = {
     }
   },
 
-  checkActiveAddon(data, partialRecord) {
+  checkActiveAddon(id, data, partialRecord) {
     let signedState = "number";
     // system add-ons have an undefined signState
     if (data.isSystem) {
@@ -818,6 +1003,26 @@ export var TelemetryEnvironmentTesting = {
       );
     }
 
+    // Retrieve the Glean `addons.activeAddons` from the test API
+    let gleanData = Glean.addons.activeAddons.testGetValue();
+    // gleanData has all of the addons in it so we need to find the right one
+    let gleanObject = gleanData.find(entry => entry.id == id);
+    // Check the Glean properties of `addons.activeAddons`
+    for (let [field] of Object.entries(fields)) {
+      // Glean cannot use "type" as a field name so it is named "addonType"
+      // We account for that difference here in order to test the data
+      let gleanField = field;
+      if (field == "type") {
+        gleanField = "addonType";
+      }
+
+      lazy.Assert.equal(
+        data[field],
+        gleanObject[gleanField],
+        field + " must match what is recorded in Glean."
+      );
+    }
+
     if (!partialRecord) {
       // We check "description" separately, as it can be null.
       lazy.Assert.ok(this.checkNullOrString(data.description));
@@ -847,6 +1052,18 @@ export var TelemetryEnvironmentTesting = {
       );
     }
 
+    // Retrieve the Glean `addons.theme` from the test API
+    let gleanData = Glean.addons.theme.testGetValue();
+
+    // Check the Glean properties of `addons.theme`
+    for (let field in EXPECTED_THEME_FIELDS_TYPES) {
+      lazy.Assert.equal(
+        data[field],
+        gleanData[field],
+        field + " must match what is recorded in Glean."
+      );
+    }
+
     // We check "description" separately, as it can be null.
     lazy.Assert.ok(this.checkNullOrString(data.description));
   },
@@ -858,6 +1075,15 @@ export var TelemetryEnvironmentTesting = {
     }
     lazy.Assert.equal(typeof data.userDisabled, "boolean");
     lazy.Assert.equal(typeof data.applyBackgroundUpdates, "number");
+
+    // Retrieve the Glean `addons.activeGMPlugins` from the test API
+    let gleanData = Glean.addons.activeGMPlugins.testGetValue()[0];
+    lazy.Assert.equal(data.version, gleanData.version);
+    lazy.Assert.equal(data.userDisabled, gleanData.userDisabled);
+    lazy.Assert.equal(
+      data.applyBackgroundUpdates,
+      gleanData.applyBackgroundUpdates
+    );
   },
 
   checkAddonsSection(data, expectBrokenAddons, partialAddonsRecords) {
@@ -875,7 +1101,7 @@ export var TelemetryEnvironmentTesting = {
     if (!expectBrokenAddons) {
       let activeAddons = data.addons.activeAddons;
       for (let addon in activeAddons) {
-        this.checkActiveAddon(activeAddons[addon], partialAddonsRecords);
+        this.checkActiveAddon(addon, activeAddons[addon], partialAddonsRecords);
       }
     }
 

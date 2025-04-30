@@ -135,8 +135,6 @@ namespace js {
 
 extern JS_PUBLIC_API JSObject* UnwrapArrayBufferView(JSObject* obj);
 
-extern JS_PUBLIC_API JSObject* UnwrapReadableStream(JSObject* obj);
-
 namespace detail {
 
 constexpr size_t TypedArrayLengthSlot = 1;

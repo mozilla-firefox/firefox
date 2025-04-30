@@ -483,12 +483,6 @@ nsresult nsHostResolver::ResolveHost(const nsACString& aHost,
   PROFILER_MARKER("nsHostResolver::ResolveHost", NETWORK, {},
                   HostResolverMarker, host, originSuffix, type, flags);
 
-  // When this pref is set, we always set the flag, to make sure consumers
-  // that forget to set the flag don't end up being a cache miss.
-  if (StaticPrefs::network_dns_always_ai_canonname()) {
-    flags |= nsIDNSService::RESOLVE_CANONICAL_NAME;
-  }
-
   // ensure that we are working with a valid hostname before proceeding.  see
   // bug 304904 for details.
   if (!net_IsValidDNSHost(host)) {

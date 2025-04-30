@@ -70,8 +70,11 @@ class nsGeolocationService final : public nsIGeolocationUpdate,
   nsresult Init();
 
   // Management of the Geolocation objects
-  void AddLocator(mozilla::dom::Geolocation* locator);
-  void RemoveLocator(mozilla::dom::Geolocation* locator);
+  void AddLocator(mozilla::dom::Geolocation* aLocator);
+  void RemoveLocator(mozilla::dom::Geolocation* aLocator);
+
+  // Move locators from service override to the original service.
+  void MoveLocators(nsGeolocationService* aService);
 
   void SetCachedPosition(nsIDOMGeoPosition* aPosition);
   CachedPositionAndAccuracy GetCachedPosition();

@@ -35,6 +35,7 @@ class Nyx {
   bool is_replay();
   uint32_t get_data(uint8_t* data, uint32_t size);
   uint32_t get_raw_data(uint8_t* data, uint32_t size);
+  uint32_t get_raw_data(uint8_t** data);
   void release(uint32_t iterations = 1);
   void handle_event(const char* type, const char* file, int line,
                     const char* reason);

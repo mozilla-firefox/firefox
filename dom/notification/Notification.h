@@ -194,7 +194,7 @@ class Notification : public DOMEventTargetHelper, public SupportsWeakPtr {
   bool CreateActor();
   bool SendShow(Promise* aPromise);
 
-  static nsresult ResolveIconURL(nsIGlobalObject* aGlobal, nsString& aIconURL);
+  static nsresult ResolveIconURL(nsIGlobalObject* aGlobal, const nsAString& aIconURL, nsString& aResolvedURL);
 };
 
 }  // namespace mozilla::dom

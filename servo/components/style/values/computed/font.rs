@@ -4,6 +4,7 @@
 
 //! Computed values for font properties
 
+use crate::gecko::media_queries::QueryFontMetricsFlags;
 use crate::parser::{Parse, ParserContext};
 use crate::values::animated::ToAnimatedValue;
 use crate::values::computed::{
@@ -802,13 +803,13 @@ impl ToComputedValue for specified::FontSizeAdjust {
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
         use crate::font_metrics::FontMetricsOrientation;
 
-        let font_metrics = |vertical| {
+        let font_metrics = |vertical, flags| {
             let orient = if vertical {
                 FontMetricsOrientation::MatchContextPreferVertical
             } else {
                 FontMetricsOrientation::Horizontal
             };
-            let metrics = context.query_font_metrics(FontBaseSize::CurrentStyle, orient, false);
+            let metrics = context.query_font_metrics(FontBaseSize::CurrentStyle, orient, flags);
             let font_size = context.style().get_font().clone_font_size().used_size.0;
             (metrics, font_size)
         };
@@ -817,13 +818,13 @@ impl ToComputedValue for specified::FontSizeAdjust {
         // returns the fallback value, or if that is negative, resolves using ascent instead
         // of the missing field (this is the fallback for cap-height).
         macro_rules! resolve {
-            ($basis:ident, $value:expr, $vertical:expr, $field:ident, $fallback:expr) => {{
+            ($basis:ident, $value:expr, $vertical:expr, $field:ident, $fallback:expr, $flags:expr) => {{
                 match $value {
                     specified::FontSizeAdjustFactor::Number(f) => {
                         FontSizeAdjust::$basis(f.to_computed_value(context))
                     },
                     specified::FontSizeAdjustFactor::FromFont => {
-                        let (metrics, font_size) = font_metrics($vertical);
+                        let (metrics, font_size) = font_metrics($vertical, $flags);
                         let ratio = if let Some(metric) = metrics.$field {
                             metric / font_size
                         } else if $fallback >= 0.0 {
@@ -843,13 +844,21 @@ impl ToComputedValue for specified::FontSizeAdjust {
 
         match *self {
             Self::None => FontSizeAdjust::None,
-            Self::ExHeight(val) => resolve!(ExHeight, val, false, x_height, 0.5),
-            Self::CapHeight(val) => {
-                resolve!(CapHeight, val, false, cap_height, -1.0 /* fall back to ascent */)
+            Self::ExHeight(val) => {
+                resolve!(ExHeight, val, false, x_height, 0.5, QueryFontMetricsFlags::empty())
             },
-            Self::ChWidth(val) => resolve!(ChWidth, val, false, zero_advance_measure, 0.5),
-            Self::IcWidth(val) => resolve!(IcWidth, val, false, ic_width, 1.0),
-            Self::IcHeight(val) => resolve!(IcHeight, val, true, ic_width, 1.0),
+            Self::CapHeight(val) => {
+                resolve!(CapHeight, val, false, cap_height, -1.0 /* fall back to ascent */, QueryFontMetricsFlags::empty())
+            },
+            Self::ChWidth(val) => {
+                resolve!(ChWidth, val, false, zero_advance_measure, 0.5, QueryFontMetricsFlags::NEEDS_CH)
+            },
+            Self::IcWidth(val) => {
+                resolve!(IcWidth, val, false, ic_width, 1.0, QueryFontMetricsFlags::NEEDS_IC)
+            },
+            Self::IcHeight(val) => {
+                resolve!(IcHeight, val, true, ic_width, 1.0, QueryFontMetricsFlags::NEEDS_IC)
+            },
         }
     }
 

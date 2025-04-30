@@ -395,6 +395,11 @@ macosx1400-64-shippable-qr/opt:
     test-sets:
         - macosx1400-64-qr-tests
 
+macosx1500-aarch64-shippable/opt:
+    build-platform: macosx64-shippable/opt
+    test-sets:
+        - macosx1400-64-qr-tests
+
 ##
 # Android platforms (matching /android-em.*/)
 #

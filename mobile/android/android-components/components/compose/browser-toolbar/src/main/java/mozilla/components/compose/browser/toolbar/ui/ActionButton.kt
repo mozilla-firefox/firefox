@@ -28,6 +28,7 @@ import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarEvent
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarMenu
+import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.CombinedEventAndMenu
 import mozilla.components.ui.icons.R
 
 // Interim composable for a tab counter button that supports showing a menu on long press.
@@ -46,6 +47,7 @@ import mozilla.components.ui.icons.R
  * @param onInteraction Callback for handling [BrowserToolbarEvent]s on user interactions.
  */
 @Composable
+@Suppress("CyclomaticComplexMethod")
 fun ActionButton(
     @DrawableRes icon: Int,
     @ColorInt tint: Int,
@@ -58,7 +60,9 @@ fun ActionButton(
     val onLongClickMenu = key(onLongClick) { onLongClick.buildMenu(onInteraction) }
     val shouldReactToLongClicks = remember(onLongClickMenu) {
         mutableStateOf(
-            onLongClick is BrowserToolbarEvent || (onLongClick is BrowserToolbarMenu && onLongClickMenu != null),
+            onLongClick is BrowserToolbarEvent ||
+                onLongClick is CombinedEventAndMenu ||
+                (onLongClick is BrowserToolbarMenu && onLongClickMenu != null),
         )
     }
     var currentMenuState by remember { mutableStateOf(MenuState.None) }
@@ -74,6 +78,10 @@ fun ActionButton(
                         // no-op. Not possible, just making the compiler happy.
                     }
                 }
+            }
+            is CombinedEventAndMenu -> {
+                onInteraction(interaction.event)
+                currentMenuState = MenuState.LongClick
             }
         }
     }

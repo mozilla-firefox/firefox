@@ -136,7 +136,7 @@ async function testCookies(options) {
           ? Ci.nsICookie.SCHEME_HTTPS
           : Ci.nsICookie.SCHEME_HTTP
       );
-      // This will be modified by the background script.
+      // This will be modified by the background script
       Services.cookies.add(
         domain,
         "/",
@@ -184,6 +184,7 @@ async function testCookies(options) {
     addMessageListener("options", options => {
       let domain = options.domain.replace(/^\.?/, ".");
 
+      // this is the fourth cookie, it triggers a purge
       Services.cookies.add(
         domain,
         "/",
@@ -199,6 +200,7 @@ async function testCookies(options) {
           ? Ci.nsICookie.SCHEME_HTTPS
           : Ci.nsICookie.SCHEME_HTTP
       );
+      // overwrite the latest cookie
       Services.cookies.add(
         domain,
         "/",

@@ -24,6 +24,8 @@ import mozilla.components.concept.sync.TabData
 import mozilla.components.feature.accounts.push.SendTabUseCases
 import mozilla.components.feature.accounts.push.SendTabUseCases.SendToAllUseCase
 import mozilla.components.feature.accounts.push.SendTabUseCases.SendToDeviceUseCase
+import mozilla.components.feature.tabs.TabsUseCases
+import mozilla.components.feature.tabs.TabsUseCases.UndoTabRemovalUseCase
 import mozilla.components.support.test.any
 import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.eq
@@ -48,6 +50,7 @@ import org.mozilla.fenix.components.appstate.AppAction.ShareAction
 import org.mozilla.fenix.components.appstate.AppAction.SnackbarAction
 import org.mozilla.fenix.components.appstate.AppAction.TranslationsAction
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState
+import org.mozilla.fenix.ext.tabClosedUndoMessage
 
 @RunWith(AndroidJUnit4::class)
 class SnackbarBindingTest {
@@ -57,6 +60,7 @@ class SnackbarBindingTest {
     private val appStore = AppStore()
     private val snackbarDelegate: FenixSnackbarDelegate = mock()
     private val navController: NavController = mock()
+    private val tabsUseCases: TabsUseCases = mock()
 
     @Test
     fun `GIVEN translation is in progress for the current selected session WHEN snackbar state is updated to translation in progress THEN display the snackbar`() = runTestOnMain {
@@ -441,6 +445,7 @@ class SnackbarBindingTest {
         assertEquals(SnackbarState.None, appStore.state.snackbarState)
     }
 
+    @Test
     fun `WHEN a link is copied to clipboard THEN display a snackbar`() {
         val binding = buildSnackbarBinding()
         binding.start()
@@ -449,11 +454,13 @@ class SnackbarBindingTest {
         waitForStoreToSettle()
 
         verify(snackbarDelegate).show(
-            text = eq(R.string.toast_copy_link_to_clipboard),
+            text = R.string.toast_copy_link_to_clipboard,
+            duration = LENGTH_SHORT,
         )
         assertEquals(SnackbarState.None, appStore.state.snackbarState)
     }
 
+    @Test
     fun `WHEN site data is cleared THEN display a snackbar`() {
         val binding = buildSnackbarBinding()
         binding.start()
@@ -462,8 +469,31 @@ class SnackbarBindingTest {
         waitForStoreToSettle()
 
         verify(snackbarDelegate).show(
-            text = eq(R.string.clear_site_data_snackbar),
+            text = R.string.clear_site_data_snackbar,
         )
+        assertEquals(SnackbarState.None, appStore.state.snackbarState)
+    }
+
+    @Test
+    fun `WHEN the current tab is closed THEN display a snackbar`() {
+        val snackbarAction = argumentCaptor<((v: View) -> Unit)>()
+        val undoUsecase: UndoTabRemovalUseCase = mock()
+        doReturn(undoUsecase).`when`(tabsUseCases).undo
+        val binding = buildSnackbarBinding()
+        binding.start()
+
+        appStore.dispatch(AppAction.CurrentTabClosed(isPrivate = false))
+        waitForStoreToSettle()
+
+        verify(snackbarDelegate).show(
+            text = eq(testContext.tabClosedUndoMessage(false)),
+            duration = eq(LENGTH_LONG),
+            isError = eq(false),
+            action = eq(testContext.getString(R.string.snackbar_deleted_undo)),
+            listener = snackbarAction.capture(),
+        )
+        snackbarAction.value.invoke(mock())
+        verify(undoUsecase).invoke()
         assertEquals(SnackbarState.None, appStore.state.snackbarState)
     }
 
@@ -473,6 +503,7 @@ class SnackbarBindingTest {
         appStore: AppStore = this.appStore,
         snackbarDelegate: FenixSnackbarDelegate = this.snackbarDelegate,
         navController: NavController = this.navController,
+        tabsUseCases: TabsUseCases = this.tabsUseCases,
         sendTabUseCases: SendTabUseCases? = null,
         customTabSessionId: String? = null,
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -482,6 +513,7 @@ class SnackbarBindingTest {
         appStore = appStore,
         snackbarDelegate = snackbarDelegate,
         navController = navController,
+        tabsUseCases = tabsUseCases,
         sendTabUseCases = sendTabUseCases,
         customTabSessionId = customTabSessionId,
         ioDispatcher = ioDispatcher,

@@ -276,6 +276,7 @@
 
 .popup-notification-icon[popupid="update-available"],
 .popup-notification-icon[popupid="update-manual"],
+.popup-notification-icon[popupid="update-other-instance"],
 .popup-notification-icon[popupid="update-restart"] {
   background: url(chrome://browser/skin/update-badge.svg) no-repeat center;
   -moz-context-properties: fill;

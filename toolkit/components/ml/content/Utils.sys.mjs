@@ -2,9 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 const lazy = {};
-
 const IN_WORKER = typeof importScripts !== "undefined";
-
 const ES_MODULES_OPTIONS = IN_WORKER ? { global: "current" } : {};
 
 ChromeUtils.defineESModuleGetters(
@@ -13,6 +11,7 @@ ChromeUtils.defineESModuleGetters(
     BLOCK_WORDS_ENCODED: "chrome://global/content/ml/BlockWords.sys.mjs",
     RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
     TranslationsParent: "resource://gre/actors/TranslationsParent.sys.mjs",
+    OPFS: "chrome://global/content/ml/OPFS.sys.mjs",
   },
   ES_MODULES_OPTIONS
 );
@@ -439,98 +438,12 @@ export async function modelToResponse(modelFilePath, headers) {
     }
   }
 
-  const file = await (await getFileHandleFromOPFS(modelFilePath)).getFile();
+  const file = await (await lazy.OPFS.getFileHandle(modelFilePath)).getFile();
 
   return new Response(file.stream(), {
     status: 200,
     headers: responseHeaders,
   });
-}
-
-/**
- * Retrieves a handle to a directory at the specified path in the Origin Private File System (OPFS).
- *
- * @param {string|null} path - The path to the directory, using "/" as the directory separator.
- *                        Example: "subdir1/subdir2/subdir3"
- *                        If null, returns the root.
- * @param {object} options - Configuration object
- * @param {boolean} options.create - if `true` (default is false), create any missing subdirectories.
- * @returns {Promise<FileSystemDirectoryHandle>} - A promise that resolves to the directory handle
- *                                                 for the specified path.
- */
-export async function getDirectoryHandleFromOPFS(
-  path = null,
-  { create = false } = {}
-) {
-  let currentNavigator = globalThis.navigator;
-  if (!currentNavigator) {
-    currentNavigator = Services.wm.getMostRecentBrowserWindow().navigator;
-  }
-  let directoryHandle = await currentNavigator.storage.getDirectory();
-
-  if (!path) {
-    return directoryHandle;
-  }
-
-  // Split the `path` into directory components.
-  const components = path.split("/").filter(Boolean);
-
-  // Traverse or creates subdirectories based on the path components.
-  for (const dirName of components) {
-    directoryHandle = await directoryHandle.getDirectoryHandle(dirName, {
-      create,
-    });
-  }
-
-  return directoryHandle;
-}
-
-/**
- * Retrieves a handle to a file at the specified file path in the Origin Private File System (OPFS).
- *
- * @param {string} filePath - The path to the file, using "/" as the directory separator.
- *                            Example: "subdir1/subdir2/filename.txt"
- * @param {object} options - Configuration object
- * @param {boolean} options.create - if `true` (default is false), create any missing directories
- *                                   and the file itself.
- * @returns {Promise<FileSystemFileHandle>} - A promise that resolves to the file handle
- *                                            for the specified file.
- */
-export async function getFileHandleFromOPFS(filePath, { create = false } = {}) {
-  // Extract the directory path and filename from the filePath.
-  const lastSlashIndex = filePath.lastIndexOf("/");
-  const fileName = filePath.substring(lastSlashIndex + 1);
-  const dirPath = filePath.substring(0, lastSlashIndex);
-
-  // Get or create the directory handle for the file's parent directory.
-  const directoryHandle = await getDirectoryHandleFromOPFS(dirPath, { create });
-
-  // Retrieve or create the file handle within the directory.
-  const fileHandle = await directoryHandle.getFileHandle(fileName, { create });
-
-  return fileHandle;
-}
-
-/**
- * Delete a file or directory from the Origin Private File System (OPFS).
- *
- * @param {string} path - The path to delete, using "/" as the directory separator.
- * @param {object} options - Configuration object
- * @param {boolean} options.recursive - if `true` (default is false) a directory path
- *                                      is recursively deleted.
- * @returns {Promise<void>} A promise that resolves when the path has been successfully deleted.
- */
-export async function removeFromOPFS(path, { recursive = false } = {}) {
-  // Extract the root directory and basename from the path.
-  const lastSlashIndex = path.lastIndexOf("/");
-  const fileName = path.substring(lastSlashIndex + 1);
-  const dirPath = path.substring(0, lastSlashIndex);
-
-  const directoryHandle = await getDirectoryHandleFromOPFS(dirPath);
-  if (!directoryHandle) {
-    throw new Error("Directory does not exist: " + dirPath);
-  }
-  await directoryHandle.removeEntry(fileName, { recursive });
 }
 
 /**
@@ -589,12 +502,6 @@ Progress.ProgressStatusText = ProgressStatusText;
 Progress.ProgressType = ProgressType;
 Progress.readResponse = readResponse;
 Progress.readResponseToWriter = readResponseToWriter;
-
-// OPFS operations
-export var OPFS = OPFS || {};
-OPFS.getFileHandle = getFileHandleFromOPFS;
-OPFS.getDirectoryHandle = getDirectoryHandleFromOPFS;
-OPFS.remove = removeFromOPFS;
 
 export async function getInferenceProcessInfo() {
   // for now we only have a single inference process.

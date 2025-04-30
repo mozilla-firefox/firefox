@@ -54,11 +54,12 @@ NS_IMETHODIMP nsUpdateSyncManager::Observe(nsISupports* aSubject,
     nsCOMPtr<nsIObserverService> observerService =
         mozilla::services::GetObserverService();
     if (observerService) {
-      return observerService->AddObserver(this, "quit-application", false);
+      return observerService->AddObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID,
+                                          false);
     }
     return NS_ERROR_SERVICE_NOT_AVAILABLE;
   }
-  if (!nsCRT::strcmp(aTopic, "quit-application")) {
+  if (!nsCRT::strcmp(aTopic, NS_XPCOM_SHUTDOWN_OBSERVER_ID)) {
     ReleaseLock();
   }
 

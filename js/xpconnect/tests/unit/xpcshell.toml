@@ -5,6 +5,11 @@ support-files = [
   "CatBackgroundTaskRegistrationComponents.manifest",
   "bug451678_subscript.js",
   "environment_script.js",
+  "file_envChain_subscript.js",
+  "file_envChain_subscript_unique_target.js",
+  "file_envChain_subscript_unique_no_target.js",
+  "file_envChain_subscript_non_unique_target.js",
+  "file_envChain_subscript_non_unique_no_target.js",
   "file_simple_script.js",
   "ReturnCodeChild.sys.mjs",
   "es6module.js",
@@ -189,7 +194,7 @@ support-files = [
 ["test_defineESModuleGetters_options.js"]
 
 ["test_defineESModuleGetters_options_worker.js"]
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_envChain_frameScript.js"]
 
@@ -204,7 +209,6 @@ skip-if = ["os == 'android'"]
 ["test_exportFunction.js"]
 
 ["test_file2.js"]
-skip-if = ["os == 'android' && processor == 'x86_64'"]
 
 ["test_fileReader.js"]
 
@@ -229,21 +233,18 @@ skip-if = ["os == 'android' && processor == 'x86_64'"]
 ["test_import_global_contextual.js"]
 
 ["test_import_global_contextual_worker.js"]
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_import_global_current.js"]
 
 ["test_import_global_current_worker.js"]
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_import_global_worker.js"]
-skip-if = ["os == 'android'"]
+skip-if = ["os == 'android' && android_version == '24' && processor == 'x86_64'"]
 
 ["test_import_stack.js"]
-skip-if = [
-  "!nightly_build",
-  "!debug",
-]
+skip-if = ["!nightly_build"]
 
 ["test_isProxy.js"]
 
@@ -326,9 +327,7 @@ head = "head_ongc.js"
 ["test_subScriptLoader.js"]
 
 ["test_symbols_as_weak_keys.js"]
-skip-if = [
-  "!nightly_build",
-]
+skip-if = ["!nightly_build"]
 
 ["test_tearoffs.js"]
 
@@ -342,14 +341,14 @@ skip-if = [
 
 ["test_wasm_jspi_profiler.js"]
 skip-if = [
-  "tsan",
   "!nightly_build",
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && tsan",
 ]
 
 ["test_wasm_tailcalls_profiler.js"]
 skip-if = [
-  "tsan",
   "!nightly_build",
+  "os == 'linux' && os_version == '18.04' && processor == 'x86_64' && tsan",
 ]
 
 ["test_watchdog_default.js"]

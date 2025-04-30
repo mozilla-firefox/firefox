@@ -1305,6 +1305,7 @@ static nsLiteralCString sStyleSrcUnsafeInlineAllowList[] = {
     "chrome://mozapps/content/update/history.xhtml"_ns,
     "chrome://mozapps/content/update/updateElevation.xhtml"_ns,
     "chrome://pippki/content/certManager.xhtml"_ns,
+    "chrome://pippki/content/changepassword.xhtml"_ns,
     "chrome://pippki/content/deletecert.xhtml"_ns,
     "chrome://pippki/content/device_manager.xhtml"_ns,
     "chrome://pippki/content/downloadcert.xhtml"_ns,
@@ -1346,6 +1347,7 @@ static nsLiteralCString sImgSrcDataBlobAllowList[] = {
     "chrome://browser/content/sidebar/sidebar-syncedtabs.html"_ns,
     "chrome://browser/content/spotlight.html"_ns,
     "chrome://browser/content/syncedtabs/sidebar.xhtml"_ns,
+    "chrome://browser/content/webext-panels.xhtml"_ns,
     "chrome://devtools/content/application/index.html"_ns,
     "chrome://devtools/content/framework/browser-toolbox/window.html"_ns,
     "chrome://devtools/content/framework/toolbox-window.xhtml"_ns,
@@ -1967,19 +1969,25 @@ void nsContentSecurityUtils::AssertChromePageHasCSP(Document* aDocument) {
     return;
   }
 
-  static nsLiteralCString sAllowedChromePagesWithNoCSP[] = {
-      "chrome://geckoview/content/geckoview.xhtml"_ns,
-      // Test files
-      "chrome://mochikit/"_ns,
-      "chrome://mochitests/"_ns,
-      "chrome://pageloader/content/pageloader.xhtml"_ns,
-      "chrome://reftest/"_ns,
-      "chrome://remote/content/marionette/"_ns,
-  };
+  // TODO These are injecting scripts so it cannot be blocked without
+  // further coordination.
+  if (StringBeginsWith(spec, "chrome://remote/content/marionette/"_ns)) {
+    return;
+  }
 
-  for (const nsLiteralCString& entry : sAllowedChromePagesWithNoCSP) {
-    if (StringBeginsWith(spec, entry)) {
-      return;
+  if (xpc::IsInAutomation()) {
+    // Test files
+    static nsLiteralCString sAllowedTestPathsWithNoCSP[] = {
+        "chrome://mochikit/"_ns,
+        "chrome://mochitests/"_ns,
+        "chrome://pageloader/content/pageloader.xhtml"_ns,
+        "chrome://reftest/"_ns,
+    };
+
+    for (const nsLiteralCString& entry : sAllowedTestPathsWithNoCSP) {
+      if (StringBeginsWith(spec, entry)) {
+        return;
+      }
     }
   }
 

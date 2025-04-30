@@ -10,35 +10,11 @@
       "use strict";
 
       /* exported logFromWorker */
+      const worker = new Worker("./test-worker.js");
 
-      const worker = new Worker(`data:application/javascript,
-        console.log("initial-message-from-worker", {foo: "bar"}, globalThis);
-
-        onmessage = function (e) {
-          console.log("log-from-worker", e.data.msg, globalThis);
-          console.log(Symbol("logged-symbol-from-worker"));
-          console.log(["array-item", 42, { key: "value" }]);
-          console.log("sab-from-worker", e.data.sab);
-
-          /* Check if page functions can be called by console previewers */
-          const date = new Date(2024, 0, 1);
-          date.getTime = () => {
-            return 42;
-          };
-          Date.prototype.getTime = date.getTime;
-          console.log("date-from-worker", date);
-
-          const regexp = /foo/m;
-          regexp.toString = () => {
-            return "24";
-          };
-          console.log("regexp-from-worker", regexp, /not-overloaded/g);
-        };
-      `);
-
-      function logFromWorker(msg) {
+      function logFromWorker(message) {
         const sab = new SharedArrayBuffer(1024);
-        worker.postMessage({type: "log", msg, sab});
+        worker.postMessage({type: "log-objects", message, sab});
       }
     </script>
   </body>

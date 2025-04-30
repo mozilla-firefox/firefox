@@ -616,8 +616,6 @@
   <string name="preferences_override_account_server">پسندیدہ موزیلا کھاتا سرور</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">پسندیدہ سنک سرور</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">موزیلا کھاتا/سنک سرور نوں سودھیا گیا اے۔ تبدیلیاں لاگو کرن واسطے ایپلیکیشن نوں بند کیتا جا رہا اے…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">کھاتہ</string>
   <!-- Preference for changing where the AddressBar is positioned -->

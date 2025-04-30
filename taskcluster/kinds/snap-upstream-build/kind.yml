@@ -18,7 +18,6 @@ task-defaults:
     treeherder:
         kind: build
         tier: 2
-        symbol: B
     worker-type: b-linux-xlarge-gcp
     run:
         checkout: true
@@ -27,6 +26,9 @@ task-defaults:
             - name: public/build
               type: directory
               path: /builds/worker/artifacts/
+            - name: public/snapcraft-logs
+              type: directory
+              path: /builds/worker/.local/state/snapcraft/log
         max-run-time: 900
         env:
             UPLOAD_DIR: artifacts
@@ -39,12 +41,8 @@ tasks:
     amd64-nightly/opt:
         description: Build Firefox Nightly as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-nightly
+            build_platform: linux64-snap
             build_type: opt
-        index:
-            product: firefox
-            job-name: amd64-nightly
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core24}
             max-run-time: 9000
@@ -53,17 +51,14 @@ tasks:
             command: >-
               ./run.sh nightly amd64
         treeherder:
-            platform: linux64-snap-amd64-nightly/opt
+            platform: linux64-snap/opt
+            symbol: B-nightly(amd64)
 
     amd64-nightly/debug:
         description: Build Firefox Nightly (debug) as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-nightly
+            build_platform: linux64-snap
             build_type: debug
-        index:
-            product: firefox
-            job-name: amd64-nightly-debug
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core24}
             max-run-time: 7200
@@ -72,17 +67,78 @@ tasks:
             command: >-
               ./run.sh nightly amd64 --debug
         treeherder:
-            platform: linux64-snap-amd64-nightly/debug
+            platform: linux64-snap/debug
+            symbol: B-nightly(amd64)
+
+    armhf-nightly/opt:
+        description: Build Firefox Nightly as a Snap using upstream definition
+        attributes:
+            build_platform: linux-armhf-snap
+            build_type: opt
+        worker:
+            docker-image: {in-tree: snap-build-core24}
+            max-run-time: 9000
+        run:
+            using: run-task
+            command: >-
+              ./run.sh nightly armhf
+        treeherder:
+            platform: linux64-snap/opt
+            symbol: B-nightly(armhf)
+
+    armhf-nightly/debug:
+        description: Build Firefox Nightly (debug) as a Snap using upstream definition
+        attributes:
+            build_platform: linux-armhf-snap
+            build_type: debug
+        worker:
+            docker-image: {in-tree: snap-build-core24}
+            max-run-time: 7200
+        run:
+            using: run-task
+            command: >-
+              ./run.sh nightly armhf --debug
+        treeherder:
+            platform: linux64-snap/debug
+            symbol: B-nightly(armhf)
+
+    arm64-nightly/opt:
+        description: Build Firefox Nightly as a Snap using upstream definition
+        attributes:
+            build_platform: linux-arm64-snap
+            build_type: opt
+        worker:
+            docker-image: {in-tree: snap-build-core24}
+            max-run-time: 9000
+        run:
+            using: run-task
+            command: >-
+              ./run.sh nightly arm64
+        treeherder:
+            platform: linux64-snap/opt
+            symbol: B-nightly(arm64)
+
+    arm64-nightly/debug:
+        description: Build Firefox Nightly (debug) as a Snap using upstream definition
+        attributes:
+            build_platform: linux-arm64-snap
+            build_type: debug
+        worker:
+            docker-image: {in-tree: snap-build-core24}
+            max-run-time: 7200
+        run:
+            using: run-task
+            command: >-
+              ./run.sh nightly arm64 --debug
+        treeherder:
+            platform: linux64-snap/debug
+            symbol: B-nightly(arm64)
 
     amd64-beta/opt:
         description: Build Firefox Beta as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-beta
+            build_platform: linux64-snap
             build_type: opt
-        index:
-            product: firefox
-            job-name: amd64-beta
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core22}
             max-run-time: 9000
@@ -91,17 +147,14 @@ tasks:
             command: >-
               ./run.sh beta amd64
         treeherder:
-            platform: linux64-snap-amd64-beta/opt
+            platform: linux64-snap/opt
+            symbol: B-beta(amd64)
 
     amd64-beta/debug:
         description: Build Firefox Beta (debug) as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-beta
+            build_platform: linux64-snap
             build_type: debug
-        index:
-            product: firefox
-            job-name: amd64-beta-debug
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core22}
             max-run-time: 7200
@@ -110,17 +163,14 @@ tasks:
             command: >-
               ./run.sh beta amd64 --debug
         treeherder:
-            platform: linux64-snap-amd64-beta/debug
+            platform: linux64-snap/debug
+            symbol: B-beta(amd64)
 
     amd64-betacore24/opt:
         description: Build Firefox Beta (Core24) as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-betacore24
+            build_platform: linux64-snap
             build_type: opt
-        index:
-            product: firefox
-            job-name: amd64-betacore24
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core24}
             max-run-time: 9000
@@ -129,17 +179,14 @@ tasks:
             command: >-
               ./run.sh beta-core24 amd64
         treeherder:
-            platform: linux64-snap-amd64-betacore24/opt
+            platform: linux64-snap/opt
+            symbol: B-beta24(amd64)
 
     amd64-betacore24/debug:
         description: Build Firefox Beta (Core24 debug) as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-betacore24
+            build_platform: linux64-snap
             build_type: debug
-        index:
-            product: firefox
-            job-name: amd64-betacore24-debug
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core24}
             max-run-time: 7200
@@ -148,17 +195,14 @@ tasks:
             command: >-
               ./run.sh beta-core24 amd64 --debug
         treeherder:
-            platform: linux64-snap-amd64-betacore24/debug
+            platform: linux64-snap/debug
+            symbol: B-beta24(amd64)
 
     amd64-stable/opt:
         description: Build Firefox Stable as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-stable
+            build_platform: linux64-snap
             build_type: opt
-        index:
-            product: firefox
-            job-name: amd64-stable
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core22}
             max-run-time: 9000
@@ -167,17 +211,14 @@ tasks:
             command: >-
               ./run.sh stable amd64
         treeherder:
-            platform: linux64-snap-amd64-stable/opt
+            platform: linux64-snap/opt
+            symbol: B-stable(amd64)
 
     amd64-stable/debug:
         description: Build Firefox Stable (debug) as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-stable
+            build_platform: linux64-snap
             build_type: debug
-        index:
-            product: firefox
-            job-name: amd64-stable-debug
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core22}
             max-run-time: 7200
@@ -186,17 +227,14 @@ tasks:
             command: >-
               ./run.sh stable amd64 --debug
         treeherder:
-            platform: linux64-snap-amd64-stable/debug
+            platform: linux64-snap/debug
+            symbol: B-stable(amd64)
 
     amd64-stablecore24/opt:
         description: Build Firefox Stable (Core24) as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-stablecore24
+            build_platform: linux64-snap
             build_type: opt
-        index:
-            product: firefox
-            job-name: amd64-stablecore24
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core24}
             max-run-time: 9000
@@ -205,17 +243,14 @@ tasks:
             command: >-
               ./run.sh stable-core24 amd64
         treeherder:
-            platform: linux64-snap-amd64-stablecore24/opt
+            platform: linux64-snap/opt
+            symbol: B-stable24(amd64)
 
     amd64-stablecore24/debug:
         description: Build Firefox Stable (Core24 debug) as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-stablecore24
+            build_platform: linux64-snap
             build_type: debug
-        index:
-            product: firefox
-            job-name: amd64-stablecore24-debug
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core24}
             max-run-time: 7200
@@ -224,17 +259,14 @@ tasks:
             command: >-
               ./run.sh stable-core24 amd64 --debug
         treeherder:
-            platform: linux64-snap-amd64-stablecore24/debug
+            platform: linux64-snap/debug
+            symbol: B-stable24(amd64)
 
     amd64-esr128/opt:
         description: Build Firefox ESR 128 as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-esr128
+            build_platform: linux64-snap
             build_type: opt
-        index:
-            product: firefox
-            job-name: amd64-esr128
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core22}
             max-run-time: 9000
@@ -243,17 +275,14 @@ tasks:
             command: >-
               ./run.sh esr-128 amd64
         treeherder:
-            platform: linux64-snap-amd64-esr128/opt
+            platform: linux64-snap/opt
+            symbol: B-esr(amd64)
 
     amd64-esr128/debug:
         description: Build Firefox ESR 128 (debug) as a Snap using upstream definition
         attributes:
-            build_platform: linux64-snap-upstream-esr128
+            build_platform: linux64-snap
             build_type: debug
-        index:
-            product: firefox
-            job-name: amd64-esr128-debug
-            type: generic
         worker:
             docker-image: {in-tree: snap-build-core22}
             max-run-time: 7200
@@ -262,17 +291,21 @@ tasks:
             command: >-
               ./run.sh esr-128 amd64 --debug
         treeherder:
-            platform: linux64-snap-amd64-esr128/debug
+            platform: linux64-snap/debug
+            symbol: B-esr(amd64)
 
-    amd64-try/opt:
-        description: Build Firefox Nightly as a Snap using upstream definition and try repo
+    amd64-local/opt:
+        description: Build Firefox Nightly as a Snap using upstream definition and local gecko checkout
         attributes:
-            build_platform: linux64-snap-upstream-try
+            build_platform: linux64-snap
             build_type: opt
+            cron: false
+        run-on-projects:
+            - mozilla-central
+            - autoland
         index:
             product: firefox
-            job-name: amd64-try
-            type: generic
+            job-name: snap-amd64-opt
         worker:
             docker-image: {in-tree: snap-build-core24}
             max-run-time: 9000
@@ -281,17 +314,21 @@ tasks:
             command: >-
               ./run.sh try amd64
         treeherder:
-            platform: linux64-snap-amd64-try/opt
+            platform: linux64-snap/opt
+            symbol: B-local(amd64)
 
-    amd64-try/debug:
-        description: Build Firefox Nightly (debug) as a Snap using upstream definition and try repo
+    amd64-local/debug:
+        description: Build Firefox Nightly (debug) as a Snap using upstream definition and local gecko checkout
         attributes:
-            build_platform: linux64-snap-upstream-try
+            build_platform: linux64-snap
             build_type: debug
+            cron: false
+        run-on-projects:
+            - mozilla-central
+            - autoland
         index:
             product: firefox
-            job-name: amd64-try-debug
-            type: generic
+            job-name: snap-amd64-debug
         worker:
             docker-image: {in-tree: snap-build-core24}
             max-run-time: 7200
@@ -300,4 +337,97 @@ tasks:
             command: >-
               ./run.sh try amd64 --debug
         treeherder:
-            platform: linux64-snap-amd64-try/debug
+            platform: linux64-snap/debug
+            symbol: B-local(amd64)
+
+    armhf-local/opt:
+        description: Build Firefox Nightly as a Snap using upstream definition and local gecko checkout
+        attributes:
+            build_platform: linux-armhf-snap
+            build_type: opt
+            cron: false
+        run-on-projects:
+            - mozilla-central
+            - autoland
+        index:
+            product: firefox
+            job-name: snap-armhf-opt
+        worker:
+            docker-image: {in-tree: snap-build-core24}
+            max-run-time: 9000
+        run:
+            using: run-task
+            command: >-
+              ./run.sh try armhf
+        treeherder:
+            platform: linux64-snap/opt
+            symbol: B-local(armhf)
+
+    armhf-local/debug:
+        description: Build Firefox Nightly (debug) as a Snap using upstream definition and local gecko checkout
+        attributes:
+            build_platform: linux-armhf-snap
+            build_type: debug
+            cron: false
+        run-on-projects:
+            - mozilla-central
+            - autoland
+        index:
+            product: firefox
+            job-name: snap-armhf-debug
+        worker:
+            docker-image: {in-tree: snap-build-core24}
+            max-run-time: 7200
+        run:
+            using: run-task
+            command: >-
+              ./run.sh try armhf --debug
+        treeherder:
+            platform: linux64-snap/debug
+            symbol: B-local(armhf)
+
+    arm64-local/opt:
+        description: Build Firefox Nightly as a Snap using upstream definition and local gecko checkout
+        attributes:
+            build_platform: linux-arm64-snap
+            build_type: opt
+            cron: false
+        run-on-projects:
+            - mozilla-central
+            - autoland
+        index:
+            product: firefox
+            job-name: snap-arm64-opt
+        worker:
+            docker-image: {in-tree: snap-build-core24}
+            max-run-time: 9000
+        run:
+            using: run-task
+            command: >-
+              ./run.sh try arm64
+        treeherder:
+            platform: linux64-snap/opt
+            symbol: B-local(arm64)
+
+    arm64-local/debug:
+        description: Build Firefox Nightly (debug) as a Snap using upstream definition and local gecko checkout
+        attributes:
+            build_platform: linux-arm64-snap
+            build_type: debug
+            cron: false
+        run-on-projects:
+            - mozilla-central
+            - autoland
+        index:
+            product: firefox
+            job-name: snap-arm64-debug
+        worker:
+            docker-image: {in-tree: snap-build-core24}
+            max-run-time: 7200
+        run:
+            using: run-task
+            command: >-
+              ./run.sh try arm64 --debug
+        treeherder:
+            platform: linux64-snap/debug
+            symbol: B-local(arm64)

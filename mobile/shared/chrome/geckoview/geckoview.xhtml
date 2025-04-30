@@ -3,6 +3,8 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
+<?csp default-src chrome: resource:; ?>
+
 <window
   id="main-window"
   windowtype="navigator:geckoview"
@@ -12,8 +14,4 @@
     type="application/javascript"
     src="chrome://geckoview/content/geckoview.js"
   />
-  <script>
-    /* import-globals-from geckoview.js */
-    window.addEventListener("DOMContentLoaded", startup, { once: true });
-  </script>
 </window>

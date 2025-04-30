@@ -103,7 +103,7 @@ impl SqliteMallocString {
     /// fails, we call `handle_alloc_error` which aborts the program after
     /// calling a global hook.
     ///
-    /// This means it's safe to use in extern "C" functions even outside of
+    /// This means it's safe to use in extern "C" functions even outside
     /// `catch_unwind`.
     pub(crate) fn from_str(s: &str) -> Self {
         let s = if s.as_bytes().contains(&0) {

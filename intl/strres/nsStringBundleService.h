@@ -47,11 +47,6 @@ class nsStringBundleService : public nsIStringBundleService,
  private:
   virtual ~nsStringBundleService();
 
-  void getStringBundle(const char* aUrl, nsIStringBundle** aResult);
-  nsresult FormatWithBundle(nsIStringBundle* bundle, nsresult aStatus,
-                            const nsTArray<nsString>& argArray,
-                            nsAString& result);
-
   void flushBundleCache(bool ignoreShared = true);
 
   mozilla::UniquePtr<bundleCacheEntry_t> evictOneEntry();

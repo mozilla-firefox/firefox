@@ -130,7 +130,7 @@
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
   <string name="address_bar_swipe_cfr_message" tools:ignore="UnusedResources" moz:removedIn="139">Llusgwch i\'r chwith neu\'r dde i newid. Llusgwch i\'r chwith ar eich tab olaf i agor tab newydd.</string>
   <!-- Text for the message displayed in the contextual feature recommendation popup promoting swipe of address bar. -->
-  <string name="address_bar_swipe_cfr_message_2">Sychwch y bar offer i\'r chwith neu\'r dde i newid tabiau.</string>
+  <string name="address_bar_swipe_cfr_message_2">Llusgwch y bar offer i\'r chwith neu\'r dde i newid tabiau.</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">Mae angen mynediad i’r camera. Ewch i osodiadau Android, tapiwch Permissions, a thapio Allow.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -836,8 +836,6 @@
   <string name="preferences_override_account_server">Gweinydd cyfrif Mozilla cyfaddas</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Gweinydd Sync Cyfaddas</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mae eich cyfrif Mozilla/Gweinydd Sync wedi’i addasu. Wrthi’n gadael y rhaglen er mwyn gwneud newidiadau…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Cyfrif</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -1485,16 +1483,20 @@
   <string name="download_delete_item_1" moz:removedIn="138" tools:ignore="UnusedResources">Tynnu</string>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">Dileu</string>
+  <!-- Content description for the toolbar "Navigate back" button -->
+  <string name="download_navigate_back_description">Symud nôl</string>
+  <!-- Content description for the toolbar "Navigate up" button -->
+  <string name="download_navigate_up_description">Symud i fyny</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">Rhannu URL</string>
   <!-- Text for the button to share the download file -->
   <string name="download_share_file">Rhannu ffeil</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
-  <string name="download_delete_multi_select_dialog_confirmation" tools:ignore="UnusedResources">Ydych chi\'n siŵr eich bod am ddileu\'r eitemau hyn?</string>
+  <string name="download_delete_multi_select_dialog_confirmation">Ydych chi\'n siŵr eich bod am ddileu\'r eitemau hyn?</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the positive action. -->
-  <string name="download_delete_multi_select_dialog_confirm" tools:ignore="UnusedResources">Dileu</string>
+  <string name="download_delete_multi_select_dialog_confirm">Dileu</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the negative action. -->
-  <string name="download_delete_multi_select_dialog_cancel" tools:ignore="UnusedResources">Diddymu</string>
+  <string name="download_delete_multi_select_dialog_cancel">Diddymu</string>
   <!-- Text for the header of in progress downloads -->
   <string name="download_header_in_progress" tools:ignore="UnusedResources">Ar waith</string>
   <!--
@@ -1525,11 +1527,11 @@
   <!-- Text to indicate that a download has failed to download. -->
   <string name="download_item_status_failed" tools:ignore="UnusedResources">Methodd y llwytho i lawr</string>
   <!-- Placeholder text to indicate that users can use the search bar to search for a download. -->
-  <string name="download_search_placeholder" tools:ignore="UnusedResources">Chwilio\'r llwythi</string>
+  <string name="download_search_placeholder">Chwilio\'r llwythi</string>
   <!-- Text to indicate that no downloads match the search query. -->
-  <string name="download_search_no_results_found" tools:ignore="UnusedResources">Heb ganfod canlyniadau</string>
+  <string name="download_search_no_results_found">Heb ganfod canlyniadau</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
-  <string name="download_select_all_items">Dewis popeth</string>
+  <string name="download_select_all_items">Dewis y cyfan</string>
   <!--
     Downloads Content Type Filters
 
@@ -2280,7 +2282,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Eicon dewis eithriad diogelu tracio gwell</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->
@@ -3195,6 +3197,8 @@
   <string name="protection_panel_no_trackers_blocked">Heb ganfod tracwyr</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings">Gosodiadau preifatrwydd a diogelwch</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Caniatâd</string>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3389,17 +3393,17 @@
   -->
   <string name="debug_drawer_region_tools_title">Offer Rhanbarth</string>
   <!-- The description of the Region tools in the Debug Drawer -->
-  <string name="debug_drawer_regin_tools_description">Dros dro yn diystyru gwerthoedd y cartref a\'r rhanbarth presennol ar gyfer profi.</string>
+  <string name="debug_drawer_regin_tools_description">Yn diystyru dros dro gwerthoedd cartref a\'r rhanbarth cyfredol ar gyfer profi.</string>
   <!-- The text label for displaying home region. -->
   <string name="debug_drawer_home_region_label">Rhanbarth cartref</string>
   <!-- The text label for displaying current region. -->
-  <string name="debug_drawer_current_region_label">Rhanbarth presennol</string>
+  <string name="debug_drawer_current_region_label">Rhanbarth cyfredol</string>
   <!-- The text field label for overriding home region. -->
   <string name="debug_drawer_override_home_region_label">Diystyru\'r rhanbarth cartref</string>
   <!-- The text field label for overriding current region. -->
-  <string name="debug_drawer_override_current_region_label">Diystyru\'r rhanbarth presennol</string>
+  <string name="debug_drawer_override_current_region_label">Diystyru\'r rhanbarth cyfredol</string>
   <!-- The title of the button for overriding home and current region. -->
-  <string name="debug_drawer_override_region">Diystyru cartref a rhanbarth presennol</string>
+  <string name="debug_drawer_override_region">Diystyru\'r cartref a\'r rhanbarth cyfredol</string>
   <!--
     Messages explaining how to exit fullscreen mode
 
@@ -3497,7 +3501,7 @@
   <!-- Subtitle for a setup checklist with 6 steps when three of the tasks are completed. -->
   <string name="setup_checklist_subtitle_6_steps_third_step">Rydych chi hanner ffordd yno! Tri cham wedi gorffen a 3 i fynd.</string>
   <!-- Subtitle for a setup checklist with 6 steps when the fourth task is completed. -->
-  <string name="setup_checklist_subtitle_6_steps_fourth_step">Rydych chi 4 cam i mewn. Dim ond 2 arall i fynd!</string>
+  <string name="setup_checklist_subtitle_6_steps_fourth_step">Rydych wedi cyrraedd cam 4. Dim ond 2 arall i fynd!</string>
   <!-- Subtitle for a setup checklist with 6 steps when the fifth task is completed. -->
   <string name="setup_checklist_subtitle_6_steps_fifth_step">Bron yno! Rydych chi 1 cam yn unig i ffwrdd o\'r llinell derfyn.</string>
   <!-- Subtitle for a setup checklist with 6 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
@@ -3533,7 +3537,7 @@
 
     Text for the 'remove' button for the setup checklist
   -->
-  <string name="setup_checklist_button_remove">Dileu rhestr wirio</string>
+  <string name="setup_checklist_button_remove">Dileu\'r rhestr wirio</string>
   <!--
     ===== Setup checklist feature: Accessibility =====
 

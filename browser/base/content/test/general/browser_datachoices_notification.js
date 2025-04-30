@@ -20,6 +20,10 @@ const PREF_ACCEPTED_POLICY_VERSION =
   PREF_BRANCH + "dataSubmissionPolicyAcceptedVersion";
 const PREF_ACCEPTED_POLICY_DATE =
   PREF_BRANCH + "dataSubmissionPolicyNotifiedTime";
+const PREF_TOS_ROLLOUT_POPULATION =
+  "browser.preonboarding.onTrainRolloutPopulation";
+const PREF_TOS_ROLLOUT_ENROLLED =
+  "browser.preonboarding.enrolledInOnTrainRollout";
 
 const PREF_TELEMETRY_LOG_LEVEL = "toolkit.telemetry.log.level";
 
@@ -127,6 +131,8 @@ add_setup(async function () {
     Preferences.set(PREF_BYPASS_NOTIFICATION, bypassNotification);
     Preferences.set(PREF_CURRENT_POLICY_VERSION, currentPolicyVersion);
     Preferences.reset(PREF_TELEMETRY_LOG_LEVEL);
+    Preferences.reset(PREF_TOS_ROLLOUT_ENROLLED);
+    Preferences.reset(PREF_TOS_ROLLOUT_POPULATION);
 
     return closeAllNotifications();
   });
@@ -138,6 +144,9 @@ add_setup(async function () {
   // Ensure this isn't the first run, because then we open the first run page.
   Preferences.set(PREF_FIRST_RUN, false);
   TelemetryReportingPolicy.testUpdateFirstRun();
+  // Do not trigger ToS modal for Linux, Mac, and MSIX builds
+  Preferences.set(PREF_TOS_ROLLOUT_ENROLLED, false);
+  Preferences.set(PREF_TOS_ROLLOUT_POPULATION, 0);
 });
 
 function clearAcceptedPolicy() {

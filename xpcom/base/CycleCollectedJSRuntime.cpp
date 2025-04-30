@@ -1346,6 +1346,13 @@ void CycleCollectedJSRuntime::AfterWaitCallback(void* aCookie) {
       ->~AutoYieldJSThreadExecution();
 }
 
+void CycleCollectedJSRuntime::TraceNativeBlackRoots(JSTracer* aTracer) {
+  if (CycleCollectedJSContext* context = GetContext()) {
+    context->TraceMicroTasks(aTracer);
+  }
+  TraceAdditionalNativeBlackRoots(aTracer);
+}
+
 struct JsGcTracer : public TraceCallbacks {
   virtual void Trace(JS::Heap<JS::Value>* aPtr, const char* aName,
                      void* aClosure) const override {
@@ -1515,14 +1522,13 @@ static inline bool ShouldCheckSingleZoneHolders() {
 void CycleCollectedJSRuntime::TraceAllNativeGrayRoots(JSTracer* aTracer) {
   MOZ_RELEASE_ASSERT(mTraceState.is<Nothing>());
   JS::SliceBudget budget = JS::SliceBudget::unlimited();
-  MOZ_ALWAYS_TRUE(
-      TraceNativeGrayRoots(aTracer, AllJSHolders, budget));
+  MOZ_ALWAYS_TRUE(TraceNativeGrayRoots(aTracer, AllJSHolders, budget));
 }
 #endif
 
-bool CycleCollectedJSRuntime::TraceNativeGrayRoots(
-    JSTracer* aTracer, WhichJSHolders aWhich,
-    JS::SliceBudget& aBudget) {
+bool CycleCollectedJSRuntime::TraceNativeGrayRoots(JSTracer* aTracer,
+                                                   WhichJSHolders aWhich,
+                                                   JS::SliceBudget& aBudget) {
   // Holders may have been removed between slices, so we may need to update
   // the iterator.
   if (mTraceState.is<JSHolderMap::Iter>()) {

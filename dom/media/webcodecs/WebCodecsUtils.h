@@ -20,6 +20,7 @@
 #include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/Nullable.h"
 #include "mozilla/dom/UnionTypes.h"
+#include "mozilla/dom/VideoColorSpaceBinding.h"
 #include "mozilla/dom/VideoEncoderBinding.h"
 #include "mozilla/dom/VideoFrameBinding.h"
 
@@ -166,9 +167,41 @@ bool CopyExtradataToDescription(JSContext* aCx, Span<const uint8_t>& aSrc,
  * gfx's values.
  */
 
-enum class VideoColorPrimaries : uint8_t;
-enum class VideoMatrixCoefficients : uint8_t;
-enum class VideoTransferCharacteristics : uint8_t;
+struct VideoColorSpaceInternal {
+  explicit VideoColorSpaceInternal(const VideoColorSpaceInit& aColorSpaceInit);
+  VideoColorSpaceInternal() = default;
+  VideoColorSpaceInternal(const bool& aFullRange,
+                          const VideoMatrixCoefficients& aMatrix,
+                          const VideoColorPrimaries& aPrimaries,
+                          const VideoTransferCharacteristics& aTransfer)
+      : mFullRange(Some(aFullRange)),
+        mMatrix(Some(aMatrix)),
+        mPrimaries(Some(aPrimaries)),
+        mTransfer(Some(aTransfer)) {}
+  VideoColorSpaceInternal(const VideoColorSpaceInternal& aOther) = default;
+  VideoColorSpaceInternal(VideoColorSpaceInternal&& aOther) = default;
+
+  VideoColorSpaceInternal& operator=(const VideoColorSpaceInternal& aOther) =
+      default;
+  VideoColorSpaceInternal& operator=(VideoColorSpaceInternal&& aOther) =
+      default;
+
+  bool operator==(const VideoColorSpaceInternal& aOther) const {
+    return mFullRange == aOther.mFullRange && mMatrix == aOther.mMatrix &&
+           mPrimaries == aOther.mPrimaries && mTransfer == aOther.mTransfer;
+  }
+  bool operator!=(const VideoColorSpaceInternal& aOther) const {
+    return !(*this == aOther);
+  }
+
+  VideoColorSpaceInit ToColorSpaceInit() const;
+  nsCString ToString() const;
+
+  Maybe<bool> mFullRange;
+  Maybe<VideoMatrixCoefficients> mMatrix;
+  Maybe<VideoColorPrimaries> mPrimaries;
+  Maybe<VideoTransferCharacteristics> mTransfer;
+};
 
 gfx::ColorRange ToColorRange(bool aIsFullRange);
 
@@ -298,8 +331,8 @@ nsCString ColorSpaceInitToString(
     const dom::VideoColorSpaceInit& aColorSpaceInit);
 
 RefPtr<TaskQueue> GetWebCodecsEncoderTaskQueue();
-VideoColorSpaceInit FallbackColorSpaceForVideoContent();
-VideoColorSpaceInit FallbackColorSpaceForWebContent();
+VideoColorSpaceInternal FallbackColorSpaceForVideoContent();
+VideoColorSpaceInternal FallbackColorSpaceForWebContent();
 
 Maybe<CodecType> CodecStringToCodecType(const nsAString& aCodecString);
 

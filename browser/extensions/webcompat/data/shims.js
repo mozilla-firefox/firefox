@@ -482,6 +482,23 @@ const AVAILABLE_SHIMS = [
     name: "Google Publisher Tags",
     bug: "1713685",
     file: "google-publisher-tags.js",
+    notHosts: [
+      "13wham.com",
+      "wpde.com",
+      "krcrtv.com",
+      "nbcmontana.com",
+      "idahonews.com",
+      "wgme.com",
+      "wtov9.com",
+      "news3lv.com",
+      "devuploads.com",
+      "wjla.com",
+      "komonews.com",
+      "fox11online.com",
+      "cbs6albany.com",
+      "okcfox.co",
+      "turnto10.com",
+    ],
     matches: [
       "*://www.googletagservices.com/tag/js/gpt.js*",
       "*://pagead2.googlesyndication.com/tag/js/gpt.js*",
@@ -943,6 +960,34 @@ const AVAILABLE_SHIMS = [
       {
         js: "stackoverflow-login.js",
         matches: ["*://stackoverflow.com/*"],
+        runAt: "document_start",
+      },
+    ],
+    onlyIfDFPIActive: true,
+  },
+  {
+    id: "JiraZendeskSupport",
+    platform: "all",
+    name: "Jira Zendesk Support",
+    bug: "1774592",
+    contentScripts: [
+      {
+        js: "jira-zendesk-support.js",
+        matches: ["*://*.atlassian.net/*"],
+        runAt: "document_start",
+      },
+    ],
+    onlyIfDFPIActive: true,
+  },
+  {
+    id: "ZendeskAsanaSupport",
+    platform: "all",
+    name: "Zendesk Asana Support",
+    bug: "1774567",
+    contentScripts: [
+      {
+        js: "zendesk-asana-support.js",
+        matches: ["*://*.zendesk.com/*"],
         runAt: "document_start",
       },
     ],

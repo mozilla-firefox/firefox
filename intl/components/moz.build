@@ -19,6 +19,7 @@ EXPORTS.mozilla.intl = [
     "src/GeneralCategory.h",
     "src/ICU4CGlue.h",
     "src/ICU4CLibrary.h",
+    "src/ICU4XGeckoDataProvider.h",
     "src/ICUError.h",
     "src/ListFormat.h",
     "src/Locale.h",
@@ -51,6 +52,7 @@ UNIFIED_SOURCES += [
     "src/DisplayNames.cpp",
     "src/ICU4CGlue.cpp",
     "src/ICU4CLibrary.cpp",
+    "src/ICU4XGeckoDataProvider.cpp",
     "src/ListFormat.cpp",
     "src/Locale.cpp",
     "src/LocaleCanonicalizer.cpp",
@@ -71,16 +73,12 @@ UNIFIED_SOURCES += [
 if not CONFIG["JS_STANDALONE"]:
     TEST_DIRS += ["gtest"]
 
-if CONFIG["MOZ_ICU4X"]:
-    EXPORTS.mozilla.intl += [
-        "src/ICU4XGeckoDataProvider.h",
-    ]
-    UNIFIED_SOURCES += [
-        "src/ICU4XGeckoDataProvider.cpp",
-    ]
-    LOCAL_INCLUDES += [
-        "/intl/icu_capi/bindings/c",
-    ]
+LOCAL_INCLUDES += [
+    "/intl/icu_capi/bindings/c",
+]
+
+if not CONFIG["MOZ_SYSTEM_ICU"]:
+    DIRS += ["src/calendar"]
 
 # At the time of this writing the MOZ_HAS_MOZGLUE define must be true in order to
 # correctly include ConvertUtf8toUtf16 in certain include paths, otherwise it results

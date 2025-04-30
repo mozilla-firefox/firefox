@@ -41,7 +41,6 @@ import mozilla.components.browser.toolbar.BrowserToolbar
 import mozilla.components.browser.toolbar.display.DisplayToolbar
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.toolbar.BrowserToolbarDefaults
-import mozilla.components.compose.browser.toolbar.CustomTabToolbarColors
 import mozilla.components.compose.browser.toolbar.concept.Action.ActionButton
 import mozilla.components.compose.browser.toolbar.store.BrowserEditToolbarAction
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarAction
@@ -516,9 +515,6 @@ class ToolbarActivity : AppCompatActivity() {
             AcornTheme {
                 BrowserToolbar(
                     store = store,
-                    onDisplayToolbarClick = {
-                        store.dispatch(BrowserToolbarAction.ToggleEditMode(editMode = true))
-                    },
                     onTextEdit = { text ->
                         store.dispatch(BrowserEditToolbarAction.UpdateEditText(text = text))
                     },
@@ -541,9 +537,9 @@ class ToolbarActivity : AppCompatActivity() {
                 val store = remember {
                     BrowserToolbarStore(
                         initialState = BrowserToolbarState(
-                            mode = Mode.CUSTOM_TAB,
+                            mode = Mode.DISPLAY,
                             displayState = DisplayState(
-                                navigationActions = listOf(
+                                browserActionsStart = listOf(
                                     ActionButton(
                                         icon = iconsR.drawable.mozac_ic_cross_24,
                                         contentDescription = R.string.page_action_clear_input_description,
@@ -551,7 +547,7 @@ class ToolbarActivity : AppCompatActivity() {
                                         onClick = object : BrowserToolbarEvent {},
                                     ),
                                 ),
-                                browserActions = listOf(
+                                browserActionsEnd = listOf(
                                     ActionButton(
                                         icon = iconsR.drawable.mozac_ic_arrow_clockwise_24,
                                         contentDescription = R.string.page_action_refresh_description,
@@ -566,18 +562,10 @@ class ToolbarActivity : AppCompatActivity() {
 
                 BrowserToolbar(
                     store = store,
-                    onDisplayToolbarClick = {},
                     onTextEdit = {},
                     onTextCommit = {},
-                    colors = BrowserToolbarDefaults.colors(
-                        customTabToolbarColors = CustomTabToolbarColors(
-                            background = AcornTheme.colors.layer1,
-                            title = AcornTheme.colors.textPrimary,
-                            url = AcornTheme.colors.textSecondary,
-                        ),
-                    ),
+                    colors = BrowserToolbarDefaults.colors(),
                     url = "https://www.mozilla.org/en-US/firefox/mobile/",
-                    title = "Mozilla",
                 )
             }
         }

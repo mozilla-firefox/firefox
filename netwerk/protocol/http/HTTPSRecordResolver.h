@@ -46,7 +46,6 @@ class HTTPSRecordResolver : public nsIDNSListener {
   nsCOMPtr<nsICancelable> mHTTPSRecordRequest MOZ_GUARDED_BY(mMutex);
   nsCOMPtr<nsIDNSAddrRecord> mAddrRecord;
   nsCOMPtr<nsIDNSHTTPSSVCRecord> mHTTPSRecord;
-  uint32_t mCaps;
   bool mDone = false;
 };
 

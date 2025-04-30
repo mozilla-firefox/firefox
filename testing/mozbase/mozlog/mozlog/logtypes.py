@@ -243,7 +243,7 @@ class List(ContainerType):
     def convert(self, data):
         # while dicts and strings _can_ be cast to lists,
         # doing so is likely not intentional behaviour
-        if isinstance(data, ((str,), dict)):
+        if isinstance(data, (str, dict)):
             raise ValueError("Expected list but got %s" % type(data))
         return [self.item_type.convert(item) for item in data]
 

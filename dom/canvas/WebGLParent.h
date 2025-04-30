@@ -110,6 +110,8 @@ class WebGLParent : public PWebGLParent, public SupportsWeakPtr {
   const RefPtr<layers::SharedSurfacesHolder> mSharedSurfacesHolder;
   const dom::ContentParentId mContentId;
 
+  HostWebGLContext* GetHostWebGLContext() const { return mHost.get(); }
+
  private:
   ~WebGLParent();
 

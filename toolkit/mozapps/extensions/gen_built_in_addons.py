@@ -64,13 +64,6 @@ def main(output, *args):
         description="Produces a JSON manifest of built-in add-ons"
     )
     parser.add_argument(
-        "--features",
-        type=str,
-        dest="featuresdir",
-        action="store",
-        help=("The distribution sub-directory " "containing feature add-ons"),
-    )
-    parser.add_argument(
         "--builtin-addons",
         type=str,
         dest="builtinsdir",
@@ -91,13 +84,6 @@ def main(output, *args):
     listing = {
         "dictionaries": dicts,
     }
-
-    if args.featuresdir:
-        features = set()
-        for p in registry.match("%s/*" % args.featuresdir):
-            features.add(mozpath.basename(get_child(args.featuresdir, p)))
-
-        listing["system"] = sorted(features)
 
     if args.builtinsdir:
         builtins = list()

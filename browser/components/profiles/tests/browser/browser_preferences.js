@@ -163,10 +163,13 @@ add_task(async function testPrivacyInfoHiddenWhenDisabled() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.profiles.enabled", false],
+      ["browser.profiles.created", false],
       ["toolkit.profiles.storeID", ""],
     ],
   });
   gProfileService.currentProfile.storeID = null;
+  await ProfilesDatastoreService.uninit();
+  await ProfilesDatastoreService.init();
   await SelectableProfileService.uninit();
   await SelectableProfileService.init();
 

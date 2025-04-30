@@ -143,6 +143,9 @@ support-files = [
 ["browser_doorhanger_password_edits.js"]
 
 ["browser_doorhanger_promptToChangePassword.js"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1775906
+]
 
 ["browser_doorhanger_remembering.js"]
 

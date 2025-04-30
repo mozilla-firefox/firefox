@@ -2654,12 +2654,8 @@ tests.push({
     });
     Assert.equal(pageInfo.annotations.get("anno"), "anno");
 
-    await new Promise(resolve => {
-      PlacesUtils.favicons.getFaviconURLForPage(this._uri2, aFaviconURI => {
-        Assert.ok(aFaviconURI.equals(SMALLPNG_DATA_URI));
-        resolve();
-      });
-    });
+    let favicon = await PlacesTestUtils.getFaviconForPage(this._uri2);
+    Assert.equal(favicon.uri.spec, SMALLPNG_DATA_URI.spec);
   },
 });
 

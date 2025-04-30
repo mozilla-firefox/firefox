@@ -102,6 +102,7 @@ export let RemotePageAccessManager = {
       RPMGetHttpResponseHeader: ["*"],
       RPMIsTRROnlyFailure: ["*"],
       RPMIsFirefox: ["*"],
+      RPMHasConnectivity: ["*"],
       RPMGetTRRSkipReason: ["*"],
       RPMGetTRRDomain: ["*"],
       RPMIsSiteSpecificTRRError: ["*"],

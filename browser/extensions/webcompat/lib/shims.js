@@ -1259,6 +1259,7 @@ class Shims {
       // should pass an empty array to disable this functionality.
       const needsShimHelpers =
         shimToApply.webExposedShimHelpers || shimToApply.needsShimHelpers;
+
       runFirst = shimToApply.runFirst;
 
       const redirect = target || file;
@@ -1272,6 +1273,16 @@ class Shims {
       const warning = `${name} is being shimmed by Firefox. See https://bugzilla.mozilla.org/show_bug.cgi?id=${bug} for details.`;
 
       let needConsoleMessage = true;
+
+      if (shimToApply.isSmartblockEmbedShim) {
+        try {
+          await browser.tabs.executeScript(tabId, {
+            file: `/lib/smartblock_embeds_helper.js`,
+            frameId,
+            runAt: "document_start",
+          });
+        } catch (_) {}
+      }
 
       if (runFirst) {
         try {

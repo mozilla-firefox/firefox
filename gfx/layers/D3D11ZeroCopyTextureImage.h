@@ -26,6 +26,8 @@ class GLBlitHelper;
 }
 namespace layers {
 
+class FenceD3D11;
+
 class ZeroCopyUsageInfo final {
  public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(ZeroCopyUsageInfo)
@@ -51,10 +53,11 @@ class D3D11ZeroCopyTextureImage : public Image {
                             gfx::ColorSpace2 aColorSpace,
                             gfx::ColorRange aColorRange,
                             gfx::ColorDepth aColorDepth);
-  virtual ~D3D11ZeroCopyTextureImage() = default;
+  virtual ~D3D11ZeroCopyTextureImage();
 
   void AllocateTextureClient(KnowsCompositor* aKnowsCompositor,
-                             RefPtr<ZeroCopyUsageInfo> aUsageInfo);
+                             RefPtr<ZeroCopyUsageInfo> aUsageInfo,
+                             const RefPtr<FenceD3D11> aWriteFence);
 
   gfx::IntSize GetSize() const override;
   already_AddRefed<gfx::SourceSurface> GetAsSourceSurface() override;

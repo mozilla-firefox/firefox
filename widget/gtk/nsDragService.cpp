@@ -2462,12 +2462,14 @@ void nsDragSession::SetDragIcon(GdkDragContext* aContext) {
           // When mDragPopup has a parent it's already attached to D&D context.
           // That may happens when D&D operation is aborted but not finished
           // on Gtk side yet so let's remove it now.
+          g_object_ref(gtkWidget);
           if (GtkWidget* parent = gtk_widget_get_parent(gtkWidget)) {
             gtk_container_remove(GTK_CONTAINER(parent), gtkWidget);
           }
           LOGDRAGSERVICE("  set drag popup [%p]", widget.get());
           OpenDragPopup();
           gtk_drag_set_icon_widget(aContext, gtkWidget, offsetX, offsetY);
+          g_object_unref(gtkWidget);
           return;
         } else {
           LOGDRAGSERVICE("  NS_NATIVE_SHELLWIDGET is missing!");

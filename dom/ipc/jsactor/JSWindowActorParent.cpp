@@ -30,10 +30,8 @@ WindowContext* JSWindowActorParent::GetWindowContext() const {
 void JSWindowActorParent::Init(const nsACString& aName,
                                WindowGlobalParent* aManager) {
   MOZ_ASSERT(!mManager, "Cannot Init() a JSWindowActorParent twice!");
-  SetName(aName);
   mManager = aManager;
-
-  InvokeCallback(CallbackFunction::ActorCreated);
+  JSActor::Init(aName);
 }
 
 void JSWindowActorParent::SendRawMessage(

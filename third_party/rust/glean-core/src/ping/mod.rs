@@ -176,8 +176,36 @@ impl PingMaker {
             StorageManager.snapshot_as_json(glean.storage(), "glean_client_info", true)
         {
             let client_info_obj = client_info.as_object().unwrap(); // safe unwrap, snapshot always returns an object.
-            for (_key, value) in client_info_obj {
-                merge(&mut map, value);
+            for (_metric_type, metrics) in client_info_obj {
+                merge(&mut map, metrics);
+            }
+            let map = map.as_object_mut().unwrap(); // safe unwrap, we created the object above.
+            let mut attribution = serde_json::Map::new();
+            let mut distribution = serde_json::Map::new();
+            map.retain(|name, value| {
+                // Only works because we ensure no client_info metric categories contain '.'.
+                let mut split = name.split('.');
+                let category = split.next();
+                let name = split.next();
+                if let (Some(category), Some(name)) = (category, name) {
+                    if category == "attribution" {
+                        attribution.insert(name.into(), value.take());
+                        false
+                    } else if category == "distribution" {
+                        distribution.insert(name.into(), value.take());
+                        false
+                    } else {
+                        true
+                    }
+                } else {
+                    true
+                }
+            });
+            if !attribution.is_empty() {
+                map.insert("attribution".into(), serde_json::Value::from(attribution));
+            }
+            if !distribution.is_empty() {
+                map.insert("distribution".into(), serde_json::Value::from(distribution));
             }
         } else {
             log::warn!("Empty client info data.");

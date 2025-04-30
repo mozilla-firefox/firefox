@@ -68,16 +68,13 @@ skip-if = ["os == 'android'"] # Non-extension add-ons are not supported on Andro
 
 ["test_builtin_location.js"]
 
+["test_builtin_theme_missing_fluent_strings.js"]
+skip-if = ["os == 'android'"] # Built-in Static Theme add-ons are not supported on Android.
+
 ["test_cacheflush.js"]
 
 ["test_childprocess.js"]
 head = ""
-
-["test_colorways_builtin_theme_upgrades.js"]
-skip-if = [
-  "appname == 'thunderbird'", # Bug 1809438 - No colorways in Thunderbird
-  "os == 'android'", # No colorway themes (or any static themes) on Android.
-]
 
 ["test_cookies.js"]
 

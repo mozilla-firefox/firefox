@@ -20,16 +20,23 @@ ChromeUtils.defineESModuleGetters(
   { global: "contextual" }
 );
 
+loader.lazyRequireGetter(
+  this,
+  "L10N",
+  "resource://devtools/client/netmonitor/src/utils/l10n.js",
+  true
+);
+
 const {
   UPDATE_PROPS,
 } = require("resource://devtools/client/netmonitor/src/constants.js");
 
-const CONTENT_MIME_TYPE_ABBREVIATIONS = {
-  ecmascript: "js",
-  javascript: "js",
-  "x-javascript": "js",
-  "event-stream": "eventsource",
-};
+const CONTENT_MIME_TYPE_ABBREVIATIONS = new Map([
+  ["ecmascript", "js"],
+  ["javascript", "js"],
+  ["x-javascript", "js"],
+  ["event-stream", "eventsource"],
+]);
 
 /**
  * Extracts any urlencoded form data sections (e.g. "?foo=bar&baz=42") from a
@@ -179,8 +186,10 @@ function getAbbreviatedMimeType(mimeType) {
   if (!mimeType) {
     return "";
   }
-  const abbrevType = (mimeType.split(";")[0].split("/")[1] || "").split("+")[0];
-  return CONTENT_MIME_TYPE_ABBREVIATIONS[abbrevType] || abbrevType;
+  const abbrevType = (
+    mimeType.toLowerCase().split(";")[0].split("/")[1] || ""
+  ).split("+")[0];
+  return CONTENT_MIME_TYPE_ABBREVIATIONS.get(abbrevType) || abbrevType;
 }
 
 /**
@@ -353,6 +362,31 @@ function getUrlDetails(url) {
     url,
     path,
   };
+}
+
+/**
+ * Helpers for retrieving the value of a URL tooltip
+ *
+ * @param {object} urlDetails - a urlDetails object
+ * @returns
+ */
+function getUrlToolTip(urlDetails) {
+  const url = urlDetails.url;
+  const decodedURL = urlDetails.unicodeUrl;
+
+  // The `originalFileURL` below refers to "File" because it was initially created for use in the File column.
+  // Now it is also being used in the Path and URL columns, while retaining the original name.
+  const ORIGINAL_URL = L10N.getFormatStr(
+    "netRequest.originalFileURL.tooltip",
+    url
+  );
+  const DECODED_URL = L10N.getFormatStr(
+    "netRequest.decodedFileURL.tooltip",
+    decodedURL
+  );
+  const toolTip =
+    url === decodedURL ? url : ORIGINAL_URL + "\n\n" + DECODED_URL;
+  return toolTip;
 }
 
 /**
@@ -792,6 +826,7 @@ module.exports = {
   getUrlHostName,
   getUrlQuery,
   getUrlScheme,
+  getUrlToolTip,
   parseQueryString,
   parseFormData,
   updateFormDataSections,

@@ -10,7 +10,7 @@
   "name": "Light",
   "description": "A theme with a light color scheme.",
   "author": "Mozilla",
-  "version": "1.3.1",
+  "version": "1.3.2",
 
   "icons": { "32": "icon.svg" },
 
@@ -20,8 +20,8 @@
       "tab_selected": "#fff",
       "tab_text": "rgb(21,20,26)",
       "icons": "rgb(91,91,102)",
-      "frame": "rgb(240, 240, 244)",
-      "frame_inactive": "rgb(235, 235, 239)",
+      "frame": "rgb(234, 234, 237)",
+      "frame_inactive": "rgb(240, 240, 244)",
       "popup": "#fff",
       "popup_text": "rgb(21,20,26)",
       "popup_border": "rgb(240,240,244)",

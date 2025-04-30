@@ -46,6 +46,14 @@ void (*const CELT_FLOAT2INT16_IMPL[OPUS_ARCHMASK+1])(const float * OPUS_RESTRICT
   celt_float2int16_neon,/* NEON */
   celt_float2int16_neon /* DOTPROD */
 };
+
+int (*const OPUS_LIMIT2_CHECKWITHIN1_IMPL[OPUS_ARCHMASK+1])(float * samples, int cnt) = {
+  opus_limit2_checkwithin1_c,   /* ARMv4 */
+  opus_limit2_checkwithin1_c,   /* EDSP */
+  opus_limit2_checkwithin1_c,   /* Media */
+  opus_limit2_checkwithin1_neon,/* NEON */
+  opus_limit2_checkwithin1_neon /* DOTPROD */
+};
 #  endif
 # endif
 

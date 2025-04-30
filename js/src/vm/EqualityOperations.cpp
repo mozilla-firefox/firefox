@@ -17,6 +17,7 @@
 #include "js/RootingAPI.h"  // JS::Rooted
 #include "js/Value.h"       // JS::Int32Value, JS::SameType, JS::Value
 #include "vm/BigIntType.h"  // JS::BigInt
+#include "vm/ConstantCompareOperand.h"
 #include "vm/JSContext.h"   // CHECK_THREAD
 #include "vm/JSObject.h"    // js::ToPrimitive
 #include "vm/StringType.h"  // js::EqualStrings
@@ -187,6 +188,28 @@ JS_PUBLIC_API bool JS::LooselyEqual(JSContext* cx, Handle<Value> value1,
   cx->check(value1, value2);
   MOZ_ASSERT(equal);
   return js::LooselyEqual(cx, value1, value2, equal);
+}
+
+bool js::ConstantStrictEqual(JSContext* cx, JS::Handle<JS::Value> val,
+                             uint16_t operand, bool* equal) {
+  ConstantCompareOperand constant =
+      ConstantCompareOperand::fromRawValue(operand);
+
+  switch (constant.type()) {
+    case ConstantCompareOperand::EncodedType::Int32:
+      *equal = val.isNumber() && val.toNumber() == constant.toNumber();
+      return true;
+    case ConstantCompareOperand::EncodedType::Boolean:
+      *equal = val.isBoolean() && val.toBoolean() == constant.toBoolean();
+      return true;
+    case ConstantCompareOperand::EncodedType::Undefined:
+      *equal = val.isUndefined();
+      return true;
+    case ConstantCompareOperand::EncodedType::Null:
+      *equal = val.isNull();
+      return true;
+  }
+  MOZ_CRASH("Unknown constant compare operand type");
 }
 
 bool js::StrictlyEqual(JSContext* cx, JS::Handle<JS::Value> lval,

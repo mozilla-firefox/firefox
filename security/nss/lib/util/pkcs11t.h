@@ -35,7 +35,7 @@
 #endif
 
 #define CRYPTOKI_VERSION_MAJOR 3
-#define CRYPTOKI_VERSION_MINOR 0
+#define CRYPTOKI_VERSION_MINOR 1
 #define CRYPTOKI_VERSION_AMENDMENT 0
 
 /* an unsigned 8-bit value */
@@ -93,7 +93,6 @@ typedef struct CK_INFO {
     CK_VERSION cryptokiVersion;     /* PKCS #11 interface ver */
     CK_UTF8CHAR manufacturerID[32]; /* blank padded */
     CK_FLAGS flags;                 /* must be zero */
-
     /* libraryDescription and libraryVersion are new for v2.0 */
     CK_UTF8CHAR libraryDescription[32]; /* blank padded */
     CK_VERSION libraryVersion;          /* version of library */
@@ -107,6 +106,7 @@ typedef CK_INFO CK_PTR CK_INFO_PTR;
  * for v2.0 */
 typedef CK_ULONG CK_NOTIFICATION;
 #define CKN_SURRENDER 0
+#define CKN_OTP_CHANGED 1
 
 typedef CK_ULONG CK_SLOT_ID;
 
@@ -330,6 +330,7 @@ typedef CK_ULONG CK_OBJECT_CLASS;
 #define CKO_HW_FEATURE 0x00000005UL
 #define CKO_DOMAIN_PARAMETERS 0x00000006UL
 #define CKO_MECHANISM 0x00000007UL
+#define CKO_OTP_KEY 0x00000008UL
 #define CKO_PROFILE 0x00000009UL
 #define CKO_VENDOR_DEFINED 0x80000000UL
 
@@ -338,6 +339,7 @@ typedef CK_OBJECT_CLASS CK_PTR CK_OBJECT_CLASS_PTR;
 /* CK_PROFILE_ID is new for v3.00. CK_PROFILE_ID is a value that
  * identifies the profile that the token supports. */
 typedef CK_ULONG CK_PROFILE_ID;
+typedef CK_PROFILE_ID CK_PTR CK_PROFILE_ID_PTR;
 
 /* Profile ID's */
 #define CKP_INVALID_ID 0x00000000UL
@@ -345,6 +347,9 @@ typedef CK_ULONG CK_PROFILE_ID;
 #define CKP_EXTENDED_PROVIDER 0x00000002UL
 #define CKP_AUTHENTICATION_TOKEN 0x00000003UL
 #define CKP_PUBLIC_CERTIFICATES_TOKEN 0x00000004UL
+#define CKP_COMPLETE_PROVIDER 0x00000005UL
+#define CKP_HKDF_TLS_TOKEN 0x00000006UL
+
 #define CKP_VENDOR_DEFINED 0x80000000UL
 
 /* CK_HW_FEATURE_TYPE is new for v2.10. CK_HW_FEATURE_TYPE is a
@@ -400,6 +405,11 @@ typedef CK_ULONG CK_KEY_TYPE;
 #define CKK_BLOWFISH 0x00000020UL
 #define CKK_TWOFISH 0x00000021UL
 
+/* New for v3.1 */
+#define CKK_SECURID 0x00000022UL
+#define CKK_ACTI 0x00000024UL
+#define CKK_HOTP 0x00000023UL
+
 /* Camellia is proposed for v2.20 Amendment 3 */
 #define CKK_CAMELLIA 0x00000025UL
 
@@ -441,6 +451,9 @@ typedef CK_ULONG CK_KEY_TYPE;
 #define CKK_SHA512_224_HMAC 0x00000043UL
 #define CKK_SHA512_256_HMAC 0x00000044UL
 #define CKK_SHA512_T_HMAC 0x00000045UL
+
+/* New for v3.1 */
+#define CKK_HSS 0x00000046UL
 
 #define CKK_VENDOR_DEFINED 0x80000000UL
 
@@ -666,6 +679,16 @@ typedef CK_ULONG CK_JAVA_MIDP_SECURITY_DOMAIN;
 #define CKA_X2RATCHET_PNS 0x00000611UL
 #define CKA_X2RATCHET_RK 0x00000612UL
 
+/* new for v3.1 */
+#define CKA_HSS_KEYS_REMAINING 0x0000061cUL
+#define CKA_HSS_LEVELS 0x00000617UL
+#define CKA_HSS_LMOTS_TYPE 0x00000619UL
+#define CKA_HSS_LMOTS_TYPES 0x0000061bUL
+#define CKA_HSS_LMS_TYPE 0x00000618UL
+#define CKA_HSS_LMS_TYPES 0x0000061aUL
+#define CKA_NAME_HASH_ALGORITHM 0x0000008cUL
+#define CKA_UNIQUE_ID 0x00000004UL
+
 #define CKA_VENDOR_DEFINED 0x80000000UL
 
 /* CK_ATTRIBUTE is a structure that includes the type, length
@@ -673,7 +696,6 @@ typedef CK_ULONG CK_JAVA_MIDP_SECURITY_DOMAIN;
 typedef struct CK_ATTRIBUTE {
     CK_ATTRIBUTE_TYPE type;
     CK_VOID_PTR pValue;
-
     /* ulValueLen went from CK_USHORT to CK_ULONG for v2.0 */
     CK_ULONG ulValueLen; /* in bytes */
 } CK_ATTRIBUTE;
@@ -1118,6 +1140,7 @@ typedef CK_ULONG CK_MECHANISM_TYPE;
 #define CKM_CAMELLIA_CBC_PAD 0x00000555UL
 #define CKM_CAMELLIA_ECB_ENCRYPT_DATA 0x00000556UL
 #define CKM_CAMELLIA_CBC_ENCRYPT_DATA 0x00000557UL
+#define CKM_CAMELLIA_CTR 0x00000558UL
 
 /* new for v2.40 */
 #define CKM_ARIA_KEY_GEN 0x00000560UL
@@ -1138,6 +1161,9 @@ typedef CK_ULONG CK_MECHANISM_TYPE;
 #define CKM_SEED_ECB_ENCRYPT_DATA 0x00000656UL
 #define CKM_SEED_CBC_ENCRYPT_DATA 0x00000657UL
 
+/* new for v3.1 */
+#define CKM_KEA_DERIVE 0x00001012UL
+
 /* new for v2.40 */
 #define CKM_ECDSA_SHA3_224 0x00001047UL
 #define CKM_ECDSA_SHA3_256 0x00001048UL
@@ -1146,6 +1172,11 @@ typedef CK_ULONG CK_MECHANISM_TYPE;
 #define CKM_EC_EDWARDS_KEY_PAIR_GEN 0x00001055UL
 #define CKM_EC_MONTGOMERY_KEY_PAIR_GEN 0x00001056UL
 #define CKM_EDDSA 0x00001057UL
+
+/* new for v3.1 */
+#define CKM_AES_XTS 0x00001071UL
+#define CKM_AES_XTS_KEY_GEN 0x00001072UL
+#define CKM_AES_GMAC 0x0000108eUL
 
 /* CKM_xxx_ENCRYPT_DATA mechanisms are new for v2.20 */
 #define CKM_DES_ECB_ENCRYPT_DATA 0x00001100UL
@@ -1174,23 +1205,49 @@ typedef CK_ULONG CK_MECHANISM_TYPE;
 #define CKM_POLY1305_KEY_GEN 0x00001227UL
 #define CKM_POLY1305 0x00001228UL
 
+/* new for v3.1 */
+#define CKM_DES3_CMAC 0x00000138UL
+#define CKM_DES3_CMAC_GENERAL 0x00000137UL
+
 #define CKM_DSA_PARAMETER_GEN 0x00002000UL
 #define CKM_DH_PKCS_PARAMETER_GEN 0x00002001UL
 #define CKM_X9_42_DH_PARAMETER_GEN 0x00002002UL
 
 /* new for v2.40 */
 #define CKM_DSA_PROBABILISTIC_PARAMETER_GEN 0x00002003UL
+#define CKM_DSA_PROBABLISTIC_PARAMETER_GEN 0x00002003UL
 #define CKM_DSA_SHAWE_TAYLOR_PARAMETER_GEN 0x00002004UL
 #define CKM_DSA_FIPS_G_GEN 0x00002005UL
+
+/* new for v3.1 */
+#define CKM_AES_OFB 0x00002104UL
+#define CKM_AES_CFB64 0x00002105UL
+#define CKM_AES_CFB8 0x00002106UL
+#define CKM_AES_CFB128 0x00002107UL
+#define CKM_AES_KEY_WRAP_PKCS7 0x0000210cUL
+
+/* new for v2.40 */
 #define CKM_AES_CFB1 0x00002108UL
 #define CKM_AES_KEY_WRAP 0x00002109UL
 #define CKM_AES_KEY_WRAP_PAD 0x0000210AUL
 #define CKM_AES_KEY_WRAP_KWP 0x0000210BUL
 
+/* new for v3.1 */
+#define CKM_SHA3_256_KEY_DERIVE 0x00000397UL
+#define CKM_SHA3_224_KEY_DERIVE 0x00000398UL
+#define CKM_SHA3_384_KEY_DERIVE 0x00000399UL
+#define CKM_SHA3_512_KEY_DERIVE 0x0000039aUL
+#define CKM_SHAKE_128_KEY_DERIVE 0x0000039bUL
+#define CKM_SHAKE_256_KEY_DERIVE 0x0000039cUL
+
 /* CKM_SP800_108_xxx_KDF are new for v3.0 */
 #define CKM_SP800_108_COUNTER_KDF 0x000003acUL
 #define CKM_SP800_108_FEEDBACK_KDF 0x000003adUL
 #define CKM_SP800_108_DOUBLE_PIPELINE_KDF 0x000003aeUL
+
+/* new for v3.1 */
+#define CKM_TLS10_MAC_SERVER 0x000003d6UL
+#define CKM_TLS10_MAC_CLIENT 0x000003d7UL
 
 /* new for v2.4 */
 #define CKM_RSA_PKCS_TPM_1_1 0x00004001UL
@@ -1240,6 +1297,14 @@ typedef CK_ULONG CK_MECHANISM_TYPE;
 #define CKM_HKDF_DATA 0x0000402bUL
 #define CKM_HKDF_KEY_GEN 0x0000402cUL
 #define CKM_SALSA20_KEY_GEN 0x0000402dUL
+
+/* new for v3.1 */
+#define CKM_HSS 0x00004033UL
+#define CKM_HSS_KEY_PAIR_GEN 0x00004032UL
+#define CKM_IKE1_EXTENDED_DERIVE 0x00004031UL
+#define CKM_IKE1_PRF_DERIVE 0x00004030UL
+#define CKM_IKE2_PRF_PLUS_DERIVE 0x0000402eUL
+#define CKM_IKE_PRF_DERIVE 0x0000402fUL
 
 #define CKM_VENDOR_DEFINED 0x80000000UL
 
@@ -1309,6 +1374,7 @@ typedef struct CK_MECHANISM_INFO {
 #define CKF_EC_NAMEDCURVE CKF_EC_OID /* renamed in v3.0 */
 #define CKF_EC_UNCOMPRESS 0x01000000UL
 #define CKF_EC_COMPRESS 0x02000000UL
+#define CKF_EC_CURVENAME 0x04000000UL
 
 #define CKF_EXTENSION 0x80000000UL /* FALSE for this version */
 
@@ -1352,6 +1418,7 @@ typedef CK_ULONG CK_RV;
 #define CKR_DEVICE_REMOVED 0x00000032UL
 #define CKR_ENCRYPTED_DATA_INVALID 0x00000040UL
 #define CKR_ENCRYPTED_DATA_LEN_RANGE 0x00000041UL
+#define CKR_AEAD_DECRYPT_FAILED 0x00000042UL
 #define CKR_FUNCTION_CANCELED 0x00000050UL
 #define CKR_FUNCTION_NOT_PARALLEL 0x00000051UL
 
@@ -1419,6 +1486,8 @@ typedef CK_ULONG CK_RV;
 #define CKR_USER_NOT_LOGGED_IN 0x00000101UL
 #define CKR_USER_PIN_NOT_INITIALIZED 0x00000102UL
 #define CKR_USER_TYPE_INVALID 0x00000103UL
+
+#define CKR_KEY_EXHAUSTED 0x00000203UL
 
 /* CKR_USER_ANOTHER_ALREADY_LOGGED_IN and CKR_USER_TOO_MANY_TYPES
  * are new to v2.01 */
@@ -1627,6 +1696,7 @@ typedef CK_RSA_PKCS_PSS_PARAMS CK_PTR CK_RSA_PKCS_PSS_PARAMS_PTR;
 
 /* CK_EC_KDF_TYPE is new for v2.11. */
 typedef CK_ULONG CK_EC_KDF_TYPE;
+typedef CK_EC_KDF_TYPE CK_PTR CK_EC_KDF_TYPE_PTR;
 
 /* The following EC Key Derivation Functions are defined */
 #define CKD_NULL 0x00000001UL
@@ -1933,7 +2003,7 @@ typedef struct CK_GCM_MESSAGE_PARAMS {
     CK_ULONG ulTagBits;
 } CK_GCM_MESSAGE_PARAMS;
 
-typedef CK_GCM_MESSAGE_PARAMS CK_GCM_MESSAGE_PARAMS_PTR;
+typedef CK_GCM_MESSAGE_PARAMS CK_PTR CK_GCM_MESSAGE_PARAMS_PTR;
 
 typedef struct CK_CCM_MESSAGE_PARAMS {
     CK_ULONG ulDataLen; /*plaintext or ciphertext*/
@@ -1945,7 +2015,7 @@ typedef struct CK_CCM_MESSAGE_PARAMS {
     CK_ULONG ulMACLen;
 } CK_CCM_MESSAGE_PARAMS;
 
-typedef CK_CCM_MESSAGE_PARAMS CK_CCM_MESSAGE_PARAMS_PTR;
+typedef CK_CCM_MESSAGE_PARAMS CK_PTR CK_CCM_MESSAGE_PARAMS_PTR;
 
 /* SALSA20/CHACHA20 doe not define IV generators */
 typedef struct CK_SALSA20_CHACHA20_POLY1305_MSG_PARAMS {
@@ -1975,7 +2045,7 @@ typedef struct CK_SKIPJACK_PRIVATE_WRAP_PARAMS {
 } CK_SKIPJACK_PRIVATE_WRAP_PARAMS;
 
 typedef CK_SKIPJACK_PRIVATE_WRAP_PARAMS CK_PTR
-    CK_SKIPJACK_PRIVATE_WRAP_PTR;
+    CK_SKIPJACK_PRIVATE_WRAP_PARAMS_PTR;
 
 /* CK_SKIPJACK_RELAYX_PARAMS provides the parameters to the
  * CKM_SKIPJACK_RELAYX mechanism */
@@ -2155,6 +2225,8 @@ typedef struct CK_TLS_KDF_PARAMS {
     CK_ULONG ulContextDataLength;
 } CK_TLS_KDF_PARAMS;
 
+typedef CK_TLS_KDF_PARAMS CK_PTR CK_TLS_KDF_PARAMS_PTR;
+
 typedef struct CK_TLS_MAC_PARAMS {
     CK_MECHANISM_TYPE prfHashMechanism;
     CK_ULONG ulMacLength;
@@ -2180,6 +2252,101 @@ typedef CK_HKDF_PARAMS CK_PTR CK_HKDF_PARAMS_PTR;
 #define CKF_HKDF_SALT_NULL 0x00000001UL
 #define CKF_HKDF_SALT_DATA 0x00000002UL
 #define CKF_HKDF_SALT_KEY 0x00000004UL
+
+/* IKE is new for v3.1 */
+/*
+ * CK_IKE2_PRF_PLUS_PARAMS is a structure that provides the parameters to
+ * the CKM_IKE2_PRF_PLUS_DERIVE mechanism.
+ * The fields of the structure have the following meanings:
+ *      prfMechanism    underlying MAC mechanism used to generate the prf.
+ *      bHasSeedKey     hSeed key is present.
+ *      hSeedKey        optional seed from key
+ *      pSeedData       optional seed from data.
+ *      ulSeedDataLen   length of optional seed data.
+ *        If no seed data is present this value is NULL.
+ */
+typedef struct CK_IKE2_PRF_PLUS_DERIVE_PARAMS {
+    CK_MECHANISM_TYPE prfMechanism;
+    CK_BBOOL bHasSeedKey;
+    CK_OBJECT_HANDLE hSeedKey;
+    CK_BYTE_PTR pSeedData;
+    CK_ULONG ulSeedDataLen;
+} CK_IKE2_PRF_PLUS_DERIVE_PARAMS;
+
+typedef CK_IKE2_PRF_PLUS_DERIVE_PARAMS CK_PTR CK_IKE2_PRF_PLUS_DERIVE_PARAMS_PTR;
+
+/* CK_IKE_PRF_DERIVE_PARAMS is a structure that provides the parameters to
+ *  the CKM_IKE_PRF_DERIVE mechanism.
+ *
+ * The fields of the structure have the following meanings:
+ *     prfMechanism underlying MAC mechanism used to generate the prf.
+ *     bRekey       hNewKey is present.
+ *     pNi          Ni value
+ *     ulNiLen      length of Ni
+ *     pNr          Nr value
+ *     ulNrLen      length of Nr
+ *     hNewKey      New key value to drive the rekey.
+ */
+typedef struct CK_IKE_PRF_DERIVE_PARAMS {
+    CK_MECHANISM_TYPE prfMechanism;
+    CK_BBOOL bDataAsKey;
+    CK_BBOOL bRekey;
+    CK_BYTE_PTR pNi;
+    CK_ULONG ulNiLen;
+    CK_BYTE_PTR pNr;
+    CK_ULONG ulNrLen;
+    CK_OBJECT_HANDLE hNewKey;
+} CK_IKE_PRF_DERIVE_PARAMS;
+
+typedef CK_IKE_PRF_DERIVE_PARAMS CK_PTR CK_IKE_PRF_DERIVE_PARAMS_PTR;
+
+/* CK_IKE1_PRF_DERIVE_PARAMS is a structure that provides the parameters
+ * to the CKM_IKE1_PRF_DERIVE mechanism.
+ *
+ * The fields of the structure have the following meanings:
+ *     prfMechanism  underlying MAC mechanism used to generate the prf.
+ *     bHasPrevKey   there is a previous key to use
+ *     hKeygxy       key to hash in the prf (usually a dhkey of sorts)
+ *     hPrevKey      the previous ike1 key
+ *     pCKYi         CKYi value
+ *     ulCKYiLen     length of CKYi
+ *     pCKYr         CKYr value
+ *     ulCKYrLen     length of CKYr
+ *     hNewKey       New key value to drive the rekey.
+ */
+typedef struct CK_IKE1_PRF_DERIVE_PARAMS {
+    CK_MECHANISM_TYPE prfMechanism;
+    CK_BBOOL bHasPrevKey;
+    CK_OBJECT_HANDLE hKeygxy;
+    CK_OBJECT_HANDLE hPrevKey;
+    CK_BYTE_PTR pCKYi;
+    CK_ULONG ulCKYiLen;
+    CK_BYTE_PTR pCKYr;
+    CK_ULONG ulCKYrLen;
+    CK_BYTE keyNumber;
+} CK_IKE1_PRF_DERIVE_PARAMS;
+
+typedef CK_IKE1_PRF_DERIVE_PARAMS CK_PTR CK_IKE1_PRF_DERIVE_PARAMS_PTR;
+
+/* CK_IKE1_EXTENDED_DERIVE_PARAMS is a structure that provides the
+ * parameters to the CKM_IKE1_EXTENDED_DERIVE mechanism.
+ *
+ * The fields of the structure have the following meanings:
+ *     prfMechanism  underlying MAC mechanism used to generate the prf.
+ *     bHasKeygxy    hKeygxy exists
+ *     hKeygxy       optional key to hash in the prf
+ *     pExtraData    optional extra data to hash in the prf
+ *     ulExtraData   length of the optional extra data.
+ */
+typedef struct CK_IKE1_EXTENDED_DERIVE_PARAMS {
+    CK_MECHANISM_TYPE prfMechanism;
+    CK_BBOOL bHasKeygxy;
+    CK_OBJECT_HANDLE hKeygxy;
+    CK_BYTE_PTR pExtraData;
+    CK_ULONG ulExtraDataLen;
+} CK_IKE1_EXTENDED_DERIVE_PARAMS;
+
+typedef CK_IKE1_EXTENDED_DERIVE_PARAMS CK_PTR CK_IKE1_EXTENDED_DERIVE_PARAMS_PTR;
 
 /* WTLS is new for version 2.20 */
 typedef struct CK_WTLS_RANDOM_DATA {
@@ -2518,6 +2685,7 @@ typedef struct CK_EDDSA_PARAMS {
     CK_BYTE_PTR pContextData;
 } CK_EDDSA_PARAMS;
 typedef CK_ULONG CK_XEDDSA_HASH_TYPE;
+typedef CK_EDDSA_PARAMS CK_PTR CK_EDDSA_PARAMS_PTR;
 typedef CK_XEDDSA_HASH_TYPE CK_PTR CK_XEDDSA_HASH_TYPE_PTR;
 
 typedef struct CK_XEDDSA_PARAMS {

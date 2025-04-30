@@ -147,6 +147,7 @@ pub(crate) mod profiler_utils {
     ///
     /// This converts from the `Local` timezone into its fixed-offset equivalent.
     /// If a timezone outside of [-24h, +24h] is detected it corrects the timezone offset to UTC (+0).
+    #[allow(deprecated)] // use of deprecated chrono functions.
     pub(crate) fn local_now_with_offset() -> chrono::DateTime<chrono::FixedOffset> {
         use chrono::{DateTime, Local};
         #[cfg(target_os = "windows")]
@@ -195,6 +196,7 @@ pub(crate) mod profiler_utils {
     /// the glean::Datetime offset is not a valid timezone We would prefer to
     /// use .into or similar, but we need to wait until this is implemented in
     /// the Glean SDK. See Bug 1925313 for more details.
+    #[allow(deprecated)] // use of deprecated chrono functions.
     pub(crate) fn glean_to_chrono_datetime(
         gdt: &glean::Datetime,
     ) -> Option<chrono::LocalResult<chrono::DateTime<chrono::FixedOffset>>> {

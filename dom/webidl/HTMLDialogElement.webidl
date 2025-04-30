@@ -24,4 +24,6 @@ interface HTMLDialogElement : HTMLElement {
   undefined showModal();
   [CEReactions]
   undefined close(optional DOMString returnValue);
+  [CEReactions, Pref="dom.element.dialog.request_close.enabled"]
+  undefined requestClose(optional DOMString returnValue);
 };

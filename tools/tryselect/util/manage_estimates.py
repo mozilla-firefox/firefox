@@ -8,7 +8,6 @@ import os
 from datetime import datetime, timedelta
 
 import requests
-import six
 
 TASK_DURATION_URL = (
     "https://storage.googleapis.com/mozilla-mach-data/task_duration_history.json"
@@ -96,7 +95,7 @@ def download_task_history_data(cache_dir):
         return
 
     with open(graph_quantile_cache, "w") as f:
-        f.write(six.ensure_text(r.content))
+        f.write(r.text)
 
     with open(task_duration_tag_file, "w") as f:
         json.dump({"download_date": datetime.now().strftime("%Y-%m-%d")}, f, indent=4)

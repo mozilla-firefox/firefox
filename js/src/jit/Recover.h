@@ -101,6 +101,8 @@ namespace jit {
   _(BigIntPtrRsh)                 \
   _(BigIntPtrBitNot)              \
   _(Compare)                      \
+  _(StrictConstantCompareInt32)   \
+  _(StrictConstantCompareBoolean) \
   _(Concat)                       \
   _(StringLength)                 \
   _(ArgumentsLength)              \
@@ -609,6 +611,28 @@ class RCompare final : public RInstruction {
 
  public:
   RINSTRUCTION_HEADER_NUM_OP_(Compare, 2)
+
+  [[nodiscard]] bool recover(JSContext* cx,
+                             SnapshotIterator& iter) const override;
+};
+
+class RStrictConstantCompareInt32 final : public RInstruction {
+  JSOp jsop_;
+  int32_t constant_;
+
+ public:
+  RINSTRUCTION_HEADER_NUM_OP_(StrictConstantCompareInt32, 1)
+
+  [[nodiscard]] bool recover(JSContext* cx,
+                             SnapshotIterator& iter) const override;
+};
+
+class RStrictConstantCompareBoolean final : public RInstruction {
+  JSOp jsop_;
+  bool constant_;
+
+ public:
+  RINSTRUCTION_HEADER_NUM_OP_(StrictConstantCompareBoolean, 1)
 
   [[nodiscard]] bool recover(JSContext* cx,
                              SnapshotIterator& iter) const override;

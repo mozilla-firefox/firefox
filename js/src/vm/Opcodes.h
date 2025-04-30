@@ -542,6 +542,19 @@
     MACRO(StrictEq, strict_eq, "===", 1, 2, 1, JOF_BYTE|JOF_IC) \
     MACRO(StrictNe, strict_ne, "!==", 1, 2, 1, JOF_BYTE|JOF_IC) \
     /*
+     * A compound opcode for strict equality comparisons with constant
+     * operands. example: `val === null`, `val !== true`. Takes in a single
+     * operand which encodes the type of the constant and a payload
+     * if applicable.
+     *
+     *   Category: Expressions
+     *   Type: Other expressions
+     *   Operands: ConstantCompareOperand operand
+     *   Stack: val => (val OP constant)
+     */ \
+    MACRO(StrictConstantEq, strict_constant_eq, NULL, 3, 1, 1, JOF_UINT16) \
+    MACRO(StrictConstantNe, strict_constant_ne, NULL, 3, 1, 1, JOF_UINT16) \
+    /*
      * Relative operators (`<`, `>`, `<=`, `>=`).
      *
      * Pop two values, compare them, and push the boolean result. The
@@ -3614,8 +3627,6 @@
 
 #ifdef ENABLE_EXPLICIT_RESOURCE_MANAGEMENT
 #  define FOR_EACH_TRAILING_UNUSED_OPCODE(MACRO) \
-    MACRO(240)                                   \
-    MACRO(241)                                   \
     MACRO(242)                                   \
     MACRO(243)                                   \
     MACRO(244)                                   \
@@ -3632,8 +3643,6 @@
     MACRO(255)
 #else
 #  define FOR_EACH_TRAILING_UNUSED_OPCODE(MACRO) \
-    MACRO(237)                                   \
-    MACRO(238)                                   \
     MACRO(239)                                   \
     MACRO(240)                                   \
     MACRO(241)                                   \

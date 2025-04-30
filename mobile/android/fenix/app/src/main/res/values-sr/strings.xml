@@ -711,8 +711,6 @@
   <string name="preferences_override_account_server">Прилагођени сервер Mozilla налога</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Прилагођени Sync сервер</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla налог/сервер за синхронизацију је измењен. Затварање апликације ради примене промена…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Налог</string>
   <!-- Preference for changing where the AddressBar is positioned -->

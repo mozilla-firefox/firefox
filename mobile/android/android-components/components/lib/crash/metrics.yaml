@@ -522,42 +522,69 @@ crash:
       - stability@mozilla.org
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1904847
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961011
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1904847
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961011
     data_sensitivity:
       - technical
     expires: never
     send_in_pings:
       - crash
+    # version history (typescript for brevity)
+    # # 0
+    # {
+    #   messages: string[],
+    #   stack: { file: string, line: number, class_name: string, method_name: string, is_native: boolean }[]
+    # }
+    #
+    # # 1
+    # {
+    #   throwables: {
+    #     message: string,
+    #     type_name: string,
+    #     stack: { file: string, line: number, class_name: string, method_name: string, is_native: boolean }[]
+    #   }[]
+    # }
+    version: 1
     structure:
       type: object
       properties:
-        # The message of the throwable and any cause throwables
-        messages:
-          type: array
-          items:
-            type: string
-        # The stack trace, from nearest to farthest execution point.
-        stack:
+        # The Throwable and any cause Throwables.
+        # They are always in cause order (e.g., [`e`, `e.cause`, `e.cause.cause`, ...]).
+        throwables:
           type: array
           items:
             type: object
             properties:
-              # The source file containing this stack trace element.
-              file:
+              # The message of the Throwable.
+              message:
                 type: string
-              # The line number of the source file containing this stack trace element.
-              line:
-                type: number
-              # The name of the class containing this stack trace element.
-              class_name:
+              # The java fully qualified type name of the Throwable.
+              type_name:
                 type: string
-              # The name of the method containing this stack trace element.
-              method_name:
-                type: string
-              # Whether the method is native.
-              is_native:
-                type: boolean
+              # The stack trace, from nearest to farthest execution point, of the Throwable.
+              # This may be omitted on `cause` Throwables.
+              stack:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    # The source file containing this stack trace element.
+                    file:
+                      type: string
+                    # The line number of the source file containing this stack trace element.
+                    line:
+                      type: number
+                    # The name of the class containing this stack trace element.
+                    class_name:
+                      type: string
+                    # The name of the method containing this stack trace element.
+                    method_name:
+                      type: string
+                    # Whether the method is native.
+                    is_native:
+                      type: boolean
 
   breadcrumbs:
     type: object

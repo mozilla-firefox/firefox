@@ -1243,8 +1243,11 @@ var AddonManagerInternal = {
       return Promise.resolve();
     }
 
-    let newPerms = info.addon.userPermissions;
+    if (info.existingAddon.isInstalledByEnterprisePolicy) {
+      return Promise.resolve();
+    }
 
+    let newPerms = info.addon.userPermissions;
     let difference = lazy.Extension.comparePermissions(oldPerms, newPerms);
 
     // If there are no new permissions, just go ahead with the update
@@ -4480,22 +4483,6 @@ export var AddonManager = {
         "aAddon must be specified",
         Cr.NS_ERROR_INVALID_ARG
       );
-    }
-
-    // Special case colorway built-in themes being migrated to an AMO installed theme
-    // when an update was found and:
-    //
-    // - `extensions.update.enable` is set to true (and so add-on updates are still
-    //    being checked automatically on the background)
-    // - `extensions.update.autoUpdateDefault` is set to false (likely because the
-    //    user has disabled auto-applying add-ons updates in about:addons to review
-    //    extensions changelogs before accepting an update, e.g. to avoid unexpected
-    //    issues that a new version of an extension may be introducing in the update)
-    //
-    // TODO(Bug 1815898): remove this special case along with other AOM/XPIProvider
-    // special cases introduced for colorways themes or colorways migration.
-    if (aAddon.isBuiltinColorwayTheme) {
-      return true;
     }
 
     if (!("applyBackgroundUpdates" in aAddon)) {

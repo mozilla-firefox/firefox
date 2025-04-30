@@ -1,26 +1,6 @@
-/* PipeWire
- *
- * Copyright © 2021 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2021 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef PIPEWIRE_THREAD_H
 #define PIPEWIRE_THREAD_H
@@ -47,12 +27,33 @@ extern "C" {
 SPA_DEPRECATED
 void pw_thread_utils_set(struct spa_thread_utils *impl);
 struct spa_thread_utils *pw_thread_utils_get(void);
+void *pw_thread_fill_attr(const struct spa_dict *props, void *attr);
 
-#define pw_thread_utils_create(...)		spa_thread_utils_create(pw_thread_utils_get(), ##__VA_ARGS__)
-#define pw_thread_utils_join(...)		spa_thread_utils_join(pw_thread_utils_get(), ##__VA_ARGS__)
-#define pw_thread_utils_get_rt_range(...)	spa_thread_utils_get_rt_range(pw_thread_utils_get(), ##__VA_ARGS__)
-#define pw_thread_utils_acquire_rt(...)		spa_thread_utils_acquire_rt(pw_thread_utils_get(), ##__VA_ARGS__)
-#define pw_thread_utils_drop_rt(...)		spa_thread_utils_drop_rt(pw_thread_utils_get(), ##__VA_ARGS__)
+#ifndef PW_API_THREAD_IMPL
+#define PW_API_THREAD_IMPL static inline
+#endif
+
+PW_API_THREAD_IMPL struct spa_thread *pw_thread_utils_create(
+		const struct spa_dict *props, void *(*start_routine)(void*), void *arg)
+{
+	return spa_thread_utils_create(pw_thread_utils_get(), props, start_routine, arg);
+}
+PW_API_THREAD_IMPL int pw_thread_utils_join(struct spa_thread *thread, void **retval)
+{
+	return spa_thread_utils_join(pw_thread_utils_get(), thread, retval);
+}
+PW_API_THREAD_IMPL int pw_thread_utils_get_rt_range(const struct spa_dict *props, int *min, int *max)
+{
+	return spa_thread_utils_get_rt_range(pw_thread_utils_get(), props, min, max);
+}
+PW_API_THREAD_IMPL int pw_thread_utils_acquire_rt(struct spa_thread *thread, int priority)
+{
+	return spa_thread_utils_acquire_rt(pw_thread_utils_get(), thread, priority);
+}
+PW_API_THREAD_IMPL int pw_thread_utils_drop_rt(struct spa_thread *thread)
+{
+	return spa_thread_utils_drop_rt(pw_thread_utils_get(), thread);
+}
 
 /**
  * \}

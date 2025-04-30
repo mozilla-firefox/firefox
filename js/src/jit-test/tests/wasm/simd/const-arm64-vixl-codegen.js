@@ -87,7 +87,13 @@ ${suffix}
     (func $f (export "f") (result v128)
       (v128.const ${bits})))`);
     let output = wasmDis(ins.exports.f, {tier:"baseline", asString:true});
-    assertEq(output.match(new RegExp(expected)) != null, true);
+    let pass = output.match(new RegExp(expected)) != null;
+    if (!pass) {
+        // Debugging output in case of failure.
+        console.log("expected:\n", expected,
+                    "\n\noutput:\n", output);
+    }
+    assertEq(pass, true);
     let mem = new Int8Array(ins.exports.mem.buffer);
     set(mem, 0, iota(16).map(x => -1-x));
     ins.exports.run();

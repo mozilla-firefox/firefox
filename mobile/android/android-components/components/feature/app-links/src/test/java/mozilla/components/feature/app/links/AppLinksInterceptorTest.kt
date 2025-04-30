@@ -65,6 +65,7 @@ class AppLinksInterceptorTest {
     private val intentUrl = "zxing://scan;S.browser_fallback_url=example.com"
     private val fallbackUrl = "https://getpocket.com"
     private val marketplaceUrl = "market://details?id=example.com"
+    private val aboutUrl = "about://scan"
 
     @Before
     fun setup() {
@@ -795,7 +796,7 @@ class AppLinksInterceptorTest {
         whenever(mockComponentName.packageName).thenReturn("com.zxing.app")
         doReturn(mockDialog).`when`(appLinksInterceptor).getOrCreateDialog(anyBoolean(), any(), any())
 
-        appLinksInterceptor.handleIntent(tab, intentUrl, mockAppIntent, mock(), "")
+        appLinksInterceptor.handleIntent(tab, intentUrl, mockAppIntent, null, mock(), "")
 
         verify(mockDialog).showNow(eq(mockFragmentManager), anyString())
         verify(mockOpenRedirect, never()).invoke(any(), anyBoolean(), any())
@@ -822,7 +823,7 @@ class AppLinksInterceptorTest {
         whenever(mockComponentName.packageName).thenReturn("com.zxing.app")
         doReturn(mockDialog).`when`(appLinksInterceptor).getOrCreateDialog(anyBoolean(), any(), any())
 
-        appLinksInterceptor.handleIntent(tab, intentUrl, null, mockMarketIntent, "")
+        appLinksInterceptor.handleIntent(tab, intentUrl, null, null, mockMarketIntent, "")
 
         verify(mockDialog).showNow(eq(mockFragmentManager), anyString())
         verify(mockOpenRedirect, never()).invoke(any(), anyBoolean(), any())
@@ -844,7 +845,7 @@ class AppLinksInterceptorTest {
         appLinksInterceptor.updateFragmentManger(mockFragmentManager)
 
         val tab = createTab(webUrl)
-        appLinksInterceptor.handleIntent(tab, intentUrl, mock(), mock(), "")
+        appLinksInterceptor.handleIntent(tab, intentUrl, mock(), null, mock(), "")
 
         verify(mockDialog, never()).showNow(eq(mockFragmentManager), anyString())
     }
@@ -877,7 +878,7 @@ class AppLinksInterceptorTest {
         whenever(appIntent.component).thenReturn(componentName)
         whenever(componentName.packageName).thenReturn("com.zxing.app")
 
-        appLinksInterceptor.handleIntent(tab, intentUrl, appIntent, null, "")
+        appLinksInterceptor.handleIntent(tab, intentUrl, appIntent, null, null, "")
 
         verify(mockDialog, never()).showNow(eq(mockFragmentManager), anyString())
     }
@@ -910,7 +911,7 @@ class AppLinksInterceptorTest {
         whenever(appIntent.component).thenReturn(componentName)
         whenever(componentName.packageName).thenReturn("com.zxing.app")
 
-        appLinksInterceptor.handleIntent(tab, intentUrl, appIntent, null, "")
+        appLinksInterceptor.handleIntent(tab, intentUrl, appIntent, null, null, "")
 
         verify(mockDialog, never()).showNow(eq(mockFragmentManager), anyString())
     }
@@ -944,7 +945,7 @@ class AppLinksInterceptorTest {
         whenever(componentName.packageName).thenReturn("com.zxing.app")
         doReturn(mockDialog).`when`(appLinksInterceptor).getOrCreateDialog(anyBoolean(), any(), any())
 
-        appLinksInterceptor.handleIntent(tab, intentUrl, appIntent, null, "")
+        appLinksInterceptor.handleIntent(tab, intentUrl, appIntent, null, null, "")
 
         verify(mockDialog).showNow(eq(mockFragmentManager), anyString())
         verify(mockOpenRedirect, never()).invoke(any(), anyBoolean(), any())
@@ -979,7 +980,7 @@ class AppLinksInterceptorTest {
         whenever(componentName.packageName).thenReturn("com.zxing.app")
         doReturn(mockDialog).`when`(appLinksInterceptor).getOrCreateDialog(anyBoolean(), any(), any())
 
-        appLinksInterceptor.handleIntent(tab, intentUrl, appIntent, null, "")
+        appLinksInterceptor.handleIntent(tab, intentUrl, appIntent, null, null, "")
 
         verify(mockDialog).showNow(eq(mockFragmentManager), anyString())
         verify(mockOpenRedirect, never()).invoke(any(), anyBoolean(), any())
@@ -1014,7 +1015,7 @@ class AppLinksInterceptorTest {
         whenever(mockComponentName.packageName).thenReturn("com.zxing.app")
         doReturn(mockDialog).`when`(appLinksInterceptor).getOrCreateDialog(anyBoolean(), any(), any())
 
-        appLinksInterceptor.handleIntent(tabSessionState, intentUrl, mockAppIntent, mock(), "")
+        appLinksInterceptor.handleIntent(tabSessionState, intentUrl, mockAppIntent, null, mock(), "")
 
         verify(mockDialog).showNow(eq(mockFragmentManager), anyString())
         verify(mockOpenRedirect, never()).invoke(any(), anyBoolean(), any())
@@ -1049,7 +1050,7 @@ class AppLinksInterceptorTest {
         whenever(mockComponentName.packageName).thenReturn("com.zxing.app")
         doReturn(mockDialog).`when`(appLinksInterceptor).getOrCreateDialog(anyBoolean(), any(), any())
 
-        appLinksInterceptor.handleIntent(tabSessionState, intentUrl, mockAppIntent, mock(), "")
+        appLinksInterceptor.handleIntent(tabSessionState, intentUrl, mockAppIntent, null, mock(), "")
 
         verify(mockDialog).showNow(eq(mockFragmentManager), anyString())
         verify(mockOpenRedirect, never()).invoke(any(), anyBoolean(), any())
@@ -1084,13 +1085,13 @@ class AppLinksInterceptorTest {
         whenever(componentName.packageName).thenReturn("com.zxing.app")
         doReturn(mockDialog).`when`(appLinksInterceptor).getOrCreateDialog(anyBoolean(), any(), any())
 
-        appLinksInterceptor.handleIntent(tabSessionState, intentUrl, appIntent, null, "")
+        appLinksInterceptor.handleIntent(tabSessionState, intentUrl, appIntent, null, null, "")
 
         verify(mockDialog).showNow(eq(mockFragmentManager), anyString())
 
         doReturn(mockDialog).`when`(appLinksInterceptor).getOrCreateDialog(false, "", "")
         doReturn(mockDialog).`when`(mockFragmentManager).findFragmentByTag(RedirectDialogFragment.FRAGMENT_TAG)
-        appLinksInterceptor.handleIntent(tabSessionState, intentUrl, mock(), mock(), "")
+        appLinksInterceptor.handleIntent(tabSessionState, intentUrl, mock(), null, mock(), "")
         verify(mockDialog, times(1)).showNow(mockFragmentManager, RedirectDialogFragment.FRAGMENT_TAG)
     }
 
@@ -1222,5 +1223,31 @@ class AppLinksInterceptorTest {
         assertFalse(isSubframeAllowed("abc"))
         assertFalse(isSubframeAllowed("http")) // we should never allow http for subframes
         assertFalse(isSubframeAllowed("https")) // we should never allow https for subframes
+    }
+
+    @Test
+    fun `WHEN scheme is supported THEN loads URL`() {
+        val tab = createTab(webUrl, private = true)
+
+        appLinksInterceptor = spy(
+            AppLinksInterceptor(
+                context = mockContext,
+                store = store,
+                interceptLinkClicks = true,
+                launchInApp = { true },
+                useCases = mockUseCases,
+                shouldPrompt = { true },
+                loadUrlUseCase = mockLoadUrlUseCase,
+            ),
+        )
+
+        appLinksInterceptor.loadUrlIfSchemeSupported(tab, intentUrl)
+        verify(mockLoadUrlUseCase, never()).invoke(anyString(), anyString(), any(), any(), any())
+
+        appLinksInterceptor.loadUrlIfSchemeSupported(tab, webUrl)
+        verify(mockLoadUrlUseCase, times(1)).invoke(anyString(), anyString(), any(), any(), any())
+
+        appLinksInterceptor.loadUrlIfSchemeSupported(tab, aboutUrl)
+        verify(mockLoadUrlUseCase, times(2)).invoke(anyString(), anyString(), any(), any(), any())
     }
 }

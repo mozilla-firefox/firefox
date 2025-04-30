@@ -141,10 +141,10 @@ class ElementStyle {
           this._maybeAddRule(entry, existingRules);
         }
 
-        // Store a list of all pseudo-element types found in the matching rules.
+        // Store a list of all (non-inherited) pseudo-element types found in the matching rules.
         this.pseudoElementTypes = new Set();
         for (const rule of this.rules) {
-          if (rule.pseudoElement) {
+          if (rule.pseudoElement && !rule.inherited) {
             this.pseudoElementTypes.add(rule.pseudoElement);
           }
         }
@@ -228,11 +228,17 @@ class ElementStyle {
   }
 
   /**
-   * Put pseudo elements in front of others.
+   * Put non inherited pseudo elements in front of others rules.
    */
   _sortRulesForPseudoElement() {
     this.rules = this.rules.sort((a, b) => {
-      return (a.pseudoElement || "z") > (b.pseudoElement || "z");
+      if (
+        !a.inherited === !b.inherited &&
+        !!a.pseudoElement !== !!b.pseudoElement
+      ) {
+        return (a.pseudoElement || "z") > (b.pseudoElement || "z") ? 1 : -1;
+      }
+      return 0;
     });
   }
 
@@ -499,21 +505,38 @@ class ElementStyle {
    * @returns Boolean
    */
   _hasHigherPriorityThanEarlierProp(computedProp, earlierProp) {
+    if (!earlierProp) {
+      return false;
+    }
+
+    if (computedProp.priority !== "important") {
+      return false;
+    }
+
+    const rule = computedProp.textProp.rule;
+    const earlierRule = earlierProp.textProp.rule;
+
+    // for only consider rules applying to the same node.
+    if (rule.inherited !== earlierRule.inherited) {
+      return false;
+    }
+
+    // only consider rules applying on the same (inherited) pseudo element (e.g. ::details-content),
+    // or rules both not applying to pseudo elements
+    if (rule.pseudoElement !== earlierRule.pseudoElement) {
+      return false;
+    }
+
+    // At this point, the computed prop is important, and it applies to the same element
+    // (or pseudo element) than the earlier prop.
     return (
-      earlierProp &&
-      computedProp.priority === "important" &&
-      (earlierProp.priority !== "important" ||
-        // Even if the earlier property was important, if the current rule is in a layer
-        // it will take precedence, unless the earlier property rule was in the same layer,
-        // or if the earlier declaration is in the style attribute (https://www.w3.org/TR/css-cascade-5/#style-attr).
-        (computedProp.textProp.rule?.isInLayer() &&
-          computedProp.textProp.rule.isInDifferentLayer(
-            earlierProp.textProp.rule
-          ) &&
-          earlierProp.textProp.rule.domRule.type !== ELEMENT_STYLE)) &&
-      // For !important only consider rules applying to the same parent node.
-      computedProp.textProp.rule.inherited ==
-        earlierProp.textProp.rule.inherited
+      earlierProp.priority !== "important" ||
+      // Even if the earlier property was important, if the current rule is in a layer
+      // it will take precedence, unless the earlier property rule was in the same layer…
+      (rule?.isInLayer() &&
+        rule.isInDifferentLayer(earlierRule) &&
+        // … or if the earlier declaration is in the style attribute (https://www.w3.org/TR/css-cascade-5/#style-attr).
+        earlierRule.domRule.type !== ELEMENT_STYLE)
     );
   }
 
@@ -584,6 +607,7 @@ class ElementStyle {
       }
 
       const isNestedDeclarations = rule.domRule.isNestedDeclarations;
+      const isInherited = !!rule.inherited;
 
       // Style rules must be considered only when they have selectors that match the node.
       // When renaming a selector, the unmatched rule lingers in the Rule view, but it no
@@ -599,18 +623,26 @@ class ElementStyle {
       // impossible, for example with ::selection or ::first-line).
       // Loosening the strict check on matched selectors ensures these declarations
       // participate in the algorithm below to mark them as overridden.
-      const isPseudoElementRule =
-        rule.pseudoElement !== "" && rule.pseudoElement === pseudo;
+      const isMatchingPseudoElementRule =
+        rule.pseudoElement !== "" &&
+        rule.pseudoElement === pseudo &&
+        // Inherited pseudo element rules don't appear in the "Pseudo elements" section,
+        // so they should be considered style rules.
+        !isInherited;
+      const isInheritedPseudoElementRule =
+        rule.pseudoElement !== "" && isInherited;
 
       const isElementStyle = rule.domRule.type === ELEMENT_STYLE;
 
       const filterCondition =
         isNestedDeclarations ||
-        (pseudo === "" ? isStyleRule || isElementStyle : isPseudoElementRule);
+        (pseudo && isMatchingPseudoElementRule) ||
+        (pseudo === "" &&
+          (isStyleRule || isElementStyle || isInheritedPseudoElementRule));
 
       // Collect all relevant CSS declarations (aka TextProperty instances).
       if (filterCondition) {
-        for (const textProp of rule.textProps.slice(0).reverse()) {
+        for (const textProp of rule.textProps.toReversed()) {
           if (textProp.enabled) {
             textProps.push(textProp);
           }

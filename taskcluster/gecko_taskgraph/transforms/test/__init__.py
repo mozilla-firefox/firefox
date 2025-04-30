@@ -175,7 +175,7 @@ test_description_schema = Schema(
             # additional command-line options for mozharness, beyond those
             # automatically added
             Required("extra-options"): optionally_keyed_by(
-                "test-platform", "variant", [str]
+                "test-platform", "variant", "subtest", "app", [str]
             ),
             # the artifact name (including path) to test on the build task; this is
             # generally set in a per-kind transformation

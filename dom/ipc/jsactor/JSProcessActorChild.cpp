@@ -75,10 +75,8 @@ void JSProcessActorChild::SendRawMessage(
 void JSProcessActorChild::Init(const nsACString& aName,
                                nsIDOMProcessChild* aManager) {
   MOZ_ASSERT(!mManager, "Cannot Init() a JSProcessActorChild twice!");
-  SetName(aName);
   mManager = aManager;
-
-  InvokeCallback(CallbackFunction::ActorCreated);
+  JSActor::Init(aName);
 }
 
 void JSProcessActorChild::ClearManager() { mManager = nullptr; }

@@ -29,6 +29,8 @@ interface nsIWorkerDebugger : nsISupports
 
   readonly attribute boolean isChrome;
 
+  readonly attribute boolean isRemote;
+
   readonly attribute boolean isInitialized;
 
   readonly attribute nsIWorkerDebugger parent;

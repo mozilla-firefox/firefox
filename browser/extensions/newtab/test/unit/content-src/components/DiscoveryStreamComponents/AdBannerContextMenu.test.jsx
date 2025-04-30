@@ -51,6 +51,22 @@ describe("<AdBannerContextMenu>", () => {
       assert.equal(wrapper.find(LinkMenu).length, 1);
     });
 
+    it("should render LinkMenu when context menu is accessed with the 'Enter' key", () => {
+      let button = wrapper.find("moz-button");
+
+      button.simulate("keydown", { key: "Enter", preventDefault: () => {} });
+
+      assert.equal(wrapper.find(LinkMenu).length, 1);
+    });
+
+    it("should render LinkMenu when context menu is accessed with the 'Space' key", () => {
+      let button = wrapper.find("moz-button");
+
+      button.simulate("keydown", { key: " ", preventDefault: () => {} });
+
+      assert.equal(wrapper.find(LinkMenu).length, 1);
+    });
+
     it("should pass props to LinkMenu", () => {
       wrapper.find("moz-button").simulate("click", {
         preventDefault: () => {},
@@ -59,6 +75,7 @@ describe("<AdBannerContextMenu>", () => {
       [
         "onUpdate",
         "dispatch",
+        "keyboardAccess",
         "options",
         "shouldSendImpressionStats",
         "userEvent",

@@ -30,9 +30,7 @@ def _infer_option_category(define_depth):
 
 
 def istupleofstrings(obj):
-    return (
-        isinstance(obj, tuple) and len(obj) and all(isinstance(o, (str,)) for o in obj)
-    )
+    return isinstance(obj, tuple) and len(obj) and all(isinstance(o, str) for o in obj)
 
 
 class OptionValue(tuple):
@@ -114,7 +112,7 @@ class OptionValue(tuple):
             return PositiveOptionValue()
         elif value is False or value == ():
             return NegativeOptionValue()
-        elif isinstance(value, (str,)):
+        elif isinstance(value, str):
             return PositiveOptionValue((value,))
         elif isinstance(value, tuple):
             return PositiveOptionValue(value)
@@ -226,7 +224,7 @@ class Option:
                 "be given"
             )
         if name:
-            if not isinstance(name, (str,)):
+            if not isinstance(name, str):
                 raise InvalidOptionError("Option must be a string")
             if not name.startswith("--"):
                 raise InvalidOptionError("Option must start with `--`")
@@ -235,7 +233,7 @@ class Option:
             if not name.islower():
                 raise InvalidOptionError("Option must be all lowercase")
         if env:
-            if not isinstance(env, (str,)):
+            if not isinstance(env, str):
                 raise InvalidOptionError("Environment variable name must be a string")
             if not env.isupper():
                 raise InvalidOptionError(
@@ -248,7 +246,7 @@ class Option:
                 "nargs must be a positive integer, '?', '*' or '+'"
             )
         if (
-            not isinstance(default, (str,))
+            not isinstance(default, str)
             and not isinstance(default, (bool, type(None)))
             and not istupleofstrings(default)
         ):
@@ -257,7 +255,7 @@ class Option:
             )
         if choices and not istupleofstrings(choices):
             raise InvalidOptionError("choices must be a tuple of strings")
-        if category and not isinstance(category, (str,)):
+        if category and not isinstance(category, str):
             raise InvalidOptionError("Category must be a string")
         if category and category not in _ALL_CATEGORIES:
             raise InvalidOptionError(
@@ -355,7 +353,7 @@ class Option:
         `values_separator`. If `values_separator` is None, there is at
         most one value.
         """
-        if not isinstance(option, (str,)):
+        if not isinstance(option, str):
             raise InvalidOptionError("Option must be a string")
 
         name, eq, values = option.partition("=")

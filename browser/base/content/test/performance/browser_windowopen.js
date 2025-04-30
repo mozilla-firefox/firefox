@@ -41,6 +41,7 @@ add_task(async function () {
 
   let alreadyFocused = false;
   let inRange = (val, min, max) => min <= val && val <= max;
+  let tabBoundingRect = undefined;
   let expectations = {
     expectedReflows: EXPECTED_REFLOWS,
     frames: {
@@ -107,6 +108,22 @@ add_task(async function () {
               bookmarksToolbarRect.top + bookmarksToolbarRect.height / 2
             ) && // in the toolbar
             inRange(r.x1, 30, 90), // close to the left of the screen
+        },
+        {
+          name: "Shadow around active tab should not flicker on macOS (bug 1960967)",
+          condition(r) {
+            const tabRect = tabBoundingRect
+              ? tabBoundingRect
+              : (tabBoundingRect = gBrowser.tabContainer
+                  .querySelector("tab[selected=true] .tab-background")
+                  .getBoundingClientRect());
+            return (
+              inRange(r.x1, tabRect.x - 2, tabRect.x + 2) &&
+              inRange(r.y1, tabRect.y - 2, tabRect.y + 2) &&
+              inRange(r.w, tabRect.width - 4, tabRect.width + 4) &&
+              inRange(r.h, tabRect.height - 4, tabRect.height + 4)
+            );
+          },
         },
       ],
     },

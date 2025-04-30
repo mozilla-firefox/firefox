@@ -17,6 +17,7 @@ import org.mozilla.fenix.helpers.TestHelper.clickSnackbarButton
 import org.mozilla.fenix.helpers.TestHelper.exitMenu
 import org.mozilla.fenix.helpers.TestHelper.verifySnackBarText
 import org.mozilla.fenix.helpers.TestSetup
+import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.browserScreen
 import org.mozilla.fenix.ui.robots.composeBookmarksMenu
 import org.mozilla.fenix.ui.robots.homeScreen
@@ -29,6 +30,9 @@ class BookmarksTestCompose : TestSetup() {
         var url: String = "https://www.example.com/"
     }
     private val bookmarkFolderName = "My Folder"
+
+    @get:Rule
+    val memoryLeaksRule = DetectMemoryLeaksRule()
 
     @get:Rule
     val composeTestRule =

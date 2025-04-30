@@ -1405,7 +1405,7 @@ struct BaseCompiler final {
   // Jump to the given branch, passing results, if the WasmGcObject, `object`,
   // is a subtype of `destType`.
   [[nodiscard]] bool jumpConditionalWithResults(BranchState* b, RegRef object,
-                                                RefType sourceType,
+                                                MaybeRefType sourceType,
                                                 RefType destType,
                                                 bool onSuccess);
   template <typename Cond>
@@ -1727,7 +1727,8 @@ struct BaseCompiler final {
   [[nodiscard]] bool emitBrOnCastCommon(bool onSuccess,
                                         uint32_t labelRelativeDepth,
                                         const ResultType& labelType,
-                                        RefType sourceType, RefType destType);
+                                        MaybeRefType sourceType,
+                                        RefType destType);
   [[nodiscard]] bool emitBrOnCast(bool onSuccess);
   [[nodiscard]] bool emitAnyConvertExtern();
   [[nodiscard]] bool emitExternConvertAny();

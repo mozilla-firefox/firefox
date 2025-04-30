@@ -2,6 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { ProfilesDatastoreService } from "resource:///modules/profiles/ProfilesDatastoreService.sys.mjs";
+import { SelectableProfileService } from "resource:///modules/profiles/SelectableProfileService.sys.mjs";
+
 /**
  * The selectable profile
  */
@@ -26,9 +29,7 @@ export class SelectableProfile {
   #themeFg;
   #themeBg;
 
-  #selectableProfileService = null;
-
-  constructor(row, selectableProfileService) {
+  constructor(row) {
     this.#id = row.getResultByName("id");
     this.#path = row.getResultByName("path");
     this.#name = row.getResultByName("name");
@@ -36,8 +37,6 @@ export class SelectableProfile {
     this.#themeId = row.getResultByName("themeId");
     this.#themeFg = row.getResultByName("themeFg");
     this.#themeBg = row.getResultByName("themeBg");
-
-    this.#selectableProfileService = selectableProfileService;
   }
 
   /**
@@ -81,7 +80,7 @@ export class SelectableProfile {
    */
   get path() {
     return PathUtils.joinRelative(
-      this.#selectableProfileService.constructor.getDirectory("UAppData").path,
+      ProfilesDatastoreService.constructor.getDirectory("UAppData").path,
       this.#path
     );
   }
@@ -105,10 +104,10 @@ export class SelectableProfile {
   get localDir() {
     return this.rootDir.then(root => {
       let relative = root.getRelativePath(
-        this.#selectableProfileService.constructor.getDirectory("DefProfRt")
+        ProfilesDatastoreService.constructor.getDirectory("DefProfRt")
       );
       let local =
-        this.#selectableProfileService.constructor.getDirectory("DefProfLRt");
+        ProfilesDatastoreService.constructor.getDirectory("DefProfLRt");
       local.appendRelativePath(relative);
       return local;
     });
@@ -203,7 +202,7 @@ export class SelectableProfile {
   }
 
   saveUpdatesToDB() {
-    this.#selectableProfileService.updateProfile(this);
+    SelectableProfileService.updateProfile(this);
   }
 
   toObject() {

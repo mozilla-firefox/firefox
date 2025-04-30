@@ -4,11 +4,18 @@ firefox-appdir = "browser"
 
 prefs = [
   "browser.profiles.enabled=true",
+  "browser.profiles.created=false",
 ]
+
+["test_command_line_handler.js"]
 
 ["test_delete_last_profile.js"]
 
 ["test_fail_recover_storeID.js"]
+
+["test_recover_database.js"]
+
+["test_recover_empty_database.js"]
 
 ["test_recover_storeID.js"]
 
@@ -17,5 +24,9 @@ prefs = [
 ["test_selectable_profile_service_exists.js"]
 
 ["test_selectable_profiles_lifecycle.js"]
+skip-if = [
+  "os == 'mac' && os_version == '10.15' && processor == 'x86_64'", # Bug 1952514
+  "os == 'mac' && os_version == '14.70' && processor == 'x86_64'", # Bug 1952514
+]
 
 ["test_shared_prefs_lifecycles_methods.js"]

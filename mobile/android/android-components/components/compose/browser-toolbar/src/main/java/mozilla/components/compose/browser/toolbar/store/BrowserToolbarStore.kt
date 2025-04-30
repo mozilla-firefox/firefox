@@ -4,6 +4,11 @@
 
 package mozilla.components.compose.browser.toolbar.store
 
+import mozilla.components.compose.browser.toolbar.store.BrowserDisplayToolbarAction.BrowserActionsEndUpdated
+import mozilla.components.compose.browser.toolbar.store.BrowserDisplayToolbarAction.BrowserActionsStartUpdated
+import mozilla.components.compose.browser.toolbar.store.BrowserDisplayToolbarAction.PageActionsEndUpdated
+import mozilla.components.compose.browser.toolbar.store.BrowserDisplayToolbarAction.PageActionsStartUpdated
+import mozilla.components.compose.browser.toolbar.store.BrowserDisplayToolbarAction.PageOriginUpdated
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarEvent
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.UiStore
@@ -46,27 +51,33 @@ private fun reduce(state: BrowserToolbarState, action: BrowserToolbarAction): Br
             ),
         )
 
-        is BrowserDisplayToolbarAction.UpdateBrowserActions -> state.copy(
+        is BrowserActionsStartUpdated -> state.copy(
             displayState = state.displayState.copy(
-                browserActions = action.actions,
+                browserActionsStart = action.actions,
             ),
         )
 
-        is BrowserDisplayToolbarAction.AddNavigationAction -> state.copy(
+        is PageActionsStartUpdated -> state.copy(
             displayState = state.displayState.copy(
-                navigationActions = state.displayState.navigationActions + action.action,
+                pageActionsStart = action.actions,
             ),
         )
 
-        is BrowserDisplayToolbarAction.AddPageAction -> state.copy(
+        is PageOriginUpdated -> state.copy(
             displayState = state.displayState.copy(
-                pageActions = state.displayState.pageActions + action.action,
+                pageOrigin = action.pageOrigin,
             ),
         )
 
-        is BrowserDisplayToolbarAction.AddBrowserAction -> state.copy(
+        is PageActionsEndUpdated -> state.copy(
             displayState = state.displayState.copy(
-                browserActions = state.displayState.browserActions + action.action,
+                pageActionsEnd = action.actions,
+            ),
+        )
+
+        is BrowserActionsEndUpdated -> state.copy(
+            displayState = state.displayState.copy(
+                browserActionsEnd = action.actions,
             ),
         )
 
@@ -85,6 +96,12 @@ private fun reduce(state: BrowserToolbarState, action: BrowserToolbarAction): Br
         is BrowserEditToolbarAction.AddEditActionEnd -> state.copy(
             editState = state.editState.copy(
                 editActionsEnd = state.editState.editActionsEnd + action.action,
+            ),
+        )
+
+        is BrowserDisplayToolbarAction.UpdateProgressBarConfig -> state.copy(
+            displayState = state.displayState.copy(
+                progressBarConfig = action.config,
             ),
         )
 

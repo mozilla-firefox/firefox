@@ -33,11 +33,11 @@ class CloseWatcher : public DOMEventTargetHelper, public AbortFollower {
 
   // The IDL binding for RequestClose returns void so that the history
   // consumption is not observable.
-  MOZ_CAN_RUN_SCRIPT void RequestClose() { RequestToClose(); }
+  MOZ_CAN_RUN_SCRIPT void RequestClose() { RequestToClose(false); }
 
   // RequestToClose returns a boolean so callers can determine if the action
   // was handled, so that other fallback behaviours can be executed.
-  MOZ_CAN_RUN_SCRIPT bool RequestToClose();
+  MOZ_CAN_RUN_SCRIPT bool RequestToClose(bool aRequireHistoryActionActivation);
 
   MOZ_CAN_RUN_SCRIPT void Close();
 

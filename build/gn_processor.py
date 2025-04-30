@@ -580,7 +580,10 @@ def write_mozbuild(
                     mb.write('if not CONFIG["MOZ_SYSTEM_LIBDRM"]:\n')
                     mb.write('    LOCAL_INCLUDES += [ "/third_party/drm/drm/",\n')
                     mb.write(
-                        '                        "/third_party/drm/drm/include/" ]\n'
+                        '                        "/third_party/drm/drm/include/",\n'
+                    )
+                    mb.write(
+                        '                        "/third_party/drm/drm/include/libdrm" ]\n'
                     )
             except KeyError:
                 pass

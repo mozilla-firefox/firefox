@@ -40,4 +40,4 @@ if CONFIG["CC_TYPE"] == "clang-cl":
         "-Wunused-result",
     ]
 
-GeckoSharedLibrary("wmfclearkey", linkage=None)
+GeckoSharedLibrary("wmfclearkey")

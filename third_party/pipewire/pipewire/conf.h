@@ -1,26 +1,11 @@
-/* PipeWire
- *
- * Copyright © 2021 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* PipeWire */
+/* SPDX-FileCopyrightText: Copyright © 2021 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
+
+#ifndef PIPEWIRE_CONF_H
+#define PIPEWIRE_CONF_H
+
+#include <spa/utils/json-core.h>
 
 #include <pipewire/context.h>
 
@@ -33,11 +18,38 @@
  * \{
  */
 
+int pw_conf_load_conf_for_context(struct pw_properties *props, struct pw_properties *conf);
 int pw_conf_load_conf(const char *prefix, const char *name, struct pw_properties *conf);
 int pw_conf_load_state(const char *prefix, const char *name, struct pw_properties *conf);
 int pw_conf_save_state(const char *prefix, const char *name, const struct pw_properties *conf);
 
+bool pw_conf_find_match(struct spa_json *arr, const struct spa_dict *props, bool condition);
 
+int pw_conf_section_update_props(const struct spa_dict *conf,
+		const char *section, struct pw_properties *props);
+
+int pw_conf_section_update_props_rules(const struct spa_dict *conf,
+		const struct spa_dict *context, const char *section,
+		struct pw_properties *props);
+
+int pw_conf_section_for_each(const struct spa_dict *conf, const char *section,
+		int (*callback) (void *data, const char *location, const char *section,
+			const char *str, size_t len),
+		void *data);
+
+int pw_conf_match_rules(const char *str, size_t len, const char *location,
+		const struct spa_dict *props,
+		int (*callback) (void *data, const char *location, const char *action,
+			const char *str, size_t len),
+		void *data);
+
+int pw_conf_section_match_rules(const struct spa_dict *conf, const char *section,
+		const struct spa_dict *props,
+		int (*callback) (void *data, const char *location, const char *action,
+			const char *str, size_t len),
+		void *data);
 /**
  * \}
  */
+
+#endif /* PIPEWIRE_CONF_H */

@@ -32,7 +32,13 @@ class AddonsActor extends Actor {
       addonFile = new FileUtils.File(addonPath);
       addon = await AddonManager.installTemporaryAddon(addonFile);
     } catch (error) {
-      throw new Error(`Could not install add-on at '${addonPath}': ${error}`);
+      let msg = `${error}`;
+      if (error.additionalErrors?.length) {
+        // The generic "Extension is invalid" error does not offer any concrete
+        // advice. Include the additional details to help with debugging.
+        msg += `\n${error.additionalErrors.join("\n")}`;
+      }
+      throw new Error(`Could not install add-on at '${addonPath}': ${msg}`);
     }
 
     Services.obs.notifyObservers(null, "devtools-installed-addon", addon.id);

@@ -61,7 +61,8 @@ add_task(function test_store_manager() {
     fakeRustRelevancyStore
   );
   Assert.equal(fakeRustRelevancyStore.init.callCount, 1);
-  Assert.deepEqual(fakeRustRelevancyStore.init.firstCall.args, ["test-path"]);
+  Assert.deepEqual(fakeRustRelevancyStore.init.firstCall.args[0], "test-path");
+  // TODO (1956519): test that the second arg is the app-wide RemoteSettingsService
   // store should throw before the manager is enabled
   Assert.throws(() => storeManager.store, /StoreDisabledError/);
   // Once the manager is enabled, store should return the RustRelevancyStore

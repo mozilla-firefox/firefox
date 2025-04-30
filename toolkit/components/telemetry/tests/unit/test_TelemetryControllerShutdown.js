@@ -34,6 +34,14 @@ add_task(async function test_setup() {
     "1.9.2"
   );
   finishAddonManagerStartup();
+  // Make sure any pending XPIDatabase.saveChanges deferred tasks
+  // are finalized, needed to prevent intermittent failure when the test
+  // exits quickly and the saveChanges deferred tasks may end up
+  // executing too late, and AddonTestUtils.promiseShutdownManager
+  // will rethrow that error here:
+  // https://searchfox.org/mozilla-central/rev/60108fa975/toolkit/mozapps/extensions/internal/AddonTestUtils.sys.mjs#968
+  await AddonTestUtils.getXPIExports().XPIDatabase.finalize();
+
   fakeIntlReady();
   // Make sure we don't generate unexpected pings due to pref changes.
   await setEmptyPrefWatchlist();

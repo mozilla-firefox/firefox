@@ -5,7 +5,9 @@
 package org.mozilla.fenix.settings.trustpanel.store
 
 import mozilla.components.concept.engine.content.blocking.TrackerLog
+import mozilla.components.concept.engine.permission.SitePermissions
 import mozilla.components.lib.state.Action
+import org.mozilla.fenix.settings.PhoneFeature
 import org.mozilla.fenix.trackingprotection.TrackingProtectionCategory
 
 /**
@@ -61,37 +63,77 @@ sealed class TrustPanelAction : Action {
     data class UpdateTrackersBlocked(val trackerLogs: List<TrackerLog>) : TrustPanelAction()
 
     /**
+     * [TrustPanelAction] dispatched when any site permission is changed.
+     *
+     * @property sitePermissions Updated [SitePermissions] for the current site.
+     */
+    data class UpdateSitePermissions(val sitePermissions: SitePermissions) : TrustPanelAction()
+
+    /**
+     * [TrustPanelAction] dispatched when a toggleable permission is toggled.
+     *
+     * @property permission Requested [WebsitePermission.Toggleable] to be toggled.
+     */
+    data class TogglePermission(val permission: WebsitePermission.Toggleable) : TrustPanelAction()
+
+    /**
+     * [TrustPanelAction] dispatched when autoplay value is updated.
+     *
+     * @property autoplayValue Requested [AutoplayValue] to be selected.
+     */
+    data class UpdateAutoplayValue(val autoplayValue: AutoplayValue) : TrustPanelAction()
+
+    /**
+     * All possible [WebsitePermissionsState] changes as result of user / system interactions.
+     *
+     * @property updatedFeature [PhoneFeature] backing a certain [WebsitePermission].
+     */
+    sealed class WebsitePermissionAction(open val updatedFeature: PhoneFeature) : TrustPanelAction() {
+        /**
+         * Change resulting from a previously blocked [WebsitePermission] being granted permission by Android.
+         *
+         * @property updatedFeature [PhoneFeature] backing a certain [WebsitePermission].
+         * Allows to easily identify which permission changed
+         */
+        class GrantPermissionBlockedByAndroid(
+            override val updatedFeature: PhoneFeature,
+        ) : WebsitePermissionAction(updatedFeature)
+
+        /**
+         * Change resulting from toggling a specific [WebsitePermission] for the current website.
+         *
+         * @property updatedFeature [PhoneFeature] backing a certain [WebsitePermission].
+         * Allows to easily identify which permission changed
+         */
+        class TogglePermission(
+            override val updatedFeature: PhoneFeature,
+        ) : WebsitePermissionAction(updatedFeature)
+
+        /**
+         * Change resulting from changing a specific [WebsitePermission.Autoplay] for the current website.
+         *
+         * @property autoplayValue [AutoplayValue] backing a certain [WebsitePermission.Autoplay].
+         * Allows to easily identify which permission changed
+         */
+        class ChangeAutoplay(
+            val autoplayValue: AutoplayValue,
+        ) : WebsitePermissionAction(PhoneFeature.AUTOPLAY)
+    }
+
+    /**
      * [TrustPanelAction] dispatched when a navigation event occurs for a specific destination.
      */
     sealed class Navigate : TrustPanelAction() {
         /**
-         * [Navigate] action dispatched when a back navigation event occurs.
-         */
-        data object Back : Navigate()
-
-        /**
-         * [Navigate] action dispatched when navigating to the clear site data dialog.
-         */
-        data object ClearSiteDataDialog : Navigate()
-
-        /**
-         * [Navigate] action dispatched when navigating to the trackers panel.
-         */
-        data object TrackersPanel : Navigate()
-
-        /**
-         * [Navigate] action dispatched when navigating to the tracker category details panel.
-         */
-        data object TrackerCategoryDetailsPanel : Navigate()
-
-        /**
-         * [Navigate] action dispatched when navigating to the connection security panel.
-         */
-        data object ConnectionSecurityPanel : Navigate()
-
-        /**
          * [Navigate] action dispatched when navigating to the privacy and security settings.
          */
         data object PrivacySecuritySettings : Navigate()
+
+        /**
+         * [Navigate] action dispatched when navigating to the manage phone feature fragment.
+         *
+         * @property phoneFeature Requested [PhoneFeature] to be managed.
+         */
+        data class ManagePhoneFeature(val phoneFeature: PhoneFeature) : Navigate()
     }
 }

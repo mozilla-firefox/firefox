@@ -21,30 +21,6 @@
     <string name="privacy_notice_neutral_button" moz:removedIn="96" tools:ignore="UnusedResources">退出应用</string>
     <string name="privacy_notice_neutral_button_2">不同意</string>
 
-    <!-- Topsites-->
-    <!-- Default title for pinned Baidu top site that links to Baidu home page  -->
-    <string name="default_top_site_baidu">百度</string>
-    <!-- Default title for pinned JD top site that links to JD home page  -->
-    <string name="default_top_site_jd">京东</string>
-    <!-- Default title for pinned JD top site that links to PDD home page  -->
-    <string name="default_top_site_pdd">拼多多</string>
-    <!-- Default title for pinned 58 top site that links to 58 home page  -->
-    <string name="default_top_site_tc">58同城</string>
-    <!-- Default title for pinned meituan top site that links to 58 home page  -->
-    <string name="default_top_site_meituan">美团</string>
-
-    <!-- FxA server switch-->
-    <!-- Switch Preference for domestic China/global fxa server -->
-    <string name="preferences_allow_domestic_china_fxa_server">使用本地服务</string>
-    <!-- Instructions on how to access pairing -->
-    <string name="pair_instructions_2_cn"><![CDATA[打开 <b>firefox.com.cn/pair</b> 并扫描网站上的二维码]]></string>
-    <!-- Instructions on how to access pairing -->
-    <string name="sign_in_instructions_cn"><![CDATA[在计算机上使用 Firefox 打开 <b>https://firefox.com.cn/pair</b>]]></string>
-
-    <!-- Homescreen menu button -->
-    <!-- Browser menu button that opens the account setting page -->
-    <string name="browser_menu_manage_account_and_devices">管理账户和设备</string>
-
     <string name="preferences_site_permissions_description">此页面为所有网站的默认权限设置；如您曾对特定网站进行权限调整，则此网站会出现在“例外网站”中。</string>
 </resources>
 

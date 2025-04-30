@@ -58,11 +58,17 @@ const EnumeratedArray<FlushType, const char*, size_t(FlushType::Count)>
 // clang-format on
 
 struct ChangesToFlush {
-  ChangesToFlush(FlushType aFlushType, bool aFlushAnimations)
-      : mFlushType(aFlushType), mFlushAnimations(aFlushAnimations) {}
+  ChangesToFlush(FlushType aFlushType, bool aFlushAnimations,
+                 bool aUpdateRelevancy)
+      : mFlushType(aFlushType),
+        mFlushAnimations(aFlushAnimations),
+        mUpdateRelevancy(aUpdateRelevancy) {
+          MOZ_ASSERT_IF(mUpdateRelevancy, mFlushType >= FlushType::Layout);
+        }
 
   FlushType mFlushType;
   bool mFlushAnimations;
+  bool mUpdateRelevancy;
 };
 
 }  // namespace mozilla

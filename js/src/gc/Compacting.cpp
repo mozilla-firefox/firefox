@@ -388,7 +388,7 @@ bool ArenaLists::relocateArenas(Arena*& relocatedListOut, JS::GCReason reason,
   clearFreeLists();
 
   if (ShouldRelocateAllArenas(reason)) {
-    zone_->prepareForCompacting();
+    zone_->prepareForMovingGC();
     for (auto kind : allocKindsToRelocate) {
       ArenaList& al = arenaList(kind);
       Arena* allArenas = al.release();
@@ -409,7 +409,7 @@ bool ArenaLists::relocateArenas(Arena*& relocatedListOut, JS::GCReason reason,
       return false;
     }
 
-    zone_->prepareForCompacting();
+    zone_->prepareForMovingGC();
     for (auto kind : allocKindsToRelocate) {
       if (rangeToRelocate[kind].first) {
         ArenaList& al = arenaList(kind);
@@ -469,13 +469,6 @@ inline void MovingTracer::onEdge(T** thingp, const char* name) {
     MOZ_ASSERT(thing->runtimeFromAnyThread() == runtime());
     *thingp = Forwarded(thing);
   }
-}
-
-void Zone::prepareForCompacting() {
-  JS::GCContext* gcx = runtimeFromMainThread()->gcContext();
-
-  MOZ_ASSERT(!isPreservingCode());
-  forceDiscardJitCode(gcx);
 }
 
 void GCRuntime::sweepZoneAfterCompacting(MovingTracer* trc, Zone* zone) {

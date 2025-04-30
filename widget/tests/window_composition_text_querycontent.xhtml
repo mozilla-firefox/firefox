@@ -11404,6 +11404,37 @@ function runPaddingLineBreakTest() {
   contenteditable.innerHTML = "";
 }
 
+function runCancelCompositionAfterCollapseWhileSpace() {
+  const selection = windowOfContenteditable.getSelection();
+  contenteditable.innerHTML = "<p>A&nbsp;</p>";
+  contenteditable.focus();
+  selection.collapse(
+    contenteditable.querySelector("[contenteditable] > p").firstChild,
+    "A ".length
+  );
+  const description = "runCancelCompositionAfterCollapseWhileSpace";
+  synthesizeCompositionChange({
+    composition: {string: "B", clauses: [{length: 1, attr: COMPOSITION_ATTR_RAW_CLAUSE}]},
+  });
+  is(
+    contenteditable.innerHTML.replaceAll("&nbsp;", " "),
+    "<p>A B</p>",
+    `${description}: Composing string "B" should be inserted after the collapsible white-space`
+  );
+  synthesizeComposition({type: "compositioncommit", data: ""});
+  is(
+    contenteditable.innerHTML,
+    kNewWhiteSpaceNormalizerEnabled ? "<p>A&nbsp;</p>" : "<p>A <br></p>",
+    `${description}: Canceling the composition should keep the preceding collapsible white-space visible`
+  );
+  synthesizeKey("B");
+  is(
+    contenteditable.innerHTML,
+    "<p>A B</p>",
+    `${description}: Typing "B" after canceling composition should cause inserting it after the collpsible white-space`
+  );
+}
+
 async function runTest()
 {
   await SpecialPowers.pushPrefEnv({
@@ -11455,6 +11486,7 @@ async function runTest()
   runBug1571375Test();
   runBug1675313Test();
   runCommitCompositionWithSpaceKey();
+  runCancelCompositionAfterCollapseWhileSpace();
   runCompositionWithSelectionChange();
   runCompositionWithClick();
   runForceCommitTest();

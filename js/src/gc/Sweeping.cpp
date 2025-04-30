@@ -430,7 +430,9 @@ void GCRuntime::sweepBackgroundThings(ZoneList& zones) {
 
     // Now everything with a non-trivial finalizer has been finalized we can
     // sweep buffer memory.
-    // TODO: This could happen in parallel with further arena sweeping.
+    //
+    // Note we depend on this happening before the BUFFER alloc kinds in
+    // BackgroundTrivialFinalizePhase are swept!
     bool decommit = shouldDecommit() && DecommitEnabled();
     zone->bufferAllocator.sweepForMajorCollection(decommit);
 
@@ -601,9 +603,6 @@ void GCRuntime::freeFromBackgroundThread(AutoLockHelperThreadState& lock) {
     Nursery::StringBufferVector stringBuffers;
     std::swap(stringBuffers, stringBuffersToReleaseAfterMinorGC.ref());
 
-    SlimLinkedList<LargeBuffer> largeBuffers;
-    std::swap(largeBuffers, largeBuffersToFreeAfterMinorGC.ref());
-
     AutoUnlockHelperThreadState unlock(lock);
 
     lifoBlocks.freeAll();
@@ -619,8 +618,6 @@ void GCRuntime::freeFromBackgroundThread(AutoLockHelperThreadState& lock) {
     for (auto* buffer : stringBuffers) {
       buffer->Release();
     }
-
-    BufferAllocator::FreeLargeAllocs(largeBuffers);
   } while (hasBuffersForBackgroundFree());
 }
 

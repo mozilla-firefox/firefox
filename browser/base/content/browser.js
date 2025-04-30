@@ -67,6 +67,8 @@ ChromeUtils.defineESModuleGetters(this, {
   PopupBlockerObserver: "resource:///modules/PopupBlockerObserver.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   ProcessHangMonitor: "resource:///modules/ProcessHangMonitor.sys.mjs",
+  ProfilesDatastoreService:
+    "resource:///modules/profiles/ProfilesDatastoreService.sys.mjs",
   PromptUtils: "resource://gre/modules/PromptUtils.sys.mjs",
   ReaderMode: "moz-src:///toolkit/components/reader/ReaderMode.sys.mjs",
   ResetPBMPanel: "resource:///modules/ResetPBMPanel.sys.mjs",
@@ -75,6 +77,8 @@ ChromeUtils.defineESModuleGetters(this, {
   SaveToPocket: "chrome://pocket/content/SaveToPocket.sys.mjs",
   ScreenshotsUtils: "resource:///modules/ScreenshotsUtils.sys.mjs",
   SearchUIUtils: "moz-src:///browser/components/search/SearchUIUtils.sys.mjs",
+  SelectableProfileService:
+    "resource:///modules/profiles/SelectableProfileService.sys.mjs",
   SessionStartup: "resource:///modules/sessionstore/SessionStartup.sys.mjs",
   SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
   SharingUtils: "resource:///modules/SharingUtils.sys.mjs",
@@ -109,17 +113,6 @@ ChromeUtils.defineESModuleGetters(this, {
   webrtcUI: "resource:///modules/webrtcUI.sys.mjs",
   WebsiteFilter: "resource:///modules/policies/WebsiteFilter.sys.mjs",
   ZoomUI: "resource:///modules/ZoomUI.sys.mjs",
-});
-
-// Bug 1894239: We will move this up to ChromeUtils.defineESModuleGetters once
-// the MOZ_SELECTABLE_PROFILES flag is removed
-ChromeUtils.defineLazyGetter(this, "SelectableProfileService", () => {
-  if (!AppConstants.MOZ_SELECTABLE_PROFILES) {
-    return null;
-  }
-  return ChromeUtils.importESModule(
-    "resource:///modules/profiles/SelectableProfileService.sys.mjs"
-  ).SelectableProfileService;
 });
 
 ChromeUtils.defineLazyGetter(this, "fxAccounts", () => {
@@ -5039,6 +5032,9 @@ function duplicateTabIn(aTab, where, delta) {
         inBackground: false,
       });
       break;
+  }
+  if (aTab.group) {
+    Glean.tabgroup.tabInteractions.duplicate.add();
   }
 }
 

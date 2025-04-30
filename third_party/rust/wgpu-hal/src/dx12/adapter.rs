@@ -1,4 +1,6 @@
-use std::{ptr, string::String, sync::Arc, thread, vec::Vec};
+use alloc::{string::String, sync::Arc, vec::Vec};
+use core::ptr;
+use std::thread;
 
 use parking_lot::Mutex;
 use windows::{
@@ -54,6 +56,7 @@ impl super::Adapter {
         adapter: DxgiAdapter,
         library: &Arc<D3D12Lib>,
         instance_flags: wgt::InstanceFlags,
+        memory_budget_thresholds: wgt::MemoryBudgetThresholds,
         dxc_container: Option<Arc<shader_compilation::DxcContainer>>,
     ) -> Option<crate::ExposedAdapter<super::Api>> {
         // Create the device so that we can get the capabilities.
@@ -500,10 +503,7 @@ impl super::Adapter {
 
         let base = wgt::Limits::default();
 
-        let mut downlevel = wgt::DownlevelCapabilities::default();
-        // https://github.com/gfx-rs/wgpu/issues/2471
-        downlevel.flags -=
-            wgt::DownlevelFlags::VERTEX_AND_INSTANCE_INDEX_RESPECTS_RESPECTIVE_FIRST_VALUE_IN_INDIRECT_DRAW;
+        let downlevel = wgt::DownlevelCapabilities::default();
 
         // See https://learn.microsoft.com/en-us/windows/win32/direct3d12/hardware-feature-levels#feature-level-support
         let max_color_attachments = 8;
@@ -518,6 +518,7 @@ impl super::Adapter {
                 private_caps,
                 presentation_timer,
                 workarounds,
+                memory_budget_thresholds,
                 dxc_container,
             },
             info,
@@ -648,6 +649,7 @@ impl crate::Adapter for super::Adapter {
         };
 
         let device = super::Device::new(
+            self.raw.clone(),
             self.device.clone(),
             queue.clone(),
             features,
@@ -655,6 +657,7 @@ impl crate::Adapter for super::Adapter {
             memory_hints,
             self.private_caps,
             &self.library,
+            self.memory_budget_thresholds,
             self.dxc_container.clone(),
         )?;
         Ok(crate::OpenDevice {

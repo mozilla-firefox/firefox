@@ -16,8 +16,7 @@
 #include "mozilla/dom/cache/ManagerId.h"
 #include "mozilla/dom/quota/Assertions.h"
 #include "mozilla/dom/quota/ClientDirectoryLock.h"
-#include "mozilla/dom/quota/DirectoryLock.h"
-#include "mozilla/dom/quota/DirectoryLockInlines.h"
+#include "mozilla/dom/quota/ClientDirectoryLockHandle.h"
 #include "mozilla/dom/quota/PrincipalUtils.h"
 #include "mozilla/dom/quota/QuotaManager.h"
 #include "mozilla/dom/quota/ResultExtensions.h"
@@ -57,6 +56,7 @@ namespace mozilla::dom::cache {
 
 using mozilla::dom::quota::AssertIsOnIOThread;
 using mozilla::dom::quota::ClientDirectoryLock;
+using mozilla::dom::quota::ClientDirectoryLockHandle;
 using mozilla::dom::quota::PERSISTENCE_TYPE_DEFAULT;
 using mozilla::dom::quota::PersistenceType;
 using mozilla::dom::quota::QuotaManager;
@@ -126,7 +126,7 @@ class Context::QuotaInitRunnable final : public nsIRunnable {
   Maybe<ClientDirectoryLock&> MaybeDirectoryLockRef() const {
     NS_ASSERT_OWNINGTHREAD(QuotaInitRunnable);
 
-    return ToMaybeRef(mDirectoryLock.get());
+    return ToMaybeRef(mDirectoryLockHandle.get());
   }
 
   nsresult Dispatch() {
@@ -149,7 +149,7 @@ class Context::QuotaInitRunnable final : public nsIRunnable {
     mInitAction->CancelOnInitiatingThread();
   }
 
-  void DirectoryLockAcquired(ClientDirectoryLock* aLock);
+  void DirectoryLockAcquired(ClientDirectoryLockHandle aLockHandle);
 
   void DirectoryLockFailed();
 
@@ -224,7 +224,7 @@ class Context::QuotaInitRunnable final : public nsIRunnable {
   nsresult mResult;
   Maybe<mozilla::ipc::PrincipalInfo> mPrincipalInfo;
   Maybe<CacheDirectoryMetadata> mDirectoryMetadata;
-  RefPtr<ClientDirectoryLock> mDirectoryLock;
+  ClientDirectoryLockHandle mDirectoryLockHandle;
   RefPtr<CipherKeyManager> mCipherKeyManager;
   State mState;
   Atomic<bool> mCanceled;
@@ -235,18 +235,18 @@ class Context::QuotaInitRunnable final : public nsIRunnable {
 };
 
 void Context::QuotaInitRunnable::DirectoryLockAcquired(
-    ClientDirectoryLock* aLock) {
+    ClientDirectoryLockHandle aLockHandle) {
   NS_ASSERT_OWNINGTHREAD(QuotaInitRunnable);
-  MOZ_DIAGNOSTIC_ASSERT(aLock);
+  MOZ_DIAGNOSTIC_ASSERT(aLockHandle);
   MOZ_DIAGNOSTIC_ASSERT(mState == STATE_WAIT_FOR_DIRECTORY_LOCK);
-  MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLock);
+  MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLockHandle);
 
-  mDirectoryLock = aLock;
+  mDirectoryLockHandle = std::move(aLockHandle);
 
-  MOZ_DIAGNOSTIC_ASSERT(mDirectoryLock->Id() >= 0);
-  mDirectoryMetadata->mDirectoryLockId = mDirectoryLock->Id();
+  MOZ_DIAGNOSTIC_ASSERT(mDirectoryLockHandle->Id() >= 0);
+  mDirectoryMetadata->mDirectoryLockId = mDirectoryLockHandle->Id();
 
-  if (mCanceled || mDirectoryLock->Invalidated()) {
+  if (mCanceled || mDirectoryLockHandle->Invalidated()) {
     Complete(NS_ERROR_ABORT);
     return;
   }
@@ -267,7 +267,7 @@ void Context::QuotaInitRunnable::DirectoryLockAcquired(
 void Context::QuotaInitRunnable::DirectoryLockFailed() {
   NS_ASSERT_OWNINGTHREAD(QuotaInitRunnable);
   MOZ_DIAGNOSTIC_ASSERT(mState == STATE_WAIT_FOR_DIRECTORY_LOCK);
-  MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLock);
+  MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLockHandle);
 
   NS_WARNING("Failed to acquire a directory lock!");
 
@@ -386,10 +386,10 @@ Context::QuotaInitRunnable::Run() {
           ->Then(
               GetCurrentSerialEventTarget(), __func__,
               [self = RefPtr(this)](
-                  const quota::ClientDirectoryLockPromise::ResolveOrRejectValue&
-                      aValue) {
+                  QuotaManager::ClientDirectoryLockHandlePromise::
+                      ResolveOrRejectValue&& aValue) {
                 if (aValue.IsResolve()) {
-                  self->DirectoryLockAcquired(aValue.ResolveValue());
+                  self->DirectoryLockAcquired(std::move(aValue.ResolveValue()));
                 } else {
                   self->DirectoryLockFailed();
                 }
@@ -468,7 +468,7 @@ Context::QuotaInitRunnable::Run() {
       mInitAction->CompleteOnInitiatingThread(mResult);
 
       mContext->OnQuotaInit(mResult, mDirectoryMetadata,
-                            std::move(mDirectoryLock),
+                            std::move(mDirectoryLockHandle),
                             std::move(mCipherKeyManager));
 
       mState = STATE_COMPLETE;
@@ -866,18 +866,18 @@ Maybe<ClientDirectoryLock&> Context::MaybeDirectoryLockRef() const {
 
   if (mState == STATE_CONTEXT_PREINIT) {
     MOZ_DIAGNOSTIC_ASSERT(!mInitRunnable);
-    MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLock);
+    MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLockHandle);
 
     return Nothing();
   }
 
   if (mState == STATE_CONTEXT_INIT) {
-    MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLock);
+    MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLockHandle);
 
     return mInitRunnable->MaybeDirectoryLockRef();
   }
 
-  return ToMaybeRef(mDirectoryLock.get());
+  return ToMaybeRef(mDirectoryLockHandle.get());
 }
 
 CipherKeyManager& Context::MutableCipherKeyManagerRef() {
@@ -963,7 +963,9 @@ Context::~Context() {
     mThreadsafeHandle->ContextDestroyed(*this);
   }
 
-  SafeDropDirectoryLock(mDirectoryLock);
+  {
+    auto destroyingDirectoryLockHandle = std::move(mDirectoryLockHandle);
+  }
 
   // Note, this may set the mOrphanedData flag.
   mManager->RemoveContext(*this);
@@ -1043,7 +1045,7 @@ void Context::DispatchAction(SafeRefPtr<Action> aAction, bool aDoomData) {
 
 void Context::OnQuotaInit(
     nsresult aRv, const Maybe<CacheDirectoryMetadata>& aDirectoryMetadata,
-    RefPtr<ClientDirectoryLock> aDirectoryLock,
+    ClientDirectoryLockHandle aDirectoryLockHandle,
     RefPtr<CipherKeyManager> aCipherKeyManager) {
   NS_ASSERT_OWNINGTHREAD(Context);
 
@@ -1055,8 +1057,8 @@ void Context::OnQuotaInit(
 
   // Always save the directory lock to ensure QuotaManager does not shutdown
   // before the Context has gone away.
-  MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLock);
-  mDirectoryLock = std::move(aDirectoryLock);
+  MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLockHandle);
+  mDirectoryLockHandle = std::move(aDirectoryLockHandle);
 
   MOZ_DIAGNOSTIC_ASSERT(!mCipherKeyManager);
   mCipherKeyManager = std::move(aCipherKeyManager);
@@ -1085,8 +1087,8 @@ void Context::OnQuotaInit(
   // We could only assert below if quota initialization was a success which
   // is ensured by NS_FAILED(aRv) above
   MOZ_DIAGNOSTIC_ASSERT(mDirectoryMetadata);
-  MOZ_DIAGNOSTIC_ASSERT(mDirectoryLock);
-  MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLock->Invalidated());
+  MOZ_DIAGNOSTIC_ASSERT(mDirectoryLockHandle);
+  MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLockHandle->Invalidated());
   MOZ_DIAGNOSTIC_ASSERT_IF(mDirectoryMetadata->mIsPrivate, mCipherKeyManager);
 
   MOZ_DIAGNOSTIC_ASSERT(mState == STATE_CONTEXT_INIT);
@@ -1180,15 +1182,16 @@ void Context::DoStringify(nsACString& aData) {
     aData.Append(kStringifyEndSet);
   };
 
-  aData.Append(
-      kStringifyDelimiter +
-      //
-      "DirectoryLock:"_ns + IntToCString(static_cast<bool>(mDirectoryLock)) +
-      kStringifyDelimiter +
-      //
-      "NextContext:"_ns + IntToCString(static_cast<bool>(mNextContext)) +
-      //
-      kStringifyEndInstance);
+  aData.Append(kStringifyDelimiter +
+               //
+               "DirectoryLock:"_ns +
+               IntToCString(static_cast<bool>(mDirectoryLockHandle)) +
+               kStringifyDelimiter +
+               //
+               "NextContext:"_ns +
+               IntToCString(static_cast<bool>(mNextContext)) +
+               //
+               kStringifyEndInstance);
 
   if (mNextContext) {
     aData.Append(kStringifyDelimiter);

@@ -153,9 +153,10 @@ nsresult JSActor::QueryInterfaceActor(const nsIID& aIID, void** aPtr) {
   return mWrappedJS->QueryInterface(aIID, aPtr);
 }
 
-void JSActor::SetName(const nsACString& aName) {
+void JSActor::Init(const nsACString& aName) {
   MOZ_ASSERT(mName.IsEmpty(), "Cannot set name twice!");
   mName = aName;
+  InvokeCallback(CallbackFunction::ActorCreated);
 }
 
 void JSActor::ThrowStateErrorForGetter(const char* aName,

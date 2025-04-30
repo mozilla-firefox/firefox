@@ -18,6 +18,9 @@ prefs = [
 ]
 
 ["browser_WebrtcGlobalInformation.js"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1961544
+]
 
 ["browser_device_controls_menus.js"]
 skip-if = [

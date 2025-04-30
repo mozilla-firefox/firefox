@@ -30,6 +30,32 @@ newtab:
     - anicholson@mozilla.com
     - najiang@mozilla.com
 
+newtab-content:
+  description: |
+    Private Newtab-related instrumentation sent over OHTTP
+    Can be disabled via the `newtabPingEnabled` variable of the `glean` Nimbus
+    feature, or the `browser.newtabpage.ping.enabled` pref.
+  metadata:
+    include_info_sections: false
+  include_client_id: false
+  uploader_capabilities:
+    - ohttp
+  reasons:
+    newtab_session_end: |
+      The newtab visit ended.
+      Could be by navigation, being closed, etc.
+    component_init: |
+      The newtab component init'd,
+      and the newtab and homepage settings have been categorized.
+      This is mostly to ensure we hear at least once from clients configured to
+      not show a newtab UI.
+  bugs:
+    - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+  data_reviews:
+    - https://bugzilla.mozilla.org/show_bug.cgi?id=1956331
+  notification_emails:
+    - nbarrett@mozilla.com
+
 top-sites:
   description: |
     A ping representing a single event happening with or to a TopSite.

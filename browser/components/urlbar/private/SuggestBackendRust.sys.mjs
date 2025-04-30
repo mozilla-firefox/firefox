@@ -294,6 +294,110 @@ export class SuggestBackendRust extends SuggestBackend {
   }
 
   /**
+   * Registers a dismissal for a Rust suggestion.
+   *
+   * @param {Suggestion} suggestion
+   *   The suggestion to dismiss, an instance of one of the `Suggestion`
+   *   subclasses exposed over FFI, e.g., `Suggestion.Wikipedia`. Typically the
+   *   suggestion will have been returned from the Rust component, but tests may
+   *   find it useful to make a `Suggestion` object directly.
+   */
+  async dismissRustSuggestion(suggestion) {
+    try {
+      await this.#store?.dismissBySuggestion(suggestion);
+    } catch (error) {
+      this.logger.error("Error: dismissRustSuggestion", { error, suggestion });
+    }
+  }
+
+  /**
+   * Registers a dismissal using a dismissal key. If you have a suggestion
+   * object returned from the Rust component, use `dismissRustSuggestion()`
+   * instead. This method can be used to record dismissals for suggestions from
+   * other backends, like Merino.
+   *
+   * @param {string} dismissalKey
+   *   The dismissal key.
+   */
+  async dismissByKey(dismissalKey) {
+    try {
+      await this.#store?.dismissByKey(dismissalKey);
+    } catch (error) {
+      this.logger.error("Error: dismissByKey", { error, dismissalKey });
+    }
+  }
+
+  /**
+   * Returns whether a dismissal is recorded for a Rust suggestion.
+   *
+   * @param {Suggestion} suggestion
+   *   The suggestion to dismiss, an instance of one of the `Suggestion`
+   *   subclasses exposed over FFI, e.g., `Suggestion.Wikipedia`. Typically the
+   *   suggestion will have been returned from the Rust component, but tests may
+   *   find it useful to make a `Suggestion` object directly.
+   * @returns {boolean}
+   *   Whether the suggestion has been dismissed.
+   */
+  async isRustSuggestionDismissed(suggestion) {
+    try {
+      return await this.#store?.isDismissedBySuggestion(suggestion);
+    } catch (error) {
+      this.logger.error("Error: isDismissedBySuggestion", {
+        error,
+        suggestion,
+      });
+    }
+    return false;
+  }
+
+  /**
+   * Returns whether a dismissal is recorded for a dismissal key. If you have a
+   * suggestion object returned from the Rust component, use
+   * `isRustSuggestionDismissed()` instead. This method can be used to determine
+   * whether suggestions from other backends, like Merino, have been dismissed.
+   *
+   * @param {string} dismissalKey
+   *   The dismissal key.
+   * @returns {boolean}
+   *   Whether a dismissal is recorded for the key.
+   */
+  async isDismissedByKey(dismissalKey) {
+    try {
+      return await this.#store?.isDismissedByKey(dismissalKey);
+    } catch (error) {
+      this.logger.error("Error: isDismissedByKey", { error, dismissalKey });
+    }
+    return false;
+  }
+
+  /**
+   * Returns whether any dismissals are recorded.
+   *
+   * @returns {boolean}
+   *   Whether any suggestions have been dismissed.
+   */
+  async anyDismissedSuggestions() {
+    try {
+      return await this.#store?.anyDismissedSuggestions();
+    } catch (error) {
+      this.logger.error("Error: anyDismissedSuggestions", error);
+    }
+    // Return true because there may be dismissed suggestions, we don't know.
+    return true;
+  }
+
+  /**
+   * Removes all registered dismissals.
+   */
+  async clearDismissedSuggestions() {
+    try {
+      await this.#store?.clearDismissedSuggestions();
+    } catch (error) {
+      this.logger.error("Error clearing dismissed suggestions", error);
+    }
+  }
+
+  /**
    * Fetches geonames stored in the Suggest database. A geoname represents a
    * geographic place.
    *
@@ -424,6 +528,14 @@ export class SuggestBackendRust extends SuggestBackend {
     // becomes enabled after this point, its `SuggestProvider` will update and
     // call `ingestEnabledSuggestions()`, which will be its initial ingest.
     this.#ingestAll();
+
+    this.#migrateBlockedDigests().then(() => {
+      // Now that the backend has finished initializing, send
+      // `quicksuggest-dismissals-changed` to let consumers know that the
+      // dismissal API is available. about:preferences relies on this to update
+      // its "Restore" button if it's open at this time.
+      Services.obs.notifyObservers(null, "quicksuggest-dismissals-changed");
+    });
   }
 
   #makeStore() {
@@ -438,12 +550,19 @@ export class SuggestBackendRust extends SuggestBackend {
       return null;
     }
 
-    let customTargetingAttributes = {
+    let rsContext = {
       formFactor: "desktop",
+      appId: Services.appinfo.ID || "",
+      channel: AppConstants.IS_ESR ? "esr" : AppConstants.MOZ_UPDATE_CHANNEL,
+      appVersion: Services.appinfo.version,
+      locale: Services.locale.appLocaleAsBCP47,
+      os: AppConstants.platform,
+      osVersion: Services.sysinfo.get("version"),
     };
+
+    // We assume `QuickSuggest` init already awaited `Region.init()`.
     if (lazy.Region.home) {
-      // We assume `QuickSuggest` init already awaited `Region.init()`.
-      customTargetingAttributes.country = lazy.Region.home;
+      rsContext.country = lazy.Region.home;
     }
 
     let rsService;
@@ -453,22 +572,7 @@ export class SuggestBackendRust extends SuggestBackend {
         new lazy.RemoteSettingsConfig2({
           server: this.#remoteSettingsServer,
           bucketName: this.#remoteSettingsBucketName,
-          appContext: new lazy.RemoteSettingsContext({
-            appName: Services.appinfo.name || "",
-            appId: Services.appinfo.ID || "",
-            channel: AppConstants.IS_ESR
-              ? "esr"
-              : AppConstants.MOZ_UPDATE_CHANNEL,
-            appVersion: Services.appinfo.version,
-            appBuild: Services.appinfo.appBuildID,
-            architecture: Services.sysinfo.get("arch"),
-            locale: Services.locale.appLocaleAsBCP47,
-            os: AppConstants.platform,
-            osVersion: Services.sysinfo.get("version"),
-            customTargetingAttributes: JSON.stringify(
-              customTargetingAttributes
-            ),
-          }),
+          appContext: new lazy.RemoteSettingsContext(rsContext),
         })
       );
     } catch (error) {
@@ -620,6 +724,71 @@ export class SuggestBackendRust extends SuggestBackend {
       ? new lazy.RemoteSettingsServer.Custom(serverUrl)
       : null;
     this.#remoteSettingsBucketName = bucketName;
+  }
+
+  /**
+   * Dismissals are stored in the Rust component but were previously stored as
+   * URL digests in a pref. This method migrates the pref to the Rust component
+   * by registering each digest as a dismissal key in the Rust component. The
+   * pref is cleared when the migration successfully finishes.
+   */
+  async #migrateBlockedDigests() {
+    if (!this.#store) {
+      return;
+    }
+
+    let pref = "browser.urlbar.quicksuggest.blockedDigests";
+    this.logger.debug("Checking blockedDigests migration", { pref });
+
+    let json;
+    // eslint-disable-next-line mozilla/use-default-preference-values
+    try {
+      json = Services.prefs.getCharPref(pref);
+    } catch (error) {
+      if (error.result != Cr.NS_ERROR_UNEXPECTED) {
+        throw error;
+      }
+      this.logger.debug(
+        "blockedDigests pref does not exist, migration not necessary"
+      );
+      return;
+    }
+
+    await this.#migrateBlockedDigestsJson(json);
+
+    // Don't clear the pref until migration finishes successfully, in case
+    // there's some uncaught error. We don't want to lose the user's data.
+    Services.prefs.clearUserPref(pref);
+  }
+
+  // This assumes `this.#store` is non-null!
+  async #migrateBlockedDigestsJson(json) {
+    let digests;
+    try {
+      digests = JSON.parse(json);
+    } catch (error) {
+      this.logger.debug("blockedDigests is not valid JSON, discarding it");
+      return;
+    }
+
+    if (!digests) {
+      this.logger.debug("blockedDigests is falsey, discarding it");
+      return;
+    }
+
+    if (!Array.isArray(digests)) {
+      this.logger.debug("blockedDigests is not an array, discarding it");
+      return;
+    }
+
+    let promises = [];
+    for (let digest of digests) {
+      if (typeof digest != "string") {
+        continue;
+      }
+      promises.push(this.#store.dismissByKey(digest));
+    }
+    await Promise.all(promises);
   }
 
   get _test_store() {

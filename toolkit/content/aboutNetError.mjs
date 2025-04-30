@@ -34,6 +34,7 @@ const KNOWN_ERROR_TITLE_IDS = new Set([
   "deniedPortAccess-title",
   "dnsNotFound-title",
   "dns-not-found-trr-only-title2",
+  "internet-connection-offline-title",
   "fileNotFound-title",
   "fileAccessDenied-title",
   "generic-title",
@@ -450,6 +451,7 @@ function initPage() {
   }
 
   const isTRROnlyFailure = gErrorCode == "dnsNotFound" && RPMIsTRROnlyFailure();
+  let noConnectivity = gErrorCode == "dnsNotFound" && !RPMHasConnectivity();
 
   const docTitle = document.querySelector("title");
   const shortDesc = document.getElementById("errorShortDesc");
@@ -499,6 +501,12 @@ function initPage() {
     isTRROnlyFailure
   );
 
+  // We can handle the offline page separately.
+  if (noConnectivity) {
+    pageTitleId = "neterror-dns-not-found-title";
+    bodyTitleId = "internet-connection-offline-title";
+  }
+
   // bodyTitle is set to null if it has already been set in initTitleAndBodyIds
   if (!KNOWN_ERROR_TITLE_IDS.has(bodyTitleId)) {
     console.error("No strings exist for error:", gErrorCode);
@@ -507,7 +515,7 @@ function initPage() {
 
   // The TRR errors may present options that direct users to settings only available on Firefox Desktop
   if (RPMIsFirefox()) {
-    if (isTRROnlyFailure) {
+    if (isTRROnlyFailure && !noConnectivity) {
       pageTitleId = "neterror-dns-not-found-title";
       document.l10n.setAttributes(docTitle, pageTitleId);
       if (bodyTitle) {
@@ -563,11 +571,6 @@ function initPage() {
         descriptionTag = "neterror-dns-not-found-trr-only-could-not-connect";
       } else if (skipReason == "TRR_TIMEOUT") {
         descriptionTag = "neterror-dns-not-found-trr-only-timeout";
-      } else if (
-        skipReason == "TRR_BROWSER_IS_OFFLINE" ||
-        skipReason == "TRR_NO_CONNECTIVITY"
-      ) {
-        descriptionTag = "neterror-dns-not-found-trr-offline";
       } else if (
         skipReason == "TRR_NO_ANSWERS" ||
         skipReason == "TRR_NXDOMAIN" ||
@@ -640,7 +643,7 @@ function initPage() {
   setFocus("#netErrorButtonContainer > .try-again");
 
   if (longDesc) {
-    const parts = getNetErrorDescParts();
+    const parts = getNetErrorDescParts(noConnectivity);
     setNetErrorMessageFromParts(longDesc, parts);
   }
 
@@ -690,9 +693,10 @@ function setNetErrorMessageFromParts(parentElement, parts) {
  * - l10n args (if the tag is not "a", optional)
  * - href (if the tag is "a", optional)
  *
+ * @param {boolean} noConnectivity - if true, the browser has no active network interfaces
  * @returns { Array<["li" | "p" | "span" | "a", string, Record<string, string> | undefined]> }
  */
-function getNetErrorDescParts() {
+function getNetErrorDescParts(noConnectivity) {
   switch (gErrorCode) {
     case "connectionFailure":
     case "netInterrupt":
@@ -740,6 +744,14 @@ function getNetErrorDescParts() {
         ["li", "neterror-corrupted-content-contact-website"],
       ];
     case "dnsNotFound":
+      if (noConnectivity) {
+        return [
+          ["span", "neterror-dns-not-found-offline-hint-header"],
+          ["li", "neterror-dns-not-found-offline-hint-different-device"],
+          ["li", "neterror-dns-not-found-offline-hint-modem"],
+          ["li", "neterror-dns-not-found-offline-hint-reconnect"],
+        ];
+      }
       return [
         ["span", "neterror-dns-not-found-hint-header"],
         ["li", "neterror-dns-not-found-hint-try-again"],

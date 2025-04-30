@@ -4,19 +4,15 @@
 
 package org.mozilla.fenix.library.bookmarks.viewholders
 
-import androidx.appcompat.content.res.AppCompatResources
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import mozilla.components.browser.icons.BrowserIcons
 import mozilla.components.browser.icons.IconRequest
 import mozilla.components.concept.storage.BookmarkNode
 import mozilla.components.concept.storage.BookmarkNodeType
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.mozilla.fenix.ext.components
@@ -72,17 +68,10 @@ class BookmarkNodeViewHolderTest {
     fun setup() {
         MockKAnnotations.init(this)
 
-        mockkStatic(AppCompatResources::class)
-        every { AppCompatResources.getDrawable(any(), any()) } returns mockk(relaxed = true)
         every { siteItemView.context.components.core.icons } returns icons
         every { icons.loadIntoView(siteItemView.iconView, any()) } returns mockk()
 
         holder = BookmarkNodeViewHolder(siteItemView, interactor)
-    }
-
-    @After
-    fun teardown() {
-        unmockkStatic(AppCompatResources::class)
     }
 
     @Test

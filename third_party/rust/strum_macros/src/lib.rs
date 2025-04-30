@@ -54,7 +54,13 @@ fn debug_print_generated(ast: &DeriveInput, toks: &TokenStream) {
 /// If you have a large enum, you may want to consider using the `use_phf` attribute here. It leverages
 /// perfect hash functions to parse much quicker than a standard `match`. (MSRV 1.46)
 ///
-/// # Example howto use `EnumString`
+/// The default error type is `strum::ParseError`. This can be overriden by applying both the
+/// `parse_err_ty` and `parse_err_fn` attributes at the type level.  `parse_error_fn` should be a
+/// function that accepts an `&str` and returns the type `parse_error_ty`. See
+/// [this test case](https://github.com/Peternator7/strum/blob/9db3c4dc9b6f585aeb9f5f15f9cc18b6cf4fd780/strum_tests/tests/from_str.rs#L233)
+/// for an example.
+///
+/// # Example how to use `EnumString`
 /// ```
 /// use std::str::FromStr;
 /// use strum_macros::EnumString;
@@ -154,10 +160,13 @@ pub fn from_string(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 /// let yellow = Color::Yellow;
 /// assert_eq!("Yellow", yellow.as_ref());
 /// // or for string formatting
-/// println!(
-///     "blue: {} green: {}",
-///     Color::Blue(10).as_ref(),
-///     Color::Green { range: 42 }.as_ref()
+/// assert_eq!(
+///    "blue: Blue green: Green",
+///    format!(
+///        "blue: {} green: {}",
+///        Color::Blue(10).as_ref(),
+///        Color::Green { range: 42 }.as_ref()
+///    )
 /// );
 ///
 /// // With prefix on all variants
@@ -237,7 +246,8 @@ pub fn variant_names_deprecated(input: proc_macro::TokenStream) -> proc_macro::T
 /// meaning that the variants must not have any data.
 ///
 /// ```
-/// use strum::VariantArray;
+/// use strum::VariantArray as _;
+/// use strum_macros::VariantArray;
 ///
 /// #[derive(VariantArray, Debug, PartialEq, Eq)]
 /// enum Op {
@@ -411,10 +421,13 @@ pub fn to_string(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 /// let yellow = Color::Yellow;
 /// assert_eq!(String::from("Yellow"), yellow.to_string());
 /// // or for string formatting
-/// println!(
-///     "blue: {} green: {}",
-///     Color::Blue(10),
-///     Color::Green { range: 42 }
+/// assert_eq!(
+///    "blue: Blue green: Green",
+///    format!(
+///        "blue: {} green: {}",
+///        Color::Blue(10),
+///        Color::Green { range: 42 }
+///    )
 /// );
 /// // you can also use named fields in message
 /// let purple = Color::Purple { sat: 10 };
@@ -429,7 +442,7 @@ pub fn display(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     toks.into()
 }
 
-/// Creates a new type that iterates of the variants of an enum.
+/// Creates a new type that iterates over the variants of an enum.
 ///
 /// Iterate over the variants of an Enum. Any additional data on your variants will be set to `Default::default()`.
 /// The macro implements [`strum::IntoEnumIterator`](https://docs.rs/strum/latest/strum/trait.IntoEnumIterator.html) on your enum and creates a new type called `YourEnumIter` that is the iterator object.
@@ -830,8 +843,8 @@ pub fn enum_properties(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// ```
 /// // Bring trait into scope
 /// use std::str::FromStr;
-/// use strum::{IntoEnumIterator, EnumMessage};
-/// use strum_macros::{EnumDiscriminants, EnumIter, EnumString};
+/// use strum::{IntoEnumIterator, EnumMessage as _};
+/// use strum_macros::{EnumDiscriminants, EnumIter, EnumString, EnumMessage};
 ///
 /// #[derive(Debug)]
 /// struct NonDefault;

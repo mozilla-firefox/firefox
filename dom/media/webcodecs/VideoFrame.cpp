@@ -14,7 +14,6 @@
 #include "ImageConversion.h"
 #include "MediaResult.h"
 #include "VideoColorSpace.h"
-#include "WebCodecsUtils.h"
 #include "js/StructuredClone.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/ResultVariant.h"
@@ -287,8 +286,9 @@ static Result<RefPtr<layers::Image>, MediaResult> CreateRGBAImageFromBuffer(
 }
 
 static Result<RefPtr<layers::Image>, MediaResult> CreateYUVImageFromBuffer(
-    const VideoFrame::Format& aFormat, const VideoColorSpaceInit& aColorSpace,
-    const gfx::IntSize& aSize, const Span<uint8_t>& aBuffer) {
+    const VideoFrame::Format& aFormat,
+    const VideoColorSpaceInternal& aColorSpace, const gfx::IntSize& aSize,
+    const Span<uint8_t>& aBuffer) {
   if (aFormat.PixelFormat() == VideoPixelFormat::I420 ||
       aFormat.PixelFormat() == VideoPixelFormat::I420A) {
     UniquePtr<I420BufferReader> reader;
@@ -327,17 +327,17 @@ static Result<RefPtr<layers::Image>, MediaResult> CreateYUVImageFromBuffer(
     data.mCbCrStride = reader->mStrideU;
     data.mChromaSubsampling = gfx::ChromaSubsampling::HALF_WIDTH_AND_HEIGHT;
     // Color settings.
-    if (!aColorSpace.mFullRange.IsNull()) {
-      data.mColorRange = ToColorRange(aColorSpace.mFullRange.Value());
+    if (aColorSpace.mFullRange) {
+      data.mColorRange = ToColorRange(aColorSpace.mFullRange.value());
     }
-    MOZ_RELEASE_ASSERT(!aColorSpace.mMatrix.IsNull());
-    data.mYUVColorSpace = ToColorSpace(aColorSpace.mMatrix.Value());
-    if (!aColorSpace.mTransfer.IsNull()) {
+    MOZ_RELEASE_ASSERT(aColorSpace.mMatrix);
+    data.mYUVColorSpace = ToColorSpace(aColorSpace.mMatrix.value());
+    if (aColorSpace.mTransfer) {
       data.mTransferFunction =
-          ToTransferFunction(aColorSpace.mTransfer.Value());
+          ToTransferFunction(aColorSpace.mTransfer.value());
     }
-    if (!aColorSpace.mPrimaries.IsNull()) {
-      data.mColorPrimaries = ToPrimaries(aColorSpace.mPrimaries.Value());
+    if (aColorSpace.mPrimaries) {
+      data.mColorPrimaries = ToPrimaries(aColorSpace.mPrimaries.value());
     }
 
     RefPtr<layers::PlanarYCbCrImage> image =
@@ -374,17 +374,17 @@ static Result<RefPtr<layers::Image>, MediaResult> CreateYUVImageFromBuffer(
     data.mCbCrStride = reader.mStrideUV;
     data.mChromaSubsampling = gfx::ChromaSubsampling::HALF_WIDTH_AND_HEIGHT;
     // Color settings.
-    if (!aColorSpace.mFullRange.IsNull()) {
-      data.mColorRange = ToColorRange(aColorSpace.mFullRange.Value());
+    if (aColorSpace.mFullRange) {
+      data.mColorRange = ToColorRange(aColorSpace.mFullRange.value());
     }
-    MOZ_RELEASE_ASSERT(!aColorSpace.mMatrix.IsNull());
-    data.mYUVColorSpace = ToColorSpace(aColorSpace.mMatrix.Value());
-    if (!aColorSpace.mTransfer.IsNull()) {
+    MOZ_RELEASE_ASSERT(aColorSpace.mMatrix);
+    data.mYUVColorSpace = ToColorSpace(aColorSpace.mMatrix.value());
+    if (aColorSpace.mTransfer) {
       data.mTransferFunction =
-          ToTransferFunction(aColorSpace.mTransfer.Value());
+          ToTransferFunction(aColorSpace.mTransfer.value());
     }
-    if (!aColorSpace.mPrimaries.IsNull()) {
-      data.mColorPrimaries = ToPrimaries(aColorSpace.mPrimaries.Value());
+    if (aColorSpace.mPrimaries) {
+      data.mColorPrimaries = ToPrimaries(aColorSpace.mPrimaries.value());
     }
 
     RefPtr<layers::NVImage> image = new layers::NVImage();
@@ -403,8 +403,9 @@ static Result<RefPtr<layers::Image>, MediaResult> CreateYUVImageFromBuffer(
 }
 
 static Result<RefPtr<layers::Image>, MediaResult> CreateImageFromBuffer(
-    const VideoFrame::Format& aFormat, const VideoColorSpaceInit& aColorSpace,
-    const gfx::IntSize& aSize, const Span<uint8_t>& aBuffer) {
+    const VideoFrame::Format& aFormat,
+    const VideoColorSpaceInternal& aColorSpace, const gfx::IntSize& aSize,
+    const Span<uint8_t>& aBuffer) {
   switch (aFormat.PixelFormat()) {
     case VideoPixelFormat::I420:
     case VideoPixelFormat::I420A:
@@ -914,16 +915,16 @@ static bool IsYUVFormat(const VideoPixelFormat& aFormat) {
 }
 
 // https://w3c.github.io/webcodecs/#videoframe-pick-color-space
-static VideoColorSpaceInit PickColorSpace(
+static VideoColorSpaceInternal PickColorSpace(
     const VideoColorSpaceInit* aInitColorSpace,
     const VideoPixelFormat& aFormat) {
-  VideoColorSpaceInit colorSpace;
+  VideoColorSpaceInternal colorSpace;
   if (aInitColorSpace) {
-    colorSpace = *aInitColorSpace;
+    colorSpace = VideoColorSpaceInternal(*aInitColorSpace);
     // By spec, we MAY replace null members of aInitColorSpace with guessed
     // values so we can always use these in CreateYUVImageFromBuffer.
-    if (IsYUVFormat(aFormat) && colorSpace.mMatrix.IsNull()) {
-      colorSpace.mMatrix.SetValue(VideoMatrixCoefficients::Bt709);
+    if (IsYUVFormat(aFormat) && colorSpace.mMatrix.isNothing()) {
+      colorSpace.mMatrix.emplace(VideoMatrixCoefficients::Bt709);
     }
     return colorSpace;
   }
@@ -949,20 +950,20 @@ static VideoColorSpaceInit PickColorSpace(
     case VideoPixelFormat::I444AP12:
     case VideoPixelFormat::NV12:
       // https://w3c.github.io/webcodecs/#rec709-color-space
-      colorSpace.mFullRange.SetValue(false);
-      colorSpace.mMatrix.SetValue(VideoMatrixCoefficients::Bt709);
-      colorSpace.mPrimaries.SetValue(VideoColorPrimaries::Bt709);
-      colorSpace.mTransfer.SetValue(VideoTransferCharacteristics::Bt709);
+      colorSpace.mFullRange.emplace(false);
+      colorSpace.mMatrix.emplace(VideoMatrixCoefficients::Bt709);
+      colorSpace.mPrimaries.emplace(VideoColorPrimaries::Bt709);
+      colorSpace.mTransfer.emplace(VideoTransferCharacteristics::Bt709);
       break;
     case VideoPixelFormat::RGBA:
     case VideoPixelFormat::RGBX:
     case VideoPixelFormat::BGRA:
     case VideoPixelFormat::BGRX:
       // https://w3c.github.io/webcodecs/#srgb-color-space
-      colorSpace.mFullRange.SetValue(true);
-      colorSpace.mMatrix.SetValue(VideoMatrixCoefficients::Rgb);
-      colorSpace.mPrimaries.SetValue(VideoColorPrimaries::Bt709);
-      colorSpace.mTransfer.SetValue(VideoTransferCharacteristics::Iec61966_2_1);
+      colorSpace.mFullRange.emplace(true);
+      colorSpace.mMatrix.emplace(VideoMatrixCoefficients::Rgb);
+      colorSpace.mPrimaries.emplace(VideoColorPrimaries::Bt709);
+      colorSpace.mTransfer.emplace(VideoTransferCharacteristics::Iec61966_2_1);
       break;
   }
 
@@ -1041,7 +1042,7 @@ static Result<RefPtr<VideoFrame>, MediaResult> CreateVideoFrameFromBuffer(
 
   Maybe<uint64_t> duration = OptionalToMaybe(aInit.mDuration);
 
-  VideoColorSpaceInit colorSpace =
+  VideoColorSpaceInternal colorSpace =
       PickColorSpace(OptionalToPointer(aInit.mColorSpace), aInit.mFormat);
 
   RefPtr<layers::Image> data;
@@ -1159,7 +1160,7 @@ InitializeFrameWithResourceAndSize(nsIGlobalObject* aGlobal,
 
   Maybe<uint64_t> duration = OptionalToMaybe(aInit.mDuration);
 
-  VideoColorSpaceInit colorSpace{};
+  VideoColorSpaceInternal colorSpace;
   if (IsYUVFormat(
           SurfaceFormatToVideoPixelFormat(surface->GetFormat()).ref())) {
     colorSpace = FallbackColorSpaceForVideoContent();
@@ -1292,25 +1293,25 @@ static Result<RefPtr<layers::Image>, MediaResult> ConvertToRGBAImage(
                                 surfaceFormat, data);
 }
 
-static VideoColorSpaceInit ConvertToColorSpace(
+static VideoColorSpaceInternal ConvertToColorSpace(
     const PredefinedColorSpace& aColorSpace) {
-  VideoColorSpaceInit colorSpace;
+  VideoColorSpaceInternal colorSpace;
   switch (aColorSpace) {
     case PredefinedColorSpace::Srgb:
       // https://w3c.github.io/webcodecs/#srgb-color-space
-      colorSpace.mFullRange.SetValue(true);
-      colorSpace.mMatrix.SetValue(VideoMatrixCoefficients::Rgb);
-      colorSpace.mPrimaries.SetValue(VideoColorPrimaries::Bt709);
-      colorSpace.mTransfer.SetValue(VideoTransferCharacteristics::Iec61966_2_1);
+      colorSpace.mFullRange.emplace(true);
+      colorSpace.mMatrix.emplace(VideoMatrixCoefficients::Rgb);
+      colorSpace.mPrimaries.emplace(VideoColorPrimaries::Bt709);
+      colorSpace.mTransfer.emplace(VideoTransferCharacteristics::Iec61966_2_1);
       break;
     case PredefinedColorSpace::Display_p3:
-      colorSpace.mFullRange.SetValue(true);
-      colorSpace.mMatrix.SetValue(VideoMatrixCoefficients::Rgb);
-      colorSpace.mPrimaries.SetValue(VideoColorPrimaries::Smpte432);
-      colorSpace.mTransfer.SetValue(VideoTransferCharacteristics::Iec61966_2_1);
+      colorSpace.mFullRange.emplace(true);
+      colorSpace.mMatrix.emplace(VideoMatrixCoefficients::Rgb);
+      colorSpace.mPrimaries.emplace(VideoColorPrimaries::Smpte432);
+      colorSpace.mTransfer.emplace(VideoTransferCharacteristics::Iec61966_2_1);
       break;
   }
-  MOZ_ASSERT(!colorSpace.mFullRange.IsNull());
+  MOZ_ASSERT(colorSpace.mFullRange.isSome());
   return colorSpace;
 }
 
@@ -1323,7 +1324,7 @@ VideoFrameData::VideoFrameData(layers::Image* aImage,
                                gfx::IntRect aVisibleRect,
                                gfx::IntSize aDisplaySize,
                                Maybe<uint64_t> aDuration, int64_t aTimestamp,
-                               const VideoColorSpaceInit& aColorSpace)
+                               const VideoColorSpaceInternal& aColorSpace)
     : mImage(aImage),
       mFormat(aFormat),
       mVisibleRect(aVisibleRect),
@@ -1346,7 +1347,7 @@ VideoFrame::VideoFrame(nsIGlobalObject* aParent,
                        gfx::IntSize aCodedSize, gfx::IntRect aVisibleRect,
                        gfx::IntSize aDisplaySize,
                        const Maybe<uint64_t>& aDuration, int64_t aTimestamp,
-                       const VideoColorSpaceInit& aColorSpace)
+                       const VideoColorSpaceInternal& aColorSpace)
     : mParent(aParent),
       mCodedSize(aCodedSize),
       mVisibleRect(aVisibleRect),
@@ -1872,7 +1873,8 @@ int64_t VideoFrame::Timestamp() const {
 already_AddRefed<VideoColorSpace> VideoFrame::ColorSpace() const {
   AssertIsOnOwningThread();
 
-  return MakeAndAddRef<VideoColorSpace>(mParent, mColorSpace);
+  return MakeAndAddRef<VideoColorSpace>(mParent,
+                                        mColorSpace.ToColorSpaceInit());
 }
 
 // https://w3c.github.io/webcodecs/#dom-videoframe-allocationsize
@@ -1953,7 +1955,7 @@ already_AddRefed<Promise> VideoFrame::CopyTo(
                                           : PredefinedColorSpace::Srgb;
 
     if (mResource->mFormat->PixelFormat() != aOptions.mFormat.Value() ||
-        !IsSameColorSpace(ConvertToColorSpace(colorSpace), mColorSpace)) {
+        mColorSpace != ConvertToColorSpace(colorSpace)) {
       AutoJSAPI jsapi;
       if (!jsapi.Init(mParent.get())) {
         p->MaybeRejectWithTypeError("Failed to get JS context");
@@ -2047,7 +2049,7 @@ void VideoFrame::Close() {
   mCodedSize = gfx::IntSize();
   mVisibleRect = gfx::IntRect();
   mDisplaySize = gfx::IntSize();
-  mColorSpace = VideoColorSpaceInit();
+  mColorSpace = VideoColorSpaceInternal();
 
   StopAutoClose();
 }
@@ -2079,7 +2081,7 @@ nsCString VideoFrame::ToString() const {
       format ? dom::GetEnumString(*format).get() : "unknown pixel format",
       mCodedSize.width, mCodedSize.height, mVisibleRect.width,
       mVisibleRect.height, mDisplaySize.width, mDisplaySize.height,
-      ColorSpaceInitToString(mColorSpace).get());
+      mColorSpace.ToString().get());
 
   if (mDuration) {
     rv.AppendPrintf(" dur: %" PRId64, mDuration.value());

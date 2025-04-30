@@ -19,15 +19,18 @@
   --message-bar-close-button-color-hover:var(--text-primary-color);
   --message-bar-close-button-border-radius:4px;
   --message-bar-close-button-border:none;
-  --message-bar-close-button-hover-bg-color:rgb(21 20 26 / 0.14);
-  --message-bar-close-button-active-bg-color:rgb(21 20 26 / 0.21);
-  --message-bar-close-button-focus-bg-color:rgb(21 20 26 / 0.07);
-
-  @media (prefers-color-scheme: dark){
-    --message-bar-close-button-hover-bg-color:rgb(251 251 254 / 0.14);
-    --message-bar-close-button-active-bg-color:rgb(251 251 254 / 0.21);
-    --message-bar-close-button-focus-bg-color:rgb(251 251 254 / 0.07);
-  }
+  --message-bar-close-button-hover-bg-color:light-dark(
+    rgb(21 20 26 / 0.14),
+    rgb(251 251 254 / 0.14)
+  );
+  --message-bar-close-button-active-bg-color:light-dark(
+    rgb(21 20 26 / 0.21),
+    rgb(251 251 254 / 0.21)
+  );
+  --message-bar-close-button-focus-bg-color:light-dark(
+    rgb(21 20 26 / 0.07),
+    rgb(251 251 254 / 0.07)
+  );
 
   @media screen and (forced-colors: active){
     --message-bar-close-button-color:ButtonText;
@@ -127,37 +130,35 @@
 }
 
 #editorUndoBar{
-  --text-primary-color:#15141a;
+  --text-primary-color:light-dark(#15141a, #fbfbfe);
 
-  --message-bar-icon:url(images/secondaryToolbarButton-documentProperties.svg);
-  --message-bar-icon-color:#0060df;
-  --message-bar-bg-color:#deeafc;
+  --message-bar-icon:url(images/messageBar_info.svg);
+  --message-bar-icon-color:light-dark(#0060df, #73a7f3);
+  --message-bar-bg-color:light-dark(#deeafc, #003070);
   --message-bar-fg-color:var(--text-primary-color);
-  --message-bar-border-color:rgb(0 0 0 / 0.08);
+  --message-bar-border-color:light-dark(
+    rgb(0 0 0 / 0.08),
+    rgb(255 255 255 / 0.08)
+  );
 
-  --undo-button-bg-color:rgb(21 20 26 / 0.07);
-  --undo-button-bg-color-hover:rgb(21 20 26 / 0.14);
-  --undo-button-bg-color-active:rgb(21 20 26 / 0.21);
+  --undo-button-bg-color:light-dark(
+    rgb(21 20 26 / 0.07),
+    rgb(255 255 255 / 0.08)
+  );
+  --undo-button-bg-color-hover:light-dark(
+    rgb(21 20 26 / 0.14),
+    rgb(255 255 255 / 0.14)
+  );
+  --undo-button-bg-color-active:light-dark(
+    rgb(21 20 26 / 0.21),
+    rgb(255 255 255 / 0.21)
+  );
 
-  --undo-button-border:1px solid #0060df;
+  --undo-button-border:1px solid light-dark(#0060df, #0df);
 
   --undo-button-fg-color:var(--message-bar-fg-color);
   --undo-button-fg-color-hover:var(--undo-button-fg-color);
   --undo-button-fg-color-active:var(--undo-button-fg-color);
-
-  @media (prefers-color-scheme: dark){
-    --text-primary-color:#fbfbfe;
-
-    --message-bar-icon-color:#73a7f3;
-    --message-bar-bg-color:#003070;
-    --message-bar-border-color:rgb(255 255 255 / 0.08);
-
-    --undo-button-bg-color:rgb(255 255 255 / 0.08);
-    --undo-button-bg-color-hover:rgb(255 255 255 / 0.14);
-    --undo-button-bg-color-active:rgb(255 255 255 / 0.21);
-
-    --undo-button-border:1px solid #0df;
-  }
 
   @media screen and (forced-colors: active){
     --text-primary-color:CanvasText;
@@ -224,77 +225,62 @@
 }
 
 .dialog{
-  --dialog-bg-color:white;
-  --dialog-border-color:white;
-  --dialog-shadow:0 2px 14px 0 rgb(58 57 68 / 0.2);
-  --text-primary-color:#15141a;
-  --text-secondary-color:#5b5b66;
+  --dialog-bg-color:light-dark(white, #1c1b22);
+  --dialog-border-color:light-dark(white, #1c1b22);
+  --dialog-shadow:0 2px 14px 0 light-dark(rgb(58 57 68 / 0.2), #15141a);
+  --text-primary-color:light-dark(#15141a, #fbfbfe);
+  --text-secondary-color:light-dark(#5b5b66, #cfcfd8);
   --hover-filter:brightness(0.9);
-  --link-fg-color:#0060df;
-  --link-hover-fg-color:#0250bb;
-  --separator-color:#f0f0f4;
+  --link-fg-color:light-dark(#0060df, #0df);
+  --link-hover-fg-color:light-dark(#0250bb, #80ebff);
+  --separator-color:light-dark(#f0f0f4, #52525e);
 
   --textarea-border-color:#8f8f9d;
-  --textarea-bg-color:white;
+  --textarea-bg-color:light-dark(white, #42414d);
   --textarea-fg-color:var(--text-secondary-color);
 
-  --radio-bg-color:#f0f0f4;
-  --radio-checked-bg-color:#fbfbfe;
+  --radio-bg-color:light-dark(#f0f0f4, #2b2a33);
+  --radio-checked-bg-color:light-dark(#fbfbfe, #15141a);
   --radio-border-color:#8f8f9d;
-  --radio-checked-border-color:#0060df;
+  --radio-checked-border-color:light-dark(#0060df, #0df);
 
-  --button-secondary-bg-color:rgb(21 20 26 / 0.07);
+  --button-secondary-bg-color:light-dark(
+    rgb(21 20 26 / 0.07),
+    rgb(251 251 254 / 0.07)
+  );
   --button-secondary-fg-color:var(--text-primary-color);
   --button-secondary-border-color:var(--button-secondary-bg-color);
-  --button-secondary-active-bg-color:rgb(21 20 26 / 0.21);
+  --button-secondary-active-bg-color:light-dark(
+    rgb(21 20 26 / 0.21),
+    rgb(251 251 254 / 0.21)
+  );
   --button-secondary-active-fg-color:var(--button-secondary-fg-color);
   --button-secondary-active-border-color:var(--button-secondary-bg-color);
-  --button-secondary-hover-bg-color:rgb(21 20 26 / 0.14);
+  --button-secondary-hover-bg-color:light-dark(
+    rgb(21 20 26 / 0.14),
+    rgb(251 251 254 / 0.14)
+  );
   --button-secondary-hover-fg-color:var(--button-secondary-fg-color);
   --button-secondary-hover-border-color:var(--button-secondary-hover-bg-color);
 
-  --button-primary-bg-color:#0060df;
-  --button-primary-fg-color:#fbfbfe;
+  --button-primary-bg-color:light-dark(#0060df, #0df);
+  --button-primary-fg-color:light-dark(#fbfbfe, #15141a);
   --button-primary-border-color:var(--button-primary-bg-color);
-  --button-primary-active-bg-color:#054096;
+  --button-primary-active-bg-color:light-dark(#054096, #aaf2ff);
   --button-primary-active-fg-color:var(--button-primary-fg-color);
   --button-primary-active-border-color:var(--button-primary-active-bg-color);
-  --button-primary-hover-bg-color:#0250bb;
+  --button-primary-hover-bg-color:light-dark(#0250bb, #80ebff);
   --button-primary-hover-fg-color:var(--button-primary-fg-color);
   --button-primary-hover-border-color:var(--button-primary-hover-bg-color);
 
   --button-disabled-bg-color:color-mix(in srgb, currentcolor, transparent 60%);
   --button-disabled-fg-color:var(--button-disabled-bg-color);
 
-  --input-text-bg-color:white;
+  --input-text-bg-color:light-dark(white, #42414d);
   --input-text-fg-color:var(--text-primary-color);
 
   @media (prefers-color-scheme: dark){
-    --dialog-bg-color:#1c1b22;
-    --dialog-border-color:#1c1b22;
-    --dialog-shadow:0 2px 14px 0 #15141a;
-    --text-primary-color:#fbfbfe;
-    --text-secondary-color:#cfcfd8;
     --hover-filter:brightness(1.4);
-    --link-fg-color:#0df;
-    --link-hover-fg-color:#80ebff;
-    --separator-color:#52525e;
-
-    --textarea-bg-color:#42414d;
-
-    --radio-bg-color:#2b2a33;
-    --radio-checked-bg-color:#15141a;
-    --radio-checked-border-color:#0df;
-
-    --button-secondary-bg-color:rgb(251 251 254 / 0.07);
-    --button-secondary-active-bg-color:rgb(251 251 254 / 0.21);
-    --button-secondary-hover-bg-color:rgb(251 251 254 / 0.14);
-    --button-primary-bg-color:#0df;
-    --button-primary-fg-color:#15141a;
-    --button-primary-active-bg-color:#aaf2ff;
-    --button-primary-hover-bg-color:#80ebff;
-
-    --input-text-bg-color:#42414d;
   }
 
   @media screen and (forced-colors: active){
@@ -539,18 +525,14 @@
     }
 
     .messageBar{
-      --message-bar-bg-color:#ffebcd;
-      --message-bar-fg-color:#15141a;
-      --message-bar-border-color:rgb(0 0 0 / 0.08);
+      --message-bar-bg-color:light-dark(#ffebcd, #5a3100);
+      --message-bar-fg-color:light-dark(#15141a, #fbfbfe);
+      --message-bar-border-color:light-dark(
+        rgb(0 0 0 / 0.08),
+        rgb(255 255 255 / 0.08)
+      );
       --message-bar-icon:url(images/messageBar_warning.svg);
-      --message-bar-icon-color:#cd411e;
-
-      @media (prefers-color-scheme: dark){
-        --message-bar-bg-color:#5a3100;
-        --message-bar-fg-color:#fbfbfe;
-        --message-bar-border-color:rgb(255 255 255 / 0.08);
-        --message-bar-icon-color:#e49c49;
-      }
+      --message-bar-icon-color:light-dark(#cd411e, #e49c49);
 
       @media screen and (forced-colors: active){
         --message-bar-bg-color:HighlightText;
@@ -696,6 +678,8 @@
 }
 
 .annotationLayer{
+  color-scheme:only light;
+
   --annotation-unfocused-field-background:url("data:image/svg+xml;charset=UTF-8,<svg width='1px' height='1px' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' style='fill:rgba(0, 54, 255, 0.13);'/></svg>");
   --input-focus-border-color:Highlight;
   --input-focus-outline:1px solid Canvas;
@@ -981,6 +965,7 @@
 
   .popup{
     background-color:rgb(255 255 153);
+    color:black;
     box-shadow:0 calc(2px * var(--total-scale-factor)) calc(5px * var(--total-scale-factor)) rgb(136 136 136);
     border-radius:calc(2px * var(--total-scale-factor));
     outline:1.5px solid rgb(255 255 74);
@@ -1079,6 +1064,8 @@
 }
 
 .xfaLayer{
+  color-scheme:only light;
+
   background-color:transparent;
 }
 
@@ -1379,18 +1366,16 @@
 }
 
 :root{
+  color-scheme:light dark;
+
   --viewer-container-height:0;
   --pdfViewer-padding-bottom:0;
   --page-margin:1px auto -8px;
   --page-border:9px solid transparent;
   --spreadHorizontalWrapped-margin-LR:-3.5px;
   --loading-icon-delay:400ms;
-  --focus-ring-color:#0060df;
+  --focus-ring-color:light-dark(#0060df, #0df);
   --focus-ring-outline:2px solid var(--focus-ring-color);
-
-  @media (prefers-color-scheme: dark){
-    --focus-ring-color:#0df;
-  }
 
   @media screen and (forced-colors: active){
     --pdfViewer-padding-bottom:9px;
@@ -1557,21 +1542,24 @@
   --toolbar-icon-opacity:1;
   --doorhanger-icon-opacity:0.9;
 
-  --main-color:rgb(12 12 13);
-  --body-bg-color:rgb(212 212 215);
-  --scrollbar-color:auto;
-  --scrollbar-bg-color:auto;
-  --field-color:rgb(6 6 6);
-  --field-bg-color:rgb(255 255 255);
-  --field-border-color:rgb(187 187 188);
-  --doorhanger-bg-color:rgb(255 255 255);
+  --main-color:light-dark(rgb(12 12 13), rgb(249 249 250));
+  --body-bg-color:light-dark(rgb(212 212 215), rgb(42 42 46));
+  --scrollbar-color:light-dark(auto, rgb(121 121 123));
+  --scrollbar-bg-color:light-dark(auto, rgb(35 35 39));
+  --field-color:light-dark(rgb(6 6 6), rgb(250 250 250));
+  --field-bg-color:light-dark(rgb(255 255 255), rgb(64 64 68));
+  --field-border-color:light-dark(rgb(187 187 188), rgb(115 115 115));
+  --doorhanger-bg-color:light-dark(rgb(255 255 255), rgb(74 74 79));
   --dialog-button-border:none;
-  --dialog-button-bg-color:rgb(12 12 13 / 0.1);
-  --dialog-button-hover-bg-color:rgb(12 12 13 / 0.3);
+  --dialog-button-bg-color:light-dark(rgb(12 12 13 / 0.1), rgb(92 92 97));
+  --dialog-button-hover-bg-color:light-dark(
+    rgb(12 12 13 / 0.3),
+    rgb(115 115 115)
+  );
 
-  --toolbar-bg-color:#f9f9fb;
-  --toolbar-divider-color:#e0e0e6;
-  --toolbar-fg-color:#15141a;
+  --toolbar-bg-color:light-dark(#f9f9fb, #2b2a33);
+  --toolbar-divider-color:light-dark(#e0e0e6, #5b5b66);
+  --toolbar-fg-color:light-dark(#15141a, #fbfbfe);
   --toolbar-height:48px;
   --toolbar-border-width:1px;
 
@@ -1581,42 +1569,6 @@
 :root:dir(rtl){
   --dir-factor:-1;
 }
-
-@media (prefers-color-scheme: dark){
-  :root:where(:not(.is-light)){
-    --main-color:rgb(249 249 250);
-    --body-bg-color:rgb(42 42 46);
-    --scrollbar-color:rgb(121 121 123);
-    --scrollbar-bg-color:rgb(35 35 39);
-    --field-color:rgb(250 250 250);
-    --field-bg-color:rgb(64 64 68);
-    --field-border-color:rgb(115 115 115);
-    --doorhanger-bg-color:rgb(74 74 79);
-    --dialog-button-bg-color:rgb(92 92 97);
-    --dialog-button-hover-bg-color:rgb(115 115 115);
-
-    --toolbar-bg-color:#2b2a33;
-    --toolbar-divider-color:#5b5b66;
-    --toolbar-fg-color:#fbfbfe;
-  }
-}
-
-:root:where(.is-dark){
-    --main-color:rgb(249 249 250);
-    --body-bg-color:rgb(42 42 46);
-    --scrollbar-color:rgb(121 121 123);
-    --scrollbar-bg-color:rgb(35 35 39);
-    --field-color:rgb(250 250 250);
-    --field-bg-color:rgb(64 64 68);
-    --field-border-color:rgb(115 115 115);
-    --doorhanger-bg-color:rgb(74 74 79);
-    --dialog-button-bg-color:rgb(92 92 97);
-    --dialog-button-hover-bg-color:rgb(115 115 115);
-
-    --toolbar-bg-color:#2b2a33;
-    --toolbar-divider-color:#5b5b66;
-    --toolbar-fg-color:#fbfbfe;
-  }
 
 @media screen and (forced-colors: active){
   :root{

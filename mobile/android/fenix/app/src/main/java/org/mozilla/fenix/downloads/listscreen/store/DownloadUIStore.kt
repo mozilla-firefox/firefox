@@ -35,10 +35,14 @@ private fun downloadStateReducer(
 ): DownloadUIState {
     return when (action) {
         is DownloadUIAction.AddItemForRemoval ->
-            state.copy(mode = Mode.Editing(state.mode.selectedItems + action.item))
+            state.copy(
+                mode = Mode.Editing(state.mode.selectedItems + action.item),
+            )
 
         is DownloadUIAction.AddAllItemsForRemoval -> {
-            state.copy(mode = Mode.Editing(state.itemsNotPendingDeletion.toSet()))
+            state.copy(
+                mode = Mode.Editing(state.itemsMatchingFilters.toSet()),
+            )
         }
 
         is DownloadUIAction.RemoveItemForRemoval -> {
@@ -72,9 +76,17 @@ private fun downloadStateReducer(
         is DownloadUIAction.FileItemDeletedSuccessfully -> state
 
         is DownloadUIAction.SearchQueryEntered -> state.copy(searchQuery = action.searchQuery)
+        is DownloadUIAction.UpdateDeleteDialogVisibility -> state.copy(isDeleteDialogVisible = action.visibility)
 
         DownloadUIAction.Init -> state
         is DownloadUIAction.ShareUrlClicked -> state
         is DownloadUIAction.ShareFileClicked -> state
+
+        is DownloadUIAction.SearchBarDismissRequest -> state.copy(
+            isSearchFieldRequested = false,
+            searchQuery = "",
+        )
+
+        is DownloadUIAction.SearchBarVisibilityRequest -> state.copy(isSearchFieldRequested = true)
     }
 }

@@ -82,6 +82,12 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=1733509
   <div id="t14" class="target scaled" hidden>
     <iframe id="t14iframe"></iframe>
   </div>
+  <div id="t15" class="target" onmousedown="x=1" style="padding: 50px" hidden>
+    <div id="t15_touchListener" ontouchend="x=1" style="width: 50px; height: 50px; background: lightcyan;"></div>
+  </div>
+  <div id="t16" class="target" ontouchend="x=1" style="padding: 50px" hidden>
+    <div id="t16_mouseListener" onmousedown="x=1" style="width: 50px; height: 50px; background: lightcyan;"></div>
+  </div>
 </div>
 <pre id="test">
 <script type="application/javascript">
@@ -393,19 +399,47 @@ function test3() {
 }
 
 function testTouchable() {
-  // Element "t" has a mousedown listener but no touch listener. So the touches
-  // that land immediately outside "t" should not hit "t"; only the touches
-  // directly aimed at "t" should hit it.
+  const kClickableIsTouchableForSingleTap =
+    SpecialPowers.getBoolPref("ui.touch.radius.single_touch.treat_clickable_as_touchable");
+  // Element "t" has a mousedown listener but no touch listener.  However, the
+  // touch target will be captured implicitly if nobody sets pointer capture
+  // explicitly.  Additionally, the fallback click event target will be the
+  // implicitly capture element.  Therefore, the touches that land immediately
+  // outside "t" should hit "t".
   setShowing("t", true);
   var rect = document.getElementById("t").getBoundingClientRect();
   testTouch("t", rect.width - 1, 10, "t", "touch inside t right edge");
-  testTouch("t", rect.width + 1, 10, "body", "touch outside t right edge");
+  testTouch(
+    "t",
+    rect.width + 1,
+    10,
+    kClickableIsTouchableForSingleTap ? "t" : "body",
+    "touch outside t right edge"
+  );
   testTouch("t", 10, rect.height - 1, "t", "touch inside t bottom edge");
-  testTouch("t", 10, rect.height + 1, "body", "touch outside t bottom edge");
+  testTouch(
+    "t",
+    10,
+    rect.height + 1,
+    kClickableIsTouchableForSingleTap ? "t" : "body",
+    "touch outside t bottom edge"
+  );
   testTouch("t", 1, 10, "t", "touch inside t left edge");
-  testTouch("t", -1, 10, "body", "touch outside t left edge");
+  testTouch(
+    "t",
+    -1,
+    10,
+    kClickableIsTouchableForSingleTap ? "t" : "body",
+    "touch outside t left edge"
+  );
   testTouch("t", 10, 1, "t", "touch inside t top edge");
-  testTouch("t", 10, -1, "body", "touch outside t top edge");
+  testTouch(
+    "t",
+    10,
+    -1,
+    kClickableIsTouchableForSingleTap ? "t" : "body",
+    "touch outside t top edge"
+  );
   setShowing("t", false);
 
   // Element "t9" has a touchend listener, so touches within the radius
@@ -422,6 +456,40 @@ function testTouchable() {
   testTouch("t13", 10, 50 + (2*mm), "t13_notouchlistener", "touch outside t13_touchlistener bottom edge");
   testTouch("t13", 10, 50 - (2*mm), "t13_touchlistener", "touch inside t13_touchlistener bottom edge");
   setShowing("t13", false);
+
+  // Element "t15" is clickable.  When both inside/outside its touchable child
+  // should get retargeted to the touchable child since the touch event listener
+  // is rawer input event listener than mouse event listener.
+  // XXX It might be better to use the parent.  If you know some web-compat
+  // issues, feel free to change these expectations.
+  setShowing("t15", true);
+  rect = document.getElementById("t15_touchListener").getBoundingClientRect();
+  testTouch("t15_touchListener", rect.width - 1, 10, "t15_touchListener", "touch inside t15_touchListener right edge");
+  testTouch("t15_touchListener", rect.width + 1, 10, "t15_touchListener", "touch outside t15_touchListener right edge");
+  testTouch("t15_touchListener", 10, rect.height - 1, "t15_touchListener", "touch inside t15_touchListener bottom edge");
+  testTouch("t15_touchListener", 10, rect.height + 1, "t15_touchListener", "touch outside t15_touchListener bottom edge");
+  testTouch("t15_touchListener", 1, 10, "t15_touchListener", "touch inside t15_touchListener left edge");
+  testTouch("t15_touchListener", -1, 10, "t15_touchListener", "touch outside t15_touchListener left edge");
+  testTouch("t15_touchListener", 10, 1, "t15_touchListener", "touch inside t15_touchListener top edge");
+  testTouch("t15_touchListener", 10, -1, "t15_touchListener", "touch outside t15_touchListener top edge");
+  setShowing("t15", false);
+
+  // Element "t16" is touchable.  When inside its clickable child should get
+  // retargeted to the parent touchable to prefer the touch event listener since
+  // it's a rawer input event listener.
+  // XXX It might be better to use the parent.  If you know some web-compat
+  // issues, feel free to change these expectations.
+  setShowing("t16", true);
+  rect = document.getElementById("t16_mouseListener").getBoundingClientRect();
+  testTouch("t16", rect.width - 1, 10, "t16", "touch inside t16 right edge");
+  testTouch("t16", rect.width + 1, 10, "t16", "touch outside t16 right edge");
+  testTouch("t16", 10, rect.height - 1, "t16", "touch inside t16 bottom edge");
+  testTouch("t16", 10, rect.height + 1, "t16", "touch outside t16 bottom edge");
+  testTouch("t16", 1, 10, "t16", "touch inside t16 left edge");
+  testTouch("t16", -1, 10, "t16", "touch outside t16 left edge");
+  testTouch("t16", 10, 1, "t16", "touch inside t16 top edge");
+  testTouch("t16", 10, -1, "t16", "touch outside t16 top edge");
+  setShowing("t16", false);
 
   test4();
 }

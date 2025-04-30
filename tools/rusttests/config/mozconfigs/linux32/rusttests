@@ -1,2 +1,5 @@
 . "$topsrcdir/build/unix/mozconfig.linux32"
 . "$topsrcdir/tools/rusttests/config/mozconfigs/common"
+
+# Not active for that configuration
+unset MOZ_NO_PIE_COMPAT

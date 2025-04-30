@@ -826,8 +826,6 @@
   <string name="preferences_override_account_server">Custom Mozilla account server</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">Custom Sync server</string>
-  <!-- Toast shown after updating the Mozilla account/Sync server override preferences -->
-  <string name="toast_override_account_sync_server_done">Mozilla account/Sync server modified. Quitting the application to apply changes…</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Account</string>
   <!-- Preference for changing where the AddressBar is positioned -->
@@ -2204,7 +2202,7 @@
   -->
   <string name="preference_etp_exceptions_icon_description">Enhanced tracking protection exception preference icon</string>
   <!--
-    DNS Over HTTPS (DoH)
+    DNS over HTTPS (DoH)
 
     Preference title for DNS over HTTPS settings
   -->

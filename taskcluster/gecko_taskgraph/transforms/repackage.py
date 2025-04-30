@@ -312,6 +312,29 @@ PACKAGE_FORMATS = {
         },
         "output": "target.langpack.deb",
     },
+    "rpm": {
+        "args": [
+            "rpm",
+            "--arch",
+            "{architecture}",
+            "--templates",
+            "{rpm-templates}",
+            "--version",
+            "{version_display}",
+            "--build-number",
+            "{build_number}",
+            "--release-product",
+            "{release_product}",
+            "--release-type",
+            "{release_type}",
+            "--input-xpi-dir",
+            "{fetch-dir}",
+        ],
+        "inputs": {
+            "input": "target{archive_format}",
+        },
+        "output": "target.rpm",
+    },
     "desktop-file": {
         "args": [
             "desktop-file",
@@ -357,6 +380,7 @@ MOZHARNESS_EXPANSIONS = [
     "fetch-dir",
     "stub-installer-tag",
     "deb-templates",
+    "rpm-templates",
     "deb-l10n-templates",
     "sfx-stub",
     "wsx-stub",
@@ -528,15 +552,16 @@ def make_job_description(config, jobs):
                     }
                 )
 
-        elif config.kind == "repackage-deb":
-            attributes["repackage_type"] = "repackage-deb"
+        elif config.kind in ("repackage-deb", "repackage-rpm"):
+            attributes["repackage_type"] = config.kind
             description = (
                 "Repackaging the '{build_platform}/{build_type}' "
-                "{version} build into a '.deb' package"
+                "{version} build into a '.{package}' package"
             ).format(
                 build_platform=attributes.get("build_platform"),
                 build_type=attributes.get("build_type"),
                 version=config.params["version"],
+                package=config.kind.split("-")[1],
             )
 
         elif config.kind == "repackage-flatpak":

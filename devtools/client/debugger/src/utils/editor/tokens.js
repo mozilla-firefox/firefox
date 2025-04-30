@@ -34,6 +34,7 @@ function _isInvalidTarget(target) {
     "tok-string",
     "tok-punctuation",
     "tok-number",
+    "tok-bool",
     "tok-operator",
     // also exclude editor element (defined in Editor component)
     "editor-mount",
@@ -41,6 +42,14 @@ function _isInvalidTarget(target) {
   if (
     target.className === "" ||
     INVALID_TARGET_CLASSES.some(cls => target.classList.contains(cls))
+  ) {
+    return true;
+  }
+
+  // `undefined` isn't flagged with any useful class name to ignore it
+  if (
+    target.classList.contains("tok-variableName") &&
+    tokenText == "undefined"
   ) {
     return true;
   }

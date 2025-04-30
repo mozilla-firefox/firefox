@@ -94,7 +94,6 @@ from struct import pack
 
 import pyct
 import pykey
-import six
 from pyasn1.codec.der import decoder, encoder
 from pyasn1.type import constraint, tag, univ, useful
 from pyasn1_modules import rfc2459
@@ -293,9 +292,7 @@ def stringToDN(string, tag=None):
             # The value may have things like '\0' (i.e. a slash followed by
             # the number zero) that have to be decoded into the resulting
             # '\x00' (i.e. a byte with value zero).
-            nameComponent[encoding] = six.ensure_binary(value).decode(
-                encoding="unicode_escape"
-            )
+            nameComponent[encoding] = value.encode().decode(encoding="unicode_escape")
         ava["value"] = nameComponent
         rdn = rfc2459.RelativeDistinguishedName()
         rdn.setComponentByPosition(0, ava)
@@ -410,22 +407,22 @@ class Certificate:
         the build system on OS X (see the comment above main, later in
         this file)."""
         hasher = hashlib.sha256()
-        hasher.update(six.ensure_binary(str(self.versionValue)))
-        hasher.update(six.ensure_binary(self.signature))
-        hasher.update(six.ensure_binary(self.issuer))
-        hasher.update(six.ensure_binary(str(self.notBefore)))
-        hasher.update(six.ensure_binary(str(self.notAfter)))
-        hasher.update(six.ensure_binary(self.subject))
+        hasher.update(str(self.versionValue).encode())
+        hasher.update(self.signature.encode())
+        hasher.update(self.issuer.encode())
+        hasher.update(str(self.notBefore).encode())
+        hasher.update(str(self.notAfter).encode())
+        hasher.update(self.subject.encode())
         if self.extensionLines:
             for extensionLine in self.extensionLines:
-                hasher.update(six.ensure_binary(extensionLine))
+                hasher.update(extensionLine.encode())
         if self.savedEmbeddedSCTListData:
             # savedEmbeddedSCTListData is
             # (embeddedSCTListSpecification, critical), where |critical|
             # may be None
-            hasher.update(six.ensure_binary(self.savedEmbeddedSCTListData[0]))
+            hasher.update(self.savedEmbeddedSCTListData[0].encode())
             if self.savedEmbeddedSCTListData[1]:
-                hasher.update(six.ensure_binary(self.savedEmbeddedSCTListData[1]))
+                hasher.update(self.savedEmbeddedSCTListData[1].encode())
         serialBytes = [c for c in hasher.digest()[:20]]
         # Ensure that the most significant bit isn't set (which would
         # indicate a negative number, which isn't valid for serial
@@ -609,9 +606,7 @@ class Certificate:
                 # The string may have things like '\0' (i.e. a slash
                 # followed by the number zero) that have to be decoded into
                 # the resulting '\x00' (i.e. a byte with value zero).
-                generalName["dNSName"] = six.ensure_binary(name).decode(
-                    "unicode_escape"
-                )
+                generalName["dNSName"] = name.encode().decode("unicode_escape")
             subjectAlternativeName.setComponentByPosition(count, generalName)
         self.addExtension(
             rfc2459.id_ce_subjectAltName, subjectAlternativeName, critical
@@ -782,7 +777,7 @@ class Certificate:
     def toPEM(self):
         output = "-----BEGIN CERTIFICATE-----"
         der = self.toDER()
-        b64 = six.ensure_text(base64.b64encode(der))
+        b64 = base64.b64encode(der).decode()
         while b64:
             output += "\n" + b64[:64]
             b64 = b64[64:]

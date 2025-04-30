@@ -23,6 +23,7 @@ https_first_disabled = true
 ["browser_aria_controls_flowto.js"]
 
 ["browser_aria_current.js"]
+skip-if = ["os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt"] # Bug 1802555
 
 ["browser_aria_expanded.js"]
 

@@ -667,8 +667,9 @@ add_task(async function test_onAction_SAVE_TO_POCKET_not_logged_in() {
   let sandbox = sinon.createSandbox();
   sandbox.stub(pktApi, "isUserLoggedIn").returns(false);
   sandbox.stub(NimbusFeatures.pocketNewtab, "getVariable").returns(true);
-  sandbox.stub(ExperimentAPI, "getExperiment").returns({
+  sandbox.stub(ExperimentAPI, "getExperimentMetaData").returns({
     slug: "slug",
+    active: true,
     branch: { slug: "branch-slug" },
   });
   Services.prefs.setStringPref(POCKET_SITE_PREF, "getpocket.com");

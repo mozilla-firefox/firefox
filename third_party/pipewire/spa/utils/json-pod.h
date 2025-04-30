@@ -1,26 +1,6 @@
-/* Simple Plugin API
- *
- * Copyright © 2022 Wim Taymans
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice (including the next
- * paragraph) shall be included in all copies or substantial portions of the
- * Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/* Simple Plugin API */
+/* SPDX-FileCopyrightText: Copyright © 2022 Wim Taymans */
+/* SPDX-License-Identifier: MIT */
 
 #ifndef SPA_UTILS_JSON_POD_H
 #define SPA_UTILS_JSON_POD_H
@@ -35,6 +15,14 @@ extern "C" {
 #include <spa/pod/builder.h>
 #include <spa/debug/types.h>
 
+#ifndef SPA_API_JSON_POD
+ #ifdef SPA_API_IMPL
+  #define SPA_API_JSON_POD SPA_API_IMPL
+ #else
+  #define SPA_API_JSON_POD static inline
+ #endif
+#endif
+
 /** \defgroup spa_json_pod JSON to POD
  * JSON to POD conversion
  */
@@ -44,7 +32,7 @@ extern "C" {
  * \{
  */
 
-static inline int spa_json_to_pod_part(struct spa_pod_builder *b, uint32_t flags, uint32_t id,
+SPA_API_JSON_POD int spa_json_to_pod_part(struct spa_pod_builder *b, uint32_t flags, uint32_t id,
 		const struct spa_type_info *info, struct spa_json *iter, const char *value, int len)
 {
 	const struct spa_type_info *ti;
@@ -62,10 +50,8 @@ static inline int spa_json_to_pod_part(struct spa_pod_builder *b, uint32_t flags
 		spa_pod_builder_push_object(b, &f[0], info->parent, id);
 
 		spa_json_enter(iter, &it[0]);
-		while (spa_json_get_string(&it[0], key, sizeof(key)) > 0) {
+		while ((l = spa_json_object_next(&it[0], key, sizeof(key), &v)) > 0) {
 			const struct spa_type_info *pi;
-			if ((l = spa_json_next(&it[0], &v)) <= 0)
-				break;
 			if ((pi = spa_debug_type_find_short(ti->values, key)) != NULL)
 				type = pi->type;
 			else if (!spa_atou32(key, &type, 0))
@@ -74,6 +60,8 @@ static inline int spa_json_to_pod_part(struct spa_pod_builder *b, uint32_t flags
 			if ((res = spa_json_to_pod_part(b, flags, id, pi, &it[0], v, l)) < 0)
 				return res;
 		}
+		if (l < 0)
+			return l;
 		spa_pod_builder_pop(b, &f[0]);
 	}
 	else if (spa_json_is_array(value, len)) {
@@ -87,6 +75,8 @@ static inline int spa_json_to_pod_part(struct spa_pod_builder *b, uint32_t flags
 		while ((l = spa_json_next(&it[0], &v)) > 0)
 			if ((res = spa_json_to_pod_part(b, flags, id, info, &it[0], v, l)) < 0)
 				return res;
+		if (l < 0)
+			return l;
 		spa_pod_builder_pop(b, &f[0]);
 	}
 	else if (spa_json_is_float(value, len)) {
@@ -97,17 +87,17 @@ static inline int spa_json_to_pod_part(struct spa_pod_builder *b, uint32_t flags
 			spa_pod_builder_bool(b, val >= 0.5f);
 			break;
 		case SPA_TYPE_Id:
-			spa_pod_builder_id(b, val);
+			spa_pod_builder_id(b, (uint32_t)val);
 			break;
 		case SPA_TYPE_Int:
-			spa_pod_builder_int(b, val);
+			spa_pod_builder_int(b, (int32_t)val);
 			break;
 		case SPA_TYPE_Long:
-			spa_pod_builder_long(b, val);
+			spa_pod_builder_long(b, (int64_t)val);
 			break;
 		case SPA_TYPE_Struct:
 			if (spa_json_is_int(value, len))
-				spa_pod_builder_int(b, val);
+				spa_pod_builder_int(b, (int32_t)val);
 			else
 				spa_pod_builder_float(b, val);
 			break;
@@ -153,17 +143,32 @@ static inline int spa_json_to_pod_part(struct spa_pod_builder *b, uint32_t flags
 	return 0;
 }
 
-static inline int spa_json_to_pod(struct spa_pod_builder *b, uint32_t flags,
-		const struct spa_type_info *info, const char *value, int len)
+SPA_API_JSON_POD int spa_json_to_pod_checked(struct spa_pod_builder *b, uint32_t flags,
+		const struct spa_type_info *info, const char *value, int len,
+		struct spa_error_location *loc)
 {
 	struct spa_json iter;
 	const char *val;
+	int res;
 
-	spa_json_init(&iter, value, len);
-	if ((len = spa_json_next(&iter, &val)) <= 0)
-		return -EINVAL;
+	if (loc)
+		spa_zero(*loc);
 
-	return spa_json_to_pod_part(b, flags, info->type, info, &iter, val, len);
+	if ((res = spa_json_begin(&iter, value, len, &val)) <= 0)
+		goto error;
+
+	res = spa_json_to_pod_part(b, flags, info->type, info, &iter, val, len);
+
+error:
+	if (res < 0 && loc)
+		spa_json_get_error(&iter, value, loc);
+	return res;
+}
+
+SPA_API_JSON_POD int spa_json_to_pod(struct spa_pod_builder *b, uint32_t flags,
+		const struct spa_type_info *info, const char *value, int len)
+{
+	return spa_json_to_pod_checked(b, flags, info, value, len, NULL);
 }
 
 /**

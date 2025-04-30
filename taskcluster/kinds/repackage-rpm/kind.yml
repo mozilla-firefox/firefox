@@ -1,0 +1,109 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - gecko_taskgraph.transforms.name_sanity
+    - gecko_taskgraph.transforms.repackage
+    - gecko_taskgraph.transforms.repackage_routes
+    - gecko_taskgraph.transforms.repackage_rpm
+    - gecko_taskgraph.transforms.job
+    - gecko_taskgraph.transforms.task
+
+kind-dependencies:
+    - build-signing
+    - shippable-l10n-signing
+    - toolchain
+
+only-for-build-platforms:
+    - linux-shippable/opt
+    - linux-devedition/opt
+     - linux64-shippable/opt
+     - linux64-devedition/opt
+    - linux64-aarch64-shippable/opt
+    - linux64-aarch64-devedition/opt
+    - linux/opt
+     - linux64/opt
+    - linux64-aarch64/opt
+
+task-defaults:
+    attributes:
+        primary-kind-dependency: build-signing
+    shipping-phase: promote
+    worker-type: b-linux-gcp
+    worker:
+        docker-image:
+            in-tree: debian12-rpm-repackage
+    mozharness:
+        run-as-root: true
+        use-caches: false
+        config:
+            by-build-platform:
+                linux\b.*:
+                    - repackage/base.py
+                    - repackage/linux32_signed.py
+                linux64\b.*:
+                    - repackage/base.py
+                    - repackage/linux64_signed.py
+    treeherder:
+        symbol: Rpk-rpm
+    package-formats:
+        by-build-platform:
+            linux.*: [rpm]
+
+tasks:
+    repackage-rpm-linux-shippable:
+        dependencies:
+            build-signing: build-signing-linux-shippable/opt
+            # dependencies gets filled out in gecko_taskgraph.transforms.repackage_rpm
+        attributes:
+            build_platform: linux-shippable
+        treeherder:
+            platform: linux-shippable/opt
+
+    repackage-rpm-linux64-shippable:
+        dependencies:
+            build-signing: build-signing-linux64-shippable/opt
+            # dependencies gets filled out in gecko_taskgraph.transforms.repackage_rpm
+        attributes:
+            build_platform: linux64-shippable
+        treeherder:
+            platform: linux64-shippable/opt
+
+    repackage-rpm-linux64-aarch64-shippable:
+        dependencies:
+            build-signing: build-signing-linux64-aarch64-shippable/opt
+            # dependencies gets filled out in gecko_taskgraph.transforms.repackage_rpm
+        attributes:
+            build_platform: linux64-aarch64-shippable
+        treeherder:
+            platform: linux64-aarch64-shippable/opt
+
+    repackage-rpm-linux-devedition:
+        dependencies:
+            build-signing: build-signing-linux-devedition/opt
+            # dependencies gets filled out in gecko_taskgraph.transforms.repackage_rpm
+        attributes:
+            build_platform: linux-devedition
+        treeherder:
+            platform: linux-devedition/opt
+
+    repackage-rpm-linux64-devedition:
+        dependencies:
+            build-signing: build-signing-linux64-devedition/opt
+            # dependencies gets filled out in gecko_taskgraph.transforms.repackage_rpm
+        attributes:
+            build_platform: linux64-devedition
+        treeherder:
+            platform: linux64-devedition/opt
+
+    repackage-rpm-linux64-aarch64-devedition:
+        dependencies:
+            build-signing: build-signing-linux64-aarch64-devedition/opt
+            # dependencies gets filled out in gecko_taskgraph.transforms.repackage_rpm
+        attributes:
+            build_platform: linux64-aarch64-devedition
+        treeherder:
+            platform: linux64-aarch64-devedition/opt

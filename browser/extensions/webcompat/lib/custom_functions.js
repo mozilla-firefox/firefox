@@ -35,9 +35,85 @@ const replaceStringInRequest = (
   };
 };
 
+const interventionListeners = new Map();
+
+function rememberListener(intervention, key, listener) {
+  if (!interventionListeners.has(intervention)) {
+    interventionListeners.set(intervention, new Map());
+  }
+  const map = interventionListeners.get(intervention);
+  if (map.has(key)) {
+    throw new Error(`multiple custom listeners have the same key ${key}`);
+  }
+  map.set(key, listener);
+}
+
+function forgetListener(intervention, key) {
+  const map = interventionListeners.get(intervention);
+  if (!map) {
+    return undefined;
+  }
+  const listener = map.get(key);
+  map.delete(key);
+  return listener;
+}
+
 var CUSTOM_FUNCTIONS = {
+  alter_response_headers: {
+    details: ["headers", "replacement"],
+    optionalDetails: ["fallback", "replace", "types", "urls"],
+    getKey(config) {
+      return `alter_headers:${JSON.stringify(config)}`;
+    },
+    enable(config, intervention) {
+      let { fallback, headers, replace, replacement, types, urls } = config;
+      if (!urls) {
+        urls = Object.values(intervention.bugs)
+          .map(bug => bug.matches)
+          .flat()
+          .filter(v => v !== undefined);
+      }
+      const regex =
+        replace === null ? null : new RegExp(replace ?? "^.*$", "gi");
+      const listener = evt => {
+        let found = false;
+        const responseHeaders = [];
+        for (const header of evt.responseHeaders) {
+          if (headers.includes(header.name.toLowerCase())) {
+            if (regex !== null) {
+              found = true;
+              const value = header.value.replaceAll(regex, replacement);
+              responseHeaders.push({ name: header.name, value });
+            }
+          } else {
+            responseHeaders.push(header);
+          }
+        }
+        if (!found && (replace === undefined || typeof fallback === "string")) {
+          responseHeaders.push({
+            name: headers[0],
+            value: fallback ?? replacement,
+          });
+        }
+        return { responseHeaders };
+      };
+      browser.webRequest.onHeadersReceived.addListener(
+        listener,
+        { types, urls },
+        ["blocking", "responseHeaders"]
+      );
+      rememberListener(intervention, this.getKey(config), listener);
+    },
+    disable(config, intervention) {
+      const listener = forgetListener(intervention, this.getKey(config));
+      if (listener) {
+        browser.webRequest.onHeadersReceived.removeListener(listener);
+      }
+    },
+  },
   replace_string_in_request: {
-    details: ["find", "replace", "urls", "types"],
+    details: ["find", "replace", "urls"],
+    optionalDetails: ["types"],
     enable(details) {
       const { find, replace, urls, types } = details;
       const listener = (details.listener = ({ requestId }) => {
@@ -57,7 +133,8 @@ var CUSTOM_FUNCTIONS = {
     },
   },
   run_script_before_request: {
-    details: ["message", "urls", "script", "types"],
+    details: ["message", "urls", "script"],
+    optionalDetails: ["types"],
     enable(details, intervention) {
       const { bug } = intervention;
       const { message, script, types, urls } = details;

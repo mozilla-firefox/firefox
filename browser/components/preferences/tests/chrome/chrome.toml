@@ -1,0 +1,8 @@
+[DEFAULT]
+support-files = [
+  "../../../../../toolkit/content/tests/widgets/lit-test-helpers.js",
+]
+
+["test_setting_control.html"]
+
+["test_setting_group.html"]

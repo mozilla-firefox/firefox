@@ -11,11 +11,15 @@ support-files = [
 
 ["browser_ml_cluster_algos.js"]
 
+["browser_ml_embeddings_generator.js"]
+
 ["browser_ml_engine.js"]
 
 ["browser_ml_engine_process.js"]
 
 ["browser_ml_nlp_utils.js"]
+
+["browser_ml_opfs.js"]
 
 ["browser_ml_telemetry.js"]
 

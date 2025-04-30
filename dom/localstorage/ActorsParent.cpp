@@ -76,9 +76,8 @@
 #include "mozilla/dom/quota/CheckedUnsafePtr.h"
 #include "mozilla/dom/quota/Client.h"
 #include "mozilla/dom/quota/ClientDirectoryLock.h"
+#include "mozilla/dom/quota/ClientDirectoryLockHandle.h"
 #include "mozilla/dom/quota/ClientImpl.h"
-#include "mozilla/dom/quota/DirectoryLock.h"
-#include "mozilla/dom/quota/DirectoryLockInlines.h"
 #include "mozilla/dom/quota/FirstInitializationAttemptsImpl.h"
 #include "mozilla/dom/quota/HashKeys.h"
 #include "mozilla/dom/quota/OriginScope.h"
@@ -1470,7 +1469,7 @@ class ConnectionThread final {
  */
 class Datastore final
     : public SupportsCheckedUnsafePtr<CheckIf<DiagnosticAssertEnabled>> {
-  RefPtr<ClientDirectoryLock> mDirectoryLock;
+  ClientDirectoryLockHandle mDirectoryLockHandle;
   RefPtr<Connection> mConnection;
   RefPtr<QuotaObject> mQuotaObject;
   nsCOMPtr<nsIRunnable> mCompleteCallback;
@@ -1525,7 +1524,7 @@ class Datastore final
   // Created by PrepareDatastoreOp.
   Datastore(const OriginMetadata& aOriginMetadata, uint32_t aPrivateBrowsingId,
             int64_t aUsage, int64_t aSizeOfKeys, int64_t aSizeOfItems,
-            RefPtr<ClientDirectoryLock>&& aDirectoryLock,
+            ClientDirectoryLockHandle&& aDirectoryLockHandle,
             RefPtr<Connection>&& aConnection,
             RefPtr<QuotaObject>&& aQuotaObject,
             nsTHashMap<nsStringHashKey, LSValue>& aValues,
@@ -1534,7 +1533,7 @@ class Datastore final
   Maybe<ClientDirectoryLock&> MaybeDirectoryLockRef() const {
     AssertIsOnBackgroundThread();
 
-    return ToMaybeRef(mDirectoryLock.get());
+    return ToMaybeRef(mDirectoryLockHandle.get());
   }
 
   const nsCString& Origin() const { return mOriginMetadata.mOrigin; }
@@ -2285,8 +2284,8 @@ class PrepareDatastoreOp
 
   mozilla::glean::TimerId mProcessingTimerId;
   RefPtr<ClientDirectoryLock> mPendingDirectoryLock;
-  RefPtr<ClientDirectoryLock> mDirectoryLock;
-  RefPtr<ClientDirectoryLock> mExtraDirectoryLock;
+  ClientDirectoryLockHandle mDirectoryLockHandle;
+  ClientDirectoryLockHandle mExtraDirectoryLockHandle;
   RefPtr<Connection> mConnection;
   RefPtr<Datastore> mDatastore;
   UniquePtr<ArchivedOriginScope> mArchivedOriginScope;
@@ -2325,11 +2324,11 @@ class PrepareDatastoreOp
   Maybe<ClientDirectoryLock&> MaybeDirectoryLockRef() const {
     AssertIsOnBackgroundThread();
 
-    if (mDirectoryLock) {
-      return SomeRef(*mDirectoryLock);
+    if (mDirectoryLockHandle) {
+      return SomeRef(*mDirectoryLockHandle);
     }
-    if (mExtraDirectoryLock) {
-      return SomeRef(*mExtraDirectoryLock);
+    if (mExtraDirectoryLockHandle) {
+      return SomeRef(*mExtraDirectoryLockHandle);
     }
     return Nothing();
   }
@@ -2413,7 +2412,7 @@ class PrepareDatastoreOp
   // IPDL overrides.
   void ActorDestroy(ActorDestroyReason aWhy) override;
 
-  void DirectoryLockAcquired(ClientDirectoryLock* aLock);
+  void DirectoryLockAcquired(ClientDirectoryLockHandle aLockHandle);
 
   void DirectoryLockFailed();
 };
@@ -4443,12 +4442,12 @@ void ConnectionThread::Shutdown() {
 Datastore::Datastore(const OriginMetadata& aOriginMetadata,
                      uint32_t aPrivateBrowsingId, int64_t aUsage,
                      int64_t aSizeOfKeys, int64_t aSizeOfItems,
-                     RefPtr<ClientDirectoryLock>&& aDirectoryLock,
+                     ClientDirectoryLockHandle&& aDirectoryLockHandle,
                      RefPtr<Connection>&& aConnection,
                      RefPtr<QuotaObject>&& aQuotaObject,
                      nsTHashMap<nsStringHashKey, LSValue>& aValues,
                      nsTArray<LSItemInfo>&& aOrderedItems)
-    : mDirectoryLock(std::move(aDirectoryLock)),
+    : mDirectoryLockHandle(std::move(aDirectoryLockHandle)),
       mConnection(std::move(aConnection)),
       mQuotaObject(std::move(aQuotaObject)),
       mOrderedItems(std::move(aOrderedItems)),
@@ -4477,7 +4476,7 @@ void Datastore::Close() {
   MOZ_ASSERT(!mPrepareDatastoreOps.Count());
   MOZ_ASSERT(!mPreparedDatastores.Count());
   MOZ_ASSERT(!mDatabases.Count());
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
 
   mClosed = true;
 
@@ -4498,7 +4497,9 @@ void Datastore::Close() {
     // There's no connection, so it's safe to release the directory lock and
     // unregister itself from the hashtable.
 
-    DropDirectoryLock(mDirectoryLock);
+    {
+      auto destroyingDirectoryLockHandle = std::move(mDirectoryLockHandle);
+    }
 
     CleanupMetadata();
   }
@@ -4518,7 +4519,7 @@ void Datastore::NoteLivePrepareDatastoreOp(
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(aPrepareDatastoreOp);
   MOZ_ASSERT(!mPrepareDatastoreOps.Contains(aPrepareDatastoreOp));
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(!mClosed);
 
   mPrepareDatastoreOps.Insert(aPrepareDatastoreOp);
@@ -4529,7 +4530,7 @@ void Datastore::NoteFinishedPrepareDatastoreOp(
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(aPrepareDatastoreOp);
   MOZ_ASSERT(mPrepareDatastoreOps.Contains(aPrepareDatastoreOp));
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(!mClosed);
 
   mPrepareDatastoreOps.Remove(aPrepareDatastoreOp);
@@ -4543,7 +4544,7 @@ void Datastore::NoteFinishedPrepareDatastoreOp(
 void Datastore::NoteLivePrivateDatastore() {
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(!mHasLivePrivateDatastore);
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(!mClosed);
 
   mHasLivePrivateDatastore = true;
@@ -4552,7 +4553,7 @@ void Datastore::NoteLivePrivateDatastore() {
 void Datastore::NoteFinishedPrivateDatastore() {
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(mHasLivePrivateDatastore);
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(!mClosed);
 
   mHasLivePrivateDatastore = false;
@@ -4568,7 +4569,7 @@ void Datastore::NoteLivePreparedDatastore(
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(aPreparedDatastore);
   MOZ_ASSERT(!mPreparedDatastores.Contains(aPreparedDatastore));
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(!mClosed);
 
   mPreparedDatastores.Insert(aPreparedDatastore);
@@ -4579,7 +4580,7 @@ void Datastore::NoteFinishedPreparedDatastore(
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(aPreparedDatastore);
   MOZ_ASSERT(mPreparedDatastores.Contains(aPreparedDatastore));
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(!mClosed);
 
   mPreparedDatastores.Remove(aPreparedDatastore);
@@ -4606,7 +4607,7 @@ void Datastore::NoteLiveDatabase(Database* aDatabase) {
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(aDatabase);
   MOZ_ASSERT(!mDatabases.Contains(aDatabase));
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(!mClosed);
 
   mDatabases.Insert(aDatabase);
@@ -4619,7 +4620,7 @@ void Datastore::NoteFinishedDatabase(Database* aDatabase) {
   MOZ_ASSERT(aDatabase);
   MOZ_ASSERT(mDatabases.Contains(aDatabase));
   MOZ_ASSERT(!mActiveDatabases.Contains(aDatabase));
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(!mClosed);
 
   mDatabases.Remove(aDatabase);
@@ -5170,7 +5171,7 @@ void Datastore::Stringify(nsACString& aResult) const {
   AssertIsOnBackgroundThread();
 
   aResult.AppendLiteral("DirectoryLock:");
-  aResult.AppendInt(!!mDirectoryLock);
+  aResult.AppendInt(!!mDirectoryLockHandle);
   aResult.Append(kQuotaGenericDelimiter);
 
   aResult.AppendLiteral("Connection:");
@@ -5247,7 +5248,7 @@ void Datastore::MaybeClose() {
 
 void Datastore::ConnectionClosedCallback() {
   AssertIsOnBackgroundThread();
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(mConnection);
   MOZ_ASSERT(mQuotaObject);
   MOZ_ASSERT(mClosed);
@@ -5274,7 +5275,9 @@ void Datastore::ConnectionClosedCallback() {
   // Now it's safe to release the directory lock and unregister itself from
   // the hashtable.
 
-  DropDirectoryLock(mDirectoryLock);
+  {
+    auto destroyingDirectoryLockHandle = std::move(mDirectoryLockHandle);
+  }
 
   CleanupMetadata();
 
@@ -6633,8 +6636,8 @@ PrepareDatastoreOp::PrepareDatastoreOp(
 }
 
 PrepareDatastoreOp::~PrepareDatastoreOp() {
-  MOZ_DIAGNOSTIC_ASSERT(!mDirectoryLock);
-  MOZ_DIAGNOSTIC_ASSERT(!mExtraDirectoryLock);
+  MOZ_DIAGNOSTIC_ASSERT(mDirectoryLockHandle.IsInert());
+  MOZ_DIAGNOSTIC_ASSERT(mExtraDirectoryLockHandle.IsInert());
   MOZ_ASSERT_IF(MayProceedOnNonOwningThread(),
                 mState == State::Initial || mState == State::Completed);
   MOZ_ASSERT(!mLoadDataOp);
@@ -6793,7 +6796,7 @@ nsresult PrepareDatastoreOp::OpenDirectory() {
   AssertIsOnOwningThread();
   MOZ_ASSERT(mState == State::Nesting);
   MOZ_ASSERT(mNestedState == NestedState::OpenDirectory);
-  MOZ_ASSERT(!mDirectoryLock);
+  MOZ_ASSERT(!mDirectoryLockHandle);
 
   if (NS_WARN_IF(QuotaClient::IsShuttingDownOnBackgroundThread()) ||
       !MayProceed()) {
@@ -6853,12 +6856,12 @@ nsresult PrepareDatastoreOp::OpenDirectory() {
           /* aCreateIfNonExistent */ false, SomeRef(mPendingDirectoryLock))
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
-          [self = RefPtr(this)](
-              const ClientDirectoryLockPromise::ResolveOrRejectValue& aValue) {
+          [self = RefPtr(this)](QuotaManager::ClientDirectoryLockHandlePromise::
+                                    ResolveOrRejectValue&& aValue) {
             self->mPendingDirectoryLock = nullptr;
 
             if (aValue.IsResolve()) {
-              self->DirectoryLockAcquired(aValue.ResolveValue());
+              self->DirectoryLockAcquired(std::move(aValue.ResolveValue()));
             } else {
               self->DirectoryLockFailed();
             }
@@ -6968,7 +6971,7 @@ nsresult PrepareDatastoreOp::BeginDatastorePreparationInternal() {
   if ((mDatastore = GetDatastore(Origin()))) {
     MOZ_ASSERT(!mDatastore->IsClosed());
 
-    mExtraDirectoryLock = std::move(mDirectoryLock);
+    mExtraDirectoryLockHandle = std::move(mDirectoryLockHandle);
 
     mDatastore->NoteLivePrepareDatastoreOp(this);
 
@@ -7542,12 +7545,12 @@ void PrepareDatastoreOp::GetResponse(LSRequestResponse& aResponse) {
       }
     }
 
-    MOZ_ASSERT(mDirectoryLock);
-    MOZ_ASSERT_IF(mDirectoryLock->Invalidated(), mInvalidated);
+    MOZ_ASSERT(mDirectoryLockHandle);
+    MOZ_ASSERT_IF(mDirectoryLockHandle->Invalidated(), mInvalidated);
 
     mDatastore = new Datastore(
         mOriginMetadata, mPrivateBrowsingId, mUsage, mSizeOfKeys, mSizeOfItems,
-        std::move(mDirectoryLock), std::move(mConnection),
+        std::move(mDirectoryLockHandle), std::move(mConnection),
         std::move(quotaObject), mValues, std::move(mOrderedItems));
 
     mDatastore->NoteLivePrepareDatastoreOp(this);
@@ -7628,7 +7631,7 @@ void PrepareDatastoreOp::Cleanup() {
   AssertIsOnOwningThread();
 
   if (mDatastore) {
-    MOZ_ASSERT(!mDirectoryLock);
+    MOZ_ASSERT(!mDirectoryLockHandle);
     MOZ_ASSERT(!mConnection);
 
     if (NS_FAILED(ResultCode())) {
@@ -7663,15 +7666,17 @@ void PrepareDatastoreOp::Cleanup() {
 
     mDatastore = nullptr;
 
-    SafeDropDirectoryLock(mExtraDirectoryLock);
+    {
+      auto extraDirectoryLockHandle = std::move(mExtraDirectoryLockHandle);
+    }
 
     CleanupMetadata();
   } else if (mConnection) {
     // If we have a connection then the operation must have failed and there
     // must be a directory lock too.
     MOZ_ASSERT(NS_FAILED(ResultCode()));
-    MOZ_ASSERT(mDirectoryLock);
-    MOZ_ASSERT(!mExtraDirectoryLock);
+    MOZ_ASSERT(mDirectoryLockHandle);
+    MOZ_ASSERT(!mExtraDirectoryLockHandle);
 
     // We must close the connection on the connection thread before releasing
     // it on this thread. The directory lock can't be released either.
@@ -7684,14 +7689,16 @@ void PrepareDatastoreOp::Cleanup() {
     // If we don't have a connection, but we do have a directory lock then the
     // operation must have failed or we were preloading a datastore and there
     // was no physical database on disk.
-    MOZ_ASSERT_IF(mDirectoryLock,
+    MOZ_ASSERT_IF(mDirectoryLockHandle,
                   NS_FAILED(ResultCode()) || mDatabaseNotAvailable);
-    MOZ_ASSERT(!mExtraDirectoryLock);
+    MOZ_ASSERT(!mExtraDirectoryLockHandle);
 
     // There's no connection, so it's safe to release the directory lock and
     // unregister itself from the array.
 
-    SafeDropDirectoryLock(mDirectoryLock);
+    {
+      auto destroyingDdirectoryLockHandle = std::move(mDirectoryLockHandle);
+    }
 
     CleanupMetadata();
   }
@@ -7700,12 +7707,14 @@ void PrepareDatastoreOp::Cleanup() {
 void PrepareDatastoreOp::ConnectionClosedCallback() {
   AssertIsOnOwningThread();
   MOZ_ASSERT(NS_FAILED(ResultCode()));
-  MOZ_ASSERT(mDirectoryLock);
+  MOZ_ASSERT(mDirectoryLockHandle);
   MOZ_ASSERT(mConnection);
 
   mConnection = nullptr;
 
-  DropDirectoryLock(mDirectoryLock);
+  {
+    auto destroyingDirectoryLockHandle = std::move(mDirectoryLockHandle);
+  }
 
   CleanupMetadata();
 }
@@ -7747,18 +7756,19 @@ void PrepareDatastoreOp::ActorDestroy(ActorDestroyReason aWhy) {
   }
 }
 
-void PrepareDatastoreOp::DirectoryLockAcquired(ClientDirectoryLock* aLock) {
+void PrepareDatastoreOp::DirectoryLockAcquired(
+    ClientDirectoryLockHandle aLockHandle) {
   AssertIsOnOwningThread();
   MOZ_ASSERT(mState == State::Nesting);
   MOZ_ASSERT(mNestedState == NestedState::DirectoryOpenPending);
-  MOZ_ASSERT(!mDirectoryLock);
+  MOZ_ASSERT(!mDirectoryLockHandle);
 
   mPendingDirectoryLock = nullptr;
 
-  mDirectoryLock = aLock;
+  mDirectoryLockHandle = std::move(aLockHandle);
 
   if (NS_WARN_IF(QuotaClient::IsShuttingDownOnBackgroundThread()) ||
-      !MayProceed() || mDirectoryLock->Invalidated()) {
+      !MayProceed() || mDirectoryLockHandle->Invalidated()) {
     MaybeSetFailureCode(NS_ERROR_ABORT);
 
     FinishNesting();
@@ -7777,7 +7787,7 @@ void PrepareDatastoreOp::DirectoryLockFailed() {
   AssertIsOnOwningThread();
   MOZ_ASSERT(mState == State::Nesting);
   MOZ_ASSERT(mNestedState == NestedState::DirectoryOpenPending);
-  MOZ_ASSERT(!mDirectoryLock);
+  MOZ_ASSERT(!mDirectoryLockHandle);
 
   mPendingDirectoryLock = nullptr;
 

@@ -1,0 +1,81 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+use num_derive::FromPrimitive;
+
+// Enumeration representing all crash annotations
+#[allow(dead_code, non_camel_case_types, clippy::upper_case_acronyms)]
+#[repr(u32)]
+#[derive(Clone, Copy, Debug, FromPrimitive, PartialEq)]
+pub(crate) enum CrashAnnotation {
+${enum}
+}
+
+impl std::fmt::Display for CrashAnnotation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", CRASH_ANNOTATION_STRINGS[*self as usize])
+    }
+}
+
+// Type of each annotation
+#[allow(dead_code)]
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum CrashAnnotationType {
+  String = 0,   // Any type of string, const char*, nsCString, etc...
+  Boolean = 1,  // Stored as a byte
+  U32 = 2,      // C/C++'s uint32_t or Rust's u32
+  U64 = 3,      // C/C++'s uint64_t or Rust's u64
+  USize = 4,    // C/C++'s size_t or Rust's usize
+  Object = 5,   // Not usable via the Rust API
+}
+
+// Type of each annotation
+static CRASH_ANNOTATION_TYPES: &[CrashAnnotationType] = &[
+${types}
+];
+
+// Stringified representation of each annotation. Most of these will just match
+// the corresponding enum values, but for historical reasons some of them are
+// different in string form when stored in the .extra file.
+static CRASH_ANNOTATION_STRINGS: &[&str] = &[
+${names}
+];
+
+// Annotations which should be skipped when they have specific values
+struct CrashAnnotationSkipValue {
+  annotation: CrashAnnotation,
+  value: &'static [u8],
+}
+
+static CRASH_ANNOTATIONS_SKIP_VALUES: &[CrashAnnotationSkipValue] = &[
+${skiplist}
+];
+
+
+/// Returns the type of a crash annotation.
+///
+/// # Arguments
+///
+/// * `annotation` - a crash annotation
+pub(crate) fn type_of_annotation(annotation: CrashAnnotation) -> CrashAnnotationType {
+  CRASH_ANNOTATION_TYPES[annotation as usize]
+}
+
+/// Checks if the annotation should be included. Some annotations are skipped
+/// if their value matches a specific one (like the value 0).
+///
+/// # Arguments
+///
+/// * `annotation` - the crash annotation to be checked
+/// * `value` - the contents of the annotation as a string
+pub(crate) fn should_include_annotation(annotation: CrashAnnotation, value: &[u8]) -> bool {
+    if let Some(skip_value) = CRASH_ANNOTATIONS_SKIP_VALUES
+        .iter()
+        .find(|&a| a.annotation == annotation)
+    {
+        skip_value.value != value
+    } else {
+        true
+    }
+}

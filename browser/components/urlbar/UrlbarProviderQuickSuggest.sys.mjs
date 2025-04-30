@@ -280,7 +280,8 @@ class ProviderQuickSuggest extends UrlbarProvider {
     // supported for results without features. Dismissal is the only one we need
     // to handle here since urlbar handles the others.
     if (details.selType == "dismiss" && result.payload.isBlockable) {
-      lazy.QuickSuggest.blockedSuggestions.add(result.payload.url);
+      // `dismissResult()` is async but there's no need to await it here.
+      lazy.QuickSuggest.dismissResult(result);
       controller.removeResult(result);
     }
   }
@@ -359,6 +360,10 @@ class ProviderQuickSuggest extends UrlbarProvider {
     result.payload.isSponsored = feature
       ? feature.isSuggestionSponsored(suggestion)
       : !!suggestion.is_sponsored;
+    if (suggestion.source == "rust") {
+      // `suggestionObject` is passed back into the Rust component on dismissal.
+      result.payload.suggestionObject = suggestion;
+    }
 
     // Handle icons here so each feature doesn't have to do it, but use `||=` to
     // let them do it if they need to.
@@ -429,6 +434,8 @@ class ProviderQuickSuggest extends UrlbarProvider {
     // Note that Merino uses snake_case keys.
     let payload = {
       url: suggestion.url,
+      originalUrl: suggestion.original_url,
+      dismissalKey: suggestion.dismissal_key,
       isBlockable: true,
       isManageable: true,
     };
@@ -565,9 +572,9 @@ class ProviderQuickSuggest extends UrlbarProvider {
       return false;
     }
 
-    // Discard the result if its URL is blocked.
-    if (await lazy.QuickSuggest.blockedSuggestions.isResultBlocked(result)) {
-      this.logger.debug("Suggestion blocked, not adding suggestion");
+    // Discard the result if it was dismissed.
+    if (await lazy.QuickSuggest.isResultDismissed(result)) {
+      this.logger.debug("Suggestion dismissed, not adding it");
       return false;
     }
 

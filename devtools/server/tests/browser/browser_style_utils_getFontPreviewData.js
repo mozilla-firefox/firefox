@@ -176,5 +176,23 @@ add_task(async function () {
       `40px "Menlo Bold", "Fira Code", "Mono Lisa", monospace, serif`,
       "Expected font style was used in the canvas"
     );
+
+    // Check font-weight value
+    is(
+      getFontPreviewData(`monospace`, content.document, { fontWeight: "200" })
+        .ctx.font,
+      `200 40px monospace, serif`,
+      "Expected font style was used in the canvas"
+    );
+
+    // Check font-style value
+    is(
+      getFontPreviewData(`monospace`, content.document, {
+        fontWeight: "200",
+        fontStyle: "italic",
+      }).ctx.font,
+      `italic 200 40px monospace, serif`,
+      "Expected font style was used in the canvas"
+    );
   });
 });

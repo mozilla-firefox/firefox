@@ -14,7 +14,7 @@ use crate::{
     api::units::*, api::ColorDepth, api::ColorF, api::ExternalImageId, api::ImageRendering, api::YuvRangedColorSpace,
     Compositor, CompositorCapabilities, CompositorSurfaceTransform, NativeSurfaceId, NativeSurfaceInfo, NativeTileId,
     profiler, MappableCompositor, SWGLCompositeSurfaceInfo, WindowVisibility,
-    device::Device,
+    device::Device, ClipRadius,
 };
 
 pub struct SwTile {
@@ -1424,9 +1424,19 @@ impl Compositor for SwCompositor {
         transform: CompositorSurfaceTransform,
         clip_rect: DeviceIntRect,
         filter: ImageRendering,
+        _rounded_clip_rect: DeviceIntRect,
+        _rounded_clip_radii: ClipRadius,
     ) {
         if self.use_native_compositor {
-            self.compositor.add_surface(device, id, transform, clip_rect, filter);
+            self.compositor.add_surface(
+                device,
+                id,
+                transform,
+                clip_rect,
+                filter,
+                _rounded_clip_rect,
+                _rounded_clip_radii,
+            );
         }
 
         if self.composite_thread.is_some() {

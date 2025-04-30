@@ -1282,6 +1282,9 @@ void CanvasRenderingContext2D::OnRemoteCanvasLost() {
         // true.
         self->mAllowContextRestore = self->DispatchEvent(
             u"contextlost"_ns, CanBubble::eNo, Cancelable::eYes);
+        gfxCriticalNote << gfx::hexa(self.get())
+                        << " accel canvas lost, can restore: "
+                        << self->mAllowContextRestore;
       }));
 }
 
@@ -1307,6 +1310,8 @@ void CanvasRenderingContext2D::OnRemoteCanvasRestored() {
           // context's attributes and associating them with context. If this
           // fails, then abort these steps.
           if (!self->EnsureTarget()) {
+            gfxCriticalNote << gfx::hexa(self.get())
+                            << " accel canvas failed to restore";
             self->mIsContextLost = true;
             return;
           }
@@ -1314,6 +1319,7 @@ void CanvasRenderingContext2D::OnRemoteCanvasRestored() {
           // 8. Fire an event named contextrestored at canvas.
           self->DispatchEvent(u"contextrestored"_ns, CanBubble::eNo,
                               Cancelable::eNo);
+          gfxCriticalNote << gfx::hexa(self.get()) << " accel canvas restored";
         }
       }));
 }
@@ -2137,25 +2143,10 @@ UniquePtr<uint8_t[]> CanvasRenderingContext2D::GetImageBuffer(
   mBufferProvider->ReturnSnapshot(snapshot.forget());
 
   if (ret && ShouldResistFingerprinting(RFPTarget::CanvasRandomization)) {
-    bool randomize = true;
-    // Skip randomization if we are doing user characteristics data collection.
-    // During data collection, we'll 1) set the pref to true 2) be in the main
-    // thread and 3) be in chrome code (JS Window Actor).
-    if (StaticPrefs::
-            privacy_resistFingerprinting_randomization_canvas_disable_for_chrome()) {
-      bool isCallerChrome =
-          NS_IsMainThread() && nsContentUtils::IsCallerChrome();
-      if (isCallerChrome) {
-        randomize = false;
-      }
-    }
-    if (randomize) {
-      nsRFPService::RandomizePixels(
-          GetCookieJarSettings(), ret.get(), out_imageSize->width,
-          out_imageSize->height,
-          out_imageSize->width * out_imageSize->height * 4,
-          SurfaceFormat::A8R8G8B8_UINT32);
-    }
+    nsRFPService::RandomizePixels(
+        GetCookieJarSettings(), ret.get(), out_imageSize->width,
+        out_imageSize->height, out_imageSize->width * out_imageSize->height * 4,
+        SurfaceFormat::A8R8G8B8_UINT32);
   }
 
   return ret;
@@ -2928,7 +2919,9 @@ static GeckoFontMetrics GetFontMetricsFromCanvas(void* aContext) {
             0.0f,
             0.0f};
   }
-  auto metrics = fontGroup->GetMetricsForCSSUnits(nsFontMetrics::eHorizontal);
+  auto metrics = fontGroup->GetMetricsForCSSUnits(
+      nsFontMetrics::eHorizontal, StyleQueryFontMetricsFlags::NEEDS_CH |
+                                      StyleQueryFontMetricsFlags::NEEDS_IC);
   return {Length::FromPixels(metrics.xHeight),
           Length::FromPixels(metrics.zeroWidth),
           Length::FromPixels(metrics.capHeight),
@@ -3046,8 +3039,9 @@ class CanvasUserSpaceMetrics final : public UserSpaceMetricsWithSize {
         return Gecko_GetFontMetrics(
             mPresContext, WritingMode(mCanvasStyle).IsVertical(),
             mCanvasStyle->StyleFont(), mCanvasStyle->StyleFont()->mFont.size,
-            /* aUseUserFontSet = */ true,
-            /* aRetrieveMathScales */ false);
+            StyleQueryFontMetricsFlags::USE_USER_FONT_SET |
+                StyleQueryFontMetricsFlags::NEEDS_CH |
+                StyleQueryFontMetricsFlags::NEEDS_IC);
       }
       case Type::Root:
         return GetFontMetrics(mPresContext->Document()->GetRootElement());

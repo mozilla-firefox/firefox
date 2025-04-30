@@ -1405,30 +1405,6 @@ add_task(
 );
 
 add_task(
-  async function test_helpers_shouldAllowFxaStatus_desktop_context_private_browsing() {
-    let wasCalled = {
-      isPrivateBrowsingMode: false,
-    };
-    let helpers = new FxAccountsWebChannelHelpers({});
-
-    helpers.isPrivateBrowsingMode = sendingContext => {
-      wasCalled.isPrivateBrowsingMode = true;
-      Assert.equal(sendingContext, mockSendingContext);
-      return true;
-    };
-
-    let shouldAllowFxaStatus = helpers.shouldAllowFxaStatus(
-      "",
-      mockSendingContext,
-      false,
-      "fx_desktop_v3"
-    );
-    Assert.ok(shouldAllowFxaStatus);
-    Assert.ok(wasCalled.isPrivateBrowsingMode);
-  }
-);
-
-add_task(
   async function test_helpers_shouldAllowFxaStatus_oauth_service_private_browsing() {
     let wasCalled = {
       isPrivateBrowsingMode: false,

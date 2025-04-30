@@ -2,14 +2,14 @@
 
 if [ "$$1" = "configure" ] || [ "$$1" = "abort-upgrade" ] || [ "$$1" = "abort-remove" ] ; then
     update-alternatives --install /usr/bin/gnome-www-browser \
-        gnome-www-browser /usr/bin/${DEB_PKG_NAME} 100 \
+        gnome-www-browser /usr/bin/${PKG_NAME} 100 \
         --slave /usr/share/man/man1/gnome-www-browser.1.gz \
-        gnome-www-browser.1.gz /usr/share/man/man1/${DEB_PKG_NAME}.1.gz
+        gnome-www-browser.1.gz /usr/share/man/man1/${PKG_NAME}.1.gz
 
     update-alternatives --install /usr/bin/x-www-browser \
-        x-www-browser /usr/bin/${DEB_PKG_NAME} 100 \
+        x-www-browser /usr/bin/${PKG_NAME} 100 \
         --slave /usr/share/man/man1/x-www-browser.1.gz \
-        x-www-browser.1.gz /usr/share/man/man1/${DEB_PKG_NAME}.1.gz
+        x-www-browser.1.gz /usr/share/man/man1/${PKG_NAME}.1.gz
 fi
 
 # Canonical shipped an AppArmor configuration via that file until 20.04 release
@@ -19,6 +19,6 @@ fi
 #
 # The correct AppArmor configuration for that package lives at
 # /etc/apparmor.d/firefox, and properly covers all the alternatives.
-if [ ${DEB_PKG_NAME} = firefox ] ; then
+if [ ${PKG_NAME} = firefox ] ; then
   dpkg-maintscript-helper rm_conffile /etc/apparmor.d/usr.bin.firefox -- "$$@"
 fi

@@ -2,6 +2,10 @@ const { TelemetryTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/TelemetryTestUtils.sys.mjs"
 );
 
+const { FormAutofill } = ChromeUtils.importESModule(
+  "resource://autofill/FormAutofill.sys.mjs"
+);
+
 const CC_NUM_USES_HISTOGRAM = "CREDITCARD_NUM_USES";
 
 function ccFormArgsv2(method, extra) {
@@ -189,6 +193,12 @@ async function openTabAndUseCreditCard(
     await osKeyStoreLoginShown;
   }
   await waitForAutofill(browser, "#cc-number", creditCard["cc-number"]);
+
+  /* eslint-disable mozilla/no-arbitrary-setTimeout */
+  await new Promise(resolve => {
+    setTimeout(resolve, FormAutofill.fillOnDynamicFormChangeTimeout);
+  });
+
   await focusUpdateSubmitForm(
     browser,
     {

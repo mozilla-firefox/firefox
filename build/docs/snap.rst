@@ -70,6 +70,23 @@ Store`` automatic connection will not happen and this can result in a broken
 state. Inspecting ``snap connections firefox`` using a store-installed snap
 should get your an accurate list that you can replicate.
 
+Cross-compilation
+=================
+
+There is now support for cross-compilation for both ``armhf`` and ``arm64``.
+To produce cross-compiled version locally:
+
+ - follow the steps above for building, except you need to pass
+   ``--build-for=ARCH`` to ``snapcraft``
+ - this needs ``snapcraft`` of at least v8.x
+ - make sure you uncomment the ``##CROSS-COMPILATION##`` lines due to Launchpad
+   limitations
+
+Builds on Treeherder as well as Try pushes are also available using
+cross-compilation. Tests on Treeherder will also be supported when ARM-based
+workers will be available, confere `Bug 1855463
+<https://bugzilla.mozilla.org/show_bug.cgi?id=1855463>`_.
+
 What CI coverage
 ================
 
@@ -121,7 +138,7 @@ So pushing to try is basically just:
 
 .. code-block:: shell
 
-    $ mach try fuzzy --full -q "'snap 'upstream 'try"
+    $ mach try fuzzy --full -q "'snap 'upstream 'local"
 
 Because of the build process, a full opt build will take around 1h45-2h while a
 debug build will be around 60 minutes, the difference coming from the use of

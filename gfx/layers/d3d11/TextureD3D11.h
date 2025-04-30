@@ -72,7 +72,8 @@ class D3D11TextureData final : public TextureData {
       ID3D11Texture2D* aTexture, uint32_t aIndex, gfx::IntSize aSize,
       gfx::SurfaceFormat aFormat, gfx::ColorSpace2 aColorSpace,
       gfx::ColorRange aColorRange, KnowsCompositor* aKnowsCompositor,
-      RefPtr<ZeroCopyUsageInfo> aUsageInfo);
+      RefPtr<ZeroCopyUsageInfo> aUsageInfo,
+      const RefPtr<FenceD3D11> aWriteFence);
 
   virtual ~D3D11TextureData();
 
@@ -123,10 +124,15 @@ class D3D11TextureData final : public TextureData {
     return mGpuProcessTextureId;
   }
 
+  void IncrementAndSignalWriteFence();
+
  private:
-  D3D11TextureData(ID3D11Texture2D* aTexture, uint32_t aArrayIndex,
+  D3D11TextureData(ID3D11Device* aDevice, ID3D11Texture2D* aTexture,
+                   uint32_t aArrayIndex,
                    RefPtr<gfx::FileHandleWrapper> aSharedHandle,
                    gfx::IntSize aSize, gfx::SurfaceFormat aFormat,
+                   const Maybe<CompositeProcessFencesHolderId> aFencesHolderId,
+                   const RefPtr<FenceD3D11> aWriteFence,
                    TextureAllocationFlags aFlags);
 
   bool PrepareDrawTargetInLock(OpenMode aMode);
@@ -143,17 +149,20 @@ class D3D11TextureData final : public TextureData {
   // Hold on to the DrawTarget because it is expensive to create one each
   // ::Lock.
   RefPtr<gfx::DrawTarget> mDrawTarget;
-  const gfx::IntSize mSize;
-  const gfx::SurfaceFormat mFormat;
 
  public:
+  const gfx::IntSize mSize;
+  const gfx::SurfaceFormat mFormat;
+  const bool mHasKeyedMutex;
+  const Maybe<CompositeProcessFencesHolderId> mFencesHolderId;
+  const RefPtr<FenceD3D11> mWriteFence;
   gfx::ColorSpace2 mColorSpace = gfx::ColorSpace2::SRGB;
 
  private:
   gfx::ColorRange mColorRange = gfx::ColorRange::LIMITED;
   bool mNeedsClear = false;
-  const bool mHasKeyedMutex;
 
+  const RefPtr<ID3D11Device> mDevice;
   RefPtr<ID3D11Texture2D> mTexture;
   const RefPtr<gfx::FileHandleWrapper> mSharedHandle;
   Maybe<GpuProcessTextureId> mGpuProcessTextureId;
@@ -397,7 +406,7 @@ class DXGITextureHostD3D11 : public TextureHost {
   const gfx::IntSize mSize;
   const gfx::SurfaceFormat mFormat;
   const bool mHasKeyedMutex;
-  const Maybe<layers::CompositeProcessFencesHolderId> mFencesHolderId;
+  const Maybe<CompositeProcessFencesHolderId> mFencesHolderId;
   const gfx::ColorSpace2 mColorSpace;
   const gfx::ColorRange mColorRange;
 };

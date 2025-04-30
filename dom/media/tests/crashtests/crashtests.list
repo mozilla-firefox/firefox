@@ -23,7 +23,7 @@ asserts-if(Android,0-1) pref(browser.link.open_newwindow,2) load 1429507_2.html 
 load 1443212.html
 asserts-if(Android,0-2) load 1453030.html
 load 1468451.html
-skip-if(wayland) skip-if(cocoaWidget&&/^14\.70$/.test(os_version)) skip-if(Android) load 1490700.html # wayland: bug 1856368, macOS bug 1932140, No screenshare on Android
+skip-if(wayland) skip-if(cocoaWidget&&/^14\.70$/.test(os_version)) skip-if(cocoaWidget&&/^15\.30$/.test(os_version)) skip-if(Android) load 1490700.html # wayland: bug 1856368, macOS bug 1932140, No screenshare on Android
 load 1505957.html
 load 1509442.html
 load 1511130.html
@@ -39,4 +39,4 @@ load 1764933.html
 load 1764940.html
 load 1766668.html
 load 1783765.html
-skip-if(Android) load 1920264.html
+skip-if(Android) skip-if(cocoaWidget&&/^15\.30$/.test(os_version)) load 1920264.html

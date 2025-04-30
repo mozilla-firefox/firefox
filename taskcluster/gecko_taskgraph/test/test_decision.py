@@ -71,6 +71,7 @@ def test_write_artifact_yml():
         decision.ARTIFACTS_DIR = "artifacts"
 
 
+@patch("gecko_taskgraph.decision.get_hg_revision_info")
 @patch("gecko_taskgraph.decision.get_hg_revision_branch")
 @patch("gecko_taskgraph.decision.get_hg_commit_message")
 @patch("gecko_taskgraph.decision._determine_more_accurate_base_rev")
@@ -91,6 +92,7 @@ def test_write_artifact_yml():
                 "try_mode": None,
                 "try_options": None,
                 "try_task_config": {},
+                "head_git_rev": "bcde",
             },
             id="simple_options",
         ),
@@ -131,6 +133,7 @@ def test_write_artifact_yml():
                     "use-artifact-builds": True,
                     "env": {},
                 },
+                "head_git_rev": "bcde",
             },
             id="try_options",
         ),
@@ -144,6 +147,7 @@ def test_write_artifact_yml():
                 "try_mode": "try_task_config",
                 "try_options": None,
                 "try_task_config": {"tasks": ["a", "b"]},
+                "head_git_rev": "bcde",
             },
             id="try_task_config",
         ),
@@ -154,12 +158,14 @@ def test_get_decision_parameters(
     mock_determine_more_accurate_base_rev,
     mock_get_hg_commit_message,
     mock_get_hg_revision_branch,
+    mock_get_hg_revision_info,
     options,
     extra_options,
     commit_msg,
     ttc,
     expected,
 ):
+    mock_get_hg_revision_info.return_value = "bcde"
     mock_get_hg_revision_branch.return_value = "default"
     mock_get_hg_commit_message.return_value = commit_msg or "commit message"
     mock_determine_more_accurate_base_rev.return_value = "baserev"

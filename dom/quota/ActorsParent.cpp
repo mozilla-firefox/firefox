@@ -94,6 +94,7 @@
 #include "mozilla/dom/quota/CheckedUnsafePtr.h"
 #include "mozilla/dom/quota/Client.h"
 #include "mozilla/dom/quota/ClientDirectoryLock.h"
+#include "mozilla/dom/quota/ClientDirectoryLockHandle.h"
 #include "mozilla/dom/quota/Config.h"
 #include "mozilla/dom/quota/Constants.h"
 #include "mozilla/dom/quota/DirectoryLockInlines.h"
@@ -2679,6 +2680,11 @@ void QuotaManager::UpdateOriginAccessTime(
   MOZ_ASSERT(aOriginMetadata.mPersistenceType == aPersistenceType);
   MOZ_ASSERT(!IsShuttingDown());
 
+  if (!StaticPrefs::
+          dom_quotaManager_temporaryStorage_updateOriginAccessTime()) {
+    return;
+  }
+
   MutexAutoLock lock(mQuotaMutex);
 
   GroupInfoPair* pair;
@@ -3553,6 +3559,8 @@ nsresult QuotaManager::RestoreDirectoryMetadata2(nsIFile* aDirectory) {
   AssertIsOnIOThread();
   MOZ_ASSERT(aDirectory);
   MOZ_ASSERT(mStorageConnection);
+
+  glean::quotamanager::restore_origin_directory_metadata_counter.Add();
 
   RefPtr<RestoreDirectoryMetadata2Helper> helper =
       new RestoreDirectoryMetadata2Helper(aDirectory);
@@ -5486,7 +5494,8 @@ RefPtr<UniversalDirectoryLockPromise> QuotaManager::OpenStorageDirectory(
              });
 }
 
-RefPtr<ClientDirectoryLockPromise> QuotaManager::OpenClientDirectory(
+RefPtr<QuotaManager::ClientDirectoryLockHandlePromise>
+QuotaManager::OpenClientDirectory(
     const ClientMetadata& aClientMetadata, bool aInitializeOrigin,
     bool aCreateIfNonExistent,
     Maybe<RefPtr<ClientDirectoryLock>&> aPendingDirectoryLockOut) {
@@ -5554,7 +5563,7 @@ RefPtr<ClientDirectoryLockPromise> QuotaManager::OpenClientDirectory(
     aPendingDirectoryLockOut.ref() = clientDirectoryLock;
   }
 
-  RefPtr<ClientDirectoryLockPromise> promise =
+  RefPtr<ClientDirectoryLockHandlePromise> promise =
       BoolPromise::All(GetCurrentSerialEventTarget(), promises)
           ->Then(
               GetCurrentSerialEventTarget(), __func__,
@@ -5595,28 +5604,33 @@ RefPtr<ClientDirectoryLockPromise> QuotaManager::OpenClientDirectory(
                            aClientMetadata, aCreateIfNonExistent,
                            std::move(originDirectoryLock));
                      }))
-          ->Then(GetCurrentSerialEventTarget(), __func__,
-                 [clientDirectoryLock = std::move(clientDirectoryLock)](
-                     const BoolPromise::ResolveOrRejectValue& aValue) mutable {
-                   if (aValue.IsReject()) {
-                     DropDirectoryLockIfNotDropped(clientDirectoryLock);
+          ->Then(
+              GetCurrentSerialEventTarget(), __func__,
+              [clientDirectoryLock = std::move(clientDirectoryLock)](
+                  const BoolPromise::ResolveOrRejectValue& aValue) mutable {
+                if (aValue.IsReject()) {
+                  DropDirectoryLockIfNotDropped(clientDirectoryLock);
 
-                     return ClientDirectoryLockPromise::CreateAndReject(
-                         aValue.RejectValue(), __func__);
-                   }
+                  return ClientDirectoryLockHandlePromise::CreateAndReject(
+                      aValue.RejectValue(), __func__);
+                }
 
-                   QM_TRY(ArtificialFailure(nsIQuotaArtificialFailure::
-                                                CATEGORY_OPEN_CLIENT_DIRECTORY),
-                          [&clientDirectoryLock](nsresult rv) {
-                            DropDirectoryLockIfNotDropped(clientDirectoryLock);
+                QM_TRY(
+                    ArtificialFailure(nsIQuotaArtificialFailure::
+                                          CATEGORY_OPEN_CLIENT_DIRECTORY),
+                    [&clientDirectoryLock](nsresult rv) {
+                      DropDirectoryLockIfNotDropped(clientDirectoryLock);
 
-                            return ClientDirectoryLockPromise::CreateAndReject(
-                                rv, __func__);
-                          });
+                      return ClientDirectoryLockHandlePromise::CreateAndReject(
+                          rv, __func__);
+                    });
 
-                   return ClientDirectoryLockPromise::CreateAndResolve(
-                       std::move(clientDirectoryLock), __func__);
-                 });
+                auto clientDirectoryLockHandle =
+                    ClientDirectoryLockHandle(std::move(clientDirectoryLock));
+
+                return ClientDirectoryLockHandlePromise::CreateAndResolve(
+                    std::move(clientDirectoryLockHandle), __func__);
+              });
 
   NotifyClientDirectoryOpeningStarted(*this);
 

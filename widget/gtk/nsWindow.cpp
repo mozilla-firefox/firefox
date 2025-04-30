@@ -916,8 +916,7 @@ bool nsWindow::ToplevelUsesCSD() const {
 }
 
 bool nsWindow::DrawsToCSDTitlebar() const {
-  return mSizeMode == nsSizeMode_Normal &&
-         mGtkWindowDecoration == GTK_DECORATION_CLIENT && mDrawInTitlebar;
+  return mGtkWindowDecoration == GTK_DECORATION_CLIENT && mDrawInTitlebar;
 }
 
 GdkPoint nsWindow::GetCsdOffsetInGdkCoords() {
@@ -8390,7 +8389,10 @@ static gboolean generic_event_cb(GtkWidget* widget, GdkEvent* aEvent) {
 }
 
 void nsWindow::GtkWidgetDestroyHandler(GtkWidget* aWidget) {
-  MOZ_RELEASE_ASSERT(mIsDestroyed, "Releasing live widget!");
+  if (!mIsDestroyed) {
+    NS_WARNING("GtkWidgetDestroyHandler called for live nsWindow!");
+    Destroy();
+  }
   if (aWidget == mShell) {
     mShell = nullptr;
     return;
