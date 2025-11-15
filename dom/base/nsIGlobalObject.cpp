@@ -15,8 +15,8 @@
 #include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/BlobURLProtocolHandler.h"
 #include "mozilla/dom/FunctionBinding.h"
-#include "mozilla/dom/Report.h"
 #include "mozilla/dom/ReportingObserver.h"
+#include "mozilla/dom/ReportingBinding.h"
 #include "mozilla/dom/ServiceWorker.h"
 #include "mozilla/dom/ServiceWorkerContainer.h"
 #include "mozilla/dom/ServiceWorkerRegistration.h"
@@ -153,7 +153,6 @@ void nsIGlobalObject::TraverseObjectsInGlobal(
   }
 
   nsIGlobalObject* tmp = this;
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mReportRecords)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mReportingObservers)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mCountQueuingStrategySizeFunction)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mByteLengthQueuingStrategySizeFunction)
@@ -388,8 +387,8 @@ void nsIGlobalObject::RegisterReportingObserver(ReportingObserver* aObserver,
     return;
   }
 
-  for (Report* report : mReportRecords) {
-    aObserver->MaybeReport(report);
+  for (size_t reportIdx = 0; reportIdx < mReportRecords.Length(); reportIdx++) {
+    aObserver->MaybeReport(&mReportRecords[reportIdx]);
   }
 }
 

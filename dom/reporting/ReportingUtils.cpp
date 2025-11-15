@@ -6,8 +6,7 @@
 
 #include "mozilla/dom/ReportingUtils.h"
 
-#include "mozilla/dom/Report.h"
-#include "mozilla/dom/ReportBody.h"
+#include "mozilla/dom/ReportingBinding.h"
 #include "mozilla/dom/ReportDeliver.h"
 #include "mozilla/ipc/BackgroundChild.h"
 #include "mozilla/ipc/BackgroundUtils.h"
@@ -26,9 +25,12 @@ void ReportingUtils::Report(nsIGlobalObject* aGlobal, nsAtom* aType,
 
   nsDependentAtomString type(aType);
 
-  RefPtr<mozilla::dom::Report> report =
-      new mozilla::dom::Report(aGlobal, type, aURL, aBody);
-  aGlobal->BroadcastReport(report);
+  mozilla::dom::Report report;
+  report.mType.Value().Assign(aGroupName);
+  report.mUrl.Value().Assign(aURL);
+  report.mBody.Value() = *aBody;
+
+  aGlobal->BroadcastReport(&report);
 
   if (!NS_IsMainThread()) {
     return;

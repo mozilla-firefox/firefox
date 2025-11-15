@@ -6,13 +6,14 @@
 
 EXPORTS.mozilla.dom = [
     "CrashReport.h",
-    "CSPViolationReportBody.h",
-    "DeprecationReportBody.h",
+    
+    #"CSPViolationReportBody.h",
+    #"DeprecationReportBody.h",
     "EndpointForReportChild.h",
     "EndpointForReportParent.h",
-    "FeaturePolicyViolationReportBody.h",
-    "Report.h",
-    "ReportBody.h",
+    #"FeaturePolicyViolationReportBody.h",
+    #"Report.h",
+    #"ReportBody.h",
     "ReportDeliver.h",
     "ReportingHeader.h",
     "ReportingObserver.h",
@@ -22,13 +23,13 @@ EXPORTS.mozilla.dom = [
 
 UNIFIED_SOURCES += [
     "CrashReport.cpp",
-    "CSPViolationReportBody.cpp",
-    "DeprecationReportBody.cpp",
+    #"CSPViolationReportBody.cpp",
+    #"DeprecationReportBody.cpp",
     "EndpointForReportChild.cpp",
     "EndpointForReportParent.cpp",
-    "FeaturePolicyViolationReportBody.cpp",
-    "Report.cpp",
-    "ReportBody.cpp",
+    #"FeaturePolicyViolationReportBody.cpp",
+    #"Report.cpp",
+    #"ReportBody.cpp",
     "ReportDeliver.cpp",
     "ReportingHeader.cpp",
     "ReportingObserver.cpp",

@@ -6,7 +6,6 @@
 
 #include "mozilla/dom/ReportingObserver.h"
 
-#include "mozilla/dom/Report.h"
 #include "mozilla/dom/ReportingBinding.h"
 #include "nsContentUtils.h"
 #include "nsIGlobalObject.h"
@@ -17,14 +16,12 @@ namespace mozilla::dom {
 NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE_CLASS(ReportingObserver)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(ReportingObserver)
   tmp->Disconnect();
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mReports)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mGlobal)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mCallback)
   NS_IMPL_CYCLE_COLLECTION_UNLINK_PRESERVED_WRAPPER
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(ReportingObserver)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mReports)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mGlobal)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mCallback)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
@@ -75,7 +72,7 @@ void ReportingObserver::Disconnect() {
   }
 }
 
-void ReportingObserver::TakeRecords(nsTArray<RefPtr<Report>>& aRecords) {
+void ReportingObserver::TakeRecords(nsTArray<Report>& aRecords) {
   mReports.SwapElements(aRecords);
 }
 
@@ -104,7 +101,7 @@ void ReportingObserver::MaybeReport(Report* aReport) {
 
   if (!mTypes.IsEmpty()) {
     nsAutoString type;
-    aReport->GetType(type);
+    type = aReport->mType.Value();
 
     if (!mTypes.Contains(type)) {
       return;
@@ -113,7 +110,10 @@ void ReportingObserver::MaybeReport(Report* aReport) {
 
   bool wasEmpty = mReports.IsEmpty();
 
-  RefPtr<Report> report = aReport->Clone();
+  // This initially used Report's Clone() method, but that
+  // isn't available to us anymore. Is it safe to perform a
+  // shallow copy like this?
+  Report report(*aReport);
   MOZ_ASSERT(report);
 
   if (NS_WARN_IF(!mReports.AppendElement(report, fallible))) {
@@ -134,11 +134,14 @@ void ReportingObserver::MaybeNotify() {
   }
 
   // Let's take the ownership of the reports.
-  nsTArray<RefPtr<Report>> list = std::move(mReports);
+  nsTArray<Report> list = std::move(mReports);
 
-  Sequence<OwningNonNull<Report>> reports;
-  for (Report* report : list) {
-    if (NS_WARN_IF(!reports.AppendElement(*report, fallible))) {
+  Sequence<Report> reports;
+
+  //From my understanding, Dictionaries don't implement the copy constructor needed for range-based for loops, 
+  // so we need to do a typical iterated for loop instead
+  for(size_t reportIdx = 0; reportIdx < list.Length(); reportIdx++){
+    if (NS_WARN_IF(!reports.AppendElement(list[reportIdx], fallible))) {
       return;
     }
   }

@@ -7,21 +7,15 @@
  * https://w3c.github.io/reporting/#interface-reporting-observer
  */
 
-[Pref="dom.reporting.enabled",
- Exposed=(Window,Worker)]
-interface ReportBody {
-  [Default] object toJSON
-();
+
+[GenerateToJSON]
+dictionary ReportBody {
 };
 
-[Pref="dom.reporting.enabled",
- Exposed=(Window,Worker)]
-interface Report {
-  [Default] object toJSON
-();
-  readonly attribute DOMString type;
-  readonly attribute DOMString url;
-  readonly attribute ReportBody? body;
+dictionary Report {
+  DOMString type;
+  DOMString url;
+  ReportBody body;
 };
 
 [Pref="dom.reporting.enabled",
@@ -43,17 +37,13 @@ dictionary ReportingObserverOptions {
 
 typedef sequence<Report> ReportList;
 
-[Pref="dom.reporting.enabled",
- Exposed=Window]
-interface DeprecationReportBody : ReportBody {
-  [Default] object toJSON();
-
-  readonly attribute DOMString id;
-  readonly attribute object? anticipatedRemoval;
-  readonly attribute DOMString message;
-  readonly attribute UTF8String? sourceFile;
-  readonly attribute unsigned long? lineNumber;
-  readonly attribute unsigned long? columnNumber;
+dictionary DeprecationReportBody : ReportBody {
+  DOMString id;
+  object? anticipatedRemoval;
+  DOMString message;
+  DOMString? sourceFile;
+  unsigned long? lineNumber;
+  unsigned long? columnNumber;
 };
 
 [Deprecated="DeprecatedTestingInterface",
@@ -69,20 +59,18 @@ interface TestingDeprecatedInterface {
   readonly attribute boolean deprecatedAttribute;
 };
 
-[Exposed=Window, Pref="dom.reporting.enabled"]
-interface CSPViolationReportBody : ReportBody {
-  [Default] object toJSON();
-  readonly attribute USVString documentURL;
-  readonly attribute USVString? referrer;
-  readonly attribute USVString? blockedURL;
-  readonly attribute DOMString effectiveDirective;
-  readonly attribute DOMString originalPolicy;
-  readonly attribute UTF8String? sourceFile;
-  readonly attribute DOMString? sample;
-  readonly attribute SecurityPolicyViolationEventDisposition disposition;
-  readonly attribute unsigned short statusCode;
-  readonly attribute unsigned long? lineNumber;
-  readonly attribute unsigned long? columnNumber;
+dictionary CSPViolationReportBody : ReportBody {
+  USVString documentURL;
+  USVString? referrer;
+  USVString? blockedURL;
+  DOMString effectiveDirective;
+  DOMString originalPolicy;
+  USVString? sourceFile;
+  DOMString? sample;
+  SecurityPolicyViolationEventDisposition disposition;
+  unsigned short statusCode;
+  unsigned long? lineNumber;
+  unsigned long? columnNumber;
 };
 
 // Used internally to process the JSON

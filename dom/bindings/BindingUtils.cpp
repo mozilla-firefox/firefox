@@ -42,7 +42,6 @@
 #include "mozilla/UseCounter.h"
 #include "mozilla/dom/CustomElementRegistry.h"
 #include "mozilla/dom/DOMException.h"
-#include "mozilla/dom/DeprecationReportBody.h"
 #include "mozilla/dom/DocGroup.h"
 #include "mozilla/dom/ElementBinding.h"
 #include "mozilla/dom/Exceptions.h"
@@ -54,6 +53,7 @@
 #include "mozilla/dom/MaybeCrossOriginObject.h"
 #include "mozilla/dom/ObservableArrayProxyHandler.h"
 #include "mozilla/dom/Promise.h"
+#include "mozilla/dom/ReportingBinding.h"
 #include "mozilla/dom/ReportingUtils.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/WebIDLGlobalNameHash.h"
@@ -4088,8 +4088,8 @@ static const char* kDeprecatedOperations[] = {
 void ReportDeprecation(nsIGlobalObject* aGlobal, Document* aDoc, nsIURI* aURI,
                        DeprecatedOperations aOperation,
                        const nsACString& aFileName,
-                       const Nullable<uint32_t>& aLineNumber,
-                       const Nullable<uint32_t>& aColumnNumber) {
+                       Nullable<uint32_t>& aLineNumber,
+                       Nullable<uint32_t>& aColumnNumber) {
   MOZ_ASSERT(aURI);
 
   // If the URI has the data scheme, report that instead of the spec,
@@ -4115,12 +4115,18 @@ void ReportDeprecation(nsIGlobalObject* aGlobal, Document* aDoc, nsIURI* aURI,
     return;
   }
 
-  RefPtr<DeprecationReportBody> body =
-      new DeprecationReportBody(aGlobal, type, nullptr /* date */, msg,
-                                aFileName, aLineNumber, aColumnNumber);
+  DeprecationReportBody body;
+  body.mId.Value().Assign(type.get());
+  body.mMessage.Value().Assign(msg.get());
+  body.mSourceFile.Value().Assign(NS_ConvertUTF8toUTF16(aFileName).get());
+  body.mLineNumber.Value().SetValue(aLineNumber.Value());
+  body.mColumnNumber.Value().SetValue(aColumnNumber.Value());
+
+      // new DeprecationReportBody(aGlobal, type, nullptr /* date */, msg,
+      //                           aFileName, aLineNumber, aColumnNumber);
 
   ReportingUtils::Report(aGlobal, nsGkAtoms::deprecation, u"default"_ns,
-                         NS_ConvertUTF8toUTF16(specOrScheme), body);
+                         NS_ConvertUTF8toUTF16(specOrScheme), &body);
 }
 
 // This runnable is used to write a deprecation message from a worker to the

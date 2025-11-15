@@ -26,8 +26,8 @@ class ErrorResult;
 
 namespace dom {
 class GlobalObject;
-class Report;
 class ReportingObserverCallback;
+struct Report;
 struct ReportingObserverOptions;
 
 class ReportingObserver final : public nsWrapperCache {
@@ -52,7 +52,7 @@ class ReportingObserver final : public nsWrapperCache {
 
   void Disconnect();
 
-  void TakeRecords(nsTArray<RefPtr<Report>>& aRecords);
+  void TakeRecords(nsTArray<Report>& aRecords);
 
   void MaybeReport(Report* aReport);
 
@@ -63,7 +63,7 @@ class ReportingObserver final : public nsWrapperCache {
  private:
   ~ReportingObserver();
 
-  nsTArray<RefPtr<Report>> mReports;
+  nsTArray<Report> mReports;
 
   nsCOMPtr<nsIGlobalObject> mGlobal;
   RefPtr<ReportingObserverCallback> mCallback;

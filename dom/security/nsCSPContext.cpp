@@ -15,10 +15,10 @@
 #include "mozilla/StaticPrefs_security.h"
 #include "mozilla/dom/CSPDictionariesBinding.h"
 #include "mozilla/dom/CSPReportBinding.h"
-#include "mozilla/dom/CSPViolationReportBody.h"
 #include "mozilla/dom/DocGroup.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/ReportingBinding.h"
 #include "mozilla/dom/ReportingUtils.h"
 #include "mozilla/dom/WindowGlobalParent.h"
 #include "mozilla/glean/DomSecurityMetrics.h"
@@ -1267,11 +1267,21 @@ nsresult nsCSPContext::SendReportsToEndpoints(
     return NS_ERROR_FAILURE;
   }
 
-  RefPtr<CSPViolationReportBody> body =
-      new CSPViolationReportBody(window->AsGlobal(), aViolationEventInit);
+  CSPViolationReportBody body;
+  body.mDocumentURL.Value().Assign(aViolationEventInit.mDocumentURI);
+  body.mReferrer.Value().Assign(aViolationEventInit.mReferrer);
+  body.mBlockedURL.Value().Assign(aViolationEventInit.mBlockedURI);
+  body.mEffectiveDirective.Value().Assign(aViolationEventInit.mEffectiveDirective);
+  body.mOriginalPolicy.Value().Assign(aViolationEventInit.mOriginalPolicy);
+  body.mSourceFile.Value().Assign(aViolationEventInit.mSourceFile);
+  body.mSample.Value().Assign(aViolationEventInit.mSample);
+  body.mDisposition.Value() = aViolationEventInit.mDisposition;
+  body.mStatusCode.Value() = aViolationEventInit.mStatusCode;
+  body.mLineNumber.Value().SetValue(aViolationEventInit.mLineNumber);
+  body.mColumnNumber.Value().SetValue(aViolationEventInit.mColumnNumber);
 
   ReportingUtils::Report(window->AsGlobal(), nsGkAtoms::cspViolation,
-                         reportGroup, aViolationEventInit.mDocumentURI, body);
+                         reportGroup, aViolationEventInit.mDocumentURI, &body);
   return NS_OK;
 }
 

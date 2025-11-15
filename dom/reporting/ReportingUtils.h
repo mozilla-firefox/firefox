@@ -14,7 +14,7 @@ class nsIGlobalObject;
 
 namespace mozilla::dom {
 
-class ReportBody;
+struct ReportBody;
 
 class ReportingUtils final {
  public:

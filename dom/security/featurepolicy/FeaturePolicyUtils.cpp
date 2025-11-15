@@ -9,7 +9,7 @@
 #include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/dom/BrowsingContext.h"
 #include "mozilla/dom/Document.h"
-#include "mozilla/dom/FeaturePolicyViolationReportBody.h"
+#include "mozilla/dom/FeaturePolicyBinding.h"
 #include "mozilla/dom/PermissionMessageUtils.h"
 #include "mozilla/dom/ReportingUtils.h"
 #include "mozilla/ipc/IPDLParamTraits.h"
@@ -235,13 +235,15 @@ void FeaturePolicyUtils::ReportViolation(Document* aDocument,
     return;
   }
 
-  RefPtr<FeaturePolicyViolationReportBody> body =
-      new FeaturePolicyViolationReportBody(window->AsGlobal(), aFeatureName,
-                                           loc.FileName(), lineNumber,
-                                           columnNumber, u"enforce"_ns);
+  FeaturePolicyViolationReportBody body;
+  body.mFeatureId.Value().Assign(aFeatureName);
+  body.mSourceFile.Value().Assign(loc.FileName());
+  body.mLineNumber.Value().SetValue(lineNumber.Value());
+  body.mColumnNumber.Value().SetValue(columnNumber.Value());
+  body.mDisposition.Value().Assign(u"enforce"_ns);
 
   ReportingUtils::Report(window->AsGlobal(), nsGkAtoms::featurePolicyViolation,
-                         u"default"_ns, NS_ConvertUTF8toUTF16(spec), body);
+                         u"default"_ns, NS_ConvertUTF8toUTF16(spec), &body);
 }
 
 }  // namespace dom
