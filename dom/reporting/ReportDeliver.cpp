@@ -14,7 +14,7 @@
 #include "mozilla/dom/Fetch.h"
 #include "mozilla/dom/Navigator.h"
 #include "mozilla/dom/Promise.h"
-#include "mozilla/dom/ReportBody.h"
+#include "mozilla/dom/ReportingBinding.h"
 #include "mozilla/dom/Request.h"
 #include "mozilla/dom/RequestBinding.h"
 #include "mozilla/dom/Response.h"
@@ -255,12 +255,8 @@ void ReportDeliver::Record(nsPIDOMWindowInner* aWindow, const nsAString& aType,
   MOZ_ASSERT(aWindow);
   MOZ_ASSERT(aBody);
 
-  JSONStringWriteFunc<nsAutoCString> reportBodyJSON;
-  ReportJSONWriter w(reportBodyJSON);
-
-  w.Start();
-  aBody->ToJSON(w);
-  w.End();
+  nsString reportBodyString;
+  aBody->ToJSON(reportBodyString);
 
   nsCOMPtr<nsIPrincipal> principal =
       nsGlobalWindowInner::Cast(aWindow)->GetPrincipal();
@@ -289,7 +285,7 @@ void ReportDeliver::Record(nsPIDOMWindowInner* aWindow, const nsAString& aType,
   data.mGroupName = aGroupName;
   data.mURL = aURL;
   data.mCreationTime = TimeStamp::Now();
-  data.mReportBodyJSON = std::move(reportBodyJSON).StringRRef();
+  data.mReportBodyJSON = NS_ConvertUTF16toUTF8(reportBodyString);
   data.mPrincipal = principal;
   data.mFailures = 0;
 

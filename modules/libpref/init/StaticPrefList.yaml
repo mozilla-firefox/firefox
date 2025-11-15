@@ -4204,27 +4204,27 @@
 # Reporting API.
 - name: dom.reporting.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 - name: dom.reporting.testing.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 - name: dom.reporting.featurePolicy.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 - name: dom.reporting.crash.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 - name: dom.reporting.header.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 # In seconds. The timeout to remove not-active report-to endpoints.

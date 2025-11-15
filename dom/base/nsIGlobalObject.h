@@ -22,6 +22,7 @@
 #include "nsTArray.h"
 #include "nsTHashtable.h"
 
+
 // Must be kept in sync with xpcom/rust/xpcom/src/interfaces/nonidl.rs
 #define NS_IGLOBALOBJECT_IID \
   {0x11afa8be, 0xd997, 0x4e07, {0xa6, 0xa3, 0x6f, 0x87, 0x2e, 0xc3, 0xee, 0x7f}}
@@ -45,8 +46,8 @@ class VoidFunction;
 class DebuggerNotificationManager;
 class FontFaceSet;
 class Function;
-class Report;
-class ReportBody;
+struct Report;
+struct ReportBody;
 class ReportingObserver;
 class ServiceWorker;
 class ServiceWorkerContainer;
@@ -408,7 +409,7 @@ class nsIGlobalObject : public nsISupports {
  private:
   // List of Report objects for ReportingObservers.
   nsTArray<RefPtr<mozilla::dom::ReportingObserver>> mReportingObservers;
-  nsTArray<RefPtr<mozilla::dom::Report>> mReportRecords;
+  nsTArray<mozilla::dom::Report> mReportRecords;
 
   // https://streams.spec.whatwg.org/#count-queuing-strategy-size-function
   RefPtr<mozilla::dom::Function> mCountQueuingStrategySizeFunction;

@@ -16,12 +16,10 @@ interface FeaturePolicy {
   sequence<DOMString> getAllowlistForFeature(DOMString feature);
 };
 
-[Pref="dom.reporting.featurePolicy.enabled",
- Exposed=Window]
-interface FeaturePolicyViolationReportBody : ReportBody {
-  readonly attribute DOMString featureId;
-  readonly attribute UTF8String? sourceFile;
-  readonly attribute long? lineNumber;
-  readonly attribute long? columnNumber;
-  readonly attribute DOMString disposition;
+dictionary FeaturePolicyViolationReportBody : ReportBody {
+  DOMString featureId;
+  UTF8String? sourceFile;
+  long? lineNumber;
+  long? columnNumber;
+  DOMString disposition;
 };

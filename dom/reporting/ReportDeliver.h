@@ -20,8 +20,6 @@ class nsPIDOMWindowInner;
 
 namespace mozilla::dom {
 
-class ReportBody;
-
 class ReportDeliver final : public nsIObserver, public nsINamed {
  public:
   NS_DECL_ISUPPORTS
