@@ -19,6 +19,7 @@
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/ReportingBinding.h"
+#include "mozilla/dom/ReportingBinding.h"
 #include "mozilla/dom/ReportingUtils.h"
 #include "mozilla/dom/WindowGlobalParent.h"
 #include "mozilla/glean/DomSecurityMetrics.h"
@@ -1281,6 +1282,7 @@ nsresult nsCSPContext::SendReportsToEndpoints(
   body.mColumnNumber.Construct(aViolationEventInit.mColumnNumber);
 
   ReportingUtils::Report(window->AsGlobal(), nsGkAtoms::cspViolation,
+                         reportGroup, aViolationEventInit.mDocumentURI, &body);
                          reportGroup, aViolationEventInit.mDocumentURI, &body);
   return NS_OK;
 }

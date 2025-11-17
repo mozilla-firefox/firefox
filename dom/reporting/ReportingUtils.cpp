@@ -7,6 +7,7 @@
 #include "mozilla/dom/ReportingUtils.h"
 
 #include "mozilla/dom/ReportingBinding.h"
+#include "mozilla/dom/ReportingBinding.h"
 #include "mozilla/dom/ReportDeliver.h"
 #include "mozilla/ipc/BackgroundChild.h"
 #include "mozilla/ipc/BackgroundUtils.h"

@@ -15,6 +15,7 @@
 #include "mozilla/dom/Navigator.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/ReportingBinding.h"
+#include "mozilla/dom/ReportingBinding.h"
 #include "mozilla/dom/Request.h"
 #include "mozilla/dom/RequestBinding.h"
 #include "mozilla/dom/Response.h"
@@ -255,6 +256,8 @@ void ReportDeliver::Record(nsPIDOMWindowInner* aWindow, const nsAString& aType,
   MOZ_ASSERT(aWindow);
   MOZ_ASSERT(aBody);
 
+  nsString reportBodyString;
+  aBody->ToJSON(reportBodyString);
   nsString reportBodyString;
   aBody->ToJSON(reportBodyString);
 

@@ -10,6 +10,7 @@
 #include "mozilla/dom/BrowsingContext.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/FeaturePolicyBinding.h"
+#include "mozilla/dom/FeaturePolicyBinding.h"
 #include "mozilla/dom/PermissionMessageUtils.h"
 #include "mozilla/dom/ReportingUtils.h"
 #include "mozilla/ipc/IPDLParamTraits.h"
