@@ -563,8 +563,8 @@
     "topLevelSites": ["github.com"]
   },
   "linkedin": {
-    "queryParams": ["refId", "trk", "trackingId"],
-    "topLevelSites": ["ca.linkedin.com", "ro.linkedin.com"]
+    "queryParams": ["refId", "trk", "trackingId", "rcm"],
+    "topLevelSites": ["www.linkedin.com", "ca.linkedin.com", "ro.linkedin.com"]
   },
   "newyorker": {
     "queryParams": ["esrc", "bxid", "cndid", "source", "mbid"],
