@@ -438,6 +438,13 @@
         <action
             android:id="@+id/action_browserFragment_to_webCompatReporterFragment"
             app:destination="@id/webCompatReporterFragment" />
+        <action
+            android:id="@+id/action_browserFragment_to_composableSettingsFragment"
+            app:destination="@id/composableSettingsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
 
     <fragment
@@ -564,6 +571,11 @@
             app:destination="@id/savedLogins"
             app:popUpTo="@id/savedLoginsFragment"
             app:popUpToInclusive="true"/>
+
+    <fragment
+        android:id="@+id/composableSettingsFragment"
+        android:name="org.mozilla.fenix.settings.ComposeSettingsFragment"
+        android:label="@string/settings_title" />
 
     <fragment
         android:id="@+id/settingsFragment"

@@ -34,6 +34,7 @@ lifecycle = "2.10.0"
 localbroadcastmanager = "1.0.0"
 media = "1.7.1"
 navigation = "2.9.5"
+navigation3 = "1.0.0"
 paging = "3.3.6"
 palette = "1.0.0"
 preferences = "1.2.1"
@@ -159,6 +160,8 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigation" }
 androidx-navigation-safeargs = { group = "androidx.navigation", name = "navigation-safe-args-gradle-plugin", version.ref = "navigation" }
 androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigation" }
+androidx-navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }
 androidx-paging = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
 androidx-palette = { group = "androidx.palette", name = "palette-ktx", version.ref = "palette" }
 androidx-preferences = { group = "androidx.preference", name = "preference", version.ref = "preferences" }

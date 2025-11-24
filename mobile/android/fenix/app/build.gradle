@@ -679,6 +679,8 @@ dependencies {
     implementation libs.androidx.navigation.compose
     implementation libs.androidx.navigation.fragment
     implementation libs.androidx.navigation.ui
+    implementation libs.androidx.navigation3.runtime
+    implementation libs.androidx.navigation3.ui
     implementation libs.androidx.paging
     implementation libs.androidx.preferences
     implementation libs.androidx.profileinstaller
