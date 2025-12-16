@@ -25,7 +25,7 @@ interface nsIServerTiming : nsISupports {
 [ref] native nsServerTimingArrayRef(nsTArray<nsCOMPtr<nsIServerTiming>>);
 
 // All properties return zero if the value is not available
-[scriptable, builtinclass, uuid(ca63784d-959c-4c3a-9a59-234a2a520de0)]
+[scriptable, builtinclass, uuid(8f2c89e7-d654-4b9a-b8f1-3c7e6a9d2f4e)]
 interface nsITimedChannel : nsISupports {
   // The number of redirects
   attribute uint8_t redirectCount;
@@ -57,6 +57,8 @@ interface nsITimedChannel : nsISupports {
   [noscript] readonly attribute TimeStamp connectEnd;
   [noscript] readonly attribute TimeStamp requestStart;
   [noscript] readonly attribute TimeStamp responseStart;
+  [noscript] readonly attribute TimeStamp firstInterimResponseStart;
+  [noscript] readonly attribute TimeStamp finalResponseHeadersStart;
   [noscript] readonly attribute TimeStamp responseEnd;
 
   // The redirect attributes timings must be writeble, se we can transfer
@@ -125,6 +127,8 @@ interface nsITimedChannel : nsISupports {
   readonly attribute PRTime connectEndTime;
   readonly attribute PRTime requestStartTime;
   readonly attribute PRTime responseStartTime;
+  readonly attribute PRTime firstInterimResponseStartTime;
+  readonly attribute PRTime finalResponseHeadersStartTime;
   readonly attribute PRTime responseEndTime;
   readonly attribute PRTime cacheReadStartTime;
   readonly attribute PRTime cacheReadEndTime;

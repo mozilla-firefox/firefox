@@ -41,6 +41,10 @@ interface PerformanceResourceTiming : PerformanceEntry
   readonly attribute DOMHighResTimeStamp requestStart;
   [NeedsSubjectPrincipal]
   readonly attribute DOMHighResTimeStamp responseStart;
+  [NeedsSubjectPrincipal]
+  readonly attribute DOMHighResTimeStamp firstInterimResponseStart;
+  [NeedsSubjectPrincipal]
+  readonly attribute DOMHighResTimeStamp finalResponseHeadersStart;
 
   readonly attribute DOMHighResTimeStamp responseEnd;
 

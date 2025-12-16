@@ -134,6 +134,8 @@ class HttpTransactionShell : public nsISupports {
   virtual mozilla::TimeStamp GetConnectEnd() = 0;
   virtual mozilla::TimeStamp GetRequestStart() = 0;
   virtual mozilla::TimeStamp GetResponseStart() = 0;
+  virtual mozilla::TimeStamp GetFirstInterimResponseStart() = 0;
+  virtual mozilla::TimeStamp GetFinalResponseHeadersStart() = 0;
   virtual mozilla::TimeStamp GetResponseEnd() = 0;
 
   virtual void SetDomainLookupStart(mozilla::TimeStamp timeStamp,
@@ -216,6 +218,8 @@ class HttpTransactionShell : public nsISupports {
   virtual mozilla::TimeStamp GetConnectEnd() override;                         \
   virtual mozilla::TimeStamp GetRequestStart() override;                       \
   virtual mozilla::TimeStamp GetResponseStart() override;                      \
+  virtual mozilla::TimeStamp GetFirstInterimResponseStart() override;          \
+  virtual mozilla::TimeStamp GetFinalResponseHeadersStart() override;          \
   virtual mozilla::TimeStamp GetResponseEnd() override;                        \
   virtual void SetDomainLookupStart(mozilla::TimeStamp timeStamp,              \
                                     bool onlyIfNull = false) override;         \

@@ -1705,6 +1705,32 @@ nsresult Http2Session::ResponseHeadersComplete() {
   // allow more headers in the case of 1xx
   if (((httpResponseCode / 100) == 1) && didFirstSetAllRecvd) {
     mInputFrameDataStream->UnsetAllHeadersReceived();
+
+    // Capture interim response timing
+    RefPtr<nsAHttpTransaction> trans = mInputFrameDataStream->Transaction();
+    if (trans) {
+      nsHttpTransaction* httpTrans = trans->QueryHttpTransaction();
+      if (httpTrans) {
+        httpTrans->SetFirstInterimResponseStart(TimeStamp::Now(), true);
+      }
+    }
+  } else if (didFirstSetAllRecvd) {
+    // This is a final response (2xx/3xx/4xx/5xx) - capture final timing
+    RefPtr<nsAHttpTransaction> trans = mInputFrameDataStream->Transaction();
+    if (trans) {
+      nsHttpTransaction* httpTrans = trans->QueryHttpTransaction();
+      if (httpTrans) {
+        httpTrans->SetFinalResponseHeadersStart(TimeStamp::Now(), true);
+
+        // Update responseStart for backward compatibility
+        TimeStamp firstInterim = httpTrans->GetFirstInterimResponseStart();
+        if (!firstInterim.IsNull()) {
+          httpTrans->SetResponseStart(firstInterim, true);
+        } else {
+          httpTrans->SetResponseStart(TimeStamp::Now(), true);
+        }
+      }
+    }
   }
 
   ChangeDownstreamState(PROCESSING_COMPLETE_HEADERS);

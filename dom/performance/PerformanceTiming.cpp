@@ -182,6 +182,8 @@ PerformanceTimingData::PerformanceTimingData(nsITimedChannel* aChannel,
     aChannel->GetConnectEnd(&mConnectEnd);
     aChannel->GetRequestStart(&mRequestStart);
     aChannel->GetResponseStart(&mResponseStart);
+    aChannel->GetFirstInterimResponseStart(&mFirstInterimResponseStart);
+    aChannel->GetFinalResponseHeadersStart(&mFinalResponseHeadersStart);
     aChannel->GetCacheReadStart(&mCacheReadStart);
     aChannel->GetResponseEnd(&mResponseEnd);
     aChannel->GetCacheReadEnd(&mCacheReadEnd);
@@ -741,20 +743,61 @@ DOMHighResTimeStamp PerformanceTimingData::ResponseStartHighRes(
   if (!StaticPrefs::dom_enable_performance() || !IsInitialized()) {
     return mZeroTime;
   }
-  if (mResponseStart.IsNull() ||
-      (!mCacheReadStart.IsNull() && mCacheReadStart < mResponseStart)) {
-    mResponseStart = mCacheReadStart;
+
+  TimeStamp effectiveResponseStart;
+
+  if (!mFirstInterimResponseStart.IsNull()) {
+    effectiveResponseStart = mFirstInterimResponseStart;
+  } else if (!mFinalResponseHeadersStart.IsNull()) {
+    effectiveResponseStart = mFinalResponseHeadersStart;
+  } else {
+    effectiveResponseStart = mResponseStart;
   }
 
-  if (mResponseStart.IsNull() ||
-      (!mRequestStart.IsNull() && mResponseStart < mRequestStart)) {
-    mResponseStart = mRequestStart;
+  if (effectiveResponseStart.IsNull() ||
+      (!mCacheReadStart.IsNull() && mCacheReadStart < effectiveResponseStart)) {
+    effectiveResponseStart = mCacheReadStart;
   }
-  return TimeStampToReducedDOMHighResOrFetchStart(aPerformance, mResponseStart);
+
+  if (effectiveResponseStart.IsNull() ||
+      (!mRequestStart.IsNull() && effectiveResponseStart < mRequestStart)) {
+    effectiveResponseStart = mRequestStart;
+  }
+  return TimeStampToReducedDOMHighResOrFetchStart(aPerformance,
+                                                  effectiveResponseStart);
 }
 
 DOMTimeMilliSec PerformanceTiming::ResponseStart() {
   return static_cast<int64_t>(mTimingData->ResponseStartHighRes(mPerformance));
+}
+
+DOMHighResTimeStamp PerformanceTimingData::FirstInterimResponseStartHighRes(
+    Performance* aPerformance) {
+  MOZ_ASSERT(aPerformance);
+
+  if (!StaticPrefs::dom_enable_performance() || !IsInitialized()) {
+    return mZeroTime;
+  }
+  if (mFirstInterimResponseStart.IsNull()) {
+    return 0;
+  }
+  return TimeStampToReducedDOMHighResOrFetchStart(aPerformance,
+                                                  mFirstInterimResponseStart);
+}
+
+DOMHighResTimeStamp PerformanceTimingData::FinalResponseHeadersStartHighRes(
+    Performance* aPerformance) {
+  MOZ_ASSERT(aPerformance);
+
+  if (!StaticPrefs::dom_enable_performance() || !IsInitialized()) {
+    return mZeroTime;
+  }
+  TimeStamp finalResponse = mFinalResponseHeadersStart;
+  if (finalResponse.IsNull() ||
+      (!mRequestStart.IsNull() && finalResponse < mRequestStart)) {
+    finalResponse = mRequestStart;
+  }
+  return TimeStampToReducedDOMHighResOrFetchStart(aPerformance, finalResponse);
 }
 
 DOMHighResTimeStamp PerformanceTimingData::ResponseEndHighRes(

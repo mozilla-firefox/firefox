@@ -1094,6 +1094,10 @@ static ResourceTimingStructArgs GetTimingAttributes(HttpBaseChannel* aChannel) {
   args.requestStart() = timeStamp;
   aChannel->GetResponseStart(&timeStamp);
   args.responseStart() = timeStamp;
+  aChannel->GetFirstInterimResponseStart(&timeStamp);
+  args.firstInterimResponseStart() = timeStamp;
+  aChannel->GetFinalResponseHeadersStart(&timeStamp);
+  args.finalResponseHeadersStart() = timeStamp;
   aChannel->GetResponseEnd(&timeStamp);
   args.responseEnd() = timeStamp;
   aChannel->GetAsyncOpen(&timeStamp);
