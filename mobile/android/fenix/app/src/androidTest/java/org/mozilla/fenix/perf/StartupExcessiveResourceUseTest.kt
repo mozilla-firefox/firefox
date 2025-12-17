@@ -105,16 +105,16 @@ class StartupExcessiveResourceUseTest {
     private val uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
     @Test
-    fun verifyRunBlockingAndStrictModeSuppresionCount() {
+    fun verifyRunBlockingAndStrictModeSuppressionCount() {
         uiDevice.waitForIdle() // wait for async UI to load.
 
-        // This might cause intermittents: at an arbitrary point after start up (such as the visual
+        // This might cause intermittent: at an arbitrary point after start up (such as the visual
         // completeness queue), we might run code on the main thread that suppresses StrictMode,
         // causing this number to fluctuate depending on device speed. We'll deal with it if it occurs.
-        val actualSuppresionCount = activityTestRule.activity.components.strictMode.suppressionCount.get().toInt()
+        val actualSuppressionCount = activityTestRule.activity.components.strictMode.suppressionCount.get().toInt()
         val actualRunBlocking = RunBlockingCounter.count.get()
 
-        assertEquals(failureMsgStrictMode, EXPECTED_SUPPRESSION_COUNT, actualSuppresionCount)
+        assertEquals(failureMsgStrictMode, EXPECTED_SUPPRESSION_COUNT, actualSuppressionCount)
         assertTrue(failureMsgRunBlocking + "actual: $actualRunBlocking", actualRunBlocking in EXPECTED_RUNBLOCKING_RANGE)
 
         // This below asserts fail in Firebase with different values for
