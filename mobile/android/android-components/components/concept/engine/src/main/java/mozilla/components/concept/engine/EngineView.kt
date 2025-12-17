@@ -12,6 +12,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import mozilla.components.concept.engine.selection.SelectionActionDelegate
 
 /**
@@ -89,6 +90,12 @@ interface EngineView {
      * Running flow of scroll deltas in pixels.
      */
     val verticalScrollDelta: Flow<Float>
+
+    /**
+     * Running flow of the current zoom factor applied to the content.
+     */
+    val zoomFactor: Flow<Float>
+        get() = flowOf(1f)
 
     /**
      * Check if [EngineView] can be scrolled vertically up.

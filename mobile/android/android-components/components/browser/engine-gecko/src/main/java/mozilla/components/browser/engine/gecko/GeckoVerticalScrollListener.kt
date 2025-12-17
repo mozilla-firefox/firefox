@@ -42,6 +42,7 @@ internal class GeckoVerticalScrollListener(
 
     private val _scrollYPosition = MutableStateFlow(0f)
     private val _scrollYDeltas = MutableStateFlow(0f)
+    private val _zoomFactor = MutableStateFlow(1f)
 
     /**
      * Running flow of the current scroll position in pixels.
@@ -52,6 +53,11 @@ internal class GeckoVerticalScrollListener(
      * Running flow of scroll deltas in pixels.
      */
     val scrollYDeltas: StateFlow<Float> = _scrollYDeltas.asStateFlow()
+
+    /**
+     * Running flow of the current zoom factor applied to the content.
+     */
+    val zoomFactor: StateFlow<Float> = _zoomFactor.asStateFlow()
 
     /**
      * Start observing [geckoSession] for scroll related updates.
@@ -73,6 +79,7 @@ internal class GeckoVerticalScrollListener(
 
         _scrollYPosition.value = 0f
         _scrollYDeltas.value = 0f
+        _zoomFactor.value = 1f
     }
 
     private fun startCollectors() {
@@ -93,6 +100,11 @@ internal class GeckoVerticalScrollListener(
         sharedPositionFlow
             .map { it.scrollY * it.zoom }
             .onEach { _scrollYPosition.value = it }
+            .launchIn(scope)
+
+        sharedPositionFlow
+            .map { it.zoom }
+            .onEach { _zoomFactor.value = it }
             .launchIn(scope)
 
         sharedPositionFlow

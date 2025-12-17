@@ -13,12 +13,16 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
 import mozilla.components.browser.state.selector.findTab
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.TabSessionState
@@ -93,6 +97,13 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
     private var translationsAvailable = false
 
     private var pwaOnboardingObserver: PwaOnboardingObserver? = null
+    private var zoomOutActivationTriggered = false
+    private var zoomOutActivationListenerAdded = false
+    private var pinchGestureActive = false
+    private var pinchGestureScaleFactor = 1f
+    private var pinchGestureStartZoomFactor = 1f
+    private var currentZoomFactor = 1f
+    private var readerModeActive = false
 
     @VisibleForTesting
     internal var homeAction: BrowserToolbar.Button? = null
@@ -168,6 +179,98 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                 view = view,
             )
         }
+
+        initZoomOutActivation()
+    }
+
+    private fun initZoomOutActivation() {
+        if (zoomOutActivationListenerAdded) {
+            return
+        }
+        zoomOutActivationListenerAdded = true
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                binding.engineView.zoomFactor.collect { zoomFactor ->
+                    currentZoomFactor = zoomFactor
+                }
+            }
+        }
+
+        binding.gestureLayout.addPinchGestureListener(
+            object : PinchGestureListener {
+                private var invalidGesture = false
+
+                override fun onPinchBegin() {
+                    pinchGestureActive = !readerModeActive
+                    pinchGestureScaleFactor = 1f
+                    pinchGestureStartZoomFactor = currentZoomFactor
+                    zoomOutActivationTriggered = false
+                    invalidGesture = readerModeActive
+                }
+
+                override fun onPinch(scaleFactor: Float) {
+                    if (!pinchGestureActive || invalidGesture) {
+                        return
+                    }
+
+                    // We calculate the new scale factor first.
+                    // We allow some jitter (up to 1.1x zoom in) before invalidating the gesture as a "zoom in".
+                    // This prevents small initial movements from breaking the "pinch out" detection.
+                    val newScaleFactor = (pinchGestureScaleFactor * scaleFactor).coerceIn(
+                        MIN_PINCH_GESTURE_SCALE_FACTOR,
+                        MAX_PINCH_GESTURE_SCALE_FACTOR,
+                    )
+
+                    if (newScaleFactor > 1.1f) {
+                        invalidGesture = true
+                        return
+                    }
+
+                    pinchGestureScaleFactor = newScaleFactor
+
+                    val zoomFactorUnchanged =
+                        abs(currentZoomFactor - pinchGestureStartZoomFactor) <= ZOOM_FACTOR_EPSILON
+                    val shouldTrigger =
+                        zoomFactorUnchanged && pinchGestureScaleFactor <= ZOOM_OUT_ACTIVATION_THRESHOLD
+
+                    if (shouldTrigger) {
+                        if (!zoomOutActivationTriggered) {
+                            if (onZoomOutActivationTriggered()) {
+                                zoomOutActivationTriggered = true
+                            }
+                        }
+                    } else {
+                        zoomOutActivationTriggered = false
+                    }
+                }
+
+                override fun onPinchEnd() {
+                    pinchGestureActive = false
+                    pinchGestureScaleFactor = 1f
+                    pinchGestureStartZoomFactor = currentZoomFactor
+                    zoomOutActivationTriggered = false
+                    invalidGesture = false
+                }
+            },
+        )
+    }
+
+    private fun onZoomOutActivationTriggered(): Boolean {
+        val tabId = getSafeCurrentTab()?.id ?: return false
+        val readerState = requireContext().components.core.store.state.findTab(tabId)?.readerState ?: return false
+        if (readerState.readerable && !readerState.active) {
+            browserToolbarInteractor.onReaderModePressed(true)
+            return true
+        }
+        return false
+    }
+
+    private fun onReaderModeActiveChanged(active: Boolean) {
+        if (readerModeActive && !active) {
+            zoomOutActivationTriggered = false
+        }
+        readerModeActive = active
     }
 
     private fun initBrowserToolbarViewActions(rootView: View) {
@@ -278,6 +381,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                     browserScreenStore.dispatch(
                         ReaderModeStatusUpdated(ReaderModeStatus(available, active)),
                     )
+                    onReaderModeActiveChanged(active)
                 }
             },
             owner = this,
@@ -366,6 +470,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                     readerModeAvailable = available
                     readerModeAction.setSelected(active)
                     safeInvalidateBrowserToolbarView()
+                    onReaderModeActiveChanged(active)
                 }
             },
             owner = this,
@@ -586,6 +691,13 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
         forwardAction = null
         backAction = null
         refreshAction = null
+        zoomOutActivationListenerAdded = false
+        zoomOutActivationTriggered = false
+        pinchGestureActive = false
+        pinchGestureScaleFactor = 1f
+        pinchGestureStartZoomFactor = 1f
+        currentZoomFactor = 1f
+        readerModeActive = false
     }
 
     private fun updateHistoryMetadata() {
@@ -730,6 +842,11 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
     }
 
     companion object {
+        private const val ZOOM_OUT_ACTIVATION_THRESHOLD = 0.8f // Sensitivity of the pinch
+        private const val MIN_PINCH_GESTURE_SCALE_FACTOR = 0.25f
+        private const val MAX_PINCH_GESTURE_SCALE_FACTOR = 4f
+        private const val ZOOM_FACTOR_EPSILON = 0.01f
+
         /**
          * Indicates weight of a page action. The lesser the weight, the closer it is to the URL.
          *

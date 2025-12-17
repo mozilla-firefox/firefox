@@ -9,6 +9,7 @@ import android.graphics.PointF
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.widget.FrameLayout
 
 /**
@@ -41,6 +42,15 @@ interface SwipeGestureListener {
      * @param velocityY the velocity of the swipe along the y-axis
      */
     fun onSwipeFinished(velocityX: Float, velocityY: Float)
+}
+
+/**
+ * Interface that allows observing pinch gestures received in a [SwipeGestureLayout].
+ */
+interface PinchGestureListener {
+    fun onPinchBegin() = Unit
+    fun onPinch(scaleFactor: Float)
+    fun onPinchEnd() = Unit
 }
 
 /**
@@ -101,13 +111,43 @@ class SwipeGestureLayout @JvmOverloads constructor(
     }
 
     private val gestureDetector = GestureDetector(context, gestureListener)
+    private val pinchDetector = ScaleGestureDetector(
+        context,
+        object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+                pinchListeners.forEach { it.onPinchBegin() }
+                return true
+            }
+
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                pinchListeners.forEach { it.onPinch(detector.scaleFactor) }
+                return true
+            }
+
+            override fun onScaleEnd(detector: ScaleGestureDetector) {
+                pinchListeners.forEach { it.onPinchEnd() }
+            }
+        },
+    )
 
     private val listeners = mutableListOf<SwipeGestureListener>()
+    private val pinchListeners = mutableListOf<PinchGestureListener>()
     private var activeListener: SwipeGestureListener? = null
     private var handledInitialScroll = false
 
     fun addGestureListener(listener: SwipeGestureListener) {
         listeners.add(listener)
+    }
+
+    fun addPinchGestureListener(listener: PinchGestureListener) {
+        pinchListeners.add(listener)
+    }
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (pinchListeners.isNotEmpty()) {
+            pinchDetector.onTouchEvent(event)
+        }
+        return super.dispatchTouchEvent(event)
     }
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {

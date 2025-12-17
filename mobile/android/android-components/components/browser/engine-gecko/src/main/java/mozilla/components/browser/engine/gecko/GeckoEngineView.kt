@@ -98,6 +98,7 @@ class GeckoEngineView @JvmOverloads constructor(
     internal var verticalScrollListener = GeckoVerticalScrollListener()
     override val verticalScrollPosition = verticalScrollListener.scrollYPosition
     override val verticalScrollDelta = verticalScrollListener.scrollYDeltas
+    override val zoomFactor = verticalScrollListener.zoomFactor
 
     init {
         addView(geckoView)
