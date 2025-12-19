@@ -67,13 +67,13 @@ already_AddRefed<Promise> MIDIAccessManager::RequestMIDIAccess(
     // different from a normal rejection because we don't want websites to use
     // the error as a way to fingerprint users, so we throw a security error
     // as if the request had been rejected by the user.
-    aRv.ThrowSecurityError("Access not allowed");
+    aRv.ThrowNotAllowedError("Access not allowed");
     return nullptr;
   }
 #endif
 
   if (!FeaturePolicyUtils::IsFeatureAllowed(doc, u"midi"_ns)) {
-    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    aRv.Throw(NS_ERROR_DOM_NOT_ALLOWED_ERR);
     return nullptr;
   }
 

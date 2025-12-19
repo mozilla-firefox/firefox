@@ -69,7 +69,7 @@
          await output_opened.open();
          ok(false, "Should've failed to open port!");
        } catch(err) {
-         is(err.name, "InvalidAccessError", "error name " + err.name + " should be InvalidAccessError");
+         is(err.name, "NotAllowedError", "error name " + err.name + " should be NotAllowedError");
          ok(output_opened.connection == "closed", "connection registered as closed");
          ok(true, "Port not opened, test succeeded");
        } finally {

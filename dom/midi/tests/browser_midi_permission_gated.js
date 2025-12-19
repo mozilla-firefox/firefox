@@ -131,7 +131,7 @@ add_task(async function testRequestMIDIAccess() {
   );
   is(
     rejectionMessage,
-    "SecurityError: WebMIDI requires a site permission add-on to activate"
+    "NotAllowedError: WebMIDI requires a site permission add-on to activate"
   );
 
   assertSitePermissionInstallTelemetryEvents(["site_warning", "cancelled"]);
@@ -185,7 +185,7 @@ add_task(async function testRequestMIDIAccess() {
   );
   is(
     rejectionMessage,
-    "SecurityError: WebMIDI requires a site permission add-on to activate"
+    "NotAllowedError: WebMIDI requires a site permission add-on to activate"
   );
 
   assertSitePermissionInstallTelemetryEvents([
@@ -386,7 +386,7 @@ add_task(async function testRequestMIDIAccess() {
       return errorMessage;
     }
   );
-  is(rejectionMessage, "SecurityError", "requestMIDIAccess was rejected");
+  is(rejectionMessage, "NotAllowedError", "requestMIDIAccess was rejected");
 
   info("Request midi-sysex access again");
   let denyIntervalStart = performance.now();
@@ -407,7 +407,7 @@ add_task(async function testRequestMIDIAccess() {
   );
   is(
     rejectionMessage,
-    "SecurityError",
+    "NotAllowedError",
     "requestMIDIAccess was rejected without user prompt"
   );
   let denyIntervalElapsed = performance.now() - denyIntervalStart;
@@ -560,7 +560,7 @@ add_task(async function testIframeRequestMIDIAccess() {
 
   is(
     rejectionMessage,
-    "SecurityError",
+    "NotAllowedError",
     "requestMIDIAccess from the remote iframe was rejected"
   );
 

@@ -87,7 +87,7 @@ void MIDIOutput::Send(const Sequence<uint8_t>& aData,
   if (!SysexEnabled()) {
     for (auto& msg : msgArray) {
       if (MIDIUtils::IsSysexMessage(msg)) {
-        aRv.Throw(NS_ERROR_DOM_INVALID_ACCESS_ERR);
+        aRv.Throw(NS_ERROR_DOM_NOT_ALLOWED_ERR);
         return;
       }
     }

@@ -196,7 +196,7 @@ void MIDIPort::FireStateChangeEvent() {
     }
   } else if (Port()->ConnectionState() == MIDIPortConnectionState::Closed) {
     if (mOpeningPromise) {
-      mOpeningPromise->MaybeReject(NS_ERROR_DOM_INVALID_ACCESS_ERR);
+      mOpeningPromise->MaybeReject(NS_ERROR_DOM_NOT_ALLOWED_ERR);
       mOpeningPromise = nullptr;
     }
     if (mClosingPromise) {
