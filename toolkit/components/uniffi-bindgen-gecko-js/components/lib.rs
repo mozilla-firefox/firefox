@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 mod reexport_appservices_uniffi_scaffolding {
+    ads_client::uniffi_reexport_scaffolding!();
     tabs::uniffi_reexport_scaffolding!();
     relevancy::uniffi_reexport_scaffolding!();
     suggest::uniffi_reexport_scaffolding!();

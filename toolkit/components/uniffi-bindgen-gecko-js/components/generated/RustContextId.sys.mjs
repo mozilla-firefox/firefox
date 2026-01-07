@@ -162,7 +162,7 @@ export class ContextIdComponent extends ContextIdComponentInterface {
         FfiConverterBoolean.checkType(runningInTestAutomation);
         FfiConverterTypeContextIdCallback.checkType(callback);
         const result = UniFFIScaffolding.callSync(
-            1, // uniffi_context_id_fn_constructor_contextidcomponent_new
+            10, // uniffi_context_id_fn_constructor_contextidcomponent_new
             FfiConverterString.lower(initContextId),
             FfiConverterInt64.lower(creationTimestampS),
             FfiConverterBoolean.lower(runningInTestAutomation),
@@ -181,7 +181,7 @@ export class ContextIdComponent extends ContextIdComponentInterface {
     async forceRotation() {
        
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            2, // uniffi_context_id_fn_method_contextidcomponent_force_rotation
+            11, // uniffi_context_id_fn_method_contextidcomponent_force_rotation
             FfiConverterTypeContextIDComponent.lowerReceiver(this),
         )
         return handleRustResult(
@@ -201,7 +201,7 @@ export class ContextIdComponent extends ContextIdComponentInterface {
        
         FfiConverterUInt8.checkType(rotationDaysInS);
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            3, // uniffi_context_id_fn_method_contextidcomponent_request
+            12, // uniffi_context_id_fn_method_contextidcomponent_request
             FfiConverterTypeContextIDComponent.lowerReceiver(this),
             FfiConverterUInt8.lower(rotationDaysInS),
         )
@@ -219,7 +219,7 @@ export class ContextIdComponent extends ContextIdComponentInterface {
     async unsetCallback() {
        
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            4, // uniffi_context_id_fn_method_contextidcomponent_unset_callback
+            13, // uniffi_context_id_fn_method_contextidcomponent_unset_callback
             FfiConverterTypeContextIDComponent.lowerReceiver(this),
         )
         return handleRustResult(
@@ -253,11 +253,11 @@ export class FfiConverterTypeContextIDComponent extends FfiConverter {
     }
 
     static read(dataStream) {
-        return this.lift(dataStream.readPointer(1));
+        return this.lift(dataStream.readPointer(2));
     }
 
     static write(dataStream, value) {
-        dataStream.writePointer(1, this.lower(value));
+        dataStream.writePointer(2, this.lower(value));
     }
 
     static computeSize(value) {

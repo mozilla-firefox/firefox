@@ -273,6 +273,7 @@ ohttp = { git = "https://github.com/martinthomson/ohttp.git", rev = "bf6a983845c
 bhttp = { git = "https://github.com/martinthomson/ohttp.git", rev = "bf6a983845cc0b540effb3a615e92d914dfcfd0b" }
 
 # application-services overrides to make updating them all simpler.
+ads-client = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
 context_id = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
 error-support = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
 filter_adult = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }

@@ -17,6 +17,7 @@ harness = false
 
 [dependencies]
 uniffi = { workspace = true }
+ads-client = "0.1"
 context_id = "0.1"
 filter_adult = "0.1"
 tabs = "0.1"

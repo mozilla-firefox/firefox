@@ -5,6 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 MOZ_SRC_FILES += [
+    "generated/RustAdsClient.sys.mjs",
     "generated/RustContextId.sys.mjs",
     "generated/RustFilterAdult.sys.mjs",
     "generated/RustInitRustComponents.sys.mjs",

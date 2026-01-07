@@ -1,0 +1,14 @@
+apply from: "$appServicesRootDir/build-scripts/component-common.gradle"
+apply from: "$appServicesRootDir/publish.gradle"
+
+android {
+    namespace 'org.mozilla.appservices.ads_client'
+}
+
+dependencies {
+    api project(":httpconfig")
+}
+
+ext.configureUniFFIBindgen("ads_client")
+ext.dependsOnTheMegazord()
+ext.configurePublish()
