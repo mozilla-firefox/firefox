@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+const VERSION = "5";
 
 const lazy = {
   Utils: "resource://services-settings/Utils.sys.mjs",
@@ -54,6 +55,7 @@ import {
   MozAdsClientConfig,
   MozAdsEnvironment,
   MozAdsPlacementRequest,
+  MozAdsPlacementRequestWithCount,
 } from "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustAdsClient.sys.mjs"
 
 const AdsClient = MozAdsClient.init(new MozAdsClientConfig({
@@ -440,49 +442,47 @@ export class AdsFeed {
 
   async fetchWithAdsClient(placements) {
     console.error("AdsClient - fetchWithAdsClient calling with", placements);
+    const formattedResponse = {};
     try {
-      const tilePlacements = placements.filter(
+      const tilesRequests = placements.filter(
         p => (p.placementId || p.placement)?.startsWith("newtab_tile_")
-      );
+      ).map(p => new MozAdsPlacementRequest({
+        placementId: p.placementId || p.placement,
+        iabContent: p.iabContent ?? null,
+      }));
+      if (tilesRequests.length) {
+        console.error("AdsClient - requestTileAds calling with", tilesRequests);
+        const tiles = await AdsClient.requestTileAds(tilesRequests, null);
+        console.error("AdsClient - requestTileAds SUCCESS - tiles:", tiles);
 
-      const mozAdRequests = tilePlacements.map(placement => 
-        new MozAdsPlacementRequest({
-          placementId: placement.placementId || placement.placement,
-          iabContent: placement.iabContent ?? null,
-        })
-      );
-
-      if (mozAdRequests.length === 0) {
-        console.error("AdsClient - No tile placements found");
-        return {};
+        for (const [placementId, tile] of tiles) {
+          tile.name = `${VERSION}: ${tile.name}`;
+          formattedResponse[placementId] = [tile];
+        }
       }
 
-      console.error("AdsClient - requestTileAds calling with", mozAdRequests);
-      const responseMap = await AdsClient.requestTileAds(mozAdRequests, null);
-      console.error("AdsClient - requestTileAds SUCCESS - responseMap:", responseMap);
+      const storiesRequests = placements.filter(
+        p => (p.placementId || p.placement)?.startsWith("newtab_stories_")
+      ).map(p => new MozAdsPlacementRequestWithCount({
+        placementId: p.placementId || p.placement,
+        iabContent: p.iabContent ?? null,
+        count: p.count,
+      }));
+      if (storiesRequests.length) {
+        console.error("AdsClient - requestSpocAds calling with", storiesRequests);
+        const spocs = await AdsClient.requestSpocAds(storiesRequests, null);
+        console.error("AdsClient - requestSpocAds SUCCESS - spocs:", spocs);
 
-      const formattedResponse = {};
-      for (const [placementId, tile] of responseMap) {
-        formattedResponse[placementId] = [
-          {
-            block_key: tile.blockKey,
-            name: `AC: ${tile.name}`,
-            url: tile.url,
-            image_url: tile.imageUrl,
-            callbacks: {
-              click: tile.callbacks.click,
-              impression: tile.callbacks.impression,
-            },
-          },
-        ];
+        for (const [placementId, spoc] of spocs) {
+          spoc[0].name = `${VERSION}: ${spoc[0].name}`;
+          formattedResponse[placementId] = spoc;
+        }
       }
-
-      console.error("AdsClient - formattedResponse:", formattedResponse);
-      return formattedResponse;
     } catch (error) {
       console.error("AdsClient - requestTileAds ERROR:", error);
-      return {};
     }
+    console.error("AdsClient - formattedResponse:", formattedResponse);
+    return formattedResponse;
   }
   /**
    * Init function that runs only from onAction at.INIT call.
