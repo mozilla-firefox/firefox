@@ -46,7 +46,20 @@ const PREF_SHOW_SPONSORED = "showSponsored";
 const PREF_SYSTEM_SHOW_SPONSORED = "system.showSponsored";
 
 const CACHE_KEY = "ads_feed";
-const ADS_UPDATE_TIME = 30 * 60 * 1000; // 30 minutes
+const ADS_UPDATE_TIME = 1; // 30 minutes
+const USE_ADS_CLIENT = true;
+
+import {
+  MozAdsClient,
+  MozAdsClientConfig,
+  MozAdsEnvironment,
+  MozAdsPlacementRequest,
+} from "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustAdsClient.sys.mjs"
+
+const AdsClient = MozAdsClient.init(new MozAdsClientConfig({
+  environment: MozAdsEnvironment.PROD,
+  cacheConfig: null,
+}));
 
 export class AdsFeed {
   constructor() {
@@ -363,6 +376,9 @@ export class AdsFeed {
       signal,
     };
 
+    if(USE_ADS_CLIENT) {
+      responseData = await this.fetchWithAdsClient(placements);
+    } else {
     // Make Oblivious Fetch Request
     if (marsOhttpEnabled && ohttpConfigURL && ohttpRelayURL) {
       const config = await lazy.ObliviousHTTP.getOHTTPConfig(ohttpConfigURL);
@@ -388,11 +404,13 @@ export class AdsFeed {
 
     if (response && response.status === 200) {
       responseData = await response.json();
+      console.error("AdsClient - responseData", responseData);
     } else {
       throw new Error(
         `Error fetching data: ${response.status} - ${response.statusText}`
       );
     }
+  }
 
     if (supportedAdTypes.tiles) {
       const filteredRespDataTiles = Object.keys(responseData)
@@ -420,6 +438,52 @@ export class AdsFeed {
     return returnData;
   }
 
+  async fetchWithAdsClient(placements) {
+    console.error("AdsClient - fetchWithAdsClient calling with", placements);
+    try {
+      const tilePlacements = placements.filter(
+        p => (p.placementId || p.placement)?.startsWith("newtab_tile_")
+      );
+
+      const mozAdRequests = tilePlacements.map(placement => 
+        new MozAdsPlacementRequest({
+          placementId: placement.placementId || placement.placement,
+          iabContent: placement.iabContent ?? null,
+        })
+      );
+
+      if (mozAdRequests.length === 0) {
+        console.error("AdsClient - No tile placements found");
+        return {};
+      }
+
+      console.error("AdsClient - requestTileAds calling with", mozAdRequests);
+      const responseMap = await AdsClient.requestTileAds(mozAdRequests, null);
+      console.error("AdsClient - requestTileAds SUCCESS - responseMap:", responseMap);
+
+      const formattedResponse = {};
+      for (const [placementId, tile] of responseMap) {
+        formattedResponse[placementId] = [
+          {
+            block_key: tile.blockKey,
+            name: `AC: ${tile.name}`,
+            url: tile.url,
+            image_url: tile.imageUrl,
+            callbacks: {
+              click: tile.callbacks.click,
+              impression: tile.callbacks.impression,
+            },
+          },
+        ];
+      }
+
+      console.error("AdsClient - formattedResponse:", formattedResponse);
+      return formattedResponse;
+    } catch (error) {
+      console.error("AdsClient - requestTileAds ERROR:", error);
+      return {};
+    }
+  }
   /**
    * Init function that runs only from onAction at.INIT call.
    *
