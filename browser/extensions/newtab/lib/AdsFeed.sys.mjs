@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-const VERSION = "5";
+const VERSION = "6";
 
 const lazy = {
   Utils: "resource://services-settings/Utils.sys.mjs",
@@ -56,11 +56,14 @@ import {
   MozAdsEnvironment,
   MozAdsPlacementRequest,
   MozAdsPlacementRequestWithCount,
+  MozAdsCacheConfig
 } from "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustAdsClient.sys.mjs"
 
 const AdsClient = MozAdsClient.init(new MozAdsClientConfig({
   environment: MozAdsEnvironment.PROD,
-  cacheConfig: null,
+  cacheConfig: new MozAdsCacheConfig({
+    dbPath: "ads_cache.db",
+  })
 }));
 
 export class AdsFeed {
