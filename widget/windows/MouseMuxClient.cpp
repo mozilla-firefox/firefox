@@ -12,7 +12,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define MOUSEMUX_CLIENT_VERSION "4.3"
+#define MOUSEMUX_CLIENT_VERSION "4.5"
 #define MOUSEMUX_BUILD_TIME __DATE__ " " __TIME__
 
 namespace mozilla {
@@ -64,7 +64,6 @@ void MouseMuxClient::Disconnect() {
     mWorkerThread.detach();
   }
 
-  Log("Disconnected");
   UpdateDebugStatus();
 }
 
@@ -280,9 +279,9 @@ void MouseMuxClient::HandleMessage(const std::string& aMessage) {
   } else if (type == "pointer.scroll.notify.M2A") {
     HandlePointerWheel(getUint("hwid"), getInt("x"), getInt("y"),
                        getInt("delta"), aMessage.find("\"horizontal\":true") != std::string::npos);
-  } else if (type == "keyboard.notify.M2A") {
+  } else if (type == "keyboard.key.notify.M2A") {
     HandleKeyboard(getUint("hwid"), getUint("vkey"), getUint("message"),
-                   getUint("scan_code"), getUint("flags"));
+                   getUint("scan"), getUint("flags"));
   } else if (type == "user_list") {
     // Parse user mappings
     std::lock_guard<std::mutex> lock(mMappingMutex);
@@ -457,7 +456,10 @@ void MouseMuxClient::HandlePointerWheel(uint32_t aHwid, int aScreenX, int aScree
 
 void MouseMuxClient::HandleKeyboard(uint32_t aHwid, uint32_t aVkey, uint32_t aMessage,
                                     uint32_t aScanCode, uint32_t aFlags) {
-  // Find the mouse hwid associated with this keyboard
+  // Only process if window has an owner
+  if (mOwnerHwid == 0) return;
+
+  // Try to find the mouse hwid associated with this keyboard
   uint32_t mouseHwid = 0;
   {
     std::lock_guard<std::mutex> lock(mMappingMutex);
@@ -469,19 +471,24 @@ void MouseMuxClient::HandleKeyboard(uint32_t aHwid, uint32_t aVkey, uint32_t aMe
     }
   }
 
-  // Check if this keyboard's associated mouse owns this window
-  bool isOwner = (mouseHwid != 0 && mouseHwid == mOwnerHwid);
-  if (!isOwner) return;
+  // If we have a mapping, check if it matches the owner
+  // If no mapping exists, accept keyboard events for any owned window
+  if (mouseHwid != 0 && mouseHwid != mOwnerHwid) return;
 
-  // Build lParam for keyboard message
-  LPARAM lParam = 0;
-  lParam |= (aScanCode & 0xFF) << 16;
-  if (aFlags & 0x01) lParam |= (1 << 24);  // Extended key
+  Log("Key hwid=0x%X vkey=%u msg=%u scan=%u owner=0x%X",
+      aHwid, aVkey, aMessage, aScanCode, mOwnerHwid.load());
+
+  // Build lParam for keyboard message (per MouseMux rules: use PostMessage only)
+  LPARAM lParam = 1;  // repeat count = 1
+  lParam |= (aScanCode & 0xFF) << 16;  // scan code
+  if (aFlags & 0x01) lParam |= (1 << 24);  // extended key flag
+
   if (aMessage == WM_KEYUP || aMessage == WM_SYSKEYUP) {
-    lParam |= (1 << 30);  // Previous state
-    lParam |= (1 << 31);  // Transition state
+    lParam |= (1 << 30);  // previous key state (was down)
+    lParam |= (1 << 31);  // transition state (being released)
   }
 
+  // Post to the owner window - Firefox will route to focused child
   ::PostMessage(mOwnerHwnd, aMessage, aVkey, lParam);
 }
 
