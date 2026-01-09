@@ -12,7 +12,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define MOUSEMUX_CLIENT_VERSION "4.5"
+#define MOUSEMUX_CLIENT_VERSION "4.6"
 #define MOUSEMUX_BUILD_TIME __DATE__ " " __TIME__
 
 namespace mozilla {
@@ -234,11 +234,13 @@ void MouseMuxClient::WebSocketThread() {
 }
 
 void MouseMuxClient::HandleMessage(const std::string& aMessage) {
-  // Log raw message (truncated)
-  if (aMessage.length() < 200) {
-    Log("MSG: %s", aMessage.c_str());
-  } else {
-    Log("MSG: %.200s...", aMessage.c_str());
+  // Log raw message (truncated) - skip motion to reduce noise
+  if (aMessage.find("motion") == std::string::npos) {
+    if (aMessage.length() < 200) {
+      Log("MSG: %s", aMessage.c_str());
+    } else {
+      Log("MSG: %.200s...", aMessage.c_str());
+    }
   }
 
   // Parse JSON manually (simple parser for our specific format)
