@@ -131,6 +131,7 @@ SOURCES += [
     "InProcessWinCompositorWidget.cpp",
     "InputFilter.cpp",
     "MediaKeysEventSourceFactory.cpp",
+    "MouseMuxClient.cpp",
     "MouseMuxDebugDialog.cpp",
     "MouseMuxService.cpp",
     "nsBidiKeyboard.cpp",
@@ -217,6 +218,7 @@ OS_LIBS += [
     "shcore",
     "urlmon",
     "winmm",
+    "ws2_32",
 ]
 
 # mingw is missing Windows toast notification definitions.

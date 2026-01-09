@@ -193,8 +193,6 @@
 
 #include "WindowsUIUtils.h"
 
-#include "MouseMuxService.h"
-#include "MouseMuxDebugDialog.h"
 #include "InputFilter.h"
 
 #include "nsWindowDefs.h"
@@ -1285,8 +1283,8 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
 
   RecreateDirectManipulationIfNeeded();
 
-  // Register with MouseMux for multi-mouse support
-  MouseMuxService::GetInstance()->RegisterWindow(this);
+  // Initialize per-window MouseMux client for multi-mouse support
+  InitMouseMux();
 
   return NS_OK;
 }
@@ -1317,8 +1315,8 @@ void nsWindow::Destroy() {
 
   DestroyDirectManipulation();
 
-  // Unregister from MouseMux before window destruction
-  MouseMuxService::GetInstance()->UnregisterWindow(this);
+  // Shutdown MouseMux client before window destruction
+  ShutdownMouseMux();
 
   /**
    * On windows the LayerManagerOGL destructor wants the widget to be around for
@@ -5151,10 +5149,22 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
 
     case WM_SYSKEYDOWN:
     case WM_KEYDOWN: {
+      // MouseMux: F11 = toggle debug dialog for this window
+      if (wParam == VK_F11 && mMouseMuxClient) {
+        if (mMouseMuxClient->IsDebugDialogVisible()) {
+          mMouseMuxClient->HideDebugDialog();
+        } else {
+          mMouseMuxClient->ShowDebugDialog();
+        }
+        result = true;
+        break;
+      }
       // MouseMux: F12 = emergency exit (disable blocking, disconnect)
       if (wParam == VK_F12 && InputFilter::IsEnabled()) {
         InputFilter::Disable();
-        MouseMuxService::GetInstance()->Disconnect();
+        if (mMouseMuxClient) {
+          mMouseMuxClient->Disconnect();
+        }
         result = true;
         break;
       }
@@ -8917,4 +8927,36 @@ void nsWindow::ContextMenuPreventer::Update(
       aEvent.mButton == MouseButton::eSecondary &&
       aEvent.mInputSource == MouseEvent_Binding::MOZ_SOURCE_MOUSE &&
       aEventStatus.mApzStatus == nsEventStatus_eConsumeNoDefault;
+}
+
+/**************************************************************
+ * MouseMux - Per-window multi-mouse/keyboard support
+ **************************************************************/
+
+void nsWindow::InitMouseMux() {
+  if (!mWnd) return;
+
+  // Only create for top-level windows
+  if (mWindowType != WindowType::TopLevel) return;
+
+  mMouseMuxClient = mozilla::MakeUnique<mozilla::widget::MouseMuxClient>(mWnd);
+
+  // Auto-open debug dialog on window creation
+  mMouseMuxClient->ShowDebugDialog();
+}
+
+void nsWindow::ShutdownMouseMux() {
+  mMouseMuxClient.reset();
+}
+
+void nsWindow::ShowMouseMuxDebugDialog() {
+  if (mMouseMuxClient) {
+    mMouseMuxClient->ShowDebugDialog();
+  }
+}
+
+void nsWindow::HideMouseMuxDebugDialog() {
+  if (mMouseMuxClient) {
+    mMouseMuxClient->HideDebugDialog();
+  }
 }

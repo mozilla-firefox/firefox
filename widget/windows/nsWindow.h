@@ -53,6 +53,7 @@
 
 #include "IMMHandler.h"
 #include "CheckInvariantWrapper.h"
+#include "MouseMuxClient.h"
 
 /**
  * Forward class definitions
@@ -912,6 +913,18 @@ class nsWindow final : public nsIWidget {
 
   nsString mDesktopId MOZ_GUARDED_BY(mozilla::sMainThreadCapability);
 
+  // MouseMux multi-mouse/keyboard support - per-window client
+  mozilla::UniquePtr<mozilla::widget::MouseMuxClient> mMouseMuxClient;
+
+ public:
+  // MouseMux methods
+  void InitMouseMux();
+  void ShutdownMouseMux();
+  void ShowMouseMuxDebugDialog();
+  void HideMouseMuxDebugDialog();
+  mozilla::widget::MouseMuxClient* GetMouseMuxClient() { return mMouseMuxClient.get(); }
+
+ private:
   friend class nsWindowGfx;
 
   static constexpr int kHiddenTaskbarSize = 2;
