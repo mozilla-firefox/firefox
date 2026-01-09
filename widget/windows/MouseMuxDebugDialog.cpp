@@ -9,6 +9,8 @@
 #include <cstdio>
 #include <cstdarg>
 
+#define MOUSEMUX_VERSION "3.0"
+
 namespace mozilla {
 namespace widget {
 
@@ -51,8 +53,10 @@ void MouseMuxDebugDialog::CreateDialogWindow() {
   ::RegisterClassExW(&wc);
 
   // Create as normal overlapped window with taskbar entry, always on top
+  wchar_t title[64];
+  swprintf(title, 64, L"MouseMux Debug v%S", MOUSEMUX_VERSION);
   mDialog = ::CreateWindowExW(
-      WS_EX_TOPMOST | WS_EX_APPWINDOW, L"MouseMuxDebugDialog", L"MouseMux Debug",
+      WS_EX_TOPMOST | WS_EX_APPWINDOW, L"MouseMuxDebugDialog", title,
       WS_OVERLAPPEDWINDOW | WS_VISIBLE, 100, 100, 400, 350,
       nullptr, nullptr, ::GetModuleHandle(nullptr), this);
 

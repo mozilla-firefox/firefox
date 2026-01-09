@@ -555,6 +555,9 @@ void MouseMuxService::SetLogCallback(LogCallback aCallback) {
   mLogCallback = aCallback;
 }
 
+// Version for tracking builds
+#define MOUSEMUX_VERSION "3.0"
+
 void MouseMuxService::Log(const char* aFormat, ...) {
   char buf[512];
   va_list args;
@@ -562,9 +565,16 @@ void MouseMuxService::Log(const char* aFormat, ...) {
   vsnprintf(buf, sizeof(buf), aFormat, args);
   va_end(args);
 
+  // Get current time
+  SYSTEMTIME st;
+  GetLocalTime(&st);
+  char timeBuf[64];
+  snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d:%02d.%03d",
+           st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+
   FILE* f = fopen("D:\\scratch\\firefox\\mousemux_debug.log", "a");
   if (f) {
-    fprintf(f, "[MM] %s\n", buf);
+    fprintf(f, "[MM v%s %s] %s\n", MOUSEMUX_VERSION, timeBuf, buf);
     fclose(f);
   }
 
