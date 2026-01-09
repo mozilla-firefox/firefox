@@ -22,7 +22,7 @@ namespace logins {
     /// Utility function to create a StaticKeyManager to be used for the time
     /// being until support lands for [trait implementation of an UniFFI
     /// interface](https://mozilla.github.io/uniffi-rs/next/proc_macro/index.html#structs-implementing-traits)
-    /// in UniFFI. 
+    /// in UniFFI.
     KeyManager create_static_key_manager(string key);
 
     /// Similar to create_static_key_manager above, create a
@@ -92,6 +92,15 @@ dictionary Login {
     // secure login fields
     string password;
     string username;
+
+    // breach alert fields
+    /// These fields can be synced from Desktop and are NOT included in LoginEntry,
+    /// so update() will not modify them. Use the dedicated API methods to manipulate:
+    /// record_breach(), reset_all_breaches(), is_potentially_breached(),
+    /// record_breach_alert_dismissal(), record_breach_alert_dismissal_time(),
+    /// and is_breach_alert_dismissed().
+    i64? time_of_last_breach;
+    i64? time_last_breach_alert_dismissed;
 };
 
 /// Metrics tracking deletion of logins that cannot be decrypted, see `delete_undecryptable_records_for_remote_replacement`
@@ -227,6 +236,31 @@ interface LoginStore {
 
     [Throws=LoginsApiError]
     void touch([ByRef] string id);
+
+    /// Determines whether a login’s password is potentially breached, based on the breach date and the time of the last password change.
+    [Throws=LoginsApiError]
+    boolean is_potentially_breached([ByRef] string id);
+
+    /// Stores a known breach date for a login.
+    /// In Firefox Desktop this is updated once per session from Remote Settings.
+    [Throws=LoginsApiError]
+    void record_breach([ByRef] string id, i64 timestamp);
+
+    /// Removes all recorded breaches for all logins (i.e. sets time_of_last_breach to null).
+    [Throws=LoginsApiError]
+    void reset_all_breaches();
+
+    /// Determines whether a breach alert has been dismissed, based on the breach date and the alert dismissal timestamp.
+    [Throws=LoginsApiError]
+    boolean is_breach_alert_dismissed([ByRef] string id);
+
+    /// Stores that the user dismissed the breach alert for a login.
+    [Throws=LoginsApiError]
+    void record_breach_alert_dismissal([ByRef] string id);
+
+    /// Stores the time at which the user dismissed the breach alert for a login.
+    [Throws=LoginsApiError]
+    void record_breach_alert_dismissal_time([ByRef] string id, i64 timestamp);
 
     [Throws=LoginsApiError]
     boolean is_empty();

@@ -99,7 +99,7 @@ impl LoginsSyncEngine {
                         let local_modified = UNIX_EPOCH
                             + Duration::from_millis(dupe.meta.time_password_changed as u64);
                         let local = LocalLogin::Alive {
-                            login: dupe,
+                            login: Box::new(dupe),
                             local_modified,
                         };
                         plan.plan_two_way_merge(local, (upstream, upstream_time));

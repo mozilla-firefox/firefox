@@ -557,23 +557,6 @@
     },
     {
       "attachment": {
-        "filename": "azerdict-16-firefox.ico",
-        "hash": "24daa27a3234d01b5add42e027b0a34000d0ab47c17fe3924c2ca267b7b61c19",
-        "location": "main-workspace/search-config-icons/4d6f988d-8905-4aa7-aeea-5b04a6197767.ico",
-        "mimetype": "image/x-icon",
-        "size": 5430
-      },
-      "engineIdentifiers": [
-        "azerdict"
-      ],
-      "filter_expression": "env.appinfo.OS != \"iOS\" && env.appinfo.OS != \"Android\"",
-      "id": "7bbe6c5c-fdb8-2845-a4f4-e1382e708a0e",
-      "imageSize": 16,
-      "last_modified": 1744118264831,
-      "schema": 1743687843227
-    },
-    {
-      "attachment": {
         "filename": "Icon%2016x16.svg",
         "hash": "912d20feefcba57d43bffff5e245b8c1e3865155ed686d8ad253bbab71116e83",
         "location": "main-workspace/search-config-icons/59fbd815-ba40-494a-b56a-40b3531dd10b.svg",
@@ -773,23 +756,6 @@
       "imageSize": 96,
       "last_modified": 1744118264941,
       "schema": 1743687940531
-    },
-    {
-      "attachment": {
-        "filename": "azerdict_mobile.png",
-        "hash": "3426b5100a6bdb45f8039f0c71a6b68193750ba7bae5b36e5ed31b2b7f372cda",
-        "location": "main-workspace/search-config-icons/1229ffe4-7a6f-46d7-b664-5596df0aa730.png",
-        "mimetype": "image/png",
-        "size": 1357
-      },
-      "engineIdentifiers": [
-        "azerdict"
-      ],
-      "filter_expression": "env.appinfo.OS == \"iOS\" || env.appinfo.OS == \"Android\"",
-      "id": "95ed201d-4ab8-4cb8-831d-454f53cab0f8",
-      "imageSize": 96,
-      "last_modified": 1744118264962,
-      "schema": 1743687938695
     },
     {
       "attachment": {
@@ -1206,5 +1172,5 @@
       "schema": 1743687832067
     }
   ],
-  "timestamp": 1763049497744
+  "timestamp": 1765918784979
 }

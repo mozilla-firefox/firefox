@@ -292,6 +292,8 @@ pub struct LoginFields {
     pub http_realm: Option<String>,
     pub username_field: String,
     pub password_field: String,
+    pub time_of_last_breach: Option<i64>,
+    pub time_last_breach_alert_dismissed: Option<i64>,
 }
 
 /// LoginEntry fields that are stored encrypted
@@ -355,6 +357,9 @@ pub struct LoginEntryWithMeta {
 }
 
 /// A bulk insert result entry, returned by `add_many` and `add_many_with_records`
+/// Please note that although the success case is much larger than the error case, this is
+/// negligible in real life, as we expect a very small success/error ratio.
+#[allow(clippy::large_enum_variant)]
 pub enum BulkResultEntry {
     Success { login: Login },
     Error { message: String },
@@ -465,6 +470,10 @@ pub struct Login {
     // secure fields
     pub username: String,
     pub password: String,
+
+    // breach alerts
+    pub time_of_last_breach: Option<i64>,
+    pub time_last_breach_alert_dismissed: Option<i64>,
 }
 
 impl Login {
@@ -484,6 +493,9 @@ impl Login {
 
             username: sec_fields.username,
             password: sec_fields.password,
+
+            time_of_last_breach: fields.time_last_breach_alert_dismissed,
+            time_last_breach_alert_dismissed: fields.time_last_breach_alert_dismissed,
         }
     }
 
@@ -525,6 +537,8 @@ impl Login {
                 http_realm: self.http_realm,
                 username_field: self.username_field,
                 password_field: self.password_field,
+                time_of_last_breach: self.time_last_breach_alert_dismissed,
+                time_last_breach_alert_dismissed: self.time_last_breach_alert_dismissed,
             },
             sec_fields,
         })
@@ -581,6 +595,10 @@ impl EncryptedLogin {
 
                 username_field: string_or_default(row, "usernameField")?,
                 password_field: string_or_default(row, "passwordField")?,
+
+                time_of_last_breach: row.get::<_, Option<i64>>("timeOfLastBreach")?,
+                time_last_breach_alert_dismissed: row
+                    .get::<_, Option<i64>>("timeLastBreachAlertDismissed")?,
             },
             sec_fields: row.get("secFields")?,
         };

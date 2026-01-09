@@ -273,22 +273,22 @@ ohttp = { git = "https://github.com/martinthomson/ohttp.git", rev = "bf6a983845c
 bhttp = { git = "https://github.com/martinthomson/ohttp.git", rev = "bf6a983845cc0b540effb3a615e92d914dfcfd0b" }
 
 # application-services overrides to make updating them all simpler.
-ads-client = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-context_id = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-error-support = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-filter_adult = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-interrupt-support = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-relevancy = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-search = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-sql-support = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-suggest = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-sync15 = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-tabs = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-tracing-support = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-viaduct = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-webext-storage = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-logins = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
-init_rust_components = { git = "https://github.com/mozilla/application-services", rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2" }
+ads-client = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+context_id = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+error-support = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+filter_adult = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+interrupt-support = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+relevancy = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+search = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+sql-support = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+suggest = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+sync15 = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+tabs = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+tracing-support = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+viaduct = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+webext-storage = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+logins = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
+init_rust_components = { git = "https://github.com/mozilla/application-services", rev = "009bf85091ebface00fcace0ef4470921a8b9288" }
 # Patched version of zip 2.4.2 to allow for reading omnijars.
 zip = { path = "third_party/rust/zip" }
 

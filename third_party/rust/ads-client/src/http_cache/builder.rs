@@ -21,7 +21,7 @@ const MIN_TTL: Duration = Duration::from_secs(1);
 const MAX_TTL: Duration = Duration::from_secs(60 * 60 * 24 * 7); // 7 days
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
+pub enum HttpCacheBuilderError {
     #[error("Database path cannot be empty")]
     EmptyDbPath,
     #[error("Database error: {0}")]
@@ -77,14 +77,14 @@ impl HttpCacheBuilder {
         self
     }
 
-    fn validate(&self) -> Result<(), Error> {
+    fn validate(&self) -> Result<(), HttpCacheBuilderError> {
         if self.db_path.to_string_lossy().trim().is_empty() {
-            return Err(Error::EmptyDbPath);
+            return Err(HttpCacheBuilderError::EmptyDbPath);
         }
 
         if let Some(max_size) = self.max_size {
             if max_size < MIN_CACHE_SIZE || max_size > MAX_CACHE_SIZE {
-                return Err(Error::InvalidMaxSize {
+                return Err(HttpCacheBuilderError::InvalidMaxSize {
                     size_bytes: max_size.as_u64(),
                     min_size: MIN_CACHE_SIZE.to_string(),
                     max_size: MAX_CACHE_SIZE.to_string(),
@@ -94,7 +94,7 @@ impl HttpCacheBuilder {
 
         if let Some(ttl) = self.default_ttl {
             if !(MIN_TTL..=MAX_TTL).contains(&ttl) {
-                return Err(Error::InvalidTtl {
+                return Err(HttpCacheBuilderError::InvalidTtl {
                     ttl: ttl.as_secs(),
                     min_ttl: format!("{} seconds", MIN_TTL.as_secs()),
                     max_ttl: format!("{} seconds", MAX_TTL.as_secs()),
@@ -105,7 +105,7 @@ impl HttpCacheBuilder {
         Ok(())
     }
 
-    fn open_connection(&self) -> Result<Connection, Error> {
+    fn open_connection(&self) -> Result<Connection, HttpCacheBuilderError> {
         let initializer = HttpCacheConnectionInitializer {};
         let conn = if cfg!(test) {
             open_database::open_memory_database(&initializer)?
@@ -115,7 +115,7 @@ impl HttpCacheBuilder {
         Ok(conn)
     }
 
-    pub fn build(&self) -> Result<HttpCache, Error> {
+    pub fn build(&self) -> Result<HttpCache, HttpCacheBuilderError> {
         self.validate()?;
 
         let conn = self.open_connection()?;
@@ -131,7 +131,7 @@ impl HttpCacheBuilder {
     }
 
     #[cfg(test)]
-    pub fn build_for_time_dependent_tests(&self) -> Result<HttpCache, Error> {
+    pub fn build_for_time_dependent_tests(&self) -> Result<HttpCache, HttpCacheBuilderError> {
         self.validate()?;
 
         let conn = self.open_connection()?;
@@ -177,7 +177,7 @@ mod tests {
         let builder = HttpCacheBuilder::new("   ".to_string());
 
         let result = builder.build();
-        assert!(matches!(result, Err(Error::EmptyDbPath)));
+        assert!(matches!(result, Err(HttpCacheBuilderError::EmptyDbPath)));
     }
 
     #[test]
@@ -187,7 +187,7 @@ mod tests {
         let result = builder.build();
         assert!(matches!(
             result,
-            Err(Error::InvalidMaxSize {
+            Err(HttpCacheBuilderError::InvalidMaxSize {
                 size_bytes: 512,
                 min_size: _,
                 max_size: _,
@@ -203,7 +203,7 @@ mod tests {
         let result = builder.build();
         assert!(matches!(
             result,
-            Err(Error::InvalidMaxSize {
+            Err(HttpCacheBuilderError::InvalidMaxSize {
                 size_bytes: 2147483648,
                 min_size: _,
                 max_size: _,
@@ -228,7 +228,7 @@ mod tests {
         let result = builder.build();
         assert!(matches!(
             result,
-            Err(Error::InvalidTtl {
+            Err(HttpCacheBuilderError::InvalidTtl {
                 ttl: 0,
                 min_ttl: _,
                 max_ttl: _,
@@ -244,7 +244,7 @@ mod tests {
         let result = builder.build();
         assert!(matches!(
             result,
-            Err(Error::InvalidTtl {
+            Err(HttpCacheBuilderError::InvalidTtl {
                 ttl: 691200,
                 min_ttl: _,
                 max_ttl: _,

@@ -14,6 +14,7 @@ use self::{builder::HttpCacheBuilder, cache_control::CacheControl, store::HttpCa
 
 use viaduct::{Request, Response};
 
+pub use self::builder::HttpCacheBuilderError;
 pub use self::bytesize::ByteSize;
 pub use self::request_hash::RequestHash;
 use std::cmp;
@@ -83,7 +84,7 @@ impl CacheMode {
 #[derive(Debug, thiserror::Error)]
 pub enum HttpCacheError {
     #[error("Could not build cache: {0}")]
-    Builder(#[from] builder::Error),
+    Builder(#[from] builder::HttpCacheBuilderError),
 
     #[error("SQLite operation failed: {0}")]
     Sqlite(#[from] rusqlite::Error),

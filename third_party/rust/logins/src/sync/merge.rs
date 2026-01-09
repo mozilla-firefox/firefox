@@ -40,7 +40,7 @@ pub(crate) enum LocalLogin {
         local_modified: SystemTime,
     },
     Alive {
-        login: EncryptedLogin,
+        login: Box<EncryptedLogin>,
         local_modified: SystemTime,
     },
 }
@@ -72,7 +72,7 @@ impl LocalLogin {
                 error_support::report_error!("logins-crypto", "empty ciphertext in the db",);
             }
             LocalLogin::Alive {
-                login,
+                login: Box::new(login),
                 local_modified,
             }
         })

@@ -51,16 +51,14 @@ thiserror = "2"
 url = "2"
 
 [dependencies.bhttp]
-git = "https://github.com/martinthomson/ohttp.git"
-rev = "bf6a983845cc0b540effb3a615e92d914dfcfd0b"
+version = "0.7.1"
 optional = true
 
 [dependencies.error-support]
 path = "../support/error"
 
 [dependencies.ohttp]
-git = "https://github.com/martinthomson/ohttp.git"
-rev = "bf6a983845cc0b540effb3a615e92d914dfcfd0b"
+version = "0.7.1"
 features = [
     "client",
     "server",

@@ -1,5 +1,37 @@
+buildscript {
+    if (gradle.hasProperty("mozconfig")) {
+        repositories {
+            gradle.mozconfig.substs.GRADLE_MAVEN_REPOSITORIES.each { repository ->
+                maven {
+                    url = repository
+                    if (gradle.mozconfig.substs.ALLOW_INSECURE_GRADLE_REPOSITORIES) {
+                        allowInsecureProtocol = true
+                    }
+                }
+            }
+        }
+
+        dependencies {
+            classpath libs.mozilla.glean.gradle.plugin
+        }
+    }
+}
+
+plugins {
+    alias libs.plugins.python.envs.plugin
+}
+
 apply from: "$appServicesRootDir/build-scripts/component-common.gradle"
 apply from: "$appServicesRootDir/publish.gradle"
+
+ext {
+    gleanNamespace = "mozilla.telemetry.glean"
+    gleanYamlFiles = ["${project.projectDir}/../metrics.yaml"]
+    if (gradle.hasProperty("mozconfig")) {
+        gleanPythonEnvDir = gradle.mozconfig.substs.GRADLE_GLEAN_PARSER_VENV
+    }
+}
+apply plugin: "org.mozilla.telemetry.glean-gradle-plugin"
 
 android {
     namespace 'org.mozilla.appservices.ads_client'
@@ -7,6 +39,10 @@ android {
 
 dependencies {
     api project(":httpconfig")
+
+    implementation libs.mozilla.glean
+
+    testImplementation libs.mozilla.glean.forUnitTests
 }
 
 ext.configureUniFFIBindgen("ads_client")

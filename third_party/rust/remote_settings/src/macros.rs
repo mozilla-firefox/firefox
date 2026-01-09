@@ -18,6 +18,26 @@ macro_rules! packaged_collections {
                 _ => None,
             }
         }
+
+        /// Get just the timestamp, which is stored separately. This allows
+        /// checking which data is newer without paying the cost of parsing
+        /// the full packaged JSON.
+        fn get_packaged_timestamp(collection_name: &str) -> Option<u64> {
+            match collection_name {
+                $($collection => {
+                    let timestamp_str = include_str!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/dumps/",
+                        $bucket,
+                        "/",
+                        $collection,
+                        ".timestamp"
+                    ));
+                    timestamp_str.trim().parse().ok()
+                }),*
+                _ => None,
+            }
+        }
     };
 }
 

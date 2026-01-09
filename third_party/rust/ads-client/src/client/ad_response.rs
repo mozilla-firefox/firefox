@@ -4,19 +4,45 @@
 */
 
 use crate::http_cache::RequestHash;
+use crate::telemetry::Telemetry;
 use serde::de::DeserializeOwned;
-use serde::Deserializer;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use url::Url;
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
-pub struct AdResponse<T: AdResponseValue> {
-    #[serde(deserialize_with = "deserialize_ad_response", flatten)]
-    pub data: HashMap<String, Vec<T>>,
+#[derive(Debug, PartialEq, Serialize)]
+pub struct AdResponse<A: AdResponseValue> {
+    pub data: HashMap<String, Vec<A>>,
 }
 
-impl<T: AdResponseValue> AdResponse<T> {
+impl<A: AdResponseValue> AdResponse<A> {
+    pub fn parse<T: Telemetry>(
+        data: serde_json::Value,
+        telemetry: &T,
+    ) -> Result<AdResponse<A>, serde_json::Error> {
+        let raw: HashMap<String, serde_json::Value> = serde_json::from_value(data)?;
+        let mut result = HashMap::new();
+
+        for (key, value) in raw {
+            if let serde_json::Value::Array(arr) = value {
+                let mut ads: Vec<A> = vec![];
+                for item in arr {
+                    match serde_json::from_value::<A>(item.clone()) {
+                        Ok(ad) => ads.push(ad),
+                        Err(e) => {
+                            telemetry.record(&e);
+                        }
+                    }
+                }
+                if !ads.is_empty() {
+                    result.insert(key, ads);
+                }
+            }
+        }
+
+        Ok(AdResponse { data: result })
+    }
+
     pub fn add_request_hash_to_callbacks(&mut self, request_hash: &RequestHash) {
         for ads in self.data.values_mut() {
             for ad in ads.iter_mut() {
@@ -34,7 +60,7 @@ impl<T: AdResponseValue> AdResponse<T> {
         }
     }
 
-    pub fn take_first(self) -> HashMap<String, T> {
+    pub fn take_first(self) -> HashMap<String, A> {
         self.data
             .into_iter()
             .filter_map(|(k, mut v)| {
@@ -67,37 +93,6 @@ pub fn pop_request_hash_from_url(url: &mut Url) -> Option<RequestHash> {
         url.set_query(Some(&query_string));
     }
     request_hash
-}
-
-fn deserialize_ad_response<'de, D, T>(deserializer: D) -> Result<HashMap<String, Vec<T>>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: AdResponseValue,
-{
-    let raw = HashMap::<String, serde_json::Value>::deserialize(deserializer)?;
-    let mut result = HashMap::new();
-
-    for (key, value) in raw {
-        if let serde_json::Value::Array(arr) = value {
-            let mut ads: Vec<T> = vec![];
-            for item in arr {
-                if let Ok(ad) = serde_json::from_value::<T>(item.clone()) {
-                    ads.push(ad);
-                } else {
-                    #[cfg(not(test))]
-                    {
-                        use crate::instrument::{emit_telemetry_event, TelemetryEvent};
-                        let _ = emit_telemetry_event(Some(TelemetryEvent::InvalidUrlError));
-                    }
-                }
-            }
-            if !ads.is_empty() {
-                result.insert(key, ads);
-            }
-        }
-    }
-
-    Ok(result)
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -180,6 +175,8 @@ impl AdResponseValue for AdTile {
 
 #[cfg(test)]
 mod tests {
+    use crate::ffi::telemetry::MozAdsTelemetryWrapper;
+
     use super::*;
     use serde_json::{from_str, json};
 
@@ -318,10 +315,10 @@ mod tests {
                     }
                 }
             ]
-        })
-        .to_string();
+        });
 
-        let parsed: AdResponse<AdImage> = from_str(&raw_ad_response).unwrap();
+        let parsed =
+            AdResponse::<AdImage>::parse(raw_ad_response, &MozAdsTelemetryWrapper::noop()).unwrap();
 
         let expected = AdResponse {
             data: HashMap::from([(
@@ -355,10 +352,10 @@ mod tests {
         let raw_ad_response = json!({
             "example_placement_1": [],
             "example_placement_2": []
-        })
-        .to_string();
+        });
 
-        let parsed: AdResponse<AdImage> = from_str(&raw_ad_response).unwrap();
+        let parsed =
+            AdResponse::<AdImage>::parse(raw_ad_response, &MozAdsTelemetryWrapper::noop()).unwrap();
 
         let expected = AdResponse {
             data: HashMap::from([]),

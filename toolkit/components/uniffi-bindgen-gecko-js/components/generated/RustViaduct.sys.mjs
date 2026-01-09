@@ -38,7 +38,7 @@ export var UnitTestObjs = {
 export function allowAndroidEmulatorLoopback() {
    
 const result = UniFFIScaffolding.callSync(
-    149, // uniffi_viaduct_fn_func_allow_android_emulator_loopback
+    160, // uniffi_viaduct_fn_func_allow_android_emulator_loopback
 )
 return handleRustResult(
     result,
@@ -56,7 +56,7 @@ export function initBackend(
    
 FfiConverterTypeBackend.checkType(backend);
 const result = UniFFIScaffolding.callSync(
-    150, // uniffi_viaduct_fn_func_init_backend
+    161, // uniffi_viaduct_fn_func_init_backend
     FfiConverterTypeBackend.lower(backend),
 )
 return handleRustResult(
@@ -1199,7 +1199,7 @@ export class BackendImpl extends Backend {
         FfiConverterTypeRequest.checkType(request);
         FfiConverterTypeClientSettings.checkType(settings);
         const result = await UniFFIScaffolding.callAsync(
-            151, // uniffi_viaduct_fn_method_backend_send_request
+            162, // uniffi_viaduct_fn_method_backend_send_request
             FfiConverterTypeBackend.lowerReceiver(this),
             FfiConverterTypeRequest.lower(request),
             FfiConverterTypeClientSettings.lower(settings),
@@ -1244,11 +1244,11 @@ export class FfiConverterTypeBackend extends FfiConverter {
     }
 
     static read(dataStream) {
-        return this.lift(dataStream.readPointer(21));
+        return this.lift(dataStream.readPointer(22));
     }
 
     static write(dataStream, value) {
-        dataStream.writePointer(21, this.lower(value));
+        dataStream.writePointer(22, this.lower(value));
     }
 
     static computeSize(value) {
@@ -1258,7 +1258,7 @@ export class FfiConverterTypeBackend extends FfiConverter {
 
 const uniffiCallbackHandlerViaductBackend = new UniFFICallbackHandler(
     "Backend",
-    6,
+    7,
     [
         new UniFFICallbackMethodHandler(
             "sendRequest",

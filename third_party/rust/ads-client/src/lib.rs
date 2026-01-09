@@ -13,16 +13,18 @@ use url::Url as AdsClientUrl;
 use client::ad_request::AdPlacementRequest;
 use client::AdsClient;
 use http_cache::RequestCachePolicy;
-use instrument::TrackError;
 
 mod client;
 mod error;
 mod ffi;
 pub mod http_cache;
-mod instrument;
 mod mars;
+pub mod telemetry;
 
 pub use ffi::*;
+
+use crate::client::config::AdsClientConfig;
+use crate::ffi::telemetry::MozAdsTelemetryWrapper;
 
 #[cfg(test)]
 mod test_utils;
@@ -37,15 +39,17 @@ uniffi::custom_type!(AdsClientUrl, String, {
 
 #[derive(uniffi::Object)]
 pub struct MozAdsClient {
-    inner: Mutex<AdsClient>,
+    inner: Mutex<AdsClient<MozAdsTelemetryWrapper>>,
 }
 #[uniffi::export]
 impl MozAdsClient {
     #[uniffi::constructor]
     pub fn new(client_config: Option<MozAdsClientConfig>) -> Self {
-        let config = client_config.map(Into::into);
+        let client_config = client_config.unwrap_or_default();
+        let client_config: AdsClientConfig<MozAdsTelemetryWrapper> = client_config.into();
+        let client = AdsClient::new(client_config);
         Self {
-            inner: Mutex::new(AdsClient::new(config)),
+            inner: Mutex::new(client),
         }
     }
 
@@ -106,7 +110,6 @@ impl MozAdsClient {
         inner
             .record_impression(url)
             .map_err(ComponentError::RecordImpression)
-            .emit_telemetry_if_error()
     }
 
     #[handle_error(ComponentError)]
@@ -114,10 +117,7 @@ impl MozAdsClient {
         let url = AdsClientUrl::parse(&click_url)
             .map_err(|e| ComponentError::RecordClick(CallbackRequestError::InvalidUrl(e).into()))?;
         let inner = self.inner.lock();
-        inner
-            .record_click(url)
-            .map_err(ComponentError::RecordClick)
-            .emit_telemetry_if_error()
+        inner.record_click(url).map_err(ComponentError::RecordClick)
     }
 
     #[handle_error(ComponentError)]
@@ -125,10 +125,7 @@ impl MozAdsClient {
         let url = AdsClientUrl::parse(&report_url)
             .map_err(|e| ComponentError::ReportAd(CallbackRequestError::InvalidUrl(e).into()))?;
         let inner = self.inner.lock();
-        inner
-            .report_ad(url)
-            .map_err(ComponentError::ReportAd)
-            .emit_telemetry_if_error()
+        inner.report_ad(url).map_err(ComponentError::ReportAd)
     }
 
     pub fn cycle_context_id(&self) -> AdsClientApiResult<String> {

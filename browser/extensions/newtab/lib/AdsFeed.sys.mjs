@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-const VERSION = "6";
+const VERSION = "7";
 
 const lazy = {
   Utils: "resource://services-settings/Utils.sys.mjs",
@@ -56,14 +56,40 @@ import {
   MozAdsEnvironment,
   MozAdsPlacementRequest,
   MozAdsPlacementRequestWithCount,
-  MozAdsCacheConfig
+  MozAdsCacheConfig,
+  MozAdsTelemetryImpl,
 } from "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustAdsClient.sys.mjs"
 
+class LoggerTelemetry extends MozAdsTelemetryImpl {
+  constructor(opts) {
+    console.error("LoggerTelemetry - simple constructor");
+    super(opts);
+  }
+  recordBuildCacheError(label, value) {
+    console.error("AdsClient - recordBuildCacheError", label, value);
+  }
+  recordClientError(label, value) {
+    console.error("AdsClient - recordClientError", label, value);
+  }
+  recordClientOperationTotal(label, value) {
+    console.error("AdsClient - recordClientOperationTotal", label, value);
+  }
+  recordDeserializationError(label, value) {
+    console.error("AdsClient - recordDeserializationError", label, value);
+  }
+  recordHttpCacheOutcome(label, value) {
+    console.error("AdsClient - recordHttpCacheOutcome", label, value);
+  }
+}
+
+const telemetry = new LoggerTelemetry();
+
 const AdsClient = MozAdsClient.init(new MozAdsClientConfig({
-  environment: MozAdsEnvironment.PROD,
   cacheConfig: new MozAdsCacheConfig({
     dbPath: "ads_cache.db",
-  })
+  }),
+  environment: MozAdsEnvironment.PROD,
+  telemetry,
 }));
 
 export class AdsFeed {

@@ -58,13 +58,93 @@ Configuration for initializing the ads client.
 pub struct MozAdsClientConfig {
   pub environment: Environment,
   pub cache_config: Option<MozAdsCacheConfig>,
+  pub telemetry: Option<Arc<dyn MozAdsTelemetry>>,
 }
 ```
 
-| Field          | Type                        | Description                                                                                            |
-| -------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `environment`  | `Environment`               | Selects which MARS environment to connect to. Unless in a dev build, this value can only ever be Prod. |
-| `cache_config` | `Option<MozAdsCacheConfig>` | Optional configuration for the internal cache.                                                         |
+| Field          | Type                               | Description                                                                                            |
+| -------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `environment`  | `Environment`                      | Selects which MARS environment to connect to. Unless in a dev build, this value can only ever be Prod. |
+| `cache_config` | `Option<MozAdsCacheConfig>`        | Optional configuration for the internal cache.                                                         |
+| `telemetry`    | `Option<Arc<dyn MozAdsTelemetry>>` | Optional telemetry instance for recording metrics. If not provided, a no-op implementation is used.    |
+
+---
+
+## `MozAdsTelemetry`
+
+Telemetry interface for recording ads client metrics. You must provide an implementation of this interface to the `MozAdsClientConfig` constructor to enable telemetry collection. If no telemetry instance is provided, a no-op implementation is used and no metrics will be recorded.
+
+```rust
+pub trait MozAdsTelemetry: Send + Sync {
+    fn record_build_cache_error(&self, label: String, value: String);
+    fn record_client_error(&self, label: String, value: String);
+    fn record_client_operation_total(&self, label: String);
+    fn record_deserialization_error(&self, label: String, value: String);
+    fn record_http_cache_outcome(&self, label: String, value: String);
+}
+```
+
+### Implementing Telemetry
+
+To enable telemetry collection, you need to implement the `MozAdsTelemetry` interface and provide an instance to the `MozAdsClientConfig` constructor. The following examples show how to bind Glean metrics to the telemetry interface.
+
+#### Swift Example
+
+```swift
+import MozillaRustComponents
+import Glean
+
+public final class AdsClientTelemetry: MozAdsTelemetry {
+    public func recordBuildCacheError(label: String, value: String) {
+        AdsClientMetrics.buildCacheError[label].set(value)
+    }
+
+    public func recordClientError(label: String, value: String) {
+        AdsClientMetrics.clientError[label].set(value)
+    }
+
+    public func recordClientOperationTotal(label: String) {
+        AdsClientMetrics.clientOperationTotal[label].add()
+    }
+
+    public func recordDeserializationError(label: String, value: String) {
+        AdsClientMetrics.deserializationError[label].set(value)
+    }
+
+    public func recordHttpCacheOutcome(label: String, value: String) {
+        AdsClientMetrics.httpCacheOutcome[label].set(value)
+    }
+}
+```
+
+#### Kotlin Example
+
+```kotlin
+import mozilla.appservices.adsclient.MozAdsTelemetry
+import org.mozilla.appservices.ads_client.GleanMetrics.AdsClient
+
+class AdsClientTelemetry : MozAdsTelemetry {
+    override fun recordBuildCacheError(label: String, value: String) {
+        AdsClient.buildCacheError[label].set(value)
+    }
+
+    override fun recordClientError(label: String, value: String) {
+        AdsClient.clientError[label].set(value)
+    }
+
+    override fun recordClientOperationTotal(label: String) {
+        AdsClient.clientOperationTotal[label].add()
+    }
+
+    override fun recordDeserializationError(label: String, value: String) {
+        AdsClient.deserializationError[label].set(value)
+    }
+
+    override fun recordHttpCacheOutcome(label: String, value: String) {
+        AdsClient.httpCacheOutcome[label].set(value)
+    }
+}
+```
 
 ---
 
@@ -400,21 +480,40 @@ If the effective TTL resolves to 0 seconds, the response is not cached.
 
 #### Example Client Configuration
 
-```rust
-// Swift / Kotlin pseudocode
+```swift
+// Swift example
 let cache = MozAdsCacheConfig(
     dbPath: "/tmp/ads_cache.sqlite",
     defaultCacheTtlSeconds: 600,   // 10 min
     maxSizeMib: 20                 // 20 MiB
 )
 
+let telemetry = AdsClientTelemetry()
 let clientCfg = MozAdsClientConfig(
     environment: .prod,
-    cacheConfig: cache
+    cacheConfig: cache,
+    telemetry: telemetry
 )
 
-let client = MozAdsClient.new(clientConfig: clientCfg)
+let client = MozAdsClient(clientConfig: clientCfg)
+```
 
+```kotlin
+// Kotlin example
+val cache = MozAdsCacheConfig(
+    dbPath = "/tmp/ads_cache.sqlite",
+    defaultCacheTtlSeconds = 600L,   // 10 min
+    maxSizeMib = 20L                 // 20 MiB
+)
+
+val telemetry = AdsClientTelemetry()
+val clientCfg = MozAdsClientConfig(
+    environment = MozAdsEnvironment.PROD,
+    cacheConfig = cache,
+    telemetry = telemetry
+)
+
+val client = MozAdsClient(clientCfg)
 ```
 
 Where `db_path` represents the location of the SQLite file. This must be a file that the client has permission to write to.

@@ -13,6 +13,7 @@ use crate::client::config::AdsClientConfig;
 use crate::error::{RecordClickError, RecordImpressionError, ReportAdError, RequestAdsError};
 use crate::http_cache::{HttpCache, RequestCachePolicy};
 use crate::mars::MARSClient;
+use crate::telemetry::Telemetry;
 use ad_request::{AdPlacementRequest, AdRequest};
 use context_id::{ContextIDComponent, DefaultContextIdCallback};
 use url::Url;
@@ -27,23 +28,28 @@ pub mod config;
 const DEFAULT_TTL_SECONDS: u64 = 300;
 const DEFAULT_MAX_CACHE_SIZE_MIB: u64 = 10;
 
-pub struct AdsClient {
-    client: MARSClient,
+pub struct AdsClient<T>
+where
+    T: Clone + Telemetry,
+{
+    client: MARSClient<T>,
     context_id_component: ContextIDComponent,
+    telemetry: T,
 }
 
-impl AdsClient {
-    pub fn new(client_config: Option<AdsClientConfig>) -> Self {
+impl<T> AdsClient<T>
+where
+    T: Clone + Telemetry,
+{
+    pub fn new(client_config: AdsClientConfig<T>) -> Self {
         let context_id = Uuid::new_v4().to_string();
-
-        let client_config = client_config.unwrap_or_default();
-
         let context_id_component = ContextIDComponent::new(
             &context_id,
             0,
             cfg!(test),
             Box::new(DefaultContextIdCallback),
         );
+        let telemetry = client_config.telemetry;
 
         // Configure the cache if a path is provided.
         // Defaults for ttl and cache size are also set if unspecified.
@@ -56,52 +62,51 @@ impl AdsClient {
             let max_cache_size =
                 ByteSize::mib(cache_cfg.max_size_mib.unwrap_or(DEFAULT_MAX_CACHE_SIZE_MIB));
 
-            let http_cache = HttpCache::builder(cache_cfg.db_path)
+            let http_cache = match HttpCache::builder(cache_cfg.db_path)
                 .max_size(max_cache_size)
                 .default_ttl(default_cache_ttl)
                 .build()
-                .ok(); // TODO: handle error with telemetry
+            {
+                Ok(cache) => Some(cache),
+                Err(e) => {
+                    telemetry.record(&e);
+                    None
+                }
+            };
 
-            let client = MARSClient::new(client_config.environment, http_cache);
-            return Self {
+            let client = MARSClient::new(client_config.environment, http_cache, telemetry.clone());
+            let client = Self {
                 context_id_component,
                 client,
+                telemetry: telemetry.clone(),
             };
+            telemetry.record(&ClientOperationEvent::New);
+            return client;
         }
 
-        let client = MARSClient::new(client_config.environment, None);
-        Self {
+        let client = MARSClient::new(client_config.environment, None, telemetry.clone());
+        let client = Self {
             context_id_component,
             client,
-        }
+            telemetry: telemetry.clone(),
+        };
+        telemetry.record(&ClientOperationEvent::New);
+        client
     }
 
-    #[cfg(test)]
-    pub fn new_with_mars_client(client: MARSClient) -> Self {
-        let context_id_component = ContextIDComponent::new(
-            &uuid::Uuid::new_v4().to_string(),
-            0,
-            false,
-            Box::new(DefaultContextIdCallback),
-        );
-        Self {
-            context_id_component,
-            client,
-        }
-    }
-
-    fn request_ads<T>(
+    fn request_ads<A>(
         &self,
         ad_placement_requests: Vec<AdPlacementRequest>,
         options: Option<RequestCachePolicy>,
-    ) -> Result<AdResponse<T>, RequestAdsError>
+    ) -> Result<AdResponse<A>, RequestAdsError>
     where
-        T: AdResponseValue,
+        A: AdResponseValue,
     {
         let context_id = self.get_context_id()?;
         let ad_request = AdRequest::build(context_id, ad_placement_requests)?;
         let cache_policy = options.unwrap_or_default();
-        let (mut response, request_hash) = self.client.fetch_ads(&ad_request, &cache_policy)?;
+        let (mut response, request_hash) =
+            self.client.fetch_ads::<A>(&ad_request, &cache_policy)?;
         response.add_request_hash_to_callbacks(&request_hash);
         Ok(response)
     }
@@ -111,7 +116,12 @@ impl AdsClient {
         ad_placement_requests: Vec<AdPlacementRequest>,
         options: Option<RequestCachePolicy>,
     ) -> Result<HashMap<String, AdImage>, RequestAdsError> {
-        let response = self.request_ads::<AdImage>(ad_placement_requests, options)?;
+        let response = self
+            .request_ads::<AdImage>(ad_placement_requests, options)
+            .inspect_err(|e| {
+                self.telemetry.record(e);
+            })?;
+        self.telemetry.record(&ClientOperationEvent::RequestAds);
         Ok(response.take_first())
     }
 
@@ -120,8 +130,15 @@ impl AdsClient {
         ad_placement_requests: Vec<AdPlacementRequest>,
         options: Option<RequestCachePolicy>,
     ) -> Result<HashMap<String, Vec<AdSpoc>>, RequestAdsError> {
-        let response = self.request_ads::<AdSpoc>(ad_placement_requests, options)?;
-        Ok(response.data)
+        let result = self.request_ads::<AdSpoc>(ad_placement_requests, options);
+        result
+            .inspect_err(|e| {
+                self.telemetry.record(e);
+            })
+            .map(|response| {
+                self.telemetry.record(&ClientOperationEvent::RequestAds);
+                response.data
+            })
     }
 
     pub fn request_tile_ads(
@@ -129,8 +146,15 @@ impl AdsClient {
         ad_placement_requests: Vec<AdPlacementRequest>,
         options: Option<RequestCachePolicy>,
     ) -> Result<HashMap<String, AdTile>, RequestAdsError> {
-        let response = self.request_ads::<AdTile>(ad_placement_requests, options)?;
-        Ok(response.take_first())
+        let result = self.request_ads::<AdTile>(ad_placement_requests, options);
+        result
+            .inspect_err(|e| {
+                self.telemetry.record(e);
+            })
+            .map(|response| {
+                self.telemetry.record(&ClientOperationEvent::RequestAds);
+                response.take_first()
+            })
     }
 
     pub fn record_impression(&self, impression_url: Url) -> Result<(), RecordImpressionError> {
@@ -138,7 +162,15 @@ impl AdsClient {
         if let Some(request_hash) = pop_request_hash_from_url(&mut impression_url) {
             let _ = self.client.invalidate_cache_by_hash(&request_hash);
         }
-        self.client.record_impression(impression_url)
+        self.client
+            .record_impression(impression_url)
+            .inspect_err(|e| {
+                self.telemetry.record(e);
+            })
+            .inspect(|_| {
+                self.telemetry
+                    .record(&ClientOperationEvent::RecordImpression);
+            })
     }
 
     pub fn record_click(&self, click_url: Url) -> Result<(), RecordClickError> {
@@ -146,12 +178,25 @@ impl AdsClient {
         if let Some(request_hash) = pop_request_hash_from_url(&mut click_url) {
             let _ = self.client.invalidate_cache_by_hash(&request_hash);
         }
-        self.client.record_click(click_url)
+        self.client
+            .record_click(click_url)
+            .inspect_err(|e| {
+                self.telemetry.record(e);
+            })
+            .inspect(|_| {
+                self.telemetry.record(&ClientOperationEvent::RecordClick);
+            })
     }
 
     pub fn report_ad(&self, report_url: Url) -> Result<(), ReportAdError> {
-        self.client.report_ad(report_url)?;
-        Ok(())
+        self.client
+            .report_ad(report_url)
+            .inspect_err(|e| {
+                self.telemetry.record(e);
+            })
+            .inspect(|_| {
+                self.telemetry.record(&ClientOperationEvent::ReportAd);
+            })
     }
 
     pub fn get_context_id(&self) -> context_id::ApiResult<String> {
@@ -169,10 +214,20 @@ impl AdsClient {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ClientOperationEvent {
+    New,
+    RecordClick,
+    RecordImpression,
+    ReportAd,
+    RequestAds,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
         client::config::Environment,
+        ffi::telemetry::MozAdsTelemetryWrapper,
         test_utils::{
             get_example_happy_image_response, get_example_happy_spoc_response,
             get_example_happy_uatile_response, make_happy_placement_requests,
@@ -181,16 +236,42 @@ mod tests {
 
     use super::*;
 
+    fn new_with_mars_client(
+        client: MARSClient<MozAdsTelemetryWrapper>,
+    ) -> AdsClient<MozAdsTelemetryWrapper> {
+        let context_id_component = ContextIDComponent::new(
+            &uuid::Uuid::new_v4().to_string(),
+            0,
+            false,
+            Box::new(DefaultContextIdCallback),
+        );
+        AdsClient {
+            context_id_component,
+            client,
+            telemetry: MozAdsTelemetryWrapper::noop(),
+        }
+    }
+
     #[test]
     fn test_get_context_id() {
-        let client = AdsClient::new(None);
+        let config = AdsClientConfig {
+            environment: Environment::Test,
+            cache_config: None,
+            telemetry: MozAdsTelemetryWrapper::noop(),
+        };
+        let client = AdsClient::new(config);
         let context_id = client.get_context_id().unwrap();
         assert!(!context_id.is_empty());
     }
 
     #[test]
     fn test_cycle_context_id() {
-        let mut client = AdsClient::new(None);
+        let config = AdsClientConfig {
+            environment: Environment::Test,
+            cache_config: None,
+            telemetry: MozAdsTelemetryWrapper::noop(),
+        };
+        let mut client = AdsClient::new(config);
         let old_id = client.get_context_id().unwrap();
         let previous_id = client.cycle_context_id().unwrap();
         assert_eq!(previous_id, old_id);
@@ -206,11 +287,12 @@ mod tests {
         let _m = mockito::mock("POST", "/ads")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(serde_json::to_string(&expected_response).unwrap())
+            .with_body(serde_json::to_string(&expected_response.data).unwrap())
             .create();
 
-        let mars_client = MARSClient::new(Environment::Test, None);
-        let ads_client = AdsClient::new_with_mars_client(mars_client);
+        let telemetry = MozAdsTelemetryWrapper::noop();
+        let mars_client = MARSClient::new(Environment::Test, None, telemetry);
+        let ads_client = new_with_mars_client(mars_client);
 
         let ad_placement_requests = make_happy_placement_requests();
 
@@ -227,11 +309,12 @@ mod tests {
         let _m = mockito::mock("POST", "/ads")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(serde_json::to_string(&expected_response).unwrap())
+            .with_body(serde_json::to_string(&expected_response.data).unwrap())
             .create();
 
-        let mars_client = MARSClient::new(Environment::Test, None);
-        let ads_client = AdsClient::new_with_mars_client(mars_client);
+        let telemetry = MozAdsTelemetryWrapper::noop();
+        let mars_client = MARSClient::new(Environment::Test, None, telemetry);
+        let ads_client = new_with_mars_client(mars_client);
 
         let ad_placement_requests = make_happy_placement_requests();
 
@@ -248,11 +331,12 @@ mod tests {
         let _m = mockito::mock("POST", "/ads")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(serde_json::to_string(&expected_response).unwrap())
+            .with_body(serde_json::to_string(&expected_response.data).unwrap())
             .create();
 
-        let mars_client = MARSClient::new(Environment::Test, None);
-        let ads_client = AdsClient::new_with_mars_client(mars_client);
+        let telemetry = MozAdsTelemetryWrapper::noop();
+        let mars_client = MARSClient::new(Environment::Test, None, telemetry.clone());
+        let ads_client = new_with_mars_client(mars_client);
 
         let ad_placement_requests = make_happy_placement_requests();
 
@@ -267,15 +351,16 @@ mod tests {
         let cache = HttpCache::builder("test_record_click_invalidates_cache")
             .build()
             .unwrap();
-        let mars_client = MARSClient::new(Environment::Test, Some(cache));
-        let ads_client = AdsClient::new_with_mars_client(mars_client);
+        let telemetry = MozAdsTelemetryWrapper::noop();
+        let mars_client = MARSClient::new(Environment::Test, Some(cache), telemetry.clone());
+        let ads_client = new_with_mars_client(mars_client);
 
         let response = get_example_happy_image_response();
 
         let _m1 = mockito::mock("POST", "/ads")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(serde_json::to_string(&response).unwrap())
+            .with_body(serde_json::to_string(&response.data).unwrap())
             .expect(2) // we expect 2 requests to the server, one for the initial ad request and one after for the cache invalidation request
             .create();
 

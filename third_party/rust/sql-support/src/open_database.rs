@@ -153,6 +153,7 @@ fn do_open_database_with_flags<CI: ConnectionInitializer, P: AsRef<Path>>(
     connection_initializer.prepare(&conn, db_empty)?;
 
     if open_flags.contains(OpenFlags::SQLITE_OPEN_READ_WRITE) {
+        let mut write_schema_version = true;
         let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
         if db_empty {
             debug!("{}: initializing new database", CI::NAME);
@@ -161,20 +162,25 @@ fn do_open_database_with_flags<CI: ConnectionInitializer, P: AsRef<Path>>(
             let mut current_version = get_schema_version(&tx)?;
             if current_version > CI::END_VERSION {
                 return Err(Error::IncompatibleVersion(current_version));
-            }
-            while current_version < CI::END_VERSION {
-                debug!(
-                    "{}: upgrading database to {}",
-                    CI::NAME,
-                    current_version + 1
-                );
-                connection_initializer.upgrade_from(&tx, current_version)?;
-                current_version += 1;
+            } else if current_version == CI::END_VERSION {
+                write_schema_version = false;
+            } else {
+                while current_version < CI::END_VERSION {
+                    debug!(
+                        "{}: upgrading database to {}",
+                        CI::NAME,
+                        current_version + 1
+                    );
+                    connection_initializer.upgrade_from(&tx, current_version)?;
+                    current_version += 1;
+                }
             }
         }
         debug!("{}: finishing writable database open", CI::NAME);
         connection_initializer.finish(&tx)?;
-        set_schema_version(&tx, CI::END_VERSION)?;
+        if write_schema_version {
+            set_schema_version(&tx, CI::END_VERSION)?;
+        }
         tx.commit()?;
     } else {
         // There's an implied requirement that the first connection to a DB is

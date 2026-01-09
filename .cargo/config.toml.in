@@ -80,9 +80,9 @@ git = "https://github.com/martinthomson/ohttp.git"
 rev = "bf6a983845cc0b540effb3a615e92d914dfcfd0b"
 replace-with = "vendored-sources"
 
-[source."git+https://github.com/mozilla/application-services?rev=0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2"]
+[source."git+https://github.com/mozilla/application-services?rev=009bf85091ebface00fcace0ef4470921a8b9288"]
 git = "https://github.com/mozilla/application-services"
-rev = "0376c542e4a31cde8d33dd0e8da17dcfbc6c58b2"
+rev = "009bf85091ebface00fcace0ef4470921a8b9288"
 replace-with = "vendored-sources"
 
 [source."git+https://github.com/mozilla/audioipc?rev=82fe7fa7e3aaa35468137239a0e4c2f867457214"]

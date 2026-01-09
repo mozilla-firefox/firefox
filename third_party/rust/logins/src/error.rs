@@ -113,6 +113,9 @@ pub enum Error {
 
     #[error("Migration Error: {0}")]
     MigrationError(String),
+
+    #[error("IncompatibleVersion: {0}")]
+    IncompatibleVersion(i64),
 }
 
 /// Error::InvalidLogin subtypes

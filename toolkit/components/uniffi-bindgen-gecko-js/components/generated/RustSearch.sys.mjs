@@ -2782,7 +2782,7 @@ export class SearchEngineSelector extends SearchEngineSelectorInterface {
     static init() {
        
         const result = UniFFIScaffolding.callSync(
-            87, // uniffi_search_fn_constructor_searchengineselector_new
+            98, // uniffi_search_fn_constructor_searchengineselector_new
         )
         return handleRustResult(
             result,
@@ -2799,7 +2799,7 @@ export class SearchEngineSelector extends SearchEngineSelectorInterface {
     clearSearchConfig() {
        
         const result = UniFFIScaffolding.callSync(
-            88, // uniffi_search_fn_method_searchengineselector_clear_search_config
+            99, // uniffi_search_fn_method_searchengineselector_clear_search_config
             FfiConverterTypeSearchEngineSelector.lowerReceiver(this),
         )
         return handleRustResult(
@@ -2821,7 +2821,7 @@ export class SearchEngineSelector extends SearchEngineSelectorInterface {
        
         FfiConverterTypeSearchUserEnvironment.checkType(userEnvironment);
         const result = UniFFIScaffolding.callSync(
-            89, // uniffi_search_fn_method_searchengineselector_filter_engine_configuration
+            100, // uniffi_search_fn_method_searchengineselector_filter_engine_configuration
             FfiConverterTypeSearchEngineSelector.lowerReceiver(this),
             FfiConverterTypeSearchUserEnvironment.lower(userEnvironment),
         )
@@ -2841,7 +2841,7 @@ export class SearchEngineSelector extends SearchEngineSelectorInterface {
        
         FfiConverterString.checkType(overrides);
         const result = UniFFIScaffolding.callSync(
-            90, // uniffi_search_fn_method_searchengineselector_set_config_overrides
+            101, // uniffi_search_fn_method_searchengineselector_set_config_overrides
             FfiConverterTypeSearchEngineSelector.lowerReceiver(this),
             FfiConverterString.lower(overrides),
         )
@@ -2865,7 +2865,7 @@ export class SearchEngineSelector extends SearchEngineSelectorInterface {
        
         FfiConverterString.checkType(configuration);
         const result = UniFFIScaffolding.callSync(
-            91, // uniffi_search_fn_method_searchengineselector_set_search_config
+            102, // uniffi_search_fn_method_searchengineselector_set_search_config
             FfiConverterTypeSearchEngineSelector.lowerReceiver(this),
             FfiConverterString.lower(configuration),
         )
@@ -2896,7 +2896,7 @@ export class SearchEngineSelector extends SearchEngineSelectorInterface {
         FfiConverterTypeRemoteSettingsService.checkType(service);
         FfiConverterBoolean.checkType(applyEngineOverrides);
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            92, // uniffi_search_fn_method_searchengineselector_use_remote_settings_server
+            103, // uniffi_search_fn_method_searchengineselector_use_remote_settings_server
             FfiConverterTypeSearchEngineSelector.lowerReceiver(this),
             FfiConverterTypeRemoteSettingsService.lower(service),
             FfiConverterBoolean.lower(applyEngineOverrides),
@@ -2932,11 +2932,11 @@ export class FfiConverterTypeSearchEngineSelector extends FfiConverter {
     }
 
     static read(dataStream) {
-        return this.lift(dataStream.readPointer(15));
+        return this.lift(dataStream.readPointer(16));
     }
 
     static write(dataStream, value) {
-        dataStream.writePointer(15, this.lower(value));
+        dataStream.writePointer(16, this.lower(value));
     }
 
     static computeSize(value) {

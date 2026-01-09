@@ -1,0 +1,127 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+
+---
+$schema: moz://mozilla.org/schemas/glean/metrics/2-0-0
+
+
+ads_client:
+  build_cache_error:
+    type: labeled_string
+    description: >
+      Errors encountered when building the HTTP cache, labeled by error type.
+      The string value contains the error message or error type.
+    labels:
+      - builder_error
+      - database_error
+      - empty_db_path
+      - invalid_max_size
+      - invalid_ttl
+    bugs:
+      - https://github.com/mozilla/application-services/pull/7111
+    data_reviews:
+      - https://github.com/mozilla/application-services/pull/7111
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - ahanot@mozilla.com
+      - llisi@mozilla.com
+      - toast@mozilla.com
+    expires: never
+
+  client_error:
+    type: labeled_string
+    description: >
+      Errors encountered when using the ads client, labeled by operation type.
+      The string value contains the error message or error type. Errors are
+      recorded even if they are propagated to the consumer.
+    labels:
+      - record_click
+      - record_impression
+      - report_ad
+      - request_ads
+    bugs:
+      - https://github.com/mozilla/application-services/pull/7111
+    data_reviews:
+      - https://github.com/mozilla/application-services/pull/7111
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - ahanot@mozilla.com
+      - llisi@mozilla.com
+      - toast@mozilla.com
+    expires: never
+
+  client_operation_total:
+    type: labeled_counter
+    description: >
+      The total number of operations attempted by the ads client, labeled by
+      operation type. Used as the denominator for client_operation_success_rate.
+    labels:
+      - new
+      - record_click
+      - record_impression
+      - report_ad
+      - request_ads
+    bugs:
+      - https://github.com/mozilla/application-services/pull/7111
+    data_reviews:
+      - https://github.com/mozilla/application-services/pull/7111
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - ahanot@mozilla.com
+      - llisi@mozilla.com
+      - toast@mozilla.com
+    expires: never
+
+  deserialization_error:
+    type: labeled_string
+    description: >
+      Deserialization errors encountered when parsing AdResponse data,
+      labeled by error type. The string value contains the error message or
+      details. Invalid ad items are skipped but these errors are tracked for
+      monitoring data quality issues.
+    labels:
+      - invalid_ad_item
+      - invalid_array
+      - invalid_structure
+    bugs:
+      - https://github.com/mozilla/application-services/pull/7111
+    data_reviews:
+      - https://github.com/mozilla/application-services/pull/7111
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - ahanot@mozilla.com
+      - llisi@mozilla.com
+      - toast@mozilla.com
+    expires: never
+
+  http_cache_outcome:
+    type: labeled_string
+    description: >
+      The total number of outcomes encountered during read operations on the
+      http cache, labeled by type. The string value contains the error message or
+      error type.
+    labels:
+      - cleanup_failed
+      - hit
+      - lookup_failed
+      - miss_not_cacheable
+      - miss_stored
+      - no_cache
+      - store_failed
+    bugs:
+      - https://github.com/mozilla/application-services/pull/7111
+    data_reviews:
+      - https://github.com/mozilla/application-services/pull/7111
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - ahanot@mozilla.com
+      - llisi@mozilla.com
+      - toast@mozilla.com
+    expires: never

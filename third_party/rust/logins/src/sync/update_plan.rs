@@ -449,7 +449,7 @@ mod tests {
         // And since the local age is 100, then the server should win.
         let server_record_timestamp = now.checked_sub(Duration::from_secs(1)).unwrap();
         let local_login = LocalLogin::Alive {
-            login: login.clone(),
+            login: Box::new(login.clone()),
             local_modified,
         };
 
@@ -516,7 +516,7 @@ mod tests {
         // And since the local age is 1, the local record should win!
         let server_record_timestamp = now.checked_sub(Duration::from_secs(500)).unwrap();
         let local_login = LocalLogin::Alive {
-            login: login.clone(),
+            login: Box::new(login.clone()),
             local_modified,
         };
         let mirror_login = MirrorLogin {

@@ -58,21 +58,6 @@ pub enum FetchAdsError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum EmitTelemetryError {
-    #[error("URL parse error: {0}")]
-    UrlParse(#[from] url::ParseError),
-
-    #[error("Error sending request: {0}")]
-    Request(#[from] viaduct::ViaductError),
-
-    #[error("JSON error: {0}")]
-    Json(#[from] serde_json::Error),
-
-    #[error("Could not fetch ads, MARS responded with: {0}")]
-    HTTPError(#[from] HTTPError),
-}
-
-#[derive(Debug, thiserror::Error)]
 pub enum CallbackRequestError {
     #[error("Could not fetch ads, MARS responded with: {0}")]
     HTTPError(#[from] HTTPError),

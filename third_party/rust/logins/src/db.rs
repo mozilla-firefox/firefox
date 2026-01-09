@@ -306,6 +306,84 @@ impl LoginDb {
         Ok(())
     }
 
+    pub fn record_breach(&self, id: &str, timestamp: i64) -> Result<()> {
+        let tx = self.unchecked_transaction()?;
+        self.ensure_local_overlay_exists(id)?;
+        self.mark_mirror_overridden(id)?;
+        self.execute_cached(
+            "UPDATE loginsL
+             SET timeOfLastBreach = :now_millis
+             WHERE guid = :guid",
+            named_params! {
+                ":now_millis": timestamp,
+                ":guid": id,
+            },
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn is_potentially_breached(&self, id: &str) -> Result<bool> {
+        let is_potentially_breached: bool = self.db.query_row(
+            "SELECT EXISTS(SELECT 1 FROM loginsL WHERE guid = :guid AND timeOfLastBreach IS NOT NULL AND timeOfLastBreach > timePasswordChanged)",
+            named_params! { ":guid": id },
+            |row| row.get(0),
+        )?;
+        Ok(is_potentially_breached)
+    }
+
+    pub fn reset_all_breaches(&self) -> Result<()> {
+        let tx = self.unchecked_transaction()?;
+        self.execute_cached(
+            "UPDATE loginsL
+             SET timeOfLastBreach = NULL
+             WHERE timeOfLastBreach IS NOT NULL",
+            [],
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn is_breach_alert_dismissed(&self, id: &str) -> Result<bool> {
+        let is_breach_alert_dismissed: bool = self.db.query_row(
+            "SELECT EXISTS(SELECT 1 FROM loginsL WHERE guid = :guid AND timeOfLastBreach < timeLastBreachAlertDismissed)",
+            named_params! { ":guid": id },
+            |row| row.get(0),
+        )?;
+        Ok(is_breach_alert_dismissed)
+    }
+
+    /// Records that the user dismissed the breach alert for a login using the current time.
+    ///
+    /// For testing or when you need to specify a particular timestamp, use
+    /// [`record_breach_alert_dismissal_time`](Self::record_breach_alert_dismissal_time) instead.
+    pub fn record_breach_alert_dismissal(&self, id: &str) -> Result<()> {
+        let timestamp = util::system_time_ms_i64(SystemTime::now());
+        self.record_breach_alert_dismissal_time(id, timestamp)
+    }
+
+    /// Records that the user dismissed the breach alert for a login at a specific time.
+    ///
+    /// This is primarily useful for testing or when syncing dismissal times from other devices.
+    /// For normal usage, prefer [`record_breach_alert_dismissal`](Self::record_breach_alert_dismissal)
+    /// which automatically uses the current time.
+    pub fn record_breach_alert_dismissal_time(&self, id: &str, timestamp: i64) -> Result<()> {
+        let tx = self.unchecked_transaction()?;
+        self.ensure_local_overlay_exists(id)?;
+        self.mark_mirror_overridden(id)?;
+        self.execute_cached(
+            "UPDATE loginsL
+             SET timeLastBreachAlertDismissed = :now_millis
+             WHERE guid = :guid",
+            named_params! {
+                ":now_millis": timestamp,
+                ":guid": id,
+            },
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+
     // The single place we insert new rows or update existing local rows.
     // just the SQL - no validation or anything.
     fn insert_new_login(&self, login: &EncryptedLogin) -> Result<()> {
@@ -322,6 +400,8 @@ impl LoginDb {
                 timeCreated,
                 timeLastUsed,
                 timePasswordChanged,
+                timeOfLastBreach,
+                timeLastBreachAlertDismissed,
                 local_modified,
                 is_deleted,
                 sync_status
@@ -337,6 +417,8 @@ impl LoginDb {
                 :time_created,
                 :time_last_used,
                 :time_password_changed,
+                :time_of_last_breach,
+                :time_last_breach_alert_dismissed,
                 :local_modified,
                 0, -- is_deleted
                 {new} -- sync_status
@@ -356,6 +438,8 @@ impl LoginDb {
                 ":times_used": login.meta.times_used,
                 ":time_last_used": login.meta.time_last_used,
                 ":time_password_changed": login.meta.time_password_changed,
+                ":time_of_last_breach": login.fields.time_of_last_breach,
+                ":time_last_breach_alert_dismissed": login.fields.time_last_breach_alert_dismissed,
                 ":local_modified": login.meta.time_created,
                 ":sec_fields": login.sec_fields,
                 ":guid": login.guid(),
@@ -368,18 +452,18 @@ impl LoginDb {
         // assumes the "local overlay" exists, so the guid must too.
         let sql = format!(
             "UPDATE loginsL
-             SET local_modified      = :now_millis,
-                 timeLastUsed        = :time_last_used,
-                 timePasswordChanged = :time_password_changed,
-                 httpRealm           = :http_realm,
-                 formActionOrigin    = :form_action_origin,
-                 usernameField       = :username_field,
-                 passwordField       = :password_field,
-                 timesUsed           = :times_used,
-                 secFields           = :sec_fields,
-                 origin              = :origin,
+             SET local_modified                           = :now_millis,
+                 timeLastUsed                             = :time_last_used,
+                 timePasswordChanged                      = :time_password_changed,
+                 httpRealm                                = :http_realm,
+                 formActionOrigin                         = :form_action_origin,
+                 usernameField                            = :username_field,
+                 passwordField                            = :password_field,
+                 timesUsed                                = :times_used,
+                 secFields                                = :sec_fields,
+                 origin                                   = :origin,
                  -- leave New records as they are, otherwise update them to `changed`
-                 sync_status         = max(sync_status, {changed})
+                 sync_status                              = max(sync_status, {changed})
              WHERE guid = :guid",
             changed = SyncStatus::Changed as u8
         );
@@ -459,6 +543,8 @@ impl LoginDb {
                             http_realm: new_entry.http_realm,
                             username_field: new_entry.username_field,
                             password_field: new_entry.password_field,
+                            time_of_last_breach: None,
+                            time_last_breach_alert_dismissed: None,
                         },
                         sec_fields,
                     };
@@ -573,6 +659,8 @@ impl LoginDb {
                 http_realm: entry.http_realm,
                 username_field: entry.username_field,
                 password_field: entry.password_field,
+                time_of_last_breach: None,
+                time_last_breach_alert_dismissed: None,
             },
             sec_fields,
         };
@@ -1018,6 +1106,9 @@ pub mod test_utils {
                 timePasswordChanged,
                 timeCreated,
 
+                timeOfLastBreach,
+                timeLastBreachAlertDismissed,
+
                 guid
             ) VALUES (
                 :is_overridden,
@@ -1034,6 +1125,9 @@ pub mod test_utils {
                 :time_last_used,
                 :time_password_changed,
                 :time_created,
+
+                :time_of_last_breach,
+                :time_last_breach_alert_dismissed,
 
                 :guid
             )";
@@ -1052,6 +1146,8 @@ pub mod test_utils {
             ":time_last_used": login.meta.time_last_used,
             ":time_password_changed": login.meta.time_password_changed,
             ":time_created": login.meta.time_created,
+            ":time_of_last_breach": login.fields.time_of_last_breach,
+            ":time_last_breach_alert_dismissed": login.fields.time_last_breach_alert_dismissed,
             ":guid": login.guid_str(),
         })?;
         Ok(())
@@ -1676,6 +1772,155 @@ mod tests {
         let login2 = db.get_by_id(&login.meta.id).unwrap().unwrap();
         assert!(login2.meta.time_last_used > login.meta.time_last_used);
         assert_eq!(login2.meta.times_used, login.meta.times_used + 1);
+    }
+
+    #[test]
+    fn test_breach_alerts() {
+        ensure_initialized();
+        let db = LoginDb::open_in_memory();
+        let login = db
+            .add(
+                LoginEntry {
+                    origin: "https://www.example.com".into(),
+                    http_realm: Some("https://www.example.com".into()),
+                    username: "user1".into(),
+                    password: "password1".into(),
+                    ..Default::default()
+                },
+                &*TEST_ENCDEC,
+            )
+            .unwrap();
+        // initial state
+        assert!(login.fields.time_of_last_breach.is_none());
+        assert!(!db.is_potentially_breached(&login.meta.id).unwrap());
+        assert!(login.fields.time_last_breach_alert_dismissed.is_none());
+
+        // Wait and use a time that's definitely after password was changed
+        thread::sleep(time::Duration::from_millis(50));
+        let breach_time = util::system_time_ms_i64(SystemTime::now());
+        db.record_breach(&login.meta.id, breach_time).unwrap();
+        assert!(db.is_potentially_breached(&login.meta.id).unwrap());
+        let login1 = db.get_by_id(&login.meta.id).unwrap().unwrap();
+        assert!(login1.fields.time_of_last_breach.is_some());
+
+        // dismiss
+        db.record_breach_alert_dismissal(&login.meta.id).unwrap();
+        let login2 = db.get_by_id(&login.meta.id).unwrap().unwrap();
+        assert!(login2.fields.time_last_breach_alert_dismissed.is_some());
+
+        // reset
+        db.reset_all_breaches().unwrap();
+        assert!(!db.is_potentially_breached(&login.meta.id).unwrap());
+        let login3 = db.get_by_id(&login.meta.id).unwrap().unwrap();
+        assert!(login3.fields.time_of_last_breach.is_none());
+
+        // Wait and use a time that's definitely after password was changed
+        thread::sleep(time::Duration::from_millis(50));
+        let breach_time = util::system_time_ms_i64(SystemTime::now());
+        db.record_breach(&login.meta.id, breach_time).unwrap();
+        assert!(db.is_potentially_breached(&login.meta.id).unwrap());
+
+        // now change password
+        db.update(
+            &login.meta.id.clone(),
+            LoginEntry {
+                password: "changed-password".into(),
+                ..login.clone().decrypt(&*TEST_ENCDEC).unwrap().entry()
+            },
+            &*TEST_ENCDEC,
+        )
+        .unwrap();
+        // not breached anymore
+        assert!(!db.is_potentially_breached(&login.meta.id).unwrap());
+    }
+
+    #[test]
+    fn test_breach_alert_fields_not_overwritten_by_update() {
+        ensure_initialized();
+        let db = LoginDb::open_in_memory();
+        let login = db
+            .add(
+                LoginEntry {
+                    origin: "https://www.example.com".into(),
+                    http_realm: Some("https://www.example.com".into()),
+                    username: "user1".into(),
+                    password: "password1".into(),
+                    ..Default::default()
+                },
+                &*TEST_ENCDEC,
+            )
+            .unwrap();
+        assert!(!db.is_potentially_breached(&login.meta.id).unwrap());
+
+        // Wait and use a time that's definitely after password was changed
+        thread::sleep(time::Duration::from_millis(50));
+        let breach_time = util::system_time_ms_i64(SystemTime::now());
+        db.record_breach(&login.meta.id, breach_time).unwrap();
+        assert!(db.is_potentially_breached(&login.meta.id).unwrap());
+
+        // change some fields
+        db.update(
+            &login.meta.id.clone(),
+            LoginEntry {
+                username_field: "changed-username-field".into(),
+                ..login.clone().decrypt(&*TEST_ENCDEC).unwrap().entry()
+            },
+            &*TEST_ENCDEC,
+        )
+        .unwrap();
+
+        // breach still present
+        assert!(db.is_potentially_breached(&login.meta.id).unwrap());
+    }
+
+    #[test]
+    fn test_breach_alert_dismissal_with_specific_timestamp() {
+        ensure_initialized();
+        let db = LoginDb::open_in_memory();
+        let login = db
+            .add(
+                LoginEntry {
+                    origin: "https://www.example.com".into(),
+                    http_realm: Some("https://www.example.com".into()),
+                    username: "user1".into(),
+                    password: "password1".into(),
+                    ..Default::default()
+                },
+                &*TEST_ENCDEC,
+            )
+            .unwrap();
+
+        // Record a breach that happened after password was created
+        // Use a timestamp that's definitely after the login's timePasswordChanged
+        let breach_time = login.meta.time_password_changed + 1000;
+        db.record_breach(&login.meta.id, breach_time).unwrap();
+        assert!(db.is_potentially_breached(&login.meta.id).unwrap());
+
+        // Dismiss with a specific timestamp after the breach
+        let dismiss_time = breach_time + 500;
+        db.record_breach_alert_dismissal_time(&login.meta.id, dismiss_time)
+            .unwrap();
+
+        // Verify the exact timestamp was stored
+        let retrieved = db
+            .get_by_id(&login.meta.id)
+            .unwrap()
+            .unwrap()
+            .decrypt(&*TEST_ENCDEC)
+            .unwrap();
+        assert_eq!(
+            retrieved.time_last_breach_alert_dismissed,
+            Some(dismiss_time)
+        );
+
+        // Verify the breach alert is considered dismissed
+        assert!(db.is_breach_alert_dismissed(&login.meta.id).unwrap());
+
+        // Test that dismissing before the breach time means it's not dismissed
+        let earlier_dismiss_time = breach_time - 100;
+        db.record_breach_alert_dismissal_time(&login.meta.id, earlier_dismiss_time)
+            .unwrap();
+        assert!(!db.is_breach_alert_dismissed(&login.meta.id).unwrap());
     }
 
     #[test]
