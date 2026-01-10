@@ -5145,7 +5145,7 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
       if (mMouseMuxClient && mMouseMuxClient->IsConnected()) {
         nsWindow* focusedWnd = IMEHandler::GetFocusedWindow();
         if (focusedWnd && focusedWnd != this && focusedWnd->mWnd) {
-          ::PostMessage(focusedWnd->mWnd, msg, wParam, lParam);
+          ::PostMessage(focusedWnd->mWnd, msg, wParam | MOUSEMUX_MARKER, lParam);  // Re-add marker
           result = true;
           break;
         }
@@ -5164,7 +5164,7 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
         if (focusedWnd && focusedWnd != this && focusedWnd->mWnd) {
           mMouseMuxClient->Log("Forwarding WM_KEYDOWN vk=%u to focused HWND %p",
                                (unsigned)wParam, focusedWnd->mWnd);
-          ::PostMessage(focusedWnd->mWnd, msg, wParam, lParam);
+          ::PostMessage(focusedWnd->mWnd, msg, wParam | MOUSEMUX_MARKER, lParam);  // Re-add marker
           result = true;
           break;
         }
