@@ -12,7 +12,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define MOUSEMUX_CLIENT_VERSION "5.1"
+#define MOUSEMUX_CLIENT_VERSION "5.2"
 #define MOUSEMUX_BUILD_TIME __DATE__ " " __TIME__
 
 namespace mozilla {
@@ -51,6 +51,7 @@ bool MouseMuxClient::Connect(const wchar_t* aUrl) {
 void MouseMuxClient::Disconnect() {
   mShouldStop = true;
   mConnected = false;
+  // Post to UI thread for status update
 
   if (mSocket != INVALID_SOCKET) {
     // Shutdown first to interrupt any blocking recv()
@@ -150,7 +151,10 @@ void MouseMuxClient::WebSocketThread() {
 
   mConnected = true;
   Log("Connected to MouseMux server");
-  UpdateDebugStatus();
+  // Post to UI thread instead of direct call
+  if (mDebugDialog && ::IsWindow(mDebugDialog)) {
+    ::PostMessage(mDebugDialog, WM_MOUSEMUX_UPDATE, 0, 0);
+  }
 
   // Set socket timeout for recv
   DWORD timeout = 100;
@@ -229,8 +233,11 @@ void MouseMuxClient::WebSocketThread() {
   }
 
   mConnected = false;
+  // Post to UI thread for status update
   Log("WebSocket thread exiting");
-  UpdateDebugStatus();
+  if (mDebugDialog && ::IsWindow(mDebugDialog)) {
+    ::PostMessage(mDebugDialog, WM_MOUSEMUX_UPDATE, 0, 0);
+  }
 }
 
 void MouseMuxClient::HandleMessage(const std::string& aMessage) {
@@ -420,7 +427,10 @@ void MouseMuxClient::HandlePointerButton(uint32_t aHwid, int aScreenX, int aScre
     if (aHwid != mOwnerHwid) {
       mOwnerHwid = aHwid;
       Log("New owner: hwid=0x%X", aHwid);
-      UpdateDebugStatus();
+      // Post to UI thread instead of direct call
+      if (mDebugDialog && ::IsWindow(mDebugDialog)) {
+        ::PostMessage(mDebugDialog, WM_MOUSEMUX_UPDATE, 0, 0);
+      }
     }
     isOwner = true;
   }
@@ -522,22 +532,35 @@ void MouseMuxClient::Log(const char* aFormat, ...) {
 }
 
 void MouseMuxClient::AppendLog(const char* text) {
-  std::lock_guard<std::mutex> lock(mLogMutex);
-  mLogLines.push_back(text);
-  while (mLogLines.size() > 100) {
-    mLogLines.erase(mLogLines.begin());
+  // Thread-safe: queue text and post message to UI thread
+  {
+    std::lock_guard<std::mutex> lock(mLogMutex);
+    mLogLines.push_back(text);
+    while (mLogLines.size() > 100) {
+      mLogLines.erase(mLogLines.begin());
+    }
   }
+  // Post message to UI thread to update the log display
+  if (mDebugDialog && ::IsWindow(mDebugDialog)) {
+    ::PostMessage(mDebugDialog, WM_MOUSEMUX_LOG, 0, 0);
+  }
+}
 
-  if (mLogEdit && ::IsWindow(mLogEdit)) {
-    std::string fullText;
+void MouseMuxClient::FlushLogToUI() {
+  // Called on UI thread only - updates the log edit control
+  if (!mLogEdit || !::IsWindow(mLogEdit)) return;
+
+  std::string fullText;
+  {
+    std::lock_guard<std::mutex> lock(mLogMutex);
     for (const auto& line : mLogLines) {
       fullText += line;
       fullText += "\r\n";
     }
-    ::SetWindowTextA(mLogEdit, fullText.c_str());
-    int lineCount = (int)::SendMessage(mLogEdit, EM_GETLINECOUNT, 0, 0);
-    ::SendMessage(mLogEdit, EM_LINESCROLL, 0, lineCount);
   }
+  ::SetWindowTextA(mLogEdit, fullText.c_str());
+  int lineCount = (int)::SendMessage(mLogEdit, EM_GETLINECOUNT, 0, 0);
+  ::SendMessage(mLogEdit, EM_LINESCROLL, 0, lineCount);
 }
 
 void MouseMuxClient::ShowDebugDialog() {
@@ -661,6 +684,12 @@ LRESULT CALLBACK MouseMuxClient::DebugDialogProc(HWND hwnd, UINT msg, WPARAM wPa
 
 LRESULT MouseMuxClient::HandleDebugMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
   switch (msg) {
+    case WM_MOUSEMUX_UPDATE:
+      UpdateDebugStatus();
+      return 0;
+    case WM_MOUSEMUX_LOG:
+      FlushLogToUI();
+      return 0;
     case WM_COMMAND:
       if (LOWORD(wParam) == ID_CONNECT) {
         if (mConnected) {

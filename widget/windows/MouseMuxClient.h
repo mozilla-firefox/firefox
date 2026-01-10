@@ -21,6 +21,8 @@
 #define WM_MOUSEMUX_BUTTON    (WM_USER + 101)
 #define WM_MOUSEMUX_WHEEL     (WM_USER + 102)
 #define WM_MOUSEMUX_KEY       (WM_USER + 103)
+#define WM_MOUSEMUX_UPDATE    (WM_USER + 104)  // Update debug dialog from UI thread
+#define WM_MOUSEMUX_LOG       (WM_USER + 105)  // Append log from UI thread
 
 // Marker in wParam high bit to identify MouseMux-injected messages
 #define MOUSEMUX_MARKER 0x80000000
@@ -111,6 +113,7 @@ class MouseMuxClient {
   void CreateDebugDialog();
   void UpdateDebugStatus();
   void AppendLog(const char* text);
+  void FlushLogToUI();  // Called by UI thread to update log display
   static LRESULT CALLBACK DebugDialogProc(HWND hwnd, UINT msg, WPARAM wParam,
                                           LPARAM lParam);
   LRESULT HandleDebugMessage(UINT msg, WPARAM wParam, LPARAM lParam);
