@@ -5141,6 +5141,15 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
 
     case WM_SYSKEYUP:
     case WM_KEYUP: {
+      // MouseMux: Forward keyboard to focused window if this is top-level
+      if (mMouseMuxClient && mMouseMuxClient->IsConnected()) {
+        nsWindow* focusedWnd = IMEHandler::GetFocusedWindow();
+        if (focusedWnd && focusedWnd != this && focusedWnd->mWnd) {
+          ::PostMessage(focusedWnd->mWnd, msg, wParam, lParam);
+          result = true;
+          break;
+        }
+      }
       MSG nativeMsg = WinUtils::InitMSG(msg, wParam, lParam, mWnd);
       nativeMsg.time = ::GetMessageTime();
       result = ProcessKeyUpMessage(nativeMsg, nullptr);
@@ -5149,6 +5158,17 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
 
     case WM_SYSKEYDOWN:
     case WM_KEYDOWN: {
+      // MouseMux: Forward keyboard to focused window if this is top-level
+      if (mMouseMuxClient && mMouseMuxClient->IsConnected()) {
+        nsWindow* focusedWnd = IMEHandler::GetFocusedWindow();
+        if (focusedWnd && focusedWnd != this && focusedWnd->mWnd) {
+          mMouseMuxClient->Log("Forwarding WM_KEYDOWN vk=%u to focused HWND %p",
+                               (unsigned)wParam, focusedWnd->mWnd);
+          ::PostMessage(focusedWnd->mWnd, msg, wParam, lParam);
+          result = true;
+          break;
+        }
+      }
       // MouseMux: F11 = toggle debug dialog for this window
       if (wParam == VK_F11 && mMouseMuxClient) {
         if (mMouseMuxClient->IsDebugDialogVisible()) {

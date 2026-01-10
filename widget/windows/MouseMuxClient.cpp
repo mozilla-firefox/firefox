@@ -12,7 +12,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define MOUSEMUX_CLIENT_VERSION "4.6"
+#define MOUSEMUX_CLIENT_VERSION "4.7"
 #define MOUSEMUX_BUILD_TIME __DATE__ " " __TIME__
 
 namespace mozilla {
@@ -491,7 +491,8 @@ void MouseMuxClient::HandleKeyboard(uint32_t aHwid, uint32_t aVkey, uint32_t aMe
   }
 
   // Post to the owner window - Firefox will route to focused child
-  ::PostMessage(mOwnerHwnd, aMessage, aVkey, lParam);
+  BOOL result = ::PostMessage(mOwnerHwnd, aMessage, aVkey, lParam);
+  Log("PostMessage(hwnd=%p, msg=%u, vk=%u) result=%d", mOwnerHwnd, aMessage, aVkey, result);
 }
 
 void MouseMuxClient::Log(const char* aFormat, ...) {
