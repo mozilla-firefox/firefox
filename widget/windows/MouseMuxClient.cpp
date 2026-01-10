@@ -12,7 +12,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define MOUSEMUX_CLIENT_VERSION "4.7"
+#define MOUSEMUX_CLIENT_VERSION "5.0"
 #define MOUSEMUX_BUILD_TIME __DATE__ " " __TIME__
 
 namespace mozilla {
