@@ -857,6 +857,8 @@ nsWindow::nsWindow()
 
 nsWindow::~nsWindow() {
   mInDtor = true;
+  // Clean up per-window InputFilter state
+  InputFilter::RemoveWindow(mWnd);
 
   // If the widget was released without calling Destroy() then the native window
   // still exists, and we need to destroy it. Destroy() will early-return if it
@@ -4776,7 +4778,7 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
 
   // MouseMux: Skip native input when blocking is enabled
   // Allow MouseMux injected messages (marked with MOUSEMUX_MARKER in wParam)
-  if (InputFilter::IsEnabled()) {
+  if (InputFilter::IsEnabledForWindow(mWnd)) {
     switch (msg) {
       // Mouse events
       case WM_MOUSEMOVE:
@@ -5180,8 +5182,8 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
         break;
       }
       // MouseMux: F12 = emergency exit (disable blocking, disconnect)
-      if (wParam == VK_F12 && InputFilter::IsEnabled()) {
-        InputFilter::Disable();
+      if (wParam == VK_F12 && InputFilter::IsEnabledForWindow(mWnd)) {
+        InputFilter::DisableForWindow(mWnd);
         if (mMouseMuxClient) {
           mMouseMuxClient->Disconnect();
         }

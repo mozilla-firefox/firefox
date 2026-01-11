@@ -6,19 +6,29 @@
 #ifndef widget_windows_InputFilter_h
 #define widget_windows_InputFilter_h
 
+#include <windows.h>
+#include <map>
+#include <mutex>
+
 namespace mozilla {
 namespace widget {
 
-// Simple flag to block native mouse input in Firefox
-// When enabled, nsWindow skips processing native mouse messages
+// Per-window flag to block native mouse input in Firefox
+// When enabled for a window, nsWindow skips processing native mouse messages
+// for that specific window only. Each window is independent.
 class InputFilter {
  public:
-  static void Enable();
-  static void Disable();
-  static bool IsEnabled();
+  static void EnableForWindow(HWND hwnd);
+  static void DisableForWindow(HWND hwnd);
+  static bool IsEnabledForWindow(HWND hwnd);
+  static void RemoveWindow(HWND hwnd);  // Cleanup when window is destroyed
 
  private:
-  static bool sEnabled;
+  static std::map<HWND, bool> sEnabledWindows;
+  static std::mutex sMutex;
+
+  // Helper to find the top-level window for a child window
+  static HWND GetTopLevelWindow(HWND hwnd);
 };
 
 }  // namespace widget

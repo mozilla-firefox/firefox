@@ -8,11 +8,56 @@
 namespace mozilla {
 namespace widget {
 
-bool InputFilter::sEnabled = false;
+std::map<HWND, bool> InputFilter::sEnabledWindows;
+std::mutex InputFilter::sMutex;
 
-void InputFilter::Enable() { sEnabled = true; }
-void InputFilter::Disable() { sEnabled = false; }
-bool InputFilter::IsEnabled() { return sEnabled; }
+HWND InputFilter::GetTopLevelWindow(HWND hwnd) {
+  if (!hwnd) return nullptr;
+  
+  // Walk up the parent chain to find the top-level window
+  HWND parent = hwnd;
+  HWND next;
+  while ((next = ::GetParent(parent)) != nullptr) {
+    parent = next;
+  }
+  return parent;
+}
+
+void InputFilter::EnableForWindow(HWND hwnd) {
+  HWND topLevel = GetTopLevelWindow(hwnd);
+  if (!topLevel) topLevel = hwnd;
+  
+  std::lock_guard<std::mutex> lock(sMutex);
+  sEnabledWindows[topLevel] = true;
+}
+
+void InputFilter::DisableForWindow(HWND hwnd) {
+  HWND topLevel = GetTopLevelWindow(hwnd);
+  if (!topLevel) topLevel = hwnd;
+  
+  std::lock_guard<std::mutex> lock(sMutex);
+  sEnabledWindows[topLevel] = false;
+}
+
+bool InputFilter::IsEnabledForWindow(HWND hwnd) {
+  HWND topLevel = GetTopLevelWindow(hwnd);
+  if (!topLevel) topLevel = hwnd;
+  
+  std::lock_guard<std::mutex> lock(sMutex);
+  auto it = sEnabledWindows.find(topLevel);
+  if (it != sEnabledWindows.end()) {
+    return it->second;
+  }
+  return false;  // Not in map means not enabled
+}
+
+void InputFilter::RemoveWindow(HWND hwnd) {
+  HWND topLevel = GetTopLevelWindow(hwnd);
+  if (!topLevel) topLevel = hwnd;
+  
+  std::lock_guard<std::mutex> lock(sMutex);
+  sEnabledWindows.erase(topLevel);
+}
 
 }  // namespace widget
 }  // namespace mozilla

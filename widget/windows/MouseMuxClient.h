@@ -21,8 +21,8 @@
 #define WM_MOUSEMUX_BUTTON    (WM_USER + 101)
 #define WM_MOUSEMUX_WHEEL     (WM_USER + 102)
 #define WM_MOUSEMUX_KEY       (WM_USER + 103)
-#define WM_MOUSEMUX_UPDATE    (WM_USER + 104)  // Update debug dialog from UI thread
-#define WM_MOUSEMUX_LOG       (WM_USER + 105)  // Append log from UI thread
+#define WM_MOUSEMUX_UPDATE    (WM_USER + 104)
+#define WM_MOUSEMUX_LOG       (WM_USER + 105)
 
 // Marker in wParam high bit to identify MouseMux-injected messages
 #define MOUSEMUX_MARKER 0x80000000
@@ -37,31 +37,45 @@ namespace widget {
  * The client connects to the MouseMux server, receives all events,
  * filters them to only handle events within its window bounds,
  * and tracks ownership (which hwid clicked on this window).
+ *
+ * Thread safety:
+ * - Connect/Disconnect are protected by mConnectMutex
+ * - Socket access is protected by mSocketMutex
+ * - All UI updates go through PostMessage to the UI thread
  */
 class MouseMuxClient {
  public:
   explicit MouseMuxClient(HWND aOwnerHwnd);
   ~MouseMuxClient();
 
+  // Non-copyable
+  MouseMuxClient(const MouseMuxClient&) = delete;
+  MouseMuxClient& operator=(const MouseMuxClient&) = delete;
+
   bool Connect(const wchar_t* aUrl = L"ws://localhost:41001");
   void Disconnect();
-  bool IsConnected() const { return mConnected; }
+  bool IsConnected() const { return mConnected.load(); }
 
   // Ownership - which hwid clicked on this window
-  uint32_t GetOwnerHwid() const { return mOwnerHwid; }
-  void ClearOwner() { mOwnerHwid = 0; }
+  uint32_t GetOwnerHwid() const { return mOwnerHwid.load(); }
+  void ClearOwner() { mOwnerHwid.store(0); }
 
   // Debug dialog
   void ShowDebugDialog();
   void HideDebugDialog();
   bool IsDebugDialogVisible() const { return mDebugDialogVisible; }
 
-  // Logging
+  // Logging (thread-safe)
   void Log(const char* aFormat, ...);
 
  private:
+  // Worker thread
   void WebSocketThread();
+  void StopWorkerThread();
+
+  // Message handling
   void HandleMessage(const std::string& aMessage);
+  void ParseUserList(const std::string& aMessage);
   void HandlePointerMotion(uint32_t aHwid, int aScreenX, int aScreenY);
   void HandlePointerButton(uint32_t aHwid, int aScreenX, int aScreenY,
                            uint32_t aEventFlags);
@@ -70,25 +84,31 @@ class MouseMuxClient {
   void HandleKeyboard(uint32_t aHwid, uint32_t aVkey, uint32_t aMessage,
                       uint32_t aScanCode, uint32_t aFlags);
 
+  // Helpers
   bool IsPointInWindow(int aScreenX, int aScreenY);
   WPARAM BuildMouseWParam(uint32_t aHwid);
   POINT ScreenToClient(int aScreenX, int aScreenY);
 
-  HWND mOwnerHwnd;  // The window we belong to
-  std::atomic<uint32_t> mOwnerHwid{0};  // The hwid that owns this window
+  // Owner window
+  HWND mOwnerHwnd;
+  std::atomic<uint32_t> mOwnerHwid{0};
 
+  // Connection state
   std::wstring mServerUrl;
   SOCKET mSocket = INVALID_SOCKET;
   std::atomic<bool> mConnected{false};
-
-  std::thread mWorkerThread;
   std::atomic<bool> mShouldStop{false};
 
-  // Button state per device (from MouseMux events only)
+  // Thread management
+  std::thread mWorkerThread;
+  std::atomic<bool> mThreadRunning{false};  // True while worker thread is running
+  std::mutex mConnectMutex;  // Protects Connect/Disconnect
+  std::mutex mSocketMutex;   // Protects mSocket access
+
+  // Per-device state
   std::map<uint32_t, uint32_t> mButtonState;
   std::mutex mButtonStateMutex;
 
-  // Last known mouse position per device
   struct MousePos {
     int screenX = 0;
     int screenY = 0;
@@ -96,7 +116,6 @@ class MouseMuxClient {
   std::map<uint32_t, MousePos> mLastMousePos;
   std::mutex mMousePosMutex;
 
-  // Mouse to keyboard hwid mapping
   std::map<uint32_t, uint32_t> mMouseToKeyboard;
   std::mutex mMappingMutex;
 
@@ -111,12 +130,14 @@ class MouseMuxClient {
   bool mDebugDialogVisible = false;
 
   void CreateDebugDialog();
-  void UpdateDebugStatus();
+  void UpdateDebugStatus();       // Call only from UI thread
+  void UpdateDebugStatusSafe();   // Safe from any thread (posts message)
   void AppendLog(const char* text);
-  void FlushLogToUI();  // Called by UI thread to update log display
+  void FlushLogToUI();
+
   static LRESULT CALLBACK DebugDialogProc(HWND hwnd, UINT msg, WPARAM wParam,
                                           LPARAM lParam);
-  LRESULT HandleDebugMessage(UINT msg, WPARAM wParam, LPARAM lParam);
+  LRESULT HandleDebugMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
   enum DebugControls {
     ID_STATUS = 1001,
