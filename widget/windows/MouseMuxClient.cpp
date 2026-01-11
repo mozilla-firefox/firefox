@@ -13,7 +13,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define MOUSEMUX_CLIENT_VERSION "5.8"
+#define MOUSEMUX_CLIENT_VERSION "5.9"
 #define MOUSEMUX_BUILD_TIME __DATE__ " " __TIME__
 
 namespace mozilla {
@@ -464,7 +464,13 @@ void MouseMuxClient::HandlePointerMotion(uint32_t aHwid, int aScreenX, int aScre
   bool isOwner = (aHwid == owner);
   bool inWindow = IsPointInWindow(aScreenX, aScreenY);
 
-  if (!isOwner && !inWindow) return;
+  // If window has an owner, only process that owner's motion
+  // If no owner, only process motion if cursor is in window (hover)
+  if (owner != 0) {
+    if (!isOwner) return;
+  } else {
+    if (!inWindow) return;
+  }
   if (!mOwnerHwnd) return;
 
   POINT clientPt = ScreenToClient(aScreenX, aScreenY);
@@ -519,7 +525,13 @@ void MouseMuxClient::HandlePointerButton(uint32_t aHwid, int aScreenX, int aScre
     isOwner = true;
   }
 
-  if (!isOwner && !inWindow) return;
+  // If window has an owner, only process that owner's motion
+  // If no owner, only process motion if cursor is in window (hover)
+  if (owner != 0) {
+    if (!isOwner) return;
+  } else {
+    if (!inWindow) return;
+  }
   if (!mOwnerHwnd) return;
 
   POINT clientPt = ScreenToClient(aScreenX, aScreenY);
@@ -540,7 +552,13 @@ void MouseMuxClient::HandlePointerWheel(uint32_t aHwid, int aScreenX, int aScree
   bool isOwner = (aHwid == owner);
   bool inWindow = IsPointInWindow(aScreenX, aScreenY);
 
-  if (!isOwner && !inWindow) return;
+  // If window has an owner, only process that owner's motion
+  // If no owner, only process motion if cursor is in window (hover)
+  if (owner != 0) {
+    if (!isOwner) return;
+  } else {
+    if (!inWindow) return;
+  }
   if (!mOwnerHwnd) return;
 
   POINT clientPt = ScreenToClient(aScreenX, aScreenY);
