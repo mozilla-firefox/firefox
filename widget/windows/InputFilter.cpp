@@ -10,6 +10,8 @@ namespace widget {
 
 std::map<HWND, bool> InputFilter::sEnabledWindows;
 std::mutex InputFilter::sMutex;
+std::map<HWND, InputFilter::CursorPos> InputFilter::sCursorPositions;
+std::mutex InputFilter::sCursorMutex;
 
 HWND InputFilter::GetTopLevelWindow(HWND hwnd) {
   if (!hwnd) return nullptr;
@@ -55,8 +57,39 @@ void InputFilter::RemoveWindow(HWND hwnd) {
   HWND topLevel = GetTopLevelWindow(hwnd);
   if (!topLevel) topLevel = hwnd;
   
-  std::lock_guard<std::mutex> lock(sMutex);
-  sEnabledWindows.erase(topLevel);
+  {
+    std::lock_guard<std::mutex> lock(sMutex);
+    sEnabledWindows.erase(topLevel);
+  }
+  {
+    std::lock_guard<std::mutex> lock(sCursorMutex);
+    sCursorPositions.erase(topLevel);
+  }
+}
+
+void InputFilter::SetCursorPosForWindow(HWND hwnd, int screenX, int screenY) {
+  HWND topLevel = GetTopLevelWindow(hwnd);
+  if (!topLevel) topLevel = hwnd;
+  
+  std::lock_guard<std::mutex> lock(sCursorMutex);
+  CursorPos& pos = sCursorPositions[topLevel];
+  pos.screenX = screenX;
+  pos.screenY = screenY;
+  pos.valid = true;
+}
+
+bool InputFilter::GetCursorPosForWindow(HWND hwnd, POINT* outPos) {
+  HWND topLevel = GetTopLevelWindow(hwnd);
+  if (!topLevel) topLevel = hwnd;
+  
+  std::lock_guard<std::mutex> lock(sCursorMutex);
+  auto it = sCursorPositions.find(topLevel);
+  if (it != sCursorPositions.end() && it->second.valid) {
+    outPos->x = it->second.screenX;
+    outPos->y = it->second.screenY;
+    return true;
+  }
+  return false;  // No valid position stored
 }
 
 }  // namespace widget

@@ -13,7 +13,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define MOUSEMUX_CLIENT_VERSION "5.9"
+#define MOUSEMUX_CLIENT_VERSION "5.19"
 #define MOUSEMUX_BUILD_TIME __DATE__ " " __TIME__
 
 namespace mozilla {
@@ -464,13 +464,20 @@ void MouseMuxClient::HandlePointerMotion(uint32_t aHwid, int aScreenX, int aScre
   bool isOwner = (aHwid == owner);
   bool inWindow = IsPointInWindow(aScreenX, aScreenY);
 
-  // If window has an owner, only process that owner's motion
-  // If no owner, only process motion if cursor is in window (hover)
-  if (owner != 0) {
-    if (!isOwner) return;
-  } else {
-    if (!inWindow) return;
+  // Log every 100th motion for debugging
+  static int motionCount = 0;
+  if (++motionCount % 100 == 0) {
+    Log("MOTION[%d] hwid=0x%X pos=(%d,%d) owner=0x%X isOwner=%d inWin=%d",
+        motionCount, aHwid, aScreenX, aScreenY, owner, isOwner, inWindow);
   }
+
+  // Only process from owner - no hover (prevents interference)
+  if (!isOwner) return;
+  
+
+
+
+
   if (!mOwnerHwnd) return;
 
   POINT clientPt = ScreenToClient(aScreenX, aScreenY);
@@ -518,20 +525,21 @@ void MouseMuxClient::HandlePointerButton(uint32_t aHwid, int aScreenX, int aScre
     return;
   }
 
-  if (isButtonDown && inWindow && aHwid != owner) {
+  // Only allow setting owner if there's no current owner (lock ownership)
+  if (isButtonDown && inWindow && owner == 0) {
     mOwnerHwid.store(aHwid);
-    Log("New owner: hwid=0x%X (was 0x%X)", aHwid, owner);
+    Log("New owner: hwid=0x%X (locked)", aHwid);
     UpdateDebugStatusSafe();
     isOwner = true;
   }
 
-  // If window has an owner, only process that owner's motion
-  // If no owner, only process motion if cursor is in window (hover)
-  if (owner != 0) {
-    if (!isOwner) return;
-  } else {
-    if (!inWindow) return;
-  }
+  // Only process from owner - no hover (prevents interference)
+  if (!isOwner) return;
+  
+
+
+
+
   if (!mOwnerHwnd) return;
 
   POINT clientPt = ScreenToClient(aScreenX, aScreenY);
@@ -552,13 +560,13 @@ void MouseMuxClient::HandlePointerWheel(uint32_t aHwid, int aScreenX, int aScree
   bool isOwner = (aHwid == owner);
   bool inWindow = IsPointInWindow(aScreenX, aScreenY);
 
-  // If window has an owner, only process that owner's motion
-  // If no owner, only process motion if cursor is in window (hover)
-  if (owner != 0) {
-    if (!isOwner) return;
-  } else {
-    if (!inWindow) return;
-  }
+  // Only process from owner - no hover (prevents interference)
+  if (!isOwner) return;
+  
+
+
+
+
   if (!mOwnerHwnd) return;
 
   POINT clientPt = ScreenToClient(aScreenX, aScreenY);

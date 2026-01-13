@@ -23,9 +23,23 @@ class InputFilter {
   static bool IsEnabledForWindow(HWND hwnd);
   static void RemoveWindow(HWND hwnd);  // Cleanup when window is destroyed
 
+  // Per-window cursor position tracking for MouseMux
+  // Stores the last known MouseMux cursor position per-window
+  static void SetCursorPosForWindow(HWND hwnd, int screenX, int screenY);
+  static bool GetCursorPosForWindow(HWND hwnd, POINT* outPos);
+
  private:
   static std::map<HWND, bool> sEnabledWindows;
   static std::mutex sMutex;
+
+  // Per-window cursor position storage
+  struct CursorPos {
+    int screenX = 0;
+    int screenY = 0;
+    bool valid = false;
+  };
+  static std::map<HWND, CursorPos> sCursorPositions;
+  static std::mutex sCursorMutex;
 
   // Helper to find the top-level window for a child window
   static HWND GetTopLevelWindow(HWND hwnd);

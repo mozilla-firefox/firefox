@@ -3987,13 +3987,20 @@ void nsWindow::InitEvent(WidgetGUIEvent& event, LayoutDeviceIntPoint* aPoint) {
   if (nullptr == aPoint) {  // use the point from the event
     // get the message position in client coordinates
     if (mWnd != nullptr) {
-      DWORD pos = ::GetMessagePos();
       POINT cpos;
-
-      cpos.x = GET_X_LPARAM(pos);
-      cpos.y = GET_Y_LPARAM(pos);
-
-      ::ScreenToClient(mWnd, &cpos);
+      
+      // MouseMux: Use stored cursor position instead of GetMessagePos
+      if (InputFilter::IsEnabledForWindow(mWnd) &&
+          InputFilter::GetCursorPosForWindow(mWnd, &cpos)) {
+        // cpos now contains screen coordinates from MouseMux
+        ::ScreenToClient(mWnd, &cpos);
+      } else {
+        // Fall back to native GetMessagePos
+        DWORD pos = ::GetMessagePos();
+        cpos.x = GET_X_LPARAM(pos);
+        cpos.y = GET_Y_LPARAM(pos);
+        ::ScreenToClient(mWnd, &cpos);
+      }
       event.mRefPoint = LayoutDeviceIntPoint(cpos.x, cpos.y);
     } else {
       event.mRefPoint = LayoutDeviceIntPoint(0, 0);
@@ -4354,14 +4361,19 @@ bool nsWindow::DispatchMouseEvent(EventMessage aEventMessage, WPARAM wParam,
 
       if (rect.Contains(mouseOrPointerEvent.mRefPoint)) {
         if (sCurrentWindow == nullptr || sCurrentWindow != this) {
-          if ((nullptr != sCurrentWindow) && (!sCurrentWindow->mInDtor)) {
+          // MouseMux: Skip cross-window exit/enter when InputFilter is enabled
+          // Each MouseMux window is independent and shouldn't affect others
+          bool skipCrossWindow = InputFilter::IsEnabledForWindow(mWnd);
+          if (!skipCrossWindow && (nullptr != sCurrentWindow) && (!sCurrentWindow->mInDtor)) {
             LPARAM pos = sCurrentWindow->lParamToClient(lParamToScreen(lParam));
             sCurrentWindow->DispatchMouseEvent(
                 eMouseExitFromWidget, wParam, pos, false, MouseButton::ePrimary,
                 aInputSource, aPointerInfo);
           }
-          sCurrentWindow = this;
-          if (!mInDtor) {
+          if (!skipCrossWindow) {
+            sCurrentWindow = this;
+          }
+          if (!mInDtor && !skipCrossWindow) {
             LPARAM pos = sCurrentWindow->lParamToClient(lParamToScreen(lParam));
             sCurrentWindow->DispatchMouseEvent(
                 eMouseEnterIntoWidget, wParam, pos, false,
@@ -4434,16 +4446,22 @@ void nsWindow::DispatchFocusToTopLevelWindow(bool aIsActivate) {
   }
 }
 
-HWND nsWindow::WindowAtMouse() {
-  DWORD pos = ::GetMessagePos();
+HWND nsWindow::WindowAtMouse(HWND aForWnd) {
   POINT mp;
-  mp.x = GET_X_LPARAM(pos);
-  mp.y = GET_Y_LPARAM(pos);
+  // MouseMux: Use stored cursor position if available
+  if (aForWnd && InputFilter::IsEnabledForWindow(aForWnd) &&
+      InputFilter::GetCursorPosForWindow(aForWnd, &mp)) {
+    // mp now has screen coords from MouseMux
+  } else {
+    DWORD pos = ::GetMessagePos();
+    mp.x = GET_X_LPARAM(pos);
+    mp.y = GET_Y_LPARAM(pos);
+  }
   return ::WindowFromPoint(mp);
 }
 
 bool nsWindow::IsTopLevelMouseExit(HWND aWnd) {
-  HWND mouseWnd = WindowAtMouse();
+  HWND mouseWnd = WindowAtMouse(aWnd);
 
   // WinUtils::GetTopLevelHWND() will return a HWND for the window frame
   // (which includes the non-client area).  If the mouse has moved into
@@ -4780,7 +4798,7 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
   // Allow MouseMux injected messages (marked with MOUSEMUX_MARKER in wParam)
   if (InputFilter::IsEnabledForWindow(mWnd)) {
     switch (msg) {
-      // Mouse events
+      // Mouse events with CLIENT coordinates
       case WM_MOUSEMOVE:
       case WM_LBUTTONDOWN:
       case WM_LBUTTONUP:
@@ -4791,8 +4809,6 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
       case WM_MBUTTONDOWN:
       case WM_MBUTTONUP:
       case WM_MBUTTONDBLCLK:
-      case WM_MOUSEWHEEL:
-      case WM_MOUSEHWHEEL:
       case WM_XBUTTONDOWN:
       case WM_XBUTTONUP:
       case WM_XBUTTONDBLCLK: {
@@ -4800,6 +4816,41 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
           return true;  // Block native mouse
         }
         wParam &= ~MOUSEMUX_MARKER;  // Strip marker
+        // Store cursor position (convert client -> screen)
+        {
+          POINT pt;
+          pt.x = GET_X_LPARAM(lParam);
+          pt.y = GET_Y_LPARAM(lParam);
+          ::ClientToScreen(mWnd, &pt);
+          InputFilter::SetCursorPosForWindow(mWnd, pt.x, pt.y);
+        }
+        break;
+      }
+      // Mouse events with SCREEN coordinates
+      case WM_MOUSEWHEEL:
+      case WM_MOUSEHWHEEL:
+      case WM_NCMOUSEMOVE: {
+        if (!(wParam & MOUSEMUX_MARKER)) {
+          return true;  // Block native mouse
+        }
+        wParam &= ~MOUSEMUX_MARKER;  // Strip marker
+        // Store cursor position (already screen coords)
+        {
+          POINT pt;
+          pt.x = GET_X_LPARAM(lParam);
+          pt.y = GET_Y_LPARAM(lParam);
+          InputFilter::SetCursorPosForWindow(mWnd, pt.x, pt.y);
+        }
+        break;
+      }
+      // Leave events have no meaningful coordinates
+      case WM_MOUSELEAVE:
+      case WM_NCMOUSELEAVE: {
+        if (!(wParam & MOUSEMUX_MARKER)) {
+          return true;  // Block native mouse
+        }
+        wParam &= ~MOUSEMUX_MARKER;  // Strip marker
+        // Don't update cursor pos - leave events have no coords
         break;
       }
       // Keyboard events
@@ -5312,7 +5363,7 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
       // clear LastMouseMoveData.  This way the WM_MOUSEMOVE we get after the
       // transition window disappears will not be ignored, even if the mouse
       // hasn't moved.
-      if (mTransitionWnd && WindowAtMouse() == mTransitionWnd) {
+      if (mTransitionWnd && WindowAtMouse(mWnd) == mTransitionWnd) {
         LastMouseMoveData::Clear();
       }
 
@@ -5323,7 +5374,16 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
                           (GetKeyState(VK_RBUTTON) ? MK_RBUTTON : 0);
       // Synthesize an event position because we don't get one from
       // WM_MOUSELEAVE.
-      LPARAM pos = lParamToClient(::GetMessagePos());
+      LPARAM pos;
+      POINT cursorPos;
+      // MouseMux: Use stored cursor position if available
+      if (InputFilter::IsEnabledForWindow(mWnd) &&
+          InputFilter::GetCursorPosForWindow(mWnd, &cursorPos)) {
+        ::ScreenToClient(mWnd, &cursorPos);
+        pos = MAKELPARAM(cursorPos.x, cursorPos.y);
+      } else {
+        pos = lParamToClient(::GetMessagePos());
+      }
       DispatchMouseEvent(eMouseExitFromWidget, mouseState, pos, false,
                          MouseButton::ePrimary, MOUSE_INPUT_SOURCE());
     } break;
@@ -7568,9 +7628,15 @@ bool nsWindow::EventIsInsideWindow(nsWindow* aWindow,
   if (aEventPoint) {
     mp = *aEventPoint;
   } else {
-    DWORD pos = ::GetMessagePos();
-    mp.x = GET_X_LPARAM(pos);
-    mp.y = GET_Y_LPARAM(pos);
+    // MouseMux: Use stored cursor position if available
+    if (aWindow && InputFilter::IsEnabledForWindow(aWindow->mWnd) &&
+        InputFilter::GetCursorPosForWindow(aWindow->mWnd, &mp)) {
+      // mp now has screen coords from MouseMux
+    } else {
+      DWORD pos = ::GetMessagePos();
+      mp.x = GET_X_LPARAM(pos);
+      mp.y = GET_Y_LPARAM(pos);
+    }
   }
 
   auto margin = aWindow->mInputRegion.mMargin;
