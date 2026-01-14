@@ -9,7 +9,9 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import mozilla.appservices.places.BookmarkRoot
@@ -49,6 +51,8 @@ class BookmarksMiddlewareTest {
 
     @get:Rule
     val coroutineRule = MainCoroutineRule()
+
+    private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var bookmarksStorage: BookmarksStorage
     private lateinit var clipboardManager: ClipboardManager
@@ -2064,6 +2068,7 @@ class BookmarksMiddlewareTest {
         saveBookmarkSortOrder = saveSortOrder,
         lastSavedFolderCache = lastSavedFolderCache,
         reportResultGlobally = reportResultGlobally,
+        lifecycleScope = CoroutineScope(testDispatcher),
     )
 
     private fun BookmarksMiddleware.makeStore(
