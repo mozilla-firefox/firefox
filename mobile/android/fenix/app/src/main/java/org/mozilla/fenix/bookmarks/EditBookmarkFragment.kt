@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.getSystemService
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
@@ -111,6 +112,7 @@ class EditBookmarkFragment : Fragment(R.layout.fragment_edit_bookmark) {
                                             AppAction.BookmarkAction.BookmarkOperationResultReported(it),
                                         )
                                     },
+                                    lifecycleScope = lifecycleScope,
                                 ),
                             ),
                             bookmarkToLoad = args.guidToEdit,

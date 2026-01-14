@@ -10,6 +10,7 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mozilla.appservices.places.BookmarkRoot
@@ -72,10 +73,11 @@ internal class BookmarksMiddleware(
     private val saveBookmarkSortOrder: suspend (BookmarksListSortOrder) -> Unit,
     private val lastSavedFolderCache: LastSavedFolderCache,
     private val reportResultGlobally: (BookmarksGlobalResultReport) -> Unit,
+    private val lifecycleScope: CoroutineScope,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : Middleware<BookmarksState, BookmarksAction> {
 
-    private val scope = CoroutineScope(ioDispatcher)
+    private val scope = CoroutineScope(lifecycleScope.coroutineContext + ioDispatcher)
 
     @Suppress("LongMethod", "CognitiveComplexMethod", "CyclomaticComplexMethod")
     override fun invoke(
@@ -96,7 +98,7 @@ internal class BookmarksMiddleware(
         }
 
         when (action) {
-            Init -> store.tryDispatchLoadFor(BookmarkRoot.Mobile.id)
+            Init -> store.tryDispatchLoadFor(store.state.currentFolder.guid)
             is InitEdit -> scope.launch {
                 Result.runCatching {
                     val bookmarkNode = bookmarksStorage.getBookmark(action.guid).getOrNull()
@@ -278,6 +280,10 @@ internal class BookmarksMiddleware(
                     }
                     // list screen cases
                     preReductionState.selectedItems.isNotEmpty() -> { /* noop */ }
+                    // User is clicking back before we've loaded anything
+                    preReductionState.currentFolder.guid.isEmpty() -> {
+                        exitBookmarks()
+                    }
                     preReductionState.currentFolder.guid != BookmarkRoot.Mobile.id -> {
                         scope.launch {
                             val parentFolderGuid = withContext(ioDispatcher) {
@@ -516,6 +522,8 @@ internal class BookmarksMiddleware(
     private fun Store<BookmarksState, BookmarksAction>.tryDispatchLoadFor(guid: String) =
         scope.launch {
             bookmarksStorage.getTree(guid).getOrNull()?.let { rootNode ->
+                ensureActive()
+
                 val folder = BookmarkItem.Folder(
                     guid = guid,
                     title = resolveFolderTitle(rootNode),
