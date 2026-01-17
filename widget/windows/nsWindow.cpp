@@ -4784,6 +4784,12 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
     return true;
   }
 
+  // Set current window for InputFilter so KeyboardLayout can query button state
+  InputFilter::SetCurrentWindow(mWnd);
+  auto clearCurrentWindow = mozilla::MakeScopeExit([]() {
+    InputFilter::ClearCurrentWindow();
+  });
+
   // The preference whether to use a different keyboard layout for each
   // window is cached, and updating it will not take effect until the
   // next restart. We read the preference here and not upon WM_ACTIVATE to make
@@ -4861,11 +4867,33 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
       case WM_CHAR:
       case WM_SYSCHAR: {
         // Allow F12 through for emergency exit
-        if (wParam == VK_F12) {
+        if ((wParam & 0xFF) == VK_F12) {
           break;
         }
         if (!(wParam & MOUSEMUX_MARKER)) {
+          // Log blocked native keyboard
+          static int blockCount = 0;
+          if (++blockCount % 10 == 1) {
+            FILE* f = fopen("D:/scratch/firefox/mousemux_client.log", "a");
+            if (f) {
+              fprintf(f, "[nsWindow] BLOCKED native keyboard: msg=0x%X wParam=0x%llX HWND=%p (count=%d)\n",
+                      msg, (unsigned long long)wParam, mWnd, blockCount);
+              fclose(f);
+            }
+          }
           return true;  // Block native keyboard
+        }
+        // Log accepted MouseMux keyboard
+        {
+          static int acceptCount = 0;
+          if (++acceptCount % 10 == 1) {
+            FILE* f = fopen("D:/scratch/firefox/mousemux_client.log", "a");
+            if (f) {
+              fprintf(f, "[nsWindow] ACCEPTED MouseMux keyboard: msg=0x%X wParam=0x%llX HWND=%p (count=%d)\n",
+                      msg, (unsigned long long)wParam, mWnd, acceptCount);
+              fclose(f);
+            }
+          }
         }
         wParam &= ~MOUSEMUX_MARKER;  // Strip marker
         break;

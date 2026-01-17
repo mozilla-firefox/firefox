@@ -28,6 +28,7 @@
 
 #include "WidgetUtils.h"
 #include "WinUtils.h"
+#include "InputFilter.h"
 
 #include "npapi.h"
 
@@ -910,6 +911,16 @@ void ModifierKeyState::InitMouseEvent(WidgetInputEvent& aMouseEvent) const {
 
   WidgetMouseEventBase& mouseEvent = *aMouseEvent.AsMouseEventBase();
   mouseEvent.mButtons = 0;
+
+  // Try to get button state from InputFilter (MouseMux per-window state)
+  uint16_t mouseMuxButtons = 0;
+  if (InputFilter::GetCurrentMouseButtons(&mouseMuxButtons)) {
+    // Use MouseMux tracked button state instead of native GetKeyState
+    mouseEvent.mButtons = static_cast<int16_t>(mouseMuxButtons);
+    return;
+  }
+
+  // Fall back to native GetKeyState for non-MouseMux windows
   if (::GetKeyState(VK_LBUTTON) < 0) {
     mouseEvent.mButtons |= MouseButtonsFlag::ePrimaryFlag;
   }
