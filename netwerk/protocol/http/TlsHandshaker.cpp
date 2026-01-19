@@ -161,7 +161,16 @@ nsresult TlsHandshaker::SetupNPNList(nsITLSSocketControl* ssl, uint32_t caps,
   // For NPN, In the case of overlap, matching priority is driven by
   // the order of the server's advertisement - with index 0 used when
   // there is no match.
-  protocolArray.AppendElement("http/1.1"_ns);
+  nsAutoCString val;
+  RefPtr<nsAHttpTransaction> trans = mOwner->Transaction();
+  if (trans && (trans->Caps() & NS_HTTP_CONNECT_ONLY) &&
+      NS_SUCCEEDED(trans->RequestHead()->GetHeader(nsHttp::Upgrade, val)) &&
+      val.Equals("webrtc,c-webrtc"_ns)) {
+    protocolArray.AppendElement("c-webrtc"_ns);
+    protocolArray.AppendElement("webrtc"_ns);
+  } else {
+    protocolArray.AppendElement("http/1.1"_ns);
+  }
 
   if (StaticPrefs::network_http_http2_enabled() &&
       (connectingToProxy || !(caps & NS_HTTP_DISALLOW_SPDY)) &&
