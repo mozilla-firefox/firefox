@@ -113,6 +113,8 @@
     <string name="preferences_debug_crash_dialog_preview" translatable="false">Enable New Crash Flow</string>
     <!-- Label for enabling the microsurvey feature -->
     <string name="preferences_debug_settings_microsurvey_feature" translatable="false">Enable Microsurvey Feature</string>
+    <!-- Label for enabling shake to summarize -->
+    <string name="preferences_key_enable_shake_to_summarize" translatable="false">Enable Shake to Summarize Feature</string>
     <!-- Label for enabling Unified Trust Panel -->
     <string name="preferences_debug_settings_unified_trust_panel" translatable="false">Enable Unified Trust Panel</string>
     <!-- Label for enabling remote search configuration -->
