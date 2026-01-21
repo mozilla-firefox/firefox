@@ -223,9 +223,16 @@ class MenuDialogMiddleware(
         val selectedTab = browserMenuState.selectedTab
         val url = selectedTab.getUrl() ?: return@launch
 
-        val parentGuid = lastSavedFolderCache.getGuid() ?: BookmarkRoot.Mobile.id
+        // get the last saved folder id
+        val targetParentFolderId = lastSavedFolderCache.getGuid() ?: BookmarkRoot.Mobile.id
 
-        val parentNode = bookmarksStorage.getBookmark(parentGuid).getOrNull()
+        // get the corresponding bookmark and fallback to mobile root bookmark node
+        // this is necessary because it's possible that the last saved folder no longer exists (
+        // e.g. if the folder is removed through sync)
+        val parentNode = bookmarksStorage.getBookmark(targetParentFolderId).getOrNull()
+            ?: bookmarksStorage.getBookmark(BookmarkRoot.Mobile.id).getOrNull()
+
+        val parentGuid = parentNode?.guid ?: BookmarkRoot.Mobile.id
 
         val guidToEdit = addBookmarkUseCase(
             url = url,
