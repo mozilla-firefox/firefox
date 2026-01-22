@@ -35,6 +35,12 @@
     <string name="preferences_debug_settings_allow_third_party_root_certs_summary">Allows the use of third party certificates from the Android CA store</string>
     <!-- Label for the Nimbus experiments preference -->
     <string name="preferences_nimbus_experiments">Nimbus Experiments</string>
+    <!-- Label for the title section of active experiments the user is enrolled in. -->
+    <string name="preferences_nimbus_experiments_active">Active Experiments</string>
+    <!-- Label for an empty list of experiments. -->
+    <string name="preferences_nimbus_experiments_no_items">None</string>
+    <!-- Label for the title section of inactive experiments the user is not enrolled in. -->
+    <string name="preferences_nimbus_experiments_inactive">Inactive Experiments</string>
     <!-- Label for using the nimbus collections preview -->
     <string name="preferences_nimbus_use_preview_collection">Use Nimbus Preview Collection (requires restart)</string>
     <!-- Label for custom Glean server URL -->
