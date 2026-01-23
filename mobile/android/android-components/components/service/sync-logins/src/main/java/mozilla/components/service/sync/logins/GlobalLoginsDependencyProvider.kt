@@ -13,7 +13,7 @@ import mozilla.components.concept.storage.LoginsStorage
 object GlobalLoginsDependencyProvider {
 
     @VisibleForTesting
-    internal var loginsStorage: LoginsStorage? = null
+    internal var loginsStorage: Lazy<LoginsStorage>? = null
 
     /**
      * Initializes logins storage for running the maintenance task via [SyncableLoginsStorageWorker].
@@ -21,7 +21,7 @@ object GlobalLoginsDependencyProvider {
      * [SyncableLoginsStorage.registerStorageMaintenanceWorker] in order to run the worker while
      * the app is not running.
      * */
-    fun initialize(loginsStorage: LoginsStorage) {
+    fun initialize(loginsStorage: Lazy<LoginsStorage>) {
         this.loginsStorage = loginsStorage
     }
 
@@ -30,7 +30,7 @@ object GlobalLoginsDependencyProvider {
      * to run maintenance on the storage.
      * */
     internal fun requireLoginsStorage(): LoginsStorage {
-        return requireNotNull(loginsStorage) {
+        return requireNotNull(loginsStorage?.value) {
             "GlobalLoginsDependencyProvider.initialize must be called before accessing the Logins storage"
         }
     }

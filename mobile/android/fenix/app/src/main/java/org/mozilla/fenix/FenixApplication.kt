@@ -52,6 +52,7 @@ import mozilla.components.feature.top.sites.TopSitesProviderConfig
 import mozilla.components.feature.webcompat.reporter.WebCompatReporterFeature
 import mozilla.components.lib.crash.CrashReporter
 import mozilla.components.service.fxa.manager.SyncEnginesStorage
+import mozilla.components.service.sync.logins.GlobalLoginsDependencyProvider
 import mozilla.components.service.sync.logins.LoginsApiException
 import mozilla.components.support.AppServicesInitializer
 import mozilla.components.support.base.ext.areNotificationsEnabledSafe
@@ -297,6 +298,7 @@ open class FenixApplication : LocaleAwareApplication(), Provider, ThemeProvider 
         // it is needed while the app is not running and WorkManager wakes up the app
         // for the periodic task.
         GlobalPlacesDependencyProvider.initialize(components.core.historyStorage)
+        GlobalLoginsDependencyProvider.initialize(lazy { components.core.passwordsStorage })
 
         GlobalSyncedTabsCommandsProvider.initialize(lazy { components.backgroundServices.syncedTabsCommands })
 
@@ -484,6 +486,7 @@ open class FenixApplication : LocaleAwareApplication(), Provider, ThemeProvider 
                 // the app for the periodic task, it will require a globally provided places storage
                 // to run the maintenance on.
                 components.core.historyStorage.registerStorageMaintenanceWorker()
+                components.core.passwordsStorage.registerStorageMaintenanceWorker()
             }
         }
 
