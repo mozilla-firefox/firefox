@@ -2284,6 +2284,7 @@ projects:
     - components:lib-publicsuffixlist
     - components:support-base
     - components:support-ktx
+    - components:support-test
     - components:support-utils
     - components:tooling-lint
   components:support-android-test:
