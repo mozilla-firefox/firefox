@@ -15,6 +15,7 @@ android {
 
 dependencies {
     api ComponentsDependencies.mozilla_appservices_autofill
+    implementation libs.androidx.work.runtime
 
     api project(':components:concept-base')
     api project(':components:concept-storage')
@@ -30,6 +31,7 @@ dependencies {
     testImplementation ComponentsDependencies.mozilla_appservices_init_rust_components
     testImplementation libs.androidx.test.core
     testImplementation libs.androidx.test.junit
+    testImplementation libs.androidx.work.testing
     testImplementation libs.kotlinx.coroutines.test
     testImplementation libs.robolectric
 }
