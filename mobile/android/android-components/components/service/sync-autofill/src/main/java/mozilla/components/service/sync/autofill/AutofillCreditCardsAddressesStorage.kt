@@ -54,9 +54,13 @@ class AutofillCreditCardsAddressesStorage(
     /**
      * "Warms up" this storage layer by establishing the database connection.
      */
-    suspend fun warmUp() = withContext(coroutineContext) {
+    override suspend fun warmUp() = withContext(coroutineContext) {
         logElapsedTime(logger, "Warming up storage") { conn }
         Unit
+    }
+
+    override suspend fun runMaintenance(dbSizeLimit: UInt) {
+        conn.getStorage().runMaintenance()
     }
 
     override suspend fun addCreditCard(
