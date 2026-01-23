@@ -622,8 +622,10 @@ class PlacesHistoryStorageTest {
         }
 
         assertEquals(request.workSpec.isPeriodic, true)
-        assertEquals(request.workSpec.intervalDuration, TimeUnit.HOURS.toMillis(
-            StorageMaintenanceWorker.WORKER_PERIOD_IN_HOURS))
+        assertEquals(
+            request.workSpec.intervalDuration,
+            TimeUnit.HOURS.toMillis(StorageMaintenanceWorker.WORKER_PERIOD_IN_HOURS),
+        )
         assertEquals(request.workSpec.constraints.requiresBatteryNotLow(), true)
         assertEquals(request.workSpec.constraints.requiresDeviceIdle(), true)
     }

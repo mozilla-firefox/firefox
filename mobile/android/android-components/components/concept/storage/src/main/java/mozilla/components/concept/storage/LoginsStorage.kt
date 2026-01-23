@@ -162,7 +162,7 @@ data class EncryptedLogin(
 /**
  * An interface describing a storage layer for logins/passwords.
  */
-interface LoginsStorage : Storage, AutoCloseable {
+interface LoginsStorage : Storage, StorageMaintenanceRegistry, AutoCloseable {
     /**
      * Clears out all local state, bringing us back to the state before the first write (or sync).
      */
@@ -251,6 +251,22 @@ interface LoginsStorage : Storage, AutoCloseable {
      * @return A list of [Login] objects, representing matching logins.
      */
     suspend fun getByBaseDomain(origin: String): List<Login>
+
+    override fun registerStorageMaintenanceWorker() {
+       // Implemented by concrete implementation of `LoginsStorage`
+    }
+
+    override fun unregisterStorageMaintenanceWorker(uniqueWorkName: String) {
+        // Implemented by concrete implementation of `LoginsStorage`
+    }
+
+    override suspend fun runMaintenance(dbSizeLimit: UInt) {
+        // Implemented by concrete implementation of `LoginsStorage`
+    }
+
+    override suspend fun warmUp() {
+        // Implemented by concrete implementation of `LoginsStorage`
+    }
 }
 
 /**

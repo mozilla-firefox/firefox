@@ -7,6 +7,8 @@ package mozilla.components.service.sync.logins
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -22,6 +24,8 @@ import mozilla.components.concept.storage.KeyGenerationReason
 import mozilla.components.concept.storage.Login
 import mozilla.components.concept.storage.LoginEntry
 import mozilla.components.concept.storage.LoginsStorage
+import mozilla.components.concept.storage.constraints
+import mozilla.components.concept.storage.periodicStorageWorkRequest
 import mozilla.components.concept.sync.SyncableStore
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
 import mozilla.components.support.base.log.logger.Logger
@@ -282,6 +286,31 @@ class SyncableLoginsStorage(
                 deleteUndecryptableLoginsAndRecordMetrics()
             }
             prefs.edit { putInt(UNDECRYPTABLE_LOGINS_CLEANED_KEY, ++cleanedPref) }
+        }
+    }
+
+    /**
+     * Enqueues a periodic storage maintenance worker to WorkManager.
+     */
+    override fun registerStorageMaintenanceWorker() {
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            SyncableLoginsStorageWorker.UNIQUE_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            periodicStorageWorkRequest<SyncableLoginsStorageWorker>(
+                tag = SyncableLoginsStorageWorker.UNIQUE_NAME,
+            ) {
+                constraints {
+                    setRequiresBatteryNotLow(true)
+                    setRequiresDeviceIdle(true)
+                }
+            },
+        )
+    }
+
+    override fun unregisterStorageMaintenanceWorker(uniqueWorkName: String) {
+        WorkManager.getInstance(context).also {
+            it.cancelUniqueWork(SyncableLoginsStorageWorker.UNIQUE_NAME)
+            it.cancelAllWorkByTag(SyncableLoginsStorageWorker.UNIQUE_NAME)
         }
     }
 }
