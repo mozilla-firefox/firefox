@@ -417,6 +417,12 @@ projects:
     - components:ui-icons
     - components:ui-tabcounter
     - components:ui-widgets
+  components:concept-accelerometer:
+    description: An abstract definition of an accelerometer.
+    path: components/concept/accelerometer
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:concept-awesomebar:
     description: An abstract definition of an awesomebar component.
     path: components/concept/awesomebar
@@ -460,6 +466,12 @@ projects:
     - components:concept-base
     - components:support-base
     - components:support-test
+    - components:tooling-lint
+  components:concept-llm:
+    description: An abstract definition of an LLM request.
+    path: components/concept/llm
+    publish: true
+    upstream_dependencies:
     - components:tooling-lint
   components:concept-menu:
     description: An abstract definition of a browser menu component.
@@ -1373,6 +1385,12 @@ projects:
     - components:ui-icons
     - components:ui-tabcounter
     - components:ui-widgets
+  components:feature-summarize:
+    description: A feature that handles displaying summarized browser content
+    path: components/feature/summarize
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:feature-syncedtabs:
     description: Feature that provides access to other devices' tabs in the same account.
     path: components/feature/syncedtabs
@@ -1628,6 +1646,13 @@ projects:
     - components:ui-icons
     - components:ui-tabcounter
     - components:ui-widgets
+  components:lib-accelerometer-sensormanager:
+    description: An implementation of the accelerometer concept that uses the Android
+      SensorManager
+    path: components/lib/accelerometer-sensormanager
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:lib-auth:
     description: A component for various kinds of authentication mechanisms.
     path: components/lib/auth
@@ -1702,6 +1727,19 @@ projects:
     publish: true
     upstream_dependencies:
     - components:tooling-lint
+  components:lib-llm-gemininano:
+    description: A Gemini Nano implementation of the LLM concept.
+    path: components/lib/llm-gemininano
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
+  components:lib-llm-mlpa:
+    description: A off-device implementation of the LLM concept that uses the MLPA
+      proxy server
+    path: components/lib/llm-mlpa
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:lib-publicsuffixlist:
     description: A library for reading and using the public suffix list.
     path: components/lib/publicsuffixlist
@@ -1722,6 +1760,12 @@ projects:
     - components:concept-push
     - components:support-base
     - components:support-test
+    - components:tooling-lint
+  components:lib-shake:
+    description: A library to detect shake gestures from accelerometer data
+    path: components/lib/shake
+    publish: true
+    upstream_dependencies:
     - components:tooling-lint
   components:lib-state:
     description: A library for maintaining application state.
