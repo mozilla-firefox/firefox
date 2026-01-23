@@ -23,7 +23,10 @@ import mozilla.components.concept.storage.HistoryMetadataKey
 import mozilla.components.concept.storage.HistoryMetadataObservation
 import mozilla.components.concept.storage.PageObservation
 import mozilla.components.concept.storage.PageVisit
+import mozilla.components.concept.storage.StorageMaintenanceWorker
 import mozilla.components.concept.storage.VisitType
+import mozilla.components.concept.storage.constraints
+import mozilla.components.concept.storage.periodicStorageWorkRequest
 import mozilla.components.concept.sync.SyncAuthInfo
 import mozilla.components.concept.sync.SyncStatus
 import mozilla.components.support.test.any
@@ -619,7 +622,8 @@ class PlacesHistoryStorageTest {
         }
 
         assertEquals(request.workSpec.isPeriodic, true)
-        assertEquals(request.workSpec.intervalDuration, TimeUnit.HOURS.toMillis(StorageMaintenanceWorker.WORKER_PERIOD_IN_HOURS))
+        assertEquals(request.workSpec.intervalDuration, TimeUnit.HOURS.toMillis(
+            StorageMaintenanceWorker.WORKER_PERIOD_IN_HOURS))
         assertEquals(request.workSpec.constraints.requiresBatteryNotLow(), true)
         assertEquals(request.workSpec.constraints.requiresDeviceIdle(), true)
     }

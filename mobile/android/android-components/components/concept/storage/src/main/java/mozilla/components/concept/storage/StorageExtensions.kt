@@ -2,12 +2,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.browser.storage.sync
+package mozilla.components.concept.storage
 
 import androidx.work.Constraints
 import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
-import mozilla.components.concept.storage.Storage
 import java.util.concurrent.TimeUnit
 
 /**

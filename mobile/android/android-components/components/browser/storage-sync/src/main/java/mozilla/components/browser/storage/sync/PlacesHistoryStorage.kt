@@ -29,6 +29,8 @@ import mozilla.components.concept.storage.SearchResult
 import mozilla.components.concept.storage.TopFrecentSiteInfo
 import mozilla.components.concept.storage.VisitInfo
 import mozilla.components.concept.storage.VisitType
+import mozilla.components.concept.storage.constraints
+import mozilla.components.concept.storage.periodicStorageWorkRequest
 import mozilla.components.concept.sync.SyncAuthInfo
 import mozilla.components.concept.sync.SyncStatus
 import mozilla.components.concept.sync.SyncableStore
