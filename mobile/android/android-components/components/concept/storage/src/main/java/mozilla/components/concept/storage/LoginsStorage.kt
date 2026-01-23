@@ -162,7 +162,7 @@ data class EncryptedLogin(
 /**
  * An interface describing a storage layer for logins/passwords.
  */
-interface LoginsStorage : AutoCloseable {
+interface LoginsStorage : Storage, AutoCloseable {
     /**
      * Clears out all local state, bringing us back to the state before the first write (or sync).
      */
