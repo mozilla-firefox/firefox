@@ -417,6 +417,10 @@ projects:
     - components:ui-icons
     - components:ui-tabcounter
     - components:ui-widgets
+  components:concept-accelerometer:
+    description: An abstract definition of an accelerometer.
+    path: components/concept/accelerometer
+    publish: true
   components:concept-awesomebar:
     description: An abstract definition of an awesomebar component.
     path: components/concept/awesomebar
@@ -461,6 +465,10 @@ projects:
     - components:support-base
     - components:support-test
     - components:tooling-lint
+  components:concept-llm:
+    description: An abstract definition of an LLM request.
+    path: components/concept/llm
+    publish: true
   components:concept-menu:
     description: An abstract definition of a browser menu component.
     path: components/concept/menu
@@ -1373,6 +1381,10 @@ projects:
     - components:ui-icons
     - components:ui-tabcounter
     - components:ui-widgets
+  components:feature-summarize:
+    description: A feature that handles displaying summarized browser content
+    path: components/feature/summarize
+    publish: true
   components:feature-syncedtabs:
     description: Feature that provides access to other devices' tabs in the same account.
     path: components/feature/syncedtabs
@@ -1628,6 +1640,11 @@ projects:
     - components:ui-icons
     - components:ui-tabcounter
     - components:ui-widgets
+  components:lib-accelerometer-sensormanager:
+    description: An implementation of the accelerometer concept that uses the Android
+      SensorManager
+    path: components/lib/accelerometer-sensormanager
+    publish: true
   components:lib-auth:
     description: A component for various kinds of authentication mechanisms.
     path: components/lib/auth
@@ -1702,6 +1719,15 @@ projects:
     publish: true
     upstream_dependencies:
     - components:tooling-lint
+  components:lib-llm-gemini-nano:
+    description: A Gemini Nano implementation of the LLM concept.
+    path: components/lib/llm-gemini-nano
+    publish: true
+  components:lib-llm-mlpa:
+    description: A off-device implementation of the LLM concept that uses the MLPA
+      proxy server
+    path: components/lib/llm-mlpa
+    publish: true
   components:lib-publicsuffixlist:
     description: A library for reading and using the public suffix list.
     path: components/lib/publicsuffixlist
@@ -1723,6 +1749,10 @@ projects:
     - components:support-base
     - components:support-test
     - components:tooling-lint
+  components:lib-shake:
+    description: A library to detect shake gestures from accelerometer data
+    path: components/lib/shake
+    publish: true
   components:lib-state:
     description: A library for maintaining application state.
     path: components/lib/state
