@@ -220,6 +220,7 @@ play-services-base = { group = "com.google.android.gms", name = "play-services-b
 play-services-fido = { group = "com.google.android.gms", name = "play-services-fido", version.ref = "play-services-fido" }
 protobuf-compiler = { group = "com.google.protobuf", name = "protoc", version.ref = "protobuf" }
 protobuf-javalite = { group = "com.google.protobuf", name = "protobuf-javalite", version.ref = "protobuf" }
+mlkit-prompt = { group = "com.google.mlkit", name = "genai-prompt", version = "1.0.0-alpha1" }
 
 # Gradle plugins
 semanticdb-java = { group = "com.sourcegraph", name = "semanticdb-javac", version.ref = "semanticdb-javac" }

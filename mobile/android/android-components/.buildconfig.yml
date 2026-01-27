@@ -1750,6 +1750,11 @@ projects:
     path: components/lib/llm-gemininano
     publish: true
     upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
+    - components:concept-llm
+    - components:support-base
+    - components:support-test
     - components:tooling-lint
   components:lib-llm-mlpa:
     description: A off-device implementation of the LLM concept that uses the MLPA
