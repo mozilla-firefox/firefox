@@ -1390,6 +1390,13 @@ projects:
     path: components/feature/summarize
     publish: true
     upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
+    - components:lib-publicsuffixlist
+    - components:lib-state
+    - components:support-base
+    - components:support-ktx
+    - components:support-utils
     - components:tooling-lint
   components:feature-syncedtabs:
     description: Feature that provides access to other devices' tabs in the same account.

@@ -4,6 +4,7 @@
 
 plugins {
     alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.kotlin.compose)
 }
 
 apply plugin: 'com.android.library'
@@ -16,13 +17,23 @@ android {
 
     buildFeatures {
         buildConfig = true
+        compose = true
     }
 
     namespace = 'mozilla.components.feature.summarize'
 }
 
 dependencies {
+    implementation project(':components:lib-state')
+
     testImplementation libs.androidx.test.junit
+
+    implementation libs.androidx.compose.foundation
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.compose.ui
+    implementation libs.androidx.compose.material3
+    debugImplementation libs.androidx.compose.ui.tooling
+
 }
 
 apply from: '../../../common-config.gradle'
