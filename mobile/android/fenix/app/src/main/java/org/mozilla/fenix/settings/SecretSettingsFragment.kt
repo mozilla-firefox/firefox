@@ -234,6 +234,11 @@ class SecretSettingsFragment : PreferenceFragmentCompat() {
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
 
+        requirePreference<SwitchPreference>(R.string.pref_key_enable_merino_client).apply {
+            isChecked = context.settings().enableMerinoClient
+            onPreferenceChangeListener = SharedPreferenceUpdater()
+        }
+
         requirePreference<SwitchPreference>(R.string.pref_key_enable_mozilla_ads_client).apply {
             isChecked = context.settings().enableMozillaAdsClient
             onPreferenceChangeListener = SharedPreferenceUpdater()

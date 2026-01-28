@@ -2394,6 +2394,14 @@ class Settings(
     )
 
     /**
+     * Indicates if Merino Client is enabled.
+     */
+    var enableMerinoClient by booleanPreference(
+        key = appContext.getPreferenceKey(R.string.pref_key_enable_merino_client),
+        default = { FxNimbus.features.merinoClient.value().enabled },
+    )
+
+    /**
      * Indicates if the Unified Trust Panel is enabled.
      */
     var enableUnifiedTrustPanel by booleanPreference(

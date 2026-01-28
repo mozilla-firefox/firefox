@@ -987,6 +987,14 @@ features:
         type: Boolean
         default: false
 
+  merino-client:
+    description: Feature to enable the Merino Client for users on Firefox on Android.
+    variables:
+      enabled:
+        description: If true, Merino Client is enabled.
+        type: Boolean
+        default: false
+
 types:
   objects:
     GleanServerKnobsConfiguration:

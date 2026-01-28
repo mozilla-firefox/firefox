@@ -81,6 +81,8 @@
     <string name="preferences_debug_settings_firefox_labs" translatable="false">Enable Firefox Labs</string>
     <!-- Label for enabling Browser Mode Toggle -->
     <string name="preferences_debug_settings_browser_mode_toggle" translatable="false">Enable Browser Mode Toggle</string>
+    <!-- Label for enabling Merino Client -->
+    <string name="preferences_debug_settings_merino_client" translatable="false">Enable Merino Client</string>
     <!-- Label for enabling Mozilla Ads Client -->
     <string name="preferences_debug_settings_mozilla_ads_client" translatable="false">Enable Mozilla Ads Client</string>
     <!-- Label for enabling Discover more stories -->
