@@ -288,6 +288,8 @@
     <string name="browser_menu_save_as_pdf_2">Save as PDF</string>
     <!-- Browser menu label for navigating to the translation feature, which provides language translation options the current visited page -->
     <string name="browser_menu_translate_page_2">Translate page</string>
+    <!-- Browser menu label for navigating to the summarization feature, which provides site summarization for the current visited page -->
+    <string name="browser_menu_summarize_page">Summarize page</string>
     <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
     <string name="browser_menu_webcompat_reporter" tools:ignore="UnusedResources" moz:removedIn="149">Report broken site…</string>
     <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->

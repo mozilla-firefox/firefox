@@ -285,6 +285,11 @@ sealed class MenuAction : Action {
         data object WebCompatReporter : Navigate()
 
         /**
+         * [Navigate] action dispatched when the user clicks to summarize the current page.
+         */
+        data object Summarizer : Navigate()
+
+        /**
          * [Navigate] action dispatched when navigating back from the current page.
          *
          * @property viewHistory Whether the tab history menu should be displayed.

@@ -38,7 +38,9 @@ internal fun MoreSettingsSubmenu(
     translationInfo: TranslationInfo,
     showShortcuts: Boolean,
     isAndroidAutomotiveAvailable: Boolean,
+    showSummarization: Boolean,
     onWebCompatReporterClick: () -> Unit,
+    onSummarizePageClick: () -> Unit,
     onShortcutsMenuClick: () -> Unit,
     onAddToHomeScreenMenuClick: () -> Unit,
     onSaveToCollectionMenuClick: () -> Unit,
@@ -49,79 +51,185 @@ internal fun MoreSettingsSubmenu(
     Column(
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        if (translationInfo.isTranslationSupported) {
-            TranslationMenuItem(
-                translationInfo = translationInfo,
-                isReaderViewActive = isReaderViewActive,
-            )
-        }
-
-        if (isWebCompatReporterSupported) {
-            MenuItem(
-                label = stringResource(id = R.string.browser_menu_webcompat_reporter_2),
-                beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_lightbulb_24),
-                state = if (isWebCompatEnabled) MenuItemState.ENABLED else MenuItemState.DISABLED,
-                onClick = onWebCompatReporterClick,
-            )
-        }
-
-        if (showShortcuts) {
-            ShortcutsMenuItem(
-                isPinned = isPinned,
-                onShortcutsMenuClick = onShortcutsMenuClick,
-            )
-        }
-
-        if (isAddToHomeScreenSupported) {
-            MenuItem(
-                label = if (isInstallable) {
-                    stringResource(id = R.string.browser_menu_add_app_to_homescreen)
-                } else {
-                    stringResource(id = R.string.browser_menu_add_to_homescreen)
-                },
-                beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_add_to_homescreen_24),
-                onClick = onAddToHomeScreenMenuClick,
-            )
-        }
-
-        MenuItem(
-            label = stringResource(id = R.string.browser_menu_save_to_collection_2),
-            beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_collection_24),
-            onClick = onSaveToCollectionMenuClick,
+        TranslationSection(
+            translationInfo = translationInfo,
+            isReaderViewActive = isReaderViewActive,
         )
-
-        if (hasExternalApp) {
-            MenuItem(
-                label = if (externalAppName != "") {
-                    stringResource(id = R.string.browser_menu_open_in_fenix, externalAppName)
-                } else {
-                    stringResource(id = R.string.browser_menu_open_app_link)
-                },
-                beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_more_grid_24),
-                isBeforeIconHighlighted = isOpenInAppMenuHighlighted,
-                state = MenuItemState.ENABLED,
-                onClick = onOpenInAppMenuClick,
-            )
-        } else {
-            MenuItem(
-                label = stringResource(id = R.string.browser_menu_open_app_link),
-                beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_more_grid_24),
-                state = MenuItemState.DISABLED,
-            )
-        }
-
-        MenuItem(
-            label = stringResource(id = R.string.browser_menu_save_as_pdf_2),
-            beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_save_file_24),
-            onClick = onSaveAsPDFMenuClick,
+        SummarizationMenuItem(
+            showSummarization = showSummarization,
+            onSummarizePageClick = onSummarizePageClick,
         )
-        if (!isAndroidAutomotiveAvailable) {
-            MenuItem(
-                label = stringResource(id = R.string.browser_menu_print_2),
-                beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_print_24),
-                onClick = onPrintMenuClick,
-            )
-        }
+        WebCompatReporterMenuItem(
+            isWebCompatReporterSupported = isWebCompatReporterSupported,
+            isWebCompatEnabled = isWebCompatEnabled,
+            onWebCompatReporterClick = onWebCompatReporterClick,
+        )
+        ShortcutsSection(
+            showShortcuts = showShortcuts,
+            isPinned = isPinned,
+            onShortcutsMenuClick = onShortcutsMenuClick,
+        )
+        AddToHomeScreenMenuItem(
+            isAddToHomeScreenSupported = isAddToHomeScreenSupported,
+            isInstallable = isInstallable,
+            onAddToHomeScreenMenuClick = onAddToHomeScreenMenuClick,
+        )
+        SaveToCollectionMenuItem(
+            onSaveToCollectionMenuClick = onSaveToCollectionMenuClick,
+        )
+        OpenInAppMenuItem(
+            hasExternalApp = hasExternalApp,
+            externalAppName = externalAppName,
+            isOpenInAppMenuHighlighted = isOpenInAppMenuHighlighted,
+            onOpenInAppMenuClick = onOpenInAppMenuClick,
+        )
+        SaveAsPdfMenuItem(
+            onSaveAsPDFMenuClick = onSaveAsPDFMenuClick,
+        )
+        PrintMenuItem(
+            isAndroidAutomotiveAvailable = isAndroidAutomotiveAvailable,
+            onPrintMenuClick = onPrintMenuClick,
+        )
+    }
+}
+
+@Composable
+private fun TranslationSection(
+    translationInfo: TranslationInfo,
+    isReaderViewActive: Boolean,
+) {
+    if (translationInfo.isTranslationSupported) {
+        TranslationMenuItem(
+            translationInfo = translationInfo,
+            isReaderViewActive = isReaderViewActive,
+        )
+    }
+}
+
+@Composable
+private fun SummarizationMenuItem(
+    showSummarization: Boolean,
+    onSummarizePageClick: () -> Unit,
+) {
+    if (showSummarization) {
+        MenuItem(
+            label = stringResource(id = R.string.browser_menu_summarize_page),
+            beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_lightning_24),
+            onClick = onSummarizePageClick,
+        )
+    }
+}
+
+@Composable
+private fun WebCompatReporterMenuItem(
+    isWebCompatReporterSupported: Boolean,
+    isWebCompatEnabled: Boolean,
+    onWebCompatReporterClick: () -> Unit,
+) {
+    if (isWebCompatReporterSupported) {
+        MenuItem(
+            label = stringResource(id = R.string.browser_menu_webcompat_reporter_2),
+            beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_lightbulb_24),
+            state = if (isWebCompatEnabled) MenuItemState.ENABLED else MenuItemState.DISABLED,
+            onClick = onWebCompatReporterClick,
+        )
+    }
+}
+
+@Composable
+private fun ShortcutsSection(
+    showShortcuts: Boolean,
+    isPinned: Boolean,
+    onShortcutsMenuClick: () -> Unit,
+) {
+    if (showShortcuts) {
+        ShortcutsMenuItem(
+            isPinned = isPinned,
+            onShortcutsMenuClick = onShortcutsMenuClick,
+        )
+    }
+}
+
+@Composable
+private fun AddToHomeScreenMenuItem(
+    isAddToHomeScreenSupported: Boolean,
+    isInstallable: Boolean,
+    onAddToHomeScreenMenuClick: () -> Unit,
+) {
+    if (isAddToHomeScreenSupported) {
+        MenuItem(
+            label = if (isInstallable) {
+                stringResource(id = R.string.browser_menu_add_app_to_homescreen)
+            } else {
+                stringResource(id = R.string.browser_menu_add_to_homescreen)
+            },
+            beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_add_to_homescreen_24),
+            onClick = onAddToHomeScreenMenuClick,
+        )
+    }
+}
+
+@Composable
+private fun SaveToCollectionMenuItem(
+    onSaveToCollectionMenuClick: () -> Unit,
+) {
+    MenuItem(
+        label = stringResource(id = R.string.browser_menu_save_to_collection_2),
+        beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_collection_24),
+        onClick = onSaveToCollectionMenuClick,
+    )
+}
+
+@Composable
+private fun OpenInAppMenuItem(
+    hasExternalApp: Boolean,
+    externalAppName: String,
+    isOpenInAppMenuHighlighted: Boolean,
+    onOpenInAppMenuClick: () -> Unit,
+) {
+    if (hasExternalApp) {
+        MenuItem(
+            label = if (externalAppName != "") {
+                stringResource(id = R.string.browser_menu_open_in_fenix, externalAppName)
+            } else {
+                stringResource(id = R.string.browser_menu_open_app_link)
+            },
+            beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_more_grid_24),
+            isBeforeIconHighlighted = isOpenInAppMenuHighlighted,
+            state = MenuItemState.ENABLED,
+            onClick = onOpenInAppMenuClick,
+        )
+    } else {
+        MenuItem(
+            label = stringResource(id = R.string.browser_menu_open_app_link),
+            beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_more_grid_24),
+            state = MenuItemState.DISABLED,
+        )
+    }
+}
+
+@Composable
+private fun SaveAsPdfMenuItem(
+    onSaveAsPDFMenuClick: () -> Unit,
+) {
+    MenuItem(
+        label = stringResource(id = R.string.browser_menu_save_as_pdf_2),
+        beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_save_file_24),
+        onClick = onSaveAsPDFMenuClick,
+    )
+}
+
+@Composable
+private fun PrintMenuItem(
+    isAndroidAutomotiveAvailable: Boolean,
+    onPrintMenuClick: () -> Unit,
+) {
+    if (!isAndroidAutomotiveAvailable) {
+        MenuItem(
+            label = stringResource(id = R.string.browser_menu_print_2),
+            beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_print_24),
+            onClick = onPrintMenuClick,
+        )
     }
 }
 
@@ -209,7 +317,9 @@ private fun MoreSettingsSubmenuPreview(
                     ),
                     showShortcuts = true,
                     isAndroidAutomotiveAvailable = false,
+                    showSummarization = true,
                     onWebCompatReporterClick = {},
+                    onSummarizePageClick = {},
                     onShortcutsMenuClick = {},
                     onAddToHomeScreenMenuClick = {},
                     onSaveToCollectionMenuClick = {},
@@ -253,7 +363,9 @@ private fun MoreSettingsSubmenuDisabledOpenPreview(
                     ),
                     showShortcuts = true,
                     isAndroidAutomotiveAvailable = false,
+                    showSummarization = false,
                     onWebCompatReporterClick = {},
+                    onSummarizePageClick = {},
                     onShortcutsMenuClick = {},
                     onAddToHomeScreenMenuClick = {},
                     onSaveToCollectionMenuClick = {},
