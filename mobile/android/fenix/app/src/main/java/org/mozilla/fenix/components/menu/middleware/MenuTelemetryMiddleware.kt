@@ -280,6 +280,7 @@ class MenuTelemetryMiddleware(
 
             MenuAction.OnCFRDismiss -> Menu.dismissCfr.record(NoExtras())
 
+            MenuAction.Navigate.Summarizer,
             MenuAction.InitAction,
             is MenuAction.CustomMenuItemAction,
             is MenuAction.UpdateBookmarkState,

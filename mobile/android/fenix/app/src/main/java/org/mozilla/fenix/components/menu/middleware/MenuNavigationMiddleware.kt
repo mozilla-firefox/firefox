@@ -284,6 +284,17 @@ class MenuNavigationMiddleware(
                     }
                 }
 
+                is MenuAction.Navigate.Summarizer -> {
+                    navController.nav(
+                        id = R.id.menuDialogFragment,
+                        directions = MenuDialogFragmentDirections
+                            .actionMenuDialogFragmentToSummarizationFragment(),
+                        navOptions = NavOptions.Builder()
+                            .setPopUpTo(R.id.browserFragment, false)
+                            .build(),
+                    )
+                }
+
                 is MenuAction.Navigate.Back -> {
                     if (action.viewHistory) {
                         navController.nav(

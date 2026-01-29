@@ -738,8 +738,12 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                                             translationInfo = translationInfo,
                                             showShortcuts = settings.showTopSitesFeature,
                                             isAndroidAutomotiveAvailable = context.isAndroidAutomotiveAvailable(),
+                                            showSummarization = settings.shakeToSummarizeFeatureEnabled,
                                             onWebCompatReporterClick = {
                                                 store.dispatch(MenuAction.Navigate.WebCompatReporter)
+                                            },
+                                            onSummarizePageClick = {
+                                                store.dispatch(MenuAction.Navigate.Summarizer)
                                             },
                                             onShortcutsMenuClick = {
                                                 if (!isPinned) {
