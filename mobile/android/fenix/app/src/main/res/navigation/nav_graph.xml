@@ -1646,6 +1646,10 @@
             app:destination="@id/translations_settings_graph" />
     </dialog>
 
+    <dialog
+        android:id="@+id/summarizationFragment"
+        android:name="org.mozilla.fenix.summarization.SummarizationFragment" />
+
     <navigation
         android:id="@+id/translations_settings_graph"
         app:startDestination="@id/translationSettingsFragment">
@@ -1762,6 +1766,9 @@
             <action
                 android:id="@+id/action_menuDialogFragment_to_translationsDialogFragment"
                 app:destination="@id/translationsDialogFragment" />
+            <action
+                android:id="@+id/action_menuDialogFragment_to_summarizationFragment"
+                app:destination="@id/summarizationFragment" />
             <action
                 android:id="@+id/action_menuDialogFragment_to_createShortcutFragment"
                 app:destination="@id/createShortcutFragment" />

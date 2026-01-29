@@ -586,6 +586,7 @@ dependencies {
     implementation project(':components:feature-session')
     implementation project(':components:feature-share')
     implementation project(':components:feature-sitepermissions')
+    implementation project(':components:feature-summarize')
     implementation project(':components:feature-syncedtabs')
     implementation project(':components:feature-toolbar')
     implementation project(':components:feature-tab-collections')
