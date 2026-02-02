@@ -22,6 +22,8 @@ android {
 }
 
 dependencies {
+    implementation libs.kotlinx.coroutines
+
     testImplementation libs.androidx.test.junit
 }
 

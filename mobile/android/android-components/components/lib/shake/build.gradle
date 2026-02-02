@@ -22,7 +22,12 @@ android {
 }
 
 dependencies {
+    api project(':components:concept-accelerometer')
+    implementation libs.kotlinx.coroutines
+
+    testImplementation project(':components:support-test')
     testImplementation libs.androidx.test.junit
+    testImplementation libs.kotlinx.coroutines.test
 }
 
 apply from: '../../../common-config.gradle'

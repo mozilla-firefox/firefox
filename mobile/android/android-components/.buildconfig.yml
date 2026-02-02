@@ -1662,6 +1662,11 @@ projects:
     path: components/lib/accelerometer-sensormanager
     publish: true
     upstream_dependencies:
+    - components:concept-accelerometer
+    - components:concept-base
+    - components:concept-fetch
+    - components:support-base
+    - components:support-test
     - components:tooling-lint
   components:lib-auth:
     description: A component for various kinds of authentication mechanisms.
@@ -1792,6 +1797,11 @@ projects:
     path: components/lib/shake
     publish: true
     upstream_dependencies:
+    - components:concept-accelerometer
+    - components:concept-base
+    - components:concept-fetch
+    - components:support-base
+    - components:support-test
     - components:tooling-lint
   components:lib-state:
     description: A library for maintaining application state.
