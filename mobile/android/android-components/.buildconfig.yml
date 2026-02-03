@@ -1402,6 +1402,7 @@ projects:
     - components:compose-base
     - components:concept-base
     - components:concept-engine
+    - components:concept-llm
     - components:concept-fetch
     - components:concept-storage
     - components:lib-publicsuffixlist

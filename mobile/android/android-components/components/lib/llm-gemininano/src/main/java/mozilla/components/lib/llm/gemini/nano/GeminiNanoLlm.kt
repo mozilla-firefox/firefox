@@ -73,6 +73,11 @@ class GeminiNanoLlm(
         }
     }
 
+    override suspend fun checkStatus(): Llm.Status = when (model.checkStatus()) {
+        FeatureStatus.UNAVAILABLE -> Llm.Status.Unavailable
+        else -> Llm.Status.Available
+    }
+
     private suspend fun FlowCollector<Llm.Response>.streamPromptResponses(prompt: Prompt) = try {
         // consume replies from the model until it provides a finish reason
         logger("Beginning model response stream")

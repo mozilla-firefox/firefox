@@ -23,6 +23,26 @@ interface Llm {
     suspend fun prompt(prompt: Prompt): Flow<Response>
 
     /**
+     * Retrieves the current [Status] of the Llm.
+     **/
+    suspend fun checkStatus(): Status
+
+    /**
+     * The status of the Llm indicating whether it is available or not.
+     **/
+    sealed class Status {
+        /**
+         * The LLM is ready to accept prompts.
+         */
+        data object Available : Status()
+
+        /**
+         * The LLM cannot currently accept prompts.
+         */
+        data object Unavailable : Status()
+    }
+
+    /**
      * A response from prompting a LLM.
      */
     sealed class Response {
