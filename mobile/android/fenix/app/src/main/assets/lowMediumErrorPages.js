@@ -40,6 +40,8 @@ function injectValues(queryMap) {
     queryMap.badCertGoBack;
   document.getElementById("advancedPanelAcceptButton").innerHTML =
     queryMap.badCertAcceptTemporary;
+  document.getElementById("advancedPanelAcceptButton").dataset.isPrivate =
+    queryMap.isPrivate;
 
   // If no image is passed in, remove the element so as not to leave an empty iframe
   const errorImage = document.getElementById("errorImage");
@@ -156,7 +158,10 @@ document.addEventListener("DOMContentLoaded", function () {
     .addEventListener("click", toggleAdvancedAndScroll);
   document
     .getElementById("advancedPanelAcceptButton")
-    .addEventListener("click", () => acceptAndContinue(true));
+    .addEventListener("click", e => {
+      const isPrivate = e.currentTarget.dataset.isPrivate;
+      acceptAndContinue(!isPrivate);
+    });
   document
     .getElementById("continueHttp")
     .addEventListener("click", () => document.reloadWithHttpsOnlyException());

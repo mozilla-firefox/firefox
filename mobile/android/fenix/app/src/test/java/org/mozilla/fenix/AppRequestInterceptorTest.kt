@@ -12,11 +12,13 @@ import io.mockk.spyk
 import io.mockk.verify
 import mozilla.components.browser.errorpages.ErrorPages
 import mozilla.components.browser.errorpages.ErrorType
+import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.request.RequestInterceptor
 import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -201,6 +203,26 @@ class AppRequestInterceptorTest {
                 ErrorPage.visitedError.testGetValue()!!.last().extra?.get("error_type"),
             )
         }
+    }
+
+    @Test
+    fun `GIVEN a private session WHEN onError is called THEN return ErrorResponse with isPrivate = true`() {
+        val isPrivateForSession: (EngineSession) -> Boolean = { true }
+        val interceptor = AppRequestInterceptor(testContext, isPrivateForSession)
+
+        val response = interceptor.onErrorRequest(mockk(), ErrorType.ERROR_UNSAFE_CONTENT_TYPE, "localhost")
+
+        assertTrue(response.uri.contains("isPrivate=true"))
+    }
+
+    @Test
+    fun `GIVEN a normal session WHEN onError is called THEN return ErrorResponse with isPrivate = true`() {
+        val isPrivateForSession: (EngineSession) -> Boolean = { false }
+        val interceptor = AppRequestInterceptor(testContext, isPrivateForSession)
+
+        val response = interceptor.onErrorRequest(mockk(), ErrorType.ERROR_UNSAFE_CONTENT_TYPE, "localhost")
+
+        assertTrue(response.uri.contains("isPrivate=false"))
     }
 
     private fun createActualErrorPage(error: ErrorType): String {
