@@ -88,6 +88,11 @@ sealed class DebugDrawerAction : Action {
          * [NavigateTo] action fired when the debug drawer needs to navigate to [CrashTools].
          */
         object CrashDebugTools : NavigateTo()
+
+        /**
+         * [NavigateTo] action fired when the debug drawer needs to navigate to [IntegrityTools].
+         */
+        object IntegrityDebugTools : NavigateTo()
     }
 
     /**

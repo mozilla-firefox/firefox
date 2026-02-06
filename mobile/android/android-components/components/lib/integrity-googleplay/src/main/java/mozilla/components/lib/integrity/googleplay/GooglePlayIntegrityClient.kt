@@ -10,7 +10,6 @@ import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.concept.integrity.IntegrityToken
 import mozilla.components.lib.integrity.googleplay.ext.prepare
 import java.util.UUID
-import kotlin.uuid.Uuid
 
 @JvmInline
 value class CloudProjectNumber(val value: Long) {
@@ -57,7 +56,7 @@ class GooglePlayIntegrityClient(
 ) : IntegrityClient {
     var tokenProvider: TokenProvider? = null
 
-    suspend fun warmup() {
+    suspend fun warmUp() {
         if (tokenProvider == null) {
             tokenProvider = tokenProviderFactory.create().getOrNull()
         }

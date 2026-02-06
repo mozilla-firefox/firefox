@@ -11,6 +11,7 @@ import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import org.mozilla.fenix.debugsettings.navigation.DebugDrawerRoute
 import org.mozilla.fenix.debugsettings.ui.DEBUG_DRAWER_HOME_ROUTE
+import org.mozilla.fenix.ext.nav
 
 /**
  * Middleware that handles navigation events for the Debug Drawer feature.
@@ -55,6 +56,8 @@ class DebugDrawerNavigationMiddleware(
                     navController.navigate(route = DebugDrawerRoute.AddonsDebugTools.route)
                 is DebugDrawerAction.NavigateTo.CrashDebugTools ->
                     navController.navigate(route = DebugDrawerRoute.CrashDebugTools.route)
+                is DebugDrawerAction.NavigateTo.IntegrityDebugTools ->
+                    navController.navigate(route = DebugDrawerRoute.IntegrityTools.route)
                 is DebugDrawerAction.OnBackPressed -> navController.popBackStack()
                 is DebugDrawerAction.DrawerOpened, DebugDrawerAction.DrawerClosed -> Unit // no-op
             }

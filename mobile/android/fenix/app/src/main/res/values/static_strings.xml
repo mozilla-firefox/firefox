@@ -247,6 +247,8 @@
 
     <!-- The title of the debug drawer tab to help debug the crash reporter-->
     <string name="crash_debug_tools_title">Crash Debug Tools</string>
+    <!-- The title of the debug drawer tab to help debug google play integrity-->
+    <string name="integrity_debug_tools_title">Play Integrity Tools</string>
     <!-- Button text to trigger a app parent process crash -->
     <string name="crash_debug_generic_crash_trigger">Trigger Crash Report</string>
     <!-- Button text to reset crash deferral period (the deferral period is set after clicking close on the dialog to 5 days in the settings) from it's future value to 0 -->

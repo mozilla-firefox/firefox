@@ -365,7 +365,7 @@ class Components(private val context: Context) {
         GooglePlayIntegrityClient(
             TokenProviderFactory.create(
                 context,
-                CloudProjectNumber.test
+                CloudProjectNumber.test,
             ),
             RequestHashProvider.randomHashProvider(),
         )
