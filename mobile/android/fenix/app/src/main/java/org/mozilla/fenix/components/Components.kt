@@ -18,6 +18,10 @@ import mozilla.components.feature.addons.update.DefaultAddonUpdater
 import mozilla.components.feature.autofill.AutofillConfiguration
 import mozilla.components.lib.crash.store.CrashAction
 import mozilla.components.lib.crash.store.CrashMiddleware
+import mozilla.components.lib.integrity.googleplay.CloudProjectNumber
+import mozilla.components.lib.integrity.googleplay.GooglePlayIntegrityClient
+import mozilla.components.lib.integrity.googleplay.RequestHashProvider
+import mozilla.components.lib.integrity.googleplay.TokenProviderFactory
 import mozilla.components.lib.publicsuffixlist.PublicSuffixList
 import mozilla.components.support.base.android.DefaultProcessInfoProvider
 import mozilla.components.support.base.android.NotificationsDelegate
@@ -354,6 +358,16 @@ class Components(private val context: Context) {
             distributionProviderChecker = DefaultDistributionProviderChecker(context),
             distributionSettings = DefaultDistributionSettings(settings),
             metricController = analytics.metrics,
+        )
+    }
+
+    val integrityClient by lazyMonitored {
+        GooglePlayIntegrityClient(
+            TokenProviderFactory.create(
+                context,
+                CloudProjectNumber.test
+            ),
+            RequestHashProvider.randomHashProvider(),
         )
     }
 
