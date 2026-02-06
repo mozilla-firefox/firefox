@@ -1763,7 +1763,11 @@ projects:
     path: components/lib/integrity-googleplay
     publish: true
     upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
     - components:concept-integrity
+    - components:support-base
+    - components:support-test
     - components:tooling-lint
   components:lib-jexl:
     description: 'Javascript Expression Language: Powerful context-based expression

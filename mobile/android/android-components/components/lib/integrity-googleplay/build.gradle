@@ -27,7 +27,9 @@ dependencies {
     implementation libs.kotlinx.coroutines.play.services
 
 
+    testImplementation project(':components:support-test')
     testImplementation libs.androidx.test.junit
+    testImplementation libs.kotlinx.coroutines.test
 }
 
 apply from: '../../../common-config.gradle'
