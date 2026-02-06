@@ -494,6 +494,15 @@ open class FenixApplication : LocaleAwareApplication(), Provider, ThemeProvider 
         }
 
         @OptIn(DelicateCoroutinesApi::class) // GlobalScope usage
+        fun queueIntegrityClientWarmUp() {
+            queue.runIfReadyOrQueue {
+                GlobalScope.launch(IO) {
+                    components.integrityClient.warmUp()
+                }
+            }
+        }
+
+        @OptIn(DelicateCoroutinesApi::class) // GlobalScope usage
         fun queueNimbusFetchInForeground() {
             queue.runIfReadyOrQueue {
                 GlobalScope.launch(IO) {
@@ -526,6 +535,7 @@ open class FenixApplication : LocaleAwareApplication(), Provider, ThemeProvider 
         queueIncrementNumberOfAppLaunches()
         queueRestoreLocale()
         queueStorageMaintenance()
+        queueIntegrityClientWarmUp()
         queueNimbusFetchInForeground()
         queueDownloadWallpapers()
         if (settings().enableFxSuggest) {
