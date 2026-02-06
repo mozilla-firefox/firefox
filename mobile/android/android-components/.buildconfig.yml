@@ -467,6 +467,12 @@ projects:
     - components:support-base
     - components:support-test
     - components:tooling-lint
+  components:concept-integrity:
+    description: A concept for verifying the integrity of an installation
+    path: components/concept/integrity
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:concept-llm:
     description: An abstract definition of an LLM request.
     path: components/concept/llm
@@ -1750,6 +1756,14 @@ projects:
     - components:support-base
     - components:support-test
     - components:tooling-fetch-tests
+    - components:tooling-lint
+  components:lib-integrity-googleplay:
+    description: A library for verifying the integrity of an installation using Google
+      Play
+    path: components/lib/integrity-googleplay
+    publish: true
+    upstream_dependencies:
+    - components:concept-integrity
     - components:tooling-lint
   components:lib-jexl:
     description: 'Javascript Expression Language: Powerful context-based expression
