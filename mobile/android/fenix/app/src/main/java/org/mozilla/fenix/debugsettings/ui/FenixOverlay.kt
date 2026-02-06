@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.map
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.concept.storage.CreditCardsAddressesStorage
 import mozilla.components.concept.storage.LoginsStorage
 import mozilla.telemetry.glean.Glean
@@ -110,6 +111,7 @@ fun FenixOverlay(
             },
         creditCardsAddressesStorage = context.components.core.autofillStorage,
         inactiveTabsEnabled = inactiveTabsEnabled,
+        integrityClient = context.components.integrityClient,
     )
 }
 
@@ -122,8 +124,10 @@ fun FenixOverlay(
  * @param loginsStorage [LoginsStorage] used to access logins for [LoginsTools].
  * @param addressesDebugRegionRepository used to control storage for [AddressesTools].
  * @param creditCardsAddressesStorage used to access addresses for [AddressesTools].
+ * @param integrityClient used to test an [IntegrityClient].
  * @param inactiveTabsEnabled Whether the inactive tabs feature is enabled.
  */
+@Suppress("LongParameterList")
 @Composable
 private fun FenixOverlay(
     browserStore: BrowserStore,
@@ -132,6 +136,7 @@ private fun FenixOverlay(
     loginsStorage: LoginsStorage,
     addressesDebugRegionRepository: AddressesDebugRegionRepository,
     creditCardsAddressesStorage: CreditCardsAddressesStorage,
+    integrityClient: IntegrityClient,
     inactiveTabsEnabled: Boolean,
 ) {
     val navController = rememberNavController()
@@ -158,6 +163,7 @@ private fun FenixOverlay(
             loginsStorage = loginsStorage,
             addressesDebugRegionRepository = addressesDebugRegionRepository,
             creditCardsAddressesStorage = creditCardsAddressesStorage,
+            integrityClient = integrityClient,
         )
     }
     val drawerStatus by remember {
@@ -207,5 +213,6 @@ private fun FenixOverlayPreview() {
         loginsStorage = FakeLoginsStorage(),
         addressesDebugRegionRepository = FakeAddressesDebugRegionRepository(),
         creditCardsAddressesStorage = FakeCreditCardsAddressesStorage(),
+        integrityClient = IntegrityClient.testSuccess,
     )
 }

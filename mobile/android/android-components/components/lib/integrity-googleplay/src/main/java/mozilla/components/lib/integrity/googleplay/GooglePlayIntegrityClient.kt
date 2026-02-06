@@ -13,7 +13,6 @@ import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.concept.integrity.IntegrityToken
 import mozilla.components.lib.integrity.googleplay.ext.prepare
 import java.util.UUID
-import kotlin.uuid.Uuid
 
 /**
  * Represents a Google Cloud project number parsed from an external value (i.e. BuildConfig).

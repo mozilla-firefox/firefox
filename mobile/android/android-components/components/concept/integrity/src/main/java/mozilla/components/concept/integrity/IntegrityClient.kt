@@ -18,4 +18,11 @@ fun interface IntegrityClient {
      * Requests an [IntegrityToken]
      */
     suspend fun request(): Result<IntegrityToken>
+
+    companion object {
+        val testSuccess: IntegrityClient
+            get() = IntegrityClient {
+                Result.success(IntegrityToken("my-integrity-token"))
+            }
+    }
 }
