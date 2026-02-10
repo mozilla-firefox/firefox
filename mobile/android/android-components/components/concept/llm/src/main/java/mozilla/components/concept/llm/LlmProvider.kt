@@ -36,6 +36,11 @@ interface CloudLlmProvider : LlmProvider {
         object Available : State
 
         /**
+         * Indicates that the cloud provider is unavailable.
+         */
+        object Unavailable : State
+
+        /**
          * Indicates that the cloud LLM is fully initialized and ready for use.
          *
          * @property llm The ready-to-use LLM instance.

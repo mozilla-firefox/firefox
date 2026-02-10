@@ -1790,11 +1790,16 @@ projects:
     - components:support-test
     - components:tooling-lint
   components:lib-llm-mlpa:
-    description: A off-device implementation of the LLM concept that uses the MLPA
-      proxy server
+    description: An implmentation of  that is backed by MLPA
     path: components/lib/llm-mlpa
     publish: true
     upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
+    - components:concept-integrity
+    - components:concept-llm
+    - components:support-base
+    - components:support-test
     - components:tooling-lint
   components:lib-publicsuffixlist:
     description: A library for reading and using the public suffix list.

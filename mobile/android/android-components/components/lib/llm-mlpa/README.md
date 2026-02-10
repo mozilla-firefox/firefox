@@ -1,7 +1,6 @@
 # [Android Components](../../../README.md) > Lib > LLM-MLPA
 
-A off-device implementation of the LLM concept that uses the MLPA
-proxy server.
+An implmentation of  that is backed by MLPA
 
 ## License
 
