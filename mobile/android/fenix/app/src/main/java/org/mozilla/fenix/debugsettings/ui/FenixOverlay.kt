@@ -28,6 +28,7 @@ import mozilla.components.concept.storage.CreditCardsAddressesStorage
 import mozilla.components.concept.storage.LoginsStorage
 import mozilla.telemetry.glean.Glean
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.Llm
 import org.mozilla.fenix.debugsettings.addresses.AddressesDebugRegionRepository
 import org.mozilla.fenix.debugsettings.addresses.AddressesTools
 import org.mozilla.fenix.debugsettings.addresses.FakeAddressesDebugRegionRepository
@@ -41,6 +42,7 @@ import org.mozilla.fenix.debugsettings.gleandebugtools.DefaultGleanDebugToolsSto
 import org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsMiddleware
 import org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsState
 import org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsStore
+import org.mozilla.fenix.debugsettings.llm.FakeClient
 import org.mozilla.fenix.debugsettings.logins.FakeLoginsStorage
 import org.mozilla.fenix.debugsettings.logins.LoginsTools
 import org.mozilla.fenix.debugsettings.navigation.DebugDrawerRoute
@@ -112,6 +114,7 @@ fun FenixOverlay(
         creditCardsAddressesStorage = context.components.core.autofillStorage,
         inactiveTabsEnabled = inactiveTabsEnabled,
         integrityClient = context.components.integrityClient,
+        llm = context.components.llm,
     )
 }
 
@@ -125,6 +128,7 @@ fun FenixOverlay(
  * @param addressesDebugRegionRepository used to control storage for [AddressesTools].
  * @param creditCardsAddressesStorage used to access addresses for [AddressesTools].
  * @param integrityClient used to test an [IntegrityClient].
+ * @param llm the component group [Llm].
  * @param inactiveTabsEnabled Whether the inactive tabs feature is enabled.
  */
 @Suppress("LongParameterList")
@@ -137,6 +141,7 @@ private fun FenixOverlay(
     addressesDebugRegionRepository: AddressesDebugRegionRepository,
     creditCardsAddressesStorage: CreditCardsAddressesStorage,
     integrityClient: IntegrityClient,
+    llm: Llm,
     inactiveTabsEnabled: Boolean,
 ) {
     val navController = rememberNavController()
@@ -164,6 +169,7 @@ private fun FenixOverlay(
             addressesDebugRegionRepository = addressesDebugRegionRepository,
             creditCardsAddressesStorage = creditCardsAddressesStorage,
             integrityClient = integrityClient,
+            llm = llm,
         )
     }
     val drawerStatus by remember {
@@ -214,5 +220,6 @@ private fun FenixOverlayPreview() {
         addressesDebugRegionRepository = FakeAddressesDebugRegionRepository(),
         creditCardsAddressesStorage = FakeCreditCardsAddressesStorage(),
         integrityClient = IntegrityClient.testSuccess,
+        llm = Llm(FakeClient()),
     )
 }

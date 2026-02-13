@@ -23,6 +23,7 @@ projects:
     - components:concept-engine
     - components:concept-fetch
     - components:concept-integrity
+    - components:concept-llm
     - components:concept-menu
     - components:concept-push
     - components:concept-storage
@@ -69,6 +70,7 @@ projects:
     - components:lib-crash-sentry
     - components:lib-dataprotect
     - components:lib-integrity-googleplay
+    - components:lib-llm-mlpa
     - components:lib-publicsuffixlist
     - components:lib-push-firebase
     - components:lib-shake

@@ -400,6 +400,8 @@ class Components(private val context: Context) {
             appStore = appStore,
         )
     }
+
+    val llm: Llm by lazyMonitored { Llm(core.client) }
 }
 
 /**
