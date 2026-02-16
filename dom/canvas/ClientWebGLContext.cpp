@@ -4146,7 +4146,7 @@ void ClientWebGLContext::ActiveTexture(const GLenum texUnitEnum) {
   if (IsContextLost()) return;
 
   if (texUnitEnum < LOCAL_GL_TEXTURE0) {
-    EnqueueError(LOCAL_GL_INVALID_VALUE,
+    EnqueueError(LOCAL_GL_INVALID_ENUM,
                  "`texture` (0x%04x) must be >= TEXTURE0 (0x%04x).",
                  texUnitEnum, LOCAL_GL_TEXTURE0);
     return;
@@ -4156,7 +4156,7 @@ void ClientWebGLContext::ActiveTexture(const GLenum texUnitEnum) {
 
   auto& state = State();
   if (texUnit >= state.mTexUnits.size()) {
-    EnqueueError(LOCAL_GL_INVALID_VALUE,
+    EnqueueError(LOCAL_GL_INVALID_ENUM,
                  "TEXTURE%u must be < MAX_COMBINED_TEXTURE_IMAGE_UNITS (%zu).",
                  texUnit, state.mTexUnits.size());
     return;
