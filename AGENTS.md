@@ -45,7 +45,7 @@ You can find the review identifier by inspecting the commit log with:
 - After making code changes, ensure the code is formatted by using `./mach format`, linted by using `./mach lint`, and build it using `./mach build`. If there are no errors, you can use `mach run` to ensure the browser still runs. Occasionally run `./mach clang-format -p path/to/modifiedfile path/to/othermodifiedfile` to format C++, `./mach lint --fix path/to/file` for most other files.
 - You can run tests by using `./mach test --auto`. Once you are satisfied with the tests you run locally, use `mach try auto` to run tests in CI
 - Ask if you should run a test. If you do, you probably want to run the test with `--headless`
-- Do not perform commits yourself, ever
+- You may commit and push when asked to do so
 - It's better to just run `./mach build` without subdirectory, the build system is well optimized
 - Always build normally, never use subdirectories, e.g. `./mach build` is the only command to run
 - Never build with a subdirectory. Always simply do `./mach build`

@@ -463,6 +463,7 @@ deck > *|*:not(:-moz-native-anonymous) {
 tabpanels > .deck-selected,
 tabpanels > .split-view-panel-active,
 tabpanels > .split-view-splitter,
+tabpanels > .split-view-tree-splitter,
 deck > .deck-selected {
   -moz-subtree-hidden-only-visually: 0;
   visibility: inherit;

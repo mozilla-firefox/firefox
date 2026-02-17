@@ -111,6 +111,8 @@
         PictureInPicture: "resource://gre/modules/PictureInPicture.sys.mjs",
         SmartTabGroupingManager:
           "moz-src:///browser/components/tabbrowser/SmartTabGrouping.sys.mjs",
+        SplitViewTree:
+          "moz-src:///browser/components/tabbrowser/SplitViewTree.sys.mjs",
         SponsorProtection:
           "moz-src:///browser/components/newtab/SponsorProtection.sys.mjs",
         TabMetrics:
@@ -402,6 +404,12 @@
     /** @type {MozTabSplitViewWrapper} */
     #activeSplitView = null;
 
+    /** @type {SplitViewTree} */
+    _splitTree = null;
+
+    /** @type {LeafNode} */
+    _focusedSplitPane = null;
+
     get activeSplitView() {
       return this.#activeSplitView;
     }
@@ -416,6 +424,13 @@
       if (this.#activeSplitView) {
         for (const tab of this.#activeSplitView.tabs) {
           browsers.push(tab.linkedBrowser);
+        }
+      }
+      if (this._splitTree) {
+        for (let leaf of this._splitTree.allLeaves()) {
+          if (!browsers.includes(leaf.tab.linkedBrowser)) {
+            browsers.push(leaf.tab.linkedBrowser);
+          }
         }
       }
       return browsers;
@@ -3478,6 +3493,90 @@
     hideSplitViewPanels(tabs) {
       for (const tab of tabs) {
         this.tabpanels.removePanelFromSplitView(tab.linkedPanel);
+      }
+    }
+
+    /**
+     * Create a tree-based split pane with two tabs side by side.
+     *
+     * @param {MozTabbrowserTab} tab1
+     * @param {MozTabbrowserTab} tab2
+     * @param {"horizontal"|"vertical"} orientation
+     */
+    splitPane(tab1, tab2, orientation) {
+      if (this._splitTree) {
+        return;
+      }
+
+      this._insertBrowser(tab1);
+      this._insertBrowser(tab2);
+
+      this._splitTree = new this.SplitViewTree(
+        document,
+        this.tabpanels,
+        window
+      );
+      this._splitTree.split(tab1, tab2, orientation);
+
+      tab1.linkedBrowser.docShellIsActive = true;
+      tab2.linkedBrowser.docShellIsActive = true;
+
+      let self = this;
+      this._splitTreeFocusHandler = function (event) {
+        let browser = event.target;
+        if (browser.tagName !== "browser") {
+          return;
+        }
+        let tab = self.getTabForBrowser(browser);
+        if (tab && self._splitTree?.hasTab(tab)) {
+          self.selectedTab = tab;
+          self._focusedSplitPane = self._splitTree.findLeaf(tab);
+        }
+      };
+
+      for (let leaf of this._splitTree.allLeaves()) {
+        let browser = leaf.tab.linkedBrowser;
+        browser.addEventListener("focus", this._splitTreeFocusHandler, true);
+      }
+    }
+
+    closeSplitView() {
+      if (!this._splitTree) {
+        return;
+      }
+
+      if (this._splitTreeFocusHandler) {
+        for (let leaf of this._splitTree.allLeaves()) {
+          let browser = leaf.tab.linkedBrowser;
+          browser.removeEventListener(
+            "focus",
+            this._splitTreeFocusHandler,
+            true
+          );
+        }
+        this._splitTreeFocusHandler = null;
+      }
+
+      this._splitTree.destroy();
+      this._splitTree = null;
+      this._focusedSplitPane = null;
+
+      for (let tab of this.tabs) {
+        if (tab !== this.selectedTab) {
+          tab.linkedBrowser.docShellIsActive = this.shouldActivateDocShell(
+            tab.linkedBrowser
+          );
+        }
+      }
+
+      let selectedPanel = document.getElementById(this.selectedTab.linkedPanel);
+      if (selectedPanel) {
+        let index = Array.from(this.tabpanels.children).indexOf(selectedPanel);
+        if (index >= 0) {
+          let oldPanel = this.tabpanels._selectedPanel;
+          this.tabpanels._selectedPanel = this.tabpanels.children[index];
+          this.tabpanels.updateSelectedIndex(index, oldPanel);
+        }
       }
     }
 
@@ -7749,8 +7848,17 @@
         (aBrowser == this.selectedBrowser && !document.hidden) ||
         this._printPreviewBrowsers.has(aBrowser) ||
         this.PictureInPicture.isOriginatingBrowser(aBrowser) ||
-        this.splitViewBrowsers.includes(aBrowser)
+        this.splitViewBrowsers.includes(aBrowser) ||
+        this._splitTreeHasBrowser(aBrowser)
       );
+    }
+
+    _splitTreeHasBrowser(aBrowser) {
+      if (!this._splitTree) {
+        return false;
+      }
+      let tab = this.getTabForBrowser(aBrowser);
+      return tab ? this._splitTree.hasTab(tab) : false;
     }
 
     _getSwitcher() {
