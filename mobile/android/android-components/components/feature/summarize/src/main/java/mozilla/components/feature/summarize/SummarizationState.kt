@@ -9,26 +9,21 @@ import mozilla.components.lib.state.State
 /**
  * The [State] of the [SummarizationStore]
  */
-internal data class SummarizationState(
-    val pageSummarizationState: PageSummarizationState,
-    val summarizedText: String = "",
-    val productName: String = "",
-) : State
-
-/**
- * State of the summarization process
- */
-internal sealed class PageSummarizationState {
-    data object Inert : PageSummarizationState()
-    data object ShakeConsentRequired : PageSummarizationState()
-    data object ShakeConsentWithDownloadRequired : PageSummarizationState()
-    data object DownloadConsentRequired : PageSummarizationState()
-    data class Downloading(val bytesToDownload: Float, val bytesDownloaded: Float) : PageSummarizationState() {
+internal sealed class SummarizationState : State {
+    data object Inert : SummarizationState()
+    data object ShakeConsentRequired : SummarizationState()
+    data object ShakeConsentWithDownloadRequired : SummarizationState()
+    data object DownloadConsentRequired : SummarizationState()
+    data class Downloading(val bytesToDownload: Float, val bytesDownloaded: Float) : SummarizationState() {
         val downloadProgress: Float get() = bytesToDownload / bytesToDownload
     }
-    data object Summarizing : PageSummarizationState()
-    data class Summarized(val text: String) : PageSummarizationState()
-    data class Error(val error: SummarizationError) : PageSummarizationState()
+    data object Summarizing : SummarizationState()
+    data class Summarized(val text: String) : SummarizationState()
+    data class Error(val error: SummarizationError) : SummarizationState()
+
+    companion object {
+        val initial: SummarizationState get() = Inert
+    }
 }
 
 internal sealed class SummarizationError {

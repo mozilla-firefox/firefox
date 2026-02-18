@@ -23,9 +23,9 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
-import mozilla.components.feature.summarize.PageSummarizationState
 import mozilla.components.feature.summarize.R
 import mozilla.components.feature.summarize.SummarizationAction.DownloadInProgressAction
+import mozilla.components.feature.summarize.SummarizationState
 
 /**
  * Composable to be rendering while downloading an on-device model.
@@ -33,7 +33,7 @@ import mozilla.components.feature.summarize.SummarizationAction.DownloadInProgre
 @Composable
 internal fun DownloadProgress(
     modifier: Modifier = Modifier,
-    downloadState: PageSummarizationState.Downloading,
+    downloadState: SummarizationState.Downloading,
     dispatchAction: (DownloadInProgressAction) -> Unit = {},
 ) {
     DownloadProgressContent(
@@ -104,7 +104,7 @@ private fun PreviewDownloadProgress() = AcornTheme {
         val bytesToDownload = 12.13f
         val bytesDownloaded = 9.04f
         DownloadProgress(
-            downloadState = PageSummarizationState.Downloading(
+            downloadState = SummarizationState.Downloading(
                 bytesToDownload = bytesToDownload,
                 bytesDownloaded = bytesDownloaded,
             ),

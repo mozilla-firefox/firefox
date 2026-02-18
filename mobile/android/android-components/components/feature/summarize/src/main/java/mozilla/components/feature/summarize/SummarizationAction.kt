@@ -10,7 +10,6 @@ import mozilla.components.lib.state.Action
  * Actions for the [SummarizationStore]
  */
 internal interface SummarizationAction : Action {
-
     /**
      * Actions for the consent step of the shake to summarize user flow when using a on-device model
      */

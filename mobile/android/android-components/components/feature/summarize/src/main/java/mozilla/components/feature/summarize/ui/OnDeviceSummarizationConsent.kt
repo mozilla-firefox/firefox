@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.feature.summarize.LocalProductName
 import mozilla.components.feature.summarize.R
 import mozilla.components.feature.summarize.SummarizationAction.OnDeviceSummarizationShakeConsentAction
 
@@ -29,12 +30,10 @@ import mozilla.components.feature.summarize.SummarizationAction.OnDeviceSummariz
 @Composable
 internal fun OnDeviceSummarizationConsent(
     modifier: Modifier = Modifier,
-    productName: String,
     dispatchAction: (OnDeviceSummarizationShakeConsentAction) -> Unit = {},
 ) {
     OnDeviceSummarizationConsentContent(
         modifier = modifier,
-        productName = productName,
         onClickLearnMore = {
             dispatchAction(OnDeviceSummarizationShakeConsentAction.AllowClicked)
         },
@@ -50,14 +49,12 @@ internal fun OnDeviceSummarizationConsent(
 @Composable
 private fun OnDeviceSummarizationConsentContent(
     modifier: Modifier,
-    productName: String,
     onClickLearnMore: () -> Unit,
     onClickAllow: () -> Unit,
     onClickCancel: () -> Unit,
 ) {
     Column(modifier) {
         OnDeviceSummarizationDescription(
-            productName = productName,
             onClickLearnMore = onClickLearnMore,
         )
 
@@ -73,9 +70,10 @@ private fun OnDeviceSummarizationConsentContent(
 @Composable
 private fun OnDeviceSummarizationDescription(
     modifier: Modifier = Modifier,
-    productName: String,
     onClickLearnMore: () -> Unit,
 ) {
+    val productName = LocalProductName.current.value
+
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = stringResource(R.string.mozac_summarize_shake_consent_on_device_title),
@@ -128,6 +126,6 @@ private fun OnDeviceSummarizationButtons(
 @Composable
 private fun PreviewOnDeviceSummarizationContent() = AcornTheme {
     Surface {
-        OnDeviceSummarizationConsent(productName = "Firefox")
+        OnDeviceSummarizationConsent()
     }
 }

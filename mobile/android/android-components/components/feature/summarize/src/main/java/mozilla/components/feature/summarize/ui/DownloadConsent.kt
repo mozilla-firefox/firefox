@@ -20,18 +20,17 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.feature.summarize.LocalProductName
 import mozilla.components.feature.summarize.R
 import mozilla.components.feature.summarize.SummarizationAction.DownloadConsentAction
 
 @Composable
 internal fun DownloadConsent(
     modifier: Modifier = Modifier,
-    productName: String,
     dispatchAction: (DownloadConsentAction) -> Unit = {},
 ) {
     DownloadConsentContent(
         modifier = modifier,
-        productName = productName,
         onClickLearnMore = {
             dispatchAction(DownloadConsentAction.LearnMoreClicked)
         },
@@ -47,7 +46,6 @@ internal fun DownloadConsent(
 @Composable
 private fun DownloadConsentContent(
     modifier: Modifier = Modifier,
-    productName: String,
     onClickLearnMore: () -> Unit,
     onClickAllow: () -> Unit,
     onClickCancel: () -> Unit,
@@ -55,7 +53,6 @@ private fun DownloadConsentContent(
     Column(modifier) {
         DownloadConsentDescription(
             modifier = modifier,
-            productName = productName,
             onClickLearnMore = onClickLearnMore,
         )
 
@@ -72,9 +69,10 @@ private fun DownloadConsentContent(
 @Composable
 private fun DownloadConsentDescription(
     modifier: Modifier = Modifier,
-    productName: String,
     onClickLearnMore: () -> Unit,
 ) {
+    val productName = LocalProductName.current.value
+
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = stringResource(R.string.mozac_summarize_download_consent_title),
@@ -127,6 +125,6 @@ private fun DownloadConsentButtons(
 @Composable
 private fun PreviewDownloadConsent() = AcornTheme {
     Surface {
-        DownloadConsent(productName = "Firefox")
+        DownloadConsent()
     }
 }

@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +35,7 @@ import mozilla.components.feature.summarize.ui.DownloadProgress
 import mozilla.components.feature.summarize.ui.InfoError
 import mozilla.components.feature.summarize.ui.OffDeviceSummarizationConsent
 import mozilla.components.feature.summarize.ui.OnDeviceSummarizationConsent
+import mozilla.components.lib.state.helpers.StoreProvider.Companion.composableStore
 
 /**
  * The corner ration of the handle shape
@@ -46,18 +49,25 @@ private const val DRAG_HANDLE_CORNER_RATIO = 50
 fun SummarizationUi(
     productName: String,
 ) {
-    SummarizationScreen(
-        modifier = Modifier.fillMaxWidth(),
-        store = SummarizationStore(
-            initialState = SummarizationState(
-                pageSummarizationState = PageSummarizationState.Inert,
-                productName = productName,
-            ),
+    val store by composableStore(SummarizationState.initial) { state ->
+        SummarizationStore(
+            initialState = state,
             reducer = ::summarizationReducer,
             middleware = listOf(SummarizationMiddleware()),
-        ),
-    )
+        )
+    }
+
+    CompositionLocalProvider(LocalProductName provides ProductName(productName)) {
+        SummarizationScreen(
+            modifier = Modifier.fillMaxWidth(),
+            store = store,
+        )
+    }
 }
+
+@JvmInline
+internal value class ProductName(val value: String)
+internal val LocalProductName = compositionLocalOf { ProductName("Firefox Debug") }
 
 @Composable
 private fun SummarizationScreen(
@@ -67,9 +77,9 @@ private fun SummarizationScreen(
     val state by store.stateFlow.collectAsStateWithLifecycle()
 
     SummarizationScreenScaffold(modifier = modifier) {
-        when (val pageState = state.pageSummarizationState) {
-            is PageSummarizationState.Inert, // TODO remove once we wire middleware
-            is PageSummarizationState.ShakeConsentRequired,
+        when (val state = state) {
+            is SummarizationState.Inert -> Unit
+            is SummarizationState.ShakeConsentRequired,
             -> {
                 OffDeviceSummarizationConsent(
                     dispatchAction = {
@@ -77,27 +87,25 @@ private fun SummarizationScreen(
                     },
                 )
             }
-            is PageSummarizationState.ShakeConsentWithDownloadRequired -> {
+            is SummarizationState.ShakeConsentWithDownloadRequired -> {
                 OnDeviceSummarizationConsent(
-                    productName = state.productName,
                     dispatchAction = {
                         store.dispatch(it)
                     },
                 )
             }
-            is PageSummarizationState.DownloadConsentRequired -> {
+            is SummarizationState.DownloadConsentRequired -> {
                 DownloadConsent(
-                    productName = state.productName,
                     dispatchAction = {
                         store.dispatch(it)
                     },
                 )
             }
-            is PageSummarizationState.Downloading -> DownloadProgress(
-                downloadState = pageState,
+            is SummarizationState.Downloading -> DownloadProgress(
+                downloadState = state,
             )
-            is PageSummarizationState.Error -> {
-                if (pageState.error is SummarizationError.DownloadFailed) {
+            is SummarizationState.Error -> {
+                if (state.error is SummarizationError.DownloadFailed) {
                     DownloadError()
                 } else {
                     InfoError()
@@ -155,28 +163,13 @@ private fun DragHandle(
 
 private class SummarizationStatePreviewProvider : PreviewParameterProvider<SummarizationState> {
     override val values: Sequence<SummarizationState> = sequenceOf(
-        SummarizationState(
-            PageSummarizationState.Summarizing,
-            summarizedText = "Lorem Ipsum",
-        ),
-        SummarizationState(
-            PageSummarizationState.Error(SummarizationError.ContentTooLong),
-        ),
-        SummarizationState(
-            PageSummarizationState.ShakeConsentRequired,
-        ),
-        SummarizationState(
-            PageSummarizationState.ShakeConsentWithDownloadRequired,
-        ),
-        SummarizationState(
-            PageSummarizationState.DownloadConsentRequired,
-        ),
-        SummarizationState(
-            PageSummarizationState.Downloading(12.13f, 9.04f),
-        ),
-        SummarizationState(
-            PageSummarizationState.Error(SummarizationError.NetworkError),
-        ),
+        SummarizationState.Summarizing,
+        SummarizationState.Error(SummarizationError.ContentTooLong),
+        SummarizationState.ShakeConsentRequired,
+        SummarizationState.ShakeConsentWithDownloadRequired,
+        SummarizationState.DownloadConsentRequired,
+        SummarizationState.Downloading(12.13f, 9.04f),
+        SummarizationState.Error(SummarizationError.NetworkError),
     )
 }
 
@@ -187,7 +180,7 @@ private fun SummarizationScreenPreview(
 ) {
     SummarizationScreen(
         store = SummarizationStore(
-            initialState = state.copy(productName = "Firefox"),
+            initialState = state,
             reducer = ::summarizationReducer,
             middleware = listOf(SummarizationMiddleware()),
         ),
