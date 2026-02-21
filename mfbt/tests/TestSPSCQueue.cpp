@@ -7,6 +7,7 @@
 #include "mozilla/SPSCQueue.h"
 #include "mozilla/PodOperations.h"
 #include <vector>
+#include <cstdint>
 #include <iostream>
 #include <thread>
 #include <chrono>

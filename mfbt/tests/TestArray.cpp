@@ -5,6 +5,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "mozilla/Array.h"
+#include <cstdint>
 
 void TestInitialValueByConstructor() {
   using namespace mozilla;

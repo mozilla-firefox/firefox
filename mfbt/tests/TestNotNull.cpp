@@ -5,6 +5,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <type_traits>
+#include <cstdint>
 
 #include "mozilla/NotNull.h"
 #include "mozilla/RefPtr.h"
