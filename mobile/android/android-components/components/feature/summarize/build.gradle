@@ -25,6 +25,7 @@ android {
 
 dependencies {
     implementation project(':components:concept-engine')
+    implementation project(':components:concept-llm')
     implementation project(':components:lib-state')
     implementation project(':components:compose-base')
     implementation project(':components:ui-icons')

@@ -1413,6 +1413,7 @@ projects:
     - components:concept-base
     - components:concept-engine
     - components:concept-fetch
+    - components:concept-llm
     - components:concept-storage
     - components:lib-publicsuffixlist
     - components:lib-state
