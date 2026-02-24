@@ -6,7 +6,9 @@ package org.mozilla.fenix.summarization
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import mozilla.components.feature.summarize.SummarizationMiddleware
+import mozilla.components.feature.summarize.SummarizationSettings
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.SummarizationStore
 import mozilla.components.feature.summarize.summarizationReducer
@@ -15,14 +17,16 @@ import mozilla.components.feature.summarize.summarizationReducer
  * A [ViewModel] that owns and survives configuration changes for a [SummarizationStore].
  *
  * @param initializedFromShake Whether the summarization feature was triggered by a shake gesture.
+ * @param settings the SummarizationSettings.
  */
 class SummarizationStoreViewModel(
     initializedFromShake: Boolean,
+    settings: SummarizationSettings,
 ) : ViewModel() {
     val store = SummarizationStore(
         initialState = SummarizationState.Inert(initializedFromShake),
         reducer = ::summarizationReducer,
-        middleware = listOf(SummarizationMiddleware()),
+        middleware = listOf(SummarizationMiddleware(settings = settings, scope = viewModelScope)),
     )
 
     companion object {
@@ -30,13 +34,15 @@ class SummarizationStoreViewModel(
          * Creates a [ViewModelProvider.Factory] for [SummarizationStoreViewModel].
          *
          * @param initializedFromShake Whether the summarization feature was triggered by a shake gesture.
+         * @param settings the SummarizationSettings.
          */
         fun factory(
             initializedFromShake: Boolean,
+            settings: SummarizationSettings,
         ) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return SummarizationStoreViewModel(initializedFromShake) as T
+                return SummarizationStoreViewModel(initializedFromShake, settings) as T
             }
         }
     }
