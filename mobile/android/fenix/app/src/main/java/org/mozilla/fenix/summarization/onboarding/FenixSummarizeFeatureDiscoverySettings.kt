@@ -16,13 +16,7 @@ import org.mozilla.fenix.utils.Settings
 class FenixSummarizeFeatureDiscoverySettings(
     private val settings: Settings,
 ) : SummarizeFeatureDiscoverySettings {
-
-    /**
-     * Determines if the feature can be shown
-     *
-     * It combines both the remote feature flag and user preference.
-     */
-    private val canShowFeature: Boolean
+    override val canShowFeature: Boolean
         get() = settings.shakeToSummarizeFeatureFlagEnabled && settings.shakeToSummarizeFeatureUserPreference
 
     override val showMenuItem: Boolean

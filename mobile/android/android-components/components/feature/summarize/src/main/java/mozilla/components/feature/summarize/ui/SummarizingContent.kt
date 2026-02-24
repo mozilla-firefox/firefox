@@ -24,7 +24,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mozilla.components.feature.summarize.R
-import mozilla.components.feature.summarize.ui.gradient.summaryLoadingGradient
 
 /**
  * Content shown while a page summary is being generated.
@@ -32,11 +31,9 @@ import mozilla.components.feature.summarize.ui.gradient.summaryLoadingGradient
  */
 @Composable
 internal fun SummarizingContent(
-    modifier: Modifier = Modifier,
     title: String = stringResource(R.string.mozac_feature_summarize_loading_title),
 ) {
     Box(
-        modifier = modifier.summaryLoadingGradient(),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -69,9 +66,7 @@ private fun SummarizingContentPreview() {
                 .height(400.dp),
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         ) {
-            SummarizingContent(
-                modifier = Modifier.fillMaxSize(),
-            )
+            SummarizingContent()
         }
     }
 }

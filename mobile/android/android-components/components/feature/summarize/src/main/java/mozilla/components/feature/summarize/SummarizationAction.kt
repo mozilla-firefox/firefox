@@ -27,6 +27,7 @@ internal sealed interface LlmProviderAction : SummarizationAction {
 /** Initialize the Llm */
 internal sealed interface LlmAction : SummarizationAction {
     data object Initialize : SummarizationAction
+    data object SummarizationRequested : SummarizationAction
     data class ReceivedResponse(val response: Llm.Response) : LlmAction
 }
 
