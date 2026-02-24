@@ -1,0 +1,46 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+package mozilla.components.feature.summarize
+
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Test
+import kotlin.time.Duration.Companion.seconds
+
+class SummarizationStoreTest {
+    @Test
+    fun `test that we can consent to shake`() = runTest {
+        val settings = SummarizationSettings.inMemory()
+
+        val store = SummarizationStore(
+            initialState = SummarizationState.Inert(true),
+            reducer = ::summarizationReducer,
+            middleware = listOf(
+                SummarizationMiddleware(
+                    settings = settings,
+                    scope = backgroundScope
+                )
+            )
+        )
+
+        val states = mutableListOf<SummarizationState>()
+        backgroundScope.launch {
+            store.stateFlow.toList(states)
+        }
+
+        store.dispatch(ViewAppeared)
+        store.dispatch(OffDeviceSummarizationShakeConsentAction.AllowClicked)
+
+        testScheduler.advanceTimeBy(5.seconds)
+
+        val expected = listOf(
+            SummarizationState.Inert(false),
+        )
+
+        assertEquals(expected, states)
+    }
+}

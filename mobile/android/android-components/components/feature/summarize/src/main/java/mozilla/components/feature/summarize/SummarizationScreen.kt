@@ -160,7 +160,7 @@ private fun SummarizationScreenPreview(
         store = SummarizationStore(
             initialState = state,
             reducer = ::summarizationReducer,
-            middleware = listOf(SummarizationMiddleware()),
+            middleware = listOf(),
         ),
     )
 }

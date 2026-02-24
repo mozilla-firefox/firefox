@@ -11,6 +11,10 @@ import mozilla.components.lib.state.Action
  */
 interface SummarizationAction : Action
 
+data object ViewAppeared : SummarizationAction
+
+data object ShakeConsentRequested : SummarizationAction
+
 /**
  * Actions for the consent step of the shake to summarize user flow when using an on-device model.
  */
