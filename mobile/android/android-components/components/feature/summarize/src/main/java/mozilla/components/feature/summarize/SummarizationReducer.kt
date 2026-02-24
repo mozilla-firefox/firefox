@@ -13,5 +13,7 @@ package mozilla.components.feature.summarize
  */
 fun summarizationReducer(state: SummarizationState, action: SummarizationAction) = when (action) {
     is ShakeConsentRequested -> SummarizationState.ShakeConsentRequired
+    OffDeviceSummarizationShakeConsentAction.CancelClicked -> SummarizationState.Finished.Cancelled
+    OffDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.Finished.LearnMoreAboutShakeConsent
     else -> { state }
 }

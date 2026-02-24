@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -22,9 +24,9 @@ class SummarizationStoreTest {
             middleware = listOf(
                 SummarizationMiddleware(
                     settings = settings,
-                    scope = backgroundScope
-                )
-            )
+                    scope = backgroundScope,
+                ),
+            ),
         )
 
         val states = mutableListOf<SummarizationState>()
@@ -37,10 +39,49 @@ class SummarizationStoreTest {
 
         testScheduler.advanceTimeBy(5.seconds)
 
-        val expected = listOf(
-            SummarizationState.Inert(false),
+        val expected = listOf<SummarizationState>(
+            SummarizationState.Inert(true),
+            SummarizationState.ShakeConsentRequired,
         )
 
         assertEquals(expected, states)
+        assertTrue(settings.getHasConsentedToShake())
+    }
+
+    @Test
+    fun `test that we can decline consenting to shake`() = runTest {
+        val settings = SummarizationSettings.inMemory()
+
+        val store = SummarizationStore(
+            initialState = SummarizationState.Inert(true),
+            reducer = ::summarizationReducer,
+            middleware = listOf(
+                SummarizationMiddleware(
+                    settings = settings,
+                    scope = backgroundScope,
+                ),
+            ),
+        )
+
+        val states = mutableListOf<SummarizationState>()
+        backgroundScope.launch {
+            store.stateFlow.toList(states)
+        }
+        testScheduler.advanceTimeBy(1.seconds)
+
+        store.dispatch(ViewAppeared)
+        testScheduler.advanceTimeBy(1.seconds)
+
+        store.dispatch(OffDeviceSummarizationShakeConsentAction.CancelClicked)
+        testScheduler.advanceTimeBy(1.seconds)
+
+        val expected = listOf<SummarizationState>(
+            SummarizationState.Inert(true),
+            SummarizationState.ShakeConsentRequired,
+            SummarizationState.Finished.Cancelled,
+        )
+
+        assertEquals(expected, states)
+        assertFalse(settings.getHasConsentedToShake())
     }
 }

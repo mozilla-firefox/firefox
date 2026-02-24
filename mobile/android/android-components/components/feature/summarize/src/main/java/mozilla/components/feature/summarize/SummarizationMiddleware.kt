@@ -20,14 +20,20 @@ class SummarizationMiddleware(
         action: SummarizationAction,
     ) {
         when (action) {
-            is ViewAppeared -> scope.launch {
-                val state = store.state
-                if (state is SummarizationState.Inert) {
-                    if (state.initializedWithShake && !settings.getHasConsentedToShake()) {
-                        store.dispatch(ShakeConsentRequested)
-                    }
-                }
+            is ViewAppeared -> checkForShakeConsent(store.state) {
+                store.dispatch(ShakeConsentRequested)
             }
+            OffDeviceSummarizationShakeConsentAction.AllowClicked -> scope.launch {
+                settings.setHasConsentedToShake(true)
+            }
+        }
+
+        next(action)
+    }
+
+    private fun checkForShakeConsent(state: SummarizationState, requiresShakeConsent: () -> Unit) = scope.launch {
+        if (state is SummarizationState.Inert && state.initializedWithShake && !settings.getHasConsentedToShake()) {
+            requiresShakeConsent()
         }
     }
 }

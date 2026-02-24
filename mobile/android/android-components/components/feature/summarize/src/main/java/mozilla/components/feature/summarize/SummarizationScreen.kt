@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -47,6 +48,10 @@ fun SummarizationUi(
     productName: String,
     store: SummarizationStore,
 ) {
+    LaunchedEffect(Unit) {
+        store.dispatch(ViewAppeared)
+    }
+
     CompositionLocalProvider(LocalProductName provides ProductName(productName)) {
         SummarizationScreen(
             modifier = Modifier.fillMaxWidth(),

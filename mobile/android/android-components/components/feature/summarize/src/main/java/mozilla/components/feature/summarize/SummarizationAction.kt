@@ -11,8 +11,10 @@ import mozilla.components.lib.state.Action
  */
 interface SummarizationAction : Action
 
+/** The Summarization Screen View Appeared */
 data object ViewAppeared : SummarizationAction
 
+/** Shake Consent has been requested */
 data object ShakeConsentRequested : SummarizationAction
 
 /**

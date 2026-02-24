@@ -48,6 +48,15 @@ sealed class SummarizationState : State {
      */
     data class Error(val error: SummarizationError) : SummarizationState()
 
+    /** User is finished with the Summarization Flow */
+    sealed class Finished : SummarizationState() {
+        /** User finished by canceling the flow. */
+        data object Cancelled : Finished()
+
+        /** User finished by clicking Learn More in the shake consent screen. */
+        data object LearnMoreAboutShakeConsent : Finished()
+    }
+
     companion object {
         val initial: SummarizationState get() = Inert(false)
     }
