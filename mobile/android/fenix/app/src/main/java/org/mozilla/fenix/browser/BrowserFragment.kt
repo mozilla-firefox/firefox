@@ -179,6 +179,10 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
     }
 
     private fun setupShakeDetection() {
+        if (!requireComponents.core.summarizeFeatureDiscoverySettings.canShowFeature) {
+            return
+        }
+
         val sensorManager = requireActivity().getSystemService(SensorManager::class.java) ?: return
         val accelerometer = LifecycleAwareSensorManagerAccelerometer(sensorManager)
         with(viewLifecycleOwner) {

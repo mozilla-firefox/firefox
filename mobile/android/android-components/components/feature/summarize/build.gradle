@@ -29,6 +29,7 @@ dependencies {
     implementation project(':components:lib-state')
     implementation project(':components:compose-base')
     implementation project(':components:ui-icons')
+    implementation project(':components:ui-richtext')
 
     implementation libs.androidx.compose.foundation
     implementation libs.androidx.compose.ui

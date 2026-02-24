@@ -45,11 +45,15 @@ class SummarizationStoreTest {
         store.dispatch(ViewAppeared)
         store.dispatch(OffDeviceSummarizationShakeConsentAction.AllowClicked)
 
-        testScheduler.advanceTimeBy(5.seconds)
+        testScheduler.advanceTimeBy(15.seconds)
 
         val expected = listOf<SummarizationState>(
             Inert(true),
             ShakeConsentRequired,
+            Summarizing("# This is the article\n"),
+            Summarizing("# This is the article\nThis is some content...\n"),
+            Summarizing("# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+            Summarized("# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
         )
 
         assertEquals(expected, states)

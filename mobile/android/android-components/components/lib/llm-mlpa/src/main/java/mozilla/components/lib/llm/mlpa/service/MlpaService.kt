@@ -26,7 +26,7 @@ class VerificationServiceFailed(reason: String) : Exception("Verification Servic
  *
  * @param reason A human-readable explanation of the failure.
  */
-class ChatServiceFailed(reason: String) : Exception("Verification Service Failed: $reason")
+class ChatServiceFailed(reason: String) : Exception("Chat Service Failed: $reason")
 
 /**
  * Configuration for connecting to MLPA services.

@@ -47,6 +47,7 @@ class SummarizationMiddleware(
     }
 
     private fun observePrompt(store: SummarizationStore, llm: Llm) = scope.launch {
+        store.dispatch(LlmAction.SummarizationRequested)
         llm.prompt(Prompt(systemPrompt))
             .collect { response ->
                 store.dispatch(LlmAction.ReceivedResponse(response))
