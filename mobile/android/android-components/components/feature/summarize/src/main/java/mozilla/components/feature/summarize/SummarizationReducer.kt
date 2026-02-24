@@ -4,6 +4,13 @@
 
 package mozilla.components.feature.summarize
 
-internal fun summarizationReducer(state: SummarizationState, action: SummarizationAction) = when (action) {
+/**
+ * Reduces the given [action] and current [state] into a new [SummarizationState].
+ *
+ * @param state The current [SummarizationState].
+ * @param action The [SummarizationAction] to process.
+ * @return The resulting [SummarizationState] after applying the action.
+ */
+fun summarizationReducer(state: SummarizationState, action: SummarizationAction) = when (action) {
     else -> { state }
 }

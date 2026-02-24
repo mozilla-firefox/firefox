@@ -29,13 +29,10 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mozilla.components.compose.base.theme.AcornTheme
-import mozilla.components.feature.summarize.ui.DownloadConsent
 import mozilla.components.feature.summarize.ui.DownloadError
-import mozilla.components.feature.summarize.ui.DownloadProgress
 import mozilla.components.feature.summarize.ui.InfoError
 import mozilla.components.feature.summarize.ui.OffDeviceSummarizationConsent
 import mozilla.components.feature.summarize.ui.OnDeviceSummarizationConsent
-import mozilla.components.lib.state.helpers.StoreProvider.Companion.composableStore
 
 /**
  * The corner ration of the handle shape
@@ -48,15 +45,8 @@ private const val DRAG_HANDLE_CORNER_RATIO = 50
 @Composable
 fun SummarizationUi(
     productName: String,
+    store: SummarizationStore,
 ) {
-    val store by composableStore(SummarizationState.initial) { state ->
-        SummarizationStore(
-            initialState = state,
-            reducer = ::summarizationReducer,
-            middleware = listOf(SummarizationMiddleware()),
-        )
-    }
-
     CompositionLocalProvider(LocalProductName provides ProductName(productName)) {
         SummarizationScreen(
             modifier = Modifier.fillMaxWidth(),
@@ -94,16 +84,6 @@ private fun SummarizationScreen(
                     },
                 )
             }
-            is SummarizationState.DownloadConsentRequired -> {
-                DownloadConsent(
-                    dispatchAction = {
-                        store.dispatch(it)
-                    },
-                )
-            }
-            is SummarizationState.Downloading -> DownloadProgress(
-                downloadState = state,
-            )
             is SummarizationState.Error -> {
                 if (state.error is SummarizationError.DownloadFailed) {
                     DownloadError()
@@ -167,8 +147,6 @@ private class SummarizationStatePreviewProvider : PreviewParameterProvider<Summa
         SummarizationState.Error(SummarizationError.ContentTooLong),
         SummarizationState.ShakeConsentRequired,
         SummarizationState.ShakeConsentWithDownloadRequired,
-        SummarizationState.DownloadConsentRequired,
-        SummarizationState.Downloading(12.13f, 9.04f),
         SummarizationState.Error(SummarizationError.NetworkError),
     )
 }

@@ -6,4 +6,4 @@ package mozilla.components.feature.summarize
 
 import mozilla.components.lib.state.Store
 
-internal typealias SummarizationStore = Store<SummarizationState, SummarizationAction>
+typealias SummarizationStore = Store<SummarizationState, SummarizationAction>

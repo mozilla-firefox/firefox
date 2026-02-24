@@ -7,7 +7,8 @@ package mozilla.components.feature.summarize
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 
-internal class SummarizationMiddleware : Middleware<SummarizationState, SummarizationAction> {
+/** The initial middleware for the summarization feature */
+class SummarizationMiddleware : Middleware<SummarizationState, SummarizationAction> {
     override fun invoke(
         store: Store<SummarizationState, SummarizationAction>,
         next: (SummarizationAction) -> Unit,
