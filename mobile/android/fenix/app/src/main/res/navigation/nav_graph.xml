@@ -416,6 +416,9 @@
         <action
             android:id="@+id/action_browserFragment_to_webCompatReporterFragment"
             app:destination="@id/webCompatReporterFragment" />
+        <action
+            android:id="@+id/action_browserFragment_to_summarizationFragment"
+            app:destination="@id/summarizationFragment" />
     </fragment>
 
     <fragment
@@ -1663,7 +1666,13 @@
 
     <dialog
         android:id="@+id/summarizationFragment"
-        android:name="org.mozilla.fenix.summarization.SummarizationFragment" />
+        android:name="org.mozilla.fenix.summarization.SummarizationFragment">
+        <argument
+            android:name="fromShake"
+            android:defaultValue="false"
+            app:nullable="false"
+            app:argType="boolean" />
+    </dialog>
 
     <navigation
         android:id="@+id/translations_settings_graph"
