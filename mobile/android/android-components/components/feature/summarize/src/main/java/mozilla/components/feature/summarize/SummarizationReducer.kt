@@ -4,6 +4,8 @@
 
 package mozilla.components.feature.summarize
 
+import mozilla.components.concept.llm.Llm
+
 /**
  * Reduces the given [action] and current [state] into a new [SummarizationState].
  *
@@ -15,5 +17,20 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
     is ShakeConsentRequested -> SummarizationState.ShakeConsentRequired
     OffDeviceSummarizationShakeConsentAction.CancelClicked -> SummarizationState.Finished.Cancelled
     OffDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.Finished.LearnMoreAboutShakeConsent
+    is LlmProviderAction.ProviderReady -> SummarizationState.Summarizing("")
+    is LlmAction.ReceivedResponse -> state.applyResponse(action.response)
     else -> { state }
+}
+
+internal fun SummarizationState.applyResponse(response: Llm.Response): SummarizationState {
+    return if (this is SummarizationState.Summarizing) {
+        when (response) {
+            is Llm.Response.Failure -> TODO()
+            is Llm.Response.Preparing -> TODO()
+            Llm.Response.Success.ReplyFinished -> SummarizationState.Summarized(text = text)
+            is Llm.Response.Success.ReplyPart -> copy(text = text + response.value)
+        }
+    } else {
+        this
+    }
 }

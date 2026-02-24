@@ -29,11 +29,14 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.summarize.ui.DownloadError
 import mozilla.components.feature.summarize.ui.InfoError
 import mozilla.components.feature.summarize.ui.OffDeviceSummarizationConsent
 import mozilla.components.feature.summarize.ui.OnDeviceSummarizationConsent
+import mozilla.components.feature.summarize.ui.SummarizingContent
+import mozilla.components.feature.summarize.ui.gradient.summaryLoadingGradient
 
 /**
  * The corner ration of the handle shape
@@ -71,7 +74,15 @@ private fun SummarizationScreen(
 ) {
     val state by store.stateFlow.collectAsStateWithLifecycle()
 
-    SummarizationScreenScaffold(modifier = modifier) {
+    SummarizationScreenScaffold(
+        modifier = modifier
+            .thenConditional(Modifier.summaryLoadingGradient()) {
+                state is SummarizationState.Summarizing
+            }
+            .thenConditional(Modifier.background(MaterialTheme.colorScheme.surface)) {
+                state !is SummarizationState.Summarizing
+            },
+    ) {
         when (val state = state) {
             is SummarizationState.Inert -> Unit
             is SummarizationState.ShakeConsentRequired,
@@ -89,6 +100,7 @@ private fun SummarizationScreen(
                     },
                 )
             }
+            is SummarizationState.Summarizing -> SummarizingContent()
             is SummarizationState.Error -> {
                 if (state.error is SummarizationError.DownloadFailed) {
                     DownloadError()
@@ -148,7 +160,7 @@ private fun DragHandle(
 
 private class SummarizationStatePreviewProvider : PreviewParameterProvider<SummarizationState> {
     override val values: Sequence<SummarizationState> = sequenceOf(
-        SummarizationState.Summarizing,
+        SummarizationState.Summarizing(""),
         SummarizationState.Error(SummarizationError.ContentTooLong),
         SummarizationState.ShakeConsentRequired,
         SummarizationState.ShakeConsentWithDownloadRequired,

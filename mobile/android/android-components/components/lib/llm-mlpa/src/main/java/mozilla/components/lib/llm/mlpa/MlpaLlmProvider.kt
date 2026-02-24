@@ -47,7 +47,7 @@ class MlpaLlmProvider(
      * - On success, updates [state] to [Ready] with a newly created [MlpaLlm].
      * - On failure, updates [state] to [Unavailable].
      */
-    suspend fun prepare() {
+    override suspend fun prepare() {
         tokenProvider.fetchToken()
             .onSuccess { _state.value = Ready(MlpaLlm(mlpaService, it)) }
             .onFailure { _state.value = Unavailable }

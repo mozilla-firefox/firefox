@@ -53,6 +53,9 @@ interface CloudLlmProvider : LlmProvider {
      * The current state of the [CloudLlmProvider]
      */
     val state: StateFlow<State>
+
+    /** prepare the [CloudLlmProvider] */
+    suspend fun prepare()
 }
 
 /**

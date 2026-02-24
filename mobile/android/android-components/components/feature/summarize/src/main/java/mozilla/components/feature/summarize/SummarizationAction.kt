@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.summarize
 
+import mozilla.components.concept.llm.Llm
 import mozilla.components.lib.state.Action
 
 /**
@@ -16,6 +17,18 @@ data object ViewAppeared : SummarizationAction
 
 /** Shake Consent has been requested */
 data object ShakeConsentRequested : SummarizationAction
+
+internal sealed interface LlmProviderAction : SummarizationAction {
+    data object ProviderError : LlmProviderAction
+    data object ProviderNotReady : LlmProviderAction
+    data class ProviderReady(val llm: Llm) : LlmProviderAction
+}
+
+/** Initialize the Llm */
+internal sealed interface LlmAction : SummarizationAction {
+    data object Initialize : SummarizationAction
+    data class ReceivedResponse(val response: Llm.Response) : LlmAction
+}
 
 /**
  * Actions for the consent step of the shake to summarize user flow when using an on-device model.
