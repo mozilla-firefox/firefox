@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.feature.summarize.DownloadErrorAction
 import mozilla.components.feature.summarize.R
-import mozilla.components.feature.summarize.SummarizationAction.DownloadErrorAction
 
 @Composable
 internal fun DownloadError(

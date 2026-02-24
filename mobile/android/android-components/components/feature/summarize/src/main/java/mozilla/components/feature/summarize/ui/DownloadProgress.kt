@@ -23,8 +23,8 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.feature.summarize.DownloadInProgressAction
 import mozilla.components.feature.summarize.R
-import mozilla.components.feature.summarize.SummarizationAction.DownloadInProgressAction
 import mozilla.components.feature.summarize.SummarizationState
 
 /**

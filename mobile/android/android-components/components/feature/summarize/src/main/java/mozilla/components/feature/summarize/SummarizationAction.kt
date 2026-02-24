@@ -7,44 +7,78 @@ package mozilla.components.feature.summarize
 import mozilla.components.lib.state.Action
 
 /**
- * Actions for the [SummarizationStore]
+ * Actions for the [SummarizationStore].
  */
-internal interface SummarizationAction : Action {
-    /**
-     * Actions for the consent step of the shake to summarize user flow when using a on-device model
-     */
-    sealed interface OnDeviceSummarizationShakeConsentAction : SummarizationAction {
-        data object LearnMoreClicked : OnDeviceSummarizationShakeConsentAction
-        data object AllowClicked : OnDeviceSummarizationShakeConsentAction
-        data object CancelClicked : OnDeviceSummarizationShakeConsentAction
-    }
+interface SummarizationAction : Action
 
-    /**
-     * Actions for the consent step of the shake to summarize user flow when using a off-device model
-     */
-    sealed interface OffDeviceSummarizationShakeConsentAction : SummarizationAction {
-        data object LearnMoreClicked : OffDeviceSummarizationShakeConsentAction
-        data object AllowClicked : OffDeviceSummarizationShakeConsentAction
-        data object CancelClicked : OffDeviceSummarizationShakeConsentAction
-    }
+/**
+ * Actions for the consent step of the shake to summarize user flow when using an on-device model.
+ */
+sealed interface OnDeviceSummarizationShakeConsentAction : SummarizationAction {
+    /** Dispatched when the user taps the "Learn more" link. */
+    data object LearnMoreClicked : OnDeviceSummarizationShakeConsentAction
 
-    sealed interface DownloadConsentAction : SummarizationAction {
-        data object LearnMoreClicked : DownloadConsentAction
-        data object AllowClicked : DownloadConsentAction
-        data object CancelClicked : DownloadConsentAction
-    }
+    /** Dispatched when the user grants consent to use the on-device model. */
+    data object AllowClicked : OnDeviceSummarizationShakeConsentAction
 
-    sealed interface DownloadInProgressAction : SummarizationAction {
-        data object CancelClicked : DownloadInProgressAction
-    }
+    /** Dispatched when the user dismisses the consent dialog. */
+    data object CancelClicked : OnDeviceSummarizationShakeConsentAction
+}
 
-    sealed interface DownloadErrorAction : SummarizationAction {
-        data object LearnMoreClicked : DownloadErrorAction
-        data object TryAgainClicked : DownloadErrorAction
-        data object CancelClicked : DownloadErrorAction
-    }
+/**
+ * Actions for the consent step of the shake to summarize user flow when using an off-device model.
+ */
+sealed interface OffDeviceSummarizationShakeConsentAction : SummarizationAction {
+    /** Dispatched when the user taps the "Learn more" link. */
+    data object LearnMoreClicked : OffDeviceSummarizationShakeConsentAction
 
-    sealed interface ErrorAction : SummarizationAction {
-        data object LearnMoreClicked : ErrorAction
-    }
+    /** Dispatched when the user grants consent to use the off-device model. */
+    data object AllowClicked : OffDeviceSummarizationShakeConsentAction
+
+    /** Dispatched when the user dismisses the consent dialog. */
+    data object CancelClicked : OffDeviceSummarizationShakeConsentAction
+}
+
+/**
+ * Actions for the consent step of the model download user flow.
+ */
+sealed interface DownloadConsentAction : SummarizationAction {
+    /** Dispatched when the user taps the "Learn more" link. */
+    data object LearnMoreClicked : DownloadConsentAction
+
+    /** Dispatched when the user consents to downloading the model. */
+    data object AllowClicked : DownloadConsentAction
+
+    /** Dispatched when the user dismisses the download consent dialog. */
+    data object CancelClicked : DownloadConsentAction
+}
+
+/**
+ * Actions for the model download in-progress step of the summarization user flow.
+ */
+sealed interface DownloadInProgressAction : SummarizationAction {
+    /** Dispatched when the user cancels an in-progress model download. */
+    data object CancelClicked : DownloadInProgressAction
+}
+
+/**
+ * Actions for the model download error step of the summarization user flow.
+ */
+sealed interface DownloadErrorAction : SummarizationAction {
+    /** Dispatched when the user taps the "Learn more" link. */
+    data object LearnMoreClicked : DownloadErrorAction
+
+    /** Dispatched when the user retries a failed model download. */
+    data object TryAgainClicked : DownloadErrorAction
+
+    /** Dispatched when the user dismisses the download error. */
+    data object CancelClicked : DownloadErrorAction
+}
+
+/**
+ * Actions for a general summarization error state.
+ */
+sealed interface ErrorAction : SummarizationAction {
+    /** Dispatched when the user taps the "Learn more" link. */
+    data object LearnMoreClicked : ErrorAction
 }

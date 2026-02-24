@@ -20,8 +20,8 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.feature.summarize.OffDeviceSummarizationShakeConsentAction
 import mozilla.components.feature.summarize.R
-import mozilla.components.feature.summarize.SummarizationAction.OffDeviceSummarizationShakeConsentAction
 
 /**
  * Composable to be rendered to request user consent to allow off-device summarization.

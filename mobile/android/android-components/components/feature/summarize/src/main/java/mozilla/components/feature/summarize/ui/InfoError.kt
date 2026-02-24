@@ -22,8 +22,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.feature.summarize.ErrorAction
 import mozilla.components.feature.summarize.R
-import mozilla.components.feature.summarize.SummarizationAction.ErrorAction
 
 @Composable
 internal fun InfoError(
