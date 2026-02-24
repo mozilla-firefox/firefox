@@ -31,5 +31,4 @@ The following articles cover different aspects of using the network monitor:
 - :doc:`Network request list <../request_list/index>`
 - :doc:`Network request details <../request_details/index>`
 - :doc:`Network traffic recording <../recording/index/>`
-- :doc:`Network traffic recording <../recording/index/>`
 - :doc:`Throttling <../throttling/index>`
