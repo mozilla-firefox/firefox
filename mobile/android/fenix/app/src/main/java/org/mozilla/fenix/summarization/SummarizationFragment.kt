@@ -16,6 +16,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import mozilla.components.feature.summarize.SummarizationSettings
 import mozilla.components.feature.summarize.SummarizationUi
 import org.mozilla.fenix.R
+import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.theme.FirefoxTheme
 import com.google.android.material.R as materialR
 
@@ -25,7 +26,11 @@ import com.google.android.material.R as materialR
 class SummarizationFragment : BottomSheetDialogFragment() {
     private val args by navArgs<SummarizationFragmentArgs>()
     private val storeViewModel: SummarizationStoreViewModel by viewModels {
-        SummarizationStoreViewModel.factory(args.fromShake, SummarizationSettings.inMemory())
+        SummarizationStoreViewModel.factory(
+            initializedFromShake = args.fromShake,
+            llmProvider = requireComponents.llm.mlpaProvider,
+            settings = SummarizationSettings.inMemory(),
+        )
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =

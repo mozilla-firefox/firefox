@@ -15,8 +15,13 @@ import mozilla.components.concept.llm.Prompt
 import kotlin.time.Duration.Companion.seconds
 
 internal data class FakeCloudProvider(
-    override val state: MutableStateFlow<CloudLlmProvider.State>,
-) : CloudLlmProvider
+    override val state: MutableStateFlow<CloudLlmProvider.State> = MutableStateFlow(CloudLlmProvider.State.Available),
+    val llm: Llm,
+) : CloudLlmProvider {
+    override suspend fun prepare() {
+        state.value = CloudLlmProvider.State.Ready(llm)
+    }
+}
 
 internal data class FakeLlm(
     val responses: List<Llm.Response> = listOf(),
@@ -31,9 +36,9 @@ internal data class FakeLlm(
     companion object {
         val successful get() = FakeLlm(
             listOf(
-                Llm.Response.Success.ReplyPart("# This is the article"),
-                Llm.Response.Success.ReplyPart("This is some content..."),
-                Llm.Response.Success.ReplyPart("This is some *bold* content."),
+                Llm.Response.Success.ReplyPart("# This is the article\n"),
+                Llm.Response.Success.ReplyPart("This is some content...\n"),
+                Llm.Response.Success.ReplyPart("This is some *bold* content.\n"),
                 Llm.Response.Success.ReplyFinished,
             ),
         )

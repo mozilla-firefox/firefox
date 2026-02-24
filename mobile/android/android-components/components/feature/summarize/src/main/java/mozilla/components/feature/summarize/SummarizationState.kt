@@ -31,8 +31,12 @@ sealed class SummarizationState : State {
         val downloadProgress: Float get() = bytesToDownload / bytesToDownload
     }
 
-    /** Summarization is in progress. */
-    data object Summarizing : SummarizationState()
+    /**
+     * Summarization is in progress.
+     *
+     * @param text The generated summary.
+     */
+    data class Summarizing(val text: String) : SummarizationState()
 
     /**
      * Summarization completed successfully.
