@@ -50,9 +50,9 @@ class SummarizationStoreTest {
         val expected = listOf<SummarizationState>(
             Inert(true),
             ShakeConsentRequired,
-            Summarizing("# This is the article\n"),
-            Summarizing("# This is the article\nThis is some content...\n"),
-            Summarizing("# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+            Summarizing(listOf("# This is the article\n")),
+            Summarizing(listOf("# This is the article\n", "This is some content...\n")),
+            Summarizing(listOf("# This is the article\n", "This is some content...\n", "This is some *bold* content.\n")),
             Summarized("# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
         )
 
@@ -123,9 +123,9 @@ class SummarizationStoreTest {
 
         val expected = listOf<SummarizationState>(
             Inert(true),
-            Summarizing("# This is the article\n"),
-            Summarizing("# This is the article\nThis is some content...\n"),
-            Summarizing("# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+            Summarizing(listOf("# This is the article\n")),
+            Summarizing(listOf("# This is the article\n", "This is some content...\n")),
+            Summarizing(listOf("# This is the article\n", "This is some content...\n", "This is some *bold* content.\n")),
             Summarized("# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
         )
 

@@ -25,28 +25,29 @@ class SummarizationMiddleware(
         action: SummarizationAction,
     ) {
         when (action) {
-            is ViewAppeared -> checkForShakeConsent(store.state) { requiresConsent ->
-                if (requiresConsent) {
+            is ViewAppeared -> scope.launch {
+                if (needsShakeConsent(store.state)) {
                     store.dispatch(ShakeConsentRequested)
                 } else {
-                    store.dispatch(LlmAction.Initialize)
+                    observeCloudLlmProvider(store, llmProvider)
                 }
             }
             OffDeviceSummarizationShakeConsentAction.AllowClicked -> scope.launch {
                 settings.setHasConsentedToShake(true)
-                store.dispatch(LlmAction.Initialize)
+                observeCloudLlmProvider(store, llmProvider)
             }
-            LlmAction.Initialize -> observeCloudLlmProvider(store, llmProvider)
-            LlmProviderAction.ProviderNotReady -> scope.launch {
+            LlmProviderAction.ProviderUnavailable -> scope.launch {
                 llmProvider.prepare()
             }
-            is LlmProviderAction.ProviderReady -> observePrompt(store, action.llm)
+            is LlmProviderAction.ProviderInitialized -> scope.launch {
+                observePrompt(store, action.llm)
+            }
         }
 
         next(action)
     }
 
-    private fun observePrompt(store: SummarizationStore, llm: Llm) = scope.launch {
+    private suspend fun observePrompt(store: SummarizationStore, llm: Llm) {
         store.dispatch(LlmAction.SummarizationRequested)
         llm.prompt(Prompt(systemPrompt))
             .collect { response ->
@@ -54,31 +55,23 @@ class SummarizationMiddleware(
             }
     }
 
-    private fun observeCloudLlmProvider(
+    private suspend fun observeCloudLlmProvider(
         store: SummarizationStore,
         llmProvider: CloudLlmProvider,
-    ) = scope.launch {
+    ) {
         llmProvider.state.map { state ->
             when (state) {
-                CloudLlmProvider.State.Available -> LlmProviderAction.ProviderNotReady
-                CloudLlmProvider.State.Unavailable -> LlmProviderAction.ProviderError
-                is CloudLlmProvider.State.Ready -> LlmProviderAction.ProviderReady(state.llm)
+                CloudLlmProvider.State.Available -> LlmProviderAction.ProviderUnavailable
+                CloudLlmProvider.State.Unavailable -> LlmProviderAction.ProviderFailed
+                is CloudLlmProvider.State.Ready -> LlmProviderAction.ProviderInitialized(state.llm)
             }
         }.collect { store.dispatch(it) }
     }
 
-    private fun checkForShakeConsent(
-        state: SummarizationState,
-        requiresShakeConsent: (Boolean) -> Unit,
-    ) = scope.launch {
-        requiresShakeConsent(
-            state is SummarizationState.Inert &&
-                state.initializedWithShake &&
-                !settings.getHasConsentedToShake(),
-        )
-    }
+    private suspend fun needsShakeConsent(state: SummarizationState): Boolean =
+        state is SummarizationState.Inert &&
+            state.initializedWithShake &&
+            !settings.getHasConsentedToShake()
 
-    private val systemPrompt = """
-        This is the system prompt: 
-    """.trimIndent()
+    private val systemPrompt = "This is the system prompt: "
 }

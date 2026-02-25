@@ -1424,6 +1424,7 @@ projects:
     - components:tooling-lint
     - components:ui-colors
     - components:ui-icons
+    - components:ui-richtext
   components:feature-syncedtabs:
     description: Feature that provides access to other devices' tabs in the same account.
     path: components/feature/syncedtabs

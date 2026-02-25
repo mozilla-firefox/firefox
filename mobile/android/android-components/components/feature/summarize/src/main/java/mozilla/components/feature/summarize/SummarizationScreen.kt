@@ -166,7 +166,7 @@ private fun DragHandle(
 
 private class SummarizationStatePreviewProvider : PreviewParameterProvider<SummarizationState> {
     override val values: Sequence<SummarizationState> = sequenceOf(
-        SummarizationState.Summarizing(""),
+        SummarizationState.Summarizing(),
         SummarizationState.Error(SummarizationError.ContentTooLong),
         SummarizationState.ShakeConsentRequired,
         SummarizationState.ShakeConsentWithDownloadRequired,

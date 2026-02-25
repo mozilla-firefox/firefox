@@ -100,6 +100,7 @@ projects:
     - components:ui-autocomplete
     - components:ui-colors
     - components:ui-icons
+    - components:ui-richtext
     - components:ui-tabcounter
     - components:ui-widgets
 variants:

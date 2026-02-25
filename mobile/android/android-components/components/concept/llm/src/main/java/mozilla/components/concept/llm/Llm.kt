@@ -45,12 +45,6 @@ interface Llm {
         }
 
         /**
-         * The LLM is engaged in getting ready to receive prompts. This may include actions like
-         * authenticating with a remote or downloading a local model.
-         */
-        data class Preparing(val status: String) : Response()
-
-        /**
          * A failure response from a LLM.
          */
         data class Failure(val reason: String) : Response()

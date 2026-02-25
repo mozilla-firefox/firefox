@@ -34,9 +34,9 @@ sealed class SummarizationState : State {
     /**
      * Summarization is in progress.
      *
-     * @param text The generated summary.
+     * @param parts the parts that we've generated so far.
      */
-    data class Summarizing(val text: String) : SummarizationState()
+    data class Summarizing(val parts: List<String> = listOf()) : SummarizationState()
 
     /**
      * Summarization completed successfully.
