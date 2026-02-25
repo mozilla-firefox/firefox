@@ -25,12 +25,15 @@ fun IntegrityTools(
     integrityClient: IntegrityClient,
 ) {
     var token by remember { mutableStateOf<IntegrityToken?>(null) }
+    var error by remember { mutableStateOf<String>("Loading") }
 
     LaunchedEffect(Unit) {
-        token = integrityClient.request().getOrNull()
+        integrityClient.request()
+            .onSuccess { token = it }
+            .onFailure { error = it.message ?: "Cannot parse error $it" }
     }
 
     SelectionContainer {
-        Text(token?.value ?: "Not present")
+        Text(token?.value ?: error)
     }
 }

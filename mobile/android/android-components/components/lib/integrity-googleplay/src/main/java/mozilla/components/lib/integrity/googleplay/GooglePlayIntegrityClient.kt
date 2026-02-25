@@ -197,9 +197,8 @@ internal class GooglePlayTokenProviderFactory(
 class GooglePlayIntegrityClient(
     private val tokenProviderFactory: TokenProviderFactory,
     private val requestHashProvider: RequestHashProvider,
-    private val logger: (String) -> Unit = { },
 ) : IntegrityClient {
-    internal var tokenProvider: TokenProvider? = null
+    internal var tokenProvider: Result<TokenProvider>? = null
 
     /**
      * Eagerly initializes the underlying [TokenProvider], if needed.
@@ -226,9 +225,10 @@ class GooglePlayIntegrityClient(
     override suspend fun request(): Result<IntegrityToken> {
         warmUp()
 
-        val result =
-            tokenProvider?.request(requestHashProvider)
-                ?: Result.failure(MissingTokenProvider())
+        val result = tokenProvider?.fold(
+            onSuccess = { it.request(requestHashProvider) },
+            onFailure = { Result.failure(it) },
+        ) ?: Result.failure(MissingTokenProvider())
 
         return result.fold(
             onSuccess = { Result.success(it) },
@@ -244,10 +244,7 @@ class GooglePlayIntegrityClient(
     }
 
     private suspend fun refreshTokenProvider() {
-        tokenProviderFactory.create()
-            .onFailure { logger("Failed to create TokenProvider: ${it.message}") }
-            .getOrNull()
-            ?.also { tokenProvider = it }
+        tokenProvider = tokenProviderFactory.create()
     }
 }
 

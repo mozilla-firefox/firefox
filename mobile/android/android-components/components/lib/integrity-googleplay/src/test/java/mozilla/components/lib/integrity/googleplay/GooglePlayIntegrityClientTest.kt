@@ -79,7 +79,7 @@ class GooglePlayIntegrityClientTest {
 
         assertTrue(client.tokenProvider == null)
         client.warmUp()
-        assertEquals(tokenProvider, client.tokenProvider)
+        assertEquals(Result.success(tokenProvider), client.tokenProvider)
     }
 
     @Test
