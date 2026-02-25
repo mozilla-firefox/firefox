@@ -179,7 +179,7 @@ class FetchClientMlpaServiceTest {
             assertTrue(response.isFailure)
 
             response.onFailure {
-                assertEquals("Verification Service Failed: Received status code 401", it.message)
+                assertEquals("Chat Service Failed: Received status code 401", it.message)
             }
         }
 }

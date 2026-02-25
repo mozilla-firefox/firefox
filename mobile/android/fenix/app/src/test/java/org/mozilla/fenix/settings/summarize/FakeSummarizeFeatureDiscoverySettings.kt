@@ -20,6 +20,7 @@ class FakeSummarizeFeatureDiscoverySettings(
     var menuOverflowInteractionCount: Int = 0
     var toolbarOverflowMenuInteractionCount: Int = 0
 
+    override var canShowFeature: Boolean = true
     override var shouldHighlightMenuItem: Boolean = true
     override var showMenuItem: Boolean = true
     override var shouldHighlightOverflowMenuItem: Boolean = true
