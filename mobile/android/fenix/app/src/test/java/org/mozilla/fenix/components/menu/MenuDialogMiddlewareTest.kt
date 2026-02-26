@@ -1015,6 +1015,22 @@ class MenuDialogMiddlewareTest {
         }
 
     @Test
+    fun `GIVEN a page is loading, WHEN menu is initialized, THEN the the summarization menu item is disabled`() =
+        runTest(testDispatcher) {
+            summarizeFeatureSettings.showMenuItem = true
+
+            val store = createStore(isTabLoading = true)
+            store.dispatch(MenuAction.InitAction)
+
+            testScheduler.advanceUntilIdle()
+
+            assertFalse(
+                "Expected the menu item to be disabled because the page is loading",
+                store.state.summarizationMenuState.enabled,
+            )
+        }
+
+    @Test
     fun `GIVEN summarization feature setting indicates that menu item is not highlighted, WHEN menu is initialized, THEN the menu item is not highlighted`() =
         runTest(testDispatcher) {
             summarizeFeatureSettings.shouldHighlightMenuItem = false
@@ -1152,11 +1168,13 @@ class MenuDialogMiddlewareTest {
 
     private fun createStore(
         appStore: AppStore = AppStore(),
+        isTabLoading: Boolean = false,
         menuState: MenuState = MenuState(
             browserMenuState = BrowserMenuState(
                 selectedTab = createTab(
                     url = "https://mozilla.org",
                 ),
+                isLoading = isTabLoading,
             ),
         ),
         onDismiss: suspend () -> Unit = {},

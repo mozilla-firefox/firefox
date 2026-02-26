@@ -153,9 +153,11 @@ class MenuDialogMiddleware(
 
     private fun setupPageSummarizationState(store: Store<MenuState, MenuAction>) {
         val isNormalTab = store.state.browserMenuState?.selectedTab?.isNormalTab() ?: false
+        val isLoading = store.state.browserMenuState?.isLoading ?: false
+
         val summarizationState = SummarizationMenuState.Default.copy(
             visible = summarizeMenuSettings.showMenuItem,
-            enabled = summarizeMenuSettings.showMenuItem && isNormalTab,
+            enabled = summarizeMenuSettings.showMenuItem && isNormalTab && !isLoading,
             highlighted = summarizeMenuSettings.shouldHighlightMenuItem && isNormalTab,
             overflowMenuHighlighted = summarizeMenuSettings.shouldHighlightOverflowMenuItem && isNormalTab,
             showNewFeatureBadge = true,

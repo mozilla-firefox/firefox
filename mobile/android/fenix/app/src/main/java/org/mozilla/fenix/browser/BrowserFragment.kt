@@ -191,7 +191,15 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     accelerometer.detectShakes().collect {
                         findNavController().apply {
-                            if (currentDestination?.id != R.id.browserFragment) {
+                            // We don't want to navigate to shake to summarize if the current page is
+                            // loading.
+                            val isPageLoading = getSafeCurrentTab()?.content?.loading == true
+
+                            // Since the summarization fragment is in a dialog, it's possible that we
+                            // can still detect shakes in the background. Don't try to navigate twice.
+                            val currentDestinationIsNotTheBrowser = currentDestination?.id != R.id.browserFragment
+
+                            if (isPageLoading || currentDestinationIsNotTheBrowser) {
                                 return@collect
                             }
 
