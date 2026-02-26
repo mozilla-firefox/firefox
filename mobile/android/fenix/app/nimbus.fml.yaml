@@ -266,6 +266,14 @@ features:
           download-link: "[Download Link]"
           show-snackbar: true
 
+  shake-to-summarize:
+    description: A feature that can summarize the content of a page when you shake the screen.
+    variables:
+      enabled:
+        type: Boolean
+        description: If true, shake to summarize will be enabled
+        default: false
+
   setup-checklist:
     description: A feature on the home page that allows the user to track onboarding setup progress.
     variables:
