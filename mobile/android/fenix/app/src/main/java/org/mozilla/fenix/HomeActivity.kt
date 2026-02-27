@@ -278,7 +278,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
     private val summarizeToolbarHighlightBinding by lazy {
         SummarizeToolbarHighlightBinding(
             appStore = components.appStore,
-            featureDiscoverySettings = components.core.summarizeFeatureDiscoverySettings,
+            featureDiscoverySettings = components.core.summarizeFeatureSettings,
             browserStore = components.core.store,
             mainDispatcher = Main,
         )

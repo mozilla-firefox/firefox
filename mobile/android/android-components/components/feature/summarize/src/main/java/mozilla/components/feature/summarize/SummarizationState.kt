@@ -52,6 +52,13 @@ sealed class SummarizationState : State {
      */
     data class Error(val error: SummarizationError) : SummarizationState()
 
+    /**
+     * The user is viewing the summarization settings.
+     *
+     * @param summarizedText The summary text to return to when navigating back.
+     */
+    data class Settings(val summarizedText: String) : SummarizationState()
+
     /** User is finished with the Summarization Flow */
     sealed class Finished : SummarizationState() {
         /** User finished by canceling the flow. */

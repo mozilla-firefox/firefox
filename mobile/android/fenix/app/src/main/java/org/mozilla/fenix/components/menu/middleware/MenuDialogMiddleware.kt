@@ -41,8 +41,8 @@ import org.mozilla.fenix.components.menu.store.MenuAction
 import org.mozilla.fenix.components.menu.store.MenuState
 import org.mozilla.fenix.components.menu.store.SummarizationMenuState
 import org.mozilla.fenix.components.metrics.MetricsUtils
+import org.mozilla.fenix.summarization.onboarding.SummarizationFeatureDiscoveryConfiguration
 import org.mozilla.fenix.summarization.onboarding.SummarizeDiscoveryEvent
-import org.mozilla.fenix.summarization.onboarding.SummarizeFeatureDiscoverySettings
 import org.mozilla.fenix.tabstray.ext.isNormalTab
 import org.mozilla.fenix.utils.LastSavedFolderCache
 import org.mozilla.fenix.utils.Settings
@@ -55,7 +55,7 @@ import org.mozilla.fenix.utils.Settings
  * @param addonManager An instance of the [AddonManager] used to provide access to [Addon]s.
  * @param settings An instance of [Settings] to read and write to the [SharedPreferences]
  * properties.
- * @param summarizeMenuSettings An instance of [SummarizeFeatureDiscoverySettings] to manage the feature's
+ * @param summarizeMenuSettings An instance of [SummarizationFeatureDiscoveryConfiguration] to manage the feature's
  * settings in the menu.
  * @param bookmarksStorage An instance of the [BookmarksStorage] used
  * to query matching bookmarks.
@@ -85,7 +85,7 @@ class MenuDialogMiddleware(
     private val appStore: AppStore,
     private val addonManager: AddonManager,
     private val settings: Settings,
-    private val summarizeMenuSettings: SummarizeFeatureDiscoverySettings,
+    private val summarizeMenuSettings: SummarizationFeatureDiscoveryConfiguration,
     private val bookmarksStorage: BookmarksStorage,
     private val pinnedSiteStorage: PinnedSiteStorage,
     private val appLinksUseCases: AppLinksUseCases,

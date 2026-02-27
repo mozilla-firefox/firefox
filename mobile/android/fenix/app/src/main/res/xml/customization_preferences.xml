@@ -108,5 +108,9 @@
             android:key="@string/pref_key_swipe_toolbar_show_tabs"
             android:title="@string/preference_gestures_swipe_toolbar_show_tabs"
             app:isPreferenceVisible="false" />
+        <androidx.preference.SwitchPreference
+            android:key="@string/pref_key_shake_gesture_enabled"
+            android:title="@string/preferences_shake_to_summarize"
+            app:isPreferenceVisible="false" />
     </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>

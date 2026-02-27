@@ -466,9 +466,12 @@
     <string name="pref_key_enable_persistent_onboarding" translatable="false">pref_key_enable_persistent_onboarding</string>
     <!-- Preference for the feature flag -->
     <string name="pref_key_enable_shake_to_summarize" translatable="false">pref_key_enable_shake_to_summarize</string>
+    <string name="pref_key_page_summaries" translatable="false">pref_key_page_summaries</string>
 
     <!-- Summarize feature: preference key to track if the user has turned off the feature or not -->
     <string name="pref_key_summarize_feature_enabled" translatable="false">pref_key_summarize_feature_enabled</string>
+    <!-- Summarize feature: preference key to track if the user has turned off the shake gesture or not -->
+    <string name="pref_key_shake_gesture_enabled" translatable="false">pref_key_shake_gesture_enabled</string>
 
     <!-- Summarize feature: preference key to track how many times we have shown the "Summarize page" menu item to the user.
         We use it to know when to remove the highlight from the menu item.

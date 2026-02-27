@@ -326,4 +326,9 @@
     <string name="firefox_labs_restore_defaults_dialog_title">Restore defaults?</string>
     <!-- The description used in a confirmation dialog when restoring the application to its defaults by turning off any experimental features. -->
     <string name="firefox_labs_restore_defaults_dialog_message">Resetting experimental features will restart %s.</string>
+
+    <!-- Preference for page summaries -->
+    <string name="preferences_page_summaries">Page summaries</string>
+    <!-- Title for the shake to summarize toggle in page summaries and customize settings -->
+    <string name="preferences_shake_to_summarize">Shake to summarize</string>
 </resources>

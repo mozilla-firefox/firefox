@@ -133,8 +133,8 @@ import org.mozilla.fenix.settings.downloads.DownloadLocationManager
 import org.mozilla.fenix.share.DefaultSentFromFirefoxManager
 import org.mozilla.fenix.share.DefaultSentFromStorage
 import org.mozilla.fenix.share.SaveToPDFMiddleware
-import org.mozilla.fenix.summarization.onboarding.FenixSummarizeFeatureDiscoverySettings
-import org.mozilla.fenix.summarization.onboarding.SummarizeFeatureDiscoverySettings
+import org.mozilla.fenix.summarization.onboarding.FenixSummarizationFeatureConfiguration
+import org.mozilla.fenix.summarization.onboarding.SummarizationFeatureDiscoveryConfiguration
 import org.mozilla.fenix.telemetry.TelemetryMiddleware
 import org.mozilla.fenix.utils.getUndoDelay
 import org.mozilla.geckoview.GeckoRuntime
@@ -660,11 +660,11 @@ class Core(
     val loginExceptionStorage by lazyMonitored { LoginExceptionStorage(context) }
 
     /**
-     * Fenix implementation of [SummarizeFeatureDiscoverySettings]
+     * Fenix implementation of [SummarizationFeatureDiscoveryConfiguration]
      * backed by [org.mozilla.fenix.utils.Settings]
      */
-    val summarizeFeatureDiscoverySettings: SummarizeFeatureDiscoverySettings by lazyMonitored {
-        FenixSummarizeFeatureDiscoverySettings(settings = context.components.settings)
+    val summarizeFeatureSettings: FenixSummarizationFeatureConfiguration by lazyMonitored {
+        FenixSummarizationFeatureConfiguration(settings = context.components.settings)
     }
 
     /**

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -38,13 +37,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.feature.summarize.settings.SettingsAppBar
+import mozilla.components.feature.summarize.settings.SummarizeSettingsContent
+import mozilla.components.feature.summarize.settings.SummarizeSettingsState
+import mozilla.components.feature.summarize.settings.SummarizeSettingsStore
+import mozilla.components.feature.summarize.settings.summarizeSettingsReducer
 import mozilla.components.feature.summarize.ui.DownloadError
 import mozilla.components.feature.summarize.ui.InfoError
 import mozilla.components.feature.summarize.ui.OffDeviceSummarizationConsent
 import mozilla.components.feature.summarize.ui.OnDeviceSummarizationConsent
+import mozilla.components.feature.summarize.ui.SummarizedContent
 import mozilla.components.feature.summarize.ui.SummarizingContent
 import mozilla.components.feature.summarize.ui.gradient.summaryLoadingGradient
-import mozilla.components.ui.richtext.RichText
 
 /**
  * The corner ration of the handle shape
@@ -58,6 +62,7 @@ private const val DRAG_HANDLE_CORNER_RATIO = 50
 fun SummarizationUi(
     productName: String,
     store: SummarizationStore,
+    settingsStore: SummarizeSettingsStore? = null,
 ) {
     LaunchedEffect(Unit) {
         store.dispatch(ViewAppeared)
@@ -67,6 +72,7 @@ fun SummarizationUi(
         SummarizationScreen(
             modifier = Modifier.fillMaxWidth(),
             store = store,
+            settingsStore = settingsStore,
         )
     }
 }
@@ -79,6 +85,7 @@ internal val LocalProductName = compositionLocalOf { ProductName("Firefox Debug"
 private fun SummarizationScreen(
     modifier: Modifier = Modifier,
     store: SummarizationStore,
+    settingsStore: SummarizeSettingsStore? = null,
 ) {
     val state by store.stateFlow.collectAsStateWithLifecycle()
 
@@ -96,19 +103,14 @@ private fun SummarizationScreen(
     ) {
         when (val state = state) {
             is SummarizationState.Inert -> Unit
-            is SummarizationState.ShakeConsentRequired,
-            -> {
+            is SummarizationState.ShakeConsentRequired -> {
                 OffDeviceSummarizationConsent(
-                    dispatchAction = {
-                        store.dispatch(it)
-                    },
+                    dispatchAction = { store.dispatch(it) },
                 )
             }
             is SummarizationState.ShakeConsentWithDownloadRequired -> {
                 OnDeviceSummarizationConsent(
-                    dispatchAction = {
-                        store.dispatch(it)
-                    },
+                    dispatchAction = { store.dispatch(it) },
                 )
             }
             is SummarizationState.Summarizing -> SummarizingContent()
@@ -116,7 +118,15 @@ private fun SummarizationScreen(
                 text = state.text,
                 modifier = Modifier.verticalScroll(rememberScrollState())
                     .padding(bottom = 16.dp),
+                onSettingsClicked = { store.dispatch(SettingsClicked) },
             )
+            is SummarizationState.Settings -> {
+                SettingsAppBar(onBackClicked = { store.dispatch(SettingsBackClicked) })
+
+                if (settingsStore != null) {
+                    SummarizeSettingsContent(store = settingsStore)
+                }
+            }
             is SummarizationState.Error -> {
                 if (state.error is SummarizationError.DownloadFailed) {
                     DownloadError()
@@ -127,13 +137,6 @@ private fun SummarizationScreen(
 
             else -> Unit
         }
-    }
-}
-
-@Composable
-private fun SummarizedContent(text: String, modifier: Modifier = Modifier) {
-    SelectionContainer(modifier = modifier) {
-        RichText(text = text)
     }
 }
 
@@ -154,8 +157,8 @@ private fun SummarizationScreenScaffold(
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = AcornTheme.layout.space.static200)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(horizontal = AcornTheme.layout.space.static200),
         ) {
             DragHandle(modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(AcornTheme.layout.space.static200))
@@ -184,9 +187,23 @@ private fun DragHandle(
     }
 }
 
+private val previewSummarizedText = """
+    **What's happening:** Lucasfilm has announced a new Star Wars trilogy set in the Old Republic era, thousands of years before the Skywalker saga.
+
+    **Why it matters:** Fans have long requested stories from this period, which explores the ancient conflict between the Jedi and the Sith at the height of their power.
+
+    **Key details:**
+    - Setting: The Old Republic, approximately 4,000 years before the Empire
+    - Director: Yet to be announced
+    - First film expected: 2028
+    - Will feature the original Sith Wars and the founding of the Jedi Order
+""".trimIndent()
+
 private class SummarizationStatePreviewProvider : PreviewParameterProvider<SummarizationState> {
     override val values: Sequence<SummarizationState> = sequenceOf(
         SummarizationState.Summarizing(),
+        SummarizationState.Summarized(text = previewSummarizedText),
+        SummarizationState.Settings(summarizedText = previewSummarizedText),
         SummarizationState.Error(SummarizationError.ContentTooLong),
         SummarizationState.ShakeConsentRequired,
         SummarizationState.ShakeConsentWithDownloadRequired,
@@ -199,11 +216,21 @@ private class SummarizationStatePreviewProvider : PreviewParameterProvider<Summa
 private fun SummarizationScreenPreview(
     @PreviewParameter(SummarizationStatePreviewProvider::class) state: SummarizationState,
 ) {
-    SummarizationScreen(
-        store = SummarizationStore(
-            initialState = state,
-            reducer = ::summarizationReducer,
-            middleware = listOf(),
-        ),
-    )
+    AcornTheme {
+        SummarizationScreen(
+            store = SummarizationStore(
+                initialState = state,
+                reducer = ::summarizationReducer,
+                middleware = listOf(),
+            ),
+            settingsStore = SummarizeSettingsStore(
+                initialState = SummarizeSettingsState(
+                    summarizePagesEnabled = true,
+                    shakeToSummarizeEnabled = true,
+                ),
+                reducer = ::summarizeSettingsReducer,
+                middleware = listOf(),
+            ),
+        )
+    }
 }

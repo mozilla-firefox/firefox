@@ -728,6 +728,13 @@
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
         <action
+            android:id="@+id/action_settingsFragment_to_pageSummariesSettingsFragment"
+            app:destination="@id/pageSummariesSettingsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <action
             android:id="@+id/action_settingsFragment_to_addonsFragment"
             app:destination="@id/addons_management_graph"
             app:enterAnim="@anim/slide_in_right"
@@ -1684,6 +1691,10 @@
             app:nullable="false"
             app:argType="boolean" />
     </dialog>
+
+    <fragment
+        android:id="@+id/pageSummariesSettingsFragment"
+        android:name="org.mozilla.fenix.settings.pagesummaries.PageSummariesSettingsFragment" />
 
     <navigation
         android:id="@+id/translations_settings_graph"

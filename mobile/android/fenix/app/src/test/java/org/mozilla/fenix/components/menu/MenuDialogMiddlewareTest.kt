@@ -54,7 +54,7 @@ import org.mozilla.fenix.components.menu.store.BrowserMenuState
 import org.mozilla.fenix.components.menu.store.MenuAction
 import org.mozilla.fenix.components.menu.store.MenuState
 import org.mozilla.fenix.components.menu.store.MenuStore
-import org.mozilla.fenix.settings.summarize.FakeSummarizeFeatureDiscoverySettings
+import org.mozilla.fenix.settings.summarize.FakeSummarizationFeatureConfiguration
 import org.mozilla.fenix.utils.LastSavedFolderCache
 import org.mozilla.fenix.utils.Settings
 import org.robolectric.RobolectricTestRunner
@@ -79,7 +79,7 @@ class MenuDialogMiddlewareTest {
     private lateinit var requestDesktopSiteUseCase: SessionUseCases.RequestDesktopSiteUseCase
     private lateinit var settings: Settings
 
-    private val summarizeFeatureSettings = FakeSummarizeFeatureDiscoverySettings()
+    private val summarizeFeatureSettings = FakeSummarizationFeatureConfiguration()
     private lateinit var lastSavedFolderCache: LastSavedFolderCache
 
     companion object {
