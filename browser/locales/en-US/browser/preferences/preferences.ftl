@@ -773,7 +773,7 @@ performance-use-recommended-settings-desc = These settings are tailored to your 
 performance-settings-learn-more = Learn more
 
 performance-allow-hw-accel =
-    .label = Use hardware acceleration when available
+    .label = Use hardware acceleration when available (requires browser restart)
     .accesskey = r
 
 performance-limit-content-process-option = Content process limit
