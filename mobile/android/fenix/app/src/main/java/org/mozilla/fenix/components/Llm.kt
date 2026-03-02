@@ -5,11 +5,14 @@
 package org.mozilla.fenix.components
 
 import mozilla.components.concept.fetch.Client
+import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.lib.llm.mlpa.MlpaLlmProvider
 import mozilla.components.lib.llm.mlpa.MlpaTokenProvider
-import mozilla.components.lib.llm.mlpa.service.AuthorizationToken
+import mozilla.components.lib.llm.mlpa.UserIdProvider
 import mozilla.components.lib.llm.mlpa.service.FetchClientMlpaService
 import mozilla.components.lib.llm.mlpa.service.MlpaConfig
+import mozilla.components.lib.llm.mlpa.service.PackageName
+import org.mozilla.fenix.BuildConfig
 import org.mozilla.fenix.perf.lazyMonitored
 
 /**
@@ -17,14 +20,18 @@ import org.mozilla.fenix.perf.lazyMonitored
  */
 class Llm(
     private val client: Client,
+    private val integrityClient: IntegrityClient,
+    private val userIdProvider: UserIdProvider,
 ) {
     val mlpaProvider: MlpaLlmProvider by lazyMonitored {
         MlpaLlmProvider(
-            MlpaTokenProvider.static(authorizationToken),
+            MlpaTokenProvider.mlpaIntegrityHandshake(
+                integrityClient = integrityClient,
+                authenticationService = FetchClientMlpaService(client, MlpaConfig.live),
+                userIdProvider = userIdProvider,
+                packageName = PackageName(BuildConfig.APPLICATION_ID),
+            ),
             FetchClientMlpaService(client, MlpaConfig.live),
         )
     }
 }
-
-private val authorizationToken =
-    AuthorizationToken("<insert token>")

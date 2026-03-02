@@ -43,6 +43,8 @@ import org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsMiddleware
 import org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsState
 import org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsStore
 import org.mozilla.fenix.debugsettings.llm.FakeClient
+import org.mozilla.fenix.debugsettings.llm.FakeIntegrityClient
+import org.mozilla.fenix.debugsettings.llm.FakeUserIdProvider
 import org.mozilla.fenix.debugsettings.logins.FakeLoginsStorage
 import org.mozilla.fenix.debugsettings.logins.LoginsTools
 import org.mozilla.fenix.debugsettings.navigation.DebugDrawerRoute
@@ -220,6 +222,6 @@ private fun FenixOverlayPreview() {
         addressesDebugRegionRepository = FakeAddressesDebugRegionRepository(),
         creditCardsAddressesStorage = FakeCreditCardsAddressesStorage(),
         integrityClient = IntegrityClient.testSuccess,
-        llm = Llm(FakeClient()),
+        llm = Llm(FakeClient(), FakeIntegrityClient(), FakeUserIdProvider()),
     )
 }

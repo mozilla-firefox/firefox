@@ -21,7 +21,6 @@ import mozilla.components.lib.crash.store.CrashMiddleware
 import mozilla.components.lib.integrity.googleplay.GooglePlayIntegrityClient
 import mozilla.components.lib.integrity.googleplay.GoogleProjectNumber
 import mozilla.components.lib.integrity.googleplay.IntegrityManagerProvider
-import mozilla.components.lib.integrity.googleplay.RequestHashProvider
 import mozilla.components.lib.integrity.googleplay.TokenProviderFactory
 import mozilla.components.lib.publicsuffixlist.PublicSuffixList
 import mozilla.components.service.fxrelay.eligibility.RelayEligibilityStore
@@ -373,7 +372,7 @@ class Components(private val context: Context) {
                 IntegrityManagerProvider.create(context),
                 GoogleProjectNumber.create(BuildConfig.GPS_INTEGRITY_TOKEN),
             ),
-            RequestHashProvider.randomHashProvider(),
+            clientUUID,
         )
     }
 
@@ -410,7 +409,11 @@ class Components(private val context: Context) {
         )
     }
 
-    val llm: Llm by lazyMonitored { Llm(core.client) }
+    val llm: Llm by lazyMonitored {
+        Llm(core.client, integrityClient, clientUUID)
+    }
+
+    private val clientUUID by lazyMonitored { ClientUUID.build(context) }
 }
 
 /**
