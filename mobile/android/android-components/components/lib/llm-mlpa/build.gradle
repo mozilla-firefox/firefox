@@ -39,6 +39,7 @@ dependencies {
     implementation libs.kotlinx.serialization.json
 
     testImplementation project(':components:support-test')
+    testImplementation project(':components:support-test-fakes')
     testImplementation libs.androidx.test.junit
     testImplementation libs.kotlinx.coroutines.test
 }
