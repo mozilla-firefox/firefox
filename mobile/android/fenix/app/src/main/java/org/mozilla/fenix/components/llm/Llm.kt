@@ -8,6 +8,7 @@ import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.lib.llm.mlpa.MlpaLlmProvider
 import mozilla.components.lib.llm.mlpa.MlpaTokenProvider
+import mozilla.components.lib.llm.mlpa.MlpaTokenStorage
 import mozilla.components.lib.llm.mlpa.UserIdProvider
 import mozilla.components.lib.llm.mlpa.service.PackageName
 import org.mozilla.fenix.BuildConfig
@@ -21,6 +22,7 @@ import org.mozilla.fenix.perf.lazyMonitored
  */
 class Llm(
     private val client: Client,
+    private val storage: MlpaTokenStorage,
     private val fxaTokenProvider: FxaAccessTokenProvider,
     private val integrityClient: IntegrityClient,
     private val userIdProvider: UserIdProvider,
@@ -36,6 +38,7 @@ class Llm(
                     integrityClient = integrityClient,
                     authenticationService = fenixMlpaService,
                     userIdProvider = userIdProvider,
+                    storage = storage,
                     packageName = PackageName(BuildConfig.APPLICATION_ID),
                 ),
             ),
