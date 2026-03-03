@@ -17,12 +17,14 @@ import java.util.UUID
  * consistently across [UserIdProvider] and [RequestHashProvider] consumers.
  */
 class ClientUUID(
-    private val prefs: SharedPreferences,
+    private val getPrefs: () -> SharedPreferences,
     private val generateUUID: () -> String = { UUID.randomUUID().toString() },
 ) : UserIdProvider, RequestHashProvider {
     private val uuid: String by lazy {
-        prefs.getString(KEY, null) ?: generateUUID().also {
-            prefs.edit { putString(KEY, it) }
+        getPrefs().let { prefs ->
+            prefs.getString(KEY, null) ?: generateUUID().also {
+                prefs.edit { putString(KEY, it) }
+            }
         }
     }
 
@@ -40,8 +42,7 @@ class ClientUUID(
          * @return an instance of [ClientUUID]
          */
         fun build(context: Context): ClientUUID {
-            val prefs = context.getSharedPreferences("client_uuid", Context.MODE_PRIVATE)
-            return ClientUUID(prefs)
+            return ClientUUID({ context.getSharedPreferences("client_uuid", Context.MODE_PRIVATE) })
         }
     }
 }

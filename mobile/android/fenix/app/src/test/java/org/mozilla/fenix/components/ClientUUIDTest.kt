@@ -14,11 +14,11 @@ class ClientUUIDTest {
     fun `that a client uuid will only be generated the first time`() {
         val prefs = FakeSharedPreferences()
 
-        val first = ClientUUID(prefs) { "my-generated-uuid" }
+        val first = ClientUUID({ prefs }) { "my-generated-uuid" }
         assertEquals(UserId("my-generated-uuid"), first.getUserId())
         assertEquals(UserId("my-generated-uuid"), first.getUserId())
 
-        val second = ClientUUID(prefs) {
+        val second = ClientUUID({ prefs }) {
             throw IllegalStateException("We should not be generating another uuid")
         }
         assertEquals(UserId("my-generated-uuid"), second.getUserId())
