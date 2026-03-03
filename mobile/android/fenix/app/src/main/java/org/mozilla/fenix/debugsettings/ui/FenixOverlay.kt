@@ -27,6 +27,7 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.concept.storage.CreditCardsAddressesStorage
 import mozilla.components.concept.storage.LoginsStorage
+import mozilla.components.lib.llm.mlpa.MlpaTokenStorage
 import mozilla.telemetry.glean.Glean
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.ClientUUID
@@ -236,6 +237,6 @@ private fun FenixOverlayPreview() {
         creditCardsAddressesStorage = FakeCreditCardsAddressesStorage(),
         clientUUID = FakeClientUUID(),
         integrityClient = IntegrityClient.testSuccess,
-        llm = Llm(FakeClient(), { null }, FakeIntegrityClient(), FakeUserIdProvider()),
+        llm = Llm(FakeClient(), MlpaTokenStorage.static(), { null }, FakeIntegrityClient(), FakeUserIdProvider()),
     )
 }
