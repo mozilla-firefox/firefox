@@ -5,68 +5,115 @@
 package mozilla.components.feature.summarize.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.summarize.R
+import mozilla.components.feature.summarize.ui.gradient.summaryLoadingGradient
+import mozilla.components.ui.icons.R as iconsR
+
+private const val DRAG_HANDLE_CORNER_RATIO = 50
 
 /**
  * Content shown while a page summary is being generated.
- * Displays the animated gradient background with centered loading text.
+ * Displays a Firefox logo icon and loading text over the animated gradient background.
  */
 @Composable
 internal fun SummarizingContent(
+    modifier: Modifier = Modifier,
     title: String = stringResource(R.string.mozac_feature_summarize_loading_title),
 ) {
-    Box(
-        contentAlignment = Alignment.Center,
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 80.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        val contentColor = if (isSystemInDarkTheme()) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            MaterialTheme.colorScheme.onPrimary
+        }
+
+        Icon(
+            painter = painterResource(id = iconsR.drawable.mozac_ic_logo_firefox_24),
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = contentColor,
+        )
+
         Text(
             text = title,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Medium,
-            lineHeight = 24.sp,
-            letterSpacing = 0.15.sp,
+            color = contentColor.copy(alpha = 0.5f),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            lineHeight = 21.sp,
+            letterSpacing = (-0.31).sp,
         )
     }
 }
 
-@Preview(showBackground = true, heightDp = 800)
+@FlexibleWindowLightDarkPreview
 @Composable
 private fun SummarizingContentPreview() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.BottomCenter,
-    ) {
-        Surface(
+    AcornTheme {
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(400.dp),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.BottomCenter,
         ) {
-            SummarizingContent()
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(336.dp),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            ) {
+                Box(modifier = Modifier.fillMaxSize().summaryLoadingGradient()) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().requiredHeight(36.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .requiredSize(width = 32.dp, height = 4.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.outline,
+                                        shape = RoundedCornerShape(DRAG_HANDLE_CORNER_RATIO),
+                                    ),
+                            )
+                        }
+                        SummarizingContent()
+                    }
+                }
+            }
         }
     }
 }
