@@ -12,6 +12,7 @@ import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.concept.storage.CreditCardsAddressesStorage
 import mozilla.components.concept.storage.LoginsStorage
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.ClientUUID
 import org.mozilla.fenix.components.Llm
 import org.mozilla.fenix.debugsettings.addons.ui.AddonsDebugToolsScreen
 import org.mozilla.fenix.debugsettings.addresses.AddressesDebugRegionRepository
@@ -107,6 +108,7 @@ enum class DebugDrawerRoute(
          * @param loginsStorage [LoginsStorage] used to access logins for [LoginsScreen].
          * @param addressesDebugRegionRepository used to control storage for [AddressesTools].
          * @param creditCardsAddressesStorage used to access addresses for [AddressesTools].
+         * @param clientUUID used to test an [IntegrityClient] in [IntegrityTools].
          * @param integrityClient used to test an [IntegrityClient] in [IntegrityTools].
          * @param inactiveTabsEnabled Whether the inactive tabs feature is enabled.
          * @param llm the component group [Llm].
@@ -120,6 +122,7 @@ enum class DebugDrawerRoute(
             loginsStorage: LoginsStorage,
             addressesDebugRegionRepository: AddressesDebugRegionRepository,
             creditCardsAddressesStorage: CreditCardsAddressesStorage,
+            clientUUID: ClientUUID,
             integrityClient: IntegrityClient,
             inactiveTabsEnabled: Boolean,
             llm: Llm,
@@ -240,7 +243,7 @@ enum class DebugDrawerRoute(
                             debugDrawerStore.dispatch(DebugDrawerAction.NavigateTo.IntegrityDebugTools)
                         }
                         content = {
-                            IntegrityTools(integrityClient)
+                            IntegrityTools(clientUUID, integrityClient)
                         }
                     }
 

@@ -413,7 +413,7 @@ class Components(private val context: Context) {
         Llm(core.client, integrityClient, clientUUID)
     }
 
-    private val clientUUID by lazyMonitored { ClientUUID.build(context) }
+    val clientUUID by lazyMonitored { ClientUUID.build(context) }
 }
 
 /**

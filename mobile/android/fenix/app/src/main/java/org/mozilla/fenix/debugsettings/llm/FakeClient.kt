@@ -12,6 +12,7 @@ import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.concept.integrity.IntegrityToken
 import mozilla.components.lib.llm.mlpa.UserIdProvider
 import mozilla.components.lib.llm.mlpa.service.UserId
+import org.mozilla.fenix.components.ClientUUID
 
 /**
  * A Fake [Client] to be used in the debug drawer preview.
@@ -34,6 +35,14 @@ class FakeIntegrityClient : IntegrityClient {
     override suspend fun request(): Result<IntegrityToken> {
         return Result.success(IntegrityToken("my-preview-integrity-token"))
     }
+}
+
+/**
+ * A Fake [IntegrityClient] to be used in the debug drawer preview.
+ */
+class FakeClientUUID : ClientUUID {
+    override fun getUserId() = UserId("fake-userid")
+    override fun generateHash() = "generated-hash"
 }
 
 /**

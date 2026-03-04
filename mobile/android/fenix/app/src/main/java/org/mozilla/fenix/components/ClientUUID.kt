@@ -41,14 +41,32 @@ fun interface Hasher {
  * Generates and persists a stable per-install UUID, used to identify this client
  * consistently across [UserIdProvider] and [RequestHashProvider] consumers.
  */
-class ClientUUID(
-    private val prefs: SharedPreferences,
+interface ClientUUID : UserIdProvider, RequestHashProvider {
+    companion object {
+        /**
+         * Convenience initializer that creates a [SharedPreferences] to be used by [ClientUUID].
+         *
+         * @param context the application context.
+         * @return an instance of [ClientUUID]
+         */
+        fun build(context: Context): ClientUUID {
+            return PrefsBackedClientUUID({
+                context.getSharedPreferences("client_uuid", Context.MODE_PRIVATE)
+            })
+        }
+    }
+}
+
+internal class PrefsBackedClientUUID(
+    private val getPrefs: () -> SharedPreferences,
     private val generateUUID: () -> String = { UUID.randomUUID().toString() },
     private val hasher: Hasher = Hasher.sha256,
-) : UserIdProvider, RequestHashProvider {
+) : ClientUUID {
     private val uuid: String by lazy {
-        prefs.getString(KEY, null) ?: generateUUID().also {
-            prefs.edit { putString(KEY, it) }
+        getPrefs().let { prefs ->
+            prefs.getString(KEY, null) ?: generateUUID().also {
+                prefs.edit { putString(KEY, it) }
+            }
         }
     }
 
@@ -58,16 +76,5 @@ class ClientUUID(
 
     companion object {
         private const val KEY = "uuid"
-
-        /**
-         * Convenience initializer that creates a [SharedPreferences] to be used by [ClientUUID].
-         *
-         * @param context the application context.
-         * @return an instance of [ClientUUID]
-         */
-        fun build(context: Context): ClientUUID {
-            val prefs = context.getSharedPreferences("client_uuid", Context.MODE_PRIVATE)
-            return ClientUUID(prefs)
-        }
     }
 }

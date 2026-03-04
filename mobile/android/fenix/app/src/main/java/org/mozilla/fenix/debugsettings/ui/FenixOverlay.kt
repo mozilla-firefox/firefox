@@ -28,6 +28,7 @@ import mozilla.components.concept.storage.CreditCardsAddressesStorage
 import mozilla.components.concept.storage.LoginsStorage
 import mozilla.telemetry.glean.Glean
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.ClientUUID
 import org.mozilla.fenix.components.Llm
 import org.mozilla.fenix.debugsettings.addresses.AddressesDebugRegionRepository
 import org.mozilla.fenix.debugsettings.addresses.AddressesTools
@@ -43,6 +44,7 @@ import org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsMiddleware
 import org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsState
 import org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsStore
 import org.mozilla.fenix.debugsettings.llm.FakeClient
+import org.mozilla.fenix.debugsettings.llm.FakeClientUUID
 import org.mozilla.fenix.debugsettings.llm.FakeIntegrityClient
 import org.mozilla.fenix.debugsettings.llm.FakeUserIdProvider
 import org.mozilla.fenix.debugsettings.logins.FakeLoginsStorage
@@ -115,6 +117,7 @@ fun FenixOverlay(
             },
         creditCardsAddressesStorage = context.components.core.autofillStorage,
         inactiveTabsEnabled = inactiveTabsEnabled,
+        clientUUID = context.components.clientUUID,
         integrityClient = context.components.integrityClient,
         llm = context.components.llm,
     )
@@ -129,6 +132,7 @@ fun FenixOverlay(
  * @param loginsStorage [LoginsStorage] used to access logins for [LoginsTools].
  * @param addressesDebugRegionRepository used to control storage for [AddressesTools].
  * @param creditCardsAddressesStorage used to access addresses for [AddressesTools].
+ * @param clientUUID used to test an [IntegrityClient].
  * @param integrityClient used to test an [IntegrityClient].
  * @param llm the component group [Llm].
  * @param inactiveTabsEnabled Whether the inactive tabs feature is enabled.
@@ -142,6 +146,7 @@ private fun FenixOverlay(
     loginsStorage: LoginsStorage,
     addressesDebugRegionRepository: AddressesDebugRegionRepository,
     creditCardsAddressesStorage: CreditCardsAddressesStorage,
+    clientUUID: ClientUUID,
     integrityClient: IntegrityClient,
     llm: Llm,
     inactiveTabsEnabled: Boolean,
@@ -170,6 +175,7 @@ private fun FenixOverlay(
             loginsStorage = loginsStorage,
             addressesDebugRegionRepository = addressesDebugRegionRepository,
             creditCardsAddressesStorage = creditCardsAddressesStorage,
+            clientUUID = clientUUID,
             integrityClient = integrityClient,
             llm = llm,
         )
@@ -221,6 +227,7 @@ private fun FenixOverlayPreview() {
         loginsStorage = FakeLoginsStorage(),
         addressesDebugRegionRepository = FakeAddressesDebugRegionRepository(),
         creditCardsAddressesStorage = FakeCreditCardsAddressesStorage(),
+        clientUUID = FakeClientUUID(),
         integrityClient = IntegrityClient.testSuccess,
         llm = Llm(FakeClient(), FakeIntegrityClient(), FakeUserIdProvider()),
     )

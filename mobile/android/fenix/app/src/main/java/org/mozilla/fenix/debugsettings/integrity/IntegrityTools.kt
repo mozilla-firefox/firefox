@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.debugsettings.integrity
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,14 +15,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.concept.integrity.IntegrityToken
+import org.mozilla.fenix.components.ClientUUID
 
 /**
  * Debug drawer view to test an [IntegrityClient].
  *
+ * @param clientUUID used to fetch the request hash.
  * @param integrityClient used to request a token.
  */
 @Composable
 fun IntegrityTools(
+    clientUUID: ClientUUID,
     integrityClient: IntegrityClient,
 ) {
     var token by remember { mutableStateOf<IntegrityToken?>(null) }
@@ -33,7 +37,13 @@ fun IntegrityTools(
             .onFailure { error = it.message ?: "Cannot parse error $it" }
     }
 
-    SelectionContainer {
-        Text(token?.value ?: error)
+    Column {
+        SelectionContainer {
+            Text(clientUUID.getUserId().value)
+        }
+
+        SelectionContainer {
+            Text(token?.value ?: error)
+        }
     }
 }
