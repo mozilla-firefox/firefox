@@ -82,5 +82,5 @@
     <string name="mozac_summarize_info_error_fallback_message">Unknown error</string>
 
     <!-- Loading text displayed while a page summary is being generated -->
-    <string name="mozac_feature_summarize_loading_title" translatable="false">Creating summary…</string>
+    <string name="mozac_feature_summarize_loading_title" translatable="false">Summarizing…</string>
 </resources>
