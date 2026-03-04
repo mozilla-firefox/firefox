@@ -2549,7 +2549,8 @@ class Settings(
     )
 
     /**
-     * Indicates if the Shake to Summarize feature flag is enabled
+     * Nimbus controlled feature flag that Indicates if the Shake to Summarize feature should be
+     * enabled
      */
     var shakeToSummarizeFeatureFlagEnabled by booleanPreference(
         key = appContext.getPreferenceKey(R.string.pref_key_enable_shake_to_summarize),
@@ -2557,12 +2558,20 @@ class Settings(
     )
 
     /**
-     * Indicates if the Shake to Summarize feature is enabled (not to be confused with [shakeToSummarizeFeatureFlagEnabled]
+     * User controlled pref that indicates if the user has the Shake to Summarize feature enabled (not to be confused with [shakeToSummarizeFeatureFlagEnabled]
      * which controls the feature flag itself)
      */
     var shakeToSummarizeFeatureUserPreference by booleanPreference(
         key = appContext.getPreferenceKey(R.string.pref_key_summarize_feature_enabled),
         default = Config.channel.isNightlyOrDebug,
+    )
+
+    /**
+     * Indicates whether the shake gesture should be used to activate page summaries.
+     */
+    var shakeGestureEnabled by booleanPreference(
+        key = appContext.getPreferenceKey(R.string.pref_key_shake_gesture_enabled),
+        default = Config.channel.isDebug,
     )
 
     /**

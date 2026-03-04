@@ -19,7 +19,12 @@ import mozilla.components.concept.engine.EngineSession
 import mozilla.components.feature.summarize.SummarizationSettings
 import mozilla.components.feature.summarize.SummarizationUi
 import mozilla.components.feature.summarize.content.PageContentExtractor
+import mozilla.components.feature.summarize.settings.SummarizeSettingsMiddleware
+import mozilla.components.feature.summarize.settings.SummarizeSettingsState
+import mozilla.components.feature.summarize.settings.SummarizeSettingsStore
+import mozilla.components.feature.summarize.settings.summarizeSettingsReducer
 import org.mozilla.fenix.R
+import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.theme.FirefoxTheme
 import kotlin.coroutines.resume
@@ -73,10 +78,26 @@ class SummarizationFragment : BottomSheetDialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View = content {
+        val summarizeSettings = requireContext().components.core.summarizeFeatureSettings
+        val settingsStore = SummarizeSettingsStore(
+            initialState = SummarizeSettingsState(
+                summarizePagesEnabled = summarizeSettings.summarizePagesEnabled,
+                shakeToSummarizeEnabled = summarizeSettings.shakeToSummarizeEnabled,
+            ),
+            reducer = ::summarizeSettingsReducer,
+            middleware = listOf(
+                SummarizeSettingsMiddleware(
+                    settings = summarizeSettings,
+                    onLearnMoreClicked = {},
+                ),
+            ),
+        )
+
         FirefoxTheme {
             SummarizationUi(
                 productName = getString(R.string.app_name),
                 store = storeViewModel.store,
+                settingsStore = settingsStore,
             )
         }
     }

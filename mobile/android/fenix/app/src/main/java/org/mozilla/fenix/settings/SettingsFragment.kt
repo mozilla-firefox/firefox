@@ -175,6 +175,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
             getPreferenceKey(R.string.pref_key_translation),
         )?.isVisible = FxNimbus.features.translations.value().globalSettingsEnabled &&
             components.core.store.state.translationEngine.isEngineSupported == true
+
+        findPreference<Preference>(
+            getPreferenceKey(R.string.pref_key_page_summaries),
+        )?.isVisible = components.settings.shakeToSummarizeFeatureFlagEnabled
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -385,6 +389,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
             resources.getString(R.string.pref_key_translation) -> {
                 Translations.action.record(Translations.ActionExtra("global_settings_from_preferences"))
                 SettingsFragmentDirections.actionSettingsFragmentToTranslationsSettingsFragment()
+            }
+
+            resources.getString(R.string.pref_key_page_summaries) -> {
+                SettingsFragmentDirections.actionSettingsFragmentToPageSummariesSettingsFragment()
             }
 
             // Privacy and security preferences

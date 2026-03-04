@@ -19,6 +19,14 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
     OffDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.Finished.LearnMoreAboutShakeConsent
     is LlmAction.SummarizationRequested -> SummarizationState.Summarizing()
     is LlmAction.ReceivedResponse -> state.applyResponse(action.response)
+    is SettingsClicked -> when (state) {
+        is SummarizationState.Summarized -> SummarizationState.Settings(summarizedText = state.text)
+        else -> state
+    }
+    is SettingsBackClicked -> when (state) {
+        is SummarizationState.Settings -> SummarizationState.Summarized(text = state.summarizedText)
+        else -> state
+    }
     is SummarizationFailed -> SummarizationState.Error(SummarizationError.SummarizationFailed(action.throwable))
     else -> state
 }

@@ -18,7 +18,7 @@ import mozilla.components.lib.state.helpers.AbstractBinding
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
-import org.mozilla.fenix.summarization.onboarding.SummarizeFeatureDiscoverySettings
+import org.mozilla.fenix.summarization.onboarding.SummarizationFeatureDiscoveryConfiguration
 import org.mozilla.fenix.tabstray.ext.isNormalTab
 
 /**
@@ -27,7 +27,7 @@ import org.mozilla.fenix.tabstray.ext.isNormalTab
  */
 class SummarizeToolbarHighlightBinding(
     private val appStore: AppStore,
-    private val featureDiscoverySettings: SummarizeFeatureDiscoverySettings,
+    private val featureDiscoverySettings: SummarizationFeatureDiscoveryConfiguration,
     browserStore: BrowserStore,
     mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : AbstractBinding<BrowserState>(browserStore, mainDispatcher) {

@@ -265,6 +265,12 @@ class CustomizationFragment : PreferenceFragmentCompat() {
             isVisible = isSwipeToolbarToSwitchTabsVisible
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
+        requirePreference<SwitchPreference>(R.string.pref_key_shake_gesture_enabled).apply {
+            isVisible = context.settings().shakeToSummarizeFeatureFlagEnabled &&
+                    context.settings().shakeToSummarizeFeatureUserPreference
+            isChecked = context.settings().shakeGestureEnabled
+            onPreferenceChangeListener = SharedPreferenceUpdater()
+        }
     }
 
     private fun setupAppIconCategory() {

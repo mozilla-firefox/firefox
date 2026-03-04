@@ -15,6 +15,12 @@ interface SummarizationAction : Action
 /** The Summarization Screen View Appeared */
 data object ViewAppeared : SummarizationAction
 
+/** The user tapped the settings cog. */
+data object SettingsClicked : SummarizationAction
+
+/** The user tapped the back button from settings. */
+data object SettingsBackClicked : SummarizationAction
+
 /** Shake Consent has been requested */
 data object ShakeConsentRequested : SummarizationAction
 

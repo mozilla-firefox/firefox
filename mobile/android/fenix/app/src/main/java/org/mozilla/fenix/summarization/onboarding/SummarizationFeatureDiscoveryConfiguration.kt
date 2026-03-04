@@ -7,11 +7,12 @@ package org.mozilla.fenix.summarization.onboarding
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Interface for managing the discovery of the summarization feature
+ * Interface for managing the discovery of the summarization feature.
  *
- * It helps to manage things like highlighting the menu item, and clearing it upon interaction
+ * Provides discovery-specific behavior like highlighting the menu item
+ * and clearing it upon interaction.
  */
-interface SummarizeFeatureDiscoverySettings {
+interface SummarizationFeatureDiscoveryConfiguration {
     /**
      * Determines if the feature can be shown
      */
