@@ -19,7 +19,8 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
     OffDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.Finished.LearnMoreAboutShakeConsent
     is LlmAction.SummarizationRequested -> SummarizationState.Summarizing()
     is LlmAction.ReceivedResponse -> state.applyResponse(action.response)
-    else -> { state }
+    is SummarizationFailed -> SummarizationState.Error(SummarizationError.SummarizationFailed(action.throwable))
+    else -> state
 }
 
 internal fun SummarizationState.applyResponse(response: Llm.Response): SummarizationState {

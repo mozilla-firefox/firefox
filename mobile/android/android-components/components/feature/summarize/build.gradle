@@ -24,7 +24,6 @@ android {
 }
 
 dependencies {
-    implementation project(':components:concept-engine')
     implementation project(':components:concept-llm')
     implementation project(':components:lib-state')
     implementation project(':components:compose-base')
@@ -40,7 +39,6 @@ dependencies {
 
     testImplementation libs.androidx.test.junit
     testImplementation libs.kotlinx.coroutines.test
-    testImplementation project(":components:support-test-fakes")
 }
 
 apply from: '../../../common-config.gradle'

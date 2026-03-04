@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.Prompt
+import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 
@@ -17,6 +18,7 @@ import mozilla.components.lib.state.Store
 class SummarizationMiddleware(
     private val settings: SummarizationSettings,
     private val llmProvider: CloudLlmProvider,
+    private val pageContentExtractor: PageContentExtractor,
     private val scope: CoroutineScope,
 ) : Middleware<SummarizationState, SummarizationAction> {
     override fun invoke(
@@ -49,10 +51,17 @@ class SummarizationMiddleware(
 
     private suspend fun observePrompt(store: SummarizationStore, llm: Llm) {
         store.dispatch(LlmAction.SummarizationRequested)
-        llm.prompt(Prompt(systemPrompt))
-            .collect { response ->
-                store.dispatch(LlmAction.ReceivedResponse(response))
-            }
+        pageContentExtractor.getPageContent().fold(
+            onSuccess = { result ->
+                llm.prompt(Prompt(systemPrompt + result))
+                    .collect { response ->
+                        store.dispatch(LlmAction.ReceivedResponse(response))
+                    }
+            },
+            onFailure = {
+                store.dispatch(SummarizationFailed(it))
+            },
+        )
     }
 
     private suspend fun observeCloudLlmProvider(

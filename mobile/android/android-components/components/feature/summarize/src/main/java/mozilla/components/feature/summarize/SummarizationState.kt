@@ -92,7 +92,7 @@ sealed class SummarizationError {
     data object DownloadCancelled : SummarizationError()
 
     /** The summarization model failed to produce a result. */
-    data object SummarizationFailed : SummarizationError()
+    data class SummarizationFailed(val throwable: Throwable) : SummarizationError()
 
     /** The model produced a result that could not be used as a valid summary. */
     data object InvalidSummary : SummarizationError()

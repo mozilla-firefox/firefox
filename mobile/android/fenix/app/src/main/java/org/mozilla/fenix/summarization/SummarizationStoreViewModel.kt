@@ -13,6 +13,7 @@ import mozilla.components.feature.summarize.SummarizationMiddleware
 import mozilla.components.feature.summarize.SummarizationSettings
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.SummarizationStore
+import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.feature.summarize.summarizationReducer
 
 /**
@@ -21,11 +22,13 @@ import mozilla.components.feature.summarize.summarizationReducer
  * @param initializedFromShake Whether the summarization feature was triggered by a shake gesture.
  * @param llmProvider the [LlmProvider] used to summarize the page.
  * @param settings the SummarizationSettings.
+ * @param pageContentExtractor an extractor for page content.
  */
 class SummarizationStoreViewModel(
     initializedFromShake: Boolean,
     llmProvider: CloudLlmProvider,
     settings: SummarizationSettings,
+    pageContentExtractor: PageContentExtractor,
 ) : ViewModel() {
     val store = SummarizationStore(
         initialState = SummarizationState.Inert(initializedFromShake),
@@ -34,6 +37,7 @@ class SummarizationStoreViewModel(
             SummarizationMiddleware(
                 settings = settings,
                 llmProvider = llmProvider,
+                pageContentExtractor = pageContentExtractor,
                 scope = viewModelScope,
             ),
         ),
@@ -46,11 +50,13 @@ class SummarizationStoreViewModel(
          * @param initializedFromShake Whether the summarization feature was triggered by a shake gesture.
          * @param llmProvider the [LlmProvider] used to summarize the page.
          * @param settings the SummarizationSettings.
+         * @param pageContentExtractor an extractor for page content.
          */
         fun factory(
             initializedFromShake: Boolean,
             llmProvider: CloudLlmProvider,
             settings: SummarizationSettings,
+            pageContentExtractor: PageContentExtractor,
         ) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -58,6 +64,7 @@ class SummarizationStoreViewModel(
                     initializedFromShake,
                     llmProvider = llmProvider,
                     settings = settings,
+                    pageContentExtractor = pageContentExtractor,
                 ) as T
             }
         }

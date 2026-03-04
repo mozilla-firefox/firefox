@@ -41,11 +41,16 @@ data class FakeCloudProvider(
 data class FakeLlm(
     val responses: List<Llm.Response> = listOf(),
 ) : Llm {
+
+    var promptCapture = ""
+
     override suspend fun prompt(prompt: Prompt): Flow<Llm.Response> = flow {
         for (response in responses) {
             emit(response)
             delay(2.seconds)
         }
+    }.also {
+        promptCapture = prompt.value
     }
 
     companion object {

@@ -21,6 +21,7 @@ import org.junit.Test
 import kotlin.time.Duration.Companion.seconds
 
 class SummarizationStoreTest {
+
     @Test
     fun `test that we can consent to shake`() = runTest {
         val settings = SummarizationSettings.inMemory()
@@ -32,6 +33,7 @@ class SummarizationStoreTest {
                 SummarizationMiddleware(
                     settings = settings,
                     llmProvider = FakeCloudProvider(llm = FakeLlm.successful),
+                    pageContentExtractor = { Result.success("") },
                     scope = backgroundScope,
                 ),
             ),
@@ -71,6 +73,7 @@ class SummarizationStoreTest {
                 SummarizationMiddleware(
                     settings = settings,
                     llmProvider = FakeCloudProvider(llm = FakeLlm.successful),
+                    pageContentExtractor = { Result.success("") },
                     scope = backgroundScope,
                 ),
             ),
@@ -100,13 +103,16 @@ class SummarizationStoreTest {
 
     @Test
     fun `If a user has already consented to shake, test that we can prompt an llm`() = runTest {
+        val llm = FakeLlm.successful
+        val content = "this is expected content."
         val store = SummarizationStore(
             initialState = Inert(true),
             reducer = ::summarizationReducer,
             middleware = listOf(
                 SummarizationMiddleware(
                     settings = SummarizationSettings.inMemory(hasConsentedToShakeInitial = true),
-                    llmProvider = FakeCloudProvider(llm = FakeLlm.successful),
+                    llmProvider = FakeCloudProvider(llm = llm),
+                    pageContentExtractor = { Result.success(content) },
                     scope = backgroundScope,
                 ),
             ),
@@ -127,6 +133,40 @@ class SummarizationStoreTest {
             Summarizing(listOf("# This is the article\n", "This is some content...\n")),
             Summarizing(listOf("# This is the article\n", "This is some content...\n", "This is some *bold* content.\n")),
             Summarized("# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+        )
+
+        assertEquals(expected, states)
+        assertEquals("This is the system prompt: $content", llm.promptCapture)
+    }
+
+    @Test
+    fun `if the page extractor fails, the failure is forwarded as a summarization failure`() = runTest {
+        val failureThrowable = NullPointerException()
+        val store = SummarizationStore(
+            initialState = Inert(true),
+            reducer = ::summarizationReducer,
+            middleware = listOf(
+                SummarizationMiddleware(
+                    settings = SummarizationSettings.inMemory(hasConsentedToShakeInitial = true),
+                    llmProvider = FakeCloudProvider(llm = FakeLlm.successful),
+                    pageContentExtractor = { Result.failure(failureThrowable) },
+                    scope = backgroundScope,
+                ),
+            ),
+        )
+
+        val states = mutableListOf<SummarizationState>()
+        backgroundScope.launch {
+            store.stateFlow.toList(states)
+        }
+        testScheduler.advanceTimeBy(1.seconds)
+
+        store.dispatch(ViewAppeared)
+        testScheduler.advanceTimeBy(15.seconds)
+
+        val expected = listOf<SummarizationState>(
+            Inert(true),
+            SummarizationState.Error(SummarizationError.SummarizationFailed(failureThrowable)),
         )
 
         assertEquals(expected, states)

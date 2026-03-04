@@ -24,6 +24,11 @@ internal sealed interface LlmProviderAction : SummarizationAction {
     data class ProviderInitialized(val llm: Llm) : LlmProviderAction
 }
 
+/**
+ * There was a failure in summarizing content from the current page.
+ */
+data class SummarizationFailed(val throwable: Throwable) : SummarizationAction
+
 /** Initialize the Llm */
 internal sealed interface LlmAction : SummarizationAction {
     data object SummarizationRequested : SummarizationAction
