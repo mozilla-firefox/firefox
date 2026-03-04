@@ -40,9 +40,17 @@ data class MlpaConfig(
         /**
          * Preconfigured MLPA configuration targeting the live (non-prod stage) environment.
          */
-        val live
+        val nonProd
             get() = MlpaConfig(
-                baseUrl = "https://mlpa-nonprod-stage-mozilla.global.ssl.fastly.net/v1",
+                baseUrl = "https://mlpa-nonprod-dev-mozilla.global.ssl.fastly.net",
+            )
+
+        /**
+         * Preconfigured MLPA configuration targeting the live (prod-prod) environment.
+         */
+        val prodProd
+            get() = MlpaConfig(
+                baseUrl = "https://mlpa-prod-prod-mozilla.global.ssl.fastly.net",
             )
     }
 }

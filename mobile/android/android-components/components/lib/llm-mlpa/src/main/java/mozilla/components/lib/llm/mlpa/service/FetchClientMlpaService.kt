@@ -71,7 +71,7 @@ class FetchClientMlpaService(
     ): Result<ChatService.Response> {
         val bodyString = json.encodeToString(request)
         val fetchRequest = Request(
-            url = "${config.baseUrl}/chat/completions",
+            url = "${config.baseUrl}/v1/chat/completions",
             method = Request.Method.POST,
             headers = MutableHeaders(
                 "authorization" to authorizationToken.value,

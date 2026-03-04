@@ -5,7 +5,9 @@
 package org.mozilla.fenix.debugsettings.llm
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -35,16 +37,29 @@ fun LlmTools(
     llm: LlmComponent,
 ) {
     val state by llm.mlpaProvider.state.collectAsState()
+    var useProd by remember { mutableStateOf(llm.fenixMlpaService.useProd) }
 
-    when (state) {
-        State.Unavailable -> UnavailableState()
-        is State.Available -> AvailableState(llm.mlpaProvider)
-        is State.Ready -> ReadyState((state as State.Ready).llm)
+    Column {
+        Row {
+            Text("Use Prod")
+            Switch(useProd, onCheckedChange = { checked ->
+                useProd = checked
+                llm.fenixMlpaService.useProd = checked
+            })
+        }
+
+        when (state) {
+            State.Unavailable -> UnavailableState()
+            is State.Available -> AvailableState(llm.mlpaProvider)
+            is State.Ready -> ReadyState((state as State.Ready).llm)
+        }
     }
 }
 
 @Composable
-private fun ReadyState(llm: Llm) {
+private fun ReadyState(
+    llm: Llm,
+) {
     val scope = rememberCoroutineScope()
 
     var llmResponse by remember { mutableStateOf("") }
