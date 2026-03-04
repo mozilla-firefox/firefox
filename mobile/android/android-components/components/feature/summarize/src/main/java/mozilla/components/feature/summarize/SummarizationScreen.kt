@@ -31,11 +31,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.summarize.ui.DownloadError
@@ -111,7 +111,9 @@ private fun SummarizationScreen(
                     },
                 )
             }
-            is SummarizationState.Summarizing -> SummarizingContent()
+            is SummarizationState.Summarizing -> SummarizingContent(
+                modifier = Modifier.height(252.dp),
+            )
             is SummarizationState.Summarized -> SummarizedContent(
                 text = state.text,
                 modifier = Modifier.verticalScroll(rememberScrollState())
@@ -194,16 +196,18 @@ private class SummarizationStatePreviewProvider : PreviewParameterProvider<Summa
     )
 }
 
-@Preview
+@FlexibleWindowLightDarkPreview
 @Composable
 private fun SummarizationScreenPreview(
     @PreviewParameter(SummarizationStatePreviewProvider::class) state: SummarizationState,
 ) {
-    SummarizationScreen(
-        store = SummarizationStore(
-            initialState = state,
-            reducer = ::summarizationReducer,
-            middleware = listOf(),
-        ),
-    )
+    AcornTheme {
+        SummarizationScreen(
+            store = SummarizationStore(
+                initialState = state,
+                reducer = ::summarizationReducer,
+                middleware = listOf(),
+            ),
+        )
+    }
 }
