@@ -14,14 +14,27 @@ class ClientUUIDTest {
     fun `that a client uuid will only be generated the first time`() {
         val prefs = FakeSharedPreferences()
 
-        val first = ClientUUID(prefs) { "my-generated-uuid" }
+        val first = ClientUUID(prefs, generateUUID = { "my-generated-uuid" })
         assertEquals(UserId("my-generated-uuid"), first.getUserId())
         assertEquals(UserId("my-generated-uuid"), first.getUserId())
 
-        val second = ClientUUID(prefs) {
+        val second = ClientUUID(prefs, generateUUID = {
             throw IllegalStateException("We should not be generating another uuid")
-        }
+        })
         assertEquals(UserId("my-generated-uuid"), second.getUserId())
         assertEquals(UserId("my-generated-uuid"), second.getUserId())
+    }
+
+    @Test
+    fun `that generateHash uses the provided hasher`() {
+        val prefs = FakeSharedPreferences()
+
+        val clientUUID = ClientUUID(
+            prefs = prefs,
+            generateUUID = { "my-generated-uuid" },
+            hasher = { "This is a hashed value: $it" },
+        )
+
+        assertEquals("This is a hashed value: my-generated-uuid", clientUUID.generateHash())
     }
 }
