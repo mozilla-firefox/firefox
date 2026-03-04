@@ -181,7 +181,7 @@ internal class GooglePlayTokenProviderFactory(
     integrityManagerProvider: IntegrityManagerProvider,
     private val projectNumber: GoogleProjectNumber.Valid,
 ) : TokenProviderFactory {
-    private val integrityManager = integrityManagerProvider.create()
+    private val integrityManager by lazy { integrityManagerProvider.create() }
 
     override suspend fun create() = integrityManager.prepare(projectNumber)
 }
