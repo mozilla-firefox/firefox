@@ -29,7 +29,7 @@ import mozilla.components.concept.storage.LoginsStorage
 import mozilla.telemetry.glean.Glean
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.ClientUUID
-import org.mozilla.fenix.components.Llm
+import org.mozilla.fenix.components.llm.Llm
 import org.mozilla.fenix.debugsettings.addresses.AddressesDebugRegionRepository
 import org.mozilla.fenix.debugsettings.addresses.AddressesTools
 import org.mozilla.fenix.debugsettings.addresses.FakeAddressesDebugRegionRepository
@@ -229,6 +229,6 @@ private fun FenixOverlayPreview() {
         creditCardsAddressesStorage = FakeCreditCardsAddressesStorage(),
         clientUUID = FakeClientUUID(),
         integrityClient = IntegrityClient.testSuccess,
-        llm = Llm(FakeClient(), FakeIntegrityClient(), FakeUserIdProvider()),
+        llm = Llm(FakeClient(), { null }, FakeIntegrityClient(), FakeUserIdProvider()),
     )
 }

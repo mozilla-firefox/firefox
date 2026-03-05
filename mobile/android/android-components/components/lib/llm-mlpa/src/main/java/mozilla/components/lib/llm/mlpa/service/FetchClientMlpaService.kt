@@ -74,7 +74,7 @@ class FetchClientMlpaService(
             url = "${config.baseUrl}/v1/chat/completions",
             method = Request.Method.POST,
             headers = MutableHeaders(
-                "authorization" to authorizationToken.value,
+                "authorization" to "Bearer ${authorizationToken.value}",
                 "content-type" to "application/json",
                 "service-type" to "s2s",
             ),

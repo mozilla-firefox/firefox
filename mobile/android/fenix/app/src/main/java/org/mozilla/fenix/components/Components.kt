@@ -49,6 +49,8 @@ import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistState
 import org.mozilla.fenix.components.appstate.setup.checklist.getSetupChecklistCollection
+import org.mozilla.fenix.components.llm.Llm
+import org.mozilla.fenix.components.llm.ext.accessTokenProvider
 import org.mozilla.fenix.components.metrics.MetricsMiddleware
 import org.mozilla.fenix.crashes.CrashReportingAppMiddleware
 import org.mozilla.fenix.crashes.SettingsCrashReportCache
@@ -410,7 +412,12 @@ class Components(private val context: Context) {
     }
 
     val llm: Llm by lazyMonitored {
-        Llm(core.client, integrityClient, clientUUID)
+        Llm(
+            client = core.client,
+            fxaTokenProvider = backgroundServices.accountManager.accessTokenProvider,
+            integrityClient = integrityClient,
+            userIdProvider = clientUUID,
+        )
     }
 
     val clientUUID by lazyMonitored { ClientUUID.build(context) }

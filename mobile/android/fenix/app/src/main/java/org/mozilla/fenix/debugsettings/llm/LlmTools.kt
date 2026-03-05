@@ -25,7 +25,7 @@ import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.Prompt
 import mozilla.components.lib.llm.mlpa.MlpaLlmProvider
 import org.mozilla.fenix.R
-import org.mozilla.fenix.components.Llm as LlmComponent
+import org.mozilla.fenix.components.llm.Llm as LlmComponent
 
 /**
  * Debug drawer view to test an [IntegrityClient].
