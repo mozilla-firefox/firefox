@@ -17,7 +17,7 @@ import mozilla.components.lib.llm.mlpa.service.MlpaService
  */
 class FenixMlpaService(
     client: Client,
-    var useProd: Boolean = false,
+    var useProd: Boolean = true,
 ) : MlpaService {
     private val nonProd = FetchClientMlpaService(client, MlpaConfig.nonProd)
     private val prod = FetchClientMlpaService(client, MlpaConfig.prodProd)
