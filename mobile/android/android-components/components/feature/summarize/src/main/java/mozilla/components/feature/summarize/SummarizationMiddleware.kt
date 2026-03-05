@@ -80,7 +80,7 @@ class SummarizationMiddleware(
     private suspend fun needsShakeConsent(state: SummarizationState): Boolean =
         state is SummarizationState.Inert &&
             state.initializedWithShake &&
-            !settings.getHasConsentedToShake()
+            !settings.hasConsentedToShake()
 
     private val systemPrompt = "This is the system prompt: "
 }

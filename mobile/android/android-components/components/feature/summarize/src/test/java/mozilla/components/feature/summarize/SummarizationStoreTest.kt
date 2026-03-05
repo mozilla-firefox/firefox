@@ -59,7 +59,7 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
-        assertTrue(settings.getHasConsentedToShake())
+        assertTrue(settings.hasConsentedToShake())
     }
 
     @Test
@@ -98,7 +98,7 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
-        assertFalse(settings.getHasConsentedToShake())
+        assertFalse(settings.hasConsentedToShake())
     }
 
     @Test

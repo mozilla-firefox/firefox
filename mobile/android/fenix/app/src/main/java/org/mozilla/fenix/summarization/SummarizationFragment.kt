@@ -55,7 +55,7 @@ class SummarizationFragment : BottomSheetDialogFragment() {
         SummarizationStoreViewModel.factory(
             initializedFromShake = args.fromShake,
             llmProvider = provider,
-            settings = SummarizationSettings.inMemory(),
+            settings = SummarizationSettings.sharedPrefs(requireContext()),
             pageContentExtractor = engineSession.asPageContentExtractor(),
         )
     }

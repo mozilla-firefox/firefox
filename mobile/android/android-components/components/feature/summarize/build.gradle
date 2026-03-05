@@ -24,9 +24,9 @@ android {
 }
 
 dependencies {
+    implementation project(':components:compose-base')
     implementation project(':components:concept-llm')
     implementation project(':components:lib-state')
-    implementation project(':components:compose-base')
     implementation project(':components:ui-icons')
     implementation project(':components:ui-richtext')
 
@@ -35,10 +35,13 @@ dependencies {
     implementation libs.androidx.compose.ui.graphics
     implementation libs.androidx.compose.ui.tooling.preview
     implementation libs.androidx.compose.material3
+    implementation libs.androidx.core.ktx
     debugImplementation libs.androidx.compose.ui.tooling
 
     testImplementation libs.androidx.test.junit
     testImplementation libs.kotlinx.coroutines.test
+
+    testImplementation project(':components:support-test-fakes')
 }
 
 apply from: '../../../common-config.gradle'
