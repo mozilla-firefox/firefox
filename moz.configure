@@ -179,7 +179,7 @@ set_config("MOZ_PGO", depends("MOZ_PGO")(lambda x: bool(x)))
 
 # Imply --enable-release when MOZILLA_OFFICIAL is set rather than adjusting the
 # default so that we can't have both MOZILLA_OFFICIAL and --disable-release set.
-imply_option("--enable-release", mozilla_official)
+imply_option("--enable-release", True)
 
 option(
     "--enable-release",

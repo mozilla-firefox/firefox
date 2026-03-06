@@ -19,6 +19,8 @@ android {
 }
 
 dependencies {
+    implementation (files("./../../libs/myui.aar"))
+
     implementation project(":components:support-ktx")
     implementation project(":components:support-utils")
     implementation project(":components:ui-colors")

@@ -5,41 +5,41 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <dimen name="crash_reporter_close_tab_button_horizontal_margin">26dp</dimen>
     <dimen name="crash_reporter_close_tab_button_bottom_margin">24dp</dimen>
-    <dimen name="glyph_button_height">48dp</dimen>
-    <dimen name="glyph_button_width">48dp</dimen>
+    <dimen name="glyph_button_height">64dp</dimen>
+    <dimen name="glyph_button_width">64dp</dimen>
     <dimen name="mozac_browser_menu_width_min" tools:ignore="UnusedResources">112dp</dimen>
     <dimen name="mozac_browser_menu_width_max" tools:ignore="UnusedResources">314dp</dimen>
     <dimen name="mozac_browser_menu_item_checkbox_container_padding_end" tools:ignore="UnusedResources">0dp</dimen>
     <dimen name="mozac_browser_menu_item_checkbox_text_label_padding_end" tools:ignore="UnusedResources">8dp</dimen>
     <dimen name="mozac_browser_menu_item_image_checkbox_padding_start" tools:ignore="UnusedResources">8dp</dimen>
     <dimen name="mozac_browser_menu_item_image_checkbox_padding_end" tools:ignore="UnusedResources">16dp</dimen>
-    <dimen name="library_item_height">56dp</dimen>
+    <dimen name="library_item_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="library_item_icon_margin_horizontal">16dp</dimen>
     <dimen name="history_favicon_width_height">48dp</dimen>
     <dimen name="tab_corner_radius">8dp</dimen>
     <dimen name="material_dialog_corner_radius">28dp</dimen>"
-    <dimen name="preference_icon_drawable_size">24dp</dimen>
+    <dimen name="preference_icon_drawable_size">48dp</dimen>
     <dimen name="search_bar_search_engine_icon_padding">12dp</dimen>
     <dimen name="search_engine_engine_icon_margin">12dp</dimen>
     <dimen name="search_engine_engine_icon_top_margin">14dp</dimen>
-    <dimen name="search_engine_radio_button_height">48dp</dimen>
-    <dimen name="search_engine_engine_icon_height">24dp</dimen>
+    <dimen name="search_engine_radio_button_height">@dimen/dsDefaultHeight</dimen>
+    <dimen name="search_engine_engine_icon_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="radio_button_padding_horizontal">16dp</dimen>
     <dimen name="radio_button_padding_vertical">12dp</dimen>
-    <dimen name="radio_button_preference_height">48dp</dimen>
+    <dimen name="radio_button_preference_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="radio_button_preference_horizontal">16dp</dimen>
     <dimen name="radio_button_preference_drawable_padding">24dp</dimen>
     <dimen name="radio_button_preference_vertical">12dp</dimen>
-    <dimen name="phone_feature_label_recommended_text_size">14sp</dimen>
-    <dimen name="site_permissions_exceptions_item_text_size">18sp</dimen>
-    <dimen name="site_permissions_exceptions_item_height">56dp</dimen>
+    <dimen name="phone_feature_label_recommended_text_size">18sp</dimen>
+    <dimen name="site_permissions_exceptions_item_text_size">28sp</dimen>
+    <dimen name="site_permissions_exceptions_item_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="component_collection_creation_list_margin">16dp</dimen>
     <dimen name="exceptions_description_margin">12dp</dimen>
-    <dimen name="component_exceptions_learn_more_height">48dp</dimen>
+    <dimen name="component_exceptions_learn_more_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="component_tp_exceptions_icon_size">48dp</dimen>
     <dimen name="custom_checkbox_alignment_margin">68dp</dimen>
 
-    <dimen name="context_menu_height">48dp</dimen>
+    <dimen name="context_menu_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="context_menu_x_offset">8dp</dimen>
 
     <!--Preferences-->
@@ -47,12 +47,12 @@
     <dimen name="radiobutton_preference_margin_start">8dp</dimen>
     <dimen name="top_bar_alignment_margin_start">72dp</dimen>
     <dimen name="top_bar_no_icon_alignment_margin_start">16dp</dimen>
-    <dimen name="section_header_height">48dp</dimen>
+    <dimen name="section_header_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="dialog_edit_text_horizontal_padding">20dp</dimen>
 
     <!--Quick Settings-->
-    <dimen name="quicksettings_item_height">48dp</dimen>
-    <dimen name="tracking_protection_item_height">48dp</dimen>
+    <dimen name="quicksettings_item_height">@dimen/dsDefaultHeight</dimen>
+    <dimen name="tracking_protection_item_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="tracking_protection_item_margin_end">16dp</dimen>
     <dimen name="tracking_protection_item_margin_bottom">18dp</dimen>
 
@@ -63,16 +63,16 @@
     <dimen name="bottom_sheet_handle_top_margin">8dp</dimen>
 
     <!-- Browser Toolbar -->
-    <dimen name="composable_browser_toolbar_height">64dp</dimen>
-    <dimen name="composable_browser_toolbar_height_small">56dp</dimen>
-    <dimen name="browser_toolbar_height">56dp</dimen>
-    <dimen name="browser_navbar_height">60dp</dimen>
+    <dimen name="composable_browser_toolbar_height">88dp</dimen>
+    <dimen name="composable_browser_toolbar_height_small">48dp</dimen>
+    <dimen name="browser_toolbar_height">88dp</dimen>
+    <dimen name="browser_navbar_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="browser_navbar_height_small">48dp</dimen>
-    <dimen name="tab_strip_height">56dp</dimen>
+    <dimen name="tab_strip_height">114dp</dimen>
     <dimen name="browser_microsurvey_height">131dp</dimen>
 
     <!-- Bookmark Edit Fragment  -->
-    <dimen name="bookmark_edit_text_height">48dp</dimen>
+    <dimen name="bookmark_edit_text_height">@dimen/dsDefaultHeight</dimen>
 
     <!-- Home Fragment -->
     <dimen name="home_fragment_top_toolbar_header_margin">60dp</dimen>
@@ -94,14 +94,14 @@
     <dimen name="mozac_browser_toolbar_button_width" tools:ignore="UnusedResources">48dp</dimen>
 
     <!-- Search Fragment -->
-    <dimen name="search_fragment_clipboard_item_height">56dp</dimen>
+    <dimen name="search_fragment_clipboard_item_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="search_fragment_clipboard_item_horizontal_margin">8dp</dimen>
     <dimen name="search_fragment_clipboard_item_title_margin_start">8dp</dimen>
 
     <dimen name="search_fragment_clipboard_title_text_size">15sp</dimen>
 
     <!-- About Fragment -->
-    <dimen name="about_list_item_height">56dp</dimen>
+    <dimen name="about_list_item_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="about_list_item_text_padding">8dp</dimen>
     <dimen name="about_header_fenix_logo_height">80dp</dimen>
     <dimen name="about_header_icon_margin_top">36dp</dimen>
@@ -152,7 +152,7 @@
     <dimen name="credit_cards_saved_cards_item_margin_end">48dp</dimen>
 
     <!-- a11y -->
-    <dimen name="accessibility_min_height">48dp</dimen>
+    <dimen name="accessibility_min_height">@dimen/dsDefaultHeight</dimen>
     <dimen name="tap_increase_2">2dp</dimen>
 
     <!-- Browser Menu -->

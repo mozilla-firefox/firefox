@@ -4,11 +4,13 @@
 
 package mozilla.components.compose.browser.toolbar
 
+import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -19,6 +21,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.dp
+import androidx.core.graphics.BlendModeCompat
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.toolbar.concept.Action
 import mozilla.components.compose.browser.toolbar.concept.Action.ActionButton
@@ -55,7 +59,8 @@ fun ActionContainer(
         horizontalArrangement = horizontalArrangement,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        for (action in actions) {
+        val filteredActions = actions.filterNot { it is TabCounterAction }
+        for (action in filteredActions) {
             when (action) {
                 is ActionButtonRes -> {
                     action.iconDrawable()?.let {
@@ -117,7 +122,7 @@ private fun ActionButtonRes.iconDrawable(): Drawable? {
 
     return remember(this, context) {
         AppCompatResources.getDrawable(context, drawableResId)
-            ?.apply { mutate().setTint(tint.toArgb()) }
+            ?.apply { mutate() }
     }
 }
 
@@ -126,7 +131,7 @@ private fun ActionButton.iconDrawable(): Drawable? {
     val tint = MaterialTheme.colorScheme.onSurface
 
     return remember(this) {
-        when (shouldTint) {
+        when (false) {
             true -> drawable?.mutate()?.apply { setTint(tint.toArgb()) }
             false -> drawable
         }
@@ -149,7 +154,7 @@ private fun SearchSelectorAction.iconDrawable(): Drawable? {
         when (icon) {
             is DrawableIcon -> icon.drawable
             is DrawableResIcon -> AppCompatResources.getDrawable(context, icon.resourceId)
-                ?.apply { setTint(tint.toArgb()) }
+                ?.apply {  }
         }
     }
     return drawable
@@ -168,12 +173,12 @@ private fun ActionContainerPreview() {
                     onClick = null,
                 ),
                 ActionButtonRes(
-                    drawableResId = iconsR.drawable.mozac_ic_microphone_24,
+                    drawableResId = iconsR.drawable.mozac_ic_arrow_clockwise_24,
                     contentDescription = R.string.mozac_clear_button_description,
                     onClick = object : BrowserToolbarEvent {},
                 ),
                 ActionButton(
-                    drawable = AppCompatResources.getDrawable(LocalContext.current, iconsR.drawable.mozac_ic_tool_24),
+                    drawable = AppCompatResources.getDrawable(LocalContext.current, iconsR.drawable.mozac_ic_forward_24),
                     contentDescription = stringResource(R.string.mozac_clear_button_description),
                     onClick = object : BrowserToolbarEvent {},
                 ),

@@ -170,7 +170,7 @@ class CustomTabsToolbarFeature(
 
         // Show share button
         if (config.showShareMenuItem) {
-            addShareButton(readableColor)
+            //addShareButton(readableColor)
         }
 
         if (customTabsToolbarButtonConfig.showRefreshButton &&
@@ -185,7 +185,7 @@ class CustomTabsToolbarFeature(
         }
 
         menuDrawableIcon = getDrawable(context, iconsR.drawable.mozac_ic_ellipsis_vertical_24)
-        menuDrawableIcon?.setTint(readableColor)
+        //menuDrawableIcon?.setTint(readableColor)
 
         if (customTabsToolbarButtonConfig.showMenu && isMenuAvailable()) {
             addMenuButton()
@@ -242,7 +242,7 @@ class CustomTabsToolbarFeature(
         val drawableIcon = bitmap?.toDrawable(context.resources)
             ?: getDrawable(context, iconsR.drawable.mozac_ic_cross_24)!!.mutate()
 
-        drawableIcon.setTint(readableColor)
+        //drawableIcon.setTint(readableColor)
 
         val button = Toolbar.ActionButton(
             drawableIcon,
@@ -278,7 +278,7 @@ class CustomTabsToolbarFeature(
                 .toDrawable(context.resources)
 
             if (config.tint || forceActionButtonTinting) {
-                drawableIcon.setTint(readableColor)
+                //drawableIcon.setTint(readableColor)
             }
 
             val button = Toolbar.ActionButton(
@@ -304,7 +304,7 @@ class CustomTabsToolbarFeature(
         @ColorInt readableColor: Int,
     ) {
         val drawableIcon = getDrawable(context, iconsR.drawable.mozac_ic_arrow_clockwise_24)
-        drawableIcon?.setTint(readableColor)
+        //drawableIcon?.setTint(readableColor)
 
         val button = Toolbar.ActionButton(
             drawableIcon,
@@ -327,7 +327,7 @@ class CustomTabsToolbarFeature(
         @ColorInt readableColor: Int,
     ) {
         val drawableIcon = getDrawable(context, iconsR.drawable.mozac_ic_share_android_24)!!
-        drawableIcon.setTint(readableColor)
+        //drawableIcon.setTint(readableColor)
 
         val button = Toolbar.ActionButton(
             drawableIcon,

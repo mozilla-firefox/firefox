@@ -44,6 +44,8 @@ import androidx.compose.ui.semantics.Role.Companion.Button
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,7 +69,7 @@ import mozilla.components.compose.browser.toolbar.utils.PageOriginContextualMenu
 import mozilla.components.support.ktx.kotlin.getRegistrableDomainIndexRange
 import mozilla.components.support.utils.ClipboardHandler
 
-private const val URL_TEXT_SIZE_ALONE = 15
+private const val URL_TEXT_SIZE_ALONE = 32
 private const val URL_TEXT_SIZE_WITH_TITLE = 12
 private const val FADE_LENGTH = 66
 
@@ -181,8 +183,9 @@ private fun Title(
         text = title,
         modifier = Modifier.testTag(ADDRESSBAR_TITLE),
         style = TextStyle(
+            fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
             fontSize = URL_TEXT_SIZE_ALONE.sp,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = AcornTheme.colors.textSecondary,
         ),
         truncationDirection = textGravity.toTextTruncationDirection(),
         fadeLength = FADE_LENGTH.dp,
@@ -206,12 +209,14 @@ private fun Url(
         url = urlString,
         registrableDomainIndexRange = registrableDomainIndexRange,
         fadedTextStyle = materialTextStyle.merge(
+            fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
             fontSize = fontSize.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = AcornTheme.colors.textSecondary,
         ),
         boldedTextStyle = materialTextStyle.merge(
+            fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
             fontSize = fontSize.sp,
-            color = color,
+            color = AcornTheme.colors.textSecondary,
         ),
         modifier = Modifier.testTag(ADDRESSBAR_URL),
     )
@@ -220,9 +225,9 @@ private fun Url(
 @Composable
 private fun getUrlColor(showUrlOnly: Boolean): Color {
     return if (showUrlOnly) {
-        MaterialTheme.colorScheme.onSurfaceVariant
+        AcornTheme.colors.textSecondary
     } else {
-        MaterialTheme.colorScheme.onSurface
+        AcornTheme.colors.textSecondary
     }
 }
 

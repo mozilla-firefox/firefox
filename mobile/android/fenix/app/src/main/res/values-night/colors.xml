@@ -69,69 +69,69 @@
 
     <!-- Action -->
     <!-- Primary button, Snackbar, Floating action button, Chip selected -->
-    <color name="fx_mobile_action_color_primary">@color/photonViolet60</color>
+    <color name="fx_mobile_action_color_primary">@color/controlPrimaryNormal</color>
     <!-- Primary button in a disabled state -->
-    <color name="fx_mobile_action_color_primary_disabled">@color/photonViolet60A50</color>
+    <color name="fx_mobile_action_color_primary_disabled">@color/controlDisabled</color>
     <!-- Secondary button -->
-    <color name="fx_mobile_action_color_secondary">@color/photonDarkGrey05</color>
+    <color name="fx_mobile_action_color_secondary">@color/controlSecondaryNormal</color>
 
     <!-- Text -->
     <!-- Primary text -->
-    <color name="fx_mobile_text_color_primary">@color/photonLightGrey05</color>
+    <color name="fx_mobile_text_color_primary">@color/textNormal</color>
     <!-- Secondary text -->
-    <color name="fx_mobile_text_color_secondary">@color/photonLightGrey40</color>
+    <color name="fx_mobile_text_color_secondary">@color/textSecondary</color>
     <!-- Disabled text -->
-    <color name="fx_mobile_text_color_disabled">@color/photonLightGrey05A40</color>
+    <color name="fx_mobile_text_color_disabled">@color/textDisabled</color>
     <!-- Warning text -->
-    <color name="fx_mobile_text_color_critical">@color/photonRed20</color>
+    <color name="fx_mobile_text_color_critical">@color/textNegative</color>
     <!-- Warning text on Secondary button -->
-    <color name="fx_mobile_text_color_critical_button">@color/photonRed20</color>
+    <color name="fx_mobile_text_color_critical_button">@color/textNormal</color>
     <!-- Small heading, Text link -->
-    <color name="fx_mobile_text_color_accent">@color/photonViolet20</color>lor>
+    <color name="fx_mobile_text_color_accent">@color/textNegative</color>lor>
     <!-- Text Inverted/On Color -->
-    <color name="fx_mobile_text_color_oncolor_primary">@color/photonLightGrey05</color>
+    <color name="fx_mobile_text_color_oncolor_primary">@color/textInverse</color>
     <!-- Text Inverted/On Color -->
-    <color name="fx_mobile_text_color_oncolor_secondary">@color/photonLightGrey40</color>
+    <color name="fx_mobile_text_color_oncolor_secondary">@color/textInverse</color>
     <!-- Action Primary text -->
-    <color name="fx_mobile_text_color_action_primary">@color/photonLightGrey05</color>
+    <color name="fx_mobile_text_color_action_primary">@color/textNormal</color>
     <!-- Action Primary disabled text -->
-    <color name="fx_mobile_text_color_action_primary_disabled">@color/photonLightGrey05A40</color>
+    <color name="fx_mobile_text_color_action_primary_disabled">@color/textDisabled</color>
     <!-- Action Secondary text -->
-    <color name="fx_mobile_text_color_action_secondary">@color/photonLightGrey05</color>
+    <color name="fx_mobile_text_color_action_secondary">@color/textSecondary</color>
 
     <!-- Icon -->
     <!-- Primary icon -->
-    <color name="fx_mobile_icon_color_primary">@color/photonLightGrey05</color>
+    <color name="fx_mobile_icon_color_primary">@color/iconNormal</color>
     <!-- Secondary icon -->
-    <color name="fx_mobile_icon_color_secondary">@color/photonLightGrey40</color>
+    <color name="fx_mobile_icon_color_secondary">@color/iconSecondary</color>
     <!-- Disabled icon -->
-    <color name="fx_mobile_icon_color_disabled">@color/photonLightGrey05A40</color>
+    <color name="fx_mobile_icon_color_disabled">@color/iconDisabled</color>
     <!-- Icon inverted (on color) -->
-    <color name="fx_mobile_icon_color_oncolor">@color/photonLightGrey05</color>
+    <color name="fx_mobile_icon_color_oncolor">@color/iconInverse</color>
     <!-- Information -->
-    <color name="fx_mobile_icon_color_information">@color/photonBlue30</color>
-    <color name="fx_mobile_icon_color_critical">@color/photonRed20</color>
+    <color name="fx_mobile_icon_color_information">@color/iconAccent</color>
+    <color name="fx_mobile_icon_color_critical">@color/iconNegative</color>
     <!-- Warning icon on Secondary button -->
-    <color name="fx_mobile_icon_color_critical_button">@color/photonRed20</color>
-    <color name="fx_mobile_icon_color_accent_violet">@color/photonViolet20</color>
+    <color name="fx_mobile_icon_color_critical_button">@color/textNegative</color>
+    <color name="fx_mobile_icon_color_accent_violet">@color/iconAccent</color>
     <color name="fx_mobile_icon_color_accent_blue">@color/photonBlue20</color>
     <color name="fx_mobile_icon_color_accent_pink">@color/photonPink20</color>
     <color name="fx_mobile_icon_color_accent_green">@color/photonGreen20</color>
     <color name="fx_mobile_icon_color_accent_yellow">@color/photonYellow20</color>
     <!-- Action Secondary Icon -->
-    <color name="fx_mobile_icon_color_action_secondary">@color/photonLightGrey05</color>
+    <color name="fx_mobile_icon_color_action_secondary">@color/iconSecondary</color>
 
     <!-- Border -->
     <!-- Active tab (Nav), Selected tab, Active form -->
-    <color name="fx_mobile_border_color_accent">@color/photonViolet40</color>
+    <color name="fx_mobile_border_color_accent">@color/iconAccent</color>
 
     <!-- Normal theme colors for dark mode -->
     <color name="accent_normal_theme">@color/photonViolet50</color>
-    <color name="accent_high_contrast_normal_theme">@color/photonViolet40</color>
+    <color name="accent_high_contrast_normal_theme">@color/iconAccent</color>
     <color name="neutral_normal_theme">@color/photonGrey20</color>
     <color name="neutral_faded_normal_theme">#1FFBFBFE</color>
-    <color name="toggle_off_knob_normal_theme">@color/toggle_off_knob_dark_theme</color>
-    <color name="toggle_off_track_normal_theme">@color/toggle_off_track_dark_theme</color>
+    <color name="toggle_off_knob_normal_theme">@color/white</color>
+    <color name="toggle_off_track_normal_theme">@color/controlToggleNormal</color>
     <color name="fill_link_from_clipboard_normal_theme">@color/photonViolet40</color>
     <color name="add_on_private_browsing_exterior_circle_background_normal_theme">@color/accent_normal_theme</color>
     <color name="prompt_login_edit_text_cursor_color_normal_theme">@color/photonViolet50</color>

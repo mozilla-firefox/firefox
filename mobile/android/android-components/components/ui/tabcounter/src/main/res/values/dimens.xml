@@ -4,5 +4,5 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
 <resources>
-    <dimen name="mozac_tab_counter_box_width_height">24dp</dimen>
+    <dimen name="mozac_tab_counter_box_width_height">72dp</dimen>
 </resources>

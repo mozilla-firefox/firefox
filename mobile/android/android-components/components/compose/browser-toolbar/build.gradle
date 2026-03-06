@@ -20,6 +20,7 @@ android {
 }
 
 dependencies {
+    implementation (files("../../libs/myui.aar"))
     api project(":components:concept-toolbar")
     api project(":components:ui-autocomplete")
 

@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -83,67 +85,68 @@ private val DefaultTextStyle = TextStyle.Default.copy(
 
 val defaultTypography = AcornTypography(
     headline5 = DefaultTextStyle.copy(
-        fontSize = 24.sp,
+        fontSize = 32.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 0.18.sp,
         lineHeight = 32.sp,
     ),
     headline6 = DefaultTextStyle.copy(
-        fontSize = 20.sp,
+        fontSize = 28.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.15.sp,
         lineHeight = 24.sp,
     ),
     headline7 = DefaultTextStyle.copy(
-        fontSize = 16.sp,
+        fontSize = 24.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.15.sp,
         lineHeight = 24.sp,
     ),
     headline8 = DefaultTextStyle.copy(
-        fontSize = 14.sp,
+        fontSize = 22.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.4.sp,
         lineHeight = 20.sp,
     ),
     subtitle1 = DefaultTextStyle.copy(
-        fontSize = 16.sp,
+        fontSize = 24.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 0.15.sp,
         lineHeight = 24.sp,
     ),
     subtitle2 = DefaultTextStyle.copy(
-        fontSize = 14.sp,
-        fontWeight = FontWeight.W500,
+        fontSize = 32.sp, // текст на табах
+        fontWeight = FontWeight.W600,
         letterSpacing = 0.1.sp,
         lineHeight = 24.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold))
     ),
     body1 = DefaultTextStyle.copy(
-        fontSize = 16.sp,
+        fontSize = 24.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 0.5.sp,
         lineHeight = 24.sp,
     ),
     body2 = DefaultTextStyle.copy(
-        fontSize = 14.sp,
+        fontSize = 22.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 0.25.sp,
         lineHeight = 20.sp,
     ),
     button = DefaultTextStyle.copy(
-        fontSize = 14.sp,
+        fontSize = 22.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.25.sp,
         lineHeight = 14.sp,
     ),
     caption = DefaultTextStyle.copy(
-        fontSize = 12.sp,
+        fontSize = 20.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 0.4.sp,
         lineHeight = 16.sp,
     ),
     overline = DefaultTextStyle.copy(
-        fontSize = 10.sp,
+        fontSize = 18.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 1.5.sp,
         lineHeight = 16.sp,

@@ -14,6 +14,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import mozilla.components.ui.colors.CustomColorsDark
+import mozilla.components.ui.colors.CustomColorsLight
 import mozilla.components.ui.colors.PhotonColors
 
 /**
@@ -48,6 +50,14 @@ class AcornColors(
     information: Color,
     surfaceDimVariant: Color,
     success: Color,
+    iconNormal: Color,
+    iconInverse: Color,
+    iconSecondary: Color,
+    textNormal: Color,
+    textSecondary: Color,
+    textInverse: Color,
+    controlsInputFocusFill: Color,
+    controlsButtonSecondaryNormal: Color
 ) {
     // Layers
 
@@ -166,7 +176,7 @@ class AcornColors(
      *
      * Slightly dimmer surface color in light theme.
      */
-    internal var surfaceDimVariant by mutableStateOf(surfaceDimVariant)
+    var surfaceDimVariant by mutableStateOf(surfaceDimVariant)
         private set
 
     /**
@@ -174,6 +184,36 @@ class AcornColors(
      * indicating successful information
      */
     internal var success by mutableStateOf(success)
+        private set
+
+    // Normal icon
+    var iconNormal by mutableStateOf(iconNormal)
+        private set
+
+    // Inverse icon (на темном фоне)
+    var iconInverse by mutableStateOf(iconInverse)
+        private set
+
+    // Secondary icon
+    var iconSecondary by mutableStateOf(iconSecondary)
+        private set
+
+    // Normal text
+    var textNormal by mutableStateOf(textNormal)
+        private set
+
+    // Secondary text
+    var textSecondary by mutableStateOf(textSecondary)
+        private set
+
+    // Inverse text (на темном фоне)
+    var textInverse by mutableStateOf(textInverse)
+        private set
+
+    var controlsInputFocusFill by mutableStateOf(controlsInputFocusFill)
+        private set
+
+    var controlsButtonSecondaryNormal by mutableStateOf(controlsButtonSecondaryNormal)
         private set
 
     /**
@@ -207,6 +247,14 @@ class AcornColors(
         information = other.information
         surfaceDimVariant = other.surfaceDimVariant
         success = other.success
+        iconNormal = other.iconNormal
+        iconInverse = other.iconInverse
+        iconSecondary = other.iconSecondary
+        textNormal = other.textNormal
+        textSecondary = other.textSecondary
+        textInverse = other.textInverse
+        controlsInputFocusFill = other.controlsInputFocusFill
+        controlsButtonSecondaryNormal = other.controlsButtonSecondaryNormal
     }
 
     /**
@@ -240,6 +288,14 @@ class AcornColors(
         information: Color = this.information,
         surfaceDimVariant: Color = this.surfaceDimVariant,
         success: Color = this.success,
+        iconNormal: Color = this.iconNormal,
+        iconInverse: Color = this.iconInverse,
+        iconSecondary: Color = this.iconSecondary,
+        textNormal: Color = this.textNormal,
+        textSecondary: Color = this.textSecondary,
+        textInverse: Color = this.textInverse,
+        controlsInputFocusFill: Color = this.controlsInputFocusFill,
+        controlsButtonSecondaryNormal: Color = this.controlsButtonSecondaryNormal
     ): AcornColors = AcornColors(
         layer2 = layer2,
         layer3 = layer3,
@@ -267,41 +323,57 @@ class AcornColors(
         information = information,
         surfaceDimVariant = surfaceDimVariant,
         success = success,
+        iconNormal = iconNormal,
+        iconInverse = iconInverse,
+        iconSecondary = iconSecondary,
+        textNormal = textNormal,
+        textSecondary = textSecondary,
+        textInverse = textInverse,
+        controlsInputFocusFill = controlsInputFocusFill,
+        controlsButtonSecondaryNormal = controlsButtonSecondaryNormal
     )
 }
 
 val darkColorPalette = AcornColors(
     layer2 = PhotonColors.DarkGrey30,
-    layer3 = PhotonColors.DarkGrey80,
     layerAccent = PhotonColors.Violet40,
-    layerAccentNonOpaque = PhotonColors.Violet50A32,
-    layerGradientStart = PhotonColors.Violet70,
-    layerGradientEnd = PhotonColors.Violet60,
-    layerWarning = PhotonColors.Yellow70A77,
-    layerCritical = PhotonColors.Pink80,
+    layer3 = CustomColorsDark.BackgroundPlate,// бекраунд под табами
+    layerAccentNonOpaque = CustomColorsDark.BackgroundPlate,
+    layerGradientStart = CustomColorsDark.BackgroundPlate,
+    layerGradientEnd = CustomColorsDark.BackgroundPlate,
+    layerWarning = CustomColorsDark.BackgroundPlate,
+    layerCritical = CustomColorsDark.BackgroundPlate,
     layerInformation = PhotonColors.Blue50,
     actionWarning = PhotonColors.Yellow40A41,
     actionCritical = PhotonColors.Pink70A69,
     actionInformation = PhotonColors.Blue60,
-    formDefault = PhotonColors.LightGrey05,
-    textOnColorPrimary = PhotonColors.LightGrey05,
+    formDefault = CustomColorsDark.BackgroundPlate,
+    textOnColorPrimary = CustomColorsDark.IconAccent,
     iconPrimaryInactive = PhotonColors.LightGrey05A60,
-    iconActive = PhotonColors.Violet40,
+    iconActive = CustomColorsDark.BackgroundPlate,
     iconOnColor = PhotonColors.LightGrey05,
     iconOnColorDisabled = PhotonColors.LightGrey05A40,
     iconActionPrimary = PhotonColors.LightGrey05,
-    borderAccent = PhotonColors.Violet40,
+    borderAccent = CustomColorsDark.BackgroundPlate,
     ripple = PhotonColors.White,
-    tabActive = PhotonColors.DarkGrey30,
-    tabInactive = PhotonColors.DarkGrey80,
+    tabActive = CustomColorsDark.ControlsTabSecondarySelected,
+    tabInactive = CustomColorsDark.ControlsTabNormal,
     information = PhotonColors.Blue30,
-    surfaceDimVariant = PhotonColors.DarkGrey80,
+    surfaceDimVariant = CustomColorsDark.ControlsButtonSecondaryNormal,// в трех точках плашки
     success = PhotonColors.Green50,
+    iconNormal = CustomColorsDark.IconNormal,
+    iconInverse = CustomColorsDark.IconInverse,
+    iconSecondary = CustomColorsDark.IconSecondary,
+    textNormal = CustomColorsDark.TextNormal,
+    textSecondary = CustomColorsDark.TextSecondary,
+    textInverse = CustomColorsDark.TextInverse,
+    controlsInputFocusFill = CustomColorsDark.ControlsInputFocusFill,
+    controlsButtonSecondaryNormal = CustomColorsDark.ControlsButtonSecondaryNormal
 )
 
 val lightColorPalette = AcornColors(
     layer2 = PhotonColors.White,
-    layer3 = PhotonColors.LightGrey20,
+    layer3 = CustomColorsLight.BackgroundPlate,
     layerAccent = PhotonColors.Ink20,
     layerAccentNonOpaque = PhotonColors.Violet70A12,
     layerGradientStart = PhotonColors.Violet70,
@@ -313,7 +385,7 @@ val lightColorPalette = AcornColors(
     actionCritical = PhotonColors.Red30,
     actionInformation = PhotonColors.Blue50,
     formDefault = PhotonColors.DarkGrey90,
-    textOnColorPrimary = PhotonColors.LightGrey05,
+    textOnColorPrimary = CustomColorsDark.IconAccent,
     iconPrimaryInactive = PhotonColors.DarkGrey90A60,
     iconActive = PhotonColors.Ink20,
     iconOnColor = PhotonColors.LightGrey05,
@@ -321,11 +393,19 @@ val lightColorPalette = AcornColors(
     iconActionPrimary = PhotonColors.LightGrey05,
     borderAccent = PhotonColors.Ink20,
     ripple = PhotonColors.Black,
-    tabActive = PhotonColors.LightGrey10,
-    tabInactive = PhotonColors.LightGrey20,
+    tabActive = CustomColorsLight.ControlsTabSecondarySelected,
+    tabInactive = CustomColorsLight.ControlsTabNormal,
     information = PhotonColors.Blue60,
-    surfaceDimVariant = PhotonColors.LightGrey20,
+    surfaceDimVariant = CustomColorsLight.ControlsButtonSecondaryNormal,
     success = PhotonColors.Green80,
+    iconNormal = CustomColorsLight.IconNormal,
+    iconInverse = CustomColorsLight.IconInverse,
+    iconSecondary = CustomColorsLight.IconSecondary,
+    textNormal = CustomColorsLight.TextNormal,
+    textSecondary = CustomColorsLight.TextSecondary,
+    textInverse = CustomColorsLight.TextInverse,
+    controlsInputFocusFill = CustomColorsLight.ControlsInputFocusFill,
+    controlsButtonSecondaryNormal = CustomColorsLight.ControlsButtonSecondaryNormal
 )
 
 val privateColorPalette = darkColorPalette.copy(

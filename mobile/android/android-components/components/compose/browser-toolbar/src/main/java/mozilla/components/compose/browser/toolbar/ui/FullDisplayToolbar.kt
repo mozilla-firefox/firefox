@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
@@ -46,10 +47,11 @@ import mozilla.components.compose.browser.toolbar.store.ToolbarGravity.Bottom
 import mozilla.components.compose.browser.toolbar.store.ToolbarGravity.Top
 import mozilla.components.compose.browser.toolbar.utils.DisplayToolbarDataProvider
 import mozilla.components.compose.browser.toolbar.utils.DisplayToolbarPreviewModel
+import androidx.compose.ui.platform.LocalResources
 
 private const val NO_TOOLBAR_PADDING_DP = 0
 private const val TOOLBAR_PADDING_DP = 8
-private const val LARGE_TOOLBAR_PADDING_DP = 24
+private const val LARGE_TOOLBAR_PADDING_DP = 20
 
 @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod", "CognitiveComplexMethod")
 @Composable
@@ -63,7 +65,7 @@ internal fun FullDisplayToolbar(
     browserActionsEnd: List<Action>,
     onInteraction: (BrowserToolbarEvent) -> Unit,
     modifier: Modifier = Modifier,
-    backgroundColor: Color = MaterialTheme.colorScheme.surface,
+    backgroundColor: Color = AcornTheme.colors.layer3,
     outlineColor: Color = DividerDefaults.color,
     browserActionsStartModifier: Modifier = Modifier,
     pageActionsStartModifier: Modifier = Modifier,
@@ -76,7 +78,7 @@ internal fun FullDisplayToolbar(
         windowSizeClass.minWidthDp < WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND
     }
 
-    Surface(color = backgroundColor) {
+    Surface(color = AcornTheme.colors.layer3) {
         Box(
             modifier = modifier
                 .semantics { testTagsAsResourceId = true },
@@ -111,14 +113,14 @@ internal fun FullDisplayToolbar(
                                 false -> NO_TOOLBAR_PADDING_DP.dp
                             },
                             bottom = when (gravity) {
-                                Top -> TOOLBAR_PADDING_DP
+                                Top -> LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.padding_M)
                                 Bottom -> if (browserActionsEnd.isEmpty()) NO_TOOLBAR_PADDING_DP else TOOLBAR_PADDING_DP
                             }.dp,
                         )
-                        .height(48.dp)
+                        .height(72.dp)
                         .background(
-                            color = MaterialTheme.colorScheme.surfaceDim,
-                            shape = RoundedCornerShape(90.dp),
+                            color = AcornTheme.colors.controlsInputFocusFill,
+                            shape = RoundedCornerShape(999.dp),
                         )
                         .padding(
                             start = when (pageActionsStart.isEmpty()) {

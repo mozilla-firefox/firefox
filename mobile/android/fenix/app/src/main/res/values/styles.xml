@@ -27,8 +27,8 @@
         <item name="android:windowBackground">@color/fx_mobile_surface</item>
         <item name="android:colorEdgeEffect">@color/accent_normal_theme</item>
         <item name="android:colorAccent">@color/fx_mobile_text_color_primary</item>
-        <item name="android:textColorPrimary">@color/state_list_text_color</item>
-        <item name="android:textColorSecondary">@color/secondary_state_list_text_color</item>
+        <item name="android:textColorPrimary">@color/textNormal</item>
+        <item name="android:textColorSecondary">@color/textSecondary</item>
         <item name="materialAlertDialogTheme">@style/BaseDialogStyle</item>
         <item name="android:windowEnableSplitTouch">false</item>
         <item name="android:splitMotionEvents">false</item>
@@ -57,7 +57,7 @@
         <item name="colorOnTertiary">@color/fx_mobile_on_tertiary</item>
         <item name="colorTertiaryContainer">@color/fx_mobile_tertiary_container</item>
         <item name="colorOnTertiaryContainer">@color/fx_mobile_on_tertiary_container</item>
-        <item name="android:colorBackground">@color/fx_mobile_background</item>
+        <item name="android:colorBackground">@color/backgroundNormal</item>
         <item name="colorOnBackground">@color/fx_mobile_on_background</item>
         <item name="colorSurface">@color/fx_mobile_surface</item>
         <item name="colorOnSurface">@color/fx_mobile_on_surface</item>
@@ -95,41 +95,41 @@
 
         <!-- Layers -->
         <!-- Card background, Menu background, Dialog, Banner -->
-        <item name="layer2">@color/fx_mobile_layer_color_2</item>
+        <item name="layer2">@color/backgroundNormal</item>
         <!-- Search -->
-        <item name="layer3">@color/fx_mobile_layer_color_3</item>
-        <item name="scrim">@color/fx_mobile_layer_color_scrim</item>
+        <item name="layer3">@color/backgroundNormal</item>
+        <item name="scrim">@color/backgroundNormal</item>
 
         <!-- Action -->
         <!-- Primary button, Snackbar, Floating action button, Chip selected -->
-        <item name="actionPrimary">@color/fx_mobile_action_color_primary</item>
+        <item name="actionPrimary">@color/controlPrimaryNormal</item>
         <!-- Primary button in a disabled state -->
-        <item name="actionPrimaryDisabled">@color/fx_mobile_action_color_primary_disabled</item>
+        <item name="actionPrimaryDisabled">@color/controlDisabled</item>
 
         <!-- Text -->
         <!-- Primary text -->
-        <item name="textPrimary">@color/fx_mobile_text_color_primary</item>
+        <item name="textPrimary">@color/textNormal</item>
         <!-- Secondary text -->
-        <item name="textSecondary">@color/fx_mobile_text_color_secondary</item>
+        <item name="textSecondary">@color/textSecondary</item>
         <!-- Disabled text -->
-        <item name="textDisabled">@color/fx_mobile_text_color_disabled</item>
+        <item name="textDisabled">@color/textDisabled</item>
         <!-- Warning text -->
-        <item name="textCritical">@color/fx_mobile_text_color_critical</item>
+        <item name="textCritical">@color/textNegative</item>
         <!-- Small heading, Text link -->
-        <item name="textAccent">@color/fx_mobile_text_color_accent</item>
+        <item name="textAccent">@color/textAccent</item>
         <!-- Text Inverted/On Color -->
-        <item name="textOnColorPrimary">@color/fx_mobile_text_color_oncolor_primary</item>
+        <item name="textOnColorPrimary">@color/textInverse</item>
         <!-- Action Primary text -->
-        <item name="textActionPrimary">@color/fx_mobile_text_color_action_primary</item>
+        <item name="textActionPrimary">@color/textInverse</item>
         <!-- Action Primary disabled text -->
-        <item name="textActionPrimaryDisabled">@color/fx_mobile_text_color_action_primary_disabled</item>
+        <item name="textActionPrimaryDisabled">@color/textDisabled</item>
 
         <!-- Icon -->
         <!-- Icon inverted (on color) -->
-        <item name="iconOnColor">@color/fx_mobile_icon_color_oncolor</item>
+        <item name="iconOnColor">@color/iconInverse</item>
 
         <!-- Active thumb color & Active track color (30% transparency) -->
-        <item name="colorControlActivated">@color/accent_high_contrast_normal_theme</item>
+        <item name="colorControlActivated">@color/iconNormal</item>
         <!-- Inactive thumb color -->
         <item name="colorSwitchThumbNormal">@color/toggle_off_knob_normal_theme</item>
         <!-- Inactive track color(30% transparency) -->
@@ -483,7 +483,7 @@
         <item name="android:textAlignment">center</item>
         <item name="android:layout_width">match_parent</item>
         <item name="android:radius">4dp</item>
-        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_height">72dp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textAllCaps">false</item>
         <item name="backgroundTint">@color/fx_mobile_action_color_secondary</item>
@@ -681,7 +681,7 @@
     <style name="CreateShortcutDialogButton" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:minHeight">40dp</item>
+        <item name="android:minHeight">72dp</item>
         <item name="android:layout_marginTop">32dp</item>
         <item name="android:textAlignment">center</item>
         <item name="android:textColor">?accentUsedOnDarkBackground</item>

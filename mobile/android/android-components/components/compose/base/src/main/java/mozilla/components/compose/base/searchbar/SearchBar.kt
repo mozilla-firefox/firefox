@@ -337,7 +337,7 @@ private fun SearchBarPreview(
                 )
             },
             trailingIcon =
-                if (previewState.showTrailing || previewState.showSecondaryTrailing) {
+                if (false) {
                     {
                         Row {
                             if (previewState.showTrailing) {
@@ -412,24 +412,25 @@ private fun TopSearchBarPreview() {
                         }
                     },
                     trailingIcon = {
-                        Row {
-                            IconButton(
-                                onClick = {},
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = iconsR.drawable.mozac_ic_qr_code_24),
-                                    contentDescription = "content description",
-                                )
-                            }
-                            IconButton(
-                                onClick = {},
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = iconsR.drawable.mozac_ic_microphone_24),
-                                    contentDescription = "content description",
-                                )
-                            }
-                        }
+                        null
+//                        Row {
+//                            IconButton(
+//                                onClick = {},
+//                            ) {
+//                                Icon(
+//                                    painter = painterResource(id = iconsR.drawable.mozac_ic_qr_code_24),
+//                                    contentDescription = "content description",
+//                                )
+//                            }
+//                            IconButton(
+//                                onClick = {},
+//                            ) {
+//                                Icon(
+//                                    painter = painterResource(id = iconsR.drawable.mozac_ic_microphone_24),
+//                                    contentDescription = "content description",
+//                                )
+//                            }
+//                        }
                     },
                 )
             },

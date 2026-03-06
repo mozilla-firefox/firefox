@@ -5,5 +5,5 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
     <solid android:color="@color/mozac_ui_icons_fill" />
-    <size android:height="24dp" android:width="24dp" />
+    <size android:height="@dimen/iconSizeM" android:width="@dimen/iconSizeM" />
 </shape>

@@ -58,7 +58,7 @@ fun TabStripTabCounterButton(
 
     Box(
         modifier = modifier
-            .size(size)
+            .size(72.dp)
             .clip(CircleShape)
             .combinedClickable(
                 onClick = onClick,

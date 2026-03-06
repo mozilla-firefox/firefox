@@ -88,7 +88,7 @@
     <style name="DialogTitleStyle" parent="TextAppearance.AppCompat.Title">
         <item name="android:textColor">@color/primaryText</item>
         <item name="android:textSize">20sp</item>
-        <item name="android:fontFamily">@string/font_roboto_medium</item>
+        <item name="android:fontFamily">@font/vesta2_medium</item>
     </style>
 
     <style name="AddToHomeScreenSiteTitle" parent="Widget.AppCompat.EditText">
@@ -134,7 +134,7 @@
         <item name="android:textAllCaps">true</item>
         <item name="android:textColor">@color/accentBright</item>
         <item name="android:textSize">14sp</item>
-        <item name="android:fontFamily">@font/metropolis_semibold</item>
+        <item name="android:fontFamily">@font/vesta2_bold</item>
     </style>
 
     <style name="SettingsTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar.Bridge">
@@ -218,7 +218,7 @@
 
     <style name="ContextMenuTextAppearence">
         <item name="android:textSize">16sp</item>
-        <item name="android:fontFamily">@string/font_roboto_medium</item>
+        <item name="android:fontFamily">@font/vesta2_medium</item>
         <item name="android:textStyle">normal</item>
         <item name="android:textColor">@color/primaryText</item>
     </style>
@@ -234,11 +234,11 @@
     </style>
 
     <style name="DoorHanger.Medium.Bold">
-        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:fontFamily">@font/vesta2_medium</item>
     </style>
 
     <style name="DoorHanger.Medium.Light">
-        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:fontFamily">@font/vesta2_medium</item>
     </style>
 
     <style name="HintTextAppearance">
@@ -260,7 +260,7 @@
     </style>
 
     <style name="PanelHeading" parent="Widget.MaterialComponents.TextView">
-        <item name="fontFamily">@font/metropolis</item>
+        <item name="fontFamily">@font/vesta2_condensed</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/primaryText</item>
         <item name="android:textStyle">bold</item>
@@ -274,7 +274,7 @@
     </style>
 
     <style name="TrackersCount" parent="Widget.MaterialComponents.TextView">
-        <item name="fontFamily">@font/metropolis</item>
+        <item name="fontFamily">@font/vesta2_condensed</item>
         <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/primaryText</item>
@@ -338,7 +338,7 @@
     <style name="PreferenceScreenHeader">
         <item name="android:textColor">@color/preference_summary_text</item>
         <item name="android:textSize">16sp</item>
-        <item name="fontFamily">@font/metropolis</item>
+        <item name="fontFamily">@font/vesta2_regular</item>
         <item name="android:lineSpacingExtra">1sp</item>
         <item name="android:letterSpacing">0.03</item>
     </style>

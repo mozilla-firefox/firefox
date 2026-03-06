@@ -301,7 +301,7 @@ interface Toolbar : ScrollableToolbar {
 
                 imageButton.setImageDrawable(imageDrawable)
                 imageButton.contentDescription = contentDescription
-                imageButton.setTintResource(iconTintColorResource)
+                //imageButton.setTintResource(iconTintColorResource)
                 imageButton.setOnClickListener { listener.invoke() }
                 imageButton.setOnLongClickListener {
                     longClickListener?.invoke()
@@ -331,7 +331,7 @@ interface Toolbar : ScrollableToolbar {
         ) {
             view?.get()?.let {
                 it.contentDescription = contentDescription
-                it.setTintResource(tintColorResource)
+                //it.setTintResource(tintColorResource)
             }
         }
 

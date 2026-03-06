@@ -14,7 +14,7 @@ android {
 }
 
 dependencies {
-    // None
+    implementation (files("../../libs/myui.aar"))
 }
 
 apply from: '../../../common-config.gradle'

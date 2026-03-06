@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.mozilla.fenix.theme.FirefoxTheme
 
-private val cardShape = RoundedCornerShape(8.dp)
+private val cardShape = RoundedCornerShape(999.dp)
 internal val defaultTabStripCardElevation = 0.dp
 internal val selectedTabStripCardElevation = 4.dp
 

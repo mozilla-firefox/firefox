@@ -82,8 +82,8 @@ fun SearchSelector(
     Card(
         modifier = modifier
             .padding(horizontal = 4.dp)
-            .width(52.dp)
-            .height(40.dp)
+            .width(72.dp)
+            .height(48.dp)
             .semantics(mergeDescendants = true) {
                 this.contentDescription = contentDescription
                 this.testTag = SEARCH_SELECTOR
@@ -97,7 +97,7 @@ fun SearchSelector(
             },
         shape = RoundedCornerShape(90.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceBright,
+            AcornTheme.colors.iconNormal,
         ),
         elevation = CardDefaults.elevatedCardElevation(
             defaultElevation = 0.dp,
@@ -113,20 +113,20 @@ fun SearchSelector(
                 contentDescription = null,
                 modifier = Modifier
                     .size(24.dp)
-                    .clip(RoundedCornerShape(2.dp)),
+                    .clip(RoundedCornerShape(999.dp)),
                 contentScale = ContentScale.Crop,
                 colorFilter = when (shouldTint) {
-                    true -> ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                    true -> ColorFilter.tint(AcornTheme.colors.iconInverse)
                     else -> null
                 },
             )
 
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             Icon(
                 painter = painterResource(R.drawable.mozac_compose_browser_toolbar_chevron_down_6),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = AcornTheme.colors.iconInverse,
             )
         }
 

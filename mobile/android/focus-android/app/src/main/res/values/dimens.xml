@@ -13,7 +13,7 @@
     <item name="match_parent" type="dimen">-1</item>
 
     <!-- The custom tabs spec defines a maximum close button size, we need to define this here to enforce that sizing. -->
-    <dimen name="customtabs_toolbar_icon_size">24dp</dimen>
+    <dimen name="customtabs_toolbar_icon_size">72dp</dimen>
 
     <!-- We are using a NavigationView in our context menu and it adds padding that we do not want. -->
     <dimen name="design_navigation_padding_top_default" tools:override="true">0dp</dimen>
@@ -26,7 +26,7 @@
     <dimen name="fingerprint_icon_size">64dp</dimen>
     <dimen name="fingerprint_status_layout_margin_vertical">48dp</dimen>
 
-    <dimen name="tabs_button_text_size">12dp</dimen>
+    <dimen name="tabs_button_text_size">24dp</dimen>
 
     <dimen name="adaptive_icon_drawable_dimen">108dp</dimen> <!-- Specified in AdaptiveIconDrawable docs. -->
 
@@ -38,11 +38,11 @@
     <dimen name="preference_padding_top">8dp</dimen>
     <dimen name="preference_padding_horizontal">16dp</dimen>
     <dimen name="preference_padding_vertical">12dp</dimen>
-    <dimen name="preference_row_height">48dp</dimen>
+    <dimen name="preference_row_height">72dp</dimen>
 
     <dimen name="textinputlayout_spacing">8dp</dimen>
 
-    <dimen name="urlinput_height">57dp</dimen>
+    <dimen name="urlinput_height">72dp</dimen>
 
     <dimen name="doorhanger_width">300dp</dimen>
     <dimen name="doorhanger_input_width">250dp</dimen>
@@ -74,8 +74,8 @@
     <dimen name="mozac_browser_menu_width_max" tools:ignore="UnusedResources">314dp</dimen>
 
     <!-- Preferences. -->
-    <dimen name="radio_button_preference_height">48dp</dimen>
-    <dimen name="radio_button_preference_width">48dp</dimen>
+    <dimen name="radio_button_preference_height">72dp</dimen>
+    <dimen name="radio_button_preference_width">72dp</dimen>
     <dimen name="radio_button_preference_start_margin">18dp</dimen>
     <dimen name="radio_button_preference_title_margins">16dp</dimen>
 

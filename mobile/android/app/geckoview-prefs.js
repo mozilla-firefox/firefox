@@ -378,4 +378,4 @@ pref("xpinstall.signatures.required", true);
 pref("xpinstall.whitelist.add", "https://addons.mozilla.org");
 pref("xpinstall.whitelist.fileRequest", false);
 
-pref("layout.css.devPixelsPerPx", 2.0);
+pref("layout.css.devPixelsPerPx", "2.0");

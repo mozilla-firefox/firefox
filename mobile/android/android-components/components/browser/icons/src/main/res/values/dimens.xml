@@ -3,7 +3,7 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <dimen name="mozac_browser_icons_size_default">32dp</dimen>
+    <dimen name="mozac_browser_icons_size_default">@dimen/iconSizeM</dimen>
     <dimen name="mozac_browser_icons_size_launcher">48dp</dimen>
     <dimen name="mozac_browser_icons_size_launcher_adaptive">102dp</dimen>
 

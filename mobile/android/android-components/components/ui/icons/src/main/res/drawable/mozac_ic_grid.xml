@@ -5,8 +5,8 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
         android:viewportWidth="24"
         android:viewportHeight="24"
-        android:width="24dp"
-        android:height="24dp">
+        android:width="@dimen/iconSizeM"
+        android:height="@dimen/iconSizeM">
     <path
         android:pathData="M9.667 3L4.333 3C3.597 3 3 3.597 3 4.333L3 9.667C3 10.403 3.597 11 4.333 11l5.334 0C10.403 11 11 10.403 11 9.667L11 4.333C11 3.597 10.403 3 9.667 3m10 0l-5.334 0C13.597 3 13 3.597 13 4.333l0 5.334C13 10.403 13.597 11 14.333 11l5.334 0C20.403 11 21 10.403 21 9.667L21 4.333C21 3.597 20.403 3 19.667 3m-10 10l-5.334 0C3.597 13 3 13.597 3 14.333l0 5.334C3 20.403 3.597 21 4.333 21l5.334 0C10.403 21 11 20.403 11 19.667l0 -5.334C11 13.597 10.403 13 9.667 13m10 0l-5.334 0C13.597 13 13 13.597 13 14.333l0 5.334C13 20.403 13.597 21 14.333 21l5.334 0C20.403 21 21 20.403 21 19.667l0 -5.334C21 13.597 20.403 13 19.667 13"
         android:fillColor="@color/mozac_ui_icons_fill"/>

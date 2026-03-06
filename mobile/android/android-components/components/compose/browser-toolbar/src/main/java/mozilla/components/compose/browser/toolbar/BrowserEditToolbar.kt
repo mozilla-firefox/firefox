@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
@@ -93,13 +94,18 @@ fun BrowserEditToolbar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(all = 8.dp)
-                    .height(48.dp)
+                    .padding(start = 12.dp, end = 12.dp, bottom =
+                        LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.padding_M).dp)
+                    .height(72.dp)
                     .clip(shape = ROUNDED_CORNER_SHAPE)
-                    .background(color = MaterialTheme.colorScheme.surfaceDim),
+                    .background(color = AcornTheme.colors.controlsInputFocusFill),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ActionContainer(
+                    modifier = Modifier
+                        .padding(horizontal =
+                            LocalResources.current.getDimensionPixelSize(
+                                com.android.car.navioui.R.dimen.padding_M).dp),
                     actions = editActionsStart,
                     onInteraction = onInteraction,
                 )
@@ -159,11 +165,11 @@ private fun BrowserEditToolbarPreview() {
                     contentDescription = android.R.string.untitled,
                     onClick = object : BrowserToolbarEvent {},
                 ),
-                ActionButtonRes(
-                    drawableResId = iconsR.drawable.mozac_ic_qr_code_24,
-                    contentDescription = android.R.string.untitled,
-                    onClick = object : BrowserToolbarEvent {},
-                ),
+//                ActionButtonRes(
+//                    drawableResId = iconsR.drawable.mozac_ic_qr_code_24,
+//                    contentDescription = android.R.string.untitled,
+//                    onClick = object : BrowserToolbarEvent {},
+//                ),
             ),
             onInteraction = {},
         )
@@ -193,16 +199,7 @@ private fun BrowserEditToolbarPrivatePreview() {
                 ),
             ),
             editActionsEnd = listOf(
-                ActionButtonRes(
-                    drawableResId = iconsR.drawable.mozac_ic_microphone_24,
-                    contentDescription = android.R.string.untitled,
-                    onClick = object : BrowserToolbarEvent {},
-                ),
-                ActionButtonRes(
-                    drawableResId = iconsR.drawable.mozac_ic_qr_code_24,
-                    contentDescription = android.R.string.untitled,
-                    onClick = object : BrowserToolbarEvent {},
-                ),
+
             ),
             onInteraction = {},
         )

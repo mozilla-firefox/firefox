@@ -513,7 +513,7 @@ class BrowserToolbarSearchMiddleware(
                     onClick = ClearSearchClicked,
                 ),
             )
-        } else if (isValidSearchEngine) {
+        } else if (false) {
             add(
                 ActionButtonRes(
                     drawableResId = iconsR.drawable.mozac_ic_qr_code_24,

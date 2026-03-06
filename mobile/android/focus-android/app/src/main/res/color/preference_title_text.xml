@@ -4,6 +4,6 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="@color/disabled" android:state_enabled="false" />
-    <item android:color="@color/primaryText" />
+    <item android:color="@color/textDisabled" android:state_enabled="false" />
+    <item android:color="@color/textNormal" />
 </selector>

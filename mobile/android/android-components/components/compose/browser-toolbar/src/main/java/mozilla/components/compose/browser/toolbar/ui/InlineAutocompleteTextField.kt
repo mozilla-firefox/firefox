@@ -63,6 +63,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -79,8 +81,8 @@ import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags
 import mozilla.components.concept.toolbar.AutocompleteResult
 import mozilla.components.support.utils.SafeUrl
 
-private const val TEXT_SIZE = 15f
-private const val TEXT_HIGHLIGHT_COLOR = "#5C592ACB"
+private const val TEXT_SIZE = 32f
+private const val TEXT_HIGHLIGHT_COLOR = "#5CF5671E"
 private const val MAX_TEXT_LENGTH_TO_PASTE = 2_000
 
 /**
@@ -126,7 +128,7 @@ internal fun InlineAutocompleteTextField(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val suggestionTextColor = MaterialTheme.colorScheme.onSurface
+    val suggestionTextColor = AcornTheme.colors.textNormal
     val highlightBackgroundColor = Color(TEXT_HIGHLIGHT_COLOR.toColorInt())
 
     var suggestionBounds by remember { mutableStateOf<Rect?>(null) }
@@ -209,7 +211,8 @@ internal fun InlineAutocompleteTextField(
                     .focusRequester(focusRequester),
                 textStyle = TextStyle(
                     fontSize = TEXT_SIZE.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
+                    color = AcornTheme.colors.textSecondary,
                     textAlign = when (deviceLayoutDirection) {
                         LayoutDirection.Ltr -> TextAlign.Start
                         LayoutDirection.Rtl -> TextAlign.End
@@ -249,7 +252,7 @@ internal fun InlineAutocompleteTextField(
                         textBackground = highlightBackgroundColor,
                     )
                 },
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                cursorBrush = SolidColor(AcornTheme.colors.textOnColorPrimary),
                 onTextLayout = { layoutResult ->
                     val currentInput = textFieldState.text
                     suggestionBounds = when (currentInput.isEmpty()) {
@@ -427,8 +430,9 @@ private fun AutocompleteDecorator(
             Text(
                 text = hint,
                 style = LocalTextStyle.current.merge(
+                    fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
                     fontSize = TEXT_SIZE.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = AcornTheme.colors.textSecondary,
                 ),
                 maxLines = 1,
                 overflow = TextOverflow.Clip,

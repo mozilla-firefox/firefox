@@ -82,12 +82,7 @@ fun BrowserToolbar(
             isQueryPrefilled = uiState.editState.isQueryPrefilled,
             usePrivateModeQueries = uiState.editState.isQueryPrivate,
             gravity = uiState.gravity,
-            backgroundColor =
-                if (store.state.editState.query.current.isEmpty()) {
-                    backgroundColor
-                } else {
-                    MaterialTheme.colorScheme.surface
-                },
+            backgroundColor = AcornTheme.colors.layer3,
             outlineColor = outlineColor,
             suggestion = uiState.editState.suggestion,
             editActionsStart = uiState.editState.editActionsStart,
@@ -102,8 +97,8 @@ fun BrowserToolbar(
                 pageOrigin = uiState.displayState.pageOrigin,
                 progressBarConfig = uiState.displayState.progressBarConfig,
                 gravity = uiState.gravity,
-                backgroundColor = backgroundColor,
-                outlineColor = outlineColor,
+                backgroundColor = AcornTheme.colors.layer3,
+                outlineColor = AcornTheme.colors.layer3,
                 browserActionsStart = uiState.displayState.browserActionsStart,
                 pageActionsStart = uiState.displayState.pageActionsStart,
                 pageActionsEnd = uiState.displayState.pageActionsEnd,

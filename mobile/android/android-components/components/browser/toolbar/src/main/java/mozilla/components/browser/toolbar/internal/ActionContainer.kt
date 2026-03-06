@@ -154,6 +154,12 @@ internal class ActionContainer @JvmOverloads constructor(
     }
 
     private fun addActionView(view: View, index: Int) {
-        addView(view, index, LayoutParams(actionSize ?: 0, actionSize ?: 0))
+        val params = LayoutParams(actionSize ?: 0, actionSize ?: 0)
+
+        // Добавляем отступ справа (marginEnd) равный padding_L,
+        // чтобы создать расстояние между элементами.
+        params.marginEnd = context.resources.getDimensionPixelSize(R.dimen.mozac_browser_toolbar_icon_size)
+
+        addView(view, index, params)
     }
 }

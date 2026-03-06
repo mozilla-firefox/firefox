@@ -4,6 +4,8 @@
 
 package org.mozilla.fenix.browser.tabstrip
 
+import androidx.compose.ui.graphics.Color
+
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
@@ -28,6 +30,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -83,15 +86,17 @@ import org.mozilla.fenix.theme.ThemedValue
 import org.mozilla.fenix.theme.ThemedValueProvider
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.GleanMetrics.TabStrip as TabStripMetrics
+import androidx.compose.ui.text.style.TextOverflow
+import mozilla.components.compose.base.theme.AcornTheme
 
-private val minTabStripItemWidth = 130.dp
-private val maxTabStripItemWidth = 280.dp
-private val tabItemHeight = 40.dp
-private val tabStripIconSize = 24.dp
-private val spaceBetweenTabs = 4.dp
-private val tabStripListContentStartPadding = 8.dp
-private val titleFadeWidth = 16.dp
-private val tabStripHorizontalPadding = 16.dp
+private val minTabStripItemWidth = 400.dp
+private val maxTabStripItemWidth = 400.dp
+private val tabItemHeight = 72.dp// не влияет
+private val tabStripIconSize = 48.dp// не влияет
+private val spaceBetweenTabs = 12.dp
+private val tabStripListContentStartPadding = 12.dp
+private val titleFadeWidth = 0.dp // нам не нужен
+private val tabStripHorizontalPadding = 20.dp // от начала табов и в конце табов
 
 /**
  * Top level composable for the tabs strip.
@@ -195,7 +200,7 @@ private fun TabStripContent(
             .height(dimensionResource(R.dimen.tab_strip_height))
             .background(colors.backgroundColor)
             .systemGestureExclusion()
-            .padding(horizontal = tabStripHorizontalPadding),
+            .padding(start = tabStripListContentStartPadding, end = tabStripListContentStartPadding, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -213,11 +218,17 @@ private fun TabStripContent(
             )
 
             if (showActionButtons) {
-                IconButton(onClick = onAddTabClick) {
+                // Modified: Set IconButton size to 72 dp
+                IconButton(
+                    onClick = onAddTabClick,
+                    modifier = Modifier.size(12.dp)
+                ) {
                     Icon(
                         painter = painterResource(iconsR.drawable.mozac_ic_plus_24),
                         tint = MaterialTheme.colorScheme.onSurface,
                         contentDescription = stringResource(R.string.add_tab),
+                        modifier = Modifier.size(72.dp),
+                        //tint = Color.Unspecified
                     )
                 }
             }
@@ -230,6 +241,7 @@ private fun TabStripContent(
                 menuItems = state.menuItems,
                 privacyBadgeVisible = state.isPrivateMode,
                 onClick = onTabCounterClick,
+                modifier = Modifier.padding(end = spaceBetweenTabs)
             )
         }
     }
@@ -272,7 +284,6 @@ private fun TabsList(
                 )
                 .selectableGroup(),
             state = listState,
-            contentPadding = PaddingValues(start = tabStripListContentStartPadding),
         ) {
             itemsIndexed(
                 items = state.tabs,
@@ -355,7 +366,7 @@ private fun TabItem(
     val closeTabLabel = stringResource(R.string.close_tab)
 
     TabStripCard(
-        modifier = modifier.height(tabItemHeight),
+        modifier = modifier.height(tabItemHeight).width(400.dp),
         backgroundColor = backgroundColor,
         elevation = if (state.isSelected) {
             selectedTabStripCardElevation
@@ -391,15 +402,6 @@ private fun TabItem(
                     BidiFormatter.getInstance().isRtl(state.title)
                 }
 
-                Spacer(modifier = Modifier.size(8.dp))
-
-                TabStripIcon(
-                    url = state.url,
-                    icon = state.icon,
-                )
-
-                Spacer(modifier = Modifier.size(8.dp))
-
                 HorizontalFadingEdgeBox(
                     modifier = Modifier
                         .weight(1f)
@@ -410,10 +412,16 @@ private fun TabItem(
                 ) {
                     Text(
                         text = state.title,
-                        modifier = Modifier.align(Alignment.CenterStart),
-                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.align(Alignment.CenterStart)
+                            .padding(start = 28.dp),
+                        color = if (state.isSelected) {
+                            AcornTheme.colors.textInverse
+                        } else {
+                            AcornTheme.colors.textSecondary
+                        },
                         softWrap = false,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = FirefoxTheme.typography.subtitle2,
                     )
                 }
@@ -422,19 +430,17 @@ private fun TabItem(
             if (state.isCloseButtonVisible) {
                 IconButton(
                     onClick = { onCloseTabClick(state.id, state.isPrivate) },
-                    modifier = if (state.isSelected) {
-                        Modifier.semantics {}
-                    } else {
-                        Modifier.clearAndSetSemantics {}
-                    },
+                    modifier =  Modifier.height(72.dp).width(72.dp)
+                    ,
                 ) {
                     Icon(
                         painter = painterResource(iconsR.drawable.mozac_ic_cross_20),
                         tint = if (state.isSelected) {
-                            MaterialTheme.colorScheme.onSurface
+                            AcornTheme.colors.iconInverse
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                            AcornTheme.colors.iconSecondary
                         },
+                        modifier = Modifier.size(36.dp),
                         contentDescription = stringResource(
                             id = R.string.close_tab_title,
                             state.title,

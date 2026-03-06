@@ -2,14 +2,14 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
+    android:width="@dimen/iconSizeM"
+    android:height="@dimen/iconSizeM"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="@color/mozac_ui_icons_fill"
+        android:fillColor="@color/iconNormal"
         android:pathData="M10.89,14.56c0.16,0.17 0.39,0.26 0.62,0.26 0.23,0 0.46,-0.09 0.62,-0.26l4.51,-4.51 -1.24,-1.24 -3.89,3.89 -2.16,-2.16 -1.24,1.24 2.78,2.78z" />
     <path
-        android:fillColor="@color/mozac_ui_icons_fill"
+        android:fillColor="@color/iconNormal"
         android:pathData="M10.54,21.62a3,3 0,0 0,2.92 0c2.08,-1.17 3.99,-2.97 5.39,-5.09 0.7,-1.07 1.2,-2.37 1.48,-3.87l0.71,-3.79c0.24,-1.29 -0.38,-2.57 -1.53,-3.19l-6.17,-3.32a3,3 0,0 0,-2.85 0L4.47,5.62c-1.14,0.62 -1.76,1.9 -1.52,3.18l0.71,3.85c0.28,1.51 0.78,2.81 1.49,3.89 1.4,2.12 3.31,3.92 5.39,5.08zM11.33,3.9c0.18,-0.1 0.39,-0.15 0.59,-0.15v0.01c0.2,0 0.4,0.05 0.59,0.15l6.18,3.32c0.48,0.26 0.74,0.79 0.64,1.33l-0.71,3.79c-0.23,1.27 -0.64,2.35 -1.22,3.23 -1.24,1.89 -2.94,3.49 -4.78,4.52 -0.37,0.21 -0.84,0.21 -1.22,0 -1.84,-1.03 -3.54,-2.63 -4.78,-4.52 -0.58,-0.88 -1,-1.97 -1.23,-3.24l-0.71,-3.85c-0.1,-0.54 0.15,-1.07 0.63,-1.33l6.02,-3.26z" />
 </vector>

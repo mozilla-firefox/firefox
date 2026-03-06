@@ -4,7 +4,7 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <color name="mozac_ui_icons_fill">#FFFFFF</color>
+    <color name="mozac_ui_icons_fill">@color/iconNormal</color>
 
     <!-- Star icon fill colors for mozac_ic_star_one_half_fill_20 -->
     <color name="mozac_ic_star_filled" tools:ignore="UnusedResources">#000000</color>

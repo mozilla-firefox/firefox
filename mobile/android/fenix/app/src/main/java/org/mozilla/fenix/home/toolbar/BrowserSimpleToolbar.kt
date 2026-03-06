@@ -114,11 +114,11 @@ private fun searchEndActions(): List<Action> {
             contentDescription = android.R.string.untitled,
             onClick = object : BrowserToolbarEvent {},
         ),
-        ActionButtonRes(
-            drawableResId = iconsR.drawable.mozac_ic_qr_code_24,
-            contentDescription = android.R.string.untitled,
-            onClick = object : BrowserToolbarEvent {},
-        ),
+//        ActionButtonRes(
+//            drawableResId = iconsR.drawable.mozac_ic_qr_code_24,
+//            contentDescription = android.R.string.untitled,
+//            onClick = object : BrowserToolbarEvent {},
+//        ),
     )
 }
 

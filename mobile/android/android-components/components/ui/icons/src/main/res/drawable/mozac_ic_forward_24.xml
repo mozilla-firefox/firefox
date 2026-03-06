@@ -2,12 +2,15 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:autoMirrored="true"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:width="@dimen/dsDefaultHeight"
+    android:height="@dimen/dsDefaultHeight"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
     <path
-        android:fillColor="@color/mozac_ui_icons_fill"
-        android:pathData="M17.638 13.75H3.125V12h14.513L12.25 6.613l1.238-1.238 6.88 6.881a0.875 0.875 0 0 1 0 1.238l-6.88 6.88-1.238-1.237 5.387-5.387z" />
+        android:pathData="M0,36C0,16.118 16.118,0 36,0C55.882,0 72,16.118 72,36C72,55.882 55.882,72 36,72C16.118,72 0,55.882 0,36Z"
+        android:fillColor="@color/controlSecondaryNormal"/>
+    <path
+        android:pathData="M32.204,23.205C32.644,22.765 33.356,22.765 33.796,23.205L45.796,35.204C46.235,35.644 46.235,36.356 45.796,36.796L33.796,48.796C33.356,49.235 32.644,49.235 32.204,48.796C31.765,48.356 31.765,47.644 32.204,47.204L43.409,36L32.204,24.795C31.765,24.356 31.765,23.644 32.204,23.205Z"
+        android:fillColor="@color/iconNormal"
+        android:fillType="evenOdd"/>
 </vector>

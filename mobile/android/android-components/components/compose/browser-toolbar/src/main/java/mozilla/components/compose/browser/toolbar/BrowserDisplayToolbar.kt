@@ -5,16 +5,21 @@
 package mozilla.components.compose.browser.toolbar
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.base.theme.acornPrivateColorScheme
 import mozilla.components.compose.base.theme.privateColorPalette
@@ -27,6 +32,7 @@ import mozilla.components.compose.browser.toolbar.ui.FullDisplayToolbar
 import mozilla.components.compose.browser.toolbar.utils.DisplayToolbarDataProvider
 import mozilla.components.compose.browser.toolbar.utils.DisplayToolbarPreviewModel
 import mozilla.components.support.base.log.logger.Logger
+import androidx.compose.ui.platform.LocalResources
 
 /**
  * Sub-component of the [BrowserToolbar] responsible for displaying the URL and related

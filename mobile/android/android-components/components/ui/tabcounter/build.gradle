@@ -19,6 +19,8 @@ android {
 }
 
 dependencies {
+    implementation (files("../../libs/myui.aar"))
+
     implementation project(':components:browser-menu2')
     implementation project(':components:compose-base')
     implementation project(':components:concept-menu')

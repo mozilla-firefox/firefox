@@ -2,11 +2,11 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
+    android:width="@dimen/iconSizeM"
+    android:height="@dimen/iconSizeM"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="@color/mozac_ui_icons_fill"
+        android:fillColor="@color/iconNormal"
         android:pathData="M2 12c0 5.514 4.486 10 10 10s10-4.486 10-10S17.514 2 12 2 2 6.486 2 12zm7.238-4L12 10.763 14.762 8 16 9.238 13.237 12 16 14.762 14.762 16 12 13.237 9.238 16 8 14.762 10.762 12 8 9.238 9.238 8z" />
 </vector>

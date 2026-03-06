@@ -80,6 +80,7 @@ output as packages are downloaded and installed.
 MOBILE_ANDROID_MOZCONFIG_TEMPLATE = """
 # Build GeckoView/Firefox for Android:
 ac_add_options --enable-project=mobile/android
+ac_add_options --target=aarch64
 
 # If --target is not specified it will default to host architecture for fast
 # emulation (x86_64 or aarch64). For testing on physical phones you most likely
