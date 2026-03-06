@@ -2549,7 +2549,7 @@ class Settings(
      */
     var shakeToSummarizeFeatureUserPreference by booleanPreference(
         key = appContext.getPreferenceKey(R.string.pref_key_summarize_feature_enabled),
-        default = Config.channel.isDebug,
+        default = Config.channel.isNightlyOrDebug,
     )
 
     /**
