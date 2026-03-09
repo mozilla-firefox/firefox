@@ -4,6 +4,9 @@
 
 package mozilla.components.lib.llm.mlpa.service
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.fetch.MutableHeaders
@@ -23,6 +26,7 @@ import mozilla.components.concept.fetch.isClientError
 class FetchClientMlpaService(
     private val client: Client,
     private val config: MlpaConfig,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : MlpaService {
     private val json by lazy {
         Json {
@@ -37,25 +41,27 @@ class FetchClientMlpaService(
      * @return [Result.success] with the parsed response on success containing a [AuthenticationService.Response],
      * or [Result.failure] if the HTTP call is not successful.
      */
-    override suspend fun verify(request: AuthenticationService.Request): Result<AuthenticationService.Response> {
-        val fetchRequest = Request(
-            url = "${config.baseUrl}/verify/play",
-            method = Request.Method.POST,
-            headers = MutableHeaders(),
-            body = Request.Body.fromString(json.encodeToString(request)),
-        )
+    override suspend fun verify(
+        request: AuthenticationService.Request,
+    ): Result<AuthenticationService.Response> = withContext(dispatcher) {
+            val fetchRequest = Request(
+                url = "${config.baseUrl}/verify/play",
+                method = Request.Method.POST,
+                headers = MutableHeaders(),
+                body = Request.Body.fromString(json.encodeToString(request)),
+            )
 
-        return Result.runCatching {
-            val httpResponse = client.fetch(fetchRequest)
-            if (httpResponse.isClientError) {
-                throw VerificationServiceFailed("Received status code ${httpResponse.status}")
+            return@withContext Result.runCatching {
+                val httpResponse = client.fetch(fetchRequest)
+                if (httpResponse.isClientError) {
+                    throw VerificationServiceFailed("Received status code ${httpResponse.status}")
+                }
+
+                httpResponse
+                    .use { httpResponse.body.string(Charsets.UTF_8) }
+                    .let { json.decodeFromString(it) }
             }
-
-            httpResponse
-                .use { httpResponse.body.string(Charsets.UTF_8) }
-                .let { json.decodeFromString(it) }
         }
-    }
 
     /**
      * Calls the `/chat/completions` endpoint to request a chat completion.
@@ -68,7 +74,7 @@ class FetchClientMlpaService(
     override suspend fun completion(
         authorizationToken: AuthorizationToken,
         request: ChatService.Request,
-    ): Result<ChatService.Response> {
+    ): Result<ChatService.Response> = withContext(dispatcher) {
         val bodyString = json.encodeToString(request)
         val fetchRequest = Request(
             url = "${config.baseUrl}/v1/chat/completions",
@@ -76,7 +82,7 @@ class FetchClientMlpaService(
             headers = MutableHeaders(
                 "authorization" to "Bearer ${authorizationToken.value}",
                 "content-type" to "application/json",
-                "service-type" to "s2s",
+                "service-type" to "s2s-android",
             ).apply {
                 if (authorizationToken is AuthorizationToken.Integrity) {
                     set("use-play-integrity", "true")
@@ -85,7 +91,7 @@ class FetchClientMlpaService(
             body = Request.Body.fromString(bodyString),
         )
 
-        return Result.runCatching {
+        return@withContext Result.runCatching {
             val httpResponse = client.fetch(fetchRequest)
             if (httpResponse.isClientError) {
                 throw ChatServiceFailed("Received status code ${httpResponse.status}")

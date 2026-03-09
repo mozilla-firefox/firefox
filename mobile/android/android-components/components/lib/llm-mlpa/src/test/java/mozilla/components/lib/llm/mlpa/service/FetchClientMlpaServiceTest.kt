@@ -130,7 +130,7 @@ class FetchClientMlpaServiceTest {
             )
 
             assertEquals(response.getOrThrow(), expected)
-            assertEquals("s2s", fakeClient.lastRequest?.headers?.get("service-type"))
+            assertEquals("s2s-android", fakeClient.lastRequest?.headers?.get("service-type"))
             assertEquals("true", fakeClient.lastRequest?.headers?.get("use-play-integrity"))
         }
 
@@ -167,7 +167,7 @@ class FetchClientMlpaServiceTest {
             )
 
             assertEquals(response.getOrThrow(), expected)
-            assertEquals("s2s", fakeClient.lastRequest?.headers?.get("service-type"))
+            assertEquals("s2s-android", fakeClient.lastRequest?.headers?.get("service-type"))
             assertEquals(null, fakeClient.lastRequest?.headers?.get("use-play-integrity"))
         }
 
