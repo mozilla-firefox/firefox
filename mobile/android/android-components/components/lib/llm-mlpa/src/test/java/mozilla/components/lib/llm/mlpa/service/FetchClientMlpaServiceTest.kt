@@ -112,8 +112,8 @@ class FetchClientMlpaServiceTest {
                 }
             """.trimIndent()
 
-            val mlpaService =
-                FetchClientMlpaService(FakeClient.success(json.asBody), MlpaConfig.prodProd)
+            val fakeClient = FakeClient.success(json.asBody)
+            val mlpaService = FetchClientMlpaService(fakeClient, MlpaConfig.prodProd)
 
             val response = mlpaService.completion(
                 authorizationToken = AuthorizationToken("my-token"),
@@ -130,6 +130,8 @@ class FetchClientMlpaServiceTest {
             )
 
             assertEquals(response.getOrThrow(), expected)
+            assertEquals("s2s", fakeClient.lastRequest?.headers?.get("service-type"))
+            assertEquals("true", fakeClient.lastRequest?.headers?.get("use-play-integrity"))
         }
 
     @OptIn(ExperimentalSerializationApi::class)

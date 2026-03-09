@@ -75,12 +75,15 @@ data class FakeMlpaService(
     val chatService: ChatService = successChatService,
 ) : MlpaService, ChatService by chatService, AuthenticationService by authService
 
-data class FakeClient(
+class FakeClient(
     val status: Int = 200,
     val headers: Headers = MutableHeaders(),
     val body: Response.Body = Response.Body.empty(),
 ) : Client() {
+    var lastRequest: Request? = null
+
     override fun fetch(request: Request): Response {
+        lastRequest = request
         return Response(
             url = request.url,
             status = status,
