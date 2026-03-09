@@ -50,7 +50,6 @@ class SummarizationMiddleware(
     }
 
     private suspend fun observePrompt(store: SummarizationStore, llm: Llm) {
-        store.dispatch(LlmAction.SummarizationRequested)
         pageContentExtractor.getPageContent().fold(
             onSuccess = { result ->
                 llm.prompt(Prompt(systemPrompt + result))
@@ -68,6 +67,7 @@ class SummarizationMiddleware(
         store: SummarizationStore,
         llmProvider: CloudLlmProvider,
     ) {
+        store.dispatch(LlmAction.SummarizationRequested)
         llmProvider.state.map { state ->
             when (state) {
                 CloudLlmProvider.State.Available -> LlmProviderAction.ProviderUnavailable

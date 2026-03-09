@@ -45,13 +45,14 @@ class SummarizationStoreTest {
         }
 
         store.dispatch(ViewAppeared)
+        testScheduler.advanceTimeBy(15.seconds)
         store.dispatch(OffDeviceSummarizationShakeConsentAction.AllowClicked)
-
         testScheduler.advanceTimeBy(15.seconds)
 
         val expected = listOf<SummarizationState>(
             Inert(true),
             ShakeConsentRequired,
+            Summarizing(),
             Summarizing(listOf("# This is the article\n")),
             Summarizing(listOf("# This is the article\n", "This is some content...\n")),
             Summarizing(listOf("# This is the article\n", "This is some content...\n", "This is some *bold* content.\n")),
@@ -129,6 +130,7 @@ class SummarizationStoreTest {
 
         val expected = listOf<SummarizationState>(
             Inert(true),
+            Summarizing(),
             Summarizing(listOf("# This is the article\n")),
             Summarizing(listOf("# This is the article\n", "This is some content...\n")),
             Summarizing(listOf("# This is the article\n", "This is some content...\n", "This is some *bold* content.\n")),
@@ -166,6 +168,7 @@ class SummarizationStoreTest {
 
         val expected = listOf<SummarizationState>(
             Inert(true),
+            Summarizing(),
             SummarizationState.Error(SummarizationError.SummarizationFailed(failureThrowable)),
         )
 
