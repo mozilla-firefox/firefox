@@ -31,7 +31,7 @@ val failureIntegrityClient = IntegrityClient {
 }
 
 val successTokenProvider = MlpaTokenProvider {
-    Result.success(AuthorizationToken("my-test-token"))
+    Result.success(AuthorizationToken.Integrity("my-test-token"))
 }
 
 val userIdProvider = UserIdProvider { UserId("test-user-id") }
@@ -43,7 +43,7 @@ val failureTokenProvider = MlpaTokenProvider {
 val successAuthenticationService = AuthenticationService { request ->
     Result.success(
         AuthenticationService.Response(
-            AuthorizationToken("my-test-token"),
+            AuthorizationToken.Integrity("my-test-token"),
             tokenType = "bearer",
             expiresIn = 6000,
         ),

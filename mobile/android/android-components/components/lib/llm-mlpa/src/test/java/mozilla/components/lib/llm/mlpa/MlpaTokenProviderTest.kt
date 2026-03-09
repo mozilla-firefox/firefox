@@ -21,7 +21,7 @@ class MlpaTokenProviderTest {
     @Test
     fun `GIVEN a static provider WHEN I fetch the token THEN return the provided token`() =
         runTest {
-            val expected = AuthorizationToken("my-test-token")
+            val expected = AuthorizationToken.Integrity("my-test-token")
             val provider = MlpaTokenProvider.static(expected)
             val result = provider.fetchToken()
 

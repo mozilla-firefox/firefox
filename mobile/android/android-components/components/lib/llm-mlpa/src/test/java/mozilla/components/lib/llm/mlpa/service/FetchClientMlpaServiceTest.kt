@@ -38,7 +38,7 @@ class FetchClientMlpaServiceTest {
             )
 
             val expected = AuthenticationService.Response(
-                accessToken = AuthorizationToken("my-authorization-token"),
+                accessToken = AuthorizationToken.Integrity("my-authorization-token"),
                 tokenType = "bearer",
                 expiresIn = 6000,
             )
@@ -116,7 +116,7 @@ class FetchClientMlpaServiceTest {
             val mlpaService = FetchClientMlpaService(fakeClient, MlpaConfig.prodProd)
 
             val response = mlpaService.completion(
-                authorizationToken = AuthorizationToken("my-token"),
+                authorizationToken = AuthorizationToken.Integrity("my-token"),
                 request = ChatService.Request(
                     model = ChatService.Request.ModelID.mistral,
                     messages = listOf(ChatService.Request.Message.user("hello")),
@@ -132,6 +132,43 @@ class FetchClientMlpaServiceTest {
             assertEquals(response.getOrThrow(), expected)
             assertEquals("s2s", fakeClient.lastRequest?.headers?.get("service-type"))
             assertEquals("true", fakeClient.lastRequest?.headers?.get("use-play-integrity"))
+        }
+
+    @Test
+    fun `GIVEN a successful response with an fxa token WHEN try to chat THEN dont include the use-play-integrity header`() =
+        runTest {
+            val json = """
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content" : "world!"
+                            }
+                        }
+                    ]
+                }
+            """.trimIndent()
+
+            val fakeClient = FakeClient.success(json.asBody)
+            val mlpaService = FetchClientMlpaService(fakeClient, MlpaConfig.prodProd)
+
+            val response = mlpaService.completion(
+                authorizationToken = AuthorizationToken.Fxa("my-token"),
+                request = ChatService.Request(
+                    model = ChatService.Request.ModelID.mistral,
+                    messages = listOf(ChatService.Request.Message.user("hello")),
+                ),
+            )
+
+            val expected = ChatService.Response(
+                choices = listOf(
+                    ChatService.Response.Choice(ChatService.Response.Message("world!")),
+                ),
+            )
+
+            assertEquals(response.getOrThrow(), expected)
+            assertEquals("s2s", fakeClient.lastRequest?.headers?.get("service-type"))
+            assertEquals(null, fakeClient.lastRequest?.headers?.get("use-play-integrity"))
         }
 
     @OptIn(ExperimentalSerializationApi::class)
@@ -154,7 +191,7 @@ class FetchClientMlpaServiceTest {
                 FetchClientMlpaService(FakeClient.success(json.asBody), MlpaConfig.prodProd)
 
             val response = mlpaService.completion(
-                authorizationToken = AuthorizationToken("my-token"),
+                authorizationToken = AuthorizationToken.Integrity("my-token"),
                 request = ChatService.Request(
                     model = ChatService.Request.ModelID.mistral,
                     messages = listOf(ChatService.Request.Message.user("hello")),
@@ -174,7 +211,7 @@ class FetchClientMlpaServiceTest {
             val mlpaService = FetchClientMlpaService(FakeClient.failure(401), MlpaConfig.prodProd)
 
             val response = mlpaService.completion(
-                authorizationToken = AuthorizationToken("my-token"),
+                authorizationToken = AuthorizationToken.Integrity("my-token"),
                 request = ChatService.Request(
                     model = ChatService.Request.ModelID.mistral,
                     messages = listOf(ChatService.Request.Message.user("hello")),

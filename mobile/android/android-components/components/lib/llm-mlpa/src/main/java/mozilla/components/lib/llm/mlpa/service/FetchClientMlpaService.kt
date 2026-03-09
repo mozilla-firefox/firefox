@@ -77,8 +77,11 @@ class FetchClientMlpaService(
                 "authorization" to "Bearer ${authorizationToken.value}",
                 "content-type" to "application/json",
                 "service-type" to "s2s",
-                "use-play-integrity" to "true",
-            ),
+            ).apply {
+                if (authorizationToken is AuthorizationToken.Integrity) {
+                    set("use-play-integrity", "true")
+                }
+            },
             body = Request.Body.fromString(bodyString),
         )
 

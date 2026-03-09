@@ -32,6 +32,6 @@ fun MlpaTokenProvider.Companion.choose(vararg tokenProviders: MlpaTokenProvider)
  */
 fun MlpaTokenProvider.Companion.fxaTokenProvider(tokenProvider: FxaAccessTokenProvider) = MlpaTokenProvider {
     tokenProvider.provide()?.let {
-        Result.success(AuthorizationToken(it))
+        Result.success(AuthorizationToken.Fxa(it))
     } ?: Result.failure(FxaMissingAccessToken())
 }

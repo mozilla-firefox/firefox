@@ -29,7 +29,7 @@ class MlpaLlmTest {
                 expectedToken = token
                 successChatService.completion(token, request)
             },
-            authorizationToken = AuthorizationToken("my-test-token"),
+            authorizationToken = AuthorizationToken.Integrity("my-test-token"),
         )
 
         val actual = llm.prompt(Prompt("This is my prompt")).toList()
@@ -38,7 +38,7 @@ class MlpaLlmTest {
             Llm.Response.Success.ReplyFinished,
         )
 
-        assertEquals(expectedToken, AuthorizationToken("my-test-token"))
+        assertEquals(expectedToken, AuthorizationToken.Integrity("my-test-token"))
         assertEquals(expected, actual)
     }
 
@@ -46,7 +46,7 @@ class MlpaLlmTest {
     fun `GIVEN a failure response from the mlpa client WHEN prompt THEN I get a valid response`() = runTest {
         val llm = MlpaLlm(
             chatService = failureChatService,
-            authorizationToken = AuthorizationToken("my-test-token"),
+            authorizationToken = AuthorizationToken.Integrity("my-test-token"),
         )
 
         val actual = llm.prompt(Prompt("This is my prompt")).toList()

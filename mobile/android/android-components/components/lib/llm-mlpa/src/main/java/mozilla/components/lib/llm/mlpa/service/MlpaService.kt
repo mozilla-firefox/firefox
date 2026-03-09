@@ -56,13 +56,31 @@ data class MlpaConfig(
 }
 
 /**
- * Represents an MLPA authorization token used to authenticate API calls.
+ * Represents a bearer token used to authenticate API calls.
  *
  * @property value The raw authorization token string.
  */
-@JvmInline
-@Serializable
-value class AuthorizationToken(val value: String)
+sealed interface AuthorizationToken {
+    val value: String
+
+    /**
+     * An integrity-based authorization token issued by the MLPA verification service.
+     *
+     * @property value The raw token string.
+     */
+    @JvmInline
+    @Serializable
+    value class Integrity(override val value: String) : AuthorizationToken
+
+    /**
+     * A Firefox Accounts (FxA) authorization token.
+     *
+     * @property value The raw token string.
+     */
+    @JvmInline
+    @Serializable
+    value class Fxa(override val value: String) : AuthorizationToken
+}
 
 /**
  * Represents a unique identifier for a user in MLPA requests.
@@ -126,7 +144,7 @@ fun interface AuthenticationService {
      */
     @Serializable
     data class Response(
-        @SerialName("access_token") val accessToken: AuthorizationToken,
+        @SerialName("access_token") val accessToken: AuthorizationToken.Integrity,
         @SerialName("token_type") val tokenType: String,
         @SerialName("expires_in") val expiresIn: Int,
     )
