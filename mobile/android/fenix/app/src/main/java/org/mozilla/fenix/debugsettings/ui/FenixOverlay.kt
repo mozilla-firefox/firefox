@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.StrictMode
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -53,6 +54,7 @@ import org.mozilla.fenix.debugsettings.navigation.DebugDrawerRoute
 import org.mozilla.fenix.debugsettings.store.DebugDrawerAction
 import org.mozilla.fenix.debugsettings.store.DebugDrawerNavigationMiddleware
 import org.mozilla.fenix.debugsettings.store.DebugDrawerStore
+import org.mozilla.fenix.debugsettings.store.DebugDrawerTelemetryMiddleware
 import org.mozilla.fenix.debugsettings.store.DrawerStatus
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.theme.DefaultThemeProvider
@@ -161,8 +163,13 @@ private fun FenixOverlay(
                     navController = navController,
                     scope = coroutineScope,
                 ),
+                DebugDrawerTelemetryMiddleware(),
             ),
         )
+    }
+
+    LaunchedEffect(Unit) {
+        debugDrawerStore.dispatch(DebugDrawerAction.ViewAppeared)
     }
 
     val debugDrawerDestinations = remember {

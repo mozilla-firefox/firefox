@@ -60,7 +60,10 @@ class DebugDrawerNavigationMiddleware(
                 is DebugDrawerAction.NavigateTo.LlmDebugTools ->
                     navController.navigate(route = DebugDrawerRoute.LlmTools.route)
                 is DebugDrawerAction.OnBackPressed -> navController.popBackStack()
-                is DebugDrawerAction.DrawerOpened, DebugDrawerAction.DrawerClosed -> Unit // no-op
+                is DebugDrawerAction.DrawerOpened,
+                DebugDrawerAction.DrawerClosed,
+                DebugDrawerAction.ViewAppeared,
+                -> Unit // no-op
             }
         }
     }

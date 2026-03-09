@@ -20,6 +20,11 @@ import org.mozilla.fenix.debugsettings.tabs.TabTools as TabToolsScreen
 sealed class DebugDrawerAction : Action {
 
     /**
+     * [DebugDrawerAction] fired when the overlay is displayed.
+     */
+    object ViewAppeared : DebugDrawerAction()
+
+    /**
      * [DebugDrawerAction] fired when the user opens the drawer.
      */
     object DrawerOpened : DebugDrawerAction()
