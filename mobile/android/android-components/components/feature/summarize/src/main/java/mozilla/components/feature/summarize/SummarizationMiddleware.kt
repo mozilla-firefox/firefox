@@ -5,6 +5,7 @@
 package mozilla.components.feature.summarize
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mozilla.components.concept.llm.CloudLlmProvider
@@ -53,10 +54,12 @@ class SummarizationMiddleware(
         store.dispatch(LlmAction.SummarizationRequested)
         pageContentExtractor.getPageContent().fold(
             onSuccess = { result ->
-                llm.prompt(Prompt(systemPrompt + result))
-                    .collect { response ->
-                        store.dispatch(LlmAction.ReceivedResponse(response))
-                    }
+                scope.launch(Dispatchers.IO) {
+                    llm.prompt(Prompt(systemPrompt + result))
+                        .collect { response ->
+                            store.dispatch(LlmAction.ReceivedResponse(response))
+                        }
+                }
             },
             onFailure = {
                 store.dispatch(SummarizationFailed(it))
