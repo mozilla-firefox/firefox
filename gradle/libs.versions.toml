@@ -302,3 +302,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 protobuf-plugin = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
 python-envs-plugin = { id = "com.jetbrains.python.envs", version.ref = "python-envs-plugin" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+android-library = { id = "com.android.library", version.ref = "android-gradle-plugin" }

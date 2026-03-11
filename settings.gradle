@@ -55,8 +55,10 @@ project(':exoplayer2').projectDir = new File("${gradle.mozconfig.topsrcdir}/mobi
 project(':android-components').projectDir = new File("${gradle.mozconfig.topsrcdir}/mobile/android/android-components")
 
 if (!gradle.mozconfig.substs.MOZ_ANDROID_SUBPROJECT || gradle.mozconfig.substs.MOZ_ANDROID_SUBPROJECT == "fenix") {
-    include ':fenix'
-    project(':fenix').projectDir = new File("${gradle.mozconfig.topsrcdir}/mobile/android/fenix/app")
+    include ':app'
+    project(':app').projectDir = new File("${gradle.mozconfig.topsrcdir}/mobile/android/fenix/app")
+    include ':app:longfox'
+    project(':app:longfox').projectDir = new File("${gradle.mozconfig.topsrcdir}/mobile/android/fenix/app/longfox")
 }
 if (!gradle.mozconfig.substs.MOZ_ANDROID_SUBPROJECT || gradle.mozconfig.substs.MOZ_ANDROID_SUBPROJECT == "focus") {
     include ':focus-android'
