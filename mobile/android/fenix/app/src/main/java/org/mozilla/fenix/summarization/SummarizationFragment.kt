@@ -10,13 +10,16 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
+import androidx.compose.runtime.LaunchedEffect
 import androidx.fragment.compose.content
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.fragment.navArgs
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.suspendCancellableCoroutine
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.feature.summarize.SummarizationSettings
+import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.SummarizationUi
 import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.feature.summarize.settings.SummarizeSettingsMiddleware
@@ -92,6 +95,13 @@ class SummarizationFragment : BottomSheetDialogFragment() {
                 ),
             ),
         )
+
+        val state = storeViewModel.store.stateFlow.collectAsStateWithLifecycle()
+        LaunchedEffect(state.value) {
+            if (state.value is SummarizationState.Finished) {
+                dismiss()
+            }
+        }
 
         FirefoxTheme {
             SummarizationUi(
