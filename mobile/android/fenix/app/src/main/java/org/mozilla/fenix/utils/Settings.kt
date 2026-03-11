@@ -2571,7 +2571,7 @@ class Settings(
      */
     var shakeGestureEnabled by booleanPreference(
         key = appContext.getPreferenceKey(R.string.pref_key_shake_gesture_enabled),
-        default = Config.channel.isDebug,
+        default = Config.channel.isNightlyOrDebug,
     )
 
     /**
