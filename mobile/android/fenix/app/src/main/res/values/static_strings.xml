@@ -142,6 +142,9 @@
     <string name="preferences_debug_settings_enable_search_optimization_sport" translatable="false">Show Search Optimization Sport cards</string>
     <string name="preferences_debug_settings_search_optimization_card_summary" translatable="false">This needs the Search Optimization Feature enabled</string>
 
+    <!-- longfox secret setting -->
+    <string name="preferences_debug_settings_enable_longfox" translatable="false">Enable Longfox</string>
+
     <!-- Search suggestions title for Firefox Suggest Online -->
     <string name="firefox_suggest_online_header" tools:ignore="BrandUsage" translatable="false">Firefox Suggest Online</string>
 
