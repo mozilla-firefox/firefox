@@ -570,6 +570,10 @@
 
     <!-- Native Share Sheet -->
     <string name="pref_key_native_share_sheet" translatable="false">pref_key_native_share_sheet</string>
+
+    <!-- Longfox -->
+    <string name="pref_key_enable_longfox" translatable="false">pref_key_enable_longfox</string>
+
     <!--  Search Optimization Cards  -->
     <string name="pref_key_search_optimization" translatable="false">pref_key_search_optimization</string>
     <string name="pref_key_search_optimization_feature" translatable="false">pref_key_search_optimization_feature</string>
