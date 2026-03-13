@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.LlmProvider
+import mozilla.components.feature.summarize.ErrorReporter
 import mozilla.components.feature.summarize.SummarizationMiddleware
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.SummarizationStore
@@ -25,6 +26,7 @@ import mozilla.components.feature.summarize.summarizationReducer
  * @param settings the SummarizationSettings.
  * @param pageContentExtractor an extractor for page content.
  * @param pageMetadataExtractor an extractor for page metadata.
+ * @param errorReporter reports caught exceptions to the crash reporting service.
  */
 class SummarizationStoreViewModel(
     initializedFromShake: Boolean,
@@ -32,6 +34,7 @@ class SummarizationStoreViewModel(
     settings: SummarizationSettings,
     pageContentExtractor: PageContentExtractor,
     pageMetadataExtractor: PageMetadataExtractor,
+    errorReporter: ErrorReporter,
 ) : ViewModel() {
     val store = SummarizationStore(
         initialState = SummarizationState.Inert(initializedFromShake),
@@ -42,6 +45,7 @@ class SummarizationStoreViewModel(
                 llmProvider = llmProvider,
                 pageContentExtractor = pageContentExtractor,
                 pageMetadataExtractor = pageMetadataExtractor,
+                errorReporter = errorReporter,
                 scope = viewModelScope,
             ),
         ),
@@ -56,6 +60,7 @@ class SummarizationStoreViewModel(
          * @param settings the SummarizationSettings.
          * @param pageContentExtractor an extractor for page content.
          * @param pageMetadataExtractor an extractor for page metadata.
+         * @param errorReporter reports caught exceptions to the crash reporting service.
          */
         fun factory(
             initializedFromShake: Boolean,
@@ -63,6 +68,7 @@ class SummarizationStoreViewModel(
             settings: SummarizationSettings,
             pageContentExtractor: PageContentExtractor,
             pageMetadataExtractor: PageMetadataExtractor,
+            errorReporter: ErrorReporter,
         ) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -72,6 +78,7 @@ class SummarizationStoreViewModel(
                     settings = settings,
                     pageContentExtractor = pageContentExtractor,
                     pageMetadataExtractor = pageMetadataExtractor,
+                    errorReporter = errorReporter,
                 ) as T
             }
         }

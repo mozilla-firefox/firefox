@@ -20,10 +20,20 @@ import mozilla.components.feature.summarize.settings.SummarizationSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import kotlin.time.Duration.Companion.seconds
 
 class SummarizationStoreTest {
+
+    private val reportedErrors = mutableListOf<Throwable>()
+    private val errorReporter = ErrorReporter { reportedErrors.add(it) }
+    private val noopReporter = ErrorReporter { }
+
+    @Before
+    fun setUp() {
+        reportedErrors.clear()
+    }
 
     @Test
     fun `test that we can consent to shake`() = runTest {
@@ -39,6 +49,7 @@ class SummarizationStoreTest {
                     llmProvider = provider,
                     pageContentExtractor = { Result.success("") },
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf(), "")) },
+                    errorReporter = noopReporter,
                     scope = backgroundScope,
                 ),
             ),
@@ -81,6 +92,7 @@ class SummarizationStoreTest {
                     llmProvider = FakeCloudProvider(llm = FakeLlm.successful),
                     pageContentExtractor = { Result.success("") },
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf(), "")) },
+                    errorReporter = noopReporter,
                     scope = backgroundScope,
                 ),
             ),
@@ -122,6 +134,7 @@ class SummarizationStoreTest {
                     settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
                     pageContentExtractor = { Result.success(content) },
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf("Article"), "en")) },
+                    errorReporter = noopReporter,
                     scope = backgroundScope,
                 ),
             ),
@@ -162,6 +175,7 @@ class SummarizationStoreTest {
                     settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
                     pageContentExtractor = { Result.failure(failureThrowable) },
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf(), "")) },
+                    errorReporter = errorReporter,
                     scope = backgroundScope,
                 ),
             ),
@@ -183,6 +197,7 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
+        assertEquals(listOf(failureThrowable), reportedErrors)
     }
 
     @Test
@@ -199,6 +214,7 @@ class SummarizationStoreTest {
                     llmProvider = provider,
                     pageContentExtractor = { Result.success(content) },
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf("Recipe"), "en")) },
+                    errorReporter = noopReporter,
                     scope = backgroundScope,
                 ),
             ),
@@ -240,6 +256,7 @@ class SummarizationStoreTest {
                     llmProvider = provider,
                     pageContentExtractor = { Result.success(content) },
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf("Recipe"), "es")) },
+                    errorReporter = noopReporter,
                     scope = backgroundScope,
                 ),
             ),
@@ -281,6 +298,7 @@ class SummarizationStoreTest {
                     llmProvider = provider,
                     pageContentExtractor = { Result.success(content) },
                     pageMetadataExtractor = { Result.failure(IllegalStateException()) },
+                    errorReporter = noopReporter,
                     scope = backgroundScope,
                 ),
             ),

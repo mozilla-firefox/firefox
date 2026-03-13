@@ -78,6 +78,7 @@ class SummarizationMiddleware(
     private val llmProvider: CloudLlmProvider,
     private val pageContentExtractor: PageContentExtractor,
     private val pageMetadataExtractor: PageMetadataExtractor,
+    private val errorReporter: ErrorReporter,
     private val scope: CoroutineScope,
 ) : Middleware<SummarizationState, SummarizationAction> {
     override fun invoke(
@@ -105,6 +106,9 @@ class SummarizationMiddleware(
             }
             is LlmProviderAction.ProviderInitialized -> scope.launch {
                 observePrompt(store, action.llm)
+            }
+            is SummarizationFailed -> scope.launch {
+                errorReporter.report(action.throwable)
             }
         }
 
