@@ -21,7 +21,7 @@ autoexamples = false
 autotests = false
 autobenches = false
 description = "High performance Rust implementation of a JPEG XL decoder - SIMD support code"
-readme = "README.md"
+readme = "../README.md"
 keywords = [
     "jpeg-xl",
     "simd",
@@ -29,7 +29,6 @@ keywords = [
 categories = ["multimedia::images"]
 license = "BSD-3-Clause"
 repository = "https://github.com/libjxl/jxl-rs"
-resolver = "2"
 
 [features]
 all-simd = [
@@ -49,11 +48,9 @@ path = "src/lib.rs"
 
 [dependencies]
 
-[dev-dependencies.arbtest]
-version = "0.3.2"
-
-[dev-dependencies.paste]
-version = "1.0.15"
+[dev-dependencies]
+arbtest = "0.3.2"
+paste = "1.0.15"
 
 [lints.clippy]
 missing_safety_doc = "deny"

@@ -20,37 +20,28 @@ mod extend;
 mod run_stage;
 mod save;
 
-/// A RenderPipeline that waits for all input of a pass to be ready before doing any rendering, and
+/// A RenderPipeline that waits for all input to be ready before doing any rendering, and
 /// prioritizes simplicity over memory usage and computational efficiency.
 /// Eventually meant to be used only for verification purposes.
 pub struct SimpleRenderPipeline {
     shared: RenderPipelineShared<Image<f64>>,
     input_buffers: Vec<Image<f64>>,
-    completed_passes: usize,
 }
 
 impl SimpleRenderPipeline {
     #[instrument(skip_all, err)]
     fn do_render(&mut self, buffer_splitter: &mut BufferSplitter) -> Result<()> {
-        let ready_passes = self
+        let ready = self
             .shared
-            .group_chan_ready_passes
+            .group_chan_complete
             .iter()
             .flat_map(|x| x.iter())
-            .copied()
-            .min()
-            .unwrap();
-        if ready_passes <= self.completed_passes {
-            debug!(
-                "no more ready passes ({} completed, {ready_passes} ready)",
-                self.completed_passes
-            );
+            .all(|x| *x);
+        if !ready {
+            debug!("not yet ready");
             return Ok(());
         }
-        debug!(
-            "new ready passes ({} completed, {ready_passes} ready)",
-            self.completed_passes
-        );
+        debug!("ready to render");
 
         let mut current_buffers = clone_images(&self.input_buffers)?;
 
@@ -129,7 +120,6 @@ impl SimpleRenderPipeline {
             current_buffers = output_buffers;
         }
 
-        self.completed_passes = ready_passes;
         Ok(())
     }
 }
@@ -154,7 +144,6 @@ impl RenderPipeline for SimpleRenderPipeline {
         Ok(Self {
             shared,
             input_buffers,
-            completed_passes: 0,
         })
     }
 
@@ -168,7 +157,7 @@ impl RenderPipeline for SimpleRenderPipeline {
         &mut self,
         channel: usize,
         group_id: usize,
-        num_passes: usize,
+        complete: bool,
         buf: Image<T>,
         buffer_splitter: &mut BufferSplitter,
     ) -> Result<()> {
@@ -178,22 +167,24 @@ impl RenderPipeline for SimpleRenderPipeline {
             channel,
             T::DATA_TYPE_ID,
         );
-        let sz = self.shared.group_size_for_channel(channel, T::DATA_TYPE_ID);
-        let goffset = self.shared.group_offset(group_id);
-        let ChannelInfo { ty, downsample } = self.shared.channel_info[0][channel];
-        let off = (goffset.0 >> downsample.0, goffset.1 >> downsample.1);
-        debug!(?sz, input_buffers_sz=?self.input_buffers[channel].size(), offset=?off, ?downsample, ?goffset);
-        let ty = ty.unwrap();
-        assert_eq!(ty, T::DATA_TYPE_ID);
-        let total_sz = self.input_buffers[channel].size();
-        for y in 0..sz.1.min(total_sz.1 - off.1) {
-            let row_in = buf.row(y);
-            let row_out = self.input_buffers[channel].row_mut(y + off.1);
-            for x in 0..sz.0.min(total_sz.0 - off.0) {
-                row_out[x + off.0] = row_in[x].to_f64();
+        if self.shared.channel_is_used[channel] {
+            let sz = self.shared.group_size_for_channel(channel, T::DATA_TYPE_ID);
+            let goffset = self.shared.group_offset(group_id);
+            let ChannelInfo { ty, downsample } = self.shared.channel_info[0][channel];
+            let off = (goffset.0 >> downsample.0, goffset.1 >> downsample.1);
+            debug!(?sz, input_buffers_sz=?self.input_buffers[channel].size(), offset=?off, ?downsample, ?goffset);
+            let ty = ty.unwrap();
+            assert_eq!(ty, T::DATA_TYPE_ID);
+            let total_sz = self.input_buffers[channel].size();
+            for y in 0..sz.1.min(total_sz.1 - off.1) {
+                let row_in = buf.row(y);
+                let row_out = self.input_buffers[channel].row_mut(y + off.1);
+                for x in 0..sz.0.min(total_sz.0 - off.0) {
+                    row_out[x + off.0] = row_in[x].to_f64();
+                }
             }
+            self.shared.group_chan_complete[group_id][channel] = complete;
         }
-        self.shared.group_chan_ready_passes[group_id][channel] += num_passes;
 
         self.do_render(buffer_splitter)
     }
@@ -208,6 +199,8 @@ impl RenderPipeline for SimpleRenderPipeline {
         Ok(())
     }
 
+    fn mark_group_to_rerender(&mut self, _g: usize) {}
+
     fn box_inout_stage<S: RenderPipelineInOutStage>(
         stage: S,
     ) -> Box<dyn super::RunInOutStage<Self::Buffer>> {
@@ -218,5 +211,9 @@ impl RenderPipeline for SimpleRenderPipeline {
         stage: S,
     ) -> Box<dyn super::RunInPlaceStage<Self::Buffer>> {
         Box::new(stage)
+    }
+
+    fn used_channel_mask(&self) -> &[bool] {
+        &self.shared.channel_is_used
     }
 }

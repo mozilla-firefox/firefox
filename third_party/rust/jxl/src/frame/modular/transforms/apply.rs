@@ -56,40 +56,44 @@ pub enum TransformStep {
 #[derive(Debug)]
 pub struct TransformStepChunk {
     pub(super) step: TransformStep,
+
     // Grid position this transform should produce.
     // Note that this is a lie for Palette with AverageAll or Weighted, as the transform with
     // position (0, y) will produce the entire row of blocks (*, y) (and there will be no
     // transforms with position (x, y) with x > 0).
     pub(super) grid_pos: (usize, usize),
-    // Number of inputs that are not yet available.
-    pub(super) incomplete_deps: usize,
+
+    // List of (buffer, grid) that this transform depends on.
+    pub(in super::super) deps: Vec<(usize, usize)>,
+
+    // Processing layer that this transform belongs to. Layer 0 are transforms
+    // that only depend on coded channels, layer 1 are transforms that only
+    // depend on coded channels and layer 0 outputs, etc. Since transforms
+    // in the same layer have no inter-dependencies, they can be run at the
+    // same time.
+    pub(in super::super) layer: usize,
 }
 
 impl TransformStepChunk {
-    // Marks that one dependency of this transform is ready, and potentially runs the transform,
-    // returning the new buffers that are now ready.
-    #[instrument(level = "trace", skip_all)]
-    pub fn dep_ready(
-        &mut self,
-        frame_header: &FrameHeader,
-        buffers: &mut [ModularBufferInfo],
-    ) -> Result<Vec<(usize, usize)>> {
-        self.incomplete_deps = self.incomplete_deps.checked_sub(1).unwrap();
-        if self.incomplete_deps > 0 {
-            trace!(
-                "skipping transform chunk because incomplete_deps = {}",
-                self.incomplete_deps
-            );
-            return Ok(vec![]);
-        }
-        let buf_out: &[usize] = match &self.step {
+    fn buf_out(&self) -> &[usize] {
+        match &self.step {
             TransformStep::Rct { buf_out, .. } => buf_out,
             TransformStep::Palette { buf_out, .. } => buf_out,
             TransformStep::HSqueeze { buf_out, .. } | TransformStep::VSqueeze { buf_out, .. } => {
-                &[*buf_out]
+                std::slice::from_ref(buf_out)
             }
-        };
+        }
+    }
 
+    // Runs this transform. This function *will* crash if the transform is not ready.
+    #[instrument(level = "trace", skip_all)]
+    pub fn do_run(
+        &self,
+        frame_header: &FrameHeader,
+        buffers: &[ModularBufferInfo],
+        is_final: bool,
+    ) -> Result<()> {
+        let buf_out = self.buf_out();
         let out_grid_kind = buffers[buf_out[0]].grid_kind;
         let out_grid = buffers[buf_out[0]].get_grid_idx(out_grid_kind, self.grid_pos);
         let out_size = buffers[buf_out[0]].info.size;
@@ -112,13 +116,12 @@ impl TransformStepChunk {
                     // If not, creates buffers in the output that are a copy of the input buffers.
                     // This should be rare.
                     *buffers[buf_out[i]].buffer_grid[out_grid].data.borrow_mut() =
-                        Some(buffers[buf_in[i]].buffer_grid[out_grid].get_buffer()?);
+                        Some(buffers[buf_in[i]].buffer_grid[out_grid].get_buffer(is_final)?);
                 }
-                with_buffers(buffers, buf_out, out_grid, false, |mut bufs| {
+                with_buffers(buffers, buf_out, out_grid, |mut bufs| {
                     super::rct::do_rct_step(&mut bufs, *op, *perm);
                     Ok(())
                 })?;
-                Ok(buf_out.iter().map(|x| (*x, out_grid)).collect())
             }
             TransformStep::Palette {
                 buf_in,
@@ -127,10 +130,9 @@ impl TransformStepChunk {
                 ..
             } if buffers[*buf_in].info.size.0 == 0 => {
                 // Nothing to do, just bookkeeping.
-                buffers[*buf_in].buffer_grid[out_grid].mark_used();
-                buffers[*buf_pal].buffer_grid[0].mark_used();
-                with_buffers(buffers, buf_out, out_grid, false, |_| Ok(()))?;
-                Ok(buf_out.iter().map(|x| (*x, out_grid)).collect())
+                buffers[*buf_in].buffer_grid[out_grid].mark_used(is_final);
+                buffers[*buf_pal].buffer_grid[0].mark_used(is_final);
+                with_buffers(buffers, buf_out, out_grid, |_| Ok(()))?;
             }
             TransformStep::Palette {
                 buf_in,
@@ -155,7 +157,7 @@ impl TransformStepChunk {
                         });
                     // Ensure that the output buffers are present.
                     // TODO(szabadka): Extend the callback to support many grid points.
-                    with_buffers(buffers, buf_out, out_grid, false, |_| Ok(()))?;
+                    with_buffers(buffers, buf_out, out_grid, |_| Ok(()))?;
                     let grid_shape = buffers[buf_out[0]].grid_shape;
                     let grid_x = out_grid % grid_shape.0;
                     let grid_y = out_grid / grid_shape.0;
@@ -191,9 +193,8 @@ impl TransformStepChunk {
                         *predictor,
                     );
                 }
-                buffers[*buf_in].buffer_grid[out_grid].mark_used();
-                buffers[*buf_pal].buffer_grid[0].mark_used();
-                Ok(buf_out.iter().map(|x| (*x, out_grid)).collect())
+                buffers[*buf_in].buffer_grid[out_grid].mark_used(is_final);
+                buffers[*buf_pal].buffer_grid[0].mark_used(is_final);
             }
             TransformStep::Palette {
                 buf_in,
@@ -206,7 +207,6 @@ impl TransformStepChunk {
             } => {
                 assert_eq!(out_grid_kind, buffers[*buf_in].grid_kind);
                 assert_eq!(out_size, buffers[*buf_in].info.size);
-                let mut generated_chunks = Vec::<(usize, usize)>::new();
                 let grid_shape = buffers[buf_out[0]].grid_shape;
                 {
                     assert_eq!(out_grid % grid_shape.0, 0);
@@ -222,7 +222,7 @@ impl TransformStepChunk {
                         ));
                         // Ensure that the output buffers are present.
                         // TODO(szabadka): Extend the callback to support many grid points.
-                        with_buffers(buffers, buf_out, out_grid + grid_x, false, |_| Ok(()))?;
+                        with_buffers(buffers, buf_out, out_grid + grid_x, |_| Ok(()))?;
                     }
                     let in_buf_refs: Vec<&ModularChannel> =
                         in_bufs.iter().map(|x| x.deref()).collect();
@@ -256,14 +256,10 @@ impl TransformStepChunk {
                         wp_header,
                     )?;
                 }
-                buffers[*buf_pal].buffer_grid[0].mark_used();
+                buffers[*buf_pal].buffer_grid[0].mark_used(is_final);
                 for grid_x in 0..grid_shape.0 {
-                    buffers[*buf_in].buffer_grid[out_grid + grid_x].mark_used();
-                    for buf in buf_out {
-                        generated_chunks.push((*buf, out_grid + grid_x));
-                    }
+                    buffers[*buf_in].buffer_grid[out_grid + grid_x].mark_used(is_final);
                 }
-                Ok(generated_chunks)
             }
             TransformStep::HSqueeze { buf_in, buf_out } => {
                 let buf_avg = &buffers[buf_in[0]];
@@ -309,7 +305,7 @@ impl TransformStepChunk {
                         ))
                     };
 
-                    with_buffers(buffers, &[*buf_out], out_grid, false, |mut bufs| {
+                    with_buffers(buffers, &[*buf_out], out_grid, |mut bufs| {
                         super::squeeze::do_hsqueeze_step(
                             &in_avg.data.get_rect(buf_avg.get_grid_rect(
                                 frame_header,
@@ -328,9 +324,8 @@ impl TransformStepChunk {
                         Ok(())
                     })?;
                 }
-                buffers[buf_in[0]].buffer_grid[in_grid].mark_used();
-                buffers[buf_in[1]].buffer_grid[res_grid].mark_used();
-                Ok(vec![(*buf_out, out_grid)])
+                buffers[buf_in[0]].buffer_grid[in_grid].mark_used(is_final);
+                buffers[buf_in[1]].buffer_grid[res_grid].mark_used(is_final);
             }
             TransformStep::VSqueeze { buf_in, buf_out } => {
                 let buf_avg = &buffers[buf_in[0]];
@@ -379,7 +374,7 @@ impl TransformStepChunk {
                         buf_avg.get_grid_rect(frame_header, out_grid_kind, (gx, gy));
                     let res_grid_rect =
                         buf_res.get_grid_rect(frame_header, out_grid_kind, (gx, gy));
-                    with_buffers(buffers, &[*buf_out], out_grid, false, |mut bufs| {
+                    with_buffers(buffers, &[*buf_out], out_grid, |mut bufs| {
                         super::squeeze::do_vsqueeze_step(
                             &in_avg.data.get_rect(avg_grid_rect),
                             &in_res.data.get_rect(res_grid_rect),
@@ -390,11 +385,34 @@ impl TransformStepChunk {
                         Ok(())
                     })?;
                 }
-                buffers[buf_in[0]].buffer_grid[in_grid].mark_used();
-                buffers[buf_in[1]].buffer_grid[res_grid].mark_used();
-                Ok(vec![(*buf_out, out_grid)])
+                buffers[buf_in[0]].buffer_grid[in_grid].mark_used(is_final);
+                buffers[buf_in[1]].buffer_grid[res_grid].mark_used(is_final);
             }
-        }
+        };
+
+        Ok(())
+    }
+
+    // Iterates over the list of outputs for this transform.
+    pub fn outputs(&self, buffers: &[ModularBufferInfo]) -> impl Iterator<Item = (usize, usize)> {
+        let buf_out = self.buf_out();
+        let out_grid_kind = buffers[buf_out[0]].grid_kind;
+        let out_grid = buffers[buf_out[0]].get_grid_idx(out_grid_kind, self.grid_pos);
+        let grid_offset_up = match &self.step {
+            TransformStep::Palette {
+                buf_in,
+                buf_out,
+                predictor,
+                ..
+            } if buffers[*buf_in].info.size.0 != 0 && predictor.requires_full_row() => {
+                buffers[buf_out[0]].grid_shape.0
+            }
+            _ => 1,
+        };
+
+        buf_out
+            .iter()
+            .flat_map(move |x| (0..grid_offset_up).map(move |y| (*x, out_grid + y)))
     }
 }
 
@@ -445,7 +463,7 @@ fn meta_apply_single_transform(
             for i in 0..3 {
                 let c = &mut channels[begin_channel + i];
                 let mut info = c.1;
-                info.output_channel_idx = -1;
+                info.output_channel_idx = None;
                 c.0 = add_transform_buffer(
                     info,
                     format!(
@@ -503,7 +521,7 @@ fn meta_apply_single_transform(
                         ((w, h.div_ceil(2)), (w, h - h.div_ceil(2)))
                     };
                     let new_0 = ChannelInfo {
-                        output_channel_idx: -1,
+                        output_channel_idx: None,
                         shift: new_shift,
                         size: new_size_0,
                         bit_depth: chan.bit_depth,
@@ -513,7 +531,7 @@ fn meta_apply_single_transform(
                         format!("Squeezed channel, original channel {}", begin_channel + ic),
                     );
                     let new_1 = ChannelInfo {
-                        output_channel_idx: -1,
+                        output_channel_idx: None,
                         shift: new_shift,
                         size: new_size_1,
                         bit_depth: chan.bit_depth,
@@ -551,7 +569,7 @@ fn meta_apply_single_transform(
             // equal in the line above.
             let bit_depth = channels[begin_channel].1.bit_depth;
             let pchan_info = ChannelInfo {
-                output_channel_idx: -1,
+                output_channel_idx: None,
                 shift: None,
                 size: (num_colors + num_deltas, num_channels),
                 bit_depth,
@@ -564,7 +582,7 @@ fn meta_apply_single_transform(
                 ),
             );
             let mut inchan_info = channels[begin_channel].1;
-            inchan_info.output_channel_idx = -1;
+            inchan_info.output_channel_idx = None;
             let inchan = add_transform_buffer(
                 inchan_info,
                 format!(

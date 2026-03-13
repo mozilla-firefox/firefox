@@ -33,13 +33,15 @@ impl RowBuffer {
         data_type: DataTypeTag,
         next_y_border: usize,
         y_shift: usize,
+        x_shift: usize,
         row_len: usize,
     ) -> Result<Self> {
         let num_rows = (1 << y_shift) + 2 * next_y_border;
         let num_rows = num_rows.next_power_of_two();
         // Input offset is at *one* cacheline, and we need up to *two* cachelines on the other
         // side as the data might exceed xsize slightly.
-        let row_stride = (row_len * data_type.size()).div_ceil(CACHE_LINE_BYTE_SIZE) + 3;
+        let row_stride =
+            (row_len * data_type.size()).div_ceil(CACHE_LINE_BYTE_SIZE) + (3 << x_shift);
         let mut buffer = Vec::<CacheLine>::new();
         buffer.try_reserve_exact(row_stride * num_rows)?;
         buffer.resize(row_stride * num_rows, CacheLine::default());
@@ -54,13 +56,15 @@ impl RowBuffer {
     /// Creates a new row buffer with a single row filled with a repeating pattern.
     /// Used for constant values like opaque alpha.
     pub fn new_filled(data_type: DataTypeTag, row_len: usize, fill_pattern: &[u8]) -> Result<Self> {
-        let mut result = Self::new(data_type, 0, 0, row_len)?;
+        let mut result = Self::new(data_type, 0, 0, 0, row_len)?;
         let row_bytes: &mut [u8] = result.get_row_mut(0);
-        let start = Self::x0_offset::<u8>();
-        let end = start + row_len * fill_pattern.len();
-        for (i, byte) in row_bytes[start..end].iter_mut().enumerate() {
+
+        // Fill the *entire* allocated row, including the padding on both sides,
+        // so cross-group border sampling doesn't read zeros (transparent alpha).
+        for (i, byte) in row_bytes.iter_mut().enumerate() {
             *byte = fill_pattern[i % fill_pattern.len()];
         }
+
         Ok(result)
     }
 

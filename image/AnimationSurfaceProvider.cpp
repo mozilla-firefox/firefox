@@ -14,6 +14,10 @@
 #include "DecodePool.h"
 #include "Decoder.h"
 
+#ifdef MOZ_JXL
+#  include "decoders/nsJXLDecoder.h"
+#endif
+
 using namespace mozilla::gfx;
 using namespace mozilla::layers;
 
@@ -103,8 +107,25 @@ void AnimationSurfaceProvider::Reset() {
     // blending code and simplify this quite a bit -- just always pop the next
     // full frame and timeout off the stack.
     if (mDecoder) {
+#ifdef MOZ_JXL
+      Vector<JxlFrameInfo> scannedFrames;
+      bool isJXL = mDecoder->GetType() == DecoderType::JXL;
+      if (isJXL) {
+        auto* jxlDecoder = static_cast<nsJXLDecoder*>(mDecoder.get());
+        // OOM here is acceptable: the decoder will re-scan from scratch.
+        (void)scannedFrames.appendAll(jxlDecoder->ScannedFrames());
+      }
+#endif
+
       mDecoder = DecoderFactory::CloneAnimationDecoder(mDecoder);
       MOZ_ASSERT(mDecoder);
+
+#ifdef MOZ_JXL
+      if (isJXL && !scannedFrames.empty()) {
+        auto* jxlDecoder = static_cast<nsJXLDecoder*>(mDecoder.get());
+        jxlDecoder->TransferScannedFrames(std::move(scannedFrames));
+      }
+#endif
 
       MutexAutoLock lock2(mFramesMutex);
       restartDecoder = mFrames->Reset();
@@ -476,8 +497,33 @@ void AnimationSurfaceProvider::FinishDecoding() {
   }
 
   if (recreateDecoder) {
+#ifdef MOZ_JXL
+    Vector<JxlFrameInfo> scannedFrames;
+    uint32_t seekTarget = 0;
+    bool isJXL = mDecoder->GetType() == DecoderType::JXL;
+    if (isJXL) {
+      auto* jxlDecoder = static_cast<nsJXLDecoder*>(mDecoder.get());
+      // OOM here is acceptable: the decoder will re-scan from scratch.
+      (void)scannedFrames.appendAll(jxlDecoder->ScannedFrames());
+
+      MutexAutoLock lock(mFramesMutex);
+      MOZ_ASSERT(mFrames->MayDiscard());
+      auto* discardingQueue =
+          static_cast<AnimationFrameDiscardingQueue*>(mFrames.get());
+      seekTarget = static_cast<uint32_t>(discardingQueue->PendingInsert());
+    }
+#endif
+
     mDecoder = DecoderFactory::CloneAnimationDecoder(mDecoder);
     MOZ_ASSERT(mDecoder);
+
+#ifdef MOZ_JXL
+    if (isJXL && !scannedFrames.empty()) {
+      auto* jxlDecoder = static_cast<nsJXLDecoder*>(mDecoder.get());
+      jxlDecoder->TransferScannedFrames(std::move(scannedFrames));
+      jxlDecoder->SetSeekTargetFrame(seekTarget);
+    }
+#endif
   } else {
     mDecoder = nullptr;
   }

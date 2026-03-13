@@ -53,6 +53,33 @@ impl HybridUint {
         })
     }
 
+    /// Returns true if this config matches the 420 pattern (common in e3 images):
+    /// split_exponent=4, msb_in_token=2, lsb_in_token=0
+    #[inline(always)]
+    pub fn is_config_420(&self) -> bool {
+        self.split_exponent == 4
+            && self.split_token == 16
+            && self.msb_in_token == 2
+            && self.lsb_in_token == 0
+    }
+
+    /// Specialized fast path for 420 config:
+    /// split_exponent=4, msb_in_token=2, lsb_in_token=0
+    #[inline(always)]
+    pub fn read_config_420(symbol: u32, br: &mut BitReader) -> u32 {
+        if symbol < 16 {
+            return symbol;
+        }
+
+        // Equivalent to: 2 + ((symbol - 16) >> 2)
+        let nbits = (symbol >> 2) - 2;
+        let nbits = nbits & 31;
+        let bits = br.read_optimistic(nbits as usize) as u32;
+        let hi = (symbol & 3) | 4;
+
+        (hi << nbits) | bits
+    }
+
     #[inline]
     pub fn read(&self, symbol: u32, br: &mut BitReader) -> u32 {
         if symbol < self.split_token {

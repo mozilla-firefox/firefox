@@ -15,6 +15,11 @@ const RLE_MARKER_SYM: u16 = LOG_SUM_PROBS as u16 + 1;
 
 #[derive(Debug)]
 struct AnsHistogram {
+    // Safety invariant:
+    // - log_bucket_size <= LOG_SUM_PROBS
+    // - buckets.len() = 2^(LOG_SUM_PROBS - log_bucket_size)
+    // This relationship ensures that for any ANS state (12 bits), the bucket index
+    // computed as (state & 0xfff) >> log_bucket_size is always < buckets.len()
     buckets: Vec<Bucket>,
     log_bucket_size: usize,
     bucket_mask: u32,
@@ -265,7 +270,7 @@ impl AnsHistogram {
         debug_assert!((5..=8).contains(&log_alpha_size));
         let table_size = (1u16 << log_alpha_size) as usize;
         // 4 <= log_bucket_size <= 7
-        let log_bucket_size = LOG_SUM_PROBS - log_alpha_size;
+        let log_bucket_size = LOG_SUM_PROBS.checked_sub(log_alpha_size).unwrap();
         let bucket_size = 1u16 << log_bucket_size;
         let bucket_mask = bucket_size as u32 - 1;
 
@@ -281,10 +286,9 @@ impl AnsHistogram {
         } else {
             Self::decode_dist_complex(br, &mut dist)?
         };
-
-        if let Some(single_sym_idx) = dist.iter().position(|&d| d == SUM_PROBS) {
-            let buckets = dist
-                .into_iter()
+        let single_symbol = dist.iter().position(|&d| d == SUM_PROBS).map(|x| x as u32);
+        let buckets = if let Some(single_sym_idx) = single_symbol {
+            dist.into_iter()
                 .enumerate()
                 .map(|(i, dist)| Bucket {
                     dist,
@@ -293,20 +297,19 @@ impl AnsHistogram {
                     alias_cutoff: 0,
                     alias_dist_xor: dist ^ SUM_PROBS,
                 })
-                .collect();
-            return Ok(Self {
-                buckets,
-                log_bucket_size,
-                bucket_mask,
-                single_symbol: Some(single_sym_idx as u32),
-            });
-        }
+                .collect()
+        } else {
+            Self::build_alias_map(alphabet_size, log_bucket_size, &dist)
+        };
 
+        assert_eq!(buckets.len(), 1 << (LOG_SUM_PROBS - log_bucket_size));
+        // Safety note: log_bucket_size <= LOG_SUM_PROBS by construction, and we
+        // just checked that buckets.len() = 2^(LOG_SUM_PROBS - log_bucket_size)
         Ok(Self {
-            buckets: Self::build_alias_map(alphabet_size, log_bucket_size, &dist),
+            buckets,
             log_bucket_size,
             bucket_mask,
-            single_symbol: None,
+            single_symbol,
         })
     }
 
@@ -356,7 +359,19 @@ impl AnsHistogram {
         let pos = idx & self.bucket_mask;
 
         debug_assert!(self.buckets.len().is_power_of_two());
-        let bucket = self.buckets[i & (self.buckets.len() - 1)];
+        debug_assert!(
+            i < self.buckets.len(),
+            "bucket index {} out of bounds (len = {})",
+            i,
+            self.buckets.len()
+        );
+        // SAFETY: The struct-level safety invariant (see AnsHistogram::buckets) ensures that
+        // buckets.len() = 2^(LOG_SUM_PROBS - log_bucket_size). Since idx = state & 0xfff
+        // (12 bits) and i = idx >> log_bucket_size, we have i < buckets.len() always.
+        #[allow(unsafe_code)]
+        let bucket = unsafe { *self.buckets.get_unchecked(i) };
+        // Safe version: (~3% slower for e2 lossless decoding)
+        // let bucket = self.buckets[i & (self.buckets.len() - 1)];
         let alias_symbol = bucket.alias_symbol as u32;
         let alias_cutoff = bucket.alias_cutoff as u32;
         let dist = bucket.dist as u32;

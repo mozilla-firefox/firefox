@@ -3,6 +3,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+use std::sync::Arc;
+
 use crate::{
     BLOCK_DIM, MIN_SIGMA,
     features::epf::SigmaSource,
@@ -10,6 +12,7 @@ use crate::{
         Channels, ChannelsMut, RenderPipelineInOutStage,
         stages::epf::common::{get_sigma, prepare_sad_mul_storage},
     },
+    util::AtomicRefCell,
 };
 
 use jxl_simd::{F32SimdVec, SimdMask, simd_function};
@@ -21,7 +24,7 @@ pub struct Epf1Stage {
     /// (inverse) multiplier for sigma on borders
     border_sad_mul: f32,
     channel_scale: [f32; 3],
-    sigma: SigmaSource,
+    sigma: Arc<AtomicRefCell<SigmaSource>>,
 }
 
 impl std::fmt::Display for Epf1Stage {
@@ -39,7 +42,7 @@ impl Epf1Stage {
         sigma_scale: f32,
         border_sad_mul: f32,
         channel_scale: [f32; 3],
-        sigma: SigmaSource,
+        sigma: Arc<AtomicRefCell<SigmaSource>>,
     ) -> Self {
         Self {
             sigma,
@@ -64,7 +67,8 @@ fn epf1_process_row_chunk(
     assert_eq!(input_rows.len(), 3);
     assert_eq!(output_rows.len(), 3);
 
-    let row_sigma = stage.sigma.row(ypos / BLOCK_DIM);
+    let sigma = stage.sigma.borrow();
+    let row_sigma = sigma.row(ypos / BLOCK_DIM);
 
     let sm = stage.sigma_scale * 1.65;
     let bsm = sm * stage.border_sad_mul;
@@ -74,7 +78,8 @@ fn epf1_process_row_chunk(
         let sigma = get_sigma(d, x + xpos, row_sigma);
         let sad_mul = D::F32Vec::load(d, &sad_mul_storage[x % 8..]);
 
-        if D::F32Vec::splat(d, MIN_SIGMA).gt(sigma).all() {
+        let sigma_mask = D::F32Vec::splat(d, MIN_SIGMA).gt(sigma);
+        if sigma_mask.all() {
             for (input_c, output_c) in input_rows.iter().zip(output_rows.iter_mut()) {
                 D::F32Vec::load(d, &input_c[2][2 + x..]).store(&mut output_c[0][x..]);
             }
@@ -140,7 +145,10 @@ fn epf1_process_row_chunk(
             ] {
                 out = D::F32Vec::load(d, &input_c[row_idx][col_idx..]).mul_add(sads[sad_idx], out);
             }
-            (out * inv_w).store(&mut output_c[0][x..]);
+            out *= inv_w;
+            let p22 = D::F32Vec::load(d, &input_c[2][2 + x..]);
+            let out = sigma_mask.if_then_else_f32(p22, out);
+            out.store(&mut output_c[0][x..]);
         }
     }
 });

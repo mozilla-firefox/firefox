@@ -86,7 +86,7 @@ impl ModularChannelDecoder for NoWpTree {
             &self.references,
             &mut self.property_buffer,
         );
-        let dec = reader.read_signed(histograms, br, prediction_result.context as usize);
+        let dec = reader.read_signed_clustered(histograms, br, prediction_result.context as usize);
         make_pixel(dec, prediction_result.multiplier, prediction_result.guess)
     }
 }
@@ -140,7 +140,7 @@ impl ModularChannelDecoder for GeneralTree {
             &self.no_wp_tree.references,
             &mut self.no_wp_tree.property_buffer,
         );
-        let dec = reader.read_signed(histograms, br, prediction_result.context as usize);
+        let dec = reader.read_signed_clustered(histograms, br, prediction_result.context as usize);
         let val = make_pixel(dec, prediction_result.multiplier, prediction_result.guess);
         self.wp_state.update_errors(val, pos, xsize);
         val
@@ -152,12 +152,7 @@ const LUT_MIN_SPLITVAL: i32 = -1024;
 const LUT_TABLE_SIZE: usize = (LUT_MAX_SPLITVAL - LUT_MIN_SPLITVAL + 1) as usize;
 const _: () = assert!(LUT_TABLE_SIZE.is_power_of_two());
 
-pub struct WpOnlyLookup {
-    lut: [u8; LUT_TABLE_SIZE], // Lookup (wp value -> *clustered* context id)
-    wp_state: WeightedPredictorState,
-}
-
-fn make_lut(tree: &[TreeNode], histograms: &Histograms) -> Option<[u8; LUT_TABLE_SIZE]> {
+fn make_lut(tree: &[TreeNode]) -> Option<[u8; LUT_TABLE_SIZE]> {
     struct RangeAndNode {
         range: Range<i32>,
         node: u32,
@@ -198,8 +193,7 @@ fn make_lut(tree: &[TreeNode], histograms: &Histograms) -> Option<[u8; LUT_TABLE
                 }
                 let start = range.start - LUT_MIN_SPLITVAL;
                 let end = range.end - LUT_MIN_SPLITVAL;
-                ans[start as usize..end as usize]
-                    .fill(histograms.map_context_to_cluster(id as usize) as u8);
+                ans[start as usize..end as usize].fill(id as u8);
             }
         }
     }
@@ -207,20 +201,30 @@ fn make_lut(tree: &[TreeNode], histograms: &Histograms) -> Option<[u8; LUT_TABLE
     Some(ans)
 }
 
-impl WpOnlyLookup {
+/// Specialized WpOnlyLookup for when all HybridUint configs are 420
+/// This allows using the fast-path entropy decoder
+pub struct WpOnlyLookupConfig420 {
+    lut: [u8; LUT_TABLE_SIZE],
+    wp_state: WeightedPredictorState,
+}
+
+impl WpOnlyLookupConfig420 {
     fn new(
         tree: &[TreeNode],
         histograms: &Histograms,
         header: &GroupHeader,
         xsize: usize,
     ) -> Option<Self> {
+        if !histograms.can_use_config_420_fast_path() {
+            return None;
+        }
         let wp_state = WeightedPredictorState::new(&header.wp_header, xsize);
-        let lut = make_lut(tree, histograms)?;
+        let lut = make_lut(tree)?;
         Some(Self { lut, wp_state })
     }
 }
 
-impl ModularChannelDecoder for WpOnlyLookup {
+impl ModularChannelDecoder for WpOnlyLookupConfig420 {
     const NEEDS_TOP: bool = true;
     const NEEDS_TOPTOP: bool = true;
 
@@ -243,25 +247,30 @@ impl ModularChannelDecoder for WpOnlyLookup {
             .predict_and_property(pos, xsize, &prediction_data);
         let ctx = self.lut[(property as i64 - LUT_MIN_SPLITVAL as i64)
             .clamp(0, LUT_TABLE_SIZE as i64 - 1) as usize];
-        let dec = reader.read_signed_clustered(histograms, br, ctx as usize);
+        // Use the specialized 420 fast path
+        let dec = reader.read_signed_clustered_config_420(histograms, br, ctx as usize);
         let val = dec.wrapping_add(wp_pred as i32);
         self.wp_state.update_errors(val, pos, xsize);
         val
     }
 }
 
-/// Fast path for trees that split only on property 9 (gradient: left + top - topleft)
-/// with Gradient predictor, offset=0, multiplier=1.
-/// Maps property 9 values directly to cluster IDs via a LUT.
-/// This targets libjxl effort 2 encoding.
-pub struct GradientLookup {
-    lut: [u8; LUT_TABLE_SIZE],
-}
-
 /// Property 9 is the "gradient property": left + top - topleft
 const GRADIENT_PROPERTY: u8 = 9;
 
-fn make_gradient_lut(tree: &[TreeNode], histograms: &Histograms) -> Option<GradientLookup> {
+/// Config 420 specialized version of gradient lookup for trees that split only on property 9.
+/// This uses the specialized entropy decoder for config 420 + no LZ77.
+pub struct GradientLookupConfig420 {
+    lut: [u8; LUT_TABLE_SIZE],
+}
+
+fn make_gradient_lut_config_420(
+    tree: &[TreeNode],
+    histograms: &Histograms,
+) -> Option<GradientLookupConfig420> {
+    if !histograms.can_use_config_420_fast_path() {
+        return None;
+    }
     // Verify all splits are on property 9 and all leaves have Gradient predictor
     for node in tree {
         match node {
@@ -278,12 +287,11 @@ fn make_gradient_lut(tree: &[TreeNode], histograms: &Histograms) -> Option<Gradi
         }
     }
 
-    // Use existing make_lut which handles offset=0, multiplier=1 checks
-    let lut = make_lut(tree, histograms)?;
-    Some(GradientLookup { lut })
+    let lut = make_lut(tree)?;
+    Some(GradientLookupConfig420 { lut })
 }
 
-impl ModularChannelDecoder for GradientLookup {
+impl ModularChannelDecoder for GradientLookupConfig420 {
     const NEEDS_TOP: bool = true;
     const NEEDS_TOPTOP: bool = false;
 
@@ -314,13 +322,14 @@ impl ModularChannelDecoder for GradientLookup {
             prediction_data.topleft as i64,
         );
 
-        let dec = reader.read_signed_clustered(histograms, br, cluster as usize);
+        // Use the specialized config 420 fast path
+        let dec = reader.read_signed_clustered_config_420(histograms, br, cluster as usize);
         dec.wrapping_add(pred as i32)
     }
 }
 
 pub struct SingleGradientOnly {
-    ctx: usize,
+    clustered_ctx: usize,
 }
 
 impl ModularChannelDecoder for SingleGradientOnly {
@@ -340,16 +349,42 @@ impl ModularChannelDecoder for SingleGradientOnly {
         histograms: &Histograms,
     ) -> i32 {
         let pred = Predictor::Gradient.predict_one(prediction_data, 0);
-        let dec = reader.read_signed(histograms, br, self.ctx);
+        let dec = reader.read_signed_clustered_inline(histograms, br, self.clustered_ctx);
         make_pixel(dec, 1, pred)
+    }
+}
+
+pub struct NoTree {
+    clustered_ctx: usize,
+}
+
+impl ModularChannelDecoder for NoTree {
+    const NEEDS_TOP: bool = false;
+    const NEEDS_TOPTOP: bool = false;
+
+    fn init_row(&mut self, _: &mut [&mut ModularChannel], _: usize, _: usize) {}
+
+    #[inline(always)]
+    fn decode_one(
+        &mut self,
+        _: PredictionData,
+        _: (usize, usize),
+        _: usize,
+        reader: &mut SymbolReader,
+        br: &mut BitReader,
+        histograms: &Histograms,
+    ) -> i32 {
+        let dec = reader.read_signed_clustered_inline(histograms, br, self.clustered_ctx);
+        make_pixel(dec, 1, 0)
     }
 }
 
 #[allow(clippy::large_enum_variant)]
 pub enum TreeSpecialCase {
+    NoTree(NoTree),
     NoWp(NoWpTree),
-    WpOnly(WpOnlyLookup),
-    GradientLookup(GradientLookup),
+    WpOnlyConfig420(WpOnlyLookupConfig420),
+    GradientLookupConfig420(GradientLookupConfig420),
     SingleGradientOnly(SingleGradientOnly),
     General(GeneralTree),
 }
@@ -372,9 +407,10 @@ pub fn specialize_tree(
     let mut uses_non_wp = false;
 
     // Obtain a pruned tree without nodes that are not relevant in the current channel and stream.
-    // Proceed in BFS order, so that we know that the children of  anode will be adjacent.
+    // Proceed in BFS order, so that we know that the children of a node will be adjacent.
+    // Also re-maps context IDs to cluster IDs.
     while let Some(v) = queue.pop_front() {
-        let node = tree.nodes[v as usize];
+        let mut node = tree.nodes[v as usize];
         match node {
             TreeNode::Split {
                 property,
@@ -409,9 +445,27 @@ pub fn specialize_tree(
             TreeNode::Leaf { predictor, .. } => {
                 uses_wp |= predictor == Predictor::Weighted;
                 uses_non_wp |= predictor != Predictor::Weighted;
+                let TreeNode::Leaf { id, .. } = &mut node else {
+                    unreachable!()
+                };
+                *id = tree.histograms.map_context_to_cluster(*id as usize) as u32;
                 pruned_tree.push(node);
             }
         }
+    }
+
+    if let [
+        TreeNode::Leaf {
+            predictor: Predictor::Zero,
+            multiplier: 1,
+            offset: 0,
+            id,
+        },
+    ] = &*pruned_tree
+    {
+        return Ok(TreeSpecialCase::NoTree(NoTree {
+            clustered_ctx: *id as usize,
+        }));
     }
 
     if let [
@@ -424,20 +478,23 @@ pub fn specialize_tree(
     ] = &*pruned_tree
     {
         return Ok(TreeSpecialCase::SingleGradientOnly(SingleGradientOnly {
-            ctx: *id as usize,
+            clustered_ctx: *id as usize,
         }));
     }
 
-    if !uses_non_wp
-        && let Some(wp) = WpOnlyLookup::new(&pruned_tree, &tree.histograms, header, xsize)
-    {
-        return Ok(TreeSpecialCase::WpOnly(wp));
+    if !uses_non_wp {
+        // Try the specialized 420 config version (fast path for effort 3 encoded images)
+        if let Some(wp) = WpOnlyLookupConfig420::new(&pruned_tree, &tree.histograms, header, xsize)
+        {
+            return Ok(TreeSpecialCase::WpOnlyConfig420(wp));
+        }
     }
 
-    // Try gradient LUT for non-WP trees (targets effort 2 encoding)
+    // Non-WP trees (includes effort 2 encoding and some groups in effort > 3)
     if !uses_wp {
-        if let Some(gl) = make_gradient_lut(&pruned_tree, &tree.histograms) {
-            return Ok(TreeSpecialCase::GradientLookup(gl));
+        // Try config 420 specialized gradient LUT version (fast path for effort 2 encoded images)
+        if let Some(gl) = make_gradient_lut_config_420(&pruned_tree, &tree.histograms) {
+            return Ok(TreeSpecialCase::GradientLookupConfig420(gl));
         }
         return Ok(TreeSpecialCase::NoWp(NoWpTree::new(
             pruned_tree,

@@ -12,7 +12,11 @@ use crate::{
 };
 
 pub const NON_ZERO_BUCKETS: usize = 37;
+
+// Supremum of zero_density_context(x, y) + 1, when x + y <= 64.
 pub const ZERO_DENSITY_CONTEXT_COUNT: usize = 458;
+// Supremum of zero_density_context(x, y) + 1.
+pub const ZERO_DENSITY_CONTEXT_LIMIT: usize = 474;
 
 pub const COEFF_FREQ_CONTEXT: [usize; 64] = [
     0xBAD, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19,
@@ -27,7 +31,7 @@ pub const COEFF_NUM_NONZERO_CONTEXT: [usize; 64] = [
     206, 206, 206, 206, 206, 206,
 ];
 
-#[inline]
+#[inline(always)]
 pub fn zero_density_context(
     nonzeros_left: usize,
     k: usize,

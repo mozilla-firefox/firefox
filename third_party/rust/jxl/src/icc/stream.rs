@@ -25,7 +25,7 @@ fn read_varint(mut read_one: impl FnMut() -> Result<u8>) -> Result<u64> {
     Ok(value)
 }
 
-pub(super) fn read_varint_from_reader(stream: &mut impl Read) -> Result<u64> {
+pub(crate) fn read_varint_from_reader(stream: &mut impl Read) -> Result<u64> {
     read_varint(|| stream.read_u8().map_err(|_| Error::IccEndOfStream))
 }
 

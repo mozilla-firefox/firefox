@@ -5,7 +5,7 @@
 
 use crate::{U32SimdVec, impl_f32_array_interface};
 
-use super::super::{F32SimdVec, I32SimdVec, SimdDescriptor, SimdMask};
+use super::super::{F32SimdVec, I32SimdVec, SimdDescriptor, SimdMask, U8SimdVec, U16SimdVec};
 use std::{
     arch::x86_64::*,
     mem::MaybeUninit,
@@ -31,6 +31,8 @@ impl SimdDescriptor for Sse42Descriptor {
     type F32Vec = F32VecSse42;
     type I32Vec = I32VecSse42;
     type U32Vec = U32VecSse42;
+    type U16Vec = U16VecSse42;
+    type U8Vec = U8VecSse42;
     type Mask = MaskSse42;
     type Bf16Table8 = Bf16Table8Sse42;
 
@@ -131,7 +133,7 @@ unsafe impl F32SimdVec for F32VecSse42 {
             let hi = _mm_unpackhi_ps(a, b);
             // SAFETY: `dest` has enough space and writing to `MaybeUninit<f32>` through `*mut f32` is valid.
             unsafe {
-                let dest_ptr = dest.as_mut_ptr() as *mut f32;
+                let dest_ptr = dest.as_mut_ptr().cast::<f32>();
                 _mm_storeu_ps(dest_ptr, lo);
                 _mm_storeu_ps(dest_ptr.add(4), hi);
             }
@@ -184,7 +186,7 @@ unsafe impl F32SimdVec for F32VecSse42 {
             // Store the results
             // SAFETY: `dest` has enough space and writing to `MaybeUninit<f32>` through `*mut f32` is valid.
             unsafe {
-                let dest_ptr = dest.as_mut_ptr() as *mut f32;
+                let dest_ptr = dest.as_mut_ptr().cast::<f32>();
                 _mm_storeu_ps(dest_ptr, out0);
                 _mm_storeu_ps(dest_ptr.add(4), out1);
                 _mm_storeu_ps(dest_ptr.add(8), out2);
@@ -227,7 +229,7 @@ unsafe impl F32SimdVec for F32VecSse42 {
 
             // SAFETY: `dest` has enough space and writing to `MaybeUninit<f32>` through `*mut f32` is valid.
             unsafe {
-                let dest_ptr = dest.as_mut_ptr() as *mut f32;
+                let dest_ptr = dest.as_mut_ptr().cast::<f32>();
                 _mm_storeu_ps(dest_ptr, out0);
                 _mm_storeu_ps(dest_ptr.add(4), out1);
                 _mm_storeu_ps(dest_ptr.add(8), out2);
@@ -575,10 +577,15 @@ unsafe impl F32SimdVec for F32VecSse42 {
             let u16s = _mm_packus_epi32(i32s, i32s);
             let u8s = _mm_packus_epi16(u16s, u16s);
             // Store lower 4 bytes
-            // SAFETY: we checked dest has enough space
+            let val = _mm_cvtsi128_si32(u8s);
+            let bytes = val.to_ne_bytes();
+            // SAFETY:
+            // 1. `src` (bytes.as_ptr()) is valid for 4 bytes as it is a local [u8; 4].
+            // 2. `dst` (dest.as_mut_ptr()) is valid for 4 bytes because dest.len() >= 4.
+            // 3. `src` and `dst` are properly aligned for u8 (alignment 1).
+            // 4. `src` and `dst` do not overlap as `src` is a local stack array.
             unsafe {
-                let ptr = dest.as_mut_ptr() as *mut i32;
-                *ptr = _mm_cvtsi128_si32(u8s);
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), dest.as_mut_ptr().cast::<u8>(), 4);
             }
         }
         // SAFETY: sse4.2 is available from the safety invariant on the descriptor.
@@ -598,9 +605,15 @@ unsafe impl F32SimdVec for F32VecSse42 {
             // Pack i32 -> u16 (use same vector twice, take lower half)
             let u16s = _mm_packus_epi32(i32s, i32s);
             // Store lower 8 bytes (4 u16s)
-            // SAFETY: we checked dest has enough space
+            let val = _mm_cvtsi128_si64(u16s);
+            let bytes = val.to_ne_bytes();
+            // SAFETY:
+            // 1. `src` (bytes.as_ptr()) is valid for 8 bytes as it is a local [u8; 8].
+            // 2. `dst` (dest.as_mut_ptr()) is valid for 8 bytes because dest.len() >= 4 and each element is 2 bytes.
+            // 3. `src` and `dst` are properly aligned for u8 (alignment 1).
+            // 4. `src` and `dst` do not overlap as `src` is a local stack array.
             unsafe {
-                _mm_storel_epi64(dest.as_mut_ptr() as *mut __m128i, u16s);
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), dest.as_mut_ptr().cast::<u8>(), 8);
             }
         }
         // SAFETY: sse4.2 is available from the safety invariant on the descriptor.
@@ -732,7 +745,7 @@ impl I32SimdVec for I32VecSse42 {
         assert!(mem.len() >= Self::LEN);
         // SAFETY: we just checked that `mem` has enough space. Moreover, we know sse4.2 is available
         // from the safety invariant on `d`.
-        Self(unsafe { _mm_loadu_si128(mem.as_ptr() as *const _) }, d)
+        Self(unsafe { _mm_loadu_si128(mem.as_ptr().cast()) }, d)
     }
 
     #[inline(always)]
@@ -820,16 +833,49 @@ impl I32SimdVec for I32VecSse42 {
         #[inline]
         fn store_u16_impl(v: __m128i, dest: &mut [u16]) {
             assert!(dest.len() >= I32VecSse42::LEN);
-            // Use scalar loop since _mm_packs_epi32 would saturate incorrectly for unsigned values
-            let mut tmp = [0i32; 4];
-            // SAFETY: tmp has 4 elements, matching LEN
-            unsafe { _mm_storeu_si128(tmp.as_mut_ptr() as *mut __m128i, v) };
-            for i in 0..4 {
-                dest[i] = tmp[i] as u16;
+            // Truncate i32 -> u16 using shuffle
+            let shuffle_mask =
+                _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1);
+            let u16s = _mm_shuffle_epi8(v, shuffle_mask);
+            let val = _mm_cvtsi128_si64(u16s);
+            let bytes = val.to_ne_bytes();
+            // SAFETY:
+            // 1. `src` (bytes.as_ptr()) is valid for 8 bytes as it is a local [u8; 8].
+            // 2. `dst` (dest.as_mut_ptr()) is valid for 8 bytes because dest.len() >= 4 and each element is 2 bytes.
+            // 3. `src` and `dst` are properly aligned for u8 (alignment 1).
+            // 4. `src` and `dst` do not overlap as `src` is a local stack array.
+            unsafe {
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), dest.as_mut_ptr().cast::<u8>(), 8);
             }
         }
         // SAFETY: sse4.2 is available from the safety invariant on the descriptor.
         unsafe { store_u16_impl(self.0, dest) }
+    }
+
+    #[inline(always)]
+    fn store_u8(self, dest: &mut [u8]) {
+        #[target_feature(enable = "sse4.2")]
+        #[inline]
+        fn store_u8_impl(v: __m128i, dest: &mut [u8]) {
+            assert!(dest.len() >= I32VecSse42::LEN);
+            // Truncate i32 -> u8 using shuffle
+            let shuffle_mask =
+                _mm_setr_epi8(0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+            let u8s = _mm_shuffle_epi8(v, shuffle_mask);
+            // Store lower 4 bytes
+            let val = _mm_cvtsi128_si32(u8s);
+            let bytes = val.to_ne_bytes();
+            // SAFETY:
+            // 1. `src` (bytes.as_ptr()) is valid for 4 bytes as it is a local [u8; 4].
+            // 2. `dst` (dest.as_mut_ptr()) is valid for 4 bytes because dest.len() >= 4.
+            // 3. `src` and `dst` are properly aligned for u8 (alignment 1).
+            // 4. `src` and `dst` do not overlap as `src` is a local stack array.
+            unsafe {
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), dest.as_mut_ptr().cast::<u8>(), 4);
+            }
+        }
+        // SAFETY: sse4.2 is available from the safety invariant on the descriptor.
+        unsafe { store_u8_impl(self.0, dest) }
     }
 }
 
@@ -936,6 +982,312 @@ impl U32SimdVec for U32VecSse42 {
     fn shr<const AMOUNT_U: u32, const AMOUNT_I: i32>(self) -> Self {
         // SAFETY: We know sse2 is available from the safety invariant on `self.1`.
         unsafe { Self(_mm_srli_epi32::<AMOUNT_I>(self.0), self.1) }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
+pub struct U8VecSse42(__m128i, Sse42Descriptor);
+
+// SAFETY: The methods in this implementation that write to `MaybeUninit` (store_interleaved_*)
+// ensure that they write valid data to the output slice without reading uninitialized memory.
+unsafe impl U8SimdVec for U8VecSse42 {
+    type Descriptor = Sse42Descriptor;
+    const LEN: usize = 16;
+
+    #[inline(always)]
+    fn load(d: Self::Descriptor, mem: &[u8]) -> Self {
+        assert!(mem.len() >= Self::LEN);
+        // SAFETY: we just checked that `mem` has enough space. Moreover, we know sse4.2 is available
+        // from the safety invariant on `d`.
+        unsafe { Self(_mm_loadu_si128(mem.as_ptr().cast()), d) }
+    }
+
+    #[inline(always)]
+    fn splat(d: Self::Descriptor, v: u8) -> Self {
+        // SAFETY: We know sse4.2 is available from the safety invariant on `d`.
+        unsafe { Self(_mm_set1_epi8(v as i8), d) }
+    }
+
+    #[inline(always)]
+    fn store(&self, mem: &mut [u8]) {
+        assert!(mem.len() >= Self::LEN);
+        // SAFETY: we just checked that `mem` has enough space. Moreover, we know sse4.2 is available
+        // from the safety invariant on `self.1`.
+        unsafe { _mm_storeu_si128(mem.as_mut_ptr().cast(), self.0) }
+    }
+
+    #[inline(always)]
+    fn store_interleaved_2_uninit(a: Self, b: Self, dest: &mut [MaybeUninit<u8>]) {
+        #[target_feature(enable = "sse4.2")]
+        #[inline]
+        fn store_interleaved_2_impl(a: __m128i, b: __m128i, dest: &mut [MaybeUninit<u8>]) {
+            assert!(dest.len() >= 2 * U8VecSse42::LEN);
+            let lo = _mm_unpacklo_epi8(a, b);
+            let hi = _mm_unpackhi_epi8(a, b);
+            // SAFETY: `dest` has enough space and writing to `MaybeUninit<u8>` through `*mut __m128i` is valid.
+            unsafe {
+                let dest_ptr = dest.as_mut_ptr().cast::<__m128i>();
+                _mm_storeu_si128(dest_ptr, lo);
+                _mm_storeu_si128(dest_ptr.add(1), hi);
+            }
+        }
+        // SAFETY: sse4.2 is available from the safety invariant on the descriptor.
+        unsafe { store_interleaved_2_impl(a.0, b.0, dest) }
+    }
+
+    #[inline(always)]
+    fn store_interleaved_3_uninit(a: Self, b: Self, c: Self, dest: &mut [MaybeUninit<u8>]) {
+        #[target_feature(enable = "sse4.2")]
+        #[inline]
+        fn store_interleaved_3_impl(
+            a: __m128i,
+            b: __m128i,
+            c: __m128i,
+            dest: &mut [MaybeUninit<u8>],
+        ) {
+            assert!(dest.len() >= 3 * U8VecSse42::LEN);
+
+            // Masks for out0
+            let mask_a0 = _mm_setr_epi8(0, -1, -1, 1, -1, -1, 2, -1, -1, 3, -1, -1, 4, -1, -1, 5);
+            let mask_b0 = _mm_setr_epi8(-1, 0, -1, -1, 1, -1, -1, 2, -1, -1, 3, -1, -1, 4, -1, -1);
+            let mask_c0 = _mm_setr_epi8(-1, -1, 0, -1, -1, 1, -1, -1, 2, -1, -1, 3, -1, -1, 4, -1);
+
+            // Masks for out1
+            let mask_a1 = _mm_setr_epi8(-1, -1, 6, -1, -1, 7, -1, -1, 8, -1, -1, 9, -1, -1, 10, -1);
+            let mask_b1 = _mm_setr_epi8(5, -1, -1, 6, -1, -1, 7, -1, -1, 8, -1, -1, 9, -1, -1, 10);
+            let mask_c1 = _mm_setr_epi8(-1, 5, -1, -1, 6, -1, -1, 7, -1, -1, 8, -1, -1, 9, -1, -1);
+
+            // Masks for out2
+            let mask_a2 = _mm_setr_epi8(
+                -1, 11, -1, -1, 12, -1, -1, 13, -1, -1, 14, -1, -1, 15, -1, -1,
+            );
+            let mask_b2 = _mm_setr_epi8(
+                -1, -1, 11, -1, -1, 12, -1, -1, 13, -1, -1, 14, -1, -1, 15, -1,
+            );
+            let mask_c2 = _mm_setr_epi8(
+                10, -1, -1, 11, -1, -1, 12, -1, -1, 13, -1, -1, 14, -1, -1, 15,
+            );
+
+            let out0 = _mm_or_si128(
+                _mm_or_si128(_mm_shuffle_epi8(a, mask_a0), _mm_shuffle_epi8(b, mask_b0)),
+                _mm_shuffle_epi8(c, mask_c0),
+            );
+            let out1 = _mm_or_si128(
+                _mm_or_si128(_mm_shuffle_epi8(a, mask_a1), _mm_shuffle_epi8(b, mask_b1)),
+                _mm_shuffle_epi8(c, mask_c1),
+            );
+            let out2 = _mm_or_si128(
+                _mm_or_si128(_mm_shuffle_epi8(a, mask_a2), _mm_shuffle_epi8(b, mask_b2)),
+                _mm_shuffle_epi8(c, mask_c2),
+            );
+
+            // SAFETY: `dest` has enough space and writing to `MaybeUninit<u8>` through `*mut __m128i` is valid.
+            unsafe {
+                let ptr = dest.as_mut_ptr().cast::<__m128i>();
+                _mm_storeu_si128(ptr, out0);
+                _mm_storeu_si128(ptr.add(1), out1);
+                _mm_storeu_si128(ptr.add(2), out2);
+            }
+        }
+        // SAFETY: sse4.2 is available from the safety invariant on the descriptor.
+        unsafe { store_interleaved_3_impl(a.0, b.0, c.0, dest) }
+    }
+
+    #[inline(always)]
+    fn store_interleaved_4_uninit(
+        a: Self,
+        b: Self,
+        c: Self,
+        d: Self,
+        dest: &mut [MaybeUninit<u8>],
+    ) {
+        #[target_feature(enable = "sse4.2")]
+        #[inline]
+        fn store_interleaved_4_impl(
+            a: __m128i,
+            b: __m128i,
+            c: __m128i,
+            d: __m128i,
+            dest: &mut [MaybeUninit<u8>],
+        ) {
+            assert!(dest.len() >= 4 * U8VecSse42::LEN);
+            // First interleave pairs: ab and cd
+            let ab_lo = _mm_unpacklo_epi8(a, b);
+            let ab_hi = _mm_unpackhi_epi8(a, b);
+            let cd_lo = _mm_unpacklo_epi8(c, d);
+            let cd_hi = _mm_unpackhi_epi8(c, d);
+
+            // Then interleave the pairs to get final layout
+            let out0 = _mm_unpacklo_epi16(ab_lo, cd_lo);
+            let out1 = _mm_unpackhi_epi16(ab_lo, cd_lo);
+            let out2 = _mm_unpacklo_epi16(ab_hi, cd_hi);
+            let out3 = _mm_unpackhi_epi16(ab_hi, cd_hi);
+
+            // SAFETY: `dest` has enough space and writing to `MaybeUninit<u8>` through `*mut __m128i` is valid.
+            unsafe {
+                let dest_ptr = dest.as_mut_ptr().cast::<__m128i>();
+                _mm_storeu_si128(dest_ptr, out0);
+                _mm_storeu_si128(dest_ptr.add(1), out1);
+                _mm_storeu_si128(dest_ptr.add(2), out2);
+                _mm_storeu_si128(dest_ptr.add(3), out3);
+            }
+        }
+        // SAFETY: sse4.2 is available from the safety invariant on the descriptor.
+        unsafe { store_interleaved_4_impl(a.0, b.0, c.0, d.0, dest) }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
+pub struct U16VecSse42(__m128i, Sse42Descriptor);
+
+// SAFETY: The methods in this implementation that write to `MaybeUninit` (store_interleaved_*)
+// ensure that they write valid data to the output slice without reading uninitialized memory.
+unsafe impl U16SimdVec for U16VecSse42 {
+    type Descriptor = Sse42Descriptor;
+    const LEN: usize = 8;
+
+    #[inline(always)]
+    fn load(d: Self::Descriptor, mem: &[u16]) -> Self {
+        assert!(mem.len() >= Self::LEN);
+        // SAFETY: we just checked that `mem` has enough space. Moreover, we know sse4.2 is available
+        // from the safety invariant on `d`.
+        unsafe { Self(_mm_loadu_si128(mem.as_ptr().cast()), d) }
+    }
+
+    #[inline(always)]
+    fn splat(d: Self::Descriptor, v: u16) -> Self {
+        // SAFETY: We know sse4.2 is available from the safety invariant on `d`.
+        unsafe { Self(_mm_set1_epi16(v as i16), d) }
+    }
+
+    #[inline(always)]
+    fn store(&self, mem: &mut [u16]) {
+        assert!(mem.len() >= Self::LEN);
+        // SAFETY: we just checked that `mem` has enough space. Moreover, we know sse4.2 is available
+        // from the safety invariant on `self.1`.
+        unsafe { _mm_storeu_si128(mem.as_mut_ptr().cast(), self.0) }
+    }
+
+    #[inline(always)]
+    fn store_interleaved_2_uninit(a: Self, b: Self, dest: &mut [MaybeUninit<u16>]) {
+        #[target_feature(enable = "sse4.2")]
+        #[inline]
+        fn store_interleaved_2_impl(a: __m128i, b: __m128i, dest: &mut [MaybeUninit<u16>]) {
+            assert!(dest.len() >= 2 * U16VecSse42::LEN);
+            let lo = _mm_unpacklo_epi16(a, b);
+            let hi = _mm_unpackhi_epi16(a, b);
+            // SAFETY: `dest` has enough space and writing to `MaybeUninit<u16>` through `*mut __m128i` is valid.
+            unsafe {
+                let dest_ptr = dest.as_mut_ptr().cast::<__m128i>();
+                _mm_storeu_si128(dest_ptr, lo);
+                _mm_storeu_si128(dest_ptr.add(1), hi);
+            }
+        }
+        // SAFETY: sse4.2 is available from the safety invariant on the descriptor.
+        unsafe { store_interleaved_2_impl(a.0, b.0, dest) }
+    }
+
+    #[inline(always)]
+    fn store_interleaved_3_uninit(a: Self, b: Self, c: Self, dest: &mut [MaybeUninit<u16>]) {
+        #[target_feature(enable = "sse4.2")]
+        #[inline]
+        fn store_interleaved_3_impl(
+            a: __m128i,
+            b: __m128i,
+            c: __m128i,
+            dest: &mut [MaybeUninit<u16>],
+        ) {
+            assert!(dest.len() >= 3 * U16VecSse42::LEN);
+
+            // Masks for out0
+            let mask_a0 = _mm_setr_epi8(0, 1, -1, -1, -1, -1, 2, 3, -1, -1, -1, -1, 4, 5, -1, -1);
+            let mask_b0 = _mm_setr_epi8(-1, -1, 0, 1, -1, -1, -1, -1, 2, 3, -1, -1, -1, -1, 4, 5);
+            let mask_c0 = _mm_setr_epi8(-1, -1, -1, -1, 0, 1, -1, -1, -1, -1, 2, 3, -1, -1, -1, -1);
+
+            // Masks for out1
+            let mask_a1 = _mm_setr_epi8(-1, -1, 6, 7, -1, -1, -1, -1, 8, 9, -1, -1, -1, -1, 10, 11);
+            let mask_b1 = _mm_setr_epi8(-1, -1, -1, -1, 6, 7, -1, -1, -1, -1, 8, 9, -1, -1, -1, -1);
+            let mask_c1 = _mm_setr_epi8(4, 5, -1, -1, -1, -1, 6, 7, -1, -1, -1, -1, 8, 9, -1, -1);
+
+            // Masks for out2
+            let mask_a2 = _mm_setr_epi8(
+                -1, -1, -1, -1, 12, 13, -1, -1, -1, -1, 14, 15, -1, -1, -1, -1,
+            );
+            let mask_b2 = _mm_setr_epi8(
+                10, 11, -1, -1, -1, -1, 12, 13, -1, -1, -1, -1, 14, 15, -1, -1,
+            );
+            let mask_c2 = _mm_setr_epi8(
+                -1, -1, 10, 11, -1, -1, -1, -1, 12, 13, -1, -1, -1, -1, 14, 15,
+            );
+
+            let out0 = _mm_or_si128(
+                _mm_or_si128(_mm_shuffle_epi8(a, mask_a0), _mm_shuffle_epi8(b, mask_b0)),
+                _mm_shuffle_epi8(c, mask_c0),
+            );
+            let out1 = _mm_or_si128(
+                _mm_or_si128(_mm_shuffle_epi8(a, mask_a1), _mm_shuffle_epi8(b, mask_b1)),
+                _mm_shuffle_epi8(c, mask_c1),
+            );
+            let out2 = _mm_or_si128(
+                _mm_or_si128(_mm_shuffle_epi8(a, mask_a2), _mm_shuffle_epi8(b, mask_b2)),
+                _mm_shuffle_epi8(c, mask_c2),
+            );
+
+            // SAFETY: `dest` has enough space and writing to `MaybeUninit<u16>` through `*mut __m128i` is valid.
+            unsafe {
+                let ptr = dest.as_mut_ptr().cast::<__m128i>();
+                _mm_storeu_si128(ptr, out0);
+                _mm_storeu_si128(ptr.add(1), out1);
+                _mm_storeu_si128(ptr.add(2), out2);
+            }
+        }
+        // SAFETY: sse4.2 is available from the safety invariant on the descriptor.
+        unsafe { store_interleaved_3_impl(a.0, b.0, c.0, dest) }
+    }
+
+    #[inline(always)]
+    fn store_interleaved_4_uninit(
+        a: Self,
+        b: Self,
+        c: Self,
+        d: Self,
+        dest: &mut [MaybeUninit<u16>],
+    ) {
+        #[target_feature(enable = "sse4.2")]
+        #[inline]
+        fn store_interleaved_4_impl(
+            a: __m128i,
+            b: __m128i,
+            c: __m128i,
+            d: __m128i,
+            dest: &mut [MaybeUninit<u16>],
+        ) {
+            assert!(dest.len() >= 4 * U16VecSse42::LEN);
+            // First interleave pairs: ab and cd
+            let ab_lo = _mm_unpacklo_epi16(a, b);
+            let ab_hi = _mm_unpackhi_epi16(a, b);
+            let cd_lo = _mm_unpacklo_epi16(c, d);
+            let cd_hi = _mm_unpackhi_epi16(c, d);
+
+            // Then interleave the pairs to get final layout
+            let out0 = _mm_unpacklo_epi32(ab_lo, cd_lo);
+            let out1 = _mm_unpackhi_epi32(ab_lo, cd_lo);
+            let out2 = _mm_unpacklo_epi32(ab_hi, cd_hi);
+            let out3 = _mm_unpackhi_epi32(ab_hi, cd_hi);
+
+            // SAFETY: `dest` has enough space and writing to `MaybeUninit<u16>` through `*mut __m128i` is valid.
+            unsafe {
+                let dest_ptr = dest.as_mut_ptr().cast::<__m128i>();
+                _mm_storeu_si128(dest_ptr, out0);
+                _mm_storeu_si128(dest_ptr.add(1), out1);
+                _mm_storeu_si128(dest_ptr.add(2), out2);
+                _mm_storeu_si128(dest_ptr.add(3), out3);
+            }
+        }
+        // SAFETY: sse4.2 is available from the safety invariant on the descriptor.
+        unsafe { store_interleaved_4_impl(a.0, b.0, c.0, d.0, dest) }
     }
 }
 

@@ -12,6 +12,7 @@ mod inner;
 mod input;
 mod options;
 mod signature;
+mod xyb_constants;
 
 pub use crate::image::JxlOutputBuffer;
 pub use color::*;

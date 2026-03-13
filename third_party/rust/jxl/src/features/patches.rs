@@ -172,6 +172,13 @@ pub struct PatchesDictionary {
 }
 
 impl PatchesDictionary {
+    pub fn new(num_extra_channels: usize) -> Self {
+        Self {
+            blendings_stride: num_extra_channels + 1,
+            ..Default::default()
+        }
+    }
+
     #[cfg(test)]
     pub fn random<R: rand::Rng>(
         size: (usize, usize),

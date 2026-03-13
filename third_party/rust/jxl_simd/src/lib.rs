@@ -44,6 +44,10 @@ pub trait SimdDescriptor: Sized + Copy + Debug + Send + Sync {
 
     type U32Vec: U32SimdVec<Descriptor = Self>;
 
+    type U16Vec: U16SimdVec<Descriptor = Self>;
+
+    type U8Vec: U8SimdVec<Descriptor = Self>;
+
     type Mask: SimdMask<Descriptor = Self>;
 
     /// Prepared 8-entry BF16 lookup table for fast approximate lookups.
@@ -124,7 +128,7 @@ pub unsafe trait F32SimdVec:
         // SAFETY: f32 and MaybeUninit<f32> have the same layout.
         // We are writing to initialized memory, so treating it as uninit for writing is fine.
         let dest = unsafe {
-            std::slice::from_raw_parts_mut(dest.as_mut_ptr() as *mut MaybeUninit<f32>, dest.len())
+            std::slice::from_raw_parts_mut(dest.as_mut_ptr().cast::<MaybeUninit<f32>>(), dest.len())
         };
         Self::store_interleaved_2_uninit(a, b, dest);
     }
@@ -136,7 +140,7 @@ pub unsafe trait F32SimdVec:
         // SAFETY: f32 and MaybeUninit<f32> have the same layout.
         // We are writing to initialized memory, so treating it as uninit for writing is fine.
         let dest = unsafe {
-            std::slice::from_raw_parts_mut(dest.as_mut_ptr() as *mut MaybeUninit<f32>, dest.len())
+            std::slice::from_raw_parts_mut(dest.as_mut_ptr().cast::<MaybeUninit<f32>>(), dest.len())
         };
         Self::store_interleaved_3_uninit(a, b, c, dest);
     }
@@ -148,7 +152,7 @@ pub unsafe trait F32SimdVec:
         // SAFETY: f32 and MaybeUninit<f32> have the same layout.
         // We are writing to initialized memory, so treating it as uninit for writing is fine.
         let dest = unsafe {
-            std::slice::from_raw_parts_mut(dest.as_mut_ptr() as *mut MaybeUninit<f32>, dest.len())
+            std::slice::from_raw_parts_mut(dest.as_mut_ptr().cast::<MaybeUninit<f32>>(), dest.len())
         };
         Self::store_interleaved_4_uninit(a, b, c, d, dest);
     }
@@ -344,6 +348,10 @@ pub trait I32SimdVec:
     /// Stores the lower 16 bits of each i32 lane as u16 values.
     /// Requires `dest.len() >= Self::LEN` or it will panic.
     fn store_u16(self, dest: &mut [u16]);
+
+    /// Stores the lower 8 bits of each i32 lane as u8 values.
+    /// Requires `dest.len() >= Self::LEN` or it will panic.
+    fn store_u8(self, dest: &mut [u8]);
 }
 
 pub trait U32SimdVec: Sized + Copy + Debug + Send + Sync {
@@ -355,6 +363,150 @@ pub trait U32SimdVec: Sized + Copy + Debug + Send + Sync {
     fn bitcast_to_i32(self) -> <<Self as U32SimdVec>::Descriptor as SimdDescriptor>::I32Vec;
 
     fn shr<const AMOUNT_U: u32, const AMOUNT_I: i32>(self) -> Self;
+}
+
+/// # Safety
+///
+/// Implementors are required to respect the safety promises of the methods in this trait.
+/// Specifically, this applies to the store_*_uninit methods.
+pub unsafe trait U8SimdVec: Sized + Copy + Debug + Send + Sync {
+    type Descriptor: SimdDescriptor;
+
+    const LEN: usize;
+
+    fn load(d: Self::Descriptor, mem: &[u8]) -> Self;
+    fn splat(d: Self::Descriptor, v: u8) -> Self;
+    fn store(&self, mem: &mut [u8]);
+
+    /// Stores two vectors interleaved: [a0, b0, a1, b1, a2, b2, ...].
+    /// Requires `dest.len() >= 2 * Self::LEN` or it will panic.
+    #[inline(always)]
+    fn store_interleaved_2(a: Self, b: Self, dest: &mut [u8]) {
+        // SAFETY: u8 and MaybeUninit<u8> have the same layout.
+        // We are writing to initialized memory, so treating it as uninit for writing is fine.
+        let dest = unsafe {
+            std::slice::from_raw_parts_mut(dest.as_mut_ptr().cast::<MaybeUninit<u8>>(), dest.len())
+        };
+        Self::store_interleaved_2_uninit(a, b, dest);
+    }
+
+    /// Stores three vectors interleaved: [a0, b0, c0, a1, b1, c1, ...].
+    /// Requires `dest.len() >= 3 * Self::LEN` or it will panic.
+    #[inline(always)]
+    fn store_interleaved_3(a: Self, b: Self, c: Self, dest: &mut [u8]) {
+        // SAFETY: u8 and MaybeUninit<u8> have the same layout.
+        // We are writing to initialized memory, so treating it as uninit for writing is fine.
+        let dest = unsafe {
+            std::slice::from_raw_parts_mut(dest.as_mut_ptr().cast::<MaybeUninit<u8>>(), dest.len())
+        };
+        Self::store_interleaved_3_uninit(a, b, c, dest);
+    }
+
+    /// Stores four vectors interleaved: [a0, b0, c0, d0, a1, b1, c1, d1, ...].
+    /// Requires `dest.len() >= 4 * Self::LEN` or it will panic.
+    #[inline(always)]
+    fn store_interleaved_4(a: Self, b: Self, c: Self, d: Self, dest: &mut [u8]) {
+        // SAFETY: u8 and MaybeUninit<u8> have the same layout.
+        // We are writing to initialized memory, so treating it as uninit for writing is fine.
+        let dest = unsafe {
+            std::slice::from_raw_parts_mut(dest.as_mut_ptr().cast::<MaybeUninit<u8>>(), dest.len())
+        };
+        Self::store_interleaved_4_uninit(a, b, c, d, dest);
+    }
+
+    /// Stores two vectors interleaved: [a0, b0, a1, b1, a2, b2, ...].
+    /// Requires `dest.len() >= 2 * Self::LEN` or it will panic.
+    ///
+    /// Safety note:
+    /// Does not write uninitialized data into `dest`.
+    fn store_interleaved_2_uninit(a: Self, b: Self, dest: &mut [MaybeUninit<u8>]);
+
+    /// Stores three vectors interleaved: [a0, b0, c0, a1, b1, c1, ...].
+    /// Requires `dest.len() >= 3 * Self::LEN` or it will panic.
+    /// Safety note:
+    /// Does not write uninitialized data into `dest`.
+    fn store_interleaved_3_uninit(a: Self, b: Self, c: Self, dest: &mut [MaybeUninit<u8>]);
+
+    /// Stores four vectors interleaved: [a0, b0, c0, d0, a1, b1, c1, d1, ...].
+    /// Requires `dest.len() >= 4 * Self::LEN` or it will panic.
+    /// Safety note:
+    /// Does not write uninitialized data into `dest`.
+    fn store_interleaved_4_uninit(a: Self, b: Self, c: Self, d: Self, dest: &mut [MaybeUninit<u8>]);
+}
+
+/// # Safety
+///
+/// Implementors are required to respect the safety promises of the methods in this trait.
+/// Specifically, this applies to the store_*_uninit methods.
+pub unsafe trait U16SimdVec: Sized + Copy + Debug + Send + Sync {
+    type Descriptor: SimdDescriptor;
+
+    const LEN: usize;
+
+    fn load(d: Self::Descriptor, mem: &[u16]) -> Self;
+    fn splat(d: Self::Descriptor, v: u16) -> Self;
+    fn store(&self, mem: &mut [u16]);
+
+    /// Stores two vectors interleaved: [a0, b0, a1, b1, a2, b2, ...].
+    /// Requires `dest.len() >= 2 * Self::LEN` or it will panic.
+    #[inline(always)]
+    fn store_interleaved_2(a: Self, b: Self, dest: &mut [u16]) {
+        // SAFETY: u16 and MaybeUninit<u16> have the same layout.
+        // We are writing to initialized memory, so treating it as uninit for writing is fine.
+        let dest = unsafe {
+            std::slice::from_raw_parts_mut(dest.as_mut_ptr().cast::<MaybeUninit<u16>>(), dest.len())
+        };
+        Self::store_interleaved_2_uninit(a, b, dest);
+    }
+
+    /// Stores three vectors interleaved: [a0, b0, c0, a1, b1, c1, ...].
+    /// Requires `dest.len() >= 3 * Self::LEN` or it will panic.
+    #[inline(always)]
+    fn store_interleaved_3(a: Self, b: Self, c: Self, dest: &mut [u16]) {
+        // SAFETY: u16 and MaybeUninit<u16> have the same layout.
+        // We are writing to initialized memory, so treating it as uninit for writing is fine.
+        let dest = unsafe {
+            std::slice::from_raw_parts_mut(dest.as_mut_ptr().cast::<MaybeUninit<u16>>(), dest.len())
+        };
+        Self::store_interleaved_3_uninit(a, b, c, dest);
+    }
+
+    /// Stores four vectors interleaved: [a0, b0, c0, d0, a1, b1, c1, d1, ...].
+    /// Requires `dest.len() >= 4 * Self::LEN` or it will panic.
+    #[inline(always)]
+    fn store_interleaved_4(a: Self, b: Self, c: Self, d: Self, dest: &mut [u16]) {
+        // SAFETY: u16 and MaybeUninit<u16> have the same layout.
+        // We are writing to initialized memory, so treating it as uninit for writing is fine.
+        let dest = unsafe {
+            std::slice::from_raw_parts_mut(dest.as_mut_ptr().cast::<MaybeUninit<u16>>(), dest.len())
+        };
+        Self::store_interleaved_4_uninit(a, b, c, d, dest);
+    }
+
+    /// Stores two vectors interleaved: [a0, b0, a1, b1, a2, b2, ...].
+    /// Requires `dest.len() >= 2 * Self::LEN` or it will panic.
+    ///
+    /// Safety note:
+    /// Does not write uninitialized data into `dest`.
+    fn store_interleaved_2_uninit(a: Self, b: Self, dest: &mut [MaybeUninit<u16>]);
+
+    /// Stores three vectors interleaved: [a0, b0, c0, a1, b1, c1, ...].
+    /// Requires `dest.len() >= 3 * Self::LEN` or it will panic.
+    /// Safety note:
+    /// Does not write uninitialized data into `dest`.
+    fn store_interleaved_3_uninit(a: Self, b: Self, c: Self, dest: &mut [MaybeUninit<u16>]);
+
+    /// Stores four vectors interleaved: [a0, b0, c0, d0, a1, b1, c1, d1, ...].
+    /// Requires `dest.len() >= 4 * Self::LEN` or it will panic.
+    /// Safety note:
+    /// Does not write uninitialized data into `dest`.
+    fn store_interleaved_4_uninit(
+        a: Self,
+        b: Self,
+        c: Self,
+        d: Self,
+        dest: &mut [MaybeUninit<u16>],
+    );
 }
 
 #[macro_export]
@@ -436,7 +588,8 @@ mod test {
     use arbtest::arbitrary::Unstructured;
 
     use crate::{
-        F32SimdVec, I32SimdVec, ScalarDescriptor, SimdDescriptor, test_all_instruction_sets,
+        F32SimdVec, I32SimdVec, ScalarDescriptor, SimdDescriptor, U8SimdVec, U16SimdVec,
+        test_all_instruction_sets,
     };
 
     enum Distribution {
@@ -1215,4 +1368,160 @@ mod test {
         }
     }
     test_all_instruction_sets!(test_store_u16);
+
+    fn test_store_interleaved_2_u8<D: SimdDescriptor>(d: D) {
+        let len = D::U8Vec::LEN;
+        let a: Vec<u8> = (0..len).map(|i| i as u8).collect();
+        let b: Vec<u8> = (0..len).map(|i| (i + 100) as u8).collect();
+        let mut output = vec![0u8; 2 * len];
+
+        let a_vec = D::U8Vec::load(d, &a);
+        let b_vec = D::U8Vec::load(d, &b);
+        D::U8Vec::store_interleaved_2(a_vec, b_vec, &mut output);
+
+        for i in 0..len {
+            assert_eq!(output[2 * i], a[i]);
+            assert_eq!(output[2 * i + 1], b[i]);
+        }
+    }
+    test_all_instruction_sets!(test_store_interleaved_2_u8);
+
+    fn test_store_interleaved_3_u8<D: SimdDescriptor>(d: D) {
+        let len = D::U8Vec::LEN;
+        let a: Vec<u8> = (0..len).map(|i| i as u8).collect();
+        let b: Vec<u8> = (0..len).map(|i| (i + 100) as u8).collect();
+        let c: Vec<u8> = (0..len).map(|i| (i + 50) as u8).collect();
+        let mut output = vec![0u8; 3 * len];
+
+        let a_vec = D::U8Vec::load(d, &a);
+        let b_vec = D::U8Vec::load(d, &b);
+        let c_vec = D::U8Vec::load(d, &c);
+        D::U8Vec::store_interleaved_3(a_vec, b_vec, c_vec, &mut output);
+
+        for i in 0..len {
+            assert_eq!(output[3 * i], a[i]);
+            assert_eq!(output[3 * i + 1], b[i]);
+            assert_eq!(output[3 * i + 2], c[i]);
+        }
+    }
+    test_all_instruction_sets!(test_store_interleaved_3_u8);
+
+    fn test_store_interleaved_4_u8<D: SimdDescriptor>(d: D) {
+        let len = D::U8Vec::LEN;
+        let a: Vec<u8> = (0..len).map(|i| i as u8).collect();
+        let b: Vec<u8> = (0..len).map(|i| (i + 100) as u8).collect();
+        let c: Vec<u8> = (0..len).map(|i| (i + 50) as u8).collect();
+        let e: Vec<u8> = (0..len).map(|i| (i + 200) as u8).collect();
+        let mut output = vec![0u8; 4 * len];
+
+        let a_vec = D::U8Vec::load(d, &a);
+        let b_vec = D::U8Vec::load(d, &b);
+        let c_vec = D::U8Vec::load(d, &c);
+        let d_vec = D::U8Vec::load(d, &e);
+        D::U8Vec::store_interleaved_4(a_vec, b_vec, c_vec, d_vec, &mut output);
+
+        for i in 0..len {
+            assert_eq!(output[4 * i], a[i]);
+            assert_eq!(output[4 * i + 1], b[i]);
+            assert_eq!(output[4 * i + 2], c[i]);
+            assert_eq!(output[4 * i + 3], e[i]);
+        }
+    }
+    test_all_instruction_sets!(test_store_interleaved_4_u8);
+
+    fn test_store_interleaved_2_u16<D: SimdDescriptor>(d: D) {
+        let len = D::U16Vec::LEN;
+        let a: Vec<u16> = (0..len).map(|i| i as u16).collect();
+        let b: Vec<u16> = (0..len).map(|i| (i + 1000) as u16).collect();
+        let mut output = vec![0u16; 2 * len];
+
+        let a_vec = D::U16Vec::load(d, &a);
+        let b_vec = D::U16Vec::load(d, &b);
+        D::U16Vec::store_interleaved_2(a_vec, b_vec, &mut output);
+
+        for i in 0..len {
+            assert_eq!(output[2 * i], a[i]);
+            assert_eq!(output[2 * i + 1], b[i]);
+        }
+    }
+    test_all_instruction_sets!(test_store_interleaved_2_u16);
+
+    fn test_store_interleaved_3_u16<D: SimdDescriptor>(d: D) {
+        let len = D::U16Vec::LEN;
+        let a: Vec<u16> = (0..len).map(|i| i as u16).collect();
+        let b: Vec<u16> = (0..len).map(|i| (i + 1000) as u16).collect();
+        let c: Vec<u16> = (0..len).map(|i| (i + 2000) as u16).collect();
+        let mut output = vec![0u16; 3 * len];
+
+        let a_vec = D::U16Vec::load(d, &a);
+        let b_vec = D::U16Vec::load(d, &b);
+        let c_vec = D::U16Vec::load(d, &c);
+        D::U16Vec::store_interleaved_3(a_vec, b_vec, c_vec, &mut output);
+
+        for i in 0..len {
+            assert_eq!(output[3 * i], a[i]);
+            assert_eq!(output[3 * i + 1], b[i]);
+            assert_eq!(output[3 * i + 2], c[i]);
+        }
+    }
+    test_all_instruction_sets!(test_store_interleaved_3_u16);
+
+    fn test_store_interleaved_4_u16<D: SimdDescriptor>(d: D) {
+        let len = D::U16Vec::LEN;
+        let a: Vec<u16> = (0..len).map(|i| i as u16).collect();
+        let b: Vec<u16> = (0..len).map(|i| (i + 1000) as u16).collect();
+        let c: Vec<u16> = (0..len).map(|i| (i + 2000) as u16).collect();
+        let e: Vec<u16> = (0..len).map(|i| (i + 3000) as u16).collect();
+        let mut output = vec![0u16; 4 * len];
+
+        let a_vec = D::U16Vec::load(d, &a);
+        let b_vec = D::U16Vec::load(d, &b);
+        let c_vec = D::U16Vec::load(d, &c);
+        let d_vec = D::U16Vec::load(d, &e);
+        D::U16Vec::store_interleaved_4(a_vec, b_vec, c_vec, d_vec, &mut output);
+
+        for i in 0..len {
+            assert_eq!(output[4 * i], a[i]);
+            assert_eq!(output[4 * i + 1], b[i]);
+            assert_eq!(output[4 * i + 2], c[i]);
+            assert_eq!(output[4 * i + 3], e[i]);
+        }
+    }
+    test_all_instruction_sets!(test_store_interleaved_4_u16);
+
+    fn test_store_u8<D: SimdDescriptor>(d: D) {
+        let data = [
+            0xba_i32,
+            0x12345678_i32,
+            0xdeadbabeu32 as i32,
+            0x76543210_i32,
+            0x11111111_i32,
+            0x00000000_i32,
+            0xffffffffu32 as i32,
+            0x12345678_i32,
+            0x87654321u32 as i32,
+            0xabcdef01u32 as i32,
+            0x10203040_i32,
+            0x50607080_i32,
+            0x01020304_i32,
+            0x05060708_i32,
+            0x090a0b0c_i32,
+            0x0d0e0f00_i32,
+        ];
+        let mut output = [0u8; 16];
+        for i in (0..16).step_by(D::I32Vec::LEN) {
+            let vec = D::I32Vec::load(d, &data[i..]);
+            vec.store_u8(&mut output[i..]);
+        }
+
+        for i in 0..16 {
+            let expected = (data[i] & 0xff) as u8;
+            assert_eq!(
+                output[i], expected,
+                "store_u8 failed at index {}: expected 0x{:02x}, got 0x{:02x}",
+                i, expected, output[i]
+            );
+        }
+    }
+    test_all_instruction_sets!(test_store_u8);
 }

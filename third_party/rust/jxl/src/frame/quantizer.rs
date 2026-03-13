@@ -13,10 +13,21 @@ use crate::{
 pub const NUM_QUANT_TABLES: usize = 17;
 pub const GLOBAL_SCALE_DENOM: usize = 1 << 16;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LfQuantFactors {
     pub quant_factors: [f32; 3],
     pub inv_quant_factors: [f32; 3],
+}
+
+impl Default for LfQuantFactors {
+    fn default() -> Self {
+        let quant_factors = quant_weights::LF_QUANT;
+        let inv_quant_factors = quant_factors.map(f32::recip);
+        Self {
+            quant_factors,
+            inv_quant_factors,
+        }
+    }
 }
 
 impl LfQuantFactors {

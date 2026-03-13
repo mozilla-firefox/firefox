@@ -3,6 +3,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+use std::io::IoSliceMut;
+
+use crate::container::frame_index::FrameIndexBox;
 use crate::error::{Error, Result};
 
 use crate::api::{
@@ -15,6 +18,8 @@ enum ParseState {
     BoxNeeded,
     CodestreamBox(u64),
     SkippableBox(u64),
+    /// Buffering a jxli box: (remaining bytes, accumulated content).
+    BufferingFrameIndex(u64, Vec<u8>),
 }
 
 enum CodestreamBoxType {
@@ -28,6 +33,10 @@ pub(super) struct BoxParser {
     pub(super) box_buffer: SmallBuffer,
     state: ParseState,
     box_type: CodestreamBoxType,
+    /// Parsed frame index box, if present in the file.
+    pub(super) frame_index: Option<FrameIndexBox>,
+    /// Total file bytes consumed from the underlying input.
+    pub(super) total_file_consumed: u64,
 }
 
 impl BoxParser {
@@ -36,6 +45,8 @@ impl BoxParser {
             box_buffer: SmallBuffer::new(128),
             state: ParseState::SignatureNeeded,
             box_type: CodestreamBoxType::None,
+            frame_index: None,
+            total_file_consumed: 0,
         }
     }
 
@@ -49,7 +60,8 @@ impl BoxParser {
         loop {
             match self.state.clone() {
                 ParseState::SignatureNeeded => {
-                    self.box_buffer.refill(|b| input.read(b), None)?;
+                    let read = self.box_buffer.refill(|b| input.read(b), None)?;
+                    self.total_file_consumed += read as u64;
                     match check_signature_internal(&self.box_buffer)? {
                         None => return Err(Error::InvalidSignature),
                         Some(JxlSignatureType::Codestream) => {
@@ -71,7 +83,9 @@ impl BoxParser {
                     let skipped = if !self.box_buffer.is_empty() {
                         self.box_buffer.consume(num)
                     } else {
-                        input.skip(num)?
+                        let skipped = input.skip(num)?;
+                        self.total_file_consumed += skipped as u64;
+                        skipped
                     };
                     if skipped == 0 {
                         return Err(Error::OutOfBounds(num));
@@ -83,8 +97,35 @@ impl BoxParser {
                         self.state = ParseState::SkippableBox(s);
                     }
                 }
+                ParseState::BufferingFrameIndex(mut remaining, mut buf) => {
+                    let num = remaining.min(usize::MAX as u64) as usize;
+                    if !self.box_buffer.is_empty() {
+                        let take = num.min(self.box_buffer.len());
+                        buf.extend_from_slice(&self.box_buffer[..take]);
+                        self.box_buffer.consume(take);
+                        remaining -= take as u64;
+                    } else {
+                        let old_len = buf.len();
+                        buf.resize(old_len + num, 0);
+                        let read = input.read(&mut [IoSliceMut::new(&mut buf[old_len..])])?;
+                        self.total_file_consumed += read as u64;
+                        if read == 0 {
+                            return Err(Error::OutOfBounds(num));
+                        }
+                        buf.truncate(old_len + read);
+                        remaining -= read as u64;
+                    }
+                    if remaining == 0 {
+                        // Parse the buffered frame index box.
+                        self.frame_index = Some(FrameIndexBox::parse(&buf)?);
+                        self.state = ParseState::BoxNeeded;
+                    } else {
+                        self.state = ParseState::BufferingFrameIndex(remaining, buf);
+                    }
+                }
                 ParseState::BoxNeeded => {
-                    self.box_buffer.refill(|b| input.read(b), None)?;
+                    let read = self.box_buffer.refill(|b| input.read(b), None)?;
+                    self.total_file_consumed += read as u64;
                     let min_len = match &self.box_buffer[..] {
                         [0, 0, 0, 1, ..] => 16,
                         _ => 8,
@@ -148,6 +189,20 @@ impl BoxParser {
                             };
                             self.state = ParseState::CodestreamBox(content_len);
                         }
+                        b"jxli" => {
+                            if content_len == u64::MAX {
+                                return Err(Error::InvalidBox);
+                            }
+                            // Reasonable size limit for a frame index box (16 MB).
+                            if content_len > 16 * 1024 * 1024 {
+                                self.state = ParseState::SkippableBox(content_len);
+                            } else {
+                                self.state = ParseState::BufferingFrameIndex(
+                                    content_len,
+                                    Vec::with_capacity(content_len as usize),
+                                );
+                            }
+                        }
                         _ => {
                             self.state = ParseState::SkippableBox(content_len);
                         }
@@ -156,6 +211,26 @@ impl BoxParser {
                 }
             }
         }
+    }
+
+    /// Accounts file bytes consumed directly by codestream parser reads/skips.
+    pub(super) fn mark_file_consumed(&mut self, amount: usize) {
+        self.total_file_consumed += amount as u64;
+    }
+
+    /// Resets the box parser for seeking to a specific codestream position.
+    ///
+    /// Sets the parser to `CodestreamBox(remaining)` state with cleared
+    /// buffers.  The caller must provide raw input starting from the file
+    /// position that corresponds to the target codestream offset.
+    ///
+    /// `remaining` is the number of codestream bytes left in the current
+    /// box from the target file position.  For bare-codestream files this
+    /// is `u64::MAX`.
+    pub(super) fn reset_for_codestream_seek(&mut self, remaining: u64) {
+        self.box_buffer = SmallBuffer::new(128);
+        self.state = ParseState::CodestreamBox(remaining);
+        // Keep frame_index unchanged.
     }
 
     pub(super) fn consume_codestream(&mut self, amount: u64) {

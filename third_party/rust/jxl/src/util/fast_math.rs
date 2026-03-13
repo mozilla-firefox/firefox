@@ -58,6 +58,22 @@ pub fn fast_erff(x: f32) -> f32 {
     result.copysign(x)
 }
 
+#[inline(always)]
+pub fn fast_erff_simd<D: SimdDescriptor>(d: D, x: D::F32Vec) -> D::F32Vec {
+    let absx = x.abs();
+    let denom1 = absx.mul_add(
+        D::F32Vec::splat(d, 7.77394369e-02),
+        D::F32Vec::splat(d, 2.05260015e-04),
+    );
+    let denom2 = denom1.mul_add(absx, D::F32Vec::splat(d, 2.32120216e-01));
+    let denom3 = denom2.mul_add(absx, D::F32Vec::splat(d, 2.77820801e-01));
+    let denom4 = denom3.mul_add(absx, D::F32Vec::splat(d, 1.0));
+    let denom5 = denom4 * denom4;
+    let inv_denom5 = D::F32Vec::splat(d, 1.0) / denom5;
+    let result = D::F32Vec::splat(d, 1.0) - inv_denom5 * inv_denom5;
+    result.copysign(x)
+}
+
 #[inline]
 pub fn fast_pow2f(x: f32) -> f32 {
     let x_floor = x.floor();

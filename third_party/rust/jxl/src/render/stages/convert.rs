@@ -3,64 +3,29 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+use std::sync::Arc;
+
 use crate::{
     frame::quantizer::LfQuantFactors,
     headers::bit_depth::BitDepth,
-    render::{Channels, ChannelsMut, RenderPipelineInOutStage},
+    render::{Channels, ChannelsMut, RenderPipelineInOutStage, StageSpecialCase},
+    util::AtomicRefCell,
 };
-use jxl_simd::{F32SimdVec, I32SimdVec, simd_function};
-
-pub struct ConvertU8F32Stage {
-    channel: usize,
-}
-
-impl ConvertU8F32Stage {
-    pub fn new(channel: usize) -> ConvertU8F32Stage {
-        ConvertU8F32Stage { channel }
-    }
-}
-
-impl std::fmt::Display for ConvertU8F32Stage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "convert U8 data to F32 in channel {}", self.channel)
-    }
-}
-
-impl RenderPipelineInOutStage for ConvertU8F32Stage {
-    type InputT = u8;
-    type OutputT = f32;
-    const SHIFT: (u8, u8) = (0, 0);
-    const BORDER: (u8, u8) = (0, 0);
-
-    fn uses_channel(&self, c: usize) -> bool {
-        c == self.channel
-    }
-
-    fn process_row_chunk(
-        &self,
-        _position: (usize, usize),
-        xsize: usize,
-        input_rows: &Channels<u8>,
-        output_rows: &mut ChannelsMut<f32>,
-        _state: Option<&mut dyn std::any::Any>,
-    ) {
-        let input = &input_rows[0];
-        for i in 0..xsize {
-            output_rows[0][0][i] = input[0][i] as f32 * (1.0 / 255.0);
-        }
-    }
-}
+use jxl_simd::{F32SimdVec, I32SimdVec, SimdMask, simd_function};
 
 pub struct ConvertModularXYBToF32Stage {
     first_channel: usize,
-    scale: [f32; 3],
+    lf_quant: Arc<AtomicRefCell<LfQuantFactors>>,
 }
 
 impl ConvertModularXYBToF32Stage {
-    pub fn new(first_channel: usize, lf_quant: &LfQuantFactors) -> ConvertModularXYBToF32Stage {
+    pub fn new(
+        first_channel: usize,
+        lf_quant: Arc<AtomicRefCell<LfQuantFactors>>,
+    ) -> ConvertModularXYBToF32Stage {
         ConvertModularXYBToF32Stage {
             first_channel,
-            scale: lf_quant.quant_factors,
+            lf_quant,
         }
     }
 }
@@ -69,10 +34,9 @@ impl std::fmt::Display for ConvertModularXYBToF32Stage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "convert modular xyb data to F32 in channels {}..{} with scales {:?}",
+            "convert modular xyb data to F32 in channels {}..{}",
             self.first_channel,
             self.first_channel + 2,
-            self.scale
         )
     }
 }
@@ -95,7 +59,8 @@ impl RenderPipelineInOutStage for ConvertModularXYBToF32Stage {
         output_rows: &mut ChannelsMut<f32>,
         _state: Option<&mut dyn std::any::Any>,
     ) {
-        let [scale_x, scale_y, scale_b] = self.scale;
+        let lf_quant = self.lf_quant.borrow();
+        let [scale_x, scale_y, scale_b] = lf_quant.quant_factors;
         assert_eq!(
             input_rows.len(),
             3,
@@ -257,6 +222,27 @@ fn int_to_float_generic(input: &[i32], output: &mut [f32], bits: u32, exp_bits: 
     }
 }
 
+// SIMD modular to 32 bit float conversion
+simd_function!(
+    modular_to_float_32bit_simd_dispatch,
+    d: D,
+    fn modular_to_float_32bit_simd(input: &[i32], output: &mut [f32], scale: f32, xsize: usize) {
+        let simd_width = D::I32Vec::LEN;
+
+        let scale = D::F32Vec::splat(d, scale);
+
+        // Process complete SIMD vectors
+        for (in_chunk, out_chunk) in input
+            .chunks_exact(simd_width)
+            .zip(output.chunks_exact_mut(simd_width))
+            .take(xsize.div_ceil(simd_width))
+        {
+            let val = D::I32Vec::load(d, in_chunk);
+            (val.as_f32() * scale).store(out_chunk);
+        }
+    }
+);
+
 impl RenderPipelineInOutStage for ConvertModularToF32Stage {
     type InputT = i32;
     type OutputT = f32;
@@ -279,11 +265,19 @@ impl RenderPipelineInOutStage for ConvertModularToF32Stage {
         if self.bit_depth.floating_point_sample() {
             int_to_float(input[0], output_rows[0][0], &self.bit_depth, xsize);
         } else {
-            // TODO(veluca): SIMDfy this code.
             let scale = 1.0 / ((1u64 << self.bit_depth.bits_per_sample()) - 1) as f32;
-            for i in 0..xsize {
-                output_rows[0][0][i] = input[0][i] as f32 * scale;
-            }
+            modular_to_float_32bit_simd_dispatch(input[0], output_rows[0][0], scale, xsize);
+        }
+    }
+
+    fn is_special_case(&self) -> Option<StageSpecialCase> {
+        if self.bit_depth.floating_point_sample() {
+            None
+        } else {
+            Some(StageSpecialCase::ModularToF32 {
+                channel: self.channel,
+                bit_depth: self.bit_depth.bits_per_sample() as u8,
+            })
         }
     }
 }
@@ -357,6 +351,89 @@ impl RenderPipelineInOutStage for ConvertF32ToU8Stage {
         let output = &mut output_rows[0][0];
         let max = ((1u32 << self.bit_depth) - 1) as f32;
         f32_to_u8_simd_dispatch(input, output, max, xsize);
+    }
+
+    fn is_special_case(&self) -> Option<StageSpecialCase> {
+        Some(StageSpecialCase::F32ToU8 {
+            channel: self.channel,
+            bit_depth: self.bit_depth,
+        })
+    }
+}
+
+/// Stage that converts i32 values to u8 values, applying a multiplier.
+pub struct ConvertI32ToU8Stage {
+    channel: usize,
+    multiplier: i32,
+    max: i32,
+}
+
+impl ConvertI32ToU8Stage {
+    pub fn new(channel: usize, multiplier: i32, max: i32) -> ConvertI32ToU8Stage {
+        ConvertI32ToU8Stage {
+            channel,
+            multiplier,
+            max,
+        }
+    }
+}
+
+impl std::fmt::Display for ConvertI32ToU8Stage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "convert I32 to U8 in channel {} with multiplier {}",
+            self.channel, self.multiplier
+        )
+    }
+}
+
+// SIMD I32 to U8 conversion
+simd_function!(
+    i32_to_u8_simd_dispatch,
+    d: D,
+    fn i32_to_u8_simd(input: &[i32], output: &mut [u8], scale: i32, max: i32, xsize: usize) {
+        let simd_width = D::F32Vec::LEN;
+        let scale = D::I32Vec::splat(d, scale);
+        let max = D::I32Vec::splat(d, max);
+        let zero = D::I32Vec::splat(d, 0);
+
+        // Process SIMD vectors using div_ceil (buffers are padded)
+        for (input_chunk, output_chunk) in input
+            .chunks_exact(simd_width)
+            .zip(output.chunks_exact_mut(simd_width))
+            .take(xsize.div_ceil(simd_width))
+        {
+            let val = D::I32Vec::load(d, input_chunk);
+            let scaled = val * scale;
+            let zeroclip = scaled.lt_zero().if_then_else_i32(zero, scaled);
+            let clip = scaled.gt(max).if_then_else_i32(max, zeroclip);
+            clip.store_u8(output_chunk);
+        }
+    }
+);
+
+impl RenderPipelineInOutStage for ConvertI32ToU8Stage {
+    type InputT = i32;
+    type OutputT = u8;
+    const SHIFT: (u8, u8) = (0, 0);
+    const BORDER: (u8, u8) = (0, 0);
+
+    fn uses_channel(&self, c: usize) -> bool {
+        c == self.channel
+    }
+
+    fn process_row_chunk(
+        &self,
+        _position: (usize, usize),
+        xsize: usize,
+        input_rows: &Channels<i32>,
+        output_rows: &mut ChannelsMut<u8>,
+        _state: Option<&mut dyn std::any::Any>,
+    ) {
+        let input = input_rows[0][0];
+        let output = &mut output_rows[0][0];
+        i32_to_u8_simd_dispatch(input, output, self.multiplier, self.max, xsize);
     }
 }
 
@@ -480,11 +557,6 @@ mod test {
     use crate::error::Result;
     use crate::headers::bit_depth::BitDepth;
     use test_log::test;
-
-    #[test]
-    fn u8_consistency() -> Result<()> {
-        crate::render::test::test_stage_consistency(|| ConvertU8F32Stage::new(0), (500, 500), 1)
-    }
 
     #[test]
     fn f32_to_u8_consistency() -> Result<()> {

@@ -22,7 +22,6 @@ pub struct JxlDecoderOptions {
     pub desired_intensity_target: Option<f32>,
     pub skip_preview: bool,
     pub progressive_mode: JxlProgressiveMode,
-    pub enable_output: bool,
     pub cms: Option<Box<dyn JxlCms>>,
     /// Fail decoding images with more than this number of pixels, or with frames with
     /// more than this number of pixels. The limit counts the product of pixels and
@@ -40,6 +39,11 @@ pub struct JxlDecoderOptions {
     /// This produces premultiplied alpha output, which is useful for compositing.
     /// Default: false (output straight alpha)
     pub premultiply_output: bool,
+    /// If true, only parse frame headers/TOC and skip section decoding.
+    ///
+    /// This is useful for collecting [`VisibleFrameInfo`](crate::api::VisibleFrameInfo)
+    /// via the regular decoder API without producing pixels.
+    pub scan_frames_only: bool,
 }
 
 impl Default for JxlDecoderOptions {
@@ -51,11 +55,11 @@ impl Default for JxlDecoderOptions {
             skip_preview: true,
             desired_intensity_target: None,
             progressive_mode: JxlProgressiveMode::Pass,
-            enable_output: true,
             cms: None,
             pixel_limit: None,
             high_precision: false,
             premultiply_output: false,
+            scan_frames_only: false,
         }
     }
 }

@@ -7,22 +7,28 @@ use crate::{api::JxlOutputBuffer, headers::Orientation, image::Rect, util::Shift
 
 // Information for splitting the output buffers.
 #[derive(Debug)]
-pub(super) struct SaveStageBufferInfo {
-    pub(super) downsample: (u8, u8),
-    pub(super) orientation: Orientation,
-    pub(super) byte_size: usize,
-    pub(super) after_extend: bool,
+pub struct SaveStageBufferInfo {
+    pub downsample: (u8, u8),
+    pub orientation: Orientation,
+    pub byte_size: usize,
+    pub after_extend: bool,
 }
 
 /// Data structure responsible for handing out access to portions of the output buffers.
-pub struct BufferSplitter<'a, 'b>(&'a mut [Option<JxlOutputBuffer<'b>>]);
+pub struct BufferSplitter<'a, 'b> {
+    buffers: &'a mut [Option<JxlOutputBuffer<'b>>],
+    requested_rects: Vec<Rect>,
+}
 
 impl<'a, 'b> BufferSplitter<'a, 'b> {
     pub fn new(bufs: &'a mut [Option<JxlOutputBuffer<'b>>]) -> Self {
-        Self(bufs)
+        Self {
+            buffers: bufs,
+            requested_rects: vec![],
+        }
     }
 
-    pub(super) fn get_local_buffers(
+    pub(crate) fn get_local_buffers(
         &mut self,
         save_buffer_info: &[Option<SaveStageBufferInfo>],
         rect: Rect,
@@ -31,8 +37,9 @@ impl<'a, 'b> BufferSplitter<'a, 'b> {
         full_image_size: (usize, usize),
         frame_origin: (isize, isize),
     ) -> Vec<Option<JxlOutputBuffer<'_>>> {
+        self.requested_rects.push(rect);
         let mut local_buffers = vec![];
-        let buffers = &mut *self.0;
+        let buffers = &mut *self.buffers;
         local_buffers.reserve(buffers.len());
         for _ in 0..buffers.len() {
             local_buffers.push(None::<JxlOutputBuffer>);
@@ -97,7 +104,11 @@ impl<'a, 'b> BufferSplitter<'a, 'b> {
         local_buffers
     }
 
+    pub fn into_changed_regions(self) -> Vec<Rect> {
+        self.requested_rects
+    }
+
     pub fn get_full_buffers(&mut self) -> &mut [Option<JxlOutputBuffer<'b>>] {
-        &mut *self.0
+        &mut *self.buffers
     }
 }

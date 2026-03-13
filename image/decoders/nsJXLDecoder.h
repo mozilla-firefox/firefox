@@ -8,7 +8,9 @@
 #define mozilla_image_decoders_nsJXLDecoder_h
 
 #include "Decoder.h"
-#include "StreamingLexer.h"
+#include "SourceBuffer.h"
+#include "SurfacePipe.h"
+#include "mozilla/Maybe.h"
 #include "mozilla/Vector.h"
 #include "mozilla/image/jxl_decoder_ffi.h"
 
@@ -24,6 +26,10 @@ class nsJXLDecoder final : public Decoder {
 
   DecoderType GetType() const override { return DecoderType::JXL; }
 
+  void TransferScannedFrames(Vector<JxlFrameInfo>&& aFrames);
+  void SetSeekTargetFrame(uint32_t aFrameIndex);
+  const Vector<JxlFrameInfo>& ScannedFrames() const { return mScannedFrames; }
+
  protected:
   nsresult InitInternal() override;
   LexerResult DoDecode(SourceBufferIterator& aIterator,
@@ -34,9 +40,7 @@ class nsJXLDecoder final : public Decoder {
 
   explicit nsJXLDecoder(RasterImage* aImage);
 
-  std::unique_ptr<JxlApiDecoder, JxlDecoderDeleter> mDecoder;
-
-  enum class State { JXL_DATA, DRAIN_FRAMES, FINISHED_JXL_DATA };
+  enum class DecoderState { Initial, HaveBasicInfo };
 
   enum class FrameOutputResult {
     BufferAllocated,
@@ -47,18 +51,36 @@ class nsJXLDecoder final : public Decoder {
   };
 
   JxlDecoderStatus ProcessInput(const uint8_t** aData, size_t* aLength);
-  nsresult ProcessFrame(Vector<uint8_t>& aPixelBuffer);
   FrameOutputResult HandleFrameOutput();
 
-  LexerTransition<State> ReadJXLData(const char* aData, size_t aLength);
-  LexerTransition<State> DrainFrames();
-  LexerTransition<State> FinishedJXLData();
+  FrameOutputResult BeginFrame();
+  nsresult FinishFrame();
+  void FlushPartialFrame();
 
-  StreamingLexer<State> mLexer;
+  LexerResult DrainFrames();
+  void FeedScanner(const uint8_t* aData, size_t aLength);
+
+  std::unique_ptr<JxlApiDecoder, JxlDecoderDeleter> mDecoder;
+  std::unique_ptr<JxlApiDecoder, JxlDecoderDeleter> mScanner;
+
+  DecoderState mDecoderState = DecoderState::Initial;
+  SourceBuffer* mSourceBuffer = nullptr;  // Non-owning; outlives decoder.
+  Maybe<SourceBufferIterator> mOwnIterator;
+  size_t mTotalBytesReceived = 0;
+  size_t mSkipToOffset = 0;
+  Maybe<uint32_t> mSeekTargetFrame;
 
   uint32_t mFrameIndex = 0;
 
   Vector<uint8_t> mPixelBuffer;
+  Maybe<SurfacePipe> mCurrentPipe;
+  uint32_t mLastFlushedPasses = 0;
+
+  bool mScannerDone = false;
+  size_t mScannerBytesConsumed = 0;
+  Vector<JxlFrameInfo> mScannedFrames;
+
+  bool mIteratorComplete = false;
 };
 
 }  // namespace mozilla::image

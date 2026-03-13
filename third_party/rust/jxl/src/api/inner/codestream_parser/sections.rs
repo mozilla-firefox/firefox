@@ -8,15 +8,18 @@ use crate::{
     bit_reader::BitReader,
     error::Result,
     frame::Section,
+    headers::frame_header::{Encoding, FrameType},
 };
 
 use super::CodestreamParser;
 
+#[derive(Debug)]
 pub(super) struct SectionState {
     lf_global_done: bool,
     remaining_lf: usize,
     hf_global_done: bool,
     completed_passes: Vec<u8>,
+    lf_global_flush_len: usize,
 }
 
 impl SectionState {
@@ -26,6 +29,7 @@ impl SectionState {
             remaining_lf: num_lf_groups,
             hf_global_done: false,
             completed_passes: vec![0; num_groups],
+            lf_global_flush_len: 0,
         }
     }
 
@@ -41,8 +45,15 @@ impl CodestreamParser {
         &mut self,
         decode_options: &JxlDecoderOptions,
         output_buffers: &mut Option<&mut [JxlOutputBuffer<'_>]>,
+        do_flush: bool,
     ) -> Result<Option<usize>> {
         let frame = self.frame.as_mut().unwrap();
+
+        let output_profile = self
+            .output_color_profile
+            .as_ref()
+            .expect("output_color_profile should be set before pipeline preparation");
+
         let frame_header = frame.header();
 
         // Dequeue ready sections.
@@ -72,40 +83,81 @@ impl CodestreamParser {
         }
 
         let mut processed_section = false;
+        let mut called_render_hf = false;
         let pixel_format = self.pixel_format.as_ref().unwrap();
+
+        let complete_lf_global;
+        let (lf_global, lf_global_is_complete) = if let Some(d) = self.lf_global_section.take() {
+            complete_lf_global = d;
+            (
+                Some(&complete_lf_global.data[..complete_lf_global.len]),
+                true,
+            )
+        } else if do_flush
+            && self
+                .sections
+                .front()
+                .is_some_and(|s| s.section == Section::LfGlobal)
+            && 2 * self.ready_section_data > 3 * self.section_state.lf_global_flush_len
+            && frame_header.encoding == Encoding::Modular
+            && matches!(
+                frame_header.frame_type,
+                FrameType::RegularFrame | FrameType::LFFrame
+            )
+        {
+            self.section_state.lf_global_flush_len = self.ready_section_data;
+            (
+                Some(&self.sections[0].data[..self.ready_section_data]),
+                false,
+            )
+        } else {
+            (None, false)
+        };
+
         'process: {
             if frame_header.num_groups() == 1 && frame_header.passes.num_passes == 1 {
                 // Single-group special case.
-                let Some(sec) = self.lf_global_section.take() else {
+                let Some(buf) = lf_global else {
                     break 'process;
                 };
-                assert!(self.sections.is_empty());
-                let mut br = BitReader::new(&sec.data);
-                frame.decode_lf_global(&mut br)?;
-                frame.decode_lf_group(0, &mut br)?;
-                frame.decode_hf_global(&mut br)?;
-                frame.prepare_render_pipeline(
-                    self.pixel_format.as_ref().unwrap(),
-                    decode_options.cms.as_deref(),
-                    self.embedded_color_profile
-                        .as_ref()
-                        .expect("embedded_color_profile should be set before pipeline preparation"),
-                    self.output_color_profile
-                        .as_ref()
-                        .expect("output_color_profile should be set before pipeline preparation"),
-                )?;
-                frame.finalize_lf()?;
-                frame.decode_and_render_hf_groups(
-                    output_buffers,
-                    pixel_format,
-                    vec![(0, vec![(0, br)])],
-                )?;
-                processed_section = true;
+                assert!(self.sections.is_empty() || !lf_global_is_complete);
+                let mut br = BitReader::new(buf);
+                let res = (|| -> Result<()> {
+                    frame.decode_lf_global(&mut br, !lf_global_is_complete)?;
+                    frame.decode_lf_group(0, &mut br)?;
+                    frame.decode_hf_global(&mut br)?;
+                    frame.finalize_lf()?;
+                    frame.decode_and_render_hf_groups(
+                        output_buffers,
+                        pixel_format,
+                        vec![(0, vec![(0, br)])],
+                        do_flush,
+                        output_profile,
+                    )?;
+                    called_render_hf = true;
+                    Ok(())
+                })();
+                match res {
+                    Ok(_) => {
+                        processed_section = true;
+                    }
+                    Err(_) if !lf_global_is_complete => {
+                        // Ignore errors if we are doing partial parsing.
+                    }
+                    Err(e) => return Err(e),
+                }
             } else {
-                if let Some(lf_global) = self.lf_global_section.take() {
-                    frame.decode_lf_global(&mut BitReader::new(&lf_global.data))?;
-                    self.section_state.lf_global_done = true;
-                    processed_section = true;
+                if let Some(buf) = lf_global {
+                    match frame.decode_lf_global(&mut BitReader::new(buf), !lf_global_is_complete) {
+                        Ok(_) => {
+                            self.section_state.lf_global_done = true;
+                            processed_section = true;
+                        }
+                        Err(_) if !lf_global_is_complete => {
+                            // Ignore errors if we are doing partial parsing.
+                        }
+                        Err(e) => return Err(e),
+                    }
                 }
 
                 if !self.section_state.lf_global_done {
@@ -127,16 +179,6 @@ impl CodestreamParser {
 
                 if let Some(hf_global) = self.hf_global_section.take() {
                     frame.decode_hf_global(&mut BitReader::new(&hf_global.data))?;
-                    frame.prepare_render_pipeline(
-                        self.pixel_format.as_ref().unwrap(),
-                        decode_options.cms.as_deref(),
-                        self.embedded_color_profile.as_ref().expect(
-                            "embedded_color_profile should be set before pipeline preparation",
-                        ),
-                        self.output_color_profile.as_ref().expect(
-                            "output_color_profile should be set before pipeline preparation",
-                        ),
-                    )?;
                     frame.finalize_lf()?;
                     self.section_state.hf_global_done = true;
                     processed_section = true;
@@ -184,7 +226,14 @@ impl CodestreamParser {
                     self.candidate_hf_sections.clear();
                 }
 
-                frame.decode_and_render_hf_groups(output_buffers, pixel_format, group_readers)?;
+                frame.decode_and_render_hf_groups(
+                    output_buffers,
+                    pixel_format,
+                    group_readers,
+                    do_flush,
+                    output_profile,
+                )?;
+                called_render_hf = true;
 
                 for g in processed_groups.into_iter() {
                     for i in 0..self.section_state.completed_passes[g] {
@@ -193,6 +242,16 @@ impl CodestreamParser {
                     processed_section = true;
                 }
             }
+        }
+
+        if do_flush && !called_render_hf && frame.can_do_early_rendering() {
+            frame.decode_and_render_hf_groups(
+                output_buffers,
+                pixel_format,
+                vec![],
+                do_flush,
+                output_profile,
+            )?;
         }
 
         if !processed_section {
@@ -230,7 +289,6 @@ impl CodestreamParser {
             if let Some(fh) = self.saved_file_header.take() {
                 let mut new_state = crate::frame::DecoderState::new(fh);
                 new_state.render_spotcolors = decode_options.render_spot_colors;
-                new_state.enable_output = decode_options.enable_output;
                 self.decoder_state = Some(new_state);
             }
         } else {

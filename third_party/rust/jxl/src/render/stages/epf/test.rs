@@ -9,12 +9,13 @@ use rand::SeedableRng;
 use test_log::test;
 
 use super::*;
-use crate::{error::Result, features::epf::SigmaSource, image::Image};
+use crate::{error::Result, features::epf::SigmaSource, image::Image, util::AtomicRefCell};
 
 #[test]
 fn epf0_consistency() -> Result<()> {
     let mut rng = rand_xorshift::XorShiftRng::seed_from_u64(0);
     let sigma = SigmaSource::Variable(Arc::new(Image::new_random((128, 128), &mut rng).unwrap()));
+    let sigma = Arc::new(AtomicRefCell::new(sigma));
     crate::render::test::test_stage_consistency(
         || Epf0Stage::new(0.9, 2.3 / 3.0, [40.0, 5.0, 3.5], sigma.clone()),
         (512, 512),
@@ -26,6 +27,7 @@ fn epf0_consistency() -> Result<()> {
 fn epf1_consistency() -> Result<()> {
     let mut rng = rand_xorshift::XorShiftRng::seed_from_u64(0);
     let sigma = SigmaSource::Variable(Arc::new(Image::new_random((128, 128), &mut rng).unwrap()));
+    let sigma = Arc::new(AtomicRefCell::new(sigma));
     crate::render::test::test_stage_consistency(
         || Epf1Stage::new(1.0, 2.3 / 3.0, [40.0, 5.0, 3.5], sigma.clone()),
         (512, 512),
@@ -37,6 +39,7 @@ fn epf1_consistency() -> Result<()> {
 fn epf2_consistency() -> Result<()> {
     let mut rng = rand_xorshift::XorShiftRng::seed_from_u64(0);
     let sigma = SigmaSource::Variable(Arc::new(Image::new_random((128, 128), &mut rng).unwrap()));
+    let sigma = Arc::new(AtomicRefCell::new(sigma));
     crate::render::test::test_stage_consistency(
         || Epf2Stage::new(6.5, 2.3 / 3.0, [40.0, 5.0, 3.5], sigma.clone()),
         (512, 512),

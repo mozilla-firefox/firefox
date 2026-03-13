@@ -192,9 +192,9 @@ pub struct ColorEncoding {
 
 impl ColorEncoding {
     pub fn check(&self, _: &Empty) -> Result<(), Error> {
-        if !self.want_icc
-            && (self.color_space == ColorSpace::Unknown
-                || self.tf.transfer_function == TransferFunction::Unknown)
+        if self.color_space == ColorSpace::Unknown
+            || self.tf.transfer_function == TransferFunction::Unknown
+            || self.color_space == ColorSpace::XYB
         {
             Err(Error::InvalidColorEncoding)
         } else {

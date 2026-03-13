@@ -5,10 +5,13 @@
 
 #![allow(clippy::needless_range_loop)]
 
+use std::{any::Any, sync::Arc};
+
 use crate::{
     features::noise::Noise,
     frame::color_correlation_map::ColorCorrelationParams,
     render::{Channels, ChannelsMut, RenderPipelineInOutStage, RenderPipelineInPlaceStage},
+    util::AtomicRefCell,
 };
 use jxl_simd::{F32SimdVec, simd_function};
 
@@ -103,16 +106,16 @@ impl RenderPipelineInOutStage for ConvolveNoiseStage {
 }
 
 pub struct AddNoiseStage {
-    noise: Noise,
+    noise: Arc<AtomicRefCell<Noise>>,
     first_channel: usize,
-    color_correlation: ColorCorrelationParams,
+    color_correlation: Arc<AtomicRefCell<ColorCorrelationParams>>,
 }
 
 impl AddNoiseStage {
     #[allow(dead_code)]
     pub fn new(
-        noise: Noise,
-        color_correlation: ColorCorrelationParams,
+        noise: Arc<AtomicRefCell<Noise>>,
+        color_correlation: Arc<AtomicRefCell<ColorCorrelationParams>>,
         first_channel: usize,
     ) -> AddNoiseStage {
         assert!(first_channel > 2);
@@ -148,11 +151,16 @@ impl RenderPipelineInPlaceStage for AddNoiseStage {
         _position: (usize, usize),
         xsize: usize,
         row: &mut [&mut [f32]],
-        _state: Option<&mut dyn std::any::Any>,
+        _state: Option<&mut dyn Any>,
     ) {
+        let noise = self.noise.borrow();
+        if noise.lut == [0.0; 8] {
+            return;
+        }
+        let color_correlation = self.color_correlation.borrow();
         let norm_const = 0.22;
-        let ytox = self.color_correlation.y_to_x_lf();
-        let ytob = self.color_correlation.y_to_b_lf();
+        let ytox = color_correlation.y_to_x_lf();
+        let ytob = color_correlation.y_to_b_lf();
         for x in 0..xsize {
             let row_rnd_r = row[3][x];
             let row_rnd_g = row[4][x];
@@ -161,8 +169,8 @@ impl RenderPipelineInPlaceStage for AddNoiseStage {
             let vy = row[1][x];
             let in_g = vy - vx;
             let in_r = vy + vx;
-            let noise_strength_g = self.noise.strength(in_g * 0.5);
-            let noise_strength_r = self.noise.strength(in_r * 0.5);
+            let noise_strength_g = noise.strength(in_g * 0.5);
+            let noise_strength_r = noise.strength(in_r * 0.5);
             let addit_rnd_noise_red = row_rnd_r * norm_const;
             let addit_rnd_noise_green = row_rnd_g * norm_const;
             let addit_rnd_noise_correlated = row_rnd_c * norm_const;
@@ -182,6 +190,8 @@ impl RenderPipelineInPlaceStage for AddNoiseStage {
 
 #[cfg(test)]
 mod test {
+    use std::sync::Arc;
+
     use crate::{
         error::Result,
         features::noise::Noise,
@@ -191,7 +201,7 @@ mod test {
             stages::noise::{AddNoiseStage, ConvolveNoiseStage},
             test::make_and_run_simple_pipeline,
         },
-        util::test::assert_almost_abs_eq,
+        util::{AtomicRefCell, test::assert_almost_abs_eq},
     };
     use test_log::test;
 
@@ -228,10 +238,10 @@ mod test {
         let input_c4: Image<f32> = Image::new_range((xsize, ysize), 0.1, 0.1)?;
         let input_c5: Image<f32> = Image::new_range((xsize, ysize), 0.1, 0.1)?;
         let stage = AddNoiseStage::new(
-            Noise {
+            Arc::new(AtomicRefCell::new(Noise {
                 lut: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
-            },
-            ColorCorrelationParams::default(),
+            })),
+            Arc::new(AtomicRefCell::new(ColorCorrelationParams::default())),
             3,
         );
         let output = make_and_run_simple_pipeline(
@@ -325,10 +335,10 @@ mod test {
         crate::render::test::test_stage_consistency(
             || {
                 AddNoiseStage::new(
-                    Noise {
+                    Arc::new(AtomicRefCell::new(Noise {
                         lut: [0.0, 2.0, 1.0, 0.0, 1.0, 3.0, 1.1, 2.3],
-                    },
-                    ColorCorrelationParams::default(),
+                    })),
+                    Arc::new(AtomicRefCell::new(ColorCorrelationParams::default())),
                     3,
                 )
             },

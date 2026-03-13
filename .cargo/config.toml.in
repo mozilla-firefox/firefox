@@ -80,6 +80,11 @@ git = "https://github.com/jfkthame/mapped_hyph.git"
 rev = "eff105f6ad7ec9b79816cfc1985a28e5340ad14b"
 replace-with = "vendored-sources"
 
+[source."git+https://github.com/libjxl/jxl-rs?branch=main"]
+git = "https://github.com/libjxl/jxl-rs"
+branch = "main"
+replace-with = "vendored-sources"
+
 [source."git+https://github.com/mozilla/audioipc?rev=0339c4732ceadbc5f54898b77498c33fff0f3f90"]
 git = "https://github.com/mozilla/audioipc"
 rev = "0339c4732ceadbc5f54898b77498c33fff0f3f90"

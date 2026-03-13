@@ -3826,6 +3826,26 @@ criteria = "safe-to-deploy"
 delta = "0.1.32 -> 0.1.33"
 notes = "No unsafe added, only non-trivial change is switching to the getrandom crate on Windows."
 
+[[audits.jxl]]
+who = "Martin Bruse <zondolfin@gmail.com>"
+criteria = "safe-to-deploy"
+delta = "0.3.0 -> 0.3.0@git:2cddd9033317c4968f07c9e76c1b5257969eb291"
+
+[[audits.jxl_macros]]
+who = "Martin Bruse <zondolfin@gmail.com>"
+criteria = "safe-to-deploy"
+delta = "0.3.0 -> 0.3.0@git:2cddd9033317c4968f07c9e76c1b5257969eb291"
+
+[[audits.jxl_simd]]
+who = "Martin Bruse <zondolfin@gmail.com>"
+criteria = "safe-to-deploy"
+delta = "0.3.0 -> 0.3.0@git:2cddd9033317c4968f07c9e76c1b5257969eb291"
+
+[[audits.jxl_transforms]]
+who = "Martin Bruse <zondolfin@gmail.com>"
+criteria = "safe-to-deploy"
+delta = "0.3.0 -> 0.3.0@git:2cddd9033317c4968f07c9e76c1b5257969eb291"
+
 [[audits.keccak]]
 who = "Simon Friedberger <simon@mozilla.com>"
 criteria = "safe-to-deploy"

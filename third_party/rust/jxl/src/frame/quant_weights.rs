@@ -254,6 +254,7 @@ impl QuantEncoding {
                     None,
                     &lf_global.tree,
                     br,
+                    None,
                 )?;
                 let mut qtable = Vec::with_capacity(required_size_x * required_size_y * 3);
                 for channel in image.iter_mut() {

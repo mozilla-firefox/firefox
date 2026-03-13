@@ -97,7 +97,7 @@ pub enum TransformId {
     Invalid = 3,
 }
 
-#[derive(UnconditionalCoder, Debug, PartialEq)]
+#[derive(UnconditionalCoder, Debug, PartialEq, Clone)]
 #[validate]
 pub struct Transform {
     #[coder(Bits(2))]
@@ -157,7 +157,7 @@ impl Transform {
     }
 }
 
-#[derive(UnconditionalCoder, Debug, PartialEq)]
+#[derive(UnconditionalCoder, Debug, PartialEq, Clone)]
 pub struct GroupHeader {
     pub use_global_tree: bool,
     pub wp_header: WeightedHeader,

@@ -851,4 +851,14 @@ mod test_frame_header {
             },
         )
     }
+
+    #[test]
+    fn test_frame_name() {
+        let (_, frame_header, _) =
+            read_headers_and_toc(include_bytes!("../../resources/test/named_frame_test.jxl"))
+                .unwrap();
+        assert_eq!(frame_header.frame_type, FrameType::RegularFrame);
+        assert_eq!(frame_header.name, "TestFrameName");
+        assert_eq!(frame_header.name.len(), 13);
+    }
 }

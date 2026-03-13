@@ -21,7 +21,7 @@ autoexamples = false
 autotests = false
 autobenches = false
 description = "High performance Rust implementation of a JPEG XL decoder - supporting macros"
-readme = "README.md"
+readme = "../README.md"
 keywords = [
     "jpeg-xl",
     "decoder",
@@ -29,7 +29,6 @@ keywords = [
 categories = ["multimedia::images"]
 license = "BSD-3-Clause"
 repository = "https://github.com/libjxl/jxl-rs"
-resolver = "2"
 
 [features]
 test = []
@@ -39,14 +38,10 @@ name = "jxl_macros"
 path = "src/lib.rs"
 proc-macro = true
 
-[dependencies.proc-macro-error2]
-version = "2.0.1"
-
-[dependencies.proc-macro2]
-version = "1.0"
-
-[dependencies.quote]
-version = "1.0"
+[dependencies]
+proc-macro-error2 = "2.0.1"
+proc-macro2 = "1.0"
+quote = "1.0"
 
 [dependencies.syn]
 version = "2.0.90"

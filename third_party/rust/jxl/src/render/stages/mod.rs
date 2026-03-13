@@ -17,7 +17,7 @@ mod premultiply_alpha;
 mod splines;
 mod spot;
 mod to_linear;
-mod upsample;
+pub mod upsample;
 mod xyb;
 mod ycbcr;
 

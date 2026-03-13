@@ -25,6 +25,15 @@ pub enum SigmaSource {
     Constant(f32),
 }
 
+#[allow(clippy::excessive_precision)]
+const INV_SIGMA_NUM: f32 = -1.1715728752538099024;
+
+impl Default for SigmaSource {
+    fn default() -> Self {
+        Self::Constant(INV_SIGMA_NUM / 2.0)
+    }
+}
+
 impl SigmaSource {
     pub fn new(
         frame_header: &FrameHeader,
@@ -32,9 +41,6 @@ impl SigmaSource {
         hf_meta: &Option<HfMetadata>,
     ) -> Result<Self> {
         let rf = &frame_header.restoration_filter;
-        #[allow(clippy::excessive_precision)]
-        const INV_SIGMA_NUM: f32 = -1.1715728752538099024;
-
         if frame_header.encoding == Encoding::VarDCT {
             let size_blocks = frame_header.size_blocks();
             let sigma_xsize = size_blocks.0;

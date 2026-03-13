@@ -12,6 +12,7 @@ use crate::entropy_coding::huffman::*;
 use crate::entropy_coding::hybrid_uint::*;
 use crate::error::{Error, Result};
 use crate::headers::encodings::*;
+use crate::util::NewWithCapacity;
 use crate::util::tracing_wrappers::*;
 
 pub fn decode_varint16(br: &mut BitReader) -> Result<u16> {
@@ -259,7 +260,7 @@ impl SymbolReader {
                     min_symbol,
                     min_length,
                     dist_multiplier,
-                    window: Vec::new(),
+                    window: Vec::new_with_capacity(1 << Lz77State::LOG_WINDOW_SIZE)?,
                     num_to_copy: 0,
                     copy_pos: 0,
                     num_decoded: 0,
@@ -278,30 +279,50 @@ impl SymbolReader {
 }
 
 impl SymbolReader {
-    #[inline]
-    pub fn read_unsigned(
+    #[inline(always)]
+    pub fn read_unsigned_inline(
         &mut self,
         histograms: &Histograms,
         br: &mut BitReader,
         context: usize,
     ) -> u32 {
         let cluster = histograms.map_context_to_cluster(context);
-        self.read_unsigned_clustered(histograms, br, cluster)
+        self.read_unsigned_clustered_inline(histograms, br, cluster)
+    }
+
+    #[inline(never)]
+    pub fn read_unsigned(
+        &mut self,
+        histograms: &Histograms,
+        br: &mut BitReader,
+        context: usize,
+    ) -> u32 {
+        self.read_unsigned_inline(histograms, br, context)
     }
 
     #[inline(always)]
+    pub fn read_signed_inline(
+        &mut self,
+        histograms: &Histograms,
+        br: &mut BitReader,
+        context: usize,
+    ) -> i32 {
+        let unsigned = self.read_unsigned_inline(histograms, br, context);
+        unpack_signed(unsigned)
+    }
+
+    #[inline(never)]
     pub fn read_signed(
         &mut self,
         histograms: &Histograms,
         br: &mut BitReader,
         context: usize,
     ) -> i32 {
-        let unsigned = self.read_unsigned(histograms, br, context);
-        unpack_signed(unsigned)
+        self.read_signed_inline(histograms, br, context)
     }
 
-    #[inline]
-    pub fn read_unsigned_clustered(
+    #[inline(always)]
+    pub fn read_unsigned_clustered_inline(
         &mut self,
         histograms: &Histograms,
         br: &mut BitReader,
@@ -382,14 +403,69 @@ impl SymbolReader {
         }
     }
 
+    #[inline(never)]
+    pub fn read_unsigned_clustered(
+        &mut self,
+        histograms: &Histograms,
+        br: &mut BitReader,
+        cluster: usize,
+    ) -> u32 {
+        self.read_unsigned_clustered_inline(histograms, br, cluster)
+    }
+
     #[inline(always)]
+    pub fn read_signed_clustered_inline(
+        &mut self,
+        histograms: &Histograms,
+        br: &mut BitReader,
+        cluster: usize,
+    ) -> i32 {
+        let unsigned = self.read_unsigned_clustered_inline(histograms, br, cluster);
+        unpack_signed(unsigned)
+    }
+
+    #[inline(never)]
     pub fn read_signed_clustered(
         &mut self,
         histograms: &Histograms,
         br: &mut BitReader,
         cluster: usize,
     ) -> i32 {
-        let unsigned = self.read_unsigned_clustered(histograms, br, cluster);
+        self.read_signed_clustered_inline(histograms, br, cluster)
+    }
+
+    /// Specialized fast path for when all HybridUint configs are 420.
+    ///
+    /// # Preconditions
+    /// - `histograms.can_use_config_420_fast_path()` must be true (no LZ77, all configs are 420)
+    /// - This assumes `SymbolReaderState::None` (verified by debug_assert)
+    #[inline(always)]
+    pub fn read_unsigned_clustered_config_420(
+        &mut self,
+        histograms: &Histograms,
+        br: &mut BitReader,
+        cluster: usize,
+    ) -> u32 {
+        debug_assert!(matches!(self.state, SymbolReaderState::None));
+        debug_assert!(histograms.can_use_config_420_fast_path());
+
+        let token = match &histograms.codes {
+            Codes::Huffman(hc) => hc.read(br, cluster),
+            Codes::Ans(ans) => self.ans_reader.read(ans, br, cluster),
+        };
+        HybridUint::read_config_420(token, br)
+    }
+
+    /// Specialized fast path for signed reads when all configs are 420.
+    /// See [`read_unsigned_clustered_config_420`] for preconditions.
+    #[inline(always)]
+    pub fn read_signed_clustered_config_420(
+        &mut self,
+        histograms: &Histograms,
+        br: &mut BitReader,
+        cluster: usize,
+    ) -> i32 {
+        let unsigned = self.read_unsigned_clustered_config_420(histograms, br, cluster);
         unpack_signed(unsigned)
     }
 
@@ -552,6 +628,17 @@ impl Histograms {
 
     pub fn num_histograms(&self) -> usize {
         *self.context_map.iter().max().unwrap() as usize + 1
+    }
+
+    pub fn resize(&mut self, num_contexts: usize) {
+        self.context_map.resize(num_contexts, 0);
+    }
+
+    /// Returns true if the config 420 fast path can be safely used.
+    /// Config 420: split_exponent=4, msb_in_token=2, lsb_in_token=0 (common pattern)
+    /// Requires: all configs are 420 AND LZ77 is disabled
+    pub fn can_use_config_420_fast_path(&self) -> bool {
+        !self.lz77_params.enabled && self.uint_configs.iter().all(|cfg| cfg.is_config_420())
     }
 }
 

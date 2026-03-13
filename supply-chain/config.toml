@@ -120,6 +120,22 @@ notes = "Patched version of upstream"
 audit-as-crates-io = true
 notes = "Patched version of upstream"
 
+[policy."jxl:0.3.0@git:2cddd9033317c4968f07c9e76c1b5257969eb291"]
+audit-as-crates-io = true
+notes = "This is the upstream code from the main branch"
+
+[policy."jxl_macros:0.3.0@git:2cddd9033317c4968f07c9e76c1b5257969eb291"]
+audit-as-crates-io = true
+notes = "This is the upstream code from the main branch"
+
+[policy."jxl_simd:0.3.0@git:2cddd9033317c4968f07c9e76c1b5257969eb291"]
+audit-as-crates-io = true
+notes = "This is the upstream code from the main branch"
+
+[policy."jxl_transforms:0.3.0@git:2cddd9033317c4968f07c9e76c1b5257969eb291"]
+audit-as-crates-io = true
+notes = "This is the upstream code from the main branch"
+
 [policy.l10nregistry]
 dependency-criteria = { fluent-testing = "safe-to-run", tokio = "safe-to-run" }
 notes = "This crate has two testing-only dependencies which are specified as regular-but-optional rather than a dev-dependencies, because they need to be available to both benchmarks and integration tests."

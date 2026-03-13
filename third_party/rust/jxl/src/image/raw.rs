@@ -20,6 +20,10 @@ pub struct OwnedRawImage {
 }
 
 impl OwnedRawImage {
+    pub fn new(byte_size: (usize, usize)) -> Result<Self> {
+        Self::new_zeroed_with_padding(byte_size, (0, 0), (0, 0))
+    }
+
     pub fn new_zeroed_with_padding(
         byte_size: (usize, usize),
         offset: (usize, usize),

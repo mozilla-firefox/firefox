@@ -3,10 +3,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
+
 use apply::TransformStep;
 pub use apply::TransformStepChunk;
 use num_derive::FromPrimitive;
 
+use crate::frame::modular::BUFFER_STATUS_NOT_RENDERED;
 use crate::frame::modular::ModularBuffer;
 use crate::headers::frame_header::FrameHeader;
 use crate::util::AtomicRefCell;
@@ -112,15 +116,17 @@ pub fn make_grids(
 
     // Create grids.
     for g in buffer_info.iter_mut() {
-        let is_output = g.info.output_channel_idx >= 0;
+        let is_output = g.info.output_channel_idx.is_some();
         g.buffer_grid = get_grid_indices(g.grid_shape)
             .map(|(x, y)| ModularBuffer {
                 data: AtomicRefCell::new(None),
-                remaining_uses: if is_output { 1 } else { 0 },
-                used_by_transforms: vec![],
+                remaining_uses: AtomicUsize::new(if is_output { 1 } else { 0 }),
+                used_by_transforms_weak: vec![],
+                used_by_transforms_strong: vec![],
                 size: g
                     .get_grid_rect(frame_header, g.grid_kind, (x as usize, y as usize))
                     .size,
+                status: AtomicUsize::new(BUFFER_STATUS_NOT_RENDERED),
             })
             .collect();
     }
@@ -135,7 +141,8 @@ pub fn make_grids(
             grid_transform_steps.push(TransformStepChunk {
                 step: transform.clone(),
                 grid_pos: (grid_pos.0 as usize, grid_pos.1 as usize),
-                incomplete_deps: 0,
+                deps: vec![],
+                layer: 0,
             });
             ts
         };
@@ -145,6 +152,7 @@ pub fn make_grids(
                         output_grid_kind: ModularGridKind,
                         output_grid_shape: (usize, usize),
                         output_grid_pos: (isize, isize),
+                        is_weak: bool,
                         grid_transform_steps: &mut Vec<TransformStepChunk>,
                         buffer_info: &mut Vec<ModularBufferInfo>| {
         let output_grid_size = (output_grid_shape.0 as isize, output_grid_shape.1 as isize);
@@ -159,15 +167,19 @@ pub fn make_grids(
         let output_grid_pos = (output_grid_pos.0 as usize, output_grid_pos.1 as usize);
         let input_grid_pos =
             buffer_info[input_buffer_idx].get_grid_idx(output_grid_kind, output_grid_pos);
-        if !buffer_info[input_buffer_idx].buffer_grid[input_grid_pos]
-            .used_by_transforms
-            .contains(&ts)
+        let grid = &mut buffer_info[input_buffer_idx].buffer_grid[input_grid_pos];
+        if !grid.used_by_transforms_weak.contains(&ts)
+            && !grid.used_by_transforms_strong.contains(&ts)
         {
-            buffer_info[input_buffer_idx].buffer_grid[input_grid_pos].remaining_uses += 1;
-            buffer_info[input_buffer_idx].buffer_grid[input_grid_pos]
-                .used_by_transforms
-                .push(ts);
-            grid_transform_steps[ts].incomplete_deps += 1;
+            grid.remaining_uses.fetch_add(1, Ordering::Relaxed);
+            grid_transform_steps[ts]
+                .deps
+                .push((input_buffer_idx, input_grid_pos));
+            if is_weak {
+                grid.used_by_transforms_weak.push(ts);
+            } else {
+                grid.used_by_transforms_strong.push(ts);
+            }
         }
     };
 
@@ -191,6 +203,7 @@ pub fn make_grids(
                             out_kind,
                             out_shape,
                             (x, y),
+                            false,
                             &mut grid_transform_steps,
                             buffer_info,
                         );
@@ -219,6 +232,7 @@ pub fn make_grids(
                             out_kind,
                             out_shape,
                             (x, y),
+                            false,
                             &mut grid_transform_steps,
                             buffer_info,
                         );
@@ -229,6 +243,7 @@ pub fn make_grids(
                         out_kind,
                         out_shape,
                         (x, y),
+                        false,
                         &mut grid_transform_steps,
                         buffer_info,
                     );
@@ -239,6 +254,7 @@ pub fn make_grids(
                             out_kind,
                             out_shape,
                             (x, y - 1),
+                            false,
                             &mut grid_transform_steps,
                             buffer_info,
                         );
@@ -265,6 +281,7 @@ pub fn make_grids(
                         out_kind,
                         out_shape,
                         (x, y),
+                        false,
                         &mut grid_transform_steps,
                         buffer_info,
                     );
@@ -274,6 +291,7 @@ pub fn make_grids(
                         out_kind,
                         out_shape,
                         (x, y),
+                        false,
                         &mut grid_transform_steps,
                         buffer_info,
                     );
@@ -289,6 +307,7 @@ pub fn make_grids(
                                 out_kind,
                                 out_shape,
                                 (x + dx, y + dy),
+                                false,
                                 &mut grid_transform_steps,
                                 buffer_info,
                             );
@@ -309,6 +328,7 @@ pub fn make_grids(
                             out_kind,
                             out_shape,
                             (x, y),
+                            false,
                             &mut grid_transform_steps,
                             buffer_info,
                         );
@@ -320,6 +340,7 @@ pub fn make_grids(
                         out_kind,
                         out_shape,
                         (x + 1, y),
+                        true,
                         &mut grid_transform_steps,
                         buffer_info,
                     );
@@ -330,6 +351,7 @@ pub fn make_grids(
                         out_kind,
                         out_shape,
                         (x - 1, y),
+                        true,
                         &mut grid_transform_steps,
                         buffer_info,
                     );
@@ -348,6 +370,7 @@ pub fn make_grids(
                             out_kind,
                             out_shape,
                             (x, y),
+                            false,
                             &mut grid_transform_steps,
                             buffer_info,
                         );
@@ -359,6 +382,7 @@ pub fn make_grids(
                         out_kind,
                         out_shape,
                         (x, y + 1),
+                        true,
                         &mut grid_transform_steps,
                         buffer_info,
                     );
@@ -369,12 +393,53 @@ pub fn make_grids(
                         out_kind,
                         out_shape,
                         (x, y - 1),
+                        true,
                         &mut grid_transform_steps,
                         buffer_info,
                     );
                 }
             }
         }
+    }
+
+    // Compute the layer of each transform step.
+    // TODO(veluca): for parallelization purposes, it might make sense to try to ensure that
+    // transforms in the same layer are as similar in runtime as possible.
+    let mut transforms_needed_by = vec![vec![]; grid_transform_steps.len()];
+    let mut enabled_transforms = vec![vec![]; grid_transform_steps.len()];
+    for (i, s) in grid_transform_steps.iter().enumerate() {
+        for (b, g) in s.outputs(buffer_info) {
+            for (t, _) in buffer_info[b].buffer_grid[g].users(true) {
+                transforms_needed_by[t].push(i);
+                enabled_transforms[i].push(t);
+            }
+        }
+    }
+
+    let mut missing_prerequisites: Vec<_> = transforms_needed_by.iter().map(|x| x.len()).collect();
+
+    let mut stack = vec![];
+    for (i, m) in missing_prerequisites.iter().enumerate() {
+        if *m == 0 {
+            stack.push(i);
+        }
+    }
+
+    while let Some(i) = stack.pop() {
+        assert_eq!(missing_prerequisites[i], 0);
+        for e in enabled_transforms[i].iter() {
+            missing_prerequisites[*e] = missing_prerequisites[*e].checked_sub(1).unwrap();
+            if missing_prerequisites[*e] == 0 {
+                stack.push(*e);
+            }
+        }
+
+        grid_transform_steps[i].layer = transforms_needed_by[i]
+            .iter()
+            .map(|x| grid_transform_steps[*x].layer)
+            .max()
+            .unwrap_or(0)
+            + 1;
     }
 
     trace!(?grid_transform_steps, ?buffer_info);

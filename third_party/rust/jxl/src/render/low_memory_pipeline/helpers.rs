@@ -43,17 +43,3 @@ pub(super) fn get_distinct_indices<'a, T>(
         .map(|x| std::mem::take(x).expect("Not all elements were found"))
         .collect()
 }
-
-/// Mirror-reflects a value v to fit in a [0; s) range.
-pub(super) fn mirror(mut v: isize, s: usize) -> usize {
-    // TODO(veluca): consider speeding this up if needed.
-    loop {
-        if v < 0 {
-            v = -v - 1;
-        } else if v >= s as isize {
-            v = s as isize * 2 - v - 1;
-        } else {
-            return v as usize;
-        }
-    }
-}

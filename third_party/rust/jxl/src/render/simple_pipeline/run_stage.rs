@@ -13,7 +13,7 @@ use crate::{
         RenderPipelineInOutStage, RenderPipelineInPlaceStage, RunInOutStage, RunInPlaceStage,
         internal::PipelineBuffer,
     },
-    util::{SmallVec, round_up_size_to_cache_line, tracing_wrappers::*},
+    util::{SmallVec, mirror, round_up_size_to_cache_line, tracing_wrappers::*},
 };
 
 impl PipelineBuffer for Image<f64> {
@@ -122,31 +122,20 @@ impl<T: RenderPipelineInOutStage> RunInOutStage<Image<f64>> for T {
             numc
         ];
 
-        let mirror = |mut v: i64, size: i64| {
-            while v < 0 || v >= size {
-                if v < 0 {
-                    v = -v - 1;
-                }
-                if v >= size {
-                    v = size + (size - v) - 1;
-                }
-            }
-            v as usize
-        };
         for y in 0..input_size.1 {
             for x in (0..input_size.0).step_by(chunk_size) {
-                let border_x = Self::BORDER.0 as i64;
-                let border_y = Self::BORDER.1 as i64;
+                let border_x = Self::BORDER.0 as isize;
+                let border_y = Self::BORDER.1 as isize;
                 let xsize = input_size.0.min(x + chunk_size) - x;
-                let xs = xsize as i64;
+                let xs = xsize as isize;
                 debug!("position: {x}x{y} xsize: {xsize}");
                 for c in 0..numc {
                     for iy in -border_y..=border_y {
-                        let imgy = mirror(y as i64 + iy, input_size.1 as i64);
+                        let imgy = mirror(y as isize + iy, input_size.1);
                         let in_row = input_buffers[c].row(imgy);
                         let buf_in_row = &mut buffer_in[c][(iy + border_y) as usize];
                         for ix in (-border_x..0).chain(xs..xs + border_x) {
-                            let imgx = mirror(x as i64 + ix, input_size.0 as i64);
+                            let imgx = mirror(x as isize + ix, input_size.0);
                             buf_in_row[(ix + border_x) as usize] =
                                 T::InputT::from_f64(in_row[imgx]);
                         }

@@ -937,7 +937,29 @@ impl JxlColorEncoding {
             }
         } else {
             match self {
-                JxlColorEncoding::XYB { .. } => todo!("implement A2B0 and B2A0 tags"),
+                JxlColorEncoding::XYB { .. } => {
+                    // Create A2B0 tag for XYB color space
+                    let a2b0_start = tags_data.len() as u32;
+                    create_icc_lut_atob_tag_for_xyb(&mut tags_data)?;
+                    pad_to_4_byte_boundary(&mut tags_data);
+                    let a2b0_size = (tags_data.len() as u32) - a2b0_start;
+                    collected_tags.push(TagInfo {
+                        signature: *b"A2B0",
+                        offset_in_tags_blob: a2b0_start,
+                        size_unpadded: a2b0_size,
+                    });
+
+                    // Create B2A0 tag (no-op, required by Apple software)
+                    let b2a0_start = tags_data.len() as u32;
+                    create_icc_noop_btoa_tag(&mut tags_data)?;
+                    pad_to_4_byte_boundary(&mut tags_data);
+                    let b2a0_size = (tags_data.len() as u32) - b2a0_start;
+                    collected_tags.push(TagInfo {
+                        signature: *b"B2A0",
+                        offset_in_tags_blob: b2a0_start,
+                        size_unpadded: b2a0_size,
+                    });
+                }
                 JxlColorEncoding::RgbColorSpace {
                     transfer_function, ..
                 }
@@ -2047,6 +2069,108 @@ fn tone_map_pixel(
     ])
 }
 
+/// Create mAB A2B0 tag for XYB color space.
+fn create_icc_lut_atob_tag_for_xyb(tags: &mut Vec<u8>) -> Result<(), Error> {
+    use super::xyb_constants::*;
+    use byteorder::{BigEndian, WriteBytesExt};
+
+    // Tag signature: 'mAB '
+    tags.extend_from_slice(b"mAB ");
+    // 4 reserved bytes set to 0
+    tags.write_u32::<BigEndian>(0)
+        .map_err(|_| Error::InvalidIccStream)?;
+    // Number of input channels
+    tags.push(3);
+    // Number of output channels
+    tags.push(3);
+    // 2 reserved bytes for padding
+    tags.write_u16::<BigEndian>(0)
+        .map_err(|_| Error::InvalidIccStream)?;
+
+    // Offsets (calculated based on structure size)
+    // offset to first B curve: 32
+    tags.write_u32::<BigEndian>(32)
+        .map_err(|_| Error::InvalidIccStream)?;
+    // offset to matrix: 244
+    tags.write_u32::<BigEndian>(244)
+        .map_err(|_| Error::InvalidIccStream)?;
+    // offset to first M curve: 148
+    tags.write_u32::<BigEndian>(148)
+        .map_err(|_| Error::InvalidIccStream)?;
+    // offset to CLUT: 80
+    tags.write_u32::<BigEndian>(80)
+        .map_err(|_| Error::InvalidIccStream)?;
+    // offset to first A curve (reuse linear B curves): 32
+    tags.write_u32::<BigEndian>(32)
+        .map_err(|_| Error::InvalidIccStream)?;
+
+    // offset = 32: B curves (3 identity/linear curves)
+    // Each curve is 12 bytes: 'para' (4) + reserved (4) + function type (2) + reserved (2)
+    // For type 0: Y = X^gamma, with gamma = 1.0 (identity)
+    for _ in 0..3 {
+        create_icc_curv_para_tag(tags, &[1.0], 0)?;
+    }
+
+    // offset = 80: CLUT
+    // 16 bytes for grid points (only first 3 used, rest 0)
+    for i in 0..16 {
+        tags.push(if i < 3 { 2 } else { 0 });
+    }
+    // precision = 2 (16-bit)
+    tags.push(2);
+    // 3 bytes padding
+    tags.push(0);
+    tags.write_u16::<BigEndian>(0)
+        .map_err(|_| Error::InvalidIccStream)?;
+
+    // 2x2x2x3 entries of 2 bytes each = 48 bytes
+    let cube = unscaled_a2b_cube_full();
+    for row_x in &cube {
+        for row_y in row_x {
+            for out_f in row_y {
+                for &val_f in out_f {
+                    let val = (65535.0 * val_f).round().clamp(0.0, 65535.0) as u16;
+                    tags.write_u16::<BigEndian>(val)
+                        .map_err(|_| Error::InvalidIccStream)?;
+                }
+            }
+        }
+    }
+
+    // offset = 148: M curves (3 parametric curves)
+    // Type 3 parametric curve: Y = (aX + b)^gamma + c for X >= d, else Y = cX
+    // Each curve: 12 + 5*4 = 32 bytes
+    let scale = xyb_scale();
+    for i in 0..3 {
+        let b = -XYB_OFFSET[i] - NEG_OPSIN_ABSORBANCE_BIAS_RGB[i].cbrt();
+        let params = [
+            3.0,                      // gamma
+            1.0 / scale[i],           // a
+            b,                        // b
+            0.0,                      // c (unused)
+            (-b * scale[i]).max(0.0), // d (make skcms happy)
+        ];
+        create_icc_curv_para_tag(tags, &params, 3)?;
+    }
+
+    // offset = 244: Matrix (12 values as s15Fixed16)
+    // 9 matrix values + 3 intercepts = 12 * 4 = 48 bytes
+    for v in XYB_ICC_MATRIX {
+        append_s15_fixed_16(tags, v as f32)?;
+    }
+
+    // Intercepts
+    for i in 0..3 {
+        let mut intercept: f64 = 0.0;
+        for j in 0..3 {
+            intercept += XYB_ICC_MATRIX[i * 3 + j] * (NEG_OPSIN_ABSORBANCE_BIAS_RGB[j] as f64);
+        }
+        append_s15_fixed_16(tags, intercept as f32)?;
+    }
+
+    Ok(())
+}
+
 /// Create mft1 (8-bit LUT) A2B0 tag for HDR tone mapping.
 fn create_icc_lut_atob_tag_for_hdr(
     transfer_function: &JxlTransferFunction,
@@ -2641,5 +2765,18 @@ mod test {
         });
         assert!(!rgb.same_color_encoding(&gray));
         assert!(!gray.same_color_encoding(&rgb));
+    }
+
+    /// Verify XYB color profiles generate valid ICC profiles with A2B0/B2A0 tags.
+    #[test]
+    fn test_xyb_icc_profile_generation() {
+        let xyb = JxlColorProfile::Simple(JxlColorEncoding::XYB {
+            rendering_intent: RenderingIntent::Perceptual,
+        });
+
+        let icc = xyb.try_as_icc().expect("XYB should generate ICC profile");
+        assert!(!icc.is_empty());
+        assert!(icc.windows(4).any(|w| w == b"mAB "));
+        assert!(icc.windows(4).any(|w| w == b"mBA "));
     }
 }

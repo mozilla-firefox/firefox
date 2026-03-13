@@ -127,11 +127,23 @@ impl JxlDecoderInner {
             input,
             &self.options,
             buffers,
+            false,
         ))
     }
 
     /// Draws all the pixels we have data for.
-    pub fn flush_pixels(&mut self, _buffers: &mut [JxlOutputBuffer]) -> Result<()> {
-        todo!()
+    pub fn flush_pixels(&mut self, buffers: &mut [JxlOutputBuffer]) -> Result<()> {
+        let mut input: &[u8] = &[];
+        match self.codestream_parser.process(
+            &mut self.box_parser,
+            &mut input,
+            &self.options,
+            Some(buffers),
+            true,
+        ) {
+            Ok(()) => Ok(()),
+            Err(crate::error::Error::OutOfBounds(_)) => Ok(()),
+            Err(e) => Err(e),
+        }
     }
 }

@@ -6,6 +6,7 @@
 // Originally written for jxl-oxide.
 
 pub mod box_header;
+pub mod frame_index;
 pub mod parse;
 
 use box_header::*;

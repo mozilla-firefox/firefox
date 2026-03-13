@@ -14,8 +14,9 @@ use crate::{
     entropy_coding::decode::{Histograms, SymbolReader, unpack_signed},
     error::{Error, Result},
     frame::color_correlation_map::ColorCorrelationParams,
-    util::{CeilLog2, NewWithCapacity, fast_cos, fast_erff, tracing_wrappers::*},
+    util::{CeilLog2, NewWithCapacity, fast_cos, fast_erff_simd, tracing_wrappers::*},
 };
+use jxl_simd::{F32SimdVec, ScalarDescriptor, SimdDescriptor, simd_function};
 const MAX_NUM_CONTROL_POINTS: u32 = 1 << 20;
 const MAX_NUM_CONTROL_POINTS_PER_PIXEL_RATIO: u32 = 2;
 const DELTA_LIMIT: i64 = 1 << 30;
@@ -520,7 +521,111 @@ impl Dct32 {
     }
 }
 
+#[inline(always)]
+fn draw_segment_inner<D: SimdDescriptor>(
+    d: D,
+    row: &mut [&mut [f32]],
+    row_pos: (usize, usize),
+    x_range: (usize, usize),
+    segment: &SplineSegment,
+) -> usize {
+    let (x_start, x_end) = x_range;
+    let (row_x0, y) = row_pos;
+    let len = D::F32Vec::LEN;
+    if x_start + len > x_end {
+        return x_start;
+    }
+
+    let inv_sigma = D::F32Vec::splat(d, segment.inv_sigma);
+    let half = D::F32Vec::splat(d, 0.5);
+    let one_over_2s2 = D::F32Vec::splat(d, 0.353_553_38);
+    let sigma_over_4_times_intensity = D::F32Vec::splat(d, segment.sigma_over_4_times_intensity);
+    let center_x = D::F32Vec::splat(d, segment.center_x);
+    let center_y = D::F32Vec::splat(d, segment.center_y);
+    let dy = D::F32Vec::splat(d, y as f32) - center_y;
+    let dy2 = dy * dy;
+
+    let mut x_base_arr = [0.0f32; 16];
+    for (i, val) in x_base_arr.iter_mut().enumerate() {
+        *val = i as f32;
+    }
+    let vx_base = D::F32Vec::load(d, &x_base_arr);
+
+    let start_offset = x_start - row_x0;
+    let end_offset = x_end - row_x0;
+
+    let [r0, r1, r2] = row else { unreachable!() };
+
+    let mut it0 = r0[start_offset..end_offset].chunks_exact_mut(len);
+    let mut it1 = r1[start_offset..end_offset].chunks_exact_mut(len);
+    let mut it2 = r2[start_offset..end_offset].chunks_exact_mut(len);
+
+    let cm0 = D::F32Vec::splat(d, segment.color[0]);
+    let cm1 = D::F32Vec::splat(d, segment.color[1]);
+    let cm2 = D::F32Vec::splat(d, segment.color[2]);
+
+    let num_chunks = (end_offset - start_offset) / len;
+    let mut x = x_start;
+    for _ in 0..num_chunks {
+        let vx = D::F32Vec::splat(d, x as f32) + vx_base;
+        let dx = vx - center_x;
+        let sqd = dx.mul_add(dx, dy2);
+        let distance = sqd.sqrt();
+
+        let arg1 = distance.mul_add(half, one_over_2s2) * inv_sigma;
+        let arg2 = distance.mul_add(half, D::F32Vec::splat(d, -0.353_553_38)) * inv_sigma;
+        let one_dimensional_factor = fast_erff_simd(d, arg1) - fast_erff_simd(d, arg2);
+        let local_intensity =
+            sigma_over_4_times_intensity * one_dimensional_factor * one_dimensional_factor;
+
+        let c0 = it0.next().unwrap();
+        cm0.mul_add(local_intensity, D::F32Vec::load(d, c0))
+            .store(c0);
+        let c1 = it1.next().unwrap();
+        cm1.mul_add(local_intensity, D::F32Vec::load(d, c1))
+            .store(c1);
+        let c2 = it2.next().unwrap();
+        cm2.mul_add(local_intensity, D::F32Vec::load(d, c2))
+            .store(c2);
+
+        x += len;
+    }
+    x
+}
+
+simd_function!(
+    draw_segment_dispatch,
+    d: D,
+    fn draw_segment_simd(
+        row: &mut [&mut [f32]],
+        row_pos: (usize, usize),
+        xsize: usize,
+        segment: &SplineSegment,
+    ) {
+        let (x0, y) = row_pos;
+        let x1 = x0 + xsize;
+        let clamped_x0 = x0.max((segment.center_x - segment.maximum_distance).round() as usize);
+        let clamped_x1 = x1.min((segment.center_x + segment.maximum_distance).round() as usize + 1);
+
+        if clamped_x1 <= clamped_x0 {
+            return;
+        }
+
+        let x = clamped_x0;
+        let x = draw_segment_inner(d, row, (x0, y), (x, clamped_x1), segment);
+        let d = d.maybe_downgrade_256bit();
+        let x = draw_segment_inner(d, row, (x0, y), (x, clamped_x1), segment);
+        let d = d.maybe_downgrade_128bit();
+        let x = draw_segment_inner(d, row, (x0, y), (x, clamped_x1), segment);
+        draw_segment_inner(ScalarDescriptor, row, (x0, y), (x, clamped_x1), segment);
+    }
+);
+
 impl Splines {
+    pub fn is_initialized(&self) -> bool {
+        !self.segment_y_start.is_empty()
+    }
+
     #[cfg(test)]
     pub fn create(
         quantization_adjustment: i32,
@@ -540,54 +645,12 @@ impl Splines {
         let first_segment_index_pos = self.segment_y_start[row_pos.1];
         let last_segment_index_pos = self.segment_y_start[row_pos.1 + 1];
         for segment_index_pos in first_segment_index_pos..last_segment_index_pos {
-            self.draw_segment(
+            draw_segment_dispatch(
                 row,
                 row_pos,
                 xsize,
                 &self.segments[self.segment_indices[segment_index_pos as usize]],
             );
-        }
-    }
-    fn draw_segment(
-        &self,
-        row: &mut [&mut [f32]],
-        row_pos: (usize, usize),
-        xsize: usize,
-        segment: &SplineSegment,
-    ) {
-        let (x0, y) = row_pos;
-        let x1 = x0 + xsize;
-        let clamped_x0 = x0.max((segment.center_x - segment.maximum_distance).round() as usize);
-        // one-past-the-end
-        let clamped_x1 = x1.min((segment.center_x + segment.maximum_distance).round() as usize + 1);
-        for x in clamped_x0..clamped_x1 {
-            self.draw_segment_at(row, (x, y), x0, segment);
-        }
-    }
-    fn draw_segment_at(
-        &self,
-        row: &mut [&mut [f32]],
-        pixel_pos: (usize, usize),
-        row_x0: usize,
-        segment: &SplineSegment,
-    ) {
-        let (x, y) = pixel_pos;
-        let inv_sigma = segment.inv_sigma;
-        let half = 0.5f32;
-        let one_over_2s2 = 0.353_553_38_f32;
-        let sigma_over_4_times_intensity = segment.sigma_over_4_times_intensity;
-        let dx = x as f32 - segment.center_x;
-        let dy = y as f32 - segment.center_y;
-        let sqd = dx * dx + dy * dy;
-        let distance = sqd.sqrt();
-        let one_dimensional_factor = fast_erff((distance * half + one_over_2s2) * inv_sigma)
-            - fast_erff((distance * half - one_over_2s2) * inv_sigma);
-        let local_intensity =
-            sigma_over_4_times_intensity * one_dimensional_factor * one_dimensional_factor;
-        for (channel_index, row) in row.iter_mut().enumerate() {
-            let cm = segment.color[channel_index];
-            let inp = row[x - row_x0];
-            row[x - row_x0] = cm * local_intensity + inp;
         }
     }
 

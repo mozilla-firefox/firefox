@@ -40,6 +40,13 @@ impl JxlColorType {
             Self::Rgba | Self::Bgra => false,
         }
     }
+    pub fn add_alpha(&self) -> Self {
+        match self {
+            Self::Grayscale | Self::GrayscaleAlpha => Self::GrayscaleAlpha,
+            Self::Rgb | Self::Rgba => Self::Rgba,
+            Self::Bgr | Self::Bgra => Self::Bgra,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

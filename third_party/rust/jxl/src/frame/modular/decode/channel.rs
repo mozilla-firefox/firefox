@@ -189,13 +189,16 @@ pub(super) fn decode_modular_channel(
 
     let special_tree = specialize_tree(tree, chan, stream_id, size.0, header)?;
     match special_tree {
+        TreeSpecialCase::NoTree(t) => {
+            decode_modular_channel_impl(buffers, chan, t, reader, br, &tree.histograms)
+        }
         TreeSpecialCase::NoWp(t) => {
             decode_modular_channel_impl(buffers, chan, t, reader, br, &tree.histograms)
         }
-        TreeSpecialCase::WpOnly(t) => {
+        TreeSpecialCase::WpOnlyConfig420(t) => {
             decode_modular_channel_impl(buffers, chan, t, reader, br, &tree.histograms)
         }
-        TreeSpecialCase::GradientLookup(t) => {
+        TreeSpecialCase::GradientLookupConfig420(t) => {
             decode_modular_channel_impl(buffers, chan, t, reader, br, &tree.histograms)
         }
         TreeSpecialCase::SingleGradientOnly(t) => {
@@ -204,5 +207,6 @@ pub(super) fn decode_modular_channel(
         TreeSpecialCase::General(t) => {
             decode_modular_channel_impl(buffers, chan, t, reader, br, &tree.histograms)
         }
-    }
+    }?;
+    br.check_for_error()
 }

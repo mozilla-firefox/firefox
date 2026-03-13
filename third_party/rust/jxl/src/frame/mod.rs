@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use std::sync::Arc;
+use std::{collections::BTreeSet, sync::Arc};
 
 use crate::{
     entropy_coding::decode::Histograms,
@@ -12,7 +12,7 @@ use crate::{
     headers::{
         FileHeader,
         extra_channels::ExtraChannelInfo,
-        frame_header::{Encoding, FrameHeader},
+        frame_header::{Encoding, FrameHeader, FrameType},
         permutation::Permutation,
         toc::Toc,
     },
@@ -26,12 +26,16 @@ use modular::{FullModularImage, Tree};
 use quant_weights::DequantMatrices;
 use quantizer::{LfQuantFactors, QuantizerParams};
 
+use crate::features::epf::SigmaSource;
+use crate::util::AtomicRefCell;
+
 mod adaptive_lf_smoothing;
 mod block_context_map;
 mod coeff_order;
 pub mod color_correlation_map;
 pub mod decode;
 mod group;
+pub mod lf_preview;
 pub mod modular;
 mod quant_weights;
 pub mod quantizer;
@@ -45,16 +49,15 @@ pub enum Section {
     Hf { group: usize, pass: usize },
 }
 
+#[derive(Debug)]
 pub struct LfGlobalState {
-    patches: Option<Arc<PatchesDictionary>>,
-    splines: Option<Splines>,
-    noise: Option<Noise>,
     lf_quant: LfQuantFactors,
     pub quant_params: Option<QuantizerParams>,
     block_context_map: Option<BlockContextMap>,
     color_correlation_params: Option<ColorCorrelationParams>,
     tree: Option<Tree>,
     modular_global: FullModularImage,
+    total_bits_read: usize,
 }
 
 pub struct PassState {
@@ -113,10 +116,7 @@ impl ReferenceFrame {
 pub struct DecoderState {
     pub(super) file_header: FileHeader,
     pub(super) reference_frames: Arc<[Option<ReferenceFrame>; Self::MAX_STORED_FRAMES]>,
-    pub(super) lf_frames: [Option<[Image<f32>; 3]>; 4],
-    // TODO(veluca): do we really need this? ISTM it could be achieved by passing None for all the
-    // buffers, and it's not clear to me what use the decoder can make of it.
-    pub enable_output: bool,
+    pub(super) lf_frames: [Option<[Image<f32>; 3]>; Self::NUM_LF_FRAMES],
     pub render_spotcolors: bool,
     #[cfg(test)]
     pub use_simple_pipeline: bool,
@@ -124,17 +124,21 @@ pub struct DecoderState {
     pub nonvisible_frame_index: usize,
     pub high_precision: bool,
     pub premultiply_output: bool,
+    // Whether the latest level 1 LF frame was fully rendered.
+    // If this is set to `true`, early flushing in the main frame
+    // (before HF is available) will do nothing.
+    pub lf_frame_was_rendered: bool,
 }
 
 impl DecoderState {
     pub const MAX_STORED_FRAMES: usize = 4;
+    pub const NUM_LF_FRAMES: usize = 4;
 
     pub fn new(file_header: FileHeader) -> Self {
         Self {
             file_header,
             reference_frames: Arc::new([None, None, None, None]),
-            lf_frames: [None, None, None, None],
-            enable_output: true,
+            lf_frames: std::array::from_fn(|_| None),
             render_spotcolors: true,
             #[cfg(test)]
             use_simple_pipeline: false,
@@ -142,6 +146,7 @@ impl DecoderState {
             nonvisible_frame_index: 0,
             high_precision: false,
             premultiply_output: false,
+            lf_frame_was_rendered: false,
         }
     }
 
@@ -169,6 +174,14 @@ pub struct HfMetadata {
     used_hf_types: u32,
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum RenderUnit {
+    /// VarDCT data
+    VarDCT,
+    /// Modular channel with the given index
+    Modular(usize),
+}
+
 pub struct Frame {
     header: FrameHeader,
     toc: Toc,
@@ -187,9 +200,21 @@ pub struct Frame {
     render_pipeline: Option<Box<crate::render::LowMemoryRenderPipeline>>,
     reference_frame_data: Option<Vec<Image<f32>>>,
     lf_frame_data: Option<[Image<f32>; 3]>,
-    lf_global_was_rendered: bool,
+    was_flushed_once: bool,
     /// Reusable buffers for VarDCT group decoding.
     vardct_buffers: Option<group::VarDctBuffers>,
+    // Last pass rendered so far for each HF group.
+    last_rendered_pass: Vec<Option<usize>>,
+    // Groups that should be rendered on the next call to flush().
+    groups_to_flush: BTreeSet<usize>,
+    changed_since_last_flush: BTreeSet<(usize, RenderUnit)>,
+    incomplete_groups: usize,
+    patches: Arc<AtomicRefCell<PatchesDictionary>>,
+    splines: Arc<AtomicRefCell<Splines>>,
+    noise: Arc<AtomicRefCell<Noise>>,
+    lf_quant: Arc<AtomicRefCell<LfQuantFactors>>,
+    color_correlation_params: Arc<AtomicRefCell<ColorCorrelationParams>>,
+    epf_sigma: Arc<AtomicRefCell<SigmaSource>>,
 }
 
 impl Frame {
@@ -219,6 +244,25 @@ impl Frame {
                 }
             }
         }
+    }
+
+    pub fn can_do_early_rendering(&self) -> bool {
+        if matches!(
+            self.header.frame_type,
+            FrameType::ReferenceOnly | FrameType::SkipProgressive
+        ) {
+            return false;
+        }
+        if self.header.has_lf_frame() {
+            return true;
+        }
+        if self.header.encoding == Encoding::VarDCT {
+            return false;
+        }
+        self.lf_global
+            .as_ref()
+            .map(|x| x.modular_global.can_do_early_partial_render())
+            .unwrap_or_default()
     }
 
     pub fn finalize_lf(&mut self) -> Result<()> {
@@ -295,14 +339,14 @@ mod test {
         bytes: &[u8],
         verify: impl Fn(&Frame, usize) -> Result<()> + 'static,
     ) -> Result<usize> {
-        crate::api::tests::decode(bytes, usize::MAX, false, Some(Box::new(verify))).map(|x| x.0)
+        crate::api::tests::decode(bytes, usize::MAX, false, false, Some(Box::new(verify)))
+            .map(|x| x.0)
     }
 
     #[test]
     fn splines() -> Result<(), Error> {
         let verify_frame = move |frame: &Frame, _| {
-            let lf_global = frame.lf_global.as_ref().unwrap();
-            let splines = lf_global.splines.as_ref().unwrap();
+            let splines = frame.splines.borrow();
             assert_eq!(splines.quantization_adjustment, 0);
             let expected_starting_points = [Point { x: 9.0, y: 54.0 }].to_vec();
             assert_eq!(splines.starting_points, expected_starting_points);
@@ -361,8 +405,7 @@ mod test {
     #[test]
     fn noise() -> Result<(), Error> {
         let verify_frame = |frame: &Frame, _| {
-            let lf_global = frame.lf_global.as_ref().unwrap();
-            let noise = lf_global.noise.as_ref().unwrap();
+            let noise = frame.noise.borrow();
             let want_noise = [
                 0.000000, 0.000977, 0.002930, 0.003906, 0.005859, 0.006836, 0.008789, 0.010742,
             ];

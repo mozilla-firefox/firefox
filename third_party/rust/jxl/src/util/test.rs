@@ -222,6 +222,39 @@ pub fn check_equal_images<T: ImageDataType>(a: &Image<T>, b: &Image<T>) {
     }
 }
 
+/// Encode a u64 value as a LEB128 varint. Useful for building test data for
+/// frame index boxes and other container structures.
+pub fn encode_varint(mut value: u64) -> Vec<u8> {
+    let mut result = Vec::new();
+    loop {
+        let mut byte = (value & 0x7f) as u8;
+        value >>= 7;
+        if value > 0 {
+            byte |= 0x80;
+        }
+        result.push(byte);
+        if value == 0 {
+            break;
+        }
+    }
+    result
+}
+
+/// Build raw jxli frame index box content bytes from tnum, tden, and
+/// delta-coded entries `(OFF_delta, T, F)`.
+pub fn build_frame_index_content(tnum: u32, tden: u32, entries: &[(u64, u64, u64)]) -> Vec<u8> {
+    let mut buf = Vec::new();
+    buf.extend(encode_varint(entries.len() as u64));
+    buf.extend(tnum.to_be_bytes());
+    buf.extend(tden.to_be_bytes());
+    for &(off, t, f) in entries {
+        buf.extend(encode_varint(off));
+        buf.extend(encode_varint(t));
+        buf.extend(encode_varint(f));
+    }
+    buf
+}
+
 pub fn read_headers_and_toc(image: &[u8]) -> Result<(FileHeader, FrameHeader, Toc), JXLError> {
     let codestream = ContainerParser::collect_codestream(image).unwrap();
     let mut br = BitReader::new(&codestream);

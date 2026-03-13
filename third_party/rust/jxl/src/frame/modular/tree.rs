@@ -63,6 +63,124 @@ pub struct Tree {
     pub histograms: Histograms,
 }
 
+fn validate_tree(tree: &[TreeNode], num_properties: usize) -> Result<()> {
+    const HEIGHT_LIMIT: usize = 2048;
+
+    if tree.is_empty() {
+        return Ok(());
+    }
+
+    // This mirrors libjxl's ValidateTree(), but avoids allocating
+    // `num_properties * tree.len()` entries.
+    //
+    // We do an explicit DFS and keep the property ranges only for the current root->node path.
+    // When descending into a child we update exactly one property's range (the one we split on)
+    // and store the previous range in the child frame; when returning from that child we restore
+    // it. This makes memory O(num_properties + height) instead of O(num_properties * tree_size).
+
+    #[derive(Clone, Copy, Debug)]
+    enum Stage {
+        Enter,
+        AfterLeft,
+        AfterRight,
+    }
+
+    struct Frame {
+        node: usize,
+        depth: usize,
+        stage: Stage,
+        restore: Option<(usize, (i32, i32))>,
+    }
+
+    let mut property_ranges: Vec<(i32, i32)> = vec![(i32::MIN, i32::MAX); num_properties];
+    let mut stack = vec![Frame {
+        node: 0,
+        depth: 0,
+        stage: Stage::Enter,
+        restore: None,
+    }];
+
+    while let Some(mut frame) = stack.pop() {
+        if frame.depth > HEIGHT_LIMIT {
+            return Err(Error::TreeTooTall(frame.depth, HEIGHT_LIMIT));
+        }
+
+        match (frame.stage, tree[frame.node]) {
+            (Stage::Enter, TreeNode::Leaf { .. }) => {
+                if let Some((p, old)) = frame.restore {
+                    property_ranges[p] = old;
+                }
+            }
+            (
+                Stage::Enter,
+                TreeNode::Split {
+                    property,
+                    val,
+                    left,
+                    right: _,
+                },
+            ) => {
+                let p = property as usize;
+                let (l, u) = property_ranges[p];
+                if l > val || u <= val {
+                    return Err(Error::TreeSplitOnEmptyRange(property, val, l, u));
+                }
+
+                frame.stage = Stage::AfterLeft;
+                let depth = frame.depth;
+                stack.push(frame);
+
+                // Descend into left child: range becomes (val+1, u).
+                let old = property_ranges[p];
+                property_ranges[p] = (val + 1, u);
+                stack.push(Frame {
+                    node: left as usize,
+                    depth: depth + 1,
+                    stage: Stage::Enter,
+                    restore: Some((p, old)),
+                });
+            }
+            (
+                Stage::AfterLeft,
+                TreeNode::Split {
+                    property,
+                    val,
+                    left: _,
+                    right,
+                },
+            ) => {
+                let p = property as usize;
+                let (l, u) = property_ranges[p];
+                if l > val || u <= val {
+                    return Err(Error::TreeSplitOnEmptyRange(property, val, l, u));
+                }
+
+                frame.stage = Stage::AfterRight;
+                let depth = frame.depth;
+                stack.push(frame);
+
+                // Descend into right child: range becomes (l, val).
+                let old = property_ranges[p];
+                property_ranges[p] = (l, val);
+                stack.push(Frame {
+                    node: right as usize,
+                    depth: depth + 1,
+                    stage: Stage::Enter,
+                    restore: Some((p, old)),
+                });
+            }
+            (Stage::AfterRight, TreeNode::Split { .. }) => {
+                if let Some((p, old)) = frame.restore {
+                    property_ranges[p] = old;
+                }
+            }
+            _ => unreachable!("invalid tree validation state"),
+        }
+    }
+
+    Ok(())
+}
+
 impl Debug for Tree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Tree[{:?}]", self.nodes)
@@ -358,52 +476,7 @@ impl Tree {
         tree_reader.check_final_state(&tree_histograms, br)?;
 
         let num_properties = max_property as usize + 1;
-        let mut property_ranges = Vec::new_with_capacity(num_properties * tree.len())?;
-        property_ranges.resize(num_properties * tree.len(), (i32::MIN, i32::MAX));
-        let mut height = Vec::new_with_capacity(tree.len())?;
-        height.resize(tree.len(), 0);
-        for i in 0..tree.len() {
-            const HEIGHT_LIMIT: usize = 2048;
-            if height[i] > HEIGHT_LIMIT {
-                return Err(Error::TreeTooLarge(height[i], HEIGHT_LIMIT));
-            }
-            if let TreeNode::Split {
-                property,
-                val,
-                left,
-                right,
-            } = tree[i]
-            {
-                height[left as usize] = height[i] + 1;
-                height[right as usize] = height[i] + 1;
-                for p in 0..num_properties {
-                    if p == property as usize {
-                        let (l, u) = property_ranges[i * num_properties + p];
-                        if l > val || u <= val {
-                            return Err(Error::TreeSplitOnEmptyRange(p as u8, val, l, u));
-                        }
-                        trace!(
-                            "splitting at node {i} on property {p}, range [{l}, {u}] at position {val}"
-                        );
-                        property_ranges[left as usize * num_properties + p] = (val + 1, u);
-                        property_ranges[right as usize * num_properties + p] = (l, val);
-                    } else {
-                        property_ranges[left as usize * num_properties + p] =
-                            property_ranges[i * num_properties + p];
-                        property_ranges[right as usize * num_properties + p] =
-                            property_ranges[i * num_properties + p];
-                    }
-                }
-            } else {
-                #[cfg(feature = "tracing")]
-                {
-                    for p in 0..num_properties {
-                        let (l, u) = property_ranges[i * num_properties + p];
-                        trace!("final range at node {i} property {p}: [{l}, {u}]");
-                    }
-                }
-            }
-        }
+        validate_tree(&tree, num_properties)?;
 
         let histograms = Histograms::decode(tree.len().div_ceil(2), br, true)?;
 

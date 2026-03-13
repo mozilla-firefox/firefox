@@ -9,7 +9,7 @@ use super::{
 };
 #[cfg(test)]
 use crate::frame::Frame;
-use crate::{api::JxlFrameHeader, error::Result};
+use crate::{api::JxlFrameHeader, container::frame_index::FrameIndexBox, error::Result};
 use states::*;
 use std::marker::PhantomData;
 
@@ -35,6 +35,42 @@ pub struct JxlDecoder<State: JxlState> {
 #[cfg(test)]
 pub type FrameCallback = dyn FnMut(&Frame, usize) -> Result<()>;
 
+/// Information about a single visible frame discovered while decoding.
+#[derive(Debug, Clone, PartialEq)]
+pub struct VisibleFrameInfo {
+    /// Zero-based index among visible frames.
+    pub index: usize,
+    /// Duration in milliseconds (0 for still images or the last frame).
+    pub duration_ms: f64,
+    /// Duration in raw ticks from the animation header.
+    pub duration_ticks: u32,
+    /// Byte offset of this frame's header in the input file.
+    pub(crate) file_offset: usize,
+    /// Whether this is the last frame in the codestream.
+    pub is_last: bool,
+    /// Whether this frame is a seek-keyframe for visible-frame playback.
+    ///
+    /// This is equivalent to `seek_target.visible_frames_to_skip == 0`.
+    pub is_keyframe: bool,
+    /// Precomputed seek inputs for this visible frame.
+    pub seek_target: VisibleFrameSeekTarget,
+    /// Frame name, if any.
+    pub name: String,
+}
+
+/// Computed seek inputs for a target visible frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VisibleFrameSeekTarget {
+    /// File byte offset to start feeding input from.
+    pub decode_start_file_offset: usize,
+    /// Remaining codestream bytes in the current container box at the seek
+    /// point. Pass this to [`JxlDecoder::start_new_frame`].
+    pub remaining_in_box: u64,
+    /// Number of visible frames to skip after seek-start before decoding the
+    /// requested target frame.
+    pub visible_frames_to_skip: usize,
+}
+
 impl<S: JxlState> JxlDecoder<S> {
     fn wrap_inner(inner: Box<JxlDecoderInner>) -> Self {
         Self {
@@ -52,6 +88,26 @@ impl<S: JxlState> JxlDecoder<S> {
     #[cfg(test)]
     pub fn decoded_frames(&self) -> usize {
         self.inner.decoded_frames()
+    }
+
+    /// Returns the parsed frame index box, if the file contained one.
+    ///
+    /// The frame index box (`jxli`) is an optional part of the JXL container
+    /// format that provides a seek table for animated files, listing keyframe
+    /// byte offsets, timestamps, and frame counts.
+    ///
+    /// TODO(veluca): Provide a higher-level frame-index API aligned with
+    /// `scanned_frames()` / `VisibleFrameInfo` seek metadata.
+    pub fn frame_index(&self) -> Option<&FrameIndexBox> {
+        self.inner.frame_index()
+    }
+
+    /// Returns visible frame info entries collected so far.
+    ///
+    /// When `JxlDecoderOptions::scan_frames_only` is enabled this is the
+    /// primary output of decoding.
+    pub fn scanned_frames(&self) -> &[VisibleFrameInfo] {
+        self.inner.scanned_frames()
     }
 
     /// Rewinds a decoder to the start of the file, allowing past frames to be displayed again.
@@ -93,8 +149,6 @@ impl JxlDecoder<Initialized> {
 }
 
 impl JxlDecoder<WithImageInfo> {
-    // TODO(veluca): once frame skipping is implemented properly, expose that in the API.
-
     /// Obtains the image's basic information.
     pub fn basic_info(&self) -> &JxlBasicInfo {
         self.inner.basic_info().unwrap()
@@ -116,10 +170,15 @@ impl JxlDecoder<WithImageInfo> {
         self.inner.set_output_color_profile(profile)
     }
 
+    /// Retrieves the current pixel format for output buffers.
     pub fn current_pixel_format(&self) -> &JxlPixelFormat {
         self.inner.current_pixel_format().unwrap()
     }
 
+    /// Specifies pixel format for output buffers.
+    ///
+    /// Setting this may also change output color profile in some cases, if the profile was not set
+    /// manually before.
     pub fn set_pixel_format(&mut self, pixel_format: JxlPixelFormat) {
         self.inner.set_pixel_format(pixel_format);
     }
@@ -132,8 +191,52 @@ impl JxlDecoder<WithImageInfo> {
         Ok(self.map_inner_processing_result(inner_result))
     }
 
+    /// Draws all the pixels we have data for. This is useful for i.e. previewing LF frames.
+    ///
+    /// Note: see `process` for alignment requirements for the buffer data.
+    pub fn flush_pixels(&mut self, buffers: &mut [JxlOutputBuffer<'_>]) -> Result<()> {
+        self.inner.flush_pixels(buffers)
+    }
+
     pub fn has_more_frames(&self) -> bool {
         self.inner.has_more_frames()
+    }
+
+    /// Resets frame-level decoder state to prepare for decoding a new frame.
+    ///
+    /// This clears intermediate buffers (frame header, TOC, section data) while
+    /// preserving image-level state (file header, color profiles, pixel format,
+    /// reference frames). The box parser is restored to the correct
+    /// mid-codestream state using `remaining_in_box`, so the next `process()`
+    /// call correctly parses a new frame header from the input.
+    ///
+    /// # Arguments
+    ///
+    /// * `seek_target` -- from `VisibleFrameInfo::seek_target`.
+    ///   Includes both the box-parser state (`remaining_in_box`) and the input
+    ///   resume offset (`decode_start_file_offset`).
+    ///
+    /// After calling this, provide raw file input starting from
+    /// `seek_target.decode_start_file_offset`.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// // 1. Scan frame info using the regular decoder API.
+    /// let options = JxlDecoderOptions {
+    ///     scan_frames_only: true,
+    ///     ..Default::default()
+    /// };
+    /// let decoder = JxlDecoder::<states::Initialized>::new(options);
+    /// // ...advance decoder and call `scanned_frames()`...
+    ///
+    /// // 2. Seek to frame N (bare codestream).
+    /// let target = &frames[n];
+    /// decoder.start_new_frame(target.seek_target);
+    /// // 3. Provide input from target.seek_target.decode_start_file_offset and process().
+    /// ```
+    pub fn start_new_frame(&mut self, seek_target: VisibleFrameSeekTarget) {
+        self.inner.start_new_frame(seek_target);
     }
 
     #[cfg(test)]
@@ -143,7 +246,17 @@ impl JxlDecoder<WithImageInfo> {
 }
 
 impl JxlDecoder<WithFrameInfo> {
-    /// Skip the current frame.
+    /// Skip the current frame without decoding pixels.
+    ///
+    /// This reads section data from the input to advance past the frame, but
+    /// does not render pixels. Reference frames that may be needed by later
+    /// frames are still decoded internally.
+    ///
+    /// For efficient frame seeking in animations, enable
+    /// `JxlDecoderOptions::scan_frames_only` and use
+    /// [`scanned_frames`](JxlDecoder::scanned_frames), then
+    /// [`start_new_frame`](JxlDecoder::start_new_frame) to jump directly to a
+    /// target frame.
     pub fn skip_frame(
         mut self,
         input: &mut impl JxlBitstreamInput,
@@ -191,7 +304,6 @@ pub(crate) mod tests {
     use crate::api::{JxlDataFormat, JxlDecoderOptions};
     use crate::error::Error;
     use crate::image::{Image, Rect};
-    use crate::util::test::assert_almost_abs_eq_coords;
     use jxl_macros::for_each_test_file;
     use std::path::Path;
 
@@ -201,6 +313,7 @@ pub(crate) mod tests {
             decode(
                 &std::fs::read("resources/test/green_queen_vardct_e3.jxl").unwrap(),
                 u.arbitrary::<u8>().unwrap() as usize + 1,
+                false,
                 false,
                 None,
             )
@@ -214,6 +327,7 @@ pub(crate) mod tests {
         mut input: &[u8],
         chunk_size: usize,
         use_simple_pipeline: bool,
+        do_flush: bool,
         callback: Option<Box<dyn FnMut(&Frame, usize) -> Result<(), Error>>>,
     ) -> Result<(usize, Vec<Vec<Image<f32>>>), Error> {
         let options = JxlDecoderOptions::default();
@@ -226,7 +340,7 @@ pub(crate) mod tests {
         let mut chunk_input = &input[0..0];
 
         macro_rules! advance_decoder {
-            ($decoder: ident $(, $extra_arg: expr)?) => {
+            ($decoder: ident $(, $extra_arg: expr)? $(; $flush_arg: expr)?) => {
                 loop {
                     chunk_input =
                         &input[..(chunk_input.len().saturating_add(chunk_size)).min(input.len())];
@@ -236,6 +350,12 @@ pub(crate) mod tests {
                     match process_result.unwrap() {
                         ProcessingResult::Complete { result } => break result,
                         ProcessingResult::NeedsMoreInput { fallback, .. } => {
+                            $(
+                                let mut fallback = fallback;
+                                if do_flush && !input.is_empty() {
+                                    fallback.flush_pixels($flush_arg)?;
+                                }
+                            )?
                             if input.is_empty() {
                                 panic!("Unexpected end of input");
                             }
@@ -281,9 +401,6 @@ pub(crate) mod tests {
         let mut frames = vec![];
 
         loop {
-            // Process until we have frame info
-            let mut decoder_with_frame_info = advance_decoder!(decoder_with_image_info);
-
             // First channel is interleaved.
             let mut buffers = vec![Image::new_with_value(
                 (buffer_width * num_channels, buffer_height),
@@ -313,7 +430,11 @@ pub(crate) mod tests {
                 })
                 .collect();
 
-            decoder_with_image_info = advance_decoder!(decoder_with_frame_info, &mut api_buffers);
+            // Process until we have frame info
+            let mut decoder_with_frame_info =
+                advance_decoder!(decoder_with_image_info; &mut api_buffers);
+            decoder_with_image_info =
+                advance_decoder!(decoder_with_frame_info, &mut api_buffers; &mut api_buffers);
 
             // All pixels should have been overwritten, so they should no longer be NaNs.
             for buf in buffers.iter() {
@@ -341,75 +462,107 @@ pub(crate) mod tests {
     }
 
     fn decode_test_file(path: &Path) -> Result<(), Error> {
-        decode(&std::fs::read(path)?, usize::MAX, false, None)?;
+        decode(&std::fs::read(path)?, usize::MAX, false, false, None)?;
         Ok(())
     }
 
     for_each_test_file!(decode_test_file);
 
     fn decode_test_file_chunks(path: &Path) -> Result<(), Error> {
-        decode(&std::fs::read(path)?, 1, false, None)?;
+        decode(&std::fs::read(path)?, 1, false, false, None)?;
         Ok(())
     }
 
     for_each_test_file!(decode_test_file_chunks);
 
-    fn compare_pipelines(path: &Path) -> Result<(), Error> {
-        let file = std::fs::read(path)?;
-        let simple_frames = decode(&file, usize::MAX, true, None)?.1;
-        let frames = decode(&file, usize::MAX, false, None)?.1;
-        assert_eq!(frames.len(), simple_frames.len());
-        for (fc, (f, sf)) in frames
-            .into_iter()
-            .zip(simple_frames.into_iter())
-            .enumerate()
-        {
+    fn compare_frames(
+        path: &Path,
+        fc: usize,
+        f: &[Image<f32>],
+        sf: &[Image<f32>],
+    ) -> Result<(), Error> {
+        assert_eq!(
+            f.len(),
+            sf.len(),
+            "Frame {fc} has different channels counts",
+        );
+        for (c, (b, sb)) in f.iter().zip(sf.iter()).enumerate() {
             assert_eq!(
-                f.len(),
-                sf.len(),
-                "Frame {fc} has different channels counts",
+                b.size(),
+                sb.size(),
+                "Channel {c} in frame {fc} has different sizes",
             );
-            for (c, (b, sb)) in f.into_iter().zip(sf.into_iter()).enumerate() {
-                assert_eq!(
-                    b.size(),
-                    sb.size(),
-                    "Channel {c} in frame {fc} has different sizes",
-                );
-                // TODO(veluca): This check actually succeeds if we disable SIMD.
-                // With SIMD, the exact output of computations in epf.rs appear to depend on the
-                // lane that the computation was done in (???). We should investigate this.
-                // b.as_rect().check_equal(sb.as_rect());
-                let sz = b.size();
-                if false {
-                    let f = std::fs::File::create(Path::new("/tmp/").join(format!(
-                        "{}_diff_chan{c}.pbm",
-                        path.as_os_str().to_string_lossy().replace("/", "_")
-                    )))?;
-                    use std::io::Write;
-                    let mut f = std::io::BufWriter::new(f);
-                    writeln!(f, "P1\n{} {}", sz.0, sz.1)?;
-                    for y in 0..sz.1 {
-                        for x in 0..sz.0 {
-                            if (b.row(y)[x] - sb.row(y)[x]).abs() > 1e-8 {
-                                write!(f, "1")?;
-                            } else {
-                                write!(f, "0")?;
-                            }
-                        }
-                    }
-                    drop(f);
-                }
+            let sz = b.size();
+            if false {
+                let f = std::fs::File::create(Path::new("/tmp/").join(format!(
+                    "{}_diff_chan{c}.pbm",
+                    path.as_os_str().to_string_lossy().replace("/", "_")
+                )))?;
+                use std::io::Write;
+                let mut f = std::io::BufWriter::new(f);
+                writeln!(f, "P1\n{} {}", sz.0, sz.1)?;
                 for y in 0..sz.1 {
                     for x in 0..sz.0 {
-                        assert_almost_abs_eq_coords(b.row(y)[x], sb.row(y)[x], 1e-5, (x, y), c);
+                        if (b.row(y)[x] - sb.row(y)[x]).abs() > 1e-8 {
+                            write!(f, "1")?;
+                        } else {
+                            write!(f, "0")?;
+                        }
                     }
+                }
+                drop(f);
+            }
+            for y in 0..sz.1 {
+                for x in 0..sz.0 {
+                    assert_eq!(
+                        b.row(y)[x],
+                        sb.row(y)[x],
+                        "Pixels differ at position ({x}, {y}), channel {c}"
+                    );
                 }
             }
         }
         Ok(())
     }
 
+    fn compare_pipelines(path: &Path) -> Result<(), Error> {
+        let file = std::fs::read(path)?;
+        let simple_frames = decode(&file, usize::MAX, true, false, None)?.1;
+        let frames = decode(&file, usize::MAX, false, false, None)?.1;
+        assert_eq!(frames.len(), simple_frames.len());
+        for (fc, (f, sf)) in frames
+            .into_iter()
+            .zip(simple_frames.into_iter())
+            .enumerate()
+        {
+            compare_frames(path, fc, &f, &sf)?;
+        }
+        Ok(())
+    }
+
     for_each_test_file!(compare_pipelines);
+
+    fn compare_incremental(path: &Path) -> Result<(), Error> {
+        let file = std::fs::read(path).unwrap();
+        // One-shot decode
+        let (_, one_shot_frames) = decode(&file, usize::MAX, false, false, None)?;
+        // Incremental decode with arbitrary flushes.
+        let (_, frames) = decode(&file, 123, false, true, None)?;
+
+        // Compare one_shot_frames and frames
+        assert_eq!(one_shot_frames.len(), frames.len());
+        for (fc, (f, sf)) in frames
+            .into_iter()
+            .zip(one_shot_frames.into_iter())
+            .enumerate()
+        {
+            compare_frames(path, fc, &f, &sf)?;
+        }
+
+        Ok(())
+    }
+
+    for_each_test_file!(compare_incremental);
 
     #[test]
     fn test_preview_size_none_for_regular_files() {
@@ -537,6 +690,55 @@ pub(crate) mod tests {
         let icc_profile = JxlColorProfile::Icc(vec![0u8; 100]);
         let result = decoder.set_output_color_profile(icc_profile);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_default_output_tf_by_pixel_format() {
+        use crate::api::{JxlColorEncoding, JxlTransferFunction};
+
+        // Using test image with ICC profile to trigger default transfer function path
+        let file = std::fs::read("resources/test/lossy_with_icc.jxl").unwrap();
+        let options = JxlDecoderOptions::default();
+        let mut decoder = JxlDecoder::<states::Initialized>::new(options);
+        let mut input = file.as_slice();
+        let mut decoder = loop {
+            match decoder.process(&mut input).unwrap() {
+                ProcessingResult::Complete { result } => break result,
+                ProcessingResult::NeedsMoreInput { fallback, .. } => decoder = fallback,
+            }
+        };
+
+        // Output data format will default to F32, so output color profile will be linear sRGB
+        assert_eq!(
+            *decoder.output_color_profile().transfer_function().unwrap(),
+            JxlTransferFunction::Linear,
+        );
+
+        // Integer data format will set output color profile to sRGB
+        decoder.set_pixel_format(JxlPixelFormat::rgba8(0));
+        assert_eq!(
+            *decoder.output_color_profile().transfer_function().unwrap(),
+            JxlTransferFunction::SRGB,
+        );
+
+        decoder.set_pixel_format(JxlPixelFormat::rgba_f16(0));
+        assert_eq!(
+            *decoder.output_color_profile().transfer_function().unwrap(),
+            JxlTransferFunction::Linear,
+        );
+
+        decoder.set_pixel_format(JxlPixelFormat::rgba16(0));
+        assert_eq!(
+            *decoder.output_color_profile().transfer_function().unwrap(),
+            JxlTransferFunction::SRGB,
+        );
+
+        // Once output color profile is set by user, it will remain as is regardless of what pixel
+        // format is set
+        let profile = JxlColorProfile::Simple(JxlColorEncoding::srgb(false));
+        decoder.set_output_color_profile(profile.clone()).unwrap();
+        decoder.set_pixel_format(JxlPixelFormat::rgba_f16(0));
+        assert!(decoder.output_color_profile() == &profile);
     }
 
     #[test]
@@ -1230,7 +1432,7 @@ pub(crate) mod tests {
         // The test passes if it doesn't panic with "attempt to add with overflow"
         // It's OK if it returns an error or panics with "Unexpected end of input"
         let result = panic::catch_unwind(|| {
-            let _ = decode(data, 1024, false, None);
+            let _ = decode(data, 1024, false, false, None);
         });
 
         // If it panicked, make sure it wasn't an overflow panic
@@ -1245,6 +1447,540 @@ pub(crate) mod tests {
                 "Unexpected overflow panic: {}",
                 panic_msg
             );
+        }
+    }
+
+    fn make_box(ty: &[u8; 4], content: &[u8]) -> Vec<u8> {
+        let len = (8 + content.len()) as u32;
+        let mut buf = Vec::new();
+        buf.extend(len.to_be_bytes());
+        buf.extend(ty);
+        buf.extend(content);
+        buf
+    }
+
+    fn add_container_header(container: &mut Vec<u8>) {
+        // JXL signature box
+        let sig = [
+            0x00, 0x00, 0x00, 0x0c, 0x4a, 0x58, 0x4c, 0x20, 0x0d, 0x0a, 0x87, 0x0a,
+        ];
+        // ftyp box
+        let ftyp = make_box(b"ftyp", b"jxl \x00\x00\x00\x00jxl ");
+        container.extend(&sig);
+        container.extend(&ftyp);
+    }
+
+    /// Helper to wrap a bare codestream in a JXL container with a jxli frame index box.
+    fn wrap_with_frame_index(
+        codestream: &[u8],
+        tnum: u32,
+        tden: u32,
+        entries: &[(u64, u64, u64)], // (OFF_delta, T, F)
+    ) -> Vec<u8> {
+        use crate::util::test::build_frame_index_content;
+
+        let jxli_content = build_frame_index_content(tnum, tden, entries);
+
+        let jxli = make_box(b"jxli", &jxli_content);
+        let jxlc = make_box(b"jxlc", codestream);
+
+        let mut container = Vec::new();
+        add_container_header(&mut container);
+        container.extend(&jxli);
+        container.extend(&jxlc);
+        container
+    }
+
+    /// Helper to wrap a bare codestream in a container split across jxlp boxes.
+    ///
+    /// `chunk_starts` are codestream offsets where each new jxlp chunk begins.
+    fn wrap_with_jxlp_chunks(codestream: &[u8], chunk_starts: &[usize]) -> Vec<u8> {
+        let mut starts = chunk_starts.to_vec();
+        starts.sort_unstable();
+        starts.dedup();
+        if starts.first().copied() != Some(0) {
+            starts.insert(0, 0);
+        }
+        if starts.last().copied() != Some(codestream.len()) {
+            starts.push(codestream.len());
+        }
+        assert!(starts.len() >= 2);
+
+        let mut container = Vec::new();
+        add_container_header(&mut container);
+
+        let num_chunks = starts.len() - 1;
+        for i in 0..num_chunks {
+            let begin = starts[i];
+            let end = starts[i + 1];
+            assert!(begin <= end && end <= codestream.len());
+
+            let mut payload = Vec::with_capacity(4 + (end - begin));
+            let mut index = i as u32;
+            if i + 1 == num_chunks {
+                index |= 0x8000_0000;
+            }
+            payload.extend(index.to_be_bytes());
+            payload.extend(&codestream[begin..end]);
+            container.extend(make_box(b"jxlp", &payload));
+        }
+
+        container
+    }
+
+    #[test]
+    fn test_frame_index_parsed_from_container() {
+        // Read a bare animation codestream and wrap it in a container with a jxli box.
+        let codestream =
+            std::fs::read("resources/test/conformance_test_images/animation_icos4d_5.jxl").unwrap();
+
+        // Create synthetic frame index entries (delta offsets).
+        // These are synthetic -- we don't know real frame offsets, but we can verify parsing.
+        let entries = vec![
+            (0u64, 100u64, 1u64), // Frame 0 at offset 0
+            (500, 100, 1),        // Frame 1 at offset 500
+            (600, 100, 1),        // Frame 2 at offset 1100
+        ];
+
+        let container = wrap_with_frame_index(&codestream, 1, 1000, &entries);
+
+        // Decode with a large chunk size so the jxli box is fully consumed.
+        let options = JxlDecoderOptions::default();
+        let mut dec = JxlDecoder::<states::Initialized>::new(options);
+        let mut input: &[u8] = &container;
+        let dec = loop {
+            match dec.process(&mut input).unwrap() {
+                ProcessingResult::Complete { result } => break result,
+                ProcessingResult::NeedsMoreInput { fallback, .. } => {
+                    if input.is_empty() {
+                        panic!("Unexpected end of input");
+                    }
+                    dec = fallback;
+                }
+            }
+        };
+
+        // Check that frame index was parsed.
+        let fi = dec.frame_index().expect("frame_index should be Some");
+        assert_eq!(fi.num_frames(), 3);
+        assert_eq!(fi.tnum, 1);
+        assert_eq!(fi.tden.get(), 1000);
+        // Verify absolute offsets (accumulated from deltas)
+        assert_eq!(fi.entries[0].codestream_offset, 0);
+        assert_eq!(fi.entries[1].codestream_offset, 500);
+        assert_eq!(fi.entries[2].codestream_offset, 1100);
+        assert_eq!(fi.entries[0].duration_ticks, 100);
+        assert_eq!(fi.entries[2].frame_count, 1);
+    }
+
+    #[test]
+    fn test_frame_index_none_for_bare_codestream() {
+        // A bare codestream has no container, so no frame index.
+        let data =
+            std::fs::read("resources/test/conformance_test_images/animation_icos4d_5.jxl").unwrap();
+        let options = JxlDecoderOptions::default();
+        let mut dec = JxlDecoder::<states::Initialized>::new(options);
+        let mut input: &[u8] = &data;
+        let dec = loop {
+            match dec.process(&mut input).unwrap() {
+                ProcessingResult::Complete { result } => break result,
+                ProcessingResult::NeedsMoreInput { fallback, .. } => {
+                    if input.is_empty() {
+                        panic!("Unexpected end of input");
+                    }
+                    dec = fallback;
+                }
+            }
+        };
+        assert!(dec.frame_index().is_none());
+    }
+
+    fn scan_frames_with_decoder(mut input: &[u8], chunk_size: usize) -> Vec<VisibleFrameInfo> {
+        let mut chunk_input = &input[0..0];
+        let options = JxlDecoderOptions {
+            scan_frames_only: true,
+            skip_preview: false,
+            ..Default::default()
+        };
+        let mut initialized_decoder = JxlDecoder::<states::Initialized>::new(options);
+
+        macro_rules! advance_process {
+            ($decoder: ident) => {
+                loop {
+                    chunk_input =
+                        &input[..(chunk_input.len().saturating_add(chunk_size)).min(input.len())];
+                    let available_before = chunk_input.len();
+                    let process_result = $decoder.process(&mut chunk_input);
+                    input = &input[(available_before - chunk_input.len())..];
+                    match process_result.unwrap() {
+                        ProcessingResult::Complete { result } => break result,
+                        ProcessingResult::NeedsMoreInput { fallback, .. } => {
+                            if input.is_empty() {
+                                panic!("Unexpected end of input");
+                            }
+                            $decoder = fallback;
+                        }
+                    }
+                }
+            };
+        }
+
+        macro_rules! advance_skip {
+            ($decoder: ident) => {
+                loop {
+                    chunk_input =
+                        &input[..(chunk_input.len().saturating_add(chunk_size)).min(input.len())];
+                    let available_before = chunk_input.len();
+                    let process_result = $decoder.skip_frame(&mut chunk_input);
+                    input = &input[(available_before - chunk_input.len())..];
+                    match process_result.unwrap() {
+                        ProcessingResult::Complete { result } => break result,
+                        ProcessingResult::NeedsMoreInput { fallback, .. } => {
+                            if input.is_empty() {
+                                panic!("Unexpected end of input");
+                            }
+                            $decoder = fallback;
+                        }
+                    }
+                }
+            };
+        }
+
+        let mut decoder_with_image_info = advance_process!(initialized_decoder);
+
+        if !decoder_with_image_info.has_more_frames() {
+            return decoder_with_image_info.scanned_frames().to_vec();
+        }
+
+        loop {
+            let mut decoder_with_frame_info = advance_process!(decoder_with_image_info);
+            decoder_with_image_info = advance_skip!(decoder_with_frame_info);
+            if !decoder_with_image_info.has_more_frames() {
+                break;
+            }
+        }
+
+        decoder_with_image_info.scanned_frames().to_vec()
+    }
+
+    fn assert_start_new_frame_matches_sequential(data: &[u8], expect_bare_codestream: bool) {
+        use crate::api::{JxlDataFormat, JxlPixelFormat};
+        use crate::image::{Image, Rect};
+
+        // 1. Scan frame info to get seek offsets.
+        let scanned_frames = scan_frames_with_decoder(data, usize::MAX);
+        assert!(scanned_frames.len() > 1, "need multiple frames");
+
+        // Compare against second visible frame from regular sequential decode.
+        let target_visible_index = 1;
+        let seek_target = scanned_frames[target_visible_index].seek_target;
+
+        if expect_bare_codestream {
+            assert_eq!(seek_target.remaining_in_box, u64::MAX);
+        } else {
+            assert_ne!(seek_target.remaining_in_box, u64::MAX);
+        }
+
+        // 2. Decode all frames sequentially and keep the reference frame.
+        let (_n, sequential_frames) = decode(data, usize::MAX, false, false, None).unwrap();
+        let expected = &sequential_frames[target_visible_index];
+
+        // 3. Create decoder and parse image info.
+        let options = JxlDecoderOptions::default();
+        let decoder = JxlDecoder::<states::Initialized>::new(options);
+        let mut input = data;
+
+        let ProcessingResult::Complete {
+            result: mut decoder,
+        } = decoder.process(&mut input).unwrap()
+        else {
+            panic!("expected Complete with full data");
+        };
+
+        let basic_info = decoder.basic_info().clone();
+        let (width, height) = basic_info.size;
+
+        // Match the same requested output format as the sequential helper.
+        let default_format = decoder.current_pixel_format().clone();
+        let requested_format = JxlPixelFormat {
+            color_type: default_format.color_type,
+            color_data_format: Some(JxlDataFormat::f32()),
+            extra_channel_format: default_format
+                .extra_channel_format
+                .iter()
+                .map(|_| Some(JxlDataFormat::f32()))
+                .collect(),
+        };
+        decoder.set_pixel_format(requested_format.clone());
+
+        let channels = requested_format.color_type.samples_per_pixel();
+        let num_ec = requested_format.extra_channel_format.len();
+
+        // 4. Seek to decode-start and advance to the target visible frame.
+        decoder.start_new_frame(seek_target);
+        let mut input = &data[seek_target.decode_start_file_offset..];
+
+        for _ in 0..seek_target.visible_frames_to_skip {
+            let mut decoder_frame = loop {
+                match decoder.process(&mut input).unwrap() {
+                    ProcessingResult::Complete { result } => break result,
+                    ProcessingResult::NeedsMoreInput { fallback, .. } => {
+                        decoder = fallback;
+                    }
+                }
+            };
+
+            decoder = loop {
+                match decoder_frame.skip_frame(&mut input).unwrap() {
+                    ProcessingResult::Complete { result } => break result,
+                    ProcessingResult::NeedsMoreInput { fallback, .. } => {
+                        decoder_frame = fallback;
+                    }
+                }
+            };
+        }
+
+        let mut decoder_frame = loop {
+            match decoder.process(&mut input).unwrap() {
+                ProcessingResult::Complete { result } => break result,
+                ProcessingResult::NeedsMoreInput { fallback, .. } => {
+                    decoder = fallback;
+                }
+            }
+        };
+
+        let mut color_buffer = Image::<f32>::new((width * channels, height)).unwrap();
+        let mut ec_buffers: Vec<Image<f32>> = (0..num_ec)
+            .map(|_| Image::<f32>::new((width, height)).unwrap())
+            .collect();
+        let mut buffers: Vec<JxlOutputBuffer> = vec![JxlOutputBuffer::from_image_rect_mut(
+            color_buffer
+                .get_rect_mut(Rect {
+                    origin: (0, 0),
+                    size: (width * channels, height),
+                })
+                .into_raw(),
+        )];
+        for ec in ec_buffers.iter_mut() {
+            buffers.push(JxlOutputBuffer::from_image_rect_mut(
+                ec.get_rect_mut(Rect {
+                    origin: (0, 0),
+                    size: (width, height),
+                })
+                .into_raw(),
+            ));
+        }
+
+        let _decoder = loop {
+            match decoder_frame.process(&mut input, &mut buffers).unwrap() {
+                ProcessingResult::Complete { result } => break result,
+                ProcessingResult::NeedsMoreInput { fallback, .. } => {
+                    decoder_frame = fallback;
+                }
+            }
+        };
+
+        // 5. Compare seek-decoded frame against sequential decode reference.
+        let mut seek_decoded = Vec::with_capacity(1 + num_ec);
+        seek_decoded.push(color_buffer);
+        seek_decoded.extend(ec_buffers);
+        compare_frames(
+            Path::new("start_new_frame_seek"),
+            target_visible_index,
+            expected,
+            &seek_decoded,
+        )
+        .unwrap();
+    }
+
+    /// Test that `start_new_frame()` + scanner seek info decodes the same
+    /// frame as regular sequential decode for bare codestream input.
+    #[test]
+    fn test_start_new_frame_bare_codestream() {
+        let data =
+            std::fs::read("resources/test/conformance_test_images/animation_icos4d_5.jxl").unwrap();
+        assert_start_new_frame_matches_sequential(&data, true);
+    }
+
+    /// Test that `start_new_frame()` + scanner seek info also works for boxed input.
+    #[test]
+    fn test_start_new_frame_boxed_codestream() {
+        let codestream =
+            std::fs::read("resources/test/conformance_test_images/animation_icos4d_5.jxl").unwrap();
+        let entries = vec![(0u64, 100u64, 1u64), (500, 100, 1), (600, 100, 1)];
+        let container = wrap_with_frame_index(&codestream, 1, 1000, &entries);
+        assert_start_new_frame_matches_sequential(&container, false);
+    }
+
+    /// Test seek/scanner behavior when codestream data is split across jxlp boxes,
+    /// with each visible frame starting in its own chunk.
+    #[test]
+    fn test_start_new_frame_boxed_jxlp_per_visible_frame() {
+        let codestream =
+            std::fs::read("resources/test/conformance_test_images/animation_icos4d_5.jxl").unwrap();
+
+        let scanned_frames = scan_frames_with_decoder(&codestream, usize::MAX);
+        assert!(scanned_frames.len() > 1, "need multiple frames");
+
+        let (decoded_frames, _) = decode(&codestream, usize::MAX, false, false, None).unwrap();
+        assert_eq!(
+            decoded_frames,
+            scanned_frames.len(),
+            "test file should have one codestream frame per visible frame",
+        );
+
+        let mut chunk_starts: Vec<usize> = scanned_frames.iter().map(|f| f.file_offset).collect();
+        chunk_starts.sort_unstable();
+        chunk_starts.dedup();
+        assert_eq!(chunk_starts.len(), scanned_frames.len());
+
+        let container = wrap_with_jxlp_chunks(&codestream, &chunk_starts);
+        assert_start_new_frame_matches_sequential(&container, false);
+    }
+
+    #[test]
+    fn test_scan_still_image() {
+        let data = std::fs::read("resources/test/green_queen_vardct_e3.jxl").unwrap();
+        let frames = scan_frames_with_decoder(&data, usize::MAX);
+
+        assert_eq!(frames.len(), 1);
+        assert!(frames[0].is_last);
+        assert!(frames[0].is_keyframe);
+        let total_duration_ms: f64 = frames.iter().map(|f| f.duration_ms).sum();
+        assert_eq!(total_duration_ms, 0.0);
+    }
+
+    #[test]
+    fn test_scan_bare_animation() {
+        let data =
+            std::fs::read("resources/test/conformance_test_images/animation_icos4d_5.jxl").unwrap();
+        let frames = scan_frames_with_decoder(&data, usize::MAX);
+
+        assert!(frames.len() > 1, "expected multiple frames");
+
+        for (i, frame) in frames.iter().enumerate() {
+            assert_eq!(frame.index, i);
+        }
+
+        assert!(frames.last().unwrap().is_last);
+
+        assert!(frames[0].is_keyframe);
+        assert_eq!(
+            frames[0].seek_target.decode_start_file_offset,
+            frames[0].file_offset
+        );
+    }
+
+    #[test]
+    fn test_scan_animation_offsets_increase() {
+        let data =
+            std::fs::read("resources/test/conformance_test_images/animation_icos4d_5.jxl").unwrap();
+        let frames = scan_frames_with_decoder(&data, usize::MAX);
+
+        for i in 1..frames.len() {
+            assert!(
+                frames[i].file_offset > frames[i - 1].file_offset,
+                "frame {} offset {} should be > frame {} offset {}",
+                i,
+                frames[i].file_offset,
+                i - 1,
+                frames[i - 1].file_offset,
+            );
+        }
+    }
+
+    #[test]
+    fn test_scan_incremental() {
+        let data =
+            std::fs::read("resources/test/conformance_test_images/animation_icos4d_5.jxl").unwrap();
+
+        let frames = scan_frames_with_decoder(&data, 128);
+        assert!(frames.len() > 1);
+        assert!(frames.last().unwrap().is_last);
+    }
+
+    #[test]
+    fn test_scan_keyframe_detection_still() {
+        let data = std::fs::read("resources/test/green_queen_vardct_e3.jxl").unwrap();
+        let frames = scan_frames_with_decoder(&data, usize::MAX);
+
+        assert_eq!(frames.len(), 1);
+        let f = &frames[0];
+        assert!(f.is_keyframe);
+        assert_eq!(f.seek_target.decode_start_file_offset, f.file_offset);
+        assert_eq!(f.seek_target.visible_frames_to_skip, 0);
+    }
+
+    #[test]
+    fn test_scan_decode_start_file_offset_consistency() {
+        let data =
+            std::fs::read("resources/test/conformance_test_images/animation_icos4d_5.jxl").unwrap();
+
+        let frames = scan_frames_with_decoder(&data, usize::MAX);
+
+        for frame in &frames {
+            assert!(
+                frame.seek_target.decode_start_file_offset <= frame.file_offset,
+                "frame {}: decode_start_file_offset {} > file_offset {}",
+                frame.index,
+                frame.seek_target.decode_start_file_offset,
+                frame.file_offset,
+            );
+            assert_eq!(
+                frame.is_keyframe,
+                frame.seek_target.visible_frames_to_skip == 0,
+                "frame {}: keyframe flag should match visible_frames_to_skip",
+                frame.index,
+            );
+        }
+    }
+
+    #[test]
+    fn test_scan_with_preview() {
+        let data = std::fs::read("resources/test/with_preview.jxl");
+        if data.is_err() {
+            return;
+        }
+        let data = data.unwrap();
+        let frames = scan_frames_with_decoder(&data, usize::MAX);
+
+        assert!(frames.len() <= 1);
+    }
+
+    #[test]
+    fn test_scan_patches_not_keyframe() {
+        let data = std::fs::read("resources/test/grayscale_patches_var_dct.jxl");
+        if data.is_err() {
+            return;
+        }
+        let data = data.unwrap();
+        let frames = scan_frames_with_decoder(&data, usize::MAX);
+
+        assert!(!frames.is_empty());
+    }
+
+    /// Regression test for Chromium ClusterFuzz issue 474401148.
+    #[test]
+    fn test_fuzzer_xyb_icc_no_panic() {
+        use crate::api::ProcessingResult;
+
+        #[rustfmt::skip]
+        let data: &[u8] = &[
+            0xff, 0x0a, 0x01, 0x00, 0x00, 0x04, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x25, 0x00,
+        ];
+
+        let opts = JxlDecoderOptions {
+            pixel_limit: Some(1024 * 1024 * 1024),
+            ..Default::default()
+        };
+        let mut decoder = JxlDecoderInner::new(opts);
+        let mut input = data;
+
+        if let Ok(ProcessingResult::Complete { .. }) = decoder.process(&mut input, None)
+            && let Some(profile) = decoder.output_color_profile()
+        {
+            let _ = profile.try_as_icc();
         }
     }
 }
