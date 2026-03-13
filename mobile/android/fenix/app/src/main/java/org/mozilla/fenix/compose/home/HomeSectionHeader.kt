@@ -4,12 +4,17 @@
 
 package org.mozilla.fenix.compose.home
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +24,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -28,6 +34,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.dp
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.base.utils.inComposePreview
 import mozilla.components.lib.state.ext.observeAsComposableState
 import org.mozilla.fenix.R
@@ -98,9 +106,9 @@ fun HomeSectionHeader(
 private fun HomeSectionHeaderContent(
     headerText: String,
     modifier: Modifier = Modifier,
-    textColor: Color = MaterialTheme.colorScheme.onSurface,
+    textColor: Color = AcornTheme.colors.textNormal,
     description: String = "",
-    buttonColor: Color = MaterialTheme.colorScheme.onSurface,
+    buttonColor: Color = AcornTheme.colors.textNormal,
     buttonText: String = stringResource(id = R.string.recent_tabs_show_all),
     onButtonClick: (() -> Unit)? = null,
 ) {
@@ -125,27 +133,39 @@ private fun HomeSectionHeaderContent(
         onButtonClick?.let {
             TextButton(
                 onClick = { onButtonClick() },
+                modifier = Modifier
+                    .clip(RoundedCornerShape(999.dp))
+                    .height(height = 72.dp)
+                    .background(
+                        color = AcornTheme.colors.controlsButtonPrimaryNormal  // ✅ Цвет фона
+                    ),
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = buttonColor,
+                    contentColor = AcornTheme.colors.textInverse,
                 ),
+                // Добавь padding для контента внутри кнопки
+                contentPadding = PaddingValues(horizontal = 28.dp)
             ) {
-                Text(
-                    text = buttonText,
+                Row(  // Оберни в Row для правильного выравнивания
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .semantics {
-                            contentDescription = description
-                        },
-                    style = FirefoxTheme.typography.subtitle1,
-                )
+                ) {
+                    Text(
+                        text = buttonText,
+                        modifier = Modifier // Занимает оставшееся место
+                            .semantics {
+                                contentDescription = description
+                            },
+                        style = FirefoxTheme.typography.subtitle1,
+                    )
 
-                Spacer(modifier = Modifier.width(FirefoxTheme.layout.size.static50))
-
-                Icon(
-                    painter = painterResource(id = iconsR.drawable.mozac_ic_chevron_right_16),
-                    contentDescription = null,
-                )
+//                    Icon(
+//                        painter = painterResource(id = iconsR.drawable.mozac_ic_chevron_right_16),
+//                        contentDescription = null,
+//                    )
+                }
             }
         }
+
     }
 }
 

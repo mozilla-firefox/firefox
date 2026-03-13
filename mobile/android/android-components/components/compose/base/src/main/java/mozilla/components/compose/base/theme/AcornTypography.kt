@@ -91,27 +91,28 @@ val defaultTypography = AcornTypography(
         lineHeight = 32.sp,
     ),
     headline6 = DefaultTextStyle.copy(
-        fontSize = 28.sp,
+        fontSize = 32.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.15.sp,
         lineHeight = 24.sp,
     ),
     headline7 = DefaultTextStyle.copy(
-        fontSize = 24.sp,
+        fontSize = 28.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.15.sp,
         lineHeight = 24.sp,
     ),
     headline8 = DefaultTextStyle.copy(
-        fontSize = 22.sp,
+        fontSize = 26.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.4.sp,
         lineHeight = 20.sp,
     ),
     subtitle1 = DefaultTextStyle.copy(
-        fontSize = 24.sp,
+        fontSize = 28.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 0.15.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
         lineHeight = 24.sp,
     ),
     subtitle2 = DefaultTextStyle.copy(
@@ -122,31 +123,33 @@ val defaultTypography = AcornTypography(
         fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold))
     ),
     body1 = DefaultTextStyle.copy(
-        fontSize = 24.sp,
+        fontSize = 28.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 0.5.sp,
         lineHeight = 24.sp,
     ),
     body2 = DefaultTextStyle.copy(
-        fontSize = 22.sp,
+        fontSize = 26.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 0.25.sp,
         lineHeight = 20.sp,
     ),
     button = DefaultTextStyle.copy(
-        fontSize = 22.sp,
+        fontSize = 26.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.25.sp,
         lineHeight = 14.sp,
     ),
     caption = DefaultTextStyle.copy(
-        fontSize = 20.sp,
-        fontWeight = FontWeight.W400,
+        fontSize = 24.sp,
+        fontWeight = FontWeight.W600,
         letterSpacing = 0.4.sp,
         lineHeight = 16.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold))
+
     ),
     overline = DefaultTextStyle.copy(
-        fontSize = 18.sp,
+        fontSize = 22.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 1.5.sp,
         lineHeight = 16.sp,

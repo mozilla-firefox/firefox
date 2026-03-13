@@ -84,12 +84,8 @@ internal fun FullDisplayToolbar(
                 .semantics { testTagsAsResourceId = true },
         ) {
             Row(
-                modifier = Modifier.padding(
-                    horizontal = when (isSmallWidthScreen) {
-                        true -> NO_TOOLBAR_PADDING_DP.dp
-                        else -> LARGE_TOOLBAR_PADDING_DP.dp
-                    },
-                ),
+                modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom =
+                    LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.padding_M).dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (browserActionsStart.isNotEmpty()) {
@@ -112,10 +108,6 @@ internal fun FullDisplayToolbar(
                                 true -> TOOLBAR_PADDING_DP.dp
                                 false -> NO_TOOLBAR_PADDING_DP.dp
                             },
-                            bottom = when (gravity) {
-                                Top -> LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.padding_M)
-                                Bottom -> if (browserActionsEnd.isEmpty()) NO_TOOLBAR_PADDING_DP else TOOLBAR_PADDING_DP
-                            }.dp,
                         )
                         .height(72.dp)
                         .background(
@@ -141,7 +133,9 @@ internal fun FullDisplayToolbar(
                         ActionContainer(
                             actions = pageActionsStart,
                             onInteraction = onInteraction,
-                            modifier = pageActionsStartModifier,
+                            modifier = pageActionsStartModifier.padding(horizontal =
+                                LocalResources.current.getDimensionPixelSize(
+                                    com.android.car.navioui.R.dimen.padding_M).dp),
                         )
                     }
 

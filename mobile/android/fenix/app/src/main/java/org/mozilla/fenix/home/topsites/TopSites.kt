@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mozilla.components.compose.base.annotation.FlexibleWindowPreview
 import mozilla.components.compose.base.modifier.rightClickable
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.top.sites.TopSite
 import mozilla.components.ui.colors.PhotonColors
 import org.mozilla.fenix.R
@@ -211,8 +212,8 @@ data class TopSiteColors(
          */
         @Composable
         fun colors(
-            titleTextColor: Color = MaterialTheme.colorScheme.onSurface,
-            sponsoredTextColor: Color = MaterialTheme.colorScheme.onSurface,
+            titleTextColor: Color = AcornTheme.colors.textNormal,
+            sponsoredTextColor: Color = AcornTheme.colors.textSecondary,
             faviconCardBackgroundColor: Color = MaterialTheme.colorScheme.surfaceContainerLowest,
         ) = TopSiteColors(
             titleTextColor = titleTextColor,

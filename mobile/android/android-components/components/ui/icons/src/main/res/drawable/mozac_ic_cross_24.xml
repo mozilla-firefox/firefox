@@ -1,12 +1,12 @@
-<!-- This Source Code Form is subject to the terms of the Mozilla Public
-   - License, v. 2.0. If a copy of the MPL was not distributed with this
-   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="@dimen/iconSizeM"
-    android:height="@dimen/iconSizeM"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path
-        android:fillColor="@color/iconNormal"
-        android:pathData="M12 10.753L5.238 3.99 4 5.228l6.762 6.762L4 18.752l1.238 1.238L12 13.227l6.762 6.763L20 18.752l-6.763-6.762L20 5.228 18.762 3.99 12 10.753z" />
+    android:width="@dimen/dsDefaultHeight"
+    android:height="@dimen/dsDefaultHeight"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+  <path
+      android:pathData="M0,36C0,16.118 16.118,0 36,0C55.882,0 72,16.118 72,36C72,55.882 55.882,72 36,72C16.118,72 0,55.882 0,36Z"
+      android:fillColor="@color/controlSecondaryNormal"/>
+  <path
+      android:pathData="M43.424,26.455C44.01,25.869 44.96,25.869 45.546,26.455C46.131,27.041 46.131,27.99 45.546,28.576L38.12,36L45.546,43.425C46.131,44.011 46.131,44.96 45.546,45.546C44.96,46.132 44.01,46.132 43.424,45.546L35.999,38.121L28.575,45.546C27.99,46.132 27.04,46.132 26.454,45.546C25.869,44.96 25.868,44.011 26.454,43.425L33.878,36L26.454,28.576C25.868,27.99 25.868,27.041 26.454,26.455C27.04,25.869 27.99,25.869 28.575,26.455L35.999,33.879L43.424,26.455Z"
+      android:fillColor="@color/iconNormal"/>
 </vector>

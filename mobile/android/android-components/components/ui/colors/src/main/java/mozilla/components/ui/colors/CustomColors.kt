@@ -26,6 +26,8 @@ object CustomColorsDark {
     val ControlsButtonSecondaryNormal = Color(0xFF272D32)
     val BackgroundPlate = Color(0xFF171B1E)
     val ControlsInputFocusFill = Color(0xFF272D32)
+    val ControlsButtonPrimaryNormal = Color(0xFFDCE1E6)
+    val BackgroundNormal = Color(0xFF0F1214)
 
 }
 
@@ -42,5 +44,7 @@ object CustomColorsLight {
     val ControlsButtonSecondaryNormal = Color(0xFFDCE1E6)
     val BackgroundPlate = Color(0xFFEDEEF0)
     val ControlsInputFocusFill = Color(0xFFE2E5E8)
+    val ControlsButtonPrimaryNormal = Color(0xFF272D32)
+    val BackgroundNormal = Color(0xFFF7F8FA)
 
 }

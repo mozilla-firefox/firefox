@@ -88,14 +88,13 @@ fun BrowserEditToolbar(
     Surface(color = backgroundColor) {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom =
+                    LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.padding_M).dp)
                 .semantics { testTagsAsResourceId = true },
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 12.dp, end = 12.dp, bottom =
-                        LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.padding_M).dp)
                     .height(72.dp)
                     .clip(shape = ROUNDED_CORNER_SHAPE)
                     .background(color = AcornTheme.colors.controlsInputFocusFill),
@@ -122,6 +121,10 @@ fun BrowserEditToolbar(
                 )
 
                 ActionContainer(
+                    modifier = Modifier
+                        .padding(horizontal =
+                            LocalResources.current.getDimensionPixelSize(
+                                com.android.car.navioui.R.dimen.padding_M).dp),
                     actions = editActionsEnd,
                     onInteraction = onInteraction,
                 )

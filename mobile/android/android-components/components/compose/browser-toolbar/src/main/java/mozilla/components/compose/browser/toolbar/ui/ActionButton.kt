@@ -152,7 +152,7 @@ private fun ActionButtonIcon(
     BadgedIcon(
         painter = rememberDrawablePainter(icon),
         isHighlighted = isHighlighted,
-        tint = tint,
+        tint = Color.Unspecified,
     )
 }
 

@@ -57,7 +57,9 @@ class AcornColors(
     textSecondary: Color,
     textInverse: Color,
     controlsInputFocusFill: Color,
-    controlsButtonSecondaryNormal: Color
+    controlsButtonSecondaryNormal: Color,
+    controlsButtonPrimaryNormal: Color,
+    backgroundPlate: Color
 ) {
     // Layers
 
@@ -210,10 +212,16 @@ class AcornColors(
     var textInverse by mutableStateOf(textInverse)
         private set
 
+    var controlsButtonPrimaryNormal by mutableStateOf(controlsButtonPrimaryNormal)
+        private set
+
     var controlsInputFocusFill by mutableStateOf(controlsInputFocusFill)
         private set
 
     var controlsButtonSecondaryNormal by mutableStateOf(controlsButtonSecondaryNormal)
+        private set
+
+    var backgroundPlate by mutableStateOf(backgroundPlate)
         private set
 
     /**
@@ -255,6 +263,8 @@ class AcornColors(
         textInverse = other.textInverse
         controlsInputFocusFill = other.controlsInputFocusFill
         controlsButtonSecondaryNormal = other.controlsButtonSecondaryNormal
+        controlsButtonPrimaryNormal = other.controlsButtonPrimaryNormal
+        backgroundPlate = other.backgroundPlate
     }
 
     /**
@@ -295,7 +305,9 @@ class AcornColors(
         textSecondary: Color = this.textSecondary,
         textInverse: Color = this.textInverse,
         controlsInputFocusFill: Color = this.controlsInputFocusFill,
-        controlsButtonSecondaryNormal: Color = this.controlsButtonSecondaryNormal
+        controlsButtonSecondaryNormal: Color = this.controlsButtonSecondaryNormal,
+        controlsButtonPrimaryNormal: Color = this.controlsButtonPrimaryNormal,
+        backgroundPlate: Color = this.backgroundPlate
     ): AcornColors = AcornColors(
         layer2 = layer2,
         layer3 = layer3,
@@ -330,19 +342,21 @@ class AcornColors(
         textSecondary = textSecondary,
         textInverse = textInverse,
         controlsInputFocusFill = controlsInputFocusFill,
-        controlsButtonSecondaryNormal = controlsButtonSecondaryNormal
+        controlsButtonSecondaryNormal = controlsButtonSecondaryNormal,
+        controlsButtonPrimaryNormal = controlsButtonPrimaryNormal,
+        backgroundPlate = backgroundPlate
     )
 }
 
 val darkColorPalette = AcornColors(
     layer2 = PhotonColors.DarkGrey30,
     layerAccent = PhotonColors.Violet40,
-    layer3 = CustomColorsDark.BackgroundPlate,// бекраунд под табами
-    layerAccentNonOpaque = CustomColorsDark.BackgroundPlate,
-    layerGradientStart = CustomColorsDark.BackgroundPlate,
-    layerGradientEnd = CustomColorsDark.BackgroundPlate,
-    layerWarning = CustomColorsDark.BackgroundPlate,
-    layerCritical = CustomColorsDark.BackgroundPlate,
+    layer3 = CustomColorsDark.BackgroundNormal,// бекраунд под табами
+    layerAccentNonOpaque = CustomColorsDark.BackgroundNormal,
+    layerGradientStart = CustomColorsDark.BackgroundNormal,
+    layerGradientEnd = CustomColorsDark.BackgroundNormal,
+    layerWarning = CustomColorsDark.BackgroundNormal,
+    layerCritical = CustomColorsDark.BackgroundNormal,
     layerInformation = PhotonColors.Blue50,
     actionWarning = PhotonColors.Yellow40A41,
     actionCritical = PhotonColors.Pink70A69,
@@ -368,12 +382,14 @@ val darkColorPalette = AcornColors(
     textSecondary = CustomColorsDark.TextSecondary,
     textInverse = CustomColorsDark.TextInverse,
     controlsInputFocusFill = CustomColorsDark.ControlsInputFocusFill,
-    controlsButtonSecondaryNormal = CustomColorsDark.ControlsButtonSecondaryNormal
+    controlsButtonSecondaryNormal = CustomColorsDark.ControlsButtonSecondaryNormal,
+    controlsButtonPrimaryNormal = CustomColorsDark.ControlsButtonPrimaryNormal,
+    backgroundPlate = CustomColorsDark.BackgroundPlate
 )
 
 val lightColorPalette = AcornColors(
     layer2 = PhotonColors.White,
-    layer3 = CustomColorsLight.BackgroundPlate,
+    layer3 = CustomColorsLight.BackgroundNormal,
     layerAccent = PhotonColors.Ink20,
     layerAccentNonOpaque = PhotonColors.Violet70A12,
     layerGradientStart = PhotonColors.Violet70,
@@ -405,7 +421,9 @@ val lightColorPalette = AcornColors(
     textSecondary = CustomColorsLight.TextSecondary,
     textInverse = CustomColorsLight.TextInverse,
     controlsInputFocusFill = CustomColorsLight.ControlsInputFocusFill,
-    controlsButtonSecondaryNormal = CustomColorsLight.ControlsButtonSecondaryNormal
+    controlsButtonSecondaryNormal = CustomColorsLight.ControlsButtonSecondaryNormal,
+    controlsButtonPrimaryNormal = CustomColorsLight.ControlsButtonPrimaryNormal,
+    backgroundPlate = CustomColorsLight.BackgroundPlate
 )
 
 val privateColorPalette = darkColorPalette.copy(

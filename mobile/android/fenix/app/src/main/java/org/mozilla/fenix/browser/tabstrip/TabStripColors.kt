@@ -7,6 +7,7 @@ package org.mozilla.fenix.browser.tabstrip
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarState
 import org.mozilla.fenix.R
 import org.mozilla.fenix.browser.browsingmode.BrowsingModeManager
@@ -68,7 +69,7 @@ data class TabStripColors(
             val shouldUseEdgeToEdgeColors =
                 isEdgeToEdgeBackgroundEnabled && !isPrivate && isSearching == false
 
-            return if (shouldUseEdgeToEdgeColors) {
+            return if (false) {
                 TabStripColors(
                     backgroundColor = colorResource(R.color.homepage_tab_edge_to_edge_toolbar_background),
                     tabItemBackgroundColors = TabColors(
@@ -82,10 +83,10 @@ data class TabStripColors(
                 )
             } else {
                 TabStripColors(
-                    backgroundColor = FirefoxTheme.colors.layer3,
+                    backgroundColor = AcornTheme.colors.layer3,
                     tabItemBackgroundColors = TabColors(
-                        activeColor = FirefoxTheme.colors.tabActive,
-                        inactiveColor = FirefoxTheme.colors.tabInactive,
+                        activeColor = AcornTheme.colors.tabActive,
+                        inactiveColor = AcornTheme.colors.tabInactive,
                     ),
                 )
             }

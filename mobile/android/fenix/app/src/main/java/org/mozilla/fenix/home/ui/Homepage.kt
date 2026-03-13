@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.home.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.top.sites.TopSite
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.History
@@ -103,11 +105,13 @@ internal fun Homepage(
 
     BoxWithConstraints(
         modifier = modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .background(AcornTheme.colors.layer3),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(all = 32.dp)
                 .semantics {
                     testTagsAsResourceId = true
                     testTag = HOMEPAGE
@@ -123,7 +127,7 @@ internal fun Homepage(
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (state is HomepageState.Normal) {
+            if (state is HomepageState.Normal && false) {
                 BannerCardSection(
                     shouldShowPrivacyNoticeBanner = state.shouldShowPrivacyNoticeBanner,
                     nimbusMessage = state.nimbusMessage,
@@ -132,7 +136,7 @@ internal fun Homepage(
                 )
             }
 
-            if (state.headerState.showHeader) {
+            if (state.headerState.showHeader && false) {
                 HomepageHeader(
                     wordmarkTextColor = state.headerState.wordmarkTextColor,
                     privateBrowsingButtonColor = state.headerState.privateBrowsingButtonColor,
@@ -164,7 +168,7 @@ internal fun Homepage(
 
                             MaybeAddSetupChecklist(setupChecklistState, interactor)
 
-                            if (showRecentTabs) {
+                            if (false) {
                                 RecentTabsSection(
                                     interactor = interactor,
                                     cardBackgroundColor = cardBackgroundColor,
@@ -199,12 +203,12 @@ internal fun Homepage(
                             if (showBookmarks) {
                                 BookmarksSection(
                                     bookmarks = bookmarks,
-                                    cardBackgroundColor = cardBackgroundColor,
+                                    cardBackgroundColor = AcornTheme.colors.backgroundPlate,
                                     interactor = interactor,
                                 )
                             }
 
-                            if (showRecentlyVisited) {
+                            if (false) {
                                 RecentlyVisitedSection(
                                     recentVisits = recentlyVisited,
                                     cardBackgroundColor = cardBackgroundColor,
@@ -212,14 +216,14 @@ internal fun Homepage(
                                 )
                             }
 
-                            if (showCollections) {
+                            if (false) {
                                 CollectionsSection(
                                     collectionsState = collectionsState,
                                     interactor = interactor,
                                 )
                             }
 
-                            if (showPocketStories) {
+                            if (false) {
                                 Spacer(
                                     modifier = if (isMinimalLayout()) {
                                         Modifier.weight(1f)

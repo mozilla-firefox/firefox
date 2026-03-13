@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.semantics.testTagsAsResourceId
@@ -39,6 +41,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.browser.icons.compose.Loader
 import mozilla.components.browser.icons.compose.Placeholder
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.base.utils.inComposePreview
 import org.mozilla.fenix.components.components
 import org.mozilla.fenix.compose.ContextualMenu
@@ -51,8 +54,8 @@ import org.mozilla.fenix.home.topsites.ui.HomepageCard
 import org.mozilla.fenix.home.topsites.ui.homepageCardImageShape
 import org.mozilla.fenix.theme.FirefoxTheme
 
-private val imageWidth = 126.dp
-private val imageHeight = 82.dp
+private val imageWidth = 420.dp
+private val imageHeight = 190.dp
 
 private val imageModifier = Modifier
     .size(width = imageWidth, height = imageHeight)
@@ -114,7 +117,8 @@ private fun BookmarkItem(
 
     HomepageCard(
         modifier = Modifier
-            .width(134.dp)
+            .width(420.dp)
+            .height(252.dp)
             .combinedClickable(
                 enabled = true,
                 onClick = { onBookmarkClick(bookmark) },
@@ -124,9 +128,9 @@ private fun BookmarkItem(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(
-                    top = FirefoxTheme.layout.space.static50,
+                    top = FirefoxTheme.layout.space.static100,
                     bottom = FirefoxTheme.layout.space.static100,
                     start = FirefoxTheme.layout.space.static50,
                     end = FirefoxTheme.layout.space.static50,
@@ -139,13 +143,14 @@ private fun BookmarkItem(
             Text(
                 text = bookmark.title ?: bookmark.url ?: "",
                 modifier = Modifier
-                    .padding(horizontal = FirefoxTheme.layout.space.static50)
+                    .padding(horizontal = 16.dp)
                     .semantics {
                         testTagsAsResourceId = true
                         testTag = "bookmark.title"
                     },
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
+                color = AcornTheme.colors.textNormal,
                 style = FirefoxTheme.typography.caption,
             )
 
@@ -197,7 +202,7 @@ private fun BookmarkImage(bookmark: Bookmark) {
 private fun PlaceholderBookmarkImage() {
     Box(
         modifier = imageModifier.background(
-            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            color = AcornTheme.colors.backgroundPlate,
         ),
     )
 }
@@ -212,7 +217,7 @@ private fun FallbackBookmarkFaviconImage(
         ),
         contentAlignment = Alignment.Center,
     ) {
-        Favicon(url = url, size = 36.dp)
+        Favicon(url = url, size = 80.dp)
     }
 }
 
@@ -224,7 +229,7 @@ private fun BookmarksPreview() {
             Bookmarks(
                 bookmarks = bookmarks(),
                 menuItems = listOf(),
-                backgroundColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                backgroundColor = AcornTheme.colors.backgroundPlate,
             )
         }
     }
