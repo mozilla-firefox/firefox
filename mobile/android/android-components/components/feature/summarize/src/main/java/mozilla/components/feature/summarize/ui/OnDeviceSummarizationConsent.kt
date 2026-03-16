@@ -35,7 +35,7 @@ internal fun OnDeviceSummarizationConsent(
     OnDeviceSummarizationConsentContent(
         modifier = modifier,
         onClickLearnMore = {
-            dispatchAction(OnDeviceSummarizationShakeConsentAction.AllowClicked)
+            dispatchAction(OnDeviceSummarizationShakeConsentAction.LearnMoreClicked)
         },
         onClickAllow = {
             dispatchAction(OnDeviceSummarizationShakeConsentAction.AllowClicked)

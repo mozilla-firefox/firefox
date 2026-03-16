@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.fragment.app.viewModels
 import androidx.fragment.compose.content
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,6 +30,7 @@ import mozilla.components.feature.summarize.settings.summarizeSettingsReducer
 import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.requireComponents
+import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.theme.FirefoxTheme
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -82,6 +84,21 @@ class SummarizationFragment : BottomSheetDialogFragment() {
         savedInstanceState: Bundle?,
     ): View = content {
         val summarizeSettings = requireContext().components.core.summarizeFeatureSettings
+
+        val state by storeViewModel.store.stateFlow.collectAsStateWithLifecycle()
+        LaunchedEffect(state) {
+            when (state) {
+                SummarizationState.Finished.LearnMoreAboutShakeConsent -> {
+                    openLearnMoreLink()
+                    dismiss()
+                }
+                is SummarizationState.Finished -> {
+                    dismiss()
+                }
+                else -> {}
+            }
+        }
+
         val settingsStore = SummarizeSettingsStore(
             initialState = SummarizeSettingsState(
                 summarizePagesEnabled = summarizeSettings.summarizePagesEnabled,
@@ -91,17 +108,10 @@ class SummarizationFragment : BottomSheetDialogFragment() {
             middleware = listOf(
                 SummarizeSettingsMiddleware(
                     settings = summarizeSettings,
-                    onLearnMoreClicked = {},
+                    onLearnMoreClicked = { openLearnMoreLink() },
                 ),
             ),
         )
-
-        val state = storeViewModel.store.stateFlow.collectAsStateWithLifecycle()
-        LaunchedEffect(state.value) {
-            if (state.value is SummarizationState.Finished) {
-                dismiss()
-            }
-        }
 
         FirefoxTheme {
             SummarizationUi(
@@ -110,5 +120,10 @@ class SummarizationFragment : BottomSheetDialogFragment() {
                 settingsStore = settingsStore,
             )
         }
+    }
+
+    private fun openLearnMoreLink() {
+        val url = SupportUtils.getGenericSumoURLForTopic(SupportUtils.SumoTopic.PAGE_SUMMARIZATION)
+        SupportUtils.launchSandboxCustomTab(requireContext(), url)
     }
 }

@@ -21,6 +21,7 @@ import mozilla.components.feature.summarize.settings.summarizeSettingsReducer
 import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.showToolbar
+import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
@@ -51,7 +52,7 @@ class PageSummariesSettingsFragment : Fragment() {
                         middleware = listOf(
                             SummarizeSettingsMiddleware(
                                 settings = summarizeSettings,
-                                onLearnMoreClicked = {},
+                                onLearnMoreClicked = { openLearnMoreLink() },
                             ),
                         ),
                     )
@@ -63,5 +64,10 @@ class PageSummariesSettingsFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun openLearnMoreLink() {
+        val url = SupportUtils.getGenericSumoURLForTopic(SupportUtils.SumoTopic.PAGE_SUMMARIZATION)
+        SupportUtils.launchSandboxCustomTab(requireContext(), url)
     }
 }

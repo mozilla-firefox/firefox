@@ -74,6 +74,7 @@ object SupportUtils {
          * SUMO page for Local Network Access & Local Device Access permissions
          */
         LOCAL_NETWORK_AND_DEVICE_ACCESS("control-personal-device-local-network-permissions-firefox-android"),
+        PAGE_SUMMARIZATION("summarize-pages-ios"),
     }
 
     enum class MozillaPage(internal val path: String) {
