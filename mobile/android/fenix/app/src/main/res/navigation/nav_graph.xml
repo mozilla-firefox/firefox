@@ -735,6 +735,14 @@
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
         <action
+            android:id="@+id/action_settingsFragment_to_aiControlsFragment"
+            app:destination="@id/aiControlsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right"
+            app:popUpTo="@id/settingsFragment" />
+        <action
             android:id="@+id/action_settingsFragment_to_addonsFragment"
             app:destination="@id/addons_management_graph"
             app:enterAnim="@anim/slide_in_right"
@@ -862,6 +870,25 @@
         android:id="@+id/wallpaperSettingsFragment"
         android:name="org.mozilla.fenix.settings.wallpaper.WallpaperSettingsFragment"
         android:label="@string/customize_wallpapers"/>
+    <fragment
+        android:id="@+id/aiControlsFragment"
+        android:name="org.mozilla.fenix.settings.ai.AiControlsFragment"
+        android:label="@string/preferences_ai_controls">
+        <action
+            android:id="@+id/action_aiControlsFragment_to_translationsSettingsFragment"
+            app:destination="@id/translations_settings_graph"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_aiControlsFragment_to_pageSummariesSettingsFragment"
+            app:destination="@id/pageSummariesSettingsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
     <fragment
         android:id="@+id/dataChoicesFragment"
         android:name="org.mozilla.fenix.settings.datachoices.DataChoicesFragment"
