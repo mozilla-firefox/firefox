@@ -94,7 +94,15 @@ class FakeClient(
 
     companion object {
         fun success(body: Response.Body = Response.Body.empty()) = FakeClient(body = body)
-        fun failure(status: Int) = FakeClient(status = status)
+        fun failure(
+            status: Int,
+            headers: Headers = MutableHeaders(),
+            body: Response.Body = Response.Body.empty(),
+        ) = FakeClient(
+            status = status,
+            headers = headers,
+            body = body,
+        )
     }
 }
 
