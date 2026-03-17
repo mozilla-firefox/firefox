@@ -7,6 +7,8 @@ package mozilla.components.lib.llm.mlpa.service
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.MissingFieldException
+import mozilla.components.concept.fetch.MutableHeaders
+import mozilla.components.concept.fetch.Response
 import mozilla.components.concept.integrity.IntegrityToken
 import mozilla.components.lib.llm.mlpa.fakes.FakeClient
 import mozilla.components.lib.llm.mlpa.fakes.asBody
@@ -206,22 +208,55 @@ class FetchClientMlpaServiceTest {
         }
 
     @Test
-    fun `GIVEN an error status code WHEN try to chat THEN return a failure`() =
+    fun `GIVEN an error status code WHEN try to chat THEN return the appropriate error`() =
         runTest {
-            val mlpaService = FetchClientMlpaService(FakeClient.failure(401), MlpaConfig.prodProd)
+            data class Case(val statusCode: Int, val expectedError: ChatServiceError) {
+                val headers get() = when (expectedError) {
+                    ChatServiceError.RateLimited(8000L),
+                    ChatServiceError.BudgetExceeded(8000L),
+                        -> MutableHeaders("Retry-After" to "8000")
+                    else -> MutableHeaders()
+                }
 
-            val response = mlpaService.completion(
-                authorizationToken = AuthorizationToken.Integrity("my-token"),
-                request = ChatService.Request(
-                    model = ChatService.Request.ModelID.mistral,
-                    messages = listOf(ChatService.Request.Message.user("hello")),
-                ),
+                val body get() = when (expectedError) {
+                    is ChatServiceError.BudgetExceeded -> "{ \"error\": 1 }".asBody
+                    is ChatServiceError.RateLimited -> "{ \"error\": 2 }".asBody
+                    is ChatServiceError.UpstreamError -> "{ \"error\": \"There was an error\" }".asBody
+                    else -> Response.Body.empty()
+                }
+            }
+
+            val cases = listOf(
+                Case(401, ChatServiceError.InvalidToken),
+                Case(403, ChatServiceError.UserBlocked),
+                Case(413, ChatServiceError.RequestTooLarge),
+                Case(429, ChatServiceError.BudgetExceeded(8000L)),
+                Case(429, ChatServiceError.BudgetExceeded(null)),
+                Case(429, ChatServiceError.RateLimited(8000L)),
+                Case(502, ChatServiceError.UpstreamError("There was an error")),
+                Case(500, ChatServiceError.ServerError(500)),
             )
 
-            assertTrue(response.isFailure)
+            cases.forEach { case ->
+                val service = FetchClientMlpaService(
+                    client = FakeClient.failure(case.statusCode, case.headers, case.body),
+                    config = MlpaConfig.prodProd,
+                )
 
-            response.onFailure {
-                assertEquals("Chat Service Failed: Received status code 401", it.message)
+                val response = service.completion(
+                    authorizationToken = AuthorizationToken.Integrity("my-token"),
+                    request = ChatService.Request(
+                        model = ChatService.Request.ModelID.mistral,
+                        messages = listOf(ChatService.Request.Message.user("hello")),
+                    ),
+                )
+
+                assertTrue(response.isFailure)
+
+                response.onFailure {
+                    assertTrue("Should be ChatServiceException but got $it", it is ChatServiceException)
+                    assertEquals(case.expectedError, (it as? ChatServiceException)?.error)
+                }
             }
         }
 }
