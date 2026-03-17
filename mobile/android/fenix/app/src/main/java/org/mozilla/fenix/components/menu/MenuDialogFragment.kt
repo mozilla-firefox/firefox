@@ -181,7 +181,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
 
                 if (isPrivate && args.accesspoint == MenuAccessPoint.Home) {
                     window?.setBackgroundDrawable(
-                        Color.BLACK.toDrawable().mutate().apply {
+                        Color.BLUE.toDrawable().mutate().apply {
                             alpha = PRIVATE_HOME_MENU_BACKGROUND_ALPHA
                         },
                     )

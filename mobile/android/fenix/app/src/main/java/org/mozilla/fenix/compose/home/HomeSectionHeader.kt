@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -135,7 +136,7 @@ private fun HomeSectionHeaderContent(
                 onClick = { onButtonClick() },
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
-                    .height(height = 72.dp)
+                    .height(height = LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.dsDefaultHeight).dp)
                     .background(
                         color = AcornTheme.colors.controlsButtonPrimaryNormal  // ✅ Цвет фона
                     ),

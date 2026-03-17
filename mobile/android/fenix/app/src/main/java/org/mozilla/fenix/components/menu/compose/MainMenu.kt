@@ -47,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.base.theme.surfaceDimVariant
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.ui.displayName
@@ -173,6 +174,7 @@ fun MainMenu(
     extensionSubmenu: @Composable () -> Unit,
 ) {
     MenuFrame(
+        modifier = Modifier.background(AcornTheme.colors.layer3),
         contentModifier = Modifier
             .padding(
                 start = 8.dp,

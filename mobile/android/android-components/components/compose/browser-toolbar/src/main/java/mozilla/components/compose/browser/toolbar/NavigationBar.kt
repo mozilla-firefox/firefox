@@ -49,7 +49,7 @@ fun NavigationBar(
     Surface {
         Box(
             modifier = Modifier
-                .height(if (toolbarGravity == Top) 60.dp else 48.dp)
+                .height(if (toolbarGravity == Top) 160.dp else 248.dp)
                 .pointerInput(Unit) {
                     awaitPointerEventScope {
                         while (true) {

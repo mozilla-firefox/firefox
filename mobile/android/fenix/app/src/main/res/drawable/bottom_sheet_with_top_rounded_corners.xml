@@ -8,5 +8,5 @@
     <corners
         android:topLeftRadius="@dimen/bottom_sheet_corner_radius_28dp"
         android:topRightRadius="@dimen/bottom_sheet_corner_radius_28dp" />
-    <solid android:color="?attr/colorSurface" />
+    <solid android:color="@color/backgroundNormal" />
 </shape>

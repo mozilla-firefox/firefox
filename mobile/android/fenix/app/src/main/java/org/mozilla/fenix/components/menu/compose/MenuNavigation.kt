@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import mozilla.components.compose.base.theme.AcornTheme
 import org.mozilla.fenix.R
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.theme.PreviewThemeProvider
@@ -62,12 +64,7 @@ internal fun MenuNavigation(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                color = if (isExtensionsExpanded || isMoreMenuExpanded) {
-                    MaterialTheme.colorScheme.surfaceContainerHighest
-                } else {
-                    MaterialTheme.colorScheme.surface
-                },
+            .background(AcornTheme.colors.layer3
             )
             .padding(horizontal = 4.dp, vertical = 12.dp)
             .verticalScroll(rememberScrollState())
@@ -150,7 +147,10 @@ private fun MenuNavItem(
         Icon(
             painter = painter,
             contentDescription = null,
-            tint = getIconTint(state = state),
+            tint = null,//getIconTint(state = state),
+            modifier = Modifier.alpha(
+                if (state == MenuItemState.DISABLED) 0.5f else 1.0f
+            )
         )
 
         Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static50))
@@ -169,10 +169,10 @@ private fun MenuNavItem(
 @Composable
 private fun getLabelTextColor(state: MenuItemState): Color {
     return when (state) {
-        MenuItemState.ACTIVE -> MaterialTheme.colorScheme.tertiary
+        MenuItemState.ACTIVE -> AcornTheme.colors.textNormal
         MenuItemState.WARNING -> MaterialTheme.colorScheme.error
-        MenuItemState.DISABLED -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        else -> MaterialTheme.colorScheme.onSurface
+        MenuItemState.DISABLED -> AcornTheme.colors.textNormal.copy(alpha = 0.38f)
+        else -> AcornTheme.colors.textNormal
     }
 }
 

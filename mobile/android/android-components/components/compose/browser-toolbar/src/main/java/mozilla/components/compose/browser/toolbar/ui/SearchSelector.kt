@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
@@ -82,7 +83,7 @@ fun SearchSelector(
     Card(
         modifier = modifier
             .padding(horizontal = 4.dp)
-            .width(72.dp)
+            .width(LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.dsDefaultHeight).dp)
             .height(48.dp)
             .semantics(mergeDescendants = true) {
                 this.contentDescription = contentDescription

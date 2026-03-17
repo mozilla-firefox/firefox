@@ -12,8 +12,10 @@ import androidx.compose.ui.graphics.Color
  * _"Firefox colors are bold, vibrant and attractive. They enhance the experience by providing visual
  * clues and by bringing attention to primary actions."_
  */
+
+
 object CustomColorsDark {
-    val IconAccent = Color(0xFFF5671E)
+    val Accent = Color(0xFFF5671E)// same for both themes
     // dark theme
     val IconSecondary = Color(0xFF828B93)
     val IconNormal = Color(0xFFEDEEF0)

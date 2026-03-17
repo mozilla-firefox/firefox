@@ -89,24 +89,28 @@ val defaultTypography = AcornTypography(
         fontWeight = FontWeight.W400,
         letterSpacing = 0.18.sp,
         lineHeight = 32.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
     ),
     headline6 = DefaultTextStyle.copy(
         fontSize = 32.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.15.sp,
         lineHeight = 24.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
     ),
     headline7 = DefaultTextStyle.copy(
         fontSize = 28.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.15.sp,
         lineHeight = 24.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
     ),
     headline8 = DefaultTextStyle.copy(
-        fontSize = 26.sp,
-        fontWeight = FontWeight.W500,
+        fontSize = 28.sp,
+        fontWeight = FontWeight.W600,
         letterSpacing = 0.4.sp,
-        lineHeight = 20.sp,
+        lineHeight = 56.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
     ),
     subtitle1 = DefaultTextStyle.copy(
         fontSize = 28.sp,
@@ -127,18 +131,21 @@ val defaultTypography = AcornTypography(
         fontWeight = FontWeight.W400,
         letterSpacing = 0.5.sp,
         lineHeight = 24.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
     ),
     body2 = DefaultTextStyle.copy(
         fontSize = 26.sp,
         fontWeight = FontWeight.W400,
         letterSpacing = 0.25.sp,
         lineHeight = 20.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
     ),
     button = DefaultTextStyle.copy(
         fontSize = 26.sp,
         fontWeight = FontWeight.W500,
         letterSpacing = 0.25.sp,
         lineHeight = 14.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
     ),
     caption = DefaultTextStyle.copy(
         fontSize = 24.sp,
@@ -153,6 +160,7 @@ val defaultTypography = AcornTypography(
         fontWeight = FontWeight.W400,
         letterSpacing = 1.5.sp,
         lineHeight = 16.sp,
+        fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
     ),
 )
 

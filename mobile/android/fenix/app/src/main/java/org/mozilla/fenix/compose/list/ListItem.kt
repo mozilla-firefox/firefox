@@ -74,8 +74,8 @@ import org.mozilla.fenix.theme.FirefoxTheme
 import java.util.Locale
 import mozilla.components.ui.icons.R as iconsR
 
-private val LIST_ITEM_HEIGHT = 56.dp
-private val ICON_SIZE = 24.dp
+private val LIST_ITEM_HEIGHT = 72.dp
+private val ICON_SIZE = 48.dp
 
 private const val TOAST_LENGTH = Toast.LENGTH_SHORT
 

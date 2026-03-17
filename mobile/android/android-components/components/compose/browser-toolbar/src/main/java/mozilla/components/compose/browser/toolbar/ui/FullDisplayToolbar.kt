@@ -50,7 +50,7 @@ import mozilla.components.compose.browser.toolbar.utils.DisplayToolbarPreviewMod
 import androidx.compose.ui.platform.LocalResources
 
 private const val NO_TOOLBAR_PADDING_DP = 0
-private const val TOOLBAR_PADDING_DP = 8
+private const val TOOLBAR_PADDING_DP = 0
 private const val LARGE_TOOLBAR_PADDING_DP = 20
 
 @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod", "CognitiveComplexMethod")
@@ -109,7 +109,7 @@ internal fun FullDisplayToolbar(
                                 false -> NO_TOOLBAR_PADDING_DP.dp
                             },
                         )
-                        .height(72.dp)
+                        .height(LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.dsDefaultHeight).dp)
                         .background(
                             color = AcornTheme.colors.controlsInputFocusFill,
                             shape = RoundedCornerShape(999.dp),

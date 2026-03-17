@@ -95,7 +95,7 @@ fun BrowserEditToolbar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(72.dp)
+                    .height(LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.dsDefaultHeight).dp)
                     .clip(shape = ROUNDED_CORNER_SHAPE)
                     .background(color = AcornTheme.colors.controlsInputFocusFill),
                 verticalAlignment = Alignment.CenterVertically,

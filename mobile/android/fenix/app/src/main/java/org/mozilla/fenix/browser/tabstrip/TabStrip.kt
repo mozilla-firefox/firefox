@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -227,7 +228,7 @@ private fun TabStripContent(
                         painter = painterResource(iconsR.drawable.mozac_ic_plus_24),
                         tint = MaterialTheme.colorScheme.onSurface,
                         contentDescription = stringResource(R.string.add_tab),
-                        modifier = Modifier.size(72.dp),
+                        modifier = Modifier.size(LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.dsDefaultHeight).dp),
                         //tint = Color.Unspecified
                     )
                 }
@@ -430,7 +431,8 @@ private fun TabItem(
             if (state.isCloseButtonVisible) {
                 IconButton(
                     onClick = { onCloseTabClick(state.id, state.isPrivate) },
-                    modifier =  Modifier.height(72.dp).width(72.dp)
+                    modifier =  Modifier.size(
+                        LocalResources.current.getDimensionPixelSize(com.android.car.navioui.R.dimen.dsDefaultHeight).dp)
                     ,
                 ) {
                     Icon(

@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.modifier.thenConditional
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.base.theme.surfaceDimVariant
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.MenuDialogTestTag.WEB_EXTENSION_ITEM
@@ -454,7 +455,7 @@ enum class MenuItemState {
 @Composable
 private fun getLabelTextColor(state: MenuItemState): Color {
     return when (state) {
-        MenuItemState.ACTIVE -> MaterialTheme.colorScheme.tertiary
+        MenuItemState.ACTIVE -> AcornTheme.colors.accent
         MenuItemState.WARNING -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurface
     }
@@ -463,9 +464,9 @@ private fun getLabelTextColor(state: MenuItemState): Color {
 @Composable
 private fun getDescriptionTextColor(state: MenuItemState): Color {
     return when (state) {
-        MenuItemState.ACTIVE -> MaterialTheme.colorScheme.tertiary
+        MenuItemState.ACTIVE -> AcornTheme.colors.accent
         MenuItemState.WARNING -> MaterialTheme.colorScheme.error
-        MenuItemState.DISABLED -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        MenuItemState.DISABLED -> AcornTheme.colors.textNormal.copy(alpha = 0.38f)
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 }
@@ -473,18 +474,18 @@ private fun getDescriptionTextColor(state: MenuItemState): Color {
 @Composable
 private fun getIconTint(state: MenuItemState): Color {
     return when (state) {
-        MenuItemState.ACTIVE -> MaterialTheme.colorScheme.tertiary
+        MenuItemState.ACTIVE -> AcornTheme.colors.accent
         MenuItemState.WARNING -> MaterialTheme.colorScheme.error
         MenuItemState.CRITICAL -> Color.Unspecified
-        else -> MaterialTheme.colorScheme.onSurface
+        else -> AcornTheme.colors.iconNormal
     }
 }
 
 @Composable
 private fun getBadgeColor(state: MenuItemState): Color {
     return when (state) {
-        MenuItemState.ACTIVE -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.surfaceContainerHighest
+        MenuItemState.ACTIVE -> AcornTheme.colors.controlsButtonPrimaryNormal
+        else -> AcornTheme.colors.controlsButtonSecondaryNormal
     }
 }
 

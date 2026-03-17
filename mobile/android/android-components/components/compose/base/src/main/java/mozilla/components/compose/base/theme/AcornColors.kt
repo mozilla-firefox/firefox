@@ -59,7 +59,8 @@ class AcornColors(
     controlsInputFocusFill: Color,
     controlsButtonSecondaryNormal: Color,
     controlsButtonPrimaryNormal: Color,
-    backgroundPlate: Color
+    backgroundPlate: Color,
+    accent: Color
 ) {
     // Layers
 
@@ -224,6 +225,9 @@ class AcornColors(
     var backgroundPlate by mutableStateOf(backgroundPlate)
         private set
 
+    var accent by mutableStateOf(accent)
+        private set
+
     /**
      * Updates the existing colors with the provided [AcornColors].
      */
@@ -265,6 +269,7 @@ class AcornColors(
         controlsButtonSecondaryNormal = other.controlsButtonSecondaryNormal
         controlsButtonPrimaryNormal = other.controlsButtonPrimaryNormal
         backgroundPlate = other.backgroundPlate
+        accent = other.accent
     }
 
     /**
@@ -307,7 +312,8 @@ class AcornColors(
         controlsInputFocusFill: Color = this.controlsInputFocusFill,
         controlsButtonSecondaryNormal: Color = this.controlsButtonSecondaryNormal,
         controlsButtonPrimaryNormal: Color = this.controlsButtonPrimaryNormal,
-        backgroundPlate: Color = this.backgroundPlate
+        backgroundPlate: Color = this.backgroundPlate,
+        accent: Color = this.accent
     ): AcornColors = AcornColors(
         layer2 = layer2,
         layer3 = layer3,
@@ -344,7 +350,8 @@ class AcornColors(
         controlsInputFocusFill = controlsInputFocusFill,
         controlsButtonSecondaryNormal = controlsButtonSecondaryNormal,
         controlsButtonPrimaryNormal = controlsButtonPrimaryNormal,
-        backgroundPlate = backgroundPlate
+        backgroundPlate = backgroundPlate,
+        accent = accent
     )
 }
 
@@ -362,7 +369,7 @@ val darkColorPalette = AcornColors(
     actionCritical = PhotonColors.Pink70A69,
     actionInformation = PhotonColors.Blue60,
     formDefault = CustomColorsDark.BackgroundPlate,
-    textOnColorPrimary = CustomColorsDark.IconAccent,
+    textOnColorPrimary = CustomColorsDark.TextNormal,
     iconPrimaryInactive = PhotonColors.LightGrey05A60,
     iconActive = CustomColorsDark.BackgroundPlate,
     iconOnColor = PhotonColors.LightGrey05,
@@ -384,7 +391,8 @@ val darkColorPalette = AcornColors(
     controlsInputFocusFill = CustomColorsDark.ControlsInputFocusFill,
     controlsButtonSecondaryNormal = CustomColorsDark.ControlsButtonSecondaryNormal,
     controlsButtonPrimaryNormal = CustomColorsDark.ControlsButtonPrimaryNormal,
-    backgroundPlate = CustomColorsDark.BackgroundPlate
+    backgroundPlate = CustomColorsDark.BackgroundPlate,
+    accent = CustomColorsDark.Accent
 )
 
 val lightColorPalette = AcornColors(
@@ -401,7 +409,7 @@ val lightColorPalette = AcornColors(
     actionCritical = PhotonColors.Red30,
     actionInformation = PhotonColors.Blue50,
     formDefault = PhotonColors.DarkGrey90,
-    textOnColorPrimary = CustomColorsDark.IconAccent,
+    textOnColorPrimary = CustomColorsLight.TextNormal,
     iconPrimaryInactive = PhotonColors.DarkGrey90A60,
     iconActive = PhotonColors.Ink20,
     iconOnColor = PhotonColors.LightGrey05,
@@ -423,7 +431,8 @@ val lightColorPalette = AcornColors(
     controlsInputFocusFill = CustomColorsLight.ControlsInputFocusFill,
     controlsButtonSecondaryNormal = CustomColorsLight.ControlsButtonSecondaryNormal,
     controlsButtonPrimaryNormal = CustomColorsLight.ControlsButtonPrimaryNormal,
-    backgroundPlate = CustomColorsLight.BackgroundPlate
+    backgroundPlate = CustomColorsLight.BackgroundPlate,
+    accent = CustomColorsDark.Accent
 )
 
 val privateColorPalette = darkColorPalette.copy(
