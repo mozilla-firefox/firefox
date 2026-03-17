@@ -201,32 +201,44 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
                             summarizeToolbarCfrBinding.get()?.maybeDismissCfr()
                         }
                         .collect {
-                        findNavController().apply {
-                            // We don't want to navigate to the summarization fragment if the current
-                            // tab is private.
-                            val isPrivate = getSafeCurrentTab()?.content?.private == true
-
-                            // We don't want to navigate to the summarization fragment if the current
-                            // tab is loading.
-                            val isPageLoading = getSafeCurrentTab()?.content?.loading == true
-
-                            // Since the summarization fragment is in a dialog, it's possible that we
-                            // can still detect shakes in the background. Don't try to navigate twice.
-                            val currentDestinationIsNotTheBrowser = currentDestination?.id != R.id.browserFragment
-
-                            if (isPrivate || isPageLoading || currentDestinationIsNotTheBrowser) {
-                                return@collect
-                            }
-
-                            navigate(
-                                BrowserFragmentDirections.actionBrowserFragmentToSummarizationFragment(
-                                    true,
-                                ),
-                            )
-                        }
+                            navigateToSummarizationIfEligible()
                     }
                 }
             }
+        }
+    }
+
+    private fun navigateToSummarizationIfEligible() {
+        findNavController().apply {
+            // If the shake gesture was disabled in the bottom sheet hosted settings but the fragment
+            // has not been recreated yet, we need to check if it's still active before proceeding.
+            val shakeEnabled = requireComponents.core.summarizeFeatureSettings.shakeToSummarizeEnabled
+
+            if (!shakeEnabled) {
+                return
+            }
+
+            // We don't want to navigate to the summarization fragment if the current
+            // tab is private.
+            val isPrivate = getSafeCurrentTab()?.content?.private == true
+
+            // We don't want to navigate to the summarization fragment if the current
+            // tab is loading.
+            val isPageLoading = getSafeCurrentTab()?.content?.loading == true
+
+            // Since the summarization fragment is in a dialog, it's possible that we
+            // can still detect shakes in the background. Don't try to navigate twice.
+            val currentDestinationIsNotTheBrowser = currentDestination?.id != R.id.browserFragment
+
+            if (isPrivate || isPageLoading || currentDestinationIsNotTheBrowser) {
+                return
+            }
+
+            navigate(
+                BrowserFragmentDirections.actionBrowserFragmentToSummarizationFragment(
+                    true,
+                ),
+            )
         }
     }
 
