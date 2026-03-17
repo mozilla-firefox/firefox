@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.fetch.MutableHeaders
 import mozilla.components.concept.fetch.Request
+import mozilla.components.concept.fetch.Response
 import mozilla.components.concept.fetch.isClientError
 
 /**
@@ -57,9 +58,7 @@ class FetchClientMlpaService(
                     throw VerificationServiceFailed("Received status code ${httpResponse.status}")
                 }
 
-                httpResponse
-                    .use { httpResponse.body.string(Charsets.UTF_8) }
-                    .let { json.decodeFromString(it) }
+                json.decodeFromString(httpResponse.bodyString)
             }
         }
 
@@ -93,13 +92,28 @@ class FetchClientMlpaService(
 
         return@withContext Result.runCatching {
             val httpResponse = client.fetch(fetchRequest)
-            if (httpResponse.isClientError) {
-                throw ChatServiceFailed("Received status code ${httpResponse.status}")
+
+            httpResponse.error?.also {
+                throw ChatServiceException(it)
             }
 
-            httpResponse
-                .use { httpResponse.body.string(Charsets.UTF_8) }
-                .let { json.decodeFromString(it) }
+            json.decodeFromString(httpResponse.bodyString)
         }
+    }
+
+    private val Response.bodyString get() = use { body.string(Charsets.UTF_8) }
+    private val Response.retryAfter: Long? get() = headers["Retry-After"]?.toLongOrNull()
+    private val Response.error: ChatServiceError? get() = when (status) {
+        in 200..299 -> null
+        401 -> ChatServiceError.InvalidToken
+        403 -> ChatServiceError.UserBlocked
+        413 -> ChatServiceError.RequestTooLarge
+        429 -> when (json.decodeFromString<ChatService.ResponseErrorCode>(bodyString).error) {
+            1 -> ChatServiceError.BudgetExceeded(retryAfter)
+            2 -> ChatServiceError.RateLimited(retryAfter)
+            else -> ChatServiceError.ServerError(status)
+        }
+        502 -> ChatServiceError.UpstreamError(json.decodeFromString<ChatService.ResponseErrorReason>(bodyString).error)
+        else -> ChatServiceError.ServerError(status)
     }
 }
