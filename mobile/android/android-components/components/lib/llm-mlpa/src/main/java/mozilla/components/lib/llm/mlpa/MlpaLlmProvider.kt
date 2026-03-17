@@ -8,9 +8,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.CloudLlmProvider.State
-import mozilla.components.concept.llm.CloudLlmProvider.State.Ready
-import mozilla.components.concept.llm.CloudLlmProvider.State.Unavailable
 import mozilla.components.concept.llm.LlmProvider
+import mozilla.components.lib.llm.mlpa.service.ChatService
+import mozilla.components.lib.llm.mlpa.service.ChatServiceError
+import mozilla.components.lib.llm.mlpa.service.ChatServiceException
 import mozilla.components.lib.llm.mlpa.service.MlpaService
 
 /**
@@ -31,6 +32,7 @@ import mozilla.components.lib.llm.mlpa.service.MlpaService
  */
 class MlpaLlmProvider(
     val tokenProvider: MlpaTokenProvider,
+    val storage: MlpaTokenStorage,
     val mlpaService: MlpaService,
 ) : CloudLlmProvider {
     override val info = LlmProvider.Info(nameRes = R.string.mlpa_llm_provider_name, iconRes = R.drawable.firefox_icon)
@@ -46,12 +48,30 @@ class MlpaLlmProvider(
      *
      * This function attempts to fetch an authentication token using [tokenProvider].
      *
-     * - On success, updates [state] to [Ready] with a newly created [MlpaLlm].
-     * - On failure, updates [state] to [Unavailable].
+     * - On success, updates [state] to [State.Ready] with a newly created [MlpaLlm].
+     * - On failure, updates [state] to [State.Unavailable].
      */
     override suspend fun prepare() {
         tokenProvider.fetchToken()
-            .onSuccess { _state.value = Ready(MlpaLlm(mlpaService, it)) }
-            .onFailure { _state.value = Unavailable }
+            .onSuccess { _state.value = State.Ready(MlpaLlm(chatService, it)) }
+            .onFailure { _state.value = State.Unavailable }
+    }
+
+    /**
+     * Wraps the [ChatService]
+     */
+    private val chatService = ChatService { token, request ->
+        val response = mlpaService.completion(token, request)
+        response.onFailure {
+            if (it.isRetryable) {
+                storage.clear()
+                _state.value = State.Available
+            } else {
+                _state.value = State.Unavailable
+            }
+        }
+        return@ChatService response
     }
 }
+
+private val Throwable.isRetryable get() = (this as? ChatServiceException)?.error is ChatServiceError.InvalidToken
