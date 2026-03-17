@@ -16,6 +16,8 @@ import mozilla.components.lib.llm.mlpa.UserIdProvider
 import mozilla.components.lib.llm.mlpa.service.AuthenticationService
 import mozilla.components.lib.llm.mlpa.service.AuthorizationToken
 import mozilla.components.lib.llm.mlpa.service.ChatService
+import mozilla.components.lib.llm.mlpa.service.ChatServiceError
+import mozilla.components.lib.llm.mlpa.service.ChatServiceException
 import mozilla.components.lib.llm.mlpa.service.MlpaService
 import mozilla.components.lib.llm.mlpa.service.UserId
 import java.io.ByteArrayInputStream
@@ -68,6 +70,10 @@ val successChatService = ChatService { token, request ->
 
 val failureChatService = ChatService { token, request ->
     Result.failure(IllegalStateException("Bad response!"))
+}
+
+val invalidTokenService = ChatService { _, _ ->
+    Result.failure(ChatServiceException(ChatServiceError.InvalidToken))
 }
 
 data class FakeMlpaService(
