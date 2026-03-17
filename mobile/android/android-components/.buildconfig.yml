@@ -1823,13 +1823,21 @@ projects:
     path: components/lib/llm-mlpa
     publish: true
     upstream_dependencies:
+    - components:browser-errorpages
     - components:concept-base
+    - components:concept-engine
     - components:concept-fetch
     - components:concept-integrity
     - components:concept-llm
+    - components:concept-storage
+    - components:lib-publicsuffixlist
     - components:support-base
+    - components:support-ktx
     - components:support-test
+    - components:support-test-fakes
+    - components:support-utils
     - components:tooling-lint
+    - components:ui-icons
   components:lib-publicsuffixlist:
     description: A library for reading and using the public suffix list.
     path: components/lib/publicsuffixlist
