@@ -487,7 +487,7 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
 
-        requirePreference<SwitchPreference>(R.string.pref_key_enable_longfox).apply {
+        requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_longfox).apply {
             isVisible = Config.channel.isNightlyOrDebug
             isChecked = context.settings().longfoxEnabled
             onPreferenceChangeListener = SharedPreferenceUpdater()
