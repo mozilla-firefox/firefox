@@ -15,11 +15,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.feature.summarize.LocalProductName
 import mozilla.components.feature.summarize.OffDeviceSummarizationShakeConsentAction
 import mozilla.components.feature.summarize.R
 
@@ -57,7 +64,7 @@ private fun OffDeviceSummarizationConsentContent(
             onClickLearnMore = onClickLearnMore,
         )
 
-        Spacer(modifier = Modifier.height(AcornTheme.layout.space.static300))
+        Spacer(modifier = Modifier.height(AcornTheme.layout.space.static600))
 
         OffDeviceSummarizationButtons(
             onClickAllow = onClickAllow,
@@ -71,6 +78,8 @@ private fun OffDeviceSummarizationDescription(
     modifier: Modifier = Modifier,
     onClickLearnMore: () -> Unit,
 ) {
+    val productName = LocalProductName.current.value
+
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = stringResource(R.string.mozac_summarize_shake_consent_off_device_title),
@@ -81,17 +90,45 @@ private fun OffDeviceSummarizationDescription(
 
         Spacer(modifier = Modifier.height(AcornTheme.layout.space.static100))
 
-        Text(
-            text = stringResource(R.string.mozac_summarize_shake_consent_off_device_message),
-            style = AcornTheme.typography.body2,
+        AnnotatedBodyText(
+            message = stringResource(R.string.mozac_summarize_shake_consent_off_device_message, productName),
+            onClickLearnMore = onClickLearnMore,
+        )
+    }
+}
+
+@Composable
+private fun AnnotatedBodyText(
+    message: String,
+    onClickLearnMore: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val linkColor = MaterialTheme.colorScheme.tertiary
+    val learnMore = stringResource(R.string.mozac_summarize_learn_more_link)
+
+    val annotatedMessage = buildAnnotatedString {
+        append("$message ")
+        withLink(
+            LinkAnnotation.Clickable(
+                tag = "LEARN_MORE",
+                styles = TextLinkStyles(
+                    style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline),
+                ),
+                linkInteractionListener = { onClickLearnMore() },
+            ),
+        ) {
+            append(learnMore)
+        }
+    }
+
+    Text(
+        modifier = modifier,
+        text = annotatedMessage,
+        style = AcornTheme.typography.body2.copy(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-        )
-
-        Spacer(modifier = Modifier.height(AcornTheme.layout.space.static200))
-
-        LearnMoreLinkText(onClick = onClickLearnMore)
-    }
+        ),
+    )
 }
 
 @Composable
