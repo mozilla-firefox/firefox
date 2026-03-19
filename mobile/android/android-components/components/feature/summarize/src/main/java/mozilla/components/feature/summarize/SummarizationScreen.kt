@@ -48,6 +48,7 @@ import mozilla.components.feature.summarize.ui.OnDeviceSummarizationConsent
 import mozilla.components.feature.summarize.ui.SummarizingContent
 import mozilla.components.feature.summarize.ui.SummaryContentLoaded
 import mozilla.components.feature.summarize.ui.gradient.summaryLoadingGradient
+import mozilla.components.ui.richtext.ir.RichDocument
 
 /**
  * The corner ration of the handle shape
@@ -117,12 +118,20 @@ private fun SummarizationScreen(
                     },
                 )
             }
-            is SummarizationState.Summarizing -> SummarizingContent(
-                modifier = Modifier.height(252.dp),
-            )
+            is SummarizationState.Summarizing -> if(state.document.blocks.size > 1) {
+                SummaryContentLoaded(
+                    info = state.info,
+                    document = state.document,
+                    onSettingsClicked = { store.dispatch(SettingsClicked) },
+                )
+            } else {
+                SummarizingContent(
+                    modifier = Modifier.height(252.dp),
+                )
+            }
             is SummarizationState.Summarized -> SummaryContentLoaded(
                 info = state.info,
-                text = state.text,
+                document = state.document,
                 onSettingsClicked = { store.dispatch(SettingsClicked) },
             )
             is SummarizationState.Settings -> {
@@ -208,8 +217,8 @@ private class SummarizationStatePreviewProvider : PreviewParameterProvider<Summa
     val info = LlmProvider.Info(R.string.mozac_summarize_fake_llm_name)
     override val values: Sequence<SummarizationState> = sequenceOf(
         SummarizationState.Summarizing(info = info),
-        SummarizationState.Summarized(info = info, text = previewSummarizedText),
-        SummarizationState.Settings(info = info, summarizedText = previewSummarizedText),
+        SummarizationState.Summarized(info = info, document = RichDocument(listOf())),
+        SummarizationState.Settings(info = info, document = RichDocument(listOf())),
         SummarizationState.Error(SummarizationError.ContentTooLong),
         SummarizationState.ShakeConsentRequired,
         SummarizationState.ShakeConsentWithDownloadRequired,

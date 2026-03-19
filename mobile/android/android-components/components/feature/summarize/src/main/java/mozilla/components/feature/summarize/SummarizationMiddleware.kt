@@ -6,6 +6,9 @@ package mozilla.components.feature.summarize
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.reduce
+import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.launch
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.Llm
@@ -13,6 +16,7 @@ import mozilla.components.concept.llm.Prompt
 import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
+import mozilla.components.ui.richtext.parsing.Parser
 
 /** The initial middleware for the summarization feature */
 class SummarizationMiddleware(
@@ -52,9 +56,14 @@ class SummarizationMiddleware(
     private suspend fun observePrompt(store: SummarizationStore, llm: Llm) {
         pageContentExtractor.getPageContent().fold(
             onSuccess = { result ->
+                val parser = Parser()
                 llm.prompt(Prompt(systemPrompt + result))
-                    .collect { response ->
-                        store.dispatch(LlmAction.ReceivedResponse(response))
+                    .map { it.content }
+                    .scan("") { acc, i -> acc + i }
+                    .map { parser.parse(it) }
+                    .onCompletion { store.dispatch(LlmAction.SummarizationFinished) }
+                    .collect { document ->
+                        store.dispatch(LlmAction.ReceivedParsedDocument(document) )
                     }
             },
             onFailure = {
@@ -83,4 +92,11 @@ class SummarizationMiddleware(
             !settings.hasConsentedToShake()
 
     private val systemPrompt = "This is the system prompt: "
+}
+
+
+private val Llm.Response.content get() = when (this) {
+    is Llm.Response.Failure -> ""
+    Llm.Response.Success.ReplyFinished -> ""
+    is Llm.Response.Success.ReplyPart -> this.value
 }

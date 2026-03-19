@@ -6,6 +6,7 @@ package mozilla.components.feature.summarize
 
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.lib.state.State
+import mozilla.components.ui.richtext.ir.RichDocument
 
 /**
  * The [State] of the [SummarizationStore]
@@ -38,7 +39,7 @@ sealed class SummarizationState : State {
      * @param info metadata about the LLM that generated the summary
      * @param parts the parts that we've generated so far.
      */
-    data class Summarizing(val info: LlmProvider.Info, val parts: List<String> = listOf()) : SummarizationState()
+    data class Summarizing(val info: LlmProvider.Info, val document: RichDocument = RichDocument(listOf())) : SummarizationState()
 
     /**
      * Summarization completed successfully.
@@ -46,7 +47,7 @@ sealed class SummarizationState : State {
      * @param info metadata about the LLM that generated the summary
      * @param text The generated summary.
      */
-    data class Summarized(val info: LlmProvider.Info, val text: String) : SummarizationState()
+    data class Summarized(val info: LlmProvider.Info, val document: RichDocument = RichDocument(listOf())) : SummarizationState()
 
     /**
      * An error occurred during the summarization lifecycle.
@@ -61,7 +62,7 @@ sealed class SummarizationState : State {
      * @param info metadata about the LLM that generated the summary
      * @param summarizedText The summary text to return to when navigating back.
      */
-    data class Settings(val info: LlmProvider.Info, val summarizedText: String) : SummarizationState()
+    data class Settings(val info: LlmProvider.Info, val document: RichDocument) : SummarizationState()
 
     /** User is finished with the Summarization Flow */
     sealed class Finished : SummarizationState() {
