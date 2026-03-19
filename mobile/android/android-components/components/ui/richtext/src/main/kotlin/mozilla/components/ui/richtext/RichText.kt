@@ -4,7 +4,6 @@
 
 package mozilla.components.ui.richtext
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,17 +14,24 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.ui.richtext.ir.RichDocument
 import mozilla.components.ui.richtext.parsing.Parser
 import mozilla.components.ui.richtext.rendering.Render
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Rich text rendering composable.
@@ -42,11 +48,37 @@ fun RichText(
     modifier: Modifier = Modifier,
     typography: RichTextTypography = RichTextDefaults.typography(),
     colors: RichTextColors = RichTextDefaults.colors(),
-    uriHandler: UriHandler = NoOpUriHandler(),
+    uriHandler: UriHandler = remember { NoOpUriHandler() },
 ) {
     val document = remember(text, typography) {
         Parser().parse(text)
     }
+    RichText(
+        document = document,
+        modifier = modifier,
+        typography = typography,
+        colors = colors,
+        uriHandler = uriHandler,
+    )
+}
+
+/**
+ * Rich text rendering composable.
+ *
+ * @param document The [RichDocument] to render.
+ * @param modifier The modifier to apply to this layout.
+ * @param typography The typography to use.
+ * @param colors The colors to use.
+ * @param uriHandler The [UriHandler] to use for link clicks
+ */
+@Composable
+fun RichText(
+    document: RichDocument,
+    modifier: Modifier = Modifier,
+    typography: RichTextTypography = RichTextDefaults.typography(),
+    colors: RichTextColors = RichTextDefaults.colors(),
+    uriHandler: UriHandler = remember(Unit) { NoOpUriHandler() },
+) {
     CompositionLocalProvider(
         LocalRichTextColors provides colors,
         LocalRichTextTypography provides typography,
@@ -57,7 +89,9 @@ fun RichText(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             document.blocks.forEach { block ->
-                block.Render()
+                key(block) {
+                    block.Render()
+                }
             }
         }
     }
@@ -94,6 +128,32 @@ private val SampleText = """
 @PreviewLightDark
 @Composable
 private fun PreviewRichText() = AcornTheme {
+    var visibleCharCount by remember { mutableStateOf(0) }
+
+    val currentText = remember(visibleCharCount) {
+        SampleText.substring(0, visibleCharCount)
+    }
+
+    LaunchedEffect(Unit) {
+        // TODO remove: delay to wait for the layout inspector to get attached
+        delay(10.seconds.inWholeMilliseconds)
+
+        while (visibleCharCount < SampleText.length) {
+            // randomly pick 20-35 characters
+            val chunkSize = (20..35).random()
+
+            // randomly wait 500ms - 1s
+            val delayMs = (500L..1000L).random()
+
+            visibleCharCount = (visibleCharCount + chunkSize).coerceAtMost(SampleText.length)
+            delay(delayMs)
+        }
+    }
+
+    val document = remember(currentText) {
+        Parser().parse(currentText)
+    }
+
     Scaffold {
         Box(
             modifier = Modifier
@@ -103,15 +163,9 @@ private fun PreviewRichText() = AcornTheme {
                 .verticalScroll(rememberScrollState()),
             contentAlignment = Alignment.Center,
         ) {
-            val view = LocalView.current
             RichText(
                 modifier = Modifier,
-                text = SampleText,
-                uriHandler = object : UriHandler {
-                    override fun openUri(uri: String) {
-                        Toast.makeText(view.context, uri, Toast.LENGTH_SHORT).show()
-                    }
-                },
+                document = document,
             )
         }
     }
