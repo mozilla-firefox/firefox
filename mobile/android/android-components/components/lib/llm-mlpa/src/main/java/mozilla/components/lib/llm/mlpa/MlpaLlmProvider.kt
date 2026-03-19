@@ -6,6 +6,7 @@ package mozilla.components.lib.llm.mlpa
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.CloudLlmProvider.State
 import mozilla.components.concept.llm.LlmProvider
@@ -61,16 +62,18 @@ class MlpaLlmProvider(
      * Wraps the [ChatService]
      */
     private val chatService = ChatService { token, request ->
-        val response = mlpaService.completion(token, request)
-        response.onFailure {
-            if (it.isRetryable) {
-                storage.clear()
-                _state.value = State.Available
-            } else {
-                _state.value = State.Unavailable
+        mlpaService.completion(token, request)
+            .catch { throwable ->
+                if (throwable.isRetryable) {
+                    storage.clear()
+                    _state.value = State.Available
+                } else {
+                    _state.value = State.Unavailable
+                }
+
+                // Re-throw the error so downstream consumers can handle the error
+                throw throwable
             }
-        }
-        return@ChatService response
     }
 }
 

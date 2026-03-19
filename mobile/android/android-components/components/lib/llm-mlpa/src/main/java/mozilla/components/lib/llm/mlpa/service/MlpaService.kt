@@ -4,6 +4,7 @@
 
 package mozilla.components.lib.llm.mlpa.service
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -199,10 +200,10 @@ fun interface ChatService {
      * @param request The completion request payload.
      * @return A [Result] containing a [Response] on success, or a failure otherwise.
      */
-    suspend fun completion(
+    fun completion(
         authorizationToken: AuthorizationToken,
         request: Request,
-    ): Result<Response>
+    ): Flow<String>
 
     /**
      * Body of an error response with a code.
@@ -260,6 +261,7 @@ fun interface ChatService {
     data class Request(
         val model: ModelID,
         val messages: List<Message>,
+        val stream: Boolean = true,
     ) {
         /**
          * Identifier of a model supported by MLPA.

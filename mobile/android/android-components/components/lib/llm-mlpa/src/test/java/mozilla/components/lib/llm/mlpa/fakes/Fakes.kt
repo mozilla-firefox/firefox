@@ -4,6 +4,8 @@
 
 package mozilla.components.lib.llm.mlpa.fakes
 
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flow
 import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.fetch.Headers
 import mozilla.components.concept.fetch.MutableHeaders
@@ -57,24 +59,24 @@ val failureAuthenticationService = AuthenticationService { request ->
 }
 
 val successChatService = ChatService { token, request ->
-    Result.success(
-        ChatService.Response(
-            choices = listOf(
-                ChatService.Response.Choice(
-                    ChatService.Response.Message("Hello World!"),
-                ),
-            ),
-        ),
-    )
+    listOf("Hello World!").asFlow()
 }
 
 val failureChatService = ChatService { token, request ->
-    Result.failure(IllegalStateException("Bad response!"))
+    flow { throw IllegalStateException("Bad response!") }
 }
 
 val invalidTokenService = ChatService { _, _ ->
-    Result.failure(ChatServiceException(ChatServiceError.InvalidToken))
+    flow { throw ChatServiceException(ChatServiceError.InvalidToken) }
 }
+
+val streamedResponseBody = """
+    data: {"id":"chatcmpl-8ba80f82-97e4-4d1d-a17b-8eaa6a02ab64","created":1773776808,"model":"vertex_ai/mistral-small-2503","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"Hello","role":"assistant"}}]}
+
+    data: {"id":"chatcmpl-659c5828-fbd8-48cb-887f-2a6b3b508d95","created":1773776808,"model":"vertex_ai/mistral-small-2503","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":" World!"}}]}
+
+    data: [DONE]
+""".trimIndent()
 
 data class FakeMlpaService(
     val authService: AuthenticationService = successAuthenticationService,
