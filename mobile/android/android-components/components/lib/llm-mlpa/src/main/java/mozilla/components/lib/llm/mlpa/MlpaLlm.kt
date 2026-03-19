@@ -5,7 +5,9 @@
 package mozilla.components.lib.llm.mlpa
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onCompletion
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.Prompt
 import mozilla.components.lib.llm.mlpa.service.AuthorizationToken
@@ -20,14 +22,17 @@ internal class MlpaLlm(
 ) : Llm {
     override suspend fun prompt(prompt: Prompt): Flow<Llm.Response> = flow {
         chatService.completion(authorizationToken, prompt.asRequest)
-            .onSuccess {
-                emit(Llm.Response.Success.ReplyPart(it.choices.first().message.content))
-                emit(Llm.Response.Success.ReplyFinished)
-            }
-            .onFailure {
-                emit(Llm.Response.Failure("MlpaLlm Failed: ${it.message}"))
-            }
+            .onSuccessfulCompletion { emit(Llm.Response.Success.ReplyFinished) }
+            .catch { emit(Llm.Response.Failure("MlpaLlm Failed: ${it.message}")) }
+            .collect { emit(Llm.Response.Success.ReplyPart(it)) }
     }
+}
+
+private fun <T> Flow<T>.onSuccessfulCompletion(
+    action: suspend () -> Unit
+): Flow<T> = onCompletion {
+    if (it != null) return@onCompletion
+    action()
 }
 
 internal val Prompt.asRequest
@@ -36,4 +41,5 @@ internal val Prompt.asRequest
         messages = listOf(
             Message.user(value),
         ),
+        stream = true,
     )

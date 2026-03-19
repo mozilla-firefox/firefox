@@ -6,13 +6,19 @@ package mozilla.components.lib.llm.mlpa.service
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.Json.Default.decodeFromString
 import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.fetch.MutableHeaders
 import mozilla.components.concept.fetch.Request
 import mozilla.components.concept.fetch.Response
 import mozilla.components.concept.fetch.isClientError
+import mozilla.components.lib.llm.mlpa.service.ext.contentFlow
 
 /**
  * Default [MlpaService] implementation backed by a generic HTTP [Client].
@@ -32,6 +38,7 @@ class FetchClientMlpaService(
     private val json by lazy {
         Json {
             ignoreUnknownKeys = true
+            encodeDefaults = true
         }
     }
 
@@ -70,10 +77,10 @@ class FetchClientMlpaService(
      * @return [Result.success] with the parsed response on success containing a [ChatService.Response],
      * or [Result.failure] if the HTTP call is not successful.
      */
-    override suspend fun completion(
+    override fun completion(
         authorizationToken: AuthorizationToken,
         request: ChatService.Request,
-    ): Result<ChatService.Response> = withContext(dispatcher) {
+    ): Flow<String> {
         val bodyString = json.encodeToString(request)
         val fetchRequest = Request(
             url = "${config.baseUrl}/v1/chat/completions",
@@ -90,16 +97,23 @@ class FetchClientMlpaService(
             body = Request.Body.fromString(bodyString),
         )
 
-        return@withContext Result.runCatching {
+        return flow {
             val httpResponse = client.fetch(fetchRequest)
 
             httpResponse.error?.also {
                 throw ChatServiceException(it)
             }
 
-            json.decodeFromString(httpResponse.bodyString)
-        }
+            if (request.stream) {
+                emitAll(httpResponse.contentFlow)
+            } else {
+                emit(httpResponse.nonStreamedResponse)
+            }
+        }.flowOn(dispatcher)
     }
+
+    private val Response.nonStreamedResponse get() =
+        json.decodeFromString<ChatService.Response>(bodyString).choices.first().message.content
 
     private val Response.bodyString get() = use { body.string(Charsets.UTF_8) }
     private val Response.retryAfter: Long? get() = headers["Retry-After"]?.toLongOrNull()
