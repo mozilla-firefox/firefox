@@ -42,7 +42,8 @@ class Llm(
                     packageName = PackageName(BuildConfig.APPLICATION_ID),
                 ),
             ),
-            fenixMlpaService,
+            storage = storage,
+            mlpaService = fenixMlpaService,
         )
     }
 }
