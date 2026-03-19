@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +25,7 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.ui.richtext.ir.RichDocument
 import mozilla.components.ui.richtext.parsing.Parser
 import mozilla.components.ui.richtext.rendering.Render
 
@@ -58,6 +60,41 @@ fun RichText(
         ) {
             document.blocks.forEach { block ->
                 block.Render()
+            }
+        }
+    }
+}
+
+/**
+ * Rich text rendering composable.
+ *
+ * @param document The [RichDocument] to render.
+ * @param modifier The modifier to apply to this layout.
+ * @param typography The typography to use.
+ * @param colors The colors to use.
+ * @param uriHandler The [UriHandler] to use for link clicks
+ */
+@Composable
+fun RichText(
+    document: RichDocument,
+    modifier: Modifier = Modifier,
+    typography: RichTextTypography = RichTextDefaults.typography(),
+    colors: RichTextColors = RichTextDefaults.colors(),
+    uriHandler: UriHandler = NoOpUriHandler(),
+) {
+    CompositionLocalProvider(
+        LocalRichTextColors provides colors,
+        LocalRichTextTypography provides typography,
+        LocalUriHandler provides uriHandler,
+    ) {
+        Column(
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            document.blocks.forEach { block ->
+                key(block) {
+                    block.Render()
+                }
             }
         }
     }
