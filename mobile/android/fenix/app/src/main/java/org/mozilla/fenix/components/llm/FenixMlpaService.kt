@@ -24,7 +24,7 @@ class FenixMlpaService(
     private val service get() = if (useProd) prod else nonProd
 
     override suspend fun verify(request: AuthenticationService.Request) = service.verify(request)
-    override suspend fun completion(
+    override fun completion(
         authorizationToken: AuthorizationToken,
         request: ChatService.Request,
     ) = service.completion(authorizationToken, request)
