@@ -5,7 +5,11 @@
 package org.mozilla.fenix.summarization
 
 import android.app.Dialog
+import android.content.Context
+import android.content.DialogInterface
 import android.graphics.Color
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -25,6 +29,7 @@ import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.SummarizationUi
+import mozilla.components.feature.summarize.ViewDismissed
 import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.feature.summarize.content.PageMetadata
 import mozilla.components.feature.summarize.content.PageMetadataExtractor
@@ -83,6 +88,17 @@ private fun EngineSession?.asPageMetadataExtractor(): PageMetadataExtractor = {
     }
 }
 
+private fun Context.getConnectionType(): ConnectionType {
+    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+    return when {
+        capabilities == null -> ConnectionType.NONE
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> ConnectionType.WIFI
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> ConnectionType.CELLULAR
+        else -> ConnectionType.OTHER
+    }
+}
+
 const val HALF_EXPANDED_RATIO = 0.75f
 
 /**
@@ -95,6 +111,7 @@ class SummarizationFragment : BottomSheetDialogFragment() {
         val provider = requireComponents.llm.mlpaProvider
         SummarizationStoreViewModel.factory(
             initializedFromShake = args.fromShake,
+            connectionType = requireContext().getConnectionType(),
             llmProvider = provider,
             settings = SummarizationSettings.dataStore(requireContext()),
             pageContentExtractor = engineSession.asPageContentExtractor(),
@@ -113,6 +130,11 @@ class SummarizationFragment : BottomSheetDialogFragment() {
             behavior.halfExpandedRatio = HALF_EXPANDED_RATIO
             behavior.expandedOffset = 0
         }
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        storeViewModel.store.dispatch(ViewDismissed)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =

@@ -110,6 +110,12 @@ class SummarizationMiddleware(
             is SummarizationFailed -> scope.launch {
                 errorReporter.report(action.throwable)
             }
+            is LlmAction.LlmPrompted -> scope.launch {
+                action.llm.prompt(Prompt("${action.instructions} ${action.content}"))
+                    .collect { response ->
+                        store.dispatch(LlmAction.ReceivedResponse(response))
+                    }
+            }
         }
 
         next(action)
@@ -128,10 +134,7 @@ class SummarizationMiddleware(
         }
         pageContentExtractor.getPageContent().fold(
             onSuccess = { content ->
-                llm.prompt(Prompt("$instructions $content"))
-                    .collect { response ->
-                        store.dispatch(LlmAction.ReceivedResponse(response))
-                    }
+                store.dispatch(LlmAction.LlmPrompted(instructions, content, pageMetadata, llm))
             },
             onFailure = {
                 store.dispatch(SummarizationFailed(it))

@@ -15025,3 +15025,197 @@ toolbar:
     notification_emails:
       - android-probes@mozilla.com
     expires: never
+
+ai.summarize:
+  summarization_closed:
+    type: event
+    description: |
+      Recorded when the user cancels or closes the summarization at any point.
+    extra_keys:
+      model:
+        description: The name of the model used for summarization.
+        type: string
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  summarization_completed:
+    type: event
+    description: |
+      Recorded when the summarizer service returns the summary or errors out.
+    extra_keys:
+      outcome:
+        description: True for success, false for failure.
+        type: boolean
+      length_words:
+        description: The number of words in the page content.
+        type: quantity
+      length_chars:
+        description: The number of characters in the page content.
+        type: quantity
+      connection_type:
+        description: |
+          The network connection type, e.g. "wifi" or "cellular".
+        type: string
+      model:
+        description: The name of the model used for summarization.
+        type: string
+      error_type:
+        description: If an error occurred, the error message.
+        type: string
+      time:
+        description: |
+          Time in milliseconds between request and completion.
+        type: quantity
+      content_type:
+        description: The content type of the page being summarized.
+        type: string
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  summarization_consent_displayed:
+    type: event
+    description: |
+      Recorded when the user responds to the Terms of Service consent dialogue.
+    extra_keys:
+      agreed:
+        description: Whether the user accepted the consent.
+        type: boolean
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  summarization_requested:
+    type: event
+    description: |
+      Recorded the instant the user initiates the summarization
+      (e.g. taps menu button, toolbar icon or shakes the device).
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  summarization_started:
+    type: event
+    description: |
+      Recorded when the summarizer service starts processing the page's text content.
+    extra_keys:
+      trigger:
+        description: |
+          How the user initiated summarization. Possible values:
+          "shake", "menu", "toolbar_button".
+        type: string
+      length_words:
+        description: The number of words in the page content.
+        type: quantity
+      length_chars:
+        description: The number of characters in the page content.
+        type: quantity
+      model:
+        description: The name of the model used for summarization.
+        type: string
+      content_type:
+        description: The content type of the page being summarized.
+        type: string
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  summary_failure:
+    type: event
+    description: |
+      Records when summary fails.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  summarization_time:
+    type: timing_distribution
+    time_unit: millisecond
+    description: |
+      Records the total time for generating the summary and showing it to the
+      user. Starts when the user triggers summarization. Ends when user sees
+      the result or an error.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+
+user.ai.summarize:
+  gesture_enabled:
+    type: boolean
+    lifetime: application
+    description: |
+      Records if the user has shake to summarize option enabled.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  summarization_enabled:
+    type: boolean
+    lifetime: application
+    description: |
+      Records if the user has summarization enabled.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  summarization_consented:
+    type: boolean
+    lifetime: application
+    description: |
+      Records if the user has consented to shake to summarize feature.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never

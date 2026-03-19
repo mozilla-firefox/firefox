@@ -6,6 +6,7 @@ package mozilla.components.feature.summarize
 
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.LlmProvider
+import mozilla.components.feature.summarize.content.PageMetadata
 import mozilla.components.lib.state.Action
 
 /**
@@ -16,6 +17,9 @@ interface SummarizationAction : Action
 /** The Summarization Screen View Appeared */
 data object ViewAppeared : SummarizationAction
 
+/** The Summarization Screen View was Dismissed */
+data object ViewDismissed : SummarizationAction
+
 /** The user tapped the settings cog. */
 data object SettingsClicked : SummarizationAction
 
@@ -25,9 +29,17 @@ data object SettingsBackClicked : SummarizationAction
 /** Shake Consent has been requested */
 data object ShakeConsentRequested : SummarizationAction
 
-internal sealed interface LlmProviderAction : SummarizationAction {
+/**
+ * Actions related to the lifecycle of the [LlmProvider].
+ */
+sealed interface LlmProviderAction : SummarizationAction {
+    /** The LLM provider failed to initialize. */
     data object ProviderFailed : LlmProviderAction
+
+    /** The LLM provider is not yet available. */
     data object ProviderUnavailable : LlmProviderAction
+
+    /** The LLM provider finished initializing with the given [llm]. */
     data class ProviderInitialized(val llm: Llm) : LlmProviderAction
 }
 
@@ -36,9 +48,20 @@ internal sealed interface LlmProviderAction : SummarizationAction {
  */
 data class SummarizationFailed(val throwable: Throwable) : SummarizationAction
 
-/** Initialize the Llm */
-internal sealed interface LlmAction : SummarizationAction {
+/** Actions related to LLM interactions during summarization. */
+sealed interface LlmAction : SummarizationAction {
+    /** The user requested summarization; carries the provider [info]. */
     data class SummarizationRequested(val info: LlmProvider.Info) : SummarizationAction
+
+    /** The LLM has been prompted with extracted page content. */
+    data class LlmPrompted(
+        val instructions: String,
+        val content: String,
+        val pageMetadata: PageMetadata?,
+        val llm: Llm,
+    ) : LlmAction
+
+    /** A response was received from the LLM. */
     data class ReceivedResponse(val response: Llm.Response) : LlmAction
 }
 
