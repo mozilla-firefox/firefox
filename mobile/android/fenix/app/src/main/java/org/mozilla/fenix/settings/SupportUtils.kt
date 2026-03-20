@@ -60,6 +60,7 @@ object SupportUtils {
         UNSIGNED_ADDONS("unsigned-addons"),
         FX_SUGGEST("search-suggestions-firefox"),
         TRANSLATIONS("android-translation"),
+        AI_CONTROLS("firefox-ai-controls"),
         MANAGE_OPTIONAL_EXTENSION_PERMISSIONS("manage-optional-permissions-android-extensions"),
         EXTENSION_PERMISSIONS("extension-permissions"),
         CRASH_REPORTS("mobile-crash-reports"),

@@ -349,6 +349,54 @@
 
     <!-- Preference for page summaries -->
     <string name="preferences_page_summaries">Page summaries</string>
+
+    <!-- AI Controls settings -->
+    <!-- Label for the secret settings preference to enable AI controls -->
+    <string name="preferences_debug_settings_ai_controls">Enable AI controls</string>
+    <!-- Title for the AI controls settings screen -->
+    <string name="preferences_ai_controls">AI controls</string>
+    <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
+    <string name="ai_controls_banner_headline">You always have a choice in %s</string>
+    <!-- Supporting text for the AI controls banner -->
+    <string name="ai_controls_banner_supporting_text">That includes whether to use features enhanced with AI. </string>
+    <!-- Link text for learning more about AI controls -->
+    <string name="ai_controls_learn_more">Learn more</string>
+    <!-- Title for the block AI enhancements toggle -->
+    <string name="ai_controls_block_ai_title">Block AI enhancements</string>
+    <!-- Description for the block AI enhancements toggle. %s is the name of the app (for example "Firefox"). -->
+    <string name="ai_controls_block_ai_description">Blocking means you won’t see new or current AI enhancements in %s, or popups about them.</string>
+    <!-- Link text to see what AI enhancements are and aren’t included -->
+    <string name="ai_controls_see_whats_included">See what is and isn’t included </string>
+    <!-- Banner text shown when AI enhancements are blocked -->
+    <string name="ai_controls_blocked_info_banner">New and current AI enhancements are blocked by default. Unblock specific features below.</string>
+    <!-- Section header for the AI-powered features list -->
+    <string name="ai_controls_ai_powered_features">AI-powered features</string>
+    <!-- Title for the translations AI feature toggle -->
+    <string name="ai_controls_translations_title">Translations</string>
+    <!-- Description for the translations AI feature toggle -->
+    <string name="ai_controls_translations_description">All translations stay private on your device. </string>
+    <!-- Link text to navigate to more translations settings -->
+    <string name="ai_controls_more_translations_settings">More translations settings</string>
+    <!-- Title for the page summaries AI feature toggle -->
+    <string name="ai_controls_page_summaries_title">Page summaries</string>
+    <!-- Description for the page summaries AI feature toggle -->
+    <string name="ai_controls_page_summaries_description">Pages and summaries are never stored.</string>
+    <!-- Link text to navigate to more page summary settings -->
+    <string name="ai_controls_more_page_summary_settings">More page summary settings</string>
+    <!-- Title for the voice search AI feature toggle -->
+    <string name="ai_controls_voice_search_title">Voice search</string>
+    <!-- Description for the voice search AI feature toggle -->
+    <string name="ai_controls_voice_search_description">Audio is converted to text by Google Speech Services.</string>
+    <!-- Title for the block AI enhancements confirmation dialog -->
+    <string name="ai_controls_block_dialog_title">Block AI enhancements?</string>
+    <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
+    <string name="ai_controls_block_dialog_body">You won’t see new or current AI enhancements in %1$s, or pop-ups about them. Afterwards, you can unblock anything you want to keep using.\n\nBlocking also affects extensions that use AI provided by %1$s.</string>
+    <!-- Label shown above the list of features that will be blocked in the block AI dialog -->
+    <string name="ai_controls_block_dialog_what_will_be_blocked">What will be blocked:</string>
+    <!-- Cancel button text in the block AI enhancements confirmation dialog -->
+    <string name="ai_controls_block_dialog_cancel">Cancel</string>
+    <!-- Block button text in the block AI enhancements confirmation dialog -->
+    <string name="ai_controls_block_dialog_block">Block</string>
     <!-- Title for the shake to summarize toggle in page summaries and customize settings -->
     <string name="preferences_shake_to_summarize">Shake to summarize</string>
 </resources>

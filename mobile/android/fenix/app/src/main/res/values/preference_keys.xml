@@ -19,6 +19,8 @@
     <string name="pref_key_firefox_labs" translatable="false">pref_key_firefox_labs</string>
     <string name="pref_key_language" translatable="false">pref_key_language</string>
     <string name="pref_key_translation" translatable="false">pref_key_translation</string>
+    <string name="pref_key_ai_controls" translatable="false">pref_key_ai_controls</string>
+    <string name="pref_key_enable_ai_controls" translatable="false">pref_key_enable_ai_controls</string>
     <string name="pref_key_data_choices" translatable="false">pref_key_data_choices</string>
     <string name="pref_key_delete_browsing_data" translatable="false">pref_key_delete_browsing_data</string>
     <string name="pref_key_delete_browsing_data_on_quit_preference" translatable="false">pref_key_delete_browsing_data_on_quit_preference</string>

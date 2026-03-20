@@ -2563,6 +2563,11 @@ class Settings(
         default = { FxNimbus.features.shakeToSummarize.value().enabled },
     )
 
+    var aiControlsFeatureFlagEnabled by booleanPreference(
+        key = appContext.getPreferenceKey(R.string.pref_key_enable_ai_controls),
+        default = Config.channel.isDebug,
+    )
+
     /**
      * Tracks how many times the summarize menu item has been shown.
      * Used to control highlight/badge visibility for feature discovery.

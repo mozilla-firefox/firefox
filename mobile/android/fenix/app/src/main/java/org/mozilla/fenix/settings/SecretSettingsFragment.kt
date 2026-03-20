@@ -481,6 +481,12 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
 
+        requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_ai_controls).apply {
+            isVisible = Config.channel.isDebug
+            isChecked = context.settings().aiControlsFeatureFlagEnabled
+            onPreferenceChangeListener = SharedPreferenceUpdater()
+        }
+
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_persistent_debug_menu).apply {
             isVisible = true
             isChecked = context.settings().isDebugMenuPersistentlyRevealed

@@ -95,6 +95,12 @@
             app:isPreferenceVisible="false"
             android:title="@string/preferences_page_summaries" />
 
+        <androidx.preference.Preference
+            android:key="@string/pref_key_ai_controls"
+            app:iconSpaceReserved="false"
+            app:isPreferenceVisible="false"
+            android:title="@string/preferences_ai_controls" />
+
         <org.mozilla.fenix.settings.DefaultBrowserPreference
             android:key="@string/pref_key_make_default_browser"
             app:iconSpaceReserved="false"
