@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import mozilla.components.feature.summarize.SummarizationState.Finished
 import mozilla.components.feature.summarize.SummarizationState.Inert
+import mozilla.components.feature.summarize.SummarizationState.Loading
 import mozilla.components.feature.summarize.SummarizationState.ShakeConsentRequired
 import mozilla.components.feature.summarize.SummarizationState.Summarized
 import mozilla.components.feature.summarize.SummarizationState.Summarizing
@@ -17,6 +18,7 @@ import mozilla.components.feature.summarize.content.PageMetadata
 import mozilla.components.feature.summarize.fakes.FakeCloudProvider
 import mozilla.components.feature.summarize.fakes.FakeLlm
 import mozilla.components.feature.summarize.settings.SummarizationSettings
+import mozilla.components.ui.richtext.parsing.Parser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -29,6 +31,7 @@ class SummarizationStoreTest {
     private val reportedErrors = mutableListOf<Throwable>()
     private val errorReporter = ErrorReporter { reportedErrors.add(it) }
     private val noopReporter = ErrorReporter { }
+    private val parser = Parser()
 
     @Before
     fun setUp() {
@@ -68,11 +71,11 @@ class SummarizationStoreTest {
         val expected = listOf<SummarizationState>(
             Inert(true),
             ShakeConsentRequired,
-            Summarizing(provider.info),
-            Summarizing(provider.info, listOf("# This is the article\n")),
-            Summarizing(provider.info, listOf("# This is the article\n", "This is some content...\n")),
-            Summarizing(provider.info, listOf("# This is the article\n", "This is some content...\n", "This is some *bold* content.\n")),
-            Summarized(provider.info, "# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+            Loading(provider.info),
+            Summarizing(provider.info, parser.parse("# This is the article\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
+            Summarized(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
         )
 
         assertEquals(expected, states)
@@ -151,11 +154,11 @@ class SummarizationStoreTest {
 
         val expected = listOf<SummarizationState>(
             Inert(true),
-            Summarizing(provider.info),
-            Summarizing(provider.info, listOf("# This is the article\n")),
-            Summarizing(provider.info, listOf("# This is the article\n", "This is some content...\n")),
-            Summarizing(provider.info, listOf("# This is the article\n", "This is some content...\n", "This is some *bold* content.\n")),
-            Summarized(provider.info, "# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+            Loading(provider.info),
+            Summarizing(provider.info, parser.parse("# This is the article\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
+            Summarized(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
         )
 
         assertEquals(expected, states)
@@ -192,7 +195,7 @@ class SummarizationStoreTest {
 
         val expected = listOf<SummarizationState>(
             Inert(true),
-            Summarizing(provider.info),
+            Loading(provider.info),
             SummarizationState.Error(SummarizationError.SummarizationFailed(failureThrowable)),
         )
 
@@ -231,11 +234,11 @@ class SummarizationStoreTest {
 
         val expected = listOf<SummarizationState>(
             Inert(true),
-            Summarizing(info = provider.info),
-            Summarizing(provider.info, listOf("# This is the article\n")),
-            Summarizing(provider.info, listOf("# This is the article\n", "This is some content...\n")),
-            Summarizing(provider.info, listOf("# This is the article\n", "This is some content...\n", "This is some *bold* content.\n")),
-            Summarized(provider.info, "# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+            Loading(provider.info),
+            Summarizing(provider.info, parser.parse("# This is the article\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
+            Summarized(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
         )
 
         assertEquals(expected, states)
@@ -273,11 +276,11 @@ class SummarizationStoreTest {
 
         val expected = listOf<SummarizationState>(
             Inert(true),
-            Summarizing(info = provider.info),
-            Summarizing(provider.info, listOf("# This is the article\n")),
-            Summarizing(provider.info, listOf("# This is the article\n", "This is some content...\n")),
-            Summarizing(provider.info, listOf("# This is the article\n", "This is some content...\n", "This is some *bold* content.\n")),
-            Summarized(provider.info, "# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+            Loading(provider.info),
+            Summarizing(provider.info, parser.parse("# This is the article\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
+            Summarized(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
         )
 
         assertEquals(expected, states)
@@ -315,11 +318,11 @@ class SummarizationStoreTest {
 
         val expected = listOf<SummarizationState>(
             Inert(true),
-            Summarizing(provider.info),
-            Summarizing(provider.info, listOf("# This is the article\n")),
-            Summarizing(provider.info, listOf("# This is the article\n", "This is some content...\n")),
-            Summarizing(provider.info, listOf("# This is the article\n", "This is some content...\n", "This is some *bold* content.\n")),
-            Summarized(provider.info, "# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+            Loading(provider.info),
+            Summarizing(provider.info, parser.parse("# This is the article\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
+            Summarized(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
         )
 
         assertEquals(expected, states)

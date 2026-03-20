@@ -4,6 +4,10 @@
 
 package mozilla.components.feature.summarize
 
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +61,8 @@ import mozilla.components.feature.summarize.ui.OnDeviceSummarizationConsent
 import mozilla.components.feature.summarize.ui.SummarizingContent
 import mozilla.components.feature.summarize.ui.SummaryContentLoaded
 import mozilla.components.feature.summarize.ui.gradient.summaryLoadingGradient
+import mozilla.components.ui.richtext.ir.RichDocument
+import mozilla.components.ui.richtext.parsing.Parser
 
 /**
  * The corner ration of the handle shape
@@ -95,15 +101,15 @@ private fun SummarizationScreen(
     store: SummarizationStore,
     settingsStore: SummarizeSettingsStore? = null,
 ) {
-    val haptic = LocalHapticFeedback.current
-
     val state by store.stateFlow.collectAsStateWithLifecycle()
 
-    LaunchedEffect(state) {
-        if (state is SummarizationState.Summarized) {
-            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-        }
-    }
+    ApplyHaptics(state)
+
+    val loadingAlpha by animateFloatAsState(
+        targetValue = if (state.isLoading) 1f else 0f,
+        animationSpec = if (state.isLoading) snap() else state.tween,
+        label = "gradientAlpha",
+    )
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -111,16 +117,12 @@ private fun SummarizationScreen(
     ) {
         SummarizationScreenScaffold(
             modifier = modifier
-                .thenConditional(Modifier.summaryLoadingGradient()) {
-                    state is SummarizationState.Summarizing
+                .thenConditional(Modifier.summaryLoadingGradient(loadingAlpha)) {
+                    loadingAlpha > 0
                 }
                 .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom))
                 .nestedScroll(rememberNestedScrollInteropConnection()),
-            color = if (state is SummarizationState.Summarizing) {
-                Color.Transparent
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 1f - loadingAlpha),
         ) {
             handleSummarizationState(store, settingsStore)
         }
@@ -153,13 +155,21 @@ private fun handleSummarizationState(
             )
         }
 
-        is SummarizationState.Summarizing -> SummarizingContent(
-            modifier = Modifier.height(252.dp),
+        is SummarizationState.Loading -> {
+            SummarizingContent(
+                modifier = Modifier.height(252.dp),
+            )
+        }
+
+        is SummarizationState.Summarizing -> SummaryContentLoaded(
+            info = state.info,
+            document = state.document,
+            onSettingsClicked = { store.dispatch(SettingsClicked) },
         )
 
         is SummarizationState.Summarized -> SummaryContentLoaded(
             info = state.info,
-            text = state.text,
+            document = state.document,
             onSettingsClicked = { store.dispatch(SettingsClicked) },
         )
 
@@ -184,6 +194,16 @@ private fun handleSummarizationState(
 }
 
 @Composable
+private fun ApplyHaptics(state: SummarizationState) {
+    val haptic = LocalHapticFeedback.current
+    LaunchedEffect(state) {
+        if (state.isSummarized) {
+            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+        }
+    }
+}
+
+@Composable
 private fun SummarizationScreenScaffold(
     modifier: Modifier,
     color: Color = Color.Transparent,
@@ -192,6 +212,7 @@ private fun SummarizationScreenScaffold(
     Surface(
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         color = color,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight(align = Alignment.Bottom)
@@ -246,10 +267,11 @@ private val previewSummarizedText = """
 
 private class SummarizationStatePreviewProvider : PreviewParameterProvider<SummarizationState> {
     val info = LlmProvider.Info(R.string.mozac_summarize_fake_llm_name)
+    val parser = Parser()
     override val values: Sequence<SummarizationState> = sequenceOf(
         SummarizationState.Summarizing(info = info),
-        SummarizationState.Summarized(info = info, text = previewSummarizedText),
-        SummarizationState.Settings(info = info, summarizedText = previewSummarizedText),
+        SummarizationState.Summarized(info = info, document = parser.parse(previewSummarizedText)),
+        SummarizationState.Settings(info = info, document = RichDocument(listOf())),
         SummarizationState.Error(SummarizationError.ContentTooLong),
         SummarizationState.ShakeConsentRequired,
         SummarizationState.ShakeConsentWithDownloadRequired,
@@ -279,4 +301,10 @@ private fun SummarizationScreenPreview(
             ),
         )
     }
+}
+
+private val SummarizationState.tween: AnimationSpec<Float> get() = if (isSummarizing) {
+    tween(durationMillis = 3000)
+} else {
+    snap()
 }

@@ -4,6 +4,8 @@
 
 package mozilla.components.lib.llm.mlpa
 
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.llm.CloudLlmProvider
@@ -38,22 +40,23 @@ class MlpaLlmTest {
             Llm.Response.Success.ReplyFinished,
         )
 
-        assertEquals(expectedToken, AuthorizationToken.Integrity("my-test-token"))
+        assertEquals(expectedToken?.value, AuthorizationToken.Integrity("my-test-token").value)
         assertEquals(expected, actual)
     }
 
     @Test
     fun `GIVEN a failure response from the mlpa client WHEN prompt THEN I get a valid response`() = runTest {
+        var threw = false
+
         val llm = MlpaLlm(
             chatService = failureChatService,
             authorizationToken = AuthorizationToken.Integrity("my-test-token"),
         )
 
-        val actual = llm.prompt(Prompt("This is my prompt")).toList()
-        val expected = listOf(
-            Llm.Response.Failure("MlpaLlm Failed: Bad response!"),
-        )
+        llm.prompt(Prompt("This is my prompt"))
+            .catch { threw = true }
+            .toList()
 
-        assertEquals(expected, actual)
+        assertTrue(threw)
     }
 }
