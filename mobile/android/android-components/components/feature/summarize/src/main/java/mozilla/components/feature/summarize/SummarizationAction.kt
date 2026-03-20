@@ -7,6 +7,7 @@ package mozilla.components.feature.summarize
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.lib.state.Action
+import mozilla.components.ui.richtext.ir.RichDocument
 
 /**
  * Actions for the [SummarizationStore].
@@ -36,11 +37,20 @@ internal sealed interface LlmProviderAction : SummarizationAction {
  */
 data class SummarizationFailed(val throwable: Throwable) : SummarizationAction
 
-/** Initialize the Llm */
-internal sealed interface LlmAction : SummarizationAction {
-    data class SummarizationRequested(val info: LlmProvider.Info) : SummarizationAction
-    data class ReceivedResponse(val response: Llm.Response) : LlmAction
-}
+/**
+ * We've requested a response from a Llm.
+ */
+data class SummarizationRequested(val info: LlmProvider.Info) : SummarizationAction
+
+/**
+ * We've received a new parsed document.
+ */
+data class ReceivedParsedDocument(val document: RichDocument) : SummarizationAction
+
+/**
+ * We've received a response from the Llm.
+ */
+data class ReceivedLlmResponse(val response: Llm.Response) : SummarizationAction
 
 /**
  * Actions for the consent step of the shake to summarize user flow when using an on-device model.

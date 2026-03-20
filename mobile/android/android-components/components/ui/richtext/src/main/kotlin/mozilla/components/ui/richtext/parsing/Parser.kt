@@ -12,6 +12,12 @@ import org.intellij.markdown.parser.MarkdownParser
  * Parser that delegates to Jetbrains [MarkdownParser]
  */
 class Parser {
+    /**
+     * Parses a string into a [RichDocument].
+     *
+     * @param source the string to parse.
+     * @return a [RichDocument].
+     */
     fun parse(source: String): RichDocument {
         val flavour = CommonMarkFlavourDescriptor()
         val parser = MarkdownParser(flavour)
