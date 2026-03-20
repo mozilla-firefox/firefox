@@ -4,9 +4,11 @@
 
 package mozilla.components.compose.browser.awesomebar
 
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import mozilla.components.compose.base.theme.AcornTheme
 
 /**
  * Contains the default values used by the AwesomeBar.
@@ -23,11 +25,11 @@ object AwesomeBarDefaults {
      */
     @Composable
     fun colors(
-        background: Color = MaterialTheme.colorScheme.background,
-        title: Color = MaterialTheme.colorScheme.onBackground,
-        description: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-        autocompleteIcon: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-        groupTitle: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+        background: Color = AcornTheme.colors.layer3,
+        title: Color = AcornTheme.colors.textNormal,
+        description: Color = AcornTheme.colors.textNormal,
+        autocompleteIcon: Color = AcornTheme.colors.iconNormal,
+        groupTitle: Color = AcornTheme.colors.textNormal,
     ) = AwesomeBarColors(
         background,
         title,

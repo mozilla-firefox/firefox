@@ -24,7 +24,8 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
         <item name="android:windowTranslucentNavigation">false</item>
-        <item name="android:windowBackground">@color/fx_mobile_surface</item>
+        <item name="android:colorBackground">@null</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:colorEdgeEffect">@color/accent_normal_theme</item>
         <item name="android:colorAccent">@color/fx_mobile_text_color_primary</item>
         <item name="android:textColorPrimary">@color/textNormal</item>
@@ -57,7 +58,6 @@
         <item name="colorOnTertiary">@color/fx_mobile_on_tertiary</item>
         <item name="colorTertiaryContainer">@color/fx_mobile_tertiary_container</item>
         <item name="colorOnTertiaryContainer">@color/fx_mobile_on_tertiary_container</item>
-        <item name="android:colorBackground">@color/backgroundNormal</item>
         <item name="colorOnBackground">@color/fx_mobile_on_background</item>
         <item name="colorSurface">@color/fx_mobile_surface</item>
         <item name="colorOnSurface">@color/fx_mobile_on_surface</item>
@@ -177,7 +177,7 @@
     <!-- A theme derived from the normal activity theme, but to look and behave like a dialog -->
     <style name="DialogActivityTheme" parent="NormalTheme">
         <item name="android:windowElevation">16dp</item>
-        <item name="android:colorBackground">?attr/colorBackgroundFloating</item>
+        <item name="android:colorBackground">@null</item>
         <item name="android:colorBackgroundCacheHint">@null</item>
         <item name="android:windowFrame">@null</item>
         <item name="android:windowTitleStyle">@style/RtlOverlay.DialogWindowTitle.AppCompat</item>
@@ -303,7 +303,7 @@
         <item name="android:windowAnimationStyle">@style/WindowAnimationTransition</item>
         <item name="android:progressBarStyleHorizontal">@style/progressBarStyleHorizontal</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowBackground">@color/fx_mobile_private_surface</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:colorEdgeEffect">@color/accent_private_theme</item>
         <item name="android:colorAccent">@color/fx_mobile_private_text_color_primary</item>
         <item name="colorControlActivated">@color/accent_high_contrast_private_theme</item>
@@ -336,7 +336,7 @@
         <item name="colorOnTertiary">@color/fx_mobile_private_on_tertiary</item>
         <item name="colorTertiaryContainer">@color/fx_mobile_private_tertiary_container</item>
         <item name="colorOnTertiaryContainer">@color/fx_mobile_private_on_tertiary_container</item>
-        <item name="android:colorBackground">@color/fx_mobile_private_background</item>
+        <item name="android:colorBackground">@null</item>
         <item name="colorOnBackground">@color/fx_mobile_private_on_background</item>
         <item name="colorSurface">@color/fx_mobile_private_surface</item>
         <item name="colorOnSurface">@color/fx_mobile_private_on_surface</item>

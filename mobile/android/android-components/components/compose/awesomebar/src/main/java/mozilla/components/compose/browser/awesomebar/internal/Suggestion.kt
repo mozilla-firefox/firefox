@@ -30,6 +30,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,7 +58,7 @@ internal fun Suggestion(
     Row(
         modifier = Modifier
             .clickable { onSuggestionClicked() }
-            .defaultMinSize(minHeight = 56.dp)
+            .defaultMinSize(minHeight = 64.dp)
             .testTag("mozac.awesomebar.suggestion")
             .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
     ) {
@@ -81,14 +83,16 @@ internal fun Suggestion(
                 onAutoComplete = onAutoComplete,
                 orientation = orientation,
                 colors = colors,
-                modifier = Modifier.align(Alignment.CenterVertically),
+                modifier = Modifier.align(Alignment.CenterVertically)
+                    .padding(end = 20.dp),
             )
         }
         if (suggestion.isRemovalAllowed) {
             RemoveButton(
                 onRemoveClicked = onRemoveClicked,
                 colors = colors,
-                modifier = Modifier.align(Alignment.CenterVertically),
+                modifier = Modifier.align(Alignment.CenterVertically)
+                    .padding(end = 20.dp),
             )
         }
     }
@@ -111,23 +115,25 @@ private fun SuggestionTitleAndDescription(
                 title
             },
             color = colors.title,
-            fontSize = 15.sp,
+            fontSize = 24.sp,
+            fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .width(IntrinsicSize.Max)
-                .padding(start = 2.dp, end = 8.dp),
+                .padding(start = 12.dp, end = 8.dp),
         )
         if (description?.isNotEmpty() == true) {
             Text(
                 text = description,
                 color = colors.description,
-                fontSize = 12.sp,
+                fontSize = 20.sp,
+                fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_medium)),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .width(IntrinsicSize.Max)
-                    .padding(start = 2.dp, end = 8.dp),
+                    .padding(start = 12.dp, end = 8.dp),
             )
         }
     }
@@ -141,17 +147,17 @@ private fun SuggestionIcon(
 ) {
     Box(
         modifier = modifier
-            .width(30.dp)
-            .height(38.dp),
+            .width(48.dp)
+            .height(56.dp),
     ) {
         Image(
             icon.asImageBitmap(),
             contentDescription = null,
             modifier = Modifier
-                .padding(top = 8.dp)
+                .padding(top = 16.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .width(24.dp)
-                .height(24.dp),
+                .width(36.dp)
+                .height(36.dp),
             contentScale = ContentScale.Crop,
         )
         if (indicator != null) {
@@ -159,9 +165,9 @@ private fun SuggestionIcon(
                 indicator.toBitmap().asImageBitmap(),
                 contentDescription = null,
                 modifier = Modifier
-                    .padding(top = 22.dp, start = 14.dp)
-                    .width(16.dp)
-                    .height(16.dp),
+                    .padding(top = 22.dp, start = 20.dp)
+                    .width(36.dp)
+                    .height(36.dp),
             )
         }
     }
@@ -177,7 +183,7 @@ private fun AutocompleteButton(
 ) {
     Image(
         painterResource(iconsR.drawable.mozac_ic_append_up_left_24),
-        colorFilter = ColorFilter.tint(colors.autocompleteIcon),
+        colorFilter = null,//ColorFilter.tint(colors.autocompleteIcon),
         contentDescription = stringResource(R.string.mozac_browser_awesomebar_edit_suggestion),
         modifier = modifier
             .size(48.dp)
@@ -189,23 +195,22 @@ private fun AutocompleteButton(
                 },
             )
             .clickable { onAutoComplete() }
-            .padding(12.dp),
+        .padding(8.dp)
     )
 }
 
 @Composable
-private fun RemoveButton(
+private fun RemoveButton(A
     onRemoveClicked: () -> Unit,
     colors: AwesomeBarColors,
     modifier: Modifier,
 ) {
     Image(
         painterResource(iconsR.drawable.mozac_ic_cross_24),
-        colorFilter = ColorFilter.tint(colors.autocompleteIcon),
+        colorFilter = null,//ColorFilter.tint(colors.autocompleteIcon),
         contentDescription = stringResource(R.string.mozac_browser_awesomebar_remove_suggestion),
         modifier = modifier
             .size(48.dp)
             .clickable { onRemoveClicked() }
-            .padding(12.dp),
     )
 }

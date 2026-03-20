@@ -22,6 +22,7 @@ android {
 }
 
 dependencies {
+    implementation (files("../../libs/myui.aar"))
     implementation project(":components:browser-state")
     implementation project(":components:concept-awesomebar")
     implementation project(":components:compose-base")

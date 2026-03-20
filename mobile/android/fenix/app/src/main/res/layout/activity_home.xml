@@ -11,7 +11,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/main_bg"
+    android:layout_marginTop="@dimen/app_frame_margin_top"
+    android:layout_marginBottom="@dimen/app_frame_margin_bottom"
+    android:layout_marginStart="@dimen/app_frame_margin_start"
+    android:layout_marginEnd="@dimen/app_frame_margin_end"
+    android:clipChildren="true"
+    android:clipToPadding="true"
+    android:clipToOutline="true">
 
     <org.mozilla.fenix.perf.HomeActivityRootLinearLayout
         android:layout_width="match_parent"
@@ -34,7 +42,10 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:defaultNavHost="true"
-            app:navGraph="@navigation/nav_graph" />
+            app:navGraph="@navigation/nav_graph"
+            android:clipChildren="true"
+            android:clipToPadding="true"
+            android:clipToOutline="true"/>
 
     </org.mozilla.fenix.perf.HomeActivityRootLinearLayout>
 

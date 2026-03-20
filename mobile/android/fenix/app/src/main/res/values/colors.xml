@@ -4,6 +4,9 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Material3 color variables -->
+    )
+    <!--<color name="backgroundNormal">@color/iconAccent</color>-->
+    <color name="color_transparent">@android:color/transparent</color>
     <color name="fx_mobile_primary">@color/photonInk20</color>
     <color name="fx_mobile_on_primary">@color/photonLightGrey05</color>
     <color name="fx_mobile_primary_container">@color/photonViolet05</color>
@@ -48,7 +51,7 @@
     <color name="fx_mobile_tertiary_fixed_dim">@color/photonPink05</color>
     <color name="fx_mobile_on_tertiary_fixed">@color/photonDarkGrey90</color>
     <color name="fx_mobile_on_tertiary_fixed_variant">@color/photonLightGrey05</color>
-    <color name="fx_mobile_splashscreen_background">#FCF3EE</color>
+    <color name="fx_mobile_splashscreen_background">#000000</color>
 
     <!-- Design system color variables -->
 
@@ -293,7 +296,7 @@
     <color name="spinner_selected_item">#1415141A</color>
 
     <!-- Icon colors -->
-    <color name="mozac_ui_icons_fill">@color/fx_mobile_on_surface</color>
+    <color name="mozac_ui_icons_fill">@color/iconNormal</color>
 
     <!-- Add-ons colors -->
     <color name="mozac_feature_addons_messagebar_error_background_color" tools:ignore="UnusedResources">@color/fx_mobile_layer_color_critical</color>

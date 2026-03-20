@@ -162,7 +162,7 @@ class HomepageEdgeToEdgeFeature(
      * Enum representing the available background drawable resources.
      */
     enum class Background(val resourceId: Int) {
-        Regular(R.color.fx_mobile_surface),
+        Regular(R.color.color_transparent),
         HomeEdgeToEdge(R.drawable.home_background_gradient),
     }
 }

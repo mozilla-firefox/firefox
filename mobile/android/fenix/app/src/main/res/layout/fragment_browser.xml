@@ -26,7 +26,8 @@
             <mozilla.components.ui.widgets.VerticalSwipeRefreshLayout
                 android:id="@+id/swipeRefresh"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:padding="12dp">
 
                 <mozilla.components.concept.engine.EngineView
                     tools:ignore="Instantiatable"

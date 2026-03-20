@@ -48,7 +48,6 @@
     <color name="fx_mobile_tertiary_fixed_dim">@color/photonPink80</color>
     <color name="fx_mobile_on_tertiary_fixed">@color/photonLightGrey05</color>
     <color name="fx_mobile_on_tertiary_fixed_variant">@color/photonDarkGrey90</color>
-    <color name="fx_mobile_splashscreen_background">#210340</color>
 
     <!-- Design system color variables -->
 

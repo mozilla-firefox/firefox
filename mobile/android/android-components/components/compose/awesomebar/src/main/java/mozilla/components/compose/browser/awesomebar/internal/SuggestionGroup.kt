@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mozilla.components.compose.browser.awesomebar.AwesomeBarColors
@@ -37,10 +39,11 @@ internal fun SuggestionGroup(
             modifier = Modifier
                 .padding(
                     vertical = 12.dp,
-                    horizontal = 16.dp,
+                    horizontal = 20.dp,
                 )
                 .fillMaxWidth(),
-            fontSize = 14.sp,
+            fontSize = 32.sp,
+            fontFamily = FontFamily(Font(com.android.car.navioui.R.font.vesta2_bold)),
         )
     }
 }
