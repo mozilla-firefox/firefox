@@ -5,6 +5,7 @@
 package mozilla.components.feature.summarize
 
 import mozilla.components.concept.llm.Llm
+import mozilla.components.ui.richtext.ir.RichDocument
 
 /**
  * Reduces the given [action] and current [state] into a new [SummarizationState].
@@ -18,14 +19,15 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
     OffDeviceSummarizationShakeConsentAction.CancelClicked -> SummarizationState.Finished.Cancelled
     OffDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.Finished.LearnMoreAboutShakeConsent
     OnDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.Finished.LearnMoreAboutShakeConsent
-    is LlmAction.SummarizationRequested -> SummarizationState.Summarizing(info = action.info)
-    is LlmAction.ReceivedResponse -> state.applyResponse(action.response)
+    is SummarizationRequested -> SummarizationState.Loading(action.info)
+    is ReceivedLlmResponse -> state.applyResponse(action.response)
+    is ReceivedParsedDocument -> state.updateDocument(action.document)
     is SettingsClicked -> when (state) {
-        is SummarizationState.Summarized -> SummarizationState.Settings(info = state.info, summarizedText = state.text)
+        is SummarizationState.Summarized -> SummarizationState.Settings(info = state.info, document = state.document)
         else -> state
     }
     is SettingsBackClicked -> when (state) {
-        is SummarizationState.Settings -> SummarizationState.Summarized(info = state.info, text = state.summarizedText)
+        is SummarizationState.Settings -> SummarizationState.Summarized(info = state.info, document = state.document)
         else -> state
     }
     is SummarizationFailed -> SummarizationState.Error(SummarizationError.SummarizationFailed(action.throwable))
@@ -33,13 +35,20 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
 }
 
 internal fun SummarizationState.applyResponse(response: Llm.Response): SummarizationState {
-    return if (this is SummarizationState.Summarizing) {
-        when (response) {
-            is Llm.Response.Failure -> SummarizationState.Summarized(info = info, response.reason)
-            Llm.Response.Success.ReplyFinished -> SummarizationState.Summarized(info = info, parts.joinToString(""))
-            is Llm.Response.Success.ReplyPart -> copy(parts = parts + response.value)
-        }
-    } else {
-        this
+    if (this !is SummarizationState.Summarizing) return this
+    return when (response) {
+        is Llm.Response.Failure -> SummarizationState.Error(
+            SummarizationError.SummarizationFailed(IllegalStateException(response.reason)),
+        )
+        Llm.Response.Success.ReplyFinished -> SummarizationState.Summarized(info = info, document)
+        else -> this
+    }
+}
+
+internal fun SummarizationState.updateDocument(document: RichDocument): SummarizationState {
+    return when (this) {
+        is SummarizationState.Loading -> SummarizationState.Summarizing(info, document)
+        is SummarizationState.Summarizing -> copy(document = document)
+        else -> this
     }
 }

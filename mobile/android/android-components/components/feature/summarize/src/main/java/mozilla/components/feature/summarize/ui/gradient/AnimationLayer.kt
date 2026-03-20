@@ -93,7 +93,7 @@ private data class BlobSegment(
  * Modifier that renders an animated gradient loading effect behind the content.
  */
 @Suppress("ComposeModifierComposed")
-fun Modifier.summaryLoadingGradient(): Modifier = composed {
+fun Modifier.summaryLoadingGradient(alpha: Float = 1f): Modifier = composed {
     val density = LocalDensity.current.density
     val surfaceColor = MaterialTheme.colorScheme.surface
 
@@ -116,7 +116,7 @@ fun Modifier.summaryLoadingGradient(): Modifier = composed {
     this
         .background(surfaceColor)
         .drawBehind {
-            drawBackgroundWash()
+            drawBackgroundWash(alpha)
 
             for (layer in BLOB_DRAW_LAYERS) {
                 val pose = computeBlobPoseAtTime(blobTimeMs, layer.phases)
@@ -124,7 +124,7 @@ fun Modifier.summaryLoadingGradient(): Modifier = composed {
                     path = blobPaths.getValue(layer.spec),
                     spec = layer.spec,
                     positionDp = pose.offsetDp,
-                    color = layer.color.copy(alpha = BlobDefaults.ALPHA),
+                    color = layer.color.copy(alpha = BlobDefaults.ALPHA * alpha),
                     density = density,
                     paint = blobPaint,
                     maskFilter = blobMaskFilter,
@@ -180,7 +180,7 @@ private fun SummaryLoadingGradientPreview() {
     }
 }
 
-private fun DrawScope.drawBackgroundWash() {
+private fun DrawScope.drawBackgroundWash(alpha: Float = 1f) {
     val (start, end) = gradientLineEndpoints(
         widthPx = size.width,
         heightPx = size.height,
@@ -189,11 +189,11 @@ private fun DrawScope.drawBackgroundWash() {
         brush = Brush.linearGradient(
             colorStops = arrayOf(
                 GradientDefaults.START_STOP to
-                    GradientPalette.gradientStart.copy(alpha = GradientDefaults.ALPHA),
+                    GradientPalette.gradientStart.copy(alpha = GradientDefaults.ALPHA * alpha),
                 GradientDefaults.MIDDLE_STOP to
-                    GradientPalette.gradientMiddle.copy(alpha = GradientDefaults.ALPHA),
+                    GradientPalette.gradientMiddle.copy(alpha = GradientDefaults.ALPHA * alpha),
                 GradientDefaults.END_STOP to
-                    GradientPalette.gradientEnd.copy(alpha = GradientDefaults.ALPHA),
+                    GradientPalette.gradientEnd.copy(alpha = GradientDefaults.ALPHA * alpha),
             ),
             start = start,
             end = end,

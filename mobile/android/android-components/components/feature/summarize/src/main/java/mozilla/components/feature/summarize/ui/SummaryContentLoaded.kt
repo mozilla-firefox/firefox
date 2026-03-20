@@ -35,6 +35,7 @@ import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.feature.summarize.R
 import mozilla.components.ui.richtext.RichText
+import mozilla.components.ui.richtext.ir.RichDocument
 import mozilla.components.ui.icons.R as iconsR
 
 /**
@@ -42,7 +43,7 @@ import mozilla.components.ui.icons.R as iconsR
  */
 @Composable
 internal fun SummaryContentLoaded(
-    text: String,
+    document: RichDocument,
     info: LlmProvider.Info,
     onSettingsClicked: () -> Unit = {},
 ) {
@@ -54,7 +55,7 @@ internal fun SummaryContentLoaded(
         SummarizationHeader(info, onSettingsClicked = onSettingsClicked)
         Spacer(Modifier.height(AcornTheme.layout.space.static200))
         SummarizedContent(
-            text = text,
+            document = document,
             modifier = Modifier
                 .weight(1f, fill = true)
                 .fillMaxWidth()
@@ -136,9 +137,9 @@ private fun ModelInformation(
 }
 
 @Composable
-private fun SummarizedContent(text: String, modifier: Modifier = Modifier) {
+private fun SummarizedContent(document: RichDocument, modifier: Modifier = Modifier) {
     SelectionContainer(modifier = modifier) {
-        RichText(text = text)
+        RichText(document = document)
     }
 }
 
