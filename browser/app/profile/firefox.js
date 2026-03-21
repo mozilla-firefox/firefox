@@ -3420,7 +3420,7 @@ pref("browser.firefox-view.feature-tour", "{\"screen\":\"FIREFOX_VIEW_SPOTLIGHT\
 // Number of times the user visited about:firefoxview via the button/hidden tab in the past 30 days
 pref("browser.firefox-view.button-clicks", "{\"count\":0,\"lastCountTime\":\"\"}");
 // Maximum number of rows to show on the "History" page (0 = unlimited).
-pref("browser.firefox-view.max-history-rows", 0);
+
 // Enables virtual list functionality in Firefox View.
 pref("browser.firefox-view.virtual-list.enabled", true);
 
