@@ -422,10 +422,12 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
         binding = ActivityHomeBinding.inflate(layoutInflater)
         val isLauncherIntent = intent.toSafeIntent().isLauncherIntent
 
-        val shouldShowOnboarding = settings().shouldShowOnboarding(
-            hasUserBeenOnboarded = components.fenixOnboarding.userHasBeenOnboarded(),
-            isLauncherIntent = isLauncherIntent,
-        )
+        val shouldShowOnboarding = false
+
+//        val shouldShowOnboarding = settings().shouldShowOnboarding(
+//            hasUserBeenOnboarded = components.fenixOnboarding.userHasBeenOnboarded(),
+//            isLauncherIntent = isLauncherIntent,
+//        )
 
         // This is a temporary solution to determine if we should show the marketing onboarding card.
         if (shouldShowOnboarding) {

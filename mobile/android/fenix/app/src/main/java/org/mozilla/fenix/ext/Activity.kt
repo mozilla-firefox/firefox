@@ -231,9 +231,7 @@ fun Activity.setNavigationIcon(
 ) {
     (this as? AppCompatActivity)?.supportActionBar?.let {
         it.setDisplayHomeAsUpEnabled(true)
-        val navigationIcon = AppCompatResources.getDrawable(this, icon)?.apply {
-            setTint(getColorFromAttr(materialR.attr.colorOnSurface))
-        }
+        val navigationIcon = AppCompatResources.getDrawable(this, icon)
         it.setHomeAsUpIndicator(navigationIcon)
         it.setHomeActionContentDescription(R.string.action_bar_up_description)
     }

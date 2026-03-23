@@ -4,8 +4,10 @@
 
 package mozilla.components.compose.browser.toolbar
 
+import android.annotation.SuppressLint
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
+import android.util.Log
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -59,7 +61,13 @@ fun ActionContainer(
         horizontalArrangement = horizontalArrangement,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val filteredActions = actions.filterNot { it is TabCounterAction }
+        val filteredActions = actions.filterNot { action ->
+            when (action) {
+                is TabCounterAction -> true
+                is ActionButtonRes -> action.drawableResId == mozilla.components.ui.icons.R.drawable.mozac_ic_ellipsis_vertical_24
+                else -> false
+            }
+        }
         for (action in filteredActions) {
             when (action) {
                 is ActionButtonRes -> {

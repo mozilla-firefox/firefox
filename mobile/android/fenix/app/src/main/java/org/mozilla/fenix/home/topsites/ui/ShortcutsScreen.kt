@@ -7,6 +7,7 @@ package org.mozilla.fenix.home.topsites.ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,12 +67,15 @@ fun ShortcutsScreen(
                         Icon(
                             painter = painterResource(iconsR.drawable.mozac_ic_back_24),
                             contentDescription = "",
+                            tint = null,
                         )
                     }
                 },
                 windowInsets = WindowInsets(
-                    top = 0.dp,
-                    bottom = 0.dp,
+                    top = 20.dp,
+                    right = 20.dp,
+                    left = 20.dp,
+                    bottom = 20.dp,
                 ),
             )
         },

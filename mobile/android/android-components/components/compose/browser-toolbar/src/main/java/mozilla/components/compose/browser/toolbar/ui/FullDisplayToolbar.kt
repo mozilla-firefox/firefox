@@ -159,7 +159,7 @@ internal fun FullDisplayToolbar(
                         ActionContainer(
                             actions = pageActionsEnd,
                             onInteraction = onInteraction,
-                            modifier = pageActionsEndModifier,
+                            modifier = pageActionsEndModifier.padding(12.dp),
                         )
                     }
                 }
