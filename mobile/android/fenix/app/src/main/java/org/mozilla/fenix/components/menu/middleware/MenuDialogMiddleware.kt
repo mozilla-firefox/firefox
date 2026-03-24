@@ -12,7 +12,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import mozilla.appservices.places.BookmarkRoot
 import mozilla.components.browser.state.ext.getUrl
 import mozilla.components.browser.state.state.TabSessionState
@@ -179,11 +178,10 @@ class MenuDialogMiddleware(
         }
     }
 
-    private suspend fun TabSessionState?.checkSummarizationEligibility(): Boolean = withContext(Dispatchers.Default) {
+    private suspend fun TabSessionState?.checkSummarizationEligibility(): Boolean =
         this@checkSummarizationEligibility?.engineState?.engineSession?.let { session ->
             summarizationEligibilityChecker.checkLanguage(session).getOrDefault(false)
         } ?: false
-    }
 
     private suspend fun setupBookmarkState(
         store: Store<MenuState, MenuAction>,

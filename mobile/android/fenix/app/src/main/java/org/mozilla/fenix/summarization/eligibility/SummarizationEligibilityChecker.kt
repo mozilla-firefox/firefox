@@ -4,7 +4,9 @@
 
 package org.mozilla.fenix.summarization.eligibility
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.pageextraction.PageMetadata
 import kotlin.coroutines.resume
@@ -52,15 +54,17 @@ internal class DefaultSummarizationEligibilityChecker : SummarizationEligibility
     }
 
     private suspend fun EngineSession.getPageMetadata() = runCatching {
-        suspendCancellableCoroutine { continuation ->
-            getPageMetadata(
-                onResult = { metadata ->
-                    continuation.resume(metadata)
-                },
-                onException = { error ->
-                    continuation.resumeWithException(error)
-                },
-            )
+        withContext(Dispatchers.Main) {
+            suspendCancellableCoroutine { continuation ->
+                getPageMetadata(
+                    onResult = { metadata ->
+                        continuation.resume(metadata)
+                    },
+                    onException = { error ->
+                        continuation.resumeWithException(error)
+                    },
+                )
+            }
         }
     }
 
