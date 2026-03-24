@@ -623,14 +623,14 @@ class BrowserToolbarSearchMiddleware(
                     add(BrowserToolbarMenuDivider)
                 }
 
-                add(
-                    BrowserToolbarMenuButton(
-                        icon = MenuItemIconRes(iconsR.drawable.mozac_ic_settings_24),
-                        text = MenuItemStringResText(R.string.search_settings_menu_item),
-                        contentDescription = MenuItemDescriptionRes(R.string.search_settings_menu_item),
-                        onClick = SearchSettingsItemClicked,
-                    ),
-                )
+//                add(
+//                    BrowserToolbarMenuButton(
+//                        icon = MenuItemIconRes(iconsR.drawable.mozac_ic_settings_24),
+//                        text = MenuItemStringResText(R.string.search_settings_menu_item),
+//                        contentDescription = MenuItemDescriptionRes(R.string.search_settings_menu_item),
+//                        onClick = SearchSettingsItemClicked,
+//                    ),
+//                )
             }
 
             return SearchSelectorAction(

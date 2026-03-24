@@ -168,7 +168,7 @@ internal fun Homepage(
 
                             MaybeAddSetupChecklist(setupChecklistState, interactor)
 
-                            if (false) {
+                            if (showRecentTabs && false) {
                                 RecentTabsSection(
                                     interactor = interactor,
                                     cardBackgroundColor = cardBackgroundColor,
@@ -208,7 +208,7 @@ internal fun Homepage(
                                 )
                             }
 
-                            if (false) {
+                            if (showRecentlyVisited && false) {
                                 RecentlyVisitedSection(
                                     recentVisits = recentlyVisited,
                                     cardBackgroundColor = cardBackgroundColor,
@@ -216,14 +216,14 @@ internal fun Homepage(
                                 )
                             }
 
-                            if (false) {
+                            if (showCollections && false) {
                                 CollectionsSection(
                                     collectionsState = collectionsState,
                                     interactor = interactor,
                                 )
                             }
 
-                            if (false) {
+                            if (showPocketStories && false) {
                                 Spacer(
                                     modifier = if (isMinimalLayout()) {
                                         Modifier.weight(1f)

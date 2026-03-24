@@ -415,9 +415,9 @@
         <item name="colorControlNormal">@color/fx_mobile_private_text_color_primary</item>
 
         <!-- Updated color attributes -->
-        <item name="accent">@color/accent_private_theme</item>
-        <item name="accentBright">@color/photonViolet70</item>
-        <item name="accentHighContrast">@color/accent_high_contrast_private_theme</item>
+        <item name="accent">@color/iconAccent</item>
+        <item name="accentBright">@color/iconAccent</item>
+        <item name="accentHighContrast">@color/iconAccent</item>
         <item name="neutral">@color/neutral_private_theme</item>
         <item name="neutralFaded">@color/neutral_faded_private_theme</item>
         <item name="accentUsedOnDarkBackground">@color/accent_high_contrast_private_theme</item>

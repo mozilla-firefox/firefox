@@ -90,7 +90,7 @@
     <!-- Warning text on Secondary button -->
     <color name="fx_mobile_text_color_critical_button">@color/photonRed70</color>
     <!-- Small heading, Text link -->
-    <color name="fx_mobile_text_color_accent">@color/photonViolet70</color>
+    <color name="fx_mobile_text_color_accent">@color/textAccent</color>
     <!-- Text Inverted/On Color -->
     <color name="fx_mobile_text_color_oncolor_primary">@color/photonLightGrey05</color>
     <!-- Text Inverted/On Color -->
@@ -220,11 +220,11 @@
     <color name="dark_grey_90_gradient_end">#0015141A</color>
 
     <!-- Private theme color palette -->
-    <color name="accent_private_theme">@color/photonViolet50</color>
-    <color name="accent_high_contrast_private_theme">#AA71FF</color>
+    <color name="accent_private_theme">@color/iconAccent</color>
+    <color name="accent_high_contrast_private_theme">@color/iconAccent</color>
     <color name="neutral_private_theme">@color/photonGrey20</color>
     <color name="neutral_faded_private_theme">#1FFBFBFE</color>
-    <color name="prompt_login_edit_text_cursor_color_private_theme">@color/photonViolet50</color>
+    <color name="prompt_login_edit_text_cursor_color_private_theme">@color/iconAccent</color>
 
     <!-- Normal theme colors for light mode -->
     <color name="accent_normal_theme">@color/photonInk20</color>

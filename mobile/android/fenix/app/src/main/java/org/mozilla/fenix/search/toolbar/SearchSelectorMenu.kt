@@ -77,6 +77,6 @@ class SearchSelectorMenu(
         ) {
             interactor.onMenuItemTapped(Item.SearchSettings)
         }
-        return listOf(headerCandidate) + searchEngines + listOf(settingsCandidate)
+        return listOf(headerCandidate) + searchEngines//+ listOf(settingsCandidate)
     }
 }
