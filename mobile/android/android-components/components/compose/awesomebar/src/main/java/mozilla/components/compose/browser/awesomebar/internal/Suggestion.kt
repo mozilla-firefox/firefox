@@ -200,7 +200,7 @@ private fun AutocompleteButton(
 }
 
 @Composable
-private fun RemoveButton(A
+private fun RemoveButton(
     onRemoveClicked: () -> Unit,
     colors: AwesomeBarColors,
     modifier: Modifier,
