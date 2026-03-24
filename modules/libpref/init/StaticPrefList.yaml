@@ -17986,6 +17986,11 @@
   value: false
   mirror: always
 
+- name: security.tls.client_certificate_enrollment.enabled
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
 # Probability of GREASEing a TLS connection with ECH (0-100)
 # 0 means never GREASE, 100 means always GREASE
 - name: security.tls.ech.grease_probability

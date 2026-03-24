@@ -30,6 +30,7 @@ XPIDL_SOURCES += [
     "nsIPublicKeyPinningService.idl",
     "nsISecretDecoderRing.idl",
     "nsISecurityUITelemetry.idl",
+    "nsISiteClientCertEnrollmentService.idl",
     "nsISiteIntegrityService.idl",
     "nsISiteSecurityService.idl",
     "nsITLSSocketControl.idl",
@@ -51,6 +52,7 @@ EXTRA_JS_MODULES.psm += [
     "DER.sys.mjs",
     "QWACs.sys.mjs",
     "RemoteSecuritySettings.sys.mjs",
+    "SiteClientCertEnrollmentService.sys.mjs",
     "X509.sys.mjs",
 ]
 

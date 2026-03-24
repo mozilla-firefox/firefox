@@ -10,6 +10,7 @@
 #include "mozilla/ScopeExit.h"
 #include "mozilla/Sprintf.h"
 #include "mozilla/ToString.h"
+#include "mozilla/dom/BrowsingContext.h"
 #include "mozilla/dom/nsCSPContext.h"
 #include "mozilla/dom/NavigatorLogin.h"
 #include "mozilla/glean/AntitrackingMetrics.h"
@@ -95,6 +96,7 @@
 #include "nsInputStreamPump.h"
 #include "nsURLHelper.h"
 #include "nsISiteIntegrityService.h"
+#include "nsISiteClientCertEnrollmentService.h"
 #include "nsISiteSecurityService.h"
 #include "nsISocketTransport.h"
 #include "nsIStreamConverterService.h"
@@ -185,6 +187,7 @@ namespace {
      ((req) != mTransactionPump))))
 
 static NS_DEFINE_CID(kStreamListenerTeeCID, NS_STREAMLISTENERTEE_CID);
+static LazyLogModule gSiteClientCertEnrollmentLog("SiteClientCertEnrollment");
 
 enum ChannelDisposition {
   kHttpCanceled = 0,
@@ -2822,6 +2825,127 @@ nsresult nsHttpChannel::ProcessHSTSHeader(nsITransportSecurityInfo* aSecInfo) {
   return NS_OK;
 }
 
+nsresult nsHttpChannel::ProcessClientCertEnrollmentHeader(
+    nsITransportSecurityInfo* aSecInfo) {
+  if (!StaticPrefs::security_tls_client_certificate_enrollment_enabled()) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Debug,
+            ("ProcessClientCertEnrollmentHeader: pref disabled"));
+    return NS_OK;
+  }
+
+  ExtContentPolicyType type = mLoadInfo->GetExternalContentPolicyType();
+  if (type != ExtContentPolicy::TYPE_DOCUMENT) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Debug,
+            ("ProcessClientCertEnrollmentHeader: non-document load (%d) - "
+             "ignoring header",
+             static_cast<int>(type)));
+    return NS_OK;
+  }
+
+  nsHttpAtom atom(nsHttp::ResolveAtom("Client-Cert-Enrollment"_ns));
+
+  nsAutoCString enrollmentHeader;
+  nsresult rv = mResponseHead->GetHeader(atom, enrollmentHeader);
+  if (rv == NS_ERROR_NOT_AVAILABLE || enrollmentHeader.IsEmpty()) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Debug,
+            ("ProcessClientCertEnrollmentHeader: no header present"));
+    return NS_OK;
+  }
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  if (!aSecInfo) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
+            ("ProcessClientCertEnrollmentHeader: missing security info - "
+             "ignoring header"));
+    return NS_OK;
+  }
+
+  if (!nsHttp::IsReasonableHeaderValue(enrollmentHeader)) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
+            ("ProcessClientCertEnrollmentHeader: unreasonable header value - "
+             "ignoring header"));
+    return NS_OK;
+  }
+
+  nsITransportSecurityInfo::OverridableErrorCategory overridableErrorCategory;
+  rv = aSecInfo->GetOverridableErrorCategory(&overridableErrorCategory);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+  if (overridableErrorCategory !=
+      nsITransportSecurityInfo::OverridableErrorCategory::ERROR_UNSET) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
+            ("ProcessClientCertEnrollmentHeader: untrustworthy connection - "
+             "ignoring header"));
+    return NS_OK;
+  }
+
+  nsCOMPtr<nsIURI> enrollmentURI;
+  rv = NS_NewURI(getter_AddRefs(enrollmentURI), enrollmentHeader, nullptr, mURI);
+  if (NS_FAILED(rv)) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
+            ("ProcessClientCertEnrollmentHeader: failed to parse enrollment "
+             "URI '%s'",
+             enrollmentHeader.get()));
+    return NS_OK;
+  }
+
+  if (!enrollmentURI->SchemeIs("https")) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
+            ("ProcessClientCertEnrollmentHeader: enrollment URI is not https "
+             "- ignoring header"));
+    return NS_OK;
+  }
+
+  nsAutoCString requestPrePath;
+  rv = mURI->GetPrePath(requestPrePath);
+  NS_ENSURE_SUCCESS(rv, NS_OK);
+
+  nsAutoCString enrollmentPrePath;
+  rv = enrollmentURI->GetPrePath(enrollmentPrePath);
+  NS_ENSURE_SUCCESS(rv, NS_OK);
+
+  if (requestPrePath != enrollmentPrePath) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
+            ("ProcessClientCertEnrollmentHeader: enrollment URI '%s' is not "
+             "same-origin with request '%s' - ignoring header",
+             enrollmentPrePath.get(), requestPrePath.get()));
+    return NS_OK;
+  }
+
+  RefPtr<mozilla::dom::BrowsingContext> browsingContext;
+  mLoadInfo->GetBrowsingContext(getter_AddRefs(browsingContext));
+  uint64_t browserId =
+      browsingContext ? browsingContext->Top()->BrowserId() : 0;
+
+  nsAutoCString requestingSpec;
+  rv = mURI->GetSpec(requestingSpec);
+  NS_ENSURE_SUCCESS(rv, NS_OK);
+
+  nsAutoCString enrollmentSpec;
+  rv = enrollmentURI->GetSpec(enrollmentSpec);
+  NS_ENSURE_SUCCESS(rv, NS_OK);
+
+  nsCOMPtr<nsISiteClientCertEnrollmentService> service =
+      do_GetService(NS_SITE_CLIENT_CERT_ENROLLMENT_SERVICE_CONTRACTID);
+  if (!service) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
+            ("ProcessClientCertEnrollmentHeader: enrollment service "
+             "unavailable"));
+    return NS_OK;
+  }
+
+  MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Info,
+          ("ProcessClientCertEnrollmentHeader: dispatching enrollment request "
+           "for '%s' to '%s' (browserId=%" PRIu64 ")",
+           requestingSpec.get(), enrollmentSpec.get(), browserId));
+  service->RequestEnrollment(requestingSpec, enrollmentSpec, browserId);
+
+  return NS_OK;
+}
+
 // https://github.com/rozbb/waict-integrity-draft/
 nsresult nsHttpChannel::ProcessWAICTHeader() {
 #ifdef NIGHTLY_BUILD
@@ -2929,6 +3053,9 @@ nsresult nsHttpChannel::ProcessSecurityHeaders() {
     rv = ProcessHSTSHeader(mSecurityInfo);
     NS_ENSURE_SUCCESS(rv, rv);
   }
+
+  rv = ProcessClientCertEnrollmentHeader(mSecurityInfo);
+  NS_ENSURE_SUCCESS(rv, rv);
 
   return NS_OK;
 }

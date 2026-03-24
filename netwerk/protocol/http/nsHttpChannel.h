@@ -494,6 +494,9 @@ class nsHttpChannel final : public HttpBaseChannel,
    */
   [[nodiscard]] nsresult ProcessHSTSHeader(nsITransportSecurityInfo* aSecInfo);
 
+  [[nodiscard]] nsresult ProcessClientCertEnrollmentHeader(
+      nsITransportSecurityInfo* aSecInfo);
+
   [[nodiscard]] nsresult ProcessWAICTHeader();
 
   void InvalidateCacheEntryForLocation(const char* location);
