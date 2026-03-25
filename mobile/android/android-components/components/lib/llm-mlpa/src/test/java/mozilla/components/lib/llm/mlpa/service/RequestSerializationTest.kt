@@ -34,14 +34,14 @@ class RequestSerializationTest {
     @Test
     fun `chat service completion request gets serialized to json correctly`() {
         val request = ChatService.Request(
-            model = ChatService.Request.ModelID.mistral,
+            model = ChatService.Request.ModelID.mozSummarization,
             messages = listOf(
                 ChatService.Request.Message.user("hello"),
             ),
         )
 
         assertEquals(
-            "{\"model\":\"vertex_ai/mistral-small-2503\",\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}",
+            "{\"model\":\"moz-summarization\",\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}",
             json.encodeToString(request),
         )
     }

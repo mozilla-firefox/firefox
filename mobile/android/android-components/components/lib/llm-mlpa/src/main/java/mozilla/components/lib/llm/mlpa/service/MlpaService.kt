@@ -275,8 +275,8 @@ fun interface ChatService {
                 /**
                  * Predefined model identifier for the Mistral Small model hosted via Vertex AI.
                  */
-                val mistral: ModelID
-                    get() = ModelID("vertex_ai/mistral-small-2503")
+                val mozSummarization: ModelID
+                    get() = ModelID("moz-summarization")
             }
         }
 

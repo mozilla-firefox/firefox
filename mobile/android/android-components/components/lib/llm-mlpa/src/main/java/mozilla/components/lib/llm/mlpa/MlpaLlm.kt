@@ -33,7 +33,7 @@ internal class MlpaLlm(
 
 internal val Prompt.asRequest
     get() = Request(
-        model = ModelID.mistral,
+        model = ModelID.mozSummarization,
         messages = listOf(
             Message.user(value),
         ),
