@@ -557,7 +557,7 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
 
     @OptIn(DelicateCoroutinesApi::class) // GlobalScope usage
     private fun queueIntegrityClientWarmUp(queue: RunWhenReadyQueue) {
-        if (!Config.channel.isReleased) {
+        if (Config.channel != ReleaseChannel.Nightly) {
             return
         }
         runOnVisualCompleteness(queue) {
