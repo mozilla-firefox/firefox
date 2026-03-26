@@ -75,11 +75,14 @@
     <!-- Button for the download error screen to cancel -->
     <string name="mozac_summarize_download_error_negative_button">Cancel</string>
 
-    <!-- Title for the info error screen -->
-    <string name="mozac_summarize_info_error_title">Error</string>
+    <!-- Title for the error screen when page is too long to summarize -->
+    <string name="mozac_summarize_content_too_long_error_title">Page too long to summarize</string>
 
-    <!-- Generic fallback message for the info error screen -->
-    <string name="mozac_summarize_info_error_fallback_message">Unknown error</string>
+    <!-- Title for the info error screen -->
+    <string name="mozac_summarize_info_error_title">Can\'t summarize right now</string>
+
+    <!-- Generic fallback message for the info error screen. %1$d is an error code. -->
+    <string name="mozac_summarize_info_error_message">Try again later. Error code: %1$d</string>
 
     <!-- Loading text displayed while a page summary is being generated -->
     <string name="mozac_feature_summarize_loading_title" translatable="false">Summarizing…</string>

@@ -8,6 +8,7 @@ import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.lib.llm.mlpa.service.AuthenticationService
 import mozilla.components.lib.llm.mlpa.service.AuthenticationService.Request
 import mozilla.components.lib.llm.mlpa.service.AuthorizationToken
+import mozilla.components.lib.llm.mlpa.service.IntegrityHandshakeFailure
 import mozilla.components.lib.llm.mlpa.service.PackageName
 import mozilla.components.lib.llm.mlpa.service.UserId
 import kotlin.time.Duration.Companion.seconds
@@ -87,13 +88,17 @@ fun interface MlpaTokenProvider {
             }
 
             runCatching {
+                val integrityToken = integrityClient.request().getOrElse {
+                    throw IntegrityHandshakeFailure(it.message ?: "Unknown Integrity failure")
+                }
+
                 val request = Request(
                     userId = userIdProvider.getUserId(),
-                    integrityToken = integrityClient.request().getOrThrow(),
+                    integrityToken = integrityToken,
                     packageName = packageName,
                 )
-
                 val response = authenticationService.verify(request).getOrThrow()
+
                 storage.setToken(response.accessToken, response.expiresIn.seconds)
 
                 return@runCatching response.accessToken

@@ -30,6 +30,7 @@ class SummarizationMiddleware(
     private val errorReporter: ErrorReporter,
     private val scope: CoroutineScope,
 ) : Middleware<SummarizationState, SummarizationAction> {
+
     override fun invoke(
         store: Store<SummarizationState, SummarizationAction>,
         next: (SummarizationAction) -> Unit,
@@ -57,7 +58,7 @@ class SummarizationMiddleware(
                 observePrompt(store, action.llm)
             }
             is SummarizationFailed -> scope.launch {
-                errorReporter.report(action.throwable)
+                errorReporter.report(action.exception)
             }
         }
 
@@ -85,7 +86,11 @@ class SummarizationMiddleware(
             .map { parser.parse(it) }
             .collect { store.dispatch(ReceivedParsedDocument(it)) }
     }.onFailure {
-        store.dispatch(SummarizationFailed(it))
+        store.dispatch(
+            SummarizationFailed(
+                it as? Llm.Exception ?: Llm.Exception.unknown("Unknown exception while prompting"),
+            ),
+        )
     }
 
     private suspend fun observeCloudLlmProvider(
@@ -96,7 +101,7 @@ class SummarizationMiddleware(
         llmProvider.state.map { state ->
             when (state) {
                 CloudLlmProvider.State.Available -> LlmProviderAction.ProviderUnavailable
-                CloudLlmProvider.State.Unavailable -> LlmProviderAction.ProviderFailed
+                is CloudLlmProvider.State.Unavailable -> LlmProviderAction.ProviderFailed(state.exception)
                 is CloudLlmProvider.State.Ready -> LlmProviderAction.ProviderInitialized(state.llm)
             }
         }.collect { store.dispatch(it) }

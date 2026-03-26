@@ -56,7 +56,7 @@ private fun EngineSession?.asPageContentExtractor(): PageContentExtractor = {
                     continuation.resume(content)
                 },
                 onException = { error ->
-                    continuation.resumeWithException(error)
+                    continuation.resumeWithException(PageContentExtractor.Exception())
                 },
             )
         }
@@ -76,7 +76,7 @@ private fun EngineSession?.asPageMetadataExtractor(): PageMetadataExtractor = {
                     )
                 },
                 onException = { error ->
-                    continuation.resumeWithException(error)
+                    continuation.resumeWithException(PageMetadataExtractor.Exception())
                 },
             )
         }

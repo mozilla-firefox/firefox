@@ -48,6 +48,6 @@ internal class GeminiNanoLlm(
     } catch (e: GenAiException) {
         val message = "Gemini Nano inference failed: ${e.message}"
         logger(message)
-        emit(Llm.Response.Failure(message))
+        emit(Llm.Response.Failure(Llm.Exception.unknown(message)))
     }
 }

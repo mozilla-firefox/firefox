@@ -9,10 +9,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.CloudLlmProvider.State
+import mozilla.components.concept.llm.ErrorCode
+import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.lib.llm.mlpa.service.ChatService
 import mozilla.components.lib.llm.mlpa.service.ChatServiceError
-import mozilla.components.lib.llm.mlpa.service.ChatServiceException
 import mozilla.components.lib.llm.mlpa.service.MlpaService
 
 /**
@@ -55,7 +56,15 @@ class MlpaLlmProvider(
     override suspend fun prepare() {
         tokenProvider.fetchToken()
             .onSuccess { _state.value = State.Ready(MlpaLlm(chatService, it)) }
-            .onFailure { _state.value = State.Unavailable }
+            .onFailure {
+                _state.value = State.Unavailable(
+                it as? Llm.Exception
+                    ?: Llm.Exception(
+                        message = it.message ?: "missing token provider error",
+                        errorCode = unknownTokenProviderError,
+                    ),
+                )
+            }
     }
 
     /**
@@ -64,17 +73,24 @@ class MlpaLlmProvider(
     private val chatService = ChatService { token, request ->
         mlpaService.completion(token, request)
             .catch { throwable ->
-                if (throwable.isRetryable) {
+                if (throwable is ChatServiceError.InvalidToken) {
                     storage.clear()
                     _state.value = State.Available
                 } else {
-                    _state.value = State.Unavailable
+                    _state.value = State.Unavailable(
+                        throwable as? Llm.Exception
+                            ?: Llm.Exception(
+                                message = throwable.message ?: "missing chat service error",
+                                errorCode = unknownChatServiceError,
+                            ),
+                    )
                 }
 
                 // Re-throw the error so downstream consumers can handle the error
                 throw throwable
             }
     }
-}
 
-private val Throwable.isRetryable get() = (this as? ChatServiceException)?.error is ChatServiceError.InvalidToken
+    private val unknownTokenProviderError = ErrorCode(1010)
+    private val unknownChatServiceError = ErrorCode(1011)
+}

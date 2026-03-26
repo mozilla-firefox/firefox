@@ -27,7 +27,7 @@ data object SettingsBackClicked : SummarizationAction
 data object ShakeConsentRequested : SummarizationAction
 
 internal sealed interface LlmProviderAction : SummarizationAction {
-    data object ProviderFailed : LlmProviderAction
+    data class ProviderFailed(val exception: Llm.Exception) : LlmProviderAction
     data object ProviderUnavailable : LlmProviderAction
     data class ProviderInitialized(val llm: Llm) : LlmProviderAction
 }
@@ -35,7 +35,7 @@ internal sealed interface LlmProviderAction : SummarizationAction {
 /**
  * There was a failure in summarizing content from the current page.
  */
-data class SummarizationFailed(val throwable: Throwable) : SummarizationAction
+data class SummarizationFailed(val exception: Llm.Exception) : SummarizationAction
 
 /**
  * We've requested a response from a Llm.

@@ -8,6 +8,7 @@ import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.common.GenAiException
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import mozilla.components.concept.llm.ErrorCode
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.Prompt
 import mozilla.components.lib.llm.gemini.nano.fakes.FakeGenerativeModel
@@ -45,7 +46,9 @@ class GeminiNanoLlmTest {
         val results = llm.prompt(Prompt("test prompt")).toList()
 
         assertEquals(1, results.size)
-        assertEquals(Llm.Response.Failure("Gemini Nano inference failed: [ErrorCode 4] Request doesn't pass certain policy check. Please try a different input."), results[0])
+        val failure = results[0] as Llm.Response.Failure
+        assertEquals(0, failure.exception.errorCode.value)
+        assertTrue(failure.exception.message?.startsWith("Gemini Nano inference failed:") == true)
     }
 
     @Test

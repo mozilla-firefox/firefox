@@ -14,6 +14,7 @@ import kotlinx.serialization.MissingFieldException
 import mozilla.components.concept.fetch.MutableHeaders
 import mozilla.components.concept.fetch.Response
 import mozilla.components.concept.integrity.IntegrityToken
+import mozilla.components.concept.llm.Llm
 import mozilla.components.lib.llm.mlpa.fakes.FakeClient
 import mozilla.components.lib.llm.mlpa.fakes.asBody
 import mozilla.components.lib.llm.mlpa.fakes.streamedResponseBody
@@ -249,9 +250,9 @@ class FetchClientMlpaServiceTest {
             }
 
             val cases = listOf(
-                Case(401, ChatServiceError.InvalidToken),
-                Case(403, ChatServiceError.UserBlocked),
-                Case(413, ChatServiceError.RequestTooLarge),
+                Case(401, ChatServiceError.InvalidToken()),
+                Case(403, ChatServiceError.UserBlocked()),
+                Case(413, ChatServiceError.RequestTooLarge()),
                 Case(429, ChatServiceError.BudgetExceeded(8000L)),
                 Case(429, ChatServiceError.BudgetExceeded(null)),
                 Case(429, ChatServiceError.RateLimited(8000L)),
@@ -276,8 +277,8 @@ class FetchClientMlpaServiceTest {
                 response
                     .onEach { _ -> fail("We should have thrown an exception") }
                     .catch {
-                        assertTrue("Should be ChatServiceException but got $it", it is ChatServiceException)
-                        assertEquals(case.expectedError, (it as? ChatServiceException)?.error)
+                        assertTrue("Should be ChatServiceError but got $it", it is ChatServiceError)
+                        assertEquals(case.expectedError.errorCode, (it as Llm.Exception).errorCode)
                     }.collect()
             }
         }

@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.summarize
 
+import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.lib.state.State
 import mozilla.components.ui.richtext.ir.RichDocument
@@ -95,35 +96,14 @@ sealed class SummarizationState : State {
 * Describes the possible failure modes of the summarization feature.
 */
 sealed class SummarizationError {
-    /** The user declined the consent prompt. */
-    data object ConsentDenied : SummarizationError()
-
-    /** The page content could not be extracted or is unavailable. */
-    data object ContentUnavailable : SummarizationError()
-
-    /** The page content is too short to summarize. */
-    data object ContentTooShort : SummarizationError()
-
     /** The page content exceeds the maximum supported length. */
     data object ContentTooLong : SummarizationError()
-
-    /** The user declined to download the summarization model. */
-    data object DownloadDenied : SummarizationError()
 
     /** The model download did not complete successfully. */
     data object DownloadFailed : SummarizationError()
 
-    /** The model download was cancelled before completion. */
-    data object DownloadCancelled : SummarizationError()
-
     /** The summarization model failed to produce a result. */
-    data class SummarizationFailed(val throwable: Throwable) : SummarizationError()
-
-    /** The model produced a result that could not be used as a valid summary. */
-    data object InvalidSummary : SummarizationError()
-
-    /** A network error occurred during download or summarization. */
-    data object NetworkError : SummarizationError()
+    data class SummarizationFailed(val exception: Llm.Exception) : SummarizationError()
 }
 
 val SummarizationState.isLoading get() = this is SummarizationState.Loading

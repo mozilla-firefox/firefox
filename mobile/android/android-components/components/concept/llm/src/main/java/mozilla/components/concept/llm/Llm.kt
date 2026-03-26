@@ -13,6 +13,12 @@ import kotlinx.coroutines.flow.Flow
 value class Prompt(val value: String)
 
 /**
+ * An integer error code that can be used to categorize failures.
+ */
+@JvmInline
+value class ErrorCode(val value: Int)
+
+/**
  * An abstract definition of a LLM that can receive prompts.
  */
 interface Llm {
@@ -21,6 +27,28 @@ interface Llm {
      * of [Response]s as they are made available.
      */
     suspend fun prompt(prompt: Prompt): Flow<Response>
+
+    /**
+     * An exception thrown by an LLM, equipped with an [ErrorCode] to differentiate
+     * error types. Implementation modules may subclass this to attach additional context.
+     *
+     * @param message A human-readable description of the failure.
+     * @param errorCode The error code identifying the failure category.
+     */
+    open class Exception(
+        message: String,
+        val errorCode: ErrorCode,
+    ) : kotlin.Exception(message) {
+        companion object {
+            /**
+             * Create an unspecified error with the general error code.
+             */
+            fun unknown(message: String?) = Llm.Exception(
+                message = message ?: "Unknown Llm Exception",
+                errorCode = ErrorCode(0),
+            )
+        }
+    }
 
     /**
      * A response from prompting a LLM.
@@ -47,6 +75,6 @@ interface Llm {
         /**
          * A failure response from a LLM.
          */
-        data class Failure(val reason: String) : Response()
+        data class Failure(val exception: Llm.Exception) : Response()
     }
 }

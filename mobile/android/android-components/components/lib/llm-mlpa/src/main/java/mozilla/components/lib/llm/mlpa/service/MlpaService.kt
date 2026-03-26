@@ -14,57 +14,68 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import mozilla.components.concept.integrity.IntegrityToken
+import mozilla.components.concept.llm.ErrorCode
+import mozilla.components.concept.llm.Llm
+
+private val INTEGRITY_HANDSHAKE_FAILURE = ErrorCode(1001)
+private val VERIFICATION_SERVICE_FAILED = ErrorCode(1002)
+private val INVALID_TOKEN = ErrorCode(1003)
+private val USER_BLOCKED = ErrorCode(1004)
+private val REQUEST_TOO_LARGE = ErrorCode(1005)
+private val BUDGET_EXCEEDED = ErrorCode(1006)
+private val RATE_LIMITED = ErrorCode(1007)
+private val UPSTREAM_ERROR = ErrorCode(1008)
+private val SERVER_ERROR = ErrorCode(1009)
+
+/**
+ * Thrown when the Integrity client experiences a failure, propagating its error message.
+ */
+class IntegrityHandshakeFailure(message: String) : Llm.Exception(message, INTEGRITY_HANDSHAKE_FAILURE)
 
 /**
  * Thrown when the MLPA verification service fails to process or validate a request.
  *
  * @param reason A human-readable explanation of the failure.
  */
-class VerificationServiceFailed(reason: String) : Exception("Verification Service Failed: $reason")
+class VerificationServiceFailed(reason: String) :
+    Llm.Exception("Verification Service Failed: $reason", VERIFICATION_SERVICE_FAILED)
 
 /**
- * Thrown when the MLPA chat/completion service fails to process a request.
- *
- * @param error the [ChatServiceError] that was raised.
+ * Sealed class for describing the type of error a [ChatService] can return.
  */
-class ChatServiceException(val error: ChatServiceError) : Exception(error.toString())
-
-/**
- * Sealed interface for describing the type of error a [ChatService] can return.
- */
-sealed interface ChatServiceError {
+sealed class ChatServiceError(message: String, errorCode: ErrorCode) : Llm.Exception(message, errorCode) {
     /** Token expired or invalid. Re-authenticate via [AuthenticationService.verify]. */
-    data object InvalidToken : ChatServiceError
+    class InvalidToken : ChatServiceError("Invalid token", INVALID_TOKEN)
 
     /** The user has been blocked from accessing the service. */
-    data object UserBlocked : ChatServiceError
+    class UserBlocked : ChatServiceError("User blocked", USER_BLOCKED)
 
     /** The request body exceeded the 10MB limit. */
-    data object RequestTooLarge : ChatServiceError
+    class RequestTooLarge : ChatServiceError("Request too large", REQUEST_TOO_LARGE)
 
     /**
      * The user's total budget has been exhausted.
      *
      * @property retryAfter Duration in seconds before the budget resets (typically 86400s).
      */
-    data class BudgetExceeded(val retryAfter: Long?) : ChatServiceError
+    data class BudgetExceeded(val retryAfter: Long?) : ChatServiceError("Budget exceeded", BUDGET_EXCEEDED)
 
     /**
      * Requests per minute or tokens per minute limit reached.
      *
      * @property retryAfter Duration in seconds before the limit resets (typically 60s).
      */
-    data class RateLimited(val retryAfter: Long?) : ChatServiceError
+    data class RateLimited(val retryAfter: Long?) : ChatServiceError("Rate limited", RATE_LIMITED)
 
     /** The upstream LLM was unreachable or returned an error (502). */
-    data class UpstreamError(val reason: String) : ChatServiceError
+    data class UpstreamError(val reason: String) : ChatServiceError("Upstream error: $reason", UPSTREAM_ERROR)
 
     /**
      * An unexpected server-side error occurred.
      *
      * @property statusCode The HTTP status code returned.
      */
-    data class ServerError(val statusCode: Int) : ChatServiceError
+    data class ServerError(val statusCode: Int) : ChatServiceError("Server error: $statusCode", SERVER_ERROR)
 }
 
 /**

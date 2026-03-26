@@ -7,6 +7,7 @@ package mozilla.components.lib.llm.mlpa
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
+import mozilla.components.concept.llm.ErrorCode
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.Prompt
 import mozilla.components.lib.llm.mlpa.service.AuthorizationToken
@@ -23,12 +24,18 @@ internal class MlpaLlm(
         chatService.completion(authorizationToken, prompt.asRequest)
             .onCompletion { cause ->
                 val action = cause
-                    ?.let { Llm.Response.Failure("MlpaLlm Failed: ${it.message}") }
+                    ?.let {
+                        val exception = it as? Llm.Exception
+                            ?: Llm.Exception(it.message ?: "unknown chat error", unknownLlmErrorCode)
+                        Llm.Response.Failure(exception)
+                    }
                     ?: Llm.Response.Success.ReplyFinished
                 emit(action)
             }
             .collect { emit(Llm.Response.Success.ReplyPart(it)) }
     }
+
+    private val unknownLlmErrorCode = ErrorCode(1012)
 }
 
 internal val Prompt.asRequest

@@ -19,7 +19,6 @@ import mozilla.components.lib.llm.mlpa.service.AuthenticationService
 import mozilla.components.lib.llm.mlpa.service.AuthorizationToken
 import mozilla.components.lib.llm.mlpa.service.ChatService
 import mozilla.components.lib.llm.mlpa.service.ChatServiceError
-import mozilla.components.lib.llm.mlpa.service.ChatServiceException
 import mozilla.components.lib.llm.mlpa.service.MlpaService
 import mozilla.components.lib.llm.mlpa.service.UserId
 import java.io.ByteArrayInputStream
@@ -67,7 +66,7 @@ val failureChatService = ChatService { token, request ->
 }
 
 val invalidTokenService = ChatService { _, _ ->
-    flow { throw ChatServiceException(ChatServiceError.InvalidToken) }
+    flow { throw ChatServiceError.InvalidToken() }
 }
 
 val streamedResponseBody = """

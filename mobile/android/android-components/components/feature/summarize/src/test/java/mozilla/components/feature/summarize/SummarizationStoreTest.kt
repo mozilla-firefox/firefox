@@ -14,6 +14,7 @@ import mozilla.components.feature.summarize.SummarizationState.Loading
 import mozilla.components.feature.summarize.SummarizationState.ShakeConsentRequired
 import mozilla.components.feature.summarize.SummarizationState.Summarized
 import mozilla.components.feature.summarize.SummarizationState.Summarizing
+import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.feature.summarize.content.PageMetadata
 import mozilla.components.feature.summarize.fakes.FakeCloudProvider
 import mozilla.components.feature.summarize.fakes.FakeLlm
@@ -167,7 +168,7 @@ class SummarizationStoreTest {
 
     @Test
     fun `if the page extractor fails, the failure is forwarded as a summarization failure`() = runTest {
-        val failureThrowable = NullPointerException()
+        val failureThrowable = PageContentExtractor.Exception()
         val provider = FakeCloudProvider(llm = FakeLlm.successful)
         val store = SummarizationStore(
             initialState = Inert(true),

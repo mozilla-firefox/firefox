@@ -100,9 +100,7 @@ class FetchClientMlpaService(
         return flow {
             val httpResponse = client.fetch(fetchRequest)
 
-            httpResponse.error?.also {
-                throw ChatServiceException(it)
-            }
+            httpResponse.error?.also { throw it }
 
             if (request.stream) {
                 emitAll(httpResponse.contentFlow)
@@ -119,9 +117,9 @@ class FetchClientMlpaService(
     private val Response.retryAfter: Long? get() = headers["Retry-After"]?.toLongOrNull()
     private val Response.error: ChatServiceError? get() = when (status) {
         in 200..299 -> null
-        401 -> ChatServiceError.InvalidToken
-        403 -> ChatServiceError.UserBlocked
-        413 -> ChatServiceError.RequestTooLarge
+        401 -> ChatServiceError.InvalidToken()
+        403 -> ChatServiceError.UserBlocked()
+        413 -> ChatServiceError.RequestTooLarge()
         429 -> when (json.decodeFromString<ChatService.ResponseErrorCode>(bodyString).error) {
             1 -> ChatServiceError.BudgetExceeded(retryAfter)
             2 -> ChatServiceError.RateLimited(retryAfter)

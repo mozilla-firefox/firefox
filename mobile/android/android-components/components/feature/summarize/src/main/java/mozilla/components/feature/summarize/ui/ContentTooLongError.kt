@@ -22,14 +22,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
-import mozilla.components.concept.llm.ErrorCode
 import mozilla.components.feature.summarize.R
 
 @Composable
-internal fun InfoError(
-    modifier: Modifier = Modifier,
-    errorCode: ErrorCode,
-) {
+internal fun ContentTooLongError(modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(
             painter = painterResource(mozilla.components.ui.icons.R.drawable.mozac_ic_warning_fill_24),
@@ -40,29 +36,18 @@ internal fun InfoError(
         Spacer(modifier = Modifier.height(AcornTheme.layout.space.static300))
 
         Text(
-            text = stringResource(R.string.mozac_summarize_info_error_title),
+            text = stringResource(R.string.mozac_summarize_content_too_long_error_title),
             style = AcornTheme.typography.headline6,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
-
-        Spacer(modifier = Modifier.height(AcornTheme.layout.space.static100))
-
-        Text(
-            text = stringResource(R.string.mozac_summarize_info_error_message, errorCode.value),
-            style = AcornTheme.typography.body2,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(modifier = Modifier.height(AcornTheme.layout.space.static200))
     }
 }
 
 @PreviewLightDark
 @Composable
-private fun PreviewInfoError() = AcornTheme {
+private fun PreviewContentTooLongError() = AcornTheme {
     Surface {
-        InfoError(errorCode = ErrorCode(1000))
+        ContentTooLongError()
     }
 }

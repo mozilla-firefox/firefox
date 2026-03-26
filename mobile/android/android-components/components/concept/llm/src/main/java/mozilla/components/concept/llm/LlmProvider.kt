@@ -50,8 +50,10 @@ interface CloudLlmProvider : LlmProvider {
 
         /**
          * Indicates that the cloud provider is unavailable.
+         *
+         * @property exception The exception that caused the provider to become unavailable, if known.
          */
-        object Unavailable : State
+        data class Unavailable(val exception: Llm.Exception) : State
 
         /**
          * Indicates that the cloud LLM is fully initialized and ready for use.

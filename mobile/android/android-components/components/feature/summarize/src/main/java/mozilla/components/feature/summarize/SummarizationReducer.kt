@@ -30,16 +30,25 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
         is SummarizationState.Settings -> SummarizationState.Summarized(info = state.info, document = state.document)
         else -> state
     }
-    is SummarizationFailed -> SummarizationState.Error(SummarizationError.SummarizationFailed(action.throwable))
+    is SummarizationFailed -> SummarizationState.Error(SummarizationError.SummarizationFailed(action.exception))
+    is LlmProviderAction.ProviderFailed -> SummarizationState.Error(
+        SummarizationError.SummarizationFailed(action.exception),
+    )
     else -> state
 }
 
 internal fun SummarizationState.applyResponse(response: Llm.Response): SummarizationState {
     if (this !is SummarizationState.Summarizing) return this
     return when (response) {
-        is Llm.Response.Failure -> SummarizationState.Error(
-            SummarizationError.SummarizationFailed(IllegalStateException(response.reason)),
-        )
+        is Llm.Response.Failure -> {
+            val contentTooLongErrorCode = 1005
+            when (response.exception.errorCode.value) {
+                contentTooLongErrorCode -> SummarizationState.Error(SummarizationError.ContentTooLong)
+                else -> SummarizationState.Error(
+                    SummarizationError.SummarizationFailed(response.exception),
+                )
+            }
+        }
         Llm.Response.Success.ReplyFinished -> SummarizationState.Summarized(info = info, document)
         else -> this
     }

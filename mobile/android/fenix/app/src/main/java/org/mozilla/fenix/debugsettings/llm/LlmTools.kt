@@ -49,7 +49,7 @@ fun LlmTools(
         }
 
         when (state) {
-            State.Unavailable -> UnavailableState()
+            is State.Unavailable -> UnavailableState()
             is State.Available -> AvailableState(llm.mlpaProvider)
             is State.Ready -> ReadyState((state as State.Ready).llm)
         }
@@ -74,7 +74,7 @@ private fun ReadyState(
                     llm.prompt(Prompt("Hello World")).collect { response ->
                         when (response) {
                             is Llm.Response.Failure -> {
-                                llmResponse = "There was a problem: ${response.reason}"
+                                llmResponse = "There was a problem. Error code: ${response.exception.errorCode}"
                             }
                             is Llm.Response.Success.ReplyPart -> llmResponse += response.value
                             else -> {}
