@@ -182,7 +182,7 @@ internal class DataStoreBackedSettings(private val dataStore: DataStore<Preferen
                 val updatedCount = (preferences[shakeConsentRejectedCountKey] ?: 0) + 1
                 preferences[shakeConsentRejectedCountKey] = updatedCount
                 if (updatedCount >= MAX_SHAKE_CONSENT_REJECTION) {
-                    setGestureEnabledUserStatus(false)
+                    preferences[gestureEnabledKey] = false
                 }
             }
         }
