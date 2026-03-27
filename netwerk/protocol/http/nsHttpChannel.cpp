@@ -2869,6 +2869,37 @@ nsresult nsHttpChannel::ProcessClientCertEnrollmentHeader(
     return NS_OK;
   }
 
+  nsAutoString enrollmentValue16;
+  rv = GetParameterHTTP(enrollmentHeader, "", enrollmentValue16);
+  if (NS_FAILED(rv) || enrollmentValue16.IsEmpty()) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
+            ("ProcessClientCertEnrollmentHeader: malformed enrollment header "
+             "value - ignoring header"));
+    return NS_OK;
+  }
+
+  nsAutoCString enrollmentValue;
+  CopyUTF16toUTF8(enrollmentValue16, enrollmentValue);
+
+  nsAutoCString enrollmentToken;
+  nsAutoString enrollmentToken16;
+  rv = GetParameterHTTP(enrollmentHeader, "token", enrollmentToken16);
+  if (rv == NS_OK) {
+    CopyUTF16toUTF8(enrollmentToken16, enrollmentToken);
+    if (enrollmentToken.IsEmpty() ||
+        !nsHttp::IsReasonableHeaderValue(enrollmentToken)) {
+      MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
+              ("ProcessClientCertEnrollmentHeader: malformed enrollment token "
+               "- ignoring header"));
+      return NS_OK;
+    }
+  } else if (rv != NS_ERROR_INVALID_ARG) {
+    MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
+            ("ProcessClientCertEnrollmentHeader: failed to parse enrollment "
+             "token - ignoring header"));
+    return NS_OK;
+  }
+
   nsITransportSecurityInfo::OverridableErrorCategory overridableErrorCategory;
   rv = aSecInfo->GetOverridableErrorCategory(&overridableErrorCategory);
   if (NS_WARN_IF(NS_FAILED(rv))) {
@@ -2883,12 +2914,12 @@ nsresult nsHttpChannel::ProcessClientCertEnrollmentHeader(
   }
 
   nsCOMPtr<nsIURI> enrollmentURI;
-  rv = NS_NewURI(getter_AddRefs(enrollmentURI), enrollmentHeader, nullptr, mURI);
+  rv = NS_NewURI(getter_AddRefs(enrollmentURI), enrollmentValue, nullptr, mURI);
   if (NS_FAILED(rv)) {
     MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Warning,
             ("ProcessClientCertEnrollmentHeader: failed to parse enrollment "
              "URI '%s'",
-             enrollmentHeader.get()));
+             enrollmentValue.get()));
     return NS_OK;
   }
 
@@ -2939,9 +2970,11 @@ nsresult nsHttpChannel::ProcessClientCertEnrollmentHeader(
 
   MOZ_LOG(gSiteClientCertEnrollmentLog, LogLevel::Info,
           ("ProcessClientCertEnrollmentHeader: dispatching enrollment request "
-           "for '%s' to '%s' (browserId=%" PRIu64 ")",
-           requestingSpec.get(), enrollmentSpec.get(), browserId));
-  service->RequestEnrollment(requestingSpec, enrollmentSpec, browserId);
+           "for '%s' to '%s' (browserId=%" PRIu64 ", hasToken=%s)",
+           requestingSpec.get(), enrollmentSpec.get(), browserId,
+           enrollmentToken.IsEmpty() ? "false" : "true"));
+  service->RequestEnrollment(requestingSpec, enrollmentSpec, enrollmentToken,
+                             browserId);
 
   return NS_OK;
 }

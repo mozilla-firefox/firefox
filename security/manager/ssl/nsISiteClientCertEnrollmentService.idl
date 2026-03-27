@@ -8,7 +8,7 @@
  * Coordinates site-driven client certificate enrollment requests discovered on
  * HTTPS responses.
  */
-[scriptable, uuid(8df03baa-2f95-4a97-af2b-3f77c764f8d1)]
+[scriptable, uuid(247ccdd2-e319-409b-938b-acd0d0595818)]
 interface nsISiteClientCertEnrollmentService : nsISupports
 {
   /**
@@ -16,11 +16,13 @@ interface nsISiteClientCertEnrollmentService : nsISupports
    *
    * @param requestingURI The HTTPS URI that requested enrollment.
    * @param enrollmentURI The HTTPS endpoint that should receive a CSR.
+   * @param enrollmentToken Optional opaque token to attach to the CSR request.
    * @param browserId The browser id for the top-level browsing context, or 0 if
    *                  no browsing context is available.
    */
   void requestEnrollment(in AUTF8String requestingURI,
                          in AUTF8String enrollmentURI,
+                         in AUTF8String enrollmentToken,
                          in uint64_t browserId);
 };
 

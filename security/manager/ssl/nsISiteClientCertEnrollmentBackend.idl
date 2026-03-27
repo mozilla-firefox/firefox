@@ -1,0 +1,57 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+/**
+ * Generates and tracks pending site-driven client certificate enrollment
+ * requests until the returned certificate is either imported or discarded.
+ */
+[scriptable, builtinclass, uuid(66ef00ae-5e62-46ed-a449-b6d0ce9770ff)]
+interface nsISiteClientCertEnrollmentBackend : nsISupports
+{
+  /**
+   * Generates a new client key pair and PKCS#10 certificate signing request.
+   *
+   * @param subjectCommonName ASCII common name to place in the CSR subject.
+   * @return An opaque request id used to retrieve the CSR and complete or abort
+   *         the pending enrollment.
+   */
+  [must_use]
+  AUTF8String createEnrollmentRequest(in AUTF8String subjectCommonName);
+
+  /**
+   * Retrieves the PEM-encoded PKCS#10 CSR for a pending enrollment request.
+   *
+   * @param requestId Request id returned by createEnrollmentRequest().
+   * @return The PEM-encoded CSR.
+   */
+  [must_use]
+  AUTF8String getEnrollmentRequestCsr(in AUTF8String requestId);
+
+  /**
+   * Imports the certificate returned by the enrollment server for the pending
+   * request, associating it with the generated private key.
+   *
+   * @param requestId Request id returned by createEnrollmentRequest().
+   * @param certificateBytes Raw certificate package bytes accepted by
+   *                         nsIX509CertDB.importUserCertificate().
+   */
+  [must_use]
+  void completeEnrollment(in AUTF8String requestId,
+                          in Array<uint8_t> certificateBytes);
+
+  /**
+   * Deletes the generated private key for a pending enrollment request.
+   *
+   * @param requestId Request id returned by createEnrollmentRequest().
+   */
+  [must_use]
+  void abortEnrollment(in AUTF8String requestId);
+};
+
+%{C++
+#define NS_SITE_CLIENT_CERT_ENROLLMENT_BACKEND_CONTRACTID \
+  "@mozilla.org/security/site-client-cert-enrollment-backend;1"
+%}
