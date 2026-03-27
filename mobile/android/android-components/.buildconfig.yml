@@ -428,6 +428,12 @@ projects:
     publish: true
     upstream_dependencies:
     - components:tooling-lint
+  components:concept-ai-controls:
+    description: An abstract definition of a ai-controls component.
+    path: components/concept/ai-controls
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:concept-awesomebar:
     description: An abstract definition of an awesomebar component.
     path: components/concept/awesomebar
@@ -1710,6 +1716,24 @@ projects:
     - components:support-base
     - components:support-test
     - components:tooling-lint
+  components:lib-ai-controls:
+    description: An abstract definition of a ai-controls component.
+    path: components/lib/ai-controls
+    publish: true
+    upstream_dependencies:
+    - components:browser-errorpages
+    - components:concept-ai-controls
+    - components:concept-base
+    - components:concept-engine
+    - components:concept-fetch
+    - components:concept-storage
+    - components:lib-publicsuffixlist
+    - components:support-base
+    - components:support-ktx
+    - components:support-test-fakes
+    - components:support-utils
+    - components:tooling-lint
+    - components:ui-icons
   components:lib-auth:
     description: A component for various kinds of authentication mechanisms.
     path: components/lib/auth

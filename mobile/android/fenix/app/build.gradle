@@ -625,6 +625,7 @@ dependencies {
     implementation project(':components:lib-integrity-googleplay')
     implementation project(':components:lib-llm-mlpa')
     implementation project(':components:lib-shake')
+    implementation project(':components:lib-ai-controls')
 
     implementation ComponentsDependencies.mozilla_appservices_syncmanager
     implementation libs.accompanist.drawablepainter

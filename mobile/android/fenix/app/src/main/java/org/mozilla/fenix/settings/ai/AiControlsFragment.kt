@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
+import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.theme.FirefoxTheme
 
@@ -24,12 +25,14 @@ class AiControlsFragment : Fragment(), SystemInsetsPaddedFragment {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View = content {
-            FirefoxTheme {
-                AiControlsScreen(
-                    onBannerLearnMoreClick = { openAiControlsSumoPage() },
-                )
-            }
+        // TODO use me
+        requireComponents.aiControlsFeatureBlock
+        FirefoxTheme {
+            AiControlsScreen(
+                onBannerLearnMoreClick = { openAiControlsSumoPage() },
+            )
         }
+    }
 
     private fun openAiControlsSumoPage() {
         val context = requireContext()
