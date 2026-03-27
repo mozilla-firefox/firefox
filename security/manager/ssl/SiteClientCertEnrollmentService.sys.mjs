@@ -55,6 +55,18 @@ function getEnrollmentSubjectCommonName(requestingURI) {
   }
 }
 
+function isSameOriginURI(firstURI, secondURI) {
+  if (!firstURI || !secondURI) {
+    return false;
+  }
+
+  try {
+    return firstURI.prePath == secondURI.prePath;
+  } catch {
+    return false;
+  }
+}
+
 function stringToUtf8Bytes(value) {
   return new TextEncoder().encode(value);
 }
@@ -77,10 +89,7 @@ function normalizeEnrollmentJsonCertificate(payload) {
     throw new Error("enrollment JSON response missing certificate");
   }
 
-  if (
-    payload.encoding == "pem" ||
-    payload.certificate.includes("-----BEGIN")
-  ) {
+  if (payload.encoding == "pem" || payload.certificate.includes("-----BEGIN")) {
     return stringToUtf8Bytes(payload.certificate);
   }
 
@@ -105,7 +114,11 @@ async function readEnrollmentCertificateBytes(response) {
   return new Uint8Array(await response.arrayBuffer());
 }
 
-async function promptForEnrollment(requestingURI, enrollmentURI, browsingContext) {
+async function promptForEnrollment(
+  requestingURI,
+  enrollmentURI,
+  browsingContext
+) {
   const title = "Client certificate enrollment request";
   const host = getDisplayHost(requestingURI);
   const text =
@@ -149,6 +162,44 @@ async function promptForEnrollment(requestingURI, enrollmentURI, browsingContext
       {}
     ) == 0
   );
+}
+
+function reloadBrowsingContextForNewClientCertificate(
+  requestingURI,
+  browsingContext
+) {
+  if (!browsingContext) {
+    log("info", "skipping reload after enrollment without browsing context", {
+      requestingURI: requestingURI.spec,
+    });
+    return;
+  }
+
+  let currentURI = browsingContext.currentURI;
+  if (!isSameOriginURI(requestingURI, currentURI)) {
+    log("info", "skipping reload after enrollment on different page", {
+      requestingURI: requestingURI.spec,
+      currentURI: currentURI?.spec ?? null,
+      browserId: browsingContext.browserId,
+    });
+    return;
+  }
+
+  try {
+    browsingContext.reload(Ci.nsIWebNavigation.LOAD_FLAGS_BYPASS_CACHE);
+    log("info", "reloading page after client certificate enrollment", {
+      requestingURI: requestingURI.spec,
+      currentURI: currentURI?.spec ?? null,
+      browserId: browsingContext.browserId,
+    });
+  } catch (error) {
+    log("error", "failed to reload page after client certificate enrollment", {
+      requestingURI: requestingURI.spec,
+      currentURI: currentURI?.spec ?? null,
+      browserId: browsingContext.browserId,
+      error: `${error}`,
+    });
+  }
 }
 
 export function SiteClientCertEnrollmentService() {
@@ -301,8 +352,7 @@ SiteClientCertEnrollmentService.prototype = {
         "Content-Type": ENROLLMENT_REQUEST_CONTENT_TYPE,
       };
       if (enrollmentToken) {
-        headers.Authorization =
-          `${ENROLLMENT_AUTHORIZATION_SCHEME} ${enrollmentToken}`;
+        headers.Authorization = `${ENROLLMENT_AUTHORIZATION_SCHEME} ${enrollmentToken}`;
       }
 
       let response = await fetch(enrollmentURI.spec, {
@@ -349,6 +399,10 @@ SiteClientCertEnrollmentService.prototype = {
         browserId: browsingContext?.browserId ?? 0,
         requestId,
       });
+      reloadBrowsingContextForNewClientCertificate(
+        requestingURI,
+        browsingContext
+      );
 
       log("info", "completed client certificate enrollment", {
         requestingURI: requestingURI.spec,
