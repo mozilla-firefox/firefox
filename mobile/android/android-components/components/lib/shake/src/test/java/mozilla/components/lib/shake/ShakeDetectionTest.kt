@@ -191,7 +191,12 @@ class ShakeDetectionTest {
             z: Float = 1.g,
             timestampNs: Long,
         ): Accelerometer.Sample {
-            return Accelerometer.Sample(x, y, z, timestampNs)
+            return object : Accelerometer.Sample {
+                override val xAccel = x
+                override val yAccel = y
+                override val zAccel = z
+                override val timestampNs = timestampNs
+            }
         }
     }
 }

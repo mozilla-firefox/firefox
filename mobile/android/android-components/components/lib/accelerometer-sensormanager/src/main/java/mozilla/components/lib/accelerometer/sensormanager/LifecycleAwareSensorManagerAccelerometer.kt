@@ -11,8 +11,9 @@ import android.hardware.SensorManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import mozilla.components.concept.accelerometer.Accelerometer
 import mozilla.components.support.base.log.logger.Logger
 
@@ -32,35 +33,24 @@ class LifecycleAwareSensorManagerAccelerometer(
     },
 ) : Accelerometer, SensorEventListener, DefaultLifecycleObserver {
 
+    private val sampleBuffer = SampleBuffer(capacity = 10)
+
     private val sensor: Sensor? by lazy {
         sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
             ?: sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     }
 
-    private val _samples = MutableSharedFlow<Accelerometer.Sample>(
-        extraBufferCapacity = NUM_BUFFER_CAPACITY,
+    private val _samples = Channel<Accelerometer.Sample>(
+        capacity = NUM_BUFFER_CAPACITY,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
 
-    override fun samples(): Flow<Accelerometer.Sample> = _samples
+    override fun samples(): Flow<Accelerometer.Sample> = _samples.receiveAsFlow()
 
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) = Unit
 
     override fun onSensorChanged(event: SensorEvent) {
-        val sample = when (event.sensor.type) {
-            Sensor.TYPE_LINEAR_ACCELERATION ->
-                Accelerometer.Sample(
-                    xAccel = event.values[0],
-                    yAccel = event.values[1],
-                    zAccel = event.values[2],
-                    timestampNs = event.timestamp,
-                )
-
-            Sensor.TYPE_ACCELEROMETER -> event.toLinearAccelerationSample()
-            else -> null
-        }
-
-        sample?.let { _samples.tryEmit(it) }
+        event.toSample()?.also { _samples.trySend(it) }
     }
 
     override fun onResume(owner: LifecycleOwner) {
@@ -73,6 +63,26 @@ class LifecycleAwareSensorManagerAccelerometer(
         super.onPause(owner)
         logger("Unregistering self as sensor listener")
         sensorManager.unregisterListener(this)
+    }
+
+    override fun onDestroy(owner: LifecycleOwner) {
+        super.onDestroy(owner)
+        _samples.close()
+    }
+
+    private fun SensorEvent.toSample(): Accelerometer.Sample? = when (sensor.type) {
+        Sensor.TYPE_LINEAR_ACCELERATION -> linearEventToSample()
+        Sensor.TYPE_ACCELEROMETER -> toLinearAccelerationSample()
+        else -> null
+    }
+
+    private fun SensorEvent.linearEventToSample(): Accelerometer.Sample {
+        return sampleBuffer.request(
+            xAccel = values[0],
+            yAccel = values[1],
+            zAccel = values[2],
+            timestampNs = timestamp,
+        )
     }
 
     /**
@@ -121,7 +131,7 @@ class LifecycleAwareSensorManagerAccelerometer(
         val linearY = values[1] - GRAVITY_VALUES[1]
         val linearZ = values[2] - GRAVITY_VALUES[2]
 
-        return Accelerometer.Sample(
+        return sampleBuffer.request(
             xAccel = linearX,
             yAccel = linearY,
             zAccel = linearZ,

@@ -13,15 +13,15 @@ interface Accelerometer {
     /**
      * The flow of data.
      */
-    fun samples(): Flow<Accelerometer.Sample>
+    fun samples(): Flow<Sample>
 
     /**
-     * A simple data type containing acceleration data at a specific time.
+     * A simple type containing acceleration data at a specific time.
      */
-    data class Sample(
-        val xAccel: Float,
-        val yAccel: Float,
-        val zAccel: Float,
-        val timestampNs: Long,
-    )
+    interface Sample {
+        val xAccel: Float
+        val yAccel: Float
+        val zAccel: Float
+        val timestampNs: Long
+    }
 }

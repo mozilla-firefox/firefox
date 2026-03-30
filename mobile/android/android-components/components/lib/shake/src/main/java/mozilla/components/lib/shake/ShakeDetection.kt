@@ -6,9 +6,7 @@ package mozilla.components.lib.shake
 
 import android.hardware.SensorManager
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.scan
+import kotlinx.coroutines.flow.flow
 import mozilla.components.concept.accelerometer.Accelerometer
 import mozilla.components.lib.shake.ShakeSensitivity.Companion.High
 import mozilla.components.lib.shake.ShakeSensitivity.Companion.Low
@@ -36,19 +34,22 @@ fun Accelerometer.detectShakes(
     detectionWindowNs: Long = 350_000_000L,
     cooldownPeriodNs: Long = 800_000_000L,
     minHits: Int = 2,
-): Flow<Unit> =
-    samples()
-        .scan(ShakeState()) { state, sample ->
-            state.next(
-                sample = sample,
-                sensitivity = sensitivity,
-                detectionWindowNs = detectionWindowNs,
-                cooldownPeriodNs = cooldownPeriodNs,
-                minHits = minHits,
-            )
+): Flow<Unit> = flow {
+    val state = ShakeState()
+    samples().collect { sample ->
+        state.process(
+            sample = sample,
+            sensitivity = sensitivity,
+            detectionWindowNs = detectionWindowNs,
+            cooldownPeriodNs = cooldownPeriodNs,
+            minHits = minHits,
+        )
+
+        if (state.hasReachedMinHits) {
+            emit(Unit)
         }
-        .filter { it.hasReachedMinHits }
-        .map { }
+    }
+}
 
 /**
  * Configuration element for the sensitivity of shake detection.
@@ -103,19 +104,19 @@ private enum class ShakeDirection {
  * minimum required.
  */
 private data class ShakeState(
-    val hits: Int = 0,
-    val detectionWindowStartNs: Long = 0L,
-    val lastShakeNs: Long = 0L,
-    val lastShakeDirection: ShakeDirection = ShakeDirection.Unknown,
-    val hasReachedMinHits: Boolean = false,
+    var hits: Int = 0,
+    var detectionWindowStartNs: Long = 0L,
+    var lastShakeNs: Long = 0L,
+    var lastShakeDirection: ShakeDirection = ShakeDirection.Unknown,
+    var hasReachedMinHits: Boolean = false,
 ) {
-    fun next(
+    fun process(
         sample: Accelerometer.Sample,
         sensitivity: ShakeSensitivity,
         detectionWindowNs: Long,
         cooldownPeriodNs: Long,
         minHits: Int,
-    ): ShakeState {
+    ) {
         // Step 0: Unwrap the Sample object & calculate the magnitude of acceleration
         val magnitude = sqrt(
             sample.xAccel * sample.xAccel +
@@ -126,7 +127,10 @@ private data class ShakeState(
 
         // Step 1: Check if acceleration magnitude is below the threshold.
         // If it is below, return and wait for stronger hit.
-        if (magnitude < sensitivity.threshold) return copy(hasReachedMinHits = false)
+        if (magnitude < sensitivity.threshold) {
+            hasReachedMinHits = false
+            return
+        }
 
         // Step 2: Check the approximate shake direction based on the most dominant acceleration
         val currentShakeDirection = sample.approximateShakeDirection()
@@ -155,22 +159,18 @@ private data class ShakeState(
         return if (!inCooldown && newHits >= minHits) {
             // Shake detected: we have enough hits within the window and previous cooldown has passed.
             // Reset state and record this shake's timestamp to start cooldown period.
-            ShakeState(
-                hits = 0,
-                detectionWindowStartNs = 0L,
-                lastShakeNs = timestampNs,
-                lastShakeDirection = ShakeDirection.Unknown,
-                hasReachedMinHits = true,
-            )
+            hits = 0
+            detectionWindowStartNs = 0L
+            lastShakeNs = timestampNs
+            lastShakeDirection = ShakeDirection.Unknown
+            hasReachedMinHits = true
         } else {
             // No shake yet: continue accumulating hits within the current window.
-            ShakeState(
-                hits = newHits,
-                detectionWindowStartNs = newWindowStart,
-                lastShakeNs = lastShakeNs,
-                lastShakeDirection = currentShakeDirection,
-                hasReachedMinHits = false,
-            )
+            hits = newHits
+            detectionWindowStartNs = newWindowStart
+            lastShakeNs = lastShakeNs
+            lastShakeDirection = currentShakeDirection
+            hasReachedMinHits = false
         }
     }
 
