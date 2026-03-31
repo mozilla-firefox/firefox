@@ -394,7 +394,7 @@
     <!-- Title for the voice search AI feature toggle -->
     <string name="ai_controls_voice_search_title">Voice search</string>
     <!-- Description for the voice search AI feature toggle -->
-    <string name="ai_controls_voice_search_description" tools:ignore="UnusedResources">Audio is converted to text by Google Speech Services.</string>
+    <string name="ai_controls_voice_search_description">Audio is converted to text by Google Speech Services.</string>
     <!-- Title for the block AI enhancements confirmation dialog -->
     <string name="ai_controls_block_dialog_title">Block AI enhancements?</string>
     <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
