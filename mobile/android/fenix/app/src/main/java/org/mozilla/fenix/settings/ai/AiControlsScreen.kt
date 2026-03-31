@@ -28,6 +28,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import mozilla.components.concept.ai.controls.AIControllableFeature
+import mozilla.components.concept.ai.controls.AIFeatureBlock
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +60,9 @@ import mozilla.components.ui.icons.R as iconsR
 
 @Composable
 internal fun AiControlsScreen(
+    registeredFeatures: List<AIControllableFeature> = emptyList(),
+    onFeatureToggle: (AIControllableFeature, Boolean) -> Unit = { _, _ -> },
+    onMorePageSummarySettingsClick: () -> Unit = {},
     onBannerLearnMoreClick: () -> Unit,
 ) {
     Surface {
@@ -82,13 +92,19 @@ internal fun AiControlsScreen(
 
             HorizontalDivider()
 
-            AiFeaturesSection()
+            AiFeaturesSection(
+                registeredFeatures = registeredFeatures,
+                onFeatureToggle = onFeatureToggle,
+            )
         }
     }
 }
 
 @Composable
-private fun AiFeaturesSection() {
+private fun AiFeaturesSection(
+    registeredFeatures: List<AIControllableFeature>,
+    onFeatureToggle: (AIControllableFeature, Boolean) -> Unit,
+) {
     SettingsSectionHeader(
         text = stringResource(R.string.ai_controls_ai_powered_features),
         modifier = Modifier.padding(
@@ -112,14 +128,18 @@ private fun AiFeaturesSection() {
         onClick = {},
     )
 
-    SwitchListItem(
-        label = stringResource(R.string.ai_controls_page_summaries_title),
-        checked = false,
-        enabled = true,
-        description = stringResource(R.string.ai_controls_page_summaries_description),
-        showSwitchAfter = true,
-        onClick = {},
-    )
+    for (feature in registeredFeatures) {
+        val isEnabled by feature.isEnabled.collectAsState(initial = true)
+
+        SwitchListItem(
+            label = stringResource(feature.description.titleRes),
+            checked = isEnabled,
+            enabled = true,
+            description = stringResource(feature.description.descriptionRes),
+            showSwitchAfter = true,
+            onClick = { onFeatureToggle(feature, !isEnabled) },
+        )
+    }
 
     SettingsLink(
         text = stringResource(R.string.ai_controls_more_page_summary_settings),

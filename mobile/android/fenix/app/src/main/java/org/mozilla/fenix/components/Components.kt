@@ -18,6 +18,8 @@ import mozilla.components.feature.addons.amo.AMOAddonsProvider
 import mozilla.components.feature.addons.migration.DefaultSupportedAddonsChecker
 import mozilla.components.feature.addons.update.DefaultAddonUpdater
 import mozilla.components.feature.autofill.AutofillConfiguration
+import mozilla.components.feature.summarize.PageSummaryFeature
+import mozilla.components.feature.summarize.settings.SummarizationSettings
 import mozilla.components.lib.ai.controls.default
 import mozilla.components.lib.crash.store.CrashAction
 import mozilla.components.lib.crash.store.CrashMiddleware
@@ -416,7 +418,9 @@ class Components(private val context: Context) {
     }
 
     val aiFeatureRegistry by lazyMonitored {
-        AIFeatureRegistry.default()
+        AIFeatureRegistry.default().also {
+            it.register(PageSummaryFeature(SummarizationSettings.dataStore(context)))
+        }
     }
 
     @Suppress("unused")
