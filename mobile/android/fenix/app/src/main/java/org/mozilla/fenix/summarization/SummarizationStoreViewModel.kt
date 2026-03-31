@@ -13,6 +13,7 @@ import mozilla.components.feature.summarize.ErrorReporter
 import mozilla.components.feature.summarize.SummarizationMiddleware
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.SummarizationStore
+import mozilla.components.feature.summarize.content.ContentProvider
 import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.feature.summarize.content.PageMetadataExtractor
 import mozilla.components.feature.summarize.settings.SummarizationSettings
@@ -47,8 +48,7 @@ class SummarizationStoreViewModel(
             SummarizationMiddleware(
                 settings = settings,
                 llmProvider = llmProvider,
-                pageContentExtractor = pageContentExtractor,
-                pageMetadataExtractor = pageMetadataExtractor,
+                contentProvider = ContentProvider.fromPage(pageContentExtractor, pageMetadataExtractor),
                 errorReporter = errorReporter,
                 scope = viewModelScope,
             ),

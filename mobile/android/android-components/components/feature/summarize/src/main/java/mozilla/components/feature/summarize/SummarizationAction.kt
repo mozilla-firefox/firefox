@@ -6,7 +6,7 @@ package mozilla.components.feature.summarize
 
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.LlmProvider
-import mozilla.components.feature.summarize.content.PageMetadata
+import mozilla.components.feature.summarize.content.Content
 import mozilla.components.lib.state.Action
 import mozilla.components.ui.richtext.ir.RichDocument
 
@@ -66,10 +66,7 @@ data class ReceivedParsedDocument(val document: RichDocument) : SummarizationAct
 /**
  * Page content has been extracted and is ready to be sent to the LLM.
  */
-data class ContentExtracted(
-    val pageMetadata: PageMetadata,
-    val charCount: Int,
-) : SummarizationAction
+data class ContentExtracted(val content: Content) : SummarizationAction
 
 /**
  * Actions for the consent step of the shake to summarize user flow when using an on-device model.

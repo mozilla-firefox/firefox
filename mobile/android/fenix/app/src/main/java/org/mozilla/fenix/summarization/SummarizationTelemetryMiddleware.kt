@@ -15,6 +15,7 @@ import mozilla.components.feature.summarize.SummarizationRequested
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.ViewAppeared
 import mozilla.components.feature.summarize.ViewDismissed
+import mozilla.components.feature.summarize.content.Content
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import mozilla.telemetry.glean.GleanTimerId
@@ -77,7 +78,7 @@ class SummarizationTelemetryMiddleware(
             is SummarizationRequested -> {
                 sessionTelemetry = sessionTelemetry.copy(model = action.info.nameRes.toString())
             }
-            is ContentExtracted -> handleExtractedContent(action)
+            is ContentExtracted -> handleExtractedContent(action.content)
             is SummarizationCompleted -> recordSummarizationCompleted()
             is SummarizationFailed -> recordSummarizationCompleted(success = false, action.throwable.errorType)
             ViewDismissed -> {
@@ -130,13 +131,13 @@ class SummarizationTelemetryMiddleware(
         }
     }
 
-    private fun handleExtractedContent(action: ContentExtracted) {
+    private fun handleExtractedContent(content: Content) {
         sessionTelemetry = sessionTelemetry.copy(
             contentMetrics = ContentMetrics(
-                wordCount = action.pageMetadata.wordCount,
-                charCount = action.charCount,
-                contentType = action.pageMetadata.structuredDataTypes.toString(),
-                language = action.pageMetadata.language,
+                wordCount = content.metadata.wordCount,
+                charCount = content.body.length,
+                contentType = content.metadata.structuredDataTypes.toString(),
+                language = content.metadata.language,
             ),
         )
         AiSummarize.started.record(

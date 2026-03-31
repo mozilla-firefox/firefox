@@ -15,6 +15,8 @@ import mozilla.components.feature.summarize.SummarizationState.Loading
 import mozilla.components.feature.summarize.SummarizationState.ShakeConsentRequired
 import mozilla.components.feature.summarize.SummarizationState.Summarized
 import mozilla.components.feature.summarize.SummarizationState.Summarizing
+import mozilla.components.feature.summarize.content.Content
+import mozilla.components.feature.summarize.content.ContentProvider
 import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.feature.summarize.content.PageMetadata
 import mozilla.components.feature.summarize.ext.defaultInstructions
@@ -54,8 +56,7 @@ class SummarizationStoreTest {
                 SummarizationMiddleware(
                     settings = settings,
                     llmProvider = provider,
-                    pageContentExtractor = { Result.success("") },
-                    pageMetadataExtractor = { Result.success(PageMetadata(listOf(), 0, "en")) },
+                    contentProvider = { Result.success(Content()) },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
                     dispatcher = StandardTestDispatcher(testScheduler),
@@ -98,8 +99,7 @@ class SummarizationStoreTest {
                 SummarizationMiddleware(
                     settings = settings,
                     llmProvider = FakeCloudProvider(llm = FakeLlm.successful),
-                    pageContentExtractor = { Result.success("") },
-                    pageMetadataExtractor = { Result.success(PageMetadata(listOf(), 0, "en")) },
+                    contentProvider = { Result.success(Content()) },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
                     dispatcher = StandardTestDispatcher(testScheduler),
@@ -141,8 +141,7 @@ class SummarizationStoreTest {
                 SummarizationMiddleware(
                     llmProvider = provider,
                     settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
-                    pageContentExtractor = { Result.success(content) },
-                    pageMetadataExtractor = { Result.success(PageMetadata(listOf("Article"), 0, "en")) },
+                    contentProvider = { Result.success(Content(PageMetadata(listOf("Article"), 0, "en"), content)) },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
                     dispatcher = StandardTestDispatcher(testScheduler),
@@ -183,8 +182,7 @@ class SummarizationStoreTest {
                 SummarizationMiddleware(
                     llmProvider = provider,
                     settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
-                    pageContentExtractor = { Result.failure(failureThrowable) },
-                    pageMetadataExtractor = { Result.success(PageMetadata(listOf(), 0, "en")) },
+                    contentProvider = { Result.failure(failureThrowable) },
                     errorReporter = errorReporter,
                     scope = backgroundScope,
                     dispatcher = StandardTestDispatcher(testScheduler),
@@ -223,8 +221,7 @@ class SummarizationStoreTest {
                 SummarizationMiddleware(
                     settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
                     llmProvider = provider,
-                    pageContentExtractor = { Result.success(content) },
-                    pageMetadataExtractor = { Result.success(PageMetadata(listOf("Recipe"), 0, "en")) },
+                    contentProvider = { Result.success(Content(PageMetadata(listOf("Recipe"), 0, "en"), content)) },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
                     dispatcher = StandardTestDispatcher(testScheduler),
@@ -266,8 +263,18 @@ class SummarizationStoreTest {
                 SummarizationMiddleware(
                     settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
                     llmProvider = provider,
-                    pageContentExtractor = { Result.success(content) },
-                    pageMetadataExtractor = { Result.success(PageMetadata(listOf("Recipe"), 0, "es")) },
+                    contentProvider = {
+                        Result.success(
+                            Content(
+                                PageMetadata(
+                                    listOf("Recipe"),
+                                    0,
+                                    "es",
+                                ),
+                                    content,
+                            ),
+                        )
+                    },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
                     dispatcher = StandardTestDispatcher(testScheduler),
@@ -288,55 +295,21 @@ class SummarizationStoreTest {
             Inert(true),
             Loading(provider.info),
             Summarizing(provider.info, parser.parse("# This is the article\n")),
-            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\n")),
-            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
-            Summarized(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
+            Summarizing(
+                provider.info,
+                parser.parse("# This is the article\nThis is some content...\n"),
+            ),
+            Summarizing(
+                provider.info,
+                parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+            ),
+            Summarized(
+                provider.info,
+                parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n"),
+            ),
         )
 
         assertEquals(expected, states)
         assertEquals("${recipeInstructions("es")} $content", llm.promptCapture)
-    }
-
-    @Test
-    fun `if extracting page metadata fails, the llm is prompted with the default instructions`() = runTest {
-        val llm = FakeLlm.successful
-        val content = "this is expected content."
-        val provider = FakeCloudProvider(llm = llm)
-        val store = SummarizationStore(
-            initialState = Inert(true),
-            reducer = ::summarizationReducer,
-            middleware = listOf(
-                SummarizationMiddleware(
-                    settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
-                    llmProvider = provider,
-                    pageContentExtractor = { Result.success(content) },
-                    pageMetadataExtractor = { Result.failure(IllegalStateException()) },
-                    errorReporter = noopReporter,
-                    scope = backgroundScope,
-                    dispatcher = StandardTestDispatcher(testScheduler),
-                ),
-            ),
-        )
-
-        val states = mutableListOf<SummarizationState>()
-        backgroundScope.launch {
-            store.stateFlow.toList(states)
-        }
-        testScheduler.advanceTimeBy(1.seconds)
-
-        store.dispatch(ViewAppeared)
-        testScheduler.advanceTimeBy(15.seconds)
-
-        val expected = listOf<SummarizationState>(
-            Inert(true),
-            Loading(provider.info),
-            Summarizing(provider.info, parser.parse("# This is the article\n")),
-            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\n")),
-            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
-            Summarized(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
-        )
-
-        assertEquals(expected, states)
-        assertEquals("${defaultInstructions("en")} $content", llm.promptCapture)
     }
 }

@@ -18,6 +18,7 @@ import mozilla.components.feature.summarize.SummarizationRequested
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.ViewAppeared
 import mozilla.components.feature.summarize.ViewDismissed
+import mozilla.components.feature.summarize.content.Content
 import mozilla.components.feature.summarize.content.PageMetadata
 import mozilla.components.lib.state.Store
 import mozilla.components.support.test.robolectric.testContext
@@ -241,10 +242,7 @@ class SummarizationTelemetryMiddlewareTest {
     private fun createContentExtractedAction(
         content: String = "test content",
         pageMetadata: PageMetadata = PageMetadata(),
-    ) = ContentExtracted(
-        pageMetadata = pageMetadata,
-        charCount = content.length
-    )
+    ) = ContentExtracted(Content(pageMetadata, content))
 
     private fun invokeMiddleware(action: SummarizationAction) {
         middleware(

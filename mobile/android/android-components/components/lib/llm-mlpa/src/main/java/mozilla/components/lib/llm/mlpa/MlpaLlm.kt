@@ -5,8 +5,6 @@
 package mozilla.components.lib.llm.mlpa
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.Prompt
 import mozilla.components.lib.llm.mlpa.service.AuthorizationToken
@@ -19,9 +17,10 @@ internal class MlpaLlm(
     val chatService: ChatService,
     val authorizationToken: AuthorizationToken,
 ) : Llm {
-    override suspend fun prompt(prompt: Prompt): Flow<String> = flow {
-        emitAll(chatService.completion(authorizationToken, prompt.asRequest))
-    }
+    override suspend fun prompt(prompt: Prompt): Flow<String> = chatService.completion(
+        authorizationToken,
+        request = prompt.asRequest,
+    )
 }
 
 internal val Prompt.asRequest
