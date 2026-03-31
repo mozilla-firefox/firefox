@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
- * A feature that can be enabled or disabled by AI controls.
+ * Metadata defining an AI Feature.
  */
-interface AIControllableFeature {
+interface AIFeatureMetadata {
     /**
      * A unique identifier for an [AIControllableFeature].
      */
@@ -27,7 +27,12 @@ interface AIControllableFeature {
 
     val id: FeatureId
     val description: Description
+}
 
+/**
+ * A feature that can be enabled or disabled by AI controls.
+ */
+interface AIControllableFeature : AIFeatureMetadata {
     val isEnabled: Flow<Boolean>
 
     /**
@@ -40,16 +45,16 @@ interface AIControllableFeature {
          * Creates a simple in-memory implementation of [AIControllableFeature] for use in tests or previews.
          */
         fun inMemory(
-            id: FeatureId = FeatureId("inMemory"),
-            description: Description = Description(0, 0),
+            id: AIFeatureMetadata.FeatureId = AIFeatureMetadata.FeatureId("inMemory"),
+            description: AIFeatureMetadata.Description = AIFeatureMetadata.Description(0, 0),
             initialEnabled: Boolean = false,
         ): AIControllableFeature = InMemoryAIControllableFeature(id, description, initialEnabled)
     }
 }
 
 private class InMemoryAIControllableFeature(
-    override val id: AIControllableFeature.FeatureId,
-    override val description: AIControllableFeature.Description,
+    override val id: AIFeatureMetadata.FeatureId,
+    override val description: AIFeatureMetadata.Description,
     initialEnabled: Boolean,
 ) : AIControllableFeature {
     private val _isEnabled = MutableStateFlow(initialEnabled)

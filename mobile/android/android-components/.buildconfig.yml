@@ -1431,6 +1431,7 @@ projects:
     upstream_dependencies:
     - components:browser-errorpages
     - components:compose-base
+    - components:concept-ai-controls
     - components:concept-base
     - components:concept-engine
     - components:concept-fetch

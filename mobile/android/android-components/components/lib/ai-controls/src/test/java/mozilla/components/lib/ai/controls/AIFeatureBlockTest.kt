@@ -7,6 +7,7 @@ package mozilla.components.lib.ai.controls
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.ai.controls.AIControllableFeature
+import mozilla.components.concept.ai.controls.AIFeatureMetadata
 import mozilla.components.concept.ai.controls.AIFeatureRegistry
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -28,11 +29,11 @@ class AIFeatureBlockTest {
     fun `block disables all registered features`() = runTest {
         val registry = AIFeatureRegistry.default()
         val featureA = AIControllableFeature.inMemory(
-            id = AIControllableFeature.FeatureId("a"),
+            id = AIFeatureMetadata.FeatureId("a"),
             initialEnabled = true,
         )
         val featureB = AIControllableFeature.inMemory(
-            id = AIControllableFeature.FeatureId("b"),
+            id = AIFeatureMetadata.FeatureId("b"),
             initialEnabled = true,
         )
         registry.register(featureA)
@@ -69,11 +70,11 @@ class AIFeatureBlockTest {
     fun `unblock enables all registered features`() = runTest {
         val registry = AIFeatureRegistry.default()
         val featureA = AIControllableFeature.inMemory(
-            id = AIControllableFeature.FeatureId("a"),
+            id = AIFeatureMetadata.FeatureId("a"),
             initialEnabled = false,
         )
         val featureB = AIControllableFeature.inMemory(
-            id = AIControllableFeature.FeatureId("b"),
+            id = AIFeatureMetadata.FeatureId("b"),
             initialEnabled = false,
         )
         registry.register(featureA)

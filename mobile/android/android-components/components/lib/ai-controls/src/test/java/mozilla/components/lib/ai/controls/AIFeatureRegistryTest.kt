@@ -5,6 +5,7 @@
 package mozilla.components.lib.ai.controls
 
 import mozilla.components.concept.ai.controls.AIControllableFeature
+import mozilla.components.concept.ai.controls.AIFeatureMetadata
 import mozilla.components.concept.ai.controls.AIFeatureRegistry
 import org.junit.Test
 
@@ -13,7 +14,7 @@ class AIFeatureRegistryTest {
     fun `registry cannot re-register features`() {
         val registry = AIFeatureRegistry.default()
         val featureA = AIControllableFeature.inMemory(
-            id = AIControllableFeature.FeatureId("a"),
+            id = AIFeatureMetadata.FeatureId("a"),
             initialEnabled = true,
         )
 

@@ -117,6 +117,12 @@
     <!-- Disclaimer message -->
     <string name="mozac_feature_summarize_disclaimer_message">AI can make mistakes</string>
 
+    <!-- Title for the page summary AI controllable feature -->
+    <string name="mozac_ai_controls_page_summary_title">Page summaries</string>
+
+    <!-- Description for the page summary AI controllable feature -->
+    <string name="mozac_ai_controls_page_summary_description">Pages and summaries are never stored.</string>
+
     <!-- Keep these strings in static_strings.xml -->
 
     <!-- Name for the Fake LLM to use in place for testing. -->

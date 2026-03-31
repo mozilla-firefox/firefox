@@ -382,19 +382,19 @@
     <!-- Title for the translations AI feature toggle -->
     <string name="ai_controls_translations_title">Translations</string>
     <!-- Description for the translations AI feature toggle -->
-    <string name="ai_controls_translations_description">All translations stay private on your device. </string>
+    <string name="ai_controls_translations_description" tools:ignore="UnusedResources">All translations stay private on your device. </string>
     <!-- Link text to navigate to more translations settings -->
-    <string name="ai_controls_more_translations_settings">More translations settings</string>
+    <string name="ai_controls_more_translations_settings" tools:ignore="UnusedResources">More translations settings</string>
     <!-- Title for the page summaries AI feature toggle -->
     <string name="ai_controls_page_summaries_title">Page summaries</string>
     <!-- Description for the page summaries AI feature toggle -->
-    <string name="ai_controls_page_summaries_description">Pages and summaries are never stored.</string>
+    <string name="ai_controls_page_summaries_description" tools:ignore="UnusedResources">Pages and summaries are never stored.</string>
     <!-- Link text to navigate to more page summary settings -->
     <string name="ai_controls_more_page_summary_settings">More page summary settings</string>
     <!-- Title for the voice search AI feature toggle -->
     <string name="ai_controls_voice_search_title">Voice search</string>
     <!-- Description for the voice search AI feature toggle -->
-    <string name="ai_controls_voice_search_description">Audio is converted to text by Google Speech Services.</string>
+    <string name="ai_controls_voice_search_description" tools:ignore="UnusedResources">Audio is converted to text by Google Speech Services.</string>
     <!-- Title for the block AI enhancements confirmation dialog -->
     <string name="ai_controls_block_dialog_title">Block AI enhancements?</string>
     <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->

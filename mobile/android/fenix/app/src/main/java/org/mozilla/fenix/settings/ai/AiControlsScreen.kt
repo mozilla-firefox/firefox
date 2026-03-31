@@ -28,6 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +42,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.annotation.FlexibleWindowPreview
 import mozilla.components.compose.base.button.TextButton
+import mozilla.components.concept.ai.controls.AIControllableFeature
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.LinkText
 import org.mozilla.fenix.compose.LinkTextState
@@ -53,6 +56,9 @@ import mozilla.components.ui.icons.R as iconsR
 
 @Composable
 internal fun AiControlsScreen(
+    registeredFeatures: List<AIControllableFeature> = emptyList(),
+    onFeatureToggle: (AIControllableFeature, Boolean) -> Unit = { _, _ -> },
+    onFeatureNavLinkClick: (AIFeatureMetadataDestination) -> Unit,
     onBannerLearnMoreClick: () -> Unit,
 ) {
     Surface {
@@ -75,20 +81,28 @@ internal fun AiControlsScreen(
                 onClick = {},
             )
 
-            SettingsLink(
+            NavLink(
                 text = stringResource(R.string.ai_controls_see_whats_included),
                 onClick = onBannerLearnMoreClick,
             )
 
             HorizontalDivider()
 
-            AiFeaturesSection()
+            AiFeaturesSection(
+                registeredFeatures = registeredFeatures,
+                onFeatureToggle = onFeatureToggle,
+                onFeatureNavLinkClick = onFeatureNavLinkClick,
+            )
         }
     }
 }
 
 @Composable
-private fun AiFeaturesSection() {
+private fun AiFeaturesSection(
+    registeredFeatures: List<AIControllableFeature>,
+    onFeatureToggle: (AIControllableFeature, Boolean) -> Unit,
+    onFeatureNavLinkClick: (AIFeatureMetadataDestination) -> Unit,
+) {
     SettingsSectionHeader(
         text = stringResource(R.string.ai_controls_ai_powered_features),
         modifier = Modifier.padding(
@@ -97,44 +111,25 @@ private fun AiFeaturesSection() {
         ),
     )
 
-    SwitchListItem(
-        label = stringResource(R.string.ai_controls_translations_title),
-        checked = true,
-        enabled = true,
-        description = stringResource(R.string.ai_controls_translations_description),
-        maxDescriptionLines = Int.MAX_VALUE,
-        showSwitchAfter = true,
-        onClick = {},
-    )
+    for (feature in registeredFeatures) {
+        val isEnabled by feature.isEnabled.collectAsState(initial = true)
 
-    SettingsLink(
-        text = stringResource(R.string.ai_controls_more_translations_settings),
-        onClick = {},
-    )
+        SwitchListItem(
+            label = stringResource(feature.description.titleRes),
+            checked = isEnabled,
+            enabled = true,
+            description = stringResource(feature.description.descriptionRes),
+            showSwitchAfter = true,
+            onClick = { onFeatureToggle(feature, !isEnabled) },
+        )
 
-    SwitchListItem(
-        label = stringResource(R.string.ai_controls_page_summaries_title),
-        checked = false,
-        enabled = true,
-        description = stringResource(R.string.ai_controls_page_summaries_description),
-        showSwitchAfter = true,
-        onClick = {},
-    )
-
-    SettingsLink(
-        text = stringResource(R.string.ai_controls_more_page_summary_settings),
-        onClick = {},
-    )
-
-    SwitchListItem(
-        label = stringResource(R.string.ai_controls_voice_search_title),
-        checked = true,
-        enabled = true,
-        description = stringResource(R.string.ai_controls_voice_search_description),
-        maxDescriptionLines = 2,
-        showSwitchAfter = true,
-        onClick = {},
-    )
+        feature.destination?.let {
+            NavLink(
+                text = stringResource(it.label),
+                onClick = { onFeatureNavLinkClick(it) },
+            )
+        }
+    }
 }
 
 @Composable
@@ -299,7 +294,7 @@ private fun BlockAiDialog() {
 }
 
 @Composable
-private fun SettingsLink(
+private fun NavLink(
     text: String,
     onClick: () -> Unit,
 ) {
@@ -335,6 +330,7 @@ private fun AiControlsScreenPreview(
 ) {
     FirefoxTheme(theme) {
         AiControlsScreen(
+            onFeatureNavLinkClick = {},
             onBannerLearnMoreClick = {},
         )
     }

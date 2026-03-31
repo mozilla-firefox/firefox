@@ -5,6 +5,7 @@
 package mozilla.components.lib.ai.controls
 
 import mozilla.components.concept.ai.controls.AIControllableFeature
+import mozilla.components.concept.ai.controls.AIFeatureMetadata
 import mozilla.components.concept.ai.controls.AIFeatureRegistry
 
 /**
@@ -12,7 +13,7 @@ import mozilla.components.concept.ai.controls.AIFeatureRegistry
  */
 fun AIFeatureRegistry.Companion.default() = object : AIFeatureRegistry {
     // LinkedHashMap allows us to maintain the order for later use.
-    private val features = LinkedHashMap<AIControllableFeature.FeatureId, AIControllableFeature>()
+    private val features = LinkedHashMap<AIFeatureMetadata.FeatureId, AIControllableFeature>()
 
     override fun register(feature: AIControllableFeature) {
         check(feature.id !in features.keys) {

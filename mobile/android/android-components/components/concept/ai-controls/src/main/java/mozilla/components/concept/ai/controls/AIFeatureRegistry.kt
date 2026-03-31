@@ -27,7 +27,7 @@ interface AIFeatureRegistry {
 }
 
 private class InMemoryAIFeatureRegistry : AIFeatureRegistry {
-    private val features = LinkedHashMap<AIControllableFeature.FeatureId, AIControllableFeature>()
+    private val features = LinkedHashMap<AIFeatureMetadata.FeatureId, AIControllableFeature>()
 
     override fun register(feature: AIControllableFeature) {
         features[feature.id] = feature
