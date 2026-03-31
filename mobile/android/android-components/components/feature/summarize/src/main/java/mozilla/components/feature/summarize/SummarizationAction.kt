@@ -46,7 +46,7 @@ sealed interface LlmProviderAction : SummarizationAction {
 /**
  * There was a failure in summarizing content from the current page.
  */
-data class SummarizationFailed(val exception: Llm.Exception) : SummarizationAction
+data class SummarizationFailed(val throwable: Throwable) : SummarizationAction
 
 /**
  * We've requested a response from a Llm.
@@ -54,14 +54,14 @@ data class SummarizationFailed(val exception: Llm.Exception) : SummarizationActi
 data class SummarizationRequested(val info: LlmProvider.Info) : SummarizationAction
 
 /**
+ * The Summarization has completed successfully.
+ */
+data object SummarizationCompleted : SummarizationAction
+
+/**
  * We've received a new parsed document.
  */
 data class ReceivedParsedDocument(val document: RichDocument) : SummarizationAction
-
-/**
- * We've received a response from the Llm.
- */
-data class ReceivedLlmResponse(val response: Llm.Response) : SummarizationAction
 
 /**
  * Page content has been extracted and is ready to be sent to the LLM.

@@ -35,10 +35,7 @@ class MlpaLlmTest {
         )
 
         val actual = llm.prompt(Prompt("This is my prompt")).toList()
-        val expected = listOf(
-            Llm.Response.Success.ReplyPart("Hello World!"),
-            Llm.Response.Success.ReplyFinished,
-        )
+        val expected = listOf("Hello World!")
 
         assertEquals(expectedToken?.value, AuthorizationToken.Integrity("my-test-token").value)
         assertEquals(expected, actual)

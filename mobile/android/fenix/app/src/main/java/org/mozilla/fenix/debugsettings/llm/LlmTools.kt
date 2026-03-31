@@ -18,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.concept.llm.CloudLlmProvider.State
@@ -71,15 +72,9 @@ private fun ReadyState(
             onClick = {
                 scope.launch {
                     llmResponse = ""
-                    llm.prompt(Prompt("Hello World")).collect { response ->
-                        when (response) {
-                            is Llm.Response.Failure -> {
-                                llmResponse = "There was a problem. Error code: ${response.exception.errorCode}"
-                            }
-                            is Llm.Response.Success.ReplyPart -> llmResponse += response.value
-                            else -> {}
-                        }
-                    }
+                    llm.prompt(Prompt("Hello World"))
+                        .catch { llmResponse = "There was a problem. Error: ${it.message ?: "Unknown"}" }
+                        .collect { llmResponse += it }
                 }
             },
         )

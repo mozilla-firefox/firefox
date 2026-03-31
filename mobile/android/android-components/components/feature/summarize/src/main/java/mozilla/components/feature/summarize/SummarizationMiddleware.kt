@@ -5,10 +5,11 @@
 package mozilla.components.feature.summarize
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.scan
-import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.Llm
@@ -58,19 +59,15 @@ class SummarizationMiddleware(
                 observePrompt(store, action.llm)
             }
             is SummarizationFailed -> scope.launch {
-                errorReporter.report(action.exception)
+                errorReporter.report(action.throwable)
             }
             is ContentExtracted -> scope.launch {
                 val parser = Parser()
                 action.llm.prompt(Prompt("${action.instructions} ${action.content}"))
                     // We want to accumulate and parse the values that we get from [ReplyPart]
                     // So we emit them and dispatch any other value we get from the [Llm]
-                    .transform {
-                        when (it) {
-                            is Llm.Response.Success.ReplyPart -> emit(it.value)
-                            else -> store.dispatch(ReceivedLlmResponse(it))
-                        }
-                    }
+                    .catch { store.dispatch(SummarizationFailed(it)) }
+                    .onCompletion { if (it == null) store.dispatch(SummarizationCompleted) }
                     .scan("") { acc, i -> acc + i }
                     .map { parser.parse(it) }
                     .collect { store.dispatch(ReceivedParsedDocument(it)) }
@@ -95,11 +92,7 @@ class SummarizationMiddleware(
             ),
         )
     }.onFailure {
-        store.dispatch(
-            SummarizationFailed(
-                it as? Llm.Exception ?: Llm.Exception.unknown("Unknown exception while prompting"),
-            ),
-        )
+        store.dispatch(SummarizationFailed(it))
     }
 
     private suspend fun observeCloudLlmProvider(

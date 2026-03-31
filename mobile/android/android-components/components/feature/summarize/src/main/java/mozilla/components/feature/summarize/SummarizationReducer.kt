@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.summarize
 
+import mozilla.components.concept.llm.ErrorCode
 import mozilla.components.concept.llm.Llm
 import mozilla.components.ui.richtext.ir.RichDocument
 
@@ -20,7 +21,8 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
     OffDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.Finished.LearnMoreAboutShakeConsent
     OnDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.Finished.LearnMoreAboutShakeConsent
     is SummarizationRequested -> SummarizationState.Loading(action.info)
-    is ReceivedLlmResponse -> state.applyResponse(action.response)
+    is SummarizationCompleted -> state.complete()
+    is SummarizationFailed -> SummarizationState.Error(action.throwable.summarizationError())
     is ReceivedParsedDocument -> state.updateDocument(action.document)
     is SettingsClicked -> when (state) {
         is SummarizationState.Summarized -> SummarizationState.Settings(info = state.info, document = state.document)
@@ -30,27 +32,23 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
         is SummarizationState.Settings -> SummarizationState.Summarized(info = state.info, document = state.document)
         else -> state
     }
-    is SummarizationFailed -> SummarizationState.Error(SummarizationError.SummarizationFailed(action.exception))
     is LlmProviderAction.ProviderFailed -> SummarizationState.Error(
         SummarizationError.SummarizationFailed(action.exception),
     )
     else -> state
 }
 
-internal fun SummarizationState.applyResponse(response: Llm.Response): SummarizationState {
+private fun SummarizationState.complete(): SummarizationState {
     if (this !is SummarizationState.Summarizing) return this
-    return when (response) {
-        is Llm.Response.Failure -> {
-            val contentTooLongErrorCode = 1005
-            when (response.exception.errorCode.value) {
-                contentTooLongErrorCode -> SummarizationState.Error(SummarizationError.ContentTooLong)
-                else -> SummarizationState.Error(
-                    SummarizationError.SummarizationFailed(response.exception),
-                )
-            }
-        }
-        Llm.Response.Success.ReplyFinished -> SummarizationState.Summarized(info = info, document)
-        else -> this
+    return SummarizationState.Summarized(info, document)
+}
+
+private fun Throwable.summarizationError(): SummarizationError {
+    val exception = (this as? Llm.Exception) ?: Llm.Exception.unknown(message)
+    val contentTooLong = 1005
+    return when (exception.errorCode) {
+        ErrorCode(contentTooLong) -> SummarizationError.ContentTooLong
+        else -> SummarizationError.SummarizationFailed(exception)
     }
 }
 

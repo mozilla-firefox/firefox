@@ -29,25 +29,24 @@ internal class GeminiNanoLlm(
         buildModel()
     }
 
-    override suspend fun prompt(prompt: Prompt): Flow<Llm.Response> = flow {
+    override suspend fun prompt(prompt: Prompt): Flow<String> = flow {
         streamPromptResponses(prompt)
     }
 
-    private suspend fun FlowCollector<Llm.Response>.streamPromptResponses(prompt: Prompt) = try {
+    private suspend fun FlowCollector<String>.streamPromptResponses(prompt: Prompt) = try {
         // consume replies from the model until it provides a finish reason
         logger("Beginning model response stream")
         model.generateContentStream(prompt.value).onEach { response ->
-            emit(Llm.Response.Success.ReplyPart(response.candidates[0].text))
+            emit(response.candidates[0].text)
         }.first {
             val finishReason = it.candidates[0].finishReason
             (finishReason != null).also {
                 logger("Model stream completed with: $finishReason")
             }
         }
-        emit(Llm.Response.Success.ReplyFinished)
     } catch (e: GenAiException) {
         val message = "Gemini Nano inference failed: ${e.message}"
         logger(message)
-        emit(Llm.Response.Failure(Llm.Exception.unknown(message)))
+        throw Llm.Exception.unknown(message)
     }
 }

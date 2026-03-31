@@ -11,8 +11,9 @@ import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.feature.summarize.ContentExtracted
 import mozilla.components.feature.summarize.OffDeviceSummarizationShakeConsentAction
-import mozilla.components.feature.summarize.ReceivedLlmResponse
 import mozilla.components.feature.summarize.SummarizationAction
+import mozilla.components.feature.summarize.SummarizationCompleted
+import mozilla.components.feature.summarize.SummarizationFailed
 import mozilla.components.feature.summarize.SummarizationRequested
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.ViewAppeared
@@ -111,13 +112,11 @@ class SummarizationTelemetryMiddlewareTest {
     }
 
     @Test
-    fun `WHEN Llm Reply is received THEN summarization_completed is recorded with success true`() {
+    fun `WHEN SummarizationCompleted is received THEN summarization_completed is recorded with success true`() {
         assertNull(AiSummarize.completed.testGetValue())
 
         setupFullSession()
-        invokeMiddleware(
-            ReceivedLlmResponse(Llm.Response.Success.ReplyFinished),
-        )
+        invokeMiddleware(SummarizationCompleted)
 
         val snapshot = AiSummarize.completed.testGetValue()!!
         assertEquals(1, snapshot.size)
@@ -131,14 +130,12 @@ class SummarizationTelemetryMiddlewareTest {
     }
 
     @Test
-    fun `WHEN Failure response is received THEN summarization_completed is recorded with success false`() {
+    fun `WHEN SummarizationFailed is received THEN summarization_completed is recorded with success false`() {
         assertNull(AiSummarize.completed.testGetValue())
 
         setupFullSession()
         val exception = Llm.Exception("Error", ErrorCode(1001))
-        invokeMiddleware(
-            ReceivedLlmResponse(Llm.Response.Failure(exception)),
-        )
+        invokeMiddleware(SummarizationFailed(exception))
 
         val snapshot = AiSummarize.completed.testGetValue()!!
         assertEquals(1, snapshot.size)
@@ -216,21 +213,17 @@ class SummarizationTelemetryMiddlewareTest {
         assertNull(AiSummarize.duration.testGetValue())
 
         setupFullSession()
-        invokeMiddleware(
-            ReceivedLlmResponse(Llm.Response.Success.ReplyFinished),
-        )
+        invokeMiddleware(SummarizationCompleted)
 
         assertNotNull(AiSummarize.duration.testGetValue())
     }
 
     @Test
-    fun `GIVEN cellular connection WHEN summarization completes THEN connection_type is CELLULAR`() {
+    fun `GIVEN cellular connection WHEN SummarizationCompleted THEN connection_type is CELLULAR`() {
         middleware = SummarizationTelemetryMiddleware(ConnectionType.CELLULAR)
 
         setupFullSession()
-        invokeMiddleware(
-            ReceivedLlmResponse(Llm.Response.Success.ReplyFinished),
-        )
+        invokeMiddleware(SummarizationCompleted)
 
         val extras = AiSummarize.completed.testGetValue()!!.first().extra!!
         assertEquals("CELLULAR", extras["connection_type"])

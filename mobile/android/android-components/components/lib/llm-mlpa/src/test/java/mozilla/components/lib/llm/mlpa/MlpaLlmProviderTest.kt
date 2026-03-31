@@ -4,6 +4,7 @@
 
 package mozilla.components.lib.llm.mlpa
 
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.llm.CloudLlmProvider
@@ -66,7 +67,9 @@ class MlpaLlmProviderTest {
 
             provider.prepare()
 
-            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(Prompt("This is a test prompt"))?.first()
+            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(Prompt("This is a test prompt"))
+                ?.catch {}
+                ?.collect {}
 
             assertTrue(provider.state.value is CloudLlmProvider.State.Available)
         }
@@ -88,7 +91,9 @@ class MlpaLlmProviderTest {
 
             provider.prepare()
 
-            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(Prompt("This is a test prompt"))?.first()
+            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(Prompt("This is a test prompt"))
+                ?.catch {}
+                ?.collect {}
 
             assertTrue(provider.state.value is CloudLlmProvider.State.Unavailable)
         }

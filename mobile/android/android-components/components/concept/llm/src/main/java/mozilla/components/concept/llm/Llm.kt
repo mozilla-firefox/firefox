@@ -23,10 +23,12 @@ value class ErrorCode(val value: Int)
  */
 interface Llm {
     /**
-     * A prompt request delivered to the LLM for inference, which will stream a series
-     * of [Response]s as they are made available.
+     * A prompt request delivered to the LLM for inference.
+     *
+     * @param prompt a [Prompt] that will be sent to the [Llm].
+     * @return a [Flow] of [String] of the response from the [Llm].
      */
-    suspend fun prompt(prompt: Prompt): Flow<Response>
+    suspend fun prompt(prompt: Prompt): Flow<String>
 
     /**
      * An exception thrown by an LLM, equipped with an [ErrorCode] to differentiate
@@ -48,33 +50,5 @@ interface Llm {
                 errorCode = ErrorCode(0),
             )
         }
-    }
-
-    /**
-     * A response from prompting a LLM.
-     */
-    sealed class Response {
-
-        /**
-         * A successful response from the LLM has occurred. This may include partial data,
-         * or be an indication that the reply has completed.
-         */
-        sealed class Success : Response() {
-            /**
-             * A (potentially) partial reply from the LLM. This may be a complete reply if
-             * it is short or the underlying implementation does not stream responses.
-             */
-            data class ReplyPart(val value: String) : Success()
-
-            /**
-             * An indication that the reply from the LLM is finishes.
-             */
-            data object ReplyFinished : Success()
-        }
-
-        /**
-         * A failure response from a LLM.
-         */
-        data class Failure(val exception: Llm.Exception) : Response()
     }
 }
