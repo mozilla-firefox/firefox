@@ -240,12 +240,10 @@ class SummarizationTelemetryMiddlewareTest {
 
     private fun createContentExtractedAction(
         content: String = "test content",
-        pageMetadata: PageMetadata? = null,
+        pageMetadata: PageMetadata = PageMetadata(),
     ) = ContentExtracted(
-        instructions = "summarize this",
-        content = content,
         pageMetadata = pageMetadata,
-        llm = mockk(relaxed = true),
+        charCount = content.length
     )
 
     private fun invokeMiddleware(action: SummarizationAction) {

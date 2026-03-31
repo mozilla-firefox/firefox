@@ -67,10 +67,8 @@ data class ReceivedParsedDocument(val document: RichDocument) : SummarizationAct
  * Page content has been extracted and is ready to be sent to the LLM.
  */
 data class ContentExtracted(
-    val instructions: String,
-    val content: String,
-    val pageMetadata: PageMetadata?,
-    val llm: Llm,
+    val pageMetadata: PageMetadata,
+    val charCount: Int,
 ) : SummarizationAction
 
 /**

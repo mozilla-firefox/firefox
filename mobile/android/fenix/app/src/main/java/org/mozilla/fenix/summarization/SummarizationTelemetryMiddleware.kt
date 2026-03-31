@@ -133,10 +133,10 @@ class SummarizationTelemetryMiddleware(
     private fun handleExtractedContent(action: ContentExtracted) {
         sessionTelemetry = sessionTelemetry.copy(
             contentMetrics = ContentMetrics(
-                wordCount = action.pageMetadata?.wordCount ?: -1,
-                charCount = action.content.length,
-                contentType = action.pageMetadata?.structuredDataTypes?.toString(),
-                language = action.pageMetadata?.language ?: "",
+                wordCount = action.pageMetadata.wordCount,
+                charCount = action.charCount,
+                contentType = action.pageMetadata.structuredDataTypes.toString(),
+                language = action.pageMetadata.language,
             ),
         )
         AiSummarize.started.record(

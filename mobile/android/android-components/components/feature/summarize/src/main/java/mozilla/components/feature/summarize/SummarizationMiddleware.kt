@@ -61,17 +61,6 @@ class SummarizationMiddleware(
             is SummarizationFailed -> scope.launch {
                 errorReporter.report(action.throwable)
             }
-            is ContentExtracted -> scope.launch {
-                val parser = Parser()
-                action.llm.prompt(Prompt("${action.instructions} ${action.content}"))
-                    // We want to accumulate and parse the values that we get from [ReplyPart]
-                    // So we emit them and dispatch any other value we get from the [Llm]
-                    .catch { store.dispatch(SummarizationFailed(it)) }
-                    .onCompletion { if (it == null) store.dispatch(SummarizationCompleted) }
-                    .scan("") { acc, i -> acc + i }
-                    .map { parser.parse(it) }
-                    .collect { store.dispatch(ReceivedParsedDocument(it)) }
-            }
         }
 
         next(action)
@@ -83,14 +72,18 @@ class SummarizationMiddleware(
 
         val content = pageContentExtractor.getPageContent().getOrThrow()
 
-        store.dispatch(
-            ContentExtracted(
-                instructions = pageMetadata.systemPrompt,
-                content = content,
-                pageMetadata = pageMetadata,
-                llm = llm,
-            ),
-        )
+        store.dispatch(ContentExtracted(pageMetadata, content.length))
+
+        val parser = Parser()
+
+        llm.prompt(Prompt("${pageMetadata.systemPrompt} $content"))
+            // We want to accumulate and parse the values that we get from [ReplyPart]
+            // So we emit them and dispatch any other value we get from the [Llm]
+            .catch { store.dispatch(SummarizationFailed(it)) }
+            .onCompletion { if (it == null) store.dispatch(SummarizationCompleted) }
+            .scan("") { acc, i -> acc + i }
+            .map { parser.parse(it) }
+            .collect { store.dispatch(ReceivedParsedDocument(it)) }
     }.onFailure {
         store.dispatch(SummarizationFailed(it))
     }

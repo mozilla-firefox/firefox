@@ -7,6 +7,7 @@ package mozilla.components.feature.summarize
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import mozilla.components.feature.summarize.SummarizationState.Finished
 import mozilla.components.feature.summarize.SummarizationState.Inert
@@ -16,6 +17,8 @@ import mozilla.components.feature.summarize.SummarizationState.Summarized
 import mozilla.components.feature.summarize.SummarizationState.Summarizing
 import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.feature.summarize.content.PageMetadata
+import mozilla.components.feature.summarize.ext.defaultInstructions
+import mozilla.components.feature.summarize.ext.recipeInstructions
 import mozilla.components.feature.summarize.fakes.FakeCloudProvider
 import mozilla.components.feature.summarize.fakes.FakeLlm
 import mozilla.components.feature.summarize.settings.SummarizationSettings
@@ -55,6 +58,7 @@ class SummarizationStoreTest {
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf(), 0, "en")) },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
+                    dispatcher = StandardTestDispatcher(testScheduler),
                 ),
             ),
         )
@@ -98,6 +102,7 @@ class SummarizationStoreTest {
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf(), 0, "en")) },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
+                    dispatcher = StandardTestDispatcher(testScheduler),
                 ),
             ),
         )
@@ -140,6 +145,7 @@ class SummarizationStoreTest {
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf("Article"), 0, "en")) },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
+                    dispatcher = StandardTestDispatcher(testScheduler),
                 ),
             ),
         )
@@ -181,6 +187,7 @@ class SummarizationStoreTest {
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf(), 0, "en")) },
                     errorReporter = errorReporter,
                     scope = backgroundScope,
+                    dispatcher = StandardTestDispatcher(testScheduler),
                 ),
             ),
         )
@@ -220,6 +227,7 @@ class SummarizationStoreTest {
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf("Recipe"), 0, "en")) },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
+                    dispatcher = StandardTestDispatcher(testScheduler),
                 ),
             ),
         )
@@ -262,6 +270,7 @@ class SummarizationStoreTest {
                     pageMetadataExtractor = { Result.success(PageMetadata(listOf("Recipe"), 0, "es")) },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
+                    dispatcher = StandardTestDispatcher(testScheduler),
                 ),
             ),
         )
@@ -304,6 +313,7 @@ class SummarizationStoreTest {
                     pageMetadataExtractor = { Result.failure(IllegalStateException()) },
                     errorReporter = noopReporter,
                     scope = backgroundScope,
+                    dispatcher = StandardTestDispatcher(testScheduler),
                 ),
             ),
         )
