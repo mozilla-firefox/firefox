@@ -30,7 +30,7 @@ RefPtr<UiCompositorControllerParent>
 UiCompositorControllerParent::GetFromRootLayerTreeId(
     const LayersId& aRootLayerTreeId) {
   RefPtr<UiCompositorControllerParent> controller;
-  CompositorBridgeParent::CallWithIndirectShadowTree(
+  CompositorBridgeParent::CallWithLayerTreeState(
       aRootLayerTreeId, [&](LayerTreeState& aState) -> void {
         controller = aState.mUiControllerParent;
       });
@@ -129,7 +129,7 @@ mozilla::ipc::IPCResult UiCompositorControllerParent::RecvFixedBottomOffset(
 mozilla::ipc::IPCResult UiCompositorControllerParent::RecvDefaultClearColor(
     const uint32_t& aColor) {
   LayerTreeState* state =
-      CompositorBridgeParent::GetIndirectShadowTree(mRootLayerTreeId);
+      CompositorBridgeParent::GetLayerTreeState(mRootLayerTreeId);
 
   if (state && state->mWrBridge) {
     state->mWrBridge->SetClearColor(gfx::DeviceColor::UnusualFromARGB(aColor));
@@ -142,7 +142,7 @@ mozilla::ipc::IPCResult UiCompositorControllerParent::RecvRequestScreenPixels(
     uint64_t aRequestId, gfx::IntRect aSourceRect, gfx::IntSize aDestSize) {
 #if defined(MOZ_WIDGET_ANDROID)
   LayerTreeState* state =
-      CompositorBridgeParent::GetIndirectShadowTree(mRootLayerTreeId);
+      CompositorBridgeParent::GetLayerTreeState(mRootLayerTreeId);
 
   if (state && state->mWrBridge) {
     state->mWrBridge->RequestScreenPixels(aSourceRect, aDestSize)
@@ -275,7 +275,7 @@ void UiCompositorControllerParent::InitializeForOutOfProcess() {
 void UiCompositorControllerParent::Initialize() {
   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
   LayerTreeState* state =
-      CompositorBridgeParent::GetIndirectShadowTree(mRootLayerTreeId);
+      CompositorBridgeParent::GetLayerTreeState(mRootLayerTreeId);
   MOZ_ASSERT(state);
   MOZ_ASSERT(state->mParent);
   if (!state || !state->mParent) {
@@ -297,7 +297,7 @@ void UiCompositorControllerParent::Open(
 void UiCompositorControllerParent::Shutdown() {
   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
   LayerTreeState* state =
-      CompositorBridgeParent::GetIndirectShadowTree(mRootLayerTreeId);
+      CompositorBridgeParent::GetLayerTreeState(mRootLayerTreeId);
   if (state) {
     state->mUiControllerParent = nullptr;
   }

@@ -88,7 +88,7 @@ struct APZCTreeManager::TreeBuildingState {
                     bool aIsTestLoggingEnabled)
       : mOriginatingLayersId(aOriginatingLayersId),
         mPaintLogger(aTestData, aPaintSequence, aIsTestLoggingEnabled) {
-    CompositorBridgeParent::CallWithIndirectShadowTree(
+    CompositorBridgeParent::CallWithLayerTreeState(
         aRootLayersId, [this](LayerTreeState& aState) -> void {
           mCompositorController = aState.GetCompositorController();
         });
@@ -788,7 +788,7 @@ void APZCTreeManager::SampleForWebRender(const Maybe<VsyncId>& aVsyncId,
 
   RefPtr<WebRenderBridgeParent> wrBridgeParent;
   RefPtr<CompositorController> controller;
-  CompositorBridgeParent::CallWithIndirectShadowTree(
+  CompositorBridgeParent::CallWithLayerTreeState(
       mRootLayersId, [&](LayerTreeState& aState) -> void {
         controller = aState.GetCompositorController();
         wrBridgeParent = aState.mWrBridge;
@@ -1206,7 +1206,7 @@ HitTestingTreeNode* APZCTreeManager::PrepareNodeForLayer(
   // TreeBuildingState, and update them as we change layers id during the
   // traversal
   RefPtr<GeckoContentController> geckoContentController;
-  CompositorBridgeParent::CallWithIndirectShadowTree(
+  CompositorBridgeParent::CallWithLayerTreeState(
       aLayersId, [&](LayerTreeState& lts) -> void {
         geckoContentController = lts.mController;
       });
@@ -3720,7 +3720,7 @@ LayerToParentLayerMatrix4x4 APZCTreeManager::ComputeTransformForScrollThumbNode(
 
 already_AddRefed<wr::WebRenderAPI> APZCTreeManager::GetWebRenderAPI() const {
   RefPtr<wr::WebRenderAPI> api;
-  CompositorBridgeParent::CallWithIndirectShadowTree(
+  CompositorBridgeParent::CallWithLayerTreeState(
       mRootLayersId,
       [&](LayerTreeState& aState) -> void { api = aState.mWebRenderAPI; });
   return api.forget();
@@ -3730,7 +3730,7 @@ already_AddRefed<wr::WebRenderAPI> APZCTreeManager::GetWebRenderAPI() const {
 already_AddRefed<GeckoContentController> APZCTreeManager::GetContentController(
     LayersId aLayersId) {
   RefPtr<GeckoContentController> controller;
-  CompositorBridgeParent::CallWithIndirectShadowTree(
+  CompositorBridgeParent::CallWithLayerTreeState(
       aLayersId,
       [&](LayerTreeState& aState) -> void { controller = aState.mController; });
   return controller.forget();

@@ -1192,7 +1192,7 @@ CompositorBridgeParent* WebRenderBridgeParent::GetRootCompositorBridgeParent()
   // ContentCompositorBridgeParent so we have an extra level of
   // indirection to unravel.
   CompositorBridgeParent::LayerTreeState* lts =
-      CompositorBridgeParent::GetIndirectShadowTree(GetLayersId());
+      CompositorBridgeParent::GetLayerTreeState(GetLayersId());
   if (!lts) {
     return nullptr;
   }

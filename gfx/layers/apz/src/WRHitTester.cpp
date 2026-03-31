@@ -125,7 +125,7 @@ IAPZHitTester::HitTestResult WRHitTester::GetAPZCAtPoint(
       // to fire (see bug 1634763), which is fixed in Fission mode and not
       // worth fixing in non-Fission mode.
       layersIdExists =
-          CompositorBridgeParent::HasIndirectShadowTree(result.mLayersId);
+          CompositorBridgeParent::HasLayerTreeState(result.mLayersId);
       if (FissionAutostart()) {
         MOZ_ASSERT(result.mScrollId == ScrollableLayerGuid::NULL_SCROLL_ID ||
                    !layersIdExists);
