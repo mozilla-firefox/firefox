@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -55,8 +56,13 @@ import org.mozilla.fenix.theme.Theme
 import mozilla.components.ui.icons.R as iconsR
 
 @Composable
-internal fun AiControlsScreen(
+internal fun AIControlsScreen(
     registeredFeatures: List<AIControllableFeature> = emptyList(),
+    showDialog: Boolean,
+    isBlocked: Boolean,
+    onDialogDismiss: () -> Unit,
+    onDialogConfirm: () -> Unit,
+    onToggle: (Boolean) -> Unit,
     onFeatureToggle: (AIControllableFeature, Boolean) -> Unit = { _, _ -> },
     onFeatureNavLinkClick: (AIFeatureMetadataDestination) -> Unit,
     onBannerLearnMoreClick: () -> Unit,
@@ -67,24 +73,37 @@ internal fun AiControlsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
+            if (showDialog) {
+                BlockAiDialog(
+                    onDismiss = { onDialogDismiss() },
+                    onConfirm = { onDialogConfirm() },
+                )
+            }
+
             AiChoiceBanner(onLearnMoreClick = onBannerLearnMoreClick)
 
             SwitchListItem(
                 label = stringResource(R.string.ai_controls_block_ai_title),
-                checked = false,
+                checked = isBlocked,
                 description = stringResource(
                     R.string.ai_controls_block_ai_description,
                     stringResource(R.string.app_name),
                 ),
                 maxDescriptionLines = Int.MAX_VALUE,
                 showSwitchAfter = true,
-                onClick = {},
+                onClick = { onToggle(isBlocked) },
             )
 
             NavLink(
                 text = stringResource(R.string.ai_controls_see_whats_included),
                 onClick = onBannerLearnMoreClick,
             )
+
+            if (isBlocked) {
+                BlockedInfoBanner(
+                    modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp),
+                )
+            }
 
             HorizontalDivider()
 
@@ -226,14 +245,14 @@ private fun BlockedInfoBanner(
 }
 
 @Composable
-private fun BlockAiDialog() {
+private fun BlockAiDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
     AlertDialog(
-        onDismissRequest = { },
+        onDismissRequest = onDismiss,
         title = {
             Text(
                 text = stringResource(R.string.ai_controls_block_dialog_title),
                 style = FirefoxTheme.typography.headline5,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
         },
@@ -278,13 +297,13 @@ private fun BlockAiDialog() {
         dismissButton = {
             TextButton(
                 text = stringResource(R.string.ai_controls_block_dialog_cancel),
-                onClick = { },
+                onClick = onDismiss,
             )
         },
         confirmButton = {
             TextButton(
                 text = stringResource(R.string.ai_controls_block_dialog_block),
-                onClick = { },
+                onClick = onConfirm,
                 colors = ButtonDefaults.textButtonColors(
                     contentColor = MaterialTheme.colorScheme.error,
                 ),
@@ -325,11 +344,16 @@ private fun NavLink(
 
 @FlexibleWindowPreview
 @Composable
-private fun AiControlsScreenPreview(
+private fun AIControlsScreenPreview(
     @PreviewParameter(PreviewThemeProvider::class) theme: Theme,
 ) {
     FirefoxTheme(theme) {
-        AiControlsScreen(
+        AIControlsScreen(
+            showDialog = false,
+            isBlocked = false,
+            onDialogDismiss = {},
+            onDialogConfirm = {},
+            onToggle = {},
             onFeatureNavLinkClick = {},
             onBannerLearnMoreClick = {},
         )
@@ -338,11 +362,14 @@ private fun AiControlsScreenPreview(
 
 @Preview
 @Composable
-private fun BlockAiDialogPreview(
+private fun BlockAIDialogPreview(
     @PreviewParameter(PreviewThemeProvider::class) theme: Theme,
 ) {
     FirefoxTheme(theme) {
-        BlockAiDialog()
+        BlockAiDialog(
+            onDismiss = {},
+            onConfirm = {},
+        )
     }
 }
 

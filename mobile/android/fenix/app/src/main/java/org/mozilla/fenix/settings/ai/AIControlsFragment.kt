@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.fragment.app.Fragment
@@ -21,7 +22,7 @@ import org.mozilla.fenix.theme.FirefoxTheme
 /**
  * A fragment displaying the AI Controls settings screen.
  */
-class AiControlsFragment : Fragment(), SystemInsetsPaddedFragment {
+class AIControlsFragment : Fragment(), SystemInsetsPaddedFragment {
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -30,11 +31,27 @@ class AiControlsFragment : Fragment(), SystemInsetsPaddedFragment {
     ): View = content {
         val registry = requireComponents.aiFeatureRegistry
         val features = remember { registry.getFeatures() }
+        val featureBlock = requireComponents.aiControlsFeatureBlock
         val scope = rememberCoroutineScope()
 
+        val aiBlockUiController = remember {
+            AIBlockUIController.default(
+                featureBlock = featureBlock,
+                scope = scope,
+            )
+        }
+
+        val showDialog = aiBlockUiController.showDialogFlow.collectAsState()
+        val isBlocked = featureBlock.isBlocked.collectAsState(initial = false)
+
         FirefoxTheme {
-            AiControlsScreen(
+            AIControlsScreen(
                 registeredFeatures = features,
+                showDialog = showDialog.value,
+                isBlocked = isBlocked.value,
+                onDialogDismiss = { aiBlockUiController.onDialogDismiss() },
+                onDialogConfirm = { aiBlockUiController.onDialogConfirm() },
+                onToggle = { enabled -> aiBlockUiController.onToggle(enabled) },
                 onFeatureToggle = { feature, enabled ->
                     scope.launch { feature.set(enabled) }
                 },

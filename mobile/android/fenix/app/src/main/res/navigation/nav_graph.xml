@@ -876,7 +876,7 @@
         android:label="@string/customize_wallpapers"/>
     <fragment
         android:id="@+id/aiControlsFragment"
-        android:name="org.mozilla.fenix.settings.ai.AiControlsFragment"
+        android:name="org.mozilla.fenix.settings.ai.AIControlsFragment"
         android:label="@string/preferences_ai_controls">
         <action
             android:id="@+id/action_aiControlsFragment_to_translationsSettingsFragment"
