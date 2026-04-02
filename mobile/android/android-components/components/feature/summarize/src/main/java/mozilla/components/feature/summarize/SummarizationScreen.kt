@@ -196,8 +196,19 @@ private fun SummarizationScreenContent(
 private fun ApplyHaptics(state: SummarizationState) {
     val haptic = LocalHapticFeedback.current
     LaunchedEffect(state) {
-        if (state.isSummarized) {
-            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+        when (state) {
+            is SummarizationState.Inert -> {
+                if (state.initializedWithShake) {
+                    haptic.performHapticFeedback(HapticFeedbackType.ToggleOn)
+                }
+            }
+            is SummarizationState.Summarized -> {
+                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+            }
+            is SummarizationState.Error -> {
+                haptic.performHapticFeedback(HapticFeedbackType.Reject)
+            }
+            else -> {}
         }
     }
 }
