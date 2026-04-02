@@ -273,6 +273,8 @@ fun interface ChatService {
         val model: ModelID,
         val messages: List<Message>,
         val stream: Boolean = true,
+        val temperature: Float = 0.1f,
+        @SerialName("top_p") val topP: Float = 0.01f,
     ) {
         /**
          * Identifier of a model supported by MLPA.

@@ -11,7 +11,7 @@ import org.junit.Test
 
 class RequestSerializationTest {
 
-    val json = Json { ignoreUnknownKeys = true }
+    val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     @Test
     fun `authentication service request gets serialized to json correctly`() {
@@ -41,7 +41,7 @@ class RequestSerializationTest {
         )
 
         assertEquals(
-            "{\"model\":\"moz-summarization\",\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}",
+            "{\"model\":\"moz-summarization\",\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}],\"stream\":true,\"temperature\":0.1,\"top_p\":0.01}",
             json.encodeToString(request),
         )
     }
