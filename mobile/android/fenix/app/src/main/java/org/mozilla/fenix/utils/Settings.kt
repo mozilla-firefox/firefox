@@ -2668,7 +2668,7 @@ class Settings(
 
     var aiControlsFeatureFlagEnabled by booleanPreference(
         key = appContext.getPreferenceKey(R.string.pref_key_enable_ai_controls),
-        default = Config.channel.isDebug,
+        default = Config.channel.isNightlyOrDebug,
     )
 
     /**
