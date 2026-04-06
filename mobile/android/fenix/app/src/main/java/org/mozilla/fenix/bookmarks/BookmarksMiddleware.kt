@@ -465,14 +465,16 @@ internal class BookmarksMiddleware(
             expansionState = when {
                 // when we are expanding folders, we need to find all their children that could also be selected
                 shouldOpen -> SelectFolderExpansionState.Open(
-                    children = loadedNode.children.orEmpty().mapNotNull { node ->
-                        loadAsSelectableFolder(
-                            guid = node.guid,
-                            indentation = indentation + 1,
-                            shouldOpen = false,
-                            sortOrder = sortOrder,
-                        )
-                    }.sortedWith(comparator),
+                    children = loadedNode.children.orEmpty()
+                        .filter { it.type == BookmarkNodeType.FOLDER }
+                        .mapNotNull { node ->
+                            loadAsSelectableFolder(
+                                guid = node.guid,
+                                indentation = indentation + 1,
+                                shouldOpen = false,
+                                sortOrder = sortOrder,
+                            )
+                        }.sortedWith(comparator),
                 )
                 // only mark folders as expandable if they have children that could potentially be selected
                 (loadedNode.children?.any { it.type == BookmarkNodeType.FOLDER } == true) -> {
