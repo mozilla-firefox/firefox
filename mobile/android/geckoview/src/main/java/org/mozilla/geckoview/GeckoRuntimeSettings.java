@@ -820,6 +820,10 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
       new PrefWithoutDefault<Boolean>("privacy.fingerprintingProtection.pbmode");
   /* package */ final PrefWithoutDefault<String> mFingerprintingProtectionOverrides =
       new PrefWithoutDefault<>("privacy.fingerprintingProtection.overrides");
+    /* package */ final Pref<Boolean> mBrowserMlEnabled =
+            new Pref<Boolean>("browser.ml.enable", true);
+    /* package */ final Pref<Boolean> mExtensionsMlEnabled =
+            new Pref<Boolean>("extensions.ml.enable", true);
   /* package */ final Pref<Boolean> mFdlibmMathEnabled =
       new Pref<Boolean>("javascript.options.use_fdlibm_for_sin_cos_tan", false);
   /* package */ final Pref<Integer> mUserCharacteristicPingCurrentVersion =
@@ -855,6 +859,7 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
       new PrefWithoutDefault<Boolean>("browser.crashReports.requestedNeverShowAgain");
   /* package */ final PrefWithoutDefault<String> mCrliteChannel =
       new PrefWithoutDefault<String>("security.pki.crlite_channel");
+
 
   /* package */ int mPreferredColorScheme = COLOR_SCHEME_SYSTEM;
 
@@ -1046,6 +1051,48 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
     mFdlibmMathEnabled.commit(enabled);
     return this;
   }
+
+    /**
+     * Get whether the browser ML feature is enabled.
+     *
+     * @return True if the browser ML feature is enabled, or null if not set.
+     */
+    public @Nullable Boolean getBrowserMLEnabled() {
+        return mBrowserMlEnabled.get();
+    }
+
+    /**
+     * Set whether the browser ML feature should be enabled.
+     *
+     * @param enabled A flag determining whether the browser ML feature should be enabled.
+     * @return This GeckoRuntimeSettings instance.
+     */
+    public @NonNull GeckoRuntimeSettings setBrowserMlEnabled(
+            @NonNull final Boolean enabled) {
+        mBrowserMlEnabled.commit(enabled);
+        return this;
+    }
+
+    /**
+     * Get whether the extensions ML feature is enabled.
+     *
+     * @return True if the extensions ML feature is enabled, or null if not set.
+     */
+    public @Nullable Boolean getExtensionsMLEnabled() {
+        return mExtensionsMlEnabled.get();
+    }
+
+    /**
+     * Set whether the extensions ML feature should be enabled.
+     *
+     * @param enabled A flag determining whether the extensions ML feature should be enabled.
+     * @return This GeckoRuntimeSettings instance.
+     */
+    public @NonNull GeckoRuntimeSettings setExtensionsMlEnabled(
+            @NonNull final Boolean enabled) {
+        mExtensionsMlEnabled.commit(enabled);
+        return this;
+    }
 
   /**
    * Get whether Fingerprint protection is enabled in all tabs.

@@ -1281,6 +1281,68 @@ class RuntimeSettingsTest : BaseSessionTest() {
     }
 
     @Test
+    fun browserMLEnabled() {
+        val geckoRuntimeSettings = sessionRule.runtime.settings
+
+        var defaultPrefValue =
+            (sessionRule.getPrefs("browser.ml.enable").get(0)) as Boolean
+
+        assertThat(
+            "browser ml enabled pref should match setting",
+            geckoRuntimeSettings.browserMLEnabled,
+            equalTo(defaultPrefValue),
+        )
+
+        geckoRuntimeSettings.setBrowserMlEnabled(!defaultPrefValue)
+
+        assertThat(
+            "browser ml enabled setting should match after change",
+            geckoRuntimeSettings.browserMLEnabled,
+            equalTo(!defaultPrefValue),
+        )
+
+        var prefValue =
+            (sessionRule.getPrefs("browser.safebrowsing.realTime.simulation.negativeCacheEnabled").get(0)) as Boolean
+
+        assertThat(
+            "Negative cache enabled pref should match after change",
+            prefValue,
+            equalTo(!defaultPrefValue),
+        )
+    }
+
+    @Test
+    fun extensionMLEnabled() {
+        val geckoRuntimeSettings = sessionRule.runtime.settings
+
+        var defaultPrefValue =
+            (sessionRule.getPrefs("extensions.ml.enable").get(0)) as Boolean
+
+        assertThat(
+            "extensions ml enabled pref should match setting",
+            geckoRuntimeSettings.extensionsMLEnabled,
+            equalTo(defaultPrefValue),
+        )
+
+        geckoRuntimeSettings.setExtensionsMlEnabled(!defaultPrefValue)
+
+        assertThat(
+            "extensions ml enabled setting should match after change",
+            geckoRuntimeSettings.extensionsMLEnabled,
+            equalTo(!defaultPrefValue),
+        )
+
+        var prefValue =
+            (sessionRule.getPrefs("browser.safebrowsing.realTime.simulation.negativeCacheEnabled").get(0)) as Boolean
+
+        assertThat(
+            "Negative cache enabled pref should match after change",
+            prefValue,
+            equalTo(!defaultPrefValue),
+        )
+    }
+
+    @Test
     fun safeBrowsingRealTimeSimulationNegativeCacheTTLSec() {
         val geckoRuntimeSettings = sessionRule.runtime.settings
 
