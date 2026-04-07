@@ -1879,6 +1879,18 @@ class GeckoEngine(
             set(value) {
                 value?.let { runtime.settings.contentBlocking.setSafeBrowsingRealTimeSimulationNegativeCacheTTLSec(it) }
             }
+
+        override var browserML: Boolean?
+            get() = runtime.settings.browserMLEnabled
+            set(value) {
+                value?.also { runtime.settings.setBrowserMlEnabled(it) }
+            }
+
+        override var extensionsML: Boolean?
+            get() = runtime.settings.extensionsMLEnabled
+            set(value) {
+                value?.also { runtime.settings.setExtensionsMlEnabled(it) }
+            }
     }.apply {
         defaultSettings?.let {
             this.javascriptEnabled = it.javascriptEnabled
@@ -1941,6 +1953,8 @@ class GeckoEngine(
                 it.safeBrowsingRealTimeSimulationNegativeCacheEnabled
             this.safeBrowsingRealTimeSimulationNegativeCacheTTLSec =
                 it.safeBrowsingRealTimeSimulationNegativeCacheTTLSec
+            this.browserML = it.browserML
+            this.extensionsML = it.extensionsML
         }
     }
 

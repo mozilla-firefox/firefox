@@ -433,6 +433,16 @@ abstract class Settings {
      * Setting to control the negative cache TTL in seconds for Safe Browsing Real-Time simulation.
      */
     open var safeBrowsingRealTimeSimulationNegativeCacheTTLSec: Int? by UnsupportedSetting()
+
+    /**
+     * Setting to control whether the browser platform AI API is enabled.
+     */
+    open var browserML: Boolean? by UnsupportedSetting()
+
+    /**
+     * Setting to control whether the extension platform AI API is enabled.
+     */
+    open var extensionsML: Boolean? by UnsupportedSetting()
 }
 
 /**
@@ -519,6 +529,8 @@ data class DefaultSettings(
     override var safeBrowsingRealTimeSimulationCacheTTLSec: Int? = null,
     override var safeBrowsingRealTimeSimulationNegativeCacheEnabled: Boolean? = null,
     override var safeBrowsingRealTimeSimulationNegativeCacheTTLSec: Int? = null,
+    override var browserML: Boolean? = null,
+    override var extensionsML: Boolean? = null,
 ) : Settings() {
     override val desktopModeEnabled: Boolean
         get() = getDesktopMode()
