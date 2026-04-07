@@ -11,14 +11,15 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.Json.Default.decodeFromString
 import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.fetch.MutableHeaders
 import mozilla.components.concept.fetch.Request
 import mozilla.components.concept.fetch.Response
 import mozilla.components.concept.fetch.isClientError
 import mozilla.components.lib.llm.mlpa.service.ext.contentFlow
+import java.io.IOException
 
 /**
  * Default [MlpaService] implementation backed by a generic HTTP [Client].
@@ -99,20 +100,28 @@ class FetchClientMlpaService(
         )
 
         return flow {
-            client.fetch(fetchRequest).use { httpResponse ->
-                httpResponse.error?.also { throw it }
+            val httpResponse = try {
+                client.fetch(fetchRequest)
+            } catch (e: IOException) {
+                throw ChatServiceError.NetworkError(e)
+            }
+            httpResponse.use {
+                it.error?.also { error -> throw error }
 
                 if (request.stream) {
-                    emitAll(httpResponse.contentFlow)
+                    emitAll(it.contentFlow)
                 } else {
-                    emit(httpResponse.nonStreamedResponse)
+                    emit(it.nonStreamedResponse)
                 }
             }
         }.flowOn(dispatcher)
     }
 
-    private val Response.nonStreamedResponse get() =
+    private val Response.nonStreamedResponse get() = try {
         json.decodeFromString<ChatService.Response>(bodyString).choices.first().message.content
+    } catch (e: SerializationException) {
+        throw ChatServiceError.ResponseParseError(e)
+    }
 
     private val Response.bodyString get() = use { body.string(Charsets.UTF_8) }
     private val Response.retryAfter: Long? get() = headers["Retry-After"]?.toLongOrNull()
@@ -121,12 +130,20 @@ class FetchClientMlpaService(
         401 -> ChatServiceError.InvalidToken()
         403 -> ChatServiceError.UserBlocked()
         413 -> ChatServiceError.RequestTooLarge()
-        429 -> when (json.decodeFromString<ChatService.ResponseErrorCode>(bodyString).error) {
-            1 -> ChatServiceError.BudgetExceeded(retryAfter)
-            2 -> ChatServiceError.RateLimited(retryAfter)
-            else -> ChatServiceError.ServerError(status)
+        429 -> try {
+            when (json.decodeFromString<ChatService.ResponseErrorCode>(bodyString).error) {
+                1 -> ChatServiceError.BudgetExceeded(retryAfter)
+                2 -> ChatServiceError.RateLimited(retryAfter)
+                else -> ChatServiceError.ServerError(status)
+            }
+        } catch (e: SerializationException) {
+            ChatServiceError.RateLimitResponseParseError(e)
         }
-        502 -> ChatServiceError.UpstreamError(json.decodeFromString<ChatService.ResponseErrorReason>(bodyString).error)
+        502 -> try {
+            ChatServiceError.UpstreamError(json.decodeFromString<ChatService.ResponseErrorReason>(bodyString).error)
+        } catch (e: SerializationException) {
+            ChatServiceError.UpstreamResponseParseError(e)
+        }
         else -> ChatServiceError.ServerError(status)
     }
 }

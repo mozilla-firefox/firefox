@@ -73,24 +73,19 @@ class MlpaLlmProvider(
     private val chatService = ChatService { token, request ->
         mlpaService.completion(token, request)
             .catch { throwable ->
+                val error = throwable as? Llm.Exception
+                    ?: Llm.Exception(
+                        message = throwable.message ?: "missing chat service error",
+                        errorCode = unknownChatServiceError,
+                    )
                 if (throwable is ChatServiceError.InvalidToken) {
                     storage.clear()
                     _state.value = State.Available
-                } else {
-                    _state.value = State.Unavailable(
-                        throwable as? Llm.Exception
-                            ?: Llm.Exception(
-                                message = throwable.message ?: "missing chat service error",
-                                errorCode = unknownChatServiceError,
-                            ),
-                    )
                 }
-
-                // Re-throw the error so downstream consumers can handle the error
-                throw throwable
+                throw error
             }
     }
 
-    private val unknownTokenProviderError = ErrorCode(1010)
-    private val unknownChatServiceError = ErrorCode(1011)
+    private val unknownTokenProviderError = ErrorCode(1000)
+    private val unknownChatServiceError = ErrorCode(1001)
 }

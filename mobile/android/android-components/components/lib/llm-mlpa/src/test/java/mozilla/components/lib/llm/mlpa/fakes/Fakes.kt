@@ -22,6 +22,7 @@ import mozilla.components.lib.llm.mlpa.service.ChatServiceError
 import mozilla.components.lib.llm.mlpa.service.MlpaService
 import mozilla.components.lib.llm.mlpa.service.UserId
 import java.io.ByteArrayInputStream
+import java.io.IOException
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
 
@@ -110,6 +111,9 @@ class FakeClient(
             headers = headers,
             body = body,
         )
+        fun throwing(message: String = "Connection refused") = object : Client() {
+            override fun fetch(request: Request): Response = throw IOException(message)
+        }
     }
 }
 

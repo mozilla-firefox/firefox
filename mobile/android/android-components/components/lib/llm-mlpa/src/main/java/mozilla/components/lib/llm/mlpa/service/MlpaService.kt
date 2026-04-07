@@ -17,15 +17,21 @@ import mozilla.components.concept.integrity.IntegrityToken
 import mozilla.components.concept.llm.ErrorCode
 import mozilla.components.concept.llm.Llm
 
-private val INTEGRITY_HANDSHAKE_FAILURE = ErrorCode(1001)
-private val VERIFICATION_SERVICE_FAILED = ErrorCode(1002)
-private val INVALID_TOKEN = ErrorCode(1003)
-private val USER_BLOCKED = ErrorCode(1004)
-private val REQUEST_TOO_LARGE = ErrorCode(1005)
-private val BUDGET_EXCEEDED = ErrorCode(1006)
-private val RATE_LIMITED = ErrorCode(1007)
-private val UPSTREAM_ERROR = ErrorCode(1008)
-private val SERVER_ERROR = ErrorCode(1009)
+private val INTEGRITY_HANDSHAKE_FAILURE = ErrorCode(1002)
+private val VERIFICATION_SERVICE_FAILED = ErrorCode(1003)
+private val INVALID_TOKEN = ErrorCode(1004)
+private val USER_BLOCKED = ErrorCode(1005)
+private val REQUEST_TOO_LARGE = ErrorCode(1006)
+private val BUDGET_EXCEEDED = ErrorCode(1007)
+private val RATE_LIMITED = ErrorCode(1008)
+private val UPSTREAM_ERROR = ErrorCode(1009)
+private val SERVER_ERROR = ErrorCode(1010)
+private val NETWORK_ERROR = ErrorCode(1011)
+private val RESPONSE_PARSE_ERROR = ErrorCode(1012)
+private val RATE_LIMIT_RESPONSE_PARSE_ERROR = ErrorCode(1013)
+private val UPSTREAM_RESPONSE_PARSE_ERROR = ErrorCode(1014)
+private val STREAM_CONTENT_PARSE_ERROR = ErrorCode(1015)
+private val STREAM_EVENT_PARSE_ERROR = ErrorCode(1016)
 
 /**
  * Thrown when the Integrity client experiences a failure, propagating its error message.
@@ -76,6 +82,53 @@ sealed class ChatServiceError(message: String, errorCode: ErrorCode) : Llm.Excep
      * @property statusCode The HTTP status code returned.
      */
     data class ServerError(val statusCode: Int) : ChatServiceError("Server error: $statusCode", SERVER_ERROR)
+
+    /**
+     * A network error occurred while communicating with the service.
+     *
+     * @param cause The underlying network exception.
+     */
+    class NetworkError(cause: Exception) : ChatServiceError("Network error: ${cause.message}", NETWORK_ERROR)
+
+    /**
+     * The server response could not be parsed.
+     *
+     * @param cause The underlying serialization exception.
+     */
+    class ResponseParseError(cause: Exception) :
+        ChatServiceError("Response parse error: ${cause.message}", RESPONSE_PARSE_ERROR)
+
+    /**
+     * The rate-limit error response body (HTTP 429) could not be parsed.
+     *
+     * @param cause The underlying serialization exception.
+     */
+    class RateLimitResponseParseError(cause: Exception) :
+        ChatServiceError("Rate limit response parse error: ${cause.message}", RATE_LIMIT_RESPONSE_PARSE_ERROR)
+
+    /**
+     * The upstream error response body (HTTP 502) could not be parsed.
+     *
+     * @param cause The underlying serialization exception.
+     */
+    class UpstreamResponseParseError(cause: Exception) :
+        ChatServiceError("Upstream response parse error: ${cause.message}", UPSTREAM_RESPONSE_PARSE_ERROR)
+
+    /**
+     * A streamed response could not be parsed.
+     *
+     * @param cause The underlying serialization exception.
+     */
+    class StreamEventParseError(cause: Exception) :
+        ChatServiceError("Stream event parse error: ${cause.message}", STREAM_CONTENT_PARSE_ERROR)
+
+    /**
+     * A streamed response event included an error message.
+     *
+     * @param cause The underlying serialization exception.
+     */
+    class StreamError(cause: Exception) :
+        ChatServiceError("Stream event error: ${cause.message}", STREAM_EVENT_PARSE_ERROR)
 }
 
 /**

@@ -9,8 +9,10 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import mozilla.components.concept.fetch.Response
+import mozilla.components.lib.llm.mlpa.service.ChatServiceError
 import kotlin.collections.joinToString
 
 private const val DATA_PREFIX = "data: "
@@ -41,7 +43,17 @@ private fun Flow<String>.events(): Flow<Event> {
         ignoreUnknownKeys = true
     }
 
-    return map { json.decodeFromString(it) }
+    return map {
+        try {
+            json.decodeFromString(it)
+        } catch (e: SerializationException) {
+            if (it.contains("error")) {
+                throw ChatServiceError.StreamError(e)
+            } else {
+                throw ChatServiceError.StreamEventParseError(e)
+            }
+        }
+    }
 }
 
 private fun Flow<Event>.content() = map {

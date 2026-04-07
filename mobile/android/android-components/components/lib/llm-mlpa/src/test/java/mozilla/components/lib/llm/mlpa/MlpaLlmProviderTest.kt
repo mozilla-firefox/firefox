@@ -8,12 +8,15 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.llm.CloudLlmProvider
+import mozilla.components.concept.llm.ErrorCode
+import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.Prompt
 import mozilla.components.lib.llm.mlpa.fakes.FakeMlpaService
 import mozilla.components.lib.llm.mlpa.fakes.failureChatService
 import mozilla.components.lib.llm.mlpa.fakes.failureTokenProvider
 import mozilla.components.lib.llm.mlpa.fakes.invalidTokenService
 import mozilla.components.lib.llm.mlpa.fakes.successTokenProvider
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -75,7 +78,7 @@ class MlpaLlmProviderTest {
         }
 
     @Test
-    fun `GIVEN a valid LLM WHEN I prompt getting an error that is not retryable THEN the provider transitions into the unavailable state`() =
+    fun `GIVEN a valid LLM WHEN I prompt getting an error that is not retryable THEN then provider remains in ready state`() =
         runTest {
             val service = FakeMlpaService(
                 chatService = failureChatService,
@@ -95,6 +98,30 @@ class MlpaLlmProviderTest {
                 ?.catch {}
                 ?.collect {}
 
-            assertTrue(provider.state.value is CloudLlmProvider.State.Unavailable)
+            assertTrue(provider.state.value is CloudLlmProvider.State.Ready)
+        }
+
+    @Test
+    fun `GIVEN a chat service that throws a non-Llm exception WHEN I prompt THEN the rethrown exception carries the unknown chat service error code`() =
+        runTest {
+            val service = FakeMlpaService(
+                chatService = failureChatService,
+            )
+
+            val provider = MlpaLlmProvider(
+                tokenProvider = successTokenProvider,
+                storage = MlpaTokenStorage.static(),
+                mlpaService = service,
+            )
+
+            provider.prepare()
+
+            var caughtError: Throwable? = null
+            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(Prompt("This is a test prompt"))
+                ?.catch { caughtError = it }
+                ?.collect {}
+
+            assertTrue(caughtError is Llm.Exception)
+            assertEquals(ErrorCode(1001), (caughtError as Llm.Exception).errorCode)
         }
 }
