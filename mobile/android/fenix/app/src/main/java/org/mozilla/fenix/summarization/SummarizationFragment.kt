@@ -39,8 +39,6 @@ import mozilla.components.feature.summarize.settings.SummarizeSettingsState
 import mozilla.components.feature.summarize.settings.SummarizeSettingsStore
 import mozilla.components.feature.summarize.settings.summarizeSettingsReducer
 import mozilla.components.support.ktx.android.view.setNavigationBarColorCompat
-import mozilla.components.support.utils.ext.left
-import mozilla.components.support.utils.ext.right
 import mozilla.components.support.utils.ext.top
 import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.requireComponents
@@ -143,7 +141,7 @@ class SummarizationFragment : BottomSheetDialogFragment() {
                 ViewCompat.setOnApplyWindowInsetsListener(bottomSheet) { view, insets ->
                     // edge-to-edge workaround
                     // exclude the bottom insets so that we can handle the insets in compose
-                    view.setPadding(insets.left(), insets.top(), insets.right(), 0)
+                    view.setPadding(0, insets.top(), 0, 0)
                     insets
                 }
                 bottomSheet.setBackgroundResource(android.R.color.transparent)
