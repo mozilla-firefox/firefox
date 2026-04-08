@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.summarize
 
+import android.os.Build
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
@@ -116,9 +117,7 @@ private fun SummarizationScreen(
 
     SummarizationScreenScaffold(
         modifier = modifier
-            .thenConditional(Modifier.summaryLoadingGradient(loadingAlpha)) {
-                loadingAlpha > 0
-            }
+            .summaryLoadingGradientCompat(loadingAlpha)
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom))
             .nestedScroll(rememberNestedScrollInteropConnection()),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 1f - loadingAlpha),
@@ -126,6 +125,17 @@ private fun SummarizationScreen(
         SummarizationScreenContent(store, settingsStore)
     }
 }
+
+private fun Modifier.summaryLoadingGradientCompat(loadingAlpha: Float): Modifier =
+    thenConditional(
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            Modifier.summaryLoadingGradient(loadingAlpha)
+        } else {
+            Modifier
+        },
+    ) {
+        loadingAlpha > 0
+    }
 
 @Composable
 private fun SummarizationScreenContent(

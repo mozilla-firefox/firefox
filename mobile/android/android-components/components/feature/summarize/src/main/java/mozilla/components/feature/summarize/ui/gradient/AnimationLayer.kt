@@ -5,6 +5,8 @@
 package mozilla.components.feature.summarize.ui.gradient
 
 import android.graphics.BlurMaskFilter
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -92,6 +94,7 @@ private data class BlobSegment(
 /**
  * Modifier that renders an animated gradient loading effect behind the content.
  */
+@RequiresApi(Build.VERSION_CODES.Q)
 @Suppress("ComposeModifierComposed")
 fun Modifier.summaryLoadingGradient(alpha: Float = 1f): Modifier = composed {
     val density = LocalDensity.current.density
@@ -137,6 +140,7 @@ fun Modifier.summaryLoadingGradient(alpha: Float = 1f): Modifier = composed {
 /**
  * Composable that fills its bounds with the animated gradient loading effect.
  */
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun GradientAnimationLayer(
     modifier: Modifier = Modifier,
@@ -144,6 +148,7 @@ fun GradientAnimationLayer(
     Box(modifier = modifier.summaryLoadingGradient())
 }
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @Preview(showBackground = true, heightDp = 800)
 @Composable
 private fun SummaryLoadingGradientPreview() {
