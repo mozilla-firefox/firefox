@@ -144,6 +144,13 @@ private fun SummarizationMenuItem(
         } else {
             MenuItemState.DISABLED
         }
+
+        val containerColor = if (summarizationMenuState.enabled) {
+            MaterialTheme.colorScheme.information
+        } else {
+            MaterialTheme.colorScheme.information.copy(alpha = 0.38f)
+        }
+
         MenuItem(
             label = stringResource(id = R.string.browser_menu_summarize_page),
             labelModifier = Modifier.wrapContentWidth(),
@@ -154,7 +161,7 @@ private fun SummarizationMenuItem(
             afterContent = {
                 if (summarizationMenuState.showNewFeatureBadge) {
                     StatusBadge(
-                        containerColor = MaterialTheme.colorScheme.information,
+                        containerColor = containerColor,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         status = stringResource(R.string.browser_menu_summarize_page_badge),
                     )

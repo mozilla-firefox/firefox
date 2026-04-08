@@ -330,7 +330,7 @@ fun IconListItem(
         contentPadding = contentPaddingListItem,
         beforeListItemAction = {
             IconListItemBeforeIcon(
-                isHighlighted = isBeforeIconHighlighted,
+                isHighlighted = enabled && isBeforeIconHighlighted,
                 painter = beforeIconPainter,
                 description = beforeIconDescription,
                 tint = if (enabled) beforeIconTint else colors.disabledLeadingIconColor,
