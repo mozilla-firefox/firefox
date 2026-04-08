@@ -102,7 +102,7 @@ internal fun SummarizingContent(
             painter = painterResource(id = iconsR.drawable.mozac_ic_logo_firefox_24),
             contentDescription = null,
             modifier = Modifier.size(48.dp),
-            tint = contentColor,
+            tint = MaterialTheme.colorScheme.onPrimary,
         )
 
         Text(
