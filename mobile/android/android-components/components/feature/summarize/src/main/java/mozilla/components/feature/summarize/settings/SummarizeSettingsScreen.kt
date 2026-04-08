@@ -101,7 +101,7 @@ fun SummarizeSettingsContent(
         Text(
             text = stringResource(id = R.string.mozac_summarize_settings_gestures),
             style = MaterialTheme.typography.titleSmall.copy(
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.tertiary,
             ),
             modifier = Modifier.padding(vertical = AcornTheme.layout.space.static100),
         )
