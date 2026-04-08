@@ -146,6 +146,8 @@ private fun SummarizationScreenContent(
 
     when (val state = state) {
         is SummarizationState.Inert -> Unit
+
+        is SummarizationState.LearnMoreAboutShakeConsent,
         is SummarizationState.ShakeConsentRequired,
             -> {
             OffDeviceSummarizationConsent(

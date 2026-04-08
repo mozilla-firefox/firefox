@@ -159,9 +159,8 @@ class SummarizationFragment : BottomSheetDialogFragment() {
         val state by storeViewModel.store.stateFlow.collectAsStateWithLifecycle()
         LaunchedEffect(state) {
             when (state) {
-                SummarizationState.Finished.LearnMoreAboutShakeConsent -> {
+                SummarizationState.LearnMoreAboutShakeConsent -> {
                     openLearnMoreLink()
-                    dismiss()
                 }
                 is SummarizationState.Finished -> {
                     dismiss()

@@ -18,8 +18,8 @@ import mozilla.components.ui.richtext.ir.RichDocument
 fun summarizationReducer(state: SummarizationState, action: SummarizationAction) = when (action) {
     is ShakeConsentRequested -> SummarizationState.ShakeConsentRequired
     OffDeviceSummarizationShakeConsentAction.CancelClicked -> SummarizationState.Finished.Cancelled
-    OffDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.Finished.LearnMoreAboutShakeConsent
-    OnDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.Finished.LearnMoreAboutShakeConsent
+    OffDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.LearnMoreAboutShakeConsent
+    OnDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.LearnMoreAboutShakeConsent
     is SummarizationRequested -> SummarizationState.Loading(action.info)
     is SummarizationCompleted -> state.complete()
     is SummarizationFailed -> SummarizationState.Error(action.throwable.summarizationError())
