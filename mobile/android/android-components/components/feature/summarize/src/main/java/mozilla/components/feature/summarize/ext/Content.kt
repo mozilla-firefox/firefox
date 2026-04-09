@@ -11,6 +11,7 @@ import mozilla.components.feature.summarize.content.PageMetadata
 val Content.prompt get() = Prompt(userPrompt = body, systemPrompt = metadata.systemPrompt)
 
 private val PageMetadata.isRecipe get() = structuredDataTypes.any { it.lowercase() == "recipe" }
+internal val PageMetadata.shouldUseReaderModeContent get() = isReaderable && !isRecipe
 private val PageMetadata.systemPrompt get() = if (isRecipe) {
     recipeInstructions(language)
 } else {

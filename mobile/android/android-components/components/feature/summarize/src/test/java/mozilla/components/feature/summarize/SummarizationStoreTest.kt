@@ -211,10 +211,11 @@ class SummarizationStoreTest {
     }
 
     @Test
-    fun `if the page metadata indicates a recipe, the llm is prompted with the recipe instructions`() = runTest {
+    fun `if the page metadata indicates a recipe, the llm is prompted with the recipe instructions even if the content is readerable`() = runTest {
         val llm = FakeLlm.successful
         val content = "this is expected content."
         val provider = FakeCloudProvider(llm = llm)
+        var usingReaderContent = true
         val store = SummarizationStore(
             initialState = Inert(true),
             reducer = ::summarizationReducer,
@@ -222,7 +223,15 @@ class SummarizationStoreTest {
                 SummarizationMiddleware(
                     settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
                     llmProvider = provider,
-                    contentProvider = { Result.success(Content(PageMetadata(listOf("Recipe"), 0, "en"), content)) },
+                    contentProvider = ContentProvider.fromPage(
+                        pageMetadataExtractor = {
+                            Result.success(PageMetadata(listOf("Recipe"), 0, "en", isReaderable = true))
+                        },
+                        pageContentExtractor = { options ->
+                            usingReaderContent = options.shouldUseReaderModeContent
+                            Result.success(content)
+                        },
+                    ),
                     errorReporter = noopReporter,
                     scope = backgroundScope,
                     dispatcher = StandardTestDispatcher(testScheduler),
@@ -248,8 +257,61 @@ class SummarizationStoreTest {
             Summarized(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
         )
 
+        assertFalse(usingReaderContent)
         assertEquals(expected, states)
         assertEquals(Prompt(content, recipeInstructions("en")), llm.lastPrompt)
+    }
+
+    @Test
+    fun `if the page metadata indicates readerable, we use readermode content`() = runTest {
+        val llm = FakeLlm.successful
+        val content = "this is expected content."
+        val provider = FakeCloudProvider(llm = llm)
+        var usingReaderContent = false
+        val store = SummarizationStore(
+            initialState = Inert(true),
+            reducer = ::summarizationReducer,
+            middleware = listOf(
+                SummarizationMiddleware(
+                    settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
+                    llmProvider = provider,
+                    contentProvider = ContentProvider.fromPage(
+                        pageMetadataExtractor = {
+                            Result.success(PageMetadata(listOf("Article"), 0, "en", isReaderable = true))
+                        },
+                        pageContentExtractor = { options ->
+                            usingReaderContent = options.shouldUseReaderModeContent
+                            Result.success(content)
+                        },
+                    ),
+                    errorReporter = noopReporter,
+                    scope = backgroundScope,
+                    dispatcher = StandardTestDispatcher(testScheduler),
+                ),
+            ),
+        )
+
+        val states = mutableListOf<SummarizationState>()
+        backgroundScope.launch {
+            store.stateFlow.toList(states)
+        }
+        testScheduler.advanceTimeBy(1.seconds)
+
+        store.dispatch(ViewAppeared)
+        testScheduler.advanceTimeBy(15.seconds)
+
+        val expected = listOf<SummarizationState>(
+            Inert(true),
+            Loading(provider.info),
+            Summarizing(provider.info, parser.parse("# This is the article\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\n")),
+            Summarizing(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
+            Summarized(provider.info, parser.parse("# This is the article\nThis is some content...\nThis is some *bold* content.\n")),
+        )
+
+        assertTrue(usingReaderContent)
+        assertEquals(expected, states)
+        assertEquals(Prompt(content, defaultInstructions("en")), llm.lastPrompt)
     }
 
     @Test

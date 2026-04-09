@@ -27,6 +27,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.suspendCancellableCoroutine
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.engine.pageextraction.ContentParams
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.SummarizationUi
 import mozilla.components.feature.summarize.ViewDismissed
@@ -51,10 +52,12 @@ import com.google.android.material.R as materialR
 /**
  * Gets the content for a given engine session.
  */
-private fun EngineSession?.asPageContentExtractor(): PageContentExtractor = {
+private fun EngineSession?.asPageContentExtractor(): PageContentExtractor = { options ->
     runCatching {
+        val options = ContentParams(removeBoilerplate = options.shouldUseReaderModeContent)
         suspendCancellableCoroutine { continuation ->
             this!!.getPageContent(
+                options = options,
                 onResult = { content ->
                     continuation.resume(content)
                 },
