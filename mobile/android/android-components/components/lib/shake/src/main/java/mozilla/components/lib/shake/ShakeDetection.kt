@@ -30,10 +30,10 @@ import kotlin.math.sqrt
  * defined by [sensitivity]) that we need to see to determine that a shake has happened.
  */
 fun Accelerometer.detectShakes(
-    sensitivity: ShakeSensitivity = Medium,
-    detectionWindowNs: Long = 350_000_000L,
+    sensitivity: ShakeSensitivity = Low,
+    detectionWindowNs: Long = 500_000_000L,
     cooldownPeriodNs: Long = 800_000_000L,
-    minHits: Int = 2,
+    minHits: Int = 3,
 ): Flow<Unit> = flow {
     val state = ShakeState()
     samples().collect { sample ->

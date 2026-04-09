@@ -160,12 +160,14 @@ class ShakeDetectionTest {
         // Given a flow of: two shakes, separated by 7ns
         val samples = flowOf(
             sample(timestampNs = 0L),
-            // shake - forward & backward along z-axis
+            // shake - three hits along z-axis within 4ns window
             sample(z = 2.g, timestampNs = 1L),
-            sample(z = (-1.1).g, timestampNs = 3L),
-            // shake - forward & backward along x-axis
+            sample(z = (-1.1).g, timestampNs = 2L),
+            sample(z = 2.g, timestampNs = 3L),
+            // shake - three hits along x-axis, after cooldown expires
             sample(x = 1.g, timestampNs = 10L),
-            sample(x = (-1).g, timestampNs = 13L),
+            sample(x = (-1).g, timestampNs = 11L),
+            sample(x = 1.g, timestampNs = 13L),
         )
 
         val accelerometer = FakeAccelerometer(samples)
