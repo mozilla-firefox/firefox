@@ -16,6 +16,7 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 import org.mozilla.geckoview.Autofill
+import org.mozilla.geckoview.PageExtractionController
 import org.mozilla.geckoview.test.rule.GeckoSessionTestRule
 
 /**
@@ -70,6 +71,29 @@ class PageExtractionTest : BaseSessionTest() {
                  The computed style is respected for extraction.
             """.trimIndent(),
             pageContent,
+        )
+    }
+
+    @GeckoSessionTestRule.NullDelegate(Autofill.Delegate::class)
+    @Test
+    fun removeBoilerplateStripsNonArticleContent() {
+        mainSession.loadTestPath(PAGE_EXTRACTION_READER_MODE_HTML_PATH)
+        mainSession.waitForPageStop()
+
+        val options = PageExtractionController.ContentParams(true)
+        val pageContent = sessionRule.waitForResult(
+            mainSession.sessionPageExtractor.getPageContent(options),
+        )
+        mainSession.waitForRoundTrip()
+
+        assertNotNull("Expected page content result to be non-null", pageContent)
+        assertTrue(
+            "Expected article body text to be present after boilerplate removal",
+            pageContent!!.contains("Lorem ipsum"),
+        )
+        assertTrue(
+            "Expected site header to be stripped by boilerplate removal",
+            !pageContent.contains("Site header"),
         )
     }
 

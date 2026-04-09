@@ -48,6 +48,31 @@ public class PageExtractionController {
     }
   }
 
+  /** Options for controlling how text is extracted from a page. */
+  public static class ContentParams {
+
+    /**
+     * When true, attempts to remove boilerplate content from the page using reader mode, falling
+     * back to full extraction if unavailable.
+     */
+    public final boolean removeBoilerplate;
+
+    /**
+     * Construct a new ContentParams.
+     *
+     * @param removeBoilerplate whether to remove boilerplate using reader mode
+     */
+    public ContentParams(final boolean removeBoilerplate) {
+      this.removeBoilerplate = removeBoilerplate;
+    }
+
+    /* package */ GeckoBundle toBundle() {
+      final GeckoBundle bundle = new GeckoBundle(1);
+      bundle.putBoolean("removeBoilerplate", removeBoilerplate);
+      return bundle;
+    }
+  }
+
   /**
    * Session page extractor coordinates session messaging between the page extractor actor and
    * GeckoView.
@@ -74,17 +99,29 @@ public class PageExtractionController {
     }
 
     /**
-     * Gets the page content for the current page.
+     * Gets the page content for the current page with default options.
      *
      * @return the content of the current page as a {@link String} or a {@link
      *     PageExtractionException} if an error occurs while extracting the page content
      */
     @HandlerThread
     public @NonNull GeckoResult<String> getPageContent() {
+      return getPageContent(new ContentParams(false));
+    }
+
+    /**
+     * Gets the page content for the current page using the provided options.
+     *
+     * @param options the options to control how the text is extracted
+     * @return the content of the current page as a {@link String} or a {@link
+     *     PageExtractionException} if an error occurs while extracting the page content
+     */
+    @HandlerThread
+    public @NonNull GeckoResult<String> getPageContent(@NonNull final ContentParams options) {
       ThreadUtils.assertOnHandlerThread();
       return mSession
           .getEventDispatcher()
-          .queryBundle(GET_TEXT_CONTENT_EVENT)
+          .queryBundle(GET_TEXT_CONTENT_EVENT, options.toBundle())
           .then(
               result -> {
                 if (result == null)

@@ -22,7 +22,7 @@ export class GeckoViewPageExtractor extends GeckoViewModule {
       case "GeckoView:PageExtractor:GetTextContent": {
         try {
           await this.getActor("PageExtractor")
-            .getText()
+            .getText(aData ?? {})
             .then(
               result => {
                 aCallback.onSuccess({

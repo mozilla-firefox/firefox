@@ -7,6 +7,7 @@ package mozilla.components.browser.engine.gecko
 import android.os.Looper.getMainLooper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.concept.engine.pageextraction.PageExtractionError
+import mozilla.components.support.test.any
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
 import org.junit.Assert.assertEquals
@@ -50,7 +51,7 @@ class GeckoEngineSessionPageExtractionTest {
     @Test
     fun `given page extractor returns successfully but null result, then an unexpected null error is returned`() {
         // given that page extractor returns null content
-        whenever(mockedSessionPageExtractor.pageContent)
+        whenever(mockedSessionPageExtractor.getPageContent(any()))
             .thenReturn(GeckoResult.fromValue(null))
 
         // when we attempt to get page content
@@ -70,7 +71,7 @@ class GeckoEngineSessionPageExtractionTest {
     @Test
     fun `given page extractor returns a null content exception, then an unexpected null error is returned`() {
         // given that page extractor returns a null result exception
-        whenever(mockedSessionPageExtractor.pageContent)
+        whenever(mockedSessionPageExtractor.getPageContent(any()))
             .thenReturn(GeckoResult.fromException(PageExtractionException(ERROR_NULL_RESULT)))
 
         // when we attempt to get page content
@@ -90,7 +91,7 @@ class GeckoEngineSessionPageExtractionTest {
     @Test
     fun `given page extractor returns a malformed content exception, then a malformed content error is returned`() {
         // given that page extractor returns a malformed result exception
-        whenever(mockedSessionPageExtractor.pageContent)
+        whenever(mockedSessionPageExtractor.getPageContent(any()))
             .thenReturn(GeckoResult.fromException(PageExtractionException(ERROR_MALFORMED_RESULT)))
 
         // when we attempt to get page content
@@ -110,7 +111,7 @@ class GeckoEngineSessionPageExtractionTest {
     @Test
     fun `given page extractor returns an unknown exception, then an unknown error is returned`() {
         // given that page extractor returns an unknown exception
-        whenever(mockedSessionPageExtractor.pageContent)
+        whenever(mockedSessionPageExtractor.getPageContent(any()))
             .thenReturn(GeckoResult.fromException(PageExtractionException(ERROR_UNKNOWN)))
 
         // when we attempt to get page content
@@ -130,7 +131,7 @@ class GeckoEngineSessionPageExtractionTest {
     @Test
     fun `given page extractor returns content successfully, then a the result is returned without error`() {
         // given that page extractor returns content
-        whenever(mockedSessionPageExtractor.pageContent)
+        whenever(mockedSessionPageExtractor.getPageContent(any()))
             .thenReturn(GeckoResult.fromValue("mozilla.org awesome blog"))
 
         // when we attempt to get page content

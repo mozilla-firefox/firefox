@@ -2341,6 +2341,11 @@ package org.mozilla.geckoview {
     ctor public PageExtractionController();
   }
 
+  public static class PageExtractionController.ContentParams {
+    ctor public ContentParams(boolean);
+    field public final boolean removeBoilerplate;
+  }
+
   public static class PageExtractionController.PageExtractionException extends Exception {
     ctor public PageExtractionException(@NonNull String);
     ctor public PageExtractionException(@NonNull String, Throwable);
@@ -2360,6 +2365,7 @@ package org.mozilla.geckoview {
   public static class PageExtractionController.SessionPageExtractor {
     ctor public SessionPageExtractor(GeckoSession);
     method @HandlerThread @NonNull public GeckoResult<String> getPageContent();
+    method @HandlerThread @NonNull public GeckoResult<String> getPageContent(@NonNull PageExtractionController.ContentParams);
     method @HandlerThread @NonNull public GeckoResult<PageExtractionController.PageMetadata> getPageMetadata();
   }
 
