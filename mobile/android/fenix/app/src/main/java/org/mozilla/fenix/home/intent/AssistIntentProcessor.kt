@@ -28,7 +28,7 @@ class AssistIntentProcessor : HomeIntentProcessor {
                 directions = NavGraphDirections.actionGlobalHome(
                     searchAccessPoint = MetricsUtils.Source.DIGITAL_ASSISTANT,
                     focusOnAddressBar = true,
-                    startVoiceSearch = true,
+                    startVoiceSearch = settings.shouldShowVoiceSearch,
                 ),
             )
         } else {
