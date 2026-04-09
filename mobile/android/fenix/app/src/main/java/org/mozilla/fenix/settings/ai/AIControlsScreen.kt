@@ -139,6 +139,7 @@ private fun AiFeaturesSection(
             checked = isEnabled,
             enabled = true,
             description = stringResource(feature.description.descriptionRes),
+            maxDescriptionLines = Int.MAX_VALUE,
             showSwitchAfter = true,
             onClick = { onFeatureToggle(feature, !isEnabled) },
         )
