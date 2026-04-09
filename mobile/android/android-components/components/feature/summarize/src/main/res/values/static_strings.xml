@@ -81,8 +81,11 @@
     <!-- Title for the info error screen -->
     <string name="mozac_summarize_info_error_title">Can’t summarize right now</string>
 
-    <!-- Generic fallback message for the info error screen. %1$d is an error code. -->
-    <string name="mozac_summarize_info_error_message">Try again later. Error code: %1$d</string>
+    <!-- Generic fallback message for the info error screen -->
+    <string name="mozac_summarize_info_error_message">Try again later.</string>
+
+    <!-- Error code shown on long press of the error icon. %1$d is an error code. -->
+    <string name="mozac_summarize_info_error_code">Error code: %1$d</string>
 
     <!-- Loading text displayed while a page summary is being generated -->
     <string name="mozac_feature_summarize_loading_title" translatable="false">Summarizing…</string>
