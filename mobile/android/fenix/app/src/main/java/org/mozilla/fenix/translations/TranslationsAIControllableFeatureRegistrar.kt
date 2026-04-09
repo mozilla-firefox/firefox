@@ -9,7 +9,6 @@ import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -33,21 +32,20 @@ class TranslationsAIControllableFeatureRegistrar(
 
         job = scope.launch {
             browserStore.stateFlow
-                .distinctUntilChangedBy { it.translationEngine.isEngineSupported != null }
-                .filter { it.translationEngine.isEngineSupported != null }
+                .distinctUntilChangedBy { it.translationEngine.isEngineSupported }
                 .onEach { state ->
-                    val isEngineSupported = state.translationEngine.isEngineSupported == true
-                    val isFeatureRegistered = aiRegistry
-                        .getFeatures()
-                        .map { it.id }
-                        .contains(TranslationsAIControllableFeature.id)
-                    if (isEngineSupported && !isFeatureRegistered) {
-                        aiRegistry.register(
-                            TranslationsAIControllableFeature(
-                                settings = translationsEnabledSettings,
-                                browserStore = browserStore,
-                            ),
-                        )
+                    if (state.translationEngine.isEngineSupported != false) {
+                        val isFeatureRegistered = aiRegistry
+                            .getFeatures()
+                            .any { it.id == TranslationsAIControllableFeature.id }
+                        if (!isFeatureRegistered) {
+                            aiRegistry.register(
+                                TranslationsAIControllableFeature(
+                                    settings = translationsEnabledSettings,
+                                    browserStore = browserStore,
+                                ),
+                            )
+                        }
                     }
                 }
                 .first()
