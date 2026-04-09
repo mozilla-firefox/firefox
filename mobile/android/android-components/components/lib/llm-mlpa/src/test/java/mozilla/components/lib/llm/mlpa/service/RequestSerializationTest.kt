@@ -36,12 +36,13 @@ class RequestSerializationTest {
         val request = ChatService.Request(
             model = ChatService.Request.ModelID.mozSummarization,
             messages = listOf(
+                ChatService.Request.Message.system("system prompt"),
                 ChatService.Request.Message.user("hello"),
             ),
         )
 
         assertEquals(
-            "{\"model\":\"moz-summarization\",\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}],\"stream\":true,\"temperature\":0.1,\"top_p\":0.01}",
+            "{\"model\":\"moz-summarization\",\"messages\":[{\"role\":\"system\",\"content\":\"system prompt\"},{\"role\":\"user\",\"content\":\"hello\"}],\"stream\":true,\"temperature\":0.1,\"top_p\":0.01}",
             json.encodeToString(request),
         )
     }

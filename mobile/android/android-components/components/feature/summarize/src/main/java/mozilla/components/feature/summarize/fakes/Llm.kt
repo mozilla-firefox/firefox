@@ -46,7 +46,7 @@ data class FakeLlm(
     val responses: List<String> = listOf(),
 ) : Llm {
 
-    var promptCapture = ""
+    var lastPrompt: Prompt? = null
 
     override suspend fun prompt(prompt: Prompt): Flow<String> = flow {
         for (response in responses) {
@@ -54,7 +54,7 @@ data class FakeLlm(
             delay(2.seconds)
         }
     }.also {
-        promptCapture = prompt.value
+        lastPrompt = prompt
     }
 
     companion object {

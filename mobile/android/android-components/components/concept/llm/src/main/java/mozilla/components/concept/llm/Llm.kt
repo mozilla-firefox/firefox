@@ -7,10 +7,15 @@ package mozilla.components.concept.llm
 import kotlinx.coroutines.flow.Flow
 
 /**
- * A value type representing a prompt that can be delivered to a LLM.
+ * A prompt that can be delivered to a LLM.
+ *
+ * @param userPrompt The user message to send to the LLM.
+ * @param systemPrompt An optional system-level instruction that shapes LLM behavior.
  */
-@JvmInline
-value class Prompt(val value: String)
+data class Prompt(
+    val userPrompt: String,
+    val systemPrompt: String? = null,
+)
 
 /**
  * An integer error code that can be used to categorize failures.

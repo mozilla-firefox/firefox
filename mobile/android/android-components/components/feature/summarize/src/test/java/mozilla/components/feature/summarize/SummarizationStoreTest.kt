@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import mozilla.components.concept.llm.Prompt
 import mozilla.components.feature.summarize.SummarizationState.Finished
 import mozilla.components.feature.summarize.SummarizationState.Inert
 import mozilla.components.feature.summarize.SummarizationState.Loading
@@ -168,7 +169,7 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
-        assertEquals("${defaultInstructions("en")} $content", llm.promptCapture)
+        assertEquals(Prompt(content, defaultInstructions("en")), llm.lastPrompt)
     }
 
     @Test
@@ -248,7 +249,7 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
-        assertEquals("${recipeInstructions("en")} $content", llm.promptCapture)
+        assertEquals(Prompt(content, recipeInstructions("en")), llm.lastPrompt)
     }
 
     @Test
@@ -310,6 +311,6 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
-        assertEquals("${recipeInstructions("es")} $content", llm.promptCapture)
+        assertEquals(Prompt(content, recipeInstructions("es")), llm.lastPrompt)
     }
 }

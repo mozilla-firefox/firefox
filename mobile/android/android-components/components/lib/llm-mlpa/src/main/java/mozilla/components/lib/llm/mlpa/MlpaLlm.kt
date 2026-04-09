@@ -26,8 +26,9 @@ internal class MlpaLlm(
 internal val Prompt.asRequest
     get() = Request(
         model = ModelID.mozSummarization,
-        messages = listOf(
-            Message.user(value),
-        ),
+        messages = buildList {
+            systemPrompt?.let { add(Message.system(it)) }
+            add(Message.user(userPrompt))
+        },
         stream = true,
     )

@@ -36,7 +36,8 @@ internal class GeminiNanoLlm(
     private suspend fun FlowCollector<String>.streamPromptResponses(prompt: Prompt) = try {
         // consume replies from the model until it provides a finish reason
         logger("Beginning model response stream")
-        model.generateContentStream(prompt.value).onEach { response ->
+        val content = listOfNotNull(prompt.systemPrompt, prompt.userPrompt).joinToString("\n\n")
+        model.generateContentStream(content).onEach { response ->
             emit(response.candidates[0].text)
         }.first {
             val finishReason = it.candidates[0].finishReason

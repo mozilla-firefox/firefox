@@ -8,7 +8,7 @@ import mozilla.components.concept.llm.Prompt
 import mozilla.components.feature.summarize.content.Content
 import mozilla.components.feature.summarize.content.PageMetadata
 
-val Content.prompt get() = Prompt("${metadata.systemPrompt} $body")
+val Content.prompt get() = Prompt(userPrompt = body, systemPrompt = metadata.systemPrompt)
 
 private val PageMetadata.isRecipe get() = structuredDataTypes.any { it.lowercase() == "recipe" }
 private val PageMetadata.systemPrompt get() = if (isRecipe) {

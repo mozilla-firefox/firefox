@@ -17,6 +17,7 @@ import mozilla.components.lib.llm.mlpa.fakes.failureTokenProvider
 import mozilla.components.lib.llm.mlpa.fakes.successChatService
 import mozilla.components.lib.llm.mlpa.fakes.successTokenProvider
 import mozilla.components.lib.llm.mlpa.service.AuthorizationToken
+import mozilla.components.lib.llm.mlpa.service.ChatService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -55,5 +56,46 @@ class MlpaLlmTest {
             .toList()
 
         assertTrue(threw)
+    }
+
+    @Test
+    fun `that we attach the system prompt to the request if present`() = runTest {
+        var acutalRequest: ChatService.Request? = null
+        val llm = MlpaLlm(
+            chatService = { token, request ->
+                acutalRequest = request
+                successChatService.completion(token, request)
+            },
+            authorizationToken = AuthorizationToken.Integrity("my-test-token"),
+        )
+
+        llm.prompt(Prompt("user prompt", "system prompt")).toList()
+
+        val expected = listOf(
+            ChatService.Request.Message.system("system prompt"),
+            ChatService.Request.Message.user("user prompt"),
+        )
+
+        assertEquals(expected, acutalRequest?.messages)
+    }
+
+    @Test
+    fun `that system response is not attached to request if null`() = runTest {
+        var acutalRequest: ChatService.Request? = null
+        val llm = MlpaLlm(
+            chatService = { token, request ->
+                acutalRequest = request
+                successChatService.completion(token, request)
+            },
+            authorizationToken = AuthorizationToken.Integrity("my-test-token"),
+        )
+
+        llm.prompt(Prompt("user prompt", null)).toList()
+
+        val expected = listOf(
+            ChatService.Request.Message.user("user prompt"),
+        )
+
+        assertEquals(expected, acutalRequest?.messages)
     }
 }
