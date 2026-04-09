@@ -53,6 +53,8 @@ export type PageMetadata = {
   wordCount: number;
   // lang-tag of the page
   language: string;
+  // whether the page is likely readable by reader mode
+  isReaderable: boolean;
 };
 
 /**

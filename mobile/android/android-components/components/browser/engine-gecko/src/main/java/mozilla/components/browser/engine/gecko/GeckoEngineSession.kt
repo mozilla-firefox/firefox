@@ -908,6 +908,7 @@ class GeckoEngineSession(
                             structuredDataTypes = metadata.structuredDataTypes.toList(),
                             wordCount = metadata.wordCount,
                             language = metadata.language,
+                            isReaderable = metadata.isReaderable,
                         ),
                     )
                     GeckoResult<Unit>()

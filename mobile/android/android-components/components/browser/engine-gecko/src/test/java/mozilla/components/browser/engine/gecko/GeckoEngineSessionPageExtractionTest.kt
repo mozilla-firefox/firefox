@@ -217,7 +217,7 @@ class GeckoEngineSessionPageExtractionTest {
     @Test
     fun `given page metadata extractor returns metadata successfully, then the result is returned without error`() {
         whenever(mockedSessionPageExtractor.pageMetadata)
-            .thenReturn(GeckoResult.fromValue(PageMetadata(arrayOf("Article"), 42, "en")))
+            .thenReturn(GeckoResult.fromValue(PageMetadata(arrayOf("Article"), 42, "en", true)))
 
         var resultMetadata: mozilla.components.concept.engine.pageextraction.PageMetadata? = null
         var resultError: Throwable? = null
@@ -232,5 +232,6 @@ class GeckoEngineSessionPageExtractionTest {
         assertEquals(listOf("Article"), resultMetadata?.structuredDataTypes)
         assertEquals(42, resultMetadata?.wordCount)
         assertEquals("en", resultMetadata?.language)
+        assertTrue("Expected isReaderable to be true", resultMetadata?.isReaderable == true)
     }
 }

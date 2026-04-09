@@ -23,28 +23,35 @@ public class PageExtractionController {
     /** BCP 47 language tag of the page */
     @NonNull public final String language;
 
+    /** Whether the page is likely readable by reader mode */
+    public final boolean isReaderable;
+
     /**
      * Construct a new page metadata object.
      *
      * @param structuredDataTypes JSON-LD types as defined by Schema.org
      * @param wordCount word count of all the content on the page
      * @param language BCP 47 language tag of the page
+     * @param isReaderable whether the page is likely readable by reader mode
      */
     public PageMetadata(
         @NonNull final String[] structuredDataTypes,
         final int wordCount,
-        @NonNull final String language) {
+        @NonNull final String language,
+        final boolean isReaderable) {
       this.structuredDataTypes = structuredDataTypes;
       this.wordCount = wordCount;
       this.language = language;
+      this.isReaderable = isReaderable;
     }
 
     /* package */ static PageMetadata fromBundle(@NonNull final GeckoBundle bundle) {
       final String[] structuredDataTypes = bundle.getStringArray("structuredDataTypes");
       final int wordCount = bundle.getInt("wordCount", -1);
       final String language = bundle.getString("language");
+      final boolean isReaderable = bundle.getBoolean("isReaderable", false);
 
-      return new PageMetadata(structuredDataTypes, wordCount, language);
+      return new PageMetadata(structuredDataTypes, wordCount, language, isReaderable);
     }
   }
 

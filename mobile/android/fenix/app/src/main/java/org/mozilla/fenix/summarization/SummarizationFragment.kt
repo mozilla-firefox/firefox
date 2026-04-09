@@ -76,6 +76,7 @@ private fun EngineSession?.asPageMetadataExtractor(): PageMetadataExtractor = {
                             structuredDataTypes = metadata.structuredDataTypes,
                             wordCount = metadata.wordCount,
                             language = metadata.language,
+                            isReaderable = metadata.isReaderable,
                         ),
                     )
                 },

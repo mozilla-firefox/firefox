@@ -47,6 +47,7 @@ export class GeckoViewPageExtractor extends GeckoViewModule {
                   structuredDataTypes: result.structuredDataTypes,
                   wordCount: result.wordCount,
                   language: result.language,
+                  isReaderable: result.isReaderable,
                 });
               },
               error =>

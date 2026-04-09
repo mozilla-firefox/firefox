@@ -287,3 +287,50 @@ add_task(async function test_page_metadata_reader_mode_language() {
 
   return cleanup();
 });
+
+// isReaderable
+
+add_task(async function test_page_metadata_is_readerable_true() {
+  const { actor, cleanup } = await html`
+    <article>
+      <h1>Etymology of Mochitests</h1>
+      <p>${READERABLE_ARTICLE}</p>
+    </article>
+  `;
+
+  const { isReaderable } = await actor.getPageMetadata();
+
+  ok(isReaderable, "A page with article content is readerable.");
+
+  return cleanup();
+});
+
+add_task(async function test_page_metadata_is_readerable_false() {
+  const { actor, cleanup } = await html`<p>Short page.</p>`;
+
+  const { isReaderable } = await actor.getPageMetadata();
+
+  ok(
+    !isReaderable,
+    "A minimal page without article content is not readerable."
+  );
+
+  return cleanup();
+});
+
+add_task(async function test_page_metadata_reader_mode_is_readerable_true() {
+  const { cleanup, getPageExtractor } = await html`
+    <article>
+      <h1>Etymology of Mochitests</h1>
+      <p>${READERABLE_ARTICLE}</p>
+    </article>
+  `;
+
+  await toggleReaderMode();
+
+  const { isReaderable } = await getPageExtractor().getPageMetadata();
+
+  ok(isReaderable, "A page in reader mode returns isReaderable true.");
+
+  return cleanup();
+});

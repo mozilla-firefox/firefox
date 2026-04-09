@@ -10,9 +10,11 @@ package mozilla.components.concept.engine.pageextraction
  * @property structuredDataTypes JSON-LD types as defined by Schema.org
  * @property wordCount Word count of all the content on the page
  * @property language BCP 47 language tag of the page, or empty string if not declared
+ * @property isReaderable Whether the page is likely readable by reader mode
  */
 data class PageMetadata(
     val structuredDataTypes: List<String>,
     val wordCount: Int,
     val language: String,
+    val isReaderable: Boolean,
 )

@@ -2356,7 +2356,8 @@ package org.mozilla.geckoview {
   }
 
   public static class PageExtractionController.PageMetadata {
-    ctor public PageMetadata(@NonNull String[], int, @NonNull String);
+    ctor public PageMetadata(@NonNull String[], int, @NonNull String, boolean);
+    field public final boolean isReaderable;
     field @NonNull public final String language;
     field @NonNull public final String[] structuredDataTypes;
     field public final int wordCount;

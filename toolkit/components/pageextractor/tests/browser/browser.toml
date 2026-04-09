@@ -9,7 +9,8 @@ support-files = [
 
 ["browser_dom_extractor.js"]
 skip-if = [
-  "os == 'linux' && standalone", # Bug 2013672
+  "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && display == 'wayland' && standalone", # Bug 2013672
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && standalone", # Bug 2013672
 ]
 
 ["browser_dom_extractor_pdf.js"]
