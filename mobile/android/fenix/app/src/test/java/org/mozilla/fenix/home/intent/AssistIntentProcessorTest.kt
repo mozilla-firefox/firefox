@@ -90,6 +90,32 @@ class AssistIntentProcessorTest {
         verify { out wasNot Called }
     }
 
+    @Test
+    fun `GIVEN an intent with ACTION_ASSIST action and voice search is disabled WHEN it is processed THEN startVoiceSearch should be false`() {
+        every { settings.shouldUseComposableToolbar } returns true
+        every { settings.shouldShowVoiceSearch } returns false
+        val intent = Intent().apply {
+            action = Intent.ACTION_ASSIST
+        }
+
+        AssistIntentProcessor().process(intent, navController, out, settings)
+
+        verify {
+            navController.navigate(
+                NavGraphDirections.actionGlobalHome(
+                    sessionToDelete = null,
+                    sessionToStartSearchFor = null,
+                    focusOnAddressBar = true,
+                    startVoiceSearch = false,
+                    searchAccessPoint = MetricsUtils.Source.DIGITAL_ASSISTANT,
+                ),
+                null,
+            )
+        }
+
+        verify { out wasNot Called }
+    }
+
     companion object {
         const val TEST_WRONG_ACTION = "test-action"
     }
