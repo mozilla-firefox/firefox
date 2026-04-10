@@ -320,6 +320,16 @@ features:
         type: Boolean
         description: If true, shake to summarize will be enabled
         default: false
+    defaults:
+      - channel: developer
+        value:
+          enabled: true
+      - channel: nightly
+        value:
+          enabled: true
+      - channel: beta
+        value:
+          enabled: true
 
   setup-checklist:
     description: A feature on the home page that allows the user to track onboarding setup progress.
