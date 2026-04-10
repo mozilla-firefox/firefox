@@ -3,6 +3,9 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <resources>
     <!-- Keep these strings in static_strings.xml -->
+    <!-- Content description for the back button in the summarize settings screen -->
+    <string name="mozac_summarize_settings_back_content_description">Navigate back</string>
+
     <!-- Name for the Fake LLM to use in place for testing. -->
     <string name="mozac_summarize_fake_llm_name">Fake LLM</string>
 </resources>
