@@ -8,6 +8,7 @@
     android:id="@+id/navigationToolbar"
     android:layout_width="0dp"
     android:layout_height="0dp"
+    android:minHeight="56dp"
     app:titleMarginStart="16dp"
     app:titleMarginEnd="16dp"
     app:titleTextAppearance="@style/AppBarTitleTextStyle"

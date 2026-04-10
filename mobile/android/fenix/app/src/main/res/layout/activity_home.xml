@@ -25,7 +25,7 @@
             android:inflatedId="@id/navigationToolbar"
             android:layout="@layout/navigation_toolbar"
             android:layout_width="match_parent"
-            android:layout_height="56dp" />
+            android:layout_height="wrap_content" />
 
         <!--The navGraph is set dynamically in NavGraphProvider -->
         <androidx.fragment.app.FragmentContainerView
