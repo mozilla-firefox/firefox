@@ -194,7 +194,9 @@ class SettingsCustomizeTest {
         }.openCustomizeSubMenu {
             verifyToolbarLayout()
             verifyToolbarLayoutPreference("Simple")
+            scrollToExpandedToolbarOption()
             selectExpandedToolbarLayout()
+            scrollToAddressBarLocation()
             clickBottomToolbarToggle()
             verifyAddressBarPositionPreference("Bottom")
             verifyToolbarLayout()
@@ -416,6 +418,7 @@ class SettingsCustomizeTest {
         }.openCustomizeSubMenu {
             clickTopToolbarToggle()
             verifyToolbarLayout()
+            scrollToExpandedToolbarOption()
             selectExpandedToolbarLayout()
             verifyToolbarLayoutPreference("Expanded")
             scrollToTheScrollToHideToolbarOption()

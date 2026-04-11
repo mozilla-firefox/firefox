@@ -274,6 +274,10 @@ class SettingsSubMenuCustomizeRobot {
         Log.i(TAG, "clickShowTabBarToggle: Clicked the \"Show tab bar\" toggle")
     }
 
+    fun scrollToExpandedToolbarOption() {
+        scrollToElementByText("Expanded")
+    }
+
     fun scrollToTheScrollToHideToolbarOption() {
         scrollToElementByText("Scroll to hide toolbar")
     }
