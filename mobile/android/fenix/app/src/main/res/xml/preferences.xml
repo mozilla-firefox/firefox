@@ -101,6 +101,12 @@
             app:isPreferenceVisible="false"
             android:title="@string/preferences_ai_controls" />
 
+        <androidx.preference.Preference
+            android:key="@string/pref_key_import_bookmarks"
+            app:iconSpaceReserved="false"
+            app:isPreferenceVisible="false"
+            android:title="@string/preferences_import_bookmarks" />
+
         <org.mozilla.fenix.settings.DefaultBrowserPreference
             android:key="@string/pref_key_make_default_browser"
             app:iconSpaceReserved="false"

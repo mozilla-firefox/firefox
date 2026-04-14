@@ -391,4 +391,9 @@
     <!--  The button text to close all tab groups in the tab group creation tool. -->
     <string name="debug_drawer_tab_group_tools_creation_button_remove_all">Remove all tab groups</string>
 
+
+    <!-- Import Bookmarks pref title -->
+    <string name="preferences_import_bookmarks">Import Bookmarks</string>
+    <!-- Label for the secret settings preference to enable Import Bookmarks -->
+    <string name="preferences_debug_settings_import_bookmarks">Enable Import Bookmarks</string>
 </resources>

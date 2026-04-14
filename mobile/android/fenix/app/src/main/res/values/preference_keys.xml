@@ -20,7 +20,9 @@
     <string name="pref_key_language" translatable="false">pref_key_language</string>
     <string name="pref_key_translation" translatable="false">pref_key_translation</string>
     <string name="pref_key_ai_controls" translatable="false">pref_key_ai_controls</string>
+    <string name="pref_key_import_bookmarks" translatable="false">pref_key_import_bookmarks</string>
     <string name="pref_key_enable_ai_controls" translatable="false">pref_key_enable_ai_controls</string>
+    <string name="pref_key_enable_import_bookmarks" translatable="false">pref_key_enable_import_bookmarks</string>
     <string name="pref_key_enable_ip_protection" translatable="false">pref_key_enable_ip_protection</string>
     <string name="pref_key_ip_protection_settings" translatable="false">pref_key_ip_protection_settings</string>
     <string name="pref_key_data_choices" translatable="false">pref_key_data_choices</string>
