@@ -31,7 +31,7 @@ class TranslationsAIControllableFeature(
         override val description = AIFeatureMetadata.Description(
             titleRes = R.string.ai_controls_translations_title,
             descriptionRes = R.string.ai_controls_translations_description,
-            iconRes = iconsR.drawable.mozac_ic_lightning_24,
+            iconRes = iconsR.drawable.mozac_ic_translate_24,
         )
     }
 }
