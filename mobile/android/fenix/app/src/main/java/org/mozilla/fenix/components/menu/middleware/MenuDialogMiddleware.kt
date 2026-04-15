@@ -273,6 +273,10 @@ class MenuDialogMiddleware(
 
         val parentGuid = parentNode?.guid ?: BookmarkRoot.Mobile.id
 
+        if (targetParentFolderId != parentGuid) {
+            lastSavedFolderCache.setGuid(null)
+        }
+
         val guidToEdit = addBookmarkUseCase(
             url = url,
             title = selectedTab.content.title,

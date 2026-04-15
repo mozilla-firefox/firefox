@@ -491,8 +491,17 @@ class BrowserToolbarMiddleware(
 
                 selectedTab?.let {
                     scope.launch(ioDispatcher) {
-                        val parentGuid = settings.lastSavedFolderCache.getGuid() ?: BookmarkRoot.Mobile.id
-                        val parentNode = bookmarksStorage.getBookmark(parentGuid).getOrNull()
+                        val targetParentFolderId =
+                            settings.lastSavedFolderCache.getGuid() ?: BookmarkRoot.Mobile.id
+
+                        val parentNode = bookmarksStorage.getBookmark(targetParentFolderId).getOrNull()
+                            ?: bookmarksStorage.getBookmark(BookmarkRoot.Mobile.id).getOrNull()
+                        val parentGuid = parentNode?.guid ?: BookmarkRoot.Mobile.id
+
+                        if (targetParentFolderId != parentGuid) {
+                            settings.lastSavedFolderCache.setGuid(null)
+                        }
+
                         val guidToEdit = useCases.bookmarksUseCases.addBookmark(
                             url = selectedTab.content.url,
                             title = selectedTab.content.title,

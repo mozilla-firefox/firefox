@@ -243,9 +243,7 @@ internal class BookmarksMiddleware(
                     }
 
                     preReductionState.bookmarksEditBookmarkState != null -> {
-                        if (!getNavController().popBackStack()) {
-                            exitBookmarks()
-                        }
+                        val popped = getNavController().popBackStack()
                         lifecycleScope.launch {
                             preReductionState.createBookmarkInfo()?.also {
                                 val result = bookmarksStorage.updateNode(
@@ -261,6 +259,9 @@ internal class BookmarksMiddleware(
                                 }
                             }
                             store.tryDispatchLoadFor(preReductionState.currentFolder.guid)
+                            if (!popped) {
+                                exitBookmarks()
+                            }
                         }
                     }
                     // list screen cases
