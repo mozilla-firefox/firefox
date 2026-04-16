@@ -11,6 +11,7 @@ import mozilla.components.concept.ai.controls.AIFeatureMetadata
 import mozilla.components.feature.summarize.PageSummaryFeature
 import org.mozilla.fenix.R
 import org.mozilla.fenix.settings.SupportUtils
+import org.mozilla.fenix.translations.TranslationsAIControllableFeature
 
 /**
  * Defines the types of navigation destinations that AI features can map to.
@@ -37,6 +38,10 @@ val AIFeatureMetadata.destination: AIFeatureMetadataDestination? get() = when (i
     PageSummaryFeature.id -> Destination(
         id = R.id.pageSummariesSettingsFragment,
         label = R.string.ai_controls_more_page_summary_settings,
+    )
+    TranslationsAIControllableFeature.id -> Destination(
+        id = R.id.translations_settings_graph,
+        label = R.string.ai_controls_more_translations_settings,
     )
     else -> null
 }

@@ -342,7 +342,7 @@
     <!-- Description for the translations AI feature toggle -->
     <string name="ai_controls_translations_description">All translations stay private on your device.</string>
     <!-- Link text to navigate to more translations settings -->
-    <string name="ai_controls_more_translations_settings" tools:ignore="UnusedResources">More translations settings</string>
+    <string name="ai_controls_more_translations_settings">More translations settings</string>
     <!-- Link text to navigate to more page summary settings -->
     <string name="ai_controls_more_page_summary_settings">More page summary settings</string>
     <!-- Title for the voice search AI feature toggle -->
