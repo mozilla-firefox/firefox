@@ -63,6 +63,8 @@ internal sealed class BookmarksListSortOrder {
  *
  * @property bookmarkItems Bookmark items to be displayed in the current list screen.
  * @property selectedItems The bookmark items that are currently selected by the user for bulk actions.
+ * @property rootMenuShown Whether the root bookmarks overflow menu is shown.
+ * @property launchFilePicker Whether the file picker should be launched for bookmarks import.
  * @property sortMenuShown Whether the bookmark sorting menu is shown.
  * @property sortOrder Describes how to sort the bookmark list.
  * @property recursiveSelectedCount the total number of children of the [selectedItems] found in bookmark storage.
@@ -82,6 +84,8 @@ internal sealed class BookmarksListSortOrder {
 internal data class BookmarksState(
     val bookmarkItems: List<BookmarkItem>,
     val selectedItems: List<BookmarkItem>,
+    val rootMenuShown: Boolean,
+    val launchFilePicker: Boolean,
     val sortMenuShown: Boolean,
     val sortOrder: BookmarksListSortOrder,
     val recursiveSelectedCount: Int?,
@@ -106,6 +110,8 @@ internal data class BookmarksState(
         val default: BookmarksState = BookmarksState(
             bookmarkItems = listOf(),
             selectedItems = listOf(),
+            rootMenuShown = false,
+            launchFilePicker = false,
             sortMenuShown = false,
             sortOrder = BookmarksListSortOrder.default,
             recursiveSelectedCount = null,

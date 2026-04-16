@@ -9,8 +9,8 @@ package org.mozilla.fenix.bookmarks
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -72,6 +72,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -106,6 +107,7 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.FloatingActionButton
+import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.menu.DropdownMenu
 import mozilla.components.compose.base.menu.MenuItem
@@ -138,6 +140,7 @@ import org.mozilla.fenix.compose.list.SelectableFaviconListItem
 import org.mozilla.fenix.compose.list.SelectableIconListItem
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.getRootView
+import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.search.SearchFragmentAction.SuggestionClicked
 import org.mozilla.fenix.search.SearchFragmentAction.SuggestionSelected
 import org.mozilla.fenix.search.SearchFragmentState
@@ -284,6 +287,17 @@ private fun BookmarksList(
     }
 
     val fabHeight = remember { mutableIntStateOf(0) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { _ -> }
+
+    LaunchedEffect(state.launchFilePicker) {
+        if (state.launchFilePicker) {
+            filePickerLauncher.launch("text/html")
+            store.dispatch(FilePickerDismissed)
+        }
+    }
 
     LaunchedEffect(state.bookmarksSnackbarState) {
         when (state.bookmarksSnackbarState) {
@@ -863,6 +877,18 @@ private fun BookmarksListTopBarActionsNoSelection(
                 tint = MaterialTheme.colorScheme.onSurface,
             )
         }
+    } else if (LocalContext.current.settings().importBookmarksFeatureFlagEnabled) {
+        Box {
+            IconButton(onClick = { store.dispatch(RootMenuClicked) }) {
+                Icon(
+                    painter = painterResource(iconsR.drawable.mozac_ic_ellipsis_vertical_24),
+                    contentDescription = stringResource(R.string.bookmark_import_bookmarks_button_content_description),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            RootBookmarksOverflowMenu(store)
+        }
     }
 }
 
@@ -1260,6 +1286,25 @@ private fun SelectFolderSortOverflowMenu(store: BookmarksStore) {
     )
 }
 
+@Composable
+private fun RootBookmarksOverflowMenu(store: BookmarksStore) {
+    val showMenu by remember { store.stateFlow.map { store.state.rootMenuShown } }
+        .collectAsState(initial = store.state.rootMenuShown)
+
+    val menuItems = listOf(
+        MenuItem.TextItem(
+            text = Text.Resource(R.string.bookmark_import_menu_button),
+            onClick = { store.dispatch(ImportFileClicked) },
+        ),
+    )
+
+    DropdownMenu(
+        menuItems = menuItems,
+        expanded = showMenu,
+        onDismissRequest = { store.dispatch(RootMenuDismissed) },
+    )
+}
+
 private sealed class EmptyListState {
     data object NotAuthenticated : EmptyListState()
     data object Authenticated : EmptyListState()
@@ -1274,21 +1319,6 @@ private fun BookmarksState.emptyListState(): EmptyListState? {
         !isSignedIntoSync -> EmptyListState.NotAuthenticated
         else -> null
     }
-}
-
-@DrawableRes
-private fun EmptyListState.drawableId(): Int = when (this) {
-    is EmptyListState.NotAuthenticated,
-    EmptyListState.Authenticated,
-    -> R.drawable.bookmarks_star_illustration
-    EmptyListState.Folder -> R.drawable.bookmarks_folder_illustration
-}
-
-@StringRes
-private fun EmptyListState.descriptionId(): Int = when (this) {
-    is EmptyListState.NotAuthenticated -> R.string.bookmark_empty_list_guest_description
-    EmptyListState.Authenticated -> R.string.bookmark_empty_list_authenticated_description
-    EmptyListState.Folder -> R.string.bookmark_empty_list_folder_description
 }
 
 @Composable
@@ -1307,41 +1337,82 @@ private fun EmptyList(
             modifier = Modifier.width(FirefoxTheme.layout.size.containerMaxWidth),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Image(
-                painter = painterResource(state.drawableId()),
-                contentDescription = null,
-            )
-
-            Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static200))
-
-            Text(
-                text = stringResource(R.string.bookmark_empty_list_title),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = FirefoxTheme.typography.headline6,
-            )
-
-            Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static100))
-
-            Text(
-                text = stringResource(state.descriptionId()),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = FirefoxTheme.typography.body2,
-                textAlign = TextAlign.Center,
-            )
-
-            if (state is EmptyListState.NotAuthenticated) {
-                Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static300))
-
-                FilledButton(
-                    text = stringResource(R.string.bookmark_empty_list_guest_cta),
-                    onClick = { dispatcher(SignIntoSyncClicked) },
-                    modifier = Modifier
-                        .heightIn(36.dp)
-                        .fillMaxWidth(),
-                )
+            when (state) {
+                is EmptyListState.NotAuthenticated -> RootEmptyContent(dispatcher, showSignIn = true)
+                EmptyListState.Authenticated -> RootEmptyContent(dispatcher, showSignIn = false)
+                EmptyListState.Folder -> FolderEmptyContent()
             }
         }
     }
+}
+
+@Composable
+private fun RootEmptyContent(
+    dispatcher: (BookmarksAction) -> Unit,
+    showSignIn: Boolean,
+) {
+    Image(
+        painter = painterResource(iconsR.drawable.mozac_ic_kit_bookmarks_empty_state),
+        contentDescription = null,
+    )
+
+    Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static200))
+
+    Text(
+        text = stringResource(R.string.bookmark_empty_list_root_title),
+        color = MaterialTheme.colorScheme.onSurface,
+        style = FirefoxTheme.typography.headline6,
+        textAlign = TextAlign.Center,
+    )
+
+    Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static300))
+
+    if (LocalContext.current.settings().importBookmarksFeatureFlagEnabled) {
+        FilledButton(
+            text = stringResource(R.string.bookmark_import_menu_button),
+            onClick = { dispatcher(ImportFileClicked) },
+            modifier = Modifier
+                .heightIn(40.dp)
+                .fillMaxWidth(),
+        )
+    }
+
+    if (showSignIn) {
+        Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static200))
+
+        OutlinedButton(
+            text = stringResource(R.string.bookmark_empty_list_guest_cta),
+            onClick = { dispatcher(SignIntoSyncClicked) },
+            modifier = Modifier
+                .heightIn(40.dp)
+                .fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun FolderEmptyContent() {
+    Image(
+        painter = painterResource(R.drawable.bookmarks_folder_illustration),
+        contentDescription = null,
+    )
+
+    Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static200))
+
+    Text(
+        text = stringResource(R.string.bookmark_empty_list_title),
+        color = MaterialTheme.colorScheme.onSurface,
+        style = FirefoxTheme.typography.headline6,
+    )
+
+    Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static100))
+
+    Text(
+        text = stringResource(R.string.bookmark_empty_list_folder_description),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = FirefoxTheme.typography.body2,
+        textAlign = TextAlign.Center,
+    )
 }
 
 @Composable
@@ -1921,6 +1992,8 @@ private fun EditBookmarkScreenPreview() {
         initialState = BookmarksState(
             bookmarkItems = listOf(),
             selectedItems = listOf(),
+            rootMenuShown = false,
+            launchFilePicker = false,
             sortMenuShown = false,
             sortOrder = BookmarksListSortOrder.default,
             recursiveSelectedCount = null,
@@ -1964,6 +2037,8 @@ private fun EditFolderScreenPreview() {
         initialState = BookmarksState(
             bookmarkItems = listOf(),
             selectedItems = listOf(),
+            rootMenuShown = false,
+            launchFilePicker = false,
             sortMenuShown = false,
             sortOrder = BookmarksListSortOrder.default,
             recursiveSelectedCount = null,
@@ -2033,6 +2108,8 @@ private fun BookmarksScreenPreview() {
             initialState = BookmarksState(
                 bookmarkItems = bookmarkItems,
                 selectedItems = listOf(),
+                rootMenuShown = false,
+                launchFilePicker = false,
                 sortMenuShown = false,
                 sortOrder = BookmarksListSortOrder.default,
                 recursiveSelectedCount = null,
@@ -2077,6 +2154,8 @@ private fun EmptyBookmarksScreenPreview() {
             initialState = BookmarksState(
                 bookmarkItems = listOf(),
                 selectedItems = listOf(),
+                rootMenuShown = false,
+                launchFilePicker = false,
                 sortMenuShown = false,
                 sortOrder = BookmarksListSortOrder.default,
                 recursiveSelectedCount = null,
@@ -2122,6 +2201,8 @@ private fun AddFolderPreview() {
         initialState = BookmarksState(
             bookmarkItems = listOf(),
             selectedItems = listOf(),
+            rootMenuShown = false,
+            launchFilePicker = false,
             sortMenuShown = false,
             sortOrder = BookmarksListSortOrder.default,
             recursiveSelectedCount = null,
@@ -2168,6 +2249,8 @@ private fun SelectFolderPreview() {
         initialState = BookmarksState(
             bookmarkItems = listOf(),
             selectedItems = listOf(),
+            rootMenuShown = false,
+            launchFilePicker = false,
             sortMenuShown = false,
             sortOrder = BookmarksListSortOrder.default,
             recursiveSelectedCount = null,

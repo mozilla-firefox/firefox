@@ -1973,6 +1973,8 @@
     <string name="bookmark_sort_menu_a_to_z">Sort by A to Z</string>
     <!-- Label for button to sort bookmarks in reverse alphabetical order in the bookmark sorting overflow menu. -->
     <string name="bookmark_sort_menu_z_to_a">Sort by Z to A</string>
+    <!-- Label for button to import bookmarks from file. -->
+    <string name="bookmark_import_menu_button">Import from file</string>
     <!-- Bookmark multi select title in app bar
      %1$d is the number of bookmarks selected -->
     <string name="bookmarks_multi_select_title">%1$d selected</string>
@@ -2018,8 +2020,12 @@
     <string name="bookmark_select_folder_close_folder_content_description">Close folder: %s</string>
     <!-- Content description for the "close" button in bookmarks screen. -->
     <string name="bookmark_close_button_content_description">Close bookmarks</string>
+    <!-- Content description for the Import bookmarks button in bookmarks screen. -->
+    <string name="bookmark_import_bookmarks_button_content_description">Import from file</string>
     <!-- Title for the bookmark list empty state-->
     <string name="bookmark_empty_list_title">No bookmarks yet</string>
+    <!-- Title for the bookmark list empty state at the root level. -->
+    <string name="bookmark_empty_list_root_title">Keep all your favorite bookmarks together</string>
     <!-- Bookmark screen folder description. %s is the count of bookmark folder children -->
     <string name="bookmarks_folder_description">Bookmarks in folder: %s</string>
     <!-- Description for the bookmark list empty state when you're not signed into sync. -->

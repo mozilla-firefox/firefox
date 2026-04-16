@@ -158,3 +158,8 @@ internal sealed class SnackbarAction : BookmarksAction {
     data object Dismissed : SnackbarAction()
     data object SelectFolderFailed : SnackbarAction()
 }
+
+internal data object RootMenuClicked : BookmarksAction
+internal data object RootMenuDismissed : BookmarksAction
+internal data object ImportFileClicked : BookmarksAction
+internal data object FilePickerDismissed : BookmarksAction

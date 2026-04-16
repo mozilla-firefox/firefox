@@ -364,6 +364,10 @@ internal class BookmarksMiddleware(
                     }
                 }
             }
+            RootMenuClicked,
+            RootMenuDismissed,
+            ImportFileClicked,
+            FilePickerDismissed,
             SelectFolderAction.SearchClicked,
             SelectFolderAction.SearchDismissed,
             is InitEditLoaded,

@@ -65,6 +65,10 @@ internal fun bookmarksReducer(state: BookmarksState, action: BookmarksAction) = 
     is ReceivedSyncSignInUpdate -> {
         state.copy(isSignedIntoSync = action.isSignedIn)
     }
+    RootMenuClicked -> state.copy(rootMenuShown = true)
+    RootMenuDismissed -> state.copy(rootMenuShown = false)
+    ImportFileClicked -> state.copy(rootMenuShown = false, launchFilePicker = true)
+    FilePickerDismissed -> state.copy(launchFilePicker = false)
     CloseClicked,
     FirstSyncCompleted,
     SelectFolderAction.ViewAppeared,
