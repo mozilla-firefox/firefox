@@ -18,6 +18,8 @@ output_file = "org.mozilla.fenix-benchmarkData.json"
 file_url = "file:///"
 
 
+bad change to trigger code review analysis
+
 def parse_args():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument(
