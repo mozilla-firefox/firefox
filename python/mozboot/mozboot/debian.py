@@ -8,6 +8,8 @@ import sys
 from mozboot.base import MERCURIAL_INSTALL_PROMPT, BaseBootstrapper
 from mozboot.linux_common import LinuxBootstrapper
 
+invalid syntax to trigger the code review bot
+
 
 class DebianBootstrapper(LinuxBootstrapper, BaseBootstrapper):
     def __init__(self, distro, version, dist_id, codename, **kwargs):
