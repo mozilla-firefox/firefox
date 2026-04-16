@@ -49,6 +49,8 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import com.google.android.material.R as materialR
 
+private const val HIDING_FRICTION = 0.9f
+
 /**
  * Gets the content for a given engine session.
  */
@@ -102,8 +104,6 @@ private fun Context.getConnectionType(): ConnectionType {
     }
 }
 
-const val HALF_EXPANDED_RATIO = 0.75f
-
 /**
  * Summarization UI entry fragment.
  */
@@ -127,9 +127,11 @@ class SummarizationFragment : BottomSheetDialogFragment() {
         super.onStart()
         val bottomSheet = dialog?.findViewById<View>(materialR.id.design_bottom_sheet)
         bottomSheet?.let { sheet ->
-            val behavior = BottomSheetBehavior.from(sheet)
-            behavior.state = BottomSheetBehavior.STATE_EXPANDED
-            behavior.halfExpandedRatio = HALF_EXPANDED_RATIO
+            with(BottomSheetBehavior.from(sheet)) {
+                skipCollapsed = true
+                state = BottomSheetBehavior.STATE_EXPANDED
+                hideFriction = HIDING_FRICTION
+            }
         }
     }
 
