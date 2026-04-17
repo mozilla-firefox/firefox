@@ -20,6 +20,8 @@ dependencies {
     // Included via 'api' because this module is unusable without coroutines.
     api libs.kotlinx.coroutines
 
+    api project(':components:concept-storage-bookmarks')
+
     implementation project(':components:support-base')
     implementation project(':components:support-ktx')
     implementation project(':components:support-utils')

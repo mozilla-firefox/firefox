@@ -8,10 +8,12 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.withContext
 import mozilla.appservices.places.PlacesApi
+import mozilla.appservices.places.uniffi.InsertableBookmarkFolder
 import mozilla.appservices.places.uniffi.PlacesApiException
 import mozilla.components.concept.storage.BookmarkInfo
 import mozilla.components.concept.storage.BookmarkNode
 import mozilla.components.concept.storage.BookmarksStorage
+import mozilla.components.concept.storage.bookmarks.InsertableBookmarkNode
 import mozilla.components.concept.sync.SyncableStore
 import mozilla.components.concept.toolbar.AutocompleteProvider
 import mozilla.components.concept.toolbar.AutocompleteResult
@@ -187,6 +189,7 @@ open class PlacesBookmarksStorage(
      */
     override suspend fun updateNode(guid: String, info: BookmarkInfo): Result<Unit> {
         return withContext(writeScope.coroutineContext) {
+            InsertableBookmarkFolder()
             Result.runCatching { writer.updateBookmark(guid, info.parentGuid, info.position, info.title, info.url) }
         }
     }
@@ -244,4 +247,8 @@ open class PlacesBookmarksStorage(
                 )
             }
         }
+
+    override suspend fun insert(node: InsertableBookmarkNode) {
+        TODO("Not yet implemented")
+    }
 }
