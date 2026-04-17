@@ -1811,6 +1811,14 @@ projects:
     - components:support-base
     - components:support-test
     - components:tooling-lint
+  components:lib-bookmarks-file:
+    description: A concrete implementation of concept-bookmarks-file-importer that
+      parses Netscape HTML bookmark files.
+    path: components/lib/bookmarks-file
+    publish: true
+    upstream_dependencies:
+    - components:concept-bookmarks-file
+    - components:tooling-lint
   components:lib-crash:
     description: A generic crash reporter library that can report crashes to multiple
       services.

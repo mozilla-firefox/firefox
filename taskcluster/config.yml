@@ -297,6 +297,7 @@ treeherder:
         'lib-ai-controls': 'lib-ai-controls'
         'lib-crash': 'lib-crash'
         'lib-auth': 'lib-auth'
+        'lib-bookmarks-file-importer': 'lib-bookmarks-file-importer'
         'lib-crash-sentry': 'lib-crash-sentry'
         'lib-crash-sentry-legacy': 'lib-crash-sentry-legacy'
         'lib-dataprotect': 'lib-dataprotect'
