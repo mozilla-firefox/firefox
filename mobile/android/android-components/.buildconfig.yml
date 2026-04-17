@@ -527,6 +527,13 @@ projects:
     - components:support-test
     - components:support-utils
     - components:tooling-lint
+  components:concept-storage-bookmarks:
+    description: This component contains interfaces and abstract classes that describe
+      the bookmarks storage layer.
+    path: components/concept/storage-bookmarks
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:concept-sync:
     description: An abstract definition of a browser data synchronization layer.
     path: components/concept/sync

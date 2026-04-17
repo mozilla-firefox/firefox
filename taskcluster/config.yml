@@ -251,6 +251,7 @@ treeherder:
         'concept-menu': 'concept-menu'
         'concept-push': 'concept-push'
         'concept-storage': 'concept-storage'
+        'concept-storage-bookmarks': 'concept-storage-bookmarks'
         'concept-sync': 'concept-sync'
         'concept-tabstray': 'concept-tabstray'
         'concept-toolbar': 'concept-toolbar'
