@@ -245,6 +245,7 @@ treeherder:
         'concept-base': 'concept-base'
         'compose-base': 'compose-base'
         'compose-cfr': 'compose-cfr'
+        'concept-bookmark-filepar': 'concept-bookmark-fileparser'
         'concept-engine': 'concept-engine'
         'concept-fetch': 'concept-fetch'
         'concept-llm': 'concept-llm'
