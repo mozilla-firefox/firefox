@@ -104,7 +104,7 @@ class AIControlsFragment : Fragment(), SystemInsetsPaddedFragment {
             url = SupportUtils.getSumoURLForTopic(
                 context = context,
                 topic = SupportUtils.SumoTopic.AI_CONTROLS,
-                useMobilePage = false,
+                useMobilePage = true,
             ),
         )
     }
