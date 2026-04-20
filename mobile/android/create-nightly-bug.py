@@ -33,6 +33,8 @@ RELEASE_CHECKLIST_URL = (
     "#dev-team-starting-the-next-nightly-development-cycle"
 )
 
+TEST XYZ
+
 
 def _bugzilla_request(url, data=None, api_key=None):
     if api_key:
