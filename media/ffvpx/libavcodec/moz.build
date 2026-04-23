@@ -181,6 +181,10 @@ else:
   CXXFLAGS += CONFIG["MOZ_LIBVPX_CFLAGS"]
   OS_LIBS += CONFIG["MOZ_LIBVPX_LIBS"]
 
+# Vendored FFmpeg code has type mismatches between AVCodecParser/FFCodecParser
+# that GCC 16+ treats as errors.
+CFLAGS += ['-Wno-incompatible-pointer-types']
+
 SYMBOLS_FILE = 'avcodec.symbols'
 NoVisibilityFlags()
 
