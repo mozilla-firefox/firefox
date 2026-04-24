@@ -346,8 +346,8 @@ tasks:
                                                         href: "https://treeherder.mozilla.org/#/jobs?repo=${repository.project}&revision=${push.revision}"
                                                   - $if: 'repository.project == "try"'
                                                     then:
-                                                        subject: "Thank you for your try submission of ${push.revision}. It's the best!"
-                                                        content: "Your try push has been submitted. It's the best! Use the link to view the status of your jobs."
+                                                        subject: "Thank you for your try submission of ${push.revision}."
+                                                        content: "Your try push has been submitted. Use the link to view the status of your jobs."
                                         - $if: 'repository.project == "mozilla-central"'
                                           then:
                                               matrixBody: "${repository.project} push notification: https://treeherder.mozilla.org/#/jobs?repo=${repository.project}&revision=${push.revision}"
