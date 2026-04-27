@@ -411,6 +411,30 @@ export var DownloadIntegration = {
   },
 
   /**
+   * A set of callbacks registered by the WebExtensions downloads API to handle
+   * the onDeterminingFilename event.  Each callback receives a Download object
+   * and may return a { filename, conflictAction } suggestion.
+   */
+  _determineFilenameCallbacks: new Set(),
+
+  /**
+   * Called by Download.start() before execution begins, to give registered
+   * callbacks (i.e. WebExtension onDeterminingFilename listeners) a chance to
+   * override the target filename.
+   *
+   * @param {Download} download
+   */
+  async determineFilename(download) {
+    for (let callback of this._determineFilenameCallbacks) {
+      try {
+        await callback(download);
+      } catch (ex) {
+        console.error(ex);
+      }
+    }
+  },
+
+  /**
    * Checks to determine whether to block downloads for parental controls.
    *
    * aParam aDownload
