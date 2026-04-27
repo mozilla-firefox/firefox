@@ -375,7 +375,7 @@ Download.prototype = {
    *   Resolves when the download has finished successfully.
    * @rejects JavaScript exception if the download failed.
    */
-  start: function D_start() {
+  start: async function D_start() {
     // If the download succeeded, it's the final state, we have nothing to do.
     if (this.succeeded) {
       return Promise.resolve();
@@ -473,6 +473,8 @@ Download.prototype = {
         this._notifyChange();
       }
     }
+
+    await lazy.DownloadIntegration.determineFilename(this);
 
     // Now that we stored the promise in the download object, we can start the
     // task that will actually execute the download.
