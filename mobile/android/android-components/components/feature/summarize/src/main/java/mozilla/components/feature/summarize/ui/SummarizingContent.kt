@@ -61,8 +61,9 @@ private const val DRAG_HANDLE_CORNER_RATIO = 50
 internal fun SummarizingContent(
     modifier: Modifier = Modifier,
     title: String = stringResource(R.string.mozac_feature_summarize_loading_title),
+    useGradientColors: Boolean,
 ) {
-    val contentColor = if (isSystemInDarkTheme()) {
+    val contentColor = if (!useGradientColors || isSystemInDarkTheme()) {
         MaterialTheme.colorScheme.onSurface
     } else {
         MaterialTheme.colorScheme.onPrimary
@@ -104,7 +105,11 @@ internal fun SummarizingContent(
             painter = painterResource(id = iconsR.drawable.mozac_ic_logo_firefox_24),
             contentDescription = null,
             modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.onPrimary,
+            tint = if (useGradientColors) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
         )
 
         Text(
@@ -155,7 +160,7 @@ private fun SummarizingContentPreview() {
                                     ),
                             )
                         }
-                        SummarizingContent()
+                        SummarizingContent(useGradientColors = true)
                     }
                 }
             }
