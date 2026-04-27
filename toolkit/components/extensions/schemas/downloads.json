@@ -726,6 +726,32 @@
         "type": "function"
       },
       {
+        "name": "onDeterminingFilename",
+        "description": "Fires with the <a href='#type-DownloadItem'>DownloadItem</a> before the download's filename is finalized. The listener may return an object with an optional <code>filename</code> and/or <code>conflictAction</code> to influence the final filename. The first listener to return a non-null value wins.",
+        "parameters": [
+          {
+            "$ref": "DownloadItem",
+            "name": "downloadItem"
+          }
+        ],
+        "returns": {
+          "type": "object",
+          "optional": true,
+          "properties": {
+            "filename": {
+              "type": "string",
+              "description": "The filename to use for the download. Must not be an absolute path, and must not contain path components that would traverse back to a parent directory. If a path separator is included, the file will be saved in the corresponding subdirectory beneath the user's default Downloads directory.",
+              "optional": true
+            },
+            "conflictAction": {
+              "$ref": "FilenameConflictAction",
+              "optional": true
+            }
+          }
+        },
+        "type": "function"
+      },
+      {
         "name": "onChanged",
         "description": "When any of a <a href='#type-DownloadItem'>DownloadItem</a>'s properties except <code>bytesReceived</code> changes, this event fires with the <code>downloadId</code> and an object containing the properties that changed.",
         "parameters": [
