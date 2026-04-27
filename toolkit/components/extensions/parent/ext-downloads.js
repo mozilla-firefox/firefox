@@ -5,13 +5,15 @@
 "use strict";
 
 ChromeUtils.defineESModuleGetters(this, {
+  DownloadIntegration:
+    "resource://gre/modules/DownloadIntegration.sys.mjs",
   DownloadLastDir: "resource://gre/modules/DownloadLastDir.sys.mjs",
   DownloadPaths: "resource://gre/modules/DownloadPaths.sys.mjs",
   Downloads: "resource://gre/modules/Downloads.sys.mjs",
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
 });
 
-var { EventEmitter, ignoreEvent } = ExtensionCommon;
+var { EventEmitter } = ExtensionCommon;
 var { ExtensionError } = ExtensionUtils;
 
 const DOWNLOAD_ITEM_FIELDS = [
@@ -612,6 +614,61 @@ const queryHelper = async query => {
   }
   return results;
 };
+
+async function applyFilenameSuggestion(suggestion, currentPath) {
+  let { filename: suggestedFilename, conflictAction } = suggestion;
+  if (!suggestedFilename) {
+    return null;
+  }
+
+  if (PathUtils.isAbsolute(suggestedFilename)) {
+    Cu.reportError(
+      "downloads.onDeterminingFilename: suggested filename must not be an absolute path"
+    );
+    return null;
+  }
+
+  if (AppConstants.platform === "win") {
+    suggestedFilename = suggestedFilename.replace(/\//g, "\\");
+  }
+
+  let pathComponents;
+  try {
+    pathComponents = PathUtils.splitRelative(suggestedFilename, {
+      allowEmpty: true,
+      allowCurrentDir: true,
+      allowParentDir: true,
+    });
+  } catch (e) {
+    Cu.reportError(
+      `downloads.onDeterminingFilename: invalid suggested filename: ${e}`
+    );
+    return null;
+  }
+
+  if (pathComponents.some(component => component == "..")) {
+    Cu.reportError(
+      "downloads.onDeterminingFilename: suggested filename must not contain back-references (..)"
+    );
+    return null;
+  }
+
+  const dir = PathUtils.parent(currentPath);
+  const newPath = PathUtils.joinRelative(dir, suggestedFilename);
+  await IOUtils.makeDirectory(PathUtils.parent(newPath));
+
+  const resolvedConflictAction = conflictAction || "uniquify";
+
+  if (await IOUtils.exists(newPath)) {
+    if (resolvedConflictAction === "uniquify") {
+      return DownloadPaths.createNiceUniqueFile(new FileUtils.File(newPath))
+        .path;
+    }
+    // "overwrite" — use the path as-is
+  }
+
+  return newPath;
+}
 
 this.downloads = class extends ExtensionAPIPersistent {
   downloadEventRegistrar(event, listener) {
@@ -1275,10 +1332,45 @@ this.downloads = class extends ExtensionAPIPersistent {
           extensionApi: this,
         }).api(),
 
-        onDeterminingFilename: ignoreEvent(
+        onDeterminingFilename: new EventManager({
           context,
-          "downloads.onDeterminingFilename"
-        ),
+          name: "downloads.onDeterminingFilename",
+          register: fire => {
+            DownloadMap.lazyInit();
+            const callback = async download => {
+              if (!extension.privateBrowsingAllowed && download.source.isPrivate) {
+                return;
+              }
+              // Ensure the download has an entry in DownloadMap even if it has
+              // not been added to the DownloadList yet (e.g. legacy downloads
+              // call start() before list.add()).
+              const item =
+                DownloadMap.byDownload.get(download) ||
+                DownloadMap.newFromDownload(download, null);
+              let suggestion;
+              try {
+                suggestion = await fire.async(item.serialize());
+              } catch (e) {
+                Cu.reportError(e);
+                return;
+              }
+              if (suggestion) {
+                const newPath = await applyFilenameSuggestion(
+                  suggestion,
+                  download.target.path
+                );
+                if (newPath) {
+                  download.target.path = newPath;
+                  download.target.partFilePath = `${newPath}.part`;
+                }
+              }
+            };
+            DownloadIntegration._determineFilenameCallbacks.add(callback);
+            return () => {
+              DownloadIntegration._determineFilenameCallbacks.delete(callback);
+            };
+          },
+        }).api(),
       },
     };
   }
