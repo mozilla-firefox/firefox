@@ -98,7 +98,6 @@ add_task(
       },
     });
 
-    // onDeterminingFilename is never persisted, it is an empty event handler.
     const EVENTS = ["onChanged", "onCreated", "onErased"];
 
     await extension.startup();
