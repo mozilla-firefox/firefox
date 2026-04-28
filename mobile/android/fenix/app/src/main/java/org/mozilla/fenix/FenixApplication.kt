@@ -566,7 +566,7 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
     private fun queueIntegrityClientWarmUp(queue: RunWhenReadyQueue) {
         // We want to avoid shipping this warmup into UI test builds to reduce quota impact, especially given
         // that the Integrity verdicts will always fail anyway.
-        if (!BuildConfig.MOZILLA_OFFICIAL) {
+        if (!BuildConfig.TELEMETRY) {
             return
         }
         runOnVisualCompleteness(queue) {
