@@ -7,17 +7,6 @@ package mozilla.components.concept.llm
 import kotlinx.coroutines.flow.Flow
 
 /**
- * A prompt that can be delivered to a LLM.
- *
- * @param userPrompt The user message to send to the LLM.
- * @param systemPrompt An optional system-level instruction that shapes LLM behavior.
- */
-data class Prompt(
-    val userPrompt: String,
-    val systemPrompt: String? = null,
-)
-
-/**
  * An integer error code that can be used to categorize failures.
  */
 @JvmInline
@@ -28,12 +17,48 @@ value class ErrorCode(val value: Int)
  */
 interface Llm {
     /**
-     * A prompt request delivered to the LLM for inference.
+     * Runs inference with the given [contextWindow].
      *
-     * @param prompt a [Prompt] that will be sent to the [Llm].
-     * @return a [Flow] of [String] of the response from the [Llm].
+     * @param contextWindow A [ContextWindow] containing the ordered conversation messages.
+     * @return a [Flow] of [String] tokens emitted as the [Llm] produces its response.
      */
-    suspend fun prompt(prompt: Prompt): Flow<String>
+    suspend fun prompt(contextWindow: ContextWindow): Flow<String>
+
+    /**
+     * Represents the full context provided to an [Llm] for a single inference request,
+     * as an ordered list of [Message]s.
+     *
+     * @param messages The conversation history, in chronological order.
+     */
+    data class ContextWindow(val messages: List<Message>)
+
+    /**
+     * A single message in a [ContextWindow].
+     */
+    sealed class Message {
+        abstract val message: String
+
+        /**
+         * A system-level instruction that shapes model behavior.
+         *
+         * @param message The instruction text.
+         */
+        data class System(override val message: String) : Message()
+
+        /**
+         * A message from the end user.
+         *
+         * @param message The user's input text.
+         */
+        data class User(override val message: String) : Message()
+
+        /**
+         * A message from the assistant (model).
+         *
+         * @param message The assistant's response text.
+         */
+        data class Assistant(override val message: String) : Message()
+    }
 
     /**
      * An exception thrown by an LLM, equipped with an [ErrorCode] to differentiate

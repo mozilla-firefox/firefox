@@ -12,7 +12,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.llm.ErrorCode
 import mozilla.components.concept.llm.Llm
-import mozilla.components.concept.llm.Prompt
 import mozilla.components.feature.summarize.SummarizationState.Error
 import mozilla.components.feature.summarize.SummarizationState.Finished
 import mozilla.components.feature.summarize.SummarizationState.Inert
@@ -174,7 +173,7 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
-        assertEquals(Prompt(content, defaultInstructions()), llm.lastPrompt)
+        assertEquals(Llm.ContextWindow(listOf(Llm.Message.System(defaultInstructions()), Llm.Message.User(content))), llm.lastPrompt)
     }
 
     @Test
@@ -266,7 +265,7 @@ class SummarizationStoreTest {
 
         assertFalse(usingReaderContent)
         assertEquals(expected, states)
-        assertEquals(Prompt(content, recipeInstructions("en")), llm.lastPrompt)
+        assertEquals(Llm.ContextWindow(listOf(Llm.Message.System(recipeInstructions("en")), Llm.Message.User(content))), llm.lastPrompt)
     }
 
     @Test
@@ -320,7 +319,7 @@ class SummarizationStoreTest {
 
         assertTrue(usingReaderContent)
         assertEquals(expected, states)
-        assertEquals(Prompt(content, defaultInstructions()), llm.lastPrompt)
+        assertEquals(Llm.ContextWindow(listOf(Llm.Message.System(defaultInstructions()), Llm.Message.User(content))), llm.lastPrompt)
     }
 
     @Test
@@ -375,7 +374,7 @@ class SummarizationStoreTest {
         val contentTooLongException = Llm.Exception("Content too long", ErrorCode(1005))
         val provider = FakeCloudProvider(
             llm = object : Llm {
-                override suspend fun prompt(prompt: Prompt): Flow<String> = throw contentTooLongException
+                override suspend fun prompt(contextWindow: Llm.ContextWindow): Flow<String> = throw contentTooLongException
             },
         )
         val store = SummarizationStore(
@@ -466,7 +465,7 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
-        assertEquals(Prompt(content, recipeInstructions("es")), llm.lastPrompt)
+        assertEquals(Llm.ContextWindow(listOf(Llm.Message.System(recipeInstructions("es")), Llm.Message.User(content))), llm.lastPrompt)
     }
 
     @Test
@@ -508,6 +507,6 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
-        assertEquals(Prompt(content, defaultInstructions()), llm.lastPrompt)
+        assertEquals(Llm.ContextWindow(listOf(Llm.Message.System(defaultInstructions()), Llm.Message.User(content))), llm.lastPrompt)
     }
 }

@@ -9,7 +9,6 @@ import com.google.mlkit.genai.common.GenAiException
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.llm.Llm
-import mozilla.components.concept.llm.Prompt
 import mozilla.components.lib.llm.gemini.nano.fakes.FakeGenerativeModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -26,7 +25,7 @@ class GeminiNanoLlmTest {
 
         val llm = GeminiNanoLlm(buildModel = { fakeModel })
 
-        val results = llm.prompt(Prompt("test prompt")).toList()
+        val results = llm.prompt(Llm.ContextWindow(listOf(Llm.Message.User("test prompt")))).toList()
 
         assertEquals(1, results.size)
         assertEquals("test response", results[0])
@@ -41,7 +40,7 @@ class GeminiNanoLlmTest {
         )
 
         val llm = GeminiNanoLlm(buildModel = { fakeModel })
-        val result = runCatching { llm.prompt(Prompt("test prompt")).toList() }
+        val result = runCatching { llm.prompt(Llm.ContextWindow(listOf(Llm.Message.User("test prompt")))).toList() }
 
         assertTrue(result.isFailure)
         assertIs<Llm.Exception>(result.exceptionOrNull())
@@ -62,7 +61,13 @@ class GeminiNanoLlmTest {
             logger = { logMessages.add(it) },
         )
 
-        llm.prompt(Prompt(prompt)).toList()
+        llm.prompt(
+            Llm.ContextWindow(
+                listOf(
+                    Llm.Message.User(prompt),
+                ),
+            ),
+        ).toList()
 
         assertEquals(2, logMessages.size)
         assertTrue(logMessages[0].contains("Beginning model response stream"))

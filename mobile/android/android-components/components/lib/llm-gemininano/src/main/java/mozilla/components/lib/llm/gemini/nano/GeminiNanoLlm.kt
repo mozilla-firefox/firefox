@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
 import mozilla.components.concept.llm.Llm
-import mozilla.components.concept.llm.Prompt
 import mozilla.components.support.base.log.logger.Logger
 
 /**
@@ -29,14 +28,14 @@ internal class GeminiNanoLlm(
         buildModel()
     }
 
-    override suspend fun prompt(prompt: Prompt): Flow<String> = flow {
-        streamPromptResponses(prompt)
+    override suspend fun prompt(contextWindow: Llm.ContextWindow): Flow<String> = flow {
+        streamPromptResponses(contextWindow)
     }
 
-    private suspend fun FlowCollector<String>.streamPromptResponses(prompt: Prompt) = try {
+    private suspend fun FlowCollector<String>.streamPromptResponses(contextWindow: Llm.ContextWindow) = try {
         // consume replies from the model until it provides a finish reason
         logger("Beginning model response stream")
-        val content = listOfNotNull(prompt.systemPrompt, prompt.userPrompt).joinToString("\n\n")
+        val content = contextWindow.messages.joinToString("\n\n") { it.message }
         model.generateContentStream(content).onEach { response ->
             emit(response.candidates[0].text)
         }.first {

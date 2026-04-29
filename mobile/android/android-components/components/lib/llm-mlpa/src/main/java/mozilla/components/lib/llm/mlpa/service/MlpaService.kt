@@ -370,6 +370,12 @@ fun interface ChatService {
                  */
                 @SerialName("system")
                 System,
+
+                /**
+                 * A message produced by the assistant (model).
+                 */
+                @SerialName("assistant")
+                Assistant,
             }
 
             companion object {
@@ -386,6 +392,13 @@ fun interface ChatService {
                  * @param content The message content.
                  */
                 fun system(content: String) = Message(Role.System, content)
+
+                /**
+                 * Convenience factory for creating an assistant message.
+                 *
+                 * @param content The message content.
+                 */
+                fun assistant(content: String) = Message(Role.Assistant, content)
             }
         }
     }

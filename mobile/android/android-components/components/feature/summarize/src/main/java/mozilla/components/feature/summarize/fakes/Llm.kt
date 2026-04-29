@@ -12,7 +12,6 @@ import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.concept.llm.LocalLlmProvider
-import mozilla.components.concept.llm.Prompt
 import mozilla.components.feature.summarize.R
 import kotlin.time.Duration.Companion.seconds
 
@@ -46,15 +45,15 @@ data class FakeLlm(
     val responses: List<String> = listOf(),
 ) : Llm {
 
-    var lastPrompt: Prompt? = null
+    var lastPrompt: Llm.ContextWindow? = null
 
-    override suspend fun prompt(prompt: Prompt): Flow<String> = flow {
+    override suspend fun prompt(contextWindow: Llm.ContextWindow): Flow<String> = flow {
         for (response in responses) {
             emit(response)
             delay(2.seconds)
         }
     }.also {
-        lastPrompt = prompt
+        lastPrompt = contextWindow
     }
 
     companion object {

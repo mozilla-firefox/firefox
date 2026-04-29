@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.Llm
-import mozilla.components.concept.llm.Prompt
 import mozilla.components.lib.llm.mlpa.fakes.FakeMlpaService
 import mozilla.components.lib.llm.mlpa.fakes.failureChatService
 import mozilla.components.lib.llm.mlpa.fakes.failureTokenProvider
@@ -35,7 +34,7 @@ class MlpaLlmTest {
             authorizationToken = AuthorizationToken.Integrity("my-test-token"),
         )
 
-        val actual = llm.prompt(Prompt("This is my prompt")).toList()
+        val actual = llm.prompt(Llm.ContextWindow(listOf(Llm.Message.User("This is my prompt")))).toList()
         val expected = listOf("Hello World!")
 
         assertEquals(expectedToken?.value, AuthorizationToken.Integrity("my-test-token").value)
@@ -51,7 +50,7 @@ class MlpaLlmTest {
             authorizationToken = AuthorizationToken.Integrity("my-test-token"),
         )
 
-        llm.prompt(Prompt("This is my prompt"))
+        llm.prompt(Llm.ContextWindow(listOf(Llm.Message.User("This is my prompt"))))
             .catch { threw = true }
             .toList()
 
@@ -69,7 +68,7 @@ class MlpaLlmTest {
             authorizationToken = AuthorizationToken.Integrity("my-test-token"),
         )
 
-        llm.prompt(Prompt("user prompt", "system prompt")).toList()
+        llm.prompt(Llm.ContextWindow(listOf(Llm.Message.System("system prompt"), Llm.Message.User("user prompt")))).toList()
 
         val expected = listOf(
             ChatService.Request.Message.system("system prompt"),
@@ -90,7 +89,7 @@ class MlpaLlmTest {
             authorizationToken = AuthorizationToken.Integrity("my-test-token"),
         )
 
-        llm.prompt(Prompt("user prompt", null)).toList()
+        llm.prompt(Llm.ContextWindow(listOf(Llm.Message.User("user prompt")))).toList()
 
         val expected = listOf(
             ChatService.Request.Message.user("user prompt"),

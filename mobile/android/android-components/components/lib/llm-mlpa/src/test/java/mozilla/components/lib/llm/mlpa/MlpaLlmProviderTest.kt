@@ -9,7 +9,6 @@ import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.ErrorCode
 import mozilla.components.concept.llm.Llm
-import mozilla.components.concept.llm.Prompt
 import mozilla.components.lib.llm.mlpa.fakes.FakeMlpaService
 import mozilla.components.lib.llm.mlpa.fakes.failureChatService
 import mozilla.components.lib.llm.mlpa.fakes.failureTokenProvider
@@ -70,7 +69,13 @@ class MlpaLlmProviderTest {
 
             provider.prepare()
 
-            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(Prompt("This is a test prompt"))
+            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(
+                Llm.ContextWindow(
+                    listOf(
+                        Llm.Message.User("This is a test prompt"),
+                    ),
+                ),
+            )
                 ?.catch {}
                 ?.collect {}
 
@@ -94,7 +99,13 @@ class MlpaLlmProviderTest {
 
             provider.prepare()
 
-            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(Prompt("This is a test prompt"))
+            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(
+                Llm.ContextWindow(
+                    listOf(
+                        Llm.Message.User("This is a test prompt"),
+                    ),
+                ),
+            )
                 ?.catch {}
                 ?.collect {}
 
@@ -117,7 +128,13 @@ class MlpaLlmProviderTest {
             provider.prepare()
 
             var caughtError: Throwable? = null
-            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(Prompt("This is a test prompt"))
+            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(
+                Llm.ContextWindow(
+                    listOf(
+                        Llm.Message.User("This is a test prompt"),
+                    ),
+                ),
+            )
                 ?.catch { caughtError = it }
                 ?.collect {}
 

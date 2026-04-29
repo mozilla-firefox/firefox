@@ -4,11 +4,16 @@
 
 package mozilla.components.feature.summarize.ext
 
-import mozilla.components.concept.llm.Prompt
+import mozilla.components.concept.llm.Llm
 import mozilla.components.feature.summarize.content.Content
 import mozilla.components.feature.summarize.content.PageMetadata
 
-val Content.prompt get() = Prompt(userPrompt = body, systemPrompt = metadata.systemPrompt)
+val Content.prompt get() = Llm.ContextWindow(
+    messages = listOf(
+        Llm.Message.System(metadata.systemPrompt),
+        Llm.Message.User(body),
+    ),
+)
 
 private val PageMetadata.isRecipe get() = structuredDataTypes.any { it.lowercase() == "recipe" }
 internal val PageMetadata.shouldUseReaderModeContent get() = isReaderable && !isRecipe
