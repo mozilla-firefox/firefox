@@ -261,6 +261,7 @@ treeherder:
         'feature-accounts': 'feature-accounts'
         'feature-addons': 'feature-addons'
         'feature-app-links': 'feature-app-links'
+        'feature-ask-page': 'feature-ask-page'
         'feature-autofill': 'feature-autofill'
         'feature-awesomebar': 'feature-awesomebar'
         'feature-containers': 'feature-containers'

@@ -2745,6 +2745,11 @@ class Settings(
         default = true,
     )
 
+    var askPageFeatureFlagEnabled by booleanPreference(
+        key = appContext.getPreferenceKey(R.string.pref_key_enable_ask_page),
+        default = Config.channel.isDebug,
+    )
+
     var importBookmarksFeatureFlagEnabled by booleanPreference(
         key = appContext.getPreferenceKey(R.string.pref_key_enable_import_bookmarks),
         default = Config.channel.isDebug,

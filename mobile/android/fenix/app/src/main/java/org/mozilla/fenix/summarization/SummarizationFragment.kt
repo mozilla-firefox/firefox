@@ -28,6 +28,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.pageextraction.ContentParams
+import mozilla.components.feature.ask.page.AskPageUi
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.SummarizationUi
 import mozilla.components.feature.summarize.ViewDismissed
@@ -42,13 +43,16 @@ import mozilla.components.feature.summarize.settings.summarizeSettingsReducer
 import mozilla.components.support.ktx.android.view.setNavigationBarColorCompat
 import mozilla.components.support.utils.ext.top
 import org.mozilla.fenix.R
+import org.mozilla.fenix.askpage.AskPageStoreViewModel
 import org.mozilla.fenix.ext.requireComponents
+import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.tabstray.ext.toDisplayTitle
 import org.mozilla.fenix.theme.FirefoxTheme
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import com.google.android.material.R as materialR
+import mozilla.components.feature.ask.page.ViewDismissed as AskPageViewDismissed
 
 private const val HIDING_FRICTION = 0.9f
 
@@ -110,6 +114,7 @@ private fun Context.getConnectionType(): ConnectionType {
  */
 class SummarizationFragment : BottomSheetDialogFragment() {
     private val args by navArgs<SummarizationFragmentArgs>()
+    private val askPageViewModel: AskPageStoreViewModel by viewModels()
     private val storeViewModel: SummarizationStoreViewModel by viewModels {
         val currentTab = requireComponents.core.store.state.selectedTab
         val engineSession = currentTab?.engineState?.engineSession
@@ -141,7 +146,11 @@ class SummarizationFragment : BottomSheetDialogFragment() {
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-        storeViewModel.store.dispatch(ViewDismissed)
+        if (requireContext().settings().askPageFeatureFlagEnabled) {
+            askPageViewModel.store.dispatch(AskPageViewDismissed)
+        } else {
+            storeViewModel.store.dispatch(ViewDismissed)
+        }
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
@@ -164,39 +173,45 @@ class SummarizationFragment : BottomSheetDialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View = content {
-        val summarizeSettings = SummarizationSettings.dataStore(requireContext())
-
-        val state by storeViewModel.store.stateFlow.collectAsStateWithLifecycle()
-        LaunchedEffect(state) {
-            when (state) {
-                SummarizationState.LearnMoreAboutShakeConsent -> {
-                    openLearnMoreLink()
-                }
-                is SummarizationState.Finished -> {
-                    dismiss()
-                }
-                else -> {}
+        if (requireContext().settings().askPageFeatureFlagEnabled) {
+            FirefoxTheme {
+                AskPageUi(store = askPageViewModel.store)
             }
-        }
+        } else {
+            val summarizeSettings = SummarizationSettings.dataStore(requireContext())
 
-        val settingsStore = SummarizeSettingsStore(
-            initialState = SummarizeSettingsState(),
-            reducer = ::summarizeSettingsReducer,
-            middleware = listOf(
-                SummarizeSettingsMiddleware(
-                    settings = summarizeSettings,
-                    onLearnMoreClicked = { openLearnMoreLink() },
-                    storeViewModel.viewModelScope,
+            val state by storeViewModel.store.stateFlow.collectAsStateWithLifecycle()
+            LaunchedEffect(state) {
+                when (state) {
+                    SummarizationState.LearnMoreAboutShakeConsent -> {
+                        openLearnMoreLink()
+                    }
+                    is SummarizationState.Finished -> {
+                        dismiss()
+                    }
+                    else -> {}
+                }
+            }
+
+            val settingsStore = SummarizeSettingsStore(
+                initialState = SummarizeSettingsState(),
+                reducer = ::summarizeSettingsReducer,
+                middleware = listOf(
+                    SummarizeSettingsMiddleware(
+                        settings = summarizeSettings,
+                        onLearnMoreClicked = { openLearnMoreLink() },
+                        storeViewModel.viewModelScope,
+                    ),
                 ),
-            ),
-        )
-
-        FirefoxTheme {
-            SummarizationUi(
-                productName = getString(R.string.app_name),
-                store = storeViewModel.store,
-                settingsStore = settingsStore,
             )
+
+            FirefoxTheme {
+                SummarizationUi(
+                    productName = getString(R.string.app_name),
+                    store = storeViewModel.store,
+                    settingsStore = settingsStore,
+                )
+            }
         }
     }
 

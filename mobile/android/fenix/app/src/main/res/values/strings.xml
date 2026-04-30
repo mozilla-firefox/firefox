@@ -310,6 +310,8 @@
     <string name="preferences_page_summaries">Page summaries</string>
 
     <!-- AI Controls settings -->
+    <!-- Label for the secret settings preference to enable the conversational ask-page UI -->
+    <string name="preferences_debug_settings_ask_page">Enable experimental conversational AI</string>
     <!-- Title for the AI controls settings screen -->
     <string name="preferences_ai_controls">AI controls</string>
     <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->

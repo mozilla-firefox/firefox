@@ -729,6 +729,23 @@ projects:
     - components:ui-colors
     - components:ui-icons
     - components:ui-widgets
+  components:feature-ask-page:
+    description: An abstract definition of a ask-page component.
+    path: components/feature/ask-page
+    publish: true
+    upstream_dependencies:
+    - components:compose-base
+    - components:concept-base
+    - components:concept-fetch
+    - components:concept-llm
+    - components:lib-publicsuffixlist
+    - components:lib-state
+    - components:support-base
+    - components:support-ktx
+    - components:support-utils
+    - components:tooling-lint
+    - components:ui-colors
+    - components:ui-icons
   components:feature-autofill:
     description: Component adding support for Android`s Autofill framework.
     path: components/feature/autofill

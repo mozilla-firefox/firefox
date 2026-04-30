@@ -1,0 +1,45 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+plugins {
+    alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.kotlin.compose)
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+    defaultConfig {
+        buildConfigField("String", "LIBRARY_VERSION", "\"" + config.componentsVersion + "\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
+        compose = true
+    }
+
+    namespace = 'mozilla.components.feature.ask.page'
+}
+
+dependencies {
+    implementation project(':components:compose-base')
+    implementation project(':components:concept-llm')
+    implementation project(':components:lib-state')
+    implementation project(':components:ui-icons')
+
+    implementation libs.androidx.compose.foundation
+    implementation libs.androidx.compose.ui
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.compose.material3
+    implementation libs.androidx.core.ktx
+    debugImplementation libs.androidx.compose.ui.tooling
+
+    testImplementation libs.androidx.test.junit
+    testImplementation libs.kotlinx.coroutines.test
+}
+
+apply from: '../../../common-config.gradle'
+apply from: '../../../publish.gradle'
+ext.configurePublish(config.componentsGroupId, project.name, project.ext.description)
