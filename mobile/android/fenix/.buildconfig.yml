@@ -81,6 +81,7 @@ projects:
     - components:lib-crash-sentry
     - components:lib-dataprotect
     - components:lib-integrity-googleplay
+    - components:lib-llm-harness
     - components:lib-llm-mlpa
     - components:lib-publicsuffixlist
     - components:lib-push-firebase

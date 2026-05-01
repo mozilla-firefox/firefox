@@ -21,42 +21,40 @@ data class PartialResponse(val rawMarkdown: String, val richDocument: RichDocume
  */
 sealed class AskPageState : State {
 
-    /** The feature is idle, waiting for the LLM provider to become ready. */
+    /** The feature is idle before the UI has appeared. */
     data object Idle : AskPageState()
 
     /**
-     * The user has submitted a message but the LLM provider is not yet ready.
+     * The session is available and waiting for user input.
      *
-     * @param message The message the user submitted, to be sent once the LLM is ready.
-     */
-    data class WaitingToSendMessage(val message: String) : AskPageState()
-
-    /**
-     * The LLM is ready and waiting for user input.
-     *
-     * @param llm The ready [Llm] instance.
-     * @param messages The ordered list of [Llm.Message]s in the current conversation, used as the
-     *   context window for the LLM.
+     * @param messages The conversation history to display, in chronological order.
+     * @param hasError Whether the last LLM call failed. Cleared on the next [UserMessageSubmitted].
      */
     data class Ready(
-        val llm: Llm,
         val messages: List<Llm.Message> = emptyList(),
+        val hasError: Boolean = false,
+    ) : AskPageState()
+
+    /**
+     * A message has been sent and the session is waiting for the first response token.
+     *
+     * @param messages The conversation history to display, in chronological order.
+     */
+    data class Waiting(
+        val messages: List<Llm.Message>,
     ) : AskPageState()
 
     /**
      * The LLM is streaming a response.
      *
-     * @param llm The ready [Llm] instance.
-     * @param messages The ordered list of [Llm.Message]s in the current conversation, used as the
-     *   context window for the LLM.
+     * @param messages The conversation history to display, in chronological order.
      * @param pendingResponse The in-progress [PartialResponse] being streamed.
      */
     data class Receiving(
-        val llm: Llm,
         val messages: List<Llm.Message>,
         val pendingResponse: PartialResponse,
     ) : AskPageState()
 
-    /** */
+    /** The ask page UI was dismissed. */
     data object Finished : AskPageState()
 }

@@ -9,14 +9,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
-import mozilla.components.concept.llm.CloudLlmProvider
-import mozilla.components.concept.llm.Llm
+import mozilla.components.concept.llm.LlmSession
 import mozilla.components.feature.ask.page.ext.mapToRichDocument
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 
 class AskPageMiddleware(
-    private val llmProvider: CloudLlmProvider,
+    private val session: LlmSession,
     private val scope: CoroutineScope,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : Middleware<AskPageState, AskPageAction> {
@@ -26,50 +25,20 @@ class AskPageMiddleware(
         next: (AskPageAction) -> Unit,
         action: AskPageAction,
     ) {
-        val prevState = store.state
         next(action)
-        when (action) {
-            is ViewAppeared -> scope.launch { observeProvider(store) }
-            is LlmProviderAction.ProviderAvailable -> scope.launch { llmProvider.prepare() }
-            is LlmProviderAction.ProviderReady -> {
-                val wasWaiting = prevState is AskPageState.WaitingToSendMessage
-                if (wasWaiting) {
-                    val ready = store.state as? AskPageState.Ready ?: return
-                    scope.launch { sendPrompt(store, ready.llm, ready.messages) }
-                }
-            }
-            is UserMessageSubmitted -> {
-                val ready = store.state as? AskPageState.Ready ?: return
-                scope.launch { sendPrompt(store, ready.llm, ready.messages) }
-            }
-            else -> {}
+        if (action is UserMessageSubmitted) {
+            scope.launch { sendMessage(store, action.text) }
         }
     }
 
-    private suspend fun sendPrompt(
-        store: Store<AskPageState, AskPageAction>,
-        llm: Llm,
-        messages: List<Llm.Message>,
-    ) {
+    private suspend fun sendMessage(store: Store<AskPageState, AskPageAction>, text: String) {
         runCatching {
-            llm.prompt(Llm.ContextWindow(messages))
+            session.send(text)
                 .mapToRichDocument(dispatcher)
                 .onCompletion { if (it == null) store.dispatch(ResponseCompleted) }
                 .collect { (markdown, document) ->
                     store.dispatch(ReceivedParsedResponse(PartialResponse(markdown, document)))
                 }
         }.onFailure { store.dispatch(ResponseFailed(it)) }
-    }
-
-    private suspend fun observeProvider(store: Store<AskPageState, AskPageAction>) {
-        llmProvider.state.collect { providerState ->
-            store.dispatch(
-                when (providerState) {
-                    CloudLlmProvider.State.Available -> LlmProviderAction.ProviderAvailable
-                    is CloudLlmProvider.State.Ready -> LlmProviderAction.ProviderReady(providerState.llm)
-                    is CloudLlmProvider.State.Unavailable -> LlmProviderAction.ProviderFailed(providerState.exception)
-                },
-            )
-        }
     }
 }

@@ -2016,6 +2016,13 @@ projects:
     publish: true
     upstream_dependencies:
     - components:tooling-lint
+  components:lib-llm-harness:
+    description: A harness that simplifies LLM usage to text in, text out.
+    path: components/lib/llm-harness
+    publish: true
+    upstream_dependencies:
+    - components:concept-llm
+    - components:tooling-lint
   components:lib-llm-gemininano:
     description: A Gemini Nano implementation of the LLM concept.
     path: components/lib/llm-gemininano

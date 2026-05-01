@@ -17,6 +17,21 @@ value class ErrorCode(val value: Int)
  */
 interface Llm {
     /**
+     * The maximum number of tokens this model's context window can hold.
+     * Defaults to [Int.MAX_VALUE] for implementations that do not enforce a limit.
+     */
+    val contextWindowSize: Int get() = Int.MAX_VALUE
+
+    /**
+     * Returns the number of tokens in [contextWindow] as counted by this model's tokenizer.
+     * Defaults to a rough approximation of 4 characters per token.
+     *
+     * @param contextWindow The context to measure.
+     */
+    suspend fun countTokens(contextWindow: ContextWindow): Int =
+        contextWindow.messages.sumOf { it.message.length } / 4
+
+    /**
      * Runs inference with the given [contextWindow].
      *
      * @param contextWindow A [ContextWindow] containing the ordered conversation messages.

@@ -155,4 +155,9 @@ fun interface LlmPicker {
      * @return The selected provider.
      */
     fun pick(llmProviders: List<LlmProvider>): LlmProvider
+
+    companion object {
+        /** Selects the first provider in the list. */
+        val Default: LlmPicker = LlmPicker { providers -> providers.first() }
+    }
 }

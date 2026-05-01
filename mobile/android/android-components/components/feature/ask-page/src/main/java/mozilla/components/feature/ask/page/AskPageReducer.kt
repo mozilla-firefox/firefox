@@ -14,27 +14,16 @@ import mozilla.components.concept.llm.Llm
  * @return The resulting [AskPageState] after applying the action.
  */
 fun askPageReducer(state: AskPageState, action: AskPageAction): AskPageState = when (action) {
-    is ViewAppeared -> AskPageState.Idle
+    is ViewAppeared -> AskPageState.Ready()
     is ViewDismissed -> AskPageState.Finished
     is UserMessageSubmitted -> when (state) {
-        is AskPageState.Ready -> state.copy(
+        is AskPageState.Ready -> AskPageState.Waiting(
             messages = state.messages + Llm.Message.User(action.text),
-        )
-        else -> AskPageState.WaitingToSendMessage(action.text)
-    }
-    is LlmProviderAction.ProviderAvailable -> state
-    is LlmProviderAction.ProviderReady -> when (state) {
-        is AskPageState.Idle -> AskPageState.Ready(llm = action.llm)
-        is AskPageState.WaitingToSendMessage -> AskPageState.Ready(
-            llm = action.llm,
-            messages = listOf(Llm.Message.User(state.message)),
         )
         else -> state
     }
-    is LlmProviderAction.ProviderFailed -> state
     is ReceivedParsedResponse -> when (state) {
-        is AskPageState.Ready -> AskPageState.Receiving(
-            llm = state.llm,
+        is AskPageState.Waiting -> AskPageState.Receiving(
             messages = state.messages,
             pendingResponse = action.partialResponse,
         )
@@ -42,17 +31,15 @@ fun askPageReducer(state: AskPageState, action: AskPageAction): AskPageState = w
         else -> state
     }
     is ResponseCompleted -> when (state) {
+        is AskPageState.Waiting -> AskPageState.Ready(messages = state.messages)
         is AskPageState.Receiving -> AskPageState.Ready(
-            llm = state.llm,
             messages = state.messages + Llm.Message.Assistant(state.pendingResponse.rawMarkdown),
         )
         else -> state
     }
     is ResponseFailed -> when (state) {
-        is AskPageState.Receiving -> AskPageState.Ready(
-            llm = state.llm,
-            messages = state.messages,
-        )
+        is AskPageState.Waiting -> AskPageState.Ready(messages = state.messages, hasError = true)
+        is AskPageState.Receiving -> AskPageState.Ready(messages = state.messages, hasError = true)
         else -> state
     }
 }
