@@ -17,9 +17,42 @@ fun askPageReducer(state: AskPageState, action: AskPageAction): AskPageState = w
     is ViewAppeared -> AskPageState.Idle
     is ViewDismissed -> AskPageState.Finished
     is UserMessageSubmitted -> when (state) {
-        is AskPageState.Active -> state.copy(
+        is AskPageState.Ready -> state.copy(
             messages = state.messages + Llm.Message.User(action.text),
         )
-        else -> AskPageState.Active(messages = listOf(Llm.Message.User(action.text)))
+        else -> AskPageState.WaitingToSendMessage(action.text)
+    }
+    is LlmProviderAction.ProviderAvailable -> state
+    is LlmProviderAction.ProviderReady -> when (state) {
+        is AskPageState.Idle -> AskPageState.Ready(llm = action.llm)
+        is AskPageState.WaitingToSendMessage -> AskPageState.Ready(
+            llm = action.llm,
+            messages = listOf(Llm.Message.User(state.message)),
+        )
+        else -> state
+    }
+    is LlmProviderAction.ProviderFailed -> state
+    is ReceivedParsedResponse -> when (state) {
+        is AskPageState.Ready -> AskPageState.Receiving(
+            llm = state.llm,
+            messages = state.messages,
+            pendingResponse = action.partialResponse,
+        )
+        is AskPageState.Receiving -> state.copy(pendingResponse = action.partialResponse)
+        else -> state
+    }
+    is ResponseCompleted -> when (state) {
+        is AskPageState.Receiving -> AskPageState.Ready(
+            llm = state.llm,
+            messages = state.messages + Llm.Message.Assistant(state.pendingResponse.rawMarkdown),
+        )
+        else -> state
+    }
+    is ResponseFailed -> when (state) {
+        is AskPageState.Receiving -> AskPageState.Ready(
+            llm = state.llm,
+            messages = state.messages,
+        )
+        else -> state
     }
 }

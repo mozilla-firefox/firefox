@@ -114,7 +114,9 @@ private fun Context.getConnectionType(): ConnectionType {
  */
 class SummarizationFragment : BottomSheetDialogFragment() {
     private val args by navArgs<SummarizationFragmentArgs>()
-    private val askPageViewModel: AskPageStoreViewModel by viewModels()
+    private val askPageViewModel: AskPageStoreViewModel by viewModels {
+        AskPageStoreViewModel.factory(requireComponents.llm.mlpaProvider)
+    }
     private val storeViewModel: SummarizationStoreViewModel by viewModels {
         val currentTab = requireComponents.core.store.state.selectedTab
         val engineSession = currentTab?.engineState?.engineSession

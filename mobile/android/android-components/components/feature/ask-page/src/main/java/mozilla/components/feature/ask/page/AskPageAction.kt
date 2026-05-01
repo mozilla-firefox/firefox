@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.ask.page
 
+import mozilla.components.concept.llm.Llm
 import mozilla.components.lib.state.Action
 
 /**
@@ -23,3 +24,25 @@ data object ViewDismissed : AskPageAction
  * @param text The text of the user's message.
  */
 data class UserMessageSubmitted(val text: String) : AskPageAction
+
+/** We've received an incremental [PartialResponse] from the LLM. */
+data class ReceivedParsedResponse(val partialResponse: PartialResponse) : AskPageAction
+
+/** The LLM has finished streaming its response. */
+data object ResponseCompleted : AskPageAction
+
+/** The LLM encountered an error. */
+data class ResponseFailed(val throwable: Throwable) : AskPageAction
+
+/** Actions tracking the lifecycle of the [Llm] provider. */
+sealed interface LlmProviderAction : AskPageAction {
+
+    /** The LLM provider is reachable and can be prepared for use. */
+    data object ProviderAvailable : LlmProviderAction
+
+    /** The LLM provider is fully initialized and ready to receive prompts. */
+    data class ProviderReady(val llm: Llm) : LlmProviderAction
+
+    /** The LLM provider is unavailable. */
+    data class ProviderFailed(val exception: Llm.Exception) : LlmProviderAction
+}

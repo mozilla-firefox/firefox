@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.concept.llm.Llm
+import mozilla.components.ui.richtext.RichText
+import mozilla.components.ui.richtext.ir.RichDocument
+import mozilla.components.ui.richtext.parsing.Parser
 
 /**
  * Top-level entry point for the ask-page conversational UI.
@@ -41,10 +45,17 @@ fun AskPageUi(store: AskPageStore) {
     LaunchedEffect(Unit) { store.dispatch(ViewAppeared) }
 
     val state by store.stateFlow.collectAsStateWithLifecycle()
-    val messages = (state as? AskPageState.Active)?.messages ?: emptyList()
+
+    val messages = when (val s = state) {
+        is AskPageState.Ready -> s.messages
+        is AskPageState.Receiving -> s.messages
+        else -> emptyList()
+    }
 
     AskPageScreen(
         messages = messages,
+        pendingResponse = (state as? AskPageState.Receiving)?.pendingResponse,
+        sendEnabled = state is AskPageState.Ready,
         onSubmit = { submittedText ->
             store.dispatch(UserMessageSubmitted(submittedText))
         },
@@ -54,8 +65,16 @@ fun AskPageUi(store: AskPageStore) {
 @Composable
 internal fun AskPageScreen(
     messages: List<Llm.Message>,
+    pendingResponse: PartialResponse?,
+    sendEnabled: Boolean,
     onSubmit: (String) -> Unit,
 ) {
+    val listState = rememberLazyListState()
+    val itemCount = messages.size + if (pendingResponse != null) 1 else 0
+    LaunchedEffect(itemCount) {
+        if (itemCount > 0) listState.scrollToItem(itemCount - 1)
+    }
+
     Surface(modifier = Modifier.fillMaxHeight()) {
         Column(
             modifier = Modifier
@@ -63,6 +82,7 @@ internal fun AskPageScreen(
                 .padding(horizontal = AcornTheme.layout.space.dynamic200),
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
@@ -71,10 +91,16 @@ internal fun AskPageScreen(
                 items(messages) { message ->
                     MessageBubble(message)
                 }
+                if (pendingResponse != null) {
+                    item {
+                        AssistantResponseBubble(pendingResponse.richDocument)
+                    }
+                }
             }
 
             UserPromptChip(
                 onSubmit = onSubmit,
+                enabled = sendEnabled,
                 modifier = Modifier
                     .padding(
                         top = AcornTheme.layout.space.dynamic100,
@@ -100,13 +126,40 @@ private fun MessageBubble(message: Llm.Message) {
                 MaterialTheme.colorScheme.surfaceVariant
             },
         ) {
-            Text(
-                text = message.message,
+            val contentModifier = Modifier.padding(
+                horizontal = AcornTheme.layout.space.dynamic150,
+                vertical = AcornTheme.layout.space.dynamic100,
+            )
+            if (isUser) {
+                Text(
+                    text = message.message,
+                    modifier = contentModifier,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            } else {
+                val document = remember(message.message) { Parser().parse(message.message) }
+                RichText(document = document, modifier = contentModifier)
+            }
+        }
+    }
+}
+
+@Composable
+private fun AssistantResponseBubble(document: RichDocument) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Start,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(AcornTheme.layout.space.dynamic150),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+        ) {
+            RichText(
+                document = document,
                 modifier = Modifier.padding(
                     horizontal = AcornTheme.layout.space.dynamic150,
                     vertical = AcornTheme.layout.space.dynamic100,
                 ),
-                style = MaterialTheme.typography.bodyMedium,
             )
         }
     }
@@ -115,6 +168,7 @@ private fun MessageBubble(message: Llm.Message) {
 @Composable
 private fun UserPromptChip(
     onSubmit: (String) -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var text by remember { mutableStateOf("") }
@@ -137,6 +191,7 @@ private fun UserPromptChip(
                 onSubmit(text)
                 text = ""
             },
+            enabled = enabled,
         ) {
             Text("Send")
         }
