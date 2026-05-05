@@ -395,3 +395,73 @@ WHERE EXISTS (
 ORDER BY c.updated_date {sort}
 LIMIT :limit OFFSET :offset;
 `;
+
+export const LLM_TELEMETRY_TABLE = `
+CREATE TABLE llm_telemetry (
+  conv_id TEXT PRIMARY KEY,
+  telemetry_prompts BLOB,
+  telemetry_probabilitiies BLOB,
+  processed_time TIMESTAMP,
+  processed INTEGER DEFAULT 0
+)
+`;
+
+export const GET_LLM_TELEMETRY_DATA_BY_CONV_ID = `
+SELECT
+  telemetry_prompts,
+  telemetry_probabilitiies
+FROM llm_telemetry
+WHERE conv_id = :conv_id
+`;
+
+export const UPSERT_LLM_TELEMETRY = `
+INSERT INTO llm_telemetry (
+  conv_id,
+  telemetry_prompts,
+  telemetry_probabilitiies,
+  processed_time,
+  processed
+)
+VALUES (
+  :conv_id,
+  :telemetry_prompts,
+  :telemetry_probabilitiies,
+  :processed_time,
+  :processed
+)
+ON CONFLICT(conv_id) DO UPDATE SET
+  telemetry_prompts = excluded.telemetry_prompts,
+  telemetry_probabilitiies = excluded.telemetry_probabilitiies,
+  processed_time = excluded.processed_time,
+  processed = excluded.processed
+`;
+
+export const MARK_LLM_TELEMETRY_UNPROCESSED = `
+  INSERT INTO llm_telemetry (
+    conv_id,
+    telemetry_prompts,
+    telemetry_probabilitiies,
+    processed_time,
+    processed
+  )
+  VALUES (
+    :conv_id,
+    '{}',
+    '{}',
+    :processed_time,
+    0
+  )
+  ON CONFLICT(conv_id) DO UPDATE SET
+    processed = 0
+`;
+
+export const GET_LLM_TELEMETRY_BY_CONV_ID = `
+SELECT
+  conv_id,
+  telemetry_prompts,
+  telemetry_probabilitiies,
+  processed_time,
+  processed
+FROM llm_telemetry
+WHERE conv_id = :conv_id
+`;
