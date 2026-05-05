@@ -299,6 +299,7 @@ treeherder:
         'feature-webcompat': 'feature-webcompat'
         'feature-webnotifications': 'feature-webnotifications'
         'lib-ai-controls': 'lib-ai-controls'
+        'lib-llm-harness': 'lib-llm-harness'
         'lib-crash': 'lib-crash'
         'lib-auth': 'lib-auth'
         'lib-bookmarks-file': 'lib-bookmarks-file'
