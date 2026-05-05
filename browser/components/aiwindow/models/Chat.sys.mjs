@@ -29,7 +29,10 @@ import {
   replaceUrlsWithTokens,
 } from "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs";
 import { compactMessages } from "moz-src:///browser/components/aiwindow/models/PromptOptimizer.sys.mjs";
-import { TelemetryEngine } from "moz-src:///browser/components/aiwindow/models/TelemetryUtils.sys.mjs";
+import {
+  TelemetryEngine,
+  submitTelemetryResult,
+} from "moz-src:///browser/components/aiwindow/models/TelemetryUtils.sys.mjs";
 
 // Hard limit on how many times run_search can execute per conversation turn.
 // Prevents infinite tool-call loops when the model repeatedly requests search.
@@ -229,6 +232,13 @@ Object.assign(Chat, {
           console.warn("TRIGGERS: ", triggers);
           telemetryEngine
             .runTelemetry(triggers, conversation)
+            .then(results => {
+              submitTelemetryResult(
+                results,
+                conversation,
+                this.modelId,
+              );
+            })
             .catch(e => console.error("Telemetry run failed:", e));
         }
         return;
