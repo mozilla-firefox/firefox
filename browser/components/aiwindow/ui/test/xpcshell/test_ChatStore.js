@@ -1262,3 +1262,176 @@ add_atomic_task(async function test_memoriesToggled_upsert_updatesValue() {
     "memoriesToggled should be false after second upsert"
   );
 });
+
+add_atomic_task(
+  async function test_updateLLMTelemetryRecord_creates_unprocessed_row() {
+    const conversation = new ChatConversation({});
+    conversation.title = "conversation with llm telemetry";
+    conversation.addUserMessage("test content", "https://www.firefox.com");
+    await gChatStore.updateConversation(conversation);
+
+    await gChatStore.updateLLMTelemetryRecord(conversation.id);
+
+    const telemetry = await gChatStore.findLLMTelemetryByConversationId(
+      conversation.id
+    );
+
+    Assert.ok(telemetry, "LLM telemetry row should exist");
+    Assert.withSoftAssertions(function (soft) {
+      soft.equal(telemetry.convId, conversation.id);
+      soft.equal(telemetry.processed, 0);
+      soft.deepEqual(telemetry.telemetryPrompts, {});
+      soft.deepEqual(telemetry.telemetryProbabilities, {});
+      soft.ok(telemetry.processedTime, "processedTime should be set");
+    });
+  }
+);
+
+add_atomic_task(
+  async function test_updateLLMTelemetryRecord_creates_processed_row() {
+    const conversation = new ChatConversation({});
+    conversation.title = "processed llm telemetry conversation";
+    conversation.addUserMessage("test content", "https://www.firefox.com");
+    await gChatStore.updateConversation(conversation);
+
+    await gChatStore.updateLLMTelemetryRecord(
+      conversation.id,
+      {
+        "wasSuccessful-v1": 2,
+        "isLongConvo-v1": 2,
+      },
+      {
+        "wasSuccessful-v1": 0.9,
+        "isLongConvo-v1": 0.84,
+      },
+      1
+    );
+
+    const telemetry = await gChatStore.findLLMTelemetryByConversationId(
+      conversation.id
+    );
+
+    Assert.ok(telemetry, "LLM telemetry row should exist");
+    Assert.withSoftAssertions(function (soft) {
+      soft.equal(telemetry.convId, conversation.id);
+      soft.equal(telemetry.processed, 1);
+      soft.deepEqual(telemetry.telemetryPrompts, {
+        "wasSuccessful-v1": 2,
+        "isLongConvo-v1": 2,
+      });
+      soft.deepEqual(telemetry.telemetryProbabilities, {
+        "wasSuccessful-v1": 0.9,
+        "isLongConvo-v1": 0.84,
+      });
+      soft.ok(telemetry.processedTime, "processedTime should be set");
+    });
+  }
+);
+
+add_atomic_task(
+  async function test_updateLLMTelemetryRecord_merges_prompts_and_probabilities() {
+    const conversation = new ChatConversation({});
+    conversation.title = "merged llm telemetry conversation";
+    conversation.addUserMessage("test content", "https://www.firefox.com");
+    await gChatStore.updateConversation(conversation);
+
+    await gChatStore.updateLLMTelemetryRecord(
+      conversation.id,
+      {
+        "wasSuccessful-v1": 2,
+        "isLongConvo-v1": 2,
+      },
+      {
+        "wasSuccessful-v1": 0.9,
+        "isLongConvo-v1": 0.84,
+      },
+      0
+    );
+
+    await gChatStore.updateLLMTelemetryRecord(
+      conversation.id,
+      {
+        "isLongConvo-v1": 8,
+      },
+      {
+        "isLongConvo-v1": 0.95,
+      },
+      1
+    );
+
+    const telemetry = await gChatStore.findLLMTelemetryByConversationId(
+      conversation.id
+    );
+
+    Assert.ok(telemetry, "LLM telemetry row should exist");
+    Assert.withSoftAssertions(function (soft) {
+      soft.equal(telemetry.convId, conversation.id);
+      soft.equal(telemetry.processed, 1);
+      soft.deepEqual(telemetry.telemetryPrompts, {
+        "wasSuccessful-v1": 2,
+        "isLongConvo-v1": 8,
+      });
+      soft.deepEqual(telemetry.telemetryProbabilities, {
+        "wasSuccessful-v1": 0.9,
+        "isLongConvo-v1": 0.95,
+      });
+      soft.ok(telemetry.processedTime, "processedTime should be set");
+    });
+  }
+);
+
+add_atomic_task(
+  async function test_updateLLMTelemetryRecord_preserves_existing_data_when_marking_unprocessed() {
+    const conversation = new ChatConversation({});
+    conversation.title = "unprocessed preserves telemetry";
+    conversation.addUserMessage("test content", "https://www.firefox.com");
+    await gChatStore.updateConversation(conversation);
+
+    await gChatStore.updateLLMTelemetryRecord(
+      conversation.id,
+      {
+        "wasSuccessful-v1": 2,
+        "isLongConvo-v1": 8,
+      },
+      {
+        "wasSuccessful-v1": 0.9,
+        "isLongConvo-v1": 0.95,
+      },
+      1
+    );
+
+    await gChatStore.updateLLMTelemetryRecord(conversation.id, {}, {}, 0);
+
+    const telemetry = await gChatStore.findLLMTelemetryByConversationId(
+      conversation.id
+    );
+
+    Assert.ok(telemetry, "LLM telemetry row should exist");
+    Assert.withSoftAssertions(function (soft) {
+      soft.equal(telemetry.convId, conversation.id);
+      soft.equal(telemetry.processed, 0);
+      soft.deepEqual(telemetry.telemetryPrompts, {
+        "wasSuccessful-v1": 2,
+        "isLongConvo-v1": 8,
+      });
+      soft.deepEqual(telemetry.telemetryProbabilities, {
+        "wasSuccessful-v1": 0.9,
+        "isLongConvo-v1": 0.95,
+      });
+      soft.ok(telemetry.processedTime, "processedTime should be set");
+    });
+  }
+);
+
+add_atomic_task(
+  async function test_findLLMTelemetryByConversationId_returns_null_for_missing_row() {
+    const telemetry =
+      await gChatStore.findLLMTelemetryByConversationId("missing-conv-id");
+
+    Assert.equal(
+      telemetry,
+      null,
+      "Should return null when no LLM telemetry row exists"
+    );
+  }
+);

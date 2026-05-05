@@ -147,6 +147,23 @@ async function applyV7(conn, version) {
   `);
 }
 
+// Create a new table for LLM telemetry
+async function applyV8(conn, version) {
+  if (version >= 8) {
+    return;
+  }
+
+  await conn.execute(`
+    CREATE TABLE llm_telemetry (
+      conv_id TEXT PRIMARY KEY,
+      telemetry_prompts BLOB,
+      telemetry_probabilitiies BLOB,
+      processed_time TIMESTAMP,
+      processed INTEGER DEFAULT 0
+    )
+  `);
+}
+
 /**
  * Array of migration functions to run in the order they should be run in.
  *
@@ -159,4 +176,5 @@ export const migrations = [
   applyV5,
   applyV6,
   applyV7,
+  applyV8,
 ];
