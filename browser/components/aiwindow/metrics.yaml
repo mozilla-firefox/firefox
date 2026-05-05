@@ -66,6 +66,11 @@ smart_window:
         unit: count
         description: >
           Number of tabs selected
+      turn_number: &turn_number
+        type: quantity
+        unit: count
+        description: >
+          Current chat turn number
 
   search_submit:
     type: event
@@ -1067,3 +1072,29 @@ smart_window:
     notification_emails:
       - gcardieri@mozilla.com
     expires: never
+
+llm_response_telemetry:
+    type: event
+    description: |
+      Privacy preserving Chat Telemetry for Smart Window LLM response.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2035338
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D297374
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - gcardieri@mozilla.com
+    expires: never
+    extra_keys:
+      chat_id: *chat_id
+      model: *model
+      turn_number: *turn_number
+      attribute_name:
+        type: string
+        description: >
+          Attribute names including was_successful, conversation_topic, memory_referenced, etc.
+      attribute_value:
+        type: string
+        description: >
+          Value of the attribute, note that original boolean value would be stored as string (true/false)

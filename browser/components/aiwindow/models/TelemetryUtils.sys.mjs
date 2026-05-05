@@ -507,3 +507,19 @@ export class TelemetryEngine {
     return results;
   }
 }
+
+export function submitTelemetryResult(telemetryResults, conversation, modelId, currentTurn) {
+  const result_object = telemetryResults[0];
+  console.log("Result Object:", result_object);
+
+  for (const [attributeName, attributeValue] of Object.entries(result_object.result)) {
+    Glean.smartWindow.llmResponseTelemetry.record({
+      chat_id: conversation.id,
+      model: modelId,
+      turn_number: currentTurn,
+      attribute_name: attributeName,
+      attribute_value: String(attributeValue ?? UNKNOWN),
+    });
+  }
+  return;
+}
