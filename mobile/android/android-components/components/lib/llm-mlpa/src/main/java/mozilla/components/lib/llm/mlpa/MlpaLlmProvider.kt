@@ -12,6 +12,7 @@ import mozilla.components.concept.llm.CloudLlmProvider.State
 import mozilla.components.concept.llm.ErrorCode
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.LlmProvider
+import mozilla.components.lib.llm.mlpa.service.AuthorizationToken
 import mozilla.components.lib.llm.mlpa.service.ChatService
 import mozilla.components.lib.llm.mlpa.service.ChatServiceError
 import mozilla.components.lib.llm.mlpa.service.MlpaService
@@ -67,23 +68,32 @@ class MlpaLlmProvider(
             }
     }
 
-    /**
-     * Wraps the [ChatService]
-     */
-    private val chatService = ChatService { token, request ->
-        mlpaService.completion(token, request)
-            .catch { throwable ->
-                val error = throwable as? Llm.Exception
-                    ?: Llm.Exception(
-                        message = throwable.message ?: "missing chat service error",
-                        errorCode = unknownChatServiceError,
-                    )
-                if (throwable is ChatServiceError.InvalidToken) {
-                    storage.clear()
-                    _state.value = State.Available
-                }
-                throw error
+    private val chatService = object : ChatService {
+        override fun completion(authorizationToken: AuthorizationToken, request: ChatService.Request) =
+            mlpaService.completion(authorizationToken, request)
+                .catch { throwable -> throw mapError(throwable) }
+
+        override suspend fun completionWithTools(
+            authorizationToken: AuthorizationToken,
+            request: ChatService.Request,
+        ) = try {
+            mlpaService.completionWithTools(authorizationToken, request)
+        } catch (throwable: Throwable) {
+            throw mapError(throwable)
+        }
+
+        private suspend fun mapError(throwable: Throwable): Llm.Exception {
+            if (throwable is ChatServiceError.InvalidToken) {
+                storage.
+                clear()
+                _state.value = State.Available
             }
+            return throwable as? Llm.Exception
+                ?: Llm.Exception(
+                    message = throwable.message ?: "missing chat service error",
+                    errorCode = unknownChatServiceError,
+                )
+        }
     }
 
     private val unknownTokenProviderError = ErrorCode(1000)

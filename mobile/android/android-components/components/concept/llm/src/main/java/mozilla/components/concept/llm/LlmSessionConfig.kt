@@ -26,6 +26,7 @@ data class LlmSessionConfig(
     val picker: LlmPicker = LlmPicker.Default,
     val systemPrompt: String = "",
     val tools: List<LlmTool> = emptyList(),
+    val maxToolRounds: Int = 5,
     val contextWindowStrategy: ContextWindowStrategy = ContextWindowStrategy.Default,
     val failoverStrategy: LlmFailoverStrategy = LlmFailoverStrategy.AutoFailover,
     val preparationStrategy: LlmPreparationStrategy = LlmPreparationStrategy.ActiveOnly,

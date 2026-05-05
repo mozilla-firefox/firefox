@@ -34,18 +34,25 @@ interface Llm {
     /**
      * Runs inference with the given [contextWindow].
      *
-     * @param contextWindow A [ContextWindow] containing the ordered conversation messages.
-     * @return a [Flow] of [String] tokens emitted as the [Llm] produces its response.
+     * When [ContextWindow.tools] is non-empty, the result may be a [LlmTurnResult.ToolCalls]
+     * rather than a [LlmTurnResult.Text].
+     *
+     * @param contextWindow A [ContextWindow] containing the ordered conversation messages and
+     *   any tools available for this turn.
+     * @return A [LlmTurnResult] that is either a text token stream or a set of tool calls.
      */
-    suspend fun prompt(contextWindow: ContextWindow): Flow<String>
+    suspend fun prompt(contextWindow: ContextWindow): LlmTurnResult
 
     /**
-     * Represents the full context provided to an [Llm] for a single inference request,
-     * as an ordered list of [Message]s.
+     * Represents the full context provided to an [Llm] for a single inference request.
      *
      * @param messages The conversation history, in chronological order.
+     * @param tools Tools available for this turn. Empty means no tool calling.
      */
-    data class ContextWindow(val messages: List<Message>)
+    data class ContextWindow(
+        val messages: List<Message>,
+        val tools: List<LlmTool> = emptyList(),
+    )
 
     /**
      * A single message in a [ContextWindow].
@@ -73,6 +80,43 @@ interface Llm {
          * @param message The assistant's response text.
          */
         data class Assistant(override val message: String) : Message()
+
+        /**
+         * An assistant turn that requested one or more tool calls instead of producing text.
+         *
+         * @param calls The tool calls the model requested.
+         */
+        data class AssistantToolCall(val calls: List<ToolCall>) : Message() {
+            override val message: String = ""
+        }
+
+        /**
+         * A tool result fed back to the model after executing a tool call.
+         *
+         * @param toolCallId The ID of the [ToolCall] this result corresponds to.
+         * @param message The result content returned by the tool.
+         */
+        data class Tool(val toolCallId: String, override val message: String) : Message()
+    }
+
+    /**
+     * A single tool call requested by the model during a turn.
+     *
+     * @property id Unique identifier used to correlate this call with its result.
+     * @property toolName The name of the tool to invoke.
+     * @property arguments A JSON string of the arguments the model supplied.
+     */
+    data class ToolCall(val id: String, val toolName: String, val arguments: String)
+
+    /**
+     * The result of a single model turn.
+     */
+    sealed class LlmTurnResult {
+        /** The model produced a streaming text response. */
+        data class Text(val flow: Flow<String>) : LlmTurnResult()
+
+        /** The model requested one or more tool calls instead of producing text. */
+        data class ToolCalls(val calls: List<ToolCall>) : LlmTurnResult()
     }
 
     /**

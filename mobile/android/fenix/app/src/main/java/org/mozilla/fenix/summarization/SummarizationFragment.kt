@@ -24,11 +24,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.fragment.navArgs
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.pageextraction.ContentParams
 import mozilla.components.feature.ask.page.AskPageUi
+import mozilla.components.feature.ask.page.PageContentTool
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.SummarizationUi
 import mozilla.components.feature.summarize.ViewDismissed
@@ -115,7 +118,23 @@ private fun Context.getConnectionType(): ConnectionType {
 class SummarizationFragment : BottomSheetDialogFragment() {
     private val args by navArgs<SummarizationFragmentArgs>()
     private val askPageViewModel: AskPageStoreViewModel by viewModels {
-        AskPageStoreViewModel.factory(requireComponents.llm.mlpaProvider)
+        val engineSession = requireComponents.core.store.state.selectedTab?.engineState?.engineSession
+        AskPageStoreViewModel.factory(
+            provider = requireComponents.llm.mlpaProvider,
+            tools = listOf(
+                PageContentTool {
+                    withContext(Dispatchers.Main) {
+                        suspendCancellableCoroutine { continuation ->
+                                engineSession!!.getPageContent(
+                                    options = ContentParams(removeBoilerplate = true),
+                                    onResult = { continuation.resume(it) },
+                                    onException = { continuation.resumeWithException(PageContentExtractor.Exception()) },
+                                )
+                            }
+                    }
+                },
+            ),
+        )
     }
     private val storeViewModel: SummarizationStoreViewModel by viewModels {
         val currentTab = requireComponents.core.store.state.selectedTab

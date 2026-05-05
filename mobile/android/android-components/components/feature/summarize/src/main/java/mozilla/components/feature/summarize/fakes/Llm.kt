@@ -5,7 +5,6 @@
 package mozilla.components.feature.summarize.fakes
 
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import mozilla.components.concept.llm.CloudLlmProvider
@@ -47,13 +46,16 @@ data class FakeLlm(
 
     var lastPrompt: Llm.ContextWindow? = null
 
-    override suspend fun prompt(contextWindow: Llm.ContextWindow): Flow<String> = flow {
-        for (response in responses) {
-            emit(response)
-            delay(2.seconds)
-        }
-    }.also {
+    override suspend fun prompt(contextWindow: Llm.ContextWindow): Llm.LlmTurnResult {
         lastPrompt = contextWindow
+        return Llm.LlmTurnResult.Text(
+            flow {
+                for (response in responses) {
+                    emit(response)
+                    delay(2.seconds)
+                }
+            },
+        )
     }
 
     companion object {

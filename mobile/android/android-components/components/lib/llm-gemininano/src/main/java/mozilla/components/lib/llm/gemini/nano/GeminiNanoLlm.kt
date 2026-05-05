@@ -7,7 +7,6 @@ package mozilla.components.lib.llm.gemini.nano
 import com.google.mlkit.genai.common.GenAiException
 import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.prompt.GenerativeModel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -28,9 +27,8 @@ internal class GeminiNanoLlm(
         buildModel()
     }
 
-    override suspend fun prompt(contextWindow: Llm.ContextWindow): Flow<String> = flow {
-        streamPromptResponses(contextWindow)
-    }
+    override suspend fun prompt(contextWindow: Llm.ContextWindow): Llm.LlmTurnResult =
+        Llm.LlmTurnResult.Text(flow { streamPromptResponses(contextWindow) })
 
     private suspend fun FlowCollector<String>.streamPromptResponses(contextWindow: Llm.ContextWindow) = try {
         // consume replies from the model until it provides a finish reason

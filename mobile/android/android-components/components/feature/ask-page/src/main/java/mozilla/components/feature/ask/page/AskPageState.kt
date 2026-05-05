@@ -28,11 +28,11 @@ sealed class AskPageState : State {
      * The session is available and waiting for user input.
      *
      * @param messages The conversation history to display, in chronological order.
-     * @param hasError Whether the last LLM call failed. Cleared on the next [UserMessageSubmitted].
+     * @param error The exception from the last failed LLM call, or null. Cleared on the next [UserMessageSubmitted].
      */
     data class Ready(
         val messages: List<Llm.Message> = emptyList(),
-        val hasError: Boolean = false,
+        val error: Throwable? = null,
     ) : AskPageState()
 
     /**

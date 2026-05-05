@@ -38,8 +38,8 @@ fun askPageReducer(state: AskPageState, action: AskPageAction): AskPageState = w
         else -> state
     }
     is ResponseFailed -> when (state) {
-        is AskPageState.Waiting -> AskPageState.Ready(messages = state.messages, hasError = true)
-        is AskPageState.Receiving -> AskPageState.Ready(messages = state.messages, hasError = true)
+        is AskPageState.Waiting -> AskPageState.Ready(messages = state.messages, error = action.throwable)
+        is AskPageState.Receiving -> AskPageState.Ready(messages = state.messages, error = action.throwable)
         else -> state
     }
 }

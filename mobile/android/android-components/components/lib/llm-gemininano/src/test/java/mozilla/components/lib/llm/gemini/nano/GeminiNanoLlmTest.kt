@@ -25,7 +25,7 @@ class GeminiNanoLlmTest {
 
         val llm = GeminiNanoLlm(buildModel = { fakeModel })
 
-        val results = llm.prompt(Llm.ContextWindow(listOf(Llm.Message.User("test prompt")))).toList()
+        val results = (llm.prompt(Llm.ContextWindow(listOf(Llm.Message.User("test prompt")))) as Llm.LlmTurnResult.Text).flow.toList()
 
         assertEquals(1, results.size)
         assertEquals("test response", results[0])
@@ -40,7 +40,7 @@ class GeminiNanoLlmTest {
         )
 
         val llm = GeminiNanoLlm(buildModel = { fakeModel })
-        val result = runCatching { llm.prompt(Llm.ContextWindow(listOf(Llm.Message.User("test prompt")))).toList() }
+        val result = runCatching { (llm.prompt(Llm.ContextWindow(listOf(Llm.Message.User("test prompt")))) as Llm.LlmTurnResult.Text).flow.toList() }
 
         assertTrue(result.isFailure)
         assertIs<Llm.Exception>(result.exceptionOrNull())
@@ -61,13 +61,7 @@ class GeminiNanoLlmTest {
             logger = { logMessages.add(it) },
         )
 
-        llm.prompt(
-            Llm.ContextWindow(
-                listOf(
-                    Llm.Message.User(prompt),
-                ),
-            ),
-        ).toList()
+        (llm.prompt(Llm.ContextWindow(listOf(Llm.Message.User(prompt)))) as Llm.LlmTurnResult.Text).flow.toList()
 
         assertEquals(2, logMessages.size)
         assertTrue(logMessages[0].contains("Beginning model response stream"))

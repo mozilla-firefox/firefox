@@ -69,7 +69,7 @@ class SummarizationMiddleware(
 
         store.dispatch(ContentExtracted(content))
 
-        llm.prompt(content.prompt)
+        (llm.prompt(content.prompt) as Llm.LlmTurnResult.Text).flow
             .mapToRichDocument(
                 pageTitle = content.metadata.pageTitle,
                 dispatcher = dispatcher,

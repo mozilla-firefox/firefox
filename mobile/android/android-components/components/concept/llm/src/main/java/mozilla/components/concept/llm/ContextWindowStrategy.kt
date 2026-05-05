@@ -36,10 +36,10 @@ interface ContextWindowStrategy {
 
                 while (conversation.isNotEmpty()) {
                     conversation.removeAt(0)
-                    val candidate = Llm.ContextWindow(systemMessages + conversation)
+                    val candidate = Llm.ContextWindow(systemMessages + conversation, contextWindow.tools)
                     if (llm.countTokens(candidate) <= llm.contextWindowSize) return candidate
                 }
-                return Llm.ContextWindow(systemMessages)
+                return Llm.ContextWindow(systemMessages, contextWindow.tools)
             }
         }
     }

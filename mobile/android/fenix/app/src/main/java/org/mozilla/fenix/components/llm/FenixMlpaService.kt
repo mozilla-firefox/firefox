@@ -28,4 +28,8 @@ class FenixMlpaService(
         authorizationToken: AuthorizationToken,
         request: ChatService.Request,
     ) = service.completion(authorizationToken, request)
+    override suspend fun completionWithTools(
+        authorizationToken: AuthorizationToken,
+        request: ChatService.Request,
+    ) = service.completionWithTools(authorizationToken, request)
 }

@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.ErrorCode
 import mozilla.components.concept.llm.Llm
+import mozilla.components.concept.llm.Llm.LlmTurnResult
 import mozilla.components.lib.llm.mlpa.fakes.FakeMlpaService
 import mozilla.components.lib.llm.mlpa.fakes.failureChatService
 import mozilla.components.lib.llm.mlpa.fakes.failureTokenProvider
@@ -69,15 +70,10 @@ class MlpaLlmProviderTest {
 
             provider.prepare()
 
-            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(
-                Llm.ContextWindow(
-                    listOf(
-                        Llm.Message.User("This is a test prompt"),
-                    ),
-                ),
-            )
-                ?.catch {}
-                ?.collect {}
+            val flow1 = ((provider.state.value as? CloudLlmProvider.State.Ready)
+                ?.llm?.prompt(Llm.ContextWindow(listOf(Llm.Message.User("This is a test prompt"))))
+                as? Llm.LlmTurnResult.Text)?.flow
+            flow1?.catch {}?.collect {}
 
             assertIs<CloudLlmProvider.State.Available>(provider.state.value)
         }
@@ -99,15 +95,10 @@ class MlpaLlmProviderTest {
 
             provider.prepare()
 
-            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(
-                Llm.ContextWindow(
-                    listOf(
-                        Llm.Message.User("This is a test prompt"),
-                    ),
-                ),
-            )
-                ?.catch {}
-                ?.collect {}
+            val flow2 = ((provider.state.value as? CloudLlmProvider.State.Ready)
+                ?.llm?.prompt(Llm.ContextWindow(listOf(Llm.Message.User("This is a test prompt"))))
+                as? Llm.LlmTurnResult.Text)?.flow
+            flow2?.catch {}?.collect {}
 
             assertIs<CloudLlmProvider.State.Ready>(provider.state.value)
         }
@@ -128,15 +119,10 @@ class MlpaLlmProviderTest {
             provider.prepare()
 
             var caughtError: Throwable? = null
-            (provider.state.value as? CloudLlmProvider.State.Ready)?.llm?.prompt(
-                Llm.ContextWindow(
-                    listOf(
-                        Llm.Message.User("This is a test prompt"),
-                    ),
-                ),
-            )
-                ?.catch { caughtError = it }
-                ?.collect {}
+            val flow3 = ((provider.state.value as? CloudLlmProvider.State.Ready)
+                ?.llm?.prompt(Llm.ContextWindow(listOf(Llm.Message.User("This is a test prompt"))))
+                as? Llm.LlmTurnResult.Text)?.flow
+            flow3?.catch { caughtError = it }?.collect {}
 
             assertIs<Llm.Exception>(caughtError)
             assertEquals(ErrorCode(1001), (caughtError as Llm.Exception).errorCode)

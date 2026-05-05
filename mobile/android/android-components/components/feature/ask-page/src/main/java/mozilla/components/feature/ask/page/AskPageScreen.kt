@@ -68,7 +68,7 @@ fun AskPageUi(store: AskPageStore) {
         messages = messages,
         pendingResponse = (state as? AskPageState.Receiving)?.pendingResponse,
         showLoadingBubble = state is AskPageState.Waiting,
-        hasError = (state as? AskPageState.Ready)?.hasError == true,
+        error = (state as? AskPageState.Ready)?.error,
         sendEnabled = state is AskPageState.Ready,
         onSubmit = { submittedText ->
             store.dispatch(UserMessageSubmitted(submittedText))
@@ -81,12 +81,12 @@ internal fun AskPageScreen(
     messages: List<Llm.Message>,
     pendingResponse: PartialResponse?,
     showLoadingBubble: Boolean,
-    hasError: Boolean,
+    error: Throwable?,
     sendEnabled: Boolean,
     onSubmit: (String) -> Unit,
 ) {
     val listState = rememberLazyListState()
-    val itemCount = messages.size + if (showLoadingBubble || pendingResponse != null || hasError) 1 else 0
+    val itemCount = messages.size + if (showLoadingBubble || pendingResponse != null || error != null) 1 else 0
     LaunchedEffect(itemCount) {
         if (itemCount > 0) listState.scrollToItem(itemCount - 1)
     }
@@ -110,7 +110,7 @@ internal fun AskPageScreen(
                 when {
                     showLoadingBubble -> item { LoadingBubble() }
                     pendingResponse != null -> item { AssistantResponseBubble(pendingResponse.richDocument) }
-                    hasError -> item { ErrorBubble() }
+                    error != null -> item { ErrorBubble(error) }
                 }
             }
 
@@ -230,7 +230,7 @@ private fun LoadingBubble() {
 }
 
 @Composable
-private fun ErrorBubble() {
+private fun ErrorBubble(error: Throwable) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Start,
@@ -240,7 +240,7 @@ private fun ErrorBubble() {
             color = MaterialTheme.colorScheme.errorContainer,
         ) {
             Text(
-                text = "Something went wrong. Please try again.",
+                text = "Something went wrong (${error::class.simpleName}). Please try again.",
                 modifier = Modifier.padding(
                     horizontal = AcornTheme.layout.space.dynamic150,
                     vertical = AcornTheme.layout.space.dynamic100,

@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -49,21 +48,54 @@ internal class LlmSessionImpl(private val config: LlmSessionConfig) : LlmSession
         yield()
 
         return flow {
-            historyMutex.withLock { history.add(Llm.Message.User(message)) }
-            val contextWindow = buildContextWindow(llm)
-            val responseBuilder = StringBuilder()
-            llm.prompt(contextWindow)
-                .onCompletion { cause ->
-                    if (cause != null) {
-                        historyMutex.withLock { history.removeLastOrNull() }
+            val historySnapshot = historyMutex.withLock {
+                val size = history.size
+                history.add(Llm.Message.User(message))
+                size
+            }
+
+            try {
+                var turnResult = llm.prompt(buildContextWindow(llm))
+                var rounds = 0
+
+                while (true) {
+                    when (val result = turnResult) {
+                        is Llm.LlmTurnResult.ToolCalls -> {
+                            if (rounds >= config.maxToolRounds) {
+                                throw Llm.Exception.unknown("Max tool rounds exceeded")
+                            }
+                            historyMutex.withLock {
+                                history.add(Llm.Message.AssistantToolCall(result.calls))
+                            }
+                            for (call in result.calls) {
+                                val tool = config.tools.find { it.name == call.toolName }
+                                    ?: throw Llm.Exception.unknown("Unknown tool: ${call.toolName}")
+                                val toolResult = tool.execute(call.arguments)
+                                historyMutex.withLock {
+                                    history.add(Llm.Message.Tool(call.id, toolResult))
+                                }
+                            }
+                            rounds++
+                            turnResult = llm.prompt(buildContextWindow(llm))
+                        }
+                        is Llm.LlmTurnResult.Text -> {
+                            val responseBuilder = StringBuilder()
+                            result.flow.collect { token ->
+                                responseBuilder.append(token)
+                                emit(token)
+                            }
+                            historyMutex.withLock {
+                                history.add(Llm.Message.Assistant(responseBuilder.toString()))
+                            }
+                            break
+                        }
                     }
                 }
-                .collect { response ->
-                    responseBuilder.append(response)
-                    emit(response)
+            } catch (e: Throwable) {
+                historyMutex.withLock {
+                    while (history.size > historySnapshot) history.removeLastOrNull()
                 }
-            historyMutex.withLock {
-                history.add(Llm.Message.Assistant(responseBuilder.toString()))
+                throw e
             }
         }
     }
@@ -113,7 +145,7 @@ internal class LlmSessionImpl(private val config: LlmSessionConfig) : LlmSession
                 addAll(history)
             }
         }
-        return config.contextWindowStrategy.trim(Llm.ContextWindow(messages), llm)
+        return config.contextWindowStrategy.trim(Llm.ContextWindow(messages, config.tools), llm)
     }
 
     private suspend fun prepareProvider(provider: LlmProvider) {

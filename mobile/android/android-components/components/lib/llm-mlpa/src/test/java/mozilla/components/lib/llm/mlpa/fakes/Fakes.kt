@@ -58,16 +58,19 @@ val failureAuthenticationService = AuthenticationService { request ->
     Result.failure(IllegalStateException("Bad MLPA Response"))
 }
 
-val successChatService = ChatService { token, request ->
-    listOf("Hello World!").asFlow()
+val successChatService = object : ChatService {
+    override fun completion(authorizationToken: AuthorizationToken, request: ChatService.Request) =
+        listOf("Hello World!").asFlow()
 }
 
-val failureChatService = ChatService { token, request ->
-    flow { throw IllegalStateException("Bad response!") }
+val failureChatService = object : ChatService {
+    override fun completion(authorizationToken: AuthorizationToken, request: ChatService.Request) =
+        flow<String> { throw IllegalStateException("Bad response!") }
 }
 
-val invalidTokenService = ChatService { _, _ ->
-    flow { throw ChatServiceError.InvalidToken() }
+val invalidTokenService = object : ChatService {
+    override fun completion(authorizationToken: AuthorizationToken, request: ChatService.Request) =
+        flow<String> { throw ChatServiceError.InvalidToken() }
 }
 
 val streamedResponseBody = """
