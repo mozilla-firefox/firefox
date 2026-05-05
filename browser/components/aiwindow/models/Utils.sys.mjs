@@ -86,6 +86,38 @@ export const MODEL_FEATURES = Object.freeze({
 });
 
 /**
+ * Default model IDs for each feature.
+ * These are Mozilla's recommended models, used when user hasn't configured
+ * custom settings or when remote setting retrieval fails.
+ */
+export const DEFAULT_MODEL = Object.freeze({
+  [MODEL_FEATURES.CHAT]: "qwen3-235b-a22b-instruct-2507-maas",
+  [MODEL_FEATURES.TITLE_GENERATION]: "qwen3-235b-a22b-instruct-2507-maas",
+  [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_SIDEBAR_STARTER]:
+    "qwen3-235b-a22b-instruct-2507-maas",
+  [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_FOLLOWUP]:
+    "qwen3-235b-a22b-instruct-2507-maas",
+  [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_ASSISTANT_LIMITATIONS]:
+    "qwen3-235b-a22b-instruct-2507-maas",
+  [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_INSIGHTS]:
+    "qwen3-235b-a22b-instruct-2507-maas",
+  // memories generation flow
+  [MODEL_FEATURES.MEMORIES_INITIAL_GENERATION_SYSTEM]: "gemini-2.5-flash-lite",
+  [MODEL_FEATURES.MEMORIES_INITIAL_GENERATION_USER]: "gemini-2.5-flash-lite",
+  [MODEL_FEATURES.MEMORIES_DEDUPLICATION_SYSTEM]: "gemini-2.5-flash-lite",
+  [MODEL_FEATURES.MEMORIES_DEDUPLICATION_USER]: "gemini-2.5-flash-lite",
+  [MODEL_FEATURES.MEMORIES_SENSITIVITY_FILTER_SYSTEM]: "gemini-2.5-flash-lite",
+  [MODEL_FEATURES.MEMORIES_SENSITIVITY_FILTER_USER]: "gemini-2.5-flash-lite",
+  // memories usage flow
+  [MODEL_FEATURES.MEMORIES_MESSAGE_CLASSIFICATION_SYSTEM]:
+    "qwen3-235b-a22b-instruct-2507-maas",
+  [MODEL_FEATURES.MEMORIES_MESSAGE_CLASSIFICATION_USER]:
+    "qwen3-235b-a22b-instruct-2507-maas",
+  [MODEL_FEATURES.MEMORIES_RELEVANT_CONTEXT]:
+    "qwen3-235b-a22b-instruct-2507-maas",
+});
+
+/**
  * Service types for different AI Window features
  */
 export const SERVICE_TYPES = Object.freeze({
@@ -136,6 +168,7 @@ export const FEATURE_MAJOR_VERSIONS = Object.freeze({
   [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_SIDEBAR_STARTER]: 2,
   [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_FOLLOWUP]: 1,
   [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_ASSISTANT_LIMITATIONS]: 1,
+  [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_INSIGHTS]: 1,
   // memories generation feature versions
   [MODEL_FEATURES.MEMORIES_INITIAL_GENERATION_SYSTEM]: 1,
   [MODEL_FEATURES.MEMORIES_INITIAL_GENERATION_USER]: 1,
@@ -186,6 +219,18 @@ export function parseVersion(versionString) {
 }
 
 /**
+ * Verifies that the RS record is matches the current Fx build
+ *
+ * @param {string} recordVersion {majorVersion}.{minorVersion}
+ * @param {string} comparisonVersion major version supported by this build
+ * @returns {boolean} whether or not major version in recordVersion matches comparisonVersion
+ */
+export function checkMajorVersion(recordVersion, comparisonVersion) {
+  const parsed = parseVersion(recordVersion);
+  return parsed && parsed.major == comparisonVersion;
+}
+
+/**
  * Selects the main configuration for a feature based on version and model preferences.
  *
  * Remote Settings maintains only the latest minor version for each (feature, model, major_version) combination.
@@ -208,10 +253,9 @@ function selectMainConfig(
   { majorVersion, userModel, modelChoiceId, feature }
 ) {
   // Filter to configs matching the required major version
-  const sameMajor = featureConfigs.filter(config => {
-    const parsed = parseVersion(config.version);
-    return parsed && parsed.major === majorVersion;
-  });
+  const sameMajor = featureConfigs.filter(config =>
+    checkMajorVersion(config.version, majorVersion)
+  );
 
   if (sameMajor.length === 0) {
     console.warn(`Missing featureConfigs for major version ${majorVersion}`);

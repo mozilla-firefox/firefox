@@ -4,6 +4,9 @@ run-if = [
 ]
 head = "head.js"
 firefox-appdir = "browser"
+support-files = [
+  "ai-window-prompts-remote-settings-snapshot.json",
+]
 
 ["test_Chat.js"]
 
@@ -36,6 +39,8 @@ firefox-appdir = "browser"
 ["test_SecurityProperties.js"]
 
 ["test_SensitiveInfoDetector.js"]
+
+["test_TelemetryUtils.js"]
 
 ["test_TitleGeneration.js"]
 

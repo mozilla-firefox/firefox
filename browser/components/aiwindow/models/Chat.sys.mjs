@@ -4,8 +4,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
 import { ToolRoleOpts } from "moz-src:///browser/components/aiwindow/ui/modules/ChatMessage.sys.mjs";
-import { openAIEngine } from "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs";
+import {
+  openAIEngine,
+  DEFAULT_MODEL,
+  MODEL_FEATURES,
+} from "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs";
 import {
   toolsConfig,
   toolFns,
@@ -23,6 +29,7 @@ import {
   replaceUrlsWithTokens,
 } from "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs";
 import { compactMessages } from "moz-src:///browser/components/aiwindow/models/PromptOptimizer.sys.mjs";
+import { TelemetryEngine } from "moz-src:///browser/components/aiwindow/models/TelemetryUtils.sys.mjs";
 
 // Hard limit on how many times run_search can execute per conversation turn.
 // Prevents infinite tool-call loops when the model repeatedly requests search.
@@ -61,6 +68,13 @@ ChromeUtils.defineLazyGetter(lazy, "console", () =>
  * Chat
  */
 export const Chat = {};
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  Chat,
+  "modelId",
+  "browser.smartwindow.model",
+  DEFAULT_MODEL[MODEL_FEATURES.CHAT]
+);
 
 /**
  * Log chat stream traffic.
@@ -130,7 +144,7 @@ Object.assign(Chat, {
       throw fxaError;
     }
 
-    const toolRoleOpts = new ToolRoleOpts(engineInstance.model);
+    const toolRoleOpts = new ToolRoleOpts(this.modelId);
     const currentTurn = conversation.currentTurnIndex();
     const config = engineInstance.getConfig(engineInstance.feature);
     const inferenceParams = config?.parameters || {};
@@ -207,6 +221,16 @@ Object.assign(Chat, {
       if (!pendingToolCalls || pendingToolCalls.length === 0) {
         // Debug logging: Mark the end of the streaming loop for this turn
         logConversationStream(currentTurn, "STREAM END");
+        // We only run telemetry on our own endpoints
+        if (!openAIEngine.hasCustomEndpoint()) {
+          console.warn("TRIGGERS");
+          const telemetryEngine = new TelemetryEngine();
+          const triggers = await telemetryEngine.getTriggers(conversation);
+          console.warn("TRIGGERS: ", triggers);
+          telemetryEngine
+            .runTelemetry(triggers, conversation)
+            .catch(e => console.error("Telemetry run failed:", e));
+        }
         return;
       }
 
@@ -413,7 +437,7 @@ Object.assign(Chat, {
             `Security commit ${conversation.securityProperties.getLogText()}`
           );
 
-          const win = originalEmbedderElement?.documentGlobal;
+          const win = originalEmbedderElement?.ownerGlobal;
           if (!win || win.closed) {
             console.error(
               "run_search: Associated window not available or closed, aborting search handoff"
