@@ -51,6 +51,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   SearchUIUtils: "moz-src:///browser/components/search/SearchUIUtils.sys.mjs",
   MemoriesSchedulers:
     "moz-src:///browser/components/aiwindow/models/memories/MemoriesSchedulers.sys.mjs",
+  TelemetryScheduler:
+    "moz-src:///browser/components/aiwindow/models/TelemetryManager.sys.mjs",
   SmartWindowTelemetry:
     "moz-src:///browser/components/aiwindow/ui/modules/SmartWindowTelemetry.sys.mjs",
 });
@@ -126,6 +128,7 @@ export const AIWindow = {
     // AI window, we need to start the memories schedulers.
     if (this.isAIWindowActive(win)) {
       lazy.MemoriesSchedulers.maybeRunAndSchedule();
+      lazy.TelemetryScheduler.maybeInit();
     }
   },
 
@@ -670,6 +673,7 @@ export const AIWindow = {
         }
 
         lazy.MemoriesSchedulers.maybeRunAndSchedule();
+        lazy.TelemetryScheduler.maybeInit();
 
         this.recordOpenWindowTelemetry(trigger);
       } else {

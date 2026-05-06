@@ -1073,7 +1073,7 @@ smart_window:
       - gcardieri@mozilla.com
     expires: never
 
-llm_response_telemetry:
+  llm_response_telemetry:
     type: event
     description: |
       Privacy preserving Chat Telemetry for Smart Window LLM response.

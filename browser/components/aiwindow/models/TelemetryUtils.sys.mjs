@@ -18,7 +18,7 @@ const lazy = XPCOMUtils.declareLazy({
 
 export const TELEMETRY_MAJOR_VERSIONS = Object.freeze({
   wasSuccessful: 1,
-  isLongConvo: 1,
+  conversationCategory: 1,
 });
 
 export const TRIGGER_MAJOR_VERSIONS = Object.freeze({
@@ -92,30 +92,86 @@ const OUTPUT_SCHEMA1 = {
   reason: ["completed_successfully", "incorrect_answer", "user_frustration", "topic_change"],
 };
 
-const PROMPT2 = `Read the following conversation between a user and an AI browser assistant. This conversation is relatively long and may involve multiple turns, topic shifts, or extended problem-solving.
+const PROMPT2 = `Read the following conversation between a user and an AI browser assistant. Your task is to determine the primary category of the conversation.
 
 ### Conversation ###
 {chatConversation}
 
-Evaluate the conversation on the following criteria, assigning each category one of the listed values:
+Classify the conversation into exactly one of the following categories:
 
-- "taskProgression":
-  - "steady": The conversation shows clear, consistent progress toward a goal across turns.
-  - "stalled": The conversation shows little to no forward progress despite multiple turns.
-  - "regressive": The conversation repeatedly backtracks, resets, or revisits the same issues without progress.
+- "Adult"
+- "Arts & Entertainment"
+- "Autos & Vehicles"
+- "Beauty & Fitness"
+- "Books & Literature"
+- "Business & Industrial"
+- "Computers & Electronics"
+- "Finance"
+- "Food & Drink"
+- "Games"
+- "Health"
+- "Hobbies & Leisure"
+- "Home & Garden"
+- "Internet & Telecom"
+- "Jobs & Education"
+- "Law & Government"
+- "News"
+- "Online Communities"
+- "People & Society"
+- "Pets & Animals"
+- "Real Estate"
+- "Reference"
+- "Science"
+- "Sensitive Subjects"
+- "Shopping"
+- "Sports"
+- "Travel & Transportation"
 
-- "conversationDrift":
-  - "focused": The conversation remains centered on a single task or closely related tasks.
-  - "moderate_drift": The conversation includes some tangents or minor topic changes but stays mostly on track.
-  - "high_drift": The conversation significantly diverges into unrelated topics or loses the original intent.
+Instructions:
+- Choose the single category that best represents the **primary intent** of the user.
+- Focus on the user’s goal, not incidental details in the conversation.
+- If multiple categories apply, select the one most central to the task.
+- Use "Reference" for general knowledge queries that do not clearly fit another category.
+- Use "People & Society" for general advice, relationships, or personal topics.
+- Use "Sensitive Subjects" for topics involving self-harm, violence, or other sensitive issues.
+- If the conversation is ambiguous, choose the closest reasonable category rather than inventing a new one.
 
-Respond using a well-formatted JSON with the following fields:
+Respond using a well-formatted JSON with the following field:
 {fields}`;
 
+
 const OUTPUT_SCHEMA2 = {
-  taskProgression: ["steady", "stalled", "regressive"],
-  conversationDrift: ["focused", "moderate_drift", "high_drift"],
+  category: [
+    "Adult",
+    "Arts & Entertainment",
+    "Autos & Vehicles",
+    "Beauty & Fitness",
+    "Books & Literature",
+    "Business & Industrial",
+    "Computers & Electronics",
+    "Finance",
+    "Food & Drink",
+    "Games",
+    "Health",
+    "Hobbies & Leisure",
+    "Home & Garden",
+    "Internet & Telecom",
+    "Jobs & Education",
+    "Law & Government",
+    "News",
+    "Online Communities",
+    "People & Society",
+    "Pets & Animals",
+    "Real Estate",
+    "Reference",
+    "Science",
+    "Sensitive Subjects",
+    "Shopping",
+    "Sports",
+    "Travel & Transportation"
+  ],
 };
+
 
 // ai-window-telemetry-prompts sample records
 const ALL_RECORDS = [
@@ -134,11 +190,15 @@ const ALL_RECORDS = [
     prompt: PROMPT1,
   },
   {
-    id: "isLongConvo-v1",
+    id: "conversationCategory-v1",
     version: "1.0",
     model: TELEMETRY_MODEL,
-    telemetry_name: "isLongConvo",
-    triggers: ["long_conversation"],
+    telemetry_name: "conversationCategory",
+    triggers: [
+      "uniform_sample",
+      "uniform_sample_turn2",
+      "uniform_sample_turn4",
+    ],
     run_terminal: true,
     output_schema: OUTPUT_SCHEMA2,
     prompt: PROMPT2,
@@ -508,18 +568,18 @@ export class TelemetryEngine {
   }
 }
 
-export function submitTelemetryResult(telemetryResults, conversation, modelId, currentTurn) {
-  const result_object = telemetryResults[0];
-  console.log("Result Object:", result_object);
-
-  for (const [attributeName, attributeValue] of Object.entries(result_object.result)) {
-    Glean.smartWindow.llmResponseTelemetry.record({
-      chat_id: conversation.id,
-      model: modelId,
-      turn_number: currentTurn,
-      attribute_name: attributeName,
-      attribute_value: String(attributeValue ?? UNKNOWN),
-    });
+export function submitTelemetryResult(telemetryResults, conversationId, modelId, currentTurn, telemetryType) {  
+  for (const result_object of telemetryResults) {
+    console.log("Result Object:", result_object);
+    for (const [attributeName, attributeValue] of Object.entries(result_object.result)) {
+      Glean.smartWindow.llmResponseTelemetry.record({
+        chat_id: conversationId,
+        model: modelId,
+        turn_number: currentTurn,
+        attribute_name: attributeName,
+        attribute_value: String(attributeValue ?? UNKNOWN),
+        telemetryType: telemetryType
+      });
+    }
   }
-  return;
 }

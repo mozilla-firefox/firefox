@@ -455,6 +455,15 @@ export const MARK_LLM_TELEMETRY_UNPROCESSED = `
     processed = 0
 `;
 
+export const MARK_LLM_TELEMETRY_PROCESSED = `
+UPDATE llm_telemetry
+SET
+  processed = 1,
+  processed_time = :processed_time,
+  telemetry_prompts = :telemetry_prompts
+WHERE conv_id = :conv_id
+`;
+
 export const GET_LLM_TELEMETRY_BY_CONV_ID = `
 SELECT
   conv_id,
@@ -465,3 +474,25 @@ SELECT
 FROM llm_telemetry
 WHERE conv_id = :conv_id
 `;
+
+export const GET_CONVERSATIONS_FOR_TELEMETRY = `
+SELECT
+  m.conv_id,
+  t.telemetry_prompts AS telemetryJobs,
+  t.telemetry_probabilitiies AS telemetryProbs,
+  m.model_id,
+  m.turn_index
+FROM llm_telemetry t
+JOIN (
+  SELECT conv_id, MAX(created_date) AS last_message_time
+  FROM message
+  WHERE role = 1 -- assistant 
+  GROUP BY conv_id
+) lm
+  ON t.conv_id = lm.conv_id
+JOIN message m
+  ON m.conv_id = lm.conv_id
+ AND m.created_date = lm.last_message_time
+WHERE t.processed = 0
+  AND lm.last_message_time < strftime('%s', 'now', '-5 hours') * 1000;
+`

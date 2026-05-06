@@ -51,6 +51,8 @@ import {
   GET_LLM_TELEMETRY_DATA_BY_CONV_ID,
   UPSERT_LLM_TELEMETRY,
   MARK_LLM_TELEMETRY_UNPROCESSED,
+  MARK_LLM_TELEMETRY_PROCESSED,
+  GET_CONVERSATIONS_FOR_TELEMETRY
 } from "./ChatSql.sys.mjs";
 
 import { ChatMinimal } from "./ChatMessage.sys.mjs";
@@ -1250,6 +1252,46 @@ class ChatStore {
       processed: rows[0].getResultByName("processed"),
     };
   }
+
+  async markLLMTelemetryProcessed(convId, telemetryPrompts, turnIndex) {
+    await this.#ensureDatabase().catch(e => {
+      lazy.log.error("Could not ensure a database connection.", e.message, e.stack);
+      throw e;
+    });
+
+    const updatedPrompts = Object.fromEntries(
+      Object.keys(telemetryPrompts).map(name => [name, turnIndex])
+    );
+
+    await this.#conn
+      .executeCached(MARK_LLM_TELEMETRY_PROCESSED, {
+        conv_id: convId,
+        processed_time: Date.now(),
+        telemetry_prompts: JSON.stringify(updatedPrompts),
+      })
+      .catch(e => {
+        lazy.log.error(`Could not mark telemetry processed for ${convId}`, e.message, e.stack);
+        throw e;
+      });
+  }
+
+  async getConversationsForTelemetry() {
+  const rows = await this.#conn
+    .executeCached(GET_CONVERSATIONS_FOR_TELEMETRY)
+    .catch(e => {
+      lazy.log.error("Failed to fetch conversations for telemetry", e.message, e.stack);
+      throw e;
+    });
+
+  return rows.map(row => ({
+    convId: row.getResultByName("conv_id"),
+    telemetryJobs: JSON.parse(row.getResultByName("telemetryJobs") ?? "{}"),
+    telemetryProbs: JSON.parse(row.getResultByName("telemetryProbs") ?? "{}"),
+    modelId: row.getResultByName("model_id"),
+    turnIndex: row.getResultByName("turn_index")
+  }));
+}
+
 
   async #createDatabaseEntities() {
     await this.#conn.execute(CONVERSATION_TABLE);
