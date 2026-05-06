@@ -71,6 +71,10 @@ smart_window:
         unit: count
         description: >
           Current chat turn number
+      chat_version: &chat_version
+        type: string
+        description: >
+          Version of chat prompt used for this request
 
   search_submit:
     type: event
@@ -1073,7 +1077,7 @@ smart_window:
       - gcardieri@mozilla.com
     expires: never
 
-llm_response_telemetry:
+  llm_response_telemetry:
     type: event
     description: |
       Privacy preserving Chat Telemetry for Smart Window LLM response.
@@ -1090,6 +1094,37 @@ llm_response_telemetry:
       chat_id: *chat_id
       model: *model
       turn_number: *turn_number
+      chat_version: *chat_version
+      telemetry_version:
+        type: string
+        description: >
+          Version of telemetry
+      record_type:
+        type: string
+        description: >
+          Type of telemetry record: state or terminal.
+      uniform_sampled:
+        type: boolean
+        description: >
+          Whether this record was included by uniform sampling.
+      uniform_sampling_probability:
+        type: quantity
+        unit: permille
+        description: >
+          Sampling probability scaled by 1,000. For example, 0.25 is recorded as 250.
+      trigger_sampled:
+        type: boolean
+        description: >
+          Whether this record was included by triggers.
+      trigger_sampling_probability:
+        type: quantity
+        unit: permille
+        description: >
+          Sampling probability scaled by 1,000. For example, 0.25 is recorded as 250.
+      triggers:
+        type: string
+        description: >
+          List of trigger objects in a json string
       attribute_name:
         type: string
         description: >

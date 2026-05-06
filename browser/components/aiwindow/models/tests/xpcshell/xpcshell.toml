@@ -42,6 +42,8 @@ support-files = [
 
 ["test_TelemetryUtils.js"]
 
+["test_TelemetryUtils2.js"]
+
 ["test_TitleGeneration.js"]
 
 ["test_ToolDefinitions.js"]

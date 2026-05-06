@@ -236,7 +236,8 @@ Object.assign(Chat, {
               submitTelemetryResult(
                 results,
                 conversation,
-                this.modelId,
+                engineInstance?.model,
+                {},
               );
             })
             .catch(e => console.error("Telemetry run failed:", e));

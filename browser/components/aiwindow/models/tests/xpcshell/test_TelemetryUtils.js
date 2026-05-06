@@ -7,6 +7,8 @@ const {
   TelemetryPromptEngine,
   Trigger,
   TRIGGER_CHECK_STRATEGIES,
+  normalizeMetadata,
+  submitTelemetryResult,
 } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/TelemetryUtils.sys.mjs"
 );
@@ -804,3 +806,161 @@ add_task(
     }
   }
 );
+
+add_task(async function test_normalizeMetadata_defaults() {
+  const result = normalizeMetadata();
+
+  Assert.deepEqual(result, {
+    telemetry_version: "",
+    chat_version: "",
+    record_type: "",
+    uniform_sampled: false,
+    uniform_sampling_probability: 0,
+    trigger_sampled: false,
+    trigger_sampling_probability: 0,
+    triggers: "",
+  });
+});
+
+add_task(async function test_normalizeMetadata_scales_probabilities_and_formats_triggers() {
+  const result = normalizeMetadata({
+    telemetry_version: "1",
+    chat_version: "chat-v2",
+    record_type: "terminal",
+    uniform_sampled: true,
+    uniform_sampling_probability: 0.25,
+    trigger_sampled: true,
+    trigger_sampling_probability: 0.123,
+    triggers: ["uniform_sample", "long_conversation"],
+  });
+
+  Assert.deepEqual(result, {
+    telemetry_version: "1",
+    chat_version: "chat-v2",
+    record_type: "terminal",
+    uniform_sampled: true,
+    uniform_sampling_probability: 250,
+    trigger_sampled: true,
+    trigger_sampling_probability: 123,
+    triggers: JSON.stringify(["uniform_sample", "long_conversation"]),
+  });
+});
+
+add_task(async function test_submitTelemetryResult_records_one_event_per_attribute() {
+  const sb = sinon.createSandbox();
+
+  try {
+    const recordStub = sb.stub(
+      Glean.smartWindow.llmResponseTelemetry,
+      "record"
+    );
+
+    const conversation = {
+      id: "conversation-id",
+      currentTurnIndex() {
+        return 3;
+      },
+    };
+
+    submitTelemetryResult(
+      [
+        {
+          result: {
+            was_successful: "successful",
+            conversation_topic: "sports",
+            memory_referenced: true,
+          },
+        },
+      ],
+      conversation,
+      "fake-model",
+      {
+        telemetry_version: "1",
+        chat_version: "chat-v1",
+        record_type: "terminal",
+        uniform_sampled: true,
+        uniform_sampling_probability: 0.5,
+        trigger_sampled: true,
+        trigger_sampling_probability: 0.25,
+        triggers: ["uniform_sample"],
+      }
+    );
+
+    Assert.equal(
+      recordStub.callCount,
+      3,
+      "Should record one event per telemetry result attribute"
+    );
+
+    const first = recordStub.getCall(0).args[0];
+
+    Assert.withSoftAssertions(function (soft) {
+      soft.equal(first.chat_id, "conversation-id");
+      soft.equal(first.model, "fake-model");
+      soft.equal(first.turn_number, 3);
+      soft.equal(first.telemetry_version, "1");
+      soft.equal(first.chat_version, "chat-v1");
+      soft.equal(first.record_type, "terminal");
+      soft.equal(first.uniform_sampled, true);
+      soft.equal(first.uniform_sampling_probability, 500);
+      soft.equal(first.trigger_sampled, true);
+      soft.equal(first.trigger_sampling_probability, 250);
+      soft.equal(first.triggers, JSON.stringify(["uniform_sample"]));
+      soft.equal(first.attribute_name, "was_successful");
+      soft.equal(first.attribute_value, "successful");
+    });
+
+    const second = recordStub.getCall(1).args[0];
+    Assert.withSoftAssertions(function (soft) {
+      soft.equal(second.attribute_name, "conversation_topic");
+      soft.equal(second.attribute_value, "sports");
+    });
+
+    const third = recordStub.getCall(2).args[0];
+    Assert.withSoftAssertions(function (soft) {
+      soft.equal(third.attribute_name, "memory_referenced");
+      soft.equal(third.attribute_value, "true");
+    });
+  } finally {
+    sb.restore();
+  }
+});
+
+add_task(async function test_submitTelemetryResult_uses_unknown_for_nullish_attribute_value() {
+  const sb = sinon.createSandbox();
+
+  try {
+    const recordStub = sb.stub(
+      Glean.smartWindow.llmResponseTelemetry,
+      "record"
+    );
+
+    const conversation = {
+      id: "conversation-id",
+      currentTurnIndex() {
+        return 1;
+      },
+    };
+
+    submitTelemetryResult(
+      [
+        {
+          result: {
+            was_successful: null,
+          },
+        },
+      ],
+      conversation,
+      "fake-model",
+      {}
+    );
+
+    Assert.equal(recordStub.callCount, 1);
+
+    const event = recordStub.getCall(0).args[0];
+    Assert.equal(event.attribute_name, "was_successful");
+    Assert.equal(event.attribute_value, "unknown");
+  } finally {
+    sb.restore();
+  }
+});

@@ -83,13 +83,20 @@ Respond using a well-formatted JSON with the following fields:
 `;
 
 const OUTPUT_SCHEMA1 = {
-  useCase: ["summarization", "page_qa", "tab_compare", "history_search", "other"],
-  resolutionStatus: [
-    "satisfied",
-    "dissatisfied",
-    "ongoing",
+  useCase: [
+    "summarization",
+    "page_qa",
+    "tab_compare",
+    "history_search",
+    "other",
   ],
-  reason: ["completed_successfully", "incorrect_answer", "user_frustration", "topic_change"],
+  resolutionStatus: ["satisfied", "dissatisfied", "ongoing"],
+  reason: [
+    "completed_successfully",
+    "incorrect_answer",
+    "user_frustration",
+    "topic_change",
+  ],
 };
 
 const PROMPT2 = `Read the following conversation between a user and an AI browser assistant. This conversation is relatively long and may involve multiple turns, topic shifts, or extended problem-solving.
@@ -441,7 +448,9 @@ export class TelemetryEngine {
           TELEMETRY_MAJOR_VERSIONS[record.telemetry_name]
         )
       ) {
-        const matchingTriggerName = recordTriggers.find(t => triggerByName.has(t));
+        const matchingTriggerName = recordTriggers.find(t =>
+          triggerByName.has(t)
+        );
         if (matchingTriggerName) {
           seen.add(record.telemetry_name);
           promptsToRun.push(record);
@@ -460,7 +469,7 @@ export class TelemetryEngine {
   }
 
   /**
-   * Runs LLM-based evaluations for all telemetry prompts passed by name. 
+   * Runs LLM-based evaluations for all telemetry prompts passed by name.
    * Prompt records that have run_terminal flag set to False will not be run
    *
    * @param {string[]} promptNames
@@ -479,17 +488,16 @@ export class TelemetryEngine {
 
     const nameSet = new Set(promptNames);
     const promptsToRun = allRecords
-      .filter(
-        record => nameSet.has(record.telemetry_name)
+      .filter(record => nameSet.has(record.telemetry_name))
+      .filter(record =>
+        checkMajorVersion(
+          record.version,
+          TELEMETRY_MAJOR_VERSIONS[record.telemetry_name]
+        )
       )
-      .filter(
-        record => checkMajorVersion(record.version, TELEMETRY_MAJOR_VERSIONS[record.telemetry_name])
-      )
-      .filter(
-        record => record.run_terminal
-      )
+      .filter(record => record.run_terminal);
 
-    return this._runPrompts(promptsToRun, conversation)
+    return this._runPrompts(promptsToRun, conversation);
   }
 
   async _runPrompts(promptsToRun, conversation) {
@@ -508,18 +516,65 @@ export class TelemetryEngine {
   }
 }
 
-export function submitTelemetryResult(telemetryResults, conversation, modelId, currentTurn) {
-  const result_object = telemetryResults[0];
-  console.log("Result Object:", result_object);
+export function normalizeMetadata(metadata = {}) {
+  const {
+    telemetry_version = "",
+    chat_version = "",
+    record_type = "",
+    uniform_sampled = false,
+    uniform_sampling_probability = 0,
+    trigger_sampled = false,
+    trigger_sampling_probability = 0,
+    triggers = [],
+  } = metadata;
 
-  for (const [attributeName, attributeValue] of Object.entries(result_object.result)) {
+  return {
+    telemetry_version,
+    chat_version,
+    record_type,
+    uniform_sampled,
+    uniform_sampling_probability: Math.round(
+      uniform_sampling_probability * 1000
+    ),
+    trigger_sampled,
+    trigger_sampling_probability: Math.round(
+      trigger_sampling_probability * 1000
+    ),
+    triggers: Array.isArray(triggers)
+      ? JSON.stringify(triggers)
+      : (triggers ?? "[]"),
+  };
+}
+
+export function submitTelemetryResult(
+  telemetryResults,
+  conversation,
+  modelId,
+  metadata
+) {
+  const result_object = telemetryResults[0];
+  const normalized_metadata = normalizeMetadata(metadata);
+
+  for (const [attributeName, attributeValue] of Object.entries(
+    result_object.result
+  )) {
     Glean.smartWindow.llmResponseTelemetry.record({
       chat_id: conversation.id,
       model: modelId,
-      turn_number: currentTurn,
+      turn_number: conversation.currentTurnIndex(),
+      ...normalized_metadata,
       attribute_name: attributeName,
       attribute_value: String(attributeValue ?? UNKNOWN),
     });
+
+    const rec_obj = {
+      chat_id: conversation.id,
+      model: modelId,
+      turn_number: conversation.currentTurnIndex(),
+      ...normalized_metadata,
+      attribute_name: attributeName,
+      attribute_value: String(attributeValue ?? UNKNOWN),
+    };
+    console.log(rec_obj);
   }
-  return;
 }
