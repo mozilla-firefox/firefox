@@ -336,7 +336,7 @@ class TestEnvironment:
                     pending.append((host, port))
 
             for scheme, servers in self.servers.items():
-                if scheme == "webtransport-h3":
+                if scheme in ("dns", "webtransport-h3"):
                     continue
                 for port, server in servers:
                     s = socket.socket()
