@@ -258,9 +258,12 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
 
     private suspend fun navigateToSummarizationIfEligible() {
         findNavController().apply {
-            // If the shake gesture was disabled in the bottom sheet hosted settings but the fragment
-            // has not been recreated yet, we need to check if it's still active before proceeding.
-            val shakeEnabled = requireComponents.core.summarizationSettings.isGestureEnabled.value
+            // If the shake gesture or the parent feature was disabled in the bottom sheet hosted
+            // settings but the fragment has not been recreated yet, we need to check both are still
+            // active before proceeding.
+            val summarizationSettings = requireComponents.core.summarizationSettings
+            val shakeEnabled = summarizationSettings.isFeatureEnabled.value &&
+                summarizationSettings.isGestureEnabled.value
 
             if (!shakeEnabled) {
                 return

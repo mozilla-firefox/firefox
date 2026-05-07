@@ -43,9 +43,6 @@ class SummarizeSettingsMiddleware(
 
             SummarizePagesPreferenceToggled -> scope.launch {
                 settings.setFeatureEnabledUserStatus(store.state.isFeatureEnabled)
-                if (!store.state.isFeatureEnabled) {
-                    settings.setGestureEnabledUserStatus(false)
-                }
             }
 
             ShakeToSummarizePreferenceToggled -> scope.launch {

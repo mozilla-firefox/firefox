@@ -60,7 +60,6 @@ class PageSummariesSettingsMiddlewareTest {
         this.runCurrent()
 
         assertFalse(settings.getFeatureEnabledUserStatus().first())
-        assertFalse(settings.getGestureEnabledUserStatus().first())
     }
 
     @Test
@@ -100,7 +99,7 @@ class PageSummariesSettingsMiddlewareTest {
     }
 
     @Test
-    fun `WHEN page summaries are toggled off THEN gesture is disabled as well`() = runTest {
+    fun `WHEN page summaries are toggled off THEN gesture preference is preserved`() = runTest {
         val settings = SummarizationSettings.inMemory(
             isFeatureEnabled = true,
             isGestureEnabled = true,
@@ -115,7 +114,7 @@ class PageSummariesSettingsMiddlewareTest {
         this.runCurrent()
 
         assertFalse(settings.getFeatureEnabledUserStatus().first())
-        assertFalse(settings.getGestureEnabledUserStatus().first())
+        assertTrue(settings.getGestureEnabledUserStatus().first())
     }
 
     @Test
