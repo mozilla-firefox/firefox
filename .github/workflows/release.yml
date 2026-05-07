@@ -1,0 +1,173 @@
+# Builds a signed Robowolf APK and publishes it as a GitHub Release.
+#
+# Triggers:
+#   - push to a tag matching `v*` (e.g. v2026.05.07).
+#   - workflow_dispatch (manual run from the Actions tab; takes a version arg).
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   - SIGNING_KEYSTORE_BASE64    base64 of your release keystore.jks
+#   - SIGNING_KEYSTORE_PASSWORD  store password
+#   - SIGNING_KEY_ALIAS          key alias inside the keystore
+#   - SIGNING_KEY_PASSWORD       key password
+#
+# See RELEASING.md for the one-time keystore setup.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v2026.05.07). Will be created if it does not exist.'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create tag (manual dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "robowolf-release-bot"
+          git config user.email "actions@github.com"
+          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "Tag already exists, reusing."
+          else
+            git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
+            git push origin "${{ steps.version.outputs.tag }}"
+          fi
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Export MACH_PYTHON
+        run: echo "MACH_PYTHON=$(which python)" >> "$GITHUB_ENV"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Decode signing keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "ERROR: SIGNING_KEYSTORE_BASE64 secret is not set." >&2
+            echo "See RELEASING.md for one-time keystore setup." >&2
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/signing"
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/signing/keystore.jks"
+          echo "SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/signing/keystore.jks" >> "$GITHUB_ENV"
+
+      - name: Build release APK
+        working-directory: mobile/android/fenix
+        env:
+          KEYSTORE_PATH: ${{ env.SIGNING_KEYSTORE_PATH }}
+          KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          ./gradlew :app:assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+
+      - name: Locate built APKs
+        id: apks
+        run: |
+          mapfile -t apks < <(find mobile/android/fenix/app/build/outputs/apk -name '*.apk' -type f | sort)
+          if [ "${#apks[@]}" -eq 0 ]; then
+            echo "ERROR: no APK found under mobile/android/fenix/app/build/outputs/apk" >&2
+            exit 1
+          fi
+          {
+            echo "files<<EOF"
+            printf '%s\n' "${apks[@]}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "Found APKs:"
+          printf '  %s\n' "${apks[@]}"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          previous=$(git tag --sort=-creatordate | grep -v "^${tag}$" | head -n 1 || echo "")
+          {
+            echo "body<<EOF"
+            echo "## Robowolf ${tag}"
+            echo ""
+            echo "Privacy-focused Firefox fork. Sideload the APK below to install."
+            echo ""
+            if [ -n "$previous" ]; then
+              echo "### Changes since ${previous}"
+              echo ""
+              git log --pretty='format:- %s (%h)' "${previous}..${tag}" --no-merges | head -n 100
+              echo ""
+              echo ""
+            fi
+            echo "### Verifying the build"
+            echo ""
+            echo "All APKs are signed with the Robowolf release key. Verify with:"
+            echo ""
+            echo '```'
+            echo "apksigner verify --print-certs robowolf-<arch>-${tag}.apk"
+            echo '```'
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release and upload APKs
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Robowolf ${{ steps.version.outputs.tag }}
+          body: ${{ steps.notes.outputs.body }}
+          files: ${{ steps.apks.outputs.files }}
+          draft: false
+          prerelease: false
