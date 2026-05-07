@@ -91,6 +91,32 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
+      - name: Cache mozbuild state
+        uses: actions/cache@v4
+        with:
+          path: ~/.mozbuild
+          key: mozbuild-${{ runner.os }}-artifact-${{ hashFiles('python/mozboot/**', 'mobile/android/config/mozconfigs/**') }}
+          restore-keys: |
+            mozbuild-${{ runner.os }}-artifact-
+
+      - name: Bootstrap mach (mobile_android_artifact_mode)
+        run: |
+          ./mach --no-interactive bootstrap \
+            --application-choice mobile_android_artifact_mode \
+            --no-system-changes
+
+      - name: Write release mozconfig (artifact build)
+        run: |
+          cat > .mozconfig <<'EOF'
+          ac_add_options --enable-project=mobile/android
+          ac_add_options --target=aarch64-linux-android
+          ac_add_options --enable-artifact-builds
+          ac_add_options --enable-update-channel=release
+          EOF
+
+      - name: Configure mach
+        run: ./mach configure
+
       - name: Decode signing keystore
         env:
           KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
