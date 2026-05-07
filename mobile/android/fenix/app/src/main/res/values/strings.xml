@@ -1518,6 +1518,14 @@
     <string name="close_tab">Close tab</string>
     <!-- Content description (not visible, for screen readers etc.): Close tab <title> button. %s is the tab title -->
     <string name="close_tab_title">Close tab %s</string>
+    <!-- Content description for the "+" button in the bottom group tab strip. -->
+    <string name="group_tab_strip_add_tab">Add tab to group</string>
+    <!-- Content description for the close button on a tab in the bottom group tab strip. %s is the tab title. -->
+    <string name="group_tab_strip_close_tab">Close %s in group</string>
+    <!-- Title for the preference that toggles the bottom group tab strip. -->
+    <string name="preferences_group_tab_strip">Show group tab strip</string>
+    <!-- Summary for the preference that toggles the bottom group tab strip. -->
+    <string name="preferences_group_tab_strip_summary">Show tabs from the current group at the bottom of the page</string>
     <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
     <string name="open_tabs_menu">Open tabs menu</string>
     <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->

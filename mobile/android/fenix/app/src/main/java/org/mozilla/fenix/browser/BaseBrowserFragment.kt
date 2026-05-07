@@ -176,6 +176,7 @@ import org.mozilla.fenix.browser.readermode.ReaderModeController
 import org.mozilla.fenix.browser.store.BrowserScreenMiddleware
 import org.mozilla.fenix.browser.store.BrowserScreenState
 import org.mozilla.fenix.browser.store.BrowserScreenStore
+import org.mozilla.fenix.browser.grouptabstrip.GroupTabStripIntegration
 import org.mozilla.fenix.browser.tabstrip.TabStrip
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.Components
@@ -337,6 +338,7 @@ abstract class BaseBrowserFragment :
     @VisibleForTesting
     internal val findInPageIntegration = ViewBoundFeatureWrapper<FindInPageIntegration>()
     private val toolbarsIntegration = ViewBoundFeatureWrapper<ToolbarsIntegration>()
+    private val groupTabStripIntegration = ViewBoundFeatureWrapper<GroupTabStripIntegration>()
     private val bottomToolbarContainerIntegration = ViewBoundFeatureWrapper<BottomToolbarContainerIntegration>()
     private val sitePermissionsFeature = ViewBoundFeatureWrapper<SitePermissionsFeature>()
     private val fullScreenFeature = ViewBoundFeatureWrapper<FullScreenFeature>()
@@ -662,6 +664,36 @@ abstract class BaseBrowserFragment :
             owner = this,
             view = view,
         )
+
+        if (customTabSessionId == null) {
+            val tabGroupRepository = requireComponents.core.tabGroupRepository
+            groupTabStripIntegration.set(
+                feature = GroupTabStripIntegration(
+                    context = context,
+                    browserLayout = binding.browserLayout,
+                    browserStore = store,
+                    tabGroupRepository = tabGroupRepository,
+                    tabsUseCases = requireComponents.useCases.tabsUseCases,
+                    toolbarPosition = context.settings().toolbarPosition,
+                    isFeatureEnabled = { context.settings().isGroupTabStripEnabled },
+                    onAddTabInGroup = { groupId ->
+                        val newTabId = requireComponents.useCases.fenixBrowserUseCases
+                            .addNewHomepageTab(private = false)
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                            tabGroupRepository.addTabGroupAssignment(
+                                tabId = newTabId,
+                                tabGroupId = groupId,
+                            )
+                        }
+                    },
+                    onShowGroupInTabsTray = {
+                        onTabCounterClicked(BrowsingMode.Normal)
+                    },
+                ),
+                owner = this,
+                view = view,
+            )
+        }
 
         findInPageBinding.set(
             feature = FindInPageBinding(

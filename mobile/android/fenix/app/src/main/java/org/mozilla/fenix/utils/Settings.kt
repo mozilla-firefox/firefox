@@ -2110,6 +2110,16 @@ class Settings(
                 (isTabStripEligible(appContext) || FxNimbus.features.tabStrip.value().allowOnAllDevices),
     )
 
+    /**
+     * Whether the bottom group tab strip (Brave-style "tabs in current group" strip) is enabled.
+     * The strip only shows up when the active tab actually belongs to an open tab group, so it's
+     * safe to default this on; the toggle is provided in case users dislike the extra chrome.
+     */
+    var isGroupTabStripEnabled by booleanPreference(
+        appContext.getPreferenceKey(R.string.pref_key_group_tab_strip_show),
+        default = true,
+    )
+
     var isDynamicToolbarEnabled by booleanPreference(
         appContext.getPreferenceKey(R.string.pref_key_dynamic_toolbar),
         default = true,

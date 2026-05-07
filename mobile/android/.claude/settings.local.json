@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": [
+    "moz",
+    "firefox-devtools"
+  ]
+}

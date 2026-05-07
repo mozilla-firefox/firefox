@@ -6,4 +6,5 @@
     <item name="navigation_bar" type="id"/>
     <item name="composable_toolbar" type="id"/>
     <item name="toolbar" type="id"/>
+    <item name="group_tab_strip" type="id"/>
 </resources>
