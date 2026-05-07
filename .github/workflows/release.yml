@@ -118,32 +118,71 @@ jobs:
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
-      - name: Locate built APKs
+      - name: Stage and rename APKs
         id: apks
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          mapfile -t apks < <(find mobile/android/fenix/app/build/outputs/apk -name '*.apk' -type f | sort)
-          if [ "${#apks[@]}" -eq 0 ]; then
+          set -euo pipefail
+          mapfile -t built < <(find mobile/android/fenix/app/build/outputs/apk -name '*.apk' -type f | sort)
+          if [ "${#built[@]}" -eq 0 ]; then
             echo "ERROR: no APK found under mobile/android/fenix/app/build/outputs/apk" >&2
             exit 1
           fi
+
+          stage="$RUNNER_TEMP/release-assets"
+          mkdir -p "$stage"
+
+          renamed=()
+          for src in "${built[@]}"; do
+            base="$(basename "$src")"
+            # gradle outputs e.g. app-arm64-v8a-release.apk → robowolf-arm64-v8a-vYYYY.MM.DD.apk
+            arch="$(echo "$base" \
+              | sed -E 's/^app-//' \
+              | sed -E 's/-(release|nightly|beta|debug)\.apk$//')"
+            if [ -z "$arch" ] || [ "$arch" = "$base" ]; then
+              arch="universal"
+            fi
+            dst="$stage/robowolf-${arch}-${TAG}.apk"
+            cp "$src" "$dst"
+            renamed+=("$dst")
+          done
+
           {
             echo "files<<EOF"
-            printf '%s\n' "${apks[@]}"
+            printf '%s\n' "${renamed[@]}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
-          echo "Found APKs:"
-          printf '  %s\n' "${apks[@]}"
+
+          echo "Staged release APKs:"
+          printf '  %s\n' "${renamed[@]}"
 
       - name: Generate release notes
         id: notes
         run: |
           tag="${{ steps.version.outputs.tag }}"
           previous=$(git tag --sort=-creatordate | grep -v "^${tag}$" | head -n 1 || echo "")
+          repo_url="https://github.com/${GITHUB_REPOSITORY}"
+          source_zip="${repo_url}/archive/refs/tags/${tag}.zip"
+          source_tarball="${repo_url}/archive/refs/tags/${tag}.tar.gz"
           {
             echo "body<<EOF"
             echo "## Robowolf ${tag}"
             echo ""
-            echo "Privacy-focused Firefox fork. Sideload the APK below to install."
+            echo "Privacy-focused Firefox fork. Sideload an APK below to install."
+            echo ""
+            echo "### Downloads"
+            echo ""
+            echo "Pick the APK for your device's CPU architecture. If unsure, **arm64-v8a** is correct for almost any phone made after 2017."
+            echo ""
+            echo "### Source code"
+            echo ""
+            echo "Per the Mozilla Public License 2.0, the source for this build is available:"
+            echo ""
+            echo "- **This release's source snapshot:** [${tag}.tar.gz](${source_tarball}) | [${tag}.zip](${source_zip})"
+            echo "- **Live repository:** ${repo_url}"
+            echo ""
+            echo "Both source archives are also attached automatically by GitHub below ('Source code (zip)' and 'Source code (tar.gz)')."
             echo ""
             if [ -n "$previous" ]; then
               echo "### Changes since ${previous}"
@@ -159,6 +198,10 @@ jobs:
             echo '```'
             echo "apksigner verify --print-certs robowolf-<arch>-${tag}.apk"
             echo '```'
+            echo ""
+            echo "### License"
+            echo ""
+            echo "Robowolf is a derivative of Mozilla Firefox, distributed under the [Mozilla Public License 2.0](https://www.mozilla.org/MPL/2.0/). 'Firefox' and the Firefox logo are trademarks of the Mozilla Foundation; this fork uses neither."
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
