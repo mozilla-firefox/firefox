@@ -7,6 +7,7 @@ package org.mozilla.fenix.home.pocket
 import android.content.Context
 import mozilla.components.support.locale.LocaleManager
 import mozilla.components.support.locale.LocaleManager.getSystemDefault
+import org.mozilla.fenix.FeatureFlags
 
 /**
  * Utility singleton for providing helper functions related to content recommendations feature
@@ -45,6 +46,7 @@ object ContentRecommendationsFeatureHelper {
      * recommendations, and false otherwise.
      */
     fun isContentRecommendationsFeatureEnabled(context: Context): Boolean {
+        if (FeatureFlags.ROBOWOLF_DEBLOAT_SPONSORED) return false
         val langTag = LocaleManager.getCurrentLocale(context)
             ?.toLanguageTag() ?: getSystemDefault().toLanguageTag()
         return CONTENT_RECOMMENDATIONS_SUPPORTED_LOCALE.contains(langTag)

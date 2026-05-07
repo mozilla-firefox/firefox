@@ -25,7 +25,7 @@ import org.mozilla.fenix.R
 import mozilla.components.feature.pwa.R as pwaR
 
 /**
- * Displays a "Powered by Firefox Preview" notification when a Trusted Web Activity is running.
+ * Displays a "Powered by Robowolf" notification when a Trusted Web Activity is running.
  */
 class PoweredByNotification(
     private val applicationContext: Context,

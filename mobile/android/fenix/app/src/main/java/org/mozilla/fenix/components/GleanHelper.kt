@@ -12,6 +12,7 @@ import mozilla.telemetry.glean.Glean
 import mozilla.telemetry.glean.config.Configuration
 import org.mozilla.fenix.BuildConfig
 import org.mozilla.fenix.Config
+import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.GleanMetrics.GleanBuildInfo
 import org.mozilla.fenix.GleanMetrics.Pings
 import org.mozilla.fenix.ext.getCustomGleanServerUrlIfAvailable
@@ -27,7 +28,8 @@ import org.mozilla.fenix.nimbus.FxNimbus
  * [client] an instance of [Client] used to upload metrics.
  */
 fun initializeGlean(applicationContext: Context, logger: Logger, isTelemetryUploadEnabled: Boolean, client: Client) {
-    logger.debug("Initializing Glean (uploadEnabled=$isTelemetryUploadEnabled})")
+    val effectiveUploadEnabled = isTelemetryUploadEnabled && !FeatureFlags.ROBOWOLF_DEBLOAT_TELEMETRY
+    logger.debug("Initializing Glean (uploadEnabled=$effectiveUploadEnabled)")
 
     // for performance reasons, this is only available in Nightly or Debug builds
     val customEndpoint = if (Config.channel.isNightlyOrDebug) {
@@ -60,7 +62,7 @@ fun initializeGlean(applicationContext: Context, logger: Logger, isTelemetryUplo
     Glean.initialize(
         applicationContext = applicationContext,
         configuration = configuration.setCustomEndpointIfAvailable(customEndpoint),
-        uploadEnabled = isTelemetryUploadEnabled,
+        uploadEnabled = effectiveUploadEnabled,
         buildInfo = GleanBuildInfo.buildInfo,
     )
 }

@@ -17,6 +17,7 @@ import org.mozilla.experiments.nimbus.internal.GeckoPrefHandler
 import org.mozilla.experiments.nimbus.internal.NimbusException
 import org.mozilla.experiments.nimbus.internal.NimbusServerSettings
 import org.mozilla.fenix.BuildConfig
+import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.settings
@@ -138,6 +139,7 @@ fun NimbusInterface.maybeFetchExperiments(
     feature: NimbusSystem = FxNimbusMessaging.features.nimbusSystem.value(),
     currentTimeMillis: Long = System.currentTimeMillis(),
 ) {
+    if (FeatureFlags.ROBOWOLF_DEBLOAT_SERVICES) return
     if (context.settings().nimbusUsePreview) {
         context.settings().nimbusLastFetchTime = 0L
         fetchExperiments()

@@ -105,6 +105,7 @@ import org.mozilla.fenix.GleanMetrics.TermsOfUse
 import org.mozilla.fenix.GleanMetrics.UserAiSummarize
 import org.mozilla.fenix.components.Components
 import org.mozilla.fenix.components.Core
+import org.mozilla.fenix.components.RobowolfPrivacyPrefs
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.initializeGlean
 import org.mozilla.fenix.components.ipprotection.FenixIPProtectionEligibilityStorage
@@ -305,6 +306,10 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
         // Here we access the engine property, which will cause the lazy property getter to
         // construct the instance.
         components.core.engine
+
+        // Robowolf debloat: push privacy-focused Gecko prefs as soon as the engine exists
+        // so the captive-portal probe and network-connectivity service never fire.
+        RobowolfPrivacyPrefs.applyTo(components.core.engine)
 
         // Kick off initialization of Glean backend off-thread. Glean will continue to queue
         // metric samples until the backend is ready. If we don't have data-upload consent then

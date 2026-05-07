@@ -26,6 +26,7 @@ import mozilla.components.support.utils.RunWhenReadyQueue
 import mozilla.components.support.utils.ext.packageManagerCompatHelper
 import org.mozilla.fenix.BuildConfig
 import org.mozilla.fenix.Config
+import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
 import org.mozilla.fenix.ReleaseChannel
@@ -128,7 +129,8 @@ class Analytics(
                     appChannel = MOZ_UPDATE_CHANNEL,
                     appVersion = MOZ_APP_VERSION,
                     appBuildId = MOZ_APP_BUILDID,
-                    isUploadEnabled = context.settings().isTelemetryEnabled,
+                    isUploadEnabled = context.settings().isTelemetryEnabled &&
+                        !FeatureFlags.ROBOWOLF_DEBLOAT_TELEMETRY,
                 ),
             ),
             shouldPrompt = CrashReporter.Prompt.ALWAYS,
@@ -179,11 +181,17 @@ class Analytics(
                 InstallReferrerMetricsService(context),
                 GleanUsageReportingMetricsService(gleanProfileIdStore = GleanProfileIdPreferenceStore(context)),
             ),
-            isDataTelemetryEnabled = { context.settings().isTelemetryEnabled },
-            isMarketingDataTelemetryEnabled = {
-                context.settings().isMarketingTelemetryEnabled && context.settings().hasMadeMarketingTelemetrySelection
+            isDataTelemetryEnabled = {
+                context.settings().isTelemetryEnabled && !FeatureFlags.ROBOWOLF_DEBLOAT_TELEMETRY
             },
-            isUsageTelemetryEnabled = { context.settings().isDailyUsagePingEnabled },
+            isMarketingDataTelemetryEnabled = {
+                context.settings().isMarketingTelemetryEnabled &&
+                    context.settings().hasMadeMarketingTelemetrySelection &&
+                    !FeatureFlags.ROBOWOLF_DEBLOAT_TELEMETRY
+            },
+            isUsageTelemetryEnabled = {
+                context.settings().isDailyUsagePingEnabled && !FeatureFlags.ROBOWOLF_DEBLOAT_TELEMETRY
+            },
             context.settings(),
         )
     }

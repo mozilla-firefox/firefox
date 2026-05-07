@@ -4,8 +4,8 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Name of the application -->
-    <string name="app_name" translatable="false">Firefox Fenix</string>
-    <string name="firefox" translatable="false">Firefox</string>
+    <string name="app_name" translatable="false">Robowolf</string>
+    <string name="firefox" translatable="false">Robowolf</string>
 
     <!-- Preference for developers -->
     <string name="preference_leakcanary" translatable="false">LeakCanary</string>
@@ -76,9 +76,9 @@
     <!-- Preference to use the experimental React (The web framework) Mozilla Account page, used only in testing -->
     <string name="preferences_use_react_fxa">Use New React Mozilla Account page</string>
     <!-- Quit app button title for the Sync Debug preferences -->
-    <string name="preferences_sync_debug_quit_button_title">Stop Firefox</string>
+    <string name="preferences_sync_debug_quit_button_title">Stop Robowolf</string>
     <!-- Quit app button summary for the Sync Debug preferences -->
-    <string name="preferences_sync_debug_quit_button_summary">Custom server changes will take effect on the next Firefox run.</string>
+    <string name="preferences_sync_debug_quit_button_summary">Custom server changes will take effect on the next Robowolf run.</string>
     <!-- Button title for simulating an FxA network error inside the Sync Debug menu -->
     <string name="preferences_sync_debug_network_error_button_title">Simulate account network error</string>
     <!-- Button title for simulating an FxA temporary auth error inside the Sync Debug menu -->
@@ -97,8 +97,8 @@
     <string name="preferences_debug_settings_homepage_searchbar" translatable="false">Enable Homepage Search Bar</string>
     <!-- Label for enabling Homepage as a New Tab -->
     <string name="preferences_debug_settings_homepage_as_new_tab" translatable="false">Enable Homepage as a New Tab</string>
-    <!-- Label for enabling Firefox Labs -->
-    <string name="preferences_debug_settings_firefox_labs" translatable="false">Enable Firefox Labs</string>
+    <!-- Label for enabling Robowolf Labs -->
+    <string name="preferences_debug_settings_firefox_labs" translatable="false">Enable Robowolf Labs</string>
     <!-- Label for enabling top sites pager layout -->
     <string name="preferences_debug_settings_top_sites_pager" translatable="false">Enable Top Sites Pager</string>
     <!-- Label for enabling Add Shortcuts improvement -->
@@ -113,8 +113,8 @@
     <string name="preferences_debug_settings_privacy_report" translatable="false">Enable Privacy Report</string>
     <!-- Label for enabling the custom tab extension -->
     <string name="preferences_debug_settings_custom_tab_extensions" translatable="false">Enable Custom Tab Extension List</string>
-    <!-- Label for enabling Firefox Suggest -->
-    <string name="preferences_debug_settings_fxsuggest" translatable="false">Enable Firefox Suggest</string>
+    <!-- Label for enabling Robowolf Suggest -->
+    <string name="preferences_debug_settings_fxsuggest" translatable="false">Enable Robowolf Suggest</string>
     <!-- Label for enabling the redesigned toolbar options -->
     <string name="preferences_debug_settings_toolbar_redesign" translatable="false">Enable Redesigned Toolbar Options</string>
     <!-- Label for enabling the redesigned toolbar -->
@@ -166,8 +166,8 @@
     <!-- longfox secret setting -->
     <string name="preferences_debug_settings_enable_longfox" translatable="false">Enable Longfox</string>
 
-    <!-- Search suggestions title for Firefox Suggest Online -->
-    <string name="firefox_suggest_online_header" translatable="false" tools:ignore="BrandUsage">Firefox Suggest Online</string>
+    <!-- Search suggestions title for Robowolf Suggest Online -->
+    <string name="firefox_suggest_online_header" translatable="false" tools:ignore="BrandUsage">Robowolf Suggest Online</string>
 
     <!-- Label for toggling the native android share sheet feature -->
     <string name="preferences_debug_settings_native_android_share_sheet" translatable="false">Enable Native Android Share Sheet</string>
@@ -236,15 +236,15 @@
     <string name="profiler_active_notification" translatable="false">Profiler active</string>
     <string name="profiler_notification_text" translatable="false">Profiling is active. Tap to stop profiler</string>
     <string name="profiler_settings_title">Profiler Settings</string>
-    <string name="profiler_filter_firefox">Firefox</string>
+    <string name="profiler_filter_firefox">Robowolf</string>
     <string name="profiler_running">Profiler is currently running</string>
-    <string name="profiler_filter_firefox_explain">Recommended preset for profiling Firefox</string>
+    <string name="profiler_filter_firefox_explain">Recommended preset for profiling Robowolf</string>
     <string name="profiler_filter_graphics">Graphics</string>
-    <string name="profiler_filter_graphics_explain">Preset for investigating graphics bugs in Firefox</string>
+    <string name="profiler_filter_graphics_explain">Preset for investigating graphics bugs in Robowolf</string>
     <string name="profiler_filter_media">Media</string>
-    <string name="profiler_filter_media_explain">Preset for investigating audio and video bugs in Firefox</string>
+    <string name="profiler_filter_media_explain">Preset for investigating audio and video bugs in Robowolf</string>
     <string name="profiler_filter_networking">Networking</string>
-    <string name="profiler_filter_networking_explain">Preset for investigating networking bugs in Firefox</string>
+    <string name="profiler_filter_networking_explain">Preset for investigating networking bugs in Robowolf</string>
     <string name="profiler_filter_debug">Debug</string>
     <string name="profiler_filter_debug_explain">Preset for debugging. High overhead, do not use for performance work but use for focusing on understanding browser behavior.</string>
     <string name="profiler_filter_web_compat">Web Compat</string>
@@ -344,23 +344,23 @@
     <!-- Label for enabling Email Masks -->
     <string name="preferences_enable_email_masks">Enable Email Masks</string>
 
-    <!-- Firefox Labs -->
-    <!-- Firefox Labs is the name of a screen in Settings to allow users to learn about
+    <!-- Robowolf Labs -->
+    <!-- Robowolf Labs is the name of a screen in Settings to allow users to learn about
         experimental and in-development features, and turn those features on and off.
-        The "Labs" portion can be localized, "Firefox" must be treated as a brand and kept
+        The "Labs" portion can be localized, "Robowolf" must be treated as a brand and kept
         in English. -->
-    <string name="firefox_labs_title" tools:ignore="BrandUsage">Firefox Labs</string>
-    <!-- Title text displayed in the banner at the top of the Firefox Labs screen. -->
+    <string name="firefox_labs_title" tools:ignore="BrandUsage">Robowolf Labs</string>
+    <!-- Title text displayed in the banner at the top of the Robowolf Labs screen. -->
     <string name="firefox_labs_banner_title">Give our experimental features a try!</string>
-    <!-- Description text displayed in the banner at the top of the Firefox Labs screen. %s is the name of the app (for example "Firefox"). -->
+    <!-- Description text displayed in the banner at the top of the Robowolf Labs screen. %s is the name of the app (for example "Robowolf"). -->
     <string name="firefox_labs_experimental_description">They’re in development and evolving, which could impact how %s works.</string>
-    <!-- Button text for restoring the default settings by turning off any experimental features in the Firefox Labs screen. -->
+    <!-- Button text for restoring the default settings by turning off any experimental features in the Robowolf Labs screen. -->
     <string name="firefox_labs_restore_default_button_text">Restore Defaults</string>
-    <!-- Text displayed when no experimental features are available in the Firefox Labs screen. -->
+    <!-- Text displayed when no experimental features are available in the Robowolf Labs screen. -->
     <string name="firefox_labs_no_labs_available_description">No experimental features available</string>
-    <!-- The name of an experimental feature displayed in theFirefox Labs screen. This features allows the user to open the homepage as a new tab. -->
+    <!-- The name of an experimental feature displayed in theRobowolf Labs screen. This features allows the user to open the homepage as a new tab. -->
     <string name="firefox_labs_homepage_as_a_new_tab">Homepage as a New Tab</string>
-    <!-- The description of the "Homepage as a New Tab" feature in the Firefox Labs screen. -->
+    <!-- The description of the "Homepage as a New Tab" feature in the Robowolf Labs screen. -->
     <string name="firefox_labs_homepage_as_a_new_tab_description">With this feature enabled, Homepage will behave as a tab.</string>
     <!-- The title used in a confirmation dialog when toggling on an experimental feature. -->
     <string name="firefox_labs_enable_feature_dialog_title">Enable experimental feature?</string>
