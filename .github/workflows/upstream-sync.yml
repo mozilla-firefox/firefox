@@ -1,0 +1,172 @@
+# Weekly sync from upstream Mozilla Firefox into the Robowolf fork branch.
+#
+# Two triggers:
+#   - schedule: every Monday 06:00 UTC (only fires when this file is on the
+#     repo's default branch — see SYNCING.md for one-time setup).
+#   - workflow_dispatch: manual run from the Actions tab.
+#
+# Behavior:
+#   1. Fast-forwards origin/main to upstream/main so main stays a pristine
+#      mirror of mozilla-firefox/firefox. Skipped if main is protected and
+#      the GITHUB_TOKEN cannot push.
+#   2. Creates a fresh branch `sync/upstream-YYYY-MM-DD` off FORK_BRANCH and
+#      merges upstream/main into it. Conflicts are committed with markers and
+#      the PR is labelled `sync-conflict` for manual resolution.
+#   3. Opens a PR against FORK_BRANCH. The PR is the only review surface; no
+#      auto-merge.
+
+name: Sync upstream Firefox
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UPSTREAM_URL: https://github.com/mozilla-firefox/firefox.git
+  UPSTREAM_BRANCH: main
+  FORK_BRANCH: privacy-features
+  MIRROR_BRANCH: main
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout fork branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.FORK_BRANCH }}
+          fetch-depth: 0
+          # Use a token that can push to protected branches if configured.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "robowolf-sync-bot"
+          git config user.email "actions@github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream "$UPSTREAM_URL"
+          # Partial clone filter keeps disk use manageable on the runner; we
+          # only need ancestry, not full blob history.
+          git config --add remote.upstream.partialclonefilter "blob:none"
+
+      - name: Fetch upstream
+        run: |
+          git fetch upstream "$UPSTREAM_BRANCH" --no-tags --filter=blob:none
+
+      - name: Fast-forward mirror branch (origin/main)
+        id: mirror
+        continue-on-error: true
+        run: |
+          git checkout -B "$MIRROR_BRANCH" "upstream/$UPSTREAM_BRANCH"
+          git push origin "$MIRROR_BRANCH"
+
+      - name: Compute sync branch name
+        id: branchname
+        run: |
+          name="sync/upstream-$(date -u +%Y-%m-%d)"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Create sync branch from fork
+        run: |
+          git checkout "$FORK_BRANCH"
+          git checkout -B "${{ steps.branchname.outputs.name }}"
+
+      - name: Merge upstream into sync branch
+        id: merge
+        run: |
+          set +e
+          git merge "upstream/$UPSTREAM_BRANCH" --no-edit \
+            -m "chore: sync upstream Firefox $(date -u +%Y-%m-%d)"
+          rc=$?
+          if [ $rc -eq 0 ]; then
+            echo "conflicts=false" >> "$GITHUB_OUTPUT"
+          else
+            git add -A
+            git commit -m "MERGE CONFLICT: upstream sync $(date -u +%Y-%m-%d) — manual resolution required"
+            echo "conflicts=true" >> "$GITHUB_OUTPUT"
+          fi
+          set -e
+
+      - name: Push sync branch
+        run: |
+          git push origin "${{ steps.branchname.outputs.name }}" --force-with-lease
+
+      - name: Open or update pull request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = "${{ steps.branchname.outputs.name }}";
+            const conflicts = "${{ steps.merge.outputs.conflicts }}" === "true";
+            const today = new Date().toISOString().slice(0, 10);
+
+            const title = conflicts
+              ? `[CONFLICTS] Upstream sync ${today}`
+              : `Upstream sync ${today}`;
+
+            const body = [
+              `Automated weekly sync from upstream \`mozilla-firefox/firefox\`.`,
+              ``,
+              conflicts
+                ? `:warning: This merge has conflicts. Conflict markers were committed verbatim — resolve locally before merging.`
+                : `Merge applied cleanly. Review then merge into \`${process.env.FORK_BRANCH}\`.`,
+              ``,
+              `Triggered by ${context.eventName} on ${context.sha.slice(0, 7)}.`,
+            ].join("\n");
+
+            const existing = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${branch}`,
+              state: "open",
+            });
+
+            if (existing.data.length > 0) {
+              const pr = existing.data[0];
+              core.info(`Reusing existing PR #${pr.number}: ${pr.html_url}`);
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                title,
+                body,
+              });
+              return;
+            }
+
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: branch,
+              base: process.env.FORK_BRANCH,
+              title,
+              body,
+            });
+            core.info(`Created PR #${pr.number}: ${pr.html_url}`);
+
+            if (conflicts) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  labels: ["sync-conflict"],
+                });
+              } catch (err) {
+                core.warning(`Could not add sync-conflict label: ${err.message}`);
+              }
+            }
+        env:
+          FORK_BRANCH: ${{ env.FORK_BRANCH }}
