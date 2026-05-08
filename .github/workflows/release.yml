@@ -47,6 +47,21 @@ jobs:
             echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Free disk space
+        # `ubuntu-latest` ships with ~14 GB free on `/`. The Gecko AAR + 3-ABI
+        # APK outputs + gradle cache routinely blow past that, which manifests
+        # as the runner agent silently dying mid-build ("lost communication").
+        # This action removes preinstalled toolchains we don't need (~20 GB).
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: false
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -131,7 +146,10 @@ jobs:
           cat > mozconfig <<'EOF'
           NO_CACHE=1
           NO_NDK=1
-          export MOZ_ANDROID_FAT_AAR_ARCHITECTURES="armeabi-v7a,arm64-v8a,x86_64"
+          # x86_64 is only needed for emulators; users on real devices ship
+          # arm. Dropping it cuts AGP resource-merge memory ~33% and is the
+          # single biggest lever against the OOM that killed the runner.
+          export MOZ_ANDROID_FAT_AAR_ARCHITECTURES="armeabi-v7a,arm64-v8a"
           ac_add_options --enable-project=mobile/android
           ac_add_options --enable-artifact-builds
           ac_add_options --disable-compile-environment
@@ -189,7 +207,12 @@ jobs:
           KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
+          # -Xmx6g caps the gradle JVM well below the runner's 16 GB so AGP's
+          # resource-merging tasks can't OOM the agent. --max-workers=2 keeps
+          # parallel task JVMs from compounding heap pressure.
           ./gradlew :app:assembleRelease --no-daemon \
+            -Dorg.gradle.jvmargs="-Xmx6g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8" \
+            --max-workers=2 \
             -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
             -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
