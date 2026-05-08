@@ -163,30 +163,45 @@ const CONFIG_WITH_MODIFIED_NAME = [
 
 const testSearchEngine = {
   id: "originalDefault",
+  providerId: "originalDefault",
+  partnerCode: "",
+  overriddenByThirdParty: false,
   name: "Original Default",
   loadPath: "[app]originalDefault",
   submissionURL: "https://www.example.com/search?q=",
 };
 const testNewDefaultEngine = {
   id: "newDefault",
+  providerId: "newDefault",
+  partnerCode: "",
+  overriddenByThirdParty: false,
   name: "New Default",
   loadPath: "[app]newDefault",
   submissionURL: "https://www.example.com/new?q=",
 };
 const testDefaultInLocaleFRNotRegionDEEngine = {
   id: "defaultInLocaleFRNotRegionDE",
+  providerId: "defaultInLocaleFRNotRegionDE",
+  partnerCode: "",
+  overriddenByThirdParty: false,
   name: "Default in Locale FR and not Region DE",
   loadPath: "[app]defaultInLocaleFRNotRegionDE",
   submissionURL: "https://www.example.com/fr?ie=iso-8859-1&oe=iso-8859-1&q=",
 };
 const testPrefEngine = {
   id: "defaultInRegionDE",
+  providerId: "defaultInRegionDE",
+  partnerCode: "",
+  overriddenByThirdParty: false,
   name: "Default in Region DE",
   loadPath: "[app]defaultInRegionDE",
   submissionURL: "https://www.example.org/de?q=",
 };
 const testDefaultForExperiment = {
   id: "defaultForExperiment",
+  providerId: "defaultForExperiment",
+  partnerCode: "",
+  overriddenByThirdParty: false,
   name: "Default for Experiment",
   loadPath: "[app]defaultForExperiment",
   submissionURL: "https://www.example.org/experiment?q=",
@@ -255,6 +270,21 @@ async function checkTelemetry(
     },
     "Should have received the correct event details"
   );
+
+  let probeData = {
+    engineId: newEngine?.id ?? "",
+    providerId: newEngine?.providerId ?? "",
+    partnerCode: newEngine?.partnerCode ?? "",
+    overriddenByThirdParty: newEngine?.overriddenByThirdParty ?? false,
+    displayName: newEngine?.name ?? "",
+    loadPath: newEngine?.loadPath ?? "",
+    submissionUrl: newEngine?.submissionURL ?? "blank:",
+  };
+  if (checkPrivate) {
+    await assertGleanDefaultEngine({ normal: {}, private: probeData });
+  } else {
+    await assertGleanDefaultEngine({ normal: probeData });
+  }
 }
 
 add_setup(async () => {
@@ -433,6 +463,79 @@ add_task(async function test_ui_enabled_with_separate_default_notifies() {
   );
 });
 
+add_task(async function test_default_engine_update_private() {
+  Services.prefs.setBoolPref(
+    SearchUtils.BROWSER_SEARCH_PREF + "separatePrivateDefault.ui.enabled",
+    true
+  );
+  Services.prefs.setBoolPref(
+    SearchUtils.BROWSER_SEARCH_PREF + "separatePrivateDefault",
+    true
+  );
+
+  let extension = await SearchTestUtils.installSearchExtension(
+    {
+      name: "engineprivate",
+      id: "engineprivate@tests.mozilla.org",
+      search_url_get_params: `q={searchTerms}&version=1.0`,
+      search_url: "https://www.google.com/search",
+      version: "1.0",
+    },
+    { skipUnload: true }
+  );
+  let engine = SearchService.getEngineByName("engineprivate");
+
+  Assert.ok(!!engine, "Should have loaded the engine");
+
+  await SearchService.setDefaultPrivate(
+    engine,
+    SearchService.CHANGE_REASON.UNKNOWN
+  );
+
+  clearTelemetry();
+
+  let promiseChanged = TestUtils.topicObserved(
+    "browser-search-engine-modified",
+    (eng, verb) => verb == "engine-changed"
+  );
+  let manifest = SearchTestUtils.createEngineManifest({
+    name: "Bar",
+    id: "engineprivate@tests.mozilla.org",
+    search_url_get_params: `q={searchTerms}&version=2.0`,
+    search_url: "https://www.google.com/search",
+    version: "2.0",
+  });
+
+  await extension.upgrade({
+    useAddonManager: "permanent",
+    manifest,
+  });
+  await AddonTestUtils.waitForSearchProviderStartup(extension);
+  await promiseChanged;
+
+  const defaultEngineData = {
+    id: engine.telemetryId,
+    providerId: "other",
+    partnerCode: "",
+    overriddenByThirdParty: false,
+    name: "Bar",
+    loadPath: engine._loadPath,
+    submissionURL: "https://www.google.com/search?q=&version=2.0",
+  };
+  await checkTelemetry(
+    "engine-update",
+    defaultEngineData,
+    defaultEngineData,
+    true
+  );
+  await extension.unload();
+
+  Services.prefs.setBoolPref(
+    SearchUtils.BROWSER_SEARCH_PREF + "separatePrivateDefault.ui.enabled",
+    false
+  );
+});
+
 add_task(async function test_default_engine_update() {
   clearTelemetry();
   let extension = await SearchTestUtils.installSearchExtension(
@@ -474,6 +577,9 @@ add_task(async function test_default_engine_update() {
 
   const defaultEngineData = {
     id: engine.telemetryId,
+    providerId: "other",
+    partnerCode: "",
+    overriddenByThirdParty: false,
     name: "Bar",
     loadPath: engine._loadPath,
     submissionURL: "https://www.google.com/search?q=&version=2.0",
