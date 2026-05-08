@@ -2172,7 +2172,7 @@ public abstract class TreeBuilder<T> implements TokenHandler,
                                         && findLastInScope("select") != TreeBuilder.NOT_FOUND_ON_STACK) {
                                     generateImpliedEndTags();
                                     if (errorHandler != null
-+                                            && findLastInScope("option") != TreeBuilder.NOT_FOUND_ON_STACK
+                                            && findLastInScope("option") != TreeBuilder.NOT_FOUND_ON_STACK
                                             || findLastInScope("optgroup") != TreeBuilder.NOT_FOUND_ON_STACK) {
                                         errUnclosedElements(currentPtr, name);
                                     }
@@ -2305,7 +2305,7 @@ public abstract class TreeBuilder<T> implements TokenHandler,
                                     if (findLastInScope("select") != TreeBuilder.NOT_FOUND_ON_STACK) {
                                         generateImpliedEndTagsExceptFor("optgroup");
                                         if (errorHandler != null
-+                                            && findLastInScope("option") != TreeBuilder.NOT_FOUND_ON_STACK) {
+                                            && findLastInScope("option") != TreeBuilder.NOT_FOUND_ON_STACK) {
                                             errUnclosedElements(findLastInScope("option"), name);
                                         }
                                     } else {
@@ -2326,7 +2326,7 @@ public abstract class TreeBuilder<T> implements TokenHandler,
                                     if (findLastInScope("select") != TreeBuilder.NOT_FOUND_ON_STACK) {
                                         generateImpliedEndTags();
                                         if (errorHandler != null
-+                                            && findLastInScope("option") != TreeBuilder.NOT_FOUND_ON_STACK
+                                            && findLastInScope("option") != TreeBuilder.NOT_FOUND_ON_STACK
                                                 || findLastInScope("optgroup") != TreeBuilder.NOT_FOUND_ON_STACK) {
                                             errUnclosedElements(currentPtr, name);
                                         }
