@@ -45,7 +45,7 @@ add_task(
     await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage2);
 
     info("Re-enabling the Translations feature from tab 2 (active tab).");
-    await TranslationsParent.AIFeature.enable();
+    await TranslationsFeature.enable();
 
     await FullPageTranslationsTestUtils.assertOnlyIntersectingNodesAreTranslated(
       {
@@ -133,7 +133,7 @@ add_task(async function test_manual_translate_on_reenable_in_background_tab() {
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage2);
 
   info("Re-enabling the Translations feature from tab 2 (active tab).");
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
 
   await FullPageTranslationsTestUtils.assertOnlyIntersectingNodesAreTranslated({
     fromLanguage: "es",

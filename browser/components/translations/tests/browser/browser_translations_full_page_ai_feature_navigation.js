@@ -25,8 +25,8 @@ add_task(async function test_toggle_without_navigation_detects_language() {
   );
 
   info("Disabling and immediately re-enabling without navigation.");
-  await TranslationsParent.AIFeature.block();
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.block();
+  await TranslationsFeature.enable();
 
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },
@@ -67,7 +67,7 @@ add_task(async function test_navigation_while_disabled_detects_current_page() {
   );
 
   info("Disabling the Translations feature while on Spanish page.");
-  await TranslationsParent.AIFeature.block();
+  await TranslationsFeature.block();
 
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: false },
@@ -84,7 +84,7 @@ add_task(async function test_navigation_while_disabled_detects_current_page() {
   );
 
   info("Re-enabling the Translations feature on French page.");
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
 
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },
@@ -125,7 +125,7 @@ add_task(async function test_multiple_navigations_while_disabled() {
   );
 
   info("Disabling the Translations feature on Spanish page.");
-  await TranslationsParent.AIFeature.block();
+  await TranslationsFeature.block();
 
   await navigate("Navigating to French page while feature is disabled", {
     url: FRENCH_PAGE_URL,
@@ -139,7 +139,7 @@ add_task(async function test_multiple_navigations_while_disabled() {
   );
 
   info("Re-enabling the Translations feature on Spanish page.");
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
 
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },

@@ -10,6 +10,8 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   PageActions: "resource:///modules/PageActions.sys.mjs",
+  TranslationsFeature:
+    "chrome://global/content/translations/TranslationsFeature.sys.mjs",
   TranslationsUtils:
     "chrome://global/content/translations/TranslationsUtils.mjs",
   TranslationsPanelShared:
@@ -1458,7 +1460,7 @@ var FullPageTranslationsPanel = new (class {
 
     if (TranslationsParent.isFullPageTranslationsRestrictedForPage(gBrowser)) {
       this.buttonElements.button.hidden = true;
-    } else if (!TranslationsParent.AIFeature.isEnabled) {
+    } else if (!TranslationsFeature.isEnabled) {
       // When the Translations feature is disabled, no actor instance is created, therefore no
       // event will be dispatched to update button visibility. We need to handle it here instead.
       this.buttonElements.button.hidden = true;
@@ -1613,7 +1615,7 @@ var FullPageTranslationsPanel = new (class {
 
         if (
           // Only show the button if the Translations feature is enabled.
-          TranslationsParent.AIFeature.isEnabled &&
+          TranslationsFeature.isEnabled &&
           // We've already requested to translate this page, so always show the icon.
           (requestedLanguagePair ||
             // There was an error translating, so always show the icon. This can happen

@@ -12,6 +12,9 @@ const { EngineProcess } = ChromeUtils.importESModule(
 const { TranslationsPanelShared } = ChromeUtils.importESModule(
   "chrome://browser/content/translations/TranslationsPanelShared.sys.mjs"
 );
+const { TranslationsFeature } = ChromeUtils.importESModule(
+  "chrome://global/content/translations/TranslationsFeature.sys.mjs"
+);
 const { TranslationsUtils } = ChromeUtils.importESModule(
   "chrome://global/content/translations/TranslationsUtils.mjs"
 );
@@ -310,7 +313,7 @@ async function openAboutTranslations({
   const lockedFeaturePrefs = [];
 
   if (!featureEnabled) {
-    await TranslationsParent.AIFeature.block();
+    await TranslationsFeature.block();
   }
 
   if (lockEnabledState) {

@@ -29,7 +29,7 @@ add_task(async function test_app_menu_ai_feature_toggle_from_disabled() {
     "The more-tools translate menu item is hidden when the page loads with the Translations feature disabled."
   );
 
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
   await FullPageTranslationsTestUtils.assertAppMenuTranslateItemVisibility(
     { visible: true },
     "The app-menu translate button is visible when the Translations feature is enabled."
@@ -63,7 +63,7 @@ add_task(async function test_app_menu_ai_feature_toggle_from_disabled() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.block();
+  await TranslationsFeature.block();
   await FullPageTranslationsTestUtils.assertAppMenuTranslateItemVisibility(
     { visible: false },
     "The app-menu translate button is hidden after disabling the Translations feature."
@@ -93,7 +93,7 @@ add_task(async function test_app_menu_ai_feature_toggle_from_enabled() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
   await FullPageTranslationsTestUtils.assertAppMenuTranslateItemVisibility(
     { visible: true },
     "The app-menu translate button is visible when the Translations feature is enabled."
@@ -127,7 +127,7 @@ add_task(async function test_app_menu_ai_feature_toggle_from_enabled() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.block();
+  await TranslationsFeature.block();
   await FullPageTranslationsTestUtils.assertAppMenuTranslateItemVisibility(
     { visible: false },
     "The app-menu translate button is hidden when the Translations feature is disabled."
@@ -137,7 +137,7 @@ add_task(async function test_app_menu_ai_feature_toggle_from_enabled() {
     "The more-tools translate menu item is hidden when the Translations feature is disabled."
   );
 
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
   await FullPageTranslationsTestUtils.assertAppMenuTranslateItemVisibility(
     { visible: true },
     "The app-menu translate button is visible after enabling the Translations feature."

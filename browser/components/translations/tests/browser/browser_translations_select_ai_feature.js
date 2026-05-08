@@ -21,7 +21,7 @@ add_task(
       ],
     });
 
-    await TranslationsParent.AIFeature.block();
+    await TranslationsFeature.block();
 
     await SelectTranslationsTestUtils.assertContextMenuTranslateSelectionItem(
       runInPage,
@@ -33,7 +33,7 @@ add_task(
       "The translate-selection context menu item is hidden when the Translations feature is disabled."
     );
 
-    await TranslationsParent.AIFeature.enable();
+    await TranslationsFeature.enable();
 
     await SelectTranslationsTestUtils.openPanel(runInPage, {
       selectSpanishSentence: true,
@@ -45,7 +45,7 @@ add_task(
 
     await SelectTranslationsTestUtils.clickDoneButton();
 
-    await TranslationsParent.AIFeature.block();
+    await TranslationsFeature.block();
 
     await SelectTranslationsTestUtils.assertContextMenuTranslateSelectionItem(
       runInPage,
@@ -78,7 +78,7 @@ add_task(
       ],
     });
 
-    await TranslationsParent.AIFeature.enable();
+    await TranslationsFeature.enable();
 
     await SelectTranslationsTestUtils.openPanel(runInPage, {
       selectSpanishSentence: true,
@@ -90,7 +90,7 @@ add_task(
 
     await SelectTranslationsTestUtils.clickDoneButton();
 
-    await TranslationsParent.AIFeature.block();
+    await TranslationsFeature.block();
 
     await SelectTranslationsTestUtils.assertContextMenuTranslateSelectionItem(
       runInPage,
@@ -102,7 +102,7 @@ add_task(
       "The translate-selection context menu item is hidden after disabling the Translations feature."
     );
 
-    await TranslationsParent.AIFeature.enable();
+    await TranslationsFeature.enable();
 
     await SelectTranslationsTestUtils.openPanel(runInPage, {
       selectSpanishSentence: true,

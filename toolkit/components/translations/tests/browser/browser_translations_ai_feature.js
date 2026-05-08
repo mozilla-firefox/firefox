@@ -12,7 +12,7 @@ const TRANSLATIONS_ENABLE_PREF = "browser.translations.enable";
  */
 add_task(async function test_ai_feature_id() {
   is(
-    TranslationsParent.AIFeature.id,
+    TranslationsFeature.id,
     "translations",
     "AIFeature exposes the translations id"
   );
@@ -31,7 +31,7 @@ add_task(async function test_ai_feature_state_combinations() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
 
   const cases = [
     {
@@ -217,7 +217,7 @@ add_task(async function test_ai_feature_enable() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
   const originalDeleteAllLanguageFiles =
     TranslationsUtils.deleteAllLanguageFiles;
   let deleteCalls = 0;
@@ -266,7 +266,7 @@ add_task(async function test_ai_feature_disable() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
   const originalDeleteAllLanguageFiles =
     TranslationsUtils.deleteAllLanguageFiles;
   let deleteCalls = 0;
@@ -320,7 +320,7 @@ add_task(async function test_ai_feature_reset() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
   const originalDeleteAllLanguageFiles =
     TranslationsUtils.deleteAllLanguageFiles;
   let deleteCalls = 0;
@@ -369,7 +369,7 @@ add_task(async function test_ai_feature_policy_lock_enable_pref() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
 
   ok(!feature.isManagedByPolicy, "Policy managed state starts off");
   Services.prefs.lockPref(TRANSLATIONS_ENABLE_PREF);
@@ -423,7 +423,7 @@ add_task(async function test_ai_feature_policy_lock_ai_control_pref() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
 
   ok(!feature.isManagedByPolicy, "Policy managed state starts off");
   Services.prefs.lockPref(AI_CONTROL_TRANSLATIONS_PREF);

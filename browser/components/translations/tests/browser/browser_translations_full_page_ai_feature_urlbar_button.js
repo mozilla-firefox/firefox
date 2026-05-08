@@ -25,7 +25,7 @@ add_task(async function test_urlbar_button_ai_feature_toggle_from_disabled() {
     "The URL bar translate button is hidden when the page loads with Translations feature disabled."
   );
 
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },
     "The URL bar translate button is visible when the Translations feature is enabled."
@@ -54,7 +54,7 @@ add_task(async function test_urlbar_button_ai_feature_toggle_from_disabled() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.block();
+  await TranslationsFeature.block();
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: false },
     "The URL bar translate button is hidden after disabling the Translations feature."
@@ -81,7 +81,7 @@ add_task(async function test_urlbar_button_ai_feature_toggle_from_enabled() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },
     "The URL bar translate button is visible when the Translations feature is enabled."
@@ -110,13 +110,13 @@ add_task(async function test_urlbar_button_ai_feature_toggle_from_enabled() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.block();
+  await TranslationsFeature.block();
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: false },
     "The URL bar translate button is hidden when the Translations feature is disabled."
   );
 
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },
     "The URL bar translate button is visible after enabling the Translations feature."
@@ -182,7 +182,7 @@ add_task(async function test_urlbar_button_ai_feature_toggle_multiple_tabs() {
     "The URL bar translate button is visible in tab 2."
   );
 
-  await TranslationsParent.AIFeature.block();
+  await TranslationsFeature.block();
 
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: false },
@@ -196,7 +196,7 @@ add_task(async function test_urlbar_button_ai_feature_toggle_multiple_tabs() {
     "The URL bar translate button is hidden in tab 1 after disabling."
   );
 
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
 
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },
@@ -233,7 +233,7 @@ add_task(
 
     const tab1 = gBrowser.selectedTab;
 
-    await TranslationsParent.AIFeature.enable();
+    await TranslationsFeature.enable();
     await FullPageTranslationsTestUtils.assertTranslationsButton(
       { button: true, circleArrows: false, locale: false, icon: true },
       "The URL bar translate button is visible in tab 1."
@@ -244,7 +244,7 @@ add_task(
       "Opening about:blank tab"
     );
 
-    await TranslationsParent.AIFeature.block();
+    await TranslationsFeature.block();
 
     await switchTab(tab1, "Switching to tab 1");
 
@@ -287,7 +287,7 @@ add_task(
       "Opening about:blank tab"
     );
 
-    await TranslationsParent.AIFeature.enable();
+    await TranslationsFeature.enable();
 
     await switchTab(tab1, "Switching to tab 1");
 
