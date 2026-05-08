@@ -47,6 +47,17 @@ add_task(function test_id_is_feature_id() {
   );
 });
 
+add_task(function test_contract_values() {
+  Assert.ok(
+    SmartTabGroupingManager.hasDistinctEnabledState,
+    "SmartTabGroupingManager should expose a distinct enabled state"
+  );
+  Assert.ok(
+    SmartTabGroupingManager.canRunOnDevice,
+    "SmartTabGroupingManager should report that it can run on this device"
+  );
+});
+
 add_task(function test_isEnabled_requires_all_prefs() {
   clearSTGPrefs();
 
@@ -110,70 +121,82 @@ add_task(async function test_enable_sets_all_prefs_true() {
     SmartTabGroupingManager.isEnabled,
     "After enable(), isEnabled should be true"
   );
-});
-
-add_task(async function test_reset_clears_user_prefs_and_uninstalls_models() {
-  clearSTGPrefs();
-
-  // Force actual user values even if defaults match.
-  setUserBoolPrefDifferentFromDefault(PREF_ENABLED);
-  setUserBoolPrefDifferentFromDefault(PREF_USER_ENABLED);
-  setUserBoolPrefDifferentFromDefault(PREF_OPTIN);
-
-  Assert.ok(
-    Services.prefs.prefHasUserValue(PREF_ENABLED),
-    "Sanity check: enabled has a user value before reset()"
-  );
-  Assert.ok(
-    Services.prefs.prefHasUserValue(PREF_USER_ENABLED),
-    "Sanity check: userEnabled has a user value before reset()"
-  );
-  Assert.ok(
-    Services.prefs.prefHasUserValue(PREF_OPTIN),
-    "Sanity check: optin has a user value before reset()"
-  );
-
-  const uninstallStub = sinon.stub(MLUninstallService, "uninstall").resolves();
-
-  await SmartTabGroupingManager.makeAvailable();
-
-  Assert.ok(
-    !Services.prefs.prefHasUserValue(PREF_ENABLED),
-    "reset() should clear user pref for enabled"
-  );
-  Assert.ok(
-    !Services.prefs.prefHasUserValue(PREF_USER_ENABLED),
-    "reset() should clear user pref for userEnabled"
-  );
-  Assert.ok(
-    !Services.prefs.prefHasUserValue(PREF_OPTIN),
-    "reset() should clear user pref for optin"
-  );
-
-  Assert.ok(
-    uninstallStub.calledOnce,
-    "reset() should uninstall ML engine files via MLUninstallService.uninstall()"
-  );
-
-  const expectedEngineIds = [
-    SMART_TAB_GROUPING_CONFIG.topicGeneration.engineId,
-    SMART_TAB_GROUPING_CONFIG.embedding.engineId,
-  ].sort();
-
-  const uninstallArgs = uninstallStub.getCall(0).args[0];
-  Assert.deepEqual(
-    (uninstallArgs.engineIds || []).slice().sort(),
-    expectedEngineIds,
-    "reset() should uninstall files for both STG engines"
-  );
   Assert.equal(
-    uninstallArgs.actor,
-    "SmartTabGrouping",
-    "reset() should pass the expected actor attribution"
+    SmartTabGroupingManager.aiControlState,
+    "enabled",
+    "After enable(), aiControlState should be enabled"
   );
-
-  uninstallStub.restore();
 });
+
+add_task(
+  async function test_reset_sets_available_state_and_uninstalls_models() {
+    clearSTGPrefs();
+
+    // Force actual user values even if defaults match.
+    setUserBoolPrefDifferentFromDefault(PREF_ENABLED);
+    setUserBoolPrefDifferentFromDefault(PREF_USER_ENABLED);
+    setUserBoolPrefDifferentFromDefault(PREF_OPTIN);
+
+    const uninstallStub = sinon
+      .stub(MLUninstallService, "uninstall")
+      .resolves();
+
+    await SmartTabGroupingManager.makeAvailable();
+
+    Assert.equal(
+      Services.prefs.getBoolPref(PREF_ENABLED, false),
+      true,
+      "reset() should set browser.tabs.groups.smart.enabled=true"
+    );
+    Assert.equal(
+      Services.prefs.getBoolPref(PREF_USER_ENABLED, false),
+      true,
+      "reset() should set browser.tabs.groups.smart.userEnabled=true"
+    );
+    Assert.equal(
+      Services.prefs.getBoolPref(PREF_OPTIN, true),
+      false,
+      "reset() should set browser.tabs.groups.smart.optin=false"
+    );
+    Assert.ok(
+      !SmartTabGroupingManager.isEnabled,
+      "After reset(), isEnabled should be false"
+    );
+    Assert.ok(
+      !SmartTabGroupingManager.isBlocked,
+      "After reset(), isBlocked should be false"
+    );
+    Assert.equal(
+      SmartTabGroupingManager.aiControlState,
+      "available",
+      "After reset(), aiControlState should be available"
+    );
+
+    Assert.ok(
+      uninstallStub.calledOnce,
+      "reset() should uninstall ML engine files via MLUninstallService.uninstall()"
+    );
+
+    const expectedEngineIds = [
+      SMART_TAB_GROUPING_CONFIG.topicGeneration.engineId,
+      SMART_TAB_GROUPING_CONFIG.embedding.engineId,
+    ].sort();
+
+    const uninstallArgs = uninstallStub.getCall(0).args[0];
+    Assert.deepEqual(
+      (uninstallArgs.engineIds || []).slice().sort(),
+      expectedEngineIds,
+      "reset() should uninstall files for both STG engines"
+    );
+    Assert.equal(
+      uninstallArgs.actor,
+      "SmartTabGrouping",
+      "reset() should pass the expected actor attribution"
+    );
+
+    uninstallStub.restore();
+  }
+);
 
 add_task(function test_isBlocked_reflects_enabled_and_userEnabled() {
   clearSTGPrefs();
@@ -231,6 +254,11 @@ add_task(async function test_disable_sets_prefs_false_and_uninstalls_models() {
   Assert.ok(
     !SmartTabGroupingManager.isEnabled,
     "After disable(), isEnabled should be false"
+  );
+  Assert.equal(
+    SmartTabGroupingManager.aiControlState,
+    "blocked",
+    "After disable(), aiControlState should be blocked"
   );
 
   Assert.ok(
