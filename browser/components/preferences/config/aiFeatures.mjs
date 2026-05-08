@@ -28,7 +28,7 @@ const lazy = XPCOMUtils.declareLazy({
   GenAI: "resource:///modules/GenAI.sys.mjs",
   MemoryStore:
     "moz-src:///browser/components/aiwindow/services/MemoryStore.sys.mjs",
-  getCachedModelsData:
+  FALLBACK_MODELS:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindowConstants.sys.mjs",
 });
 
@@ -303,8 +303,8 @@ const AI_CONTROL_OPTIONS = [
 ];
 
 const modelL10nArgs = key => ({
-  model: lazy.getCachedModelsData()[key].model,
-  ownerName: lazy.getCachedModelsData()[key].ownerName,
+  model: lazy.FALLBACK_MODELS[key].model,
+  ownerName: lazy.FALLBACK_MODELS[key].ownerName,
 });
 
 /**
@@ -761,7 +761,7 @@ Preferences.addSetting({
     set(value, deps, setting) {
       const prev = deps.smartWindowFirstRunModelChoice.value;
       previousAssistantModel = prev
-        ? lazy.getCachedModelsData()[String(prev)].model
+        ? lazy.FALLBACK_MODELS[prev].model
         : "No model";
 
       customRadioSelected = value === "0";
@@ -782,7 +782,7 @@ Preferences.addSetting({
       // sending telemetry only for the preset models
       // custom model telemetry is sent after user hits the save button
       if (value !== "0") {
-        const new_model = lazy.getCachedModelsData()[String(value)].model;
+        const new_model = lazy.FALLBACK_MODELS[value].model;
         Glean.smartWindow.settingsModel.record({
           previous_model: previousAssistantModel,
           new_model,
@@ -889,7 +889,7 @@ Preferences.addSetting({
       return;
     }
 
-    const new_model = lazy.getCachedModelsData()["0"].model;
+    const new_model = lazy.FALLBACK_MODELS["0"].model;
     Glean.smartWindow.settingsModel.record({
       previous_model: previousAssistantModel,
       new_model,
