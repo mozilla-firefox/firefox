@@ -1993,8 +1993,7 @@ class Document : public nsINode,
  private:
   void RequestFullscreenInContentProcess(UniquePtr<FullscreenRequest> aRequest,
                                          bool aApplyFullscreenDirectly);
-  void RequestFullscreenInParentProcess(UniquePtr<FullscreenRequest> aRequest,
-                                        bool aApplyFullscreenDirectly);
+  void RequestFullscreenInParentProcess(UniquePtr<FullscreenRequest> aRequest);
 
   // Pushes aElement onto the top layer
   void TopLayerPush(Element&);

@@ -16724,8 +16724,8 @@ void Document::RequestFullscreen(UniquePtr<FullscreenRequest> aRequest,
     RequestFullscreenInContentProcess(std::move(aRequest),
                                       aApplyFullscreenDirectly);
   } else {
-    RequestFullscreenInParentProcess(std::move(aRequest),
-                                     aApplyFullscreenDirectly);
+    MOZ_ASSERT(!aApplyFullscreenDirectly);
+    RequestFullscreenInParentProcess(std::move(aRequest));
   }
 }
 
@@ -16803,7 +16803,7 @@ void Document::RequestFullscreenInContentProcess(
 }
 
 void Document::RequestFullscreenInParentProcess(
-    UniquePtr<FullscreenRequest> aRequest, bool aApplyFullscreenDirectly) {
+    UniquePtr<FullscreenRequest> aRequest) {
   MOZ_ASSERT(XRE_IsParentProcess());
   nsCOMPtr<nsPIDOMWindowOuter> rootWin = GetRootWindow(this);
   if (!rootWin) {
@@ -16811,8 +16811,7 @@ void Document::RequestFullscreenInParentProcess(
     return;
   }
 
-  if (aApplyFullscreenDirectly ||
-      ShouldApplyFullscreenDirectly(this, rootWin)) {
+  if (ShouldApplyFullscreenDirectly(this, rootWin)) {
     ApplyFullscreen(std::move(aRequest));
     return;
   }
