@@ -260,6 +260,11 @@ NSAttributedString* nsMenuUtilsX::AttributedStringForContent(
   }
 
   float fontSize = style->StyleFont()->mSize.ToCSSPixels();
+  float zoom = 1.0;
+
+  if (nsIFrame* frame = aContent->AsElement()->GetPrimaryFrame()) {
+    zoom = frame->PresContext()->GetFullZoom();
+  }
 
   if (fontSize == 0.f) {
     // Cocoa uses the default font size when 0 is passed, so let's approximate
@@ -267,7 +272,7 @@ NSAttributedString* nsMenuUtilsX::AttributedStringForContent(
     fontSize = 0.01f;
   }
 
-  NSFont* font = [NSFont menuFontOfSize:fontSize];
+  NSFont* font = [NSFont menuFontOfSize:zoom * fontSize];
   NSDictionary* attrs = @{NSFontAttributeName : font};
 
   return [[[NSAttributedString alloc] initWithString:aLabel
