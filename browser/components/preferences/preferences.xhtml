@@ -130,10 +130,16 @@
         iconsrc="chrome://browser/skin/preferences/category-general.svg"
         data-l10n-id="pane-general-title">
       </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-sync"
+        hidden="true"
+        view="paneSync"
+        iconsrc="chrome://browser/skin/preferences/category-sync.svg"
+        data-l10n-id="pane-sync-title3">
+      </html:moz-page-nav-button>
       <html:moz-page-nav-button id="category-home"
         view="paneHome"
         iconsrc="chrome://browser/skin/home.svg"
-        data-l10n-id="pane-home-title">
+        data-l10n-id="pane-home-startup-title">
       </html:moz-page-nav-button>
       <html:moz-page-nav-button id="category-search"
         view="paneSearch"
@@ -150,31 +156,15 @@
         iconsrc="chrome://browser/skin/login.svg"
         data-l10n-id="pane-passwords-autofill-title">
       </html:moz-page-nav-button>
-      <html:moz-page-nav-button id="category-downloads"
-        view="paneDownloads"
-        iconsrc="chrome://browser/skin/downloads/downloads.svg"
-        data-l10n-id="pane-downloads-title">
-      </html:moz-page-nav-button>
-      <html:moz-page-nav-button id="category-languages"
-        view="paneLanguages"
-        iconsrc="chrome://browser/skin/translations.svg"
-        data-l10n-id="pane-languages-title">
-      </html:moz-page-nav-button>
-      <html:moz-page-nav-button id="category-sync"
-        hidden="true"
-        view="paneSync"
-        iconsrc="chrome://browser/skin/preferences/category-sync.svg"
-        data-l10n-id="pane-sync-title3">
-      </html:moz-page-nav-button>
-      <html:moz-page-nav-button id="category-ai-features"
-        view="paneAi"
-        iconsrc="chrome://global/skin/icons/highlights.svg"
-        data-l10n-id="pane-ai-controls-title">
-      </html:moz-page-nav-button>
       <html:moz-page-nav-button id="category-appearance"
         view="paneAppearance"
         iconsrc="chrome://global/skin/icons/eye.svg"
         data-l10n-id="pane-appearance-title">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-downloads"
+        view="paneDownloads"
+        iconsrc="chrome://browser/skin/downloads/downloads.svg"
+        data-l10n-id="pane-downloads-title">
       </html:moz-page-nav-button>
       <html:moz-page-nav-button id="category-tabs-browsing"
         view="paneTabsBrowsing"
@@ -185,6 +175,16 @@
         view="paneAccessibility"
         iconsrc="chrome://browser/skin/preferences/category-accessibility.svg"
         data-l10n-id="pane-accessibility-title">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-languages"
+        view="paneLanguages"
+        iconsrc="chrome://browser/skin/translations.svg"
+        data-l10n-id="pane-languages-title">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-ai-features"
+        view="paneAi"
+        iconsrc="chrome://global/skin/icons/highlights.svg"
+        data-l10n-id="pane-ai-controls-title">
       </html:moz-page-nav-button>
       <html:moz-page-nav-button id="category-permissions-data"
         view="panePermissionsData"
@@ -197,17 +197,6 @@
         iconsrc="chrome://browser/skin/labs-16.svg"
         data-l10n-id="settings-pane-labs-title">
       </html:moz-page-nav-button>
-      <html:moz-page-nav-button id="category-about-firefox"
-        view="paneAbout"
-        iconsrc="chrome://browser/skin/sidebar/firefox.svg"
-        data-l10n-id="pane-about-firefox-title">
-      </html:moz-page-nav-button>
-      <html:moz-page-nav-button id="category-more-from-mozilla"
-        hidden="true"
-        view="paneMoreFromMozilla"
-        iconsrc="chrome://browser/skin/preferences/mozilla-16.svg"
-        data-l10n-id="more-from-moz-title">
-      </html:moz-page-nav-button>
 
       <!-- Hidden sub-page entries (CSS display:none via .hidden-category).
            These keep gotoPref() routing working for sub-pages that are
@@ -217,6 +206,19 @@
       <html:moz-page-nav-button class="hidden-category" view="paneTranslations"/>
 
       <!-- Footer links -->
+      <html:moz-page-nav-button id="category-about-firefox"
+        slot="secondary-nav"
+        view="paneAbout"
+        iconsrc="chrome://browser/skin/sidebar/firefox.svg"
+        data-l10n-id="pane-about-firefox-title">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-more-from-mozilla"
+        slot="secondary-nav"
+        hidden="true"
+        view="paneMoreFromMozilla"
+        iconsrc="chrome://browser/skin/preferences/mozilla-16.svg"
+        data-l10n-id="more-from-moz-title">
+      </html:moz-page-nav-button>
       <html:moz-page-nav-button id="addonsButton"
         slot="secondary-nav"
         iconsrc="chrome://mozapps/skin/extensions/extension.svg"
