@@ -46,7 +46,7 @@
         android:layout_marginEnd="@dimen/credit_cards_saved_cards_item_margin_end"
         android:ellipsize="middle"
         android:singleLine="true"
-        android:textColor="?attr/textSecondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/credit_card_logo"

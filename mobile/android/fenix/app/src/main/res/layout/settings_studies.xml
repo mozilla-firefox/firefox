@@ -28,7 +28,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="@string/preference_experiments_summary_2"
-        android:textColor="?attr/textSecondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textColorLink="?attr/colorTertiary"
         app:layout_constraintEnd_toEndOf="@id/studiesTitle"
         app:layout_constraintHorizontal_bias="0.5"

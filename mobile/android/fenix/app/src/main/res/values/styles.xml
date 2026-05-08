@@ -110,8 +110,6 @@
         <!-- Text -->
         <!-- Primary text -->
         <item name="textPrimary">@color/fx_mobile_text_color_primary</item>
-        <!-- Secondary text -->
-        <item name="textSecondary">@color/fx_mobile_text_color_secondary</item>
         <!-- Disabled text -->
         <item name="textDisabled">@color/fx_mobile_text_color_disabled</item>
         <!-- Text Inverted/On Color -->
@@ -153,7 +151,7 @@
 
         <!-- Shared widget colors -->
         <item name="mozac_primary_text_color">@color/fx_mobile_text_color_primary</item>
-        <item name="mozac_caption_text_color">@color/fx_mobile_text_color_secondary</item>
+        <item name="mozac_caption_text_color">@color/fx_mobile_on_surface_variant</item>
         <item name="mozac_widget_favicon_background_color">@color/fx_mobile_layer_color_2</item>
         <item name="mozac_widget_favicon_border_color">@color/fx_mobile_outline_variant</item>
 
@@ -394,8 +392,6 @@
         <!-- Text -->
         <!-- Primary text -->
         <item name="textPrimary">@color/fx_mobile_private_text_color_primary</item>
-        <!-- Secondary text -->
-        <item name="textSecondary">@color/fx_mobile_private_text_color_secondary</item>
         <!-- Disabled text -->
         <item name="textDisabled">@color/fx_mobile_private_text_color_disabled</item>
         <!-- Text Inverted/On Color -->
@@ -435,7 +431,7 @@
 
         <!-- Shared widget colors -->
         <item name="mozac_primary_text_color">@color/fx_mobile_private_text_color_primary</item>
-        <item name="mozac_caption_text_color">@color/fx_mobile_private_text_color_secondary</item>
+        <item name="mozac_caption_text_color">@color/fx_mobile_private_on_surface_variant</item>
         <item name="mozac_widget_favicon_background_color">@color/photonInk50</item>
         <item name="mozac_widget_favicon_border_color">@color/photonInk50</item>
 
@@ -490,7 +486,7 @@
         <item name="android:textAllCaps">false</item>
         <item name="backgroundTint">@color/fx_mobile_action_color_secondary</item>
         <item name="android:textColor">@color/fx_mobile_text_color_action_secondary</item>
-        <item name="rippleColor">?attr/textSecondary</item>
+        <item name="rippleColor">?attr/colorOnSurfaceVariant</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:textFontWeight" tools:ignore="NewApi">@integer/font_weight_medium</item>
         <item name="android:fontWeight">@integer/font_weight_medium</item>
@@ -616,7 +612,7 @@
     </style>
 
     <style name="QuickSettingsSmallText">
-        <item name="android:textColor">?attr/textSecondary</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
         <item name="android:textSize">12sp</item>
         <item name="android:paddingEnd">16dp</item>
         <item name="android:gravity">top</item>
@@ -677,7 +673,7 @@
     <style name="ShareHeaderTextStyle">
         <item name="android:singleLine">true</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:textColor">?attr/textSecondary</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
         <item name="android:textSize">@dimen/share_header_text_size</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textFontWeight" tools:ignore="NewApi">@integer/font_weight_medium</item>

@@ -54,7 +54,7 @@
         android:layout_height="wrap_content"
         android:paddingHorizontal="16dp"
         android:layout_marginBottom="8dp"
-        android:textColor="?attr/textSecondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/navigate_back"

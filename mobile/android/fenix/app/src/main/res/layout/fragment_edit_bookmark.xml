@@ -43,7 +43,7 @@
         android:fadingEdgeLength="8dp"
         android:inputType="textAutoComplete"
         android:requiresFadingEdge="horizontal"
-        android:textColor="?attr/textSecondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="15sp"
         tools:text="Internet for people, not profit -- Mozilla" />
 
@@ -74,7 +74,7 @@
             android:fadingEdgeLength="8dp"
             android:inputType="textUri"
             android:requiresFadingEdge="horizontal"
-            android:textColor="?attr/textSecondary"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="15sp"
             tools:text="https://www.mozilla.org/en-US/" />
 
@@ -100,7 +100,7 @@
         android:layout_marginTop="8dp"
         android:drawablePadding="10dp"
         android:gravity="center_vertical"
-        android:textColor="?attr/textSecondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="16sp"
         app:drawableStartCompat="@drawable/mozac_ic_folder_24"
         app:drawableTint="?attr/textPrimary"

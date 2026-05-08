@@ -43,7 +43,7 @@
             android:layout_marginStart="8dp"
             android:ellipsize="end"
             android:singleLine="true"
-            android:textColor="?attr/textSecondary"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="12sp"
             android:textStyle="bold"
             app:layout_constraintStart_toEndOf="@id/favicon_image"

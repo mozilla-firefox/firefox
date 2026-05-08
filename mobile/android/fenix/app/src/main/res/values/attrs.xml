@@ -21,8 +21,6 @@
     <!-- Text -->
     <!-- Primary text -->
     <attr name="textPrimary" format="reference" />
-    <!-- Secondary text -->
-    <attr name="textSecondary" format="reference" />
     <!-- Disabled text -->
     <attr name="textDisabled" format="reference" />
     <!-- Text Inverted/On Color -->

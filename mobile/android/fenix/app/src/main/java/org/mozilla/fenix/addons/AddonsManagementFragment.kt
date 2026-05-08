@@ -36,6 +36,7 @@ import org.mozilla.fenix.ext.runIfFragmentIsAttached
 import org.mozilla.fenix.ext.showToolbar
 import org.mozilla.fenix.settings.SupportUtils.AMO_HOMEPAGE_FOR_ANDROID
 import org.mozilla.fenix.theme.ThemeManager
+import com.google.android.material.R as materialR
 import mozilla.components.feature.addons.R as addonsR
 
 /**
@@ -155,7 +156,7 @@ class AddonsManagementFragment : Fragment(R.layout.fragment_add_ons_management),
         return AddonsManagerAdapter.Style(
             sectionsTextColor = ThemeManager.resolveAttribute(R.attr.textPrimary, context),
             addonNameTextColor = ThemeManager.resolveAttribute(R.attr.textPrimary, context),
-            addonSummaryTextColor = ThemeManager.resolveAttribute(R.attr.textSecondary, context),
+            addonSummaryTextColor = ThemeManager.resolveAttribute(materialR.attr.colorOnSurfaceVariant, context),
             sectionsTypeFace = sectionsTypeFace,
             addonAllowPrivateBrowsingLabelDrawableRes = R.drawable.ic_add_on_private_browsing_label,
         )

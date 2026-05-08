@@ -52,7 +52,7 @@
         android:ellipsize="end"
         android:singleLine="true"
         android:textAlignment="viewStart"
-        android:textColor="?attr/textSecondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

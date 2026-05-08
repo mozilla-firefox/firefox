@@ -35,7 +35,7 @@
         android:clickable="false"
         android:focusable="false"
         android:importantForAccessibility="no"
-        android:textColor="?attr/textSecondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:layout_marginBottom="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@id/switch_with_description_title"
