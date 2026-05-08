@@ -149,44 +149,55 @@ void BaseAlloc::free(void* aPtr) MOZ_EXCLUDES(mMutex) {
     return;
   }
 
-  MutexAutoLock lock(mMutex);
+  // base_chunk_dealloc must run outside mMutex: chunk_record allocates an
+  // extent_node_t via BaseAlloc::alloc which would re-acquire it.
+  void* chunkToDealloc = nullptr;
+  size_t chunkSizeToDealloc = 0;
 
-  BaseAllocCell* cell = BaseAllocCell::GetCell(aPtr);
+  {
+    MutexAutoLock lock(mMutex);
 
-  // Zero the contents of the memory cell before we add it to a free list.
-  // Otherwise the DoublyLinkedList code will hit an assertion because it
-  // looks like it's already in a list.
-  cell->ClearPayload();
-  cell->SetFreed();
+    BaseAllocCell* cell = BaseAllocCell::GetCell(aPtr);
 
-  Log("free(%p), size: %u\n", aPtr, cell->Size());
+    // Zero the contents of the memory cell before we add it to a free list.
+    // Otherwise the DoublyLinkedList code will hit an assertion because it
+    // looks like it's already in a list.
+    cell->ClearPayload();
+    cell->SetFreed();
 
-  // Attempt to merge backwards
-  BaseAllocCell* left = cell->LeftCell();
-  if (left && !left->Allocated() && left->Committed()) {
-    Unlink(left);
-    left->Merge(cell);
-    cell = left;
+    Log("free(%p), size: %u\n", aPtr, cell->Size());
+
+    // Attempt to merge backwards
+    BaseAllocCell* left = cell->LeftCell();
+    if (left && !left->Allocated() && left->Committed()) {
+      Unlink(left);
+      left->Merge(cell);
+      cell = left;
+    }
+    // And forward
+    BaseAllocCell* right = cell->RightCell();
+    if (right && !right->Allocated() && right->Committed()) {
+      Unlink(right);
+      cell->Merge(right);
+    }
+
+    if (cell->Size() >= kChunkSize && !cell->RightCell() && !cell->LeftCell()) {
+      // The cell covers a whole chunk and can be completely released.
+      uintptr_t addr = reinterpret_cast<uintptr_t>(cell) & ~gRealPageSizeMask;
+      size_t size = REAL_PAGE_CEILING(cell->Size());
+      Log("Releasing entire chunk %p, size %d", addr, size);
+      chunkToDealloc = reinterpret_cast<void*>(addr);
+      chunkSizeToDealloc = size;
+      mStats.mCommitted -= size;
+      mStats.mMapped -= size;
+    } else {
+      Link(cell);
+    }
   }
-  // And forward
-  BaseAllocCell* right = cell->RightCell();
-  if (right && !right->Allocated() && right->Committed()) {
-    Unlink(right);
-    cell->Merge(right);
-  }
 
-  if (cell->Size() >= kChunkSize && !cell->RightCell() && !cell->LeftCell()) {
-    // The cell covers a whole chunk and can be completely released.
-    uintptr_t addr = reinterpret_cast<uintptr_t>(cell) & ~gRealPageSizeMask;
-    size_t size = REAL_PAGE_CEILING(cell->Size());
-    Log("Releasing entire chunk %p, size %d", addr, size);
-    base_chunk_dealloc(reinterpret_cast<void*>(addr), size, UNKNOWN_CHUNK);
-    mStats.mCommitted -= size;
-    mStats.mMapped -= size;
-    return;
+  if (chunkToDealloc) {
+    base_chunk_dealloc(chunkToDealloc, chunkSizeToDealloc, UNKNOWN_CHUNK);
   }
-
-  Link(cell);
 }
 
 void* BaseAlloc::alloc(size_t aSize) {
