@@ -627,7 +627,7 @@ impl Gradient {
                 match self {
                     Component::Center => PositionComponent::Center,
                     Component::Number(NumberOrPercentage::Number(number)) => {
-                        PositionComponent::Length(Length::from_px(number.value).into())
+                        PositionComponent::Length(Length::from_px(number.value()).into())
                     },
                     Component::Number(NumberOrPercentage::Percentage(p)) => {
                         PositionComponent::Length(p.into())
@@ -644,7 +644,7 @@ impl Gradient {
                         a.get().partial_cmp(&b.get())
                     },
                     (NumberOrPercentage::Number(a), NumberOrPercentage::Number(b)) => {
-                        a.value.partial_cmp(&b.value)
+                        a.value().partial_cmp(&b.value())
                     },
                     (_, _) => None,
                 }
@@ -681,13 +681,13 @@ impl Gradient {
                 input.expect_comma()?;
                 let second_radius = Number::parse_non_negative(context, input)?;
 
-                let (reverse_stops, point, radius) = if second_radius.value >= first_radius.value {
+                let (reverse_stops, point, radius) = if second_radius.value() >= first_radius.value() {
                     (false, second_point, second_radius)
                 } else {
                     (true, first_point, first_radius)
                 };
 
-                let rad = Circle::Radius(NonNegative(Length::from_px(radius.value)));
+                let rad = Circle::Radius(NonNegative(Length::from_px(radius.value())));
                 let shape = generic::EndingShape::Circle(rad);
                 let position = Position::new(point.horizontal.into(), point.vertical.into());
                 let items = Gradient::parse_webkit_gradient_stops(context, input, reverse_stops)?;
