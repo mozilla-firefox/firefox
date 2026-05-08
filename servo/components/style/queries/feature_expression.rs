@@ -717,7 +717,7 @@ impl QueryExpressionValue {
             QueryExpressionValue::Keyword(k) => k.to_css(dest),
             QueryExpressionValue::Percentage(ref v) => v.to_css(dest),
             QueryExpressionValue::Angle(v) => v.to_css(dest),
-            QueryExpressionValue::Time(v) => v.to_css(dest),
+            QueryExpressionValue::Time(ref v) => v.to_css(dest),
             QueryExpressionValue::Custom(ref v) => v.to_css(dest),
             QueryExpressionValue::Function(ref f) => f.to_css(dest),
             QueryExpressionValue::Enumerated(value) => match for_expr

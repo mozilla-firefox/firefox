@@ -20,7 +20,9 @@ use crate::values::generics::position::{
 };
 use crate::values::specified::length::{AbsoluteLength, FontRelativeLength, NoCalcLength};
 use crate::values::specified::length::{ContainerRelativeLength, ViewportPercentageLength};
-use crate::values::specified::{self, Angle, NoCalcNumber, NoCalcPercentage, Resolution, Time};
+use crate::values::specified::{
+    self, Angle, NoCalcNumber, NoCalcPercentage, NoCalcTime, Resolution,
+};
 use crate::values::{CSSFloat, DashedIdent};
 use cssparser::{match_ignore_ascii_case, CowRcStr, Parser, Token};
 use debug_unreachable::debug_unreachable;
@@ -89,7 +91,7 @@ pub enum Leaf {
     /// `<angle>`
     Angle(Angle),
     /// `<time>`
-    Time(Time),
+    Time(NoCalcTime),
     /// `<resolution>`
     Resolution(Resolution),
     /// A component of a color.
@@ -128,11 +130,12 @@ impl ToCss for Leaf {
 
 impl ToTyped for Leaf {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-        // XXX Only supporting Length, Number and Percentage for now
+        // XXX Only supporting Length, Number,  Percentage and Time for now
         match *self {
             Self::Length(ref l) => l.to_typed(dest),
             Self::Number(n) => n.to_typed(dest),
             Self::Percentage(p) => p.to_typed(dest),
+            Self::Time(t) => t.to_typed(dest),
             _ => Err(()),
         }
     }
@@ -197,6 +200,14 @@ impl CalcNumeric {
     pub fn as_percentage(&self) -> Option<NoCalcPercentage> {
         match self.node.resolve() {
             Ok(Leaf::Percentage(p)) => Some(p),
+            _ => None,
+        }
+    }
+
+    /// Gets this calc expression as a time
+    pub fn as_time(&self) -> Option<NoCalcTime> {
+        match self.node.resolve() {
+            Ok(Leaf::Time(t)) => Some(t),
             _ => None,
         }
     }
@@ -402,8 +413,12 @@ impl generic::CalcNodeLeaf for Leaf {
     }
 
     fn simplify(&mut self) {
-        if let Self::Length(NoCalcLength::Absolute(ref mut abs)) = *self {
-            *abs = AbsoluteLength::Px(abs.to_px());
+        match self {
+            Leaf::Length(NoCalcLength::Absolute(ref mut abs)) => {
+                *abs = AbsoluteLength::Px(abs.to_px())
+            },
+            Leaf::Time(ref mut t) => *t = NoCalcTime::from_seconds(t.seconds()),
+            _ => (),
         }
     }
 
@@ -429,7 +444,7 @@ impl generic::CalcNodeLeaf for Leaf {
                 *one = specified::Angle::from_calc(one.degrees() + other.degrees());
             },
             (&mut Time(ref mut one), &Time(ref other)) => {
-                *one = specified::Time::from_seconds(one.seconds() + other.seconds());
+                *one = NoCalcTime::from_seconds(one.seconds() + other.seconds());
             },
             (&mut Resolution(ref mut one), &Resolution(ref other)) => {
                 *one = specified::Resolution::from_dppx(one.dppx() + other.dppx());
@@ -519,7 +534,7 @@ impl generic::CalcNodeLeaf for Leaf {
                 ))));
             },
             (&Time(ref one), &Time(ref other)) => {
-                return Ok(Leaf::Time(specified::Time::from_seconds(op(
+                return Ok(Leaf::Time(NoCalcTime::from_seconds(op(
                     one.seconds(),
                     other.seconds(),
                 ))));
@@ -546,7 +561,7 @@ impl generic::CalcNodeLeaf for Leaf {
         Ok(match self {
             Leaf::Length(one) => *one = one.map(op),
             Leaf::Angle(one) => *one = specified::Angle::from_calc(op(one.degrees())),
-            Leaf::Time(one) => *one = specified::Time::from_seconds(op(one.seconds())),
+            Leaf::Time(one) => *one = NoCalcTime::from_seconds(op(one.seconds())),
             Leaf::Resolution(one) => *one = specified::Resolution::from_dppx(op(one.dppx())),
             Leaf::Percentage(one) => *one = NoCalcPercentage::new(op(one.get())),
             Leaf::Number(one) => *one = NoCalcNumber::new(op(one.value())),
@@ -698,7 +713,7 @@ impl CalcNode {
                     }
                 }
                 if allowed.includes(CalcUnits::TIME) {
-                    if let Ok(t) = Time::parse_dimension(value, unit) {
+                    if let Ok(t) = NoCalcTime::parse_dimension(value, unit) {
                         return Ok(CalcNode::Leaf(Leaf::Time(t)));
                     }
                 }
@@ -943,8 +958,8 @@ impl CalcNode {
                             return Ok(a.get().atan2(b.get()));
                         }
 
-                        if let Ok(a) = a.to_time(None) {
-                            let b = b.to_time(None)?;
+                        if let Ok(a) = a.to_time() {
+                            let b = b.to_time()?;
                             return Ok(a.seconds().atan2(b.seconds()));
                         }
 
@@ -1232,18 +1247,28 @@ impl CalcNode {
         }
     }
 
-    /// Tries to simplify this expression into a `<time>` value.
-    fn to_time(&self, clamping_mode: Option<AllowedNumericType>) -> Result<Time, ()> {
-        let seconds = if let Leaf::Time(time) = self.resolve()? {
-            time.seconds()
+    /// Tries to simplify this expression into a `NoCalcTime` value.
+    fn to_time(&self) -> Result<NoCalcTime, ()> {
+        if let Leaf::Time(time) = self.resolve()? {
+            Ok(time)
         } else {
-            return Err(());
-        };
+            Err(())
+        }
+    }
 
-        Ok(Time::from_seconds_with_calc_clamping_mode(
-            seconds,
-            clamping_mode,
-        ))
+    /// Tries to simplify this expression into a `<time>` value.
+    fn into_time(mut self, clamping_mode: AllowedNumericType) -> Result<CalcNumeric, ()> {
+        self.simplify_and_sort();
+
+        let unit: CalcUnits = self.unit()?;
+        if !CalcUnits::TIME.intersects(unit) {
+            Err(())
+        } else {
+            Ok(CalcNumeric {
+                clamping_mode,
+                node: self,
+            })
+        }
     }
 
     /// Tries to simplify the expression into a `<resolution>` value.
@@ -1433,9 +1458,9 @@ impl CalcNode {
         input: &mut Parser<'i, 't>,
         clamping_mode: AllowedNumericType,
         function: MathFunction,
-    ) -> Result<Time, ParseError<'i>> {
+    ) -> Result<CalcNumeric, ParseError<'i>> {
         Self::parse(context, input, function, AllowParse::new(CalcUnits::TIME))?
-            .to_time(Some(clamping_mode))
+            .into_time(clamping_mode)
             .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     }
 

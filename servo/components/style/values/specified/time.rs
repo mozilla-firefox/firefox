@@ -8,28 +8,29 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::computed::time::Time as ComputedTime;
 use crate::values::computed::{Context, ToComputedValue};
-use crate::values::specified::calc::CalcNode;
+use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
 use crate::values::CSSFloat;
 use crate::Zero;
 use cssparser::{match_ignore_ascii_case, Parser, Token};
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{
-    CssString, CssWriter, MathSum, NumericValue, ParseError, SpecifiedValueInfo,
-    StyleParseErrorKind, ToCss, ToTyped, TypedValue, UnitValue,
+    CssString, CssWriter, NumericValue, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss,
+    ToTyped, TypedValue, UnitValue,
 };
 use thin_vec::ThinVec;
 
 /// A time value according to CSS-VALUES § 6.2.
 #[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, ToShmem)]
-pub struct Time {
+#[repr(C)]
+pub struct NoCalcTime {
     seconds: CSSFloat,
     unit: TimeUnit,
-    calc_clamping_mode: Option<AllowedNumericType>,
 }
 
 /// A time unit.
 #[derive(Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToShmem)]
+#[repr(u8)]
 pub enum TimeUnit {
     /// `s`
     Second,
@@ -37,26 +38,17 @@ pub enum TimeUnit {
     Millisecond,
 }
 
-impl Time {
+impl NoCalcTime {
     /// Returns a time value that represents `seconds` seconds.
-    pub fn from_seconds_with_calc_clamping_mode(
-        seconds: CSSFloat,
-        calc_clamping_mode: Option<AllowedNumericType>,
-    ) -> Self {
-        Time {
+    pub fn from_seconds(seconds: CSSFloat) -> Self {
+        Self {
             seconds,
             unit: TimeUnit::Second,
-            calc_clamping_mode,
         }
     }
 
-    /// Returns a time value that represents `seconds` seconds.
-    pub fn from_seconds(seconds: CSSFloat) -> Self {
-        Self::from_seconds_with_calc_clamping_mode(seconds, None)
-    }
-
     /// Returns the time in fractional seconds.
-    pub fn seconds(self) -> CSSFloat {
+    pub fn seconds(&self) -> CSSFloat {
         self.seconds
     }
 
@@ -91,26 +83,79 @@ impl Time {
              _ => return Err(()),
         };
 
-        Ok(Time {
+        Ok(Self {
             seconds: self.seconds,
             unit,
-            calc_clamping_mode: None,
         })
     }
 
     /// Parses a time according to CSS-VALUES § 6.2.
-    pub fn parse_dimension(value: CSSFloat, unit: &str) -> Result<Time, ()> {
+    pub fn parse_dimension(value: CSSFloat, unit: &str) -> Result<Self, ()> {
         let (seconds, unit) = match_ignore_ascii_case! { unit,
             "s" => (value, TimeUnit::Second),
             "ms" => (value / 1000.0, TimeUnit::Millisecond),
             _ => return Err(())
         };
 
-        Ok(Time {
-            seconds,
-            unit,
-            calc_clamping_mode: None,
-        })
+        Ok(Self { seconds, unit })
+    }
+}
+
+impl ToCss for NoCalcTime {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        crate::values::serialize_specified_dimension(
+            self.unitless_value(),
+            self.unit(),
+            /* was_calc = */ false,
+            dest,
+        )
+    }
+}
+
+impl ToComputedValue for NoCalcTime {
+    type ComputedValue = ComputedTime;
+
+    fn to_computed_value(&self, _: &Context) -> Self::ComputedValue {
+        ComputedTime::from_seconds(self.seconds())
+    }
+
+    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
+        Self::from_seconds(computed.seconds())
+    }
+}
+
+impl ToTyped for NoCalcTime {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        let numeric_value = NumericValue::Unit(UnitValue {
+            value: self.unitless_value(),
+            unit: CssString::from(self.unit()),
+        });
+
+        // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-math-expression
+        dest.push(TypedValue::Numeric(numeric_value));
+
+        Ok(())
+    }
+}
+
+impl SpecifiedValueInfo for NoCalcTime {}
+
+/// A specified time value, either a plain value or a `calc()` expression.
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
+pub enum Time {
+    /// A plain <time> value.
+    NoCalc(NoCalcTime),
+    /// A calc() expression that produces a <time>.
+    Calc(Box<CalcNumeric>),
+}
+
+impl Time {
+    /// Returns a time value that represents `seconds` seconds.
+    pub fn from_seconds(seconds: CSSFloat) -> Self {
+        Time::NoCalc(NoCalcTime::from_seconds(seconds))
     }
 
     fn parse_with_clamping_mode<'i, 't>(
@@ -130,12 +175,15 @@ impl Time {
             Token::Dimension {
                 value, ref unit, ..
             } if clamping_mode.is_ok(ParsingMode::DEFAULT, value) => {
-                Time::parse_dimension(value, unit)
+                NoCalcTime::parse_dimension(value, unit)
                     .map_err(|()| location.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+                    .map(Time::NoCalc)
             },
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
                 CalcNode::parse_time(context, input, clamping_mode, function)
+                    .map(Box::new)
+                    .map(Time::Calc)
             },
             ref t => return Err(location.new_unexpected_token_error(t.clone())),
         }
@@ -159,27 +207,35 @@ impl Zero for Time {
     #[inline]
     fn is_zero(&self) -> bool {
         // The unit doesn't matter, i.e. `s` and `ms` are the same for zero.
-        self.seconds == 0.0 && self.calc_clamping_mode.is_none()
+        matches!(self, Self::NoCalc(t) if t.seconds() == 0.0)
     }
 }
 
 impl ToComputedValue for Time {
     type ComputedValue = ComputedTime;
 
-    fn to_computed_value(&self, _context: &Context) -> Self::ComputedValue {
-        let seconds = self
-            .calc_clamping_mode
-            .map_or(self.seconds(), |mode| mode.clamp(self.seconds()));
-
-        ComputedTime::from_seconds(crate::values::normalize(seconds))
+    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
+        match self {
+            Time::NoCalc(t) => t.to_computed_value(context),
+            Time::Calc(ref calc) => {
+                let value = match calc.node.with_computed_context(context).resolve() {
+                    Ok(Leaf::Time(t)) => t.seconds(),
+                    _ => {
+                        debug_assert!(false, "Unexpected Time::Calc without resolved time");
+                        f32::NAN
+                    },
+                };
+                ComputedTime::from_seconds(
+                    crate::values::normalize(calc.clamping_mode.clamp(value))
+                        .min(f32::MAX)
+                        .max(f32::MIN),
+                )
+            },
+        }
     }
 
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
-        Time {
-            seconds: computed.seconds(),
-            unit: TimeUnit::Second,
-            calc_clamping_mode: None,
-        }
+        Time::NoCalc(NoCalcTime::from_seconds(computed.seconds()))
     }
 }
 
@@ -191,39 +247,3 @@ impl Parse for Time {
         Self::parse_with_clamping_mode(context, input, AllowedNumericType::All)
     }
 }
-
-impl ToCss for Time {
-    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-    where
-        W: Write,
-    {
-        crate::values::serialize_specified_dimension(
-            self.unitless_value(),
-            self.unit(),
-            self.calc_clamping_mode.is_some(),
-            dest,
-        )
-    }
-}
-
-impl ToTyped for Time {
-    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-        let numeric_value = NumericValue::Unit(UnitValue {
-            value: self.unitless_value(),
-            unit: CssString::from(self.unit()),
-        });
-
-        // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-math-expression
-        if self.calc_clamping_mode.is_some() {
-            dest.push(TypedValue::Numeric(NumericValue::Sum(MathSum {
-                values: ThinVec::from([numeric_value]),
-            })));
-        } else {
-            dest.push(TypedValue::Numeric(numeric_value));
-        }
-
-        Ok(())
-    }
-}
-
-impl SpecifiedValueInfo for Time {}
