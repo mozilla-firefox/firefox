@@ -125,6 +125,8 @@ class ObserverList {
   void setPrev(Ptr link);
   friend class ObserverListPtr;
 
+  void makeEmpty();
+
  public:
   class Iter;
 
@@ -143,6 +145,7 @@ class ObserverList {
   Iter iter();
 
   void insertFront(ObserverListObject* obj);
+  void append(ObserverList&& other);
 };
 
 // A hasher for GC things used as WeakRef and FinalizationRegistry targets. Uses
