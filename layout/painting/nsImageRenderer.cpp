@@ -251,6 +251,8 @@ bool nsImageRenderer::PrepareImage() {
     // on.
     mPrepareResult = ImgDrawResult::BAD_IMAGE;
     return false;
+  } else if (mImage->IsImage()) {
+    mPrepareResult = ImgDrawResult::SUCCESS;
   } else {
     MOZ_ASSERT(mImage->IsNone(), "Unknown image type?");
   }
@@ -331,6 +333,7 @@ CSSSizeOrRatio nsImageRenderer::ComputeIntrinsicSize() {
     // Per <http://dev.w3.org/csswg/css3-images/#gradients>, gradients have no
     // intrinsic dimensions.
     case StyleImage::Tag::Gradient:
+    case StyleImage::Tag::Image:
     case StyleImage::Tag::None:
       break;
   }
@@ -565,6 +568,15 @@ ImgDrawResult nsImageRenderer::Draw(nsPresContext* aPresContext,
           ConvertImageRendererToDrawFlags(mFlags), mExtendMode, aOpacity);
       break;
     }
+    case StyleImage::Tag::Image: {
+      const auto fill = LayoutDeviceRect::FromAppUnits(
+          aFill, aPresContext->AppUnitsPerDevPixel());
+      ctx->GetDrawTarget()->FillRect(
+          fill.ToUnknownRect(),
+          ColorPattern(ToDeviceColor(mImage->AsImage()->CalcColor(mForFrame))),
+          DrawOptions(/* aAlpha = */ aOpacity));
+      break;
+    }
     case StyleImage::Tag::Gradient: {
       nsCSSGradientRenderer renderer = nsCSSGradientRenderer::Create(
           aPresContext, mForFrame->Style(), *mGradientData, mSize);
@@ -672,11 +684,10 @@ ImgDrawResult nsImageRenderer::BuildWebRenderDisplayItems(
       SVGImageContext svgContext(Some(destCSSSize));
       Maybe<ImageIntRegion> region;
 
-      const int32_t appUnitsPerDevPixel =
-          mForFrame->PresContext()->AppUnitsPerDevPixel();
-      LayoutDeviceRect destRect =
+      const int32_t appUnitsPerDevPixel = aPresContext->AppUnitsPerDevPixel();
+      const auto destRect =
           LayoutDeviceRect::FromAppUnits(aDest, appUnitsPerDevPixel);
-      LayoutDeviceRect clipRect =
+      const auto clipRect =
           LayoutDeviceRect::FromAppUnits(aFill, appUnitsPerDevPixel);
       auto stretchSize = wr::ToLayoutSize(destRect.Size());
 
@@ -743,6 +754,16 @@ ImgDrawResult nsImageRenderer::BuildWebRenderDisplayItems(
                                     rendering, key.value(), true,
                                     wr::ColorF{1.0f, 1.0f, 1.0f, aOpacity});
       }
+      break;
+    }
+    case StyleImage::Tag::Image: {
+      const int32_t appUnitsPerDevPixel = aPresContext->AppUnitsPerDevPixel();
+      auto fillRect = wr::ToLayoutRect(
+          LayoutDeviceRect::FromAppUnits(aFill, appUnitsPerDevPixel));
+      aBuilder.PushRect(
+          fillRect, fillRect, !aItem->BackfaceIsHidden(),
+          /* aFoceAntiAliasing = */ false, /* aIsCheckerboard = */ false,
+          wr::ToColorF(ToDeviceColor(mImage->AsImage()->CalcColor(mForFrame))));
       break;
     }
     default:

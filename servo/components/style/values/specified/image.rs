@@ -245,8 +245,10 @@ impl Image {
             #[cfg(feature = "servo")]
             "paint" => Self::PaintWorklet(Box::new(<PaintWorklet>::parse_args(context, input)?)),
             "cross-fade" if cross_fade_enabled() => Self::CrossFade(Box::new(CrossFade::parse_args(context, input, cors_mode, flags)?)),
+            "image" => Self::Image(Box::new(Color::parse(context, input)?)),
             "light-dark" if image_light_dark_enabled(context) => Self::LightDark(Box::new(GenericLightDark::parse_args_with(input, |input| {
-                Self::parse_with_cors_mode(context, input, cors_mode, flags)
+                // `none` in `light-dark()` has a special meaning.
+                Self::parse_with_cors_mode(context, input, cors_mode, flags & !ParseImageFlags::FORBID_NONE)
             })?)),
             #[cfg(feature = "gecko")]
             "-moz-element" => Self::Element(Self::parse_element(input)?),

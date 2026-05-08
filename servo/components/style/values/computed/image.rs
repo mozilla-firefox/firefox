@@ -223,7 +223,13 @@ impl ToComputedValue for specified::Image {
             Self::PaintWorklet(w) => Image::PaintWorklet(w.to_computed_value(context)),
             Self::CrossFade(f) => Image::CrossFade(f.to_computed_value(context)),
             Self::ImageSet(s) => Image::ImageSet(s.to_computed_value(context)),
-            Self::LightDark(ld) => ld.compute(context),
+            Self::Image(color) => Image::Image(color.to_computed_value(context)),
+            Self::LightDark(ld) => match ld.compute(context) {
+                // none computes to image(transparent) in light-dark(), see
+                // https://github.com/w3c/csswg-drafts/issues/13866.
+                Image::None => Image::Image(Color::TRANSPARENT_BLACK.into()),
+                other => other,
+            },
         }
     }
 
@@ -242,6 +248,7 @@ impl ToComputedValue for specified::Image {
             Image::PaintWorklet(w) => Self::PaintWorklet(ToComputedValue::from_computed_value(w)),
             Image::CrossFade(f) => Self::CrossFade(ToComputedValue::from_computed_value(f)),
             Image::ImageSet(s) => Self::ImageSet(ToComputedValue::from_computed_value(s)),
+            Image::Image(color) => Self::Image(ToComputedValue::from_computed_value(color)),
             Image::LightDark(_) => unreachable!("Shouldn't have computed image-set values"),
         }
     }

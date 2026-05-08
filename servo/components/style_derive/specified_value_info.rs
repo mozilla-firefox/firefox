@@ -36,7 +36,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
                     let css_attrs = cg::parse_variant_attrs::<CssVariantAttrs>(&v);
                     let info_attrs = cg::parse_variant_attrs::<ValueInfoVariantAttrs>(&v);
                     let parse_attrs = cg::parse_variant_attrs::<ParseVariantAttrs>(&v);
-                    if css_attrs.skip {
+                    if css_attrs.skip || info_attrs.skip {
                         continue;
                     }
                     if let Some(aliases) = parse_attrs.aliases {
@@ -165,11 +165,10 @@ fn derive_struct_fields<'a>(
         if let Some(if_empty) = css_attrs.if_empty {
             values.push(if_empty);
         }
-        if !css_attrs.skip {
-            Some(&field.ty)
-        } else {
-            None
+        if css_attrs.skip || info_attrs.skip {
+            return None;
         }
+        Some(&field.ty)
     }));
     true
 }
@@ -185,11 +184,13 @@ struct ValueInfoInputAttrs {
 #[darling(attributes(value_info), default)]
 struct ValueInfoVariantAttrs {
     starts_with_keyword: bool,
+    skip: bool,
     other_values: Option<String>,
 }
 
 #[derive(Default, FromField)]
 #[darling(attributes(value_info), default)]
 struct ValueInfoFieldAttrs {
+    skip: bool,
     other_values: Option<String>,
 }

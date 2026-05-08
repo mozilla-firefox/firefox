@@ -1633,6 +1633,8 @@ bool StyleImage::IsOpaque() const {
       MOZ_ASSERT(imageContainer, "IsComplete() said image container is ready");
       return imageContainer->WillDrawOpaqueNow();
     }
+    case Tag::Image:
+      return !AsImage()->MaybeTransparent();
     case Tag::CrossFade:
       for (const auto& el : AsCrossFade()->elements.AsSpan()) {
         if (el.image.IsColor()) {
@@ -1665,6 +1667,7 @@ bool StyleImage::IsComplete() const {
     case Tag::Gradient:
     case Tag::Element:
     case Tag::MozSymbolicIcon:
+    case Tag::Image:
       return true;
     case Tag::Url: {
       if (!IsResolved()) {
@@ -1697,6 +1700,7 @@ bool StyleImage::IsSizeAvailable() const {
   switch (tag) {
     case Tag::None:
       return false;
+    case Tag::Image:
     case Tag::Gradient:
     case Tag::Element:
     case Tag::MozSymbolicIcon:
@@ -1988,10 +1992,10 @@ static bool SizeDependsOnPositioningAreaSize(const StyleBackgroundSize& aSize,
     return false;
   }
 
-  // Gradient rendering depends on frame size when auto is involved because
-  // gradients have no intrinsic ratio or dimensions, and therefore the relevant
-  // dimension is "treat[ed] as 100%".
-  if (aImage.IsGradient()) {
+  // Gradient and image() rendering depends on frame size when auto is involved
+  // because they have no intrinsic ratio or dimensions, and therefore the
+  // relevant dimension is "treat[ed] as 100%".
+  if (aImage.IsGradient() || aImage.IsImage()) {
     return true;
   }
 
