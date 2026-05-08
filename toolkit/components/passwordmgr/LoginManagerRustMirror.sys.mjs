@@ -7,7 +7,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
 });
 
-const rustMirrorTelemetryVersion = "7";
+const rustMirrorTelemetryVersion = "8";
 
 /* Normalize different errors */
 function normalizeRustStorageErrorMessage(error) {

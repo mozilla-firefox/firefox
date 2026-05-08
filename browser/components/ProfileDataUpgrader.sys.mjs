@@ -979,16 +979,16 @@ export let ProfileDataUpgrader = {
       } catch (e) {}
     }
 
-    // Updating from 168 to 170 to trigger re-migrations of the Rusts store.
-    if (existingDataVersion < 170) {
-      // Force all logins to be re-migrated to the rust store.
-      Services.prefs.setBoolPref("signon.rustMirror.migrationNeeded", true);
-    }
-
     if (existingDataVersion < 169) {
       // Clear prefs removed by bug 2018089 and bug 2018516.
       Services.prefs.clearUserPref("widget.macos.native-anchored-menulists");
       Services.prefs.clearUserPref("widget.macos.native-anchored-select");
+    }
+
+    // Updating from 170 to 171 to trigger re-migrations of the Rusts store.
+    if (existingDataVersion < 171) {
+      // Force all logins to be re-migrated to the rust store.
+      Services.prefs.setBoolPref("signon.rustMirror.migrationNeeded", true);
     }
 
     // Update the migration version.
