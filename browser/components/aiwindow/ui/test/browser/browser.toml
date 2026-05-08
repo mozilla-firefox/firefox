@@ -47,6 +47,10 @@ support-files = [
 
 ["browser_aiwindow_account_auth.js"]
 
+["browser_aiwindow_ai_action_result.js"]
+
+["browser_aiwindow_aifeature_contract.js"]
+
 ["browser_aiwindow_applied_memories_button.js"]
 
 ["browser_aiwindow_ask_button.js"]
@@ -108,8 +112,6 @@ skip-if = [
 ["browser_aiwindow_transparency.js"]
 
 ["browser_aiwindow_url_security.js"]
-
-["browser_aiwindow_ai_action_result.js"]
 
 ["browser_aiwindow_urlbar_chat.js"]
 
