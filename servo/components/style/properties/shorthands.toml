@@ -438,11 +438,11 @@ sub_properties = [
   "line-height",
   "font-family",
   "font-optical-sizing",
-  "font-variation-settings"
+  "font-variation-settings",
+  "font-kerning"
 ]
 extra_gecko_sub_properties = [
   "font-size-adjust",
-  "font-kerning",
   "font-variant-alternates",
   "font-variant-east-asian",
   "font-variant-emoji",

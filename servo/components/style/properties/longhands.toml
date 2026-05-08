@@ -3650,7 +3650,6 @@ gecko_constant_prefix = "NS_FONT_VARIANT_CAPS"
 
 [font-kerning]
 struct = "font"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-kerning"
 animation_type = "discrete"
 affects = "layout"
