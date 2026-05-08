@@ -15,7 +15,7 @@ CXXFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]
 CXXFLAGS += CONFIG["MOZ_PANGO_CFLAGS"]
 OS_LIBS += CONFIG["MOZ_X11_LIBS"]
 OS_LIBS += CONFIG["MOZ_GTK3_LIBS"]
-OS_LIBS += ["dl"]
+OS_LIBS += CONFIG["DL_LIBS"]
 
 LOCAL_INCLUDES += [
     "/third_party/khronos/vulkan-headers/include",
