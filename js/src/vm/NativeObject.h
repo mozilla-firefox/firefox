@@ -36,6 +36,8 @@ class PropertyResult;
 
 namespace gc {
 class TenuringTracer;
+template <uint32_t>
+class MarkingTracerT;
 }  // namespace gc
 
 /*
@@ -545,7 +547,6 @@ extern HeapSlot* const emptyObjectSlots;
 extern HeapSlot* const emptyObjectSlotsForDictionaryObject[];
 
 class AutoCheckShapeConsistency;
-class GCMarker;
 
 // Operations which change an object's dense elements can either succeed, fail,
 // or be unable to complete. The latter is used when the object's elements must
@@ -860,7 +861,8 @@ class NativeObject : public JSObject {
 
  protected:
   friend class DictionaryPropMap;
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class Shape;
 
   void invalidateSlotRange(uint32_t start, uint32_t end) {
