@@ -59,8 +59,8 @@ impl FilterFactor {
 
 impl ToComputedValue for FilterFactor {
     type ComputedValue = ComputedNumber;
-    fn to_computed_value(&self, _: &Context) -> Self::ComputedValue {
-        self.0.to_number().get()
+    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
+        self.0.to_number().to_computed_value(context)
     }
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
         Self(NumberOrPercentage::Number(Number::new(*computed)))
@@ -217,28 +217,28 @@ impl Filter {
                 length.0.to_computed_pixel_length_without_context()?,
             ))),
             Filter::Brightness(ref factor) => Ok(ComputedFilter::Brightness(
-                ComputedNonNegativeNumber::from(factor.0.to_number().get()),
+                ComputedNonNegativeNumber::from(factor.0.to_number().resolve().ok_or(())?),
             )),
             Filter::Contrast(ref factor) => Ok(ComputedFilter::Contrast(
-                ComputedNonNegativeNumber::from(factor.0.to_number().get()),
+                ComputedNonNegativeNumber::from(factor.0.to_number().resolve().ok_or(())?),
             )),
             Filter::Grayscale(ref factor) => Ok(ComputedFilter::Grayscale(
-                ComputedZeroToOneNumber::from(factor.0.to_number().get()),
+                ComputedZeroToOneNumber::from(factor.0.to_number().resolve().ok_or(())?),
             )),
             Filter::HueRotate(ref angle) => Ok(ComputedFilter::HueRotate(
                 ComputedAngle::from_degrees(angle.degrees()),
             )),
             Filter::Invert(ref factor) => Ok(ComputedFilter::Invert(
-                ComputedZeroToOneNumber::from(factor.0.to_number().get()),
+                ComputedZeroToOneNumber::from(factor.0.to_number().resolve().ok_or(())?),
             )),
             Filter::Opacity(ref factor) => Ok(ComputedFilter::Opacity(
-                ComputedZeroToOneNumber::from(factor.0.to_number().get()),
+                ComputedZeroToOneNumber::from(factor.0.to_number().resolve().ok_or(())?),
             )),
             Filter::Saturate(ref factor) => Ok(ComputedFilter::Saturate(
-                ComputedNonNegativeNumber::from(factor.0.to_number().get()),
+                ComputedNonNegativeNumber::from(factor.0.to_number().resolve().ok_or(())?),
             )),
             Filter::Sepia(ref factor) => Ok(ComputedFilter::Sepia(ComputedZeroToOneNumber::from(
-                factor.0.to_number().get(),
+                factor.0.to_number().resolve().ok_or(())?,
             ))),
             Filter::DropShadow(ref shadow) => {
                 if cfg!(feature = "gecko") {

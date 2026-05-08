@@ -27,9 +27,11 @@ type = "Vec<cssparser::UnicodeRange>"
 
 [font-feature-settings]
 type = "FontFeatureSettings"
+parser = "parse_for_font_face_rule"
 
 [font-variation-settings]
 type = "FontVariationSettings"
+parser = "parse_for_font_face_rule"
 gecko_pref = "layout.css.font-variations.enabled"
 
 [font-language-override]

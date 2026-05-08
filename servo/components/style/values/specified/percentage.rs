@@ -119,7 +119,7 @@ impl Percentage {
 
     /// Returns this percentage as a number.
     pub fn to_number(&self) -> Number {
-        Number::new_with_clamping_mode(self.value, self.calc_clamping_mode)
+        Number::new(self.get())
     }
 
     /// Returns the calc() clamping mode for this percentage.

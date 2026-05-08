@@ -44,8 +44,12 @@ impl Parse for FontPaletteOverrideColor {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<FontPaletteOverrideColor, ParseError<'i>> {
-        let index = NonNegativeInteger::parse(context, input)?;
         let location = input.current_source_location();
+        let index = NonNegativeInteger::parse(context, input)?;
+        if index.0.resolve().is_none() {
+            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+
         let color = SpecifiedColor::parse(context, input)?;
         // Only absolute colors are accepted here:
         //   https://drafts.csswg.org/css-fonts/#override-color
@@ -81,11 +85,34 @@ impl OneOrMoreSeparated for FamilyName {
 }
 
 #[allow(missing_docs)]
-#[derive(Clone, Debug, MallocSizeOf, Parse, PartialEq, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem)]
 pub enum FontPaletteBase {
     Light,
     Dark,
     Index(NonNegativeInteger),
+}
+
+impl Parse for FontPaletteBase {
+    #[inline]
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        let location = input.current_source_location();
+        if let Ok(v) = input.try_parse(|input| NonNegativeInteger::parse(context, input)) {
+            if v.0.resolve().is_none() {
+                return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            }
+            return Ok(FontPaletteBase::Index(v));
+        }
+
+        let ident = input.expect_ident()?;
+        match_ignore_ascii_case! { &ident,
+            "light" => Ok(FontPaletteBase::Light),
+            "dark" => Ok(FontPaletteBase::Dark),
+            _ => Err(location.new_unexpected_token_error(cssparser::Token::Ident(ident.clone())))
+        }
+    }
 }
 
 /// The [`@font-palette-values`][font-palette-values] at-rule.
@@ -181,7 +208,8 @@ impl FontPaletteValuesRule {
                         match &base_palette {
                             FontPaletteBase::Light => FontPaletteValueSet_PaletteValues_kLight,
                             FontPaletteBase::Dark => FontPaletteValueSet_PaletteValues_kDark,
-                            FontPaletteBase::Index(i) => i.0.value() as i32,
+                            // We checked at parse time that the index is resolvable.
+                            FontPaletteBase::Index(i) => i.0.resolve().unwrap(),
                         },
                     );
                 }
@@ -190,10 +218,12 @@ impl FontPaletteValuesRule {
                 // We checked at parse time that the specified color can be resolved
                 // in this way, so the unwrap() here will succeed.
                 let absolute = c.color.resolve_to_absolute().unwrap();
+                // We checked at parse time that the index is resolvable.
+                let index = c.index.0.resolve().unwrap();
                 unsafe {
                     Gecko_SetFontPaletteOverride(
                         palette_values,
-                        c.index.0.value(),
+                        index,
                         (&absolute) as *const _ as *mut _,
                     );
                 }

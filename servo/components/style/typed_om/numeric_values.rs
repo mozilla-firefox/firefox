@@ -5,7 +5,7 @@
 //! Typed OM Numeric Values.
 
 use crate::derives::*;
-use crate::values::specified::{NoCalcLength, Number, Percentage, Time};
+use crate::values::specified::{NoCalcLength, NoCalcNumber, Percentage, Time};
 use crate::values::CSSFloat;
 use cssparser::match_ignore_ascii_case;
 use style_traits::ParsingMode;
@@ -27,7 +27,7 @@ pub enum NoCalcNumeric {
     /// A `<number>` value.
     ///
     /// <https://drafts.csswg.org/css-values/#number-value>
-    Number(Number),
+    Number(NoCalcNumber),
 
     /// A `<percentage>` value.
     ///
@@ -103,7 +103,7 @@ impl NoCalcNumeric {
         }
 
         match_ignore_ascii_case! { unit,
-            "number" => Ok(NoCalcNumeric::Number(Number::new(value))),
+            "number" => Ok(NoCalcNumeric::Number(NoCalcNumber::new(value))),
             "percent" => Ok(NoCalcNumeric::Percentage(Percentage::new(value))),
             _ => Err(()),
         }

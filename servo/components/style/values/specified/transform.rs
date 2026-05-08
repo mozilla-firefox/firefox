@@ -235,7 +235,7 @@ impl Transform {
                                 let sy = NumberOrPercentage::parse(context, input)?.to_number();
                                 Ok(generic::TransformOperation::Scale(sx, sy))
                             } else {
-                                Ok(generic::TransformOperation::Scale(sx, sx))
+                                Ok(generic::TransformOperation::Scale(sx.clone(), sx))
                             }
                         },
                         "scalex" => {
@@ -553,6 +553,6 @@ impl Parse for Scale {
         }
 
         // 'scale: <number>'
-        Ok(generic::Scale::Scale(sx, sx, Number::new(1.0)))
+        Ok(generic::Scale::Scale(sx.clone(), sx, Number::new(1.0)))
     }
 }

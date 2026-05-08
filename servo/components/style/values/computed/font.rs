@@ -868,7 +868,7 @@ impl ToComputedValue for specified::FontSizeAdjust {
             }};
         }
 
-        match *self {
+        match self {
             Self::None => FontSizeAdjust::None,
             Self::ExHeight(val) => {
                 resolve!(
@@ -1089,7 +1089,7 @@ impl ToComputedValue for specified::MathDepth {
         use crate::properties::longhands::math_style::SpecifiedValue as MathStyleValue;
         use std::{cmp, i8};
 
-        let int = match *self {
+        let int = match self {
             specified::MathDepth::AutoAdd => {
                 let parent = cx.builder.get_parent_font().clone_math_depth() as i32;
                 let style = cx.builder.get_parent_font().clone_math_style();

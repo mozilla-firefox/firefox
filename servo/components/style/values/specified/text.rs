@@ -141,7 +141,7 @@ impl Parse for HyphenateLimitChars {
             .unwrap_or(IntegerOrAuto::Auto);
         let post_hyphen_length = input
             .try_parse(|i| IntegerOrAuto::parse(context, i))
-            .unwrap_or(pre_hyphen_length);
+            .unwrap_or_else(|_| pre_hyphen_length.clone());
         Ok(Self {
             total_word_length,
             pre_hyphen_length,

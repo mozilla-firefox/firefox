@@ -484,7 +484,7 @@ impl ToCss for System {
     where
         W: Write,
     {
-        match *self {
+        match self {
             System::Cyclic => dest.write_str("cyclic"),
             System::Numeric => dest.write_str("numeric"),
             System::Alphabetic => dest.write_str("alphabetic"),
@@ -579,7 +579,7 @@ pub struct CounterRange {
 pub struct CounterRanges(#[css(iterable, if_empty = "auto")] pub crate::OwnedSlice<CounterRange>);
 
 /// A bound found in `CounterRanges`.
-#[derive(Clone, Copy, Debug, MallocSizeOf, ToCss, ToShmem, PartialEq)]
+#[derive(Clone, Debug, MallocSizeOf, ToCss, ToShmem, PartialEq)]
 pub enum CounterBound {
     /// An integer bound.
     Integer(Integer),
@@ -602,8 +602,12 @@ impl Parse for CounterRanges {
         let ranges = input.parse_comma_separated(|input| {
             let start = parse_bound(context, input)?;
             let end = parse_bound(context, input)?;
-            if let (CounterBound::Integer(start), CounterBound::Integer(end)) = (start, end) {
-                if start > end {
+            if let (CounterBound::Integer(ref s), CounterBound::Integer(ref e)) = (&start, &end) {
+                // Rejects calc expressions that cannot be resolved at parse time,
+                // since @counter-style descriptors require concrete values.
+                let s = s.resolve();
+                let e = e.resolve();
+                if s.is_none() || e.is_none() || s.unwrap() > e.unwrap() {
                     return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
             }
@@ -636,6 +640,11 @@ impl Parse for Pad {
     ) -> Result<Self, ParseError<'i>> {
         let pad_with = input.try_parse(|input| Symbol::parse(context, input));
         let min_length = Integer::parse_non_negative(context, input)?;
+        // Rejects calc expressions that cannot be resolved at parse time,
+        // since @counter-style descriptors require concrete values.
+        if min_length.resolve().is_none() {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
         let pad_with = pad_with.or_else(|_| Symbol::parse(context, input))?;
         Ok(Pad(min_length, pad_with))
     }
@@ -692,10 +701,13 @@ impl Parse for AdditiveSymbols {
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
         let tuples = Vec::<AdditiveTuple>::parse(context, input)?;
+        if tuples.iter().any(|t| t.weight.resolve().is_none()) {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
         // FIXME maybe? https://github.com/w3c/csswg-drafts/issues/1220
         if tuples
             .windows(2)
-            .any(|window| window[0].weight <= window[1].weight)
+            .any(|window| window[0].weight.get() <= window[1].weight.get())
         {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }

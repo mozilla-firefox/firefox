@@ -563,7 +563,7 @@ impl Gradient {
         };
         type Point = GenericPosition<Component<X>, Component<Y>>;
 
-        #[derive(Clone, Copy, Parse)]
+        #[derive(Clone, Parse)]
         enum Component<S> {
             Center,
             Number(NumberOrPercentage),
@@ -600,6 +600,14 @@ impl Gradient {
                     let x = Component::parse(context, i)?;
                     let y = Component::parse(context, i)?;
 
+                    // TODO(Bug 2037751) - Enable calc()-expressions that can only be resolved at
+                    // computed value time (due to relative lengths, sibling-index(), etc.).
+                    if matches!(&x, Component::Number(NumberOrPercentage::Number(n)) if n.resolve().is_none()) ||
+                        matches!(&y, Component::Number(NumberOrPercentage::Number(n)) if n.resolve().is_none())
+                    {
+                        return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    }
+
                     Ok(Self::new(x, y))
                 })
             }
@@ -627,7 +635,8 @@ impl Gradient {
                 match self {
                     Component::Center => PositionComponent::Center,
                     Component::Number(NumberOrPercentage::Number(number)) => {
-                        PositionComponent::Length(Length::from_px(number.value()).into())
+                        // Unresolvable calc is rejected in Point::parse.
+                        PositionComponent::Length(Length::from_px(number.resolve().unwrap()).into())
                     },
                     Component::Number(NumberOrPercentage::Percentage(p)) => {
                         PositionComponent::Length(p.into())
@@ -639,12 +648,12 @@ impl Gradient {
 
         impl<S: Copy + Side> Component<S> {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-                match ((*self).into(), (*other).into()) {
+                match (self.clone().into(), other.clone().into()) {
                     (NumberOrPercentage::Percentage(a), NumberOrPercentage::Percentage(b)) => {
                         a.get().partial_cmp(&b.get())
                     },
                     (NumberOrPercentage::Number(a), NumberOrPercentage::Number(b)) => {
-                        a.value().partial_cmp(&b.value())
+                        a.resolve().partial_cmp(&b.resolve())
                     },
                     (_, _) => None,
                 }
@@ -681,13 +690,20 @@ impl Gradient {
                 input.expect_comma()?;
                 let second_radius = Number::parse_non_negative(context, input)?;
 
-                let (reverse_stops, point, radius) = if second_radius.value() >= first_radius.value() {
+                // TODO(Bug 2037751) - Enable calc()-expressions that can only be resolved at
+                // computed value time (due to relative lengths, sibling-index(), etc.).
+                if first_radius.resolve().is_none() || second_radius.resolve().is_none() {
+                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                }
+
+                let (reverse_stops, point, radius) = if second_radius.resolve() >= first_radius.resolve() {
                     (false, second_point, second_radius)
                 } else {
                     (true, first_point, first_radius)
                 };
 
-                let rad = Circle::Radius(NonNegative(Length::from_px(radius.value())));
+                // Unresolvable calc is rejected above.
+                let rad = Circle::Radius(NonNegative(Length::from_px(radius.resolve().unwrap())));
                 let shape = generic::EndingShape::Circle(rad);
                 let position = Position::new(point.horizontal.into(), point.vertical.into());
                 let items = Gradient::parse_webkit_gradient_stops(context, input, reverse_stops)?;

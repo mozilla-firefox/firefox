@@ -407,7 +407,7 @@ impl ColorComponentType for NumberOrPercentageComponent {
     fn try_from_leaf(leaf: &Leaf) -> Result<Self, ()> {
         Ok(match *leaf {
             Leaf::Percentage(unit_value) => Self::Percentage(unit_value),
-            Leaf::Number(value) => Self::Number(value),
+            Leaf::Number(n) => Self::Number(n.value()),
             _ => return Err(()),
         })
     }
@@ -465,7 +465,7 @@ impl ColorComponentType for NumberOrAngleComponent {
     fn try_from_leaf(leaf: &Leaf) -> Result<Self, ()> {
         Ok(match *leaf {
             Leaf::Angle(angle) => Self::Angle(angle.degrees()),
-            Leaf::Number(value) => Self::Number(value),
+            Leaf::Number(n) => Self::Number(n.value()),
             _ => return Err(()),
         })
     }
@@ -490,8 +490,8 @@ impl ColorComponentType for f32 {
     }
 
     fn try_from_leaf(leaf: &Leaf) -> Result<Self, ()> {
-        if let Leaf::Number(value) = *leaf {
-            Ok(value)
+        if let Leaf::Number(n) = *leaf {
+            Ok(n.value())
         } else {
             Err(())
         }

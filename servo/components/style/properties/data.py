@@ -568,7 +568,6 @@ class Longhand(Property):
                 "AnimationDirection",
                 "AnimationFillMode",
                 "AnimationPlayState",
-                "AspectRatio",
                 "BaselineSource",
                 "BreakBetween",
                 "BreakWithin",
@@ -577,7 +576,6 @@ class Longhand(Property):
                 "BorderStyle",
                 "table::CaptionSide",
                 "Clear",
-                "ColumnCount",
                 "Contain",
                 "ContentVisibility",
                 "ContainerType",
@@ -586,7 +584,6 @@ class Longhand(Property):
                 "FillRule",
                 "Float",
                 "FontLanguageOverride",
-                "FontSizeAdjust",
                 "FontStretch",
                 "FontStyle",
                 "FontSynthesis",
@@ -594,13 +591,9 @@ class Longhand(Property):
                 "FontVariantEastAsian",
                 "FontVariantLigatures",
                 "FontVariantNumeric",
-                "FontWeight",
-                "GreaterThanOrEqualToOneNumber",
                 "GridAutoFlow",
                 "ImageRendering",
                 "Inert",
-                "InitialLetter",
-                "Integer",
                 "PositionArea",
                 "PositionAreaKeyword",
                 "PositionProperty",
@@ -609,19 +602,15 @@ class Longhand(Property):
                 "SelfAlignment",
                 "JustifyItems",
                 "LineBreak",
-                "LineClamp",
                 "MasonryAutoFlow",
                 "MozTheme",
                 "BoolInteger",
                 "text::MozControlCharacterVisibility",
-                "MathDepth",
                 "MozScriptMinSize",
                 "MozScriptSizeMultiplier",
                 "TransformBox",
                 "TextDecorationSkipInk",
-                "NonNegativeNumber",
                 "OffsetRotate",
-                "Opacity",
                 "OutlineStyle",
                 "Overflow",
                 "OverflowAnchor",
@@ -636,7 +625,6 @@ class Longhand(Property):
                 "ForcedColorAdjust",
                 "Resize",
                 "RubyPosition",
-                "SVGOpacity",
                 "SVGPaintOrder",
                 "ScrollbarGutter",
                 "ScrollSnapAlign",
@@ -663,8 +651,6 @@ class Longhand(Property):
                 "WritingModeProperty",
                 "XSpan",
                 "XTextScale",
-                "ZIndex",
-                "Zoom",
             }
         if self.name == "overflow-y":
             return True
@@ -810,9 +796,10 @@ class StyleStruct(object):
 
 
 class Descriptor(object):
-    def __init__(self, name, type, gecko_pref=None, ignore_malloc_size_of=None):
+    def __init__(self, name, type, parser=None, gecko_pref=None, ignore_malloc_size_of=None):
         self.name = name
         self.type = type
+        self.parser = parser
         self.gecko_pref = gecko_pref
         self.ignore_malloc_size_of = ignore_malloc_size_of
         self.ident = to_rust_ident(name)

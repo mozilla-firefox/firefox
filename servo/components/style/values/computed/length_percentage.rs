@@ -43,6 +43,7 @@ use crate::values::generics::position::GenericAnchorSide;
 use crate::values::generics::{calc, ClampToNonNegative, NonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
 use crate::values::specified::length::{EqualsPercentage, FontBaseSize, LineHeightBase};
+use crate::values::specified::number::NoCalcNumber;
 use crate::values::{specified, CSSFloat};
 use crate::{Zero, ZeroNoPercent};
 use app_units::Au;
@@ -1190,7 +1191,7 @@ impl specified::CalcNumeric {
                     result
                 }
             }),
-            Leaf::Number(n) => CalcLengthPercentageLeaf::Number(n),
+            Leaf::Number(n) => CalcLengthPercentageLeaf::Number(n.get()),
             Leaf::Angle(..) | Leaf::Time(..) | Leaf::Resolution(..) | Leaf::ColorComponent(..) => {
                 unreachable!("Shouldn't have parsed")
             },
@@ -1273,7 +1274,7 @@ impl specified::CalcNumeric {
                     Leaf::Length(NoCalcLength::from_px(l.px()))
                 },
                 CalcLengthPercentageLeaf::Percentage(ref p) => Leaf::Percentage(p.0),
-                CalcLengthPercentageLeaf::Number(n) => Leaf::Number(*n),
+                CalcLengthPercentageLeaf::Number(n) => Leaf::Number(NoCalcNumber::new(*n)),
             }),
         }
     }

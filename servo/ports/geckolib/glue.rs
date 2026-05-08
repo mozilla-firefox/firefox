@@ -3707,7 +3707,18 @@ pub extern "C" fn Servo_FontFaceRule_GetFontWeight(
     rule: &LockedFontFaceRule,
     out: &mut font_face::ComputedFontWeightRange,
 ) -> bool {
-    simple_font_descriptor_getter_impl!(rule, out, font_weight, compute)
+    read_locked_arc_worker(rule, |rule: &FontFaceRule| {
+        let Some(v) = rule
+            .descriptors
+            .font_weight
+            .as_ref()
+            .and_then(|v| v.compute())
+        else {
+            return false;
+        };
+        *out = v;
+        true
+    })
 }
 
 #[no_mangle]
@@ -3867,7 +3878,9 @@ pub unsafe extern "C" fn Servo_FontFaceRule_GetVariationSettings(
                 .iter()
                 .map(|source| structs::gfxFontVariation {
                     mTag: source.tag.0,
-                    mValue: source.value.get(),
+                    // The value is enforced to be resolvable at parse time
+                    // (see FontVariationSettings::parse_for_font_face_rule).
+                    mValue: source.value.resolve().unwrap(),
                 }),
         );
     });
@@ -3890,7 +3903,9 @@ pub unsafe extern "C" fn Servo_FontFaceRule_GetFeatureSettings(
                 .iter()
                 .map(|source| structs::gfxFontFeature {
                     mTag: source.tag.0,
-                    mValue: source.value.value() as u32,
+                    // The value is enforced to be resolvable at parse time
+                    // (see FontFeatureSettings::parse_for_font_face_rule).
+                    mValue: source.value.resolve().unwrap() as u32,
                 }),
         );
     });
@@ -4002,7 +4017,8 @@ pub unsafe extern "C" fn Servo_CounterStyleRule_GetPad(
             Some(ref pad) => pad,
             None => return false,
         };
-        *width = pad.0.value();
+        // The value is enforced to be resolvable at parse time
+        *width = pad.0.resolve().unwrap();
         *symbol = symbol_to_string(&pad.1);
         true
     })
@@ -4082,14 +4098,16 @@ pub unsafe extern "C" fn Servo_CounterStyleRule_IsInRange(
         }
 
         let in_range = range.0.iter().any(|r| {
-            if let CounterBound::Integer(start) = r.start {
-                if start.value() > ordinal {
+            if let CounterBound::Integer(start) = &r.start {
+                // The value is enforced to be resolvable at parse time
+                if start.get().unwrap() > ordinal {
                     return false;
                 }
             }
 
-            if let CounterBound::Integer(end) = r.end {
-                if end.value() < ordinal {
+            if let CounterBound::Integer(end) = &r.end {
+                // The value is enforced to be resolvable at parse time
+                if end.get().unwrap() < ordinal {
                     return false;
                 }
             }
@@ -4136,7 +4154,8 @@ pub unsafe extern "C" fn Servo_CounterStyleRule_GetAdditiveSymbols(
             Some(ref s) => {
                 s.0.iter()
                     .map(|s| AdditiveSymbol {
-                        weight: s.weight.value(),
+                        // The value is enforced to be resolvable at parse time
+                        weight: s.weight.resolve().unwrap(),
                         symbol: symbol_to_string(&s.symbol),
                     })
                     .collect()
@@ -4226,10 +4245,11 @@ pub unsafe extern "C" fn Servo_CounterStyleRule_GetFixedFirstValue(
     rule: &LockedCounterStyleRule,
 ) -> i32 {
     read_locked_arc(rule, |rule: &CounterStyleRule| {
-        match *rule.resolved_system() {
-            counter_style::System::Fixed { first_symbol_value } => {
-                first_symbol_value.map_or(1, |v| v.value())
-            },
+        match rule.resolved_system() {
+            counter_style::System::Fixed { first_symbol_value } => first_symbol_value
+                .as_ref()
+                .and_then(|v| v.resolve())
+                .unwrap_or(1),
             _ => {
                 debug_assert!(false, "Not fixed system");
                 0
@@ -6586,7 +6606,7 @@ pub extern "C" fn Servo_DeclarationBlock_SetAutoValue(
         MarginRight => auto,
         MarginBottom => auto,
         MarginLeft => auto,
-        AspectRatio => specified::AspectRatio::auto(),
+        AspectRatio => Box::new(specified::AspectRatio::auto()),
     };
     write_locked_arc(declarations, |decls: &mut PropertyDeclarationBlock| {
         decls.push(prop, Importance::Normal);
@@ -6730,7 +6750,8 @@ pub extern "C" fn Servo_DeclarationBlock_SetAspectRatio(
     use style::properties::PropertyDeclaration;
     use style::values::generics::position::AspectRatio;
 
-    let decl = PropertyDeclaration::AspectRatio(AspectRatio::from_mapped_ratio(width, height));
+    let decl =
+        PropertyDeclaration::AspectRatio(Box::new(AspectRatio::from_mapped_ratio(width, height)));
     write_locked_arc(declarations, |decls: &mut PropertyDeclarationBlock| {
         decls.push(decl, Importance::Normal);
     })
@@ -9439,7 +9460,10 @@ pub unsafe extern "C" fn Servo_ParseFontShorthandForMatching(
     };
 
     *weight = match font.font_weight {
-        specified::FontWeight::Absolute(w) => w.compute(),
+        specified::FontWeight::Absolute(w) => match w.compute() {
+            Some(v) => v,
+            None => return false,
+        },
         // Resolve relative font weights against the initial of font-weight
         // (normal, which is equivalent to 400).
         specified::FontWeight::Bolder => FontWeight::normal().bolder(),

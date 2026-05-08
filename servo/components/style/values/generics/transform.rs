@@ -10,6 +10,7 @@ use crate::values::computed::length::LengthPercentage as ComputedLengthPercentag
 use crate::values::specified::angle::Angle as SpecifiedAngle;
 use crate::values::specified::length::Length as SpecifiedLength;
 use crate::values::specified::length::LengthPercentage as SpecifiedLengthPercentage;
+use crate::values::specified::number::Number as SpecifiedNumber;
 use crate::values::{computed, CSSFloat};
 use crate::{Zero, ZeroNoPercent};
 use euclid::default::{Rect, Transform3D};
@@ -76,28 +77,32 @@ pub struct GenericMatrix3D<T> {
 pub use self::GenericMatrix3D as Matrix3D;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-impl<T: Into<f64>> From<Matrix<T>> for Transform3D<f64> {
+impl<T: ToFloat> TryFrom<Matrix<T>> for Transform3D<f64> {
+    type Error = ();
+
     #[inline]
-    fn from(m: Matrix<T>) -> Self {
-        Transform3D::new(
-            m.a.into(), m.b.into(), 0.0, 0.0,
-            m.c.into(), m.d.into(), 0.0, 0.0,
+    fn try_from(m: Matrix<T>) -> Result<Self, Self::Error> {
+        Ok(Transform3D::new(
+            m.a.to_f64()?, m.b.to_f64()?, 0.0, 0.0,
+            m.c.to_f64()?, m.d.to_f64()?, 0.0, 0.0,
             0.0,        0.0,        1.0, 0.0,
-            m.e.into(), m.f.into(), 0.0, 1.0,
-        )
+            m.e.to_f64()?, m.f.to_f64()?, 0.0, 1.0,
+        ))
     }
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-impl<T: Into<f64>> From<Matrix3D<T>> for Transform3D<f64> {
+impl<T: ToFloat> TryFrom<Matrix3D<T>> for Transform3D<f64> {
+    type Error = ();
+
     #[inline]
-    fn from(m: Matrix3D<T>) -> Self {
-        Transform3D::new(
-            m.m11.into(), m.m12.into(), m.m13.into(), m.m14.into(),
-            m.m21.into(), m.m22.into(), m.m23.into(), m.m24.into(),
-            m.m31.into(), m.m32.into(), m.m33.into(), m.m34.into(),
-            m.m41.into(), m.m42.into(), m.m43.into(), m.m44.into(),
-        )
+    fn try_from(m: Matrix3D<T>) -> Result<Self, Self::Error> {
+        Ok(Transform3D::new(
+            m.m11.to_f64()?, m.m12.to_f64()?, m.m13.to_f64()?, m.m14.to_f64()?,
+            m.m21.to_f64()?, m.m22.to_f64()?, m.m23.to_f64()?, m.m24.to_f64()?,
+            m.m31.to_f64()?, m.m32.to_f64()?, m.m33.to_f64()?, m.m34.to_f64()?,
+            m.m41.to_f64()?, m.m42.to_f64()?, m.m43.to_f64()?, m.m44.to_f64()?,
+        ))
     }
 }
 
@@ -454,11 +459,44 @@ impl ToRadians for SpecifiedAngle {
     }
 }
 
+// Convert a number type into a float.
+trait ToFloat {
+    // Return the number as an f32, or Err(()) if the conversion is not possible.
+    fn to_f32(&self) -> Result<f32, ()>;
+
+    // Return the number as an f64, or Err(()) if the conversion is not possible.
+    fn to_f64(&self) -> Result<f64, ()>;
+}
+
+impl ToFloat for SpecifiedNumber {
+    #[inline]
+    fn to_f32(&self) -> Result<f32, ()> {
+        self.resolve().ok_or(())
+    }
+
+    #[inline]
+    fn to_f64(&self) -> Result<f64, ()> {
+        self.resolve().map(|v| v as f64).ok_or(())
+    }
+}
+
+impl ToFloat for computed::Number {
+    #[inline]
+    fn to_f32(&self) -> Result<f32, ()> {
+        Ok(*self)
+    }
+
+    #[inline]
+    fn to_f64(&self) -> Result<f64, ()> {
+        Ok(*self as f64)
+    }
+}
+
 impl<Angle, Number, Length, Integer, LoP> ToMatrix
     for TransformOperation<Angle, Number, Length, Integer, LoP>
 where
     Angle: Zero + ToRadians + Copy,
-    Number: PartialEq + Copy + Into<f32> + Into<f64>,
+    Number: PartialEq + Clone + ToFloat + ToFloat,
     Length: ToAbsoluteLength,
     LoP: Zero + ToAbsoluteLength + ZeroNoPercent,
 {
@@ -486,10 +524,14 @@ where
         let reference_width = reference_box.map(|v| v.size.width);
         let reference_height = reference_box.map(|v| v.size.height);
         let matrix = match *self {
-            Rotate3D(ax, ay, az, theta) => {
+            Rotate3D(ref ax, ref ay, ref az, theta) => {
                 let theta = theta.radians64();
-                let (ax, ay, az, theta) =
-                    get_normalized_vector_and_angle(ax.into(), ay.into(), az.into(), theta);
+                let (ax, ay, az, theta) = get_normalized_vector_and_angle(
+                    ax.to_f32()?,
+                    ay.to_f32()?,
+                    az.to_f32()?,
+                    theta,
+                );
                 Transform3D::rotation(
                     ax as f64,
                     ay as f64,
@@ -516,11 +558,13 @@ where
                 };
                 create_perspective_matrix(px).cast()
             },
-            Scale3D(sx, sy, sz) => Transform3D::scale(sx.into(), sy.into(), sz.into()),
-            Scale(sx, sy) => Transform3D::scale(sx.into(), sy.into(), 1.),
-            ScaleX(s) => Transform3D::scale(s.into(), 1., 1.),
-            ScaleY(s) => Transform3D::scale(1., s.into(), 1.),
-            ScaleZ(s) => Transform3D::scale(1., 1., s.into()),
+            Scale3D(ref sx, ref sy, ref sz) => {
+                Transform3D::scale(sx.to_f64()?, sy.to_f64()?, sz.to_f64()?)
+            },
+            Scale(ref sx, ref sy) => Transform3D::scale(sx.to_f64()?, sy.to_f64()?, 1.),
+            ScaleX(ref s) => Transform3D::scale(s.to_f64()?, 1., 1.),
+            ScaleY(ref s) => Transform3D::scale(1., s.to_f64()?, 1.),
+            ScaleZ(ref s) => Transform3D::scale(1., 1., s.to_f64()?),
             Translate3D(ref tx, ref ty, ref tz) => {
                 let tx = tx.to_pixel_length(reference_width)? as f64;
                 let ty = ty.to_pixel_length(reference_height)? as f64;
@@ -552,8 +596,8 @@ where
                 euclid::Angle::radians(0.),
                 euclid::Angle::radians(theta.radians64()),
             ),
-            Matrix3D(m) => m.into(),
-            Matrix(m) => m.into(),
+            Matrix3D(ref m) => m.clone().try_into()?,
+            Matrix(ref m) => m.clone().try_into()?,
             InterpolateMatrix { .. } | AccumulateMatrix { .. } => {
                 // TODO: Convert InterpolateMatrix/AccumulateMatrix into a valid Transform3D by
                 // the reference box and do interpolation on these two Transform3D matrices.
@@ -713,7 +757,7 @@ pub trait IsParallelTo {
 
 impl<Number, Angle> ToCss for Rotate<Number, Angle>
 where
-    Number: Copy + PartialOrd + ToCss + Zero,
+    Number: Clone + PartialOrd + ToCss + Zero,
     Angle: Copy + Neg<Output = Angle> + ToCss + Zero,
     (Number, Number, Number): IsParallelTo,
 {
@@ -725,7 +769,7 @@ where
         match *self {
             Rotate::None => dest.write_str("none"),
             Rotate::Rotate(ref angle) => angle.to_css(dest),
-            Rotate::Rotate3D(x, y, z, angle) => {
+            Rotate::Rotate3D(ref x, ref y, ref z, angle) => {
                 // If the axis is parallel with the x or y axes, it must serialize as the
                 // appropriate keyword. If a rotation about the z axis (that is, in 2D) is
                 // specified, the property must serialize as just an <angle>.
@@ -734,8 +778,8 @@ where
                 // direction, we need to negate the angle to maintain the correct meaning.
                 //
                 // https://drafts.csswg.org/css-transforms-2/#individual-transform-serialization
-                let v = (x, y, z);
-                let (axis, angle) = if x.is_zero() && y.is_zero() && z.is_zero() {
+                let v = (x.clone(), y.clone(), z.clone());
+                let (axis, angle) = if v.0.is_zero() && v.1.is_zero() && v.2.is_zero() {
                     // The zero length vector is parallel to every other vector, so
                     // is_parallel_to() returns true for it. However, it is definitely different
                     // from x axis, y axis, or z axis, and it's meaningless to perform a rotation
@@ -808,26 +852,24 @@ pub use self::GenericScale as Scale;
 
 impl<Number> ToCss for Scale<Number>
 where
-    Number: ToCss + PartialEq + Copy,
-    f32: From<Number>,
+    Number: ToCss + PartialEq + Clone + ToFloat,
 {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: fmt::Write,
-        f32: From<Number>,
     {
         match *self {
             Scale::None => dest.write_str("none"),
             Scale::Scale(ref x, ref y, ref z) => {
                 x.to_css(dest)?;
 
-                let is_3d = f32::from(*z) != 1.0;
-                if is_3d || x != y {
+                let serialize_z = z.to_f32() != Ok(1.0);
+                if serialize_z || x != y {
                     dest.write_char(' ')?;
                     y.to_css(dest)?;
                 }
 
-                if is_3d {
+                if serialize_z {
                     dest.write_char(' ')?;
                     z.to_css(dest)?;
                 }

@@ -19,9 +19,11 @@ use crate::properties_and_values::value::{ComputedValueComponent as Component, V
 use crate::selector_map::PrecomputedHashSet;
 use crate::str::{starts_with_ignore_ascii_case, string_as_ascii_lowercase};
 use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
-use crate::values::computed::{self, CSSPixelLength, Ratio, ToComputedValue};
-use crate::values::specified::{Angle, Integer, Length, Number, Percentage, Resolution, Time};
-use crate::values::{CSSFloat, DashedIdent};
+use crate::values::computed::{self, CSSPixelLength, ToComputedValue};
+use crate::values::specified::{
+    Angle, Integer, Length, Number, Percentage, Ratio, Resolution, Time,
+};
+use crate::values::DashedIdent;
 use crate::{Atom, Zero};
 use cssparser::{Parser, ParserInput, Token};
 use selectors::kleene_value::KleeneValue;
@@ -596,11 +598,13 @@ impl QueryFeatureExpression {
             },
             Evaluator::Integer(eval) => {
                 let v = eval(context);
-                self.kind.evaluate(v, |v| *expect!(Integer, v))
+                self.kind
+                    .evaluate(v, |v| expect!(Integer, v).to_computed_value(context))
             },
             Evaluator::Float(eval) => {
                 let v = eval(context);
-                self.kind.evaluate(v, |v| *expect!(Float, v))
+                self.kind
+                    .evaluate(v, |v| expect!(Float, v).to_computed_value(context))
             },
             Evaluator::NumberRatio(eval) => {
                 let ratio = eval(context);
@@ -608,8 +612,11 @@ impl QueryFeatureExpression {
                 // to convert it if necessary.
                 // FIXME: we may need to update here once
                 // https://github.com/w3c/csswg-drafts/issues/4954 got resolved.
-                self.kind
-                    .evaluate(ratio, |v| expect!(NumberRatio, v).used_value())
+                self.kind.evaluate(ratio, |v| {
+                    expect!(NumberRatio, v)
+                        .to_computed_value(context)
+                        .used_value()
+                })
             },
             Evaluator::OptionalNumberRatio(eval) => {
                 let ratio = match eval(context) {
@@ -617,8 +624,11 @@ impl QueryFeatureExpression {
                     None => return KleeneValue::Unknown,
                 };
                 // See above for subtleties here.
-                self.kind
-                    .evaluate(ratio, |v| expect!(NumberRatio, v).used_value())
+                self.kind.evaluate(ratio, |v| {
+                    expect!(NumberRatio, v)
+                        .to_computed_value(context)
+                        .used_value()
+                })
             },
             Evaluator::Resolution(eval) => {
                 let v = eval(context).dppx();
@@ -637,9 +647,9 @@ impl QueryFeatureExpression {
                 let computed = self
                     .kind
                     .non_ranged_value()
-                    .map(|v| *expect!(BoolInteger, v));
+                    .map(|v| expect!(BoolInteger, v).to_computed_value(context));
                 let boolean = eval(context);
-                computed.map_or(boolean, |v| v == boolean)
+                computed.map_or(boolean, |v| v == boolean as i32)
             },
         })
     }
@@ -658,11 +668,11 @@ pub enum QueryExpressionValue {
     /// A length.
     Length(Length),
     /// An integer.
-    Integer(i32),
+    Integer(Integer),
     /// A floating point value.
-    Float(CSSFloat),
+    Float(Number),
     /// A boolean value, specified as an integer (i.e., either 0 or 1).
-    BoolInteger(bool),
+    BoolInteger(Integer),
     /// A single non-negative number or two non-negative numbers separated by '/',
     /// with optional whitespace on either side of the '/'.
     NumberRatio(Ratio),
@@ -699,10 +709,10 @@ impl QueryExpressionValue {
     {
         match *self {
             QueryExpressionValue::Length(ref l) => l.to_css(dest),
-            QueryExpressionValue::Integer(v) => v.to_css(dest),
-            QueryExpressionValue::Float(v) => v.to_css(dest),
-            QueryExpressionValue::BoolInteger(v) => dest.write_char(if v { '1' } else { '0' }),
-            QueryExpressionValue::NumberRatio(ratio) => ratio.to_css(dest),
+            QueryExpressionValue::Integer(ref v) => v.to_css(dest),
+            QueryExpressionValue::Float(ref v) => v.to_css(dest),
+            QueryExpressionValue::BoolInteger(ref v) => v.to_css(dest),
+            QueryExpressionValue::NumberRatio(ref ratio) => ratio.to_css(dest),
             QueryExpressionValue::Resolution(ref r) => r.to_css(dest),
             QueryExpressionValue::Keyword(k) => k.to_css(dest),
             QueryExpressionValue::Percentage(v) => v.to_css(dest),
@@ -733,24 +743,23 @@ impl QueryExpressionValue {
             },
             Evaluator::Integer(..) => {
                 let integer = Integer::parse(context, input)?;
-                QueryExpressionValue::Integer(integer.value())
+                QueryExpressionValue::Integer(integer)
             },
             Evaluator::BoolInteger(..) => {
-                let integer = Integer::parse_non_negative(context, input)?;
-                let value = integer.value();
-                if value > 1 {
+                let integer = Integer::parse(context, input)?;
+                if matches!(integer.resolve(), Some(v) if v != 0 && v != 1) {
                     return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
-                QueryExpressionValue::BoolInteger(value == 1)
+                QueryExpressionValue::BoolInteger(integer)
             },
             Evaluator::Float(..) => {
                 let number = Number::parse(context, input)?;
-                QueryExpressionValue::Float(number.get())
+                QueryExpressionValue::Float(number)
             },
             Evaluator::OptionalNumberRatio(..) | Evaluator::NumberRatio(..) => {
                 use crate::values::specified::Ratio as SpecifiedRatio;
                 let ratio = SpecifiedRatio::parse(context, input)?;
-                QueryExpressionValue::NumberRatio(Ratio::new(ratio.0.get(), ratio.1.get()))
+                QueryExpressionValue::NumberRatio(ratio)
             },
             Evaluator::Resolution(..) => {
                 QueryExpressionValue::Resolution(Resolution::parse(context, input)?)
@@ -771,7 +780,7 @@ impl QueryExpressionValue {
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
         if let Ok(number) = input.try_parse(|i| Number::parse(context, i)) {
-            return Ok(Self::Float(number.get()));
+            return Ok(Self::Float(number));
         }
         if let Ok(percent) = input.try_parse(|i| Percentage::parse(context, i)) {
             return Ok(Self::Percentage(percent));

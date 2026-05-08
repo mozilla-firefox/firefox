@@ -10,18 +10,15 @@ use crate::values::computed::transform::DirectionVector;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::transform::IsParallelTo;
 use crate::values::generics::{GreaterThanOrEqualToOne, NonNegative};
-use crate::values::specified::calc::CalcNode;
+use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
 use crate::values::specified::Percentage;
 use crate::values::{reify_number, serialize_number};
 use crate::values::{CSSFloat, CSSInteger};
 use crate::{One, Zero};
 use cssparser::{Parser, Token};
 use std::fmt::{self, Write};
-use std::ops::Add;
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{
-    CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss, ToTyped, TypedValue,
-};
+use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, ToCss, ToTyped, TypedValue};
 use thin_vec::ThinVec;
 
 /// Parse a `<number>` value, with a given clamping mode.
@@ -33,33 +30,130 @@ pub fn parse_number_with_clamping_mode<'i, 't>(
     let location = input.current_source_location();
     match *input.next()? {
         Token::Number { value, .. } if clamping_mode.is_ok(context.parsing_mode, value) => {
-            Ok(Number {
-                value,
-                calc_clamping_mode: None,
-            })
+            Ok(Number::NoCalc(NoCalcNumber::new(value)))
         },
         Token::Function(ref name) => {
             let function = CalcNode::math_function(context, name, location)?;
-            let value = CalcNode::parse_number(context, input, function)?;
-            Ok(Number {
-                value,
-                calc_clamping_mode: Some(clamping_mode),
-            })
+            CalcNode::parse_number(context, input, clamping_mode, function)
+                .map(Box::new)
+                .map(Number::Calc)
         },
         ref t => Err(location.new_unexpected_token_error(t.clone())),
+    }
+}
+
+/// Parse an `<integer>` value, with a given clamping mode.
+pub fn parse_integer_with_clamping_mode<'i, 't>(
+    context: &ParserContext,
+    input: &mut Parser<'i, 't>,
+    clamping_mode: AllowedNumericType,
+) -> Result<Integer, ParseError<'i>> {
+    let location = input.current_source_location();
+    match *input.next()? {
+        Token::Number {
+            int_value: Some(v), ..
+        } if clamping_mode.is_ok(context.parsing_mode, v as f32) => Ok(Integer::new(v)),
+        Token::Function(ref name) => {
+            let function = CalcNode::math_function(context, name, location)?;
+            CalcNode::parse_number(context, input, clamping_mode, function)
+                .map(Box::new)
+                .map(Integer::Calc)
+        },
+        ref t => Err(location.new_unexpected_token_error(t.clone())),
+    }
+}
+
+/// A non-calc `<number>` value.
+#[derive(Clone, Copy, Debug, MallocSizeOf, ToShmem)]
+#[repr(C)]
+pub struct NoCalcNumber(CSSFloat);
+
+impl NoCalcNumber {
+    /// Returns a new literal number with the value `val`.
+    #[inline]
+    pub fn new(val: CSSFloat) -> Self {
+        Self(val)
+    }
+
+    /// Returns the raw, underlying value of this number.
+    #[inline]
+    pub fn value(&self) -> f32 {
+        self.0
+    }
+
+    /// Returns the numeric value, clamped if needed.
+    #[inline]
+    pub fn get(&self) -> f32 {
+        crate::values::normalize(self.0).min(f32::MAX).max(f32::MIN)
+    }
+
+    /// Returns the unit string for a number value.
+    pub fn unit(&self) -> &'static str {
+        "number"
+    }
+
+    /// Returns the canonical unit for a number value (none).
+    pub fn canonical_unit(&self) -> Option<&'static str> {
+        None
+    }
+
+    /// Converts to the given unit, only succeeding if the unit is "number".
+    pub fn to(&self, unit: &str) -> Result<Self, ()> {
+        if !unit.eq_ignore_ascii_case("number") {
+            return Err(());
+        }
+        Ok(self.clone())
+    }
+}
+
+impl PartialEq<NoCalcNumber> for NoCalcNumber {
+    fn eq(&self, other: &NoCalcNumber) -> bool {
+        self.0 == other.0 || (self.0.is_nan() && other.0.is_nan())
+    }
+}
+
+impl PartialOrd<NoCalcNumber> for NoCalcNumber {
+    fn partial_cmp(&self, other: &NoCalcNumber) -> Option<std::cmp::Ordering> {
+        self.get().partial_cmp(&other.get())
+    }
+}
+
+impl ToCss for NoCalcNumber {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        serialize_number(self.0, /* was_calc = */ false, dest)
+    }
+}
+
+impl ToTyped for NoCalcNumber {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        reify_number(self.0, /* was_calc = */ false, dest)
+    }
+}
+
+impl ToComputedValue for NoCalcNumber {
+    type ComputedValue = CSSFloat;
+
+    fn to_computed_value(&self, _: &Context) -> Self::ComputedValue {
+        self.get()
+    }
+
+    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
+        Self::new(*computed)
     }
 }
 
 /// A CSS `<number>` specified value.
 ///
 /// https://drafts.csswg.org/css-values-3/#number-value
-#[derive(Clone, Copy, Debug, MallocSizeOf, PartialOrd, ToShmem)]
-pub struct Number {
-    /// The numeric value itself.
-    value: CSSFloat,
-    /// If this number came from a calc() expression, this tells how clamping
-    /// should be done on the value.
-    calc_clamping_mode: Option<AllowedNumericType>,
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem, ToTyped)]
+pub enum Number {
+    /// A literal <number> value.
+    NoCalc(NoCalcNumber),
+    /// A calc() expression that produces a <number>.
+    Calc(Box<CalcNumeric>),
 }
 
 impl Parse for Number {
@@ -71,83 +165,48 @@ impl Parse for Number {
     }
 }
 
-impl PartialEq<Number> for Number {
-    fn eq(&self, other: &Number) -> bool {
-        if self.calc_clamping_mode != other.calc_clamping_mode {
-            return false;
-        }
-
-        self.value == other.value || (self.value.is_nan() && other.value.is_nan())
+impl PartialOrd<Number> for Number {
+    fn partial_cmp(&self, other: &Number) -> Option<std::cmp::Ordering> {
+        self.get().partial_cmp(&other.get())
     }
 }
 
 impl Number {
     /// Returns a new number with the value `val`.
     #[inline]
-    pub fn new_with_clamping_mode(
-        value: CSSFloat,
-        calc_clamping_mode: Option<AllowedNumericType>,
-    ) -> Self {
-        Self {
-            value,
-            calc_clamping_mode,
-        }
-    }
-
-    /// Returns this percentage as a number.
-    pub fn to_percentage(&self) -> Percentage {
-        Percentage::new_with_clamping_mode(self.value, self.calc_clamping_mode)
-    }
-
-    /// Returns a new number with the value `val`.
-    #[inline]
     pub fn new(val: CSSFloat) -> Self {
-        Self::new_with_clamping_mode(val, None)
+        Number::NoCalc(NoCalcNumber::new(val))
     }
 
-    /// Returns whether this number came from a `calc()` expression.
-    #[inline]
-    pub fn was_calc(&self) -> bool {
-        self.calc_clamping_mode.is_some()
-    }
-
-    /// Returns the raw, underlying value of this number.
-    #[inline]
-    pub fn value(&self) -> CSSFloat {
-        self.value
-    }
-
-    /// Returns the numeric value, clamped if needed.
-    #[inline]
-    pub fn get(&self) -> f32 {
-        crate::values::normalize(
-            self.calc_clamping_mode
-                .map_or(self.value, |mode| mode.clamp(self.value)),
-        )
-        .min(f32::MAX)
-        .max(f32::MIN)
-    }
-
-    /// Return the unit, as a string.
-    pub fn unit(&self) -> &'static str {
-        "number"
-    }
-
-    /// Return no canonical unit (number values do not have one).
-    pub fn canonical_unit(&self) -> Option<&'static str> {
-        None
-    }
-
-    /// Convert only if the unit is the same (conversion to other units does
-    /// not make sense).
-    pub fn to(&self, unit: &str) -> Result<Self, ()> {
-        if !unit.eq_ignore_ascii_case("number") {
-            return Err(());
+    /// Returns this number as a percentage.
+    pub fn to_percentage(&self) -> Percentage {
+        match self {
+            Number::NoCalc(n) => Percentage::new(n.value()),
+            Number::Calc(_) => {
+                // TODO Bug 2035572 - Number::Calc requires Percentage::Calc
+                Percentage::zero()
+            },
         }
-        Ok(Self {
-            value: self.value,
-            calc_clamping_mode: self.calc_clamping_mode,
-        })
+    }
+
+    /// Returns the value if this is a plain (non-calc) number, or None otherwise.
+    /// Use `resolve()` to also handle resolvable calc expressions, or `to_computed_value()`
+    /// when computed context is available.
+    #[inline]
+    pub fn get(&self) -> Option<f32> {
+        match self {
+            Number::NoCalc(n) => Some(n.get()),
+            Number::Calc(_) => None,
+        }
+    }
+
+    /// Returns the value if it can be resolved at parse time, including resolvable calc
+    /// expressions. Returns None for calc expressions that require computed-value context.
+    pub fn resolve(&self) -> Option<f32> {
+        match self {
+            Number::NoCalc(n) => Some(n.get()),
+            Number::Calc(ref calc) => calc.as_number().map(|n| n.get()),
+        }
     }
 
     #[allow(missing_docs)]
@@ -169,9 +228,11 @@ impl Number {
     /// Clamp to 1.0 if the value is over 1.0.
     #[inline]
     pub fn clamp_to_one(self) -> Self {
-        Number {
-            value: self.value.min(1.),
-            calc_clamping_mode: self.calc_clamping_mode,
+        match self {
+            Number::NoCalc(n) => Number::new(n.value().min(1.)),
+            Number::Calc(ref calc) => Number::Calc(Box::new(
+                calc.with_clamping_mode(AllowedNumericType::ZeroToOne),
+            )),
         }
     }
 }
@@ -180,31 +241,27 @@ impl ToComputedValue for Number {
     type ComputedValue = CSSFloat;
 
     #[inline]
-    fn to_computed_value(&self, _: &Context) -> CSSFloat {
-        self.get()
+    fn to_computed_value(&self, context: &Context) -> CSSFloat {
+        match self {
+            Number::NoCalc(n) => n.to_computed_value(context),
+            Number::Calc(ref calc) => {
+                let value = match calc.node.with_computed_context(context).resolve() {
+                    Ok(Leaf::Number(n)) => n.get(),
+                    _ => {
+                        debug_assert!(false, "Unexpected Number::Calc without resolved number");
+                        f32::NAN
+                    },
+                };
+                crate::values::normalize(calc.clamping_mode.clamp(value))
+                    .min(f32::MAX)
+                    .max(f32::MIN)
+            },
+        }
     }
 
     #[inline]
     fn from_computed_value(computed: &CSSFloat) -> Self {
-        Number {
-            value: *computed,
-            calc_clamping_mode: None,
-        }
-    }
-}
-
-impl ToCss for Number {
-    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-    where
-        W: Write,
-    {
-        serialize_number(self.value, self.calc_clamping_mode.is_some(), dest)
-    }
-}
-
-impl ToTyped for Number {
-    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-        reify_number(self.value, self.calc_clamping_mode.is_some(), dest)
+        Number::new(*computed)
     }
 }
 
@@ -213,23 +270,17 @@ impl IsParallelTo for (Number, Number, Number) {
         use euclid::approxeq::ApproxEq;
         // If a and b is parallel, the angle between them is 0deg, so
         // a x b = |a|*|b|*sin(0)*n = 0 * n, |a x b| == 0.
-        let self_vector = DirectionVector::new(self.0.get(), self.1.get(), self.2.get());
-        self_vector
-            .cross(*vector)
-            .square_length()
-            .approx_eq(&0.0f32)
+        match (self.0.get(), self.1.get(), self.2.get()) {
+            (Some(x), Some(y), Some(z)) => DirectionVector::new(x, y, z)
+                .cross(*vector)
+                .square_length()
+                .approx_eq(&0.0f32),
+            _ => false,
+        }
     }
 }
 
 impl SpecifiedValueInfo for Number {}
-
-impl Add for Number {
-    type Output = Self;
-
-    fn add(self, other: Self) -> Self {
-        Self::new(self.get() + other.get())
-    }
-}
 
 impl Zero for Number {
     #[inline]
@@ -237,23 +288,10 @@ impl Zero for Number {
         Self::new(0.)
     }
 
+    // Returns true if this number was a non-calc 0.
     #[inline]
     fn is_zero(&self) -> bool {
-        self.get() == 0.
-    }
-}
-
-impl From<Number> for f32 {
-    #[inline]
-    fn from(n: Number) -> Self {
-        n.get()
-    }
-}
-
-impl From<Number> for f64 {
-    #[inline]
-    fn from(n: Number) -> Self {
-        n.get() as f64
+        matches!(self, Self::NoCalc(NoCalcNumber(0.)))
     }
 }
 
@@ -276,9 +314,10 @@ impl One for NonNegativeNumber {
         NonNegativeNumber::new(1.0)
     }
 
+    // Returns true if this number was a non-calc 1.
     #[inline]
     fn is_one(&self) -> bool {
-        self.get() == 1.0
+        matches!(self.0, Number::NoCalc(NoCalcNumber(1.)))
     }
 }
 
@@ -290,12 +329,13 @@ impl NonNegativeNumber {
 
     /// Returns the numeric value.
     #[inline]
-    pub fn get(&self) -> f32 {
+    pub fn get(&self) -> Option<f32> {
         self.0.get()
     }
 }
 
-/// An Integer which is >= 0.
+/// An Integer which is >= 0. For calc expressions that couldn't be resolved at parse time,
+/// this value is clamped to 0 at computed-value time.
 pub type NonNegativeInteger = NonNegative<Integer>;
 
 impl Parse for NonNegativeInteger {
@@ -320,18 +360,20 @@ impl Parse for GreaterThanOrEqualToOneNumber {
     }
 }
 
-/// A specified `<integer>`, either a simple integer value or a calc expression.
+/// A specified `<integer>`, either a simple integer value, a resolved calc expression,
+/// or a full calc expression tree that cannot be computed at parse time.
 /// Note that a calc expression may not actually be an integer; it will be rounded
 /// at computed-value time.
 ///
 /// <https://drafts.csswg.org/css-values/#integers>
-#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToShmem, ToTyped)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem, ToTyped)]
 #[typed(todo_derive_fields)]
 pub enum Integer {
     /// A literal integer value.
-    Literal(CSSInteger),
-    /// A calc expression, whose value will be rounded later if necessary.
-    Calc(CSSFloat),
+    NoCalc(CSSInteger),
+    /// A calc expression that produces an <integer>, stored as a full
+    /// AST node to be evaluated at computed-value time.
+    Calc(Box<CalcNumeric>),
 }
 
 impl Zero for Integer {
@@ -340,9 +382,10 @@ impl Zero for Integer {
         Self::new(0)
     }
 
+    // Returns true if this integer was a non-calc 0.
     #[inline]
     fn is_zero(&self) -> bool {
-        *self == 0
+        matches!(self, Self::NoCalc(0))
     }
 }
 
@@ -352,35 +395,45 @@ impl One for Integer {
         Self::new(1)
     }
 
+    // Returns true if this integer was a non-calc 1.
     #[inline]
     fn is_one(&self) -> bool {
-        *self == 1
+        matches!(self, Self::NoCalc(1))
     }
 }
 
 impl PartialEq<i32> for Integer {
     fn eq(&self, value: &i32) -> bool {
-        self.value() == *value
+        self.get().is_some_and(|v| v == *value)
     }
 }
 
 impl Integer {
     /// Trivially constructs a new `Integer` value.
     pub fn new(val: CSSInteger) -> Self {
-        Self::Literal(val)
+        Self::NoCalc(val)
     }
 
-    /// Returns the (rounded) integer value associated with this value.
-    pub fn value(&self) -> CSSInteger {
+    /// Returns the value if this is a plain (non-calc) integer, or None otherwise.
+    /// Use `resolve()` to also handle resolvable calc expressions, or `to_computed_value()`
+    /// when computed context is available.
+    pub fn get(&self) -> Option<CSSInteger> {
         match *self {
-            Self::Literal(i) => i,
-            Self::Calc(n) => (n + 0.5).floor() as CSSInteger,
+            Self::NoCalc(i) => Some(i),
+            Self::Calc(_) => None,
         }
     }
 
-    /// Trivially constructs a new integer value from a `calc()` expression.
-    fn from_calc(val: CSSFloat) -> Self {
-        Self::Calc(val)
+    /// Returns the value if it can be resolved at parse time, including resolvable calc
+    /// expressions. Returns None for calc expressions that require computed-value context.
+    pub fn resolve(&self) -> Option<CSSInteger> {
+        Some(match self {
+            Self::NoCalc(i) => *i,
+            Self::Calc(ref calc) => {
+                let value = calc.as_number()?.get();
+                (value + 0.5).floor() as CSSInteger
+            },
+        })
     }
 }
 
@@ -389,46 +442,17 @@ impl Parse for Integer {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
-        match *input.next()? {
-            Token::Number {
-                int_value: Some(v), ..
-            } => Ok(Integer::new(v)),
-            Token::Function(ref name) => {
-                let function = CalcNode::math_function(context, name, location)?;
-                let result = CalcNode::parse_number(context, input, function)?;
-                Ok(Integer::from_calc(result))
-            },
-            ref t => Err(location.new_unexpected_token_error(t.clone())),
-        }
+        parse_integer_with_clamping_mode(context, input, AllowedNumericType::All)
     }
 }
 
 impl Integer {
-    /// Parse an integer value which is at least `min`.
-    pub fn parse_with_minimum<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-        min: i32,
-    ) -> Result<Integer, ParseError<'i>> {
-        let value = Integer::parse(context, input)?;
-        // FIXME(emilio): The spec asks us to avoid rejecting it at parse
-        // time except until computed value time.
-        //
-        // It's not totally clear it's worth it though, and no other browser
-        // does this.
-        if value.value() < min {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-        }
-        Ok(value)
-    }
-
     /// Parse a non-negative integer.
     pub fn parse_non_negative<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Integer, ParseError<'i>> {
-        Integer::parse_with_minimum(context, input, 0)
+        parse_integer_with_clamping_mode(context, input, AllowedNumericType::NonNegative)
     }
 
     /// Parse a positive integer (>= 1).
@@ -436,7 +460,7 @@ impl Integer {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Integer, ParseError<'i>> {
-        Integer::parse_with_minimum(context, input, 1)
+        parse_integer_with_clamping_mode(context, input, AllowedNumericType::AtLeastOne)
     }
 }
 
@@ -444,8 +468,23 @@ impl ToComputedValue for Integer {
     type ComputedValue = i32;
 
     #[inline]
-    fn to_computed_value(&self, _: &Context) -> i32 {
-        self.value()
+    fn to_computed_value(&self, context: &Context) -> i32 {
+        match *self {
+            Self::NoCalc(i) => i,
+            Self::Calc(ref calc) => {
+                let value = match calc.node.with_computed_context(context).resolve() {
+                    Ok(Leaf::Number(n)) => n.get(),
+                    _ => {
+                        debug_assert!(false, "Unexpected Integer::Calc without resolved number");
+                        f32::NAN
+                    },
+                };
+                let clamped = crate::values::normalize(calc.clamping_mode.clamp(value))
+                    .min(f32::MAX)
+                    .max(f32::MIN);
+                (clamped + 0.5).floor() as i32
+            },
+        }
     }
 
     #[inline]
@@ -454,29 +493,13 @@ impl ToComputedValue for Integer {
     }
 }
 
-impl ToCss for Integer {
-    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-    where
-        W: Write,
-    {
-        match *self {
-            Integer::Literal(i) => i.to_css(dest),
-            Integer::Calc(n) => {
-                dest.write_str("calc(")?;
-                n.to_css(dest)?;
-                dest.write_char(')')
-            },
-        }
-    }
-}
-
 impl SpecifiedValueInfo for Integer {}
 
-/// A wrapper of Integer, with value >= 1.
+/// An Integer which is >= 1. For calc expressions that couldn't be resolved at parse time,
+/// this value is clamped to 1 at computed-value time.
 pub type PositiveInteger = GreaterThanOrEqualToOne<Integer>;
 
 impl Parse for PositiveInteger {
-    #[inline]
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,

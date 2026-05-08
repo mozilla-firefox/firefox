@@ -78,8 +78,8 @@ pub use self::list::ListStyleType;
 pub use self::list::Quotes;
 pub use self::motion::{OffsetPath, OffsetPosition, OffsetRotate};
 pub use self::number::{
-    GreaterThanOrEqualToOneNumber, Integer, NonNegativeInteger, NonNegativeNumber, Number,
-    PositiveInteger,
+    GreaterThanOrEqualToOneNumber, Integer, NoCalcNumber, NonNegativeInteger, NonNegativeNumber,
+    Number, PositiveInteger,
 };
 pub use self::outline::OutlineStyle;
 pub use self::page::{PageName, PageOrientation, PageSize, PageSizeOrientation, PaperSize};
@@ -202,7 +202,7 @@ impl Parse for AngleOrPercentage {
 ///
 /// Accepts only non-negative numbers.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
 pub enum NumberOrPercentage {
     Percentage(Percentage),
     Number(Number),
@@ -240,10 +240,10 @@ impl NumberOrPercentage {
     }
 
     /// Convert the number or the percentage to a number.
-    pub fn to_number(self) -> Number {
+    pub fn to_number(&self) -> Number {
         match self {
             Self::Percentage(p) => p.to_number(),
-            Self::Number(n) => n,
+            Self::Number(n) => n.clone(),
         }
     }
 }
@@ -289,16 +289,7 @@ impl Parse for NonNegativeNumberOrPercentage {
 /// However, we serialize the specified value as number, so it's ok to store
 /// the Opacity as Number.
 #[derive(
-    Clone,
-    Copy,
-    Debug,
-    MallocSizeOf,
-    PartialEq,
-    PartialOrd,
-    SpecifiedValueInfo,
-    ToCss,
-    ToShmem,
-    ToTyped,
+    Clone, Debug, MallocSizeOf, PartialEq, PartialOrd, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 pub struct Opacity(Number);
 
