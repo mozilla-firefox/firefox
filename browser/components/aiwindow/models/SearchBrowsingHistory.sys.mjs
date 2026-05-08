@@ -579,7 +579,7 @@ export async function searchBrowsingHistory({
     // If semantic search cannot be used or we don't have enough entries, always
     // fall back to plain time-range search.
     const canUseSemantic =
-      semanticManager.canUseSemanticSearch &&
+      semanticManager.isEnabledForSmartWindow &&
       (await semanticManager.hasSufficientEntriesForSearching());
 
     if (!searchTerm?.trim()) {

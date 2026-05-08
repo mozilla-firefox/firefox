@@ -991,6 +991,15 @@ export let ProfileDataUpgrader = {
       Services.prefs.setBoolPref("signon.rustMirror.migrationNeeded", true);
     }
 
+    if (existingDataVersion < 172) {
+      if (Services.prefs.getBoolPref("browser.smartwindow.enabled", false)) {
+        Services.prefs.setBoolPref(
+          "places.semanticHistory.smartwindow.featureGate",
+          true
+        );
+      }
+    }
+
     // Update the migration version.
     Services.prefs.setIntPref("browser.migration.version", newVersion);
   },

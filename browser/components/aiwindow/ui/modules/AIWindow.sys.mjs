@@ -23,6 +23,8 @@ const PREF_MEMORIES_CONVERSATION =
   "browser.smartwindow.memories.generateFromConversation";
 const PREF_MEMORIES_HISTORY =
   "browser.smartwindow.memories.generateFromHistory";
+const PREF_SEMANTIC_HISTORY_SMARTWINDOW_FEATURE_GATE =
+  "places.semanticHistory.smartwindow.featureGate";
 
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
@@ -259,6 +261,10 @@ export const AIWindow = {
 
   _onAIWindowEnabledPrefChange() {
     this._forEachWindow(win => this._updateButtonVisibility(win));
+    Services.prefs.setBoolPref(
+      PREF_SEMANTIC_HISTORY_SMARTWINDOW_FEATURE_GATE,
+      this.isAvailable
+    );
     if (!this.isAvailable) {
       this._onAccountLogout();
     }

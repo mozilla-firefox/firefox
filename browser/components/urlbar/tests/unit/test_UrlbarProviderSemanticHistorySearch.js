@@ -172,6 +172,48 @@ add_task(async function test_isActive_conditions() {
   );
 });
 
+add_task(async function test_isActive_smartbar_uses_sw_gate() {
+  const provider = new UrlbarProviderSemanticHistorySearch();
+
+  // Reset any leftover stubs from earlier tests so we control both gates.
+  if (semanticManager.canUseSemanticSearch.restore) {
+    semanticManager.canUseSemanticSearch.restore();
+  }
+
+  Services.prefs.setBoolPref("browser.urlbar.suggest.history", true);
+
+  const canUseStub = sinon.stub(semanticManager, "canUseSemanticSearch");
+  const swStub = sinon.stub(semanticManager, "isEnabledForSmartWindow");
+
+  const smartbarQuery = { searchString: "hello world", sapName: "smartbar" };
+  const urlbarQuery = { searchString: "hello world", sapName: "urlbar" };
+
+  canUseStub.get(() => false);
+  swStub.get(() => true);
+  Assert.ok(
+    await provider.isActive(smartbarQuery),
+    "Smartbar active when SW gate on (CW gate off)"
+  );
+  Assert.ok(
+    !(await provider.isActive(urlbarQuery)),
+    "Urlbar inactive when CW gate off (SW gate on)"
+  );
+
+  canUseStub.get(() => true);
+  swStub.get(() => false);
+  Assert.ok(
+    !(await provider.isActive(smartbarQuery)),
+    "Smartbar inactive when SW gate off (CW gate on)"
+  );
+  Assert.ok(
+    await provider.isActive(urlbarQuery),
+    "Urlbar active when CW gate on (SW gate off)"
+  );
+
+  canUseStub.restore();
+  swStub.restore();
+});
+
 add_task(async function test_switchTab() {
   const userContextId1 = 2;
   const userContextId2 = 3;

@@ -37,6 +37,8 @@ skip-if = [
 
 ["test_profileDataUpgrade_smartwindow.js"]
 
+["test_profileDataUpgrade_smartwindow_semanticHistory.js"]
+
 ["test_startupTelemetry_aiControlBlocking.js"]
 
 ["test_startupTelemetry_launchMethod.js"]

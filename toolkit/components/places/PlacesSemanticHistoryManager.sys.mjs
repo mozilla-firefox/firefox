@@ -74,6 +74,13 @@ XPCOMUtils.defineLazyPreferenceGetter(
   }
 );
 
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "semanticHistorySmartwindowFeatureGate",
+  "places.semanticHistory.smartwindow.featureGate",
+  false
+);
+
 // Time between deferred task executions.
 const DEFERRED_TASK_INTERVAL_MS = 3000;
 // Maximum time to wait for an idle before the task is executed anyway.
@@ -217,7 +224,8 @@ class PlacesSemanticHistoryManager {
         "places.semanticHistory.initialized"
       );
 
-      let isAvailable = this.canUseSemanticSearch;
+      let isAvailable =
+        this.canUseSemanticSearch || this.isEnabledForSmartWindow;
       let removeFiles =
         (wasInitialized && !isAvailable) ||
         Services.prefs.getBoolPref(
@@ -254,7 +262,7 @@ class PlacesSemanticHistoryManager {
 
     await this.#promiseInitialized;
 
-    if (!this.canUseSemanticSearch) {
+    if (!this.canUseSemanticSearch && !this.isEnabledForSmartWindow) {
       return null;
     }
 
@@ -354,6 +362,24 @@ class PlacesSemanticHistoryManager {
       this.qualifiedForSemanticSearch &&
       Services.prefs.getBoolPref("browser.ml.enable", true) &&
       Services.prefs.getBoolPref("places.semanticHistory.featureGate", false) &&
+      this.#isSupportedLocale(Services.locale.appLocaleAsBCP47)
+    );
+  }
+
+  /**
+   * Per-window-type enablement check for Smart Window. This is a UI-surface
+   * decision (should the SW search consumer query semantic history?), distinct
+   * from `canUseSemanticSearch` which gates the Classic Window surface. The
+   * underlying singleton DB initializes if either gate is on, so toggling SW
+   * does not affect CW behavior and vice versa.
+   *
+   * @returns {boolean}
+   */
+  get isEnabledForSmartWindow() {
+    return (
+      this.qualifiedForSemanticSearch &&
+      Services.prefs.getBoolPref("browser.ml.enable", true) &&
+      lazy.semanticHistorySmartwindowFeatureGate &&
       this.#isSupportedLocale(Services.locale.appLocaleAsBCP47)
     );
   }
