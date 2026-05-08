@@ -145,7 +145,11 @@ export class SidebarPage extends MozLitElement {
     let promise;
     switch (e.target.id) {
       case "sidebar-history-context-open-in-tab":
-        this.topWindow.openTrustedLinkIn(this.triggerNode.url, "tab");
+        this.topWindow.openTrustedLinkIn(this.triggerNode.url, "tab", {
+          inBackground: Services.prefs.getBoolPref(
+            "browser.tabs.loadInBackground"
+          ),
+        });
         break;
       case "sidebar-history-context-open-in-window":
       case "sidebar-synced-tabs-context-open-in-window":
