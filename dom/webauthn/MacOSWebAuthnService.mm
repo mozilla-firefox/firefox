@@ -404,7 +404,11 @@ NSDictionary<NSData*, ASAuthorizationPublicKeyCredentialPRFAssertionInputValues*
           }
         }
       }
-    } else {
+    } else if (
+        [credential
+            isKindOfClass:
+                [ASAuthorizationSecurityKeyPublicKeyCredentialRegistration
+                    class]]) {
       // The platform didn't tell us what transport was used, but we know it
       // wasn't the internal transport. The transport response is not signed by
       // the authenticator. It represents the "transports that the authenticator
@@ -412,6 +416,21 @@ NSDictionary<NSData*, ASAuthorizationPublicKeyCredentialPRFAssertionInputValues*
       // unavailable". We believe macOS supports usb, so we return usb.
       transports.AppendElement(u"usb"_ns);
       authenticatorAttachment.emplace(u"cross-platform"_ns);
+      if (__builtin_available(macos 26.4, *)) {
+        ASAuthorizationSecurityKeyPublicKeyCredentialRegistration*
+            securityKeyCredential =
+                (ASAuthorizationSecurityKeyPublicKeyCredentialRegistration*)
+                    credential;
+        if (securityKeyCredential.prf) {
+          prfSupported.emplace(securityKeyCredential.prf.isSupported);
+          if (securityKeyCredential.prf.first) {
+            prfFirst.emplace(NSDataToArray(securityKeyCredential.prf.first));
+          }
+          if (securityKeyCredential.prf.second) {
+            prfSecond.emplace(NSDataToArray(securityKeyCredential.prf.second));
+          }
+        }
+      }
     }
     mCallback->FinishMakeCredential(
         rawAttestationObject, credentialId, transports, authenticatorAttachment,
@@ -483,6 +502,16 @@ NSDictionary<NSData*, ASAuthorizationPublicKeyCredentialPRFAssertionInputValues*
                   credential;
       if (__builtin_available(macos 14.5, *)) {
         usedAppId.emplace(securityKeyCredential.appID);
+      }
+      if (__builtin_available(macos 26.4, *)) {
+        if (securityKeyCredential.prf) {
+          if (securityKeyCredential.prf.first) {
+            prfFirst.emplace(NSDataToArray(securityKeyCredential.prf.first));
+          }
+          if (securityKeyCredential.prf.second) {
+            prfSecond.emplace(NSDataToArray(securityKeyCredential.prf.second));
+          }
+        }
       }
       authenticatorAttachment.emplace(u"cross-platform"_ns);
     }
@@ -886,9 +915,14 @@ MacOSWebAuthnService::MakeCredential(uint64_t aTransactionId,
                     [[ASAuthorizationPublicKeyCredentialPRFAssertionInputValues
                         alloc] initWithSaltInput1:saltInput1
                                        saltInput2:saltInput2];
-            platformRegistrationRequest.prf =
-                [[ASAuthorizationPublicKeyCredentialPRFRegistrationInput alloc]
-                    initWithInputValues:prfInputs];
+            ASAuthorizationPublicKeyCredentialPRFRegistrationInput*
+                prfRegistrationInput =
+                    [[ASAuthorizationPublicKeyCredentialPRFRegistrationInput
+                        alloc] initWithInputValues:prfInputs];
+            platformRegistrationRequest.prf = prfRegistrationInput;
+            if (__builtin_available(macos 26.4, *)) {
+              crossPlatformRegistrationRequest.prf = prfRegistrationInput;
+            }
           }
         }
 
@@ -1310,10 +1344,15 @@ void MacOSWebAuthnService::DoGetAssertion(
                 ASAuthorizationPublicKeyCredentialPRFAssertionInputValues*>*
                 prfPerCredentialInputs =
                     ConstructPrfEvalByCredentialEntries(aArgs);
-            platformAssertionRequest.prf =
-                [[ASAuthorizationPublicKeyCredentialPRFAssertionInput alloc]
-                         initWithInputValues:prfInputs
-                    perCredentialInputValues:prfPerCredentialInputs];
+            ASAuthorizationPublicKeyCredentialPRFAssertionInput*
+                prfAssertionInput =
+                    [[ASAuthorizationPublicKeyCredentialPRFAssertionInput alloc]
+                             initWithInputValues:prfInputs
+                        perCredentialInputValues:prfPerCredentialInputs];
+            platformAssertionRequest.prf = prfAssertionInput;
+            if (__builtin_available(macos 26.4, *)) {
+              crossPlatformAssertionRequest.prf = prfAssertionInput;
+            }
           }
         }
 
