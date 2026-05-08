@@ -1,18 +1,7 @@
 <!-- This Source Code Form is subject to the terms of the Mozilla Public
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="166.66667"
-    android:viewportHeight="166.66667">
-  <group android:translateX="53.333332"
-      android:translateY="68.333336">
-    <path
-        android:pathData="M46.5301,30C40.2931,30 35.979,22.5 30.0001,22.5C24.0211,22.5 19.3351,30 13.4701,30C5.7751,30 0.0931,22.713 0.0001,10.227C-0.0569,2.472 2.2591,0 12.2461,0C22.2331,0 25.1611,4.089 30.0001,4.089C34.8391,4.089 37.7671,0 47.7541,0C57.7411,0 60.0541,2.472 60,10.227C59.9071,22.713 54.2251,30 46.5301,30ZM17.1301,9.543C11.0611,9.807 8.5591,13.425 8.5591,14.316C8.5591,15.207 12.6001,17.724 16.5301,17.724C20.4601,17.724 25.1011,16.281 25.1011,14.997C24.2648,11.3895 20.8082,9.0208 17.1421,9.543L17.1301,9.543ZM42.8461,9.543C39.1789,9.0211 35.722,11.3913 34.8871,15C34.8871,16.284 39.522,17.727 43.458,17.727C47.3941,17.727 51.417,15.207 51.417,14.316C51.417,13.425 48.9271,9.807 42.8581,9.543L42.8461,9.543Z"
-        android:strokeWidth="1"
-        android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:strokeColor="#00000000"/>
-  </group>
-</vector>
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@drawable/robowolf_foreground"
+    android:gravity="fill"
+    android:antialias="true"/>

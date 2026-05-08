@@ -108,13 +108,19 @@ jobs:
       - name: Write release mozconfig (artifact build)
         run: |
           cat > .mozconfig <<'EOF'
+          NO_CACHE=1
+          NO_NDK=1
           ac_add_options --enable-project=mobile/android
-          ac_add_options --target=aarch64-linux-android
           ac_add_options --enable-artifact-builds
+          ac_add_options --disable-compile-environment
           ac_add_options --enable-update-channel=release
+          mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/objdir-frontend
           EOF
 
       - name: Configure mach
+        timeout-minutes: 15
+        env:
+          MOZ_AUTOMATION: '1'
         run: ./mach configure
 
       - name: Decode signing keystore
