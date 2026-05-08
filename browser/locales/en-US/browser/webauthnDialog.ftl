@@ -81,3 +81,14 @@ webauthn-allow = Allow
     .accesskey = A
 webauthn-block = Block
     .accesskey = B
+webauthn-continue = Continue
+    .accesskey = n
+
+# Variables:
+#   $origin (String): the domain of the site making the request
+#   $rpId (String): the related domain the passkey is associated with
+webauthn-related-origin-create-header = { $origin } wants to create a passkey for { $rpId }.
+# Variables:
+#   $origin (String): the domain of the site making the request
+#   $rpId (String): the related domain the passkey is associated with
+webauthn-related-origin-use-header = { $origin } wants to use a passkey for { $rpId }.

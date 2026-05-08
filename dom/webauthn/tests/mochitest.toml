@@ -5,6 +5,10 @@ support-files = [
   "pkijs/*",
   "get_assertion_dead_object.html",
   "empty.html",
+  "/.well-known/webauthn",
+  "/.well-known/webauthn^headers^",
+  "webauthn-wellknown.sjs",
+  "well-known-webauthn-state.sjs",
 ]
 scheme = "https"
 prefs = [
@@ -15,6 +19,7 @@ prefs = [
   "security.webauthn.ctap2=true",
   "security.webauthn.enable_conditional_mediation=true",
   "security.webauthn.enable_macos_passkeys=false",
+  "security.webauthn.related_origin_requests_mode=0",
 ]
 
 ["test_bug1969341.html"]
@@ -116,6 +121,12 @@ run-if = [
 skip-if = [
   "os == 'android'", # Test disables all tokens, which is an unsupported configuration on android.
   "xorigin", # JavaScript error: https://example.org/tests/SimpleTest/SimpleTest.js, line 76: DataCloneError: The object could not be cloned.
+]
+
+["test_webauthn_related_origin.html"]
+skip-if = [
+  "os == 'win'", # Bug 1718296
+  "xorigin",
 ]
 
 ["test_webauthn_sameorigin.html"]

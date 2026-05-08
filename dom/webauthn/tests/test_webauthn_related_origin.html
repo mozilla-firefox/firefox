@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Test for WebAuthn Related Origin Requests</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script type="text/javascript" src="u2futil.js"></script>
+<link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+<script>
+"use strict";
+
+function desktopOnly(fn) {
+  let t = add_task(fn);
+  if (AppConstants.platform == "android") {
+    t.skip();
+  }
+}
+
+// Tests run at https://example.com. We use rpId "example.org", which is not a
+// valid rpId for example.com, so every request goes through the RoR code path.
+// The well-known URL https://example.org/.well-known/webauthn is served by the
+// test server (redirected to webauthn-wellknown.sjs via ^headers^).
+
+const RP_ID = "example.org";
+
+add_task(async function setup() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["security.webauthn.related_origin_requests_mode", 1]],
+  });
+  await addVirtualAuthenticator();
+});
+
+function makeCredOptions() {
+  let challenge = new Uint8Array(16);
+  crypto.getRandomValues(challenge);
+  return {
+    publicKey: {
+      rp: { id: RP_ID, name: "Example Corp" },
+      user: {
+        id: new Uint8Array(16),
+        name: "user@example.com",
+        displayName: "User",
+      },
+      challenge,
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+    },
+  };
+}
+
+function makeGetOptions(credId) {
+  let challenge = new Uint8Array(16);
+  crypto.getRandomValues(challenge);
+  return {
+    publicKey: {
+      rpId: RP_ID,
+      challenge,
+      allowCredentials: credId ? [{ type: "public-key", id: credId }] : [],
+    },
+  };
+}
+
+async function setWellKnownState(state) {
+  let resp = await fetch(
+    `well-known-webauthn-state.sjs?state=${encodeURIComponent(state)}`
+  );
+  ok(resp.ok, `set well-known state to "${state}"`);
+}
+
+async function clickRelatedOriginPopupOK() {
+  await SpecialPowers.spawnChrome([], async () => {
+    let { TestUtils } = ChromeUtils.importESModule(
+      "resource://testing-common/TestUtils.sys.mjs"
+    );
+    let chromeWin = browsingContext.topChromeWindow;
+    let browser = chromeWin.gBrowser.selectedBrowser;
+    let notification;
+    await TestUtils.waitForCondition(() => {
+      notification = chromeWin.PopupNotifications.getNotification(
+        "webauthn-prompt-related-origin-request",
+        browser
+      );
+      return !!notification;
+    }, "waiting for RoR popup");
+    notification.mainAction.callback();
+    notification.remove();
+  });
+}
+
+async function clickRelatedOriginPopupCancel() {
+  await SpecialPowers.spawnChrome([], async () => {
+    let { TestUtils } = ChromeUtils.importESModule(
+      "resource://testing-common/TestUtils.sys.mjs"
+    );
+    let chromeWin = browsingContext.topChromeWindow;
+    let browser = chromeWin.gBrowser.selectedBrowser;
+    let notification;
+    await TestUtils.waitForCondition(() => {
+      notification = chromeWin.PopupNotifications.getNotification(
+        "webauthn-prompt-related-origin-request",
+        browser
+      );
+      return !!notification;
+    }, "waiting for RoR popup");
+    notification.remove();
+  });
+}
+
+add_task(async function test_pref_disabled() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["security.webauthn.related_origin_requests_mode", 0]],
+  });
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "mode 0: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "mode 0: get gives SecurityError");
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_mode1_no_prompt() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["security.webauthn.related_origin_requests_mode", 1]],
+  });
+  await setWellKnownState("valid");
+  let cred = await navigator.credentials.create(makeCredOptions());
+  ok(cred !== null, "mode 1: credential created without prompt");
+
+  let assertion = await navigator.credentials.get(makeGetOptions(cred.rawId));
+  ok(assertion !== null, "mode 1: assertion succeeds without prompt");
+  is(assertion.id, cred.id, "mode 1: asserted the created credential");
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_not_found() {
+  await setWellKnownState("not_found");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "404 response: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "404 response: get gives SecurityError");
+});
+
+add_task(async function test_timeout() {
+  await setWellKnownState("timeout");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "timeout: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "timeout: get gives SecurityError");
+});
+
+add_task(async function test_http_redirect() {
+  await setWellKnownState("http_redirect");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "http: redirect: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "http: redirect: get gives SecurityError");
+});
+
+add_task(async function test_http_to_https_redirect() {
+  await setWellKnownState("http_to_https_redirect");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "http-to-https redirect chain: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "http-to-https redirect chain: get gives SecurityError");
+});
+
+add_task(async function test_https_cross_origin_redirect() {
+  await setWellKnownState("https_cross_origin_redirect");
+  let cred = await navigator.credentials.create(makeCredOptions());
+  ok(cred !== null, "cross-origin https: redirect: credential created");
+
+  let assertion = await navigator.credentials.get(makeGetOptions(cred.rawId));
+  ok(assertion !== null, "cross-origin https: redirect: assertion succeeds");
+  is(assertion.id, cred.id, "cross-origin https: redirect: asserted the created credential");
+});
+
+add_task(async function test_https_same_origin_redirect() {
+  await setWellKnownState("https_same_origin_redirect");
+  let cred = await navigator.credentials.create(makeCredOptions());
+  ok(cred !== null, "same-origin https: redirect: credential created");
+
+  let assertion = await navigator.credentials.get(makeGetOptions(cred.rawId));
+  ok(assertion !== null, "same-origin https: redirect: assertion succeeds");
+  is(assertion.id, cred.id, "same-origin https: redirect: asserted the created credential");
+});
+
+add_task(async function test_wrong_content_type() {
+  await setWellKnownState("wrong_content_type");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "wrong content-type: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "wrong content-type: get gives SecurityError");
+});
+
+add_task(async function test_invalid_json() {
+  await setWellKnownState("invalid_json");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "invalid JSON body: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "invalid JSON body: get gives SecurityError");
+});
+
+add_task(async function test_origins_not_array() {
+  await setWellKnownState("origins_not_array");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "origins not an array: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "origins not an array: get gives SecurityError");
+});
+
+add_task(async function test_origins_missing() {
+  await setWellKnownState("origins_missing");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "origins key missing: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "origins key missing: get gives SecurityError");
+});
+
+add_task(async function test_caller_not_listed() {
+  await setWellKnownState("caller_not_listed");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "caller not in origins: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "caller not in origins: get gives SecurityError");
+});
+
+add_task(async function test_all_invalid_urls() {
+  await setWellKnownState("all_invalid_urls");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "all invalid origins: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "all invalid origins: get gives SecurityError");
+});
+
+// Step 4.3: getBaseDomainFromHost throws for IP addresses and localhost (no
+// registrable domain). Those entries are skipped; if the caller is absent the
+// request fails, and if the caller is present it is still found.
+add_task(async function test_no_registrable_domain() {
+  await setWellKnownState("no_registrable_domain");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "no registrable domain: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "no registrable domain: get gives SecurityError");
+});
+
+add_task(async function test_mixed_no_registrable_domain() {
+  await setWellKnownState("mixed_no_registrable_domain");
+  let cred = await navigator.credentials.create(makeCredOptions());
+  ok(cred !== null, "mixed no-registrable-domain: credential created");
+
+  let assertion = await navigator.credentials.get(makeGetOptions(cred.rawId));
+  ok(assertion !== null, "mixed no-registrable-domain: assertion succeeds");
+  is(assertion.id, cred.id, "mixed no-registrable-domain: asserted the created credential");
+});
+
+// Label limit: 6 distinct non-caller labels fill labelsSeen to kMaxLabels=5;
+// the caller entry is then skipped because its label is new.
+add_task(async function test_max_labels_exceeded() {
+  await setWellKnownState("max_labels_exceeded");
+  let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
+  is(createErr.name, "SecurityError", "max labels exceeded: create gives SecurityError");
+  let getErr = await navigator.credentials.get(makeGetOptions()).catch(e => e);
+  is(getErr.name, "SecurityError", "max labels exceeded: get gives SecurityError");
+});
+
+desktopOnly(async function test_user_cancel() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["security.webauthn.related_origin_requests_mode", 2],
+      ["security.notification_enable_delay", 0],
+    ],
+  });
+  await setWellKnownState("valid");
+  let [err] = await Promise.all([
+    navigator.credentials.create(makeCredOptions()).catch(e => e),
+    clickRelatedOriginPopupCancel(),
+  ]);
+  is(err.name, "NotAllowedError", "user cancel gives NotAllowedError");
+  await SpecialPowers.popPrefEnv();
+});
+
+desktopOnly(async function test_valid_create() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["security.webauthn.related_origin_requests_mode", 2],
+      ["security.notification_enable_delay", 0],
+    ],
+  });
+  await setWellKnownState("valid");
+  let [cred] = await Promise.all([
+    navigator.credentials.create(makeCredOptions()),
+    clickRelatedOriginPopupOK(),
+  ]);
+  ok(cred !== null, "valid RoR: credential created");
+
+  let [assertion] = await Promise.all([
+    navigator.credentials.get(makeGetOptions(cred.rawId)),
+    clickRelatedOriginPopupOK(),
+  ]);
+  ok(assertion !== null, "valid RoR: assertion succeeds");
+  is(assertion.id, cred.id, "valid RoR: asserted the created credential");
+  await SpecialPowers.popPrefEnv();
+});
+
+// Invalid URLs in the origins list are skipped; the valid caller is still found.
+add_task(async function test_mixed_valid_invalid_urls() {
+  await setWellKnownState("mixed_valid_invalid");
+  let cred = await navigator.credentials.create(makeCredOptions());
+  ok(cred !== null, "mixed valid/invalid origins: credential created");
+
+  let assertion = await navigator.credentials.get(makeGetOptions(cred.rawId));
+  ok(assertion !== null, "mixed valid/invalid origins: assertion succeeds");
+  is(assertion.id, cred.id, "mixed valid/invalid origins: asserted the created credential");
+});
+
+// Caller is the 5th unique label: labelsSeen has room, so it is not skipped.
+add_task(async function test_max_labels_exactly_five() {
+  await setWellKnownState("max_labels_exactly_five");
+  let cred = await navigator.credentials.create(makeCredOptions());
+  ok(cred !== null, "caller at 5th label slot: credential created");
+
+  let assertion = await navigator.credentials.get(makeGetOptions(cred.rawId));
+  ok(assertion !== null, "caller at 5th label slot: assertion succeeds");
+  is(assertion.id, cred.id, "caller at 5th label slot: asserted the created credential");
+});
+
+// getBaseDomainFromHost("subdomain.example.co.uk") returns "example.co.uk";
+// slicing before the first dot gives label "example", not "example.co".
+// That label fills one slot; when example.com arrives later with a full set,
+// it is not skipped because "example" is already present.
+add_task(async function test_multi_part_tld_label() {
+  await setWellKnownState("multi_part_tld_label");
+  let cred = await navigator.credentials.create(makeCredOptions());
+  ok(cred !== null, "multi-part TLD label: credential created");
+
+  let assertion = await navigator.credentials.get(makeGetOptions(cred.rawId));
+  ok(assertion !== null, "multi-part TLD label: assertion succeeds");
+  is(assertion.id, cred.id, "multi-part TLD label: asserted the created credential");
+});
+
+// Caller's label was seen before the limit was reached, so even when
+// labelsSeen is full the caller entry is not skipped.
+add_task(async function test_label_seen_before_limit() {
+  await setWellKnownState("label_seen_before_limit");
+  let cred = await navigator.credentials.create(makeCredOptions());
+  ok(cred !== null, "caller label pre-seen: credential created");
+
+  let assertion = await navigator.credentials.get(makeGetOptions(cred.rawId));
+  ok(assertion !== null, "caller label pre-seen: assertion succeeds");
+  is(assertion.id, cred.id, "caller label pre-seen: asserted the created credential");
+});
+</script>

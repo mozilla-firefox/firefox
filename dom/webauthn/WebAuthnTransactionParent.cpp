@@ -12,7 +12,7 @@
 #include "mozilla/StaticPrefs_security.h"
 #include "mozilla/dom/PWindowGlobalParent.h"
 #include "mozilla/dom/WindowGlobalParent.h"
-#include "mozilla/extensions/WebExtensionPolicy.h"
+#include "nsIWebAuthnRelatedOriginFetcher.h"
 #include "nsThreadUtils.h"
 
 #ifdef MOZ_WIDGET_ANDROID
@@ -98,14 +98,89 @@ bool MakeCredentialRequestIncludesPrfExtension(
   return false;
 }
 
+class RelatedOriginCheckHandler final
+    : public nsIWebAuthnRelatedOriginCheckCallback {
+ public:
+  NS_DECL_ISUPPORTS
+
+  explicit RelatedOriginCheckHandler(WebAuthnTransactionParent* aParent)
+      : mParent(aParent) {}
+
+  nsresult StartCheck(const nsACString& aRpId, WebAuthnOp aOp,
+                      bool aShowPrompt) {
+    mFetcher =
+        do_CreateInstance("@mozilla.org/webauthn/related-origin-fetcher;1");
+    if (!mFetcher) {
+      return NS_ERROR_DOM_SECURITY_ERR;
+    }
+    auto* manager = static_cast<WindowGlobalParent*>(mParent->Manager());
+    return mFetcher->CheckRelatedOriginRequest(
+        manager, aRpId, aOp == WebAuthnOp::Create, aShowPrompt, this);
+  }
+
+  void Disconnect() {
+    mParent = nullptr;
+    mFetcher->Cancel();
+    mFetcher = nullptr;
+  }
+
+  NS_IMETHOD Resolved() override {
+    mFetcher = nullptr;
+    if (mParent) {
+      RefPtr<WebAuthnTransactionParent> parent = std::move(mParent);
+      parent->RelatedOriginApproved();
+    }
+    return NS_OK;
+  }
+
+  NS_IMETHOD Rejected() override {
+    mFetcher = nullptr;
+    if (mParent) {
+      RefPtr<WebAuthnTransactionParent> parent = std::move(mParent);
+      parent->AbortPendingRelatedOriginCheck(NS_ERROR_DOM_SECURITY_ERR);
+    }
+    return NS_OK;
+  }
+
+  NS_IMETHOD UserCancel() override {
+    mFetcher = nullptr;
+    if (mParent) {
+      RefPtr<WebAuthnTransactionParent> parent = std::move(mParent);
+      parent->AbortPendingRelatedOriginCheck(NS_ERROR_DOM_NOT_ALLOWED_ERR);
+    }
+    return NS_OK;
+  }
+
+ private:
+  ~RelatedOriginCheckHandler() = default;
+
+  RefPtr<WebAuthnTransactionParent> mParent;
+  nsCOMPtr<nsIWebAuthnRelatedOriginFetcher> mFetcher;
+};
+
+NS_IMPL_ISUPPORTS(RelatedOriginCheckHandler,
+                  nsIWebAuthnRelatedOriginCheckCallback)
+
+WebAuthnTransactionParent::WebAuthnTransactionParent() = default;
+WebAuthnTransactionParent::~WebAuthnTransactionParent() = default;
+
 void WebAuthnTransactionParent::CompleteTransaction() {
   if (mTransactionId.isSome()) {
+    MOZ_ASSERT(!mRelatedOriginCheckHandler);
     if (mRegisterPromiseRequest.Exists()) {
       mRegisterPromiseRequest.Complete();
     }
     if (mSignPromiseRequest.Exists()) {
       mSignPromiseRequest.Complete();
     }
+    if (mRelatedOriginCheckHandler) {
+      mRelatedOriginCheckHandler->Disconnect();
+      mRelatedOriginCheckHandler = nullptr;
+    }
+    mPendingRegisterInfo.reset();
+    mPendingRegisterResolver.reset();
+    mPendingSignInfo.reset();
+    mPendingSignResolver.reset();
     if (mWebAuthnService) {
       // We have to do this to work around Bug 1864526.
       mWebAuthnService->Cancel(mTransactionId.ref());
@@ -118,6 +193,20 @@ void WebAuthnTransactionParent::DisconnectTransaction() {
   mTransactionId.reset();
   mRegisterPromiseRequest.DisconnectIfExists();
   mSignPromiseRequest.DisconnectIfExists();
+  if (mRelatedOriginCheckHandler) {
+    mRelatedOriginCheckHandler->Disconnect();
+    mRelatedOriginCheckHandler = nullptr;
+  }
+  if (mPendingRegisterResolver.isSome()) {
+    RequestRegisterResolver resolver = mPendingRegisterResolver.extract();
+    mPendingRegisterInfo.reset();
+    resolver(NS_ERROR_DOM_ABORT_ERR);
+  }
+  if (mPendingSignResolver.isSome()) {
+    RequestSignResolver resolver = mPendingSignResolver.extract();
+    mPendingSignInfo.reset();
+    resolver(NS_ERROR_DOM_ABORT_ERR);
+  }
   if (mWebAuthnService) {
     mWebAuthnService->Reset();
   }
@@ -158,21 +247,82 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestRegister(
     return IPC_OK();
   }
 
-  if (!IsValidRpId(principal, aTransactionInfo.RpId())) {
+  if (IsValidRpId(principal, aTransactionInfo.RpId())) {
+    ContinueWithRegister(origin, aTransactionInfo, std::move(aResolver));
+    return IPC_OK();
+  }
+  rv = BeginRelatedOriginCheck(aTransactionInfo.RpId(), WebAuthnOp::Create);
+  if (NS_FAILED(rv)) {
     aResolver(NS_ERROR_DOM_SECURITY_ERR);
     return IPC_OK();
   }
+  mPendingRegisterInfo = Some(aTransactionInfo);
+  mPendingRegisterResolver = Some(std::move(aResolver));
+  return IPC_OK();
+}
+
+void WebAuthnTransactionParent::RelatedOriginApproved() {
+  WindowGlobalParent* manager = static_cast<WindowGlobalParent*>(Manager());
+  nsAutoCString origin;
+  nsresult rv =
+      GetWebAuthnClientDataOrigin(manager->DocumentPrincipal(), origin);
+  if (NS_FAILED(rv)) {
+    AbortPendingRelatedOriginCheck(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  MOZ_ASSERT(mTransactionId.isSome());
+  mRelatedOriginCheckHandler = nullptr;
+
+  if (mPendingRegisterResolver.isSome()) {
+    MOZ_ASSERT(mPendingRegisterInfo.isSome());
+    WebAuthnMakeCredentialInfo info = mPendingRegisterInfo.extract();
+    RequestRegisterResolver resolver = mPendingRegisterResolver.extract();
+    ContinueWithRegister(origin, info, std::move(resolver));
+  } else {
+    MOZ_ASSERT(mPendingSignInfo.isSome());
+    MOZ_ASSERT(mPendingSignResolver.isSome());
+    WebAuthnGetAssertionInfo info = mPendingSignInfo.extract();
+    RequestSignResolver resolver = mPendingSignResolver.extract();
+    ContinueWithSign(origin, info, std::move(resolver));
+  }
+}
+
+void WebAuthnTransactionParent::AbortPendingRelatedOriginCheck(
+    nsresult aError) {
+  mRelatedOriginCheckHandler = nullptr;
+  if (mPendingRegisterResolver.isSome()) {
+    RequestRegisterResolver resolver = mPendingRegisterResolver.extract();
+    mPendingRegisterInfo.reset();
+    resolver(aError);
+  } else if (mPendingSignResolver.isSome()) {
+    RequestSignResolver resolver = mPendingSignResolver.extract();
+    mPendingSignInfo.reset();
+    resolver(aError);
+  }
+  mTransactionId.reset();
+}
+
+void WebAuthnTransactionParent::ContinueWithRegister(
+    const nsCString& aOrigin, const WebAuthnMakeCredentialInfo& aInfo,
+    RequestRegisterResolver&& aResolver) {
+  MOZ_ASSERT(mTransactionId.isSome());
+
+  WindowGlobalParent* manager = static_cast<WindowGlobalParent*>(Manager());
+  nsIPrincipal* principal = manager->DocumentPrincipal();
+  uint64_t aTransactionId = mTransactionId.ref();
 
   nsCString clientDataJSON;
-  rv = AssembleClientData(manager, "webauthn.create"_ns,
-                          aTransactionInfo.Challenge(), clientDataJSON);
+  nsresult rv = AssembleClientData(manager, "webauthn.create"_ns,
+                                   aInfo.Challenge(), clientDataJSON);
   if (NS_FAILED(rv)) {
     aResolver(NS_ERROR_FAILURE);
-    return IPC_OK();
+    mTransactionId.reset();
+    return;
   }
 
   bool requestIncludesPrfExtension =
-      MakeCredentialRequestIncludesPrfExtension(aTransactionInfo);
+      MakeCredentialRequestIncludesPrfExtension(aInfo);
 
   RefPtr<WebAuthnRegisterPromiseHolder> promiseHolder =
       new WebAuthnRegisterPromiseHolder(GetCurrentSerialEventTarget());
@@ -311,15 +461,13 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestRegister(
 
   uint64_t browsingContextId = manager->GetBrowsingContext()->Top()->Id();
   bool privateBrowsing = principal->GetIsInPrivateBrowsing();
-  auto args = MakeRefPtr<WebAuthnRegisterArgs>(
-      origin, clientDataJSON, privateBrowsing, aTransactionInfo);
+  auto args = MakeRefPtr<WebAuthnRegisterArgs>(aOrigin, clientDataJSON,
+                                               privateBrowsing, aInfo);
   rv = mWebAuthnService->MakeCredential(aTransactionId, browsingContextId, args,
                                         promiseHolder);
   if (NS_FAILED(rv)) {
     promiseHolder->Reject(NS_ERROR_DOM_NOT_ALLOWED_ERR);
   }
-
-  return IPC_OK();
 }
 
 mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestSign(
@@ -356,39 +504,78 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestSign(
     return IPC_OK();
   }
 
-  if (!IsValidRpId(principal, aTransactionInfo.RpId())) {
+  if (IsValidRpId(principal, aTransactionInfo.RpId())) {
+    ContinueWithSign(origin, aTransactionInfo, std::move(aResolver));
+    return IPC_OK();
+  }
+  rv = BeginRelatedOriginCheck(aTransactionInfo.RpId(), WebAuthnOp::Assert);
+  if (NS_FAILED(rv)) {
     aResolver(NS_ERROR_DOM_SECURITY_ERR);
     return IPC_OK();
   }
+  mPendingSignInfo = Some(aTransactionInfo);
+  mPendingSignResolver = Some(std::move(aResolver));
+  return IPC_OK();
+}
 
-  if (aTransactionInfo.AppId().isSome() &&
-      !IsValidAppId(principal, aTransactionInfo.AppId().ref())) {
+nsresult WebAuthnTransactionParent::BeginRelatedOriginCheck(
+    const nsACString& aRpId, WebAuthnOp aOp) {
+  const uint32_t mode =
+      StaticPrefs::security_webauthn_related_origin_requests_mode();
+  if (mode == nsIWebAuthnRelatedOriginFetcher::MODE_DISABLED) {
+    mTransactionId.reset();
+    return NS_ERROR_DOM_SECURITY_ERR;
+  }
+  mRelatedOriginCheckHandler = MakeRefPtr<RelatedOriginCheckHandler>(this);
+  nsresult rv = mRelatedOriginCheckHandler->StartCheck(
+      aRpId, aOp, mode == nsIWebAuthnRelatedOriginFetcher::MODE_PROMPT);
+  if (NS_FAILED(rv)) {
+    mRelatedOriginCheckHandler = nullptr;
+    mTransactionId.reset();
+    return NS_ERROR_DOM_SECURITY_ERR;
+  }
+  return NS_OK;
+}
+
+void WebAuthnTransactionParent::ContinueWithSign(
+    const nsCString& aOrigin, const WebAuthnGetAssertionInfo& aInfo,
+    RequestSignResolver&& aResolver) {
+  MOZ_ASSERT(mTransactionId.isSome());
+
+  WindowGlobalParent* manager = static_cast<WindowGlobalParent*>(Manager());
+  nsIPrincipal* principal = manager->DocumentPrincipal();
+  uint64_t transactionId = mTransactionId.ref();
+
+  if (aInfo.AppId().isSome() && !IsValidAppId(principal, aInfo.AppId().ref())) {
     aResolver(NS_ERROR_DOM_SECURITY_ERR);
-    return IPC_OK();
+    mTransactionId.reset();
+    return;
   }
 
-  for (const WebAuthnExtension& ext : aTransactionInfo.Extensions()) {
+  for (const WebAuthnExtension& ext : aInfo.Extensions()) {
     if (ext.type() == WebAuthnExtension::TWebAuthnExtensionPrf) {
       if (ext.get_WebAuthnExtensionPrf().evalByCredential().Length() >
           kWebAuthnMaxAllowedCredentials) {
         aResolver(NS_ERROR_DOM_NOT_ALLOWED_ERR);
-        return IPC_OK();
+        mTransactionId.reset();
+        return;
       }
     }
   }
 
   nsCString clientDataJSON;
-  rv = AssembleClientData(manager, "webauthn.get"_ns,
-                          aTransactionInfo.Challenge(), clientDataJSON);
+  nsresult rv = AssembleClientData(manager, "webauthn.get"_ns,
+                                   aInfo.Challenge(), clientDataJSON);
   if (NS_FAILED(rv)) {
     aResolver(NS_ERROR_FAILURE);
-    return IPC_OK();
+    mTransactionId.reset();
+    return;
   }
 
-  bool requestIncludesAppId = aTransactionInfo.AppId().isSome();
+  bool requestIncludesAppId = aInfo.AppId().isSome();
 
   bool requestIncludesLargeBlobRead =
-      GetAssertionRequestIncludesLargeBlobRead(aTransactionInfo);
+      GetAssertionRequestIncludesLargeBlobRead(aInfo);
 
   RefPtr<WebAuthnSignPromiseHolder> promiseHolder =
       new WebAuthnSignPromiseHolder(GetCurrentSerialEventTarget());
@@ -534,15 +721,13 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestSign(
 
   uint64_t browsingContextId = manager->GetBrowsingContext()->Top()->Id();
   bool privateBrowsing = principal->GetIsInPrivateBrowsing();
-  auto args = MakeRefPtr<WebAuthnSignArgs>(origin, clientDataJSON,
-                                           privateBrowsing, aTransactionInfo);
+  auto args = MakeRefPtr<WebAuthnSignArgs>(aOrigin, clientDataJSON,
+                                           privateBrowsing, aInfo);
   rv = mWebAuthnService->GetAssertion(transactionId, browsingContextId, args,
                                       promiseHolder);
   if (NS_FAILED(rv)) {
     promiseHolder->Reject(NS_ERROR_DOM_NOT_ALLOWED_ERR);
   }
-
-  return IPC_OK();
 }
 
 mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestCancel() {

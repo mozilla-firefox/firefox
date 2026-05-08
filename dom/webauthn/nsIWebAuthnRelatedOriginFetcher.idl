@@ -1,0 +1,39 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+webidl WindowGlobalParent;
+
+[scriptable, uuid(06915a3a-5f1b-43cc-a692-3e3058da2201)]
+interface nsIWebAuthnRelatedOriginCheckCallback : nsISupports {
+  void resolved();
+  // The .well-known fetch or origin validation failed.
+  void rejected();
+  // The user dismissed the consent prompt.
+  void userCancel();
+};
+
+[scriptable, uuid(cfa801b0-b89d-441c-bead-9ba08ebbd107)]
+interface nsIWebAuthnRelatedOriginFetcher : nsISupports {
+  // Values for security.webauthn.related_origin_requests_mode.
+  const unsigned long MODE_DISABLED = 0;
+  const unsigned long MODE_NO_PROMPT = 1;
+  const unsigned long MODE_PROMPT = 2;
+
+  // Fetches https://{aRpId}/.well-known/webauthn and validates the caller
+  // origin. If aShowPrompt is true, shows a consent prompt before resolving.
+  // Calls aCallback.resolved() on success, aCallback.rejected() if validation
+  // fails, or aCallback.userCancel() if the user dismisses the prompt.
+  // Returns immediately; the check is async.
+  void checkRelatedOriginRequest(in WindowGlobalParent aManager,
+                                 in ACString aRpId,
+                                 in boolean aIsCreate,
+                                 in boolean aShowPrompt,
+                                 in nsIWebAuthnRelatedOriginCheckCallback aCallback);
+
+  // Cancels any ongoing checkRelatedOriginRequest (aborts the fetch or
+  // removes the prompt if shown). The callback will not be called after this.
+  void cancel();
+};

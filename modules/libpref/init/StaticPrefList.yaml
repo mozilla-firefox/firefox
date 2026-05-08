@@ -18019,6 +18019,17 @@
   value: true
   mirror: always
 
+# WebAuthn Related Origin Requests
+# 0: disabled, 1: enabled without prompt, 2: enabled with prompt
+- name: security.webauthn.related_origin_requests_mode
+  type: RelaxedAtomicUint32
+#ifdef ANDROID
+  value: 0
+#else
+  value: 2
+#endif
+  mirror: always
+
 # Dispatch WebAuthn requests to virtual authenticators (mutually exclusive
 # with and webauthn_enable_usbtoken)
 - name: security.webauth.webauthn_enable_softtoken
