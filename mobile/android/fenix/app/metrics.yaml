@@ -15319,10 +15319,17 @@ ai_summarize:
         type: string
       error_type:
         description: |
-          If an error occurred, the resulting error code. Examples include:
+          If an error occurred, a human-readable name for the failure
+          (typically the exception class name, e.g. "RateLimited",
+          "RequestTooLarge").
+        type: string
+      error_code:
+        description: |
+          If an error occurred, the integer error code associated with the
+          failure. Examples include:
           1005 (meaning content was too large to summarize)
           1007 (meaning LLM service has rate-limited the user)
-        type: string
+        type: quantity
       summarize_duration_ms:
         description: |
           Time in milliseconds between request and completion.
@@ -15334,6 +15341,7 @@ ai_summarize:
         type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2036474
     data_reviews:
       - https://phabricator.services.mozilla.com/D289882
     data_sensitivity:
@@ -15364,8 +15372,15 @@ ai_summarize:
     description: |
       Records when the user initiates summarization.
       (e.g. taps menu button, toolbar icon or shakes the device).
+    extra_keys:
+      trigger:
+        description: |
+          How the user initiated summarization. Possible values:
+          "shake", "menu".
+        type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2025523
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2036474
     data_reviews:
       - https://phabricator.services.mozilla.com/D289882
     data_sensitivity:

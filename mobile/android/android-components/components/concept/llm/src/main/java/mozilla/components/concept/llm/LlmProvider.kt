@@ -21,8 +21,10 @@ sealed interface LlmProvider {
      *
      * @property nameRes A string resource ID representing the display name of the provider.
      * @property iconRes A drawable resource ID representing the icon of the provider if present.
+     * @property model The identifier of the model that this provider serves (e.g.
+     * "moz-summarization"). Used for telemetry and logging.
      */
-    data class Info(val nameRes: Int, val iconRes: Int? = null)
+    data class Info(val nameRes: Int, val iconRes: Int? = null, val model: String? = null)
 
     /**
      * Metadata about this provider, including its display name.

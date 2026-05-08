@@ -13,6 +13,7 @@ import mozilla.components.concept.llm.ErrorCode
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.lib.llm.mlpa.service.ChatService
+import mozilla.components.lib.llm.mlpa.service.ChatService.Request.ModelID
 import mozilla.components.lib.llm.mlpa.service.ChatServiceError
 import mozilla.components.lib.llm.mlpa.service.MlpaService
 
@@ -37,7 +38,11 @@ class MlpaLlmProvider(
     val storage: MlpaTokenStorage,
     val mlpaService: MlpaService,
 ) : CloudLlmProvider {
-    override val info = LlmProvider.Info(nameRes = R.string.mlpa_llm_provider_name, iconRes = R.drawable.firefox_icon)
+    override val info = LlmProvider.Info(
+        nameRes = R.string.mlpa_llm_provider_name,
+        iconRes = R.drawable.firefox_icon,
+        model = ModelID.mozSummarization.value,
+    )
     private val _state = MutableStateFlow<State>(State.Available)
 
     /**
