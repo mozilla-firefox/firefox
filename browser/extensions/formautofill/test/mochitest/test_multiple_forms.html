@@ -29,9 +29,9 @@ add_task(async function setupStorage() {
 });
 
 add_task(async function check_switch_form_popup() {
+  let popupPromise = expectPopup();
   await setInput("#additional-name", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await popupPromise;
 
   // We need an intentional wait here before switching form.
   await sleep();
@@ -41,9 +41,9 @@ add_task(async function check_switch_form_popup() {
   is(popupOpen, false);
 
   await sleep();
+  popupPromise = expectPopup();
   await setInput("#given-name", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await popupPromise;
 });
 
 </script>

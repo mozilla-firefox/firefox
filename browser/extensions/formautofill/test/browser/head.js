@@ -717,7 +717,7 @@ async function openPopupOn(browser, selector) {
     );
     // If the field is already focused, we need to send a key event to
     // open the popup
-    if (previouslyFocused || !selector.includes("cc-")) {
+    if (previouslyFocused && !browser.autoCompletePopup.popupOpen) {
       info(`openPopupOn: before VK_DOWN on ${selector}`);
       await BrowserTestUtils.synthesizeKey("VK_DOWN", {}, browser);
     }
@@ -734,7 +734,7 @@ async function openPopupOnSubframe(browser, frameBrowsingContext, selector) {
     );
     // If the field is already focused, we need to send a key event to
     // open the popup
-    if (previouslyFocused || !selector.includes("cc-")) {
+    if (previouslyFocused) {
       info(`openPopupOnSubframe: before VK_DOWN on ${selector}`);
       await BrowserTestUtils.synthesizeKey("VK_DOWN", {}, frameBrowsingContext);
     }

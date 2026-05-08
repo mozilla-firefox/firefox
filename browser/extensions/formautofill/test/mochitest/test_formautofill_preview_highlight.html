@@ -66,10 +66,9 @@ add_task(async function setup_storage() {
 });
 
 add_task(async function check_preview() {
+  const promise = expectPopup();
   const focusedInput = await setInput("#organization", "");
-
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   await checkFormFieldsStyle(null);
 
   for (let i = 0; i < MOCK_STORAGE.length; i++) {

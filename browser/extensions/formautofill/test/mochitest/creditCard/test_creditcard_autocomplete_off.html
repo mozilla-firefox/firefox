@@ -60,9 +60,9 @@ initPopupListener();
 add_task(async function history_only_menu_checking() {
   await setupFormHistory();
 
+  const promise = expectPopup();
   await setInput("#cc-number", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntries(["6011029476355493"], false);
 
   await setInput("#cc-name", "");
@@ -74,9 +74,9 @@ add_task(async function history_only_menu_checking() {
 add_task(async function check_menu_when_both_with_autocomplete_off() {
   await setupCreditCardStorage();
 
+  const promise = expectPopup();
   await setInput("#cc-number", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(patchRecordCCNumber).map(({ cc, expected }) => JSON.stringify({
     primary: replaceStars(cc.ccNumberFmt),
     secondary: cc["cc-name"],

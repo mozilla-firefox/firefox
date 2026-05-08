@@ -25,6 +25,7 @@ add_task(
       async function (browser) {
         const focusInput = "#email";
         await focusAndWaitForFieldsIdentified(browser, "#given-name");
+        await closePopup(browser);
         await openPopupOn(browser, focusInput);
         const item = getDisplayedPopupItems(browser)[0];
 
@@ -47,7 +48,6 @@ add_task(
       { gBrowser, url: PAGE_URL },
       async function (browser) {
         const focusInput = "#email";
-        await focusAndWaitForFieldsIdentified(browser, "#given-name");
         await openPopupOn(browser, focusInput);
         const item = getDisplayedPopupItems(browser)[0];
 

@@ -3,6 +3,9 @@
 const { FormAutofill } = ChromeUtils.importESModule(
   "resource://autofill/FormAutofill.sys.mjs"
 );
+const { FormAutofillParent } = ChromeUtils.importESModule(
+  "resource://autofill/FormAutofillParent.sys.mjs"
+);
 const { FormAutofillUtils } = ChromeUtils.importESModule(
   "resource://gre/modules/shared/FormAutofillUtils.sys.mjs"
 );
@@ -238,8 +241,10 @@ var ParentUtils = {
 
 Services.obs.addObserver(ParentUtils, "formautofill-storage-changed");
 
-Services.mm.addMessageListener("FormAutofill:FieldsIdentified", () => {
-  return null;
+FormAutofillParent.addMessageObserver({
+  fieldsIdentified() {
+    sendAsyncMessage("FormAutofillTest:FieldsIdentified");
+  },
 });
 
 addMessageListener("FormAutofillTest:AddAddress", msg => {

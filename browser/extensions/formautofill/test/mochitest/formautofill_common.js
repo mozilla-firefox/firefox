@@ -35,8 +35,25 @@ async function focusAndWaitForFieldsIdentified(
   if (typeof input === "string") {
     input = document.querySelector(input);
   }
-  const rootElement = input.form || input.ownerDocument.documentElement;
-  const previouslyFocused = input != document.activeElement;
+  // Use the same root heuristic as AutofillFormFactory: in iframes, ignore <form>
+  // and use the document root instead (since FormAutofillHandler uses document root).
+  const rootElement =
+    (window === window.top && input.form) ||
+    input.ownerDocument.documentElement;
+  const previouslyFocused = input == document.activeElement;
+
+  let fieldsIdentifiedPromise = new Promise(resolve => {
+    formFillChromeScript.addMessageListener(
+      "FormAutofillTest:FieldsIdentified",
+      function onIdentified() {
+        formFillChromeScript.removeMessageListener(
+          "FormAutofillTest:FieldsIdentified",
+          onIdentified
+        );
+        resolve();
+      }
+    );
+  });
 
   input.focus();
 
@@ -44,26 +61,16 @@ async function focusAndWaitForFieldsIdentified(
     rootElement.removeAttribute("test-formautofill-identified");
   }
   if (rootElement.hasAttribute("test-formautofill-identified")) {
-    return;
+    return previouslyFocused;
   }
   if (!previouslyFocused) {
-    await new Promise(resolve => {
-      formFillChromeScript.addMessageListener(
-        "FormAutofillTest:FieldsIdentified",
-        function onIdentified() {
-          formFillChromeScript.removeMessageListener(
-            "FormAutofillTest:FieldsIdentified",
-            onIdentified
-          );
-          resolve();
-        }
-      );
-    });
+    await fieldsIdentifiedPromise;
   }
   // In order to ensure that "markAsAutofillField" is fully executed, a short period
   // of timeout is still required.
   await sleep(300, "Guarantee asynchronous identifyAutofillFields is invoked");
   rootElement.setAttribute("test-formautofill-identified", "true");
+  return previouslyFocused;
 }
 
 async function setInput(selector, value, userInput = false) {
@@ -492,8 +499,14 @@ function initPopupListener() {
 
 async function triggerPopupAndHoverItem(fieldSelector, selectIndex) {
   const promise = expectPopup();
-  await focusAndWaitForFieldsIdentified(fieldSelector);
-  synthesizeKey("KEY_ArrowDown");
+  const previouslyFocused =
+    await focusAndWaitForFieldsIdentified(fieldSelector);
+  // If the field is already focused, we need to send a key event to
+  // open the popup
+  if (previouslyFocused) {
+    info(`triggerPopupAndHoverItem: send key to open the popup`);
+    synthesizeKey("KEY_ArrowDown");
+  }
   await promise;
   for (let i = 0; i <= selectIndex; i++) {
     synthesizeKey("KEY_ArrowDown");
