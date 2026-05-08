@@ -159,15 +159,11 @@ ObserverList& ObserverList::operator=(ObserverList&& other) {
   next.setPrev(this);
   prev.setNext(this);
 
-  other.makeEmpty();
+  other.next = &other;
+  other.prev = &other;
+  MOZ_ASSERT(other.isEmpty());
 
   return *this;
-}
-
-void ObserverList::makeEmpty() {
-  next = this;
-  prev = this;
-  MOZ_ASSERT(isEmpty());
 }
 
 bool ObserverList::isEmpty() const {
@@ -196,25 +192,6 @@ void ObserverList::insertFront(ObserverListObject* obj) {
 
   oldNext.setPrev(obj);
   obj->setPrev(this);
-}
-
-static inline void LinkElements(ObserverListPtr a, ObserverListPtr b) {
-  a.setNext(b);
-  b.setPrev(a);
-}
-
-void ObserverList::append(ObserverList&& other) {
-  // The things in these lists might be gray.
-  AutoTouchingGrayThings atgt;
-
-  if (other.isEmpty()) {
-    return;
-  }
-
-  LinkElements(getPrev(), other.getNext());
-  LinkElements(other.getPrev(), this);
-
-  other.makeEmpty();
 }
 
 void ObserverList::setNext(Ptr link) { next = link; }
@@ -714,12 +691,17 @@ ObserverList FinalizationObservers::extractWeakRefObservers(
 bool FinalizationObservers::addWeakRefObservers(const Value& target,
                                                 ObserverList&& list) {
   auto ptr = weakRefMap.lookupForAdd(target);
-  if (!ptr && !weakRefMap.add(ptr, target, ObserverList())) {
-    return false;
+  if (ptr) {
+    // There's already an entry for this target (unlikely but possible).
+    // Merge the lists by moving elements one by one.
+    ObserverList& existing = ptr->value();
+    while (!list.isEmpty()) {
+      existing.insertFront(list.getFirst());
+    }
+    return true;
   }
 
-  ptr->value().append(std::move(list));
-  return true;
+  return weakRefMap.add(ptr, target, std::move(list));
 }
 
 ObserverList FinalizationObservers::extractRecordObservers(
@@ -736,12 +718,17 @@ ObserverList FinalizationObservers::extractRecordObservers(
 bool FinalizationObservers::addRecordObservers(const Value& target,
                                                ObserverList&& list) {
   auto ptr = recordMap.lookupForAdd(target);
-  if (!ptr && !recordMap.add(ptr, target, ObserverList())) {
-    return false;
+  if (ptr) {
+    // There's already an entry for this target (unlikely but possible).
+    // Merge the lists by moving elements one by one.
+    ObserverList& existing = ptr->value();
+    while (!list.isEmpty()) {
+      existing.insertFront(list.getFirst());
+    }
+    return true;
   }
 
-  ptr->value().append(std::move(list));
-  return true;
+  return recordMap.add(ptr, target, std::move(list));
 }
 
 /* static */
