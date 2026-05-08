@@ -2,6 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
+
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  GeckoViewPrompter: "resource://gre/modules/GeckoViewPrompter.sys.mjs",
+});
+
 let l10n;
 
 // Steps 3-5 of https://w3c.github.io/webauthn/#sctn-validating-relation-origin.
@@ -178,10 +186,37 @@ export class WebAuthnRelatedOriginFetcher {
       return;
     }
 
-    this._showPrompt(aManager, aRpId, aIsCreate);
+    if (AppConstants.platform === "android") {
+      this._showAndroidPrompt(aManager, aRpId, aIsCreate);
+    } else {
+      this._showDesktopPrompt(aManager, aRpId, aIsCreate);
+    }
   }
 
-  _showPrompt(aManager, aRpId, aIsCreate) {
+  _showAndroidPrompt(aManager, aRpId, aIsCreate) {
+    const prompter = new lazy.GeckoViewPrompter(aManager.browsingContext.top);
+    this._currentPrompt = prompter;
+    prompter
+      .asyncShowPromptPromise({
+        type: "webauthn-related-origin",
+        origin: aManager.documentPrincipal.host,
+        rpId: aRpId,
+        isCreate: aIsCreate,
+      })
+      .then(result => {
+        this._currentPrompt = null;
+        if (!this._callback) {
+          return;
+        }
+        if (result?.allow) {
+          this._resolve();
+        } else {
+          this._userCancel();
+        }
+      });
+  }
+
+  _showDesktopPrompt(aManager, aRpId, aIsCreate) {
     if (!l10n) {
       l10n = new Localization(
         ["branding/brand.ftl", "browser/webauthnDialog.ftl"],
@@ -271,6 +306,10 @@ export class WebAuthnRelatedOriginFetcher {
 
     const prompt = this._currentPrompt;
     this._currentPrompt = null;
-    prompt?.remove();
+    if (AppConstants.platform === "android") {
+      prompt?.dismiss();
+    } else {
+      prompt?.remove();
+    }
   }
 }

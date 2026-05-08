@@ -2230,6 +2230,61 @@ class GeckoPromptDelegateTest {
         whenever(geckoPrompt.isComplete).thenReturn(true)
     }
 
+    @Test
+    fun `onWebAuthnRelatedOriginPrompt must provide a WebAuthnRelatedOriginPrompt PromptRequest`() {
+        val mockSession = GeckoEngineSession(runtime)
+        var request: PromptRequest.WebAuthnRelatedOriginPrompt? = null
+        var onConfirmWasCalled = false
+        var onDismissWasCalled = false
+
+        mockSession.register(
+            object : EngineSession.Observer {
+                override fun onPromptRequest(promptRequest: PromptRequest) {
+                    request = promptRequest as PromptRequest.WebAuthnRelatedOriginPrompt
+                }
+            },
+        )
+
+        val promptDelegate = GeckoPromptDelegate(mockSession)
+
+        var geckoPrompt = geckoWebAuthnRelatedOriginPrompt()
+        var geckoResult = promptDelegate.onWebAuthnRelatedOriginPrompt(mock(), geckoPrompt)
+        geckoResult!!.accept {
+            onConfirmWasCalled = true
+        }
+
+        assertEquals("example.com", request!!.origin)
+        assertEquals("rp.example.com", request.rpId)
+        assertTrue(request.isCreate)
+
+        request.onConfirm()
+        shadowOf(getMainLooper()).idle()
+        assertTrue(onConfirmWasCalled)
+        whenever(geckoPrompt.isComplete).thenReturn(true)
+
+        // Calling onDismiss
+        geckoPrompt = geckoWebAuthnRelatedOriginPrompt()
+        geckoResult = promptDelegate.onWebAuthnRelatedOriginPrompt(mock(), geckoPrompt)
+        geckoResult!!.accept {
+            onDismissWasCalled = true
+        }
+        request.onDismiss()
+        shadowOf(getMainLooper()).idle()
+        assertTrue(onDismissWasCalled)
+    }
+
+    private fun geckoWebAuthnRelatedOriginPrompt(
+        origin: String = "example.com",
+        rpId: String = "rp.example.com",
+        isCreate: Boolean = true,
+    ): GeckoSession.PromptDelegate.WebAuthnRelatedOriginPrompt {
+        val prompt: GeckoSession.PromptDelegate.WebAuthnRelatedOriginPrompt = mock()
+        ReflectionUtils.setField(prompt, "origin", origin)
+        ReflectionUtils.setField(prompt, "rpId", rpId)
+        ReflectionUtils.setField(prompt, "isCreate", isCreate)
+        return prompt
+    }
+
     private fun geckoChoicePrompt(
         title: String,
         message: String,

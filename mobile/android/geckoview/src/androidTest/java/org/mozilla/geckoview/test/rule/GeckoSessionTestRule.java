@@ -2848,6 +2848,20 @@ public class GeckoSessionTestRule implements TestRule {
     webExtensionApiCall(session, "NotifyUserGestureActivation", null);
   }
 
+  /** Adds a virtual WebAuthn authenticator. Returns the authenticator ID. */
+  public String addVirtualAuthenticator() {
+    return (String) webExtensionApiCall("AddVirtualAuthenticator", null);
+  }
+
+  /** Removes a virtual WebAuthn authenticator. */
+  public void removeVirtualAuthenticator(final String authenticatorId) {
+    webExtensionApiCall(
+        "RemoveVirtualAuthenticator",
+        args -> {
+          args.put("authenticatorId", authenticatorId);
+        });
+  }
+
   /**
    * Gets all the permission names defined in the WebExtensions API JSONSchema given an array of
    * type names.

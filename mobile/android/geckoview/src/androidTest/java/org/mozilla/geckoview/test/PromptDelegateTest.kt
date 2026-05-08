@@ -1398,4 +1398,79 @@ class PromptDelegateTest : BaseSessionTest(
             )
         }
     }
+
+    @Test
+    fun webAuthnRelatedOriginPromptAllow() {
+        sessionRule.setPrefsUntilTestEnd(
+            mapOf(
+                "security.webauth.webauthn_enable_softtoken" to true,
+                "security.webauth.webauthn_enable_usbtoken" to false,
+                "security.webauthn.related_origin_requests_mode" to 2,
+            ),
+        )
+
+        // Load from https://example.com with rpId "example.org" to trigger the
+        // related-origin flow. https://example.org/.well-known/webauthn is served
+        // by the shared mochitest infrastructure and returns
+        // {"origins":["https://example.com"]} by default.
+        mainSession.loadUri(WEBAUTHN_RELATED_ORIGIN_PATH)
+        sessionRule.waitForPageStop()
+
+        val authenticatorId = sessionRule.addVirtualAuthenticator()
+        try {
+            sessionRule.delegateUntilTestEnd(object : PromptDelegate {
+                @AssertCalled(count = 1)
+                override fun onWebAuthnRelatedOriginPrompt(
+                    session: GeckoSession,
+                    prompt: PromptDelegate.WebAuthnRelatedOriginPrompt,
+                ): GeckoResult<PromptResponse>? {
+                    assertThat("origin", prompt.origin, equalTo("example.com"))
+                    assertThat("rpId", prompt.rpId, equalTo("example.org"))
+                    assertThat("isCreate", prompt.isCreate, equalTo(true))
+                    return GeckoResult.fromValue(prompt.confirm(AllowOrDeny.ALLOW))
+                }
+            })
+
+            val credential = mainSession.evaluateJS("createCredential()")
+            assertThat("credential created", credential, notNullValue())
+        } finally {
+            sessionRule.removeVirtualAuthenticator(authenticatorId)
+        }
+    }
+
+    @Test
+    fun webAuthnRelatedOriginPromptDeny() {
+        sessionRule.setPrefsUntilTestEnd(
+            mapOf(
+                "security.webauth.webauthn_enable_softtoken" to true,
+                "security.webauth.webauthn_enable_usbtoken" to false,
+                "security.webauthn.related_origin_requests_mode" to 2,
+            ),
+        )
+
+        mainSession.loadUri(WEBAUTHN_RELATED_ORIGIN_PATH)
+        sessionRule.waitForPageStop()
+
+        sessionRule.delegateUntilTestEnd(object : PromptDelegate {
+            @AssertCalled(count = 1)
+            override fun onWebAuthnRelatedOriginPrompt(
+                session: GeckoSession,
+                prompt: PromptDelegate.WebAuthnRelatedOriginPrompt,
+            ): GeckoResult<PromptResponse>? {
+                assertThat("isCreate", prompt.isCreate, equalTo(true))
+                return GeckoResult.fromValue(prompt.confirm(AllowOrDeny.DENY))
+            }
+        })
+
+        try {
+            mainSession.evaluateJS("createCredential()")
+            Assert.fail("credential creation should fail when prompt is denied")
+        } catch (e: GeckoSessionTestRule.RejectedPromiseException) {
+            assertThat(
+                "error is NotAllowedError",
+                e.reason as String,
+                containsString("NotAllowedError"),
+            )
+        }
+    }
 }

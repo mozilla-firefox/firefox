@@ -52,6 +52,7 @@ import org.mozilla.geckoview.GeckoSession.PromptDelegate.IdentityCredential.Acco
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.IdentityCredential.PrivacyPolicyPrompt
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.IdentityCredential.ProviderSelectorPrompt
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.PromptResponse
+import org.mozilla.geckoview.GeckoSession.PromptDelegate.WebAuthnRelatedOriginPrompt
 import java.security.InvalidParameterException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -795,6 +796,33 @@ internal class GeckoPromptDelegate(private val geckoEngineSession: GeckoEngineSe
             onPromptRequest(PromptRequest.BeforeUnload(title, onAllow, onDeny, onDismiss))
         }
 
+        return geckoResult
+    }
+
+    override fun onWebAuthnRelatedOriginPrompt(
+        session: GeckoSession,
+        geckoPrompt: WebAuthnRelatedOriginPrompt,
+    ): GeckoResult<PromptResponse>? {
+        val geckoResult = GeckoResult<PromptResponse>()
+        val onConfirm: () -> Unit = {
+            if (!geckoPrompt.isComplete) {
+                geckoResult.complete(geckoPrompt.confirm(AllowOrDeny.ALLOW))
+            }
+        }
+        val onDismiss: () -> Unit = {
+            geckoPrompt.dismissSafely(geckoResult)
+        }
+        geckoEngineSession.notifyObservers {
+            onPromptRequest(
+                PromptRequest.WebAuthnRelatedOriginPrompt(
+                    geckoPrompt.origin ?: "",
+                    geckoPrompt.rpId ?: "",
+                    geckoPrompt.isCreate,
+                    onConfirm,
+                    onDismiss,
+                ),
+            )
+        }
         return geckoResult
     }
 

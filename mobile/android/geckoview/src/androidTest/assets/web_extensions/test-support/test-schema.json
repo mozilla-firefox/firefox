@@ -391,6 +391,27 @@
         "async": true,
         "description": "Removes all entries from the tracking protection database.",
         "parameters": []
+      },
+
+      {
+        "name": "addVirtualAuthenticator",
+        "type": "function",
+        "async": true,
+        "description": "Adds a virtual WebAuthn authenticator via nsIWebAuthnService.",
+        "parameters": []
+      },
+
+      {
+        "name": "removeVirtualAuthenticator",
+        "type": "function",
+        "async": true,
+        "description": "Removes a virtual WebAuthn authenticator via nsIWebAuthnService.",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "authenticatorId"
+          }
+        ]
       }
     ]
   }

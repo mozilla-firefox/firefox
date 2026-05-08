@@ -50,6 +50,7 @@ import mozilla.components.concept.engine.prompt.PromptRequest.Share
 import mozilla.components.concept.engine.prompt.PromptRequest.SingleChoice
 import mozilla.components.concept.engine.prompt.PromptRequest.TextPrompt
 import mozilla.components.concept.engine.prompt.PromptRequest.TimeSelection
+import mozilla.components.concept.engine.prompt.PromptRequest.WebAuthnRelatedOriginPrompt
 import mozilla.components.concept.identitycredential.Account
 import mozilla.components.concept.identitycredential.Provider
 import mozilla.components.concept.storage.CreditCardEntry
@@ -79,6 +80,7 @@ import mozilla.components.feature.prompts.dialog.Prompter
 import mozilla.components.feature.prompts.dialog.SaveLoginDialogFragment
 import mozilla.components.feature.prompts.dialog.TextPromptDialogFragment
 import mozilla.components.feature.prompts.dialog.TimePickerDialogFragment
+import mozilla.components.feature.prompts.dialog.WebAuthnRelatedOriginDialogFragment
 import mozilla.components.feature.prompts.dialog.emitGeneratedPasswordShownFact
 import mozilla.components.feature.prompts.emailmask.EmailMaskDelegate
 import mozilla.components.feature.prompts.emailmask.EmailMaskPromptViewListener
@@ -876,6 +878,7 @@ class PromptFeature private constructor(
                 is PromptRequest.IdentityCredential.PrivacyPolicy -> it.onConfirm(value as Boolean)
                 is SelectLoginPrompt -> it.onConfirm(value as Login)
                 is FolderUploadPrompt -> it.onConfirm()
+                is WebAuthnRelatedOriginPrompt -> it.onConfirm()
                 else -> {
                     // no-op
                 }
@@ -1247,6 +1250,19 @@ class PromptFeature private constructor(
                 )
             }
 
+            is WebAuthnRelatedOriginPrompt -> {
+                val messageResId = if (promptRequest.isCreate) {
+                    R.string.webauthn_related_origin_create_message
+                } else {
+                    R.string.webauthn_related_origin_use_message
+                }
+                WebAuthnRelatedOriginDialogFragment.newInstance(
+                    sessionId = session.id,
+                    promptRequestUID = promptRequest.uid,
+                    message = container.getString(messageResId, promptRequest.origin, promptRequest.rpId),
+                )
+            }
+
             is PromptRequest.IdentityCredential.SelectProvider -> {
                 SelectProviderDialogFragment.newInstance(
                     sessionId = session.id,
@@ -1401,6 +1417,9 @@ class PromptFeature private constructor(
 
             is Alert, is TextPrompt, is Confirm, is Repost, is Popup, is FolderUploadPrompt, is Redirect,
             -> promptAbuserDetector.shouldShowMoreDialogs
+
+            is WebAuthnRelatedOriginPrompt,
+            -> true
         }
     }
 
