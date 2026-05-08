@@ -219,6 +219,10 @@ ${
     "selectionchange",
   ];
 
+  /**
+   * Whether expanding is allowed. Requires a parent
+   * toolbar, and us not being read-only.
+   */
   #allowBreakout = false;
   #gBrowserListenersAdded = false;
   #breakoutBlockerCount = 0;
@@ -384,7 +388,6 @@ ${
     // type definitions.
     const READ_WRITE_PROPERTIES = [
       "placeholder",
-      "readOnly",
       "selectionStart",
       "selectionEnd",
     ];
@@ -425,18 +428,16 @@ ${
     if (this.inOverflowPanel && this.view.isOpen) {
       this.view.close();
     }
-    this.toggleAttribute("focused", this.focused);
 
-    // Don't attach event listeners if the toolbar is not visible
-    // in this window or the urlbar is readonly.
-    if (
-      !this.window.toolbar.visible ||
-      this.window.document.documentElement.hasAttribute("taskbartab") ||
-      this.readOnly
-    ) {
+    // Don't attach event listeners if the urlbar is readonly.
+    if (this.readOnly) {
       this.#stopBreakout();
+      this.#allowBreakout = false;
+      // Focused won't be updated so remove it to avoid it becoming stale.
+      this.removeAttribute("focused");
       return;
     }
+    this.toggleAttribute("focused", this.focused);
 
     if (
       this.sapName == "searchbar" &&
@@ -506,7 +507,6 @@ ${
       this._updatePlaceholderFromDefaultEngine();
     }
 
-    // Expanding requires a parent toolbar, and us not being read-only.
     this.#allowBreakout =
       !!this.closest("toolbar") &&
       !document.documentElement.hasAttribute("customizing");
@@ -657,15 +657,27 @@ ${
     this.inputField.blur();
   }
 
+  set readOnly(val) {
+    if (val != this.inputField.readOnly) {
+      this.inputField.readOnly = val;
+      if (this.isConnected) {
+        this.#disconnectedCallback();
+        this.#connectedCallback();
+      }
+    }
+  }
+
+  /**
+   * @type {boolean}
+   */
+  get readOnly() {
+    return this.inputField.readOnly;
+  }
+
   /**
    * @type {typeof HTMLInputElement.prototype.placeholder}
    */
   placeholder;
-
-  /**
-   * @type {typeof HTMLInputElement.prototype.readOnly}
-   */
-  readOnly;
 
   /**
    * @type {typeof HTMLInputElement.prototype.selectionStart}

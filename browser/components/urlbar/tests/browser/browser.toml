@@ -307,6 +307,8 @@ support-files = [
 
 ["browser_raceWithTabs.js"]
 
+["browser_readOnly.js"]
+
 ["browser_recentsearches.js"]
 
 ["browser_redirect_error.js"]
