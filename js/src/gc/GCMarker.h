@@ -362,6 +362,10 @@ class MarkingTracerT
   void markEphemeronEdges(gc::EphemeronEdgeVector& edges,
                           gc::MarkColor srcColor);
 
+  static constexpr bool hasOption(uint32_t option) {
+    return markingOptions & option;
+  }
+
  private:
   gc::MarkColor markColor() const { return gcMarker()->markColor(); }
   Zone* tracingZone() const { return gcMarker()->tracingZone; }

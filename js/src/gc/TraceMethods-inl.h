@@ -197,7 +197,7 @@ void js::gc::MarkingTracerT<opts>::eagerlyMarkChildren(JSRope* rope) {
     // on the main thread these happen in the reverse order. This ensures that
     // we can't observe updated children with the old type. Observing the new
     // type with old children is possible but benign.
-    if constexpr (bool(opts & gc::MarkingOptions::ConcurrentMarking)) {
+    if constexpr (hasOption(gc::MarkingOptions::ConcurrentMarking)) {
       gc::MemoryAcquireFence<opts>(rope->runtimeFromAnyThread());
       if (!rope->isRopeAtomic()) {
         shouldMark = false;

@@ -747,7 +747,7 @@ template <uint32_t opts>
 void MarkingTracerT<opts>::markEphemeronEdges(EphemeronEdgeVector& edges,
                                               gc::MarkColor srcColor) {
   // This is only called as part of GC weak marking.
-  static_assert(bool(opts & MarkingOptions::MarkImplicitEdges));
+  static_assert(hasOption(MarkingOptions::MarkImplicitEdges));
 
   DebugOnly<size_t> initialLength = edges.length();
 
@@ -786,7 +786,7 @@ struct TypeCanHaveImplicitEdges<JS::Symbol> : std::true_type {};
 template <uint32_t opts>
 template <typename T>
 void MarkingTracerT<opts>::maybeMarkImplicitEdges(T* markedThing) {
-  if constexpr (bool(opts & MarkingOptions::MarkImplicitEdges) &&
+  if constexpr (hasOption(MarkingOptions::MarkImplicitEdges) &&
                 TypeCanHaveImplicitEdges<T>::value) {
     markImplicitEdges(markedThing);
   }
@@ -795,7 +795,7 @@ void MarkingTracerT<opts>::maybeMarkImplicitEdges(T* markedThing) {
 template <uint32_t opts>
 template <typename T>
 void MarkingTracerT<opts>::markImplicitEdges(T* markedThing) {
-  static_assert(bool(opts & MarkingOptions::MarkImplicitEdges));
+  static_assert(hasOption(MarkingOptions::MarkImplicitEdges));
   static_assert(TypeCanHaveImplicitEdges<T>::value);
 
   Zone* zone = markedThing->asTenured().zone();
@@ -890,7 +890,7 @@ void MarkingTracerT<opts>::onEdge(T** thingp, const char* name) {
   AutoClearTracingSource acts(this);
   this->markAndTraverse(thing);
 
-  if constexpr (bool(opts & MarkingOptions::MarkRootCompartments)) {
+  if constexpr (hasOption(MarkingOptions::MarkRootCompartments)) {
     // Mark the compartment as live.
     SetCompartmentHasMarkedCells(thing);
   }
@@ -1088,7 +1088,7 @@ void MarkingTracerT<opts>::traverse(GetterSetter* thing) {
 }
 template <uint32_t opts>
 void MarkingTracerT<opts>::traverse(JS::Symbol* thing) {
-  if constexpr (bool(opts & MarkingOptions::MarkImplicitEdges)) {
+  if constexpr (hasOption(MarkingOptions::MarkImplicitEdges)) {
     pushThing(thing);
     return;
   }
@@ -1300,7 +1300,7 @@ bool MarkingTracerT<opts>::mark(T* thing) {
   // concurrent marking however.
   return thing->asTenured().markIfUnmarkedThreadSafe(color);
 #else
-  if constexpr (bool(opts & MarkingOptions::AtomicMarking)) {
+  if constexpr (hasOption(MarkingOptions::AtomicMarking)) {
     return thing->asTenured().markIfUnmarkedThreadSafe(color);
   }
 
@@ -1892,7 +1892,7 @@ bool MarkingTracerT<opts>::callOrDelayTraceHook(JSObject* obj,
   MOZ_ASSERT(clasp->hasTrace());
 
 #ifdef JS_GC_CONCURRENT_MARKING
-  if constexpr (bool(opts & MarkingOptions::ConcurrentMarking)) {
+  if constexpr (hasOption(MarkingOptions::ConcurrentMarking)) {
     // TODO: Add a class flag to allow us to call the trace hook concurrently
     // for classes that support it.
     GCMarker* marker = gcMarker();
