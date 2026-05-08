@@ -185,7 +185,7 @@ impl ContextOps for ClientContext {
 
         // Don't let errors bubble from here.  Later calls against this context
         // will return errors the caller expects to handle.
-        let _ = send_recv!(rpc, ClientConnect(std::process::id()) => ClientConnected);
+        let _ = send_recv!(rpc, ClientConnect => ClientConnected);
 
         let backend_id = send_recv!(rpc, ContextGetBackendId => ContextBackendId())
             .unwrap_or_else(|_| "(remote error)".to_string());

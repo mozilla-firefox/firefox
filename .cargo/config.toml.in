@@ -69,9 +69,9 @@ replace-with = "vendored-sources"
 git = "https://github.com/martinthomson/ohttp"
 replace-with = "vendored-sources"
 
-[source."git+https://github.com/mozilla/audioipc?rev=57d82a9e0a389e4ad8a029ec6ba6a7920c67d631"]
+[source."git+https://github.com/mozilla/audioipc?rev=57a79753da9de4cf4b1c54e0c6775d3d2aba26f6"]
 git = "https://github.com/mozilla/audioipc"
-rev = "57d82a9e0a389e4ad8a029ec6ba6a7920c67d631"
+rev = "57a79753da9de4cf4b1c54e0c6775d3d2aba26f6"
 replace-with = "vendored-sources"
 
 [source."git+https://github.com/mozilla/cubeb-coreaudio-rs?rev=0bb8a45a040e85d313eb18deb36570e87df3a6af"]

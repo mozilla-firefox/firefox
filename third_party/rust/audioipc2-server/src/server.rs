@@ -430,9 +430,6 @@ impl rpccore::Server for CubebServer {
     type ClientMessage = ClientMessage;
 
     fn process(&mut self, req: Self::ServerMessage) -> Self::ClientMessage {
-        if let ServerMessage::ClientConnect(pid) = req {
-            self.remote_pid = Some(pid);
-        }
         with_local_context(|context, manager| match *context {
             Err(_) => error(cubeb::Error::Error),
             Ok(ref context) => self.process_msg(context, manager, &req),
@@ -465,13 +462,14 @@ impl CubebServer {
     pub fn new(
         callback_thread: ipccore::EventLoopHandle,
         device_collection_thread: ipccore::EventLoopHandle,
+        remote_pid: u32,
         shm_area_size: usize,
     ) -> Self {
         CubebServer {
             callback_thread,
             device_collection_thread,
             streams: slab::Slab::<ServerStream>::new(),
-            remote_pid: None,
+            remote_pid: Some(remote_pid),
             device_collection_change_callbacks: None,
             devidmap: DevIdMap::new(),
             shm_area_size,
@@ -486,8 +484,7 @@ impl CubebServer {
         msg: &ServerMessage,
     ) -> ClientMessage {
         let resp: ClientMessage = match *msg {
-            ServerMessage::ClientConnect(_) => {
-                // remote_pid is set before cubeb initialization, just verify here.
+            ServerMessage::ClientConnect => {
                 assert!(self.remote_pid.is_some());
                 ClientMessage::ClientConnected
             }
@@ -680,12 +677,20 @@ impl CubebServer {
             #[cfg(target_os = "linux")]
             ServerMessage::PromoteThreadToRealTime(thread_info) => {
                 let info = RtPriorityThreadInfo::deserialize(thread_info);
-                match promote_thread_to_real_time(info, 0, 48000) {
-                    Ok(_) => {
-                        info!("Promotion of content process thread to real-time OK");
-                    }
-                    Err(_) => {
-                        warn!("Promotion of content process thread to real-time error");
+                if info.pid() as u32 != self.remote_pid.unwrap() {
+                    warn!(
+                        "PromoteThreadToRealTime: client supplied pid {} doesn't match trusted pid {}",
+                        info.pid(),
+                        self.remote_pid.unwrap()
+                    );
+                } else {
+                    match promote_thread_to_real_time(info, 0, 48000) {
+                        Ok(_) => {
+                            info!("Promotion of content process thread to real-time OK");
+                        }
+                        Err(_) => {
+                            warn!("Promotion of content process thread to real-time error");
+                        }
                     }
                 }
                 ClientMessage::ThreadPromoted

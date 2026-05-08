@@ -85,7 +85,7 @@ impl Error for AudioThreadPriorityError {
 }
 
 cfg_if! {
-    if #[cfg(target_os = "macos")] {
+    if #[cfg(any(target_os = "macos", target_os = "ios"))] {
         mod rt_mach;
         extern crate mach2;
         extern crate libc;
@@ -119,8 +119,10 @@ cfg_if! {
         use rt_android::RtPriorityHandleInternal;
     } else {
         // blanket implementations for Android, Linux Desktop without dbus and others
+        /// Fallback priority handle that performs no-op operations on unsupported platforms.
         pub struct RtPriorityHandleInternal {}
         #[derive(Clone, Copy, PartialEq)]
+        /// Fallback thread information structure for unsupported platforms.
         pub struct RtPriorityThreadInfoInternal {
             _dummy: u8
         }
@@ -132,13 +134,20 @@ cfg_if! {
         }
 
         impl RtPriorityThreadInfo {
+            /// Serialize the thread info to a byte array (fallback implementation).
             pub fn serialize(&self) -> [u8; 1] {
                 [0]
             }
+            /// Deserialize thread info from a byte array (fallback implementation).
             pub fn deserialize(_: [u8; 1]) -> Self {
                 RtPriorityThreadInfo{_dummy: 0}
             }
+            /// Returns the PID of the process containing the thread (fallback: always -1).
+            pub fn pid(&self) -> i32 {
+                -1
+            }
         }
+        /// Fallback implementation that performs no operation for unsupported platforms.
         pub fn promote_current_thread_to_real_time_internal(_: u32, audio_samplerate_hz: u32) -> Result<RtPriorityHandle, AudioThreadPriorityError> {
             if audio_samplerate_hz == 0 {
                 return Err(AudioThreadPriorityError{message: "sample rate is zero".to_string(), inner: None});
@@ -146,19 +155,23 @@ cfg_if! {
             // no-op
             Ok(RtPriorityHandle{})
         }
+        /// Fallback implementation that performs no operation for unsupported platforms.
         pub fn demote_current_thread_from_real_time_internal(_: RtPriorityHandle) -> Result<(), AudioThreadPriorityError> {
             // no-op
             Ok(())
         }
+        /// Fallback implementation that performs no operation for unsupported platforms.
         pub fn set_real_time_hard_limit(
             _: u32,
             _: u32,
         ) -> Result<(), AudioThreadPriorityError> {
             Ok(())
         }
+        /// Fallback implementation that returns dummy thread info for unsupported platforms.
         pub fn get_current_thread_info_internal() -> Result<RtPriorityThreadInfo, AudioThreadPriorityError> {
             Ok(RtPriorityThreadInfo{_dummy: 0})
         }
+        /// Fallback implementation that performs no operation for unsupported platforms.
         pub fn promote_thread_to_real_time_internal(
             _: RtPriorityThreadInfo,
             _: u32,
@@ -167,11 +180,12 @@ cfg_if! {
             if audio_samplerate_hz == 0 {
                 return Err(AudioThreadPriorityError::new("sample rate is zero"));
             }
-            return Ok(RtPriorityHandle{});
+            Ok(RtPriorityHandle{})
         }
 
+        /// Fallback implementation that performs no operation for unsupported platforms.
         pub fn demote_thread_from_real_time_internal(_: RtPriorityThreadInfo) -> Result<(), AudioThreadPriorityError> {
-            return Ok(());
+            Ok(())
         }
         #[no_mangle]
         /// Size of a RtPriorityThreadInfo or atp_thread_info struct, for use in FFI.

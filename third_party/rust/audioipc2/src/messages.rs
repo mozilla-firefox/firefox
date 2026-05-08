@@ -219,7 +219,7 @@ pub struct RegisterDeviceCollectionChanged {
 // ServerConn::process_msg doesn't have a catch-all case.
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ServerMessage {
-    ClientConnect(u32),
+    ClientConnect,
     ClientDisconnect,
 
     ContextGetBackendId,

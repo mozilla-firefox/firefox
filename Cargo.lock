@@ -343,9 +343,9 @@ dependencies = [
 
 [[package]]
 name = "audio_thread_priority"
-version = "0.34.0"
+version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7203799cd8063907524460aa8b632a46baba80c50947295aa6b92d7793c26447"
+checksum = "f8865406116350b733332de840244b6be15c7ff4d22f4278e98a73da343b935f"
 dependencies = [
  "cfg-if",
  "dbus",
@@ -358,7 +358,7 @@ dependencies = [
 [[package]]
 name = "audioipc2"
 version = "0.6.0"
-source = "git+https://github.com/mozilla/audioipc?rev=57d82a9e0a389e4ad8a029ec6ba6a7920c67d631#57d82a9e0a389e4ad8a029ec6ba6a7920c67d631"
+source = "git+https://github.com/mozilla/audioipc?rev=57a79753da9de4cf4b1c54e0c6775d3d2aba26f6#57a79753da9de4cf4b1c54e0c6775d3d2aba26f6"
 dependencies = [
  "arrayvec",
  "ashmem",
@@ -384,7 +384,7 @@ dependencies = [
 [[package]]
 name = "audioipc2-client"
 version = "0.6.0"
-source = "git+https://github.com/mozilla/audioipc?rev=57d82a9e0a389e4ad8a029ec6ba6a7920c67d631#57d82a9e0a389e4ad8a029ec6ba6a7920c67d631"
+source = "git+https://github.com/mozilla/audioipc?rev=57a79753da9de4cf4b1c54e0c6775d3d2aba26f6#57a79753da9de4cf4b1c54e0c6775d3d2aba26f6"
 dependencies = [
  "audio_thread_priority",
  "audioipc2",
@@ -395,7 +395,7 @@ dependencies = [
 [[package]]
 name = "audioipc2-server"
 version = "0.6.0"
-source = "git+https://github.com/mozilla/audioipc?rev=57d82a9e0a389e4ad8a029ec6ba6a7920c67d631#57d82a9e0a389e4ad8a029ec6ba6a7920c67d631"
+source = "git+https://github.com/mozilla/audioipc?rev=57a79753da9de4cf4b1c54e0c6775d3d2aba26f6#57a79753da9de4cf4b1c54e0c6775d3d2aba26f6"
 dependencies = [
  "audio_thread_priority",
  "audioipc2",

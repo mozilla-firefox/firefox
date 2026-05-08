@@ -160,6 +160,7 @@ pub unsafe extern "C" fn audioipc2_server_start(
 #[no_mangle]
 pub extern "C" fn audioipc2_server_new_client(
     p: *mut c_void,
+    remote_pid: u32,
     shm_area_size: usize,
 ) -> PlatformHandleType {
     let wrapper: &ServerWrapper = unsafe { &*(p as *mut _) };
@@ -182,6 +183,7 @@ pub extern "C" fn audioipc2_server_new_client(
     let server = server::CubebServer::new(
         callback_thread.clone(),
         device_collection_thread.clone(),
+        remote_pid,
         shm_area_size,
     );
     if let Err(e) = rpc_thread.bind_server_async(server, server_pipe) {

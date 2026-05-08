@@ -68,7 +68,7 @@ features = ["html_reports"]
 ashmem = "0.1.2"
 
 [target.'cfg(target_os = "linux")'.dependencies.audio_thread_priority]
-version = "0.34"
+version = "0.35"
 default-features = false
 
 [target."cfg(unix)".dependencies]
