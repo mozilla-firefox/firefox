@@ -419,7 +419,7 @@ extern mozilla::LazyLogModule sPDMLog;
 
 namespace mozilla {
 namespace CubebUtils {
-extern FileDescriptor CreateAudioIPCConnection();
+extern FileDescriptor CreateAudioIPCConnection(uint32_t aRemotePid);
 }
 
 namespace dom {
@@ -5091,7 +5091,7 @@ mozilla::ipc::IPCResult ContentParent::RecvRequestAnonymousTemporaryFile(
 
 mozilla::ipc::IPCResult ContentParent::RecvCreateAudioIPCConnection(
     CreateAudioIPCConnectionResolver&& aResolver) {
-  FileDescriptor fd = CubebUtils::CreateAudioIPCConnection();
+  FileDescriptor fd = CubebUtils::CreateAudioIPCConnection(OtherPid());
   FileDescOrError result;
   if (fd.IsValid()) {
     result = fd;
