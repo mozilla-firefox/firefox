@@ -26,6 +26,8 @@ const PREF_MEMORIES_HISTORY =
 
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
+  getAllModelsData:
+    "moz-src:///browser/components/aiwindow/ui/modules/AIWindowConstants.sys.mjs",
   AIWindowTabStatesManager:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindowTabStatesManager.sys.mjs",
   AIWindowAccountAuth:
@@ -122,6 +124,7 @@ export const AIWindow = {
     Services.obs.addObserver(this, lazy.ONLOGOUT_NOTIFICATION);
     Services.obs.addObserver(this, "tabstrip-orientation-change");
     lazy.SmartWindowTelemetry.init();
+    lazy.getAllModelsData(); // loads model data into cache for about:preferences
     this._initialized = true;
 
     // On startup/restart, if the first window initialized is an
