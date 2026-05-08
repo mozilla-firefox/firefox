@@ -118,10 +118,21 @@ jobs:
           EOF
 
       - name: Configure mach
-        timeout-minutes: 15
+        timeout-minutes: 30
         env:
-          MOZ_AUTOMATION: '1'
-        run: ./mach configure
+          PYTHONUNBUFFERED: '1'
+        run: |
+          set -o pipefail
+          ./mach --no-interactive -v configure || {
+            ec=$?
+            echo "::group::config.log tail"
+            tail -n 300 objdir-frontend/config.log 2>/dev/null || echo "(no config.log)"
+            echo "::endgroup::"
+            echo "::group::.mozconfig"
+            cat .mozconfig
+            echo "::endgroup::"
+            exit "$ec"
+          }
 
       - name: Decode signing keystore
         env:
