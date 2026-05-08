@@ -84,8 +84,6 @@
     <color name="fx_mobile_text_color_disabled">@color/photonDarkGrey90A40</color>
     <!-- Warning text on Secondary button -->
     <color name="fx_mobile_text_color_critical_button">@color/photonRed70</color>
-    <!-- Small heading, Text link -->
-    <color name="fx_mobile_text_color_accent">@color/photonViolet70</color>
     <!-- Text Inverted/On Color -->
     <color name="fx_mobile_text_color_oncolor_primary">@color/photonLightGrey05</color>
     <!-- Text Inverted/On Color -->
@@ -189,8 +187,6 @@
     <color name="fx_mobile_private_text_color_secondary">@color/photonLightGrey40</color>
     <!-- Disabled text -->
     <color name="fx_mobile_private_text_color_disabled">@color/photonLightGrey05A40</color>
-    <!-- Small heading, Text link -->
-    <color name="fx_mobile_private_text_color_accent">@color/photonViolet20</color>
     <!-- Text Inverted/On Color -->
     <color name="fx_mobile_private_text_color_oncolor_primary">@color/photonLightGrey05</color>
     <!-- Action Primary text -->

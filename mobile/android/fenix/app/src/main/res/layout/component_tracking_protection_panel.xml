@@ -278,7 +278,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="@string/preference_etp_smartblock_learn_more"
-            android:textColor="?textAccent"
+            android:textColor="?attr/colorTertiary"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@id/smartblock_description"

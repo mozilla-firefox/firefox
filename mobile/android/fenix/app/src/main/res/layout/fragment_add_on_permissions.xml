@@ -28,6 +28,6 @@
             android:paddingEnd="16dp"
             android:text="@string/mozac_feature_addons_learn_more"
             style="@style/AboutHeaderContentText"
-            android:textColor="?textAccent"/>
+            android:textColor="?attr/colorTertiary"/>
     </RelativeLayout>
 </ScrollView>

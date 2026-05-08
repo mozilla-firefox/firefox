@@ -22,7 +22,7 @@ import org.mozilla.fenix.settings.downloads.DownloadLocationManager
 class DownloadService : AbstractFetchDownloadService() {
     override val httpClient by lazy { components.core.client }
     override val store: BrowserStore by lazy { components.core.store }
-    override val style: Style by lazy { Style(R.color.fx_mobile_text_color_accent) }
+    override val style: Style by lazy { Style(R.color.fx_mobile_tertiary) }
     override val notificationsDelegate: NotificationsDelegate by lazy { components.notificationsDelegate }
     override val fileSizeFormatter: FileSizeFormatter by lazy { components.core.fileSizeFormatter }
     override val downloadEstimator: DownloadEstimator by lazy { components.core.downloadEstimator }

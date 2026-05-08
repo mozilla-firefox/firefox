@@ -34,7 +34,7 @@
         <item name="android:windowEnableSplitTouch">false</item>
         <item name="android:splitMotionEvents">false</item>
         <item name="bottomSheetDialogTheme">@style/BottomSheet</item>
-        <item name="android:textColorLink">@color/fx_mobile_text_color_accent</item>
+        <item name="android:textColorLink">@color/fx_mobile_tertiary</item>
 
         <item name="mozacInputLayoutErrorTextColor"
             tools:ignore="UnusedResources">@color/fx_mobile_error</item>
@@ -114,8 +114,6 @@
         <item name="textSecondary">@color/fx_mobile_text_color_secondary</item>
         <!-- Disabled text -->
         <item name="textDisabled">@color/fx_mobile_text_color_disabled</item>
-        <!-- Small heading, Text link -->
-        <item name="textAccent">@color/fx_mobile_text_color_accent</item>
         <!-- Text Inverted/On Color -->
         <item name="textOnColorPrimary">@color/fx_mobile_text_color_oncolor_primary</item>
         <!-- Action Primary text -->
@@ -142,7 +140,7 @@
         <item name="accentHighContrast">@color/accent_high_contrast_normal_theme</item>
         <item name="neutral">@color/neutral_normal_theme</item>
         <item name="neutralFaded">@color/neutral_faded_normal_theme</item>
-        <item name="accentUsedOnDarkBackground">@color/fx_mobile_text_color_accent</item>
+        <item name="accentUsedOnDarkBackground">@color/fx_mobile_tertiary</item>
         <item name="toolbarStartGradient">@color/fx_mobile_surface</item>
         <item name="toolbarCenterGradient">@color/fx_mobile_surface</item>
         <item name="toolbarEndGradient">@color/fx_mobile_surface</item>
@@ -151,7 +149,7 @@
         <item name="mozacPromptLoginEditTextCursorColor">@color/prompt_login_edit_text_cursor_color_normal_theme</item>
         <item name="awesomeBarIndicatorColor">@color/search_suggestion_indicator_icon_color_normal_theme</item>
         <item name="awesomeBarIndicatorBookmarkColor">@color/search_suggestion_indicator_icon_bookmark_color_normal_theme</item>
-        <item name="selectPromptHeaderTextColor">@color/fx_mobile_text_color_accent</item>
+        <item name="selectPromptHeaderTextColor">@color/fx_mobile_tertiary</item>
 
         <!-- Shared widget colors -->
         <item name="mozac_primary_text_color">@color/fx_mobile_text_color_primary</item>
@@ -212,7 +210,7 @@
     </style>
 
     <style name="PrivateDialogButtonStyle" parent="Widget.Material3.Button.TextButton.Dialog">
-        <item name="android:textColor">?textAccent</item>
+        <item name="android:textColor">?attr/colorTertiary</item>
         <item name="android:titleTextStyle">@style/Button14TextStyle</item>
     </style>
 
@@ -303,7 +301,7 @@
         <item name="materialCalendarTheme">@style/MaterialCalendar</item>
         <item name="materialSwitchStyle">@style/MaterialSwitchStyle</item>
         <item name="searchViewStyle">@style/SearchViewStyle</item>
-        <item name="android:textColorLink">@color/fx_mobile_private_text_color_accent</item>
+        <item name="android:textColorLink">@color/fx_mobile_private_tertiary</item>
         <item name="preferenceTheme">@style/PreferenceTheme</item>
         <item name="checkboxStyle">@style/App.Widget.CompoundButton.CheckBox</item>
         <item name="autoCompleteTextViewStyle">@style/AutoCompleteTextViewStyle</item>
@@ -400,8 +398,6 @@
         <item name="textSecondary">@color/fx_mobile_private_text_color_secondary</item>
         <!-- Disabled text -->
         <item name="textDisabled">@color/fx_mobile_private_text_color_disabled</item>
-        <!-- Small heading, Text link -->
-        <item name="textAccent">@color/fx_mobile_private_text_color_accent</item>
         <!-- Text Inverted/On Color -->
         <item name="textOnColorPrimary">@color/fx_mobile_private_text_color_oncolor_primary</item>
         <!-- Action Primary text -->
@@ -698,7 +694,7 @@
     <style name="ShareDialogStyle" parent="DialogStyleBase"/>
 
     <style name="AboutItemText" parent="TextAppearance.MaterialComponents.Body2">
-        <item name="android:textColor">?textAccent</item>
+        <item name="android:textColor">?attr/colorTertiary</item>
         <item name="android:textSize">@dimen/about_items_text_size</item>
         <item name="android:paddingStart">@dimen/about_list_item_text_padding</item>
         <item name="android:paddingEnd">@dimen/about_list_item_text_padding</item>

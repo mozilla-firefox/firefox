@@ -26,6 +26,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.databinding.FragmentAddOnDetailsBinding
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertIs
+import com.google.android.material.R as materialR
 import mozilla.components.feature.addons.R as addonsR
 
 @RunWith(RobolectricTestRunner::class)
@@ -156,7 +157,7 @@ class AddonDetailsBindingDelegateTest {
         )
 
         assertEquals("Sarah Jane", binding.authorText.text)
-        assertNotEquals(testContext.getColorFromAttr(R.attr.textAccent), binding.authorText.currentTextColor)
+        assertNotEquals(testContext.getColorFromAttr(materialR.attr.colorTertiary), binding.authorText.currentTextColor)
         val expectedContentDescription = binding.authorLabel.text.toString() + " Sarah Jane"
         assertEquals(expectedContentDescription, binding.authorLabel.contentDescription)
         assertEquals(IMPORTANT_FOR_ACCESSIBILITY_NO, binding.authorText.importantForAccessibility)
@@ -169,7 +170,7 @@ class AddonDetailsBindingDelegateTest {
         )
 
         assertEquals("Sarah Jane", binding.authorText.text.toString())
-        assertEquals(testContext.getColorFromAttr(R.attr.textAccent), binding.authorText.currentTextColor)
+        assertEquals(testContext.getColorFromAttr(materialR.attr.colorTertiary), binding.authorText.currentTextColor)
 
         binding.authorText.performClick()
 

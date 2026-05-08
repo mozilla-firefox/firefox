@@ -96,7 +96,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/exceptions_empty_message_learn_more_link"
-                android:textColor="?textAccent"
+                android:textColor="?attr/colorTertiary"
                 android:visibility="visible"
                 app:layout_constraintTop_toBottomOf="@id/exceptions_empty_message" />
         </LinearLayout>
@@ -149,7 +149,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/exceptions_empty_message_learn_more_link"
-                android:textColor="?textAccent"
+                android:textColor="?attr/colorTertiary"
                 android:visibility="visible"
                 app:layout_constraintTop_toBottomOf="@id/exceptions_empty_message"
                 android:paddingBottom="16dp"/>

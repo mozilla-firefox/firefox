@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:text="@string/extension_process_crash_dialog_retry_button_text"
             android:textAlignment="textEnd"
-            android:textColor="?textAccent" />
+            android:textColor="?attr/colorTertiary" />
 
         <Button
             android:id="@+id/negative"
@@ -36,6 +36,6 @@
             android:layout_height="wrap_content"
             android:text="@string/extension_process_crash_dialog_disable_extensions_button_text"
             android:textAlignment="textEnd"
-            android:textColor="?textAccent" />
+            android:textColor="?attr/colorTertiary" />
     </LinearLayout>
 </ScrollView>

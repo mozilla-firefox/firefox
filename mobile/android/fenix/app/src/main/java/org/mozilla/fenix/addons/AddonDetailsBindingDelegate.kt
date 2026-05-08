@@ -20,12 +20,12 @@ import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.ui.translateDescription
 import mozilla.components.feature.addons.ui.updatedAtDate
 import mozilla.components.support.ktx.android.content.getColorFromAttr
-import org.mozilla.fenix.R
 import org.mozilla.fenix.databinding.FragmentAddOnDetailsBinding
 import org.mozilla.fenix.ext.addUnderline
 import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Locale
+import com.google.android.material.R as materialR
 import mozilla.components.feature.addons.R as addonsR
 
 interface AddonDetailsInteractor {
@@ -75,7 +75,7 @@ class AddonDetailsBindingDelegate(
             binding.reviewCount.text = numberFormatter.format(rating.reviews)
 
             if (addon.ratingUrl.isNotBlank()) {
-                binding.reviewCount.setTextColor(binding.root.context.getColorFromAttr(R.attr.textAccent))
+                binding.reviewCount.setTextColor(binding.root.context.getColorFromAttr(materialR.attr.colorTertiary))
                 binding.reviewCount.addUnderline()
                 binding.reviewCount.setOnClickListener {
                     interactor.openWebsite(addon.ratingUrl.toUri())
@@ -140,7 +140,7 @@ class AddonDetailsBindingDelegate(
         binding.authorText.text = author.name
 
         if (author.url.isNotBlank()) {
-            binding.authorText.setTextColor(binding.root.context.getColorFromAttr(R.attr.textAccent))
+            binding.authorText.setTextColor(binding.root.context.getColorFromAttr(materialR.attr.colorTertiary))
             binding.authorText.addUnderline()
             binding.authorText.setOnClickListener {
                 interactor.openWebsite(author.url.toUri())

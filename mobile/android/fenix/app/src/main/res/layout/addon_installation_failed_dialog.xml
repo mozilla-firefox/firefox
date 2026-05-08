@@ -26,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/mozac_feature_addons_status_see_details"
-            android:textColor="?textAccent"
+            android:textColor="?attr/colorTertiary"
             android:visibility="gone"
             android:layout_marginHorizontal="24dp"
             app:layout_constraintTop_toBottomOf="@id/message" />
