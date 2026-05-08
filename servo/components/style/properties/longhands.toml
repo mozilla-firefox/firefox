@@ -2570,9 +2570,8 @@ affects = "layout"
 type = "NonNegativeLengthOrNumber"
 initial = "generics::length::LengthOrNumber::Number(From::from(8.0))"
 struct = "inherited_text"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-text-3/#tab-size-property"
-aliases = ["-moz-tab-size"]
+extra_gecko_aliases = ["-moz-tab-size"]
 affects = "layout"
 
 [text-autospace]
