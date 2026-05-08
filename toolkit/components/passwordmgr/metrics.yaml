@@ -912,6 +912,10 @@ pwmgr:
         description: >
           Number of logins migrated during this run.
         type: quantity
+      number_of_logins_quarantined:
+        description: >
+          Number of logins quarantined during this run.
+        type: quantity
       duration_ms:
         description: >
           Duration of the migration in milliseconds.
