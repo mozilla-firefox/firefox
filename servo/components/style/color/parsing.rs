@@ -406,7 +406,7 @@ impl ColorComponentType for NumberOrPercentageComponent {
 
     fn try_from_leaf(leaf: &Leaf) -> Result<Self, ()> {
         Ok(match *leaf {
-            Leaf::Percentage(unit_value) => Self::Percentage(unit_value),
+            Leaf::Percentage(p) => Self::Percentage(p.get()),
             Leaf::Number(n) => Self::Number(n.value()),
             _ => return Err(()),
         })

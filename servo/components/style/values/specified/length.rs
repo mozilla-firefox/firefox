@@ -20,8 +20,9 @@ use crate::values::generics::length::{
     GenericMargin, GenericMaxSize, GenericSize,
 };
 use crate::values::generics::NonNegative;
-use crate::values::specified::calc::{self, AllowAnchorPositioningFunctions, CalcNode};
+use crate::values::specified::calc::{AllowAnchorPositioningFunctions, CalcNode};
 use crate::values::specified::font::QueryFontMetricsFlags;
+use crate::values::specified::percentage::NoCalcPercentage;
 use crate::values::specified::NonNegativeNumber;
 use crate::values::CSSFloat;
 use crate::{Zero, ZeroNoPercent};
@@ -1788,7 +1789,7 @@ impl NonNegativeLength {
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
 pub enum LengthPercentage {
     Length(NoCalcLength),
-    Percentage(computed::Percentage),
+    Percentage(NoCalcPercentage),
     Calc(Box<CalcNumeric>),
 }
 
@@ -1811,13 +1812,9 @@ impl From<NoCalcLength> for LengthPercentage {
 impl From<Percentage> for LengthPercentage {
     #[inline]
     fn from(pc: Percentage) -> Self {
-        if let Some(clamping_mode) = pc.calc_clamping_mode() {
-            LengthPercentage::Calc(Box::new(CalcNumeric {
-                clamping_mode,
-                node: CalcNode::Leaf(calc::Leaf::Percentage(pc.get())),
-            }))
-        } else {
-            LengthPercentage::Percentage(computed::Percentage(pc.get()))
+        match pc {
+            Percentage::NoCalc(p) => LengthPercentage::Percentage(p),
+            Percentage::Calc(calc) => LengthPercentage::Calc(calc),
         }
     }
 }
@@ -1825,7 +1822,7 @@ impl From<Percentage> for LengthPercentage {
 impl From<computed::Percentage> for LengthPercentage {
     #[inline]
     fn from(pc: computed::Percentage) -> Self {
-        LengthPercentage::Percentage(pc)
+        LengthPercentage::Percentage(NoCalcPercentage::new(pc.0))
     }
 }
 
@@ -1843,13 +1840,13 @@ impl LengthPercentage {
     #[inline]
     /// Returns a `0%` value.
     pub fn zero_percent() -> LengthPercentage {
-        LengthPercentage::Percentage(computed::Percentage::zero())
+        LengthPercentage::Percentage(NoCalcPercentage::zero())
     }
 
     #[inline]
     /// Returns a `100%` value.
     pub fn hundred_percent() -> LengthPercentage {
-        LengthPercentage::Percentage(computed::Percentage::hundred())
+        LengthPercentage::Percentage(NoCalcPercentage::hundred())
     }
 
     fn parse_internal<'i, 't>(
@@ -1872,7 +1869,7 @@ impl LengthPercentage {
             Token::Percentage { unit_value, .. }
                 if num_context.is_ok(context.parsing_mode, unit_value) =>
             {
-                return Ok(LengthPercentage::Percentage(computed::Percentage(
+                return Ok(LengthPercentage::Percentage(NoCalcPercentage::new(
                     unit_value,
                 )));
             },
@@ -2005,7 +2002,7 @@ impl Zero for LengthPercentage {
     fn is_zero(&self) -> bool {
         match *self {
             LengthPercentage::Length(l) => l.is_zero(),
-            LengthPercentage::Percentage(p) => p.0 == 0.0,
+            LengthPercentage::Percentage(p) => p.get() == 0.0,
             LengthPercentage::Calc(_) => false,
         }
     }
@@ -2030,7 +2027,7 @@ pub trait EqualsPercentage {
 impl EqualsPercentage for LengthPercentage {
     fn equals_percentage(&self, v: CSSFloat) -> bool {
         match *self {
-            LengthPercentage::Percentage(p) => p.0 == v,
+            LengthPercentage::Percentage(p) => p.get() == v,
             _ => false,
         }
     }

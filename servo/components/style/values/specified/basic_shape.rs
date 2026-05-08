@@ -23,7 +23,9 @@ use crate::values::specified::image::Image;
 use crate::values::specified::length::LengthPercentageOrAuto;
 use crate::values::specified::position::Position;
 use crate::values::specified::url::SpecifiedUrl;
-use crate::values::specified::{LengthPercentage, NonNegativeLengthPercentage, SVGPathData};
+use crate::values::specified::{
+    LengthPercentage, NoCalcPercentage, NonNegativeLengthPercentage, SVGPathData,
+};
 use crate::values::CSSFloat;
 use crate::Zero;
 use cssparser::{match_ignore_ascii_case, Parser};
@@ -969,7 +971,8 @@ impl ToComputedValue for generic::AxisPosition<LengthPercentage> {
                 Self::ComputedValue::LengthPercent(lp.to_computed_value(context))
             },
             Self::Keyword(word) => {
-                let lp = LengthPercentage::Percentage(word.as_percentage());
+                let lp =
+                    LengthPercentage::Percentage(NoCalcPercentage::new(word.as_percentage().0));
                 Self::ComputedValue::LengthPercent(lp.to_computed_value(context))
             },
         }

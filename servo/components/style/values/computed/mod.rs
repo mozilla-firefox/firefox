@@ -791,7 +791,7 @@ impl ToComputedValue for specified::AngleOrPercentage {
 
     #[inline]
     fn to_computed_value(&self, context: &Context) -> AngleOrPercentage {
-        match *self {
+        match self {
             specified::AngleOrPercentage::Percentage(percentage) => {
                 AngleOrPercentage::Percentage(percentage.to_computed_value(context))
             },
@@ -931,6 +931,16 @@ impl From<GreaterThanOrEqualToOneNumber> for CSSFloat {
 pub enum NumberOrPercentage {
     Percentage(Percentage),
     Number(Number),
+}
+
+impl NumberOrPercentage {
+    /// Get the underlying value of this number or percentage.
+    pub fn value(&self) -> f32 {
+        match self {
+            NumberOrPercentage::Percentage(p) => p.0,
+            NumberOrPercentage::Number(n) => *n,
+        }
+    }
 }
 
 impl ClampToNonNegative for NumberOrPercentage {

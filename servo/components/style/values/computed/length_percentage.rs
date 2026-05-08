@@ -44,6 +44,7 @@ use crate::values::generics::{calc, ClampToNonNegative, NonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
 use crate::values::specified::length::{EqualsPercentage, FontBaseSize, LineHeightBase};
 use crate::values::specified::number::NoCalcNumber;
+use crate::values::specified::percentage::NoCalcPercentage;
 use crate::values::{specified, CSSFloat};
 use crate::{Zero, ZeroNoPercent};
 use app_units::Au;
@@ -621,7 +622,9 @@ impl ToComputedValue for specified::LengthPercentage {
             specified::LengthPercentage::Length(ref value) => {
                 LengthPercentage::new_length(value.to_computed_value(context))
             },
-            specified::LengthPercentage::Percentage(value) => LengthPercentage::new_percent(value),
+            specified::LengthPercentage::Percentage(value) => {
+                LengthPercentage::new_percent(value.to_computed_value(context))
+            },
             specified::LengthPercentage::Calc(ref calc) => (**calc).to_computed_value(context),
         }
     }
@@ -631,7 +634,9 @@ impl ToComputedValue for specified::LengthPercentage {
             Unpacked::Length(ref l) => {
                 specified::LengthPercentage::Length(ToComputedValue::from_computed_value(l))
             },
-            Unpacked::Percentage(p) => specified::LengthPercentage::Percentage(p),
+            Unpacked::Percentage(p) => {
+                specified::LengthPercentage::Percentage(NoCalcPercentage::new(p.0))
+            },
             Unpacked::Calc(c) => {
                 // We simplify before constructing the LengthPercentage if
                 // needed, so this is always fine.
@@ -1181,7 +1186,7 @@ impl specified::CalcNumeric {
         use crate::values::specified::calc::Leaf;
 
         let node = self.node.map_leaves(|leaf| match *leaf {
-            Leaf::Percentage(p) => CalcLengthPercentageLeaf::Percentage(Percentage(p)),
+            Leaf::Percentage(p) => CalcLengthPercentageLeaf::Percentage(Percentage(p.get())),
             Leaf::Length(l) => CalcLengthPercentageLeaf::Length({
                 let result =
                     l.to_computed_value_with_base_size(context, base_size, line_height_base);
@@ -1273,7 +1278,9 @@ impl specified::CalcNumeric {
                 CalcLengthPercentageLeaf::Length(ref l) => {
                     Leaf::Length(NoCalcLength::from_px(l.px()))
                 },
-                CalcLengthPercentageLeaf::Percentage(ref p) => Leaf::Percentage(p.0),
+                CalcLengthPercentageLeaf::Percentage(ref p) => {
+                    Leaf::Percentage(NoCalcPercentage::new(p.0))
+                },
                 CalcLengthPercentageLeaf::Number(n) => Leaf::Number(NoCalcNumber::new(*n)),
             }),
         }

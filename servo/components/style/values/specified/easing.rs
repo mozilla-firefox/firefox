@@ -9,6 +9,7 @@ use crate::values::computed::easing::TimingFunction as ComputedTimingFunction;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::easing::TimingFunction as GenericTimingFunction;
 use crate::values::generics::easing::{StepPosition, TimingKeyword};
+use crate::values::specified::percentage::ToPercentage;
 use crate::values::specified::{AnimationName, Integer, Number, Percentage};
 use cssparser::{match_ignore_ascii_case, Delimiter, Parser, Token};
 use selectors::parser::SelectorParseErrorKind;
@@ -135,15 +136,19 @@ impl TimingFunction {
                     Some(v) => v,
                     None => return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
                 };
+                if matches!(input_start.as_ref().or(input_end.as_ref()), Some(p) if p.resolve().is_none()) {
+                    return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                }
 
-                builder.push(output, input_start.map(|v| v.get()).into());
+                let has_input_start = input_start.is_some();
+                builder.push(
+                    output,
+                    input_start.map(|v| v.to_percentage().unwrap()).into(),
+                );
                 num_specified_stops += 1;
                 if input_end.is_some() {
-                    debug_assert!(
-                        input_start.is_some(),
-                        "Input end valid but not input start?"
-                    );
-                    builder.push(output, input_end.map(|v| v.get()).into());
+                    debug_assert!(has_input_start, "Input end valid but not input start?");
+                    builder.push(output, input_end.map(|v| v.to_percentage().unwrap()).into());
                 }
 
                 Ok(())

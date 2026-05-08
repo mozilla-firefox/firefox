@@ -715,7 +715,7 @@ impl QueryExpressionValue {
             QueryExpressionValue::NumberRatio(ref ratio) => ratio.to_css(dest),
             QueryExpressionValue::Resolution(ref r) => r.to_css(dest),
             QueryExpressionValue::Keyword(k) => k.to_css(dest),
-            QueryExpressionValue::Percentage(v) => v.to_css(dest),
+            QueryExpressionValue::Percentage(ref v) => v.to_css(dest),
             QueryExpressionValue::Angle(v) => v.to_css(dest),
             QueryExpressionValue::Time(v) => v.to_css(dest),
             QueryExpressionValue::Custom(ref v) => v.to_css(dest),

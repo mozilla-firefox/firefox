@@ -23,9 +23,10 @@ use crate::values::generics::position::{GenericAnchorFunction, GenericInset, Tre
 use crate::values::generics::position::{IsTreeScoped, Position as GenericPosition};
 use crate::values::specified;
 use crate::values::specified::align::AlignFlags;
+use crate::values::specified::percentage::NoCalcPercentage;
 use crate::values::specified::{AllowQuirks, Integer, LengthPercentage, NonNegativeNumber};
 use crate::values::{AtomIdent, DashedIdent};
-use crate::{Atom, Zero};
+use crate::Atom;
 use cssparser::{match_ignore_ascii_case, Parser};
 use num_traits::FromPrimitive;
 use selectors::parser::SelectorParseErrorKind;
@@ -288,9 +289,11 @@ impl<S> GenericPositionComponent for PositionComponent<S> {
     fn is_center(&self) -> bool {
         match *self {
             PositionComponent::Center => true,
-            PositionComponent::Length(LengthPercentage::Percentage(ref per)) => per.0 == 0.5,
+            PositionComponent::Length(LengthPercentage::Percentage(ref per)) => per.get() == 0.5,
             // 50% from any side is still the center.
-            PositionComponent::Side(_, Some(LengthPercentage::Percentage(ref per))) => per.0 == 0.5,
+            PositionComponent::Side(_, Some(LengthPercentage::Percentage(ref per))) => {
+                per.get() == 0.5
+            },
             _ => false,
         }
     }
@@ -299,7 +302,7 @@ impl<S> GenericPositionComponent for PositionComponent<S> {
 impl<S> PositionComponent<S> {
     /// `0%`
     pub fn zero() -> Self {
-        PositionComponent::Length(LengthPercentage::Percentage(Percentage::zero()))
+        PositionComponent::Length(LengthPercentage::Percentage(NoCalcPercentage::zero()))
     }
 
     /// Returns the count of this component.

@@ -2723,10 +2723,14 @@ pub mod font {
                 return Ok(());
             }
 
-            let font_stretch = match *self.font_stretch {
-                FontStretch::Keyword(kw) => kw,
+            let font_stretch = match self.font_stretch {
+                FontStretch::Keyword(kw) => *kw,
                 FontStretch::Stretch(percentage) => {
-                    match FontStretchKeyword::from_percentage(percentage.0.get()) {
+                    let computed = match percentage.compute() {
+                        Some(v) => v,
+                        None => return Ok(()),
+                    };
+                    match FontStretchKeyword::from_percentage(computed.0) {
                         Some(kw) => kw,
                         None => return Ok(()),
                     }

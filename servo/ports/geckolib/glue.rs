@@ -3726,7 +3726,18 @@ pub extern "C" fn Servo_FontFaceRule_GetFontStretch(
     rule: &LockedFontFaceRule,
     out: &mut font_face::ComputedFontStretchRange,
 ) -> bool {
-    simple_font_descriptor_getter_impl!(rule, out, font_stretch, compute)
+    read_locked_arc_worker(rule, |rule: &FontFaceRule| {
+        match rule
+            .descriptors
+            .font_stretch
+            .as_ref()
+            .and_then(|f| f.compute())
+        {
+            Some(v) => *out = v,
+            None => return false,
+        }
+        true
+    })
 }
 
 #[no_mangle]
@@ -3760,7 +3771,18 @@ pub extern "C" fn Servo_FontFaceRule_GetAscentOverride(
     rule: &LockedFontFaceRule,
     out: &mut computed::Percentage,
 ) -> bool {
-    simple_font_descriptor_getter_impl!(rule, out, ascent_override, compute)
+    read_locked_arc_worker(rule, |rule: &FontFaceRule| {
+        match rule
+            .descriptors
+            .ascent_override
+            .as_ref()
+            .and_then(|f| f.compute())
+        {
+            Some(v) => *out = v,
+            None => return false,
+        }
+        true
+    })
 }
 
 // Returns a Percentage of -1.0 if the override descriptor is present but 'normal'
@@ -3770,7 +3792,18 @@ pub extern "C" fn Servo_FontFaceRule_GetDescentOverride(
     rule: &LockedFontFaceRule,
     out: &mut computed::Percentage,
 ) -> bool {
-    simple_font_descriptor_getter_impl!(rule, out, descent_override, compute)
+    read_locked_arc_worker(rule, |rule: &FontFaceRule| {
+        match rule
+            .descriptors
+            .descent_override
+            .as_ref()
+            .and_then(|f| f.compute())
+        {
+            Some(v) => *out = v,
+            None => return false,
+        }
+        true
+    })
 }
 
 // Returns a Percentage of -1.0 if the override descriptor is present but 'normal'
@@ -3780,7 +3813,18 @@ pub extern "C" fn Servo_FontFaceRule_GetLineGapOverride(
     rule: &LockedFontFaceRule,
     out: &mut computed::Percentage,
 ) -> bool {
-    simple_font_descriptor_getter_impl!(rule, out, line_gap_override, compute)
+    read_locked_arc_worker(rule, |rule: &FontFaceRule| {
+        match rule
+            .descriptors
+            .line_gap_override
+            .as_ref()
+            .and_then(|f| f.compute())
+        {
+            Some(v) => *out = v,
+            None => return false,
+        }
+        true
+    })
 }
 
 #[no_mangle]
@@ -3788,7 +3832,18 @@ pub extern "C" fn Servo_FontFaceRule_GetSizeAdjust(
     rule: &LockedFontFaceRule,
     out: &mut computed::Percentage,
 ) -> bool {
-    simple_font_descriptor_getter_impl!(rule, out, size_adjust, compute)
+    read_locked_arc_worker(rule, |rule: &FontFaceRule| {
+        match rule
+            .descriptors
+            .size_adjust
+            .as_ref()
+            .and_then(|f| f.compute())
+        {
+            Some(v) => *out = v,
+            None => return false,
+        }
+        true
+    })
 }
 
 #[no_mangle]
@@ -6556,14 +6611,14 @@ pub extern "C" fn Servo_DeclarationBlock_SetPercentValue(
     value: f32,
 ) {
     use style::properties::PropertyDeclaration;
-    use style::values::computed::Percentage;
     use style::values::generics::length::{GenericMargin, LengthPercentageOrAuto, Size};
     use style::values::generics::NonNegative;
     use style::values::specified::length::LengthPercentage;
+    use style::values::specified::percentage::NoCalcPercentage;
     use style::values::specified::FontSize;
 
     let long = get_longhand_from_id!(property);
-    let pc = Percentage(value);
+    let pc = NoCalcPercentage::new(value);
     let lp = LengthPercentage::Percentage(pc);
     let margin = GenericMargin::LengthPercentage(lp.clone());
 
@@ -9455,7 +9510,10 @@ pub unsafe extern "C" fn Servo_ParseFontShorthandForMatching(
 
     *stretch = match font.font_stretch {
         specified::FontStretch::Keyword(ref k) => k.compute(),
-        specified::FontStretch::Stretch(ref p) => FontStretch::from_percentage(p.0.get()),
+        specified::FontStretch::Stretch(ref p) => match p.compute() {
+            Some(v) => FontStretch::from_percentage(v.0),
+            None => return false,
+        },
         specified::FontStretch::System(_) => return false,
     };
 

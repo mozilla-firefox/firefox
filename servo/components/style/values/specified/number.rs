@@ -11,7 +11,7 @@ use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::transform::IsParallelTo;
 use crate::values::generics::{GreaterThanOrEqualToOne, NonNegative};
 use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
-use crate::values::specified::Percentage;
+use crate::values::specified::{NoCalcPercentage, Percentage};
 use crate::values::{reify_number, serialize_number};
 use crate::values::{CSSFloat, CSSInteger};
 use crate::{One, Zero};
@@ -179,14 +179,16 @@ impl Number {
     }
 
     /// Returns this number as a percentage.
-    pub fn to_percentage(&self) -> Percentage {
-        match self {
-            Number::NoCalc(n) => Percentage::new(n.value()),
-            Number::Calc(_) => {
-                // TODO Bug 2035572 - Number::Calc requires Percentage::Calc
-                Percentage::zero()
+    pub fn to_percentage(&self) -> Option<Percentage> {
+        Some(match self {
+            Number::NoCalc(n) => Percentage::new(n.0),
+            Number::Calc(ref calc) => {
+                let n = calc.as_number()?.get();
+                Percentage::Calc(Box::new(
+                    calc.with_leaf_node(Leaf::Percentage(NoCalcPercentage::new(n))),
+                ))
             },
-        }
+        })
     }
 
     /// Returns the value if this is a plain (non-calc) number, or None otherwise.

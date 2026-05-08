@@ -17,7 +17,7 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::specified::calc::CalcNode;
 use crate::values::specified::number::parse_number_with_clamping_mode;
-use crate::values::{serialize_atom_identifier, AtomString};
+use crate::values::{computed, serialize_atom_identifier, AtomString};
 use crate::{Atom, Namespace, Prefix};
 use cssparser::{Parser, Token};
 use rustc_hash::FxHashMap;
@@ -83,7 +83,7 @@ pub use self::number::{
 };
 pub use self::outline::OutlineStyle;
 pub use self::page::{PageName, PageOrientation, PageSize, PageSizeOrientation, PaperSize};
-pub use self::percentage::{NonNegativePercentage, Percentage};
+pub use self::percentage::{NoCalcPercentage, NonNegativePercentage, Percentage};
 pub use self::position::{
     AnchorFunction, AnchorName, AnchorNameIdent, AspectRatio, GridAutoFlow, GridTemplateAreas,
     Inset, MasonryAutoFlow, MasonryItemOrder, MasonryPlacement, Position, PositionAnchor,
@@ -160,7 +160,7 @@ pub mod url;
 /// <angle> | <percentage>
 /// https://drafts.csswg.org/css-values/#typedef-angle-percentage
 #[allow(missing_docs)]
-#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
 pub enum AngleOrPercentage {
     Percentage(Percentage),
     Angle(Angle),
@@ -232,19 +232,31 @@ impl NumberOrPercentage {
     }
 
     /// Convert the number or the percentage to a number.
-    pub fn to_percentage(self) -> Percentage {
+    pub fn to_percentage(self) -> Option<Percentage> {
         match self {
-            Self::Percentage(p) => p,
+            Self::Percentage(p) => Some(p),
             Self::Number(n) => n.to_percentage(),
         }
     }
 
     /// Convert the number or the percentage to a number.
-    pub fn to_number(&self) -> Number {
+    pub fn to_number(&self) -> Option<Number> {
         match self {
             Self::Percentage(p) => p.to_number(),
-            Self::Number(n) => n.clone(),
+            Self::Number(n) => Some(n.clone()),
         }
+    }
+
+    /// Attempts to resolve this number or percentage to a computed value.
+    pub fn to_computed_value_without_context(&self) -> Result<computed::NumberOrPercentage, ()> {
+        Ok(match self {
+            NumberOrPercentage::Percentage(percentage) => computed::NumberOrPercentage::Percentage(
+                computed::Percentage(percentage.resolve().ok_or(())?),
+            ),
+            NumberOrPercentage::Number(number) => {
+                computed::NumberOrPercentage::Number(number.resolve().ok_or(())?)
+            },
+        })
     }
 }
 
@@ -301,7 +313,11 @@ impl Parse for Opacity {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        let number = NumberOrPercentage::parse(context, input)?.to_number();
+        // TODO(Bug 1980555) - Properly handle serialization of percentages in calcs by not eagerly
+        // converting into a number here at parse time.
+        let Some(number) = NumberOrPercentage::parse(context, input)?.to_number() else {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        };
         Ok(Opacity(number))
     }
 }

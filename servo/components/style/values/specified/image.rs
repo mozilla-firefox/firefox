@@ -649,9 +649,10 @@ impl Gradient {
         impl<S: Copy + Side> Component<S> {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
                 match (self.clone().into(), other.clone().into()) {
-                    (NumberOrPercentage::Percentage(a), NumberOrPercentage::Percentage(b)) => {
-                        a.get().partial_cmp(&b.get())
-                    },
+                    (
+                        NumberOrPercentage::Percentage(ref a),
+                        NumberOrPercentage::Percentage(ref b),
+                    ) => a.resolve().partial_cmp(&b.resolve()),
                     (NumberOrPercentage::Number(a), NumberOrPercentage::Number(b)) => {
                         a.resolve().partial_cmp(&b.resolve())
                     },
@@ -738,7 +739,11 @@ impl Gradient {
                     let (color, mut p) = i.parse_nested_block(|i| {
                         let p = match_ignore_ascii_case! { &function,
                             "color-stop" => {
-                                let p = NumberOrPercentage::parse(context, i)?.to_percentage();
+                                // TODO(Bug 2037751) - Enable calc()-expressions that can only be resolved at
+                                // computed value time (due to relative lengths, sibling-index(), etc.).
+                                let Some(p) = NumberOrPercentage::parse(context, i)?.to_percentage() else {
+                                    return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                                };
                                 i.expect_comma()?;
                                 p
                             },
@@ -795,7 +800,7 @@ impl Gradient {
                         },
                     ) => match (a_position, b_position) {
                         (&LengthPercentage::Percentage(a), &LengthPercentage::Percentage(b)) => {
-                            return a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal);
+                            return a.get().partial_cmp(&b.get()).unwrap_or(Ordering::Equal);
                         },
                         _ => {},
                     },

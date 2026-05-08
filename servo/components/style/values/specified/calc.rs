@@ -20,8 +20,8 @@ use crate::values::generics::position::{
 };
 use crate::values::specified::length::{AbsoluteLength, FontRelativeLength, NoCalcLength};
 use crate::values::specified::length::{ContainerRelativeLength, ViewportPercentageLength};
-use crate::values::specified::{self, Angle, NoCalcNumber, Resolution, Time};
-use crate::values::{reify_percentage, serialize_percentage, CSSFloat, DashedIdent};
+use crate::values::specified::{self, Angle, NoCalcNumber, NoCalcPercentage, Resolution, Time};
+use crate::values::{CSSFloat, DashedIdent};
 use cssparser::{match_ignore_ascii_case, CowRcStr, Parser, Token};
 use debug_unreachable::debug_unreachable;
 use smallvec::SmallVec;
@@ -95,7 +95,7 @@ pub enum Leaf {
     /// A component of a color.
     ColorComponent(ChannelKeyword),
     /// `<percentage>`
-    Percentage(CSSFloat),
+    Percentage(NoCalcPercentage),
     /// `<number>`
     Number(NoCalcNumber),
 }
@@ -118,7 +118,7 @@ impl ToCss for Leaf {
             Self::Length(ref l) => l.to_css(dest),
             Self::Number(n) => n.to_css(dest),
             Self::Resolution(ref r) => r.to_css(dest),
-            Self::Percentage(p) => serialize_percentage(p, dest),
+            Self::Percentage(p) => p.to_css(dest),
             Self::Angle(ref a) => a.to_css(dest),
             Self::Time(ref t) => t.to_css(dest),
             Self::ColorComponent(ref s) => s.to_css(dest),
@@ -132,7 +132,7 @@ impl ToTyped for Leaf {
         match *self {
             Self::Length(ref l) => l.to_typed(dest),
             Self::Number(n) => n.to_typed(dest),
-            Self::Percentage(p) => reify_percentage(p, /* was_calc = */ false, dest),
+            Self::Percentage(p) => p.to_typed(dest),
             _ => Err(()),
         }
     }
@@ -177,10 +177,26 @@ impl CalcNumeric {
         }
     }
 
+    /// Returns a new CalcNumeric with the same clamping mode but a different leaf node
+    pub fn with_leaf_node(&self, leaf: Leaf) -> Self {
+        Self {
+            clamping_mode: self.clamping_mode,
+            node: CalcNode::Leaf(leaf),
+        }
+    }
+
     /// Gets this calc expression as a number
     pub fn as_number(&self) -> Option<NoCalcNumber> {
         match self.node.resolve() {
             Ok(Leaf::Number(n)) => Some(n),
+            _ => None,
+        }
+    }
+
+    /// Gets this calc expression as a percentage
+    pub fn as_percentage(&self) -> Option<NoCalcPercentage> {
+        match self.node.resolve() {
+            Ok(Leaf::Percentage(p)) => Some(p),
             _ => None,
         }
     }
@@ -257,7 +273,7 @@ impl generic::CalcNodeLeaf for Leaf {
     fn unitless_value(&self) -> Option<f32> {
         Some(match *self {
             Self::Length(ref l) => l.unitless_value(),
-            Self::Percentage(n) => n,
+            Self::Percentage(ref p) => p.get(),
             Self::Number(ref n) => n.value(),
             Self::Resolution(ref r) => r.dppx(),
             Self::Angle(ref a) => a.degrees(),
@@ -291,7 +307,7 @@ impl generic::CalcNodeLeaf for Leaf {
         }
 
         match (self, other) {
-            (&Percentage(ref one), &Percentage(ref other)) => one.partial_cmp(other),
+            (&Percentage(ref one), &Percentage(ref other)) => one.get().partial_cmp(&other.get()),
             (&Length(ref one), &Length(ref other)) => one.partial_cmp(other),
             (&Angle(ref one), &Angle(ref other)) => one.degrees().partial_cmp(&other.degrees()),
             (&Time(ref one), &Time(ref other)) => one.seconds().partial_cmp(&other.seconds()),
@@ -407,7 +423,7 @@ impl generic::CalcNodeLeaf for Leaf {
                 *one = NoCalcNumber::new(one.value() + other.value());
             },
             (&mut Percentage(ref mut one), &Percentage(ref other)) => {
-                *one += *other;
+                *one = NoCalcPercentage::new(one.get() + other.get());
             },
             (&mut Angle(ref mut one), &Angle(ref other)) => {
                 *one = specified::Angle::from_calc(one.degrees() + other.degrees());
@@ -485,7 +501,10 @@ impl generic::CalcNodeLeaf for Leaf {
                 ))));
             },
             (&Percentage(one), &Percentage(other)) => {
-                return Ok(Leaf::Percentage(op(one, other)));
+                return Ok(Leaf::Percentage(NoCalcPercentage::new(op(
+                    one.get(),
+                    other.get(),
+                ))));
             },
             (&Angle(ref one), &Angle(ref other)) => {
                 return Ok(Leaf::Angle(specified::Angle::from_calc(op(
@@ -529,7 +548,7 @@ impl generic::CalcNodeLeaf for Leaf {
             Leaf::Angle(one) => *one = specified::Angle::from_calc(op(one.degrees())),
             Leaf::Time(one) => *one = specified::Time::from_seconds(op(one.seconds())),
             Leaf::Resolution(one) => *one = specified::Resolution::from_dppx(op(one.dppx())),
-            Leaf::Percentage(one) => *one = op(*one),
+            Leaf::Percentage(one) => *one = NoCalcPercentage::new(op(one.get())),
             Leaf::Number(one) => *one = NoCalcNumber::new(op(one.value())),
             Leaf::ColorComponent(..) => return Err(()),
         })
@@ -571,7 +590,9 @@ fn parse_anchor_function_fallback<'i, 't>(
                 NoCalcLength::parse_dimension_with_context(context, value, unit)
                     .map_err(|_| i.new_custom_error(StyleParseErrorKind::UnspecifiedError))?,
             ),
-            &Token::Percentage { unit_value, .. } => Leaf::Percentage(unit_value),
+            &Token::Percentage { unit_value, .. } => {
+                Leaf::Percentage(NoCalcPercentage::new(unit_value))
+            },
             _ => return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
         }))
     }) {
@@ -688,9 +709,9 @@ impl CalcNode {
                 }
                 return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
             },
-            &Token::Percentage { unit_value, .. } if allowed.includes(CalcUnits::PERCENTAGE) => {
-                Ok(CalcNode::Leaf(Leaf::Percentage(unit_value)))
-            },
+            &Token::Percentage { unit_value, .. } if allowed.includes(CalcUnits::PERCENTAGE) => Ok(
+                CalcNode::Leaf(Leaf::Percentage(NoCalcPercentage::new(unit_value))),
+            ),
             &Token::ParenthesisBlock => {
                 input.parse_nested_block(|input| CalcNode::parse_argument(context, input, allowed))
             },
@@ -919,7 +940,7 @@ impl CalcNode {
 
                         if let Ok(a) = a.to_percentage() {
                             let b = b.to_percentage()?;
-                            return Ok(a.atan2(b));
+                            return Ok(a.get().atan2(b.get()));
                         }
 
                         if let Ok(a) = a.to_time(None) {
@@ -1275,12 +1296,30 @@ impl CalcNode {
         }
     }
 
-    /// Tries to simplify this expression into a `<percentage>` value.
-    fn to_percentage(&self) -> Result<CSSFloat, ()> {
-        if let Leaf::Percentage(percentage) = self.resolve()? {
-            Ok(percentage)
+    /// Tries to simplify this expression into a `NoCalcAngle` value.
+    fn to_percentage(&self) -> Result<NoCalcPercentage, ()> {
+        let value = if let Leaf::Percentage(percentage) = self.resolve()? {
+            percentage.get()
         } else {
+            return Err(());
+        };
+
+        Ok(NoCalcPercentage::new(value))
+    }
+
+    /// Tries to convert this expression into a `CalcNumeric`, keeping the
+    /// AST for later evaluation at computed-value time.
+    fn into_percentage(mut self, clamping_mode: AllowedNumericType) -> Result<CalcNumeric, ()> {
+        self.simplify_and_sort();
+
+        let unit: CalcUnits = self.unit()?;
+        if !CalcUnits::PERCENTAGE.intersects(unit) {
             Err(())
+        } else {
+            Ok(CalcNumeric {
+                clamping_mode,
+                node: self,
+            })
         }
     }
 
@@ -1335,16 +1374,16 @@ impl CalcNode {
     pub fn parse_percentage<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
+        clamping_mode: AllowedNumericType,
         function: MathFunction,
-    ) -> Result<CSSFloat, ParseError<'i>> {
+    ) -> Result<CalcNumeric, ParseError<'i>> {
         Self::parse(
             context,
             input,
             function,
             AllowParse::new(CalcUnits::PERCENTAGE),
         )?
-        .to_percentage()
-        .map(crate::values::normalize)
+        .into_percentage(clamping_mode)
         .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     }
 
