@@ -354,6 +354,14 @@ class MarkingTracerT
 
   bool processMarkStackTop(JS::SliceBudget& budget);
 
+  template <typename T>
+  void maybeMarkImplicitEdges(T* markedThing);
+  template <typename T>
+  void markImplicitEdges(T* markedThing);
+
+  void markEphemeronEdges(gc::EphemeronEdgeVector& edges,
+                          gc::MarkColor srcColor);
+
  private:
   gc::MarkColor markColor() const { return gcMarker()->markColor(); }
   Zone* tracingZone() const { return gcMarker()->tracingZone; }
@@ -474,6 +482,11 @@ class GCMarker {
     return &tracer_.as<gc::MarkingTracer>();
   }
 
+  gc::WeakMarkingTracer* getWeakMarkingTracer() {
+    MOZ_ASSERT(isWeakMarking());
+    return &tracer_.as<gc::WeakMarkingTracer>();
+  }
+
   template <typename F>
   decltype(auto) matchTracer(F&& f) {
     return tracer_.match(std::forward<F>(f));
@@ -572,9 +585,6 @@ class GCMarker {
 
   // Internal public methods, for ease of use by the rest of the GC:
 
-  template <typename T>
-  void markImplicitEdges(T* markedThing);
-
 #ifdef JS_GC_CONCURRENT_MARKING
 
   using MainThreadBuffer = js::Vector<JSObject*, 0, SystemAllocPolicy>;
@@ -624,13 +634,6 @@ class GCMarker {
 
   inline void pushValueRange(JSObject* obj, SlotsOrElementsKind kind,
                              size_t start, size_t end);
-
-  // Mark through edges whose target color depends on the colors of two source
-  // entities (eg a WeakMap and one of its keys), and push the target onto the
-  // mark stack.
-  void markEphemeronEdges(gc::EphemeronEdgeVector& edges,
-                          gc::MarkColor srcColor);
-  friend class JS::Zone;
 
 #ifdef DEBUG
   void checkZone(gc::Cell* cell);

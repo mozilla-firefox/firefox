@@ -743,13 +743,11 @@ void js::gc::TraceRangeInternal(JSTracer* trc, size_t len, T* vec,
 
 /*** GC Marking Interface ***************************************************/
 
-namespace js {
-
-void GCMarker::markEphemeronEdges(EphemeronEdgeVector& edges,
-                                  gc::MarkColor srcColor) {
+template <uint32_t opts>
+void MarkingTracerT<opts>::markEphemeronEdges(EphemeronEdgeVector& edges,
+                                              gc::MarkColor srcColor) {
   // This is only called as part of GC weak marking.
-  MOZ_ASSERT(isWeakMarking());
-  auto* trc = &tracer_.as<WeakMarkingTracer>();
+  static_assert(bool(opts & MarkingOptions::MarkImplicitEdges));
 
   DebugOnly<size_t> initialLength = edges.length();
 
@@ -758,7 +756,7 @@ void GCMarker::markEphemeronEdges(EphemeronEdgeVector& edges,
     MOZ_ASSERT(markColor() >= targetColor);
     if (targetColor == markColor()) {
       ApplyGCThingTyped(edge.target(), edge.target()->getTraceKind(),
-                        [trc](auto t) { trc->markAndTraverse(t); });
+                        [this](auto t) { this->markAndTraverse(t); });
     }
   }
 
@@ -785,15 +783,20 @@ struct TypeCanHaveImplicitEdges<BaseScript> : std::true_type {};
 template <>
 struct TypeCanHaveImplicitEdges<JS::Symbol> : std::true_type {};
 
+template <uint32_t opts>
 template <typename T>
-void GCMarker::markImplicitEdges(T* markedThing) {
-  if constexpr (!TypeCanHaveImplicitEdges<T>::value) {
-    return;
+void MarkingTracerT<opts>::maybeMarkImplicitEdges(T* markedThing) {
+  if constexpr (bool(opts & MarkingOptions::MarkImplicitEdges) &&
+                TypeCanHaveImplicitEdges<T>::value) {
+    markImplicitEdges(markedThing);
   }
+}
 
-  if (!isWeakMarking()) {
-    return;
-  }
+template <uint32_t opts>
+template <typename T>
+void MarkingTracerT<opts>::markImplicitEdges(T* markedThing) {
+  static_assert(bool(opts & MarkingOptions::MarkImplicitEdges));
+  static_assert(TypeCanHaveImplicitEdges<T>::value);
 
   Zone* zone = markedThing->asTenured().zone();
   MOZ_ASSERT(zone->isGCMarking() || zone->isAtomsZone());
@@ -807,13 +810,13 @@ void GCMarker::markImplicitEdges(T* markedThing) {
 
   EphemeronEdgeVector& edges = p->value();
 
-  // markedThing might be a key in a debugger weakmap, which can end up marking
-  // values that are in a different compartment.
-  AutoClearTracingSource acts(tracer());
+  // markedThing might be a key in a debugger weakmap, which can end up
+  // marking values that are in a different compartment.
+  AutoClearTracingSource acts(this);
 
   MarkColor thingColor = markColor();
   MOZ_ASSERT(CellColor(thingColor) ==
-             gc::detail::GetEffectiveColor(this, markedThing));
+             gc::detail::GetEffectiveColor(gcMarker(), markedThing));
 
   markEphemeronEdges(edges, thingColor);
 
@@ -821,12 +824,6 @@ void GCMarker::markImplicitEdges(T* markedThing) {
     ephemeronTable.remove(p);
   }
 }
-
-template void GCMarker::markImplicitEdges(JSObject*);
-template void GCMarker::markImplicitEdges(BaseScript*);
-template void GCMarker::markImplicitEdges(JS::Symbol*);
-
-}  // namespace js
 
 template <uint32_t opts>
 MarkingTracerT<opts>::MarkingTracerT(JSRuntime* runtime, GCMarker* marker)
@@ -1728,9 +1725,7 @@ inline bool MarkingTracerT<opts>::processMarkStackTop(SliceBudget& budget) {
 
       case MarkStack::SymbolTag: {
         auto* symbol = ptr.as<JS::Symbol>();
-        if constexpr (bool(opts & MarkingOptions::MarkImplicitEdges)) {
-          marker->markImplicitEdges(symbol);
-        }
+        maybeMarkImplicitEdges(symbol);
         AutoSetTracingSource asts(this, symbol);
         symbol->traceChildren(this);
         return true;
@@ -1745,9 +1740,7 @@ inline bool MarkingTracerT<opts>::processMarkStackTop(SliceBudget& budget) {
 
       case MarkStack::ScriptTag: {
         auto* script = ptr.as<BaseScript>();
-        if constexpr (bool(opts & MarkingOptions::MarkImplicitEdges)) {
-          marker->markImplicitEdges(script);
-        }
+        maybeMarkImplicitEdges(script);
         AutoSetTracingSource asts(this, script);
         script->traceChildren(this);
         return true;
@@ -1819,9 +1812,7 @@ scan_value_range:
 scan_obj: {
   AssertShouldMarkInZone(marker, obj);
 
-  if constexpr (bool(opts & MarkingOptions::MarkImplicitEdges)) {
-    marker->markImplicitEdges(obj);
-  }
+  maybeMarkImplicitEdges(obj);
   markAndTraverseEdge(obj, obj->shape());
 
   const JSClass* clasp = obj->getClass();
@@ -2691,6 +2682,7 @@ IncrementalProgress JS::Zone::enterWeakMarkingMode(GCMarker* marker,
     return IncrementalProgress::Finished;
   }
 
+  WeakMarkingTracer* trc = marker->getWeakMarkingTracer();
   for (auto iter = gcEphemeronEdges().iter(); !iter.done(); iter.next()) {
     Cell* src = iter.get().key();
     CellColor srcColor = gc::detail::GetEffectiveColor(marker, src);
@@ -2698,7 +2690,7 @@ IncrementalProgress JS::Zone::enterWeakMarkingMode(GCMarker* marker,
     auto& edges = iter.get().value();
     size_t numEdges = edges.length();
     if (IsMarked(srcColor) && edges.length() > 0) {
-      marker->markEphemeronEdges(edges, AsMarkColor(srcColor));
+      trc->markEphemeronEdges(edges, AsMarkColor(srcColor));
     }
     budget.step(1 + numEdges);
     if (budget.isOverBudget()) {
@@ -2769,7 +2761,9 @@ void GCRuntime::markDelayedChildren(Arena* arena, MarkColor color) {
         // bitmap for any Symbol edges traced via the generic tracer.
         AutoSetTracingSource asts(trc, t);
         t->traceChildren(trc);
-        marker().markImplicitEdges(t);
+        if (marker().isWeakMarking()) {
+          marker().getWeakMarkingTracer()->maybeMarkImplicitEdges(t);
+        }
       });
     }
   }
