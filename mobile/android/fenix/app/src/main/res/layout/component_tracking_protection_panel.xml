@@ -28,7 +28,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/mozac_ic_back_24"
-            app:tint="?attr/textPrimary" />
+            app:tint="?attr/colorOnSurface" />
 
         <TextView
             android:id="@+id/details"
@@ -37,7 +37,7 @@
             android:layout_height="@dimen/tracking_protection_item_height"
             android:paddingStart="0dp"
             android:paddingEnd="0dp"
-            android:textColor="?attr/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             app:layout_constraintStart_toEndOf="@+id/navigate_back"
             app:layout_constraintTop_toTopOf="parent"
             android:text="@string/enhanced_tracking_protection_details" />
@@ -49,7 +49,7 @@
             android:layout_width="wrap_content"
             android:layout_height="@dimen/tracking_protection_item_height"
             android:text="@string/enhanced_tracking_protection_blocked"
-            android:textColor="?attr/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             android:textStyle="bold"
             android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
@@ -209,7 +209,7 @@
             android:layout_height="@dimen/tracking_protection_item_height"
             android:text="@string/etp_settings"
             app:drawableStartCompat="@drawable/mozac_ic_settings_24"
-            app:drawableTint="?attr/textPrimary"
+            app:drawableTint="?attr/colorOnSurface"
             app:layout_constraintTop_toBottomOf="@id/line_divider" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -226,7 +226,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="20dp"
-            app:tint="?attr/textPrimary"
+            app:tint="?attr/colorOnSurface"
             android:contentDescription="@string/etp_back_button_content_description"
             app:layout_constraintBottom_toBottomOf="@+id/category_description"
             app:layout_constraintStart_toStartOf="parent"
@@ -242,7 +242,7 @@
             android:layout_marginStart="52dp"
             android:layout_marginTop="11dp"
             android:layout_marginEnd="19dp"
-            android:textColor="?attr/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="@tools:sample/lorem" />
 

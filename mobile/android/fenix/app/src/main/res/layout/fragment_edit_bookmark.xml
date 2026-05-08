@@ -30,7 +30,7 @@
         android:labelFor="@id/bookmarkNameEdit"
         android:text="@string/bookmark_name_label"
         android:textAllCaps="true"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="12sp" />
 
     <org.mozilla.fenix.utils.ClearableEditText
@@ -56,7 +56,7 @@
         android:labelFor="@id/bookmarkUrlEdit"
         android:text="@string/bookmark_url_label"
         android:textAllCaps="true"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="12sp" />
 
     <com.google.android.material.textfield.TextInputLayout
@@ -89,7 +89,7 @@
         android:labelFor="@id/bookmarkParentFolderSelector"
         android:text="@string/bookmark_folder_label"
         android:textAllCaps="true"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="12sp" />
 
     <TextView
@@ -103,7 +103,7 @@
         android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="16sp"
         app:drawableStartCompat="@drawable/mozac_ic_folder_24"
-        app:drawableTint="?attr/textPrimary"
+        app:drawableTint="?attr/colorOnSurface"
         tools:text="Mobile Bookmarks" />
 
 </LinearLayout>

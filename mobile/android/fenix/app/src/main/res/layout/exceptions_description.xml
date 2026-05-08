@@ -9,5 +9,5 @@
     android:layout_height="wrap_content"
     android:layout_margin="12dp"
     tools:text="@string/enhanced_tracking_protection_exceptions"
-    android:textColor="?attr/textPrimary"
+    android:textColor="?attr/colorOnSurface"
     android:textSize="16sp" />

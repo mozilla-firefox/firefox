@@ -16,5 +16,5 @@
     android:paddingEnd="?attr/dialogPreferredPadding"
     android:text="@string/tab_tray_add_new_collection"
     android:textAppearance="?android:attr/textAppearanceMedium"
-    android:textColor="?attr/textPrimary"
+    android:textColor="?attr/colorOnSurface"
     app:drawableStartCompat="?android:attr/listChoiceIndicatorSingle" />

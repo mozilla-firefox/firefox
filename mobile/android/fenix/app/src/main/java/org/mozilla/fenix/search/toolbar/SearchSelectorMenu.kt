@@ -17,6 +17,7 @@ import mozilla.components.concept.menu.candidate.TextMenuCandidate
 import mozilla.components.support.ktx.android.content.getColorFromAttr
 import mozilla.components.support.ktx.android.util.dpToPx
 import org.mozilla.fenix.R
+import com.google.android.material.R as materialR
 import mozilla.components.ui.icons.R as iconsR
 
 typealias MozSearchEngine = SearchEngine
@@ -72,7 +73,7 @@ class SearchSelectorMenu(
                     context,
                     iconsR.drawable.mozac_ic_settings_24,
                 ),
-                tint = context.getColorFromAttr(R.attr.textPrimary),
+                tint = context.getColorFromAttr(materialR.attr.colorOnSurface),
             ),
         ) {
             interactor.onMenuItemTapped(Item.SearchSettings)

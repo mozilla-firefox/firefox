@@ -76,8 +76,6 @@
     <color name="fx_mobile_action_color_secondary">@color/photonLightGrey30</color>
 
     <!-- Text -->
-    <!-- Primary text -->
-    <color name="fx_mobile_text_color_primary">@color/photonDarkGrey90</color>
     <!-- Disabled text -->
     <color name="fx_mobile_text_color_disabled">@color/photonDarkGrey90A40</color>
     <!-- Warning text on Secondary button -->
@@ -179,8 +177,6 @@
     <color name="fx_mobile_private_action_color_primary_disabled">@color/photonInk20A20</color>
 
     <!-- Text -->
-    <!-- Primary text -->
-    <color name="fx_mobile_private_text_color_primary">@color/photonLightGrey05</color>
     <!-- Disabled text -->
     <color name="fx_mobile_private_text_color_disabled">@color/photonLightGrey05A40</color>
     <!-- Text Inverted/On Color -->
@@ -272,7 +268,7 @@
 
     <!-- Tab Counter colors -->
     <color name="mozac_ui_tabcounter_default_tint" tools:ignore="UnusedResources">@color/fx_mobile_icon_color_primary</color>
-    <color name="mozac_ui_tabcounter_default_text" tools:ignore="UnusedResources">@color/fx_mobile_text_color_primary</color>
+    <color name="mozac_ui_tabcounter_default_text" tools:ignore="UnusedResources">@color/fx_mobile_on_surface</color>
 
     <!-- App Spinners colors -->
     <color name="spinner_selected_item">#1415141A</color>

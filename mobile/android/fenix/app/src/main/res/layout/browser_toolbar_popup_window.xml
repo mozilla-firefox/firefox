@@ -24,7 +24,7 @@
         android:paddingEnd="12dp"
         android:text="@string/browser_toolbar_long_press_popup_copy"
         android:textAllCaps="false"
-        android:textColor="?attr/textPrimary" />
+        android:textColor="?attr/colorOnSurface" />
 
     <Button
         android:id="@+id/paste"
@@ -37,7 +37,7 @@
         android:paddingEnd="12dp"
         android:text="@string/browser_toolbar_long_press_popup_paste"
         android:textAllCaps="false"
-        android:textColor="?attr/textPrimary" />
+        android:textColor="?attr/colorOnSurface" />
 
     <Button
         android:id="@+id/paste_and_go"
@@ -49,5 +49,5 @@
         android:paddingEnd="12dp"
         android:text="@string/browser_toolbar_long_press_popup_paste_and_go"
         android:textAllCaps="false"
-        android:textColor="?attr/textPrimary" />
+        android:textColor="?attr/colorOnSurface" />
 </LinearLayout>

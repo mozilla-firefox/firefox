@@ -31,6 +31,7 @@ import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.search.SearchFragmentStore
 import org.mozilla.fenix.telemetry.ACTION_SEARCH_ENGINE_SELECTOR_CLICKED
 import org.mozilla.fenix.telemetry.SOURCE_ADDRESS_BAR
+import com.google.android.material.R as materialR
 import org.mozilla.fenix.GleanMetrics.Toolbar as GleanMetricsToolbar
 
 /**
@@ -112,7 +113,7 @@ class SearchSelectorToolbarAction(
                                 // to Bitmap. Search Engine icons are stored as Bitmaps, hence
                                 // theming/attribute mechanism won't work.
                                 if (searchEngine.type == SearchEngine.Type.APPLICATION) {
-                                    setTint(view.context.getColorFromAttr(R.attr.textPrimary))
+                                    setTint(view.context.getColorFromAttr(materialR.attr.colorOnSurface))
                                 }
                             },
                             contentDescription = view.context.getString(

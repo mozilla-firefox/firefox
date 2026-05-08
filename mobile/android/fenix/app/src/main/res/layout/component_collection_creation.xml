@@ -128,7 +128,7 @@
         android:paddingEnd="20dp"
         android:paddingBottom="12dp"
         android:text="@string/create_collection_default_name"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="16sp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent" />

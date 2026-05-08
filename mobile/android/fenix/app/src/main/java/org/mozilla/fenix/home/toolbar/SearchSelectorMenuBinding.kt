@@ -18,10 +18,10 @@ import mozilla.components.concept.menu.candidate.DrawableMenuIcon
 import mozilla.components.concept.menu.candidate.TextMenuCandidate
 import mozilla.components.lib.state.helpers.AbstractBinding
 import mozilla.components.support.ktx.android.content.getColorFromAttr
-import org.mozilla.fenix.R
 import org.mozilla.fenix.search.ext.searchEngineShortcuts
 import org.mozilla.fenix.search.toolbar.SearchSelectorInteractor
 import org.mozilla.fenix.search.toolbar.SearchSelectorMenu
+import com.google.android.material.R as materialR
 
 /**
  * A binding that updates the search engine menu items in the search selector menu.
@@ -50,7 +50,7 @@ class SearchSelectorMenuBinding(
                     start = DrawableMenuIcon(
                         drawable = it.icon.toDrawable(context.resources),
                         tint = if (it.type == SearchEngine.Type.APPLICATION) {
-                            context.getColorFromAttr(R.attr.textPrimary)
+                            context.getColorFromAttr(materialR.attr.colorOnSurface)
                         } else {
                             null
                         },

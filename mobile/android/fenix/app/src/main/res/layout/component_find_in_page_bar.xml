@@ -13,6 +13,6 @@
     android:elevation="@dimen/browser_fragment_toolbar_elevation"
     android:focusable="true"
     android:visibility="gone"
-    app:findInPageButtonsTint="?attr/textPrimary"
+    app:findInPageButtonsTint="?attr/colorOnSurface"
     app:findInPageNoMatchesTextColor="?attr/colorError"
-    app:findInPageResultCountTextColor="?attr/textPrimary" />
+    app:findInPageResultCountTextColor="?attr/colorOnSurface" />

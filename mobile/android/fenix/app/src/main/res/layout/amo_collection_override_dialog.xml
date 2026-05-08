@@ -20,7 +20,7 @@
         android:inputType="number"
         android:singleLine="true"
         android:textColorHint="?attr/colorOnSurfaceVariant"
-        android:textColor="?attr/textPrimary" />
+        android:textColor="?attr/colorOnSurface" />
 
     <EditText
         android:id="@+id/custom_amo_collection"
@@ -33,6 +33,6 @@
         android:inputType="text"
         android:singleLine="true"
         android:textColorHint="?attr/colorOnSurfaceVariant"
-        android:textColor="?attr/textPrimary" />
+        android:textColor="?attr/colorOnSurface" />
 
 </LinearLayout>

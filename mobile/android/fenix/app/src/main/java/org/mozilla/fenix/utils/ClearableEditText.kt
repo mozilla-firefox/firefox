@@ -14,8 +14,8 @@ import androidx.core.graphics.BlendModeColorFilterCompat.createBlendModeColorFil
 import androidx.core.graphics.BlendModeCompat.SRC_IN
 import mozilla.components.support.ktx.android.content.getColorFromAttr
 import mozilla.components.support.ktx.android.view.putCompoundDrawablesRelativeWithIntrinsicBounds
-import org.mozilla.fenix.R
 import androidx.appcompat.R as appcompatR
+import com.google.android.material.R as materialR
 import mozilla.components.ui.icons.R as iconsR
 
 /**
@@ -63,7 +63,8 @@ class ClearableEditText @JvmOverloads constructor(
         val textLength = text?.length ?: 0
         val drawable = if (shouldShowClearButton(textLength)) {
             AppCompatResources.getDrawable(context, iconsR.drawable.mozac_ic_cross_circle_fill_24)?.apply {
-                colorFilter = createBlendModeColorFilterCompat(context.getColorFromAttr(R.attr.textPrimary), SRC_IN)
+                colorFilter =
+                    createBlendModeColorFilterCompat(context.getColorFromAttr(materialR.attr.colorOnSurface), SRC_IN)
             }
         } else {
             null

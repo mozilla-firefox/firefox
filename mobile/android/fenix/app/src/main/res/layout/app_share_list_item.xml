@@ -34,7 +34,7 @@
         android:gravity="center|top"
         android:lines="2"
         android:textAlignment="gravity"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="10sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

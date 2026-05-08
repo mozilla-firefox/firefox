@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="24dp"
             android:layout_marginVertical="8dp"
-            android:textColor="?attr/textPrimary" />
+            android:textColor="?attr/colorOnSurface" />
 
         <org.mozilla.fenix.utils.LinkTextView
             android:id="@+id/link"

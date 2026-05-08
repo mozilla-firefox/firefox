@@ -50,7 +50,7 @@
             android:singleLine="true"
             android:textAlignment="viewStart"
             android:textSize="16sp"
-            android:textColor="?attr/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             tools:text="Example site"
             app:layout_constraintEnd_toStartOf="@id/overflow_menu"
             app:layout_constraintStart_toEndOf="@id/icon"

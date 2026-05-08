@@ -39,6 +39,7 @@ import org.mozilla.fenix.navigation.DefaultNavControllerProvider
 import org.mozilla.fenix.navigation.NavControllerProvider
 import org.mozilla.fenix.theme.ThemeManager
 import org.mozilla.fenix.utils.isLargeScreenSize
+import com.google.android.material.R as materialR
 import mozilla.components.ui.icons.R as iconsR
 
 /**
@@ -110,7 +111,7 @@ fun Fragment.showToolbarWithIconButton(
 
             val item = menu.add(Menu.NONE, Menu.NONE, Menu.NONE, "")
             item.setIcon(iconResId)
-            val colorResId = ThemeManager.resolveAttribute(R.attr.textPrimary, activity)
+            val colorResId = ThemeManager.resolveAttribute(materialR.attr.colorOnSurface, activity)
             item.iconTintList = ColorStateList.valueOf(activity.getColor(colorResId))
             item.contentDescription = contentDescription
             item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)

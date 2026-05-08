@@ -4,5 +4,5 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_checked="true" android:color="@color/mozac_feature_readerview_selected" />
-    <item android:state_checked="false" android:color="@color/fx_mobile_private_text_color_primary" />
+    <item android:state_checked="false" android:color="@color/fx_mobile_private_on_surface" />
 </selector>

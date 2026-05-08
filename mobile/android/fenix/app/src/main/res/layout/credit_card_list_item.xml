@@ -30,7 +30,7 @@
         android:ellipsize="middle"
         android:singleLine="true"
         android:textAppearance="?android:attr/textAppearanceListItem"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         app:layout_constraintBottom_toTopOf="@id/expiry_date"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/credit_card_logo"

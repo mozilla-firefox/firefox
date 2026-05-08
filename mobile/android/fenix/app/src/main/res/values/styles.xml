@@ -27,7 +27,7 @@
         <item name="android:windowTranslucentNavigation">false</item>
         <item name="android:windowBackground">@color/fx_mobile_surface</item>
         <item name="android:colorEdgeEffect">@color/accent_normal_theme</item>
-        <item name="android:colorAccent">@color/fx_mobile_text_color_primary</item>
+        <item name="android:colorAccent">@color/fx_mobile_on_surface</item>
         <item name="android:textColorPrimary">@color/state_list_text_color</item>
         <item name="android:textColorSecondary">@color/secondary_state_list_text_color</item>
         <item name="materialAlertDialogTheme">@style/BaseDialogStyle</item>
@@ -108,8 +108,6 @@
         <item name="actionPrimaryDisabled">@color/fx_mobile_action_color_primary_disabled</item>
 
         <!-- Text -->
-        <!-- Primary text -->
-        <item name="textPrimary">@color/fx_mobile_text_color_primary</item>
         <!-- Disabled text -->
         <item name="textDisabled">@color/fx_mobile_text_color_disabled</item>
         <!-- Text Inverted/On Color -->
@@ -130,7 +128,7 @@
         <!-- Inactive track color(30% transparency) -->
         <item name="android:colorForeground">@color/toggle_off_track_normal_theme</item>
         <!-- sets the toolbar back button color, radio buttons / unselected checkboxes -->
-        <item name="colorControlNormal">@color/fx_mobile_text_color_primary</item>
+        <item name="colorControlNormal">@color/fx_mobile_on_surface</item>
 
         <!-- Updated color attributes -->
         <item name="accent">@color/accent_normal_theme</item>
@@ -150,7 +148,7 @@
         <item name="selectPromptHeaderTextColor">@color/fx_mobile_tertiary</item>
 
         <!-- Shared widget colors -->
-        <item name="mozac_primary_text_color">@color/fx_mobile_text_color_primary</item>
+        <item name="mozac_primary_text_color">@color/fx_mobile_on_surface</item>
         <item name="mozac_caption_text_color">@color/fx_mobile_on_surface_variant</item>
         <item name="mozac_widget_favicon_background_color">@color/fx_mobile_layer_color_2</item>
         <item name="mozac_widget_favicon_border_color">@color/fx_mobile_outline_variant</item>
@@ -163,11 +161,11 @@
         <item name="bottomBarBackground">@drawable/home_bottom_bar_background</item>
         <item name="bottomBarBackgroundTop">@drawable/home_bottom_bar_background_top</item>
         <item name="mozac_ic_private_mode_circle_fill_background_color">@android:color/transparent</item>
-        <item name="mozac_ic_private_mode_circle_fill_icon_color">@color/fx_mobile_text_color_primary</item>
+        <item name="mozac_ic_private_mode_circle_fill_icon_color">@color/fx_mobile_on_surface</item>
         <item name="mozac_ic_shield_slash_bg_fill_critical">@color/fx_mobile_icon_color_primary</item>
         <item name="mozac_ic_shield_slash_fill_critical">@color/fx_mobile_icon_color_critical</item>
 
-        <item name="tabCounterTintColor">?attr/textPrimary</item>
+        <item name="tabCounterTintColor">?attr/colorOnSurface</item>
     </style>
 
     <!-- A theme derived from the normal activity theme, but to look and behave like a dialog -->
@@ -232,11 +230,11 @@
     </style>
 
     <style name="MaterialAlertDialog.App.Body.Text.Private" parent="MaterialAlertDialog.App.Body.Text">
-        <item name="android:textColor">@color/fx_mobile_private_text_color_primary</item>
+        <item name="android:textColor">@color/fx_mobile_private_on_surface</item>
     </style>
 
     <style name="MaterialAlertDialog.App.Title.Text.Private" parent="MaterialAlertDialog.App.Title.Text">
-        <item name="android:textColor">@color/fx_mobile_private_text_color_primary</item>
+        <item name="android:textColor">@color/fx_mobile_private_on_surface</item>
     </style>
 
     <style name="BaseDialogStyle" parent="ThemeOverlay.Material3.MaterialAlertDialog">
@@ -309,7 +307,7 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/fx_mobile_private_surface</item>
         <item name="android:colorEdgeEffect">@color/accent_private_theme</item>
-        <item name="android:colorAccent">@color/fx_mobile_private_text_color_primary</item>
+        <item name="android:colorAccent">@color/fx_mobile_private_on_surface</item>
         <item name="colorControlActivated">@color/accent_high_contrast_private_theme</item>
         <item name="android:textColorPrimary">@color/state_list_text_color</item>
         <item name="android:textColorSecondary">@color/secondary_state_list_text_color</item>
@@ -390,8 +388,6 @@
         <item name="actionPrimaryDisabled">@color/fx_mobile_private_action_color_primary_disabled</item>
 
         <!-- Text -->
-        <!-- Primary text -->
-        <item name="textPrimary">@color/fx_mobile_private_text_color_primary</item>
         <!-- Disabled text -->
         <item name="textDisabled">@color/fx_mobile_private_text_color_disabled</item>
         <!-- Text Inverted/On Color -->
@@ -410,7 +406,7 @@
         <!-- Inactive track color(30% transparency) -->
         <item name="android:colorForeground">@color/toggle_off_track_dark_theme</item>
         <!-- sets the toolbar back button color, radio buttons/ unselected checkboxes -->
-        <item name="colorControlNormal">@color/fx_mobile_private_text_color_primary</item>
+        <item name="colorControlNormal">@color/fx_mobile_private_on_surface</item>
 
         <!-- Updated color attributes -->
         <item name="accent">@color/accent_private_theme</item>
@@ -430,7 +426,7 @@
         <item name="selectPromptHeaderTextColor">@color/accent_high_contrast_private_theme</item>
 
         <!-- Shared widget colors -->
-        <item name="mozac_primary_text_color">@color/fx_mobile_private_text_color_primary</item>
+        <item name="mozac_primary_text_color">@color/fx_mobile_private_on_surface</item>
         <item name="mozac_caption_text_color">@color/fx_mobile_private_on_surface_variant</item>
         <item name="mozac_widget_favicon_background_color">@color/photonInk50</item>
         <item name="mozac_widget_favicon_border_color">@color/photonInk50</item>
@@ -446,7 +442,7 @@
         <item name="mozac_ic_shield_slash_bg_fill_critical">@color/fx_mobile_private_icon_color_primary</item>
         <item name="mozac_ic_shield_slash_fill_critical">@color/fx_mobile_private_icon_color_critical</item>
 
-        <item name="tabCounterTintColor">?attr/textPrimary</item>
+        <item name="tabCounterTintColor">?attr/colorOnSurface</item>
     </style>
 
     <style name="App.Widget.CompoundButton.CheckBox" parent="Widget.Material3.CompoundButton.CheckBox">
@@ -529,43 +525,43 @@
 
     <style name="HeaderTextStyle" parent="TextAppearance.MaterialComponents.Subtitle1">
         <item name="android:textSize">18sp</item>
-        <item name="android:textColor">?attr/textPrimary</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:textFontWeight" tools:ignore="NewApi">@integer/font_weight_medium</item>
         <item name="android:fontWeight">@integer/font_weight_medium</item>
     </style>
 
     <style name="Header20TextStyle" parent="TextAppearance.MaterialComponents.Body1" tools:ignore="UnusedResources">
-        <item name="android:textColor">?attr/textPrimary</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:textSize">20sp</item>
         <item name="android:textFontWeight" tools:ignore="NewApi">@integer/font_weight_medium</item>
         <item name="android:fontWeight">@integer/font_weight_medium</item>
     </style>
 
     <style name="Header16TextStyle" parent="TextAppearance.MaterialComponents.Body1">
-        <item name="android:textColor">?attr/textPrimary</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textFontWeight" tools:ignore="NewApi">@integer/font_weight_medium</item>
         <item name="android:fontWeight">@integer/font_weight_medium</item>
     </style>
 
     <style name="Header14TextStyle" parent="TextAppearance.MaterialComponents.Body2">
-        <item name="android:textColor">?attr/textPrimary</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textFontWeight" tools:ignore="NewApi">@integer/font_weight_medium</item>
         <item name="android:fontWeight">@integer/font_weight_medium</item>
     </style>
 
     <style name="Body14TextStyle" parent="TextAppearance.MaterialComponents.Body2">
-        <item name="android:textColor">?attr/textPrimary</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:textSize">14sp</item>
     </style>
 
     <style name="Body16TextStyle" parent="TextAppearance.MaterialComponents.Body1">
-        <item name="android:textColor">?attr/textPrimary</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
     <style name="Body12TextStyle" parent="TextAppearance.MaterialComponents.Body1" tools:ignore="UnusedResources">
-        <item name="android:textColor">?attr/textPrimary</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textAllCaps">false</item>
     </style>
@@ -580,7 +576,7 @@
     </style>
 
     <style name="ListItemTextStyle" parent="TextAppearance.MaterialComponents.Subtitle1">
-        <item name="android:textColor">?attr/textPrimary</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
     <style name="progressBarStyleHorizontal" parent="@style/Widget.AppCompat.ProgressBar.Horizontal">
@@ -701,7 +697,7 @@
     </style>
 
     <style name="AboutHeaderContentText" parent="TextAppearance.MaterialComponents.Subtitle1">
-        <item name="android:textColor">?attr/textPrimary</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:lineSpacingExtra">@dimen/about_header_text_line_spacing_extra</item>
     </style>
 

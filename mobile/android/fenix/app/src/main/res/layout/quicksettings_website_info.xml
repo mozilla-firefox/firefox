@@ -54,7 +54,7 @@
             android:layout_height="wrap_content"
             android:importantForAccessibility="no"
             app:srcCompat="@drawable/mozac_ic_lock_24"
-            app:tint="?attr/textPrimary" />
+            app:tint="?attr/colorOnSurface" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

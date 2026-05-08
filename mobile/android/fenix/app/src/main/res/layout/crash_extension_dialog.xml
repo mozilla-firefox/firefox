@@ -17,7 +17,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="24dp"
             android:layout_marginVertical="8dp"
-            android:textColor="?attr/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             tools:text="@string/extension_process_crash_dialog_message" />
 
         <Button

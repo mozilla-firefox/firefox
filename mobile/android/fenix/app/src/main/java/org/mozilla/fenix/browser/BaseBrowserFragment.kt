@@ -1011,7 +1011,7 @@ abstract class BaseBrowserFragment :
 
         val colorsProvider = DialogColorsProvider {
             DialogColors(
-                title = ThemeManager.resolveAttributeColor(attribute = R.attr.textPrimary),
+                title = ThemeManager.resolveAttributeColor(attribute = materialR.attr.colorOnSurface),
                 description = ThemeManager.resolveAttributeColor(attribute = materialR.attr.colorOnSurfaceVariant),
             )
         }

@@ -58,6 +58,7 @@ import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.settings.requirePreference
 import org.mozilla.fenix.settings.scrollToPreferenceWithHighlight
 import org.mozilla.fenix.settings.showCustomEditTextPreferenceDialog
+import com.google.android.material.R as materialR
 
 /**
  * Settings screen allowing users to manage their Firefox account and what data to sync through it.
@@ -208,7 +209,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
 
             icon?.let {
                 icon = it.mutate().apply {
-                    setTint(context.getColorFromAttr(R.attr.textPrimary))
+                    setTint(context.getColorFromAttr(materialR.attr.colorOnSurface))
                 }
             }
 

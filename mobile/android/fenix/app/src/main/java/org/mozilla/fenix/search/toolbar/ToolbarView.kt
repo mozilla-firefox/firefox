@@ -96,13 +96,13 @@ class ToolbarView(
             edit.hint = context.getString(R.string.search_hint)
 
             edit.colors = edit.colors.copy(
-                text = context.getColorFromAttr(R.attr.textPrimary),
+                text = context.getColorFromAttr(materialR.attr.colorOnSurface),
                 hint = context.getColorFromAttr(materialR.attr.colorOnSurfaceVariant),
                 suggestionBackground = ContextCompat.getColor(
                     context,
                     R.color.suggestion_highlight_color,
                 ),
-                clear = context.getColorFromAttr(R.attr.textPrimary),
+                clear = context.getColorFromAttr(materialR.attr.colorOnSurface),
             )
 
             edit.setUrlBackground(

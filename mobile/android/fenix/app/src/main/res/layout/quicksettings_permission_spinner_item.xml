@@ -10,5 +10,5 @@
     android:gravity="end|center_vertical"
     android:paddingStart="0dp"
     android:paddingEnd="12dp"
-    android:textColor="?textPrimary"
+    android:textColor="?attr/colorOnSurface"
     tools:text="Allowed" />

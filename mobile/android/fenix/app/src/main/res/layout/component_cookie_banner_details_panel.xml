@@ -19,7 +19,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/mozac_ic_back_24"
-        app:tint="?attr/textPrimary" />
+        app:tint="?attr/colorOnSurface" />
 
     <TextView
         android:id="@+id/title"
@@ -29,7 +29,7 @@
         android:focusable="false"
         android:paddingHorizontal="16dp"
         android:paddingTop="16dp"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="16sp"
         app:layout_constraintStart_toEndOf="@+id/navigate_back"
         app:layout_constraintEnd_toStartOf="@id/cookieBannerSwitch"
