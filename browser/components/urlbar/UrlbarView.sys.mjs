@@ -3621,6 +3621,14 @@ export class UrlbarView {
       "--tab-group-color-pale",
       group.style.getPropertyValue("--tab-group-color-pale")
     );
+    actionNode.style.setProperty(
+      "--tab-group-background-color",
+      group.style.getPropertyValue("--tab-group-background-color")
+    );
+    actionNode.style.setProperty(
+      "--tab-group-text-color",
+      group.style.getPropertyValue("--tab-group-text-color")
+    );
   }
 
   /**

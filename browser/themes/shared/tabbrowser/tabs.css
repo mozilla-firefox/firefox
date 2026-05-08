@@ -1741,6 +1741,10 @@ tab-group {
   display: contents;
 
   --tab-group-line-color: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("browser.nova.enabled") {
+    --tab-group-line-color: var(--tab-group-background-color);
+  }
 
   #tabbrowser-tabs[orient="horizontal"] &[movingtabgroup][collapsed] > .tabbrowser-tab[visuallyselected],
   #tabbrowser-tabs[orient="horizontal"] &[collapsed] > .tabbrowser-tab:not([visuallyselected], [multiselected]) {
@@ -1759,7 +1763,10 @@ tab-group {
   }
 
   &[collapsed] {
-    --tab-group-line-color: light-dark(var(--tab-group-color), var(--tab-group-color-pale));
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media not -moz-pref("browser.nova.enabled") {
+      --tab-group-line-color: light-dark(var(--tab-group-color), var(--tab-group-color-pale));
+    }
     /* Override xul.css, we're using the collapsed attribute for our own purposes */
     visibility: inherit;
   }
@@ -1933,8 +1940,17 @@ tab-group {
 
   tab-group[collapsed]:not([movingtabgroup]) &:hover,
   tab-group[previewpanelactive] & {
-    background-color: var(--tab-background-color-hover);
-    box-shadow: 0 0 0 var(--tab-group-label-highlight-radius) var(--tab-background-color-hover);
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media not -moz-pref("browser.nova.enabled") {
+      background-color: var(--tab-background-color-hover);
+      box-shadow: 0 0 0 var(--tab-group-label-highlight-radius) var(--tab-background-color-hover);
+    }
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      .tab-group-label {
+        background-color: var(--tab-group-background-color-hover);
+      }
+    }
   }
 }
 
@@ -1960,6 +1976,16 @@ tab-group {
   background-color: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
   margin: auto 0;
 
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("browser.nova.enabled") {
+    color: var(--tab-group-text-color);
+    background-color: var(--tab-group-background-color);
+
+    &:hover {
+      background-color: var(--tab-group-background-color-hover);
+    }
+  }
+
   /* Animations for hovering a tab(s) over a collapsed tab group. Indicates to
    * the user that they can drop the tab(s) into the tab group.
    */
@@ -1968,6 +1994,10 @@ tab-group {
   &[dragover-groupTarget] {
     box-shadow: color-mix(in oklab, light-dark(var(--tab-group-color), var(--tab-group-color-pale)) 30%, transparent) 0 0 0
       var(--tab-group-label-highlight-thickness);
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      box-shadow: color-mix(in oklab, var(--tab-group-background-color) 30%, transparent) 0 0 0 var(--tab-group-label-highlight-thickness);
+    }
   }
 
   tab-group[collapsed] > .tab-group-label-container & {
@@ -1975,6 +2005,12 @@ tab-group {
     color: light-dark(var(--tab-group-color), var(--tab-group-color-pale));
     outline: 1px solid light-dark(var(--tab-group-color), var(--tab-group-color-pale));
     outline-offset: -1px;
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      color: var(--tab-group-text-color);
+      background-color: var(--tab-group-background-color);
+      outline: none;
+    }
   }
 
   #tabbrowser-tabs[tablist-has-focus] &.tablist-keyboard-focus {
@@ -2069,6 +2105,10 @@ tab-group {
     border-radius: var(--border-radius-medium);
     background-clip: content-box;
     background-color: light-dark(var(--tabgroup-swatch-color), var(--tabgroup-swatch-color-invert));
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      background-color: var(--tabgroup-swatch-color);
+    }
 
     input:checked + & {
       border-color: var(--focus-outline-color);
@@ -2889,6 +2929,11 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
   --menuitem-icon-fill: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
   -moz-context-properties: fill, stroke;
   stroke: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("browser.nova.enabled") {
+    --menuitem-icon-fill: var(--tab-group-background-color);
+    stroke: var(--tab-group-background-color);
+  }
 
   > .toolbarbutton-icon {
     fill: var(--menuitem-icon-fill);
@@ -2897,11 +2942,20 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
   &.tab-group-icon-collapsed {
     --menuitem-icon-fill: light-dark(var(--tab-group-color-pale), var(--tab-group-color));
     stroke: light-dark(var(--tab-group-color), var(--tab-group-color-pale));
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      --menuitem-icon-fill: var(--tab-group-background-color);
+      stroke: var(--tab-group-background-color);
+    }
   }
 
   &.tab-group-icon-closed {
     --menuitem-icon-fill: transparent;
     stroke: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      stroke: var(--tab-group-background-color);
+    }
   }
 }
 

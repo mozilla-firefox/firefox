@@ -608,6 +608,10 @@ export class TabsPanel extends TabsListBase {
       "--tab-group-color-pale",
       `var(--tab-group-color-${group.color}-pale)`
     );
+    row.style.setProperty(
+      "--tab-group-background-color",
+      `var(--tab-group-${group.color})`
+    );
 
     let button = doc.createXULElement("toolbarbutton");
     button.setAttribute("context", "open-tab-group-context-menu");

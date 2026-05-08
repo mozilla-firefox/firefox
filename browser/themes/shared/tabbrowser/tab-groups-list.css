@@ -44,6 +44,13 @@ tab-groups-list:not([hidden]) {
   fill: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   stroke: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("browser.nova.enabled") {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    fill: var(--tab-group-background-color);
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    stroke: var(--tab-group-background-color);
+  }
 
   &.tab-group-icon-closed {
     fill: transparent;

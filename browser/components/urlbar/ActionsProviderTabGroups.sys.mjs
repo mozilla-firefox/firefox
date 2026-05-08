@@ -145,6 +145,9 @@ class ProviderTabGroups extends ActionsProvider {
           "--tab-group-color": `var(--tab-group-color-${color})`,
           "--tab-group-color-invert": `var(--tab-group-color-${color}-invert)`,
           "--tab-group-color-pale": `var(--tab-group-color-${color}-pale)`,
+          "--tab-group-background-color": `var(--tab-group-${color})`,
+          "--tab-group-text-color": `var(--tab-group-${color}-content)`,
+          "--tab-group-background-color-hover": `var(--tab-group-${color}-hover)`,
         },
       },
     });

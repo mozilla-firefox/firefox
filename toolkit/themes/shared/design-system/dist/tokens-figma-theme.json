@@ -1089,5 +1089,185 @@
     "light": "transparent",
     "dark": "transparent",
     "forcedColors": "currentColor"
+  },
+  "tab/group/blue": {
+    "light": "{Colors$color/blue/50}",
+    "dark": "{Colors$color/blue/10}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/blue/content": {
+    "light": "{Colors$color/white}",
+    "dark": "{Colors$color/blue/60}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/blue/hover": {
+    "light": "{Colors$color/blue/60}",
+    "dark": "{Colors$color/blue/20}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/blue/invert": {
+    "light": "{Colors$color/blue/10}",
+    "dark": "{Colors$color/blue/50}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/purple": {
+    "light": "{Colors$color/purple/50}",
+    "dark": "{Colors$color/purple/10}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/purple/content": {
+    "light": "{Colors$color/white}",
+    "dark": "{Colors$color/purple/60}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/purple/hover": {
+    "light": "{Colors$color/purple/60}",
+    "dark": "{Colors$color/purple/20}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/purple/invert": {
+    "light": "{Colors$color/purple/10}",
+    "dark": "{Colors$color/purple/50}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/cyan": {
+    "light": "{Colors$color/cyan/50}",
+    "dark": "{Colors$color/cyan/10}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/cyan/content": {
+    "light": "{Colors$color/white}",
+    "dark": "{Colors$color/cyan/60}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/cyan/hover": {
+    "light": "{Colors$color/cyan/60}",
+    "dark": "{Colors$color/cyan/20}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/cyan/invert": {
+    "light": "{Colors$color/cyan/10}",
+    "dark": "{Colors$color/cyan/50}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/orange": {
+    "light": "{Colors$color/orange/50}",
+    "dark": "{Colors$color/orange/10}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/orange/content": {
+    "light": "{Colors$color/white}",
+    "dark": "{Colors$color/orange/60}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/orange/hover": {
+    "light": "{Colors$color/orange/60}",
+    "dark": "{Colors$color/orange/20}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/orange/invert": {
+    "light": "{Colors$color/orange/10}",
+    "dark": "{Colors$color/orange/50}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/yellow": {
+    "light": "{Colors$color/yellow/50}",
+    "dark": "{Colors$color/yellow/10}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/yellow/content": {
+    "light": "{Colors$color/white}",
+    "dark": "#181923",
+    "forcedColors": "transparent"
+  },
+  "tab/group/yellow/hover": {
+    "light": "{Colors$color/yellow/60}",
+    "dark": "{Colors$color/yellow/20}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/yellow/invert": {
+    "light": "{Colors$color/yellow/10}",
+    "dark": "{Colors$color/yellow/50}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/pink": {
+    "light": "{Colors$color/pink/50}",
+    "dark": "{Colors$color/pink/10}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/pink/content": {
+    "light": "{Colors$color/white}",
+    "dark": "{Colors$color/pink/60}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/pink/hover": {
+    "light": "{Colors$color/pink/60}",
+    "dark": "{Colors$color/pink/20}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/pink/invert": {
+    "light": "{Colors$color/pink/10}",
+    "dark": "{Colors$color/pink/50}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/green": {
+    "light": "{Colors$color/green/50}",
+    "dark": "{Colors$color/green/10}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/green/content": {
+    "light": "{Colors$color/white}",
+    "dark": "{Colors$color/green/60}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/green/hover": {
+    "light": "{Colors$color/green/60}",
+    "dark": "{Colors$color/green/20}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/green/invert": {
+    "light": "{Colors$color/green/10}",
+    "dark": "{Colors$color/green/50}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/red": {
+    "light": "{Colors$color/red/50}",
+    "dark": "{Colors$color/red/10}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/red/content": {
+    "light": "{Colors$color/white}",
+    "dark": "{Colors$color/red/60}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/red/hover": {
+    "light": "{Colors$color/red/60}",
+    "dark": "{Colors$color/red/20}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/red/invert": {
+    "light": "{Colors$color/red/10}",
+    "dark": "{Colors$color/red/50}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/gray": {
+    "light": "{Colors$color/gray/50}",
+    "dark": "{Colors$color/gray/10}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/gray/content": {
+    "light": "{Colors$color/white}",
+    "dark": "{Colors$color/gray/60}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/gray/hover": {
+    "light": "{Colors$color/gray/60}",
+    "dark": "{Colors$color/gray/20}",
+    "forcedColors": "transparent"
+  },
+  "tab/group/gray/invert": {
+    "light": "{Colors$color/gray/10}",
+    "dark": "{Colors$color/gray/50}",
+    "forcedColors": "transparent"
   }
 }

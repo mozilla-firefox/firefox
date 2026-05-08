@@ -735,8 +735,8 @@
     }
 
     &.urlbarView-tabGroup {
-      color: light-dark(var(--tab-group-color-pale), var(--tab-group-label-text-dark));
-      background-color: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
+      color: var(--tab-group-text-color);
+      background-color: var(--tab-group-background-color);
     }
 
     -moz-context-properties: fill, fill-opacity;
@@ -1142,8 +1142,8 @@
   }
 
   &[data-action^="tabgroup-"] {
-    color: light-dark(var(--tab-group-color-pale), var(--tab-group-label-text-dark));
-    background-color: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
+    color: var(--tab-group-text-color);
+    background-color: var(--tab-group-background-color);
     max-width: 30%;
 
     /* Add offset to the focus / selection indicator as the outline color could
@@ -1152,7 +1152,7 @@
     margin-inline-start: 1px;
 
     &:hover {
-      opacity: 0.8;
+      background-color: var(--tab-group-background-color-hover);
     }
 
     > .urlbarView-action-btn-label {

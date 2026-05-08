@@ -88,6 +88,7 @@ class TabGroupsList extends MozLitElement {
       "--tab-group-color": `var(--tab-group-color-${group.color})`,
       "--tab-group-color-invert": `var(--tab-group-color-${group.color}-invert)`,
       "--tab-group-color-pale": `var(--tab-group-color-${group.color}-pale)`,
+      "--tab-group-color-default": `var(--tab-group-${group.color})`,
     });
     return html`
       <button

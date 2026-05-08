@@ -245,6 +245,18 @@
         "--tab-group-color-pale",
         `var(--tab-group-color-${code}-pale)`
       );
+      this.style.setProperty(
+        "--tab-group-background-color",
+        `var(--tab-group-${code})`
+      );
+      this.style.setProperty(
+        "--tab-group-text-color",
+        `var(--tab-group-${code}-content)`
+      );
+      this.style.setProperty(
+        "--tab-group-background-color-hover",
+        `var(--tab-group-${code}-hover)`
+      );
       if (diff) {
         this.dispatchEvent(
           new CustomEvent("TabGroupUpdate", { bubbles: true })

@@ -10825,6 +10825,10 @@ var TabContextMenu = {
       "--tab-group-color-pale",
       `var(--tab-group-color-${group.color}-pale)`
     );
+    item.style.setProperty(
+      "--tab-group-background-color",
+      `var(--tab-group-${group.color})`
+    );
 
     return item;
   },
