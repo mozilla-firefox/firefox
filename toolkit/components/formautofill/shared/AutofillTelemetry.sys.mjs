@@ -222,6 +222,7 @@ export class AddressTelemetry extends AutofillTelemetryBase {
   EVENT_CATEGORY = "address";
   EVENT_OBJECT_FORM_INTERACTION = "AddressForm";
   EVENT_OBJECT_FORM_INTERACTION_EXT = "AddressFormExt";
+  EVENT_OBJECT_FORM_INTERACTION_MLCOMPARE = "Mlcompare";
 
   // Fields that are recorded in `address_form` and `address_form_ext` telemetry
   SUPPORTED_FIELDS = {
@@ -291,6 +292,37 @@ export class AddressTelemetry extends AutofillTelemetryBase {
 
   recordAutofillProfileCount(count) {
     Glean.formautofillAddresses.autofillProfilesCount.set(count);
+  }
+
+  recordMLDetection(fieldDetails, hash) {
+    let reason = [];
+    let re = [];
+    let ml = [];
+    let computed = [];
+
+    fieldDetails.forEach(detail => {
+      // The data is formed as followed:
+      //    detail.originalFieldName - if reason is "autocomplete", the autocomplete value,
+      //                               otherwise the value determined by heuristics.
+      //    detail.mlFieldName = the reason detected by the model.
+      reason.push(detail.reason);
+      re.push(detail.extraInfo.reFieldName || "");
+      ml.push(detail.mlFieldName || "");
+      computed.push(detail.fieldName || "");
+    });
+
+    let extra = {
+      value: hash,
+      mlversion: "1",
+      reason: reason.toString(),
+      re: re.toString(),
+      ml: ml.toString(),
+      computed: computed.toString(),
+    };
+
+    Glean.address[
+      "detected" + this.EVENT_OBJECT_FORM_INTERACTION_MLCOMPARE
+    ]?.record(extra);
   }
 }
 
@@ -426,5 +458,10 @@ export class AutofillTelemetry {
 
   static recordFormSubmissionHeuristicCount(label) {
     Glean.formautofill.formSubmissionHeuristic[label].add(1);
+  }
+
+  static recordMLDetection(fieldDetails, hash) {
+    const telemetry = this.#getTelemetryByType(AutofillTelemetry.ADDRESS);
+    telemetry.recordMLDetection(fieldDetails, hash);
   }
 }

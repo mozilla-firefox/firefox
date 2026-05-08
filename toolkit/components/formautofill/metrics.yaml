@@ -953,6 +953,49 @@ address:
     expires: never
     extra_keys: *address_detected_ext_extra
 
+  detected_mlcompare:
+    type: event
+    description: >
+      Recorded to compare ML inference results against heuristics for address forms,
+      used to compare the accuracy of both mechanisms.
+    bugs:
+      - https://bugzil.la/2035232
+    data_reviews:
+      - https://bugzil.la/2035232
+    notification_emails:
+      - autofill@lists.mozilla.org
+    expires: 156
+    extra_keys:
+      value:
+        description: >
+          Value that contains a hash of the text data used to compute the ML
+          model, used only to remove duplicates during analysis
+        type: quantity
+      mlversion:
+        description: >
+          String that indicates the model version used
+        type: string
+      reason:
+        description: >
+          String that contains a comma-separated list of the reasons field
+          indicating how the field was computed
+        type: string
+      re:
+        description: >
+          String that contains a comma-separated list of field names detected
+          by regular expression heuristics
+        type: string
+      ml:
+        description: >
+          String that contains a comma-separated list of field names detected
+          by the ML model
+        type: string
+      computed:
+        description: >
+          String that contains a comma-separated list of the final field names
+          computed for heuristics
+        type: string
+
 creditcard:
   show_capture_doorhanger:
     type: event

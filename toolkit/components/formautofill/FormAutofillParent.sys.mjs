@@ -39,6 +39,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "resource://gre/modules/shared/FormAutofillSection.sys.mjs",
   FormAutofillCreditCardSection:
     "resource://gre/modules/shared/FormAutofillSection.sys.mjs",
+  FormAutofillML: "resource://gre/modules/shared/FormAutofillML.sys.mjs",
   FormAutofillHeuristics:
     "resource://gre/modules/shared/FormAutofillHeuristics.sys.mjs",
   FormAutofillSection:
@@ -554,6 +555,16 @@ export class FormAutofillParent extends JSWindowActorParent {
     const sections = FormAutofillParent.parseAndClassifyFields(fieldDetails);
 
     this.sectionsByRootId.set(rootElementId, sections);
+
+    // This should really happen before parseAndClassifyFields, but the
+    // asyncronous nature of the ML call means that multiple calls to add
+    // to this.sectionsByRootId will be performed in a non-fixed order,
+    // resulting in test failures. This will be something to fix up later
+    // and it doesn't matter right now until we get to a more final form of
+    // what will happen here.
+    if (FormAutofillUtils.useMLInference) {
+      await lazy.FormAutofillML.detectFields(fieldDetails);
+    }
 
     // Note that 'onFieldsDetected' is not only called when a form is detected,
     // but also called when the elements in a form are changed. When the elements

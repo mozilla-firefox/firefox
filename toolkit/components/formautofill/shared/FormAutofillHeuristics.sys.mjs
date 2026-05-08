@@ -28,6 +28,12 @@ const MULTI_N_FIELD_NAMES = {
 const CC_TYPE = 1;
 const ADDR_TYPE = 2;
 
+// Regular expression to match a word of text.
+const WORD_RE = /\s*([\p{L}\p{N}]+)/u;
+
+const ADJACENT_BEFORE_PREFIX = "bb";
+const ADJACENT_AFTER_PREFIX = "aa";
+
 /**
  * Returns the autocomplete information of fields according to heuristics.
  */
@@ -854,6 +860,96 @@ export const FormAutofillHeuristics = {
     }
   },
 
+  //
+  // Functions related to ML inference
+  //
+
+  tokenizeWords(text, words) {
+    if (!text) {
+      return;
+    }
+
+    text = text.toLowerCase().replace(/\s+/g, " ");
+
+    let match = text.match(WORD_RE);
+    if (!match) {
+      return;
+    }
+
+    while (match) {
+      let word = match[1];
+      // Ignore short words
+      if (word.length >= 3) {
+        words.push(word);
+      }
+
+      text = text.substring(match.index + match[0].length);
+      match = text.match(WORD_RE);
+    }
+  },
+
+  splitMixedCase(text) {
+    // For ids and names, we try to split mixed case words
+    // (such as addressLine) into two separate words.
+    return text.replaceAll(/([\p{Lower}\p{N}]*)(\p{Upper}*)/gu, "$1 $2");
+  },
+
+  tokenizeAttributes(element, words) {
+    //    stringText.add(element.autocompleteInfo.fieldName, prefix);
+    this.tokenizeWords(this.splitMixedCase(element.id), words);
+    this.tokenizeWords(this.splitMixedCase(element.name), words);
+    this.tokenizeWords(element.placeholder, words);
+
+    const labels = this._getElementLabelStrings(element);
+    for (const label of labels) {
+      this.tokenizeWords(label, words);
+    }
+
+    let elementType = element.type;
+    if (elementType != "text") {
+      this.tokenizeWords("**" + elementType, words);
+    }
+  },
+
+  tokenizeElements(elements) {
+    if (!lazy.FormAutofillUtils.useMLInference) {
+      return null;
+    }
+
+    let elementDataList = [];
+    for (let element of elements) {
+      let words = [];
+      this.tokenizeAttributes(element, words);
+
+      elementDataList.push({ element, words });
+    }
+
+    let resultsMap = new Map();
+
+    // The tokens are made up of the list of words in the text
+    // and the prefixed tokens for the previous and next elements.
+    for (let e = 0; e < elementDataList.length; e++) {
+      let words = elementDataList[e].words.copyWithin();
+
+      if (e > 0) {
+        words = words.concat(
+          elementDataList[e - 1].words.map(
+            text => ADJACENT_BEFORE_PREFIX + text
+          )
+        );
+      }
+      if (e < elementDataList.length - 1) {
+        words = words.concat(
+          elementDataList[e + 1].words.map(text => ADJACENT_AFTER_PREFIX + text)
+        );
+      }
+
+      resultsMap.set(elementDataList[e].element, words.join(" "));
+    }
+
+    return resultsMap;
+  },
+
   /**
    * This function should provide all field details of a form which are placed
    * in the belonging section. The details contain the autocomplete info
@@ -870,6 +966,12 @@ export const FormAutofillHeuristics = {
     const elements = Array.from(formLike.elements).filter(element =>
       lazy.FormAutofillUtils.isCreditCardOrAddressFieldType(element)
     );
+
+    // All of the tokenization is done into a map first and then
+    // retrieved later within inferFieldInfo. This is used because
+    // we may wish to ask the ML inference to be performed all in one
+    // step, if possible.
+    let mlTokensMap = this.tokenizeElements(elements);
 
     const fieldDetails = [];
     for (let idx = 0; idx < elements.length; idx++) {
@@ -889,7 +991,11 @@ export const FormAutofillHeuristics = {
         continue;
       }
 
-      const [fieldName, inferInfo] = this.inferFieldInfo(element, elements);
+      const [fieldName, inferInfo, extraInfo] = this.inferFieldInfo(
+        element,
+        elements,
+        mlTokensMap
+      );
       const attributes = this.parseAdditionalAttributes(element, fieldName);
 
       fieldDetails.push(
@@ -898,6 +1004,7 @@ export const FormAutofillHeuristics = {
           fathomConfidence: inferInfo.fathomConfidence,
           isVisible,
           isLookup: attributes.isLookup,
+          extraInfo,
         })
       );
     }
@@ -1033,25 +1140,49 @@ export const FormAutofillHeuristics = {
    *
    * @param {HTMLElement} element - The input element to infer information about.
    * @param {Array<HTMLElement>} elements - See `getFathomField` for details
+   * @param {Map} mlTokens map of elements to words to use for ml inference.
    * @returns {Array} - An array containing:
    *                    [0]the inferred field name
    *                    [1]information collected during the inference process. The possible values includes:
    *                       'autocompleteInfo' and 'fathomConfidence'.
+   *                    [2] extra information used for ML model measurement.
    */
-  inferFieldInfo(element, elements = []) {
-    const inferredInfo = {};
+  inferFieldInfo(element, elements, mlTokens) {
     const autocompleteInfo = element.getAutocompleteInfo();
-
-    // An input[autocomplete="on"] will not be early return here since it stll
-    // needs to find the field name.
-    if (
+    // An input[autocomplete="on"] will should just use hueristics to guess
+    // the field name.
+    const useAutocomplete =
       autocompleteInfo?.fieldName &&
       !["on", "off"].includes(autocompleteInfo.fieldName) &&
-      !lazy.FormAutofillUtils.isUnsupportedField(autocompleteInfo.fieldName)
-    ) {
-      inferredInfo.autocompleteInfo = autocompleteInfo;
-      return [autocompleteInfo.fieldName, inferredInfo];
+      !lazy.FormAutofillUtils.isUnsupportedField(autocompleteInfo.fieldName);
+
+    let extraInfo = {};
+    if (!useAutocomplete || lazy.FormAutofillUtils.useMLInference) {
+      let [fieldName, inferredInfo] = this.inferFieldInfoHeuristics(
+        element,
+        elements
+      );
+
+      // Extra information used for ML inference and measurement.
+      // For now, we will always guess the ML field type, but this would later
+      // be moved to just before the fathom check below. Note that we only save
+      // the tokens to be used for ML inference, since inference must happen in
+      // the parent process.
+      extraInfo = {
+        reFieldName: fieldName,
+        mlData: mlTokens?.get(element),
+      };
+
+      if (!useAutocomplete) {
+        return [fieldName, inferredInfo, extraInfo];
+      }
     }
+
+    return [autocompleteInfo.fieldName, { autocompleteInfo }, extraInfo];
+  },
+
+  inferFieldInfoHeuristics(element, elements = []) {
+    const inferredInfo = {};
 
     const fields = this._getPossibleFieldNames(element);
 
