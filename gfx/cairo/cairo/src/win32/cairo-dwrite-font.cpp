@@ -1381,10 +1381,6 @@ init_glyph_surface_fallback_a8 (cairo_dwrite_scaled_font_t  *scaled_font,
     if (cairo_surface_status (surface))
         return CAIRO_INT_STATUS_UNSUPPORTED;
 
-    // Tell pixman that it should use component alpha blending when the surface is
-    // used as a source
-    pixman_image_set_component_alpha (((cairo_image_surface_t*)surface)->pixman_image, TRUE);
-
     int stride = cairo_image_surface_get_stride (surface);
     WICRect rect = { 0, 0, width, height };
     bitmap->CopyPixels(&rect,
@@ -1502,12 +1498,15 @@ _cairo_dwrite_scaled_font_init_glyph_surface (cairo_dwrite_scaled_font_t *scaled
     switch (cairo_font_options_get_hint_style (&scaled_font->base.options)) {
         case CAIRO_HINT_STYLE_DEFAULT:
             grid_fit_mode = DWRITE_GRID_FIT_MODE_DEFAULT;
+            break;
         case CAIRO_HINT_STYLE_NONE:
             grid_fit_mode = DWRITE_GRID_FIT_MODE_DISABLED;
+            break;
         case CAIRO_HINT_STYLE_SLIGHT:
         case CAIRO_HINT_STYLE_MEDIUM:
         case CAIRO_HINT_STYLE_FULL:
             grid_fit_mode = DWRITE_GRID_FIT_MODE_ENABLED;
+            break;
     }
 
     cairo_subpixel_order_t subpixel_order;
@@ -1589,12 +1588,6 @@ _cairo_dwrite_scaled_font_init_glyph_surface (cairo_dwrite_scaled_font_t *scaled
     if (cairo_surface_status (surface))
         return CAIRO_INT_STATUS_UNSUPPORTED;
 
-    // Tell pixman that it should use component alpha blending when the surface is
-    // used as a source
-    pixman_image_set_component_alpha (((cairo_image_surface_t*)surface)->pixman_image, TRUE);
-
-    // That's probably not needed right after creation
-    cairo_surface_flush (surface);
     unsigned char *surface_data = cairo_image_surface_get_data (surface);
     int surface_stride = cairo_image_surface_get_stride (surface);
 
@@ -1803,9 +1796,6 @@ _cairo_dwrite_scaled_font_init_glyph_surface (cairo_dwrite_scaled_font_t *scaled
             break;
         }
     }
-
-    // That's probably not needed. cairoft-font.c doesn't do that
-    cairo_surface_mark_dirty (surface);
 
     if (!render_is_direct) {
         free (dwrite_data);
