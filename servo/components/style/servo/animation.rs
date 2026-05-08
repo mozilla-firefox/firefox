@@ -475,7 +475,7 @@ impl ComputedKeyframe {
                                     .position(|step| {
                                         step.declarations.contains(property_declaration)
                                     })
-                                    .unwrap_or(remaining_steps.as_slice().len());
+                                    .unwrap_or(remaining_steps.as_slice().len() - 1);
                                 let absolute_offset = step_index + 1 + relative_offset;
 
                                 keyframe_offset_cache.next_keyframe_that_defines_property =
