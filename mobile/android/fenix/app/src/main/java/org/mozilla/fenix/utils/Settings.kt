@@ -3188,7 +3188,7 @@ class Settings(
      */
     var tabGroupsEnabled by booleanPreference(
         key = appContext.getPreferenceKey(R.string.pref_key_tab_groups),
-        default = { DefaultTabManagementFeatureHelper.tabGroupsEnabled },
+        default = true,
     )
 
     /**

@@ -8,7 +8,6 @@ import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.concept.base.profiler.Profiler
 import mozilla.components.concept.engine.EngineSession
-import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.concept.storage.HistoryMetadataKey
 import mozilla.components.feature.search.SearchUseCases
 import mozilla.components.feature.session.SessionUseCases
@@ -16,6 +15,11 @@ import mozilla.components.feature.tabs.TabsUseCases
 import mozilla.components.support.ktx.kotlin.isUrl
 import mozilla.components.support.ktx.kotlin.toNormalizedUrl
 import org.mozilla.fenix.components.AppStore
+
+// Robowolf default landing page. Replaces about:home (which shows fenix's
+// native HomeFragment with top-sites/recent-tabs/etc.) so a fresh tab opens
+// directly on DuckDuckGo's search page.
+private const val DEFAULT_LANDING_URL = "https://duckduckgo.com/"
 
 /**
  * Use cases for handling loading a URL and performing a search.
@@ -125,7 +129,7 @@ class FenixBrowserUseCases(
      */
     fun addNewHomepageTab(private: Boolean = appStore.state.mode.isPrivate): String {
         return tabsUseCases.addTab.invoke(
-            url = ABOUT_HOME_URL,
+            url = DEFAULT_LANDING_URL,
             title = homepageTitle,
             private = private,
         )
@@ -147,9 +151,10 @@ class FenixBrowserUseCases(
     }
 
     /**
-     * Loads the homepage ("about:home").
+     * Loads the default landing page ([DEFAULT_LANDING_URL]) into the active tab.
+     * Used by the toolbar's "home" button and equivalents.
      */
     fun navigateToHomepage() {
-        loadUrlUseCase.invoke(url = ABOUT_HOME_URL)
+        loadUrlUseCase.invoke(url = DEFAULT_LANDING_URL)
     }
 }

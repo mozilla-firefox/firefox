@@ -67,6 +67,11 @@ class GroupTabStripIntegration(
     private var stripView: ComposeView? = null
     private var currentState by mutableStateOf<GroupTabStripState?>(null)
 
+    // In-memory only: collapsing the strip is a temporary "let me see the page"
+    // gesture, so it's fine for it to default back to expanded after the
+    // integration is recreated (config change, fragment swap, app restart).
+    private var collapsed by mutableStateOf(false)
+
     override fun start() {
         if (stripView == null) {
             stripView = createStripView().also { browserLayout.addView(it) }
@@ -109,6 +114,8 @@ class GroupTabStripIntegration(
             setContent {
                 GroupTabStrip(
                     state = currentState,
+                    isCollapsed = collapsed,
+                    onToggleCollapsed = { collapsed = !collapsed },
                     onSelectTab = { tabId -> tabsUseCases.selectTab(tabId) },
                     onCloseTab = { tabId -> tabsUseCases.removeTab(tabId) },
                     onAddTabInGroup = { groupId -> onAddTabInGroup(groupId) },

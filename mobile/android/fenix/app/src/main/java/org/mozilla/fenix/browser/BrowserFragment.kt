@@ -19,8 +19,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.state.selectedOrDefaultSearchEngine
@@ -68,6 +70,8 @@ import org.mozilla.fenix.onboarding.OnboardingTelemetryRecorder
 import org.mozilla.fenix.onboarding.continuous.ContinuousOnboardingFeatureDefault
 import org.mozilla.fenix.onboarding.continuous.ContinuousOnboardingStageProviderDefault
 import org.mozilla.fenix.settings.downloads.DownloadLocationManager
+import org.mozilla.fenix.tabgroups.storage.database.StoredTabGroup
+import org.mozilla.fenix.tabstray.data.TabGroupTheme
 import org.mozilla.fenix.settings.quicksettings.protections.cookiebanners.getCookieBannerUIMode
 import org.mozilla.fenix.shortcut.PwaOnboardingObserver
 import org.mozilla.fenix.termsofuse.store.Surface
@@ -525,8 +529,65 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
         ) + ContextMenuCandidate.createOpenInExternalAppCandidate(
             requireContext(),
             contextMenuCandidateAppLinksUseCases,
-        ) + createOpenWithGoogleLensCandidate(context)
+        ) + createOpenWithGoogleLensCandidate(context) +
+            createAddLinkToGroupTabStripCandidate(context)
     }
+
+    /**
+     * Long-press-on-link context menu entry that opens the link as a new tab and
+     * places it in the same group as the current tab. If the current tab does not
+     * belong to a group yet, a fresh group is created and both the current tab and
+     * the new tab are added to it. The new tab is opened in the background so the
+     * user keeps reading the page they long-pressed from.
+     */
+    private fun createAddLinkToGroupTabStripCandidate(context: Context) = ContextMenuCandidate(
+        id = "fenix.contextmenu.add_link_to_group_tab_strip",
+        label = context.getString(R.string.context_menu_add_link_to_group_tab_strip),
+        showFor = { sessionState, hitResult ->
+            // Only on real http(s) links, never on private tabs (private tabs cannot
+            // belong to a group — see GroupTabStripState.toGroupTabStripState).
+            !sessionState.content.private &&
+                hitResult.src.isHttpUrl() &&
+                context.settings().tabGroupsEnabled
+        },
+        action = { _, hitResult ->
+            val components = context.components
+            val tabsUseCases = components.useCases.tabsUseCases
+            val tabGroupRepository = components.core.tabGroupRepository
+            val store = components.core.store
+
+            // The action lambda is synchronous; the repository operations are
+            // suspending. Fire-and-forget on MainScope is fine here — the work is
+            // short and lifecycle-bounded by the underlying DAO.
+            MainScope().launch {
+                val currentTabId = store.state.selectedTab?.id ?: return@launch
+                val newTabId = tabsUseCases.addTab.invoke(
+                    url = hitResult.src,
+                    selectTab = false,
+                )
+
+                val assignments = tabGroupRepository.fetchTabGroupAssignments()
+                val existingGroupId = assignments[currentTabId]
+                if (existingGroupId != null) {
+                    tabGroupRepository.addTabGroupAssignment(
+                        tabId = newTabId,
+                        tabGroupId = existingGroupId,
+                    )
+                } else {
+                    val newGroup = StoredTabGroup(
+                        title = "",
+                        theme = TabGroupTheme.entries.random().name,
+                        closed = false,
+                        lastModified = System.currentTimeMillis(),
+                    )
+                    tabGroupRepository.createTabGroupWithTabs(
+                        tabGroup = newGroup,
+                        tabIds = listOf(currentTabId, newTabId),
+                    )
+                }
+            }
+        },
+    )
 
     private fun createOpenWithGoogleLensCandidate(context: Context) = ContextMenuCandidate(
         id = "fenix.contextmenu.open_with_google_lens",

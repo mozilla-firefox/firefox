@@ -182,6 +182,10 @@
     <string name="content_description_take_photo">Take photo and send to Google Lens</string>`
     <!-- Image context menu entry that sends the long-pressed image to Google Lens -->
     <string name="context_menu_open_image_with_google_lens">Search with Google Lens</string>
+    <!-- Link long-press context menu entry that opens the link as a new tab in
+         the active group tab strip (creating a new group from the current tab
+         if the current tab does not belong to one yet). -->
+    <string name="context_menu_add_link_to_group_tab_strip">Add to group tab strip</string>
     <!-- Toast shown when the user denies the camera permission requested by the Lens camera screen -->
     <string name="lens_camera_permission_denied">Permission denied</string>
 

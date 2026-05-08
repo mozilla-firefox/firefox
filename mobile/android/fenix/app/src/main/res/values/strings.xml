@@ -1522,6 +1522,10 @@
     <string name="group_tab_strip_add_tab">Add tab to group</string>
     <!-- Content description for the close button on a tab in the bottom group tab strip. %s is the tab title. -->
     <string name="group_tab_strip_close_tab">Close %s in group</string>
+    <!-- Content description for the chevron button that hides the bottom group tab strip. -->
+    <string name="group_tab_strip_collapse">Hide group tab strip</string>
+    <!-- Content description for the chevron button that re-opens the bottom group tab strip after it has been hidden. -->
+    <string name="group_tab_strip_expand">Show group tab strip</string>
     <!-- Title for the preference that toggles the bottom group tab strip. -->
     <string name="preferences_group_tab_strip">Show group tab strip</string>
     <!-- Summary for the preference that toggles the bottom group tab strip. -->

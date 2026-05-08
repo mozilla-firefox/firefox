@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -46,31 +45,69 @@ import mozilla.components.ui.icons.R as iconsR
 
 private val stripHeight = 44.dp
 private val tabItemHeight = 36.dp
-private val tabItemMinWidth = 120.dp
-private val tabItemMaxWidth = 200.dp
+
+// Favicon-only tabs. The card is wider than the favicon itself so the close
+// badge in the top-right has clear separation from the centered favicon — the
+// favicon's right edge sits ~1cm away from the badge, which keeps the close
+// tap-target from interfering with the "select tab" tap-target.
+private val tabItemWidth = 52.dp
 private val faviconSize = 18.dp
+private val closeBadgeSize = 14.dp
 private val groupAccentSize = 10.dp
-private val tabSpacing = 6.dp
+private val tabSpacing = 4.dp
 
 /**
  * Bottom strip showing the tabs that belong to the same group as the active tab.
  * Hidden by passing `state = null`.
  *
+ * When [isCollapsed] is true, only a small chevron button at the bottom-right
+ * is rendered, with the rest of the strip hidden so the user can see the page
+ * underneath. Tapping that chevron flips the state back to expanded via
+ * [onToggleCollapsed]. The collapse button only appears at all when [state] is
+ * non-null (i.e. the active tab actually belongs to a group).
+ *
  * @param state The current [GroupTabStripState] to render, or null to render an empty placeholder.
+ * @param isCollapsed When true, render only the floating "expand" chevron.
+ * @param onToggleCollapsed Invoked when either the collapse chevron (in the
+ *  expanded strip) or the floating expand chevron (in the collapsed view) is
+ *  tapped.
  * @param onSelectTab Invoked with the tab id when a tab card is clicked.
- * @param onCloseTab Invoked with the tab id when the close button on a tab is clicked.
+ * @param onCloseTab Invoked with the tab id when the close badge on a tab is tapped.
  * @param onAddTabInGroup Invoked when the trailing "+" is clicked, with the active group id.
  * @param onShowGroup Invoked when the group title chip is clicked, with the active group id.
  */
 @Composable
 fun GroupTabStrip(
     state: GroupTabStripState?,
+    isCollapsed: Boolean,
+    onToggleCollapsed: () -> Unit,
     onSelectTab: (tabId: String) -> Unit,
     onCloseTab: (tabId: String) -> Unit,
     onAddTabInGroup: (groupId: String) -> Unit,
     onShowGroup: (groupId: String) -> Unit,
 ) {
     if (state == null) return
+
+    if (isCollapsed) {
+        FirefoxTheme {
+            // Only the "expand" chevron — sits at the bottom-right above the
+            // toolbar, leaving the page area below it fully visible.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ToggleStripButton(
+                    iconRes = iconsR.drawable.mozac_ic_chevron_left_24,
+                    contentDescription = stringResource(R.string.group_tab_strip_expand),
+                    onClick = onToggleCollapsed,
+                )
+            }
+        }
+        return
+    }
 
     FirefoxTheme {
         Row(
@@ -127,7 +164,28 @@ fun GroupTabStrip(
                     contentDescription = stringResource(R.string.group_tab_strip_add_tab),
                 )
             }
+
+            ToggleStripButton(
+                iconRes = iconsR.drawable.mozac_ic_chevron_right_24,
+                contentDescription = stringResource(R.string.group_tab_strip_collapse),
+                onClick = onToggleCollapsed,
+            )
         }
+    }
+}
+
+@Composable
+private fun ToggleStripButton(
+    iconRes: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    IconButton(onClick = onClick) {
+        Icon(
+            painter = painterResource(iconRes),
+            tint = MaterialTheme.colorScheme.onSurface,
+            contentDescription = contentDescription,
+        )
     }
 }
 
@@ -170,47 +228,41 @@ private fun GroupTabCard(
     onClick: () -> Unit,
     onClose: () -> Unit,
 ) {
+    // Favicon-only card. Selection is shown via a translucent accent ring
+    // behind the favicon. A compact close badge sits in the top-right corner
+    // and is tappable independently of the rest of the card.
     val backgroundColor = if (tab.isSelected) {
         MaterialTheme.colorScheme.surfaceVariant
     } else {
-        MaterialTheme.colorScheme.surface
+        Color.Transparent
     }
 
-    Row(
+    Box(
         modifier = Modifier
-            .height(tabItemHeight)
-            .widthIn(min = tabItemMinWidth, max = tabItemMaxWidth)
+            .size(tabItemWidth, tabItemHeight)
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
         if (tab.isSelected) {
             Box(
                 modifier = Modifier
-                    .size(width = 3.dp, height = faviconSize)
-                    .background(accentColor),
+                    .size(faviconSize + 6.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.25f)),
             )
-            Spacer(modifier = Modifier.width(6.dp))
         }
-
         TabFavicon(url = tab.url, icon = tab.icon)
 
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Text(
-            text = tab.title,
-            modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.onSurface,
-            style = FirefoxTheme.typography.caption,
-            maxLines = 1,
-            softWrap = false,
-        )
-
-        IconButton(
-            onClick = onClose,
-            modifier = Modifier.size(24.dp),
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(closeBadgeSize)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable(onClick = onClose),
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(iconsR.drawable.mozac_ic_cross_20),
@@ -219,6 +271,7 @@ private fun GroupTabCard(
                     id = R.string.group_tab_strip_close_tab,
                     tab.title,
                 ),
+                modifier = Modifier.size(10.dp),
             )
         }
     }

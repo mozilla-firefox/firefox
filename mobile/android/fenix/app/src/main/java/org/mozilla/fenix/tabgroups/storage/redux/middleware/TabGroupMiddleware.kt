@@ -60,9 +60,26 @@ class TabGroupMiddleware(
                     tabGroupRepository.deleteTabGroupAssignmentsById(tabIds = action.tabIds)
                 }
             }
+            is TabListAction.AddTabAction -> {
+                // Only inherit a group when the new tab has an EXPLICIT parent
+                // (e.g. long-press → "Open in new tab" / "Open in background
+                // tab"). Plain "new tab" entry points — the toolbar's "+"
+                // counter, the tab-tray "+" menu, or homepage-awesome-bar
+                // searches — pass no parentId, so they correctly produce
+                // ungrouped tabs even when the active tab is in a group.
+                if (action.tab.content.private) return
+                val parentTabId = action.tab.parentId ?: return
+                scope.launch {
+                    val parentGroupId = tabGroupRepository.fetchTabGroupAssignments()[parentTabId]
+                        ?: return@launch
+                    tabGroupRepository.addTabGroupAssignment(
+                        tabId = action.tab.id,
+                        tabGroupId = parentGroupId,
+                    )
+                }
+            }
 
             is TabListAction.AddMultipleTabsAction,
-            is TabListAction.AddTabAction,
             is TabListAction.MoveTabsAction,
             is TabListAction.RestoreAction,
             is TabListAction.SelectTabAction,
