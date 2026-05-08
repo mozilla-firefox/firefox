@@ -290,6 +290,9 @@ MethodStatus BaselineCompiler::compileOffThread() {
 }
 
 bool BaselineCompiler::compileImpl() {
+  MOZ_RELEASE_ASSERT(handler.script()->length() <= BaselineMaxScriptLength);
+  MOZ_RELEASE_ASSERT(handler.script()->nslots() <= BaselineMaxScriptSlots);
+
   AutoCreatedBy acb(masm, "BaselineCompiler::compile");
 
   perfSpewer_.startRecording();
