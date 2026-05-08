@@ -46,7 +46,7 @@ def do_delayed_imports(logger, test_paths):
 
 
 def serve_path(test_paths):
-    return os.path.join(test_paths["/"].tests_path)
+    return test_paths["/"].tests_path
 
 
 def webtranport_h3_server_is_running(host, port, timeout):
