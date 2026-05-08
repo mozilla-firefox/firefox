@@ -11,7 +11,7 @@ AllowCompilerWarnings()
 
 DEFINES["ABSL_ALLOCATOR_NOTHROW"] = "1"
 
-FINAL_LIBRARY = "xul"
+FINAL_LIBRARY = "abseil"
 
 
 LOCAL_INCLUDES += [
