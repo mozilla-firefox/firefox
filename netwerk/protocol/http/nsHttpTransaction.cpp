@@ -1341,9 +1341,13 @@ bool nsHttpTransaction::ShouldRestartOnResumptionError(nsresult reason) {
       ("nsHttpTransaction::ShouldRestartOnResumptionError [this=%p, "
        "mResumptionAttempted=%d error=%" PRIx32 "]\n",
        this, mResumptionAttempted, static_cast<uint32_t>(reason)));
+  // Also accept NS_ERROR_NET_RESET: the socket-transport teardown can win
+  // the race against NSS alert propagation and surface a PSK rejection as a
+  // generic connection reset.
   return StaticPrefs::network_http_early_data_disable_on_error() &&
          mResumptionAttempted &&
-         NS_ERROR_GET_MODULE(reason) == NS_ERROR_MODULE_SECURITY;
+         (NS_ERROR_GET_MODULE(reason) == NS_ERROR_MODULE_SECURITY ||
+          reason == NS_ERROR_NET_RESET);
 }
 
 static void MaybeRemoveSSLToken(nsITransportSecurityInfo* aSecurityInfo) {
@@ -1446,14 +1450,21 @@ void nsHttpTransaction::Close(nsresult reason) {
       mOrigConnInfo && AllowedErrorForTransactionRetry(reason) &&
       !mDoNotRemoveAltSvc;
 
-  // On a TLS resumption error over an HTTPS-RR-routed connection, only the
-  // cached resumption material is bad — the route is fine. Stay on the
-  // alt-route: MaybeRemoveSSLToken has already evicted the PSK, so a fresh
-  // handshake on the same route should succeed. Setting
+  // When a PSK resumption attempt fails over a non-ECH HTTPS-RR-routed
+  // connection, only the cached resumption material is bad — the route is
+  // fine. Stay on the alt-route: MaybeRemoveSSLToken has already evicted the
+  // PSK, so a fresh handshake on the same route should succeed. Setting
   // mDontRetryWithDirectRoute keeps Restart() from stripping the route. If
   // that retry also fails, mResumptionAttempted will have been reset and
   // the standard HTTPS-RR retry path takes over.
-  if (shouldRestartTransactionForHTTPSRR &&
+  //
+  // Skip this for ECH connections: ECH manages its own retry chain (record
+  // rotation, fallback to origin) through PrepareConnInfoForRetry, and must
+  // not be blocked.
+  const bool echConfigUsed =
+      nsHttpHandler::EchConfigEnabled(mConnInfo->IsHttp3()) &&
+      !mConnInfo->GetEchConfig().IsEmpty();
+  if (shouldRestartTransactionForHTTPSRR && !echConfigUsed &&
       ShouldRestartOnResumptionError(reason)) {
     shouldRestartTransactionForHTTPSRR = false;
     mDontRetryWithDirectRoute = true;
