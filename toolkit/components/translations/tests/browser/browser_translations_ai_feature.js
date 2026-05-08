@@ -19,8 +19,41 @@ add_task(async function test_ai_feature_id() {
 });
 
 /**
- * This test case ensures that the Translations feature availability is correct
- * for all combinations of the prefs that control its enabled state.
+ * This test case ensures that the Translations feature exposes the required
+ * AI feature contract values.
+ */
+add_task(async function test_ai_feature_contract_values() {
+  const feature = TranslationsFeature;
+
+  is(
+    feature.hasDistinctEnabledState,
+    false,
+    "Translations does not expose a distinct enabled AI Controls state"
+  );
+  is(
+    feature.canRunOnDevice,
+    TranslationsParent.getIsTranslationsEngineSupported(),
+    "Translations device support matches the engine capability check"
+  );
+
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.translations.simulateUnsupportedEngine", true]],
+  });
+
+  try {
+    is(
+      feature.canRunOnDevice,
+      false,
+      "Translations reports unsupported devices through canRunOnDevice"
+    );
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+/**
+ * This test case ensures that the Translations feature state is correct for
+ * all combinations of the prefs that control its enabled state.
  */
 add_task(async function test_ai_feature_state_combinations() {
   await SpecialPowers.pushPrefEnv({
@@ -200,6 +233,11 @@ add_task(async function test_ai_feature_state_combinations() {
     is(feature.isAllowed, true, `${description} (allowed state)`);
     is(feature.isBlocked, !expectEnabled, `${description} (blocked state)`);
     is(feature.isEnabled, expectEnabled, `${description} (enabled state)`);
+    is(
+      feature.aiControlState,
+      expectEnabled ? "available" : "blocked",
+      `${description} (AI Controls state)`
+    );
   }
 
   await SpecialPowers.popPrefEnv();
@@ -238,6 +276,12 @@ add_task(async function test_ai_feature_enable() {
       Services.prefs.getBoolPref(TRANSLATIONS_ENABLE_PREF),
       true,
       "Enable turns on translations"
+    );
+    is(feature.isEnabled, true, "Enable leaves translations enabled");
+    is(
+      feature.aiControlState,
+      "available",
+      "Enable reports the available AI Controls state"
     );
     is(deleteCalls, 0, "Enable does not delete artifacts");
 
@@ -293,6 +337,12 @@ add_task(async function test_ai_feature_disable() {
       false,
       "Disable turns off translations"
     );
+    is(feature.isBlocked, true, "Disable leaves translations blocked");
+    is(
+      feature.aiControlState,
+      "blocked",
+      "Disable reports the blocked AI Controls state"
+    );
     is(deleteCalls, 1, "Disable deletes artifacts");
 
     await TestTranslationsTelemetry.assertEvent(
@@ -341,6 +391,12 @@ add_task(async function test_ai_feature_reset() {
       Services.prefs.getBoolPref(TRANSLATIONS_ENABLE_PREF),
       true,
       "makeAvailable enables translations"
+    );
+    is(feature.isEnabled, true, "makeAvailable leaves translations enabled");
+    is(
+      feature.aiControlState,
+      "available",
+      "makeAvailable reports the available AI Controls state"
     );
     is(deleteCalls, 1, "Reset deletes artifacts");
 

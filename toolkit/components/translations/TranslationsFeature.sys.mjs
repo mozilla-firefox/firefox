@@ -11,6 +11,7 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
  * @property {typeof import("chrome://global/content/translations/TranslationsUtils.mjs").TranslationsUtils} TranslationsUtils
  * @property {typeof import("chrome://global/content/ml/EngineProcess.sys.mjs").EngineProcess} EngineProcess
  * @property {typeof import("chrome://global/content/translations/TranslationsTelemetry.sys.mjs").TranslationsTelemetry} TranslationsTelemetry
+ * @property {typeof import("resource://gre/actors/TranslationsParent.sys.mjs").TranslationsParent} TranslationsParent
  * @property {boolean} translationsEnabledPref
  */
 
@@ -23,6 +24,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   EngineProcess: "chrome://global/content/ml/EngineProcess.sys.mjs",
   TranslationsTelemetry:
     "chrome://global/content/translations/TranslationsTelemetry.sys.mjs",
+  TranslationsParent: "resource://gre/actors/TranslationsParent.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
@@ -56,7 +58,90 @@ export class TranslationsFeature extends AIFeature {
   }
 
   /**
-   * Enables translations via preferences.
+   * Returns whether Translations exposes a distinct "Enabled" AI Controls
+   * state.
+   *
+   * @returns {boolean}
+   */
+  static get hasDistinctEnabledState() {
+    // Translations does not have a distinct "Enabled" state. When Translations
+    // is "Available," it is immediately usable, and there is no separate
+    // experience to enable further functionality.
+    return false;
+  }
+
+  /**
+   * Returns whether the Translations feature is enabled.
+   *
+   * @returns {boolean}
+   */
+  static get isEnabled() {
+    return TranslationsFeature.isAllowed && lazy.translationsEnabledPref;
+  }
+
+  /**
+   * Returns whether the Translations feature is blocked.
+   *
+   * @returns {boolean}
+   */
+  static get isBlocked() {
+    return !lazy.translationsEnabledPref;
+  }
+
+  /**
+   * Returns whether the Translations feature is allowed.
+   *
+   * @returns {boolean}
+   */
+  static get isAllowed() {
+    return true;
+  }
+
+  /**
+   * Returns whether the current device can run Translations.
+   *
+   * @returns {boolean}
+   */
+  static get canRunOnDevice() {
+    return lazy.TranslationsParent.getIsTranslationsEngineSupported();
+  }
+
+  /**
+   * Returns whether enterprise policy manages the Translations feature state.
+   *
+   * @returns {boolean}
+   */
+  static get isManagedByPolicy() {
+    return (
+      Services.prefs.prefIsLocked(TRANSLATIONS_ENABLE_PREF) ||
+      Services.prefs.prefIsLocked(AI_CONTROL_TRANSLATIONS_PREF)
+    );
+  }
+
+  /**
+   * Makes the Translations feature available and removes artifacts.
+   *
+   * @returns {Promise<void>}
+   */
+  static async makeAvailable() {
+    if (TranslationsFeature.isManagedByPolicy) {
+      throw new Error(
+        "Cannot make Translations available: controlled by enterprise policy"
+      );
+    }
+
+    Services.prefs.setStringPref(AI_CONTROL_TRANSLATIONS_PREF, "available");
+    Services.prefs.setBoolPref(TRANSLATIONS_ENABLE_PREF, true);
+
+    await Promise.allSettled([
+      lazy.EngineProcess.destroyTranslationsEngine(),
+      TranslationsFeature.#deleteAllArtifacts(),
+    ]);
+    lazy.TranslationsTelemetry.onFeatureReset();
+  }
+
+  /**
+   * Enables the Translations feature.
    *
    * @returns {Promise<void>}
    */
@@ -73,7 +158,7 @@ export class TranslationsFeature extends AIFeature {
   }
 
   /**
-   * Disables translations via preferences and removes artifacts.
+   * Blocks the Translations feature and removes artifacts.
    *
    * @returns {Promise<void>}
    */
@@ -92,73 +177,6 @@ export class TranslationsFeature extends AIFeature {
       TranslationsFeature.#deleteAllArtifacts(),
     ]);
     lazy.TranslationsTelemetry.onFeatureDisable();
-  }
-
-  /**
-   * Resets translations preferences and removes artifacts.
-   *
-   * @returns {Promise<void>}
-   */
-  static async makeAvailable() {
-    if (TranslationsFeature.isManagedByPolicy) {
-      throw new Error(
-        "Cannot make Translations available: controlled by enterprise policy"
-      );
-    }
-
-    // Set explicitly rather than clearing, so that a non-locked policy default
-    // of "blocked" does not prevent the user from switching back to "available".
-    Services.prefs.setStringPref(AI_CONTROL_TRANSLATIONS_PREF, "available");
-    Services.prefs.setBoolPref(TRANSLATIONS_ENABLE_PREF, true);
-
-    await Promise.allSettled([
-      lazy.EngineProcess.destroyTranslationsEngine(),
-      TranslationsFeature.#deleteAllArtifacts(),
-    ]);
-    lazy.TranslationsTelemetry.onFeatureReset();
-  }
-
-  /**
-   * Returns true if the Translations feature is enable, otherwise false.
-   *
-   * @returns {boolean}
-   */
-  static get isEnabled() {
-    return TranslationsFeature.isAllowed && lazy.translationsEnabledPref;
-  }
-
-  /**
-   * Returns true if the Translations feature is allowed on this system, always true.
-   *
-   * @returns {boolean}
-   */
-  static get isAllowed() {
-    return true;
-  }
-
-  /**
-   * Returns true if the Translations feature is blocked, otherwise false.
-   *
-   * @returns {boolean}
-   */
-  static get isBlocked() {
-    // This could check the browser.ai.control.default and .translations prefs
-    // but since the UI is currently shown/hidden based on the
-    // browser.translations.enable pref it just checks that.
-    return !lazy.translationsEnabledPref;
-  }
-
-  /**
-   * Returns true if the enabled state of the Translations feature is already
-   * managed by an enterprise policy and is therefore immutable, otherwise false.
-   *
-   * @returns {boolean}
-   */
-  static get isManagedByPolicy() {
-    return (
-      Services.prefs.prefIsLocked(TRANSLATIONS_ENABLE_PREF) ||
-      Services.prefs.prefIsLocked(AI_CONTROL_TRANSLATIONS_PREF)
-    );
   }
 
   /**
