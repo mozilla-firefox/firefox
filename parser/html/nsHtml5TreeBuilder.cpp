@@ -1353,10 +1353,10 @@ starttagloop:
                       nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
                 generateImpliedEndTags();
                 if (!!MOZ_UNLIKELY(mViewSource) &&
-                        findLastInScope(nsGkAtoms::option) !=
-                            nsHtml5TreeBuilder::NOT_FOUND_ON_STACK ||
-                    findLastInScope(nsGkAtoms::optgroup) !=
-                        nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
+                    (findLastInScope(nsGkAtoms::option) !=
+                         nsHtml5TreeBuilder::NOT_FOUND_ON_STACK ||
+                     findLastInScope(nsGkAtoms::optgroup) !=
+                         nsHtml5TreeBuilder::NOT_FOUND_ON_STACK)) {
                   errUnclosedElements(currentPtr, name);
                 }
               }
@@ -1509,10 +1509,10 @@ starttagloop:
                     nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
                   generateImpliedEndTags();
                   if (!!MOZ_UNLIKELY(mViewSource) &&
-                          findLastInScope(nsGkAtoms::option) !=
-                              nsHtml5TreeBuilder::NOT_FOUND_ON_STACK ||
-                      findLastInScope(nsGkAtoms::optgroup) !=
-                          nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
+                      (findLastInScope(nsGkAtoms::option) !=
+                           nsHtml5TreeBuilder::NOT_FOUND_ON_STACK ||
+                       findLastInScope(nsGkAtoms::optgroup) !=
+                           nsHtml5TreeBuilder::NOT_FOUND_ON_STACK)) {
                     errUnclosedElements(currentPtr, name);
                   }
                 } else if (isCurrent(nsGkAtoms::option)) {
@@ -4274,6 +4274,9 @@ void nsHtml5TreeBuilder::popTemplateMode() { templateModePtr--; }
 void nsHtml5TreeBuilder::pop() {
   nsHtml5StackNode* node = stack[currentPtr];
   MOZ_ASSERT(debugOnlyClearLastStackSlot());
+  if (node->getGroup() == OPTION) {
+    optionElementPopped(node->node);
+  }
   currentPtr--;
   elementPopped(node->ns, node->popName, node->node);
   node->release(this);
@@ -4285,6 +4288,9 @@ void nsHtml5TreeBuilder::popForeign(int32_t origPos, int32_t eltPos) {
     markMalformedIfScript(node->node);
   }
   MOZ_ASSERT(debugOnlyClearLastStackSlot());
+  if (node->getGroup() == OPTION) {
+    optionElementPopped(node->node);
+  }
   currentPtr--;
   elementPopped(node->ns, node->popName, node->node);
   node->release(this);
@@ -4293,6 +4299,7 @@ void nsHtml5TreeBuilder::popForeign(int32_t origPos, int32_t eltPos) {
 void nsHtml5TreeBuilder::silentPop() {
   nsHtml5StackNode* node = stack[currentPtr];
   MOZ_ASSERT(debugOnlyClearLastStackSlot());
+  MOZ_ASSERT(node->getGroup() != OPTION);
   currentPtr--;
   node->release(this);
 }
@@ -4300,6 +4307,9 @@ void nsHtml5TreeBuilder::silentPop() {
 void nsHtml5TreeBuilder::popOnEof() {
   nsHtml5StackNode* node = stack[currentPtr];
   MOZ_ASSERT(debugOnlyClearLastStackSlot());
+  if (node->getGroup() == OPTION) {
+    optionElementPopped(node->node);
+  }
   currentPtr--;
   markMalformedIfScript(node->node);
   elementPopped(node->ns, node->popName, node->node);

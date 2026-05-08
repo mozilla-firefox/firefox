@@ -2172,8 +2172,8 @@ public abstract class TreeBuilder<T> implements TokenHandler,
                                         && findLastInScope("select") != TreeBuilder.NOT_FOUND_ON_STACK) {
                                     generateImpliedEndTags();
                                     if (errorHandler != null
-                                            && findLastInScope("option") != TreeBuilder.NOT_FOUND_ON_STACK
-                                            || findLastInScope("optgroup") != TreeBuilder.NOT_FOUND_ON_STACK) {
+                                            && (findLastInScope("option") != TreeBuilder.NOT_FOUND_ON_STACK
+                                            || findLastInScope("optgroup") != TreeBuilder.NOT_FOUND_ON_STACK)) {
                                         errUnclosedElements(currentPtr, name);
                                     }
                                 }
@@ -2326,8 +2326,8 @@ public abstract class TreeBuilder<T> implements TokenHandler,
                                     if (findLastInScope("select") != TreeBuilder.NOT_FOUND_ON_STACK) {
                                         generateImpliedEndTags();
                                         if (errorHandler != null
-                                            && findLastInScope("option") != TreeBuilder.NOT_FOUND_ON_STACK
-                                                || findLastInScope("optgroup") != TreeBuilder.NOT_FOUND_ON_STACK) {
+                                            && (findLastInScope("option") != TreeBuilder.NOT_FOUND_ON_STACK
+                                                || findLastInScope("optgroup") != TreeBuilder.NOT_FOUND_ON_STACK)) {
                                             errUnclosedElements(currentPtr, name);
                                         }
                                     } else if (isCurrent("option")) {
@@ -5210,6 +5210,9 @@ public abstract class TreeBuilder<T> implements TokenHandler,
     private void pop() throws SAXException {
         StackNode<T> node = stack[currentPtr];
         assert debugOnlyClearLastStackSlot();
+        if (node.getGroup() == OPTION) {
+            optionElementPopped(node.node);
+        }
         currentPtr--;
         elementPopped(node.ns, node.popName, node.node);
         node.release(this);
@@ -5221,6 +5224,9 @@ public abstract class TreeBuilder<T> implements TokenHandler,
             markMalformedIfScript(node.node);
         }
         assert debugOnlyClearLastStackSlot();
+        if (node.getGroup() == OPTION) {
+            optionElementPopped(node.node);
+        }
         currentPtr--;
         elementPopped(node.ns, node.popName, node.node);
         node.release(this);
@@ -5229,6 +5235,7 @@ public abstract class TreeBuilder<T> implements TokenHandler,
     private void silentPop() throws SAXException {
         StackNode<T> node = stack[currentPtr];
         assert debugOnlyClearLastStackSlot();
+        assert node.getGroup() != OPTION;
         currentPtr--;
         node.release(this);
     }
@@ -5236,6 +5243,9 @@ public abstract class TreeBuilder<T> implements TokenHandler,
     private void popOnEof() throws SAXException {
         StackNode<T> node = stack[currentPtr];
         assert debugOnlyClearLastStackSlot();
+        if (node.getGroup() == OPTION) {
+            optionElementPopped(node.node);
+        }
         currentPtr--;
         markMalformedIfScript(node.node);
         elementPopped(node.ns, node.popName, node.node);
@@ -5873,6 +5883,9 @@ public abstract class TreeBuilder<T> implements TokenHandler,
             throws SAXException;
 
     protected abstract void detachFromParent(T element) throws SAXException;
+
+    protected void optionElementPopped(T option) throws SAXException {
+    }
 
     protected abstract boolean hasChildren(T element) throws SAXException;
 
