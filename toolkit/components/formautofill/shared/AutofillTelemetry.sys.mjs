@@ -294,11 +294,13 @@ export class AddressTelemetry extends AutofillTelemetryBase {
     Glean.formautofillAddresses.autofillProfilesCount.set(count);
   }
 
-  recordMLDetection(fieldDetails, hash) {
+  recordMLDetection(fieldDetails, hash, mlTime) {
     let reason = [];
     let re = [];
     let ml = [];
     let computed = [];
+
+    let reTime = 0;
 
     fieldDetails.forEach(detail => {
       // The data is formed as followed:
@@ -309,11 +311,14 @@ export class AddressTelemetry extends AutofillTelemetryBase {
       re.push(detail.extraInfo.reFieldName || "");
       ml.push(detail.mlFieldName || "");
       computed.push(detail.fieldName || "");
+      reTime += detail.extraInfo.reTime || 0;
     });
 
     let extra = {
       value: hash,
       mlversion: "1",
+      retime: reTime.toFixed(2),
+      mltime: mlTime.toFixed(2),
       reason: reason.toString(),
       re: re.toString(),
       ml: ml.toString(),
@@ -460,8 +465,8 @@ export class AutofillTelemetry {
     Glean.formautofill.formSubmissionHeuristic[label].add(1);
   }
 
-  static recordMLDetection(fieldDetails, hash) {
+  static recordMLDetection(fieldDetails, hash, mlTime) {
     const telemetry = this.#getTelemetryByType(AutofillTelemetry.ADDRESS);
-    telemetry.recordMLDetection(fieldDetails, hash);
+    telemetry.recordMLDetection(fieldDetails, hash, mlTime);
   }
 }

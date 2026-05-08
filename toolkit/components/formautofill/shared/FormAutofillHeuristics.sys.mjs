@@ -1158,6 +1158,9 @@ export const FormAutofillHeuristics = {
 
     let extraInfo = {};
     if (!useAutocomplete || lazy.FormAutofillUtils.useMLInference) {
+      // element.documentGlobal can be null in xpcshell tests.
+      let beforeTime = element.documentGlobal?.performance?.now();
+
       let [fieldName, inferredInfo] = this.inferFieldInfoHeuristics(
         element,
         elements
@@ -1170,6 +1173,7 @@ export const FormAutofillHeuristics = {
       // the parent process.
       extraInfo = {
         reFieldName: fieldName,
+        reTime: element.documentGlobal?.performance?.now() - beforeTime,
         mlData: mlTokens?.get(element),
       };
 

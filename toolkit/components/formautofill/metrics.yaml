@@ -975,6 +975,14 @@ address:
         description: >
           String that indicates the model version used
         type: string
+      retime:
+        description: >
+          Time for regular expression heuristics
+        type: string
+      mltime:
+        description: >
+          Time for ML model to perform inference
+        type: string
       reason:
         description: >
           String that contains a comma-separated list of the reasons field

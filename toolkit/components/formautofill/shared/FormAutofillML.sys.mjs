@@ -60,7 +60,7 @@ export class FormAutofillML extends AIFeature {
     return hash;
   }
 
-  static async detectFields(fieldDetails) {
+  static async detectFields(window, fieldDetails) {
     let engine;
     try {
       engine = await createEngine(FormFill_Config);
@@ -70,6 +70,7 @@ export class FormAutofillML extends AIFeature {
 
     // Hash of the data for the form
     let hash = 0;
+    let beforeTime = window.performance.now();
 
     let results = [];
     for (let fd of fieldDetails) {
@@ -84,6 +85,8 @@ export class FormAutofillML extends AIFeature {
       results.push(result[0].label == "other" ? "" : result[0].label);
     }
 
+    let mlTime = window.performance.now() - beforeTime;
+
     let mlEnabled = lazy.FormAutofillUtils.enableMLAutofill;
 
     // If ML is enabled, then it will be used for autofill.
@@ -96,6 +99,6 @@ export class FormAutofillML extends AIFeature {
       }
     }
 
-    lazy.AutofillTelemetry.recordMLDetection(fieldDetails, hash);
+    lazy.AutofillTelemetry.recordMLDetection(fieldDetails, hash, mlTime);
   }
 }

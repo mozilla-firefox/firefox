@@ -563,7 +563,10 @@ export class FormAutofillParent extends JSWindowActorParent {
     // and it doesn't matter right now until we get to a more final form of
     // what will happen here.
     if (FormAutofillUtils.useMLInference) {
-      await lazy.FormAutofillML.detectFields(fieldDetails);
+      await lazy.FormAutofillML.detectFields(
+        topBC.topChromeWindow,
+        fieldDetails
+      );
     }
 
     // Note that 'onFieldsDetected' is not only called when a form is detected,
