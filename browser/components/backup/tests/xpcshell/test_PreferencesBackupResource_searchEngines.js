@@ -92,7 +92,7 @@ add_task(async function test_recover_searchEngines_verified() {
   );
 
   let postRecoveryEntry = await preferencesBackupResource.recover(
-    { profilePath: PathUtils.profileDir },
+    { profileDirName: PathUtils.filename(PathUtils.profileDir) },
     recoveryPath,
     destProfilePath
   );
@@ -122,7 +122,7 @@ add_task(async function test_recover_searchEngines_verified() {
     recoveredSearchEngineSettings.metaData.defaultEngineIdHash,
     SearchUtils.getVerificationHash(
       originalSearchEngineSettings.metaData.defaultEngineId,
-      destProfilePath
+      PathUtils.filename(destProfilePath)
     ),
     "defaultEngineIdHash was updated correctly."
   );
@@ -136,7 +136,7 @@ add_task(async function test_recover_searchEngines_verified() {
     recoveredSearchEngineSettings.metaData.privateDefaultEngineIdHash,
     SearchUtils.getVerificationHash(
       originalSearchEngineSettings.metaData.privateDefaultEngineId,
-      destProfilePath
+      PathUtils.filename(destProfilePath)
     ),
     "privateDefaultEngineIdHash was updated correctly."
   );
@@ -165,7 +165,7 @@ add_task(async function test_recover_searchEngines_verified() {
         recoveredEngine._metaData.loadPathHash,
         SearchUtils.getVerificationHash(
           originalEngine._loadPath,
-          destProfilePath
+          PathUtils.filename(destProfilePath)
         ),
         "loadPathHash had the expected value."
       );
@@ -225,7 +225,7 @@ add_task(async function test_recover_searchEngines_unverified() {
   );
 
   let postRecoveryEntry = await preferencesBackupResource.recover(
-    { profilePath: PathUtils.profileDir },
+    { profileDirName: PathUtils.filename(PathUtils.profileDir) },
     recoveryPath,
     destProfilePath
   );

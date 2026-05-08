@@ -178,9 +178,10 @@ export class PreferencesBackupResource extends BackupResource {
 
     // During recovery, we need to recompute verification hashes for any
     // custom engines, but only for engines that were originally passing
-    // verification. We'll store the profile path at backup time in our
-    // ManifestEntry so that we can do that verification check at recover-time.
-    return { profilePath };
+    // verification. We store just the profile directory name rather than
+    // the full path so that cross-platform recovery works (a macOS path
+    // would not be parseable by PathUtils.filename on Windows).
+    return { profileDirName: PathUtils.filename(profilePath) };
   }
 
   async recover(manifestEntry, recoveryPath, destProfilePath) {
@@ -198,22 +199,27 @@ export class PreferencesBackupResource extends BackupResource {
       });
 
       // ... but we only want to do this for engines that had valid verification
-      // hashes for the original profile path.
-      const ORIGINAL_PROFILE_PATH = manifestEntry.profilePath;
+      // hashes for the original profile directory.
+      // Prefer profileDirName (cross-platform safe). Fall back to profilePath
+      // for backups created before profileDirName was introduced.
+      const ORIGINAL_DIR_NAME =
+        manifestEntry.profileDirName ??
+        (manifestEntry.profilePath
+          ? PathUtils.filename(manifestEntry.profilePath)
+          : null);
 
-      if (ORIGINAL_PROFILE_PATH) {
+      if (ORIGINAL_DIR_NAME) {
+        let destDirName = PathUtils.filename(destProfilePath);
+
         searchPrefs.engines = searchPrefs.engines.map(engine => {
           if (engine._metaData.loadPathHash) {
             let loadPath = engine._loadPath;
             if (
               engine._metaData.loadPathHash ==
-              lazy.SearchUtils.getVerificationHash(
-                loadPath,
-                ORIGINAL_PROFILE_PATH
-              )
+              lazy.SearchUtils.getVerificationHash(loadPath, ORIGINAL_DIR_NAME)
             ) {
               engine._metaData.loadPathHash =
-                lazy.SearchUtils.getVerificationHash(loadPath, destProfilePath);
+                lazy.SearchUtils.getVerificationHash(loadPath, destDirName);
             }
           }
           return engine;
@@ -224,13 +230,13 @@ export class PreferencesBackupResource extends BackupResource {
           searchPrefs.metaData.defaultEngineIdHash ==
             lazy.SearchUtils.getVerificationHash(
               searchPrefs.metaData.defaultEngineId,
-              ORIGINAL_PROFILE_PATH
+              ORIGINAL_DIR_NAME
             )
         ) {
           searchPrefs.metaData.defaultEngineIdHash =
             lazy.SearchUtils.getVerificationHash(
               searchPrefs.metaData.defaultEngineId,
-              destProfilePath
+              destDirName
             );
         }
 
@@ -239,13 +245,13 @@ export class PreferencesBackupResource extends BackupResource {
           searchPrefs.metaData.privateDefaultEngineIdHash ==
             lazy.SearchUtils.getVerificationHash(
               searchPrefs.metaData.privateDefaultEngineId,
-              ORIGINAL_PROFILE_PATH
+              ORIGINAL_DIR_NAME
             )
         ) {
           searchPrefs.metaData.privateDefaultEngineIdHash =
             lazy.SearchUtils.getVerificationHash(
               searchPrefs.metaData.privateDefaultEngineId,
-              destProfilePath
+              destDirName
             );
         }
       }

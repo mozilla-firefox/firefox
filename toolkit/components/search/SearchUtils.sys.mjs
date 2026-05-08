@@ -386,7 +386,21 @@ export var SearchUtils = {
     return result.substring(0, maxLength);
   },
 
-  getVerificationHash(name, profileDir = PathUtils.profileDir) {
+  /**
+   * Computes a verification hash for a search engine or default engine ID,
+   * used to detect unauthorized modifications. The hash incorporates the
+   * profile directory name as a salt.
+   *
+   * @param {string} name
+   *  The engine load path or engine ID to hash.
+   * @param {string} [profileDirName]
+   *  Profile directory name used as salt. Defaults to the leaf name of
+   *  the current profile directory.
+   */
+  getVerificationHash(
+    name,
+    profileDirName = PathUtils.filename(PathUtils.profileDir)
+  ) {
     let disclaimer =
       "By modifying this file, I agree that I am doing so " +
       "only within $appName itself, using official, user-driven search " +
@@ -396,7 +410,7 @@ export var SearchUtils = {
       "to accordingly.";
 
     let salt =
-      PathUtils.filename(profileDir) +
+      profileDirName +
       name +
       disclaimer.replace(/\$appName/g, Services.appinfo.name);
 
