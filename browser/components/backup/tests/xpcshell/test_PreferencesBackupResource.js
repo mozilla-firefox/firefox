@@ -134,8 +134,8 @@ add_task(async function test_backup() {
   );
   Assert.deepEqual(
     manifestEntry,
-    { profileDirName: PathUtils.filename(sourcePath) },
-    "PreferencesBackupResource.backup should return the profile directory name " +
+    { profilePath: sourcePath },
+    "PreferencesBackupResource.backup should return the original profile path " +
       "in its ManifestEntry"
   );
 
@@ -275,11 +275,11 @@ add_task(async function test_recover() {
     .onCall(5)
     .returns(EXPECTED_HASH);
 
-  const PRETEND_ORIGINAL_DIR_NAME = "some-profile-dir";
+  const PRETEND_ORIGINAL_PATH = "some/original/path";
 
   // The backup method is expected to have returned a null ManifestEntry
   let postRecoveryEntry = await preferencesBackupResource.recover(
-    { profileDirName: PRETEND_ORIGINAL_DIR_NAME },
+    { profilePath: PRETEND_ORIGINAL_PATH },
     recoveryPath,
     destProfilePath
   );
@@ -308,42 +308,40 @@ add_task(async function test_recover() {
     6,
     "SearchUtils.getVerificationHash was called the right number of times."
   );
-  let destDirName = PathUtils.filename(destProfilePath);
-
   Assert.ok(
     SearchUtils.getVerificationHash
       .getCall(0)
-      .calledWith(TEST_SEARCH_ENGINE_LOAD_PATH, PRETEND_ORIGINAL_DIR_NAME),
+      .calledWith(TEST_SEARCH_ENGINE_LOAD_PATH, PRETEND_ORIGINAL_PATH),
     "SearchUtils.getVerificationHash first call called with the right arguments."
   );
   Assert.ok(
     SearchUtils.getVerificationHash
       .getCall(1)
-      .calledWith(TEST_SEARCH_ENGINE_LOAD_PATH, destDirName),
+      .calledWith(TEST_SEARCH_ENGINE_LOAD_PATH, destProfilePath),
     "SearchUtils.getVerificationHash second call called with the right arguments."
   );
   Assert.ok(
     SearchUtils.getVerificationHash
       .getCall(2)
-      .calledWith(TEST_DEFAULT_ENGINE_ID, PRETEND_ORIGINAL_DIR_NAME),
+      .calledWith(TEST_DEFAULT_ENGINE_ID, PRETEND_ORIGINAL_PATH),
     "SearchUtils.getVerificationHash third call called with the right arguments."
   );
   Assert.ok(
     SearchUtils.getVerificationHash
       .getCall(3)
-      .calledWith(TEST_DEFAULT_ENGINE_ID, destDirName),
+      .calledWith(TEST_DEFAULT_ENGINE_ID, destProfilePath),
     "SearchUtils.getVerificationHash fourth call called with the right arguments."
   );
   Assert.ok(
     SearchUtils.getVerificationHash
       .getCall(4)
-      .calledWith(TEST_PRIVATE_DEFAULT_ENGINE_ID, PRETEND_ORIGINAL_DIR_NAME),
+      .calledWith(TEST_PRIVATE_DEFAULT_ENGINE_ID, PRETEND_ORIGINAL_PATH),
     "SearchUtils.getVerificationHash fifth call called with the right arguments."
   );
   Assert.ok(
     SearchUtils.getVerificationHash
       .getCall(5)
-      .calledWith(TEST_PRIVATE_DEFAULT_ENGINE_ID, destDirName),
+      .calledWith(TEST_PRIVATE_DEFAULT_ENGINE_ID, destProfilePath),
     "SearchUtils.getVerificationHash sixth call called with the right arguments."
   );
 
