@@ -59,27 +59,47 @@ impl ServoRestyleDamage {
         old: &ComputedValues,
         new: &ComputedValues,
     ) -> StyleDifference {
-        let mut damage = if std::ptr::eq(old, new) {
-            ServoRestyleDamage::empty()
-        } else {
-            compute_damage(old, new)
-        };
-        let custom_properties_changed = !old.custom_properties_equal(new);
+        if std::ptr::eq(old, new) {
+            return StyleDifference {
+                damage: ServoRestyleDamage::empty(),
+                change: StyleChange::Unchanged,
+            };
+        }
 
+        let mut damage = compute_damage(old, new);
         if damage.contains(ServoRestyleDamage::RELAYOUT) {
             damage |= E::compute_layout_damage(old, new);
         }
 
+        let mut any_style_changed = !damage.is_empty();
         // FIXME(emilio): Differentiate between reset and inherited
         // properties here, and set `reset_only` appropriately so the
         // optimization to skip the cascade in those cases applies.
-        let change = if damage.is_empty() && !custom_properties_changed {
-            StyleChange::Unchanged
-        } else {
+        let mut reset_only = !any_style_changed;
+
+        let old_custom_props = old.custom_properties();
+        let new_custom_props = new.custom_properties();
+        let mut custom_properties_changed = false;
+        if old_custom_props.inherited != new_custom_props.inherited {
+            any_style_changed = true;
+            custom_properties_changed = true;
+            reset_only = false;
+        } else if old_custom_props.non_inherited != new_custom_props.non_inherited {
+            any_style_changed = true;
+            custom_properties_changed = true;
+        };
+        if custom_properties_changed {
+            // Paint worklets may depend on custom properties, so if they have changed we should repaint.
+            damage.insert(ServoRestyleDamage::REPAINT);
+        }
+
+        let change = if any_style_changed {
             StyleChange::Changed {
-                reset_only: false,
+                reset_only,
                 custom_properties_changed,
             }
+        } else {
+            StyleChange::Unchanged
         };
 
         StyleDifference { damage, change }
@@ -150,26 +170,21 @@ fn augmented_restyle_damage_rebuild_stacking_context(
     restyle_damage_rebuild_stacking_context(old, new)
         || old.guarantees_stacking_context() != new.guarantees_stacking_context()
 }
-fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDamage {
-    let mut damage = ServoRestyleDamage::empty();
 
+fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDamage {
     // Damage flags higher up the if-else chain imply damage flags lower down the if-else chain,
     // so we can skip the diffing process for later flags if an earlier flag is true
     if augmented_restyle_damage_rebuild_box(old, new) {
-        damage.insert(ServoRestyleDamage::RELAYOUT)
+        ServoRestyleDamage::RELAYOUT
     } else if restyle_damage_recalculate_overflow(old, new) {
-        damage.insert(ServoRestyleDamage::RECALCULATE_OVERFLOW)
+        ServoRestyleDamage::RECALCULATE_OVERFLOW
     } else if augmented_restyle_damage_rebuild_stacking_context(old, new) {
-        damage.insert(ServoRestyleDamage::REBUILD_STACKING_CONTEXT);
+        ServoRestyleDamage::REBUILD_STACKING_CONTEXT
     } else if restyle_damage_repaint(old, new) {
-        damage.insert(ServoRestyleDamage::REPAINT);
+        ServoRestyleDamage::REPAINT
+    } else {
+        ServoRestyleDamage::empty()
     }
-    // Paint worklets may depend on custom properties, so if they have changed we should repaint.
-    else if !old.custom_properties_equal(new) {
-        damage.insert(ServoRestyleDamage::REPAINT);
-    }
-
-    damage
 }
 
 impl ComputedValues {

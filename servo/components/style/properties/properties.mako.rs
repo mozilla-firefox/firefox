@@ -1930,7 +1930,7 @@ impl ComputedValues {
             PropertyDeclarationId::Longhand(id) => {
                 let mut context = resolved::Context {
                     style: self,
-                    for_property: id.into(),
+                    for_property: PropertyId::NonCustom(id.into()),
                     current_longhand: Some(id),
                 };
                 let mut s = String::new();

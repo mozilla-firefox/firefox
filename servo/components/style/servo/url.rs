@@ -8,7 +8,7 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::stylesheets::CorsMode;
 use crate::values::computed::{Context, ToComputedValue};
-use cssparser::Parser;
+use cssparser::{Parser, SourceLocation};
 use servo_arc::Arc;
 use std::fmt::{self, Write};
 use std::ops::Deref;
@@ -62,11 +62,44 @@ impl Deref for CssUrl {
 }
 
 impl CssUrl {
+    /// Parse a URL from a string value that is a valid CSS token for a URL,
+    /// enforcing attr()-tainting constraints if applicable.
+    /// https://drafts.csswg.org/css-values-5/#attr-security
+    pub fn parse_from_string<'i>(
+        url: String,
+        url_start: usize,
+        url_end: usize,
+        context: &ParserContext,
+        cors_mode: CorsMode,
+        location: SourceLocation,
+    ) -> Result<Self, ParseError<'i>> {
+        use crate::custom_properties::AttrTaintedRange;
+        use style_traits::StyleParseErrorKind;
+        let range = AttrTaintedRange::new(url_start, url_end);
+        if context.disallow_urls_in_range(&range) {
+            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+        Ok(Self::new_from_string(url, context, cors_mode))
+    }
+
+    /// Create a new CSS URL that is attr()-untainted given a valid CSS token for a URL.
+    /// Be cautious when calling `expect_url()` to not bypass attr()-tainting checks. If
+    /// it's possible attr()'s were substituted into the `url`, DO NOT use this method.
+    /// https://drafts.csswg.org/css-values-5/#attr-security
+    pub fn new_from_untainted_string(
+        url: String,
+        context: &ParserContext,
+        cors_mode: CorsMode,
+    ) -> Self {
+        debug_assert!(context.attr_tainted_regions.is_empty());
+        Self::new_from_string(url, context, cors_mode)
+    }
+
     /// Try to parse a URL from a string value that is a valid CSS token for a
     /// URL.
     ///
     /// FIXME(emilio): Should honor CorsMode.
-    pub fn parse_from_string(url: String, context: &ParserContext, _: CorsMode) -> Self {
+    fn new_from_string(url: String, context: &ParserContext, _cors_mode: CorsMode) -> Self {
         let serialization = Arc::new(url);
         // Per https://drafts.csswg.org/css-values-4/#url-empty
         // If the original url is empty, then the resolved url is considered invalid.
@@ -142,12 +175,18 @@ impl CssUrl {
         input: &mut Parser<'i, 't>,
         cors_mode: CorsMode,
     ) -> Result<Self, ParseError<'i>> {
+        let start = input.position().byte_index();
+        let location = input.current_source_location();
         let url = input.expect_url()?;
-        Ok(Self::parse_from_string(
+        let end = input.position().byte_index();
+        Self::parse_from_string(
             url.as_ref().to_owned(),
+            start,
+            end,
             context,
             cors_mode,
-        ))
+            location,
+        )
     }
 }
 
