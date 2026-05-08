@@ -49,13 +49,15 @@ class SessionHistoryWatcher {
         this.#currentEntry = newEntry;
         this.#processSessionHistory(isUpdate);
       },
-      OnEntryTitleUpdated: entry => {
+      OnEntryUpdated: entry => {
         const title = entry.title;
+        const url = entry.URI.spec;
+        const name = entry.name;
         this.onUpdated([
           {
             resourceId: this.resourceId,
             resourceUpdates: {
-              sessionHistoryEntry: { title, key: key(entry.ID) },
+              sessionHistoryEntry: { url, title, name, key: key(entry.ID) },
             },
             browsingContextID:
               this.watcherActor.browserElement.browsingContext.id,

@@ -38,14 +38,19 @@ function sessionHistoryReducer(state = SessionHistory(), action) {
       if (!entry) {
         return state;
       }
+      // Updates happen when we're mutating the existing session history,
+      // without neither adding or traversing. This happens when a document
+      // updates its title, a window changes its name, or through calls to
+      // History.replaceState.
       return {
         ...state,
         entriesByKey: {
           ...state.entriesByKey,
           [entryKey]: {
             ...entry,
-            // only title can be updated at the moment
+            url: sessionHistoryEntry.url,
             title: sessionHistoryEntry.title,
+            name: sessionHistoryEntry.name,
           },
         },
       };

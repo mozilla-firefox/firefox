@@ -256,6 +256,23 @@ add_task(async function () {
     "same-document-nav"
   );
 
+  updated = 0;
+  await SpecialPowers.spawn(tab.linkedBrowser, [], async function () {
+    content.history.replaceState(null, null, "#2");
+  });
+
+  await waitFor(() => updated == 1);
+
+  table = doc.querySelector("table");
+  tBodyRows = table.tBodies[0].rows;
+  tBodyRows[0].cells[3].firstChild.click();
+  popover = doc.querySelector(":popover-open");
+  Assert.equal(
+    "#2",
+    new URL(popover.firstChild.getElementsByTagName("dd")[0].innerText).hash,
+    "hash should be updated by replaceState"
+  );
+
   resourceCommand.unwatchResources([resourceCommand.TYPES.SESSION_HISTORY], {
     onAvailable,
     onUpdated,

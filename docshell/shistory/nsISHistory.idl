@@ -187,12 +187,12 @@ interface nsISHistory: nsISupports
   void notifyOnHistoryCommit();
 
   /**
-   * Notifies all registered session history listeners that aEntry's title has
-   * been updated.
+   * Notifies all registered session history listeners that aEntry has been
+   * updated.
    *
-   * @param aEntry            The entry that has a new title.
+   * @param aEntry            The updated entry.
    */
-  void notifyOnEntryTitleUpdated(in nsISHEntry aEntry);
+  void notifyOnEntryUpdated(in nsISHEntry aEntry);
 
   /**
    * Evict content viewers which don't lie in the "safe" range around aIndex.
