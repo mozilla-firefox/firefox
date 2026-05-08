@@ -802,8 +802,6 @@ class BrowserParent final : public PBrowserParent,
 
   void UnlockNativePointer();
 
-  void UpdateNativePointerLockCenter(nsIWidget* aWidget);
-
  private:
   // This is used when APZ needs to find the BrowserParent associated with a
   // layer to dispatch events.

@@ -1132,7 +1132,6 @@ void BrowserParent::UpdateDimensions(const LayoutDeviceIntRect& rect,
     mChromeOffset = chromeOffset;
 
     (void)SendUpdateDimensions(GetDimensionInfo());
-    UpdateNativePointerLockCenter(widget);
   }
 }
 
@@ -1141,14 +1140,6 @@ DimensionInfo BrowserParent::GetDimensionInfo() {
   CSSSize unscaledSize = mDimensions / mDefaultScale;
   return DimensionInfo(unscaledRect, unscaledSize, mClientOffset,
                        mChromeOffset);
-}
-
-void BrowserParent::UpdateNativePointerLockCenter(nsIWidget* aWidget) {
-  if (!mLockedNativePointer) {
-    return;
-  }
-  aWidget->SetNativePointerLockCenter(
-      LayoutDeviceIntRect(mChromeOffset, mDimensions).Center());
 }
 
 void BrowserParent::SizeModeChanged(const nsSizeMode& aSizeMode) {
@@ -2072,8 +2063,7 @@ mozilla::ipc::IPCResult BrowserParent::RecvSynthesizeNativeTouchpadPan(
 mozilla::ipc::IPCResult BrowserParent::RecvLockNativePointer(
     const nsIWidget::NativePointerLockMode& aNativePointerLockMode) {
   if (nsCOMPtr<nsIWidget> widget = GetWidget()) {
-    mLockedNativePointer = true;  // do before updating the center
-    UpdateNativePointerLockCenter(widget);
+    mLockedNativePointer = true;
     widget->LockNativePointer(aNativePointerLockMode);
   }
   return IPC_OK();

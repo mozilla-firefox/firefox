@@ -1914,13 +1914,6 @@ class nsIWidget : public nsSupportsWeakReference {
     Unadjusted,
   };
 
-  /**
-   * If this widget uses native pointer lock instead of warp-to-center
-   * (currently only GTK on Wayland), these methods provide access to that
-   * functionality.
-   */
-  virtual void SetNativePointerLockCenter(
-      const LayoutDeviceIntPoint& aLockCenter) {}
   virtual void LockNativePointer(NativePointerLockMode aNativePointerLockMode) {
   }
   virtual void UnlockNativePointer() {}

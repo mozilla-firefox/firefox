@@ -279,25 +279,46 @@ void nsWindowWayland::DisableVSyncSource() {
   }
 }
 
+nsresult nsWindowWayland::SynthesizeNativeMouseMove(
+    LayoutDeviceIntPoint aPoint, nsISynthesizedEventCallback* aCallback) {
+  if (IsNativePointerLocked()) {
+    AutoSynthesizedEventCallbackNotifier notifier(aCallback);
+    mNativeLockedPoint = aPoint - WidgetToScreenOffset();
+
+    WidgetMouseEvent event(true, eMouseMove, this, WidgetMouseEvent::eReal);
+    event.mRefPoint = mNativeLockedPoint;
+    event.AssignEventTime(GetWidgetEventTime(0));
+    event.mMovement = Some(LayoutDeviceIntPoint(0, 0));
+    DispatchInputEvent(&event);
+
+    return NS_OK;
+  }
+
+  return nsWindow::SynthesizeNativeMouseMove(aPoint, aCallback);
+}
+
 static void relative_pointer_handle_relative_motion(
     void* data, struct zwp_relative_pointer_v1* pointer, uint32_t time_hi,
     uint32_t time_lo, wl_fixed_t dx_w, wl_fixed_t dy_w, wl_fixed_t dx_unaccel_w,
     wl_fixed_t dy_unaccel_w) {
   RefPtr<nsWindowWayland> window(reinterpret_cast<nsWindowWayland*>(data));
-
-  WidgetMouseEvent event(true, eMouseMove, window, WidgetMouseEvent::eReal);
-
   double scale = window->FractionalScaleFactor();
-  event.mRefPoint = window->GetNativePointerLockCenter();
-  event.mRefPoint.x += int(wl_fixed_to_double(dx_w) * scale);
-  event.mRefPoint.y += int(wl_fixed_to_double(dy_w) * scale);
-
   LOGW(
       "[%p] relative_pointer_handle_relative_motion center dx = %f, "
       "dy = %f scale %f",
       data, wl_fixed_to_double(dx_w), wl_fixed_to_double(dy_w), scale);
 
+  int32_t movementX = int32_t(wl_fixed_to_double(dx_w) * scale);
+  int32_t movementY = int32_t(wl_fixed_to_double(dy_w) * scale);
+  if (movementX == 0 && movementY == 0) {
+    // Ignore event with zero movement.
+    return;
+  }
+
+  WidgetMouseEvent event(true, eMouseMove, window, WidgetMouseEvent::eReal);
+  event.mRefPoint = window->GetNativeLockedPoint();
   event.AssignEventTime(window->GetWidgetEventTime(time_lo));
+  event.mMovement = Some(LayoutDeviceIntPoint(movementX, movementY));
   window->DispatchInputEvent(&event);
 }
 
@@ -378,6 +399,7 @@ void nsWindowWayland::LockNativePointer(
 }
 
 void nsWindowWayland::UnlockNativePointer() {
+  mNativeLockedPoint = LayoutDeviceIntPoint(0, 0);
   if (mRelativePointer) {
     zwp_relative_pointer_v1_destroy(mRelativePointer);
     mRelativePointer = nullptr;
