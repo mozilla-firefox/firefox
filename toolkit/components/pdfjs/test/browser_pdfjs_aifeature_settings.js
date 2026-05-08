@@ -44,6 +44,17 @@ add_task(function test_id_is_feature_id() {
   );
 });
 
+add_task(function test_contract_values() {
+  Assert.ok(
+    PdfJsGuessAltTextFeature.hasDistinctEnabledState,
+    "PdfJsGuessAltTextFeature should expose a distinct enabled state"
+  );
+  Assert.ok(
+    PdfJsGuessAltTextFeature.canRunOnDevice,
+    "PdfJsGuessAltTextFeature should report that it can run on this device"
+  );
+});
+
 add_task(function test_isEnabled_with_pref() {
   clearGuessAltTextPrefs();
 
@@ -84,14 +95,19 @@ add_task(async function test_enable_sets_all_prefs_true() {
     PdfJsGuessAltTextFeature.isEnabled,
     "After enable(), isEnabled should be true"
   );
+  Assert.equal(
+    PdfJsGuessAltTextFeature.aiControlState,
+    "enabled",
+    "After enable(), aiControlState should be enabled"
+  );
 });
 
-add_task(async function test_disable_sets_prefs_false_and_uninstalls_models() {
+add_task(async function test_block_sets_prefs_false_and_uninstalls_models() {
   clearGuessAltTextPrefs();
   await PdfJsGuessAltTextFeature.enable();
   Assert.ok(
     PdfJsGuessAltTextFeature.isEnabled,
-    "Sanity check: enabled before disable()"
+    "Sanity check: enabled before block()"
   );
 
   const uninstallStub = sinon.stub(MLUninstallService, "uninstall").resolves();
@@ -101,27 +117,32 @@ add_task(async function test_disable_sets_prefs_false_and_uninstalls_models() {
   Assert.equal(
     Services.prefs.getBoolPref(PREF_ENABLED, true),
     false,
-    "disable() should set pdfjs.enableGuessAltText=false"
+    "block() should set pdfjs.enableGuessAltText=false"
   );
   Assert.equal(
     Services.prefs.getBoolPref(PREF_ALT_TEXT_MODEL_DOWNLOAD, true),
     false,
-    "disable() should set pdfjs.enableAltTextModelDownload=false"
+    "block() should set pdfjs.enableAltTextModelDownload=false"
   );
   Assert.equal(
     Services.prefs.getBoolPref(PREF_ALT_TEXT_ENABLED, true),
     false,
-    "disable() changes pdfjs.enableAltText"
+    "block() should set pdfjs.enableAltText=false"
   );
 
   Assert.ok(
     !PdfJsGuessAltTextFeature.isEnabled,
-    "After disable(), isEnabled should be false"
+    "After block(), isEnabled should be false"
+  );
+  Assert.equal(
+    PdfJsGuessAltTextFeature.aiControlState,
+    "blocked",
+    "After block(), aiControlState should be blocked"
   );
 
   Assert.ok(
     uninstallStub.calledOnce,
-    "disable() should uninstall ML engine files via MLUninstallService.uninstall()"
+    "block() should uninstall ML engine files via MLUninstallService.uninstall()"
   );
 
   const expectedEngineIds = [PdfJsGuessAltTextFeature.engineId];
@@ -129,12 +150,56 @@ add_task(async function test_disable_sets_prefs_false_and_uninstalls_models() {
   Assert.deepEqual(
     (uninstallArgs.engineIds || []).slice(),
     expectedEngineIds,
-    "disable() should uninstall files for the expected engine IDs"
+    "block() should uninstall files for the expected engine IDs"
   );
   Assert.equal(
     uninstallArgs.actor,
     PdfJsGuessAltTextFeature.engineId,
-    "disable() should pass the expected actor attribution"
+    "block() should pass the expected actor attribution"
+  );
+
+  uninstallStub.restore();
+});
+
+add_task(async function test_makeAvailable_sets_available_state() {
+  clearGuessAltTextPrefs();
+  await PdfJsGuessAltTextFeature.enable();
+
+  const uninstallStub = sinon.stub(MLUninstallService, "uninstall").resolves();
+
+  await PdfJsGuessAltTextFeature.makeAvailable();
+
+  Assert.equal(
+    Services.prefs.getBoolPref(PREF_ENABLED, true),
+    false,
+    "makeAvailable() should set pdfjs.enableGuessAltText=false"
+  );
+  Assert.equal(
+    Services.prefs.getBoolPref(PREF_ALT_TEXT_MODEL_DOWNLOAD, true),
+    false,
+    "makeAvailable() should set pdfjs.enableAltTextModelDownload=false"
+  );
+  Assert.equal(
+    Services.prefs.getBoolPref(PREF_ALT_TEXT_ENABLED, false),
+    true,
+    "makeAvailable() should set pdfjs.enableAltText=true"
+  );
+  Assert.ok(
+    !PdfJsGuessAltTextFeature.isEnabled,
+    "After makeAvailable(), isEnabled should be false"
+  );
+  Assert.ok(
+    !PdfJsGuessAltTextFeature.isBlocked,
+    "After makeAvailable(), isBlocked should be false"
+  );
+  Assert.equal(
+    PdfJsGuessAltTextFeature.aiControlState,
+    "available",
+    "After makeAvailable(), aiControlState should be available"
+  );
+  Assert.ok(
+    uninstallStub.calledOnce,
+    "makeAvailable() should uninstall ML engine files"
   );
 
   uninstallStub.restore();
