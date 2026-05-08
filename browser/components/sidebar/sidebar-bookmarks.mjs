@@ -127,24 +127,6 @@ export class SidebarBookmarks extends SidebarPage {
     this.treeView = new lazy.SidebarTreeView(this);
   }
 
-  get lists() {
-    const mainList = this.bookmarkList;
-    if (!mainList?.shadowRoot) {
-      return [];
-    }
-    const result = [];
-    const collect = list => {
-      result.push(list);
-      for (const nested of list.shadowRoot.querySelectorAll(
-        "sidebar-bookmark-list"
-      )) {
-        collect(nested);
-      }
-    };
-    collect(mainList);
-    return result;
-  }
-
   connectedCallback() {
     super.connectedCallback();
     lazy.PlacesUtils.observers.addListener(
@@ -169,6 +151,29 @@ export class SidebarBookmarks extends SidebarPage {
     }
     this.bookmarks = await this.getBookmarksList();
     this.requestUpdate();
+  }
+
+  getRowsInOrder() {
+    return this.#getRowsForList(this.bookmarkList);
+  }
+
+  #getRowsForList(list) {
+    let rows = [];
+    for (const item of list.tabItems) {
+      const isFolder = Array.isArray(item.children);
+      if (!isFolder) {
+        rows.push({ list, item });
+      } else if (
+        item.children.length &&
+        this.#expandedFolderGuids.has(item.guid)
+      ) {
+        const sublist = list.findSublistForGuid(item.guid);
+        if (sublist) {
+          rows = rows.concat(this.#getRowsForList(sublist));
+        }
+      }
+    }
+    return rows;
   }
 
   onPrimaryAction(e) {

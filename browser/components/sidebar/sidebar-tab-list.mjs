@@ -20,7 +20,6 @@ export class SidebarTabList extends FxviewTabListBase {
     // Panel is open, assume we always want to react to updates.
     this.updatesPaused = false;
     this.multiSelect = true;
-    this.selectedGuids = new Set();
     this.shortcutsLocalization = new Localization(
       ["toolkit/global/textActions.ftl"],
       true
@@ -33,6 +32,23 @@ export class SidebarTabList extends FxviewTabListBase {
       all: "sidebar-tab-row",
     },
   };
+
+  /**
+   * The tree view controller that owns selection state for the page this list
+   * belongs to.
+   *
+   * @returns {SidebarTreeView}
+   */
+  get treeView() {
+    let host = this.getRootNode()?.host;
+    while (host) {
+      if (host.treeView) {
+        return host.treeView;
+      }
+      host = host.getRootNode()?.host;
+    }
+    return null;
+  }
 
   #dispatchFocusRowEvent = event => {
     const [row] = event.composedPath();
@@ -184,23 +200,11 @@ export class SidebarTabList extends FxviewTabListBase {
   }
 
   toggleRowSelection(guid) {
-    if (this.selectedGuids.has(guid)) {
-      this.selectedGuids.delete(guid);
-    } else {
-      this.selectedGuids.add(guid);
-    }
-    this.requestVirtualListUpdate();
-    this.dispatchEvent(
-      new CustomEvent("update-selection", {
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.treeView?.toggleSelection(this, guid);
   }
 
   clearSelection() {
-    this.selectedGuids.clear();
-    this.requestVirtualListUpdate();
+    this.treeView?.resetSelection();
   }
 
   get selectAllShortcut() {
@@ -212,16 +216,7 @@ export class SidebarTabList extends FxviewTabListBase {
   }
 
   selectAll() {
-    for (const { guid } of this.tabItems) {
-      this.selectedGuids.add(guid);
-    }
-    this.requestVirtualListUpdate();
-    this.dispatchEvent(
-      new CustomEvent("update-selection", {
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.treeView?.selectAllInList(this);
   }
 
   itemTemplate = (tabItem, i) => {
@@ -268,7 +263,7 @@ export class SidebarTabList extends FxviewTabListBase {
   };
 
   isTabItemSelected(tabItem) {
-    return this.selectedGuids.has(tabItem.guid);
+    return !!this.treeView?.isSelected(this, tabItem.guid);
   }
 
   stylesheets() {

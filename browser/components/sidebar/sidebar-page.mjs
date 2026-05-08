@@ -44,6 +44,16 @@ export class SidebarPage extends MozLitElement {
     return this.topWindow.SidebarController;
   }
 
+  getRowsInOrder() {
+    const rows = [];
+    for (const list of this.lists) {
+      for (const item of list.tabItems) {
+        rows.push({ list, item });
+      }
+    }
+    return rows;
+  }
+
   addContextMenuListeners() {
     this.addEventListener("contextmenu", this);
     this._contextMenu.addEventListener("command", this);

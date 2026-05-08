@@ -415,6 +415,79 @@ add_task(async function test_plain_arrow_clears_selection() {
   await PlacesUtils.bookmarks.eraseEverything();
 });
 
+add_task(async function test_shift_click_across_nested_folders() {
+  // Tests that we can multiselect rows in the following structure:
+  // V Bookmarks Toolbar
+  //   V Folder
+  //     - Inner 1
+  //     - Inner 2
+  //   - Outer 1
+  //   - Outer 2
+  const folder = await PlacesUtils.bookmarks.insert({
+    type: PlacesUtils.bookmarks.TYPE_FOLDER,
+    title: "Folder",
+    parentGuid: PlacesUtils.bookmarks.toolbarGuid,
+  });
+  await addBookmark({
+    url: "https://example.com/inner-1",
+    title: "Inner 1",
+    parentGuid: folder.guid,
+  });
+  await addBookmark({
+    url: "https://example.com/inner-2",
+    title: "Inner 2",
+    parentGuid: folder.guid,
+  });
+  await addBookmark({ url: "https://example.com/outer-1", title: "Outer 1" });
+  await addBookmark({ url: "https://example.com/outer-2", title: "Outer 2" });
+
+  const { component, contentWindow } = await showBookmarksSidebar();
+  const tabList = component.bookmarkList;
+  const toolbarFolder = await openToolbarFolder(tabList);
+  const toolbarList = await getNestedList(toolbarFolder);
+
+  const folderEl = [...toolbarList.folderEls].find(
+    el => el.guid === folder.guid
+  );
+  Assert.ok(folderEl, "Inner folder rendered.");
+  if (!folderEl.open) {
+    folderEl.open = true;
+    await TestUtils.waitForCondition(
+      () => toolbarList.expandedFolderGuids.has(folder.guid),
+      "Folder open propagated to expandedFolderGuids."
+    );
+  }
+  const innerList = await getNestedList(folderEl);
+
+  const innerRows = [...innerList.rowEls];
+  const outerRows = [...toolbarList.rowEls];
+
+  info("Click first inner row.");
+  await clickRow(innerRows[0], { accelKey: true }, contentWindow);
+  await BrowserTestUtils.waitForMutationCondition(
+    innerRows[0],
+    { attributes: true },
+    () => innerRows[0].selected
+  );
+
+  const lastOuter = outerRows.at(-1);
+  info("Shift + Click last outer row.");
+  await clickRow(lastOuter, { shiftKey: true }, contentWindow);
+  await Promise.all(
+    [...innerRows, ...outerRows].map(row =>
+      BrowserTestUtils.waitForMutationCondition(
+        row,
+        { attributes: true },
+        () => row.selected
+      )
+    )
+  );
+
+  component.treeView.resetSelection();
+  SidebarController.hide();
+  await PlacesUtils.bookmarks.eraseEverything();
+});
+
 add_task(async function test_treeview_getSelectedTabItems() {
   await addBookmark({ url: "https://example.com/1", title: "Bookmark 1" });
   await addBookmark({ url: "https://example.com/2", title: "Bookmark 2" });

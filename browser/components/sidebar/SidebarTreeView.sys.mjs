@@ -5,20 +5,27 @@
 /**
  * A controller that enables selection and keyboard navigation within a "tree"
  * view in the sidebar. This tree represents any hierarchical structure of
- * URLs, such as those from synced tabs or history visits.
+ * URLs, such as those from synced tabs, history visits, or bookmarks.
  *
- * The host component should have the following queries:
- * - `cards` for the `<moz-card>` instances of collapsible containers.
+ * The host component should expose:
+ * - `cards` — `<moz-card>` instances of collapsible containers.
+ * - `getRowsInOrder()` — returns `{ list, item }` pairs in visual
+ *    order.
+ *
+ * Selection is keyed on `(list, guid)` because guids are not globally unique
+ * across the tree. (The same URL appears in multiple cards, and each card has
+ * its own list.) Storing per-list keeps a click in a card from also marking
+ * the same URL "selected" in other cards.
  *
  * @implements {ReactiveController}
  */
 export class SidebarTreeView {
   /**
-   * All lists that currently have a row selected.
+   * Selected guids per list.
    *
-   * @type {Set<SidebarTabList>}
+   * @type {Map<SidebarTabList, Set<string>>}
    */
-  selectedLists;
+  selectedRows;
 
   /**
    * The anchor row for shift-click range selection. Holds the list and GUID of
@@ -34,7 +41,7 @@ export class SidebarTreeView {
     host.addController(this);
 
     this.multiSelect = multiSelect;
-    this.selectedLists = new Set();
+    this.selectedRows = new Map();
   }
 
   get cards() {
@@ -42,7 +49,6 @@ export class SidebarTreeView {
   }
 
   hostConnected() {
-    this.host.addEventListener("update-selection", this);
     this.host.addEventListener("clear-selection", this);
     this.host.addEventListener("set-anchor", this);
     this.host.addEventListener("shift-select", this);
@@ -50,7 +56,6 @@ export class SidebarTreeView {
   }
 
   hostDisconnected() {
-    this.host.removeEventListener("update-selection", this);
     this.host.removeEventListener("clear-selection", this);
     this.host.removeEventListener("set-anchor", this);
     this.host.removeEventListener("shift-select", this);
@@ -64,11 +69,7 @@ export class SidebarTreeView {
    */
   handleEvent(event) {
     switch (event.type) {
-      case "update-selection":
-        this.selectedLists.add(event.originalTarget);
-        break;
       case "clear-selection":
-        this.selectedLists.delete(event.originalTarget);
         this.#clearSelection();
         break;
       case "set-anchor":
@@ -85,6 +86,45 @@ export class SidebarTreeView {
 
   #setAnchor(list, guid) {
     this.#selectionAnchor = { list, guid };
+  }
+
+  #resetAnchor() {
+    this.#setAnchor(null, null);
+  }
+
+  isSelected(list, guid) {
+    const selection = this.selectedRows.get(list);
+    return selection?.has(guid);
+  }
+
+  toggleSelection(list, guid) {
+    const selection = this.#getSelectedGuids(list);
+    if (selection.has(guid)) {
+      selection.delete(guid);
+      if (!selection.size) {
+        this.selectedRows.delete(list);
+      }
+    } else {
+      selection.add(guid);
+    }
+    list.requestVirtualListUpdate();
+  }
+
+  selectAllInList(list) {
+    const selection = this.#getSelectedGuids(list);
+    for (const { guid } of list.tabItems) {
+      selection.add(guid);
+    }
+    list.requestVirtualListUpdate();
+  }
+
+  #getSelectedGuids(list) {
+    let selection = this.selectedRows.get(list);
+    if (!selection) {
+      selection = new Set();
+      this.selectedRows.set(list, selection);
+    }
+    return selection;
   }
 
   /**
@@ -293,16 +333,13 @@ export class SidebarTreeView {
     this.#setAnchor(rowEl.getRootNode().host, rowEl.guid);
   }
 
-  selectRowInList(row, list, updateList = true) {
-    list.selectedGuids.add(row.guid);
-    if (updateList) {
-      list.requestVirtualListUpdate();
-    }
-    this.selectedLists.add(list);
+  selectRowInList(row, list) {
+    this.#getSelectedGuids(list).add(row.guid);
+    list.requestVirtualListUpdate();
   }
 
   /**
-   * Select all items between current anchor and clicked row.
+   * Select all items between current anchor and clicked row, in visual order.
    *
    * If no anchor has been set, fall back to selecting just the clicked row
    * and making it the new anchor.
@@ -319,83 +356,45 @@ export class SidebarTreeView {
       return;
     }
 
-    const lists = [...this.host.lists];
-    const anchorListIndex = lists.indexOf(anchorList);
+    const rows = this.host.getRowsInOrder();
+    const anchorIndex = rows.findIndex(
+      row => row.list === anchorList && row.item.guid === anchorGuid
+    );
+    const clickedIndex = rows.findIndex(
+      row => row.list === clickedList && row.item.guid === clickedRow.guid
+    );
 
-    if (anchorListIndex === -1) {
-      // Anchor's list was destroyed (e.g. sort changed); fall back.
+    if (anchorIndex === -1 || clickedIndex === -1) {
+      // Anchor or clicked target isn't reachable in visual order (e.g. anchor's
+      // list was destroyed, or the sublist isn't currently rendered). Reset
+      // and treat the click as a fresh anchor.
+      this.#clearSelection();
       this.#setAnchor(clickedList, clickedRow.guid);
       this.selectRowInList(clickedRow, clickedList);
       return;
     }
 
-    const anchorRowIndex = anchorList.tabItems.findIndex(
-      ({ guid }) => guid === anchorGuid
-    );
-    const clickedListIndex = lists.indexOf(clickedList);
-    const clickedRowIndex = clickedList.tabItems.findIndex(
-      ({ guid }) => guid === clickedRow.guid
-    );
+    const selectedLists = [...this.selectedRows.keys()];
+    const listsToUpdate = new Set();
+    this.selectedRows.clear();
 
-    let startListIndex, startRowIndex, endListIndex, endRowIndex;
-    const clickedBelowAnchor =
-      clickedListIndex > anchorListIndex ||
-      (clickedList === anchorList && clickedRowIndex >= anchorRowIndex);
-
-    if (clickedBelowAnchor) {
-      startListIndex = anchorListIndex;
-      startRowIndex = anchorRowIndex;
-      endListIndex = clickedListIndex;
-      endRowIndex = clickedRowIndex;
+    let start, end;
+    if (anchorIndex <= clickedIndex) {
+      start = anchorIndex;
+      end = clickedIndex;
     } else {
-      startListIndex = clickedListIndex;
-      startRowIndex = clickedRowIndex;
-      endListIndex = anchorListIndex;
-      endRowIndex = anchorRowIndex;
+      start = clickedIndex;
+      end = anchorIndex;
     }
-
-    this.#selectAllBetween(
-      lists,
-      startListIndex,
-      endListIndex,
-      startRowIndex,
-      endRowIndex
-    );
-  }
-
-  /**
-   * Multiselect all rows from start to end.
-   *
-   * @param {SidebarTabList[]} lists
-   * @param {number} startListIndex
-   * @param {number} endListIndex
-   * @param {number} startRowIndex
-   * @param {number} endRowIndex
-   */
-  #selectAllBetween(
-    lists,
-    startListIndex,
-    endListIndex,
-    startRowIndex,
-    endRowIndex
-  ) {
-    this.#clearSelection();
-    for (let i = startListIndex; i <= endListIndex; i++) {
-      const list = lists[i];
-      const isFirst = i === startListIndex;
-      const isLast = i === endListIndex;
-
-      if (!isFirst && !isLast) {
-        list.selectAll();
-        continue;
-      }
-
-      const rows = list.tabItems;
-      const start = isFirst ? startRowIndex : 0;
-      const end = isLast ? endRowIndex : rows.length - 1;
-      for (let j = start; j <= end; j++) {
-        this.selectRowInList(rows[j], list, false);
-      }
+    for (let i = start; i <= end; i++) {
+      const { list, item } = rows[i];
+      this.#getSelectedGuids(list).add(item.guid);
+      listsToUpdate.add(list);
+    }
+    for (const list of selectedLists) {
+      listsToUpdate.add(list);
+    }
+    for (const list of listsToUpdate) {
       list.requestVirtualListUpdate();
     }
   }
@@ -419,9 +418,9 @@ export class SidebarTreeView {
    */
   getSelectedTabItems() {
     const items = [];
-    for (const list of this.selectedLists) {
+    for (const [list, guids] of this.selectedRows) {
       for (const item of list.tabItems) {
-        if (list.isTabItemSelected(item)) {
+        if (guids.has(item.guid)) {
           items.push(item);
         }
       }
@@ -429,15 +428,25 @@ export class SidebarTreeView {
     return items;
   }
 
-  #clearSelection() {
-    for (const list of this.selectedLists) {
-      list.clearSelection();
+  clearSelectionForList(list) {
+    if (this.#selectionAnchor.list === list) {
+      this.#resetAnchor();
     }
-    this.selectedLists.clear();
+    if (this.selectedRows.delete(list)) {
+      list.requestVirtualListUpdate();
+    }
+  }
+
+  #clearSelection() {
+    const listsToUpdate = [...this.selectedRows.keys()];
+    this.selectedRows.clear();
+    for (const list of listsToUpdate) {
+      list.requestVirtualListUpdate();
+    }
   }
 
   resetSelection() {
     this.#clearSelection();
-    this.#setAnchor(null, null);
+    this.#resetAnchor();
   }
 }
