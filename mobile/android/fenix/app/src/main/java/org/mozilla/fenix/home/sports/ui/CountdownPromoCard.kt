@@ -73,6 +73,7 @@ fun CountdownPromoCard(
                     text = stringResource(R.string.sports_widget_countdown_to_world_cup),
                     style = FirefoxTheme.typography.headline7,
                     color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(end = FirefoxTheme.layout.space.static500),
                 )
             },
             message = {
