@@ -116,13 +116,19 @@ jobs:
 
       - name: Write release mozconfig (artifact build)
         run: |
+          # `mach bootstrap --application-choice mobile_android_artifact_mode`
+          # writes its own `mozconfig` (no leading dot) at the topsrcdir. If we
+          # then create `.mozconfig` (with dot) alongside it, `mach configure`
+          # bails with "Multiple default mozconfig files present". Remove
+          # bootstrap's file and write our own to the SAME filename.
+          rm -f .mozconfig
           # MOZ_ANDROID_FAT_AAR_ARCHITECTURES makes `mach build` download Gecko
           # binaries for ALL listed archs and pack them into one geckoview AAR.
           # Without it, configure picks the host CPU (x86_64) and the resulting
           # AAR's jni/ folder only has x86_64/libxul.so — meaning the arm64-v8a
           # and armeabi-v7a APKs gradle produces will UnsatisfiedLinkError on
           # load. Fenix's ABI splits + a fat AAR is the right combination here.
-          cat > .mozconfig <<'EOF'
+          cat > mozconfig <<'EOF'
           NO_CACHE=1
           NO_NDK=1
           export MOZ_ANDROID_FAT_AAR_ARCHITECTURES="armeabi-v7a,arm64-v8a,x86_64"
@@ -144,8 +150,8 @@ jobs:
             echo "::group::config.log tail"
             tail -n 300 objdir-frontend/config.log 2>/dev/null || echo "(no config.log)"
             echo "::endgroup::"
-            echo "::group::.mozconfig"
-            cat .mozconfig
+            echo "::group::mozconfig"
+            cat mozconfig
             echo "::endgroup::"
             exit "$ec"
           }
