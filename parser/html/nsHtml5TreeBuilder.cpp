@@ -1352,8 +1352,9 @@ starttagloop:
                   findLastInScope(nsGkAtoms::select) !=
                       nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
                 generateImpliedEndTags();
-                if (findLastInScope(nsGkAtoms::option) !=
-                        nsHtml5TreeBuilder::NOT_FOUND_ON_STACK ||
+                if (!!MOZ_UNLIKELY(mViewSource) &&
+                        findLastInScope(nsGkAtoms::option) !=
+                            nsHtml5TreeBuilder::NOT_FOUND_ON_STACK ||
                     findLastInScope(nsGkAtoms::optgroup) !=
                         nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
                   errUnclosedElements(currentPtr, name);
@@ -1484,8 +1485,9 @@ starttagloop:
                 if (findLastInScope(nsGkAtoms::select) !=
                     nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
                   generateImpliedEndTagsExceptFor(nsGkAtoms::optgroup);
-                  if (findLastInScope(nsGkAtoms::option) !=
-                      nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
+                  if (!!MOZ_UNLIKELY(mViewSource) &&
+                      findLastInScope(nsGkAtoms::option) !=
+                          nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
                     errUnclosedElements(findLastInScope(nsGkAtoms::option),
                                         name);
                   }
@@ -1506,8 +1508,9 @@ starttagloop:
                 if (findLastInScope(nsGkAtoms::select) !=
                     nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
                   generateImpliedEndTags();
-                  if (findLastInScope(nsGkAtoms::option) !=
-                          nsHtml5TreeBuilder::NOT_FOUND_ON_STACK ||
+                  if (!!MOZ_UNLIKELY(mViewSource) &&
+                          findLastInScope(nsGkAtoms::option) !=
+                              nsHtml5TreeBuilder::NOT_FOUND_ON_STACK ||
                       findLastInScope(nsGkAtoms::optgroup) !=
                           nsHtml5TreeBuilder::NOT_FOUND_ON_STACK) {
                     errUnclosedElements(currentPtr, name);

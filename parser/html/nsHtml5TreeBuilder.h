@@ -36,6 +36,7 @@
 #include "nsAHtml5TreeBuilderState.h"
 #include "nsAtom.h"
 #include "nsContentUtils.h"
+#include "nsGkAtoms.h"
 #include "nsHtml5ArrayCopy.h"
 #include "nsHtml5AtomTable.h"
 #include "nsHtml5DocumentMode.h"
