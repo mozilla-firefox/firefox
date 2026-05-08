@@ -22,3 +22,7 @@ user_pref("app.update.disabledForTesting", true);
 // Browser restarts can cause the session restore suggestion to be shown when reusing a
 // profile across a set of tests. Avoid showing this infobar by default.
 user_pref("browser.startup.couldRestoreSession.count", -1);
+
+// This is used to disable address autofill telemetry since we cannot download
+// the model within tests.
+user_pref("extensions.formautofill.addresses.telemetry.mlenabled", false);
