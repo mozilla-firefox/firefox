@@ -10,7 +10,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.os.Build
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -57,8 +56,7 @@ import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
-import org.robolectric.util.ReflectionHelpers.setStaticField
-import kotlin.reflect.jvm.javaField
+import org.robolectric.annotation.Config
 import android.media.session.PlaybackState as AndroidPlaybackState
 
 @RunWith(AndroidJUnit4::class)
@@ -581,6 +579,7 @@ class MediaSessionServiceDelegateTest {
     }
 
     @Test
+    @Config(sdk = [31])
     fun `GIVEN device is at least API level 31 WHEN startForeground throws an exception THEN catch and pass the exception to the crash reporter`() = runTest {
         val crashReporter: CrashReporting = mock()
         val service: AbstractMediaSessionService = mock()
@@ -594,7 +593,6 @@ class MediaSessionServiceDelegateTest {
 
         val exception = ForegroundServiceStartNotAllowedException("Test thrown exception")
         doThrow(exception).`when`(service).startForeground(anyInt(), any())
-        setSdkInt(31)
 
         delegate.startForeground(mock(), coroutineContext)
         testScheduler.advanceUntilIdle()
@@ -603,7 +601,8 @@ class MediaSessionServiceDelegateTest {
         verify(delegate.audioFocus, never()).request(any())
     }
 
-    @Test(expected = ForegroundServiceStartNotAllowedException::class)
+    @Test(expected = RuntimeException::class)
+    @Config(sdk = [30])
     fun `GIVEN device is less than 31 WHEN startForeground throws an exception THEN rethrow the exception`() =
         runTest {
             var throwable: Throwable? = null
@@ -627,9 +626,8 @@ class MediaSessionServiceDelegateTest {
                 doReturn(notification).`when`(this).create(mock(), delegate.mediaSession)
             }
 
-            val exception = ForegroundServiceStartNotAllowedException("Test thrown exception")
+            val exception = RuntimeException("Test thrown exception")
             doThrow(exception).`when`(service).startForeground(anyInt(), any())
-            setSdkInt(30)
 
             delegate.startForeground(mock(), exceptionHandler)
 
@@ -641,8 +639,4 @@ class MediaSessionServiceDelegateTest {
         url = "https://www.mozilla.org",
         mediaSessionState = MediaSessionState(mock(), playbackState = playbackState),
     )
-
-    private fun setSdkInt(sdkVersion: Int) {
-        setStaticField(Build.VERSION::SDK_INT.javaField, sdkVersion)
-    }
 }
