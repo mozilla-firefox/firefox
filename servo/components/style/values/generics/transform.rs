@@ -442,20 +442,21 @@ pub trait ToMatrix {
 /// A little helper to deal with both specified and computed angles.
 pub trait ToRadians {
     /// Return the radians value as a 64-bit floating point value.
-    fn radians64(&self) -> f64;
+    fn radians64(&self) -> Result<f64, ()>;
 }
 
 impl ToRadians for computed::angle::Angle {
     #[inline]
-    fn radians64(&self) -> f64 {
-        computed::angle::Angle::radians64(self)
+    fn radians64(&self) -> Result<f64, ()> {
+        Ok(computed::angle::Angle::radians64(self))
     }
 }
 
 impl ToRadians for SpecifiedAngle {
     #[inline]
-    fn radians64(&self) -> f64 {
-        computed::angle::Angle::from_degrees(self.degrees()).radians64()
+    fn radians64(&self) -> Result<f64, ()> {
+        let degrees = self.degrees().ok_or(())?;
+        Ok(computed::angle::Angle::from_degrees(degrees).radians64())
     }
 }
 
@@ -495,7 +496,7 @@ impl ToFloat for computed::Number {
 impl<Angle, Number, Length, Integer, LoP> ToMatrix
     for TransformOperation<Angle, Number, Length, Integer, LoP>
 where
-    Angle: Zero + ToRadians + Copy,
+    Angle: Zero + ToRadians + Clone,
     Number: PartialEq + Clone + ToFloat + ToFloat,
     Length: ToAbsoluteLength,
     LoP: Zero + ToAbsoluteLength + ZeroNoPercent,
@@ -524,8 +525,8 @@ where
         let reference_width = reference_box.map(|v| v.size.width);
         let reference_height = reference_box.map(|v| v.size.height);
         let matrix = match *self {
-            Rotate3D(ref ax, ref ay, ref az, theta) => {
-                let theta = theta.radians64();
+            Rotate3D(ref ax, ref ay, ref az, ref theta) => {
+                let theta = theta.radians64()?;
                 let (ax, ay, az, theta) = get_normalized_vector_and_angle(
                     ax.to_f32()?,
                     ay.to_f32()?,
@@ -539,16 +540,16 @@ where
                     euclid::Angle::radians(theta),
                 )
             },
-            RotateX(theta) => {
-                let theta = euclid::Angle::radians(theta.radians64());
+            RotateX(ref theta) => {
+                let theta = euclid::Angle::radians(theta.radians64()?);
                 Transform3D::rotation(1., 0., 0., theta)
             },
-            RotateY(theta) => {
-                let theta = euclid::Angle::radians(theta.radians64());
+            RotateY(ref theta) => {
+                let theta = euclid::Angle::radians(theta.radians64()?);
                 Transform3D::rotation(0., 1., 0., theta)
             },
-            RotateZ(theta) | Rotate(theta) => {
-                let theta = euclid::Angle::radians(theta.radians64());
+            RotateZ(ref theta) | Rotate(ref theta) => {
+                let theta = euclid::Angle::radians(theta.radians64()?);
                 Transform3D::rotation(0., 0., 1., theta)
             },
             Perspective(ref p) => {
@@ -584,17 +585,17 @@ where
                 Transform3D::translation(0., t, 0.)
             },
             TranslateZ(ref z) => Transform3D::translation(0., 0., z.to_pixel_length(None)? as f64),
-            Skew(theta_x, theta_y) => Transform3D::skew(
-                euclid::Angle::radians(theta_x.radians64()),
-                euclid::Angle::radians(theta_y.radians64()),
+            Skew(ref theta_x, ref theta_y) => Transform3D::skew(
+                euclid::Angle::radians(theta_x.radians64()?),
+                euclid::Angle::radians(theta_y.radians64()?),
             ),
-            SkewX(theta) => Transform3D::skew(
-                euclid::Angle::radians(theta.radians64()),
+            SkewX(ref theta) => Transform3D::skew(
+                euclid::Angle::radians(theta.radians64()?),
                 euclid::Angle::radians(0.),
             ),
-            SkewY(theta) => Transform3D::skew(
+            SkewY(ref theta) => Transform3D::skew(
                 euclid::Angle::radians(0.),
-                euclid::Angle::radians(theta.radians64()),
+                euclid::Angle::radians(theta.radians64()?),
             ),
             Matrix3D(ref m) => m.clone().try_into()?,
             Matrix(ref m) => m.clone().try_into()?,
@@ -758,7 +759,7 @@ pub trait IsParallelTo {
 impl<Number, Angle> ToCss for Rotate<Number, Angle>
 where
     Number: Clone + PartialOrd + ToCss + Zero,
-    Angle: Copy + Neg<Output = Angle> + ToCss + Zero,
+    Angle: Clone + Neg<Output = Angle> + ToCss + Zero,
     (Number, Number, Number): IsParallelTo,
 {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
@@ -769,7 +770,7 @@ where
         match *self {
             Rotate::None => dest.write_str("none"),
             Rotate::Rotate(ref angle) => angle.to_css(dest),
-            Rotate::Rotate3D(ref x, ref y, ref z, angle) => {
+            Rotate::Rotate3D(ref x, ref y, ref z, ref angle) => {
                 // If the axis is parallel with the x or y axes, it must serialize as the
                 // appropriate keyword. If a rotation about the z axis (that is, in 2D) is
                 // specified, the property must serialize as just an <angle>.
@@ -786,23 +787,35 @@ where
                     // using that direction vector. So we *have* to serialize it using that same
                     // vector - we can't simplify to some theoretically parallel axis-aligned
                     // vector.
-                    (None, angle)
+                    (None, angle.clone())
                 } else if v.is_parallel_to(&DirectionVector::new(1., 0., 0.)) {
                     (
                         Some("x "),
-                        if v.0 < Number::zero() { -angle } else { angle },
+                        if v.0 < Number::zero() {
+                            -angle.clone()
+                        } else {
+                            angle.clone()
+                        },
                     )
                 } else if v.is_parallel_to(&DirectionVector::new(0., 1., 0.)) {
                     (
                         Some("y "),
-                        if v.1 < Number::zero() { -angle } else { angle },
+                        if v.1 < Number::zero() {
+                            -angle.clone()
+                        } else {
+                            angle.clone()
+                        },
                     )
                 } else if v.is_parallel_to(&DirectionVector::new(0., 0., 1.)) {
                     // When we're parallel to the z-axis, we can just serialize the angle.
-                    let angle = if v.2 < Number::zero() { -angle } else { angle };
+                    let angle = if v.2 < Number::zero() {
+                        -angle.clone()
+                    } else {
+                        angle.clone()
+                    };
                     return angle.to_css(dest);
                 } else {
-                    (None, angle)
+                    (None, angle.clone())
                 };
                 match axis {
                     Some(a) => dest.write_str(a)?,

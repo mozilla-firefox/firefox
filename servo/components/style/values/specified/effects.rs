@@ -233,7 +233,7 @@ impl Filter {
                 )))
             },
             Filter::HueRotate(ref angle) => Ok(ComputedFilter::HueRotate(
-                ComputedAngle::from_degrees(angle.degrees()),
+                ComputedAngle::from_degrees(angle.degrees().ok_or(())?),
             )),
             Filter::Invert(ref factor) => {
                 Ok(ComputedFilter::Invert(ComputedZeroToOneNumber::from(

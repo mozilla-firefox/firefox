@@ -315,10 +315,12 @@ impl Parse for SpecifiedFontStyle {
 impl ToComputedValue for SpecifiedFontStyle {
     type ComputedValue = computed::FontStyle;
 
-    fn to_computed_value(&self, _: &Context) -> Self::ComputedValue {
+    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
         match *self {
             Self::Italic => computed::FontStyle::ITALIC,
-            Self::Oblique(ref angle) => computed::FontStyle::oblique(angle.degrees()),
+            Self::Oblique(ref angle) => {
+                computed::FontStyle::oblique(angle.to_computed_value(context).degrees())
+            },
         }
     }
 
@@ -327,7 +329,7 @@ impl ToComputedValue for SpecifiedFontStyle {
             return Self::Italic;
         }
         let degrees = computed.oblique_degrees();
-        generics::FontStyle::Oblique(Angle::from_degrees(degrees, /* was_calc = */ false))
+        generics::FontStyle::Oblique(Angle::from_degrees(degrees))
     }
 }
 
@@ -344,11 +346,13 @@ pub const FONT_STYLE_OBLIQUE_MIN_ANGLE_DEGREES: f32 = -90.;
 
 impl SpecifiedFontStyle {
     /// Gets a clamped angle in degrees from a specified Angle.
-    pub fn compute_angle_degrees(angle: &Angle) -> f32 {
-        angle
-            .degrees()
-            .max(FONT_STYLE_OBLIQUE_MIN_ANGLE_DEGREES)
-            .min(FONT_STYLE_OBLIQUE_MAX_ANGLE_DEGREES)
+    pub fn compute_angle_degrees(angle: &Angle) -> Option<f32> {
+        Some(
+            angle
+                .degrees()?
+                .max(FONT_STYLE_OBLIQUE_MIN_ANGLE_DEGREES)
+                .min(FONT_STYLE_OBLIQUE_MAX_ANGLE_DEGREES),
+        )
     }
 
     /// Parse a suitable angle for font-style: oblique.
@@ -357,11 +361,12 @@ impl SpecifiedFontStyle {
         input: &mut Parser<'i, 't>,
     ) -> Result<Angle, ParseError<'i>> {
         let angle = Angle::parse(context, input)?;
-        if angle.was_calc() {
+        // Calc angles can exceed the range and are clamped at computed-value time.
+        if matches!(angle, Angle::Calc(_)) {
             return Ok(angle);
         }
 
-        let degrees = angle.degrees();
+        let degrees = angle.degrees().unwrap();
         if degrees < FONT_STYLE_OBLIQUE_MIN_ANGLE_DEGREES
             || degrees > FONT_STYLE_OBLIQUE_MAX_ANGLE_DEGREES
         {
@@ -372,16 +377,13 @@ impl SpecifiedFontStyle {
 
     /// The default angle for `font-style: oblique`.
     pub fn default_angle() -> Angle {
-        Angle::from_degrees(
-            computed::FontStyle::DEFAULT_OBLIQUE_DEGREES as f32,
-            /* was_calc = */ false,
-        )
+        Angle::from_degrees(computed::FontStyle::DEFAULT_OBLIQUE_DEGREES as f32)
     }
 }
 
 /// The specified value of the `font-style` property.
 #[derive(
-    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
+    Clone, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 #[allow(missing_docs)]
 #[typed(todo_derive_fields)]

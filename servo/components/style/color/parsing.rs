@@ -16,7 +16,7 @@ use crate::{
     parser::{Parse, ParserContext},
     values::{
         generics::{calc::CalcUnits, Optional},
-        specified::{angle::Angle as SpecifiedAngle, calc::Leaf, color::Color as SpecifiedColor},
+        specified::{angle::NoCalcAngle, calc::Leaf, color::Color as SpecifiedColor},
     },
 };
 use cssparser::{
@@ -450,10 +450,7 @@ impl ColorComponentType for NumberOrAngleComponent {
             Token::Dimension {
                 value, ref unit, ..
             } => {
-                let degrees =
-                    SpecifiedAngle::parse_dimension(value, unit, /* from_calc = */ false)
-                        .map(|angle| angle.degrees())?;
-
+                let degrees = NoCalcAngle::parse_dimension(value, unit)?.degrees();
                 NumberOrAngleComponent::Angle(degrees)
             },
             _ => {

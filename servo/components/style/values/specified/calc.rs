@@ -21,7 +21,7 @@ use crate::values::generics::position::{
 use crate::values::specified::length::{AbsoluteLength, FontRelativeLength, NoCalcLength};
 use crate::values::specified::length::{ContainerRelativeLength, ViewportPercentageLength};
 use crate::values::specified::{
-    self, Angle, NoCalcNumber, NoCalcPercentage, NoCalcResolution, NoCalcTime,
+    NoCalcAngle, NoCalcNumber, NoCalcPercentage, NoCalcResolution, NoCalcTime,
 };
 use crate::values::{CSSFloat, DashedIdent};
 use cssparser::{match_ignore_ascii_case, CowRcStr, Parser, Token};
@@ -89,7 +89,7 @@ pub enum Leaf {
     /// `<length>`
     Length(NoCalcLength),
     /// `<angle>`
-    Angle(Angle),
+    Angle(NoCalcAngle),
     /// `<time>`
     Time(NoCalcTime),
     /// `<resolution>`
@@ -216,6 +216,14 @@ impl CalcNumeric {
     pub fn as_resolution(&self) -> Option<NoCalcResolution> {
         match self.node.resolve() {
             Ok(Leaf::Resolution(r)) => Some(r),
+            _ => None,
+        }
+    }
+
+    /// Gets this calc expression as an angle
+    pub fn as_angle(&self) -> Option<NoCalcAngle> {
+        match self.node.resolve() {
+            Ok(Leaf::Angle(a)) => Some(a),
             _ => None,
         }
     }
@@ -427,6 +435,7 @@ impl generic::CalcNodeLeaf for Leaf {
             },
             Leaf::Resolution(ref mut r) => *r = NoCalcResolution::from_dppx(r.dppx()),
             Leaf::Time(ref mut t) => *t = NoCalcTime::from_seconds(t.seconds()),
+            Leaf::Angle(ref mut a) => *a = NoCalcAngle::from_degrees(a.degrees()),
             _ => (),
         }
     }
@@ -450,7 +459,7 @@ impl generic::CalcNodeLeaf for Leaf {
                 *one = NoCalcPercentage::new(one.get() + other.get());
             },
             (&mut Angle(ref mut one), &Angle(ref other)) => {
-                *one = specified::Angle::from_calc(one.degrees() + other.degrees());
+                *one = NoCalcAngle::from_degrees(one.degrees() + other.degrees());
             },
             (&mut Time(ref mut one), &Time(ref other)) => {
                 *one = NoCalcTime::from_seconds(one.seconds() + other.seconds());
@@ -531,7 +540,7 @@ impl generic::CalcNodeLeaf for Leaf {
                 ))));
             },
             (&Angle(ref one), &Angle(ref other)) => {
-                return Ok(Leaf::Angle(specified::Angle::from_calc(op(
+                return Ok(Leaf::Angle(NoCalcAngle::from_degrees(op(
                     one.degrees(),
                     other.degrees(),
                 ))));
@@ -569,7 +578,7 @@ impl generic::CalcNodeLeaf for Leaf {
     fn map(&mut self, mut op: impl FnMut(f32) -> f32) -> Result<(), ()> {
         Ok(match self {
             Leaf::Length(one) => *one = one.map(op),
-            Leaf::Angle(one) => *one = specified::Angle::from_calc(op(one.degrees())),
+            Leaf::Angle(one) => *one = NoCalcAngle::from_degrees(op(one.degrees())),
             Leaf::Time(one) => *one = NoCalcTime::from_seconds(op(one.seconds())),
             Leaf::Resolution(one) => *one = NoCalcResolution::from_dppx(op(one.dppx())),
             Leaf::Percentage(one) => *one = NoCalcPercentage::new(op(one.get())),
@@ -717,7 +726,7 @@ impl CalcNode {
                     }
                 }
                 if allowed.includes(CalcUnits::ANGLE) {
-                    if let Ok(a) = Angle::parse_dimension(value, unit, /* from_calc = */ true) {
+                    if let Ok(a) = NoCalcAngle::parse_dimension(value, unit) {
                         return Ok(CalcNode::Leaf(Leaf::Angle(a)));
                     }
                 }
@@ -948,7 +957,7 @@ impl CalcNode {
                         },
                     };
 
-                    Ok(Self::Leaf(Leaf::Angle(Angle::from_radians(radians))))
+                    Ok(Self::Leaf(Leaf::Angle(NoCalcAngle::from_radians(radians))))
                 },
                 MathFunction::Atan2 => {
                     let allow_all = allowed.new_including(CalcUnits::ALL);
@@ -989,7 +998,7 @@ impl CalcNode {
                         Ok(a.atan2(b))
                     })?;
 
-                    Ok(Self::Leaf(Leaf::Angle(Angle::from_radians(radians))))
+                    Ok(Self::Leaf(Leaf::Angle(NoCalcAngle::from_radians(radians))))
                 },
                 MathFunction::Pow => {
                     let a = Self::parse_number_argument(context, input)?;
@@ -1306,16 +1315,30 @@ impl CalcNode {
         }
     }
 
-    /// Tries to simplify this expression into an `Angle` value.
-    fn to_angle(&self) -> Result<Angle, ()> {
+    /// Tries to simplify this expression into a `NoCalcAngle` value.
+    fn to_angle(&self) -> Result<NoCalcAngle, ()> {
         let degrees = if let Leaf::Angle(angle) = self.resolve()? {
             angle.degrees()
         } else {
             return Err(());
         };
 
-        let result = Angle::from_calc(degrees);
-        Ok(result)
+        Ok(NoCalcAngle::from_degrees(degrees))
+    }
+
+    /// Tries to simplify this expression into a `CalcNumeric` value.
+    fn into_angle(mut self, clamping_mode: AllowedNumericType) -> Result<CalcNumeric, ()> {
+        self.simplify_and_sort();
+
+        let unit: CalcUnits = self.unit()?;
+        if !CalcUnits::ANGLE.intersects(unit) {
+            Err(())
+        } else {
+            Ok(CalcNumeric {
+                clamping_mode,
+                node: self,
+            })
+        }
     }
 
     /// Tries to simplify this expression into a `<number>` value.
@@ -1470,9 +1493,9 @@ impl CalcNode {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
         function: MathFunction,
-    ) -> Result<Angle, ParseError<'i>> {
+    ) -> Result<CalcNumeric, ParseError<'i>> {
         Self::parse(context, input, function, AllowParse::new(CalcUnits::ANGLE))?
-            .to_angle()
+            .into_angle(AllowedNumericType::All)
             .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     }
 

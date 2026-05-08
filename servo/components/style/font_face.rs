@@ -467,15 +467,14 @@ impl ToCss for FontStyle {
 
 impl FontStyle {
     /// Returns a computed font-style descriptor.
-    pub fn compute(&self) -> ComputedFontStyleDescriptor {
+    pub fn compute(&self) -> Option<ComputedFontStyleDescriptor> {
         match *self {
-            FontStyle::Italic => ComputedFontStyleDescriptor::Italic,
+            FontStyle::Italic => Some(ComputedFontStyleDescriptor::Italic),
             FontStyle::Oblique(ref first, ref second) => {
-                let (min, max) = sort_range(
-                    SpecifiedFontStyle::compute_angle_degrees(first),
-                    SpecifiedFontStyle::compute_angle_degrees(second),
-                );
-                ComputedFontStyleDescriptor::Oblique(min, max)
+                let first = SpecifiedFontStyle::compute_angle_degrees(first)?;
+                let second = SpecifiedFontStyle::compute_angle_degrees(second)?;
+                let (min, max) = sort_range(first, second);
+                Some(ComputedFontStyleDescriptor::Oblique(min, max))
             },
         }
     }

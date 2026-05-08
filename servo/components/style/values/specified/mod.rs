@@ -25,7 +25,7 @@ use style_traits::values::specified::AllowedNumericType;
 use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 
 pub use self::align::{ContentDistribution, ItemPlacement, JustifyItems, SelfAlignment};
-pub use self::angle::{AllowUnitlessZeroAngle, Angle};
+pub use self::angle::{AllowUnitlessZeroAngle, Angle, NoCalcAngle};
 pub use self::animation::{
     AnimationComposition, AnimationDirection, AnimationDuration, AnimationFillMode,
     AnimationIterationCount, AnimationName, AnimationPlayState, AnimationRangeEnd,

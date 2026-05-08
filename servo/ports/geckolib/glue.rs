@@ -3745,7 +3745,18 @@ pub extern "C" fn Servo_FontFaceRule_GetFontStyle(
     rule: &LockedFontFaceRule,
     out: &mut font_face::ComputedFontStyleDescriptor,
 ) -> bool {
-    simple_font_descriptor_getter_impl!(rule, out, font_style, compute)
+    read_locked_arc_worker(rule, |rule: &FontFaceRule| {
+        match rule
+            .descriptors
+            .font_style
+            .as_ref()
+            .and_then(|f| f.compute())
+        {
+            Some(v) => *out = v,
+            None => return false,
+        }
+        true
+    })
 }
 
 #[no_mangle]
@@ -9505,7 +9516,10 @@ pub unsafe extern "C" fn Servo_ParseFontShorthandForMatching(
 
     *style = match *specified_font_style {
         GenericFontStyle::Italic => FontStyle::ITALIC,
-        GenericFontStyle::Oblique(ref angle) => FontStyle::oblique(angle.degrees()),
+        GenericFontStyle::Oblique(ref angle) => match angle.degrees() {
+            Some(d) => FontStyle::oblique(d),
+            None => return false,
+        },
     };
 
     *stretch = match font.font_stretch {
