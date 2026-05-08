@@ -99,7 +99,16 @@ jobs:
           restore-keys: |
             mozbuild-${{ runner.os }}-artifact-
 
+      # mach reads any `mozconfig` (no leading dot) at the repo root and silently
+      # hangs early if it includes an in-tree mozconfig (those reference TaskCluster-
+      # only paths). Wipe any stale one before bootstrap so it can't poison the run.
+      - name: Remove stale mozconfig
+        run: rm -f mozconfig .mozconfig
+
       - name: Bootstrap mach (mobile_android_artifact_mode)
+        timeout-minutes: 20
+        env:
+          PYTHONUNBUFFERED: '1'
         run: |
           ./mach --no-interactive bootstrap \
             --application-choice mobile_android_artifact_mode \
@@ -107,9 +116,16 @@ jobs:
 
       - name: Write release mozconfig (artifact build)
         run: |
+          # MOZ_ANDROID_FAT_AAR_ARCHITECTURES makes `mach build` download Gecko
+          # binaries for ALL listed archs and pack them into one geckoview AAR.
+          # Without it, configure picks the host CPU (x86_64) and the resulting
+          # AAR's jni/ folder only has x86_64/libxul.so — meaning the arm64-v8a
+          # and armeabi-v7a APKs gradle produces will UnsatisfiedLinkError on
+          # load. Fenix's ABI splits + a fat AAR is the right combination here.
           cat > .mozconfig <<'EOF'
           NO_CACHE=1
           NO_NDK=1
+          export MOZ_ANDROID_FAT_AAR_ARCHITECTURES="armeabi-v7a,arm64-v8a,x86_64"
           ac_add_options --enable-project=mobile/android
           ac_add_options --enable-artifact-builds
           ac_add_options --disable-compile-environment
@@ -118,7 +134,7 @@ jobs:
           EOF
 
       - name: Configure mach
-        timeout-minutes: 30
+        timeout-minutes: 15
         env:
           PYTHONUNBUFFERED: '1'
         run: |
@@ -133,6 +149,17 @@ jobs:
             echo "::endgroup::"
             exit "$ec"
           }
+
+      # `gradlew :app:assembleRelease` resolves geckoview against the maven repo
+      # at `objdir-frontend/gradle/maven`. That repo is empty until `mach build`
+      # downloads the Gecko binaries (dist/bin, dist/geckoview) and publishes
+      # the geckoview AAR built from them. Without this step the gradle build
+      # fails with `Could not find org.mozilla.geckoview:geckoview-omni:...`.
+      - name: Build Gecko binaries and publish geckoview AAR
+        timeout-minutes: 30
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: ./mach --no-interactive build
 
       - name: Decode signing keystore
         env:
@@ -149,6 +176,7 @@ jobs:
 
       - name: Build release APK
         working-directory: mobile/android/fenix
+        timeout-minutes: 60
         env:
           KEYSTORE_PATH: ${{ env.SIGNING_KEYSTORE_PATH }}
           KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
@@ -167,9 +195,15 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
-          mapfile -t built < <(find mobile/android/fenix/app/build/outputs/apk -name '*.apk' -type f | sort)
+          # Mozilla's gradle conventions plugin redirects the build directory into
+          # the objdir, so APKs land here (NOT under mobile/android/fenix/app/build/).
+          apk_dir="objdir-frontend/gradle/build/mobile/android/fenix/app/outputs/apk/release"
+          mapfile -t built < <(find "$apk_dir" -name '*.apk' -type f 2>/dev/null | sort)
           if [ "${#built[@]}" -eq 0 ]; then
-            echo "ERROR: no APK found under mobile/android/fenix/app/build/outputs/apk" >&2
+            echo "ERROR: no APK found under $apk_dir" >&2
+            echo "::group::what's in objdir gradle build dir"
+            find objdir-frontend/gradle/build -name '*.apk' -type f 2>/dev/null || true
+            echo "::endgroup::"
             exit 1
           fi
 

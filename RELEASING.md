@@ -122,15 +122,11 @@ The first release will work for sideload, but a few items still bite:
    Change to e.g. `it.bproject.robowolf` so installs co-exist. This also
    matches Mozilla's trademark policy.
 
-2. **Launcher icon and any embedded fox glyphs**. Until you replace these
-   with original Robowolf artwork, distributing the APK violates Mozilla's
-   trademark policy regardless of the rename in strings.
-
-3. **Adjust SDK** is still pulled in via gradle deps even though we
+2. **Adjust SDK** is still pulled in via gradle deps even though we
    disabled it at runtime. F-Droid won't accept this; for GitHub-only
    distribution it's fine but worth removing eventually.
 
-4. **The other 121 locale `strings.xml` files** still say "Firefox". For
+3. **The other 121 locale `strings.xml` files** still say "Firefox". For
    any locale you support publicly, run the same bulk replace we did for
    English and Italian.
 
