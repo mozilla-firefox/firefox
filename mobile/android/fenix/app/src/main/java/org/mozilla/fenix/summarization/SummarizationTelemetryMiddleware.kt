@@ -76,11 +76,11 @@ class SummarizationTelemetryMiddleware(
         when (action) {
             ViewAppeared -> handleViewAppeared(stateBefore)
             is SummarizationRequested -> {
-                sessionTelemetry = sessionTelemetry.copy(model = action.info.nameRes.toString())
+                sessionTelemetry = sessionTelemetry.copy(model = action.info.model)
             }
             is ContentExtracted -> handleExtractedContent(action.content)
             is SummarizationCompleted -> recordSummarizationCompleted()
-            is SummarizationFailed -> recordSummarizationCompleted(success = false, action.throwable.errorType)
+            is SummarizationFailed -> recordSummarizationCompleted(success = false, action.throwable)
             ViewDismissed -> {
                 AiSummarize.closed.record(
                     AiSummarize.ClosedExtra(
@@ -119,8 +119,6 @@ class SummarizationTelemetryMiddleware(
     }
 
     private fun handleViewAppeared(stateBefore: SummarizationState) {
-        AiSummarize.requested.record()
-        timerId = AiSummarize.duration.start()
         if (stateBefore is SummarizationState.Inert) {
             val trigger = if (stateBefore.initializedWithShake) {
                 SummarizationTrigger.SHAKE
@@ -129,6 +127,10 @@ class SummarizationTelemetryMiddleware(
             }
             sessionTelemetry = sessionTelemetry.copy(trigger = trigger)
         }
+        AiSummarize.requested.record(
+            AiSummarize.RequestedExtra(trigger = sessionTelemetry.trigger?.toString()),
+        )
+        timerId = AiSummarize.duration.start()
     }
 
     private fun handleExtractedContent(content: Content) {
@@ -151,7 +153,7 @@ class SummarizationTelemetryMiddleware(
         )
     }
 
-    private fun recordSummarizationCompleted(success: Boolean = true, errorType: String? = null) {
+    private fun recordSummarizationCompleted(success: Boolean = true, error: Throwable? = null) {
         timerId?.let {
             AiSummarize.duration.stopAndAccumulate(it)
             timerId = null
@@ -161,7 +163,8 @@ class SummarizationTelemetryMiddleware(
             AiSummarize.CompletedExtra(
                 connectionType = connectionType.toString(),
                 contentType = sessionTelemetry.contentMetrics?.contentType,
-                errorType = errorType,
+                errorType = error?.errorType,
+                errorCode = error?.errorCode,
                 language = sessionTelemetry.contentMetrics?.language,
                 lengthChars = sessionTelemetry.contentMetrics?.charCount,
                 lengthWords = sessionTelemetry.contentMetrics?.wordCount,
@@ -173,4 +176,6 @@ class SummarizationTelemetryMiddleware(
     }
 }
 
-private val Throwable.errorType get() = (this as? Llm.Exception)?.errorCode?.value?.toString()
+private val Throwable.errorType get() = this::class.simpleName
+
+private val Throwable.errorCode get() = (this as? Llm.Exception)?.errorCode?.value

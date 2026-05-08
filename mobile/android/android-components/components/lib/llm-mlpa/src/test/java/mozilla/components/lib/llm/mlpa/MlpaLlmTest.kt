@@ -33,6 +33,7 @@ class MlpaLlmTest {
                 successChatService.completion(token, request)
             },
             authorizationToken = AuthorizationToken.Integrity("my-test-token"),
+            model = ChatService.Request.ModelID.mozSummarization,
         )
 
         val actual = llm.prompt(Prompt("This is my prompt")).toList()
@@ -49,6 +50,7 @@ class MlpaLlmTest {
         val llm = MlpaLlm(
             chatService = failureChatService,
             authorizationToken = AuthorizationToken.Integrity("my-test-token"),
+            model = ChatService.Request.ModelID.mozSummarization,
         )
 
         llm.prompt(Prompt("This is my prompt"))
@@ -67,6 +69,7 @@ class MlpaLlmTest {
                 successChatService.completion(token, request)
             },
             authorizationToken = AuthorizationToken.Integrity("my-test-token"),
+            model = ChatService.Request.ModelID.mozSummarization,
         )
 
         llm.prompt(Prompt("user prompt", "system prompt")).toList()
@@ -88,6 +91,7 @@ class MlpaLlmTest {
                 successChatService.completion(token, request)
             },
             authorizationToken = AuthorizationToken.Integrity("my-test-token"),
+            model = ChatService.Request.ModelID.mozSummarization,
         )
 
         llm.prompt(Prompt("user prompt", null)).toList()

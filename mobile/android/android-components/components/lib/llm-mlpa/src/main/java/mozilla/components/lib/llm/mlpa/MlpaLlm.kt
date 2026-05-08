@@ -16,19 +16,19 @@ import mozilla.components.lib.llm.mlpa.service.ChatService.Request.ModelID
 internal class MlpaLlm(
     val chatService: ChatService,
     val authorizationToken: AuthorizationToken,
+    val model: ModelID,
 ) : Llm {
     override suspend fun prompt(prompt: Prompt): Flow<String> = chatService.completion(
         authorizationToken,
-        request = prompt.asRequest,
+        request = prompt.toRequest(model),
     )
 }
 
-internal val Prompt.asRequest
-    get() = Request(
-        model = ModelID.mozSummarization,
-        messages = buildList {
-            systemPrompt?.let { add(Message.system(it)) }
-            add(Message.user(userPrompt))
-        },
-        stream = true,
-    )
+internal fun Prompt.toRequest(model: ModelID) = Request(
+    model = model,
+    messages = buildList {
+        systemPrompt?.let { add(Message.system(it)) }
+        add(Message.user(userPrompt))
+    },
+    stream = true,
+)
