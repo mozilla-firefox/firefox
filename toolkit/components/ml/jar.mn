@@ -28,6 +28,7 @@ toolkit.jar:
     content/global/ml/backends/OpenAIPipeline.mjs         (content/backends/OpenAIPipeline.mjs)
     content/global/ml/backends/StaticEmbeddingsPipeline.mjs (content/backends/StaticEmbeddingsPipeline.mjs)
     content/global/ml/openai.mjs                          (vendor/openai/dist/openai.mjs)
+    content/global/ml/firefox_inference/runner.js         (src/firefox_inference/runner.js)
     content/global/ml/MLTelemetry.sys.mjs                 (MLTelemetry.sys.mjs)
     content/global/ml/security/ConditionEvaluator.sys.mjs            (security/ConditionEvaluator.sys.mjs)
     content/global/ml/security/DecisionTypes.sys.mjs                 (security/DecisionTypes.sys.mjs)

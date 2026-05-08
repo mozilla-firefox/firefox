@@ -15,6 +15,7 @@ with Files("**"):
 DIRS += [
     "actors",
     "security",
+    "src/firefox_inference",
     "tests",
 ]
 
@@ -25,6 +26,7 @@ XPCSHELL_TESTS_MANIFESTS += ["tests/xpcshell/xpcshell.toml"]
 
 BROWSER_CHROME_MANIFESTS += [
     "tests/browser/browser.toml",
+    "tests/browser/browser_ml_driver/browser.toml",
     "tests/browser/perftest.toml",
     "tests/browser_eval/eval.toml",
 ]

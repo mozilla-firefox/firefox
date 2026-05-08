@@ -1,0 +1,10 @@
+[DEFAULT]
+prefs = ["browser.ml.modelHubRootUrl='chrome://mochitests/content/browser/toolkit/components/ml/tests/browser/data'"]
+support-files = [
+  "head.js",
+  "../head.js",
+  "../shared-head.js",
+  "../data/**/*.*",
+]
+
+["browser_ml_driver.js"]
