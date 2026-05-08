@@ -35,6 +35,7 @@ import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.setTextColor
 import org.mozilla.fenix.ext.showToolbar
 import org.mozilla.fenix.library.LibraryPageFragment
+import androidx.appcompat.R as appcompatR
 
 /**
  * Screen showing all recently closed tabs.
@@ -63,7 +64,7 @@ class RecentlyClosedFragment :
             inflater.inflate(R.menu.history_select_multi, menu)
             menu.findItem(R.id.delete_history_multi_select)?.let { deleteItem ->
                 deleteItem.title = SpannableString(deleteItem.title)
-                    .apply { setTextColor(requireContext(), R.attr.textCritical) }
+                    .apply { setTextColor(requireContext(), appcompatR.attr.colorError) }
             }
         } else {
             inflater.inflate(R.menu.library_menu, menu)

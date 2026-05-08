@@ -82,8 +82,6 @@
     <color name="fx_mobile_text_color_secondary">@color/photonLightGrey40</color>
     <!-- Disabled text -->
     <color name="fx_mobile_text_color_disabled">@color/photonLightGrey05A40</color>
-    <!-- Warning text -->
-    <color name="fx_mobile_text_color_critical">@color/photonRed20</color>
     <!-- Warning text on Secondary button -->
     <color name="fx_mobile_text_color_critical_button">@color/photonRed20</color>
     <!-- Small heading, Text link -->

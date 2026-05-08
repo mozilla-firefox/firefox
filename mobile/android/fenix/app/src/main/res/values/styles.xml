@@ -37,9 +37,9 @@
         <item name="android:textColorLink">@color/fx_mobile_text_color_accent</item>
 
         <item name="mozacInputLayoutErrorTextColor"
-            tools:ignore="UnusedResources">@color/fx_mobile_text_color_critical</item>
+            tools:ignore="UnusedResources">@color/fx_mobile_error</item>
         <item name="mozacInputLayoutErrorIconColor"
-            tools:ignore="UnusedResources">@color/fx_mobile_text_color_critical</item>
+            tools:ignore="UnusedResources">@color/fx_mobile_error</item>
         <item name="mozacLoginSelectHeaderTextStyle" tools:ignore="UnusedResources">@style/SelectPromptHeaderTextStyle</item>
         <item name="mozacSelectCreditCardHeaderTextStyle" tools:ignore="UnusedResources">@style/SelectPromptHeaderTextStyle</item>
         <item name="mozacSelectAddressHeaderTextStyle" tools:ignore="UnusedResources">@style/SelectPromptHeaderTextStyle</item>
@@ -114,8 +114,6 @@
         <item name="textSecondary">@color/fx_mobile_text_color_secondary</item>
         <!-- Disabled text -->
         <item name="textDisabled">@color/fx_mobile_text_color_disabled</item>
-        <!-- Warning text -->
-        <item name="textCritical">@color/fx_mobile_text_color_critical</item>
         <!-- Small heading, Text link -->
         <item name="textAccent">@color/fx_mobile_text_color_accent</item>
         <!-- Text Inverted/On Color -->
@@ -325,9 +323,9 @@
         <item name="bottomSheetDialogTheme">@style/BottomSheetPrivate</item>
 
         <item name="mozacInputLayoutErrorTextColor"
-            tools:ignore="UnusedResources">@color/fx_mobile_private_text_color_critical</item>
+            tools:ignore="UnusedResources">@color/fx_mobile_private_error</item>
         <item name="mozacInputLayoutErrorIconColor"
-            tools:ignore="UnusedResources">@color/fx_mobile_private_text_color_critical</item>
+            tools:ignore="UnusedResources">@color/fx_mobile_private_error</item>
         <item name="mozacLoginSelectHeaderTextStyle" tools:ignore="UnusedResources">@style/SelectPromptHeaderTextStyle</item>
         <item name="mozacSelectCreditCardHeaderTextStyle" tools:ignore="UnusedResources">@style/SelectPromptHeaderTextStyle</item>
         <item name="mozacSelectAddressHeaderTextStyle" tools:ignore="UnusedResources">@style/SelectPromptHeaderTextStyle</item>
@@ -402,8 +400,6 @@
         <item name="textSecondary">@color/fx_mobile_private_text_color_secondary</item>
         <!-- Disabled text -->
         <item name="textDisabled">@color/fx_mobile_private_text_color_disabled</item>
-        <!-- Warning text -->
-        <item name="textCritical">@color/fx_mobile_private_text_color_critical</item>
         <!-- Small heading, Text link -->
         <item name="textAccent">@color/fx_mobile_private_text_color_accent</item>
         <!-- Text Inverted/On Color -->
