@@ -21,7 +21,7 @@ use crate::values::generics::position::{
 use crate::values::specified::length::{AbsoluteLength, FontRelativeLength, NoCalcLength};
 use crate::values::specified::length::{ContainerRelativeLength, ViewportPercentageLength};
 use crate::values::specified::{
-    self, Angle, NoCalcNumber, NoCalcPercentage, NoCalcTime, Resolution,
+    self, Angle, NoCalcNumber, NoCalcPercentage, NoCalcResolution, NoCalcTime,
 };
 use crate::values::{CSSFloat, DashedIdent};
 use cssparser::{match_ignore_ascii_case, CowRcStr, Parser, Token};
@@ -93,7 +93,7 @@ pub enum Leaf {
     /// `<time>`
     Time(NoCalcTime),
     /// `<resolution>`
-    Resolution(Resolution),
+    Resolution(NoCalcResolution),
     /// A component of a color.
     ColorComponent(ChannelKeyword),
     /// `<percentage>`
@@ -208,6 +208,14 @@ impl CalcNumeric {
     pub fn as_time(&self) -> Option<NoCalcTime> {
         match self.node.resolve() {
             Ok(Leaf::Time(t)) => Some(t),
+            _ => None,
+        }
+    }
+
+    /// Gets this calc expression as a resolution
+    pub fn as_resolution(&self) -> Option<NoCalcResolution> {
+        match self.node.resolve() {
+            Ok(Leaf::Resolution(r)) => Some(r),
             _ => None,
         }
     }
@@ -417,6 +425,7 @@ impl generic::CalcNodeLeaf for Leaf {
             Leaf::Length(NoCalcLength::Absolute(ref mut abs)) => {
                 *abs = AbsoluteLength::Px(abs.to_px())
             },
+            Leaf::Resolution(ref mut r) => *r = NoCalcResolution::from_dppx(r.dppx()),
             Leaf::Time(ref mut t) => *t = NoCalcTime::from_seconds(t.seconds()),
             _ => (),
         }
@@ -447,7 +456,7 @@ impl generic::CalcNodeLeaf for Leaf {
                 *one = NoCalcTime::from_seconds(one.seconds() + other.seconds());
             },
             (&mut Resolution(ref mut one), &Resolution(ref other)) => {
-                *one = specified::Resolution::from_dppx(one.dppx() + other.dppx());
+                *one = NoCalcResolution::from_dppx(one.dppx() + other.dppx());
             },
             (&mut Length(ref mut one), &Length(ref other)) => {
                 *one = one.try_op(other, std::ops::Add::add)?;
@@ -528,7 +537,7 @@ impl generic::CalcNodeLeaf for Leaf {
                 ))));
             },
             (&Resolution(ref one), &Resolution(ref other)) => {
-                return Ok(Leaf::Resolution(specified::Resolution::from_dppx(op(
+                return Ok(Leaf::Resolution(NoCalcResolution::from_dppx(op(
                     one.dppx(),
                     other.dppx(),
                 ))));
@@ -562,7 +571,7 @@ impl generic::CalcNodeLeaf for Leaf {
             Leaf::Length(one) => *one = one.map(op),
             Leaf::Angle(one) => *one = specified::Angle::from_calc(op(one.degrees())),
             Leaf::Time(one) => *one = NoCalcTime::from_seconds(op(one.seconds())),
-            Leaf::Resolution(one) => *one = specified::Resolution::from_dppx(op(one.dppx())),
+            Leaf::Resolution(one) => *one = NoCalcResolution::from_dppx(op(one.dppx())),
             Leaf::Percentage(one) => *one = NoCalcPercentage::new(op(one.get())),
             Leaf::Number(one) => *one = NoCalcNumber::new(op(one.value())),
             Leaf::ColorComponent(..) => return Err(()),
@@ -718,7 +727,7 @@ impl CalcNode {
                     }
                 }
                 if allowed.includes(CalcUnits::RESOLUTION) {
-                    if let Ok(t) = Resolution::parse_dimension(value, unit) {
+                    if let Ok(t) = NoCalcResolution::parse_dimension(value, unit) {
                         return Ok(CalcNode::Leaf(Leaf::Resolution(t)));
                     }
                 }
@@ -1271,15 +1280,30 @@ impl CalcNode {
         }
     }
 
-    /// Tries to simplify the expression into a `<resolution>` value.
-    fn to_resolution(&self) -> Result<Resolution, ()> {
+    /// Tries to simplify the expression into a `NoCalcResolution` value.
+    fn to_resolution(&self) -> Result<NoCalcResolution, ()> {
         let dppx = if let Leaf::Resolution(resolution) = self.resolve()? {
             resolution.dppx()
         } else {
             return Err(());
         };
 
-        Ok(Resolution::from_dppx_calc(dppx))
+        Ok(NoCalcResolution::from_dppx(dppx))
+    }
+
+    /// Tries to simplify this expression into a `<resolution>` value.
+    fn into_resolution(mut self) -> Result<CalcNumeric, ()> {
+        self.simplify_and_sort();
+
+        let unit: CalcUnits = self.unit()?;
+        if !CalcUnits::RESOLUTION.intersects(unit) {
+            Err(())
+        } else {
+            Ok(CalcNumeric {
+                clamping_mode: AllowedNumericType::NonNegative,
+                node: self,
+            })
+        }
     }
 
     /// Tries to simplify this expression into an `Angle` value.
@@ -1469,14 +1493,14 @@ impl CalcNode {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
         function: MathFunction,
-    ) -> Result<Resolution, ParseError<'i>> {
+    ) -> Result<CalcNumeric, ParseError<'i>> {
         Self::parse(
             context,
             input,
             function,
             AllowParse::new(CalcUnits::RESOLUTION),
         )?
-        .to_resolution()
+        .into_resolution()
         .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     }
 

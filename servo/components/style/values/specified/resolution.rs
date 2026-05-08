@@ -8,21 +8,22 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-use crate::values::specified::CalcNode;
+use crate::values::specified::calc::{CalcNode, CalcNumeric};
 use crate::values::CSSFloat;
 use cssparser::{match_ignore_ascii_case, Parser, Token};
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 
-/// A specified resolution.
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToShmem)]
-pub struct Resolution {
+/// A non-calc `<resolution>` value.
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+#[repr(C)]
+pub struct NoCalcResolution {
     value: CSSFloat,
     unit: ResolutionUnit,
-    was_calc: bool,
 }
 
 #[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[repr(u8)]
 enum ResolutionUnit {
     /// Dots per inch.
     Dpi,
@@ -45,31 +46,20 @@ impl ResolutionUnit {
     }
 }
 
-impl Resolution {
+impl NoCalcResolution {
     /// Returns a resolution value from dppx units.
     pub fn from_dppx(value: CSSFloat) -> Self {
         Self {
             value,
             unit: ResolutionUnit::Dppx,
-            was_calc: false,
         }
     }
 
-    /// Returns a resolution value from dppx units.
+    /// Returns a resolution value from x units.
     pub fn from_x(value: CSSFloat) -> Self {
         Self {
             value,
             unit: ResolutionUnit::X,
-            was_calc: false,
-        }
-    }
-
-    /// Returns a resolution value from dppx units.
-    pub fn from_dppx_calc(value: CSSFloat) -> Self {
-        Self {
-            value,
-            unit: ResolutionUnit::Dppx,
-            was_calc: true,
         }
     }
 
@@ -99,15 +89,11 @@ impl Resolution {
             "x" => ResolutionUnit::X,
             _ => return Err(())
         };
-        Ok(Self {
-            value,
-            unit,
-            was_calc: false,
-        })
+        Ok(Self { value, unit })
     }
 }
 
-impl ToCss for Resolution {
+impl ToCss for NoCalcResolution {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: Write,
@@ -115,9 +101,39 @@ impl ToCss for Resolution {
         crate::values::serialize_specified_dimension(
             self.value,
             self.unit.as_str(),
-            self.was_calc,
+            /* was_calc = */ false,
             dest,
         )
+    }
+}
+
+impl SpecifiedValueInfo for NoCalcResolution {}
+
+/// A specified resolution value, either a plain value or a `calc()` expression.
+///
+/// https://drafts.csswg.org/css-values/#resolution-value
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+pub enum Resolution {
+    /// A plain <resolution> value.
+    NoCalc(NoCalcResolution),
+    /// A calc() expression that produces a <resolution>.
+    Calc(Box<CalcNumeric>),
+}
+
+impl Resolution {
+    /// Returns a resolution value from dppx units.
+    pub fn from_dppx(value: CSSFloat) -> Self {
+        Resolution::NoCalc(NoCalcResolution::from_dppx(value))
+    }
+
+    /// Returns a resolution value from x units.
+    pub fn from_x(value: CSSFloat) -> Self {
+        Resolution::NoCalc(NoCalcResolution::from_x(value))
+    }
+
+    /// Parse a resolution given a value and unit.
+    pub fn parse_dimension(value: CSSFloat, unit: &str) -> Result<Self, ()> {
+        NoCalcResolution::parse_dimension(value, unit).map(Resolution::NoCalc)
     }
 }
 
@@ -135,6 +151,8 @@ impl Parse for Resolution {
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
                 CalcNode::parse_resolution(context, input, function)
+                    .map(Box::new)
+                    .map(Resolution::Calc)
             },
             ref t => return Err(location.new_unexpected_token_error(t.clone())),
         }

@@ -15,7 +15,6 @@ use super::CSSFloat;
 use crate::context::QuirksMode;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-use crate::values::specified::calc::CalcNode;
 use crate::values::specified::number::parse_number_with_clamping_mode;
 use crate::values::{computed, serialize_atom_identifier, AtomString};
 use crate::{Atom, Namespace, Prefix};
@@ -92,7 +91,7 @@ pub use self::position::{
 };
 pub use self::ratio::Ratio;
 pub use self::rect::NonNegativeLengthOrNumberRect;
-pub use self::resolution::Resolution;
+pub use self::resolution::{NoCalcResolution, Resolution};
 pub use self::svg::{DProperty, MozContextProperties};
 pub use self::svg::{SVGLength, SVGOpacity, SVGPaint};
 pub use self::svg::{SVGPaintOrder, SVGStrokeDashArray, SVGWidth, VectorEffect};
