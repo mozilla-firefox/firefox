@@ -199,8 +199,7 @@ const CONFIG_PANES = Object.freeze({
     iconSrc: "chrome://browser/skin/sidebar/firefox.svg",
     groupIds: ["updates", "support"],
     module: "chrome://browser/content/preferences/config/about-firefox.mjs",
-    visible: () =>
-      Services.prefs.getBoolPref("browser.settings-redesign.enabled", false),
+    visible: () => srdSectionPrefs.all,
   },
   accessibility: {
     l10nId: "preferences-accessibility-header",
@@ -213,8 +212,7 @@ const CONFIG_PANES = Object.freeze({
     ],
     module: "chrome://browser/content/preferences/config/accessibility.mjs",
     iconSrc: "chrome://browser/skin/preferences/category-accessibility.svg",
-    visible: () =>
-      Services.prefs.getBoolPref("browser.settings-redesign.enabled", false),
+    visible: () => srdSectionPrefs.all,
   },
   appearance: {
     l10nId: "preferences-appearance-header",
@@ -226,8 +224,7 @@ const CONFIG_PANES = Object.freeze({
     ],
     module: "chrome://browser/content/preferences/config/appearance.mjs",
     iconSrc: "chrome://global/skin/icons/eye.svg",
-    visible: () =>
-      Services.prefs.getBoolPref("browser.settings-redesign.enabled", false),
+    visible: () => srdSectionPrefs.all,
   },
   ai: {
     l10nId: "preferences-ai-controls-header",
@@ -275,15 +272,16 @@ const CONFIG_PANES = Object.freeze({
     groupIds: ["etpCustomize", "etpReset"],
     replaces: "privacy",
   },
-  general: {
-    l10nId: "pane-general-title",
-    groupIds: [],
-  },
   experimental: {
     l10nId: "settings-pane-labs-header",
     iconSrc: "chrome://browser/skin/labs-16.svg",
     groupIds: ["firefoxLabsFeatures"],
     module: "chrome://browser/content/preferences/config/firefoxLabs.mjs",
+  },
+  general: {
+    l10nId: "pane-general-title",
+    groupIds: [],
+    visible: () => !srdSectionPrefs.all,
   },
   history: {
     parent: "privacy",
@@ -484,7 +482,12 @@ function init_all() {
   // the entire document.
   Preferences.queueUpdateOfAllElements();
 
-  register_module("paneGeneral", gMainPane);
+  let redesignEnabled = srdSectionPrefs.all;
+
+  if (!redesignEnabled) {
+    register_module("paneGeneral", gMainPane);
+    document.getElementById("category-general").hidden = false;
+  }
   register_module("paneHome", gHomePane);
   register_module("paneSearch", gSearchPane);
   register_module("panePrivacy", gPrivacyPane);
@@ -505,9 +508,6 @@ function init_all() {
   // The Sync category needs to be the last of the "real" categories
   // registered and initialized since many tests wait for the
   // "sync-pane-loaded" observer notification before starting the test.
-  let redesignEnabled = Services.prefs.getBoolPref(
-    "browser.settings-redesign.enabled"
-  );
   let accountsEnabled = Services.prefs.getBoolPref(
     "identity.fxaccounts.enabled"
   );
@@ -618,9 +618,12 @@ async function gotoPref(
   aCategory,
   aShowReason = aCategory ? "Click" : "Initial"
 ) {
+  let redesignEnabled = srdSectionPrefs.all;
   let categories = document.getElementById("categories");
-  const kDefaultCategoryInternalName = "paneGeneral";
-  const kDefaultCategory = "general";
+  const kDefaultCategoryInternalName = redesignEnabled
+    ? "paneSync"
+    : "paneGeneral";
+  const kDefaultCategory = redesignEnabled ? "sync" : "general";
   let hash = document.location.hash;
   let category = aCategory || hash.substring(1) || kDefaultCategoryInternalName;
 
