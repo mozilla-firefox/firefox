@@ -52,12 +52,23 @@ class TabGroupMiddleware(
             }
             is TabListAction.RemoveTabAction -> {
                 scope.launch {
+                    // Capture the tab's group BEFORE removing the assignment so
+                    // we can check whether the group is empty after the removal.
+                    val previousGroupId = tabGroupRepository.fetchTabGroupAssignments()[action.tabId]
                     tabGroupRepository.deleteTabGroupAssignmentById(tabId = action.tabId)
+                    if (previousGroupId != null) {
+                        deleteGroupIfEmpty(previousGroupId)
+                    }
                 }
             }
             is TabListAction.RemoveTabsAction -> {
                 scope.launch {
+                    val assignmentsBefore = tabGroupRepository.fetchTabGroupAssignments()
+                    val affectedGroupIds = action.tabIds
+                        .mapNotNull { assignmentsBefore[it] }
+                        .distinct()
                     tabGroupRepository.deleteTabGroupAssignmentsById(tabIds = action.tabIds)
+                    affectedGroupIds.forEach { deleteGroupIfEmpty(it) }
                 }
             }
             is TabListAction.AddTabAction -> {
@@ -85,6 +96,17 @@ class TabGroupMiddleware(
             is TabListAction.SelectTabAction,
             is TabListAction.RemoveAllPrivateTabsAction, // Tab groups are not supported in Private browsing
                 -> {} // no-op
+        }
+    }
+
+    /**
+     * Deletes [tabGroupId] from the repository if no tab is still assigned to it.
+     * Used to clean up groups that became empty when their last tab was closed.
+     */
+    private suspend fun deleteGroupIfEmpty(tabGroupId: String) {
+        val remaining = tabGroupRepository.fetchTabGroupAssignments()
+        if (remaining.values.none { it == tabGroupId }) {
+            tabGroupRepository.deleteTabGroupById(tabGroupId = tabGroupId)
         }
     }
 }
