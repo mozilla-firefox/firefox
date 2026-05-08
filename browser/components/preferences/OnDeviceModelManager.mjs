@@ -174,6 +174,15 @@ export const OnDeviceModelManager = {
   },
 
   /**
+   * Check if a feature has a distinct enabled state in AI Controls.
+   *
+   * @param {OnDeviceModelFeaturesEnum} feature
+   */
+  hasDistinctEnabledState(feature) {
+    return this.getAIFeature(feature).hasDistinctEnabledState;
+  },
+
+  /**
    * Check if a feature is enabled (visible and opted-in).
    *
    * @param {OnDeviceModelFeaturesEnum} feature
@@ -189,6 +198,24 @@ export const OnDeviceModelManager = {
    */
   isBlocked(feature) {
     return this.getAIFeature(feature).isBlocked;
+  },
+
+  /**
+   * Check if the current device can run a feature.
+   *
+   * @param {OnDeviceModelFeaturesEnum} feature
+   */
+  canRunOnDevice(feature) {
+    return this.getAIFeature(feature).canRunOnDevice;
+  },
+
+  /**
+   * Get the derived AI Controls state for a feature.
+   *
+   * @param {OnDeviceModelFeaturesEnum} feature
+   */
+  getAiControlState(feature) {
+    return this.getAIFeature(feature).aiControlState;
   },
 
   /**

@@ -365,7 +365,6 @@ Preferences.addSetting({
  * @param {string} options.id Setting id to create
  * @param {string} options.pref Pref id for the state
  * @param {OnDeviceModelFeaturesEnum} options.feature Feature id for removing models
- * @param {boolean} [options.supportsEnabled] If the feature supports the "enabled" state
  * @param {SettingConfig['getControlConfig']} [options.getControlConfig] A getControlConfig implementation.
  * @param {() => Promise<boolean>} [options.onBeforeBlock] Optional async callback to show a modal before blocking
  */
@@ -373,7 +372,6 @@ function makeAiControlSetting({
   id,
   pref,
   feature,
-  supportsEnabled = true,
   getControlConfig,
   onBeforeBlock,
 }) {
@@ -404,21 +402,25 @@ function makeAiControlSetting({
         );
     },
     get(prefVal, deps) {
+      const aiControlState = OnDeviceModelManager.getAiControlState(feature);
+
       if (
         prefVal == AiControlStates.blocked ||
         (prefVal == AiControlStates.default &&
           deps.aiControlDefault.value == AiControlGlobalStates.blocked) ||
-        OnDeviceModelManager.isBlocked(feature)
+        aiControlState == AiControlStates.blocked
       ) {
         return AiControlStates.blocked;
       }
+
       if (
-        supportsEnabled &&
+        OnDeviceModelManager.hasDistinctEnabledState(feature) &&
         (prefVal == AiControlStates.enabled ||
-          OnDeviceModelManager.isEnabled(feature))
+          aiControlState == AiControlStates.enabled)
       ) {
         return AiControlStates.enabled;
       }
+
       return AiControlStates.available;
     },
     set(prefVal, _, setting) {
@@ -459,14 +461,23 @@ function makeAiControlSetting({
         recordTelemetry(selection);
       }
     },
-    getControlConfig,
+    getControlConfig(config, deps, setting) {
+      if (!OnDeviceModelManager.hasDistinctEnabledState(feature)) {
+        config.options = config.options.filter(
+          option => option.value != AiControlStates.enabled
+        );
+      }
+
+      return getControlConfig
+        ? getControlConfig(config, deps, setting)
+        : config;
+    },
   });
 }
 makeAiControlSetting({
   id: "aiControlTranslationsSelect",
   pref: "browser.ai.control.translations",
   feature: OnDeviceModelManager.features.Translations,
-  supportsEnabled: false,
   getControlConfig(config, _, setting) {
     let isBlocked = setting.value == AiControlStates.blocked;
     let moreSettingsLink = config.options.at(-1);
@@ -523,15 +534,22 @@ Preferences.addSetting(
         );
     },
     get(prefVal, deps) {
+      const aiControlState = OnDeviceModelManager.getAiControlState(
+        this.feature
+      );
+
       if (
         prefVal == AiControlStates.blocked ||
         (prefVal == AiControlStates.default &&
           deps.aiControlDefault.value == AiControlGlobalStates.blocked) ||
-        OnDeviceModelManager.isBlocked(this.feature)
+        aiControlState == AiControlStates.blocked
       ) {
         return AiControlStates.blocked;
       }
-      return deps.chatbotProvider.value || AiControlStates.available;
+
+      return aiControlState == AiControlStates.enabled
+        ? deps.chatbotProvider.value
+        : aiControlState;
     },
     set(inputVal, deps) {
       if (inputVal == AiControlStates.blocked) {
