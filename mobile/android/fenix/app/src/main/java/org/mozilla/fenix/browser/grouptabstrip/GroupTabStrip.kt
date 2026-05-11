@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -42,6 +43,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
@@ -54,6 +56,14 @@ import mozilla.components.ui.icons.R as iconsR
 
 private val stripHeight = 44.dp
 private val tabItemHeight = 36.dp
+
+// Vertical room the collapsed chevron can be dragged into. Sized to give the
+// user meaningful repositioning headroom without dominating the screen.
+private val collapsedDragAreaHeight = 320.dp
+
+// IconButton's default minimum touch target. Used to clamp the drag so the
+// chevron always stays at least this much on-screen.
+private val chevronTouchTarget = 48.dp
 
 // Favicon-only tabs. The card is wider than the favicon itself so the close
 // badge in the top-right has clear separation from the centered favicon — the
@@ -99,26 +109,35 @@ fun GroupTabStrip(
 
     if (isCollapsed) {
         FirefoxTheme {
-            // Only the "expand" chevron — sits at the bottom-right above the
-            // toolbar, leaving the page area below it fully visible. The user
-            // can drag it to reposition; the offset lives inside this branch
-            // so Compose disposes it when the strip is expanded, naturally
-            // resetting the position the next time the strip is collapsed.
-            var dragOffset by remember { mutableStateOf(Offset.Zero) }
-            Row(
+            // The chevron starts at the bottom-right above the toolbar and can
+            // be dragged within this tall, transparent area. The empty space
+            // around the chevron does not consume touches, so the page content
+            // beneath the strip area stays usable. The drag offset lives
+            // inside this branch so Compose disposes it when the strip is
+            // expanded — the position naturally resets the next time the
+            // strip is collapsed.
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(collapsedDragAreaHeight)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
+                contentAlignment = Alignment.BottomEnd,
             ) {
+                val density = LocalDensity.current
+                val minXPx = with(density) { -(maxWidth - chevronTouchTarget).toPx() }
+                val minYPx = with(density) { -(maxHeight - chevronTouchTarget).toPx() }
+                var dragOffset by remember { mutableStateOf(Offset.Zero) }
                 Box(
                     modifier = Modifier
                         .offset { IntOffset(dragOffset.x.toInt(), dragOffset.y.toInt()) }
                         .pointerInput(Unit) {
                             detectDragGestures { change, dragAmount ->
                                 change.consume()
-                                dragOffset += dragAmount
+                                val next = dragOffset + dragAmount
+                                dragOffset = Offset(
+                                    x = next.x.coerceIn(minXPx, 0f),
+                                    y = next.y.coerceIn(minYPx, 0f),
+                                )
                             }
                         },
                 ) {
