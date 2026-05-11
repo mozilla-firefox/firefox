@@ -4,5 +4,5 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <resources>
     <!-- Name of the application -->
-    <string name="app_name" translatable="false">Firefox Nightly</string>
+    <string name="app_name" translatable="false">Robowolf</string>
 </resources>
