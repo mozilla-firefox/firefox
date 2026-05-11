@@ -375,6 +375,8 @@
   <string name="preferences_ai_controls">Tekoälyn säätimet</string>
   <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
   <string name="ai_controls_banner_headline">Sinulla on aina valinnanvaraa %sissa</string>
+  <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
+  <string name="ai_controls_banner_supporting_text_2">Tämä sisältää sen, käytetäänkö tekoälyn avulla parannettuja ominaisuuksia. %s</string>
   <!-- Supporting text for the AI controls banner -->
   <string name="ai_controls_banner_supporting_text">Tämä sisältää sen, käytetäänkö tekoälyn avulla parannettuja ominaisuuksia.</string>
   <!-- Link text for learning more about AI controls -->
@@ -383,6 +385,8 @@
   <string name="ai_controls_block_ai_title">Estä tekoälytehostukset</string>
   <!-- Description for the block AI enhancements toggle. %s is the name of the app (for example "Firefox"). -->
   <string name="ai_controls_block_ai_description">Estäminen tarkoittaa, että et näe uusia tai nykyisiä tekoälytehostuksia %sissa, etkä näe niistä ponnahdusikkunoita.</string>
+  <!-- Link text to see what AI enhancements are and aren’t included -->
+  <string name="ai_controls_see_whats_included">Katso mikä sisältyy, ja mikä ei</string>
   <!-- Banner text shown when AI enhancements are blocked -->
   <string name="ai_controls_blocked_info_banner">Uudet ja nykyiset tekoälytehostukset on oletusarvoisesti estetty. Voit poistaa tietyn ominaisuuden eston alapuolelta.</string>
   <!-- Section header for the AI-powered features list -->
@@ -401,6 +405,8 @@
   <string name="ai_controls_voice_search_description">Google Speech Services muuntaa äänen tekstiksi.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Estetäänkö tekoälytehostukset?</string>
+  <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_block_dialog_body">Et näe uusia tai nykyisiä tekoälytehostuksia %1$sissa, etkä niitä koskevia ponnahdusikkunoita. Jälkeenpäin voit poistaa eston mistä tahansa, jonka käyttöä haluat jatkaa.\n\nEsto vaikuttaa myös laajennuksiin, jotka käyttävät %1$sin tarjoamaa tekoälyä.</string>
   <!-- Label shown above the list of features that will be blocked in the block AI dialog -->
   <string name="ai_controls_block_dialog_what_will_be_blocked">Mitä estetään:</string>
   <!-- Cancel button text in the block AI enhancements confirmation dialog -->
@@ -1716,6 +1722,8 @@
   <!-- Title for the edit tab group bottom sheet -->
   <string name="edit_tab_group_title">Muokkaa ryhmää</string>
   <string name="create_tab_group_save_button">Tallenna</string>
+  <!-- Description for the handle at the top of a bottom sheet, used to drag the sheet up or down. -->
+  <string name="edit_tab_group_bottom_sheet_grabber_content_description">Uusi ryhmä, supista vetämällä kahvasta</string>
   <string name="edit_tab_group_bottom_sheet_close_content_description">Sulje välilehtiryhmän muokkaaminen</string>
   <!-- Default tab group name when creating a tab group -->
   <string name="create_tab_group_default_name" tools:ignore="UnusedResources" moz:removedIn="150">Ryhmä</string>
@@ -1730,6 +1738,8 @@
   <string name="tab_group_name_label" tools:ignore="UnusedResources" moz:removedIn="150">Nimi</string>
   <!-- Title for adding more tabs to a tab group. -->
   <string name="add_to_tab_group_title">Lisää ryhmään</string>
+  <!-- Content Description for closing the "Add to Tab Group" panel. -->
+  <string name="add_to_tab_group_bottom_sheet_grabber_content_description">Lisää välilehtiryhmään, supista vetämällä kahvasta</string>
   <!-- Content Description for "New tab group" panel. -->
   <string name="add_to_new_tab_group_content_description">Lisää uuteen välilehtiryhmään</string>
   <!-- Content Description for closing the "Add to Tab Group" panel. -->
@@ -1744,6 +1754,25 @@
     <item quantity="one">%1$d välilehti</item>
     <item quantity="other">%1$d välilehteä</item>
   </plurals>
+  <plurals name="add_to_exiting_tab_group_content_description">
+    <!--
+      Accessibility description for add to existing tab group.
+      %1$s is the group name, %2$d is the number of tabs, %3$s is the color name.
+    -->
+    <item quantity="one">Lisää välilehtiryhmään %1$s, %2$d välilehti, väri %3$s</item>
+    <item quantity="other">Lisää välilehtiryhmään %1$s, %2$d välilehteä, väri %3$s</item>
+  </plurals>
+  <plurals name="share_tab_group_button_content_description">
+    <!--
+      Content Description for share tab group button.
+      %1$s is the name of the tab group.
+      %2$d is the number of tabs in a tab group.
+    -->
+    <item quantity="one">Jaa välilehtiryhmä %1$s, jossa on %2$d välilehti.</item>
+    <item quantity="other">Jaa välilehtiryhmä %1$s, jossa on %2$d välilehteä.</item>
+  </plurals>
+  <!-- Content description for the grabber/handle of the tab group bottom sheet. -->
+  <string name="tab_group_sheet_dismiss_description">Näytä välilehtiryhmä, supista vetämällä kahvasta</string>
   <plurals name="expanded_tab_group_header_description">
     <!--
       Accessibility description for the header of an expanded tab group.
@@ -2182,6 +2211,8 @@
   <string name="bookmark_import_menu_button">Tuo tiedostosta</string>
   <!-- Snackbar message shown when a bookmark import attempt fails. -->
   <string name="bookmark_import_failure_snackbar">Kirjanmerkkien tuonti epäonnistui. Yritä uudelleen.</string>
+  <!-- Default name for the folder created when importing bookmarks from a file. -->
+  <string name="bookmark_import_destination_default_name">Tuodut kirjanmerkit</string>
   <!--
     Bookmark multi select title in app bar
     %1$d is the number of bookmarks selected
@@ -2708,6 +2739,8 @@
   </plurals>
   <!-- Text shown on the trackers blocked card when no trackers have been blocked yet -->
   <string name="trackers_blocked_empty">Olet suojattu</string>
+  <!-- Text shown below the trackers blocked card with typing animation -->
+  <string name="help_catch_trackers">Auta seurainten nappaamisessa</string>
   <!-- Preference for enhanced tracking protection for the standard protection settings -->
   <string name="preference_enhanced_tracking_protection_standard_default_1">Tavallinen (oletus)</string>
   <!-- Preference description for enhanced tracking protection for the standard protection settings -->
@@ -4445,6 +4478,10 @@
   <string name="sports_widget_runner_up_title" tools:ignore="UnusedResources">Toinen sija</string>
   <!-- Title shown on the sports widget champion scoreboard celebrating the soccer tournament third place winners. -->
   <string name="sports_widget_third_place_title" tools:ignore="UnusedResources">Kolmas sija</string>
+  <!-- Round name shown on the sports widget for the Round of 32 stage in the soccer tournament. -->
+  <string name="sports_widget_round_of_32">32 parasta</string>
+  <!-- Round name shown on the sports widget for the Round of 16 stage in the soccer tournament. -->
+  <string name="sports_widget_round_of_16">16 parasta</string>
   <!-- Round name shown on the sports widget for the quarter-finals stage in the soccer tournament. -->
   <string name="sports_widget_quarter_final">Puolivälierät</string>
   <!-- Round name shown on the sports widget for the semi-finals stage in the soccer tournament. -->
@@ -4566,6 +4603,18 @@
   -->
   <string name="sports_widget_upcoming_match_content_description" tools:ignore="UnusedResources">Tulossa: %1$s vastaan %2$s, %3$s klo %4$s</string>
   <!--
+    Content description (for accessibility, not displayed)  used for the sports widget card header announcing a live match for a group or stage.
+    %s is the soccer tournament group name or stage (e.g. Group A represented by sports_widget_group_a, Round of 32 represented by sports_widget_round_of_32,
+    or Final represented by sports_widget_final).
+  -->
+  <string name="sports_widget_live_game_content_description" tools:ignore="UnusedResources">%s, suora ottelu</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="sports_widget_live_score_content_description" tools:ignore="UnusedResources">%1$s %2$d, %3$s %4$d, %5$s, suora</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the soccer tournament group name or stage (e.g. Group A represented by sports_widget_group_a, Round of 32 represented by sports_widget_round_of_32),
     %2$d is the current page number, and %3$d is the total number of pages.
@@ -4576,6 +4625,12 @@
     %1$d is the current page number, and %2$d is the total number of pages.
   -->
   <string name="sports_widget_final_results_page_content_description" tools:ignore="UnusedResources">MM-kisojen lopputulokset, sivu %1$d/%2$d</string>
+  <!-- Content description (for accessibility, not displayed) for the remove button that removes the sports widget from the homepage. -->
+  <string name="sports_widget_remove_content_description" tools:ignore="UnusedResources">Poista MM-kisat kotinäkymästä</string>
+  <!-- Title shown on the sports widget immediately after the user has followed a team. %s is the selected team (e.g., "USA"). -->
+  <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Seurataan: \n%s</string>
+  <!-- Description shown on the sports widget immediately after the user has followed a team -->
+  <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Tarkista ottelutiedot turnauksen lähestyessä.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

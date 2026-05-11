@@ -248,16 +248,41 @@ export class SmartTabGroupingManager extends AIFeature {
   }
 
   /**
-   * Returns id associated with Smart tab grouping
+   * Returns the feature identifier for Smart Tab Grouping.
    *
-   * @return {string}
+   * @returns {string}
    */
   static get id() {
     return STG_FEATURE_ID;
   }
 
   /**
-   * Re-enables prefs for stg
+   * Returns whether Smart Tab Grouping exposes a distinct "Enabled" AI
+   * Controls state.
+   *
+   * @returns {boolean}
+   */
+  static get hasDistinctEnabledState() {
+    // Smart Tab Grouping has a distinct opt-in flow in the tab group UI.
+    // It is not immediately enabled when the feature is "Available" and must
+    // still be manually enabled by the user.
+    return true;
+  }
+
+  /**
+   * Returns whether the current device can run Smart Tab Grouping.
+   *
+   * @returns {boolean}
+   */
+  static get canRunOnDevice() {
+    // Smart Tab Grouping has no known restrictions based on device hardware.
+    return true;
+  }
+
+  /**
+   * Enables Smart Tab Grouping.
+   *
+   * @returns {Promise<void>}
    */
   static async enable() {
     Services.prefs.setBoolPref("browser.tabs.groups.smart.enabled", true);
@@ -266,9 +291,9 @@ export class SmartTabGroupingManager extends AIFeature {
   }
 
   /**
-   * Disables user prefs for smart tab grouping and deletes local models
+   * Blocks Smart Tab Grouping and deletes its model artifacts.
    *
-   * @return {Promise<void>}
+   * @returns {Promise<void>}
    */
   static async block() {
     // disable prefs associated with stg
@@ -283,10 +308,9 @@ export class SmartTabGroupingManager extends AIFeature {
   }
 
   /**
-   * Checks if STG feature is enabled based on various prefs
-   * that it depends on
+   * Returns whether Smart Tab Grouping is enabled.
    *
-   * @return {boolean}
+   * @returns {boolean}
    */
   static get isEnabled() {
     // note that both `browser.tabs.groups.smart.enabled` and
@@ -301,34 +325,34 @@ export class SmartTabGroupingManager extends AIFeature {
   }
 
   /**
-   * Checks for other conditions for smart tab grouping to be turned on,
-   * e.g. locale.
+   * Returns whether Smart Tab Grouping is allowed.
    *
-   * @return {boolean}
+   * @returns {boolean}
    */
   static get isAllowed() {
     return Services.locale.appLocaleAsBCP47.startsWith("en");
   }
 
   /**
-   * Resets smart tab grouping to its default state where UI is visible
-   * and user opt-in is required
+   * Makes Smart Tab Grouping available and removes artifacts.
+   *
+   * @returns {Promise<void>}
    */
   static async makeAvailable() {
     // Set explicitly rather than clearing, so that a non-locked policy default
     // of "blocked" does not prevent the user from switching back to "available".
     Services.prefs.setBoolPref("browser.tabs.groups.smart.enabled", true);
     Services.prefs.setBoolPref("browser.tabs.groups.smart.userEnabled", true);
-    Services.prefs.clearUserPref("browser.tabs.groups.smart.optin");
+    Services.prefs.setBoolPref("browser.tabs.groups.smart.optin", false);
 
     // remove local models
     await SmartTabGroupingManager.deleteSmartTabModels();
   }
 
   /**
-   * Checks if UI is hidden
+   * Returns whether Smart Tab Grouping is blocked.
    *
-   * @return {boolean}
+   * @returns {boolean}
    */
   static get isBlocked() {
     return (
@@ -340,16 +364,16 @@ export class SmartTabGroupingManager extends AIFeature {
   /**
    * Checks if the feature is managed by enterprise policy.
    *
-   * @return {boolean}
+   * @returns {boolean}
    */
   static get isManagedByPolicy() {
     return Services.prefs.prefIsLocked("browser.tabs.groups.smart.userEnabled");
   }
 
   /**
-   * Deletes model artifacts associated with Smart Tab Grouping
+   * Deletes model artifacts associated with Smart Tab Grouping.
    *
-   * @return {Promise<void>}
+   * @returns {Promise<void>}
    */
   static async deleteSmartTabModels() {
     const engineIds = [

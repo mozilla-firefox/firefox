@@ -11,11 +11,12 @@
   :root,
   :host {
     --tab-attention-dot-color: var(--color-accent-attention);
+    --tab-background-color-hover: color-mix(in srgb, currentColor 11%, transparent);
+    --tab-background-color-selected: var(--toolbar-background-color);
     --tab-block-margin: var(--dimension-4);
     --tab-border-radius: var(--toolbarbutton-border-radius);
     --tab-box-shadow: var(--box-shadow-level-1);
     --tab-close-button-padding: 6px;
-    --tab-hover-background-color: color-mix(in srgb, currentColor 11%, transparent);
     --tab-hover-outline-color: transparent;
     --tab-icon-end-margin: 5.5px;
     --tab-inline-padding: var(--dimension-8);
@@ -29,7 +30,6 @@
     --tab-pinned-container-margin-inline-expanded: var(--space-small);
     --tab-pinned-expanded-background-width: var(--dimension-40);
     --tab-pinned-margin-inline-expanded: var(--space-xsmall);
-    --tab-selected-bgcolor: var(--toolbar-background-color);
     --tab-selected-outline-color: transparent;
     --tab-selected-textcolor: var(--toolbar-text-color);
     --tab-vertical-block-margin: var(--dimension-2);
@@ -45,6 +45,38 @@
     :host {
       --tab-hover-outline-color: currentColor;
       --tab-selected-outline-color: currentColor;
+    }
+  }
+}
+
+/* stylelint-disable-next-line media-query-no-invalid */
+@media -moz-pref("browser.nova.enabled") {
+  @layer tokens-foundation-nova {
+    :root,
+    :host {
+      --tab-background-color-hover: color-mix(in srgb, currentColor 11%, transparent);
+      --tab-background-color-selected: var(--toolbar-background-color);
+      --tab-block-margin: 6px;
+      --tab-border-color-accent: linear-gradient(96deg, var(--tab-border-color-selected-leading) 20.68%, var(--tab-border-color-selected-trailing) 79.34%);
+      --tab-border-color-selected-leading: var(--color-violet-30);
+      --tab-border-color-selected-trailing: var(--color-orange-30);
+      --tab-border-radius: var(--border-radius-circle);
+      --tab-selected-shadow: none;
+    }
+  }
+
+  /* Bug 1879900: Can't nest media queries inside of :host, :root selector
+   until Bug 1879349 lands */
+  @layer tokens-browser-theme-nova {
+    @media not ((forced-colors) or (-moz-native-theme)) {
+      :root:not([lwtheme]),
+      :host(.anonymous-content-host) {
+        --tab-background-color-hover: light-dark(
+          color-mix(in lch, var(--color-violet-desaturated-50) 25%, transparent),
+          color-mix(in lch, var(--color-violet-desaturated-30) 40%, transparent)
+        );
+        --tab-background-color-selected: var(--background-color-box);
+      }
     }
   }
 }

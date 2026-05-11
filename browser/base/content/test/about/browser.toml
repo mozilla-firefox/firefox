@@ -13,6 +13,8 @@ skip-if = [
 
 ["browser_aboutCertError_accesskey.js"]
 
+["browser_aboutCertError_caInvalid.js"]
+
 ["browser_aboutCertError_cca_telemetry.js"]
 
 ["browser_aboutCertError_clockSkew.js"]

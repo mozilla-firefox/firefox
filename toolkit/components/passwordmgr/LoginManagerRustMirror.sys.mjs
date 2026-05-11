@@ -7,7 +7,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
 });
 
-const rustMirrorTelemetryVersion = "7";
+const rustMirrorTelemetryVersion = "8";
 
 /* Normalize different errors */
 function normalizeRustStorageErrorMessage(error) {
@@ -17,6 +17,20 @@ function normalizeRustStorageErrorMessage(error) {
     .replace(/^reason: /, "")
     .replace(/^Invalid login: /, "")
     .replace(/\{[0-9a-fA-F-]{36}\}/, "{UUID}");
+}
+
+// Replace an origin's scheme with `moz-pwmngr-fixed-<prefix extracted from
+// login guid>://`.
+// Used during migration when two JSON logins collapse onto the same Rust dedup
+// key after origin normalization: rewriting the loser's scheme gives it a
+// distinct origin in Rust so both records can be persisted.
+function rewriteOriginToFixedScheme(origin, guid) {
+  const id = guid.replace(/\W/, "").split("-", 1)[0];
+  const idx = origin.indexOf("://");
+  if (idx === -1) {
+    return `moz-pwmngr-fixed-${id}://${origin}`;
+  }
+  return `moz-pwmngr-fixed-${id}://${origin.slice(idx + 3)}`;
 }
 
 //Normalize a Unix timestamp (ms) to the first day of its month at 00:00 UTC
@@ -88,7 +102,8 @@ function recordMigrationStatus(
   runId,
   duration,
   numberOfLoginsToMigrate,
-  numberOfLoginsMigrated
+  numberOfLoginsMigrated,
+  numberOfLoginsQuarantined
 ) {
   const had_errors = numberOfLoginsMigrated < numberOfLoginsToMigrate;
 
@@ -98,6 +113,7 @@ function recordMigrationStatus(
     duration_ms: duration,
     number_of_logins_to_migrate: numberOfLoginsToMigrate,
     number_of_logins_migrated: numberOfLoginsMigrated,
+    number_of_logins_quarantined: numberOfLoginsQuarantined,
     had_errors,
   });
 }
@@ -364,6 +380,7 @@ export class LoginManagerRustMirror {
     const runId = Services.uuid.generateUUID();
     let numberOfLoginsToMigrate = 0;
     let numberOfLoginsMigrated = 0;
+    let numberOfLoginsQuarantined = 0;
 
     try {
       await this.#rustStorage.removeAllLoginsAsync();
@@ -377,14 +394,64 @@ export class LoginManagerRustMirror {
       const logins = await this.#jsonStorage.getAllLogins(false);
       numberOfLoginsToMigrate = logins.length;
 
-      const results = await this.#rustStorage.addLoginsAsync(logins, true);
-      for (const [i, { error }] of results.entries()) {
-        if (error) {
+      // AS Logins's origins are normalized, so they get implicitely merged,
+      // because origin is part of the key.
+      // Sort by timePasswordChanged descending so the login with the most
+      // recently changed password wins the bulk-add race; older-password
+      // duplicates are quarantined under moz-pwmngr-fixed:// later.
+      const sortedLogins = [...logins].sort(
+        (a, b) => (b.timePasswordChanged || 0) - (a.timePasswordChanged || 0)
+      );
+
+      const results = await this.#rustStorage.addLoginsAsync(
+        sortedLogins,
+        true
+      );
+      const failedLogins = results
+        .map(({ error }, i) => ({
+          login: sortedLogins[i],
+          error,
+          isDuplicate: /Login already exists/i.test(error?.message || ""),
+        }))
+        .filter(({ error }) => error);
+
+      numberOfLoginsMigrated += results.length - failedLogins.length;
+
+      const duplicates = [];
+      for (const { isDuplicate, error, login } of failedLogins) {
+        if (isDuplicate) {
+          const rescued = login.clone();
+          rescued.QueryInterface(Ci.nsILoginMetaInfo);
+          rescued.origin = rewriteOriginToFixedScheme(login.origin, login.guid);
+          duplicates.push(rescued);
+        } else {
           this.#logger.error("error during migration:", error.message);
-          recordMirrorFailure(runId, "migration", error, logins[i]);
+          recordMirrorFailure(runId, "migration", error, login);
+        }
+      }
+
+      const duplicatesResults = await this.#rustStorage.addLoginsAsync(
+        duplicates,
+        true
+      );
+
+      for (const [i, { error }] of duplicatesResults.entries()) {
+        if (error) {
+          this.#logger.error(
+            "error during migration of rescued duplicate:",
+            error.message
+          );
+          recordMirrorFailure(runId, "migration", error, duplicates[i]);
         } else {
           numberOfLoginsMigrated += 1;
+          numberOfLoginsQuarantined += 1;
         }
+      }
+
+      if (numberOfLoginsQuarantined) {
+        this.#logger.log(
+          `Quarantined ${numberOfLoginsQuarantined} duplicate logins during migration.`
+        );
       }
 
       this.#logger.log(
@@ -422,7 +489,8 @@ export class LoginManagerRustMirror {
         runId,
         duration,
         numberOfLoginsToMigrate,
-        numberOfLoginsMigrated
+        numberOfLoginsMigrated,
+        numberOfLoginsQuarantined
       );
       this.#migrationInProgress = false;
 

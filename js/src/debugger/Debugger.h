@@ -27,7 +27,7 @@
 #include "debugger/Object.h"        // for DebuggerObject
 #include "ds/TraceableFifo.h"       // for TraceableFifo
 #include "gc/Barrier.h"             //
-#include "gc/Tracer.h"              // for TraceNullableEdge, TraceEdge
+#include "gc/Tracer.h"              // for TraceEdge, TraceEdge
 #include "gc/WeakMap.h"             // for WeakMap
 #include "gc/ZoneAllocator.h"       // for ZoneAllocPolicy
 #include "js/Debug.h"               // JS_DefineDebuggerObject
@@ -629,7 +629,7 @@ class Debugger : private mozilla::LinkedListElement<Debugger> {
     bool inNursery;
 
     void trace(JSTracer* trc) {
-      TraceNullableEdge(trc, &frame, "Debugger::AllocationsLogEntry::frame");
+      TraceEdge(trc, &frame, "Debugger::AllocationsLogEntry::frame");
     }
   };
 

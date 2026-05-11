@@ -1949,6 +1949,12 @@ var XULBrowserWindow = {
     return (this._menuItemForTranslations =
       document.getElementById("cmd_translate"));
   },
+  get _moreToolsTranslateMenuItem() {
+    delete this._moreToolsTranslateMenuItem;
+    return (this._moreToolsTranslateMenuItem = document.getElementById(
+      "cmd_openAboutTranslations"
+    ));
+  },
 
   setDefaultStatus(status) {
     this.defaultStatus = status;
@@ -2384,14 +2390,13 @@ var XULBrowserWindow = {
     } else {
       this._menuItemForTranslations.removeAttribute("disabled");
     }
-    if (
+
+    const shouldShowTranslationsMenuItems =
       TranslationsParent.AIFeature.isEnabled &&
-      TranslationsParent.getIsTranslationsEngineSupported()
-    ) {
-      this._menuItemForTranslations.removeAttribute("hidden");
-    } else {
-      this._menuItemForTranslations.setAttribute("hidden", "true");
-    }
+      TranslationsParent.getIsTranslationsEngineSupported();
+
+    this._menuItemForTranslations.hidden = !shouldShowTranslationsMenuItems;
+    this._moreToolsTranslateMenuItem.hidden = !shouldShowTranslationsMenuItems;
   },
 
   /**

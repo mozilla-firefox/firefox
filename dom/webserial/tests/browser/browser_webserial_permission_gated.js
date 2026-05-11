@@ -141,7 +141,7 @@ add_task(async function testRequestPort() {
   is(
     installDialog.querySelector("popupnotificationcontent description")
       .textContent,
-    l10n.formatValueSync("webext-site-perms-description-gated-perms-serial"),
+    l10n.formatValueSync("webext-site-perms-description-gated-perms-webserial"),
     "Install dialog has expected description"
   );
 

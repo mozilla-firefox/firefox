@@ -15,10 +15,6 @@ const { ProfileAge } = ChromeUtils.importESModule(
 const HAS_IMPORTED_HISTORY_PREF = "browser.migrate.interactions.history";
 const IMPORT_HISTORY_DISMISSED_PREF =
   "browser.tabs.firefox-view.importHistory.dismissed";
-const HISTORY_EVENT = [["firefoxview_next", "history", "visits", undefined]];
-const SHOW_ALL_HISTORY_EVENT = [
-  ["firefoxview_next", "show_all_history", "tabs", undefined],
-];
 const NEVER_REMEMBER_HISTORY_PREF = "browser.privatebrowsing.autostart";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -69,69 +65,6 @@ async function historyComponentReady(historyComponent, expectedHistoryItems) {
   let actual = historyComponent.cards.length;
 
   is(expected, actual, `Total number of cards should be ${expected}`);
-}
-
-async function historyTelemetry() {
-  await TestUtils.waitForCondition(
-    () => {
-      let events = Services.telemetry.snapshotEvents(
-        Ci.nsITelemetry.DATASET_PRERELEASE_CHANNELS,
-        false
-      ).parent;
-      return events && events.length >= 1;
-    },
-    "Waiting for history firefoxview telemetry event.",
-    200,
-    100
-  );
-
-  TelemetryTestUtils.assertEvents(
-    HISTORY_EVENT,
-    { category: "firefoxview_next" },
-    { clear: true, process: "parent" }
-  );
-}
-
-async function sortHistoryTelemetry(sortHistoryEvent) {
-  await TestUtils.waitForCondition(
-    () => {
-      let events = Services.telemetry.snapshotEvents(
-        Ci.nsITelemetry.DATASET_PRERELEASE_CHANNELS,
-        false
-      ).parent;
-      return events && events.length >= 1;
-    },
-    "Waiting for sort_history firefoxview telemetry event.",
-    200,
-    100
-  );
-
-  TelemetryTestUtils.assertEvents(
-    sortHistoryEvent,
-    { category: "firefoxview_next" },
-    { clear: true, process: "parent" }
-  );
-}
-
-async function showAllHistoryTelemetry() {
-  await TestUtils.waitForCondition(
-    () => {
-      let events = Services.telemetry.snapshotEvents(
-        Ci.nsITelemetry.DATASET_PRERELEASE_CHANNELS,
-        false
-      ).parent;
-      return events && events.length >= 1;
-    },
-    "Waiting for show_all_history firefoxview telemetry event.",
-    200,
-    100
-  );
-
-  TelemetryTestUtils.assertEvents(
-    SHOW_ALL_HISTORY_EVENT,
-    { category: "firefoxview_next" },
-    { clear: true, process: "parent" }
-  );
 }
 
 async function addHistoryItems(dateAdded) {
@@ -205,7 +138,7 @@ add_task(async function test_list_ordering() {
     );
 
     // Select first history item in first card
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
     await TestUtils.waitForCondition(
       () => historyComponent.lists[0].rowEls.length,
       "The first history list to have row elements"
@@ -216,21 +149,16 @@ add_task(async function test_list_ordering() {
       "visibilitychange"
     );
     await EventUtils.synthesizeMouseAtCenter(firstHistoryLink, {}, content);
-    await historyTelemetry();
+    Assert.equal(
+      1,
+      Glean.firefoxviewNext.historyVisits.testGetValue().length,
+      "Expected one history event."
+    );
     await promiseHidden;
     await openFirefoxViewTab(browser.documentGlobal);
 
     // Test number of cards when sorted by site/domain
-    await clearAllParentTelemetryEvents();
-    let sortHistoryEvent = [
-      [
-        "firefoxview_next",
-        "sort_history",
-        "tabs",
-        undefined,
-        { sort_type: "site", search_start: "false" },
-      ],
-    ];
+    Services.fog.testResetFOG();
     // Select sort by site option
     await EventUtils.synthesizeMouseAtCenter(
       historyComponent.sortInputs[1],
@@ -241,7 +169,12 @@ add_task(async function test_list_ordering() {
       () => historyComponent.fullyUpdated,
       "Waiting for the history component to be fully updated"
     );
-    await sortHistoryTelemetry(sortHistoryEvent);
+    let sortEvents = Glean.firefoxviewNext.sortHistoryTabs.testGetValue();
+    Assert.equal(1, sortEvents.length, "Expected one sort event.");
+    Assert.deepEqual(
+      { sort_type: "site", search_start: "false" },
+      sortEvents[0].extra
+    );
 
     let expectedNumOfCards = historyComponent.controller.historyVisits.length;
 
@@ -252,16 +185,7 @@ add_task(async function test_list_ordering() {
       () => expectedNumOfCards === historyComponent.cards.length
     );
 
-    await clearAllParentTelemetryEvents();
-    sortHistoryEvent = [
-      [
-        "firefoxview_next",
-        "sort_history",
-        "tabs",
-        undefined,
-        { sort_type: "date", search_start: "false" },
-      ],
-    ];
+    Services.fog.testResetFOG();
     // Select sort by date option
     await EventUtils.synthesizeMouseAtCenter(
       historyComponent.sortInputs[0],
@@ -272,7 +196,12 @@ add_task(async function test_list_ordering() {
       () => historyComponent.fullyUpdated,
       "Waiting for the history component to be fully updated"
     );
-    await sortHistoryTelemetry(sortHistoryEvent);
+    sortEvents = Glean.firefoxviewNext.sortHistoryTabs.testGetValue();
+    Assert.equal(1, sortEvents.length, "Expected one sort event.");
+    Assert.deepEqual(
+      { sort_type: "date", search_start: "false" },
+      sortEvents[0].extra
+    );
 
     // clean up extra tabs
     while (gBrowser.tabs.length > 1) {
@@ -451,11 +380,15 @@ add_task(async function test_show_all_history_telemetry() {
     historyComponent.profileAge = 8;
     await historyComponentReady(historyComponent, historyEntries.length);
 
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
     let showAllHistoryBtn = historyComponent.showAllHistoryBtn;
     showAllHistoryBtn.scrollIntoView();
     await EventUtils.synthesizeMouseAtCenter(showAllHistoryBtn, {}, content);
-    await showAllHistoryTelemetry();
+    Assert.equal(
+      1,
+      Glean.firefoxviewNext.showAllHistoryTabs.testGetValue().length,
+      "Expected one show-all-history event."
+    );
 
     // Make sure library window is shown
     await TestUtils.waitForCondition(

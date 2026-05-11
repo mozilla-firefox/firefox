@@ -34,6 +34,13 @@ class TrackInfo;
 namespace layers {
 class KnowsCompositor;
 }
+namespace mediacaps {
+// Pref-driven behaviour flags resolved once per MediaCapabilities request.
+struct BehaviorConfig {
+  bool mLegacy = false;
+  bool mWebRTCEnabled = true;
+};
+}  // namespace mediacaps
 namespace dom {
 class MediaCapabilities;
 }  // namespace dom
@@ -86,7 +93,7 @@ class MediaCapabilities final : public nsISupports, public nsWrapperCache {
   already_AddRefed<layers::KnowsCompositor> GetCompositor();
   void CreateMediaCapabilitiesDecodingInfo(
       const MediaDecodingConfiguration& aConfiguration, ErrorResult& aRv,
-      Promise* aPromise);
+      Promise* aPromise, const mediacaps::BehaviorConfig& aBehavior);
 
   void CreateWebRTCDecodingInfo(
       const MediaDecodingConfiguration& aConfiguration, Promise* aPromise,

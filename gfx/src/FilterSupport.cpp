@@ -462,8 +462,8 @@ bool ComputeColorMatrix(const ColorMatrixAttributes& aMatrixAttributes,
 
       float hueRotateValue = aMatrixAttributes.mValues[0];
 
-      float c = static_cast<float>(cos(hueRotateValue * M_PI / 180));
-      float s = static_cast<float>(sin(hueRotateValue * M_PI / 180));
+      float c = static_cast<float>(cos(hueRotateValue * kRadPerDegree));
+      float s = static_cast<float>(sin(hueRotateValue * kRadPerDegree));
 
       aOutMatrix[0] = lumR + oneMinusLumR * c - lumR * s;
       aOutMatrix[1] = lumG - lumG * c - lumG * s;

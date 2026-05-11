@@ -3792,7 +3792,8 @@ class AddPreferencesMemoryReporterRunnable : public Runnable {
       : Runnable("AddPreferencesMemoryReporterRunnable") {}
 
   NS_IMETHOD Run() override {
-    return RegisterStrongMemoryReporter(new PreferenceServiceReporter());
+    return RegisterStrongMemoryReporter(
+        MakeAndAddRef<PreferenceServiceReporter>());
   }
 };
 

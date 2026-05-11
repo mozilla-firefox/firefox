@@ -184,4 +184,12 @@
   <string name="mozac_feature_prompts_identity_credentials_continue">Cuntinuar</string>
   <!-- Text for the cancel button of the Identity Credential dialogs. -->
   <string name="mozac_feature_prompts_identity_credentials_cancel">Interrumper</string>
+  <!--
+    Email Mask Autofill
+
+    Text for the email mask prompt to allow users to fill an email input field in a sign up form with an email mask.
+  -->
+  <string name="mozac_feature_relay_chip_text">Utilisar in alias dad e-mail</string>
+  <!-- Informational text for the contextual feature recommendation (CFR) enabling the email mask aliases. The %s is the name of the service, "Firefox Relay". -->
+  <string name="mozac_feature_relay_email_masks_cfr">Nov! Ils alias dad e-mail da %s stattan ussa era a disposiziun sin apparats mobils.</string>
 </resources>

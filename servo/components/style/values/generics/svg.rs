@@ -157,7 +157,6 @@ impl<C: Parse, U: Parse> Parse for SVGPaint<C, U> {
     ToTyped,
 )]
 #[repr(C, u8)]
-#[typed(todo_derive_fields)]
 pub enum GenericSVGLength<L> {
     /// `<length> | <percentage> | <number>`
     LengthPercentage(L),
@@ -184,10 +183,10 @@ pub use self::GenericSVGLength as SVGLength;
     ToTyped,
 )]
 #[repr(C, u8)]
-#[typed(todo_derive_fields)]
 pub enum GenericSVGStrokeDashArray<L> {
     /// `[ <length> | <percentage> | <number> ]#`
     #[css(comma)]
+    #[typed(no_multiple_values)]
     Values(#[css(if_empty = "none", iterable)] crate::OwnedSlice<L>),
     /// `context-value`
     ContextValue,
@@ -216,7 +215,6 @@ pub use self::GenericSVGStrokeDashArray as SVGStrokeDashArray;
     ToTyped,
 )]
 #[repr(C, u8)]
-#[typed(todo_derive_fields)]
 pub enum GenericSVGOpacity<OpacityType> {
     /// `<opacity-value>`
     Opacity(OpacityType),

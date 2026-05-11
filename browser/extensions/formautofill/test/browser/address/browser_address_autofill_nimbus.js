@@ -62,7 +62,7 @@ add_task(async function test_address_autofill_feature_disabled() {
 
   is(
     FormAutofill.isAutofillAddressesAvailable,
-    false,
+    AppConstants.NIGHTLY_BUILD,
     "Address autofill shouldn't be available when feature is off in nimbus."
   );
 

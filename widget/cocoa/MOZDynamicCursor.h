@@ -31,6 +31,12 @@
           widgetScaleFactor:(CGFloat)aWidgetScaleFactor
                 forceUpdate:(bool)aForceUpdate;
 
+// Re-push our cached cursor state to AppKit. Used when AppKit may have
+// changed cursor visibility under us without firing a mouse event that
+// would re-evaluate cursor rects (e.g. macOS fullscreen window
+// transitions, bug 2031413).
+- (void)reassertCurrentCursor;
+
 + (MOZDynamicCursor*)sharedInstance;
 @end
 

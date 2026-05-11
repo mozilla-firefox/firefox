@@ -8,8 +8,8 @@ menupopup,
 panel {
   --menu-arrow-opacity: 1;
   --menu-arrow-size: 1em;
-  --menuitem-border-radius: 3px;
-  --menuitem-margin: 0px;
+  --menuitem-border-radius: var(--border-radius-xsmall);
+  --menuitem-margin: 0;
   --menuitem-padding: 0.5em 1em;
   --menuitem-max-width: 42em;
 
@@ -17,19 +17,23 @@ panel {
     --menuitem-padding: 0.25em 0.5em;
   }
   @media (-moz-platform: macos) {
+    /* Space tokens don't match native macOS dimensions. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     --menuitem-padding: 3px 9px;
 
     @media (-moz-mac-tahoe-theme) {
+      /* Space tokens don't match native macOS dimensions. */
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       --menuitem-padding: 4px 11px;
-      --menuitem-border-radius: 7px;
+      --menuitem-border-radius: var(--border-radius-medium);
     }
   }
 
   @media (-moz-platform: windows) {
-    --menu-arrow-size: max(1em, 16px);
+    --menu-arrow-size: max(1em, var(--size-item-small));
 
     @media (prefers-color-scheme: light) {
-      --menu-arrow-opacity: 0.7;
+      --menu-arrow-opacity: var(--opacity-deemphasized);
     }
   }
 }
@@ -66,6 +70,7 @@ menupopup {
 
   > menu > menupopup {
     /* Vertically align nested menupopups: the shadow plus the top padding plus top border */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin-top: calc(-1 * (var(--panel-box-shadow-margin) + var(--panel-padding-block) + 1px));
   }
 }
@@ -79,7 +84,7 @@ menulist > menupopup {
     color: FieldText;
 
     &:not([position]) {
-      margin-inline-start: -13px;
+      margin-inline-start: calc(-1 * var(--space-medium));
       margin-top: -1px;
     }
   }
@@ -98,7 +103,7 @@ menulist > menupopup {
 
   @media (-moz-platform: windows) {
     > menuitem[_moz-menuactive][disabled] {
-      color: GrayText;
+      color: var(--text-color-disabled);
     }
   }
 }
@@ -109,11 +114,11 @@ menuseparator {
   /* Using padding instead of margin to increase the hit area, as some
      separators (e.g. in bookmarks menus) can be dragged or have a context
      menu. */
-  padding-block: 4px;
+  padding-block: var(--space-xsmall);
 
   @media (-moz-platform: macos) {
-    padding-block: 5px;
-    margin-inline: 9px;
+    padding-block: var(--space-xsmall);
+    margin-inline: var(--space-small);
   }
 
   @media (-moz-platform: windows) {
@@ -122,6 +127,8 @@ menuseparator {
   }
 
   &::before {
+    /* Color of border-top derived from currentColor */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     border-top: 1px solid var(--panel-separator-color);
     content: "";
     display: block;
@@ -142,16 +149,26 @@ menuseparator {
  * such a way that its edges are at the same position as the edges of
  * arrowscrollbox regardless of scroll button visibility.
  */
+
+.menupopup-arrowscrollbox {
+  /* Scrollbutton height derived from toolbarbutton list-style-image SVG width
+   * of 12px and padding-block of 2px as defined in arrowscrollbox.css.
+   */
+  --scrollbutton-height: calc(12px + 2px + 2px);
+}
+
 .menupopup-arrowscrollbox:not([scrolledtostart])::part(scrollbox) {
   /* scrollbutton-up is visible; shift our top edge up by its height. */
-  margin-top: -16px;
-  border-top: 16px solid transparent;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  margin-top: calc(-1 * var(--scrollbutton-height));
+  border-top: var(--scrollbutton-height) solid transparent;
 }
 
 .menupopup-arrowscrollbox:not([scrolledtoend])::part(scrollbox) {
   /* scrollbutton-down is visible; shift our bottom edge down by its height. */
-  margin-bottom: -16px;
-  border-bottom: 16px solid transparent;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  margin-bottom: calc(-1 * var(--scrollbutton-height));
+  border-bottom: var(--scrollbutton-height) solid transparent;
 }
 
 menubar {
@@ -173,16 +190,16 @@ menubar > menu {
   }
 
   @media (-moz-platform: macos) {
-    padding-block: 2px;
-    padding-inline: 7px 5px;
+    padding-block: var(--space-xxsmall);
+    padding-inline: var(--space-small) var(--space-xsmall);
     margin: 1px 0;
   }
 
   @media (-moz-platform: windows) {
-    padding: 1px 6px 2px;
+    padding: 1px var(--space-small) var(--space-xxsmall);
 
     &:-moz-window-inactive {
-      color: ThreeDShadow;
+      color: var(--text-color-deemphasized);
     }
 
     &:not([disabled]) {
@@ -210,6 +227,8 @@ menu,
 menuitem,
 menucaption {
   border-radius: var(--menuitem-border-radius);
+  /* --menuitem-padding uses px values on macOS to match native menus. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: var(--menuitem-padding);
   margin: var(--menuitem-margin);
   align-items: center;
@@ -271,7 +290,7 @@ menupopup > menu::after {
     margin-inline: 0.5em 0;
   }
   @media (-moz-platform: macos) {
-    margin-inline: 22px -3px;
+    margin-inline: var(--space-xlarge) calc(-1 * var(--space-xxsmall));
   }
 }
 
@@ -286,6 +305,10 @@ menupopup > menu:-moz-locale-dir(rtl)::after {
     padding: 1px 0;
   }
   @media (-moz-platform: linux) {
+    /* --space-xxsmall (0.125rem) only equals 2px at a 16px root font, causing
+     * rounding differences in layout at other font sizes.
+     */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin-inline: 0 2px;
   }
 }
@@ -295,11 +318,13 @@ menupopup > menu:-moz-locale-dir(rtl)::after {
 .menu-accel {
   margin-inline: 0.74em 0.35em;
   @media (-moz-platform: macos) {
+    /* margin-inline mimics natively-rendered menus */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin-inline: 25px 0;
   }
   @media (-moz-platform: linux) {
     /* Matches the margin-inline-end on iconic-left */
-    margin-inline: 0.5em 0;
+    margin-inline: var(--space-small) 0;
   }
 
   @media not (prefers-contrast) {
@@ -324,8 +349,8 @@ menuitem[highlightable] > .menu-text {
 }
 
 .menu-icon {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size);
+  height: var(--icon-size);
   box-sizing: border-box;
 
   /* Empty icons shouldn't take up any space */
@@ -339,12 +364,12 @@ menuitem[highlightable] > .menu-text {
     margin-inline-end: 0.5em;
   }
   @media (-moz-platform: windows) {
-    margin-top: 2px;
-    margin-inline-end: 8px;
+    margin-top: var(--space-xxsmall);
+    margin-inline-end: var(--space-small);
   }
   @media (-moz-platform: macos) {
-    margin-block: -2px;
-    margin-inline-end: 6px;
+    margin-block: calc(-1 * var(--space-xxsmall));
+    margin-inline-end: var(--space-small);
   }
 
   menuitem:where(.menuitem-iconic, [image]) > &,
@@ -410,7 +435,7 @@ menupopup[needsgutter] {
         vertical-align: middle;
         line-height: 0;
         visibility: hidden;
-        padding-inline: 4px;
+        padding-inline: var(--space-xsmall);
         font-weight: var(--font-weight-bold);
       }
     }

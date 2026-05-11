@@ -333,7 +333,7 @@ export class PanelList extends HTMLElement {
           VIEWPORT_PANEL_MIN_MARGIN
         );
         // Provide a max-height for larger elements which will provide scrolling as needed.
-        this.style.maxHeight = `${roundedAnchorTop + VIEWPORT_PANEL_MIN_MARGIN}px`;
+        this.style.maxHeight = `${roundedAnchorTop - VIEWPORT_PANEL_MIN_MARGIN}px`;
         valign = "top";
       } else {
         topOffset = roundedAnchorBottom;
@@ -689,7 +689,7 @@ export class PanelItem extends HTMLElement {
   #badge;
 
   static get observedAttributes() {
-    return ["accesskey", "type", "disabled", "badge-type"];
+    return ["accesskey", "type", "disabled", "badge-type", "aria-haspopup"];
   }
 
   constructor() {
@@ -835,7 +835,11 @@ export class PanelItem extends HTMLElement {
       } else {
         this._accessKey = null;
       }
-    } else if (name === "type" || name === "disabled") {
+    } else if (
+      name === "type" ||
+      name === "disabled" ||
+      name === "aria-haspopup"
+    ) {
       this.#setButtonAttributes();
     } else if (name === "badge-type") {
       this.#updateBadge();
@@ -851,6 +855,14 @@ export class PanelItem extends HTMLElement {
       this.button.removeAttribute("aria-checked");
     }
     this.button.toggleAttribute("disabled", this.disabled);
+    if (this.hasAttribute("aria-haspopup")) {
+      this.button.setAttribute(
+        "aria-haspopup",
+        this.getAttribute("aria-haspopup")
+      );
+    } else {
+      this.button.removeAttribute("aria-haspopup");
+    }
   }
 
   #updateBadge() {

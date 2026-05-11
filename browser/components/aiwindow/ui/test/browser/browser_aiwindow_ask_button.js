@@ -100,12 +100,8 @@ add_task(async function test_ask_button() {
 
     await BrowserTestUtils.waitForMutationCondition(
       askButton,
-      { attributes: true, attributeFilter: ["checked"] },
-      () => askButton.hasAttribute("checked")
-    );
-    Assert.ok(
-      askButton.hasAttribute("checked"),
-      "Ask button has the checked attribute after click"
+      { attributes: true, attributeFilter: ["aria-expanded"] },
+      () => askButton.getAttribute("aria-expanded") === "true"
     );
     Assert.equal(
       askButton.getAttribute("aria-expanded"),
@@ -121,12 +117,8 @@ add_task(async function test_ask_button() {
 
     await BrowserTestUtils.waitForMutationCondition(
       askButton,
-      { attributes: true, attributeFilter: ["checked"] },
-      () => !askButton.hasAttribute("checked")
-    );
-    Assert.ok(
-      !askButton.hasAttribute("checked"),
-      "Ask button removed the checked attribute after second click"
+      { attributes: true, attributeFilter: ["aria-expanded"] },
+      () => askButton.getAttribute("aria-expanded") === "false"
     );
     Assert.equal(
       askButton.getAttribute("aria-expanded"),
@@ -142,12 +134,8 @@ add_task(async function test_ask_button() {
 
     await BrowserTestUtils.waitForMutationCondition(
       askButton,
-      { attributes: true, attributeFilter: ["checked"] },
-      () => askButton.hasAttribute("checked")
-    );
-    Assert.ok(
-      askButton.hasAttribute("checked"),
-      "Ask button has the checked attribute after tab enter"
+      { attributes: true, attributeFilter: ["aria-expanded"] },
+      () => askButton.getAttribute("aria-expanded") === "true"
     );
     Assert.equal(
       askButton.getAttribute("aria-expanded"),
@@ -160,12 +148,8 @@ add_task(async function test_ask_button() {
 
     await BrowserTestUtils.waitForMutationCondition(
       askButton,
-      { attributes: true, attributeFilter: ["checked"] },
-      () => !askButton.hasAttribute("checked")
-    );
-    Assert.ok(
-      !askButton.hasAttribute("checked"),
-      "Ask button removed the checked attribute after second tab enter"
+      { attributes: true, attributeFilter: ["aria-expanded"] },
+      () => askButton.getAttribute("aria-expanded") === "false"
     );
     Assert.equal(
       askButton.getAttribute("aria-expanded"),
@@ -173,6 +157,34 @@ add_task(async function test_ask_button() {
       "Ask button has aria-expanded=false after second tab enter"
     );
     Assert.ok(sidebar.collapsed, "AI Sidebar is hidden after second tab enter");
+
+    EventUtils.synthesizeKey(" ", {}, win);
+
+    await BrowserTestUtils.waitForMutationCondition(
+      askButton,
+      { attributes: true, attributeFilter: ["aria-expanded"] },
+      () => askButton.getAttribute("aria-expanded") === "true"
+    );
+    Assert.equal(
+      askButton.getAttribute("aria-expanded"),
+      "true",
+      "Ask button has aria-expanded=true after space"
+    );
+    Assert.ok(!sidebar.hidden, "AI Sidebar is not hidden after space");
+
+    EventUtils.synthesizeKey(" ", {}, win);
+
+    await BrowserTestUtils.waitForMutationCondition(
+      askButton,
+      { attributes: true, attributeFilter: ["aria-expanded"] },
+      () => askButton.getAttribute("aria-expanded") === "false"
+    );
+    Assert.equal(
+      askButton.getAttribute("aria-expanded"),
+      "false",
+      "Ask button has aria-expanded=false after second space"
+    );
+    Assert.ok(sidebar.collapsed, "AI Sidebar is hidden after second space");
     askButton.removeAttribute("tabindex");
   } finally {
     await BrowserTestUtils.closeWindow(win);

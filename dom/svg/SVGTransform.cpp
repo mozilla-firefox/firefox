@@ -8,10 +8,6 @@
 #include "nsError.h"
 #include "nsTextFormatter.h"
 
-namespace {
-const double kRadPerDegree = 2.0 * M_PI / 360.0;
-}  // namespace
-
 namespace mozilla {
 
 using namespace dom::SVGTransform_Binding;

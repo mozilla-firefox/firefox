@@ -491,7 +491,9 @@ bool gAreFormatTablesInitialized = false;
 static void EnsureInitFormatTables(
     const StaticMutexAutoLock&)  // Prove that you locked it!
 {
-  if (MOZ_LIKELY(gAreFormatTablesInitialized)) return;
+  if (gAreFormatTablesInitialized) [[likely]] {
+    return;
+  }
 
   gAreFormatTablesInitialized = true;
 

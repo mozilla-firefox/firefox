@@ -859,7 +859,7 @@ export var PlacesUIUtils = {
     }
     if (lazy.OpenInTabsUtils.confirmOpenInTabs(urlsToOpen.length, window)) {
       if (window.updateTelemetry) {
-        window.updateTelemetry(urlsToOpen);
+        window.updateTelemetry(urlsToOpen, true);
       }
       this.openTabset(urlsToOpen, event, window);
     }

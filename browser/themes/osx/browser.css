@@ -15,7 +15,7 @@
         --urlbar-box-background-color: #fafafa;
       }
       @media (prefers-color-scheme: dark) {
-        --tab-selected-bgcolor: color-mix(in srgb, -moz-dialog 75%, white);
+        --tab-background-color-selected: color-mix(in srgb, -moz-dialog 75%, white);
       }
     }
   }

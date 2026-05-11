@@ -115,7 +115,7 @@ class ProducerView {
   template <typename T>
   bool WriteFromRange(const Range<const T>& src) {
     static_assert(BytesAlwaysValidT<T>::value);
-    if (MOZ_LIKELY(mOk)) {
+    if (mOk) [[likely]] {
       mOk &= mProducer->WriteFromRange(src);
     }
     return mOk;
@@ -169,9 +169,9 @@ class ConsumerView {
 
     const auto dest = AsRange(destBegin, destEnd);
     const auto view = ReadRange<T>(dest.length());
-    if (MOZ_LIKELY(view)) {
+    if (view) [[likely]] {
       const auto byteSize = ByteSize(dest);
-      if (MOZ_LIKELY(byteSize)) {
+      if (byteSize) [[likely]] {
         memcpy(dest.begin().get(), view->begin().get(), byteSize);
       }
     }
@@ -182,7 +182,9 @@ class ConsumerView {
   template <typename T>
   inline Maybe<Range<const T>> ReadRange(const size_t elemCount) {
     static_assert(BytesAlwaysValidT<T>::value);
-    if (MOZ_UNLIKELY(!mOk)) return {};
+    if (!mOk) [[unlikely]] {
+      return {};
+    }
     const auto view = mConsumer->template ReadRange<T>(elemCount);
     mOk &= bool(view);
     return view;

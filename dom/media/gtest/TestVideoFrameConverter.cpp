@@ -161,7 +161,8 @@ MATCHER_P(
 VideoChunk GenerateChunk(int32_t aWidth, int32_t aHeight, TimeStamp aTime) {
   YUVBufferGenerator generator;
   generator.Init(gfx::IntSize(aWidth, aHeight));
-  VideoFrame f(generator.GenerateI420Image(), gfx::IntSize(aWidth, aHeight));
+  mozilla::VideoFrame f(generator.GenerateI420Image(),
+                        gfx::IntSize(aWidth, aHeight));
   VideoChunk c;
   c.mFrame.TakeFrom(&f);
   c.mTimeStamp = aTime;
@@ -459,7 +460,7 @@ TEST_F(VideoFrameConverterTest, ClearFutureFramesOnJumpingBack) {
   TimeStamp future3 = step1 + TimeDuration::FromMilliseconds(10);
   mConverter->QueueVideoChunk(GenerateChunk(800, 600, future2), false);
   VideoChunk nullChunk;
-  nullChunk.mFrame = VideoFrame(nullptr, gfx::IntSize(800, 600));
+  nullChunk.mFrame = mozilla::VideoFrame(nullptr, gfx::IntSize(800, 600));
   nullChunk.mTimeStamp = step1;
   mConverter->QueueVideoChunk(nullChunk, false);
 

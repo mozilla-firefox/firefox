@@ -5,6 +5,7 @@
 #include "CubebUtils.h"
 
 #include "audio_thread_priority.h"
+#include "base/process_util.h"
 #include "mozilla/AbstractThread.h"
 #include "mozilla/Components.h"
 #include "mozilla/Logging.h"
@@ -599,7 +600,7 @@ void InitAudioIPCConnection() {
 #endif
 
 #ifdef MOZ_CUBEB_REMOTING
-ipc::FileDescriptor CreateAudioIPCConnectionUnlocked() {
+ipc::FileDescriptor CreateAudioIPCConnectionUnlocked(uint32_t aRemotePid) {
   MOZ_ASSERT(sCubebSandbox && XRE_IsParentProcess());
   if (!sServerHandle) {
     MOZ_LOG(gCubebLog, LogLevel::Debug, ("Starting cubeb server..."));
@@ -612,7 +613,7 @@ ipc::FileDescriptor CreateAudioIPCConnectionUnlocked() {
           ("%s: %d", PREF_AUDIOIPC_SHM_AREA_SIZE, (int)sAudioIPCShmAreaSize));
   MOZ_ASSERT(sServerHandle);
   ipc::FileDescriptor::PlatformHandleType rawFD;
-  rawFD = audioipc2::audioipc2_server_new_client(sServerHandle,
+  rawFD = audioipc2::audioipc2_server_new_client(sServerHandle, aRemotePid,
                                                  sAudioIPCShmAreaSize);
   ipc::FileDescriptor fd(rawFD);
   if (!fd.IsValid()) {
@@ -630,10 +631,10 @@ ipc::FileDescriptor CreateAudioIPCConnectionUnlocked() {
 }
 #endif
 
-ipc::FileDescriptor CreateAudioIPCConnection() {
+ipc::FileDescriptor CreateAudioIPCConnection(uint32_t aRemotePid) {
 #ifdef MOZ_CUBEB_REMOTING
   StaticMutexAutoLock lock(sMutex);
-  return CreateAudioIPCConnectionUnlocked();
+  return CreateAudioIPCConnectionUnlocked(aRemotePid);
 #else
   return ipc::FileDescriptor();
 #endif
@@ -665,7 +666,7 @@ RefPtr<CubebHandle> GetCubebUnlocked() {
         InitBrandName();
       }
       // TODO: Don't use audio IPC when within the same process.
-      auto fd = CreateAudioIPCConnectionUnlocked();
+      auto fd = CreateAudioIPCConnectionUnlocked(base::GetCurrentProcId());
       if (fd.IsValid()) {
         sIPCConnection = new ipc::FileDescriptor(fd);
       }

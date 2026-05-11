@@ -83,6 +83,7 @@ using mozilla::layers::CompositorOptions from "mozilla/layers/CompositorOptions.
 using mozilla::CSSToScreenScale from "Units.h";
 using mozilla::CommandInt from "mozilla/EventForwards.h";
 using mozilla::HapticFeedbackType from "nsIWidget.h";
+using nsIWidget::NativePointerLockMode from "nsIWidget.h";
 using nsIWidget::TouchPointerState from "nsIWidget.h";
 using nsIWidget::TouchpadGesturePhase from "nsIWidget.h";
 using nsCursor from "nsIWidget.h";
@@ -514,8 +515,9 @@ parent:
                                       int32_t aModifierFlags,
                                       uint64_t? aCallbackId);
 
-    async LockNativePointer();
+    async LockNativePointer(NativePointerLockMode aNativePointerLockMode);
     async UnlockNativePointer();
+    async SetNativePointerLockMode(NativePointerLockMode aNativePointerLockMode);
 
     async AccessKeyNotHandled(WidgetKeyboardEvent event);
 
@@ -949,6 +951,12 @@ child:
      *
      */
     async SafeAreaInsetsChanged(LayoutDeviceIntMargin aSafeAreaInsets);
+
+    /**
+     * Tell the child to init the supporting of unadjustedMovement.
+     *
+     */
+    async InitSupportsUnadjustedMovement(bool aSupportsUnadjustedMovement);
 
     /**
      * Tell the browser that its frame loader has been swapped

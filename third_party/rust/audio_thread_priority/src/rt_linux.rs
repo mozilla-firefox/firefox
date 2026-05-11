@@ -62,6 +62,10 @@ impl RtPriorityThreadInfoInternal {
     pub fn deserialize(bytes: [u8; std::mem::size_of::<Self>()]) -> Self {
         unsafe { std::mem::transmute::<[u8; std::mem::size_of::<Self>()], Self>(bytes) }
     }
+    /// Returns the PID of the process containing the thread.
+    pub fn pid(&self) -> libc::pid_t {
+        self.pid
+    }
 }
 
 impl PartialEq for RtPriorityThreadInfoInternal {

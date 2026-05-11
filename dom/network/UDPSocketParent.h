@@ -65,7 +65,8 @@ class UDPSocketParent : public mozilla::net::PUDPSocketParent,
                         const bool& aAddressReuse, const bool& aLoopback,
                         const uint32_t& recvBufferSize,
                         const uint32_t& sendBufferSize);
-  nsresult ConnectInternal(const nsCString& aHost, const uint16_t& aPort);
+  nsresult ConnectInternal(const nsCOMPtr<nsIUDPSocket>& aSocket,
+                           const nsCString& aHost, const uint16_t& aPort);
   void FireInternalError(uint32_t aLineNo);
   void SendInternalError(const nsCOMPtr<nsIEventTarget>& aThread,
                          uint32_t aLineNo);

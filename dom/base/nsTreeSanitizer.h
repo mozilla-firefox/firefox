@@ -5,6 +5,7 @@
 #ifndef nsTreeSanitizer_h_
 #define nsTreeSanitizer_h_
 
+#include "mozilla/StaticPtr.h"
 #include "mozilla/dom/NameSpaceConstants.h"
 #include "mozilla/dom/StaticAtomSet.h"
 #include "nsAtom.h"
@@ -223,42 +224,43 @@ class nsTreeSanitizer {
   /**
    * The whitelist of HTML elements.
    */
-  static mozilla::dom::StaticAtomSet* sElementsHTML;
+  static mozilla::StaticAutoPtr<mozilla::dom::StaticAtomSet> sElementsHTML;
 
   /**
    * The whitelist of non-presentational HTML attributes.
    */
-  static mozilla::dom::StaticAtomSet* sAttributesHTML;
+  static mozilla::StaticAutoPtr<mozilla::dom::StaticAtomSet> sAttributesHTML;
 
   /**
    * The whitelist of presentational HTML attributes.
    */
-  static mozilla::dom::StaticAtomSet* sPresAttributesHTML;
+  static mozilla::StaticAutoPtr<mozilla::dom::StaticAtomSet>
+      sPresAttributesHTML;
 
   /**
    * The whitelist of SVG elements.
    */
-  static mozilla::dom::StaticAtomSet* sElementsSVG;
+  static mozilla::StaticAutoPtr<mozilla::dom::StaticAtomSet> sElementsSVG;
 
   /**
    * The whitelist of SVG attributes.
    */
-  static mozilla::dom::StaticAtomSet* sAttributesSVG;
+  static mozilla::StaticAutoPtr<mozilla::dom::StaticAtomSet> sAttributesSVG;
 
   /**
    * The whitelist of SVG elements.
    */
-  static mozilla::dom::StaticAtomSet* sElementsMathML;
+  static mozilla::StaticAutoPtr<mozilla::dom::StaticAtomSet> sElementsMathML;
 
   /**
    * The whitelist of MathML attributes.
    */
-  static mozilla::dom::StaticAtomSet* sAttributesMathML;
+  static mozilla::StaticAutoPtr<mozilla::dom::StaticAtomSet> sAttributesMathML;
 
   /**
    * Reusable null principal for URL checks.
    */
-  static nsIPrincipal* sNullPrincipal;
+  static mozilla::StaticRefPtr<nsIPrincipal> sNullPrincipal;
 };
 
 #endif  // nsTreeSanitizer_h_

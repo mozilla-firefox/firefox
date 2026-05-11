@@ -2552,13 +2552,13 @@ ArraySortResult js::ArraySortFromJit(JSContext* cx,
 }
 
 void ArraySortData::trace(JSTracer* trc) {
-  TraceNullableRoot(trc, &comparator_, "comparator_");
+  TraceRoot(trc, &comparator_, "comparator_");
   TraceRoot(trc, &thisv, "thisv");
   TraceRoot(trc, &callArgs[0], "callArgs0");
   TraceRoot(trc, &callArgs[1], "callArgs1");
   vec.trace(trc);
   TraceRoot(trc, &item, "item");
-  TraceNullableRoot(trc, &obj_, "obj");
+  TraceRoot(trc, &obj_, "obj");
 }
 
 bool js::NewbornArrayPush(JSContext* cx, HandleObject obj, const Value& v) {

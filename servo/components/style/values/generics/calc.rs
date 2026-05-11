@@ -1504,7 +1504,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                             if value_or_stop!(value.is_negative_leaf())
                                 && !value_or_stop!(value.is_zero_leaf())
                             {
-                                value_or_stop!(value.coerce_to_value(f32::INFINITY));
+                                value_or_stop!(value.coerce_to_value(-f32::INFINITY));
                                 replace_self_with!(&mut **value);
                                 return;
                             } else if value_or_stop!(value.is_negative_leaf())

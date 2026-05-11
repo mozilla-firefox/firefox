@@ -293,6 +293,50 @@ For the gecko profiler, you should also keep in mind these :searchfox:`default p
 
 Likewise, for chrome trace you will want to be aware of :searchfox:`these defaults. <mozilla-central/rev/11d085b63cf74b35737d9c036be80434883dd3f6:testing/raptor/raptor/browsertime/base.py#646-658>`
 
+Native profiling with Raptor-Browsertime
+----------------------------------------
+
+Raptor can also support profiling Browsertime tests with the following native (OS-specific) profilers:
+
+- Simpleperf (Android)
+
+To use native profiling in CI, first run ``./mach try`` with the ``--native-profiling`` flag. For example:
+
+::
+
+  ./mach try fuzzy --native-profiling
+
+Then, select any test configured for native profiling. Currently, the following tests support native profiling:
+
+============= ================ ==========
+Test          App              Profiler
+============= ================ ==========
+Speedometer 3 Fenix, Geckoview Simpleperf
+============= ================ ==========
+
+To configure a Browsertime script with Simpleperf profiling, wrap the test script to profile with Browsertime's ``commands.simpleperf.start()`` and ``commands.simpleperf.stop()``. For example:
+
+::
+
+  export default async function test(context, commands) {
+
+    // Start Simpleperf profiling.
+    await commands.simpleperf.start();
+
+    // Profile a Speedometer 3.1 test
+    await commands.measure.start(
+      'https://browserbench.org/Speedometer3.1/?iterationCount=1'
+    );
+    await commands.js.runAndWait(`this.benchmarkClient.start();`);
+    await commands.wait.byTime(20000); // prevent early timeout
+
+    // Stop Simpleperf profiling.
+    await commands.simpleperf.stop();
+
+  }
+
+The Simpleperf commands are implemented with Simpleperf's `app_profiler.py <https://android.googlesource.com/platform/system/extras/+/47fec4c00e2556988ec8efe800ba7690a70720f7/simpleperf/scripts/app_profiler.py>`_. ``commands.simpleperf.start()`` can accept app profiler options and recording (``-r``) options. When creating a CI job with the test script, pass the ``--simpleperf`` Raptor flag into test configuration as a mozharness extra option (i.e. ``--add-option=--simpleperf``). When pushing to Try, the ``--native-profiling`` flag can now be used to enable the test's Simpleperf profiling.
+
 Upgrading Browsertime In-Tree
 -----------------------------
 

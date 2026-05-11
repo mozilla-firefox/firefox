@@ -177,11 +177,105 @@ def test_buffering_off(get_message_logger, assert_actions):
 def test_test_names_fixed_to_be_relative(name, expected, get_message_logger, get_lines):
     ml = get_message_logger(buffering=False)
     ml.fake_message("test_start", test=name)
-    lines = get_lines()
 
     if expected is None:
         expected = name
-    assert json.loads(lines[0])["test"] == expected
+    assert json.loads(get_lines()[0])["test"] == expected
+
+
+@pytest.fixture
+def get_output_handler(setup_test_harness, logger, get_message_logger, monkeypatch):
+    setup_test_harness(*setup_args)
+    runtests = pytest.importorskip("runtests")
+    monkeypatch.setattr(runtests, "get_stack_fixer_function", lambda *a, **k: None)
+
+    def inner(shutdownLeaks=None):
+        ml = get_message_logger(buffering=False)
+        harness = types.SimpleNamespace(
+            message_logger=ml,
+            failedTests=set(),
+            countfail=0,
+            log=logger,
+        )
+        return runtests.MochitestDesktop.OutputHandler(
+            harness=harness,
+            utilityPath=".",
+            shutdownLeaks=shutdownLeaks,
+        )
+
+    return inner
+
+
+def _shutdown_leak_lines(lines):
+    return [
+        json.loads(l)
+        for l in lines
+        if json.loads(l).get("action") == "test_status"
+        and json.loads(l).get("subtest") == "Shutdown"
+    ]
+
+
+def test_shutdown_leak_in_retry_mode_queues_test_for_retry(
+    get_output_handler, get_lines
+):
+    """A shutdown leak detected on the initial run is added to failedTests
+    (so the test is retried) instead of bumping countfail."""
+    leak = {"test": "test_leak.html", "msg": "leaked 1 window", "time": 0}
+    fake_leaks = types.SimpleNamespace(process=lambda: (0, [leak]))
+    output = get_output_handler(shutdownLeaks=fake_leaks)
+    output.harness.message_logger.retry_mode = True
+
+    output.finish()
+
+    assert output.harness.failedTests == {"test_leak.html"}
+    assert output.harness.countfail == 0
+
+    leaks = _shutdown_leak_lines(get_lines())
+    assert len(leaks) == 1
+    # In retry mode the synthetic leak message is rewritten so it doesn't
+    # surface as a TEST-UNEXPECTED-FAIL on the initial run. mozlog drops the
+    # "expected" key when it matches "status".
+    assert "expected" not in leaks[0]
+    assert leaks[0]["status"] == "FAIL"
+
+
+def test_shutdown_leak_without_retry_mode_logs_unexpected(
+    get_output_handler, get_lines
+):
+    """Outside retry mode (or on the retry pass), a shutdown leak bumps
+    countfail and is logged as a real unexpected failure."""
+    leak = {"test": "test_leak.html", "msg": "leaked 1 window", "time": 0}
+    fake_leaks = types.SimpleNamespace(process=lambda: (0, [leak]))
+    output = get_output_handler(shutdownLeaks=fake_leaks)
+    output.harness.message_logger.retry_mode = False
+
+    output.finish()
+
+    assert output.harness.failedTests == set()
+    assert output.harness.countfail == 1
+
+    leaks = _shutdown_leak_lines(get_lines())
+    assert len(leaks) == 1
+    assert leaks[0]["expected"] == "PASS"
+    assert leaks[0]["status"] == "FAIL"
+
+
+def test_shutdown_leak_already_failed_test_not_double_counted(
+    get_output_handler, get_lines
+):
+    """If the test is already in failedTests (because it had in-test
+    failures), an additional shutdown leak shouldn't bump countfail again
+    or re-add the test."""
+    leak = {"test": "test_leak.html", "msg": "leaked 1 window", "time": 0}
+    fake_leaks = types.SimpleNamespace(process=lambda: (0, [leak]))
+    output = get_output_handler(shutdownLeaks=fake_leaks)
+    output.harness.failedTests.add("test_leak.html")
+    output.harness.message_logger.retry_mode = False
+
+    output.finish()
+
+    assert output.harness.failedTests == {"test_leak.html"}
+    assert output.harness.countfail == 0
 
 
 if __name__ == "__main__":

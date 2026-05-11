@@ -2666,6 +2666,8 @@ class nsIFrame : public nsQueryFrame {
    */
   void MarkSubtreeDirty();
 
+  void MarkPrincipalChildrenDirty();
+
   /**
    * Get the min-content intrinsic inline size of the frame.  This must be
    * less than or equal to the max-content intrinsic inline size.

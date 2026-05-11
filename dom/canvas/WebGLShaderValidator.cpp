@@ -485,7 +485,7 @@ bool ShaderValidatorResults::CanLinkTo(const ShaderValidatorResults& vert,
 }
 
 size_t ShaderValidatorResults::SizeOfIncludingThis(
-    const MallocSizeOf fnSizeOf) const {
+    const mozilla::MallocSizeOf fnSizeOf) const {
   auto ret = fnSizeOf(this);
 
   // std::string heap allocations are not measured here because:

@@ -5,9 +5,18 @@
 ("use strict");
 
 const {
+  SET_AVAILABLE_SESSION_HISTORY,
+  DISABLE_SESSION_HISTORY,
   UPDATE_SESSION_HISTORY,
   UPDATE_SESSION_HISTORY_ENTRY,
 } = require("resource://devtools/client/application/src/constants.js");
+
+function setAvailableSessionHistory(sessionHistory) {
+  return {
+    type: SET_AVAILABLE_SESSION_HISTORY,
+    sessionHistory,
+  };
+}
 
 function updateSessionHistory(sessionHistory) {
   return {
@@ -23,7 +32,15 @@ function updateSessionHistoryEntry(sessionHistoryEntry) {
   };
 }
 
+function disableSessionHistory() {
+  return {
+    type: DISABLE_SESSION_HISTORY,
+  };
+}
+
 module.exports = {
+  setAvailableSessionHistory,
   updateSessionHistory,
   updateSessionHistoryEntry,
+  disableSessionHistory,
 };

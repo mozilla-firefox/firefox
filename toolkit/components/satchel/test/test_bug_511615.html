@@ -126,7 +126,6 @@ add_setup(async () => {
 add_task(async function test_untrusted_events_ignored() {
   // The autocomplete popup should not open from untrusted events.
   for (let triggerFn of [
-    () => input.focus(),
     () => input.click(),
     () => doClickWithMouseEventUnprivileged(),
     () => doKeyUnprivileged("down"),

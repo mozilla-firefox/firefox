@@ -44,6 +44,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import mozilla.components.compose.base.InfoCard
+import mozilla.components.compose.base.InfoType
 import mozilla.components.compose.base.LinkText
 import mozilla.components.compose.base.LinkTextState
 import mozilla.components.concept.engine.translate.Language
@@ -53,8 +55,6 @@ import mozilla.components.concept.engine.translate.TranslationError
 import mozilla.components.feature.downloads.DefaultFileSizeFormatter
 import mozilla.components.feature.downloads.FileSizeFormatter
 import org.mozilla.fenix.R
-import org.mozilla.fenix.compose.InfoCard
-import org.mozilla.fenix.compose.InfoType
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.theme.PreviewThemeProvider
 import org.mozilla.fenix.theme.Theme

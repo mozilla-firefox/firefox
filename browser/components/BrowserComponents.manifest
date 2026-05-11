@@ -20,6 +20,7 @@ category browser-before-ui-startup resource:///modules/BuiltInThemes.sys.mjs Bui
 #ifdef MOZ_NORMANDY
 category browser-before-ui-startup resource://normandy/Normandy.sys.mjs Normandy.init
 #endif
+category browser-before-ui-startup moz-src:///browser/components/nova/NovaPrefs.sys.mjs NovaPrefs.init
 category browser-before-ui-startup moz-src:///browser/components/privatebrowsing/ResetPBMPanel.sys.mjs ResetPBMPanel.init
 category browser-before-ui-startup resource:///modules/AboutHomeStartupCache.sys.mjs AboutHomeStartupCache.init
 category browser-before-ui-startup resource:///modules/AccountsGlue.sys.mjs AccountsGlue.init

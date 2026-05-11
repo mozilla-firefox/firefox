@@ -14,7 +14,7 @@ dictionary EditContextInit {
 
 [Pref="dom.editcontext.enabled", Exposed=Window]
 interface EditContext : EventTarget {
-    [Throws]
+    [Throws, UseCounter]
     constructor(optional EditContextInit options = {});
 
     undefined updateText(unsigned long rangeStart, unsigned long rangeEnd,

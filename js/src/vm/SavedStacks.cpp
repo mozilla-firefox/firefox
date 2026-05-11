@@ -235,10 +235,10 @@ struct MOZ_STACK_CLASS SavedFrame::Lookup {
 
   void trace(JSTracer* trc) {
     TraceRoot(trc, &source, "SavedFrame::Lookup::source");
-    TraceNullableRoot(trc, &functionDisplayName,
-                      "SavedFrame::Lookup::functionDisplayName");
-    TraceNullableRoot(trc, &asyncCause, "SavedFrame::Lookup::asyncCause");
-    TraceNullableRoot(trc, &parent, "SavedFrame::Lookup::parent");
+    TraceRoot(trc, &functionDisplayName,
+              "SavedFrame::Lookup::functionDisplayName");
+    TraceRoot(trc, &asyncCause, "SavedFrame::Lookup::asyncCause");
+    TraceRoot(trc, &parent, "SavedFrame::Lookup::parent");
   }
 };
 

@@ -8,7 +8,7 @@ rust-version.workspace = true
 base64 = "0.21"
 kvstore = { path = "../../../toolkit/components/kvstore" }
 nserror = { path = "../../../xpcom/rust/nserror" }
-nss-rs = { git = "https://github.com/mozilla/nss-rs", rev = "c54949bbff92795b8b2e837ec84decc9b468081a", default-features = false }
+nss-rs = { path = "../../../third_party/rust/nss-rs", default-features = false }
 nsstring = { path = "../../../xpcom/rust/nsstring" }
 serde = "1"
 serde_json = { version = "1", features = ["float_roundtrip"] }
@@ -17,6 +17,6 @@ xpcom = { path = "../../../xpcom/rust/xpcom" }
 
 [dev-dependencies]
 kvstore = { path = "../../../toolkit/components/kvstore" }
-nss-rs = { git = "https://github.com/mozilla/nss-rs", rev = "c54949bbff92795b8b2e837ec84decc9b468081a", default-features = false }
+nss-rs = { path = "../../../third_party/rust/nss-rs", default-features = false }
 rusqlite = "0.31"
 tempfile = "3"

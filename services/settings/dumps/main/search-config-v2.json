@@ -3879,15 +3879,14 @@
       },
       "id": "5fb2256b-fdb0-42e8-8d8a-0d633b14e8d5",
       "identifier": "startpage",
-      "last_modified": 1776702260347,
+      "last_modified": 1778165854657,
       "recordType": "engine",
-      "schema": 1776701460565,
+      "schema": 1778115248130,
       "variants": [
         {
           "environment": {
             "experiment": "startpage"
-          },
-          "isNewUntil": "2026-05-19"
+          }
         }
       ]
     },
@@ -8421,5 +8420,5 @@
       "schema": 1707824831520
     }
   ],
-  "timestamp": 1776702260347
+  "timestamp": 1778165854657
 }

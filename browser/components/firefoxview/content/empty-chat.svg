@@ -1,12 +1,6 @@
 <!-- This Source Code Form is subject to the terms of the Mozilla Public
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
-<svg xmlns="http://www.w3.org/2000/svg" id="emptyChat" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path fill="url(#a)" d="m13.886 1.429.685.685v8.343l-.685.686h-2.172a.57.57 0 0 0-.571.571v2.456L7.67 11.393a1.14 1.14 0 0 0-.714-.25H2.114l-.685-.686V2.114l.685-.685ZM13.714 0H2.286A2.286 2.286 0 0 0 0 2.286v8a2.286 2.286 0 0 0 2.286 2.285h4.571L11.143 16h1.428v-3.429h1.143A2.286 2.286 0 0 0 16 10.286v-8A2.286 2.286 0 0 0 13.714 0" style="fill:url(#a);stroke-width:1.14285"/>
-  <defs>
-    <linearGradient id="a" x1="0" x2="14" y1="7" y2="7" gradientTransform="scale(1.14286)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#8341ca"/>
-      <stop offset="1" stop-color="#656fff"/>
-    </linearGradient>
-  </defs>
+<svg width="16" height="15" viewBox="0 0 16 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M8.2896 0C11.5547 0.000110576 14.3318 2.08737 15.3619 5H13.7447C12.7962 2.935 10.7108 1.5001 8.2896 1.5C4.97615 1.5004 2.2896 4.18646 2.2896 7.5C2.2896 8.51201 2.5423 9.46414 2.98491 10.3008C3.09918 10.5168 3.10184 10.7755 2.99077 10.9932L1.8521 13.2188L4.17143 12.3379C4.37473 12.2606 4.60092 12.2762 4.79057 12.377V14.1279C4.64029 14.0482 4.49221 13.9643 4.34819 13.875L1.59721 14.9219C0.59357 15.3018 -0.356524 14.2481 0.13237 13.2891L1.48296 10.6445C1.04011 9.68845 0.789597 8.62328 0.789597 7.5C0.789597 3.35803 4.14772 0.000399155 8.2896 0Z" fill="context-fill"/>
 </svg>

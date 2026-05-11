@@ -499,9 +499,7 @@ struct JSRuntime {
     js::PreBarriered<JSAtom*> name;
     bool isDebuggee;
 
-    void trace(JSTracer* trc) {
-      TraceNullableEdge(trc, &name, "JitCacheKey::name");
-    }
+    void trace(JSTracer* trc) { TraceEdge(trc, &name, "JitCacheKey::name"); }
   };
 
   struct JitCacheKeyHasher : public js::DefaultHasher<JitCacheKey> {

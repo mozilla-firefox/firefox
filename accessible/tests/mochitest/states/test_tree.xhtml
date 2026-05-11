@@ -20,78 +20,57 @@
   <script type="application/javascript"
           src="../states.js" />
   <script type="application/javascript"
-          src="../events.js" />
+          src="../promisified-events.js" />
 
   <script type="application/javascript">
   <![CDATA[
     ////////////////////////////////////////////////////////////////////////////
     // Test
 
-    /**
-     * Event queue invoker object to test accessible states for XUL tree
-     * accessible.
-     */
-    function statesChecker(aTreeID, aView)
-    {
-      this.DOMNode = getNode(aTreeID);
+    function checkTreeStates(aTreeID) {
+      const domNode = getNode(aTreeID);
+      const tree = getAccessible(domNode);
 
-      this.invoke = function statesChecker_invoke()
-      {
-        this.DOMNode.view = aView;
-      }
+      // tree states
+      testStates(tree, STATE_READONLY);
 
-      this.check = function statesChecker_check()
-      {
-        var tree = getAccessible(this.DOMNode);
+      if (domNode.getAttribute("seltype") != "single")
+        testStates(tree, STATE_MULTISELECTABLE);
+      else
+        testStates(tree, 0, 0, STATE_MULTISELECTABLE);
 
-        // tree states
-        testStates(tree, STATE_READONLY);
+      // tree item states
+      const expandedItem = tree.getChildAt(2);
+      testStates(expandedItem,
+                 STATE_SELECTABLE | STATE_FOCUSABLE | STATE_EXPANDED);
 
-        if (this.DOMNode.getAttribute("seltype") != "single")
-          testStates(tree, STATE_MULTISELECTABLE);
-        else
-          testStates(tree, 0, 0, STATE_MULTISELECTABLE);
+      const collapsedItem = tree.getChildAt(5);
+      testStates(collapsedItem,
+                 STATE_SELECTABLE | STATE_FOCUSABLE | STATE_COLLAPSED);
 
-        // tree item states
-        var expandedItem = tree.getChildAt(2);
-        testStates(expandedItem,
-                   STATE_SELECTABLE | STATE_FOCUSABLE | STATE_EXPANDED);
-
-        var collapsedItem = tree.getChildAt(5);
-        testStates(collapsedItem,
-                   STATE_SELECTABLE | STATE_FOCUSABLE | STATE_COLLAPSED);
-
-        // cells states if any
-        var cells = collapsedItem.children;
-        if (cells && cells.length) {
-          for (var idx = 0; idx < cells.length; idx++) {
-            var cell = cells.queryElementAt(idx, nsIAccessible);
-            testStates(cell, STATE_SELECTABLE);
-          }
-
-          var checkboxCell = cells.queryElementAt(3, nsIAccessible);
-          testStates(checkboxCell, STATE_CHECKABLE | STATE_CHECKED);
+      // cells states if any
+      const cells = collapsedItem.children;
+      if (cells && cells.length) {
+        for (let idx = 0; idx < cells.length; idx++) {
+          const cell = cells.queryElementAt(idx, nsIAccessible);
+          testStates(cell, STATE_SELECTABLE);
         }
-      }
 
-      this.getID = function statesChecker_getID()
-      {
-        return "tree processor for " + prettyName(aTreeID);
+        const checkboxCell = cells.queryElementAt(3, nsIAccessible);
+        testStates(checkboxCell, STATE_CHECKABLE | STATE_CHECKED);
       }
     }
 
-    gA11yEventDumpToConsole = true; // debug stuff
+    async function doTest() {
+      for (let treeID of ["tree", "treesingle", "tabletree"]) {
+        let domNode = getNode(treeID);
+        let reordered = waitForEvent(EVENT_REORDER, domNode);
+        domNode.view = new nsTreeTreeView();
+        await reordered;
+        checkTreeStates(treeID);
+      }
 
-    var gQueue = null;
-
-    function doTest()
-    {
-      gQueue = new eventQueue(EVENT_REORDER);
-      gQueue.push(new statesChecker("tree", new nsTreeTreeView()));
-      gQueue.push(new statesChecker("treesingle", new nsTreeTreeView()));
-      gQueue.push(new statesChecker("tabletree", new nsTreeTreeView()));
-
-      gQueue.invoke(); // Will call SimpleTest.finish();
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

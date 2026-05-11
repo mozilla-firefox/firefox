@@ -9,9 +9,11 @@
       "command": "./mach",
       "args": [
         "npx",
-        "@padenot/firefox-devtools-mcp",
+        "@mozilla/firefox-devtools-mcp-moz",
         "--pref",
-        "browser.ml.enable=true"
+        "browser.ml.enable=true",
+        "--enable-scripting",
+        "--enable-privileged-context"
       ]
     }
   }

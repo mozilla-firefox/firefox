@@ -2385,7 +2385,7 @@ export const SearchService = new (class SearchService {
     // If the defaultEngine has changed between the previous load and this one,
     // dispatch the appropriate notifications.
     if (prevCurrentEngine && this.defaultEngine !== prevCurrentEngine) {
-      this.#recordDefaultChangedEvent(
+      this.#updateTelemetryDueToDefaultEngineChange(
         false,
         prevCurrentEngine,
         this.defaultEngine,
@@ -2424,7 +2424,7 @@ export const SearchService = new (class SearchService {
       prevPrivateEngine &&
       this.defaultPrivateEngine !== prevPrivateEngine
     ) {
-      this.#recordDefaultChangedEvent(
+      this.#updateTelemetryDueToDefaultEngineChange(
         true,
         prevPrivateEngine,
         this.defaultPrivateEngine,
@@ -3368,13 +3368,12 @@ export const SearchService = new (class SearchService {
     // Only do this if we're initialized though - this function can get called
     // during initalization.
     if (this.isInitialized) {
-      this.#recordDefaultChangedEvent(
+      this.#updateTelemetryDueToDefaultEngineChange(
         privateMode,
         currentEngine,
         newCurrentEngine,
         changeReason
       );
-      this.#recordDefaultEngineTelemetryData();
     }
 
     lazy.SearchUtils.notifyAction(
@@ -3411,22 +3410,20 @@ export const SearchService = new (class SearchService {
       ? this.CHANGE_REASON.USER_PRIVATE_PREF_ENABLED
       : this.CHANGE_REASON.USER_PRIVATE_SPLIT;
     if (!previousValue && currentValue) {
-      this.#recordDefaultChangedEvent(
+      this.#updateTelemetryDueToDefaultEngineChange(
         true,
         null,
         this._getEngineDefault(true),
         eventReason
       );
     } else {
-      this.#recordDefaultChangedEvent(
+      this.#updateTelemetryDueToDefaultEngineChange(
         true,
         this._getEngineDefault(true),
         null,
         eventReason
       );
     }
-    // Update the telemetry data.
-    this.#recordDefaultEngineTelemetryData();
   }
 
   /**
@@ -3509,11 +3506,8 @@ export const SearchService = new (class SearchService {
   }
 
   /**
-   * Records an event for where the default engine is changed. This is
-   * recorded to both Glean and Telemetry.
-   *
-   * The Glean GIFFT functionality is not used here because we use longer
-   * names in the extra arguments to the event.
+   * Records the telemetry event when the default engine has changed, and
+   * also updates the related non-event probes.
    *
    * @param {boolean} isPrivate
    *   True if this is a event about a private engine.
@@ -3524,7 +3518,7 @@ export const SearchService = new (class SearchService {
    * @param {Values<typeof this.CHANGE_REASON>} changeReason
    *   The reason for the default search engine change
    */
-  #recordDefaultChangedEvent(
+  #updateTelemetryDueToDefaultEngineChange(
     isPrivate,
     previousEngine,
     newEngine,
@@ -3538,6 +3532,7 @@ export const SearchService = new (class SearchService {
     }
 
     let submissionURL = engineInfo?.submissionURL ?? "";
+    /** @type {Parameters<typeof Glean.searchEngineDefault.changed.record>[0]} */
     let extraArgs = {
       // In docshell tests, the previous engine does not exist, so we allow
       // for the previousEngine to be undefined.
@@ -3554,6 +3549,7 @@ export const SearchService = new (class SearchService {
     } else {
       Glean.searchEngineDefault.changed.record(extraArgs);
     }
+    this.#recordDefaultEngineTelemetryData();
   }
 
   /**
@@ -3761,7 +3757,7 @@ export const SearchService = new (class SearchService {
               engine == this.defaultEngine ||
               engine == this.defaultPrivateEngine
             ) {
-              this.#recordDefaultChangedEvent(
+              this.#updateTelemetryDueToDefaultEngineChange(
                 engine != this.defaultEngine,
                 engine,
                 engine,

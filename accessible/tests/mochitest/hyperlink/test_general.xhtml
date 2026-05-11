@@ -15,16 +15,12 @@
   <script type="application/javascript"
           src="../states.js" />
   <script type="application/javascript"
-          src="../events.js" />
-
-  <script type="application/javascript"
-          src="hyperlink.js" />
+          src="../promisified-events.js" />
 
   <script type="application/javascript">
   <![CDATA[
     function testThis(aID, aAcc, aRole, aAnchorCount, aAnchorName, aURI,
-                      aStartIndex, aEndIndex, aValid)
-    {
+                      aStartIndex, aEndIndex, aValid) {
       testRole(aID, aRole);
       is(aAcc.anchorCount, aAnchorCount, "Wrong number of anchors for ID "
          + aID + "!");
@@ -36,26 +32,24 @@
       is(aAcc.valid, aValid, "Wrong valid state for ID " + aID + "!");
     }
 
-    var gQueue = null;
-    function doTest()
-    {
-      var linkedLabelAcc = getAccessible("linkedLabel",
-                                         [nsIAccessibleHyperLink]);
+    async function doTest() {
+      const linkedLabelAcc = getAccessible("linkedLabel",
+                                           [nsIAccessibleHyperLink]);
       testThis("linkedLabel", linkedLabelAcc, ROLE_LINK, 1,
                // eslint-disable-next-line @microsoft/sdl/no-insecure-url
                "Mozilla Foundation home", "http://www.mozilla.org/", 1, 2,
                true);
       testStates(linkedLabelAcc, STATE_LINKED, 0);
 
-      var labelWithValueAcc = getAccessible("linkLabelWithValue",
-                                            [nsIAccessibleHyperLink]);
+      const labelWithValueAcc = getAccessible("linkLabelWithValue",
+                                              [nsIAccessibleHyperLink]);
       testThis("linkLabelWithValue", labelWithValueAcc, ROLE_LINK, 1,
                // eslint-disable-next-line @microsoft/sdl/no-insecure-url
                "Mozilla Foundation", "http://www.mozilla.org/", 2, 3, true,
                false, true);
       testStates(labelWithValueAcc, STATE_LINKED, 0);
 
-      var normalLabelAcc = getAccessible("normalLabel");
+      const normalLabelAcc = getAccessible("normalLabel");
       testRole(normalLabelAcc, ROLE_LABEL);
       is(normalLabelAcc.name, "This label should not be a link",
          "Wrong name for normal label!");
@@ -64,12 +58,21 @@
       //////////////////////////////////////////////////////////////////////////
       // Test focus
 
-      gQueue = new eventQueue();
+      let node = getNode("linkedLabel");
+      testStates("linkedLabel", STATE_FOCUSABLE, 0, STATE_FOCUSED);
+      let focused = waitForEvent(EVENT_FOCUS, getAccessible(node));
+      node.focus();
+      await focused;
+      testStates("linkedLabel", STATE_FOCUSABLE | STATE_FOCUSED, 0, 0);
 
-      gQueue.push(new focusLink("linkedLabel", true));
-      gQueue.push(new focusLink("linkLabelWithValue", true));
+      node = getNode("linkLabelWithValue");
+      testStates("linkLabelWithValue", STATE_FOCUSABLE, 0, STATE_FOCUSED);
+      focused = waitForEvent(EVENT_FOCUS, getAccessible(node));
+      node.focus();
+      await focused;
+      testStates("linkLabelWithValue", STATE_FOCUSABLE | STATE_FOCUSED, 0, 0);
 
-      gQueue.invoke(); // Will call SimpleTest.finish();
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

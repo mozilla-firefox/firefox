@@ -33,7 +33,8 @@ struct ScrollableLayerGuid {
   uint32_t mPresShellId;
   ViewID mScrollId;
 
-  ScrollableLayerGuid();
+  constexpr ScrollableLayerGuid()
+      : mLayersId{0}, mPresShellId(0), mScrollId(0) {}
 
   ScrollableLayerGuid(LayersId aLayersId, uint32_t aPresShellId,
                       ViewID aScrollId);

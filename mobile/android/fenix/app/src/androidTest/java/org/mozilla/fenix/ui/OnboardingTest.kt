@@ -16,6 +16,7 @@ import org.mozilla.fenix.helpers.TestHelper.restartApp
 import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.homeScreen
 import org.mozilla.fenix.ui.robots.navigationToolbar
+import kotlin.test.Ignore
 import androidx.compose.ui.test.junit4.v2.AndroidComposeTestRule as AndroidComposeTestRuleV2
 
 class OnboardingTest {
@@ -89,6 +90,7 @@ class OnboardingTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3349496
+    @Ignore("Disabled, see: https://bugzilla.mozilla.org/show_bug.cgi?id=2037831")
     @SdkSuppress(minSdkVersion = 29)
     @SmokeTest
     @Test
@@ -119,6 +121,7 @@ class OnboardingTest {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3349498
     // If the device is running on Android version higher or equal to 13 the "Turn on notifications" onboarding card is displayed
+    @Ignore("Disabled, see: https://bugzilla.mozilla.org/show_bug.cgi?id=2037831")
     @SdkSuppress(minSdkVersion = 33)
     @SmokeTest
     @Test
@@ -142,6 +145,7 @@ class OnboardingTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3349499
+    @Ignore("Disabled, see: https://bugzilla.mozilla.org/show_bug.cgi?id=2037831")
     @SdkSuppress(minSdkVersion = 29)
     @SmokeTest
     @Test
@@ -177,6 +181,7 @@ class OnboardingTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3349492
+    @Ignore("Disabled, see: https://bugzilla.mozilla.org/show_bug.cgi?id=2037831")
     @SdkSuppress(minSdkVersion = 29)
     @Test
     fun verifyTheOnboardingCardOrderTest() {

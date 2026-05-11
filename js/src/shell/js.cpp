@@ -1060,7 +1060,7 @@ static void TraceRootArrays(JSTracer* trc, gc::MarkColor color) {
 
       GCPtr<ArrayObject*>& array =
           (color == gc::MarkColor::Black) ? priv->blackRoot : priv->grayRoot;
-      TraceNullableEdge(trc, &array, "shell root array");
+      TraceEdge(trc, &array, "shell root array");
 
       if (array) {
         // Trace the array elements as part of root marking.
@@ -9096,91 +9096,110 @@ static constexpr uint32_t DOM_OBJECT_SLOT2 = 1;
 
 static const JSClass* GetDomClass();
 
-static JSObject* GetDOMPrototype(JSContext* cx, JSObject* global);
+static const JSClass TransplantableProxyObjectClass =
+    PROXY_CLASS_DEF("TransplantableProxyObject", JSCLASS_HAS_RESERVED_SLOTS(1));
 
-static void TransplantableDOMObject_finalize(JS::GCContext* gcx,
-                                             JSObject* obj) {
-  // Dummy finalize method so we can swap with background finalized object.
-}
-
-static const JSClassOps TransplantableDOMObjectClassOps = {
-    nullptr,  // addProperty
-    nullptr,  // delProperty
-    nullptr,  // enumerate
-    nullptr,  // newEnumerate
-    nullptr,  // resolve
-    nullptr,  // mayResolve
-    TransplantableDOMObject_finalize,
-    nullptr,  // call
-    nullptr,  // construct
-    nullptr,
-};
-
-static const JSClass TransplantableDOMObjectClass = {
-    "TransplantableDOMObject",
-    JSCLASS_IS_DOMJSCLASS | JSCLASS_HAS_RESERVED_SLOTS(1) |
-        JSCLASS_BACKGROUND_FINALIZE,
-    &TransplantableDOMObjectClassOps};
-
-static const JSClass TransplantableDOMProxyObjectClass =
-    PROXY_CLASS_DEF("TransplantableDOMProxyObject",
-                    JSCLASS_IS_DOMJSCLASS | JSCLASS_HAS_RESERVED_SLOTS(1));
-
-class TransplantableDOMProxyHandler final : public ForwardingProxyHandler {
+// A non-Wrapper proxy that can be transplanted. We want to have shell coverage
+// of this to match the non-wrapper RemoteObjectProxy{Base} proxies in the
+// browser.
+class TransplantableProxyHandler final : public ForwardingProxyHandler {
  public:
-  static const TransplantableDOMProxyHandler singleton;
+  static const TransplantableProxyHandler singleton;
   static const char family;
 
-  constexpr TransplantableDOMProxyHandler() : ForwardingProxyHandler(&family) {}
+  constexpr TransplantableProxyHandler() : ForwardingProxyHandler(&family) {}
 
   // These two proxy traps are called in |js::DeadProxyTargetValue|, which in
   // turn is called when nuking proxies. Because this proxy can temporarily be
-  // without an object in its private slot, see |EnsureExpandoObject|, the
+  // without an object in its private slot, see |GetAndClearExpandoObject|, the
   // default implementation inherited from ForwardingProxyHandler can't be used,
   // since it tries to derive the callable/constructible value from the target.
   bool isCallable(JSObject* obj) const override { return false; }
   bool isConstructor(JSObject* obj) const override { return false; }
 
-  // Simplified implementation of |DOMProxyHandler::GetAndClearExpandoObject|.
+  static bool is(JSObject* obj) {
+    return IsProxy(obj) && GetProxyHandler(obj) == &singleton;
+  }
+
   static JSObject* GetAndClearExpandoObject(
       JSObject* obj, JS::MutableHandle<JS::Value> restoreToken) {
+    MOZ_ASSERT(TransplantableProxyHandler::is(obj));
     Value v = GetProxyPrivate(obj);
+    MOZ_ASSERT(v.isObject());
     restoreToken.set(v);
-    if (v.isUndefined()) {
-      return nullptr;
-    }
-
     SetProxyPrivate(obj, UndefinedValue());
     return &v.toObject();
   }
 
   static void RestoreExpando(JSObject* obj, const JS::Value& restoreToken) {
+    MOZ_ASSERT(TransplantableProxyHandler::is(obj));
     SetProxyPrivate(obj, restoreToken);
-  }
-
-  // Simplified implementation of |DOMProxyHandler::EnsureExpandoObject|.
-  static JSObject* EnsureExpandoObject(JSContext* cx, JS::HandleObject obj) {
-    Value v = GetProxyPrivate(obj);
-    if (v.isObject()) {
-      return &v.toObject();
-    }
-    MOZ_ASSERT(v.isUndefined());
-
-    JSObject* expando = JS_NewObjectWithGivenProto(cx, nullptr, nullptr);
-    if (!expando) {
-      return nullptr;
-    }
-    SetProxyPrivate(obj, ObjectValue(*expando));
-    return expando;
   }
 };
 
-const TransplantableDOMProxyHandler TransplantableDOMProxyHandler::singleton;
-const char TransplantableDOMProxyHandler::family = 0;
+const TransplantableProxyHandler TransplantableProxyHandler::singleton;
+const char TransplantableProxyHandler::family = 0;
 
 enum TransplantObjectSlots {
   TransplantSourceObject = 0,
 };
+
+static JSObject* NewTransplantableProxy(JSContext* cx) {
+  JSObject* expando = JS_NewPlainObject(cx);
+  if (!expando) {
+    return nullptr;
+  }
+  RootedValue expandoVal(cx, ObjectValue(*expando));
+
+  ProxyOptions options;
+  options.setClass(&TransplantableProxyObjectClass);
+  options.setLazyProto(true);
+
+  return NewProxyObject(cx, &TransplantableProxyHandler::singleton, expandoVal,
+                        nullptr, options);
+}
+
+// Copy own properties (including private fields) from |obj| to |target|.
+// |obj| and |target| may be in different compartments.
+static bool CopyExpandoProperties(JSContext* cx, HandleObject target,
+                                  HandleObject obj) {
+  // |obj| and |target| must not be CCWs because we need to enter their realms
+  // below and CCWs are not associated with a single realm.
+  MOZ_ASSERT(!IsCrossCompartmentWrapper(obj));
+  MOZ_ASSERT(!IsCrossCompartmentWrapper(target));
+
+  JSAutoRealm ar(cx, obj);
+
+  RootedIdVector props(cx);
+  if (!GetPropertyKeys(
+          cx, obj,
+          JSITER_PRIVATE | JSITER_OWNONLY | JSITER_HIDDEN | JSITER_SYMBOLS,
+          &props)) {
+    return false;
+  }
+
+  for (size_t i = 0; i < props.length(); ++i) {
+    RootedId id(cx, props[i]);
+    Rooted<mozilla::Maybe<PropertyDescriptor>> desc(cx);
+    if (!GetOwnPropertyDescriptor(cx, obj, id, &desc)) {
+      return false;
+    }
+    MOZ_ASSERT(desc.isSome());
+
+    JSAutoRealm dstRealm(cx, target);
+    cx->markId(id);
+    RootedId wrappedId(cx, id);
+    if (!cx->compartment()->wrap(cx, &desc)) {
+      return false;
+    }
+    Rooted<PropertyDescriptor> desc_(cx, *desc);
+    if (!DefineProperty(cx, target, wrappedId, desc_)) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 static bool TransplantObject(JSContext* cx, unsigned argc, Value* vp) {
   CallArgs args = CallArgsFromVp(argc, vp);
@@ -9217,62 +9236,27 @@ static bool TransplantObject(JSContext* cx, unsigned argc, Value* vp) {
     JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DEAD_OBJECT);
     return false;
   }
-  MOZ_ASSERT(source->getClass()->isDOMClass());
 
-  // The following steps aim to replicate the behavior of UpdateReflectorGlobal
-  // in dom/bindings/BindingUtils.cpp. In detail:
-  // 1. Check the recursion depth using checkConservative.
-  // 2. Enter the target compartment.
-  // 3. Clone the source object using JS_CloneObject.
-  // 4. Check if new wrappers can be created if source and target are in
-  //    different compartments.
-  // 5. Copy all properties from source to a temporary holder object.
-  // 6. Actually transplant the object.
-  // 7. And finally copy the properties back to the source object.
-  //
-  // As an extension to the algorithm in UpdateReflectorGlobal, we also allow
-  // to transplant an object into the same compartment as the source object to
-  // cover all operations supported by JS_TransplantObject.
+  MOZ_ASSERT(TransplantableProxyHandler::is(source));
 
   AutoCheckRecursionLimit recursion(cx);
   if (!recursion.checkConservative(cx)) {
     return false;
   }
 
-  bool isProxy = IsProxy(source);
-  Rooted<JSObject*> expandoObject(cx);
-  Rooted<JS::Value> expandoRollbackToken(cx);
-  if (isProxy) {
-    expandoObject = TransplantableDOMProxyHandler::GetAndClearExpandoObject(
-        source, &expandoRollbackToken);
-  }
+  Rooted<Value> expandoRollbackToken(cx);
+  Rooted<JSObject*> expandoObject(
+      cx, TransplantableProxyHandler::GetAndClearExpandoObject(
+              source, &expandoRollbackToken));
   auto resetExpando = MakeScopeExit([&]() {
-    // We must clear the expando object from `source`, since otherwise it will
-    // be copied as part of JS_CloneObject. But on an error, it needs to be
+    // First clear the expando object from `source`. On an error, it needs to be
     // restored.
-    if (expandoObject) {
-      TransplantableDOMProxyHandler::RestoreExpando(source,
-                                                    expandoRollbackToken);
-    }
+    TransplantableProxyHandler::RestoreExpando(source, expandoRollbackToken);
   });
 
   JSAutoRealm ar(cx, newGlobal);
 
-  RootedObject proto(cx);
-  if (JS::GetClass(source) == GetDomClass()) {
-    proto = GetDOMPrototype(cx, newGlobal);
-    if (proto == source) {
-      JS_ReportErrorASCII(cx, "Cannot transplant the FakeDOMObject prototype");
-      return false;
-    }
-  } else {
-    proto = JS::GetRealmObjectPrototype(cx);
-  }
-  if (!proto) {
-    return false;
-  }
-
-  RootedObject target(cx, JS_CloneObject(cx, source, proto));
+  RootedObject target(cx, NewTransplantableProxy(cx));
   if (!target) {
     return false;
   }
@@ -9283,14 +9267,13 @@ static bool TransplantObject(JSContext* cx, unsigned argc, Value* vp) {
     return false;
   }
 
-  RootedObject copyFrom(cx, isProxy ? expandoObject : source);
   RootedObject propertyHolder(cx,
                               JS_NewObjectWithGivenProto(cx, nullptr, nullptr));
   if (!propertyHolder) {
     return false;
   }
 
-  if (!JS_CopyOwnPropertiesAndPrivateFields(cx, propertyHolder, copyFrom)) {
+  if (!CopyExpandoProperties(cx, propertyHolder, expandoObject)) {
     return false;
   }
 
@@ -9298,30 +9281,13 @@ static bool TransplantObject(JSContext* cx, unsigned argc, Value* vp) {
   // will not be observed even if a failure occurs after this point.
   resetExpando.release();
 
-  JS::SetReservedSlot(target, DOM_OBJECT_SLOT,
-                      JS::GetReservedSlot(source, DOM_OBJECT_SLOT));
-  JS::SetReservedSlot(source, DOM_OBJECT_SLOT, JS::PrivateValue(nullptr));
-  if (JS::GetClass(source) == GetDomClass()) {
-    JS::SetReservedSlot(target, DOM_OBJECT_SLOT2,
-                        JS::GetReservedSlot(source, DOM_OBJECT_SLOT2));
-    JS::SetReservedSlot(source, DOM_OBJECT_SLOT2, UndefinedValue());
-  }
-
   source = JS_TransplantObject(cx, source, target);
   MOZ_RELEASE_ASSERT(source, "JS_TransplantObject is infallible");
 
   AutoEnterOOMUnsafeRegion oomUnsafe;
 
-  RootedObject copyTo(cx);
-  if (isProxy) {
-    copyTo = TransplantableDOMProxyHandler::EnsureExpandoObject(cx, source);
-    if (!copyTo) {
-      oomUnsafe.crash("source of transplant is corrupted");
-    }
-  } else {
-    copyTo = source;
-  }
-  if (!JS_CopyOwnPropertiesAndPrivateFields(cx, copyTo, propertyHolder)) {
+  RootedObject copyTo(cx, &GetProxyPrivate(source).toObject());
+  if (!CopyExpandoProperties(cx, copyTo, propertyHolder)) {
     oomUnsafe.crash("source of transplant is corrupted");
   }
 
@@ -9333,81 +9299,14 @@ static bool TransplantableObject(JSContext* cx, unsigned argc, Value* vp) {
   CallArgs args = CallArgsFromVp(argc, vp);
   RootedObject callee(cx, &args.callee());
 
-  if (args.length() > 1) {
+  if (args.length() != 0) {
     ReportUsageErrorASCII(cx, callee, "Wrong number of arguments");
     return false;
   }
 
-  bool createProxy = false;
-  RootedObject source(cx);
-  if (args.length() == 1 && !args[0].isUndefined()) {
-    if (!args[0].isObject()) {
-      ReportUsageErrorASCII(cx, callee, "Argument must be an object");
-      return false;
-    }
-
-    RootedObject options(cx, &args[0].toObject());
-    RootedValue value(cx);
-
-    if (!JS_GetProperty(cx, options, "proxy", &value)) {
-      return false;
-    }
-    createProxy = JS::ToBoolean(value);
-
-    if (!JS_GetProperty(cx, options, "object", &value)) {
-      return false;
-    }
-    if (!value.isUndefined()) {
-      if (!value.isObject()) {
-        ReportUsageErrorASCII(cx, callee, "'object' option must be an object");
-        return false;
-      }
-
-      source = &value.toObject();
-      if (JS::GetClass(source) != GetDomClass()) {
-        ReportUsageErrorASCII(cx, callee, "Object not a FakeDOMObject");
-        return false;
-      }
-
-      // |source| must be a tenured object to be transplantable.
-      if (gc::IsInsideNursery(source)) {
-        JS_GC(cx);
-
-        MOZ_ASSERT(!gc::IsInsideNursery(source),
-                   "Live objects should be tenured after one GC, because "
-                   "the nursery has only a single generation");
-      }
-    }
-  }
-
+  RootedObject source(cx, NewTransplantableProxy(cx));
   if (!source) {
-    if (!createProxy) {
-      source = NewBuiltinClassInstance(cx, &TransplantableDOMObjectClass,
-                                       TenuredObject);
-      if (!source) {
-        return false;
-      }
-
-      JS::SetReservedSlot(source, DOM_OBJECT_SLOT, JS::PrivateValue(nullptr));
-    } else {
-      JSObject* expando = JS_NewPlainObject(cx);
-      if (!expando) {
-        return false;
-      }
-      RootedValue expandoVal(cx, ObjectValue(*expando));
-
-      ProxyOptions options;
-      options.setClass(&TransplantableDOMProxyObjectClass);
-      options.setLazyProto(true);
-
-      source = NewProxyObject(cx, &TransplantableDOMProxyHandler::singleton,
-                              expandoVal, nullptr, options);
-      if (!source) {
-        return false;
-      }
-
-      SetProxyReservedSlot(source, DOM_OBJECT_SLOT, JS::PrivateValue(nullptr));
-    }
+    return false;
   }
 
   jsid emptyId = NameToId(cx->names().empty_);
@@ -10727,17 +10626,11 @@ JS_FN_HELP("createUserArrayBuffer", CreateUserArrayBuffer, 1, 0,
 #endif // __wasi__
 
     JS_FN_HELP("transplantableObject", TransplantableObject, 0, 0,
-"transplantableObject([options])",
-"  Returns the pair {object, transplant}. |object| is an object which can be\n"
-"  transplanted into a new object when the |transplant| function, which must\n"
-"  be invoked with a global object, is called.\n"
-"  |object| is swapped with a cross-compartment wrapper if the global object\n"
-"  is in a different compartment.\n"
-"\n"
-"  If options is given, it may have any of the following properties:\n"
-"    proxy: Create a DOM Proxy object instead of a plain DOM object.\n"
-"    object: Don't create a new DOM object, but instead use the supplied\n"
-"            FakeDOMObject."),
+"transplantableObject()",
+"  Returns the pair {object, transplant}. |object| is a non-wrapper proxy\n"
+"  that can be transplanted into a fresh proxy in another compartment by\n"
+"  calling |transplant| with a global object. |object| is swapped with a\n"
+"  cross-compartment wrapper if the global is in a different compartment."),
 
     JS_FN_HELP("cpuNow", CpuNow, /* nargs= */ 0, /* flags = */ 0,
 "cpuNow()",
@@ -11791,18 +11684,6 @@ static void InitDOMObject(HandleObject obj) {
   JS::SetReservedSlot(obj, DOM_OBJECT_SLOT,
                       PrivateValue(const_cast<void*>(DOM_PRIVATE_VALUE)));
   JS::SetReservedSlot(obj, DOM_OBJECT_SLOT2, Int32Value(42));
-}
-
-static JSObject* GetDOMPrototype(JSContext* cx, JSObject* global) {
-  MOZ_ASSERT(JS_IsGlobalObject(global));
-  if (JS::GetClass(global) != &global_class) {
-    JS_ReportErrorASCII(cx, "Can't get FakeDOMObject prototype in sandbox");
-    return nullptr;
-  }
-
-  const JS::Value& slot = JS::GetReservedSlot(global, DOM_PROTOTYPE_SLOT);
-  MOZ_ASSERT(slot.isObject());
-  return &slot.toObject();
 }
 
 static bool dom_constructor(JSContext* cx, unsigned argc, JS::Value* vp) {

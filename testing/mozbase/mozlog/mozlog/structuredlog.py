@@ -90,7 +90,12 @@ Allowed actions, and subfields:
       subsuite - Name of the subsuite for the tests that ran (optional)
 
   lsan_leak
-      frames - List of stack frames from the leak report
+      frames - List of stack frame function names from the leak report
+      kind - Leak kind ("Direct" or "Indirect")
+      bytes - Bytes leaked at this allocation site
+      objects - Number of objects leaked at this allocation site
+      stack - Structured stack frames (list of dicts with function/module/file/line/
+              column/offset fields, suitable for the profiler stack format) (optional)
       scope - An identifier for the set of tests run during the browser session
               (e.g. a directory name)
       allowed_match - A stack frame in the list that matched a rule meaning the
@@ -661,6 +666,10 @@ class StructuredLogger:
 
     @log_action(
         List(Unicode, "frames"),
+        Unicode("kind"),
+        Int("bytes"),
+        Int("objects"),
+        List(Dict(Any), "stack", optional=True, default=None),
         Unicode("scope", optional=True, default=None),
         Unicode("allowed_match", optional=True, default=None),
         Unicode("subsuite", default=None, optional=True),

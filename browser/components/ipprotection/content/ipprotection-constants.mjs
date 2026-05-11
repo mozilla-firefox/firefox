@@ -60,7 +60,12 @@ export const ONBOARDING_PREF_FLAGS = {
 export const BANDWIDTH = Object.freeze({
   BYTES_IN_GB: Math.pow(2, 30),
   BYTES_IN_MB: Math.pow(2, 20),
-  MAX_IN_GB: 50,
+  get MAX_IN_GB() {
+    return Services.prefs.getIntPref(
+      "browser.ipProtection.bandwidth.maxInGb",
+      50
+    );
+  },
   FIRST_THRESHOLD: 0.5,
   SECOND_THRESHOLD: 0.25,
   THIRD_THRESHOLD: 0.1,

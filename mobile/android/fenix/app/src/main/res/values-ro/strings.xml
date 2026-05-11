@@ -375,6 +375,8 @@
   <string name="preferences_ai_controls">Comenzi AI</string>
   <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
   <string name="ai_controls_banner_headline">Întotdeauna alegerea e a ta în \u0020%s</string>
+  <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
+  <string name="ai_controls_banner_supporting_text_2">Include și dacă se vor utiliza sau nu funcționalități îmbunătățite cu AI. %s</string>
   <!-- Supporting text for the AI controls banner -->
   <string name="ai_controls_banner_supporting_text">Include dacă se vor utiliza funcționalități îmbunătățite cu AI.</string>
   <!-- Link text for learning more about AI controls -->
@@ -2216,6 +2218,8 @@
   <string name="bookmark_import_menu_button">Importă din fișier</string>
   <!-- Snackbar message shown when a bookmark import attempt fails. -->
   <string name="bookmark_import_failure_snackbar">Nu s-au putut importa marcajele. Încearcă din nou.</string>
+  <!-- Default name for the folder created when importing bookmarks from a file. -->
+  <string name="bookmark_import_destination_default_name">Marcaje importate</string>
   <!--
     Bookmark multi select title in app bar
     %1$d is the number of bookmarks selected
@@ -4631,6 +4635,10 @@
   <string name="sports_widget_final_results_page_content_description" tools:ignore="UnusedResources">Rezultatele finale ale Cupei Mondiale, pagina %1$d din %2$d</string>
   <!-- Content description (for accessibility, not displayed) for the remove button that removes the sports widget from the homepage. -->
   <string name="sports_widget_remove_content_description" tools:ignore="UnusedResources">Elimină Cupa Mondială din ecranul de pornire</string>
+  <!-- Title shown on the sports widget immediately after the user has followed a team. %s is the selected team (e.g., "USA"). -->
+  <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Urmărești pe: \n%s</string>
+  <!-- Description shown on the sports widget immediately after the user has followed a team -->
+  <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Revino pentru informații despre meci pe măsură ce se apropie campionatul.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

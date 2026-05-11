@@ -21,8 +21,8 @@
             android:id="@+id/details"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="?attr/textPrimary"
-            android:textColorLink="?textAccent"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorLink="?attr/colorTertiary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="@tools:sample/lorem/random" />
@@ -148,7 +148,7 @@
             android:clickable="true"
             android:focusable="true"
             android:text="@string/mozac_feature_addons_home_page"
-            android:textColor="?textAccent"
+            android:textColor="?attr/colorTertiary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/last_updated_divider" />
 
@@ -231,7 +231,7 @@
             android:clickable="true"
             android:focusable="true"
             android:text="@string/mozac_feature_addons_more_info_link_2"
-            android:textColor="?textAccent"
+            android:textColor="?attr/colorTertiary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/detail_url_divider" />
 

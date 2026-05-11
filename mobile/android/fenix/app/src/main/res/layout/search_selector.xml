@@ -41,7 +41,7 @@
                 android:layout_height="6dp"
                 android:importantForAccessibility="no"
                 app:srcCompat="@drawable/ic_chevron_down_6"
-                app:tint="?attr/textPrimary"
+                app:tint="?attr/colorOnSurface"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />

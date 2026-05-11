@@ -17,7 +17,12 @@ NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(TextFormat)
   NS_INTERFACE_MAP_ENTRY(nsISupports)
 NS_INTERFACE_MAP_END
 
-TextFormat::TextFormat(nsIGlobalObject* aGlobal) : mGlobal(aGlobal) {}
+TextFormat::TextFormat(nsIGlobalObject* aGlobal, const TextFormatInit& aOptions)
+    : mGlobal(aGlobal),
+      mRangeStart(aOptions.mRangeStart),
+      mRangeEnd(aOptions.mRangeEnd),
+      mUnderlineStyle(aOptions.mUnderlineStyle),
+      mUnderlineThickness(aOptions.mUnderlineThickness) {}
 
 JSObject* TextFormat::WrapObject(JSContext* aCx,
                                  JS::Handle<JSObject*> aGivenProto) {
@@ -27,7 +32,7 @@ JSObject* TextFormat::WrapObject(JSContext* aCx,
 already_AddRefed<TextFormat> TextFormat::Constructor(
     const GlobalObject& aGlobal, const TextFormatInit& aOptions) {
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(aGlobal.GetAsSupports());
-  RefPtr<TextFormat> fmt = new TextFormat(global);
+  RefPtr<TextFormat> fmt = new TextFormat(global, aOptions);
   return fmt.forget();
 }
 

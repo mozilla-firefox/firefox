@@ -44,7 +44,7 @@ using namespace js;
 using namespace js::temporal;
 
 void CalendarFields::trace(JSTracer* trc) {
-  TraceNullableRoot(trc, &era_, "CalendarFields::era");
+  TraceRoot(trc, &era_, "CalendarFields::era");
   timeZone_.trace(trc);
 }
 

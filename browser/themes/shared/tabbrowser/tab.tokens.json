@@ -29,17 +29,22 @@
     }
   },
   "hover": {
-    "background": {
-      "color": {
-        "value": "color-mix(in srgb, currentColor 11%, transparent)"
-      }
-    },
     "outline": {
       "color": {
         "value": {
           "default": "transparent",
           "prefersContrast": "currentColor"
         }
+      }
+    }
+  },
+  "background": {
+    "color": {
+      "hover": {
+        "value": "color-mix(in srgb, currentColor 11%, transparent)"
+      },
+      "selected": {
+        "value": "var(--toolbar-background-color)"
       }
     }
   },
@@ -118,9 +123,6 @@
     }
   },
   "selected": {
-    "bgcolor": {
-      "value": "var(--toolbar-background-color)"
-    },
     "outline": {
       "color": {
         "value": {

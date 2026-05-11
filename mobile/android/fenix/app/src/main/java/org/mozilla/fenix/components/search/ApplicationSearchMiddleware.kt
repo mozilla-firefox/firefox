@@ -19,6 +19,7 @@ import mozilla.components.feature.search.ext.createApplicationSearchEngine
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import org.mozilla.fenix.R
+import mozilla.components.ui.icons.R as iconsR
 
 const val HISTORY_SEARCH_ENGINE_ID = "history_search_engine_id"
 const val BOOKMARKS_SEARCH_ENGINE_ID = "bookmarks_search_engine_id"
@@ -58,19 +59,19 @@ class ApplicationSearchMiddleware(
                 id = BOOKMARKS_SEARCH_ENGINE_ID,
                 name = stringProvider(R.string.library_bookmarks),
                 url = "",
-                icon = bitmapProvider(R.drawable.ic_bookmarks_search),
+                icon = bitmapProvider(iconsR.drawable.mozac_ic_bookmark_tray_fill_24),
             ),
             createApplicationSearchEngine(
                 id = TABS_SEARCH_ENGINE_ID,
                 name = stringProvider(R.string.preferences_tabs),
                 url = "",
-                icon = bitmapProvider(R.drawable.ic_tabs_search),
+                icon = bitmapProvider(iconsR.drawable.mozac_ic_tab_tray_24),
             ),
             createApplicationSearchEngine(
                 id = HISTORY_SEARCH_ENGINE_ID,
                 name = stringProvider(R.string.library_history),
                 url = "",
-                icon = bitmapProvider(R.drawable.ic_history_search),
+                icon = bitmapProvider(iconsR.drawable.mozac_ic_history_24),
             ),
         )
 

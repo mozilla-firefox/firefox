@@ -2164,9 +2164,6 @@ class GFX2D_API Factory {
   static void Init(const Config& aConfig);
   static void ShutDown();
 
-  static bool HasSSE2();
-  static bool HasSSE4();
-
   /**
    * Returns false if any of the following are true:
    *

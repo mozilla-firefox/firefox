@@ -91,6 +91,39 @@
           );
         }
       });
+
+      add_task(async function testAriaHasPopup() {
+        let item = panelItems[0];
+
+        ok(
+          !item.button.hasAttribute("aria-haspopup"),
+          "button has no aria-haspopup by default"
+        );
+
+        item.setAttribute("aria-haspopup", "dialog");
+        is(
+          item.button.getAttribute("aria-haspopup"),
+          "dialog",
+          "aria-haspopup is propagated to the inner button"
+        );
+
+        item.removeAttribute("aria-haspopup");
+        ok(
+          !item.button.hasAttribute("aria-haspopup"),
+          "aria-haspopup is removed from the inner button"
+        );
+
+        // Verify the attribute is also applied at init time.
+        let initItem = document.createElement("panel-item");
+        initItem.setAttribute("aria-haspopup", "dialog");
+        panelList.appendChild(initItem);
+        is(
+          initItem.button.getAttribute("aria-haspopup"),
+          "dialog",
+          "aria-haspopup set before connection is applied at init time"
+        );
+        initItem.remove();
+      });
     </script>
   </body>
 </html>

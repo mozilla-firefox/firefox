@@ -70,6 +70,36 @@ export const CERT_ERRORS = [
     hasNoUserFix: true,
   },
   {
+    id: "SEC_ERROR_CA_CERT_INVALID",
+    errorCode: "SEC_ERROR_CA_CERT_INVALID",
+    category: "cert",
+    introContent: {
+      dataL10nId: "fp-certerror-intro",
+      dataL10nArgs: { hostname: null },
+    },
+    buttons: {
+      showTryAgain: false,
+      showGoBack: true,
+      showAdvanced: true,
+      showAddException: true,
+    },
+    advanced: {
+      whyDangerous: {
+        dataL10nId: "fp-certerror-invalid-cert-why-dangerous",
+        dataL10nArgs: { hostname: null },
+      },
+      whatCanYouDo: {
+        dataL10nId: "fp-certerror-untrusted-issuer-what-can-you-do-body",
+      },
+      learnMore: {
+        dataL10nId: "fp-learn-more-about-cert-issues",
+        supportPage: "connection-not-secure",
+      },
+      showViewCertificate: true,
+    },
+    hasNoUserFix: true,
+  },
+  {
     id: "SEC_ERROR_EXPIRED_CERTIFICATE",
     errorCode: "SEC_ERROR_EXPIRED_CERTIFICATE",
     category: "cert",

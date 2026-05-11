@@ -2170,7 +2170,7 @@ uint64_t AvailGroups(const uint64_t totalAvailItems,
 
 const char* WebGLContext::FuncName() const {
   const char* ret;
-  if (MOZ_LIKELY(mFuncScope)) {
+  if (mFuncScope) [[likely]] {
     ret = mFuncScope->mFuncName;
   } else {
     ret = "<unknown function>";

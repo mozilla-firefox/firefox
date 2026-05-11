@@ -25,6 +25,7 @@ static BOOL sNeedToUnwindForMenuClosing = NO;
 @property NSPoint position;
 @property(retain) NSView* view;
 @property(retain) NSAppearance* appearance;
+@property CGFloat fontSize;
 @property BOOL isContextMenu;
 @property BOOL isAnchoredMenu;
 @property NSRect anchorRect;
@@ -74,6 +75,7 @@ static BOOL sNeedToUnwindForMenuClosing = NO;
                    atScreenPosition:(NSPoint)aPosition
                             forView:(NSView*)aView
                      withAppearance:(NSAppearance*)aAppearance
+                       withFontSize:(CGFloat)aFontSize
                       asContextMenu:(BOOL)aIsContextMenu
                      asAnchoredMenu:(BOOL)aIsAnchoredMenu
                          anchorRect:(NSRect)aAnchorRect
@@ -92,6 +94,7 @@ static BOOL sNeedToUnwindForMenuClosing = NO;
   info.position = aPosition;
   info.view = aView;
   info.appearance = aAppearance;
+  info.fontSize = aFontSize;
   info.isContextMenu = aIsContextMenu;
   info.isAnchoredMenu = aIsAnchoredMenu;
   info.anchorRect = aAnchorRect;
@@ -121,6 +124,7 @@ static BOOL sNeedToUnwindForMenuClosing = NO;
           atScreenPosition:info.position
                    forView:info.view
             withAppearance:info.appearance
+              withFontSize:info.fontSize
              asContextMenu:info.isContextMenu
             asAnchoredMenu:info.isAnchoredMenu
                 anchorRect:info.anchorRect
@@ -153,6 +157,7 @@ static BOOL sNeedToUnwindForMenuClosing = NO;
     atScreenPosition:(NSPoint)aPosition
              forView:(NSView*)aView
       withAppearance:(NSAppearance*)aAppearance
+        withFontSize:(CGFloat)aFontSize
        asContextMenu:(BOOL)aIsContextMenu
       asAnchoredMenu:(BOOL)aIsAnchoredMenu
           anchorRect:(NSRect)aAnchorRect
@@ -182,6 +187,12 @@ static BOOL sNeedToUnwindForMenuClosing = NO;
     cell.autoenablesItems = false;
     cell.menu = aMenu;
     cell.preferredEdge = aAnchorEdge;
+
+    if (aFontSize > 0.f) {
+      // Set the font size of the cell, if provided, so that the selected item's
+      // checkmark image is sized more appropriately to menu item text.
+      cell.font = [NSFont menuFontOfSize:aFontSize];
+    }
 
     // Create the view that the menu will be anchored to
     NSView* anchorView = [[NSView alloc] initWithFrame:aAnchorRect];

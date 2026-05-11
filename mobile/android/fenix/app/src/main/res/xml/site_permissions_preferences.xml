@@ -69,7 +69,7 @@
             app:allowDividerBelow="true"/>
 
         <androidx.preference.Preference
-            android:icon="@drawable/ic_link"
+            android:icon="@drawable/mozac_ic_link_24"
             android:key="@string/pref_key_browser_feature_media_key_system_access"
             android:title="@string/preference_phone_feature_media_key_system_access"
             android:summary="@string/preference_option_phone_feature_ask_to_allow"

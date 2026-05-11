@@ -126,8 +126,8 @@ nsresult FontLoaderUtils::BuildChannel(
   nsCOMPtr<nsIHttpChannel> httpChannel(do_QueryInterface(channel));
   nsCOMPtr<nsIReferrerInfo> referrerInfo;
   if (httpChannel && !aFontFaceSrc) {
-    referrerInfo = new dom::ReferrerInfo(aDocument->GetDocumentURIAsReferrer(),
-                                         aReferrerPolicy);
+    referrerInfo = MakeAndAddRef<dom::ReferrerInfo>(
+        aDocument->GetDocumentURIAsReferrer(), aReferrerPolicy);
     rv = httpChannel->SetReferrerInfoWithoutClone(referrerInfo);
     MOZ_ASSERT(NS_SUCCEEDED(rv));
   }

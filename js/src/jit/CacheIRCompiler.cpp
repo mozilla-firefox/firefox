@@ -1328,9 +1328,9 @@ void jit::TraceCacheIRStub(JSTracer* trc, T* stub,
       }
       case Type::WeakObject:
         if (ShouldTraceWeakEdgeInStub<T>(trc)) {
-          TraceNullableEdge(
-              trc, &stubInfo->getStubField<T, Type::WeakObject>(stub, offset),
-              "cacheir-weak-object");
+          TraceEdge(trc,
+                    &stubInfo->getStubField<T, Type::WeakObject>(stub, offset),
+                    "cacheir-weak-object");
         }
         break;
       case Type::Symbol:
@@ -1343,7 +1343,7 @@ void jit::TraceCacheIRStub(JSTracer* trc, T* stub,
         break;
       case Type::WeakBaseScript:
         if (ShouldTraceWeakEdgeInStub<T>(trc)) {
-          TraceNullableEdge(
+          TraceEdge(
               trc,
               &stubInfo->getStubField<T, Type::WeakBaseScript>(stub, offset),
               "cacheir-weak-script");

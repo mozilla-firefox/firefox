@@ -167,6 +167,12 @@ $side-col-width-px: $col-width-px * 2;
 
 // Baseline styles for all widgets
 @mixin widget-base-style {
+  // Shared size-change transition values. Reference these in widget SCSS
+  // when animating properties that change between small/medium/large sizes
+  // so all widgets stay visually consistent.
+  --widget-size-transition-duration: 180ms;
+  --widget-size-transition-easing: ease;
+
   padding: var(--space-medium);
   background-color: var(--newtab-background-card);
   border-radius: var(--border-radius-large);

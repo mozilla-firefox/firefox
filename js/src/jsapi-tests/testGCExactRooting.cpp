@@ -61,8 +61,8 @@ struct MyContainer {
         obj(rhs.obj),
         str(rhs.str) {}
   void trace(JSTracer* trc) {
-    js::TraceNullableEdge(trc, &obj, "test container obj");
-    js::TraceNullableEdge(trc, &str, "test container str");
+    js::TraceEdge(trc, &obj, "test container obj");
+    js::TraceEdge(trc, &str, "test container str");
   }
 };
 
@@ -87,8 +87,8 @@ struct MyNonCopyableContainer {
   MyNonCopyableContainer& operator=(const MyNonCopyableContainer&) = delete;
 
   void trace(JSTracer* trc) {
-    js::TraceNullableEdge(trc, &obj, "test container obj");
-    js::TraceNullableEdge(trc, &str, "test container str");
+    js::TraceEdge(trc, &obj, "test container obj");
+    js::TraceEdge(trc, &str, "test container str");
   }
 };
 

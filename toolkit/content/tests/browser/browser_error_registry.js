@@ -722,3 +722,33 @@ add_task(async function test_resolve_error_id_nss_fallthrough() {
 
   _testOnlyClearRegistry();
 });
+
+add_task(async function test_sec_error_ca_cert_invalid_registered() {
+  const { initializeRegistry, getErrorConfig, _testOnlyClearRegistry } =
+    ChromeUtils.importESModule(REGISTRY_URL);
+
+  _testOnlyClearRegistry();
+  initializeRegistry();
+
+  const config = getErrorConfig("SEC_ERROR_CA_CERT_INVALID");
+  Assert.ok(config, "SEC_ERROR_CA_CERT_INVALID should be registered");
+  Assert.equal(config.category, "cert", "Should be in the cert category");
+  Assert.ok(
+    config.buttons.showAddException,
+    "Should show the exception button"
+  );
+  Assert.ok(config.buttons.showAdvanced, "Should show the advanced section");
+  Assert.equal(config.hasNoUserFix, true, "Should have no user fix");
+  Assert.equal(
+    config.advanced.whyDangerous.dataL10nId,
+    "fp-certerror-invalid-cert-why-dangerous",
+    "Should use the invalid cert why-dangerous l10n id"
+  );
+  Assert.equal(
+    config.advanced.whatCanYouDo.dataL10nId,
+    "fp-certerror-untrusted-issuer-what-can-you-do-body",
+    "Should reuse the untrusted issuer what-can-you-do l10n id"
+  );
+
+  _testOnlyClearRegistry();
+});

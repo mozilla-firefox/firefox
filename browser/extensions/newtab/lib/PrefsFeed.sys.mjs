@@ -257,6 +257,18 @@ export class PrefsFeed {
         .setStringPref("weather.display", valueObj.weather.display);
     }
 
+    // Write widgets.weather.size to the default branch so trainhop overrides
+    // the migration default computed by getWeatherWidgetSize() while a user's
+    // explicit size pick (user branch) still wins.
+    if (
+      typeof valueObj.widgets?.weatherSize === "string" &&
+      valueObj.widgets.weatherSize
+    ) {
+      Services.prefs
+        .getDefaultBranch(this._prefs._branchStr)
+        .setStringPref("widgets.weather.size", valueObj.widgets.weatherSize);
+    }
+
     // Write topSitesRows to the default branch to enable experiments with
     // the default row count without overriding an explicit user choice.
     if (valueObj.topSites?.topSitesRows) {

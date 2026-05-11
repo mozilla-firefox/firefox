@@ -95,6 +95,7 @@ features:
               title: nova_onboarding_marketing_title
               image-res: nova_onboarding_marketing
               primary-button-label: nova_onboarding_continue_button
+              secondary-button-label: nova_onboarding_marketing_secondary_button_text
               extra-data:
                 marketing-data:
                   body-line-one-text: nova_onboarding_marketing_body
@@ -370,3 +371,9 @@ enums:
     variants:
       default:
         description: The default marketing card variation.
+      treatment-a:
+        description: The Treatment A marketing card variation.
+      treatment-b:
+        description: The Treatment B marketing card variation.
+      treatment-c:
+        description: The Treatment C marketing card variation.

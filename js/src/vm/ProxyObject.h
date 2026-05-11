@@ -43,25 +43,15 @@ class ProxyObject : public JSObject {
 
   void init(const BaseProxyHandler* handler, HandleValue priv, JSContext* cx);
 
-  // Proxies usually store their ProxyValueArray inline in the object.
-  // There's one unfortunate exception: when a proxy is swapped with another
-  // object, and the sizes don't match, we malloc the ProxyValueArray.
+  // Proxies always store their ProxyValueArray inline in the object.
   void* inlineDataStart() const {
     return (void*)(uintptr_t(this) + sizeof(ProxyObject));
-  }
-  bool usingInlineValueArray() const {
-    return data.values() == inlineDataStart();
   }
   void setInlineValueArray() {
     data.reservedSlots =
         &reinterpret_cast<detail::ProxyValueArray*>(inlineDataStart())
              ->reservedSlots;
   }
-
-  // For use from JSObject::swap.
-  [[nodiscard]] bool prepareForSwap(JSContext* cx,
-                                    MutableHandleValueVector valuesOut);
-  [[nodiscard]] bool fixupAfterSwap(JSContext* cx, HandleValueVector values);
 
   const Value& private_() const { return GetProxyPrivate(this); }
   const Value& expando() const { return GetProxyExpando(this); }
@@ -134,8 +124,6 @@ class ProxyObject : public JSObject {
   static void trace(JSTracer* trc, JSObject* obj);
 
   static void traceEdgeToTarget(JSTracer* trc, ProxyObject* obj);
-
-  void nurseryProxyTenured(ProxyObject* old);
 
   void nuke();
 };

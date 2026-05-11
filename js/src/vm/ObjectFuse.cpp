@@ -164,16 +164,6 @@ void ObjectFuse::handleTeleportingProtoMutation(JSContext* cx) {
   invalidateAllDependentIonScripts(cx, "proto mutation");
 }
 
-void ObjectFuse::handleObjectSwap(JSContext* cx) {
-  bumpGeneration();
-
-  // Reset state for all properties.
-  propertyStateLength_ = 0;
-  propertyStateBits_.reset();
-
-  invalidateAllDependentIonScripts(cx, "object swap");
-}
-
 void ObjectFuse::handleShadowedGlobalProperty(JSContext* cx,
                                               PropertyInfo prop) {
   if (isUntrackedProperty(prop)) {

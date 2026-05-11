@@ -264,10 +264,16 @@ add_task(
         const relayIntegrationCheckbox = content.document.querySelector(
           "moz-checkbox#relayIntegration"
         );
+        let prefChanged = TestUtils.waitForCondition(() => {
+          return Services.prefs.getBoolPref(
+            "signon.firefoxRelay.feature",
+            true
+          );
+        }, "Waiting for signon.firefoxRelay.feature pref to be enabled");
         relayIntegrationCheckbox.click();
+        await prefChanged;
       }
     );
-
     // Visit the test page again and see the Relay autocomplete item is back
     await BrowserTestUtils.withNewTab(
       {

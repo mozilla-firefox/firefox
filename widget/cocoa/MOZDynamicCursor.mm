@@ -314,6 +314,19 @@ static constexpr nsCursor kCustomCursor = eCursorCount;
   [mCurrentCursor set];
 }
 
+- (void)reassertCurrentCursor {
+  // [NSCursor hide] is reference-counted: each hide must be balanced by
+  // unhide. Pairing unhide+hide here is a no-op when our hide is still
+  // on the stack and re-establishes the hide if AppKit dropped it under
+  // us during a window transition.
+  if (mCurrentCursorType == eCursor_none) {
+    [NSCursor unhide];
+    [NSCursor hide];
+  } else {
+    [mCurrentCursor set];
+  }
+}
+
 - (void)dealloc {
   [mCurrentCursor release];
   [mCursors release];

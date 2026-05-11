@@ -34,7 +34,7 @@
         android:text="@string/sign_out_cancel"
         android:textAlignment="center"
         android:textAllCaps="false"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/signOutDisconnect"

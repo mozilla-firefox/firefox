@@ -4952,7 +4952,7 @@ void ClientWebGLContext::UniformData(const GLenum funcElemType,
   // -
 
   uint32_t locId = -1;
-  if (MOZ_LIKELY(loc)) {
+  if (loc) [[likely]] {
     locId = loc->mLocation;
     if (!loc->ValidateUsable(*this, "location")) {
       nogc.reset();
@@ -4973,7 +4973,7 @@ void ClientWebGLContext::UniformData(const GLenum funcElemType,
     for (const auto allowed : loc->mValidUploadElemTypes) {
       funcMatchesLocation |= (funcElemType == allowed);
     }
-    if (MOZ_UNLIKELY(!funcMatchesLocation)) {
+    if (!funcMatchesLocation) [[unlikely]] {
       std::string validSetters;
       for (const auto allowed : loc->mValidUploadElemTypes) {
         validSetters += EnumString(allowed);

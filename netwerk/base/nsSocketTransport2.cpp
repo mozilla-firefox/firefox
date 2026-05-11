@@ -734,9 +734,15 @@ nsresult nsSocketTransport::Init(const nsTArray<nsCString>& types,
   if (dnsRecord) {
     mExternalDNSResolution = true;
     mDNSRecord = do_QueryInterface(dnsRecord);
-    mDNSRecord->IsTRR(&mResolvedByTRR);
-    mDNSRecord->GetEffectiveTRRMode(&mEffectiveTRRMode);
-    mDNSRecord->GetTrrSkipReason(&mTRRSkipReason);
+    bool resolvedByTRR;
+    mDNSRecord->IsTRR(&resolvedByTRR);
+    mResolvedByTRR = resolvedByTRR;
+    nsIRequest::TRRMode effectiveTRRMode;
+    mDNSRecord->GetEffectiveTRRMode(&effectiveTRRMode);
+    mEffectiveTRRMode = effectiveTRRMode;
+    nsITRRSkipReason::value trrSkipReason;
+    mDNSRecord->GetTrrSkipReason(&trrSkipReason);
+    mTRRSkipReason = trrSkipReason;
   }
 
   // init socket type info
@@ -1765,9 +1771,17 @@ bool nsSocketTransport::RecoverFromError() {
   // try next ip address only if past the resolver stage...
   if (mState == STATE_CONNECTING && mDNSRecord) {
     nsresult rv = mDNSRecord->GetNextAddr(SocketPort(), &mNetAddr);
-    mDNSRecord->IsTRR(&mResolvedByTRR);
-    mDNSRecord->GetEffectiveTRRMode(&mEffectiveTRRMode);
-    mDNSRecord->GetTrrSkipReason(&mTRRSkipReason);
+    {
+      bool resolvedByTRR;
+      mDNSRecord->IsTRR(&resolvedByTRR);
+      mResolvedByTRR = resolvedByTRR;
+      nsIRequest::TRRMode effectiveTRRMode;
+      mDNSRecord->GetEffectiveTRRMode(&effectiveTRRMode);
+      mEffectiveTRRMode = effectiveTRRMode;
+      nsITRRSkipReason::value trrSkipReason;
+      mDNSRecord->GetTrrSkipReason(&trrSkipReason);
+      mTRRSkipReason = trrSkipReason;
+    }
     if (NS_SUCCEEDED(rv)) {
       SOCKET_LOG(("  trying again with next ip address\n"));
       tryAgain = true;
@@ -2073,9 +2087,15 @@ void nsSocketTransport::OnSocketEvent(uint32_t type, nsresult status,
 
       if (mDNSRecord) {
         mDNSRecord->GetNextAddr(SocketPort(), &mNetAddr);
-        mDNSRecord->IsTRR(&mResolvedByTRR);
-        mDNSRecord->GetEffectiveTRRMode(&mEffectiveTRRMode);
-        mDNSRecord->GetTrrSkipReason(&mTRRSkipReason);
+        bool resolvedByTRR;
+        mDNSRecord->IsTRR(&resolvedByTRR);
+        mResolvedByTRR = resolvedByTRR;
+        nsIRequest::TRRMode effectiveTRRMode;
+        mDNSRecord->GetEffectiveTRRMode(&effectiveTRRMode);
+        mEffectiveTRRMode = effectiveTRRMode;
+        nsITRRSkipReason::value trrSkipReason;
+        mDNSRecord->GetTrrSkipReason(&trrSkipReason);
+        mTRRSkipReason = trrSkipReason;
       }
       // status contains DNS lookup status
       if (NS_FAILED(status)) {
@@ -2817,9 +2837,15 @@ nsSocketTransport::OnLookupComplete(nsICancelable* request, nsIDNSRecord* rec,
   }
 
   if (nsCOMPtr<nsIDNSAddrRecord> addrRecord = do_QueryInterface(rec)) {
-    addrRecord->IsTRR(&mResolvedByTRR);
-    addrRecord->GetEffectiveTRRMode(&mEffectiveTRRMode);
-    addrRecord->GetTrrSkipReason(&mTRRSkipReason);
+    bool resolvedByTRR;
+    addrRecord->IsTRR(&resolvedByTRR);
+    mResolvedByTRR = resolvedByTRR;
+    nsIRequest::TRRMode effectiveTRRMode;
+    addrRecord->GetEffectiveTRRMode(&effectiveTRRMode);
+    mEffectiveTRRMode = effectiveTRRMode;
+    nsITRRSkipReason::value trrSkipReason;
+    addrRecord->GetTrrSkipReason(&trrSkipReason);
+    mTRRSkipReason = trrSkipReason;
   }
 
   // flag host lookup complete for the benefit of the ResolveHost method.

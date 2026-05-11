@@ -2123,6 +2123,15 @@ class Inspector extends EventEmitter {
     }
     return false;
   }
+
+  /**
+   * Check if this inspector instance already started being destroyed.
+   *
+   * @returns {boolean} true if the inspector destroy() was already called.
+   */
+  isDestroyed() {
+    return !!this.#destroyed;
+  }
 }
 
 exports.Inspector = Inspector;

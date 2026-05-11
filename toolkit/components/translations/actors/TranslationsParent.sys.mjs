@@ -738,7 +738,7 @@ export class TranslationsParent extends JSWindowActorParent {
   static #isTranslationsEngineMocked = false;
 
   /**
-   * @type {null | Promise<boolean>}
+   * @type {null | boolean}
    */
   static #isTranslationsEngineSupported = null;
 
@@ -1172,7 +1172,6 @@ export class TranslationsParent extends JSWindowActorParent {
       );
 
       /* eslint-disable-next-line no-shadow */
-      // @ts-ignore
       const { CustomEvent } = browser.documentGlobal;
       browser.dispatchEvent(
         new CustomEvent("TranslationsParent:OfferTranslation", {
@@ -1228,7 +1227,7 @@ export class TranslationsParent extends JSWindowActorParent {
    * use the feature. This function also respects mocks and simulating unsupported
    * engines.
    *
-   * @type {boolean}
+   * @returns {boolean}
    */
   static getIsTranslationsEngineSupported() {
     if (lazy.simulateUnsupportedEnginePref) {

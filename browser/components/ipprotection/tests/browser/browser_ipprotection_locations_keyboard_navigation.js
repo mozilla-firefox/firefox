@@ -14,9 +14,10 @@ const MOCK_LOCATIONS_LIST = [
  * Opens the IP Protection panel, then navigates to the locations subview.
  *
  * @param {object} state - Additional state to set on the panel.
- * @returns {Promise<{backButton: Element, headerButton: Element, firstListItem: Element, promoButton: Element|null, locationsView: Element}>}
+ * @param {boolean} [keyboardActivated] - Whether to open via keyboard activation.
+ * @returns {Promise<{backButton: Element, firstListItem: Element, promoButton: Element|null, locationsView: Element}>}
  */
-async function openLocationsSubview(state = {}) {
+async function openLocationsSubview(state = {}, keyboardActivated = false) {
   await openPanel({
     isEnrolledAndEntitled: true,
     locationsList: MOCK_LOCATIONS_LIST,
@@ -29,11 +30,18 @@ async function openLocationsSubview(state = {}) {
     IPProtectionPanel.LOCATIONS_PANELVIEW
   );
 
+  let mainView = PanelMultiView.getViewNode(
+    document,
+    IPProtectionPanel.MAIN_PANELVIEW
+  );
+  let content = mainView.querySelector(IPProtectionPanel.CONTENT_TAGNAME);
+  let locationButton = content?.statusCardEl?.locationButtonEl ?? null;
+
   let viewShownPromise = BrowserTestUtils.waitForEvent(
     locationsView,
     "ViewShown"
   );
-  panel.showLocationSelector();
+  panel.showLocationSelector(keyboardActivated, locationButton);
   await viewShownPromise;
 
   let locationsEl = locationsView.querySelector(
@@ -45,7 +53,6 @@ async function openLocationsSubview(state = {}) {
   await locationsList?.updateComplete;
 
   let backButton = locationsView.querySelector(".subviewbutton-back");
-  let headerButton = locationsView.querySelector(".panel-info-button");
   let firstListItem = locationsList?.querySelector(
     ".location-item:not([disabled])"
   );
@@ -53,8 +60,8 @@ async function openLocationsSubview(state = {}) {
 
   return {
     backButton,
-    headerButton,
     firstListItem,
+    locationButton,
     promoButton,
     locationsView,
   };
@@ -65,21 +72,20 @@ async function openLocationsSubview(state = {}) {
  * ignoring list items.
  */
 add_task(async function test_locations_tab_nav_with_promo() {
-  let { backButton, headerButton, firstListItem, promoButton } =
-    await openLocationsSubview({ hasUpgraded: false });
+  let { backButton, firstListItem, promoButton } = await openLocationsSubview({
+    hasUpgraded: false,
+  });
 
   Assert.ok(promoButton, "promo button should be present when not upgraded");
 
   backButton.focus();
 
-  await expectFocusAfterKey("Tab", headerButton);
   await expectFocusAfterKey("Tab", firstListItem);
   await expectFocusAfterKey("Tab", promoButton);
   await expectFocusAfterKey("Tab", backButton);
 
   await expectFocusAfterKey("Shift+Tab", promoButton);
   await expectFocusAfterKey("Shift+Tab", firstListItem);
-  await expectFocusAfterKey("Shift+Tab", headerButton);
   await expectFocusAfterKey("Shift+Tab", backButton);
 
   await closePanel();
@@ -91,20 +97,19 @@ add_task(async function test_locations_tab_nav_with_promo() {
  * ignoring list items.
  */
 add_task(async function test_locations_tab_nav_without_promo() {
-  let { backButton, headerButton, firstListItem, promoButton } =
-    await openLocationsSubview({ hasUpgraded: true });
+  let { backButton, firstListItem, promoButton } = await openLocationsSubview({
+    hasUpgraded: true,
+  });
 
   Assert.ok(!promoButton, "promo button should not be present when upgraded");
 
   backButton.focus();
 
-  await expectFocusAfterKey("Tab", headerButton);
   await expectFocusAfterKey("Tab", firstListItem);
   await expectFocusAfterKey("Tab", backButton);
 
   // Shift+Tab reverses.
   await expectFocusAfterKey("Shift+Tab", firstListItem);
-  await expectFocusAfterKey("Shift+Tab", headerButton);
   await expectFocusAfterKey("Shift+Tab", backButton);
 
   await closePanel();
@@ -113,14 +118,12 @@ add_task(async function test_locations_tab_nav_without_promo() {
 
 /**
  * Tests that Tab from any list item skips directly to promo,
- * and Shift+Tab from any list item goes back to the help button.
+ * and Shift+Tab from any list item goes back to the back button.
  */
 add_task(async function test_locations_tab_exits_list_from_any_item() {
-  let { headerButton, locationsView, promoButton } = await openLocationsSubview(
-    {
-      hasUpgraded: false,
-    }
-  );
+  let { locationsView, promoButton } = await openLocationsSubview({
+    hasUpgraded: false,
+  });
 
   Assert.ok(promoButton, "promo button should be present");
 
@@ -135,9 +138,10 @@ add_task(async function test_locations_tab_exits_list_from_any_item() {
   listItems[1].focus();
   await expectFocusAfterKey("Tab", promoButton);
 
-  // Shift+Tab from a non-first list item should jump straight to info button.
+  // Shift+Tab from a non-first list item should jump straight to back button.
+  let backButton = locationsView.querySelector(".subviewbutton-back");
   listItems[1].focus();
-  await expectFocusAfterKey("Shift+Tab", headerButton);
+  await expectFocusAfterKey("Shift+Tab", backButton);
 
   await closePanel();
   cleanupService();
@@ -176,7 +180,7 @@ add_task(async function test_locations_arrow_keys_navigate_list() {
  * Tests that ArrowDown and ArrowUp do not move focus when on non-list elements.
  */
 add_task(async function test_locations_arrow_keys_ignored_outside_list() {
-  let { backButton, headerButton } = await openLocationsSubview();
+  let { backButton } = await openLocationsSubview();
 
   backButton.focus();
 
@@ -188,13 +192,116 @@ add_task(async function test_locations_arrow_keys_ignored_outside_list() {
     "ArrowDown on back button should not move focus"
   );
 
-  headerButton.focus();
+  await closePanel();
+  cleanupService();
+});
 
-  EventUtils.synthesizeKey("KEY_ArrowDown", {});
+/**
+ * Tests that ArrowLeft closes the locations subview and returns focus to the
+ * location button when keyboard activated.
+ */
+add_task(async function test_locations_arrow_left_closes_subview() {
+  let { firstListItem, locationsView, locationButton } =
+    await openLocationsSubview({}, true);
+
+  firstListItem.focus();
+
+  let viewHidingPromise = BrowserTestUtils.waitForEvent(
+    locationsView,
+    "ViewHiding"
+  );
+  EventUtils.synthesizeKey("KEY_ArrowLeft", {});
+  await viewHidingPromise;
+
+  Assert.ok(
+    !locationsView.hasAttribute("visible"),
+    "ArrowLeft should close the subview"
+  );
+
+  Assert.ok(
+    locationButton.matches(":focus"),
+    "focus should return to the location button after ArrowLeft"
+  );
+
+  await closePanel();
+  cleanupService();
+});
+
+/**
+ * Tests that ArrowRight closes the locations subview in RTL and returns focus
+ * to the location button when keyboard activated.
+ */
+add_task(async function test_locations_arrow_right_closes_subview_in_rtl() {
+  await SpecialPowers.pushPrefEnv({ set: [["intl.l10n.pseudo", "bidi"]] });
+
+  let { firstListItem, locationsView, locationButton } =
+    await openLocationsSubview({}, true);
+
+  firstListItem.focus();
+
+  let viewHidingPromise = BrowserTestUtils.waitForEvent(
+    locationsView,
+    "ViewHiding"
+  );
+  EventUtils.synthesizeKey("KEY_ArrowRight", {});
+  await viewHidingPromise;
+
+  Assert.ok(
+    !locationsView.hasAttribute("visible"),
+    "ArrowRight should close the subview in RTL"
+  );
+
+  Assert.ok(
+    locationButton.matches(":focus"),
+    "focus should return to the location button after ArrowRight"
+  );
+
+  await closePanel();
+  cleanupService();
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Tests that opening the subview via keyboard focuses the first list item,
+ * and that closing via keyboard returns focus to the location button.
+ * Opening via mouse should not affect focus in either direction.
+ */
+add_task(async function test_locations_keyboard_open_focuses_header_button() {
+  let { firstListItem, locationsView, locationButton } =
+    await openLocationsSubview({}, true);
+
+  Assert.ok(locationButton, "location button should be present");
+
   Assert.equal(
     document.activeElement,
-    headerButton,
-    "ArrowDown on help button should not move focus"
+    firstListItem,
+    "keyboard-activated open should focus the first list item"
+  );
+
+  let backButton = locationsView.querySelector(".subviewbutton-back");
+  backButton.focus();
+
+  let viewHidingPromise = BrowserTestUtils.waitForEvent(
+    locationsView,
+    "ViewHiding"
+  );
+  EventUtils.synthesizeKey("KEY_Enter", {});
+  await viewHidingPromise;
+
+  Assert.ok(
+    locationButton.matches(":focus"),
+    "focus should return to the location button after pressing the back button via keyboard"
+  );
+
+  await closePanel();
+  cleanupService();
+
+  let { firstListItem: firstListItem2 } = await openLocationsSubview({}, false);
+
+  Assert.notEqual(
+    document.activeElement,
+    firstListItem2,
+    "mouse-activated open should not focus the first list item"
   );
 
   await closePanel();

@@ -55,6 +55,7 @@
 #include "mozilla/dom/CharacterDataBuffer.h"
 #include "mozilla/dom/DocumentFragment.h"
 #include "mozilla/dom/DocumentInlines.h"
+#include "mozilla/dom/EditContext.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/ElementInlines.h"
 #include "mozilla/dom/Event.h"
@@ -797,6 +798,11 @@ nsresult HTMLEditor::OnFocus(const nsINode& aOriginalEventTargetNode) {
   }
   mHasFocus = true;
   mIsInDesignMode = aOriginalEventTargetNode.IsInDesignMode();
+  if (StaticPrefs::dom_editcontext_enabled() && EditContext::IsAnyAttached()) {
+    // Active EditContext may have changed
+    aOriginalEventTargetNode.OwnerDoc()->UpdateTextEditContext();
+  }
+
   return NS_OK;
 }
 
@@ -829,6 +835,12 @@ nsresult HTMLEditor::FocusedElementOrDocumentBecomesNotEditable(
                          "HTMLEditor::FinalizeSelection() failed");
     aHTMLEditor->mHasFocus = false;
     aHTMLEditor->mIsInDesignMode = false;
+
+    if (StaticPrefs::dom_editcontext_enabled() &&
+        EditContext::IsAnyAttached()) {
+      // Active EditContext may have changed
+      aDocument.UpdateTextEditContext();
+    }
 
     RefPtr<Element> focusedElement = nsFocusManager::GetFocusedElementStatic();
     if (focusedElement && !focusedElement->IsInComposedDoc()) {
@@ -919,6 +931,12 @@ nsresult HTMLEditor::OnBlur(const EventTarget* aEventTarget) {
                        "EditorBase::FinalizeSelection() failed");
   mIsInDesignMode = false;
   mHasFocus = false;
+  if (StaticPrefs::dom_editcontext_enabled() && EditContext::IsAnyAttached() &&
+      eventTargetAsElement) {
+    // Active EditContext may have changed
+    eventTargetAsElement->OwnerDoc()->UpdateTextEditContext();
+  }
+
   return rv;
 }
 

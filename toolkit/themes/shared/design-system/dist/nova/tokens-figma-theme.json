@@ -503,5 +503,15 @@
     "light": "rgba(21, 20, 26, 0.4)",
     "dark": "rgba(251, 251, 254, 0.4)",
     "forcedColors": "{HCM Theme$CanvasText}"
+  },
+  "tab/background/color/hover": {
+    "light": "color-mix(in lch, var(--color-violet-desaturated-50) 25%, transparent)",
+    "dark": "color-mix(in lch, var(--color-violet-desaturated-30) 40%, transparent)",
+    "forcedColors": "transparent"
+  },
+  "tab/background/color/selected": {
+    "light": "var(--background-color-box)",
+    "dark": "var(--background-color-box)",
+    "forcedColors": "var(--background-color-box)"
   }
 }

@@ -433,6 +433,9 @@ class BrowserChild final : public nsMessageManagerScriptExecutor,
   mozilla::ipc::IPCResult RecvSafeAreaInsetsChanged(
       const mozilla::LayoutDeviceIntMargin& aSafeAreaInsets);
 
+  mozilla::ipc::IPCResult RecvInitSupportsUnadjustedMovement(
+      const bool& aSupportsUnadjustedMovement);
+
 #ifdef ACCESSIBILITY
   PDocAccessibleChild* AllocPDocAccessibleChild(
       PDocAccessibleChild*, const uint64_t&,

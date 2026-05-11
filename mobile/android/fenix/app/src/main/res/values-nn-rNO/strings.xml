@@ -927,7 +927,7 @@
   <!-- Message shown in the error page for when trying to access a http website while https only mode is enabled. The message has two paragraphs. This is the second. -->
   <string name="errorpage_httpsonly_message_summary">Det er òg mogleg at ein angripar er involvert. Dersom du fortset til nettstaden, bør du ikkje skrive inn sensitiv informasjon. Dersom du fortset, vil berre HTTPS-modus bli slått av mellombels for nettstaden.</string>
   <!-- Preference for accessibility -->
-  <string name="preferences_accessibility">Tilgjenge</string>
+  <string name="preferences_accessibility">Tilgjengelegheit</string>
   <!-- Preference to override the Mozilla account server -->
   <string name="preferences_override_account_server">Tilpassa Mozilla-kontoserver</string>
   <!-- Preference to override the Sync token server -->
@@ -1612,6 +1612,14 @@
     The %1$s will be replaced by the number of opened private tabs
   -->
   <string name="tabs_header_private_tabs_counter_title">Private faner opne: %1$s. Trykk for å byte fane.</string>
+  <plurals name="tabs_header_tab_group_counter_title">
+    <!--
+      Title for the list of tab groups used by a11y services
+      The %1$d will be replaced by the number of opened tab groups
+    -->
+    <item quantity="one">%1$d fanegruppe er open. Trykk for å veksle mellom faner.</item>
+    <item quantity="other">%1$d fanegrupper er opne. Trykk for å veksle mellom faner.</item>
+  </plurals>
   <!--
     Title for the list of tabs in the synced tabs used by a11y services
     The %1$s will be replaced by the number of opened synced tabs
@@ -3206,6 +3214,13 @@
   <string name="ip_protection_onboarding_body_link">Surf med ekstra vern</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Ikkje no</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">Klarte ikkje å koble til VPN. Prøv igjen om nokre minutt.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">%1$d GB med VPN-data brukt. Tilgangen blir tilbakestilt neste månad.</string>
   <!--
     Autofill
 
@@ -4555,7 +4570,7 @@
   <!-- Sports widget match status label shown during halftime of a match. -->
   <string name="sports_widget_halftime" tools:ignore="UnusedResources">Pause</string>
   <!-- Sports widget match status label shown during extra time of a match. -->
-  <string name="sports_widget_extra_time" tools:ignore="UnusedResources">Ekstra tid</string>
+  <string name="sports_widget_extra_time" tools:ignore="UnusedResources">Ekstraomgangar</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
   <string name="sports_widget_penalties" tools:ignore="UnusedResources">Straffer</string>
   <!--
@@ -4623,6 +4638,14 @@
   <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Følgjer: \n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
   <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Følg med for kampinformasjon når turneringa nærmar seg.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">Første omgang</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">Andre omgang</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">Det ser ut til at du er fråkopla.</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">Kontroller internett-tilkoplinga di og prøv på nytt.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

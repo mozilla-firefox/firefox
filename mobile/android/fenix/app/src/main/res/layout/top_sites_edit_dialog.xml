@@ -18,7 +18,7 @@
         android:text="@string/top_sites_rename_dialog_title"
         android:textAllCaps="true"
         android:textAppearance="@style/Body16TextStyle"
-        android:textColor="?attr/textSecondary" />
+        android:textColor="?attr/colorOnSurfaceVariant" />
 
     <EditText
         android:id="@+id/top_site_title"
@@ -43,7 +43,7 @@
         android:text="@string/top_sites_edit_dialog_url_title"
         android:textAllCaps="true"
         android:textAppearance="@style/Body16TextStyle"
-        android:textColor="?attr/textSecondary" />
+        android:textColor="?attr/colorOnSurfaceVariant" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/top_site_url_layout"

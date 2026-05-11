@@ -46,7 +46,7 @@ NS_IMPL_ISUPPORTS(AllocationReporter, nsIMemoryReporter)
 static void RegisterAllocationMemoryReporter() {
   static Atomic<bool> registered;
   if (registered.compareExchange(false, true)) {
-    RegisterStrongMemoryReporter(new AllocationReporter());
+    RegisterStrongMemoryReporter(MakeAndAddRef<AllocationReporter>());
   }
 }
 

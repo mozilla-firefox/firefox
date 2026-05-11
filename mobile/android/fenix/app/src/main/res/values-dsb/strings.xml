@@ -375,6 +375,8 @@
   <string name="preferences_ai_controls">Wóźeńske elementy KI</string>
   <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
   <string name="ai_controls_banner_headline">W %s maśo pśecej wólbu</string>
+  <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
+  <string name="ai_controls_banner_supporting_text_2">To wopśimjejo, lěc se maju funkcije wužywaś, kótarež su pśez KI pólěpšone. %s</string>
   <!-- Supporting text for the AI controls banner -->
   <string name="ai_controls_banner_supporting_text">To wopśimjejo, lěc se maju funkcije wužywaś, kótarež su pśez KI pólěpšone.</string>
   <!-- Link text for learning more about AI controls -->
@@ -2223,6 +2225,8 @@
   <string name="bookmark_import_menu_button">Z dataje importěrowaś</string>
   <!-- Snackbar message shown when a bookmark import attempt fails. -->
   <string name="bookmark_import_failure_snackbar">Cytańske znamjenja njedaju se importěrowaś. Wopytajśo hyšći raz.</string>
+  <!-- Default name for the folder created when importing bookmarks from a file. -->
+  <string name="bookmark_import_destination_default_name">Importěrowane cytańske znamjenja</string>
   <!--
     Bookmark multi select title in app bar
     %1$d is the number of bookmarks selected
@@ -3226,6 +3230,13 @@
   <string name="ip_protection_onboarding_body_link">Pśeglědujśo z pśidatnym šćitom</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Nic něnto</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">Njejo móžno z VPN zwězaś. Wopytajśo za mało minutow hyšći raz.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">%1$d GB datow VPN jo se pśetrjebało. Pśistup se w pśiducem mjasecu slědk stajijo.</string>
   <!--
     Autofill
 
@@ -4639,6 +4650,18 @@
   <string name="sports_widget_final_results_page_content_description" tools:ignore="UnusedResources">Kóńcne wuslědki swětowego mejstaŕstwa, bok %1$d z %2$d</string>
   <!-- Content description (for accessibility, not displayed) for the remove button that removes the sports widget from the homepage. -->
   <string name="sports_widget_remove_content_description" tools:ignore="UnusedResources">Swětowe mejstaŕstwo ze startowego boka wótwónoźeś</string>
+  <!-- Title shown on the sports widget immediately after the user has followed a team. %s is the selected team (e.g., "USA"). -->
+  <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Slědujo: \n%s</string>
+  <!-- Description shown on the sports widget immediately after the user has followed a team -->
+  <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Glědajśo za informacijami wó graśu, gaž se turněr bližy.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">Prědny połcas</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">Drugi połcas</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">Zda se, až sćo offline.</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">Pśeglědujśo swój internetny zwisk a wopytajśo hyšći raz.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

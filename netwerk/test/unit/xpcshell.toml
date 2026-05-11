@@ -480,6 +480,8 @@ skip-if = [
 
 ["test_cache2-33-clear-base-domain.js"]
 
+["test_cache2-34-overlimit-eviction-preserves-active.js"]
+
 ["test_cache2_clear_with_principal.js"]
 run-sequentially = ["true"] # httpd server
 
@@ -1524,6 +1526,13 @@ skip-if = [
 ]
 
 ["test_retry_psk_no_early_data.js"]
+run-sequentially = ["true"] # tlsserver uses fixed port
+skip-if = [
+  "os == 'win' && os_version == '11.26100' && arch == 'x86_64' && msix", # Bug 2034343
+  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 2034343
+]
+
+["test_retry_resumption_https_rr.js"]
 run-sequentially = ["true"] # tlsserver uses fixed port
 skip-if = [
   "os == 'win' && os_version == '11.26100' && arch == 'x86_64' && msix", # Bug 2034343

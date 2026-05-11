@@ -16,10 +16,11 @@
     "properties": {
       "color_scheme": "light",
       "ai_gradient": "radial-gradient(circle at 50% 90%, rgba(253, 244, 243, 1) 0%, rgba(253, 244, 243, 1) 30%, rgba(216, 202, 247, 1) 100%)",
-      "link_color": "#623ac3"
+      "link_color": "#623ac3",
+      "ai_background_color": "#f5f4fe"
     },
     "colors": {
-      "frame": "hsla(240, 20%, 98%, 1)",
+      "frame": "#f5f4fe",
       "toolbar": "transparent",
       "tab_background_text": "#15141A",
       "toolbar_text": "rgba(21, 20, 26, 0.69)",
@@ -40,10 +41,11 @@
   "dark_theme": {
     "properties": {
       "ai_gradient": "radial-gradient(ellipse 110% 130% at 100% 100%, rgba(255, 124, 31, 0.2), transparent 45%), radial-gradient(ellipse 90% 70% at -10% 10%, rgba(115, 90, 245, 0.32), transparent 60%), radial-gradient(ellipse 100% 100% at 50% 0%, rgba(106, 50, 140, 0.5), rgba(33, 3, 64, 0.25) 50%, transparent 80%), linear-gradient(236deg, #31143C 5.34%, #1F133C 98.24%)",
-      "link_color": "#ae90fe"
+      "link_color": "#ae90fe",
+      "ai_background_color": "#1d1f30"
     },
     "colors": {
-      "frame": "#1f133c",
+      "frame": "#1d1f30",
       "toolbar": "transparent",
       "tab_background_text": "#E1DCF7",
       "toolbar_text": "#E4DCF7",
@@ -71,7 +73,8 @@
     "stylesheet": "aiwindow-theme.css",
     "properties": {
       "ai_gradient": "--ai-gradient",
-      "link_color": "--link-color"
+      "link_color": "--link-color",
+      "ai_background_color": "--ai-background-color"
     }
   }
 }

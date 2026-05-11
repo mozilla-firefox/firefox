@@ -104,6 +104,32 @@
         );
       });
 
+      add_task(async function testRadioGroupAriaLabel() {
+        const TEST_ARIA_LABEL = "Accessible radio group label";
+        let renderTarget = await testHelpers.renderTemplate(defaultTemplate);
+        let radioGroup = renderTarget.querySelector("moz-radio-group");
+
+        ok(!radioGroup.ariaLabel, "No aria-label set by default.");
+
+        // Set via attribute to simulate how Fluent would set it.
+        radioGroup.setAttribute("aria-label", TEST_ARIA_LABEL);
+        await radioGroup.updateComplete;
+        await radioGroup.fieldset.updateComplete;
+
+        is(
+          radioGroup.ariaLabel,
+          TEST_ARIA_LABEL,
+          "ariaLabel property reflects aria-label attribute on moz-radio-group."
+        );
+        is(
+          radioGroup.fieldset.shadowRoot
+            .querySelector("fieldset")
+            .getAttribute("aria-label"),
+          TEST_ARIA_LABEL,
+          "aria-label is set on the inner fieldset element."
+        );
+      });
+
       // Verify that each radio button is given the name of the radio group.
       add_task(async function testGroupNamePropagation() {
         const FIRST_NAME = "test-name";

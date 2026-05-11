@@ -19,6 +19,8 @@
   <string name="content_description_menu">Ulteriuras opziuns</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Modus privat</string>
+  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
+  <string name="content_description_normal_browsing">Navigaziun normala</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Tschertgar u endatar in\'adressa</string>
   <!-- Placeholder text shown in the search bar before a user enters text for a general engine -->
@@ -281,8 +283,14 @@
   <string name="browser_menu_edit_bookmark">Modifitgar il segnapagina</string>
   <!-- Browser menu label that the saves the currently visited page as a PDF -->
   <string name="browser_menu_save_as_pdf_2">Memorisar sco PDF</string>
+  <!-- Browser menu label for moving the current private tab to a non-private tab -->
+  <string name="browser_menu_move_to_non_private_tab">Spustar en in tab betg privat</string>
   <!-- Browser menu label for navigating to the translation feature, which provides language translation options the current visited page -->
   <string name="browser_menu_translate_page_2">Translatar la pagina</string>
+  <!-- Browser menu label for navigating to the summarization feature, which provides site summarization for the current visited page -->
+  <string name="browser_menu_summarize_page">Resumar la pagina</string>
+  <!-- Browser menu badge text for summarization feature -->
+  <string name="browser_menu_summarize_page_badge">Nov</string>
   <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
   <string name="browser_menu_webcompat_reporter" tools:ignore="UnusedResources" moz:removedIn="149">Annunziar problems cun questa website…</string>
   <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
@@ -339,6 +347,8 @@
     %2$s is the name of the language which the page was translated to. (For example: French)
   -->
   <string name="browser_toolbar_translated_successfully">Pagina translatada per %2$s, l’original è en %1$s.</string>
+  <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
+  <string name="browser_toolbar_summarize_cfr_description">Scrola tes apparat per resumar questa pagina en in pèr secundas. ⚡️</string>
   <!--
     Translation Toolbar
 
@@ -351,6 +361,56 @@
   <string name="translation_toolbar_expand_action">Avrir la panela da translaziun</string>
   <!-- Content description for the translate toolbar action that closes the translations toolbar. -->
   <string name="translation_toolbar_close_action">Sbittar quest messadi</string>
+  <!--
+    Page summaries
+
+    Toolbar title for the Page summaries settings fragment
+  -->
+  <string name="preferences_page_summaries">Resumaziuns da paginas</string>
+  <!--
+    AI Controls settings
+
+    Title for the AI controls settings screen
+  -->
+  <string name="preferences_ai_controls">Controllas IA</string>
+  <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_banner_headline">Ti has adina la tscherna en %s</string>
+  <!-- Supporting text for the AI controls banner -->
+  <string name="ai_controls_banner_supporting_text">Quai includa la pussaivladad d’utilisar u betg utilisar funcziuns dad intelligenza artifiziala.</string>
+  <!-- Link text for learning more about AI controls -->
+  <string name="ai_controls_learn_more">Ulteriuras infurmaziuns</string>
+  <!-- Title for the block AI enhancements toggle -->
+  <string name="ai_controls_block_ai_title">Bloccar funcziuns che sa basan sin l’IA</string>
+  <!-- Description for the block AI enhancements toggle. %s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_block_ai_description">Bloccar vul dir che ti na vesas betg funcziuns che sa basan sin IA (novas u existentas) en %s – n’era betg ils messadis pop-up davart las funcziuns.</string>
+  <!-- Link text to see what AI enhancements are and aren’t included -->
+  <string name="ai_controls_see_whats_included">Vesair tge ch’è inclus e tge betg</string>
+  <!-- Banner text shown when AI enhancements are blocked -->
+  <string name="ai_controls_blocked_info_banner">Funcziuns che sa basan sin l’IA èn bloccadas en la configuraziun da standard. Deblochescha funcziuns specificas sutvart.</string>
+  <!-- Section header for the AI-powered features list -->
+  <string name="ai_controls_ai_powered_features">Funcziuns basadas sin l’IA</string>
+  <!-- Title for the translations AI feature toggle -->
+  <string name="ai_controls_translations_title">Translaziuns</string>
+  <!-- Description for the translations AI feature toggle -->
+  <string name="ai_controls_translations_description">Tut las translaziuns restan privatas sin tes apparat.</string>
+  <!-- Link text to navigate to more translations settings -->
+  <string name="ai_controls_more_translations_settings">Ulteriurs parameters da translaziun</string>
+  <!-- Link text to navigate to more page summary settings -->
+  <string name="ai_controls_more_page_summary_settings">Ulteriurs parameters da las resumaziuns da paginas</string>
+  <!-- Title for the voice search AI feature toggle -->
+  <string name="ai_controls_voice_search_title">Tschertga vocala</string>
+  <!-- Description for the voice search AI feature toggle -->
+  <string name="ai_controls_voice_search_description">Audio vegn convertì en text cun agid da Google Speech Services.</string>
+  <!-- Title for the block AI enhancements confirmation dialog -->
+  <string name="ai_controls_block_dialog_title">Bloccar meglieraziuns che sa basan sin l’IA?</string>
+  <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_block_dialog_body">Ti na vegns betg a vesair funcziuns che sa basan sin l’IA (novas u existentas) en %1$s – n’era betg ils messadis pop-up davart las funcziuns. Suenter pos ti debloccar tut las funcziuns che ti vuls vinavant utilisar.\n\nLa bloccada pertutga era las extensiuns che utiliseschan l’IA che %1$s porscha.</string>
+  <!-- Label shown above the list of features that will be blocked in the block AI dialog -->
+  <string name="ai_controls_block_dialog_what_will_be_blocked">Il suandant vegn bloccà:</string>
+  <!-- Cancel button text in the block AI enhancements confirmation dialog -->
+  <string name="ai_controls_block_dialog_cancel">Interrumper</string>
+  <!-- Block button text in the block AI enhancements confirmation dialog -->
+  <string name="ai_controls_block_dialog_block">Bloccar</string>
   <!--
     Locale Settings Fragment
 
@@ -585,8 +645,12 @@
 
   <!-- "Continue" onboarding button. -->
   <string name="nova_onboarding_continue_button">Cuntinuar</string>
+  <!-- "Continue browsing" onboarding button. -->
+  <string name="nova_onboarding_continue_browsing_button" tools:ignore="UnusedResources">Cuntinuar a navigar</string>
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Betg ussa</string>
+  <!-- "Skip" onboarding button. -->
+  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Sursiglir</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Ta prepara per navigar en tutta libertad</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
@@ -614,6 +678,8 @@
   <string name="nova_onboarding_tou_body_line_3_link_text">Administrar ils parameters</string>
   <!-- "Set to default" onboarding title. -->
   <string name="nova_onboarding_set_to_default_title" tools:ignore="UnusedResources">Di adia a fastizaders mulestus</string>
+  <!-- "Set to default" onboarding title. -->
+  <string name="nova_onboarding_set_to_default_title_2">Avra tut tias colliaziuns savend che la protecziun da datas è integrada</string>
   <!-- "Set to default" onboarding subtitle. -->
   <string name="nova_onboarding_set_to_default_subtitle">Nus protegin tias datas ed impedin automaticamain che interpresas spiuneschian tes clics.</string>
   <!-- "Set to default" onboarding button. -->
@@ -659,6 +725,21 @@
   <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Lantscha mintga tschertga directamain dal visur da partenza, savend che las protecziuns automaticas da Firefox ta defendan.</string>
   <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
   <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Agiuntar il widget da Firefox</string>
+  <!-- Customize prompt onboarding title. -->
+  <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Simpel da persunalisar e pli privat cun mintga interacziun</string>
+  <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
+    <!--
+      Customize prompt onboarding body.
+      %1$s is replaced by the product name (for example "Firefox"),
+      %2$,d is replaced by the number of trackers blocked. The comma represents the thousand
+      separator (e.g. 1,000 in English), and it will automatically use the correct character
+      for your locale (don't change or remove it).
+    -->
+    <item quantity="one">%1$s ha bloccà %2$,d fastizader durant che ti es navigà en il web.</item>
+    <item quantity="other">%1$s ha bloccà %2$,d fastizaders durant che ti es navigà en il web.</item>
+  </plurals>
+  <!-- Customize prompt onboarding positive button. -->
+  <string name="nova_onboarding_customize_prompt_positive_button" tools:ignore="UnusedResources">Cumenzar a persunalisar</string>
   <!-- ==== End of Project "Nova" onboarding strings ==== -->
 
   <!-- Onboarding header for the toolbar selection card, used by Nimbus experiments. -->

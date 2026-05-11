@@ -256,7 +256,7 @@ class IPProtectionInfobarManagerClass {
       usageLeft = String(remainingFormatted);
       l10nId = "ip-protection-bandwidth-warning-infobar-message-90-mb";
     } else {
-      usageLeft = remainingFormatted.toFixed(1);
+      usageLeft = String(remainingFormatted);
       l10nId =
         threshold === 90
           ? "ip-protection-bandwidth-warning-infobar-message-90"

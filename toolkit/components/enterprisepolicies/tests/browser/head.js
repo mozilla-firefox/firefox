@@ -8,17 +8,7 @@ const { EnterprisePolicyTesting, PoliciesPrefTracker } =
   ChromeUtils.importESModule(
     "resource://testing-common/EnterprisePolicyTesting.sys.mjs"
   );
+const { setupPolicyEngineWithJson } = EnterprisePolicyTesting;
+EnterprisePolicyTesting.pathResolver = getTestFilePath;
 
 PoliciesPrefTracker.start();
-
-async function setupPolicyEngineWithJson(json, customSchema) {
-  PoliciesPrefTracker.restoreDefaultValues();
-  if (typeof json != "object") {
-    let filePath = getTestFilePath(json ? json : "non-existing-file.json");
-    return EnterprisePolicyTesting.setupPolicyEngineWithJson(
-      filePath,
-      customSchema
-    );
-  }
-  return EnterprisePolicyTesting.setupPolicyEngineWithJson(json, customSchema);
-}

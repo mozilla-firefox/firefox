@@ -1,8 +1,0 @@
-let obj = { object: FakeDOMObject.prototype };
-let caught = undefined;
-try {
-  transplantableObject(obj).transplant(this);
-} catch (e) {
-  caught = e.message;
-}
-assertEq(caught, "Cannot transplant the FakeDOMObject prototype")

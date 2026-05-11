@@ -3204,10 +3204,10 @@ bool js::temporal::ParseTemporalRelativeToString(
 }
 
 void js::temporal::ParsedTimeZone::trace(JSTracer* trc) {
-  TraceNullableRoot(trc, &name, "ParsedTimeZone::name");
+  TraceRoot(trc, &name, "ParsedTimeZone::name");
 }
 
 void js::temporal::ParsedZonedDateTime::trace(JSTracer* trc) {
-  TraceNullableRoot(trc, &calendar, "ParsedZonedDateTime::calendar");
+  TraceRoot(trc, &calendar, "ParsedZonedDateTime::calendar");
   timeZoneAnnotation.trace(trc);
 }

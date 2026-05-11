@@ -284,7 +284,6 @@ support-files = ["browser_relay_utils.js"]
 
 ["browser_rust_mirror.js"]
 skip-if = [
-  "true", # temporarily disabled, Bug 2034387
   "os == 'android'",
   "release_or_beta", # Bug 1993218
 ]

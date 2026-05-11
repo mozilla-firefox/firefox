@@ -107,17 +107,23 @@ async function test_formAutofillTrigger(settingsRedesignEnabled) {
           () => browser.contentWindow?.gSubDialog?.dialogs.length
         );
       } else {
-        const savedPaymentsBtn = content.document.querySelector(
-          "#savedPaymentsButton"
-        );
-        savedPaymentsBtn.click();
-        const paymentsPage = content.document.querySelector(
-          '[data-category="paneManagePayments"]'
-        );
-        await BrowserTestUtils.waitForCondition(
-          () => !paymentsPage.hidden,
-          "Payments page failed to show."
-        );
+        await SpecialPowers.spawn(browser, [], async () => {
+          const savedPaymentsBtn = await ContentTaskUtils.waitForCondition(
+            () => content.document.querySelector("#savedPaymentsButton"),
+            "Waiting for credit card manager button"
+          );
+
+          savedPaymentsBtn.click();
+
+          const paymentsPage = content.document.querySelector(
+            '[data-category="paneManagePayments"]'
+          );
+
+          await ContentTaskUtils.waitForCondition(
+            () => paymentsPage && !paymentsPage.hidden,
+            "Payments page failed to show."
+          );
+        });
       }
 
       notifyCreditCardSaved();

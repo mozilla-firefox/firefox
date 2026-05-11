@@ -680,6 +680,17 @@
         );
 
         is(
+          item1.handleEl.getAttribute("data-l10n-id"),
+          "moz-box-item-reorder-handle-named",
+          "Handle uses the named l10n-id when the item has a label."
+        );
+        is(
+          item1.handleEl.getAttribute("data-l10n-args"),
+          JSON.stringify({ item: item1.label }),
+          "Handle passes the item label via data-l10n-args."
+        );
+
+        is(
           boxGroup.querySelector("moz-box-item:nth-of-type(2)").label,
           item2.label,
           "item2 starts in the second position."

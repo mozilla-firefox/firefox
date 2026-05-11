@@ -17,6 +17,7 @@
 
 #if !defined(ANDROID) && (defined(__SSE2__) || defined(_M_X64) || \
                           (defined(_M_IX86_FP) && _M_IX86_FP >= 2))
+#  include "mozilla/SSE.h"
 #  if defined(_MSC_VER) && !defined(__clang__)
 #    include "smmintrin.h"
 #  else

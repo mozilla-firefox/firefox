@@ -5,6 +5,7 @@
 include "mozilla/GfxMessageUtils.h";
 
 using struct mozilla::gfx::DeviceColor from "mozilla/gfx/2D.h";
+using mozilla::gfx::SamplingFilter from "mozilla/gfx/2D.h";
 using mozilla::gfx::IntPoint from "mozilla/gfx/Point.h";
 using mozilla::gfx::IntRect from "mozilla/gfx/Point.h";
 using mozilla::gfx::RoundedRect from "mozilla/gfx/Point.h";
@@ -56,7 +57,7 @@ struct CommandLayerInfo {
   IntRect? ClipRect;
   RoundedRect? RoundedClipRect;
   Matrix4x4 Transform;
-  int8_t SamplingFilter;
+  SamplingFilter samplingFilter;
   bool SurfaceIsFlipped;
 };
 

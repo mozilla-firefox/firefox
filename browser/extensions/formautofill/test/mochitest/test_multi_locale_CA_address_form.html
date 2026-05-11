@@ -176,18 +176,18 @@ add_setup(async () => {
 
 // Autofill the address with address level 1 code.
 add_task(async function autofill_with_level1_code() {
+  let promise = expectPopup();
   await setInput("#organization-en", "Mozilla Toront");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
 
   synthesizeKey("KEY_ArrowDown");
   // Replace address level 1 code with full name in English for test result
   let result = Object.assign({}, MOCK_STORAGE[1], {"address-level1": "Ontario"});
   await checkFormFilled("#form-en", result);
 
+  promise = expectPopup();
   await setInput("#organization-fr", "Mozilla Vancouve");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
 
   synthesizeKey("KEY_ArrowDown");
   // Replace address level 1 code with full name in French for test result
@@ -199,18 +199,18 @@ add_task(async function autofill_with_level1_code() {
 
 // Autofill the address with address level 1 full name.
 add_task(async function autofill_with_level1_full_name() {
+  let promise = expectPopup();
   await setInput("#organization-en", "ExpoCit");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
 
   synthesizeKey("KEY_ArrowDown");
   // Replace address level 1 code with full name in French for test result
   let result = Object.assign({}, MOCK_STORAGE[3], {"address-level1": "Quebec"});
   await checkFormFilled("#form-en", result);
 
+  promise = expectPopup();
   await setInput("#organization-fr", "Prince of Wales");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
 
   synthesizeKey("KEY_ArrowDown");
   // Replace address level 1 code with full name in English for test result

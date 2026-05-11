@@ -635,6 +635,57 @@ add_task(async function test_site_exclusion_updates_on_tab_switch() {
 });
 
 /**
+ * Tests that the site exclusion description is shown when the site is not
+ * excluded, and hidden when the site is excluded.
+ */
+add_task(async function test_site_exclusion_description_visibility() {
+  setupService({
+    isSignedIn: true,
+    isEnrolledAndEntitled: true,
+  });
+
+  let content = await openPanel({
+    isSignedOut: false,
+    isProtectionEnabled: true,
+    siteData: {
+      isExclusion: false,
+    },
+  });
+
+  Assert.ok(
+    BrowserTestUtils.isVisible(content),
+    "ipprotection content component should be present"
+  );
+  Assert.ok(
+    content.siteExclusionDescriptionEl,
+    "Site exclusion description should be present when site is not excluded"
+  );
+
+  let descriptionHiddenPromise = BrowserTestUtils.waitForMutationCondition(
+    content.shadowRoot,
+    { childList: true, subtree: true },
+    () => !content.siteExclusionDescriptionEl
+  );
+
+  await setPanelState({
+    isSignedOut: false,
+    isProtectionEnabled: true,
+    siteData: {
+      isExclusion: true,
+    },
+  });
+
+  await Promise.all([content.updateComplete, descriptionHiddenPromise]);
+
+  Assert.ok(
+    !content.siteExclusionDescriptionEl,
+    "Site exclusion description should not be present when site is excluded"
+  );
+
+  await closePanel();
+});
+
+/**
  * Tests that we don't show the site exclusion toggle on privileged pages.
  */
 add_task(async function test_site_exclusion_toggle_privileged_page() {

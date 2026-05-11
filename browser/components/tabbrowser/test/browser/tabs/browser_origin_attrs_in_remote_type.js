@@ -32,7 +32,7 @@ add_setup(async function () {
       ["browser.newtab.preload", false],
     ],
   });
-  requestLongerTimeout(10);
+  requestLongerTimeout(5);
 
   // Add a file:// uri
   let dir = getChromeDir(getResolvedURI(gTestPath));
@@ -44,9 +44,9 @@ add_setup(async function () {
   TEST_CASES.push({ uri: uriString });
 });
 
-function setupRemoteTypes(isolateEverything) {
+function setupRemoteTypes() {
   remoteTypes = getExpectedRemoteTypes(
-    isolateEverything,
+    gFissionBrowser,
     NUM_PAGES_OPEN_FOR_EACH_TEST_CASE
   );
   remoteTypes = remoteTypes.concat(
@@ -54,12 +54,8 @@ function setupRemoteTypes(isolateEverything) {
   ); // file uri
 }
 
-async function test_user_identity_simple_common(isolateEverything) {
-  await SpecialPowers.pushPrefEnv({
-    set: [["fission.webContentIsolationStrategy", isolateEverything ? 1 : 0]],
-  });
-  setupRemoteTypes(isolateEverything);
-
+add_task(async function test_user_identity_simple() {
+  setupRemoteTypes();
   var currentRemoteType;
 
   for (let testData of TEST_CASES) {
@@ -109,15 +105,4 @@ async function test_user_identity_simple_common(isolateEverything) {
     BrowserTestUtils.removeTab(page_regular.tab);
     BrowserTestUtils.removeTab(page_private.tab);
   }
-}
-
-if (gFissionBrowser) {
-  // This will have no impact if fission is disabled, so we skip this test.
-  add_task(async function test_user_identity_simple_isolateEverything() {
-    await test_user_identity_simple_common(/* isolateEverything */ true);
-  });
-}
-
-add_task(async function test_user_identity_simple_isolateNothing() {
-  await test_user_identity_simple_common(/* isolateEverything */ false);
 });

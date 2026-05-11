@@ -414,7 +414,7 @@ nsresult nsPrintJob::DoCommonPrint(bool aIsPrintPreview,
 
   nsCOMPtr<nsIDeviceContextSpec> devspec;
   if (XRE_IsContentProcess()) {
-    devspec = new nsDeviceContextSpecProxy(mRemotePrintJob);
+    devspec = MakeAndAddRef<nsDeviceContextSpecProxy>(mRemotePrintJob);
   } else {
     devspec = do_CreateInstance("@mozilla.org/gfx/devicecontextspec;1", &rv);
     NS_ENSURE_SUCCESS(rv, rv);
@@ -2026,7 +2026,8 @@ class nsPrintCompletionEvent : public Runnable {
 //-----------------------------------------------------------
 void nsPrintJob::FirePrintCompletionEvent() {
   MOZ_ASSERT(NS_IsMainThread());
-  nsCOMPtr<nsIRunnable> event = new nsPrintCompletionEvent(mDocViewerPrint);
+  nsCOMPtr<nsIRunnable> event =
+      MakeAndAddRef<nsPrintCompletionEvent>(mDocViewerPrint);
   nsCOMPtr<nsIDocumentViewer> viewer = do_QueryInterface(mDocViewerPrint);
   NS_ENSURE_TRUE_VOID(viewer);
   nsCOMPtr<Document> doc = viewer->GetDocument();

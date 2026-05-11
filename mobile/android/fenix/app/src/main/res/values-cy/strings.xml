@@ -4660,9 +4660,13 @@
   <!-- Content description (for accessibility, not displayed) for the remove button that removes the sports widget from the homepage. -->
   <string name="sports_widget_remove_content_description" tools:ignore="UnusedResources">Tynnu Cwpan y Byd o\'r cartref</string>
   <!-- Title shown on the sports widget immediately after the user has followed a team. %s is the selected team (e.g., "USA"). -->
-  <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Yn dilyn: %s</string>
+  <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Yn dilyn: \n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
-  <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Gwiriwch yn ôl am wybodaeth gêm wrth i\'r twrnamaint agosáu.</string>
+  <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Dewch nôl am wybodaeth am y gemau wrth i\'r twrnamaint agosáu.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">Hanner cyntaf</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">Ail hanner</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

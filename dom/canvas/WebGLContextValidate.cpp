@@ -606,7 +606,7 @@ bool WebGLContext::ValidateFramebufferTarget(GLenum target) const {
       break;
   }
 
-  if (MOZ_LIKELY(isValid)) {
+  if (isValid) [[likely]] {
     return true;
   }
 

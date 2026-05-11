@@ -144,8 +144,8 @@ webext-site-perms-description-gated-perms-midi =
 
     Websites are normally not allowed to access MIDI devices. Improper usage could cause damage or compromise security.
 
-webext-site-perms-description-gated-perms-serial =
-    These are devices like microcontrollers, 3D printers, and other devices that connect via USB or serial ports.
+webext-site-perms-description-gated-perms-webserial =
+    These are devices like microcontrollers, 3D printers, and other devices that connect via USB, serial ports, or Bluetooth.
 
     You will be able to choose which devices the website can access.
 

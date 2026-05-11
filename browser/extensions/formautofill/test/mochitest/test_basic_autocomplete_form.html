@@ -49,10 +49,9 @@ initPopupListener();
 add_task(async function history_only_menu_checking() {
   await setupFormHistory();
 
+  const promise = expectPopup();
   await setInput("#tel", "", true);
-  await notExpectPopup();
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntries(["+1234567890"], false);
 });
 
@@ -65,10 +64,9 @@ add_task(async function all_saved_fields_less_than_threshold() {
     email,
   });
 
+  const promise = expectPopup();
   await setInput("#email", "", true);
-  await notExpectPopup();
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment([
     makeAddressComment({
       primary: email,
@@ -82,10 +80,9 @@ add_task(async function all_saved_fields_less_than_threshold() {
 add_task(async function check_menu_when_both_existed() {
   await setupAddressStorage();
 
+  let promise = expectPopup();
   await setInput("#organization", "", true);
-  await notExpectPopup();
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(address =>
     makeAddressComment({
       primary: address.organization,
@@ -93,10 +90,9 @@ add_task(async function check_menu_when_both_existed() {
     })
   ));
 
+  promise = expectPopup();
   await setInput("#street-address", "", true);
-  await notExpectPopup();
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(address =>
     makeAddressComment({
       primary: FormAutofillUtils.toOneLineAddress(address["street-address"]),
@@ -104,10 +100,9 @@ add_task(async function check_menu_when_both_existed() {
     })
   ));
 
+  promise = expectPopup();
   await setInput("#tel", "", true);
-  await notExpectPopup();
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(address =>
     makeAddressComment({
       primary: address.tel,
@@ -115,10 +110,9 @@ add_task(async function check_menu_when_both_existed() {
     })
   ));
 
+  promise = expectPopup();
   await setInput("#address-line1", "", true);
-  await notExpectPopup();
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(address =>
     makeAddressComment({
       primary: FormAutofillUtils.toOneLineAddress(address["street-address"]),
@@ -129,10 +123,9 @@ add_task(async function check_menu_when_both_existed() {
 
 // Display history search result if no matched data in addresses.
 add_task(async function check_fallback_for_mismatched_field() {
+  const promise = expectPopup();
   await setInput("#email", "", true);
-  await notExpectPopup();
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntries(["foo@mozilla.com"], false);
 });
 
@@ -142,10 +135,9 @@ add_task(async function check_search_result_for_pref_off() {
     set: [["extensions.formautofill.addresses.enabled", false]],
   });
 
+  const promise = expectPopup();
   await setInput("#tel", "", true);
-  await notExpectPopup();
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntries(["+1234567890"], false);
 
   await SpecialPowers.popPrefEnv();
@@ -153,10 +145,9 @@ add_task(async function check_search_result_for_pref_off() {
 
 // Autofill the address from dropdown menu.
 add_task(async function check_fields_after_form_autofill() {
+  const promise = expectPopup();
   const focusedInput = await setInput("#organization", "Moz", true);
-  await notExpectPopup();
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(address =>
     makeAddressComment({
       primary: address.organization,

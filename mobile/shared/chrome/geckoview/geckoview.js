@@ -13,6 +13,7 @@ var { XPCOMUtils } = ChromeUtils.importESModule(
 
 ChromeUtils.defineESModuleGetters(this, {
   Blocklist: "resource://gre/modules/Blocklist.sys.mjs",
+  E10SUtils: "resource://gre/modules/E10SUtils.sys.mjs",
   EventDispatcher: "resource://gre/modules/Messaging.sys.mjs",
   GeckoViewActorManager: "resource://gre/modules/GeckoViewActorManager.sys.mjs",
   GeckoViewSettings: "resource://gre/modules/GeckoViewSettings.sys.mjs",
@@ -52,16 +53,14 @@ var ModuleManager = {
     return window.arguments[0].QueryInterface(Ci.nsIGeckoViewView).initData;
   },
 
-  init(aModules) {
+  init(aBrowser, aModules) {
     const initData = this._initData;
+    this._browser = aBrowser;
     this._settings = initData.settings;
     this._frozenSettings = Object.freeze(Object.assign({}, this._settings));
 
     // Promise resolvers set during applink navigation, used to defer extension startup.
     this._applinkNavigation = null;
-
-    const browser = createBrowser(this.settings);
-    this._browser = browser;
 
     const self = this;
     this._modules = new Map(
@@ -79,16 +78,16 @@ var ModuleManager = {
       })()
     );
 
-    window.document.documentElement.appendChild(browser);
+    window.document.documentElement.appendChild(aBrowser);
 
     // By default all layers are discarded when a browser is set to inactive.
     // GeckoView by default sets browsers to inactive every time they're not
     // visible. To avoid flickering when changing tabs, we preserve layers for
     // all loaded tabs.
-    browser.preserveLayers(true);
+    aBrowser.preserveLayers(true);
     // GeckoView browsers start off as active (for now at least).
     // See bug 1815015 for an attempt at making them start off inactive.
-    browser.docShellIsActive = true;
+    aBrowser.docShellIsActive = true;
 
     WindowEventDispatcher.registerListener(this, [
       "GeckoView:UpdateModuleState",
@@ -112,14 +111,6 @@ var ModuleManager = {
 
       this._modules.clear();
     });
-
-    browser.addEventListener("WillChangeBrowserRemoteness", () =>
-      this.willChangeBrowserRemoteness()
-    );
-
-    browser.addEventListener("DidChangeBrowserRemoteness", () =>
-      this.didChangeBrowserRemoteness()
-    );
   },
 
   onPrintWindow(aParams) {
@@ -421,7 +412,7 @@ class ModuleInfo {
   }
 }
 
-function createBrowser(settings) {
+function createBrowser() {
   const browser = (window.browser = document.createXULElement("browser"));
   // Identify this `<browser>` element uniquely to Marionette, devtools, etc.
   // Use the JSM global to create the permanentKey, so that if the
@@ -435,13 +426,7 @@ function createBrowser(settings) {
   browser.setAttribute("flex", "1");
   browser.setAttribute("maychangeremoteness", "true");
   browser.setAttribute("remote", "true");
-  browser.setAttribute(
-    "remoteType",
-    ChromeUtils.predictRemoteTypeForURI(null, {
-      window,
-      geckoViewSessionContextId: settings.sessionContextId ?? undefined,
-    })
-  );
+  browser.setAttribute("remoteType", E10SUtils.DEFAULT_REMOTE_TYPE);
   browser.setAttribute("messagemanagergroup", "browsers");
   browser.setAttribute("manualactiveness", "true");
 
@@ -460,7 +445,8 @@ function InitLater(fn, object, name) {
 function startup() {
   GeckoViewUtils.initLogging("XUL", window);
 
-  ModuleManager.init([
+  const browser = createBrowser();
+  ModuleManager.init(browser, [
     {
       name: "GeckoViewContent",
       onInit: {
@@ -764,6 +750,14 @@ function startup() {
     },
   ]);
 
+  browser.addEventListener("WillChangeBrowserRemoteness", () =>
+    ModuleManager.willChangeBrowserRemoteness()
+  );
+
+  browser.addEventListener("DidChangeBrowserRemoteness", () =>
+    ModuleManager.didChangeBrowserRemoteness()
+  );
+
   // Allows actors to access ModuleManager.
   window.moduleManager = ModuleManager;
 
@@ -840,7 +834,7 @@ function startup() {
 
   // Move focus to the content window at the end of startup,
   // so things like text selection can work properly.
-  ModuleManager.browser.focus();
+  browser.focus();
 
   InitializationTracker.onInitialized(ChromeUtils.now());
 }

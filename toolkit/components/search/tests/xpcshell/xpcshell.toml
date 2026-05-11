@@ -262,7 +262,7 @@ support-files = [
 
 ["test_sort_orders.js"]
 
-["test_telemetry_event_default.js"]
+["test_telemetry_default.js"]
 
 ["test_userEngine.js"]
 

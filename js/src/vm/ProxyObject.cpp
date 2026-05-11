@@ -18,8 +18,7 @@ using namespace js;
 
 static gc::AllocKind GetProxyGCObjectKind(const JSClass* clasp,
                                           const BaseProxyHandler* handler,
-                                          const Value& priv,
-                                          bool withInlineValues) {
+                                          const Value& priv) {
   MOZ_ASSERT(clasp->isProxyObject());
 
   uint32_t nreserved = JSCLASS_RESERVED_SLOTS(clasp);
@@ -29,10 +28,7 @@ static gc::AllocKind GetProxyGCObjectKind(const JSClass* clasp,
   // JSCLASS_HAS_RESERVED_SLOTS since bug 1360523.
   MOZ_ASSERT(nreserved > 0);
 
-  uint32_t nslots = 0;
-  if (withInlineValues) {
-    nslots = detail::ProxyValueArray::allocCount(nreserved);
-  }
+  uint32_t nslots = detail::ProxyValueArray::allocCount(nreserved);
 
   MOZ_ASSERT(nslots <= NativeObject::MAX_FIXED_SLOTS);
   gc::AllocKind kind = gc::GetGCObjectKind(nslots);
@@ -89,8 +85,7 @@ ProxyObject* ProxyObject::New(JSContext* cx, const BaseProxyHandler* handler,
   }
 #endif
 
-  gc::AllocKind allocKind = GetProxyGCObjectKind(clasp, handler, priv,
-                                                 /* withInlineValues = */ true);
+  gc::AllocKind allocKind = GetProxyGCObjectKind(clasp, handler, priv);
 
   Realm* realm = cx->realm();
 
@@ -140,8 +135,7 @@ ProxyObject* ProxyObject::New(JSContext* cx, const BaseProxyHandler* handler,
 
 gc::AllocKind ProxyObject::allocKindForTenure() const {
   Value priv = private_();
-  return GetProxyGCObjectKind(getClass(), data.handler, priv,
-                              usingInlineValueArray());
+  return GetProxyGCObjectKind(getClass(), data.handler, priv);
 }
 
 void ProxyObject::setCrossCompartmentPrivate(const Value& priv) {

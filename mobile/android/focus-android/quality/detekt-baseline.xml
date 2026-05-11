@@ -3,6 +3,40 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>ForbiddenSuppress:UrlInputFragment.kt$UrlInputFragment$@Suppress("CognitiveComplexMethod")</ID>
+    <ID>HardcodedPaddingUsage:AboutFragment.kt$(10.dp)</ID>
+    <ID>HardcodedPaddingUsage:AboutFragment.kt$(4.dp)</ID>
+    <ID>HardcodedPaddingUsage:AboutFragment.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:BiometricAuthenticationFragmentCompose.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:BiometricAuthenticationFragmentCompose.kt$(end = 10.dp)</ID>
+    <ID>HardcodedPaddingUsage:BiometricAuthenticationFragmentCompose.kt$(start = 24.dp, end = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:BiometricAuthenticationFragmentCompose.kt$(top = 16.dp, bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:CookieBannerReducerItem.kt$(end = 20.dp)</ID>
+    <ID>HardcodedPaddingUsage:LearnMoreLink.kt$(10.dp)</ID>
+    <ID>HardcodedPaddingUsage:LocaleFragmentCompose.kt$(10.dp)</ID>
+    <ID>HardcodedPaddingUsage:LocaleFragmentCompose.kt$(horizontal = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingFirstScreenCompose.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingFirstScreenCompose.kt$(top = 16.dp, start = 16.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingFirstScreenCompose.kt$(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 74.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingFirstScreenCompose.kt$(top = 32.dp, start = 16.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingSecondScreenCompose.kt$(top = 16.dp, start = 16.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingSecondScreenCompose.kt$(top = 32.dp, start = 16.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingSecondScreenCompose.kt$(top = 33.dp, start = 16.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingSecondScreenCompose.kt$(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 74.dp)</ID>
+    <ID>HardcodedPaddingUsage:PreferenceToolTipCompose.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:PromoteSearchWidgetDialogCompose.kt$(10.dp)</ID>
+    <ID>HardcodedPaddingUsage:PromoteSearchWidgetDialogCompose.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:PromoteSearchWidgetDialogCompose.kt$(24.dp)</ID>
+    <ID>HardcodedPaddingUsage:PromoteSearchWidgetDialogCompose.kt$(start = 10.dp, end = 10.dp)</ID>
+    <ID>HardcodedPaddingUsage:PromoteSearchWidgetDialogCompose.kt$(top = 16.dp, start = 16.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:PromoteSearchWidgetDialogCompose.kt$(top = 8.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SettingsScreen.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SitePermissionOptionsFragmentCompose.kt$(10.dp)</ID>
+    <ID>HardcodedPaddingUsage:SitePermissionOptionsFragmentCompose.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SitePermissionOptionsFragmentCompose.kt$(horizontal = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:SitePermissionOptionsFragmentCompose.kt$(start = 55.dp, end = 16.dp, bottom = bottomPadding)</ID>
+    <ID>HardcodedPaddingUsage:SitePermissionOptionsFragmentCompose.kt$(start = 8.dp, end = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:SitePermissionOptionsFragmentCompose.kt$(top = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TopSites.kt$(horizontal = 10.dp)</ID>
     <ID>NoSystemCurrentTimeMillis:AppReviewUtils.kt$AppReviewUtils$System.currentTimeMillis()</ID>
     <ID>NoSystemCurrentTimeMillis:GleanUsageReportingLifecycleObserver.kt$GleanUsageReportingLifecycleObserver$System.currentTimeMillis()</ID>
     <ID>NoSystemCurrentTimeMillis:MainActivity.kt$MainActivity$System.currentTimeMillis()</ID>
@@ -132,7 +166,6 @@
     <ID>UndocumentedPublicClass:VoiceSearchActivity.kt$VoiceSearchActivity : BaseVoiceSearchActivity</ID>
     <ID>UndocumentedPublicFunction:AutocompleteDomainFormatter.kt$AutocompleteDomainFormatter$fun format(url: String): String</ID>
     <ID>UndocumentedPublicFunction:BaseFragment.kt$BaseFragment$fun cancelAnimation()</ID>
-    <ID>UndocumentedPublicFunction:BrowsersCache.kt$BrowsersCache$@Synchronized fun all(context: Context): Browsers</ID>
     <ID>UndocumentedPublicFunction:ClientWrapper.kt$ClientWrapper$@Deprecated("Non-private Client usage should be prevented") fun unwrap(): Client</ID>
     <ID>UndocumentedPublicFunction:CookiesPreference.kt$CookiesPreference$fun updateSummary()</ID>
     <ID>UndocumentedPublicFunction:DefaultBrowserPreference.kt$DefaultBrowserPreference$fun update()</ID>

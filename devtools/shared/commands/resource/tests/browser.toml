@@ -95,6 +95,8 @@ skip-if = [
 
 ["browser_resources_server_sent_events.js"]
 
+["browser_resources_session_history_events.js"]
+
 ["browser_resources_several_resources.js"]
 
 ["browser_resources_sources.js"]

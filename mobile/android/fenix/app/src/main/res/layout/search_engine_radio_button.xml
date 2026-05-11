@@ -28,7 +28,7 @@
         android:layout_gravity="center" />
     <TextView
         android:id="@+id/engine_text"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/radio_button_padding_horizontal"

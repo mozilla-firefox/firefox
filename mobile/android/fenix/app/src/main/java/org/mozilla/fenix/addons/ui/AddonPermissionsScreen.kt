@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import mozilla.components.compose.base.InfoCard
+import mozilla.components.compose.base.InfoType
 import mozilla.components.compose.base.LinkText
 import mozilla.components.compose.base.LinkTextState
 import mozilla.components.feature.addons.Addon
@@ -23,8 +25,6 @@ import mozilla.components.feature.addons.Addon.Companion.isAllURLsPermission
 import mozilla.components.feature.addons.Addon.Permission
 import org.mozilla.fenix.R
 import org.mozilla.fenix.addons.AddonPermissionsUpdateRequest
-import org.mozilla.fenix.compose.InfoCard
-import org.mozilla.fenix.compose.InfoType
 import org.mozilla.fenix.compose.list.SwitchListItem
 import org.mozilla.fenix.compose.list.TextListItem
 import org.mozilla.fenix.compose.settings.SettingsSectionHeader

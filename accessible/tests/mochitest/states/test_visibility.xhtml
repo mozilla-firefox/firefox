@@ -16,75 +16,38 @@
   <script type="application/javascript"
           src="../states.js" />
   <script type="application/javascript"
-          src="../events.js" />
+          src="../promisified-events.js" />
 
   <script type="application/javascript">
   <![CDATA[
-    function openMenu(aID, aSubID, aOffscreenSubID)
-    {
-      this.menuNode = getNode(aID);
-
-      this.eventSeq = [
-        new invokerChecker(EVENT_FOCUS, this.menuNode)
-      ];
-
-      this.invoke = function openMenu_invoke()
-      {
-        this.menuNode.open = true;
-      }
-
-      this.finalCheck = function openMenu_finalCheck()
-      {
-        testStates(aID, 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
-        testStates(aSubID, 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
-        if (aOffscreenSubID)
-          testStates(aOffscreenSubID, STATE_OFFSCREEN, 0, STATE_INVISIBLE);
-      }
-
-      this.getID = function openMenu_invoke()
-      {
-        return "open menu '" + aID + "' and test states";
-      }
-    }
-
-    function closeMenu(aID, aSubID, aSub2ID)
-    {
-      this.menuNode = getNode(aID);
-
-      this.eventSeq = [
-        new invokerChecker(EVENT_FOCUS, document)
-      ];
-
-      this.invoke = function openMenu_invoke()
-      {
-        this.menuNode.open = false;
-      }
-
-      this.finalCheck = function openMenu_finalCheck()
-      {
-        testStates(aID, 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
-        testStates(aSubID, STATE_INVISIBLE, 0, STATE_OFFSCREEN);
-        testStates(aSub2ID, STATE_INVISIBLE, 0, STATE_OFFSCREEN);
-      }
-
-      this.getID = function openMenu_invoke()
-      {
-        return "open menu and test states";
-      }
-    }
-
-    var gQueue = null;
-    function doTest()
-    {
+    async function doTest() {
       testStates("deck_pane2", 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
       testStates("tabs_pane1", 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
       testStates("tabs_pane2", STATE_OFFSCREEN, 0, STATE_INVISIBLE);
 
-      gQueue = new eventQueue();
-      gQueue.push(new openMenu("mi_file1", "mi_file1.1"));
-      gQueue.push(new openMenu("mi_file1.2", "mi_file1.2.1", "mi_file1.2.4"));
-      gQueue.push(new closeMenu("mi_file1", "mi_file1.1", "mi_file1.2.1"));
-      gQueue.invoke(); // Will call SimpleTest.finish();
+      let menuNode1 = getNode("mi_file1");
+      let focused = waitForEvent(EVENT_FOCUS, menuNode1);
+      menuNode1.open = true;
+      await focused;
+      testStates("mi_file1", 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
+      testStates("mi_file1.1", 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
+
+      let menuNode2 = getNode("mi_file1.2");
+      focused = waitForEvent(EVENT_FOCUS, menuNode2);
+      menuNode2.open = true;
+      await focused;
+      testStates("mi_file1.2", 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
+      testStates("mi_file1.2.1", 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
+      testStates("mi_file1.2.4", STATE_OFFSCREEN, 0, STATE_INVISIBLE);
+
+      focused = waitForEvent(EVENT_FOCUS, document);
+      menuNode1.open = false;
+      await focused;
+      testStates("mi_file1", 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
+      testStates("mi_file1.1", STATE_INVISIBLE, 0, STATE_OFFSCREEN);
+      testStates("mi_file1.2.1", STATE_INVISIBLE, 0, STATE_OFFSCREEN);
+
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

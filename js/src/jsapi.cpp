@@ -592,14 +592,11 @@ static void ReleaseAssertObjectHasNoWrappers(JSContext* cx,
  *
  * Not for beginners or the squeamish.
  *
- * Sometimes a web spec requires us to transplant an object from one
- * compartment to another, like when a DOM node is inserted into a document in
- * another window and thus gets "adopted". We cannot literally change the
+ * Sometimes we need to transplant an object from one compartment to another,
+ * for example during navigation when the WindowProxy moves into the new
+ * Window's compartment. We cannot literally change the
  * `.compartment()` of a `JSObject`; that would break the compartment
  * invariants. However, as usual, we have a workaround using wrappers.
- *
- * Of all the wrapper-based workarounds we do, it's safe to say this is the
- * most spectacular and questionable.
  *
  * `JS_TransplantObject(cx, origobj, target)` changes `origobj` into a
  * simulacrum of `target`, using highly esoteric means. To JS code, the effect
@@ -611,12 +608,7 @@ static void ReleaseAssertObjectHasNoWrappers(JSContext* cx,
  * Thus, to "transplant" an object from one compartment to another:
  *
  * 1.  Let `origobj` be the object that you want to move. First, create a
- *     clone of it, `target`, in the destination compartment.
- *
- *     In our DOM adoption example, `target` will be a Node of the same type as
- *     `origobj`, same content, but in the adopting document.  We're not done
- *     yet: the spec for DOM adoption requires that `origobj.ownerDocument`
- *     actually change. All we've done so far is make a copy.
+ *     replacement for it, `target`, in the destination compartment.
  *
  * 2.  Call `JS_TransplantObject(cx, origobj, target)`. This typically turns
  *     `origobj` into a wrapper for `target`, so that any JS code that has a
@@ -625,14 +617,10 @@ static void ReleaseAssertObjectHasNoWrappers(JSContext* cx,
  *     changed into wrappers for `target`, extending the illusion to those
  *     compartments as well.
  *
- * During navigation, we use the above technique to transplant the WindowProxy
- * into the new Window's compartment.
- *
  * A few rules:
  *
- * -   `origobj` and `target` must be two distinct objects of the same
- *     `JSClass`.  Some classes may not support transplantation; WindowProxy
- *     objects and DOM nodes are OK.
+ * -   `origobj` and `target` must be two distinct proxy objects of the same
+ *     allocation kind (size).
  *
  * -   `target` should be created specifically to be passed to this function.
  *     There must be no existing cross-compartment wrappers for it; ideally
@@ -648,13 +636,15 @@ static void ReleaseAssertObjectHasNoWrappers(JSContext* cx,
  *
  * We don't have a good way to recover from failure in this function, so
  * we intentionally crash instead.
+ *
+ * Historically, transplantation also supported native (non-proxy) objects such
+ * as DOM nodes, but fortunately this is no longer the case.
  */
 
 static void CheckTransplantObject(JSObject* obj) {
-#ifdef DEBUG
-  MOZ_ASSERT(!obj->is<CrossCompartmentWrapperObject>());
+  MOZ_RELEASE_ASSERT(obj->is<ProxyObject>());
+  MOZ_RELEASE_ASSERT(!obj->is<CrossCompartmentWrapperObject>());
   JS::AssertCellIsNotGray(obj);
-#endif
 }
 
 JS_PUBLIC_API JSObject* JS_TransplantObject(JSContext* cx, HandleObject origobj,

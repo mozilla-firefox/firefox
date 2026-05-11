@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include "AOMDecoder.h"
+#include "MediaCapabilities.h"
 #include "MediaInfo.h"
 #include "MediaMIMETypes.h"
 #include "VPXDecoder.h"
@@ -15,7 +16,6 @@
 #include "mozilla/ErrorResult.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Result.h"
-#include "mozilla/StaticPrefs_media.h"
 #include "mozilla/Variant.h"
 #include "mozilla/dom/MediaCapabilitiesBinding.h"
 #include "mozilla/dom/Promise.h"
@@ -68,7 +68,8 @@ ValidationResult CheckMIMETypeSupport(
     const MediaExtendedMIMEType& aMime,
     const MediaType& aEncodingOrDecodingType,
     const Maybe<dom::ColorGamut>& aColorGamut,
-    const Maybe<dom::TransferFunction>& aTransferFunction) {
+    const Maybe<dom::TransferFunction>& aTransferFunction,
+    const BehaviorConfig& aBehavior) {
   // Step 1: If encodingOrDecodingType is webrtc (MediaEncodingType) or
   // webrtc (MediaDecodingType) and mimeType is not one that is used with
   // RTP (as defined in the specifications of the corresponding RTP payload
@@ -86,8 +87,7 @@ ValidationResult CheckMIMETypeSupport(
   // unsupported.
   // Step 3: If transferFunction is present and is not valid for
   // mimeType, return unsupported.
-  if ((aColorGamut || aTransferFunction) &&
-      StaticPrefs::media_mediacapabilities_color_space_validation_enabled()) {
+  if ((aColorGamut || aTransferFunction) && !aBehavior.mLegacy) {
     // colorGamut and transferFunction are video-only properties
     MOZ_ASSERT_IF(aMime.Type().HasAudioMajorType(), !aColorGamut);
     MOZ_ASSERT_IF(aMime.Type().HasAudioMajorType(), !aTransferFunction);
@@ -133,8 +133,6 @@ ValidationResult CheckMIMETypeSupport(
 
 // Checks MIME type validity as per:
 // https://w3c.github.io/media-capabilities/#check-mime-type-validity
-// NOTE: Open issue, https://github.com/w3c/media-capabilities/issues/238
-// "Do WebRTC encoding/decoding types have the single-codec restrictions?"
 static ValidationResult CheckMIMETypeValidity(
     const MediaExtendedMIMEType& aMime, const AVType& aAVType,
     const MediaType& aMediaType) {
@@ -180,16 +178,17 @@ static ValidationResult CheckMIMETypeValidity(
   //         single media codec and the parameters member of mimeType is not
   //         empty, return false.
   //
-  // NOTE: For WebRTC, this rejects fmtp attributes (e.g., profile-level-id,
-  // packetization-mode) passed as MIME type parameters on single-codec types.
-  // The spec requires this rejection, but the examples used in the WPTs
-  // contradict it by using fmtp attributes. Chrome also allows them through.
-  // We reject per spec for now; a followup will handle fmtp attributes
-  // once the spec is updated. See: bug 2024767 and the following discussions:
-  // https://github.com/w3c/media-capabilities/issues/235
-  // https://github.com/w3c/media-capabilities/issues/238
+  // NOTE: WebRTC single-codec types (e.g. video/h264, audio/opus) commonly
+  // carry fmtp attributes as MIME parameters (e.g. profile-level-id,
+  // packetization-mode). The older (≈2024) spec text and WPT examples both
+  // treat these as valid, and Chrome accepts them. We therefore skip this
+  // rejection for WebRTC types and only enforce it for non-WebRTC types
+  // (file, media-source) where such parameters have no defined semantics.
+  // See: bug 2024767, https://github.com/w3c/media-capabilities/issues/235, and
+  // https://github.com/w3c/media-capabilities/issues/238.
   const size_t numParams = aMime.GetParameterCount();
-  if (IsSingleCodecType(aMime) && numParams != 0) {
+  if (IsSingleCodecType(aMime) && numParams != 0 &&
+      !IsMediaTypeWebRTC(aMediaType)) {
     ValidationResult err = Err(ValidationError::SingleCodecHasParams);
     LOG(
         ("[Invalid MIME Validity #2, %s] Rejecting '%s' (single codec type "
@@ -255,7 +254,8 @@ ValidationResult IsValidAudioConfiguration(const AudioConfiguration& aConfig,
 // configuration, the following steps MUST be run...
 template <typename CodingType>
 ValidationResult IsValidVideoConfiguration(const VideoConfiguration& aConfig,
-                                           const CodingType& aType) {
+                                           const CodingType& aType,
+                                           const BehaviorConfig& aBehavior) {
   static_assert(std::is_same_v<std::decay_t<CodingType>, MediaEncodingType> ||
                     std::is_same_v<CodingType, MediaDecodingType>,
                 "tType must be MediaEncodingType or MediaDecodingType");
@@ -326,9 +326,7 @@ ValidationResult IsValidVideoConfiguration(const VideoConfiguration& aConfig,
     // ScalabilityMode is only applicable to MediaEncodingConfiguration
     // for type webrtc.
     if (aConfig.mScalabilityMode.WasPassed() &&
-        aType != MediaEncodingType::Webrtc &&
-        StaticPrefs::
-            media_mediacapabilities_scalability_mode_validation_enabled()) {
+        aType != MediaEncodingType::Webrtc && !aBehavior.mLegacy) {
       ValidationResult err = Err(ValidationError::InapplicableMember);
       LOG(
           ("[Invalid VideoConfiguration (Scalability Mode, %s) #2] Rejecting "
@@ -338,8 +336,7 @@ ValidationResult IsValidVideoConfiguration(const VideoConfiguration& aConfig,
       return err;
     }
     // colorGamut is only applicable to MediaDecodingConfiguration
-    if (aConfig.mColorGamut.WasPassed() &&
-        StaticPrefs::media_mediacapabilities_color_space_validation_enabled()) {
+    if (aConfig.mColorGamut.WasPassed() && !aBehavior.mLegacy) {
       ValidationResult err = Err(ValidationError::InapplicableMember);
       LOG(("[Invalid VideoConfiguration (Color Gamut, %s) #2] Rejecting '%s'\n",
            EnumValueToString(err.unwrapErr()),
@@ -347,8 +344,7 @@ ValidationResult IsValidVideoConfiguration(const VideoConfiguration& aConfig,
       return err;
     }
     // transferFunction is only applicable to MediaDecodingConfiguration
-    if (aConfig.mTransferFunction.WasPassed() &&
-        StaticPrefs::media_mediacapabilities_color_space_validation_enabled()) {
+    if (aConfig.mTransferFunction.WasPassed() && !aBehavior.mLegacy) {
       ValidationResult err = Err(ValidationError::InapplicableMember);
       LOG(
           ("[Invalid VideoConfiguration (Transfer Function, %s) #2] Rejecting "
@@ -379,24 +375,26 @@ ValidationResult IsValidVideoConfiguration(const VideoConfiguration& aConfig,
 }
 
 template ValidationResult IsValidVideoConfiguration<MediaEncodingType>(
-    const VideoConfiguration&, const MediaEncodingType&);
+    const VideoConfiguration&, const MediaEncodingType&, const BehaviorConfig&);
 template ValidationResult IsValidVideoConfiguration<MediaDecodingType>(
-    const VideoConfiguration&, const MediaDecodingType&);
+    const VideoConfiguration&, const MediaDecodingType&, const BehaviorConfig&);
 
 ValidationResult IsValidVideoConfiguration(const VideoConfiguration& aConfig,
-                                           const MediaType& aType) {
+                                           const MediaType& aType,
+                                           const BehaviorConfig& aBehavior) {
   return aType.match(
       [&](const MediaEncodingType& t) {
-        return IsValidVideoConfiguration(aConfig, t);
+        return IsValidVideoConfiguration(aConfig, t, aBehavior);
       },
       [&](const MediaDecodingType& t) {
-        return IsValidVideoConfiguration(aConfig, t);
+        return IsValidVideoConfiguration(aConfig, t, aBehavior);
       });
 }
 
 // https://w3c.github.io/media-capabilities/#mediaconfiguration
 ValidationResult IsValidMediaConfiguration(const MediaConfiguration& aConfig,
-                                           const MediaType& aType) {
+                                           const MediaType& aType,
+                                           const BehaviorConfig& aBehavior) {
   // Step 1: audio and/or video MUST exist.
   if (!aConfig.mVideo.WasPassed() && !aConfig.mAudio.WasPassed()) {
     ValidationResult err = Err(ValidationError::MissingType);
@@ -419,7 +417,8 @@ ValidationResult IsValidMediaConfiguration(const MediaConfiguration& aConfig,
 
   // Step 3: video MUST be a valid video configuration if it exists.
   if (aConfig.mVideo.WasPassed()) {
-    auto rv = IsValidVideoConfiguration(aConfig.mVideo.Value(), aType);
+    auto rv =
+        IsValidVideoConfiguration(aConfig.mVideo.Value(), aType, aBehavior);
     if (rv.isErr()) {
       LOG(("[Invalid Media Configuration (Invalid Video, %s) #3] '%s'",
            EnumValueToString(rv.unwrapErr()),
@@ -432,18 +431,22 @@ ValidationResult IsValidMediaConfiguration(const MediaConfiguration& aConfig,
 
 // No specific validation steps in the spec...
 ValidationResult IsValidMediaEncodingConfiguration(
-    const MediaEncodingConfiguration& aConfig) {
-  return IsValidMediaConfiguration(aConfig, AsVariant(aConfig.mType));
+    const MediaEncodingConfiguration& aConfig,
+    const BehaviorConfig& aBehavior) {
+  return IsValidMediaConfiguration(aConfig, AsVariant(aConfig.mType),
+                                   aBehavior);
 }
 
 // https://w3c.github.io/media-capabilities/#mediaconfiguration
 ValidationResult IsValidMediaDecodingConfiguration(
-    const MediaDecodingConfiguration& aConfig) {
+    const MediaDecodingConfiguration& aConfig,
+    const BehaviorConfig& aBehavior) {
   // For a MediaDecodingConfiguration to be a valid MediaDecodingConfiguration,
   // all of the following conditions MUST be true:
 
   // Step 1: It MUST be a valid MediaConfiguration.
-  auto base = IsValidMediaConfiguration(aConfig, AsVariant(aConfig.mType));
+  auto base =
+      IsValidMediaConfiguration(aConfig, AsVariant(aConfig.mType), aBehavior);
   if (base.isErr()) {
     LOG(
         ("[Invalid MediaDecodingConfiguration (Invalid MediaConfiguration, %s) "

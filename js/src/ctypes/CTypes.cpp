@@ -7427,7 +7427,7 @@ void CClosure::Trace(JSTracer* trc, JSObject* obj) {
   TraceEdge(trc, &cinfo->closureObj, "closureObj");
   TraceEdge(trc, &cinfo->typeObj, "typeObj");
   TraceEdge(trc, &cinfo->jsfnObj, "jsfnObj");
-  TraceNullableEdge(trc, &cinfo->thisObj, "thisObj");
+  TraceEdge(trc, &cinfo->thisObj, "thisObj");
 }
 
 void CClosure::Finalize(JS::GCContext* gcx, JSObject* obj) {

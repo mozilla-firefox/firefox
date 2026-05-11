@@ -32,6 +32,6 @@ Win11PinToTaskBarResult PinCurrentAppToTaskbarWin11(
     bool aCheckOnly, const nsAString& aAppUserModelId,
     const bool aFireAndForget);
 
-Win11PinToTaskBarResult IsCurrentAppPinnedToTaskbarWin11(bool aCheckOnly);
+Win11PinToTaskBarResult IsCurrentAppPinnedToTaskbarWin11();
 
 #endif  // SHELL_WINDOWS11TASKBARPINNING_H_

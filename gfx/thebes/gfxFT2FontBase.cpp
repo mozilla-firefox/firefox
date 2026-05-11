@@ -353,6 +353,12 @@ void gfxFT2FontBase::InitMetrics() {
   mMetrics.maxAdvance = FLOAT_FROM_26_6(ftMetrics.max_advance);
   gfxFloat lineHeight = FLOAT_FROM_26_6(ftMetrics.height);
 
+  // Negative maxDescent here almost certainly indicates a font with a sign
+  // error in the descent field of the 'hhea' table; invert it.
+  if (mMetrics.maxDescent < 0.0) {
+    mMetrics.maxDescent = -mMetrics.maxDescent;
+  }
+
   gfxFloat emHeight;
   // Scale for vertical design metric conversion: pixels per design unit.
   // If this remains at 0.0, we can't use metrics from OS/2 etc.

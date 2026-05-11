@@ -88,40 +88,30 @@ window.Application = {
       canDebugServiceWorkers && services.features.doesDebuggerSupportWorkers
     );
 
-    this.onResourceAvailable = this.onResourceAvailable.bind(this);
-    await this._commands.resourceCommand.watchResources(
-      [this._commands.resourceCommand.TYPES.DOCUMENT_EVENT],
-      {
-        onAvailable: this.onResourceAvailable,
-      }
+    const { resourceCommand } = this._commands;
+    this._watchedResources = [resourceCommand.TYPES.DOCUMENT_EVENT];
+    const isSessionHistoryPanelEnabled = Services.prefs.getBoolPref(
+      "devtools.application.sessionHistory.enabled",
+      false
     );
-
-    if (
-      Services.prefs.getBoolPref(
-        "devtools.application.sessionHistory.enabled",
-        false
-      )
-    ) {
-      // TODO: This should be moved to a resource (see Bug 2014064)
-      this._sessionHistory = BrowsingContext.get(
-        this._commands.targetCommand.targetFront.browsingContextID
-      ).sessionHistory;
-      this.actions.updateSessionHistory(this._sessionHistory);
-      this._sessionHistoryListener = {
-        QueryInterface: ChromeUtils.generateQI([
-          "nsISHistoryListener",
-          "nsISupportsWeakReference",
-        ]),
-        OnHistoryCommit: () => {
-          this.actions.updateSessionHistory(this._sessionHistory);
-        },
-        OnEntryTitleUpdated: entry => {
-          this.actions.updateSessionHistoryEntry(entry);
-        },
-      };
-
-      this._sessionHistory.addSHistoryListener(this._sessionHistoryListener);
+    if (isSessionHistoryPanelEnabled) {
+      if (
+        resourceCommand.hasResourceCommandSupport(
+          resourceCommand.TYPES.SESSION_HISTORY
+        )
+      ) {
+        this._watchedResources.push(resourceCommand.TYPES.SESSION_HISTORY);
+      } else {
+        this.actions.disableSessionHistory();
+      }
     }
+
+    this.onResourcesAvailable = this.onResourcesAvailable.bind(this);
+    this.onResourcesUpdated = this.onResourcesUpdated.bind(this);
+    await resourceCommand.watchResources(this._watchedResources, {
+      onAvailable: this.onResourcesAvailable,
+      onUpdated: this.onResourcesUpdated,
+    });
 
     // Render the root Application component.
     this.mount = document.querySelector("#mount");
@@ -147,17 +137,40 @@ window.Application = {
     this.actions.resetManifest();
   },
 
-  onResourceAvailable(resources) {
-    // Only consider top level document, and ignore remote iframes top document
-    const hasDocumentDomComplete = resources.some(
-      resource =>
-        resource.resourceType ===
-          this._commands.resourceCommand.TYPES.DOCUMENT_EVENT &&
+  onResourcesAvailable(resources) {
+    const { resourceCommand } = this._commands;
+    for (const resource of resources) {
+      if (
+        resource.resourceType === resourceCommand.TYPES.DOCUMENT_EVENT &&
         resource.name === "dom-complete" &&
+        // Only consider top level document, and ignore remote iframes top document
         resource.targetFront.isTopLevel
-    );
-    if (hasDocumentDomComplete) {
-      this.handleOnNavigate(); // update domain and manifest for the new target
+      ) {
+        this.handleOnNavigate(); // update domain and manifest for the new target
+      }
+
+      if (resource.resourceType === resourceCommand.TYPES.SESSION_HISTORY) {
+        this.actions.setAvailableSessionHistory(resource);
+      }
+    }
+  },
+
+  onResourcesUpdated(updates) {
+    const { resourceCommand } = this._commands;
+    for (const { resource, update } of updates) {
+      if (resource.resourceType === resourceCommand.TYPES.SESSION_HISTORY) {
+        // A single entry changed (e.g. title or URL update for an existing entry).
+        if (update.resourceUpdates.sessionHistoryEntry) {
+          this.actions.updateSessionHistoryEntry(
+            update.resourceUpdates.sessionHistoryEntry
+          );
+        } else if (update.resourceUpdates.sessionHistory) {
+          // The full session history changed (e.g. navigation added or removed entries).
+          this.actions.updateSessionHistory(
+            update.resourceUpdates.sessionHistory
+          );
+        }
+      }
     }
   },
 
@@ -167,16 +180,10 @@ window.Application = {
 
     this.workersListener.removeListener();
 
-    this._commands.resourceCommand.unwatchResources(
-      [this._commands.resourceCommand.TYPES.DOCUMENT_EVENT],
-      { onAvailable: this.onResourceAvailable }
-    );
-
-    if (this._sessionHistory) {
-      this._sessionHistory.removeSHistoryListener(this._sessionHistoryListener);
-      this._sessionHistory = null;
-      this._sessionHistoryListener;
-    }
+    this._commands.resourceCommand.unwatchResources(this._watchedResources, {
+      onAvailable: this.onResourcesAvailable,
+      onUpdated: this.onResourcesUpdated,
+    });
 
     unmountComponentAtNode(this.mount);
     this.mount = null;

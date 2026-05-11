@@ -3255,6 +3255,17 @@
   value: false
   mirror: always
 
+# Whether to require system permission for geolocation access.
+# See also `geo.prompt.open_system_prefs` for opening the system preferences dialog.
+- name: dom.geolocation.require_system_permission.enabled
+  type: bool
+#ifdef XP_WIN
+  value: true
+#else
+  value: false
+#endif
+  mirror: always
+
 # <img loading=lazy sizes=auto>
 # https://html.spec.whatwg.org/multipage/embedded-content.html#allows-auto-sizes
 - name: dom.image.sizes_auto.enabled
@@ -4041,6 +4052,15 @@
   value: true
   mirror: always
 #endif
+
+# Whether the |unadjustedMovement| dictionary member of PointerLockOptions
+# is honored. When true, requestPointerLock({unadjustedMovement: true})
+# asks the widget to deliver raw, unaccelerated mouse delta in mouse events
+# while the lock is active.
+- name: dom.pointer-lock.unadjusted-movement.enabled
+  type: bool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
 
 # re-SAB: Whether to allow postMessage of a SharedArrayBuffer if various
 # preconditions related to COOP and COEP are met
@@ -10812,6 +10832,13 @@
   mirror: always
   rust: true
 
+# Whether the ViewTimeline WebIDL interface is enabled.
+- name: layout.css.scroll-driven-animations.viewtimeline.enabled
+  type: bool
+  value: false
+  mirror: always
+  rust: true
+
 # When selecting the snap point for CSS scroll snapping, the velocity of the
 # scroll frame is clamped to this speed, in CSS pixels / s.
 - name: layout.css.scroll-snap.prediction-max-velocity
@@ -11785,20 +11812,27 @@
   value: false
   mirror: always
 
-# Enable colorGamut and transferFunction validation in Media Capabilities.
-# When disabled, these fields are ignored rather than validated against the
-# codec's color space info or rejected when used with inapplicable types.
-- name: media.mediacapabilities.color-space-validation.enabled
-  type: RelaxedAtomicBool
-  value: true
+# Comma-separated hostnames (with optional `*.` wildcard prefix). Hosts in
+# this list get WebRTC Media Capabilities support even when the global pref
+# above is false.
+- name: media.mediacapabilities.webrtc.enabled.allowlist
+  type: DataMutexString
+  value: ""
   mirror: always
 
-# Enable scalabilityMode validation for non-WebRTC encoding in Media Capabilities.
-# When disabled, scalabilityMode in a non-WebRTC MediaEncodingConfiguration
-# is silently ignored rather than causing a TypeError.
-- name: media.mediacapabilities.scalability-mode-validation.enabled
+# When true (or when the page host is in legacy.allowlist), Media Capabilities
+# skips the colorGamut, transferFunction, and scalabilityMode validation paths
+# that would otherwise reject "inapplicable member" or "color space mismatch".
+- name: media.mediacapabilities.legacy.enabled
   type: RelaxedAtomicBool
-  value: true
+  value: false
+  mirror: always
+
+# Comma-separated hostnames (with optional `*.` wildcard prefix). Hosts in
+# this list are treated as legacy mode regardless of the global pref above.
+- name: media.mediacapabilities.legacy.allowlist
+  type: DataMutexString
+  value: ""
   mirror: always
 
 # Controls smooth attribute for WebRTC EncodeInfo
@@ -17985,6 +18019,13 @@
   value: true
   mirror: always
 
+# WebAuthn Related Origin Requests
+# 0: disabled, 1: enabled without prompt, 2: enabled with prompt
+- name: security.webauthn.related_origin_requests_mode
+  type: RelaxedAtomicUint32
+  value: 2
+  mirror: always
+
 # Dispatch WebAuthn requests to virtual authenticators (mutually exclusive
 # with and webauthn_enable_usbtoken)
 - name: security.webauth.webauthn_enable_softtoken
@@ -19800,6 +19841,15 @@
   mirror: always
 
 #ifdef XP_MACOSX
+
+# If true, use native NSPopover for arrow panel popups (type="arrow") on macOS
+# Someone like Zen browser will use this pref by default, so
+# please take this into account when you change the behavior of
+# native popover. Note: Only panels with type="arrow" will use NSPopover.
+- name: widget.macos.native-popovers
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
 
 # Whether to shift by the menubar height on fullscreen mode.
 # 0: never

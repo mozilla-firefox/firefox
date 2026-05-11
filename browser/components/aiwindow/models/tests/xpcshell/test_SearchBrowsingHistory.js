@@ -29,11 +29,18 @@ add_task(async function setup() {
     sb.restore();
     Services.prefs.clearUserPref("browser.ml.enable");
     Services.prefs.clearUserPref("places.semanticHistory.featureGate");
+    Services.prefs.clearUserPref(
+      "places.semanticHistory.smartwindow.featureGate"
+    );
     Services.prefs.clearUserPref("browser.search.region");
   });
 
   Services.prefs.setBoolPref("browser.ml.enable", true);
   Services.prefs.setBoolPref("places.semanticHistory.featureGate", true);
+  Services.prefs.setBoolPref(
+    "places.semanticHistory.smartwindow.featureGate",
+    true
+  );
   Services.prefs.setCharPref("browser.search.region", "US");
 
   await PlacesUtils.history.clear();
@@ -523,7 +530,7 @@ add_task(async function test_hybrid_search_path() {
   const semanticManager = getPlacesSemanticHistoryManager();
 
   sb.stub(semanticManager, "hasSufficientEntriesForSearching").resolves(true);
-  sb.stub(semanticManager, "canUseSemanticSearch").value(true);
+  sb.stub(semanticManager, "isEnabledForSmartWindow").value(true);
 
   sb.stub(semanticManager.embedder, "ensureEngine").resolves();
   sb.stub(semanticManager.embedder, "embed").resolves({
@@ -612,7 +619,7 @@ add_task(async function test_hybrid_search_rrf_ranking_prefers_shared_result() {
   const semanticManager = getPlacesSemanticHistoryManager();
 
   sb.stub(semanticManager, "hasSufficientEntriesForSearching").resolves(true);
-  sb.stub(semanticManager, "canUseSemanticSearch").value(true);
+  sb.stub(semanticManager, "isEnabledForSmartWindow").value(true);
 
   sb.stub(semanticManager.embedder, "ensureEngine").resolves();
   sb.stub(semanticManager.embedder, "embed").resolves({

@@ -390,8 +390,10 @@ add_task(async function test_show_locations() {
     "Locations component should be present"
   );
 
-  let headerButton = subview.querySelector(".panel-info-button");
-  Assert.ok(headerButton, "Header button should be present in locations view");
+  Assert.ok(
+    !subview.querySelector(".panel-info-button"),
+    "Info button should not be present in locations view"
+  );
 
   // Close the panel
   let panelHiddenPromise = waitForPanelEvent(document, "popuphidden");

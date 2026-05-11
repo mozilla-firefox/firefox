@@ -149,6 +149,74 @@ class TestResourceMonitor(unittest.TestCase):
         v = monitor.max_memory_percent()
         self.assertIsInstance(v, float)
 
+    def test_lsan_events(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+
+        monitor.start()
+        time.sleep(0.1)
+
+        # Direct leak with a stack and an allow-list match -> yellow.
+        SystemResourceMonitor.lsan_leak({
+            "time": int(time.time() * 1000),
+            "kind": "Direct",
+            "bytes": 128,
+            "objects": 2,
+            "stack": [{"function": "Foo::Bar"}, {"function": "main"}],
+            "scope": "browser/foo",
+            "allowed_match": "Foo::Bar",
+        })
+
+        # Indirect leak without allow-list match -> orange, no stack/scope.
+        SystemResourceMonitor.lsan_leak({
+            "time": int(time.time() * 1000),
+            "kind": "Indirect",
+            "bytes": 32,
+            "objects": 1,
+        })
+
+        # Allow-listed summary -> yellow.
+        SystemResourceMonitor.lsan_summary({
+            "time": int(time.time() * 1000),
+            "bytes": 160,
+            "allocations": 3,
+            "allowed": True,
+        })
+
+        time.sleep(0.1)
+        monitor.stop()
+
+        leak_events = [e for e in monitor.events if e[1] == "LSan Leak"]
+        summary_events = [e for e in monitor.events if e[1] == "LSan Summary"]
+        self.assertEqual(len(leak_events), 2)
+        self.assertEqual(len(summary_events), 1)
+
+        direct, indirect = leak_events[0][2], leak_events[1][2]
+        self.assertEqual(direct["type"], "LSanLeak")
+        self.assertEqual(direct["kind"], "Direct")
+        self.assertEqual(direct["bytes"], 128)
+        self.assertEqual(direct["objects"], 2)
+        self.assertEqual(direct["scope"], "browser/foo")
+        self.assertEqual(direct["allowed_match"], "Foo::Bar")
+        self.assertEqual(direct["color"], "yellow")
+        self.assertEqual(direct["stack"][0]["function"], "Foo::Bar")
+
+        self.assertEqual(indirect["kind"], "Indirect")
+        self.assertEqual(indirect["color"], "orange")
+        self.assertNotIn("stack", indirect)
+        self.assertNotIn("scope", indirect)
+        self.assertNotIn("allowed_match", indirect)
+
+        summary = summary_events[0][2]
+        self.assertEqual(summary["type"], "LSanSummary")
+        self.assertEqual(summary["bytes"], 160)
+        self.assertEqual(summary["allocations"], 3)
+        self.assertEqual(summary["color"], "yellow")
+        self.assertTrue(summary["allowed"])
+
+        markers = monitor.as_profile()["threads"][0]["markers"]["data"]
+        self.assertTrue(any(m.get("type") == "LSanLeak" for m in markers))
+        self.assertTrue(any(m.get("type") == "LSanSummary" for m in markers))
+
     def test_as_profile(self):
         monitor = SystemResourceMonitor(poll_interval=0.25)
 

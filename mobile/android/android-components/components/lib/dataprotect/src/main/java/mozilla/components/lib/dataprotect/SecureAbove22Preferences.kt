@@ -9,6 +9,7 @@ import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.util.Base64
 import androidx.core.content.edit
+import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.support.base.log.logger.Logger
 import java.nio.charset.StandardCharsets
 import java.security.GeneralSecurityException
@@ -60,10 +61,14 @@ private interface KeyValuePreferences {
  * @param forceInsecure A flag indicating whether to force plaintext storage. If set to `true`,
  * [InsecurePreferencesImpl21] will be used as a storage layer
  */
-class SecureAbove22Preferences(context: Context, name: String, forceInsecure: Boolean = false) :
-    KeyValuePreferences {
+class SecureAbove22Preferences(
+    context: Context,
+    name: String,
+    forceInsecure: Boolean = false,
+    crashReporting: CrashReporting? = null,
+) : KeyValuePreferences {
     private val impl = if (!forceInsecure) {
-        SecurePreferencesImpl23(context, name)
+        SecurePreferencesImpl23(context, name, crashReporting = crashReporting)
     } else {
         InsecurePreferencesImpl21(context, name)
     }
@@ -149,6 +154,7 @@ private class SecurePreferencesImpl23(
     context: Context,
     name: String,
     migrateFromPlaintextStorage: Boolean = true,
+    crashReporting: CrashReporting? = null,
 ) : KeyValuePreferences {
     companion object {
         private const val SUFFIX = "_kp_post_m"
@@ -157,7 +163,7 @@ private class SecurePreferencesImpl23(
 
     private val logger = Logger("SecurePreferencesImpl23")
     private val prefs = context.getSharedPreferences("$name$SUFFIX", MODE_PRIVATE)
-    private val keystore by lazy { Keystore(context.packageName) }
+    private val keystore by lazy { Keystore(context.packageName, crashReporting = crashReporting) }
 
     init {
         if (migrateFromPlaintextStorage && prefs.all.isEmpty()) {

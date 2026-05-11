@@ -54,8 +54,8 @@ when a given version reaches the end of its Beta cycle. This is the primary prod
 While a release is live, interim updates (dot releases) are used to ship important bug fixes prior to
 the next major release. These can happen on an as-needed basis when there is an important-enough
 :ref:`driver <dot release drivers>` to do so (such as a critical bug severely impairing the usability
-of the product for some users). In order to provide better predictability, there is also a planned
-dot release scheduled for two weeks after the initial go-live for less-critical fixes and other
+of the product for some users). In order to provide better predictability, there are also three planned
+dot releases scheduled for the three weeks following the initial go-live for less-critical fixes and other
 :ref:`ride-along fixes <ride alongs>` deemed low-risk enough to include.
 
 .. note::
@@ -160,8 +160,12 @@ What’s new page & release notes ready                 Beta W4          Wednesd
 Firefox Release Candidate build creation              Beta W4          Wednesday         End of the current Beta cycle in preparation for the upcoming Firefox Release
 Firefox go-live @ 6am PT                              Release W1       Tuesday           Day 1 of the new Firefox Release to 25% of Release users
 Firefox Release bump to 100%                          Release W1       Thursday          Increase deployment of new Firefox Release to 100% of Release users
-Scheduled dot release approval requests due           Release W2       Friday            All requests required by EOD
-Scheduled dot release go-live                         Release W3       Tuesday           By default, ships when ready. Specific time available upon request.
+Scheduled dot release 1 approval requests due         Release W1       Friday            All requests required by EOD
+Scheduled dot release 1 go-live                       Release W2       Tuesday           By default, ships when ready. Specific time available upon request.
+Scheduled dot release 2 approval requests due         Release W2       Friday            All requests required by EOD
+Scheduled dot release 2 go-live                       Release W3       Tuesday           By default, ships when ready. Specific time available upon request.
+Scheduled dot release 3 approval requests due         Release W3       Friday            All requests required by EOD
+Scheduled dot release 3 go-live                       Release W4       Tuesday           By default, ships when ready. Specific time available upon request.
 ===================================================== ================ ================= =======================================================================================
 
 

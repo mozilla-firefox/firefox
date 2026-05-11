@@ -35,13 +35,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.map
+import mozilla.components.compose.base.PromoCard
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.utils.BackInvokedHandler
 import org.mozilla.fenix.R
-import org.mozilla.fenix.compose.PromoCard
 import org.mozilla.fenix.compose.list.SwitchListItem
 import org.mozilla.fenix.settings.labs.FeatureKey
 import org.mozilla.fenix.settings.labs.LabsFeature

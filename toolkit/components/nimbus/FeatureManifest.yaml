@@ -5524,6 +5524,13 @@ ipProtection:
         pref: browser.ipProtection.enabled
       description: >-
         Enables the IP Protection feature.
+    bandwidthMax:
+      type: int
+      setPref:
+        branch: default
+        pref: browser.ipProtection.bandwidth.maxInGb
+      description: >-
+        Maximum bandwidth allowance in GB for messaging.
 
 webApps:
   description: Enables or disables web apps.

@@ -158,7 +158,7 @@ class CookiePersistentStorage final : public CookieStorage,
   nsCOMPtr<mozIStorageAsyncStatement> mStmtDelete;
   nsCOMPtr<mozIStorageAsyncStatement> mStmtUpdate;
 
-  CorruptFlag mCorruptFlag;
+  Atomic<CorruptFlag, Relaxed> mCorruptFlag;
 
   // Various parts representing asynchronous read state. These are useful
   // while the background read is taking place.

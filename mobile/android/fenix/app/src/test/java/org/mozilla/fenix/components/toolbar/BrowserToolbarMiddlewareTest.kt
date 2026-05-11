@@ -18,6 +18,7 @@ import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.ContentAction.UpdateLoadingStateAction
@@ -47,6 +48,7 @@ import mozilla.components.browser.thumbnails.BrowserThumbnails
 import mozilla.components.compose.browser.toolbar.concept.Action
 import mozilla.components.compose.browser.toolbar.concept.Action.ActionButton
 import mozilla.components.compose.browser.toolbar.concept.Action.ActionButtonRes
+import mozilla.components.compose.browser.toolbar.concept.Action.AnimatedPillActionRes
 import mozilla.components.compose.browser.toolbar.concept.Action.TabCounterAction
 import mozilla.components.compose.browser.toolbar.concept.PageOrigin
 import mozilla.components.compose.browser.toolbar.concept.PageOrigin.Companion.ContextualMenuOption
@@ -69,10 +71,15 @@ import mozilla.components.concept.engine.Engine
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.EngineSession.LoadUrlFlags
 import mozilla.components.concept.engine.cookiehandling.CookieBannersStorage
+import mozilla.components.concept.engine.ipprotection.IPProtectionHandler.StateInfo
 import mozilla.components.concept.engine.permission.SitePermissionsStorage
 import mozilla.components.concept.engine.prompt.ShareData
 import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.concept.storage.BookmarksStorage
+import mozilla.components.feature.ipprotection.Authorized
+import mozilla.components.feature.ipprotection.IPProtectionAction
+import mozilla.components.feature.ipprotection.IPProtectionState
+import mozilla.components.feature.ipprotection.IPProtectionStore
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.session.TrackingProtectionUseCases
 import mozilla.components.feature.tabs.TabsUseCases
@@ -200,6 +207,7 @@ class BrowserToolbarMiddlewareTest {
     private val trackingProtectionUseCases: TrackingProtectionUseCases = mockk()
     private val publicSuffixList = PublicSuffixList(testContext)
     private val bookmarksStorage: BookmarksStorage = mockk()
+    private val ipProtectionStore = IPProtectionStore()
     private lateinit var appStore: AppStore
 
     @Before
@@ -2183,6 +2191,246 @@ class BrowserToolbarMiddlewareTest {
         }
 
     @Test
+    fun `GIVEN ip protection is active WHEN initializing the toolbar THEN show animated pill with an overlay icon`() = runTest(testDispatcher) {
+        val ipProtectionStore = IPProtectionStore(
+            initialState = IPProtectionState(proxyStatus = Authorized.Active),
+        )
+        val browserStore = BrowserStore(
+            BrowserState(
+                tabs = listOf(tab),
+                selectedTabId = tab.id,
+            ),
+        )
+        every { tab.content.securityInfo } returns SecurityInfo.Secure()
+        every { tab.trackingProtection.enabled } returns true
+        every { tab.trackingProtection.ignoredOnTrackingProtection } returns false
+        val middleware = buildMiddleware(
+            browserStore = browserStore,
+            ipProtectionStore = ipProtectionStore,
+            useCases = useCases,
+        )
+
+        val toolbarStore = buildStore(middleware)
+
+        val toolbarPageActions = toolbarStore.state.displayState.pageActionsStart
+        assertEquals(1, toolbarPageActions.size)
+        val siteInfo = toolbarPageActions[0] as AnimatedPillActionRes
+        assertEquals(iconsR.drawable.mozac_ic_shield_checkmark_24, siteInfo.iconResId)
+        assertEquals(iconsR.drawable.mozac_ic_globe_24, siteInfo.overlayResId)
+        assertEquals(R.string.ip_protection_toolbar_pill_label, siteInfo.textResId)
+    }
+
+    @Test
+    fun `GIVEN ip protection is active and security is unknown WHEN initializing THEN show animated pill with globe icon`() = runTest(testDispatcher) {
+        val ipProtectionStore = IPProtectionStore(
+            initialState = IPProtectionState(proxyStatus = Authorized.Active),
+        )
+        val browserStore = BrowserStore(
+            BrowserState(
+                tabs = listOf(tab),
+                selectedTabId = tab.id,
+            ),
+        )
+        every { tab.content.securityInfo } returns SecurityInfo.Unknown
+        val middleware = buildMiddleware(
+            browserStore = browserStore,
+            ipProtectionStore = ipProtectionStore,
+            useCases = useCases,
+        )
+
+        val toolbarStore = buildStore(middleware)
+
+        val toolbarPageActions = toolbarStore.state.displayState.pageActionsStart
+        assertEquals(1, toolbarPageActions.size)
+        val siteInfo = toolbarPageActions[0] as AnimatedPillActionRes
+        assertEquals(iconsR.drawable.mozac_ic_globe_24, siteInfo.iconResId)
+    }
+
+    @Test
+    fun `GIVEN ip protection is active and site is insecure WHEN initializing THEN show animated pill with shield slash icon`() = runTest(testDispatcher) {
+        val ipProtectionStore = IPProtectionStore(
+            initialState = IPProtectionState(proxyStatus = Authorized.Active),
+        )
+        val browserStore = BrowserStore(
+            BrowserState(
+                tabs = listOf(tab),
+                selectedTabId = tab.id,
+            ),
+        )
+        every { tab.content.securityInfo } returns SecurityInfo.Insecure()
+        val middleware = buildMiddleware(
+            browserStore = browserStore,
+            ipProtectionStore = ipProtectionStore,
+            useCases = useCases,
+        )
+
+        val toolbarStore = buildStore(middleware)
+
+        val toolbarPageActions = toolbarStore.state.displayState.pageActionsStart
+        assertEquals(1, toolbarPageActions.size)
+        val siteInfo = toolbarPageActions[0] as AnimatedPillActionRes
+        assertEquals(iconsR.drawable.mozac_ic_shield_slash_24, siteInfo.iconResId)
+    }
+
+    @Test
+    fun `GIVEN ip protection is active and url is content WHEN initializing THEN show regular button`() = runTest(testDispatcher) {
+        val ipProtectionStore = IPProtectionStore(
+            initialState = IPProtectionState(proxyStatus = Authorized.Active),
+        )
+        val browserStore = BrowserStore(
+            BrowserState(
+                tabs = listOf(tab),
+                selectedTabId = tab.id,
+            ),
+        )
+        every { tab.content.url } returns "content://test"
+        val middleware = buildMiddleware(
+            browserStore = browserStore,
+            ipProtectionStore = ipProtectionStore,
+            useCases = useCases,
+        )
+
+        val toolbarStore = buildStore(middleware)
+
+        val toolbarPageActions = toolbarStore.state.displayState.pageActionsStart
+        assertEquals(1, toolbarPageActions.size)
+        assertTrue(toolbarPageActions[0] is ActionButtonRes)
+    }
+
+    @Test
+    fun `GIVEN ip protection is active WHEN security changes from insecure to secure THEN pill remains with updated icon`() = runTest {
+        val ipProtectionStore = IPProtectionStore(
+            initialState = IPProtectionState(proxyStatus = Authorized.Active),
+        )
+        val tab = createTab(
+            url = "URL",
+            id = tabId,
+            trackingProtection = TrackingProtectionState(
+                enabled = true,
+                ignoredOnTrackingProtection = false,
+            ),
+            securityInfo = SecurityInfo.Insecure(),
+        )
+        val browserStore = BrowserStore(
+            BrowserState(
+                tabs = listOf(tab),
+                selectedTabId = tab.id,
+            ),
+        )
+        val middleware = buildMiddleware(
+            browserStore = browserStore,
+            ipProtectionStore = ipProtectionStore,
+            useCases = useCases,
+        )
+        val toolbarStore = buildStore(middleware)
+
+        var toolbarPageActions = toolbarStore.state.displayState.pageActionsStart
+        assertEquals(1, toolbarPageActions.size)
+        var siteInfo = toolbarPageActions[0] as AnimatedPillActionRes
+        assertEquals(iconsR.drawable.mozac_ic_shield_slash_24, siteInfo.iconResId)
+
+        browserStore.dispatch(UpdateSecurityInfoAction(tab.id, SecurityInfo.Secure()))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        toolbarPageActions = toolbarStore.state.displayState.pageActionsStart
+        assertEquals(1, toolbarPageActions.size)
+        siteInfo = toolbarPageActions[0] as AnimatedPillActionRes
+        assertEquals(iconsR.drawable.mozac_ic_shield_checkmark_24, siteInfo.iconResId)
+    }
+
+    @OptIn(ExperimentalAndroidComponentsApi::class)
+    @Test
+    fun `GIVEN ip protection is not active WHEN it becomes active THEN update site info to animated pill`() = runTest {
+            val ipProtectionStore = IPProtectionStore()
+            val tab = createTab(
+                url = "URL",
+                id = tabId,
+                trackingProtection = TrackingProtectionState(
+                    enabled = true,
+                    ignoredOnTrackingProtection = false,
+                ),
+                securityInfo = SecurityInfo.Secure(),
+            )
+            val browserStore = BrowserStore(
+                BrowserState(
+                    tabs = listOf(tab),
+                    selectedTabId = tab.id,
+                ),
+            )
+            val middleware = buildMiddleware(
+                browserStore = browserStore,
+                ipProtectionStore = ipProtectionStore,
+                useCases = useCases,
+            )
+            val toolbarStore = buildStore(middleware)
+
+            var toolbarPageActions = toolbarStore.state.displayState.pageActionsStart
+            assertEquals(1, toolbarPageActions.size)
+            assertTrue(toolbarPageActions[0] is ActionButtonRes)
+
+            ipProtectionStore.dispatch(
+                IPProtectionAction.EngineStateChanged(
+                    StateInfo(
+                        serviceState = StateInfo.SERVICE_STATE_READY,
+                        proxyState = StateInfo.PROXY_STATE_ACTIVE,
+                    ),
+                ),
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            toolbarPageActions = toolbarStore.state.displayState.pageActionsStart
+            assertEquals(1, toolbarPageActions.size)
+            assertTrue(toolbarPageActions[0] is AnimatedPillActionRes)
+        }
+
+    @OptIn(ExperimentalAndroidComponentsApi::class)
+    @Test
+    fun `GIVEN ip protection is active WHEN it becomes inactive THEN update site info to regular button`() = runTest {
+            val ipProtectionStore = IPProtectionStore(
+                initialState = IPProtectionState(proxyStatus = Authorized.Active),
+            )
+            val tab = createTab(
+                url = "URL",
+                id = tabId,
+                trackingProtection = TrackingProtectionState(
+                    enabled = true,
+                    ignoredOnTrackingProtection = false,
+                ),
+                securityInfo = SecurityInfo.Secure(),
+            )
+            val browserStore = BrowserStore(
+                BrowserState(
+                    tabs = listOf(tab),
+                    selectedTabId = tab.id,
+                ),
+            )
+            val middleware = buildMiddleware(
+                browserStore = browserStore,
+                ipProtectionStore = ipProtectionStore,
+                useCases = useCases,
+            )
+            val toolbarStore = buildStore(middleware)
+
+            var toolbarPageActions = toolbarStore.state.displayState.pageActionsStart
+            assertEquals(1, toolbarPageActions.size)
+            assertTrue(toolbarPageActions[0] is AnimatedPillActionRes)
+
+            ipProtectionStore.dispatch(
+                IPProtectionAction.EngineStateChanged(
+                    StateInfo(
+                        serviceState = StateInfo.SERVICE_STATE_READY,
+                        proxyState = StateInfo.PROXY_STATE_READY,
+                    ),
+                ),
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            toolbarPageActions = toolbarStore.state.displayState.pageActionsStart
+            assertEquals(1, toolbarPageActions.size)
+            assertTrue(toolbarPageActions[0] is ActionButtonRes)
+        }
+
+    @Test
     fun `GIVEN reader mode is available WHEN reader mode status updates THEN update appropriate security indicator`() =
         runTest {
             val readerModeStatus: ReaderModeStatus = mockk(relaxed = true) {
@@ -3421,6 +3669,7 @@ class BrowserToolbarMiddlewareTest {
         appStore: AppStore = this.appStore,
         browserScreenStore: BrowserScreenStore = this.browserScreenStore,
         browserStore: BrowserStore = this.browserStore,
+        ipProtectionStore: IPProtectionStore = this.ipProtectionStore,
         permissionsStorage: SitePermissionsStorage = this.permissionsStorage,
         cookieBannersStorage: CookieBannersStorage = this.cookieBannersStorage,
         trackingProtectionUseCases: TrackingProtectionUseCases = this.trackingProtectionUseCases,
@@ -3443,6 +3692,7 @@ class BrowserToolbarMiddlewareTest {
         appStore = appStore,
         browserScreenStore = browserScreenStore,
         browserStore = browserStore,
+        ipProtectionStore = ipProtectionStore,
         permissionsStorage = permissionsStorage,
         cookieBannersStorage = cookieBannersStorage,
         bookmarksStorage = bookmarksStorage,

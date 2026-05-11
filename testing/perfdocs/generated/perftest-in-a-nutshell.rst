@@ -239,7 +239,7 @@ Triggering Simpleperf Profiles in CI
 ------------------------------------
 
 `Simpleperf is an android profiling tool  <https://firefox-source-docs.mozilla.org/performance/profiling_with_simpleperf.html#profiling-on-android-with-simpleperf>`_  which can profile all threads on an android device and also works for non-fenix apps.
-At the moment we only have support for simpleperf with our video applink startup tests.
+At the moment, we only support generating Simpleperf profiles for video applink startup tests via the Treeherder UI.
 
 To trigger a CI run, go to one of those jobs, and click the `Generate Performance Profile` button.
 
@@ -249,6 +249,10 @@ To trigger a CI run, go to one of those jobs, and click the `Generate Performanc
     :align: center
 
 When the job completes, click on the artifacts tab, and then click the `Open in Firefox Profiler` hyperlink. You'll be re-directed to a screen where you can then load and interact with the simpleperf profiles.
+
+Native Profiling
+----------------
+To generate CI profiles with an OS-specific profiler (i.e., Simpleperf for Android), use the ``--native-profiling`` flag with ``./mach try`` and select a `supported job <browsertime.html#native-profiling-with-raptor-browsertime>`_.
 
 Side-by-Side
 ------------

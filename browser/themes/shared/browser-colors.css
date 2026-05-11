@@ -72,12 +72,12 @@
       --button-background-color-hover: light-dark(rgba(207, 207, 216, 0.66), rgba(207, 207, 216, 0.2));
       --button-background-color-active: light-dark(rgb(207, 207, 216), rgba(207, 207, 216, 0.4));
       --button-text-color: light-dark(rgb(21, 20, 26), rgb(251, 251, 254));
+      --tab-background-color-selected: light-dark(rgb(255, 255, 255), rgba(106, 106, 120, 0.7));
     }
 
     --input-color: light-dark(rgb(21, 20, 26), rgb(251, 251, 254));
     --input-bgcolor: light-dark(rgb(255, 255, 255), #42414d);
 
-    --tab-selected-bgcolor: light-dark(rgb(255, 255, 255), rgba(106, 106, 120, 0.7));
     --tab-selected-textcolor: light-dark(rgb(21, 20, 26), rgb(255, 255, 255));
     --tabs-navbar-separator-style: none;
 

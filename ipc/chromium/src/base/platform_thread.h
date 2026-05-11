@@ -39,7 +39,7 @@ typedef mach_port_t PlatformThreadId;
 class PlatformThread {
  public:
   // Gets the current thread id, which may be useful for logging purposes.
-  static PlatformThreadId CurrentId();
+  static ::PlatformThreadId CurrentId();
 
   // Yield the current thread so another thread can be scheduled.
   static void YieldCurrentThread();

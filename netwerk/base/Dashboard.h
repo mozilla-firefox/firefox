@@ -5,6 +5,7 @@
 #ifndef nsDashboard_h_
 #define nsDashboard_h_
 
+#include "mozilla/Atomics.h"
 #include "mozilla/Mutex.h"
 #include "mozilla/net/DashboardTypes.h"
 #include "nsIDashboard.h"
@@ -65,7 +66,7 @@ class Dashboard final : public nsIDashboard, public nsIDashboardEventNotifier {
     mozilla::Mutex lock;
   };
 
-  bool mEnableLogging;
+  Atomic<bool, Relaxed> mEnableLogging;
   WebSocketData mWs;
 
  private:

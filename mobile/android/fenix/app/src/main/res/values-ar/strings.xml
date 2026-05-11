@@ -3244,6 +3244,13 @@
   <string name="ip_protection_onboarding_body_link">تصفح الإنترنت بحماية إضافية</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">ليس الآن</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">تعذّر الاتصال بشبكة VPN. حاول مجددًا بعد بضع دقائق.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">استُخدم %1$d ج.بايت من بيانات VPN. سيُصفّر الوصول الشهر المقبل.</string>
   <!--
     Autofill
 

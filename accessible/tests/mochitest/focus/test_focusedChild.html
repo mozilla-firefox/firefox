@@ -15,49 +15,32 @@
   <script type="application/javascript"
           src="../states.js"></script>
   <script type="application/javascript"
-          src="../events.js"></script>
+          src="../promisified-events.js"></script>
 
   <script type="application/javascript">
-    function openWnd() {
-      this.eventSeq = [ new invokerChecker(EVENT_FOCUS,
-                                           getDialogAccessible,
-                                           this) ];
+    // gA11yEventDumpToConsole = true;
 
-      this.invoke = function openWnd_invoke() {
-        this.dialog = window.browsingContext.topChromeWindow
-                            .openDialog("about:mozilla",
-                                        "AboutMozilla",
-                                        "chrome,width=600,height=600");
-      };
-
-      this.finalCheck = function openWnd_finalCheck() {
-        var app = getApplicationAccessible();
-        is(app.focusedChild, getDialogAccessible(this),
-           "Wrong focused child");
-
-        this.dialog.close();
-      };
-
-      this.getID = function openWnd_getID() {
-        return "focusedChild for application accessible";
-      };
-
-      function getDialogAccessible(aInvoker) {
-        return getAccessible(aInvoker.dialog.document);
-      }
-    }
-
-    gA11yEventDumpToConsole = true;
-    var gQueue = null;
-
-    function doTest() {
+    async function doTest() {
       enableLogging("focus,doclifecycle");
-      gQueue = new eventQueue();
 
-      gQueue.push(new openWnd());
+      let dialog;
+      let p = waitForEvent(EVENT_FOCUS, evt => {
+        return evt.accessible === getAccessible(dialog.document);
+      });
+      dialog = window.browsingContext.topChromeWindow
+                     .openDialog("about:mozilla",
+                                 "AboutMozilla",
+                                 "chrome,width=600,height=600");
+      await p;
 
-      gQueue.onFinish = function() { disableLogging(); };
-      gQueue.invoke(); // Will call SimpleTest.finish();
+      let app = getApplicationAccessible();
+      is(app.focusedChild, getAccessible(dialog.document),
+         "Wrong focused child");
+
+      dialog.close();
+
+      disableLogging();
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

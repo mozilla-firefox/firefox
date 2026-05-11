@@ -3225,8 +3225,9 @@ void XPCJSRuntime::Initialize(JSContext* cx) {
   js::SetSourceHook(cx, std::move(hook));
 
   // Register memory reporters and distinguished amount functions.
-  RegisterStrongMemoryReporter(new JSMainRuntimeRealmsReporter());
-  RegisterStrongMemoryReporter(new JSMainRuntimeTemporaryPeakReporter());
+  RegisterStrongMemoryReporter(MakeAndAddRef<JSMainRuntimeRealmsReporter>());
+  RegisterStrongMemoryReporter(
+      MakeAndAddRef<JSMainRuntimeTemporaryPeakReporter>());
   RegisterJSMainRuntimeGCHeapDistinguishedAmount(
       JSMainRuntimeGCHeapDistinguishedAmount);
   RegisterJSMainRuntimeTemporaryPeakDistinguishedAmount(

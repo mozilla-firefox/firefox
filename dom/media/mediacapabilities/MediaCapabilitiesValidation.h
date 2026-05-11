@@ -46,20 +46,25 @@ MOZ_DEFINE_ENUM_CLASS_WITH_TOSTRING(
 using MediaType = Variant<dom::MediaEncodingType, dom::MediaDecodingType>;
 using ValidationResult = mozilla::Result<mozilla::Ok, ValidationError>;
 
+struct BehaviorConfig;
+
 ValidationResult CheckMIMETypeSupport(
     const MediaExtendedMIMEType& aMime,
     const MediaType& aEncodingOrDecodingType,
     const Maybe<dom::ColorGamut>& aColorGamut,
-    const Maybe<dom::TransferFunction>& aTransferFunction);
+    const Maybe<dom::TransferFunction>& aTransferFunction,
+    const BehaviorConfig& aBehavior);
 
 // https://w3c.github.io/media-capabilities/#mediaconfiguration
 ValidationResult IsValidMediaDecodingConfiguration(
-    const dom::MediaDecodingConfiguration& aConfig);
+    const dom::MediaDecodingConfiguration& aConfig,
+    const BehaviorConfig& aBehavior);
 
 // NOTE: No formal validation steps in the spec.
 //       Currently just calls IsValidMediaConfiguration.
 ValidationResult IsValidMediaEncodingConfiguration(
-    const dom::MediaEncodingConfiguration& aConfig);
+    const dom::MediaEncodingConfiguration& aConfig,
+    const BehaviorConfig& aBehavior);
 
 // Helpers which also convert the validation error to text
 void RejectWithValidationResult(dom::Promise* aPromise,

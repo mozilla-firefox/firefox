@@ -1399,6 +1399,20 @@ browser.ui.interaction:
       - mstriemer@mozilla.com
     expires: never
 
+  preferences_pane_tabs_browsing:
+    type: labeled_counter
+    description: >
+      Records the items interacted with in the Tabs and browsing section
+      of preferences. See
+      https://firefox-source-docs.mozilla.org/browser/BrowserUsageTelemetry.html
+    bugs:
+      - https://bugzil.la/1968114
+    data_reviews:
+      - https://bugzil.la/1968114
+    notification_emails:
+      - hjones@mozilla.com
+    expires: never
+
   preferences_pane_permissions_data:
     type: labeled_counter
     description: >

@@ -50,3 +50,35 @@ jobs:
       run: rustup run ${{ matrix.rust }} cargo test --all
       # setrlimit64 error in the CI container
       if: matrix.os != 'ubuntu-24.04'
+
+  # Test on Linux, as if it didn't have DBUS, to exercise the fallback path.
+  build-fallback:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        rust: [stable, nightly]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install Rust
+      run: |
+        rustup toolchain install ${{ matrix.rust }} --profile minimal
+        rustup component add rustfmt --toolchain ${{ matrix.rust }}
+        rustup component add clippy --toolchain ${{ matrix.rust }}
+
+    - name: Check format
+      shell: bash
+      run: rustup run ${{ matrix.rust }} cargo fmt -- --check
+
+    - name: Clippy
+      shell: bash
+      run: rustup run ${{ matrix.rust }} cargo clippy --no-default-features -- -D warnings
+
+    - name: Build fallback (Linux without dbus)
+      shell: bash
+      run: rustup run ${{ matrix.rust }} cargo build --no-default-features
+
+    - name: Test fallback (Linux without dbus)
+      shell: bash
+      run: rustup run ${{ matrix.rust }} cargo test --no-default-features

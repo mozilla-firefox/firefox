@@ -59,6 +59,20 @@ interface nsIXULChromeRegistry : nsIChromeRegistry
    * Do not pass non-chrome URIs to this method.
    */
   boolean allowContentToAccess(in nsIURI url);
+
+  /**
+   * Returns true if the passed chrome URL is allowed to be loaded in a remote
+   * process. This reflects the remoteenabled flag on packages.
+   * Do not pass non-chrome URIs to this method.
+   */
+  boolean canLoadURLRemotely(in nsIURI url);
+
+  /**
+   * Returns true if the passed chrome URL must be loaded in a remote process.
+   * This reflects the remoterequired flag on packages.
+   * Do not pass non-chrome URIs to this method.
+   */
+  boolean mustLoadURLRemotely(in nsIURI url);
 };
 
 %{ C++

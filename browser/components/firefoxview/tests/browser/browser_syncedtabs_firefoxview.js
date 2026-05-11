@@ -49,25 +49,16 @@ add_task(async function test_unconfigured_initial_state() {
     );
 
     // Test telemetry for signing into Firefox Accounts.
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
     EventUtils.synthesizeMouseAtCenter(
       emptyState.querySelector(`moz-button[data-action="sign-in"]`).buttonEl,
       {},
       browser.contentWindow
     );
-    await TestUtils.waitForCondition(
-      () =>
-        Services.telemetry.snapshotEvents(
-          Ci.nsITelemetry.DATASET_PRERELEASE_CHANNELS
-        ).parent?.length >= 1,
-      "Waiting for fxa_continue firefoxview telemetry event.",
-      200,
-      100
-    );
-    TelemetryTestUtils.assertEvents(
-      [["firefoxview_next", "fxa_continue", "sync"]],
-      { category: "firefoxview_next" },
-      { clear: true, process: "parent" }
+    Assert.equal(
+      1,
+      Glean.firefoxviewNext.fxaContinueSync.testGetValue().length,
+      "Expected one fxa_continue event."
     );
     await BrowserTestUtils.removeTab(
       browser.documentGlobal.gBrowser.selectedTab
@@ -145,25 +136,16 @@ add_task(async function test_signed_in() {
 
     await openFirefoxViewTab(window);
     // Test telemetry for adding a device.
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
     EventUtils.synthesizeMouseAtCenter(
       emptyState.querySelector(`moz-button[data-action="add-device"]`).buttonEl,
       {},
       browser.contentWindow
     );
-    await TestUtils.waitForCondition(
-      () =>
-        Services.telemetry.snapshotEvents(
-          Ci.nsITelemetry.DATASET_PRERELEASE_CHANNELS
-        ).parent?.length >= 1,
-      "Waiting for fxa_mobile firefoxview telemetry event.",
-      200,
-      100
-    );
-    TelemetryTestUtils.assertEvents(
-      [["firefoxview_next", "fxa_mobile", "sync"]],
-      { category: "firefoxview_next" },
-      { clear: true, process: "parent" }
+    Assert.equal(
+      1,
+      Glean.firefoxviewNext.fxaMobileSync.testGetValue().length,
+      "Expected one fxa_continue event."
     );
     // clean up extra tabs
     while (gBrowser.tabs.length > 1) {
@@ -378,30 +360,11 @@ add_task(async function test_tabs() {
     ok(tabRow1[1].shadowRoot.textContent.includes, "The Times");
 
     // Test telemetry for opening a tab.
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
     EventUtils.synthesizeMouseAtCenter(tabRow1[0], {}, browser.contentWindow);
-    await TestUtils.waitForCondition(
-      () =>
-        Services.telemetry.snapshotEvents(
-          Ci.nsITelemetry.DATASET_PRERELEASE_CHANNELS
-        ).parent?.length >= 1,
-      "Waiting for synced_tabs firefoxview telemetry event.",
-      200,
-      100
-    );
-    TelemetryTestUtils.assertEvents(
-      [
-        [
-          "firefoxview_next",
-          "synced_tabs",
-          "tabs",
-          null,
-          { page: "syncedtabs" },
-        ],
-      ],
-      { category: "firefoxview_next" },
-      { clear: true, process: "parent" }
-    );
+    const syncEvents = Glean.firefoxviewNext.syncedTabsTabs.testGetValue();
+    Assert.equal(1, syncEvents.length, "Expected one synced_tabs event.");
+    Assert.deepEqual({ page: "syncedtabs" }, syncEvents[0].extra);
   });
   await tearDown(sandbox);
 });

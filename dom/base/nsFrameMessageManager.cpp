@@ -934,7 +934,7 @@ nsFrameMessageManager::GetGlobalMessageManager() {
     sGlobalMessageManager = mm =
         new ChromeMessageBroadcaster(MessageManagerFlags::MM_GLOBAL);
     ClearOnShutdown(&sGlobalMessageManager);
-    RegisterStrongMemoryReporter(new MessageManagerReporter());
+    RegisterStrongMemoryReporter(MakeAndAddRef<MessageManagerReporter>());
   }
   return mm.forget();
 }
@@ -1396,7 +1396,7 @@ nsresult NS_NewChildProcessMessageManager(nsISupports** aResult) {
     cb = new SameChildProcessMessageManagerCallback();
   } else {
     cb = new ChildProcessMessageManagerCallback();
-    RegisterStrongMemoryReporter(new MessageManagerReporter());
+    RegisterStrongMemoryReporter(MakeAndAddRef<MessageManagerReporter>());
   }
   auto* mm = new ChildProcessMessageManager(cb);
   nsFrameMessageManager::SetChildProcessManager(mm);

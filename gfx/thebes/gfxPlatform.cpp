@@ -1032,12 +1032,12 @@ void gfxPlatform::Init() {
     MOZ_CRASH("Could not initialize ImageLib");
   }
 
-  RegisterStrongMemoryReporter(new GfxMemoryImageReporter());
+  RegisterStrongMemoryReporter(MakeAndAddRef<GfxMemoryImageReporter>());
   if (XRE_IsParentProcess()) {
-    RegisterStrongAsyncMemoryReporter(new WebRenderMemoryReporter());
+    RegisterStrongAsyncMemoryReporter(MakeAndAddRef<WebRenderMemoryReporter>());
   }
 
-  RegisterStrongMemoryReporter(new SkMemoryReporter());
+  RegisterStrongMemoryReporter(MakeAndAddRef<SkMemoryReporter>());
 
   uint32_t skiaCacheSize = GetSkiaGlyphCacheSize();
   if (skiaCacheSize != kDefaultGlyphCacheSize) {
@@ -1070,8 +1070,8 @@ void gfxPlatform::Init() {
 void gfxPlatform::InitMemoryReportersForGPUProcess() {
   MOZ_RELEASE_ASSERT(XRE_IsGPUProcess());
 
-  RegisterStrongMemoryReporter(new GfxMemoryImageReporter());
-  RegisterStrongMemoryReporter(new SkMemoryReporter());
+  RegisterStrongMemoryReporter(MakeAndAddRef<GfxMemoryImageReporter>());
+  RegisterStrongMemoryReporter(MakeAndAddRef<SkMemoryReporter>());
 }
 
 void gfxPlatform::ReportTelemetry() {

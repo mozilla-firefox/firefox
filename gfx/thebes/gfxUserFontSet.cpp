@@ -1263,7 +1263,7 @@ void gfxUserFontSet::UserFontCache::CacheFont(gfxFontEntry* aFontEntry) {
     // the reporter checks whether sUserFonts is null, so it would
     // be safe to call even after UserFontCache::Shutdown has deleted
     // the cache.
-    RegisterStrongMemoryReporter(new MemoryReporter());
+    RegisterStrongMemoryReporter(MakeAndAddRef<MemoryReporter>());
   }
 
   // For data: URIs, the principal is ignored; anyone who has the same

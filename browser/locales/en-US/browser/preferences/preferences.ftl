@@ -236,6 +236,12 @@ preferences-profile-to-copy =
 preferences-copy-profile-select = Select profile
 preferences-copy-profile-button = Copy
 
+tabs-browsing-section =
+  .heading = Tabs and browsing
+
+pane-tabs-browsing-title = Tabs and browsing
+  .title = { pane-tabs-browsing-title }
+
 tabs-group-header2 =
   .label = Tabs
 
@@ -279,22 +285,22 @@ warn-on-open-many-tabs =
     .label = Warn you when opening multiple tabs might slow down { -brand-short-name }
     .accesskey = d
 
-switch-to-new-tabs =
-    .label = When you open a link, image or media in a new tab, switch to it immediately
+switch-to-new-tabs-2 =
+    .label = When opening links or media in a new tab, switch to it immediately
     .accesskey = h
 
 show-tabs-in-taskbar =
     .label = Show tab previews in the Windows taskbar
     .accesskey = k
 
-browser-containers-enabled =
-    .label = Enable Container Tabs
+browser-containers-enabled-2 =
+    .label = Use Container Tabs
     .accesskey = n
 
 browser-containers-learn-more = Learn more
 
-browser-containers-settings =
-    .label = Settings…
+browser-containers-settings-2 =
+    .label = Manage settings
     .accesskey = i
 
 containers-disable-alert-title = Close All Container Tabs?
@@ -354,6 +360,9 @@ browser-layout-vertical-tabs2 =
 browser-layout-show-sidebar2 =
     .label = Show sidebar
     .description = Quickly access bookmarks, tabs from your phone, AI chatbots, and more without leaving your main view.
+
+page-navigation-group =
+    .label = Page navigation
 
 ## General Section - Language & Appearance
 
@@ -816,11 +825,10 @@ support-share-ideas =
 performance-group =
   .label = Performance
 
-performance-use-recommended-settings-checkbox =
+performance-use-recommended-settings-checkbox-2 =
     .label = Use recommended performance settings
+    .description = These settings are tailored to your hardware and operating system.
     .accesskey = U
-
-performance-use-recommended-settings-desc = These settings are tailored to your computer’s hardware and operating system.
 
 performance-settings-learn-more = Learn more
 
@@ -872,9 +880,12 @@ browsing-search-on-start-typing =
     .label = Search for text when you start typing
     .accesskey = x
 
-browsing-picture-in-picture-toggle-enabled =
-    .label = Enable Picture-in-Picture video controls
-    .accesskey = E
+settings-media-group =
+    .label = Media
+
+browsing-picture-in-picture-toggle-enabled-2 =
+    .label = Use Picture-in-Picture
+    .accesskey = e
 
 browsing-picture-in-picture-enable-when-switching-tabs =
     .label = Keep playing videos in Picture-in-Picture when switching tabs
@@ -883,6 +894,9 @@ browsing-picture-in-picture-enable-when-switching-tabs =
 browsing-media-control =
     .label = Control media via keyboard, headset, or virtual interface
     .accesskey = v
+
+recommendations-group =
+    .label = Recommendations
 
 browsing-cfr-recommendations =
     .label = Recommend extensions as you browse
@@ -1320,6 +1334,8 @@ containers-remove-button =
 
 account-sync-section =
     .heading = Account and sync
+
+pane-account-sync-title = Account and sync
 
 sync-group-label =
     .label = Sync
@@ -1779,6 +1795,12 @@ addresses-no-addresses-stored-message =
 address-moz-box-item =
   .label = { $name }
   .description = { $address }
+
+category-passwords-autofill =
+    .tooltiptext = Passwords and autofill settings
+pane-passwords-autofill-title = Passwords and autofill
+preferences-passwords-autofill-header =
+   .heading = Passwords and autofill
 
 ## Privacy Section - History
 

@@ -19,16 +19,8 @@
     <attr name="actionPrimaryDisabled" format="reference" />
 
     <!-- Text -->
-    <!-- Primary text -->
-    <attr name="textPrimary" format="reference" />
-    <!-- Secondary text -->
-    <attr name="textSecondary" format="reference" />
     <!-- Disabled text -->
     <attr name="textDisabled" format="reference" />
-    <!-- Warning text -->
-    <attr name="textCritical" format="reference"/>
-    <!-- Small heading, Text link -->
-    <attr name="textAccent" format="reference" />
     <!-- Text Inverted/On Color -->
     <attr name="textOnColorPrimary" format="reference" />
     <!-- Action Primary text -->

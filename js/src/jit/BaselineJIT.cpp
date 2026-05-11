@@ -468,13 +468,7 @@ MethodStatus jit::BaselineCompile(JSContext* cx, JSScript* script,
 
 static MethodStatus CanEnterBaselineJIT(JSContext* cx, HandleScript script,
                                         AbstractFramePtr osrSourceFrame) {
-  // Skip if the script has been disabled.
-  if (!script->canBaselineCompile()) {
-    return Method_Skipped;
-  }
-
-  if (!IsBaselineJitEnabled(cx)) {
-    script->disableBaselineCompile();
+  if (!CanBaselineCompileScript(cx, script)) {
     return Method_CantCompile;
   }
 
@@ -501,16 +495,6 @@ static MethodStatus CanEnterBaselineJIT(JSContext* cx, HandleScript script,
   if (osrSourceFrame && osrSourceFrame.isDebuggee() &&
       !DebugAPI::ensureExecutionObservabilityOfOsrFrame(cx, osrSourceFrame)) {
     return Method_Error;
-  }
-
-  if (script->length() > BaselineMaxScriptLength) {
-    script->disableBaselineCompile();
-    return Method_CantCompile;
-  }
-
-  if (script->nslots() > BaselineMaxScriptSlots) {
-    script->disableBaselineCompile();
-    return Method_CantCompile;
   }
 
   if (script->hasBaselineScript()) {
@@ -549,11 +533,6 @@ static MethodStatus CanEnterBaselineJIT(JSContext* cx, HandleScript script,
     return Method_Error;
   }
 
-  if (script->hasForceInterpreterOp()) {
-    script->disableBaselineCompile();
-    return Method_CantCompile;
-  }
-
   // Frames can be marked as debuggee frames independently of its underlying
   // script being a debuggee script, e.g., when performing
   // Debugger.Frame.prototype.eval.
@@ -578,6 +557,27 @@ bool jit::CanBaselineInterpretScript(JSScript* script) {
     return false;
   }
 
+  return true;
+}
+
+bool jit::CanBaselineCompileScript(JSContext* cx, JSScript* script) {
+  if (!script->canBaselineCompile()) {
+    return false;
+  }
+  if (!IsBaselineJitEnabled(cx)) {
+    script->disableBaselineCompile();
+    return false;
+  }
+  if (!CanBaselineInterpretScript(script)) {
+    script->disableBaselineCompile();
+    return false;
+  }
+  if (script->length() > BaselineMaxScriptLength) {
+    script->disableBaselineCompile();
+    return false;
+  }
+  MOZ_RELEASE_ASSERT(script->nslots() <= BaselineMaxScriptSlots,
+                     "nslots is checked in CanBaselineInterpretScript");
   return true;
 }
 

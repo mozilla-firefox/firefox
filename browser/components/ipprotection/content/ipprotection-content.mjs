@@ -39,6 +39,7 @@ export default class IPProtectionContentElement extends MozLitElement {
     statusBoxEl: "ipprotection-status-box",
     siteExclusionControlEl: "#site-exclusion-control",
     siteExclusionToggleEl: "#site-exclusion-toggle",
+    siteExclusionDescriptionEl: '#site-exclusion-toggle > [slot="description"]',
     settingsButtonEl: "#vpn-settings-button",
   };
 
@@ -409,7 +410,12 @@ export default class IPProtectionContentElement extends MozLitElement {
           inputlayout="inline-end"
           ?pressed=${!hasExclusion}
           @toggle=${this.handleToggleUseVPN}
-        >
+          >${!hasExclusion
+            ? html`<span
+                slot="description"
+                data-l10n-id="site-exclusion-toggle-description"
+              ></span>`
+            : null}
         </moz-toggle>
       </div>
       <hr role="separator" />`;

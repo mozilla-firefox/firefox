@@ -360,6 +360,20 @@ module.exports = function (config) {
               functions: 0,
               branches: 0,
             },
+            // Coverage for this component lives in Jest (test/jest/content-src/components/Widgets/AddClockForm.test.jsx)
+            "content-src/components/Widgets/Clocks/AddClockForm.jsx": {
+              statements: 0,
+              lines: 0,
+              functions: 0,
+              branches: 0,
+            },
+            // Coverage for this component lives in Jest (test/jest/content-src/components/Widgets/EditClocksPanel.test.jsx)
+            "content-src/components/Widgets/Clocks/EditClocksPanel.jsx": {
+              statements: 0,
+              lines: 0,
+              functions: 0,
+              branches: 0,
+            },
             // Coverage for this component lives in Jest (test/jest/content-src/components/Widgets/ClocksRow.test.jsx)
             "content-src/components/Widgets/Clocks/ClocksRow.jsx": {
               statements: 0,

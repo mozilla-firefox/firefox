@@ -5,13 +5,19 @@
 #include "ImageContainer.h"
 #include "MediaData.h"
 #include "MediaInfo.h"
+#include "MediaResult.h"
 #include "gtest/gtest.h"
+#include "mozilla/AutoRestore.h"
+#include "mozilla/ResultVariant.h"
 #include "mozilla/gfx/Types.h"
+#include "nsIWidget.h"
 #include "nsTArray.h"
 
 using namespace mozilla;
 using namespace mozilla::gfx;
 using namespace mozilla::layers;
+
+using media::TimeUnit;
 
 static void BuildI420Buffer(uint32_t aWidth, uint32_t aHeight,
                             nsTArray<uint8_t>& aStorage,
@@ -114,4 +120,94 @@ TEST(VideoData, SetVideoDataToImagePreservesBT709Default)
   ASSERT_NE(data, nullptr);
   EXPECT_EQ(data->mTransferFunction, TransferFunction::BT709);
   EXPECT_EQ(data->mHDRMetadata, Nothing());
+}
+
+TEST(VideoData, StrideOrSizeMismatch)
+{
+  constexpr int width = 32;
+  constexpr int height = 64;
+  constexpr int stride = width * 10;
+  VideoInfo info(width, height);
+  uint8_t buffer[stride * height] = {};
+  VideoData::YCbCrBuffer b;
+  VideoData::YCbCrBuffer::Plane alpha_plane;
+
+  b.mPlanes[0].mStride = alpha_plane.mStride = stride;
+  b.mPlanes[0].mHeight = alpha_plane.mHeight = height;
+  b.mPlanes[0].mWidth = alpha_plane.mWidth = width;
+  b.mPlanes[0].mSkip = alpha_plane.mSkip = 0;
+  b.mPlanes[0].mData = alpha_plane.mData = buffer;
+
+  b.mChromaSubsampling = gfx::ChromaSubsampling::HALF_WIDTH_AND_HEIGHT;
+  b.mPlanes[1].mStride = b.mPlanes[2].mStride = stride / 4;
+  b.mPlanes[1].mSkip = b.mPlanes[2].mSkip = 0;
+  b.mPlanes[1].mHeight = b.mPlanes[2].mHeight = (b.mPlanes[0].mHeight + 1) / 2;
+  b.mPlanes[1].mWidth = b.mPlanes[2].mWidth = (b.mPlanes[0].mWidth + 1) / 2;
+  // Use tail end of buffer.
+  b.mPlanes[1].mData = b.mPlanes[2].mData =
+      buffer + stride * height - b.mPlanes[1].mStride * b.mPlanes[1].mHeight;
+
+  b.mYUVColorSpace = gfx::YUVColorSpace::BT601;
+  b.mColorRange = gfx::ColorRange::FULL;
+
+  RefPtr imageContainer = new ImageContainer(
+      ImageUsageType::VideoFrameContainer, ImageContainer::ASYNCHRONOUS);
+  auto CreateVideoData = [&]() {
+    Result res = VideoData::CreateAndCopyData(
+        info, imageContainer, /*aOffset*/ 0, TimeUnit::Zero(),
+        TimeUnit::FromSeconds(1), b, alpha_plane, /*aKeyFrame*/ true,
+        TimeUnit::Zero(), info.ImageRect());
+    return res.unwrapOr(nullptr);
+  };
+  // Trigger gfx::GPUProcessManager::EnsureImageBridgeChild()
+  // for ImageContainer::CreateSharedRGBImage(),
+  // from VideoData::CreateAndCopyData().
+  // (ImageContainer::EnsureRecycleAllocatorForRDD() requires
+  // XRE_IsRDDProcess().)
+  RefPtr widget = nsIWidget::CreateHeadlessWidget();
+  widget->CreateCompositor();
+  // Check that VideoData can be created successfully from a simple
+  // combination of planes.
+  RefPtr v = CreateVideoData();
+  EXPECT_NE(v.get(), nullptr);
+
+  // Check that non-so-simple combinations do not cause crashes.
+  // At the time of writing this test, CreateAndCopyData() returns failure,
+  // but these combinations could be supported in the future, if desired.
+  {
+    // Differing alpha and luma plane strides
+    AutoRestore r(alpha_plane.mStride);
+    AutoRestore r2(alpha_plane.mData);
+    alpha_plane.mStride = width;
+    EXPECT_NE(alpha_plane.mStride, b.mPlanes[0].mStride);
+    // tail end of buffer
+    alpha_plane.mData = buffer + (stride - alpha_plane.mStride) * height;
+    v = CreateVideoData();
+    // Change to NE if this becomes supported.
+    EXPECT_EQ(v.get(), nullptr);
+  }
+  {
+    // Differing alpha and luma plane heights
+    AutoRestore r(alpha_plane.mHeight);
+    AutoRestore r2(alpha_plane.mData);
+    alpha_plane.mHeight = height / 2;
+    EXPECT_NE(alpha_plane.mHeight, b.mPlanes[0].mHeight);
+    alpha_plane.mData =
+        buffer + stride * height - alpha_plane.mStride * alpha_plane.mHeight;
+    v = CreateVideoData();
+    // Change to NE if this becomes supported.
+    EXPECT_EQ(v.get(), nullptr);
+  }
+  {
+    // Differing chroma plane strides
+    AutoRestore r(b.mPlanes[2].mStride);
+    AutoRestore r2(b.mPlanes[2].mData);
+    b.mPlanes[2].mStride = b.mPlanes[2].mWidth;
+    EXPECT_NE(b.mPlanes[1].mStride, b.mPlanes[2].mStride);
+    b.mPlanes[2].mData =
+        buffer + stride * height - b.mPlanes[2].mStride * b.mPlanes[2].mHeight;
+    v = CreateVideoData();
+    // Change to NE if this becomes supported.
+    EXPECT_EQ(v.get(), nullptr);
+  }
 }

@@ -265,8 +265,8 @@ class MarkStack {
 #endif
 
 #ifdef DEBUG
+ public:
   MainThreadOrGCTaskData<bool> elementsRangesAreValid;
-  friend class js::GCMarker;
 #endif
 
   friend class MarkStackIter;
@@ -327,6 +327,11 @@ constexpr uint32_t NormalMarkingOptions = MarkingOptions::MarkImplicitEdges;
 constexpr uint32_t ConcurrentMarkingOptions =
     MarkingOptions::AtomicMarking | MarkingOptions::ConcurrentMarking;
 
+enum ShouldReportMarkTime : bool {
+  ReportMarkTime = true,
+  DontReportMarkTime = false
+};
+
 template <uint32_t markingOptions>
 class MarkingTracerT
     : public GenericTracerImpl<MarkingTracerT<markingOptions>> {
@@ -338,7 +343,94 @@ class MarkingTracerT
   void onEdge(T** thingp, const char* name);
   friend class GenericTracerImpl<MarkingTracerT<markingOptions>>;
 
-  GCMarker* getMarker();
+  GCMarker* gcMarker();
+  const GCMarker* gcMarker() const;
+
+  // If |thing| is unmarked, mark it and then traverse its children.
+  template <typename T>
+  void markAndTraverse(T* thing);
+
+  bool doMarking(JS::SliceBudget& budget, gc::ShouldReportMarkTime reportTime);
+
+  bool processMarkStackTop(JS::SliceBudget& budget);
+
+  template <typename T>
+  void maybeMarkImplicitEdges(T* markedThing);
+  template <typename T>
+  void markImplicitEdges(T* markedThing);
+
+  void markEphemeronEdges(gc::EphemeronEdgeVector& edges,
+                          gc::MarkColor srcColor);
+
+  static constexpr bool hasOption(uint32_t option) {
+    return markingOptions & option;
+  }
+
+ private:
+  gc::MarkColor markColor() const { return gcMarker()->markColor(); }
+  Zone* tracingZone() const { return gcMarker()->tracingZone; }
+
+  template <gc::MarkColor color>
+  bool markOneColor(JS::SliceBudget& budget);
+
+  bool markCurrentColor(JS::SliceBudget& budget);
+  friend class GCRuntime;
+
+  bool callOrDelayTraceHook(JSObject* obj, const JSClass* clasp,
+                            JS::SliceBudget& budget);
+
+  // Helper methods that coerce their second argument to the base pointer
+  // type.
+  template <typename S>
+  void markAndTraverseObjectEdge(S source, JSObject* target) {
+    markAndTraverseEdge(source, target);
+  }
+  template <typename S>
+  void markAndTraverseStringEdge(S source, JSString* target) {
+    markAndTraverseEdge(source, target);
+  }
+
+  template <typename S, typename T>
+  void markAndTraverseEdge(S* source, T* target);
+  template <typename S, typename T>
+  void markAndTraverseEdge(S* source, const T& target);
+
+  bool markAndTraversePrivateGCThing(JSObject* source, gc::Cell* target);
+
+  bool markAndTraverseSymbol(JSObject* source, JS::Symbol* target);
+
+  // Mark the given GC thing, but do not trace its children. Return true
+  // if the thing became marked.
+  template <typename T>
+  [[nodiscard]] bool mark(T* thing);
+
+  // Traverse a GC thing's children, using a strategy depending on the type.
+  // This can either processing them immediately or push them onto the mark
+  // stack for later.
+#define DEFINE_TRAVERSE_METHOD(_1, Type, _2, _3) void traverse(Type* thing);
+  JS_FOR_EACH_TRACEKIND(DEFINE_TRAVERSE_METHOD)
+#undef DEFINE_TRAVERSE_METHOD
+
+  // Process a marked thing's children by calling T::traceChildren().
+  template <typename T>
+  void traceChildren(T* thing);
+
+  // Process a marked thing's children recursively using an iterative loop and
+  // manual dispatch, for kinds where this is possible.
+  template <typename T>
+  void scanChildren(T* thing);
+
+  // Push a marked thing onto the mark stack. Its children will be marked later.
+  template <typename T>
+  void pushThing(T* thing);
+
+  void eagerlyMarkChildren(JSString* str);
+  void eagerlyMarkChildren(JSLinearString* str);
+  void eagerlyMarkChildren(JSRope* rope);
+  void eagerlyMarkChildren(Shape* shape);
+  void eagerlyMarkChildren(BaseShape* shape);
+  void eagerlyMarkChildren(PropMap* map);
+  void eagerlyMarkChildren(Scope* scope);
 };
 
 using MarkingTracer = MarkingTracerT<MarkingOptions::None>;
@@ -347,14 +439,12 @@ using WeakMarkingTracer = MarkingTracerT<MarkingOptions::MarkImplicitEdges>;
 using ParallelMarkingTracer = MarkingTracerT<MarkingOptions::AtomicMarking>;
 using ConcurrentMarkingTracer = MarkingTracerT<ConcurrentMarkingOptions>;
 
-enum ShouldReportMarkTime : bool {
-  ReportMarkTime = true,
-  DontReportMarkTime = false
-};
-
 } /* namespace gc */
 
 class GCMarker {
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
+
   enum MarkingState : uint8_t {
     // Have not yet started marking.
     NotActive,
@@ -389,6 +479,30 @@ class GCMarker {
   JSRuntime* runtime() { return runtime_; }
   JSTracer* tracer() {
     return tracer_.match([](auto& t) -> JSTracer* { return &t; });
+  }
+
+  gc::MarkingTracer* getRegularTracer() {
+    MOZ_ASSERT(isRegularMarking());
+    return &tracer_.as<gc::MarkingTracer>();
+  }
+
+  gc::WeakMarkingTracer* getWeakMarkingTracer() {
+    MOZ_ASSERT(isWeakMarking());
+    return &tracer_.as<gc::WeakMarkingTracer>();
+  }
+
+  template <typename F>
+  decltype(auto) matchTracer(F&& f) {
+    return tracer_.match(std::forward<F>(f));
+  }
+
+  template <typename F>
+  decltype(auto) matchRegularOrParallelTracer(F&& f) {
+    if (isRegularMarking()) {
+      return f(tracer_.as<gc::MarkingTracer>());
+    }
+    MOZ_ASSERT(isParallelMarking());
+    return f(tracer_.as<gc::ParallelMarkingTracer>());
   }
 
 #ifdef JS_GC_ZEAL
@@ -455,9 +569,6 @@ class GCMarker {
   bool markCurrentColorInParallel(gc::ParallelMarkTask* task,
                                   JS::SliceBudget& budget);
 
-  template <uint32_t markingOptions, gc::MarkColor>
-  bool markOneColor(JS::SliceBudget& budget);
-
   static void moveAllWork(GCMarker* dst, GCMarker* src);
   static size_t moveSomeWork(GCMarker* dst, GCMarker* src,
                              bool allowDistribute);
@@ -477,13 +588,6 @@ class GCMarker {
   }
 
   // Internal public methods, for ease of use by the rest of the GC:
-
-  // If |thing| is unmarked, mark it and then traverse its children.
-  template <uint32_t, typename T>
-  void markAndTraverse(T* thing);
-
-  template <typename T>
-  void markImplicitEdges(T* markedThing);
 
 #ifdef JS_GC_CONCURRENT_MARKING
 
@@ -524,81 +628,10 @@ class GCMarker {
   void updateRangesAtStartOfSlice();
   void updateRangesAtEndOfSlice();
   friend class gc::AutoUpdateMarkStackRanges;
-
-  template <uint32_t markingOptions>
-  bool processMarkStackTop(JS::SliceBudget& budget);
   friend class gc::GCRuntime;
-
-  template <uint32_t markingOptions>
-  bool callOrDelayTraceHook(JSObject* obj, const JSClass* clasp,
-                            JS::SliceBudget& budget);
-
-  // Helper methods that coerce their second argument to the base pointer
-  // type.
-  template <uint32_t markingOptions, typename S>
-  void markAndTraverseObjectEdge(S source, JSObject* target) {
-    markAndTraverseEdge<markingOptions>(source, target);
-  }
-  template <uint32_t markingOptions, typename S>
-  void markAndTraverseStringEdge(S source, JSString* target) {
-    markAndTraverseEdge<markingOptions>(source, target);
-  }
-
-  template <uint32_t markingOptions, typename S, typename T>
-  void markAndTraverseEdge(S* source, T* target);
-  template <uint32_t markingOptions, typename S, typename T>
-  void markAndTraverseEdge(S* source, const T& target);
-
-  template <uint32_t markingOptions>
-  bool markAndTraversePrivateGCThing(JSObject* source, gc::Cell* target);
-
-  template <uint32_t markingOptions>
-  bool markAndTraverseSymbol(JSObject* source, JS::Symbol* target);
 
   template <typename S, typename T>
   void checkTraversedEdge(S source, T* target);
-
-  // Mark the given GC thing, but do not trace its children. Return true
-  // if the thing became marked.
-  template <uint32_t markingOptions, typename T>
-  [[nodiscard]] bool mark(T* thing);
-
-  // Traverse a GC thing's children, using a strategy depending on the type.
-  // This can either processing them immediately or push them onto the mark
-  // stack for later.
-#define DEFINE_TRAVERSE_METHOD(_1, Type, _2, _3) \
-  template <uint32_t>                            \
-  void traverse(Type* thing);
-  JS_FOR_EACH_TRACEKIND(DEFINE_TRAVERSE_METHOD)
-#undef DEFINE_TRAVERSE_METHOD
-
-  // Process a marked thing's children by calling T::traceChildren().
-  template <uint32_t markingOptions, typename T>
-  void traceChildren(T* thing);
-
-  // Process a marked thing's children recursively using an iterative loop and
-  // manual dispatch, for kinds where this is possible.
-  template <uint32_t markingOptions, typename T>
-  void scanChildren(T* thing);
-
-  // Push a marked thing onto the mark stack. Its children will be marked later.
-  template <uint32_t markingOptions, typename T>
-  void pushThing(T* thing);
-
-  template <uint32_t markingOptions>
-  void eagerlyMarkChildren(JSString* str);
-  template <uint32_t markingOptions>
-  void eagerlyMarkChildren(JSLinearString* str);
-  template <uint32_t markingOptions>
-  void eagerlyMarkChildren(JSRope* rope);
-  template <uint32_t markingOptions>
-  void eagerlyMarkChildren(Shape* shape);
-  template <uint32_t markingOptions>
-  void eagerlyMarkChildren(BaseShape* shape);
-  template <uint32_t markingOptions>
-  void eagerlyMarkChildren(PropMap* map);
-  template <uint32_t markingOptions>
-  void eagerlyMarkChildren(Scope* scope);
 
   template <typename T>
   inline void pushTaggedPtr(T* ptr);
@@ -606,21 +639,11 @@ class GCMarker {
   inline void pushValueRange(JSObject* obj, SlotsOrElementsKind kind,
                              size_t start, size_t end);
 
-  // Mark through edges whose target color depends on the colors of two source
-  // entities (eg a WeakMap and one of its keys), and push the target onto the
-  // mark stack.
-  void markEphemeronEdges(gc::EphemeronEdgeVector& edges,
-                          gc::MarkColor srcColor);
-  friend class JS::Zone;
-
 #ifdef DEBUG
   void checkZone(gc::Cell* cell);
 #else
   void checkZone(gc::Cell* cell) {}
 #endif
-
-  template <uint32_t markingOptions>
-  bool doMarking(JS::SliceBudget& budget, gc::ShouldReportMarkTime reportTime);
 
   void delayMarkingChildrenOnOOM(gc::Cell* cell);
 

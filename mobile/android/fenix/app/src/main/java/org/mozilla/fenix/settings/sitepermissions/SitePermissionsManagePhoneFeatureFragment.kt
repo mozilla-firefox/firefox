@@ -38,6 +38,7 @@ import org.mozilla.fenix.settings.PhoneFeature.AUTOPLAY_INAUDIBLE
 import org.mozilla.fenix.settings.setStartCheckedIndicator
 import org.mozilla.fenix.theme.ThemeManager
 import org.mozilla.fenix.utils.Settings
+import com.google.android.material.R as materialR
 
 const val AUTOPLAY_BLOCK_ALL = 0
 const val AUTOPLAY_BLOCK_AUDIBLE = 1
@@ -254,7 +255,7 @@ class SitePermissionsManagePhoneFeatureFragment : Fragment(), SystemInsetsPadded
         val recommendedSpannable = SpannableString(subText)
         val subTextColor = ContextCompat.getColor(
             requireContext(),
-            ThemeManager.resolveAttribute(R.attr.textSecondary, requireContext()),
+            ThemeManager.resolveAttribute(materialR.attr.colorOnSurfaceVariant, requireContext()),
         )
 
         recommendedSpannable.setSpan(

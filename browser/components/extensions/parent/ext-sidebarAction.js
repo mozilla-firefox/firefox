@@ -147,7 +147,7 @@ this.sidebarAction = class extends ExtensionAPI {
     this.panel = details.panel;
     let { SidebarController, devicePixelRatio } = window;
     SidebarController.registerExtension(this.id, {
-      ...this.getMenuIcon(details, devicePixelRatio),
+      iconUrl: this.getMenuIcon(details, devicePixelRatio),
       menuId: this.menuId,
       title: details.title,
       extensionId: this.extension.id,
@@ -168,20 +168,12 @@ this.sidebarAction = class extends ExtensionAPI {
    *   Extension icons.
    * @param {number} scale
    *   Scaling factor of the icon's size.
-   * @returns {{ icon: string; iconUrl: string }}
+   * @returns {string}
    */
   getMenuIcon({ icon }, scale) {
-    let getIcon = size =>
-      IconDetails.escapeUrl(
-        IconDetails.getPreferredIcon(icon, this.extension, size).icon
-      );
-
-    const iconUrl = getIcon(16 * scale);
-    // TODO Bug 1898257 - Only return iconUrl here, remove usages of icon.
-    return {
-      icon: `image-set(url("${getIcon(16)}"), url("${getIcon(32)}") 2x)`,
-      iconUrl,
-    };
+    return IconDetails.escapeUrl(
+      IconDetails.getPreferredIcon(icon, this.extension, 16 * scale).icon
+    );
   }
 
   /**
@@ -208,7 +200,7 @@ this.sidebarAction = class extends ExtensionAPI {
     SidebarController.setExtensionAttributes(
       this.id,
       {
-        ...this.getMenuIcon(tabData, devicePixelRatio),
+        iconUrl: this.getMenuIcon(tabData, devicePixelRatio),
         label: title,
       },
       urlChanged

@@ -7,18 +7,18 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
   <path
-      android:fillColor="?attr/textPrimary"
+      android:fillColor="?attr/colorOnSurface"
       android:pathData="M18,2L6,2A3,3 0,0 0,3 5L3,19a3,3 0,0 0,3 3L18,22a3,3 0,0 0,3 -3L21,5A3,3 0,0 0,18 2ZM19,19a1,1 0,0 1,-1 1L6,20a1,1 0,0 1,-1 -1L5,5A1,1 0,0 1,6 4L18,4a1,1 0,0 1,1 1Z"/>
   <path
-      android:fillColor="?attr/textPrimary"
+      android:fillColor="?attr/colorOnSurface"
       android:pathData="M9.5,6L9.5,6A1.5,1.5 0,0 1,11 7.5L11,7.5A1.5,1.5 0,0 1,9.5 9L9.5,9A1.5,1.5 0,0 1,8 7.5L8,7.5A1.5,1.5 0,0 1,9.5 6z"/>
   <path
-      android:fillColor="?attr/textPrimary"
+      android:fillColor="?attr/colorOnSurface"
       android:pathData="M15.5,11h-7a0.5,0.5 0,0 0,0 1h7a0.5,0.5 0,0 0,0 -1Z"/>
   <path
-      android:fillColor="?attr/textPrimary"
+      android:fillColor="?attr/colorOnSurface"
       android:pathData="M15.5,14h-7a0.5,0.5 0,0 0,0 1h7a0.5,0.5 0,0 0,0 -1Z"/>
   <path
-      android:fillColor="?attr/textPrimary"
+      android:fillColor="?attr/colorOnSurface"
       android:pathData="M11.5,17h-3a0.5,0.5 0,0 0,0 1h3a0.5,0.5 0,0 0,0 -1Z"/>
 </vector>

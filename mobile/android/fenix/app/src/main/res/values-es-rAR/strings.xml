@@ -3214,6 +3214,13 @@
   <string name="ip_protection_onboarding_body_link">Navegá con protección adicional</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">No ahora</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">No se pudo conectar a la VPN. Probá de nuevo en unos minutos.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">%1$d GB de datos de VPN usados. El acceso se restablecerá el próximo mes.</string>
   <!--
     Autofill
 
@@ -4628,9 +4635,17 @@
   <!-- Content description (for accessibility, not displayed) for the remove button that removes the sports widget from the homepage. -->
   <string name="sports_widget_remove_content_description" tools:ignore="UnusedResources">Eliminar la Copa del Mundo del inicio</string>
   <!-- Title shown on the sports widget immediately after the user has followed a team. %s is the selected team (e.g., "USA"). -->
-  <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Siguiendo: %s</string>
+  <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Siguiendo: \n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
-  <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Vuelva a consultar la información del partido a medida que se acerca el torneo.</string>
+  <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Volvé a consultar la información del partido a medida que se acerca el torneo.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">Primer tiempo</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">Segundo tiempo</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">Parece que no estás conectado.</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">Verificá la conexión a internet y probá de nuevo.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

@@ -14,76 +14,40 @@
   <script type="application/javascript"
           src="../states.js"></script>
   <script type="application/javascript"
-          src="../events.js"></script>
+          src="../promisified-events.js"></script>
 
   <script type="application/javascript">
-    function addChild(aContainerID) {
-      this.containerNode = getNode(aContainerID);
-      this.childNode = null;
-
-      this.eventSeq = [
-        new invokerChecker(EVENT_REORDER, this.containerNode),
-      ];
-
-      this.invoke = function addChild_invoke() {
-        this.childNode = document.createElement("div");
-        // Note after bug 646216, a sole div without text won't be accessible
-        // and would not result in an embedded character.
-        // Therefore, add some text.
-        this.childNode.textContent = "hello";
-        this.containerNode.appendChild(this.childNode);
-      };
-
-      this.finalCheck = function addChild_finalCheck() {
-        // no stale state should be set
-        testStates(this.childNode, 0, 0, 0, EXT_STATE_STALE);
-      };
-
-      this.getID = function addChild_getID() {
-        return "add child for " + prettyName(aContainerID);
-      };
-    }
-
-    function removeChildChecker(aInvoker) {
-      this.type = EVENT_HIDE;
-      this.__defineGetter__("target", function() { return aInvoker.child; });
-
-      this.check = function removeChildChecker_check() {
-        // stale state should be set
-        testStates(aInvoker.child, 0, EXT_STATE_STALE);
-      };
-    }
-
-    function removeChild(aContainerID) {
-      this.containerNode = getNode(aContainerID);
-      this.child = null;
-
-      this.eventSeq = [
-        new removeChildChecker(this),
-      ];
-
-      this.invoke = function removeChild_invoke() {
-        var childNode = this.containerNode.firstChild;
-        this.child = getAccessible(childNode);
-
-        this.containerNode.removeChild(childNode);
-      };
-
-      this.getID = function removeChild_getID() {
-        return "remove child from " + prettyName(aContainerID);
-      };
-    }
-
     // gA11yEventDumpToConsole = true; //debugging
 
-    var gQueue = null;
-    function doTest() {
-      gQueue = new eventQueue();
+    async function doTest() {
+      const containerNode = getNode("container");
 
-      gQueue.push(new addChild("container"));
-      gQueue.push(new removeChild("container"));
+      let childNode = null;
+      let reordered = waitForEvent(EVENT_REORDER, containerNode);
+      childNode = document.createElement("div");
+      // Note after bug 646216, a sole div without text won't be accessible
+      // and would not result in an embedded character.
+      // Therefore, add some text.
+      childNode.textContent = "hello";
+      containerNode.appendChild(childNode);
+      await reordered;
+      // no stale state should be set
+      testStates(childNode, 0, 0, 0, EXT_STATE_STALE);
 
-      gQueue.invoke(); // will call SimpleTest.finish()
+      const child = getAccessible(containerNode.firstChild);
+      const hidden = waitForEvent(EVENT_HIDE, e => {
+        if (e.accessible != child) {
+          return false;
+        }
+
+        // stale state should be set
+        testStates(child, 0, EXT_STATE_STALE);
+        return true;
+      });
+      containerNode.firstChild.remove();
+      await hidden;
+
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

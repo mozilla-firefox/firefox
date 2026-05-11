@@ -311,11 +311,12 @@ const CONFIG_PANES = Object.freeze({
     visible: () => srdSectionEnabled("languages"),
   },
   manageAddresses: {
-    parent: "privacy",
+    parent: "passwordsAutofill",
     l10nId: "autofill-addresses-manage-addresses-title",
     groupIds: ["manageAddresses"],
     iconSrc: "chrome://browser/skin/notification-icons/geo.svg",
-    replaces: "privacy",
+    module:
+      "chrome://browser/content/preferences/config/passwords-autofill.mjs",
   },
   manageMemories: {
     parent: "personalizeSmartWindow",
@@ -325,11 +326,12 @@ const CONFIG_PANES = Object.freeze({
     supportPage: "smart-window-memories",
   },
   managePayments: {
-    parent: "privacy",
+    parent: "passwordsAutofill",
     l10nId: "autofill-payment-methods-manage-payments-title",
     groupIds: ["managePayments"],
     iconSrc: "chrome://browser/skin/payment-methods-16.svg",
-    replaces: "privacy",
+    module:
+      "chrome://browser/content/preferences/config/passwords-autofill.mjs",
   },
   profiles: {
     parent: srdSectionEnabled("sync") ? "sync" : "general",
@@ -351,6 +353,14 @@ const CONFIG_PANES = Object.freeze({
     groupIds: ["assistantDefaultGroup", "assistantModelGroup", "memoriesGroup"],
     module: "chrome://browser/content/preferences/config/aiFeatures.mjs",
   },
+  passwordsAutofill: {
+    l10nId: "preferences-passwords-autofill-header",
+    iconSrc: "chrome://browser/skin/login.svg",
+    groupIds: ["passwords", "addresses", "payments"],
+    module:
+      "chrome://browser/content/preferences/config/passwords-autofill.mjs",
+    visible: () => srdSectionEnabled("passwordsAutofill"),
+  },
   privacy: {
     l10nId: "pane-privacy-section",
     iconSrc: "chrome://browser/skin/preferences/category-privacy-security.svg",
@@ -360,12 +370,6 @@ const CONFIG_PANES = Object.freeze({
       "etpStatus",
       "ipprotection",
       "cookiesAndSiteData2",
-      // Bug 1968111: move this elsewhere
-      "passwords",
-      // Bug 1968111: move this elsewhere
-      "addresses",
-      // Bug 1968111: move this elsewhere
-      "payments",
       "history2",
       "nonTechnicalPrivacy2",
       "dnsOverHttps",
@@ -407,6 +411,19 @@ const CONFIG_PANES = Object.freeze({
     module: "chrome://browser/content/preferences/config/moreFromMozilla.mjs",
     visible: () => NimbusFeatures.moreFromMozilla.getVariable("enabled"),
     replaces: "moreFromMozilla",
+  },
+  tabsBrowsing: {
+    l10nId: "tabs-browsing-section",
+    groupIds: [
+      "tabs",
+      "pageNavigation",
+      "media",
+      "performance",
+      "recommendations",
+    ],
+    iconSrc: "chrome://global/skin/icons/cursor-arrow.svg",
+    module: "chrome://browser/content/preferences/config/tabs-browsing.mjs",
+    visible: () => srdSectionEnabled("tabsBrowsing"),
   },
   translations: {
     parent: srdSectionEnabled("languages") ? "languages" : "general",
@@ -486,17 +503,24 @@ function init_all() {
   }
 
   // The Sync category needs to be the last of the "real" categories
-  // registered and inititalized since many tests wait for the
+  // registered and initialized since many tests wait for the
   // "sync-pane-loaded" observer notification before starting the test.
-  if (Services.prefs.getBoolPref("identity.fxaccounts.enabled")) {
-    document.getElementById("category-sync").hidden = false;
-    register_module("paneSync", gSyncPane);
-  }
-  register_module("paneSearchResults", gSearchResultsPane);
-
   let redesignEnabled = Services.prefs.getBoolPref(
     "browser.settings-redesign.enabled"
   );
+  let accountsEnabled = Services.prefs.getBoolPref(
+    "identity.fxaccounts.enabled"
+  );
+  let categorySync = document.getElementById("category-sync");
+  if (redesignEnabled) {
+    categorySync.setAttribute("data-l10n-id", "pane-account-sync-title");
+    categorySync.iconSrc = "chrome://browser/skin/fxa/avatar-empty.svg";
+    categorySync.hidden = false;
+  } else if (accountsEnabled) {
+    categorySync.hidden = false;
+    register_module("paneSync", gSyncPane);
+  }
+  register_module("paneSearchResults", gSearchResultsPane);
   for (let [id, config] of Object.entries(CONFIG_PANES)) {
     if (!redesignEnabled && config.replaces) {
       continue;

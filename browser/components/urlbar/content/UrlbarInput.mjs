@@ -219,6 +219,10 @@ ${
     "selectionchange",
   ];
 
+  /**
+   * Whether expanding is allowed. Requires a parent
+   * toolbar, and us not being read-only.
+   */
   #allowBreakout = false;
   #gBrowserListenersAdded = false;
   #breakoutBlockerCount = 0;
@@ -240,6 +244,7 @@ ${
   // Tracks IME composition.
   #compositionState = lazy.UrlbarUtils.COMPOSITION.NONE;
   #compositionClosedPopup = false;
+  #compositionHadText = false;
 
   valueIsTyped = false;
 
@@ -383,7 +388,6 @@ ${
     // type definitions.
     const READ_WRITE_PROPERTIES = [
       "placeholder",
-      "readOnly",
       "selectionStart",
       "selectionEnd",
     ];
@@ -424,18 +428,16 @@ ${
     if (this.inOverflowPanel && this.view.isOpen) {
       this.view.close();
     }
-    this.toggleAttribute("focused", this.focused);
 
-    // Don't attach event listeners if the toolbar is not visible
-    // in this window or the urlbar is readonly.
-    if (
-      !this.window.toolbar.visible ||
-      this.window.document.documentElement.hasAttribute("taskbartab") ||
-      this.readOnly
-    ) {
+    // Don't attach event listeners if the urlbar is readonly.
+    if (this.readOnly) {
       this.#stopBreakout();
+      this.#allowBreakout = false;
+      // Focused won't be updated so remove it to avoid it becoming stale.
+      this.removeAttribute("focused");
       return;
     }
+    this.toggleAttribute("focused", this.focused);
 
     if (
       this.sapName == "searchbar" &&
@@ -473,6 +475,7 @@ ${
     // This listener handles clicks from our children too, included the search mode
     // indicator close button.
     this._inputContainer.addEventListener("click", this);
+    this._inputContainer.addEventListener("auxclick", this);
 
     // This is used to detect commands launched from the panel, to avoid
     // recording abandonment events when the command causes a blur event.
@@ -504,7 +507,6 @@ ${
       this._updatePlaceholderFromDefaultEngine();
     }
 
-    // Expanding requires a parent toolbar, and us not being read-only.
     this.#allowBreakout =
       !!this.closest("toolbar") &&
       !document.documentElement.hasAttribute("customizing");
@@ -568,6 +570,7 @@ ${
     // This listener handles clicks from our children too, included the search mode
     // indicator close button.
     this._inputContainer.removeEventListener("click", this);
+    this._inputContainer.removeEventListener("auxclick", this);
 
     // This is used to detect commands launched from the panel, to avoid
     // recording abandonment events when the command causes a blur event.
@@ -654,15 +657,27 @@ ${
     this.inputField.blur();
   }
 
+  set readOnly(val) {
+    if (val != this.inputField.readOnly) {
+      this.inputField.readOnly = val;
+      if (this.isConnected) {
+        this.#disconnectedCallback();
+        this.#connectedCallback();
+      }
+    }
+  }
+
+  /**
+   * @type {boolean}
+   */
+  get readOnly() {
+    return this.inputField.readOnly;
+  }
+
   /**
    * @type {typeof HTMLInputElement.prototype.placeholder}
    */
   placeholder;
-
-  /**
-   * @type {typeof HTMLInputElement.prototype.readOnly}
-   */
-  readOnly;
 
   /**
    * @type {typeof HTMLInputElement.prototype.selectionStart}
@@ -5228,6 +5243,14 @@ ${
     }
   }
 
+  _on_auxclick(event) {
+    switch (event.target) {
+      case this.goButton:
+        this.handleCommand(event);
+        break;
+    }
+  }
+
   _on_contextmenu(event) {
     this.#lazy.addSearchEngineHelper.refreshContextMenu(event);
 
@@ -5461,6 +5484,13 @@ ${
       this.#compositionClosedPopup = false;
     }
 
+    if (
+      compositionState == lazy.UrlbarUtils.COMPOSITION.COMPOSING &&
+      event.data
+    ) {
+      this.#compositionHadText = true;
+    }
+
     this.toggleAttribute("usertyping", value);
     this.removeAttribute("actiontype");
 
@@ -5503,7 +5533,7 @@ ${
     // 1. a compositionstart event
     // 2. some input events
     // 3. a compositionend event
-    // 4. an input event
+    // 4. an input event (some IMEs may skip this when step 3 has empty data)
 
     // We should do nothing during composition or if composition was canceled
     // and we didn't close the popup on composition start.
@@ -5516,12 +5546,13 @@ ${
       return;
     }
 
-    // Autofill only when text is inserted (i.e., event.data is not empty) and
-    // it's not due to pasting.
+    // Don't autofill when the user is explicitly deleting content, pasting, or
+    // undoing/redoing.
     const allowAutofill =
       (!lazy.UrlbarPrefs.get("keepPanelOpenDuringImeComposition") ||
         compositionState !== lazy.UrlbarUtils.COMPOSITION.COMPOSING) &&
-      !!event.data &&
+      !event.inputType?.startsWith("delete") &&
+      !event.inputType?.startsWith("history") &&
       !lazy.UrlbarUtils.isPasteEvent(event) &&
       this._maybeAutofillPlaceholder(value);
 
@@ -5857,6 +5888,7 @@ ${
       throw new Error("Trying to start a nested composition?");
     }
     this.#compositionState = lazy.UrlbarUtils.COMPOSITION.COMPOSING;
+    this.#compositionHadText = false;
 
     if (lazy.UrlbarPrefs.get("keepPanelOpenDuringImeComposition")) {
       return;
@@ -5901,6 +5933,21 @@ ${
     this.#compositionState = event.data
       ? lazy.UrlbarUtils.COMPOSITION.COMMIT
       : lazy.UrlbarUtils.COMPOSITION.CANCELED;
+
+    // Certain IMEs fire a spurious empty composition after each commit without
+    // a subsequent input event. If this composition was empty throughout and it
+    // closed the popup, reopen it directly since we can't rely on a following
+    // input event.
+    if (
+      !event.data &&
+      !this.#compositionHadText &&
+      this.#compositionClosedPopup &&
+      !lazy.UrlbarPrefs.get("keepPanelOpenDuringImeComposition")
+    ) {
+      this.#compositionState = lazy.UrlbarUtils.COMPOSITION.NONE;
+      this.#compositionClosedPopup = false;
+      this.startQuery({ resetSearchState: false, event });
+    }
   }
 
   _on_dragstart(event) {

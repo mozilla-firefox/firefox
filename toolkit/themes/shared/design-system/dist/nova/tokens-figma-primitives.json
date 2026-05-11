@@ -25,5 +25,11 @@
   "toolbarbutton/outline/offset": -1,
   "toolbarseparator/color": "color-mix(in srgb, currentColor 60%, transparent)",
   "toolbox/background/color/inactive": "transparent",
-  "badge/border/radius": "{Primitives$border/radius/circle}"
+  "badge/border/radius": "{Primitives$border/radius/circle}",
+  "tab/border/color/selected/leading": "{Colors$color/violet/30}",
+  "tab/border/color/selected/trailing": "{Colors$color/orange/30}",
+  "tab/border/color/accent": "linear-gradient(96deg, var(--tab-border-color-selected-leading) 20.68%, var(--tab-border-color-selected-trailing) 79.34%)",
+  "tab/border/radius": "var(--border-radius-circle)",
+  "tab/block/margin": 6,
+  "tab/selected/shadow": "none"
 }

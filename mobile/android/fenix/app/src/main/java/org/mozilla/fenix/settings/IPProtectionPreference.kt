@@ -49,6 +49,7 @@ class IPProtectionPreference @JvmOverloads constructor(
     }
 
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
+        super.onBindViewHolder(holder)
         holder.itemView.findViewById<ComposeView>(R.id.compose_view)?.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {

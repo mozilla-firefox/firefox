@@ -24,6 +24,11 @@ foreignObject {
   overflow: hidden;
 }
 
+svg:root {
+  width: 100%;
+  height: 100%;
+}
+
 @media all and (-moz-is-glyph) {
   :root {
     fill: context-fill;

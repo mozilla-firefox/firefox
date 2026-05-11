@@ -19,6 +19,9 @@
 #include "mozilla/Span.h"
 
 namespace mozilla {
+
+constexpr double kRadPerDegree = 2.0 * M_PI / 360.0;
+
 namespace gfx {
 
 static inline bool FuzzyEqual(Float aV1, Float aV2) {

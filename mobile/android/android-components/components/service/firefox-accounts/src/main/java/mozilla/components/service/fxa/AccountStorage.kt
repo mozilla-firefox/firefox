@@ -216,7 +216,7 @@ internal class SecureAbove22AccountStorage(
         private const val PREF_KEY_HAS_STATE = "fxaStatePresent"
     }
 
-    private val store = SecureAbove22Preferences(context, STORAGE_NAME)
+    private val store = SecureAbove22Preferences(context, STORAGE_NAME, crashReporting = crashReporter)
 
     // Prefs are used here to keep track of abnormal storage behaviour - namely, account state disappearing without
     // being cleared first through this class. Note that clearing application data will clear both 'store' and 'prefs'.

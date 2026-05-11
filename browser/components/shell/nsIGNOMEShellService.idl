@@ -30,4 +30,29 @@ interface nsIGNOMEShellService : nsIShellService
    * @returns the value of argv[0].
    */
   ACString getArgv0();
+
+  /**
+   * Used for the return value of getDesktopEntryStatus. 'ABSENT' indicates the
+   * desktop file doesn't exist (or does but is marked Hidden=); 'INVISIBLE'
+   * indicates the desktop file exists, but will not be shown (e.g. via
+   * NoDisplay=); 'VISIBLE' indicates that it does exist and will be shown.
+   */
+  cenum DesktopEntryStatus : 8 {
+    DESKTOP_ENTRY_ABSENT = 0,
+    DESKTOP_ENTRY_INVISIBLE = 1,
+    DESKTOP_ENTRY_VISIBLE = 2,
+  };
+
+  /**
+   * Determines whether the named desktop entry exists and is visible,
+   * returning a status intended for telemetry.
+   *
+   * Note that this could be inaccurate if you're running under Flatpak or
+   * Snap. From JavaScript, you can detect that with nsGIOService.
+   *
+   * @param aEntryId The ID of the desktop entry; this should end with
+   *        '.desktop'.
+   * @returns The current status of the desktop entry.
+   */
+  nsIGNOMEShellService_DesktopEntryStatus getDesktopEntryStatus(in AUTF8String aEntryId);
 };

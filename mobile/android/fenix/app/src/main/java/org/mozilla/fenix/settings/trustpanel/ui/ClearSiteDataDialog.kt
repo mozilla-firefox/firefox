@@ -10,8 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.button.TextButton
+import mozilla.components.compose.base.utils.parseHtml
 import org.mozilla.fenix.R
-import org.mozilla.fenix.compose.parseHtml
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**

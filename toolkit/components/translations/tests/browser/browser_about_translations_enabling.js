@@ -107,7 +107,7 @@ add_task(
         ],
       },
       async () => {
-        await TranslationsParent.AIFeature.enable();
+        await TranslationsFeature.enable();
       }
     );
     await aboutTranslationsTestUtils.assertIsVisible(
@@ -124,7 +124,7 @@ add_task(
         ],
       },
       async () => {
-        await TranslationsParent.AIFeature.block();
+        await TranslationsFeature.block();
       }
     );
     await aboutTranslationsTestUtils.assertIsVisible(
@@ -166,7 +166,7 @@ add_task(
         ],
       },
       async () => {
-        await TranslationsParent.AIFeature.block();
+        await TranslationsFeature.block();
       }
     );
     await aboutTranslationsTestUtils.assertIsVisible(
@@ -183,7 +183,7 @@ add_task(
         ],
       },
       async () => {
-        await TranslationsParent.AIFeature.enable();
+        await TranslationsFeature.enable();
       }
     );
     await aboutTranslationsTestUtils.assertIsVisible(
@@ -324,7 +324,7 @@ add_task(
         ],
       },
       async () => {
-        await TranslationsParent.AIFeature.block();
+        await TranslationsFeature.block();
       }
     );
 

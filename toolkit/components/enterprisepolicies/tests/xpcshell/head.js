@@ -10,6 +10,8 @@ const { updateAppInfo } = ChromeUtils.importESModule(
 const { EnterprisePolicyTesting } = ChromeUtils.importESModule(
   "resource://testing-common/EnterprisePolicyTesting.sys.mjs"
 );
+const { setupPolicyEngineWithJson } = EnterprisePolicyTesting;
+EnterprisePolicyTesting.pathResolver = path => do_get_file(path).path;
 
 updateAppInfo({
   name: "XPCShell",
@@ -23,14 +25,3 @@ let policies = Cc["@mozilla.org/enterprisepolicies;1"].getService(
   Ci.nsIObserver
 );
 policies.observe(null, "policies-startup", null);
-
-async function setupPolicyEngineWithJson(json, customSchema) {
-  if (typeof json != "object") {
-    let filePath = do_get_file(json ? json : "non-existing-file.json").path;
-    return EnterprisePolicyTesting.setupPolicyEngineWithJson(
-      filePath,
-      customSchema
-    );
-  }
-  return EnterprisePolicyTesting.setupPolicyEngineWithJson(json, customSchema);
-}

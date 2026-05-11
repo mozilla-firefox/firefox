@@ -380,7 +380,7 @@ def check(
         len(sources) + len(header_sources),
     )
 
-    footer = StaticAnalysisFooter(command_context.log_manager.terminal, monitor)
+    footer = StaticAnalysisFooter(monitor)
 
     with StaticAnalysisOutputManager(
         command_context.log_manager, monitor, footer
@@ -949,10 +949,11 @@ def _run_analysis_batch(command_context, clang_paths, compilation_commands_path,
         compilation_commands_path,
         checks="-*," + ",".join(items),
         header_filter="",
-        sources=[
-            mozpath.join(clang_paths._clang_tidy_base_path, "test", checker) + ".cpp"
+        sources={
+            mozpath.join(clang_paths._clang_tidy_base_path, "test", checker)
+            + ".cpp": None
             for checker in items
-        ],
+        },
         print_out=True,
     )
 
@@ -1177,7 +1178,7 @@ def _verify_checker(
         compilation_commands_path,
         checks="-*," + check,
         header_filter="",
-        sources=[test_file_path_cpp],
+        sources={test_file_path_cpp: None},
     )
     if issues is None:
         return TOOLS_CHECKER_FAILED_FILE

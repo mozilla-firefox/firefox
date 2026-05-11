@@ -10,20 +10,19 @@ NS_IMPL_NS_NEW_SVG_ELEMENT(View)
 
 namespace mozilla::dom {
 
-using namespace SVGViewElement_Binding;
-
 JSObject* SVGViewElement::WrapNode(JSContext* aCx,
                                    JS::Handle<JSObject*> aGivenProto) {
   return SVGViewElement_Binding::Wrap(aCx, this, aGivenProto);
 }
 
 SVGEnumMapping SVGViewElement::sZoomAndPanMap[] = {
-    {nsGkAtoms::disable, SVG_ZOOMANDPAN_DISABLE},
-    {nsGkAtoms::magnify, SVG_ZOOMANDPAN_MAGNIFY},
+    {nsGkAtoms::disable, SVGViewElement_Binding::SVG_ZOOMANDPAN_DISABLE},
+    {nsGkAtoms::magnify, SVGViewElement_Binding::SVG_ZOOMANDPAN_MAGNIFY},
     {nullptr, 0}};
 
 SVGElement::EnumInfo SVGViewElement::sEnumInfo[1] = {
-    {nsGkAtoms::zoomAndPan, sZoomAndPanMap, SVG_ZOOMANDPAN_MAGNIFY}};
+    {nsGkAtoms::zoomAndPan, sZoomAndPanMap,
+     SVGViewElement_Binding::SVG_ZOOMANDPAN_MAGNIFY}};
 
 //----------------------------------------------------------------------
 // Implementation
@@ -38,8 +37,8 @@ SVGViewElement::SVGViewElement(
 NS_IMPL_ELEMENT_CLONE_WITH_INIT(SVGViewElement)
 
 void SVGViewElement::SetZoomAndPan(uint16_t aZoomAndPan, ErrorResult& rv) {
-  if (aZoomAndPan == SVG_ZOOMANDPAN_DISABLE ||
-      aZoomAndPan == SVG_ZOOMANDPAN_MAGNIFY) {
+  if (aZoomAndPan == SVGViewElement_Binding::SVG_ZOOMANDPAN_DISABLE ||
+      aZoomAndPan == SVGViewElement_Binding::SVG_ZOOMANDPAN_MAGNIFY) {
     ErrorResult nestedRv;
     mEnumAttributes[ZOOMANDPAN].SetBaseValue(aZoomAndPan, this, nestedRv);
     MOZ_ASSERT(!nestedRv.Failed(),

@@ -66,9 +66,7 @@
     <ID>ForbiddenSuppress:HomeDeepLinkIntentProcessor.kt$HomeDeepLinkIntentProcessor$@Suppress("CyclomaticComplexMethod")</ID>
     <ID>ForbiddenSuppress:HomeFragment.kt$HomeFragment$@Suppress("CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:HomeFragment.kt$HomeFragment$@Suppress("LongMethod")</ID>
-    <ID>ForbiddenSuppress:HomeFragment.kt$HomeFragment$@Suppress("LongMethod", "CyclomaticComplexMethod")</ID>
     <ID>ForbiddenSuppress:Homepage.kt$@Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")</ID>
-    <ID>ForbiddenSuppress:InfoCard.kt$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:InstalledAddonDetailsFragment.kt$InstalledAddonDetailsFragment$@SuppressWarnings("LongMethod")</ID>
     <ID>ForbiddenSuppress:LegacyWallpaperMigration.kt$LegacyWallpaperMigration$@Suppress("CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:ListItem.kt$@Suppress("CognitiveComplexMethod")</ID>
@@ -77,7 +75,6 @@
     <ID>ForbiddenSuppress:MainMenu.kt$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:MainMenu.kt$@Suppress("LongParameterList", "LongMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:MainMenu.kt$@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")</ID>
-    <ID>ForbiddenSuppress:InstallReferrerHandlingService.kt$InstallReferrerHandlingService$@Suppress("CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:MarketingDataOnboardingPage.kt$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:MarketingDataOnboardingPageRedesign.kt$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:Menu.kt$@Suppress("LongMethod", "CognitiveComplexMethod")</ID>
@@ -151,6 +148,295 @@
     <ID>ForbiddenSuppress:WallpaperSettings.kt$@Suppress("CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:WallpaperSettings.kt$@Suppress("MagicNumber")</ID>
     <ID>ForbiddenSuppress:WebCompatReporter.kt$@Suppress("LongMethod")</ID>
+    <ID>HardcodedPaddingUsage:AIControlsScreen.kt$( horizontal = FirefoxTheme.layout.space.dynamic200, vertical = 8.dp, )</ID>
+    <ID>HardcodedPaddingUsage:AIControlsScreen.kt$( start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp, )</ID>
+    <ID>HardcodedPaddingUsage:AIControlsScreen.kt$( start = FirefoxTheme.layout.space.dynamic200, end = FirefoxTheme.layout.space.dynamic200, top = 4.dp, )</ID>
+    <ID>HardcodedPaddingUsage:AIControlsScreen.kt$(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:AddExceptionScreen.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:AddFolderScreen.kt$( start = 16.dp, end = 16.dp, top = 32.dp, )</ID>
+    <ID>HardcodedPaddingUsage:AddFolderScreen.kt$(start = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:AddToTabGroup.kt$( bottom = 12.dp, )</ID>
+    <ID>HardcodedPaddingUsage:AddToTabGroup.kt$(vertical = 8.dp, horizontal = 27.dp)</ID>
+    <ID>HardcodedPaddingUsage:AddonPermissionsScreen.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:AddonPermissionsScreen.kt$(horizontal = 16.dp, vertical = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:AddonPermissionsScreen.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:AddonPermissionsScreen.kt$(vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:AddonsDebugToolsScreen.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:AddressList.kt$(start = 56.dp)</ID>
+    <ID>HardcodedPaddingUsage:AddressesTools.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:AppLinksPromptFragment.kt$( horizontal = 16.dp, vertical = 8.dp, )</ID>
+    <ID>HardcodedPaddingUsage:AppLinksPromptFragment.kt$( start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp, )</ID>
+    <ID>HardcodedPaddingUsage:AppLinksPromptFragment.kt$(all = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:AppLinksPromptFragment.kt$(horizontal = 12.dp, vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:AppLinksPromptFragment.kt$(horizontal = 16.dp, vertical = 14.dp)</ID>
+    <ID>HardcodedPaddingUsage:AppLinksPromptFragment.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:AppLinksPromptFragment.kt$(top = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:AutomaticTranslationPreference.kt$( start = 56.dp, )</ID>
+    <ID>HardcodedPaddingUsage:AutomaticTranslationPreference.kt$(start = 56.dp)</ID>
+    <ID>HardcodedPaddingUsage:AutomaticTranslationPreference.kt$(start = 72.dp, end = 16.dp, bottom = 16.dp, top = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:Banner.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:BetaLabel.kt$(horizontal = 12.dp, vertical = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:Bookmarks.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:BookmarksScreen.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:BookmarksScreen.kt$(horizontal = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:BookmarksScreen.kt$(vertical = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:BottomSheetHandle.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:BottomSheetScene.kt$BottomSheetScene$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ChecklistView.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ChecklistView.kt$(start = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ClipboardSuggestionBar.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:Collection.kt$( start = 16.dp, end = 8.dp, // (24.dp - 16.dp) hardcoded in ExpandableListHeader )</ID>
+    <ID>HardcodedPaddingUsage:Collections.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:CollectionsPlaceholder.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ContinuousOnboardingScreen.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:CountdownPromoCard.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:CrashTools.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:CustomReviewPrompt.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:CustomReviewPrompt.kt$(bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:CustomReviewPrompt.kt$(horizontal = 10.dp)</ID>
+    <ID>HardcodedPaddingUsage:CustomReviewPrompt.kt$(horizontal = 20.dp)</ID>
+    <ID>HardcodedPaddingUsage:CustomReviewPrompt.kt$(vertical = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:CustomTabMenu.kt$( start = 8.dp, top = if (isBottomToolbar) 0.dp else 8.dp, end = 8.dp, bottom = if (isBottomToolbar) 84.dp else 16.dp, )</ID>
+    <ID>HardcodedPaddingUsage:CustomTabMenu.kt$(top = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:CustomTabMenu.kt$(top = 8.dp, bottom = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:DataChoicesScreen.kt$(top = 16.dp, bottom = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:DebugDrawerHome.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:DebugOverlay.kt$(start = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:DismissibleItemBackground.kt$(horizontal = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:DohSettingsScreen.kt$( start = 72.dp, top = 6.dp, end = 16.dp, bottom = 6.dp, )</ID>
+    <ID>HardcodedPaddingUsage:DohSettingsScreen.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:DohSettingsScreen.kt$(vertical = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:DohSettingsScreen.kt$(vertical = 6.dp, horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadAppDialog.kt$(horizontal = 16.dp, vertical = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadAppDialog.kt$(top = 16.dp, bottom = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadIndicator.kt$(horizontal = 16.dp, vertical = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadLanguageFileDialog.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadLanguageFileDialog.kt$(top = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadLanguageFileDialog.kt$(top = 16.dp, bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadLanguagesPreference.kt$( start = 56.dp, )</ID>
+    <ID>HardcodedPaddingUsage:DownloadLanguagesPreference.kt$( start = 72.dp, top = 6.dp, bottom = 6.dp, end = 16.dp, )</ID>
+    <ID>HardcodedPaddingUsage:DownloadLanguagesPreference.kt$(end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadLanguagesPreference.kt$(horizontal = 16.dp, vertical = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadLanguagesPreference.kt$(start = 72.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadLanguagesPreference.kt$(top = 8.dp, bottom = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadSearchField.kt$(horizontal = 8.dp, vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:DownloadsScreen.kt$(vertical = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:EditFolderScreen.kt$( start = 16.dp, end = 16.dp, top = 32.dp, )</ID>
+    <ID>HardcodedPaddingUsage:EditFolderScreen.kt$(start = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:EditTabGroup.kt$( bottom = 12.dp, )</ID>
+    <ID>HardcodedPaddingUsage:EditTabGroup.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:EditTabGroup.kt$(end = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:EditTabGroup.kt$(horizontal = 24.dp, vertical = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:EditTabGroup.kt$(start = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:EliminatedBanner.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ExceptionsListScreen.kt$( vertical = 12.dp, horizontal = 16.dp, )</ID>
+    <ID>HardcodedPaddingUsage:ExceptionsListScreen.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ExpandableListHeader.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:ExperimentalHomepageHeader.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ExperimentalHomepageHeader.kt$(bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ExperimentalHomepageHeader.kt$(start = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:ExtensionsMenuItem.kt$( start = if (count &gt; 0) 8.dp else 2.dp, top = 2.dp, bottom = 2.dp, end = 2.dp, )</ID>
+    <ID>HardcodedPaddingUsage:FirefoxLabsScreen.kt$( start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp, )</ID>
+    <ID>HardcodedPaddingUsage:FirefoxLabsScreen.kt$(horizontal = 16.dp, vertical = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:FlagContainer.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:FollowTeamPromoCard.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:FollowingPromoCard.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:FontSizeSlider.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:FontSizeSlider.kt$(6.dp)</ID>
+    <ID>HardcodedPaddingUsage:FontSizeSlider.kt$(start = 72.dp, top = 16.dp, end = 16.dp, bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:FontSizeSlider.kt$(start = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:FontSizeSlider.kt$(vertical = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:Homepage.kt$( start = horizontalMargin, end = horizontalMargin, top = 40.dp, bottom = 12.dp, )</ID>
+    <ID>HardcodedPaddingUsage:Homepage.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:Homepage.kt$(top = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:Homepage.kt$(top = 72.dp)</ID>
+    <ID>HardcodedPaddingUsage:HomepageHeader.kt$(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:HomepagePillButton.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:HomepagePillButton.kt$(all = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:IPProtectionBottomSheet.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:IPProtectionBottomSheet.kt$(bottom = 16.dp, start = 16.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:IPProtectionBottomSheet.kt$(horizontal = 8.dp, vertical = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:IPProtectionMenuItem.kt$(horizontal = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:IPProtectionPreference.kt$(horizontal = 16.dp, vertical = 14.dp)</ID>
+    <ID>HardcodedPaddingUsage:IPProtectionPreference.kt$(horizontal = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:InactiveTabs.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:InactiveTabs.kt$(horizontal = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:InactiveTabs.kt$(horizontal = 16.dp, vertical = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:InactiveTabs.kt$(horizontal = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:InactiveTabs.kt$(start = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:InfoScreen.kt$( start = 72.dp, top = 6.dp, end = 16.dp, bottom = 6.dp, )</ID>
+    <ID>HardcodedPaddingUsage:InfoScreen.kt$(end = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:LensCameraScreen.kt$(top = 24.dp, bottom = 48.dp, start = 32.dp, end = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:LensCameraScreen.kt$(top = 48.dp, start = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:LibraryMenuItem.kt$(horizontal = 4.dp, vertical = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:LoginsTools.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MainMenu.kt$( start = 8.dp, top = if (accessPoint != MenuAccessPoint.Home &amp;&amp; (isBottomToolbar || isExpandedToolbarEnabled) ) { 0.dp } else { 8.dp }, end = 8.dp, bottom = if (accessPoint != MenuAccessPoint.Home &amp;&amp; (isBottomToolbar || isExpandedToolbarEnabled) ) { 84.dp } else { 16.dp }, )</ID>
+    <ID>HardcodedPaddingUsage:MainMenu.kt$(start = 40.dp)</ID>
+    <ID>HardcodedPaddingUsage:ManagePrivacyPreferencesDialog.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MarketingDataOnboardingPage.kt$(bottom = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:MarketingDataOnboardingPage.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MarketingDataOnboardingPage.kt$(horizontal = 16.dp, vertical = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:MarketingDataOnboardingPage.kt$(horizontal = 20.dp)</ID>
+    <ID>HardcodedPaddingUsage:MarketingDataOnboardingPageRedesign.kt$( horizontal = 16.dp, vertical = if (state.isSmallDevice) 0.dp else 24.dp, )</ID>
+    <ID>HardcodedPaddingUsage:MarketingDataOnboardingPageRedesign.kt$(start = 20.dp, end = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:MenuBanner.kt$(end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MenuBanner.kt$(start = 24.dp, top = 12.dp, bottom = 10.dp)</ID>
+    <ID>HardcodedPaddingUsage:MenuBanner.kt$(top = 8.dp, end = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:MenuDialogFragment.kt$MenuDialogFragment$(top = 16.dp, bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MenuItem.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MenuItem.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:MenuItem.kt$(start = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MenuNavigation.kt$(horizontal = 4.dp, vertical = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:MenuScaffold.kt$( start = 16.dp, top = 12.dp, end = 16.dp, bottom = 32.dp, )</ID>
+    <ID>HardcodedPaddingUsage:MessageCard.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyBottomSheet.kt$(bottom = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyBottomSheet.kt$(top = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyCompleted.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyCompleted.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyContent.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyContent.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyFooter.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyFooter.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyHeader.kt$(start = 32.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyHeader.kt$(vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:MicrosurveyRequestPrompt.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:NeverTranslateSitesPreference.kt$( start = 56.dp, )</ID>
+    <ID>HardcodedPaddingUsage:NeverTranslateSitesPreference.kt$(start = 72.dp, end = 16.dp, bottom = 16.dp, top = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:NimbusExperiments.kt$( start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp, )</ID>
+    <ID>HardcodedPaddingUsage:NimbusExperiments.kt$( start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp, )</ID>
+    <ID>HardcodedPaddingUsage:OnboardingPage.kt$(bottom = if (pageState.secondaryButton == null) 32.dp else 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingPage.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingPage.kt$(horizontal = 16.dp, vertical = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingPageRedesign.kt$( horizontal = 16.dp, vertical = if (isSmallDevice) 0.dp else 24.dp, )</ID>
+    <ID>HardcodedPaddingUsage:OnboardingPageRedesign.kt$(start = 20.dp, end = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingScreen.kt$(bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:OnboardingScreenRedesign.kt$(bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:PageSummariesSettingsFragment.kt$PageSummariesSettingsFragment$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:PlaceholderCard.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:PlaceholderCard.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:PrivateBrowsingDescription.kt$(horizontal = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:PrivateSuggestionsCard.kt$( top = 20.dp, start = 20.dp, end = 20.dp, bottom = 10.dp, )</ID>
+    <ID>HardcodedPaddingUsage:ProfilerReusableComposable.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ProfilerReusableComposable.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:ProfilerReusableComposable.kt$(bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ProfilerStartDialogFragment.kt$ProfilerStartDialogFragment$(bottom = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:ProgressBarSetupChecklistView.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ProtectionPanel.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ProtectionPanel.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:ProtectionPanelHeader.kt$(horizontal = 16.dp, vertical = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:ProtectionsView.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ProtectionsView.kt$(horizontal = 8.dp, vertical = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:QRCodeDialogFragment.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:QRCodeDialogFragment.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:QRCodeDialogFragment.kt$(bottom = 32.dp, start = 48.dp, end = 48.dp)</ID>
+    <ID>HardcodedPaddingUsage:QRCodeDialogFragment.kt$(bottom = 8.dp, start = 48.dp, end = 48.dp)</ID>
+    <ID>HardcodedPaddingUsage:QRCodeDialogFragment.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:QRCodeDialogFragment.kt$(top = 40.dp, start = 48.dp, end = 48.dp)</ID>
+    <ID>HardcodedPaddingUsage:RecentlyVisited.kt$( horizontal = contentPadding, vertical = 8.dp, )</ID>
+    <ID>HardcodedPaddingUsage:RegionTools.kt$(4.dp)</ID>
+    <ID>HardcodedPaddingUsage:RegionTools.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:ResearchSurfaceSurvey.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SavedLoginsScreen.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SearchEngineShortcuts.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SearchEngineShortcuts.kt$(start = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:SearchEngineShortcuts.kt$(vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:SearchOptimizationFragment.kt$SearchOptimizationFragment$(horizontal = 16.dp, vertical = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:SecretDebugSettingsFragment.kt$(4.dp)</ID>
+    <ID>HardcodedPaddingUsage:SecretDebugSettingsFragment.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:SecretSettingsFragment.kt$SecretSettingsFragment$(horizontal = 16.dp, vertical = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:SelectFolderScreen.kt$(start = if (!showPadding) folder.startPadding else 0.dp)</ID>
+    <ID>HardcodedPaddingUsage:SelectFolderScreen.kt$(vertical = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SendToDevicesScreen.kt$( bottom = 16.dp, top = 8.dp, start = 16.dp, end = 16.dp, )</ID>
+    <ID>HardcodedPaddingUsage:SendToDevicesScreen.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SendToDevicesScreen.kt$(start = 16.dp, end = 16.dp, bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SendToDevicesScreen.kt$(vertical = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SettingsSearchResultItem.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:SettingsSearchScreen.kt$(start = 16.dp, top = 12.dp, bottom = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:SettingsSearchScreen.kt$(top = 8.dp, bottom = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:SettingsSearchSectionHeader.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SetupChecklist.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SetupChecklist.kt$(24.dp)</ID>
+    <ID>HardcodedPaddingUsage:SetupChecklist.kt$(horizontal = 16.dp, vertical = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:Shortcuts.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:Snackbar.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SportsCountrySelector.kt$(bottom = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:SportsWidgetErrorCard.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:StartupCrashScreen.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:StatusBadge.kt$(horizontal = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:StoryCard.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:StoryCard.kt$(all = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:SubmenuHeader.kt$(start = 4.dp, end = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SyncedTabsList.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SyncedTabsList.kt$(all = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:SyncedTabsList.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:SyncedTabsList.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabGroupColors.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabGroupTools.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabGroupTools.kt$(start = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabLayout.kt$( horizontal = if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) { TAB_LAYOUT_HORIZONTAL_LANDSCAPE_PADDING } else { FirefoxTheme.layout.space.static200 }, vertical = 24.dp, )</ID>
+    <ID>HardcodedPaddingUsage:TabListTabItem.kt$(start = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabListTabItem.kt$(start = 16.dp, top = 8.dp, bottom = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabManagerFloatingToolbar.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabProcessTools.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabProcessTools.kt$(top = 12.dp, bottom = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabProcessTools.kt$(vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabProcessTools.kt$(vertical = 8.dp, horizontal = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabSearchScreen.kt$(horizontal = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabStripCard.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabTools.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TabTools.kt$(start = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TermsOfServiceOnboardingPage.kt$(bottom = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:TermsOfServiceOnboardingPage.kt$(horizontal = 10.dp)</ID>
+    <ID>HardcodedPaddingUsage:TermsOfServiceOnboardingPage.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TermsOfServiceOnboardingPage.kt$(vertical = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:TermsOfServiceOnboardingPageRedesign.kt$( horizontal = 16.dp, vertical = if (pageState.isSmallDevice) 0.dp else 24.dp, )</ID>
+    <ID>HardcodedPaddingUsage:TermsOfServiceOnboardingPageRedesign.kt$(end = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:TermsOfServiceOnboardingPageRedesign.kt$(horizontal = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TermsOfUseBottomSheet.kt$(start = 36.dp, end = 36.dp, bottom = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:ThemeOnboardingPage.kt$(horizontal = 16.dp, vertical = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:ThemeOnboardingPage.kt$(vertical = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:ToolbarOnboardingPage.kt$(horizontal = 16.dp, vertical = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:ToolbarOnboardingPage.kt$(vertical = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:ToolbarOnboardingPageRedesign.kt$( horizontal = 16.dp, vertical = if (pageState.isSmallDevice) 0.dp else 24.dp, )</ID>
+    <ID>HardcodedPaddingUsage:ToolbarOnboardingPageRedesign.kt$(start = 20.dp, end = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:TopSites.kt$(horizontal = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:TopSites.kt$(top = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TrackerCategoryDetailsPanel.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TrackersBlockedCard.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TrackersBlockedCard.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TrackersBlockedPanel.kt$(horizontal = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:TrailingIcons.kt$(8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationOptionsDialog.kt$(end = 16.dp, start = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationOptionsDialog.kt$(start = 56.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationOptionsDialog.kt$(start = 72.dp, end = 16.dp, bottom = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationOptionsDialog.kt$(start = 72.dp, end = 16.dp, top = 6.dp, bottom = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationOptionsDialog.kt$(top = 4.dp, bottom = 4.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationSettings.kt$(start = 72.dp, end = 16.dp, bottom = 16.dp, top = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationToolbar.kt$(start = 16.dp, end = 2.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationToolbar.kt$(start = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationsBottomSheet.kt$(top = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationsDialogBottomSheet.kt$( top = if (showPageSettings) { 12.dp } else { 0.dp }, )</ID>
+    <ID>HardcodedPaddingUsage:TranslationsDialogBottomSheet.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:TranslationsDialogBottomSheet.kt$(top = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:TrustPanelFragment.kt$TrustPanelFragment$(top = 8.dp, bottom = 5.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnlockPrivateTabsScreen.kt$(32.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnlockPrivateTabsScreen.kt$(bottom = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnlockPrivateTabsScreen.kt$(end = 14.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnlockPrivateTabsScreen.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnlockPrivateTabsTrayScreen.kt$(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 32.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnlockScreen.kt$(32.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnlockScreen.kt$(bottom = 24.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnlockScreen.kt$(end = 14.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnlockScreen.kt$(horizontal = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnsubmittedCrashDialog.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnsubmittedCrashDialog.kt$(all = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:UnsubmittedCrashDialog.kt$(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 0.dp)</ID>
+    <ID>HardcodedPaddingUsage:WallpaperOnboarding.kt$(horizontal = 32.dp, vertical = 16.dp)</ID>
+    <ID>HardcodedPaddingUsage:WebCompatReporter.kt$(horizontal = 16.dp, vertical = 12.dp)</ID>
+    <ID>HardcodedPaddingUsage:WebCompatReporter.kt$(vertical = 6.dp)</ID>
+    <ID>HardcodedPaddingUsage:WebCompatReporterPreviewSheet.kt$(top = 72.dp)</ID>
+    <ID>HardcodedPaddingUsage:Wordmark.kt$(end = 10.dp)</ID>
+    <ID>LongMethod:ThemeOnboardingPage.kt$@Composable private fun SelectableImageItem( boxWithConstraintsScope: BoxWithConstraintsScope, themeOption: ThemeOption, selectedOption: ThemeOptionType, onClick: (ThemeOptionType) -&gt; Unit, )</ID>
     <ID>MaxLineLength:TelemetryMiddleware.kt$TelemetryMiddleware$@Suppress("TooGenericExceptionCaught", "CognitiveComplexMethod", "NestedBlockDepth", "LongMethod", "CyclomaticComplexMethod")</ID>
     <ID>UndocumentedPublicClass:AboutItem.kt$AboutItem</ID>
     <ID>UndocumentedPublicClass:AboutItem.kt$AboutItem$Crashes : AboutItem</ID>
@@ -225,8 +511,6 @@
     <ID>UndocumentedPublicClass:CrashReporterController.kt$CrashReporterController</ID>
     <ID>UndocumentedPublicClass:CreateShortcutFragment.kt$CreateShortcutFragment : DialogFragment</ID>
     <ID>UndocumentedPublicClass:CustomTabContextMenuCandidate.kt$CustomTabContextMenuCandidate</ID>
-    <ID>UndocumentedPublicClass:CustomTabToolbarIntegration.kt$CustomTabToolbarIntegration : ToolbarIntegration</ID>
-    <ID>UndocumentedPublicClass:CustomTabsIntegration.kt$CustomTabsIntegration : LifecycleAwareFeatureUserInteractionHandler</ID>
     <ID>UndocumentedPublicClass:CustomTabsService.kt$CustomTabsService : AbstractCustomTabsService</ID>
     <ID>UndocumentedPublicClass:DefaultBrowserPreference.kt$DefaultBrowserPreference : Preference</ID>
     <ID>UndocumentedPublicClass:DefaultSyncController.kt$SyncController</ID>
@@ -355,7 +639,6 @@
     <ID>UndocumentedPublicClass:StartupActivityLog.kt$StartupActivityLog.LogEntry$AppStarted : LogEntry</ID>
     <ID>UndocumentedPublicClass:StartupActivityLog.kt$StartupActivityLog.LogEntry$AppStopped : LogEntry</ID>
     <ID>UndocumentedPublicClass:StartupTypeTelemetry.kt$StartupTypeTelemetry$StartupTypeLifecycleObserver : DefaultLifecycleObserver</ID>
-    <ID>UndocumentedPublicClass:StudiesInteractor.kt$DefaultStudiesInteractor : StudiesInteractor</ID>
     <ID>UndocumentedPublicClass:StudiesInteractor.kt$StudiesInteractor</ID>
     <ID>UndocumentedPublicClass:StudiesView.kt$StudiesView : StudiesAdapterDelegate</ID>
     <ID>UndocumentedPublicClass:SupportUtils.kt$SupportUtils</ID>
@@ -374,7 +657,6 @@
     <ID>UndocumentedPublicClass:TabHistoryViewHolder.kt$TabHistoryViewHolder : ViewHolder</ID>
     <ID>UndocumentedPublicClass:ThemeManager.kt$DefaultThemeManager : ThemeManager</ID>
     <ID>UndocumentedPublicClass:ThemeManager.kt$ThemeManager</ID>
-    <ID>UndocumentedPublicClass:ToolbarIntegration.kt$DefaultToolbarIntegration : ToolbarIntegration</ID>
     <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu</ID>
     <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu$Item</ID>
     <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$AddToHomeScreen : Item</ID>
@@ -628,7 +910,6 @@
     <ID>UndocumentedPublicFunction:TabHistoryView.kt$TabHistoryView$fun updateState(historyState: HistoryState)</ID>
     <ID>UndocumentedPublicFunction:TabHistoryViewHolder.kt$TabHistoryViewHolder$fun bind(item: TabHistoryItem)</ID>
     <ID>UndocumentedPublicFunction:ThemeManager.kt$ThemeManager$fun setActivityTheme(activity: Activity)</ID>
-    <ID>UndocumentedPublicFunction:ToolbarIntegration.kt$ToolbarIntegration$fun invalidateMenu()</ID>
     <ID>UndocumentedPublicFunction:ToolbarView.kt$ToolbarView$fun update(searchState: SearchFragmentState)</ID>
     <ID>UndocumentedPublicFunction:TrackingProtectionExceptionsInteractor.kt$DefaultTrackingProtectionExceptionsInteractor$fun reloadExceptions()</ID>
     <ID>UndocumentedPublicFunction:TrackingProtectionPanelView.kt$TrackingProtectionPanelView$fun onBackPressed(): Boolean</ID>

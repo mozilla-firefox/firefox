@@ -101,6 +101,10 @@ tasks:
         description: "Crashtest run"
         schedules-component: crashtest
         treeherder-symbol: R(C)
+        worker-type:
+            by-test-platform:
+                .*windows.*: win11-64-25h2
+                default: default
         test-manifest-loader:
             by-test-platform:
                 linux.*64-tsan(-qr)?/opt: default
@@ -177,6 +181,10 @@ tasks:
         description: "Crashtest Webrender run"
         schedules-component: crashtest
         treeherder-symbol: R(C)
+        worker-type:
+            by-test-platform:
+                .*windows.*: win11-64-25h2
+                default: default
         test-manifest-loader: null  # don't load tests in the taskgraph
         chunks: 1
         variants:
@@ -193,6 +201,10 @@ tasks:
         description: "JS Reftest run"
         schedules-component: jsreftest
         treeherder-symbol: R(J)
+        worker-type:
+            by-test-platform:
+                .*windows.*: win11-64-25h2
+                default: default
         instance-size:
             by-test-platform:
                 windows.*-asan.*: large
@@ -246,6 +258,10 @@ tasks:
         description: "Reftest run"
         treeherder-symbol: R(R)
         virtualization: virtual-with-gpu
+        worker-type:
+            by-test-platform:
+                .*windows.*: win11-64-25h2-gpu
+                default: default
         chunks: dynamic
         default-chunks:
             by-test-platform:
@@ -347,6 +363,10 @@ tasks:
     reftest-qr:
         description: "Reftest webrender run"
         treeherder-symbol: R(R)
+        worker-type:
+            by-test-platform:
+                .*windows.*: win11-64-25h2
+                default: default
         chunks: 2
         test-manifest-loader: null  # don't load tests in the taskgraph
         variants:

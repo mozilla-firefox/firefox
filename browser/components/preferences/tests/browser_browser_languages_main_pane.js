@@ -351,6 +351,71 @@ add_task(async function testInstalledLocalesWhileRemotePending() {
   BrowserTestUtils.removeTab(gBrowser.selectedTab);
 });
 
+// Remote locales should only be fetched once the user navigates to the
+// languages pane, not when prefs are opened to a different pane.
+add_task(async function testRemoteLocalesNotFetchedUntilLanguagesPaneShown() {
+  let sandbox = sinon.createSandbox();
+  sandbox
+    .stub(LangPackMatcher.mockable, "getAvailableLangpacks")
+    .resolves(["de"].map(createRemoteLangpack));
+
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.settings-redesign.enabled", true],
+      ["intl.multilingual.enabled", true],
+      ["intl.multilingual.downloadEnabled", true],
+    ],
+  });
+
+  let paneInitialized = TestUtils.topicObserved("languages-pane-loaded");
+  await openPreferencesViaOpenPreferencesAPI("general", { leaveOpen: true });
+  let doc = gBrowser.contentDocument;
+  let win = doc.defaultView;
+
+  // findInPage.js initializes all panes in a requestIdleCallback after the
+  // initial pane loads. Wait for the browserLanguagePreferred select to be
+  // populated so that the languages.mjs settings have run their refresh and
+  // remote language fetching has had a chance to run. If it always loads we
+  // should have hit the API at that point.
+  await paneInitialized;
+  let preferredLanguage = getSettingControl("browserLanguagePreferred", win);
+  await BrowserTestUtils.waitForMutationCondition(
+    preferredLanguage,
+    { childList: true, subtree: true },
+    () => preferredLanguage.controlEl?.children?.length
+  );
+
+  is(
+    LangPackMatcher.mockable.getAvailableLangpacks.callCount,
+    0,
+    "Remote langpacks aren't fetched while a different pane is shown"
+  );
+
+  let paneLoaded = waitForPaneChange("languages");
+  synthesizeClick(doc.getElementById("category-languages"));
+  await paneLoaded;
+  await waitForRemoteSeparator(win);
+
+  is(
+    LangPackMatcher.mockable.getAvailableLangpacks.callCount,
+    1,
+    "Remote langpacks are fetched after switching to the languages pane"
+  );
+
+  let sc = getSettingControl("browserLanguagePreferred", win);
+  let children = Array.from(sc.controlEl.children);
+  let hrIndex = children.findIndex(el => el.localName === "hr");
+  let remoteValues = children.slice(hrIndex + 1).map(el => el.value);
+  Assert.deepEqual(
+    remoteValues,
+    ["de"],
+    "Remote locales appear after switching to the languages pane"
+  );
+
+  sandbox.restore();
+  BrowserTestUtils.removeTab(gBrowser.selectedTab);
+});
+
 // When downloadEnabled is true, remote locales from AMO should appear after
 // a separator below the installed locales.
 add_task(async function testRemoteLocalesAppearAfterSeparator() {

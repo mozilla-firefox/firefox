@@ -17,63 +17,11 @@
   <script type="application/javascript"
           src="../layout.js" />
   <script type="application/javascript"
-          src="../events.js" />
+          src="../promisified-events.js" />
 
   <script type="application/javascript">
   <![CDATA[
-    function openMenu(aMenuID, aMenuPopupID, aMenuItemID)
-    {
-      this.menuNode = getNode(aMenuID);
-
-      this.eventSeq = [
-        new invokerChecker(EVENT_FOCUS, this.menuNode)
-      ];
-
-      this.invoke = function openMenu_invoke()
-      {
-        this.menuNode.open = true;
-      }
-
-      this.finalCheck = function openMenu_finalCheck()
-      {
-        hitTest(aMenuPopupID, aMenuItemID, aMenuItemID);
-      }
-
-      this.getID = function openMenu_invoke()
-      {
-        return "open menu '" + aMenuID + "' and do hit testing";
-      }
-    }
-
-    function closeMenu(aID, aSubID, aSub2ID)
-    {
-      this.menuNode = getNode(aID);
-
-      this.eventSeq = [
-        new invokerChecker(EVENT_FOCUS, document)
-      ];
-
-      this.invoke = function openMenu_invoke()
-      {
-        this.menuNode.open = false;
-      }
-
-      this.finalCheck = function openMenu_finalCheck()
-      {
-        testStates(aID, 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
-        testStates(aSubID, STATE_INVISIBLE, 0, STATE_OFFSCREEN);
-        testStates(aSub2ID, STATE_INVISIBLE, 0, STATE_OFFSCREEN);
-      }
-
-      this.getID = function openMenu_invoke()
-      {
-        return "open menu and test states";
-      }
-    }
-
-    var gQueue = null;
-    function doTest()
-    {
+    async function doTest() {
       if (LINUX) {
         ok(true, "No tests is running on Linux");
         SimpleTest.finish();
@@ -82,11 +30,26 @@
 
       getNode("mi_file1").scrollIntoView(true);
 
-      gQueue = new eventQueue();
-      gQueue.push(new openMenu("mi_file1", "mp_file1", "mi_file1.1"));
-      gQueue.push(new openMenu("mi_file1.2", "mp_file1.2", "mi_file1.2.1"));
-      gQueue.push(new closeMenu("mi_file1", "mi_file1.1", "mi_file1.2.1"));
-      gQueue.invoke(); // Will call SimpleTest.finish();
+      let menuNode1 = getNode("mi_file1");
+      let focused = waitForEvent(EVENT_FOCUS, menuNode1);
+      menuNode1.open = true;
+      await focused;
+      hitTest("mp_file1", "mi_file1.1", "mi_file1.1");
+
+      let subMenuNode = getNode("mi_file1.2");
+      focused = waitForEvent(EVENT_FOCUS, subMenuNode);
+      subMenuNode.open = true;
+      await focused;
+      hitTest("mp_file1.2", "mi_file1.2.1", "mi_file1.2.1");
+
+      focused = waitForEvent(EVENT_FOCUS, document);
+      menuNode1.open = false;
+      await focused;
+      testStates("mi_file1", 0, 0, STATE_INVISIBLE | STATE_OFFSCREEN);
+      testStates("mi_file1.1", STATE_INVISIBLE, 0, STATE_OFFSCREEN);
+      testStates("mi_file1.2.1", STATE_INVISIBLE, 0, STATE_OFFSCREEN);
+
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

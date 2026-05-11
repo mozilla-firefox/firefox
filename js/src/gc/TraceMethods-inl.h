@@ -35,7 +35,7 @@
 #include "vm/StringType-inl.h"
 
 inline void js::BaseScript::traceChildren(JSTracer* trc) {
-  TraceNullableEdge(trc, &function_, "function");
+  TraceEdge(trc, &function_, "function");
   TraceEdge(trc, &sourceObject_, "sourceObject");
 
   if (data_) {
@@ -54,19 +54,19 @@ inline void js::Shape::traceChildren(JSTracer* trc) {
 }
 
 inline void js::NativeShape::traceChildren(JSTracer* trc) {
-  TraceNullableEdge(trc, &propMap_, "propertymap");
+  TraceEdge(trc, &propMap_, "propertymap");
 }
 
 template <uint32_t opts>
-void js::GCMarker::eagerlyMarkChildren(Shape* shape) {
+void js::gc::MarkingTracerT<opts>::eagerlyMarkChildren(Shape* shape) {
   MOZ_ASSERT(shape->isMarked(markColor()));
 
   BaseShape* base = shape->base();
-  markAndTraverseEdge<opts>(shape, base);
+  markAndTraverseEdge(shape, base);
 
   if (shape->isNative()) {
     if (PropMap* map = shape->asNative().propMap()) {
-      markAndTraverseEdge<opts>(shape, map);
+      markAndTraverseEdge(shape, map);
     }
   }
 }
@@ -84,15 +84,15 @@ inline void js::BaseShape::traceChildren(JSTracer* trc) {
 }
 
 template <uint32_t opts>
-void js::GCMarker::eagerlyMarkChildren(BaseShape* base) {
+void js::gc::MarkingTracerT<opts>::eagerlyMarkChildren(BaseShape* base) {
   JSObject* global = base->realm()->unsafeUnbarrieredMaybeGlobal();
   if (MOZ_LIKELY(global)) {
-    markAndTraverseEdge<opts>(base, global);
+    markAndTraverseEdge(base, global);
   }
 
   TaggedProto proto = base->proto();
   if (proto.isObject()) {
-    markAndTraverseEdge<opts>(base, proto.toObject());
+    markAndTraverseEdge(base, proto.toObject());
   }
 }
 
@@ -107,12 +107,12 @@ inline void JSString::traceChildren(JSTracer* trc) {
   }
 }
 template <uint32_t opts>
-void js::GCMarker::eagerlyMarkChildren(JSString* str) {
+void js::gc::MarkingTracerT<opts>::eagerlyMarkChildren(JSString* str) {
   uint32_t flags = str->flags();
   if (flags & js::StringFlags::LINEAR_BIT) {
-    eagerlyMarkChildren<opts>(static_cast<JSLinearString*>(str));
+    eagerlyMarkChildren(static_cast<JSLinearString*>(str));
   } else {
-    eagerlyMarkChildren<opts>(static_cast<JSRope*>(str));
+    eagerlyMarkChildren(static_cast<JSRope*>(str));
   }
 }
 
@@ -121,8 +121,9 @@ inline void JSString::traceBase(JSTracer* trc) {
   js::TraceManuallyBarrieredEdge(trc, &d.s.u3.base, "base");
 }
 template <uint32_t opts>
-void js::GCMarker::eagerlyMarkChildren(JSLinearString* linearStr) {
-  gc::AssertShouldMarkInZone(this, linearStr);
+void js::gc::MarkingTracerT<opts>::eagerlyMarkChildren(
+    JSLinearString* linearStr) {
+  gc::AssertShouldMarkInZone(gcMarker(), linearStr);
   MOZ_ASSERT(linearStr->isMarkedAny());
 
   // Use iterative marking to avoid blowing out the stack.
@@ -138,8 +139,8 @@ void js::GCMarker::eagerlyMarkChildren(JSLinearString* linearStr) {
     }
 
     MOZ_ASSERT(linearStr->JSString::isLinear());
-    gc::AssertShouldMarkInZone(this, linearStr);
-    if (!mark<opts>(static_cast<JSString*>(linearStr))) {
+    gc::AssertShouldMarkInZone(gcMarker(), linearStr);
+    if (!mark(static_cast<JSString*>(linearStr))) {
       break;
     }
   }
@@ -153,7 +154,7 @@ inline void JSRope::traceChildren(JSTracer* trc) {
   js::TraceManuallyBarrieredEdge(trc, &d.s.u3.right, "right child");
 }
 template <uint32_t opts>
-void js::GCMarker::eagerlyMarkChildren(JSRope* rope) {
+void js::gc::MarkingTracerT<opts>::eagerlyMarkChildren(JSRope* rope) {
   // This function tries to scan the whole rope tree using the marking stack as
   // temporary storage. If that becomes full, the unscanned ropes are added to
   // the delayed marking list. When the function returns, the marking stack is
@@ -161,12 +162,15 @@ void js::GCMarker::eagerlyMarkChildren(JSRope* rope) {
   // the stack. This also assumes that a rope can only point to other ropes or
   // linear strings, it cannot refer to GC things of other types.
 
+  GCMarker* marker = gcMarker();
+  MarkStack& stack = marker->stack;
+
   size_t savedPos = stack.position();
   MOZ_DIAGNOSTIC_ASSERT(rope->getTraceKind() == JS::TraceKind::String);
 
   while (true) {
     MOZ_DIAGNOSTIC_ASSERT(rope->getTraceKind() == JS::TraceKind::String);
-    gc::AssertShouldMarkInZone(this, rope);
+    gc::AssertShouldMarkInZone(marker, rope);
 
     MOZ_ASSERT(rope->isMarkedAny());
     JSRope* next = nullptr;
@@ -193,7 +197,7 @@ void js::GCMarker::eagerlyMarkChildren(JSRope* rope) {
     // on the main thread these happen in the reverse order. This ensures that
     // we can't observe updated children with the old type. Observing the new
     // type with old children is possible but benign.
-    if constexpr (bool(opts & gc::MarkingOptions::ConcurrentMarking)) {
+    if constexpr (hasOption(gc::MarkingOptions::ConcurrentMarking)) {
       gc::MemoryAcquireFence<opts>(rope->runtimeFromAnyThread());
       if (!rope->isRopeAtomic()) {
         shouldMark = false;
@@ -204,24 +208,24 @@ void js::GCMarker::eagerlyMarkChildren(JSRope* rope) {
 #endif
 
     if (shouldMark) {
-      if (mark<opts>(right)) {
+      if (mark(right)) {
         MOZ_ASSERT(!right->isPermanentAtom());
         if (right->isLinear()) {
-          eagerlyMarkChildren<opts>(static_cast<JSLinearString*>(right));
+          eagerlyMarkChildren(static_cast<JSLinearString*>(right));
         } else {
           next = static_cast<JSRope*>(right);
         }
       }
 
-      if (mark<opts>(left)) {
+      if (mark(left)) {
         MOZ_ASSERT(!left->isPermanentAtom());
         if (left->isLinear()) {
-          eagerlyMarkChildren<opts>(static_cast<JSLinearString*>(left));
+          eagerlyMarkChildren(static_cast<JSLinearString*>(left));
         } else {
           // When both children are ropes, set aside the right one to
           // scan it later.
           if (next && !stack.pushTempRope(next)) {
-            delayMarkingChildrenOnOOM(next);
+            marker->delayMarkingChildrenOnOOM(next);
           }
           next = static_cast<JSRope*>(left);
         }
@@ -242,7 +246,7 @@ void js::GCMarker::eagerlyMarkChildren(JSRope* rope) {
 }
 
 inline void JS::Symbol::traceChildren(JSTracer* trc) {
-  js::TraceNullableCellHeaderEdge(trc, this, "symbol description");
+  js::TraceCellHeaderEdge(trc, this, "symbol description");
 }
 
 template <typename SlotInfo>
@@ -251,22 +255,22 @@ void js::RuntimeScopeData<SlotInfo>::trace(JSTracer* trc) {
 }
 
 inline void js::FunctionScope::RuntimeData::trace(JSTracer* trc) {
-  TraceNullableEdge(trc, &canonicalFunction, "scope canonical function");
+  TraceEdge(trc, &canonicalFunction, "scope canonical function");
   TraceNullableBindingNames(trc, GetScopeDataTrailingNamesPointer(this),
                             length);
 }
 inline void js::ModuleScope::RuntimeData::trace(JSTracer* trc) {
-  TraceNullableEdge(trc, &module, "scope module");
+  TraceEdge(trc, &module, "scope module");
   TraceBindingNames(trc, GetScopeDataTrailingNamesPointer(this), length);
 }
 inline void js::WasmInstanceScope::RuntimeData::trace(JSTracer* trc) {
-  TraceNullableEdge(trc, &instance, "wasm instance");
+  TraceEdge(trc, &instance, "wasm instance");
   TraceBindingNames(trc, GetScopeDataTrailingNamesPointer(this), length);
 }
 
 inline void js::Scope::traceChildren(JSTracer* trc) {
-  TraceNullableEdge(trc, &environmentShape_, "scope env shape");
-  TraceNullableEdge(trc, &enclosingScope_, "scope enclosing");
+  TraceEdge(trc, &environmentShape_, "scope env shape");
+  TraceEdge(trc, &enclosingScope_, "scope enclosing");
   BaseScopeData* data = rawData();
   if (data) {
     TraceBufferEdge(trc, this, &data, "Scope data");
@@ -278,10 +282,10 @@ inline void js::Scope::traceChildren(JSTracer* trc) {
 }
 
 template <uint32_t opts>
-void js::GCMarker::eagerlyMarkChildren(Scope* scope) {
+void js::gc::MarkingTracerT<opts>::eagerlyMarkChildren(Scope* scope) {
   do {
     if (Shape* shape = scope->environmentShape()) {
-      markAndTraverseEdge<opts>(scope, shape);
+      markAndTraverseEdge(scope, shape);
     }
     if (BaseScopeData* data = scope->rawData()) {
       MarkTenuredBuffer(scope->zone(), data);
@@ -291,7 +295,7 @@ void js::GCMarker::eagerlyMarkChildren(Scope* scope) {
       case ScopeKind::Function: {
         FunctionScope::RuntimeData& data = scope->as<FunctionScope>().data();
         if (data.canonicalFunction) {
-          markAndTraverseObjectEdge<opts>(scope, data.canonicalFunction);
+          markAndTraverseObjectEdge(scope, data.canonicalFunction);
         }
         names = GetScopeDataTrailingNames(&data);
         break;
@@ -337,7 +341,7 @@ void js::GCMarker::eagerlyMarkChildren(Scope* scope) {
       case ScopeKind::Module: {
         ModuleScope::RuntimeData& data = scope->as<ModuleScope>().data();
         if (data.module) {
-          markAndTraverseObjectEdge<opts>(scope, data.module);
+          markAndTraverseObjectEdge(scope, data.module);
         }
         names = GetScopeDataTrailingNames(&data);
         break;
@@ -349,7 +353,7 @@ void js::GCMarker::eagerlyMarkChildren(Scope* scope) {
       case ScopeKind::WasmInstance: {
         WasmInstanceScope::RuntimeData& data =
             scope->as<WasmInstanceScope>().data();
-        markAndTraverseObjectEdge<opts>(scope, data.instance);
+        markAndTraverseObjectEdge(scope, data.instance);
         names = GetScopeDataTrailingNames(&data);
         break;
       }
@@ -364,16 +368,16 @@ void js::GCMarker::eagerlyMarkChildren(Scope* scope) {
     if (scope->kind_ == ScopeKind::Function) {
       for (auto& binding : names) {
         if (JSAtom* name = binding.name()) {
-          markAndTraverseStringEdge<opts>(scope, name);
+          markAndTraverseStringEdge(scope, name);
         }
       }
     } else {
       for (auto& binding : names) {
-        markAndTraverseStringEdge<opts>(scope, binding.name());
+        markAndTraverseStringEdge(scope, binding.name());
       }
     }
     scope = scope->enclosing();
-  } while (scope && mark<opts>(scope));
+  } while (scope && mark(scope));
 }
 
 inline void js::GetterSetter::traceChildren(JSTracer* trc) {
@@ -412,12 +416,12 @@ inline void js::PropMap::traceChildren(JSTracer* trc) {
 }
 
 template <uint32_t opts>
-void js::GCMarker::eagerlyMarkChildren(PropMap* map) {
+void js::gc::MarkingTracerT<opts>::eagerlyMarkChildren(PropMap* map) {
   MOZ_ASSERT(map->isMarkedAny());
   do {
     for (uint32_t i = 0; i < PropMap::Capacity; i++) {
       if (map->hasKey(i)) {
-        markAndTraverseEdge<opts>(map, map->getKey(i));
+        markAndTraverseEdge(map, map->getKey(i));
       }
     }
 
@@ -425,7 +429,7 @@ void js::GCMarker::eagerlyMarkChildren(PropMap* map) {
       // Special case: if a map has a table then all its pointers must point to
       // this map or an ancestor. Since these pointers will be traced by this
       // loop they do not need to be traced here as well.
-      MOZ_ASSERT_IF(state != MarkingState::ConcurrentMarking,
+      MOZ_ASSERT_IF(!gcMarker()->isConcurrentMarking(),
                     map->asLinked()->canSkipMarkingTable());
     }
 
@@ -439,7 +443,7 @@ void js::GCMarker::eagerlyMarkChildren(PropMap* map) {
       // |parent| maps will also mark all |previous| maps.
       map = map->asShared()->treeDataRef().parent.maybeMap();
     }
-  } while (map && mark<opts>(map));
+  } while (map && mark(map));
 }
 
 inline void JS::BigInt::traceChildren(JSTracer* trc) {

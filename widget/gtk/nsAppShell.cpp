@@ -64,7 +64,7 @@ LazyLogModule gWidgetCompositorLog("WidgetCompositor");
 
 static GPollFunc sPollFunc;
 
-nsAppShell* sAppShell = nullptr;
+nsAppShell* nsAppShell::sAppShell = nullptr;
 
 // Wrapper function to disable hang monitoring while waiting in poll().
 static gint PollWrapper(GPollFD* aUfds, guint aNfsd, gint aTimeout) {
@@ -451,6 +451,7 @@ void nsAppShell::InstallTermSignalHandler() {
 }
 
 nsresult nsAppShell::Init() {
+  MOZ_ASSERT(!sAppShell);
   mozilla::hal::Init();
 
 #ifdef MOZ_ENABLE_DBUS

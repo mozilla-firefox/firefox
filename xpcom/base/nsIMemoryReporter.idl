@@ -462,8 +462,8 @@ namespace mozilla {
 
 // Register a memory reporter.  The manager service will hold a strong
 // reference to this reporter.
-XPCOM_API(nsresult) RegisterStrongMemoryReporter(nsIMemoryReporter* aReporter);
-XPCOM_API(nsresult) RegisterStrongAsyncMemoryReporter(nsIMemoryReporter* aReporter);
+nsresult RegisterStrongMemoryReporter(already_AddRefed<nsIMemoryReporter> aReporter);
+nsresult RegisterStrongAsyncMemoryReporter(already_AddRefed<nsIMemoryReporter> aReporter);
 
 // Register a memory reporter.  The manager service will hold a weak reference
 // to this reporter.
@@ -471,7 +471,7 @@ XPCOM_API(nsresult) RegisterWeakMemoryReporter(nsIMemoryReporter* aReporter);
 XPCOM_API(nsresult) RegisterWeakAsyncMemoryReporter(nsIMemoryReporter* aReporter);
 
 // Unregister a strong memory reporter.
-XPCOM_API(nsresult) UnregisterStrongMemoryReporter(nsIMemoryReporter* aReporter);
+nsresult UnregisterStrongMemoryReporter(nsIMemoryReporter* aReporter);
 
 // Unregister a weak memory reporter.
 XPCOM_API(nsresult) UnregisterWeakMemoryReporter(nsIMemoryReporter* aReporter);

@@ -529,6 +529,7 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
             Log.i(TAG, "clickBookmarksButton: Trying to click the Bookmarks button from the new main menu design.")
             itemWithDescription(getStringResource(R.string.library_bookmarks)).click()
             Log.i(TAG, "clickBookmarksButton: Clicked the Bookmarks button from the new main menu design.")
+            composeTestRule.waitForIdle()
 
             BookmarksRobot(composeTestRule).interact()
             return BookmarksRobot.Transition(composeTestRule)
@@ -700,10 +701,14 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
             return AddToHomeScreenRobot.Transition(composeTestRule)
         }
 
+        @OptIn(ExperimentalTestApi::class)
         fun clickAddAppToHomeScreenButton(interact: AddToHomeScreenRobot.() -> Unit): AddToHomeScreenRobot.Transition {
             Log.i(TAG, "clickAddToHomeScreenButton: Trying to click the \"Add app to Home screen…\" button from the new main menu design.")
             composeTestRule.addAppToHomeScreenButton().performClick()
             Log.i(TAG, "clickAddToHomeScreenButton: Clicked the \"Add app to Home screen…\" button from the new main menu design.")
+            Log.i(TAG, "clickAddToHomeScreenButton: Waiting for $waitingTime until the \"Add app to Home screen…\" button does not exist.")
+            composeTestRule.waitUntilDoesNotExist(hasContentDescription(getStringResource(R.string.browser_menu_add_app_to_homescreen)), waitingTime)
+            Log.i(TAG, "clickAddToHomeScreenButton: Waited for $waitingTime until the \"Add app to Home screen…\" button does not exist.")
 
             AddToHomeScreenRobot(composeTestRule).interact()
             return AddToHomeScreenRobot.Transition(composeTestRule)

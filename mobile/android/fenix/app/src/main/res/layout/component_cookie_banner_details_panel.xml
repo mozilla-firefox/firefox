@@ -19,7 +19,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/mozac_ic_back_24"
-        app:tint="?attr/textPrimary" />
+        app:tint="?attr/colorOnSurface" />
 
     <TextView
         android:id="@+id/title"
@@ -29,7 +29,7 @@
         android:focusable="false"
         android:paddingHorizontal="16dp"
         android:paddingTop="16dp"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="16sp"
         app:layout_constraintStart_toEndOf="@+id/navigate_back"
         app:layout_constraintEnd_toStartOf="@id/cookieBannerSwitch"
@@ -54,7 +54,7 @@
         android:layout_height="wrap_content"
         android:paddingHorizontal="16dp"
         android:layout_marginBottom="8dp"
-        android:textColor="?attr/textSecondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/navigate_back"
@@ -74,7 +74,7 @@
         android:text="@string/cookie_banner_handling_details_site_is_not_supported_cancel_button"
         android:layout_marginEnd="16dp"
         android:textAllCaps="true"
-        android:textColor="@color/fx_mobile_text_color_accent"
+        android:textColor="?attr/colorTertiary"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -92,7 +92,7 @@
         android:layout_marginEnd="16dp"
         android:text="@string/cookie_banner_handling_details_site_is_not_supported_request_support_button_2"
         android:textAllCaps="true"
-        android:textColor="@color/fx_mobile_text_color_accent"
+        android:textColor="?attr/colorTertiary"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"

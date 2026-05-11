@@ -22,7 +22,7 @@ add_task(async function test_mid_translation_disable_and_reenable_active_tab() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },
     "The URL bar translate button is visible when the Translations feature is enabled."
@@ -57,7 +57,7 @@ add_task(async function test_mid_translation_disable_and_reenable_active_tab() {
   const browser = gBrowser.selectedBrowser;
   const reloadPromise = BrowserTestUtils.browserLoaded(browser);
 
-  await TranslationsParent.AIFeature.block();
+  await TranslationsFeature.block();
 
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: false },
@@ -78,7 +78,7 @@ add_task(async function test_mid_translation_disable_and_reenable_active_tab() {
   info(
     "Re-enabling the Translations feature. Page should automatically reload."
   );
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
 
   info("Waiting for page reload to complete.");
   await reloadPromise;
@@ -135,7 +135,7 @@ add_task(
 
     await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage1);
 
-    await TranslationsParent.AIFeature.enable();
+    await TranslationsFeature.enable();
     await FullPageTranslationsTestUtils.assertTranslationsButton(
       { button: true, circleArrows: false, locale: false, icon: true },
       "The URL bar translate button is visible in tab 1."
@@ -169,7 +169,7 @@ add_task(
     );
 
     info("Disabling the Translations feature while translation is active.");
-    await TranslationsParent.AIFeature.block();
+    await TranslationsFeature.block();
 
     await FullPageTranslationsTestUtils.assertTranslationsButton(
       { button: false },
@@ -188,7 +188,7 @@ add_task(
     );
 
     info("Re-enabling the Translations feature from tab 2.");
-    await TranslationsParent.AIFeature.enable();
+    await TranslationsFeature.enable();
 
     await FullPageTranslationsTestUtils.assertTranslationsButton(
       { button: true, circleArrows: false, locale: false, icon: true },
@@ -260,7 +260,7 @@ add_task(async function test_mid_translation_disable_from_tab_without_actor() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },
     "The URL bar translate button is visible in tab 1."
@@ -284,7 +284,7 @@ add_task(async function test_mid_translation_disable_from_tab_without_actor() {
   const { removeTab } = await addTab("about:blank", "Opening about:blank tab");
 
   info("Disabling the Translations feature from about:blank tab.");
-  await TranslationsParent.AIFeature.block();
+  await TranslationsFeature.block();
 
   info("Switching back to tab 1 with active translation.");
   await switchTab(tab1, "Switching to tab 1");
@@ -316,7 +316,7 @@ add_task(async function test_disable_feature_during_model_loading() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },
     "The URL bar translate button is visible when the Translations feature is enabled."
@@ -344,7 +344,7 @@ add_task(async function test_disable_feature_during_model_loading() {
   info(
     "Disabling the Translations feature while models are still loading (downloads not resolved)."
   );
-  await TranslationsParent.AIFeature.block();
+  await TranslationsFeature.block();
 
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: false },
@@ -352,7 +352,7 @@ add_task(async function test_disable_feature_during_model_loading() {
   );
 
   info("Re-enabling the Translations feature.");
-  await TranslationsParent.AIFeature.enable();
+  await TranslationsFeature.enable();
 
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: true, circleArrows: false, locale: false, icon: true },

@@ -17,7 +17,7 @@
         android:layout_marginEnd="24dp"
         android:ellipsize="end"
         android:text="@string/delete_history_prompt_title"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="16sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
@@ -32,7 +32,7 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="24dp"
         android:text="@string/delete_history_prompt_body_2"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -53,12 +53,12 @@
             android:layout_height="wrap_content"
             android:background="?android:attr/selectableItemBackground"
             android:ellipsize="end"
-            android:buttonTint="?attr/textSecondary"
+            android:buttonTint="?attr/colorOnSurfaceVariant"
             android:layout_marginStart="18dp"
             android:paddingStart="32dp"
             android:paddingEnd="8dp"
             android:text="@string/delete_history_prompt_button_last_hour"
-            android:textColor="?attr/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="16sp" />
 
         <RadioButton
@@ -67,12 +67,12 @@
             android:layout_height="wrap_content"
             android:background="?android:attr/selectableItemBackground"
             android:ellipsize="end"
-            android:buttonTint="?attr/textSecondary"
+            android:buttonTint="?attr/colorOnSurfaceVariant"
             android:layout_marginStart="18dp"
             android:paddingStart="32dp"
             android:paddingEnd="8dp"
             android:text="@string/delete_history_prompt_button_today_and_yesterday"
-            android:textColor="?attr/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="16sp" />
 
         <RadioButton
@@ -81,12 +81,12 @@
             android:layout_height="wrap_content"
             android:background="?android:attr/selectableItemBackground"
             android:ellipsize="end"
-            android:buttonTint="?attr/textSecondary"
+            android:buttonTint="?attr/colorOnSurfaceVariant"
             android:layout_marginStart="18dp"
             android:paddingStart="32dp"
             android:paddingEnd="8dp"
             android:text="@string/delete_history_prompt_button_everything"
-            android:textColor="?attr/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="16sp" />
     </RadioGroup>
 </androidx.constraintlayout.widget.ConstraintLayout>

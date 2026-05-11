@@ -19,7 +19,6 @@ import org.mozilla.fenix.helpers.TestAssetHelper.htmlControlsFormAsset
 import org.mozilla.fenix.helpers.TestHelper.clickSnackbarButton
 import org.mozilla.fenix.helpers.TestHelper.exitMenu
 import org.mozilla.fenix.helpers.TestHelper.verifySnackBarText
-import org.mozilla.fenix.helpers.TestHelper.waitForAppWindowToBeUpdated
 import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.browserScreen
 import org.mozilla.fenix.ui.robots.composeBookmarksMenu
@@ -350,6 +349,7 @@ class BookmarksTest {
         homeScreen(composeTestRule) {
         }.openThreeDotMenu {
         }.clickBookmarksButton {
+            verifyBookmarkTitle(defaultWebPage.title)
             createFolder(bookmarkFolderName)
             verifyFolderTitle(bookmarkFolderName)
             verifyBookmarkTitle(defaultWebPage.title)

@@ -54,6 +54,11 @@
         app:launchSingleTop="true" />
 
     <action
+      android:id="@+id/action_global_ip_protection_dialog"
+      app:destination="@+id/ipProtectionOnboardingDialogFragment"
+      app:launchSingleTop="true" />
+
+    <action
         android:id="@+id/action_global_recently_closed"
         app:destination="@id/recentlyClosedFragment" />
 
@@ -199,6 +204,10 @@
         android:id="@+id/action_global_to_installedAddonDetailsFragment"
         app:destination="@id/installedAddonDetailsFragment" />
 
+    <action
+        android:id="@+id/action_global_aiControlsFragment"
+        app:destination="@+id/aiControlsFragment"/>
+
     <fragment
         android:id="@+id/tabManagementFragment"
         android:name="org.mozilla.fenix.tabstray.ui.TabManagementFragment">
@@ -327,6 +336,15 @@
         <argument
             android:name="surface"
             app:argType="org.mozilla.fenix.termsofuse.store.Surface"
+            app:nullable="false" />
+    </dialog>
+
+    <dialog
+        android:id="@+id/ipProtectionOnboardingDialogFragment"
+        android:name="org.mozilla.fenix.ipprotection.ui.IPProtectionBottomSheetFragment">
+        <argument
+            android:name="surface"
+            app:argType="org.mozilla.fenix.ipprotection.store.Surface"
             app:nullable="false" />
     </dialog>
 

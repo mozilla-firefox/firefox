@@ -668,27 +668,14 @@
         userContextId = parseInt(tabArgument.getAttribute("usercontextid"), 10);
       }
 
-      if (openWindowInfo) {
-        userContextId = openWindowInfo.originAttributes.userContextId;
-      }
-
-      let remoteTypeOptions = { window, userContextId };
-      if (triggeringRemoteType) {
-        // NOTE: We intentionally don't allow setting preferredRemoteType to
-        // NOT_REMOTE (null), as we don't want to choose the parent process.
-        remoteTypeOptions.preferredRemoteType = triggeringRemoteType;
-      }
-
       if (tabArgument && tabArgument.linkedBrowser) {
         remoteType = tabArgument.linkedBrowser.remoteType;
         initialBrowsingContextGroupId =
           tabArgument.linkedBrowser.browsingContext?.group.id;
       } else if (openWindowInfo) {
+        userContextId = openWindowInfo.originAttributes.userContextId;
         if (openWindowInfo.isRemote) {
-          remoteType = ChromeUtils.predictRemoteTypeForURI(
-            null,
-            remoteTypeOptions
-          );
+          remoteType = triggeringRemoteType ?? E10SUtils.DEFAULT_REMOTE_TYPE;
         } else {
           remoteType = E10SUtils.NOT_REMOTE;
         }
@@ -699,9 +686,17 @@
         }
 
         if (uriToLoad && typeof uriToLoad == "string") {
-          remoteType = ChromeUtils.predictRemoteTypeForURI(
+          let oa = E10SUtils.predictOriginAttributes({
+            window,
+            userContextId,
+          });
+          remoteType = E10SUtils.getRemoteTypeForURI(
             uriToLoad,
-            remoteTypeOptions
+            gMultiProcessBrowser,
+            gFissionBrowser,
+            triggeringRemoteType ?? E10SUtils.DEFAULT_REMOTE_TYPE,
+            null,
+            oa
           );
         } else {
           // If we reach here, we don't have the url to load. This means that
@@ -2713,11 +2708,16 @@
 
       let oldRemoteType = aBrowser.remoteType;
 
-      aOptions.remoteType = ChromeUtils.predictRemoteTypeForURI(aURL, {
-        window,
-        userContextId: aBrowser.getAttribute("usercontextid") ?? 0,
-        preferredRemoteType: oldRemoteType,
-      });
+      let oa = E10SUtils.predictOriginAttributes({ browser: aBrowser });
+
+      aOptions.remoteType = E10SUtils.getRemoteTypeForURI(
+        aURL,
+        gMultiProcessBrowser,
+        gFissionBrowser,
+        oldRemoteType,
+        aBrowser.currentURI,
+        oa
+      );
 
       // If this URL can't load in the current browser then flip it to the
       // correct type.
@@ -2906,10 +2906,25 @@
             getter = () => {
               let url =
                 SessionStore.getLazyTabValue(aTab, "url") || "about:blank";
-              return ChromeUtils.predictRemoteTypeForURI(url, {
-                window,
+              // Avoid recreating the same nsIURI object over and over again...
+              let uri;
+              if (browser._cachedCurrentURI) {
+                uri = browser._cachedCurrentURI;
+              } else {
+                uri = browser._cachedCurrentURI = Services.io.newURI(url);
+              }
+              let oa = E10SUtils.predictOriginAttributes({
+                browser,
                 userContextId: aTab.getAttribute("usercontextid"),
               });
+              return E10SUtils.getRemoteTypeForURI(
+                url,
+                gMultiProcessBrowser,
+                gFissionBrowser,
+                undefined,
+                uri,
+                oa
+              );
             };
             break;
           case "userTypedValue":
@@ -4255,6 +4270,8 @@
 
       let { userContextId } = tab;
 
+      var oa = E10SUtils.predictOriginAttributes({ window, userContextId });
+
       // If URI is about:blank and we don't have a preferred remote type,
       // then we need to use the referrer, if we have one, to get the
       // correct remote type for the new tab.
@@ -4264,19 +4281,26 @@
         referrerInfo &&
         referrerInfo.originalReferrer
       ) {
-        preferredRemoteType = ChromeUtils.predictRemoteTypeForURI(
-          referrerInfo.originalReferrer,
-          { window, userContextId }
+        preferredRemoteType = E10SUtils.getRemoteTypeForURI(
+          referrerInfo.originalReferrer.spec,
+          gMultiProcessBrowser,
+          gFissionBrowser,
+          E10SUtils.DEFAULT_REMOTE_TYPE,
+          null,
+          oa
         );
       }
 
       let remoteType = forceNotRemote
         ? E10SUtils.NOT_REMOTE
-        : ChromeUtils.predictRemoteTypeForURI(uriString, {
-            window,
-            userContextId,
+        : E10SUtils.getRemoteTypeForURI(
+            uriString,
+            gMultiProcessBrowser,
+            gFissionBrowser,
             preferredRemoteType,
-          });
+            null,
+            oa
+          );
 
       let b,
         usingPreloadedContent = false;
@@ -4525,10 +4549,14 @@
             url = tabData.entries[activeIndex].url;
           }
 
-          let preferredRemoteType = ChromeUtils.predictRemoteTypeForURI(url, {
-            window,
-            userContextId,
-          });
+          let preferredRemoteType = E10SUtils.getRemoteTypeForURI(
+            url,
+            gMultiProcessBrowser,
+            gFissionBrowser,
+            E10SUtils.DEFAULT_REMOTE_TYPE,
+            null,
+            E10SUtils.predictOriginAttributes({ window, userContextId })
+          );
 
           // If we're creating a lazy browser, let tabbrowser know the future
           // URI because progress listeners won't get onLocationChange
@@ -10541,15 +10569,19 @@ var TabContextMenu = {
     );
 
     // Only one of pin/unpin/multiselect-pin/multiselect-unpin should be visible
+    let hasAboutOpenTabsTab = this.contextTabs.some(
+      t => t.linkedBrowser.currentURI.spec === "about:opentabs"
+    );
     let contextPinTab = document.getElementById("context_pinTab");
-    contextPinTab.hidden = this.contextTab.pinned || this.multiselected;
+    contextPinTab.hidden =
+      this.contextTab.pinned || this.multiselected || hasAboutOpenTabsTab;
     let contextUnpinTab = document.getElementById("context_unpinTab");
     contextUnpinTab.hidden = !this.contextTab.pinned || this.multiselected;
     let contextPinSelectedTabs = document.getElementById(
       "context_pinSelectedTabs"
     );
     contextPinSelectedTabs.hidden =
-      this.contextTab.pinned || !this.multiselected;
+      this.contextTab.pinned || !this.multiselected || hasAboutOpenTabsTab;
     let contextUnpinSelectedTabs = document.getElementById(
       "context_unpinSelectedTabs"
     );

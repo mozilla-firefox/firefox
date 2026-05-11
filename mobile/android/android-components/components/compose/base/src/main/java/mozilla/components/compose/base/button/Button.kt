@@ -15,6 +15,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonDefaults.outlinedButtonBorder
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -52,6 +53,7 @@ private fun ButtonContent(
     text: String,
     icon: Painter?,
     modifier: Modifier = Modifier,
+    iconTint: Color = LocalContentColor.current,
 ) {
     val fontScale: Float = LocalConfiguration.current.fontScale
 
@@ -60,6 +62,7 @@ private fun ButtonContent(
             painter = painter,
             contentDescription = null,
             modifier = modifier,
+            tint = iconTint,
         )
         Spacer(modifier = Modifier.width(AcornTheme.layout.space.static100))
     }
@@ -83,6 +86,8 @@ private fun ButtonContent(
  * @param containerColor The background color of the button when enabled.
  * @param icon Optional [Painter] used to display an [Icon] before the button text.
  * @param iconModifier [Modifier] to be applied to the icon.
+ * @param iconTint Optional [Color] used to tint the icon. When `null` the icon is tinted using
+ * [contentColor].
  * @param onClick Invoked when the user clicks on the button.
  */
 @Composable
@@ -94,6 +99,7 @@ fun FilledButton(
     containerColor: Color = ButtonDefaults.buttonColors().containerColor,
     icon: Painter? = null,
     iconModifier: Modifier = Modifier,
+    iconTint: Color = contentColor,
     onClick: () -> Unit,
 ) {
     M3Button(
@@ -106,7 +112,7 @@ fun FilledButton(
             contentColor = contentColor,
         ),
     ) {
-        ButtonContent(text = text, icon = icon, modifier = iconModifier)
+        ButtonContent(text = text, icon = icon, modifier = iconModifier, iconTint = iconTint)
     }
 }
 
@@ -265,6 +271,13 @@ private fun ButtonPreviewContent() {
                 text = "Label",
                 enabled = false,
                 icon = painterResource(iconsR.drawable.mozac_ic_collection_24),
+                onClick = {},
+            )
+
+            FilledButton(
+                text = "Label",
+                icon = painterResource(iconsR.drawable.mozac_ic_collection_24),
+                iconTint = Color.Red,
                 onClick = {},
             )
 

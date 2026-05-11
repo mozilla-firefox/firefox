@@ -29,9 +29,9 @@
 #include "frontend/SharedContext.h"
 #include "frontend/StencilXdr.h"  // XDRStencilEncoder, XDRStencilDecoder
 #include "gc/AllocKind.h"         // gc::AllocKind
-#include "gc/Tracer.h"            // TraceNullableRoot
+#include "gc/Tracer.h"            // TraceRoot
 #include "jit/BaselineCompileTask.h"  // BaselineCompileTask::OffThreadBaselineCompilationAvailable
-#include "jit/BaselineJIT.h"  // jit::BaselineScript, jit::CanBaselineInterpretScript
+#include "jit/BaselineJIT.h"  // jit::BaselineScript, jit::CanBaselineCompileScript
 #include "jit/JitContext.h"     // jit::MethodStatus
 #include "jit/JitRuntime.h"     // jit::JitRuntime
 #include "jit/JitScript.h"      // AutoKeepJitScripts
@@ -1524,7 +1524,7 @@ void InputScope::trace(JSTracer* trc) {
   using ScopePtr = Scope*;
   if (scope_.is<ScopePtr>()) {
     ScopePtr* ptrAddr = &scope_.as<ScopePtr>();
-    TraceNullableRoot(trc, ptrAddr, "compilation-input-scope");
+    TraceRoot(trc, ptrAddr, "compilation-input-scope");
   }
 }
 
@@ -1532,7 +1532,7 @@ void InputScript::trace(JSTracer* trc) {
   using ScriptPtr = BaseScript*;
   if (script_.is<ScriptPtr>()) {
     ScriptPtr* ptrAddr = &script_.as<ScriptPtr>();
-    TraceNullableRoot(trc, ptrAddr, "compilation-input-lazy");
+    TraceRoot(trc, ptrAddr, "compilation-input-lazy");
   }
 }
 
@@ -1904,12 +1904,12 @@ void PreAllocateableGCArray<T>::trace(JSTracer* trc) {
   }
 
   if (isInline()) {
-    TraceNullableRoot(trc, &inlineElem_, "PreAllocateableGCArray::inlineElem_");
+    TraceRoot(trc, &inlineElem_, "PreAllocateableGCArray::inlineElem_");
     return;
   }
 
   for (size_t i = 0; i < length_; i++) {
-    TraceNullableRoot(trc, &elems_[i], "PreAllocateableGCArray::elems_");
+    TraceRoot(trc, &elems_[i], "PreAllocateableGCArray::elems_");
   }
 }
 
@@ -1945,9 +1945,9 @@ template struct js::frontend::PreAllocateableGCArray<js::Scope*>;
 void CompilationAtomCache::trace(JSTracer* trc) { atoms_.trace(trc); }
 
 void CompilationGCOutput::trace(JSTracer* trc) {
-  TraceNullableRoot(trc, &script, "compilation-gc-output-script");
-  TraceNullableRoot(trc, &module, "compilation-gc-output-module");
-  TraceNullableRoot(trc, &sourceObject, "compilation-gc-output-source");
+  TraceRoot(trc, &script, "compilation-gc-output-script");
+  TraceRoot(trc, &module, "compilation-gc-output-module");
+  TraceRoot(trc, &sourceObject, "compilation-gc-output-source");
   functions.trace(trc);
   scopes.trace(trc);
 }
@@ -2721,7 +2721,7 @@ static bool MaybeDoEagerBaselineCompilations(JSContext* cx,
                                              const CompilationStencil& stencil,
                                              CompilationGCOutput& gcOutput,
                                              bool doAggressive) {
-  if (!jit::IsBaselineInterpreterEnabled()) {
+  if (!jit::IsBaselineJitEnabled(cx)) {
     return true;
   }
 
@@ -2760,11 +2760,7 @@ static bool MaybeDoEagerBaselineCompilations(JSContext* cx,
       }
     }
 
-    if (script->baselineDisabled()) {
-      continue;
-    }
-
-    if (!jit::CanBaselineInterpretScript(script)) {
+    if (!jit::CanBaselineCompileScript(cx, script)) {
       continue;
     }
 

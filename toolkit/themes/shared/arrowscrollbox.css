@@ -23,11 +23,14 @@ slot {
 
 toolbarbutton {
   color: inherit;
+  /* Width of list-style-image SVG and padding-block used to calculate
+   * --scrollbutton-height in menu.css.
+   */
   list-style-image: url("chrome://global/skin/icons/arrow-down-12.svg");
+  padding: 2px;
   -moz-context-properties: fill, fill-opacity;
   fill: currentColor;
   fill-opacity: 1;
-  padding: 2px;
   /* Make sure we draw on top of our scrollbox, since otherwise the up button
    * won't be hittable */
   position: relative;

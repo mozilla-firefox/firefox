@@ -16,48 +16,30 @@
   <script type="application/javascript"
           src="../states.js"></script>
   <script type="application/javascript"
-          src="../events.js"></script>
+          src="../promisified-events.js"></script>
 
   <script type="application/javascript">
-    function focusARIAItem(aID, aIsSelected) {
-      this.DOMNode = getNode(aID);
-
-      this.invoke = function focusARIAItem_invoke() {
-        this.DOMNode.focus();
-      };
-
-      this.check = function focusARIAItem_check() {
-        testStates(this.DOMNode, aIsSelected ? STATE_SELECTED : 0, 0,
-                   aIsSelected ? 0 : STATE_SELECTED);
-      };
-
-      this.getID = function focusARIAItem_getID() {
-        return "Focused ARIA widget item with aria-selected='" +
-                (aIsSelected ? "true', should" : "false', shouldn't") +
-                " have selected state on " + prettyName(aID);
-      };
+    async function focusActiveDescendantItem(aItemID, aWidgetID, aIsSelected) {
+      const domNode = getNode(aItemID);
+      const widgetDOMNode = getNode(aWidgetID);
+      const focused = waitForEvent(EVENT_FOCUS, aItemID);
+      widgetDOMNode.setAttribute("aria-activedescendant", aItemID);
+      widgetDOMNode.focus();
+      await focused;
+      testStates(domNode, aIsSelected ? STATE_SELECTED : 0, 0,
+                 aIsSelected ? 0 : STATE_SELECTED);
     }
 
-    function focusActiveDescendantItem(aItemID, aWidgetID, aIsSelected) {
-      this.DOMNode = getNode(aItemID);
-      this.widgetDOMNode = getNode(aWidgetID);
-
-      this.invoke = function focusActiveDescendantItem_invoke() {
-        this.widgetDOMNode.setAttribute("aria-activedescendant", aItemID);
-        this.widgetDOMNode.focus();
-      };
-
-      this.check = function focusActiveDescendantItem_check() {
-        testStates(this.DOMNode, aIsSelected ? STATE_SELECTED : 0, 0,
-                   aIsSelected ? 0 : STATE_SELECTED);
-      };
-
-      this.getID = function tabActiveDescendant_getID() {
-        return "ARIA widget item managed by activedescendant " +
-                (aIsSelected ? "should" : "shouldn't") +
-                " have the selected state on " + prettyName(aItemID);
-      };
-    }
+    // Test the selected state when a widget item is DOM focused if
+    // aria-selected is explicitly set on at least one of the items.
+    async function focusItem(aID, aIsSelected) {
+      const domNode = getNode(aID);
+      const focused = waitForEvent(EVENT_FOCUS, domNode);
+      domNode.focus();
+      await focused;
+      testStates(domNode, aIsSelected ? STATE_SELECTED : 0, 0,
+                  aIsSelected ? 0 : STATE_SELECTED);
+    };
 
     // //////////////////////////////////////////////////////////////////////////
     // Test
@@ -65,9 +47,7 @@
     // gA11yEventDumpID = "eventdump"; // debug stuff
     // gA11yEventDumpToConsole = true;
 
-    var gQueue = null;
-
-    function doTest() {
+    async function doTest() {
       // aria-selected
       testStates("aria_tab1", 0, 0, STATE_SELECTED);
       testStates("aria_tab2", STATE_SELECTED);
@@ -79,28 +59,24 @@
       testStates("aria_treeitem2", STATE_SELECTED);
       testStates("aria_treeitem3", 0, 0, STATE_SELECTED);
 
-      // Test the selected state when a widget item is DOM focused if
-      // aria-selected is explicitly set on at least one of the items.
-      gQueue = new eventQueue(EVENT_FOCUS);
-
-      gQueue.push(new focusARIAItem("aria_tab1", false));
-      gQueue.push(new focusARIAItem("aria_tab2", true));
-      gQueue.push(new focusARIAItem("aria_tab3", false));
-      gQueue.push(new focusARIAItem("aria_option1", false));
-      gQueue.push(new focusARIAItem("aria_option2", true));
-      gQueue.push(new focusARIAItem("aria_option3", false));
-      gQueue.push(new focusARIAItem("aria_treeitem1", false));
-      gQueue.push(new focusARIAItem("aria_treeitem2", true));
-      gQueue.push(new focusARIAItem("aria_treeitem3", false));
+      await focusItem("aria_tab1", false);
+      await focusItem("aria_tab2", true);
+      await focusItem("aria_tab3", false);
+      await focusItem("aria_option1", false);
+      await focusItem("aria_option2", true);
+      await focusItem("aria_option3", false);
+      await focusItem("aria_treeitem1", false);
+      await focusItem("aria_treeitem2", true);
+      await focusItem("aria_treeitem3", false);
 
       // Test the selected state when a widget item is focused via
       // aria-activedescendant if aria-selected is explicitly set on at least
       // one of the items.
-      gQueue.push(new focusActiveDescendantItem("aria_tab5", "aria_tablist2", false));
-      gQueue.push(new focusActiveDescendantItem("aria_tab6", "aria_tablist2", false));
-      gQueue.push(new focusActiveDescendantItem("aria_tab4", "aria_tablist2", false));
+      await focusActiveDescendantItem("aria_tab5", "aria_tablist2", false);
+      await focusActiveDescendantItem("aria_tab6", "aria_tablist2", false);
+      await focusActiveDescendantItem("aria_tab4", "aria_tablist2", false);
 
-      gQueue.invoke(); // SimpleTest.finish() will be called in the end
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

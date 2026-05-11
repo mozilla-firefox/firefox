@@ -45,11 +45,12 @@ if CONFIG["MOZ_UPDATER"]:
     DIRS += ["/modules/libmar"]
 
 DIRS += [
+    "/config/external/abseil-cpp",
     "/config/external/freetype2",
-    "/xpcom",
-    "/modules/libpref",
     "/intl",
+    "/modules/libpref",
     "/netwerk",
+    "/xpcom",
 ]
 
 if CONFIG["MOZ_AUTH_EXTENSION"]:

@@ -35,6 +35,13 @@ XPCOMUtils.defineLazyPreferenceGetter(
   onPrefsChanged
 );
 
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "MAC_NATIVE_ANCHORED_MENUS_ENABLED",
+  "widget.macos.native-anchored-menus",
+  false
+);
+
 // Minimum elements required to show select search
 const SEARCH_MINIMUM_ELEMENTS = 40;
 
@@ -118,6 +125,17 @@ export var SelectParentHelper = {
     menupopup.setAttribute("style", "");
     menupopup.style.colorScheme = isDarkBackground ? "dark" : "light";
     menupopup.style.direction = selectStyle.direction;
+
+    // Apply the font size of the <select> to the <menupopup> for use with
+    // native menus, which do not have access to the <select>.
+    if (
+      AppConstants.platform == "macosx" &&
+      lazy.MAC_NATIVE_ANCHORED_MENUS_ENABLED &&
+      !this.disableMacNativeMenu()
+    ) {
+      menupopup.style.fontSize =
+        zoom * parseFloat(selectStyle["font-size"], 10) + "px";
+    }
 
     stylesheet = doc.createElementNS("http://www.w3.org/1999/xhtml", "style");
     stylesheet.setAttribute("id", "ContentSelectDropdownStylesheet");
@@ -656,6 +674,15 @@ export var SelectParentHelper = {
     return nthChildIndex;
   },
 
+  disableMacNativeMenu() {
+    return (
+      AppConstants.platform == "macosx" &&
+      (lazy.CUSTOM_STYLING_ENABLED ||
+        lazy.DOM_FORMS_SELECTSEARCH ||
+        !lazy.MAC_NATIVE_SELECT_ENABLED)
+    );
+  },
+
   onSearchKeydown(event, menulist) {
     if (event.defaultPrevented) {
       return;
@@ -784,15 +811,6 @@ export class SelectParent extends JSWindowActorParent {
     return this._document.getElementById("ContentSelectDropdown");
   }
 
-  get _disableMacNativeMenu() {
-    return (
-      AppConstants.platform == "macosx" &&
-      (lazy.CUSTOM_STYLING_ENABLED ||
-        lazy.DOM_FORMS_SELECTSEARCH ||
-        !lazy.MAC_NATIVE_SELECT_ENABLED)
-    );
-  }
-
   _createMenulist() {
     let document = this._document;
     let menulist = document.createXULElement("menulist");
@@ -809,7 +827,7 @@ export class SelectParent extends JSWindowActorParent {
     if (AppConstants.platform == "win") {
       popup.setAttribute("consumeoutsideclicks", "false");
       popup.setAttribute("ignorekeys", "shortcuts");
-    } else if (this._disableMacNativeMenu) {
+    } else if (SelectParentHelper.disableMacNativeMenu()) {
       popup.toggleAttribute("nonnative", true);
     }
 
@@ -833,7 +851,7 @@ export class SelectParent extends JSWindowActorParent {
           if (AppConstants.platform == "macosx") {
             menulist.menupopup.toggleAttribute(
               "nonnative",
-              this._disableMacNativeMenu
+              SelectParentHelper.disableMacNativeMenu()
             );
           }
           prefsChanged = false;

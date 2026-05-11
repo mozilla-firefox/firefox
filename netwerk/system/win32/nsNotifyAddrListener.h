@@ -42,8 +42,8 @@ class nsNotifyAddrListener : public nsINetworkLinkService,
                                    mozilla::SHA1Sum& sha1);
 
  protected:
-  bool mLinkUp{true};  // assume true by default
-  bool mStatusKnown{false};
+  mozilla::Atomic<bool, mozilla::Relaxed> mLinkUp{true};
+  mozilla::Atomic<bool, mozilla::Relaxed> mStatusKnown{false};
   bool mCheckAttempted{false};
 
   nsresult Shutdown(void);

@@ -237,6 +237,7 @@ class DocumentType;
 class DOMImplementation;
 class DOMIntersectionObserver;
 class DOMStringList;
+class EditContext;
 class Event;
 class EventListener;
 struct FailedCertSecurityInfo;
@@ -1572,6 +1573,10 @@ class Document : public nsINode,
    */
   void TearingDownEditor();
 
+  EditContext* GetActiveEditContext() const { return mActiveEditContext; }
+  // https://w3c.github.io/edit-context/#dfn-update-the-text-edit-context
+  MOZ_CAN_RUN_SCRIPT void UpdateTextEditContext();
+
   void SetKeyPressEventModel(uint16_t aKeyPressEventModel);
 
   // Gets the next form number.
@@ -1988,8 +1993,7 @@ class Document : public nsINode,
  private:
   void RequestFullscreenInContentProcess(UniquePtr<FullscreenRequest> aRequest,
                                          bool aApplyFullscreenDirectly);
-  void RequestFullscreenInParentProcess(UniquePtr<FullscreenRequest> aRequest,
-                                        bool aApplyFullscreenDirectly);
+  void RequestFullscreenInParentProcess(UniquePtr<FullscreenRequest> aRequest);
 
   // Pushes aElement onto the top layer
   void TopLayerPush(Element&);
@@ -4336,6 +4340,9 @@ class Document : public nsINode,
 
   void AppendAutoFocusCandidateToTopDocument(Element* aAutoFocusCandidate);
 
+  // https://w3c.github.io/edit-context/#dfn-determine-the-active-editcontext
+  EditContext* DetermineActiveEditContext() const;
+
  public:
   void SetSHEntryHasUserInteraction(bool aHasInteraction);
 
@@ -5623,6 +5630,10 @@ class Document : public nsINode,
   WeakPtr<Document> mFullscreenRoot;
 
   RefPtr<DOMImplementation> mDOMImplementation;
+
+  // This document's active edit context
+  // https://w3c.github.io/edit-context/#dfn-active-editcontext
+  RefPtr<EditContext> mActiveEditContext;
 
   RefPtr<ContentList> mImageMaps;
 

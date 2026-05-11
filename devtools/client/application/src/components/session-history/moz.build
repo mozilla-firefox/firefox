@@ -3,6 +3,5 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 DevToolsModules(
-    "SessionHistory.js",
-    "SessionHistoryPage.js",
+    "SessionHistory.js", "SessionHistoryPage.js", "SessionHistoryUnavailable.js"
 )

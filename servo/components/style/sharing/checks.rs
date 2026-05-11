@@ -11,6 +11,7 @@ use crate::context::SharedStyleContext;
 use crate::dom::TElement;
 use crate::sharing::{StyleSharingCandidate, StyleSharingTarget};
 use selectors::matching::SelectorCaches;
+use crate::properties::ComputedValues;
 
 /// Determines whether a target and a candidate have compatible parents for
 /// sharing.
@@ -152,17 +153,32 @@ where
 {
     // The candidate must be styled in order to be in the cache.
     let borrowed_data = candidate.element.borrow_data().unwrap();
-    let attrs_used = borrowed_data.styles.primary().attribute_references.as_ref();
+    let styles = &borrowed_data.styles;
 
-    let Some(attrs_used) = attrs_used else {
-        return true;
+    let check_style = |style: &ComputedValues| {
+        let Some(ref attrs) = style.attribute_references else {
+            return true;
+        };
+        attrs.iter().all(|(name, namespaces)| {
+            namespaces.iter().all(|namespace| {
+                target.get_attr(name, namespace) == candidate.get_attr(name, namespace)
+            })
+        })
     };
 
-    attrs_used.iter().all(|(name, namespaces)| {
-        namespaces.iter().all(|namespace| {
-            target.get_attr(name, namespace) == candidate.get_attr(name, namespace)
-        })
-    })
+    if !check_style(styles.primary()) {
+        return false;
+    }
+
+    for pseudo_styles in styles.pseudos.as_array() {
+        let Some(ref styles) = pseudo_styles else {
+            continue;
+        };
+        if !check_style(styles) {
+            return false;
+        }
+    }
+    true
 }
 
 /// Whether a given element and a candidate share a set of scope activations

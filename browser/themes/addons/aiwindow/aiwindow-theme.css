@@ -3,13 +3,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 :root {
-  /* See bug 2036647 for removing this. */
-  --lwt-additional-images: var(--ai-gradient);
-
   /* stylelint-disable-next-line media-query-no-invalid */
-  @media -moz-pref("browser.nova.enabled") {
-    --ai-gradient-nova-color: light-dark(#f5f4fe, #1d1f30);
-    --ai-gradient: linear-gradient(0deg, var(--ai-gradient-nova-color) 89%, color-mix(in srgb, var(--color-violet-50) 60%, var(--ai-gradient-nova-color)) 102%);
+  @media not (-moz-pref("browser.nova.enabled")) {
+    /* See bug 2036647 for removing this. */
+    --lwt-additional-images: var(--ai-gradient);
   }
 }
 

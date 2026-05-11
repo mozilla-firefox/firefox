@@ -30,7 +30,7 @@
         android:labelFor="@id/bookmarkNameEdit"
         android:text="@string/bookmark_name_label"
         android:textAllCaps="true"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="12sp" />
 
     <org.mozilla.fenix.utils.ClearableEditText
@@ -43,7 +43,7 @@
         android:fadingEdgeLength="8dp"
         android:inputType="textAutoComplete"
         android:requiresFadingEdge="horizontal"
-        android:textColor="?attr/textSecondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="15sp"
         tools:text="Internet for people, not profit -- Mozilla" />
 
@@ -56,7 +56,7 @@
         android:labelFor="@id/bookmarkUrlEdit"
         android:text="@string/bookmark_url_label"
         android:textAllCaps="true"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="12sp" />
 
     <com.google.android.material.textfield.TextInputLayout
@@ -74,7 +74,7 @@
             android:fadingEdgeLength="8dp"
             android:inputType="textUri"
             android:requiresFadingEdge="horizontal"
-            android:textColor="?attr/textSecondary"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="15sp"
             tools:text="https://www.mozilla.org/en-US/" />
 
@@ -89,7 +89,7 @@
         android:labelFor="@id/bookmarkParentFolderSelector"
         android:text="@string/bookmark_folder_label"
         android:textAllCaps="true"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="12sp" />
 
     <TextView
@@ -100,10 +100,10 @@
         android:layout_marginTop="8dp"
         android:drawablePadding="10dp"
         android:gravity="center_vertical"
-        android:textColor="?attr/textSecondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="16sp"
         app:drawableStartCompat="@drawable/mozac_ic_folder_24"
-        app:drawableTint="?attr/textPrimary"
+        app:drawableTint="?attr/colorOnSurface"
         tools:text="Mobile Bookmarks" />
 
 </LinearLayout>

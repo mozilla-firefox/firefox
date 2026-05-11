@@ -74,6 +74,18 @@
   --menuitem-margin: var(--panel-menuitem-margin);
 }
 
+/* stylelint-disable-next-line media-query-no-invalid */
+@media -moz-pref("widget.macos.native-popovers") and (-moz-platform: macos) {
+  panel:not([nonnative]) {
+    background-color: transparent;
+    --panel-background: transparent;
+    --panel-box-shadow: none;
+    --panel-border-color: transparent;
+    --panel-box-shadow-margin: 0px;
+    --panel-padding: 0px;
+  }
+}
+
 /* Lightweight theme roots */
 
 :root[lwtheme] {

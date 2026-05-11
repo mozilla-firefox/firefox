@@ -16,6 +16,7 @@ import { MozBaseInputElement } from "../lit-utils.mjs";
  * @tagname moz-radio-group
  * @property {boolean} disabled - Whether or not the fieldset is disabled.
  * @property {string} label - Label for the group of moz-radio elements.
+ * @property {string} ariaLabel - Accessible name for the group when no visible label is provided.
  * @property {string} description - Description for the group of moz-radio elements.
  * @property {string} supportPage - Support page for the group of moz-radio elements.
  * @property {number} headingLevel - Render the label in a heading of this level.

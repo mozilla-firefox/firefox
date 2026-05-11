@@ -82,7 +82,26 @@ function getVisibleMenuItems(aMenu) {
         if (item.id != FRAME_OS_PID) {
           ok(key, "menuitem " + item.id + " has an access key");
         }
-        if (accessKeys[key]) {
+        // These entries already had overlapping access keys and we are keeping
+        // their existing ones to avoid disorienting users by changing them.
+        // The duplicate access keys do work, you just have to hit the access
+        // key more than once to use them.
+        // This test did not catch the duplicate access keys initially because
+        // it only tests the entries in the context menu by default and the
+        // Send Tab entry was originally only in the context menu if the user is
+        // signed in. See Bug 2035895.
+        const allowedAccessKeyDuplicates = [
+          "context-translate-selection",
+          "context-sendlinktodevice",
+        ];
+
+        if (
+          accessKeys[key] &&
+          !(
+            allowedAccessKeyDuplicates.includes(item.id) &&
+            allowedAccessKeyDuplicates.includes(accessKeys[key])
+          )
+        ) {
           ok(
             false,
             "menuitem " + item.id + " has same accesskey as " + accessKeys[key]
@@ -416,9 +435,12 @@ async function test_contextmenu(selector, menuItems, options = {}) {
     if (Services.prefs.getBoolPref("devtools.inspector.enabled", true)) {
       let inspectItems = [];
       let hasSeparatorAboveAskChat = false;
-      const hasViewSource =
-        menuItems.includes("context-viewsource") ||
-        menuItems.includes("context-viewpartialsource-selection");
+      let viewSourceIndex = menuItems.indexOf("context-viewsource");
+      if (viewSourceIndex == -1) {
+        viewSourceIndex = menuItems.indexOf(
+          "context-viewpartialsource-selection"
+        );
+      }
 
       const askChatIndex = menuItems.indexOf("context-ask-chat");
       const isAskChatLastItem = menuItems.at(-6) === "context-ask-chat";
@@ -426,7 +448,10 @@ async function test_contextmenu(selector, menuItems, options = {}) {
         hasSeparatorAboveAskChat = menuItems[askChatIndex - 2] === "---";
       }
 
-      if (!hasViewSource && !(isAskChatLastItem && hasSeparatorAboveAskChat)) {
+      if (
+        viewSourceIndex == -1 &&
+        !(isAskChatLastItem && hasSeparatorAboveAskChat)
+      ) {
         inspectItems.push("---", null);
       }
 
@@ -439,7 +464,11 @@ async function test_contextmenu(selector, menuItems, options = {}) {
       }
       inspectItems.push("context-inspect", true);
 
-      menuItems = menuItems.concat(inspectItems);
+      if (viewSourceIndex == -1) {
+        menuItems = menuItems.concat(inspectItems);
+      } else {
+        menuItems.splice(viewSourceIndex + 2, 0, ...inspectItems);
+      }
     }
 
     checkContextMenu(menuItems);

@@ -270,7 +270,11 @@ private fun SelectableImageItem(
 
         Text(
             text = themeOption.label,
-            onTextLayout = { if (!isMultilineLabel) { isMultilineLabel = it.lineCount > 1 } },
+            onTextLayout = {
+                if (!isMultilineLabel) {
+                    isMultilineLabel = it.lineCount > 1
+                }
+            },
             modifier = Modifier.padding(vertical = 6.dp),
             style = FirefoxTheme.typography.caption,
         )

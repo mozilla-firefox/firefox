@@ -261,7 +261,7 @@ add_task(async function initialStateNew() {
     await BrowserTestUtils.withNewTab(
       {
         gBrowser,
-        url: "about:preferences#privacy",
+        url: "about:preferences#passwordsAutofill",
       },
       async function (browser) {
         let doc = browser.contentDocument;
@@ -340,7 +340,7 @@ add_task(async function toggleGenerationEnabledNew() {
   await BrowserTestUtils.withNewTab(
     {
       gBrowser,
-      url: "about:preferences#privacy",
+      url: "about:preferences#passwordsAutofill",
     },
     async function (browser) {
       let doc = browser.contentDocument;
@@ -386,7 +386,7 @@ add_task(async function toggleRememberSignonNew() {
   await BrowserTestUtils.withNewTab(
     {
       gBrowser,
-      url: "about:preferences#privacy",
+      url: "about:preferences#passwordsAutofill",
     },
     async function (browser) {
       let doc = browser.contentDocument;

@@ -2,8 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-@import "chrome://global/skin/global.css";
-
 #locations-list-wrapper {
   padding-block-end: var(--space-xlarge);
 }
@@ -50,7 +48,7 @@
     outline-offset: var(--focus-outline-inset);
   }
 
-  &[aria-selected="true"] {
+  &[aria-checked="true"] {
     .location-check {
       visibility: visible;
     }
@@ -64,6 +62,14 @@
     .location-description {
       color: var(--text-color-deemphasized);
     }
+  }
+
+  @media (prefers-contrast) {
+    border: var(--button-border);
+  }
+
+  @media (forced-colors) {
+    border: var(--button-border);
   }
 }
 

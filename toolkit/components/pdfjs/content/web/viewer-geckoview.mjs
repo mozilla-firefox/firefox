@@ -21,8 +21,8 @@
  */
 
 /**
- * pdfjsVersion = 6.0.28
- * pdfjsBuild = cd1b5f57c
+ * pdfjsVersion = 6.0.40
+ * pdfjsBuild = a5e9940d1
  */
 /******/ // The require scope
 /******/ var __webpack_require__ = {};
@@ -8647,7 +8647,7 @@ class PDFViewer {
   #savedPageViews = null;
   #deletedPageNumbers = null;
   constructor(options) {
-    const viewerVersion = "6.0.28";
+    const viewerVersion = "6.0.40";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }
@@ -11519,7 +11519,7 @@ const PDFViewerApplication = {
     }
     this.pdfHistory.initialize({
       fingerprint,
-      resetHistory: viewOnLoad === ViewOnLoad.INITIAL,
+      resetHistory: viewOnLoad === ViewOnLoad.INITIAL || !!this._mergedDocumentNeedsSaving,
       updateUrl: AppOptions.get("historyUpdateUrl")
     });
     if (this.pdfHistory.initialBookmark) {

@@ -441,8 +441,8 @@ NS_InitXPCOM(nsIServiceManager** aResult, nsIFile* aBinDirectory,
 #endif
 
   // The memory reporter manager is up and running -- register our reporters.
-  RegisterStrongMemoryReporter(new ICUReporter());
-  RegisterStrongMemoryReporter(new OggReporter());
+  RegisterStrongMemoryReporter(mozilla::MakeAndAddRef<ICUReporter>());
+  RegisterStrongMemoryReporter(mozilla::MakeAndAddRef<OggReporter>());
   xpc::SelfHostedShmem::GetSingleton().InitMemoryReporter();
 
   mozilla::gecko_trace::Init();

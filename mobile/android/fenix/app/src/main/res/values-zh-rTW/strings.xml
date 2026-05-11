@@ -3208,6 +3208,13 @@
   <string name="ip_protection_onboarding_body_link">為上網再加一層保護</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">現在不要</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">無法連線至 VPN，請稍候再試。</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">已使用 %1$d GB VPN 流量。將於下個月重設存取權限。</string>
   <!--
     Autofill
 
@@ -4625,6 +4632,14 @@
   <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">關注中：\n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
   <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">接近比賽時間時，請再回來獲得賽事最新資訊。</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">上半場</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">下半場</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">看來您的網路不通。</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">請確認網路連線正常後再試一次。</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

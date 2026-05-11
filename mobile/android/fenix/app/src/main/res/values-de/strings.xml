@@ -3214,6 +3214,13 @@
   <string name="ip_protection_onboarding_body_link">Surfen Sie mit zusätzlichem Schutz</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Nicht jetzt</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">Verbindung mit VPN fehlgeschlagen. Versuchen Sie es in ein paar Minuten erneut.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">%1$d GB an VPN-Daten verwendet. Daten-Volumen wird nächsten Monat zurückgesetzt.</string>
   <!--
     Autofill
 
@@ -4631,6 +4638,14 @@
   <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Sie folgen: \n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
   <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Schauen Sie hier nach Spiel-Infos, wenn das Turnier näher rückt.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">Erste Halbzeit</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">Zweite Halbzeit</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">Sieht so aus, als wären Sie offline.</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">Überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

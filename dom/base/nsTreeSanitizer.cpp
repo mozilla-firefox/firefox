@@ -970,14 +970,14 @@ const nsStaticAtom* const kURLAttributesMathML[] = {
     // clang-format on
 };
 
-StaticAtomSet* nsTreeSanitizer::sElementsHTML = nullptr;
-StaticAtomSet* nsTreeSanitizer::sAttributesHTML = nullptr;
-StaticAtomSet* nsTreeSanitizer::sPresAttributesHTML = nullptr;
-StaticAtomSet* nsTreeSanitizer::sElementsSVG = nullptr;
-StaticAtomSet* nsTreeSanitizer::sAttributesSVG = nullptr;
-StaticAtomSet* nsTreeSanitizer::sElementsMathML = nullptr;
-StaticAtomSet* nsTreeSanitizer::sAttributesMathML = nullptr;
-nsIPrincipal* nsTreeSanitizer::sNullPrincipal = nullptr;
+StaticAutoPtr<StaticAtomSet> nsTreeSanitizer::sElementsHTML;
+StaticAutoPtr<StaticAtomSet> nsTreeSanitizer::sAttributesHTML;
+StaticAutoPtr<StaticAtomSet> nsTreeSanitizer::sPresAttributesHTML;
+StaticAutoPtr<StaticAtomSet> nsTreeSanitizer::sElementsSVG;
+StaticAutoPtr<StaticAtomSet> nsTreeSanitizer::sAttributesSVG;
+StaticAutoPtr<StaticAtomSet> nsTreeSanitizer::sElementsMathML;
+StaticAutoPtr<StaticAtomSet> nsTreeSanitizer::sAttributesMathML;
+StaticRefPtr<nsIPrincipal> nsTreeSanitizer::sNullPrincipal;
 
 nsTreeSanitizer::nsTreeSanitizer(uint32_t aFlags)
     : mAllowStyles(aFlags & nsIParserUtils::SanitizerAllowStyle),
@@ -1558,32 +1558,16 @@ void nsTreeSanitizer::InitializeStatics() {
     sAttributesMathML->Insert(kAttributesMathML[i]);
   }
 
-  nsCOMPtr<nsIPrincipal> principal =
-      NullPrincipal::CreateWithoutOriginAttributes();
-  principal.forget(&sNullPrincipal);
+  sNullPrincipal = NullPrincipal::CreateWithoutOriginAttributes();
 }
 
 void nsTreeSanitizer::ReleaseStatics() {
-  delete sElementsHTML;
   sElementsHTML = nullptr;
-
-  delete sAttributesHTML;
   sAttributesHTML = nullptr;
-
-  delete sPresAttributesHTML;
   sPresAttributesHTML = nullptr;
-
-  delete sElementsSVG;
   sElementsSVG = nullptr;
-
-  delete sAttributesSVG;
   sAttributesSVG = nullptr;
-
-  delete sElementsMathML;
   sElementsMathML = nullptr;
-
-  delete sAttributesMathML;
   sAttributesMathML = nullptr;
-
-  NS_IF_RELEASE(sNullPrincipal);
+  sNullPrincipal = nullptr;
 }

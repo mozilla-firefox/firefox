@@ -3214,6 +3214,13 @@
   <string name="ip_protection_onboarding_body_link">ekstra korumayla gezinin</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Şimdi değil</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">VPN’e bağlanılamadı. Birkaç dakika sonra tekrar deneyin.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">%1$d GB VPN kotası kullanıldı. Erişiminiz gelecek ay sıfırlanacak.</string>
   <!--
     Autofill
 
@@ -4631,6 +4638,14 @@
   <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Takip ediliyor: \n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
   <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Turnuva yaklaşırken maç bilgileri için burayı tekrar kontrol edin.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">İlk yarı</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">İkinci yarı</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">Çevrimdışısınız.</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">İnternet bağlantınızı kontrol edip yeniden deneyin.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

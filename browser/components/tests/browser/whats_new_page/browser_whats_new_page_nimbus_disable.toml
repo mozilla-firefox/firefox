@@ -1,9 +1,9 @@
 [DEFAULT]
-
-["browser_whats_new_page_nimbus_disable.js"]
 # These are prefs set by nimbus to be used for What's new pages
 prefs = ["startup.homepage_override_url_nimbus='https://www.firefox.com/en-US/whatsnew/|https://www.firefox.com/en-US/whatsnew/'",
 "startup.homepage_override_nimbus_maxVersion='99999999.0'", "startup.homepage_override_nimbus_disable_wnp=true"]
+
+["browser_whats_new_page_nimbus_disable.js"]
 skip-if = [
   "verify-standalone",
 ]

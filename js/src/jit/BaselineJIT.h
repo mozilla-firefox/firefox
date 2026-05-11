@@ -397,6 +397,7 @@ JitExecStatus EnterBaselineInterpreterAtBranch(JSContext* cx,
                                                jsbytecode* pc);
 
 bool CanBaselineInterpretScript(JSScript* script);
+bool CanBaselineCompileScript(JSContext* cx, JSScript* script);
 
 // Called by the Baseline Interpreter to compile a script for the Baseline JIT.
 // |res| is set to the native code address in the BaselineScript to jump to, or

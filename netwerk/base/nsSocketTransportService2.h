@@ -292,7 +292,7 @@ class nsSocketTransportService final : public nsPISocketTransportService,
   // Number of keepalive probes to send.
   int32_t mKeepaliveProbeCount{kDefaultTCPKeepCount};
   // True if TCP keepalive is enabled globally.
-  bool mKeepaliveEnabledPref{false};
+  Atomic<bool, Relaxed> mKeepaliveEnabledPref{false};
   // Timeout of pollable event signalling.
   TimeDuration mPollableEventTimeout MOZ_GUARDED_BY(mLock);
 

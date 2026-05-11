@@ -399,6 +399,302 @@ test((t) => {
 }, "Event propagates to source tree when source is given in synthetic event, even without reference target");
 </script>
 
+<x-component id="outerG">
+<template shadowRootMode="open">
+    <button id="button" popovertarget="middleG">Toggle</button>
+    <x-component id="middleG">
+    <template shadowRootMode="open" shadowRootReferenceTarget="innerG">
+        <x-component id="innerG">
+        <template shadowRootMode="open" shadowRootReferenceTarget="targetDiv">
+            <div id="targetDiv" popover></div>
+        </template>
+        </x-component>
+    </template>
+    </x-component>
+</template>
+</x-component>
+
+<script>
+test((t) => {
+    const outerG = document.getElementById("outerG");
+    const button = outerG.shadowRoot.getElementById("button");
+    const middleG = outerG.shadowRoot.getElementById("middleG");
+    const innerG = middleG.shadowRoot.getElementById("innerG");
+    const targetDiv = innerG.shadowRoot.getElementById("targetDiv");
+    let targetDivToggleEventCount = 0;
+    let middleGToggleEventCount = 0;
+
+    outerG.addEventListener("beforetoggle", (e) => {
+        assert_unreached("beforetoggle event should not fire on outer component.");
+    }, {once: true});
+
+    innerG.addEventListener("beforetoggle", (e) => {
+        assert_unreached("beforetoggle event should not fire on inner component.");
+    }, {once: true});
+
+    targetDiv.addEventListener("beforetoggle", (e) => {
+        targetDivToggleEventCount++;
+        assert_true(e instanceof ToggleEvent);
+        assert_equals(e.target, targetDiv,
+                "target for event listener on targetDiv is targetDiv");
+        assert_equals(e.source, button,
+                "source for event listener on targetDiv is button");
+    }, {once: true});
+
+    middleG.addEventListener("beforetoggle", (e) => {
+        middleGToggleEventCount++;
+        assert_true(e instanceof ToggleEvent);
+        assert_equals(e.target, middleG,
+                "target for event listener on middleG is middleG");
+        assert_equals(e.source, button,
+                "source for event listener on middleG is button");
+    }, {once: true});
+
+    button.click();
+    assert_equals(targetDivToggleEventCount, 1, "beforetoggle handler on targetDiv should have been called");
+    assert_equals(middleGToggleEventCount, 1, "beforetoggle handler on middleG should have been called");
+    t.add_cleanup(() => {
+        if (targetDiv.matches(':popover-open')) targetDiv.hidePopover();
+    });
+}, "beforetoggle event propagates to source's shadow tree only; target in deeper shadow root");
+</script>
+
+<x-component id="outerH">
+<template shadowRootMode="open">
+    <button id="button" popovertarget="middleH">Toggle</button>
+    <x-component id="middleH">
+    <template shadowRootMode="open" shadowRootReferenceTarget="innerH">
+        <x-component id="innerH">
+        <template shadowRootMode="open" shadowRootReferenceTarget="targetDiv">
+            <div id="targetDiv" popover></div>
+        </template>
+        </x-component>
+    </template>
+    </x-component>
+</template>
+</x-component>
+
+<script>
+promise_test(async (t) => {
+    const outerH = document.getElementById("outerH");
+    const button = outerH.shadowRoot.getElementById("button");
+    const middleH = outerH.shadowRoot.getElementById("middleH");
+    const innerH = middleH.shadowRoot.getElementById("innerH");
+    const targetDiv = innerH.shadowRoot.getElementById("targetDiv");
+    let targetDivToggleEventCount = 0;
+    let middleHToggleEventCount = 0;
+
+    const targetDivToggleFired = new Promise((resolve) => {
+        targetDiv.addEventListener("toggle", (e) => {
+            targetDivToggleEventCount++;
+            assert_true(e instanceof ToggleEvent);
+            assert_equals(e.target, targetDiv,
+                    "target for event listener on targetDiv is targetDiv");
+            assert_equals(e.source, button,
+                    "source for event listener on targetDiv is button");
+            resolve();
+        }, {once: true});
+    });
+
+    const middleHToggleFired = new Promise((resolve) => {
+        middleH.addEventListener("toggle", (e) => {
+            middleHToggleEventCount++;
+            assert_true(e instanceof ToggleEvent);
+            assert_equals(e.target, middleH,
+                    "target for event listener on middleH is middleH");
+            assert_equals(e.source, button,
+                    "source for event listener on middleH is button");
+            resolve();
+        }, {once: true});
+    });
+
+    outerH.addEventListener("toggle", (e) => {
+        assert_unreached("toggle event should not fire on outer component.");
+    }, {once: true});
+
+    innerH.addEventListener("toggle", (e) => {
+        assert_unreached("toggle event should not fire on inner component.");
+    }, {once: true});
+
+    button.click();
+    await Promise.all([targetDivToggleFired, middleHToggleFired]);
+    t.add_cleanup(() => {
+        if (targetDiv.matches(':popover-open')) targetDiv.hidePopover();
+    });
+}, "toggle event propagates to source's shadow tree only; target in deeper shadow root");
+</script>
+
+<x-component id="outerI">
+<template shadowRootMode="open">
+    <button id="button" type="submit" form="middleI">Submit</button>
+    <x-component id="middleI">
+    <template shadowRootMode="open" shadowRootReferenceTarget="innerI">
+        <x-component id="innerI">
+        <template shadowRootMode="open" shadowRootReferenceTarget="targetForm">
+            <form id="targetForm"></form>
+        </template>
+        </x-component>
+    </template>
+    </x-component>
+</template>
+</x-component>
+
+<script>
+test((t) => {
+    const outerI = document.getElementById("outerI");
+    const button = outerI.shadowRoot.getElementById("button");
+    const middleI = outerI.shadowRoot.getElementById("middleI");
+    const innerI = middleI.shadowRoot.getElementById("innerI");
+    const targetForm = innerI.shadowRoot.getElementById("targetForm");
+    let targetFormSubmitEventCount = 0;
+    let middleISubmitEventCount = 0;
+
+    outerI.addEventListener("submit", (e) => {
+        assert_unreached("submit event should not fire on outer component.");
+    }, {once: true});
+
+    innerI.addEventListener("submit", (e) => {
+        assert_unreached("submit event should not fire on inner component.");
+    }, {once: true});
+
+    targetForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        targetFormSubmitEventCount++;
+        assert_true(e instanceof SubmitEvent);
+        assert_equals(e.target, targetForm,
+                "target for event listener on targetForm is targetForm");
+        assert_equals(e.submitter, button,
+                "submitter for event listener on targetForm is button");
+    }, {once: true});
+
+    middleI.addEventListener("submit", (e) => {
+        middleISubmitEventCount++;
+        assert_true(e instanceof SubmitEvent);
+        assert_equals(e.target, middleI,
+                "target for event listener on middleI is middleI");
+        assert_equals(e.submitter, button,
+                "submitter for event listener on middleI is button");
+    }, {once: true});
+
+    button.click();
+    assert_equals(targetFormSubmitEventCount, 1, "submit handler on targetForm should have been called");
+    assert_equals(middleISubmitEventCount, 1, "submit handler on middleI should have been called");
+}, "submit event propagates to submitter's shadow tree only; target in deeper shadow root");
+</script>
+
+<x-component id="outerJ">
+<template shadowRootMode="open">
+    <style>
+        button {
+            interest-delay: 0s;
+        }
+    </style>
+    <button id="button" interestfor="middleJ">Interest</button>
+    <x-component id="middleJ">
+    <template shadowRootMode="open" shadowRootReferenceTarget="innerJ">
+        <x-component id="innerJ">
+        <template shadowRootMode="open" shadowRootReferenceTarget="targetDiv">
+            <div id="targetDiv"></div>
+        </template>
+        </x-component>
+    </template>
+    </x-component>
+</template>
+</x-component>
+<button id="otherFocusTarget">Other</button>
+
+<script>
+function waitForRender() {
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+async function focusOn(element) {
+    element.focus();
+    await waitForRender();
+}
+
+promise_test(async (t) => {
+    const outerJ = document.getElementById("outerJ");
+    const button = outerJ.shadowRoot.getElementById("button");
+    const middleJ = outerJ.shadowRoot.getElementById("middleJ");
+    const innerJ = middleJ.shadowRoot.getElementById("innerJ");
+    const targetDiv = innerJ.shadowRoot.getElementById("targetDiv");
+    let targetDivInterestEventCount = 0;
+    let middleJInterestEventCount = 0;
+
+    outerJ.addEventListener("interest", (e) => {
+        assert_unreached("interest event should not fire on outer component.");
+    }, {once: true});
+
+    innerJ.addEventListener("interest", (e) => {
+        assert_unreached("interest event should not fire on inner component.");
+    }, {once: true});
+
+    targetDiv.addEventListener("interest", (e) => {
+        targetDivInterestEventCount++;
+        assert_true(e instanceof InterestEvent);
+        assert_equals(e.target, targetDiv,
+                "target for event listener on targetDiv is targetDiv");
+        assert_equals(e.source, button,
+                "source for event listener on targetDiv is button");
+    }, {once: true});
+
+    middleJ.addEventListener("interest", (e) => {
+        middleJInterestEventCount++;
+        assert_true(e instanceof InterestEvent);
+        assert_equals(e.target, middleJ,
+                "target for event listener on middleJ is middleJ");
+        assert_equals(e.source, button,
+                "source for event listener on middleJ is button");
+    }, {once: true});
+
+    await focusOn(button);
+    assert_equals(targetDivInterestEventCount, 1, "interest handler on targetDiv should have been called");
+    assert_equals(middleJInterestEventCount, 1, "interest handler on middleJ should have been called");
+}, "interest event propagates to source's shadow tree only; target in deeper shadow root");
+
+promise_test(async (t) => {
+    const outerJ = document.getElementById("outerJ");
+    const button = outerJ.shadowRoot.getElementById("button");
+    const middleJ = outerJ.shadowRoot.getElementById("middleJ");
+    const innerJ = middleJ.shadowRoot.getElementById("innerJ");
+    const targetDiv = innerJ.shadowRoot.getElementById("targetDiv");
+    const otherFocusTarget = document.getElementById("otherFocusTarget");
+    let targetDivLoseInterestEventCount = 0;
+    let middleJLoseInterestEventCount = 0;
+
+    outerJ.addEventListener("loseinterest", (e) => {
+        assert_unreached("loseinterest event should not fire on outer component.");
+    }, {once: true});
+
+    innerJ.addEventListener("loseinterest", (e) => {
+        assert_unreached("loseinterest event should not fire on inner component.");
+    }, {once: true});
+
+    targetDiv.addEventListener("loseinterest", (e) => {
+        targetDivLoseInterestEventCount++;
+        assert_true(e instanceof InterestEvent);
+        assert_equals(e.target, targetDiv,
+                "target for loseinterest event listener on targetDiv is targetDiv");
+        assert_equals(e.source, button,
+                "source for loseinterest event listener on targetDiv is button");
+    }, {once: true});
+
+    middleJ.addEventListener("loseinterest", (e) => {
+        middleJLoseInterestEventCount++;
+        assert_true(e instanceof InterestEvent);
+        assert_equals(e.target, middleJ,
+                "target for loseinterest event listener on middleJ is middleJ");
+        assert_equals(e.source, button,
+                "source for loseinterest event listener on middleJ is button");
+    }, {once: true});
+
+    await focusOn(button);
+    await focusOn(otherFocusTarget);
+    assert_equals(targetDivLoseInterestEventCount, 1, "loseinterest handler on targetDiv should have been called");
+    assert_equals(middleJLoseInterestEventCount, 1, "loseinterest handler on middleJ should have been called");
+}, "loseinterest event propagates to source's shadow tree only; target in deeper shadow root");
+</script>
+
 </body>
 
 </html>

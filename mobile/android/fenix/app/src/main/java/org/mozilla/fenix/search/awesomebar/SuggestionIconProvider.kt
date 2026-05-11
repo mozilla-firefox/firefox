@@ -14,6 +14,7 @@ import androidx.core.graphics.BlendModeCompat.SRC_IN
 import androidx.core.graphics.drawable.toBitmap
 import mozilla.components.support.ktx.android.content.getColorFromAttr
 import org.mozilla.fenix.R
+import com.google.android.material.R as materialR
 import mozilla.components.ui.icons.R as iconsR
 
 /**
@@ -110,7 +111,7 @@ interface SuggestionIconProvider {
 class DefaultSuggestionIconProvider(private val context: Context) : SuggestionIconProvider {
 
     private val primaryTextColor: Int by lazy {
-        context.getColorFromAttr(R.attr.textPrimary)
+        context.getColorFromAttr(materialR.attr.colorOnSurface)
     }
 
     private val searchIconBitmapInstance: Bitmap? by lazy {

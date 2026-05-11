@@ -72,16 +72,6 @@ add_task(async function test_pin_unpin_open_tab() {
       "panel-item[data-l10n-id=fxviewtabrow-pin-tab]"
     );
 
-    await clearAllParentTelemetryEvents();
-    let contextMenuEvent = [
-      [
-        "firefoxview_next",
-        "context_menu",
-        "tabs",
-        undefined,
-        { menu_action: "pin-tab", data_type: "opentabs" },
-      ],
-    ];
     tabChangeRaised = BrowserTestUtils.waitForEvent(
       NonPrivateTabs,
       "TabChange"
@@ -136,16 +126,7 @@ add_task(async function test_pin_unpin_open_tab() {
       "panel-item[data-l10n-id=fxviewtabrow-unpin-tab]"
     );
 
-    await clearAllParentTelemetryEvents();
-    contextMenuEvent = [
-      [
-        "firefoxview_next",
-        "context_menu",
-        "tabs",
-        undefined,
-        { menu_action: "unpin-tab", data_type: "opentabs" },
-      ],
-    ];
+    Services.fog.testResetFOG();
     tabChangeRaised = BrowserTestUtils.waitForEvent(
       NonPrivateTabs,
       "TabChange"
@@ -157,7 +138,12 @@ add_task(async function test_pin_unpin_open_tab() {
 
     await tabChangeRaised;
     await openTabs.updateComplete;
-    await telemetryEvent(contextMenuEvent);
+    const contextEvents = Glean.firefoxviewNext.contextMenuTabs.testGetValue();
+    Assert.equal(1, contextEvents.length, "Expect one context menu event.");
+    Assert.deepEqual(
+      { menu_action: "unpin-tab", data_type: "opentabs" },
+      contextEvents[0].extra
+    );
   });
   cleanup();
 });
@@ -425,16 +411,6 @@ add_task(async function test_mute_unmute_with_context_menu() {
       "panel-item[data-l10n-id=fxviewtabrow-mute-tab]"
     );
 
-    await clearAllParentTelemetryEvents();
-    let contextMenuEvent = [
-      [
-        "firefoxview_next",
-        "context_menu",
-        "tabs",
-        undefined,
-        { menu_action: "mute-tab", data_type: "opentabs" },
-      ],
-    ];
     tabChangeRaised = BrowserTestUtils.waitForEvent(
       NonPrivateTabs,
       "TabChange"
@@ -471,16 +447,7 @@ add_task(async function test_mute_unmute_with_context_menu() {
       "panel-item[data-l10n-id=fxviewtabrow-unmute-tab]"
     );
 
-    await clearAllParentTelemetryEvents();
-    contextMenuEvent = [
-      [
-        "firefoxview_next",
-        "context_menu",
-        "tabs",
-        undefined,
-        { menu_action: "unmute-tab", data_type: "opentabs" },
-      ],
-    ];
+    Services.fog.testResetFOG();
     tabChangeRaised = BrowserTestUtils.waitForEvent(
       NonPrivateTabs,
       "TabChange"
@@ -492,7 +459,12 @@ add_task(async function test_mute_unmute_with_context_menu() {
 
     await tabChangeRaised;
     await openTabs.updateComplete;
-    await telemetryEvent(contextMenuEvent);
+    const contextEvents = Glean.firefoxviewNext.contextMenuTabs.testGetValue();
+    Assert.equal(1, contextEvents.length, "Expect one context menu event.");
+    Assert.deepEqual(
+      { menu_action: "unmute-tab", data_type: "opentabs" },
+      contextEvents[0].extra
+    );
 
     let unmutedTab = card.tabList.rowEls[0];
     await TestUtils.waitForCondition(

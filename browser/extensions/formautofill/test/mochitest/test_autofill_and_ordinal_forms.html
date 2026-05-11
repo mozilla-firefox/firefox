@@ -29,7 +29,7 @@ let MOCK_STORAGE = [{
 
 initPopupListener();
 
-add_task(async function setupStorage() {
+add_setup(async function setupStorage() {
   await addAddress(MOCK_STORAGE[0]);
 
   await updateFormHistory([
@@ -39,9 +39,9 @@ add_task(async function setupStorage() {
 });
 
 add_task(async function check_switch_autofill_form_popup() {
+  const promise = expectPopup();
   await setInput("#tel", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment(
     [
       makeAddressComment({
@@ -57,9 +57,9 @@ add_task(async function check_switch_autofill_form_popup() {
 add_task(async function check_switch_oridnal_form_popup() {
   // We need an intentional wait here before switching form.
   await sleep();
+  const promise = expectPopup();
   await setInput("#username", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntries(["petya"], 0);
 
   await testMenuEntry(0, "autocomplete-richlistitem");
@@ -68,9 +68,9 @@ add_task(async function check_switch_oridnal_form_popup() {
 add_task(async function check_switch_autofill_form_popup_back() {
   // We need an intentional wait here before switching form.
   await sleep();
+  const promise = expectPopup();
   await setInput("#tel", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment(
     [
       makeAddressComment({

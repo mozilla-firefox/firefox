@@ -32,7 +32,7 @@
         android:layout_marginStart="@dimen/radio_button_padding_horizontal"
         android:layout_marginEnd="@dimen/radio_button_padding_horizontal"
         android:text="@string/search_engine_add_custom_search_engine_title"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

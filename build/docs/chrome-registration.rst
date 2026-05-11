@@ -390,6 +390,30 @@ main process.
    component {09543782-22b1-4a0b-ba07-9134365776ee} maincomponent.js process=main
    component {98309951-ac89-4642-afea-7b2b6216bcef} contentcomponent.js process=content
 
+remoteenabled
+~~~~~~~~~~~~~
+
+In `multiprocess Firefox`, the
+default is that a given chrome: URI will always be loaded into the
+chrome process. If you set the "remoteenabled" flag, then the page will
+be loaded in the same process as the ``browser`` that loaded it:
+
+::
+
+   content packagename chrome/path/ remoteenabled=yes
+
+remoterequired
+~~~~~~~~~~~~~~
+
+In `multiprocess Firefox`, the
+default is that a given chrome: URI will always be loaded into the
+chrome process. If you set the "remoterequired" flag, then the page will
+always be loaded into a child process:
+
+::
+
+   content packagename chrome/path/ remoterequired=yes
+
 Example chrome manifest
 -----------------------
 

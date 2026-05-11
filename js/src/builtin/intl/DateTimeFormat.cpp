@@ -1171,15 +1171,6 @@ static bool ResolveLocale(JSContext* cx,
         return false;
       }
       dateTimeFormat->setCalendar(str);
-    } else if (StringEqualsLiteral(ca, "islamic-rgsa")) {
-      // Fallback to "islamic-tbla" calendar for 147 uplift compatibility.
-      // The above warning text isn't suitable, and per 2025-12 TG2 meeting
-      // treatment as unknown is expected going forward (bug 2005702).
-      auto* str = NewStringCopyZ<CanGC>(cx, "islamic-tbla");
-      if (!str) {
-        return false;
-      }
-      dateTimeFormat->setCalendar(str);
     } else {
       dateTimeFormat->setCalendar(ca);
     }
@@ -2357,6 +2348,27 @@ static bool ResolveCalendarValue(JSContext* cx,
   return true;
 }
 
+/**
+ * Throws an error if `dateTimeFormat`'s calendar is not equal to `calendarId`.
+ */
+static bool ThrowIfCalendarNotEqual(
+    JSContext* cx, Handle<DateTimeFormatObject*> dateTimeFormat,
+    CalendarId calendarId) {
+  if (!ResolveCalendarValue(cx, dateTimeFormat)) {
+    return false;
+  }
+  auto calendar = dateTimeFormat->getCalendarValue();
+
+  if (calendarId != calendar.identifier()) {
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                              JSMSG_TEMPORAL_CALENDAR_INCOMPATIBLE,
+                              CalendarIdentifier(calendarId).data(),
+                              CalendarIdentifier(calendar).data());
+    return false;
+  }
+  return true;
+}
+
 struct EpochMilliseconds {
   double milliseconds = 0;
 
@@ -2384,19 +2396,11 @@ static bool HandleDateTimeTemporalDate(
   auto isoDate = unwrappedTemporalDate->date();
   auto calendarId = unwrappedTemporalDate->calendar().identifier();
 
-  if (!ResolveCalendarValue(cx, dateTimeFormat)) {
-    return false;
-  }
-  Rooted<CalendarValue> calendar(cx, dateTimeFormat->getCalendarValue());
-
   // Step 1.
-  if (calendarId != CalendarId::ISO8601 &&
-      calendarId != calendar.identifier()) {
-    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
-                              JSMSG_TEMPORAL_CALENDAR_INCOMPATIBLE,
-                              CalendarIdentifier(calendarId).data(),
-                              CalendarIdentifier(calendar).data());
-    return false;
+  if (calendarId != CalendarId::ISO8601) {
+    if (!ThrowIfCalendarNotEqual(cx, dateTimeFormat, calendarId)) {
+      return false;
+    }
   }
 
   // Step 2.
@@ -2424,17 +2428,8 @@ static bool HandleDateTimeTemporalYearMonth(
   auto isoDate = unwrappedTemporalYearMonth->date();
   auto calendarId = unwrappedTemporalYearMonth->calendar().identifier();
 
-  if (!ResolveCalendarValue(cx, dateTimeFormat)) {
-    return false;
-  }
-  Rooted<CalendarValue> calendar(cx, dateTimeFormat->getCalendarValue());
-
   // Step 1.
-  if (calendarId != calendar.identifier()) {
-    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
-                              JSMSG_TEMPORAL_CALENDAR_INCOMPATIBLE,
-                              CalendarIdentifier(calendarId).data(),
-                              CalendarIdentifier(calendar).data());
+  if (!ThrowIfCalendarNotEqual(cx, dateTimeFormat, calendarId)) {
     return false;
   }
 
@@ -2463,17 +2458,8 @@ static bool HandleDateTimeTemporalMonthDay(
   auto isoDate = unwrappedTemporalMonthDay->date();
   auto calendarId = unwrappedTemporalMonthDay->calendar().identifier();
 
-  if (!ResolveCalendarValue(cx, dateTimeFormat)) {
-    return false;
-  }
-  Rooted<CalendarValue> calendar(cx, dateTimeFormat->getCalendarValue());
-
   // Step 1.
-  if (calendarId != calendar.identifier()) {
-    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
-                              JSMSG_TEMPORAL_CALENDAR_INCOMPATIBLE,
-                              CalendarIdentifier(calendarId).data(),
-                              CalendarIdentifier(calendar).data());
+  if (!ThrowIfCalendarNotEqual(cx, dateTimeFormat, calendarId)) {
     return false;
   }
 
@@ -2523,19 +2509,11 @@ static bool HandleDateTimeTemporalDateTime(
   auto isoDateTime = unwrappedDateTime->dateTime();
   auto calendarId = unwrappedDateTime->calendar().identifier();
 
-  if (!ResolveCalendarValue(cx, dateTimeFormat)) {
-    return false;
-  }
-  Rooted<CalendarValue> calendar(cx, dateTimeFormat->getCalendarValue());
-
   // Step 1.
-  if (calendarId != CalendarId::ISO8601 &&
-      calendarId != calendar.identifier()) {
-    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
-                              JSMSG_TEMPORAL_CALENDAR_INCOMPATIBLE,
-                              CalendarIdentifier(calendarId).data(),
-                              CalendarIdentifier(calendar).data());
-    return false;
+  if (calendarId != CalendarId::ISO8601) {
+    if (!ThrowIfCalendarNotEqual(cx, dateTimeFormat, calendarId)) {
+      return false;
+    }
   }
 
   // Step 2.
@@ -2573,19 +2551,11 @@ static bool HandleDateTimeTemporalZonedDateTime(
   auto epochNs = unwrappedZonedDateTime->epochNanoseconds();
   auto calendarId = unwrappedZonedDateTime->calendar().identifier();
 
-  if (!ResolveCalendarValue(cx, dateTimeFormat)) {
-    return false;
-  }
-  Rooted<CalendarValue> calendar(cx, dateTimeFormat->getCalendarValue());
-
   // Step 4.
-  if (calendarId != CalendarId::ISO8601 &&
-      calendarId != calendar.identifier()) {
-    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
-                              JSMSG_TEMPORAL_CALENDAR_INCOMPATIBLE,
-                              CalendarIdentifier(calendarId).data(),
-                              CalendarIdentifier(calendar).data());
-    return false;
+  if (calendarId != CalendarId::ISO8601) {
+    if (!ThrowIfCalendarNotEqual(cx, dateTimeFormat, calendarId)) {
+      return false;
+    }
   }
 
   // Step 5.

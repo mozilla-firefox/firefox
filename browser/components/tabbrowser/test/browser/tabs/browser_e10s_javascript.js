@@ -1,20 +1,19 @@
+const CHROME_PROCESS = E10SUtils.NOT_REMOTE;
+const WEB_CONTENT_PROCESS = E10SUtils.WEB_REMOTE_TYPE;
+
 add_task(async function () {
   let url = "javascript:dosomething()";
 
-  is(
-    ChromeUtils.predictRemoteTypeForURI(url, {
-      useRemoteSubframes: false,
-      preferredRemoteType: E10SUtils.NOT_REMOTE,
-    }),
-    E10SUtils.NOT_REMOTE,
+  ok(
+    E10SUtils.canLoadURIInRemoteType(url, /* fission */ false, CHROME_PROCESS),
     "Check URL in chrome process."
   );
-  is(
-    ChromeUtils.predictRemoteTypeForURI(url, {
-      useRemoteSubframes: false,
-      preferredRemoteType: E10SUtils.WEB_REMOTE_TYPE,
-    }),
-    E10SUtils.WEB_REMOTE_TYPE,
+  ok(
+    E10SUtils.canLoadURIInRemoteType(
+      url,
+      /* fission */ false,
+      WEB_CONTENT_PROCESS
+    ),
     "Check URL in web content process."
   );
 });

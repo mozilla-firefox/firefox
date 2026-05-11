@@ -33,9 +33,6 @@ void TransferUniqueId(Cell* tgt, Cell* src);
 // Remove any unique id associated with this Cell.
 void RemoveUniqueId(Cell* cell);
 
-// Used to restore unique ID after JSObject::swap.
-bool SetOrUpdateUniqueId(JSContext* cx, Cell* cell, uint64_t uid);
-
 }  // namespace js::gc
 
 #endif  // gc_StableCellHasher_h

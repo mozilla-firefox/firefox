@@ -113,7 +113,7 @@ class MOZ_STACK_CLASS ServoCSSAnimationBuilder final {
   // This code should eventually disappear along with the Gecko style backend
   // and we should simply call Play() / Pause() / Cancel() etc. which will
   // post the required restyles.
-  void NotifyNewOrRemovedAnimation(const Animation& aAnimation) {
+  void NotifyNewOrRemovedAnimation(const dom::Animation& aAnimation) {
     dom::AnimationEffect* effect = aAnimation.GetEffect();
     if (!effect) {
       return;

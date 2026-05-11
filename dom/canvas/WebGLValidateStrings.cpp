@@ -150,7 +150,7 @@ std::string CrushGlslToAscii(const std::string& u8) {
   static_assert(!IsValidForPreprocOrGlsl(INVALID_GLSL_CHAR));
   auto ascii = u8;
   for (auto& c : ascii) {
-    if (MOZ_UNLIKELY(!IsValidForPreprocOrGlsl(c))) {
+    if (!IsValidForPreprocOrGlsl(c)) [[unlikely]] {
       c = INVALID_GLSL_CHAR;
     }
   }

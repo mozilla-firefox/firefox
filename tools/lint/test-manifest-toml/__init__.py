@@ -228,6 +228,7 @@ def lint(paths, config, fix=None, **lintargs):
                     f"Use 'disabled = \"<reason>\"' to disable a test instead of a comment: {disabled_section}"
                 )
 
+        is_xpcshell = os.path.basename(file_name).startswith("xpcshell")
         for section, keyvals in manifest.body:
             if section is None:
                 continue
@@ -236,6 +237,14 @@ def lint(paths, config, fix=None, **lintargs):
                 state.error(f"Bad assignment in preamble: {section} = {keyvals}")
             else:
                 for k, v in keyvals.items():
+                    if (
+                        k == "prefs"
+                        and str(section) != DEFAULT_SECTION
+                        and not is_xpcshell
+                    ):
+                        state.error(
+                            f"'prefs' is only supported in the [{DEFAULT_SECTION}] section for non-xpcshell manifests"
+                        )
                     if k.endswith("-if"):
                         if not isinstance(v, Array):
                             state.error(

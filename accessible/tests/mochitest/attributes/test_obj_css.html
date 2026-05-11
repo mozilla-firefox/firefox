@@ -11,33 +11,10 @@
   <script type="application/javascript"
           src="../attributes.js"></script>
   <script type="application/javascript"
-          src="../events.js"></script>
+          src="../promisified-events.js"></script>
 
   <script type="application/javascript">
-    var gQueue = null;
-
-    function removeElm(aID) {
-      this.node = getNode(aID);
-      this.accessible = getAccessible(aID);
-
-      this.eventSeq = [
-        new invokerChecker(EVENT_HIDE, this.accessible),
-      ];
-
-      this.invoke = function removeElm_invoke() {
-        this.node.remove();
-      };
-
-      this.check = function removeElm_check() {
-        testAbsentCSSAttrs(this.accessible);
-      };
-
-      this.getID = function removeElm_getID() {
-        return "test CSS-based attributes on removed accessible";
-      };
-    }
-
-    function doTest() {
+    async function doTest() {
       // CSS display
       testCSSAttrs("display_block");
       testCSSAttrs("display_inline");
@@ -103,9 +80,21 @@
       // no CSS-based object attributes
       testAbsentCSSAttrs(getAccessible("listitem").firstChild);
 
-      gQueue = new eventQueue();
-      gQueue.push(new removeElm("div"));
-      gQueue.invoke(); // SimpleTest.finish();
+      const divAccessible = getAccessible("div");
+      const hidden = waitForEvent(EVENT_HIDE, e => {
+          if (divAccessible != e.accessible) {
+            return false;
+          }
+          // We need to test this inline with the hide event because if we do this async we risk doing
+          // this after the reorder which deparents the accessible and makes it defunct.
+          testAbsentCSSAttrs(divAccessible);
+          return true;
+     });
+
+      getNode("div").remove();
+      await hidden;
+
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

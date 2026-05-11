@@ -344,6 +344,29 @@ private:
     return this_ptr->impl_create_sandbox(std::forward<T_Args>(args)...);
   }
 
+
+template <typename T>
+T checked_add(T aLhs, T aRhs, const char* aErrorMsg) {
+  static_assert(std::is_unsigned_v<T>, "Expected unsigned type");
+
+  T ret = aLhs + aRhs;
+  bool has_overflow = ret < aLhs;
+  detail::dynamic_check(!has_overflow, aErrorMsg);
+
+  return ret;
+}
+
+template <typename T>
+T checked_multiply(T aLhs, T aRhs, const char* aErrorMsg) {
+  static_assert(std::is_unsigned_v<T>, "Expected unsigned type");
+
+  T ret = aLhs * aRhs;
+  bool has_overflow = (aLhs != 0) && ((ret / aLhs) != aRhs);
+  detail::dynamic_check(!has_overflow, aErrorMsg);
+
+  return ret;
+}
+
 public:
   /**
    * @brief Unused member that allows the calling code to save data in a
@@ -556,9 +579,10 @@ public:
     }
     detail::dynamic_check(is_pointer_in_sandbox_memory(ptr),
                           "Malloc returned pointer outside the sandbox memory");
-    auto ptr_end = reinterpret_cast<uintptr_t>(ptr + (count - 1));
-    detail::dynamic_check(
-      is_in_same_sandbox(ptr, reinterpret_cast<void*>(ptr_end)),
+
+    const size_t obj_size = checked_multiply(static_cast<size_t>(count), sizeof(T), "Malloc object size too large");
+    auto ptr_end = checked_add(reinterpret_cast<uintptr_t>(ptr), reinterpret_cast<uintptr_t>(obj_size - 1), "Malloc object end too large");
+    detail::dynamic_check(is_pointer_in_sandbox_memory(reinterpret_cast<const char *>(ptr_end)),
       "Malloc returned a pointer whose range goes beyond sandbox memory");
     auto cast_ptr = reinterpret_cast<T*>(ptr);
     return tainted<T*, T_Sbx>::internal_factory(cast_ptr);

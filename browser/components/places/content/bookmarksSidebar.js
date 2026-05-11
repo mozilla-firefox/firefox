@@ -64,7 +64,82 @@ window.addEventListener("load", () => {
   document
     .getElementById("sidebar-panel-close")
     .addEventListener("click", closeSidebarPanel);
+
+  document
+    .getElementById("placesCommands")
+    .addEventListener("command", event => {
+      let label;
+      switch (event.target.id) {
+        case "placesCmd_open:tab":
+          label = "open_in_new_tab";
+          break;
+        case "placesCmd_open:window":
+          label = "open_in_new_window";
+          break;
+        case "placesCmd_open:privatewindow":
+          label = "open_in_private_window";
+          break;
+        case "placesCmd_show:info": {
+          let node = document.getElementById("bookmarks-view").selectedNode;
+          const labelPrefix =
+            node && PlacesUtils.nodeIsFolderOrShortcut(node)
+              ? "rename_bookmark_folder"
+              : "edit_bookmark";
+          recordDialogResult(labelPrefix);
+          break;
+        }
+        case "placesCmd_cut":
+          label = "cut_bookmark";
+          break;
+        case "placesCmd_copy":
+          label = "copy_bookmark_url";
+          break;
+        case "placesCmd_new:bookmark":
+          recordDialogResult("add_bookmark");
+          break;
+        case "placesCmd_new:folder":
+          recordDialogResult("add_bookmark_folder");
+          break;
+        case "placesCmd_new:separator":
+          label = "add_separator";
+          break;
+        case "placesCmd_sortBy:name":
+          label = "sort_bookmarks_by_name";
+          break;
+      }
+      if (label) {
+        Glean.browserUiInteraction.sidebarBookmarks[label].add(1);
+      }
+    });
+
+  document
+    .getElementById("placesContext_open_newcontainertab_popup")
+    .addEventListener("command", () => {
+      Glean.browserUiInteraction.sidebarBookmarks.open_in_new_container_tab.add(
+        1
+      );
+    });
 });
+
+/**
+ * Wait for an in-flight bookmark dialog (add / edit / rename folder) to be
+ * dismissed, then record the result in the respective Glean bucket.
+ *
+ * @param {string} labelPrefix
+ *   One of "add_bookmark", "add_bookmark_folder", "edit_bookmark",
+ *   "rename_bookmark_folder".
+ */
+async function recordDialogResult(labelPrefix) {
+  const deferred = PlacesUIUtils.lastBookmarkDialogDeferred;
+  const guid = await deferred.promise;
+  // If user confirms the bookmark dialog, we will have the guid.
+  // If they cancel, guid will be `undefined`.
+  // (If saving resulted in an error, deferred promise wouldn't have resolved.)
+  const outcome = guid ? "confirmed" : "cancelled";
+  Glean.browserUiInteraction.sidebarBookmarks[`${labelPrefix}_${outcome}`].add(
+    1
+  );
+}
 
 function searchBookmarks(event) {
   let { value } = event.currentTarget;
@@ -75,18 +150,22 @@ function searchBookmarks(event) {
     tree.place = tree.place;
   } else {
     Glean.sidebar.search.bookmarks.add(1);
+    Glean.browserUiInteraction.sidebarBookmarks.search.add(1);
     gCumulativeSearches++;
     tree.applyFilter(value, PlacesUtils.bookmarks.userContentRoots);
   }
 }
 
-function updateTelemetry(urlsOpened = []) {
+function updateTelemetry(urlsOpened = [], openAllBookmarks = false) {
   Glean.bookmarksSidebar.cumulativeSearches.accumulateSingleSample(
     gCumulativeSearches
   );
   clearCumulativeCounter();
 
   Glean.sidebar.link.bookmarks.add(urlsOpened.length);
+  if (openAllBookmarks) {
+    Glean.browserUiInteraction.sidebarBookmarks.open_all_bookmarks.add(1);
+  }
 }
 
 function clearCumulativeCounter() {

@@ -76,6 +76,7 @@ import org.mozilla.fenix.settings.quicksettings.protections.cookiebanners.getCoo
 import org.mozilla.fenix.shortcut.PwaOnboardingObserver
 import org.mozilla.fenix.termsofuse.store.Surface
 import org.mozilla.fenix.utils.Settings
+import org.mozilla.fenix.ipprotection.store.Surface as IPProtectionSurface
 
 /**
  * Fragment used for browsing the web within the main app.
@@ -387,6 +388,10 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
         if (requireComponents.termsOfUseManager.shouldShowTermsOfUsePromptOnBrowserFragment()) {
             findNavController().navigate(
                 BrowserFragmentDirections.actionGlobalTermsOfUseDialog(Surface.BROWSER),
+            )
+        } else if (requireComponents.ipProtectionManager.shouldShowIPProtectionPrompt()) {
+            findNavController().navigate(
+                BrowserFragmentDirections.actionGlobalIpProtectionDialog(IPProtectionSurface.BROWSER),
             )
         }
     }

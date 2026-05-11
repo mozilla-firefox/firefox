@@ -133,7 +133,6 @@ skip-if = [
 
 ["test_animation_loop_count.html"]
 scheme = "https"
-skip-if = ["release_or_beta"]
 
 ["test_animation_operators.html"]
 
@@ -241,7 +240,6 @@ skip-if = [
 
 ["test_jxl_progressive.html"]
 skip-if = [
-  "release_or_beta",
   "http2",
   "http3",
 ]

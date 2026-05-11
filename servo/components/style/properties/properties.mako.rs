@@ -1930,7 +1930,7 @@ impl ComputedValues {
             PropertyDeclarationId::Longhand(id) => {
                 let mut context = resolved::Context {
                     style: self,
-                    for_property: id.into(),
+                    for_property: PropertyId::NonCustom(id.into()),
                     current_longhand: Some(id),
                 };
                 let mut s = String::new();
@@ -2980,7 +2980,13 @@ impl Descriptors {
         match id {
         % for descriptor in descriptors:
             DescriptorId::${descriptor.camel_case} => {
-                let value = Some(input.parse_entirely(|i| Parse::parse(context, i))?);
+                let value = Some(input.parse_entirely(|i|
+                    % if descriptor.parser:
+                        ${descriptor.type}::${descriptor.parser}(context, i)
+                    % else:
+                        Parse::parse(context, i)
+                    % endif
+                )?);
                 let change = self.${descriptor.ident} != value;
                 self.${descriptor.ident} = value;
                 Ok(change)

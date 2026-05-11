@@ -16,7 +16,9 @@ use crate::properties::longhands::{
     contain::computed_value::T as Contain, container_type::computed_value::T as ContainerType,
     content_visibility::computed_value::T as ContentVisibility,
 };
-use crate::properties::{ComputedValues, LonghandId, LonghandIdSet, StyleBuilder};
+#[cfg(feature = "gecko")]
+use crate::properties::LonghandId;
+use crate::properties::{ComputedValues, LonghandIdSet, StyleBuilder};
 use crate::values::computed::position::{
     PositionTryFallbacksTryTactic, PositionTryFallbacksTryTacticKeyword, TryTacticAdjustment,
 };
@@ -1019,6 +1021,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     }
 
     /// Adjusts the style to account for various fixups that don't fit naturally into the cascade.
+    #[allow(unused_variables)]
     pub fn adjust<E>(
         &mut self,
         layout_parent_style: &ComputedValues,

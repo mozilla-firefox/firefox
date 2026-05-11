@@ -5,13 +5,12 @@ prefs = [
 ]
 support-files = [
   "head.js",
-  "../head.js",
 ]
 tags = "os_integration"
 
-["browser_sync_chooseWhatToSync.js"]
+["browser_account_sync_visibility.js"]
 
-["browser_sync_disabled.js"]
+["browser_sync_chooseWhatToSync.js"]
 
 ["browser_sync_pairing.js"]
 

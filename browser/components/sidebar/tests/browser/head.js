@@ -153,6 +153,40 @@ async function openAndWaitForContextMenu(popup, button, onShown) {
   return popup;
 }
 
+/**
+ * Right-click a sidebar element to open the current sidebar context menu, then
+ * activate a menu item (or run a custom callback). Resolves once the command
+ * has fired and the menu has fully closed.
+ *
+ * @param {Element} triggerEl
+ *   The element to right-click.
+ * @param {string} menuItemId
+ *   The id of the `<menuitem>` to activate. Ignored if `callback` is provided.
+ * @param {(contextMenu: Element) => any} [callback]
+ *   Custom handler invoked to dispatch a command once the context menu is
+ *   shown. Receives the context menu popup element.
+ */
+async function activateContextMenuItem(triggerEl, menuItemId, callback) {
+  const contextMenu = SidebarController.currentContextMenu;
+  const promiseHidden = BrowserTestUtils.waitForPopupEvent(
+    contextMenu,
+    "hidden"
+  );
+  await openAndWaitForContextMenu(contextMenu, triggerEl, async () => {
+    const promiseCommand = BrowserTestUtils.waitForEvent(
+      contextMenu,
+      "command"
+    );
+    if (callback) {
+      await callback(contextMenu);
+    } else {
+      contextMenu.activateItem(document.getElementById(menuItemId));
+    }
+    await promiseCommand;
+  });
+  await promiseHidden;
+}
+
 function isActiveElement(el) {
   return el.getRootNode().activeElement == el;
 }

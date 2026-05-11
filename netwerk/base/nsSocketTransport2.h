@@ -267,9 +267,11 @@ class nsSocketTransport final : public nsASocketHandler,
 
   nsCString mEchConfig MOZ_GUARDED_BY(mLock);
   Atomic<bool, Relaxed> mEchConfigUsed{false};
-  bool mResolvedByTRR{false};
-  nsIRequest::TRRMode mEffectiveTRRMode{nsIRequest::TRR_DEFAULT_MODE};
-  nsITRRSkipReason::value mTRRSkipReason{nsITRRSkipReason::TRR_UNSET};
+  Atomic<bool, Relaxed> mResolvedByTRR{false};
+  Atomic<nsIRequest::TRRMode, Relaxed> mEffectiveTRRMode{
+      nsIRequest::TRR_DEFAULT_MODE};
+  Atomic<nsITRRSkipReason::value, Relaxed> mTRRSkipReason{
+      nsITRRSkipReason::TRR_UNSET};
 
   nsCOMPtr<nsISupports> mInputCopyContext;
   nsCOMPtr<nsISupports> mOutputCopyContext;

@@ -3,7 +3,7 @@ const global2 = newGlobal({"newCompartment": true});
 
 global1.nukeAllCCWs();
 
-const {object, transplant} = this.transplantableObject(global1);
+const {object, transplant} = this.transplantableObject();
 
 global2.firstGlobalInCompartment(object);
 transplant(global1);

@@ -396,8 +396,7 @@ class LookupMatcherResult final {
 };
 
 void LookupMatcherResult::trace(JSTracer* trc) {
-  TraceNullableRoot(trc, &requestedLocale_,
-                    "LookupMatcherResult::requestedLocale");
+  TraceRoot(trc, &requestedLocale_, "LookupMatcherResult::requestedLocale");
 }
 
 namespace js {
@@ -488,7 +487,7 @@ bool js::intl::LookupMatcher(JSContext* cx,
 
 void js::intl::LocaleOptions::trace(JSTracer* trc) {
   for (auto& extension : extensions_) {
-    TraceNullableRoot(trc, &extension, "LocaleOptions::extension");
+    TraceRoot(trc, &extension, "LocaleOptions::extension");
   }
 }
 
@@ -527,7 +526,7 @@ JSLinearString* js::intl::ResolvedLocale::toLocale(JSContext* cx) const {
 
 void js::intl::ResolvedLocale::trace(JSTracer* trc) {
   for (auto& extension : extensions_) {
-    TraceNullableRoot(trc, &extension, "ResolvedLocale::extension");
+    TraceRoot(trc, &extension, "ResolvedLocale::extension");
   }
 }
 
@@ -694,6 +693,11 @@ static bool IsSupportedCalendar(JSContext* cx, LanguageId locale,
       return false;
     }
     auto calendar = keyword.unwrap();
+
+    // Skip deprecated calendar variants.
+    if (calendar == mozilla::MakeStringSpan("islamic-rgsa")) {
+      continue;
+    }
 
     if (StringEqualsAscii(string, calendar.data(), calendar.size())) {
       *result = true;

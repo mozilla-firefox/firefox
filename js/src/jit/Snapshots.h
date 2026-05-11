@@ -485,7 +485,7 @@ class RecoverWriter {
   uint32_t instructionsWritten_ = 0;
 
  public:
-  SnapshotOffset startRecover(uint32_t instructionCount);
+  RecoverOffset startRecover(uint32_t instructionCount);
 
   void writeInstruction(const MNode* rp);
 

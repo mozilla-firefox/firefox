@@ -244,7 +244,8 @@ config = {
                     if REQUIRE_GPU and (platform.uname().version == "10.0.19045")
                     else (
                         "--platform=win11-hw"
-                        if REQUIRE_GPU and (platform.uname().version == "10.0.26100")
+                        if REQUIRE_GPU
+                        and platform.uname().version in ("10.0.26100", "10.0.26200")
                         else "--platform=win7"
                     )
                 ),

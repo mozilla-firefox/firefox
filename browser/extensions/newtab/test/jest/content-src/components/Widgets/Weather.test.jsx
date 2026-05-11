@@ -417,6 +417,85 @@ describe("<Weather> (Widgets/Weather)", () => {
       ).toBeInTheDocument();
     });
 
+    it("trainhopConfig.widgets.enabled overrides widgets.system.enabled=false", () => {
+      const state = {
+        ...mockState,
+        Prefs: {
+          ...mockState.Prefs,
+          values: {
+            ...mockState.Prefs.values,
+            "widgets.system.enabled": false,
+            trainhopConfig: { widgets: { enabled: true } },
+          },
+        },
+      };
+      const { container } = renderWeather("medium", state);
+      expect(
+        container.querySelector(
+          "span[data-l10n-id='newtab-widget-menu-change-size']"
+        )
+      ).toBeInTheDocument();
+    });
+
+    it("trainhopConfig.widgets.enabled overrides widgets.enabled=false", () => {
+      const state = {
+        ...mockState,
+        Prefs: {
+          ...mockState.Prefs,
+          values: {
+            ...mockState.Prefs.values,
+            "widgets.enabled": false,
+            trainhopConfig: { widgets: { enabled: true } },
+          },
+        },
+      };
+      const { container } = renderWeather("medium", state);
+      expect(
+        container.querySelector(
+          "span[data-l10n-id='newtab-widget-menu-change-size']"
+        )
+      ).toBeInTheDocument();
+    });
+
+    it("trainhopConfig.widgets.maximized overrides widgets.system.maximized=false", () => {
+      const state = {
+        ...mockState,
+        Prefs: {
+          ...mockState.Prefs,
+          values: {
+            ...mockState.Prefs.values,
+            "widgets.system.maximized": false,
+            trainhopConfig: { widgets: { maximized: true } },
+          },
+        },
+      };
+      const { container } = renderWeather("medium", state);
+      expect(
+        container.querySelector(
+          "span[data-l10n-id='newtab-widget-menu-change-size']"
+        )
+      ).toBeInTheDocument();
+    });
+
+    it("hides change-size submenu when both widgets.enabled is false and trainhopConfig is absent", () => {
+      const state = {
+        ...mockState,
+        Prefs: {
+          ...mockState.Prefs,
+          values: {
+            ...mockState.Prefs.values,
+            "widgets.enabled": false,
+          },
+        },
+      };
+      const { container } = renderWeather("medium", state);
+      expect(
+        container.querySelector(
+          "span[data-l10n-id='newtab-widget-menu-change-size']"
+        )
+      ).not.toBeInTheDocument();
+    });
+
     it("contains hide and learn-more items", () => {
       const { container } = renderWeather();
       expect(

@@ -67,10 +67,6 @@ extern JS_PUBLIC_API JSPrincipals* JS_GetScriptPrincipals(JSScript* script);
 
 extern JS_PUBLIC_API bool JS_ScriptHasMutedErrors(JSScript* script);
 
-extern JS_PUBLIC_API JSObject* JS_CloneObject(JSContext* cx,
-                                              JS::HandleObject obj,
-                                              JS::HandleObject proto);
-
 /**
  * Copy the own properties of src to dst in a fast way.  src and dst must both
  * be native and must be in the compartment of cx.  They must have the same
@@ -124,17 +120,6 @@ extern JS_PUBLIC_API bool GetIsSecureContext(JS::Realm* realm);
 extern JS_PUBLIC_API bool GetDebuggerObservesWasm(JS::Realm* realm);
 
 }  // namespace JS
-
-/**
- * Copies all own properties and private fields from |obj| to |target|. Both
- * |obj| and |target| must not be cross-compartment wrappers because we have to
- * enter their realms.
- *
- * This function immediately enters a realm, and does not impose any
- * restrictions on the realm of |cx|.
- */
-extern JS_PUBLIC_API bool JS_CopyOwnPropertiesAndPrivateFields(
-    JSContext* cx, JS::HandleObject target, JS::HandleObject obj);
 
 extern JS_PUBLIC_API bool JS_WrapPropertyDescriptor(
     JSContext* cx, JS::MutableHandle<JS::PropertyDescriptor> desc);

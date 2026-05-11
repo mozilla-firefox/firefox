@@ -7,6 +7,10 @@
   --tab-min-height: 36px;
   --tab-group-suggestions-loading-animation-color-1: color-mix(in srgb, currentColor 5%, transparent);
   --tab-group-suggestions-loading-animation-color-2: color-mix(in srgb, currentColor 35%, transparent);
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("browser.nova.enabled") {
+    --tab-min-height: 32px;
+  }
   &[uidensity="compact"] {
     --tab-min-height: 29px;
   }
@@ -14,6 +18,7 @@
     --tab-min-height: 41px;
   }
   --split-view-padding-block: 2px;
+  --split-view-tab-padding-inline: 2px;
   --tabstrip-min-height: calc(var(--tab-min-height) + 2 * var(--tab-block-margin));
   --tab-group-label-height: max(1.5em, var(--tab-min-height) - 14px);
   --tab-group-label-padding: 4px;
@@ -273,7 +278,7 @@ tab-split-view-wrapper[dragtarget] {
   }
 
   :root:not([uidensity="compact"], [sidebar-expand-on-hover]) &[pinned] {
-    padding: 0 10px;
+    padding: 0 calc((var(--tab-min-height) - var(--icon-size)) / 2);
   }
 
   &:is([selected], [multiselected]) {
@@ -577,6 +582,12 @@ tab-split-view-wrapper[dragtarget] {
   inset-inline-end: -7px;
   z-index: 1; /* Overlay tab title */
 
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("browser.nova.enabled") {
+    top: 7px;
+    box-shadow: var(--box-shadow-level-1);
+  }
+
   #tabbrowser-tabs[orient="vertical"] & {
     top: 7px;
   }
@@ -602,9 +613,9 @@ tab-split-view-wrapper[dragtarget] {
     &:is([soundplaying], [muted], [activemedia-blocked]) {
       /* We want to make this look like the selected tab, but fully opaque. For that,
        * we build a stack of `--lwt-accent-color` (guaranteed opaque), then
-       * `--toolbox-background-color`, then `--tab-selected-bgcolor`.
+       * `--toolbox-background-color`, then `--tab-background-color-selected`.
        *
-       * We rely on at least one of `--toolbox-background-color` / `--tab-selected-bgcolor`
+       * We rely on at least one of `--toolbox-background-color` / `--tab-background-color-selected`
        * being opaque on the system themes, so even though `--lwt-accent-color` is
        * not set there, it ends up working out because we never see it through.
        *
@@ -624,11 +635,12 @@ tab-split-view-wrapper[dragtarget] {
       }
       &[selected] {
         background-image:
-          linear-gradient(var(--audio-overlay-extra-background)), linear-gradient(var(--tab-selected-bgcolor)), linear-gradient(var(--toolbox-background-color));
+          linear-gradient(var(--audio-overlay-extra-background)), linear-gradient(var(--tab-background-color-selected)),
+          linear-gradient(var(--toolbox-background-color));
       }
       &[selected]:-moz-window-inactive {
         background-image:
-          linear-gradient(var(--audio-overlay-extra-background)), linear-gradient(var(--tab-selected-bgcolor)),
+          linear-gradient(var(--audio-overlay-extra-background)), linear-gradient(var(--tab-background-color-selected)),
           linear-gradient(var(--toolbox-background-color-inactive));
       }
 
@@ -673,9 +685,9 @@ tab-split-view-wrapper[dragtarget] {
       &:is([soundplaying], [muted], [activemedia-blocked]) {
         /* We want to make this look like the selected tab, but fully opaque. For that,
          * we build a stack of `--lwt-accent-color` (guaranteed opaque), then
-         * `--toolbox-background-color`, then `--tab-selected-bgcolor`.
+         * `--toolbox-background-color`, then `--tab-background-color-selected`.
          *
-         * We rely on at least one of `--toolbox-background-color` / `--tab-selected-bgcolor`
+         * We rely on at least one of `--toolbox-background-color` / `--tab-background-color-selected`
          * being opaque on the system themes, so even though `--lwt-accent-color` is
          * not set there, it ends up working out because we never see it through.
          *
@@ -696,13 +708,13 @@ tab-split-view-wrapper[dragtarget] {
 
         &[selected] {
           background-image:
-            linear-gradient(var(--audio-overlay-extra-background)), linear-gradient(var(--tab-selected-bgcolor)),
+            linear-gradient(var(--audio-overlay-extra-background)), linear-gradient(var(--tab-background-color-selected)),
             linear-gradient(var(--toolbox-background-color));
         }
 
         &[selected]:-moz-window-inactive {
           background-image:
-            linear-gradient(var(--audio-overlay-extra-background)), linear-gradient(var(--tab-selected-bgcolor)),
+            linear-gradient(var(--audio-overlay-extra-background)), linear-gradient(var(--tab-background-color-selected)),
             linear-gradient(var(--toolbox-background-color-inactive));
         }
 
@@ -756,10 +768,11 @@ tab-split-view-wrapper[dragtarget] {
     background-image: linear-gradient(transparent), linear-gradient(var(--toolbox-background-color-inactive));
   }
   .tabbrowser-tab[selected] & {
-    background-image: linear-gradient(transparent), linear-gradient(var(--tab-selected-bgcolor)), linear-gradient(var(--toolbox-background-color));
+    background-image: linear-gradient(transparent), linear-gradient(var(--tab-background-color-selected)), linear-gradient(var(--toolbox-background-color));
   }
   .tabbrowser-tab[selected] &:-moz-window-inactive {
-    background-image: linear-gradient(transparent), linear-gradient(var(--tab-selected-bgcolor)), linear-gradient(var(--toolbox-background-color-inactive));
+    background-image:
+      linear-gradient(transparent), linear-gradient(var(--tab-background-color-selected)), linear-gradient(var(--toolbox-background-color-inactive));
   }
 
   #tabbrowser-tabs[orient="vertical"] & {
@@ -902,14 +915,28 @@ tab-split-view-wrapper[dragtarget] {
   outline-offset: var(--tab-outline-offset);
 
   .tabbrowser-tab:hover > .tab-stack > &:not([selected], [multiselected]) {
-    background-color: var(--tab-hover-background-color);
+    background-color: var(--tab-background-color-hover);
     outline-color: var(--tab-hover-outline-color);
   }
 
   &:is([selected], [multiselected]) {
-    background-color: var(--tab-selected-bgcolor);
-    box-shadow: var(--tab-selected-shadow);
+    background-color: var(--tab-background-color-selected);
     outline-color: var(--tab-selected-outline-color);
+    box-shadow: var(--tab-selected-shadow);
+  }
+
+  &:is([selected]:not([multiselected])) {
+    /* The below lines are required for dark, light, and
+      system themes to achieve the gradient border appearance */
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media (not ((forced-colors) or (-moz-native-theme))) and (-moz-pref("browser.nova.enabled")) {
+      :root:not([lwtheme]) & {
+        border: 1px solid transparent;
+        background:
+          linear-gradient(var(--tab-background-color-selected)) padding-box,
+          var(--tab-border-color-accent) border-box;
+      }
+    }
   }
 
   &[multiselected] {
@@ -924,15 +951,15 @@ tab-split-view-wrapper[dragtarget] {
   #tabbrowser-tabs[orient="vertical"] & {
     .tabbrowser-tab[small-stack] > .tab-stack > & {
       box-shadow:
-        0 5px 0 -3px var(--tab-selected-bgcolor),
+        0 5px 0 -3px var(--tab-background-color-selected),
         0 3px var(--tab-dragover-outline-color);
     }
 
     .tabbrowser-tab[big-stack] > .tab-stack > & {
       box-shadow:
-        0 5px 0 -3px var(--tab-selected-bgcolor),
+        0 5px 0 -3px var(--tab-background-color-selected),
         0 3px var(--tab-dragover-outline-color),
-        0 8px 0 -3px var(--tab-selected-bgcolor),
+        0 8px 0 -3px var(--tab-background-color-selected),
         0 6px var(--tab-dragover-outline-color);
     }
   }
@@ -940,30 +967,30 @@ tab-split-view-wrapper[dragtarget] {
   #tabbrowser-tabs[orient="horizontal"] & {
     .tabbrowser-tab[small-stack] > .tab-stack > & {
       box-shadow:
-        5px 0 0 -3px var(--tab-selected-bgcolor),
+        5px 0 0 -3px var(--tab-background-color-selected),
         3px 0 var(--tab-dragover-outline-color);
     }
 
     .tabbrowser-tab[big-stack] > .tab-stack > & {
       box-shadow:
-        5px 0 0 -3px var(--tab-selected-bgcolor),
+        5px 0 0 -3px var(--tab-background-color-selected),
         3px 0 var(--tab-dragover-outline-color),
-        8px 0 0 -3px var(--tab-selected-bgcolor),
+        8px 0 0 -3px var(--tab-background-color-selected),
         6px 0 var(--tab-dragover-outline-color);
     }
 
     &:-moz-locale-dir(rtl) {
       .tabbrowser-tab[small-stack] > .tab-stack > & {
         box-shadow:
-          -5px 0 0 -3px var(--tab-selected-bgcolor),
+          -5px 0 0 -3px var(--tab-background-color-selected),
           -3px 0 var(--tab-dragover-outline-color);
       }
 
       .tabbrowser-tab[big-stack] > .tab-stack > & {
         box-shadow:
-          -5px 0 0 -3px var(--tab-selected-bgcolor),
+          -5px 0 0 -3px var(--tab-background-color-selected),
           -3px 0 var(--tab-dragover-outline-color),
-          -8px 0 0 -3px var(--tab-selected-bgcolor),
+          -8px 0 0 -3px var(--tab-background-color-selected),
           -6px 0 var(--tab-dragover-outline-color);
       }
     }
@@ -1185,8 +1212,24 @@ tab-group > tab-split-view-wrapper {
   max-width: var(--tab-max-width);
   transition: var(--tab-width-transition);
 
+  .tab-group-line {
+    inset-block-end: calc(var(--tab-group-line-toolbar-border-distance) - var(--tab-block-margin) - var(--split-view-padding-block));
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media not -moz-pref("browser.nova.enabled") {
+      inset-inline-start: calc(var(--space-small) * -2);
+    }
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      inset-inline-end: calc(-1 * var(--tab-overflow-clip-margin) - var(--split-view-tab-padding-inline));
+    }
+  }
+
   &[last-tab-or-split-view] .tabbrowser-tab:last-child .tab-group-line {
     inset-inline-end: calc(var(--tab-border-radius) / 2);
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      inset-inline-end: calc(-1 * var(--tab-overflow-clip-margin));
+    }
   }
 
   &:has(tab:is([muted], [soundplaying], [activemedia-blocked])) {
@@ -1203,15 +1246,10 @@ tab-group > tab-split-view-wrapper {
   }
 
   .tabbrowser-tab {
-    padding-inline: 2px;
+    padding-inline: var(--split-view-tab-padding-inline);
 
     .tab-background {
       min-height: calc(var(--tab-min-height) - 4px); /* exclude the 4px padding normally added */
-
-      .tab-group-line {
-        inset-block-end: calc(var(--tab-group-line-toolbar-border-distance) - var(--tab-block-margin) - var(--split-view-padding-block));
-        inset-inline-start: calc(var(--space-small) * -2);
-      }
     }
 
     tab-group & {
@@ -1251,7 +1289,7 @@ tab-group > tab-split-view-wrapper {
   -moz-window-dragging: no-drag;
 
   &[hasactivetab] {
-    background-color: var(--tab-hover-background-color);
+    background-color: var(--tab-background-color-hover);
 
     @media (forced-colors) {
       border: 1px solid SelectedItem;
@@ -1377,7 +1415,7 @@ tab-group > tab-split-view-wrapper {
     outline-offset: var(--tab-outline-offset);
 
     &:hover {
-      background-color: var(--tab-hover-background-color);
+      background-color: var(--tab-background-color-hover);
       outline-color: var(--tab-hover-outline-color);
     }
 
@@ -1417,6 +1455,11 @@ tab-group > tab-split-view-wrapper {
   @container vertical-tabs-container (max-width: 210px) {
     grid-template-columns: 1fr;
 
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      border-radius: var(--border-radius-large);
+    }
+
     &:not([hasactivetab]) .tabbrowser-tab {
       &:first-child {
         border-block-end: 1px solid var(--toolbarbutton-icon-fill);
@@ -1433,6 +1476,11 @@ tab-group > tab-split-view-wrapper {
 /* When expand-on-hover is enabled, always stack split-view tabs in a single column */
 :root[sidebar-expand-on-hover] #tabbrowser-tabs[orient="vertical"][expanded] tab-split-view-wrapper {
   grid-template-columns: 1fr;
+
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("browser.nova.enabled") {
+    border-radius: var(--border-radius-large);
+  }
 
   &:not([hasactivetab]) .tabbrowser-tab {
     &:first-child {
@@ -1531,7 +1579,7 @@ tab-group > tab-split-view-wrapper {
 #tabbrowser-tabs[orient="vertical"] tab-split-view-wrapper {
   &[small-stack] {
     box-shadow:
-      0 5px 0 -3px var(--tab-selected-bgcolor),
+      0 5px 0 -3px var(--tab-background-color-selected),
       0 3px var(--tab-dragover-outline-color);
   }
 
@@ -1541,9 +1589,9 @@ tab-group > tab-split-view-wrapper {
 
   &[big-stack] {
     box-shadow:
-      0 6px 0 -3px var(--tab-selected-bgcolor),
+      0 6px 0 -3px var(--tab-background-color-selected),
       0 4px var(--tab-dragover-outline-color),
-      0 9px 0 -3px var(--tab-selected-bgcolor),
+      0 9px 0 -3px var(--tab-background-color-selected),
       0 7px var(--tab-dragover-outline-color);
   }
 }
@@ -1551,30 +1599,30 @@ tab-group > tab-split-view-wrapper {
 #tabbrowser-tabs[orient="horizontal"] tab-split-view-wrapper {
   &[small-stack] {
     box-shadow:
-      5px 0 0 -3px var(--tab-selected-bgcolor),
+      5px 0 0 -3px var(--tab-background-color-selected),
       3px 0 0 1px var(--tab-dragover-outline-color);
   }
 
   &[big-stack] {
     box-shadow:
-      5px 0 0 -3px var(--tab-selected-bgcolor),
+      5px 0 0 -3px var(--tab-background-color-selected),
       3px 0 0 1px var(--tab-dragover-outline-color),
-      8px 0 0 -3px var(--tab-selected-bgcolor),
+      8px 0 0 -3px var(--tab-background-color-selected),
       6px 0 0 1px var(--tab-dragover-outline-color);
   }
 
   &:-moz-locale-dir(rtl) {
     &[small-stack] {
       box-shadow:
-        -5px 0 0 -3px var(--tab-selected-bgcolor),
+        -5px 0 0 -3px var(--tab-background-color-selected),
         -3px 0 0 1px var(--tab-dragover-outline-color);
     }
 
     &[big-stack] {
       box-shadow:
-        -5px 0 0 -3px var(--tab-selected-bgcolor),
+        -5px 0 0 -3px var(--tab-background-color-selected),
         -3px 0 0 1px var(--tab-dragover-outline-color),
-        -8px 0 0 -3px var(--tab-selected-bgcolor),
+        -8px 0 0 -3px var(--tab-background-color-selected),
         -6px 0 0 1px var(--tab-dragover-outline-color);
     }
   }
@@ -1640,6 +1688,10 @@ tab-group > tab-split-view-wrapper {
       inset-inline-end: calc(var(--tab-border-radius) / 2);
       border-start-end-radius: calc(var(--tab-group-line-thickness) / 2);
       border-end-end-radius: calc(var(--tab-group-line-thickness) / 2);
+      /* stylelint-disable-next-line media-query-no-invalid */
+      @media -moz-pref("browser.nova.enabled") {
+        inset-inline-end: calc(-1 * var(--tab-overflow-clip-margin));
+      }
     }
   }
 
@@ -1881,8 +1933,8 @@ tab-group {
 
   tab-group[collapsed]:not([movingtabgroup]) &:hover,
   tab-group[previewpanelactive] & {
-    background-color: var(--tab-hover-background-color);
-    box-shadow: 0 0 0 var(--tab-group-label-highlight-radius) var(--tab-hover-background-color);
+    background-color: var(--tab-background-color-hover);
+    box-shadow: 0 0 0 var(--tab-group-label-highlight-radius) var(--tab-background-color-hover);
   }
 }
 
@@ -2227,7 +2279,7 @@ tab-group {
   }
 
   &:hover {
-    background-color: var(--tab-hover-background-color);
+    background-color: var(--tab-background-color-hover);
     outline-color: var(--tab-hover-outline-color);
   }
 
@@ -2355,6 +2407,10 @@ tab-group {
   background-color: transparent;
   margin-inline: var(--tab-inner-inline-margin);
   min-height: 2px;
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("browser.nova.enabled") {
+    min-height: 4px;
+  }
 
   /* stylelint-disable-next-line media-query-no-invalid */
   @media -moz-pref("browser.nova.enabled") {
@@ -2460,9 +2516,9 @@ tab-group {
       fill: var(--tab-selected-textcolor);
       /* We want to make this look like the selected tab, but fully opaque. For that,
        * we build a stack of `--lwt-accent-color` (guaranteed opaque), then
-       * `--toolbox-background-color`, then `--tab-selected-bgcolor`.
+       * `--toolbox-background-color`, then `--tab-background-color-selected`.
        *
-       * We rely on at least one of `--toolbox-background-color` / `--tab-selected-bgcolor`
+       * We rely on at least one of `--toolbox-background-color` / `--tab-background-color-selected`
        * being opaque on the system themes, so even though `--lwt-accent-color` is
        * not set there, it ends up working out because we never see it through.
        *
@@ -2472,7 +2528,8 @@ tab-group {
       --close-button-extra-background: transparent;
       background-color: var(--lwt-accent-color);
       background-image:
-        linear-gradient(var(--close-button-extra-background)), linear-gradient(var(--tab-selected-bgcolor)), linear-gradient(var(--toolbox-background-color));
+        linear-gradient(var(--close-button-extra-background)), linear-gradient(var(--tab-background-color-selected)),
+        linear-gradient(var(--toolbox-background-color));
       color-scheme: var(--tab-selected-color-scheme);
       outline-color: var(--tab-selected-outline-color);
       box-shadow: var(--tab-selected-shadow);
@@ -2485,7 +2542,7 @@ tab-group {
 
       &:-moz-window-inactive {
         background-image:
-          linear-gradient(var(--close-button-extra-background)), linear-gradient(var(--tab-selected-bgcolor)),
+          linear-gradient(var(--close-button-extra-background)), linear-gradient(var(--tab-background-color-selected)),
           linear-gradient(var(--toolbox-background-color-inactive));
       }
 
@@ -2558,11 +2615,23 @@ tab-group {
 /* Firefox View button and menu item */
 
 #TabsToolbar #firefox-view-button[open] > .toolbarbutton-icon {
-  background-color: var(--tab-selected-bgcolor);
+  background-color: var(--tab-background-color-selected);
   box-shadow: var(--tab-selected-shadow);
   outline-color: var(--tab-selected-outline-color);
   color: var(--tab-selected-textcolor);
   color-scheme: var(--tab-selected-color-scheme);
+
+  /* The below lines are required for dark, light, and
+      system themes to achieve the gradient border appearance */
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media (not ((forced-colors) or (-moz-native-theme))) and (-moz-pref("browser.nova.enabled")) {
+    :root:not([lwtheme]) & {
+      border: 1px solid transparent;
+      background:
+        linear-gradient(var(--tab-background-color-selected)) padding-box,
+        var(--tab-border-color-accent) border-box;
+    }
+  }
 }
 
 :root:not([privatebrowsingmode]) :is(toolbarbutton, toolbarpaletteitem),

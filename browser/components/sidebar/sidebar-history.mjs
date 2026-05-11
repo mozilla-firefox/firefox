@@ -154,7 +154,8 @@ export class SidebarHistory extends SidebarPage {
     }
   }
 
-  handleCommandEvent(e) {
+  async handleCommandEvent(e) {
+    let label;
     switch (e.target.id) {
       case "sidebar-history-sort-by-date":
         this.#changeSortOption(e, "date");
@@ -168,21 +169,63 @@ export class SidebarHistory extends SidebarPage {
       case "sidebar-history-sort-by-last-visited":
         this.#changeSortOption(e, "lastvisited");
         break;
-      case "sidebar-history-clear":
-        lazy.Sanitizer.showUI(this.topWindow);
+      case "sidebar-history-clear": {
+        const button = await lazy.Sanitizer.showUI(this.topWindow);
+        const outcome = button === "accept" ? "confirmed" : "cancelled";
+        Glean.browserUiInteraction.sidebarHistory[
+          `clear_history_${outcome}`
+        ].add(1);
         break;
+      }
       case "sidebar-history-context-open-all-in-tabs":
         this.#openAllInTabs(e);
         break;
       case "sidebar-history-context-delete-page":
         this.controller.deleteFromHistory().catch(console.error);
+        label = "delete_from_history";
         break;
       case "sidebar-history-context-delete-pages":
         this.#deleteMultipleFromHistory().catch(console.error);
+        label = "delete_from_history";
+        break;
+      case "sidebar-history-context-open-in-tab":
+        super.handleCommandEvent(e);
+        label = "open_in_new_tab";
+        break;
+      case "sidebar-history-context-open-in-window":
+        super.handleCommandEvent(e);
+        label = "open_in_new_window";
+        break;
+      case "sidebar-history-context-open-in-private-window":
+        super.handleCommandEvent(e);
+        label = "open_in_private_window";
+        break;
+      case "sidebar-history-context-forget-site": {
+        const button = await this.forgetAboutThisSite();
+        const outcome = button === "accept" ? "confirmed" : "cancelled";
+        Glean.browserUiInteraction.sidebarHistory[
+          `clear_all_website_data_${outcome}`
+        ].add(1);
+        break;
+      }
+      case "sidebar-history-context-bookmark-page": {
+        const guid = await super.handleCommandEvent(e);
+        const outcome = guid ? "confirmed" : "cancelled";
+        Glean.browserUiInteraction.sidebarHistory[
+          `bookmark_tab_${outcome}`
+        ].add(1);
+        break;
+      }
+      case "sidebar-history-context-copy-link":
+        super.handleCommandEvent(e);
+        label = "copy_link";
         break;
       default:
         super.handleCommandEvent(e);
         break;
+    }
+    if (label) {
+      Glean.browserUiInteraction.sidebarHistory[label].add(1);
     }
   }
 
@@ -190,6 +233,15 @@ export class SidebarHistory extends SidebarPage {
     this.treeView.resetSelection();
     Services.prefs.setStringPref(SORT_OPTION_PREF, sortOption);
     this.controller.onChangeSortOption(e, sortOption);
+    const sortTypeMap = {
+      date: "date",
+      site: "site",
+      datesite: "date_and_site",
+      lastvisited: "last_visited",
+    };
+    Glean.browserUiInteraction.sidebarSortHistory.record({
+      sort_type: sortTypeMap[sortOption],
+    });
   }
 
   #openAllInTabs(e) {
@@ -464,6 +516,7 @@ export class SidebarHistory extends SidebarPage {
 
   onSearchQuery(e) {
     this.controller.onSearchQuery(e);
+    Glean.browserUiInteraction.sidebarHistory.search.add(1);
   }
 
   getTabItems(items) {

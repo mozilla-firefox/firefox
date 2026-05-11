@@ -168,6 +168,7 @@
 #include "mozilla/dom/DocumentL10n.h"
 #include "mozilla/dom/DocumentTimeline.h"
 #include "mozilla/dom/DocumentType.h"
+#include "mozilla/dom/EditContext.h"
 #include "mozilla/dom/ElementBinding.h"
 #include "mozilla/dom/ErrorEvent.h"
 #include "mozilla/dom/Event.h"
@@ -2523,6 +2524,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(Document)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mLazyLoadObserver)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mAutoSizeImageObserver)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mElementsObservedForLastRememberedSize)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mActiveEditContext)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDOMImplementation)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mImageMaps)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mOrientationPendingPromise)
@@ -2648,6 +2650,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(Document)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mLazyLoadObserver)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mAutoSizeImageObserver)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mElementsObservedForLastRememberedSize);
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mActiveEditContext)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mFontFaceSet)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mReadyForIdle)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mDocumentL10n)
@@ -6623,6 +6626,71 @@ void Document::DeferredContentEditableCountChange(Element* aElement) {
           "ignored");
     }
   }
+}
+
+EditContext* Document::DetermineActiveEditContext() const {
+  // https://w3c.github.io/edit-context/#dfn-determine-the-active-editcontext
+  // 1. Let traversable be document's node navigable's top-level traversable.
+  // 2. If traversable is null, return null.
+  if (!GetBrowsingContext()) {
+    return nullptr;
+  }
+  // 3. Let focused be the DOM anchor of the currently focused area of a
+  //    top-level traversable given traversable.
+  // 4. If focused is null or if the shadow-including root of focused is not
+  //    document, return null.
+  // GetFocusedElementStatic returns null if the focused area of the top-level
+  // traversable is in a different process. So, if it's not null and is in this
+  // document, then we know that it's the currently focused area of the
+  // top-level traversable.
+  nsINode* focused = nsFocusManager::GetFocusedElementStatic();
+  if (!focused || focused->GetComposedDoc() != this) {
+    return nullptr;
+  }
+  // 5. Let editContext be null.
+  EditContext* editContext = nullptr;
+  // 6. While focused is not null and focused is editable:
+  while (focused && focused->IsEditable()) {
+    // 1. Set editContext to the value of focused's internal [[EditContext]]
+    //    slot.
+    editContext = nullptr;
+    if (auto* element = nsGenericHTMLElement::FromNode(focused)) {
+      editContext = element->GetEditContext();
+    }
+    // 2. Let parent be focused's parent.
+    // 3. If parent is null and focused's root is a shadow root, let parent be
+    //    focused's root's host.
+    // 4. Set focused to parent.
+    focused = focused->GetParentOrShadowHostNode();
+  }
+  // 7. Return editContext.
+  return editContext;
+}
+
+void Document::UpdateTextEditContext() {
+  // https://w3c.github.io/edit-context/#dfn-update-the-text-edit-context
+  // 1. Let oldActiveEditContext be document's active EditContext.
+  RefPtr<EditContext> oldActiveEditContext = mActiveEditContext;
+  // 2. Let newActiveEditContext be the result of running the steps to determine
+  //    the active EditContext given document.
+  RefPtr<EditContext> newActiveEditContext = DetermineActiveEditContext();
+  // https://github.com/w3c/edit-context/pull/123
+  if (oldActiveEditContext == newActiveEditContext) {
+    return;
+  }
+  // 3. If oldActiveEditContext is not null, then run the steps to deactivate an
+  //    EditContext given oldActiveEditContext.
+  if (oldActiveEditContext) {
+    oldActiveEditContext->Deactivate();
+  }
+  // 4. If newActiveEditContext is not null, then:
+  if (newActiveEditContext) {
+    // 1. Update the Text Edit Context's text state to match the values in
+    //    newActiveEditContext's text state.
+    // TODO
+  }
+  // 5. Set the document's active EditContext to newActiveEditContext.
+  mActiveEditContext = newActiveEditContext;
 }
 
 void Document::MaybeDispatchCheckKeyPressEventModelEvent() {
@@ -16656,8 +16724,8 @@ void Document::RequestFullscreen(UniquePtr<FullscreenRequest> aRequest,
     RequestFullscreenInContentProcess(std::move(aRequest),
                                       aApplyFullscreenDirectly);
   } else {
-    RequestFullscreenInParentProcess(std::move(aRequest),
-                                     aApplyFullscreenDirectly);
+    MOZ_ASSERT(!aApplyFullscreenDirectly);
+    RequestFullscreenInParentProcess(std::move(aRequest));
   }
 }
 
@@ -16735,7 +16803,7 @@ void Document::RequestFullscreenInContentProcess(
 }
 
 void Document::RequestFullscreenInParentProcess(
-    UniquePtr<FullscreenRequest> aRequest, bool aApplyFullscreenDirectly) {
+    UniquePtr<FullscreenRequest> aRequest) {
   MOZ_ASSERT(XRE_IsParentProcess());
   nsCOMPtr<nsPIDOMWindowOuter> rootWin = GetRootWindow(this);
   if (!rootWin) {
@@ -16743,8 +16811,7 @@ void Document::RequestFullscreenInParentProcess(
     return;
   }
 
-  if (aApplyFullscreenDirectly ||
-      ShouldApplyFullscreenDirectly(this, rootWin)) {
+  if (ShouldApplyFullscreenDirectly(this, rootWin)) {
     ApplyFullscreen(std::move(aRequest));
     return;
   }
@@ -16881,10 +16948,6 @@ bool Document::ApplyFullscreen(UniquePtr<FullscreenRequest> aRequest) {
   // documents.
   Document* fullScreenRootDoc =
       nsContentUtils::GetInProcessSubtreeRootDocument(this);
-
-  // If a document is already in fullscreen, then unlock the mouse pointer
-  // before setting a new document to fullscreen
-  PointerLockManager::Unlock("Document::ApplyFullscreen");
 
   // Set the fullscreen element. This sets the fullscreen style on the
   // element, and the fullscreen-ancestor styles on ancestors of the element

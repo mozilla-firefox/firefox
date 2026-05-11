@@ -29,12 +29,12 @@ add_task(async function search_engine_serp() {
     info("Press on the search engine to search for 'x'");
     let popupHidden = UrlbarTestUtils.searchModeSwitcherPopupClosed(window);
     popup.querySelector("panel-item").button.click();
+    EventUtils.synthesizeKey("KEY_Enter");
     await BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser);
     await popupHidden;
 
-    // Since the query (x) is not an empty string, the serp is
-    // opened directly and no engagement telemetry is recorded.
-    await assertEngagementTelemetry([]);
+    // search mode is entered with a new query and a new session is started.
+    assertEngagementTelemetry([{ search_mode: "search_engine" }]);
     await assertAbandonmentTelemetry([]);
   });
 });

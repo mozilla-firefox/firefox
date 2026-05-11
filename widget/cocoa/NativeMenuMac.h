@@ -28,8 +28,8 @@ class NativeMenuMac : public NativeMenu,
   explicit NativeMenuMac(dom::Element* aElement);
 
   // NativeMenu
-  void ShowMenuAnchored(nsIFrame* aClickedFrame, const CSSIntRect& aRect,
-                        int8_t aPosition) override;
+  void ShowMenuAnchored(nsIFrame* aClickedFrame,
+                        const nsMenuPopupFrame* aPopupFrame) override;
   void ShowMenuAtPosition(nsIFrame* aClickedFrame, const CSSIntPoint& aPosition,
                           bool aIsContextMenu) override;
   bool Close() override;
@@ -84,8 +84,8 @@ class NativeMenuMac : public NativeMenu,
   nsTArray<NativeMenu::Observer*> mObservers;
   NSStatusItem* mContainerStatusBarItem;
 
-  // Non-zero after a call to ShowAsContextMenu. Stores the handle from the
-  // MOZMenuOpeningCoordinator.
+  // Non-zero after a call to ShowMenuAnchored or ShowMenuAtPosition. Stores the
+  // handle from the MOZMenuOpeningCoordinator.
   NSInteger mOpeningHandle = 0;
 };
 

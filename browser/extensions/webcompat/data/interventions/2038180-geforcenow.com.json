@@ -1,0 +1,17 @@
+{
+  "label": "geforcenow.com",
+  "bugs": {
+    "2038180": {
+      "issue": "unsupported-warning",
+      "matches": ["*://*.nvidia.com/*", "*://*.geforcenow.com/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "content_scripts": {
+        "js": ["bug2038180-shim-keyboard-lock.js"]
+      }
+    }
+  ]
+}

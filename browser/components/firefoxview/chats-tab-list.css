@@ -24,9 +24,9 @@
 
 .fxview-tab-row-favicon.chat-overlay {
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-  background-size: 50%, 100%;
+  background-size: 60%, 100%;
   background-position:
-    center calc(50% - 2px),
-    center;
+    right calc(100% + 1px),
+    0;
   background-repeat: no-repeat, no-repeat;
 }

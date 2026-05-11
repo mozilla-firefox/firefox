@@ -1064,7 +1064,8 @@ nsresult nsContentUtils::Init() {
     sEventListenerManagersHash =
         new nsTHashMap<const nsINode*, RefPtr<EventListenerManager>>();
 
-    RegisterStrongMemoryReporter(new DOMEventListenerManagersHashReporter());
+    RegisterStrongMemoryReporter(
+        MakeAndAddRef<DOMEventListenerManagersHashReporter>());
   }
 
   sBlockedScriptRunners = new AutoTArray<nsCOMPtr<nsIRunnable>, 8>;
@@ -4494,6 +4495,21 @@ bool nsContentUtils::IsCustomElementName(nsAtom* aName, uint32_t aNameSpaceID) {
          aName != nsGkAtoms::font_face_uri &&
          aName != nsGkAtoms::font_face_format &&
          aName != nsGkAtoms::font_face_name && aName != nsGkAtoms::missingGlyph;
+}
+
+bool nsContentUtils::IsValidShadowHostName(nsAtom* aName,
+                                           uint32_t aNameSpaceID) {
+  return IsCustomElementName(aName, aNameSpaceID) ||
+         aName == nsGkAtoms::article || aName == nsGkAtoms::aside ||
+         aName == nsGkAtoms::blockquote || aName == nsGkAtoms::body ||
+         aName == nsGkAtoms::div || aName == nsGkAtoms::footer ||
+         aName == nsGkAtoms::h1 || aName == nsGkAtoms::h2 ||
+         aName == nsGkAtoms::h3 || aName == nsGkAtoms::h4 ||
+         aName == nsGkAtoms::h5 || aName == nsGkAtoms::h6 ||
+         aName == nsGkAtoms::header || aName == nsGkAtoms::main ||
+         aName == nsGkAtoms::nav || aName == nsGkAtoms::p ||
+         aName == nsGkAtoms::section || aName == nsGkAtoms::search ||
+         aName == nsGkAtoms::span;
 }
 
 // static

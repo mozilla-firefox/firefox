@@ -90,6 +90,7 @@ add_task(async function select_non_default_engine_and_search() {
     window,
     "panel-item[data-engine-name=MochiSearch]"
   );
+  EventUtils.synthesizeKey("KEY_Enter");
   await browserLoadedPromise;
 
   assertSearchStringIsInUrlbar(SEARCH_STRING);

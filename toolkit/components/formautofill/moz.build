@@ -21,6 +21,7 @@ EXTRA_JS_MODULES.shared += [
     "shared/FieldScanner.sys.mjs",
     "shared/FormAutofillHandler.sys.mjs",
     "shared/FormAutofillHeuristics.sys.mjs",
+    "shared/FormAutofillML.sys.mjs",
     "shared/FormAutofillNameUtils.sys.mjs",
     "shared/FormAutofillSection.sys.mjs",
     "shared/FormAutofillUtils.sys.mjs",

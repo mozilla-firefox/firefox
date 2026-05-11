@@ -10,7 +10,6 @@ else
 APIKEYDIR="${APIKEYDIR:-/builds}"
 fi
 
-ac_add_options --with-google-location-service-api-keyfile=${APIKEYDIR}/gls-gapi.data
 ac_add_options --with-google-safebrowsing-api-keyfile=${APIKEYDIR}/sb-gapi.data
 
 ac_add_options --with-mozilla-api-keyfile=${APIKEYDIR}/mozilla-desktop-geoloc-api.key

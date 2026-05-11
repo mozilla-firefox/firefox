@@ -1999,7 +1999,7 @@ fuzzy(0-2,0-17500) skip-if(winWidget&&isCoverageBuild) == 1412375.html 1412375-r
 # scale-dependent font metrics. Without the fix the test fails in the range
 # 246-255,3237-25110, which overlaps the fuzz range, but would still catch
 # regressing this bug some of the time which is better than not having a test.
-fuzzy(0-255,0-6025) fuzzy-if(gtkWidget,0-255,0-8600) == 1415987-1.html 1415987-1-ref.html
+fuzzy(0-255,0-6025) fuzzy-if(gtkWidget,0-255,0-8600) fuzzy-if(appleSilicon,0-255,0-6500) == 1415987-1.html 1415987-1-ref.html
 == 1419820-1.html 1419820-1-ref.html
 == 1420946-1.html 1420946-1-ref.html
 == 1422393.html 1422393-ref.html

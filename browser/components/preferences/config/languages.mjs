@@ -389,8 +389,19 @@ class BrowserLanguageRemoteLocalesSetting extends Preferences.AsyncSetting {
   /** @type {Promise<RemoteLocale[]> | null} */
   #cache = null;
 
+  #languagesLoaded = false;
+
   setup() {
     this.#multilingualDownloadEnabled.on("change", this.emitChange);
+    /** @param {CustomEvent} e */
+    const onPaneshown = e => {
+      if (e.detail.category == "paneLanguages") {
+        this.#languagesLoaded = true;
+        this.emitChange();
+        window.removeEventListener("paneshown", onPaneshown);
+      }
+    };
+    window.addEventListener("paneshown", onPaneshown);
     return () =>
       this.#multilingualDownloadEnabled.off("change", this.emitChange);
   }
@@ -402,7 +413,7 @@ class BrowserLanguageRemoteLocalesSetting extends Preferences.AsyncSetting {
   /** @returns {Promise<RemoteLocale[]>} */
   // @ts-expect-error Arrays aren't typed currently.
   async get() {
-    if (!this.#multilingualDownloadEnabled.value) {
+    if (!this.#multilingualDownloadEnabled.value || !this.#languagesLoaded) {
       return [];
     }
     if (!this.#cache) {

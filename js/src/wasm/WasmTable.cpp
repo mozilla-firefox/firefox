@@ -104,7 +104,7 @@ void Table::tracePrivate(JSTracer* trc) {
   // WasmTableObject's trace hook so maybeObject_ must already be marked.
   // TraceEdge is called so that the pointer can be updated during a moving
   // GC.
-  TraceNullableEdge(trc, &maybeObject_, "wasm table object");
+  TraceEdge(trc, &maybeObject_, "wasm table object");
 
   switch (repr()) {
     case TableRepr::Func: {

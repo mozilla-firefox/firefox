@@ -509,7 +509,7 @@
     <!-- Onboarding label for 'Continue' button. -->
     <string name="onboarding_redesign_continue_button" tools:ignore="UnusedResources">Continue</string>
     <!-- Marketing onboarding page title. 'Robowolf' is intentionally hardcoded. -->
-    <string name="onboarding_marketing_redesign_title" tools:ignore="BrandUsage,UnusedResources">Help us grow Robowolf</string>
+    <string name="onboarding_marketing_redesign_title" tools:ignore="BrandUsage">Help us grow Robowolf</string>
     <!-- Marketing onboarding page opt-out checkbox. Unchecking the box does not increase data collection. Our data practices remain the same. 'Mozilla' is intentionally hardcoded. -->
     <string name="onboarding_marketing_redesign_opt_out_checkbox" tools:ignore="BrandUsage,UnusedResources">Share how you discovered Robowolf, and that you use it, with Mozilla’s marketing partners. This data is never sold.</string>
     <!-- Marketing onboarding page clickable link text to "learn more" on how data is used. -->
@@ -634,8 +634,28 @@
         %1$s is replaced by an active link, using nova_onboarding_marketing_body_link_text as text (“How we use the data”). -->
     <string name="nova_onboarding_marketing_body" tools:ignore="BrandUsage">Share how you discovered Robowolf, and that you use it, with Mozilla’s marketing partners. This data is never sold. %1$s</string>
 
+    <!-- Marketing onboarding body. 'Robowolf' and 'Mozilla' are intentionally hardcoded. -->
+    <string name="nova_onboarding_marketing_body_2" tools:ignore="BrandUsage">Share how you discovered Robowolf, and that you use it, with Mozilla’s marketing partners. This data is never sold.</string>
+
+    <!-- Marketing onboarding body. 'Robowolf' and 'Mozilla' are intentionally hardcoded. -->
+    <string name="nova_onboarding_marketing_body_3" tools:ignore="BrandUsage">You can help us reach more people by allowing Mozilla to inform the channels where we promote Robowolf that you’re a Robowolf user.</string>
+
+    <!-- Marketing onboarding body. 'Robowolf' and 'Mozilla' are intentionally hardcoded.
+      “Platform you came from” refers to the external app, website, store, campaign, or other source that directed the user to Robowolf. -->
+    <string name="nova_onboarding_marketing_body_4" tools:ignore="BrandUsage">You can help us reach more people by allowing Mozilla to inform the platform you came from that you use Robowolf.</string>
+
+    <!-- Marketing onboarding body. 'Robowolf' and 'Mozilla' are intentionally hardcoded.
+        “Platform you came from” refers to the external app, website, store, campaign, or other source that directed the user to Robowolf. -->
+    <string name="nova_onboarding_marketing_body_5" tools:ignore="BrandUsage,UnusedResources">Help us reach more people by allowing Mozilla to inform the platform you came from that you use Robowolf.</string>
+
     <!-- Marketing onboarding body link text. -->
     <string name="nova_onboarding_marketing_body_link_text">How we use the data</string>
+
+    <!-- Marketing onboarding primary button text. 'Robowolf' is intentionally hardcoded.  -->
+    <string name="nova_onboarding_marketing_primary_button_text" tools:ignore="BrandUsage">Help Robowolf</string>
+
+    <!-- Marketing onboarding secondary button text. -->
+    <string name="nova_onboarding_marketing_secondary_button_text">No Thanks</string>
 
     <!-- Notifications onboarding title. 'Robowolf' is intentionally hardcoded. -->
     <string name="nova_onboarding_notifications_title" tools:ignore="BrandUsage,UnusedResources">Notifications help you stay safer with Robowolf</string>
@@ -2877,6 +2897,8 @@
     <string name="ip_protection_menu_paused">Paused</string>
     <!-- Badge label shown in the menu item when the browser VPN has an error -->
     <string name="ip_protection_menu_error">Error</string>
+    <!-- Badge label shown in the menu item when the user is eligible to use the browser VPN but should authenticate or authorize it first. -->
+    <string name="ip_protection_menu_auth_required">Try it</string>
     <!-- Content description for the chevron button that opens the browser VPN settings screen -->
     <string name="ip_protection_navigate_settings">Open VPN settings</string>
     <!-- Subtitle shown below the VPN label in menus when the monthly data allowance is exhausted.
@@ -2886,9 +2908,9 @@
         %1$d is the total monthly allowance in GB (for example "50"). -->
     <string name="ip_protection_data_limit_reached_description">You’ve used all %1$d GB of your VPN data. Access resets next month.</string>
     <!-- Label shown next to the browser protection icon in the address bar when the browser VPN is active -->
-    <string name="ip_protection_toolbar_pill_label" tools:ignore="UnusedResources">VPN on</string>
+    <string name="ip_protection_toolbar_pill_label">VPN on</string>
     <!-- Accessibility description for the browser VPN pill in the address bar when the VPN has been activated -->
-    <string name="ip_protection_toolbar_pill_description" tools:ignore="UnusedResources">VPN is active.</string>
+    <string name="ip_protection_toolbar_pill_description">VPN is active.</string>
     <!-- Label for the button that starts the browser VPN authentication or authorization flow on the settings screen -->
     <string name="ip_protection_get_started">Get started</string>
     <!-- Headline for the browser VPN onboarding card. %s is the name of the app (for example "Robowolf"). -->
@@ -2901,6 +2923,11 @@
     <string name="ip_protection_onboarding_body_link">Browse with extra protection</string>
     <!-- Label for the dismiss button on the onboarding bottom sheet. -->
     <string name="ip_protection_onboarding_not_now_button">Not now</string>
+    <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+    <string name="ip_protection_connection_error_snackbar">Couldn’t connect to VPN. Try again in a few minutes.</string>
+    <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+        %1$d is the total monthly allowance in GB (for example "50"). -->
+    <string name="ip_protection_data_limit_reached_snackbar">%1$d GB of VPN data used. Access will reset next month.</string>
 
     <!-- Autofill -->
     <!-- Preference and title for managing the autofill settings -->
@@ -3304,12 +3331,8 @@
     <!-- Accessibility services actions labels. These will be appended to accessibility actions like "Double tap to.." but not by or applications but by services like Talkback. -->
     <!-- Action label for elements that can be collapsed if interacting with them. Talkback will append this to say "Double tap to collapse". -->
     <string name="a11y_action_label_collapse">collapse</string>
-    <!-- Current state for elements that can be collapsed if interacting with them. Talkback will dictate this after a state change. -->
-    <string name="a11y_state_label_collapsed">collapsed</string>
     <!-- Action label for elements that can be expanded if interacting with them. Talkback will append this to say "Double tap to expand". -->
     <string name="a11y_action_label_expand">expand</string>
-    <!-- Current state for elements that can be expanded if interacting with them. Talkback will dictate this after a state change. -->
-    <string name="a11y_state_label_expanded">expanded</string>
     <!-- Action label for links to a website containing documentation about a wallpaper collection. Talkback will append this to say "Double tap to open link to learn more about this collection". -->
     <string name="a11y_action_label_wallpaper_collection_learn_more">open link to learn more about this collection</string>
 
@@ -4168,6 +4191,12 @@
     <string name="sports_widget_first_half" tools:ignore="UnusedResources">First half</string>
     <!-- Sports widget match status label shown during second half of a match. -->
     <string name="sports_widget_second_half" tools:ignore="UnusedResources">Second half</string>
+    <!-- Sports widget error card title shown when the user is offline. -->
+    <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">Looks like you’re offline.</string>
+    <!-- Sports widget error card description shown when the user is offline. -->
+    <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">Check your internet connection and try again.</string>
+    <!-- Sports widget general group stage label in the soccer tournament. -->
+    <string name="sports_widget_group_stage" tools:ignore="UnusedResources">Group Stage</string>
 
     <!-- Privacy notice homepage banner -->
     <!-- A message we show the user on the homepage when there is a new version of the privacy notice. 'Robowolf' is intentionally hardcoded.

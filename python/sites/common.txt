@@ -21,6 +21,8 @@ vendored:third_party/python/frozenlist
 vendored:third_party/python/giturlparse
 vendored:third_party/python/gyp/pylib
 vendored:third_party/python/json_e
+vendored:third_party/python/markdown_it_py
+vendored:third_party/python/mdurl
 vendored:third_party/python/mohawk
 vendored:third_party/python/mozilla_repo_urls
 vendored:third_party/python/multidict
@@ -29,12 +31,14 @@ vendored:third_party/python/ply
 vendored:third_party/python/propcache
 vendored:third_party/python/pyasn1
 vendored:third_party/python/pyasn1_modules
+vendored:third_party/python/pygments
 vendored:third_party/python/pylru
 vendored:third_party/python/python_dateutil
 vendored:third_party/python/pyyaml/lib/
 vendored:third_party/python/redo
 vendored:third_party/python/requests_unixsocket
 vendored:third_party/python/responses
+vendored:third_party/python/rich
 vendored:third_party/python/rsa
 vendored:third_party/python/slugid
 vendored:third_party/python/taskcluster

@@ -127,24 +127,6 @@ export class SidebarBookmarks extends SidebarPage {
     this.treeView = new lazy.SidebarTreeView(this);
   }
 
-  get lists() {
-    const mainList = this.bookmarkList;
-    if (!mainList?.shadowRoot) {
-      return [];
-    }
-    const result = [];
-    const collect = list => {
-      result.push(list);
-      for (const nested of list.shadowRoot.querySelectorAll(
-        "sidebar-bookmark-list"
-      )) {
-        collect(nested);
-      }
-    };
-    collect(mainList);
-    return result;
-  }
-
   connectedCallback() {
     super.connectedCallback();
     lazy.PlacesUtils.observers.addListener(
@@ -169,6 +151,29 @@ export class SidebarBookmarks extends SidebarPage {
     }
     this.bookmarks = await this.getBookmarksList();
     this.requestUpdate();
+  }
+
+  getRowsInOrder() {
+    return this.#getRowsForList(this.bookmarkList);
+  }
+
+  #getRowsForList(list) {
+    let rows = [];
+    for (const item of list.tabItems) {
+      const isFolder = Array.isArray(item.children);
+      if (!isFolder) {
+        rows.push({ list, item });
+      } else if (
+        item.children.length &&
+        this.#expandedFolderGuids.has(item.guid)
+      ) {
+        const sublist = list.findSublistForGuid(item.guid);
+        if (sublist) {
+          rows = rows.concat(this.#getRowsForList(sublist));
+        }
+      }
+    }
+    return rows;
   }
 
   onPrimaryAction(e) {
@@ -355,30 +360,38 @@ export class SidebarBookmarks extends SidebarPage {
       this.topWindow.openTrustedLinkIn(this.triggerNode.url, "tab", {
         userContextId,
       });
+      Glean.browserUiInteraction.sidebarBookmarks.open_in_new_container_tab.add(
+        1
+      );
       return;
     }
+    let label;
     switch (e.target.id) {
       case "sidebar-bookmarks-context-open-all-bookmarks":
         this.#openAllBookmarks();
         break;
       case "sidebar-bookmarks-context-sort-by-name":
         this.#sortByName();
+        label = "sort_bookmarks_by_name";
         break;
       case "sidebar-bookmarks-context-open-in-tab":
         this.topWindow.openTrustedLinkIn(this.triggerNode.url, "tab");
+        label = "open_in_new_tab";
         break;
       case "sidebar-bookmarks-context-open-in-window":
         this.topWindow.openTrustedLinkIn(this.triggerNode.url, "window", {
           private: false,
         });
+        label = "open_in_new_window";
         break;
       case "sidebar-bookmarks-context-open-in-private-window":
         this.topWindow.openTrustedLinkIn(this.triggerNode.url, "window", {
           private: true,
         });
+        label = "open_in_private_window";
         break;
       case "sidebar-bookmarks-context-edit-bookmark":
-        this.#editBookmark(this.triggerNode);
+        this.#editBookmarkOrFolder(this.triggerNode);
         break;
       case "sidebar-bookmarks-context-delete-bookmark":
         this.#deleteBookmark(this.triggerNode);
@@ -388,6 +401,7 @@ export class SidebarBookmarks extends SidebarPage {
           this.triggerNode.url,
           this.triggerNode.title
         );
+        label = "copy_bookmark_url";
         break;
       case "sidebar-bookmarks-context-add-bookmark":
         this.#addItem("bookmark");
@@ -397,9 +411,11 @@ export class SidebarBookmarks extends SidebarPage {
         break;
       case "sidebar-bookmarks-context-add-separator":
         this.#addSeparator();
+        label = "add_separator";
         break;
       case "sidebar-bookmarks-context-cut":
         this.#cutItem();
+        label = "cut_bookmark";
         break;
       case "sidebar-bookmarks-context-copy":
         this.#copyItem();
@@ -408,6 +424,9 @@ export class SidebarBookmarks extends SidebarPage {
         this.#paste();
         break;
     }
+    if (label) {
+      Glean.browserUiInteraction.sidebarBookmarks[label].add(1);
+    }
   }
 
   onSecondaryAction(e) {
@@ -415,7 +434,7 @@ export class SidebarBookmarks extends SidebarPage {
     this.#deleteBookmark(this.triggerNode);
   }
 
-  async #editBookmark(bookmark) {
+  async #editBookmarkOrFolder(bookmark) {
     const fetchInfo = await lazy.PlacesUtils.bookmarks.fetch({
       guid: bookmark.guid,
     });
@@ -424,10 +443,17 @@ export class SidebarBookmarks extends SidebarPage {
     }
     const node =
       await lazy.PlacesUIUtils.promiseNodeLikeFromFetchInfo(fetchInfo);
-    await lazy.PlacesUIUtils.showBookmarkDialog(
+    const guid = await lazy.PlacesUIUtils.showBookmarkDialog(
       { action: "edit", node },
       this.topWindow
     );
+    const outcome = guid ? "confirmed" : "cancelled";
+    const labelPrefix = bookmark.isFolder
+      ? "rename_bookmark_folder"
+      : "edit_bookmark";
+    Glean.browserUiInteraction.sidebarBookmarks[
+      `${labelPrefix}_${outcome}`
+    ].add(1);
   }
 
   async #deleteBookmark(bookmark) {
@@ -435,10 +461,16 @@ export class SidebarBookmarks extends SidebarPage {
   }
 
   async #addItem(type) {
-    await lazy.PlacesUIUtils.showBookmarkDialog(
+    const guid = await lazy.PlacesUIUtils.showBookmarkDialog(
       { action: "add", type },
       this.topWindow
     );
+    const outcome = guid ? "confirmed" : "cancelled";
+    const label =
+      type === "folder"
+        ? `add_bookmark_folder_${outcome}`
+        : `add_bookmark_${outcome}`;
+    Glean.browserUiInteraction.sidebarBookmarks[label].add(1);
   }
 
   async #addSeparator() {
@@ -462,6 +494,7 @@ export class SidebarBookmarks extends SidebarPage {
     if (!lazy.OpenInTabsUtils.confirmOpenInTabs(urls.length, this.topWindow)) {
       return;
     }
+    Glean.browserUiInteraction.sidebarBookmarks.open_all_bookmarks.add(1);
     for (const url of urls) {
       this.topWindow.openTrustedLinkIn(url, "tab", { inBackground: true });
     }
@@ -651,6 +684,9 @@ export class SidebarBookmarks extends SidebarPage {
     this.searchResults = this.searchQuery
       ? this.#searchBookmarks(this.bookmarks, this.searchQuery.toLowerCase())
       : [];
+    if (this.searchQuery) {
+      Glean.browserUiInteraction.sidebarBookmarks.search.add(1);
+    }
   }
 
   #searchBookmarks(node, query) {

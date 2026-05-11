@@ -3,6 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 moz-button.memories-icon-button {
-  --button-icon-fill: var(--smartbar-cta-icon-fill, var(--icon-color));
-  --button-background-color-ghost-selected: transparent;
+  @media not (forced-colors) {
+    --button-icon-fill: var(--smartbar-cta-icon-fill, var(--icon-color));
+    --button-background-color-ghost-selected: transparent;
+  }
 }

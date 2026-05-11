@@ -420,9 +420,7 @@ bool js::ProxyHas(JSContext* cx, HandleObject proxy, HandleValue idVal,
   if (!ToPropertyKey(cx, idVal, &id)) {
     return false;
   }
-  if (MOZ_UNLIKELY(!proxy->is<ProxyObject>())) {
-    return HasProperty(cx, proxy, id, result);
-  }
+
   return Proxy::has(cx, proxy, id, result);
 }
 
@@ -463,9 +461,7 @@ bool js::ProxyHasOwn(JSContext* cx, HandleObject proxy, HandleValue idVal,
   if (!ToPropertyKey(cx, idVal, &id)) {
     return false;
   }
-  if (MOZ_UNLIKELY(!proxy->is<ProxyObject>())) {
-    return HasOwnProperty(cx, proxy, id, result);
-  }
+
   return Proxy::hasOwn(cx, proxy, id, result);
 }
 
@@ -547,9 +543,6 @@ bool js::ProxyGetPropertyByValue(JSContext* cx, HandleObject proxy,
   }
 
   RootedValue receiver(cx, ObjectValue(*proxy));
-  if (MOZ_UNLIKELY(!proxy->is<ProxyObject>())) {
-    return GetProperty(cx, proxy, receiver, id, vp);
-  }
   return Proxy::getInternal(cx, proxy, receiver, id, vp);
 }
 
@@ -623,11 +616,7 @@ bool js::ProxySetPropertyByValue(JSContext* cx, HandleObject proxy,
 
   ObjectOpResult result;
   RootedValue receiver(cx, ObjectValue(*proxy));
-  if (MOZ_UNLIKELY(!proxy->is<ProxyObject>())) {
-    if (!SetProperty(cx, proxy, id, val, receiver, result)) {
-      return false;
-    }
-  } else if (!Proxy::setInternal(cx, proxy, id, val, receiver, result)) {
+  if (!Proxy::setInternal(cx, proxy, id, val, receiver, result)) {
     return false;
   }
   return result.checkStrictModeError(cx, proxy, id, strict);
@@ -896,7 +885,7 @@ static inline void CheckProxyIsInCCWMap(ProxyObject* proxy) {
 void ProxyObject::trace(JSTracer* trc, JSObject* obj) {
   ProxyObject* proxy = &obj->as<ProxyObject>();
 
-  TraceNullableEdge(trc, proxy->slotOfExpando(), "expando");
+  TraceEdge(trc, proxy->slotOfExpando(), "expando");
 
 #ifdef DEBUG
   JSContext* cx = TlsContext.get();
@@ -933,36 +922,12 @@ static void proxy_Finalize(JS::GCContext* gcx, JSObject* obj) {
   MOZ_ASSERT(obj->is<ProxyObject>());
   ProxyObject* proxy = &obj->as<ProxyObject>();
   proxy->handler()->finalize(gcx, obj);
-
-  if (!proxy->usingInlineValueArray() && proxy->isTenured()) {
-    auto* valArray = js::detail::GetProxyDataLayout(obj)->values();
-    size_t size =
-        js::detail::ProxyValueArray::sizeOf(proxy->numReservedSlots());
-    gcx->free_(obj, valArray, size, MemoryUse::ProxyExternalValueArray);
-  }
 }
 
 size_t js::proxy_ObjectMoved(JSObject* obj, JSObject* old) {
   ProxyObject& proxy = obj->as<ProxyObject>();
-
-  if (IsInsideNursery(old)) {
-    proxy.nurseryProxyTenured(&old->as<ProxyObject>());
-  }
-
+  proxy.setInlineValueArray();
   return proxy.handler()->objectMoved(obj, old);
-}
-
-void ProxyObject::nurseryProxyTenured(ProxyObject* old) {
-  if (old->usingInlineValueArray()) {
-    setInlineValueArray();
-    return;
-  }
-
-  Nursery& nursery = runtimeFromMainThread()->gc.nursery();
-  nursery.removeMallocedBufferDuringMinorGC(data.values());
-
-  size_t size = detail::ProxyValueArray::sizeOf(numReservedSlots());
-  AddCellMemory(this, size, MemoryUse::ProxyExternalValueArray);
 }
 
 const JSClassOps js::ProxyClassOps = {

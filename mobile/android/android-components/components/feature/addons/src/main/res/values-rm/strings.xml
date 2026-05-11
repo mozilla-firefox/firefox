@@ -352,6 +352,8 @@
   <string name="mozac_feature_addons_not_yet_supported_caption2">Nus sviluppain actualmain la basa per sustegnair ina selecziun iniziala dad extensiuns recumandadas.</string>
   <!-- This is the caption for the extension installation progress overlay -->
   <string name="mozac_extension_install_progress_caption">Telechargiar e verifitgar l’extensiun…</string>
+  <!-- Error shown when extensions could not be loaded -->
+  <string name="mozac_feature_addons_failed_to_load_extensions">Impussibel da chargiar las extensiuns. Emprova per plaschair pli tard anc ina giada.</string>
   <!-- Error shown when something unexpected happened while trying to get the extension list from the server -->
   <string name="mozac_feature_addons_failed_to_query_extensions">Betg reussì da retschaiver las extensiuns!</string>
   <!-- Error shown when unable to find a translation for an add-on field. %1$s is the locale of the user and %2$s is the default language of the add-on -->

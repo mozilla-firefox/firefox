@@ -166,6 +166,7 @@
 
 #    include "BinaryPath.h"
 #    include "SpecialSystemDirectory.h"
+#    include "mozilla/SandboxSettings.h"
 #    include "mozilla/ipc/UtilityProcessSandboxing.h"
 #    include "nsILineInputStream.h"
 #  endif

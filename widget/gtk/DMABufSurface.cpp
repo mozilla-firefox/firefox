@@ -207,7 +207,7 @@ NS_IMPL_ISUPPORTS(DMABufSurfaceReporter, nsIMemoryReporter)
 size_t DMABufSurfaceRGBA::GetUsedMemoryRGBA() { return mWidth * mHeight * 4; }
 
 void DMABufSurface::InitMemoryReporting() {
-  RegisterStrongMemoryReporter(new DMABufSurfaceReporter());
+  RegisterStrongMemoryReporter(MakeAndAddRef<DMABufSurfaceReporter>());
 }
 
 // We should release all resources allocated by SnapshotGLContext before

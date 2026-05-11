@@ -88,7 +88,7 @@ void WebGLShader::CompileShader() {
   gl::GLContext* gl = mContext->gl;
 
   static const bool kDumpShaders = PR_GetEnv("MOZ_WEBGL_DUMP_SHADERS");
-  if (MOZ_UNLIKELY(kDumpShaders)) {
+  if (kDumpShaders) [[unlikely]] {
     printf_stderr("==== begin MOZ_WEBGL_DUMP_SHADERS ====\n");
     PrintLongString(mSource.c_str(), mSource.size());
   }
@@ -103,7 +103,7 @@ void WebGLShader::CompileShader() {
   mCompilationLog = mCompileResults->mInfoLog;
   const auto& success = mCompileResults->mValid;
 
-  if (MOZ_UNLIKELY(kDumpShaders)) {
+  if (kDumpShaders) [[unlikely]] {
     printf_stderr("\n==== \\/ \\/ \\/ ====\n");
     if (success) {
       const auto& translated = mCompileResults->mObjectCode;

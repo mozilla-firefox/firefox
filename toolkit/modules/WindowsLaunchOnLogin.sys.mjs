@@ -166,33 +166,6 @@ export var WindowsLaunchOnLogin = {
   },
 
   /**
-   * Determines whether launch on login on MSIX is enabled by using the
-   * StartupTask APIs. A task called "LaunchOnLogin" exists
-   * in the packaged application manifest.
-   *
-   * @returns {Promise<bool>}
-   *          Whether the startup task is enabled.
-   */
-  async getLaunchOnLoginEnabledMSIX() {
-    if (!Services.sysinfo.getProperty("hasWinPackageId")) {
-      throw Components.Exception(
-        "Called on non-MSIX build",
-        Cr.NS_ERROR_NOT_IMPLEMENTED
-      );
-    }
-    let shellService = Cc["@mozilla.org/browser/shell-service;1"].getService(
-      Ci.nsIWindowsShellService
-    );
-    let state = await shellService.getLaunchOnLoginEnabledMSIXAsync(
-      LAUNCH_ON_LOGIN_TASKID
-    );
-    return (
-      state == shellService.LAUNCH_ON_LOGIN_ENABLED ||
-      state == shellService.LAUNCH_ON_LOGIN_ENABLED_BY_POLICY
-    );
-  },
-
-  /**
    * Gets a list of all launch on login shortcuts in the
    * %USERNAME%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup folder
    * that point to the current Firefox executable.
@@ -217,35 +190,6 @@ export var WindowsLaunchOnLogin = {
   },
 
   /**
-   * If the state is set to disabled from the Windows UI our API calls to
-   * re-enable it will fail so we should say that it's not approved and
-   * provide users the link to the App Startup settings so they can
-   * re-enable it.
-   *
-   * @returns {Promise<bool>}
-   *          If launch on login has not been disabled by Windows settings
-   *          or enabled by policy.
-   */
-  async getLaunchOnLoginApprovedMSIX() {
-    if (!Services.sysinfo.getProperty("hasWinPackageId")) {
-      throw Components.Exception(
-        "Called on non-MSIX build",
-        Cr.NS_ERROR_NOT_IMPLEMENTED
-      );
-    }
-    let shellService = Cc["@mozilla.org/browser/shell-service;1"].getService(
-      Ci.nsIWindowsShellService
-    );
-    let state = await shellService.getLaunchOnLoginEnabledMSIXAsync(
-      LAUNCH_ON_LOGIN_TASKID
-    );
-    return !(
-      state == shellService.LAUNCH_ON_LOGIN_DISABLED_BY_SETTINGS ||
-      state == shellService.LAUNCH_ON_LOGIN_ENABLED_BY_POLICY
-    );
-  },
-
-  /**
    * Checks if Windows launch on login was independently enabled or disabled
    * by the user in the Windows Startup Apps menu. The registry key that
    * stores this information should not be modified.
@@ -259,34 +203,8 @@ export var WindowsLaunchOnLogin = {
    *          unable to modify it so we should account for that here.
    */
   async getLaunchOnLoginApproved() {
-    if (Services.sysinfo.getProperty("hasWinPackageId")) {
-      return this.getLaunchOnLoginApprovedMSIX();
-    }
-    try {
-      let wrkApproved = Cc[
-        "@mozilla.org/windows-registry-key;1"
-      ].createInstance(Ci.nsIWindowsRegKey);
-      wrkApproved.open(
-        wrkApproved.ROOT_KEY_CURRENT_USER,
-        "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run",
-        wrkApproved.ACCESS_READ
-      );
-      let registryName = this.getLaunchOnLoginRegistryName();
-      if (!wrkApproved.hasValue(registryName)) {
-        wrkApproved.close();
-        return true;
-      }
-      // There's very little consistency with these binary values aside from if the first byte
-      // is even it's enabled and odd is disabled. There's also no published specification.
-      let approvedByWindows =
-        wrkApproved.readBinaryValue(registryName).charCodeAt(0) % 2 == 0;
-      wrkApproved.close();
-      return approvedByWindows;
-    } catch (e) {
-      // We should only end up here if we fail to open the registry
-      console.error("Failed to open Windows registry", e);
-    }
-    return true;
+    const enablementDetails = await this.getLaunchOnLoginEnablementDetails();
+    return enablementDetails.isAllowedByPolicy;
   },
 
   /**
@@ -300,34 +218,98 @@ export var WindowsLaunchOnLogin = {
    *          Whether launch on login is enabled.
    */
   async getLaunchOnLoginEnabled() {
+    const enablementDetails = await this.getLaunchOnLoginEnablementDetails();
+    return enablementDetails.isEnabled;
+  },
+
+  /**
+   * Returns detailed information about the launch-on-login enablement state.
+   * This is the authoritative source of truth for telemetry and UI alike.
+   *
+   * On MSIX installs, queries the StartupTask API.
+   * On non-MSIX installs, checks the registry key and startup shortcuts,
+   * plus the StartupApproved registry for Windows Settings overrides.
+   *
+   * @returns {Promise<object>}
+   *          An object with:
+   *            isEnabled {bool} - Whether launch on login is currently active.
+   *            isSupported {bool} - Whether the platform supports this feature.
+   *            isAllowedByPolicy {bool} - Whether the user is free to toggle
+   *              the setting (false when Windows Settings or policy override).
+   */
+  async getLaunchOnLoginEnablementDetails() {
     if (Services.sysinfo.getProperty("hasWinPackageId")) {
-      return this.getLaunchOnLoginEnabledMSIX();
+      let shellService = Cc["@mozilla.org/browser/shell-service;1"].getService(
+        Ci.nsIWindowsShellService
+      );
+      let state = await shellService.getLaunchOnLoginEnabledMSIXAsync(
+        LAUNCH_ON_LOGIN_TASKID
+      );
+      return {
+        isEnabled:
+          state == shellService.LAUNCH_ON_LOGIN_ENABLED ||
+          state == shellService.LAUNCH_ON_LOGIN_ENABLED_BY_POLICY,
+        isSupported: true,
+        isAllowedByPolicy: !(
+          state == shellService.LAUNCH_ON_LOGIN_DISABLED_BY_SETTINGS ||
+          state == shellService.LAUNCH_ON_LOGIN_ENABLED_BY_POLICY
+        ),
+      };
     }
 
+    // First check if launch on login is currently enabled
     let registryName = this.getLaunchOnLoginRegistryName();
     let regExists = false;
     let shortcutExists = false;
-    this.withLaunchOnLoginRegistryKey(wrk => {
-      try {
-        // Start by checking if registry key exists.
+    // Start by checking if the registry key exists
+    try {
+      await this.withLaunchOnLoginRegistryKey(wrk => {
         regExists = wrk.hasValue(registryName);
-      } catch (e) {
-        // We should only end up here if we fail to open the registry
-        console.error("Failed to open Windows registry", e);
-      }
-    });
+      });
+    } catch {
+      // There will be an error when the registry key doesn't exist,
+      // but to us this just means launch on login is not currently enabled.
+    }
+    // If the registry key doesn't exist, check if there are any shortcuts
+    // to Firefox in the startup folder
     if (!regExists) {
       shortcutExists = !!this.getLaunchOnLoginShortcutList().length;
     }
+    let isEnabled = regExists || shortcutExists;
     // Even if a user disables it later on we want the launch on login
     // infobar to remain disabled as the user is aware of the option.
-    if (regExists || shortcutExists) {
+    if (isEnabled) {
       Services.prefs.setBoolPref(
         "browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt",
         true
       );
     }
-    return regExists || shortcutExists;
+    // Check whether Windows Settings has overridden the user's ability to
+    // toggle launch-on-login (the StartupApproved\Run registry key).
+    let isAllowedByPolicy = true;
+    try {
+      let wrkApproved = Cc[
+        "@mozilla.org/windows-registry-key;1"
+      ].createInstance(Ci.nsIWindowsRegKey);
+      wrkApproved.open(
+        wrkApproved.ROOT_KEY_CURRENT_USER,
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run",
+        wrkApproved.ACCESS_READ
+      );
+      let approvedName = this.getLaunchOnLoginRegistryName();
+      if (wrkApproved.hasValue(approvedName)) {
+        // There's very little consistency with these binary values aside from
+        // if the first byte is even it's enabled and odd is disabled. There's
+        // also no published specification.
+        isAllowedByPolicy =
+          wrkApproved.readBinaryValue(approvedName).charCodeAt(0) % 2 == 0;
+      }
+      wrkApproved.close();
+    } catch {
+      // There will be an error when the registry key doesn't exist,
+      // but to us this just means there is no policy override in place.
+    }
+    return { isEnabled, isSupported: true, isAllowedByPolicy };
   },
 
   /**

@@ -66,9 +66,9 @@ skip-if = [
 
 ["browser_bookmark_change_location.js"]
 
-["browser_bookmark_context_on_gutter.js"]
-
 ["browser_bookmark_context_menu_contents.js"]
+
+["browser_bookmark_context_on_gutter.js"]
 
 ["browser_bookmark_copy_folder_tree.js"]
 tags = "os_integration"
@@ -235,6 +235,8 @@ https_first_disabled = true
 ["browser_recursive_hierarchies.js"]
 
 ["browser_remove_bookmarks.js"]
+
+["browser_sidebar_bookmarks_glean.js"]
 
 ["browser_sidebar_bookmarks_telemetry.js"]
 

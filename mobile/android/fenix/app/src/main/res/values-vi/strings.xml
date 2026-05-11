@@ -375,6 +375,8 @@
   <string name="preferences_ai_controls">Kiểm soát trí tuệ nhân tạo (AI)</string>
   <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
   <string name="ai_controls_banner_headline">Bạn luôn có quyền lựa chọn trong %s</string>
+  <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
+  <string name="ai_controls_banner_supporting_text_2">Điều đó bao gồm cả việc có nên sử dụng các tính năng được tăng cường bằng trí tuệ nhân tạo hay không. %s</string>
   <!-- Supporting text for the AI controls banner -->
   <string name="ai_controls_banner_supporting_text">Điều đó bao gồm cả việc có nên sử dụng các tính năng được tăng cường bằng trí tuệ nhân tạo hay không.</string>
   <!-- Link text for learning more about AI controls -->
@@ -2202,6 +2204,8 @@
   <string name="bookmark_import_menu_button">Nhập từ tập tin</string>
   <!-- Snackbar message shown when a bookmark import attempt fails. -->
   <string name="bookmark_import_failure_snackbar">Không thể nhập dấu trang. Hãy thử lại.</string>
+  <!-- Default name for the folder created when importing bookmarks from a file. -->
+  <string name="bookmark_import_destination_default_name">Dấu trang đã nhập</string>
   <!--
     Bookmark multi select title in app bar
     %1$d is the number of bookmarks selected
@@ -4615,6 +4619,10 @@
   <string name="sports_widget_final_results_page_content_description" tools:ignore="UnusedResources">Kết quả cuối cùng World Cup, trang %1$d của %2$d</string>
   <!-- Content description (for accessibility, not displayed) for the remove button that removes the sports widget from the homepage. -->
   <string name="sports_widget_remove_content_description" tools:ignore="UnusedResources">Xoá World Cup khỏi trang chủ</string>
+  <!-- Title shown on the sports widget immediately after the user has followed a team. %s is the selected team (e.g., "USA"). -->
+  <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Đang theo dõi: \n%s</string>
+  <!-- Description shown on the sports widget immediately after the user has followed a team -->
+  <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Hãy quay lại để xem thông tin về các trận đấu khi giải đấu đến gần.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

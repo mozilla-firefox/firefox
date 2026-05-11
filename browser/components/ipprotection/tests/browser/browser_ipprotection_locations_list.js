@@ -77,7 +77,7 @@ add_task(async function test_locations_list_default_rendering() {
   let recButton = locationsList.querySelector("#location-option-REC");
   Assert.ok(recButton, "recommended location button should be present");
   Assert.equal(
-    recButton.getAttribute("aria-selected"),
+    recButton.getAttribute("aria-checked"),
     "true",
     "recommended location should be selected by default"
   );
@@ -98,7 +98,7 @@ add_task(async function test_locations_list_default_rendering() {
       `#location-option-${code}`
     );
     Assert.equal(
-      unSelectedButton.getAttribute("aria-selected"),
+      unSelectedButton.getAttribute("aria-checked"),
       "false",
       `${code} button should not be selected`
     );
@@ -125,14 +125,14 @@ add_task(async function test_locations_list_preselected_location() {
   let caButton = locationsList.querySelector("#location-option-CA");
   Assert.ok(caButton, "CA location button should be present");
   Assert.equal(
-    caButton.getAttribute("aria-selected"),
+    caButton.getAttribute("aria-checked"),
     "true",
     "CA should be selected when passed as location"
   );
 
   let recButton = locationsList.querySelector("#location-option-REC");
   Assert.equal(
-    recButton.getAttribute("aria-selected"),
+    recButton.getAttribute("aria-checked"),
     "false",
     "recommended location should not be selected"
   );
@@ -157,7 +157,7 @@ add_task(async function test_locations_list_unknown_falls_back_to_rec() {
 
   let recButton = locationsList.querySelector("#location-option-REC");
   Assert.equal(
-    recButton.getAttribute("aria-selected"),
+    recButton.getAttribute("aria-checked"),
     "true",
     "recommended location button should be selected when an invalid code is passed"
   );

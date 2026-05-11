@@ -5929,9 +5929,13 @@ js::gc::ClearEdgesTracer::ClearEdgesTracer(JSRuntime* rt)
 
 template <typename T>
 void js::gc::ClearEdgesTracer::onEdge(T** thingp, const char* name) {
+  T* thing = *thingp;
+  if (!thing) {
+    return;
+  }
+
   // We don't handle removing pointers to nursery edges from the store buffer
   // with this tracer. Check that this doesn't happen.
-  T* thing = *thingp;
   MOZ_ASSERT(!IsInsideNursery(thing));
 
   // Fire the pre-barrier since we're removing an edge from the graph.

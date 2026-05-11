@@ -897,6 +897,48 @@ page_context_menu:
     no_lint:
       - COMMON_PREFIX
 
+send_tab_toolbar:
+  send_tab_opened:
+    type: event
+    description: >
+      Recorded when the user opens the send tab menu from the send tab toolbar
+      button in order to view available devices.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025884
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025884
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    extra_keys:
+      device_count:
+        description: >
+          Number of connected devices available to send tabs to
+        type: string
+
+  click_send_tab:
+    type: event
+    description: >
+      Recorded when the user selects a specific action from the Send Link/Page to Device
+      toolbar button (e.g., selecting a device, "Send to all devices", or "Manage Devices").
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025884
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2025884
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    extra_keys:
+      device_count:
+        description: >
+          Number of connected devices available to send tabs to
+        type: string
+      action:
+        description: >
+          The action selected by the user. Possible values are "device" (sent to specific device),
+          "all_devices" (sent to all devices), or "manage_devices" (opened device management).
+        type: string
+
 firefoxview:
   send_tab_exposed:
     type: event

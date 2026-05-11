@@ -12,6 +12,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   OsEnvironment: "resource://gre/modules/OsEnvironment.sys.mjs",
+  WindowsLaunchOnLogin: "resource://gre/modules/WindowsLaunchOnLogin.sys.mjs",
   PlacesDBUtils: "resource://gre/modules/PlacesDBUtils.sys.mjs",
   ShellService: "moz-src:///browser/components/shell/ShellService.sys.mjs",
   TelemetryReportingPolicy:
@@ -76,6 +77,7 @@ export let StartupTelemetry = {
       () => this.httpsOnlyState(),
       () => this.globalPrivacyControl(),
       () => this.aiControlBlocking(),
+      () => this.launchOnLoginState(),
     ];
     if (this._willUseExpensiveTelemetry) {
       tasks.push(() => lazy.PlacesDBUtils.telemetry());
@@ -87,6 +89,8 @@ export let StartupTelemetry = {
       );
     } else if (AppConstants.platform == "macosx") {
       tasks.push(() => this.macDockStatus());
+    } else if (AppConstants.platform == "linux") {
+      tasks.push(() => this.desktopEntryStatus());
     }
 
     this._runIdleTasks(tasks, "startupTelemetryIdleTask");
@@ -475,6 +479,31 @@ export let StartupTelemetry = {
     });
   },
 
+  async launchOnLoginState() {
+    let state;
+    if (AppConstants.platform != "win") {
+      state = "not_supported";
+    } else {
+      try {
+        const enablementDetails =
+          await lazy.WindowsLaunchOnLogin.getLaunchOnLoginEnablementDetails();
+        if (enablementDetails.isEnabled) {
+          state = "enabled";
+        } else if (!enablementDetails.isSupported) {
+          state = "not_supported";
+        } else if (!enablementDetails.isAllowedByPolicy) {
+          state = "disabled_by_settings";
+        } else {
+          state = "disabled";
+        }
+      } catch (ex) {
+        console.error(ex);
+        state = "error";
+      }
+    }
+    Glean.osEnvironment.launchOnLoginState.set(state);
+  },
+
   macDockStatus() {
     // Report macOS Dock status
     Glean.osEnvironment.isKeptInDock.set(
@@ -482,6 +511,28 @@ export let StartupTelemetry = {
         Ci.nsIMacDockSupport
       ).isAppInDock
     );
+  },
+
+  desktopEntryStatus(gioServiceForTestingOnly) {
+    // Get it here so it can be mocked out.
+    let gioService =
+      gioServiceForTestingOnly ??
+      Cc["@mozilla.org/gio-service;1"].getService(Ci.nsIGIOService);
+    if (gioService.isRunningUnderFlatpak || gioService.isRunningUnderSnap) {
+      Glean.osEnvironment.desktopEntryExists.set("sandboxed");
+      return;
+    }
+
+    let labels = {
+      [Ci.nsIGNOMEShellService.DESKTOP_ENTRY_ABSENT]: "absent",
+      [Ci.nsIGNOMEShellService.DESKTOP_ENTRY_INVISIBLE]: "invisible",
+      [Ci.nsIGNOMEShellService.DESKTOP_ENTRY_VISIBLE]: "visible",
+    };
+    let status = lazy.ShellService.getDesktopEntryStatus(
+      Services.appinfo.remotingName + ".desktop"
+    );
+
+    Glean.osEnvironment.desktopEntryExists.set(labels[status] ?? "other");
   },
 
   sslKeylogFile() {

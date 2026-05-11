@@ -424,7 +424,7 @@ already_AddRefed<nsFrameLoader> nsFrameLoader::Create(
   // If this is a toplevel initial remote frame, we're looking at a browser
   // loaded in the parent process. Pull the remote type attribute off of the
   // <browser> element to determine which remote type it should be loaded in, or
-  // use a shared web remote type if we can't tell.
+  // use `DEFAULT_REMOTE_TYPE` if we can't tell.
   if (isRemoteFrame) {
     MOZ_ASSERT(XRE_IsParentProcess());
     nsAutoString remoteType;
@@ -432,7 +432,7 @@ already_AddRefed<nsFrameLoader> nsFrameLoader::Create(
         !remoteType.IsEmpty()) {
       CopyUTF16toUTF8(remoteType, fl->mRemoteType);
     } else {
-      fl->mRemoteType = SharedWebRemoteType(context->OriginAttributesRef());
+      fl->mRemoteType = DEFAULT_REMOTE_TYPE;
     }
   }
   return fl.forget();

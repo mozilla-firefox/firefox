@@ -140,7 +140,10 @@ export class PropertyValidator {
 
   isAllowedFunction(functionType, isAlias = false) {
     if (isAlias) {
-      return this.allowedAliasFunctions.has(functionType);
+      return (
+        this.allowedFunctions.has(functionType) ||
+        this.allowedAliasFunctions.has(functionType)
+      );
     }
 
     return this.allowedFunctions.has(functionType);

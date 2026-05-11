@@ -818,9 +818,13 @@ pub struct TypedValueList {
 ///
 /// * `#[css(comma)]` on the variant indicates that supported fields may reify
 ///   to multiple separate values. When this attribute is present, multiple
-///   [`TypedValue`] items may be produced. If it is not present and the
-///   derived implementation would produce more than one item, it returns
-///   `Err(())`.
+///   [`TypedValue`] items may be produced, unless
+///   `#[typed(no_multiple_values)]` is also present. If multiple values are
+///   not allowed and the derived implementation would produce more than one
+///   item, it returns `Err(())`.
+///
+/// * `#[typed(no_multiple_values)]` on a variant prevents it from reifying to
+///   multiple [`TypedValue`] items, even if `#[css(comma)]` is present.
 ///
 /// * `#[css(iterable)]` on a field indicates that the field represents a list
 ///   of values. Each item in the iterable is reified individually by calling

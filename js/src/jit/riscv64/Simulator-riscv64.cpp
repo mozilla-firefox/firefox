@@ -1984,7 +1984,7 @@ void Simulator::DecodeRVRType() {
       set_rd(rs1() | (~rs2()));
       break;
     case RO_XNOR:
-      set_rd((~rs1()) ^ (~rs2()));
+      set_rd(~(rs1() ^ rs2()));
       break;
 #  ifdef JS_CODEGEN_RISCV64
     case RO_ADDW: {
@@ -2186,7 +2186,7 @@ void Simulator::DecodeRVRType() {
     }
     case RO_BCLR: {
       sreg_t index = rs2() & (xlen - 1);
-      set_rd(rs1() & ~(1l << index));
+      set_rd(rs1() & ~(static_cast<reg_t>(1) << index));
       break;
     }
     case RO_BEXT: {
@@ -2196,12 +2196,12 @@ void Simulator::DecodeRVRType() {
     }
     case RO_BINV: {
       sreg_t index = rs2() & (xlen - 1);
-      set_rd(rs1() ^ (1 << index));
+      set_rd(rs1() ^ (static_cast<reg_t>(1) << index));
       break;
     }
     case RO_BSET: {
       sreg_t index = rs2() & (xlen - 1);
-      set_rd(rs1() | (1 << index));
+      set_rd(rs1() | (static_cast<reg_t>(1) << index));
       break;
     }
       // TODO(riscv): End Add RISCV M extension macro
@@ -4239,7 +4239,7 @@ void Simulator::DecodeCBType() {
       break;
     case RO_C_MISC_ALU:
       if (instr_.RvcFunct2BValue() == 0b00) {  // c.srli
-        set_rvc_rs1s(sext_xlen(sext_xlen(rvc_rs1s()) >> rvc_shamt6()));
+        set_rvc_rs1s(sext_xlen(zext_xlen(rvc_rs1s()) >> rvc_shamt6()));
       } else if (instr_.RvcFunct2BValue() == 0b01) {  // c.srai
         require(rvc_shamt6() < xlen);
         set_rvc_rs1s(sext_xlen(sext_xlen(rvc_rs1s()) >> rvc_shamt6()));

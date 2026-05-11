@@ -7,6 +7,7 @@ prefs = [
   "layout.css.backdrop-filter.enabled=true",
   "layout.css.fit-content-function.enabled=true",
   "layout.css.scroll-driven-animations.enabled=true",
+  "layout.css.scroll-driven-animations.viewtimeline.enabled=true",
   "layout.css.stretch-size-keyword.enabled=true",
   "layout.css.webkit-fill-available.all-size-properties.enabled=true",
   "layout.css.basic-shape-shape.enabled=true",

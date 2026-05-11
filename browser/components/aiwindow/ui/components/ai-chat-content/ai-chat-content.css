@@ -36,6 +36,31 @@
       var(--color-black) calc(100% - var(--bottom-fade-size)),
       transparent
     );
+    position: relative;
+
+    /* TODO: Bug 2033070 -  Nova tokens were implemented as the default value for the custom properties, and the fallbacks (and lint exceptions) will need to be removed after launch */
+    @media -moz-pref("browser.nova.enabled") {
+      mask-image: none;
+
+      &::after,
+      &::before {
+        backdrop-filter: blur(2px);
+        content: "";
+        height: var(--size-item-xlarge);
+        inset-inline: 0;
+        position: fixed;
+      }
+
+      &::after {
+        mask: linear-gradient(var(--color-black) 30%, var(--color-black-alpha-60) 50%, transparent 70%);
+        top: 0;
+      }
+
+      &::before {
+        bottom: 0;
+        mask: linear-gradient(transparent 30%, var(--color-black-alpha-60) 50%, var(--color-black) 70%);
+      }
+    }
   }
 
   &[overflowing][scrolled-to-bottom] {
@@ -82,18 +107,23 @@
 /* Temporary chat bubble styling */
 .chat-bubble {
   box-sizing: border-box;
+  color: var(--text-color);
   display: flex;
   flex-direction: column;
   --smartwindow-message-chat-bubble-line-height: 1.5; /* for readability */
   line-height: var(--smartwindow-message-chat-bubble-line-height);
   padding-block: var(--space-large);
+
+  @media -moz-pref("browser.nova.enabled") and (not (forced-colors)) {
+    --text-color: light-dark(
+      color-mix(in srgb, var(--color-violet-desaturated-90) 70%, transparent),
+      color-mix(in srgb, var(--color-violet-desaturated-0) 70%, transparent)
+    );
+  }
 }
 
 .chat-bubble-user {
-  --chat-bubble-inset-color: color-mix(in srgb, var(--color-violet-30) 12%, transparent);
-
   align-self: flex-end;
-  background: light-dark(white, var(--color-violet-110));
   border-radius: var(--space-medium);
   box-shadow:
     var(--smartwindow-shadow, var(--box-shadow-level-2)),
@@ -103,11 +133,36 @@
   overflow-wrap: anywhere;
   padding-inline: var(--space-large);
   width: fit-content;
+
+  @media not (forced-colors) {
+    --chat-bubble-background-color: light-dark(var(--color-white), var(--color-violet-110));
+    --chat-bubble-inset-color: color-mix(in srgb, var(--color-violet-30) 12%, transparent);
+    background: var(--chat-bubble-background-color);
+  }
+
+  /* TODO: Bug 2033070 -  Nova tokens were implemented as the default value for the custom properties, and the fallbacks (and lint exceptions) will need to be removed after launch */
+  @media -moz-pref("browser.nova.enabled") {
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: none;
+
+    @media not (forced-colors) {
+      --chat-bubble-background-color: light-dark(var(--color-white), var(--color-neutral-120, #1e1d20));
+      --chat-bubble-border-color: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-50));
+      border-color: var(--chat-bubble-border-color);
+    }
+  }
 }
 
 .chat-bubble-assistant {
   gap: var(--space-small);
   width: 100%;
+
+  /* TODO: Bug 2033070 -  Nova tokens were implemented as the default value for the custom properties, and the fallbacks (and lint exceptions) will need to be removed after launch */
+  @media -moz-pref("browser.nova.enabled") and (not (forced-colors)) {
+    --chat-bubble-assistant-background-color: var(--ai-background-color);
+    /* Background color is needed in order to have the blur effect on the edges */
+    background-color: var(--chat-bubble-assistant-background-color);
+  }
 }
 
 moz-button.jump-to-bottom-button {

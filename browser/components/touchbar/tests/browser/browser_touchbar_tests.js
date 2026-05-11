@@ -120,6 +120,27 @@ add_task(async function updateMainButtonInFullscreen() {
   );
 });
 
+/**
+ * Tests that activeUrl and activeTitle return the URL and title of the
+ * selected tab. These getters are called from the macOS Share scrubber
+ * (nsTouchBar.mm's itemsForSharingServicePickerTouchBarItem:).
+ */
+add_task(async function activeUrlAndTitle() {
+  let url = TEST_PATH + "readerModeArticle.html";
+  await BrowserTestUtils.withNewTab(url, async function (browser) {
+    Assert.equal(
+      TouchBarHelper.activeUrl,
+      browser.currentURI.spec,
+      "activeUrl should match the selected tab's URL."
+    );
+    Assert.equal(
+      TouchBarHelper.activeTitle,
+      browser.contentTitle,
+      "activeTitle should match the selected tab's title."
+    );
+  });
+});
+
 add_task(async function toggleUrlbarFocusOnOpenLocation() {
   Assert.equal(TouchBarHelper.isUrlbarFocused, false, "Urlbar is unfocused.");
   TouchBarHelper.toggleFocusUrlbar();

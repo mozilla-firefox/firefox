@@ -90,7 +90,7 @@ public:
 
     auto ret = UNSAFE_unverified();
     if (ret != nullptr) {
-      size_t bytes = sizeof(T) * count;
+      size_t bytes = sizeof(T_Pointed) * count;
       detail::check_range_doesnt_cross_app_sbx_boundary<T_Sbx>(ret, bytes);
     }
     return ret;

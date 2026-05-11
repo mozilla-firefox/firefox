@@ -149,30 +149,22 @@ export const LinkPreview = {
   _windowStates: new Map(),
   linkPreviewPanelId: "link-preview-panel",
 
-  /**
-   * Returns the unique identifier for this AI feature.
-   *
-   * @returns {string}
-   */
   get id() {
     return lazy.LinkPreviewModel.id;
   },
 
-  /**
-   * Enable the feature by setting its preference.
-   * Also enables opt-in pref.
-   * The preference observer will handle the actual setup.
-   */
+  get hasDistinctEnabledState() {
+    // Link Preview key points has a distinct opt-in flow in the card UI.
+    // It is not immediately enabled when the feature is "Available" and must
+    // still be manually enabled by the user.
+    return true;
+  },
+
   async enable() {
     Services.prefs.setBoolPref("browser.ml.linkPreview.enabled", true);
     Services.prefs.setBoolPref("browser.ml.linkPreview.optin", true);
   },
 
-  /**
-   * Disable the feature by setting its preference.
-   * Also disables opt-in pref and uninstalls models.
-   * Waits for model uninstallation to complete before resolving.
-   */
   async block() {
     // Disable both feature and opt-in prefs (triggers onEnabledPref to remove listeners)
     Services.prefs.setBoolPref("browser.ml.linkPreview.enabled", false);
@@ -186,10 +178,6 @@ export const LinkPreview = {
     }
   },
 
-  /**
-   * Reset the feature to its default state.
-   * Clears all user prefs to restore factory defaults and uninstalls models.
-   */
   async makeAvailable() {
     // Set explicitly rather than clearing, so that a non-locked policy default
     // of "blocked" does not prevent the user from switching back to "available".
@@ -224,11 +212,6 @@ export const LinkPreview = {
     }
   },
 
-  /**
-   * Check if the feature is currently enabled.
-   *
-   * @returns {boolean}
-   */
   get isEnabled() {
     const enabled = Services.prefs.getBoolPref(
       "browser.ml.linkPreview.enabled",
@@ -242,29 +225,19 @@ export const LinkPreview = {
     return enabled && optin;
   },
 
-  /**
-   * Check if the feature is allowed to be enabled.
-   *
-   * @returns {boolean}
-   */
   get isAllowed() {
     return this._isRegionSupported() && this._isLocaleSupported();
   },
 
-  /**
-   * Check if the feature is blocked from being enabled.
-   *
-   * @returns {boolean}
-   */
-  get isBlocked() {
-    return !this.canShowKeyPoints;
+  get canRunOnDevice() {
+    // Link Preview has no known restrictions based on device hardware.
+    return true;
   },
 
-  /**
-   * Check if the feature is managed by enterprise policy.
-   *
-   * @returns {boolean}
-   */
+  get isBlocked() {
+    return !Services.prefs.getBoolPref("browser.ml.linkPreview.enabled", false);
+  },
+
   get isManagedByPolicy() {
     return (
       Services.prefs.prefIsLocked("browser.ml.linkPreview.enabled") ||

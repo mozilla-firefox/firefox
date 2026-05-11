@@ -312,6 +312,45 @@
           anchorButton.style.cssText = "";
         }
       });
+
+      add_task(async function checkClampedAboveAlignment() {
+        // Regression test for Bug 2037402: when the panel-list opens above and
+        // is taller than the available space ("clamped"), its bottom must not
+        // overlap the anchor button.
+        let extraItems = [];
+        for (let i = 0; i < 30; i++) {
+          let item = document.createElement("panel-item");
+          item.textContent = `extra ${i}`;
+          panelList.appendChild(item);
+          extraItems.push(item);
+        }
+
+        try {
+          anchorButton.style.position = "fixed";
+          anchorButton.style.bottom = "32px";
+          anchorButton.style.left = "32px";
+          anchorButton.style.top = "unset";
+          anchorButton.style.right = "unset";
+
+          await showPanel();
+          let bounds = await getBounds();
+          is(
+            panelList.getAttribute("valign"),
+            "top",
+            "Panel opens above the anchor"
+          );
+          ok(
+            bounds.menu.bottom <= bounds.button.top,
+            "Clamped panel does not overlap the button when opening above"
+          );
+          await hidePanel();
+        } finally {
+          anchorButton.style.cssText = "";
+          for (let item of extraItems) {
+            item.remove();
+          }
+        }
+      });
     </script>
   </body>
 </html>

@@ -2,7 +2,7 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="?attr/textSecondary" android:state_checked="false" android:state_enabled="true" />
+    <item android:color="?attr/colorOnSurfaceVariant" android:state_checked="false" android:state_enabled="true" />
     <item android:color="?accent" android:state_checked="true" android:state_enabled="true" />
     <item android:color="?attr/textDisabled" android:state_enabled="false" />
 </selector>

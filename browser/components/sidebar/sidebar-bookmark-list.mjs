@@ -49,6 +49,8 @@ export class SidebarBookmarkList extends SidebarTabList {
       this.shadowRoot
         ?.querySelector("virtual-list")
         ?.triggerIntersectionObserver();
+    } else {
+      this.treeView.clearSelectionForList(this);
     }
   };
 
@@ -68,6 +70,23 @@ export class SidebarBookmarkList extends SidebarTabList {
       this.#onContainingDetailsToggle
     );
     this.#containingDetails = null;
+  }
+
+  /**
+   * Find the rendered nested `<sidebar-bookmark-list>` for a folder guid.
+   * Returns null if the folder isn't currently rendered (e.g. virtual-list
+   * has it scrolled out of view).
+   *
+   * @param {string} guid
+   * @returns {SidebarBookmarkList}
+   */
+  findSublistForGuid(guid) {
+    for (const details of this.shadowRoot.querySelectorAll("details")) {
+      if (details.guid === guid) {
+        return details.querySelector("sidebar-bookmark-list");
+      }
+    }
+    return null;
   }
 
   willUpdate(changes) {
@@ -369,7 +388,7 @@ export class SidebarBookmarkList extends SidebarTabList {
         )}
         .secondaryL10nArgs=${ifDefined(tabItem.secondaryL10nArgs)}
         .secondaryL10nId=${tabItem.secondaryL10nId}
-        .selected=${this.selectedGuids.has(tabItem.guid)}
+        .selected=${this.isTabItemSelected(tabItem)}
         .tabElement=${ifDefined(tabItem.tabElement)}
         tabindex=${tabIndex}
         .title=${tabItem.title}

@@ -163,7 +163,7 @@ gfx::Matrix SVGMarkerElement::GetMarkerTransform(float aStrokeWidth,
       angle = aMark.angle + (aMark.type == SVGMark::Type::Start ? M_PI : 0.0f);
       break;
     default:  // SVG_MARKER_ORIENT_ANGLE
-      angle = mOrient.GetAnimValue() * M_PI / 180.0f;
+      angle = mOrient.GetAnimValue() * kRadPerDegree;
       break;
   }
 

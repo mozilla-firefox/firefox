@@ -538,6 +538,7 @@ STATIC_ATOMS = [
     Atom("hidechrome", "hidechrome"),
     Atom("hidecolumnpicker", "hidecolumnpicker"),
     Atom("hidetitlebarseparator", "hidetitlebarseparator"),
+    Atom("hidepopovertail", "hidepopovertail"),
     Atom("hide_popover", "hide-popover"),
     Atom("high", "high"),
     Atom("highest", "highest"),

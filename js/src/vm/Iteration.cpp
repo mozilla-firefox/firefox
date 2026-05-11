@@ -59,9 +59,9 @@ static const gc::AllocKind ITERATOR_FINALIZE_KIND =
 // |NativeIterator| allocations if the |IdToString| in that constructor recurs
 // into this code.
 void NativeIterator::trace(JSTracer* trc) {
-  TraceNullableEdge(trc, &objectBeingIterated_, "objectBeingIterated_");
-  TraceNullableEdge(trc, &iterObj_, "iterObj_");
-  TraceNullableEdge(trc, &objShape_, "objShape_");
+  TraceEdge(trc, &objectBeingIterated_, "objectBeingIterated_");
+  TraceEdge(trc, &iterObj_, "iterObj_");
+  TraceEdge(trc, &objShape_, "objShape_");
 
   // The limits below are correct at every instant of |NativeIterator|
   // initialization, with the end-pointer incremented as each new shape is

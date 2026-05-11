@@ -204,7 +204,7 @@ void JitScript::trace(JSTracer* trc) {
   }
 
   if (templateEnv_.isSome()) {
-    TraceNullableEdge(trc, templateEnv_.ptr(), "jitscript-template-env");
+    TraceEdge(trc, templateEnv_.ptr(), "jitscript-template-env");
   }
 
   if (hasInliningRoot()) {

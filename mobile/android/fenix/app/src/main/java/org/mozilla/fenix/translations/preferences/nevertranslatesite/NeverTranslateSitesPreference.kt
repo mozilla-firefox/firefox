@@ -25,9 +25,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import mozilla.components.compose.base.InfoCard
+import mozilla.components.compose.base.InfoType
 import org.mozilla.fenix.R
-import org.mozilla.fenix.compose.InfoCard
-import org.mozilla.fenix.compose.InfoType
 import org.mozilla.fenix.compose.list.TextListItem
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.theme.PreviewThemeProvider

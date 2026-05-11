@@ -26,12 +26,13 @@ export function countryName(code) {
  * Formats remaining bandwidth bytes into a rounded value with a unit indicator.
  *
  * @param {number} remainingBytes - Remaining bandwidth in bytes.
- * @returns {{ value: number, useGB: boolean }}
- *   `value` is the remaining amount rounded to the nearest 0.1 GB (when >= 1 GB)
- *   or floored to the nearest MB (when < 1 GB). `useGB` indicates whether the
- *   value is in GB (true) or MB (false).
+ * @param {string} [locale] - BCP 47 locale tag; defaults to the runtime locale.
+ * @returns {{ value: number|string, useGB: boolean }}
+ *   `value` is the remaining amount: a locale-formatted string rounded to 1
+ *   decimal place (when >= 1 GB) or a floored integer in MB (when < 1 GB).
+ *   `useGB` indicates whether the value is in GB (true) or MB (false).
  */
-export function formatRemainingBandwidth(remainingBytes) {
+export function formatRemainingBandwidth(remainingBytes, locale = undefined) {
   const remainingGB = remainingBytes / BANDWIDTH.BYTES_IN_GB;
   if (remainingGB < 1) {
     return {
@@ -39,5 +40,10 @@ export function formatRemainingBandwidth(remainingBytes) {
       useGB: false,
     };
   }
-  return { value: parseFloat(remainingGB.toFixed(1)), useGB: true };
+  return {
+    value: new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 1,
+    }).format(remainingGB),
+    useGB: true,
+  };
 }

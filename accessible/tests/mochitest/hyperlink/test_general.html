@@ -17,10 +17,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
   <script type="application/javascript"
           src="../states.js"></script>
   <script type="application/javascript"
-          src="../events.js"></script>
-
-  <script type="application/javascript"
-          src="hyperlink.js"></script>
+          src="../promisified-events.js"></script>
 
   <script type="application/javascript">
     function testThis(aID, aAcc, aRole, aAnchors, aName, aValid, aStartIndex,
@@ -39,7 +36,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
     }
 
     function testAction(aId, aAcc, aActionName) {
-      var actionCount = aActionName ? 1 : 0;
+      const actionCount = aActionName ? 1 : 0;
       is(aAcc.actionCount, actionCount,
          "Wrong actions number for ID " + aId);
       try {
@@ -53,17 +50,51 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
       }
     }
 
-    // gA11yEventDumpToConsole = true; // debug stuff
-    function doPreTest() {
-      waitForImageMap("imgmap", doTest);
+    async function focusLinkAsync(aID, aSelectedAfter) {
+      const node = getNode(aID);
+      const accessible = getAccessible(node);
+
+      const expectedStates = aSelectedAfter ? STATE_FOCUSABLE : 0;
+      const unexpectedStates =
+        (!aSelectedAfter ? STATE_FOCUSABLE : 0) | STATE_FOCUSED;
+      testStates(aID, expectedStates, 0, unexpectedStates, 0);
+
+      if (aSelectedAfter) {
+        let p = waitForEvent(EVENT_FOCUS, accessible);
+        node.focus();
+        await p;
+      } else {
+        let unexpected = new UnexpectedEvents([[EVENT_FOCUS, accessible]]);
+        node.focus();
+        await unexpected.flush();
+        unexpected.stop();
+      }
+
+      const expectedStatesAfter = aSelectedAfter
+        ? STATE_FOCUSABLE | STATE_FOCUSED
+        : 0;
+      const unexpectedStatesAfter = !aSelectedAfter
+        ? STATE_FOCUSABLE | STATE_FOCUSED
+        : 0;
+      testStates(aID, expectedStatesAfter, 0, unexpectedStatesAfter, 0);
     }
 
-    var gQueue = null;
-    function doTest() {
+    // gA11yEventDumpToConsole = true; // debug stuff
+
+    async function doTest() {
+      // Wait for image map to be built before running tests.
+      let imageMapNode = getNode("imgmap");
+      synthesizeMouse(imageMapNode, 10, 10, { type: "mousemove" },
+                      imageMapNode.ownerGlobal);
+      let imageMapAcc = getAccessible("imgmap");
+      if (!imageMapAcc.firstChild) {
+        await waitForEvent(EVENT_REORDER, imageMapAcc);
+      }
+
       // ////////////////////////////////////////////////////////////////////////
       // normal hyperlink
-      var normalHyperlinkAcc = getAccessible("NormalHyperlink",
-                                             [nsIAccessibleHyperLink]);
+      const normalHyperlinkAcc = getAccessible("NormalHyperlink",
+                                               [nsIAccessibleHyperLink]);
       testThis("NormalHyperlink", normalHyperlinkAcc, ROLE_LINK, 1,
                "Mozilla Foundation", true, 17, 18);
       // eslint-disable-next-line @microsoft/sdl/no-insecure-url
@@ -73,8 +104,8 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
 
       // ////////////////////////////////////////////////////////////////////////
       // ARIA hyperlink
-      var ariaHyperlinkAcc = getAccessible("AriaHyperlink",
-                                           [nsIAccessibleHyperLink]);
+      const ariaHyperlinkAcc = getAccessible("AriaHyperlink",
+                                             [nsIAccessibleHyperLink]);
       testThis("AriaHyperlink", ariaHyperlinkAcc, ROLE_LINK, 1,
                "Mozilla Foundation Home", true, 30, 31);
       testStates(ariaHyperlinkAcc, STATE_LINKED, 0);
@@ -82,16 +113,18 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
 
       // ////////////////////////////////////////////////////////////////////////
       // ARIA hyperlink with status invalid
-      var invalidAriaHyperlinkAcc = getAccessible("InvalidAriaHyperlink",
-                                                  [nsIAccessibleHyperLink]);
+      const invalidAriaHyperlinkAcc = getAccessible(
+        "InvalidAriaHyperlink",
+        [nsIAccessibleHyperLink]
+      );
       is(invalidAriaHyperlinkAcc.valid, false, "Should not be valid!");
       testStates(invalidAriaHyperlinkAcc, STATE_LINKED, 0);
 
       // ////////////////////////////////////////////////////////////////////////
       // image map and its link children
 
-      var imageMapHyperlinkAcc = getAccessible("imgmap",
-                                               [nsIAccessibleHyperLink]);
+      const imageMapHyperlinkAcc = getAccessible("imgmap",
+                                                 [nsIAccessibleHyperLink]);
       testThis("imgmap", imageMapHyperlinkAcc, ROLE_IMAGE_MAP, 2, "b", true,
                79, 80);
       is(imageMapHyperlinkAcc.getURI(0).spec,
@@ -102,16 +135,16 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
          "http://www.bbc.co.uk/radio4/atoz/index.shtml#a", "URI wrong!");
       testStates(imageMapHyperlinkAcc, 0, 0);
 
-      var area1 = getAccessible(imageMapHyperlinkAcc.firstChild,
-                                [nsIAccessibleHyperLink]);
+      const area1 = getAccessible(imageMapHyperlinkAcc.firstChild,
+                                  [nsIAccessibleHyperLink]);
       testThis("Area1", area1, ROLE_LINK, 1, "b", true, 0, 1);
       is(area1.getURI(0).spec,
          // eslint-disable-next-line @microsoft/sdl/no-insecure-url
          "http://www.bbc.co.uk/radio4/atoz/index.shtml#b", "URI wrong!");
       testStates(area1, (STATE_LINKED));
 
-      var area2 = getAccessible(area1.nextSibling,
-                                [nsIAccessibleHyperLink]);
+      const area2 = getAccessible(area1.nextSibling,
+                                  [nsIAccessibleHyperLink]);
       testThis("Area2", area2, ROLE_LINK, 1, "a", true, 1, 2);
       is(area2.getURI(0).spec,
          // eslint-disable-next-line @microsoft/sdl/no-insecure-url
@@ -120,16 +153,16 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
 
       // ////////////////////////////////////////////////////////////////////////
       // empty hyperlink
-      var EmptyHLAcc = getAccessible("emptyLink",
-                                     [nsIAccessibleHyperLink]);
+      const EmptyHLAcc = getAccessible("emptyLink",
+                                       [nsIAccessibleHyperLink]);
       testThis("emptyLink", EmptyHLAcc, ROLE_LINK, 1, null, true, 93, 94);
       testStates(EmptyHLAcc, (STATE_FOCUSABLE | STATE_LINKED), 0);
       testAction("emptyLink", EmptyHLAcc, "jump");
 
       // ////////////////////////////////////////////////////////////////////////
       // normal hyperlink with embedded span
-      var hyperlinkWithSpanAcc = getAccessible("LinkWithSpan",
-                                               [nsIAccessibleHyperLink]);
+      const hyperlinkWithSpanAcc = getAccessible("LinkWithSpan",
+                                                 [nsIAccessibleHyperLink]);
       testThis("LinkWithSpan", hyperlinkWithSpanAcc, ROLE_LINK, 1,
                "Heise Online", true, 119, 120);
       // eslint-disable-next-line @microsoft/sdl/no-insecure-url
@@ -140,8 +173,8 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
 
       // ////////////////////////////////////////////////////////////////////////
       // Named anchor, should never have state_linked
-      var namedAnchorAcc = getAccessible("namedAnchor",
-                                         [nsIAccessibleHyperLink]);
+      const namedAnchorAcc = getAccessible("namedAnchor",
+                                           [nsIAccessibleHyperLink]);
       testThis("namedAnchor", namedAnchorAcc, ROLE_TEXT, 1,
                null, true, 196, 197);
       testStates(namedAnchorAcc, 0, 0, (STATE_FOCUSABLE | STATE_LINKED));
@@ -149,8 +182,8 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
 
       // ////////////////////////////////////////////////////////////////////////
       // No link (hasn't any attribute), should never have state_linked
-      var noLinkAcc = getAccessible("noLink",
-                                    [nsIAccessibleHyperLink]);
+      const noLinkAcc = getAccessible("noLink",
+                                      [nsIAccessibleHyperLink]);
       testThis("noLink", noLinkAcc, ROLE_TEXT, 1,
                null, true, 254, 255);
       testStates(noLinkAcc, 0, 0, (STATE_FOCUSABLE | STATE_LINKED));
@@ -158,8 +191,8 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
 
       // ////////////////////////////////////////////////////////////////////////
       // Link with registered 'click' event, should have state_linked
-      var linkWithClickAcc = getAccessible("linkWithClick",
-                                           [nsIAccessibleHyperLink]);
+      const linkWithClickAcc = getAccessible("linkWithClick",
+                                             [nsIAccessibleHyperLink]);
       testThis("linkWithClick", linkWithClickAcc, ROLE_LINK, 1,
                "This should have state_linked", true, 292, 293);
       testStates(linkWithClickAcc, STATE_LINKED, 0);
@@ -171,8 +204,8 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
 
       // ////////////////////////////////////////////////////////////////////////
       // Link with title attribute, no name from the subtree (bug 438325).
-      var id = "linkWithTitleNoNameFromSubtree";
-      var linkAcc = getAccessible(id, [nsIAccessibleHyperLink]);
+      let id = "linkWithTitleNoNameFromSubtree";
+      let linkAcc = getAccessible(id, [nsIAccessibleHyperLink]);
       testThis(id, linkAcc, ROLE_LINK, 1, "Link with title", true, 344, 345);
       testStates(linkAcc, STATE_LINKED, 0);
       testAction(id, linkAcc, "jump");
@@ -198,24 +231,22 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=418368
 
       // ////////////////////////////////////////////////////////////////////////
       // Text accessible shouldn't implement nsIAccessibleHyperLink
-      var res = isAccessible(getNode("namedAnchor").firstChild,
-                             [nsIAccessibleHyperLink]);
+      const res = isAccessible(getNode("namedAnchor").firstChild,
+                               [nsIAccessibleHyperLink]);
       ok(!res, "Text accessible shouldn't implement nsIAccessibleHyperLink");
 
       // ////////////////////////////////////////////////////////////////////////
       // Test focus
-      gQueue = new eventQueue();
+      await focusLinkAsync("NormalHyperlink", true);
+      await focusLinkAsync("AriaHyperlink", true);
+      await focusLinkAsync("InvalidAriaHyperlink", false);
+      await focusLinkAsync("LinkWithSpan", true);
 
-      gQueue.push(new focusLink("NormalHyperlink", true));
-      gQueue.push(new focusLink("AriaHyperlink", true));
-      gQueue.push(new focusLink("InvalidAriaHyperlink", false));
-      gQueue.push(new focusLink("LinkWithSpan", true));
-
-      gQueue.invoke(); // Will call SimpleTest.finish();
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();
-    addA11yLoadEvent(doPreTest);
+    addA11yLoadEvent(doTest);
   </script>
 
 </head>

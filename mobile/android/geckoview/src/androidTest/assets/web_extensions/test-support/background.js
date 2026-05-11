@@ -110,6 +110,12 @@ const APIS = {
   ClearTrackingDB() {
     return browser.test.clearTrackingDB();
   },
+  AddVirtualAuthenticator() {
+    return browser.test.addVirtualAuthenticator();
+  },
+  RemoveVirtualAuthenticator({ authenticatorId }) {
+    return browser.test.removeVirtualAuthenticator(authenticatorId);
+  },
 };
 
 port.onMessage.addListener(async message => {

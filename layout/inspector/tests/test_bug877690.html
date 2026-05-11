@@ -16,6 +16,9 @@ const InspectorUtils = SpecialPowers.InspectorUtils;
 
 // Returns true if values contains all and only the expected values. False otherwise.
 function testValues(values, expected) {
+  values = [...new Set(values)];
+  expected = [...new Set(expected)];
+
   values.sort();
   expected.sort();
 
@@ -56,7 +59,10 @@ function do_test() {
     "oklch"
   ];
 
-  var allGradients = [
+  var allImages = [
+    "image-set", "url",
+    "-moz-element", "image",
+    "light-dark",
     "linear-gradient",
     "-webkit-linear-gradient",
     "-moz-linear-gradient",
@@ -74,6 +80,10 @@ function do_test() {
     "repeating-conic-gradient",
   ];
 
+  if(SpecialPowers.getBoolPref("layout.css.cross-fade.enabled")) {
+    allImages.push("cross-fade");
+  }
+
   // test a property with keywords and colors
   var prop = "color";
   var values = InspectorUtils.getCSSValuesForProperty(prop);
@@ -86,11 +96,8 @@ function do_test() {
   var expected = [ "auto", ...CSS_WIDE_KEYWORDS, ...allColors, "no-repeat", "repeat",
       "repeat-x", "repeat-y", "space", "round", "fixed", "scroll", "local", "center", "top", "bottom", "left", "right",
       "border-box", "padding-box", "content-box", "text", "contain",
-      "cover", "none", "-moz-element", "url", ...allGradients, "image-set" ];
+      "cover", "none", ...allImages ];
 
-  if(SpecialPowers.getBoolPref("layout.css.cross-fade.enabled")) {
-    expected.push("cross-fade");
-  }
 
   ok(testValues(values, expected), "property background values.");
 
@@ -228,8 +235,7 @@ function do_test() {
   var prop = "border-image";
   var values = InspectorUtils.getCSSValuesForProperty(prop);
   var expected = [ ...CSS_WIDE_KEYWORDS, "auto", "repeat", "stretch",
-                   "-moz-element", "url", ...allGradients,
-                   "fill", "none", "round", "space", "image-set" ];
+                   ...allImages, "fill", "none", "round", "space", ];
 
   if(SpecialPowers.getBoolPref("layout.css.cross-fade.enabled")) {
     expected.push("cross-fade");
@@ -302,8 +308,8 @@ function do_test() {
   var expected = [ "normal", "none", "counter", "counters",
                    "attr", "open-quote", "close-quote", "no-open-quote",
                    ...CSS_WIDE_KEYWORDS, "no-close-quote",
-                   "-moz-alt-content", "-moz-label-content", "image-set", "url", "-moz-element" ]
-    .concat(allGradients);
+                   "-moz-alt-content", "-moz-label-content", ]
+    .concat(allImages);
   var values = InspectorUtils.getCSSValuesForProperty("content");
   ok(testValues(values, expected), "property content's values");
 

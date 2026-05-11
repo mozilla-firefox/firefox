@@ -600,7 +600,7 @@ SessionHistoryEntry::SetTitle(const nsAString& aTitle) {
   mInfo->SetTitle(aTitle);
   if (nsCOMPtr<nsISHistory> sHistory =
           do_QueryReferent(SharedInfo()->mSHistory)) {
-    sHistory->NotifyOnEntryTitleUpdated(this);
+    sHistory->NotifyOnEntryUpdated(this);
   }
   return NS_OK;
 }
@@ -614,6 +614,10 @@ SessionHistoryEntry::GetName(nsAString& aName) {
 NS_IMETHODIMP
 SessionHistoryEntry::SetName(const nsAString& aName) {
   mInfo->mName = aName;
+  if (nsCOMPtr<nsISHistory> sHistory =
+          do_QueryReferent(SharedInfo()->mSHistory)) {
+    sHistory->NotifyOnEntryUpdated(this);
+  }
   return NS_OK;
 }
 

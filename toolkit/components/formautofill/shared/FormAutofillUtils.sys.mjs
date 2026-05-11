@@ -229,6 +229,14 @@ FormAutofillUtils = {
     return Array.from(element.querySelectorAll(types.join(",")));
   },
 
+  get useMLInference() {
+    return (
+      AppConstants.NIGHTLY_BUILD &&
+      AppConstants.platform !== "android" &&
+      FormAutofillUtils.useMLTelemetry
+    );
+  },
+
   /**
    * Get whether the OSAuth is enabled or not.
    *
@@ -1549,5 +1557,19 @@ XPCOMUtils.defineLazyPreferenceGetter(
   FormAutofillUtils,
   "ignoreVisibilityCheck",
   "extensions.formautofill.test.ignoreVisibilityCheck",
+  false
+);
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  FormAutofillUtils,
+  "useMLTelemetry",
+  "extensions.formautofill.addresses.telemetry.mlenabled",
+  true
+);
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  FormAutofillUtils,
+  "enableMLAutofill",
+  "extensions.formautofill.addresses.useml",
   false
 );

@@ -382,8 +382,7 @@ NativeMenuGtk::~NativeMenuGtk() {
 RefPtr<dom::Element> NativeMenuGtk::Element() { return mMenuModel->Element(); }
 
 void NativeMenuGtk::ShowMenuAnchored(nsIFrame* aClickedFrame,
-                                     const CSSIntRect& aRect,
-                                     int8_t aPosition) {
+                                     const nsMenuPopupFrame* aPopupFrame) {
   MOZ_ASSERT_UNREACHABLE("GTK native anchored menus are not implemented");
 }
 

@@ -4,6 +4,8 @@
 
 #include "sdp/SdpHelper.h"
 
+#include <charconv>
+#include <cstdint>
 #include <set>
 
 #include "nsDebug.h"
@@ -626,12 +628,16 @@ void SdpHelper::AppendSdpParseErrors(
 
 /* static */
 bool SdpHelper::GetPtAsInt(const std::string& ptString, uint16_t* ptOutparam) {
-  char* end;
-  unsigned long pt = strtoul(ptString.c_str(), &end, 10);
-  size_t length = static_cast<size_t>(end - ptString.c_str());
-  if ((pt > UINT16_MAX) || (length != ptString.size())) {
+  // Parse pt string using from_chars
+  uint16_t pt = 0;
+  auto res = std::from_chars(ptString.data(), ptString.data() + ptString.size(),
+                             pt, 10);
+
+  // Ensure conversion succeeded, reached the end of the string, and fits in
+  if (res.ec != std::errc{} || res.ptr != ptString.data() + ptString.size()) {
     return false;
   }
+
   *ptOutparam = pt;
   return true;
 }

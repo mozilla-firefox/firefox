@@ -150,10 +150,7 @@ add_task(async function test_close_open_tab() {
 
     ok(tertiaryButtonEl, "Dismiss button exists");
 
-    await clearAllParentTelemetryEvents();
-    let closeTabEvent = [
-      ["firefoxview_next", "close_open_tab", "tabs", undefined],
-    ];
+    Services.fog.testResetFOG();
 
     let tabsUpdated = BrowserTestUtils.waitForEvent(
       NonPrivateTabs,
@@ -167,7 +164,8 @@ add_task(async function test_close_open_tab() {
       "First tab successfully removed"
     );
 
-    await telemetryEvent(closeTabEvent);
+    const closeEvents = Glean.firefoxviewNext.closeOpenTabTabs.testGetValue();
+    Assert.equal(1, closeEvents.length, "Expected one close tab event.");
 
     const openTabs = cards[0].ownerDocument.querySelector(
       "view-opentabs[name=opentabs]"
@@ -235,16 +233,7 @@ add_task(async function test_more_menus() {
     EventUtils.synthesizeKey("KEY_ArrowRight", {});
     await shown;
 
-    await clearAllParentTelemetryEvents();
-    let contextMenuEvent = [
-      [
-        "firefoxview_next",
-        "context_menu",
-        "tabs",
-        null,
-        { menu_action: "move-tab-end", data_type: "opentabs" },
-      ],
-    ];
+    Services.fog.testResetFOG();
 
     // click on the first option, which should be "Move to the end" since
     // this is the first tab
@@ -255,7 +244,12 @@ add_task(async function test_more_menus() {
     );
     EventUtils.synthesizeKey("KEY_Enter", {});
     info("Waiting for result of moving a tab via the menu");
-    await telemetryEvent(contextMenuEvent);
+    let contextEvents = Glean.firefoxviewNext.contextMenuTabs.testGetValue();
+    Assert.equal(1, contextEvents.length, "Expected one close tab event.");
+    Assert.deepEqual(
+      { menu_action: "move-tab-end", data_type: "opentabs" },
+      contextEvents[0].extra
+    );
     await menuHidden;
     await tabChangeRaised;
 
@@ -286,23 +280,18 @@ add_task(async function test_more_menus() {
       "Copy link panel item button with role=menuitem exists"
     );
 
-    await clearAllParentTelemetryEvents();
-    contextMenuEvent = [
-      [
-        "firefoxview_next",
-        "context_menu",
-        "tabs",
-        null,
-        { menu_action: "copy-link", data_type: "opentabs" },
-      ],
-    ];
+    Services.fog.testResetFOG();
 
     menuHidden = BrowserTestUtils.waitForEvent(panelList, "hidden");
     panelItemButton.click();
     info("Waiting for menuHidden");
     await menuHidden;
-    info("Waiting for telemetryEvent");
-    await telemetryEvent(contextMenuEvent);
+    contextEvents = Glean.firefoxviewNext.contextMenuTabs.testGetValue();
+    Assert.equal(1, contextEvents.length, "Expected one close tab event.");
+    Assert.deepEqual(
+      { menu_action: "copy-link", data_type: "opentabs" },
+      contextEvents[0].extra
+    );
 
     let copiedText = SpecialPowers.getClipboardData(
       "text/plain",
@@ -381,23 +370,19 @@ add_task(async function test_send_device_submenu() {
       )
       .returns(true);
 
-    await clearAllParentTelemetryEvents();
-    let contextMenuEvent = [
-      [
-        "firefoxview_next",
-        "context_menu",
-        "tabs",
-        null,
-        { menu_action: "send-tab-device", data_type: "opentabs" },
-      ],
-    ];
+    Services.fog.testResetFOG();
 
     // click on the first device and verify it was "sent"
     let menuHidden = BrowserTestUtils.waitForEvent(panelList, "hidden");
     EventUtils.synthesizeKey("KEY_Enter", {});
 
     expectation.verify();
-    await telemetryEvent(contextMenuEvent);
+    const contextEvents = Glean.firefoxviewNext.contextMenuTabs.testGetValue();
+    Assert.equal(1, contextEvents.length, "Expected one close tab event.");
+    Assert.deepEqual(
+      { menu_action: "send-tab-device", data_type: "opentabs" },
+      contextEvents[0].extra
+    );
     await menuHidden;
 
     sandbox.restore();

@@ -3,6 +3,12 @@ http://creativecommons.org/publicdomain/zero/1.0/ */
 
 "use strict";
 
+ChromeUtils.defineESModuleGetters(this, {
+  ShellService: "moz-src:///browser/components/shell/ShellService.sys.mjs",
+  sinon: "resource://testing-common/Sinon.sys.mjs",
+  StartupTelemetry: "moz-src:///browser/components/StartupTelemetry.sys.mjs",
+});
+
 // Check that telemetry reports Firefox is not pinned on any OS at startup.
 add_task(function check_startup_pinned_telemetry() {
   const scalars = TelemetryTestUtils.getProcessScalars("parent");
@@ -125,4 +131,76 @@ add_task(function check_is_default_handler_telemetry() {
       );
       break;
   }
+});
+
+add_task(async function check_desktop_entry_telemetry() {
+  if (AppConstants.platform != "linux") {
+    Assert.strictEqual(
+      Glean.osEnvironment.desktopEntryExists.testGetValue(),
+      null,
+      "desktop_entry_exists is unset on non-Linux platforms"
+    );
+    return;
+  }
+
+  // Check that it was set to something before. (This is meant to check that it
+  // was set at startup, although if the tests repeat then it might bleed
+  // through.)
+  Assert.ok(
+    Glean.osEnvironment.desktopEntryExists.testGetValue(),
+    "desktop_entry_exists was set before"
+  );
+
+  let enumValues = {
+    [Ci.nsIGNOMEShellService.DESKTOP_ENTRY_ABSENT]: "absent",
+    [Ci.nsIGNOMEShellService.DESKTOP_ENTRY_INVISIBLE]: "invisible",
+    [Ci.nsIGNOMEShellService.DESKTOP_ENTRY_VISIBLE]: "visible",
+    [12345]: "other",
+  };
+  for (let key of Object.getOwnPropertyNames(enumValues)) {
+    let sandbox = sinon.createSandbox();
+    let requested = [];
+    sandbox.stub(ShellService, "shellService").value({
+      getDesktopEntryStatus(name) {
+        requested.push(name);
+        return key;
+      },
+    });
+    StartupTelemetry.desktopEntryStatus();
+    Assert.deepEqual(
+      requested,
+      [Services.appinfo.remotingName + ".desktop"],
+      "The remoting name is passed as the desired desktop entry"
+    );
+    Assert.equal(
+      Glean.osEnvironment.desktopEntryExists.testGetValue(),
+      enumValues[key],
+      "The telemetry was set to the expected value"
+    );
+    sandbox.restore();
+  }
+
+  let sandbox = sinon.createSandbox();
+  sandbox.stub(ShellService, "shellService").value({
+    getDesktopEntryStatus(_name) {
+      Assert.ok(false, "should not be reached");
+      throw new Error("should not be reached");
+    },
+  });
+
+  StartupTelemetry.desktopEntryStatus({ isRunningUnderFlatpak: true });
+  Assert.equal(
+    Glean.osEnvironment.desktopEntryExists.testGetValue(),
+    "sandboxed",
+    "Telemetry indicates the browser is sandboxed when running under Flatpak"
+  );
+
+  StartupTelemetry.desktopEntryStatus({ isRunningUnderSnap: true });
+  Assert.equal(
+    Glean.osEnvironment.desktopEntryExists.testGetValue(),
+    "sandboxed",
+    "Telemetry indicates the browser is sandboxed when running under Snap"
+  );
+
+  sandbox.restore();
 });

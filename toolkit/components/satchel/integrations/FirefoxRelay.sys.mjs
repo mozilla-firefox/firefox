@@ -258,7 +258,7 @@ async function showReusableMasksAsync(browser, origin, error) {
   }
 
   // Parse the mask count from the error message
-  let maskCount = 5;
+  let maskCount = 50;
   if (error?.detail) {
     const match = error.detail.match(/(\d+)\s+(?:free\s+)?email\s+masks?/i);
     if (match) {

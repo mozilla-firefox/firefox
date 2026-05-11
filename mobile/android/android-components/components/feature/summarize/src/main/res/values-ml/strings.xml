@@ -21,6 +21,8 @@
   <string name="mozac_summarize_download_consent_button_positive">ചുരുക്കാൻ വേണ്ടി ഇറക്കിവയ്ക്കുക</string>
   <!-- Button text for the consent to download an on-device model denying download consent -->
   <string name="mozac_summarize_download_consent_button_negative">റദ്ദാക്കുക</string>
+  <!-- Caption to describe the progress of the download. %1$.2f is bytes downloaded, %2$.2f is total bytes required for download to complete. -->
+  <string name="mozac_summarize_download_progress_caption">%1$.2f എംബി / %2$.2f എംബി</string>
   <!-- Button text shown while a download is in progress to cancel the download -->
   <string name="mozac_summarize_download_progress_button_negative">റദ്ദാക്കുക</string>
   <!-- Title for the download error screen -->
@@ -31,10 +33,18 @@
   <string name="mozac_summarize_download_error_positive_button">വീണ്ടും ശ്രമിക്കുക</string>
   <!-- Button for the download error screen to cancel -->
   <string name="mozac_summarize_download_error_negative_button">റദ്ദാക്കുക</string>
+  <!-- Generic fallback message for the info error screen -->
+  <string name="mozac_summarize_info_error_message">പിന്നീടു വീണ്ടും ശ്രമിക്കുക.</string>
+  <!-- Error code shown on long press of the error icon. %1$d is an error code. -->
+  <string name="mozac_summarize_info_error_code">പിഴവടയാളം: %1$d</string>
+  <!-- Loading text displayed while a page summary is being generated -->
+  <string name="mozac_feature_summarize_loading_title">ചുരുക്കുന്നു…</string>
   <!-- Link text to learn more about page summaries in settings -->
   <string name="mozac_summarize_settings_learn_more">കൂടുതലറിയുക</string>
   <!-- Section header for gesture settings -->
   <string name="mozac_summarize_settings_gestures">ആംഗ്യങ്ങൾ</string>
+  <!-- Title for the page summary AI controllable feature -->
+  <string name="mozac_ai_controls_page_summary_title">താൾ ചുരുക്കം</string>
   <!-- Button text for the Error dismiss button on Shake to Summarize -->
   <string name="mozac_summarize_error_dissmiss">കളയുക</string>
 </resources>

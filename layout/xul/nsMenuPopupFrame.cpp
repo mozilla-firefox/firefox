@@ -705,7 +705,7 @@ void nsMenuPopupFrame::LayoutPopup(nsPresContext* aPresContext,
 
     // If there are no transitions, fire the popupshown event right away.
     nsCOMPtr<nsIRunnable> event =
-        new nsXULPopupShownEvent(GetContent(), aPresContext);
+        MakeAndAddRef<nsXULPopupShownEvent>(GetContent(), aPresContext);
     mContent->OwnerDoc()->Dispatch(event.forget());
   }
 }

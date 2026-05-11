@@ -378,7 +378,6 @@ add_task(async function sidebar_action_icon_update() {
   const sidebarID = SidebarController.currentID;
 
   let iconUrl = `moz-extension://${extension.uuid}/icon.png`;
-  let icon2xUrl = `moz-extension://${extension.uuid}/icon@2x.png`;
 
   if (isNewSidebar) {
     ok(sidebar, "sidebar is shown");
@@ -390,10 +389,17 @@ add_task(async function sidebar_action_icon_update() {
     );
     is(
       item.style.getPropertyValue("--webextension-menuitem-image"),
-      `image-set(url("${iconUrl}"), url("${icon2xUrl}") 2x)`,
+      `url("${iconUrl}")`,
       "Extension has the correct icon."
     );
   }
+  const menuItem = document.getElementById(`menubar_menu_${sidebarID}`);
+  is(
+    menuItem.style.getPropertyValue("--webextension-menuitem-image"),
+    `url("${iconUrl}")`,
+    "View>Sidebars menu item has the correct icon."
+  );
+
   SidebarController.hide({ dismissPanel: true });
   await sendMessage(extension, "isOpen", { result: false });
 
@@ -402,6 +408,13 @@ add_task(async function sidebar_action_icon_update() {
   await extension.awaitMessage("sidebar");
   await sendMessage(extension, "isOpen", { result: true });
   iconUrl = `moz-extension://${extension.uuid}/1.png`;
+
+  const updatedMenuItem = document.getElementById(`menubar_menu_${sidebarID}`);
+  is(
+    updatedMenuItem.style.getPropertyValue("--webextension-menuitem-image"),
+    `url("${iconUrl}")`,
+    "View>Sidebars menu item has the updated icon."
+  );
 
   if (isNewSidebar) {
     const { iconSrc } = sidebar.extensionButtons[0];
@@ -412,7 +425,7 @@ add_task(async function sidebar_action_icon_update() {
     );
     is(
       item.style.getPropertyValue("--webextension-menuitem-image"),
-      `image-set(url("${iconUrl}"), url("${iconUrl}") 2x)`,
+      `url("${iconUrl}")`,
       "Extension has updated icon."
     );
   }
@@ -434,8 +447,8 @@ add_task(async function sidebar_action_hidpi_icon() {
   info("Test extension's sidebar is opened on install");
   await extension.awaitMessage("sidebar");
   await sendMessage(extension, "isOpen", { result: true });
+  const sidebarID = SidebarController.currentID;
 
-  let iconUrl = `moz-extension://${extension.uuid}/icon.png`;
   let icon2xUrl = `moz-extension://${extension.uuid}/icon@2x.png`;
 
   if (isNewSidebar) {
@@ -452,10 +465,17 @@ add_task(async function sidebar_action_hidpi_icon() {
     );
     is(
       item.style.getPropertyValue("--webextension-menuitem-image"),
-      `image-set(url("${iconUrl}"), url("${icon2xUrl}") 2x)`,
+      `url("${icon2xUrl}")`,
       "Extension has the correct icon for HiDPI displays."
     );
   }
+
+  const menuItem = document.getElementById(`menubar_menu_${sidebarID}`);
+  is(
+    menuItem.style.getPropertyValue("--webextension-menuitem-image"),
+    `url("${icon2xUrl}")`,
+    "View>Sidebars menu item has the correct icon for HiDPI displays."
+  );
 
   await extension.unload();
   await SpecialPowers.popPrefEnv();

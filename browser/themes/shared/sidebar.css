@@ -347,6 +347,35 @@ sidebar-main,
       inset-inline-start: unset;
       inset-inline-end: 0;
     }
+
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      border-radius: var(--chrome-block-radius);
+      background-color: var(--toolbar-background-color);
+      position: absolute;
+      inset-block-end: var(--chrome-window-gap);
+      inset-inline-start: var(--chrome-window-gap);
+
+      /* stylelint-disable max-nesting-depth */
+      &[sidebar-launcher-expanded],
+      &[sidebar-ongoing-animations]:not([sidebar-launcher-expanded]) {
+        background-image: none;
+        background-color: var(--toolbar-background-color);
+
+        &:not([sidebar-positionend]) {
+          border-inline-end: 1px solid var(--chrome-content-separator-color);
+        }
+        &[sidebar-positionend] {
+          border-inline-start: 1px solid var(--chrome-content-separator-color);
+        }
+      }
+      /* stylelint-enable max-nesting-depth */
+
+      &[sidebar-positionend] {
+        inset-inline-start: unset;
+        inset-inline-end: var(--chrome-window-gap);
+      }
+    }
   }
 
   #sidebar-launcher-splitter[sidebar-launcher-expanded] {
@@ -357,49 +386,75 @@ sidebar-main,
   The element next to it can be the sidebar box or the tabbox,
   depending on whether the sidebar box is expanded */
   #tabbrowser-tabbox {
-    &:not([sidebar-positionend]) {
-      &:not([sidebar-panel-open]) {
-        margin-inline-start: 0;
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media not -moz-pref("browser.nova.enabled") {
+      &:not([sidebar-positionend]) {
+        &:not([sidebar-panel-open]) {
+          margin-inline-start: 0;
+        }
+
+        &[sidebar-launcher-expanded][sidebar-launcher-hovered]:not([sidebar-panel-open]),
+        &[sidebar-ongoing-animations]:not([sidebar-launcher-expanded], [sidebar-panel-open]) {
+          margin-inline-start: var(--sidebar-launcher-collapsed-width);
+        }
       }
 
-      &[sidebar-launcher-expanded][sidebar-launcher-hovered]:not([sidebar-panel-open]),
-      &[sidebar-ongoing-animations]:not([sidebar-launcher-expanded], [sidebar-panel-open]) {
-        margin-inline-start: var(--sidebar-launcher-collapsed-width);
+      &[sidebar-positionend] {
+        &:not([sidebar-panel-open]) {
+          margin-inline-end: 0;
+        }
+
+        &[sidebar-launcher-expanded][sidebar-launcher-hovered]:not([sidebar-panel-open]),
+        &[sidebar-ongoing-animations]:not([sidebar-panel-open], [sidebar-launcher-expanded]) {
+          margin-inline-end: var(--sidebar-launcher-collapsed-width);
+        }
       }
     }
 
-    &[sidebar-positionend] {
-      &:not([sidebar-panel-open]) {
-        margin-inline-end: 0;
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      &:not([sidebar-positionend], [sidebar-panel-open]) {
+        margin-inline-start: calc(var(--sidebar-launcher-collapsed-width) + var(--chrome-window-gap));
       }
-
-      &[sidebar-launcher-expanded][sidebar-launcher-hovered]:not([sidebar-panel-open]),
-      &[sidebar-ongoing-animations]:not([sidebar-panel-open], [sidebar-launcher-expanded]) {
-        margin-inline-end: var(--sidebar-launcher-collapsed-width);
+      &[sidebar-positionend]:not([sidebar-panel-open]) {
+        margin-inline-end: calc(var(--sidebar-launcher-collapsed-width) + var(--chrome-window-gap));
       }
     }
   }
 
   #sidebar-box {
-    &:not([sidebar-positionend]) {
-      &[sidebar-panel-open] {
-        margin-inline-start: 0;
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media not -moz-pref("browser.nova.enabled") {
+      &:not([sidebar-positionend]) {
+        &[sidebar-panel-open] {
+          margin-inline-start: 0;
+        }
+
+        &[sidebar-panel-open][sidebar-launcher-hovered][sidebar-launcher-expanded],
+        &[sidebar-ongoing-animations][sidebar-panel-open] {
+          margin-inline-start: var(--sidebar-launcher-collapsed-width);
+        }
       }
 
-      &[sidebar-panel-open][sidebar-launcher-hovered][sidebar-launcher-expanded],
-      &[sidebar-ongoing-animations][sidebar-panel-open] {
-        margin-inline-start: var(--sidebar-launcher-collapsed-width);
+      &[sidebar-positionend] {
+        &[sidebar-panel-open] {
+          margin-inline-end: 0;
+        }
+
+        &[sidebar-panel-open][sidebar-launcher-hovered][sidebar-launcher-expanded],
+        &[sidebar-ongoing-animations][sidebar-panel-open] {
+          margin-inline-end: var(--sidebar-launcher-collapsed-width);
+        }
       }
     }
 
-    &[sidebar-positionend] {
-      &[sidebar-panel-open] {
-        margin-inline-end: 0;
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      &:not([sidebar-positionend])[sidebar-panel-open] {
+        margin-inline-start: calc(var(--sidebar-launcher-collapsed-width) + var(--chrome-window-gap));
       }
-
-      &[sidebar-panel-open][sidebar-launcher-hovered][sidebar-launcher-expanded],
-      &[sidebar-ongoing-animations][sidebar-panel-open] {
-        margin-inline-end: var(--sidebar-launcher-collapsed-width);
+      &[sidebar-positionend][sidebar-panel-open] {
+        margin-inline-end: calc(var(--sidebar-launcher-collapsed-width) + var(--chrome-window-gap));
       }
     }
   }

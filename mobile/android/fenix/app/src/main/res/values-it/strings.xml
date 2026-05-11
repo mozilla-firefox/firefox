@@ -3214,6 +3214,13 @@
   <string name="ip_protection_onboarding_body_link">Naviga con una protezione aggiuntiva</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Non adesso</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">Impossibile connettersi alla VPN. Riprova tra qualche minuto.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">Hai utilizzato %1$d GB di dati VPN. L’accesso alla VPN verrà reimpostato il mese prossimo.</string>
   <!--
     Autofill
 
@@ -4631,6 +4638,14 @@
   <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Stai seguendo: \n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
   <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Controlla di nuovo per aggiornamenti sulle partite man mano che il torneo si avvicina.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">Primo tempo</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">Secondo tempo</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">Sembra che tu non sia connesso a Internet.</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">Verifica la connessione a Internet e riprova.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

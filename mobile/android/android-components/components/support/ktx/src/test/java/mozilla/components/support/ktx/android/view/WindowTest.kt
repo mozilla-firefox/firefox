@@ -5,12 +5,11 @@
 package mozilla.components.support.ktx.android.view
 
 import android.graphics.Color
-import android.os.Build
 import android.view.View
 import android.view.Window
+import android.view.WindowInsetsController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.support.test.robolectric.testContext
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,8 +21,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations.openMocks
-import org.robolectric.util.ReflectionHelpers.setStaticField
-import kotlin.reflect.jvm.javaField
+import org.robolectric.annotation.Config
 
 /**
  * **Note** Tests for isAppearanceLightStatusBars are in WindowKtTest.
@@ -35,22 +33,22 @@ class WindowTest {
 
     @Mock private lateinit var decorView: View
 
+    @Mock
+    lateinit var windowInsetsController: WindowInsetsController
+
     @Before
     fun setup() {
-        setStaticField(Build.VERSION::SDK_INT.javaField, 0)
-
         openMocks(this)
 
         `when`(window.decorView).thenAnswer { decorView }
         `when`(window.context).thenAnswer { testContext }
     }
 
-    @After
-    fun teardown() = setStaticField(Build.VERSION::SDK_INT.javaField, 0)
-
     @Suppress("DEPRECATION")
     @Test
+    @Config(sdk = [29])
     fun `GIVEN a color WHEN setStatusBarTheme THEN sets the status bar color`() {
+        `when`(window.insetsController).thenReturn(windowInsetsController)
         window.setStatusBarTheme(Color.BLUE)
         verify(window).statusBarColor = Color.BLUE
 
@@ -59,8 +57,8 @@ class WindowTest {
     }
 
     @Test
+    @Config(sdk = [27])
     fun `GIVEN Android 8 & no args WHEN setNavigationBarTheme THEN no colors are set`() {
-        setStaticField(Build.VERSION::SDK_INT.javaField, Build.VERSION_CODES.O_MR1)
         window.setNavigationBarTheme()
 
         verifyNoMoreInteractions(window)
@@ -68,8 +66,8 @@ class WindowTest {
 
     @Test
     @Suppress("DEPRECATION")
+    @Config(sdk = [27])
     fun `GIVEN Android 8 & has nav bar color WHEN setNavigationBarTheme THEN only the nav bar color is set`() {
-        setStaticField(Build.VERSION::SDK_INT.javaField, Build.VERSION_CODES.O_MR1)
         window.setNavigationBarTheme(navBarColor = Color.MAGENTA)
 
         // We can't verify against the navigationBarDividerColor directly due to using SDK O_MR1 so we'll verify using ordering.
@@ -81,8 +79,8 @@ class WindowTest {
     }
 
     @Test
+    @Config(sdk = [27])
     fun `GIVEN Android 8 & has nav bar divider color WHEN setNavigationBarTheme THEN no colors are set`() {
-        setStaticField(Build.VERSION::SDK_INT.javaField, Build.VERSION_CODES.O_MR1)
         window.setNavigationBarTheme(navBarDividerColor = Color.DKGRAY)
 
         verifyNoMoreInteractions(window)
@@ -90,8 +88,8 @@ class WindowTest {
 
     @Test
     @Suppress("DEPRECATION")
+    @Config(sdk = [27])
     fun `GIVEN Android 8 & all args WHEN setNavigationBarTheme THEN only the nav bar color is set`() {
-        setStaticField(Build.VERSION::SDK_INT.javaField, Build.VERSION_CODES.O_MR1)
         window.setNavigationBarTheme(navBarColor = Color.MAGENTA, navBarDividerColor = Color.DKGRAY)
 
         // We can't verify against the navigationBarDividerColor directly due to using SDK O_MR1 so we'll verify using ordering.
@@ -104,8 +102,8 @@ class WindowTest {
 
     @Test
     @Suppress("DEPRECATION")
+    @Config(sdk = [28])
     fun `GIVEN Android 9 & no args WHEN setNavigationBarTheme THEN the nav bar divider color is set to default`() {
-        setStaticField(Build.VERSION::SDK_INT.javaField, Build.VERSION_CODES.P)
         window.setNavigationBarTheme()
 
         verify(window, never()).navigationBarColor
@@ -114,8 +112,8 @@ class WindowTest {
 
     @Test
     @Suppress("DEPRECATION")
+    @Config(sdk = [28])
     fun `GIVEN Android 9 has nav bar color WHEN setNavigationBarTheme THEN the nav bar color is set & nav bar divider color set to default`() {
-        setStaticField(Build.VERSION::SDK_INT.javaField, Build.VERSION_CODES.P)
         window.setNavigationBarTheme(navBarColor = Color.BLUE)
 
         verify(window).navigationBarColor = Color.BLUE
@@ -124,8 +122,8 @@ class WindowTest {
 
     @Test
     @Suppress("DEPRECATION")
+    @Config(sdk = [28])
     fun `GIVEN Android 9 has nav bar divider color WHEN setNavigationBarTheme THEN only the nav bar divider color is set`() {
-        setStaticField(Build.VERSION::SDK_INT.javaField, Build.VERSION_CODES.P)
         window.setNavigationBarTheme(navBarDividerColor = Color.GREEN)
 
         verify(window, never()).navigationBarColor
@@ -134,8 +132,8 @@ class WindowTest {
 
     @Test
     @Suppress("DEPRECATION")
+    @Config(sdk = [28])
     fun `GIVEN Android 9 & all args WHEN setNavigationBarTheme THEN the nav bar & nav bar divider colors are set`() {
-        setStaticField(Build.VERSION::SDK_INT.javaField, Build.VERSION_CODES.P)
         window.setNavigationBarTheme(navBarColor = Color.YELLOW, navBarDividerColor = Color.CYAN)
 
         verify(window).navigationBarColor = Color.YELLOW

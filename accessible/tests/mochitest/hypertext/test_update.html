@@ -10,170 +10,95 @@
   <script type="application/javascript"
           src="../common.js"></script>
   <script type="application/javascript"
-          src="../events.js"></script>
+          src="../promisified-events.js"></script>
 
   <script type="application/javascript">
-    const kLinksCount = 128;
-    function addLinks(aContainerID) {
-      this.containerNode = getNode(aContainerID);
-
-      this.eventSeq = [
-        new invokerChecker(EVENT_REORDER, this.containerNode),
-      ];
-
-      this.invoke = function addLinks_invoke() {
-        for (var jdx = 0; jdx < kLinksCount; jdx++) {
-          var a = document.createElement("a");
-          a.setAttribute("href", "mozilla.org");
-          a.textContent = "mozilla";
-          this.containerNode.appendChild(a);
-
-          var span = document.createElement("span");
-          span.textContent = " text ";
-          this.containerNode.appendChild(span);
-        }
-      };
-
-      this.finalCheck = function addLinks_finalCheck() {
-        // getLinkAt and getLinkIndex.
-        var htAcc = getAccessible(this.containerNode, [nsIAccessibleHyperText]);
-        for (var jdx = 0; jdx < kLinksCount; jdx++) {
-          var link = htAcc.getLinkAt(jdx);
-          ok(link, "No link at index " + jdx + " for '" + aContainerID + "'");
-
-          var linkIdx = htAcc.getLinkIndex(link);
-          is(linkIdx, jdx, "Wrong link index for '" + aContainerID + "'!");
-        }
-      };
-
-      this.getID = function addLinks_getID() {
-        return "Add links for '" + aContainerID + "'";
-      };
-    }
-
-    function updateText(aContainerID) {
-      this.containerNode = getNode(aContainerID);
-      this.container = getAccessible(this.containerNode, nsIAccessibleHyperText);
-      this.text = this.container.firstChild;
-      this.textNode = this.text.DOMNode;
-      this.textLen = this.textNode.data.length;
-
-      this.eventSeq = [
-        new invokerChecker(EVENT_TEXT_INSERTED, this.containerNode),
-      ];
-
-      this.invoke = function updateText_invoke() {
-        is(this.container.getLinkIndexAtOffset(this.textLen), 0,
-           "Wrong intial text offsets!");
-
-        this.text.DOMNode.appendData(" my");
-      };
-
-      this.finalCheck = function updateText_finalCheck() {
-        is(this.container.getLinkIndexAtOffset(this.textLen), -1,
-           "Text offsets weren't updated!");
-      };
-
-      this.getID = function updateText_getID() {
-        return "update text for '" + aContainerID + "'";
-      };
-    }
-
-    /**
-     * Text offsets must be updated when hypertext child is removed.
-     */
-    function removeChild(aContainerID, aChildID, aInitialText, aFinalText) {
-      this.containerNode = getNode(aContainerID);
-      this.container = getAccessible(this.containerNode, nsIAccessibleText);
-      this.childNode = getNode(aChildID);
-
-      // Call first to getText so offsets are cached
-      is(this.container.getText(0, -1), aInitialText,
-         "Wrong text before child removal");
-
-      this.eventSeq = [
-        new invokerChecker(EVENT_REORDER, this.containerNode),
-      ];
-
-      this.invoke = function removeChild_invoke() {
-        this.containerNode.removeChild(this.childNode);
-      };
-
-      this.finalCheck = function removeChild_finalCheck() {
-        is(this.container.getText(0, -1), aFinalText,
-           "Wrong text after child removal");
-        is(this.container.characterCount, aFinalText.length,
-           "Wrong text after child removal");
-      };
-
-      this.getID = function removeChild_getID() {
-        return "check text after removing child from '" + aContainerID + "'";
-      };
-    }
-
-    function removeFirstChild(aContainer) {
-      this.ht = getAccessible(aContainer, [ nsIAccessibleHyperText ]);
-      this.eventSeq = [
-        new invokerChecker(EVENT_REORDER, aContainer),
-      ];
-
-      this.invoke = function removeFirstChild_invoke() {
-        is(this.ht.linkCount, 2, "Wrong embedded objects count before removal");
-
-        getNode(aContainer).removeChild(getNode(aContainer).firstElementChild);
-      };
-
-      this.finalCheck = function removeFirstChild_finalCheck() {
-        // check list index before link count
-        is(this.ht.getLinkIndex(this.ht.firstChild), 0, "Wrong child index");
-        is(this.ht.linkCount, 1, "Wrong embedded objects count after removal");
-      };
-
-      this.getID = function removeFirstChild_getID() {
-        return "Remove first child and check embedded object indeces";
-      };
-    }
-
-    function removeLastChild(aContainer) {
-      this.ht = getAccessible(aContainer, [ nsIAccessibleHyperText ]);
-      this.eventSeq = [
-        new invokerChecker(EVENT_REORDER, aContainer),
-      ];
-
-      this.invoke = function removeLastChild_invoke() {
-        is(this.ht.linkCount, 1, "Wrong embedded objects count before removal");
-
-        getNode(aContainer).removeChild(getNode(aContainer).lastElementChild);
-      };
-
-      this.finalCheck = function removeLastChild_finalCheck() {
-        is(this.ht.linkCount, 0, "Wrong embedded objects count after removal");
-
-        var link = null;
-        try {
-          link = this.ht.getLinkAt(0);
-        } catch (e) { }
-        ok(!link, "No embedded object is expected");
-      };
-
-      this.getID = function removeLastChild_getID() {
-        return "Remove last child and try its embedded object";
-      };
-    }
-
     // gA11yEventDumpToConsole = true; // debug stuff
 
-    var gQueue = null;
-    function doTest() {
-      gQueue = new eventQueue();
-      gQueue.push(new addLinks("p1"));
-      gQueue.push(new updateText("p2"));
-      gQueue.push(new removeChild("div1", "div2",
-                                  "hello my good friend", "hello friend"));
-      gQueue.push(new removeFirstChild("c4"));
-      gQueue.push(new removeLastChild("c5"));
+    const kLinksCount = 128;
 
-      gQueue.invoke(); // Will call SimpleTest.finish();
+    async function doTest() {
+      // addLinks
+      const p1Node = getNode("p1");
+      let reordered = waitForEvent(EVENT_REORDER, p1Node);
+      for (let jdx = 0; jdx < kLinksCount; jdx++) {
+        const a = document.createElement("a");
+        a.setAttribute("href", "mozilla.org");
+        a.textContent = "mozilla";
+        p1Node.appendChild(a);
+
+        const span = document.createElement("span");
+        span.textContent = " text ";
+        p1Node.appendChild(span);
+      }
+      await reordered;
+      // getLinkAt and getLinkIndex.
+      const p1Acc = getAccessible(p1Node, [nsIAccessibleHyperText]);
+      for (let idx = 0; idx < kLinksCount; idx++) {
+        const link = p1Acc.getLinkAt(idx);
+        ok(link, "No link at index " + idx + " for 'p1'");
+
+        const linkIdx = p1Acc.getLinkIndex(link);
+        is(linkIdx, idx, "Wrong link index for 'p1'!");
+      }
+
+      // updateText
+      const p2Node = getNode("p2");
+      const p2Acc = getAccessible(p2Node, nsIAccessibleHyperText);
+      const textAcc = p2Acc.firstChild;
+      const textNode = textAcc.DOMNode;
+      const textLen = textNode.data.length;
+      is(p2Acc.getLinkIndexAtOffset(textLen), 0, "Wrong intial text offsets!");
+      let inserted = waitForEvent(EVENT_TEXT_INSERTED, p2Node);
+      textNode.appendData(" my");
+      await inserted;
+      is(
+        p2Acc.getLinkIndexAtOffset(textLen),
+        -1,
+        "Text offsets weren't updated!"
+      );
+
+      // removeChild
+      const div1Node = getNode("div1");
+      const div1Acc = getAccessible(div1Node, nsIAccessibleText);
+      const div2Node = getNode("div2");
+      // Call first to getText so offsets are cached
+      is(div1Acc.getText(0, -1), "hello my good friend",
+         "Wrong text before child removal");
+      reordered = waitForEvent(EVENT_REORDER, div1Node);
+      div1Node.removeChild(div2Node);
+      await reordered;
+      is(div1Acc.getText(0, -1), "hello friend",
+         "Wrong text after child removal");
+      is(div1Acc.characterCount, "hello friend".length,
+         "Wrong text after child removal");
+
+      // removeFirstChild
+      const c4Node = getNode("c4");
+      const c4Acc = getAccessible(c4Node, [nsIAccessibleHyperText]);
+      is(c4Acc.linkCount, 2, "Wrong embedded objects count before removal");
+      reordered = waitForEvent(EVENT_REORDER, c4Node);
+      c4Node.removeChild(c4Node.firstElementChild);
+      await reordered;
+      // check list index before link count
+      is(c4Acc.getLinkIndex(c4Acc.firstChild), 0, "Wrong child index");
+      is(c4Acc.linkCount, 1, "Wrong embedded objects count after removal");
+
+      // removeLastChild
+      const c5Node = getNode("c5");
+      const c5Acc = getAccessible(c5Node, [nsIAccessibleHyperText]);
+      is(c5Acc.linkCount, 1, "Wrong embedded objects count before removal");
+      reordered = waitForEvent(EVENT_REORDER, c5Node);
+      c5Node.removeChild(c5Node.lastElementChild);
+      await reordered;
+      is(c5Acc.linkCount, 0, "Wrong embedded objects count after removal");
+      let lastLink = null;
+      try {
+        lastLink = c5Acc.getLinkAt(0);
+      } catch (e) { }
+      ok(!lastLink, "No embedded object is expected");
+
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

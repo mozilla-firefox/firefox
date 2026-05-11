@@ -38,9 +38,7 @@ template <typename W, typename T>
 struct TestStruct {
   W wrapper;
 
-  void trace(JSTracer* trc) {
-    TraceNullableEdge(trc, &wrapper, "TestStruct::wrapper");
-  }
+  void trace(JSTracer* trc) { TraceEdge(trc, &wrapper, "TestStruct::wrapper"); }
 
   TestStruct() {}
   explicit TestStruct(T init) : wrapper(init) {}

@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-05-01_02-51-25_UTC
-// COMMIT: 8b4345f9a2513011b21e6fc7b8a7197a849be52c
+// VERSION: 2026-05-07_00-57-25_UTC
+// COMMIT: ee780bcf233174cb23ba8575d54c4154d47508e1
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -12820,10 +12820,6 @@ craft.me
 // Submitted by Ales Krajnik <ales.krajnik@craynic.com>
 realm.cz
 
-// Crisp IM SAS : https://crisp.chat/
-// Submitted by Baptiste Jamin <hostmaster@crisp.chat>
-on.crisp.email
-
 // Cryptonomic : https://cryptonomic.net/
 // Submitted by Andrew Cady <public-suffix-list@cryptonomic.net>
 *.cryptonomic.net
@@ -16355,6 +16351,8 @@ zeabur.app
 // Zerops : https://zerops.io/
 // Submitted by Zerops Team <security@zerops.io>
 *.zerops.app
+prg1-zerops.zone
+*.zerops.zone
 
 // Zine EOOD : https://zine.bg/
 // Submitted by Martin Angelov <martin@zine.bg>

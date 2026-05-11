@@ -10,9 +10,11 @@ const { sinon } = ChromeUtils.importESModule(
   "resource://testing-common/Sinon.sys.mjs"
 );
 
-const { LINKS } = ChromeUtils.importESModule(
+const { BANDWIDTH, LINKS } = ChromeUtils.importESModule(
   "chrome://browser/content/ipprotection/ipprotection-constants.mjs"
 );
+
+const MAX_IN_GB_PREF = "browser.ipProtection.bandwidth.maxInGb";
 
 ChromeUtils.defineESModuleGetters(lazy, {
   IPProtectionWidget:
@@ -322,6 +324,51 @@ add_task(async function test_privacy_notice_link() {
 
   openWebLinkInStub.restore();
   cleanupService();
+});
+
+/**
+ * Tests that BANDWIDTH.MAX_IN_GB use the bandwidth.maxInGb pref
+ * and that the unauthenticated panel reflects the configured value.
+ */
+add_task(async function test_max_in_gb_pref() {
+  Assert.equal(
+    BANDWIDTH.MAX_IN_GB,
+    50,
+    "MAX_IN_GB should default to 50 when the pref is unset"
+  );
+
+  await SpecialPowers.pushPrefEnv({ set: [[MAX_IN_GB_PREF, 100]] });
+  Assert.equal(
+    BANDWIDTH.MAX_IN_GB,
+    100,
+    "MAX_IN_GB should reflect the pref value"
+  );
+
+  setupService({
+    isSignedIn: false,
+    isEnrolledAndEntitled: false,
+  });
+  let content = await openPanel({ unauthenticated: true });
+  let bandwidthMessage = content.unauthenticatedEl.shadowRoot.querySelector(
+    '[data-l10n-id="unauthenticated-bandwidth-limit-message"]'
+  );
+
+  Assert.ok(bandwidthMessage, "Bandwidth limit message should be present");
+  Assert.deepEqual(
+    JSON.parse(bandwidthMessage.getAttribute("data-l10n-args")),
+    { maxUsage: 100 },
+    "Panel should render with the pref-driven max usage"
+  );
+
+  await closePanel();
+  cleanupService();
+  await SpecialPowers.popPrefEnv();
+
+  Assert.equal(
+    BANDWIDTH.MAX_IN_GB,
+    50,
+    "MAX_IN_GB should return to the default after the pref is cleared"
+  );
 });
 
 /**

@@ -6,6 +6,8 @@ import { html, classMap } from "../vendor/lit.all.mjs";
 import { MozBoxBase } from "../lit-utils.mjs";
 import { GROUP_TYPES } from "chrome://global/content/elements/moz-box-group.mjs";
 
+window.MozXULElement?.insertFTLIfNeeded("toolkit/global/mozBoxBase.ftl");
+
 const DIRECTION_RIGHT = "Right";
 const DIRECTION_LEFT = "Left";
 const NAVIGATION_DIRECTIONS = {
@@ -264,14 +266,27 @@ export default class MozBoxItem extends MozBoxBase {
     ></slot>`;
   }
 
+  handleTemplate() {
+    if (!this.isDraggable) {
+      return "";
+    }
+    return html`<span
+      tabindex="0"
+      class="handle"
+      data-l10n-id=${this.label
+        ? "moz-box-item-reorder-handle-named"
+        : "moz-box-item-reorder-handle"}
+      data-l10n-args=${this.label
+        ? JSON.stringify({ item: this.label })
+        : undefined}
+    ></span>`;
+  }
+
   render() {
     return html`
       ${this.stylesTemplate()}
       <div class="box-container">
-        ${this.isDraggable
-          ? html`<span tabindex="0" class="handle"></span>`
-          : ""}
-        ${this.slotTemplate("actions-start")}
+        ${this.handleTemplate()} ${this.slotTemplate("actions-start")}
         <div class="box-content">
           ${this.label ? this.textTemplate() : html`<slot></slot>`}
         </div>

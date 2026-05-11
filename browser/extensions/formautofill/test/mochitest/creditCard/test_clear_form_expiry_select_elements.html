@@ -40,7 +40,7 @@ const MOCK_CC_STORAGE = [{
 
 initPopupListener();
 
-add_task(async function setup_storage() {
+add_setup(async function setup_storage() {
   await addAddress(MOCK_ADDR_STORAGE[0]);
   await addCreditCard(MOCK_CC_STORAGE[0]);
   await addCreditCard(MOCK_CC_STORAGE[1]);

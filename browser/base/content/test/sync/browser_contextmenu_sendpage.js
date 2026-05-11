@@ -192,8 +192,8 @@ add_task(async function test_page_contextmenu_no_remote_clients() {
   await openContentContextMenu("#moztext");
   is(
     document.getElementById("context-sendpagetodevice").hidden,
-    true,
-    "Send page to device is hidden"
+    false,
+    "Send page to device is not hidden"
   );
   is(
     document.getElementById("context-sendpagetodevice").disabled,
@@ -537,8 +537,8 @@ add_task(async function test_page_contextmenu_unconfigured() {
   await openContentContextMenu("#moztext");
   is(
     document.getElementById("context-sendpagetodevice").hidden,
-    true,
-    "Send page to device is hidden"
+    false,
+    "Send page to device is not hidden"
   );
   is(
     document.getElementById("context-sendpagetodevice").disabled,
@@ -579,8 +579,8 @@ add_task(async function test_page_contextmenu_login_failed() {
   await openContentContextMenu("#moztext");
   is(
     document.getElementById("context-sendpagetodevice").hidden,
-    true,
-    "Send page to device is hidden"
+    false,
+    "Send page to device is not hidden"
   );
   is(
     document.getElementById("context-sendpagetodevice").disabled,

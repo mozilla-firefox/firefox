@@ -876,9 +876,9 @@ set_config("MOZ_SYSTEM_AV1", True, when="--with-system-av1")
 option("--disable-jxl", help="Disable jxl image support")
 
 
-@depends("--disable-jxl", milestone.is_nightly)
-def jxl(value, is_nightly):
-    if is_nightly and value:
+@depends("--disable-jxl")
+def jxl(value):
+    if value:
         return True
 
 
@@ -1148,7 +1148,7 @@ include("../build/moz.configure/keyfiles.configure")
 
 simple_keyfile("Mozilla API")
 
-with only_when(depends(target.os)(lambda os: os != "Android")):
+with only_when(depends(target.os)(lambda os: os not in ("Android", "WINNT"))):
     simple_keyfile("Google Location Service API")
 
 simple_keyfile("Google Safebrowsing API")

@@ -769,11 +769,12 @@ toolbar[keyNav]:not([collapsed], [customizing]) toolbartabstop,
   font-weight: var(--font-weight-semibold);
   gap: var(--smartwindow-ask-btn-text-icon-gap);
   height: var(--size-item-medium);
-  --toolbarbutton-padding-outer: var(--space-small);
   padding-inline: var(--smartwindow-ask-btn-inner-padding-inline);
   --toolbarbutton-outline-color-hover: none;
   --toolbarbutton-background-color-hover: transparent;
   --toolbarbutton-background-color-active: transparent;
+  --toolbarbutton-border-radius: 0;
+  --toolbarbutton-padding-outer: var(--space-small);
 
   #smartwindow-ask-button:hover > & {
     color: var(--smartwindow-ask-btn-text-color-hover);
@@ -821,7 +822,7 @@ toolbar[keyNav]:not([collapsed], [customizing]) toolbartabstop,
     --toolbarbutton-padding-inner: 0;
   }
 
-  &[checked] {
+  &[aria-expanded="true"] {
     background-clip: var(--smartwindow-ask-btn-bg-opened-clip);
     background-color: var(--smartwindow-ask-btn-bg-opened);
     background-image: var(--smartwindow-ask-btn-bg-opened-image);
@@ -829,7 +830,7 @@ toolbar[keyNav]:not([collapsed], [customizing]) toolbartabstop,
     border-color: var(--smartwindow-ask-btn-border-color-opened);
   }
 
-  &[checked] {
+  &[aria-expanded="true"] {
     #smartwindow-ask-button:hover > & {
       color: var(--smartwindow-ask-btn-text-color-opened-hover);
       background-color: var(--smartwindow-ask-btn-bg-opened-hover);

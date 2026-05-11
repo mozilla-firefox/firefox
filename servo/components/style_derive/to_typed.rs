@@ -64,9 +64,13 @@ use synstructure::{BindingInfo, Structure};
 ///
 /// * `#[css(comma)]` on the variant indicates that fields may reify to
 ///   multiple separate values. When present, multiple `TypedValue`s may be
-///   produced across the supported fields. If it is not present and the
-///   derived implementation would produce more than one item, it treats the
-///   value as unsupported and returns `Err(())`.
+///   produced across the supported fields, unless
+///   `#[typed(no_multiple_values)]` is also present. If multiple values are
+///   not allowed and the derived implementation would produce more than one
+///   item, it treats the value as unsupported and returns `Err(())`.
+///
+/// * `#[typed(no_multiple_values)]` on a variant prevents it from reifying to
+///   multiple `TypedValue`s, even if `#[css(comma)]` is present.
 ///
 /// * `#[css(iterable)]` on a field indicates that the field is an iterable
 ///   collection whose elements should be reified individually.
@@ -236,7 +240,9 @@ fn derive_variant_arm(
             Ok(())
         }
     } else if !skip_derive_fields {
-        derive_variant_fields_expr(bindings, where_clause, css_variant_attrs.comma)
+        let allow_multiple_values = css_variant_attrs.comma && !variant_attrs.no_multiple_values;
+
+        derive_variant_fields_expr(bindings, where_clause, allow_multiple_values)
     } else {
         // This variant has one or more fields, but field reification is
         // disabled. With `skip_derive_fields`, this variant simply returns
@@ -258,15 +264,15 @@ fn derive_variant_arm(
 ///   trait bound (e.g. `T: ToTyped`) to the `where` clause.
 ///
 /// * Otherwise, it appends the reified output of the supported fields to the
-///   destination and then validates the combined result against the enclosing
-///   variant’s `#[css(comma)]` setting.
+///   destination and then validates whether the enclosing variant is allowed
+///   to produce multiple `TypedValue`s.
 ///
 /// Fields marked with `#[css(skip)]`, or skipped by
 /// `#[typed(skip_if = "...")]`, are ignored.
 fn derive_variant_fields_expr(
     bindings: &[BindingInfo],
     where_clause: &mut Option<WhereClause>,
-    comma: bool,
+    allow_multiple_values: bool,
 ) -> TokenStream {
     // Filter out fields marked with #[css(skip)] so they are ignored during
     // reification.
@@ -322,7 +328,7 @@ fn derive_variant_fields_expr(
     quote! {{
         let old_len = dest.len();
         #expr
-        if !#comma && dest.len() - old_len > 1 {
+        if !#allow_multiple_values && dest.len() - old_len > 1 {
             dest.truncate(old_len);
             return Err(());
         }
@@ -480,6 +486,13 @@ pub struct TypedInputAttrs {
     /// expected to be revisited later, either to implement it or to switch to
     /// `skip_derive_fields` if it turns out to be unsupported.
     pub todo_derive_fields: bool,
+
+    /// Prevents this type from reifying to multiple Typed OM values.
+    ///
+    /// This is useful for types that use `#[css(comma)]` for CSS
+    /// serialization, but should still be treated as unsupported when they
+    /// would produce more than one `TypedValue`.
+    pub no_multiple_values: bool,
 }
 
 #[derive(Default, FromVariant)]
@@ -500,6 +513,14 @@ pub struct TypedVariantAttrs {
     /// When set, field-level reification for this variant is disabled and the
     /// generated code returns `Err(())`.
     pub todo_derive_fields: bool,
+
+    /// Same as the top-level `no_multiple_values`, but included here because
+    /// struct variants are represented as both a variant and a type
+    /// definition.
+    ///
+    /// When set, this variant is prevented from reifying to multiple
+    /// `TypedValue`s.
+    pub no_multiple_values: bool,
 
     /// If present, this variant is excluded from generated reification code.
     /// `to_typed()` will always return `Err(())` for it.

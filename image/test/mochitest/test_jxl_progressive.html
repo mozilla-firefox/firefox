@@ -21,6 +21,15 @@ flushes the gtest sees in raw surface bytes also reach the screen.
 <body onload="SimpleTest.waitForFocus(runTest)">
 <script>
 SimpleTest.waitForExplicitFinish();
+SimpleTest.requestFlakyTimeout("Slow poll to limit snapshotRect canvas churn");
+
+// Wait kPollDelayMs between snapshotRect calls so we don't overwelm test
+// verify android jobs that can hit oom if we do it every frame.
+const kPollDelayMs = 500;
+async function nextPollTick() {
+  await new Promise(r => setTimeout(r, kPollDelayMs));
+  await new Promise(requestAnimationFrame);
+}
 
 function getPixel(imgElement, x, y) {
   let r = imgElement.getBoundingClientRect();
@@ -95,7 +104,7 @@ const stops = [
   },
 ];
 
-const kColorTolerance = 0;
+const kColorTolerance = 1;
 const kStopDiagnosticDeadlineMs = 2 * 60 * 1000;
 
 function pixelsMatch(actual, expected) {
@@ -116,7 +125,7 @@ async function waitForStop(img, stop) {
   let logged = false;
   let deadline = performance.now() + kStopDiagnosticDeadlineMs;
   while (true) {
-    await new Promise(requestAnimationFrame);
+    await nextPollTick();
     let pixels = samplePoints.map(p => getPixel(img, p.x, p.y));
     let allMatch = pixels.every((px, i) => pixelsMatch(px, stop.samples[i]));
     if (allMatch) {

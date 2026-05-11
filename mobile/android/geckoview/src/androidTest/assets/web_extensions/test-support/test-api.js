@@ -300,6 +300,27 @@ this.test = class extends ExtensionAPI {
           ].getService(Ci.nsITrackingDBService);
           await trackingDBService.clearAll();
         },
+
+        async addVirtualAuthenticator() {
+          const webauthnService = Cc[
+            "@mozilla.org/webauthn/service;1"
+          ].getService(Ci.nsIWebAuthnService);
+          return webauthnService.addVirtualAuthenticator(
+            "ctap2_1",
+            "internal",
+            true,
+            true,
+            true,
+            true
+          );
+        },
+
+        async removeVirtualAuthenticator(authenticatorId) {
+          const webauthnService = Cc[
+            "@mozilla.org/webauthn/service;1"
+          ].getService(Ci.nsIWebAuthnService);
+          webauthnService.removeVirtualAuthenticator(authenticatorId);
+        },
       },
     };
   }

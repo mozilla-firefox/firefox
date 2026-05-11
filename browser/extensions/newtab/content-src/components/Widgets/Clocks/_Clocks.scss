@@ -5,9 +5,9 @@
 .nova-enabled .clocks-widget {
   @include widget-base-style;
 
-  &:hover {
-    outline: none;
-  }
+  // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens -- Using newtab variables from _variables.scss.
+  height: var(--newtab-card-height-small);
+  transition: height var(--widget-size-transition-duration) var(--widget-size-transition-easing);
 
   // Mirrors Weather widget grid proportions.
   &.small-widget {
@@ -23,6 +23,8 @@
   &.large-widget {
     grid-column: span 4;
     grid-row: span 4;
+    // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens -- Using newtab variables from _variables.scss.
+    height: var(--newtab-card-height);
   }
 
   .widget-toolbar {
@@ -30,7 +32,7 @@
     inset-block-start: 0;
     inset-inline: 0;
     // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens
-    block-size: 75px;
+    block-size: 75px; // Figma-spec toolbar lane height.
     display: flex;
     align-items: flex-start;
     justify-content: flex-end;
@@ -38,57 +40,63 @@
     padding: var(--space-medium);
     border-start-start-radius: var(--border-radius-large);
     border-start-end-radius: var(--border-radius-large);
-    background: linear-gradient(
-      180deg,
-      var(--newtab-background-card) 16%,
-      color-mix(in srgb, var(--newtab-background-card) 50%, transparent) 96%
-    );
-    backdrop-filter: blur(var(--dimension-2));
     opacity: 0;
-    transition: opacity 160ms ease;
+    // Use shared size-change transition variables from widget-base-style mixin
+    // so all widgets animate size changes consistently.
+    transition:
+      opacity 180ms ease,
+      block-size var(--widget-size-transition-duration) var(--widget-size-transition-easing),
+      padding var(--widget-size-transition-duration) var(--widget-size-transition-easing);
+    pointer-events: none;
     z-index: 1;
 
     // Invisible toolbar shouldn't eat pointer events for the rows below.
     moz-button {
+      opacity: 0;
       pointer-events: none;
+      transform: translateY(-0.125rem);
+      transition:
+        opacity 140ms ease,
+        transform 140ms ease;
     }
 
-    // `type="icon primary"` hits icon styles but not the primary color
-    // (moz-button matches `[type="primary"]` exactly). Apply primary via
-    // ::part(button) so the + button renders solid purple.
-    .clocks-add-button::part(button) {
-      background-color: var(--button-background-color-primary);
-      border-color: var(--button-border-color-primary);
-      color: var(--button-text-color-primary);
-    }
-
-    .clocks-add-button:hover:not([disabled])::part(button) {
-      background-color: var(--button-background-color-primary-hover);
-      color: var(--button-text-color-primary-hover);
-    }
-
-    .clocks-add-button:hover:active:not([disabled])::part(button) {
-      background-color: var(--button-background-color-primary-active);
-      color: var(--button-text-color-primary-active);
-    }
-
-    // Same reason as above: apply primary-disabled (incl. border) so
-    // the maxed-out add button doesn't fall back to grey.
-    .clocks-add-button[disabled]::part(button) {
-      background-color: var(--button-background-color-primary-disabled);
-      border-color: var(--button-border-color-primary-disabled);
-      color: var(--button-text-color-primary-disabled);
+    panel-list {
+      pointer-events: auto;
     }
   }
 
-  .widget-toolbar:hover,
+  // `type="icon primary"` hits icon styles but not the primary color
+  // (moz-button matches `[type="primary"]` exactly). Apply primary via
+  // ::part(button) so the + buttons render solid purple.
+  .clocks-add-button::part(button),
+  .clocks-edit-add-button::part(button) {
+    background-color: var(--button-background-color-primary);
+    border-color: var(--button-border-color-primary);
+    color: var(--button-text-color-primary);
+  }
+
+  .clocks-add-button:hover::part(button),
+  .clocks-edit-add-button:hover::part(button) {
+    background-color: var(--button-background-color-primary-hover);
+    color: var(--button-text-color-primary-hover);
+  }
+
+  .clocks-add-button:hover:active::part(button),
+  .clocks-edit-add-button:hover:active::part(button) {
+    background-color: var(--button-background-color-primary-active);
+    color: var(--button-text-color-primary-active);
+  }
+
+  &:hover .widget-toolbar,
   &:focus-within .widget-toolbar {
     opacity: 1;
   }
 
-  .widget-toolbar:hover moz-button,
+  &:hover .widget-toolbar moz-button,
   &:focus-within .widget-toolbar moz-button {
+    opacity: 1;
     pointer-events: auto;
+    transform: translateY(0);
   }
 
   // Suppress only :hover (not :focus-within) so a keyboard user can
@@ -98,13 +106,261 @@
   }
 
   &.is-dismissed .widget-toolbar:hover moz-button {
+    opacity: 0;
     pointer-events: none;
+    transform: translateY(-0.125rem);
   }
 
   @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
     .widget-toolbar {
       transition: none;
     }
+
+    .widget-toolbar moz-button {
+      transition: none;
+    }
+
+    .clocks-list,
+    .clocks-row,
+    .clocks-meta,
+    .clocks-label,
+    .clocks-city,
+    .clocks-timezone,
+    .clocks-time,
+    .clocks-edit-item,
+    .clocks-edit-item-actions {
+      transition: none;
+    }
+
+    .clocks-edit-item:hover .clocks-edit-item-actions,
+    .clocks-edit-item:focus-within .clocks-edit-item-actions {
+      transition: none;
+    }
+  }
+
+  .clocks-panel {
+    position: absolute;
+    z-index: 2;
+    inset-block-start: var(--space-xsmall);
+    inset-inline-end: var(--space-small);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-medium);
+    // 332px is the Figma-spec overlay width; no design token exists.
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    inline-size: min(332px, calc(100% - var(--space-large)));
+    // Figma-spec panel height; no design token exists.
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    block-size: 276px;
+    padding: var(--space-medium);
+    background: var(--newtab-background-card);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius-large);
+    box-shadow: var(--box-shadow-level-4);
+  }
+
+  .clocks-location-wrapper {
+    position: relative;
+  }
+
+  .clocks-search-location-input {
+    min-inline-size: 0;
+    inline-size: 100%;
+  }
+
+  .clocks-search-results {
+    position: absolute;
+    inset-block-start: calc(100% + var(--space-xxsmall));
+    inset-inline: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xxsmall);
+    // 180px fits ~4–5 results before scrolling; no design token for this size.
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    max-block-size: 180px;
+    overflow-y: auto;
+    padding: var(--space-xsmall);
+    background: var(--newtab-background-card);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius-medium);
+    box-shadow: var(--box-shadow-level-4);
+  }
+
+  .clocks-nickname-input {
+    min-inline-size: 0;
+    inline-size: 100%;
+  }
+
+  .clocks-edit-title {
+    margin: 0;
+    color: var(--text-color);
+    font-size: var(--font-size-root);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .clocks-edit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-small);
+  }
+
+  .clocks-edit-title-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-small);
+    min-inline-size: 0;
+  }
+
+  .clocks-edit-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-small);
+    flex: 1 1 0;
+    min-block-size: 0;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    padding-block-start: var(--space-xxsmall);
+    padding-inline: var(--space-xxsmall);
+    list-style: none;
+  }
+
+  .clocks-edit-panel {
+    flex: 1 1 0;
+    min-block-size: 0;
+  }
+
+  .clocks-edit-item {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--space-xxsmall) / 2);
+    position: relative;
+    padding-block: var(--space-small);
+    padding-inline: var(--space-medium);
+    padding-inline-end: calc(var(--space-medium) * 4);
+    border-radius: var(--button-border-radius);
+    transition: background-color 180ms ease;
+  }
+
+  .clocks-edit-item:hover,
+  .clocks-edit-item:focus-within {
+    // stylelint-disable-next-line stylelint-plugin-mozilla/no-base-design-tokens, stylelint-plugin-mozilla/use-design-tokens
+    background-color: var(--button-background-color-menu-hover, #E7E1F8);
+  }
+
+  .clocks-edit-item:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-inset);
+  }
+
+  .clocks-edit-top-row {
+    display: flex;
+    align-items: center;
+    min-inline-size: 0;
+  }
+
+  .clocks-edit-city {
+    font-size: var(--font-size-small);
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .clocks-edit-item-actions {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    inset-inline-end: var(--space-medium);
+    inset-block: 0;
+    margin-block: auto;
+    block-size: fit-content;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity 180ms ease,
+      visibility 0s linear 180ms;
+  }
+
+  .clocks-edit-item:hover .clocks-edit-item-actions,
+  .clocks-edit-item:focus-within .clocks-edit-item-actions {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity 180ms ease,
+      visibility 0s;
+  }
+
+  .clocks-edit-item-button::part(button) {
+    border: var(--border-width) solid transparent;
+    border-radius: var(--border-radius-circle);
+    block-size: var(--size-item-large);
+    inline-size: var(--size-item-large);
+    padding: var(--space-xsmall);
+
+    --button-icon-fill: var(--icon-color);
+
+    color: var(--icon-color);
+  }
+
+  .clocks-edit-item-button:hover::part(button),
+  .clocks-edit-item-button:focus-visible::part(button) {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/no-base-design-tokens, stylelint-plugin-mozilla/use-design-tokens */
+    border-color: rgb(255 255 255 / 90%);
+  }
+
+  .clocks-edit-subtitle {
+    color: var(--text-color-deemphasized);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight);
+  }
+
+  .clocks-add-actions {
+    margin-block-start: auto;
+    align-self: center;
+  }
+
+  .clocks-search-result {
+    display: flex;
+    align-items: center;
+    gap: var(--space-small);
+    padding-inline: var(--space-small);
+    padding-block: var(--space-xsmall);
+    background: transparent;
+    border: none;
+    border-radius: var(--border-radius-small);
+    color: var(--text-color);
+    font: inherit;
+    text-align: start;
+    cursor: default;
+
+    &:hover,
+    &:focus {
+      background: var(--button-background-color-hover);
+    }
+
+    &:focus-visible {
+      outline: var(--focus-outline);
+      outline-offset: var(--focus-outline-offset);
+    }
+  }
+
+  .clocks-search-result-city,
+  .clocks-search-result-timezone {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .clocks-search-result-timezone {
+    color: var(--text-color-deemphasized);
+    font-size: var(--font-size-small);
   }
 
   .clocks-list {
@@ -113,29 +369,80 @@
     padding: 0;
     display: flex;
     flex: 1 1 auto;
-    min-height: 0;
+    min-block-size: 0;
+    transition:
+      padding-block-start var(--widget-size-transition-duration) var(--widget-size-transition-easing),
+      gap var(--widget-size-transition-duration) var(--widget-size-transition-easing);
+  }
+
+  &:not(.is-panel-open):hover .clocks-list,
+  &:not(.is-panel-open):focus-within .clocks-list {
+    // Reserve header room for the hover controls so they don't overlap the
+    // first visible clock row.
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list */
+    padding-block-start: 2.25rem;
   }
 
   .clocks-row {
     display: flex;
     align-items: center;
     color: var(--text-color);
-    min-width: 0;
+    min-inline-size: 0;
+    transition:
+      gap var(--widget-size-transition-duration) var(--widget-size-transition-easing),
+      padding var(--widget-size-transition-duration) var(--widget-size-transition-easing);
+  }
+
+  .clocks-row-actions {
+    display: none;
+    align-items: center;
+    gap: var(--space-small);
+    margin-inline-start: auto;
+  }
+
+  .clocks-row-action-button::part(button) {
+    border: var(--border-width) solid var(--button-border-color);
+    border-radius: var(--border-radius-circle);
+    block-size: var(--size-item-large);
+    inline-size: var(--size-item-large);
+    padding: var(--space-small);
+
+    --button-icon-fill: var(--icon-color);
+
+    color: var(--icon-color);
+  }
+
+  .clocks-row.has-inline-actions:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-inset);
+    border-radius: var(--border-radius-small);
+  }
+
+  .clocks-row.has-inline-actions:hover .clocks-row-actions,
+  .clocks-row.has-inline-actions:focus-within .clocks-row-actions {
+    display: flex;
+  }
+
+  .clocks-row.has-inline-actions.hides-time-on-inline-actions:hover .clocks-time,
+  .clocks-row.has-inline-actions.hides-time-on-inline-actions:focus-within .clocks-time {
+    display: none;
   }
 
   .clocks-meta {
     display: flex;
     align-items: center;
     gap: var(--space-small);
-    min-width: 0;
+    min-inline-size: 0;
     flex: 1 1 auto;
+    transition: gap var(--widget-size-transition-duration) var(--widget-size-transition-easing);
   }
 
   .clocks-label {
     display: flex;
     flex-direction: column;
-    min-width: 0;
+    min-inline-size: 0;
     gap: var(--space-xxsmall);
+    transition: gap var(--widget-size-transition-duration) var(--widget-size-transition-easing);
   }
 
   .clocks-label-chip {
@@ -195,7 +502,6 @@
     /* stylelint-enable stylelint-plugin-mozilla/no-base-design-tokens, stylelint-plugin-mozilla/use-design-tokens */
   }
 
-  // Chip stacks above city for Large size at 1 or 2 clocks.
   &.large-widget[data-clock-count='1'] .clocks-meta,
   &.large-widget[data-clock-count='2'] .clocks-meta {
     flex-direction: column;
@@ -203,14 +509,13 @@
     gap: var(--space-small);
   }
 
-  // Larger chip on Hero layout (single clock) and 2-clock.
   &.large-widget[data-clock-count='1'] .clocks-label-chip,
   &.large-widget[data-clock-count='2'] .clocks-label-chip {
     padding-block: var(--space-small);
     padding-inline: var(--space-large);
   }
 
-  // Tighter chip on Large size at 3+ clocks. No --space-* token for 6px; literal.
+  // No --space-* token for 6px.
   &.large-widget[data-clock-count='3'] .clocks-label-chip,
   &.large-widget[data-clock-count='4'] .clocks-label-chip {
     // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list
@@ -223,17 +528,22 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: font-size var(--widget-size-transition-duration) var(--widget-size-transition-easing);
   }
 
   .clocks-timezone {
     font-size: var(--font-size-small);
     color: var(--text-color-deemphasized);
+    transition: font-size var(--widget-size-transition-duration) var(--widget-size-transition-easing);
   }
 
   .clocks-time {
     // SF Pro Semibold (590) maps to --font-weight-semibold (600).
     font-weight: var(--font-weight-semibold);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: font-size var(--widget-size-transition-duration) var(--widget-size-transition-easing);
   }
 
   &.small-widget.is-hero {
@@ -265,12 +575,7 @@
       gap: var(--space-xxsmall);
     }
 
-    .clocks-city {
-      font-size: var(--font-size-root);
-    }
-
     .clocks-timezone {
-      font-size: var(--font-size-small);
       display: initial;
     }
 
@@ -281,6 +586,28 @@
   }
 
   &.small-widget {
+    .widget-toolbar {
+      block-size: var(--size-item-large);
+      padding-block-start: var(--space-xxsmall);
+      padding-block-end: 0;
+      padding-inline-end: var(--space-large);
+    }
+
+    .widget-toolbar moz-button::part(button) {
+      // Small 2x2 widgets need a slightly smaller toolbar button so the
+      // keyboard focus ring can fit cleanly in the top-right corner.
+      // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens
+      block-size: 1.75rem;
+      // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens
+      inline-size: 1.75rem;
+    }
+
+    .widget-toolbar moz-button {
+      /* moz-button draws its focus ring from the internal button background
+         using this variable, so tighten the offset at the host level. */
+      --focus-outline-offset: calc(var(--focus-outline-inset) - 1px);
+    }
+
     .clocks-list {
       flex-direction: column;
       justify-content: center;
@@ -301,14 +628,6 @@
       gap: var(--space-xxsmall);
     }
 
-    .clocks-city {
-      font-size: var(--font-size-root);
-    }
-
-    .clocks-timezone {
-      font-size: var(--font-size-small);
-    }
-
     .clocks-time {
       font-size: var(--font-size-root);
     }
@@ -318,7 +637,6 @@
       display: none;
     }
 
-    // 3-clock rows are content-height, spaced via the list gap.
     &[data-clock-count='3'] .clocks-row {
       flex: 0 0 auto;
       padding-block: var(--space-xsmall);
@@ -334,8 +652,52 @@
       .clocks-row {
         flex: 0 0 auto;
         padding-block: var(--space-xxsmall);
+        padding-inline: var(--space-xsmall);
       }
     }
+  }
+
+  &.small-widget:not(.is-panel-open):hover .clocks-list,
+  &.small-widget:not(.is-panel-open):focus-within .clocks-list {
+    justify-content: flex-start;
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list */
+    padding-block-start: 1.75rem;
+  }
+
+  &.small-widget[data-clock-count='2']:not(.is-panel-open):hover .clocks-list,
+  &.small-widget[data-clock-count='2']:not(.is-panel-open):focus-within .clocks-list {
+    /* Two full rows with timezone text need a slightly smaller header lane. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list */
+    padding-block-start: 1.25rem;
+  }
+
+  &.small-widget[data-clock-count='2']:not(.is-panel-open):hover .clocks-row,
+  &.small-widget[data-clock-count='2']:not(.is-panel-open):focus-within .clocks-row {
+    padding-block: var(--space-xsmall);
+  }
+
+  &.small-widget[data-clock-count='4']:not(.is-panel-open):hover .clocks-list,
+  &.small-widget[data-clock-count='4']:not(.is-panel-open):focus-within .clocks-list {
+    /* Only the menu remains at 4 clocks, so reserve less header room. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list */
+    padding-block-start: 1.25rem;
+  }
+
+  &.medium-widget:not(.is-panel-open):hover .clocks-list,
+  &.medium-widget:not(.is-panel-open):focus-within .clocks-list {
+    padding-block-start: var(--space-xxlarge);
+  }
+
+  &.medium-widget[data-clock-count='3']:not(.is-panel-open):hover .clocks-list,
+  &.medium-widget[data-clock-count='3']:not(.is-panel-open):focus-within .clocks-list {
+    /* Dense 3-clock layouts need a smaller header lane to keep the time inside the card. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list */
+    padding-block-start: 1.25rem;
+  }
+
+  &.medium-widget[data-clock-count='3']:not(.is-panel-open):hover .clocks-row,
+  &.medium-widget[data-clock-count='3']:not(.is-panel-open):focus-within .clocks-row {
+    padding-block: var(--space-small);
   }
 
   // 10px inline padding has no --space-* token (scale jumps 0.5->0.75rem).
@@ -384,18 +746,79 @@
       align-self: flex-start;
     }
 
+    &[data-clock-count='3'] .clocks-time {
+      // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list
+      font-size: calc(var(--font-size-heading-large) - 3px);
+    }
+
     &[data-clock-count='4'] .clocks-time {
-      font-size: var(--font-size-heading-medium);
+      align-self: center;
+      // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens
+      font-size: var(--font-size-heading-small);
+      text-align: center;
+    }
+
+    &[data-clock-count='4'] {
+      .clocks-list {
+        gap: var(--space-xsmall);
+      }
+
+      .clocks-row {
+        padding-block: var(--space-xsmall);
+        // No --space-* token for 6px.
+        // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list
+        padding-inline: 0.375rem;
+        gap: var(--space-xxsmall);
+      }
+
+      .clocks-row + .clocks-row::before {
+        inset-inline-start: calc(var(--space-xxsmall) * -1);
+        inset-block: var(--space-xxsmall);
+      }
+
+      .clocks-row-actions {
+        align-self: center;
+        gap: var(--space-xsmall);
+        margin-inline: 0;
+      }
+
+      .clocks-row-action-button::part(button) {
+        // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens
+        block-size: 1.75rem;
+        // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens
+        inline-size: 1.75rem;
+        padding: var(--space-xsmall);
+      }
     }
   }
 
   &.medium-widget.is-hero {
+    .clocks-list {
+      padding-block-start: 0;
+    }
+
     .clocks-row {
       align-items: stretch;
+    }
+
+    .clocks-row-actions {
+      position: absolute;
+      inset-inline-end: 0;
+      inset-block-end: 0;
+      margin: 0;
     }
   }
 
   &.large-widget {
+    .widget-toolbar {
+      padding-block-start: var(--space-small);
+      padding-inline-end: var(--space-large);
+    }
+
+    .widget-toolbar moz-button {
+      --focus-outline-offset: var(--focus-outline-inset);
+    }
+
     .clocks-list {
       flex-direction: column;
     }
@@ -404,6 +827,8 @@
       flex: 1 1 0;
       justify-content: space-between;
       gap: var(--space-medium);
+      padding-inline-start: var(--space-medium);
+      padding-inline-end: var(--space-xlarge);
       position: relative;
     }
 
@@ -418,6 +843,10 @@
       // No dedicated "divider" token; --border-color is the semantic fit.
       // stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens
       background: var(--border-color);
+    }
+
+    .clocks-row-actions {
+      margin-inline-end: var(--space-small);
     }
 
     // 2-clock: 16px row gap; 3+: 8px. Divider offsets below centre in each.
@@ -435,6 +864,8 @@
     &[data-clock-count='4'] {
       .clocks-list {
         gap: var(--space-small);
+        padding-block-start: 0;
+        transition-property: gap;
       }
 
       .clocks-row + .clocks-row::before {
@@ -448,10 +879,6 @@
   }
 
   &.large-widget.is-hero {
-    .clocks-list {
-      flex-direction: column;
-    }
-
     .clocks-row {
       flex: 1 1 auto;
       flex-direction: column;
@@ -460,13 +887,11 @@
     }
 
     .clocks-label {
-      flex-direction: column;
       gap: var(--space-xsmall);
     }
 
     .clocks-city {
       font-size: var(--font-size-heading-xlarge);
-      font-weight: var(--font-weight);
     }
 
     .clocks-timezone {
@@ -475,15 +900,32 @@
     }
 
     .clocks-time {
-      // 64px doesn't map to any standard font-size token.
+      // 56px doesn't map to any standard font-size token.
       /* stylelint-disable-next-line declaration-property-value-disallowed-list, stylelint-plugin-mozilla/use-design-tokens */
-      font-size: 64px;
+      font-size: 56px;
       align-self: flex-start;
+    }
+
+    .clocks-row-actions {
+      position: absolute;
+      inset-inline-end: 0;
+      inset-block-end: 0;
+      margin: 0;
     }
 
     // Labeled Hero shrinks TZ (22 to 17px) so chip + TZ don't stack too tall.
     .clocks-meta:has(.clocks-label-chip) .clocks-timezone {
       font-size: var(--font-size-heading-medium);
     }
+  }
+
+  &.large-widget.is-hero:not(.is-panel-open):hover .clocks-list,
+  &.large-widget.is-hero:not(.is-panel-open):focus-within .clocks-list {
+    padding-block-start: 0;
+  }
+
+  &.large-widget[data-clock-count='2']:not(.is-panel-open):hover .clocks-list,
+  &.large-widget[data-clock-count='2']:not(.is-panel-open):focus-within .clocks-list {
+    padding-block-start: 0;
   }
 }

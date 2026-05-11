@@ -102,6 +102,10 @@ private fun CardView(
 
                 Content(pageState, isSmallDevice)
 
+                pageState.secondaryButton?.let {
+                    SecondaryButton(title = pageState.title, secondaryButton = it)
+                }
+
                 FilledButton(
                     modifier = Modifier
                         .width(width = FirefoxTheme.layout.size.maxWidth.small)
@@ -111,10 +115,6 @@ private fun CardView(
                     text = pageState.primaryButton.text,
                     onClick = pageState.primaryButton.onClick,
                 )
-
-                pageState.secondaryButton?.let {
-                    SecondaryButton(title = pageState.title, secondaryButton = it)
-                }
             }
         }
     }

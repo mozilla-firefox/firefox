@@ -373,18 +373,42 @@
     Title for the AI controls settings screen
   -->
   <string name="preferences_ai_controls">Унсурҳои идоракунии зеҳни сунъӣ (AI)</string>
+  <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_banner_headline">Шумо ҳамеша дар барномаи «%s» интихоб доред</string>
+  <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
+  <string name="ai_controls_banner_supporting_text_2">Ин бахш имконияти истифодаи ҳусусиятҳои такмилёфтаро тавассути зеҳни сунъӣ (AI) дар бар мегирад. %s</string>
+  <!-- Supporting text for the AI controls banner -->
+  <string name="ai_controls_banner_supporting_text">Ин бахш имконияти истифодаи ҳусусиятҳои такмилёфтаро тавассути зеҳни сунъӣ (AI) дар бар мегирад.</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">Маълумоти бештар</string>
   <!-- Title for the block AI enhancements toggle -->
   <string name="ai_controls_block_ai_title">Манъ кардани такмилҳои зеҳни сунъӣ (AI)</string>
+  <!-- Description for the block AI enhancements toggle. %s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_block_ai_description">Амали манъкунӣ маънои онро дорад, ки шумо дар барномаи «%s» такмилҳои нав ё ҷории зеҳни сунъиро (AI) намебинед, аз он ҷумла маълумот дар бораи онҳо тавассути равзанаҳои зоҳиршаванда.</string>
+  <!-- Link text to see what AI enhancements are and aren’t included -->
+  <string name="ai_controls_see_whats_included">Озмоед, ки чӣ дохил карда шудааст ва чӣ дохил карда нашудааст</string>
+  <!-- Banner text shown when AI enhancements are blocked -->
+  <string name="ai_controls_blocked_info_banner">Такмилҳои нав ё ҷории зеҳни сунъӣ (AI) ба таври пешфарз манъ карда мешаванд. Хусусиятҳои мушаххасро дар зер кушоед.</string>
+  <!-- Section header for the AI-powered features list -->
+  <string name="ai_controls_ai_powered_features">Хусусиятҳои зеҳни сунъӣ (AI)</string>
   <!-- Title for the translations AI feature toggle -->
   <string name="ai_controls_translations_title">Тарҷумаҳо</string>
   <!-- Description for the translations AI feature toggle -->
   <string name="ai_controls_translations_description">Ҳамаи тарҷумаҳо дар дастгоҳи шумо ба таври махфӣ мемонанд.</string>
   <!-- Link text to navigate to more translations settings -->
   <string name="ai_controls_more_translations_settings">Танзимоти иловагии тарҷума</string>
+  <!-- Link text to navigate to more page summary settings -->
+  <string name="ai_controls_more_page_summary_settings">Танзимоти иловагии хулосаи саҳифа</string>
   <!-- Title for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_title">Ҷустуҷӯи овозӣ</string>
+  <!-- Description for the voice search AI feature toggle -->
+  <string name="ai_controls_voice_search_description">Аудио тавассути «Google Speech Services» ба матн табдил дода мешавад.</string>
+  <!-- Title for the block AI enhancements confirmation dialog -->
+  <string name="ai_controls_block_dialog_title">Такмилҳои зеҳни сунъӣ (AI)-ро манъ мекунед?</string>
+  <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_block_dialog_body">Шумо дар барномаи «%1$s» такмилдиҳии нав ё ҷории зеҳни сунъӣ ё равзанаҳои зоҳиршавандаро дар бораи онҳо дигар намебинед. Пас аз ин, барои идомаи истифодаи чизҳои дилхоҳ шумо метавонед ҳамаи онҳоро боз кунед.\n\nАмали манъкунӣ, инчунин, ба васеъшавиҳое, ки зеҳни сунъӣ (AI)-ро аз ҷониби «%1$s» истифода мебаранд, таъсир мерасонад.</string>
+  <!-- Label shown above the list of features that will be blocked in the block AI dialog -->
+  <string name="ai_controls_block_dialog_what_will_be_blocked">Чӣ манъ карда мешавад:</string>
   <!-- Cancel button text in the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_cancel">Бекор кардан</string>
   <!-- Block button text in the block AI enhancements confirmation dialog -->
@@ -1101,6 +1125,8 @@
   <string name="customize_wallpapers">Тасвирҳои замина</string>
   <!-- Title for the customize home screen section with sponsored shortcuts. -->
   <string name="customize_toggle_contile">Миёнбурҳои сарпарастӣ</string>
+  <!-- Title for the customize home screen section that toggles the Homepage sports widget. -->
+  <string name="customize_toggle_world_cup" tools:ignore="UnusedResources">Ҷоми ҷаҳон</string>
   <!--
     Wallpapers
 
@@ -1417,6 +1443,8 @@
   <!-- Preference for using the dynamic toolbar -->
   <string name="preference_gestures_dynamic_toolbar">Барои пинҳон кардани навори абзорҳо ҳаракат кунед</string>
   <!-- Preference for showing the opened tabs by swiping up on the toolbar -->
+  <string name="preference_gestures_swipe_toolbar_show_tabs_2">Барои дидани варақаҳои кушодашуда, аз болои навори абзорҳо ба таври амудӣ бо ангуш молед</string>
+  <!-- Preference for showing the opened tabs by swiping up on the toolbar -->
   <string name="preference_gestures_swipe_toolbar_show_tabs">Барои кушодани варақаҳо аз болои навори абзорҳо ба боло бо ангуш молед</string>
   <!-- Preference for switching tabs by swiping horizontally on the addressbar -->
   <string name="preference_gestures_swipe_toolbar_switch_tabs_2">Барои иваз кардани варақаҳо аз болои навори нишонӣ ба тарафи лозимӣ бо ангуш молед</string>
@@ -1584,6 +1612,14 @@
     The %1$s will be replaced by the number of opened private tabs
   -->
   <string name="tabs_header_private_tabs_counter_title">Варақаҳои хусусии кушодашуда: %1$s. Барои гузариш байни варақаҳо зарба занед.</string>
+  <plurals name="tabs_header_tab_group_counter_title">
+    <!--
+      Title for the list of tab groups used by a11y services
+      The %1$d will be replaced by the number of opened tab groups
+    -->
+    <item quantity="one">%1$d гурӯҳи варақаҳо кушода аст. Барои гузариш байни варақаҳо зарба занед.</item>
+    <item quantity="other">%1$d гурӯҳи варақаҳо кушодаанд. Барои гузариш байни варақаҳо зарба занед.</item>
+  </plurals>
   <!--
     Title for the list of tabs in the synced tabs used by a11y services
     The %1$s will be replaced by the number of opened synced tabs
@@ -1682,6 +1718,8 @@
   <!-- Title for the edit tab group bottom sheet -->
   <string name="edit_tab_group_title">Таҳрир кардани гурӯҳ</string>
   <string name="create_tab_group_save_button">Нигоҳ доштан</string>
+  <!-- Description for the handle at the top of a bottom sheet, used to drag the sheet up or down. -->
+  <string name="edit_tab_group_bottom_sheet_grabber_content_description">Гурӯҳи нав, дастаки таҳвилро печонед</string>
   <string name="edit_tab_group_bottom_sheet_close_content_description">Пӯшидани реҷаи таҳрири гурӯҳи варақаҳо</string>
   <!-- Default tab group name when creating a tab group -->
   <string name="create_tab_group_default_name" tools:ignore="UnusedResources" moz:removedIn="150">Гурӯҳ</string>
@@ -1697,6 +1735,10 @@
   <!-- Title for adding more tabs to a tab group. -->
   <string name="add_to_tab_group_title">Илова кардан ба</string>
   <!-- Content Description for closing the "Add to Tab Group" panel. -->
+  <string name="add_to_tab_group_bottom_sheet_grabber_content_description">Ба гурӯҳи варақаҳо илова кунед, дастаки таҳвилро печонед</string>
+  <!-- Content Description for "New tab group" panel. -->
+  <string name="add_to_new_tab_group_content_description">Ба гурӯҳи нави варақаҳо илова кунед</string>
+  <!-- Content Description for closing the "Add to Tab Group" panel. -->
   <string name="add_to_tab_group_bottom_sheet_close_content_description">Пӯшидани имкони иловакунӣ ба гурӯҳи варақаҳо</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Варақаи нави гурӯҳ</string>
@@ -1708,6 +1750,25 @@
     <item quantity="one">%1$d варақа</item>
     <item quantity="other">%1$d варақа</item>
   </plurals>
+  <plurals name="add_to_exiting_tab_group_content_description">
+    <!--
+      Accessibility description for add to existing tab group.
+      %1$s is the group name, %2$d is the number of tabs, %3$s is the color name.
+    -->
+    <item quantity="one">Илова кардан ба гурӯҳи варақаҳои «%1$s», %2$d варақа, ранги «%3$s»</item>
+    <item quantity="other">Илова кардан ба гурӯҳи варақаҳои «%1$s», %2$d варақа, ранги «%3$s»</item>
+  </plurals>
+  <plurals name="share_tab_group_button_content_description">
+    <!--
+      Content Description for share tab group button.
+      %1$s is the name of the tab group.
+      %2$d is the number of tabs in a tab group.
+    -->
+    <item quantity="one">Мубодила кардани гурӯҳи варақаҳои «%1$s» бо %2$d варақа.</item>
+    <item quantity="other">Мубодила кардани гурӯҳи варақаҳои «%1$s» бо %2$d варақа.</item>
+  </plurals>
+  <!-- Content description for the grabber/handle of the tab group bottom sheet. -->
+  <string name="tab_group_sheet_dismiss_description">Гурӯҳи варақаҳоро нишон диҳед, дастаки таҳвилро печонед</string>
   <!-- Title for the Delete tab group confirmation dialog. -->
   <string name="delete_tab_group_confirmation_dialog_title">Гурӯҳи варақаҳоро нест мекунед?</string>
   <!-- Text shown in the body of the Delete tab group confirmation dialog. -->
@@ -1716,6 +1777,14 @@
   <string name="delete_tab_group_confirmation_dialog_confirm">Нест кардани гурӯҳ</string>
   <!-- Text shown on the cancel button in the Delete tab group confirmation dialog. -->
   <string name="delete_tab_group_confirmation_dialog_cancel">Бекор кардан</string>
+  <!-- Title for the Close last tab and delete tab group confirmation dialog. -->
+  <string name="close_tab_and_delete_group_confirmation_dialog_title">Варақаҳоро мепӯшед ва гурӯҳро нест мекунед?</string>
+  <!-- Text shown in the body of the Close last tab and delete tab group confirmation dialog. -->
+  <string name="close_tab_and_delete_group_confirmation_dialog_body">Ин амал гурӯҳро бебозгашт нест мекунад.</string>
+  <!-- Text shown on the confirm button in the Close last tab and delete tab group confirmation dialog. -->
+  <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Нест кардани гурӯҳ</string>
+  <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
+  <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Бекор кардан</string>
   <!--
     Color labels for tab groups, used for accessibility and selection UI.
 
@@ -3062,6 +3131,12 @@
   <string name="ip_protection_promo_headline">«VPN»-и дарунсохти «%s»\u0020</string>
   <!-- Link text that opens additional information about the browser VPN -->
   <string name="ip_protection_learn_more">Маълумоти бештар</string>
+  <!--
+    Data usage shown on the browser VPN settings screen.
+    %1$.1f is the data remaining in GB (for example "8.3").
+    %2$.1f is the total monthly allowance in GB (for example "50.0").
+  -->
+  <string name="ip_protection_data_limit_value">%1$.1f ГБ аз %2$.1f ГБ боқӣ мондааст</string>
   <!-- Header for the browser VPN `location` section -->
   <string name="ip_protection_location_section">Ҷойгиршавӣ</string>
   <!-- Label for the recommended automatic location option on the browser VPN settings screen -->
@@ -3084,6 +3159,8 @@
   <string name="ip_protection_toolbar_pill_description" tools:ignore="UnusedResources">«VPN» фаъол аст.</string>
   <!-- Label for the button that starts the browser VPN authentication or authorization flow on the settings screen -->
   <string name="ip_protection_get_started">Оғози кор</string>
+  <!-- Label for the dismiss button on the onboarding bottom sheet. -->
+  <string name="ip_protection_onboarding_not_now_button">Ҳоло не</string>
   <!--
     Autofill
 
@@ -4320,10 +4397,36 @@
   <string name="sports_widget_confederation_asia" tools:ignore="UnusedResources">Осиё</string>
   <!-- Section header for the Europe confederation group in the sports widget country selector. -->
   <string name="sports_widget_confederation_europe" tools:ignore="UnusedResources">Аврупо</string>
+  <!-- Title shown on the sports widget champion scoreboard celebrating the soccer tournament third place winners. -->
+  <string name="sports_widget_third_place_title" tools:ignore="UnusedResources">Ҷойи сеюм</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="sports_widget_error_refresh">Нав кардан</string>
+  <!-- Sports widget group stage label for group A in the soccer tournament. -->
+  <string name="sports_widget_group_a" tools:ignore="UnusedResources">Гурӯҳи «A»</string>
+  <!-- Sports widget group stage label for group B in the soccer tournament. -->
+  <string name="sports_widget_group_b" tools:ignore="UnusedResources">Гурӯҳи «B»</string>
+  <!-- Sports widget group stage label for group C in the soccer tournament. -->
+  <string name="sports_widget_group_c" tools:ignore="UnusedResources">Гурӯҳи «C»</string>
+  <!-- Sports widget group stage label for group F in the soccer tournament. -->
+  <string name="sports_widget_group_f" tools:ignore="UnusedResources">Гурӯҳи «F»</string>
+  <!-- Sports widget group stage label for group G in the soccer tournament. -->
+  <string name="sports_widget_group_g" tools:ignore="UnusedResources">Гурӯҳи «G»</string>
+  <!-- Sports widget group stage label for group H in the soccer tournament. -->
+  <string name="sports_widget_group_h" tools:ignore="UnusedResources">Гурӯҳи «H»</string>
+  <!-- Sports widget group stage label for group I in the soccer tournament. -->
+  <string name="sports_widget_group_i" tools:ignore="UnusedResources">Гурӯҳи «I»</string>
+  <!-- Sports widget group stage label for group J in the soccer tournament. -->
+  <string name="sports_widget_group_j" tools:ignore="UnusedResources">Гурӯҳи «J»</string>
+  <!-- Sports widget group stage label for group K in the soccer tournament. -->
+  <string name="sports_widget_group_k" tools:ignore="UnusedResources">Гурӯҳи «K»</string>
   <!-- Sports widget group stage label for group L in the soccer tournament. -->
   <string name="sports_widget_group_l" tools:ignore="UnusedResources">Гурӯҳи «L»</string>
   <!-- Sports widget button label to see match results. -->
   <string name="sports_widget_see_results" tools:ignore="UnusedResources">Дидани натиҷаҳо</string>
+  <!-- Sports widget button label to view details of a soccer match results. -->
+  <string name="sports_widget_view_match_details" tools:ignore="UnusedResources">Дидани тафсилоти бозӣ</string>
+  <!-- Sports widget section header for related soccer matches in the same group. -->
+  <string name="sports_widget_related_matches">Бозиҳои марбут</string>
   <!-- Sports widget match status suffix appended to match scores (e.g., "3 - 2 (Full time)") to indicate the match has been completed. -->
   <string name="sports_widget_match_full_time_suffix">(Вақти пурра)</string>
   <!-- Sports widget match status to indicate the match has been completed. -->

@@ -6,19 +6,15 @@
 
 #include "gfxVR.h"
 
-#ifndef M_PI
-#  define M_PI 3.14159265358979323846
-#endif
-
 using namespace mozilla;
 using namespace mozilla::gfx;
 
 Matrix4x4 VRFieldOfView::ConstructProjectionMatrix(float zNear, float zFar,
                                                    bool rightHanded) const {
-  float upTan = tan(upDegrees * M_PI / 180.0);
-  float downTan = tan(downDegrees * M_PI / 180.0);
-  float leftTan = tan(leftDegrees * M_PI / 180.0);
-  float rightTan = tan(rightDegrees * M_PI / 180.0);
+  float upTan = tan(upDegrees * kRadPerDegree);
+  float downTan = tan(downDegrees * kRadPerDegree);
+  float leftTan = tan(leftDegrees * kRadPerDegree);
+  float rightTan = tan(rightDegrees * kRadPerDegree);
 
   float handednessScale = rightHanded ? -1.0 : 1.0;
 

@@ -50,6 +50,10 @@
   margin-inline: var(--tab-inner-inline-margin);
   margin-block-end: var(--space-small);
   min-height: 2px;
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("browser.nova.enabled") {
+    min-height: 4px;
+  }
 
   /* stylelint-disable-next-line media-query-no-invalid */
   @media -moz-pref("browser.nova.enabled") {

@@ -2,6 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+const { AppConstants } = ChromeUtils.importESModule(
+  "resource://gre/modules/AppConstants.sys.mjs"
+);
+
 function run_test() {
   var formatter = Services.urlFormatter;
   var locale = Services.locale.appLocaleAsBCP47;
@@ -91,10 +95,12 @@ function run_test() {
     "http://test.mozilla.com/[trimmed-google-api-key]/?val=[trimmed-google-api-key]"
   );
 
-  let url_gls =
-    "http://test.mozilla.com/%GOOGLE_LOCATION_SERVICE_API_KEY%/?val=%GOOGLE_LOCATION_SERVICE_API_KEY%";
-  Assert.equal(
-    formatter.trimSensitiveURLs(formatter.formatURL(url_gls)),
-    "http://test.mozilla.com/[trimmed-google-api-key]/?val=[trimmed-google-api-key]"
-  );
+  if (AppConstants.platform !== "win") {
+    let url_gls =
+      "http://test.mozilla.com/%GOOGLE_LOCATION_SERVICE_API_KEY%/?val=%GOOGLE_LOCATION_SERVICE_API_KEY%";
+    Assert.equal(
+      formatter.trimSensitiveURLs(formatter.formatURL(url_gls)),
+      "http://test.mozilla.com/[trimmed-google-api-key]/?val=[trimmed-google-api-key]"
+    );
+  }
 }

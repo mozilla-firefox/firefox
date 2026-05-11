@@ -51,20 +51,22 @@ need to download a Marionette client or use the in-tree client.
   at a Python command prompt][2]
 * Start [writing and running][3] tests
 * Tips on [debugging][4] Marionette code
-* [Download and setup the Marionette JS client][5]
-* [Protocol definition][6]
+* [Protocol definition][5]
 
 [1]: /python/marionette_driver.rst
 [2]: /python/marionette_driver.rst
 [3]: PythonTests.md
 [4]: Debugging.md
-[5]: https://github.com/mozilla-b2g/marionette_js_client
-[6]: Protocol.md
+[5]: Protocol.md
 
 ## Bugs
 
-Please file any bugs you may find in the `Testing :: Marionette`
-component in Bugzilla.  You can view a [list of current bugs]
-to see if your problem is already being addressed.
+Please file any bugs you may find in the `Remote Protocol :: Marionette`
+component in Bugzilla for issues with the Marionette server, or
+`Testing :: Marionette Client and Harness` for issues with the Python
+client or test harness.  You can view a list of current bugs for the
+[server] or [client and harness] to see if your problem is already
+being addressed.
 
-[list of current bugs]: https://bugzilla.mozilla.org/buglist.cgi?product=Testing&component=Marionette
+[server]: https://bugzilla.mozilla.org/buglist.cgi?product=Remote%20Protocol&component=Marionette&resolution=---
+[client and harness]: https://bugzilla.mozilla.org/buglist.cgi?product=Testing&component=Marionette%20Client%20and%20Harness&resolution=---

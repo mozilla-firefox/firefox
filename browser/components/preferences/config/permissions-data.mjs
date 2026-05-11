@@ -56,6 +56,7 @@ Preferences.addAll([
   { id: "browser.crashReports.unsubmittedCheck.autoSubmit2", type: "bool" },
 
   { id: PREF_NORMANDY_ENABLED, type: "bool" },
+  { id: "nimbus.rollouts.enabled", type: "bool" },
 ]);
 
 // Study opt out

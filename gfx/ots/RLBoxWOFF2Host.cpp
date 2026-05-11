@@ -29,15 +29,17 @@ tainted_woff2<BrotliDecoderResult> RLBoxBrotliDecoderDecompressCallback(
 
   size_t encodedSize =
       aEncodedSize.unverified_safe_because("Any size within sandbox is ok.");
-  const uint8_t* encodedBuffer = reinterpret_cast<const uint8_t*>(
-      aEncodedBuffer.unverified_safe_pointer_because(
-          encodedSize, "Pointer fits within sandbox"));
+  const uint8_t* encodedBuffer =
+      rlbox::sandbox_reinterpret_cast<const uint8_t*>(aEncodedBuffer)
+          .unverified_safe_pointer_because(encodedSize,
+                                           "Pointer fits within sandbox");
 
   size_t decodedSize =
       (*aDecodedSize).unverified_safe_because("Any size within sandbox is ok.");
   uint8_t* decodedBuffer =
-      reinterpret_cast<uint8_t*>(aDecodedBuffer.unverified_safe_pointer_because(
-          decodedSize, "Pointer fits within sandbox"));
+      rlbox::sandbox_reinterpret_cast<uint8_t*>(aDecodedBuffer)
+          .unverified_safe_pointer_because(decodedSize,
+                                           "Pointer fits within sandbox");
 
   BrotliDecoderResult res = BrotliDecoderDecompress(
       encodedSize, encodedBuffer, &decodedSize, decodedBuffer);

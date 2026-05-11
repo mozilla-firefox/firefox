@@ -36,6 +36,7 @@
 #include "nsAHtml5TreeBuilderState.h"
 #include "nsAtom.h"
 #include "nsContentUtils.h"
+#include "nsGkAtoms.h"
 #include "nsHtml5ArrayCopy.h"
 #include "nsHtml5AtomTable.h"
 #include "nsHtml5DocumentMode.h"
@@ -513,6 +514,7 @@ class nsHtml5TreeBuilder : public nsAHtml5TreeBuilderState {
   nsIContentHandle* createHtmlElementSetAsRoot(
       nsHtml5HtmlAttributes* attributes);
   void detachFromParent(nsIContentHandle* element);
+  void optionElementPopped(nsIContentHandle* option);
   bool hasChildren(nsIContentHandle* element);
   void appendElement(nsIContentHandle* child, nsIContentHandle* newParent);
   void appendChildrenToNewParent(nsIContentHandle* oldParent,

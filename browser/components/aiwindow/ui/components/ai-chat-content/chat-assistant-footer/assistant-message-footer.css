@@ -18,12 +18,19 @@
 }
 
 moz-button.footer-icon-button {
-  --button-icon-fill: light-dark(var(--color-gray-70), var(--color-white));
-  --button-padding: var(--chat-assistant-footer-button-padding);
-  --button-background-color-ghost-hover: var(--chat-assistant-footer-button-bg-hover);
-  --button-border-color-ghost-hover: var(--chat-assistant-footer-button-border-hover);
-  --button-background-color-ghost-active: var(--chat-assistant-footer-button-bg-active);
-  --button-border-color-ghost-active: var(--chat-assistant-footer-button-border-active);
+  @media not (forced-colors) {
+    --button-icon-fill: light-dark(var(--color-gray-70), var(--color-white));
+    --button-padding: var(--chat-assistant-footer-button-padding);
+    --button-background-color-ghost-hover: var(--chat-assistant-footer-button-bg-hover);
+    --button-border-color-ghost-hover: var(--chat-assistant-footer-button-border-hover);
+    --button-background-color-ghost-active: var(--chat-assistant-footer-button-bg-active);
+    --button-border-color-ghost-active: var(--chat-assistant-footer-button-border-active);
+
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("browser.nova.enabled") {
+      --button-icon-fill: var(--smartwindow-icon-color-accent-primary-desaturated);
+    }
+  }
 }
 
 .thumbs-up-button,

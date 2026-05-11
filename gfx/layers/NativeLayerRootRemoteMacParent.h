@@ -42,7 +42,7 @@ class NativeLayerRootRemoteMacParent final : public NativeLayerRemoteParent {
   void HandleLayerInfo(uint64_t aID, IntPoint aPosition, IntRect aDisplayRect,
                        Maybe<IntRect> aClipRect,
                        Maybe<RoundedRect> aRoundedClipRect,
-                       Matrix4x4 aTransform, int8_t aSamplingFilter,
+                       Matrix4x4 aTransform, SamplingFilter aSamplingFilter,
                        bool aSurfaceIsFlipped);
   void HandleChangedSurface(uint64_t aID, IOSurfacePort aSurfacePort,
                             bool aIsDRM, bool aIsHDR, IntSize aSize);

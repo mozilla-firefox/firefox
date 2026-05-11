@@ -3454,21 +3454,16 @@ static nscoord ComputeWhereToScroll(WhereToScroll aWhereToScroll,
 static WhereToScroll GetApplicableWhereToScroll(
     const ScrollContainerFrame* aScrollContainerFrame,
     const nsIFrame* aScrollableFrame, const nsIFrame* aTarget,
-    ScrollDirection aScrollDirection, WhereToScroll aOriginal) {
+    ScrollDirection aScrollDirection, WhereToScroll aOriginal,
+    WhereToScroll aAutoDefault) {
   MOZ_ASSERT(do_QueryFrame(aScrollContainerFrame) == aScrollableFrame);
 
   if (!aOriginal.mIsAuto) {
     return aOriginal;
   }
 
-  // "auto": fall back to spec defaults (start for block/vertical, nearest for
-  // inline/horizontal) if no snap alignment applies.
-  const WhereToScroll fallback = aScrollDirection == ScrollDirection::eVertical
-                                     ? WhereToScroll{WhereToScroll::Start}
-                                     : WhereToScroll{WhereToScroll::Nearest};
-
   if (aTarget == aScrollableFrame) {
-    return fallback;
+    return aAutoDefault;
   }
 
   StyleScrollSnapAlignKeyword align =
@@ -3478,7 +3473,7 @@ static WhereToScroll GetApplicableWhereToScroll(
 
   switch (align) {
     case StyleScrollSnapAlignKeyword::None:
-      return fallback;
+      return aAutoDefault;
     case StyleScrollSnapAlignKeyword::Start:
       return WhereToScroll::Start;
     case StyleScrollSnapAlignKeyword::Center:
@@ -3486,7 +3481,7 @@ static WhereToScroll GetApplicableWhereToScroll(
     case StyleScrollSnapAlignKeyword::End:
       return WhereToScroll::End;
   }
-  return fallback;
+  return aAutoDefault;
 }
 
 static ScrollMode GetScrollModeForScrollIntoView(
@@ -3537,7 +3532,8 @@ static Maybe<nsPoint> ScrollToShowRect(
     const nsIFrame* aScrollableFrame, const nsIFrame* aTarget,
     const nsRect& aRect, const Sides aScrollPaddingSkipSides,
     const nsMargin& aMargin, AxisScrollParams aVertical,
-    AxisScrollParams aHorizontal, ScrollFlags aScrollFlags) {
+    AxisScrollParams aHorizontal, ScrollFlags aScrollFlags,
+    WhereToScroll aVerticalAutoDefault, WhereToScroll aHorizontalAutoDefault) {
   nsPoint scrollPt = aScrollContainerFrame->GetVisualViewportOffset();
   const nsPoint originalScrollPt = scrollPt;
   const nsRect visibleRect(scrollPt,
@@ -3575,7 +3571,8 @@ static Maybe<nsPoint> ScrollToShowRect(
                             visibleRect.YMost() - padding.bottom)) {
       WhereToScroll whereToScroll = GetApplicableWhereToScroll(
           aScrollContainerFrame, aScrollableFrame, aTarget,
-          ScrollDirection::eVertical, aVertical.mWhereToScroll);
+          ScrollDirection::eVertical, aVertical.mWhereToScroll,
+          aVerticalAutoDefault);
 
       const auto result = ComputeWhereToScrollAndRange(
           whereToScroll, scrollPt.y, rectToScrollIntoView.y,
@@ -3594,7 +3591,8 @@ static Maybe<nsPoint> ScrollToShowRect(
                             visibleRect.XMost() - padding.right)) {
       WhereToScroll whereToScroll = GetApplicableWhereToScroll(
           aScrollContainerFrame, aScrollableFrame, aTarget,
-          ScrollDirection::eHorizontal, aHorizontal.mWhereToScroll);
+          ScrollDirection::eHorizontal, aHorizontal.mWhereToScroll,
+          aHorizontalAutoDefault);
 
       const auto result = ComputeWhereToScrollAndRange(
           whereToScroll, scrollPt.x, rectToScrollIntoView.x,
@@ -3885,6 +3883,14 @@ bool PresShell::ScrollFrameIntoView(
   // to physical axes/directions here.
   // XXX Maybe we should convert more of the following code to logical axes,
   // if it's convenient for more callers to work that way?
+
+  // The default of WhereToScroll for physical vertical/horizontal axes:
+  // block-start (top) and inline-nearest respectively, matching the spec for
+  // horizontal writing modes. These are overridden below when AxesAreLogical is
+  // set.
+  WhereToScroll verticalAutoDefault = WhereToScroll::Start;
+  WhereToScroll horizontalAutoDefault = WhereToScroll::Nearest;
+
   if (aScrollFlags & ScrollFlags::AxesAreLogical) {
     // The aVertical parameter actually refers to the element's block axis,
     // and aHorizontal to its inline axis. Potentially reverse/swap them,
@@ -3906,6 +3912,13 @@ bool PresShell::ScrollFrameIntoView(
     }
     if (wm.IsVertical()) {
       std::swap(aVertical, aHorizontal);
+
+      // After the swap, physical vertical = inline and physical horizontal =
+      // block for vertical writing modes. Compute auto defaults accordingly.
+      verticalAutoDefault = WhereToScroll::Nearest;
+      horizontalAutoDefault = wm.IsVerticalRL()
+                                  ? WhereToScroll{WhereToScroll::End}
+                                  : WhereToScroll{WhereToScroll::Start};
     }
     // Remove the AxesAreLogical flag, to make it clear that methods we call
     // always get physical axes from here on.
@@ -4020,7 +4033,8 @@ bool PresShell::ScrollFrameIntoView(
         AutoWeakFrame wf(container);
         Maybe<nsPoint> destination = ScrollToShowRect(
             sf, container, target, targetRect, skipPaddingSides, scrollMargin,
-            aVertical, aHorizontal, aScrollFlags);
+            aVertical, aHorizontal, aScrollFlags, verticalAutoDefault,
+            horizontalAutoDefault);
         if (!wf.IsAlive()) {
           return didScroll;
         }

@@ -110,13 +110,7 @@ class Animation : public DOMEventTargetHelper,
   virtual void SetEffect(AnimationEffect* aEffect);
   void SetEffectNoUpdate(AnimationEffect* aEffect);
 
-  // FIXME: Bug 2014906. ViewTimeline doesn't have a JS interface yet, so we
-  // return null for it. Once we implement it, we can drop this BinaryName.
-  already_AddRefed<AnimationTimeline> GetTimelineFromJS() const {
-    return mTimeline && mTimeline->IsViewTimeline() ? nullptr
-                                                    : do_AddRef(mTimeline);
-  }
-  void SetTimelineFromJS(AnimationTimeline* aTimeline) {
+  void SetTimeline(AnimationTimeline* aTimeline) {
     // Can't refer to timeline by name from JS side.
     const auto prevTimelineName = GetTimelineName();
     SetTimeline(aTimeline, nullptr);

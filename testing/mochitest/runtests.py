@@ -223,7 +223,10 @@ class MessageLogger:
 
     def _fix_test_name(self, message):
         """Normalize a logged test path to match the relative path from the sourcedir."""
-        if message.get("test") is not None:
+        if message.get("test") is None:
+            if self._current_test_name is not None:
+                message["test"] = self._current_test_name
+        else:
             test = message["test"]
             for pattern in MessageLogger.TEST_PATH_PREFIXES:
                 test = re.sub(pattern, "", test)
@@ -1684,6 +1687,12 @@ class MochitestDesktop:
             manifestFile.write(
                 f"content mochitests {chrometestDir} contentaccessible=yes\n"
             )
+            manifestFile.write(
+                f"content mochitests-any {chrometestDir} contentaccessible=yes remoteenabled=yes\n"
+            )
+            manifestFile.write(
+                f"content mochitests-content {chrometestDir} contentaccessible=yes remoterequired=yes\n"
+            )
 
             if options.testingModulesDir is not None:
                 manifestFile.write(
@@ -3046,10 +3055,18 @@ toolbar#nav-bar {
             runner.process_handler = None
 
             if not status and self.message_logger.is_test_running:
+                # In retry mode, queue the test for retry and suppress the
+                # unexpected failure on the initial run; otherwise report it
+                # as a real failure.
+                if self.message_logger.retry_mode:
+                    self.failedTests.add(self.lastTestSeen)
+                    expected = "FAIL"
+                else:
+                    expected = "PASS"
                 message = {
                     "action": "test_end",
                     "status": "FAIL",
-                    "expected": "PASS",
+                    "expected": expected,
                     "thread": None,
                     "pid": None,
                     "source": "mochitest",
@@ -4349,7 +4366,10 @@ toolbar#nav-bar {
                 self.harness.countfail += unattributedFailures
                 for error in leakErrors:
                     if error["test"] not in self.harness.failedTests:
-                        self.harness.countfail += 1
+                        if self.harness.message_logger.retry_mode:
+                            self.harness.failedTests.add(error["test"])
+                        else:
+                            self.harness.countfail += 1
                     msg = {
                         "action": "test_status",
                         "subtest": "Shutdown",

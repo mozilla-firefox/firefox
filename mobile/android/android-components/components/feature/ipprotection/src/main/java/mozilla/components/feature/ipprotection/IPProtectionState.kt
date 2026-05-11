@@ -24,4 +24,7 @@ data class IPProtectionState(
     val dataMaxBytes: Long = -1L,
     val resetDate: String? = null,
     val isSignedIn: Boolean = false,
-) : State
+) : State {
+    val isEligible: Boolean
+        get() = eligibilityStatus == EligibilityStatus.Eligible
+}

@@ -3072,7 +3072,7 @@ pref("network.tcp.keepalive.idle_time", 600); // seconds; 10 mins
 
 // All the Geolocation preferences are here.
 //
-#ifndef ANDROID
+#if !defined(ANDROID) && !defined(XP_WIN)
   pref("geo.provider.network.url", "https://www.googleapis.com/geolocation/v1/geolocate?key=%GOOGLE_LOCATION_SERVICE_API_KEY%&solution_channel=%OS%");
 
   // Timeout to wait before sending the location request.
@@ -3987,7 +3987,12 @@ pref("dom.postMessage.sharedArrayBuffer.bypassCOOP_COEP.insecure.enabled", false
 // Note: "extensions.formautofill.available"
 // is not being used in form autofill, but need to exist for migration purposes.
 pref("extensions.formautofill.available", "detect");
+
+#if defined(NIGHTLY_BUILD) && !defined(ANDROID)
+pref("extensions.formautofill.addresses.supported", "on");
+#else
 pref("extensions.formautofill.addresses.supported", "detect");
+#endif
 pref("extensions.formautofill.addresses.enabled", true);
 pref("extensions.formautofill.addresses.capture.enabled", true);
 #if defined(ANDROID)

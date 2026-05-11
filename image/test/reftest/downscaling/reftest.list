@@ -103,7 +103,7 @@ fuzzy(0-1,0-1) fuzzy-if(gtkWidget&&swgl,1-1,1-1) == downscale-16px.html?ff-ARGB.
 == downscale-32px.html?.gif downscale-32px-ref.html
 fuzzy(0-1,0-1024) == downscale-32px.html?.jpg downscale-32px-ref.html
 == downscale-32px.html?.png downscale-32px-ref.html
-pref(image.jxl.enabled,true) skip-if(release_or_beta) == downscale-32px.html?.jxl downscale-32px-ref.html
+pref(image.jxl.enabled,true) == downscale-32px.html?.jxl downscale-32px-ref.html
 == downscale-32px.html?.svg downscale-32px-ref.html
 == downscale-32px.html?-bmp-in.ico downscale-32px-ref.html
 == downscale-32px.html?-png-in.ico downscale-32px-ref.html
@@ -198,7 +198,7 @@ fuzzy(0-18,0-128) == downscale-32px.html?.bmp downscale-32px-ref.html
 fuzzy(0-18,0-128) == downscale-32px.html?.gif downscale-32px-ref.html
 fuzzy(0-19,0-992) == downscale-32px.html?.jpg downscale-32px-ref.html
 fuzzy(0-18,0-128) == downscale-32px.html?.png downscale-32px-ref.html
-pref(image.jxl.enabled,true) skip-if(release_or_beta) fuzzy(0-18,0-128) == downscale-32px.html?.jxl downscale-32px-ref.html
+pref(image.jxl.enabled,true) fuzzy(0-18,0-128) == downscale-32px.html?.jxl downscale-32px-ref.html
 == downscale-32px.html?.svg downscale-32px-ref.html
 fuzzy(0-18,0-128) == downscale-32px.html?-bmp-in.ico downscale-32px-ref.html
 fuzzy(0-18,0-128) == downscale-32px.html?-png-in.ico downscale-32px-ref.html

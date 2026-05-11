@@ -8931,7 +8931,7 @@ class CGCallGenerator(CGThing):
                 CGGeneric(
                     fill(
                         """
-                if (MOZ_UNLIKELY(rv.MaybeSetPendingException(cx, ${context}))) {
+                if (rv.MaybeSetPendingException(cx, ${context})) [[unlikely]] {
                   return false;
                 }
                 """,
@@ -23383,7 +23383,7 @@ class CGObservableArrayProxyHandler_callback(ClassMethod):
 
             $*{preCallback}
             const JS::Value& val = js::GetProxyReservedSlot(aProxy, OBSERVABLE_ARRAY_DOM_INTERFACE_SLOT);
-            if (MOZ_LIKELY(!val.isUndefined())) {
+            if (!val.isUndefined()) [[likely]] {
               auto* interface = static_cast<${ifaceType}*>(val.toPrivate());
               MOZ_ASSERT(interface);
 

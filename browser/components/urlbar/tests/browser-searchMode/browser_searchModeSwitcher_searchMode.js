@@ -45,6 +45,7 @@ add_task(async function test_search_after_result_nav() {
   let popupHidden = UrlbarTestUtils.searchModeSwitcherPopupClosed(window);
   let browserLoaded = BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser);
   popup.querySelector(`panel-item[data-engine-id=engine]`).click();
+  EventUtils.synthesizeKey("KEY_Enter");
   await Promise.all([popupHidden, browserLoaded]);
 
   Assert.equal(

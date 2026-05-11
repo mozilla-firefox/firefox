@@ -351,10 +351,10 @@ fn sort_range<T: PartialOrd>(a: T, b: T) -> (T, T) {
 }
 
 impl FontWeightRange {
-    /// Returns a computed font-stretch range.
-    pub fn compute(&self) -> ComputedFontWeightRange {
-        let (min, max) = sort_range(self.0.compute().value(), self.1.compute().value());
-        ComputedFontWeightRange(min, max)
+    /// Returns a computed font-weight range, or None if either bound is an unresolvable calc.
+    pub fn compute(&self) -> Option<ComputedFontWeightRange> {
+        let (min, max) = sort_range(self.0.compute()?.value(), self.1.compute()?.value());
+        Some(ComputedFontWeightRange(min, max))
     }
 }
 
@@ -372,18 +372,21 @@ impl_range!(FontStretchRange, SpecifiedFontStretch);
 pub struct ComputedFontStretchRange(FontStretch, FontStretch);
 
 impl FontStretchRange {
-    /// Returns a computed font-stretch range.
-    pub fn compute(&self) -> ComputedFontStretchRange {
-        fn compute_stretch(s: &SpecifiedFontStretch) -> FontStretch {
+    /// Returns a computed font-stretch range, or None if any value contains a calc
+    /// expression that cannot be resolved at parse time.
+    pub fn compute(&self) -> Option<ComputedFontStretchRange> {
+        fn compute_stretch(s: &SpecifiedFontStretch) -> Option<FontStretch> {
             match *s {
-                SpecifiedFontStretch::Keyword(ref kw) => kw.compute(),
-                SpecifiedFontStretch::Stretch(ref p) => FontStretch::from_percentage(p.0.get()),
+                SpecifiedFontStretch::Keyword(ref kw) => Some(kw.compute()),
+                SpecifiedFontStretch::Stretch(ref p) => {
+                    Some(FontStretch::from_percentage(p.compute()?.0))
+                },
                 SpecifiedFontStretch::System(..) => unreachable!(),
             }
         }
 
-        let (min, max) = sort_range(compute_stretch(&self.0), compute_stretch(&self.1));
-        ComputedFontStretchRange(min, max)
+        let (min, max) = sort_range(compute_stretch(&self.0)?, compute_stretch(&self.1)?);
+        Some(ComputedFontStretchRange(min, max))
     }
 }
 
@@ -464,15 +467,14 @@ impl ToCss for FontStyle {
 
 impl FontStyle {
     /// Returns a computed font-style descriptor.
-    pub fn compute(&self) -> ComputedFontStyleDescriptor {
+    pub fn compute(&self) -> Option<ComputedFontStyleDescriptor> {
         match *self {
-            FontStyle::Italic => ComputedFontStyleDescriptor::Italic,
+            FontStyle::Italic => Some(ComputedFontStyleDescriptor::Italic),
             FontStyle::Oblique(ref first, ref second) => {
-                let (min, max) = sort_range(
-                    SpecifiedFontStyle::compute_angle_degrees(first),
-                    SpecifiedFontStyle::compute_angle_degrees(second),
-                );
-                ComputedFontStyleDescriptor::Oblique(min, max)
+                let first = SpecifiedFontStyle::compute_angle_degrees(first)?;
+                let second = SpecifiedFontStyle::compute_angle_degrees(second)?;
+                let (min, max) = sort_range(first, second);
+                Some(ComputedFontStyleDescriptor::Oblique(min, max))
             },
         }
     }

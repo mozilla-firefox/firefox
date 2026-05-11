@@ -7,8 +7,6 @@ package org.mozilla.fenix.home.sports
 import androidx.navigation.NavController
 import io.mockk.mockk
 import io.mockk.verify
-import mozilla.components.browser.state.store.BrowserStore
-import org.junit.Before
 import org.junit.Test
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
@@ -21,23 +19,12 @@ class SportsControllerTest {
     private val settings: Settings = mockk(relaxed = true)
     private val navController: NavController = mockk(relaxed = true)
     private val fenixBrowserUseCases: FenixBrowserUseCases = mockk(relaxed = true)
-
-    private lateinit var browserStore: BrowserStore
-
-    private lateinit var controller: SportsController
-
-    @Before
-    fun setup() {
-        browserStore = BrowserStore()
-
-        controller = DefaultSportsController(
-            appStore = appStore,
-            browserStore = browserStore,
-            settings = settings,
-            navController = navController,
-            fenixBrowserUseCases = fenixBrowserUseCases,
-        )
-    }
+    private val controller: SportsController = DefaultSportsController(
+        appStore = appStore,
+        settings = settings,
+        navController = navController,
+        fenixBrowserUseCases = fenixBrowserUseCases,
+    )
 
     @Test
     fun `GIVEN a set of country codes WHEN countries are selected THEN the selection is persisted and the action is dispatched`() {

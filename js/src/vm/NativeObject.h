@@ -36,6 +36,8 @@ class PropertyResult;
 
 namespace gc {
 class TenuringTracer;
+template <uint32_t>
+class MarkingTracerT;
 }  // namespace gc
 
 /*
@@ -545,7 +547,6 @@ extern HeapSlot* const emptyObjectSlots;
 extern HeapSlot* const emptyObjectSlotsForDictionaryObject[];
 
 class AutoCheckShapeConsistency;
-class GCMarker;
 
 // Operations which change an object's dense elements can either succeed, fail,
 // or be unable to complete. The latter is used when the object's elements must
@@ -860,7 +861,8 @@ class NativeObject : public JSObject {
 
  protected:
   friend class DictionaryPropMap;
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class Shape;
 
   void invalidateSlotRange(uint32_t start, uint32_t end) {
@@ -1158,20 +1160,6 @@ class NativeObject : public JSObject {
   static bool freezeOrSealProperties(JSContext* cx, Handle<NativeObject*> obj,
                                      IntegrityLevel level);
 
- protected:
-  static bool changeNumFixedSlotsAfterSwap(JSContext* cx,
-                                           Handle<NativeObject*> obj,
-                                           uint32_t nfixed);
-
-  // For use from JSObject::swap.
-  [[nodiscard]] bool prepareForSwap(JSContext* cx, JSObject* other,
-                                    MutableHandleValueVector slotValuesOut);
-  [[nodiscard]] static bool fixupAfterSwap(JSContext* cx,
-                                           Handle<NativeObject*> obj,
-                                           gc::AllocKind kind,
-                                           HandleValueVector slotValues);
-
- public:
   // Return true if this object has been converted from shared-immutable
   // shapes to object-owned dictionary shapes.
   bool inDictionaryMode() const { return shape()->isDictionary(); }
@@ -1311,7 +1299,6 @@ class NativeObject : public JSObject {
   inline uint64_t maybeUniqueId() const {
     return getSlotsHeader()->maybeUniqueId();
   }
-  bool setOrUpdateUniqueId(JSContext* cx, uint64_t uid);
 
   // MAX_FIXED_SLOTS is the biggest number of fixed slots our GC
   // size classes will give an object.
@@ -1342,22 +1329,15 @@ class NativeObject : public JSObject {
   // that the first reserved slots (up to MAX_FIXED_SLOTS) are always stored in
   // fixed slots. This lets the compiler optimize away the branch below when
   // |index| is a constant (after inlining).
-  //
-  // Note: objects that may be swapped have less predictable slot layouts
-  // because they could have been swapped with an object with fewer fixed slots.
-  // Fortunately, the only native objects that can be swapped are DOM objects
-  // and these shouldn't end up here (asserted below).
   MOZ_ALWAYS_INLINE HeapSlot& getReservedSlotRef(uint32_t index) {
     MOZ_ASSERT(index < JSSLOT_FREE(getClass()));
     MOZ_ASSERT(slotIsFixed(index) == (index < MAX_FIXED_SLOTS));
-    MOZ_ASSERT(!ObjectMayBeSwapped(this));
     return index < MAX_FIXED_SLOTS ? fixedSlots()[index]
                                    : slots_[index - MAX_FIXED_SLOTS];
   }
   MOZ_ALWAYS_INLINE const HeapSlot& getReservedSlotRef(uint32_t index) const {
     MOZ_ASSERT(index < JSSLOT_FREE(getClass()));
     MOZ_ASSERT(slotIsFixed(index) == (index < MAX_FIXED_SLOTS));
-    MOZ_ASSERT(!ObjectMayBeSwapped(this));
     return index < MAX_FIXED_SLOTS ? fixedSlots()[index]
                                    : slots_[index - MAX_FIXED_SLOTS];
   }

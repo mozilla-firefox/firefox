@@ -300,7 +300,9 @@ const FormatInfo* GetFormat(EffectiveFormat format);
 
 inline uint8_t BytesPerPixel(const PackingInfo& packing) {
   const auto pii = PackingInfoInfo::For(packing);
-  if (MOZ_LIKELY(pii)) return pii->BytesPerPixel();
+  if (pii) [[likely]] {
+    return pii->BytesPerPixel();
+  }
 
   gfxCriticalError() << "Bad BytesPerPixel(" << packing << ")";
   MOZ_CRASH("Bad `packing`.");

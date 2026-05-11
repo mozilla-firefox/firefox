@@ -12,6 +12,8 @@ let REASON = BackgroundUpdate.REASON;
 const { EnterprisePolicyTesting } = ChromeUtils.importESModule(
   "resource://testing-common/EnterprisePolicyTesting.sys.mjs"
 );
+const { setupPolicyEngineWithJson } = EnterprisePolicyTesting;
+EnterprisePolicyTesting.pathResolver = path => do_get_file(path).path;
 const { UpdateService } = ChromeUtils.importESModule(
   "resource://gre/modules/UpdateService.sys.mjs"
 );
@@ -30,17 +32,6 @@ function setup_enterprise_policy_testing() {
   policies.observe(null, "policies-startup", null);
 }
 setup_enterprise_policy_testing();
-
-async function setupPolicyEngineWithJson(json, customSchema) {
-  if (typeof json != "object") {
-    let filePath = do_get_file(json ? json : "non-existing-file.json").path;
-    return EnterprisePolicyTesting.setupPolicyEngineWithJson(
-      filePath,
-      customSchema
-    );
-  }
-  return EnterprisePolicyTesting.setupPolicyEngineWithJson(json, customSchema);
-}
 
 add_setup(async function test_setup() {
   // These tests use per-installation prefs, and those are a shared resource, so

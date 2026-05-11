@@ -8,14 +8,14 @@ const { E10SUtils } = ChromeUtils.importESModule(
 );
 
 /**
- * Tests for ChromeUtils.predictRemoteTypeForURI method, which is
+ * Tests for E10SUtils.getRemoteTypeForURIObject method, which is
  * used to compute preferred remote process types for content given
  * certain conditions.
  */
 
 /**
- * Test that predictRemoteTypeForURI returns the preferred remote type when
- * given a URI with an invalid site origin.
+ * Test that getRemoteTypeForURIObject returns the preferred remote type
+ * when given a URI with an invalid site origin.
  *
  * This is a regression test for bug 1760417.
  */
@@ -24,9 +24,10 @@ add_task(async function test_invalid_site_origin() {
     "https://.mozilla.org/this/is/a/test.html"
   );
   const EXPECTED_REMOTE_TYPE = `${E10SUtils.FISSION_WEB_REMOTE_TYPE}=https://.mozilla.org`;
-  let result = ChromeUtils.predictRemoteTypeForURI(INVALID_SITE_ORIGIN_URI, {
-    useRemoteTabs: true,
-    useRemoteSubframes: true,
+  let result = E10SUtils.getRemoteTypeForURIObject(INVALID_SITE_ORIGIN_URI, {
+    remoteSubFrames: true,
+    multiProcess: true,
+    preferredRemoteType: E10SUtils.DEFAULT_REMOTE_TYPE,
   });
   Assert.equal(
     result,

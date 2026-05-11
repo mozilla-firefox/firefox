@@ -32,15 +32,15 @@ using namespace mozilla::gfx;
 namespace mozilla::dom {
 
 using namespace SVGPreserveAspectRatio_Binding;
-using namespace SVGSVGElement_Binding;
 
 SVGEnumMapping SVGSVGElement::sZoomAndPanMap[] = {
-    {nsGkAtoms::disable, SVG_ZOOMANDPAN_DISABLE},
-    {nsGkAtoms::magnify, SVG_ZOOMANDPAN_MAGNIFY},
+    {nsGkAtoms::disable, SVGSVGElement_Binding::SVG_ZOOMANDPAN_DISABLE},
+    {nsGkAtoms::magnify, SVGSVGElement_Binding::SVG_ZOOMANDPAN_MAGNIFY},
     {nullptr, 0}};
 
 SVGElement::EnumInfo SVGSVGElement::sEnumInfo[1] = {
-    {nsGkAtoms::zoomAndPan, sZoomAndPanMap, SVG_ZOOMANDPAN_MAGNIFY}};
+    {nsGkAtoms::zoomAndPan, sZoomAndPanMap,
+     SVGSVGElement_Binding::SVG_ZOOMANDPAN_MAGNIFY}};
 
 JSObject* SVGSVGElement::WrapNode(JSContext* aCx,
                                   JS::Handle<JSObject*> aGivenProto) {
@@ -73,7 +73,8 @@ NS_IMPL_ADDREF_INHERITED(SVGSVGElement, SVGSVGElementBase)
 NS_IMPL_RELEASE_INHERITED(SVGSVGElement, SVGSVGElementBase)
 
 SVGView::SVGView() {
-  mZoomAndPan.Init(SVGSVGElement::ZOOMANDPAN, SVG_ZOOMANDPAN_MAGNIFY);
+  mZoomAndPan.Init(SVGSVGElement::ZOOMANDPAN,
+                   SVGSVGElement_Binding::SVG_ZOOMANDPAN_MAGNIFY);
   mViewBox.Init();
   mPreserveAspectRatio.Init();
 }
@@ -295,8 +296,8 @@ uint16_t SVGSVGElement::ZoomAndPan() const {
 }
 
 void SVGSVGElement::SetZoomAndPan(uint16_t aZoomAndPan, ErrorResult& rv) {
-  if (aZoomAndPan == SVG_ZOOMANDPAN_DISABLE ||
-      aZoomAndPan == SVG_ZOOMANDPAN_MAGNIFY) {
+  if (aZoomAndPan == SVGSVGElement_Binding::SVG_ZOOMANDPAN_DISABLE ||
+      aZoomAndPan == SVGSVGElement_Binding::SVG_ZOOMANDPAN_MAGNIFY) {
     ErrorResult nestedRv;
     mEnumAttributes[ZOOMANDPAN].SetBaseValue(aZoomAndPan, this, nestedRv);
     MOZ_ASSERT(!nestedRv.Failed(),

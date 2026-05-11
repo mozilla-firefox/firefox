@@ -6,7 +6,6 @@ package org.mozilla.fenix.ui
 
 import androidx.test.espresso.Espresso.pressBack
 import androidx.test.filters.SdkSuppress
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.customannotations.SmokeTest
@@ -453,7 +452,6 @@ class SettingsSearchTest {
     // Test running on beta/release builds in CI:
     // caution when making changes to it, so they don't block the builds
     // Goes through the settings and changes the search suggestion toggle, then verifies it changes.
-    @Ignore("Failing, see https://bugzilla.mozilla.org/show_bug.cgi?id=2021581")
     @SmokeTest
     @Test
     fun verifyShowSearchSuggestionsToggleTest() {
@@ -463,7 +461,7 @@ class SettingsSearchTest {
             clickSearchSelectorButton()
             selectTemporarySearchMethod("DuckDuckGo")
             typeSearch("mozilla ")
-            verifySearchSuggestionsAreDisplayed("mozilla firefox")
+            verifySearchSuggestionsAreDisplayed("mozilla")
         }.dismissSearchBar {
         }.openThreeDotMenu {
         }.clickSettingsButton {
@@ -477,7 +475,7 @@ class SettingsSearchTest {
             clickSearchSelectorButton()
             selectTemporarySearchMethod("DuckDuckGo")
             typeSearch("mozilla")
-            verifySuggestionsAreNotDisplayed("mozilla firefox")
+            verifySuggestionsAreNotDisplayed("mozilla")
         }
     }
 

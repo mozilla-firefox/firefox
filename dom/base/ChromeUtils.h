@@ -361,17 +361,6 @@ class ChromeUtils {
   static void EncodeURIForSrcset(GlobalObject&, const nsACString& aIn,
                                  nsACString& aOut);
 
-  static void PredictRemoteTypeForURI(GlobalObject& aGlobal, nsIURI* aURI,
-                                      const PredictRemoteTypeOptions& aOptions,
-                                      nsACString& aRemoteType,
-                                      ErrorResult& aRv);
-
-  static void PredictRemoteTypeForURI(GlobalObject& aGlobal,
-                                      const nsACString& aURIString,
-                                      const PredictRemoteTypeOptions& aOptions,
-                                      nsACString& aRemoteType,
-                                      ErrorResult& aRv);
-
 #ifdef MOZ_WMF_CDM
   static already_AddRefed<Promise> GetWMFContentDecryptionModuleInformation(
       GlobalObject& aGlobal, ErrorResult& aRv);

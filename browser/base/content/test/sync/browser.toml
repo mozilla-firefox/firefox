@@ -22,6 +22,8 @@ support-files = ["browser_fxa_web_channel.html"]
 
 ["browser_sendtab_telemetry.js"]
 
+["browser_sendtab_toolbarbutton.js"]
+
 ["browser_signed_out_avatar_variants.js"]
 
 ["browser_sync.js"]

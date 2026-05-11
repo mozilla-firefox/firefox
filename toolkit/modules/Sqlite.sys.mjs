@@ -161,7 +161,7 @@ function convertStorageErrorResult(result) {
     case Ci.mozIStorageError.MISMATCH:
     case Ci.mozIStorageError.MISUSE:
     case Ci.mozIStorageError.RANGE:
-      return Ci.NS_ERROR_UNEXPECTED;
+      return Cr.NS_ERROR_UNEXPECTED;
     case Ci.mozIStorageError.CORRUPT:
     case Ci.mozIStorageError.EMPTY:
     case Ci.mozIStorageError.FORMAT:

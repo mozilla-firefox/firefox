@@ -75,6 +75,14 @@
   list-style-image: url("chrome://browser/skin/synced-tabs.svg");
 }
 
+#send-tab-button {
+  list-style-image: url("chrome://browser/skin/send-tab-20.svg");
+
+  &:-moz-locale-dir(rtl) {
+    transform: scaleX(-1);
+  }
+}
+
 #characterencoding-button {
   list-style-image: url("chrome://browser/skin/characterEncoding.svg");
 }
@@ -412,7 +420,7 @@
 #smartwindow-ask-button-inner {
   list-style-image: url("chrome://browser/content/aiwindow/assets/ask-icon.svg");
 
-  &[checked] {
+  &[aria-expanded="true"] {
     list-style-image: url("chrome://global/skin/icons/close.svg");
   }
 }

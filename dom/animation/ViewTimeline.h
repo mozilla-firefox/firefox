@@ -41,9 +41,15 @@ class ViewTimeline final : public ScrollTimeline {
       StyleScrollAxis aAxis, const StyleViewTimelineInset& aInset);
 
   JSObject* WrapObject(JSContext* aCx,
-                       JS::Handle<JSObject*> aGivenProto) override {
-    return nullptr;
+                       JS::Handle<JSObject*> aGivenProto) override;
+
+  // ViewTimeline methods.
+  Element* Subject() const {
+    MOZ_ASSERT(mSubject);
+    return mSubject;
   }
+  Nullable<double> GetStartOffset() const;
+  Nullable<double> GetEndOffset() const;
 
   bool IsViewTimeline() const override { return true; }
 

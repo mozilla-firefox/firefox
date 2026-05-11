@@ -2581,7 +2581,7 @@ MediaManager* MediaManager::Get() {
         prefs->AddObserver(aPrefName, sSingleton, false);
       });
     }
-    RegisterStrongMemoryReporter(sSingleton);
+    RegisterStrongMemoryReporter(do_AddRef(sSingleton));
 
     // Prepare async shutdown
 

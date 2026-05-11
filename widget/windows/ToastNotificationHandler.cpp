@@ -865,6 +865,19 @@ ToastNotificationHandler::OnActivate(
       }
     }
 
+    Json::Value jsonData;
+    Json::Reader jsonReader;
+    Maybe<nsString> actionValue;
+
+    if (jsonReader.parse(NS_ConvertUTF16toUTF8(actionString).get(), jsonData,
+                         false)) {
+      char actionKey[] = "action";
+      if (jsonData.isMember(actionKey) && jsonData[actionKey].isString()) {
+        actionValue.emplace(
+            NS_ConvertUTF8toUTF16(jsonData[actionKey].asCString()));
+      }
+    }
+
     if (argumentsString.EqualsLiteral("dismiss")) {
       // XXX: Somehow Windows still fires OnActivate instead of OnDismiss for
       // supposedly system managed dismiss button (with activationType=system
@@ -872,9 +885,9 @@ ToastNotificationHandler::OnActivate(
       // dismiss action. For this case `arguments` only includes a keyword so we
       // don't need to compare with a parsed result.
       SendFinished();
-    } else if (actionString == kAlertActionSettings) {
+    } else if (actionValue && *actionValue == kAlertActionSettings) {
       mAlertListener->Observe(nullptr, "alertsettingscallback", mCookie.get());
-    } else if (actionString == kAlertActionDisable) {
+    } else if (actionValue && *actionValue == kAlertActionDisable) {
       mAlertListener->Observe(nullptr, "alertdisablecallback", mCookie.get());
     } else if (mClickable) {
       // When clicking toast, focus moves to another process, but we want to set
@@ -894,20 +907,7 @@ ToastNotificationHandler::OnActivate(
         }
       }
 
-      Json::Value jsonData;
-      Json::Reader jsonReader;
-      Maybe<nsString> actionValue;
       nsCOMPtr<nsIAlertAction> alertAction;
-
-      if (jsonReader.parse(NS_ConvertUTF16toUTF8(actionString).get(), jsonData,
-                           false)) {
-        char actionKey[] = "action";
-        if (jsonData.isMember(actionKey) && jsonData[actionKey].isString()) {
-          actionValue.emplace(
-              NS_ConvertUTF8toUTF16(jsonData[actionKey].asCString()));
-        }
-      }
-
       if (actionValue) {
         mAlertNotification->GetAction(*actionValue,
                                       getter_AddRefs(alertAction));

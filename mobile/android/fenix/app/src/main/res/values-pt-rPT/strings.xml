@@ -3214,6 +3214,13 @@
   <string name="ip_protection_onboarding_body_link">Navegue com proteção extra</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Agora não</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">Não foi possível ligar à VPN. Tente novamente dentro de alguns minutos.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">Utilizados %1$d GB de dados de VPN. O acesso será reposto no próximo mês.</string>
   <!--
     Autofill
 
@@ -4631,6 +4638,14 @@
   <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">A seguir: %s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
   <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Volte para ver as informações da correspondência à medida que o evento se aproxima.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">Primeira parte</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">Segundo tempo</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">Parece que está offline.</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">Verifique a sua ligação à Internet e tente novamente.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

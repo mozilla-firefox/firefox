@@ -52,7 +52,7 @@ class KeystoreTest {
 
     @Test
     fun workingWithLabel() {
-        val keystore = Keystore("test-labels", true, wrapper)
+        val keystore = Keystore("test-labels", true, wrapper = wrapper)
 
         Assert.assertFalse(keystore.available())
         keystore.generateKey()
@@ -63,7 +63,7 @@ class KeystoreTest {
 
     @Test
     fun createEncryptCipher() {
-        val keystore = Keystore("test-encrypt-ciphers", true, wrapper)
+        val keystore = Keystore("test-encrypt-ciphers", true, wrapper = wrapper)
 
         Assert.assertFalse(keystore.available())
         var caught = false
@@ -86,7 +86,7 @@ class KeystoreTest {
 
     @Test
     fun createDecryptCipher() {
-        val keystore = Keystore("test-decrypt-ciphers", true, wrapper)
+        val keystore = Keystore("test-decrypt-ciphers", true, wrapper = wrapper)
         val iv = ByteArray(12)
         rng.nextBytes(iv)
 
@@ -111,7 +111,7 @@ class KeystoreTest {
 
     @Test
     fun testAutoInit() {
-        val keystore = Keystore("test-auto-init", false, wrapper)
+        val keystore = Keystore("test-auto-init", false, wrapper = wrapper)
 
         Assert.assertTrue(keystore.available())
         Assert.assertFalse(keystore.generateKey())

@@ -79,8 +79,8 @@ bool EvalCacheHashPolicy::match(const EvalCacheEntry& cacheEntry,
 }
 
 void EvalCacheLookup::trace(JSTracer* trc) {
-  TraceNullableRoot(trc, &str, "EvalCacheLookup::str");
-  TraceNullableRoot(trc, &callerScript, "EvalCacheLookup::callerScript");
+  TraceRoot(trc, &str, "EvalCacheLookup::str");
+  TraceRoot(trc, &callerScript, "EvalCacheLookup::callerScript");
 }
 
 // Add the script to the eval cache when EvalKernel is finished

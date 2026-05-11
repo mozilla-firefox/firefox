@@ -17,8 +17,17 @@
 
   /* stylelint-disable-next-line media-query-no-invalid */
   @media -moz-pref("browser.nova.enabled") {
-    /* Smart Window Nova Tokens */
-    --smartwindow-text-color-accent-primary: light-dark(var(--color-violet-60), var(--color-violet-30));
-    --smartwindow-icon-color-accent-primary-desaturated: light-dark(var(--color-purple-desaturated-50), var(--color-purple-desaturated-10));
+    /* HCM Default */
+    --smartwindow-text-color-accent-primary: var(--text-color);
+    --smartwindow-icon-color-accent-primary-desaturated: var(--icon-color);
+
+    @media not (forced-colors) {
+      /* Smart Window Nova Tokens */
+      --smartwindow-text-color-accent-primary: light-dark(var(--color-violet-60), var(--color-violet-30));
+      --smartwindow-icon-color-accent-primary-desaturated: light-dark(var(--color-purple-desaturated-50), var(--color-purple-desaturated-10));
+
+      --box-shadow-color-lighter-layer-1: color-mix(in srgb, var(--color-violet-70) 15%, transparent);
+      --box-shadow-color-lighter-layer-2: color-mix(in srgb, var(--color-violet-70) 24%, transparent);
+    }
   }
 }

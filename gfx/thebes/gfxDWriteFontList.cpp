@@ -26,6 +26,7 @@
 #include "nsDirectoryServiceUtils.h"
 #include "nsDirectoryServiceDefs.h"
 #include "nsAppDirectoryServiceDefs.h"
+#include "nsWindowsHelpers.h"
 
 #include "../2d/AutoHelpersWin.h"
 #include "gfxRect.h"
@@ -1989,7 +1990,7 @@ nsresult gfxDWriteFontList::GetFontSubstitutes() {
     AddSubstitute(substituteName, actualFontName, true);
   }
 
-  HKEY hKey;
+  std::unique_ptr<HKEY, RegCloseKeyDeleter> hKey;
   DWORD i, rv, lenAlias, lenActual, valueType;
   WCHAR aliasName[MAX_VALUE_NAME];
   WCHAR actualName[MAX_VALUE_DATA];
@@ -1997,7 +1998,7 @@ nsresult gfxDWriteFontList::GetFontSubstitutes() {
   if (RegOpenKeyExW(
           HKEY_LOCAL_MACHINE,
           L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes",
-          0, KEY_READ, &hKey) != ERROR_SUCCESS) {
+          0, KEY_READ, getter_Transfers(hKey)) != ERROR_SUCCESS) {
     return NS_ERROR_FAILURE;
   }
 
@@ -2006,7 +2007,7 @@ nsresult gfxDWriteFontList::GetFontSubstitutes() {
     lenAlias = std::size(aliasName);
     actualName[0] = 0;
     lenActual = sizeof(actualName);
-    rv = RegEnumValueW(hKey, i, aliasName, &lenAlias, nullptr, &valueType,
+    rv = RegEnumValueW(hKey.get(), i, aliasName, &lenAlias, nullptr, &valueType,
                        (LPBYTE)actualName, &lenActual);
 
     if (rv != ERROR_SUCCESS || valueType != REG_SZ || lenAlias == 0) {

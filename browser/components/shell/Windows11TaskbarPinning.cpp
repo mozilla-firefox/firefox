@@ -423,7 +423,7 @@ Win11PinToTaskBarResult PinCurrentAppToTaskbarWin11(
   return {hr, resultStatus};
 }
 
-Win11PinToTaskBarResult IsCurrentAppPinnedToTaskbarWin11(bool aCheckOnly) {
+Win11PinToTaskBarResult IsCurrentAppPinnedToTaskbarWin11() {
   MOZ_DIAGNOSTIC_ASSERT(
       !NS_IsMainThread(),
       "IsCurrentAppPinnedToTaskbarWin11 should be called off main "
@@ -453,22 +453,21 @@ Win11PinToTaskBarResult IsCurrentAppPinnedToTaskbarWin11(bool aCheckOnly) {
   // Everything related to the taskbar and pinning must be done on the main /
   // user interface thread or Windows will cause them to fail.
   NS_DispatchToMainThread(NS_NewRunnableFunction(
-      "IsCurrentAppPinnedToTaskbarWin11",
-      [&event, &hr, &resultStatus, aCheckOnly] {
+      "IsCurrentAppPinnedToTaskbarWin11", [&event, &hr, &resultStatus] {
         auto CompletedOperations =
             [&event, &resultStatus](Win11PinToTaskBarResultStatus status) {
               resultStatus = status;
               event.Set();
             };
 
-        ComPtr<ITaskbarManager> taskbar;
-        Win11PinToTaskBarResultStatus allowed =
-            IsTaskbarPinningAllowed(aCheckOnly, taskbar);
-        if ((aCheckOnly && allowed == Win11PinToTaskBarResultStatus::Success) ||
-            allowed != Win11PinToTaskBarResultStatus::Success) {
-          return CompletedOperations(allowed);
+        auto result = InitializeTaskbar();
+        if (result.isErr()) {
+          hr = result.unwrapErr();
+          return CompletedOperations(
+              Win11PinToTaskBarResultStatus::NotSupported);
         }
 
+        ComPtr<ITaskbarManager> taskbar = result.unwrap();
         ComPtr<IAsyncOperation<bool>> isPinnedOperation = nullptr;
         hr = taskbar->IsCurrentAppPinnedAsync(&isPinnedOperation);
         if (FAILED(hr)) {

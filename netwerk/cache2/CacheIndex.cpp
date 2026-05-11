@@ -1363,6 +1363,21 @@ nsresult CacheIndex::GetEntryForEviction(EvictionSortedSnapshot& aSnapshot,
       continue;
     }
 
+    // Skip entries with active (non-doomed) file handles. These are
+    // currently being read from or written to. Evicting them would doom
+    // the in-progress I/O — in particular, a newly-created entry being
+    // written always has the lowest frecency and would otherwise be
+    // selected as the first eviction candidate, preventing it from ever
+    // being stored. See bug 2031577.
+    {
+      RefPtr<CacheFileHandle> handle;
+      if (CacheFileIOManager::gInstance &&
+          NS_SUCCEEDED(CacheFileIOManager::gInstance->mHandles.GetHandle(
+              &hash, getter_AddRefs(handle)))) {
+        continue;
+      }
+    }
+
     if (CacheIndexEntry::IsPinned(rec)) {
       continue;
     }

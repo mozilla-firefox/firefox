@@ -9381,9 +9381,7 @@ static bool LineHasNonEmptyContentWorker(nsIFrame* aFrame) {
 }
 
 static bool LineHasNonEmptyContent(nsLineBox* aLine) {
-  int32_t count = aLine->GetChildCount();
-  for (nsIFrame* frame = aLine->mFirstChild; count > 0;
-       --count, frame = frame->GetNextSibling()) {
+  for (nsIFrame* frame : aLine->ChildFrames()) {
     if (LineHasNonEmptyContentWorker(frame)) {
       return true;
     }

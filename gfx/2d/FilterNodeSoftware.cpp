@@ -3429,7 +3429,7 @@ uint32_t PointLightSoftware::GetColor(uint32_t aLightColor,
 void SpotLightSoftware::Prepare() {
   mVectorFromFocusPointToLight = Normalized(mPointsAt - mPosition);
   mLimitingConeCos =
-      std::max<double>(cos(mLimitingConeAngle * M_PI / 180.0), 0.0);
+      std::max<double>(cos(mLimitingConeAngle * kRadPerDegree), 0.0);
   mPowCache.CacheForExponent(mSpecularFocus);
 }
 
@@ -3473,10 +3473,11 @@ uint32_t SpotLightSoftware::GetColor(uint32_t aLightColor,
 }
 
 void DistantLightSoftware::Prepare() {
-  const double radPerDeg = M_PI / 180.0;
-  mVectorToLight.x = cos(mAzimuth * radPerDeg) * cos(mElevation * radPerDeg);
-  mVectorToLight.y = sin(mAzimuth * radPerDeg) * cos(mElevation * radPerDeg);
-  mVectorToLight.z = sin(mElevation * radPerDeg);
+  mVectorToLight.x =
+      cos(mAzimuth * kRadPerDegree) * cos(mElevation * kRadPerDegree);
+  mVectorToLight.y =
+      sin(mAzimuth * kRadPerDegree) * cos(mElevation * kRadPerDegree);
+  mVectorToLight.z = sin(mElevation * kRadPerDegree);
 }
 
 Point3D DistantLightSoftware::GetVectorToLight(const Point3D& aTargetPoint) {

@@ -415,3 +415,10 @@ zip = { path = "third_party/rust/zip" }
 
 # Patch libcrux-traits to avoid unnecessary unused dependencies and conflicts.
 libcrux-traits = { path = "build/rust/libcrux-traits" }
+
+# Redirect any `nss-rs` git dependency (notably the one pinned inside upstream
+# `mls-rs-crypto-nss` in mozilla/mls-platform-api) to the in-tree vendored copy.
+# This way bumping nss-rs in tree does not require a matching update to the
+# pin in mls-platform-api on GitHub.
+[patch."https://github.com/mozilla/nss-rs"]
+nss-rs = { path = "third_party/rust/nss-rs" }

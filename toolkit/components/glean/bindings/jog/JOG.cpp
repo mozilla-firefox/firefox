@@ -27,7 +27,7 @@
 
 namespace mozilla::glean {
 
-static LazyLogModule sLog("jog");
+static LazyLogModule sJOGLog("jog");
 
 // Storage
 // Thread Safety: Only used on the main thread.
@@ -54,13 +54,14 @@ bool JOG::EnsureRuntimeMetricsRegistered(bool aForce) {
   }
   sFoundAndLoadedJogfile = Some(false);
 
-  MOZ_LOG(sLog, LogLevel::Debug, ("Determining whether there's JOG for you."));
+  MOZ_LOG(sJOGLog, LogLevel::Debug,
+          ("Determining whether there's JOG for you."));
 
   if (!mozilla::StaticPrefs::telemetry_fog_artifact_build()) {
     // Supporting Artifact Builds is a developer-only thing.
     // We're on the main thread here.
     // Let's not spend any more time than we need to.
-    MOZ_LOG(sLog, LogLevel::Debug,
+    MOZ_LOG(sJOGLog, LogLevel::Debug,
             ("!telemetry.fog.artifact_build. No JOG for you."));
     return false;
   }
@@ -74,7 +75,7 @@ bool JOG::EnsureRuntimeMetricsRegistered(bool aForce) {
   if (NS_WARN_IF(NS_FAILED(NS_NewURI(
           getter_AddRefs(uri), "resource://android/assets/jogfile.json"))) ||
       NS_WARN_IF(!uri)) {
-    MOZ_LOG(sLog, LogLevel::Debug, ("Unable to create URI to jogfile."));
+    MOZ_LOG(sJOGLog, LogLevel::Debug, ("Unable to create URI to jogfile."));
     return false;
   }
   nsCOMPtr<nsIChannel> channel;
@@ -87,17 +88,18 @@ bool JOG::EnsureRuntimeMetricsRegistered(bool aForce) {
       nullptr,                               /* aCallbacks */
       nsIRequest::LOAD_NORMAL);
   if (NS_WARN_IF(NS_FAILED(rv))) {
-    MOZ_LOG(sLog, LogLevel::Debug, ("Unable to create channel for jogfile."));
+    MOZ_LOG(sJOGLog, LogLevel::Debug,
+            ("Unable to create channel for jogfile."));
     return false;
   }
   nsCOMPtr<nsIInputStream> input;
   if (NS_WARN_IF(NS_FAILED(channel->Open(getter_AddRefs(input))))) {
-    MOZ_LOG(sLog, LogLevel::Debug, ("Unable to open stream for jogfile."));
+    MOZ_LOG(sJOGLog, LogLevel::Debug, ("Unable to open stream for jogfile."));
     return false;
   }
   nsCString contents;
   if (NS_WARN_IF(NS_FAILED(NS_ReadInputStreamToString(input, contents, -1)))) {
-    MOZ_LOG(sLog, LogLevel::Debug, ("Unable to read jogfile to string."));
+    MOZ_LOG(sJOGLog, LogLevel::Debug, ("Unable to read jogfile to string."));
     return false;
   }
   sFoundAndLoadedJogfile = Some(jog::jog_load_jogfile_str(&contents));
@@ -130,7 +132,7 @@ bool JOG::EnsureRuntimeMetricsRegistered(bool aForce) {
 
 #endif
 
-  MOZ_LOG(sLog, LogLevel::Debug,
+  MOZ_LOG(sJOGLog, LogLevel::Debug,
           ("%s", sFoundAndLoadedJogfile.value()
                      ? "Found and loaded jogfile. Yes! JOG for you!"
                      : "Couldn't find and load jogfile. No JOG for you."));
@@ -268,7 +270,7 @@ extern "C" NS_EXPORT void JOG_RegisterMetric(
     return;
   }
 
-  MOZ_LOG(mozilla::glean::sLog, mozilla::LogLevel::Verbose,
+  MOZ_LOG(mozilla::glean::sJOGLog, mozilla::LogLevel::Verbose,
           ("Registering metric %s.%s id %" PRIu32 " id+type %" PRIu32 "",
            PromiseFlatCString(aCategory).get(), PromiseFlatCString(aName).get(),
            aMetricId, aMetric));
@@ -327,7 +329,7 @@ extern "C" NS_EXPORT void JOG_RegisterPing(const nsACString& aPingName,
                                            uint32_t aPingId) {
   MOZ_ASSERT(NS_IsMainThread());
 
-  MOZ_LOG(mozilla::glean::sLog, mozilla::LogLevel::Verbose,
+  MOZ_LOG(mozilla::glean::sJOGLog, mozilla::LogLevel::Verbose,
           ("Registering ping %s id %" PRIu32 "",
            PromiseFlatCString(aPingName).get(), aPingId));
 

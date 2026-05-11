@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* global gSubDialog, gotoPref, confirmRestartPrompt, CONFIRM_RESTART_PROMPT_RESTART_NOW, srdSectionEnabled, LoginHelper */
+/* global gSubDialog, gotoPref, confirmRestartPrompt, CONFIRM_RESTART_PROMPT_RESTART_NOW, srdSectionEnabled */
 
 import { SettingGroupManager } from "chrome://browser/content/preferences/config/SettingGroupManager.mjs";
 import { Preferences } from "chrome://global/content/preferences/Preferences.mjs";
@@ -22,7 +22,6 @@ const lazy = XPCOMUtils.declareLazy({
   DoHConfigController: "moz-src:///toolkit/components/doh/DoHConfig.sys.mjs",
   DownloadUtils: "resource://gre/modules/DownloadUtils.sys.mjs",
   FirefoxRelay: "resource://gre/modules/FirefoxRelay.sys.mjs",
-  OSKeyStore: "resource://gre/modules/OSKeyStore.sys.mjs",
   Sanitizer: "resource:///modules/Sanitizer.sys.mjs",
   SiteDataManager: "resource:///modules/SiteDataManager.sys.mjs",
   IPProtection:
@@ -43,8 +42,6 @@ const lazy = XPCOMUtils.declareLazy({
         )
       : null,
   isPackagedApp: () => Services.sysinfo.getProperty("isPackagedApp"),
-  AboutLoginsL10n: () =>
-    new Localization(["branding/brand.ftl", "browser/aboutLogins.ftl"]),
 });
 
 const SANITIZE_ON_SHUTDOWN_PREFS_ONLY_V2 = [
@@ -53,105 +50,6 @@ const SANITIZE_ON_SHUTDOWN_PREFS_ONLY_V2 = [
 ];
 
 export class PrivacySettingHelpers {
-  /**
-   * Displays a dialog in which the user can view and modify the list of sites
-   * where passwords are never saved.
-   */
-  static showPasswordExceptions() {
-    let params = {
-      blockVisible: true,
-      sessionVisible: false,
-      allowVisible: false,
-      hideStatusColumn: true,
-      prefilledHost: "",
-      permissionType: "login-saving",
-    };
-    gSubDialog.open(
-      "chrome://browser/content/preferences/dialogs/permissions.xhtml",
-      undefined,
-      params
-    );
-  }
-
-  /**
-   * Shows the sites where the user has saved passwords and the associated login
-   * information.
-   */
-  static showPasswords() {
-    let loginManager = window.windowGlobalChild.getActor("LoginManager");
-    loginManager.sendAsyncMessage("PasswordManager:OpenPreferences", {
-      entryPoint: "Preferences",
-    });
-  }
-
-  /**
-   * Displays a dialog in which the primary password may be changed.
-   */
-  static async changeMasterPassword() {
-    // Require OS authentication before the user can set a Primary Password.
-    // OS reauthenticate functionality is not available on Linux yet (bug 1527745)
-    if (!LoginHelper.isPrimaryPasswordSet() && LoginHelper.getOSAuthEnabled()) {
-      // Uses primary-password-os-auth-dialog-message-win and
-      // primary-password-os-auth-dialog-message-macosx via concatenation:
-      let messageId =
-        "primary-password-os-auth-dialog-message-" + lazy.AppConstants.platform;
-      let [messageText, captionText] = await document.l10n.formatMessages([
-        { id: messageId },
-        { id: "master-password-os-auth-dialog-caption" },
-      ]);
-      let win = Services.wm.getMostRecentBrowserWindow();
-
-      // Note on Glean collection: because OSKeyStore.ensureLoggedIn() is not wrapped in
-      // verifyOSAuth(), it will be documenting "success" for unsupported platforms
-      // and won't record "fail_error", only "fail_user_canceled"
-      let loggedIn = await lazy.OSKeyStore.ensureLoggedIn(
-        messageText.value,
-        captionText.value,
-        win,
-        false
-      );
-      const result = loggedIn.authenticated ? "success" : "fail_user_canceled";
-      Glean.pwmgr.promptShownOsReauth.record({
-        trigger: "toggle_pref_primary_password",
-        result,
-      });
-      if (!loggedIn.authenticated) {
-        return;
-      }
-    }
-    gSubDialog.open("chrome://mozapps/content/preferences/changemp.xhtml", {
-      features: "resizable=no",
-      closingCallback: () => {
-        Services.obs.notifyObservers(null, "passwordmgr-primary-pw-changed");
-        PrivacySettingHelpers._initMasterPasswordUI();
-      },
-    });
-  }
-
-  /**
-   * Displays the "remove master password" dialog to allow the user to remove
-   * the current master password.  When the dialog is dismissed, master password
-   * UI is automatically updated.
-   */
-  static async _removeMasterPassword() {
-    const fipsUtils = Cc["@mozilla.org/security/fipsutils;1"].getService(
-      Ci.nsIFIPSUtils
-    );
-    if (fipsUtils.isFIPSEnabled) {
-      let title = document.getElementById("fips-title").textContent;
-      let desc = document.getElementById("fips-desc").textContent;
-      Services.prompt.alert(window, title, desc);
-      PrivacySettingHelpers._initMasterPasswordUI();
-    } else {
-      gSubDialog.open("chrome://mozapps/content/preferences/removemp.xhtml", {
-        closingCallback: () => {
-          Services.obs.notifyObservers(null, "passwordmgr-primary-pw-changed");
-          PrivacySettingHelpers._initMasterPasswordUI();
-        },
-      });
-    }
-  }
-
   /**
    * Displays per-site preferences for HTTPS-Only Mode exceptions.
    */
@@ -366,25 +264,6 @@ export class PrivacySettingHelpers {
     let policy = Services.policies.getActivePolicies();
     return policy?.EnableTrackingProtection?.Locked || policy?.Cookies?.Locked;
   }
-
-  /**
-   * Initializes master password UI: the "use master password" checkbox, selects
-   * the master password button to show, and enables/disables it as necessary.
-   * The master password is controlled by various bits of NSS functionality, so
-   * the UI for it can't be controlled by the normal preference bindings.
-   */
-  static _initMasterPasswordUI() {
-    var noMP = !LoginHelper.isPrimaryPasswordSet();
-
-    var button = document.getElementById("changeMasterPassword");
-    button.disabled = noMP;
-
-    var checkbox = document.getElementById("useMasterPassword");
-    checkbox.checked = !noMP;
-    checkbox.disabled =
-      (noMP && !Services.policies.isAllowed("createMasterPassword")) ||
-      (!noMP && !Services.policies.isAllowed("removeMasterPassword"));
-  }
 }
 
 const SECURITY_PRIVACY_STATUS_CARD_ENABLED =
@@ -493,13 +372,6 @@ Preferences.addAll([
   // Media
   { id: "media.autoplay.default", type: "int" },
 
-  // Passwords
-  { id: "signon.rememberSignons", type: "bool" },
-  { id: "signon.generation.enabled", type: "bool" },
-  { id: "signon.autofillForms", type: "bool" },
-  { id: "signon.management.page.breach-alerts.enabled", type: "bool" },
-  { id: "signon.firefoxRelay.feature", type: "string" },
-
   // Buttons
   { id: "pref.privacy.disable_button.view_passwords", type: "bool" },
   { id: "pref.privacy.disable_button.view_passwords_exceptions", type: "bool" },
@@ -543,9 +415,6 @@ Preferences.addAll([
   { id: "dom.security.https_only_mode_pbm", type: "bool" },
   { id: "dom.security.https_first", type: "bool" },
   { id: "dom.security.https_first_pbm", type: "bool" },
-
-  // Windows SSO
-  { id: "network.http.windows-sso.enabled", type: "bool" },
 
   // Cookie Banner Handling
   { id: "cookiebanners.ui.desktop.enabled", type: "bool" },
@@ -1587,152 +1456,6 @@ SettingGroupManager.registerGroups({
   },
 });
 
-SettingGroupManager.registerGroups({
-  // Bug 1968111: move this elsewhere
-  passwords: {
-    inProgress: true,
-    id: "passwordsGroup",
-    l10nId: "forms-passwords-header",
-    headingLevel: 2,
-    items: [
-      {
-        id: "savePasswords",
-        l10nId: "forms-ask-to-save-passwords",
-        items: [
-          {
-            id: "managePasswordExceptions",
-            l10nId: "forms-manage-password-exceptions",
-            control: "moz-box-button",
-            controlAttrs: {
-              "search-l10n-ids":
-                "permissions-address,permissions-exceptions-saved-passwords-window.title,permissions-exceptions-saved-passwords-desc,",
-            },
-          },
-          {
-            id: "fillUsernameAndPasswords",
-            l10nId: "forms-fill-usernames-and-passwords-2",
-            controlAttrs: {
-              "search-l10n-ids": "forms-saved-passwords-searchkeywords",
-            },
-          },
-          {
-            id: "suggestStrongPasswords",
-            l10nId: "forms-suggest-passwords",
-            supportPage: "how-generate-secure-password-firefox",
-          },
-        ],
-      },
-      {
-        id: "requireOSAuthForPasswords",
-        l10nId: "forms-os-reauth-2",
-      },
-      {
-        id: "allowWindowSSO",
-        l10nId: "forms-windows-sso",
-        supportPage: "windows-sso",
-      },
-      {
-        id: "manageSavedPasswords",
-        l10nId: "forms-saved-passwords-2",
-        control: "moz-box-link",
-      },
-      {
-        id: "additionalProtectionsGroup",
-        l10nId: "forms-additional-protections-header",
-        control: "moz-fieldset",
-        controlAttrs: {
-          headingLevel: 2,
-        },
-        items: [
-          {
-            id: "primaryPasswordNotSet",
-            control: "moz-box-group",
-            items: [
-              {
-                id: "usePrimaryPassword",
-                l10nId: "forms-primary-pw-use-2",
-                control: "moz-box-item",
-                supportPage: "primary-password-stored-logins",
-              },
-              {
-                id: "addPrimaryPassword",
-                l10nId: "forms-primary-pw-set",
-                control: "moz-box-button",
-              },
-            ],
-          },
-          {
-            id: "primaryPasswordSet",
-            control: "moz-box-group",
-            items: [
-              {
-                id: "statusPrimaryPassword",
-                l10nId: "forms-primary-pw-on",
-                control: "moz-box-item",
-                controlAttrs: {
-                  iconsrc: "chrome://global/skin/icons/check-filled.svg",
-                },
-                options: [
-                  {
-                    id: "turnOffPrimaryPassword",
-                    l10nId: "forms-primary-pw-turn-off",
-                    control: "moz-button",
-                    slot: "actions",
-                  },
-                ],
-              },
-              {
-                id: "changePrimaryPassword",
-                l10nId: "forms-primary-pw-change-2",
-                control: "moz-box-button",
-              },
-            ],
-          },
-          {
-            id: "breachAlerts",
-            l10nId: "forms-breach-alerts",
-            supportPage: "lockwise-alerts",
-          },
-        ],
-      },
-    ],
-  },
-  // Bug 1968111: move this elsewhere
-  managePayments: {
-    items: [
-      {
-        id: "add-payment-button",
-        control: "moz-button",
-        l10nId: "autofill-payment-methods-add-button",
-      },
-      {
-        id: "payments-list",
-        control: "moz-box-group",
-        controlAttrs: {
-          type: "list",
-        },
-      },
-    ],
-  },
-  // Bug 1968111: move this elsewhere
-  manageAddresses: {
-    items: [
-      {
-        id: "add-address-button",
-        control: "moz-button",
-        l10nId: "autofill-addresses-add-button",
-      },
-      {
-        id: "addresses-list",
-        control: "moz-box-group",
-        controlAttrs: {
-          type: "list",
-        },
-      },
-    ],
-  },
-});
-
 Preferences.addSetting({
   id: "trustPanelFeatureGate",
   pref: "browser.urlbar.trustPanel.featureGate",
@@ -1743,149 +1466,6 @@ Preferences.addSetting({
   pref: "browser.urlbar.trustPanel.breachAlerts",
   deps: ["trustPanelFeatureGate"],
   visible: ({ trustPanelFeatureGate }) => trustPanelFeatureGate.value,
-});
-
-Preferences.addSetting({
-  id: "savePasswords",
-  pref: "signon.rememberSignons",
-  controllingExtensionInfo: {
-    storeId: "services.passwordSavingEnabled",
-    l10nId: "extension-controlling-password-saving",
-  },
-});
-
-Preferences.addSetting({
-  id: "managePasswordExceptions",
-  onUserClick: () => {
-    PrivacySettingHelpers.showPasswordExceptions();
-  },
-});
-
-Preferences.addSetting({
-  id: "fillUsernameAndPasswords",
-  pref: "signon.autofillForms",
-});
-
-Preferences.addSetting({
-  id: "suggestStrongPasswords",
-  pref: "signon.generation.enabled",
-  visible: () => Services.prefs.getBoolPref("signon.generation.available"),
-});
-
-Preferences.addSetting({
-  id: "requireOSAuthForPasswords",
-  visible: () => lazy.OSKeyStore.canReauth(),
-  get: () => LoginHelper.getOSAuthEnabled(),
-  async set(checked) {
-    const [messageText, captionText] = await Promise.all([
-      lazy.AboutLoginsL10n.formatValue("about-logins-os-auth-dialog-message"),
-      lazy.AboutLoginsL10n.formatValue("about-logins-os-auth-dialog-caption"),
-    ]);
-
-    await LoginHelper.trySetOSAuthEnabled(
-      window,
-      checked,
-      messageText,
-      captionText
-    );
-
-    // Trigger change event to keep checkbox UI in sync with pref value
-    Services.obs.notifyObservers(null, "PasswordsOSAuthEnabledChange");
-  },
-  setup: emitChange => {
-    Services.obs.addObserver(emitChange, "PasswordsOSAuthEnabledChange");
-    return () =>
-      Services.obs.removeObserver(emitChange, "PasswordsOSAuthEnabledChange");
-  },
-});
-
-Preferences.addSetting({
-  id: "allowWindowSSO",
-  pref: "network.http.windows-sso.enabled",
-  visible: () => lazy.AppConstants.platform === "win",
-});
-
-Preferences.addSetting({
-  id: "manageSavedPasswords",
-  onUserClick: ({ _target }) => {
-    PrivacySettingHelpers.showPasswords();
-  },
-});
-
-Preferences.addSetting({
-  id: "additionalProtectionsGroup",
-});
-
-Preferences.addSetting({
-  id: "primaryPasswordNotSet",
-  setup(emitChange) {
-    const topic = "passwordmgr-primary-pw-changed";
-    Services.obs.addObserver(emitChange, topic);
-    return () => Services.obs.removeObserver(emitChange, topic);
-  },
-  visible: () => {
-    return !LoginHelper.isPrimaryPasswordSet();
-  },
-});
-
-Preferences.addSetting({
-  id: "usePrimaryPassword",
-  deps: ["primaryPasswordNotSet"],
-});
-
-Preferences.addSetting({
-  id: "addPrimaryPassword",
-  deps: ["primaryPasswordNotSet"],
-  onUserClick: ({ _target }) => {
-    PrivacySettingHelpers.changeMasterPassword();
-  },
-  disabled: () => {
-    return !Services.policies.isAllowed("createMasterPassword");
-  },
-});
-
-Preferences.addSetting({
-  id: "primaryPasswordSet",
-  setup(emitChange) {
-    const topic = "passwordmgr-primary-pw-changed";
-    Services.obs.addObserver(emitChange, topic);
-    return () => Services.obs.removeObserver(emitChange, topic);
-  },
-  visible: () => {
-    return LoginHelper.isPrimaryPasswordSet();
-  },
-});
-
-Preferences.addSetting({
-  id: "statusPrimaryPassword",
-  deps: ["primaryPasswordSet"],
-  onUserClick: e => {
-    if (e.target.localName == "moz-button") {
-      PrivacySettingHelpers._removeMasterPassword();
-    }
-  },
-  getControlConfig(config) {
-    config.options[0].controlAttrs = {
-      ...config.options[0].controlAttrs,
-      ...(!Services.policies.isAllowed("removeMasterPassword")
-        ? { disabled: "" }
-        : {}),
-    };
-    return config;
-  },
-});
-
-Preferences.addSetting({
-  id: "changePrimaryPassword",
-  deps: ["primaryPasswordSet"],
-  onUserClick: ({ _target }) => {
-    PrivacySettingHelpers.changeMasterPassword();
-  },
-});
-
-Preferences.addSetting({
-  id: "breachAlerts",
-  pref: "signon.management.page.breach-alerts.enabled",
 });
 
 /**

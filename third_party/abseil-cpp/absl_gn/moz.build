@@ -9,7 +9,7 @@
 COMPILE_FLAGS["OS_INCLUDES"] = []
 AllowCompilerWarnings()
 
-FINAL_LIBRARY = "xul"
+FINAL_LIBRARY = "abseil"
 
 
 LOCAL_INCLUDES += [

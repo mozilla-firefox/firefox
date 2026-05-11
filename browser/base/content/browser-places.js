@@ -472,23 +472,26 @@ var PlacesCommandHook = {
    *        the address of the link target
    * @param title
    *        The link text
+   * @returns {string}
+   *        The bookmark's guid if the dialog was confirmed, otherwise undefined.
    */
   async bookmarkLink(url, title) {
     let bm = await PlacesUtils.bookmarks.fetch({ url });
+    let guid;
     if (bm) {
       let node = await PlacesUIUtils.promiseNodeLikeFromFetchInfo(bm);
-      await PlacesUIUtils.showBookmarkDialog(
+      guid = await PlacesUIUtils.showBookmarkDialog(
         { action: "edit", node },
         window.top
       );
-      return;
+      return guid;
     }
 
     let parentGuid = await PlacesUIUtils.defaultParentGuid;
     let defaultInsertionPoint = new PlacesInsertionPoint({
       parentGuid,
     });
-    await PlacesUIUtils.showBookmarkDialog(
+    guid = await PlacesUIUtils.showBookmarkDialog(
       {
         action: "add",
         type: "bookmark",
@@ -499,6 +502,7 @@ var PlacesCommandHook = {
       },
       window.top
     );
+    return guid;
   },
 
   /**

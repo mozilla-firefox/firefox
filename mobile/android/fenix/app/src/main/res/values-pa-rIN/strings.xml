@@ -377,6 +377,38 @@
   <string name="ai_controls_banner_headline">%s ਵਿੱਚ ਤੁਹਾਡੇ ਕੋਲ ਹਮੇਸ਼ਾਂ ਚੋਣ ਹੁੰਦੀ ਹੈ</string>
   <!-- Supporting text for the AI controls banner -->
   <string name="ai_controls_banner_supporting_text">ਉਸ ਵਿੱਚ AI ਨਾਲ ਸੁਧਾਰ ਕੀਤੇ ਫ਼ੀਚਰਾਂ ਨੂੰ ਵਰਤਣਾ ਵੀ ਸ਼ਾਮਲ ਹੈ।</string>
+  <!-- Link text for learning more about AI controls -->
+  <string name="ai_controls_learn_more">ਹੋਰ ਜਾਣੋ</string>
+  <!-- Title for the block AI enhancements toggle -->
+  <string name="ai_controls_block_ai_title">AI ਸੁਧਾਰਾਂ ਉੱਤੇ ਪਾਬੰਦੀ ਲਾਓ</string>
+  <!-- Description for the block AI enhancements toggle. %s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_block_ai_description">ਪਾਬੰਦੀ ਲਾਉਣ ਦਾ ਅਰਥ ਹੈ ਕਿ ਤੁਸੀਂ %s ਵਿੱਚ ਨਵੇਂ ਜਾਂ ਮੌਜੂਦ AI ਸੁਧਾਰਾਂ ਨੂੰ ਜਾਂ ਉਹਨਾਂ ਬਾਰੇ ਪੌਪ-ਅੱਪ ਨਹੀਂ ਵੇਖੋਗੇ।</string>
+  <!-- Link text to see what AI enhancements are and aren’t included -->
+  <string name="ai_controls_see_whats_included">ਵੇਖੋ ਕਿ ਕੀ ਸ਼ਾਮਲ ਹੈ ਅਤੇ ਕੀ ਨਹੀਂ</string>
+  <!-- Banner text shown when AI enhancements are blocked -->
+  <string name="ai_controls_blocked_info_banner">ਨਵੇਂ ਜਾਂ ਮੌਜੂਦਾ AI ਸੁਧਾਰਾਂ ਉੱਤੇ ਮੂਲ ਰੂਪ ਵਿੱਚ ਪਾਬੰਦੀ ਲਾਈ ਗਈ ਹੈ। ਹੇਠਾਂ ਖਾਸ ਫ਼ੀਚਰਾਂ ਤੋਂ ਪਾਬੰਦੀ ਹਟਾਓ।</string>
+  <!-- Section header for the AI-powered features list -->
+  <string name="ai_controls_ai_powered_features">AI ਰਾਹੀਂ ਤਿਆਰ ਫ਼ੀਚਰ</string>
+  <!-- Title for the translations AI feature toggle -->
+  <string name="ai_controls_translations_title">ਅਨੁਵਾਦ</string>
+  <!-- Description for the translations AI feature toggle -->
+  <string name="ai_controls_translations_description">ਸਭ ਅਨੁਵਾਦ ਤੁਹਾਡੇ ਡਿਵਾਈਸ ਉੱਤੇ ਪ੍ਰਾਈਵੇਟ ਰਹਿੰਦੇ ਹਨ।</string>
+  <!-- Link text to navigate to more translations settings -->
+  <string name="ai_controls_more_translations_settings">ਹੋਰ ਅਨੁਵਾਦ ਸੈਟਿੰਗਾਂ</string>
+  <!-- Link text to navigate to more page summary settings -->
+  <string name="ai_controls_more_page_summary_settings">ਹੋਰ ਸਫ਼ਾ ਸਾਰ ਦੀਆਂ ਸੈਟਿੰਗਾਂ</string>
+  <!-- Title for the voice search AI feature toggle -->
+  <string name="ai_controls_voice_search_title">ਆਵਾਜ਼ ਰਾਹੀਂ ਖੋਜੋ</string>
+  <!-- Title for the block AI enhancements confirmation dialog -->
+  <string name="ai_controls_block_dialog_title">AI ਸੁਧਾਰਾਂ ਉੱਤੇ ਪਾਬੰਦੀ ਲਾਉਣੀ ਹੈ?</string>
+  <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_block_dialog_body">ਤੁਸੀਂ %1$s ਵਿੱਚ ਨਵੇਂ ਜਾਂ ਮੌਜੂਦਾ AI ਸੁਧਾਰਾਂ ਨੂੰ ਜਾਂ ਉਹਨਾਂ ਬਾਰੇ ਪੌਪ-ਅੱਪ ਨਹੀਂ ਵੇਖੋਗੇ। ਇਸ ਦੇ ਬਾਅਦ ਤੁਸੀਂ ਜਿਸ ਵੀ ਚੀਜ਼ ਨੂੰ ਵਰਤਣਾ ਚਾਹੁੰਦੇ ਹੋ ਤਾਂ ਉਸ ਤੋਂ ਪਾਬੰਦੀ ਹਟਾ ਸਕਦੇ ਹੋ।\n\nਪਾਬੰਦੀ ਲਾਉਣ ਨਾਲ %1$s ਵਲੋਂ ਦਿੱਤੀਆਂ AI ਵਰਤਣ ਵਾਲੀਆਂ ਸਾਰੀਆਂ ਇਕਸਟੈਨਸ਼ਨਾਂ ਵੀ ਪ੍ਰਭਾਵਿਤ ਹੁੰਦੀਆਂ ਹਨ।</string>
+  <!-- Label shown above the list of features that will be blocked in the block AI dialog -->
+  <string name="ai_controls_block_dialog_what_will_be_blocked">ਕਿਸ ਉੱਤੇ ਪਾਬੰਦੀ ਲਾਈ ਜਾਵੇਗੀ:</string>
+  <!-- Cancel button text in the block AI enhancements confirmation dialog -->
+  <string name="ai_controls_block_dialog_cancel">ਰੱਦ ਕਰੋ</string>
+  <!-- Block button text in the block AI enhancements confirmation dialog -->
+  <string name="ai_controls_block_dialog_block">ਪਾਬੰਦੀ</string>
   <!--
     Locale Settings Fragment
 
@@ -1089,6 +1121,8 @@
   <string name="customize_wallpapers">ਵਾਲਪੇਪਰ</string>
   <!-- Title for the customize home screen section with sponsored shortcuts. -->
   <string name="customize_toggle_contile">ਸਪਾਂਸਰ ਕੀਤੇ ਸ਼ਾਰਟਕੱਟ</string>
+  <!-- Title for the customize home screen section that toggles the Homepage sports widget. -->
+  <string name="customize_toggle_world_cup" tools:ignore="UnusedResources">ਵਰਲਡ ਕੱਪ</string>
   <!--
     Wallpapers
 
@@ -1408,6 +1442,8 @@
   <string name="preference_gestures_swipe_toolbar_show_tabs">ਟੈਬਾਂ ਖੋਲ੍ਹਣ ਲਈ ਟੂਲਬਾਰ ਉੱਤੇ ਵੱਲ ਸਰਕਾਓ</string>
   <!-- Preference for switching tabs by swiping horizontally on the addressbar -->
   <string name="preference_gestures_swipe_toolbar_switch_tabs_2">ਟੈਬਾਂ ਵਿੱਚ ਬਦਲਣ ਲਈ ਸਿਰਨਾਵਾਂ ਪੱਟੀ ਨੂੰ ਪਾਸੇ ਵੱਲ ਸਰਕਾਓ</string>
+  <!-- Preference for switching for the shake to summarize toggle in page summaries and customize settings -->
+  <string name="preferences_shake_to_summarize">ਸਾਰ ਲੈਣ ਲਈ ਹਿਲਾਓ</string>
   <!--
     Library
 
@@ -1702,8 +1738,22 @@
   <string name="delete_tab_group_confirmation_dialog_confirm">ਗਰੁੱਪ ਨੂੰ ਹਟਾਓ</string>
   <!-- Text shown on the cancel button in the Delete tab group confirmation dialog. -->
   <string name="delete_tab_group_confirmation_dialog_cancel">ਰੱਦ ਕਰੋ</string>
+  <!-- Text shown on the confirm button in the Close last tab and delete tab group confirmation dialog. -->
+  <string name="close_tab_and_delete_group_confirmation_dialog_confirm">ਗਰੁੱਪ ਨੂੰ ਹਟਾਓ</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">ਰੱਦ ਕਰੋ</string>
+  <!--
+    Color labels for tab groups, used for accessibility and selection UI.
+
+    Tab group color: Yellow
+  -->
+  <string name="tab_group_color_yellow">ਪੀਲਾ</string>
+  <!-- Tab group color: Orange -->
+  <string name="tab_group_color_orange">ਸੰਤਰੀ</string>
+  <!-- Tab group color: Red -->
+  <string name="tab_group_color_red">ਲਾਲ</string>
+  <!-- Tab group color: Pink -->
+  <string name="tab_group_color_pink">ਗੁਲਾਬੀ</string>
   <!-- Tab group color: Purple -->
   <string name="tab_group_color_purple">ਵੈਂਗਣੀ</string>
   <!-- Tab group color: Violet -->
@@ -4343,16 +4393,64 @@
   <string name="sports_widget_confederation_africa" tools:ignore="UnusedResources">ਅਫ਼ਰੀਕਾ</string>
   <!-- Section header for the Asia confederation group in the sports widget country selector. -->
   <string name="sports_widget_confederation_asia" tools:ignore="UnusedResources">ਏਸ਼ੀਆ</string>
+  <!-- Section header for the CONCACAF confederation group in the sports widget country selector. "CONCACAF" is the abbreviation for "Confederation of North, Central America and Caribbean Association Football". -->
+  <string name="sports_widget_confederation_concacaf" tools:ignore="UnusedResources">CONCACAF</string>
+  <!-- Section header for the Europe confederation group in the sports widget country selector. -->
+  <string name="sports_widget_confederation_europe" tools:ignore="UnusedResources">ਯੂਰਪ</string>
+  <!-- Section header for the Oceania confederation group in the sports widget country selector. -->
+  <string name="sports_widget_confederation_oceania" tools:ignore="UnusedResources">ਓਸ਼ੇਨੀਆ</string>
+  <!-- Sports widget error card message shown when the network connection is interrupted and live updates pause. -->
+  <string name="sports_widget_error_connection_interrupted">ਕਨੈਕਸ਼ਨ ਰੋਕਿਆ — ਲਾਈਵ ਅੱਪਡੇਟ ਰੋਕੇ ਗਏ।</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="sports_widget_error_refresh">ਤਾਜ਼ਾ ਕਰੋ</string>
+  <!-- Sports widget group stage label for group D in the soccer tournament. -->
+  <string name="sports_widget_group_d" tools:ignore="UnusedResources">ਗਰੁੱਪ D</string>
+  <!-- Sports widget group stage label for group E in the soccer tournament. -->
+  <string name="sports_widget_group_e" tools:ignore="UnusedResources">ਗਰੁੱਪ E</string>
+  <!-- Sports widget group stage label for group F in the soccer tournament. -->
+  <string name="sports_widget_group_f" tools:ignore="UnusedResources">ਗਰੁੱਪ F</string>
+  <!-- Sports widget group stage label for group G in the soccer tournament. -->
+  <string name="sports_widget_group_g" tools:ignore="UnusedResources">ਗਰੁੱਪ G</string>
+  <!-- Sports widget group stage label for group H in the soccer tournament. -->
+  <string name="sports_widget_group_h" tools:ignore="UnusedResources">ਗਰੁੱਪ H</string>
+  <!-- Sports widget group stage label for group I in the soccer tournament. -->
+  <string name="sports_widget_group_i" tools:ignore="UnusedResources">ਗਰੁੱਪ I</string>
+  <!-- Sports widget group stage label for group J in the soccer tournament. -->
+  <string name="sports_widget_group_j" tools:ignore="UnusedResources">ਗਰੁਪ J</string>
+  <!-- Sports widget group stage label for group K in the soccer tournament. -->
+  <string name="sports_widget_group_k" tools:ignore="UnusedResources">ਗਰੁੱਪ K</string>
+  <!-- Sports widget group stage label for group L in the soccer tournament. -->
+  <string name="sports_widget_group_l" tools:ignore="UnusedResources">ਗਰੁੱਪ L</string>
+  <!-- Sports widget button label to see match results. -->
+  <string name="sports_widget_see_results" tools:ignore="UnusedResources">ਨਤੀਜਿਆਂ ਨੂੰ ਵੇਖੋ</string>
+  <!-- Sports widget section header for related soccer matches in the same group. -->
+  <string name="sports_widget_related_matches">ਸੰਬੰਧਿਤ ਮੈਚ</string>
+  <!-- Sports widget section header for a list of upcoming soccer matches that have not yet started. -->
+  <string name="sports_widget_upcoming" tools:ignore="UnusedResources">ਆਉਣ ਵਾਲੇ</string>
   <!-- Sports widget match status suffix appended to match scores (e.g., "3 - 2 (Full time)") to indicate the match has been completed. -->
   <string name="sports_widget_match_full_time_suffix">(ਸਾਰਾ ਸਮਾਂ)</string>
   <!-- Sports widget match status to indicate the match has been completed. -->
   <string name="sports_widget_match_full_time_2" tools:ignore="UnusedResources">ਸਾਰਾ ਸਮਾਂ</string>
+  <!-- Sports widget menu item to change the selected team. -->
+  <string name="sports_widget_change_team" tools:ignore="UnusedResources">ਟੀਮ ਨੂੰ ਬਦਲੋ</string>
+  <!-- Sports widget menu item to get a custom wallpaper for the widget. -->
+  <string name="sports_widget_get_custom_wallpaper" tools:ignore="UnusedResources">ਪਸੰਦੀਦਾ ਵਾਲਪੇਪਰ ਲਵੋ</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="sports_widget_remove" tools:ignore="UnusedResources">ਹਟਾਓ</string>
+  <!-- Sports widget button label to follow another team after the current team is eliminated. -->
+  <string name="sports_widget_follow_another_team">ਹੋਰ ਟੀਮ ਨੂੰ ਫ਼ਾਲੋ ਕਰੋ</string>
   <!-- Sports widget card title shown before the soccer tournament begins on top of a timer that is counting down. -->
   <string name="sports_widget_countdown_to_world_cup" tools:ignore="UnusedResources">ਵਰਲਡ ਕੱਪ ਲਈ ਉਲਟੀ ਗਿਣਤੀ</string>
   <!-- Sports widget button label that navigates the user to the full soccer tournament match schedule. -->
   <string name="sports_widget_view_schedule">ਸੈਡਿਊਲ ਨੂੰ ਵੇਖੋ</string>
   <!-- Sports widget button label that dismisses the step of choosing a team to follow. -->
   <string name="sports_widget_skip">ਛੱਡੋ</string>
+  <!-- Sports widget match status label shown during halftime of a match. -->
+  <string name="sports_widget_halftime" tools:ignore="UnusedResources">ਅੱਧਾ ਟਾਈਮ</string>
+  <!-- Sports widget match status label shown during extra time of a match. -->
+  <string name="sports_widget_extra_time" tools:ignore="UnusedResources">ਵਾਧੂ ਟਾਈਮ</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="sports_widget_penalties" tools:ignore="UnusedResources">ਪਨੈਲਟੀਆਂ</string>
   <!--
     Sports widget countdown label for days. D is short for Day. The layout only allows for 1–2 characters:
     if there is an equivalent single character for your language, use that (e.g. T for German).
@@ -4418,6 +4516,14 @@
   <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">ਫ਼ਾਲੋ ਕੀਤੇ:\n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
   <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">ਟੂਰਨਾਮੈਂਟ ਨੇੜੇ ਆਉਣ ਉੱਤੇ ਮੈਚ ਬਾਰੇ ਜਾਣਕਾਰੀ ਵਾਸਤੇ ਫੇਰ ਵੇਖਿਓ।</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">ਪਹਿਲਾ ਅੱਧ</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">ਦੂਜਾ ਅੱਧ</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">ਤੁਸੀਂ ਆਫਲਾਈਨ ਜਾਪਦੇ ਹੋ।</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">ਆਪਣੇ ਇੰਟਰਨੈੱਟ ਕਨੈਕਸ਼ਨ ਦੀ ਜਾਂਚ ਕਰਕੇ ਫੇਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

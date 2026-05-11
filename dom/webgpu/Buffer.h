@@ -117,7 +117,7 @@ class Buffer final : public nsWrapperCache,
 
  private:
   Buffer(Device* const aParent, RawId aId, BufferAddress aSize, uint32_t aUsage,
-         ipc::SharedMemoryMapping&& aShmem);
+         mozilla::ipc::SharedMemoryMapping&& aShmem);
   virtual ~Buffer();
   void Cleanup();
   void UnmapArrayBuffers(JSContext* aCx, ErrorResult& aRv);
@@ -150,7 +150,7 @@ class Buffer final : public nsWrapperCache,
   // Otherwise, this points to `SharedMemoryMapping()` (the default
   // constructor), a zero-length mapping that doesn't point to any shared
   // memory.
-  std::shared_ptr<ipc::SharedMemoryMapping> mShmem;
+  std::shared_ptr<mozilla::ipc::SharedMemoryMapping> mShmem;
 };
 
 }  // namespace webgpu

@@ -19,7 +19,7 @@
         android:layout_height="@dimen/quicksettings_item_height"
         android:scaleType="center"
         android:contentDescription="@string/etp_back_button_content_description"
-        app:tint="?attr/textPrimary"
+        app:tint="?attr/colorOnSurface"
         app:srcCompat="@drawable/mozac_ic_back_24" />
 
     <LinearLayout
@@ -79,7 +79,7 @@
                 android:layout_height="wrap_content"
                 android:importantForAccessibility="no"
                 app:srcCompat="@drawable/mozac_ic_lock_24"
-                app:tint="?attr/textPrimary" />
+                app:tint="?attr/colorOnSurface" />
 
             <LinearLayout
                 android:layout_width="match_parent"

@@ -123,20 +123,22 @@ class InlineOptionsBrowser extends HTMLElement {
     }
 
     let readyPromise;
-    // For now, we never consider userContextId, so don't bother passing it
-    // down. This will change if optionsURL ever becomes anything but
-    // moz-extension*, or if we start considering OA for extensions.
-    let remoteType = ChromeUtils.predictRemoteTypeForURI(optionsURL, {
-      window,
-      preferredRemoteType: lazy.E10SUtils.EXTENSION_REMOTE_TYPE,
-    });
-    if (remoteType !== lazy.E10SUtils.NOT_REMOTE) {
-      if (remoteType !== lazy.E10SUtils.EXTENSION_REMOTE_TYPE) {
-        throw new Error("optionsURL would not load in 'extension' remote type");
-      }
-
+    let remoteSubframes = window.docShell.QueryInterface(
+      Ci.nsILoadContext
+    ).useRemoteSubframes;
+    // For now originAttributes have no effect, which will change if the
+    // optionsURL becomes anything but moz-extension* or we start considering
+    // OA for extensions.
+    var oa = lazy.E10SUtils.predictOriginAttributes({ browser });
+    let loadRemote = lazy.E10SUtils.canLoadURIInRemoteType(
+      optionsURL,
+      remoteSubframes,
+      lazy.E10SUtils.EXTENSION_REMOTE_TYPE,
+      oa
+    );
+    if (loadRemote) {
       browser.setAttribute("remote", "true");
-      browser.setAttribute("remoteType", remoteType);
+      browser.setAttribute("remoteType", lazy.E10SUtils.EXTENSION_REMOTE_TYPE);
 
       readyPromise = promiseEvent("XULFrameLoaderCreated", browser);
     } else {

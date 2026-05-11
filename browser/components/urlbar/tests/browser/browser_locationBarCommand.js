@@ -185,6 +185,12 @@ add_task(async function load_in_new_tab_test() {
       url: "about:blank",
     },
     {
+      desc: "Middleclick on go button",
+      type: "click",
+      details: { button: 1 },
+      url: "about:blank",
+    },
+    {
       desc: "Alt+Return keypress in a dirty tab",
       type: "keypress",
       details: { altKey: true },

@@ -5,6 +5,10 @@ support-files = [
   "!/toolkit/components/translations/tests/browser/shared-head.js",
   "!/toolkit/components/translations/tests/browser/translations-test.mjs",
 ]
+prefs = [
+  # The Browser languages section is now hitting AMO on page load
+  "extensions.getAddons.langpacks.url=https://mochi.test:8000/langpacks",
+]
 
 ["browser_translations_about_preferences_manage_downloaded_languages.js"]
 

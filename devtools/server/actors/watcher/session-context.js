@@ -201,6 +201,7 @@ function getWatcherSupportedResources(_type) {
     [Resources.TYPES.SOURCE]: true,
     [Resources.TYPES.THREAD_STATE]: true,
     [Resources.TYPES.SERVER_SENT_EVENT]: true,
+    [Resources.TYPES.SESSION_HISTORY]: true,
     [Resources.TYPES.WEBSOCKET]: true,
     [Resources.TYPES.WEBTRANSPORT]: true,
     [Resources.TYPES.JSTRACER_TRACE]: true,

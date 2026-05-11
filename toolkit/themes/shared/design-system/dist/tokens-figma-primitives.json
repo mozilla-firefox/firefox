@@ -187,7 +187,8 @@
   "tab/block/margin": "{Primitives$dimension/4}",
   "tab/border/radius": "var(--toolbarbutton-border-radius)",
   "tab/close/button/padding": 6,
-  "tab/hover/background/color": "color-mix(in srgb, currentColor 11%, transparent)",
+  "tab/background/color/hover": "color-mix(in srgb, currentColor 11%, transparent)",
+  "tab/background/color/selected": "var(--toolbar-background-color)",
   "tab/icon/end/margin": 5.5,
   "tab/inline/padding": "{Primitives$dimension/8}",
   "tab/inner/inline/margin": "{Primitives$space/medium}",
@@ -200,7 +201,6 @@
   "tab/pinned/container/margin/inline/expanded": "{Primitives$space/small}",
   "tab/pinned/expanded/background/width": "{Primitives$dimension/40}",
   "tab/pinned/margin/inline/expanded": "{Primitives$space/xsmall}",
-  "tab/selected/bgcolor": "var(--toolbar-background-color)",
   "tab/selected/textcolor": "var(--toolbar-text-color)",
   "tab/vertical/block/margin": "{Primitives$dimension/2}",
   "tab/vertical/inline/padding": "{Primitives$space/medium}"

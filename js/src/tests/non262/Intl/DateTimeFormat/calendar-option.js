@@ -52,7 +52,7 @@ const canonical = {
   "islamicc": "islamic-civil",
   "ethiopic-amete-alem": "ethioaa",
   "islamic": "islamic-tbla",
-  "islamic-rgsa": "islamic-tbla",
+  "islamic-rgsa": "gregory",
 };
 
 for (let calendar of calendars) {

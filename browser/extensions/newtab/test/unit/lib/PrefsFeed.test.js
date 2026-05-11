@@ -449,6 +449,77 @@ describe("PrefsFeed", () => {
         })
       );
     });
+    it("should write trainhop widgets.weatherSize to the default branch", () => {
+      const setStringPref = sinon.spy();
+      ServicesStub.prefs.getDefaultBranch = sinon
+        .stub()
+        .returns({ setStringPref });
+      const enrollment = {
+        meta: { isRollout: false },
+        value: {
+          type: "widgets",
+          payload: { weatherSize: "large" },
+        },
+      };
+      sandbox
+        .stub(global.NimbusFeatures.newtabTrainhop, "getAllEnrollments")
+        .returns([enrollment]);
+
+      feed.onTrainhopExperimentUpdated();
+
+      assert.calledWith(setStringPref, "widgets.weather.size", "large");
+    });
+
+    it("should not write widgets.weather.size when weatherSize is missing", () => {
+      const setStringPref = sinon.spy();
+      ServicesStub.prefs.getDefaultBranch = sinon
+        .stub()
+        .returns({ setStringPref });
+      const enrollment = {
+        meta: { isRollout: false },
+        value: {
+          type: "widgets",
+          payload: { enabled: true },
+        },
+      };
+      sandbox
+        .stub(global.NimbusFeatures.newtabTrainhop, "getAllEnrollments")
+        .returns([enrollment]);
+
+      feed.onTrainhopExperimentUpdated();
+
+      assert.neverCalledWith(
+        setStringPref,
+        "widgets.weather.size",
+        sinon.match.any
+      );
+    });
+
+    it("should not write widgets.weather.size when weatherSize is empty string", () => {
+      const setStringPref = sinon.spy();
+      ServicesStub.prefs.getDefaultBranch = sinon
+        .stub()
+        .returns({ setStringPref });
+      const enrollment = {
+        meta: { isRollout: false },
+        value: {
+          type: "widgets",
+          payload: { weatherSize: "" },
+        },
+      };
+      sandbox
+        .stub(global.NimbusFeatures.newtabTrainhop, "getAllEnrollments")
+        .returns([enrollment]);
+
+      feed.onTrainhopExperimentUpdated();
+
+      assert.neverCalledWith(
+        setStringPref,
+        "widgets.weather.size",
+        sinon.match.any
+      );
+    });
+
     it("should dedupe multi-payload format with experiment taking precedence over rollout", () => {
       const rollout = {
         meta: {

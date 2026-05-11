@@ -82,8 +82,8 @@ export const LABS_MIGRATION_FEATURE_MAP = (function () {
     "urlbar-ime-search": "firefox-labs-urlbar-ime-search",
   };
 
-  // The jpeg-xl feature is Nightly-only and the relevant prefs do not exist
-  // outside Nightly.
+  // The jpeg-xl feature is gated on MOZ_JXL; the relevant prefs do not exist
+  // when MOZ_JXL is not defined.
   if (AppConstants.MOZ_JXL) {
     featureMap["jpeg-xl"] = "firefox-labs-jpeg-xl";
   }

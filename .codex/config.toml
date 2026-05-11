@@ -3,4 +3,4 @@ url = "https://mcp-dev.moz.tools/mcp"
 
 [mcp_servers.firefox-devtools]
 command = "./mach"
-args = ["npx", "@padenot/firefox-devtools-mcp", "--pref", "browser.ml.enable=true"]
+args = ["npx", "@mozilla/firefox-devtools-mcp-moz", "--pref", "browser.ml.enable=true", "--enable-scripting", "--enable-privileged-context"]

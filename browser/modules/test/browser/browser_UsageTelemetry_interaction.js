@@ -32,6 +32,7 @@ const AREAS = [
   "preferencesPaneDownloads",
   "preferencesPaneAppearance",
   "preferencesPanePermissionsData",
+  "preferencesPaneTabsBrowsing",
 ];
 
 function resetGleanEvents() {

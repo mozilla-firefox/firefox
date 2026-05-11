@@ -17,7 +17,10 @@
 #include "gfxPlatform.h"
 #include "gfxTypes.h"
 #include "ImageContainer.h"
+#include "mozilla/gtest/MozHelpers.h"
 #include "mozilla/layers/ImageDataSerializer.h"
+#include "mozilla/layers/LayersSurfaces.h"
+#include "mozilla/ipc/Shmem.h"
 
 using namespace mozilla;
 using namespace mozilla::gfx;
@@ -399,4 +402,97 @@ TEST(Layers, TextureYCbCrNoHDRMetadata)
   }
   TestYCbCrDescriptorTransferFunction(TransferFunction::BT709, Nothing(),
                                       imageBridge);
+}
+
+TEST(Layers, TextureYCbCrRejectsDisplayRectExceedingYSize)
+{
+  // The gtest harness sets XPCOM_DEBUG_BREAK=stack-and-abort, so the
+  // NS_ERROR in the rejection path of CreateBackendIndependentTextureHost
+  // becomes a MOZ_CRASH_UNSAFE in DEBUG builds. We split the verification:
+  // DEBUG builds observe the death; opt builds (where NS_ERROR is a no-op)
+  // check that the function returns nullptr directly.
+  auto shmemBuilder = ipc::Shmem::Builder(128);
+  ASSERT_TRUE(shmemBuilder);
+  auto [msg, shmem] = shmemBuilder.Build(100, false, 0);
+  ASSERT_TRUE(shmem.IsWritable());
+
+  // [[maybe_unused]]: on Darwin, EXPECT_DEATH_WRAP is a no-op (death tests
+  // are too slow there), so in DEBUG-on-Darwin builds runRejection is
+  // defined but never called. Suppress the resulting -Wunused-variable
+  // -Werror without an #ifdef.
+  [[maybe_unused]] auto runRejection = [&]() -> RefPtr<TextureHost> {
+    // display (8x8) exceeds ySize (4x4).
+    // Offsets: yOffset=0, cbOffset=16, crOffset=20
+    YCbCrDescriptor ycbcrDesc(
+        IntRect(0, 0, 8, 8), IntSize(4, 4), 4u, IntSize(2, 2), 2u, 0u, 16u, 20u,
+        StereoMode::MONO, ColorDepth::COLOR_8, YUVColorSpace::BT601,
+        ColorRange::LIMITED, TransferFunction::BT709,
+        ChromaSubsampling::HALF_WIDTH_AND_HEIGHT, mozilla::Nothing());
+
+    BufferDescriptor bufDesc(ycbcrDesc);
+    MemoryOrShmem memOrShmem(shmem);
+    SurfaceDescriptorBuffer sdBuffer(bufDesc, memOrShmem);
+    SurfaceDescriptor sd(sdBuffer);
+
+    RefPtr<TestSurfaceAllocator> deallocator = new TestSurfaceAllocator();
+    return CreateBackendIndependentTextureHost(sd, deallocator,
+                                               LayersBackend::LAYERS_NONE,
+                                               TextureFlags::DEALLOCATE_CLIENT);
+  };
+
+#ifdef DEBUG
+  SAVE_GDB_SLEEP_LOCAL();
+  EXPECT_DEATH_WRAP({ (void)runRejection(); }, "");
+  RESTORE_GDB_SLEEP_LOCAL();
+#else
+  RefPtr<TextureHost> host = runRejection();
+  EXPECT_EQ(host.get(), nullptr)
+      << "Must reject YCbCr descriptors where display rect exceeds Y plane "
+         "dimensions (display=8x8 vs ySize=4x4).";
+#endif
+}
+
+TEST(Layers, TextureYCbCrRejectsCbCrSizeInconsistentWithDisplay)
+{
+  auto shmemBuilder = ipc::Shmem::Builder(128);
+  ASSERT_TRUE(shmemBuilder);
+  auto [msg, shmem] = shmemBuilder.Build(101, false, 0);
+  ASSERT_TRUE(shmem.IsWritable());
+
+  // [[maybe_unused]]: on Darwin, EXPECT_DEATH_WRAP is a no-op (death tests
+  // are too slow there), so in DEBUG-on-Darwin builds runRejection is
+  // defined but never called. Suppress the resulting -Wunused-variable
+  // -Werror without an #ifdef.
+  [[maybe_unused]] auto runRejection = [&]() -> RefPtr<TextureHost> {
+    // display (8x8) fits within ySize (8x8), but cbCrSize (1x1) is too
+    // small for the chroma dimensions derived from display.
+    // Offsets: yOffset=0, cbOffset=64, crOffset=68
+    YCbCrDescriptor ycbcrDesc(
+        IntRect(0, 0, 8, 8), IntSize(8, 8), 8u, IntSize(1, 1), 1u, 0u, 64u, 68u,
+        StereoMode::MONO, ColorDepth::COLOR_8, YUVColorSpace::BT601,
+        ColorRange::LIMITED, TransferFunction::BT709,
+        ChromaSubsampling::HALF_WIDTH_AND_HEIGHT, mozilla::Nothing());
+
+    BufferDescriptor bufDesc(ycbcrDesc);
+    MemoryOrShmem memOrShmem(shmem);
+    SurfaceDescriptorBuffer sdBuffer(bufDesc, memOrShmem);
+    SurfaceDescriptor sd(sdBuffer);
+
+    RefPtr<TestSurfaceAllocator> deallocator = new TestSurfaceAllocator();
+    return CreateBackendIndependentTextureHost(sd, deallocator,
+                                               LayersBackend::LAYERS_NONE,
+                                               TextureFlags::DEALLOCATE_CLIENT);
+  };
+
+#ifdef DEBUG
+  SAVE_GDB_SLEEP_LOCAL();
+  EXPECT_DEATH_WRAP({ (void)runRejection(); }, "");
+  RESTORE_GDB_SLEEP_LOCAL();
+#else
+  RefPtr<TextureHost> host = runRejection();
+  EXPECT_EQ(host.get(), nullptr)
+      << "Must reject YCbCr descriptors where CbCr plane size is too small "
+         "for the chroma dimensions derived from display rect "
+         "(ChromaSize(8x8)=4x4 vs cbCrSize=1x1).";
+#endif
 }

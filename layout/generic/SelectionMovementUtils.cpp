@@ -702,9 +702,7 @@ static void AdjustCaretFrameForLineEnd(nsIFrame** aFrame, uint32_t* aOffset,
   if (!line) {
     return;
   }
-  uint32_t count = line->GetChildCount();
-  for (nsIFrame* f = line->mFirstChild; count > 0;
-       --count, f = f->GetNextSibling()) {
+  for (nsIFrame* f : line->ChildFrames()) {
     nsIFrame* r = CheckForTrailingTextFrameRecursive(f, *aFrame);
     if (r == *aFrame) {
       return;

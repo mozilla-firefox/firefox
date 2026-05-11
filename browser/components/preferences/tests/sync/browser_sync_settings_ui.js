@@ -7,31 +7,8 @@ let { UIState } = ChromeUtils.importESModule(
   "resource://services-sync/UIState.sys.mjs"
 );
 
-add_setup(async function () {
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.settings-redesign.enabled", true]],
-  });
-});
-
-async function runSyncTest(uiStateData, testCallback) {
-  const oldUIState = UIState.get;
-  UIState.get = () => uiStateData;
-
-  await openPreferencesViaOpenPreferencesAPI("paneSync", {
-    leaveOpen: true,
-  });
-  let doc = gBrowser.contentDocument;
-
-  try {
-    await testCallback(doc);
-  } finally {
-    UIState.get = oldUIState;
-    BrowserTestUtils.removeTab(gBrowser.selectedTab);
-  }
-}
-
 add_task(async function testSyncNoFxaSignIn() {
-  await runSyncTest(
+  await runSyncPaneTest(
     {
       status: UIState.STATUS_NOT_CONFIGURED,
       email: "foo@bar.com",
@@ -66,7 +43,7 @@ add_task(async function testSyncNoFxaSignIn() {
 });
 
 add_task(async function testSyncFxaNotVerified() {
-  await runSyncTest(
+  await runSyncPaneTest(
     {
       status: UIState.STATUS_NOT_VERIFIED,
       email: "foo@bar.com",
@@ -107,7 +84,7 @@ add_task(async function testSyncFxaNotVerified() {
 });
 
 add_task(async function testSyncFxaLoginFailed() {
-  await runSyncTest(
+  await runSyncPaneTest(
     {
       status: UIState.STATUS_LOGIN_FAILED,
       email: "foo@bar.com",
@@ -148,7 +125,7 @@ add_task(async function testSyncFxaLoginFailed() {
 });
 
 add_task(async function testSyncFxaSignedInSyncingOff() {
-  await runSyncTest(
+  await runSyncPaneTest(
     {
       status: UIState.STATUS_SIGNED_IN,
       email: "foo@bar.com",
@@ -207,7 +184,7 @@ add_task(async function testSyncFxaSignedInSyncingOn() {
     ],
   });
 
-  await runSyncTest(
+  await runSyncPaneTest(
     {
       status: UIState.STATUS_SIGNED_IN,
       email: "foo@bar.com",
@@ -277,7 +254,7 @@ add_task(async function testSyncedEnginesEmptyState() {
     ],
   });
 
-  await runSyncTest(
+  await runSyncPaneTest(
     {
       status: UIState.STATUS_SIGNED_IN,
       email: "foo@bar.com",

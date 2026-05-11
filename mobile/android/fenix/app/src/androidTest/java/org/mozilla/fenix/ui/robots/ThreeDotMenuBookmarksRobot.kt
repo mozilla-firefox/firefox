@@ -60,6 +60,7 @@ class ThreeDotMenuBookmarksRobot {
             Log.i(TAG, "clickMove: Trying to click the \"Move\" button")
             composeTestRule.moveButton().performClick()
             Log.i(TAG, "clickMove: Clicked the \"Move\" button")
+            composeTestRule.waitForIdle()
 
             BookmarksRobot(composeTestRule).interact()
             return BookmarksRobot.Transition(composeTestRule)

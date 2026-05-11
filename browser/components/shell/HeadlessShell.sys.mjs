@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { E10SUtils } from "resource://gre/modules/E10SUtils.sys.mjs";
 import { HiddenFrame } from "resource://gre/modules/HiddenFrame.sys.mjs";
 
 // Refrences to the progress listeners to keep them from being gc'ed
@@ -33,8 +34,19 @@ function loadContentWindow(browser, url) {
 
   const principal = Services.scriptSecurityManager.getSystemPrincipal();
   return new Promise(resolve => {
+    let oa = E10SUtils.predictOriginAttributes({
+      browser,
+    });
     let loadURIOptions = {
       triggeringPrincipal: principal,
+      remoteType: E10SUtils.getRemoteTypeForURI(
+        url,
+        true,
+        false,
+        E10SUtils.DEFAULT_REMOTE_TYPE,
+        null,
+        oa
+      ),
     };
     browser.loadURI(uri, loadURIOptions);
     let { webProgress } = browser;

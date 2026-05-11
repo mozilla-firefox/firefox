@@ -2,13 +2,26 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import os
 import sys
 
 from mozlog import handlers
 from mozlog.structuredlog import log_levels
 
+here = os.path.abspath(os.path.dirname(__file__))
+
+
+def setup_environment(tests_root=None):
+    if tests_root is None:
+        tests_root = os.path.join(here, "tests")
+    if tests_root not in sys.path:
+        sys.path.insert(0, tests_root)
+        from tools import localpaths  # noqa: F401
+
 
 def create_parser_wpt():
+    setup_environment()
+
     from wptrunner import wptcommandline
 
     result = wptcommandline.create_parser()

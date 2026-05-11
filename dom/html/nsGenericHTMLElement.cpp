@@ -369,16 +369,81 @@ EditContext* nsGenericHTMLElement::GetEditContext() const {
   return EditContext::GetForElement(*this);
 }
 
-void nsGenericHTMLElement::SetEditContext(EditContext* aContext,
-                                          ErrorResult& aRv) {
-  // TODO: handle errors and active EditContext changes:
+void nsGenericHTMLElement::SetEditContext(mozilla::dom::EditContext* aContext,
+                                          mozilla::ErrorResult& aRv) {
   // https://w3c.github.io/edit-context/#ref-for-dom-htmlelement-editcontext-4
+  // 1. If this's local name is neither a valid shadow host name nor "canvas",
+  //    then throw a "NotSupportedError" DOMException.
+  nsAtom* name = NodeInfo()->NameAtom();
+  if (name != nsGkAtoms::canvas &&
+      !nsContentUtils::IsValidShadowHostName(name)) {
+    aRv.ThrowNotSupportedError(
+        nsFmtCString(FMT_STRING("EditContext can only be attached to <canvas> "
+                                "and valid shadow hosts, not <{}>."),
+                     NS_ConvertUTF16toUTF8(LocalName())));
+    return;
+  }
+  // 2. If editContext is not null, then:
+  if (aContext) {
+    // 1. If editContext's associated element is equal to this, then terminate
+    //    these steps.
+    if (aContext->GetAssociatedElement() == this) {
+      return;
+    }
+    // 2. If editContext's associated element is not null, then throw a
+    //    "NotSupportedError" DOMException.
+    if (aContext->GetAssociatedElement()) {
+      aRv.ThrowNotSupportedError(
+          "EditContext can only be attached to one element at a time.");
+      return;
+    }
+  }
+  // 3. Let oldEditContext be the value of this's internal [[EditContext]] slot.
+  RefPtr<EditContext> oldEditContext = GetEditContext();
+  if (oldEditContext) {
+    // 4. If oldEditContext is not null and oldEditContext is this's node
+    //    document's active EditContext, then:
+    if (oldEditContext == OwnerDoc()->GetActiveEditContext()) {
+      // 1. Run the steps to deactivate an EditContext with oldEditContext.
+      oldEditContext->Deactivate();
+      // 2. If oldEditContext's associated element is not equal to this, then
+      //    terminate these steps.
+      if (oldEditContext->GetAssociatedElement() != this) {
+        return;
+      }
+      // 3. If editContext is not null, editContext's associated element is not
+      //    null and editContext's associated element is not equal to this, then
+      //    throw a "NotSupportedError" DOMException.
+      if (aContext && aContext->GetAssociatedElement() &&
+          aContext->GetAssociatedElement() != this) {
+        aRv.ThrowNotSupportedError(
+            "EditContext can only be attached to one element at a time.");
+        return;
+      }
+    }
+    // 5. If oldEditContext is not null, set oldEditContext's associated element
+    //    to null.
+    oldEditContext->SetAssociatedElement(nullptr);
+  }
+  // 6. If editContext is not null, then set editContext's associated element to
+  //    this.
+  if (aContext) {
+    aContext->SetAssociatedElement(this);
+  }
+  // 7. Set this's internal [[EditContext]] slot to be editContext.
   if (aContext) {
     SetFlags(ELEMENT_HAS_EDIT_CONTEXT);
   } else {
     UnsetFlags(ELEMENT_HAS_EDIT_CONTEXT);
   }
   EditContext::SetForElement(*this, aContext);
+
+  int32_t delta = (aContext != nullptr) - (oldEditContext != nullptr);
+  if (delta) {
+    ChangeEditableState(delta);
+  }
+  // Update the active EditContext since it might have changed.
+  OwnerDoc()->UpdateTextEditContext();
 }
 
 bool nsGenericHTMLElement::InNavQuirksMode(Document* aDoc) {
@@ -387,6 +452,11 @@ bool nsGenericHTMLElement::InNavQuirksMode(Document* aDoc) {
 
 void nsGenericHTMLElement::UpdateEditableState(bool aNotify) {
   // XXX Should we do this only when in a document?
+  if (GetEditContext()) {
+    SetEditableFlag(true);
+    UpdateReadOnlyState(aNotify);
+    return;
+  }
   ContentEditableState state = GetContentEditableState();
   if (state != ContentEditableState::Inherit) {
     SetEditableFlag(IsEditableState(state));

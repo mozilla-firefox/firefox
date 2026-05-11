@@ -670,15 +670,17 @@ export class UrlbarView {
    * @returns {boolean} Whether the view was opened.
    */
   autoOpen({ event, suppressFocusBorder = true }) {
+    if (!event) {
+      return false;
+    }
+    if (this.input.readOnly) {
+      return false;
+    }
     if (this.#pickSearchTipIfPresent(event)) {
       return false;
     }
     if (this.input.inOverflowPanel) {
       // The results panel is currently disabled in the overflow panel.
-      return false;
-    }
-
-    if (!event) {
       return false;
     }
 

@@ -132,6 +132,23 @@ launch_on_login:
     expires: never
     telemetry_mirror: Launch_on_login_LastProfileDisable_Startup
 
+  user_toggle:
+    type: event
+    description: >
+      Recorded when the user checks or unchecks the "Open Firefox when
+      your computer starts" checkbox in about:preferences.
+    bugs:
+      - https://bugzil.la/2034181
+    data_reviews:
+      - https://bugzil.la/2034181
+    notification_emails:
+      - drubino@mozilla.com
+    expires: never
+    extra_keys:
+      enabled:
+        type: boolean
+        description: Whether launch on login was turned on (true) or off (false).
+
 upgrade_dialog:
   trigger_reason:
     type: event
@@ -677,6 +694,28 @@ os.environment:
     expires: never
     telemetry_mirror: OS_ENVIRONMENT_IS_KEPT_IN_DOCK
 
+  desktop_entry_exists:
+    type: string
+    description: >
+      Determines whether a freedesktop.org desktop entry exists that matches
+      the remoting name, i.e. that is likely to associate with browser windows.
+
+      This will only be set on Linux, and is either:
+        * "absent", if none exists (or one exists but is marked Hidden, i.e.
+          deleted)
+        * "invisible", if it exists but is marked invisible (by NoDisplay etc)
+        * "visible" if it exists and is visible
+        * "sandboxed" if running under Flatpak or Snap, where it is likely
+          visible but detection is impossible
+    bugs:
+      - https://bugzil.la/2032619
+    data_reviews:
+      - https://bugzil.la/2032619
+    notification_emails:
+      - dmcintosh@mozilla.com
+      - drubino@mozilla.com
+    expires: 155
+
   is_taskbar_pinned:
     type: boolean
     description: >
@@ -712,6 +751,22 @@ os.environment:
       - shong@mozilla.com
     expires: never
     telemetry_mirror: OS_ENVIRONMENT_IS_TASKBAR_PINNED_PRIVATE
+
+  launch_on_login_state:
+    type: string
+    description: >
+      The state of the launch-on-login setting at startup. One of:
+      "enabled" (launch on login is active), "disabled" (not enabled
+      by the user), "disabled_by_settings" (blocked by Windows
+      Settings or policy), "not_supported" (feature unavailable on
+      this platform), or "error" (failed to determine state).
+    bugs:
+      - https://bugzil.la/2034180
+    data_reviews:
+      - https://bugzil.la/2034180
+    notification_emails:
+      - drubino@mozilla.com
+    expires: never
 
 security:
   https_only_mode_enabled:

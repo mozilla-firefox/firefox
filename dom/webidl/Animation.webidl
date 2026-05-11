@@ -22,8 +22,6 @@ interface Animation : EventTarget {
   attribute DOMString id;
   [Pure]
   attribute AnimationEffect? effect;
-  // Bug 2016878. Drop BinaryName once we support ViewTimeline interface.
-  [BinaryName="timelineFromJS"]
   attribute AnimationTimeline? timeline;
 
   [BinaryName="startTimeAsDouble"]

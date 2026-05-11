@@ -194,6 +194,61 @@ class nsLineBox final : public nsLineLink {
                                                  : mChildCount;
   }
 
+  // An iterator over the child frames of a single line.
+  class ChildFrameIterator {
+   public:
+    using value_type = nsIFrame*;
+    using pointer = value_type*;
+    using reference = value_type&;
+    using difference_type = ptrdiff_t;
+    // Stashing iterator (operator* returns by value), so the category can be
+    // at most std::input_iterator_tag.
+    using iterator_category = std::input_iterator_tag;
+
+    ChildFrameIterator(nsIFrame* aFrame, int32_t aRemaining)
+        : mCurrentFrame(aFrame), mRemainingChildCount(aRemaining) {}
+
+    nsIFrame* operator*() const { return mCurrentFrame; }
+
+    ChildFrameIterator& operator++() {
+      MOZ_ASSERT(mRemainingChildCount > 0);
+      --mRemainingChildCount;
+      mCurrentFrame =
+          mRemainingChildCount > 0 ? mCurrentFrame->GetNextSibling() : nullptr;
+      return *this;
+    }
+
+    bool operator==(const ChildFrameIterator&) const = default;
+
+   private:
+    nsIFrame* mCurrentFrame;
+    int32_t mRemainingChildCount;
+  };
+
+  class ChildFrameRange {
+   public:
+    explicit ChildFrameRange(const nsLineBox* aLine) : mLine(aLine) {}
+    ChildFrameIterator begin() const {
+      const int32_t count = mLine->GetChildCount();
+      return {count > 0 ? mLine->mFirstChild : nullptr, count};
+    }
+    ChildFrameIterator end() const { return {nullptr, 0}; }
+
+   private:
+    const nsLineBox* mLine;
+  };
+
+  // Return a range over this line's child frames, suitable for use with a
+  // range-based for loop.
+  //
+  // Example usage:
+  //   for (nsIFrame* f : line->ChildFrames()) { ... }
+  //
+  // Note: use the range-based for loop only when the frame sibling chain in
+  // this line is not mutated during traversal. If mutation is required, use
+  // mFirstChild and GetChildCount() instead.
+  ChildFrameRange ChildFrames() const { return ChildFrameRange(this); }
+
   /**
    * Register that aFrame is now on this line.
    */

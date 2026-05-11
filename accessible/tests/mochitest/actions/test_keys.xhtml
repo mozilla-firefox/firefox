@@ -12,50 +12,13 @@
   <script type="application/javascript"
           src="../common.js" />
   <script type="application/javascript"
-          src="../events.js" />
+          src="../promisified-events.js" />
 
   <script type="application/javascript">
   <![CDATA[
     SimpleTest.requestCompleteLog(); // To help diagnose bug 1845221
 
-    function openMenu(aMenuID, aMenuitemID)
-    {
-      this.menuNode = getNode(aMenuID);
-      this.menuitemNode = getNode(aMenuitemID);
-
-      this.eventSeq = [
-        new invokerChecker(EVENT_FOCUS, this.menuNode)
-      ];
-
-      this.invoke = function openMenu_invoke()
-      {
-        // Show menu.
-        this.menuNode.open = true;
-      }
-
-      this.finalCheck = function openMenu_finalCheck()
-      {
-        var menu = getAccessible(aMenuID);
-        is(menu.accessKey, (MAC ? "u" : "Alt+u"),
-           "Wrong accesskey on " + prettyName(this.menuitemNode));
-
-        var menuitem = getAccessible(aMenuitemID);
-        is(menuitem.accessKey, "p",
-           "Wrong accesskey on " + prettyName(this.menuitemNode));
-        is(menuitem.keyboardShortcut, (MAC ? "⌃l" : "Ctrl+l"),
-           "Wrong keyboard shortcut on " + prettyName(this.menuitemNode));
-      }
-
-      this.getID = function openMenu_getID()
-      {
-        return "menuitem accesskey and shortcut test " +
-          prettyName(this.menuItemNode);
-      }
-    }
-
-    var gQueue = null;
-    function doTest()
-    {
+    async function doTest() {
       // HTML element should get accessKey from associated XUL label.
       let input = getAccessible("input");
       is(input.accessKey, (MAC ? "⌃⌥i" : "Alt+Shift+i"),
@@ -67,9 +30,23 @@
       is(shadowButton.accessKey, (MAC ? "⌃⌥t" : "Alt+Shift+t"),
          "Wrong accessKey on shadow button");
 
-      gQueue = new eventQueue();
-      gQueue.push(new openMenu("menu", "menuitem"));
-      gQueue.invoke(); // Will call SimpleTest.finish();
+      let menuNode = getNode("menu");
+      let focused = waitForEvent(EVENT_FOCUS, menuNode);
+      menuNode.open = true;
+      await focused;
+
+      let menu = getAccessible("menu");
+      is(menu.accessKey, (MAC ? "u" : "Alt+u"),
+         "Wrong accesskey on " + prettyName(menuNode));
+
+      let menuitem = getAccessible("menuitem");
+      let menuitemNode = getNode("menuitem");
+      is(menuitem.accessKey, "p",
+         "Wrong accesskey on " + prettyName(menuitemNode));
+      is(menuitem.keyboardShortcut, (MAC ? "⌃l" : "Ctrl+l"),
+         "Wrong keyboard shortcut on " + prettyName(menuitemNode));
+
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();
@@ -123,4 +100,3 @@
   </hbox>
 
 </window>
-

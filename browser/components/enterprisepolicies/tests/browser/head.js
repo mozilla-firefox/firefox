@@ -8,24 +8,14 @@ const { EnterprisePolicyTesting, PoliciesPrefTracker } =
   ChromeUtils.importESModule(
     "resource://testing-common/EnterprisePolicyTesting.sys.mjs"
   );
+const { setupPolicyEngineWithJson } = EnterprisePolicyTesting;
+EnterprisePolicyTesting.pathResolver = getTestFilePath;
 
 ChromeUtils.defineESModuleGetters(this, {
   HomePage: "resource:///modules/HomePage.sys.mjs",
 });
 
 PoliciesPrefTracker.start();
-
-async function setupPolicyEngineWithJson(json, customSchema) {
-  PoliciesPrefTracker.restoreDefaultValues();
-  if (typeof json != "object") {
-    let filePath = getTestFilePath(json ? json : "non-existing-file.json");
-    return EnterprisePolicyTesting.setupPolicyEngineWithJson(
-      filePath,
-      customSchema
-    );
-  }
-  return EnterprisePolicyTesting.setupPolicyEngineWithJson(json, customSchema);
-}
 
 function checkLockedPref(prefName, prefValue) {
   EnterprisePolicyTesting.checkPolicyPref(prefName, prefValue, true);

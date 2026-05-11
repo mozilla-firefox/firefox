@@ -156,6 +156,8 @@ body {
 
   /* stylelint-disable-next-line media-query-no-invalid */
   @media -moz-pref("browser.nova.enabled") {
+    background-color: var(--background-color-canvas);
+
     --chrome-window-gap: 4px;
     --chrome-block-radius: 10px;
 
@@ -214,11 +216,6 @@ body {
     }
   }
 
-  /* stylelint-disable-next-line media-query-no-invalid */
-  @media -moz-pref("browser.nova.enabled") {
-    background-color: var(--background-color-canvas);
-  }
-
   :root[customizing] & {
     border-bottom-style: none;
   }
@@ -266,6 +263,11 @@ body {
       background-color: var(--toolbox-background-color-inactive);
       color: var(--toolbox-text-color-inactive);
     }
+  }
+
+  #navigator-toolbox,
+  #sidebar-main {
+    background-color: var(--toolbar-background-color);
   }
 }
 

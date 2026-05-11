@@ -178,7 +178,7 @@ class SearchTest {
         }
     }
 
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3135010
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/1059459
     @SmokeTest
     @Test
     fun verifyQRScanningCameraAccessDialogTest() {

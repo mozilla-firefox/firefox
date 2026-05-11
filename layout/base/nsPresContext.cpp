@@ -1789,9 +1789,9 @@ void nsPresContext::ThemeChanged(widget::ThemeChangeKind aKind) {
   mPendingThemeChangeKind |= unsigned(aKind);
 
   if (!mPendingThemeChanged) {
-    nsCOMPtr<nsIRunnable> ev =
-        new WeakRunnableMethod("nsPresContext::ThemeChangedInternal", this,
-                               &nsPresContext::ThemeChangedInternal);
+    nsCOMPtr<nsIRunnable> ev = MakeAndAddRef<WeakRunnableMethod>(
+        "nsPresContext::ThemeChangedInternal", this,
+        &nsPresContext::ThemeChangedInternal);
     RefreshDriver()->AddEarlyRunner(ev);
     mPendingThemeChanged = true;
   }

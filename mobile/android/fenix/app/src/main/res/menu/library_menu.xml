@@ -8,7 +8,7 @@
     <item
         android:id="@+id/close_history"
         android:icon="@drawable/mozac_ic_cross_24"
-        app:iconTint="?attr/textPrimary"
+        app:iconTint="?attr/colorOnSurface"
         android:title="@string/content_description_close_button"
         app:showAsAction="ifRoom" />
 </menu>

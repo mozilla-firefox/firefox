@@ -74,6 +74,7 @@ import:
               VIEW_HOMESCREEN: ://home
               OPEN_SETTINGS_ACCESSIBILITY: ://settings_accessibility
               OPEN_SETTINGS_ADDON_MANAGER: ://settings_addon_manager
+              OPEN_SETTINGS_AI_CONTROLS: ://settings_ai_controls
               OPEN_SETTINGS_DELETE_BROWSING_DATA: ://settings_delete_browsing_data
               OPEN_SETTINGS_LOGINS: ://settings_logins
               OPEN_SETTINGS_NOTIFICATIONS: ://settings_notifications

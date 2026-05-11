@@ -1168,6 +1168,19 @@ nsXULAppInfo::GetUpdateURL(nsACString& aResult) {
 }
 
 NS_IMETHODIMP
+nsXULAppInfo::GetRemotingName(nsACString& aResult) {
+  if (XRE_IsContentProcess()) {
+    MOZ_ASSERT(false,
+               "nsXULAppInfo::remotingName should not be accessed from the "
+               "content process");
+    return NS_ERROR_UNEXPECTED;
+  }
+  aResult.Assign(gAppData->remotingName);
+
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 nsXULAppInfo::GetLogConsoleErrors(bool* aResult) {
   *aResult = gLogConsoleErrors;
   return NS_OK;

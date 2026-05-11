@@ -23,20 +23,51 @@ class EditContext final : public DOMEventTargetHelper {
                                                    ErrorResult& aRv);
 
   void UpdateText(uint32_t aRangeStart, uint32_t aRangeEnd,
-                  const nsAString& aText) {}
-  void UpdateSelection(uint32_t aStart, uint32_t aEnd) {}
-  void UpdateControlBounds(DOMRect& aControlBounds) {}
-  void UpdateSelectionBounds(DOMRect& aSelectionBounds) {}
+                  const nsAString& aText) {
+    auto newLength = CheckedUint32(mText.Length()) + aText.Length();
+    if (NS_WARN_IF(!newLength.isValid())) {
+      // don't allow text length to overflow uint32_t
+      return;
+    }
+    size_t start = std::min(aRangeStart, aRangeEnd);
+    start = std::min(start, mText.Length());
+    size_t end = std::max(aRangeStart, aRangeEnd);
+    end = std::min(end, mText.Length());
+
+    mText.Replace(start, end - start, aText);
+  }
+  void UpdateSelection(uint32_t aStart, uint32_t aEnd) {
+    mSelectionStart = aStart;
+    mSelectionEnd = aEnd;
+  }
+  void UpdateControlBounds(DOMRect& aControlBounds);
+  void UpdateSelectionBounds(DOMRect& aSelectionBounds);
   void UpdateCharacterBounds(
       uint32_t aRangeStart,
-      const Sequence<OwningNonNull<DOMRect>>& aCharacterBounds) {}
-  void AttachedElements(nsTArray<RefPtr<nsGenericHTMLElement>>& aRetVal) {}
+      const Sequence<OwningNonNull<DOMRect>>& aCharacterBounds);
+  void AttachedElements(nsTArray<RefPtr<nsGenericHTMLElement>>& aRetVal) {
+    if (mAssociatedElement) {
+      aRetVal.AppendElement(mAssociatedElement);
+    }
+  }
 
-  void GetText(nsAString& aText) const {}
-  uint32_t SelectionStart() const { return 0; }
-  uint32_t SelectionEnd() const { return 0; }
-  uint32_t CharacterBoundsRangeStart() const { return 0; }
-  void CharacterBounds(nsTArray<RefPtr<DOMRect>>& aRetVal) {}
+  void GetText(nsAString& aText) const { aText = mText; }
+  uint32_t SelectionStart() const { return mSelectionStart; }
+  uint32_t SelectionEnd() const { return mSelectionEnd; }
+  uint32_t CharacterBoundsRangeStart() const {
+    return mCodepointRectsStartIndex;
+  }
+  void CharacterBounds(nsTArray<RefPtr<DOMRect>>& aRetVal) const;
+
+  nsGenericHTMLElement* GetAssociatedElement() const {
+    return mAssociatedElement;
+  }
+  void SetAssociatedElement(nsGenericHTMLElement* aElement) {
+    mAssociatedElement = aElement;
+  }
+
+  // https://w3c.github.io/edit-context/#dfn-deactivate-an-editcontext
+  MOZ_CAN_RUN_SCRIPT void Deactivate();
 
   IMPL_EVENT_HANDLER(characterboundsupdate);
   IMPL_EVENT_HANDLER(compositionstart);
@@ -46,12 +77,31 @@ class EditContext final : public DOMEventTargetHelper {
 
   static EditContext* GetForElement(const Element& aElement);
   static void SetForElement(const Element& aElement, EditContext* aEditContext);
+  /*
+   * Returns whether there is any EditContext attached to any element
+   * in this process.
+   */
+  static bool IsAnyAttached();
 
  private:
   explicit EditContext(nsIGlobalObject* aGlobalObject,
-                       const EditContextInit& aInit)
-      : DOMEventTargetHelper(aGlobalObject) {}
+                       const EditContextInit& aInit);
   ~EditContext() = default;
+
+  using Rect = gfx::RectTyped<CSSPixel, double>;
+
+  RefPtr<DOMRect> ToDOMRect(const Rect& copy) const;
+  Rect ToRect(const DOMRect& rect) const;
+
+  RefPtr<nsGenericHTMLElement> mAssociatedElement;
+  nsTArray<Rect> mCodepointRects;
+  Rect mControlBounds;
+  Rect mSelectionBounds;
+  nsString mText;
+  uint32_t mSelectionStart = 0;
+  uint32_t mSelectionEnd = 0;
+  uint32_t mCodepointRectsStartIndex = 0;
+  bool mIsComposing = false;
 };
 
 }  // namespace mozilla::dom

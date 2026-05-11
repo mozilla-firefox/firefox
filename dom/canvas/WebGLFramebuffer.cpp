@@ -983,7 +983,7 @@ WebGLFramebuffer::CompletenessInfo::~CompletenessInfo() {
 // Entrypoints
 
 FBStatus WebGLFramebuffer::CheckFramebufferStatus() const {
-  if (MOZ_UNLIKELY(mOpaque && !mInOpaqueRAF)) {
+  if (mOpaque && !mInOpaqueRAF) [[unlikely]] {
     // Opaque Framebuffers are considered incomplete outside of a RAF.
     return LOCAL_GL_FRAMEBUFFER_UNSUPPORTED;
   }
@@ -1192,7 +1192,7 @@ bool WebGLFramebuffer::FramebufferAttach(const GLenum attachEnum,
   MOZ_ASSERT(mContext->mBoundDrawFramebuffer == this ||
              mContext->mBoundReadFramebuffer == this);
 
-  if (MOZ_UNLIKELY(mOpaque)) {
+  if (mOpaque) [[unlikely]] {
     // An opaque framebuffer's attachments cannot be inspected or changed.
     return false;
   }
@@ -1224,7 +1224,7 @@ Maybe<double> WebGLFramebuffer::GetAttachmentParameter(GLenum attachEnum,
         " STENCIL_ATTACHMENT for a framebuffer.");
     return Nothing();
   }
-  if (MOZ_UNLIKELY(mOpaque)) {
+  if (mOpaque) [[unlikely]] {
     mContext->ErrorInvalidOperation(
         "An opaque framebuffer's attachments cannot be inspected or changed.");
     return Nothing();

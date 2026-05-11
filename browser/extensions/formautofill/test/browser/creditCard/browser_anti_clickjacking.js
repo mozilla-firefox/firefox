@@ -118,7 +118,6 @@ add_task(async function test_no_delay() {
       await SimpleTest.promiseFocus(browser);
       await runAndWaitForAutocompletePopupOpen(browser, async () => {
         await focusAndWaitForFieldsIdentified(browser, focusInput);
-        await BrowserTestUtils.synthesizeKey("VK_DOWN", {}, browser);
       });
       const firstItem = getDisplayedPopupItems(browser)[0];
       ok(!firstItem.disabled, "Popup should be enabled upon opening.");

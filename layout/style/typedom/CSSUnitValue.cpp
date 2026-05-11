@@ -90,7 +90,10 @@ void CSSUnitValue::ToCssTextWithProperty(const CSSPropertyId& aPropertyId,
       case eCSSProperty_column_width:
       case eCSSProperty_flex_basis:
       case eCSSProperty_font_size:
+      case eCSSProperty_line_height:
       case eCSSProperty_perspective:
+      case eCSSProperty_stroke_dasharray:
+      case eCSSProperty_stroke_width:
       case eCSSProperty_tab_size:
       case eCSSProperty_transition_duration:
       case eCSSProperty_column_gap:

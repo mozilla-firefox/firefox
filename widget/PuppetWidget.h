@@ -75,6 +75,10 @@ class PuppetWidget final : public nsIWidget,
 
   void InitIMEState();
 
+  void InitSupportsUnadjustedMovement(bool aSupportsUnadjustedMovement) {
+    mSupportsUnadjustedMovement = aSupportsUnadjustedMovement;
+  }
+
   void Destroy() override;
 
   void Show(bool aState) override;
@@ -268,8 +272,13 @@ class PuppetWidget final : public nsIWidget,
       double aDeltaX, double aDeltaY, int32_t aModifierFlags,
       nsISynthesizedEventCallback* aCallback) override;
 
-  void LockNativePointer() override;
+  void LockNativePointer(NativePointerLockMode aNativePointerLockMode) override;
   void UnlockNativePointer() override;
+  void SetNativePointerLockMode(
+      NativePointerLockMode aNativePointerLockMode) override;
+  bool SupportsUnadjustedMovement() override {
+    return mSupportsUnadjustedMovement;
+  }
 
   void StartAsyncScrollbarDrag(const AsyncDragMetrics& aDragMetrics) override;
 
@@ -386,6 +395,7 @@ class PuppetWidget final : public nsIWidget,
   // destroyed. So, until this meets new eCompositionStart, following
   // composition events should be ignored if this is set to true.
   bool mIgnoreCompositionEvents;
+  bool mSupportsUnadjustedMovement = false;
 };
 
 }  // namespace widget

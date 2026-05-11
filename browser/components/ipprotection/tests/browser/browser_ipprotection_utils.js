@@ -15,35 +15,40 @@ const MB = BANDWIDTH.BYTES_IN_MB;
 
 add_task(async function test_format_remaining_bandwidth_gb() {
   const testCases = [
-    { label: "50 GB", bytes: 50 * GB, expectedValue: 50, expectedUseGB: true },
+    {
+      label: "50 GB",
+      bytes: 50 * GB,
+      expectedValue: "50",
+      expectedUseGB: true,
+    },
     {
       label: "49.9 GB",
       bytes: Math.floor(49.9 * GB),
-      expectedValue: 49.9,
+      expectedValue: "49.9",
       expectedUseGB: true,
     },
     {
       label: "30 GB",
       bytes: Math.floor(30 * GB),
-      expectedValue: 30,
+      expectedValue: "30",
       expectedUseGB: true,
     },
     {
       label: "12.1 GB",
       bytes: Math.floor(12.1 * GB),
-      expectedValue: 12.1,
+      expectedValue: "12.1",
       expectedUseGB: true,
     },
     {
       label: "4.9 GB",
       bytes: Math.floor(4.9 * GB),
-      expectedValue: 4.9,
+      expectedValue: "4.9",
       expectedUseGB: true,
     },
     {
       label: "1.0 GB",
       bytes: Math.floor(1.0 * GB),
-      expectedValue: 1,
+      expectedValue: "1",
       expectedUseGB: true,
     },
   ];
@@ -103,10 +108,10 @@ add_task(async function test_format_remaining_bandwidth_mb() {
 add_task(
   async function test_format_remaining_bandwidth_rounds_to_one_decimal() {
     const testCases = [
-      { bytes: Math.floor(12.14 * GB), expectedValue: 12.1 },
-      { bytes: Math.floor(12.16 * GB), expectedValue: 12.2 },
-      { bytes: Math.floor(4.96 * GB), expectedValue: 5 },
-      { bytes: Math.floor(4.94 * GB), expectedValue: 4.9 },
+      { bytes: Math.floor(12.14 * GB), expectedValue: "12.1" },
+      { bytes: Math.floor(12.16 * GB), expectedValue: "12.2" },
+      { bytes: Math.floor(4.96 * GB), expectedValue: "5" },
+      { bytes: Math.floor(4.94 * GB), expectedValue: "4.9" },
     ];
 
     for (const { bytes, expectedValue } of testCases) {
@@ -128,5 +133,14 @@ add_task(async function test_format_remaining_bandwidth_mb_floors() {
     value,
     Math.floor(bytes / MB),
     "MB value should be floored, not rounded"
+  );
+});
+
+add_task(async function test_format_remaining_bandwidth_locale() {
+  const { value } = formatRemainingBandwidth(Math.floor(4.7 * GB), "de");
+  Assert.equal(
+    value,
+    "4,7",
+    "German locale should use comma as decimal separator"
   );
 });

@@ -306,27 +306,26 @@ JS::Symbol* js::intl::GlobalIntlData::fallbackSymbol(JSContext* cx) {
 }
 
 void js::intl::GlobalIntlData::trace(JSTracer* trc) {
-  TraceNullableEdge(trc, &realmTimeZone_, "GlobalIntlData::realmTimeZone_");
-  TraceNullableEdge(trc, &defaultTimeZone_, "GlobalIntlData::defaultTimeZone_");
-  TraceNullableEdge(trc, &defaultTimeZoneObject_,
-                    "GlobalIntlData::defaultTimeZoneObject_");
-  TraceNullableEdge(trc, &timeZoneObject_, "GlobalIntlData::timeZoneObject_");
+  TraceEdge(trc, &realmTimeZone_, "GlobalIntlData::realmTimeZone_");
+  TraceEdge(trc, &defaultTimeZone_, "GlobalIntlData::defaultTimeZone_");
+  TraceEdge(trc, &defaultTimeZoneObject_,
+            "GlobalIntlData::defaultTimeZoneObject_");
+  TraceEdge(trc, &timeZoneObject_, "GlobalIntlData::timeZoneObject_");
 
-  TraceNullableEdge(trc, &collatorLocale_, "GlobalIntlData::collatorLocale_");
-  TraceNullableEdge(trc, &collator_, "GlobalIntlData::collator_");
+  TraceEdge(trc, &collatorLocale_, "GlobalIntlData::collatorLocale_");
+  TraceEdge(trc, &collator_, "GlobalIntlData::collator_");
 
-  TraceNullableEdge(trc, &numberFormatLocale_,
-                    "GlobalIntlData::numberFormatLocale_");
-  TraceNullableEdge(trc, &numberFormat_, "GlobalIntlData::numberFormat_");
+  TraceEdge(trc, &numberFormatLocale_, "GlobalIntlData::numberFormatLocale_");
+  TraceEdge(trc, &numberFormat_, "GlobalIntlData::numberFormat_");
 
-  TraceNullableEdge(trc, &dateTimeFormatLocale_,
-                    "GlobalIntlData::dateTimeFormatLocale_");
-  TraceNullableEdge(trc, &dateTimeFormatToLocaleAll_,
-                    "GlobalIntlData::dateTimeFormatToLocaleAll_");
-  TraceNullableEdge(trc, &dateTimeFormatToLocaleDate_,
-                    "GlobalIntlData::dateTimeFormatToLocaleDate_");
-  TraceNullableEdge(trc, &dateTimeFormatToLocaleTime_,
-                    "GlobalIntlData::dateTimeFormatToLocaleTime_");
+  TraceEdge(trc, &dateTimeFormatLocale_,
+            "GlobalIntlData::dateTimeFormatLocale_");
+  TraceEdge(trc, &dateTimeFormatToLocaleAll_,
+            "GlobalIntlData::dateTimeFormatToLocaleAll_");
+  TraceEdge(trc, &dateTimeFormatToLocaleDate_,
+            "GlobalIntlData::dateTimeFormatToLocaleDate_");
+  TraceEdge(trc, &dateTimeFormatToLocaleTime_,
+            "GlobalIntlData::dateTimeFormatToLocaleTime_");
 
-  TraceNullableEdge(trc, &fallbackSymbol_, "GlobalIntlData::fallbackSymbol_");
+  TraceEdge(trc, &fallbackSymbol_, "GlobalIntlData::fallbackSymbol_");
 }

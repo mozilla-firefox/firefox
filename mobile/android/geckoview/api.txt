@@ -1732,6 +1732,7 @@ package org.mozilla.geckoview {
     method @Nullable @UiThread default public GeckoResult<GeckoSession.PromptDelegate.PromptResponse> onSharePrompt(@NonNull GeckoSession, @NonNull GeckoSession.PromptDelegate.SharePrompt);
     method @Nullable @UiThread default public GeckoResult<GeckoSession.PromptDelegate.PromptResponse> onShowPrivacyPolicyIdentityCredential(@NonNull GeckoSession, @NonNull GeckoSession.PromptDelegate.IdentityCredential.PrivacyPolicyPrompt);
     method @Nullable @UiThread default public GeckoResult<GeckoSession.PromptDelegate.PromptResponse> onTextPrompt(@NonNull GeckoSession, @NonNull GeckoSession.PromptDelegate.TextPrompt);
+    method @Nullable @UiThread default public GeckoResult<GeckoSession.PromptDelegate.PromptResponse> onWebAuthnRelatedOriginPrompt(@NonNull GeckoSession, @NonNull GeckoSession.PromptDelegate.WebAuthnRelatedOriginPrompt);
   }
 
   public static class GeckoSession.PromptDelegate.AlertPrompt extends GeckoSession.PromptDelegate.BasePrompt {
@@ -2024,6 +2025,14 @@ package org.mozilla.geckoview {
     method @NonNull @UiThread public GeckoSession.PromptDelegate.PromptResponse confirm(@NonNull String);
     field @Nullable public final String defaultValue;
     field @Nullable public final String message;
+  }
+
+  public static class GeckoSession.PromptDelegate.WebAuthnRelatedOriginPrompt extends GeckoSession.PromptDelegate.BasePrompt {
+    ctor protected WebAuthnRelatedOriginPrompt(@NonNull String, @Nullable String, @Nullable String, boolean, @NonNull GeckoSession.PromptDelegate.BasePrompt.Observer);
+    method @NonNull @UiThread public GeckoSession.PromptDelegate.PromptResponse confirm(@Nullable AllowOrDeny);
+    field public final boolean isCreate;
+    field @Nullable public final String origin;
+    field @Nullable public final String rpId;
   }
 
   @Retention(value=RetentionPolicy.SOURCE) public static interface GeckoSession.RestartReason {

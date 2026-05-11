@@ -70,6 +70,7 @@ object SupportUtils {
         REQUESTED_CRASH_MINIDUMP("unsent-crash-reports-in-firefox-android"),
         TERMS_OF_USE("firefox-terms-of-use-faq"),
         RELAY("relay-masks-android"),
+        VPN("firefox-android-vpn"),
 
         /**
          * SUMO page for Local Network Access & Local Device Access permissions

@@ -54,7 +54,7 @@
             android:layout_height="wrap_content"
             android:importantForAccessibility="no"
             app:srcCompat="@drawable/mozac_ic_lock_24"
-            app:tint="?attr/textPrimary" />
+            app:tint="?attr/colorOnSurface" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -66,7 +66,7 @@
                 android:layout_width="match_parent"
                 android:paddingStart="8dp"
                 android:layout_height="wrap_content"
-                app:drawableEndCompat="@drawable/ic_arrowhead_right"
+                app:drawableEndCompat="@drawable/mozac_ic_chevron_right_24"
                 android:paddingEnd="0dp"
                 tools:text="Connection is secure" />
         </LinearLayout>

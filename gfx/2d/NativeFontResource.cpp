@@ -43,7 +43,8 @@ class NativeFontResourceDataMemoryReporter final : public nsIMemoryReporter {
 NS_IMPL_ISUPPORTS(NativeFontResourceDataMemoryReporter, nsIMemoryReporter)
 
 void NativeFontResource::RegisterMemoryReporter() {
-  RegisterStrongMemoryReporter(new NativeFontResourceDataMemoryReporter);
+  RegisterStrongMemoryReporter(
+      MakeAndAddRef<NativeFontResourceDataMemoryReporter>());
 }
 
 }  // namespace gfx

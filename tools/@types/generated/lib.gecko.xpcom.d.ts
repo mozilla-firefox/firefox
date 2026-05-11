@@ -1333,6 +1333,8 @@ interface nsIXULChromeRegistry extends nsIChromeRegistry {
   isLocaleRTL(package: string): boolean;
   allowScriptsForPackage(url: nsIURI): boolean;
   allowContentToAccess(url: nsIURI): boolean;
+  canLoadURLRemotely(url: nsIURI): boolean;
+  mustLoadURLRemotely(url: nsIURI): boolean;
 }
 
 // https://searchfox.org/firefox-main/source/chrome/nsIToolkitChromeRegistry.idl

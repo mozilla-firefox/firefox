@@ -9,6 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">Probíhá import záložek</string>
+  <!-- Description for the bookmarks import loading dialog. -->
+  <string name="mozac_feature_importer_dialog_description">Ponechte tuto obrazovku otevřenou. Mělo by to trvat jen několik sekund.</string>
   <!-- Label for the cancel action on the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_cancel">Zrušit</string>
 </resources>

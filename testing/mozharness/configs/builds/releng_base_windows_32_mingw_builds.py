@@ -13,11 +13,6 @@ config = {
     # releng_base_linux_64_builds.py
     "secret_files": [
         {
-            "filename": "/builds/gls-gapi.data",
-            "secret_name": "project/releng/gecko/build/level-%(scm-level)s/gls-gapi.data",
-            "min_scm_level": 1,
-        },
-        {
             "filename": "/builds/sb-gapi.data",
             "secret_name": "project/releng/gecko/build/level-%(scm-level)s/sb-gapi.data",
             "min_scm_level": 1,

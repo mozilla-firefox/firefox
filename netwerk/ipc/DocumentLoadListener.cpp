@@ -2469,12 +2469,27 @@ void DocumentLoadListener::TriggerRedirectToRealChannel(
   // switch, and should not result in a document being loaded in the content
   // process.
   if (contentParent && !silentErrorLoad) {
+    nsCOMPtr<nsIURI> docURI;
+    MOZ_ALWAYS_SUCCEEDS(
+        NS_GetFinalChannelURI(mChannel, getter_AddRefs(docURI)));
+
     // Validate that the target process, if specified, would be allowed to load
     // this principal, and fail the navigation if it would not.
-    // System principals are allowed for now, as they are used in some
-    // edge-cases.
-    if (!contentParent->ValidatePrincipal(
-            unsandboxedPrincipal, {ValidatePrincipalOptions::AllowSystem})) {
+    // NOTE: Keep this in sync with the similar check in
+    // BrowserParent::RecvNewWindowGlobal.
+    EnumSet<ValidatePrincipalOptions> validationOptions = {};
+    // FIXME(bug 1699385): Remove allowSystem for blobs
+    // FIXME(bug 1698087): chrome://devtools/**/webextension-fallback.html
+    // Automation-Only: chrome://reftest/** + blank subframes
+    if (docURI->SchemeIs("blob") || docURI->SchemeIs("chrome") ||
+        (xpc::IsInAutomation() && NS_IsAboutBlank(docURI) &&
+         GetParentWindowContext() &&
+         GetParentWindowContext()->Manager()->Manager() == contentParent &&
+         GetParentWindowContext()->DocumentPrincipal()->IsSystemPrincipal())) {
+      validationOptions += ValidatePrincipalOptions::AllowSystem;
+    }
+    if (!contentParent->ValidatePrincipal(unsandboxedPrincipal,
+                                          validationOptions)) {
       ContentParent::LogAndAssertFailedPrincipalValidationInfo(
           unsandboxedPrincipal, "TriggerRedirectToRealChannel");
       RedirectToRealChannelFinished(NS_ERROR_FAILURE);

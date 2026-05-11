@@ -1,0 +1,33 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>WebAuthn Related Origin</title>
+<script>
+  async function createCredential() {
+    const challenge = new Uint8Array(16);
+    crypto.getRandomValues(challenge);
+    return navigator.credentials.create({
+      publicKey: {
+        rp: { id: "example.org", name: "Example" },
+        user: {
+          id: new Uint8Array(16),
+          name: "user@example.com",
+          displayName: "User",
+        },
+        challenge,
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+      },
+    });
+  }
+
+  async function getAssertion(credentialId) {
+    const challenge = new Uint8Array(16);
+    crypto.getRandomValues(challenge);
+    return navigator.credentials.get({
+      publicKey: {
+        rpId: "example.org",
+        challenge,
+        allowCredentials: [{ type: "public-key", id: credentialId }],
+      },
+    });
+  }
+</script>

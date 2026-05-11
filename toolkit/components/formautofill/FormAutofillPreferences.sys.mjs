@@ -30,76 +30,9 @@ ChromeUtils.defineLazyGetter(
     )
 );
 
-const MANAGE_ADDRESSES_URL =
-  "chrome://formautofill/content/manageAddresses.xhtml";
 const EDIT_ADDRESS_URL = "chrome://formautofill/content/editAddress.xhtml";
-const MANAGE_CREDITCARDS_URL =
-  "chrome://formautofill/content/manageCreditCards.xhtml";
 const EDIT_CREDIT_CARD_URL =
   "chrome://formautofill/content/editCreditCard.xhtml";
-
-const {
-  MANAGE_ADDRESSES_L10N_IDS,
-  EDIT_ADDRESS_L10N_IDS,
-  MANAGE_CREDITCARDS_L10N_IDS,
-  EDIT_CREDITCARD_L10N_IDS,
-} = FormAutofillUtils;
-
-const { ENABLED_AUTOFILL_ADDRESSES_PREF, ENABLED_AUTOFILL_CREDITCARDS_PREF } =
-  FormAutofill;
-
-const FORM_AUTOFILL_CONFIG = {
-  payments: {
-    l10nId: "payments-group",
-    headingLevel: 2,
-    items: [
-      {
-        id: "saveAndFillPayments",
-        l10nId: "autofill-payment-methods-checkbox-message-2",
-        supportPage: "credit-card-autofill",
-        items: [
-          {
-            id: "requireOSAuthForPayments",
-            l10nId: "autofill-reauth-payment-methods-checkbox-2",
-            supportPage:
-              "credit-card-autofill#w_require-authentication-for-autofill",
-          },
-        ],
-      },
-      {
-        id: "savedPaymentsButton",
-        l10nId: "autofill-payment-methods-manage-payments-button",
-        control: "moz-box-button",
-        controlAttrs: {
-          "search-l10n-ids": MANAGE_CREDITCARDS_L10N_IDS.concat(
-            EDIT_CREDITCARD_L10N_IDS
-          ).join(","),
-        },
-      },
-    ],
-  },
-  addresses: {
-    l10nId: "addresses-group",
-    headingLevel: 2,
-    items: [
-      {
-        id: "saveAndFillAddresses",
-        l10nId: "autofill-addresses-checkbox-message",
-        supportPage: "automatically-fill-your-address-web-forms",
-      },
-      {
-        id: "savedAddressesButton",
-        l10nId: "autofill-addresses-manage-addresses-button",
-        control: "moz-box-button",
-        controlAttrs: {
-          "search-l10n-ids": MANAGE_ADDRESSES_L10N_IDS.concat(
-            EDIT_ADDRESS_L10N_IDS
-          ).join(","),
-        },
-      },
-    ],
-  },
-};
 
 export class FormAutofillPreferences {
   /**
@@ -118,75 +51,7 @@ export class FormAutofillPreferences {
    * @param  {HTMLDocument} document
    */
   createPreferenceGroup(document) {
-    const win = document.documentGlobal;
-    win.Preferences.addAll([
-      // Credit cards and addresses
-      { id: ENABLED_AUTOFILL_ADDRESSES_PREF, type: "bool" },
-      { id: ENABLED_AUTOFILL_CREDITCARDS_PREF, type: "bool" },
-      {
-        id: "extensions.formautofill.creditCards.os-auth.locked.enabled",
-        type: "bool",
-      },
-    ]);
-
-    win.Preferences.addSetting({
-      id: "saveAndFillAddresses",
-      pref: ENABLED_AUTOFILL_ADDRESSES_PREF,
-      visible: () => FormAutofill.isAutofillAddressesAvailable,
-    });
-    win.Preferences.addSetting({
-      id: "savedAddressesButton",
-      pref: null,
-      visible: () => FormAutofill.isAutofillAddressesAvailable,
-      onUserClick: e => {
-        e.preventDefault();
-        if (Services.prefs.getBoolPref("browser.settings-redesign.enabled")) {
-          e.target.documentGlobal.gotoPref("paneManageAddresses");
-        } else {
-          e.target.documentGlobal.gSubDialog.open(MANAGE_ADDRESSES_URL);
-        }
-      },
-    });
-
-    win.Preferences.addSetting({
-      id: "saveAndFillPayments",
-      pref: ENABLED_AUTOFILL_CREDITCARDS_PREF,
-      visible: () => FormAutofill.isAutofillCreditCardsAvailable,
-    });
-    win.Preferences.addSetting({
-      id: "savedPaymentsButton",
-      pref: null,
-      visible: () => FormAutofill.isAutofillCreditCardsAvailable,
-      onUserClick: e => {
-        e.preventDefault();
-
-        if (Services.prefs.getBoolPref("browser.settings-redesign.enabled")) {
-          e.target.documentGlobal.gotoPref("paneManagePayments");
-        } else {
-          e.target.documentGlobal.gSubDialog.open(MANAGE_CREDITCARDS_URL);
-        }
-      },
-    });
-    win.Preferences.addSetting({
-      id: "requireOSAuthForPayments",
-      visible: () => lazy.OSKeyStore.canReauth(),
-      get: () => FormAutofillUtils.getOSAuthEnabled(),
-      async set(checked) {
-        await FormAutofillPreferences.trySetOSAuthEnabled(win, checked);
-
-        // Trigger change event to keep checkbox UI in sync with pref value
-        Services.obs.notifyObservers(null, "OSAuthEnabledChange");
-      },
-      setup: emitChange => {
-        Services.obs.addObserver(emitChange, "OSAuthEnabledChange");
-        return () =>
-          Services.obs.removeObserver(emitChange, "OSAuthEnabledChange");
-      },
-    });
-
-    win.SettingGroupManager.registerGroups(FORM_AUTOFILL_CONFIG);
-    win.initSettingGroup("payments");
-    win.initSettingGroup("addresses");
+    const win = document.ownerGlobal;
     Services.obs.notifyObservers(win, "formautofill-preferences-initialized");
   }
 
@@ -341,8 +206,8 @@ export class FormAutofillPreferences {
           l10nId: "address-moz-box-item",
           iconSrc: "chrome://browser/skin/notification-icons/geo.svg",
           l10nArgs: {
-            name: `${record.name}`,
-            address: addressFormatted,
+            name: record.name || addressFormatted,
+            address: record.name ? addressFormatted : "",
           },
           options: [
             {

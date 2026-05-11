@@ -41,7 +41,7 @@
                 android:layout_marginStart="54dp"
                 android:padding="16dp"
                 android:text="@string/mozac_feature_addons_enabled"
-                android:textColor="?attr/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp" />
 
             <com.google.android.material.materialswitch.MaterialSwitch
@@ -57,10 +57,10 @@
                 android:text="@string/mozac_feature_addons_settings_run_in_private_browsing"
                 android:padding="16dp"
                 android:textSize="16sp"
-                android:textColor="?attr/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:drawablePadding="32dp"
                 android:drawableStart="@drawable/mozac_ic_private_mode_fill_24"
-                app:drawableTint="?attr/textPrimary" />
+                app:drawableTint="?attr/colorOnSurface" />
 
             <TextView
                 android:id="@+id/settings"
@@ -72,9 +72,9 @@
                 android:padding="16dp"
                 android:text="@string/mozac_feature_addons_settings"
                 android:textSize="16sp"
-                android:textColor="?attr/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 app:drawableStartCompat="@drawable/mozac_ic_settings_24"
-                app:drawableTint="?attr/textPrimary" />
+                app:drawableTint="?attr/colorOnSurface" />
 
             <TextView
                 android:id="@+id/details"
@@ -84,11 +84,11 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:drawablePadding="32dp"
                 android:padding="16dp"
-                android:textColor="?attr/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:text="@string/mozac_feature_addons_details"
                 android:textSize="16sp"
                 app:drawableStartCompat="@drawable/mozac_ic_information_24"
-                app:drawableTint="?attr/textPrimary" />
+                app:drawableTint="?attr/colorOnSurface" />
 
             <TextView
                 android:id="@+id/permissions"
@@ -99,10 +99,10 @@
                 android:drawablePadding="32dp"
                 android:padding="16dp"
                 android:text="@string/mozac_feature_addons_permissions"
-                android:textColor="?attr/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp"
                 app:drawableStartCompat="@drawable/mozac_ic_permissions_24"
-                app:drawableTint="?attr/textPrimary" />
+                app:drawableTint="?attr/colorOnSurface" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/remove_add_on"

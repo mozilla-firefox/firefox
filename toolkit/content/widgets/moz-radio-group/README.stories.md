@@ -112,6 +112,26 @@ Would be used to set labels on the different elements as follows:
 </moz-radio-group>
 ```
 
+### Accessible name without a visible label
+
+When surrounding context makes the group's purpose clear and a visible label would be redundant, use `aria-label` to provide an accessible name without rendering visible text:
+
+```html
+<moz-radio-group name="theme" aria-label="Color theme">
+  <moz-radio value="light" label="Light"></moz-radio>
+  <moz-radio value="dark" label="Dark"></moz-radio>
+</moz-radio-group>
+```
+
+`aria-label` can be set as a Fluent attribute the same way `label` does:
+
+```
+moz-radio-group-id =
+  .aria-label = Color theme
+```
+
+In most cases a visible `label` is preferred for usability reasons. Only use `aria-label` when the surrounding UI already makes the group's purpose obvious.
+
 ### Nested fields
 
 `moz-radio` elements support nested or dependent fields via a `nested` named

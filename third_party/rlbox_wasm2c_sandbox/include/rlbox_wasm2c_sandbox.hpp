@@ -650,7 +650,12 @@ public:
         return nullptr;
       }
     } else {
-      return reinterpret_cast<void*>(heap_base + p);
+      auto ret = reinterpret_cast<void*>(heap_base + p);
+      if constexpr (sizeof(uintptr_t) == sizeof(uint32_t)) {
+        detail::dynamic_check(impl_is_pointer_in_sandbox_memory(ret),
+                              "Received an invalid pointer");
+      }
+      return ret;
     }
   }
 
@@ -749,27 +754,42 @@ public:
     }
   }
 
-  static inline bool impl_is_in_same_sandbox(const void* p1, const void* p2)
+  static inline bool impl_is_in_same_sandbox(const void* p1, const void* p2,
+    rlbox_wasm2c_sandbox* (*expensive_sandbox_finder)(const void* hostptr_or_unsandboxedptr)
+  )
   {
-    uintptr_t heap_base_mask = std::numeric_limits<uintptr_t>::max() &
-                               ~(std::numeric_limits<T_PointerType>::max());
-    return (reinterpret_cast<uintptr_t>(p1) & heap_base_mask) ==
-           (reinterpret_cast<uintptr_t>(p2) & heap_base_mask);
+    if constexpr (sizeof(uintptr_t) == sizeof(uint32_t)) {
+      if (p1 == nullptr || p2 == nullptr) {
+        return true;
+      }
+
+      // This call returns the sandbox the pointer belongs to.
+      // It returns null if this belongs to the app.
+      void* p1_sbx = expensive_sandbox_finder(p1);
+      void* p2_sbx = expensive_sandbox_finder(p2);
+
+      return p1_sbx == p2_sbx;
+    } else {
+      uintptr_t heap_base_mask = std::numeric_limits<uintptr_t>::max() &
+                               ~(static_cast<uintptr_t>(std::numeric_limits<T_PointerType>::max()));
+      return (reinterpret_cast<uintptr_t>(p1) & heap_base_mask) ==
+            (reinterpret_cast<uintptr_t>(p2) & heap_base_mask);
+    }
   }
 
-  inline bool impl_is_pointer_in_sandbox_memory(const void* p)
+  inline bool impl_is_pointer_in_sandbox_memory(const void* p) const
   {
     size_t length = impl_get_total_memory();
     uintptr_t p_val = reinterpret_cast<uintptr_t>(p);
     return p_val >= heap_base && p_val < (heap_base + length);
   }
 
-  inline bool impl_is_pointer_in_app_memory(const void* p)
+  inline bool impl_is_pointer_in_app_memory(const void* p) const
   {
     return !(impl_is_pointer_in_sandbox_memory(p));
   }
 
-  inline size_t impl_get_total_memory() { return sandbox_memory_info->size; }
+  inline size_t impl_get_total_memory() const { return sandbox_memory_info->size; }
 
   inline void* impl_get_memory_location() const
   {

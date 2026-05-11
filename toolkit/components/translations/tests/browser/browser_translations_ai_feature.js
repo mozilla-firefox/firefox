@@ -12,15 +12,48 @@ const TRANSLATIONS_ENABLE_PREF = "browser.translations.enable";
  */
 add_task(async function test_ai_feature_id() {
   is(
-    TranslationsParent.AIFeature.id,
+    TranslationsFeature.id,
     "translations",
     "AIFeature exposes the translations id"
   );
 });
 
 /**
- * This test case ensures that the Translations feature availability is correct
- * for all combinations of the prefs that control its enabled state.
+ * This test case ensures that the Translations feature exposes the required
+ * AI feature contract values.
+ */
+add_task(async function test_ai_feature_contract_values() {
+  const feature = TranslationsFeature;
+
+  is(
+    feature.hasDistinctEnabledState,
+    false,
+    "Translations does not expose a distinct enabled AI Controls state"
+  );
+  is(
+    feature.canRunOnDevice,
+    TranslationsParent.getIsTranslationsEngineSupported(),
+    "Translations device support matches the engine capability check"
+  );
+
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.translations.simulateUnsupportedEngine", true]],
+  });
+
+  try {
+    is(
+      feature.canRunOnDevice,
+      false,
+      "Translations reports unsupported devices through canRunOnDevice"
+    );
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+/**
+ * This test case ensures that the Translations feature state is correct for
+ * all combinations of the prefs that control its enabled state.
  */
 add_task(async function test_ai_feature_state_combinations() {
   await SpecialPowers.pushPrefEnv({
@@ -31,7 +64,7 @@ add_task(async function test_ai_feature_state_combinations() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
 
   const cases = [
     {
@@ -200,6 +233,11 @@ add_task(async function test_ai_feature_state_combinations() {
     is(feature.isAllowed, true, `${description} (allowed state)`);
     is(feature.isBlocked, !expectEnabled, `${description} (blocked state)`);
     is(feature.isEnabled, expectEnabled, `${description} (enabled state)`);
+    is(
+      feature.aiControlState,
+      expectEnabled ? "available" : "blocked",
+      `${description} (AI Controls state)`
+    );
   }
 
   await SpecialPowers.popPrefEnv();
@@ -217,7 +255,7 @@ add_task(async function test_ai_feature_enable() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
   const originalDeleteAllLanguageFiles =
     TranslationsUtils.deleteAllLanguageFiles;
   let deleteCalls = 0;
@@ -238,6 +276,12 @@ add_task(async function test_ai_feature_enable() {
       Services.prefs.getBoolPref(TRANSLATIONS_ENABLE_PREF),
       true,
       "Enable turns on translations"
+    );
+    is(feature.isEnabled, true, "Enable leaves translations enabled");
+    is(
+      feature.aiControlState,
+      "available",
+      "Enable reports the available AI Controls state"
     );
     is(deleteCalls, 0, "Enable does not delete artifacts");
 
@@ -266,7 +310,7 @@ add_task(async function test_ai_feature_disable() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
   const originalDeleteAllLanguageFiles =
     TranslationsUtils.deleteAllLanguageFiles;
   let deleteCalls = 0;
@@ -292,6 +336,12 @@ add_task(async function test_ai_feature_disable() {
       Services.prefs.getBoolPref(TRANSLATIONS_ENABLE_PREF),
       false,
       "Disable turns off translations"
+    );
+    is(feature.isBlocked, true, "Disable leaves translations blocked");
+    is(
+      feature.aiControlState,
+      "blocked",
+      "Disable reports the blocked AI Controls state"
     );
     is(deleteCalls, 1, "Disable deletes artifacts");
 
@@ -320,7 +370,7 @@ add_task(async function test_ai_feature_reset() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
   const originalDeleteAllLanguageFiles =
     TranslationsUtils.deleteAllLanguageFiles;
   let deleteCalls = 0;
@@ -341,6 +391,12 @@ add_task(async function test_ai_feature_reset() {
       Services.prefs.getBoolPref(TRANSLATIONS_ENABLE_PREF),
       true,
       "makeAvailable enables translations"
+    );
+    is(feature.isEnabled, true, "makeAvailable leaves translations enabled");
+    is(
+      feature.aiControlState,
+      "available",
+      "makeAvailable reports the available AI Controls state"
     );
     is(deleteCalls, 1, "Reset deletes artifacts");
 
@@ -369,7 +425,7 @@ add_task(async function test_ai_feature_policy_lock_enable_pref() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
 
   ok(!feature.isManagedByPolicy, "Policy managed state starts off");
   Services.prefs.lockPref(TRANSLATIONS_ENABLE_PREF);
@@ -423,7 +479,7 @@ add_task(async function test_ai_feature_policy_lock_ai_control_pref() {
     ],
   });
 
-  const feature = TranslationsParent.AIFeature;
+  const feature = TranslationsFeature;
 
   ok(!feature.isManagedByPolicy, "Policy managed state starts off");
   Services.prefs.lockPref(AI_CONTROL_TRANSLATIONS_PREF);

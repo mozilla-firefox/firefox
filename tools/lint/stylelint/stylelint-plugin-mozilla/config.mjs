@@ -204,6 +204,7 @@ const BackgroundPosition = {
 /** @type {PropertyTypeConfig} */
 const BackgroundSize = {
   allow: ["auto", "cover", "contain"],
+  allowFunctions: ["max"],
   tokenTypes: ["size", "space", "icon-size"],
   aliasTokenTypes: ["dimension"],
   allowUnits: true,
@@ -387,7 +388,7 @@ const TextColor = {
 
 /** @type {PropertyTypeConfig} */
 const Space = {
-  allow: ["0", "0px", "1px", "auto"],
+  allow: ["-1px", "0", "1px", "auto"],
   tokenTypes: ["space"],
   aliasTokenTypes: ["dimension"],
   allowUnits: true,
@@ -414,7 +415,9 @@ const Size = {
     "min-content",
     "max-content",
     "stretch",
+    "-moz-available",
   ],
+  allowFunctions: ["max"],
   tokenTypes: ["size", "icon-size"],
   aliasTokenTypes: ["dimension"],
   allowUnits: true,

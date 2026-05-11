@@ -90,9 +90,9 @@
   <!-- In the example, the two URLs in markup do not need to be translated. -->
   <string name="mozac_browser_errorpages_unknown_host_message"><![CDATA[<p>Il navigadôr nol rive a cjatâ il servidôr host pe direzion indicade.</p>\n<ul>\n<li>Controle la direzion par erôrs di scriture come <strong>ww</strong>.esempli.com al puest di <strong>www</strong>.esempli.com.</li>\n<li>Se no tu rivis a cjariâ nissune pagjine, controle i dâts dal to dispositîf o la conession Wi-Fi.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
-  <string name="mozac_browser_errorpages_no_internet_title_2">Al somee che al sedi presint un probleme cu la conession a internet</string>
+  <string name="mozac_browser_errorpages_no_internet_title_2">Al somee che tu vedis un probleme cu la conession a internet</string>
   <!-- The main body text of this error page. It will be shown beneath the title -->
-  <string name="mozac_browser_errorpages_no_internet_message_2">Prove a conetiti di un altri dispositîf, controle il modem o il router. Disconetiti e torne a conetiti al Wi-Fi.</string>
+  <string name="mozac_browser_errorpages_no_internet_message_2">Prove a colegâti suntun altri dispositîf, controle il modem o il router. Disconet e torne a coneti il dispositîf al Wi-Fi.</string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_no_internet_error_code">Codiç di erôr: NS_ERROR_OFFLINE</string>
   <!-- Text that will show up on the button at the bottom of the error page -->

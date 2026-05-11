@@ -21,8 +21,8 @@
  */
 
 /**
- * pdfjsVersion = 6.0.28
- * pdfjsBuild = cd1b5f57c
+ * pdfjsVersion = 6.0.40
+ * pdfjsBuild = a5e9940d1
  */
 /******/ // The require scope
 /******/ var __webpack_require__ = {};
@@ -9739,103 +9739,23 @@ function mirrorContextOperations(ctx, destCtx) {
   if (ctx._removeMirroring) {
     throw new Error("Context is already forwarding operations.");
   }
-  ctx.__originalSave = ctx.save;
-  ctx.__originalRestore = ctx.restore;
-  ctx.__originalRotate = ctx.rotate;
-  ctx.__originalScale = ctx.scale;
-  ctx.__originalTranslate = ctx.translate;
-  ctx.__originalTransform = ctx.transform;
-  ctx.__originalSetTransform = ctx.setTransform;
-  ctx.__originalResetTransform = ctx.resetTransform;
-  ctx.__originalClip = ctx.clip;
-  ctx.__originalMoveTo = ctx.moveTo;
-  ctx.__originalLineTo = ctx.lineTo;
-  ctx.__originalBezierCurveTo = ctx.bezierCurveTo;
-  ctx.__originalRect = ctx.rect;
-  ctx.__originalClosePath = ctx.closePath;
-  ctx.__originalBeginPath = ctx.beginPath;
-  ctx._removeMirroring = () => {
-    ctx.save = ctx.__originalSave;
-    ctx.restore = ctx.__originalRestore;
-    ctx.rotate = ctx.__originalRotate;
-    ctx.scale = ctx.__originalScale;
-    ctx.translate = ctx.__originalTranslate;
-    ctx.transform = ctx.__originalTransform;
-    ctx.setTransform = ctx.__originalSetTransform;
-    ctx.resetTransform = ctx.__originalResetTransform;
-    ctx.clip = ctx.__originalClip;
-    ctx.moveTo = ctx.__originalMoveTo;
-    ctx.lineTo = ctx.__originalLineTo;
-    ctx.bezierCurveTo = ctx.__originalBezierCurveTo;
-    ctx.rect = ctx.__originalRect;
-    ctx.closePath = ctx.__originalClosePath;
-    ctx.beginPath = ctx.__originalBeginPath;
-    delete ctx._removeMirroring;
-  };
-  ctx.save = function () {
-    destCtx.save();
-    this.__originalSave();
-  };
-  ctx.restore = function () {
-    destCtx.restore();
-    this.__originalRestore();
-  };
-  ctx.translate = function (x, y) {
-    destCtx.translate(x, y);
-    this.__originalTranslate(x, y);
-  };
-  ctx.scale = function (x, y) {
-    destCtx.scale(x, y);
-    this.__originalScale(x, y);
-  };
-  ctx.transform = function (a, b, c, d, e, f) {
-    destCtx.transform(a, b, c, d, e, f);
-    this.__originalTransform(a, b, c, d, e, f);
-  };
-  ctx.setTransform = function (a, b, c, d, e, f) {
-    if (b === undefined) {
-      destCtx.setTransform(a);
-      this.__originalSetTransform(a);
-    } else {
-      destCtx.setTransform(a, b, c, d, e, f);
-      this.__originalSetTransform(a, b, c, d, e, f);
+  const originalMethods = new Map();
+  for (const name of ["save", "restore", "rotate", "scale", "translate", "transform", "setTransform", "resetTransform", "clip", "moveTo", "lineTo", "bezierCurveTo", "quadraticCurveTo", "arc", "arcTo", "ellipse", "rect", "roundRect", "closePath", "beginPath"]) {
+    const original = ctx[name];
+    if (typeof original !== "function" || typeof destCtx[name] !== "function") {
+      continue;
     }
-  };
-  ctx.resetTransform = function () {
-    destCtx.resetTransform();
-    this.__originalResetTransform();
-  };
-  ctx.rotate = function (angle) {
-    destCtx.rotate(angle);
-    this.__originalRotate(angle);
-  };
-  ctx.clip = function (rule) {
-    destCtx.clip(rule);
-    this.__originalClip(rule);
-  };
-  ctx.moveTo = function (x, y) {
-    destCtx.moveTo(x, y);
-    this.__originalMoveTo(x, y);
-  };
-  ctx.lineTo = function (x, y) {
-    destCtx.lineTo(x, y);
-    this.__originalLineTo(x, y);
-  };
-  ctx.bezierCurveTo = function (cp1x, cp1y, cp2x, cp2y, x, y) {
-    destCtx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y);
-    this.__originalBezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y);
-  };
-  ctx.rect = function (x, y, width, height) {
-    destCtx.rect(x, y, width, height);
-    this.__originalRect(x, y, width, height);
-  };
-  ctx.closePath = function () {
-    destCtx.closePath();
-    this.__originalClosePath();
-  };
-  ctx.beginPath = function () {
-    destCtx.beginPath();
-    this.__originalBeginPath();
+    originalMethods.set(name, original);
+    ctx[name] = function (...args) {
+      destCtx[name](...args);
+      return original.apply(this, args);
+    };
+  }
+  ctx._removeMirroring = () => {
+    for (const [name, original] of originalMethods) {
+      ctx[name] = original;
+    }
+    delete ctx._removeMirroring;
   };
 }
 function drawImageAtIntegerCoords(ctx, srcImg, srcX, srcY, srcW, srcH, destX, destY, destW, destH) {
@@ -10134,6 +10054,7 @@ class CanvasGraphics {
     this.smaskPreparedFor = null;
     this.smaskPreparedOffsetX = 0;
     this.smaskPreparedOffsetY = 0;
+    this.smaskPreparedOOBAlpha = null;
     this.suspendedCtx = null;
     this.contentVisible = true;
     this.markedContentStack = markedContentStack || [];
@@ -10551,13 +10472,14 @@ class CanvasGraphics {
     this.smaskPreparedFor = null;
     this.smaskPreparedOffsetX = 0;
     this.smaskPreparedOffsetY = 0;
+    this.smaskPreparedOOBAlpha = null;
   }
-  _ensurePreparedSMask(smask, width, height) {
+  _ensurePreparedSMask(smask) {
     if (smask === this.smaskPreparedFor) {
       return;
     }
     this._clearPreparedSMask();
-    this._prepareSMaskCanvas(smask, width, height);
+    this._prepareSMaskCanvas(smask);
   }
   checkSMaskState(opIdx) {
     const inSMaskMode = this.inSMaskMode;
@@ -10566,10 +10488,10 @@ class CanvasGraphics {
     } else if (!this.current.activeSMask && inSMaskMode) {
       this.endSMaskMode();
     } else if (this.current.activeSMask && inSMaskMode) {
-      this._ensurePreparedSMask(this.current.activeSMask, this.ctx.canvas.width, this.ctx.canvas.height);
+      this._ensurePreparedSMask(this.current.activeSMask);
     }
   }
-  _prepareSMaskCanvas(smask, width, height) {
+  _prepareSMaskCanvas(smask) {
     const {
       canvas: maskCanvas,
       subtype,
@@ -10577,50 +10499,68 @@ class CanvasGraphics {
       transferMap
     } = smask;
     const hasFilter = subtype === "Luminosity" || subtype === "Alpha" && transferMap;
-    if (!backdrop && !hasFilter) {
+    if (!hasFilter && !(subtype === "Luminosity" && backdrop)) {
       this.smaskPreparedFor = smask;
       return;
     }
-    let preparedEntry, offsetX, offsetY;
-    if (backdrop && hasFilter) {
-      const srcEntry = this.canvasFactory.create(width, height);
-      const sCtx = srcEntry.context;
-      sCtx.drawImage(maskCanvas, smask.offsetX, smask.offsetY);
-      sCtx.globalCompositeOperation = "destination-atop";
-      sCtx.fillStyle = backdrop;
-      sCtx.fillRect(0, 0, width, height);
-      sCtx.globalCompositeOperation = "source-over";
-      preparedEntry = this.canvasFactory.create(width, height);
-      const pCtx = preparedEntry.context;
-      pCtx.filter = subtype === "Alpha" ? this.filterFactory.addAlphaFilter(transferMap) : this.filterFactory.addLuminosityFilter(transferMap);
-      pCtx.drawImage(srcEntry.canvas, 0, 0);
-      pCtx.filter = "none";
-      this.canvasFactory.destroy(srcEntry);
-      offsetX = offsetY = 0;
-    } else if (hasFilter) {
-      preparedEntry = this.canvasFactory.create(maskCanvas.width, maskCanvas.height);
-      const pCtx = preparedEntry.context;
-      pCtx.filter = subtype === "Alpha" ? this.filterFactory.addAlphaFilter(transferMap) : this.filterFactory.addLuminosityFilter(transferMap);
-      pCtx.drawImage(maskCanvas, 0, 0);
-      pCtx.filter = "none";
-      ({
-        offsetX,
-        offsetY
-      } = smask);
+    let filteredOOBAlpha;
+    if (subtype === "Luminosity" && backdrop) {
+      const [r, g, b] = getRGBA(backdrop);
+      const inputAlpha = Math.round(0.3 * r + 0.59 * g + 0.11 * b);
+      filteredOOBAlpha = transferMap?.[inputAlpha] ?? inputAlpha;
     } else {
-      preparedEntry = this.canvasFactory.create(width, height);
-      const pCtx = preparedEntry.context;
-      pCtx.drawImage(maskCanvas, smask.offsetX, smask.offsetY);
-      pCtx.globalCompositeOperation = "destination-atop";
-      pCtx.fillStyle = backdrop;
-      pCtx.fillRect(0, 0, width, height);
-      pCtx.globalCompositeOperation = "source-over";
-      offsetX = offsetY = 0;
+      filteredOOBAlpha = transferMap?.[0] ?? 0;
+    }
+    const SMASK_LAYER_TO_MASK_AREA_RATIO = 4;
+    const {
+      width: layerW,
+      height: layerH
+    } = this.ctx.canvas;
+    const maskArea = maskCanvas.width * maskCanvas.height;
+    const useLayerSize = layerW * layerH < SMASK_LAYER_TO_MASK_AREA_RATIO * maskArea;
+    let filterUrl = null;
+    if (hasFilter) {
+      filterUrl = subtype === "Alpha" ? this.filterFactory.addAlphaFilter(transferMap) : this.filterFactory.addLuminosityFilter(transferMap);
+    }
+    const bakedBackdrop = subtype === "Luminosity" ? backdrop : null;
+    let preparedEntry, offsetX, offsetY;
+    if (useLayerSize) {
+      preparedEntry = this._bakeSMaskCanvas(maskCanvas, smask.offsetX, smask.offsetY, layerW, layerH, bakedBackdrop, filterUrl);
+      offsetX = 0;
+      offsetY = 0;
+    } else {
+      preparedEntry = this._bakeSMaskCanvas(maskCanvas, 0, 0, maskCanvas.width, maskCanvas.height, bakedBackdrop, filterUrl);
+      offsetX = smask.offsetX;
+      offsetY = smask.offsetY;
     }
     this.smaskPreparedEntry = preparedEntry;
     this.smaskPreparedFor = smask;
     this.smaskPreparedOffsetX = offsetX;
     this.smaskPreparedOffsetY = offsetY;
+    this.smaskPreparedOOBAlpha = !useLayerSize && filteredOOBAlpha !== 0 ? filteredOOBAlpha : null;
+  }
+  _bakeSMaskCanvas(maskCanvas, drawX, drawY, w, h, backdrop, filterUrl) {
+    if (!backdrop && !filterUrl) {
+      unreachable("_bakeSMaskCanvas with neither backdrop nor filter");
+    }
+    const srcEntry = this.canvasFactory.create(w, h);
+    const sCtx = srcEntry.context;
+    sCtx.drawImage(maskCanvas, drawX, drawY);
+    if (backdrop) {
+      sCtx.globalCompositeOperation = "destination-atop";
+      sCtx.fillStyle = backdrop;
+      sCtx.fillRect(0, 0, w, h);
+    }
+    if (!filterUrl) {
+      return srcEntry;
+    }
+    const preparedEntry = this.canvasFactory.create(w, h);
+    const pCtx = preparedEntry.context;
+    pCtx.filter = filterUrl;
+    pCtx.drawImage(srcEntry.canvas, 0, 0);
+    pCtx.filter = "none";
+    this.canvasFactory.destroy(srcEntry);
+    return preparedEntry;
   }
   beginSMaskMode(opIdx) {
     if (this.inSMaskMode) {
@@ -10637,7 +10577,7 @@ class CanvasGraphics {
     ctx.setTransform(this.suspendedCtx.getTransform());
     copyCtxState(this.suspendedCtx, ctx);
     mirrorContextOperations(ctx, this.suspendedCtx);
-    this._ensurePreparedSMask(this.current.activeSMask, drawnWidth, drawnHeight);
+    this._ensurePreparedSMask(this.current.activeSMask);
     this.setGState(opIdx, [["BM", "source-over"]]);
   }
   endSMaskMode() {
@@ -10656,14 +10596,7 @@ class CanvasGraphics {
     if (!this.current.activeSMask) {
       return;
     }
-    if (!dirtyBox) {
-      dirtyBox = [0, 0, this.ctx.canvas.width, this.ctx.canvas.height];
-    } else {
-      dirtyBox[0] = Math.floor(dirtyBox[0]);
-      dirtyBox[1] = Math.floor(dirtyBox[1]);
-      dirtyBox[2] = Math.ceil(dirtyBox[2]);
-      dirtyBox[3] = Math.ceil(dirtyBox[3]);
-    }
+    dirtyBox = dirtyBox ? [Math.floor(dirtyBox[0]), Math.floor(dirtyBox[1]), Math.ceil(dirtyBox[2]), Math.ceil(dirtyBox[3])] : [0, 0, this.ctx.canvas.width, this.ctx.canvas.height];
     const smask = this.current.activeSMask;
     const suspendedCtx = this.suspendedCtx;
     this.composeSMask(suspendedCtx, smask, this.ctx, dirtyBox);
@@ -10682,19 +10615,38 @@ class CanvasGraphics {
     }
     const preparedEntry = this.smaskPreparedEntry;
     if (preparedEntry) {
-      const srcX = layerOffsetX - this.smaskPreparedOffsetX;
-      const srcY = layerOffsetY - this.smaskPreparedOffsetY;
-      layerCtx.save();
-      layerCtx.globalAlpha = 1;
-      layerCtx.setTransform(1, 0, 0, 1, 0, 0);
-      const clip = new Path2D();
-      clip.rect(layerOffsetX, layerOffsetY, layerWidth, layerHeight);
-      layerCtx.clip(clip);
-      layerCtx.globalCompositeOperation = "destination-in";
-      layerCtx.drawImage(preparedEntry.canvas, srcX, srcY, layerWidth, layerHeight, layerOffsetX, layerOffsetY, layerWidth, layerHeight);
-      layerCtx.restore();
+      let clipX = layerOffsetX;
+      let clipY = layerOffsetY;
+      let clipW = layerWidth;
+      let clipH = layerHeight;
+      const oobAlpha = this.smaskPreparedOOBAlpha;
+      const hasOOBAlpha = oobAlpha !== null;
+      if (hasOOBAlpha) {
+        clipX = Math.max(layerOffsetX, smask.offsetX);
+        clipY = Math.max(layerOffsetY, smask.offsetY);
+        const x1 = Math.min(layerOffsetX + layerWidth, smask.offsetX + smask.canvas.width);
+        const y1 = Math.min(layerOffsetY + layerHeight, smask.offsetY + smask.canvas.height);
+        clipW = x1 - clipX;
+        clipH = y1 - clipY;
+      }
+      if (clipW > 0 && clipH > 0) {
+        const srcX = clipX - this.smaskPreparedOffsetX;
+        const srcY = clipY - this.smaskPreparedOffsetY;
+        layerCtx.save();
+        layerCtx.globalAlpha = 1;
+        layerCtx.setTransform(1, 0, 0, 1, 0, 0);
+        const clip = new Path2D();
+        clip.rect(clipX, clipY, clipW, clipH);
+        layerCtx.clip(clip);
+        layerCtx.globalCompositeOperation = "destination-in";
+        layerCtx.drawImage(preparedEntry.canvas, srcX, srcY, clipW, clipH, clipX, clipY, clipW, clipH);
+        layerCtx.restore();
+      }
+      if (hasOOBAlpha && oobAlpha < 255) {
+        this._applySMaskOOBAlpha(layerCtx, layerOffsetX, layerOffsetY, layerWidth, layerHeight, clipX, clipY, clipX + clipW, clipY + clipH, oobAlpha);
+      }
     } else {
-      this.genericComposeSMask(smask.context, layerCtx, layerWidth, layerHeight, layerOffsetX, layerOffsetY, smask.offsetX, smask.offsetY);
+      this.genericComposeSMask(smask, layerCtx, layerWidth, layerHeight, layerOffsetX, layerOffsetY);
     }
     ctx.save();
     ctx.globalAlpha = 1;
@@ -10703,10 +10655,31 @@ class CanvasGraphics {
     ctx.drawImage(layerCtx.canvas, layerOffsetX, layerOffsetY, layerWidth, layerHeight, layerOffsetX, layerOffsetY, layerWidth, layerHeight);
     ctx.restore();
   }
-  genericComposeSMask(maskCtx, layerCtx, width, height, layerOffsetX, layerOffsetY, maskOffsetX, maskOffsetY) {
-    const maskCanvas = maskCtx.canvas;
-    const maskX = layerOffsetX - maskOffsetX;
-    const maskY = layerOffsetY - maskOffsetY;
+  _applySMaskOOBAlpha(layerCtx, layerOffsetX, layerOffsetY, layerWidth, layerHeight, maskX0, maskY0, maskX1, maskY1, alpha) {
+    const hasInnerCutout = maskX0 < maskX1 && maskY0 < maskY1;
+    if (hasInnerCutout && maskX0 === layerOffsetX && maskY0 === layerOffsetY && maskX1 === layerOffsetX + layerWidth && maskY1 === layerOffsetY + layerHeight) {
+      return;
+    }
+    const path = new Path2D();
+    path.rect(layerOffsetX, layerOffsetY, layerWidth, layerHeight);
+    if (hasInnerCutout) {
+      path.rect(maskX0, maskY0, maskX1 - maskX0, maskY1 - maskY0);
+    }
+    layerCtx.save();
+    layerCtx.globalAlpha = alpha / 255;
+    layerCtx.setTransform(1, 0, 0, 1, 0, 0);
+    layerCtx.clip(path, "evenodd");
+    layerCtx.globalCompositeOperation = "destination-in";
+    layerCtx.fillStyle = "#000000";
+    layerCtx.fillRect(layerOffsetX, layerOffsetY, layerWidth, layerHeight);
+    layerCtx.restore();
+  }
+  genericComposeSMask(smask, layerCtx, width, height, layerOffsetX, layerOffsetY) {
+    const {
+      context: maskCtx,
+      offsetX: maskOffsetX,
+      offsetY: maskOffsetY
+    } = smask;
     layerCtx.save();
     layerCtx.globalAlpha = 1;
     layerCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -10714,7 +10687,7 @@ class CanvasGraphics {
     clip.rect(layerOffsetX, layerOffsetY, width, height);
     layerCtx.clip(clip);
     layerCtx.globalCompositeOperation = "destination-in";
-    layerCtx.drawImage(maskCanvas, maskX, maskY, width, height, layerOffsetX, layerOffsetY, width, height);
+    layerCtx.drawImage(maskCtx.canvas, layerOffsetX - maskOffsetX, layerOffsetY - maskOffsetY, width, height, layerOffsetX, layerOffsetY, width, height);
     layerCtx.restore();
   }
   save(opIdx) {
@@ -13805,7 +13778,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "6.0.28",
+    apiVersion: "6.0.40",
     data,
     password,
     disableAutoFetch,
@@ -15061,12 +15034,30 @@ class WorkerTransport {
     };
     let transfer;
     if (this.annotationStorage.size > 0) {
-      const {
-        map,
-        transfer: t
-      } = this.annotationStorage.serializable;
+      const serialized = this.annotationStorage.serializable;
+      let {
+        map
+      } = serialized;
+      transfer = serialized.transfer;
+      const mapping = this.pagesMapper.getMapping();
+      if (mapping) {
+        const remapped = new Map();
+        for (const [k, v] of map) {
+          if (v?.pageIndex !== undefined && v.pageIndex >= 0 && v.pageIndex < mapping.length) {
+            const sourceIdx = mapping[v.pageIndex] - 1;
+            if (sourceIdx !== v.pageIndex) {
+              remapped.set(k, {
+                ...v,
+                pageIndex: sourceIdx
+              });
+              continue;
+            }
+          }
+          remapped.set(k, v);
+        }
+        map = remapped;
+      }
       params.annotationStorage = map;
-      transfer = t;
     }
     return this.messageHandler.sendWithPromise("ExtractPages", params, transfer).finally(() => {
       this.annotationStorage.resetModified();
@@ -15418,8 +15409,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "6.0.28";
-const build = "cd1b5f57c";
+const version = "6.0.40";
+const build = "a5e9940d1";
 
 ;// ./src/display/editor/color_picker.js
 

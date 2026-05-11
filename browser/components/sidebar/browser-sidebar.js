@@ -1221,9 +1221,7 @@ var SidebarController = {
     let sidebarOnLeft = this._positionStart != RTL_UI;
     let sidebarShift = 0;
     let novaTranslate = 0;
-    const novaMode =
-      !expandOnHoverEnabled &&
-      Services.prefs.getBoolPref("browser.nova.enabled", false);
+    const novaMode = Services.prefs.getBoolPref("browser.nova.enabled", false);
     for (let i = 0; i < animatingElements.length; ++i) {
       const el = animatingElements[i];
       const [wasHidden, from] = fromRects[i];
@@ -1752,7 +1750,6 @@ var SidebarController = {
     if (this.toolsAndExtensions.has(commandID)) {
       // Update existing extension
       let extensionToUpdate = this.toolsAndExtensions.get(commandID);
-      extensionToUpdate.icon = extension.icon;
       extensionToUpdate.iconUrl = extension.iconUrl;
       extensionToUpdate.tooltiptext = extension.label;
       window.dispatchEvent(new CustomEvent("SidebarItemChanged"));
@@ -1762,7 +1759,6 @@ var SidebarController = {
       this.toolsAndExtensions.set(commandID, {
         view: commandID,
         extensionId: extension.extensionId,
-        icon: extension.icon,
         iconUrl: extension.iconUrl,
         tooltiptext: extension.label,
         disabled: !this.sidebarTools.includes(name), // name is the extensionID
@@ -1804,7 +1800,6 @@ var SidebarController = {
       switcherMenuId: `sidebarswitcher_menu_${commandID}`,
       keyId: `ext-key-id-${commandID}`,
       label: props.title,
-      icon: props.icon,
       iconUrl: props.iconUrl,
       classAttribute: "menuitem-iconic webextension-menuitem",
       // The following properties are specific to extensions
@@ -1830,7 +1825,7 @@ var SidebarController = {
     }
     this._setExtensionAttributes(
       commandID,
-      { icon: props.icon, iconUrl: props.iconUrl, label: props.title },
+      { iconUrl: props.iconUrl, label: props.title },
       sidebar
     );
   },
@@ -1870,7 +1865,6 @@ var SidebarController = {
    *
    * @param {string} commandID
    * @param {object} attributes
-   * @param {string} attributes.icon
    * @param {string} attributes.iconUrl
    * @param {string} attributes.label
    * @param {boolean} needsRefresh
@@ -1883,18 +1877,20 @@ var SidebarController = {
 
   _setExtensionAttributes(
     commandID,
-    { icon, iconUrl, label },
+    { iconUrl, label },
     sidebar,
     needsRefresh = false
   ) {
-    sidebar.icon = icon;
     sidebar.iconUrl = iconUrl;
     sidebar.label = label;
 
     const updateAttributes = el => {
       // TODO Bug 1996762 - Add support for dark-theme sidebar icons
       // --webextension-menuitem-image-dark is used in dark themes
-      el.style.setProperty("--webextension-menuitem-image", sidebar.icon);
+      el.style.setProperty(
+        "--webextension-menuitem-image",
+        `url("${sidebar.iconUrl}")`
+      );
       el.setAttribute("label", sidebar.label);
     };
 
@@ -2457,7 +2453,7 @@ var SidebarController = {
     await this.waitUntilStable();
     let collapsedWidth = await new Promise(resolve => {
       requestAnimationFrame(() => {
-        resolve(this._getRects([this.sidebarMain])[0][1].width);
+        resolve(this._getRects([this.sidebarContainer])[0][1].width);
       });
     });
 

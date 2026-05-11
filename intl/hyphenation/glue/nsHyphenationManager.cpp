@@ -82,7 +82,7 @@ nsHyphenationManager* nsHyphenationManager::Instance() {
       obs->AddObserver(sInstance, kMemoryPressureNotification, false);
     }
 
-    RegisterStrongMemoryReporter(new HyphenReporter());
+    RegisterStrongMemoryReporter(MakeAndAddRef<HyphenReporter>());
   }
   return sInstance;
 }

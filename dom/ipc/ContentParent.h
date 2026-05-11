@@ -175,6 +175,10 @@ class ContentParent final : public PContentParent,
   static void LogAndAssertFailedPrincipalValidationInfo(
       nsIPrincipal* aPrincipal, const char* aMethod);
 
+  static mozilla::ipc::IPCResult PrincipalValidationIpcFail(
+      nsIPrincipal* aPrincipal, mozilla::ipc::IProtocol* aActor,
+      const char* aMethod);
+
   /**
    * Picks a random content parent from |aContentParents| respecting the index
    * limit set by |aMaxContentParents|. If |aBrowserId| is non-zero, that tab

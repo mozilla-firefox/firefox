@@ -62,6 +62,12 @@
     <string name="mozac_feature_prompts_before_unload_stay">Stay</string>
     <!-- Leave button of the dialog shown when a user is leaving a website and there is still data not saved yet, this indicates that the user wants to leave in the website. -->
     <string name="mozac_feature_prompts_before_unload_leave">Leave</string>
+    <!-- Message shown when a site wants to create a passkey for a related domain. %1$s is the requesting site, %2$s is the related domain the passkey is for. -->
+    <string name="webauthn_related_origin_create_message">%1$s wants to create a passkey for %2$s.</string>
+    <!-- Message shown when a site wants to use a passkey from a related domain. %1$s is the requesting site, %2$s is the related domain the passkey is for. -->
+    <string name="webauthn_related_origin_use_message">%1$s wants to use a passkey for %2$s.</string>
+    <!-- Continue button label for WebAuthn related origin prompt. -->
+    <string name="webauthn_continue">Continue</string>
     <!-- Title of the month chooser dialog. -->
     <string name="mozac_feature_prompts_set_month">Pick a month</string>
     <!-- January (short description), used on the month chooser dialog. -->

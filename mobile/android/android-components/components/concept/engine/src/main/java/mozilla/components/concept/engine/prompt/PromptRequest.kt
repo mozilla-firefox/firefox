@@ -486,6 +486,23 @@ sealed class PromptRequest(
     ) : PromptRequest(), Dismissible
 
     /**
+     * Value type that represents a WebAuthn related origin request prompt.
+     *
+     * @property origin the origin of the site making the request.
+     * @property rpId the relying party ID for the passkey.
+     * @property isCreate true if this is a create request, false if it is a use request.
+     * @property onConfirm callback to notify that the user confirmed the request.
+     * @property onDismiss callback to notify that the user dismissed the request.
+     */
+    data class WebAuthnRelatedOriginPrompt(
+        val origin: String,
+        val rpId: String,
+        val isCreate: Boolean,
+        val onConfirm: () -> Unit,
+        override val onDismiss: () -> Unit,
+    ) : PromptRequest(), Dismissible
+
+    /**
      * Value type that represents a request for a selecting one folder/directory.
      *
      * @property onSelected callback to notify that the user has selected a folder.

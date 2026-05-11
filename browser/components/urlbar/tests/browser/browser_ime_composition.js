@@ -68,6 +68,8 @@ add_task(async function () {
     await test_composition_searchMode_preview(val);
     await test_composition_tabToSearch(val);
     await test_composition_autofill(val);
+    await test_composition_cancel_autofill(val);
+    await test_spurious_empty_composition(val);
   }
   await UrlbarTestUtils.promisePopupClose(window, () => gURLBar.blur());
 });
@@ -336,4 +338,84 @@ async function test_composition_autofill(keepPanelOpenDuringImeComposition) {
 
   // Clean-up.
   gURLBar.value = "";
+}
+
+async function test_composition_cancel_autofill(
+  keepPanelOpenDuringImeComposition
+) {
+  info("Canceled composition should not prevent autofill");
+
+  gURLBar.focus();
+  await UrlbarTestUtils.promisePopupClose(window);
+  composeAndCheckPanel("m", false);
+  await UrlbarTestUtils.promisePopupOpen(window, () => {
+    EventUtils.synthesizeComposition({
+      type: "compositioncommitasis",
+      key: { key: "KEY_Enter" },
+    });
+  });
+
+  // Start a composition with "o".
+  composeAndCheckPanel("o", keepPanelOpenDuringImeComposition);
+
+  // Cancel the composition: the composed "o" is removed and the bar reverts to
+  // "m". The input event should allow autofill regardless of event.data being empty.
+  if (!keepPanelOpenDuringImeComposition) {
+    await UrlbarTestUtils.promisePopupOpen(window, () => {
+      EventUtils.synthesizeComposition({
+        type: "compositioncommit",
+        data: "",
+      });
+    });
+  } else {
+    EventUtils.synthesizeComposition({
+      type: "compositioncommit",
+      data: "",
+    });
+  }
+  await UrlbarTestUtils.promiseSearchComplete(window);
+  Assert.equal(
+    gURLBar.value,
+    "mozilla.org/",
+    "Autofill is restored after composition cancel"
+  );
+
+  await UrlbarTestUtils.promisePopupClose(window, () => gURLBar.blur());
+  gURLBar.value = "";
+}
+
+async function test_spurious_empty_composition(
+  keepPanelOpenDuringImeComposition
+) {
+  if (keepPanelOpenDuringImeComposition) {
+    // When the panel stays open during composition, compositionClosedPopup is
+    // never set, so this scenario doesn't apply.
+    return;
+  }
+
+  info(
+    "Spurious empty composition after an open popup should not keep it closed"
+  );
+
+  gURLBar.focus();
+  await UrlbarTestUtils.promisePopupClose(window);
+  composeAndCheckPanel("moz", false);
+  await UrlbarTestUtils.promisePopupOpen(window, () => {
+    EventUtils.synthesizeComposition({
+      type: "compositioncommitasis",
+      key: { key: "KEY_Enter" },
+    });
+  });
+
+  // Simulate a spurious empty composition: the popup closes on compositionstart
+  // and should reopen on compositionend.
+  composeAndCheckPanel("", false);
+  await UrlbarTestUtils.promisePopupOpen(window, () => {
+    EventUtils.synthesizeComposition({
+      type: "compositioncommit",
+      data: "",
+    });
+  });
+
+  await UrlbarTestUtils.promisePopupClose(window, () => gURLBar.blur());
 }

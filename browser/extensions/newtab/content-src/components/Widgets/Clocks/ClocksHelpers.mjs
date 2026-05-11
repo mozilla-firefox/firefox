@@ -2,17 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-// DEV scaffolding for the read-only landing. Delete this and every line
-// tagged `DEV scaffolding` below in the follow-up edit patch, alongside
-// the add/edit/remove flows.
-export const DEV_SCAFFOLDING = true;
-
-// DEV scaffolding — "Head office" exercises the 11-char max.
-const DEFAULT_LABELS = ["Home", "Head office", "Label 3", "Label 4"];
-
-// DEV scaffolding — fixed-order palette so decorateDefaultZones assigns
-// distinct tones. Each name needs a matching `.clocks-chip-<name>` in
-// _Clocks.scss; also drives isValidPaletteName's allow-list.
+// Fixed-order palette; each name needs a matching `.clocks-chip-<name>` in
+// _Clocks.scss and drives isValidPaletteName's allow-list.
 const LABEL_PALETTE = [
   "cyan",
   "green",
@@ -25,6 +16,9 @@ const LABEL_PALETTE = [
   "violet",
   "neutral",
 ];
+const RANDOM_LABEL_PALETTE = LABEL_PALETTE.filter(
+  colorName => colorName !== "neutral"
+);
 
 /**
  * Allow-list for `clock.labelColor` before interpolating it into a
@@ -34,14 +28,19 @@ export function isValidPaletteName(paletteName) {
   return typeof paletteName === "string" && LABEL_PALETTE.includes(paletteName);
 }
 
-// Read-only landing defaults; the edit patch will swap this for a
-// pref/Redux source (widgets.clocks.zones).
+export function getRandomLabelColor() {
+  return RANDOM_LABEL_PALETTE[
+    Math.floor(Math.random() * RANDOM_LABEL_PALETTE.length)
+  ];
+}
+
 const FIXED_DEFAULT_ZONES = [
   "Europe/Berlin",
   "Australia/Sydney",
   "America/New_York",
   "America/Los_Angeles",
 ];
+export const MAX_CLOCK_COUNT = 4;
 
 // IATA city codes for cities where the code differs from slice(0,3).
 // Cities whose code matches that slice (e.g. Sydney -> SYD, Berlin ->
@@ -160,15 +159,11 @@ export function getDefaultTimeZones() {
   return result;
 }
 
-/**
- * DEV scaffolding. Positional placeholder labels/palette; the edit patch
- * will replace this with per-zone user data and drop DEV_SCAFFOLDING.
- */
 export function decorateDefaultZones(timeZones) {
-  return timeZones.map((timeZone, i) => ({
+  return timeZones.map(timeZone => ({
     timeZone,
-    label: DEV_SCAFFOLDING ? (DEFAULT_LABELS[i] ?? null) : null,
-    labelColor: DEV_SCAFFOLDING ? (LABEL_PALETTE[i] ?? null) : null,
+    label: null,
+    labelColor: null,
   }));
 }
 
@@ -178,6 +173,77 @@ export function decorateDefaultZones(timeZones) {
 export function buildDefaultZones() {
   return decorateDefaultZones(getDefaultTimeZones());
 }
+
+export const isValidTimeZone = timeZone => {
+  if (typeof timeZone !== "string" || !timeZone) {
+    return false;
+  }
+  try {
+    new Intl.DateTimeFormat(undefined, { timeZone }).format(new Date(0));
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+export const getSupportedTimeZones = () => {
+  try {
+    if (typeof Intl.supportedValuesOf === "function") {
+      const timeZones = Intl.supportedValuesOf("timeZone");
+      if (timeZones.length) {
+        return timeZones;
+      }
+    }
+  } catch (e) {
+    // Fall through to the fixed defaults below.
+  }
+  return FIXED_DEFAULT_ZONES;
+};
+
+const normalizeClockZone = clock => {
+  const normalizedClock =
+    typeof clock === "string" ? { timeZone: clock } : clock;
+  if (!normalizedClock || !isValidTimeZone(normalizedClock.timeZone)) {
+    return null;
+  }
+  const label =
+    typeof normalizedClock.label === "string" && normalizedClock.label.trim()
+      ? normalizedClock.label.trim()
+      : null;
+  const labelColor = isValidPaletteName(normalizedClock.labelColor)
+    ? normalizedClock.labelColor
+    : null;
+  const city =
+    typeof normalizedClock.city === "string" && normalizedClock.city.trim()
+      ? normalizedClock.city.trim()
+      : undefined;
+  return {
+    timeZone: normalizedClock.timeZone,
+    ...(city !== undefined && { city }),
+    label,
+    labelColor,
+  };
+};
+
+export const parseClockZonesPref = prefValue => {
+  if (!prefValue) {
+    return null;
+  }
+  try {
+    const parsed =
+      typeof prefValue === "string" ? JSON.parse(prefValue) : prefValue;
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+    const clocks = parsed
+      .map(normalizeClockZone)
+      .filter(Boolean)
+      .slice(0, MAX_CLOCK_COUNT);
+    return clocks.length ? clocks : null;
+  } catch (e) {
+    return null;
+  }
+};
 
 /**
  * Derives a human-readable city from an IANA zone id
@@ -191,6 +257,77 @@ export function getCityFromTimeZone(tz) {
   const last = segments[segments.length - 1];
   return last.replace(/_/g, " ");
 }
+
+/**
+ * Builds a fresh clock-zone object for a newly-added or zone-changed
+ * clock. Seeds `city` from the IANA id so the manage panel and aria
+ * label have a display name before any user customization; label and
+ * color start null and are filled in later only if the user adds a
+ * nickname.
+ */
+export const buildClockZone = timeZone => ({
+  timeZone,
+  city: getCityFromTimeZone(timeZone),
+  label: null,
+  labelColor: null,
+});
+
+export const backfillClockLabelColors = clockZones =>
+  clockZones.map(clock =>
+    clock.label && !clock.labelColor
+      ? {
+          ...clock,
+          labelColor: getRandomLabelColor(),
+        }
+      : clock
+  );
+
+export const getClockFormDerivedState = ({
+  canAddClock,
+  clockSearchQuery,
+  clockSelectedTimeZone,
+  isEditingClock,
+  supportedTimeZones,
+}) => {
+  let resolvedClockTimeZone = "";
+  const query = clockSearchQuery.trim().toLowerCase();
+  if (clockSelectedTimeZone && isValidTimeZone(clockSelectedTimeZone)) {
+    resolvedClockTimeZone = clockSelectedTimeZone;
+  } else if (query) {
+    resolvedClockTimeZone =
+      supportedTimeZones.find(timeZone => {
+        const city = getCityFromTimeZone(timeZone).toLowerCase();
+        return timeZone.toLowerCase() === query || city === query;
+      }) ?? "";
+  }
+
+  const filteredTimeZones = query
+    ? supportedTimeZones
+        .filter(timeZone => {
+          const city = getCityFromTimeZone(timeZone).toLowerCase();
+          return timeZone.toLowerCase().includes(query) || city.includes(query);
+        })
+        .slice(0, 8)
+    : [];
+
+  return {
+    canAddSelectedClock:
+      (isEditingClock || canAddClock) && !!resolvedClockTimeZone,
+    filteredTimeZones,
+    resolvedClockTimeZone,
+    showLocationDropdown: !!(query && !resolvedClockTimeZone),
+  };
+};
+
+export const buildNextClockZones = (clockZones, editingClockIndex, zone) =>
+  editingClockIndex === null
+    ? [...clockZones, zone]
+    : clockZones.map((clock, index) =>
+        index === editingClockIndex ? zone : clock
+      );
+
+export const removeClockZoneAtIndex = (clockZones, indexToRemove) =>
+  clockZones.filter((_, index) => index !== indexToRemove);
 
 /**
  * IATA code for known cities, else first 3 non-whitespace chars upcased.
@@ -228,6 +365,29 @@ export function getTimeZoneAbbreviation(tz, locale, date = new Date()) {
 }
 
 /**
+ * Formats Date as a local datetime string (YYYY-MM-DDTHH:mm) in the given
+ * timezone, suitable for <time>'s datetime attribute. Falls back to the UTC
+ * ISO string if the platform can't format the zone.
+ */
+export function formatDateTimeAttr(date, tz) {
+  try {
+    const parts = new Intl.DateTimeFormat(undefined, {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(date);
+    const get = type => parts.find(p => p.type === type)?.value ?? "00";
+    return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+  } catch (e) {
+    return date.toISOString();
+  }
+}
+
+/**
  * Formats Date as hh:mm in a zone; "" if the zone can't be formatted.
  */
 export function formatTime(date, tz, locale, hour12) {
@@ -250,7 +410,10 @@ export function formatTime(date, tz, locale, hour12) {
  * Screen-reader label. Prepends label when present; omits the time until
  * it becomes available.
  */
-export function buildClocksRowAriaLabel(city, tzLabel, timeDisplay, label) {
-  const head = label ? `${label}, ${city}, ${tzLabel}` : `${city}, ${tzLabel}`;
-  return timeDisplay ? `${head}, ${timeDisplay}` : head;
-}
+export const buildClocksRowAriaLabel = (city, tzLabel, timeDisplay, label) => {
+  const parts = label ? [label, city, tzLabel] : [city, tzLabel];
+  if (timeDisplay) {
+    parts.push(timeDisplay);
+  }
+  return parts.join(", ");
+};

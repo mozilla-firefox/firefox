@@ -1169,10 +1169,8 @@ static bool CanAttachDOMCall(JSContext* cx, JSJitInfo::OpType type,
   }
 
   // Ion codegen expects DOM_OBJECT_SLOT to be a fixed slot in LoadDOMPrivate.
-  // It can be a dynamic slot if we transplanted this reflector object with a
-  // proxy.
-  if (obj->is<NativeObject>() && obj->as<NativeObject>().numFixedSlots() == 0) {
-    return false;
+  if (obj->is<NativeObject>()) {
+    MOZ_RELEASE_ASSERT(obj->as<NativeObject>().numFixedSlots() > 0);
   }
 
   // Tell the analysis the |DOMInstanceClassHasProtoAtDepth| hook can't GC.

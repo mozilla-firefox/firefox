@@ -216,4 +216,8 @@ ipprotection-message-bar.vpn-top-content {
 
 #site-exclusion-toggle {
   flex: 1;
+
+  > [slot="description"] {
+    padding-inline-start: var(--space-xxlarge);
+  }
 }

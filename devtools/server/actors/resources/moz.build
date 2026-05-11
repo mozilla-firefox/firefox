@@ -27,6 +27,7 @@ DevToolsModules(
     "platform-messages.js",
     "reflow.js",
     "server-sent-events.js",
+    "session-history.js",
     "sources.js",
     "storage-cache.js",
     "storage-cookie.js",

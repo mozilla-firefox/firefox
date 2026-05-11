@@ -37,7 +37,6 @@ firefoxview_next:
         description: >
           The short page name where the recently closed tab was clicked
         type: string
-    telemetry_mirror: Firefoxview_next_RecentlyClosed_Tabs
 
   dismiss_closed_tab_tabs:
     type: event
@@ -65,7 +64,6 @@ firefoxview_next:
         description: >
           The short page name where the recently closed tab was dismissed
         type: string
-    telemetry_mirror: Firefoxview_next_DismissClosedTab_Tabs
 
   card_collapsed_card_container:
     type: event
@@ -86,7 +84,6 @@ firefoxview_next:
         description: >
           The type of data being collapsed in a card on the 'Recent browsing' page
         type: string
-    telemetry_mirror: Firefoxview_next_CardCollapsed_CardContainer
 
   card_expanded_card_container:
     type: event
@@ -107,7 +104,6 @@ firefoxview_next:
         description: >
           The type of data being expanded in a card on the 'Recent browsing' page
         type: string
-    telemetry_mirror: Firefoxview_next_CardExpanded_CardContainer
 
   change_page_navigation:
     type: event
@@ -131,7 +127,6 @@ firefoxview_next:
         description: >
           Whether the page was changed via the side navigation vs the 'View all' link on cards on the Recent browsing page
         type: string
-    telemetry_mirror: Firefoxview_next_ChangePage_Navigation
 
   context_menu_tabs:
     type: event
@@ -155,7 +150,6 @@ firefoxview_next:
         description: >
           The type of data the user has used the context menu for
         type: string
-    telemetry_mirror: Firefoxview_next_ContextMenu_Tabs
 
   close_open_tab_tabs:
     type: event
@@ -171,7 +165,6 @@ firefoxview_next:
     notification_emails:
       - firefoxview@mozilla.com
     expires: never
-    telemetry_mirror: Firefoxview_next_CloseOpenTab_Tabs
 
   browser_context_menu_tabs:
     type: event
@@ -196,7 +189,6 @@ firefoxview_next:
         description: >
           The short page name used as the location hash when selecting the Firefox View tab
         type: string
-    telemetry_mirror: Firefoxview_next_BrowserContextMenu_Tabs
 
   entered_firefoxview:
     type: event
@@ -216,7 +208,6 @@ firefoxview_next:
         description: >
           The short page name used as the location hash when selecting the Firefox View tab
         type: string
-    telemetry_mirror: Firefoxview_next_Entered_Firefoxview
 
   fxa_continue_sync:
     type: event
@@ -231,7 +222,6 @@ firefoxview_next:
     notification_emails:
       - firefoxview@mozilla.com
     expires: never
-    telemetry_mirror: Firefoxview_next_FxaContinue_Sync
 
   fxa_mobile_sync:
     type: event
@@ -251,7 +241,6 @@ firefoxview_next:
         description: >
           True if user has other devices signed into sync
         type: boolean
-    telemetry_mirror: Firefoxview_next_FxaMobile_Sync
 
   synced_tabs_tabs:
     type: event
@@ -271,7 +260,6 @@ firefoxview_next:
         description: >
           The short page name where the synced tab was clicked
         type: string
-    telemetry_mirror: Firefoxview_next_SyncedTabs_Tabs
 
   history_visits:
     type: event
@@ -286,7 +274,6 @@ firefoxview_next:
     notification_emails:
       - firefoxview@mozilla.com
     expires: never
-    telemetry_mirror: Firefoxview_next_History_Visits
 
   sort_history_tabs:
     type: event
@@ -310,7 +297,6 @@ firefoxview_next:
         description: >
           Boolean for if the sort by click occured during search activity.
         type: string
-    telemetry_mirror: Firefoxview_next_SortHistory_Tabs
 
   show_all_history_tabs:
     type: event
@@ -326,7 +312,6 @@ firefoxview_next:
     notification_emails:
       - firefoxview@mozilla.com
     expires: never
-    telemetry_mirror: Firefoxview_next_ShowAllHistory_Tabs
 
   open_tab_tabs:
     type: event
@@ -350,7 +335,6 @@ firefoxview_next:
         description: >
           The window the open tab belongs to
         type: string
-    telemetry_mirror: Firefoxview_next_OpenTab_Tabs
 
   tab_selected_toolbarbutton:
     type: event
@@ -365,7 +349,6 @@ firefoxview_next:
     notification_emails:
       - firefoxview@mozilla.com
     expires: never
-    telemetry_mirror: Firefoxview_next_TabSelected_Toolbarbutton
 
   search_initiated_search:
     type: event
@@ -385,7 +368,6 @@ firefoxview_next:
         description: >
           The short page name used as the location hash when selecting the Firefox View tab.
         type: string
-    telemetry_mirror: Firefoxview_next_SearchInitiated_Search
 
   search_show_all_showallbutton:
     type: event
@@ -406,7 +388,6 @@ firefoxview_next:
         description: >
           Section within which show all is clicked.
         type: string
-    telemetry_mirror: Firefoxview_next_SearchShowAll_Showallbutton
 
 firefoxview:
   cumulative_searches:
@@ -433,4 +414,3 @@ firefoxview:
     notification_emails:
       - firefoxview@mozilla.com
     expires: never
-    telemetry_mirror: FIREFOX_VIEW_CUMULATIVE_SEARCHES

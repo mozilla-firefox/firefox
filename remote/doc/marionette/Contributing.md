@@ -44,7 +44,9 @@ a web browser, it can be challenging to a new contributor to know
 where to start.  Please don’t hesitate to [ask questions]!
 
 The canonical source code repository is [mozilla-central].  Bugs are
-filed in the [Testing :: Marionette] component on Bugzilla.  We also
+filed in the [Remote Protocol :: Marionette] component on Bugzilla, or
+[Testing :: Marionette Client and Harness] for issues with the Python
+client or test harness.  We also
 have a curated set of [good first bugs] you may consider attempting first.
 
 We have collected a lot of good advice for working on Marionette
@@ -52,8 +54,9 @@ code in our [code style document], which we highly recommend you read.
 
 [ask questions]: index.rst#Communication
 [mozilla-central]: https://searchfox.org/firefox-main/source/remote/marionette/
-[Testing :: Marionette]: https://bugzilla.mozilla.org/buglist.cgi?resolution=---&component=Marionette
-[good first bugs]: https://codetribute.mozilla.org/projects/automation?project%3DMarionette
+[Remote Protocol :: Marionette]: https://bugzilla.mozilla.org/buglist.cgi?product=Remote%20Protocol&component=Marionette&resolution=---
+[Testing :: Marionette Client and Harness]: https://bugzilla.mozilla.org/buglist.cgi?product=Testing&component=Marionette%20Client%20and%20Harness&resolution=---
+[good first bugs]: https://codetribute.mozilla.org/projects/automation?project%3DMarionette%2520Client%2520and%2520Harness
 [code style document]: CodeStyle.md
 
 ## Next steps

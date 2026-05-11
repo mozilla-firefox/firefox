@@ -68,8 +68,8 @@ impl Zero for Percentage {
 }
 
 impl ToPercentage for Percentage {
-    fn to_percentage(&self) -> CSSFloat {
-        self.0
+    fn to_percentage(&self) -> Option<CSSFloat> {
+        Some(self.0)
     }
 }
 

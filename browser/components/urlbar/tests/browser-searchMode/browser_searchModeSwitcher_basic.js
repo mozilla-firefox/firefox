@@ -453,6 +453,7 @@ add_task(async function test_searchWithPostEngine() {
     window,
     "panel-item[data-engine-name=MozSearch]"
   );
+  EventUtils.synthesizeKey("KEY_Enter");
   await browserLoaded;
 
   Assert.equal(spy.firstCall.args[0], "https://example.com/", "Correct URL");

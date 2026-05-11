@@ -513,7 +513,7 @@ void BlobURLProtocolHandler::Init(void) {
 
   if (!initialized) {
     initialized = true;
-    RegisterStrongMemoryReporter(new BlobURLsReporter());
+    RegisterStrongMemoryReporter(MakeAndAddRef<BlobURLsReporter>());
   }
 }
 

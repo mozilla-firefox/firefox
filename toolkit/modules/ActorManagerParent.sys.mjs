@@ -827,12 +827,23 @@ export var ActorManagerParent = {
         throw new Error("Invalid JSActor kind " + kind);
     }
     for (let [actorName, actor] of Object.entries(actors)) {
+      let actorRegistered = false;
+      const registerActor = () => {
+        if (!actorRegistered) {
+          register(actorName, actor);
+          actorRegistered = true;
+        }
+      };
+      const unregisterActor = () => {
+        if (actorRegistered) {
+          unregister(actorName, actor);
+          actorRegistered = false;
+        }
+      };
+
       // The actor defines its own register/unregister logic.
       if (actor.onAddActor) {
-        actor.onAddActor(
-          () => register(actorName, actor),
-          () => unregister(actorName, actor)
-        );
+        actor.onAddActor(registerActor, unregisterActor);
         continue;
       }
 
@@ -845,9 +856,9 @@ export var ActorManagerParent = {
             false
           );
           if (isEnabled) {
-            register(actorName, actor);
+            registerActor();
           } else {
-            unregister(actorName, actor);
+            unregisterActor();
           }
           if (actor.onPreferenceChanged) {
             actor.onPreferenceChanged(isEnabled);
@@ -859,7 +870,7 @@ export var ActorManagerParent = {
         }
       }
 
-      register(actorName, actor);
+      registerActor();
     }
   },
 

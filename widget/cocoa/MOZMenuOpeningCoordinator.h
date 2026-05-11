@@ -14,9 +14,9 @@ class Runnable;
 /*
  * MOZMenuOpeningCoordinator is a workaround for the fact that opening an NSMenu
  * creates a nested event loop. This event loop is only exited after the menu is
- * closed. The caller of NativeMenuMac::ShowAsContextMenu does not expect
- * ShowAsContextMenu to create a nested event loop, so we need to make sure to
- * open the NSMenu asynchronously.
+ * closed. The caller of NativeMenuMac::ShowMenuAnchored or
+ * NativeMenuMac::ShowMenuAtPosition does not expect it to create a nested event
+ * loop, so we need to make sure to open the NSMenu asynchronously.
  */
 
 @interface MOZMenuOpeningCoordinator : NSObject
@@ -33,6 +33,7 @@ class Runnable;
                    atScreenPosition:(NSPoint)aPosition
                             forView:(NSView*)aView
                      withAppearance:(NSAppearance*)aAppearance
+                       withFontSize:(CGFloat)aFontSize
                       asContextMenu:(BOOL)aIsContextMenu
                      asAnchoredMenu:(BOOL)aIsAnchoredMenu
                          anchorRect:(NSRect)aAnchorRect

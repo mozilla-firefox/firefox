@@ -2,6 +2,7 @@
 prefs = [
   "gfx.omta.background-color=true",
   "layout.css.scroll-driven-animations.enabled=true",
+  "layout.css.scroll-driven-animations.viewtimeline.enabled=true",
   "gfx.font_loader.delay=0",
 ]
 # Support files for chrome tests that we want to load over HTTP need

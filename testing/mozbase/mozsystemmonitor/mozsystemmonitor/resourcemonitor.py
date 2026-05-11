@@ -1072,6 +1072,70 @@ class SystemResourceMonitor:
         SystemResourceMonitor.record_event("CRASH", timestamp, marker_data)
 
     @staticmethod
+    def lsan_leak(data):
+        """Record an LSan leak event.
+
+        Args:
+            data: Dictionary containing lsan_leak data including:
+                  - "kind": "Direct" or "Indirect"
+                  - "bytes": bytes leaked at this allocation site
+                  - "objects": number of objects leaked at this allocation site
+                  - "stack": structured stack frames (list of frame dicts), if any
+                  - "scope": optional scope (e.g. test name)
+                  - "allowed_match": frame matching an allow-list entry, if any
+        """
+        if not SystemResourceMonitor.instance:
+            return
+
+        timestamp = SystemResourceMonitor.instance.get_monotonic_time_from_data(data)
+
+        marker_data = {
+            "type": "LSanLeak",
+            "kind": data["kind"],
+            "bytes": data["bytes"],
+            "objects": data["objects"],
+        }
+
+        if stack := data.get("stack"):
+            marker_data["stack"] = stack
+        if scope := data.get("scope"):
+            marker_data["scope"] = scope
+        if allowed_match := data.get("allowed_match"):
+            marker_data["allowed_match"] = allowed_match
+            marker_data["color"] = "yellow"
+        else:
+            marker_data["color"] = "orange"
+
+        SystemResourceMonitor.record_event("LSan Leak", timestamp, marker_data)
+
+    @staticmethod
+    def lsan_summary(data):
+        """Record an LSan summary event.
+
+        Args:
+            data: Dictionary containing lsan_summary data including:
+                  - "bytes": total bytes leaked
+                  - "allocations": total allocations leaked
+                  - "allowed": whether the leak is allow-listed
+        """
+        if not SystemResourceMonitor.instance:
+            return
+
+        timestamp = SystemResourceMonitor.instance.get_monotonic_time_from_data(data)
+
+        allowed = data.get("allowed", False)
+        marker_data = {
+            "type": "LSanSummary",
+            "bytes": data["bytes"],
+            "allocations": data["allocations"],
+            "color": "yellow" if allowed else "orange",
+        }
+        if allowed:
+            marker_data["allowed"] = True
+
+        SystemResourceMonitor.record_event("LSan Summary", timestamp, marker_data)
+
+    @staticmethod
     def mozleak_object(data):
         """Record a per-process per-class leaked object event.
 
@@ -1598,6 +1662,72 @@ class SystemResourceMonitor:
                         {
                             "key": "minidump",
                             "label": "Minidump",
+                            "format": "string",
+                        },
+                        {
+                            "key": "color",
+                            "hidden": True,
+                        },
+                    ],
+                },
+                {
+                    "name": "LSanLeak",
+                    "tooltipLabel": "{marker.data.kind} leak of {marker.data.bytes} in {marker.data.objects} object(s)",
+                    "tableLabel": "{marker.data.kind} leak of {marker.data.bytes} in {marker.data.objects} object(s) — {marker.data.scope}",
+                    "display": ["marker-chart", "marker-table"],
+                    "colorField": "color",
+                    "data": [
+                        {
+                            "key": "kind",
+                            "label": "Kind",
+                            "format": "string",
+                        },
+                        {
+                            "key": "bytes",
+                            "label": "Bytes",
+                            "format": "bytes",
+                        },
+                        {
+                            "key": "objects",
+                            "label": "Objects",
+                            "format": "integer",
+                        },
+                        {
+                            "key": "scope",
+                            "label": "Scope",
+                            "format": "string",
+                        },
+                        {
+                            "key": "allowed_match",
+                            "label": "Allowed Match",
+                            "format": "string",
+                        },
+                        {
+                            "key": "color",
+                            "hidden": True,
+                        },
+                    ],
+                },
+                {
+                    "name": "LSanSummary",
+                    "tooltipLabel": "{marker.data.bytes} in {marker.data.allocations} allocation(s)",
+                    "tableLabel": "{marker.data.bytes} in {marker.data.allocations} allocation(s)",
+                    "display": ["marker-chart", "marker-table"],
+                    "colorField": "color",
+                    "data": [
+                        {
+                            "key": "bytes",
+                            "label": "Bytes",
+                            "format": "bytes",
+                        },
+                        {
+                            "key": "allocations",
+                            "label": "Allocations",
+                            "format": "integer",
+                        },
+                        {
+                            "key": "allowed",
+                            "label": "Allowed",
                             "format": "string",
                         },
                         {

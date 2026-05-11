@@ -28,6 +28,7 @@
 #include "nsPresContext.h"
 #include "nsDeviceContext.h"
 #include "nsMenuPopupFrame.h"
+#include "nsComputedDOMStyle.h"
 
 namespace mozilla {
 
@@ -244,10 +245,10 @@ static NSAppearance* NativeAppearanceForContent(nsIContent* aContent) {
 }
 
 void NativeMenuMac::ShowMenuAnchored(nsIFrame* aClickedFrame,
-                                     const CSSIntRect& aRect,
-                                     int8_t aPosition) {
+                                     const nsMenuPopupFrame* aPopupFrame) {
+  const int8_t position = aPopupFrame->GetAlignmentPosition();
   // "Pulls down" in Cocoa means the menu does not overlap its anchor.
-  const bool pullsDown = aPosition < POPUPPOSITION_OVERLAP;
+  const bool pullsDown = position < POPUPPOSITION_OVERLAP;
 
   mMenu->SetIsAnchoredPopUp(!pullsDown);
   mMenu->SetIsAnchoredPullDown(pullsDown);
@@ -261,7 +262,8 @@ void NativeMenuMac::ShowMenuAnchored(nsIFrame* aClickedFrame,
       pc->CSSToDevPixelScale() / pc->DeviceContext()->GetDesktopToDeviceScale();
 
   // Convert Gecko screen coordinates to Cocoa window coordinates.
-  const DesktopRect desktopRect = aRect * cssToDesktopScale;
+  const DesktopRect desktopRect =
+      aPopupFrame->GetScreenAnchorRect() * cssToDesktopScale;
   NSPoint windowPoint = NSMakePoint(
       desktopRect.x - window.frame.origin.x,
       nsCocoaUtils::FlippedScreenY(desktopRect.y) - window.frame.origin.y);
@@ -278,7 +280,7 @@ void NativeMenuMac::ShowMenuAnchored(nsIFrame* aClickedFrame,
   // approximate edge setting. Because the view the button cell gets anchored
   // to is not flipped, NSRectEdgeMinY represents the bottom edge.
   NSRectEdge edge;
-  switch (aPosition) {
+  switch (position) {
     case POPUPPOSITION_BEFORESTART:
     case POPUPPOSITION_BEFOREEND:
       edge = NSRectEdgeMaxY;
@@ -295,6 +297,15 @@ void NativeMenuMac::ShowMenuAnchored(nsIFrame* aClickedFrame,
       edge = NSRectEdgeMinY;
   }
 
+  // Get the font size of the menupopup element which will be used to size the
+  // NSPopUpButtonCell, except for pull-down menus, which do not use custom font
+  // sizing. This affects the size of the checkmark image in the menu.
+  CGFloat fontSize = 0.f;
+  if (!pullsDown) {
+    fontSize = aPopupFrame->PresContext()->GetFullZoom() *
+               aPopupFrame->StyleFont()->mSize.ToCSSPixels();
+  }
+
   // Let the MOZMenuOpeningCoordinator do the actual opening, so that this
   // ShowMenuAnchored call does not spawn a nested event loop, which would be
   // surprising to our callers.
@@ -303,6 +314,7 @@ void NativeMenuMac::ShowMenuAnchored(nsIFrame* aClickedFrame,
             atScreenPosition:buttonRect.origin  // unused for anchored popups
                      forView:view
               withAppearance:appearance
+                withFontSize:fontSize
                asContextMenu:false  // unused for anchored popups
               asAnchoredMenu:true
                   anchorRect:buttonRect
@@ -333,6 +345,7 @@ void NativeMenuMac::ShowMenuAtPosition(nsIFrame* aClickedFrame,
             atScreenPosition:locationOnScreen
                      forView:view
               withAppearance:appearance
+                withFontSize:0.f  // unused
                asContextMenu:aIsContextMenu
               asAnchoredMenu:false
                   anchorRect:NSMakeRect(0, 0, 0, 0)  // unused

@@ -251,9 +251,7 @@ static void RelocateCell(Zone* zone, TenuredCell* src, AllocKind thingKind,
         dstNative->setFixedElements(numShifted);
       }
     } else if (srcObj->is<ProxyObject>()) {
-      if (srcObj->as<ProxyObject>().usingInlineValueArray()) {
-        dstObj->as<ProxyObject>().setInlineValueArray();
-      }
+      dstObj->as<ProxyObject>().setInlineValueArray();
     }
 
     // Call object moved hook if present.
@@ -459,7 +457,7 @@ MovingTracer::MovingTracer(JSRuntime* rt)
 template <typename T>
 inline void MovingTracer::onEdge(T** thingp, const char* name) {
   T* thing = *thingp;
-  if (IsForwarded(thing)) {
+  if (thing && IsForwarded(thing)) {
     MOZ_ASSERT(thing->runtimeFromAnyThread() == runtime());
     *thingp = Forwarded(thing);
   }

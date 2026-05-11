@@ -50,6 +50,8 @@
     <script async type="module" src="chrome://global/content/elements/moz-badge.mjs"></script>
     <script async type="module" src="chrome://global/content/elements/moz-button.mjs"></script>
     <script async type="module" src="chrome://global/content/elements/moz-button-group.mjs"></script>
+    <script async type="module" src="chrome://global/content/elements/moz-input-text.mjs"></script>
+    <script async type="module" src="chrome://global/content/elements/moz-input-search.mjs"></script>
     <script async type="module" src="chrome://global/content/elements/moz-box-button.mjs"></script>
     <script async type="module" src="chrome://global/content/elements/moz-message-bar.mjs"></script>
     <script async type="module" src="chrome://global/content/elements/moz-radio-group.mjs"></script>
@@ -58,6 +60,5 @@
     <script async type="module" src="chrome://global/content/elements/panel-list.js"></script>
     <script async type="module" src="chrome://global/content/elements/moz-support-link.mjs"></script>
     <script async type="module" src="chrome://global/content/elements/moz-checkbox.mjs"></script>
-    <script async type="module" src="chrome://global/content/elements/moz-input-search.mjs"></script>
   </body>
 </html>

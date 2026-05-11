@@ -19,7 +19,8 @@
 #include "nsRefreshDriver.h"
 #include "nsThreadUtils.h"
 
-static mozilla::LazyLogModule gFingerprinterDetection("FingerprinterDetection");
+static mozilla::LazyLogModule gRenderingFingerprinterDetection(
+    "FingerprinterDetection");
 
 nsICanvasRenderingContextInternal::nsICanvasRenderingContextInternal() =
     default;
@@ -61,20 +62,20 @@ class RecordCanvasUsageRunnable final
     mozilla::AssertIsOnMainThread();
     RefPtr<mozilla::dom::Document> doc;
     if (!mWorkerRef) {
-      MOZ_LOG(gFingerprinterDetection, mozilla::LogLevel::Error,
+      MOZ_LOG(gRenderingFingerprinterDetection, mozilla::LogLevel::Error,
               ("RecordCanvasUsageRunnable::MainThreadRun - null mWorkerRef"));
       return false;
     }
     auto* priv = mWorkerRef->Private();
     if (!priv) {
       MOZ_LOG(
-          gFingerprinterDetection, mozilla::LogLevel::Error,
+          gRenderingFingerprinterDetection, mozilla::LogLevel::Error,
           ("RecordCanvasUsageRunnable::MainThreadRun - null worker private"));
       return false;
     }
     doc = priv->GetDocument();
     if (!doc) {
-      MOZ_LOG(gFingerprinterDetection, mozilla::LogLevel::Error,
+      MOZ_LOG(gRenderingFingerprinterDetection, mozilla::LogLevel::Error,
               ("RecordCanvasUsageRunnable::MainThreadRun - null document"));
       return false;
     }
@@ -119,7 +120,7 @@ void nsICanvasRenderingContextInternal::RecordCanvasUsage(
                            rv);
         if (rv.Failed()) {
           rv.SuppressException();
-          MOZ_LOG(gFingerprinterDetection, mozilla::LogLevel::Error,
+          MOZ_LOG(gRenderingFingerprinterDetection, mozilla::LogLevel::Error,
                   ("RecordCanvasUsageRunnable dispatch failed"));
         }
       }

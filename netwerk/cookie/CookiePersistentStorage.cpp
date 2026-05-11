@@ -562,9 +562,10 @@ void CookiePersistentStorage::RemoveAllInternal() {
 }
 
 void CookiePersistentStorage::HandleCorruptDB() {
-  COOKIE_LOGSTRING(LogLevel::Debug,
-                   ("HandleCorruptDB(): CookieStorage %p has mCorruptFlag %u",
-                    this, mCorruptFlag));
+  COOKIE_LOGSTRING(
+      LogLevel::Debug,
+      ("HandleCorruptDB(): CookieStorage %p has mCorruptFlag %u", this,
+       static_cast<unsigned>(static_cast<CorruptFlag>(mCorruptFlag))));
 
   // Mark the database corrupt, so the close listener can begin reconstructing
   // it.

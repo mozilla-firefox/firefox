@@ -156,14 +156,14 @@ struct TestCopyWithDeletedMove {
   void operator()() { MOZ_RELEASE_ASSERT(mCopyCounter); }
   int* mCopyCounter;
 };
-struct TestMove {
-  explicit TestMove(int* aMoveCounter) : mMoveCounter(aMoveCounter) {}
-  TestMove(const TestMove&) = delete;
-  TestMove(TestMove&& a) : mMoveCounter(a.mMoveCounter) {
+struct TestMoveCounter {
+  explicit TestMoveCounter(int* aMoveCounter) : mMoveCounter(aMoveCounter) {}
+  TestMoveCounter(const TestMoveCounter&) = delete;
+  TestMoveCounter(TestMoveCounter&& a) : mMoveCounter(a.mMoveCounter) {
     a.mMoveCounter = nullptr;
     *mMoveCounter += 1;
   }
-  ~TestMove() { mMoveCounter = nullptr; }
+  ~TestMoveCounter() { mMoveCounter = nullptr; }
   void operator()() { MOZ_RELEASE_ASSERT(mMoveCounter); }
   int* mMoveCounter;
 };
@@ -292,7 +292,7 @@ static void TestRunnableFactory(bool aNamed) {
     {
       nsCOMPtr<nsIRunnable> trackedRunnable;
       {
-        TestMove tracker(&moveCounter);
+        TestMoveCounter tracker(&moveCounter);
         trackedRunnable =
             aNamed ? RunnableFactory::Create("unused", std::move(tracker))
                    : RunnableFactory::Create("TestNewRunnableFunction",
@@ -308,9 +308,10 @@ static void TestRunnableFactory(bool aNamed) {
       nsCOMPtr<nsIRunnable> trackedRunnable;
       {
         trackedRunnable =
-            aNamed ? RunnableFactory::Create("unused", TestMove(&moveCounter))
+            aNamed ? RunnableFactory::Create("unused",
+                                             TestMoveCounter(&moveCounter))
                    : RunnableFactory::Create("TestNewRunnableFunction",
-                                             TestMove(&moveCounter));
+                                             TestMoveCounter(&moveCounter));
       }
       trackedRunnable->Run();
     }

@@ -62,6 +62,13 @@ struct ParamTraits<mozilla::widget::TransparencyMode>
           mozilla::widget::TransparencyMode::Transparent> {};
 
 template <>
+struct ParamTraits<nsIWidget::NativePointerLockMode>
+    : ContiguousEnumSerializerInclusive<
+          nsIWidget::NativePointerLockMode,
+          nsIWidget::NativePointerLockMode::Regular,
+          nsIWidget::NativePointerLockMode::Unadjusted> {};
+
+template <>
 struct ParamTraits<nsCursor>
     : ContiguousEnumSerializer<nsCursor, eCursor_standard, eCursorCount> {};
 

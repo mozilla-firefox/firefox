@@ -17,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.core.app.NotificationManagerCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
 import androidx.lifecycle.lifecycleScope
@@ -27,6 +28,7 @@ import mozilla.components.concept.engine.webextension.InstallationMethod
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import mozilla.components.service.nimbus.evalJexlSafe
 import mozilla.components.service.nimbus.messaging.use
+import mozilla.components.support.base.ext.areNotificationsEnabledSafe
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.utils.Browsers
@@ -98,7 +100,7 @@ class OnboardingFragment : Fragment() {
             } else {
                 pagesToDisplay(
                     showDefaultBrowserPage = displayDefaultBrowserPage(this),
-                    showNotificationPage = canShowNotificationPage(),
+                    showNotificationPage = canShowNotificationPage(this),
                     showAddWidgetPage = AppWidgetManager.getInstance(requireContext())
                         ?.let { canShowAddSearchWidgetPrompt(it) }
                         ?: false,
@@ -330,6 +332,9 @@ class OnboardingFragment : Fragment() {
                 }
                 telemetryRecorder.onMarketingDataContinueClicked(allowMarketingDataCollection)
             },
+            onMarketingDataSkipClick = {
+                telemetryRecorder.onMarketingDataSkipClicked()
+            },
             currentIndex = { index ->
                 removeMarketingFeature.withFeature { it.currentPageIndex = index }
             },
@@ -537,7 +542,9 @@ class OnboardingFragment : Fragment() {
     private fun isNotDefaultBrowser(context: Context) =
         !Browsers.isDefaultBrowser(context)
 
-    private fun canShowNotificationPage() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    private fun canShowNotificationPage(context: Context) =
+        !NotificationManagerCompat.from(context.applicationContext)
+            .areNotificationsEnabledSafe() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
     private fun pagesToDisplay(
         showDefaultBrowserPage: Boolean,

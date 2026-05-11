@@ -41,7 +41,7 @@ export const GATED_PERMISSIONS_STRING_IDS = {
     },
     permissionsPrompt: {
       header: "webext-site-perms-header-with-gated-perms-serial",
-      description: "webext-site-perms-description-gated-perms-serial",
+      description: "webext-site-perms-description-gated-perms-webserial",
     },
     shortDescription: "webext-site-perms-serial",
   },

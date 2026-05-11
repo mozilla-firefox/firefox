@@ -3,68 +3,65 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 :host {
-  --button-background: linear-gradient(235deg, #d6b4fd -57%, #8341ca 219%);
-  --button-background-dark: linear-gradient(65deg, #4e2e9d -5%, #c1a9ff 135%);
-  --button-border-color: color-mix(in srgb, white 20%, transparent);
   --button-border-width: var(--border-width);
-  --button-box-shadow: inset 0 0 0 var(--button-border-width) var(--button-border-color);
-  --button-separator-color: color-mix(in srgb, white 60%, transparent);
-  --button-stop-color: light-dark(var(--color-violet-50), var(--color-violet-40));
-  --panel-icon-fill-color: light-dark(var(--color-violet-70), white);
-  --panel-icon-stroke-color: light-dark(var(--color-pink-0), var(--button-separator-color));
   display: inline-flex;
+
+  @media not (forced-colors) {
+    --button-background: linear-gradient(235deg, #d6b4fd -57%, #8341ca 219%);
+    --button-background-dark: linear-gradient(65deg, #4e2e9d -5%, #c1a9ff 135%);
+    --button-border-color: color-mix(in srgb, white 20%, transparent);
+    --button-box-shadow: inset 0 0 0 var(--button-border-width) var(--button-border-color);
+    --button-separator-color: color-mix(in srgb, white 60%, transparent);
+    --button-stop-color: light-dark(var(--color-violet-50), var(--color-violet-40));
+    --panel-icon-fill-color: light-dark(var(--color-violet-70), white);
+    --panel-icon-stroke-color: light-dark(var(--color-pink-0), var(--button-separator-color));
+  }
 }
 
 moz-button.input-cta {
-  --button-background-color-active: color-mix(in srgb, black 25%, transparent);
-  --button-background-color-disabled: light-dark(var(--color-gray-20), var(--color-gray-60));
-  --button-background-color-hover: color-mix(in srgb, black 15%, transparent);
-  --button-background-color-selected: color-mix(in srgb, black 25%, transparent);
-  --button-background-color: transparent;
-  --button-border-radius: var(--border-radius-circle);
-  --button-icon-fill: light-dark(var(--color-gray-60), white);
-  --button-padding: 0 var(--space-small) 0 var(--space-large);
-  --button-text-color-active: white;
-  --button-text-color-disabled: white;
-  --button-text-color-hover: white;
-  --button-text-color-selected: white;
-  --button-text-color: white;
   border-radius: var(--button-border-radius);
-}
+  --button-padding: 0 var(--space-small) 0 var(--space-large);
+  --button-border-radius: var(--border-radius-circle);
 
-moz-button[type="split"].input-cta {
-  --button-icon-fill: white;
-  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-  background: light-dark(var(--button-background), var(--button-background-dark));
-  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-  box-shadow: var(--button-box-shadow);
-  gap: 0;
-}
-
-moz-button[type="split"].input-cta::part(chevron-button) {
-  padding-inline-end: var(--space-xsmall);
-}
-
-moz-button[type="split"].input-cta::part(chevron-button)::before {
-  background: var(--button-separator-color);
-  border-radius: var(--border-radius-circle);
-  content: "";
-  display: block;
-  height: var(--size-item-small);
-  inset-inline-start: 0;
-  position: absolute;
-  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-  margin-inline-start: calc(-1 * var(--button-border-width));
-  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-  width: var(--button-border-width);
-}
-
-:host(:dir(rtl)) moz-button.input-cta::part(button) {
-  padding-inline-end: var(--space-xsmall);
+  @media not (forced-colors) {
+    --button-background-color: transparent;
+    --button-background-color-active: color-mix(in srgb, black 25%, transparent);
+    --button-background-color-disabled: light-dark(var(--color-gray-20), var(--color-gray-60));
+    --button-background-color-hover: color-mix(in srgb, black 15%, transparent);
+    --button-background-color-selected: color-mix(in srgb, black 25%, transparent);
+    --button-icon-fill: light-dark(var(--color-gray-60), var(--color-white));
+    --button-text-color: var(--color-white);
+    --button-text-color-active: var(--color-white);
+    --button-text-color-disabled: var(--color-white);
+    --button-text-color-hover: var(--color-white);
+    --button-text-color-selected: var(--color-white);
+  }
 }
 
 :host([action=""]) moz-button.input-cta::part(button) {
   min-width: var(--size-item-xlarge);
+}
+
+:host([action="stop"]) moz-button.input-cta {
+  --button-padding: 0;
+
+  @media not (forced-colors) {
+    --button-background-color-hover: light-dark(var(--color-violet-0), color-mix(in srgb, var(--color-violet-20) 24%, transparent));
+    --button-background-color-active: light-dark(var(--color-violet-10), color-mix(in srgb, var(--color-violet-0) 24%, transparent));
+    --button-icon-fill: light-dark(var(--color-violet-70), var(--color-violet-20));
+  }
+}
+
+:host([action="stop"]) moz-button.input-cta::part(button) {
+  border-style: solid;
+  border-width: var(--border-width);
+  width: var(--size-item-large);
+  height: var(--size-item-large);
+  min-width: var(--size-item-large);
+
+  @media not (forced-colors) {
+    border-color: var(--button-stop-color);
+  }
 }
 
 :host([action="search"]) moz-button.input-cta::part(button) {
@@ -79,53 +76,132 @@ moz-button[type="split"].input-cta::part(chevron-button)::before {
   background-position-x: right var(--space-small);
 }
 
+:host(:dir(rtl)) moz-button.input-cta::part(button) {
+  padding-inline-end: var(--space-xsmall);
+}
+
+moz-button[type="split"].input-cta {
+  gap: 0;
+
+  @media not (forced-colors) {
+    --button-icon-fill: var(--color-white);
+    /* TODO: Bug 2033070 - we probably won't need the background declaration now that
+    it doesn't require a gradient for Nova */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    background: light-dark(var(--button-background), var(--button-background-dark));
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    box-shadow: var(--button-box-shadow);
+  }
+}
+
+moz-button[type="split"].input-cta::part(chevron-button) {
+  padding-inline-end: var(--space-xsmall);
+}
+
+moz-button[type="split"].input-cta::part(chevron-button)::before {
+  border-radius: var(--border-radius-circle);
+  content: "";
+  display: block;
+  height: var(--size-item-small);
+  inset-inline-start: 0;
+  position: absolute;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  margin-inline-start: calc(-1 * var(--button-border-width));
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  width: var(--button-border-width);
+
+  @media not (forced-colors) {
+    background: var(--button-separator-color);
+  }
+}
+
 panel-item::part(button) {
   -moz-context-properties: fill, stroke;
   background-repeat: no-repeat;
-  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-  fill: var(--panel-icon-fill-color);
-  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-  stroke: var(--panel-icon-stroke-color);
+
+  @media not (forced-colors) {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    fill: var(--panel-icon-fill-color);
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    stroke: var(--panel-icon-stroke-color);
+  }
 }
 
-panel-item[icon="chat"]::part(button) {
-  background-image: url("chrome://browser/content/aiwindow/assets/ask-icon.svg");
+panel-item {
+  &[icon="back"]::part(button) {
+    background-image: url("chrome://global/skin/icons/arrow-left.svg");
+  }
+  &[icon="back"]::part(button):dir(rtl) {
+    background-image: url("chrome://global/skin/icons/arrow-right.svg");
+  }
+
+  &[icon="chat"]::part(button) {
+    background-image: url("chrome://browser/content/aiwindow/assets/ask-icon.svg");
+  }
+
+  &[icon="engine"]::part(button) {
+    background-image: var(--engine-icon, var(--search-icon));
+  }
+
+  &[icon="navigate"]::part(button) {
+    background-image: url("chrome://browser/skin/forward.svg");
+  }
+
+  &[icon="search"]::part(button) {
+    background-image: var(--search-icon);
+  }
+
+  &[icon="search-with"]::part(button) {
+    background-image: url("chrome://global/skin/icons/search-glass.svg");
+  }
 }
 
-panel-item[icon="navigate"]::part(button) {
-  background-image: url("chrome://browser/skin/forward.svg");
-}
+/* TODO: Bug 2033070 -  Nova tokens were implemented as the default value for the custom properties, and the fallbacks (and lint exceptions) will need to be removed after launch */
+/* stylelint-disable-next-line media-query-no-invalid */
+@media -moz-pref("browser.nova.enabled") {
+  @media not (forced-colors) {
+    moz-button {
+      &[type="split"].input-cta {
+        --button-icon-fill: var(--button-text-color-primary);
+      }
 
-panel-item[icon="search"]::part(button) {
-  background-image: var(--search-icon);
-}
+      &.input-cta {
+        --button-background-color: var(--button-background-color-primary);
+        --button-background-color-active: var(--button-background-color-primary-active);
+        --button-background-color-disabled: var(--button-background-color-primary-disabled);
+        --button-background-color-hover: var(--button-background-color-primary-hover);
+        --button-background-color-selected: var(--button-background-color-primary-selected);
+        --button-text-color: var(--button-text-color-primary);
+        --button-text-color-active: var(--button-text-color-primary-active);
+        --button-text-color-disabled: var(--button-text-color-primary-disabled);
+        --button-text-color-hover: var(--button-text-color-primary);
+        --button-text-color-selected: var(--button-text-color-primary-selected);
+        --button-border-color: var(--button-border-color-primary);
+        --button-border-color-active: var(--button-border-color-primary-active);
+        --button-border-color-disabled: var(--button-border-color-primary-disabled);
+        --button-border-color-hover: var(--button-border-color-primary-hover);
+        --button-border-color-selected: var(--button-border-color-primary-selected);
+      }
+    }
+  }
 
-:host([action="stop"]) moz-button.input-cta {
-  --button-background-color-hover: light-dark(var(--color-violet-0), color-mix(in srgb, var(--color-violet-20) 24%, transparent));
-  --button-background-color-active: light-dark(var(--color-violet-10), color-mix(in srgb, var(--color-violet-0) 24%, transparent));
-  --button-icon-fill: light-dark(var(--color-violet-70), var(--color-violet-20));
-  --button-padding: 0;
-}
+  panel-list {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    min-width: 256px;
+    padding: var(--space-small) 0;
+    --panel-list-border-radius: var(--border-radius-large);
 
-:host([action="stop"]) moz-button.input-cta::part(button) {
-  border: var(--border-width) solid var(--button-stop-color);
-  width: var(--size-item-large);
-  height: var(--size-item-large);
-  min-width: var(--size-item-large);
-}
+    @media (not (forced-colors)) {
+      --panel-list-border-color: light-dark(var(--color-violet-desaturated-20), var(--color-violet-desaturated-50));
+    }
+  }
 
-panel-item[icon="search-with"]::part(button) {
-  background-image: url("chrome://global/skin/icons/search-glass.svg");
-}
+  panel-item::part(button) {
+    background-position-x: var(--space-large);
+    padding: var(--space-small) var(--space-large) var(--space-small) calc(var(--space-medium) + var(--space-xxlarge));
 
-panel-item[icon="engine"]::part(button) {
-  background-image: var(--engine-icon, var(--search-icon));
-}
-
-panel-item[icon="back"]::part(button) {
-  background-image: url("chrome://global/skin/icons/arrow-left.svg");
-}
-
-panel-item[icon="back"]::part(button):dir(rtl) {
-  background-image: url("chrome://global/skin/icons/arrow-right.svg");
+    @media (not (forced-colors)) {
+      --panel-icon-fill-color: light-dark(var(--color-violet-50), var(--color-violet-20));
+    }
+  }
 }

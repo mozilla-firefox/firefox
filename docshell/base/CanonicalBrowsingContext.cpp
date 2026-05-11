@@ -1493,6 +1493,7 @@ void CanonicalBrowsingContext::ReplaceActiveSessionHistoryEntry(
   nsSHistory* shistory = static_cast<nsSHistory*>(GetSessionHistory());
   if (shistory) {
     shistory->NotifyOnHistoryReplaceEntry();
+    shistory->NotifyOnEntryUpdated(mActiveEntry);
   }
 
   ResetSHEntryHasUserInteractionCache();

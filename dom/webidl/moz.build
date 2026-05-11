@@ -368,6 +368,9 @@ with Files("VRDisplay.webidl"):
 with Files("Video*"):
     BUG_COMPONENT = ("Core", "Audio/Video")
 
+with Files("ViewTimeline.webidl"):
+    BUG_COMPONENT = ("Core", "DOM: Animation")
+
 with Files("ViewTransition.webidl"):
     BUG_COMPONENT = ("Core", "CSS Parsing and Computation")
 
@@ -1091,6 +1094,7 @@ WEBIDL_FILES = [
     "VideoPlaybackQuality.webidl",
     "VideoTrack.webidl",
     "VideoTrackList.webidl",
+    "ViewTimeline.webidl",
     "ViewTransition.webidl",
     "VisualViewport.webidl",
     "VRDisplay.webidl",

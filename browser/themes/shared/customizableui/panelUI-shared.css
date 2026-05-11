@@ -2444,3 +2444,7 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
     margin-inline-start: 0;
   }
 }
+
+#PanelUI-ipprotection-locations {
+  max-height: 400px;
+}

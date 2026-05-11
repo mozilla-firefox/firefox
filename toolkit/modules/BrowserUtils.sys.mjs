@@ -12,6 +12,13 @@ ChromeUtils.defineESModuleGetters(lazy, {
   Region: "resource://gre/modules/Region.sys.mjs",
 });
 
+XPCOMUtils.defineLazyServiceGetter(
+  lazy,
+  "IDNService",
+  "@mozilla.org/network/idn-service;1",
+  Ci.nsIIDNService
+);
+
 ChromeUtils.defineLazyGetter(lazy, "CatManListenerManager", () => {
   const CatManListenerManager = {
     cachedModules: {},
@@ -397,7 +404,16 @@ export var BrowserUtils = {
           !showInsecureHTTP &&
           (onlyBaseDomain || (!showWWW && host.startsWith("www.")));
         if (removeSubdomains) {
-          host = Services.eTLD.getSchemelessSite(uri);
+          try {
+            host = lazy.IDNService.domainToDisplay(
+              Services.eTLD.getSchemelessSite(uri)
+            );
+          } catch (ex) {
+            // Fall back to the full host for invalid IDN. This should never
+            // happen but we'll be defensive so we don't break display.
+            console.error(ex);
+            host = uri.host;
+          }
           if (uri.port != -1) {
             host += ":" + uri.port;
           }

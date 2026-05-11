@@ -304,16 +304,6 @@ bool NativeObject::setUniqueId(JSRuntime* runtime, uint64_t uid) {
   return true;
 }
 
-bool NativeObject::setOrUpdateUniqueId(JSContext* cx, uint64_t uid) {
-  if (!hasDynamicSlots() && !allocateSlots(cx->nursery(), 0)) {
-    ReportOutOfMemory(cx);
-    return false;
-  }
-
-  getSlotsHeader()->setUniqueId(uid);
-  return true;
-}
-
 bool NativeObject::growSlots(JSContext* cx, uint32_t oldCapacity,
                              uint32_t newCapacity) {
   MOZ_ASSERT(newCapacity > oldCapacity);

@@ -12,14 +12,12 @@ const PATH =
 
 const URI_EXAMPLECOM = "https://example.com/" + PATH;
 const URI_EXAMPLEORG = "https://example.org/" + PATH;
-const URI_DATA = "data:text/html,hi";
 
 var TEST_CASES = [
   URI_EXAMPLECOM,
   URI_EXAMPLEORG,
   "about:preferences",
   "about:config",
-  URI_DATA,
 ];
 
 var remoteTypes;
@@ -43,27 +41,20 @@ add_setup(async function () {
       // don't preload tabs so we don't have extra XULFrameLoaderCreated events
       // firing
       ["browser.newtab.preload", false],
-      // force data URIs to load in a common web process
-      ["browser.tabs.remote.dataUriInDefaultWebProcess", true],
     ],
   });
 
-  requestLongerTimeout(10);
+  requestLongerTimeout(5);
 });
 
-function setupRemoteTypes(isolateEverything) {
+function setupRemoteTypes() {
   remoteTypes = {
     regular: { "about:preferences": null, "about:config": null },
     1: { "about:preferences": null, "about:config": null },
     2: { "about:preferences": null, "about:config": null },
     3: { "about:preferences": null, "about:config": null },
   };
-  remoteTypes.regular[URI_DATA] = "web";
-  remoteTypes["1"][URI_DATA] = "web=^userContextId=1";
-  remoteTypes["2"][URI_DATA] = "web=^userContextId=2";
-  remoteTypes["3"][URI_DATA] = "web=^userContextId=3";
-
-  if (isolateEverything) {
+  if (gFissionBrowser) {
     remoteTypes.regular[URI_EXAMPLECOM] = "webIsolated=https://example.com";
     remoteTypes.regular[URI_EXAMPLEORG] = "webIsolated=https://example.org";
     remoteTypes["1"][URI_EXAMPLECOM] =
@@ -81,21 +72,17 @@ function setupRemoteTypes(isolateEverything) {
   } else {
     remoteTypes.regular[URI_EXAMPLECOM] = "web";
     remoteTypes.regular[URI_EXAMPLEORG] = "web";
-    remoteTypes["1"][URI_EXAMPLECOM] = "web=^userContextId=1";
-    remoteTypes["1"][URI_EXAMPLEORG] = "web=^userContextId=1";
-    remoteTypes["2"][URI_EXAMPLECOM] = "web=^userContextId=2";
-    remoteTypes["2"][URI_EXAMPLEORG] = "web=^userContextId=2";
-    remoteTypes["3"][URI_EXAMPLECOM] = "web=^userContextId=3";
-    remoteTypes["3"][URI_EXAMPLEORG] = "web=^userContextId=3";
+    remoteTypes["1"][URI_EXAMPLECOM] = "web";
+    remoteTypes["1"][URI_EXAMPLEORG] = "web";
+    remoteTypes["2"][URI_EXAMPLECOM] = "web";
+    remoteTypes["2"][URI_EXAMPLEORG] = "web";
+    remoteTypes["3"][URI_EXAMPLECOM] = "web";
+    remoteTypes["3"][URI_EXAMPLEORG] = "web";
   }
 }
 
-async function testReopenCommon(isolateEverything) {
-  await SpecialPowers.pushPrefEnv({
-    set: [["fission.webContentIsolationStrategy", isolateEverything ? 1 : 0]],
-  });
-  setupRemoteTypes(isolateEverything);
-
+add_task(async function testReopen() {
+  setupRemoteTypes();
   /**
    * Open a regular tab
    * For each url
@@ -123,11 +110,7 @@ async function testReopenCommon(isolateEverything) {
     await loaded;
     info(`Start Opened ${uri} in a regular tab`);
     currRemoteType = regularPage.tab.linkedBrowser.remoteType;
-    is(
-      currRemoteType,
-      remoteTypes.regular[uri],
-      `correct remote type for ${uri} in a regular tab`
-    );
+    is(currRemoteType, remoteTypes.regular[uri], "correct remote type");
 
     let containerTabs = [];
 
@@ -157,7 +140,7 @@ async function testReopenCommon(isolateEverything) {
       is(
         currRemoteType,
         remoteTypes[userCtxId.toString()][uri],
-        `correct remote type for ${uri} in container ${userCtxId}`
+        "correct remote type"
       );
 
       // Check that XULFrameLoaderCreated has fired off correct number of times
@@ -198,15 +181,4 @@ async function testReopenCommon(isolateEverything) {
     }
   }
   BrowserTestUtils.removeTab(regularPage.tab);
-}
-
-if (gFissionBrowser) {
-  // This will have no impact if fission is disabled, so we skip this test.
-  add_task(async function testReopenIsolateEverything() {
-    await testReopenCommon(/* isolateEverything */ true);
-  });
-}
-
-add_task(async function testReopenIsolateNothing() {
-  await testReopenCommon(/* isolateEverything */ false);
 });

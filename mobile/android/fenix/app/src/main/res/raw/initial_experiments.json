@@ -11,7 +11,7 @@
       "channel": "release",
       "userFacingName": "Android - Second and Seven Day Onboarding",
       "userFacingDescription": "Android - Second and Seven Day Onboarding",
-      "isEnrollmentPaused": false,
+      "isEnrollmentPaused": true,
       "isRollout": false,
       "bucketConfig": {
         "randomizationUnit": "nimbus_id",
@@ -111,7 +111,7 @@
       ],
       "targeting": "(app_version|versionCompare('150.!') >= 0)",
       "startDate": "2026-04-15",
-      "enrollmentEndDate": null,
+      "enrollmentEndDate": "2026-05-07",
       "endDate": null,
       "proposedDuration": 28,
       "proposedEnrollment": 7,

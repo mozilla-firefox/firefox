@@ -6,6 +6,8 @@
 #include "2D.h"
 #include "DataSurfaceHelpers.h"
 
+#include "mozilla/SSE.h"
+
 #include <algorithm>
 
 namespace mozilla {
@@ -151,7 +153,7 @@ void ImageHalfScaler::HalfImage2D(uint8_t* aSource, int32_t aSourceStride,
                                   const IntSize& aSourceSize, uint8_t* aDest,
                                   uint32_t aDestStride) {
 #ifdef USE_SSE2
-  if (Factory::HasSSE2()) {
+  if (mozilla::supports_sse2()) {
     HalfImage2D_SSE2(aSource, aSourceStride, aSourceSize, aDest, aDestStride);
   } else
 #endif
@@ -164,7 +166,7 @@ void ImageHalfScaler::HalfImageVertical(uint8_t* aSource, int32_t aSourceStride,
                                         const IntSize& aSourceSize,
                                         uint8_t* aDest, uint32_t aDestStride) {
 #ifdef USE_SSE2
-  if (Factory::HasSSE2()) {
+  if (mozilla::supports_sse2()) {
     HalfImageVertical_SSE2(aSource, aSourceStride, aSourceSize, aDest,
                            aDestStride);
   } else
@@ -181,7 +183,7 @@ void ImageHalfScaler::HalfImageHorizontal(uint8_t* aSource,
                                           uint8_t* aDest,
                                           uint32_t aDestStride) {
 #ifdef USE_SSE2
-  if (Factory::HasSSE2()) {
+  if (mozilla::supports_sse2()) {
     HalfImageHorizontal_SSE2(aSource, aSourceStride, aSourceSize, aDest,
                              aDestStride);
   } else

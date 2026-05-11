@@ -1075,3 +1075,9 @@
    ...
    fun:_ZN7mozilla10extensions13MatchGlobCoreC1ERK12nsTSubstringIcEbbRNS_11ErrorResultE
 }
+{
+   False positive in animation parsing after bug 2035572
+   Memcheck:Cond
+   fun:drop_in_place<core::option::Option<style::values::generics::animation::GenericAnimationDuration<style::values::specified::time::Time>>>
+   fun:parse_one_animation
+}

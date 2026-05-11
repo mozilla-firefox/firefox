@@ -398,6 +398,17 @@ nsGeolocationRequest::Allow(JS::Handle<JS::Value> aChoices) {
     return NS_OK;
   }
 
+  auto onSystemPermissionResult =
+      [self = RefPtr{this}](GeolocationPermissionStatus
+                                aResult) MOZ_CAN_RUN_SCRIPT_BOUNDARY_LAMBDA {
+        if (aResult == GeolocationPermissionStatus::Granted ||
+            !StaticPrefs::dom_geolocation_require_system_permission_enabled()) {
+          self->Allow(JS::UndefinedHandleValue);
+          return;
+        }
+        self->Cancel();
+      };
+
   if (mBehavior != SystemGeolocationPermissionBehavior::NoPrompt) {
     // Asynchronously present the system dialog or open system preferences
     // (RequestGeolocationPermissionFromUser will know which to do), and wait
@@ -409,24 +420,16 @@ nsGeolocationRequest::Allow(JS::Handle<JS::Value> aChoices) {
     RefPtr<BrowsingContext> browsingContext = mWindow->GetBrowsingContext();
     if (ContentChild* cc = ContentChild::GetSingleton()) {
       cc->SendRequestGeolocationPermissionFromUser(
-          browsingContext,
-          [self = RefPtr{this}](GeolocationPermissionStatus aResult)
-              MOZ_CAN_RUN_SCRIPT_BOUNDARY_LAMBDA {
-                self->Allow(JS::UndefinedHandleValue);
-              },
-          [self = RefPtr{this}](mozilla::ipc::ResponseRejectReason aReason)
-              MOZ_CAN_RUN_SCRIPT_BOUNDARY_LAMBDA {
-                self->Allow(JS::UndefinedHandleValue);
-              });
+          browsingContext, onSystemPermissionResult,
+          [onSystemPermissionResult](
+              mozilla::ipc::ResponseRejectReason aReason) {
+            onSystemPermissionResult(GeolocationPermissionStatus::Canceled);
+          });
       return NS_OK;
     }
 
-    Geolocation::ReallowWithSystemPermissionOrCancel(
-        browsingContext,
-        [self = RefPtr{this}](GeolocationPermissionStatus aResult)
-            MOZ_CAN_RUN_SCRIPT_BOUNDARY_LAMBDA {
-              self->Allow(JS::UndefinedHandleValue);
-            });
+    Geolocation::ReallowWithSystemPermissionOrCancel(browsingContext,
+                                                     onSystemPermissionResult);
     return NS_OK;
   }
 

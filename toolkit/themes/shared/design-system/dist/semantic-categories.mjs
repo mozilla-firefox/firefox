@@ -480,7 +480,11 @@ export const tokensTable = {
     },
     {
       value: "color-mix(in srgb, currentColor 11%, transparent)",
-      name: "--tab-hover-background-color",
+      name: "--tab-background-color-hover",
+    },
+    {
+      value: "var(--toolbar-background-color)",
+      name: "--tab-background-color-selected",
     },
   ],
   "border-color": [
@@ -1943,10 +1947,6 @@ export const tokensTable = {
     { value: "var(--icon-size)", name: "--box-icon-size" },
   ],
   uncategorized: [
-    {
-      value: "var(--toolbar-background-color)",
-      name: "--tab-selected-bgcolor",
-    },
     { value: "var(--toolbar-text-color)", name: "--tab-selected-textcolor" },
   ],
 };
@@ -3132,12 +3132,13 @@ export const variableLookupTable = {
   "tab-box-shadow": "var(--box-shadow-level-1)",
   "tab-attention-dot-color": "var(--color-accent-attention)",
   "tab-close-button-padding": "6px",
-  "tab-hover-background-color":
-    "color-mix(in srgb, currentColor 11%, transparent)",
   "tab-hover-outline-color": {
     default: "transparent",
     prefersContrast: "currentColor",
   },
+  "tab-background-color-hover":
+    "color-mix(in srgb, currentColor 11%, transparent)",
+  "tab-background-color-selected": "var(--toolbar-background-color)",
   "tab-icon-end-margin": "5.5px",
   "tab-inline-padding": "var(--dimension-8)",
   "tab-inner-inline-margin": "var(--space-medium)",
@@ -3150,7 +3151,6 @@ export const variableLookupTable = {
   "tab-pinned-container-margin-inline-expanded": "var(--space-small)",
   "tab-pinned-expanded-background-width": "var(--dimension-40)",
   "tab-pinned-margin-inline-expanded": "var(--space-xsmall)",
-  "tab-selected-bgcolor": "var(--toolbar-background-color)",
   "tab-selected-outline-color": {
     default: "transparent",
     prefersContrast: "currentColor",

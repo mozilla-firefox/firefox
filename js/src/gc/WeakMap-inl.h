@@ -299,7 +299,7 @@ template <class K, class V, class AP>
 void WeakMap<K, V, AP>::trace(JSTracer* trc) {
   MOZ_ASSERT(isInList());
 
-  TraceNullableEdge(trc, &memberOf, "WeakMap owner");
+  TraceEdge(trc, &memberOf, "WeakMap owner");
 
   // Trace memory owned by our containers but not their contents.
   TraceOwnedAllocs(trc, memberOf, map_, "WeakMap storage");

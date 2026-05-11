@@ -49,7 +49,10 @@
      * as the backdrop matches our color scheme. The .6 matches what we do for
      * acrylic, and the .15 matches the 85% we do for the default toolbar
      * background on the native theme. */
-    --toolbar-background-color: light-dark(var(--color-white-alpha-60), var(--color-white-alpha-20));
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media not -moz-pref("browser.nova.enabled") {
+      --toolbar-background-color: light-dark(var(--color-white-alpha-60), var(--color-white-alpha-20));
+    }
   }
 
   /* stylelint-disable-next-line media-query-no-invalid */

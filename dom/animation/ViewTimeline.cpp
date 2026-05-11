@@ -7,7 +7,9 @@
 #include "mozilla/ScrollContainerFrame.h"
 #include "mozilla/dom/Animation.h"
 #include "mozilla/dom/ElementInlines.h"
+#include "mozilla/dom/ViewTimelineBinding.h"
 #include "nsLayoutUtils.h"
+#include "nsPresContext.h"
 
 namespace mozilla::dom {
 
@@ -41,6 +43,31 @@ already_AddRefed<ViewTimeline> ViewTimeline::MakeAnonymous(
   return MakeAndAddRef<ViewTimeline>(aDocument, scroller, aAxis,
                                      aTarget.mElement,
                                      aTarget.mPseudoRequest.mType, aInset);
+}
+
+JSObject* ViewTimeline::WrapObject(JSContext* aCx,
+                                   JS::Handle<JSObject*> aGivenProto) {
+  if (!StaticPrefs::
+          layout_css_scroll_driven_animations_viewtimeline_enabled()) {
+    return ScrollTimeline::WrapObject(aCx, aGivenProto);
+  }
+  return ViewTimeline_Binding::Wrap(aCx, this, aGivenProto);
+}
+
+Nullable<double> ViewTimeline::GetStartOffset() const {
+  auto data = ComputeTimelineData();
+  if (!data) {
+    return nullptr;
+  }
+  return nsPresContext::AppUnitsToFloatCSSPixels(data->mStart);
+}
+
+Nullable<double> ViewTimeline::GetEndOffset() const {
+  auto data = ComputeTimelineData();
+  if (!data) {
+    return nullptr;
+  }
+  return nsPresContext::AppUnitsToFloatCSSPixels(data->mEnd);
 }
 
 void ViewTimeline::ReplacePropertiesWith(

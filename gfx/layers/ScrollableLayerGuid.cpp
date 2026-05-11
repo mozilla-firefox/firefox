@@ -12,9 +12,6 @@
 namespace mozilla {
 namespace layers {
 
-ScrollableLayerGuid::ScrollableLayerGuid()
-    : mLayersId{0}, mPresShellId(0), mScrollId(0) {}
-
 ScrollableLayerGuid::ScrollableLayerGuid(LayersId aLayersId,
                                          uint32_t aPresShellId,
                                          ViewID aScrollId)

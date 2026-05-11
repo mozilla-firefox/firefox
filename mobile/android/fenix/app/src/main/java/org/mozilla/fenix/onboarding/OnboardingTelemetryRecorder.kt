@@ -504,6 +504,18 @@ class OnboardingTelemetryRecorder(
     }
 
     /**
+     * Records the marketing data card skip button click event.
+     */
+    fun onMarketingDataSkipClicked() {
+        Onboarding.marketingDataSkipClicked.record(
+            Onboarding.MarketingDataSkipClickedExtra(
+                onboardingReason = onboardingReason.value,
+                installSource = installSource,
+            ),
+        )
+    }
+
+    /**
      * Records when the marketing data learn more link clicked.
      */
     fun onMarketingDataLearnMoreClick() = Onboarding.marketingDataLearnMore.record(

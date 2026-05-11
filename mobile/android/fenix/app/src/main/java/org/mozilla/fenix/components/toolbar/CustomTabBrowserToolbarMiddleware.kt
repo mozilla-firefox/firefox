@@ -37,6 +37,7 @@ import mozilla.components.compose.browser.toolbar.store.BrowserDisplayToolbarAct
 import mozilla.components.compose.browser.toolbar.store.BrowserDisplayToolbarAction.UpdateProgressBarConfig
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarAction
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarAction.Init
+import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarEvent
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarState
 import mozilla.components.compose.browser.toolbar.store.ProgressBarConfig
@@ -44,6 +45,8 @@ import mozilla.components.concept.engine.cookiehandling.CookieBannersStorage
 import mozilla.components.concept.engine.permission.SitePermissions
 import mozilla.components.concept.engine.permission.SitePermissionsStorage
 import mozilla.components.concept.engine.prompt.ShareData
+import mozilla.components.feature.ipprotection.Authorized
+import mozilla.components.feature.ipprotection.IPProtectionStore
 import mozilla.components.feature.session.TrackingProtectionUseCases
 import mozilla.components.feature.tabs.CustomTabsUseCases
 import mozilla.components.lib.publicsuffixlist.PublicSuffixList
@@ -99,6 +102,7 @@ private const val CUSTOM_BUTTON_CLICK_RETURN_CODE = 0
  * @param customTabId [String] of the custom tab in which the toolbar is shown.
  * @param browserStore [BrowserStore] to sync from.
  * @param appStore [AppStore] allowing to integrate with other features of the applications.
+ * @param ipProtectionStore [IPProtectionStore] to observe IP protection proxy status.
  * @param permissionsStorage [SitePermissionsStorage] to sync from.
  * @param cookieBannersStorage [CookieBannersStorage] to sync from.
  * @param useCases [CustomTabsUseCases] used for cleanup when closing the custom tab.
@@ -118,6 +122,7 @@ class CustomTabBrowserToolbarMiddleware(
     private val customTabId: String,
     private val browserStore: BrowserStore,
     private val appStore: AppStore,
+    private val ipProtectionStore: IPProtectionStore,
     private val permissionsStorage: SitePermissionsStorage,
     private val cookieBannersStorage: CookieBannersStorage,
     private val useCases: CustomTabsUseCases,
@@ -155,6 +160,7 @@ class CustomTabBrowserToolbarMiddleware(
                 observePageOriginUpdates(store)
                 observePageSecurityUpdates(store)
                 observePageTrackingProtectionUpdates(store)
+                observeIPProtectionUpdates(store)
             }
 
             is CloseClicked -> {
@@ -334,6 +340,15 @@ class CustomTabBrowserToolbarMiddleware(
         }
     }
 
+    private fun observeIPProtectionUpdates(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
+        ipProtectionStore.observeWhileActive {
+            distinctUntilChangedBy { it.proxyStatus }
+                .collect {
+                    updateStartPageActions(store, customTab)
+                }
+        }
+    }
+
     private fun updateStartBrowserActions(
         store: Store<BrowserToolbarState, BrowserToolbarAction>,
         customTab: CustomTabSessionState?,
@@ -427,7 +442,7 @@ class CustomTabBrowserToolbarMiddleware(
             customTab.content.securityInfo == SecurityInfo.Unknown
         ) {
             add(
-                ActionButtonRes(
+                buildSiteInfoAction(
                     drawableResId = iconsR.drawable.mozac_ic_globe_24,
                     contentDescription = toolbarR.string.mozac_browser_toolbar_content_description_site_info,
                     onClick = object : BrowserToolbarEvent {},
@@ -439,7 +454,7 @@ class CustomTabBrowserToolbarMiddleware(
                 !customTab.trackingProtection.ignoredOnTrackingProtection
             ) {
             add(
-                ActionButtonRes(
+                buildSiteInfoAction(
                     drawableResId = iconsR.drawable.mozac_ic_shield_checkmark_24,
                     contentDescription = toolbarR.string.mozac_browser_toolbar_content_description_site_info,
                     onClick = SiteInfoClicked,
@@ -447,11 +462,33 @@ class CustomTabBrowserToolbarMiddleware(
             )
         } else {
             add(
-                ActionButtonRes(
+                buildSiteInfoAction(
                     drawableResId = iconsR.drawable.mozac_ic_shield_slash_24,
                     contentDescription = toolbarR.string.mozac_browser_toolbar_content_description_site_info,
                     onClick = SiteInfoClicked,
                 ),
+            )
+        }
+    }
+
+    private fun buildSiteInfoAction(
+        drawableResId: Int,
+        contentDescription: Int,
+        onClick: BrowserToolbarInteraction,
+    ): Action {
+        return if (ipProtectionStore.state.proxyStatus == Authorized.Active) {
+            Action.AnimatedPillActionRes(
+                iconResId = drawableResId,
+                overlayResId = iconsR.drawable.mozac_ic_globe_24,
+                textResId = R.string.ip_protection_toolbar_pill_label,
+                contentDescriptionResId = R.string.ip_protection_toolbar_pill_description,
+                onClick = onClick,
+            )
+        } else {
+            ActionButtonRes(
+                drawableResId = drawableResId,
+                contentDescription = contentDescription,
+                onClick = onClick,
             )
         }
     }

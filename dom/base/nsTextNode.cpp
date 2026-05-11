@@ -98,7 +98,7 @@ already_AddRefed<CharacterData> nsTextNode::CloneDataNode(
   if (aCloneText) {
     it->mBuffer = mBuffer;
   }
-
+  it->SetFlags(GetFlags() & NS_MAYBE_MASKED);
   return it.forget();
 }
 

@@ -7,7 +7,7 @@
 namespace mozilla {
 namespace layers {
 
-MOZ_RUNINIT ScrollableLayerGuid InputAPZContext::sGuid;
+constinit ScrollableLayerGuid InputAPZContext::sGuid;
 uint64_t InputAPZContext::sBlockId = 0;
 nsEventStatus InputAPZContext::sApzResponse = nsEventStatus_eSentinel;
 bool InputAPZContext::sPendingLayerization = false;

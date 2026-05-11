@@ -495,3 +495,21 @@ NS_IMETHODIMP nsGNOMEShellService::GetArgv0(nsACString& output) {
   output.Assign(gArgc <= 0 ? "" : gArgv[0]);
   return NS_OK;
 }
+
+NS_IMETHODIMP nsGNOMEShellService::GetDesktopEntryStatus(
+    const nsACString& aDesktopId,
+    nsIGNOMEShellService::DesktopEntryStatus* aResult) {
+  NS_ENSURE_ARG_POINTER(aResult);
+
+  RefPtr<GDesktopAppInfo> appinfo =
+      dont_AddRef(g_desktop_app_info_new(PromiseFlatCString(aDesktopId).get()));
+  if (!appinfo) {
+    *aResult = nsIGNOMEShellService::DESKTOP_ENTRY_ABSENT;
+  } else if (g_app_info_should_show(G_APP_INFO(appinfo.get()))) {
+    *aResult = nsIGNOMEShellService::DESKTOP_ENTRY_VISIBLE;
+  } else {
+    *aResult = nsIGNOMEShellService::DESKTOP_ENTRY_INVISIBLE;
+  }
+
+  return NS_OK;
+}

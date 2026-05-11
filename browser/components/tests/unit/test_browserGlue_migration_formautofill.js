@@ -6,6 +6,9 @@ http://creativecommons.org/publicdomain/zero/1.0/ */
 const TOPIC_BROWSERGLUE_TEST = "browser-glue-test";
 const TOPICDATA_BROWSERGLUE_TEST = "force-ui-migration";
 
+const { AppConstants } = ChromeUtils.importESModule(
+  "resource://gre/modules/AppConstants.sys.mjs"
+);
 const gBrowserGlue = Cc["@mozilla.org/browser/browserglue;1"].getService(
   Ci.nsIObserver
 );
@@ -55,7 +58,7 @@ add_task(async function test_check_form_autofill_module_detect() {
   // old address available pref follows the main module pref
   Assert.equal(
     Services.prefs.getCharPref("extensions.formautofill.addresses.supported"),
-    "detect"
+    AppConstants.NIGHTLY_BUILD ? "on" : "detect"
   );
   ensureOldPrefsAreCleared();
 });

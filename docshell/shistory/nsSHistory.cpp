@@ -942,9 +942,9 @@ void nsSHistory::NotifyOnHistoryReplaceEntry() {
 }
 
 NS_IMETHODIMP
-nsSHistory::NotifyOnEntryTitleUpdated(nsISHEntry* aEntry) {
+nsSHistory::NotifyOnEntryUpdated(nsISHEntry* aEntry) {
   NotifyListeners(mListeners, [entry = nsCOMPtr{aEntry}](auto l) {
-    l->OnEntryTitleUpdated(entry);
+    l->OnEntryUpdated(entry);
   });
   return NS_OK;
 }

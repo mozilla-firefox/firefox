@@ -375,6 +375,8 @@
   <string name="preferences_ai_controls">ԱԲ կառավարում</string>
   <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
   <string name="ai_controls_banner_headline">Դուք միշտ ունեք ընտրություն %s-ում</string>
+  <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
+  <string name="ai_controls_banner_supporting_text_2">Դա ներառում է նաև արհեստական բանականությամբ բարելավված գործառույթների օգտագործումը։ %s</string>
   <!-- Supporting text for the AI controls banner -->
   <string name="ai_controls_banner_supporting_text">Դա ներառում է նաև արհեստական բանականությամբ բարելավված գործառույթների օգտագործման անհրաժեշտությունը։</string>
   <!-- Link text for learning more about AI controls -->
@@ -2209,6 +2211,8 @@
   <string name="bookmark_import_menu_button">Ներմուծել ֆայլից</string>
   <!-- Snackbar message shown when a bookmark import attempt fails. -->
   <string name="bookmark_import_failure_snackbar">Չհաջողվեց ներմուծել էջանիշները։ Փորձեք կրկին։</string>
+  <!-- Default name for the folder created when importing bookmarks from a file. -->
+  <string name="bookmark_import_destination_default_name">Ներմուծված էջանիշներ</string>
   <!--
     Bookmark multi select title in app bar
     %1$d is the number of bookmarks selected
@@ -4623,6 +4627,10 @@
   <string name="sports_widget_final_results_page_content_description" tools:ignore="UnusedResources">Աշխարհի առաջնության եզրափակիչ արդյունքներ, էջ %1$d՝ %2$d-ից</string>
   <!-- Content description (for accessibility, not displayed) for the remove button that removes the sports widget from the homepage. -->
   <string name="sports_widget_remove_content_description" tools:ignore="UnusedResources">Հեռացնել Աշխարհի գավաթը տնէջից</string>
+  <!-- Title shown on the sports widget immediately after the user has followed a team. %s is the selected team (e.g., "USA"). -->
+  <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Հետևում է՝\n%s</string>
+  <!-- Description shown on the sports widget immediately after the user has followed a team -->
+  <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Մրցաշարի մոտենալուն պես վերադարձեք խաղի մասին տեղեկություններ ստանալու համար։</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

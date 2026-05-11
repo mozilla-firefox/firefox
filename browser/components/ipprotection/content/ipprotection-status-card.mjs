@@ -51,11 +51,15 @@ export default class IPProtectionStatusCard extends MozLitElement {
     );
   }
 
-  handleLocationButtonClick() {
+  handleLocationButtonClick(e) {
     this.dispatchEvent(
       new CustomEvent("IPProtection:UserShowLocations", {
         bubbles: true,
         composed: true,
+        detail: {
+          keyboardActivated: e.detail === 0,
+          locationButton: this.locationButtonEl,
+        },
       })
     );
   }

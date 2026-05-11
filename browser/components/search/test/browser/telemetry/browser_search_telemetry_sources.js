@@ -447,6 +447,7 @@ add_task(async function test_source_searchModeSwitcher() {
       popup
         .querySelector("panel-item[data-engine-name=Example]")
         .button.click();
+      EventUtils.synthesizeKey("KEY_Enter");
       await loadPromise;
       return tab;
     },

@@ -5,6 +5,7 @@
 #ifndef TRRService_h_
 #define TRRService_h_
 
+#include "mozilla/Atomics.h"
 #include "mozilla/DataMutex.h"
 #include "nsHostResolver.h"
 #include "nsIObserver.h"
@@ -370,7 +371,7 @@ class TRRService : public TRRServiceBase,
 
   ConfirmationWrapper mConfirmation;
 
-  bool mParentalControlEnabled{false};
+  Atomic<bool, Relaxed> mParentalControlEnabled{false};
   // This is used to track whether a confirmation was triggered by a URI change,
   // so we don't trigger another one just because other prefs have changed.
   bool mConfirmationTriggered{false};

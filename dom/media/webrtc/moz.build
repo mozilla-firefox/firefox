@@ -85,7 +85,6 @@ if CONFIG["MOZ_WEBRTC_SIGNALING"]:
         "sdp",
         "transportbridge",
         "/third_party/libwebrtc",
-        "/third_party/abseil-cpp",
     ]
 
     if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":

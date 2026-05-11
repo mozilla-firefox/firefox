@@ -34,7 +34,7 @@ template <typename Base, typename T>
 inline void TypedRootedGCThingBase<Base, T>::trace(JSTracer* trc,
                                                    const char* name) {
   auto* self = this->template derived<T>();
-  TraceNullableRoot(trc, self->address(), name);
+  TraceRoot(trc, self->address(), name);
 }
 
 template <typename T>

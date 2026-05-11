@@ -20,6 +20,7 @@ const TYPES = {
   PLATFORM_MESSAGE: "platform-message",
   REFLOW: "reflow",
   SERVER_SENT_EVENT: "server-sent-event",
+  SESSION_HISTORY: "session-history",
   SOURCE: "source",
   STYLESHEET: "stylesheet",
   THREAD_STATE: "thread-state",
@@ -227,6 +228,9 @@ const ParentProcessResources = augmentResourceDictionary({
   },
   [TYPES.LAST_PRIVATE_CONTEXT_EXIT]: {
     path: "devtools/server/actors/resources/last-private-context-exit",
+  },
+  [TYPES.SESSION_HISTORY]: {
+    path: "devtools/server/actors/resources/session-history",
   },
 });
 

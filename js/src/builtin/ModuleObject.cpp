@@ -105,8 +105,8 @@ ImportEntry::ImportEntry(Handle<ModuleRequestObject*> moduleRequest,
 
 void ImportEntry::trace(JSTracer* trc) {
   TraceEdge(trc, &moduleRequest_, "ImportEntry::moduleRequest_");
-  TraceNullableEdge(trc, &importName_, "ImportEntry::importName_");
-  TraceNullableEdge(trc, &localName_, "ImportEntry::localName_");
+  TraceEdge(trc, &importName_, "ImportEntry::importName_");
+  TraceEdge(trc, &localName_, "ImportEntry::localName_");
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -128,10 +128,10 @@ ExportEntry::ExportEntry(Handle<JSAtom*> maybeExportName,
 }
 
 void ExportEntry::trace(JSTracer* trc) {
-  TraceNullableEdge(trc, &exportName_, "ExportEntry::exportName_");
-  TraceNullableEdge(trc, &moduleRequest_, "ExportEntry::moduleRequest_");
-  TraceNullableEdge(trc, &importName_, "ExportEntry::importName_");
-  TraceNullableEdge(trc, &localName_, "ExportEntry::localName_");
+  TraceEdge(trc, &exportName_, "ExportEntry::exportName_");
+  TraceEdge(trc, &moduleRequest_, "ExportEntry::moduleRequest_");
+  TraceEdge(trc, &importName_, "ExportEntry::importName_");
+  TraceEdge(trc, &localName_, "ExportEntry::localName_");
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -193,8 +193,8 @@ ImportAttribute::ImportAttribute(Handle<JSAtom*> key, Handle<JSString*> value)
     : key_(key), value_(value) {}
 
 void ImportAttribute::trace(JSTracer* trc) {
-  TraceNullableEdge(trc, &key_, "ImportAttribute::key_");
-  TraceNullableEdge(trc, &value_, "ImportAttribute::value_");
+  TraceEdge(trc, &key_, "ImportAttribute::key_");
+  TraceEdge(trc, &value_, "ImportAttribute::value_");
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -942,19 +942,16 @@ CyclicModuleFields::CyclicModuleFields()
 
 void CyclicModuleFields::trace(JSTracer* trc) {
   TraceEdge(trc, &evaluationError, "CyclicModuleFields::evaluationError");
-  TraceNullableEdge(trc, &metaObject, "CyclicModuleFields::metaObject");
-  TraceNullableEdge(trc, &scriptSourceObject,
-                    "CyclicModuleFields::scriptSourceObject");
+  TraceEdge(trc, &metaObject, "CyclicModuleFields::metaObject");
+  TraceEdge(trc, &scriptSourceObject, "CyclicModuleFields::scriptSourceObject");
   requestedModules.trace(trc);
   loadedModules.trace(trc);
   importEntries.trace(trc);
   exportEntries.trace(trc);
   importBindings.trace(trc);
-  TraceNullableEdge(trc, &topLevelCapability,
-                    "CyclicModuleFields::topLevelCapability");
-  TraceNullableEdge(trc, &asyncParentModules,
-                    "CyclicModuleFields::asyncParentModules");
-  TraceNullableEdge(trc, &cycleRoot, "CyclicModuleFields::cycleRoot");
+  TraceEdge(trc, &topLevelCapability, "CyclicModuleFields::topLevelCapability");
+  TraceEdge(trc, &asyncParentModules, "CyclicModuleFields::asyncParentModules");
+  TraceEdge(trc, &cycleRoot, "CyclicModuleFields::cycleRoot");
 }
 
 void CyclicModuleFields::initExportEntries(

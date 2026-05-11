@@ -1025,42 +1025,40 @@ GlobalObjectData::~GlobalObjectData() = default;
 
 void GlobalObjectData::trace(JSTracer* trc, GlobalObject* global) {
   for (auto& ctorWithProto : builtinConstructors) {
-    TraceNullableEdge(trc, &ctorWithProto.constructor, "global-builtin-ctor");
-    TraceNullableEdge(trc, &ctorWithProto.prototype,
-                      "global-builtin-ctor-proto");
+    TraceEdge(trc, &ctorWithProto.constructor, "global-builtin-ctor");
+    TraceEdge(trc, &ctorWithProto.prototype, "global-builtin-ctor-proto");
   }
 
   for (auto& proto : builtinProtos) {
-    TraceNullableEdge(trc, &proto, "global-builtin-proto");
+    TraceEdge(trc, &proto, "global-builtin-proto");
   }
 
-  TraceNullableEdge(trc, &emptyGlobalScope, "global-empty-scope");
+  TraceEdge(trc, &emptyGlobalScope, "global-empty-scope");
 
-  TraceNullableEdge(trc, &lexicalEnvironment, "global-lexical-env");
-  TraceNullableEdge(trc, &windowProxy, "global-window-proxy");
-  TraceNullableEdge(trc, &intrinsicsHolder, "global-intrinsics-holder");
-  TraceNullableEdge(trc, &computedIntrinsicsHolder,
-                    "global-computed-intrinsics-holder");
-  TraceNullableEdge(trc, &sourceURLsHolder, "global-source-urls");
-  TraceNullableEdge(trc, &realmKeyObject, "global-realm-key");
-  TraceNullableEdge(trc, &throwTypeError, "global-throw-type-error");
-  TraceNullableEdge(trc, &eval, "global-eval");
-  TraceNullableEdge(trc, &emptyIterator, "global-empty-iterator");
+  TraceEdge(trc, &lexicalEnvironment, "global-lexical-env");
+  TraceEdge(trc, &windowProxy, "global-window-proxy");
+  TraceEdge(trc, &intrinsicsHolder, "global-intrinsics-holder");
+  TraceEdge(trc, &computedIntrinsicsHolder,
+            "global-computed-intrinsics-holder");
+  TraceEdge(trc, &sourceURLsHolder, "global-source-urls");
+  TraceEdge(trc, &realmKeyObject, "global-realm-key");
+  TraceEdge(trc, &throwTypeError, "global-throw-type-error");
+  TraceEdge(trc, &eval, "global-eval");
+  TraceEdge(trc, &emptyIterator, "global-empty-iterator");
 
-  TraceNullableEdge(trc, &arrayShapeWithDefaultProto, "global-array-shape");
+  TraceEdge(trc, &arrayShapeWithDefaultProto, "global-array-shape");
 
   for (auto& shape : plainObjectShapesWithDefaultProto) {
-    TraceNullableEdge(trc, &shape, "global-plain-shape");
+    TraceEdge(trc, &shape, "global-plain-shape");
   }
 
-  TraceNullableEdge(trc, &functionShapeWithDefaultProto,
-                    "global-function-shape");
-  TraceNullableEdge(trc, &extendedFunctionShapeWithDefaultProto,
-                    "global-ext-function-shape");
+  TraceEdge(trc, &functionShapeWithDefaultProto, "global-function-shape");
+  TraceEdge(trc, &extendedFunctionShapeWithDefaultProto,
+            "global-ext-function-shape");
 
-  TraceNullableEdge(trc, &boundFunctionShapeWithDefaultProto,
-                    "global-bound-function-shape");
-  TraceNullableEdge(trc, &regExpShapeWithDefaultProto, "global-regexp-shape");
+  TraceEdge(trc, &boundFunctionShapeWithDefaultProto,
+            "global-bound-function-shape");
+  TraceEdge(trc, &regExpShapeWithDefaultProto, "global-regexp-shape");
 
   regExpRealm.trace(trc);
 
@@ -1068,17 +1066,15 @@ void GlobalObjectData::trace(JSTracer* trc, GlobalObject* global) {
   globalIntlData.trace(trc);
 #endif
 
-  TraceNullableEdge(trc, &mappedArgumentsTemplate, "mapped-arguments-template");
-  TraceNullableEdge(trc, &unmappedArgumentsTemplate,
-                    "unmapped-arguments-template");
+  TraceEdge(trc, &mappedArgumentsTemplate, "mapped-arguments-template");
+  TraceEdge(trc, &unmappedArgumentsTemplate, "unmapped-arguments-template");
 
-  TraceNullableEdge(trc, &mapObjectTemplate, "map-object-template");
-  TraceNullableEdge(trc, &setObjectTemplate, "set-object-template");
+  TraceEdge(trc, &mapObjectTemplate, "map-object-template");
+  TraceEdge(trc, &setObjectTemplate, "set-object-template");
 
-  TraceNullableEdge(trc, &iterResultTemplate, "iter-result-template_");
+  TraceEdge(trc, &iterResultTemplate, "iter-result-template_");
 
-  TraceNullableEdge(trc, &selfHostingScriptSource,
-                    "self-hosting-script-source");
+  TraceEdge(trc, &selfHostingScriptSource, "self-hosting-script-source");
 }
 
 void GlobalObjectData::addSizeOfIncludingThis(

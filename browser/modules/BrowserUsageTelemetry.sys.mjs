@@ -160,6 +160,7 @@ const PREFERENCES_PANES = [
   "paneAppearance",
   "paneLanguages",
   "panePermissionsData",
+  "paneTabsBrowsing",
 ];
 
 const IGNORABLE_EVENTS = new WeakMap();

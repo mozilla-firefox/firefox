@@ -5527,31 +5527,11 @@ class FunctionCompiler {
     curBlock_->end(test);
     curBlock_ = copyBlock;
 
-    MInstruction* dstData = MWasmLoadField::New(
-        alloc(), dstArrayObject, nullptr, WasmArrayObject::offsetOfData(),
-        mozilla::Nothing(), MIRType::WasmArrayData, MWideningOp::None,
-        AliasSet::Load(AliasSet::WasmArrayDataPointer),
-        mozilla::Some(trapSiteDesc()));
-    if (!dstData) {
-      return false;
-    }
-    curBlock_->add(dstData);
-
-    MInstruction* srcData = MWasmLoadField::New(
-        alloc(), srcArrayObject, nullptr, WasmArrayObject::offsetOfData(),
-        mozilla::Nothing(), MIRType::WasmArrayData, MWideningOp::None,
-        AliasSet::Load(AliasSet::WasmArrayDataPointer),
-        mozilla::Some(trapSiteDesc()));
-    if (!srcData) {
-      return false;
-    }
-    curBlock_->add(srcData);
-
     if (elemsAreRefTyped) {
       MOZ_RELEASE_ASSERT(elemSize == sizeof(void*));
 
-      if (!builtinCall6(SASigArrayRefsMove, lineOrBytecode, dstArrayObject,
-                        dstData, dstArrayIndex, srcData, srcArrayIndex,
+      if (!builtinCall5(SASigArrayRefsMove, lineOrBytecode, dstArrayObject,
+                        dstArrayIndex, srcArrayObject, srcArrayIndex,
                         numElements, nullptr)) {
         return false;
       }
@@ -5561,9 +5541,9 @@ class FunctionCompiler {
         return false;
       }
 
-      if (!builtinCall6(SASigArrayMemMove, lineOrBytecode, dstData,
-                        dstArrayIndex, srcData, srcArrayIndex, elemSizeDef,
-                        numElements, nullptr)) {
+      if (!builtinCall6(SASigArrayMemMove, lineOrBytecode, dstArrayObject,
+                        dstArrayIndex, srcArrayObject, srcArrayIndex,
+                        elemSizeDef, numElements, nullptr)) {
         return false;
       }
     }

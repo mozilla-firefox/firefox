@@ -52,6 +52,12 @@ export class SelectControlBaseElement extends MozLitElement {
     description: { type: String, fluent: true },
     supportPage: { type: String, attribute: "support-page" },
     label: { type: String, fluent: true },
+    // It looks like some interaction between fluent and mapped: true doesn't
+    // work well in this context of nested components and doesn't trigger a
+    // rerender when fluent sets the property. Therefore we don't use "mapped: true".
+    // This means that a specified aria-label attribute won't be removed. This is fine
+    // because this component has a "generic" role, where aria-label doesn't apply.
+    ariaLabel: { type: String, fluent: true, attribute: "aria-label" },
     name: { type: String },
     value: { type: String },
     headingLevel: { type: Number },
@@ -311,9 +317,9 @@ export class SelectControlBaseElement extends MozLitElement {
         part="fieldset"
         description=${ifDefined(this.description)}
         support-page=${ifDefined(this.supportPage)}
-        role=${this.type == "radio" ? "radiogroup" : "listbox"}
         ?disabled=${this.disabled}
         label=${ifDefined(this.label)}
+        aria-label=${ifDefined(this.ariaLabel)}
         headinglevel=${this.headingLevel}
         exportparts="inputs, support-link"
         aria-orientation=${ifDefined(this.constructor.orientation)}

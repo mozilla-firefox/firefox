@@ -19,8 +19,16 @@
   <string name="mozac_summarize_shake_consent_off_device_negative_button">Agora não</string>
   <!-- Title for the on-device shake summarization and download consent screen -->
   <string name="mozac_summarize_shake_consent_on_device_title">Resumir esta página</string>
+  <!-- Message for the on-device shake summarization and download consent screen. %s will be replaced by app name. -->
+  <string name="mozac_summarize_shake_consent_on_device_message">Após um único download rápido, o %s pode resumir páginas quando você balançar o dispositivo.</string>
+  <!-- Button text for the on-device shake summarization and download consent screen approving shake and download consent -->
+  <string name="mozac_summarize_shake_consent_on_device_button_positive">Baixar para resumir</string>
   <!-- Button text for the on-device shake summarization and download consent screen denying shake and download consent -->
   <string name="mozac_summarize_shake_consent_on_device_negative_button">Agora não</string>
+  <!-- Title for the download consent screen -->
+  <string name="mozac_summarize_download_consent_title">Configurar resumos privativos</string>
+  <!-- Button text for the consent to download an on-device model approving download consent -->
+  <string name="mozac_summarize_download_consent_button_positive">Baixar para resumir</string>
   <!-- Button text for the consent to download an on-device model denying download consent -->
   <string name="mozac_summarize_download_consent_button_negative">Cancelar</string>
   <!-- Button text shown while a download is in progress to cancel the download -->

@@ -4,8 +4,13 @@
 
 package mozilla.components.lib.dataprotect
 
+import android.os.Build
+import android.security.KeyStoreException
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import androidx.annotation.RequiresApi
+import mozilla.components.concept.base.crash.Breadcrumb
+import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.support.base.log.logger.Logger
 import java.security.GeneralSecurityException
 import java.security.InvalidKeyException
@@ -16,6 +21,7 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import android.security.KeyStoreException as AndroidKeyStoreException
 
 private const val KEYSTORE_TYPE = "AndroidKeyStore"
 private const val ENCRYPTED_VERSION = 0x02
@@ -32,12 +38,18 @@ internal const val CIPHER_SPEC = "$CIPHER_ALG/$CIPHER_MOD/$CIPHER_PAD"
 
 internal const val CIPHER_NONCE_LEN = 12
 
+// Apps targeting API 37+: limit is 50,000 keys → error code ERROR_TOO_MANY_KEYS.
+// Apps not targeting API 37+: limit is 200,000 keys → error code ERROR_INCORRECT_USAGE.
+private const val KEY_LIMIT_NON_TARGETING_API37 = 200_000
+
 /**
  * Wraps the critical functions around a Java KeyStore to better facilitate testing
  * and instrumenting.
  *
  */
-open class KeyStoreWrapper {
+open class KeyStoreWrapper(
+    private val crashReporting: CrashReporting? = null,
+) {
     private var keystore: KeyStore? = null
     private val logger = Logger("KeyStoreWrapper")
 
@@ -98,7 +110,46 @@ open class KeyStoreWrapper {
             .build()
         val gen = KeyGenerator.getInstance(CIPHER_ALG, KEYSTORE_TYPE)
         gen.init(spec)
-        return gen.generateKey()
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN) {
+            generateKeyHandlingLimit(gen)
+        } else {
+            gen.generateKey()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.CINNAMON_BUN)
+    private fun generateKeyHandlingLimit(gen: KeyGenerator): SecretKey {
+        return try {
+            gen.generateKey()
+        } catch (e: AndroidKeyStoreException) {
+            val keyCount = runCatching { getKeyStore().size() }.getOrNull()
+            val context = mapOf("keyCount" to "$keyCount", "errorCode" to "${e.numericErrorCode}")
+            val message = when (e.numericErrorCode) {
+                AndroidKeyStoreException.ERROR_TOO_MANY_KEYS ->
+                    "Android Keystore key limit exceeded (current key count: $keyCount)"
+
+                AndroidKeyStoreException.ERROR_INCORRECT_USAGE ->
+                    if (keyCount != null && keyCount >= KEY_LIMIT_NON_TARGETING_API37) {
+                        "Android Keystore key limit exceeded (current key count: $keyCount)"
+                    } else {
+                        "Android Keystore key generation failed with ERROR_INCORRECT_USAGE " +
+                            "(current key count: $keyCount)"
+                    }
+
+                else ->
+                    "Android Keystore key generation failed (error code: ${e.numericErrorCode})"
+            }
+            logger.error(message, e)
+            crashReporting?.recordCrashBreadcrumb(
+                Breadcrumb(
+                    message = message,
+                    data = context,
+                    category = "KeyStoreWrapper",
+                    level = Breadcrumb.Level.ERROR,
+                ),
+            )
+            throw e
+        }
     }
 
     /**
@@ -149,7 +200,8 @@ open class KeyStoreWrapper {
 open class Keystore(
     val label: String,
     manual: Boolean = false,
-    internal val wrapper: KeyStoreWrapper = KeyStoreWrapper(),
+    crashReporting: CrashReporting? = null,
+    internal val wrapper: KeyStoreWrapper = KeyStoreWrapper(crashReporting),
 ) {
     init {
         if (!manual and !available()) {

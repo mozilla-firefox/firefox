@@ -31,7 +31,7 @@ struct InternalGCPointerPolicy : public JS::GCPointerPolicy<T> {
     // It's not safe to trace unbarriered pointers except as part of root
     // marking. If you get an assertion here you probably need to add a barrier,
     // e.g. HeapPtr<T>.
-    TraceNullableRoot(trc, vp, name);
+    TraceRoot(trc, vp, name);
   }
 };
 
@@ -49,7 +49,7 @@ struct GCPolicy<T* const> : public js::InternalGCPointerPolicy<T* const> {};
 template <typename T>
 struct GCPolicy<js::HeapPtr<T>> : public GCPolicyBase<js::HeapPtr<T>> {
   static void trace(JSTracer* trc, js::HeapPtr<T>* thingp, const char* name) {
-    js::TraceNullableEdge(trc, thingp, name);
+    js::TraceEdge(trc, thingp, name);
   }
   static bool traceWeak(JSTracer* trc, js::HeapPtr<T>* thingp) {
     return js::TraceWeakEdge(trc, thingp, "HeapPtr");
@@ -67,7 +67,7 @@ struct GCPolicy<js::PreBarriered<T>>
     : public GCPolicyBase<js::PreBarriered<T>> {
   static void trace(JSTracer* trc, js::PreBarriered<T>* thingp,
                     const char* name) {
-    js::TraceNullableEdge(trc, thingp, name);
+    js::TraceEdge(trc, thingp, name);
   }
 };
 

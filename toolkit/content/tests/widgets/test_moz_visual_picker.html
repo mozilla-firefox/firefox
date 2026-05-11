@@ -112,11 +112,6 @@
           TEST_SUPPORT_PAGE,
           "Visual picker support page is set."
         );
-        is(
-          picker.fieldset.getAttribute("role"),
-          "radiogroup",
-          "Visual picker uses the 'radiogroup' role by default."
-        );
         items.forEach(item => {
           is(
             item.itemEl.getAttribute("role"),
@@ -128,11 +123,6 @@
         picker.type = "listbox";
         await picker.updateComplete;
 
-        is(
-          picker.fieldset.getAttribute("role"),
-          "listbox",
-          "Visual picker uses the 'listbox' role after the type is changed."
-        );
         items.forEach(item => {
           is(
             item.itemEl.getAttribute("role"),
@@ -737,11 +727,6 @@
         picker.focus();
         picker.scrollIntoView();
 
-        is(
-          picker.fieldset.getAttribute("role"),
-          "listbox",
-          "The top level picker element has a role of 'listbox'."
-        );
         is(
           picker.fieldset.shadowRoot
             .querySelector("fieldset")

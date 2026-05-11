@@ -677,8 +677,10 @@ smart_window:
       Recorded when a Smart Window is opened
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2009610
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037980
     data_reviews:
       - https://phabricator.services.mozilla.com/D285902
+      - https://phabricator.services.mozilla.com/D299196
     data_sensitivity:
       - interaction
     notification_emails:
@@ -696,6 +698,11 @@ smart_window:
         type: boolean
         description: >
           Whether the user saw firstrun onboarding when opening Smart Window. True if onboarding has not yet been completed.
+      opened_tabs:
+        type: quantity
+        unit: count
+        description: >
+          Number of tabs the user had opened when they switched to Smart window if the switch was used
     expires: never
 
   classic_switch:
@@ -704,12 +711,46 @@ smart_window:
       The user switches from Smart Window to classic mode
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024069
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037980
     data_reviews:
       - https://phabricator.services.mozilla.com/D290316
+      - https://phabricator.services.mozilla.com/D299196
     data_sensitivity:
       - interaction
     notification_emails:
       - yjamora@mozilla.com
+    extra_keys:
+      duration_ms: &opened_duration_ms
+        type: quantity
+        unit: ms
+        description: >
+          The amount of time in Ms since the user opened the SmartWindow
+      opened_tabs:
+        type: quantity
+        unit: count
+        description: >
+          Number of tabs the user had opened when they switched to Classic window
+    expires: never
+
+  close_window:
+    type: event
+    description: |
+      Recorded when an active Smart Window is closed
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037980
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D299196
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - elee@mozilla.com
+    extra_keys:
+      duration_ms: *opened_duration_ms
+      opened_tabs:
+        type: quantity
+        unit: count
+        description: >
+          Number of tabs the user had opened when they closed the window
     expires: never
 
   uri_load:

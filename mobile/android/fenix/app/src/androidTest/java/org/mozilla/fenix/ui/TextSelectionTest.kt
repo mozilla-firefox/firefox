@@ -310,24 +310,6 @@ class TextSelectionTest {
         }
     }
 
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/243845
-    @Ignore("Disabled after enabling the composable toolbar and main menu: https://bugzilla.mozilla.org/show_bug.cgi?id=2006295")
-    @SmokeTest
-    @Test
-    fun verifyShareUrlBarTextSelectionOptionTest() {
-        val genericURL = mockWebServer.getGenericAsset(1)
-
-        navigationToolbar(composeTestRule) {
-        }.enterURLAndEnterToBrowser(genericURL.url) {
-        }.openNavigationToolbar {
-            longClickEditModeToolbar()
-            clickContextMenuItem("Share")
-        }
-        shareOverlay {
-            verifyAndroidShareLayout()
-        }
-    }
-
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/414316
     @Ignore("Disabled after enabling the composable toolbar and main menu: https://bugzilla.mozilla.org/show_bug.cgi?id=2006295")
     @Test

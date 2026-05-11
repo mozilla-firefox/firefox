@@ -123,6 +123,15 @@
         lwtProperty: "sidebar_highlight_text",
       },
     ],
+    [
+      "--ai-background-color",
+      {
+        lwtProperty: "ai_background_color",
+        processColor(value) {
+          return value;
+        },
+      },
+    ],
   ];
 
   /**

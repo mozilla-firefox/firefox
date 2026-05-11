@@ -11,7 +11,10 @@
 namespace mozilla {
 
 template <int N>
-static bool StartsWith(const nsACString& string, const char (&prefix)[N]) {
+static bool HasMajorMIMEType(const nsACString& string,
+                             const char (&prefix)[N]) {
+  static_assert(N > 1, "empty MIME type");
+  MOZ_ASSERT(prefix[N - 2] == '/');
   if (N - 1 > string.Length()) {
     return false;
   }
@@ -19,15 +22,15 @@ static bool StartsWith(const nsACString& string, const char (&prefix)[N]) {
 }
 
 bool MediaMIMEType::HasApplicationMajorType() const {
-  return StartsWith(mMIMEType, "application/");
+  return HasMajorMIMEType(mMIMEType, "application/");
 }
 
 bool MediaMIMEType::HasAudioMajorType() const {
-  return StartsWith(mMIMEType, "audio/");
+  return HasMajorMIMEType(mMIMEType, "audio/");
 }
 
 bool MediaMIMEType::HasVideoMajorType() const {
-  return StartsWith(mMIMEType, "video/");
+  return HasMajorMIMEType(mMIMEType, "video/");
 }
 
 size_t MediaMIMEType::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const {

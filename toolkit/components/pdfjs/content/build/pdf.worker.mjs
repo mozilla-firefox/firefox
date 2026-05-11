@@ -21,8 +21,8 @@
  */
 
 /**
- * pdfjsVersion = 6.0.28
- * pdfjsBuild = cd1b5f57c
+ * pdfjsVersion = 6.0.40
+ * pdfjsBuild = a5e9940d1
  */
 /******/ // The require scope
 /******/ var __webpack_require__ = {};
@@ -9714,10 +9714,10 @@ class WasmImage {
   static #useWasm = true;
   static #useWorkerFetch = true;
   static #wasmUrl = null;
-  _buffer = null;
-  _filename = "";
-  _noWasmFilename = "";
-  _modulePromise = null;
+  #buffer = null;
+  #modulePromise = null;
+  _filename = null;
+  _noWasmFilename = null;
   static setOptions({
     handler,
     useWasm,
@@ -9736,11 +9736,13 @@ class WasmImage {
   }
   static cleanup() {
     for (const instance of WasmImage.#instances) {
-      instance._modulePromise = null;
+      instance.#modulePromise = null;
     }
   }
-  constructor() {
-    WasmImage.#instances.add(this);
+  constructor(trackInstance = false) {
+    if (trackInstance) {
+      WasmImage.#instances.add(this);
+    }
   }
   async #getJsModule(fallbackCallback) {
     let instance = null;
@@ -9757,14 +9759,14 @@ class WasmImage {
   }
   async #instantiateWasm(fallbackCallback, imports, successCallback) {
     try {
-      if (!this._buffer) {
+      if (!this.#buffer) {
         if (WasmImage.#useWorkerFetch) {
-          this._buffer = await fetchBinaryData(`${WasmImage.#wasmUrl}${this._filename}`);
+          this.#buffer = await fetchBinaryData(`${WasmImage.#wasmUrl}${this._filename}`);
         } else {
           throw new Error("Only worker-thread fetching supported.");
         }
       }
-      const results = await WebAssembly.instantiate(this._buffer, imports);
+      const results = await WebAssembly.instantiate(this.#buffer, imports);
       return successCallback(results.instance);
     } catch (ex) {
       warn(`#instantiateWasm: ${ex}`);
@@ -9773,7 +9775,7 @@ class WasmImage {
     }
   }
   _getModule(ImageDecoder) {
-    if (!this._modulePromise) {
+    if (!this.#modulePromise) {
       const {
         promise,
         resolve
@@ -9787,9 +9789,9 @@ class WasmImage {
           instantiateWasm: this.#instantiateWasm.bind(this, resolve)
         }));
       }
-      this._modulePromise = Promise.race(promises);
+      this.#modulePromise = Promise.race(promises);
     }
-    return this._modulePromise;
+    return this.#modulePromise;
   }
   async decode(bytes, _params) {
     unreachable("Abstract method `decode` called");
@@ -9809,7 +9811,7 @@ class JBig2CCITTFaxImage extends WasmImage {
   _filename = "jbig2.wasm";
   _noWasmFilename = "jbig2_nowasm_fallback.js";
   static get instance() {
-    return shadow(this, "instance", new JBig2CCITTFaxImage());
+    return shadow(this, "instance", new JBig2CCITTFaxImage(true));
   }
   async decode(bytes, width, height, globals, CCITTOptions) {
     const module = await this._getModule(jbig2);
@@ -10787,7 +10789,7 @@ class JpxImage extends WasmImage {
   _filename = "openjpeg.wasm";
   _noWasmFilename = "openjpeg_nowasm_fallback.js";
   static get instance() {
-    return shadow(this, "instance", new JpxImage());
+    return shadow(this, "instance", new JpxImage(true));
   }
   async decode(bytes, {
     numComponents = 4,
@@ -60065,6 +60067,7 @@ class PDFEditor {
   hasSingleFile = false;
   isSingleFile = false;
   #newAnnotationsParams = null;
+  #primaryDocument = null;
   currentDocument = null;
   oldPages = [];
   newPages = [];
@@ -60382,68 +60385,55 @@ class PDFEditor {
     if (!document) {
       return [];
     }
-    let keptIndices, keptRanges, deletedIndices, deletedRanges;
-    for (const page of includePages || []) {
-      if (Array.isArray(page)) {
-        (keptRanges ||= []).push(page);
-      } else {
-        (keptIndices ||= new Set()).add(page);
+    const compile = list => {
+      if (!list?.length) {
+        return null;
       }
-    }
-    for (const page of excludePages || []) {
-      if (Array.isArray(page)) {
-        (deletedRanges ||= []).push(page);
-      } else {
-        (deletedIndices ||= new Set()).add(page);
+      const indices = new Set();
+      const ranges = [];
+      for (const item of list) {
+        if (Array.isArray(item)) {
+          ranges.push(item);
+        } else {
+          indices.add(item);
+        }
       }
-    }
-    const indices = [];
+      return {
+        indices,
+        ranges
+      };
+    };
+    const matches = (index, {
+      indices,
+      ranges
+    }) => indices.has(index) || ranges.some(([start, end]) => index >= start && index <= end);
+    const inc = compile(includePages);
+    const exc = compile(excludePages);
+    const result = [];
     for (let i = 0, ii = document.numPages; i < ii; i++) {
-      if (deletedIndices?.has(i)) {
+      if (exc && matches(i, exc)) {
         continue;
       }
-      if (deletedRanges) {
-        let isDeleted = false;
-        for (const [start, end] of deletedRanges) {
-          if (i >= start && i <= end) {
-            isDeleted = true;
-            break;
-          }
-        }
-        if (isDeleted) {
-          continue;
-        }
-      }
-      let takePage = false;
-      if (keptIndices) {
-        takePage = keptIndices.has(i);
-      }
-      if (!takePage && keptRanges) {
-        for (const [start, end] of keptRanges) {
-          if (i >= start && i <= end) {
-            takePage = true;
-            break;
-          }
-        }
-      }
-      if (!takePage && !keptIndices && !keptRanges) {
-        takePage = true;
-      }
-      if (takePage) {
-        indices.push(i);
+      if (!inc || matches(i, inc)) {
+        result.push(i);
       }
     }
-    return indices;
+    return result;
   }
   #resolveInsertAfterIndices(pageInfos) {
+    const counts = new Array(pageInfos.length);
     const sequence = [];
     const insertAfterList = [];
     for (let i = 0; i < pageInfos.length; i++) {
       const info = pageInfos[i];
-      if (!info.document || info.pageIndices) {
+      if (!info.document) {
+        counts[i] = 0;
         continue;
       }
-      const count = this.#getFilteredPageIndices(info).length;
+      const count = counts[i] = this.#getFilteredPageIndices(info).length;
+      if (info.pageIndices) {
+        continue;
+      }
       if (info.insertAfter === undefined) {
         for (let j = 0; j < count; j++) {
           sequence.push(i);
@@ -60456,28 +60446,26 @@ class PDFEditor {
         });
       }
     }
-    insertAfterList.sort((a, b) => a.insertAfter - b.insertAfter);
-    if (insertAfterList.length > 0) {
+    if (insertAfterList.length === 0) {
+      return pageInfos;
+    }
+    for (let i = 0; i < pageInfos.length; i++) {
+      const info = pageInfos[i];
+      if (info.document && info.pageIndices && info.pageIndices.length < counts[i]) {
+        throw new Error("extractPages: partial pageIndices cannot be combined with insertAfter entries.");
+      }
+    }
+    insertAfterList.sort((a, b) => a.insertAfter - b.insertAfter || a.i - b.i);
+    if (sequence.length === 0 && pageInfos.some(info => info.document && info.pageIndices)) {
+      const updatedPageInfos = pageInfos.slice();
+      let maxExistingPos = -1;
       for (const info of pageInfos) {
         if (!info.document || !info.pageIndices) {
           continue;
         }
-        const filteredCount = this.#getFilteredPageIndices(info).length;
-        if (info.pageIndices.length < filteredCount) {
-          throw new Error("extractPages: partial pageIndices cannot be combined with insertAfter entries.");
-        }
-      }
-    }
-    const hasExplicitLayout = insertAfterList.length > 0 && pageInfos.some(info => info.document && info.pageIndices);
-    if (sequence.length === 0 && hasExplicitLayout) {
-      const updatedPageInfos = pageInfos.slice();
-      let maxExistingPos = -1;
-      for (const info of pageInfos) {
-        if (info.document && info.pageIndices) {
-          for (const idx of info.pageIndices) {
-            if (idx > maxExistingPos) {
-              maxExistingPos = idx;
-            }
+        for (const idx of info.pageIndices) {
+          if (idx > maxExistingPos) {
+            maxExistingPos = idx;
           }
         }
       }
@@ -60498,16 +60486,16 @@ class PDFEditor {
             pageIndices: existingInfo.pageIndices.map(idx => idx > threshold ? idx + count : idx)
           };
         }
-        const insertedIndices = [];
+        const pageIndices = [];
         for (let k = 0; k < count; k++) {
-          insertedIndices.push(threshold + 1 + k);
+          pageIndices.push(threshold + 1 + k);
         }
-        const newInfo = {
+        const result = {
           ...updatedPageInfos[i],
-          pageIndices: insertedIndices
+          pageIndices
         };
-        delete newInfo.insertAfter;
-        updatedPageInfos[i] = newInfo;
+        delete result.insertAfter;
+        updatedPageInfos[i] = result;
         offset += count;
         maxExistingPos += count;
       }
@@ -60519,7 +60507,7 @@ class PDFEditor {
       insertAfter,
       count
     } of insertAfterList) {
-      const insertPos = insertAfter + 1 + offset;
+      const insertPos = Math.max(insertAfter, -1) + 1 + offset;
       sequence.splice(insertPos, 0, ...new Array(count).fill(i));
       offset += count;
     }
@@ -60532,18 +60520,17 @@ class PDFEditor {
       if (!info.document || info.pageIndices) {
         return info;
       }
-      const newInfo = {
+      const result = {
         ...info,
         pageIndices: pageIndicesArr[i] || []
       };
-      delete newInfo.insertAfter;
-      return newInfo;
+      delete result.insertAfter;
+      return result;
     });
   }
-  async extractPages(pageInfos, annotationStorage, handler, task) {
-    if (pageInfos.some(info => info.insertAfter !== undefined)) {
-      pageInfos = this.#resolveInsertAfterIndices(pageInfos);
-    }
+  async extractPages(pageInfos, annotationStorage, primaryDocument, handler, task) {
+    this.#primaryDocument = primaryDocument;
+    pageInfos = this.#resolveInsertAfterIndices(pageInfos);
     const promises = [];
     let newIndex = 0;
     this.isSingleFile = pageInfos.length === 1 || pageInfos.every(info => info.document === pageInfos[0].document);
@@ -61639,7 +61626,7 @@ class PDFEditor {
         newAnnots = newAnnotations;
       }
     }
-    const newAnnotations = this.#newAnnotationsParams?.newAnnotationsByPage?.get(pageIndex);
+    const newAnnotations = documentData.document === this.#primaryDocument ? this.#newAnnotationsParams?.newAnnotationsByPage?.get(page.pageIndex) : null;
     if (newAnnotations) {
       const {
         handler,
@@ -62302,7 +62289,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "6.0.28";
+    const workerVersion = "6.0.40";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
     }
@@ -62701,7 +62688,7 @@ class WorkerMessageHandler {
         const pdfEditor = new PDFEditor();
         task = new WorkerTask(`ExtractPages: ${pageInfos.length} page(s)`);
         startWorkerTask(task);
-        const buffer = await pdfEditor.extractPages(pageInfos, annotationStorage, handler, task);
+        const buffer = await pdfEditor.extractPages(pageInfos, annotationStorage, pdfManager.pdfDocument, handler, task);
         return buffer;
       } catch (reason) {
         warn(`extractPages: "${reason}".`);

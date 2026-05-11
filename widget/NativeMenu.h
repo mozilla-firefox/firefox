@@ -10,6 +10,7 @@
 
 class nsIURI;
 class nsIFrame;
+class nsMenuPopupFrame;
 class nsPresContext;
 
 namespace mozilla {
@@ -41,7 +42,7 @@ class NativeMenu {
   // This call assumes that the popupshowing event for the root popup has
   // already been sent and "approved", i.e. preventDefault() was not called.
   virtual void ShowMenuAnchored(nsIFrame* aClickedFrame,
-                                const CSSIntRect& aRect, int8_t aPosition) = 0;
+                                const nsMenuPopupFrame* aPopupFrame) = 0;
 
   // Show this menu at the specified position.
   // This call assumes that the popupshowing event for the root popup has

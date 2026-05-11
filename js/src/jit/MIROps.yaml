@@ -2587,8 +2587,8 @@
   guard: true
   movable: true
   congruent_to: if_operands_equal
-  alias_set:
-    load: ObjectFields
+  # A native object can never become a non-native object and vice versa.
+  alias_set: none
   generate_lir: true
   lir_result_type: none
   lir_temps: 1
@@ -2613,8 +2613,8 @@
   guard: true
   movable: true
   congruent_to: if_operands_equal
-  alias_set:
-    load: ObjectFields
+  # A proxy object can never become a non-proxy object and vice versa.
+  alias_set: none
   generate_lir: true
   lir_result_type: none
   lir_temps: 1
@@ -2640,8 +2640,8 @@
   movable: true
   congruent_to: if_operands_equal
   folds_to: custom
-  alias_set:
-    load: ObjectFields
+  # A proxy object can never become a non-proxy object and vice versa.
+  alias_set: none
   generate_lir: true
   lir_result_type: none
   lir_temps: 1

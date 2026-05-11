@@ -407,11 +407,8 @@ def add_extra_options(config, tests):
             ("android-hw-p6" in test_platform or "android-hw-s24" in test_platform)
             and "speedometer2-" not in test["test-name"]
             # Bug 1943674 resolve why --power-test causes permafails on certain mobile platforms and browsers
-        ) or (
-            "android-hw-a55" in test_platform
-            and any(t in test["test-name"] for t in ("tp6", "speedometer3"))
-            # Bug 1919024 remove tp6 and sp3 restrictions once benchmark parsing is done in the support scripts
         ):
+            # Bug 2037511 Temporarily disable power-test option for tp6m on a55s
             if "--power-test" not in extra_options:
                 extra_options.append("--power-test")
         elif "windows" in test_platform and any(

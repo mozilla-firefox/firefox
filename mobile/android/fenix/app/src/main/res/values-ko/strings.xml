@@ -3187,7 +3187,7 @@
     Error message shown on the browser VPN settings screen when the monthly data allowance is exhausted.
     %1$d is the total monthly allowance in GB (for example "50").
   -->
-  <string name="ip_protection_data_limit_reached_description">VPN 데이터 %1$d GB를 모두 사용했습니다. 접근 권한이 다음 달에 재설정됩니다.</string>
+  <string name="ip_protection_data_limit_reached_description">VPN 데이터 %1$d GB를 모두 사용했습니다. 다음 달에 초기화됩니다.</string>
   <!-- Label shown next to the browser protection icon in the address bar when the browser VPN is active -->
   <string name="ip_protection_toolbar_pill_label" tools:ignore="UnusedResources">VPN 켜짐</string>
   <!-- Accessibility description for the browser VPN pill in the address bar when the VPN has been activated -->
@@ -3206,6 +3206,13 @@
   <string name="ip_protection_onboarding_body_link">추가 보호로 탐색</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">나중에</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">VPN에 연결할 수 없습니다. 몇 분 후에 다시 시도하세요.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">%1$d GB의 VPN 데이터가 사용되었습니다. 다음 달에 초기화됩니다.</string>
   <!--
     Autofill
 
@@ -4623,6 +4630,14 @@
   <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">팔로잉: \n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
   <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">대회가 다가오면 경기 정보를 확인해 주세요.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">전반전</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">후반전</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">오프라인 상태인 것 같습니다.</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">인터넷 연결을 확인하고 다시 시도하세요.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

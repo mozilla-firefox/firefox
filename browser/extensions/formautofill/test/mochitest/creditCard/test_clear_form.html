@@ -52,7 +52,7 @@ const MOCK_CC_STORAGE_EXPECTED_FILL = [{
 
 initPopupListener();
 
-add_task(async function setup_storage() {
+add_setup(async function setup_storage() {
   await addAddress(MOCK_ADDR_STORAGE[0]);
   await addAddress(MOCK_ADDR_STORAGE[1]);
   await addAddress(MOCK_ADDR_STORAGE[2]);
@@ -123,11 +123,9 @@ add_task(async function simple_clear() {
 
   await triggerPopupAndHoverItem("#tel", 0);
   await confirmClear("#tel");
+  const promise = expectPopup();
   await checkIsFormCleared();
-
-  // Ensure the correctness of the autocomplete popup after the form is cleared
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
 
   is(3, getMenuEntries().labels.length, `Checking length of expected menu`);
 });

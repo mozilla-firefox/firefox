@@ -21,6 +21,10 @@ vendoring:
   url: https://gitlab.xiph.org/xiph/vorbis
   source-hosting: gitlab
 
+  patches:
+    - 0001-alloca-to-malloc-in-vorbis_book_init_decode.patch
+    - 0002-null-checks-in-vorbis_book_init_decode.patch
+
   exclude:
     - "**"
 

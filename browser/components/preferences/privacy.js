@@ -14,7 +14,10 @@ const { PRIVACY_SEGMENTATION_PREF } = ChromeUtils.importESModule(
   "chrome://browser/content/preferences/config/permissions-data.mjs",
   { global: "current" }
 );
-
+const { PasswordSettingHelpers } = ChromeUtils.importESModule(
+  "chrome://browser/content/preferences/config/passwords-autofill.mjs",
+  { global: "current" }
+);
 const { PrivacySettingHelpers } = ChromeUtils.importESModule(
   "chrome://browser/content/preferences/config/privacy.mjs",
   { global: "current" }
@@ -1683,7 +1686,7 @@ var gPrivacyPane = {
    * where passwords are never saved.
    */
   showPasswordExceptions() {
-    PrivacySettingHelpers.showPasswordExceptions();
+    PasswordSettingHelpers.showPasswordExceptions();
   },
 
   /**
@@ -1693,7 +1696,7 @@ var gPrivacyPane = {
    * the UI for it can't be controlled by the normal preference bindings.
    */
   _initMasterPasswordUI() {
-    PrivacySettingHelpers._initMasterPasswordUI();
+    PasswordSettingHelpers._initMasterPasswordUI();
   },
 
   /**
@@ -1706,19 +1709,19 @@ var gPrivacyPane = {
     let button = document.getElementById("changeMasterPassword");
     button.disabled = !checkbox.checked;
     if (!checkbox.checked) {
-      await PrivacySettingHelpers._removeMasterPassword();
+      await PasswordSettingHelpers._removeMasterPassword();
     } else {
-      await PrivacySettingHelpers.changeMasterPassword();
+      await PasswordSettingHelpers.changeMasterPassword();
     }
     this._initMasterPasswordUI();
   },
 
   async _removeMasterPassword() {
-    await PrivacySettingHelpers._removeMasterPassword();
+    await PasswordSettingHelpers._removeMasterPassword();
   },
 
   async changeMasterPassword() {
-    await PrivacySettingHelpers.changeMasterPassword();
+    await PasswordSettingHelpers.changeMasterPassword();
   },
 
   /**
@@ -1835,7 +1838,7 @@ var gPrivacyPane = {
    * information.
    */
   showPasswords() {
-    PrivacySettingHelpers.showPasswords();
+    PasswordSettingHelpers.showPasswords();
   },
 
   /**

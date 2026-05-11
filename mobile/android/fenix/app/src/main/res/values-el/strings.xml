@@ -3214,6 +3214,13 @@
   <string name="ip_protection_onboarding_body_link">Περιηγηθείτε με επιπλέον προστασία</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Όχι τώρα</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">Δεν ήταν δυνατή η σύνδεση στο VPN. Δοκιμάστε ξανά σε λίγα λεπτά.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">Έχουν χρησιμοποιηθεί %1$d GB δεδομένων VPN. Θα γίνει επαναφορά της πρόσβασης τον επόμενο μήνα.</string>
   <!--
     Autofill
 
@@ -4631,6 +4638,14 @@
   <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Ακολουθείτε: \n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
   <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Ελέγξτε ξανά για πληροφορίες του αγώνα καθώς πλησιάζει το τουρνουά.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">Πρώτο ημίχρονο</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">Δεύτερο ημίχρονο</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">Φαίνεται ότι είστε εκτός σύνδεσης.</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">Ελέγξτε τη σύνδεσή σας στο διαδίκτυο και δοκιμάστε ξανά.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

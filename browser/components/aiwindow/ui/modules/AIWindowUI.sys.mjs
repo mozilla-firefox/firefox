@@ -299,7 +299,6 @@ export const AIWindowUI = {
     if (!askBtn) {
       return;
     }
-    askBtn.checked = sidebarIsOpen;
     askBtn.setAttribute("aria-expanded", String(sidebarIsOpen));
   },
 

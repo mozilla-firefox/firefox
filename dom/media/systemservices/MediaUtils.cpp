@@ -15,7 +15,7 @@
 
 namespace mozilla::media {
 
-bool HostnameInPref(const char* aPref, const nsCString& aHostName) {
+bool HostnameInValue(const nsACString& aList, const nsCString& aHostName) {
   auto HostInDomain = [](const nsCString& aHost, const nsCString& aPattern) {
     int32_t patternOffset = 0;
     int32_t hostOffset = 0;
@@ -37,13 +37,7 @@ bool HostnameInPref(const char* aPref, const nsCString& aHostName) {
     return hostRoot.EqualsIgnoreCase(aPattern.get() + patternOffset);
   };
 
-  nsCString domainList;
-  nsresult rv = Preferences::GetCString(aPref, domainList);
-
-  if (NS_FAILED(rv)) {
-    return false;
-  }
-
+  nsCString domainList(aList);
   domainList.StripWhitespace();
 
   if (domainList.IsEmpty() || aHostName.IsEmpty()) {
@@ -55,7 +49,7 @@ bool HostnameInPref(const char* aPref, const nsCString& aHostName) {
   // must match exactly or have a single leading '*.' wildcard.
   for (const nsACString& each : domainList.Split(',')) {
     nsCString domainPattern;
-    rv = NS_DomainToASCIIAllowAnyGlyphfulASCII(each, domainPattern);
+    nsresult rv = NS_DomainToASCIIAllowAnyGlyphfulASCII(each, domainPattern);
     if (NS_SUCCEEDED(rv)) {
       if (HostInDomain(aHostName, domainPattern)) {
         return true;
@@ -65,6 +59,14 @@ bool HostnameInPref(const char* aPref, const nsCString& aHostName) {
     }
   }
   return false;
+}
+
+bool HostnameInPref(const char* aPref, const nsCString& aHostName) {
+  nsCString domainList;
+  if (NS_FAILED(Preferences::GetCString(aPref, domainList))) {
+    return false;
+  }
+  return HostnameInValue(domainList, aHostName);
 }
 
 nsCOMPtr<nsIAsyncShutdownClient> GetShutdownBarrier() {

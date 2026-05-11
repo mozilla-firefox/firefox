@@ -40,7 +40,7 @@ enum Request {
     AddConnection(
         sys::Pipe,
         Box<dyn Driver + Send>,
-        mpsc::Sender<Result<Token>>,
+        Option<mpsc::Sender<Result<Token>>>,
     ),
     // See EventLoop::shutdown
     Shutdown,
@@ -77,6 +77,9 @@ impl EventLoopHandle {
         })
     }
 
+    // Register a server connection and wait until the EventLoop has installed
+    // it. This preserves a registration barrier for callers that may issue
+    // dependent RPCs immediately after binding.
     pub fn bind_server<S: Server + Send + 'static>(
         &self,
         server: S,
@@ -93,8 +96,44 @@ impl EventLoopHandle {
         r.map(|_| ())
     }
 
-    // Register a new connection with associated driver on the EventLoop.
-    // TODO: Since this is called from a Gecko main thread, make this non-blocking wrt. the EventLoop.
+    // Non-blocking server bind. The pipe pair is fully connected at creation,
+    // so the client can write immediately — data is buffered by the OS kernel
+    // until the event loop registers the server end. If registration fails,
+    // the server pipe is dropped and the client gets a broken-pipe error.
+    pub fn bind_server_async<S: Server + Send + 'static>(
+        &self,
+        server: S,
+        connection: sys::Pipe,
+    ) -> Result<()>
+    where
+        <S as Server>::ServerMessage: DeserializeOwned + Debug + AssociateHandleForMessage + Send,
+        <S as Server>::ClientMessage: Serialize + Debug + AssociateHandleForMessage + Send,
+    {
+        let handler = make_server::<S>(server);
+        let driver = Box::new(FramedDriver::new(handler));
+        let r = self.add_connection_async(connection, driver);
+        trace!("EventLoop::bind_server_async {r:?}");
+        r
+    }
+
+    // Fire-and-forget connection registration. Returns immediately without
+    // waiting for the event loop to process the request.
+    fn add_connection_async(
+        &self,
+        connection: sys::Pipe,
+        driver: Box<dyn Driver + Send>,
+    ) -> Result<()> {
+        assert_not_in_event_loop_thread();
+        self.requests
+            .push(Request::AddConnection(connection, driver, None))
+            .map_err(|_| {
+                debug!("EventLoopHandle::add_connection_async send failed");
+                io::ErrorKind::ConnectionAborted
+            })?;
+        self.waker.wake()
+    }
+
+    // Register a new connection, blocking until the event loop acknowledges it.
     fn add_connection(
         &self,
         connection: sys::Pipe,
@@ -103,7 +142,7 @@ impl EventLoopHandle {
         assert_not_in_event_loop_thread();
         let (tx, rx) = mpsc::channel();
         self.requests
-            .push(Request::AddConnection(connection, driver, tx))
+            .push(Request::AddConnection(connection, driver, Some(tx)))
             .map_err(|_| {
                 debug!("EventLoopHandle::add_connection send failed");
                 io::ErrorKind::ConnectionAborted
@@ -251,7 +290,14 @@ impl EventLoop {
                 Request::AddConnection(pipe, driver, tx) => {
                     debug!("{}: EventLoop: handling add_connection", self.name);
                     let r = self.add_connection(pipe, driver);
-                    tx.send(r).expect("EventLoop::add_connection");
+                    if let Some(tx) = tx {
+                        tx.send(r).expect("EventLoop::add_connection");
+                    } else if let Err(e) = r {
+                        debug!(
+                            "{}: EventLoop: async add_connection failed: {:?}",
+                            self.name, e
+                        );
+                    }
                 }
                 Request::Shutdown => {
                     debug!("{}: EventLoop: handling shutdown", self.name);
@@ -916,5 +962,379 @@ mod test {
         drop(elt);
 
         stop_rx.recv().expect("before_stop callback done");
+    }
+
+    // Verify client can send before the server event loop processes the
+    // async AddConnection request. Data is buffered by the OS kernel.
+    #[test]
+    fn async_bind_server() {
+        init();
+
+        // Gate the server event loop: it blocks in after_start until we release it.
+        let (gate_tx, gate_rx) = mpsc::channel();
+        let server = EventLoopThread::new(
+            "test-server".to_string(),
+            None,
+            move || {
+                gate_rx.recv().ok();
+            },
+            || {},
+        )
+        .expect("server EventLoopThread");
+        let server_handle = server.handle();
+
+        let (server_pipe, client_pipe) = sys::make_pipe_pair().expect("make_pipe_pair");
+        server_handle
+            .bind_server_async(TestServerImpl {}, server_pipe)
+            .expect("bind_server_async");
+
+        // Client setup — bind_client is synchronous and uses its own event loop.
+        let client = EventLoopThread::new("test-client".to_string(), None, || {}, || {})
+            .expect("client EventLoopThread");
+        let client_handle = client.handle();
+        let client_pipe = unsafe { sys::Pipe::from_raw_handle(client_pipe) };
+        let client_proxy = client_handle
+            .bind_client::<TestClientImpl>(client_pipe)
+            .expect("client bind_client");
+
+        // Spawn call() on a background thread — it blocks waiting for
+        // the response, which can't arrive until the gate is released.
+        let call_thread = thread::spawn(move || client_proxy.call(TestServerMessage::TestRequest));
+
+        // Wait for the client event loop to serialize the request and
+        // write it to the pipe.  The client event loop is running
+        // freely and should flush within microseconds; 200ms is a
+        // generous margin.  There is no portable, non-intrusive way
+        // to observe the write without racing mio's registration.
+        thread::sleep(std::time::Duration::from_millis(200));
+
+        // Release the server gate.  The server event loop now processes
+        // AddConnection (registering the pipe with mio) and immediately
+        // sees the buffered client data as a readability event.
+        gate_tx.send(()).ok();
+
+        let response = call_thread
+            .join()
+            .expect("call thread panicked")
+            .expect("client response");
+        assert_eq!(response, TestClientMessage::TestResponse);
+
+        drop(client);
+        drop(server);
+    }
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    enum StartupRaceServerMessage {
+        Promote,
+        Start,
+    }
+    impl AssociateHandleForMessage for StartupRaceServerMessage {}
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    enum StartupRaceClientMessage {
+        Promoted,
+        Started,
+    }
+    impl AssociateHandleForMessage for StartupRaceClientMessage {}
+
+    struct StartupRaceClientImpl {}
+
+    impl Client for StartupRaceClientImpl {
+        type ServerMessage = StartupRaceServerMessage;
+        type ClientMessage = StartupRaceClientMessage;
+    }
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    enum StartupRaceCallbackReq {
+        Data,
+    }
+    impl AssociateHandleForMessage for StartupRaceCallbackReq {}
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    enum StartupRaceCallbackResp {
+        Data,
+    }
+    impl AssociateHandleForMessage for StartupRaceCallbackResp {}
+
+    struct StartupRaceCallbackClient {}
+
+    impl Client for StartupRaceCallbackClient {
+        type ServerMessage = StartupRaceCallbackReq;
+        type ClientMessage = StartupRaceCallbackResp;
+    }
+
+    struct StartupRaceCallbackServer {}
+
+    impl Server for StartupRaceCallbackServer {
+        type ServerMessage = StartupRaceCallbackReq;
+        type ClientMessage = StartupRaceCallbackResp;
+
+        fn process(&mut self, req: Self::ServerMessage) -> Self::ClientMessage {
+            assert_eq!(req, StartupRaceCallbackReq::Data);
+            StartupRaceCallbackResp::Data
+        }
+    }
+
+    struct StartupRaceServer {
+        callback: Proxy<StartupRaceCallbackReq, StartupRaceCallbackResp>,
+    }
+
+    impl Server for StartupRaceServer {
+        type ServerMessage = StartupRaceServerMessage;
+        type ClientMessage = StartupRaceClientMessage;
+
+        fn process(&mut self, req: Self::ServerMessage) -> Self::ClientMessage {
+            match req {
+                StartupRaceServerMessage::Promote => StartupRaceClientMessage::Promoted,
+                StartupRaceServerMessage::Start => {
+                    let response = self
+                        .callback
+                        .call(StartupRaceCallbackReq::Data)
+                        .expect("callback response");
+                    assert_eq!(response, StartupRaceCallbackResp::Data);
+                    StartupRaceClientMessage::Started
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn bind_server_waits_for_callback_thread_startup() {
+        init();
+
+        // Model the Linux AudioIPC startup ordering:
+        //
+        // * The client callback event loop runs a startup callback before it
+        //   polls. On Linux that startup callback performs a remote
+        //   PromoteThreadToRealTime RPC over the main AudioIPC connection.
+        // * Stream init then binds a callback server on that same callback
+        //   event loop.
+        // * Stream start may synchronously invoke a cubeb data callback on the
+        //   server, which performs an RPC to the client's callback server.
+        //
+        // If callback bind returns before the callback event loop has really
+        // registered the server connection, start can race ahead while the
+        // callback event loop is still in its startup promotion RPC. The server
+        // then waits for a callback response and can no longer service the
+        // queued promotion response, producing a deadlock. `bind_server` must
+        // remain a registration barrier; callers that can tolerate fire-and-
+        // forget semantics should use `bind_server_async` explicitly.
+        let server_callback =
+            EventLoopThread::new("test-server-callback".to_string(), None, || {}, || {})
+                .expect("server callback EventLoopThread");
+        let (server_callback_pipe, client_callback_pipe) =
+            sys::make_pipe_pair().expect("callback make_pipe_pair");
+        let callback_proxy = server_callback
+            .handle()
+            .bind_client::<StartupRaceCallbackClient>(server_callback_pipe)
+            .expect("server callback bind_client");
+
+        let server_rpc = EventLoopThread::new("test-server-rpc".to_string(), None, || {}, || {})
+            .expect("server rpc EventLoopThread");
+        let (server_rpc_pipe, client_rpc_pipe) = sys::make_pipe_pair().expect("rpc make_pipe_pair");
+        server_rpc
+            .handle()
+            .bind_server(
+                StartupRaceServer {
+                    callback: callback_proxy,
+                },
+                server_rpc_pipe,
+            )
+            .expect("server rpc bind_server");
+
+        let client_rpc = EventLoopThread::new("test-client-rpc".to_string(), None, || {}, || {})
+            .expect("client rpc EventLoopThread");
+        let client_rpc_pipe = unsafe { sys::Pipe::from_raw_handle(client_rpc_pipe) };
+        let client_proxy = client_rpc
+            .handle()
+            .bind_client::<StartupRaceClientImpl>(client_rpc_pipe)
+            .expect("client rpc bind_client");
+
+        let promote_proxy = client_proxy.clone();
+        let (startup_tx, startup_rx) = mpsc::channel();
+        let client_callback = EventLoopThread::new(
+            "test-client-callback".to_string(),
+            None,
+            move || {
+                startup_rx.recv().ok();
+                let response = promote_proxy
+                    .call(StartupRaceServerMessage::Promote)
+                    .expect("promote response");
+                assert_eq!(response, StartupRaceClientMessage::Promoted);
+            },
+            || {},
+        )
+        .expect("client callback EventLoopThread");
+
+        let client_callback_handle = client_callback.handle().clone();
+        let (bind_done_tx, bind_done_rx) = mpsc::channel();
+        let client_callback_pipe = unsafe { sys::Pipe::from_raw_handle(client_callback_pipe) };
+        let bind_thread = thread::spawn(move || {
+            bind_done_tx
+                .send(
+                    client_callback_handle
+                        .bind_server(StartupRaceCallbackServer {}, client_callback_pipe),
+                )
+                .expect("send bind result");
+        });
+
+        thread::sleep(std::time::Duration::from_millis(50));
+        assert!(matches!(
+            bind_done_rx.try_recv(),
+            Err(mpsc::TryRecvError::Empty)
+        ));
+
+        startup_tx.send(()).ok();
+        bind_done_rx
+            .recv_timeout(std::time::Duration::from_secs(1))
+            .expect("bind_server completed")
+            .expect("bind_server result");
+        bind_thread.join().expect("bind thread");
+
+        let response = client_proxy
+            .call(StartupRaceServerMessage::Start)
+            .expect("start response");
+        assert_eq!(response, StartupRaceClientMessage::Started);
+
+        drop(client_callback);
+        drop(client_rpc);
+        drop(server_rpc);
+        drop(server_callback);
+    }
+
+    #[test]
+    fn async_bind_server_concurrent_clients() {
+        init();
+
+        let (gate_tx, gate_rx) = mpsc::channel();
+        let server = EventLoopThread::new(
+            "test-server".to_string(),
+            None,
+            move || {
+                gate_rx.recv().ok();
+            },
+            || {},
+        )
+        .expect("server EventLoopThread");
+        let server_handle = server.handle().clone();
+
+        let mut clients = Vec::new();
+        let mut calls = Vec::new();
+        for _ in 0..8 {
+            let (server_pipe, client_pipe) = sys::make_pipe_pair().expect("make_pipe_pair");
+            server_handle
+                .bind_server_async(TestServerImpl {}, server_pipe)
+                .expect("bind_server_async");
+
+            let client = EventLoopThread::new("test-client".to_string(), None, || {}, || {})
+                .expect("client EventLoopThread");
+            let client_pipe = unsafe { sys::Pipe::from_raw_handle(client_pipe) };
+            let client_proxy = client
+                .handle()
+                .bind_client::<TestClientImpl>(client_pipe)
+                .expect("client bind_client");
+
+            calls.push(thread::spawn(move || {
+                client_proxy.call(TestServerMessage::TestRequest)
+            }));
+            clients.push(client);
+        }
+
+        thread::sleep(std::time::Duration::from_millis(200));
+        gate_tx.send(()).ok();
+
+        for call in calls {
+            let response = call
+                .join()
+                .expect("call thread panicked")
+                .expect("response");
+            assert_eq!(response, TestClientMessage::TestResponse);
+        }
+
+        drop(clients);
+        drop(server);
+    }
+
+    // Verify that dropping the server before processing the async
+    // AddConnection propagates as a transport error to the client.
+    #[test]
+    fn async_bind_server_drops_before_processing() {
+        init();
+        let server = EventLoopThread::new("test-server".to_string(), None, || {}, || {})
+            .expect("server EventLoopThread");
+        let server_handle = server.handle();
+
+        let (server_pipe, client_pipe) = sys::make_pipe_pair().expect("make_pipe_pair");
+        server_handle
+            .bind_server_async(TestServerImpl {}, server_pipe)
+            .expect("bind_server_async");
+
+        // Drop the server immediately — queued AddConnection may not be processed.
+        drop(server);
+
+        let client = EventLoopThread::new("test-client".to_string(), None, || {}, || {})
+            .expect("client EventLoopThread");
+        let client_handle = client.handle();
+
+        let client_pipe = unsafe { sys::Pipe::from_raw_handle(client_pipe) };
+        let client_proxy = client_handle
+            .bind_client::<TestClientImpl>(client_pipe)
+            .expect("client bind_client");
+
+        let response = client_proxy.call(TestServerMessage::TestRequest);
+        response.expect_err("server dropped, should get transport error");
+
+        drop(client);
+    }
+
+    // Verify that an async AddConnection that is never processed
+    // (server shuts down before reaching it in the queue) propagates
+    // as a transport error to the client.
+    #[test]
+    fn async_bind_server_never_processed() {
+        init();
+
+        // Gate the server event loop so we can control the order of
+        // requests in the queue.
+        let (gate_tx, gate_rx) = mpsc::channel();
+        let server = EventLoopThread::new(
+            "test-server".to_string(),
+            None,
+            move || {
+                gate_rx.recv().ok();
+            },
+            || {},
+        )
+        .expect("server EventLoopThread");
+        let server_handle = server.handle().clone();
+
+        // Queue Shutdown BEFORE AddConnection.  The event loop processes
+        // requests in FIFO order, so it will shut down without ever
+        // handling AddConnection.  The unprocessed server pipe is
+        // dropped with the queue, and the client sees a broken-pipe error.
+        server_handle.shutdown().expect("shutdown");
+
+        let (server_pipe, client_pipe) = sys::make_pipe_pair().expect("make_pipe_pair");
+        server_handle
+            .bind_server_async(TestServerImpl {}, server_pipe)
+            .expect("bind_server_async");
+
+        // Release gate — event loop runs, hits Shutdown first, exits.
+        gate_tx.send(()).ok();
+        drop(server);
+
+        let client = EventLoopThread::new("test-client".to_string(), None, || {}, || {})
+            .expect("client EventLoopThread");
+        let client_handle = client.handle();
+
+        let client_pipe = unsafe { sys::Pipe::from_raw_handle(client_pipe) };
+        let client_proxy = client_handle
+            .bind_client::<TestClientImpl>(client_pipe)
+            .expect("client bind_client");
+
+        let response = client_proxy.call(TestServerMessage::TestRequest);
+        response.expect_err("server never processed AddConnection, should get transport error");
+
+        drop(client);
     }
 }

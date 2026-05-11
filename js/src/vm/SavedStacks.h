@@ -252,7 +252,7 @@ class SavedStacks {
         : source(source), sourceId(sourceId), line(line), column(column) {}
 
     void trace(JSTracer* trc) {
-      TraceNullableEdge(trc, &source, "SavedStacks::LocationValue::source");
+      TraceEdge(trc, &source, "SavedStacks::LocationValue::source");
     }
 
     bool traceWeak(JSTracer* trc) {

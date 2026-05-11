@@ -21,4 +21,10 @@
   <string name="mozac_compose_base_snackbar_dismiss_content_description">സന്ദേശം തള്ളിക്കളയുക</string>
   <!-- Content description for the close icon of a Banner -->
   <string name="mozac_compose_base_close_button_content_description">അടയ്ക്കുക</string>
+  <!-- Title shown in the dialog that lists every clickable link inside a LinkText composable when the text contains more than one link. -->
+  <string name="mozac_compose_base_link_text_links_title">കണ്ണികള്‍</string>
+  <!-- Announcement appended to the LinkText content description so screen readers know that interactive links are present in the text. -->
+  <string name="mozac_compose_base_link_text_links_available">കണ്ണികൾ ലഭ്യമാണു്</string>
+  <!-- Label for the button that dismisses the LinkText links dialog without selecting a link. -->
+  <string name="mozac_compose_base_link_text_dismiss">കളയുക</string>
 </resources>

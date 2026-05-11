@@ -14,41 +14,80 @@
           src="../role.js" />
   <script type="application/javascript"
           src="../states.js" />
-  <script type="application/javascript"
-          src="../events.js" />
-
   <script type="application/javascript">
   <![CDATA[
-    var gQueue = null;
-    function doTest()
-    {
+    function doTest() {
       testStates("checkbox", STATE_FOCUSABLE, 0, STATE_UNAVAILABLE);
       testStates("checkbox2", STATE_UNAVAILABLE, 0 , STATE_FOCUSABLE);
       testStates("radiogroup", 0, 0, STATE_FOCUSABLE | STATE_UNAVAILABLE);
       testStates("radio", STATE_FOCUSABLE, 0, STATE_UNAVAILABLE);
       testStates("radio-disabled", STATE_UNAVAILABLE, 0 , STATE_FOCUSABLE);
       testStates("radiogroup-disabled", STATE_UNAVAILABLE, 0 , STATE_FOCUSABLE);
-      testStates("radio-disabledradiogroup", STATE_UNAVAILABLE, 0 , STATE_FOCUSABLE);
+      testStates(
+        "radio-disabledradiogroup",
+        STATE_UNAVAILABLE,
+        0,
+        STATE_FOCUSABLE
+      );
       testStates("button", STATE_FOCUSABLE, 0, STATE_UNAVAILABLE);
       testStates("button-disabled", STATE_UNAVAILABLE, 0 , STATE_FOCUSABLE);
       testStates("checkbutton",
                  STATE_FOCUSABLE | STATE_PRESSED, 0, STATE_CHECKABLE);
       testStates("fakecheckbutton", STATE_FOCUSABLE | STATE_PRESSED, 0, 
                  STATE_CHECKABLE);
-      testStates("combobox", STATE_FOCUSABLE | STATE_HASPOPUP, 0, STATE_UNAVAILABLE);
-      testStates("combobox-disabled", STATE_UNAVAILABLE | STATE_HASPOPUP, 0, STATE_FOCUSABLE);
+      testStates(
+        "combobox",
+        STATE_FOCUSABLE | STATE_HASPOPUP,
+        0,
+        STATE_UNAVAILABLE
+      );
+      testStates(
+        "combobox-disabled",
+        STATE_UNAVAILABLE | STATE_HASPOPUP,
+        0,
+        STATE_FOCUSABLE
+      );
       testStates("listbox", STATE_FOCUSABLE, 0, STATE_UNAVAILABLE);
-      testStates("listitem", STATE_FOCUSABLE | STATE_SELECTABLE | STATE_SELECTED, 0, STATE_UNAVAILABLE);
-      testStates("listbox-disabled", STATE_UNAVAILABLE, 0, STATE_FOCUSABLE | STATE_SELECTABLE);
-      testStates("listitem-disabledlistbox", STATE_UNAVAILABLE | STATE_SELECTED, 0, STATE_FOCUSABLE | STATE_SELECTABLE);
+      testStates(
+        "listitem",
+        STATE_FOCUSABLE | STATE_SELECTABLE | STATE_SELECTED,
+        0,
+        STATE_UNAVAILABLE
+      );
+      testStates(
+        "listbox-disabled",
+        STATE_UNAVAILABLE,
+        0,
+        STATE_FOCUSABLE | STATE_SELECTABLE
+      );
+      testStates(
+        "listitem-disabledlistbox",
+        STATE_UNAVAILABLE | STATE_SELECTED,
+        0,
+        STATE_FOCUSABLE | STATE_SELECTABLE
+      );
       testStates("menubar", 0, 0, STATE_FOCUSABLE);
       testStates("menu", STATE_FOCUSABLE, 0, STATE_UNAVAILABLE);
-      testStates("menu-disabled", STATE_UNAVAILABLE, 0, STATE_FOCUSABLE | STATE_SELECTABLE);
-      testStates("tab", STATE_FOCUSABLE | STATE_SELECTABLE | STATE_SELECTED, 0, STATE_UNAVAILABLE);
-      testStates("tab-disabled", STATE_UNAVAILABLE, 0, STATE_FOCUSABLE | STATE_SELECTABLE | STATE_SELECTED);
+      testStates(
+        "menu-disabled",
+        STATE_UNAVAILABLE,
+        0,
+        STATE_FOCUSABLE | STATE_SELECTABLE
+      );
+      testStates(
+        "tab",
+        STATE_FOCUSABLE | STATE_SELECTABLE | STATE_SELECTED,
+        0,
+        STATE_UNAVAILABLE
+      );
+      testStates(
+        "tab-disabled",
+        STATE_UNAVAILABLE,
+        0,
+        STATE_FOCUSABLE | STATE_SELECTABLE | STATE_SELECTED
+      );
 
-      gQueue = new eventQueue();
-      gQueue.invoke(); // Will call SimpleTest.finish()
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

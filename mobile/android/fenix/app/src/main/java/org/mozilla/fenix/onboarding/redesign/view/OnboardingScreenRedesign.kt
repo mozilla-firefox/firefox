@@ -96,6 +96,8 @@ private val logger: Logger = Logger("OnboardingScreenRedesign")
  * @param onMarketingOptInToggle callback for when the user toggles the opt-in checkbox
  * @param onMarketingDataContinueClick callback for when the user clicks the continue button on the
  * marketing data opt out screen.
+ * @param onMarketingDataSkipClick callback for when the user clicks the skip button on the
+ * marketing data opt out screen.
  * @param onFinish Invoked when the onboarding is completed.
  * @param onImpression Invoked when a page in the pager is displayed.
  * @param currentIndex callback for when the current horizontal pager page changes
@@ -119,6 +121,7 @@ fun OnboardingScreenRedesign(
     onMarketingDataLearnMoreClick: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
     onMarketingDataContinueClick: (allowMarketingDataCollection: Boolean) -> Unit,
+    onMarketingDataSkipClick: () -> Unit,
     onFinish: (pageType: OnboardingPageUiData) -> Unit,
     onImpression: (pageType: OnboardingPageUiData) -> Unit,
     currentIndex: (index: Int) -> Unit,
@@ -240,6 +243,10 @@ fun OnboardingScreenRedesign(
             onMarketingDataContinueClick(allowMarketingDataCollection)
             scrollToNextPageOrDismiss()
         },
+        onMarketingDataSkipClick = {
+            onMarketingDataSkipClick()
+            scrollToNextPageOrDismiss()
+        },
         onboardingStore = onboardingStore,
     )
 }
@@ -342,6 +349,7 @@ private fun OnboardingContent(
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
     onMarketingDataLearnMoreClick: () -> Unit,
     onMarketingDataContinueClick: (allowMarketingDataCollection: Boolean) -> Unit,
+    onMarketingDataSkipClick: () -> Unit,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val layout = getOnboardingLayout(this)
@@ -401,6 +409,7 @@ private fun OnboardingContent(
                     onMarketingDataLearnMoreClick = onMarketingDataLearnMoreClick,
                     onMarketingOptInToggle = onMarketingOptInToggle,
                     onMarketingDataContinueClick = onMarketingDataContinueClick,
+                    onMarketingDataSkipClick = onMarketingDataSkipClick,
                 )
             }
 
@@ -450,6 +459,7 @@ private fun OnboardingPageForType(
     onMarketingDataLearnMoreClick: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
     onMarketingDataContinueClick: (allowMarketingDataCollection: Boolean) -> Unit,
+    onMarketingDataSkipClick: () -> Unit,
 ) {
     when (type) {
         OnboardingPageUiData.Type.DEFAULT_BROWSER,
@@ -482,6 +492,7 @@ private fun OnboardingPageForType(
             onMarketingDataLearnMoreClick = onMarketingDataLearnMoreClick,
             onMarketingOptInToggle = onMarketingOptInToggle,
             onMarketingDataContinueClick = onMarketingDataContinueClick,
+            onMarketingDataSkipClick = onMarketingDataSkipClick,
         )
 
         OnboardingPageUiData.Type.TERMS_OF_SERVICE -> TermsOfServiceOnboardingPageRedesign(
@@ -659,6 +670,7 @@ private fun OnboardingScreenPreview() {
             onMarketingDataLearnMoreClick = {},
             onMarketingOptInToggle = {},
             onMarketingDataContinueClick = {},
+            onMarketingDataSkipClick = {},
             onNotificationPermissionButtonClick = {},
             onNotificationPermissionSkipClick = {},
         )

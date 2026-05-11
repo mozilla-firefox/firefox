@@ -13,7 +13,7 @@ xpcom = { path = "../../../xpcom/rust/xpcom" }
 static_prefs = { path = "../../../modules/libpref/init/static_prefs" }
 
 mls-platform-api = { git = "https://github.com/mozilla/mls-platform-api", rev="bbbf9d51d60e5f63ab2b791ffbfd884c4d1a317b", features = ["gecko"] }
-nss-rs = { git = "https://github.com/mozilla/nss-rs", rev = "c54949bbff92795b8b2e837ec84decc9b468081a", default-features = false }
+nss-rs = { path = "../../../third_party/rust/nss-rs", default-features = false }
 thin-vec = { version = "^0.2.12", features = ["gecko-ffi"] }
 hex = "^0.4.3"
 rusqlite = "^0.37.0"

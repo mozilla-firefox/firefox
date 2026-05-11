@@ -1,0 +1,49 @@
+diff --git a/lib/sharedbook.c b/lib/sharedbook.c
+index 7a98b479..abe4c24d 100644
+--- a/lib/sharedbook.c
++++ b/lib/sharedbook.c
+@@ -352,9 +352,13 @@ int vorbis_book_init_decode(codebook *c,const static_codebook *s){
+
+     /* perform sort */
+     ogg_uint32_t *codes=_make_words(s->lengthlist,s->entries,c->used_entries);
+-    ogg_uint32_t **codep=alloca(sizeof(*codep)*n);
++    ogg_uint32_t **codep=_ogg_malloc(sizeof(*codep)*n);
+
+-    if(codes==NULL)goto err_out;
++    if(codes==NULL || codep==NULL){
++      if(codes)_ogg_free(codes);
++      if(codep)_ogg_free(codep);
++      goto err_out;
++    }
+
+     for(i=0;i<n;i++){
+       codes[i]=bitreverse(codes[i]);
+@@ -363,13 +367,19 @@ int vorbis_book_init_decode(codebook *c,const static_codebook *s){
+
+     qsort(codep,n,sizeof(*codep),sort32a);
+
+-    sortindex=alloca(n*sizeof(*sortindex));
++    sortindex=_ogg_malloc(n*sizeof(*sortindex));
++    if(sortindex==NULL){
++      _ogg_free(codes);
++      _ogg_free(codep);
++      goto err_out;
++    }
+     c->codelist=_ogg_malloc(n*sizeof(*c->codelist));
+     /* the index is a reverse index */
+     for(i=0;i<n;i++){
+       int position=codep[i]-codes;
+       sortindex[position]=i;
+     }
++    _ogg_free(codep);
+
+     for(i=0;i<n;i++)
+       c->codelist[sortindex[i]]=codes[i];
+@@ -390,6 +400,7 @@ int vorbis_book_init_decode(codebook *c,const static_codebook *s){
+         if(s->lengthlist[i]>c->dec_maxlength)
+           c->dec_maxlength=s->lengthlist[i];
+       }
++    _ogg_free(sortindex);
+
+     if(n==1 && c->dec_maxlength==1){
+       /* special case the 'single entry codebook' with a single bit

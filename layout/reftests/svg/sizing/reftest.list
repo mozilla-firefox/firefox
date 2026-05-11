@@ -89,18 +89,18 @@
 == standalone--auto-auto--0-pct.svg     pass-empty.svg
 == standalone--auto-auto--0-px.svg      pass-empty.svg
 == standalone--auto-auto--pct-0.svg     pass-empty.svg
-fuzzy-if(winWidget,0-1,0-400) == standalone--auto-auto--pct-pct.svg   pass-pct-pct.xhtml
-== standalone--auto-auto--pct-px.svg    pass-pct-px.xhtml
+== standalone--auto-auto--pct-pct.svg   pass-300-150.xhtml
+== standalone--auto-auto--pct-px.svg    pass-300-70.xhtml
 == standalone--auto-auto--px-0.svg      pass-empty.svg
-== standalone--auto-auto--px-pct.svg    pass-px-pct.xhtml
+== standalone--auto-auto--px-pct.svg    pass-70-150.xhtml
 == standalone--auto-auto--px-px.svg     pass-px-px.xhtml
 
 == standalone--auto-pct--0-0.svg        pass-empty.svg
 == standalone--auto-pct--0-pct.svg      pass-empty.svg
 == standalone--auto-pct--0-px.svg       pass-empty.svg
-fuzzy-if(winWidget,0-1,0-400) == standalone--auto-pct--pct-0.svg      pass-pct-pct.xhtml
-fuzzy-if(winWidget,0-1,0-400) == standalone--auto-pct--pct-pct.svg    pass-pct-pct.xhtml
-fuzzy-if(winWidget,0-1,0-400) == standalone--auto-pct--pct-px.svg     pass-pct-pct.xhtml
+== standalone--auto-pct--pct-0.svg      pass-300-pct.xhtml
+== standalone--auto-pct--pct-pct.svg    pass-300-pct.xhtml
+== standalone--auto-pct--pct-px.svg     pass-300-pct.xhtml
 == standalone--auto-pct--px-0.svg       pass-px-pct.xhtml
 == standalone--auto-pct--px-pct.svg     pass-px-pct.xhtml
 fuzzy-if(winWidget,0-1,0-1000) == standalone--auto-pct--px-px.svg      pass-pct-height-square.xhtml # intrinsic ratio!
@@ -108,9 +108,9 @@ fuzzy-if(winWidget,0-1,0-1000) == standalone--auto-pct--px-px.svg      pass-pct-
 == standalone--auto-px--0-0.svg         pass-empty.svg
 == standalone--auto-px--0-pct.svg       pass-empty.svg
 == standalone--auto-px--0-px.svg        pass-empty.svg
-== standalone--auto-px--pct-0.svg       pass-pct-px.xhtml
-== standalone--auto-px--pct-pct.svg     pass-pct-px.xhtml
-== standalone--auto-px--pct-px.svg      pass-pct-px.xhtml
+== standalone--auto-px--pct-0.svg       pass-300-70.xhtml
+== standalone--auto-px--pct-pct.svg     pass-300-70.xhtml
+== standalone--auto-px--pct-px.svg      pass-300-70.xhtml
 == standalone--auto-px--px-0.svg        pass-px-px.xhtml
 == standalone--auto-px--px-pct.svg      pass-px-px.xhtml
 == standalone--auto-px--px-px.svg       pass-px-px.xhtml # intrinsic ratio!
@@ -126,13 +126,13 @@ fuzzy-if(winWidget,0-1,0-1000) == standalone--auto-pct--px-px.svg      pass-pct-
 == standalone--pct-0--px-px.svg         pass-empty.svg
 
 == standalone--pct-auto--0-0.svg        pass-empty.svg
-fuzzy-if(winWidget,0-1,0-400) == standalone--pct-auto--0-pct.svg      pass-pct-pct.xhtml
+== standalone--pct-auto--0-pct.svg      pass-pct-150.xhtml
 == standalone--pct-auto--0-px.svg       pass-pct-px.xhtml
 == standalone--pct-auto--pct-0.svg      pass-empty.svg
-fuzzy-if(winWidget,0-1,0-400) == standalone--pct-auto--pct-pct.svg    pass-pct-pct.xhtml
+== standalone--pct-auto--pct-pct.svg    pass-pct-150.xhtml
 == standalone--pct-auto--pct-px.svg     pass-pct-px.xhtml
 == standalone--pct-auto--px-0.svg       pass-empty.svg
-fuzzy-if(winWidget,0-1,0-400) == standalone--pct-auto--px-pct.svg     pass-pct-pct.xhtml
+== standalone--pct-auto--px-pct.svg     pass-pct-150.xhtml
 == standalone--pct-auto--px-px.svg      pass-pct-width-square.xhtml # intrinsic ratio!
 
 fuzzy-if(winWidget,0-1,0-400) == standalone--pct-pct--0-0.svg         pass-pct-pct.xhtml
@@ -166,13 +166,13 @@ fuzzy-if(winWidget,0-1,0-400) == standalone--pct-pct--px-px.svg       pass-pct-p
 == standalone--px-0--px-px.svg          pass-empty.svg
 
 == standalone--px-auto--0-0.svg         pass-empty.svg
-== standalone--px-auto--0-pct.svg       pass-px-pct.xhtml
+== standalone--px-auto--0-pct.svg       pass-70-150.xhtml
 == standalone--px-auto--0-px.svg        pass-px-px.xhtml
 == standalone--px-auto--pct-0.svg       pass-empty.svg
-== standalone--px-auto--pct-pct.svg     pass-px-pct.xhtml
+== standalone--px-auto--pct-pct.svg     pass-70-150.xhtml
 == standalone--px-auto--pct-px.svg      pass-px-px.xhtml
 == standalone--px-auto--px-0.svg        pass-empty.svg
-== standalone--px-auto--px-pct.svg      pass-px-pct.xhtml
+== standalone--px-auto--px-pct.svg      pass-70-150.xhtml
 == standalone--px-auto--px-px.svg       pass-px-px.xhtml # intrinsic ratio!
 
 == standalone--px-pct--0-0.svg          pass-px-pct.xhtml

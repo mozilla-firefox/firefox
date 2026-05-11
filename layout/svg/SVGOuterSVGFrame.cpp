@@ -292,45 +292,6 @@ nsIFrame::SizeComputationResult SVGOuterSVGFrame::ComputeSize(
       cbSize.ISize(aWritingMode) *= zoom;
       cbSize.BSize(aWritingMode) *= zoom;
     }
-
-    // We also need to honour the width and height attributes' default values
-    // of 100% when we're the root of a browsing context.  (GetIntrinsicSize()
-    // doesn't report these since there's no such thing as a percentage
-    // intrinsic size.  Also note that explicit percentage values are mapped
-    // into style, so the following isn't for them.)
-
-    auto* content = static_cast<SVGSVGElement*>(GetContent());
-
-    const SVGAnimatedLength& width =
-        content->mLengthAttributes[SVGSVGElement::ATTR_WIDTH];
-    if (width.IsPercentage()) {
-      MOZ_ASSERT(!intrinsicSize.width,
-                 "GetIntrinsicSize should have reported no intrinsic width");
-      float val = width.GetAnimValInSpecifiedUnits() / 100.0f;
-      intrinsicSize.width.emplace(std::max(val, 0.0f) *
-                                  cbSize.Width(aWritingMode));
-    }
-
-    const SVGAnimatedLength& height =
-        content->mLengthAttributes[SVGSVGElement::ATTR_HEIGHT];
-    NS_ASSERTION(aCBSize.BSize(aWritingMode) != NS_UNCONSTRAINEDSIZE,
-                 "root should not have auto-height containing block");
-    if (height.IsPercentage()) {
-      MOZ_ASSERT(!intrinsicSize.height,
-                 "GetIntrinsicSize should have reported no intrinsic height");
-      float val = height.GetAnimValInSpecifiedUnits() / 100.0f;
-      intrinsicSize.height.emplace(std::max(val, 0.0f) *
-                                   cbSize.Height(aWritingMode));
-    }
-    MOZ_ASSERT(intrinsicSize.height && intrinsicSize.width,
-               "We should have just handled the only situation where"
-               "we lack an intrinsic height or width.");
-    const auto& pos = *StylePosition();
-    if (pos.mWidth.IsAuto() && pos.mHeight.IsAuto()) {
-      // HACK(emilio, bug 2035918): This is a bit of a stop-gap solution to keep
-      // behavior in bug 2034897.
-      ratio = {};
-    }
   }
 
   return {ComputeSizeWithIntrinsicDimensions(

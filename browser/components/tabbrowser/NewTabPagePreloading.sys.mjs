@@ -16,6 +16,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
+  E10SUtils: "resource://gre/modules/E10SUtils.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
 });
 
@@ -44,11 +45,23 @@ export let NewTabPagePreloading = {
    * Create a browser in the right process type.
    */
   _createBrowser(win) {
-    const { gBrowser, BROWSER_NEW_TAB_URL } = win;
+    const {
+      gBrowser,
+      gMultiProcessBrowser,
+      gFissionBrowser,
+      BROWSER_NEW_TAB_URL,
+    } = win;
 
-    let remoteType = ChromeUtils.predictRemoteTypeForURI(BROWSER_NEW_TAB_URL, {
-      window: win,
-    });
+    let oa = lazy.E10SUtils.predictOriginAttributes({ window: win });
+
+    let remoteType = lazy.E10SUtils.getRemoteTypeForURI(
+      BROWSER_NEW_TAB_URL,
+      gMultiProcessBrowser,
+      gFissionBrowser,
+      lazy.E10SUtils.DEFAULT_REMOTE_TYPE,
+      null,
+      oa
+    );
     let browser = gBrowser.createBrowser({
       isPreloadBrowser: true,
       remoteType,

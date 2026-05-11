@@ -2735,13 +2735,9 @@ bool js::intrinsic_GetStringDataProperty(JSContext* cx, unsigned argc,
   MOZ_ASSERT(args.length() == 2);
 
   JSObject* obj = &args[0].toObject();
-  if (!obj->is<NativeObject>()) {
-    // The object is already checked to be native in GetElemBaseForLambda,
-    // but it can be swapped to another class that is non-native.
-    // Return undefined to mark failure to get the property.
-    args.rval().setUndefined();
-    return true;
-  }
+
+  // GetElemBaseForLambda ensures the object is native.
+  MOZ_ASSERT(obj->is<NativeObject>());
 
   // No need to root |obj| because |AtomizeString| can't GC.
   JS::AutoCheckCannotGC nogc;

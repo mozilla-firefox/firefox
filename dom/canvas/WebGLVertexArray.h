@@ -108,7 +108,9 @@ class WebGLVertexArray : public WebGLContextBoundObject {
 
   Maybe<uint32_t> GetAttribIsArrayWithNullBuffer() const {
     const auto& bitset = mAttribIsArrayWithNullBuffer;
-    if (MOZ_LIKELY(bitset.none())) return {};
+    if (bitset.none()) [[likely]] {
+      return {};
+    }
     for (const auto i : IntegerRange(bitset.size())) {
       if (bitset[i]) return Some(i);
     }

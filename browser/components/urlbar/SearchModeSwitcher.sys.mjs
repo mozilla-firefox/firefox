@@ -722,10 +722,10 @@ export class SearchModeSwitcher {
   #remoteSearch(searchEngine, event) {
     let whereToOpenSerp = this.#whereToOpenSerp(event);
     let searchString = this.#getSearchString();
-    if (!searchString && !event.shiftKey && whereToOpenSerp == "current") {
+    if (!event.shiftKey && whereToOpenSerp == "current") {
       // Go into searchmode.
       this.closePanel();
-      this.#input.search("", {
+      this.#input.search(searchString, {
         searchEngine,
         searchModeEntry: "searchbutton",
       });

@@ -13,7 +13,7 @@ index 9deb05c2..0a6d5f22 100644
     after changing this - otherwise, SEGVs may ensue. */
 
 -#define MAP_SIZE_POW2 16
-+#define MAP_SIZE_POW2 23
++#define MAP_SIZE_POW2 24
 
  /* Do not change this unless you really know what you are doing. */
 

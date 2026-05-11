@@ -430,7 +430,7 @@ ComputeSegAnglesAndCorrectRadii(const Point& aSegStart, const Point& aSegEnd,
   float ry = std::abs(aRy);
 
   // F.6.5.1:
-  const float angle = static_cast<float>(aAngle * M_PI / 180.0);
+  const float angle = static_cast<float>(aAngle * kRadPerDegree);
   double x1p = cos(angle) * (aSegStart.x - aSegEnd.x) / 2.0 +
                sin(angle) * (aSegStart.y - aSegEnd.y) / 2.0;
   double y1p = -sin(angle) * (aSegStart.x - aSegEnd.x) / 2.0 +

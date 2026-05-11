@@ -261,7 +261,7 @@ export class TouchBarHelper {
     if (!TouchBarHelper.window) {
       return "";
     }
-    let tabbrowser = TouchBarHelper.window.documentGlobal.gBrowser;
+    let tabbrowser = TouchBarHelper.window.gBrowser;
     let activeTitle;
     if (tabbrowser) {
       activeTitle = tabbrowser.selectedBrowser.contentTitle;

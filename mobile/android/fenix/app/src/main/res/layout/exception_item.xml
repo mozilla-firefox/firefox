@@ -39,7 +39,7 @@
         android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
         android:singleLine="true"
         android:textAppearance="?android:attr/textAppearanceListItem"
-        android:textColor="?attr/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/delete_exception"
         app:layout_constraintStart_toEndOf="@+id/favicon_image"

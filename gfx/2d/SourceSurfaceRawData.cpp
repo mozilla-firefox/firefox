@@ -38,7 +38,8 @@ Atomic<size_t> SourceSurfaceAlignedRawDataReporter::sTotalDataBytes(0);
 
 /* static */
 void SourceSurfaceAlignedRawData::RegisterMemoryReporter() {
-  RegisterStrongMemoryReporter(new SourceSurfaceAlignedRawDataReporter);
+  RegisterStrongMemoryReporter(
+      MakeAndAddRef<SourceSurfaceAlignedRawDataReporter>());
 }
 
 void SourceSurfaceRawData::InitWrappingData(

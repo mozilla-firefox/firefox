@@ -1,6 +1,6 @@
 load(libdir + "asserts.js");
 
-let {object: target, transplant} = transplantableObject(options);
+let {object: target, transplant} = transplantableObject();
 let otherGlobal = newGlobal({newCompartment: true});
 
 var returnValue = 42;

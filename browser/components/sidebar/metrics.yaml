@@ -748,3 +748,113 @@ pinned_tabs:
       layout:
         type: string
         description: Either "horizontal" or "vertical".
+browser.ui.interaction:
+  sidebar_bookmarks:
+    type: labeled_counter
+    description: >
+      Records the count of actions taken within the sidebar Bookmarks panel.
+    bugs:
+      - https://bugzil.la/2032239
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D296255
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - jsudiaman@mozilla.com
+    expires: never
+    no_lint:
+      - COMMON_PREFIX
+    labels:
+      - search
+      - open_in_new_tab
+      - open_in_new_container_tab
+      - open_in_new_window
+      - open_in_private_window
+      - edit_bookmark_confirmed
+      - edit_bookmark_cancelled
+      - cut_bookmark
+      - copy_bookmark_url
+      - add_bookmark_confirmed
+      - add_bookmark_cancelled
+      - add_bookmark_folder_confirmed
+      - add_bookmark_folder_cancelled
+      - rename_bookmark_folder_confirmed
+      - rename_bookmark_folder_cancelled
+      - add_separator
+      - open_all_bookmarks
+      - sort_bookmarks_by_name
+
+  sidebar_synced_tabs:
+    type: labeled_counter
+    description: >
+      Records the count of actions taken within the sidebar Synced Tabs panel.
+    bugs:
+      - https://bugzil.la/2032239
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D296255
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - jsudiaman@mozilla.com
+    expires: never
+    no_lint:
+      - COMMON_PREFIX
+    labels:
+      - search
+      - open_in_new_window
+      - open_in_private_window
+      - close_tab_on_connected_device
+      - bookmark_tab_confirmed
+      - bookmark_tab_cancelled
+      - copy_link
+
+  sidebar_history:
+    type: labeled_counter
+    description: >
+      Records the count of actions taken within the sidebar History panel.
+    bugs:
+      - https://bugzil.la/2032239
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D296255
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - jsudiaman@mozilla.com
+    expires: never
+    no_lint:
+      - COMMON_PREFIX
+    labels:
+      - search
+      - open_in_new_tab
+      - open_in_new_container_tab
+      - open_in_new_window
+      - open_in_private_window
+      - delete_from_history
+      - clear_all_website_data_confirmed
+      - clear_all_website_data_cancelled
+      - clear_history_confirmed
+      - clear_history_cancelled
+      - bookmark_tab_confirmed
+      - bookmark_tab_cancelled
+      - copy_link
+
+  sidebar_sort_history:
+    type: event
+    description: >
+      Records when a user applies a sort to the sidebar History panel.
+    bugs:
+      - https://bugzil.la/2032239
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D296255
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - jsudiaman@mozilla.com
+    expires: never
+    no_lint:
+      - COMMON_PREFIX
+    extra_keys:
+      sort_type:
+        type: string
+        description: >
+          One of "date", "site", "date_and_site", "last_visited".

@@ -830,6 +830,28 @@ features:
         type: String
         default: ""
 
+  networking-happy-eyeballs:
+    description: "Networking (Necko) Happy Eyeballs V3 configuration"
+    variables:
+      enabled:
+        description: Whether to enable the Happy Eyeballs v3 algorithm for connection establishment
+        type: Option<Boolean>
+        gecko-pref:
+          pref: "network.http.happy_eyeballs_enabled"
+          branch: "default"
+      resolution-delay:
+        description: Time in ms to wait after the first DNS response before starting connections
+        type: Option<Int>
+        gecko-pref:
+          pref: "network.http.happy_eyeballs_resolution_delay"
+          branch: "default"
+      connection-attempt-delay:
+        description: Time in ms between successive connection attempts
+        type: Option<Int>
+        gecko-pref:
+          pref: "network.http.happy_eyeballs_connection_attempt_delay"
+          branch: "default"
+
   pki:
     description: Certificate verification configuration
     variables:

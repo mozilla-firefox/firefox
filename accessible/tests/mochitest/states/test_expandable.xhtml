@@ -24,46 +24,53 @@
   <script type="application/javascript"
           src="../states.js" />
   <script type="application/javascript"
-          src="../events.js" />
+          src="../promisified-events.js" />
 
   <script type="application/javascript">
   <![CDATA[
-    //gA11yEventDumpToConsole = true; // debuggin
+    async function doTest() {
+      const menulistNode = getNode("menulist");
 
-    var gQueue = null;
-    function doTest()
-    {
-      gQueue = new eventQueue();
+      let expanded = waitForStateChange("menulist", STATE_EXPANDED, true);
+      menulistNode.focus();
+      synthesizeKey("VK_DOWN", { altKey: true });
+      await expanded;
 
-      gQueue.push(new openCombobox("menulist"));
-      gQueue.push(new closeCombobox("menulist"));
+      todo(
+        false,
+        "Autocompletes don't fire expanded state change events " +
+          "when popup open. See bug 688480!"
+      );
+      //expanded = waitForStateChange("autocomplete", STATE_EXPANDED, true);
+      //getNode("autocomplete").focus();
+      //synthesizeKey("VK_DOWN", { altKey: true });
+      //await expanded;
 
-      todo(false, "Autocompletes don't fire expanded state change events when popup open. See bug 688480!");
-      //gQueue.push(new openCombobox("autocomplete"));
-      //gQueue.push(new closeCombobox("autocomplete"));
+      //let collapsed = waitForStateChange(
+      //  "autocomplete", STATE_EXPANDED, false);
+      //synthesizeKey("KEY_Escape");
+      //await collapsed;
 
       // XXX: searchbar doesn't fire state change events because accessible
       // parent of combobox_list accessible is pushbutton accessible.
-      //var searchbar = document.getElementById("searchbar");
-      //gQueue.push(new openHideCombobox(searchbar, true));
-      //gQueue.push(new openHideCombobox(searchbar, false));
       todo(false, "Enable states test for XUL searchbar widget!");
 
-      gQueue.onFinish = function()
-      {
-        // unregister 'test-a11y-search' autocomplete search
-        shutdownAutoComplete();
-      }
+      let collapsed = waitForStateChange("menulist", STATE_EXPANDED, false);
+      synthesizeKey("KEY_Escape");
+      await collapsed;
 
-      gQueue.invoke(); // Will call SimpleTest.finish();
+      shutdownAutoComplete();
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();
 
     // Register 'test-a11y-search' autocomplete search.
     // XPFE AutoComplete needs to register early.
-    initAutoComplete([ "hello", "hi" ],
-                     [ "Beep beep'm beep beep yeah", "Baby you can drive my car" ]);
+    initAutoComplete(
+      ["hello", "hi"],
+      ["Beep beep'm beep beep yeah", "Baby you can drive my car"]
+    );
 
     addA11yLoadEvent(doTest);
   ]]>

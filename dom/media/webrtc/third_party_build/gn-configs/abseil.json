@@ -8,7 +8,7 @@
     "COMPILE_FLAGS": {
       "WARNINGS_AS_ERRORS": []
     },
-    "FINAL_LIBRARY": "xul"
+    "FINAL_LIBRARY": "abseil"
   },
   "mozilla_flags": ["-fobjc-arc", "-mavx2", "-mfma", "-mfpu=neon", "-msse2"],
   "write_mozbuild_variables": {

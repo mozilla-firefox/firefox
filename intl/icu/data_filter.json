@@ -177,6 +177,7 @@
                 "-/ExemplarCharactersPunctuation",
                 "-/MoreInformation",
                 "-/NumberElements/minimalPairs",
+                "-/calendar/islamic-rgsa",
                 "-/characterLabel",
                 "-/delimiters",
                 "-/fields/mon",
@@ -221,7 +222,10 @@
                 "+/Variants",
                 "+/Types/calendar",
                 "+/Types%short/calendar",
-                "+/localeDisplayPattern"
+                "+/localeDisplayPattern",
+
+                "-/Types/calendar/islamic-rgsa",
+                "-/Types/calendar%core/islamic-rgsa"
             ]
         },
         {

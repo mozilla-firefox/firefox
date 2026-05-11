@@ -76,9 +76,9 @@ add_task(async function history_only_menu_checking() {
   await sleep(2000);
   await setupFormHistory();
 
+  const promise = expectPopup();
   await setInput("#cc-exp-year", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntries(["2023"], false);
 });
 
@@ -86,9 +86,9 @@ add_task(async function history_only_menu_checking() {
 add_task(async function all_saved_fields_less_than_threshold() {
   await addCreditCard(reducedMockRecord.cc);
 
+  const promise = expectPopup();
   await setInput("#cc-name", "");
-  await expectPopup();
-  synthesizeKey("KEY_ArrowDown");
+  await promise;
   checkMenuEntriesComment([reducedMockRecord].map(patchRecordCCNumber).map(({ cc, expected }) => JSON.stringify({
     primary: cc["cc-name"],
     secondary: replaceStars(cc.ccNumberFmt),
@@ -103,9 +103,9 @@ add_task(async function all_saved_fields_less_than_threshold() {
 add_task(async function check_menu_when_both_existed() {
   await setupCreditCardStorage();
 
+  let promise = expectPopup();
   await setInput("#cc-number", "");
-  await expectPopup();
-  synthesizeKey("KEY_ArrowDown");
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(patchRecordCCNumber).map(({ cc, expected }) => JSON.stringify({
     primary: replaceStars(cc.ccNumberFmt),
     secondary: cc["cc-name"].toString(),
@@ -113,9 +113,9 @@ add_task(async function check_menu_when_both_existed() {
     image: expected.image,
   })));
 
+  promise = expectPopup();
   await setInput("#cc-name", "");
-  await expectPopup();
-  synthesizeKey("KEY_ArrowDown");
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(patchRecordCCNumber).map(({ cc, expected }) => JSON.stringify({
     primary: cc["cc-name"].toString(),
     secondary: replaceStars(cc.ccNumberFmt),
@@ -123,9 +123,9 @@ add_task(async function check_menu_when_both_existed() {
     image: expected.image,
   })));
 
+  promise = expectPopup();
   await setInput("#cc-exp-year", "");
-  await expectPopup();
-  synthesizeKey("KEY_ArrowDown");
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(patchRecordCCNumber).map(({ cc, expected }) => JSON.stringify({
     primary: cc["cc-exp-year"].toString(),
     secondary: replaceStars(cc.ccNumberFmt),
@@ -133,9 +133,9 @@ add_task(async function check_menu_when_both_existed() {
     image: expected.image,
   })));
 
+  promise = expectPopup();
   await setInput("#cc-exp-month", "");
-  await expectPopup();
-  synthesizeKey("KEY_ArrowDown");
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(patchRecordCCNumber).map(({ cc, expected }) => JSON.stringify({
     primary: cc["cc-exp-month"].toString(),
     secondary: replaceStars(cc.ccNumberFmt),
@@ -150,9 +150,9 @@ add_task(async function check_menu_when_both_existed() {
 add_task(async function check_fallback_for_mismatched_field() {
   await addCreditCard(reducedMockRecord.cc);
 
+  const promise = expectPopup();
   await setInput("#cc-exp-year", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntries(["2023"], false);
 
   await cleanUpCreditCards();
@@ -166,9 +166,9 @@ add_task(async function check_search_result_for_pref_off() {
     set: [["extensions.formautofill.creditCards.enabled", false]],
   });
 
+  const promise = expectPopup();
   await setInput("#cc-name", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntries(["John Smith"], false);
 
   await SpecialPowers.popPrefEnv();
@@ -185,8 +185,6 @@ add_task(async function check_fields_after_form_autofill() {
   }
 
   await setInput("#cc-exp-year", 202);
-
-  synthesizeKey("KEY_ArrowDown");
   // The popup doesn't auto-show on focus because the field isn't empty
   await expectPopup();
   checkMenuEntriesComment(MOCK_STORAGE.slice(1).map(patchRecordCCNumber).map(({ cc, expected }) => JSON.stringify({
@@ -218,7 +216,6 @@ add_task(async function check_fallback_after_form_autofill() {
   const KEY = "J";
   const FIELD = "cc-name";
   await setInput(`#${FIELD}`, KEY, true);
-  synthesizeKey("KEY_ArrowDown");
   await expectPopup();
   checkMenuEntriesComment(MOCK_STORAGE.filter(record => record.cc["cc-name"].startsWith(KEY)).map(patchRecordCCNumber).map(({ cc, expected }) => JSON.stringify({
     primary: cc["cc-name"],
@@ -234,8 +231,9 @@ add_task(async function check_cc_popup_on_field_blank() {
     return;
   }
 
+  const promise = expectPopup();
   await setInput("#cc-name", "", true);
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(patchRecordCCNumber).map(({ cc, expected }) => JSON.stringify({
     primary: cc["cc-name"],
     secondary: replaceStars(cc.ccNumberFmt),
@@ -253,9 +251,9 @@ add_task(async function check_form_autofill_resume() {
   document.querySelector("#cc-name").blur();
   document.querySelector("#form1").reset();
 
+  const promise = expectPopup();
   await setInput("#cc-name", "");
-  synthesizeKey("KEY_ArrowDown");
-  await expectPopup();
+  await promise;
   checkMenuEntriesComment(MOCK_STORAGE.map(patchRecordCCNumber).map(({ cc, expected }) => JSON.stringify({
     primary: cc["cc-name"],
     secondary: replaceStars(cc.ccNumberFmt),

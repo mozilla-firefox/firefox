@@ -36,7 +36,7 @@ export const ResetPBMPanel = {
     // Populate _widgetConfig during init to defer (lazy) CustomizableUI import.
     this._widgetConfig ??= {
       id: "reset-pbm-toolbar-button",
-      l10nId: "reset-pbm-toolbar-button",
+      l10nId: "reset-pbm-toolbar-button2",
       type: "view",
       viewId: "reset-pbm-panel",
       defaultArea: lazy.CustomizableUI.AREA_NAVBAR,

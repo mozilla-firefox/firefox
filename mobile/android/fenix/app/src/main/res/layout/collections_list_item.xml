@@ -56,7 +56,7 @@
             android:ellipsize="end"
             android:maxLines="2"
             android:minLines="2"
-            android:textColor="?attr/textSecondary"
+            android:textColor="?attr/colorOnSurfaceVariant"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="@+id/collection_item"
             app:layout_constraintStart_toStartOf="@+id/collection_item"

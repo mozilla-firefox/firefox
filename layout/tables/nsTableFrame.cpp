@@ -4127,7 +4127,7 @@ bool nsTableFrame::BCRecalcNeeded(ComputedStyle* aOldComputedStyle,
     // However the bc painting code tries to maximize the drawn border segments
     // so it stores in the cellmap where a new border segment starts and this
     // introduces a unwanted cellmap data dependence on color
-    nsCOMPtr<nsIRunnable> evt = new nsDelayedCalcBCBorders(this);
+    nsCOMPtr<nsIRunnable> evt = MakeAndAddRef<nsDelayedCalcBCBorders>(this);
     nsresult rv = GetContent()->OwnerDoc()->Dispatch(evt.forget());
     return NS_SUCCEEDED(rv);
   }

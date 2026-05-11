@@ -59,7 +59,7 @@ using namespace js;
 using namespace js::temporal;
 
 void js::temporal::TimeZoneValue::trace(JSTracer* trc) {
-  TraceNullableRoot(trc, &object_, "TimeZoneValue::object");
+  TraceRoot(trc, &object_, "TimeZoneValue::object");
 }
 
 /**

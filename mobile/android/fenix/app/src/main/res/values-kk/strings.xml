@@ -3214,6 +3214,13 @@
   <string name="ip_protection_onboarding_body_link">қосымша қорғаныспен шолыңыз</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Қазір емес</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">VPN-ге қосылу мүмкін болмады. Бірнеше минуттан кейін қайталап көріңіз.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">%1$d ГБ VPN деректері пайдаланылды. Кіру мүмкіндігі келесі айда қалпына келтіріледі.</string>
   <!--
     Autofill
 
@@ -4631,6 +4638,14 @@
   <string name="sports_widget_team_followed_title" tools:ignore="UnusedResources">Жазылған: \n%s</string>
   <!-- Description shown on the sports widget immediately after the user has followed a team -->
   <string name="sports_widget_team_followed_description" tools:ignore="UnusedResources">Турнир жақындаған сайын матч туралы ақпаратты тексеріп отырыңыз.</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">Бірінші тайм</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">Екінші тайм</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_title" tools:ignore="UnusedResources">Сіз офлайн режимде сияқтысыз.</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description" tools:ignore="UnusedResources">Интернет байланысын тексеріп, әрекетті қайталаңыз.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--

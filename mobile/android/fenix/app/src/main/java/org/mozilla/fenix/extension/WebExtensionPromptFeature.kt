@@ -42,6 +42,7 @@ import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.pixelSizeFor
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.theme.ThemeManager
+import com.google.android.material.R as materialR
 import mozilla.components.feature.addons.R as addonsR
 
 /**
@@ -303,7 +304,7 @@ class WebExtensionPromptFeature(
                 ),
                 confirmButtonRadius = context.pixelSizeFor(R.dimen.tab_corner_radius).toFloat(),
                 learnMoreLinkTextColor = ThemeManager.resolveAttribute(
-                    R.attr.textAccent,
+                    materialR.attr.colorTertiary,
                     context,
                 ),
             ),

@@ -42,7 +42,7 @@ void ImageMemoryReporter::InitForWebRender() {
   MOZ_ASSERT(XRE_IsParentProcess() || XRE_IsGPUProcess());
   if (!sWrReporter) {
     sWrReporter = new WebRenderReporter();
-    RegisterStrongMemoryReporter(sWrReporter);
+    RegisterStrongMemoryReporter(do_AddRef(sWrReporter));
   }
 }
 

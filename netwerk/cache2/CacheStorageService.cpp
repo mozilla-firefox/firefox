@@ -109,7 +109,7 @@ CacheStorageService::CacheStorageService() {
   sSelf = this;
   sGlobalEntryTables = new GlobalEntryTables();
 
-  RegisterStrongMemoryReporter(this);
+  RegisterStrongMemoryReporter(do_AddRef(this));
 }
 
 CacheStorageService::~CacheStorageService() {

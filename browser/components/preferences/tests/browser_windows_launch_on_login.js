@@ -45,6 +45,8 @@ add_task(async function test_check_uncheck_checkbox() {
     value: { enabled: true },
   });
   await WindowsLaunchOnLogin.withLaunchOnLoginRegistryKey(async wrk => {
+    Services.fog.testResetFOG();
+
     // Open preferences to general pane
     await openPreferencesViaOpenPreferencesAPI("paneGeneral", {
       leaveOpen: true,
@@ -70,8 +72,24 @@ add_task(async function test_check_uncheck_checkbox() {
       "Key exists"
     );
 
+    let toggleEvents = Glean.launchOnLogin.userToggle.testGetValue();
+    Assert.equal(toggleEvents.length, 1, "One toggle event after checking");
+    Assert.equal(
+      toggleEvents[0].extra.enabled,
+      "true",
+      "Toggle event reports enabled=true"
+    );
+
     launchOnLoginCheckbox.click();
     ok(!launchOnLoginCheckbox.checked, "Autostart checkbox unchecked");
+
+    toggleEvents = Glean.launchOnLogin.userToggle.testGetValue();
+    Assert.equal(toggleEvents.length, 2, "Two toggle events after unchecking");
+    Assert.equal(
+      toggleEvents[1].extra.enabled,
+      "false",
+      "Toggle event reports enabled=false"
+    );
 
     await TestUtils.waitForCondition(
       () => !wrk.hasValue(WindowsLaunchOnLogin.getLaunchOnLoginRegistryName()),

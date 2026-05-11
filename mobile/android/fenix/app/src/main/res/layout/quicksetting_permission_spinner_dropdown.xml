@@ -13,4 +13,4 @@
     android:paddingStart="15dp"
     android:paddingEnd="15dp"
     tools:text="Allow Audible"
-    android:textColor="?textPrimary" />
+    android:textColor="?attr/colorOnSurface" />

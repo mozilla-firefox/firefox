@@ -43,6 +43,11 @@ namespace js {
 
 class JS_PUBLIC_API GenericPrinter;
 
+namespace gc {
+template <uint32_t>
+class MarkingTracerT;
+}  // namespace gc
+
 namespace frontend {
 class ScopeStencil;
 struct ScopeStencilRef;
@@ -314,7 +319,8 @@ class WrappedPtrOperations<Scope*, Wrapper> {
 // The base class of all Scopes.
 //
 class Scope : public gc::TenuredCellWithNonGCPointer<BaseScopeData> {
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class frontend::ScopeStencil;
   friend class js::AbstractBindingIter<JSAtom>;
   friend class js::frontend::RuntimeScopeBindingCache;
@@ -507,7 +513,8 @@ struct alignas(ScopeDataAlignBytes) RuntimeScopeData
 class LexicalScope : public Scope {
   friend class Scope;
   friend class AbstractBindingIter<JSAtom>;
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class frontend::ScopeStencil;
 
  public:
@@ -584,7 +591,8 @@ inline bool Scope::is<LexicalScope>() const {
 class ClassBodyScope : public Scope {
   friend class Scope;
   friend class AbstractBindingIter<JSAtom>;
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class frontend::ScopeStencil;
   friend class AbstractScopePtr;
 
@@ -650,7 +658,8 @@ class ClassBodyScope : public Scope {
 // Corresponds to CallObject on environment chain.
 //
 class FunctionScope : public Scope {
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class AbstractBindingIter<JSAtom>;
   friend class AbstractPositionalFormalParameterIter<JSAtom>;
   friend class Scope;
@@ -767,7 +776,8 @@ class FunctionScope : public Scope {
 // Corresponds to VarEnvironmentObject on environment chain.
 //
 class VarScope : public Scope {
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class AbstractBindingIter<JSAtom>;
   friend class Scope;
   friend class frontend::ScopeStencil;
@@ -835,7 +845,8 @@ inline bool Scope::is<VarScope>() const {
 class GlobalScope : public Scope {
   friend class Scope;
   friend class AbstractBindingIter<JSAtom>;
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
 
  public:
   struct SlotInfo {
@@ -909,7 +920,8 @@ class WithScope : public Scope {
 class EvalScope : public Scope {
   friend class Scope;
   friend class AbstractBindingIter<JSAtom>;
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class frontend::ScopeStencil;
 
  public:
@@ -968,7 +980,8 @@ inline bool Scope::is<EvalScope>() const {
 // Corresponds to a ModuleEnvironmentObject on the environment chain.
 //
 class ModuleScope : public Scope {
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class AbstractBindingIter<JSAtom>;
   friend class Scope;
   friend class AbstractScopePtr;
@@ -1040,7 +1053,8 @@ class ModuleScope : public Scope {
 class WasmInstanceScope : public Scope {
   friend class AbstractBindingIter<JSAtom>;
   friend class Scope;
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class AbstractScopePtr;
   static const ScopeKind classScopeKind_ = ScopeKind::WasmInstance;
 
@@ -1103,7 +1117,8 @@ class WasmInstanceScope : public Scope {
 class WasmFunctionScope : public Scope {
   friend class AbstractBindingIter<JSAtom>;
   friend class Scope;
-  friend class GCMarker;
+  template <uint32_t>
+  friend class gc::MarkingTracerT;
   friend class AbstractScopePtr;
   static const ScopeKind classScopeKind_ = ScopeKind::WasmFunction;
 

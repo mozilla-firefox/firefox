@@ -567,6 +567,7 @@ let JSWINDOWACTORS = {
       "about:deleteprofile",
       "about:newprofile",
       "about:opentabs",
+      "about:aichatcontent",
     ],
   },
 

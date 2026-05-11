@@ -39,6 +39,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "resource://gre/modules/shared/FormAutofillSection.sys.mjs",
   FormAutofillCreditCardSection:
     "resource://gre/modules/shared/FormAutofillSection.sys.mjs",
+  FormAutofillML: "resource://gre/modules/shared/FormAutofillML.sys.mjs",
   FormAutofillHeuristics:
     "resource://gre/modules/shared/FormAutofillHeuristics.sys.mjs",
   FormAutofillSection:
@@ -90,6 +91,7 @@ export let FormAutofillStatus = {
     }
     this._initialized = true;
 
+    Services.obs.addObserver(this, "passwordsAutofill-pane-loaded");
     Services.obs.addObserver(this, "privacy-pane-loaded");
 
     // Observing the pref and storage changes
@@ -118,6 +120,7 @@ export let FormAutofillStatus = {
     this._active = null;
 
     Services.obs.removeObserver(this, "privacy-pane-loaded");
+    Services.obs.removeObserver(this, "passwordsAutofill-pane-loaded");
     Services.prefs.removeObserver(ENABLED_AUTOFILL_ADDRESSES_PREF, this);
     Services.obs.removeObserver(this, "formautofill-storage-changed");
     Services.wm.removeListener(this);
@@ -210,9 +213,22 @@ export let FormAutofillStatus = {
 
     switch (topic) {
       case "privacy-pane-loaded": {
+        if (
+          !Services.prefs.getBoolPref(
+            "browser.settings-redesign.enabled",
+            false
+          )
+        ) {
+          let formAutofillPreferences = new lazy.FormAutofillPreferences();
+          let document = subject.document;
+          formAutofillPreferences.init(document);
+        }
+        break;
+      }
+
+      case "passwordsAutofill-pane-loaded": {
         let formAutofillPreferences = new lazy.FormAutofillPreferences();
-        let document = subject.document;
-        formAutofillPreferences.init(document);
+        formAutofillPreferences.init(subject.document);
         break;
       }
 
@@ -539,6 +555,19 @@ export class FormAutofillParent extends JSWindowActorParent {
     const sections = FormAutofillParent.parseAndClassifyFields(fieldDetails);
 
     this.sectionsByRootId.set(rootElementId, sections);
+
+    // This should really happen before parseAndClassifyFields, but the
+    // asyncronous nature of the ML call means that multiple calls to add
+    // to this.sectionsByRootId will be performed in a non-fixed order,
+    // resulting in test failures. This will be something to fix up later
+    // and it doesn't matter right now until we get to a more final form of
+    // what will happen here.
+    if (FormAutofillUtils.useMLInference) {
+      await lazy.FormAutofillML.detectFields(
+        topBC.topChromeWindow,
+        fieldDetails
+      );
+    }
 
     // Note that 'onFieldsDetected' is not only called when a form is detected,
     // but also called when the elements in a form are changed. When the elements

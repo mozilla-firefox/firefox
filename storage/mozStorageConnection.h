@@ -250,13 +250,17 @@ class Connection final : public mozIStorageConnection,
    * is disabled. `BEGIN` disables autocommit mode, and `COMMIT`, `ROLLBACK`, or
    * an automatic rollback re-enables it.
    */
-  inline bool transactionInProgress(const SQLiteMutexAutoLock& aProofOfLock) {
-    return !getAutocommit();
-  }
+  // aNativeConnection overload is the canonical implementation; the no-arg
+  // overload delegates to it using the shared mDBConn. Async callers pass
+  // their own captured native connection pointer to avoid racing with
+  // AsyncClose() which can null mDBConn on the main thread.
   inline bool transactionInProgress(const SQLiteMutexAutoLock& aProofOfLock,
                                     sqlite3* aNativeConnection) {
     return aNativeConnection &&
            !static_cast<bool>(::sqlite3_get_autocommit(aNativeConnection));
+  }
+  inline bool transactionInProgress(const SQLiteMutexAutoLock& aProofOfLock) {
+    return transactionInProgress(aProofOfLock, mDBConn);
   }
 
   /**

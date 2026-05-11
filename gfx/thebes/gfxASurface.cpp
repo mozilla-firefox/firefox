@@ -404,7 +404,7 @@ void gfxASurface::RecordMemoryUsedForSurfaceType(gfxSurfaceType aType,
 
   static bool registered = false;
   if (!registered) {
-    RegisterStrongMemoryReporter(new SurfaceMemoryReporter());
+    RegisterStrongMemoryReporter(MakeAndAddRef<SurfaceMemoryReporter>());
     registered = true;
   }
 

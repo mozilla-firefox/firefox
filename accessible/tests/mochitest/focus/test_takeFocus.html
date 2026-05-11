@@ -15,47 +15,33 @@
   <script type="application/javascript"
           src="../states.js"></script>
   <script type="application/javascript"
-          src="../events.js"></script>
+          src="../promisified-events.js"></script>
 
   <script type="application/javascript">
-    // //////////////////////////////////////////////////////////////////////////
-    // Invokers
-
-    function takeFocusInvoker(aID) {
-      this.accessible = getAccessible(aID);
-
-      this.eventSeq = [ new focusChecker(this.accessible) ];
-
-      this.invoke = function takeFocusInvoker_invoke() {
-        this.accessible.takeFocus();
-      };
-
-      this.getID = function takeFocusInvoker_getID() {
-        return "takeFocus for " + prettyName(aID);
-      };
-    }
-
-    // //////////////////////////////////////////////////////////////////////////
-    // Test
-
     // gA11yEventDumpToConsole = true; // debug stuff
 
-    var gQueue = null;
-    function doTest() {
+    async function takeFocusInvoker(aID) {
+      let accessible = getAccessible(aID);
+      let p = waitForEvent(EVENT_FOCUS, accessible);
+      accessible.takeFocus();
+      let evt = await p;
+      testStates(evt.accessible, STATE_FOCUSED);
+    }
+
+    async function doTest() {
       disableLogging(); // from test_focusedChild
-      gQueue = new eventQueue();
 
-      gQueue.push(new takeFocusInvoker("aria-link"));
-      gQueue.push(new takeFocusInvoker("aria-link2"));
-      gQueue.push(new takeFocusInvoker("link"));
-      gQueue.push(new takeFocusInvoker(document));
-      gQueue.push(new takeFocusInvoker("lb_item2"));
-      gQueue.push(new takeFocusInvoker(document));
-      gQueue.push(new takeFocusInvoker("lb_item3.2"));
-      gQueue.push(new takeFocusInvoker(document));
-      gQueue.push(new takeFocusInvoker("lb_item3.1"));
+      await takeFocusInvoker("aria-link");
+      await takeFocusInvoker("aria-link2");
+      await takeFocusInvoker("link");
+      await takeFocusInvoker(document);
+      await takeFocusInvoker("lb_item2");
+      await takeFocusInvoker(document);
+      await takeFocusInvoker("lb_item3.2");
+      await takeFocusInvoker(document);
+      await takeFocusInvoker("lb_item3.1");
 
-      gQueue.invoke(); // Will call SimpleTest.finish();
+      SimpleTest.finish();
     }
 
     SimpleTest.waitForExplicitFinish();

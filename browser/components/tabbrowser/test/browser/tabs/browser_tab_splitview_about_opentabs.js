@@ -972,3 +972,78 @@ add_task(
     }
   }
 );
+
+add_task(async function test_about_opentabs_cannot_be_pinned() {
+  const tab1 = await addTab();
+  const tab2 = await addTab();
+
+  EventUtils.synthesizeMouseAtCenter(tab1, {});
+
+  let openTabsPromise = BrowserTestUtils.waitForNewTab(
+    gBrowser,
+    "about:opentabs"
+  );
+  let splitViewCreated = BrowserTestUtils.waitForEvent(
+    gBrowser.tabContainer,
+    "SplitViewCreated"
+  );
+  await withTabMenu(tab1, async moveTabToNewSplitViewItem => {
+    await BrowserTestUtils.waitForMutationCondition(
+      moveTabToNewSplitViewItem,
+      { attributes: true },
+      () =>
+        !moveTabToNewSplitViewItem.hidden &&
+        !moveTabToNewSplitViewItem.disabled,
+      "moveTabToNewSplitViewItem is visible and not disabled"
+    );
+
+    info("Click menu option to add new split view");
+    moveTabToNewSplitViewItem.click();
+    await splitViewCreated;
+    await openTabsPromise;
+  });
+
+  let aboutOpenTabsTab = gBrowser.selectedTab;
+  Assert.equal(
+    aboutOpenTabsTab.linkedBrowser.currentURI.spec,
+    "about:opentabs",
+    "about:opentabs is the selected tab"
+  );
+
+  let menuItemPinTab = document.getElementById("context_pinTab");
+  let menuItemPinSelectedTabs = document.getElementById(
+    "context_pinSelectedTabs"
+  );
+
+  // Right-click the about:opentabs tab on its own.
+  updateTabContextMenu(aboutOpenTabsTab);
+  Assert.ok(
+    menuItemPinTab.hidden,
+    "Pin Tab is hidden when right-clicking the about:opentabs tab"
+  );
+
+  // Multi-select the about:opentabs tab alongside another tab and confirm
+  // Pin Selected Tabs is hidden.
+  await triggerClickOn(tab2, { ctrlKey: true });
+  Assert.ok(aboutOpenTabsTab.multiselected, "about:opentabs is multiselected");
+  Assert.ok(tab2.multiselected, "tab2 is multiselected");
+
+  updateTabContextMenu(aboutOpenTabsTab);
+  Assert.ok(
+    menuItemPinSelectedTabs.hidden,
+    "Pin Selected Tabs is hidden when about:opentabs is in the selection"
+  );
+
+  // Right-clicking a different multiselected tab should still hide the item
+  // because the selection contains about:opentabs.
+  updateTabContextMenu(tab2);
+  Assert.ok(
+    menuItemPinSelectedTabs.hidden,
+    "Pin Selected Tabs is hidden when right-clicking a sibling of about:opentabs"
+  );
+
+  tab1.splitview.unsplitTabs();
+  while (gBrowser.tabs.length > 1) {
+    BrowserTestUtils.removeTab(gBrowser.tabs.at(-1));
+  }
+});

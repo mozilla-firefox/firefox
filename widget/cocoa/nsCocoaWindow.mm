@@ -6,6 +6,9 @@
 
 #include "nsISupportsPrimitives.h"
 #include "nsArrayUtils.h"
+#include "nsMenuPopupFrame.h"
+#include "nsDeviceContext.h"
+#include "mozilla/dom/XULPopupElement.h"
 #include "MOZDynamicCursor.h"
 #include "nsIAppStartup.h"
 #include "nsIDOMWindowUtils.h"
@@ -502,7 +505,7 @@ nsresult nsCocoaWindow::SynthesizeNativeMouseEvent(
 
 nsresult nsCocoaWindow::SynthesizeNativeMouseMove(
     LayoutDeviceIntPoint aPoint, nsISynthesizedEventCallback* aCallback) {
-  if (IsNativePointerLocked()) {
+  if (GetNativePointerLockedMode()) {
     AutoSynthesizedEventCallbackNotifier notifier(aCallback);
     sNativeLockedPoint = aPoint - WidgetToScreenOffset();
 
@@ -2890,14 +2893,37 @@ static gfx::IntPoint GetIntegerDeltaForEvent(NSEvent* aEvent) {
   // If the pointer is locked, we need to track the reference point ourselves,
   // because EventStateManager uses the mouse event's mRefPoint to determine
   // whether the pointer needs to be re-centered.
-  if (nsCocoaWindow::IsNativePointerLocked()) {
+  if (const auto& nativePointerLockMode =
+          nsCocoaWindow::GetNativePointerLockedMode()) {
     outGeckoEvent->mRefPoint = nsCocoaWindow::GetNativeLockedPoint();
     WidgetMouseEvent* widgetMouseEvent = outGeckoEvent->AsMouseEvent();
     if (widgetMouseEvent && widgetMouseEvent->mMessage == eMouseMove) {
-      // XXX maybe we would like to ignore the the mousemove event with zero
-      // movement, since they don't cause any chanage of the pointer?
-      widgetMouseEvent->mMovement = Some(LayoutDeviceIntPoint(
-          int32_t(aMouseEvent.deltaX), int32_t(aMouseEvent.deltaY)));
+      Maybe<LayoutDeviceIntPoint> movement;
+      // If pointer lock is active with |unadjustedMovement: true|, source
+      // unaccelerated mouse delta directly from the underlying CGEvent and
+      // stash it on the WidgetMouseEvent. MouseEvent::movementX/Y will then
+      // return this value verbatim instead of computing a delta from the warped
+      // cursor position, which carries OS mouse acceleration.
+      // https://w3c.github.io/pointerlock/#pointerlockoptions-dictionary
+      if (*nativePointerLockMode ==
+          nsIWidget::NativePointerLockMode::Unadjusted) {
+        if (CGEventRef cgEvent = [aMouseEvent CGEvent]) {
+          movement.emplace(
+              int32_t(CGEventGetIntegerValueField(
+                  cgEvent, kCGEventUnacceleratedPointerMovementX)),
+              int32_t(CGEventGetIntegerValueField(
+                  cgEvent, kCGEventUnacceleratedPointerMovementY)));
+        }
+      }
+
+      // Fallback to use the deltaX/Y if we don't request unadjusted movement or
+      // fail to get the unadjusted movement from the CGEvent.
+      if (!movement) {
+        movement.emplace(int32_t(aMouseEvent.deltaX),
+                         int32_t(aMouseEvent.deltaY));
+      }
+
+      widgetMouseEvent->mMovement = std::move(movement);
     }
   } else {
     outGeckoEvent->mRefPoint = [self convertWindowCoordinates:locationInWindow];
@@ -5067,6 +5093,11 @@ nsresult nsCocoaWindow::CreateNativeWindow(const NSRect& aRect,
     mWindow.backgroundColor = NSColor.clearColor;
     mWindow.opaque = NO;
 
+    // Enable NSPopover for panel popup types when preference is enabled
+    if ([mWindow isKindOfClass:[PopupWindow class]] && ShouldUseNSPopover()) {
+      [(PopupWindow*)mWindow setAllowPopover];
+    }
+
     // When multiple spaces are in use and the browser is assigned to a
     // particular space, override the "Assign To" space and display popups on
     // the active space. Does not work with multiple displays. See
@@ -5272,6 +5303,53 @@ void nsCocoaWindow::SetModal(bool aModal) {
 
 bool nsCocoaWindow::IsRunningAppModal() { return [NSApp _isRunningAppModal]; }
 
+static NSRectEdge AlignmentPositionToNSRectEdge(int8_t aPosition) {
+  switch (aPosition) {
+    case POPUPPOSITION_BEFORESTART:
+    case POPUPPOSITION_BEFOREEND:
+      return NSRectEdgeMaxY;
+    case POPUPPOSITION_AFTERSTART:
+    case POPUPPOSITION_AFTEREND:
+      return NSRectEdgeMinY;
+    case POPUPPOSITION_STARTBEFORE:
+    case POPUPPOSITION_STARTAFTER:
+      return NSRectEdgeMaxX;
+    case POPUPPOSITION_ENDBEFORE:
+    case POPUPPOSITION_ENDAFTER:
+      return NSRectEdgeMinX;
+    default:
+      return NSRectEdgeMinY;
+  }
+}
+
+static void SyncPopoverBounds(NSPopover* aPopover,
+                              nsMenuPopupFrame* aPopupFrame) {
+  if (!aPopover || !aPopover.shown || !aPopupFrame) {
+    return;
+  }
+  NSWindow* popoverWindow = aPopover.contentViewController.view.window;
+  if (!popoverWindow) {
+    return;
+  }
+
+  // Synchronize the popup frame's internal bounds with the actual bounds that
+  // macOS calculated for the popover.
+  NSView* contentView = popoverWindow.contentView;
+  NSRect contentFrame = [contentView convertRect:contentView.bounds toView:nil];
+  NSRect windowFrame = [popoverWindow convertRectToScreen:contentFrame];
+
+  CGFloat backingScale = popoverWindow.backingScaleFactor;
+  mozilla::LayoutDeviceIntRect devPixRect =
+      nsCocoaUtils::CocoaRectToGeckoRectDevPix(windowFrame, backingScale);
+
+  nsPresContext* presContext = aPopupFrame->PresContext();
+  mozilla::CSSIntPoint cssPos =
+      presContext->DevPixelsToIntCSSPixels(devPixRect.TopLeft());
+
+  aPopupFrame->MoveTo(mozilla::CSSPoint(cssPos.x, cssPos.y),
+                      /* aUpdateAttrs */ false);
+}
+
 // Hide or show this window
 void nsCocoaWindow::Show(bool aState) {
   NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
@@ -5336,6 +5414,49 @@ void nsCocoaWindow::Show(bool aState) {
         [mWindow orderFront:nil];
       }
       NS_OBJC_END_TRY_IGNORE_BLOCK;
+      if (ShouldShowAsNSPopover() && nativeParentWindow) {
+        nsMenuPopupFrame* popupFrame = GetPopupFrame();
+        NSRectEdge preferredEdge =
+            AlignmentPositionToNSRectEdge(popupFrame->GetAlignmentPosition());
+        nsRect anchorRectAppUnits = popupFrame->GetUntransformedAnchorRect();
+        nsPresContext* pc = popupFrame->PresContext();
+        int32_t appUnitsPerDevPixel = pc->AppUnitsPerDevPixel();
+        mozilla::DesktopToLayoutDeviceScale desktopToLayoutScale =
+            pc->DeviceContext()->GetDesktopToDeviceScale();
+        mozilla::DesktopIntRect popupAnchorRectScaled =
+            mozilla::DesktopIntRect::RoundOut(
+                mozilla::LayoutDeviceRect::FromAppUnits(anchorRectAppUnits,
+                                                        appUnitsPerDevPixel) /
+                desktopToLayoutScale);
+        // Taking the now correctly scaled anchor rect and turning it into a
+        // gecko rect this accounts for the y-axis inversion that cocoa needs,
+        // as the origin is in the bottom left. This rect is in screen space
+        NSRect cocoaScreenRect =
+            nsCocoaUtils::GeckoRectToCocoaRect(popupAnchorRectScaled);
+        // We take the screen space rect and convert it to window space
+        // coordinates, as NSPopover requires the coordinates to be in view
+        // space and inside the view. If the coordinates are outside our view,
+        // the popover will fail silently
+        NSRect windowRect =
+            [nativeParentWindow convertRectFromScreen:cocoaScreenRect];
+        NSView* parentView = [nativeParentWindow contentView];
+        // We take the window space rect and convert it to view space for the
+        // specific parent view
+        NSRect positioningRect = [parentView convertRect:windowRect
+                                                fromView:nil];
+        bool shouldHideAnchor =
+            popupFrame->PopupElement().GetBoolAttr(nsGkAtoms::hidepopovertail);
+        [(PopupWindow*)mWindow showPopoverRelativeToRect:positioningRect
+                                                  ofView:parentView
+                                           preferredEdge:preferredEdge
+                                            hiddenAnchor:shouldHideAnchor];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wobjc-method-access"
+        SyncPopoverBounds([(PopupWindow*)mWindow popover], popupFrame);
+#pragma clang diagnostic pop
+        // Exit early here since the popover is now shown.
+        return;
+      }
       // If our popup window is a non-native context menu, tell the OS (and
       // other programs) that a menu has opened.  This is how the OS knows to
       // close other programs' context menus when ours open.
@@ -5409,7 +5530,11 @@ void nsCocoaWindow::Show(bool aState) {
     if (mWindowType == WindowType::Popup && nativeParentWindow) {
       [nativeParentWindow removeChildWindow:mWindow];
     }
-
+    // Handle NSPopover hiding or traditional window hiding
+    if ([mWindow isKindOfClass:[PopupWindow class]] &&
+        [(PopupWindow*)mWindow usePopover]) {
+      [(PopupWindow*)mWindow closePopover];
+    }
     [mWindow orderOut:nil];
     // If our popup window is a non-native context menu, tell the OS (and
     // other programs) that a menu has closed.
@@ -5458,6 +5583,24 @@ bool nsCocoaWindow::ShouldUseOffMainThreadCompositing() {
     return false;
   }
   return nsIWidget::ShouldUseOffMainThreadCompositing();
+}
+
+bool nsCocoaWindow::ShouldUseNSPopover() const {
+  // Use NSPopover for panel popups when the preference is enabled
+  // But not for detached popups - they should use traditional window logic
+  return mWindowType == WindowType::Popup && mPopupType == PopupType::Panel &&
+         mozilla::StaticPrefs::widget_macos_native_popovers();
+}
+
+bool nsCocoaWindow::ShouldShowAsNSPopover() const {
+  if (!ShouldUseNSPopover()) {
+    return false;
+  }
+  nsMenuPopupFrame* popupFrame = GetPopupFrame();
+  return [mWindow isKindOfClass:[PopupWindow class]] &&
+         [(PopupWindow*)mWindow usePopover] && popupFrame &&
+         popupFrame->ShouldFollowAnchor() &&
+         !popupFrame->PopupElement().GetBoolAttr(nsGkAtoms::nonnative);
 }
 
 TransparencyMode nsCocoaWindow::GetTransparencyMode() {
@@ -5994,6 +6137,13 @@ void nsCocoaWindow::CocoaWindowDidEnterFullscreen(bool aFullscreen) {
   mHasStartedNativeFullscreen = false;
   DispatchOcclusionEvent();
 
+  // The fullscreen window transition leaves the screen-displayed cursor
+  // out of sync with our cached state until the next mouse-moved event
+  // re-evaluates cursor rects. Re-push the cached cursor now so that
+  // e.g. an autohide-driven `cursor: none` stays hidden across the
+  // transition (bug 2031413).
+  [MOZDynamicCursor.sharedInstance reassertCurrentCursor];
+
   // Check if aFullscreen matches our expected fullscreen state. It might not if
   // there was a failure somewhere along the way, in which case we'll recover
   // from that.
@@ -6414,6 +6564,18 @@ void nsCocoaWindow::DoResize(double aX, double aY, double aWidth,
   // title bar doesn't immediately get repainted and is displayed in
   // the wrong place, leading to a visual jump.
   [mWindow setFrame:newFrame display:YES];
+  if (ShouldUseNSPopover() && [(PopupWindow*)mWindow usePopover]) {
+    [(PopupWindow*)mWindow updatePopoverContent];
+    // A popover won't resize by setting the frame
+    // as it's size is calculated based on the content size
+    // Therefore the content size has to be changed as well
+    NSSize contentSize = NSMakeSize(aWidth, aHeight);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wobjc-method-access"
+    [[(PopupWindow*)mWindow popover] setContentSize:contentSize];
+    SyncPopoverBounds([(PopupWindow*)mWindow popover], GetPopupFrame());
+#pragma clang diagnostic pop
+  }
 
   NS_OBJC_END_TRY_IGNORE_BLOCK;
 }
@@ -7249,49 +7411,63 @@ void nsCocoaWindow::CocoaWindowDidResize() {
   ReportSizeEvent();
 }
 
-void nsCocoaWindow::LockNativePointer() {
+void nsCocoaWindow::LockNativePointer(
+    NativePointerLockMode aNativePointerLockMode) {
   if (!StaticPrefs::dom_pointer_lock_native_lock_enabled()) {
     return;
   }
 
-  if (sIsNativePointerLocked) {
+  if (GetNativePointerLockedMode()) {
+    MOZ_ASSERT(*GetNativePointerLockedMode() == aNativePointerLockMode,
+               "Should not call LockNativePointer() with a different mode "
+               "whenthe pointer is already locked");
     // XXX Maybe we should avoid calling LockNativePointer() again when the
     // content changes the pointer lock element while the pointer is already
     // locked.
     return;
   }
 
-  sIsNativePointerLocked = true;
+  sNativePointerLockMode.emplace(aNativePointerLockMode);
   CGAssociateMouseAndMouseCursorPosition(false);
 }
 
 void nsCocoaWindow::UnlockNativePointer() {
-  if (!StaticPrefs::dom_pointer_lock_native_lock_enabled()) {
+  if (NS_WARN_IF(!GetNativePointerLockedMode())) {
     return;
   }
 
-  if (NS_WARN_IF(!sIsNativePointerLocked)) {
-    return;
-  }
-
-  sIsNativePointerLocked = false;
+  sNativePointerLockMode.reset();
   CGAssociateMouseAndMouseCursorPosition(true);
   sNativeLockedPoint = LayoutDeviceIntPoint(0, 0);
 }
 
-/* static */ bool nsCocoaWindow::sIsNativePointerLocked = false;
+void nsCocoaWindow::SetNativePointerLockMode(
+    NativePointerLockMode aNativePointerLockMode) {
+  if (NS_WARN_IF(!GetNativePointerLockedMode())) {
+    return;
+  }
+  sNativePointerLockMode.ref() = aNativePointerLockMode;
+}
+
+bool nsCocoaWindow::SupportsUnadjustedMovement() {
+  return StaticPrefs::dom_pointer_lock_native_lock_enabled();
+}
+
+/* static */ Maybe<nsIWidget::NativePointerLockMode>
+    nsCocoaWindow::sNativePointerLockMode;
 /* static */ LayoutDeviceIntPoint nsCocoaWindow::sNativeLockedPoint;
 
 /* static */
-bool nsCocoaWindow::IsNativePointerLocked() {
-  MOZ_ASSERT_IF(sIsNativePointerLocked,
+const Maybe<nsIWidget::NativePointerLockMode>&
+nsCocoaWindow::GetNativePointerLockedMode() {
+  MOZ_ASSERT_IF(sNativePointerLockMode,
                 StaticPrefs::dom_pointer_lock_native_lock_enabled());
-  return sIsNativePointerLocked;
+  return sNativePointerLockMode;
 }
 
 /* static */
 LayoutDeviceIntPoint nsCocoaWindow::GetNativeLockedPoint() {
-  MOZ_ASSERT(IsNativePointerLocked());
+  MOZ_ASSERT(GetNativePointerLockedMode());
   return sNativeLockedPoint;
 }
 
@@ -8475,12 +8651,25 @@ static CGFloat DefaultTitlebarHeight() {
   if (!self) {
     return nil;
   }
-
+  mPopover = nil;
+  mPopoverViewController = nil;
+  mUsePopover = NO;
   mIsContextMenu = false;
 
   return self;
 
   NS_OBJC_END_TRY_BLOCK_RETURN(nil);
+}
+
+- (void)dealloc {
+  if (mPopover) {
+    ChildViewMouseTracker::OnDestroyWindow(
+        mPopover.contentViewController.view.window);
+  }
+
+  [mPopover release];
+  [mPopoverViewController release];
+  [super dealloc];
 }
 
 // Override the private API _backdropBleedAmount. This determines how much the
@@ -8540,6 +8729,121 @@ static const NSUInteger kWindowShadowOptionsTooltip = 4;
 
 - (void)setIsContextMenu:(BOOL)flag {
   mIsContextMenu = flag;
+}
+
+- (void)setAllowPopover {
+  mUsePopover = YES;
+
+  if (!mPopover) {
+    mPopover = [[NSPopover alloc] init];
+
+    // Use NSPopoverBehaviorApplicationDefined to prevent auto-closing
+    // when other popovers are opened, and to respect the disable_autohide
+    // preference
+    mPopover.behavior = NSPopoverBehaviorApplicationDefined;
+    mPopover.delegate = self;
+
+    // Create view controller that will contain our content view
+    mPopoverViewController = [[NSViewController alloc] init];
+
+    NSView* contentView = self.contentView;
+    if (contentView) {
+      // Ensure the content view is properly configured
+      [contentView
+          setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+
+      mPopoverViewController.view = contentView;
+      mPopover.contentViewController = mPopoverViewController;
+
+      // Set popover size to match our window content size
+      NSRect contentRect = [contentView frame];
+      if (contentRect.size.width > 0 && contentRect.size.height > 0) {
+        [mPopover setContentSize:contentRect.size];
+      }
+    }
+  }
+}
+
+- (BOOL)usePopover {
+  return mUsePopover;
+}
+
+- (void)showPopoverRelativeToRect:(NSRect)positioningRect
+                           ofView:(NSView*)positioningView
+                    preferredEdge:(NSRectEdge)preferredEdge
+                     hiddenAnchor:(BOOL)hiddenAnchor {
+  NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
+  if (!mPopover) {
+    return;
+  }
+
+  // Close existing popover if it's already shown
+  if (mPopover.shown) {
+    [mPopover close];
+  }
+
+  // Force content update before showing
+  [self updatePopoverContent];
+
+  if (mPopoverViewController.view) {
+    mPopover.behavior = NSPopoverBehaviorApplicationDefined;
+
+    // This is a hidden API that prevents the popover from showing its arrow
+    // pointing to the anchor.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wobjc-method-access"
+    [mPopover setShouldHideAnchor:hiddenAnchor];
+#pragma clang diagnostic pop
+
+    [mPopover showRelativeToRect:positioningRect
+                          ofView:positioningView
+                   preferredEdge:preferredEdge];
+  }
+
+  NSWindow* popoverWindow = mPopover.contentViewController.view.window;
+  [popoverWindow setAcceptsMouseMovedEvents:YES];
+
+  NS_OBJC_END_TRY_IGNORE_BLOCK;
+}
+
+- (void)closePopover {
+  NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
+
+  if (mPopover && mPopover.shown) {
+    [mPopover close];
+  }
+
+  NS_OBJC_END_TRY_IGNORE_BLOCK;
+}
+
+- (void)updatePopoverContent {
+  NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
+  if (!mPopover || !mPopoverViewController) {
+    return;
+  }
+
+  NSView* contentView = self.contentView;
+  if (!contentView) {
+    return;
+  }
+  // Ensure proper hit testing for hover events
+  [contentView setWantsLayer:YES];
+  [contentView setAcceptsTouchEvents:YES];
+
+  // Update the popover content view to match current window content
+  mPopoverViewController.view = contentView;
+
+  // Update popover size to match content
+  NSRect contentRect = [contentView frame];
+  if (contentRect.size.width > 0 && contentRect.size.height > 0) {
+    mPopover.contentSize = contentRect.size;
+  }
+
+  NS_OBJC_END_TRY_IGNORE_BLOCK;
+}
+
+- (NSPopover*)popover {
+  return mPopover;
 }
 
 - (BOOL)canBecomeMainWindow {

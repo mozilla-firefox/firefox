@@ -753,7 +753,7 @@ NS_IMPL_ISUPPORTS(nsSocketTransportService, nsISocketTransportService,
                   nsPISocketTransportService, nsIObserver, nsINamed,
                   nsIDirectTaskDispatcher)
 
-static const char* gCallbackPrefs[] = {
+static const char* gCallbackUpdatePrefs[] = {
     SEND_BUFFER_PREF,
     KEEPALIVE_ENABLED_PREF,
     KEEPALIVE_IDLE_TIME_PREF,
@@ -838,7 +838,7 @@ nsSocketTransportService::Init() {
         "Underlying thread must support direct task dispatching");
   }
 
-  Preferences::RegisterCallbacks(UpdatePrefs, gCallbackPrefs, this);
+  Preferences::RegisterCallbacks(UpdatePrefs, gCallbackUpdatePrefs, this);
   UpdatePrefs();
 
   nsCOMPtr<nsIObserverService> obsSvc = services::GetObserverService();
@@ -922,7 +922,7 @@ nsresult nsSocketTransportService::ShutdownThread() {
     mDirectTaskDispatcher = nullptr;
   }
 
-  Preferences::UnregisterCallbacks(UpdatePrefs, gCallbackPrefs, this);
+  Preferences::UnregisterCallbacks(UpdatePrefs, gCallbackUpdatePrefs, this);
 
   nsCOMPtr<nsIObserverService> obsSvc = services::GetObserverService();
   if (obsSvc) {

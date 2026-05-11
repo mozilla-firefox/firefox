@@ -6761,6 +6761,8 @@ dialog:dir(rtl)::after {
 }
 
 .nova-enabled .weather-widget {
+  --widget-size-transition-duration: 180ms;
+  --widget-size-transition-easing: ease;
   padding: var(--space-medium);
   background-color: var(--newtab-background-card);
   border-radius: var(--border-radius-large);
@@ -7247,6 +7249,8 @@ dialog:dir(rtl)::after {
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 .nova-enabled .clocks-widget {
+  --widget-size-transition-duration: 180ms;
+  --widget-size-transition-easing: ease;
   padding: var(--space-medium);
   background-color: var(--newtab-background-card);
   border-radius: var(--border-radius-large);
@@ -7255,13 +7259,12 @@ dialog:dir(rtl)::after {
   display: flex;
   flex-direction: column;
   position: relative;
+  height: var(--newtab-card-height-small);
+  transition: height var(--widget-size-transition-duration) var(--widget-size-transition-easing);
 }
 .nova-enabled .clocks-widget:hover, .nova-enabled .clocks-widget:focus-within {
   outline: 1px solid var(--border-color-deemphasized);
   box-shadow: var(--card-box-shadow-hover);
-}
-.nova-enabled .clocks-widget:hover {
-  outline: none;
 }
 .nova-enabled .clocks-widget.small-widget {
   grid-column: span 2;
@@ -7274,6 +7277,7 @@ dialog:dir(rtl)::after {
 .nova-enabled .clocks-widget.large-widget {
   grid-column: span 4;
   grid-row: span 4;
+  height: var(--newtab-card-height);
 }
 .nova-enabled .clocks-widget .widget-toolbar {
   position: absolute;
@@ -7287,49 +7291,263 @@ dialog:dir(rtl)::after {
   padding: var(--space-medium);
   border-start-start-radius: var(--border-radius-large);
   border-start-end-radius: var(--border-radius-large);
-  background: linear-gradient(180deg, var(--newtab-background-card) 16%, color-mix(in srgb, var(--newtab-background-card) 50%, transparent) 96%);
-  backdrop-filter: blur(var(--dimension-2));
   opacity: 0;
-  transition: opacity 160ms ease;
+  transition: opacity 180ms ease, block-size var(--widget-size-transition-duration) var(--widget-size-transition-easing), padding var(--widget-size-transition-duration) var(--widget-size-transition-easing);
+  pointer-events: none;
   z-index: 1;
 }
 .nova-enabled .clocks-widget .widget-toolbar moz-button {
+  opacity: 0;
   pointer-events: none;
+  transform: translateY(-0.125rem);
+  transition: opacity 140ms ease, transform 140ms ease;
 }
-.nova-enabled .clocks-widget .widget-toolbar .clocks-add-button::part(button) {
+.nova-enabled .clocks-widget .widget-toolbar panel-list {
+  pointer-events: auto;
+}
+.nova-enabled .clocks-widget .clocks-add-button::part(button),
+.nova-enabled .clocks-widget .clocks-edit-add-button::part(button) {
   background-color: var(--button-background-color-primary);
   border-color: var(--button-border-color-primary);
   color: var(--button-text-color-primary);
 }
-.nova-enabled .clocks-widget .widget-toolbar .clocks-add-button:hover:not([disabled])::part(button) {
+.nova-enabled .clocks-widget .clocks-add-button:hover::part(button),
+.nova-enabled .clocks-widget .clocks-edit-add-button:hover::part(button) {
   background-color: var(--button-background-color-primary-hover);
   color: var(--button-text-color-primary-hover);
 }
-.nova-enabled .clocks-widget .widget-toolbar .clocks-add-button:hover:active:not([disabled])::part(button) {
+.nova-enabled .clocks-widget .clocks-add-button:hover:active::part(button),
+.nova-enabled .clocks-widget .clocks-edit-add-button:hover:active::part(button) {
   background-color: var(--button-background-color-primary-active);
   color: var(--button-text-color-primary-active);
 }
-.nova-enabled .clocks-widget .widget-toolbar .clocks-add-button[disabled]::part(button) {
-  background-color: var(--button-background-color-primary-disabled);
-  border-color: var(--button-border-color-primary-disabled);
-  color: var(--button-text-color-primary-disabled);
-}
-.nova-enabled .clocks-widget .widget-toolbar:hover, .nova-enabled .clocks-widget:focus-within .widget-toolbar {
+.nova-enabled .clocks-widget:hover .widget-toolbar, .nova-enabled .clocks-widget:focus-within .widget-toolbar {
   opacity: 1;
 }
-.nova-enabled .clocks-widget .widget-toolbar:hover moz-button, .nova-enabled .clocks-widget:focus-within .widget-toolbar moz-button {
+.nova-enabled .clocks-widget:hover .widget-toolbar moz-button, .nova-enabled .clocks-widget:focus-within .widget-toolbar moz-button {
+  opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
 }
 .nova-enabled .clocks-widget.is-dismissed .widget-toolbar:hover {
   opacity: 0;
 }
 .nova-enabled .clocks-widget.is-dismissed .widget-toolbar:hover moz-button {
+  opacity: 0;
   pointer-events: none;
+  transform: translateY(-0.125rem);
 }
 @media (prefers-reduced-motion: reduce) {
+  .nova-enabled .clocks-widget {
+    transition: none;
+  }
   .nova-enabled .clocks-widget .widget-toolbar {
     transition: none;
   }
+  .nova-enabled .clocks-widget .widget-toolbar moz-button {
+    transition: none;
+  }
+  .nova-enabled .clocks-widget .clocks-list,
+.nova-enabled .clocks-widget .clocks-row,
+.nova-enabled .clocks-widget .clocks-meta,
+.nova-enabled .clocks-widget .clocks-label,
+.nova-enabled .clocks-widget .clocks-city,
+.nova-enabled .clocks-widget .clocks-timezone,
+.nova-enabled .clocks-widget .clocks-time,
+.nova-enabled .clocks-widget .clocks-edit-item,
+.nova-enabled .clocks-widget .clocks-edit-item-actions {
+    transition: none;
+  }
+  .nova-enabled .clocks-widget .clocks-edit-item:hover .clocks-edit-item-actions,
+.nova-enabled .clocks-widget .clocks-edit-item:focus-within .clocks-edit-item-actions {
+    transition: none;
+  }
+}
+.nova-enabled .clocks-widget .clocks-panel {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: var(--space-xsmall);
+  inset-inline-end: var(--space-small);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-medium);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  inline-size: min(332px, 100% - var(--space-large));
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  block-size: 276px;
+  padding: var(--space-medium);
+  background: var(--newtab-background-card);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--box-shadow-level-4);
+}
+.nova-enabled .clocks-widget .clocks-location-wrapper {
+  position: relative;
+}
+.nova-enabled .clocks-widget .clocks-search-location-input {
+  min-inline-size: 0;
+  inline-size: 100%;
+}
+.nova-enabled .clocks-widget .clocks-search-results {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-xxsmall));
+  inset-inline: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxsmall);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  max-block-size: 180px;
+  overflow-y: auto;
+  padding: var(--space-xsmall);
+  background: var(--newtab-background-card);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--box-shadow-level-4);
+}
+.nova-enabled .clocks-widget .clocks-nickname-input {
+  min-inline-size: 0;
+  inline-size: 100%;
+}
+.nova-enabled .clocks-widget .clocks-edit-title {
+  margin: 0;
+  color: var(--text-color);
+  font-size: var(--font-size-root);
+  font-weight: var(--font-weight-semibold);
+}
+.nova-enabled .clocks-widget .clocks-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-small);
+}
+.nova-enabled .clocks-widget .clocks-edit-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+  min-inline-size: 0;
+}
+.nova-enabled .clocks-widget .clocks-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-small);
+  flex: 1 1 0;
+  min-block-size: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  padding-block-start: var(--space-xxsmall);
+  padding-inline: var(--space-xxsmall);
+  list-style: none;
+}
+.nova-enabled .clocks-widget .clocks-edit-panel {
+  flex: 1 1 0;
+  min-block-size: 0;
+}
+.nova-enabled .clocks-widget .clocks-edit-item {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space-xxsmall) / 2);
+  position: relative;
+  padding-block: var(--space-small);
+  padding-inline: var(--space-medium);
+  padding-inline-end: calc(var(--space-medium) * 4);
+  border-radius: var(--button-border-radius);
+  transition: background-color 180ms ease;
+}
+.nova-enabled .clocks-widget .clocks-edit-item:hover,
+.nova-enabled .clocks-widget .clocks-edit-item:focus-within {
+  background-color: var(--button-background-color-menu-hover, #E7E1F8);
+}
+.nova-enabled .clocks-widget .clocks-edit-item:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-inset);
+}
+.nova-enabled .clocks-widget .clocks-edit-top-row {
+  display: flex;
+  align-items: center;
+  min-inline-size: 0;
+}
+.nova-enabled .clocks-widget .clocks-edit-city {
+  font-size: var(--font-size-small);
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nova-enabled .clocks-widget .clocks-edit-item-actions {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  inset-inline-end: var(--space-medium);
+  inset-block: 0;
+  margin-block: auto;
+  block-size: fit-content;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, visibility 0s linear 180ms;
+}
+.nova-enabled .clocks-widget .clocks-edit-item:hover .clocks-edit-item-actions,
+.nova-enabled .clocks-widget .clocks-edit-item:focus-within .clocks-edit-item-actions {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 180ms ease, visibility 0s;
+}
+.nova-enabled .clocks-widget .clocks-edit-item-button::part(button) {
+  border: var(--border-width) solid transparent;
+  border-radius: var(--border-radius-circle);
+  block-size: var(--size-item-large);
+  inline-size: var(--size-item-large);
+  padding: var(--space-xsmall);
+  --button-icon-fill: var(--icon-color);
+  color: var(--icon-color);
+}
+.nova-enabled .clocks-widget .clocks-edit-item-button:hover::part(button),
+.nova-enabled .clocks-widget .clocks-edit-item-button:focus-visible::part(button) {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/no-base-design-tokens, stylelint-plugin-mozilla/use-design-tokens */
+  border-color: rgba(255, 255, 255, 0.9);
+}
+.nova-enabled .clocks-widget .clocks-edit-subtitle {
+  color: var(--text-color-deemphasized);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight);
+}
+.nova-enabled .clocks-widget .clocks-add-actions {
+  margin-block-start: auto;
+  align-self: center;
+}
+.nova-enabled .clocks-widget .clocks-search-result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+  padding-inline: var(--space-small);
+  padding-block: var(--space-xsmall);
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-small);
+  color: var(--text-color);
+  font: inherit;
+  text-align: start;
+  cursor: default;
+}
+.nova-enabled .clocks-widget .clocks-search-result:hover, .nova-enabled .clocks-widget .clocks-search-result:focus {
+  background: var(--button-background-color-hover);
+}
+.nova-enabled .clocks-widget .clocks-search-result:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+.nova-enabled .clocks-widget .clocks-search-result-city,
+.nova-enabled .clocks-widget .clocks-search-result-timezone {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nova-enabled .clocks-widget .clocks-search-result-timezone {
+  color: var(--text-color-deemphasized);
+  font-size: var(--font-size-small);
 }
 .nova-enabled .clocks-widget .clocks-list {
   list-style: none;
@@ -7337,26 +7555,62 @@ dialog:dir(rtl)::after {
   padding: 0;
   display: flex;
   flex: 1 1 auto;
-  min-height: 0;
+  min-block-size: 0;
+  transition: padding-block-start var(--widget-size-transition-duration) var(--widget-size-transition-easing), gap var(--widget-size-transition-duration) var(--widget-size-transition-easing);
+}
+.nova-enabled .clocks-widget:not(.is-panel-open):hover .clocks-list, .nova-enabled .clocks-widget:not(.is-panel-open):focus-within .clocks-list {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list */
+  padding-block-start: 2.25rem;
 }
 .nova-enabled .clocks-widget .clocks-row {
   display: flex;
   align-items: center;
   color: var(--text-color);
-  min-width: 0;
+  min-inline-size: 0;
+  transition: gap var(--widget-size-transition-duration) var(--widget-size-transition-easing), padding var(--widget-size-transition-duration) var(--widget-size-transition-easing);
+}
+.nova-enabled .clocks-widget .clocks-row-actions {
+  display: none;
+  align-items: center;
+  gap: var(--space-small);
+  margin-inline-start: auto;
+}
+.nova-enabled .clocks-widget .clocks-row-action-button::part(button) {
+  border: var(--border-width) solid var(--button-border-color);
+  border-radius: var(--border-radius-circle);
+  block-size: var(--size-item-large);
+  inline-size: var(--size-item-large);
+  padding: var(--space-small);
+  --button-icon-fill: var(--icon-color);
+  color: var(--icon-color);
+}
+.nova-enabled .clocks-widget .clocks-row.has-inline-actions:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-inset);
+  border-radius: var(--border-radius-small);
+}
+.nova-enabled .clocks-widget .clocks-row.has-inline-actions:hover .clocks-row-actions,
+.nova-enabled .clocks-widget .clocks-row.has-inline-actions:focus-within .clocks-row-actions {
+  display: flex;
+}
+.nova-enabled .clocks-widget .clocks-row.has-inline-actions.hides-time-on-inline-actions:hover .clocks-time,
+.nova-enabled .clocks-widget .clocks-row.has-inline-actions.hides-time-on-inline-actions:focus-within .clocks-time {
+  display: none;
 }
 .nova-enabled .clocks-widget .clocks-meta {
   display: flex;
   align-items: center;
   gap: var(--space-small);
-  min-width: 0;
+  min-inline-size: 0;
   flex: 1 1 auto;
+  transition: gap var(--widget-size-transition-duration) var(--widget-size-transition-easing);
 }
 .nova-enabled .clocks-widget .clocks-label {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  min-inline-size: 0;
   gap: var(--space-xxsmall);
+  transition: gap var(--widget-size-transition-duration) var(--widget-size-transition-easing);
 }
 .nova-enabled .clocks-widget .clocks-label-chip {
   display: inline-flex;
@@ -7419,14 +7673,19 @@ dialog:dir(rtl)::after {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: font-size var(--widget-size-transition-duration) var(--widget-size-transition-easing);
 }
 .nova-enabled .clocks-widget .clocks-timezone {
   font-size: var(--font-size-small);
   color: var(--text-color-deemphasized);
+  transition: font-size var(--widget-size-transition-duration) var(--widget-size-transition-easing);
 }
 .nova-enabled .clocks-widget .clocks-time {
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: font-size var(--widget-size-transition-duration) var(--widget-size-transition-easing);
 }
 .nova-enabled .clocks-widget.small-widget.is-hero .clocks-list {
   flex-direction: column;
@@ -7450,16 +7709,27 @@ dialog:dir(rtl)::after {
   align-items: flex-start;
   gap: var(--space-xxsmall);
 }
-.nova-enabled .clocks-widget.small-widget.is-hero .clocks-city {
-  font-size: var(--font-size-root);
-}
 .nova-enabled .clocks-widget.small-widget.is-hero .clocks-timezone {
-  font-size: var(--font-size-small);
   display: initial;
 }
 .nova-enabled .clocks-widget.small-widget.is-hero .clocks-time {
   font-size: var(--font-size-heading-large);
   align-self: flex-start;
+}
+.nova-enabled .clocks-widget.small-widget .widget-toolbar {
+  block-size: var(--size-item-large);
+  padding-block-start: var(--space-xxsmall);
+  padding-block-end: 0;
+  padding-inline-end: var(--space-large);
+}
+.nova-enabled .clocks-widget.small-widget .widget-toolbar moz-button::part(button) {
+  block-size: 1.75rem;
+  inline-size: 1.75rem;
+}
+.nova-enabled .clocks-widget.small-widget .widget-toolbar moz-button {
+  /* moz-button draws its focus ring from the internal button background
+     using this variable, so tighten the offset at the host level. */
+  --focus-outline-offset: calc(var(--focus-outline-inset) - 1px);
 }
 .nova-enabled .clocks-widget.small-widget .clocks-list {
   flex-direction: column;
@@ -7478,12 +7748,6 @@ dialog:dir(rtl)::after {
   align-items: flex-start;
   gap: var(--space-xxsmall);
 }
-.nova-enabled .clocks-widget.small-widget .clocks-city {
-  font-size: var(--font-size-root);
-}
-.nova-enabled .clocks-widget.small-widget .clocks-timezone {
-  font-size: var(--font-size-small);
-}
 .nova-enabled .clocks-widget.small-widget .clocks-time {
   font-size: var(--font-size-root);
 }
@@ -7500,6 +7764,36 @@ dialog:dir(rtl)::after {
 .nova-enabled .clocks-widget.small-widget[data-clock-count="4"] .clocks-row {
   flex: 0 0 auto;
   padding-block: var(--space-xxsmall);
+  padding-inline: var(--space-xsmall);
+}
+.nova-enabled .clocks-widget.small-widget:not(.is-panel-open):hover .clocks-list, .nova-enabled .clocks-widget.small-widget:not(.is-panel-open):focus-within .clocks-list {
+  justify-content: flex-start;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list */
+  padding-block-start: 1.75rem;
+}
+.nova-enabled .clocks-widget.small-widget[data-clock-count="2"]:not(.is-panel-open):hover .clocks-list, .nova-enabled .clocks-widget.small-widget[data-clock-count="2"]:not(.is-panel-open):focus-within .clocks-list {
+  /* Two full rows with timezone text need a slightly smaller header lane. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list */
+  padding-block-start: 1.25rem;
+}
+.nova-enabled .clocks-widget.small-widget[data-clock-count="2"]:not(.is-panel-open):hover .clocks-row, .nova-enabled .clocks-widget.small-widget[data-clock-count="2"]:not(.is-panel-open):focus-within .clocks-row {
+  padding-block: var(--space-xsmall);
+}
+.nova-enabled .clocks-widget.small-widget[data-clock-count="4"]:not(.is-panel-open):hover .clocks-list, .nova-enabled .clocks-widget.small-widget[data-clock-count="4"]:not(.is-panel-open):focus-within .clocks-list {
+  /* Only the menu remains at 4 clocks, so reserve less header room. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list */
+  padding-block-start: 1.25rem;
+}
+.nova-enabled .clocks-widget.medium-widget:not(.is-panel-open):hover .clocks-list, .nova-enabled .clocks-widget.medium-widget:not(.is-panel-open):focus-within .clocks-list {
+  padding-block-start: var(--space-xxlarge);
+}
+.nova-enabled .clocks-widget.medium-widget[data-clock-count="3"]:not(.is-panel-open):hover .clocks-list, .nova-enabled .clocks-widget.medium-widget[data-clock-count="3"]:not(.is-panel-open):focus-within .clocks-list {
+  /* Dense 3-clock layouts need a smaller header lane to keep the time inside the card. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, declaration-property-value-disallowed-list */
+  padding-block-start: 1.25rem;
+}
+.nova-enabled .clocks-widget.medium-widget[data-clock-count="3"]:not(.is-panel-open):hover .clocks-row, .nova-enabled .clocks-widget.medium-widget[data-clock-count="3"]:not(.is-panel-open):focus-within .clocks-row {
+  padding-block: var(--space-small);
 }
 .nova-enabled .clocks-widget.medium-widget .clocks-list {
   flex-direction: row;
@@ -7530,11 +7824,54 @@ dialog:dir(rtl)::after {
   font-size: var(--font-size-heading-xlarge);
   align-self: flex-start;
 }
+.nova-enabled .clocks-widget.medium-widget[data-clock-count="3"] .clocks-time {
+  font-size: calc(var(--font-size-heading-large) - 3px);
+}
 .nova-enabled .clocks-widget.medium-widget[data-clock-count="4"] .clocks-time {
-  font-size: var(--font-size-heading-medium);
+  align-self: center;
+  font-size: var(--font-size-heading-small);
+  text-align: center;
+}
+.nova-enabled .clocks-widget.medium-widget[data-clock-count="4"] .clocks-list {
+  gap: var(--space-xsmall);
+}
+.nova-enabled .clocks-widget.medium-widget[data-clock-count="4"] .clocks-row {
+  padding-block: var(--space-xsmall);
+  padding-inline: 0.375rem;
+  gap: var(--space-xxsmall);
+}
+.nova-enabled .clocks-widget.medium-widget[data-clock-count="4"] .clocks-row + .clocks-row::before {
+  inset-inline-start: calc(var(--space-xxsmall) * -1);
+  inset-block: var(--space-xxsmall);
+}
+.nova-enabled .clocks-widget.medium-widget[data-clock-count="4"] .clocks-row-actions {
+  align-self: center;
+  gap: var(--space-xsmall);
+  margin-inline: 0;
+}
+.nova-enabled .clocks-widget.medium-widget[data-clock-count="4"] .clocks-row-action-button::part(button) {
+  block-size: 1.75rem;
+  inline-size: 1.75rem;
+  padding: var(--space-xsmall);
+}
+.nova-enabled .clocks-widget.medium-widget.is-hero .clocks-list {
+  padding-block-start: 0;
 }
 .nova-enabled .clocks-widget.medium-widget.is-hero .clocks-row {
   align-items: stretch;
+}
+.nova-enabled .clocks-widget.medium-widget.is-hero .clocks-row-actions {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: 0;
+  margin: 0;
+}
+.nova-enabled .clocks-widget.large-widget .widget-toolbar {
+  padding-block-start: var(--space-small);
+  padding-inline-end: var(--space-large);
+}
+.nova-enabled .clocks-widget.large-widget .widget-toolbar moz-button {
+  --focus-outline-offset: var(--focus-outline-inset);
 }
 .nova-enabled .clocks-widget.large-widget .clocks-list {
   flex-direction: column;
@@ -7543,6 +7880,8 @@ dialog:dir(rtl)::after {
   flex: 1 1 0;
   justify-content: space-between;
   gap: var(--space-medium);
+  padding-inline-start: var(--space-medium);
+  padding-inline-end: var(--space-xlarge);
   position: relative;
 }
 .nova-enabled .clocks-widget.large-widget .clocks-row + .clocks-row::before {
@@ -7552,6 +7891,9 @@ dialog:dir(rtl)::after {
   block-size: var(--border-width);
   background: var(--border-color);
 }
+.nova-enabled .clocks-widget.large-widget .clocks-row-actions {
+  margin-inline-end: var(--space-small);
+}
 .nova-enabled .clocks-widget.large-widget[data-clock-count="2"] .clocks-list {
   gap: var(--space-medium);
 }
@@ -7560,15 +7902,14 @@ dialog:dir(rtl)::after {
 }
 .nova-enabled .clocks-widget.large-widget[data-clock-count="3"] .clocks-list, .nova-enabled .clocks-widget.large-widget[data-clock-count="4"] .clocks-list {
   gap: var(--space-small);
+  padding-block-start: 0;
+  transition-property: gap;
 }
 .nova-enabled .clocks-widget.large-widget[data-clock-count="3"] .clocks-row + .clocks-row::before, .nova-enabled .clocks-widget.large-widget[data-clock-count="4"] .clocks-row + .clocks-row::before {
   inset-block-start: calc(-1 * var(--space-xsmall));
 }
 .nova-enabled .clocks-widget.large-widget .clocks-time {
   font-size: var(--font-size-heading-xlarge);
-}
-.nova-enabled .clocks-widget.large-widget.is-hero .clocks-list {
-  flex-direction: column;
 }
 .nova-enabled .clocks-widget.large-widget.is-hero .clocks-row {
   flex: 1 1 auto;
@@ -7577,12 +7918,10 @@ dialog:dir(rtl)::after {
   align-items: stretch;
 }
 .nova-enabled .clocks-widget.large-widget.is-hero .clocks-label {
-  flex-direction: column;
   gap: var(--space-xsmall);
 }
 .nova-enabled .clocks-widget.large-widget.is-hero .clocks-city {
   font-size: var(--font-size-heading-xlarge);
-  font-weight: var(--font-weight);
 }
 .nova-enabled .clocks-widget.large-widget.is-hero .clocks-timezone {
   font-size: var(--font-size-heading-large);
@@ -7590,11 +7929,23 @@ dialog:dir(rtl)::after {
 }
 .nova-enabled .clocks-widget.large-widget.is-hero .clocks-time {
   /* stylelint-disable-next-line declaration-property-value-disallowed-list, stylelint-plugin-mozilla/use-design-tokens */
-  font-size: 64px;
+  font-size: 56px;
   align-self: flex-start;
+}
+.nova-enabled .clocks-widget.large-widget.is-hero .clocks-row-actions {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: 0;
+  margin: 0;
 }
 .nova-enabled .clocks-widget.large-widget.is-hero .clocks-meta:has(.clocks-label-chip) .clocks-timezone {
   font-size: var(--font-size-heading-medium);
+}
+.nova-enabled .clocks-widget.large-widget.is-hero:not(.is-panel-open):hover .clocks-list, .nova-enabled .clocks-widget.large-widget.is-hero:not(.is-panel-open):focus-within .clocks-list {
+  padding-block-start: 0;
+}
+.nova-enabled .clocks-widget.large-widget[data-clock-count="2"]:not(.is-panel-open):hover .clocks-list, .nova-enabled .clocks-widget.large-widget[data-clock-count="2"]:not(.is-panel-open):focus-within .clocks-list {
+  padding-block-start: 0;
 }
 
 .weather-forecast-widget {

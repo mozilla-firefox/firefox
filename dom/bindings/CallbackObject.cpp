@@ -53,11 +53,11 @@ NS_IMPL_CYCLE_COLLECTION_CAN_SKIP_BEGIN(CallbackObject)
   // wrappers to cut, we need to check whether the compartment is still alive,
   // and drop the references if it is not.
 
-  if (MOZ_UNLIKELY(!callback)) {
+  if (!callback) [[unlikely]] {
     return true;
   }
-  if (MOZ_LIKELY(tmp->mIncumbentGlobal) &&
-      MOZ_UNLIKELY(js::NukedObjectRealm(tmp->CallbackGlobalPreserveColor()))) {
+  if (tmp->mIncumbentGlobal &&
+      js::NukedObjectRealm(tmp->CallbackGlobalPreserveColor())) [[unlikely]] {
     // It's not safe to release our global reference or drop our JS objects at
     // this point, so defer their finalization until CC is finished.
     AddForDeferredFinalization(new JSObjectsDropper(tmp));

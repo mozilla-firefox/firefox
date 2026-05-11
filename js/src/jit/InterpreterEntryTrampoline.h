@@ -42,7 +42,7 @@ class EntryTrampoline {
 
  public:
   void trace(JSTracer* trc) {
-    TraceNullableEdge(trc, &entryTrampoline_, "interpreter-entry-trampoline");
+    TraceEdge(trc, &entryTrampoline_, "interpreter-entry-trampoline");
   }
 
   explicit EntryTrampoline(JSContext* cx, JitCode* code) {

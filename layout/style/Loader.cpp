@@ -2147,7 +2147,7 @@ Result<RefPtr<StyleSheet>, nsresult> Loader::LoadSheetSync(
     nsIURI* aURL, SheetParsingMode aParsingMode,
     UseSystemPrincipal aUseSystemPrincipal) {
   LOG(("css::Loader::LoadSheetSync"));
-  nsCOMPtr<nsIReferrerInfo> referrerInfo = new ReferrerInfo(nullptr);
+  nsCOMPtr<nsIReferrerInfo> referrerInfo = MakeAndAddRef<ReferrerInfo>(nullptr);
   return InternalLoadNonDocumentSheet(
       aURL, StylePreloadKind::None, aParsingMode, aUseSystemPrincipal, nullptr,
       referrerInfo, nullptr, CORS_NONE, u""_ns, u""_ns, 0, FetchPriority::Auto);
@@ -2156,7 +2156,7 @@ Result<RefPtr<StyleSheet>, nsresult> Loader::LoadSheetSync(
 Result<RefPtr<StyleSheet>, nsresult> Loader::LoadSheet(
     nsIURI* aURI, SheetParsingMode aParsingMode,
     UseSystemPrincipal aUseSystemPrincipal, nsICSSLoaderObserver* aObserver) {
-  nsCOMPtr<nsIReferrerInfo> referrerInfo = new ReferrerInfo(nullptr);
+  nsCOMPtr<nsIReferrerInfo> referrerInfo = MakeAndAddRef<ReferrerInfo>(nullptr);
   return InternalLoadNonDocumentSheet(
       aURI, StylePreloadKind::None, aParsingMode, aUseSystemPrincipal, nullptr,
       referrerInfo, aObserver, CORS_NONE, u""_ns, u""_ns, 0,

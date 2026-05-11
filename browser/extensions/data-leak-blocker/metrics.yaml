@@ -21,16 +21,18 @@ data_leak_blocker:
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1985769
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2019476
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2034310
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1985769
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2019476
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2034310
     notification_emails:
       - addons-dev-internal@mozilla.com
     data_sensitivity:
       - interaction
     send_in_pings:
       - data-leak-blocker
-    expires: 153
+    expires: 158
     extra_keys:
       addon_id:
         type: string

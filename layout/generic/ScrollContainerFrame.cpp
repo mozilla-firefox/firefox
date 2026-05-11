@@ -14,6 +14,7 @@
 #include <tuple>    // for std::tie
 
 #include "DisplayItemClip.h"
+#include "GeckoProfiler.h"
 #include "MobileViewportManager.h"
 #include "ScrollAnimationBezierPhysics.h"
 #include "ScrollAnimationMSDPhysics.h"
@@ -170,6 +171,7 @@ class ScrollContainerFrame::ScrollEvent : public Runnable {
   NS_DECL_NSIRUNNABLE
   explicit ScrollEvent(ScrollContainerFrame* aHelper);
   void Revoke() { mHelper = nullptr; }
+  UniquePtr<ProfileChunkedBuffer> mBacktrace;
 
  private:
   ScrollContainerFrame* mHelper;
@@ -6039,10 +6041,15 @@ ScrollContainerFrame::ScrollEndEvent::Run() {
 void ScrollContainerFrame::FireScrollEvent() {
   RefPtr<nsIContent> content = GetContent();
   RefPtr<nsPresContext> presContext = PresContext();
-  AUTO_PROFILER_MARKER_DOCSHELL("FireScrollEvent", GRAPHICS,
-                                presContext->GetDocShell());
-
   MOZ_ASSERT(mScrollEvent);
+  UniquePtr<ProfileChunkedBuffer> backtrace =
+      std::move(mScrollEvent->mBacktrace);
+  AutoProfilerTracing scrollEventMarker(
+      "FireScrollEvent", geckoprofiler::category::GRAPHICS,
+      std::move(backtrace),
+      geckoprofiler::markers::detail::
+          profiler_get_inner_window_id_from_docshell(
+              presContext->GetDocShell()));
   mScrollEvent->Revoke();
   mScrollEvent = nullptr;
 
@@ -6077,6 +6084,8 @@ void ScrollContainerFrame::PostScrollEvent() {
 
   // The ScrollEvent constructor registers itself.
   mScrollEvent = MakeRefPtr<ScrollEvent>(this);
+  // Capture stack trace now rather when FireScrollEvent runs async
+  mScrollEvent->mBacktrace = profiler_capture_backtrace();
 }
 
 // TODO: Convert this to MOZ_CAN_RUN_SCRIPT (bug 1415230, bug 1535398)

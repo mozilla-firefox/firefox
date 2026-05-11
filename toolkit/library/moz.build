@@ -146,6 +146,7 @@ USE_LIBS += [
 ]
 
 USE_LIBS += [
+    "abseil",
     "gkcodecs",
     "lgpllibs",
     "nspr",

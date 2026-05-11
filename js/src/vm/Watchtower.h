@@ -52,8 +52,6 @@ class Watchtower {
   static bool watchFreezeOrSealSlow(JSContext* cx, Handle<NativeObject*> obj,
                                     IntegrityLevel level);
   static bool watchProtoChangeSlow(JSContext* cx, HandleObject obj);
-  static bool watchObjectSwapSlow(JSContext* cx, HandleObject a,
-                                  HandleObject b);
   static SetSlotOptimizable canOptimizeSetSlotSlow(JSContext* cx,
                                                    NativeObject* obj,
                                                    PropertyInfo prop);
@@ -86,14 +84,6 @@ class Watchtower {
   static bool watchesProtoChange(JSObject* obj) {
     return obj->hasAnyFlag(
         {ObjectFlag::IsUsedAsPrototype, ObjectFlag::UseWatchtowerTestingLog});
-  }
-  static bool watchesObjectSwap(JSObject* a, JSObject* b) {
-    auto watches = [](JSObject* obj) {
-      return obj->hasAnyFlag({ObjectFlag::IsUsedAsPrototype,
-                              ObjectFlag::UseWatchtowerTestingLog,
-                              ObjectFlag::HasObjectFuse});
-    };
-    return watches(a) || watches(b);
   }
   static SetSlotOptimizable canOptimizeSetSlot(JSContext* cx, NativeObject* obj,
                                                PropertyInfo prop) {
@@ -159,13 +149,6 @@ class Watchtower {
       return true;
     }
     return watchProtoChangeSlow(cx, obj);
-  }
-
-  static bool watchObjectSwap(JSContext* cx, HandleObject a, HandleObject b) {
-    if (MOZ_LIKELY(!watchesObjectSwap(a, b))) {
-      return true;
-    }
-    return watchObjectSwapSlow(cx, a, b);
   }
 };
 

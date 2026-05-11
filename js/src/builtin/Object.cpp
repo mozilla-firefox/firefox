@@ -1660,11 +1660,6 @@ static bool TryEnumerableOwnPropertiesNative(JSContext* cx, HandleObject obj,
     }
   }
 
-  // Up to this point no side-effects through accessor properties are
-  // possible which could have replaced |obj| with a non-native object.
-  MOZ_ASSERT(obj->is<NativeObject>());
-  MOZ_ASSERT(obj.as<NativeObject>() == nobj);
-
   size_t approximatePropertyCount =
       nobj->shape()->propMap()
           ? nobj->shape()->propMap()->approximateEntryCount()
@@ -1753,8 +1748,8 @@ static bool TryEnumerableOwnPropertiesNative(JSContext* cx, HandleObject obj,
       PropertyInfoWithKey prop = props[i - 1];
       id = prop.key();
 
-      // If |obj| still has the same shape, it must still be a NativeObject with
-      // the properties in |props|.
+      // If |obj| still has the same shape, it must still have the properties in
+      // |props|.
       if (obj->shape() == objShape && prop.isDataProperty()) {
         if (!prop.enumerable()) {
           continue;

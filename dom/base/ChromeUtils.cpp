@@ -22,7 +22,6 @@
 #include "jsfriendapi.h"
 #include "mozJSModuleLoader.h"
 #include "mozilla/Base64.h"
-#include "mozilla/Components.h"
 #include "mozilla/ControllerCommand.h"
 #include "mozilla/CycleCollectedJSRuntime.h"
 #include "mozilla/ErrorNames.h"
@@ -49,7 +48,6 @@
 #include "mozilla/dom/MediaSessionBinding.h"
 #include "mozilla/dom/PBrowserParent.h"
 #include "mozilla/dom/PopupBlocker.h"
-#include "mozilla/dom/ProcessIsolation.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/Record.h"
 #include "mozilla/dom/ReportingHeader.h"
@@ -72,7 +70,6 @@
 #include "nsDocShell.h"
 #include "nsIException.h"
 #include "nsIRFPTargetSetIDL.h"
-#include "nsIURIFixup.h"
 #include "nsIWidget.h"
 #include "nsNativeTheme.h"
 #include "nsRFPTargetSetIDL.h"
@@ -2951,89 +2948,6 @@ void ChromeUtils::GetLastOOMStackTrace(GlobalObject& aGlobal,
                                        nsAString& aRetval) {
   JSContext* cx = aGlobal.Context();
   aRetval = NS_ConvertUTF8toUTF16(JS_GetLastOOMStackTrace(cx));
-}
-
-void ChromeUtils::PredictRemoteTypeForURI(
-    GlobalObject& aGlobal, nsIURI* aURI,
-    const PredictRemoteTypeOptions& aOptions, nsACString& aRemoteType,
-    ErrorResult& aRv) {
-  // If 'useRemoteTabs' is disabled, immediately return with NOT_REMOTE_TYPE,
-  // as we won't perform any process isolation.
-  bool useRemoteTabs = true;
-  if (aOptions.mUseRemoteTabs.WasPassed()) {
-    useRemoteTabs = aOptions.mUseRemoteTabs.Value();
-  } else if (aOptions.mWindow) {
-    useRemoteTabs = aOptions.mWindow->GetBrowsingContext()->UseRemoteTabs();
-  }
-  if (!useRemoteTabs) {
-    aRemoteType = NOT_REMOTE_TYPE;
-    return;
-  }
-
-  bool useRemoteSubframes = true;
-  if (aOptions.mUseRemoteSubframes.WasPassed()) {
-    useRemoteSubframes = aOptions.mUseRemoteSubframes.Value();
-  } else if (aOptions.mWindow) {
-    useRemoteSubframes =
-        aOptions.mWindow->GetBrowsingContext()->UseRemoteSubframes();
-  }
-
-  OriginAttributes attrs;
-  attrs.mUserContextId = aOptions.mUserContextId;
-  attrs.mGeckoViewSessionContextId = aOptions.mGeckoViewSessionContextId;
-  if (aOptions.mPrivateBrowsingId.WasPassed()) {
-    attrs.mPrivateBrowsingId = aOptions.mPrivateBrowsingId.Value();
-  } else if (aOptions.mWindow) {
-    attrs.mPrivateBrowsingId = aOptions.mWindow->IsPrivateBrowsing() ? 1 : 0;
-  }
-
-  nsCString preferredRemoteType = aOptions.mPreferredRemoteType.WasPassed()
-                                      ? aOptions.mPreferredRemoteType.Value()
-                                      : SharedWebRemoteType(attrs);
-
-  // If we got nullptr as our argument URI argument, treat it like an
-  // about:blank document, and load it into our preferred remote type.
-  if (!aURI) {
-    aRemoteType = preferredRemoteType;
-    return;
-  }
-
-  auto result = mozilla::dom::PredictRemoteTypeForURI(
-      aURI, attrs, preferredRemoteType, useRemoteSubframes);
-  if (result.isErr()) {
-    aRv.Throw(result.unwrapErr());
-    return;
-  }
-
-  aRemoteType = result.unwrap();
-}
-
-void ChromeUtils::PredictRemoteTypeForURI(
-    GlobalObject& aGlobal, const nsACString& aURIString,
-    const PredictRemoteTypeOptions& aOptions, nsACString& aRemoteType,
-    ErrorResult& aRv) {
-  // Attempt to invoke URIFixup to fix up the given URI string into a functional
-  // string. If this fails, `preferredURI` will be `nullptr`. We intentionally
-  // don't forward any errors reported, as we want to recover in the case of an
-  // invalid URI.
-  nsCOMPtr<nsIURI> preferredURI;
-  if (nsCOMPtr<nsIURIFixup> uriFixup = components::URIFixup::Service()) {
-    nsCOMPtr<nsIURIFixupInfo> fixupInfo;
-    uriFixup->GetFixupURIInfo(aURIString, nsIURIFixup::FIXUP_FLAG_NONE,
-                              getter_AddRefs(fixupInfo));
-    if (fixupInfo) {
-      fixupInfo->GetPreferredURI(getter_AddRefs(preferredURI));
-    }
-  }
-
-  // If parsing the URI with fixup failed, clear out `mPreferredRemoteType`, so
-  // we always fall back to the least privileged remote type.
-  PredictRemoteTypeOptions newOptions(aOptions);
-  if (!preferredURI) {
-    newOptions.mPreferredRemoteType.Reset();
-  }
-
-  PredictRemoteTypeForURI(aGlobal, preferredURI, newOptions, aRemoteType, aRv);
 }
 
 }  // namespace mozilla::dom

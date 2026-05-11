@@ -3,6 +3,6 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_enabled="true" android:color="@color/fx_mobile_private_text_color_primary" />
+    <item android:state_enabled="true" android:color="@color/fx_mobile_private_on_surface" />
     <item android:state_enabled="false" android:color="@color/mozac_feature_readerview_text_color_disabled" />
 </selector>

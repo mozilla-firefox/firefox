@@ -49,6 +49,7 @@ DIRS += [
     "mozcachedohttp",
     "multilineeditor",
     "newtab",
+    "nova",
     "originattributes",
     "pagedata",
     "permissions",

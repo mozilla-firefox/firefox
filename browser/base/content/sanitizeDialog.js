@@ -200,6 +200,14 @@ var gSanitizePromptDialog = {
       }
     });
 
+    const { onAccept, onCancel } = arg.wrappedJSObject ?? arg;
+    if (typeof onAccept === "function") {
+      document.addEventListener("dialogaccept", onAccept);
+    }
+    if (typeof onCancel === "function") {
+      document.addEventListener("dialogcancel", onCancel);
+    }
+
     this._allCheckboxes = document.querySelectorAll("checkbox[preference]");
 
     this.registerSyncFromPrefListeners();

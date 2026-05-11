@@ -5,6 +5,7 @@ prefs = [
   "browser.backup.archive.enabled=false",
   "browser.backup.restore.enabled=false",
   "browser.settings-redesign.enabled=false",
+  "extensions.getAddons.langpacks.url=https://mochi.test:8000/langpacks",
 ]
 support-files = [
   "head.js",

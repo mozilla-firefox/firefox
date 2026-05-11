@@ -92,7 +92,7 @@ interface nsISHistoryListener : nsISupports
   void OnHistoryCommit();
 
   /**
-   * Called whenever a session history entry changes title.
+   * Called whenever a session history entry has been updated.
    */
-  void OnEntryTitleUpdated(in nsISHEntry aEntry);
+  void OnEntryUpdated(in nsISHEntry aEntry);
 };

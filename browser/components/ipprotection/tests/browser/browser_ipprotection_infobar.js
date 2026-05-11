@@ -54,7 +54,7 @@ const REGEX_WHOLE_NUMBER = /^\d+$/;
 add_task(async function test_75_percent_notification() {
   IPProtectionInfobarManager.init();
 
-  dispatchUsageEvent(0.2);
+  dispatchUsageEvent(0.246); // 12.3 GB remaining
 
   await TestUtils.waitForCondition(
     () =>
@@ -86,7 +86,7 @@ add_task(async function test_75_percent_notification() {
 add_task(async function test_90_percent_notification() {
   IPProtectionInfobarManager.init();
 
-  dispatchUsageEvent(0.08);
+  dispatchUsageEvent(0.094); // 4.7 GB remaining
 
   await TestUtils.waitForCondition(
     () =>

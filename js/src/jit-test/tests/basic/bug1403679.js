@@ -6,28 +6,16 @@ const otherGlobalNewCompartment = newGlobal({newCompartment: true});
 
 const globals = [thisGlobal, otherGlobalSameCompartment, otherGlobalNewCompartment];
 
-function testWithOptions(fn, variants = [undefined]) {
+function test(fn, variants = [undefined]) {
     for (let variant of variants) {
         for (let global of globals) {
-            for (let options of [
-                {},
-                {proxy: true},
-                {object: new FakeDOMObject()},
-            ]) {
-                fn(options, global, variant);
-            }
+            fn(global, variant);
         }
     }
 }
 
-function testWithGlobals(fn) {
-    for (let global of globals) {
-        fn(global);
-    }
-}
-
-function testBasic(options, global) {
-    let {object: source, transplant} = transplantableObject(options);
+function testBasic(global) {
+    let {object: source, transplant} = transplantableObject();
 
     // Validate that |source| is an object and |transplant| is a function.
     assertEq(typeof source, "object");
@@ -36,14 +24,8 @@ function testBasic(options, global) {
     // |source| is created in the current global.
     assertEq(objectGlobal(source), this);
 
-    // |source|'s prototype is %ObjectPrototype%, unless it's a FakeDOMObject.
-    let oldPrototype;
-    if (options.object) {
-        oldPrototype = FakeDOMObject.prototype;
-    } else {
-        oldPrototype = Object.prototype;
-    }
-    assertEq(Object.getPrototypeOf(source), oldPrototype);
+    // |source|'s prototype is %ObjectPrototype%.
+    assertEq(Object.getPrototypeOf(source), Object.prototype);
 
     // Properties can be created on |source|.
     assertEq(source.foo, undefined);
@@ -65,67 +47,45 @@ function testBasic(options, global) {
     // The properties are copied over to the swapped object.
     assertEq(source.foo, 1);
 
-    // The prototype was changed to %ObjectPrototype% of |global| or the
-    // FakeDOMObject.prototype.
-    let newPrototype;
-    if (options.object) {
-        newPrototype = global.FakeDOMObject.prototype;
-    } else {
-        newPrototype = global.Object.prototype;
-    }
-    assertEq(Object.getPrototypeOf(source), newPrototype);
+    // The prototype was changed to %ObjectPrototype% of |global|.
+    assertEq(Object.getPrototypeOf(source), global.Object.prototype);
 }
-testWithOptions(testBasic);
+test(testBasic);
 
 // Objects can be transplanted multiple times between globals.
-function testTransplantMulti(options, global1, global2) {
-    let {object: source, transplant} = transplantableObject(options);
+function testTransplantMulti(global1, global2) {
+    let {object: source, transplant} = transplantableObject();
 
     transplant(global1);
     transplant(global2);
 }
-testWithOptions(testTransplantMulti, globals);
+test(testTransplantMulti, globals);
 
 // Test the case when the source object already has a wrapper in the target global.
-function testHasWrapperInTarget(options, global) {
-    let {object: source, transplant} = transplantableObject(options);
+function testHasWrapperInTarget(global) {
+    let {object: source, transplant} = transplantableObject();
 
     // Create a wrapper for |source| in the other global.
     global.p = source;
     assertEq(global.eval("p"), source);
 
-    if (options.proxy) {
-        // It's a proxy object either way.
-        assertEq(global.eval("isProxy(p)"), true);
-    } else {
-        if (global === otherGlobalNewCompartment) {
-            // |isProxy| returns true because |p| is a CCW.
-            assertEq(global.eval("isProxy(p)"), true);
-        } else {
-            // |isProxy| returns false because |p| is not a CCW.
-            assertEq(global.eval("isProxy(p)"), false);
-        }
-    }
+    // It's a proxy object either way.
+    assertEq(global.eval("isProxy(p)"), true);
 
     // And now transplant it into that global.
     transplant(global);
 
     assertEq(global.eval("p"), source);
 
-    if (options.proxy) {
-        // It's a proxy object either way.
-        assertEq(global.eval("isProxy(p)"), true);
-    } else {
-        // The previous CCW was replaced with a same-compartment object.
-        assertEq(global.eval("isProxy(p)"), false);
-    }
+    // It's a proxy object either way.
+    assertEq(global.eval("isProxy(p)"), true);
 }
-testWithOptions(testHasWrapperInTarget);
+test(testHasWrapperInTarget);
 
 // Test the case when the source object has a wrapper, but in a different compartment.
-function testHasWrapperOtherCompartment(options, global) {
+function testHasWrapperOtherCompartment(global) {
     let thirdGlobal = newGlobal({newCompartment: true});
-    let {object: source, transplant} = transplantableObject(options);
+    let {object: source, transplant} = transplantableObject();
 
     // Create a wrapper for |source| in the new global.
     thirdGlobal.p = source;
@@ -136,11 +96,11 @@ function testHasWrapperOtherCompartment(options, global) {
 
     assertEq(thirdGlobal.eval("p"), source);
 }
-testWithOptions(testHasWrapperOtherCompartment);
+test(testHasWrapperOtherCompartment);
 
 // Ensure a transplanted object is correctly handled by (weak) collections.
-function testCollections(options, global, AnySet) {
-    let {object, transplant} = transplantableObject(options);
+function testCollections(global, AnySet) {
+    let {object, transplant} = transplantableObject();
 
     let set = new AnySet();
 
@@ -152,23 +112,7 @@ function testCollections(options, global, AnySet) {
 
     assertEq(set.has(object), true);
 }
-testWithOptions(testCollections, [Set, WeakSet]);
-
-// Ensure DOM object slot is correctly transplanted.
-function testDOMObjectSlot(global) {
-    let domObject = new FakeDOMObject();
-    let expectedValue = domObject.x;
-    assertEq(typeof expectedValue, "number");
-
-    let {object, transplant} = transplantableObject({object: domObject});
-    assertEq(object, domObject);
-
-    transplant(global);
-
-    assertEq(object, domObject);
-    assertEq(domObject.x, expectedValue);
-}
-testWithGlobals(testDOMObjectSlot);
+test(testCollections, [Set, WeakSet]);
 
 function testArgumentValidation() {
     // Throws an error if too many arguments are present.
@@ -187,9 +131,5 @@ function testArgumentValidation() {
 
     // Throws an error if the argument isn't a global object.
     assertThrowsInstanceOf(() => transplant({}), Error);
-
-    // Throws an error if the 'object' option isn't a FakeDOMObject.
-    assertThrowsInstanceOf(() => transplant({object: null}), Error);
-    assertThrowsInstanceOf(() => transplant({object: {}}), Error);
 }
 testArgumentValidation();

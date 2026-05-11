@@ -38,7 +38,7 @@ static_assert(std::is_same_v<CSSCoord, decltype(CSSIntCoord() * 42.f)>);
 static_assert(std::is_same_v<CSSCoord, decltype(CSSCoord() * 42.f)>);
 
 template <class RectType>
-static bool TestConstructors() {
+static bool TestRectConstructors() {
   // Create a rectangle
   RectType rect1(10, 20, 30, 40);
 
@@ -607,7 +607,7 @@ TEST(Gfx, Logical)
 
 TEST(Gfx, nsRect)
 {
-  TestConstructors<nsRect>();
+  TestRectConstructors<nsRect>();
   TestEqualityOperator<nsRect>();
   TestContainment<nsRect, nscoord>();
   TestIntersects<nsRect>();
@@ -621,7 +621,7 @@ TEST(Gfx, nsRect)
 
 TEST(Gfx, nsIntRect)
 {
-  TestConstructors<nsIntRect>();
+  TestRectConstructors<nsIntRect>();
   TestEqualityOperator<nsIntRect>();
   TestContainment<nsIntRect, int32_t>();
   TestIntersects<nsIntRect>();
@@ -635,7 +635,7 @@ TEST(Gfx, nsIntRect)
 
 TEST(Gfx, gfxRect)
 {
-  TestConstructors<gfxRect>();
+  TestRectConstructors<gfxRect>();
   // Skip TestEqualityOperator<gfxRect>(); as gfxRect::operator== is private
   TestContainment<gfxRect, double>();
   TestIntersects<gfxRect>();

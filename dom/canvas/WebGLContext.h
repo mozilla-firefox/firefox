@@ -1119,7 +1119,7 @@ class WebGLContext : public VRefCounted, public SupportsWeakPtr {
 
  public:
   bool ValidateNonNegative(const char* argName, int64_t val) const {
-    if (MOZ_UNLIKELY(val < 0)) {
+    if (val < 0) [[unlikely]] {
       ErrorInvalidValue("`%s` must be non-negative.", argName);
       return false;
     }

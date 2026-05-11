@@ -1323,7 +1323,7 @@ void imgLoader::GlobalInit() {
   sCacheMaxSize = cachesize > 0 ? cachesize : 0;
 
   sMemReporter = new imgMemoryReporter();
-  RegisterStrongAsyncMemoryReporter(sMemReporter);
+  RegisterStrongAsyncMemoryReporter(do_AddRef(sMemReporter));
   RegisterImagesContentUsedUncompressedDistinguishedAmount(
       imgMemoryReporter::ImagesContentUsedUncompressedDistinguishedAmount);
 }

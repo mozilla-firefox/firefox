@@ -601,6 +601,96 @@ if (Services.prefs.getBoolPref("identity.fxaccounts.enabled")) {
       }
     },
   });
+
+  CustomizableWidgets.push({
+    id: "send-tab-button",
+    l10nId: "toolbar-button-send-tab",
+    type: "custom",
+    tabSpecific: true,
+    locationSpecific: true,
+    onBuild(aDocument) {
+      const node = aDocument.createXULElement("toolbarbutton");
+      node.setAttribute("id", this.id);
+      aDocument.l10n.setAttributes(node, "toolbar-button-send-tab");
+
+      node.classList.add("toolbarbutton-1");
+
+      node.setAttribute("type", "menu");
+
+      const enableDisableButton = () => {
+        node.disabled =
+          !aDocument.documentGlobal.gSync.sendTabToolbarButtonShouldBeEnabled(
+            aDocument.documentGlobal.gBrowser.currentURI
+          );
+      };
+
+      Services.obs.addObserver(
+        enableDisableButton,
+        "fxaccounts:devicelist_updated"
+      );
+      Services.obs.addObserver(enableDisableButton, "sync-ui-state:update");
+      Services.prefs.addObserver(
+        "identity.fxaccounts.enabled",
+        enableDisableButton
+      );
+      aDocument.documentGlobal.addEventListener(
+        "TabSelect",
+        enableDisableButton
+      );
+
+      const locationListener = {
+        onLocationChange(_browser, webProgress, _request, _uri) {
+          if (webProgress.isTopLevel) {
+            enableDisableButton();
+          }
+        },
+      };
+      aDocument.documentGlobal.gBrowser.addTabsProgressListener(
+        locationListener
+      );
+
+      enableDisableButton();
+
+      const widgetListener = {
+        onWidgetInstanceRemoved: (aWidgetId, aDoc) => {
+          if (aWidgetId != this.id || aDoc != aDocument) {
+            return;
+          }
+          lazy.CustomizableUI.removeListener(widgetListener);
+          Services.obs.removeObserver(
+            enableDisableButton,
+            "fxaccounts:devicelist_updated"
+          );
+          Services.obs.removeObserver(
+            enableDisableButton,
+            "sync-ui-state:update"
+          );
+          Services.prefs.removeObserver(
+            "identity.fxaccounts.enabled",
+            enableDisableButton
+          );
+          aDocument.documentGlobal.removeEventListener(
+            "TabSelect",
+            enableDisableButton
+          );
+          aDocument.documentGlobal.gBrowser.removeTabsProgressListener(
+            locationListener
+          );
+        },
+      };
+      lazy.CustomizableUI.addListener(widgetListener);
+
+      const popup = aDocument.createXULElement("menupopup");
+      popup.setAttribute("id", "send-tab-popup");
+      popup.addEventListener("popupshowing", () =>
+        aDocument.documentGlobal.gSync.populateSendTabToolbarButton(popup)
+      );
+
+      node.appendChild(popup);
+
+      return node;
+    },
+  });
 }
 
 let preferencesButton = {

@@ -20,6 +20,8 @@ typedef enum {
 } SessionRestoreState;
 
 class nsAppShell : public nsBaseAppShell {
+  static nsAppShell* sAppShell;
+
  public:
   nsAppShell() = default;
 
@@ -68,6 +70,7 @@ class nsAppShell : public nsBaseAppShell {
 
   int mPipeFDs[2] = {0, 0};
   unsigned mTag = 0;
+  bool mInitialized = false;
 
   SessionRestoreState mSessionRestoreState = eSessionDefault;
 

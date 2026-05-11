@@ -14,6 +14,8 @@ prefs = [
 
 ["browser_bookmarks_sidebar.js"]
 
+["browser_bookmarks_sidebar_glean.js"]
+
 ["browser_customize_sidebar.js"]
 skip-if = [
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'", # Bug 1968564
@@ -43,6 +45,8 @@ skip-if = [
 ["browser_history_multiselect.js"]
 
 ["browser_history_sidebar.js"]
+
+["browser_history_sidebar_glean.js"]
 
 ["browser_launcher_hidden_restore.js"]
 tags = "vertical-tabs"
@@ -90,6 +94,8 @@ skip-if = [
 ["browser_sidebar_splitter_keyboard.js"]
 
 ["browser_syncedtabs_sidebar.js"]
+
+["browser_syncedtabs_sidebar_glean.js"]
 
 ["browser_toolbar_sidebar_button.js"]
 skip-if = [

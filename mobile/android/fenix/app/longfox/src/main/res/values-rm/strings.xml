@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <!-- %1$d is a placeholder for the score value. -->
+  <string name="score">Puncts: %1$d</string>
+  <!--
+    Longfox is the name of an easter egg game available through
+    secret settings. Since that's not localized, keep the name unchanged.
+  -->
+  <string name="longfox">LONGFOX</string>
+  <string name="likes_cookies">🍪 ha gugent ils cookies 🍪</string>
+  <string name="tap_to_play">tutgar per giugar!</string>
+  <!--
+    %1$d is a placeholder for the current high score. HISCORE is an
+    abbreviation for "Highest Score".
+  -->
+  <string name="hiscore">RECORD: %1$d</string>
+  <string name="sound_on">🔈 tun activà</string>
+  <string name="sound_off">🔇 tun deactivà</string>
+  <!-- Back button -->
+  <string name="back">enavos</string>
+</resources>

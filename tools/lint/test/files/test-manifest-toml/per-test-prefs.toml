@@ -1,0 +1,4 @@
+[DEFAULT]
+
+["aaa.js"]
+prefs = ["some.pref=true"]

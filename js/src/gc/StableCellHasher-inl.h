@@ -82,29 +82,6 @@ inline bool GetOrCreateUniqueId(Cell* cell, uint64_t* uidp) {
   return CreateUniqueIdForNonNativeObject(cell, p, uidp);
 }
 
-inline bool SetOrUpdateUniqueId(JSContext* cx, Cell* cell, uint64_t uid) {
-  MOZ_ASSERT(CurrentThreadCanAccessRuntime(cell->runtimeFromAnyThread()));
-
-  if (cell->is<JSObject>()) {
-    JSObject* obj = cell->as<JSObject>();
-    if (obj->is<NativeObject>()) {
-      auto* nobj = &obj->as<NativeObject>();
-      return nobj->setOrUpdateUniqueId(cx, uid);
-    }
-  }
-
-  // If the cell was in the nursery, hopefully unlikely, then we need to
-  // tell the nursery about it so that it can sweep the uid if the thing
-  // does not get tenured.
-  JSRuntime* runtime = cell->runtimeFromMainThread();
-  if (IsInsideNursery(cell) &&
-      !runtime->gc.nursery().addedUniqueIdToCell(cell)) {
-    return false;
-  }
-
-  return cell->zone()->uniqueIds().put(cell, uid);
-}
-
 inline uint64_t GetUniqueIdInfallible(Cell* cell) {
   uint64_t uid;
   AutoEnterOOMUnsafeRegion oomUnsafe;

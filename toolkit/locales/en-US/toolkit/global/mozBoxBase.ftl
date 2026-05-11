@@ -4,3 +4,11 @@
 
 moz-box-link-anchor =
     .title = Opens in a new tab
+
+moz-box-item-reorder-handle =
+    .aria-label = Reorder item using Ctrl+Shift+ArrowUp or Ctrl+Shift+ArrowDown
+
+# Variables:
+#   $item (string) - The label of the moz-box-item being reordered.
+moz-box-item-reorder-handle-named =
+    .aria-label = Reorder { $item } using Ctrl+Shift+ArrowUp or Ctrl+Shift+ArrowDown

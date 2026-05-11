@@ -1536,6 +1536,12 @@
     <item quantity="one">%1$d ടാബു്</item>
     <item quantity="other">%1$d ടാബുകൾ</item>
   </plurals>
+  <!-- Title for the Delete tab group confirmation dialog. -->
+  <string name="delete_tab_group_confirmation_dialog_title">ടാബുകൂട്ടം മായ്ക്കണോ?</string>
+  <!-- Text shown on the confirm button in the Delete tab group confirmation dialog. -->
+  <string name="delete_tab_group_confirmation_dialog_confirm">കൂട്ടം മായ്ക്കുക</string>
+  <!-- Text shown on the cancel button in the Delete tab group confirmation dialog. -->
+  <string name="delete_tab_group_confirmation_dialog_cancel">റദ്ദാക്കുക</string>
   <!-- Text shown on the confirm button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">കൂട്ടം മായ്ക്കുക</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
@@ -1779,6 +1785,11 @@
   <!-- Text for the filter button to show all other file types in the downloads list -->
   <string name="download_content_type_filter_other_1">മറ്റുള്ളവ</string>
   <!--
+    Title for the alert dialog to rename a file and/or change its download location
+    when the file size is not available before downloading it.
+  -->
+  <string name="download_rename_and_change_location_dialog_title_with_unknown_size">ഫയൽ ഇറക്കിവയ്ക്കണോ?</string>
+  <!--
     WebCompat Reporter
 
     The title of the Web Compat Reporter feature. This is displayed in the top app bar.
@@ -1917,6 +1928,12 @@
   <string name="bookmark_sort_menu_a_to_z">അക്ഷരമുറയിൽ അടുക്കുക</string>
   <!-- Label for button to sort bookmarks in reverse alphabetical order in the bookmark sorting overflow menu. -->
   <string name="bookmark_sort_menu_z_to_a">തിരിച്ചക്ഷരമുറയിൽ അടുക്കുക</string>
+  <!-- Label for button to import bookmarks from file. -->
+  <string name="bookmark_import_menu_button">ഫയലിൽ നിന്നു് ഇറക്കുമതിക്കുക</string>
+  <!-- Snackbar message shown when a bookmark import attempt fails. -->
+  <string name="bookmark_import_failure_snackbar">അടയാളക്കുറിപ്പുകൾ ഇറക്കുമതിക്കുവാൻ പറ്റിയില്ല. വീണ്ടും ശ്രമിക്കുക.</string>
+  <!-- Default name for the folder created when importing bookmarks from a file. -->
+  <string name="bookmark_import_destination_default_name">ഇറക്കുമതിക്കപ്പെട്ട അടയാളക്കുറിപ്പുകൾ</string>
   <!--
     Bookmark multi select title in app bar
     %1$d is the number of bookmarks selected
@@ -1975,6 +1992,8 @@
   <string name="bookmark_select_folder_close_folder_content_description">അറ അടയ്ക്കുക: %s</string>
   <!-- Content description for the "close" button in bookmarks screen. -->
   <string name="bookmark_close_button_content_description">അടയാളക്കുറിപ്പുകൾ അടയ്ക്കുക</string>
+  <!-- Content description for the Import bookmarks button in bookmarks screen. -->
+  <string name="bookmark_import_bookmarks_button_content_description">ഫയലിൽ നിന്നു് ഇറക്കുമതിക്കുക</string>
   <!-- Title for the bookmark list empty state -->
   <string name="bookmark_empty_list_title">ഇതുവരെ അടയാളക്കുറിപ്പുകളൊന്നുമില്ല</string>
   <!-- Bookmark screen folder description. %s is the count of bookmark folder children -->
@@ -2162,6 +2181,10 @@
   <string name="menu_print">അച്ചടിപ്പിക്കുക</string>
   <!-- Sub-header in the dialog to share a link to another sync device -->
   <string name="share_device_subheader">ഉപകരണത്തിലേക്ക് അയക്കു</string>
+  <!-- Text for the QR code action in the native share sheet -->
+  <string name="share_qr_code">ക്യു.ആർ സങ്കേതം</string>
+  <!-- Title shown in the QR code display screen -->
+  <string name="qr_code_display_title">ക്യു.ആർ സങ്കേതം</string>
   <!-- Content description for the close button in the QR code display screen -->
   <string name="qr_code_display_close">അടയ്ക്കുക</string>
   <!-- Label for the download button on the QR code display screen -->
@@ -3919,6 +3942,18 @@
   <string name="terms_of_use_prompt_body_line_two_alternative" tools:ignore="UnusedResources">%1$s-ൽ താങ്ങൾക്കു കൂടുതലറിയാം.</string>
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">ഇവിടെ</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="sports_widget_remove" tools:ignore="UnusedResources">മാറ്റുക</string>
+  <!-- Sports widget button label that dismisses the step of choosing a team to follow. -->
+  <string name="sports_widget_skip">ഒഴിവാക്കുക</string>
+  <!-- Content description (for accessibility, not displayed) for the close button on the sports widget card. -->
+  <string name="sports_widget_close_content_description">അടയ്ക്കുക</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="sports_widget_more_options_content_description" tools:ignore="UnusedResources">കൂടുതൽ സാധ്യതകൾ</string>
+  <!-- Sports widget match status label shown during first half of a match. -->
+  <string name="sports_widget_first_half" tools:ignore="UnusedResources">ഒന്നാമ്പകുതി</string>
+  <!-- Sports widget match status label shown during second half of a match. -->
+  <string name="sports_widget_second_half" tools:ignore="UnusedResources">രണ്ടാമ്പകുതി</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!-- The first active link used in privacy_notice_updated_homepage_message -->

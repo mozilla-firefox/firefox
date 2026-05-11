@@ -20,12 +20,6 @@ const syncedTabsData = [
   },
 ];
 
-const searchEvent = page => {
-  return [
-    ["firefoxview_next", "search_initiated", "search", undefined, { page }],
-  ];
-};
-
 const cleanUp = () => {
   while (gBrowser.tabs.length > 1) {
     BrowserTestUtils.removeTab(gBrowser.tabs.at(-1));
@@ -47,7 +41,7 @@ add_setup(async () => {
 add_task(async function test_search_initiated_telemetry() {
   await withFirefoxView({}, async browser => {
     const { document } = browser.contentWindow;
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
 
     is(document.location.hash, "", "Searching within recent browsing.");
     const recentBrowsing = document.querySelector("view-recentbrowsing");
@@ -58,19 +52,32 @@ add_task(async function test_search_initiated_telemetry() {
       content
     );
     EventUtils.sendString("example.com", content);
-    await telemetryEvent(searchEvent("recentbrowsing"));
+    await TestUtils.waitForCondition(
+      () => Glean.firefoxviewNext.searchInitiatedSearch.testGetValue(),
+      "Awaiting search to be reported."
+    );
+    let searchEvents =
+      Glean.firefoxviewNext.searchInitiatedSearch.testGetValue();
+    Assert.equal(1, searchEvents.length, "Expected one search event.");
+    Assert.deepEqual({ page: "recentbrowsing" }, searchEvents[0].extra);
 
     await navigateToViewAndWait(document, "opentabs");
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
     is(document.location.hash, "#opentabs", "Searching within open tabs.");
     const openTabs = document.querySelector("named-deck > view-opentabs");
     info("Input a search query");
     EventUtils.synthesizeMouseAtCenter(openTabs.searchTextbox, {}, content);
     EventUtils.sendString("example.com", content);
-    await telemetryEvent(searchEvent("opentabs"));
+    await TestUtils.waitForCondition(
+      () => Glean.firefoxviewNext.searchInitiatedSearch.testGetValue(),
+      "Awaiting search to be reported."
+    );
+    searchEvents = Glean.firefoxviewNext.searchInitiatedSearch.testGetValue();
+    Assert.equal(1, searchEvents.length, "Expected one search event.");
+    Assert.deepEqual({ page: "opentabs" }, searchEvents[0].extra);
 
     await navigateToViewAndWait(document, "recentlyclosed");
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
     is(
       document.location.hash,
       "#recentlyclosed",
@@ -86,27 +93,43 @@ add_task(async function test_search_initiated_telemetry() {
       content
     );
     EventUtils.sendString("example.com", content);
-    await telemetryEvent(searchEvent("recentlyclosed"));
+    await TestUtils.waitForCondition(
+      () => Glean.firefoxviewNext.searchInitiatedSearch.testGetValue(),
+      "Awaiting search to be reported."
+    );
+    searchEvents = Glean.firefoxviewNext.searchInitiatedSearch.testGetValue();
+    Assert.equal(1, searchEvents.length, "Expected one search event.");
+    Assert.deepEqual({ page: "recentlyclosed" }, searchEvents[0].extra);
 
     await navigateToViewAndWait(document, "syncedtabs");
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
     is(document.location.hash, "#syncedtabs", "Searching within synced tabs.");
     const syncedTabs = document.querySelector("named-deck > view-syncedtabs");
     info("Input a search query");
     EventUtils.synthesizeMouseAtCenter(syncedTabs.searchTextbox, {}, content);
     EventUtils.sendString("example.com", content);
-    await telemetryEvent(searchEvent("syncedtabs"));
+    await TestUtils.waitForCondition(
+      () => Glean.firefoxviewNext.searchInitiatedSearch.testGetValue(),
+      "Awaiting search to be reported."
+    );
+    searchEvents = Glean.firefoxviewNext.searchInitiatedSearch.testGetValue();
+    Assert.equal(1, searchEvents.length, "Expected one search event.");
+    Assert.deepEqual({ page: "syncedtabs" }, searchEvents[0].extra);
 
     await navigateToViewAndWait(document, "history");
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
     is(document.location.hash, "#history", "Searching within history.");
     const history = document.querySelector("named-deck > view-history");
     info("Input a search query");
     EventUtils.synthesizeMouseAtCenter(history.searchTextbox, {}, content);
     EventUtils.sendString("example.com", content);
-    await telemetryEvent(searchEvent("history"));
-
-    await clearAllParentTelemetryEvents();
+    await TestUtils.waitForCondition(
+      () => Glean.firefoxviewNext.searchInitiatedSearch.testGetValue(),
+      "Awaiting search to be reported."
+    );
+    searchEvents = Glean.firefoxviewNext.searchInitiatedSearch.testGetValue();
+    Assert.equal(1, searchEvents.length, "Expected one search event.");
+    Assert.deepEqual({ page: "history" }, searchEvents[0].extra);
   });
 });
 
@@ -136,7 +159,7 @@ add_task(async function test_show_all_recentlyclosed_telemetry() {
         ),
       "Expected search results are not shown yet."
     );
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
 
     info("Click the Show All link.");
     const showAllButton = recentlyclosedSlot.shadowRoot.querySelector(
@@ -155,15 +178,10 @@ add_task(async function test_show_all_recentlyclosed_telemetry() {
       return false;
     }, "All search results are not shown.");
 
-    await telemetryEvent([
-      [
-        "firefoxview_next",
-        "search_show_all",
-        "showallbutton",
-        null,
-        { section: "recentlyclosed" },
-      ],
-    ]);
+    const searchEvents =
+      Glean.firefoxviewNext.searchShowAllShowallbutton.testGetValue();
+    Assert.equal(1, searchEvents.length, "Expected one search event.");
+    Assert.deepEqual({ section: "recentlyclosed" }, searchEvents[0].extra);
   });
 });
 
@@ -187,7 +205,7 @@ add_task(async function test_show_all_opentabs_telemetry() {
       () => opentabsSlot.viewCards[0].tabList.rowEls.length === 5,
       "Expected search results are not shown yet."
     );
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
 
     info("Click the Show All link.");
     const showAllButton = opentabsSlot.viewCards[0].shadowRoot.querySelector(
@@ -206,22 +224,14 @@ add_task(async function test_show_all_opentabs_telemetry() {
       return false;
     }, "All search results are not shown.");
 
-    await telemetryEvent([
-      [
-        "firefoxview_next",
-        "search_initiated",
-        "search",
-        null,
-        { page: "recentbrowsing" },
-      ],
-      [
-        "firefoxview_next",
-        "search_show_all",
-        "showallbutton",
-        null,
-        { section: "opentabs" },
-      ],
-    ]);
+    const searchEvents =
+      Glean.firefoxviewNext.searchInitiatedSearch.testGetValue();
+    Assert.equal(1, searchEvents.length, "Expected one search event.");
+    Assert.deepEqual({ page: "recentbrowsing" }, searchEvents[0].extra);
+    const showAllEvents =
+      Glean.firefoxviewNext.searchShowAllShowallbutton.testGetValue();
+    Assert.equal(1, showAllEvents.length, "Expected one search event.");
+    Assert.deepEqual({ section: "opentabs" }, showAllEvents[0].extra);
   });
 
   await SimpleTest.promiseFocus(window);
@@ -278,7 +288,7 @@ add_task(async function test_show_all_syncedtabs_telemetry() {
       () => syncedtabsSlot.tabLists[0].rowEls.length === 5,
       "Expected search results are not shown yet."
     );
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
 
     const showAllButton = await TestUtils.waitForCondition(
       () =>
@@ -303,22 +313,14 @@ add_task(async function test_show_all_syncedtabs_telemetry() {
       return false;
     }, "All search results are not shown.");
 
-    await telemetryEvent([
-      [
-        "firefoxview_next",
-        "search_initiated",
-        "search",
-        null,
-        { page: "recentbrowsing" },
-      ],
-      [
-        "firefoxview_next",
-        "search_show_all",
-        "showallbutton",
-        null,
-        { section: "syncedtabs" },
-      ],
-    ]);
+    const searchEvents =
+      Glean.firefoxviewNext.searchInitiatedSearch.testGetValue();
+    Assert.equal(1, searchEvents.length, "Expected one search event.");
+    Assert.deepEqual({ page: "recentbrowsing" }, searchEvents[0].extra);
+    const showAllEvents =
+      Glean.firefoxviewNext.searchShowAllShowallbutton.testGetValue();
+    Assert.equal(1, showAllEvents.length, "Expected one search event.");
+    Assert.deepEqual({ section: "syncedtabs" }, showAllEvents[0].extra);
   });
 
   await tearDown(sandbox);
@@ -346,7 +348,7 @@ add_task(async function test_sort_history_search_telemetry() {
       const { rowEls } = historyComponent.lists[0];
       return rowEls.length === 1;
     }, "There is one matching search result.");
-    await clearAllParentTelemetryEvents();
+    Services.fog.testResetFOG();
     // Select sort by site option
     await EventUtils.synthesizeMouseAtCenter(
       historyComponent.sortInputs[1],
@@ -357,16 +359,14 @@ add_task(async function test_sort_history_search_telemetry() {
       () => historyComponent.fullyUpdated,
       "Waiting for the history component to be fully updated"
     );
-    await telemetryEvent([
-      [
-        "firefoxview_next",
-        "sort_history",
-        "tabs",
-        null,
-        { sort_type: "site", search_start: "true" },
-      ],
-    ]);
-    await clearAllParentTelemetryEvents();
+    let historyEvents = Glean.firefoxviewNext.sortHistoryTabs.testGetValue();
+    Assert.equal(1, historyEvents.length, "Expected one history event.");
+    Assert.deepEqual(
+      { sort_type: "site", search_start: "true" },
+      historyEvents[0].extra
+    );
+
+    Services.fog.testResetFOG();
 
     // Select sort by date option
     await EventUtils.synthesizeMouseAtCenter(
@@ -378,23 +378,16 @@ add_task(async function test_sort_history_search_telemetry() {
       () => historyComponent.fullyUpdated,
       "Waiting for the history component to be fully updated"
     );
-    await telemetryEvent([
-      [
-        "firefoxview_next",
-        "sort_history",
-        "tabs",
-        null,
-        { sort_type: "date", search_start: "true" },
-      ],
-    ]);
+    historyEvents = Glean.firefoxviewNext.sortHistoryTabs.testGetValue();
+    Assert.equal(1, historyEvents.length, "Expected one history event.");
+    Assert.deepEqual(
+      { sort_type: "date", search_start: "true" },
+      historyEvents[0].extra
+    );
   });
 });
 
 add_task(async function test_cumulative_searches_recent_browsing_telemetry() {
-  const cumulativeSearchesHistogram =
-    TelemetryTestUtils.getAndClearKeyedHistogram(
-      "FIREFOX_VIEW_CUMULATIVE_SEARCHES"
-    );
   await PlacesUtils.history.clear();
   await open_then_close(URLs[0]);
 
@@ -425,17 +418,9 @@ add_task(async function test_cumulative_searches_recent_browsing_telemetry() {
       {},
       content
     );
-    await TestUtils.waitForCondition(
-      () => "recentbrowsing" in cumulativeSearchesHistogram.snapshot(),
-      `recentbrowsing key not found in cumulativeSearchesHistogram snapshot: ${JSON.stringify(
-        cumulativeSearchesHistogram.snapshot()
-      )}`
-    );
-    TelemetryTestUtils.assertKeyedHistogramValue(
-      cumulativeSearchesHistogram,
-      "recentbrowsing",
+    Assert.equal(
       1,
-      1
+      Glean.firefoxview.cumulativeSearches.testGetValue().recentbrowsing.sum
     );
   });
 
@@ -443,10 +428,6 @@ add_task(async function test_cumulative_searches_recent_browsing_telemetry() {
 });
 
 add_task(async function test_cumulative_searches_recently_closed_telemetry() {
-  const cumulativeSearchesHistogram =
-    TelemetryTestUtils.getAndClearKeyedHistogram(
-      "FIREFOX_VIEW_CUMULATIVE_SEARCHES"
-    );
   await PlacesUtils.history.clear();
   await open_then_close(URLs[0]);
 
@@ -478,11 +459,9 @@ add_task(async function test_cumulative_searches_recently_closed_telemetry() {
 
     await click_recently_closed_tab_item(tabList[0]);
 
-    TelemetryTestUtils.assertKeyedHistogramValue(
-      cumulativeSearchesHistogram,
-      "recentlyclosed",
+    Assert.equal(
       1,
-      1
+      Glean.firefoxview.cumulativeSearches.testGetValue().recentlyclosed.sum
     );
   });
 
@@ -490,10 +469,6 @@ add_task(async function test_cumulative_searches_recently_closed_telemetry() {
 });
 
 add_task(async function test_cumulative_searches_open_tabs_telemetry() {
-  const cumulativeSearchesHistogram =
-    TelemetryTestUtils.getAndClearKeyedHistogram(
-      "FIREFOX_VIEW_CUMULATIVE_SEARCHES"
-    );
   await PlacesUtils.history.clear();
   await BrowserTestUtils.openNewForegroundTab(gBrowser, URLs[0]);
 
@@ -525,21 +500,15 @@ add_task(async function test_cumulative_searches_open_tabs_telemetry() {
     );
   });
 
-  TelemetryTestUtils.assertKeyedHistogramValue(
-    cumulativeSearchesHistogram,
-    "opentabs",
+  Assert.equal(
     1,
-    1
+    Glean.firefoxview.cumulativeSearches.testGetValue().opentabs.sum
   );
 
   cleanUp();
 });
 
 add_task(async function test_cumulative_searches_history_telemetry() {
-  const cumulativeSearchesHistogram =
-    TelemetryTestUtils.getAndClearKeyedHistogram(
-      "FIREFOX_VIEW_CUMULATIVE_SEARCHES"
-    );
   await PlacesUtils.history.clear();
   await open_then_close(URLs[0]);
 
@@ -571,11 +540,9 @@ add_task(async function test_cumulative_searches_history_telemetry() {
       content
     );
 
-    TelemetryTestUtils.assertKeyedHistogramValue(
-      cumulativeSearchesHistogram,
-      "history",
+    Assert.equal(
       1,
-      1
+      Glean.firefoxview.cumulativeSearches.testGetValue().history.sum
     );
   });
 
@@ -583,10 +550,6 @@ add_task(async function test_cumulative_searches_history_telemetry() {
 });
 
 add_task(async function test_cumulative_searches_syncedtabs_telemetry() {
-  const cumulativeSearchesHistogram =
-    TelemetryTestUtils.getAndClearKeyedHistogram(
-      "FIREFOX_VIEW_CUMULATIVE_SEARCHES"
-    );
   await PlacesUtils.history.clear();
   TabsSetupFlowManager.resetInternalState();
 
@@ -640,11 +603,9 @@ add_task(async function test_cumulative_searches_syncedtabs_telemetry() {
       content
     );
 
-    TelemetryTestUtils.assertKeyedHistogramValue(
-      cumulativeSearchesHistogram,
-      "syncedtabs",
+    Assert.equal(
       1,
-      1
+      Glean.firefoxview.cumulativeSearches.testGetValue().syncedtabs.sum
     );
   });
 

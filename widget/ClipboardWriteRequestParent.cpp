@@ -62,8 +62,8 @@ IPCResult ClipboardWriteRequestParent::RecvSetData(
           {dom::ValidatePrincipalOptions::AllowNullPtr,
            dom::ValidatePrincipalOptions::AllowExpanded,
            dom::ValidatePrincipalOptions::AllowSystem})) {
-    ContentParent::LogAndAssertFailedPrincipalValidationInfo(
-        aTransferable.dataPrincipal(), __func__);
+    return ContentParent::PrincipalValidationIpcFail(
+        aTransferable.dataPrincipal(), this, __func__);
   }
 
   if (!mAsyncSetClipboardData) {

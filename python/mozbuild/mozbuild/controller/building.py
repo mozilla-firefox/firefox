@@ -30,7 +30,9 @@ import mozpack.path as mozpath
 from mach.mixin.logging import LoggingMixin
 from mach.util import get_state_dir, get_virtualenv_base_dir
 from mozsystemmonitor.resourcemonitor import SystemResourceMonitor
-from mozterm.widgets import Footer
+from rich.console import Console
+from rich.live import Live
+from rich.text import Text
 
 from ..backend import get_backend_class
 from ..base import MozbuildObject
@@ -571,79 +573,62 @@ class BuildMonitor(MozbuildObject):
 
 
 class TerminalLoggingHandler(logging.Handler):
-    """Custom logging handler that works with terminal window dressing.
+    """Routes log records to a Rich Console so they appear above the live footer.
 
     This class should probably live elsewhere, like the mach core. Consider
     this a proving ground for its usefulness.
     """
 
-    def __init__(self):
+    def __init__(self, console):
         logging.Handler.__init__(self)
-
-        self.fh = sys.stdout
-        self.footer = None
+        self.console = console
 
     def flush(self):
         self.acquire()
-
         try:
-            self.fh.flush()
+            self.console.file.flush()
         finally:
             self.release()
 
     def emit(self, record):
         msg = self.format(record)
-
         self.acquire()
-
         try:
-            if self.footer:
-                self.footer.clear()
-
-            self.fh.write(msg)
-            self.fh.write("\n")
-
-            if self.footer:
-                self.footer.draw()
-
-            # If we don't flush, the footer may not get drawn.
-            self.fh.flush()
+            self.console.print(Text.from_ansi(msg), soft_wrap=True)
         finally:
             self.release()
 
 
-class BuildProgressFooter(Footer):
+class BuildProgressFooter:
     """Handles display of a build progress indicator in a terminal.
 
-    When mach builds inside a blessed-supported terminal, it will render
-    progress information collected from a BuildMonitor. This class converts the
-    state of BuildMonitor into terminal output.
+    When mach builds inside a terminal, it will render progress information
+    collected from a BuildMonitor. This class converts the state of
+    BuildMonitor into terminal output.
     """
 
-    def __init__(self, terminal, monitor):
-        Footer.__init__(self, terminal)
-        self.tiers = monitor.tiers.tier_status.items()
+    def __init__(self, monitor):
+        self.monitor = monitor
 
-    def draw(self):
-        """Draws this footer in the terminal."""
-
-        if not self.tiers:
-            return
+    def __rich__(self):
+        tiers = list(self.monitor.tiers.tier_status.items())
+        if not tiers:
+            return Text("")
 
         # The drawn terminal looks something like:
         # TIER: static export libs tools
 
-        parts = [("bold", "TIER:")]
-        append = parts.append
-        for tier, status in self.tiers:
+        t = Text(no_wrap=True, overflow="ellipsis")
+        t.append("TIER:", style="bold")
+        for tier, status in tiers:
+            t.append(" ")
             if status is None:
-                append(tier)
+                t.append(tier)
             elif status == "finished":
-                append(("green", tier))
+                t.append(tier, style="green")
             else:
-                append(("underline_yellow", tier))
-
-        self.write(parts)
+                t.append(tier, style="underline yellow")
+        return t
 
 
 class OutputManager(LoggingMixin):
@@ -652,7 +637,10 @@ class OutputManager(LoggingMixin):
     def __init__(self, log_manager, footer):
         self.populate_logger()
 
-        self.footer = None
+        self.live = None
+        self.console = None
+        self._handler = None
+
         terminal = log_manager.terminal
 
         # TODO convert terminal footer to config file setting.
@@ -661,43 +649,49 @@ class OutputManager(LoggingMixin):
         if os.environ.get("INSIDE_EMACS", None):
             return
 
-        if os.environ.get("MACH_NO_TERMINAL_FOOTER", None):
-            footer = None
+        self.console = Console(
+            file=sys.stdout,
+            soft_wrap=True,
+            highlight=False,
+            markup=False,
+            emoji=False,
+        )
 
-        self.t = terminal
-        self.footer = footer
-
-        self._handler = TerminalLoggingHandler()
+        self._handler = TerminalLoggingHandler(self.console)
         self._handler.setFormatter(log_manager.terminal_formatter)
-        self._handler.footer = self.footer
-
         old = log_manager.replace_terminal_handler(self._handler)
         self._handler.level = old.level
 
+        if os.environ.get("MACH_NO_TERMINAL_FOOTER", None):
+            footer = None
+
+        if footer is not None and self.console.is_terminal:
+            self.live = Live(
+                footer,
+                console=self.console,
+                auto_refresh=False,
+                transient=True,
+            )
+
     def __enter__(self):
+        if self.live is not None:
+            self.live.start()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if self.footer:
-            self.footer.clear()
-            # Prevents the footer from being redrawn if logging occurs.
-            self._handler.footer = None
+        if self.live is not None:
+            self.live.stop()
+            self.live = None
 
     def write_line(self, line):
-        if self.footer:
-            self.footer.clear()
-
-        print(line)
-
-        if self.footer:
-            self.footer.draw()
+        if self.console is not None:
+            self.console.print(line, soft_wrap=True)
+        else:
+            print(line)
 
     def refresh(self):
-        if not self.footer:
-            return
-
-        self.footer.clear()
-        self.footer.draw()
+        if self.live is not None:
+            self.live.refresh()
 
 
 class BuildOutputManager(OutputManager):
@@ -759,14 +753,7 @@ class BuildOutputManager(OutputManager):
         self.monitor.stop_resource_recording()
 
     def _refresh_with_lock(self):
-        have_handler = hasattr(self, "_handler")
-        if have_handler:
-            self._handler.acquire()
-        try:
-            self.refresh()
-        finally:
-            if have_handler:
-                self._handler.release()
+        self.refresh()
 
     def on_stdout_line(self, line):
         """Handle stdout output - log as INFO, but catch obvious warnings/errors."""
@@ -887,16 +874,13 @@ class BuildOutputManager(OutputManager):
             self._refresh_with_lock()
 
 
-class StaticAnalysisFooter(Footer):
+class StaticAnalysisFooter:
     """Handles display of a static analysis progress indicator in a terminal."""
 
-    def __init__(self, terminal, monitor):
-        Footer.__init__(self, terminal)
+    def __init__(self, monitor):
         self.monitor = monitor
 
-    def draw(self):
-        """Draws this footer in the terminal."""
-
+    def __rich__(self):
         monitor = self.monitor
         total = monitor.num_files
         processed = monitor.num_files_processed
@@ -904,18 +888,18 @@ class StaticAnalysisFooter(Footer):
             percent = "(%.2f%%)" % (processed * 100.0 / total)
         else:
             percent = "(100%)"
-        parts = [
-            ("bright_black", "Processing"),
-            ("yellow", str(processed)),
-            ("bright_black", "of"),
-            ("yellow", str(total)),
-            ("bright_black", "files"),
-            ("green", percent),
-        ]
-        if monitor.current_file:
-            parts.append(("bold", monitor.current_file))
 
-        self.write(parts)
+        t = Text(no_wrap=True, overflow="ellipsis")
+        t.append("Processing ", style="bright_black")
+        t.append(str(processed), style="yellow")
+        t.append(" of ", style="bright_black")
+        t.append(str(total), style="yellow")
+        t.append(" files ", style="bright_black")
+        t.append(percent, style="green")
+        if monitor.current_file:
+            t.append(" ")
+            t.append(monitor.current_file, style="bold")
+        return t
 
 
 class StaticAnalysisOutputManager(OutputManager):
@@ -942,14 +926,7 @@ class StaticAnalysisOutputManager(OutputManager):
         if relevant:
             self.log(logging.INFO, "build_output", {"line": line}, "{line}")
         else:
-            have_handler = hasattr(self, "_handler")
-            if have_handler:
-                self._handler.acquire()
-            try:
-                self.refresh()
-            finally:
-                if have_handler:
-                    self._handler.release()
+            self.refresh()
 
     def write(self, path, output_format):
         assert output_format in (
@@ -1327,7 +1304,7 @@ class BuildDriver(MozbuildObject):
         """
         self.metrics = metrics
         self.mach_context = mach_context
-        footer = BuildProgressFooter(self.log_manager.terminal, monitor)
+        footer = BuildProgressFooter(monitor)
 
         # Disable indexing in objdir because it is not necessary and can slow
         # down builds.

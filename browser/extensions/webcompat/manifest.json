@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Web Compatibility Interventions",
   "description": "Urgent post-release fixes for web compatibility.",
-  "version": "152.4.0",
+  "version": "152.5.0",
   "browser_specific_settings": {
     "gecko": {
       "id": "webcompat@mozilla.org",

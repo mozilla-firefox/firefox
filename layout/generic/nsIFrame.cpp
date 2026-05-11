@@ -5914,7 +5914,6 @@ static FrameTarget GetSelectionClosestFrameForLine(
   if (aLine == aParent->LinesEnd()) {
     return DrillDownToSelectionFrame(aParent, true, aFlags);
   }
-  nsIFrame* frame = aLine->mFirstChild;
   nsIFrame* closestFromIStart = nullptr;
   nsIFrame* closestFromIEnd = nullptr;
   nscoord closestIStart = aLine->IStart(), closestIEnd = aLine->IEnd();
@@ -5922,8 +5921,7 @@ static FrameTarget GetSelectionClosestFrameForLine(
   LogicalPoint pt(wm, aPoint, aLine->mContainerSize);
   bool canSkipBr = false;
   bool lastFrameWasEditable = false;
-  for (int32_t n = aLine->GetChildCount(); n;
-       --n, frame = frame->GetNextSibling()) {
+  for (nsIFrame* frame : aLine->ChildFrames()) {
     // Skip brFrames. Can only skip if the line contains at least
     // one selectable and non-empty frame before. Also, avoid skipping brs if
     // the previous thing had a different editableness than us, since then we
@@ -6384,6 +6382,12 @@ void nsIFrame::MarkSubtreeDirty() {
         stack.AppendElement(kid);
       }
     }
+  }
+}
+
+void nsIFrame::MarkPrincipalChildrenDirty() {
+  for (nsIFrame* childFrame : PrincipalChildList()) {
+    childFrame->MarkSubtreeDirty();
   }
 }
 

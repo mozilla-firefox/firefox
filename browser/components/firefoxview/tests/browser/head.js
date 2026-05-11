@@ -29,9 +29,6 @@ const { sinon } = ChromeUtils.importESModule(
 const { FeatureCalloutMessages } = ChromeUtils.importESModule(
   "resource:///modules/asrouter/FeatureCalloutMessages.sys.mjs"
 );
-const { TelemetryTestUtils } = ChromeUtils.importESModule(
-  "resource://testing-common/TelemetryTestUtils.sys.mjs"
-);
 const { NonPrivateTabs } = ChromeUtils.importESModule(
   "resource:///modules/OpenTabs.sys.mjs"
 );
@@ -117,18 +114,6 @@ const syncedTabsData1 = [
     ],
   },
 ];
-
-async function clearAllParentTelemetryEvents() {
-  // Clear everything.
-  await TestUtils.waitForCondition(() => {
-    Services.telemetry.clearEvents();
-    let events = Services.telemetry.snapshotEvents(
-      Ci.nsITelemetry.DATASET_PRERELEASE_CHANNELS,
-      true
-    ).parent;
-    return !events || !events.length;
-  }, "Waiting for all telemetry events to be cleared");
-}
 
 function testVisibility(browser, expected) {
   const { document } = browser.contentWindow;
@@ -454,33 +439,6 @@ async function clickFirefoxViewButton(win) {
     "#firefox-view-button",
     { type: "mousedown" },
     win.browsingContext
-  );
-}
-
-/**
- * Wait for and assert telemetry events.
- *
- * @param {Array} eventDetails
- *   Nested array of event details
- */
-async function telemetryEvent(eventDetails) {
-  await TestUtils.waitForCondition(
-    () => {
-      let events = Services.telemetry.snapshotEvents(
-        Ci.nsITelemetry.DATASET_PRERELEASE_CHANNELS,
-        false
-      ).parent;
-      return events && events.length >= 1;
-    },
-    "Waiting for firefoxview_next telemetry event.",
-    200,
-    100
-  );
-
-  TelemetryTestUtils.assertEvents(
-    eventDetails,
-    { category: "firefoxview_next" },
-    { clear: true, process: "parent" }
   );
 }
 

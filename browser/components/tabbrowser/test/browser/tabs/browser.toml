@@ -4,6 +4,7 @@ support-files = [
   "audio.ogg",
   "dummy_page.html",
   "file_mediaPlayback.html",
+  "test_process_flags_chrome.html",
   "helper_origin_attrs_testing.js",
   "file_about_srcdoc.html",
   "file_reader_mode_article.html",
@@ -95,6 +96,11 @@ support-files = [
 tags = "vertical-tabs"
 
 ["browser_e10s_about_process.js"]
+
+["browser_e10s_chrome_process.js"]
+skip-if = [
+  "debug", # Bug 1444565, Bug 1457887
+]
 
 ["browser_e10s_javascript.js"]
 

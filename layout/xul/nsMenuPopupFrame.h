@@ -518,14 +518,6 @@ class nsMenuPopupFrame final : public nsBlockFrame, public nsIWidgetListener {
   // attributes.
   void MoveToAttributePosition();
 
-  // Returns true if the popup should try to remain at the same relative
-  // location as the anchor while it is open. If the anchor becomes hidden
-  // either directly or indirectly because a parent popup or other element
-  // is no longer visible, or a parent deck page is changed, the popup hides
-  // as well. The second variation also sets the anchor rectangle, relative to
-  // the popup frame.
-  bool ShouldFollowAnchor() const;
-
   nsIFrame* GetAnchorFrame() const;
 
  public:
@@ -537,6 +529,14 @@ class nsMenuPopupFrame final : public nsBlockFrame, public nsIWidgetListener {
    * Return whether the popup direction should be RTL.
    */
   bool IsDirectionRTL() const;
+
+  // Returns true if the popup should try to remain at the same relative
+  // location as the anchor while it is open. If the anchor becomes hidden
+  // either directly or indirectly because a parent popup or other element
+  // is no longer visible, or a parent deck page is changed, the popup hides
+  // as well. The second variation also sets the anchor rectangle, relative to
+  // the popup frame.
+  bool ShouldFollowAnchor() const;
 
   bool ShouldFollowAnchor(nsRect& aRect);
 

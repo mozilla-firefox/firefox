@@ -76,18 +76,10 @@
     <color name="fx_mobile_action_color_secondary">@color/photonDarkGrey05</color>
 
     <!-- Text -->
-    <!-- Primary text -->
-    <color name="fx_mobile_text_color_primary">@color/photonLightGrey05</color>
-    <!-- Secondary text -->
-    <color name="fx_mobile_text_color_secondary">@color/photonLightGrey40</color>
     <!-- Disabled text -->
     <color name="fx_mobile_text_color_disabled">@color/photonLightGrey05A40</color>
-    <!-- Warning text -->
-    <color name="fx_mobile_text_color_critical">@color/photonRed20</color>
     <!-- Warning text on Secondary button -->
     <color name="fx_mobile_text_color_critical_button">@color/photonRed20</color>
-    <!-- Small heading, Text link -->
-    <color name="fx_mobile_text_color_accent">@color/photonViolet20</color>lor>
     <!-- Text Inverted/On Color -->
     <color name="fx_mobile_text_color_oncolor_primary">@color/photonLightGrey05</color>
     <!-- Text Inverted/On Color -->
@@ -145,14 +137,14 @@
     <color name="homepage_tab_edge_to_edge_toolbar_outline">#00000000</color>
 
     <!-- Prompt colors -->
-    <color name="mozac_feat_prompt_cancel_save_dialog_text_color" tools:ignore="UnusedResources">@color/fx_mobile_text_color_accent</color>
+    <color name="mozac_feat_prompt_cancel_save_dialog_text_color" tools:ignore="UnusedResources">@color/fx_mobile_tertiary</color>
 
     <!-- Reader View colors -->
-    <color name="mozac_feature_readerview_text_color">@color/fx_mobile_text_color_primary</color>
+    <color name="mozac_feature_readerview_text_color">@color/fx_mobile_on_surface</color>
 
     <!-- Tab Counter colors -->
     <color name="mozac_ui_tabcounter_default_tint" tools:ignore="UnusedResources">@color/fx_mobile_icon_color_primary</color>
-    <color name="mozac_ui_tabcounter_default_text" tools:ignore="UnusedResources">@color/fx_mobile_text_color_primary</color>
+    <color name="mozac_ui_tabcounter_default_text" tools:ignore="UnusedResources">@color/fx_mobile_on_surface</color>
 
     <!-- Private Mode mask icon circle fill colors -->
     <color name="mozac_ui_private_mode_circle_fill" tools:ignore="UnusedResources">@color/photonPurple60</color>

@@ -358,7 +358,7 @@ inline StyleAngle StyleAngle::Zero() { return {0.0f}; }
 inline float StyleAngle::ToDegrees() const { return _0; }
 
 inline double StyleAngle::ToRadians() const {
-  return double(ToDegrees()) * M_PI / 180.0;
+  return double(ToDegrees()) * kRadPerDegree;
 }
 
 inline bool StyleUrlExtraData::IsShared() const { return !!(_0 & 1); }

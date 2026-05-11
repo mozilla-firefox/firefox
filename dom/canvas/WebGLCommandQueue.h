@@ -29,7 +29,7 @@ class RangeConsumerView final : public webgl::ConsumerView<RangeConsumerView> {
 
   void AlignTo(const size_t alignment) {
     const auto padToAlign = AlignmentOffset(alignment, mSrcItr.get());
-    if (MOZ_UNLIKELY(padToAlign > Remaining())) {
+    if (padToAlign > Remaining()) [[unlikely]] {
       mSrcItr = mSrcEnd;
       return;
     }
@@ -47,7 +47,9 @@ class RangeConsumerView final : public webgl::ConsumerView<RangeConsumerView> {
     const auto& byteSize = byteSizeChecked.value();
 
     const auto remaining = Remaining();
-    if (MOZ_UNLIKELY(byteSize > remaining)) return {};
+    if (byteSize > remaining) [[unlikely]] {
+      return {};
+    }
 
     const auto begin = reinterpret_cast<const T*>(mSrcItr.get());
     mSrcItr += byteSize;
@@ -116,7 +118,7 @@ class RangeProducerView final : public webgl::ProducerView<RangeProducerView> {
     mDestItr += padToAlign;
 
     MOZ_ASSERT(byteSize <= Remaining());
-    if (MOZ_LIKELY(byteSize)) {
+    if (byteSize) [[likely]] {
       memcpy(mDestItr.get(), src.begin().get(), byteSize);
     }
     mDestItr += byteSize;

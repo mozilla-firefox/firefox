@@ -492,25 +492,6 @@
     "releaseChannelCollection": "opt-out",
     "description": "GPU Device Reset Reason (ok, hung, removed, reset, internal error, invalid call, out of memory)"
   },
-  "FIREFOX_VIEW_CUMULATIVE_SEARCHES": {
-    "record_in_processes": ["main"],
-    "products": ["firefox"],
-    "expires_in_version": "never",
-    "alert_emails": ["firefoxview@mozilla.com"],
-    "releaseChannelCollection": "opt-out",
-    "bug_numbers": [1869765],
-    "kind": "enumerated",
-    "n_values": 100,
-    "description": "Cumulative no. of searches performed before selecting a resulting tab.",
-    "keyed": true,
-    "keys": [
-      "recentbrowsing",
-      "opentabs",
-      "recentlyclosed",
-      "history",
-      "syncedtabs"
-    ]
-  },
   "FORCED_DEVICE_RESET_REASON": {
     "record_in_processes": ["main", "content", "gpu"],
     "products": ["firefox", "fennec"],

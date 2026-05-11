@@ -37,6 +37,22 @@ describe("<ClocksRow>", () => {
     );
   });
 
+  it("renders the saved city when one is provided", () => {
+    const { container } = renderRow({
+      clock: {
+        timeZone: "America/New_York",
+        city: "Boston",
+        label: null,
+        labelColor: null,
+      },
+      shouldAbbreviate: false,
+    });
+    expect(container.querySelector(".clocks-city").textContent).toBe("Boston");
+    expect(
+      container.querySelector(".clocks-row").getAttribute("aria-label")
+    ).toMatch(/^Boston, /);
+  });
+
   it("renders the IATA abbreviation when shouldAbbreviate is true", () => {
     const { container } = renderRow({
       clock: { timeZone: "America/New_York", label: null, labelColor: null },
@@ -77,8 +93,8 @@ describe("<ClocksRow>", () => {
   });
 
   it("ignores unknown labelColor values (no injected classes)", () => {
-    // Allow-list guard: a malformed labelColor should leave the chip with
-    // only the base class, not smuggle extra tokens into the DOM.
+    // Allow-list guard: a malformed labelColor should fall back to neutral,
+    // not smuggle extra tokens into the DOM.
     const { container } = renderRow({
       clock: {
         timeZone: "Europe/Berlin",
@@ -88,7 +104,10 @@ describe("<ClocksRow>", () => {
       showLabel: true,
     });
     const chip = container.querySelector(".clocks-label-chip");
-    expect(Array.from(chip.classList)).toEqual(["clocks-label-chip"]);
+    expect(Array.from(chip.classList)).toEqual([
+      "clocks-label-chip",
+      "clocks-chip-neutral",
+    ]);
   });
 
   it("keeps native listitem semantics and sets an aria-label with city, TZ, and time", () => {
@@ -105,19 +124,26 @@ describe("<ClocksRow>", () => {
     expect(li.getAttribute("aria-label")).toMatch(/^Berlin, /);
   });
 
-  it("includes the nickname in the aria-label even when the chip is hidden", () => {
-    // The visual chip is gated by showLabel (size-dependent), but the
-    // accessible name must still disambiguate duplicate/same-zone clocks.
+  it("includes the visible label in the aria-label", () => {
+    const { container } = renderRow({
+      clock: { timeZone: "Europe/Berlin", label: "Home", labelColor: "cyan" },
+      showLabel: true,
+    });
+    const li = container.querySelector(".clocks-row");
+    expect(li.getAttribute("aria-label")).toMatch(/^Home, Berlin, /);
+  });
+
+  it("includes the label in the aria-label even when the chip is hidden", () => {
+    // Screen-reader users still need the label to disambiguate two clocks
+    // for the same zone (e.g. NY "Office" vs NY "Family") on sizes where
+    // the chip isn't rendered.
     const { container } = renderRow({
       clock: { timeZone: "Europe/Berlin", label: "Home", labelColor: "cyan" },
       showLabel: false,
     });
-    expect(
-      container.querySelector(".clocks-label-chip")
-    ).not.toBeInTheDocument();
-    expect(
-      container.querySelector(".clocks-row").getAttribute("aria-label")
-    ).toMatch(/^Home, Berlin, /);
+    const li = container.querySelector(".clocks-row");
+    expect(li.getAttribute("aria-label")).toMatch(/^Home, Berlin, /);
+    expect(container.querySelector(".clocks-label-chip")).toBeNull();
   });
 
   it("renders an empty time when now is null (pre-tick)", () => {
@@ -126,5 +152,32 @@ describe("<ClocksRow>", () => {
       now: null,
     });
     expect(container.querySelector(".clocks-time").textContent).toBe("");
+  });
+
+  it("sets the time datetime attribute in the clock time zone", () => {
+    const { container } = renderRow({
+      clock: { timeZone: "Asia/Tokyo", label: null, labelColor: null },
+      now: new Date("2026-04-20T13:44:00Z"),
+    });
+    expect(container.querySelector(".clocks-time").dateTime).toBe(
+      "2026-04-20T22:44"
+    );
+  });
+
+  it("has no tabIndex when showInlineActions is false", () => {
+    const { container } = renderRow({ showInlineActions: false });
+    expect(
+      container.querySelector(".clocks-row").hasAttribute("tabindex")
+    ).toBe(false);
+  });
+
+  it("has tabIndex=0 when showInlineActions is true so keyboard focus reveals the actions", () => {
+    const { container } = renderRow({
+      showInlineActions: true,
+      onEdit: () => {},
+    });
+    expect(
+      container.querySelector(".clocks-row").getAttribute("tabindex")
+    ).toBe("0");
   });
 });

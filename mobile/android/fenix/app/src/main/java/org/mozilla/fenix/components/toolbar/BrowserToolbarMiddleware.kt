@@ -44,6 +44,7 @@ import mozilla.components.compose.browser.toolbar.store.BrowserDisplayToolbarAct
 import mozilla.components.compose.browser.toolbar.store.BrowserEditToolbarAction.SearchQueryUpdated
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarAction
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarAction.Init
+import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarEvent
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.BrowserToolbarEvent.Source
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarInteraction.CombinedEventAndMenu
@@ -62,6 +63,8 @@ import mozilla.components.concept.engine.permission.SitePermissionsStorage
 import mozilla.components.concept.engine.prompt.ShareData
 import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.concept.storage.BookmarksStorage
+import mozilla.components.feature.ipprotection.Authorized
+import mozilla.components.feature.ipprotection.IPProtectionStore
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.session.TrackingProtectionUseCases
 import mozilla.components.lib.publicsuffixlist.PublicSuffixList
@@ -188,6 +191,7 @@ internal sealed class PageEndActionsInteractions(override val source: Source) : 
  * @param appStore [AppStore] allowing to integrate with other features of the applications.
  * @param browserScreenStore [BrowserScreenStore] used for integration with other browser screen functionalities.
  * @param browserStore [BrowserStore] to sync from.
+ * @param ipProtectionStore [IPProtectionStore] to observe IP protection proxy status.
  * @param permissionsStorage [SitePermissionsStorage] to find currently selected tab site permissions.
  * @param cookieBannersStorage [CookieBannersStorage] to get the current status of cookie banner ui mode.
  * @param bookmarksStorage [BookmarksStorage] to read and write bookmark data related to the current site.
@@ -214,6 +218,7 @@ class BrowserToolbarMiddleware(
     private val appStore: AppStore,
     private val browserScreenStore: BrowserScreenStore,
     private val browserStore: BrowserStore,
+    private val ipProtectionStore: IPProtectionStore,
     private val permissionsStorage: SitePermissionsStorage,
     private val cookieBannersStorage: CookieBannersStorage,
     private val bookmarksStorage: BookmarksStorage,
@@ -269,6 +274,7 @@ class BrowserToolbarMiddleware(
                 observePageTrackingProtectionUpdates(store)
                 observePageSecurityUpdates(store)
                 observePermissionHighlightsUpdates(store)
+                observeIPProtectionUpdates(store)
             }
 
             is StartPageActions.SiteInfoClicked -> {
@@ -941,6 +947,15 @@ class BrowserToolbarMiddleware(
         }
     }
 
+    private fun observeIPProtectionUpdates(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
+        ipProtectionStore.observeWhileActive {
+            distinctUntilChangedBy { it.proxyStatus }
+                .collect {
+                    updateStartPageActions(store)
+                }
+        }
+    }
+
     private fun updateCurrentPageOrigin(
         store: Store<BrowserToolbarState, BrowserToolbarAction>,
     ) = scope.launch {
@@ -1253,9 +1268,10 @@ class BrowserToolbarMiddleware(
             } else if (selectedTab?.content?.securityInfo == null ||
                 selectedTab.content.securityInfo == SecurityInfo.Unknown
             ) {
-                ActionButtonRes(
+                buildSiteInfoAction(
                     drawableResId = iconsR.drawable.mozac_ic_globe_24,
                     contentDescription = toolbarR.string.mozac_browser_toolbar_content_description_site_info,
+                    highlighted = highlight,
                     onClick = object : BrowserToolbarEvent {},
                 )
             } else if (
@@ -1263,14 +1279,14 @@ class BrowserToolbarMiddleware(
                 selectedTab.trackingProtection.enabled &&
                 !selectedTab.trackingProtection.ignoredOnTrackingProtection
             ) {
-                ActionButtonRes(
+                buildSiteInfoAction(
                     drawableResId = iconsR.drawable.mozac_ic_shield_checkmark_24,
                     contentDescription = toolbarR.string.mozac_browser_toolbar_content_description_site_info,
                     highlighted = highlight,
                     onClick = StartPageActions.SiteInfoClicked,
                 )
             } else {
-                ActionButtonRes(
+                buildSiteInfoAction(
                     drawableResId = iconsR.drawable.mozac_ic_shield_slash_24,
                     contentDescription = toolbarR.string.mozac_browser_toolbar_content_description_site_info,
                     highlighted = highlight,
@@ -1307,6 +1323,31 @@ class BrowserToolbarMiddleware(
             contentDescription = R.string.browser_menu_homepage,
             onClick = HomepageClicked(source),
         )
+    }
+
+    private fun buildSiteInfoAction(
+        drawableResId: Int,
+        contentDescription: Int,
+        highlighted: Boolean = false,
+        onClick: BrowserToolbarInteraction,
+    ): Action {
+        return if (ipProtectionStore.state.proxyStatus == Authorized.Active) {
+            Action.AnimatedPillActionRes(
+                iconResId = drawableResId,
+                overlayResId = iconsR.drawable.mozac_ic_globe_24,
+                textResId = R.string.ip_protection_toolbar_pill_label,
+                contentDescriptionResId = R.string.ip_protection_toolbar_pill_description,
+                highlighted = highlighted,
+                onClick = onClick,
+            )
+        } else {
+            ActionButtonRes(
+                drawableResId = drawableResId,
+                contentDescription = contentDescription,
+                highlighted = highlighted,
+                onClick = onClick,
+            )
+        }
     }
 
     private fun Source.toMetricSource() = when (this) {

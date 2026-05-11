@@ -131,22 +131,7 @@ var gSyncPane = {
     // Notify observers that the UI is now ready
     Services.obs.notifyObservers(window, "sync-pane-loaded");
 
-    this._maybeShowSyncAction();
-  },
-
-  // Check if the user is coming from a call to action
-  // and show them the correct additional panel
-  _maybeShowSyncAction() {
-    if (
-      location.hash == "#sync" &&
-      UIState.get().status == UIState.STATUS_SIGNED_IN
-    ) {
-      if (location.href.includes("action=pair")) {
-        gSyncPane.pairAnotherDevice();
-      } else if (location.href.includes("action=choose-what-to-sync")) {
-        SyncHelpers._chooseWhatToSync(false, "callToAction");
-      }
-    }
+    SyncHelpers.maybeShowSyncAction();
   },
 
   _toggleComputerNameControls(editMode) {

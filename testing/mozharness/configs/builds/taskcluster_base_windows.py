@@ -27,11 +27,6 @@ config = {
     },
     "secret_files": [
         {
-            "filename": "gls-gapi.data",
-            "secret_name": "project/releng/gecko/build/level-%(scm-level)s/gls-gapi.data",
-            "min_scm_level": 1,
-        },
-        {
             "filename": "sb-gapi.data",
             "secret_name": "project/releng/gecko/build/level-%(scm-level)s/sb-gapi.data",
             "min_scm_level": 1,

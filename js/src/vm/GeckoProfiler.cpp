@@ -580,7 +580,7 @@ js::ProfilerJSSources GeckoProfilerRuntime::getProfilerScriptSources(
 void ProfilingStackFrame::trace(JSTracer* trc) {
   if (isJsFrame()) {
     JSScript* s = rawScript();
-    TraceNullableRoot(trc, &s, "ProfilingStackFrame script");
+    TraceRoot(trc, &s, "ProfilingStackFrame script");
     spOrScript = s;
   }
 }

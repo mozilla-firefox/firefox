@@ -32,8 +32,10 @@
 #include "mozilla/dom/WorkerPrivate.h"
 #include "mozilla/dom/WorkerRef.h"
 #include "mozilla/layers/KnowsCompositor.h"
+#include "mozilla/media/MediaUtils.h"
 #include "mozilla/media/webrtc/CodecInfo.h"
 #include "nsContentUtils.h"
+#include "nsIPrincipal.h"
 
 namespace mozilla::dom {
 enum class CodecSupport : uint8_t { Supported, Unsupported, Unknown };
@@ -53,6 +55,25 @@ struct AudioConfiguration;
 bool MediaCapabilitiesKeySystemConfigurationToMediaKeySystemConfiguration(
     const MediaDecodingConfiguration& aInConfig,
     MediaKeySystemConfiguration& aOutConfig);
+
+static mediacaps::BehaviorConfig GetBehaviorConfig(nsIGlobalObject* aParent) {
+  nsAutoCString host;
+  if (nsIPrincipal* p = aParent ? aParent->PrincipalOrNull() : nullptr) {
+    p->GetAsciiHost(host);
+  }
+  // DataMutex operator* is deleted on rvalues; the lock must be a named
+  // variable.
+  auto legacyAllowlist =
+      StaticPrefs::media_mediacapabilities_legacy_allowlist();
+  auto webrtcAllowlist =
+      StaticPrefs::media_mediacapabilities_webrtc_enabled_allowlist();
+  return {
+      .mLegacy = StaticPrefs::media_mediacapabilities_legacy_enabled() ||
+                 media::HostnameInValue(*legacyAllowlist, host),
+      .mWebRTCEnabled = StaticPrefs::media_mediacapabilities_webrtc_enabled() ||
+                        media::HostnameInValue(*webrtcAllowlist, host),
+  };
+}
 }  // namespace mozilla::dom
 
 template <>
@@ -222,7 +243,9 @@ class MOZ_STACK_CLASS CodecSupportState final {
   // The caller (a MediaCapabilities member function) keeps itself alive
   // via the outer promise chain's `self` capture for the full duration
   // of any synchronous CheckTypeFor* calls below.
-  explicit CodecSupportState(const MediaCapabilities& aCaps) : mCaps(aCaps) {}
+  explicit CodecSupportState(const MediaCapabilities& aCaps,
+                             const mediacaps::BehaviorConfig& aBehavior)
+      : mCaps(aCaps), mBehavior(aBehavior) {}
 
   const mozilla::WebrtcCodecInfo& WebrtcCodecInfo() const {
     if (!mWebrtcCodecInfo) {
@@ -277,6 +300,7 @@ class MOZ_STACK_CLASS CodecSupportState final {
 
  private:
   const MediaCapabilities& mCaps;
+  mediacaps::BehaviorConfig mBehavior;
   mutable std::unique_ptr<mozilla::WebrtcCodecInfo> mWebrtcCodecInfo;
 
   [[nodiscard]] CodecSupport CheckCodecSupport(
@@ -284,7 +308,7 @@ class MOZ_STACK_CLASS CodecSupportState final {
       const Maybe<ColorGamut>& aColorGamut,
       const Maybe<TransferFunction>& aTransferFunction) const {
     if (mediacaps::CheckMIMETypeSupport(aMime, AsVariant(aType), aColorGamut,
-                                        aTransferFunction)
+                                        aTransferFunction, mBehavior)
             .isErr()) {
       return CodecSupport::Unsupported;
     }
@@ -310,7 +334,7 @@ class MOZ_STACK_CLASS CodecSupportState final {
       const Maybe<ColorGamut>& aColorGamut,
       const Maybe<TransferFunction>& aTransferFunction) const {
     if (mediacaps::CheckMIMETypeSupport(aMime, AsVariant(aType), aColorGamut,
-                                        aTransferFunction)
+                                        aTransferFunction, mBehavior)
             .isErr()) {
       return CodecSupport::Unsupported;
     }
@@ -634,9 +658,11 @@ already_AddRefed<Promise> MediaCapabilities::DecodingInfo(
     return nullptr;
   }
 
-  // If WebRTC type is used and the pref is disabled, reject with a TypeError.
+  const auto behavior = GetBehaviorConfig(mParent);
+
+  // If WebRTC type is used and WebRTC is not enabled for this origin, reject.
   if (aConfiguration.mType == MediaDecodingType::Webrtc &&
-      !StaticPrefs::media_mediacapabilities_webrtc_enabled()) {
+      !behavior.mWebRTCEnabled) {
     promise->MaybeRejectWithTypeError<MSG_INVALID_ENUM_VALUE>(
         "type", "webrtc", "MediaDecodingType");
     return promise.forget();
@@ -644,7 +670,8 @@ already_AddRefed<Promise> MediaCapabilities::DecodingInfo(
 
   // Step 1: If configuration is not a valid MediaDecodingConfiguration,
   // return a Promise rejected with a newly created TypeError.
-  if (auto configCheck = IsValidMediaDecodingConfiguration(aConfiguration);
+  if (auto configCheck =
+          IsValidMediaDecodingConfiguration(aConfiguration, behavior);
       configCheck.isErr()) {
     RejectWithValidationResult(promise, configCheck.unwrapErr());
     return promise.forget();
@@ -675,21 +702,21 @@ already_AddRefed<Promise> MediaCapabilities::DecodingInfo(
   // Step 3: Let p be a new Promise (already have it!)
   // Step 4: In parallel, run the Create a MediaCapabilitiesDecodingInfo
   //         algorithm with configuration and resolve p with its result.
-  CreateMediaCapabilitiesDecodingInfo(aConfiguration, aRv, promise);
+  CreateMediaCapabilitiesDecodingInfo(aConfiguration, aRv, promise, behavior);
   return promise.forget();
 }
 
 // https://w3c.github.io/media-capabilities/#create-media-capabilities-decoding-info
 void MediaCapabilities::CreateMediaCapabilitiesDecodingInfo(
     const MediaDecodingConfiguration& aConfiguration, ErrorResult& aRv,
-    Promise* aPromise) {
+    Promise* aPromise, const mediacaps::BehaviorConfig& aBehavior) {
   LOG("Processing {}", aConfiguration);
 
   const bool isWebRTC =
       mediacaps::IsMediaTypeWebRTC(AsVariant(aConfiguration.mType));
   CodecSupport videoSupported = CodecSupport::Unknown;
   CodecSupport audioSupported = CodecSupport::Unknown;
-  CodecSupportState state(*this);
+  CodecSupportState state(*this, aBehavior);
 
   Maybe<MediaContainerType> videoContainer;
   Maybe<MediaContainerType> audioContainer;
@@ -1153,9 +1180,11 @@ already_AddRefed<Promise> MediaCapabilities::EncodingInfo(
     return nullptr;
   }
 
-  // If WebRTC type is used and the pref is disabled, reject with a TypeError.
+  const auto behavior = GetBehaviorConfig(mParent);
+
+  // If WebRTC type is used and WebRTC is not enabled for this origin, reject.
   if (aConfiguration.mType == MediaEncodingType::Webrtc &&
-      !StaticPrefs::media_mediacapabilities_webrtc_enabled()) {
+      !behavior.mWebRTCEnabled) {
     encodePromise->MaybeRejectWithTypeError<MSG_INVALID_ENUM_VALUE>(
         "type", "webrtc", "MediaEncodingType");
     return encodePromise.forget();
@@ -1163,7 +1192,8 @@ already_AddRefed<Promise> MediaCapabilities::EncodingInfo(
 
   // If configuration is not a valid MediaConfiguration, return a Promise
   // rejected with a TypeError.
-  if (auto configCheck = IsValidMediaEncodingConfiguration(aConfiguration);
+  if (auto configCheck =
+          IsValidMediaEncodingConfiguration(aConfiguration, behavior);
       configCheck.isErr()) {
     RejectWithValidationResult(encodePromise, configCheck.unwrapErr());
     return encodePromise.forget();
@@ -1179,7 +1209,7 @@ already_AddRefed<Promise> MediaCapabilities::EncodingInfo(
 
   // Step 3: Let videoSupported be unknown.
   CodecSupport videoSupported = CodecSupport::Unknown;
-  CodecSupportState state(*this);
+  CodecSupportState state(*this, behavior);
 
   // Step 4: If video is present in configuration, run the following steps:
   // Step 4.1: Let videoMimeType be the result of running parse a MIME type

@@ -252,8 +252,8 @@ void NativeLayerRemoteMac::FlushDirtyLayerInfoToCommandQueue() {
   if (mDirtyLayerInfo) {
     mCommandQueue->AppendCommand(mozilla::layers::CommandLayerInfo(
         ID, GetPosition(), CurrentSurfaceDisplayRect(), ClipRect(),
-        RoundedClipRect(), GetTransform(),
-        static_cast<int8_t>(SamplingFilter()), SurfaceIsFlipped()));
+        RoundedClipRect(), GetTransform(), SamplingFilter(),
+        SurfaceIsFlipped()));
     mDirtyLayerInfo = false;
   }
 }

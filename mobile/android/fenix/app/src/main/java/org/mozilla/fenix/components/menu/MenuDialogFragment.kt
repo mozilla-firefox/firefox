@@ -141,6 +141,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
 
     private val args by navArgs<MenuDialogFragmentArgs>()
     private val webExtensionsMenuBinding = ViewBoundFeatureWrapper<WebExtensionsMenuBinding>()
+    private val ipProtectionMenuBinding = ViewBoundFeatureWrapper<IPProtectionMenuBinding>()
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
     private var isPrivate: Boolean = false
 
@@ -460,6 +461,15 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                         view = this,
                     )
 
+                    ipProtectionMenuBinding.set(
+                        feature = IPProtectionMenuBinding(
+                            ipProtectionStore = components.ipProtectionStore,
+                            menuStore = store,
+                        ),
+                        owner = this@MenuDialogFragment,
+                        view = this,
+                    )
+
                     val recommendedAddons by remember {
                         store.stateFlow
                             .map { state ->
@@ -677,7 +687,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                                     isDownloadHighlighted = isDownloadHighlighted,
                                     webExtensionMenuCount = webExtensionsCount,
                                     isAllWebExtensionsDisabled = isAllWebExtensionsDisabled,
-                                    showIPProtection = settings.isIPProtectionAvailable,
+                                    showIPProtection = components.ipProtectionStore.state.isEligible,
                                     ipProtectionMenuState = ipProtectionMenuState,
                                     onMozillaAccountButtonClick = {
                                         store.dispatch(

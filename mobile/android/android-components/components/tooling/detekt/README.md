@@ -22,6 +22,10 @@ Section `mozilla-rules`:
 
   - `AbsentOrWrongFileLicense` - check for correct license header in Kotlin files.
 
+Section `acorn-detekt-rules`:
+
+  - `HardcodedPaddingUsage` - check for usage of Acorn spacing tokens for padding in Kotlin files.
+
 ## License
 
     This Source Code Form is subject to the terms of the Mozilla Public

@@ -1176,7 +1176,9 @@ nsresult EditorEventListener::Blur(const InternalFocusEvent& aBlurEvent) {
     return NS_OK;
   }
 
-  DebugOnly<nsresult> rvIgnored = mEditorBase->OnBlur(aBlurEvent.mTarget);
+  const OwningNonNull<EditorBase> editorBase(*mEditorBase);
+  nsCOMPtr target = aBlurEvent.mTarget;
+  DebugOnly<nsresult> rvIgnored = editorBase->OnBlur(target);
   NS_WARNING_ASSERTION(NS_SUCCEEDED(rvIgnored), "EditorBase::OnBlur() failed");
   return NS_OK;  // Don't return error code to the event listener manager.
 }

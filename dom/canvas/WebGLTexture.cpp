@@ -156,7 +156,7 @@ bool WebGLTexture::IsMipAndCubeComplete(const uint32_t maxLevel,
         return false;
       }
 
-      if (MOZ_UNLIKELY(ensureInit && cur.mUninitializedSlices)) {
+      if (ensureInit && cur.mUninitializedSlices) [[unlikely]] {
         auto imageTarget = mTarget.get();
         if (imageTarget == LOCAL_GL_TEXTURE_CUBE_MAP) {
           imageTarget = LOCAL_GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;

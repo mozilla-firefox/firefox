@@ -1451,7 +1451,8 @@ class EventStateManager : public nsSupportsWeakReference, public nsIObserver {
   MOZ_CAN_RUN_SCRIPT_BOUNDARY void FireContextClick();
 
   MOZ_CAN_RUN_SCRIPT static void SetPointerLock(nsIWidget* aWidget,
-                                                nsPresContext* aPresContext);
+                                                nsPresContext* aPresContext,
+                                                bool aUnadjustedMovement);
   static void sClickHoldCallback(nsITimer* aTimer, void* aESM);
 };
 

@@ -79,7 +79,6 @@ static const unsigned BUILTIN_THUNK_LIFO_SIZE = 64 * 1024;
 #define _I64 MIRType::Int64
 #define _PTR MIRType::Pointer
 #define _RoN MIRType::WasmAnyRef
-#define _WAD MIRType::WasmArrayData
 #define _VOID MIRType::None
 #define _END MIRType::None
 #define _Infallible FailureMode::Infallible
@@ -150,14 +149,10 @@ constexpr SymbolicAddressSignature SASigArrayMemMove = {
     _Infallible,
     _NoTrap,
     6,
-    {_WAD, _I32, _WAD, _I32, _I32, _I32, _END}};
+    {_RoN, _I32, _RoN, _I32, _I32, _I32, _END}};
 constexpr SymbolicAddressSignature SASigArrayRefsMove = {
-    SymbolicAddress::ArrayRefsMove,
-    _VOID,
-    _Infallible,
-    _NoTrap,
-    6,
-    {_RoN, _WAD, _I32, _WAD, _I32, _I32, _END}};
+    SymbolicAddress::ArrayRefsMove,      _VOID, _Infallible, _NoTrap, 5,
+    {_RoN, _I32, _RoN, _I32, _I32, _END}};
 constexpr SymbolicAddressSignature SASigMemoryGrowM32 = {
     SymbolicAddress::MemoryGrowM32, _I32, _Infallible, _NoTrap, 3,
     {_PTR, _I32, _I32, _END}};
@@ -1397,21 +1392,25 @@ template ALIGN_STACK_FOR_ROUNDING_FUNCTION double NearbyInt(double);
 
 #undef ALIGN_STACK_FOR_ROUNDING_FUNCTION
 
-static void WasmArrayMemMove(uint8_t* destArrayData, uint32_t destIndex,
-                             const uint8_t* srcArrayData, uint32_t srcIndex,
+static void WasmArrayMemMove(WasmArrayObject* destArrayObject,
+                             uint32_t destIndex,
+                             WasmArrayObject* srcArrayObject, uint32_t srcIndex,
                              uint32_t elementSize, uint32_t count) {
   AutoUnsafeCallWithABI unsafe;
+  uint8_t* destArrayData = destArrayObject->data_;
+  uint8_t* srcArrayData = srcArrayObject->data_;
   memmove(&destArrayData[size_t(elementSize) * destIndex],
           &srcArrayData[size_t(elementSize) * srcIndex],
           size_t(elementSize) * count);
 }
 
 static void WasmArrayRefsMove(WasmArrayObject* destArrayObject,
-                              AnyRef* destArrayData, uint32_t destIndex,
-                              AnyRef* srcArrayData, uint32_t srcIndex,
-                              uint32_t count) {
+                              uint32_t destIndex,
+                              WasmArrayObject* srcArrayObject,
+                              uint32_t srcIndex, uint32_t count) {
   AutoUnsafeCallWithABI unsafe;
-
+  AnyRef* destArrayData = (AnyRef*)(destArrayObject->data_);
+  AnyRef* srcArrayData = (AnyRef*)(srcArrayObject->data_);
   AnyRef* dstBegin = destArrayData + destIndex;
   AnyRef* srcBegin = srcArrayData + srcIndex;
   BarrieredMoveRange(destArrayObject, dstBegin, srcBegin, count);
@@ -1609,7 +1608,7 @@ void* wasm::AddressOf(SymbolicAddress imm, ABIFunctionType* abiType) {
       *abiType = Args_Void_GeneralInt32GeneralInt32Int32Int32;
       return FuncCast(WasmArrayMemMove, *abiType);
     case SymbolicAddress::ArrayRefsMove:
-      *abiType = Args_Void_GeneralGeneralInt32GeneralInt32Int32;
+      *abiType = Args_Void_GeneralInt32GeneralInt32Int32;
       return FuncCast(WasmArrayRefsMove, *abiType);
 
     case SymbolicAddress::MemoryGrowM32:

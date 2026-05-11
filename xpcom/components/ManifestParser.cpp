@@ -379,6 +379,8 @@ void ParseManifest(NSLocationType aType, FileLocation& aFile, char* aBuf,
   nsresult rv;
 
   constexpr auto kContentAccessible = u"contentaccessible"_ns;
+  constexpr auto kRemoteEnabled = u"remoteenabled"_ns;
+  constexpr auto kRemoteRequired = u"remoterequired"_ns;
   constexpr auto kApplication = u"application"_ns;
   constexpr auto kAppVersion = u"appversion"_ns;
   constexpr auto kGeckoVersion = u"platformversion"_ns;
@@ -601,6 +603,14 @@ void ParseManifest(NSLocationType aType, FileLocation& aFile, char* aBuf,
         bool flag;
         if (CheckFlag(kContentAccessible, wtoken, flag)) {
           if (flag) flags |= nsChromeRegistry::CONTENT_ACCESSIBLE;
+          continue;
+        }
+        if (CheckFlag(kRemoteEnabled, wtoken, flag)) {
+          if (flag) flags |= nsChromeRegistry::REMOTE_ALLOWED;
+          continue;
+        }
+        if (CheckFlag(kRemoteRequired, wtoken, flag)) {
+          if (flag) flags |= nsChromeRegistry::REMOTE_REQUIRED;
           continue;
         }
       }

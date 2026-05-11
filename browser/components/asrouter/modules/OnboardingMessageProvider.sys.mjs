@@ -3172,7 +3172,7 @@ const PREONBOARDING_MESSAGES = () => [
       {
         id: "TOU_ONBOARDING_LOADING",
         targeting:
-          "browser.aboutwelcome.experimentsGate.enabled|preferenceValue && (!browser.aboutwelcome.experimentsGate.skipSplashIfLoaded|preferenceValue || !nimbusExperimentsLoaded)",
+          "'browser.aboutwelcome.experimentsGate.enabled'|preferenceValue && (!'browser.aboutwelcome.experimentsGate.skipSplashIfLoaded'|preferenceValue || !experimentsLoaded)",
         advance_on_experiment_load: {
           minDisplayMs: 3000,
           maxDisplayMs: 10000,

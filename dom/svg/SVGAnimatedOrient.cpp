@@ -26,7 +26,7 @@ namespace mozilla {
 
 constinit static SVGAttrTearoffTable<SVGAnimatedOrient,
                                      DOMSVGAnimatedEnumeration>
-    sSVGAnimatedEnumTearoffTable;
+    sSVGAnimatedOrientEnumTearoffTable;
 constinit static SVGAttrTearoffTable<SVGAnimatedOrient, DOMSVGAnimatedAngle>
     sSVGAnimatedAngleTearoffTable;
 constinit static SVGAttrTearoffTable<SVGAnimatedOrient, DOMSVGAngle>
@@ -412,10 +412,10 @@ already_AddRefed<DOMSVGAnimatedAngle> SVGAnimatedOrient::ToDOMAnimatedAngle(
 already_AddRefed<DOMSVGAnimatedEnumeration>
 SVGAnimatedOrient::ToDOMAnimatedEnum(SVGElement* aSVGElement) {
   RefPtr<DOMSVGAnimatedEnumeration> domAnimatedEnum =
-      sSVGAnimatedEnumTearoffTable.GetTearoff(this);
+      sSVGAnimatedOrientEnumTearoffTable.GetTearoff(this);
   if (!domAnimatedEnum) {
     domAnimatedEnum = new DOMAnimatedEnum(this, aSVGElement);
-    sSVGAnimatedEnumTearoffTable.AddTearoff(this, domAnimatedEnum);
+    sSVGAnimatedOrientEnumTearoffTable.AddTearoff(this, domAnimatedEnum);
   }
 
   return domAnimatedEnum.forget();
@@ -426,7 +426,7 @@ DOMSVGAnimatedAngle::~DOMSVGAnimatedAngle() {
 }
 
 SVGAnimatedOrient::DOMAnimatedEnum::~DOMAnimatedEnum() {
-  sSVGAnimatedEnumTearoffTable.RemoveTearoff(mVal);
+  sSVGAnimatedOrientEnumTearoffTable.RemoveTearoff(mVal);
 }
 
 std::unique_ptr<SMILAttr> SVGAnimatedOrient::ToSMILAttr(

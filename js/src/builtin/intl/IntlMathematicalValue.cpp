@@ -33,7 +33,7 @@ void js::intl::IntlMathematicalValue::trace(JSTracer* trc) {
 }
 
 void js::intl::IntlMathematicalValueString::trace(JSTracer* trc) {
-  TraceNullableRoot(trc, &string_, "IntlMathematicalValueString::string");
+  TraceRoot(trc, &string_, "IntlMathematicalValueString::string");
 }
 
 bool js::intl::IntlMathematicalValue::isRepresentableAsDouble(

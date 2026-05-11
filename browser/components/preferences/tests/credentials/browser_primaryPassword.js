@@ -145,10 +145,17 @@ add_task(async function () {
   await SpecialPowers.pushPrefEnv({
     set: [["browser.settings-redesign.enabled", true]],
   });
-  let prefs = await openPreferencesViaOpenPreferencesAPI("panePrivacy", {
-    leaveOpen: true,
-  });
-  is(prefs.selectedPane, "panePrivacy", "Privacy pane was selected");
+  let prefs = await openPreferencesViaOpenPreferencesAPI(
+    "panePasswordsAutofill",
+    {
+      leaveOpen: true,
+    }
+  );
+  is(
+    prefs.selectedPane,
+    "panePasswordsAutofill",
+    "Passwords and Autofill pane was selected"
+  );
 
   let doc = gBrowser.contentDocument;
   // Fake the subdialog and LoginHelper

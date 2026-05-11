@@ -16,6 +16,8 @@ import {
   UrlbarUtils,
 } from "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs";
 
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
@@ -31,6 +33,28 @@ ChromeUtils.defineESModuleGetters(lazy, {
 ChromeUtils.defineLazyGetter(lazy, "pageFrecencyThreshold", () => {
   return lazy.PlacesUtils.history.pageFrecencyThreshold(90, 0, true);
 });
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "historyEnabled",
+  "places.history.enabled",
+  true
+);
+
+// Returns which result sources are eligible for autofill. When
+// places.history.enabled is false the user has opted out of recording
+// browsing history, so we treat HISTORY as unavailable and route the
+// query through the bookmarks-only path.
+function effectiveSources(queryContext) {
+  return {
+    historyAllowed:
+      queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.HISTORY) &&
+      lazy.historyEnabled,
+    bookmarksAllowed: queryContext.sources.includes(
+      UrlbarUtils.RESULT_SOURCE.BOOKMARKS
+    ),
+  };
+}
 
 // AutoComplete query type constants.
 // Describes the various types of queries that we can process rows for.
@@ -661,10 +685,9 @@ export class UrlbarProviderAutofill extends UrlbarProvider {
       opts.prefix = this._strippedPrefix;
     }
 
-    if (
-      queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.HISTORY) &&
-      queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.BOOKMARKS)
-    ) {
+    let { historyAllowed, bookmarksAllowed } = effectiveSources(queryContext);
+
+    if (historyAllowed && bookmarksAllowed) {
       return [
         this._strippedPrefix
           ? QUERY_ORIGIN_PREFIX_HISTORY_BOOKMARK
@@ -672,7 +695,7 @@ export class UrlbarProviderAutofill extends UrlbarProvider {
         opts,
       ];
     }
-    if (queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.HISTORY)) {
+    if (historyAllowed) {
       return [
         this._strippedPrefix
           ? QUERY_ORIGIN_PREFIX_HISTORY
@@ -680,7 +703,7 @@ export class UrlbarProviderAutofill extends UrlbarProvider {
         opts,
       ];
     }
-    if (queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.BOOKMARKS)) {
+    if (bookmarksAllowed) {
       return [
         this._strippedPrefix
           ? QUERY_ORIGIN_PREFIX_BOOKMARK
@@ -733,10 +756,9 @@ export class UrlbarProviderAutofill extends UrlbarProvider {
       opts.prefix = this._strippedPrefix;
     }
 
-    if (
-      queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.HISTORY) &&
-      queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.BOOKMARKS)
-    ) {
+    let { historyAllowed, bookmarksAllowed } = effectiveSources(queryContext);
+
+    if (historyAllowed && bookmarksAllowed) {
       opts.pageFrecencyThreshold = lazy.pageFrecencyThreshold;
       opts.adaptiveAutofillEnabled = lazy.UrlbarPrefs.get(
         "autoFillAdaptiveHistoryEnabled"
@@ -750,14 +772,14 @@ export class UrlbarProviderAutofill extends UrlbarProvider {
         opts,
       ];
     }
-    if (queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.HISTORY)) {
+    if (historyAllowed) {
       opts.pageFrecencyThreshold = lazy.pageFrecencyThreshold;
       return [
         this._strippedPrefix ? QUERY_URL_PREFIX_HISTORY : QUERY_URL_HISTORY,
         opts,
       ];
     }
-    if (queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.BOOKMARKS)) {
+    if (bookmarksAllowed) {
       return [
         this._strippedPrefix ? QUERY_URL_PREFIX_BOOKMARK : QUERY_URL_BOOKMARK,
         opts,
@@ -767,24 +789,19 @@ export class UrlbarProviderAutofill extends UrlbarProvider {
   }
 
   _getAdaptiveHistoryQuery(queryContext) {
+    let { historyAllowed, bookmarksAllowed } = effectiveSources(queryContext);
+
     let sourceCondition;
     let params = {};
-    if (
-      queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.HISTORY) &&
-      queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.BOOKMARKS)
-    ) {
+    if (historyAllowed && bookmarksAllowed) {
       sourceCondition =
         "((:adaptiveAutofillEnabled = 0 AND h.foreign_count > 0) OR h.frecency > :pageFrecencyThreshold)";
       params.pageFrecencyThreshold = lazy.pageFrecencyThreshold;
-    } else if (
-      queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.HISTORY)
-    ) {
+    } else if (historyAllowed) {
       sourceCondition =
         "((h.visit_count > 0 OR h.foreign_count = 0) AND h.frecency > :pageFrecencyThreshold)";
       params.pageFrecencyThreshold = lazy.pageFrecencyThreshold;
-    } else if (
-      queryContext.sources.includes(UrlbarUtils.RESULT_SOURCE.BOOKMARKS)
-    ) {
+    } else if (bookmarksAllowed) {
       sourceCondition = "h.foreign_count > 0";
     } else {
       return [];

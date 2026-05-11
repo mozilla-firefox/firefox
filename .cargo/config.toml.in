@@ -69,9 +69,9 @@ replace-with = "vendored-sources"
 git = "https://github.com/martinthomson/ohttp"
 replace-with = "vendored-sources"
 
-[source."git+https://github.com/mozilla/audioipc?rev=b52c33425baf619b6c1278c5b4c7ffa3e92b9b1e"]
+[source."git+https://github.com/mozilla/audioipc?rev=57a79753da9de4cf4b1c54e0c6775d3d2aba26f6"]
 git = "https://github.com/mozilla/audioipc"
-rev = "b52c33425baf619b6c1278c5b4c7ffa3e92b9b1e"
+rev = "57a79753da9de4cf4b1c54e0c6775d3d2aba26f6"
 replace-with = "vendored-sources"
 
 [source."git+https://github.com/mozilla/cubeb-coreaudio-rs?rev=0bb8a45a040e85d313eb18deb36570e87df3a6af"]
@@ -112,11 +112,6 @@ replace-with = "vendored-sources"
 [source."git+https://github.com/mozilla/neqo?tag=v0.26.1"]
 git = "https://github.com/mozilla/neqo"
 tag = "v0.26.1"
-replace-with = "vendored-sources"
-
-[source."git+https://github.com/mozilla/nss-rs?rev=c54949bbff92795b8b2e837ec84decc9b468081a"]
-git = "https://github.com/mozilla/nss-rs"
-rev = "c54949bbff92795b8b2e837ec84decc9b468081a"
 replace-with = "vendored-sources"
 
 [source."git+https://github.com/rust-lang/rust-bindgen?rev=9366e0af8da529c958b4cd4fcbe492d951c86f5c"]

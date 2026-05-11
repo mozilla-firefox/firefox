@@ -1,7 +1,7 @@
 var gSame = newGlobal({sameCompartmentAs: globalThis});
 var g2 = newGlobal({newCompartment: true});
 
-var {object: proxy, transplant} = transplantableObject({proxy: true});
+var {object: proxy, transplant} = transplantableObject();
 
 transplant(g2);
 

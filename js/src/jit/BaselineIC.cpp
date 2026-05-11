@@ -14,6 +14,7 @@
 #include "jit/CacheIRGenerator.h"
 #include "jit/CacheIRHealth.h"
 #include "jit/JitFrames.h"
+#include "jit/JitHints.h"
 #include "jit/JitRuntime.h"
 #include "jit/JitSpewer.h"
 #include "jit/Linker.h"
@@ -470,6 +471,18 @@ bool ICCacheIRStub::traceWeak(JSTracer* trc) {
 
 static void MaybeTransition(JSContext* cx, BaselineFrame* frame,
                             ICFallbackStub* stub) {
+  if (!stub->state().newStubIsFirstStub() && !JitOptions.disableJitHints &&
+      cx->runtime()->jitRuntime()->hasJitHintsMap()) {
+    JitHintsMap* hints = cx->runtime()->jitRuntime()->getJitHintsMap();
+    if (hints->shouldTransitionMegamorphic(frame->script(), frame->icScript(),
+                                           stub)) {
+      ICEntry* icEntry = frame->icScript()->icEntryForStub(stub);
+      stub->state().forceTransition();
+      stub->discardStubs(cx->zone(), icEntry);
+      return;
+    }
+  }
+
   if (stub->state().shouldTransition()) {
     if (!TryFoldingStubs(cx, stub, frame->script(), frame->icScript())) {
       cx->recoverFromOutOfMemory();

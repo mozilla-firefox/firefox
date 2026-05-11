@@ -25,7 +25,6 @@
 #include "mozilla/EnumTypeTraits.h"
 #include "mozilla/EnumeratedRange.h"
 #include "mozilla/ErrorResult.h"
-#include "mozilla/Likely.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/ProfilerLabels.h"
 #include "mozilla/SegmentedVector.h"
@@ -2040,7 +2039,7 @@ enum StringificationBehavior { eStringify, eEmpty, eNull };
 
 static inline JSString* ConvertJSValueToJSString(JSContext* cx,
                                                  JS::Handle<JS::Value> v) {
-  if (MOZ_LIKELY(v.isString())) {
+  if (v.isString()) [[likely]] {
     return v.toString();
   }
   return JS::ToString(cx, v);
@@ -2110,7 +2109,7 @@ static inline bool ConvertJSValueToUSVString(
 template <typename T>
 inline bool ConvertIdToString(JSContext* cx, JS::Handle<JS::PropertyKey> id,
                               T& result, bool& isSymbol) {
-  if (MOZ_LIKELY(id.isString())) {
+  if (id.isString()) [[likely]] {
     if (!AssignJSString(cx, result, id.toString())) {
       return false;
     }

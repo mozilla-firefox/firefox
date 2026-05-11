@@ -30,7 +30,7 @@ export const ThemeVariableMap = [
     },
   ],
   [
-    "--tab-selected-bgcolor",
+    "--tab-background-color-selected",
     {
       lwtProperty: "tab_selected",
     },
@@ -165,5 +165,5 @@ export const ThemeContentPropertyList = [
   "sidebar_highlight_text",
   "sidebar_text",
   "zap_gradient",
-  "ai_gradient",
+  "ai_background_color",
 ];
