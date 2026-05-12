@@ -36,11 +36,11 @@ data class Destination(val id: Int, override val label: Int) : AIFeatureMetadata
  */
 val AIFeatureMetadata.destination: AIFeatureMetadataDestination? get() = when (id) {
     PageSummaryFeature.id -> Destination(
-        id = R.id.pageSummariesSettingsFragment,
+        id = R.id.action_aiControlsFragment_to_pageSummariesSettingsFragment,
         label = R.string.ai_controls_more_page_summary_settings,
     )
     TranslationsAIControllableFeature.id -> Destination(
-        id = R.id.translations_settings_graph,
+        id = R.id.action_aiControlsFragment_to_translationsSettingsFragment,
         label = R.string.ai_controls_more_translations_settings,
     )
     else -> null

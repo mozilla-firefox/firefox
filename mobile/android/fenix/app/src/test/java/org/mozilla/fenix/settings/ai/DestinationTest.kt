@@ -17,7 +17,7 @@ class DestinationTest {
     fun `page summary feature maps to pageSummariesSettingsFragment destination`() {
         val destination = PageSummaryFeature.destination
 
-        assertEquals(R.id.pageSummariesSettingsFragment, (destination as Destination).id)
+        assertEquals(R.id.action_aiControlsFragment_to_pageSummariesSettingsFragment, (destination as Destination).id)
     }
 
     @Test
