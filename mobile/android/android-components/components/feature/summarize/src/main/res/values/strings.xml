@@ -111,7 +111,7 @@
     <string name="mozac_feature_summarize_disclaimer_message">AI can make mistakes</string>
 
     <!-- Title for the page summary AI controllable feature -->
-    <string name="mozac_ai_controls_page_summary_title">Page summaries</string>
+    <string name="mozac_ai_controls_page_summary_title">Block page summaries</string>
 
     <!-- Description for the page summary AI controllable feature -->
     <string name="mozac_ai_controls_page_summary_description">Pages and summaries are never stored.</string>
