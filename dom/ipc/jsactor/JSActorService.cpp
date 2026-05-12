@@ -124,7 +124,7 @@ void JSActorService::UnregisterWindowActor(const nsACString& aName) {
       proto->UnregisterListenersFor(target);
     }
 
-    // Remove observers for this actor from observer serivce.
+    // Remove observers for this actor from observer service.
     proto->RemoveObservers();
 
     // Tell every content process to also unregister, and accumulate the set of
@@ -290,7 +290,7 @@ void JSActorService::UnregisterProcessActor(const nsACString& aName) {
   nsAutoCString name(aName);
   RefPtr<JSProcessActorProtocol> proto;
   if (mProcessActorDescriptors.Remove(name, getter_AddRefs(proto))) {
-    // Remove observers for this actor from observer serivce.
+    // Remove observers for this actor from observer service.
     proto->RemoveObservers();
 
     // Tell every content process to also unregister, and accumulate the set of
