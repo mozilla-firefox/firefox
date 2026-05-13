@@ -1,0 +1,6 @@
+[DEFAULT]
+support-files = [
+  "head.js",
+]
+
+["browser_aiwindow_runner.js"]
