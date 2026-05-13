@@ -627,7 +627,7 @@ void NrIceCtx::InitializeGlobals(const GlobalConfig& aConfig) {
 
     NR_reg_set_char((char*)NR_ICE_REG_ICE_TCP_DISABLE, !aConfig.mTcpEnabled);
 
-    if (!aConfig.mForceNetInterface.Length()) {
+    if (aConfig.mForceNetInterface.Length()) {
       NR_reg_set_string((char*)NR_ICE_REG_PREF_FORCE_INTERFACE_NAME,
                         const_cast<char*>(aConfig.mForceNetInterface.get()));
     }
