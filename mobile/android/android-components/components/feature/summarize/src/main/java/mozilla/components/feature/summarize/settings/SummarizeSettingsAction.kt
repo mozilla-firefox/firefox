@@ -17,6 +17,11 @@ sealed interface SummarizeSettingsAction : Action
 data object ViewAppeared : SummarizeSettingsAction
 
 /**
+ * Triggers an early load of the settings from disk before the settings UI is shown.
+ */
+data object SettingsPreLoaded : SummarizeSettingsAction
+
+/**
  * The settings have been loaded from disk.
  */
 data class SettingsLoaded(val isFeatureEnabled: Boolean, val isGestureEnabled: Boolean) : SummarizeSettingsAction

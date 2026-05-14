@@ -24,6 +24,7 @@ fun summarizeSettingsReducer(
     }
 
     ViewAppeared,
+    SettingsPreLoaded,
     LearnMoreClicked,
     -> state
 }

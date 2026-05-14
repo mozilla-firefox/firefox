@@ -32,7 +32,9 @@ class SummarizeSettingsMiddleware(
         next(action)
 
         when (action) {
-            ViewAppeared -> scope.launch {
+            ViewAppeared,
+            SettingsPreLoaded,
+            -> scope.launch {
                 store.dispatch(
                     SettingsLoaded(
                         isFeatureEnabled = settings.getFeatureEnabledUserStatus().first(),

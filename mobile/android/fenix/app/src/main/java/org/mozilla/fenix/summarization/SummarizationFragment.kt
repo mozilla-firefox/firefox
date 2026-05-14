@@ -16,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.viewModels
 import androidx.fragment.compose.content
@@ -34,6 +35,7 @@ import mozilla.components.feature.summarize.ViewDismissed
 import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.feature.summarize.content.PageMetadata
 import mozilla.components.feature.summarize.content.PageMetadataExtractor
+import mozilla.components.feature.summarize.settings.SettingsPreLoaded
 import mozilla.components.feature.summarize.settings.SummarizationSettings
 import mozilla.components.feature.summarize.settings.SummarizeSettingsMiddleware
 import mozilla.components.feature.summarize.settings.SummarizeSettingsState
@@ -183,17 +185,20 @@ class SummarizationFragment : BottomSheetDialogFragment() {
             }
         }
 
-        val settingsStore = SummarizeSettingsStore(
-            initialState = SummarizeSettingsState(),
-            reducer = ::summarizeSettingsReducer,
-            middleware = listOf(
-                SummarizeSettingsMiddleware(
-                    settings = summarizeSettings,
-                    onLearnMoreClicked = { openLearnMoreLink() },
-                    storeViewModel.viewModelScope,
+        val settingsStore = remember {
+            SummarizeSettingsStore(
+                initialState = SummarizeSettingsState(),
+                reducer = ::summarizeSettingsReducer,
+                middleware = listOf(
+                    SummarizeSettingsMiddleware(
+                        settings = summarizeSettings,
+                        onLearnMoreClicked = { openLearnMoreLink() },
+                        storeViewModel.viewModelScope,
+                    ),
                 ),
-            ),
-        )
+            )
+        }
+        LaunchedEffect(Unit) { settingsStore.dispatch(SettingsPreLoaded) }
 
         FirefoxTheme {
             SummarizationUi(
