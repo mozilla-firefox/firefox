@@ -8,21 +8,29 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import mozilla.components.lib.state.helpers.StoreProvider.Companion.storeProvider
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.GenaiAiControls
 import org.mozilla.fenix.R
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.showToolbar
+import org.mozilla.fenix.settings.SettingsState
+import org.mozilla.fenix.settings.SettingsStore
 import org.mozilla.fenix.settings.SupportUtils
+import org.mozilla.fenix.settings.settingsReducer
 import org.mozilla.fenix.theme.FirefoxTheme
+import kotlin.getValue
 
 /**
  * A fragment displaying the AI Controls settings screen.
@@ -34,72 +42,96 @@ class AIControlsFragment : Fragment(), SystemInsetsPaddedFragment {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
-    ): View = content {
-        val registry = requireComponents.aiFeatureRegistry
-        val features = remember { registry.getFeatures() }
-        val featureBlock = requireComponents.aiControlsFeatureBlock
-        val scope = rememberCoroutineScope()
+        ): View {
+        val navController = findNavController()
+        val settingsStore: SettingsStore =
+            navController.getBackStackEntry(R.id.settingsFragment)
+                .storeProvider.get<SettingsState, SettingsStore> { persistedState ->
+                    SettingsStore(persistedState ?: SettingsState(), ::settingsReducer, middleware = listOf())
+                }
 
-        val aiBlockUiController = remember {
-            AIBlockUIController.default(
-                featureBlock = featureBlock,
-                scope = scope,
-            )
+        return content {
+            val registry = requireComponents.aiFeatureRegistry
+            val features = remember { registry.getFeatures() }
+            val featureBlock = requireComponents.aiControlsFeatureBlock
+            val scope = rememberCoroutineScope()
+
+            val aiBlockUiController = remember {
+                AIBlockUIController.default(
+                    featureBlock = featureBlock,
+                    scope = scope,
+                )
+            }
+
+            val showDialog = aiBlockUiController.showDialogFlow.collectAsState()
+            val isBlocked = featureBlock.isBlocked.collectAsState(initial = false)
+            val settingsState = settingsStore.stateFlow.collectAsState()
+            val callbacks = rememberAIControlsCallbacks(aiBlockUiController, scope)
+
+            FirefoxTheme {
+                AIControlsScreen(
+                    state = AIControlsScreenState(
+                        featureEnabledState = settingsState.value.aiControlsState.featuresEnabled,
+                        registeredFeatures = features,
+                        showDialog = showDialog.value,
+                        isBlocked = isBlocked.value,
+                        itemToScrollTo = args.preferenceToScrollTo,
+                    ),
+                    callbacks = callbacks,
+                )
+            }
         }
+    }
 
-        val showDialog = aiBlockUiController.showDialogFlow.collectAsState()
-        val isBlocked = featureBlock.isBlocked.collectAsState(initial = false)
-
-        FirefoxTheme {
-            AIControlsScreen(
-                registeredFeatures = features,
-                showDialog = showDialog.value,
-                isBlocked = isBlocked.value,
-                itemToScrollTo = args.preferenceToScrollTo,
-                onDialogDismiss = {
-                    GenaiAiControls.globalPrefConfirmationClick.record(
-                        GenaiAiControls.GlobalPrefConfirmationClickExtra(element = "cancel"),
-                    )
-                    aiBlockUiController.onDialogDismiss()
-                },
-                onDialogConfirm = {
-                    GenaiAiControls.globalPrefConfirmationClick.record(
-                        GenaiAiControls.GlobalPrefConfirmationClickExtra(element = "block"),
-                    )
-                    aiBlockUiController.onDialogConfirm()
-                },
-                onToggle = { currentlyBlocked ->
-                    GenaiAiControls.globalPrefToggle.record(
-                        GenaiAiControls.GlobalPrefToggleExtra(block = !currentlyBlocked),
-                    )
-                    if (!currentlyBlocked) {
-                        GenaiAiControls.globalPrefConfirmationShown.record(NoExtras())
-                    }
-                    aiBlockUiController.onToggle(currentlyBlocked)
-                },
-                onFeatureToggle = { feature, enabled ->
-                    GenaiAiControls.featurePrefChange.record(
-                        GenaiAiControls.FeaturePrefChangeExtra(
-                            feature = feature.id.value,
-                            selection = if (enabled) "enabled" else "blocked",
-                        ),
-                    )
-                    scope.launch { feature.set(enabled) }
-                },
-                onFeatureNavLinkClick = { destination, featureId ->
-                    GenaiAiControls.featureLinkClick.record(
-                        GenaiAiControls.FeatureLinkClickExtra(link = featureId),
-                    )
-                    destination.nav(this)
-                },
-                onBannerLearnMoreClick = {
-                    GenaiAiControls.featureLinkClick.record(
-                        GenaiAiControls.FeatureLinkClickExtra(link = "global_control"),
-                    )
-                    openAiControlsSumoPage()
-                },
-            )
-        }
+    @Composable
+    private fun rememberAIControlsCallbacks(
+        aiBlockUiController: AIBlockUIController,
+        scope: CoroutineScope,
+    ): AIControlsCallbacks = remember {
+        AIControlsCallbacks(
+            onDialogDismiss = {
+                GenaiAiControls.globalPrefConfirmationClick.record(
+                    GenaiAiControls.GlobalPrefConfirmationClickExtra(element = "cancel"),
+                )
+                aiBlockUiController.onDialogDismiss()
+            },
+            onDialogConfirm = {
+                GenaiAiControls.globalPrefConfirmationClick.record(
+                    GenaiAiControls.GlobalPrefConfirmationClickExtra(element = "block"),
+                )
+                aiBlockUiController.onDialogConfirm()
+            },
+            onToggle = { currentlyBlocked ->
+                GenaiAiControls.globalPrefToggle.record(
+                    GenaiAiControls.GlobalPrefToggleExtra(block = !currentlyBlocked),
+                )
+                if (!currentlyBlocked) {
+                    GenaiAiControls.globalPrefConfirmationShown.record(NoExtras())
+                }
+                aiBlockUiController.onToggle(currentlyBlocked)
+            },
+            onFeatureToggle = { feature, enabled ->
+                GenaiAiControls.featurePrefChange.record(
+                    GenaiAiControls.FeaturePrefChangeExtra(
+                        feature = feature.id.value,
+                        selection = if (enabled) "enabled" else "blocked",
+                    ),
+                )
+                scope.launch { feature.set(enabled) }
+            },
+            onFeatureNavLinkClick = { destination, featureId ->
+                GenaiAiControls.featureLinkClick.record(
+                    GenaiAiControls.FeatureLinkClickExtra(link = featureId),
+                )
+                destination.nav(this@AIControlsFragment)
+            },
+            onBannerLearnMoreClick = {
+                GenaiAiControls.featureLinkClick.record(
+                    GenaiAiControls.FeatureLinkClickExtra(link = "global_control"),
+                )
+                openAiControlsSumoPage()
+            },
+        )
     }
 
     override fun onResume() {

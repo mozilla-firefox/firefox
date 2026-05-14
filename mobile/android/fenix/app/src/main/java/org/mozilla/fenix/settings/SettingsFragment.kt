@@ -41,6 +41,8 @@ import mozilla.components.concept.sync.AuthType
 import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.Profile
 import mozilla.components.feature.addons.ui.AddonFilePicker
+import mozilla.components.feature.summarize.settings.SummarizationSettings
+import mozilla.components.lib.state.helpers.StoreProvider.Companion.navBackStackStore
 import mozilla.components.service.fxrelay.eligibility.Eligible
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.components.support.ktx.android.view.showKeyboard
@@ -83,6 +85,7 @@ import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 import org.mozilla.fenix.snackbar.SnackbarBinding
 import org.mozilla.fenix.utils.Settings
 import java.lang.ref.WeakReference
+import kotlin.getValue
 import kotlin.system.exitProcess
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.GleanMetrics.Settings as SettingsMetrics
@@ -131,6 +134,8 @@ class SettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment 
         super.onCreate(savedInstanceState)
 
         components = requireContext().components
+
+        initializeSettingsStore()
 
         accountUiView = AccountUiView(
             fragment = this,
@@ -203,6 +208,27 @@ class SettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment 
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preferences, rootKey)
+    }
+
+    private fun initializeSettingsStore() {
+        val settingsOwner = findNavController().getBackStackEntry(R.id.settingsFragment)
+        val settingsStore: SettingsStore by findNavController().currentBackStackEntry!!.navBackStackStore(
+            initialState = SettingsState(),
+            factory = {
+                SettingsStore(
+                    initialState = SettingsState(),
+                    reducer = ::settingsReducer,
+                    middleware = listOf(
+                        SettingsMiddleware(
+                            featureRegistry = components.aiFeatureRegistry,
+                            summarizationSettings = SummarizationSettings.dataStore(requireContext()),
+                            scope = settingsOwner.lifecycleScope,
+                        ),
+                    ),
+                )
+            },
+        )
+        settingsStore.dispatch(SettingsAction.SettingsViewCreated)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

@@ -39,7 +39,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mozilla.components.compose.base.InfoCard
 import mozilla.components.compose.base.InfoType
 import mozilla.components.compose.base.LinkText
@@ -48,6 +47,7 @@ import mozilla.components.compose.base.PromoCard
 import mozilla.components.compose.base.annotation.FlexibleWindowPreview
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.concept.ai.controls.AIControllableFeature
+import mozilla.components.concept.ai.controls.AIFeatureMetadata
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.list.IconListItem
 import org.mozilla.fenix.compose.list.SwitchListItem
@@ -63,40 +63,51 @@ import mozilla.components.ui.icons.R as iconsR
 
 private const val HEADER_ITEM_COUNT = 2
 
+/**
+ * UI state for [AIControlsScreen].
+ */
+internal data class AIControlsScreenState(
+    val featureEnabledState: Map<AIFeatureMetadata.FeatureId, Boolean> = mapOf(),
+    val registeredFeatures: List<AIControllableFeature> = emptyList(),
+    val showDialog: Boolean = false,
+    val isBlocked: Boolean = false,
+    val itemToScrollTo: String? = null,
+)
+
+/**
+ * Callback bundle for [AIControlsScreen].
+ */
+internal data class AIControlsCallbacks(
+    val onDialogDismiss: () -> Unit = {},
+    val onDialogConfirm: () -> Unit = {},
+    val onToggle: (Boolean) -> Unit = {},
+    val onFeatureToggle: (AIControllableFeature, Boolean) -> Unit = { _, _ -> },
+    val onFeatureNavLinkClick: (AIFeatureMetadataDestination, String) -> Unit = { _, _ -> },
+    val onBannerLearnMoreClick: () -> Unit = {},
+)
+
 @Composable
 internal fun AIControlsScreen(
-    registeredFeatures: List<AIControllableFeature> = emptyList(),
-    showDialog: Boolean,
-    isBlocked: Boolean,
-    itemToScrollTo: String? = null,
-    onDialogDismiss: () -> Unit,
-    onDialogConfirm: () -> Unit,
-    onToggle: (Boolean) -> Unit,
-    onFeatureToggle: (AIControllableFeature, Boolean) -> Unit = { _, _ -> },
-    onFeatureNavLinkClick: (AIFeatureMetadataDestination, String) -> Unit,
-    onBannerLearnMoreClick: () -> Unit,
+    state: AIControlsScreenState,
+    callbacks: AIControlsCallbacks,
 ) {
     Surface {
-        if (showDialog) {
+        if (state.showDialog) {
             BlockAIDialog(
-                registeredFeatures = registeredFeatures,
-                onDismiss = { onDialogDismiss() },
-                onConfirm = { onDialogConfirm() },
+                registeredFeatures = state.registeredFeatures,
+                onDismiss = { callbacks.onDialogDismiss() },
+                onConfirm = { callbacks.onDialogConfirm() },
             )
         }
 
         val lazyListState = rememberLazyListState()
 
-        ScrollToItemEffect(itemToScrollTo, registeredFeatures, lazyListState)
+        ScrollToItemEffect(state.itemToScrollTo, state.registeredFeatures, lazyListState)
 
         AIControlsList(
+            state = state,
             lazyListState = lazyListState,
-            registeredFeatures = registeredFeatures,
-            isBlocked = isBlocked,
-            onToggle = onToggle,
-            onFeatureToggle = onFeatureToggle,
-            onFeatureNavLinkClick = onFeatureNavLinkClick,
-            onBannerLearnMoreClick = onBannerLearnMoreClick,
+            callbacks = callbacks,
         )
     }
 }
@@ -122,13 +133,9 @@ private fun ScrollToItemEffect(
 
 @Composable
 private fun AIControlsList(
+    state: AIControlsScreenState,
     lazyListState: LazyListState,
-    registeredFeatures: List<AIControllableFeature>,
-    isBlocked: Boolean,
-    onToggle: (Boolean) -> Unit,
-    onFeatureToggle: (AIControllableFeature, Boolean) -> Unit,
-    onFeatureNavLinkClick: (AIFeatureMetadataDestination, String) -> Unit,
-    onBannerLearnMoreClick: () -> Unit,
+    callbacks: AIControlsCallbacks,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -136,9 +143,9 @@ private fun AIControlsList(
     ) {
         item {
             AIControlsHeader(
-                isBlocked = isBlocked,
-                onToggle = onToggle,
-                onBannerLearnMoreClick = onBannerLearnMoreClick,
+                isBlocked = state.isBlocked,
+                onToggle = callbacks.onToggle,
+                onBannerLearnMoreClick = callbacks.onBannerLearnMoreClick,
             )
         }
 
@@ -147,13 +154,14 @@ private fun AIControlsList(
         }
 
         items(
-            items = registeredFeatures,
+            items = state.registeredFeatures,
             key = { it.id.value },
         ) { feature ->
             FeatureRow(
+                featureEnabledState = state.featureEnabledState,
                 feature = feature,
-                onFeatureToggle = onFeatureToggle,
-                onFeatureNavLinkClick = onFeatureNavLinkClick,
+                onFeatureToggle = callbacks.onFeatureToggle,
+                onFeatureNavLinkClick = callbacks.onFeatureNavLinkClick,
             )
         }
     }
@@ -214,11 +222,12 @@ private fun AIFeaturesHeader() {
 
 @Composable
 private fun FeatureRow(
+    featureEnabledState: Map<AIFeatureMetadata.FeatureId, Boolean>,
     feature: AIControllableFeature,
     onFeatureToggle: (AIControllableFeature, Boolean) -> Unit,
     onFeatureNavLinkClick: (AIFeatureMetadataDestination, String) -> Unit,
 ) {
-    val isEnabled by feature.isEnabled.collectAsStateWithLifecycle(initialValue = true)
+    val isEnabled = featureEnabledState[feature.id] ?: false
 
     Column {
         SwitchListItem(
@@ -383,13 +392,8 @@ private fun AIControlsScreenPreview(
 ) {
     FirefoxTheme(theme) {
         AIControlsScreen(
-            showDialog = false,
-            isBlocked = false,
-            onDialogDismiss = {},
-            onDialogConfirm = {},
-            onToggle = {},
-            onFeatureNavLinkClick = { _, _ -> },
-            onBannerLearnMoreClick = {},
+            state = AIControlsScreenState(),
+            callbacks = AIControlsCallbacks(),
         )
     }
 }
