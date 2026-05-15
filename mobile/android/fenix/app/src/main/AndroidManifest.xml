@@ -828,6 +828,9 @@
         <meta-data
             android:name="firebase_analytics_collection_deactivated"
             android:value="true" />
+        <meta-data
+            android:name="io.sentry.proguard-uuid"
+            android:value="${sentryProguardUuid}" />
         <!-- Removes the default Workmanager  initialization so that we can use on-demand initializer. -->
         <provider
             android:name="androidx.startup.InitializationProvider"

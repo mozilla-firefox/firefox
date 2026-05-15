@@ -301,4 +301,28 @@ def add_artifacts(config, tasks):
             })
             task["attributes"]["aab"] = artifact_template["name"]
 
+        # Only bundles are minified and consumed by the sentry-upload kind. Debug builds have no
+        # mapping file at all, so declaring these artifacts there would leave them permanently
+        # missing.
+        if config.kind == "build-bundle" and gradle_build_type != "debug":
+            artifacts.append({
+                "type": "file",
+                "name": "public/build/mapping.txt",
+                "path": (
+                    "/builds/worker/workspace/obj-build/gradle/build/mobile/android"
+                    f"/{source_project_name}/app/outputs/mapping"
+                    f"/{gradle_build_name}/mapping.txt"
+                ),
+            })
+
+            artifacts.append({
+                "type": "file",
+                "name": "public/build/sentry-proguard-uuid.txt",
+                "path": (
+                    "/builds/worker/workspace/obj-build/gradle/build/mobile/android"
+                    f"/{source_project_name}/app/sentry"
+                    f"/{gradle_build_name}/proguard-uuid.txt"
+                ),
+            })
+
         yield task

@@ -457,6 +457,41 @@ android.defaultConfig.with {
     } catch (FileNotFoundException ignored) {
         buildConfigField 'String', 'SENTRY_TOKEN', '""'
     }
+
+    // Default for the manifest merges that onVariants does not reach, notably the unit test and
+    // android test components. Real variants override this below.
+    manifestPlaceholders.put("sentryProguardUuid", "")
+}
+
+// -------------------------------------------------------------------------------------------------
+// Sentry: Generate the ProGuard UUID used to match crash reports with their mapping file
+//
+// The same UUID is embedded in the manifest, for the SDK to report, and written to a file, for the
+// sentry-upload task to pass to sentry-cli. Debug builds are not minified, so they get no UUID.
+// -------------------------------------------------------------------------------------------------
+
+androidComponents {
+    def buildId = org.mozilla.conventions.BuildConfigKt.getBuildId(
+            gradle.mozconfig.topobjdir, providers.environmentVariable("MOZ_BUILD_DATE").getOrNull())
+
+    onVariants(selector().all()) { variant ->
+        def proguardUuid = variant.buildType == "debug" ? "" :
+                UUID.nameUUIDFromBytes((buildId + variant.name).bytes).toString()
+        variant.manifestPlaceholders.put("sentryProguardUuid", proguardUuid)
+
+        def variantNameCap = variant.name.capitalize()
+        def uuidOutputFile = layout.buildDirectory.file("sentry/${variant.name}/proguard-uuid.txt")
+        def writeUuid = tasks.register("writeSentryProguardUuid${variantNameCap}") {
+            outputs.file(uuidOutputFile)
+            doLast {
+                def destFile = uuidOutputFile.get().asFile
+                destFile.parentFile.mkdirs()
+                destFile.text = proguardUuid
+            }
+        }
+        tasks.matching { it.name == "assemble${variantNameCap}" || it.name == "bundle${variantNameCap}" }
+                .configureEach { dependsOn(writeUuid) }
+    }
 }
 
 // -------------------------------------------------------------------------------------------------

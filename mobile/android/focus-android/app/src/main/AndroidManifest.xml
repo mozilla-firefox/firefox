@@ -231,6 +231,10 @@
         </provider>
 
 
+        <meta-data
+            android:name="io.sentry.proguard-uuid"
+            android:value="${sentryProguardUuid}" />
+
     </application>
 
 </manifest>
