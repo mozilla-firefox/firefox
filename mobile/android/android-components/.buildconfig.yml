@@ -533,6 +533,13 @@ projects:
     - components:support-test
     - components:support-utils
     - components:tooling-lint
+  components:concept-passwords-file:
+    description: An abstract definition of a component for importing passwords from
+      a file.
+    path: components/concept/passwords-file
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:concept-push:
     description: An abstract definition of a push service component.
     path: components/concept/push
@@ -2033,6 +2040,14 @@ projects:
     - components:support-utils
     - components:tooling-lint
     - components:ui-icons
+  components:lib-passwords-file:
+    description: A concrete implementation of concept-passwords-file that imports
+      passwords from CSV files.
+    path: components/lib/passwords-file
+    publish: true
+    upstream_dependencies:
+    - components:concept-passwords-file
+    - components:tooling-lint
   components:lib-publicsuffixlist:
     description: A library for reading and using the public suffix list.
     path: components/lib/publicsuffixlist
