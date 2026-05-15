@@ -1,0 +1,50 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.from_deps
+    - gecko_taskgraph.transforms.sentry_upload
+    - android_taskgraph.transforms.treeherder
+    - gecko_taskgraph.transforms.job
+    - gecko_taskgraph.transforms.task
+
+kind-dependencies:
+    - build-bundle
+
+tasks:
+    sentry-upload:
+        description: Upload Android ProGuard mapping file to Sentry
+        from-deps:
+            with-attributes:
+                build-type:
+                    - fenix-nightly
+                    - fenix-release
+                    - fenix-beta
+                    - focus-nightly
+                    - focus-release
+                    - focus-beta
+                    - klar-release
+            copy-attributes: true
+            fetches:
+                build-bundle:
+                    - artifact: mapping.txt
+                      extract: false
+                    - artifact: sentry-proguard-uuid.txt
+                      extract: false
+        worker-type: b-linux
+        worker:
+            docker-image: {in-tree: sentry}
+            taskcluster-proxy: true
+            max-run-time: 1800
+        run:
+            using: run-task
+            checkout: false
+            command: /usr/bin/upload_proguard_mapping.sh /builds/worker/fetches/mapping.txt /builds/worker/fetches/sentry-proguard-uuid.txt
+        treeherder:
+            symbol:
+                by-build-type:
+                    klar-.*: klar-map
+                    default: map

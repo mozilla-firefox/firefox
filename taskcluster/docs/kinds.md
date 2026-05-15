@@ -804,6 +804,10 @@ Interact with Sentry, such as by publishing new project releases.
 
 Generate missing macOS and windows system symbols from crash reports.
 
+## sentry-upload
+
+Upload Android ProGuard mapping files to Sentry to enable deobfuscation of crash stack traces.
+
 ## system-symbols-upload
 
 Upload macOS and windows system symbols to tecken.
