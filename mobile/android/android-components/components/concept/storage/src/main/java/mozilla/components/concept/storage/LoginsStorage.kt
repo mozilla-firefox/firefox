@@ -215,10 +215,24 @@ interface LoginsStorage : Storage, StorageMaintenanceRegistry, AutoCloseable {
      * (missing password, origin, or doesn't have exactly one of formSubmitURL
      * and httpRealm).
      *
-     * @param login [LoginEntry] to add.
+     * @param entry [LoginEntry] to add.
      * @return [EncryptedLogin] that was added
      */
     suspend fun add(entry: LoginEntry): Login
+
+    /**
+     * Inserts the provided logins into the database.
+     *
+     * Each entry is processed independently: the returned list contains one
+     * [Result] per input entry, in the same order as [entries]. A failed
+     * [Result] indicates the corresponding entry was invalid (missing password,
+     * origin, or doesn't have exactly one of formSubmitURL and httpRealm) and
+     * was not inserted; other entries are still inserted.
+     *
+     * @param entries [List] of [LoginEntry] to add.
+     * @return [List] of [Result] containing the [Login] that was added for each entry.
+     */
+    suspend fun addMany(entries: List<LoginEntry>): List<Result<Login>>
 
     /**
      * Updates an existing login in the database

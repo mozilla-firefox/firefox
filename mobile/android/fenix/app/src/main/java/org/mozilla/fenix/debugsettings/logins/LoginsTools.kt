@@ -165,6 +165,9 @@ internal class FakeLoginsStorage : LoginsStorage {
         loginsByGuid[guid] = entry
         return entry.toLogin(guid)
     }
+    override suspend fun addMany(entries: List<LoginEntry>): List<Result<Login>> {
+        return entries.map { Result.success(add(it)) }
+    }
     override suspend fun update(guid: String, entry: LoginEntry) = entry.toLogin(guid)
     override suspend fun addOrUpdate(entry: LoginEntry) = entry.toLogin("guid")
     override suspend fun getByBaseDomain(origin: String) = loginsByGuid.map { (guid, login) ->

@@ -202,6 +202,18 @@ class SyncableLoginsStorage(
     }
 
     /**
+     * @throws [InvalidRecordException] if the record is invalid.
+     * @throws [InvalidKey] if the encryption key can't decrypt the login
+     * @throws [LoginsApiException] if the storage is locked, and on unexpected
+     *              errors (IO failure, rust panics, etc)
+     */
+    @Throws(InvalidKey::class, InvalidRecordException::class, LoginsApiException::class)
+    override suspend fun addMany(entries: List<LoginEntry>) = withContext(coroutineContext) {
+        val asEntries = entries.map { it.toLoginEntry() }
+        getStorage().addMany(asEntries).map { it.toLoginResult() }
+    }
+
+    /**
      * @throws [NoSuchRecordException] if the login does not exist.
      * @throws [InvalidKey] if the encryption key can't decrypt the login
      * @throws [InvalidRecordException] if the update would create an invalid record.
