@@ -1,0 +1,25 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+    namespace = 'mozilla.components.lib.password.parser.csv'
+}
+
+dependencies {
+    implementation project(':components:concept-passwords-parser')
+    implementation project(':components:concept-storage')
+    implementation libs.kotlinx.coroutines
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit4
+    testImplementation libs.kotlin.test
+    testImplementation libs.kotlinx.coroutines.test
+}
+
+apply from: '../../../common-config.gradle'
+apply from: '../../../publish.gradle'
+ext.configurePublish(config.componentsGroupId, project.name, project.ext.description)

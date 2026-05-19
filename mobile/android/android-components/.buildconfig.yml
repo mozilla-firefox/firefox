@@ -540,6 +540,20 @@ projects:
     publish: true
     upstream_dependencies:
     - components:tooling-lint
+  components:concept-passwords-parser:
+    description: An abstract definition of a passwords-file-parser component.
+    path: components/concept/passwords-parser
+    publish: true
+    upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
+    - components:concept-storage
+    - components:concept-storage-bookmarks
+    - components:lib-publicsuffixlist
+    - components:support-base
+    - components:support-ktx
+    - components:support-utils
+    - components:tooling-lint
   components:concept-push:
     description: An abstract definition of a push service component.
     path: components/concept/push
@@ -2040,6 +2054,21 @@ projects:
     - components:support-utils
     - components:tooling-lint
     - components:ui-icons
+  components:lib-password-parser-csv:
+    description: A CSV implementation of concept-passwords-parser
+    path: components/lib/password-parser-csv
+    publish: true
+    upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
+    - components:concept-passwords-parser
+    - components:concept-storage
+    - components:concept-storage-bookmarks
+    - components:lib-publicsuffixlist
+    - components:support-base
+    - components:support-ktx
+    - components:support-utils
+    - components:tooling-lint
   components:lib-passwords-file:
     description: A concrete implementation of concept-passwords-file that imports
       passwords from CSV files.
