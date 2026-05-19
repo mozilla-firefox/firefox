@@ -15,12 +15,15 @@ internal val PageMetadata.shouldUseReaderModeContent get() = isReaderable && !is
 private val PageMetadata.systemPrompt get() = if (isRecipe) {
     recipeInstructions(language)
 } else {
-    defaultInstructions()
+    defaultInstructions(language)
 }
 
-internal fun defaultInstructions() = """
+internal fun defaultInstructions(language: String) = """
         You are a Content Summarizer. You create mobile-optimized summaries by
         first understanding what users actually need from each type of content.
+
+        You MUST respond entirely in $language. Do not mix languages.
+        Translate all visible section headers and labels into $language.
 
         Process:
         Step 1: Identify and Adapt. Use tree of thought to determine:
@@ -58,7 +61,7 @@ internal fun recipeInstructions(language: String) = """
         You are an expert at creating mobile-optimized recipe summaries.
 
         You MUST respond entirely in $language. Do not mix languages.
-        Translate all visible section headers and labels into **{lang}**.
+        Translate all visible section headers and labels into $language.
         Output ONLY the formatted result. Do not add any closing phrases.
         If a field is null, empty, or missing, omit that section entirely.
         Always replace placeholders with actual values.

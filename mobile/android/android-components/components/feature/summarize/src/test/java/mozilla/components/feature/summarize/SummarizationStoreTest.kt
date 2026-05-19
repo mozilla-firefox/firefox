@@ -176,7 +176,95 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
-        assertEquals(Prompt(content, defaultInstructions()), llm.lastPrompt)
+        assertEquals(Prompt(content, defaultInstructions("en")), llm.lastPrompt)
+    }
+
+    @Test
+    fun `page language is forwarded to model for default case`() = runTest {
+        val llm = FakeLlm.successful
+        val provider = FakeCloudProvider(preparedState = CloudLlmProvider.State.Ready(llm))
+        val content = "this is expected content."
+        val pageTitle = "Article Headline"
+        val language = "de"
+        val store = SummarizationStore(
+            initialState = Inert(true),
+            reducer = ::summarizationReducer,
+            middleware = listOf(
+                SummarizationMiddleware(
+                    llmProvider = provider,
+                    settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
+                    contentProvider = { Result.success(Content(PageMetadata(listOf("Article"), 0, language, pageTitle = pageTitle), content)) },
+                    errorReporter = noopReporter,
+                    scope = backgroundScope,
+                    dispatcher = StandardTestDispatcher(testScheduler),
+                ),
+            ),
+        )
+
+        val states = mutableListOf<SummarizationState>()
+        backgroundScope.launch {
+            store.stateFlow.toList(states)
+        }
+        testScheduler.advanceTimeBy(1.seconds)
+
+        store.dispatch(ViewAppeared)
+        testScheduler.advanceTimeBy(15.seconds)
+
+        val expected = listOf<SummarizationState>(
+            Inert(true),
+            Loading(provider.info),
+            Summarizing(provider.info, parser.parse("# $pageTitle\nThis is the article\n")),
+            Summarizing(provider.info, parser.parse("# $pageTitle\nThis is the article\nThis is some content...\n")),
+            Summarizing(provider.info, parser.parse("# $pageTitle\nThis is the article\nThis is some content...\nThis is some *bold* content.\n")),
+            Summarized(provider.info, parser.parse("# $pageTitle\nThis is the article\nThis is some content...\nThis is some *bold* content.\n")),
+        )
+
+        assertEquals(expected, states)
+        assertEquals(Prompt(content, defaultInstructions(language)), llm.lastPrompt)
+    }
+
+    @Test
+    fun `page language is forwarded to model for recipe case`() = runTest {
+        val llm = FakeLlm.successful
+        val provider = FakeCloudProvider(preparedState = CloudLlmProvider.State.Ready(llm))
+        val content = "this is expected content."
+        val pageTitle = "Article Headline"
+        val language = "de"
+        val store = SummarizationStore(
+            initialState = Inert(true),
+            reducer = ::summarizationReducer,
+            middleware = listOf(
+                SummarizationMiddleware(
+                    llmProvider = provider,
+                    settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
+                    contentProvider = { Result.success(Content(PageMetadata(listOf("Recipe"), 0, language, pageTitle = pageTitle), content)) },
+                    errorReporter = noopReporter,
+                    scope = backgroundScope,
+                    dispatcher = StandardTestDispatcher(testScheduler),
+                ),
+            ),
+        )
+
+        val states = mutableListOf<SummarizationState>()
+        backgroundScope.launch {
+            store.stateFlow.toList(states)
+        }
+        testScheduler.advanceTimeBy(1.seconds)
+
+        store.dispatch(ViewAppeared)
+        testScheduler.advanceTimeBy(15.seconds)
+
+        val expected = listOf<SummarizationState>(
+            Inert(true),
+            Loading(provider.info),
+            Summarizing(provider.info, parser.parse("# $pageTitle\nThis is the article\n")),
+            Summarizing(provider.info, parser.parse("# $pageTitle\nThis is the article\nThis is some content...\n")),
+            Summarizing(provider.info, parser.parse("# $pageTitle\nThis is the article\nThis is some content...\nThis is some *bold* content.\n")),
+            Summarized(provider.info, parser.parse("# $pageTitle\nThis is the article\nThis is some content...\nThis is some *bold* content.\n")),
+        )
+
+        assertEquals(expected, states)
+        assertEquals(Prompt(content, recipeInstructions(language)), llm.lastPrompt)
     }
 
     @Test
@@ -322,7 +410,7 @@ class SummarizationStoreTest {
 
         assertTrue(usingReaderContent)
         assertEquals(expected, states)
-        assertEquals(Prompt(content, defaultInstructions()), llm.lastPrompt)
+        assertEquals(Prompt(content, defaultInstructions("en")), llm.lastPrompt)
     }
 
     @Test
@@ -512,7 +600,7 @@ class SummarizationStoreTest {
         )
 
         assertEquals(expected, states)
-        assertEquals(Prompt(content, defaultInstructions()), llm.lastPrompt)
+        assertEquals(Prompt(content, defaultInstructions("en")), llm.lastPrompt)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

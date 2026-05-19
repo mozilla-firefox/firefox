@@ -72,7 +72,7 @@ internal class DefaultSummarizationEligibilityChecker : SummarizationEligibility
         return wordCount in WORD_COUNT_RANGE && language.inAcceptedLanguages()
     }
 
-    private fun String.inAcceptedLanguages() = listOf("en").any { acceptedLang ->
+    private fun String.inAcceptedLanguages() = listOf("en", "fr", "es", "pt", "de", "ja").any { acceptedLang ->
         this.contains(acceptedLang)
     }
 
