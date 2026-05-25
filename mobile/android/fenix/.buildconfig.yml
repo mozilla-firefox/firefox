@@ -30,6 +30,7 @@ projects:
     - components:concept-llm
     - components:concept-menu
     - components:concept-passwords-file
+    - components:concept-passwords-parser
     - components:concept-push
     - components:concept-storage
     - components:concept-storage-bookmarks
@@ -84,6 +85,8 @@ projects:
     - components:lib-dataprotect
     - components:lib-integrity-googleplay
     - components:lib-llm-mlpa
+    - components:lib-password-parser-csv
+    - components:lib-passwords-file
     - components:lib-publicsuffixlist
     - components:lib-push-firebase
     - components:lib-shake

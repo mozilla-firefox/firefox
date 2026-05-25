@@ -2092,7 +2092,18 @@ projects:
     path: components/lib/passwords-file
     publish: true
     upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
     - components:concept-passwords-file
+    - components:concept-passwords-parser
+    - components:concept-storage
+    - components:concept-storage-bookmarks
+    - components:lib-password-parser-csv
+    - components:lib-publicsuffixlist
+    - components:support-base
+    - components:support-ktx
+    - components:support-test
+    - components:support-utils
     - components:tooling-lint
   components:lib-publicsuffixlist:
     description: A library for reading and using the public suffix list.

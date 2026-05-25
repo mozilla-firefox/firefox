@@ -6,12 +6,14 @@ package org.mozilla.fenix.settings.logins.fragment
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.getSystemService
 import androidx.fragment.compose.content
 import androidx.navigation.NavHostController
 import androidx.navigation.fragment.findNavController
 import mozilla.components.concept.engine.EngineSession
+import mozilla.components.feature.password.importer.PasswordsImporterResult
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import org.mozilla.fenix.Config
 import org.mozilla.fenix.SecureFragment
@@ -23,6 +25,7 @@ import org.mozilla.fenix.ext.openToBrowser
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.settings.logins.ImportPasswordsDialogFragment
 import org.mozilla.fenix.settings.logins.ui.DefaultSavedLoginsStorage
+import org.mozilla.fenix.settings.logins.ui.LoginsListAppeared
 import org.mozilla.fenix.settings.logins.ui.LoginsMiddleware
 import org.mozilla.fenix.settings.logins.ui.LoginsSortOrder
 import org.mozilla.fenix.settings.logins.ui.LoginsState
@@ -36,9 +39,23 @@ import org.mozilla.fenix.theme.FirefoxTheme
  */
 class SavedLoginsFragment : SecureFragment(), SystemInsetsPaddedFragment {
 
+    private var loginsStore: LoginsStore? = null
+
     override fun onResume() {
         super.onResume()
         hideToolbar()
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        childFragmentManager.setFragmentResultListener(
+            ImportPasswordsDialogFragment.REQUEST_KEY,
+            viewLifecycleOwner,
+        ) { _, bundle ->
+            if (ImportPasswordsDialogFragment.decodeResult(bundle) is PasswordsImporterResult.Success) {
+                loginsStore?.dispatch(LoginsListAppeared)
+            }
+        }
     }
 
     override fun onCreateView(
@@ -96,6 +113,7 @@ class SavedLoginsFragment : SecureFragment(), SystemInsetsPaddedFragment {
                     ),
                 )
             }
+            loginsStore = store
             store
         }
 

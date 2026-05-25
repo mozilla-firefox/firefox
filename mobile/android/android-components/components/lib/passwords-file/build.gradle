@@ -11,11 +11,18 @@ android {
 
 dependencies {
     api project(':components:concept-passwords-file')
+    implementation project(':components:concept-passwords-parser')
+    implementation project(':components:concept-storage')
+    implementation project(':components:lib-password-parser-csv')
     implementation libs.kotlinx.coroutines
+
+    testImplementation project(':components:support-test')
 
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit4
     testImplementation libs.kotlinx.coroutines.test
+    testImplementation libs.kotlin.test
+    testImplementation libs.mockito
     testImplementation libs.robolectric
 }
 

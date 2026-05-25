@@ -544,6 +544,7 @@ dependencies {
     implementation project(':components:ui-widgets')
     implementation project(':components:lib-bookmarks-file')
     implementation project(':components:lib-bookmark-parser-jsoup')
+    implementation project(':components:lib-passwords-file')
     implementation project(':components:lib-crash')
     implementation project(':components:lib-crash-sentry')
     implementation project(':components:lib-dataprotect')
