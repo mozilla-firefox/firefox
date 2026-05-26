@@ -45,7 +45,7 @@ internal class DefaultAIFeatureRegistry(
             }
         }
 
-        features[feature.id] = feature
+        features[feature.id] = CachedEnabledFeature(feature, scope)
     }
 
     override fun getFeatures(): List<AIControllableFeature> {

@@ -220,24 +220,26 @@ private fun FeatureRow(
     onFeatureToggle: (AIControllableFeature, Boolean) -> Unit,
     onFeatureNavLinkClick: (AIFeatureMetadataDestination, String) -> Unit,
 ) {
-    val isEnabled by feature.isEnabled.collectAsStateWithLifecycle(initialValue = true)
+    val isEnabled by feature.isEnabled.collectAsStateWithLifecycle(initialValue = null)
 
-    Column {
-        SwitchListItem(
-            label = stringResource(feature.description.titleRes),
-            checked = isEnabled,
-            enabled = true,
-            description = stringResource(feature.description.descriptionRes),
-            maxDescriptionLines = Int.MAX_VALUE,
-            showSwitchAfter = true,
-            onClick = { onFeatureToggle(feature, !isEnabled) },
-        )
-
-        feature.destination?.let {
-            NavLink(
-                text = stringResource(it.label),
-                onClick = { onFeatureNavLinkClick(it, feature.id.value) },
+    isEnabled?.let { isEnabled ->
+        Column {
+            SwitchListItem(
+                label = stringResource(feature.description.titleRes),
+                checked = isEnabled,
+                enabled = true,
+                description = stringResource(feature.description.descriptionRes),
+                maxDescriptionLines = Int.MAX_VALUE,
+                showSwitchAfter = true,
+                onClick = { onFeatureToggle(feature, !isEnabled) },
             )
+
+            feature.destination?.let {
+                NavLink(
+                    text = stringResource(it.label),
+                    onClick = { onFeatureNavLinkClick(it, feature.id.value) },
+                )
+            }
         }
     }
 }

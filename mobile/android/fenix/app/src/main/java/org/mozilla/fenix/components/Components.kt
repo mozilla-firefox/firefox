@@ -13,7 +13,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.getSystemService
 import com.google.android.play.core.review.ReviewManagerFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.SupervisorJob
 import mozilla.components.concept.ai.controls.AIFeatureBlock
 import mozilla.components.concept.ai.controls.AIFeatureRegistry
 import mozilla.components.feature.addons.AddonManager
@@ -501,10 +504,21 @@ class Components(private val context: Context) {
         )
     }
 
+    val summarizationSettings: SummarizationSettings by lazyMonitored {
+        SummarizationSettings.dataStore(context)
+    }
+
+    val summarizationSettingsCache by lazyMonitored {
+        SummarizationSettingsCache(
+            settings = summarizationSettings,
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+        )
+    }
+
     val aiFeatureRegistry by lazyMonitored {
         AIFeatureRegistry.default(scope = MainScope(), context = context).also {
             if (settings.shakeToSummarizeFeatureFlagEnabled) {
-                it.register(PageSummaryFeature(SummarizationSettings.dataStore(context)))
+                it.register(PageSummaryFeature(summarizationSettings))
             }
             it.register(
                 VoiceSearchAIControlFeature(
