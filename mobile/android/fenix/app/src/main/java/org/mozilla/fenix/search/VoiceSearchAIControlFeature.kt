@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import mozilla.components.concept.ai.controls.AIControllableFeature
 import mozilla.components.concept.ai.controls.AIFeatureMetadata
+import mozilla.components.concept.ai.controls.AIFeatureState
 import org.mozilla.fenix.R
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.gecko.search.SearchWidgetProvider
@@ -29,7 +30,13 @@ class VoiceSearchAIControlFeature(
     //      while the object is still alive
     // pushing to the counter here will allow us to get 2 while the map will allow us to get 1
     private val _revision = MutableStateFlow(0)
-    override val isEnabled: Flow<Boolean> = _revision.map { settings.shouldShowVoiceSearch }
+    override val featureState: Flow<AIFeatureState>
+        get() = _revision.map {
+            when (settings.shouldShowVoiceSearch) {
+                true -> AIFeatureState.Enabled
+                else -> AIFeatureState.Disabled
+            }
+        }
 
     override suspend fun set(enabled: Boolean) {
         settings.shouldShowVoiceSearch = enabled

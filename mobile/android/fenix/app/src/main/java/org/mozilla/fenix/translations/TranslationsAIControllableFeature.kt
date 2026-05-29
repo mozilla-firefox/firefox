@@ -5,10 +5,12 @@
 package org.mozilla.fenix.translations
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import mozilla.components.browser.state.action.TranslationsAction
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.ai.controls.AIControllableFeature
 import mozilla.components.concept.ai.controls.AIFeatureMetadata
+import mozilla.components.concept.ai.controls.AIFeatureState
 import org.mozilla.fenix.R
 import mozilla.components.ui.icons.R as iconsR
 
@@ -19,7 +21,11 @@ class TranslationsAIControllableFeature(
     private val settings: TranslationsEnabledSettings,
     private val browserStore: BrowserStore,
 ) : AIControllableFeature, AIFeatureMetadata by Companion {
-    override val isEnabled: Flow<Boolean> = settings.isEnabled
+
+    override val featureState: Flow<AIFeatureState>
+        get() = settings.isEnabled.map { enabled ->
+            if (enabled) AIFeatureState.Enabled else AIFeatureState.Disabled
+        }
 
     override suspend fun set(enabled: Boolean) {
         settings.setEnabled(enabled)

@@ -48,6 +48,7 @@ import mozilla.components.compose.base.PromoCard
 import mozilla.components.compose.base.annotation.FlexibleWindowPreview
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.concept.ai.controls.AIControllableFeature
+import mozilla.components.concept.ai.controls.isEnabled
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.list.IconListItem
 import org.mozilla.fenix.compose.list.SwitchListItem
