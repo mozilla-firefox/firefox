@@ -13,7 +13,7 @@ import mozilla.components.lib.state.Store
 /**
  * Middleware for the summarize settings screen that persists preference changes.
  *
- * @param settings The [SummarizationFeatureSettings] to persist preference changes to.
+ * @param settings The [SummarizationSettings] to persist preference changes to.
  * @param onLearnMoreClicked Callback invoked when the learn more link is clicked.
  */
 class SummarizeSettingsMiddleware(
@@ -35,7 +35,7 @@ class SummarizeSettingsMiddleware(
             ViewAppeared -> scope.launch {
                 store.dispatch(
                     SettingsLoaded(
-                        isFeatureEnabled = settings.getFeatureEnabledUserStatus().first(),
+                        isFeatureEnabled = settings.getFeatureEnabledUserStatus().first() == true,
                         isGestureEnabled = settings.getGestureEnabledUserStatus().first(),
                     ),
                 )

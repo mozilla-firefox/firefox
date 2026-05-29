@@ -28,8 +28,13 @@ interface SummarizationSettings {
     /**
      * @return A [Flow] emitting the user's current preference for whether the summarization
      * feature is enabled.
+     *
+     * - It emits true when the feature is enabled
+     * - false when it's not, or
+     * - null when we don't know this means that the preference for this feature has never been set -
+     * either by the user, or by the app.
      */
-    suspend fun getFeatureEnabledUserStatus(): Flow<Boolean>
+    fun getFeatureEnabledUserStatus(): Flow<Boolean?>
 
     /**
      * Persists the user's preference for whether the summarization feature is enabled.
@@ -81,7 +86,7 @@ interface SummarizationSettings {
          * @return An in-memory [SummarizationSettings] instance.
          */
         fun inMemory(
-            isFeatureEnabled: Boolean = false,
+            isFeatureEnabled: Boolean? = null,
             isGestureEnabled: Boolean = false,
             hasConsentedToShake: Boolean = false,
             shakeConsentRejectedCount: Int = 0,
@@ -94,7 +99,7 @@ interface SummarizationSettings {
                 MutableStateFlow(hasConsentedToShake)
             private var shakeConsentRejectedCount = 0
 
-            override suspend fun getFeatureEnabledUserStatus(): Flow<Boolean> = isFeatureEnabledFlow
+            override fun getFeatureEnabledUserStatus(): Flow<Boolean?> = isFeatureEnabledFlow
 
             override suspend fun setFeatureEnabledUserStatus(newValue: Boolean) {
                 isFeatureEnabledFlow.emit(newValue)
@@ -140,8 +145,8 @@ internal class DataStoreBackedSettings(private val dataStore: DataStore<Preferen
     private val hasConsentedToShakeKey = booleanPreferencesKey("has_consented_to_shake_key")
     private val shakeConsentRejectedCountKey = intPreferencesKey("shake_consent_rejected_count_key")
 
-    override suspend fun getFeatureEnabledUserStatus(): Flow<Boolean> = dataStore.data.map { preferences ->
-        preferences[featureEnabledKey] ?: true
+    override fun getFeatureEnabledUserStatus(): Flow<Boolean?> = dataStore.data.map { preferences ->
+        preferences[featureEnabledKey]
     }
 
     override suspend fun setFeatureEnabledUserStatus(newValue: Boolean) {

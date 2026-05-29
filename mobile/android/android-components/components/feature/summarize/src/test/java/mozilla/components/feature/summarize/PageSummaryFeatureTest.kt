@@ -6,6 +6,7 @@ package mozilla.components.feature.summarize
 
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import mozilla.components.concept.ai.controls.isEnabled
 import mozilla.components.feature.summarize.settings.SummarizationSettings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

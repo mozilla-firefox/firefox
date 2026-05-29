@@ -45,6 +45,7 @@ import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.selectedOrDefaultPrivateSearchEngine
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.browser.storage.sync.GlobalPlacesDependencyProvider
+import mozilla.components.concept.ai.controls.isEnabled
 import mozilla.components.concept.base.crash.Breadcrumb
 import mozilla.components.concept.engine.webextension.WebExtension
 import mozilla.components.concept.engine.webextension.isUnsupported
@@ -993,7 +994,7 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
         }
 
         val summarizeSettings = SummarizationSettings.dataStore(applicationContext)
-        UserAiSummarize.summarizationEnabled.set(summarizeSettings.getFeatureEnabledUserStatus().first())
+        UserAiSummarize.summarizationEnabled.set(summarizeSettings.getFeatureEnabledUserStatus().first() == true)
         UserAiSummarize.gestureEnabled.set(summarizeSettings.getGestureEnabledUserStatus().first())
         UserAiSummarize.summarizationConsented.set(summarizeSettings.getHasConsentedToShake().first())
 

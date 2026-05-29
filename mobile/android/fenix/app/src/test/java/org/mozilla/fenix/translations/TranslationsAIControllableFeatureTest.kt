@@ -10,6 +10,7 @@ import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.TranslationsAction
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.concept.ai.controls.AIFeatureState
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -25,7 +26,7 @@ class TranslationsAIControllableFeatureTest {
         val settings = TranslationsEnabledSettings.inMemory(isEnabledInitial = true)
         val feature = TranslationsAIControllableFeature(settings, browserStore)
 
-        assertTrue(feature.isEnabled.first())
+        assertTrue(feature.featureState.first() == AIFeatureState.Enabled)
     }
 
     @Test
@@ -35,7 +36,7 @@ class TranslationsAIControllableFeatureTest {
 
         feature.set(false)
 
-        assertFalse(settings.isEnabled.first())
+        assertTrue(feature.featureState.first() == AIFeatureState.Disabled)
         assertFalse(captureActionsMiddleware.findFirstAction(TranslationsAction.SetTranslationsEnabledAction::class).isTranslationsEnabled)
     }
 }
