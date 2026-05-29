@@ -18,13 +18,20 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.text.format.DateUtils
 import android.util.AttributeSet
+import android.util.Log
 import android.view.ActionMode
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.car.Car
+import android.car.VehicleAreaType
+import android.car.VehiclePropertyIds
+import android.car.hardware.CarPropertyValue
+import android.car.hardware.property.CarPropertyManager
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
+import android.widget.Button
 import androidx.activity.BackEventCompat
 import androidx.annotation.CallSuper
 import androidx.annotation.IdRes
@@ -194,6 +201,20 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
         null
 
     private var isToolbarInflated = false
+
+    private lateinit var mCar: Car
+
+    private lateinit var mCarPropertyManager: CarPropertyManager
+
+    private val mPropertyEventCallback: CarPropertyManager.CarPropertyEventCallback =
+        object : CarPropertyManager.CarPropertyEventCallback {
+            override fun onChangeEvent(property: CarPropertyValue<*>?) {
+                runOnUiThread { updateDrivingDialogVisibility() }
+            }
+
+            override fun onErrorEvent(propId: Int, zone: Int) {
+            }
+        }
 
     private val webExtensionPopupObserver by lazy {
         WebExtensionPopupObserver(components.core.store, ::openPopup)
@@ -495,6 +516,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
         }
 
         setContentView(binding.root)
+        setupDrivingRestrictionMonitoring()
         ProfilerMarkers.addListenerForOnGlobalLayout(components.core.engine, this, binding.root)
 
         privateNotificationObserver = PrivateNotificationFeature(
@@ -866,6 +888,13 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
     @CallSuper
     override fun onDestroy() {
         val startTimeProfiler = components.core.engine.profiler?.getProfilerTime()
+
+        if (::mCarPropertyManager.isInitialized) {
+            mCarPropertyManager.unregisterCallback(mPropertyEventCallback)
+        }
+        if (::mCar.isInitialized) {
+            mCar.disconnect()
+        }
 
         super.onDestroy()
 
@@ -1477,7 +1506,79 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity {
         ).show(supportFragmentManager, UnsubmittedCrashDialog.TAG)
     }
 
+    private fun setupDrivingRestrictionMonitoring() {
+        mCar = Car.createCar(
+            this,
+            null,
+            Car.CAR_WAIT_TIMEOUT_WAIT_FOREVER,
+            Car.CarServiceLifecycleListener { car: Car, ready: Boolean ->
+                if (!ready) return@CarServiceLifecycleListener
+
+                mCarPropertyManager =
+                    car.getCarManager(Car.PROPERTY_SERVICE) as CarPropertyManager
+                mCarPropertyManager.registerCallback(
+                    mPropertyEventCallback,
+                    VehiclePropertyIds.PARKING_BRAKE_ON,
+                    0F,
+                )
+                mCarPropertyManager.registerCallback(
+                    mPropertyEventCallback,
+                    VehiclePropertyIds.GEAR_SELECTION,
+                    0F,
+                )
+
+                runOnUiThread { updateDrivingDialogVisibility() }
+            },
+        )
+    }
+
+    private fun updateDrivingDialogVisibility() {
+        val needBlocking = needToRestrictInstaller()
+        val blockingView = binding.root.findViewById<View>(R.id.driving_dialog)
+        blockingView?.let {
+            it.visibility = if (needBlocking) View.VISIBLE else View.GONE
+            it.findViewById<Button>(R.id.allow)?.setOnClickListener {
+                blockingView.visibility = View.GONE
+            }
+            it.findViewById<Button>(R.id.cancel)?.setOnClickListener {
+                finish()
+            }
+        }
+    }
+
+    private fun needToRestrictInstaller(): Boolean {
+        if (!::mCarPropertyManager.isInitialized) {
+            return false
+        }
+
+        val allowedByUser = android.provider.Settings.System.getInt(
+            contentResolver,
+            ALLOW_VIDEO_DRIVING,
+            0,
+        )
+        if (allowedByUser == 1) {
+            return false
+        }
+
+        val isParkingBrakeOn = mCarPropertyManager.getBooleanProperty(
+            VehiclePropertyIds.PARKING_BRAKE_ON,
+            VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+        )
+
+        val gearSelection = mCarPropertyManager.getIntProperty(
+            VehiclePropertyIds.GEAR_SELECTION,
+            VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+        )
+
+        val isParkOrNeutral = gearSelection == android.car.VehicleGear.GEAR_PARK ||
+            gearSelection == android.car.VehicleGear.GEAR_NEUTRAL
+
+        return !isParkingBrakeOn && !isParkOrNeutral
+    }
+
     companion object {
+        private const val ALLOW_VIDEO_DRIVING = "allow_video"
+
         const val OPEN_TO_BROWSER = "open_to_browser"
         const val OPEN_TO_BROWSER_AND_LOAD = "open_to_browser_and_load"
         const val OPEN_TO_SEARCH = "open_to_search"

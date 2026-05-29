@@ -4142,4 +4142,9 @@
   <string name="privacy_notice_updated_homepage_message_privacy_notice" tools:ignore="UnusedResources">Уведомление о конфиденциальности</string>
   <!-- The second active link used in privacy_notice_updated_homepage_message -->
   <string name="privacy_notice_updated_homepage_message_learn_more" tools:ignore="UnusedResources">Подробнее</string>
+
+  <string name="driving_dialog_title">Разрешить просмотр видео в движении?</string>
+  <string name="driving_dialog_subtitle">Просмотр видео может отвлекать водителя и повышать риск аварии. Используйте эту функцию только для пассажиров</string>
+  <string name="driving_dialog_allow">Разрешить</string>
+  <string name="driving_dialog_cancel">Отменить</string>
 </resources>

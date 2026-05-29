@@ -56,6 +56,9 @@
 
     <uses-permission android:name="${applicationId}.permission.PROFILER_INTERNAL" />
 
+    <uses-permission android:name="android.car.permission.CAR_SPEED" />
+    <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
+
     <permission
         android:name="${applicationId}.permission.PROFILER_INTERNAL"
         android:protectionLevel="signature" />
@@ -96,6 +99,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -112,6 +118,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <!--
@@ -134,6 +143,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -150,6 +162,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -166,6 +181,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -182,6 +200,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -198,6 +219,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -214,6 +238,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -230,6 +257,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <!-- Gradient icons -->
@@ -248,6 +278,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -264,6 +297,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -280,6 +316,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -296,6 +335,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -312,6 +354,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -328,6 +373,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -344,6 +392,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <!-- Themed/alternative icons -->
@@ -362,6 +413,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -378,6 +432,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -394,6 +451,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -410,6 +470,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -426,6 +489,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -442,6 +508,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity-alias
@@ -458,6 +527,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
         <activity-alias
             android:name="${applicationId}.AppCool"
@@ -473,6 +545,9 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <!--
@@ -482,6 +557,9 @@
             android:name="org.mozilla.gecko.BrowserApp"
             android:targetActivity=".IntentReceiverActivity"
             android:exported="true">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <!-- Activity alias from Fennec used by PWA launchers on the home screen -->
@@ -492,6 +570,9 @@
             <intent-filter>
                 <action android:name="org.mozilla.gecko.WEBAPP" />
             </intent-filter>
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity-alias>
 
         <activity
@@ -499,6 +580,9 @@
             android:exported="false"
             android:process=":StartupCrashActivityProcess"
             >
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity>
 
         <activity
@@ -537,6 +621,9 @@
                 <data android:host="urls_history"/>
                 <data android:host="settings_private_browsing"/>
             </intent-filter>
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity>
 
         <activity
@@ -548,7 +635,11 @@
             android:taskAffinity=""
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
-            android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
+            android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
 
         <activity
             android:name=".IntentReceiverActivity"
@@ -647,19 +738,28 @@
                 android:name="com.android.systemui.action_assist_icon"
                 android:resource="@mipmap/ic_launcher" />
 
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity>
 
         <activity android:name=".widget.VoiceSearchActivity"
             android:theme="@style/Theme.AppCompat.Translucent"
             android:taskAffinity=""
-            android:excludeFromRecents="true"
-            />
+            android:excludeFromRecents="true">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
 
         <activity android:name="mozilla.components.feature.qr.QrScanActivity"
             android:theme="@style/Theme.AppCompat.Translucent"
             android:exported="false"
-            android:taskAffinity=""
-            />
+            android:taskAffinity="">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
 
         <activity
             android:name=".settings.account.AuthCustomTabActivity"
@@ -667,26 +767,50 @@
             android:configChanges="keyboard|keyboardHidden|mcc|mnc|orientation|screenSize|layoutDirection|smallestScreenSize|screenLayout"
             android:exported="false"
             android:taskAffinity=""
-            android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
+            android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
 
         <activity android:name=".settings.account.AuthIntentReceiverActivity"
-            android:exported="false" />
+            android:exported="false">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
 
         <activity android:name=".autofill.AutofillUnlockActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.Translucent" />
+            android:theme="@style/Theme.AppCompat.Translucent">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
 
         <activity android:name=".autofill.AutofillConfirmActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.Translucent" />
+            android:theme="@style/Theme.AppCompat.Translucent">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
 
         <activity android:name=".autofill.AutofillSearchActivity"
             android:exported="false"
-            android:theme="@style/DialogActivityTheme" />
+            android:theme="@style/DialogActivityTheme">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
 
         <activity
             android:name=".messaging.NotificationClickedReceiverActivity"
-            android:exported="false" />
+            android:exported="false">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
 
         <activity
             android:name=".perf.StopProfilerActivity"
@@ -694,7 +818,11 @@
             android:taskAffinity=""
             android:excludeFromRecents="true"
             android:exported="false"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTask">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
 
         <service android:name=".autofill.AutofillService"
             android:exported="true"

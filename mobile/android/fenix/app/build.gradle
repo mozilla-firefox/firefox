@@ -538,6 +538,8 @@ nimbus {
 }
 
 dependencies {
+    compileOnly files("${projectDir}/../libs/android.car.jar")
+
     implementation project(':components:browser-engine-gecko')
     implementation project(':components:compose-awesomebar')
     implementation project(':components:compose-base')

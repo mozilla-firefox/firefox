@@ -3822,4 +3822,9 @@
     <string name="privacy_notice_updated_homepage_message_privacy_notice" tools:ignore="UnusedResources">Privacy Notice</string>
     <!-- The second active link used in privacy_notice_updated_homepage_message -->
     <string name="privacy_notice_updated_homepage_message_learn_more" tools:ignore="UnusedResources">Learn more</string>
+
+    <string name="driving_dialog_title">Allow video playback while driving?</string>
+    <string name="driving_dialog_subtitle">Watching video can distract the driver and increase the risk of an accident. Use this feature only for passengers</string>
+    <string name="driving_dialog_allow">Allow</string>
+    <string name="driving_dialog_cancel">Cancel</string>
 </resources>

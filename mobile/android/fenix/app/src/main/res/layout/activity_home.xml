@@ -55,4 +55,10 @@
         android:layout_height="match_parent"
         android:visibility="gone" />
 
+    <include
+        android:id="@+id/driving_dialog"
+        layout="@layout/driving_dialog"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
 </FrameLayout>

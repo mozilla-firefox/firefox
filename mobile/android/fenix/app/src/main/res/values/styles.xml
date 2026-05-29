@@ -812,4 +812,35 @@
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsFloating">false</item>
     </style>
+
+    <style name="DrivingDialog" />
+
+    <style name="DrivingDialog.Title">
+        <item name="android:fontFamily">@font/vesta2_bold</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+        <item name="android:textColor">@color/textNormal</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:translationY">-1.25sp</item>
+    </style>
+
+    <style name="DrivingDialog.Subtitle">
+        <item name="android:fontFamily">@font/vesta2_regular</item>
+        <item name="android:gravity">center</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:lineSpacingExtra">1sp</item>
+        <item name="android:textColor">@color/textSecondary</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:translationY">-0.45sp</item>
+    </style>
+
+    <style name="DrivingDialog.Button" parent="Widget.AppCompat.Button">
+        <item name="android:backgroundTint">@null</item>
+        <item name="android:fontFamily">@font/vesta2_bold</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+        <item name="android:paddingHorizontal">@dimen/padding_XL</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">32sp</item>
+    </style>
 </resources>

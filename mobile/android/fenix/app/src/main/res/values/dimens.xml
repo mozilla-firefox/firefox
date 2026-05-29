@@ -159,4 +159,6 @@
     <dimen name="browser_menu_max_width">640dp</dimen>
     <dimen name="browser_menu_padding">56dp</dimen>
 
+    <dimen name="driving_dialog_text_max_width">900dp</dimen>
+
 </resources>
