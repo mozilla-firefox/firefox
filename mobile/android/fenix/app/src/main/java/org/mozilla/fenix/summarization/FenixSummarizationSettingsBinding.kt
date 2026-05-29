@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import mozilla.components.feature.summarize.settings.SummarizationSettings
 
@@ -29,16 +30,17 @@ interface SummarizationSettingsBinding {
 class FenixSummarizationSettingsBinding(
     private val summarizationSettings: SummarizationSettings,
 ) : DefaultLifecycleObserver, SummarizationSettingsBinding {
-    private val _isFeatureEnabled = MutableStateFlow(true)
+    private val _isFeatureEnabled = MutableStateFlow(false)
     override val isFeatureEnabled: StateFlow<Boolean> = _isFeatureEnabled
-    private val _isGestureEnabled = MutableStateFlow(true)
+    private val _isGestureEnabled = MutableStateFlow(false)
     override val isGestureEnabled: StateFlow<Boolean> = _isGestureEnabled
 
     override fun onCreate(owner: LifecycleOwner) {
         super.onCreate(owner)
         owner.lifecycle.coroutineScope.launch {
             combine(
-                summarizationSettings.getFeatureEnabledUserStatus(),
+                summarizationSettings.getFeatureEnabledUserStatus()
+                    .mapNotNull { it },
                 summarizationSettings.getGestureEnabledUserStatus(),
             ) { a, b ->
                 a to b

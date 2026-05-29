@@ -9,6 +9,8 @@ import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.ai.controls.AIControllableFeature
 import mozilla.components.concept.ai.controls.AIFeatureMetadata
 import mozilla.components.concept.ai.controls.AIFeatureRegistry
+import mozilla.components.concept.ai.controls.AIFeatureState
+import mozilla.components.concept.ai.controls.isEnabled
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,7 +20,7 @@ class AIFeatureBlockTest {
     @Test
     fun `block sets storage to blocked`() = runTest {
         val storage = AIFeatureBlockStorage.inMemory()
-        val block = DefaultAIFeatureBlock(AIFeatureRegistry.default(), storage)
+        val block = DefaultAIFeatureBlock(AIFeatureRegistry.inMemory(), storage)
 
         block.block()
 
@@ -27,14 +29,14 @@ class AIFeatureBlockTest {
 
     @Test
     fun `block disables all registered features`() = runTest {
-        val registry = AIFeatureRegistry.default()
+        val registry = AIFeatureRegistry.inMemory()
         val featureA = AIControllableFeature.inMemory(
             id = AIFeatureMetadata.FeatureId("a"),
-            initialEnabled = true,
+            initialFeatureState = AIFeatureState.Enabled,
         )
         val featureB = AIControllableFeature.inMemory(
             id = AIFeatureMetadata.FeatureId("b"),
-            initialEnabled = true,
+            initialFeatureState = AIFeatureState.Enabled,
         )
         registry.register(featureA)
         registry.register(featureB)
@@ -49,7 +51,7 @@ class AIFeatureBlockTest {
     @Test
     fun `block with empty registry only updates storage`() = runTest {
         val storage = AIFeatureBlockStorage.inMemory()
-        val block = DefaultAIFeatureBlock(AIFeatureRegistry.default(), storage)
+        val block = DefaultAIFeatureBlock(AIFeatureRegistry.inMemory(), storage)
 
         block.block()
 
@@ -59,7 +61,7 @@ class AIFeatureBlockTest {
     @Test
     fun `unblock sets storage to unblocked`() = runTest {
         val storage = AIFeatureBlockStorage.inMemory(initialBlocked = true)
-        val block = DefaultAIFeatureBlock(AIFeatureRegistry.default(), storage)
+        val block = DefaultAIFeatureBlock(AIFeatureRegistry.inMemory(), storage)
 
         block.unblock()
 
@@ -68,14 +70,14 @@ class AIFeatureBlockTest {
 
     @Test
     fun `unblock enables all registered features`() = runTest {
-        val registry = AIFeatureRegistry.default()
+        val registry = AIFeatureRegistry.inMemory()
         val featureA = AIControllableFeature.inMemory(
             id = AIFeatureMetadata.FeatureId("a"),
-            initialEnabled = false,
+            initialFeatureState = AIFeatureState.Disabled,
         )
         val featureB = AIControllableFeature.inMemory(
             id = AIFeatureMetadata.FeatureId("b"),
-            initialEnabled = false,
+            initialFeatureState = AIFeatureState.Disabled,
         )
         registry.register(featureA)
         registry.register(featureB)
@@ -90,7 +92,7 @@ class AIFeatureBlockTest {
     @Test
     fun `isBlocked reflects storage state`() = runTest {
         val storage = AIFeatureBlockStorage.inMemory()
-        val block = DefaultAIFeatureBlock(AIFeatureRegistry.default(), storage)
+        val block = DefaultAIFeatureBlock(AIFeatureRegistry.inMemory(), storage)
 
         assertFalse(block.isBlocked.first())
 

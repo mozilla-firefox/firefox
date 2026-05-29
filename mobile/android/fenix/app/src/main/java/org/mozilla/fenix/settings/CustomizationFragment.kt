@@ -74,7 +74,7 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
                     .distinctUntilChanged()
                     .collect { (isFeatureEnabled, isGestureEnabled) ->
                         setupPreferences(
-                            isSummarizationEnabled = isFeatureEnabled,
+                            isSummarizationEnabled = isFeatureEnabled ?: false,
                             isSummarizationGestureEnabled = isGestureEnabled,
                         )
                     }
