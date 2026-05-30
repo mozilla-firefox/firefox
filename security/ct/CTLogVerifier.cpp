@@ -74,6 +74,10 @@ class SignatureParamsTrustDomain final : public TrustDomain {
     return pkix::Result::FATAL_ERROR_LIBRARY_FAILURE;
   }
 
+  pkix::Result VerifyMLDSASignedData(Input, Input, Input) override {
+    return pkix::Result::FATAL_ERROR_LIBRARY_FAILURE;
+  }
+
   pkix::Result CheckRSAPublicKeyModulusSizeInBits(
       EndEntityOrCA, unsigned int modulusSizeInBits) override {
     assert(mSignatureAlgorithm ==

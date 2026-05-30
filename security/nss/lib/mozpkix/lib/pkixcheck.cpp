@@ -92,10 +92,14 @@ CheckSignatureAlgorithm(TrustDomain& trustDomain,
   // more generally it short-circuits any path building with them (which, of
   // course, is even slower).
 
-  rv = trustDomain.CheckSignatureDigestAlgorithm(digestAlg, endEntityOrCA,
-                                                 notBefore);
-  if (rv != Success) {
-    return rv;
+  /* ML-DSA is a pure signature with no separate hash algorithm; skip the
+   * digest-algorithm policy check entirely for this key type. */
+  if (publicKeyAlg != der::PublicKeyAlgorithm::ML_DSA) {
+    rv = trustDomain.CheckSignatureDigestAlgorithm(digestAlg, endEntityOrCA,
+                                                   notBefore);
+    if (rv != Success) {
+      return rv;
+    }
   }
 
   switch (publicKeyAlg) {
@@ -118,6 +122,11 @@ CheckSignatureAlgorithm(TrustDomain& trustDomain,
       // for any curve that we support, the chances of us encountering a curve
       // during path building is too low to be worth bothering with.
       break;
+
+    case der::PublicKeyAlgorithm::ML_DSA:
+      /* Key size is fixed by the parameter set (ML-DSA-87); no modulus check. */
+      break;
+
     MOZILLA_PKIX_UNREACHABLE_DEFAULT_ENUM
   }
 

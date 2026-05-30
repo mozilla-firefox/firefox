@@ -317,6 +317,11 @@ pkix::Result AppTrustDomain::VerifyECDSASignedData(
                                   subjectPublicKeyInfo, nullptr);
 }
 
+pkix::Result AppTrustDomain::VerifyMLDSASignedData(Input data, Input signature,
+                                                    Input subjectPublicKeyInfo) {
+  return VerifyMLDSASignedDataNSS(data, signature, subjectPublicKeyInfo, nullptr);
+}
+
 pkix::Result AppTrustDomain::CheckValidityIsAcceptable(
     Time /*notBefore*/, Time /*notAfter*/, EndEntityOrCA /*endEntityOrCA*/,
     KeyPurposeId /*keyPurpose*/) {

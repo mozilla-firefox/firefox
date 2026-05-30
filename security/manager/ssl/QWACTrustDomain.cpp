@@ -147,6 +147,11 @@ pkix::Result QWACTrustDomain::VerifyECDSASignedData(
                                   subjectPublicKeyInfo, nullptr);
 }
 
+pkix::Result QWACTrustDomain::VerifyMLDSASignedData(Input data, Input signature,
+                                                     Input subjectPublicKeyInfo) {
+  return VerifyMLDSASignedDataNSS(data, signature, subjectPublicKeyInfo, nullptr);
+}
+
 pkix::Result QWACTrustDomain::CheckValidityIsAcceptable(
     Time /*notBefore*/, Time /*notAfter*/, EndEntityOrCA /*endEntityOrCA*/,
     KeyPurposeId /*keyPurpose*/) {

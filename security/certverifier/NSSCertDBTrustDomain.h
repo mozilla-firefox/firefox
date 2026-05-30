@@ -175,6 +175,10 @@ class NSSCertDBTrustDomain : public mozilla::pkix::TrustDomain {
       mozilla::pkix::Input signature,
       mozilla::pkix::Input subjectPublicKeyInfo) override;
 
+  virtual Result VerifyMLDSASignedData(
+      mozilla::pkix::Input data, mozilla::pkix::Input signature,
+      mozilla::pkix::Input subjectPublicKeyInfo) override;
+
   virtual Result DigestBuf(mozilla::pkix::Input item,
                            mozilla::pkix::DigestAlgorithm digestAlg,
                            /*out*/ uint8_t* digestBuf,

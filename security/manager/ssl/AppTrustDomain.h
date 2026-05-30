@@ -63,6 +63,9 @@ class AppTrustDomain final : public mozilla::pkix::TrustDomain {
       mozilla::pkix::Input data, mozilla::pkix::DigestAlgorithm digestAlgorithm,
       mozilla::pkix::Input signature,
       mozilla::pkix::Input subjectPublicKeyInfo) override;
+  virtual Result VerifyMLDSASignedData(
+      mozilla::pkix::Input data, mozilla::pkix::Input signature,
+      mozilla::pkix::Input subjectPublicKeyInfo) override;
   virtual Result CheckValidityIsAcceptable(
       mozilla::pkix::Time notBefore, mozilla::pkix::Time notAfter,
       mozilla::pkix::EndEntityOrCA endEntityOrCA,

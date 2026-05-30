@@ -260,6 +260,9 @@ inline size_t DigestAlgorithmToSizeInBytes(DigestAlgorithm digestAlgorithm) {
       return 384 / 8;
     case DigestAlgorithm::sha512:
       return 512 / 8;
+    case DigestAlgorithm::none:
+      /* Pure-signature algorithms (ML-DSA) have no pre-hash output size. */
+      return 0;
       MOZILLA_PKIX_UNREACHABLE_DEFAULT_ENUM
   }
 }

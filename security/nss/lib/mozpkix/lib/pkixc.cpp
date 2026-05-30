@@ -142,6 +142,12 @@ class CodeSigningTrustDomain final : public TrustDomain {
         subjectPublicKeyInfo, nullptr);
   }
 
+  virtual Result VerifyMLDSASignedData(Input data, Input signature,
+                                       Input subjectPublicKeyInfo) override {
+    return VerifyMLDSASignedDataNSS(data, signature, subjectPublicKeyInfo,
+                                    nullptr);
+  }
+
   virtual Result CheckValidityIsAcceptable(Time notBefore, Time notAfter,
                                            EndEntityOrCA endEntityOrCA,
                                            KeyPurposeId keyPurpose) override {

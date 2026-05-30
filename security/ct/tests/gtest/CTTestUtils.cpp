@@ -782,6 +782,12 @@ class OCSPExtensionTrustDomain : public TrustDomain {
                                     subjectPublicKeyInfo, nullptr);
   }
 
+  pkix::Result VerifyMLDSASignedData(Input data, Input signature,
+                                     Input subjectPublicKeyInfo) override {
+    return VerifyMLDSASignedDataNSS(data, signature, subjectPublicKeyInfo,
+                                    nullptr);
+  }
+
   pkix::Result CheckRSAPublicKeyModulusSizeInBits(EndEntityOrCA,
                                                   unsigned int) override {
     ADD_FAILURE();

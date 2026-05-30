@@ -52,6 +52,10 @@ class ServerCertHashesTrustDomain : public mozilla::pkix::TrustDomain {
       mozilla::pkix::Input signature,
       mozilla::pkix::Input subjectPublicKeyInfo) override;
 
+  virtual mozilla::pkix::Result VerifyMLDSASignedData(
+      mozilla::pkix::Input data, mozilla::pkix::Input signature,
+      mozilla::pkix::Input subjectPublicKeyInfo) override;
+
   virtual mozilla::pkix::Result DigestBuf(
       mozilla::pkix::Input item, mozilla::pkix::DigestAlgorithm digestAlg,
       /*out*/ uint8_t* digestBuf, size_t digestBufLen) override;
@@ -140,6 +144,14 @@ mozilla::pkix::Result ServerCertHashesTrustDomain::CheckECDSACurveIsAcceptable(
 mozilla::pkix::Result ServerCertHashesTrustDomain::VerifyECDSASignedData(
     mozilla::pkix::Input data, mozilla::pkix::DigestAlgorithm digestAlgorithm,
     mozilla::pkix::Input signature, mozilla::pkix::Input subjectPublicKeyInfo) {
+  MOZ_ASSERT_UNREACHABLE("not expecting this to be called");
+
+  return mozilla::pkix::Result::FATAL_ERROR_LIBRARY_FAILURE;
+}
+
+mozilla::pkix::Result ServerCertHashesTrustDomain::VerifyMLDSASignedData(
+    mozilla::pkix::Input data, mozilla::pkix::Input signature,
+    mozilla::pkix::Input subjectPublicKeyInfo) {
   MOZ_ASSERT_UNREACHABLE("not expecting this to be called");
 
   return mozilla::pkix::Result::FATAL_ERROR_LIBRARY_FAILURE;

@@ -50,6 +50,11 @@ Result VerifyECDSASignedDataNSS(Input data, DigestAlgorithm digestAlgorithm,
                                 Input signature, Input subjectPublicKeyInfo,
                                 void* pkcs11PinArg);
 
+// Verifies an ML-DSA-87 signature (NIST FIPS 204, pure-signature, no hash).
+Result VerifyMLDSASignedDataNSS(Input data, Input signature,
+                                Input subjectPublicKeyInfo,
+                                void* pkcs11PinArg);
+
 // Computes the digest of the given data using the given digest algorithm.
 //
 // item contains the data to hash.

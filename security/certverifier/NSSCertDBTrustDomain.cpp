@@ -1473,6 +1473,16 @@ Result NSSCertDBTrustDomain::VerifyECDSASignedData(
       signature, subjectPublicKeyInfo, mSignatureCache, mPinArg);
 }
 
+Result NSSCertDBTrustDomain::VerifyMLDSASignedData(Input data, Input signature,
+    Input subjectPublicKeyInfo) {
+  return VerifySignedDataWithCache(
+      der::PublicKeyAlgorithm::ML_DSA,
+      mozilla::glean::cert_signature_cache::total,
+      mozilla::glean::cert_signature_cache::hits, data,
+      DigestAlgorithm::none, signature, subjectPublicKeyInfo,
+      mSignatureCache, mPinArg);
+}
+
 Result NSSCertDBTrustDomain::CheckValidityIsAcceptable(
     Time notBefore, Time notAfter, EndEntityOrCA endEntityOrCA,
     KeyPurposeId keyPurpose) {

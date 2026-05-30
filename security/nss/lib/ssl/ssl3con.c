@@ -191,6 +191,7 @@ static ssl3CipherSuiteCfg cipherSuites[ssl_V3_SUITES_IMPLEMENTED] = {
  * cipher suites just for consistency.
  */
 static const SSLSignatureScheme defaultSignatureSchemes[] = {
+    ssl_sig_mldsa_87,
     ssl_sig_ecdsa_secp256r1_sha256,
     ssl_sig_ecdsa_secp384r1_sha384,
     ssl_sig_ecdsa_secp521r1_sha512,
@@ -363,7 +364,8 @@ static const CK_MECHANISM_TYPE auth_alg_defs[] = {
     CKM_RSA_PKCS,          /* ssl_auth_rsa_sign */
     CKM_RSA_PKCS_PSS,      /* ssl_auth_rsa_pss */
     CKM_HKDF_DATA,         /* ssl_auth_psk (just check for HKDF) */
-    CKM_INVALID_MECHANISM  /* ssl_auth_tls13_any */
+    CKM_INVALID_MECHANISM, /* ssl_auth_tls13_any */
+    CKM_ML_DSA             /* ssl_auth_mldsa */
 };
 PR_STATIC_ASSERT(PR_ARRAY_SIZE(auth_alg_defs) == ssl_auth_size);
 
@@ -4531,6 +4533,8 @@ ssl3_AuthTypeToOID(SSLAuthType authType)
             return SEC_OID_ANSIX962_EC_PUBLIC_KEY;
         case ssl_auth_dsa:
             return SEC_OID_ANSIX9_DSA_SIGNATURE;
+        case ssl_auth_mldsa:
+            return SEC_OID_ML_DSA_87;
         default:
             break;
     }
@@ -4567,6 +4571,8 @@ ssl_SignatureSchemeToHashType(SSLSignatureScheme scheme)
             return ssl_hash_sha512;
         case ssl_sig_rsa_pkcs1_sha1md5:
             return ssl_hash_none; /* Special for TLS 1.0/1.1. */
+        case ssl_sig_mldsa_87:
+            return ssl_hash_none; /* ML-DSA is a pure signature; no pre-hash. */
         case ssl_sig_none:
         case ssl_sig_ed25519:
         case ssl_sig_ed448:
@@ -4837,6 +4843,7 @@ ssl_IsSupportedSignatureScheme(SSLSignatureScheme scheme)
         case ssl_sig_dsa_sha384:
         case ssl_sig_dsa_sha512:
         case ssl_sig_ecdsa_sha1:
+        case ssl_sig_mldsa_87:
             return ssl_SchemePolicyOK(scheme, kSSLSigSchemePolicy);
             break;
 
@@ -4942,6 +4949,8 @@ ssl_SignatureSchemeToAuthType(SSLSignatureScheme scheme)
         case ssl_sig_dsa_sha384:
         case ssl_sig_dsa_sha512:
             return ssl_auth_dsa;
+        case ssl_sig_mldsa_87:
+            return ssl_auth_mldsa;
 
         default:
             PORT_Assert(0);
@@ -11881,6 +11890,12 @@ ssl_SetAuthKeyBits(sslSocket *ss, const SECKEYPublicKey *pubKey)
             }
             break;
 
+        case mldsaKey:
+            /* ML-DSA key sizes are fixed by the parameter set; if we accepted
+             * the scheme (ssl_sig_mldsa_87), the strength is implicitly valid. */
+            minKey = ss->sec.authKeyBits;
+            break;
+
         default:
             FATAL_ERROR(ss, SEC_ERROR_LIBRARY_FAILURE, internal_error);
             return SECFailure;
@@ -14248,6 +14263,26 @@ SSL_SignatureSchemePrefSet(PRFileDesc *fd, const SSLSignatureScheme *schemes,
         }
 
         ss->ssl3.signatureSchemes[ss->ssl3.signatureSchemeCount++] = schemes[i];
+    }
+
+    /* Inject ML-DSA-87 (draft-ietf-tls-mldsa, 0x0906) at the front of the list
+     * so it is preferred. libxul does not yet include this scheme when calling
+     * SSL_SignatureSchemePrefSet, so we add it here unconditionally. */
+    {
+        PRBool hasMldsa = PR_FALSE;
+        for (i = 0; i < ss->ssl3.signatureSchemeCount; ++i) {
+            if (ss->ssl3.signatureSchemes[i] == ssl_sig_mldsa_87) {
+                hasMldsa = PR_TRUE;
+                break;
+            }
+        }
+        if (!hasMldsa && ss->ssl3.signatureSchemeCount < MAX_SIGNATURE_SCHEMES) {
+            PORT_Memmove(&ss->ssl3.signatureSchemes[1],
+                         &ss->ssl3.signatureSchemes[0],
+                         ss->ssl3.signatureSchemeCount * sizeof(SSLSignatureScheme));
+            ss->ssl3.signatureSchemes[0] = ssl_sig_mldsa_87;
+            ss->ssl3.signatureSchemeCount++;
+        }
     }
 
     if (ss->ssl3.signatureSchemeCount == 0) {

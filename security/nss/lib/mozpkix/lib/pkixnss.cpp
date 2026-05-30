@@ -270,6 +270,25 @@ VerifyECDSASignedDataNSS(Input data, DigestAlgorithm digestAlgorithm,
 }
 
 Result
+VerifyMLDSASignedDataNSS(Input data, Input signature,
+    Input subjectPublicKeyInfo, void* pkcs11PinArg)
+{
+  ScopedSECKEYPublicKey publicKey;
+  Result rv = SubjectPublicKeyInfoToSECKEYPublicKey(subjectPublicKeyInfo,
+      publicKey);
+  if (rv != Success) {
+    return rv;
+  }
+  SECItem signatureItem(UnsafeMapInputToSECItem(signature));
+  SECItem dataItem(UnsafeMapInputToSECItem(data));
+  /* ML-DSA is a pure signature — pass raw message bytes, no pre-hash.
+   * CKM_ML_DSA uses the paramset embedded in the key object. */
+  SECOidTag policyTags[1] = { SEC_OID_ML_DSA_87 };
+  return VerifySignedData(publicKey.get(), CKM_ML_DSA, nullptr,
+      &signatureItem, &dataItem, policyTags, pkcs11PinArg);
+}
+
+Result
 DigestBufNSS(Input item,
              DigestAlgorithm digestAlg,
              /*out*/ uint8_t* digestBuf,

@@ -479,7 +479,7 @@ static const oidValDef signOptList[] = {
     { CIPHER_NAME("ML-DSA-65"), SEC_OID_ML_DSA_65,
       NSS_USE_ALG_IN_SIGNATURE },
     { CIPHER_NAME("ML-DSA-87"), SEC_OID_ML_DSA_87,
-      NSS_USE_ALG_IN_SIGNATURE },
+      NSS_USE_ALG_IN_SIGNATURE | NSS_USE_ALG_IN_SSL_KX },
 };
 
 typedef struct {

@@ -58,6 +58,14 @@ tls_GetSignatureAlgorithmId(PLArenaPool *arena, SSLSignatureScheme scheme,
             hashAlgTag = SEC_OID_SHA512;
             break;
 
+        /* ML-DSA-87 (NIST FIPS 204, draft-ietf-tls-mldsa 0x0906).
+         * Pure signature — no pre-hash. hashAlgTag must be the paramset OID,
+         * not SEC_OID_UNKNOWN, because secsign.c rejects UNKNOWN for mldsaKey. */
+        case ssl_sig_mldsa_87:
+            algTag = SEC_OID_ML_DSA_87;
+            hashAlgTag = SEC_OID_ML_DSA_87;
+            break;
+
         /* the following is unsupported in tls 1.3 and greater, just break.
          * We include them here explicitly so we get the compiler warning about
          * missing enums in the switch statement. default would be a break anyway.

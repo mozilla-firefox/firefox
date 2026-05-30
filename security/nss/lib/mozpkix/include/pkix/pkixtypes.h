@@ -39,6 +39,8 @@ enum class DigestAlgorithm {
   sha384 = 2,
   sha256 = 3,
   sha1 = 4,
+  /* Used for pure-signature algorithms (ML-DSA) that have no separate hash. */
+  none = 5,
 };
 
 enum class NamedCurve {
@@ -336,6 +338,12 @@ class TrustDomain {
   // verification of the public key validity as specified in NIST SP 800-56A.
   virtual Result VerifyECDSASignedData(Input data,
                                        DigestAlgorithm digestAlgorithm,
+                                       Input signature,
+                                       Input subjectPublicKeyInfo) = 0;
+
+  // Verify the given ML-DSA-87 signature (NIST FIPS 204, pure-signature).
+  // No digest algorithm — the full tbsCertificate bytes are passed directly.
+  virtual Result VerifyMLDSASignedData(Input data,
                                        Input signature,
                                        Input subjectPublicKeyInfo) = 0;
 

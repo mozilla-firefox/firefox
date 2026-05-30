@@ -150,6 +150,9 @@ typedef enum {
     ssl_sig_rsa_pss_pss_sha384 = 0x080a,
     ssl_sig_rsa_pss_pss_sha512 = 0x080b,
 
+    /* ML-DSA-87 (NIST FIPS 204) — draft-ietf-tls-mldsa codepoint 0x0906 */
+    ssl_sig_mldsa_87 = 0x0906,
+
     ssl_sig_dsa_sha1 = 0x0202,
     ssl_sig_dsa_sha256 = 0x0402,
     ssl_sig_dsa_sha384 = 0x0502,
@@ -185,6 +188,7 @@ typedef enum {
     ssl_auth_rsa_pss = 8,    /* RSA signing with a PSS key. */
     ssl_auth_psk = 9,
     ssl_auth_tls13_any = 10,
+    ssl_auth_mldsa = 11,      /* ML-DSA (NIST FIPS 204) */
     ssl_auth_size /* number of authentication types */
 } SSLAuthType;
 

@@ -1091,6 +1091,10 @@ Result VerifySignedDataWithCache(
       result = VerifyRSAPSSSignedDataNSS(data, digestAlgorithm, signature,
                                          subjectPublicKeyInfo, pinArg);
       break;
+    case der::PublicKeyAlgorithm::ML_DSA:
+      result = VerifyMLDSASignedDataNSS(data, signature, subjectPublicKeyInfo,
+                                        pinArg);
+      break;
     default:
       MOZ_ASSERT_UNREACHABLE("unhandled public key algorithm");
       return Result::FATAL_ERROR_LIBRARY_FAILURE;

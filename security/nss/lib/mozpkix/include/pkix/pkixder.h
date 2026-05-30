@@ -488,7 +488,7 @@ inline Result OptionalExtensions(Reader& input, uint8_t tag,
 Result DigestAlgorithmIdentifier(Reader& input,
                                  /*out*/ DigestAlgorithm& algorithm);
 
-enum class PublicKeyAlgorithm { RSA_PKCS1, RSA_PSS, ECDSA };
+enum class PublicKeyAlgorithm { RSA_PKCS1, RSA_PSS, ECDSA, ML_DSA };
 
 Result SignatureAlgorithmIdentifierValue(
     Reader& input,

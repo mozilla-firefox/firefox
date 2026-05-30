@@ -182,6 +182,12 @@ SignatureAlgorithmIdentifierValue(Reader& input,
     0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x0a
   };
 
+  // NIST FIPS 204, draft-ietf-lamps-dilithium-certificates
+  // python DottedOIDToCode.py id-ML-DSA-87 2.16.840.1.101.3.4.3.19
+  static const uint8_t id_ML_DSA_87[] = {
+    0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x13
+  };
+
   // CA/B Forum BR 1.8.1 Section 7.1.3.2.1
   // Params for RSA-PSS with SHA-256, MGF-1 with SHA-256, and a salt length
   // of 32 bytes:
@@ -252,12 +258,18 @@ SignatureAlgorithmIdentifierValue(Reader& input,
     } else {
       return Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED;
     }
+  } else if (algorithmID.MatchRest(id_ML_DSA_87)) {
+    /* ML-DSA-87 is a pure signature — no pre-hash and no AlgorithmIdentifier
+     * parameters (RFC: params MUST be absent). */
+    publicKeyAlgorithm = PublicKeyAlgorithm::ML_DSA;
+    digestAlgorithm = DigestAlgorithm::none;
   } else {
     return Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED;
   }
 
-  // Ensure that for non-RSA-PSS algorithms, the params are NULL or omitted.
-  if (publicKeyAlgorithm != PublicKeyAlgorithm::RSA_PSS) {
+  // Ensure that for non-RSA-PSS, non-ML-DSA algorithms, the params are NULL or omitted.
+  if (publicKeyAlgorithm != PublicKeyAlgorithm::RSA_PSS &&
+      publicKeyAlgorithm != PublicKeyAlgorithm::ML_DSA) {
     if (algorithmParams.Peek(NULLTag)) {
       rv = Null(algorithmParams);
       if (rv != Success) {

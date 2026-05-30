@@ -195,6 +195,11 @@ pkix::Result PDFTrustDomain::VerifyECDSASignedData(
                                   subjectPublicKeyInfo, nullptr);
 }
 
+pkix::Result PDFTrustDomain::VerifyMLDSASignedData(Input data, Input signature,
+                                                    Input subjectPublicKeyInfo) {
+  return VerifyMLDSASignedDataNSS(data, signature, subjectPublicKeyInfo, nullptr);
+}
+
 pkix::Result PDFTrustDomain::CheckValidityIsAcceptable(
     Time /*notBefore*/, Time /*notAfter*/, EndEntityOrCA /*endEntityOrCA*/,
     KeyPurposeId /*keyPurpose*/) {

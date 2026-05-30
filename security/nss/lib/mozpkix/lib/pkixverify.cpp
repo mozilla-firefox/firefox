@@ -53,6 +53,10 @@ VerifySignedData(TrustDomain& trustDomain,
     case der::PublicKeyAlgorithm::RSA_PSS:
       return trustDomain.VerifyRSAPSSSignedData(signedData.data,
           digestAlgorithm, signedData.signature, signerSubjectPublicKeyInfo);
+    case der::PublicKeyAlgorithm::ML_DSA:
+      /* Pure signature — no digest; pass raw tbsCertificate bytes directly. */
+      return trustDomain.VerifyMLDSASignedData(signedData.data,
+          signedData.signature, signerSubjectPublicKeyInfo);
     MOZILLA_PKIX_UNREACHABLE_DEFAULT_ENUM
   }
 }
