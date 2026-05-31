@@ -257,6 +257,12 @@ CheckSubjectPublicKeyInfoContents(Reader& input, TrustDomain& trustDomain,
     0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01
   };
 
+  // NIST FIPS 204, draft-ietf-lamps-dilithium-certificates
+  // python DottedOIDToCode.py id-ML-DSA-87 2.16.840.1.101.3.4.3.19
+  static const uint8_t id_ML_DSA_87[] = {
+    0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x13
+  };
+
   if (algorithmOID.MatchRest(id_ecPublicKey)) {
     // An id-ecPublicKey AlgorithmIdentifier has a parameter that identifes
     // the curve being used. Although RFC 5480 specifies multiple forms, we
@@ -367,6 +373,15 @@ CheckSubjectPublicKeyInfoContents(Reader& input, TrustDomain& trustDomain,
       Input exponent;
       return der::PositiveInteger(r, exponent);
     });
+    if (rv != Success) {
+      return rv;
+    }
+  } else if (algorithmOID.MatchRest(id_ML_DSA_87)) {
+    // NIST FIPS 204, draft-ietf-lamps-dilithium-certificates.
+    // AlgorithmIdentifier parameters MUST be absent for ML-DSA-87.
+    // The subjectPublicKey is a raw 2592-byte ML-DSA-87 public key.
+    Input rawKey;
+    rv = subjectPublicKeyReader.SkipToEnd(rawKey);
     if (rv != Success) {
       return rv;
     }

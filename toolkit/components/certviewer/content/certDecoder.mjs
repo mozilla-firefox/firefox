@@ -48,6 +48,25 @@ const getPublicKeyInfo = x509 => {
       xy: `04:${x}:${y}`, // 04 (uncompressed) public key
     };
   }
+  // pkijs only parses RSA and EC keys; resolve other algorithms by OID.
+  let algorithmId = getObjPath(
+    x509,
+    "subjectPublicKeyInfo.algorithm.algorithmId"
+  );
+  if (algorithmId === "2.16.840.1.101.3.4.3.19") {
+    let keyView = getObjPath(
+      x509,
+      "subjectPublicKeyInfo.subjectPublicKey.valueBlock.valueHexView"
+    );
+    let keyHex = keyView
+      ? Array.from(keyView, b => b.toString(16).padStart(2, "0")).join("")
+      : undefined;
+    return {
+      kty: "ML-DSA-87",
+      keysize: keyView ? keyView.length * 8 : undefined,
+      xy: keyHex ? hashify(keyHex) : undefined,
+    };
+  }
   return { kty: "Unknown" };
 };
 
@@ -1124,6 +1143,7 @@ const strings = {
     "1.2.840.10045.4.3.2": "ECDSA with SHA-256",
     "1.2.840.10045.4.3.3": "ECDSA with SHA-384",
     "1.2.840.10045.4.3.4": "ECDSA with SHA-512",
+    "2.16.840.1.101.3.4.3.19": "ML-DSA-87",
   },
 
   aia: {

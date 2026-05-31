@@ -688,11 +688,8 @@ static const struct mechanismList mechanisms[] = {
     { CKM_NSS_ML_KEM, { 0, 0, CKF_KEM }, PR_TRUE },
     { CKM_ML_KEM_KEY_PAIR_GEN, { 0, 0, CKF_GENERATE_KEY_PAIR }, PR_TRUE },
     { CKM_ML_KEM, { 0, 0, CKF_KEM }, PR_TRUE },
-/* don't advertize ML_DSA support until we have it working in freebl */
-#ifdef NSS_ENABLE_ML_DSA
     { CKM_ML_DSA_KEY_PAIR_GEN, { ML_DSA_44_PUBLICKEY_LEN, ML_DSA_87_PUBLICKEY_LEN, CKF_GENERATE }, PR_TRUE },
     { CKM_ML_DSA, { ML_DSA_44_PUBLICKEY_LEN, ML_DSA_87_PUBLICKEY_LEN, CKF_SN_VR }, PR_TRUE },
-#endif
 };
 static const CK_ULONG mechanismCount = sizeof(mechanisms) / sizeof(mechanisms[0]);
 

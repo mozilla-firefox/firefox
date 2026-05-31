@@ -35,6 +35,7 @@
     'md2.c',
     'md5.c',
     'ml_dsa.c',
+    'dilithium-pqcrystals-ref.c',
     'mpi/mp_gf2m.c',
     'mpi/mpcpucache.c',
     'mpi/mpi.c',

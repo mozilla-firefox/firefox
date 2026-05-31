@@ -1183,6 +1183,10 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
           glean::ssl::auth_ecdsa_curve_full.AccumulateSingleSample(
               ECCCurve(channelInfo.authKeyBits));
           break;
+        case ssl_auth_mldsa:
+          // ML-DSA key strength is fixed by the parameter set, so there is no
+          // key-size metric to record.
+          break;
         default:
           MOZ_CRASH("impossible auth algorithm");
           break;
