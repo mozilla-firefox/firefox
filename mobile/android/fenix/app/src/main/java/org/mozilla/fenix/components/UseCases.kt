@@ -35,6 +35,7 @@ import mozilla.components.support.utils.DefaultDownloadFileUtils
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.bookmarks.BookmarksUseCase
+import org.mozilla.fenix.components.bookmarks.LastSavedFolderCache
 import org.mozilla.fenix.components.share.DefaultShareSheetLauncher
 import org.mozilla.fenix.components.share.ShareSheetLauncher
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
@@ -61,6 +62,7 @@ class UseCases(
     private val topSitesStorage: Lazy<TopSitesStorage>,
     private val bookmarksStorage: Lazy<BookmarksStorage>,
     private val historyStorage: Lazy<HistoryStorage>,
+    private val lastSavedFolderCache: Lazy<LastSavedFolderCache>,
     private val syncedTabsCommands: Lazy<SyncedTabsCommands>,
     adsClientProvider: Lazy<MozAdsClientProvider>,
     appStore: Lazy<AppStore>,
@@ -135,7 +137,9 @@ class UseCases(
     /**
      * Use cases that provide bookmark management.
      */
-    val bookmarksUseCases by lazyMonitored { BookmarksUseCase(bookmarksStorage.value, historyStorage.value) }
+    val bookmarksUseCases by lazyMonitored {
+        BookmarksUseCase(bookmarksStorage.value, historyStorage.value, lastSavedFolderCache.value)
+    }
 
     val wallpaperUseCases by lazyMonitored {
         // Required to even access context.filesDir property and to retrieve current locale

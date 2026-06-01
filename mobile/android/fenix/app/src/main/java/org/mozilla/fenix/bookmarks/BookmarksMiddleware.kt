@@ -22,8 +22,8 @@ import mozilla.components.feature.tabs.TabsUseCases
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
+import org.mozilla.fenix.components.bookmarks.BookmarksUseCase
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
-import org.mozilla.fenix.utils.LastSavedFolderCache
 
 private const val WARN_OPEN_ALL_SIZE = 15
 
@@ -45,7 +45,8 @@ private const val WARN_OPEN_ALL_SIZE = 15
  * @param resolveFolderTitle Invoked to lookup user-friendly bookmark titles.
  * @param getBrowsingMode Invoked when retrieving the app's current [BrowsingMode].
  * @param saveBookmarkSortOrder Invoked to persist the new sort order.
- * @param lastSavedFolderCache used to cache the last folder you edited a bookmark in.
+ * @param editBookmarkUseCase Commits a bookmark edit and updates the last-saved-folder cache
+ * atomically with respect to caller cancellation.
  * @param reportResultGlobally Invoked when an error occurs that needs to be reported even if the
  * feature goes out of scope.
  * @param importResults Provides the [Flow] of [ImporterResult]s produced by the bookmarks import
@@ -69,7 +70,7 @@ internal class BookmarksMiddleware(
     private val resolveFolderTitle: (BookmarkNode) -> String,
     private val getBrowsingMode: () -> BrowsingMode,
     private val saveBookmarkSortOrder: suspend (BookmarksListSortOrder) -> Unit,
-    private val lastSavedFolderCache: LastSavedFolderCache,
+    private val editBookmarkUseCase: BookmarksUseCase.EditBookmarkUseCase,
     private val reportResultGlobally: (BookmarksGlobalResultReport) -> Unit,
     private val importResults: () -> Flow<ImporterResult>,
     private val lifecycleScope: CoroutineScope,
@@ -262,16 +263,13 @@ internal class BookmarksMiddleware(
                         val popped = getNavController().popBackStack()
                         lifecycleScope.launch {
                             preReductionState.createBookmarkInfo()?.also {
-                                val result = bookmarksStorage.updateNode(
+                                val success = editBookmarkUseCase(
                                     guid = preReductionState.bookmarksEditBookmarkState.bookmark.guid,
                                     info = it,
+                                    edited = preReductionState.bookmarksEditBookmarkState.edited,
                                 )
-                                if (result.isFailure) {
+                                if (!success) {
                                     reportResultGlobally(BookmarksGlobalResultReport.EditBookmarkFailed)
-                                } else {
-                                    if (preReductionState.bookmarksEditBookmarkState.edited) {
-                                        lastSavedFolderCache.setGuid(it.parentGuid)
-                                    }
                                 }
                             }
                             store.tryDispatchLoadFor(preReductionState.currentFolder.guid)
@@ -331,11 +329,6 @@ internal class BookmarksMiddleware(
                 lifecycleScope.launch {
                     preReductionState.bookmarksDeletionDialogState.guidsToDelete.forEach {
                         bookmarksStorage.deleteNode(it)
-                    }
-                    lastSavedFolderCache.getGuid()?.let {
-                        if (bookmarksStorage.getBookmark(it).getOrNull() == null) {
-                            lastSavedFolderCache.setGuid(null)
-                        }
                     }
                 }
 
@@ -713,11 +706,6 @@ internal class BookmarksMiddleware(
     private fun handleDeleteBookmark(bookmark: BookmarkItem.Bookmark) {
         lifecycleScope.launch {
             bookmarksStorage.deleteNode(bookmark.guid)
-            lastSavedFolderCache.getGuid()?.let { cachedGuid ->
-                if (bookmarksStorage.getBookmark(cachedGuid).getOrNull() == null) {
-                    lastSavedFolderCache.setGuid(null)
-                }
-            }
         }
     }
 
@@ -747,13 +735,6 @@ internal class BookmarksMiddleware(
         lifecycleScope.launch {
             guidToDelete?.let { guid ->
                 bookmarksStorage.deleteNode(guid)
-
-                // Reset the folder cache if the folder being deleted was the last used for saving.
-                lastSavedFolderCache.getGuid()?.let { cachedGuid ->
-                    if (bookmarksStorage.getBookmark(cachedGuid).getOrNull() == null) {
-                        lastSavedFolderCache.setGuid(null)
-                    }
-                }
             }
 
             if (!getNavController().popBackStack()) {

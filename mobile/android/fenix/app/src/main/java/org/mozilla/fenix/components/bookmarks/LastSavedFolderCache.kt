@@ -2,7 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package org.mozilla.fenix.utils
+package org.mozilla.fenix.components.bookmarks
+
+import org.mozilla.fenix.utils.Settings
 
 /**
  * An interface to store and retrieve the guid of the folder we last saved a bookmark in.

@@ -57,6 +57,7 @@ import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistState
 import org.mozilla.fenix.components.appstate.setup.checklist.getSetupChecklistCollection
 import org.mozilla.fenix.components.appstate.sports.SportsWidgetState
+import org.mozilla.fenix.components.bookmarks.lastSavedFolderCache
 import org.mozilla.fenix.components.ipprotection.IPProtection
 import org.mozilla.fenix.components.lens.GoogleLensAIControlFeature
 import org.mozilla.fenix.components.llm.Llm
@@ -153,6 +154,7 @@ class Components(private val context: Context) {
             topSitesStorage = lazyMonitored { core.topSitesStorage },
             bookmarksStorage = lazyMonitored { core.bookmarksStorage },
             historyStorage = lazyMonitored { core.historyStorage },
+            lastSavedFolderCache = lazyMonitored { context.settings().lastSavedFolderCache },
             syncedTabsCommands = lazyMonitored { backgroundServices.syncedTabsCommands },
             adsClientProvider = ads.lazyAdsClientProvider,
             appStore = lazyMonitored { appStore },

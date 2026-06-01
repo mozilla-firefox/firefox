@@ -37,7 +37,6 @@ import mozilla.components.concept.engine.prompt.ShareData
 import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.concept.storage.BookmarkNode
 import mozilla.components.concept.storage.BookmarkNodeType
-import mozilla.components.concept.storage.BookmarksStorage
 import mozilla.components.feature.accounts.push.CloseTabsUseCases
 import mozilla.components.feature.search.SearchUseCases
 import mozilla.components.feature.session.SessionUseCases
@@ -64,6 +63,7 @@ import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.TabCollectionStorage
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.components.appstate.AppState
+import org.mozilla.fenix.components.bookmarks.BookmarksUseCase
 import org.mozilla.fenix.components.share.ShareSource
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.components.usecases.ShareUseCases
@@ -119,7 +119,7 @@ class DefaultTabManagerControllerTest {
     private val settings: Settings = mockk(relaxed = true)
     private val shareUseCases: ShareUseCases = mockk(relaxed = true)
 
-    private val bookmarksStorage: BookmarksStorage = mockk(relaxed = true)
+    private val addBookmarkUseCase: BookmarksUseCase.AddBookmarksUseCase = mockk(relaxed = true)
     private val closeSyncedTabsUseCases: CloseTabsUseCases = mockk(relaxed = true)
     private val collectionStorage: TabCollectionStorage = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
@@ -1836,16 +1836,12 @@ class DefaultTabManagerControllerTest {
     }
 
     @Test
-    fun `GIVEN one tab selected and no bookmarks previously saved WHEN saving selected tabs to bookmarks THEN save bookmark in root, report telemetry, show snackbar`() =
+    fun `GIVEN one tab selected WHEN saving selected tabs to bookmarks THEN add bookmark use case is invoked once and snackbar is shown`() =
         runTest(testDispatcher) {
             var showBookmarkSnackbarInvoked = false
-
-            coEvery { bookmarksStorage.getRecentBookmarks(eq(1), any(), any()) } returns Result.success(listOf())
-            coEvery { bookmarksStorage.getBookmark(BookmarkRoot.Mobile.id) } returns Result.success(
-                makeBookmarkFolder(
-                    guid = BookmarkRoot.Mobile.id,
-                ),
-            )
+            val parentNode = makeBookmarkFolder(guid = BookmarkRoot.Mobile.id)
+            coEvery { addBookmarkUseCase.invoke(any(), any(), any(), any()) } returns
+                BookmarksUseCase.AddBookmarksUseCase.Result(guidToEdit = "guid", parentNode = parentNode)
             every { trayStore.state.mode.selectedTabs } returns setOf(TabsTrayItem.Tab(tab = createTab(url = "https://mozilla.org")))
 
             createController(
@@ -1856,48 +1852,17 @@ class DefaultTabManagerControllerTest {
             testDispatcher.scheduler.advanceUntilIdle()
 
             verify { trayStore.dispatch(TabsTrayAction.BookmarkSelectedTabs(1)) }
-            coVerify(exactly = 1) { bookmarksStorage.addItem(eq(BookmarkRoot.Mobile.id), any(), any(), any()) }
+            coVerify(exactly = 1) { addBookmarkUseCase.invoke(url = "https://mozilla.org", title = any()) }
             assertTrue(showBookmarkSnackbarInvoked)
         }
 
     @Test
-    fun `GIVEN one tab selected and a previously saved bookmark WHEN saving selected tabs to bookmarks THEN save bookmark in last saved folder, report telemetry, show snackbar`() =
+    fun `GIVEN multiple tabs selected WHEN saving selected tabs to bookmarks THEN add bookmark use case is invoked once per tab and snackbar is shown`() =
         runTest(testDispatcher) {
             var showBookmarkSnackbarInvoked = false
-
-            val parentGuid = "parentGuid"
-            val previousBookmark = makeBookmarkItem(parentGuid = parentGuid)
-            coEvery { bookmarksStorage.getRecentBookmarks(eq(1), any(), any()) } returns Result.success(
-                listOf(
-                    previousBookmark,
-                ),
-            )
-            coEvery { bookmarksStorage.getBookmark(parentGuid) } returns Result.success(makeBookmarkFolder(guid = parentGuid))
-            every { trayStore.state.mode.selectedTabs } returns setOf(TabsTrayItem.Tab(tab = createTab(url = "https://mozilla.org")))
-
-            createController(
-                showBookmarkSnackbar = { _, _ ->
-                    showBookmarkSnackbarInvoked = true
-                },
-            ).handleBookmarkSelectedTabsClicked()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            verify { trayStore.dispatch(TabsTrayAction.BookmarkSelectedTabs(1)) }
-            coVerify(exactly = 1) { bookmarksStorage.addItem(eq(parentGuid), any(), any(), any()) }
-            assertTrue(showBookmarkSnackbarInvoked)
-        }
-
-    @Test
-    fun `GIVEN multiple tabs selected and no bookmarks previously saved WHEN saving selected tabs to bookmarks THEN save bookmarks in root, report telemetry, show a snackbar`() =
-        runTest(testDispatcher) {
-            var showBookmarkSnackbarInvoked = false
-
-            coEvery { bookmarksStorage.getRecentBookmarks(eq(1), any(), any()) } returns Result.success(listOf())
-            coEvery { bookmarksStorage.getBookmark(BookmarkRoot.Mobile.id) } returns Result.success(
-                makeBookmarkFolder(
-                    guid = BookmarkRoot.Mobile.id,
-                ),
-            )
+            val parentNode = makeBookmarkFolder(guid = BookmarkRoot.Mobile.id)
+            coEvery { addBookmarkUseCase.invoke(any(), any(), any(), any()) } returns
+                BookmarksUseCase.AddBookmarksUseCase.Result(guidToEdit = "guid", parentNode = parentNode)
             every { trayStore.state.mode.selectedTabs } returns setOf(
                 TabsTrayItem.Tab(tab = createTab(url = "https://mozilla.org")),
                 TabsTrayItem.Tab(tab = createTab(url = "https://mozilla2.org")),
@@ -1911,37 +1876,7 @@ class DefaultTabManagerControllerTest {
             testDispatcher.scheduler.advanceUntilIdle()
 
             verify { trayStore.dispatch(TabsTrayAction.BookmarkSelectedTabs(2)) }
-            coVerify(exactly = 2) { bookmarksStorage.addItem(eq(BookmarkRoot.Mobile.id), any(), any(), any()) }
-            assertTrue(showBookmarkSnackbarInvoked)
-        }
-
-    @Test
-    fun `GIVEN multiple tabs selected and a previously saved bookmark WHEN saving selected tabs to bookmarks THEN save bookmarks in same folder as recent bookmark, report telemetry, show a snackbar`() =
-        runTest(testDispatcher) {
-            var showBookmarkSnackbarInvoked = false
-
-            val parentGuid = "parentGuid"
-            val previousBookmark = makeBookmarkItem(parentGuid = parentGuid)
-            coEvery { bookmarksStorage.getRecentBookmarks(eq(1), any(), any()) } returns Result.success(
-                listOf(
-                    previousBookmark,
-                ),
-            )
-            coEvery { bookmarksStorage.getBookmark(parentGuid) } returns Result.success(makeBookmarkFolder(guid = parentGuid))
-            every { trayStore.state.mode.selectedTabs } returns setOf(
-                TabsTrayItem.Tab(tab = createTab(url = "https://mozilla.org")),
-                TabsTrayItem.Tab(tab = createTab(url = "https://mozilla2.org")),
-            )
-
-            createController(
-                showBookmarkSnackbar = { _, _ ->
-                    showBookmarkSnackbarInvoked = true
-                },
-            ).handleBookmarkSelectedTabsClicked()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            verify { trayStore.dispatch(TabsTrayAction.BookmarkSelectedTabs(2)) }
-            coVerify(exactly = 2) { bookmarksStorage.addItem(eq(parentGuid), any(), any(), any()) }
+            coVerify(exactly = 2) { addBookmarkUseCase.invoke(any(), any(), any(), any()) }
             assertTrue(showBookmarkSnackbarInvoked)
         }
 
@@ -2274,7 +2209,7 @@ class DefaultTabManagerControllerTest {
             fenixBrowserUseCases = fenixBrowserUseCases,
             shareUseCases = shareUseCases,
             closeSyncedTabsUseCases = closeSyncedTabsUseCases,
-            bookmarksStorage = bookmarksStorage,
+            addBookmarkUseCase = addBookmarkUseCase,
             ioDispatcher = testDispatcher,
             mainDispatcher = testDispatcher,
             collectionStorage = collectionStorage,
@@ -2286,18 +2221,6 @@ class DefaultTabManagerControllerTest {
             showCollectionSnackbar = showCollectionSnackbar,
         )
     }
-
-    private fun makeBookmarkItem(parentGuid: String) = BookmarkNode(
-        type = BookmarkNodeType.ITEM,
-        parentGuid = parentGuid,
-        guid = "guid",
-        position = 42U,
-        title = "title",
-        url = "url",
-        dateAdded = 0L,
-        lastModified = 0L,
-        children = null,
-    )
 
     companion object {
         private const val PROFILER_START_TIME = Double.MAX_VALUE

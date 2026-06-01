@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import mozilla.appservices.places.BookmarkRoot
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.EngineAction
 import mozilla.components.browser.state.search.SearchEngine
@@ -138,7 +137,6 @@ import org.mozilla.fenix.tabstray.redux.state.Page
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.utils.Stories.hasUrlOfAHomeScreenStory
 import org.mozilla.fenix.utils.Stories.hasUrlOfAStoriesScreenStory
-import org.mozilla.fenix.utils.lastSavedFolderCache
 import mozilla.components.browser.toolbar.R as toolbarR
 import mozilla.components.lib.state.Action as MVIAction
 import mozilla.components.ui.icons.R as iconsR
@@ -533,31 +531,16 @@ class BrowserToolbarMiddleware(
             }
 
             is AddBookmarkClicked -> {
-                val selectedTab = browserStore.state.selectedTab
-
-                selectedTab?.let {
+                browserStore.state.selectedTab?.let { selectedTab ->
                     scope.launch(ioDispatcher) {
-                        val targetParentFolderId =
-                            settings.lastSavedFolderCache.getGuid() ?: BookmarkRoot.Mobile.id
-
-                        val parentNode = bookmarksStorage.getBookmark(targetParentFolderId).getOrNull()
-                            ?: bookmarksStorage.getBookmark(BookmarkRoot.Mobile.id).getOrNull()
-                        val parentGuid = parentNode?.guid ?: BookmarkRoot.Mobile.id
-
-                        if (targetParentFolderId != parentGuid) {
-                            settings.lastSavedFolderCache.setGuid(null)
-                        }
-
-                        val guidToEdit = useCases.bookmarksUseCases.addBookmark(
+                        val result = useCases.bookmarksUseCases.addBookmark(
                             url = selectedTab.content.url,
                             title = selectedTab.content.title,
-                            parentGuid = parentGuid,
                         )
-
                         appStore.dispatch(
                             BookmarkAction.BookmarkAdded(
-                                guidToEdit = guidToEdit,
-                                parentNode = parentNode,
+                                guidToEdit = result.guidToEdit,
+                                parentNode = result.parentNode,
                                 source = action.source.toMetricSource(),
                             ),
                         )

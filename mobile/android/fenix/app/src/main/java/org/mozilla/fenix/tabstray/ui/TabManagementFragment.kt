@@ -228,7 +228,7 @@ class TabManagementFragment : Fragment() {
             fenixBrowserUseCases = requireComponents.useCases.fenixBrowserUseCases,
             shareUseCases = requireComponents.useCases.shareUseCases,
             closeSyncedTabsUseCases = requireComponents.useCases.closeSyncedTabsUseCases,
-            bookmarksStorage = requireComponents.core.bookmarksStorage,
+            addBookmarkUseCase = requireComponents.useCases.bookmarksUseCases.addBookmark,
             collectionStorage = requireComponents.core.tabCollectionStorage,
             showUndoSnackbarForTab = ::showUndoSnackbarForTab,
             showUndoSnackbarForInactiveTab = ::showUndoSnackbarForInactiveTab,

@@ -7,7 +7,6 @@ package org.mozilla.fenix.bookmarks
 import android.content.ClipboardManager
 import androidx.navigation.NavController
 import io.mockk.coEvery
-import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -29,8 +28,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
+import org.mozilla.fenix.components.bookmarks.BookmarksUseCase
+import org.mozilla.fenix.components.bookmarks.LastSavedFolderCache
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
-import org.mozilla.fenix.utils.LastSavedFolderCache
 import kotlin.test.assertNotNull
 
 class BookmarksMiddlewareTest {
@@ -967,6 +967,94 @@ class BookmarksMiddlewareTest {
             coVerify(exactly = 1) { lastSavedFolderCache.setGuid(BookmarkRoot.Mobile.id) }
             coVerify(exactly = 2) { bookmarksStorage.getTree(BookmarkRoot.Mobile.id) }
             coVerify(exactly = 1) { navController.popBackStack() }
+            assertNull(store.state.bookmarksEditBookmarkState)
+        }
+
+    @Test
+    fun `GIVEN current screen is edit bookmark WHEN the parent folder is changed and back is clicked THEN cache is updated to the new parent`() =
+        runTest {
+            val tree = generateBookmarkTree()
+            coEvery {
+                bookmarksStorage.countBookmarksInTrees(
+                    listOf(
+                        BookmarkRoot.Menu.id,
+                        BookmarkRoot.Toolbar.id,
+                        BookmarkRoot.Unfiled.id,
+                    ),
+                )
+            } returns 0u
+            coEvery { bookmarksStorage.getTree(BookmarkRoot.Mobile.id) } returns Result.success(tree)
+            val middleware = buildMiddleware(this)
+
+            val store = middleware.makeStore()
+            testScheduler.advanceUntilIdle()
+
+            val bookmark =
+                store.state.bookmarkItems.first { it is BookmarkItem.Bookmark } as BookmarkItem.Bookmark
+            val newParent = tree.children?.last { it.type == BookmarkNodeType.FOLDER }!!
+            val newParentItem = BookmarkItem.Folder(
+                title = newParent.title!!,
+                guid = newParent.guid,
+                position = newParent.position,
+            )
+
+            store.dispatch(EditBookmarkClicked(bookmark = bookmark))
+            testScheduler.advanceUntilIdle()
+
+            store.dispatch(EditBookmarkAction.FolderClicked)
+            testScheduler.advanceUntilIdle()
+
+            store.dispatch(SelectFolderAction.ViewAppeared)
+            testScheduler.advanceUntilIdle()
+
+            store.dispatch(
+                SelectFolderAction.ItemClicked(
+                    SelectFolderItem(
+                        0,
+                        newParentItem,
+                        SelectFolderExpansionState.None,
+                    ),
+                ),
+            )
+            testScheduler.advanceUntilIdle()
+
+            store.dispatch(BackClicked)
+            store.dispatch(BackClicked)
+            testScheduler.advanceUntilIdle()
+
+            coVerify(exactly = 1) { lastSavedFolderCache.setGuid(newParent.guid) }
+            assertNull(store.state.bookmarksEditBookmarkState)
+        }
+
+    @Test
+    fun `GIVEN current screen is edit bookmark and nothing was changed WHEN back is clicked THEN cache is not updated`() =
+        runTest {
+            coEvery {
+                bookmarksStorage.countBookmarksInTrees(
+                    listOf(
+                        BookmarkRoot.Menu.id,
+                        BookmarkRoot.Toolbar.id,
+                        BookmarkRoot.Unfiled.id,
+                    ),
+                )
+            } returns 0u
+            coEvery { bookmarksStorage.getTree(BookmarkRoot.Mobile.id) } returns Result.success(
+                generateBookmarkTree(),
+            )
+            val middleware = buildMiddleware(this)
+
+            val store = middleware.makeStore()
+            testScheduler.advanceUntilIdle()
+
+            val bookmark =
+                store.state.bookmarkItems.first { it is BookmarkItem.Bookmark } as BookmarkItem.Bookmark
+            store.dispatch(EditBookmarkClicked(bookmark = bookmark))
+            testScheduler.advanceUntilIdle()
+
+            store.dispatch(BackClicked)
+            testScheduler.advanceUntilIdle()
+
+            coVerify(exactly = 0) { lastSavedFolderCache.setGuid(any<String>()) }
             assertNull(store.state.bookmarksEditBookmarkState)
         }
 
@@ -2856,48 +2944,6 @@ class BookmarksMiddlewareTest {
         }
 
     @Test
-    fun `GIVEN the last saved folder cache WHEN deleting the folder THEN the value in cache is reset`() =
-        runTest {
-            val tree = generateBookmarkTree()
-            val folder = tree.children!!.first { it.type == BookmarkNodeType.FOLDER }
-            val folderItem =
-                BookmarkItem.Folder(guid = folder.guid, title = "title", position = folder.position)
-            coEvery {
-                bookmarksStorage.countBookmarksInTrees(
-                    listOf(
-                        BookmarkRoot.Menu.id,
-                        BookmarkRoot.Toolbar.id,
-                        BookmarkRoot.Unfiled.id,
-                    ),
-                )
-            } returns 0u
-            coEvery { bookmarksStorage.countBookmarksInTrees(listOf(folderItem.guid)) } returns 19u
-            coEvery { bookmarksStorage.getTree(BookmarkRoot.Mobile.id) } returns Result.success(tree)
-            coEvery { lastSavedFolderCache.getGuid() } returns folder.guid
-
-            val middleware = buildMiddleware(this)
-            val store = middleware.makeStore()
-            testScheduler.advanceUntilIdle()
-
-            store.dispatch(BookmarksListMenuAction.Folder.DeleteClicked(folderItem))
-            testScheduler.advanceUntilIdle()
-
-            assertEquals(
-                DeletionDialogState.Presenting(listOf(folderItem.guid), 19),
-                store.state.bookmarksDeletionDialogState,
-            )
-
-            coEvery { bookmarksStorage.getBookmark(folderItem.guid) } returns Result.success(null)
-
-            store.dispatch(DeletionDialogAction.DeleteTapped)
-            testScheduler.advanceUntilIdle()
-
-            assertEquals(DeletionDialogState.None, store.state.bookmarksDeletionDialogState)
-            coVerify { bookmarksStorage.deleteNode(folder.guid) }
-            coVerify { lastSavedFolderCache.setGuid(null) }
-        }
-
-    @Test
     fun `GIVEN editing a bookmark WHEN edit fails THAN last saved location does not change`() =
         runTest {
             val tree = generateBookmarkTree()
@@ -3208,10 +3254,9 @@ class BookmarksMiddlewareTest {
         }
 
     @Test
-    fun `GIVEN a bookmark WHEN DeleteClicked is dispatched THEN delete from storage and clear cache if needed`() =
+    fun `GIVEN a bookmark WHEN DeleteClicked is dispatched THEN delete from storage`() =
         runTest {
             val bookmarkGuid = "test-guid-123"
-            val folderGuid = "cached-folder-guid"
 
             val bookmarkItem = BookmarkItem.Bookmark(
                 title = "Test Bookmark",
@@ -3221,8 +3266,6 @@ class BookmarksMiddlewareTest {
                 position = 0u,
             )
 
-            coEvery { lastSavedFolderCache.getGuid() } returns folderGuid
-            coEvery { bookmarksStorage.getBookmark(folderGuid) } returns Result.success(null)
             coEvery { bookmarksStorage.deleteNode(bookmarkGuid) } returns Result.success(true)
 
             val middleware = buildMiddleware(this)
@@ -3234,10 +3277,6 @@ class BookmarksMiddlewareTest {
 
             coVerify(exactly = 1) { bookmarksStorage.deleteNode(bookmarkGuid) }
 
-            coVerify(exactly = 1) { bookmarksStorage.getBookmark(folderGuid) }
-
-            coVerify(exactly = 1) { lastSavedFolderCache.setGuid(null) }
-
             val isStillInList = store.state.bookmarkItems.any { it.guid == bookmarkGuid }
             assertFalse(isStillInList)
         }
@@ -3245,7 +3284,6 @@ class BookmarksMiddlewareTest {
     @Test
     fun `GIVEN Edit screen is open WHEN DeleteClicked is dispatched THEN delete bookmark and navigate back`() = runTest {
         val bookmarkGuid = "target-guid-123"
-        val cachedFolderGuid = "folder-in-cache"
 
         val bookmark = BookmarkItem.Bookmark(
             title = "Bookmark to Delete",
@@ -3262,10 +3300,7 @@ class BookmarksMiddlewareTest {
             ),
         )
 
-        coEvery { lastSavedFolderCache.getGuid() } returns cachedFolderGuid
-        coEvery { bookmarksStorage.getBookmark(cachedFolderGuid) } returns Result.success(null)
         coEvery { bookmarksStorage.deleteNode(bookmarkGuid) } returns Result.success(true)
-        coJustRun { lastSavedFolderCache.setGuid(null) }
         coEvery { navController.popBackStack() } returns true
 
         val store = buildMiddleware(this).makeStore(initialState)
@@ -3275,8 +3310,6 @@ class BookmarksMiddlewareTest {
         testScheduler.advanceUntilIdle()
 
         coVerify(exactly = 1) { bookmarksStorage.deleteNode(bookmarkGuid) }
-        coVerify(exactly = 1) { bookmarksStorage.getBookmark(cachedFolderGuid) }
-        coVerify(exactly = 1) { lastSavedFolderCache.setGuid(null) }
         verify(exactly = 1) { navController.popBackStack() }
 
         assertNull(store.state.bookmarksEditBookmarkState)
@@ -3335,7 +3368,7 @@ class BookmarksMiddlewareTest {
         resolveFolderTitle = resolveFolderTitle,
         getBrowsingMode = getBrowsingMode,
         saveBookmarkSortOrder = saveSortOrder,
-        lastSavedFolderCache = lastSavedFolderCache,
+        editBookmarkUseCase = BookmarksUseCase.EditBookmarkUseCase(bookmarksStorage, lastSavedFolderCache),
         reportResultGlobally = reportResultGlobally,
         importResults = { emptyFlow() },
         lifecycleScope = scope,

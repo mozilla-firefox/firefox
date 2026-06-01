@@ -121,7 +121,6 @@ import org.mozilla.fenix.utils.enterMenu
 import org.mozilla.fenix.utils.enterSubmenu
 import org.mozilla.fenix.utils.exitMenu
 import org.mozilla.fenix.utils.exitSubmenu
-import org.mozilla.fenix.utils.lastSavedFolderCache
 import org.mozilla.fenix.webcompat.DefaultWebCompatReporterMoreInfoSender
 import org.mozilla.fenix.webcompat.middleware.DefaultWebCompatReporterRetrievalService
 import org.mozilla.fenix.webcompat.middleware.WebCompatInfoDeserializer
@@ -342,7 +341,6 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                                 },
                                 onSendPendingIntentWithUrl = ::sendPendingIntentWithUrl,
                                 mainDispatcher = Dispatchers.Main,
-                                lastSavedFolderCache = context.settings().lastSavedFolderCache,
                             ),
                             MenuNavigationMiddleware(
                                 browserStore = browserStore,

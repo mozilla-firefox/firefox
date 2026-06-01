@@ -54,7 +54,6 @@ import org.mozilla.fenix.search.SearchFragmentStore
 import org.mozilla.fenix.search.createInitialSearchFragmentState
 import org.mozilla.fenix.tabstray.redux.state.Page
 import org.mozilla.fenix.theme.FirefoxTheme
-import org.mozilla.fenix.utils.lastSavedFolderCache
 
 /**
  * The screen that displays the user's bookmark list in their Library.
@@ -191,7 +190,7 @@ class BookmarkFragment : Fragment(), SystemInsetsPaddedFragment {
                                     requireContext().settings().bookmarkListSortOrder =
                                         it.asString
                                 },
-                                lastSavedFolderCache = requireContext().settings().lastSavedFolderCache,
+                                editBookmarkUseCase = requireComponents.useCases.bookmarksUseCases.editBookmark,
                                 reportResultGlobally = {
                                     requireComponents.appStore.dispatch(
                                         AppAction.BookmarkAction.BookmarkOperationResultReported(it),

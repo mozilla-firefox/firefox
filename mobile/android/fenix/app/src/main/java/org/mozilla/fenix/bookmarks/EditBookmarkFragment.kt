@@ -32,7 +32,6 @@ import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.search.SearchFragmentState
 import org.mozilla.fenix.search.SearchFragmentStore
 import org.mozilla.fenix.theme.FirefoxTheme
-import org.mozilla.fenix.utils.lastSavedFolderCache
 
 /**
  * Menu to edit the name, URL, and location of a bookmark item.
@@ -111,7 +110,7 @@ class EditBookmarkFragment : Fragment(), SystemInsetsPaddedFragment {
                                     getBrowsingMode = {
                                         appStore.state.mode
                                     },
-                                    lastSavedFolderCache = context.settings().lastSavedFolderCache,
+                                    editBookmarkUseCase = requireComponents.useCases.bookmarksUseCases.editBookmark,
                                     saveBookmarkSortOrder = {},
                                     reportResultGlobally = {
                                         requireComponents.appStore.dispatch(

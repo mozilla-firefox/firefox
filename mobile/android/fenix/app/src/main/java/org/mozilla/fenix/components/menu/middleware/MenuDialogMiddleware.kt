@@ -12,7 +12,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import mozilla.appservices.places.BookmarkRoot
 import mozilla.components.browser.state.ext.getUrl
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.concept.engine.webextension.InstallationMethod
@@ -46,7 +45,6 @@ import org.mozilla.fenix.summarization.eligibility.SummarizationEligibilityCheck
 import org.mozilla.fenix.summarization.onboarding.SummarizationFeatureDiscoveryConfiguration
 import org.mozilla.fenix.summarization.onboarding.SummarizeDiscoveryEvent
 import org.mozilla.fenix.tabstray.ext.isNormalTab
-import org.mozilla.fenix.utils.LastSavedFolderCache
 import org.mozilla.fenix.utils.Settings
 
 /**
@@ -82,7 +80,6 @@ import org.mozilla.fenix.utils.Settings
  * @param onDismiss Callback invoked to dismiss the menu dialog.
  * @param onSendPendingIntentWithUrl Callback invoked to send the pending intent of a custom menu item
  * with the url of the custom tab.
- * @param lastSavedFolderCache used to fetch the guid of the folder to save a bookmark in.
  * @param mainDispatcher The [CoroutineDispatcher] for performing UI updates.
  */
 @Suppress("LongParameterList", "CyclomaticComplexMethod")
@@ -105,7 +102,6 @@ class MenuDialogMiddleware(
     private val onDeleteAndQuit: () -> Unit,
     private val onDismiss: suspend () -> Unit,
     private val onSendPendingIntentWithUrl: (intent: PendingIntent, url: String?) -> Unit,
-    private val lastSavedFolderCache: LastSavedFolderCache,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : Middleware<MenuState, MenuAction> {
 
@@ -262,31 +258,15 @@ class MenuDialogMiddleware(
         val selectedTab = browserMenuState.selectedTab
         val url = selectedTab.getUrl() ?: return@launch
 
-        // get the last saved folder id
-        val targetParentFolderId = lastSavedFolderCache.getGuid() ?: BookmarkRoot.Mobile.id
-
-        // get the corresponding bookmark and fallback to mobile root bookmark node
-        // this is necessary because it's possible that the last saved folder no longer exists (
-        // e.g. if the folder is removed through sync)
-        val parentNode = bookmarksStorage.getBookmark(targetParentFolderId).getOrNull()
-            ?: bookmarksStorage.getBookmark(BookmarkRoot.Mobile.id).getOrNull()
-
-        val parentGuid = parentNode?.guid ?: BookmarkRoot.Mobile.id
-
-        if (targetParentFolderId != parentGuid) {
-            lastSavedFolderCache.setGuid(null)
-        }
-
-        val guidToEdit = addBookmarkUseCase(
+        val result = addBookmarkUseCase(
             url = url,
             title = selectedTab.content.title,
-            parentGuid = parentGuid,
         )
 
         appStore.dispatch(
             BookmarkAction.BookmarkAdded(
-                guidToEdit = guidToEdit,
-                parentNode = parentNode,
+                guidToEdit = result.guidToEdit,
+                parentNode = result.parentNode,
                 source = MetricsUtils.BookmarkAction.Source.MENU_DIALOG,
             ),
         )
