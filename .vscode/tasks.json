@@ -80,7 +80,7 @@
       },
       {
         "label": "run",
-        "args": ["run", "-purgecaches"],
+        "args": ["run", "--purgecaches"],
         "problemMatcher": []
       },
       {
