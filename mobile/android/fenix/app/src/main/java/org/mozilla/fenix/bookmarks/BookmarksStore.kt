@@ -14,20 +14,13 @@ import mozilla.components.lib.state.Store
  * @param initialState The initial state for the Store.
  * @param reducer Reducer to handle state updates based on dispatched actions.
  * @param middleware Middleware to handle side-effects in response to dispatched actions.
- * @param bookmarkToLoad The guid of a bookmark to load when landing on the edit screen.
  */
 internal class BookmarksStore(
     initialState: BookmarksState = BookmarksState.default,
     reducer: Reducer<BookmarksState, BookmarksAction> = ::bookmarksReducer,
     middleware: List<Middleware<BookmarksState, BookmarksAction>> = listOf(),
-    bookmarkToLoad: String? = null,
 ) : Store<BookmarksState, BookmarksAction>(
     initialState = initialState,
     reducer = reducer,
     middleware = middleware,
-) {
-    init {
-        val action = bookmarkToLoad?.let { InitEdit(bookmarkToLoad) } ?: Init
-        dispatch(action)
-    }
-}
+)

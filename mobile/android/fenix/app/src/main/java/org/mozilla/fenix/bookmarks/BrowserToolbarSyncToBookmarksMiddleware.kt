@@ -32,7 +32,7 @@ internal class BrowserToolbarSyncToBookmarksMiddleware(
     ) {
         next(action)
 
-        if (action is Init) {
+        if (action is ViewAppeared && action.bookmarkToLoad == null) {
             syncJob?.cancel()
             syncJob = toolbarStore.flow()
                 .map { it.isEditMode() }
