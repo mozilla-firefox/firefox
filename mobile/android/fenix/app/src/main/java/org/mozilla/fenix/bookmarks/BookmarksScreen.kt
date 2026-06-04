@@ -151,6 +151,7 @@ private const val MATERIAL_DESIGN_SCRIM = "#52000000"
  * @param bookmarksSearchEngine [SearchEngine] the default search engine to use when searching bookmarks.
  * @param profiler app profiler used to access firefox profile features.
  * @param startDestination the screen on which to initialize [BookmarksScreen] with.
+ * @param bookmarkToLoad The guid of a bookmark to load when landing on the edit screen.
  */
 @Composable
 internal fun BookmarksScreen(
@@ -162,6 +163,7 @@ internal fun BookmarksScreen(
     bookmarksSearchEngine: SearchEngine?,
     profiler: Profiler? = components.core.engine.profiler,
     startDestination: String = BookmarksDestinations.LIST,
+    bookmarkToLoad: String? = null,
 ) {
     val navController = rememberNavController()
     val store = remember { buildStore(navController) }
@@ -169,6 +171,10 @@ internal fun BookmarksScreen(
     val isPrivateModeLocked by remember {
         appStore.stateFlow.map { appState -> appState.isPrivateScreenLocked }
     }.collectAsState(initial = appStore.state.isPrivateScreenLocked)
+
+    LaunchedEffect(Unit) {
+        store.dispatch(ViewAppeared(bookmarkToLoad = bookmarkToLoad))
+    }
 
     LaunchedEffect(isPrivateModeLocked) {
         if (!isPrivateModeLocked) {

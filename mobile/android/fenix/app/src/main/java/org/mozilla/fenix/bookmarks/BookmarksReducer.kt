@@ -10,7 +10,7 @@ import mozilla.appservices.places.BookmarkRoot
  * Function for reducing a new bookmarks state based on the received action.
  */
 internal fun bookmarksReducer(state: BookmarksState, action: BookmarksAction) = when (action) {
-    is InitEditLoaded -> state.copy(
+    is BookmarkToEditLoaded -> state.copy(
         currentFolder = action.folder,
         bookmarksEditBookmarkState = BookmarksEditBookmarkState(
             bookmark = action.bookmark,
@@ -74,8 +74,7 @@ internal fun bookmarksReducer(state: BookmarksState, action: BookmarksAction) = 
     FirstSyncCompleted,
     SelectFolderAction.ViewAppeared,
     SignIntoSyncClicked,
-    is InitEdit,
-    Init,
+    is ViewAppeared,
     PrivateBrowsingAuthorized,
     -> state
 }

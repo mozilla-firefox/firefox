@@ -122,7 +122,6 @@ class EditBookmarkFragment : Fragment(), SystemInsetsPaddedFragment {
                                     lifecycleScope = lifecycleScope,
                                 ),
                             ),
-                            bookmarkToLoad = args.guidToEdit,
                         )
                     }
 
@@ -136,6 +135,7 @@ class EditBookmarkFragment : Fragment(), SystemInsetsPaddedFragment {
                             toolbarStore = BrowserToolbarStore(BrowserToolbarState(mode = Mode.EDIT)),
                             searchStore = SearchFragmentStore(SearchFragmentState.EMPTY),
                             bookmarksSearchEngine = null,
+                            bookmarkToLoad = args.guidToEdit,
                         )
                     }
                 }

@@ -56,10 +56,10 @@ internal class BookmarksTelemetryMiddleware : Middleware<BookmarksState, Bookmar
             is FolderLongClicked,
             is RecursiveSelectionCountLoaded,
             is OpenTabsConfirmationDialogAction.Present,
-            is InitEdit,
-            is InitEditLoaded,
+            is ViewAppeared,
+            is BookmarkToEditLoaded,
             is ReceivedSyncSignInUpdate,
-            CloseClicked, AddFolderClicked, Init, SignIntoSyncClicked,
+            CloseClicked, AddFolderClicked, SignIntoSyncClicked,
             OpenTabsConfirmationDialogAction.CancelTapped, OpenTabsConfirmationDialogAction.ConfirmTapped,
             FirstSyncCompleted, PrivateBrowsingAuthorized,
                 -> Unit

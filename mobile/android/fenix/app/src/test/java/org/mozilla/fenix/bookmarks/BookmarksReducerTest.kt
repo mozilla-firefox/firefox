@@ -40,10 +40,10 @@ class BookmarksReducerTest {
     }
 
     @Test
-    fun `WHEN store initializes THEN no changes to state`() {
+    fun `WHEN view appeared action dispatches THEN no changes to state`() {
         val state = BookmarksState.default
 
-        assertEquals(state, bookmarksReducer(state, Init))
+        assertEquals(state, bookmarksReducer(state, ViewAppeared()))
     }
 
     @Test
@@ -1191,7 +1191,7 @@ class BookmarksReducerTest {
         val bookmark = BookmarkItem.Bookmark("ur", "title", "url", "guid", null)
         val parent = BookmarkItem.Folder("title", "guid", null)
 
-        val result = bookmarksReducer(state, InitEditLoaded(bookmark = bookmark, folder = parent))
+        val result = bookmarksReducer(state, BookmarkToEditLoaded(bookmark = bookmark, folder = parent))
         val expected = state.copy(
             currentFolder = parent,
             bookmarksEditBookmarkState = BookmarksEditBookmarkState(

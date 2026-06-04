@@ -49,8 +49,8 @@ private const val WARN_OPEN_ALL_SIZE = 15
  * @param reportResultGlobally Invoked when an error occurs that needs to be reported even if the
  * feature goes out of scope.
  * @param importResults Provides the [Flow] of [ImporterResult]s produced by the bookmarks import
- * dialog. The middleware subscribes on [Init] and dispatches [ImportAction.ImportFailed] when a
- * [ImporterResult.Failure] is emitted.
+ * dialog. The middleware subscribes on [ViewAppeared] in the normal flow and dispatches [ImportAction.ImportFailed]
+ * when a [ImporterResult.Failure] is emitted.
  * @param lifecycleScope lifecycle bound CoroutineScope scope used to cancel jobs when leaving bookmarks.
  */
 @Suppress("LongParameterList", "LargeClass")
@@ -93,41 +93,45 @@ internal class BookmarksMiddleware(
         }
 
         when (action) {
-            Init -> {
-                store.tryDispatchLoadFor(BookmarkRoot.Mobile.id)
-                importResults()
-                    .onEach { result ->
-                        when (result) {
-                            ImporterResult.Canceled -> Unit
-                            ImporterResult.Failure -> store.dispatch(ImportAction.ImportFailed)
-                            is ImporterResult.Success -> store.dispatch(
-                                action = ImportAction.ImportSucceeded(result.importCount),
-                            )
+            is ViewAppeared -> {
+                if (action.bookmarkToLoad == null) {
+                    store.tryDispatchLoadFor(BookmarkRoot.Mobile.id)
+                    importResults()
+                        .onEach { result ->
+                            when (result) {
+                                ImporterResult.Canceled -> Unit
+                                ImporterResult.Failure -> store.dispatch(ImportAction.ImportFailed)
+                                is ImporterResult.Success -> store.dispatch(
+                                    action = ImportAction.ImportSucceeded(result.importCount),
+                                )
+                            }
                         }
-                    }
-                    .launchIn(lifecycleScope)
-            }
-            is InitEdit -> lifecycleScope.launch {
-                Result.runCatching {
-                    val bookmarkNode = bookmarksStorage.getBookmark(action.guid).getOrNull()
-                    val bookmark = bookmarkNode?.let {
-                        BookmarkItem.Bookmark(it.url!!, it.title ?: "", it.url!!, it.guid, it.position)
-                    }
-                    val folder = bookmarkNode?.parentGuid
-                        ?.let { bookmarksStorage.getBookmark(it).getOrNull() }
-                        ?.let {
-                            BookmarkItem.Folder(
-                                guid = it.guid,
-                                title = resolveFolderTitle(it),
-                                position = it.position,
-                            )
-                        }
+                        .launchIn(lifecycleScope)
+                } else {
+                    lifecycleScope.launch {
+                        Result.runCatching {
+                            val bookmarkNode = bookmarksStorage.getBookmark(action.bookmarkToLoad).getOrNull()
+                            val bookmark = bookmarkNode?.let {
+                                BookmarkItem.Bookmark(it.url!!, it.title ?: "", it.url!!, it.guid, it.position)
+                            }
+                            val folder = bookmarkNode?.parentGuid
+                                ?.let { bookmarksStorage.getBookmark(it).getOrNull() }
+                                ?.let {
+                                    BookmarkItem.Folder(
+                                        guid = it.guid,
+                                        title = resolveFolderTitle(it),
+                                        position = it.position,
+                                    )
+                                }
 
-                    InitEditLoaded(bookmark = bookmark!!, folder = folder!!)
-                }.getOrNull()?.also {
-                    store.dispatch(it)
+                            BookmarkToEditLoaded(bookmark = bookmark!!, folder = folder!!)
+                        }.getOrNull()?.also {
+                            store.dispatch(it)
+                        }
+                    }
                 }
             }
+
             is BookmarkClicked -> {
                 if (preReductionState.selectedItems.isNotEmpty()) {
                     store.tryDispatchReceivedRecursiveCountUpdate()
@@ -392,7 +396,7 @@ internal class BookmarksMiddleware(
             RootOverflowMenuDismissed,
             SelectFolderAction.SearchClicked,
             SelectFolderAction.SearchDismissed,
-            is InitEditLoaded,
+            is BookmarkToEditLoaded,
             SnackbarAction.SelectFolderFailed,
             is OpenTabsConfirmationDialogAction.Present,
             OpenTabsConfirmationDialogAction.CancelTapped,
