@@ -394,6 +394,24 @@ function restart(safeMode) {
   }
 }
 
+function displayCurrentProfile(){
+
+  let currentProfile = ProfileService.currentProfile;
+  let profileInfo = document.getElementById("currentProfileInfo");
+
+  if(!currentProfile){
+    return;
+  }
+
+  profileInfo.removeAttribute("hidden");
+
+  let name = document.getElementById("currentProfileName");
+  let path = document.getElementById("currentProfilePath");
+
+  document.l10n.setAttributes(name, "default-profile", { name: currentProfile.name });
+  document.l10n.setAttributes(path, "default-profile-path", { path: currentProfile.rootDir.path });
+}
+
 window.addEventListener(
   "DOMContentLoaded",
   function () {
@@ -415,6 +433,8 @@ window.addEventListener(
     restartNormalModeButton.addEventListener("click", () => {
       restart(false);
     });
+
+    displayCurrentProfile();
 
     if (ProfileService.isListOutdated) {
       document.getElementById("owned").hidden = true;
