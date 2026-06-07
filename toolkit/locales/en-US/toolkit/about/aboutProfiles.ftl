@@ -21,6 +21,9 @@ profiles-name = Profile: { $name }
 profiles-is-default = Default Profile
 profiles-rootdir = Root Directory
 
+default-profile = Current Profile: <b>{ $name }</b>
+default-profile-path = Path: <i>{ $path }</i>
+
 # localDir is used to show the directory corresponding to
 # the main profile directory that exists for the purpose of storing data on the
 # local filesystem, including cache files or other data files that may not

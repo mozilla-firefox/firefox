@@ -24,6 +24,9 @@
       href="chrome://mozapps/skin/aboutProfiles.css"
       type="text/css"
     />
+    <link rel="stylesheet" href="chrome://global/skin/in-content/common-shared.css" />
+    <link rel="stylesheet" href="chrome://global/content/elements/moz-message-bar.css" />
+
     <script src="chrome://global/content/aboutProfiles.js" />
     <link rel="localization" href="branding/brand.ftl" />
     <link rel="localization" href="toolkit/about/aboutProfiles.ftl" />
@@ -53,6 +56,17 @@
         ></button>
       </div>
     </div>
+
+    <moz-message-bar
+      id="currentProfileInfo"
+      type="info"
+      hidden="true">
+      <span slot="message">
+        <span id="currentProfileName"></span>
+        <br />
+        <span id="currentProfilePath"></span>
+      </span>
+    </moz-message-bar>
 
     <div id="owned">
       <div>
