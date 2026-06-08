@@ -93,7 +93,7 @@ delete-profile-page-title-2 = Delete “{ $profilename }” profile
 
 # Variables
 #   $profilename (String) - The name of the profile.
-delete-profile-header = Delete { $profilename } profile?
+delete-profile-header-2 = Delete "{ $profilename }" profile?
 delete-profile-description = { -brand-short-name } will permanently delete the following data from this device:
 # Open is an adjective, as in "browser windows currently open".
 delete-profile-windows = Open windows
