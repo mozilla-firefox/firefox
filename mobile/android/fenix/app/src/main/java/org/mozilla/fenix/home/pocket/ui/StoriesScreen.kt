@@ -34,6 +34,7 @@ import mozilla.components.compose.base.utils.BackInvokedHandler
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.appstate.recommendations.ContentRecommendationsState
 import org.mozilla.fenix.home.fake.FakeHomepagePreview
+import org.mozilla.fenix.home.pocket.controller.StoriesImpressionSource
 import org.mozilla.fenix.home.pocket.interactor.PocketStoriesInteractor
 import org.mozilla.fenix.home.ui.LeftChevronPillButton
 import org.mozilla.fenix.theme.FirefoxTheme
@@ -52,6 +53,15 @@ fun StoriesScreen(
 ) {
     LaunchedEffect(Unit) {
         interactor.onDiscoverMoreScreenViewed()
+    }
+
+    // We should report back when a certain story is actually being displayed.
+    // Cannot do it reliably so for now we'll just mass report everything as being displayed.
+    LaunchedEffect(state.pocketStories) {
+        interactor.onStoriesShown(
+            storiesShown = state.pocketStories,
+            source = StoriesImpressionSource.STORIES_SCREEN,
+        )
     }
 
     BackInvokedHandler {

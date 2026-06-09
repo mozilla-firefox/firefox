@@ -33,6 +33,15 @@ import java.lang.ref.WeakReference
 private const val POCKET_CATEGORIES_SELECTED_AT_A_TIME_COUNT = 8
 
 /**
+ * The surface where a Pocket stories impression was recorded. Used as the `source` extra on the
+ * `pocket.home_recs_shown` Glean event.
+ */
+enum class StoriesImpressionSource(val sourceName: String) {
+    HOMEPAGE("homepage"),
+    STORIES_SCREEN("stories_screen"),
+}
+
+/**
  * Contract for how all user interactions with the Pocket stories feature are to be handled.
  */
 interface PocketStoriesController {
@@ -49,8 +58,9 @@ interface PocketStoriesController {
      * Callback to decide what should happen as an effect of a new list of stories being shown.
      *
      * @param storiesShown the new list of [PocketStory]es shown to the user.
+     * @param source the surface where the stories were shown.
      */
-    fun handleStoriesShown(storiesShown: List<PocketStory>)
+    fun handleStoriesShown(storiesShown: List<PocketStory>, source: StoriesImpressionSource)
 
     /**
      * Callback allowing to handle a specific [PocketRecommendedStoriesCategory] being clicked by the user.
@@ -138,7 +148,10 @@ internal class DefaultPocketStoriesController(
         }
     }
 
-    override fun handleStoriesShown(storiesShown: List<PocketStory>) {
+    override fun handleStoriesShown(
+        storiesShown: List<PocketStory>,
+        source: StoriesImpressionSource,
+    ) {
         // Only report here the impressions for recommended stories.
         // Sponsored stories use a different API for more accurate tracking.
         appStore.dispatch(
@@ -149,7 +162,9 @@ internal class DefaultPocketStoriesController(
             ),
         )
 
-        Pocket.homeRecsShown.record(NoExtras())
+        Pocket.homeRecsShown.record(
+            Pocket.HomeRecsShownExtra(source = source.sourceName),
+        )
     }
 
     override fun handleCategoryClick(categoryClicked: PocketRecommendedStoriesCategory) {
