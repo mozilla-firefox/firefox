@@ -7,7 +7,6 @@ package org.mozilla.fenix.components.llm.ext
 import mozilla.components.lib.llm.mlpa.MlpaTokenProvider
 import mozilla.components.lib.llm.mlpa.service.AuthorizationToken
 
-internal class AllTokenProvidersFailed : IllegalStateException("All token providers failed to retrieve a token.")
 internal class FxaMissingAccessToken : IllegalStateException("Unable to get access token from FxaAccessTokenProvider")
 
 /** Convenience interface for getting an fxa access token. */
@@ -17,13 +16,20 @@ fun interface FxaAccessTokenProvider {
 }
 
 /** Implementation of [MlpaTokenProvider] that takes the first successful token it receives.
+ * When every provider fails, the last provider's failure is propagated as-is so its
+ * provider-specific error reaches logs, telemetry, and error services.
  * @param tokenProviders a list of [MlpaTokenProvider].
  * @return an [MlpaTokenProvider].
  */
 fun MlpaTokenProvider.Companion.choose(vararg tokenProviders: MlpaTokenProvider) = MlpaTokenProvider {
+    var lastResult = Result.failure<AuthorizationToken>(
+        IllegalStateException("choose() called with no token providers"),
+    )
     tokenProviders.firstNotNullOfOrNull { provider ->
-        provider.fetchToken().takeIf { it.isSuccess }
-    } ?: Result.failure(AllTokenProvidersFailed())
+        provider.fetchToken()
+            .also { lastResult = it }
+            .takeIf { it.isSuccess }
+    } ?: lastResult
 }
 
 /** Implementation of [MlpaTokenProvider] that tries to fetch an fxa access token.
