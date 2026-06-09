@@ -28,7 +28,9 @@ class BrowserToolbarSyncToBookmarksMiddlewareTest {
         val bookmarksStore = BookmarksStore(
             initialState = BookmarksState.default.copy(isSearching = true),
             middleware = listOf(middleware),
-        )
+        ).also {
+            it.dispatch(ViewAppeared())
+        }
 
         toolbarStore.dispatch(ExitEditMode)
         testScheduler.advanceUntilIdle()
@@ -44,7 +46,9 @@ class BrowserToolbarSyncToBookmarksMiddlewareTest {
         val bookmarksStore = BookmarksStore(
             initialState = BookmarksState.default.copy(isSearching = false),
             middleware = listOf(middleware),
-        )
+        ).also {
+            it.dispatch(ViewAppeared())
+        }
 
         toolbarStore.dispatch(ExitEditMode)
         testScheduler.advanceUntilIdle()
@@ -60,7 +64,9 @@ class BrowserToolbarSyncToBookmarksMiddlewareTest {
         val bookmarksStore = BookmarksStore(
             initialState = BookmarksState.default.copy(isSearching = false),
             middleware = listOf(middleware),
-        )
+        ).also {
+            it.dispatch(ViewAppeared())
+        }
 
         toolbarStore.dispatch(EnterEditMode(false))
         testScheduler.advanceUntilIdle()
