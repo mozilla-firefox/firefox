@@ -22,6 +22,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.home.HomeSectionHeader
 import org.mozilla.fenix.home.fake.FakeHomepagePreview
 import org.mozilla.fenix.home.pocket.PocketState
+import org.mozilla.fenix.home.pocket.controller.StoriesImpressionSource
 import org.mozilla.fenix.home.pocket.interactor.PocketStoriesInteractor
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.wallpapers.WallpaperState
@@ -45,7 +46,10 @@ fun PocketSection(
         // We should report back when a certain story is actually being displayed.
         // Cannot do it reliably so for now we'll just mass report everything as being displayed.
         state.stories.let {
-            interactor.onStoriesShown(storiesShown = it)
+            interactor.onStoriesShown(
+                storiesShown = it,
+                source = StoriesImpressionSource.HOMEPAGE,
+            )
         }
     }
 

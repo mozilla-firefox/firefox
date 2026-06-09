@@ -9736,6 +9736,12 @@ pocket:
     type: event
     description: |
       The Pocket recommended stories are shown on the home screen.
+    extra_keys:
+      source:
+        type: string
+        description: |
+          Where the stories impression was recorded.
+          One of "homepage" or "stories_screen".
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/21593
     data_reviews:

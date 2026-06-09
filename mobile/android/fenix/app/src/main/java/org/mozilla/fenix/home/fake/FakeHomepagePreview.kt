@@ -35,6 +35,7 @@ import org.mozilla.fenix.home.collections.CollectionsState
 import org.mozilla.fenix.home.interactor.HomepageInteractor
 import org.mozilla.fenix.home.pocket.PocketRecommendedStoriesCategory
 import org.mozilla.fenix.home.pocket.PocketState
+import org.mozilla.fenix.home.pocket.controller.StoriesImpressionSource
 import org.mozilla.fenix.home.pocket.interactor.PocketStoriesInteractor
 import org.mozilla.fenix.home.privatebrowsing.interactor.PrivateBrowsingInteractor
 import org.mozilla.fenix.home.recentsyncedtabs.RecentSyncedTab
@@ -140,7 +141,10 @@ internal object FakeHomepagePreview {
                 storyPosition: Triple<Int, Int, Int>,
             ) { /* no op */ }
 
-            override fun onStoriesShown(storiesShown: List<PocketStory>) { /* no op */ }
+            override fun onStoriesShown(
+                storiesShown: List<PocketStory>,
+                source: StoriesImpressionSource,
+            ) { /* no op */ }
 
             override fun onCategoryClicked(categoryClicked: PocketRecommendedStoriesCategory) { /* no op */ }
 

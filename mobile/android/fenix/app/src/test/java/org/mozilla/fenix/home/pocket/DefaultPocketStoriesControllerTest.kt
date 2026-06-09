@@ -41,6 +41,7 @@ import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.home.HomeFragmentDirections
 import org.mozilla.fenix.home.mars.MARSUseCases
 import org.mozilla.fenix.home.pocket.controller.DefaultPocketStoriesController
+import org.mozilla.fenix.home.pocket.controller.StoriesImpressionSource
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.utils.Stories.markAsOpenedFromHomeScreen
 import org.mozilla.fenix.utils.Stories.markAsOpenedFromStoriesScreen
@@ -282,7 +283,7 @@ class DefaultPocketStoriesControllerTest {
 
         assertNull(Pocket.homeRecsShown.testGetValue())
 
-        controller.handleStoriesShown(storiesShown)
+        controller.handleStoriesShown(storiesShown, StoriesImpressionSource.HOMEPAGE)
 
         verify {
             store.dispatch(
@@ -297,7 +298,10 @@ class DefaultPocketStoriesControllerTest {
 
         assertNotNull(Pocket.homeRecsShown.testGetValue())
         assertEquals(1, Pocket.homeRecsShown.testGetValue()!!.size)
-        assertNull(Pocket.homeRecsShown.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            Pocket.homeRecsShown.testGetValue()!!.single().extra?.get("source"),
+        )
     }
 
     @Test

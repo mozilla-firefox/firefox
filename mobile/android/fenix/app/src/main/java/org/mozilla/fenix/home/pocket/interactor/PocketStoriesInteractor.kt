@@ -8,6 +8,7 @@ import mozilla.components.service.pocket.PocketStory
 import mozilla.components.service.pocket.PocketStory.PocketRecommendedStory
 import org.mozilla.fenix.home.pocket.PocketRecommendedStoriesCategory
 import org.mozilla.fenix.home.pocket.controller.PocketStoriesController
+import org.mozilla.fenix.home.pocket.controller.StoriesImpressionSource
 
 /**
  * Contract for all possible user interactions with the Pocket recommended stories feature.
@@ -26,8 +27,9 @@ interface PocketStoriesInteractor {
      * Callback for then new stories are shown to the user.
      *
      * @param storiesShown The new list of [PocketRecommendedStory]es shown to the user.
+     * @param source the surface where the stories were shown.
      */
-    fun onStoriesShown(storiesShown: List<PocketStory>)
+    fun onStoriesShown(storiesShown: List<PocketStory>, source: StoriesImpressionSource)
 
     /**
      * Callback for when the user clicks a specific category.
@@ -66,8 +68,8 @@ class DefaultPocketStoriesInteractor(
         controller.handleStoryShown(storyShown, storyPosition)
     }
 
-    override fun onStoriesShown(storiesShown: List<PocketStory>) {
-        controller.handleStoriesShown(storiesShown)
+    override fun onStoriesShown(storiesShown: List<PocketStory>, source: StoriesImpressionSource) {
+        controller.handleStoriesShown(storiesShown, source)
     }
 
     override fun onCategoryClicked(categoryClicked: PocketRecommendedStoriesCategory) {
