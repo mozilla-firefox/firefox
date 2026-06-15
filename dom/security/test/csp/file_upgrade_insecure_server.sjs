@@ -70,7 +70,12 @@ function handleRequest(request, response) {
   // or the actual load is not https, then we would
   // append "-error" in the array and the test would
   // fail at the end.
-  if (receivedQueries.includes(queryString)) {
+  // Note: match against the exact, comma-delimited entries rather than using
+  // a substring check. "img-ok" is a substring of "nested-img-ok", so a
+  // substring check would wrongly drop the top-level "img" request whenever
+  // the nested image request is recorded first, leaving totaltests > 0 and
+  // hanging the test (Bug 1777028).
+  if (receivedQueries.split(",").includes(queryString)) {
     return;
   }
 

@@ -777,10 +777,6 @@ skip-if = [
 ]
 
 ["test_upgrade_insecure.html"]
-skip-if = [
-  "os == 'android'", # Bug 1777028
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'", # Bug 1620516
-]
 
 ["test_upgrade_insecure_cors.html"]
 skip-if = [
