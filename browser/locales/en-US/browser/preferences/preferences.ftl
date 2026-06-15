@@ -105,7 +105,7 @@ settings-pane-labs-header =
 pane-experimental-description4 = Give our experimental features a try! They’re in development and evolving, which could impact how { -brand-short-name } works. We only receive data about your use of these features if you have <a data-l10n-name="data-collection">technical and interaction data</a> turned on.
 
 pane-experimental-reset =
-  .label = Restore Defaults
+  .label = Restore defaults
   .accesskey = R
 
 help-button-label2 = { -brand-short-name } support
