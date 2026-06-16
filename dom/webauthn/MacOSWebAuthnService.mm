@@ -555,6 +555,9 @@ NSDictionary<NSData*, ASAuthorizationPublicKeyCredentialPRFAssertionInputValues*
       case ASAuthorizationErrorCanceled:
         rv = NS_ERROR_DOM_NOT_ALLOWED_ERR;
         break;
+      case ASAuthorizationErrorMatchedExcludedCredential:
+        rv = NS_ERROR_DOM_INVALID_STATE_ERR;
+        break;
       case ASAuthorizationErrorFailed:
         // The message is right, but it's not about indexeddb.
         // See https://webidl.spec.whatwg.org/#constrainterror
