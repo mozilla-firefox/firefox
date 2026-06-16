@@ -387,6 +387,7 @@ private fun BookmarksList(
             )
             return@Scaffold
         }
+        val inSelectionMode = state.selectedItems.isNotEmpty()
 
         saveableStateHolder.SaveableStateProvider(state.currentFolder.guid) {
             LazyColumn(
@@ -418,7 +419,9 @@ private fun BookmarksList(
                             beforeIconPainter = painterResource(iconsR.drawable.mozac_ic_folder_24),
                             modifier = Modifier
                                 .semantics(mergeDescendants = true) {
-                                    selected = isSelected
+                                    if (inSelectionMode) {
+                                        selected = isSelected
+                                    }
                                     collectionItemInfo = CollectionItemInfo(
                                         rowIndex = index,
                                         rowSpan = 1,
@@ -442,7 +445,9 @@ private fun BookmarksList(
                             beforeIconPainter = painterResource(iconsR.drawable.mozac_ic_folder_24),
                             modifier = Modifier
                                 .semantics(mergeDescendants = true) {
-                                    selected = isSelected
+                                    if (inSelectionMode) {
+                                        selected = isSelected
+                                    }
                                     collectionItemInfo = CollectionItemInfo(
                                         rowIndex = index,
                                         rowSpan = 1,
@@ -498,7 +503,9 @@ private fun BookmarksList(
                         onLongClick = { store.dispatch(BookmarkLongClicked(item)) },
                         modifier = Modifier
                             .semantics(mergeDescendants = true) {
-                                selected = isSelected
+                                if (inSelectionMode) {
+                                    selected = isSelected
+                                }
                                 collectionItemInfo = CollectionItemInfo(
                                     rowIndex = index,
                                     rowSpan = 1,
