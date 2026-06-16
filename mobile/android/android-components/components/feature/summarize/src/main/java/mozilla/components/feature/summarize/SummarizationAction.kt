@@ -24,6 +24,13 @@ data class ViewDismissed(val isEngineAvailable: Boolean) : SummarizationAction
 /** The user tapped the settings cog. */
 data object SettingsClicked : SummarizationAction
 
+/**
+ * The user rated the generated summary using the feedback control.
+ *
+ * @param feedback The [SummaryFeedback] the user selected.
+ */
+data class SummaryFeedbackProvided(val feedback: SummaryFeedback) : SummarizationAction
+
 /** The user tapped the back button from settings. */
 data object SettingsBackClicked : SummarizationAction
 

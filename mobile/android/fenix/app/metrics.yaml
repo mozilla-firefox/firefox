@@ -15596,6 +15596,30 @@ ai_summarize:
     notification_emails:
       - android-probes@mozilla.com
     expires: never
+  feedback:
+    type: event
+    description: |
+      Recorded when the user rates a generated summary using the thumbs
+      up/down feedback control. Recorded at most once per summarization, as
+      the control is disabled after the first rating.
+    extra_keys:
+      rating:
+        description: |
+          The user's rating of the summary. Possible values:
+          "positive", "negative".
+        type: string
+      model:
+        description: The name of the model used for summarization.
+        type: string
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2047013
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2047013
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
   duration:
     type: timing_distribution
     time_unit: millisecond

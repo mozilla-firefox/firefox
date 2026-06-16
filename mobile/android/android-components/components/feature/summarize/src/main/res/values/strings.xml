@@ -110,6 +110,12 @@
     <!-- Disclaimer message -->
     <string name="mozac_feature_summarize_disclaimer_message">AI can make mistakes</string>
 
+    <!-- Content description for the thumbs up button used to rate a generated summary as helpful -->
+    <string name="mozac_feature_summarize_feedback_positive_content_description">Good summary</string>
+
+    <!-- Content description for the thumbs down button used to rate a generated summary as unhelpful -->
+    <string name="mozac_feature_summarize_feedback_negative_content_description">Bad summary</string>
+
     <!-- Title for the page summary AI controllable feature -->
     <string name="mozac_ai_controls_page_summary_title">Page summaries</string>
 

@@ -57,10 +57,13 @@ sealed class SummarizationState : State {
      *
      * @param info metadata about the LLM that generated the summary
      * @param document The generated document.
+     * @param feedback The rating the user gave the summary, or `null` if they have not rated it.
+     *  The rating is single-use: once set it is never cleared, disabling further feedback.
      */
     data class Summarized(
         val info: LlmProvider.Info,
         val document: RichDocument = RichDocument(listOf()),
+        val feedback: SummaryFeedback? = null,
     ) : SummarizationState()
 
     /**
@@ -75,8 +78,13 @@ sealed class SummarizationState : State {
      *
      * @param info metadata about the LLM that generated the summary
      * @param document The document to return to when navigating back.
+     * @param feedback The rating to restore when navigating back to the summary.
      */
-    data class Settings(val info: LlmProvider.Info, val document: RichDocument) : SummarizationState()
+    data class Settings(
+        val info: LlmProvider.Info,
+        val document: RichDocument,
+        val feedback: SummaryFeedback? = null,
+    ) : SummarizationState()
 
     /** User is finished with the Summarization Flow */
     sealed class Finished : SummarizationState() {
@@ -104,6 +112,17 @@ sealed class SummarizationError {
 
     /** The summarization model failed to produce a result. */
     data class SummarizationFailed(val exception: Throwable) : SummarizationError()
+}
+
+/**
+ * The rating a user can give a generated summary via the feedback control.
+ */
+enum class SummaryFeedback {
+    /** The user found the summary helpful. */
+    POSITIVE,
+
+    /** The user found the summary unhelpful. */
+    NEGATIVE,
 }
 
 val SummarizationState.isLoading get() = this is SummarizationState.Loading

@@ -24,11 +24,18 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
     is SummarizationFailed -> SummarizationState.Error(SummarizationError.SummarizationFailed(action.exception))
     is ReceivedParsedDocument -> state.updateDocument(action.document)
     is SettingsClicked -> when (state) {
-        is SummarizationState.Summarized -> SummarizationState.Settings(info = state.info, document = state.document)
+        is SummarizationState.Summarized ->
+            SummarizationState.Settings(info = state.info, document = state.document, feedback = state.feedback)
         else -> state
     }
     is SettingsBackClicked -> when (state) {
-        is SummarizationState.Settings -> SummarizationState.Summarized(info = state.info, document = state.document)
+        is SummarizationState.Settings ->
+            SummarizationState.Summarized(info = state.info, document = state.document, feedback = state.feedback)
+        else -> state
+    }
+    is SummaryFeedbackProvided -> when (state) {
+        is SummarizationState.Summarized ->
+            if (state.feedback == null) state.copy(feedback = action.feedback) else state
         else -> state
     }
     else -> state

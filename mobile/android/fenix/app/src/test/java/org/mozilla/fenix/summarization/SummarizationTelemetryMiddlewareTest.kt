@@ -15,6 +15,8 @@ import mozilla.components.feature.summarize.SummarizationCompleted
 import mozilla.components.feature.summarize.SummarizationFailed
 import mozilla.components.feature.summarize.SummarizationRequested
 import mozilla.components.feature.summarize.SummarizationState
+import mozilla.components.feature.summarize.SummaryFeedback
+import mozilla.components.feature.summarize.SummaryFeedbackProvided
 import mozilla.components.feature.summarize.ViewAppeared
 import mozilla.components.feature.summarize.ViewDismissed
 import mozilla.components.feature.summarize.content.Content
@@ -272,6 +274,32 @@ class SummarizationTelemetryMiddlewareTest {
 
         val extras = AiSummarize.completed.testGetValue()!!.first().extra!!
         assertEquals("CELLULAR", extras["connection_type"])
+    }
+
+    @Test
+    fun `WHEN positive feedback is provided THEN feedback is recorded with rating positive and model`() {
+        assertNull(AiSummarize.feedback.testGetValue())
+
+        setupFullSession()
+        invokeMiddleware(SummaryFeedbackProvided(SummaryFeedback.POSITIVE))
+
+        val snapshot = AiSummarize.feedback.testGetValue()!!
+        assertEquals(1, snapshot.size)
+
+        val extras = snapshot.first().extra!!
+        assertEquals("positive", extras["rating"])
+        assertEquals(TEST_MODEL, extras["model"])
+    }
+
+    @Test
+    fun `WHEN negative feedback is provided THEN feedback is recorded with rating negative`() {
+        assertNull(AiSummarize.feedback.testGetValue())
+
+        setupFullSession()
+        invokeMiddleware(SummaryFeedbackProvided(SummaryFeedback.NEGATIVE))
+
+        val extras = AiSummarize.feedback.testGetValue()!!.first().extra!!
+        assertEquals("negative", extras["rating"])
     }
 
     private fun setupFullSession() {

@@ -13,6 +13,8 @@ import mozilla.components.feature.summarize.SummarizationCompleted
 import mozilla.components.feature.summarize.SummarizationFailed
 import mozilla.components.feature.summarize.SummarizationRequested
 import mozilla.components.feature.summarize.SummarizationState
+import mozilla.components.feature.summarize.SummaryFeedback
+import mozilla.components.feature.summarize.SummaryFeedbackProvided
 import mozilla.components.feature.summarize.ViewAppeared
 import mozilla.components.feature.summarize.ViewDismissed
 import mozilla.components.feature.summarize.content.Content
@@ -81,6 +83,7 @@ class SummarizationTelemetryMiddleware(
             is ContentExtracted -> handleExtractedContent(action.content)
             is SummarizationCompleted -> recordSummarizationCompleted()
             is SummarizationFailed -> recordSummarizationCompleted(success = false, action.exception)
+            is SummaryFeedbackProvided -> recordFeedback(action.feedback)
             is ViewDismissed -> {
                 AiSummarize.closed.record(
                     AiSummarize.ClosedExtra(
@@ -150,6 +153,19 @@ class SummarizationTelemetryMiddleware(
                 lengthWords = sessionTelemetry.contentMetrics?.wordCount,
                 model = sessionTelemetry.model,
                 trigger = sessionTelemetry.trigger?.toString(),
+            ),
+        )
+    }
+
+    private fun recordFeedback(feedback: SummaryFeedback) {
+        val rating = when (feedback) {
+            SummaryFeedback.POSITIVE -> "positive"
+            SummaryFeedback.NEGATIVE -> "negative"
+        }
+        AiSummarize.feedback.record(
+            AiSummarize.FeedbackExtra(
+                model = sessionTelemetry.model,
+                rating = rating,
             ),
         )
     }

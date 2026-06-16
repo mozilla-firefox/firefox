@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.summarize.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -33,18 +34,28 @@ import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.feature.summarize.R
+import mozilla.components.feature.summarize.SummaryFeedback
 import mozilla.components.ui.richtext.RichText
 import mozilla.components.ui.richtext.ir.RichDocument
 import mozilla.components.ui.icons.R as iconsR
 
 /**
- * Content being shown after the page summary has been generated
+ * Content being shown after the page summary has been generated.
+ *
+ * @param document The generated summary to render.
+ * @param info Metadata about the LLM that generated the summary.
+ * @param onSettingsClicked Invoked when the user taps the settings cog.
+ * @param feedback The rating the user has given the summary, or `null` if unrated.
+ * @param onFeedbackClicked Invoked when the user rates the summary. When `null` the feedback
+ *  control is hidden (e.g. while the summary is still streaming).
  */
 @Composable
 internal fun SummaryContentLoaded(
     document: RichDocument,
     info: LlmProvider.Info,
     onSettingsClicked: () -> Unit = {},
+    feedback: SummaryFeedback? = null,
+    onFeedbackClicked: ((SummaryFeedback) -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -61,7 +72,7 @@ internal fun SummaryContentLoaded(
                 .verticalScroll(rememberScrollState()),
         )
         Spacer(Modifier.height(AcornTheme.layout.space.static200))
-        DisclaimerMessage()
+        SummaryFooter(feedback = feedback, onFeedbackClicked = onFeedbackClicked)
         Spacer(Modifier.height(AcornTheme.layout.space.static200))
     }
 }
@@ -144,13 +155,91 @@ private fun SummarizedContent(document: RichDocument, modifier: Modifier = Modif
 }
 
 @Composable
-private fun DisclaimerMessage() {
+private fun SummaryFooter(
+    feedback: SummaryFeedback?,
+    onFeedbackClicked: ((SummaryFeedback) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        DisclaimerMessage(modifier = Modifier.weight(1f))
+
+        if (onFeedbackClicked != null) {
+            SummaryFeedbackControl(feedback = feedback, onFeedbackClicked = onFeedbackClicked)
+        }
+    }
+}
+
+@Composable
+private fun DisclaimerMessage(modifier: Modifier = Modifier) {
     Text(
         text = stringResource(R.string.mozac_feature_summarize_disclaimer_message),
         fontSize = 14.sp,
-        modifier = Modifier
-            .height(24.dp)
-            .width(AcornTheme.layout.size.containerMaxWidth),
+        modifier = modifier,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+@Composable
+private fun SummaryFeedbackControl(
+    feedback: SummaryFeedback?,
+    onFeedbackClicked: (SummaryFeedback) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val hasRated = feedback != null
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        FeedbackButton(
+            selected = feedback == SummaryFeedback.POSITIVE,
+            enabled = !hasRated,
+            selectedIcon = iconsR.drawable.mozac_ic_thumbs_up_fill_24,
+            unselectedIcon = iconsR.drawable.mozac_ic_thumbs_up_24,
+            contentDescription = stringResource(
+                R.string.mozac_feature_summarize_feedback_positive_content_description,
+            ),
+            onClick = { onFeedbackClicked(SummaryFeedback.POSITIVE) },
+        )
+        FeedbackButton(
+            selected = feedback == SummaryFeedback.NEGATIVE,
+            enabled = !hasRated,
+            selectedIcon = iconsR.drawable.mozac_ic_thumbs_down_fill_24,
+            unselectedIcon = iconsR.drawable.mozac_ic_thumbs_down_24,
+            contentDescription = stringResource(
+                R.string.mozac_feature_summarize_feedback_negative_content_description,
+            ),
+            onClick = { onFeedbackClicked(SummaryFeedback.NEGATIVE) },
+        )
+    }
+}
+
+@Composable
+private fun FeedbackButton(
+    selected: Boolean,
+    enabled: Boolean,
+    @DrawableRes selectedIcon: Int,
+    @DrawableRes unselectedIcon: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    IconButton(
+        onClick = onClick,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        enabled = enabled,
+    ) {
+        Icon(
+            painter = painterResource(if (selected) selectedIcon else unselectedIcon),
+            contentDescription = null,
+            tint = if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        )
+    }
 }
