@@ -777,6 +777,10 @@ skip-if = [
 ]
 
 ["test_upgrade_insecure.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
 
 ["test_upgrade_insecure_cors.html"]
 skip-if = [
