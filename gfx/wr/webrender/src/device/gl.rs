@@ -1512,12 +1512,12 @@ fn is_mali_midgard(renderer_name: &str) -> bool {
 
 /// Returns whether this GPU belongs to the Mali Bifrost family
 fn is_mali_bifrost(renderer_name: &str) -> bool {
-    renderer_name == "Mali-G31"
-        || renderer_name == "Mali-G51"
-        || renderer_name == "Mali-G71"
-        || renderer_name == "Mali-G52"
-        || renderer_name == "Mali-G72"
-        || renderer_name == "Mali-G76"
+    renderer_name.starts_with("Mali-G31")
+        || renderer_name.starts_with("Mali-G51")
+        || renderer_name.starts_with("Mali-G71")
+        || renderer_name.starts_with("Mali-G52")
+        || renderer_name.starts_with("Mali-G72")
+        || renderer_name.starts_with("Mali-G76")
 }
 
 /// Returns whether this GPU belongs to the Mali Valhall family
