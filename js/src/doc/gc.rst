@@ -45,6 +45,27 @@ For details of stack rooting, see: https://github.com/mozilla-spidermonkey/spide
 We also have a :doc:`static analysis <HazardAnalysis/index>` for detecting
 errors in rooting. It can be :doc:`run locally or in CI <HazardAnalysis/running>`.
 
+Rust, WebAssembly GC, and topology instrumentation
+**************************************************
+
+Rust ownership and SpiderMonkey garbage collection solve different memory
+management problems. Rust code uses ownership, borrowing, RAII, and explicit
+unsafe boundaries. SpiderMonkey's GC manages JavaScript and WebAssembly GC
+heap values that participate in tracing, barriers, weak edges, nursery
+collection, tenuring, and compaction.
+
+Code that bridges Rust or WebAssembly data with SpiderMonkey GC things must
+not hide GC pointers from the tracer. SpiderMonkey remains responsible for
+rooting, edge classification, barriers, weak edges, and scheduling any cleanup
+that is coupled to GC activity.
+
+Experimental topology-based instrumentation should therefore observe compact
+graph summaries rather than replace collector behavior. For example, a
+test-only observer may score whether JS-to-Wasm reference boundaries, stable
+root cuts, or strongly connected components converge across GC cycles. Such
+instrumentation must be disabled by default and must not run arbitrary
+destructor work during GC.
+
 .. _incremental-gc:
 
 Incremental collection
