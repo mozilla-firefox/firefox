@@ -3538,7 +3538,14 @@ void MediaFormatReader::OnFirstDemuxCompleted(
 
   auto& decoder = GetDecoderData(aType);
   MOZ_ASSERT(decoder.mFirstDemuxedSampleTime.isNothing());
-  decoder.mFirstDemuxedSampleTime.emplace(aSamples->GetSamples()[0]->mTime);
+  TimeUnit firstDemuxedSampleTime = aSamples->GetSamples()[0]->mTime;
+  const TrackInfo* info = decoder.GetCurrentInfo();
+  if (firstDemuxedSampleTime.IsNegative() && info &&
+      info->mMediaTime.IsPositive()) {
+    // Negative samples before positive media time are decode pre-roll.
+    firstDemuxedSampleTime = TimeUnit::Zero(firstDemuxedSampleTime);
+  }
+  decoder.mFirstDemuxedSampleTime.emplace(firstDemuxedSampleTime);
   MaybeResolveMetadataPromise();
 }
 

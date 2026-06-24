@@ -32,6 +32,66 @@ using testing::MockFunction;
 using testing::Return;
 using testing::StrEq;
 
+TEST(TestMediaFormatReader, PositiveMediaTimeIgnoresNegativePreroll)
+{
+  RefPtr dataDemuxer = new MockMediaDataDemuxer();
+  RefPtr trackDemuxer =
+      new MockMediaTrackDemuxer("video/x-test; width=640; height=360");
+
+  ON_CALL(*dataDemuxer, GetNumberTracks(TrackType::kVideoTrack))
+      .WillByDefault(Return(1));
+
+  ON_CALL(*dataDemuxer, GetTrackDemuxer)
+      .WillByDefault([&](TrackType aType, uint32_t aTrackNumber) {
+        EXPECT_EQ(aTrackNumber, 0u);
+        EXPECT_EQ(aType, TrackType::kVideoTrack);
+        return do_AddRef(trackDemuxer);
+      });
+
+  ON_CALL(*trackDemuxer, GetInfo).WillByDefault([]() {
+    auto extended =
+        MakeMediaContainerType("video/x-test; width=640; height=360").value();
+    UniquePtr<TrackInfo> info =
+        CreateTrackInfoWithMIMETypeAndContainerTypeExtraParameters(
+            extended.Type().AsString(), extended);
+    info->mMediaTime = TimeUnit::FromMicroseconds(6375000);
+    return info;
+  });
+
+  EXPECT_CALL(*trackDemuxer, MockGetSamples).WillOnce([]() {
+    RefPtr sample = new MediaRawData;
+    sample->mTime = TimeUnit::FromMicroseconds(-6375000);
+    sample->mDuration = TimeUnit::FromMicroseconds(41667);
+    RefPtr<SamplesHolder> samples = new SamplesHolder;
+    samples->AppendSample(std::move(sample));
+    return SamplesPromise::CreateAndResolve(samples, __func__);
+  });
+
+  RefPtr pdm = new MockDecoderModule();
+  PDMFactory::AutoForcePDM autoForcePDM(pdm);
+  auto owner = std::make_unique<MockMediaDecoderOwner>();
+  RefPtr container = new VideoFrameContainer(
+      owner.get(),
+      MakeAndAddRef<ImageContainer>(ImageUsageType::VideoFrameContainer,
+#ifdef MOZ_WIDGET_ANDROID
+                                    // Work around bug 1922144
+                                    ImageContainer::SYNCHRONOUS
+#else
+                                    ImageContainer::ASYNCHRONOUS
+#endif
+                                    ));
+  MediaFormatReaderInit init;
+  init.mVideoFrameContainer = container;
+  RefPtr reader = new MediaFormatReader(init, dataDemuxer);
+  RefPtr proxy = new ReaderProxy(AbstractThread::MainThread(), reader);
+  EXPECT_NS_SUCCEEDED(reader->Init());
+
+  MetadataHolder metadata = WaitForResolve(proxy->ReadMetadata());
+  EXPECT_EQ(metadata.mInfo->mStartTime, TimeUnit::Zero());
+
+  WaitForResolve(proxy->Shutdown());
+}
+
 TEST(TestMediaFormatReader, WaitingForDemuxAfterInternalSeek)
 {
   RefPtr<MediaFormatReader> reader;
