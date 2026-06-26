@@ -7,6 +7,11 @@
 global.EventManager = ExtensionCommon.EventManager;
 
 extensions.registerModules({
+  downloads: {
+    url: "chrome://extensions/content/child/ext-downloads.js",
+    scopes: ["addon_child"],
+    paths: [["downloads", "onDeterminingFilename"]],
+  },
   backgroundPage: {
     url: "chrome://extensions/content/child/ext-backgroundPage.js",
     scopes: ["addon_child"],
