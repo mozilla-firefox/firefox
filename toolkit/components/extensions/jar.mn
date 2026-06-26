@@ -52,6 +52,7 @@ toolkit.jar:
     content/extensions/parent/ext-webRequest.js (parent/ext-webRequest.js)
     content/extensions/parent/ext-webNavigation.js (parent/ext-webNavigation.js)
     content/extensions/child/ext-backgroundPage.js (child/ext-backgroundPage.js)
+    content/extensions/child/ext-downloads.js (child/ext-downloads.js)
     content/extensions/child/ext-contentScripts.js (child/ext-contentScripts.js)
     content/extensions/child/ext-declarativeNetRequest.js (child/ext-declarativeNetRequest.js)
     content/extensions/child/ext-extension.js (child/ext-extension.js)
