@@ -720,6 +720,55 @@ this.downloads = class extends ExtensionAPIPersistent {
     onErased: this.downloadEventRegistrar("erase", (fire, what, item) => {
       fire.async(item.id);
     }),
+
+    onDeterminingFilename: ({ fire }) => {
+      let { extension } = this;
+      DownloadMap.lazyInit();
+      const callback = async download => {
+        if (!extension.privateBrowsingAllowed && download.source.isPrivate) {
+          return;
+        }
+        console.log(
+          `[ext-downloads] onDeterminingFilename fired for extension "${extension.id}", download target: ${download.target.path}`
+        );
+        const item =
+          DownloadMap.byDownload.get(download) ||
+          DownloadMap.newFromDownload(download, null);
+        let suggestion;
+        try {
+          suggestion = await fire.async(item.serialize());
+        } catch (e) {
+          Cu.reportError(e);
+          return;
+        }
+        console.log(
+          `[ext-downloads] onDeterminingFilename listener returned suggestion:`,
+          suggestion
+        );
+        if (suggestion) {
+          const newPath = await applyFilenameSuggestion(
+            suggestion,
+            download.target.path
+          );
+          if (newPath) {
+            console.log(
+              `[ext-downloads] onDeterminingFilename changing path: ${download.target.path} -> ${newPath}`
+            );
+            download.target.path = newPath;
+            download.target.partFilePath = `${newPath}.part`;
+          }
+        }
+      };
+      DownloadIntegration._determineFilenameCallbacks.add(callback);
+      return {
+        unregister() {
+          DownloadIntegration._determineFilenameCallbacks.delete(callback);
+        },
+        convert(_fire) {
+          fire = _fire;
+        },
+      };
+    },
   };
 
   getAPI(context) {
@@ -1334,42 +1383,9 @@ this.downloads = class extends ExtensionAPIPersistent {
 
         onDeterminingFilename: new EventManager({
           context,
-          name: "downloads.onDeterminingFilename",
-          register: fire => {
-            DownloadMap.lazyInit();
-            const callback = async download => {
-              if (!extension.privateBrowsingAllowed && download.source.isPrivate) {
-                return;
-              }
-              // Ensure the download has an entry in DownloadMap even if it has
-              // not been added to the DownloadList yet (e.g. legacy downloads
-              // call start() before list.add()).
-              const item =
-                DownloadMap.byDownload.get(download) ||
-                DownloadMap.newFromDownload(download, null);
-              let suggestion;
-              try {
-                suggestion = await fire.async(item.serialize());
-              } catch (e) {
-                Cu.reportError(e);
-                return;
-              }
-              if (suggestion) {
-                const newPath = await applyFilenameSuggestion(
-                  suggestion,
-                  download.target.path
-                );
-                if (newPath) {
-                  download.target.path = newPath;
-                  download.target.partFilePath = `${newPath}.part`;
-                }
-              }
-            };
-            DownloadIntegration._determineFilenameCallbacks.add(callback);
-            return () => {
-              DownloadIntegration._determineFilenameCallbacks.delete(callback);
-            };
-          },
+          module: "downloads",
+          event: "onDeterminingFilename",
+          extensionApi: this,
         }).api(),
       },
     };
