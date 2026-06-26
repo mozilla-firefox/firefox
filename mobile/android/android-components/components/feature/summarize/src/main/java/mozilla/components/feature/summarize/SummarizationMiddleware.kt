@@ -65,6 +65,29 @@ class SummarizationMiddleware(
             is SummarizationFailed -> scope.launch {
                 errorReporter.report(TAG, action.exception)
             }
+
+            is ContentExtracted,
+            DownloadConsentAction.AllowClicked,
+            DownloadConsentAction.CancelClicked,
+            DownloadConsentAction.LearnMoreClicked,
+            DownloadErrorAction.CancelClicked,
+            DownloadErrorAction.LearnMoreClicked,
+            DownloadErrorAction.TryAgainClicked,
+            DownloadInProgressAction.CancelClicked,
+            ErrorAction.ErrorDismissed,
+            ErrorAction.LearnMoreClicked,
+            OffDeviceSummarizationShakeConsentAction.LearnMoreClicked,
+            OnDeviceSummarizationShakeConsentAction.AllowClicked,
+            OnDeviceSummarizationShakeConsentAction.CancelClicked,
+            OnDeviceSummarizationShakeConsentAction.LearnMoreClicked,
+            is ReceivedParsedDocument,
+            SettingsBackClicked,
+            SettingsClicked,
+            ShakeConsentRequested,
+            SummarizationCompleted,
+            is SummarizationRequested,
+            is ViewDismissed,
+            -> Unit
         }
 
         next(action)

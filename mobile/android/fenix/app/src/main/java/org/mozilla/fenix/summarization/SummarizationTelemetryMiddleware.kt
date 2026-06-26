@@ -6,10 +6,17 @@ package org.mozilla.fenix.summarization
 
 import mozilla.components.concept.llm.Llm
 import mozilla.components.feature.summarize.ContentExtracted
+import mozilla.components.feature.summarize.DownloadConsentAction
+import mozilla.components.feature.summarize.DownloadErrorAction
+import mozilla.components.feature.summarize.DownloadInProgressAction
+import mozilla.components.feature.summarize.ErrorAction
 import mozilla.components.feature.summarize.LlmProviderAction
 import mozilla.components.feature.summarize.OffDeviceSummarizationShakeConsentAction
 import mozilla.components.feature.summarize.OnDeviceSummarizationShakeConsentAction
 import mozilla.components.feature.summarize.ReceivedParsedDocument
+import mozilla.components.feature.summarize.SettingsBackClicked
+import mozilla.components.feature.summarize.SettingsClicked
+import mozilla.components.feature.summarize.ShakeConsentRequested
 import mozilla.components.feature.summarize.SummarizationAction
 import mozilla.components.feature.summarize.SummarizationCompleted
 import mozilla.components.feature.summarize.SummarizationFailed
@@ -147,7 +154,22 @@ class SummarizationTelemetryMiddleware(
                 )
             }
 
-            else -> {}
+            DownloadConsentAction.AllowClicked,
+            DownloadConsentAction.CancelClicked,
+            DownloadConsentAction.LearnMoreClicked,
+            DownloadErrorAction.CancelClicked,
+            DownloadErrorAction.LearnMoreClicked,
+            DownloadErrorAction.TryAgainClicked,
+            DownloadInProgressAction.CancelClicked,
+            ErrorAction.ErrorDismissed,
+            ErrorAction.LearnMoreClicked,
+            LlmProviderAction.ProviderAvailable,
+            OffDeviceSummarizationShakeConsentAction.LearnMoreClicked,
+            OnDeviceSummarizationShakeConsentAction.LearnMoreClicked,
+            SettingsBackClicked,
+            SettingsClicked,
+            ShakeConsentRequested,
+            -> {}
         }
     }
 

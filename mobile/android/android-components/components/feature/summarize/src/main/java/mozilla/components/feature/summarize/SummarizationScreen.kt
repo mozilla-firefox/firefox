@@ -219,7 +219,11 @@ private fun SummarizationScreenContent(
             }
         }
 
-        else -> Unit
+        SummarizationState.DownloadConsentRequired,
+        is SummarizationState.Downloading,
+        SummarizationState.Finished.Cancelled,
+        SummarizationState.Finished.ErrorDismissed,
+        -> Unit
     }
 }
 
@@ -239,7 +243,18 @@ private fun ApplyHaptics(state: SummarizationState) {
             is SummarizationState.Error -> {
                 haptic.performHapticFeedback(HapticFeedbackType.Reject)
             }
-            else -> {}
+
+            SummarizationState.DownloadConsentRequired,
+            is SummarizationState.Downloading,
+            SummarizationState.Finished.Cancelled,
+            SummarizationState.Finished.ErrorDismissed,
+            SummarizationState.LearnMoreAboutShakeConsent,
+            is SummarizationState.Loading,
+            is SummarizationState.Settings,
+            SummarizationState.ShakeConsentRequired,
+            SummarizationState.ShakeConsentWithDownloadRequired,
+            is SummarizationState.Summarizing,
+            -> {}
         }
     }
 }

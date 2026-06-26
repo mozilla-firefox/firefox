@@ -13,7 +13,7 @@ import mozilla.components.ui.richtext.ir.RichDocument
 /**
  * Actions for the [SummarizationStore].
  */
-interface SummarizationAction : Action
+sealed interface SummarizationAction : Action
 
 /** The Summarization Screen View Appeared */
 data object ViewAppeared : SummarizationAction

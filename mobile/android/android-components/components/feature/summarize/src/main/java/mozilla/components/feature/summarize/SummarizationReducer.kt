@@ -31,7 +31,24 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
         is SummarizationState.Settings -> SummarizationState.Summarized(info = state.info, document = state.document)
         else -> state
     }
-    else -> state
+
+    is ContentExtracted,
+    DownloadConsentAction.AllowClicked,
+    DownloadConsentAction.CancelClicked,
+    DownloadConsentAction.LearnMoreClicked,
+    DownloadErrorAction.CancelClicked,
+    DownloadErrorAction.LearnMoreClicked,
+    DownloadErrorAction.TryAgainClicked,
+    DownloadInProgressAction.CancelClicked,
+    ErrorAction.LearnMoreClicked,
+    LlmProviderAction.ProviderAvailable,
+    is LlmProviderAction.ProviderInitialized,
+    OffDeviceSummarizationShakeConsentAction.AllowClicked,
+    OnDeviceSummarizationShakeConsentAction.AllowClicked,
+    OnDeviceSummarizationShakeConsentAction.CancelClicked,
+    ViewAppeared,
+    is ViewDismissed,
+    -> state
 }
 
 private fun SummarizationState.complete(): SummarizationState {
