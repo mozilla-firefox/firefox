@@ -425,11 +425,21 @@ export var DownloadIntegration = {
    * @param {Download} download
    */
   async determineFilename(download) {
+    console.log(
+      `[DownloadIntegration] determineFilename called for ${download.target.path} (${this._determineFilenameCallbacks.size} listener(s))`
+    );
+    const originalPath = download.target.path;
     for (let callback of this._determineFilenameCallbacks) {
+      console.log(
+        `[DownloadIntegration] invoking onDeterminingFilename callback for ${download.target.path}`
+      );
       try {
         await callback(download);
       } catch (ex) {
         console.error(ex);
+      }
+      if (download.target.path !== originalPath) {
+        break;
       }
     }
   },
