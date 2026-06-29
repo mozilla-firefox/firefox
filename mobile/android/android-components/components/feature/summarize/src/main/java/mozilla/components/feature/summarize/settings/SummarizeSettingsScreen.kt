@@ -6,13 +6,16 @@ package mozilla.components.feature.summarize.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -28,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mozilla.components.compose.base.Switch
@@ -82,7 +89,8 @@ fun SummarizeSettingsContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
     ) {
         SwitchRow(
             label = stringResource(id = R.string.mozac_summarize_settings_summarize_pages),
@@ -226,3 +234,27 @@ internal fun SettingsAppBar(
 }
 
 private const val DISABLED_ALPHA = 0.38f
+
+@Composable
+@PreviewLightDark
+private fun SummarizeSettingsContentPreview() {
+    AcornTheme {
+        var isFeatureEnabled by remember { mutableStateOf(true) }
+        var isGestureEnabled by remember { mutableStateOf(false) }
+
+        Box(
+            modifier = Modifier.background(MaterialTheme.colorScheme.background),
+        ) {
+            SummarizeSettingsContent(
+                state = SummarizeSettingsState(
+                    isFeatureEnabled = isFeatureEnabled,
+                    isGestureEnabled = isGestureEnabled,
+                ),
+                onSummarizePagesToggled = { isFeatureEnabled = !isFeatureEnabled },
+                onShakeToSummarizeToggled = { isGestureEnabled = !isGestureEnabled },
+                onLearnMoreClicked = {},
+                onShakeSensitivityChanged = {},
+            )
+        }
+    }
+}
