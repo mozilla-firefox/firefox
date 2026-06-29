@@ -44,8 +44,13 @@ interface PocketStoriesInteractor {
      * @param storyClicked The just clicked [PocketStory].
      * @param storyPosition `row x column x index` matrix representing the grid and index position
      * of the clicked story.
+     * @param source the surface where the clicked story was shown.
      */
-    fun onStoryClicked(storyClicked: PocketStory, storyPosition: Triple<Int, Int, Int>)
+    fun onStoryClicked(
+        storyClicked: PocketStory,
+        storyPosition: Triple<Int, Int, Int>,
+        source: StoriesImpressionSource,
+    )
 
     /**
      * Callback when an user clicks on the "Discover more" nutton for stories on the homepage.
@@ -76,8 +81,12 @@ class DefaultPocketStoriesInteractor(
         controller.handleCategoryClick(categoryClicked)
     }
 
-    override fun onStoryClicked(storyClicked: PocketStory, storyPosition: Triple<Int, Int, Int>) {
-        controller.handleStoryClicked(storyClicked, storyPosition)
+    override fun onStoryClicked(
+        storyClicked: PocketStory,
+        storyPosition: Triple<Int, Int, Int>,
+        source: StoriesImpressionSource,
+    ) {
+        controller.handleStoryClicked(storyClicked, storyPosition, source)
     }
 
     override fun onDiscoverMoreClicked() {

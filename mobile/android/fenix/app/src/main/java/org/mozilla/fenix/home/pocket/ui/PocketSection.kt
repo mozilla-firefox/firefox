@@ -69,7 +69,9 @@ fun PocketSection(
             contentPadding = horizontalPadding,
             backgroundColor = cardBackgroundColor,
             onStoryShown = interactor::onStoryShown,
-            onStoryClicked = interactor::onStoryClicked,
+            onStoryClicked = { story, position ->
+                interactor.onStoryClicked(story, position, StoriesImpressionSource.HOMEPAGE)
+            },
         )
     }
 }

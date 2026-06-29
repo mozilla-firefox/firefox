@@ -151,6 +151,7 @@ internal object FakeHomepagePreview {
             override fun onStoryClicked(
                 storyClicked: PocketStory,
                 storyPosition: Triple<Int, Int, Int>,
+                source: StoriesImpressionSource,
             ) { /* no op */ }
 
             override fun onDiscoverMoreClicked() { /* no op */ }

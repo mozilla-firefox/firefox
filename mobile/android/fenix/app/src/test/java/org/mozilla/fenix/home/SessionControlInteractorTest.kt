@@ -267,9 +267,15 @@ class SessionControlInteractorTest {
         val clickedStory: PocketStory = mockk()
         val storyPosition = Triple(1, 2, 3)
 
-        interactor.onStoryClicked(clickedStory, storyPosition)
+        interactor.onStoryClicked(clickedStory, storyPosition, StoriesImpressionSource.HOMEPAGE)
 
-        verify { pocketStoriesController.handleStoryClicked(clickedStory, storyPosition) }
+        verify {
+            pocketStoriesController.handleStoryClicked(
+                clickedStory,
+                storyPosition,
+                StoriesImpressionSource.HOMEPAGE,
+            )
+        }
     }
 
     @Test
