@@ -44,6 +44,7 @@ import org.mozilla.fenix.home.pocket.POCKET_STORIES_DEFAULT_CATEGORY_NAME
 import org.mozilla.fenix.home.pocket.PocketImpression
 import org.mozilla.fenix.home.pocket.PocketRecommendedStoriesCategory
 import org.mozilla.fenix.home.pocket.PocketRecommendedStoriesSelectedCategory
+import org.mozilla.fenix.home.pocket.controller.StoriesImpressionSource
 import org.mozilla.fenix.home.recentsyncedtabs.RecentSyncedTab
 import org.mozilla.fenix.home.recentsyncedtabs.RecentSyncedTabState
 import org.mozilla.fenix.home.recenttabs.RecentTab
@@ -565,6 +566,7 @@ class AppStoreTest {
                     PocketImpression(story = sponsoredContent, position = 0),
                     PocketImpression(story = sponsoredContent3, position = 2),
                 ),
+                source = StoriesImpressionSource.HOMEPAGE,
             ),
         )
 
@@ -615,6 +617,7 @@ class AppStoreTest {
                     PocketImpression(story = recommendation1, position = 0),
                     PocketImpression(story = recommendation3, position = 2),
                 ),
+                source = StoriesImpressionSource.HOMEPAGE,
             ),
         )
 

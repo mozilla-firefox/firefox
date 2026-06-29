@@ -15368,6 +15368,11 @@ home.content.article:
       topic: &topic
         description: The topic of the recommendation. Like "entertainment".
         type: string
+      source: &source_pocket
+        description: >
+          The surface where the article was shown.
+          One of "homepage" or "stories_screen".
+        type: string
     send_in_pings:
       - home
 
@@ -15393,6 +15398,7 @@ home.content.article:
       received_rank: *received_rank
       recommended_at: *recommended_at
       topic: *topic
+      source: *source_pocket
     send_in_pings:
       - home
 

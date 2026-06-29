@@ -31,6 +31,7 @@ import org.mozilla.fenix.home.bookmarks.Bookmark
 import org.mozilla.fenix.home.pocket.PocketImpression
 import org.mozilla.fenix.home.pocket.PocketRecommendedStoriesCategory
 import org.mozilla.fenix.home.pocket.PocketRecommendedStoriesSelectedCategory
+import org.mozilla.fenix.home.pocket.controller.StoriesImpressionSource
 import org.mozilla.fenix.home.recentsyncedtabs.RecentSyncedTab
 import org.mozilla.fenix.home.recentsyncedtabs.RecentSyncedTabState
 import org.mozilla.fenix.home.recenttabs.RecentTab
@@ -598,10 +599,12 @@ sealed class AppAction : Action {
          *
          * @property recommendation The [ContentRecommendation] that was clicked.
          * @property position The position (0-index) of the [ContentRecommendation].
+         * @property source The surface where the clicked recommendation was shown.
          */
         data class ContentRecommendationClicked(
             val recommendation: ContentRecommendation,
             val position: Int,
+            val source: StoriesImpressionSource,
         ) : ContentRecommendationsAction()
 
         /**
@@ -621,9 +624,12 @@ sealed class AppAction : Action {
          *
          * @property impressions A list of [PocketImpression]s detailing the story shown and
          * their respective position.
+         * @property source The surface where the stories were shown.
          */
-        data class PocketStoriesShown(val impressions: List<PocketImpression>) :
-            ContentRecommendationsAction()
+        data class PocketStoriesShown(
+            val impressions: List<PocketImpression>,
+            val source: StoriesImpressionSource,
+        ) : ContentRecommendationsAction()
 
         /**
          * Cleans all in-memory data about Pocket stories and categories.
