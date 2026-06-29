@@ -129,6 +129,7 @@ internal class DefaultPocketStoriesController(
                         position = storyPosition.third,
                     ),
                 ),
+                source = StoriesImpressionSource.HOMEPAGE,
             ),
         )
 
@@ -164,6 +165,7 @@ internal class DefaultPocketStoriesController(
                 impressions = storiesShown
                     .filter { it is ContentRecommendation || it is PocketRecommendedStory }
                     .map { PocketImpression(story = it, position = storiesShown.indexOf(it)) },
+                source = source,
             ),
         )
 
@@ -247,6 +249,7 @@ internal class DefaultPocketStoriesController(
                     ContentRecommendationsAction.ContentRecommendationClicked(
                         recommendation = storyClicked,
                         position = storyPosition.third,
+                        source = source,
                     ),
                 )
             }

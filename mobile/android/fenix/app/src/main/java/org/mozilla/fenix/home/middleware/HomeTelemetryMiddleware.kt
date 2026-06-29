@@ -40,6 +40,7 @@ class HomeTelemetryMiddleware : Middleware<AppState, AppAction> {
                         scheduledCorpusItemId = recommendation.scheduledCorpusItemId,
                         tileId = recommendation.tileId.toInt(),
                         topic = recommendation.topic,
+                        source = action.source.sourceName,
                     ),
                 )
 
@@ -60,6 +61,7 @@ class HomeTelemetryMiddleware : Middleware<AppState, AppAction> {
                                     scheduledCorpusItemId = story.scheduledCorpusItemId,
                                     tileId = story.tileId.toInt(),
                                     topic = story.topic,
+                                    source = action.source.sourceName,
                                 ),
                             )
                         }

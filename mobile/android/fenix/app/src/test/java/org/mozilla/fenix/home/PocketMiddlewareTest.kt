@@ -33,6 +33,7 @@ import org.mozilla.fenix.datastore.SelectedPocketStoriesCategories.SelectedPocke
 import org.mozilla.fenix.home.pocket.PocketImpression
 import org.mozilla.fenix.home.pocket.PocketRecommendedStoriesCategory
 import org.mozilla.fenix.home.pocket.PocketRecommendedStoriesSelectedCategory
+import org.mozilla.fenix.home.pocket.controller.StoriesImpressionSource
 
 class PocketMiddlewareTest {
 
@@ -74,6 +75,7 @@ class PocketMiddlewareTest {
                         position = 1,
                     ),
                 ),
+                source = StoriesImpressionSource.HOMEPAGE,
             ),
         )
         testScheduler.advanceUntilIdle()

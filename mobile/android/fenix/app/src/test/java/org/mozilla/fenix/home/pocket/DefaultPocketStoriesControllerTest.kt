@@ -227,6 +227,7 @@ class DefaultPocketStoriesControllerTest {
                     impressions = listOf(
                         PocketImpression(story = storyShown, position = 3),
                     ),
+                    source = StoriesImpressionSource.HOMEPAGE,
                 ),
             )
         }
@@ -267,6 +268,7 @@ class DefaultPocketStoriesControllerTest {
                     impressions = listOf(
                         PocketImpression(story = sponsoredContent, position = 3),
                     ),
+                    source = StoriesImpressionSource.HOMEPAGE,
                 ),
             )
         }
@@ -292,6 +294,7 @@ class DefaultPocketStoriesControllerTest {
                         PocketImpression(story = recommendation, position = 0),
                         PocketImpression(story = story, position = 1),
                     ),
+                    source = StoriesImpressionSource.HOMEPAGE,
                 ),
             )
         }
@@ -324,6 +327,7 @@ class DefaultPocketStoriesControllerTest {
                         PocketImpression(story = recommendation, position = 0),
                         PocketImpression(story = story, position = 1),
                     ),
+                    source = StoriesImpressionSource.STORIES_SCREEN,
                 ),
             )
         }

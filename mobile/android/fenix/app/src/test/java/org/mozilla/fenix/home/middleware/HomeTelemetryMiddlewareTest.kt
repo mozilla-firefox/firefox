@@ -20,6 +20,7 @@ import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction.ContentRecommendationsAction
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.home.pocket.PocketImpression
+import org.mozilla.fenix.home.pocket.controller.StoriesImpressionSource
 import kotlin.test.assertNotNull
 
 @RunWith(AndroidJUnit4::class)
@@ -55,6 +56,7 @@ class HomeTelemetryMiddlewareTest {
             assertEquals(recommendation.topic, extraValues["topic"])
             assertEquals(position.toString(), extraValues["position"])
             assertEquals("false", extraValues["is_sponsored"])
+            assertEquals("homepage", extraValues["source"])
 
             pingReceived = true
         }
@@ -63,6 +65,38 @@ class HomeTelemetryMiddlewareTest {
             ContentRecommendationsAction.ContentRecommendationClicked(
                 recommendation = recommendation,
                 position = position,
+                source = StoriesImpressionSource.HOMEPAGE,
+            ),
+        )
+
+        job.join()
+        assertTrue(pingReceived)
+    }
+
+    @Test
+    fun `WHEN a recommendation is clicked on the stories screen THEN record the click telemetry with the stories screen source`() {
+        val store = createStore()
+        val recommendation = TestUtils.getFakeContentRecommendations(limit = 1).first()
+        val position = 100
+
+        assertNull(HomeContentArticle.click.testGetValue())
+
+        var pingReceived = false
+        val job = Pings.home.testBeforeNextSubmit {
+            assertNotNull(HomeContentArticle.click.testGetValue())
+
+            val snapshot = HomeContentArticle.click.testGetValue()!!
+            assertEquals(1, snapshot.size)
+            assertEquals("stories_screen", snapshot.first().extra!!["source"])
+
+            pingReceived = true
+        }
+
+        store.dispatch(
+            ContentRecommendationsAction.ContentRecommendationClicked(
+                recommendation = recommendation,
+                position = position,
+                source = StoriesImpressionSource.STORIES_SCREEN,
             ),
         )
 
@@ -104,6 +138,7 @@ class HomeTelemetryMiddlewareTest {
                 assertEquals(recommendation.topic, extraValues["topic"])
                 assertEquals(position.toString(), extraValues["position"])
                 assertEquals("false", extraValues["is_sponsored"])
+                assertEquals("homepage", extraValues["source"])
             }
 
             pingReceived = true
@@ -112,6 +147,44 @@ class HomeTelemetryMiddlewareTest {
         store.dispatch(
             ContentRecommendationsAction.PocketStoriesShown(
                 impressions = impressions,
+                source = StoriesImpressionSource.HOMEPAGE,
+            ),
+        )
+
+        job.join()
+        assertTrue(pingReceived)
+    }
+
+    @Test
+    fun `WHEN a list of recommendations are shown on the stories screen THEN record the impression telemetry with the stories screen source`() {
+        val store = createStore()
+        val impressions = TestUtils.getFakeContentRecommendations(limit = 3)
+            .mapIndexed { index, contentRecommendation ->
+                PocketImpression(
+                    story = contentRecommendation,
+                    position = index,
+                )
+            }
+
+        assertNull(HomeContentArticle.impression.testGetValue())
+
+        var pingReceived = false
+        val job = Pings.home.testBeforeNextSubmit {
+            assertNotNull(HomeContentArticle.impression.testGetValue())
+
+            val snapshot = HomeContentArticle.impression.testGetValue()!!
+            assertEquals(3, snapshot.size)
+            snapshot.forEach {
+                assertEquals("stories_screen", it.extra!!["source"])
+            }
+
+            pingReceived = true
+        }
+
+        store.dispatch(
+            ContentRecommendationsAction.PocketStoriesShown(
+                impressions = impressions,
+                source = StoriesImpressionSource.STORIES_SCREEN,
             ),
         )
 
