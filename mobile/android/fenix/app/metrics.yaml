@@ -9770,6 +9770,11 @@ pocket:
         description: |
           Position of the clicked story in the list shown.
           Uses the [row x column] matrix notation.
+      source:
+        type: string
+        description: |
+          Where the clicked story was shown.
+          One of "homepage" or "stories_screen".
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/21593
     data_reviews:

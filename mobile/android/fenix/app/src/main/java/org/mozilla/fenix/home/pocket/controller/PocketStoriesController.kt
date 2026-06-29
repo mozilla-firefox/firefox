@@ -75,8 +75,13 @@ interface PocketStoriesController {
      * @param storyClicked The just clicked [PocketStory].
      * @param storyPosition `row x column x index` matrix representing the grid and index position
      * of the clicked story.
+     * @param source the surface where the clicked story was shown.
      */
-    fun handleStoryClicked(storyClicked: PocketStory, storyPosition: Triple<Int, Int, Int>)
+    fun handleStoryClicked(
+        storyClicked: PocketStory,
+        storyPosition: Triple<Int, Int, Int>,
+        source: StoriesImpressionSource,
+    )
 
     /**
      * Callback for when the user clicks on the "Discover more" button.
@@ -211,6 +216,7 @@ internal class DefaultPocketStoriesController(
     override fun handleStoryClicked(
         storyClicked: PocketStory,
         storyPosition: Triple<Int, Int, Int>,
+        source: StoriesImpressionSource,
     ) {
         val storyUrl = when (navController.currentDestination?.id) {
             R.id.storiesFragment -> storyClicked.url.markAsOpenedFromStoriesScreen()
@@ -231,6 +237,7 @@ internal class DefaultPocketStoriesController(
                     Pocket.HomeRecsStoryClickedExtra(
                         position = "${storyPosition.first}x${storyPosition.second}",
                         timesShown = storyClicked.timesShown.inc().toString(),
+                        source = source.sourceName,
                     ),
                 )
             }

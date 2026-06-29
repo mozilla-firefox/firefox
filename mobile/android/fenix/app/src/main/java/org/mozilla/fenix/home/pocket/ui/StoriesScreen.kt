@@ -165,7 +165,13 @@ private fun Stories(
         itemsIndexed(state.pocketStories) { index, story ->
             StoryCard(
                 story = story,
-                onClick = interactor::onStoryClicked,
+                onClick = { clickedStory, position ->
+                    interactor.onStoryClicked(
+                        clickedStory,
+                        position,
+                        StoriesImpressionSource.STORIES_SCREEN,
+                    )
+                },
             )
         }
     }
