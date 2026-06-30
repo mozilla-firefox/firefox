@@ -12,6 +12,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,6 +39,7 @@ import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import org.mozilla.fenix.R
@@ -81,40 +83,101 @@ fun ExperimentalHomepageHeader(
             .wrapContentHeight()
             .padding(bottom = 16.dp),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(all = 16.dp),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            PrivateModeButton(onPrivateModeTapped)
+        ExperimentalHomepageHeaderButtons(
+            showStoriesButton = showStoriesButton,
+            showButtonAnimation = showButtonAnimation,
+            onPrivateModeTapped = onPrivateModeTapped,
+            onStoriesTapped = onStoriesTapped,
+            onNewsAnimationShown = onNewsAnimationShown,
+        )
 
-            if (showStoriesButton) {
-                StoriesButton(
-                    onClick = onStoriesTapped,
-                    showNewsAnimation = showButtonAnimation,
-                    onNewsAnimationShown = onNewsAnimationShown,
-                )
-            }
-        }
+        ExperimentalHomepageWordmark(
+            wordmarkTextColor = wordmarkTextColor,
+            isSportsWidgetEnabled = isSportsWidgetEnabled,
+            onLogoClicked = onLogoClicked,
+        )
+    }
+}
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(all = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Spacer(modifier = Modifier.height(28.dp))
+/**
+ * The private mode and stories buttons that sit at the top edges of the experimental homepage
+ * header. Extracted so it can be positioned independently of [ExperimentalHomepageWordmark].
+ *
+ * @param showStoriesButton Whether to show the stories button or not.
+ * @param showButtonAnimation Whether to animate the news label on the stories button.
+ * @param onPrivateModeTapped Callback for when the private mode button is tapped.
+ * @param onStoriesTapped Callback for when the stories button is tapped.
+ * @param onNewsAnimationShown Callback invoked when the news button animation starts playing.
+ * @param modifier [Modifier] to be applied to the layout.
+ * @param contentPadding Padding around the buttons. Defaults to 16.dp on all sides to match the
+ * overlaid header; callers that handle vertical spacing themselves can pass horizontal-only padding.
+ */
+@Composable
+internal fun ExperimentalHomepageHeaderButtons(
+    showStoriesButton: Boolean,
+    showButtonAnimation: Boolean,
+    onPrivateModeTapped: () -> Unit,
+    onStoriesTapped: () -> Unit,
+    onNewsAnimationShown: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(all = 16.dp),
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(contentPadding),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        PrivateModeButton(onPrivateModeTapped)
 
-            WordmarkAndLogo(
-                wordmarkTextColor = wordmarkTextColor,
-                onLogoClicked = onLogoClicked,
-                isSportsWidgetEnabled = isSportsWidgetEnabled,
+        if (showStoriesButton) {
+            StoriesButton(
+                onClick = onStoriesTapped,
+                showNewsAnimation = showButtonAnimation,
+                onNewsAnimationShown = onNewsAnimationShown,
             )
         }
+    }
+}
+
+/**
+ * The centered Firefox logo and wordmark of the experimental homepage header. Extracted so it can
+ * be positioned independently of [ExperimentalHomepageHeaderButtons].
+ *
+ * @param wordmarkTextColor [Color] for the wordmark.
+ * @param isSportsWidgetEnabled Whether to show the Firefox sports logo or not.
+ * @param onLogoClicked Callback for when the logo is clicked.
+ * @param modifier [Modifier] to be applied to the layout.
+ * @param contentPadding Padding around the wordmark. Defaults to 16.dp on all sides to match the
+ * overlaid header; callers that handle vertical spacing themselves can pass horizontal-only padding.
+ * @param topSpacing Space above the wordmark. Defaults to 28.dp to clear the overlaid header
+ * buttons; callers that render the wordmark on its own can pass 0.dp.
+ */
+@Composable
+internal fun ExperimentalHomepageWordmark(
+    wordmarkTextColor: Color?,
+    isSportsWidgetEnabled: Boolean,
+    onLogoClicked: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(all = 16.dp),
+    topSpacing: Dp = 16.dp,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(contentPadding),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(modifier = Modifier.height(topSpacing))
+
+        WordmarkAndLogo(
+            wordmarkTextColor = wordmarkTextColor,
+            onLogoClicked = onLogoClicked,
+            isSportsWidgetEnabled = isSportsWidgetEnabled,
+        )
     }
 }
 

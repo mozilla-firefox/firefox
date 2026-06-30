@@ -122,6 +122,7 @@ import org.mozilla.fenix.utils.DELAY_MS_MAIN_MENU
 import org.mozilla.fenix.utils.DELAY_MS_SUB_MENU
 import org.mozilla.fenix.utils.DURATION_MS_MAIN_MENU
 import org.mozilla.fenix.utils.DURATION_MS_SUB_MENU
+import org.mozilla.fenix.utils.HomepageSectionMode
 import org.mozilla.fenix.utils.contentGrowth
 import org.mozilla.fenix.utils.enterMenu
 import org.mozilla.fenix.utils.enterSubmenu
@@ -584,6 +585,10 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                                     },
                                     onWallpaperButtonClick = {
                                         menuStore.dispatch(MenuAction.Navigate.Wallpaper)
+                                    },
+                                    showHomepageSettings = settings.homepageSectionMode != HomepageSectionMode.DISABLED,
+                                    onHomepageSettingsClick = {
+                                        menuStore.dispatch(MenuAction.Navigate.HomepageSettings)
                                     },
                                     onBookmarkPageMenuClick = {
                                         menuStore.dispatch(MenuAction.AddBookmark)

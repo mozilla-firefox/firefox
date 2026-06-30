@@ -361,6 +361,13 @@
 
     <string name="pref_key_contile_context_id" translatable="false">pref_key_contile_context_id</string>
 
+    <!-- Homepage section order -->
+    <string name="pref_key_homepage_customize_order" translatable="false">pref_key_homepage_customize_order</string>
+    <string name="pref_key_homepage_sections" translatable="false">pref_key_homepage_sections</string>
+    <string name="pref_key_homepage_sections_mode_default" translatable="false">pref_key_homepage_sections_mode_default</string>
+    <string name="pref_key_homepage_sections_mode_list" translatable="false">pref_key_homepage_sections_mode_list</string>
+    <string name="pref_key_homepage_section_order" translatable="false">pref_key_homepage_section_order</string>
+
     <!-- Wallpaper Settings -->
     <string name="pref_key_wallpapers" translatable="false">pref_key_wallpapers</string>
     <string name="pref_key_current_wallpaper" translatable="false">pref_key_current_wallpaper</string>

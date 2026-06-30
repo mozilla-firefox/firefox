@@ -24,14 +24,17 @@ import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.navigateWithBreadcrumb
 import org.mozilla.fenix.ext.showToolbar
 import org.mozilla.fenix.home.pocket.ContentRecommendationsFeatureHelper
+import org.mozilla.fenix.utils.HomepageSectionMode
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.utils.view.addToRadioGroup
 
 /**
  * A [PreferenceFragmentCompat] that displays settings for customizing the Firefox home screen.
  *
- * User interactions with these preferences are persisted in [Settings] and may trigger
- * telemetry events via [CustomizeHome] metrics.
+ * The layout depends on [Settings.homepageSectionMode]: a single drag-to-reorder list
+ * ([HomepageSectionsPreference]) for [HomepageSectionMode.REORDERABLE_LIST], or the classic
+ * per-section switches when [HomepageSectionMode.DISABLED]. User interactions are persisted in
+ * [Settings] and may trigger telemetry events via [CustomizeHome] metrics.
  */
 class HomeSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment {
 
@@ -60,7 +63,11 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragm
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-        setPreferencesFromResource(R.xml.home_preferences, rootKey)
+        val preferences = when (fenixSettings.homepageSectionMode) {
+            HomepageSectionMode.REORDERABLE_LIST -> R.xml.home_preferences_reorderable_list
+            HomepageSectionMode.DISABLED -> R.xml.home_preferences
+        }
+        setPreferencesFromResource(preferences, rootKey)
         setupPreferences()
     }
 
@@ -73,6 +80,21 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragm
     }
 
     private fun setupPreferences() {
+        when (fenixSettings.homepageSectionMode) {
+            // The combined list handles section toggling and reordering itself.
+            HomepageSectionMode.REORDERABLE_LIST -> Unit
+
+            HomepageSectionMode.DISABLED -> {
+                setupSectionTogglePreferences()
+                setupSportsWidgetPreferences()
+            }
+        }
+
+        setupWallpaperPreference()
+        setupOpeningScreenPreferences()
+    }
+
+    private fun setupSectionTogglePreferences() {
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_show_top_sites).apply {
             isChecked = fenixSettings.showTopSitesFeature
             onPreferenceChangeListener = createMetricPreferenceChangeListener("most_visited_sites")
@@ -141,7 +163,9 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragm
             isChecked = fenixSettings.historyMetadataUIFeature
             onPreferenceChangeListener = createMetricPreferenceChangeListener("recently_visited")
         }
+    }
 
+    private fun setupWallpaperPreference() {
         requirePreference<Preference>(R.string.pref_key_wallpapers).apply {
             setOnPreferenceClickListener {
                 view?.findNavController()?.navigateWithBreadcrumb(
@@ -153,9 +177,6 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragm
                 true
             }
         }
-
-        setupOpeningScreenPreferences()
-        setupSportsWidgetPreferences()
     }
 
     private fun createMetricPreferenceChangeListener(

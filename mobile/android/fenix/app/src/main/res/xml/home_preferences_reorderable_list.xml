@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<androidx.preference.PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+  <androidx.preference.PreferenceCategory
+    android:layout="@layout/preference_cat_style"
+    android:title="@string/preferences_order_header"
+    app:iconSpaceReserved="false">
+
+    <org.mozilla.fenix.settings.HomepageSectionsPreference
+        android:key="@string/pref_key_homepage_sections"
+        app:iconSpaceReserved="false" />
+
+  </androidx.preference.PreferenceCategory>
+
+    <androidx.preference.Preference
+        android:key="@string/pref_key_wallpapers"
+        android:title="@string/customize_wallpapers"
+        app:allowDividerAbove="true" />
+
+    <androidx.preference.PreferenceCategory
+        android:layout="@layout/preference_cat_style"
+        android:title="@string/preferences_opening_screen"
+        app:allowDividerAbove="true"
+        app:iconSpaceReserved="false">
+
+        <org.mozilla.fenix.settings.RadioButtonPreference
+            android:key="@string/pref_key_start_on_home_always"
+            android:title="@string/opening_screen_homepage" />
+
+        <org.mozilla.fenix.settings.RadioButtonPreference
+            android:key="@string/pref_key_start_on_home_never"
+            android:title="@string/opening_screen_last_tab" />
+
+        <org.mozilla.fenix.settings.RadioButtonPreference
+            android:key="@string/pref_key_start_on_home_after_four_hours"
+            android:title="@string/opening_screen_after_four_hours_of_inactivity" />
+
+    </androidx.preference.PreferenceCategory>
+</androidx.preference.PreferenceScreen>

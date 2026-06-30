@@ -229,6 +229,33 @@ class Settings(
     )
 
     /**
+     * The user-defined order of the homepage sections, serialized via
+     * `HomepageSection.toOrderString`. Empty when the user has not customized the order, in which
+     * case the canonical section order is used.
+     */
+    var homepageSectionOrder: String by stringPreference(
+        key = appContext.getPreferenceKey(R.string.pref_key_homepage_section_order),
+        default = { "" },
+    )
+
+    /**
+     * Which homepage section customization approach is active, chosen from a secret setting.
+     * Defaults to [HomepageSectionMode.REORDERABLE_LIST]; the existing homepage applies only when
+     * explicitly selected.
+     */
+    val homepageSectionMode: HomepageSectionMode
+        get() = if (
+            preferences.getBoolean(
+                appContext.getPreferenceKey(R.string.pref_key_homepage_sections_mode_default),
+                false,
+            )
+        ) {
+            HomepageSectionMode.DISABLED
+        } else {
+            HomepageSectionMode.REORDERABLE_LIST
+        }
+
+    /**
      * Indicates if the Pocket recommendations homescreen section should also show sponsored stories.
      */
     @Suppress("DEPRECATION")

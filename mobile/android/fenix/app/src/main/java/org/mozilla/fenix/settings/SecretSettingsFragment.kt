@@ -42,7 +42,9 @@ import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.showToolbar
 import org.mozilla.fenix.ext.showToolbarWithIconButton
 import org.mozilla.fenix.theme.FirefoxTheme
+import org.mozilla.fenix.utils.HomepageSectionMode
 import org.mozilla.fenix.utils.SecretSettingsPrefDefaults
+import org.mozilla.fenix.utils.view.addToRadioGroup
 import mozilla.components.ui.icons.R as iconsR
 
 /**
@@ -202,6 +204,29 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
             isChecked = settings.topSitesPager
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
+
+        val mode = settings.homepageSectionMode
+        // Normalize the radio-backed keys so exactly one is true, healing any stale state where
+        // several were persisted (which would otherwise show multiple options selected at once).
+        settings.preferences.edit {
+            putBoolean(
+                getString(R.string.pref_key_homepage_sections_mode_default),
+                mode == HomepageSectionMode.DISABLED,
+            )
+            putBoolean(
+                getString(R.string.pref_key_homepage_sections_mode_list),
+                mode == HomepageSectionMode.REORDERABLE_LIST,
+            )
+        }
+        val existingHomepageRadio =
+            requirePreference<RadioButtonPreference>(R.string.pref_key_homepage_sections_mode_default).apply {
+                setDefaultValue(mode == HomepageSectionMode.DISABLED)
+            }
+        val reorderableListRadio =
+            requirePreference<RadioButtonPreference>(R.string.pref_key_homepage_sections_mode_list).apply {
+                setDefaultValue(mode == HomepageSectionMode.REORDERABLE_LIST)
+            }
+        addToRadioGroup(existingHomepageRadio, reorderableListRadio)
 
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_add_shortcuts_improvement).apply {
             isChecked = settings.enableAddShortcutsImprovement

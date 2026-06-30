@@ -105,6 +105,12 @@
     <string name="preferences_debug_settings_firefox_labs" translatable="false">Enable Firefox Labs</string>
     <!-- Label for enabling top sites pager layout -->
     <string name="preferences_debug_settings_top_sites_pager" translatable="false">Enable Top Sites Pager</string>
+    <!-- Category title for the homepage sections customization approach selector -->
+    <string name="preferences_debug_settings_homepage_sections_mode" translatable="false">Homepage Sections Approach</string>
+    <!-- Radio label: existing homepage, no reordering -->
+    <string name="preferences_debug_settings_homepage_sections_mode_default" translatable="false">Existing homepage (no reordering)</string>
+    <!-- Radio label: approach 1, single reorderable section list -->
+    <string name="preferences_debug_settings_homepage_sections_mode_list" translatable="false">Reorderable section list</string>
     <!-- Label for enabling Add Shortcuts improvement -->
     <string name="preferences_debug_settings_add_shortcuts_improvement" translatable="false">Enable Add Shortcuts Improvement</string>
     <!-- Label for enabling Merino Client -->

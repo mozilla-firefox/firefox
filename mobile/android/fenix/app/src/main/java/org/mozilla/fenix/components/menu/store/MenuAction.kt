@@ -237,6 +237,11 @@ sealed class MenuAction : Action {
         data object Wallpaper : Navigate()
 
         /**
+         * [Navigate] action dispatched when navigating to the homepage settings.
+         */
+        data object HomepageSettings : Navigate()
+
+        /**
          * [Navigate] action dispatched when navigating to bookmarks.
          */
         data object Bookmarks : Navigate()

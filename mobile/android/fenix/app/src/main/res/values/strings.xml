@@ -989,10 +989,28 @@
     <string name="customize_wallpapers">Wallpapers</string>
     <!-- Label for the menu item that opens the wallpaper settings screen. -->
     <string name="browser_menu_change_wallpaper">Change wallpaper</string>
+    <!-- Label for the menu item that opens the homepage settings screen. -->
+    <string name="browser_menu_customize_homepage">Customize homepage</string>
     <!-- Title for the customize home screen section with sponsored shortcuts. -->
     <string name="customize_toggle_contile">Sponsored shortcuts</string>
     <!-- Title for the customize home screen section that toggles the Homepage sports widget. -->
     <string name="customize_toggle_world_cup">World Cup</string>
+    <!-- Label for the home screen section that displays the setup checklist. Used when reordering homepage sections. -->
+    <string name="customize_toggle_setup_checklist">Setup checklist</string>
+    <!-- Label for the home screen section containing the private browsing and stories buttons. Used when reordering homepage sections. -->
+    <string name="customize_toggle_header_buttons">Header buttons</string>
+    <!-- Label for the home screen section containing the Firefox logo and wordmark. Used when reordering homepage sections. -->
+    <string name="customize_toggle_header_wordmark">Firefox logo</string>
+    <!-- Title for the preference that opens the screen for reordering homepage sections. -->
+    <string name="customize_section_order">Reorder sections</string>
+    <!-- Description shown above the draggable list of homepage sections. -->
+    <string name="customize_section_order_description">Drag and hold a section to change the order it appears on the homepage.</string>
+    <!-- Description shown above the homepage settings list telling the user they can drag the rows to reorder them. -->
+    <string name="customize_section_order_list_description">Drag options to reorder.</string>
+    <!-- Content description for a homepage section row that can be dragged to reorder it. %1$s is the section name. -->
+    <string name="customize_section_order_item_content_description">%1$s, drag and hold to reorder</string>
+    <!-- Button that resets the homepage section order back to the default order. -->
+    <string name="customize_section_order_reset">Reset to default order</string>
 
     <!-- Wallpapers -->
     <!-- Content description for various wallpapers. %1$s is the name of the wallpaper. -->
@@ -1366,6 +1384,9 @@
     <string name="preferences_opening_screen">Opening screen</string>
     <!-- Option for always opening the homepage when re-opening the app -->
     <string name="opening_screen_homepage">Homepage</string>
+    <!-- Title of a preference that allows a user to choose what screen to show after opening the app -->
+    <string name="preferences_order_header">Sections</string>
+     <string name="preferences_order_description">Drag options to reorder.</string>
     <!-- Option for always opening the user's last-open tab when re-opening the app -->
     <string name="opening_screen_last_tab">Last tab</string>
     <!-- Option for always opening the homepage when re-opening the app after four hours of inactivity -->

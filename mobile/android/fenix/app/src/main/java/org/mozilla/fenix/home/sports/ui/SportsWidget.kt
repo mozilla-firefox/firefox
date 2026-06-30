@@ -72,8 +72,13 @@ fun SportsWidget(
     onMatchClicked: (String?, String?, String?) -> Unit,
     onCardShown: (SportsCardType, SportsCardImpressionSource) -> Unit,
     modifier: Modifier = Modifier,
+    showTopSpacing: Boolean = false,
 ) {
-    Spacer(modifier = Modifier.height(SportsWidgetTopSpacing))
+    // The reorderable homepage needs this top spacing for the widget's peeking content; the
+    // existing homepage handles spacing in its own layout, so it is opt-in via [showTopSpacing].
+    if (showTopSpacing) {
+        Spacer(modifier = Modifier.height(SportsWidgetTopSpacing))
+    }
 
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val isLargeWindow = AcornWindowSize.isLargeWindow()

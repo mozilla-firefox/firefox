@@ -308,6 +308,7 @@ class MenuTelemetryMiddleware(
             is MenuAction.UpdateIPProtectionMenuState,
             is MenuAction.OnMoreMenuClicked,
             is MenuAction.Navigate.IPProtectionSettings,
+            is MenuAction.Navigate.HomepageSettings,
             -> Unit
         }
     }

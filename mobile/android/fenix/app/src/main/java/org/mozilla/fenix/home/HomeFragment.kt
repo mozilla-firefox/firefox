@@ -31,7 +31,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,6 +43,7 @@ import androidx.core.content.getSystemService
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
@@ -143,6 +146,8 @@ import org.mozilla.fenix.home.topsites.TopSitesBinding
 import org.mozilla.fenix.home.topsites.controller.DefaultTopSiteController
 import org.mozilla.fenix.home.topsites.getTopSitesConfig
 import org.mozilla.fenix.home.ui.Homepage
+import org.mozilla.fenix.home.ui.HomepageSection
+import org.mozilla.fenix.home.ui.ReorderableHomepage
 import org.mozilla.fenix.home.ui.WallpaperBackground
 import org.mozilla.fenix.ipprotection.store.IPProtectionOnboardingPrompt
 import org.mozilla.fenix.messaging.DefaultMessageController
@@ -175,6 +180,7 @@ import org.mozilla.fenix.termsofuse.store.PrivacyNoticeBannerTelemetryMiddleware
 import org.mozilla.fenix.termsofuse.store.Surface
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.trackingprotection.TrackersBlockedFeature
+import org.mozilla.fenix.utils.HomepageSectionMode
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.utils.allowUndo
 import org.mozilla.fenix.utils.getUndoDelay
@@ -665,18 +671,48 @@ class HomeFragment : Fragment() {
                 )
             }
 
-            Homepage(
-                state = HomepageState.build(
-                    appState = appState,
-                    privacyNoticeBannerState = privacyNoticeBannerState,
-                    settings = settings,
-                    browsingModeManager = browsingModeManager,
-                ),
-                interactor = sessionControlInteractor,
-                onTopSitesItemBound = {
-                    StartupTimeline.onTopSitesItemBound(activity = (requireActivity() as HomeActivity))
-                },
+            val homepageState = HomepageState.build(
+                appState = appState,
+                privacyNoticeBannerState = privacyNoticeBannerState,
+                settings = settings,
+                browsingModeManager = browsingModeManager,
             )
+            val onTopSitesItemBound = {
+                StartupTimeline.onTopSitesItemBound(activity = (requireActivity() as HomeActivity))
+            }
+
+            // The section order is persisted in preferences from a separate settings screen, which
+            // Compose cannot observe. Re-read it whenever the home screen resumes so reordering done
+            // elsewhere is reflected on return.
+            var sectionOrder by remember { mutableStateOf(settings.homepageSectionOrder) }
+            LifecycleResumeEffect(Unit) {
+                sectionOrder = settings.homepageSectionOrder
+                onPauseOrDispose { }
+            }
+
+            when (homepageState) {
+                is HomepageState.Normal -> if (settings.homepageSectionMode != HomepageSectionMode.DISABLED) {
+                    ReorderableHomepage(
+                        state = homepageState,
+                        interactor = sessionControlInteractor,
+                        onTopSitesItemBound = onTopSitesItemBound,
+                        sectionOrder = HomepageSection.fromOrderString(sectionOrder)
+                            .map { it.ordinal },
+                    )
+                } else {
+                    Homepage(
+                        state = homepageState,
+                        interactor = sessionControlInteractor,
+                        onTopSitesItemBound = onTopSitesItemBound,
+                    )
+                }
+
+                is HomepageState.Private -> Homepage(
+                    state = homepageState,
+                    interactor = sessionControlInteractor,
+                    onTopSitesItemBound = onTopSitesItemBound,
+                )
+            }
 
             if (microsurveyVisible) {
                 MicrosurveyPrompt(

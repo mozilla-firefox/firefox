@@ -100,6 +100,8 @@ import mozilla.components.ui.icons.R as iconsR
  * @param onMozillaAccountButtonClick Invoked when the user clicks on Mozilla account button.
  * @param onSettingsButtonClick Invoked when the user clicks on the settings button.
  * @param onWallpaperButtonClick Invoked when the user clicks on the change wallpaper button.
+ * @param showHomepageSettings Whether to show the customize homepage menu item.
+ * @param onHomepageSettingsClick Invoked when the user clicks on the customize homepage button.
  * @param onBookmarkPageMenuClick Invoked when the user clicks on the bookmark page menu item.
  * @param onEditBookmarkButtonClick Invoked when the user clicks on the edit bookmark button.
  * @param onSwitchToDesktopSiteMenuClick Invoked when the user clicks on the switch to desktop site
@@ -157,6 +159,8 @@ fun MainMenu(
     onMozillaAccountButtonClick: () -> Unit,
     onSettingsButtonClick: () -> Unit,
     onWallpaperButtonClick: () -> Unit,
+    showHomepageSettings: Boolean,
+    onHomepageSettingsClick: () -> Unit,
     onBookmarkPageMenuClick: () -> Unit,
     onEditBookmarkButtonClick: () -> Unit,
     onSwitchToDesktopSiteMenuClick: () -> Unit,
@@ -335,6 +339,14 @@ fun MainMenu(
                     beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_wallpaper_24),
                     onClick = onWallpaperButtonClick,
                 )
+
+                if (showHomepageSettings) {
+                    MenuItem(
+                        label = stringResource(id = R.string.browser_menu_customize_homepage),
+                        beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_home_24),
+                        onClick = onHomepageSettingsClick,
+                    )
+                }
             }
 
             MenuItem(
@@ -768,6 +780,8 @@ private fun MenuDialogPreview(
                 onMozillaAccountButtonClick = {},
                 onSettingsButtonClick = {},
                 onWallpaperButtonClick = {},
+                showHomepageSettings = true,
+                onHomepageSettingsClick = {},
                 onBookmarkPageMenuClick = {},
                 onEditBookmarkButtonClick = {},
                 onSwitchToDesktopSiteMenuClick = {},
@@ -835,6 +849,8 @@ private fun MenuDialogPrivatePreview(
                 onMozillaAccountButtonClick = {},
                 onSettingsButtonClick = {},
                 onWallpaperButtonClick = {},
+                showHomepageSettings = true,
+                onHomepageSettingsClick = {},
                 onBookmarkPageMenuClick = {},
                 onEditBookmarkButtonClick = {},
                 onSwitchToDesktopSiteMenuClick = {},
