@@ -54,6 +54,15 @@ import androidx.appcompat.R as appcompatR
 import mozilla.components.ui.icons.R as iconsR
 
 /**
+ * The surface where a top sites / shortcuts interaction occurred. Used as the `source` extra on
+ * the `top_sites` Glean events.
+ */
+enum class TopSitesSource(val sourceName: String) {
+    HOMEPAGE("homepage"),
+    SHORTCUTS_LIBRARY("shortcuts_library"),
+}
+
+/**
  * An interface that handles the view manipulation of the top sites triggered by the Interactor.
  */
 interface TopSiteController {
@@ -129,6 +138,7 @@ class DefaultTopSiteController(
     private val marsUseCases: MARSUseCases,
     private val mozAdsUseCases: MozAdsUseCases,
     private val viewLifecycleScope: CoroutineScope,
+    private val source: TopSitesSource,
 ) : TopSiteController {
 
     private val activity: Activity
@@ -139,9 +149,13 @@ class DefaultTopSiteController(
 
     override fun handleOpenInPrivateTabClicked(topSite: TopSite) {
         if (topSite is TopSite.Provided) {
-            TopSites.openContileInPrivateTab.record(NoExtras())
+            TopSites.openContileInPrivateTab.record(
+                TopSites.OpenContileInPrivateTabExtra(source = source.sourceName),
+            )
         } else {
-            TopSites.openInPrivateTab.record(NoExtras())
+            TopSites.openInPrivateTab.record(
+                TopSites.OpenInPrivateTabExtra(source = source.sourceName),
+            )
         }
 
         activity.components.appStore.dispatch(
@@ -237,10 +251,12 @@ class DefaultTopSiteController(
     }
 
     override fun handleRemoveTopSiteClicked(topSite: TopSite) {
-        TopSites.remove.record(NoExtras())
+        TopSites.remove.record(TopSites.RemoveExtra(source = source.sourceName))
 
         when (topSite.url) {
-            SupportUtils.GOOGLE_URL -> TopSites.googleTopSiteRemoved.record(NoExtras())
+            SupportUtils.GOOGLE_URL -> TopSites.googleTopSiteRemoved.record(
+                TopSites.GoogleTopSiteRemovedExtra(source = source.sourceName),
+            )
         }
 
         viewLifecycleScope.launch {
@@ -252,9 +268,15 @@ class DefaultTopSiteController(
 
     override fun handleSelectTopSite(topSite: TopSite, position: Int) {
         when (topSite) {
-            is TopSite.Default -> TopSites.openDefault.record(NoExtras())
-            is TopSite.Frecent -> TopSites.openFrecency.record(NoExtras())
-            is TopSite.Pinned -> TopSites.openPinned.record(NoExtras())
+            is TopSite.Default -> TopSites.openDefault.record(
+                TopSites.OpenDefaultExtra(source = source.sourceName),
+            )
+            is TopSite.Frecent -> TopSites.openFrecency.record(
+                TopSites.OpenFrecencyExtra(source = source.sourceName),
+            )
+            is TopSite.Pinned -> TopSites.openPinned.record(
+                TopSites.OpenPinnedExtra(source = source.sourceName),
+            )
             is TopSite.Provided -> {
                 if (settings.enableMozillaAdsClient) {
                     sendMozAdsClickInteraction(clickUrl = topSite.clickUrl)
@@ -262,14 +284,18 @@ class DefaultTopSiteController(
                     sendMarsTopSiteCallback(topSite.clickUrl)
                 }
 
-                TopSites.openContileTopSite.record(NoExtras()).also {
+                TopSites.openContileTopSite.record(
+                    TopSites.OpenContileTopSiteExtra(source = source.sourceName),
+                ).also {
                     recordTopSitesClickTelemetry(topSite, position)
                 }
             }
         }
 
         when (topSite.url) {
-            SupportUtils.GOOGLE_URL -> TopSites.openGoogleSearchAttribution.record(NoExtras())
+            SupportUtils.GOOGLE_URL -> TopSites.openGoogleSearchAttribution.record(
+                TopSites.OpenGoogleSearchAttributionExtra(source = source.sourceName),
+            )
         }
 
         val availableEngines: List<SearchEngine> = getAvailableSearchEngines()
@@ -302,7 +328,9 @@ class DefaultTopSiteController(
             }
 
             if (existingTabForUrl == null) {
-                TopSites.openInNewTab.record(NoExtras())
+                TopSites.openInNewTab.record(
+                    TopSites.OpenInNewTabExtra(source = source.sourceName),
+                )
 
                 addTabUseCase.invoke(
                     url = appendSearchAttributionToUrlIfNeeded(topSite.url),
@@ -326,7 +354,7 @@ class DefaultTopSiteController(
         TopSites.contileClick.record(
             TopSites.ContileClickExtra(
                 position = position + 1,
-                source = "newtab",
+                source = source.sourceName,
             ),
         )
 
@@ -346,7 +374,7 @@ class DefaultTopSiteController(
         TopSites.contileImpression.record(
             TopSites.ContileImpressionExtra(
                 position = position + 1,
-                source = "newtab",
+                source = source.sourceName,
             ),
         )
 
@@ -375,12 +403,16 @@ class DefaultTopSiteController(
     }
 
     override fun handleTopSiteSettingsClicked() {
-        TopSites.contileSettings.record(NoExtras())
+        TopSites.contileSettings.record(
+            TopSites.ContileSettingsExtra(source = source.sourceName),
+        )
         navController.navigate(R.id.homeSettingsFragment)
     }
 
     override fun handleSponsorPrivacyClicked() {
-        TopSites.contileSponsorsAndPrivacy.record(NoExtras())
+        TopSites.contileSponsorsAndPrivacy.record(
+            TopSites.ContileSponsorsAndPrivacyExtra(source = source.sourceName),
+        )
 
         if (navController.currentDestination?.id == R.id.shortcutsFragment) {
             navController.navigate(ShortcutsFragmentDirections.actionShortcutsFragmentToBrowserFragment())
@@ -396,7 +428,9 @@ class DefaultTopSiteController(
     }
 
     override fun handleTopSiteLongClicked(topSite: TopSite) {
-        TopSites.longPress.record(TopSites.LongPressExtra(topSite.type))
+        TopSites.longPress.record(
+            TopSites.LongPressExtra(type = topSite.type, source = source.sourceName),
+        )
     }
 
     override fun handleShowAllTopSitesClicked() {
