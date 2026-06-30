@@ -13,7 +13,6 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.SearchAction
 import mozilla.components.browser.state.search.RegionState
@@ -126,11 +125,11 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openDefault.testGetValue())
         assertEquals(1, TopSites.openDefault.testGetValue()!!.size)
-        assertNull(TopSites.openDefault.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openDefault.testGetValue()!!.single().extra!!["source"])
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -158,7 +157,7 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -207,7 +206,7 @@ class DefaultTopSiteControllerTest {
             url = "mozilla.org",
             createdAt = 0,
         )
-        val controller = spyk(createController(this))
+        val controller = spyk(createController(this, source = TopSitesSource.SHORTCUTS_LIBRARY))
 
         every { controller.getAvailableSearchEngines() } returns listOf(searchEngine)
 
@@ -221,6 +220,33 @@ class DefaultTopSiteControllerTest {
                 startLoading = true,
             )
         }
+    }
+
+    @Test
+    fun `GIVEN the shortcuts library source WHEN a top site is selected THEN record telemetry with the shortcuts library source`() = runTest {
+        val topSite = TopSite.Default(
+            id = 1L,
+            title = "Mozilla",
+            url = "mozilla.org",
+            createdAt = 0,
+        )
+        val controller = spyk(createController(this, source = TopSitesSource.SHORTCUTS_LIBRARY))
+
+        every { controller.getAvailableSearchEngines() } returns listOf(searchEngine)
+
+        controller.handleSelectTopSite(topSite, position = 0)
+
+        assertNotNull(TopSites.openInNewTab.testGetValue())
+        assertEquals(
+            "shortcuts_library",
+            TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"],
+        )
+
+        assertNotNull(TopSites.openDefault.testGetValue())
+        assertEquals(
+            "shortcuts_library",
+            TopSites.openDefault.testGetValue()!!.single().extra!!["source"],
+        )
     }
 
     @Test
@@ -251,11 +277,11 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openDefault.testGetValue())
         assertEquals(1, TopSites.openDefault.testGetValue()!!.size)
-        assertNull(TopSites.openDefault.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openDefault.testGetValue()!!.single().extra!!["source"])
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -299,11 +325,11 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openContileTopSite.testGetValue())
         assertEquals(1, TopSites.openContileTopSite.testGetValue()!!.size)
-        assertNull(TopSites.openContileTopSite.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openContileTopSite.testGetValue()!!.single().extra!!["source"])
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -346,7 +372,7 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openFrecency.testGetValue())
         assertEquals(1, TopSites.openFrecency.testGetValue()!!.size)
-        assertNull(TopSites.openFrecency.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openFrecency.testGetValue()!!.single().extra!!["source"])
 
         verify {
             selectTabUseCase.invoke(existingTabForUrl.id)
@@ -384,7 +410,7 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openPinned.testGetValue())
         assertEquals(1, TopSites.openPinned.testGetValue()!!.size)
-        assertNull(TopSites.openPinned.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openPinned.testGetValue()!!.single().extra!!["source"])
 
         verify {
             selectTabUseCase.invoke(existingTabForUrl.id)
@@ -410,15 +436,18 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openDefault.testGetValue())
         assertEquals(1, TopSites.openDefault.testGetValue()!!.size)
-        assertNull(TopSites.openDefault.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openDefault.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openGoogleSearchAttribution.testGetValue())
         assertEquals(1, TopSites.openGoogleSearchAttribution.testGetValue()!!.size)
-        assertNull(TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -448,15 +477,18 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openDefault.testGetValue())
         assertEquals(1, TopSites.openDefault.testGetValue()!!.size)
-        assertNull(TopSites.openDefault.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openDefault.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openGoogleSearchAttribution.testGetValue())
         assertEquals(1, TopSites.openGoogleSearchAttribution.testGetValue()!!.size)
-        assertNull(TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -488,11 +520,14 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openDefault.testGetValue())
         assertEquals(1, TopSites.openDefault.testGetValue()!!.size)
-        assertNull(TopSites.openDefault.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openDefault.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openGoogleSearchAttribution.testGetValue())
         assertEquals(1, TopSites.openGoogleSearchAttribution.testGetValue()!!.size)
-        assertNull(TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra!!["source"],
+        )
     }
 
     @Test
@@ -535,15 +570,18 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openPinned.testGetValue())
         assertEquals(1, TopSites.openPinned.testGetValue()!!.size)
-        assertNull(TopSites.openPinned.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openPinned.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openGoogleSearchAttribution.testGetValue())
         assertEquals(1, TopSites.openGoogleSearchAttribution.testGetValue()!!.size)
-        assertNull(TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -573,15 +611,18 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openPinned.testGetValue())
         assertEquals(1, TopSites.openPinned.testGetValue()!!.size)
-        assertNull(TopSites.openPinned.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openPinned.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openGoogleSearchAttribution.testGetValue())
         assertEquals(1, TopSites.openGoogleSearchAttribution.testGetValue()!!.size)
-        assertNull(TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -611,15 +652,18 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openFrecency.testGetValue())
         assertEquals(1, TopSites.openFrecency.testGetValue()!!.size)
-        assertNull(TopSites.openFrecency.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openFrecency.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openGoogleSearchAttribution.testGetValue())
         assertEquals(1, TopSites.openGoogleSearchAttribution.testGetValue()!!.size)
-        assertNull(TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -649,15 +693,18 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openFrecency.testGetValue())
         assertEquals(1, TopSites.openFrecency.testGetValue()!!.size)
-        assertNull(TopSites.openFrecency.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openFrecency.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openGoogleSearchAttribution.testGetValue())
         assertEquals(1, TopSites.openGoogleSearchAttribution.testGetValue()!!.size)
-        assertNull(TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.openGoogleSearchAttribution.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -689,11 +736,11 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openInNewTab.testGetValue())
         assertEquals(1, TopSites.openInNewTab.testGetValue()!!.size)
-        assertNull(TopSites.openInNewTab.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openInNewTab.testGetValue()!!.single().extra!!["source"])
 
         assertNotNull(TopSites.openContileTopSite.testGetValue())
         assertEquals(1, TopSites.openContileTopSite.testGetValue()!!.size)
-        assertNull(TopSites.openContileTopSite.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.openContileTopSite.testGetValue()!!.single().extra!!["source"])
 
         verify {
             tabsUseCases.addTab.invoke(
@@ -736,6 +783,48 @@ class DefaultTopSiteControllerTest {
 
         controller.handleSelectTopSite(topSite, position)
 
+        val event = TopSites.contileClick.testGetValue()!!
+
+        assertEquals(1, event.size)
+        assertEquals("top_sites", event[0].category)
+        assertEquals("contile_click", event[0].name)
+        assertEquals("1", event[0].extra!!["position"])
+        assertEquals("homepage", event[0].extra!!["source"])
+
+        job.join()
+        assertTrue(topSiteImpressionPinged)
+    }
+
+    @Ignore("Bug 2016888 - passes on individual test run, fails when running entire app test suite.")
+    @Test
+    fun `GIVEN Ads client is enabled WHEN the provided top site is clicked THEN send a click callback request`() = runTest {
+        val controller = spyk(createController(this))
+        val topSite = TopSite.Provided(
+            id = 3,
+            title = "Mozilla",
+            url = "https://mozilla.com",
+            clickUrl = "https://mozilla.com/click",
+            imageUrl = "https://test.com/image2.jpg",
+            impressionUrl = "https://mozilla.com/impression",
+            createdAt = 3,
+        )
+        val position = 0
+
+        every { controller.getAvailableSearchEngines() } returns listOf(searchEngine)
+
+        assertNull(TopSites.contileClick.testGetValue())
+
+        var topSiteImpressionPinged = false
+        val job = Pings.topsitesImpression.testBeforeNextSubmit {
+            assertEquals(3L, TopSites.contileTileId.testGetValue())
+            assertEquals("mozilla", TopSites.contileAdvertiser.testGetValue())
+            assertNull(TopSites.contileReportingUrl.testGetValue())
+
+            topSiteImpressionPinged = true
+        }
+
+        controller.handleSelectTopSite(topSite, position)
+
         coVerify { mozAdsUseCases.recordClickInteraction(clickUrl = topSite.clickUrl) }
 
         val event = TopSites.contileClick.testGetValue()!!
@@ -744,7 +833,7 @@ class DefaultTopSiteControllerTest {
         assertEquals("top_sites", event[0].category)
         assertEquals("contile_click", event[0].name)
         assertEquals("1", event[0].extra!!["position"])
-        assertEquals("newtab", event[0].extra!!["source"])
+        assertEquals("homepage", event[0].extra!!["source"])
 
         job.join()
         assertTrue(topSiteImpressionPinged)
@@ -780,6 +869,48 @@ class DefaultTopSiteControllerTest {
 
         controller.handleTopSiteImpression(topSite, position)
 
+        val event = TopSites.contileImpression.testGetValue()!!
+
+        assertEquals(1, event.size)
+        assertEquals("top_sites", event[0].category)
+        assertEquals("contile_impression", event[0].name)
+        assertEquals("1", event[0].extra!!["position"])
+        assertEquals("homepage", event[0].extra!!["source"])
+
+        job.join()
+        assertTrue(topSiteImpressionSubmitted)
+    }
+
+    @Ignore("Bug 2016888 - passes on individual test run, fails when running entire app test suite.")
+    @Test
+    fun `GIVEN Ads client is enabled WHEN the provided top site is seen THEN send a impression callback request`() = runTest {
+        val controller = spyk(createController(this))
+        val topSite = TopSite.Provided(
+            id = 3,
+            title = "Mozilla",
+            url = "https://mozilla.com",
+            clickUrl = "https://mozilla.com/click",
+            imageUrl = "https://test.com/image2.jpg",
+            impressionUrl = "https://mozilla.com/impression",
+            createdAt = 3,
+        )
+        val position = 0
+
+        every { controller.getAvailableSearchEngines() } returns listOf(searchEngine)
+
+        assertNull(TopSites.contileImpression.testGetValue())
+
+        var topSiteImpressionSubmitted = false
+        val job = Pings.topsitesImpression.testBeforeNextSubmit {
+            assertEquals(3L, TopSites.contileTileId.testGetValue())
+            assertEquals("mozilla", TopSites.contileAdvertiser.testGetValue())
+            assertNull(TopSites.contileReportingUrl.testGetValue())
+
+            topSiteImpressionSubmitted = true
+        }
+
+        controller.handleTopSiteImpression(topSite, position)
+
         coVerify { mozAdsUseCases.recordImpressionInteraction(impressionUrl = topSite.impressionUrl) }
 
         val event = TopSites.contileImpression.testGetValue()!!
@@ -788,10 +919,56 @@ class DefaultTopSiteControllerTest {
         assertEquals("top_sites", event[0].category)
         assertEquals("contile_impression", event[0].name)
         assertEquals("1", event[0].extra!!["position"])
-        assertEquals("newtab", event[0].extra!!["source"])
+        assertEquals("homepage", event[0].extra!!["source"])
 
         job.join()
         assertTrue(topSiteImpressionSubmitted)
+    }
+
+    @Test
+    fun `GIVEN the shortcuts library source WHEN a provided top site is clicked THEN record contile_click with the shortcuts library source`() = runTest {
+        val controller = spyk(createController(this, source = TopSitesSource.SHORTCUTS_LIBRARY))
+        val topSite = TopSite.Provided(
+            id = 3,
+            title = "Mozilla",
+            url = "https://mozilla.com",
+            clickUrl = "https://mozilla.com/click",
+            imageUrl = "https://test.com/image2.jpg",
+            impressionUrl = "https://mozilla.com/impression",
+            createdAt = 3,
+        )
+
+        every { controller.getAvailableSearchEngines() } returns listOf(searchEngine)
+
+        assertNull(TopSites.contileClick.testGetValue())
+
+        controller.handleSelectTopSite(topSite, position = 0)
+
+        val event = TopSites.contileClick.testGetValue()!!
+        assertEquals(1, event.size)
+        assertEquals("shortcuts_library", event[0].extra!!["source"])
+    }
+
+    @Test
+    fun `GIVEN the shortcuts library source WHEN a provided top site is seen THEN record contile_impression with the shortcuts library source`() = runTest {
+        val controller = spyk(createController(this, source = TopSitesSource.SHORTCUTS_LIBRARY))
+        val topSite = TopSite.Provided(
+            id = 3,
+            title = "Mozilla",
+            url = "https://mozilla.com",
+            clickUrl = "https://mozilla.com/click",
+            imageUrl = "https://test.com/image2.jpg",
+            impressionUrl = "https://mozilla.com/impression",
+            createdAt = 3,
+        )
+
+        assertNull(TopSites.contileImpression.testGetValue())
+
+        controller.handleTopSiteImpression(topSite, position = 0)
+
+        val event = TopSites.contileImpression.testGetValue()!!
+        assertEquals(1, event.size)
+        assertEquals("shortcuts_library", event[0].extra!!["source"])
     }
 
     @Test
@@ -810,11 +987,14 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.googleTopSiteRemoved.testGetValue())
         assertEquals(1, TopSites.googleTopSiteRemoved.testGetValue()!!.size)
-        assertNull(TopSites.googleTopSiteRemoved.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.googleTopSiteRemoved.testGetValue()!!.single().extra!!["source"],
+        )
 
         assertNotNull(TopSites.remove.testGetValue())
         assertEquals(1, TopSites.remove.testGetValue()!!.size)
-        assertNull(TopSites.remove.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.remove.testGetValue()!!.single().extra!!["source"])
     }
 
     @Test
@@ -877,7 +1057,7 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.contileSettings.testGetValue())
         assertEquals(1, TopSites.contileSettings.testGetValue()!!.size)
-        assertNull(TopSites.contileSettings.testGetValue()!!.single().extra)
+        assertEquals("homepage", TopSites.contileSettings.testGetValue()!!.single().extra!!["source"])
 
         verify { navController.navigate(R.id.homeSettingsFragment) }
     }
@@ -888,7 +1068,10 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.contileSponsorsAndPrivacy.testGetValue())
         assertEquals(1, TopSites.contileSponsorsAndPrivacy.testGetValue()!!.size)
-        assertNull(TopSites.contileSponsorsAndPrivacy.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.contileSponsorsAndPrivacy.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             navController.navigate(R.id.browserFragment)
@@ -906,11 +1089,14 @@ class DefaultTopSiteControllerTest {
             every { id } returns R.id.shortcutsFragment
         }
 
-        createController(this).handleSponsorPrivacyClicked()
+        createController(this, source = TopSitesSource.SHORTCUTS_LIBRARY).handleSponsorPrivacyClicked()
 
         assertNotNull(TopSites.contileSponsorsAndPrivacy.testGetValue())
         assertEquals(1, TopSites.contileSponsorsAndPrivacy.testGetValue()!!.size)
-        assertNull(TopSites.contileSponsorsAndPrivacy.testGetValue()!!.single().extra)
+        assertEquals(
+            "shortcuts_library",
+            TopSites.contileSponsorsAndPrivacy.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             navController.navigate(ShortcutsFragmentDirections.actionShortcutsFragmentToBrowserFragment())
@@ -939,6 +1125,7 @@ class DefaultTopSiteControllerTest {
         createController(this).handleTopSiteLongClicked(topSite)
 
         assertEquals(topSite.type, TopSites.longPress.testGetValue()!!.single().extra!!["type"])
+        assertEquals("homepage", TopSites.longPress.testGetValue()!!.single().extra!!["source"])
     }
 
     @Test
@@ -956,7 +1143,10 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openContileInPrivateTab.testGetValue())
         assertEquals(1, TopSites.openContileInPrivateTab.testGetValue()!!.size)
-        assertNull(TopSites.openContileInPrivateTab.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.openContileInPrivateTab.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             navController.navigate(R.id.browserFragment)
@@ -983,11 +1173,14 @@ class DefaultTopSiteControllerTest {
             impressionUrl = "",
             createdAt = 0,
         )
-        createController(this).handleOpenInPrivateTabClicked(topSite)
+        createController(this, source = TopSitesSource.SHORTCUTS_LIBRARY).handleOpenInPrivateTabClicked(topSite)
 
         assertNotNull(TopSites.openContileInPrivateTab.testGetValue())
         assertEquals(1, TopSites.openContileInPrivateTab.testGetValue()!!.size)
-        assertNull(TopSites.openContileInPrivateTab.testGetValue()!!.single().extra)
+        assertEquals(
+            "shortcuts_library",
+            TopSites.openContileInPrivateTab.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             navController.navigate(ShortcutsFragmentDirections.actionShortcutsFragmentToBrowserFragment())
@@ -1016,7 +1209,10 @@ class DefaultTopSiteControllerTest {
 
         assertNotNull(TopSites.openContileInPrivateTab.testGetValue())
         assertEquals(1, TopSites.openContileInPrivateTab.testGetValue()!!.size)
-        assertNull(TopSites.openContileInPrivateTab.testGetValue()!!.single().extra)
+        assertEquals(
+            "homepage",
+            TopSites.openContileInPrivateTab.testGetValue()!!.single().extra!!["source"],
+        )
 
         verify {
             navController.navigate(R.id.browserFragment)
@@ -1058,7 +1254,7 @@ class DefaultTopSiteControllerTest {
         assertNotNull(TopSites.openInPrivateTab.testGetValue())
         assertEquals(3, TopSites.openInPrivateTab.testGetValue()!!.size)
         for (event in TopSites.openInPrivateTab.testGetValue()!!) {
-            assertNull(event.extra)
+            assertEquals("homepage", event.extra!!["source"])
         }
     }
 
@@ -1069,7 +1265,10 @@ class DefaultTopSiteControllerTest {
         assertNotNull(ShortcutsLibrary.viewed.testGetValue())
     }
 
-    private fun createController(scope: CoroutineScope): DefaultTopSiteController =
+    private fun createController(
+        scope: CoroutineScope,
+        source: TopSitesSource = TopSitesSource.HOMEPAGE,
+    ): DefaultTopSiteController =
         DefaultTopSiteController(
             activityRef = WeakReference(activity),
             navControllerRef = WeakReference(navController),
@@ -1081,5 +1280,6 @@ class DefaultTopSiteControllerTest {
             topSitesUseCases = topSitesUseCases,
             mozAdsUseCases = mozAdsUseCases,
             viewLifecycleScope = scope,
+            source = source,
         )
 }

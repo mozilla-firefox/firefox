@@ -9305,6 +9305,12 @@ top_sites:
     type: event
     description: |
       A user opened a default top site
+    extra_keys:
+      source: &top_sites_source
+        type: string
+        description: |
+          The surface where the top site interaction occurred.
+          One of "homepage" or "shortcuts_library".
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/8125
     data_reviews:
@@ -9325,6 +9331,8 @@ top_sites:
     type: event
     description: |
       A user opened the google top site
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/17418
     data_reviews:
@@ -9365,6 +9373,8 @@ top_sites:
     type: event
     description: |
       A user opened a frecency top site
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/14565
     data_reviews:
@@ -9385,6 +9395,8 @@ top_sites:
     type: event
     description: |
       A user opened a pinned top site
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/14565
     data_reviews:
@@ -9436,6 +9448,7 @@ top_sites:
         description: |
           The type of top site. Options are: "FRECENCY", "DEFAULT",
           "PINNED", or "PROVIDED"
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/14565
       - https://github.com/mozilla-mobile/fenix/issues/23526
@@ -9458,6 +9471,8 @@ top_sites:
     type: event
     description: |
       A user opens a new tab based on a top site item
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/6757
     data_reviews:
@@ -9478,6 +9493,8 @@ top_sites:
     type: event
     description: |
       A user opens a new private tab based on a top site item
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/6757
     data_reviews:
@@ -9498,6 +9515,8 @@ top_sites:
     type: event
     description: |
       A user removes a top site item
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/6757
     data_reviews:
@@ -9518,6 +9537,8 @@ top_sites:
     type: event
     description: |
       A user removed the default Google top site
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/21841
     data_reviews:
@@ -9550,6 +9571,8 @@ top_sites:
     type: event
     description: |
       A user has opened a contile top site.
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/23526
     data_reviews:
@@ -9566,6 +9589,8 @@ top_sites:
     description: |
       A user has opened a contile top site in a private tab via the long
       press context menu.
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/23526
     data_reviews:
@@ -9582,6 +9607,8 @@ top_sites:
     description: |
       A user has selected "Settings" via the contile top sites
       longpress context menu.
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/23526
     data_reviews:
@@ -9598,6 +9625,8 @@ top_sites:
     description: |
       A user has selected "Our sponsors & your privacy" via the
       contile top sites longpress context menu.
+    extra_keys:
+      source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/23526
     data_reviews:
@@ -9702,7 +9731,9 @@ top_sites:
       A user saw a Contile top site
     extra_keys:
       source:
-        description: The source of the event, example "newtab", "urlbar"
+        description: |
+          The surface where the Contile top site was shown.
+          One of "homepage" or "shortcuts_library".
         type: string
       position:
         description: The tile placement (1-based)
@@ -9729,7 +9760,9 @@ top_sites:
       A user clicked a Contile top site
     extra_keys:
       source:
-        description: The source of the event, example "newtab", "urlbar"
+        description: |
+          The surface where the Contile top site was clicked.
+          One of "homepage" or "shortcuts_library".
         type: string
       position:
         description: The tile placement (1-based)

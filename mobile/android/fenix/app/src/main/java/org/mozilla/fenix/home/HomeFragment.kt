@@ -139,6 +139,7 @@ import org.mozilla.fenix.home.toolbar.HomeToolbarComposable.Companion.DirectToSe
 import org.mozilla.fenix.home.topsites.DefaultTopSitesView
 import org.mozilla.fenix.home.topsites.TopSitesBinding
 import org.mozilla.fenix.home.topsites.controller.DefaultTopSiteController
+import org.mozilla.fenix.home.topsites.controller.TopSitesSource
 import org.mozilla.fenix.home.topsites.getTopSitesConfig
 import org.mozilla.fenix.home.ui.Homepage
 import org.mozilla.fenix.home.ui.WallpaperBackground
@@ -1335,6 +1336,7 @@ class HomeFragment : Fragment() {
         topSitesUseCases = requireComponents.useCases.topSitesUseCase,
         mozAdsUseCases = requireComponents.useCases.mozAdsUseCases,
         viewLifecycleScope = viewLifecycleOwner.lifecycleScope,
+        source = TopSitesSource.HOMEPAGE,
     )
 
     private fun initController() {
