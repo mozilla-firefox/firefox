@@ -27,7 +27,7 @@ interface PocketStoriesInteractor {
      * Callback for then new stories are shown to the user.
      *
      * @param storiesShown The new list of [PocketRecommendedStory]es shown to the user.
-     * @param source the surface where the stories were shown.
+     * @param source The surface where the stories were shown.
      */
     fun onStoriesShown(storiesShown: List<PocketStory>, source: StoriesImpressionSource)
 
