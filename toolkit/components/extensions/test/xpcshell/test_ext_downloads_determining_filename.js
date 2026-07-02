@@ -4,6 +4,10 @@ const { Downloads } = ChromeUtils.importESModule(
   "resource://gre/modules/Downloads.sys.mjs"
 );
 
+const { DownloadIntegration } = ChromeUtils.importESModule(
+  "resource://gre/modules/DownloadIntegration.sys.mjs"
+);
+
 const gServer = createHttpServer();
 gServer.registerDirectory("/data/", do_get_file("data"));
 
@@ -427,6 +431,130 @@ add_task(async function test_onDeterminingFilename_removeListener() {
     "File was saved with the original name after the listener was removed"
   );
   fileInDownloadDir(TXT_FILE).remove(false);
+
+  await extension.unload();
+});
+
+// ---------------------------------------------------------------------------
+// Test: markFilenameAlreadyDetermined prevents listener from firing a second time
+// ---------------------------------------------------------------------------
+add_task(async function test_onDeterminingFilename_double_fire_guard() {
+  const target = PathUtils.join(downloadDir.path, "guard_test.txt");
+
+  let callCount = 0;
+  const callback = async () => {
+    callCount++;
+  };
+  DownloadIntegration._determineFilenameCallbacks.add(callback);
+
+  const download = await Downloads.createDownload({
+    source: TXT_URL,
+    target,
+  });
+
+  // Simulate what HelperAppDlg / the saveAs path does before Download.start().
+  DownloadIntegration.markFilenameAlreadyDetermined(download);
+
+  await download.start();
+  await download.whenSucceeded();
+
+  equal(callCount, 0, "Listener not called when download is already marked as determined");
+
+  DownloadIntegration._determineFilenameCallbacks.delete(callback);
+
+  const list = await Downloads.getList(Downloads.ALL);
+  list.remove(download);
+  await IOUtils.remove(target);
+});
+
+// ---------------------------------------------------------------------------
+// Test: uniquify counter increments past (1) when the first candidate is taken
+// ---------------------------------------------------------------------------
+add_task(async function test_onDeterminingFilename_uniquify_increments_counter() {
+  for (const name of ["file.txt", "file(1).txt"]) {
+    let f = downloadDir.clone();
+    f.append(name);
+    f.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
+  }
+
+  const extension = ExtensionTestUtils.loadExtension({
+    manifest: { permissions: ["downloads"] },
+    background() {
+      browser.downloads.onDeterminingFilename.addListener(() => ({
+        filename: "file.txt",
+        conflictAction: "uniquify",
+      }));
+      browser.test.onMessage.addListener(async url => {
+        await browser.downloads.download({ url });
+        browser.test.sendMessage("done");
+      });
+      browser.test.sendMessage("ready");
+    },
+  });
+  await extension.startup();
+  await extension.awaitMessage("ready");
+
+  extension.sendMessage(TXT_URL);
+  await extension.awaitMessage("done");
+  await waitForDownloads();
+
+  ok(
+    fileInDownloadDir("file(2).txt").exists(),
+    "Download skipped to (2) when file.txt and file(1).txt were already present"
+  );
+  equal(
+    fileInDownloadDir("file(2).txt").fileSize,
+    TXT_LEN,
+    "Uniquified file has the correct downloaded content"
+  );
+
+  for (const name of ["file.txt", "file(1).txt", "file(2).txt"]) {
+    fileInDownloadDir(name).remove(false);
+  }
+
+  await extension.unload();
+});
+
+// ---------------------------------------------------------------------------
+// Test: omitting conflictAction defaults to "uniquify"
+// ---------------------------------------------------------------------------
+add_task(async function test_onDeterminingFilename_default_conflict_action_is_uniquify() {
+  let existing = downloadDir.clone();
+  existing.append("default_conflict.txt");
+  existing.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
+
+  const extension = ExtensionTestUtils.loadExtension({
+    manifest: { permissions: ["downloads"] },
+    background() {
+      browser.downloads.onDeterminingFilename.addListener(() => ({
+        filename: "default_conflict.txt",
+      }));
+      browser.test.onMessage.addListener(async url => {
+        await browser.downloads.download({ url });
+        browser.test.sendMessage("done");
+      });
+      browser.test.sendMessage("ready");
+    },
+  });
+  await extension.startup();
+  await extension.awaitMessage("ready");
+
+  extension.sendMessage(TXT_URL);
+  await extension.awaitMessage("done");
+  await waitForDownloads();
+
+  ok(
+    fileInDownloadDir("default_conflict(1).txt").exists(),
+    "File was uniquified when conflictAction was not specified"
+  );
+  equal(
+    fileInDownloadDir("default_conflict.txt").fileSize,
+    0,
+    "Original pre-existing file was not overwritten"
+  );
+
+  fileInDownloadDir("default_conflict.txt").remove(false);
+  fileInDownloadDir("default_conflict(1).txt").remove(false);
 
   await extension.unload();
 });
