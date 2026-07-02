@@ -418,6 +418,93 @@ export var DownloadIntegration = {
   _determineFilenameCallbacks: new Set(),
 
   /**
+   * Downloads for which determineFilename() was already called early (before
+   * the Save As dialog) via the extension API.  Download.start() checks this
+   * to avoid firing onDeterminingFilename a second time.
+   */
+  _determinedDownloads: new WeakSet(),
+
+  markFilenameAlreadyDetermined(download) {
+    this._determinedDownloads.add(download);
+  },
+
+  /**
+   * Tracks nsIHelperAppLauncher objects for which determineFilenameBeforeDialog
+   * has already been called, so DownloadLegacy can avoid double-firing
+   * onDeterminingFilename in Download.start().
+   */
+  _processedLaunchers: new WeakSet(),
+
+  markLauncherProcessed(launcher) {
+    this._processedLaunchers.add(launcher.QueryInterface(Ci.nsISupports));
+  },
+
+  wasLauncherProcessed(cancelable) {
+    try {
+      return this._processedLaunchers.has(
+        cancelable.QueryInterface(Ci.nsISupports)
+      );
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Called from the helper-app download dialog before either the auto-save
+   * path or the Save As file picker is chosen, giving onDeterminingFilename
+   * listeners a chance to redirect the download to a different filename before
+   * the user sees any dialog.
+   *
+   * @param {string} url            Source URL of the download.
+   * @param {string} tentativePath  Full tentative destination path (using the
+   *                                default download directory and suggested
+   *                                filename).
+   * @param {string|null} mimeType  MIME type of the download, if known.
+   * @param {boolean} isPrivate     Whether this is a private-browsing download.
+   * @returns {Promise<string>}     Resolves to the (possibly updated) path.
+   */
+  async determineFilenameBeforeDialog(url, tentativePath, mimeType, isPrivate) {
+    if (!this._determineFilenameCallbacks.size) {
+      return tentativePath;
+    }
+    const syntheticDownload = {
+      source: { url, isPrivate: !!isPrivate },
+      target: { path: tentativePath, partFilePath: `${tentativePath}.part` },
+      _syntheticSerialized: {
+        id: -1,
+        url,
+        referrer: null,
+        filename: PathUtils.filename(tentativePath),
+        incognito: !!isPrivate,
+        cookieStoreId: isPrivate ? "firefox-private" : "firefox-default",
+        danger: "safe",
+        mime: mimeType ?? null,
+        startTime: null,
+        endTime: null,
+        estimatedEndTime: null,
+        state: "in_progress",
+        paused: false,
+        canResume: false,
+        error: null,
+        bytesReceived: 0,
+        totalBytes: -1,
+        fileSize: -1,
+        exists: false,
+        byExtensionId: null,
+        byExtensionName: null,
+      },
+    };
+    console.log(
+      `[DownloadIntegration] determineFilenameBeforeDialog: url=${url}, tentativePath=${tentativePath}, callbacks=${this._determineFilenameCallbacks.size}`
+    );
+    await this.determineFilename(syntheticDownload);
+    console.log(
+      `[DownloadIntegration] determineFilenameBeforeDialog result: ${syntheticDownload.target.path}`
+    );
+    return syntheticDownload.target.path;
+  },
+
+  /**
    * Called by Download.start() before execution begins, to give registered
    * callbacks (i.e. WebExtension onDeterminingFilename listeners) a chance to
    * override the target filename.
@@ -425,6 +512,9 @@ export var DownloadIntegration = {
    * @param {Download} download
    */
   async determineFilename(download) {
+    if (this._determinedDownloads.has(download)) {
+      return;
+    }
     console.log(
       `[DownloadIntegration] determineFilename called for ${download.target.path} (${this._determineFilenameCallbacks.size} listener(s))`
     );
