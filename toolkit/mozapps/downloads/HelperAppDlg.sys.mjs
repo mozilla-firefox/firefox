@@ -288,6 +288,45 @@ export class nsUnknownContentTypeDialog {
     }
 
     (async () => {
+      // Retrieve the preferred download directory once, used both for the
+      // extension hook below and for auto-save / file-picker defaults.
+      let preferredDir = await Downloads.getPreferredDownloadsDirectory();
+
+      // Give onDeterminingFilename listeners a chance to rename the file
+      // before the user sees any dialog or the auto-save path is chosen.
+      console.log(
+        `[HelperAppDlg] promptForSaveToFileAsync: aDefaultFileName=${aDefaultFileName}, preferredDir=${preferredDir}`
+      );
+      if (aDefaultFileName) {
+        const isPrivate =
+          BrowsingContext.get(aLauncher.browsingContextId)
+            ?.usePrivateBrowsing ?? false;
+        const tentativePath = PathUtils.join(preferredDir, aDefaultFileName);
+        console.log(
+          `[HelperAppDlg] calling determineFilenameBeforeDialog: url=${aLauncher.source.spec}, tentativePath=${tentativePath}, isPrivate=${isPrivate}`
+        );
+        const newPath =
+          await lazy.DownloadIntegration.determineFilenameBeforeDialog(
+            aLauncher.source.spec,
+            tentativePath,
+            aLauncher.MIMEInfo?.MIMEType ?? null,
+            isPrivate
+          );
+        console.log(
+          `[HelperAppDlg] determineFilenameBeforeDialog returned: ${newPath}`
+        );
+        lazy.DownloadIntegration.markLauncherProcessed(aLauncher);
+        if (newPath !== tentativePath) {
+          const sep = AppConstants.platform === "win" ? "\\" : "/";
+          aDefaultFileName = newPath.startsWith(preferredDir + sep)
+            ? newPath.slice(preferredDir.length + 1)
+            : PathUtils.filename(newPath);
+          console.log(
+            `[HelperAppDlg] aDefaultFileName updated to: ${aDefaultFileName}`
+          );
+        }
+      }
+
       if (!aForcePrompt) {
         // Check to see if the user wishes to auto save to the default download
         // folder without prompting. Note that preference might not be set.
@@ -297,17 +336,36 @@ export class nsUnknownContentTypeDialog {
         );
 
         if (autodownload) {
-          // Retrieve the user's default download directory
-          let preferredDir = await Downloads.getPreferredDownloadsDirectory();
           let defaultFolder = new FileUtils.File(preferredDir);
 
           try {
             if (aDefaultFileName) {
-              result = this.validateLeafName(
-                defaultFolder,
-                aDefaultFileName,
-                aSuggestedFileExtension
-              );
+              const sep = AppConstants.platform === "win" ? "\\" : "/";
+              const sepIdx = aDefaultFileName.lastIndexOf(sep);
+              if (sepIdx !== -1) {
+                const subdir = aDefaultFileName.slice(0, sepIdx);
+                const leafName = aDefaultFileName.slice(sepIdx + 1);
+                const subFolder = defaultFolder.clone();
+                for (const part of subdir.split(sep)) {
+                  if (part) {
+                    subFolder.append(part);
+                  }
+                }
+                await IOUtils.makeDirectory(subFolder.path, {
+                  createAncestors: true,
+                });
+                result = this.validateLeafName(
+                  subFolder,
+                  leafName,
+                  aSuggestedFileExtension
+                );
+              } else {
+                result = this.validateLeafName(
+                  defaultFolder,
+                  aDefaultFileName,
+                  aSuggestedFileExtension
+                );
+              }
             }
           } catch (ex) {
             // When the default download directory is write-protected,
@@ -329,8 +387,28 @@ export class nsUnknownContentTypeDialog {
         Cc["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
       var windowTitle = bundle.GetStringFromName("saveDialogTitle");
       picker.init(parent.browsingContext, windowTitle, nsIFilePicker.modeSave);
+
+      // If the extension suggested a subdirectory (e.g. "images/photo.png"),
+      // split it out so the file picker shows the leaf name only and opens in
+      // the right directory.
+      const sep = AppConstants.platform === "win" ? "\\" : "/";
+      let pickerLeafName = aDefaultFileName;
+      let suggestedPickerDir = null;
       if (aDefaultFileName) {
-        picker.defaultString = this.getFinalLeafName(aDefaultFileName);
+        const sepIdx = aDefaultFileName.lastIndexOf(sep);
+        if (sepIdx !== -1) {
+          const subdir = aDefaultFileName.slice(0, sepIdx);
+          pickerLeafName = aDefaultFileName.slice(sepIdx + 1);
+          const dir = new FileUtils.File(preferredDir);
+          for (const part of subdir.split(sep)) {
+            if (part) {
+              dir.append(part);
+            }
+          }
+          await IOUtils.makeDirectory(dir.path, { createAncestors: true });
+          suggestedPickerDir = dir;
+        }
+        picker.defaultString = this.getFinalLeafName(pickerLeafName);
       }
 
       if (aSuggestedFileExtension) {
@@ -353,14 +431,12 @@ export class nsUnknownContentTypeDialog {
 
       picker.appendFilters(nsIFilePicker.filterAll);
 
-      // Default to lastDir if it is valid, otherwise use the user's default
-      // downloads directory.  getPreferredDownloadsDirectory should always
-      // return a valid directory path, so we can safely default to it.
-      let preferredDir = await Downloads.getPreferredDownloadsDirectory();
-      picker.displayDirectory = new FileUtils.File(preferredDir);
+      // If the extension suggested a subdirectory, open the picker there.
+      // Otherwise default to lastDir (if valid) or the preferred downloads dir.
+      picker.displayDirectory = suggestedPickerDir ?? new FileUtils.File(preferredDir);
 
       gDownloadLastDir.getFileAsync(aLauncher.source).then(lastDir => {
-        if (lastDir && isUsableDirectory(lastDir)) {
+        if (!suggestedPickerDir && lastDir && isUsableDirectory(lastDir)) {
           picker.displayDirectory = lastDir;
         }
 
