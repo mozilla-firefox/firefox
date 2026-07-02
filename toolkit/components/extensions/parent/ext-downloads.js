@@ -661,8 +661,19 @@ async function applyFilenameSuggestion(suggestion, currentPath) {
 
   if (await IOUtils.exists(newPath)) {
     if (resolvedConflictAction === "uniquify") {
-      return DownloadPaths.createNiceUniqueFile(new FileUtils.File(newPath))
-        .path;
+      // Compute a unique name without creating a placeholder file, since the
+      // download hasn't started yet (the file picker may still run). The
+      // actual placeholder is created by validateLeafName or the download core.
+      const uniqueDir = PathUtils.parent(newPath);
+      let [base, ext] = DownloadPaths.splitBaseNameAndExtension(
+        PathUtils.filename(newPath)
+      );
+      for (let i = 1; i < 10000; i++) {
+        const candidate = PathUtils.join(uniqueDir, base + "(" + i + ")" + ext);
+        if (!(await IOUtils.exists(candidate))) {
+          return candidate;
+        }
+      }
     }
     // "overwrite" — use the path as-is
   }
