@@ -58,7 +58,7 @@ interface PocketStoriesController {
      * Callback to decide what should happen as an effect of a new list of stories being shown.
      *
      * @param storiesShown the new list of [PocketStory]es shown to the user.
-     * @param source the surface where the stories were shown.
+     * @param source The surface where the stories were shown.
      */
     fun handleStoriesShown(storiesShown: List<PocketStory>, source: StoriesImpressionSource)
 
@@ -75,7 +75,7 @@ interface PocketStoriesController {
      * @param storyClicked The just clicked [PocketStory].
      * @param storyPosition `row x column x index` matrix representing the grid and index position
      * of the clicked story.
-     * @param source the surface where the clicked story was shown.
+     * @param source The surface where the clicked story was shown.
      */
     fun handleStoryClicked(
         storyClicked: PocketStory,

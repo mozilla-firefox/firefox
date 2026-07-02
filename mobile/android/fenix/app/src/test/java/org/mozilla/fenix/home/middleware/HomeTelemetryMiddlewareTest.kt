@@ -56,7 +56,7 @@ class HomeTelemetryMiddlewareTest {
             assertEquals(recommendation.topic, extraValues["topic"])
             assertEquals(position.toString(), extraValues["position"])
             assertEquals("false", extraValues["is_sponsored"])
-            assertEquals("homepage", extraValues["source"])
+            assertEquals(StoriesImpressionSource.HOMEPAGE.sourceName, extraValues["source"])
 
             pingReceived = true
         }

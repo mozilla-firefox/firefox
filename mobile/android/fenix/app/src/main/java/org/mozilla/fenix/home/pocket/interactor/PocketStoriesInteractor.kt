@@ -27,7 +27,7 @@ interface PocketStoriesInteractor {
      * Callback for then new stories are shown to the user.
      *
      * @param storiesShown The new list of [PocketRecommendedStory]es shown to the user.
-     * @param source the surface where the stories were shown.
+     * @param source The surface where the stories were shown.
      */
     fun onStoriesShown(storiesShown: List<PocketStory>, source: StoriesImpressionSource)
 
@@ -44,7 +44,7 @@ interface PocketStoriesInteractor {
      * @param storyClicked The just clicked [PocketStory].
      * @param storyPosition `row x column x index` matrix representing the grid and index position
      * of the clicked story.
-     * @param source the surface where the clicked story was shown.
+     * @param source The surface where the clicked story was shown.
      */
     fun onStoryClicked(
         storyClicked: PocketStory,
