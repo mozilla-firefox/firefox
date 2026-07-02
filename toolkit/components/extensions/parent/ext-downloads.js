@@ -731,12 +731,12 @@ this.downloads = class extends ExtensionAPIPersistent {
         console.log(
           `[ext-downloads] onDeterminingFilename fired for extension "${extension.id}", download target: ${download.target.path}`
         );
-        const item =
-          DownloadMap.byDownload.get(download) ||
-          DownloadMap.newFromDownload(download, null);
+        const serialized = download._syntheticSerialized ??
+          (DownloadMap.byDownload.get(download) ||
+           DownloadMap.newFromDownload(download, null)).serialize();
         let suggestion;
         try {
-          suggestion = await fire.async(item.serialize());
+          suggestion = await fire.async(serialized);
         } catch (e) {
           Cu.reportError(e);
           return;
@@ -936,6 +936,8 @@ this.downloads = class extends ExtensionAPIPersistent {
             return true;
           }
 
+          let determineFilenameCalledBeforeDialog = false;
+
           async function createTarget() {
             if (!filename) {
               let uri = Services.io.newURI(options.url);
@@ -1001,6 +1003,41 @@ this.downloads = class extends ExtensionAPIPersistent {
 
             if (!("windowTracker" in global)) {
               return target;
+            }
+
+            // Give onDeterminingFilename listeners a chance to change the
+            // filename before the user sees the Save As dialog.
+            {
+              const syntheticDownload = {
+                source: { url: options.url, isPrivate: options.incognito },
+                target: { path: target, partFilePath: `${target}.part` },
+                _syntheticSerialized: {
+                  id: DownloadMap.currentId + 1,
+                  url: options.url,
+                  referrer: null,
+                  filename: target,
+                  incognito: !!options.incognito,
+                  cookieStoreId: options.incognito ? PRIVATE_STORE : DEFAULT_STORE,
+                  danger: "safe",
+                  mime: null,
+                  startTime: null,
+                  endTime: null,
+                  estimatedEndTime: null,
+                  state: "in_progress",
+                  paused: false,
+                  canResume: false,
+                  error: null,
+                  bytesReceived: 0,
+                  totalBytes: -1,
+                  fileSize: -1,
+                  exists: false,
+                  byExtensionId: extension.id,
+                  byExtensionName: extension.name,
+                },
+              };
+              await DownloadIntegration.determineFilename(syntheticDownload);
+              target = syntheticDownload.target.path;
+              determineFilenameCalledBeforeDialog = true;
             }
 
             // At this point we are committed to displaying the file picker.
@@ -1162,6 +1199,10 @@ this.downloads = class extends ExtensionAPIPersistent {
           const list = await DownloadMap.getDownloadList();
           const item = DownloadMap.newFromDownload(download, extension);
           list.add(download);
+
+          if (determineFilenameCalledBeforeDialog) {
+            DownloadIntegration.markFilenameAlreadyDetermined(download);
+          }
 
           // This is necessary to make pause/resume work.
           download.tryToKeepPartialData = true;
