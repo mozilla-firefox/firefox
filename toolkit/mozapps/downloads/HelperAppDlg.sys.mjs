@@ -294,17 +294,11 @@ export class nsUnknownContentTypeDialog {
 
       // Give onDeterminingFilename listeners a chance to rename the file
       // before the user sees any dialog or the auto-save path is chosen.
-      console.log(
-        `[HelperAppDlg] promptForSaveToFileAsync: aDefaultFileName=${aDefaultFileName}, preferredDir=${preferredDir}`
-      );
       if (aDefaultFileName) {
         const isPrivate =
           BrowsingContext.get(aLauncher.browsingContextId)
             ?.usePrivateBrowsing ?? false;
         const tentativePath = PathUtils.join(preferredDir, aDefaultFileName);
-        console.log(
-          `[HelperAppDlg] calling determineFilenameBeforeDialog: url=${aLauncher.source.spec}, tentativePath=${tentativePath}, isPrivate=${isPrivate}`
-        );
         const newPath =
           await lazy.DownloadIntegration.determineFilenameBeforeDialog(
             aLauncher.source.spec,
@@ -312,18 +306,12 @@ export class nsUnknownContentTypeDialog {
             aLauncher.MIMEInfo?.MIMEType ?? null,
             isPrivate
           );
-        console.log(
-          `[HelperAppDlg] determineFilenameBeforeDialog returned: ${newPath}`
-        );
         lazy.DownloadIntegration.markLauncherProcessed(aLauncher);
         if (newPath !== tentativePath) {
           const sep = AppConstants.platform === "win" ? "\\" : "/";
           aDefaultFileName = newPath.startsWith(preferredDir + sep)
             ? newPath.slice(preferredDir.length + 1)
             : PathUtils.filename(newPath);
-          console.log(
-            `[HelperAppDlg] aDefaultFileName updated to: ${aDefaultFileName}`
-          );
         }
       }
 

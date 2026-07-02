@@ -739,9 +739,6 @@ this.downloads = class extends ExtensionAPIPersistent {
         if (!extension.privateBrowsingAllowed && download.source.isPrivate) {
           return;
         }
-        console.log(
-          `[ext-downloads] onDeterminingFilename fired for extension "${extension.id}", download target: ${download.target.path}`
-        );
         const serialized = download._syntheticSerialized ??
           (DownloadMap.byDownload.get(download) ||
            DownloadMap.newFromDownload(download, null)).serialize();
@@ -752,19 +749,12 @@ this.downloads = class extends ExtensionAPIPersistent {
           Cu.reportError(e);
           return;
         }
-        console.log(
-          `[ext-downloads] onDeterminingFilename listener returned suggestion:`,
-          suggestion
-        );
         if (suggestion) {
           const newPath = await applyFilenameSuggestion(
             suggestion,
             download.target.path
           );
           if (newPath) {
-            console.log(
-              `[ext-downloads] onDeterminingFilename changing path: ${download.target.path} -> ${newPath}`
-            );
             download.target.path = newPath;
             download.target.partFilePath = `${newPath}.part`;
           }

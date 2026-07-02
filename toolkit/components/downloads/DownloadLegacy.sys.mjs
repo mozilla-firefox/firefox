@@ -439,14 +439,7 @@ DownloadLegacyTransfer.prototype = {
         // from firing it again.  Downloads that bypassed HelperAppDlg (e.g.
         // SetDownloadToLaunch for helper-app opens) go through normally.
         if (this._determineFilenameCalledBeforeDialog) {
-          console.log(
-            `[DownloadLegacy] marking download as already determined: ${aDownload.target.path}`
-          );
           lazy.DownloadIntegration.markFilenameAlreadyDetermined(aDownload);
-        } else {
-          console.log(
-            `[DownloadLegacy] download was NOT pre-processed by HelperAppDlg; determineFilename will run in Download.start(): ${aDownload.target.path}`
-          );
         }
 
         // Start the download before allowing it to be controlled.  Ignore errors.

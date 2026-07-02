@@ -494,13 +494,7 @@ export var DownloadIntegration = {
         byExtensionName: null,
       },
     };
-    console.log(
-      `[DownloadIntegration] determineFilenameBeforeDialog: url=${url}, tentativePath=${tentativePath}, callbacks=${this._determineFilenameCallbacks.size}`
-    );
     await this.determineFilename(syntheticDownload);
-    console.log(
-      `[DownloadIntegration] determineFilenameBeforeDialog result: ${syntheticDownload.target.path}`
-    );
     return syntheticDownload.target.path;
   },
 
@@ -515,14 +509,8 @@ export var DownloadIntegration = {
     if (this._determinedDownloads.has(download)) {
       return;
     }
-    console.log(
-      `[DownloadIntegration] determineFilename called for ${download.target.path} (${this._determineFilenameCallbacks.size} listener(s))`
-    );
     const originalPath = download.target.path;
     for (let callback of this._determineFilenameCallbacks) {
-      console.log(
-        `[DownloadIntegration] invoking onDeterminingFilename callback for ${download.target.path}`
-      );
       try {
         await callback(download);
       } catch (ex) {
