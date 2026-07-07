@@ -1,4 +1,4 @@
-FROM debian:11.11
+FROM debian:13.5
 
 COPY setup.sh /root
 RUN cd /root && ./setup.sh
