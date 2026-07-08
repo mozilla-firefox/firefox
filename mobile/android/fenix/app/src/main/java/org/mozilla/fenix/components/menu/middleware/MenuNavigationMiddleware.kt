@@ -249,7 +249,7 @@ class MenuNavigationMiddleware(
                         },
                     )
 
-                    onDismiss()
+                    navController.popBackStack(R.id.menuDialogFragment, true)
                 }
 
                 is MenuAction.Navigate.ManageExtensions -> navController.nav(
