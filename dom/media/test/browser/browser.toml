@@ -36,6 +36,7 @@ tags = "os_integration"
 skip-if = [
   "os == 'mac' && os_version == '14.70' && arch == 'x86_64'", # Bug 1909908
   "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1909908
+  "os == 'win' && asan", # Bug 1883976
 ]
 
 ["browser_glean_media_error.js"]
