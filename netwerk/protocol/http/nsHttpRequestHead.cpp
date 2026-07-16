@@ -355,7 +355,7 @@ bool nsHttpRequestHead::IsSafeMethod() const {
     return false;
   }
 
-  return (!strcmp(mMethod.get(), "PROPFIND") ||
+  return (!strcmp(mMethod.get(), "PROPFIND") || !strcmp(mMethod.get(), "QUERY") ||
           !strcmp(mMethod.get(), "REPORT") || !strcmp(mMethod.get(), "SEARCH"));
 }
 
