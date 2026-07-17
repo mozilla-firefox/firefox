@@ -8,6 +8,7 @@
 #include "mozilla/dom/Promise-inl.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/WebTransportLog.h"
+#include <cmath>
 
 namespace mozilla::dom {
 
@@ -61,7 +62,7 @@ void WebTransportDatagramDuplexStream::SetIncomingMaxAge(double aMaxAge,
                                                          ErrorResult& aRv) {
   // https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-incomingmaxage
   // Step 1
-  if (isnan(aMaxAge) || aMaxAge < 0.) {
+  if (std::isnan(aMaxAge) || aMaxAge < 0.) {
     aRv.ThrowRangeError("Invalid IncomingMaxAge");
     return;
   }
@@ -77,7 +78,7 @@ void WebTransportDatagramDuplexStream::SetOutgoingMaxAge(double aMaxAge,
                                                          ErrorResult& aRv) {
   // https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-outgoingmaxage
   // Step 1
-  if (isnan(aMaxAge) || aMaxAge < 0.) {
+  if (std::isnan(aMaxAge) || aMaxAge < 0.) {
     aRv.ThrowRangeError("Invalid OutgoingMaxAge");
     return;
   }
@@ -93,7 +94,7 @@ void WebTransportDatagramDuplexStream::SetIncomingHighWaterMark(
     double aWaterMark, ErrorResult& aRv) {
   // https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-incominghighwatermark
   // Step 1
-  if (isnan(aWaterMark) || aWaterMark < 0.) {
+  if (std::isnan(aWaterMark) || aWaterMark < 0.) {
     aRv.ThrowRangeError("Invalid OutgoingMaxAge");
     return;
   }
@@ -109,7 +110,7 @@ void WebTransportDatagramDuplexStream::SetOutgoingHighWaterMark(
     double aWaterMark, ErrorResult& aRv) {
   // https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-outgoinghighwatermark
   // Step 1
-  if (isnan(aWaterMark) || aWaterMark < 0.) {
+  if (std::isnan(aWaterMark) || aWaterMark < 0.) {
     aRv.ThrowRangeError("Invalid OutgoingHighWaterMark");
     return;
   }
