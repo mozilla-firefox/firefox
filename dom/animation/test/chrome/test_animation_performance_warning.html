@@ -201,6 +201,8 @@ function testBasicOperation() {
     },
   ].forEach(subtest => {
     promise_test(async t => {
+      await waitForFrame();
+
       var animation = addDivAndAnimate(t, { class: 'compositable' },
                                        subtest.frames, 100 * MS_PER_SEC);
       await waitForPaints();
@@ -306,6 +308,8 @@ function testKeyframesWithGeometricProperties() {
     },
   ].forEach(subtest => {
     promise_test(async t => {
+      await waitForFrame();
+
       var animation = addDivAndAnimate(t, { class: 'compositable' },
                                        subtest.frames, 100 * MS_PER_SEC);
       await waitForPaints();
@@ -359,6 +363,8 @@ function testSetOfGeometricProperties() {
 
   geometricProperties.forEach(property => {
     promise_test(async t => {
+      await waitForFrame();
+
       const keyframes = {
         [propertyToIDL(property)]: [ '100px', '200px' ],
         transform: [ 'translate(0px)', 'translate(100px)' ]
@@ -487,6 +493,8 @@ function testStyleChanges() {
     },
   ].forEach(subtest => {
     promise_test(async t => {
+      await waitForFrame();
+
       var animation = addDivAndAnimate(t, { class: 'compositable' },
                                        subtest.frames, 100 * MS_PER_SEC);
       await waitForPaints();
@@ -565,6 +573,8 @@ function testIdChanges() {
     },
   ].forEach(subtest => {
     promise_test(async t => {
+      await waitForFrame();
+
       if (subtest.createelement) {
         addDiv(t, { style: subtest.createelement });
       }
@@ -675,6 +685,8 @@ function testMultipleAnimations() {
     },
   ].forEach(subtest => {
     promise_test(async t => {
+      await waitForFrame();
+
       var div = addDiv(t, { class: 'compositable' });
       var animations = subtest.animations.map(anim => {
         var animation = div.animate(anim.frames, 100 * MS_PER_SEC);
@@ -858,6 +870,8 @@ function testMultipleAnimationsWithGeometricKeyframes() {
     },
   ].forEach(subtest => {
     promise_test(async t => {
+      await waitForFrame();
+
       var div = addDiv(t, { class: 'compositable' });
       var animations = subtest.animations.map(anim => {
         var animation = div.animate(anim.frames, 100 * MS_PER_SEC);
@@ -1002,6 +1016,8 @@ function testMultipleAnimationsWithGeometricAnimations() {
     },
   ].forEach(subtest => {
     promise_test(async t => {
+      await waitForFrame();
+
       var div = addDiv(t, { class: 'compositable' });
       var animations = subtest.animations.map(anim => {
         var animation = div.animate(anim.frames, 100 * MS_PER_SEC);
@@ -1096,19 +1112,23 @@ function testSmallElements() {
     },
   ].forEach(subtest => {
     promise_test(async t => {
-    var div = addDiv(t, subtest.style);
-    var animation = div.animate(subtest.frames, 100 * MS_PER_SEC);
-    await waitForPaints();
+      await waitForFrame();
 
-    assert_animation_property_state_equals(
-      animation.effect.getProperties(),
-      subtest.expected);
-    }, subtest.desc);
+      var div = addDiv(t, subtest.style);
+      var animation = div.animate(subtest.frames, 100 * MS_PER_SEC);
+      await waitForPaints();
+
+      assert_animation_property_state_equals(
+        animation.effect.getProperties(),
+        subtest.expected);
+      }, subtest.desc);
   });
 }
 
 function testSynchronizedAnimations() {
   promise_test(async t => {
+    await waitForFrame();
+
     const elemA = addDiv(t, { class: 'compositable' });
     const elemB = addDiv(t, { class: 'compositable' });
 
@@ -1130,6 +1150,8 @@ function testSynchronizedAnimations() {
      + ' (compositor animation created first)');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const elemA = addDiv(t, { class: 'compositable' });
     const elemB = addDiv(t, { class: 'compositable' });
     const elemC = addDiv(t, { class: 'compositable' });
@@ -1161,6 +1183,8 @@ function testSynchronizedAnimations() {
      + ' (compositor animation created first/second)');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const elemA = addDiv(t, { class: 'compositable' });
     const elemB = addDiv(t, { class: 'compositable' });
     const elemC = addDiv(t, { class: 'compositable' });
@@ -1191,6 +1215,8 @@ function testSynchronizedAnimations() {
      + ' (compositor animation created second/third)');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const attrs = { class: 'compositable',
                     style: 'transition: all 100s' };
     const elemA = addDiv(t, attrs);
@@ -1237,6 +1263,8 @@ function testSynchronizedAnimations() {
   }, 'Transitions created before and after a tick are synchronized');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const elemA = addDiv(t, { class: 'compositable' });
     const elemB = addDiv(t, { class: 'compositable' });
 
@@ -1263,6 +1291,8 @@ function testSynchronizedAnimations() {
      + ' animations');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const transitionElem = addDiv(t, {
       style: 'margin-left: 0px; transition: margin-left 100s',
     });
@@ -1288,6 +1318,8 @@ function testSynchronizedAnimations() {
   }, 'CSS Animations are NOT synchronized with CSS Transitions');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const elemA = addDiv(t, { class: 'compositable' });
     const elemB = addDiv(t, { class: 'compositable' });
 
@@ -1310,6 +1342,8 @@ function testSynchronizedAnimations() {
      + ' started in the previous frame');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const elemA = addDiv(t, { class: 'compositable' });
     const elemB = addDiv(t, { class: 'compositable' });
 
@@ -1332,6 +1366,8 @@ function testSynchronizedAnimations() {
      + ' started in the next frame');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const elemA = addDiv(t, { class: 'compositable' });
     const elemB = addDiv(t, { class: 'compositable' });
 
@@ -1351,6 +1387,8 @@ function testSynchronizedAnimations() {
   }, 'Paused animations are not synchronized');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const elemA = addDiv(t, { class: 'compositable' });
     const elemB = addDiv(t, { class: 'compositable' });
 
@@ -1377,6 +1415,8 @@ function testSynchronizedAnimations() {
      + ' and NOT their start time');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const elemA = addDiv(t, { class: 'compositable' });
     const elemB = addDiv(t, { class: 'compositable' });
 
@@ -1406,6 +1446,8 @@ function testSynchronizedAnimations() {
   }, 'An initially synchronized animation may be unsynchronized if restarted');
 
   promise_test(async t => {
+    await waitForFrame();
+
     const elemA = addDiv(t, { class: 'compositable' });
     const elemB = addDiv(t, { class: 'compositable' });
 
@@ -1440,6 +1482,8 @@ function testTooLargeFrame() {
     },
   ].forEach(subtest => {
     promise_test(async t => {
+      await waitForFrame();
+
       var animation = addDivAndAnimate(t,
                                        { class: 'compositable' },
                                        subtest.frames,
@@ -1477,6 +1521,8 @@ function testTooLargeFrame() {
     }, subtest.property + ' on too big element - area');
 
     promise_test(async t => {
+      await waitForFrame();
+
       var animation = addDivAndAnimate(t,
                                        { class: 'compositable' },
                                        subtest.frames,
@@ -1534,6 +1580,8 @@ function testTransformSVG() {
     },
   ].forEach(subtest => {
     promise_test(async t => {
+      await waitForFrame();
+
       var svg  = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('width', '100');
       svg.setAttribute('height', '100');
@@ -1574,6 +1622,8 @@ function testTransformSVG() {
 
 function testImportantRuleOverride() {
   promise_test(async t => {
+    await waitForFrame();
+
     const elem = addDiv(t, { class: 'compositable' });
     const anim = elem.animate({ translate: [ '0px', '100px' ],
                                 rotate: ['0deg', '90deg'] },
@@ -1619,6 +1669,8 @@ function testCurrentColor() {
     return; // skip this test until bug 1510030 landed.
   }
   promise_test(async t => {
+    await waitForFrame();
+
     const animation = addDivAndAnimate(t, { class: 'compositable' },
                                        { backgroundColor: [ 'currentColor',
                                                             'red' ] },
@@ -1657,6 +1709,8 @@ function start() {
   testCurrentColor();
 
   promise_test(async t => {
+    await waitForFrame();
+
     var div = addDiv(t, { class: 'compositable',
                           style: 'animation: fade 100s' });
     var cssAnimation = div.getAnimations()[0];
