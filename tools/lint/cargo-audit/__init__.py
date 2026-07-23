@@ -169,12 +169,25 @@ def run_process(args: list[str]) -> str:
             if result.stdout:
                 return result.stdout
             else:
-                raise RuntimeError(
-                    f"Command failed: {' '.join(args)}\n"
-                    f"Exit code: {result.returncode}\n"
-                    f"stdout:\n{result.stdout}\n"
-                    f"stderr:\n{result.stderr}"
+                message = [
+                    f"cargo-audit failed (exit code {result.returncode}) while running:",
+                    f"  {' '.join(args)}",
+                ]
+                if result.stderr.strip():
+                    message.append("\nstderr:")
+                    message.append(result.stderr.rstrip())
+                # A non-zero exit code with no output usually means cargo-audit
+                # could not load the RustSec advisory database (for example
+                # because it contains an advisory in a format the pinned
+                # cargo-audit version cannot parse). That is not a regression
+                # caused by a specific push, so point at the tracking bug.
+                message.append(
+                    "\nThis usually means cargo-audit could not load the RustSec "
+                    "advisory database, which evolves independently of this "
+                    "repository. If cargo-audit needs updating to handle it, "
+                    "please file a new bug blocking bug 1747536."
                 )
+                raise RuntimeError("\n".join(message))
         return result.stdout
     except FileNotFoundError as e:
         raise RuntimeError(
