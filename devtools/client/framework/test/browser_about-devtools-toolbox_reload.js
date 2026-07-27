@@ -42,6 +42,13 @@ add_task(async function () {
   tab.linkedBrowser.reload();
   await onToolboxReady;
 
+  await waitFor(
+    () =>
+      tab.linkedBrowser.contentDocument &&
+      tab.linkedBrowser.contentDocument.querySelector(".debug-target-info"),
+    "Wait for the debug target to be displayed"
+  );
+
   info("Check if about:devtools-toolbox was reloaded correctly");
   const refreshedDoc = tab.linkedBrowser.contentDocument;
   ok(
