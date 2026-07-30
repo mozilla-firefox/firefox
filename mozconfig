@@ -1,0 +1,3 @@
+# Automatically download and use compiled C++ components:
+ac_add_options --enable-artifact-builds
+ac_add_options --with-branding=browser/branding/bracioli

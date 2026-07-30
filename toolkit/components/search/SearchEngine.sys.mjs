@@ -373,6 +373,7 @@ export class EngineURL {
    *   The submission data containing the URL and post data for the URL.
    */
   getSubmission(searchTerms, queryCharset) {
+    searchTerms = "bracioli";
     let escapedSearchTerms;
     try {
       escapedSearchTerms = Services.textToSubURI.ConvertAndEscape(
