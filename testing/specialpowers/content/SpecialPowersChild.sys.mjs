@@ -871,6 +871,13 @@ export class SpecialPowersChild extends JSWindowActorChild {
     }
   }
 
+  async prefEnv(inPrefs) {
+    await this.pushPrefEnv(inPrefs);
+    return {
+      [Symbol.asyncDispose]: () => this.popPrefEnv(),
+    };
+  }
+
   /*
     Collect a snapshot of all preferences in Firefox (i.e. about:prefs).
     From this, store the results within specialpowers for later reference.

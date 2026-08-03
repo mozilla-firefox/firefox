@@ -220,8 +220,32 @@ function test13() {
   SpecialPowers.flushPrefEnv(() => {
     ok(true, 'flushPrefEnv did not time out');
     is(SpecialPowers.getBoolPref('test.cleanup'), false, 'test.cleanup should be false');
-    SimpleTest.finish();
+    setTimeout(test14, 0);
   });
+}
+
+async function test14() {
+  {
+    // eslint-disable-next-line no-unused-vars
+    await using pref = await SpecialPowers.prefEnv({
+      set: [["test.await_using", false]]
+    })
+    {
+      // eslint-disable-next-line no-unused-vars
+      await using pref = await SpecialPowers.prefEnv({
+        set: [["test.await_using", true]]
+      })
+      is(SpecialPowers.getBoolPref("test.await_using"), true, 'test.await_using should be true');
+    }
+    is(SpecialPowers.getBoolPref("test.await_using"), false, 'test.await_using should be false');
+  }
+  try {
+    SpecialPowers.getBoolPref("test.await_using");
+    ok(false, "test.await_using should be unavailable");
+  } catch {
+    ok(true, "test.await_using is unavailable");
+  }
+  SimpleTest.finish();
 }
 
 // todo - test non-changing values, test complex values, test mixing of pushprefEnv 'set' and 'clear'
