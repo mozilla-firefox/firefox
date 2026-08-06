@@ -32,7 +32,10 @@ async function test_framerate_between_exclusive(t, track, lower, upper) {
   await video.play();
 
   const numSeconds = 2;
+  const startTime = performance.now();
   await new Promise(r => setTimeout(r, numSeconds * 1000));
   const totalVideoFrames = video.mozPaintedFrames;
-  assert_between_exclusive(totalVideoFrames / numSeconds, lower, upper, "totalVideoFrames");
+  const elapsedSeconds = (performance.now() - startTime) / 1000;
+  assert_between_exclusive(totalVideoFrames / elapsedSeconds, lower, upper,
+                           "totalVideoFrames");
 }
