@@ -55,15 +55,18 @@ object StorageStatsMetrics {
                 // So we call from a worker thread and measure the duration to make sure it's not
                 // too slow.
 
-                // Bug 2008785 - we are getting unusual crashes that seem to be related to the sharedUserId
-                // causing a RuntimeException when querying storage stats.
+                // Bug 2008785/2061436 - we are getting unusual crashes that seem to be related to the
+                // sharedUserId causing a RuntimeException/IOException when querying storage stats.
                 // We catch and swallow the exception since this information is used only for telemetry
                 // and not used for anything functional, we should not crash if we get into that situation.
-                // That unfortunately means we have to try-catch a generic RuntimeException
+                // That unfortunately means we have to try-catch generic exception types.
                 @Suppress("TooGenericExceptionCaught")
                 try {
                     storageStatsManager.queryStatsForUid(appInfo.storageUuid, appInfo.uid)
                 } catch (exception: RuntimeException) {
+                    logger.error("Failed to query storage stats", exception)
+                    null
+                } catch (exception: java.io.IOException) {
                     logger.error("Failed to query storage stats", exception)
                     null
                 }
