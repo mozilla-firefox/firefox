@@ -48,9 +48,16 @@ class AccessibilityFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
         )
 
         textSizePreference.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference, newValue ->
+            // Bug 2044409: The `setIsSliderEnabled` call below doesn't disable this callback
+            // until the next recomposition so explicitly check the current value of `shouldUseAutoSize`
+            // and reject updates. Otherwise we will set illegal combinations of engine settings.
+            if (settings.shouldUseAutoSize) {
+                return@OnPreferenceChangeListener false
+            }
+
             val newTextScale = newValue as Float
 
-            // Save new text scale value. We assume auto sizing is off if this change listener was called.
+            // Save new text scale value.
             components.core.engine.settings.fontSizeFactor = newTextScale
 
             // Reload the current session to reflect the new text scale
