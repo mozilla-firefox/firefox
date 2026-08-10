@@ -1299,6 +1299,36 @@ add_task(async function test_triggeredTabBookmark_selector() {
     url: testURL,
   });
 
+  // Wait for the toolbar to rebuild and its visibility update to settle, then the item.
+  await TestUtils.waitForCondition(
+    async () => (await win.PlacesToolbarHelper.getIsEmpty()) === false,
+    "Waiting for the Bookmarks toolbar to be rebuilt and not empty"
+  );
+  if (
+    win.PlacesToolbarHelper._viewElt._placesView._updateNodesVisibilityTimer
+  ) {
+    await BrowserTestUtils.waitForEvent(
+      win,
+      "BookmarksToolbarVisibilityUpdated"
+    );
+  }
+  await TestUtils.waitForCondition(() => {
+    const item = [
+      ...win.document.querySelectorAll("#PlacesToolbarItems .bookmark-item"),
+    ].find(el => el._placesNode?.uri === testURL);
+    if (!item) {
+      return false;
+    }
+    const style = win.getComputedStyle(item);
+    const rect = item.getBoundingClientRect();
+    return (
+      style.visibility === "visible" &&
+      style.display !== "none" &&
+      rect.width > 0 &&
+      rect.height > 0
+    );
+  }, "Waiting for the triggered-tab bookmark item to render in the toolbar");
+
   const config = {
     win,
     location: "chrome",
