@@ -80,8 +80,8 @@ xpcshell:
                     default: []
             msix:
                 by-test-platform:
-                    windows11-64-24h2(-shippable)?/opt: built-projects
-                    windows11-64-24h2/debug: built-projects
+                    windows11-64-25h2(-shippable)?/opt: built-projects
+                    windows11-64-25h2/debug: built-projects
                     default: []
             inc-origin-init: []
             default:
