@@ -632,7 +632,7 @@ nsresult nsSliderFrame::HandleEvent(nsPresContext* aPresContext,
       case eMouseUp:
         if (ShouldScrollForEvent(aEvent)) {
           StopDrag();
-          // we MUST call nsFrame HandleEvent for mouse ups to maintain the
+          // we MUST call nsIFrame HandleEvent for mouse ups to maintain the
           // selection state and capture state.
           return nsIFrame::HandleEvent(aPresContext, aEvent, aEventStatus);
         }

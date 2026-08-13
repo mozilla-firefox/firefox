@@ -467,7 +467,7 @@ nsIFrame::~nsIFrame() {
   MOZ_COUNT_DTOR(nsIFrame);
 
   MOZ_ASSERT(GetVisibility() != Visibility::ApproximatelyVisible,
-             "Visible nsFrame is being destroyed");
+             "Visible nsIFrame is being destroyed");
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsIFrame)
@@ -5334,7 +5334,7 @@ nsresult nsIFrame::MoveCaretToEventPoint(nsPresContext* aPresContext,
     fc->SetDragState(true);
   }
 
-  // Do not touch any nsFrame members after this point without adding
+  // Do not touch any nsIFrame members after this point without adding
   // weakFrame checks.
   const nsFrameSelection::FocusMode focusMode = [&]() {
     // If "Shift" and "Ctrl" are both pressed, "Shift" is given precedence. This
@@ -5709,7 +5709,7 @@ NS_IMETHODIMP nsIFrame::HandleDrag(nsPresContext* aPresContext,
 
 /**
  * This static method handles part of the nsIFrame::HandleRelease in a way
- * which doesn't rely on the nsFrame object to stay alive.
+ * which doesn't rely on the nsIFrame object to stay alive.
  */
 MOZ_CAN_RUN_SCRIPT_BOUNDARY static nsresult HandleFrameSelection(
     nsFrameSelection* aFrameSelection, nsIFrame::ContentOffsets& aOffsets,
@@ -5812,7 +5812,7 @@ NS_IMETHODIMP nsIFrame::HandleRelease(nsPresContext* aPresContext,
 
   // We might be capturing in some other document and the event just happened to
   // trickle down here. Make sure that document's frame selection is notified.
-  // Note, this may cause the current nsFrame object to be deleted, bug 336592.
+  // Note, this may cause the current nsIFrame object to be deleted, bug 336592.
   RefPtr<nsFrameSelection> frameSelection;
   if (activeFrame != this &&
       activeFrame->ShouldHandleSelectionMovementEvents()) {

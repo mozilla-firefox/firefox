@@ -39,11 +39,6 @@
 #  define MAX_REFLOW_DEPTH 1026
 #endif
 
-/* nsIFrame is in the process of being deCOMtaminated, i.e., this file is
-   eventually going to be eliminated, and all callers will use nsFrame instead.
-   At the moment we're midway through this process, so you will see inlined
-   functions and member variables in this file.  -dwh */
-
 #include <stdio.h>
 
 #include <algorithm>
@@ -574,7 +569,7 @@ static void ReleaseValue(T* aPropertyValue) {
 
 //----------------------------------------------------------------------
 
-// Frame allocation boilerplate macros. Every subclass of nsFrame must
+// Frame allocation boilerplate macros. Every subclass of nsIFrame must
 // either use NS_{DECL,IMPL}_FRAMEARENA_HELPERS pair for allocating
 // memory correctly, or use NS_DECL_ABSTRACT_FRAME to declare a frame
 // class abstract and stop it from being instantiated. If a frame class
@@ -867,7 +862,7 @@ class nsIFrame : public nsQueryFrame {
   void operator delete(void* aPtr, size_t sz);
 
  private:
-  // Left undefined; nsFrame objects are never allocated from the heap.
+  // Left undefined; nsIFrame objects are never allocated from the heap.
   void* operator new(size_t sz) noexcept(true);
 
   // Returns true if this frame has any kind of CSS animations.
