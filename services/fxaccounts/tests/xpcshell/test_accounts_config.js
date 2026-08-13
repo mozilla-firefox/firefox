@@ -158,3 +158,29 @@ add_task(async function test_promise_account_service_param() {
 
   Assert.equal(url2.searchParams.get("service"), "custom-service");
 });
+
+add_task(async function test_promise_connect_device_uri_pairing_version() {
+  Services.prefs.setStringPref("identity.fxaccounts.autoconfig.uri", "");
+  Services.prefs.setStringPref(
+    "identity.fxaccounts.remote.root",
+    "https://accounts.firefox.com/"
+  );
+
+  const getSignedInUser = FxAccounts.config.getSignedInUser;
+  FxAccounts.config.getSignedInUser = async () => ({
+    uid: "abcd",
+    email: "test@example.com",
+  });
+
+  try {
+    let url = new URL(await FxAccounts.config.promiseConnectDeviceURI("test"));
+    Assert.equal(url.searchParams.get("v"), "1", "defaults to version 1");
+
+    Services.prefs.setIntPref("identity.fxaccounts.pairing.version", 2);
+    let url2 = new URL(await FxAccounts.config.promiseConnectDeviceURI("test"));
+    Assert.equal(url2.searchParams.get("v"), "2", "reflects the pref");
+  } finally {
+    Services.prefs.clearUserPref("identity.fxaccounts.pairing.version");
+    FxAccounts.config.getSignedInUser = getSignedInUser;
+  }
+});

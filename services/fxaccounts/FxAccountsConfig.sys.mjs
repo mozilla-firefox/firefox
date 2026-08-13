@@ -36,6 +36,12 @@ XPCOMUtils.defineLazyPreferenceGetter(
 );
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
+  "PAIRING_VERSION",
+  "identity.fxaccounts.pairing.version",
+  1
+);
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
   "REQUIRES_HTTPS",
   "identity.fxaccounts.allowHttp",
   false,
@@ -101,7 +107,12 @@ export var FxAccountsConfig = {
 
   async promiseConnectDeviceURI(entrypoint, extraParams = {}) {
     return this._buildURL("connect_another_device", {
-      extraParams: { entrypoint, service: SYNC_PARAM, ...extraParams },
+      extraParams: {
+        entrypoint,
+        service: SYNC_PARAM,
+        v: lazy.PAIRING_VERSION,
+        ...extraParams,
+      },
       addAccountIdentifiers: true,
     });
   },
