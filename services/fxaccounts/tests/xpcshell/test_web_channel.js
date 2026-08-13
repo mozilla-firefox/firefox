@@ -1445,6 +1445,123 @@ add_test(function test_oauth_flow_begin() {
   channel._channelCallback(WEBCHANNEL_ID, mockMessage, mockSendingContext);
 });
 
+add_task(async function test_pair_oauth_start() {
+  let mockMessage = {
+    command: "fxaccounts:pair_oauth_start",
+    messageId: "12349",
+    data: {},
+  };
+
+  let channel = new FxAccountsWebChannel({
+    channel_id: WEBCHANNEL_ID,
+    content_uri: URL_STRING,
+  });
+
+  let promiseSend = new Promise(resolve => {
+    channel._channel = { send: response => resolve(response) };
+  });
+
+  channel._channelCallback(WEBCHANNEL_ID, mockMessage, mockSendingContext);
+  let response = await promiseSend;
+
+  Assert.equal(response.command, "fxaccounts:pair_oauth_start");
+  Assert.equal(response.messageId, "12349");
+  Assert.equal(
+    response.data.scope,
+    "https://identity.mozilla.com/apps/oldsync profile",
+    "Defaults to the Sync scopes"
+  );
+  Assert.ok(response.data.state);
+  Assert.ok(response.data.code_challenge);
+  Assert.ok(response.data.keys_jwk);
+  Assert.deepEqual(
+    Object.keys(response.data).sort(),
+    ["code_challenge", "keys_jwk", "scope", "state"],
+    "Only the params FxA needs are exposed"
+  );
+});
+
+add_task(async function test_pair_oauth_start_disabled() {
+  Services.prefs.setBoolPref("identity.fxaccounts.pairing.enabled", false);
+
+  let channel = new FxAccountsWebChannel({
+    channel_id: WEBCHANNEL_ID,
+    content_uri: URL_STRING,
+  });
+
+  let promiseSend = new Promise(resolve => {
+    channel._channel = { send: response => resolve(response) };
+  });
+
+  channel._channelCallback(
+    WEBCHANNEL_ID,
+    { command: "fxaccounts:pair_oauth_start", messageId: "12350", data: {} },
+    mockSendingContext
+  );
+  let response = await promiseSend;
+
+  Assert.ok(
+    response.data.error.message.includes("Pairing is disabled"),
+    "Should report an error rather than silently hanging"
+  );
+
+  Services.prefs.clearUserPref("identity.fxaccounts.pairing.enabled");
+});
+
+add_task(async function test_helpers_pair_oauth_finish() {
+  let authorizeParams;
+  let helpers = new FxAccountsWebChannelHelpers({
+    fxAccounts: {
+      _internal: {
+        async authorizeOAuthCode(options) {
+          authorizeParams = options;
+          return { code: "thecode", state: options.state };
+        },
+      },
+    },
+  });
+
+  let result = await helpers.pairOAuthFinish({
+    client_id: "client_id",
+    state: "thestate",
+    scope: "profile",
+    code_challenge: "challenge",
+  });
+
+  Assert.deepEqual(result, { code: "thecode", state: "thestate" });
+  Assert.equal(authorizeParams.client_id, "client_id");
+  Assert.equal(authorizeParams.scope, "profile");
+  Assert.equal(authorizeParams.access_type, "offline");
+  Assert.equal(
+    authorizeParams.code_challenge_method,
+    "S256",
+    "Defaults to the method used by pairOAuthStart"
+  );
+});
+
+add_task(async function test_helpers_pair_oauth_finish_state_mismatch() {
+  let helpers = new FxAccountsWebChannelHelpers({
+    fxAccounts: {
+      _internal: {
+        async authorizeOAuthCode() {
+          return { code: "thecode", state: "someotherstate" };
+        },
+      },
+    },
+  });
+
+  await Assert.rejects(
+    helpers.pairOAuthFinish({
+      client_id: "client_id",
+      state: "thestate",
+      scope: "profile",
+      code_challenge: "challenge",
+      code_challenge_method: "S256",
+    }),
+    /OAuth state mismatch/
+  );
+});
+
 function makeObserver(aObserveTopic, aObserveFunc) {
   let callback = function (aSubject, aTopic, aData) {
     log.debug("observed " + aTopic + " " + aData);
