@@ -6,10 +6,6 @@ support-files = [
 ]
 
 ["browser_aboutCertError.js"]
-skip-if = [
-  "os == 'mac' && os_version == '10.15' && arch == 'x86_64' && opt",
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1996741
-]
 
 ["browser_aboutCertError_accesskey.js"]
 
