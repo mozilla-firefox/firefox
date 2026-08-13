@@ -137,6 +137,24 @@ export class BrowserTestUtilsChild extends JSWindowActorChild {
     return this._EventUtils;
   }
 
+  /**
+   * Waits until painting is no longer suppressed in this window.
+   */
+  async waitForPaintingUnsuppressed() {
+    let win = this.contentWindow;
+    if (win.windowUtils.paintingSuppressed) {
+      await new Promise(resolve => {
+        let observe = subject => {
+          if (subject == win.document) {
+            Services.obs.removeObserver(observe, "before-first-paint");
+            resolve();
+          }
+        };
+        Services.obs.addObserver(observe, "before-first-paint");
+      });
+    }
+  }
+
   receiveMessage(aMessage) {
     switch (aMessage.name) {
       case "Test:SynthesizeMouse": {
@@ -172,6 +190,10 @@ export class BrowserTestUtilsChild extends JSWindowActorChild {
           this.contentWindow
         );
         break;
+
+      case "BrowserTestUtils:WaitForPaintingUnsuppressed": {
+        return this.waitForPaintingUnsuppressed();
+      }
 
       case "BrowserTestUtils:StartObservingTopics": {
         this.observer = new BrowserTestUtilsChildObserver();

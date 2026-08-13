@@ -1737,7 +1737,35 @@ export var BrowserTestUtils = {
   },
 
   /**
+   * Waits until painting is no longer suppressed in a browsing context.
+   *
+   * This is needed before synthesizing a mouse event on a freshly loaded
+   * document, because hit testing ignores content while painting is
+   * suppressed: the click resolves to the document root and fires no event.
+   *
+   * @param {BrowsingContext} browsingContext
+   *        The browsing context to wait for. Note that painting is suppressed
+   *        per document, so for content in an iframe this needs to be the
+   *        iframe's browsing context rather than the top level one.
+   */
+  async waitForPaintingUnsuppressed(browsingContext) {
+    try {
+      await this.sendQuery(
+        browsingContext,
+        "BrowserTestUtils:WaitForPaintingUnsuppressed"
+      );
+    } catch (ex) {
+      // The document may have gone away while we were waiting, eg. because the
+      // error page was only transient. There is nothing left to paint then.
+      console.warn(`waitForPaintingUnsuppressed: ${ex}`);
+    }
+  },
+
+  /**
    * Like browserLoaded, but waits for an error page to appear.
+   *
+   * Also waits for painting to be unsuppressed in the browser, so that clicks
+   * synthesized on the error page actually hit test to its content.
    *
    * @param {xul:browser} browser
    *        A xul:browser.
@@ -1746,14 +1774,18 @@ export var BrowserTestUtils = {
    *   Resolves when an error page has been loaded in the browser, with the name
    *   of the event.
    */
-  waitForErrorPage(browser) {
-    return this.waitForContentEvent(
+  async waitForErrorPage(browser) {
+    let eventName = await this.waitForContentEvent(
       browser,
       "AboutNetErrorLoad",
       false,
       null,
       true
     );
+
+    await this.waitForPaintingUnsuppressed(browser.browsingContext);
+
+    return eventName;
   },
 
   /**

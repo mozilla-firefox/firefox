@@ -46,6 +46,9 @@ async function injectErrorPageFrame(tab, src, sandboxed) {
   );
 
   await loadedPromise;
+  await BrowserTestUtils.waitForPaintingUnsuppressed(
+    tab.linkedBrowser.browsingContext.children[0]
+  );
 }
 
 async function openErrorPage(src, useFrame, sandboxed) {

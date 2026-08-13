@@ -69,8 +69,8 @@ function promiseLoadSubDialog(aURL) {
   });
 }
 
-function injectErrorPageFrame(tab, src) {
-  return SpecialPowers.spawn(
+async function injectErrorPageFrame(tab, src) {
+  await SpecialPowers.spawn(
     tab.linkedBrowser,
     [{ frameSrc: src }],
     async function ({ frameSrc }) {
@@ -91,6 +91,9 @@ function injectErrorPageFrame(tab, src) {
           iframe.contentDocument.body.classList.contains("felt-privacy-body")
       );
     }
+  );
+  await BrowserTestUtils.waitForPaintingUnsuppressed(
+    tab.linkedBrowser.browsingContext.children[0]
   );
 }
 
