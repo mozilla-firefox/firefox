@@ -776,13 +776,13 @@ run-sequentially = ["true"] # node server exceptions dont replay well
 ["test_happy_eyeballs_h1_0rtt.js"]
 run-sequentially = ["true"] # TlsServer listens to the same port
 skip-if = [
-  "os == 'win' && appname == 'thunderbird' && msix", # Bug 2038668
+  "os == 'win' && msix", # Bug 1808049
 ]
 
 ["test_happy_eyeballs_h2_0rtt.js"]
 run-sequentially = ["true"] # TlsServer listens to the same port
 skip-if = [
-  "os == 'win' && appname == 'thunderbird' && msix", # Bug 2038668
+  "os == 'win' && msix", # Bug 1808049
 ]
 
 ["test_happy_eyeballs_h2_fallback.js"]
