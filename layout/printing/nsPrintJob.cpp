@@ -1262,9 +1262,11 @@ nsresult nsPrintJob::ReflowPrintObject(const UniquePtr<nsPrintObject>& aPO) {
       !aPO->mParent || !aPO->mParent->PrintingIsEnabled();
   auto* embedderFrame = [&]() -> nsSubDocumentFrame* {
     if (documentIsTopLevel) {
-      if (nsCOMPtr<nsIDocumentViewer> viewer =
-              do_QueryInterface(mDocViewerPrint)) {
-        return viewer->FindContainerFrame();
+      if (mIsCreatingPrintPreview) {
+        if (nsCOMPtr<nsIDocumentViewer> viewer =
+                do_QueryInterface(mDocViewerPrint)) {
+          return viewer->FindContainerFrame();
+        }
       }
     } else if (aPO->mContent) {
       return do_QueryFrame(aPO->mContent->GetPrimaryFrame());
