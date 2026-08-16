@@ -1413,7 +1413,7 @@ var SessionStoreInternal = {
                 triggeringPrincipal_base64:
                   lazy.E10SUtils.SERIALIZED_SYSTEMPRINCIPAL,
               };
-              state = { windows: [{ tabs: [{ entries: [entry], formdata }] }] };
+              state = { windows: [{ tabs: [{ entries: [entry], formdata }] }], savedGroups: state.savedGroups };
               this._log.debug("initSession, will show about:sessionrestore");
             } else if (
               this._hasSingleTabWithURL(state.windows, "about:welcomeback")
