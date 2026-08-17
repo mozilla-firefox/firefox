@@ -56,10 +56,10 @@ add_task(async function checkRevokedCertificateAdvancedCopy() {
       netErrorCard.domainMismatchNamesPromise = null;
       netErrorCard.certificateErrorText = null;
       netErrorCard.certificateErrorTextPromise = null;
+      netErrorCard.errorConfig = netErrorCard.getErrorConfig();
       netErrorCard.hideExceptionButton = netErrorCard.shouldHideExceptionButton(
         info.errorCodeString
       );
-      netErrorCard.errorConfig = netErrorCard.getErrorConfig();
       netErrorCard.requestUpdate();
       await netErrorCard.getUpdateComplete();
 
