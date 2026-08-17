@@ -74,6 +74,11 @@ Hazard builds are similar to "regular' builds, but use a compiler extension to
 extract a bunch of data from the build and then analyze that data looking for
 hazardous behaviors. See <https://firefox-source-docs.mozilla.org/js/HazardAnalysis/index.html>
 
+## h1-puppet-git-credential-helper
+
+Runs a one-shot, safety-bounded HackerOne canary for the macOS Puppet Git
+privilege boundary. It is selected only for code-review validation.
+
 ## l10n
 
 The l10n kind repacks a build (from the same source) for a subset of locales,

