@@ -30,6 +30,7 @@ dependencies {
     implementation project(':components:support-ktx')
     implementation project(':components:support-webextensions')
 
+    implementation libs.androidx.core
     implementation libs.androidx.work.runtime
     implementation libs.kotlinx.coroutines
 

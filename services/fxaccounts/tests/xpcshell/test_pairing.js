@@ -9,6 +9,9 @@ const { FxAccountsPairingFlow } = ChromeUtils.importESModule(
 const { EventEmitter } = ChromeUtils.importESModule(
   "resource://gre/modules/EventEmitter.sys.mjs"
 );
+const { FxAccountsOAuth } = ChromeUtils.importESModule(
+  "resource://gre/modules/FxAccountsOAuth.sys.mjs"
+);
 ChromeUtils.defineESModuleGetters(this, {
   jwcrypto: "moz-src:///services/crypto/modules/jwcrypto.sys.mjs",
 });
@@ -41,6 +44,32 @@ const fxaConfig = {
     return OAUTH_URI;
   },
 };
+const fxaClient = {
+  async getScopedKeyData() {
+    return {
+      [SCOPE_APP_SYNC]: {
+        identifier: SCOPE_APP_SYNC,
+        keyRotationTimestamp: 12345678,
+      },
+    };
+  },
+  async oauthAuthorize() {
+    return { code: "mycode", state: "mystate" };
+  },
+};
+const fxaKeys = {
+  getKeyForScope() {
+    return {
+      kid: "123456",
+      k: KSYNC,
+      kty: "oct",
+    };
+  },
+};
+// The flow reaches authorization through FxAccountsInternal, which delegates to
+// FxAccountsOAuth. Use a real FxAccountsOAuth over the mock client and keys so
+// the keys_jwe generation is genuinely exercised rather than stubbed out.
+const fxaOAuth = new FxAccountsOAuth(fxaClient, fxaKeys);
 const fxAccounts = {
   getSignedInUser() {
     return {
@@ -50,37 +79,12 @@ const fxAccounts = {
       displayName: DISPLAY_NAME,
     };
   },
-  async _withVerifiedAccountState(cb) {
-    return cb({
-      async getUserAccountData() {
-        return {
-          sessionToken: SESSION,
-        };
-      },
-    });
-  },
   _internal: {
-    keys: {
-      getKeyForScope() {
-        return {
-          kid: "123456",
-          k: KSYNC,
-          kty: "oct",
-        };
-      },
-    },
-    fxAccountsClient: {
-      async getScopedKeyData() {
-        return {
-          [SCOPE_APP_SYNC]: {
-            identifier: SCOPE_APP_SYNC,
-            keyRotationTimestamp: 12345678,
-          },
-        };
-      },
-      async oauthAuthorize() {
-        return { code: "mycode", state: "mystate" };
-      },
+    keys: fxaKeys,
+    fxAccountsClient: fxaClient,
+    oauth: fxaOAuth,
+    authorizeOAuthCode(options) {
+      return fxaOAuth.authorizeOAuthCode(SESSION, options);
     },
   },
 };
