@@ -887,6 +887,9 @@ add_test(function test_helpers_open_sync_preferences() {
 add_task(async function test_helpers_getFxAStatus_engines_oauth() {
   let helpers = new FxAccountsWebChannelHelpers({
     fxAccounts: {
+      keys: {
+        hasKeysForScope: () => Promise.resolve(true),
+      },
       _internal: {
         getUserAccountData() {
           return Promise.resolve({
@@ -937,6 +940,9 @@ add_task(async function test_helpers_getFxAStatus_engines_oauth() {
 add_task(async function test_helpers_getFxAStatus_pairing_capabilities() {
   let helpers = new FxAccountsWebChannelHelpers({
     fxAccounts: {
+      keys: {
+        hasKeysForScope: () => Promise.resolve(false),
+      },
       _internal: {
         getUserAccountData() {
           return Promise.resolve(null);
@@ -973,6 +979,46 @@ add_task(async function test_helpers_getFxAStatus_pairing_capabilities() {
   Services.prefs.clearUserPref(PREF_PAIRING_VERSION);
 });
 
+add_task(async function test_helpers_getFxAStatus_has_sync_keys() {
+  let requestedScopes = [];
+  let hasSyncKeys = true;
+  let helpers = new FxAccountsWebChannelHelpers({
+    fxAccounts: {
+      keys: {
+        hasKeysForScope: scope => {
+          requestedScopes.push(scope);
+          return Promise.resolve(hasSyncKeys);
+        },
+      },
+      _internal: {
+        getUserAccountData() {
+          return Promise.resolve({
+            email: "testuser@testuser.com",
+            sessionToken: "sessionToken",
+            uid: "uid",
+            verified: true,
+          });
+        },
+      },
+    },
+    privateBrowsingUtils: {
+      isBrowserPrivate: () => false,
+    },
+  });
+
+  let { capabilities } = await helpers.getFxaStatus("sync", mockSendingContext);
+  Assert.strictEqual(capabilities.hasSyncKeys, true, "reports the sync keys");
+  deepEqual(requestedScopes, [SCOPE_APP_SYNC], "checks the sync scope");
+
+  hasSyncKeys = false;
+  ({ capabilities } = await helpers.getFxaStatus("sync", mockSendingContext));
+  Assert.strictEqual(
+    capabilities.hasSyncKeys,
+    false,
+    "reports the missing sync keys"
+  );
+});
+
 add_task(async function test_helpers_getFxaStatus_allowed_signedInUser() {
   let wasCalled = {
     getUserAccountData: false,
@@ -981,6 +1027,9 @@ add_task(async function test_helpers_getFxaStatus_allowed_signedInUser() {
 
   let helpers = new FxAccountsWebChannelHelpers({
     fxAccounts: {
+      keys: {
+        hasKeysForScope: () => Promise.resolve(true),
+      },
       _internal: {
         getUserAccountData() {
           wasCalled.getUserAccountData = true;
@@ -1030,6 +1079,9 @@ add_task(async function test_helpers_getFxaStatus_allowed_no_signedInUser() {
 
   let helpers = new FxAccountsWebChannelHelpers({
     fxAccounts: {
+      keys: {
+        hasKeysForScope: () => Promise.resolve(false),
+      },
       _internal: {
         getUserAccountData() {
           wasCalled.getUserAccountData = true;
@@ -1064,6 +1116,9 @@ add_task(async function test_helpers_getFxaStatus_not_allowed() {
 
   let helpers = new FxAccountsWebChannelHelpers({
     fxAccounts: {
+      keys: {
+        hasKeysForScope: () => Promise.resolve(false),
+      },
       _internal: {
         getUserAccountData() {
           wasCalled.getUserAccountData = true;

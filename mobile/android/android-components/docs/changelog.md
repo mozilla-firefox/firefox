@@ -7,6 +7,9 @@ permalink: /changelog/
 # 155.0 (In Development)
 * **feature-accounts**
     * 🆕 Added `FxaCapability.PAIRING_V2`, which advertises `capabilities.pairingVersion` in the `fxaccounts:fxa_status` WebChannel response and enables the `fxaccounts:pair_oauth_start` WebChannel command.
+    * 🆕 The `fxaccounts:fxa_status` WebChannel response now advertises `capabilities.hasSyncKeys`, telling FxA whether the signed-in account has been granted the Sync scope and so holds the Sync key.
+* **concept-sync**, **service-firefox-accounts**
+    * ⚠️ **Breaking change**: Added `OAuthAccount.hasScope`, which reports whether the account has been granted the given OAuth scopes without making network requests.
 
 # 154.0
 * **browser-icons**

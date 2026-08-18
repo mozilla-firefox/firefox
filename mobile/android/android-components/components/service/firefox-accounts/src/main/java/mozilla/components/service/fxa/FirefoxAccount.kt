@@ -130,6 +130,10 @@ class FirefoxAccount internal constructor(
         return inner.getSignedInUserForWebChannel()
     }
 
+    override fun hasScope(scopes: String): Boolean {
+        return inner.hasScope(scopes)
+    }
+
     override suspend fun getTokenServerEndpointURL() = withContext(scope.coroutineContext) {
         handleFxaExceptions(logger, "getTokenServerEndpointURL", { null }) {
             inner.getTokenServerEndpointURL()

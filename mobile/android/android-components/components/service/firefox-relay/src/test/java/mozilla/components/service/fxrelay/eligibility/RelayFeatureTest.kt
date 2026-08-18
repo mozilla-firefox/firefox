@@ -326,6 +326,7 @@ class RelayFeatureTest {
         override fun getCurrentDeviceId(): String? = null
         override suspend fun handleWebChannelLogin(jsonPayload: String) = Unit
         override fun getSignedInUserForWebChannel(): String? = null
+        override fun hasScope(scopes: String) = false
         override suspend fun getProfile(ignoreCache: Boolean): Profile? = null
         override suspend fun getAccessToken(singleScope: String): AccessTokenInfo? = null
         override fun authErrorDetected() = Unit

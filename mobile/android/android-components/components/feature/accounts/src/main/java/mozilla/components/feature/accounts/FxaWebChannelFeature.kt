@@ -381,6 +381,7 @@ class FxaWebChannelFeature(
             messageId: String,
             fxaCapabilities: Set<FxaCapability>,
         ): JSONObject {
+            val account = accountManager.authenticatedAccount()
             val status = JSONObject()
             status.put("id", CHANNEL_ID)
             status.put(
@@ -413,9 +414,11 @@ class FxaWebChannelFeature(
                                     }
                                     // we can check for uid in canLinkAccount
                                     capabilities.put("can_link_account_uid", true)
+                                    // Sync keys are delivered along with the oldsync scope, so a
+                                    // granted scope means we hold the key.
+                                    capabilities.put("hasSyncKeys", account?.hasScope(SCOPE_SYNC) == true)
                                 },
                             )
-                            val account = accountManager.authenticatedAccount()
                             val signedInUserJson = account?.getSignedInUserForWebChannel()
                             if (signedInUserJson == null) {
                                 data.put("signedInUser", JSONObject.NULL)

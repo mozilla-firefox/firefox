@@ -57,6 +57,14 @@ interface OAuthAccount : AutoCloseable {
     fun getSignedInUserForWebChannel(): String?
 
     /**
+     * Checks whether every given OAuth scope has been granted to this account, and so whether any
+     * scoped keys they carry are available. Reads in-memory state; no network requests.
+     *
+     * @param scopes Space separated OAuth scopes. Order is not significant.
+     */
+    fun hasScope(scopes: String): Boolean
+
+    /**
      * Fetches the profile object for the current client either from the existing cached state
      * or from the server (requires the client to have access to the profile scope).
      *

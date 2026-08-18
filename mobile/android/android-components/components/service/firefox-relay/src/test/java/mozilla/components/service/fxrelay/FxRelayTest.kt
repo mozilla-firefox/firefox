@@ -351,6 +351,7 @@ class FxRelayTest {
         override fun getCurrentDeviceId(): String? = null
         override suspend fun handleWebChannelLogin(jsonPayload: String) = Unit
         override fun getSignedInUserForWebChannel(): String? = null
+        override fun hasScope(scopes: String) = false
         override suspend fun getProfile(ignoreCache: Boolean): Profile? = null
         override fun authErrorDetected() = Unit
         override suspend fun checkAuthorizationStatus(singleScope: String): Boolean? = null

@@ -37,6 +37,7 @@ import {
   ON_SERVICE_ENABLED_NOTIFICATION,
   PREF_LAST_FXA_USER_UID,
   PREF_LAST_FXA_USER_EMAIL,
+  SCOPE_APP_SYNC,
   SCOPE_OLD_SYNC,
   SCOPE_PROFILE,
   WEBCHANNEL_ID,
@@ -984,7 +985,7 @@ FxAccountsWebChannelHelpers.prototype = {
       }
     }
 
-    const capabilities = this._getCapabilities();
+    const capabilities = await this._getCapabilities();
 
     return {
       signedInUser,
@@ -993,7 +994,7 @@ FxAccountsWebChannelHelpers.prototype = {
     };
   },
 
-  _getCapabilities() {
+  async _getCapabilities() {
     let engines = Array.from(CHOOSE_WHAT_TO_SYNC_ALWAYS_AVAILABLE);
     for (let optionalEngine of CHOOSE_WHAT_TO_SYNC_OPTIONALLY_AVAILABLE) {
       if (
@@ -1014,6 +1015,9 @@ FxAccountsWebChannelHelpers.prototype = {
       // accounts without passwords/sync keys (third-party auth)
       keys_optional: true,
       can_link_account_uid: true,
+      // False when no user is signed in, and also when a locked Primary Password
+      // stops us reading the keys.
+      hasSyncKeys: await this._fxAccounts.keys.hasKeysForScope(SCOPE_APP_SYNC),
       engines,
     };
   },
