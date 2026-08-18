@@ -242,13 +242,11 @@ spec = "https://drafts.fxtf.org/motion-1/#offset-shorthand"
 
 [-webkit-perspective]
 sub_properties = ["perspective"]
-derive_serialize = true
 flags = "IS_LEGACY_SHORTHAND"
 spec = "https://github.com/whatwg/compat/issues/100"
 
 [-webkit-transform]
 sub_properties = ["transform"]
-derive_serialize = true
 flags = "IS_LEGACY_SHORTHAND"
 spec = "https://github.com/whatwg/compat/issues/100"
 

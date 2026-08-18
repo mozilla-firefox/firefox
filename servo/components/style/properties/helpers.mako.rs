@@ -650,7 +650,7 @@ pub mod ${property.ident} {
         ) -> Result<(), ParseError<'i>> {
             #[allow(unused_imports)]
             use crate::properties::{NonCustomPropertyId, LonghandId};
-            % if not shorthand.kind:
+            % if not shorthand.kind and "IS_LEGACY_SHORTHAND" not in shorthand.flags:
             use crate::properties::shorthands::${shorthand.ident}::parse_value;
             % endif
             input.parse_entirely(|input| parse_value(context, input)).map(|longhands| {
@@ -684,6 +684,9 @@ pub mod ${property.ident} {
         % endif
         % if shorthand.kind == "single_border":
         ${self.single_border_shorthand(shorthand)}
+        % endif
+        % if "IS_LEGACY_SHORTHAND" in shorthand.flags:
+        ${self.legacy_shorthand(shorthand)}
         % endif
     }
 </%def>
@@ -779,6 +782,25 @@ pub mod ${property.ident} {
                 self.${shorthand.sub_properties[i].ident},
                 % endfor
             )
+        }
+    }
+</%def>
+
+<%def name="legacy_shorthand(shorthand)">
+    type Value = crate::properties::longhands::${shorthand.sub_properties[0].ident}::SpecifiedValue;
+    fn parse_value<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        let v = Value::parse_legacy(context, input)?;
+        Ok(crate::properties::shorthands::expanded! {
+            ${shorthand.sub_properties[0].ident}: v,
+        })
+    }
+
+    impl<'a> ToCss for LonghandsToSerialize<'a>  {
+        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result where W: fmt::Write {
+            self.${shorthand.sub_properties[0].ident}.to_css_legacy(dest)
         }
     }
 </%def>
