@@ -1020,9 +1020,11 @@ ImgDrawResult nsImageRenderer::DrawBorderImageComponent(
         nsLayoutUtils::GetSamplingFilterForFrame(mForFrame);
 
     if (!RequiresScaling(aFill, aHFill, aVFill, aUnitSize)) {
+      SVGImageContext svgContext;
+      SVGImageContext::MaybeStoreContextPaint(svgContext, mForFrame, subImage);
       ImgDrawResult result = nsLayoutUtils::DrawSingleImage(
           aRenderingContext, aPresContext, subImage, samplingFilter, aFill,
-          aDirtyRect, SVGImageContext(), drawFlags);
+          aDirtyRect, svgContext, drawFlags);
 
       if (!mImage->IsComplete()) {
         result &= ImgDrawResult::SUCCESS_NOT_COMPLETE;
