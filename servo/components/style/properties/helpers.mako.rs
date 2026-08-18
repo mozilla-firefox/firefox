@@ -798,9 +798,11 @@ pub mod ${property.ident} {
         })
     }
 
+    % if not shorthand.derive_serialize:
     impl<'a> ToCss for LonghandsToSerialize<'a>  {
         fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result where W: fmt::Write {
             self.${shorthand.sub_properties[0].ident}.to_css_legacy(dest)
         }
     }
+    % endif
 </%def>

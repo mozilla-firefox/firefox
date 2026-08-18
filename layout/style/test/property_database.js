@@ -1776,7 +1776,7 @@ var gCSSProperties = {
     domProp: "MozAppearance",
     domPropDisabled: true, // Bug 1977489
     inherited: false,
-    type: CSS_TYPE_SHORTHAND_AND_LONGHAND,
+    type: CSS_TYPE_LEGACY_SHORTHAND,
     alias_for: "appearance",
     subproperties: ["appearance"],
   },

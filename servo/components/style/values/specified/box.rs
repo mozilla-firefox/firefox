@@ -1743,14 +1743,6 @@ impl Perspective {
         }
         Self::parse(context, input)
     }
-
-    /// Serializes a `-webkit-perspective` value.
-    pub(crate) fn to_css_legacy<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-    where
-        W: Write,
-    {
-        self.to_css(dest)
-    }
 }
 
 /// https://drafts.csswg.org/css-box/#propdef-float
@@ -2007,6 +1999,17 @@ pub enum Appearance {
     /// A dummy variant that should be last to let the GTK widget do hackery.
     #[css(skip)]
     Count,
+}
+
+impl Appearance {
+    /// Parses a `-moz-appearance` value.
+    pub(crate) fn parse_legacy<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
+        // TODO: Restrict the values we parse in the prefixed version.
+        Self::parse(context, input)
+    }
 }
 
 /// A kind of break between two boxes.

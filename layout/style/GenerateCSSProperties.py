@@ -142,12 +142,12 @@ interface """
         pref = p.gecko_pref
 
         propId = p.ident
+        if p.idl_method == "MozAppearance":
+            # Hide MozAppearance from CSSStyleProperties to prevent outdated
+            # special casing against Gecko. (Bug 1977489)
+            pref = "layout.css.moz-appearance.webidl.enabled"
         if p.type() == "alias":
-            if p.idl_method == "MozAppearance":
-                # Hide MozAppearance from CSSStyleProperties to prevent outdated
-                # special casing against Gecko. (Bug 1977489)
-                pref = "layout.css.moz-appearance.webidl.enabled"
-            elif p.gecko_pref == p.original.gecko_pref:
+            if p.gecko_pref == p.original.gecko_pref:
                 # We already added this as a BindingAlias for the original prop.
                 continue
             propId = p.original.ident
