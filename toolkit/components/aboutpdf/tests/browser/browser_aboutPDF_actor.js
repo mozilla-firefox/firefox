@@ -127,17 +127,10 @@ add_task(async function testBrowseButtonOpensPickedPDF() {
     false,
     url => url === fileURL
   );
-  MockFilePicker.shown = false;
+  const pickerShown = promisePickerShown();
   // A scripted click would not grant user activation.
-  await BrowserTestUtils.synthesizeMouseAtCenter(
-    "#browse-files",
-    {},
-    tab.linkedBrowser
-  );
-  await TestUtils.waitForCondition(
-    () => MockFilePicker.shown,
-    "the browse button opened the picker"
-  );
+  await clickInAboutPDF(tab, "#browse-files");
+  await pickerShown;
   await navigated;
 
   is(
@@ -161,11 +154,9 @@ add_task(async function testBrowseButtonReportsANonPDF() {
   MockFilePicker.returnValue = MockFilePicker.returnOK;
 
   const tab = await openAboutPDF();
-  await BrowserTestUtils.synthesizeMouseAtCenter(
-    "#browse-files",
-    {},
-    tab.linkedBrowser
-  );
+  const pickerShown = promisePickerShown();
+  await clickInAboutPDF(tab, "#browse-files");
+  await pickerShown;
   await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
     const error = content.document.getElementById("dropzone-error");
     await ContentTaskUtils.waitForCondition(
@@ -189,20 +180,23 @@ add_task(async function testSecondPickerIsIgnored() {
 
   let opens = 0;
   let releaseFirst;
+  const firstShown = Promise.withResolvers();
   MockFilePicker.setFiles([]);
   MockFilePicker.returnValue = MockFilePicker.returnCancel;
   MockFilePicker.showCallback = () => {
     opens++;
     // Keep the first picker open; close an unexpected second.
-    return opens === 1
-      ? new Promise(resolve => {
-          releaseFirst = resolve;
-        })
-      : Promise.resolve();
+    if (opens > 1) {
+      return Promise.resolve();
+    }
+    firstShown.resolve();
+    return new Promise(resolve => {
+      releaseFirst = resolve;
+    });
   };
 
   const showing = actor.receiveMessage({ name: "AboutPDF:PickFile" });
-  await TestUtils.waitForCondition(() => opens, "the first picker is showing");
+  await firstShown.promise;
   is(
     await actor.receiveMessage({ name: "AboutPDF:PickFile" }),
     "canceled",
