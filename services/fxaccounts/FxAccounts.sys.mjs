@@ -942,6 +942,20 @@ FxAccountsInternal.prototype = {
     return this.oauth.completeOAuthFlow(sessionToken, code, state);
   },
 
+  // Grants an OAuth authorization code to another client, as the pairing
+  // authority. Requires a verified account, since granting a code hands the
+  // other client access to this account.
+  authorizeOAuthCode(options) {
+    return this.withVerifiedAccountState(async state => {
+      const { sessionToken } = await state.getUserAccountData(["sessionToken"]);
+      try {
+        return await this.oauth.authorizeOAuthCode(sessionToken, options);
+      } catch (err) {
+        throw this._errorToErrorClass(err);
+      }
+    });
+  },
+
   setScopedKeys(scopedKeys) {
     return this.keys.setScopedKeys(scopedKeys);
   },

@@ -327,3 +327,141 @@ add_task(function test_complete_oauth_flow() {
     }
   });
 });
+
+// `authorizeOAuthCode` is the authority half of pairing: it grants a code for
+// parameters that some *other* client produced with `beginOAuthFlow`.
+add_task(function test_authorize_oauth_code() {
+  const SESSION_TOKEN = "01abcef12";
+  const SYNC_KEY = {
+    kty: "oct",
+    kid: "1510726318123-IqQv4onc7VcVE1kTQkyyOw",
+    k: "DW_ll5GwX6SJ5GPqJVAuMUP2t6kDqhUulc2cbt26xbTcaKGQl-9l29FHAQ7kUiJETma4s9fIpEHrt909zgFang",
+    scope: SCOPE_APP_SYNC,
+  };
+
+  function mockClient(overrides = {}) {
+    return {
+      async getScopedKeyData() {
+        return {
+          [SCOPE_APP_SYNC]: {
+            identifier: SCOPE_APP_SYNC,
+            keyRotationTimestamp: 12345678,
+          },
+        };
+      },
+      async oauthAuthorize(sessionToken, params) {
+        return { code: "fake code", state: params.state, params };
+      },
+      ...overrides,
+    };
+  }
+
+  async function generateEphemeralKeypair() {
+    const keypair = await crypto.subtle.generateKey(
+      { name: "ECDH", namedCurve: "P-256" },
+      true,
+      ["deriveKey"]
+    );
+    const publicJWK = await crypto.subtle.exportKey("jwk", keypair.publicKey);
+    delete publicJWK.key_ops;
+    return { publicJWK, privateKey: keypair.privateKey };
+  }
+
+  add_task(async function test_authorize_wraps_scoped_keys_into_jwe() {
+    const fxaClient = mockClient();
+    const oauth = new FxAccountsOAuth(fxaClient, {
+      getKeyForScope: () => SYNC_KEY,
+    });
+
+    // Stand in for the supplicant, which generated this keypair when it ran its
+    // own `beginOAuthFlow` and sent us only the public half.
+    const { publicJWK, privateKey } = await generateEphemeralKeypair();
+    const result = await oauth.authorizeOAuthCode(SESSION_TOKEN, {
+      client_id: "supplicant_client_id",
+      access_type: "offline",
+      state: "the-state",
+      scope: SCOPE_APP_SYNC,
+      code_challenge: "the-challenge",
+      code_challenge_method: "S256",
+      keys_jwk: ChromeUtils.base64URLEncode(
+        new TextEncoder().encode(JSON.stringify(publicJWK)),
+        { pad: false }
+      ),
+    });
+
+    Assert.equal(result.code, "fake code");
+    Assert.equal(result.state, "the-state");
+
+    // The public JWK must be swapped for an encrypted JWE before the params
+    // reach the server - the server must never see the raw key material.
+    const params = result.params;
+    Assert.ok(!params.keys_jwk, "keys_jwk should not be sent to the server");
+    Assert.ok(params.keys_jwe, "keys_jwe should be sent to the server");
+
+    // Only the holder of the supplicant's private key can read the keys back.
+    const decrypted = JSON.parse(
+      new TextDecoder().decode(
+        await jwcrypto.decryptJWE(params.keys_jwe, privateKey)
+      )
+    );
+    Assert.deepEqual(decrypted, { [SCOPE_APP_SYNC]: SYNC_KEY });
+
+    // The remaining OAuth params should be forwarded untouched.
+    Assert.equal(params.client_id, "supplicant_client_id");
+    Assert.equal(params.access_type, "offline");
+    Assert.equal(params.scope, SCOPE_APP_SYNC);
+    Assert.equal(params.code_challenge, "the-challenge");
+    Assert.equal(params.code_challenge_method, "S256");
+  });
+
+  add_task(async function test_authorize_without_keys_jwk() {
+    let getScopedKeyDataCalled = false;
+    const fxaClient = mockClient({
+      async getScopedKeyData() {
+        getScopedKeyDataCalled = true;
+        return {};
+      },
+    });
+    const oauth = new FxAccountsOAuth(fxaClient, {
+      getKeyForScope: () => SYNC_KEY,
+    });
+
+    const result = await oauth.authorizeOAuthCode(SESSION_TOKEN, {
+      client_id: "supplicant_client_id",
+      access_type: "offline",
+      state: "the-state",
+      scope: SCOPE_PROFILE,
+      code_challenge: "the-challenge",
+      code_challenge_method: "S256",
+    });
+
+    Assert.equal(result.code, "fake code");
+    Assert.ok(!result.params.keys_jwe, "No keys wrapped without a keys_jwk");
+    Assert.ok(
+      !getScopedKeyDataCalled,
+      "Should not ask the server for key data when no keys were requested"
+    );
+  });
+
+  add_task(async function test_authorize_missing_key_for_scope() {
+    const fxaClient = mockClient();
+    // The server says the client may have this scope's key, but we don't hold it.
+    const oauth = new FxAccountsOAuth(fxaClient, {
+      getKeyForScope: () => null,
+    });
+
+    const { publicJWK } = await generateEphemeralKeypair();
+    await Assert.rejects(
+      oauth.authorizeOAuthCode(SESSION_TOKEN, {
+        client_id: "supplicant_client_id",
+        state: "the-state",
+        scope: SCOPE_APP_SYNC,
+        keys_jwk: ChromeUtils.base64URLEncode(
+          new TextEncoder().encode(JSON.stringify(publicJWK)),
+          { pad: false }
+        ),
+      }),
+      /Key not available for scope/
+    );
+  });
+});

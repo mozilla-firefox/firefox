@@ -18,6 +18,9 @@ const { PREF_LAST_FXA_USER_EMAIL, PREF_LAST_FXA_USER_UID } =
 
 const URL_STRING = "https://example.com";
 
+const PREF_PAIRING_ENABLED = "identity.fxaccounts.pairing.enabled";
+const PREF_PAIRING_VERSION = "identity.fxaccounts.pairing.version";
+
 const mockSendingContext = {
   browsingContext: { top: { embedderElement: {} } },
   principal: {},
@@ -931,6 +934,45 @@ add_task(async function test_helpers_getFxAStatus_engines_oauth() {
   ]);
 });
 
+add_task(async function test_helpers_getFxAStatus_pairing_capabilities() {
+  let helpers = new FxAccountsWebChannelHelpers({
+    fxAccounts: {
+      _internal: {
+        getUserAccountData() {
+          return Promise.resolve(null);
+        },
+      },
+    },
+    privateBrowsingUtils: {
+      isBrowserPrivate: () => false,
+    },
+  });
+
+  Services.prefs.setBoolPref(PREF_PAIRING_ENABLED, true);
+  Services.prefs.setIntPref(PREF_PAIRING_VERSION, 2);
+
+  let { capabilities } = await helpers.getFxaStatus("sync", mockSendingContext);
+  Assert.strictEqual(capabilities.pairing, true, "pairing is enabled");
+  Assert.strictEqual(capabilities.pairingVersion, 2, "reports version 2");
+
+  Services.prefs.setIntPref(PREF_PAIRING_VERSION, 1);
+  ({ capabilities } = await helpers.getFxaStatus("sync", mockSendingContext));
+  Assert.strictEqual(capabilities.pairing, true, "pairing is still enabled");
+  Assert.strictEqual(capabilities.pairingVersion, 1, "reports version 1");
+
+  Services.prefs.setBoolPref(PREF_PAIRING_ENABLED, false);
+  ({ capabilities } = await helpers.getFxaStatus("sync", mockSendingContext));
+  Assert.strictEqual(capabilities.pairing, false, "pairing is disabled");
+  Assert.strictEqual(
+    capabilities.pairingVersion,
+    1,
+    "reports the version even when pairing is disabled"
+  );
+
+  Services.prefs.clearUserPref(PREF_PAIRING_ENABLED);
+  Services.prefs.clearUserPref(PREF_PAIRING_VERSION);
+});
+
 add_task(async function test_helpers_getFxaStatus_allowed_signedInUser() {
   let wasCalled = {
     getUserAccountData: false,
@@ -1444,6 +1486,141 @@ add_test(function test_oauth_flow_begin() {
 
   channel._channelCallback(WEBCHANNEL_ID, mockMessage, mockSendingContext);
 });
+
+add_task(async function test_pair_oauth_start() {
+  Services.prefs.setBoolPref(PREF_PAIRING_ENABLED, true);
+  Services.prefs.setIntPref(PREF_PAIRING_VERSION, 2);
+
+  let response = await sendWebChannelCommand(
+    "fxaccounts:pair_oauth_start",
+    "12349"
+  );
+
+  Assert.equal(response.command, "fxaccounts:pair_oauth_start");
+  Assert.equal(response.messageId, "12349");
+  Assert.equal(
+    response.data.scope,
+    "https://identity.mozilla.com/apps/oldsync profile",
+    "Defaults to the Sync scopes"
+  );
+  Assert.ok(response.data.state);
+  Assert.ok(response.data.code_challenge);
+  Assert.equal(response.data.code_challenge_method, "S256");
+  Assert.ok(response.data.keys_jwk);
+  Assert.deepEqual(
+    Object.keys(response.data).sort(),
+    ["code_challenge", "code_challenge_method", "keys_jwk", "scope", "state"],
+    "Only the params FxA needs are exposed"
+  );
+
+  Services.prefs.clearUserPref(PREF_PAIRING_ENABLED);
+  Services.prefs.clearUserPref(PREF_PAIRING_VERSION);
+});
+
+add_task(async function test_pair_oauth_start_disabled() {
+  await assertPairingCommandDisabled("fxaccounts:pair_oauth_start", "12350");
+});
+
+add_task(async function test_pair_oauth_finish_disabled() {
+  await assertPairingCommandDisabled("fxaccounts:pair_oauth_finish", "12351");
+});
+
+add_task(async function test_helpers_pair_oauth_finish() {
+  let authorizeParams;
+  let helpers = new FxAccountsWebChannelHelpers({
+    fxAccounts: {
+      _internal: {
+        async authorizeOAuthCode(options) {
+          authorizeParams = options;
+          return { code: "thecode", state: options.state };
+        },
+      },
+    },
+  });
+
+  let result = await helpers.pairOAuthFinish({
+    client_id: "client_id",
+    state: "thestate",
+    scope: "profile",
+    code_challenge: "challenge",
+  });
+
+  Assert.deepEqual(result, { code: "thecode", state: "thestate" });
+  Assert.equal(authorizeParams.client_id, "client_id");
+  Assert.equal(authorizeParams.scope, "profile");
+  Assert.equal(authorizeParams.access_type, "offline");
+  Assert.equal(
+    authorizeParams.code_challenge_method,
+    "S256",
+    "Defaults to the method used by pairOAuthStart"
+  );
+});
+
+add_task(async function test_helpers_pair_oauth_finish_state_mismatch() {
+  let helpers = new FxAccountsWebChannelHelpers({
+    fxAccounts: {
+      _internal: {
+        async authorizeOAuthCode() {
+          return { code: "thecode", state: "someotherstate" };
+        },
+      },
+    },
+  });
+
+  await Assert.rejects(
+    helpers.pairOAuthFinish({
+      client_id: "client_id",
+      state: "thestate",
+      scope: "profile",
+      code_challenge: "challenge",
+      code_challenge_method: "S256",
+    }),
+    /OAuth state mismatch/
+  );
+});
+
+async function sendWebChannelCommand(command, messageId, data = {}) {
+  let channel = new FxAccountsWebChannel({
+    channel_id: WEBCHANNEL_ID,
+    content_uri: URL_STRING,
+  });
+
+  let promiseSend = new Promise(resolve => {
+    channel._channel = { send: response => resolve(response) };
+  });
+
+  channel._channelCallback(
+    WEBCHANNEL_ID,
+    { command, messageId, data },
+    mockSendingContext
+  );
+  return promiseSend;
+}
+
+// The OAuth pairing commands require both that pairing is enabled and that the
+// pairing version is at least 2, so check that each is enforced separately.
+async function assertPairingCommandDisabled(command, messageId) {
+  Services.prefs.setBoolPref(PREF_PAIRING_ENABLED, false);
+  Services.prefs.setIntPref(PREF_PAIRING_VERSION, 2);
+
+  let response = await sendWebChannelCommand(command, messageId);
+  Assert.ok(
+    response.data.error.message.includes("Pairing is disabled"),
+    "Should report an error rather than silently hanging when pairing is disabled"
+  );
+
+  Services.prefs.setBoolPref(PREF_PAIRING_ENABLED, true);
+  Services.prefs.setIntPref(PREF_PAIRING_VERSION, 1);
+
+  response = await sendWebChannelCommand(command, messageId);
+  Assert.ok(
+    response.data.error.message.includes("Pairing is disabled"),
+    "Should report an error when the pairing version is older than 2"
+  );
+
+  Services.prefs.clearUserPref(PREF_PAIRING_ENABLED);
+  Services.prefs.clearUserPref(PREF_PAIRING_VERSION);
+}
 
 function makeObserver(aObserveTopic, aObserveFunc) {
   let callback = function (aSubject, aTopic, aData) {

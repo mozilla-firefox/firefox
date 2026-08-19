@@ -17,6 +17,7 @@ import mozilla.components.concept.engine.webextension.MessageHandler
 import mozilla.components.concept.engine.webextension.Port
 import mozilla.components.concept.engine.webextension.WebExtension
 import mozilla.components.concept.sync.AuthType
+import mozilla.components.concept.sync.FxAEntryPoint
 import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.Profile
 import mozilla.components.concept.sync.SyncEngine
@@ -43,6 +44,11 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.robolectric.Shadows.shadowOf
+
+private const val PAIRING_AUTH_URL =
+    "https://foo.bar/authorization?client_id=abc&" +
+        "scope=profile%20https%3A%2F%2Fidentity.mozilla.com%2Fapps%2Foldsync&state=st8&" +
+        "code_challenge_method=S256&code_challenge=chal8&access_type=offline&keys_jwk=jwk8"
 
 @RunWith(AndroidJUnit4::class)
 class FxaWebChannelFeatureTest {
@@ -626,6 +632,230 @@ class FxaWebChannelFeatureTest {
         assertTrue(capabilitiesFromWebChannel.isEmpty())
     }
 
+    @Test
+    fun `COMMAND_STATUS configured with PAIRING_V2 must report the pairing version to the web-channel`() {
+        val port: Port = mock()
+        val responseToTheWebChannel = argumentCaptor<JSONObject>()
+
+        val messageHandler =
+            startedMessageHandler(
+                ext = mock(),
+                port = port,
+                engineSession = mock(),
+                fxaCapabilities = setOf(FxaCapability.PAIRING_V2),
+                accountManager = mock(),
+            )
+
+        messageHandler.onPortMessage(jsonFxaStatus(), port)
+        verify(port).postMessage(responseToTheWebChannel.capture())
+
+        assertEquals(2, responseToTheWebChannel.value.getPairingVersion())
+    }
+
+    @Test
+    fun `COMMAND_STATUS without PAIRING_V2 must not report the pairing version to the web-channel`() {
+        val port: Port = mock()
+        val responseToTheWebChannel = argumentCaptor<JSONObject>()
+
+        val messageHandler =
+            startedMessageHandler(
+                ext = mock(),
+                port = port,
+                engineSession = mock(),
+                fxaCapabilities = setOf(FxaCapability.CHOOSE_WHAT_TO_SYNC),
+                accountManager = mock(),
+            )
+
+        messageHandler.onPortMessage(jsonFxaStatus(), port)
+        verify(port).postMessage(responseToTheWebChannel.capture())
+
+        assertNull(responseToTheWebChannel.value.getPairingVersion())
+    }
+
+    @Test
+    fun `COMMAND_PAIR_OAUTH_START must respond with the oauth parameters from the auth url`() = runTest {
+        val port: Port = mock()
+        val accountManager: FxaAccountManager = mock()
+        val responseToTheWebChannel = argumentCaptor<JSONObject>()
+
+        whenever(accountManager.beginAuthentication(any(), any(), any(), any())).thenReturn(PAIRING_AUTH_URL)
+
+        val messageHandler =
+            startedMessageHandler(
+                ext = mock(),
+                port = port,
+                engineSession = mock(),
+                fxaCapabilities = setOf(FxaCapability.PAIRING_V2),
+                accountManager = accountManager,
+            )
+
+        messageHandler.onPortMessage(jsonPairOAuthStart(), port)
+        shadowOf(getMainLooper()).idle()
+
+        verify(port).postMessage(responseToTheWebChannel.capture())
+        val response = responseToTheWebChannel.value
+        assertEquals("fxaccounts:pair_oauth_start", response.getJSONObject("message").getString("command"))
+        assertEquals("123", response.getJSONObject("message").getString("messageId"))
+
+        val data = response.messageData()
+        assertEquals("st8", data.getString("state"))
+        assertEquals("profile https://identity.mozilla.com/apps/oldsync", data.getString("scope"))
+        assertEquals("chal8", data.getString("code_challenge"))
+        assertEquals("S256", data.getString("code_challenge_method"))
+        assertEquals("jwk8", data.getString("keys_jwk"))
+        // Only the parameters FxA needs are exposed.
+        assertEquals(5, data.length())
+    }
+
+    @Test
+    fun `COMMAND_PAIR_OAUTH_START must request the pairing scopes`() = runTest {
+        val port: Port = mock()
+        val accountManager: FxaAccountManager = mock()
+        val scopesCaptor = argumentCaptor<Set<String>>()
+        val entrypointCaptor = argumentCaptor<FxAEntryPoint>()
+
+        whenever(accountManager.beginAuthentication(any(), any(), any(), any())).thenReturn(PAIRING_AUTH_URL)
+
+        val messageHandler =
+            startedMessageHandler(
+                ext = mock(),
+                port = port,
+                engineSession = mock(),
+                fxaCapabilities = setOf(FxaCapability.PAIRING_V2),
+                accountManager = accountManager,
+            )
+
+        messageHandler.onPortMessage(jsonPairOAuthStart(), port)
+        shadowOf(getMainLooper()).idle()
+
+        verify(accountManager)
+            .beginAuthentication(
+                eq(null),
+                entrypointCaptor.capture(),
+                scopesCaptor.capture(),
+                eq(""),
+            )
+        assertEquals("webchannel-pairing", entrypointCaptor.value.entryName)
+        assertEquals(
+            setOf(
+                "profile",
+                "https://identity.mozilla.com/apps/oldsync",
+                "https://identity.mozilla.com/tokens/session",
+            ),
+            scopesCaptor.value,
+        )
+    }
+
+    @Test
+    fun `COMMAND_PAIR_OAUTH_START must respond with an error when the flow cannot be started`() = runTest {
+        val port: Port = mock()
+        val accountManager: FxaAccountManager = mock()
+        val responseToTheWebChannel = argumentCaptor<JSONObject>()
+
+        whenever(accountManager.beginAuthentication(any(), any(), any(), any())).thenReturn(null)
+
+        val messageHandler =
+            startedMessageHandler(
+                ext = mock(),
+                port = port,
+                engineSession = mock(),
+                fxaCapabilities = setOf(FxaCapability.PAIRING_V2),
+                accountManager = accountManager,
+            )
+
+        messageHandler.onPortMessage(jsonPairOAuthStart(), port)
+        shadowOf(getMainLooper()).idle()
+
+        verify(port).postMessage(responseToTheWebChannel.capture())
+        assertEquals(
+            "Failed to begin a pairing OAuth flow",
+            responseToTheWebChannel.value.getErrorMessage(),
+        )
+    }
+
+    @Test
+    fun `COMMAND_PAIR_OAUTH_START must respond with an error when the auth url is missing parameters`() = runTest {
+        val port: Port = mock()
+        val accountManager: FxaAccountManager = mock()
+        val responseToTheWebChannel = argumentCaptor<JSONObject>()
+
+        whenever(accountManager.beginAuthentication(any(), any(), any(), any()))
+            .thenReturn("https://foo.bar/authorization?client_id=abc&state=st8&scope=profile")
+
+        val messageHandler =
+            startedMessageHandler(
+                ext = mock(),
+                port = port,
+                engineSession = mock(),
+                fxaCapabilities = setOf(FxaCapability.PAIRING_V2),
+                accountManager = accountManager,
+            )
+
+        messageHandler.onPortMessage(jsonPairOAuthStart(), port)
+        shadowOf(getMainLooper()).idle()
+
+        verify(port).postMessage(responseToTheWebChannel.capture())
+        assertEquals(
+            "Failed to begin a pairing OAuth flow",
+            responseToTheWebChannel.value.getErrorMessage(),
+        )
+    }
+
+    @Test
+    fun `COMMAND_PAIR_OAUTH_START must be rejected without the PAIRING_V2 capability`() = runTest {
+        val port: Port = mock()
+        val accountManager: FxaAccountManager = mock()
+        val responseToTheWebChannel = argumentCaptor<JSONObject>()
+
+        val messageHandler =
+            startedMessageHandler(
+                ext = mock(),
+                port = port,
+                engineSession = mock(),
+                fxaCapabilities = emptySet(),
+                accountManager = accountManager,
+            )
+
+        messageHandler.onPortMessage(jsonPairOAuthStart(), port)
+        shadowOf(getMainLooper()).idle()
+
+        verify(port).postMessage(responseToTheWebChannel.capture())
+        assertEquals(
+            "Pairing is disabled for command: fxaccounts:pair_oauth_start",
+            responseToTheWebChannel.value.getErrorMessage(),
+        )
+        verify(accountManager, never()).beginAuthentication(any(), any(), any(), any())
+    }
+
+    @Test
+    fun `COMMAND_PAIR_OAUTH_START must proceed with a warning when already connected`() = runTest {
+        val port: Port = mock()
+        val accountManager: FxaAccountManager = mock()
+        val responseToTheWebChannel = argumentCaptor<JSONObject>()
+
+        whenever(accountManager.connectedAccount()).thenReturn(mock())
+        whenever(accountManager.beginAuthentication(any(), any(), any(), any())).thenReturn(PAIRING_AUTH_URL)
+
+        val messageHandler =
+            startedMessageHandler(
+                ext = mock(),
+                port = port,
+                engineSession = mock(),
+                fxaCapabilities = setOf(FxaCapability.PAIRING_V2),
+                accountManager = accountManager,
+            )
+
+        messageHandler.onPortMessage(jsonPairOAuthStart(), port)
+        shadowOf(getMainLooper()).idle()
+
+        // Being connected only warrants a warning, so the flow should still start.
+        verify(accountManager).beginAuthentication(any(), any(), any(), any())
+        verify(port).postMessage(responseToTheWebChannel.capture())
+        val response = responseToTheWebChannel.value
+        assertEquals("fxaccounts:pair_oauth_start", response.getJSONObject("message").getString("command"))
+        assertEquals("st8", response.messageData().getString("state"))
+    }
+
     // Receiving an oauth-login message account manager accepts the request
     @Test
     fun `COMMAND_OAUTH_LOGIN web-channel must be processed through when the accountManager accepts the request`() =
@@ -1103,6 +1333,30 @@ class FxaWebChannelFeatureTest {
         }
     }
 
+    private fun JSONObject.getPairingVersion(): Int? {
+        return try {
+            this.getJSONObject("message").getJSONObject("data").getJSONObject("capabilities").getInt("pairingVersion")
+        } catch (e: JSONException) {
+            null
+        }
+    }
+
+    private fun JSONObject.getPairingSupport(): Boolean? {
+        return try {
+            this.getJSONObject("message").getJSONObject("data").getJSONObject("capabilities").getBoolean("pairing")
+        } catch (e: JSONException) {
+            null
+        }
+    }
+
+    private fun JSONObject.getErrorMessage(): String {
+        return this.getJSONObject("message").getJSONObject("data").getJSONObject("error").getString("message")
+    }
+
+    private fun JSONObject.messageData(): JSONObject {
+        return this.getJSONObject("message").getJSONObject("data")
+    }
+
     data class SignedInUser(val email: String?, val uid: String?, val sessionToken: String, val verified: Boolean)
 
     private fun JSONObject.signedInUser(): SignedInUser {
@@ -1227,6 +1481,68 @@ class FxaWebChannelFeatureTest {
             """
                 .trimIndent()
         )
+    }
+
+    private fun jsonFxaStatus(): JSONObject {
+        return JSONObject(
+            """
+            {
+                         "message":{
+                            "command": "fxaccounts:fxa_status",
+                            "messageId":123
+                         }
+                        }
+            """
+                .trimIndent()
+        )
+    }
+
+    private fun jsonPairOAuthStart(): JSONObject {
+        return JSONObject(
+            """
+            {
+                         "message":{
+                            "command": "fxaccounts:pair_oauth_start",
+                            "messageId":123,
+                            "data":{}
+                         }
+                        }
+            """
+                .trimIndent()
+        )
+    }
+
+    /**
+     * Starts a feature for the given capabilities and account manager, and returns the connected content message
+     * handler.
+     */
+    private fun startedMessageHandler(
+        ext: WebExtension,
+        port: Port,
+        engineSession: EngineSession,
+        fxaCapabilities: Set<FxaCapability>,
+        accountManager: FxaAccountManager,
+    ): MessageHandler {
+        val messageHandler = argumentCaptor<MessageHandler>()
+        val webchannelFeature =
+            prepareFeatureForTest(
+                ext = ext,
+                port = port,
+                engineSession = engineSession,
+                fxaCapabilities = fxaCapabilities,
+                accountManager = accountManager,
+            )
+        webchannelFeature.start()
+        shadowOf(getMainLooper()).idle()
+
+        verify(ext)
+            .registerContentMessageHandler(
+                eq(engineSession),
+                eq(FxaWebChannelFeature.WEB_CHANNEL_MESSAGING_ID),
+                messageHandler.capture(),
+            )
+        messageHandler.value.onPortConnected(port)
+        return messageHandler.value
     }
 
     private fun prepareFeatureForTest(

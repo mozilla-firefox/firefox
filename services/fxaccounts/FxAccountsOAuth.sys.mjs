@@ -224,6 +224,88 @@ export class FxAccountsOAuth {
   }
 
   /**
+   * Grants an OAuth authorization code for another client.
+   *
+   * This is the counterpart to `beginOAuthFlow`: where that starts a flow for
+   * this browser to complete, this authorizes the parameters some *other*
+   * client produced by running its own `beginOAuthFlow`. It is used by the
+   * pairing authority, which is already signed in and so holds both the session
+   * token and the scoped keys the connecting client is asking for.
+   *
+   * If the caller supplied a `keys_jwk`, the requested scoped keys are wrapped
+   * into a `keys_jwe` so they can be delivered to that client through the auth
+   * server without the server itself being able to read them.
+   *
+   * @param { string } sessionToken: The session token encoded in hexadecimal
+   * @param {object} options: The OAuth parameters to authorize
+   *   - `client_id`: The OAuth client ID of the client being granted the code
+   *   - `state`: The state created by the other client's `beginOAuthFlow`
+   *   - `scope`: Space separated scopes being requested
+   *   - `access_type`: Typically `offline`
+   *   - `code_challenge`: The PKCE challenge
+   *   - `code_challenge_method`: The PKCE challenge method, ie `S256`
+   *   - `keys_jwk`: Optional public JWK to encrypt scoped keys to
+   *
+   * @returns {Promise<object>}: Object containing "code" and "state" properties.
+   */
+  async authorizeOAuthCode(sessionToken, options) {
+    const params = { ...options };
+    if (params.keys_jwk) {
+      const jwk = JSON.parse(
+        new TextDecoder().decode(
+          ChromeUtils.base64URLDecode(params.keys_jwk, { padding: "reject" })
+        )
+      );
+      params.keys_jwe = await this.#createKeysJWE(
+        sessionToken,
+        params.client_id,
+        params.scope,
+        jwk
+      );
+      delete params.keys_jwk;
+    }
+    return this.#fxaClient.oauthAuthorize(sessionToken, params);
+  }
+
+  /**
+   * Create a JWE to deliver keys to another client via the OAuth scoped-keys flow.
+   *
+   * This is used to transfer key material to another client, by providing an
+   * appropriately-encrypted value for the `keys_jwe` OAuth response parameter.
+   * Since we're transferring keys from one client to another, two things must be
+   * true:
+   *
+   *   * This client must actually have the key.
+   *   * The other client must be allowed to request that key.
+   *
+   * @param {string} sessionToken the sessionToken to use when fetching key metadata
+   * @param {string} clientId the client requesting access to our keys
+   * @param {string} scopes Space separated requested scopes being requested
+   * @param {object} jwk Ephemeral JWK provided by the client for secure key transfer
+   */
+  async #createKeysJWE(sessionToken, clientId, scopes, jwk) {
+    // This checks with the FxA server about what scopes the client is allowed.
+    // Note that we pass the requesting client_id here, not our own client_id.
+    const clientKeyData = await this.#fxaClient.getScopedKeyData(
+      sessionToken,
+      clientId,
+      scopes
+    );
+    const scopedKeys = {};
+    for (const scope of Object.keys(clientKeyData)) {
+      const key = await this.#fxaKeys.getKeyForScope(scope);
+      if (!key) {
+        throw new Error(`Key not available for scope "${scope}"`);
+      }
+      scopedKeys[scope] = key;
+    }
+    return lazy.jwcrypto.generateJWE(
+      jwk,
+      new TextEncoder().encode(JSON.stringify(scopedKeys))
+    );
+  }
+
+  /**
    * Obtain an OAuth access token for the given scopes, minted from the stored
    * session token.
    *

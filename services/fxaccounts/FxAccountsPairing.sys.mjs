@@ -27,7 +27,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "resource://gre/modules/FxAccountsPairingChannel.sys.mjs",
 
   Weave: "resource://services-sync/main.sys.mjs",
-  jwcrypto: "moz-src:///services/crypto/modules/jwcrypto.sys.mjs",
 });
 
 const PAIRING_REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob:pair-auth-webchannel";
@@ -436,80 +435,10 @@ export class FxAccountsPairingFlow {
   /**
    * Grant an OAuth authorization code for the connecting client.
    *
-   * @param {object} options
-   * @param options.client_id
-   * @param options.state
-   * @param options.scope
-   * @param options.access_type
-   * @param options.code_challenge_method
-   * @param options.code_challenge
-   * @param [options.keys_jwe]
+   * @param {object} options see `FxAccountsOAuth.authorizeOAuthCode`.
    * @returns {Promise<object>} Object containing "code" and "state" properties.
    */
   _authorizeOAuthCode(options) {
-    return this._fxa._withVerifiedAccountState(async state => {
-      const { sessionToken } = await state.getUserAccountData(["sessionToken"]);
-      const params = { ...options };
-      if (params.keys_jwk) {
-        const jwk = JSON.parse(
-          new TextDecoder().decode(
-            ChromeUtils.base64URLDecode(params.keys_jwk, { padding: "reject" })
-          )
-        );
-        params.keys_jwe = await this._createKeysJWE(
-          sessionToken,
-          params.client_id,
-          params.scope,
-          jwk
-        );
-        delete params.keys_jwk;
-      }
-      try {
-        return await this._fxai.fxAccountsClient.oauthAuthorize(
-          sessionToken,
-          params
-        );
-      } catch (err) {
-        throw this._fxai._errorToErrorClass(err);
-      }
-    });
-  }
-
-  /**
-   * Create a JWE to deliver keys to another client via the OAuth scoped-keys flow.
-   *
-   * This method is used to transfer key material to another client, by providing
-   * an appropriately-encrypted value for the `keys_jwe` OAuth response parameter.
-   * Since we're transferring keys from one client to another, two things must be
-   * true:
-   *
-   *   * This client must actually have the key.
-   *   * The other client must be allowed to request that key.
-   *
-   * @param {string} sessionToken the sessionToken to use when fetching key metadata
-   * @param {string} clientId the client requesting access to our keys
-   * @param {string} scopes Space separated requested scopes being requested
-   * @param {object} jwk Ephemeral JWK provided by the client for secure key transfer
-   */
-  async _createKeysJWE(sessionToken, clientId, scopes, jwk) {
-    // This checks with the FxA server about what scopes the client is allowed.
-    // Note that we pass the requesting client_id here, not our own client_id.
-    const clientKeyData = await this._fxai.fxAccountsClient.getScopedKeyData(
-      sessionToken,
-      clientId,
-      scopes
-    );
-    const scopedKeys = {};
-    for (const scope of Object.keys(clientKeyData)) {
-      const key = await this._fxai.keys.getKeyForScope(scope);
-      if (!key) {
-        throw new Error(`Key not available for scope "${scope}"`);
-      }
-      scopedKeys[scope] = key;
-    }
-    return lazy.jwcrypto.generateJWE(
-      jwk,
-      new TextEncoder().encode(JSON.stringify(scopedKeys))
-    );
+    return this._fxai.authorizeOAuthCode(options);
   }
 }

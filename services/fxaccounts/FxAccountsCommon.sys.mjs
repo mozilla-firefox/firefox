@@ -137,6 +137,12 @@ export let COMMAND_PAIR_SUPP_METADATA = "fxaccounts:pair_supplicant_metadata";
 export let COMMAND_PAIR_AUTHORIZE = "fxaccounts:pair_authorize";
 export let COMMAND_PAIR_DECLINE = "fxaccounts:pair_decline";
 export let COMMAND_PAIR_COMPLETE = "fxaccounts:pair_complete";
+// Asks the browser to start an OAuth flow on behalf of a pairing supplicant
+// and to hand the resulting OAuth parameters back to FxA.
+export let COMMAND_PAIR_OAUTH_START = "fxaccounts:pair_oauth_start";
+// Asks the browser, acting as the pairing authority, to grant an OAuth
+// authorization code for the supplicant's OAuth parameters.
+export let COMMAND_PAIR_OAUTH_FINISH = "fxaccounts:pair_oauth_finish";
 
 export let COMMAND_PROFILE_CHANGE = "profile:change";
 export let COMMAND_CAN_LINK_ACCOUNT = "fxaccounts:can_link_account";

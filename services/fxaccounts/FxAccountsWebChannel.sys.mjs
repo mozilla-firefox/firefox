@@ -26,6 +26,8 @@ import {
   COMMAND_PAIR_AUTHORIZE,
   COMMAND_PAIR_DECLINE,
   COMMAND_PAIR_COMPLETE,
+  COMMAND_PAIR_OAUTH_START,
+  COMMAND_PAIR_OAUTH_FINISH,
   COMMAND_PAIR_PREFERENCES,
   COMMAND_FIREFOX_VIEW,
   COMMAND_OAUTH_FLOW_IS_ACTIVE,
@@ -35,6 +37,8 @@ import {
   ON_SERVICE_ENABLED_NOTIFICATION,
   PREF_LAST_FXA_USER_UID,
   PREF_LAST_FXA_USER_EMAIL,
+  SCOPE_OLD_SYNC,
+  SCOPE_PROFILE,
   WEBCHANNEL_ID,
   log,
   logPII,
@@ -71,6 +75,12 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "pairingEnabled",
   "identity.fxaccounts.pairing.enabled"
+);
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "pairingVersion",
+  "identity.fxaccounts.pairing.version",
+  1
 );
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
@@ -416,6 +426,24 @@ FxAccountsWebChannel.prototype = {
           });
         break;
       }
+      case COMMAND_PAIR_OAUTH_START: {
+        this._ensurePairingEnabled(command, 2);
+        const params = await this._helpers.pairOAuthStart(data);
+        await this._channel.send(
+          { command, messageId: message.messageId, data: params },
+          sendingContext
+        );
+        break;
+      }
+      case COMMAND_PAIR_OAUTH_FINISH: {
+        this._ensurePairingEnabled(command, 2);
+        const codeAndState = await this._helpers.pairOAuthFinish(data);
+        await this._channel.send(
+          { command, messageId: message.messageId, data: codeAndState },
+          sendingContext
+        );
+        break;
+      }
       case COMMAND_PAIR_HEARTBEAT:
       case COMMAND_PAIR_SUPP_METADATA:
       case COMMAND_PAIR_AUTHORIZE:
@@ -453,6 +481,12 @@ FxAccountsWebChannel.prototype = {
         lazy.FxAccountsPairingFlow.finalizeAll();
         break;
       }
+    }
+  },
+
+  _ensurePairingEnabled(command, requiredVersion) {
+    if (!lazy.pairingEnabled || lazy.pairingVersion < requiredVersion) {
+      throw new Error(`Pairing is disabled for command: ${command}`);
     }
   },
 
@@ -787,6 +821,69 @@ FxAccountsWebChannelHelpers.prototype = {
   },
 
   /**
+   * Starts an OAuth flow on behalf of a pairing supplicant.
+   *
+   * The browser is the supplicant here - it owns the PKCE verifier and the
+   * private key needed to later complete the flow, but it is FxA which relays
+   * the resulting public parameters to the authority over the pairing channel.
+   *
+   * @param {string[]} [scopes] The scopes to request, defaults to the Sync scopes.
+   * @returns {Promise<object>} The OAuth parameters the authority needs, ie,
+   *   `state`, `scope`, `code_challenge`, `code_challenge_method` and
+   *   `keys_jwk`.
+   */
+  async pairOAuthStart({ scopes = [SCOPE_OLD_SYNC, SCOPE_PROFILE] } = {}) {
+    log.debug(`Webchannel is starting a pairing oauth flow for ${scopes}`);
+    const { state, scope, code_challenge, code_challenge_method, keys_jwk } =
+      await this._fxAccounts._internal.oauth.beginOAuthFlow(scopes);
+    return {
+      state,
+      scope,
+      code_challenge,
+      code_challenge_method,
+      keys_jwk,
+    };
+  },
+
+  /**
+   * Grants an OAuth authorization code for a pairing supplicant.
+   *
+   * The browser is the pairing authority here - it is already signed in, so it
+   * holds the scoped keys and the session token needed to authorize the
+   * supplicant's OAuth parameters. FxA relays the returned code and state to
+   * the supplicant over the pairing channel.
+   *
+   * @param {object} oauthParams The supplicant's OAuth parameters, as produced
+   *   by `pairOAuthStart` on the supplicant.
+   * @returns {Promise<object>} Object containing "code" and "state" properties.
+   */
+  async pairOAuthFinish({
+    client_id,
+    state,
+    scope,
+    code_challenge,
+    // `pairOAuthStart` always uses S256, so that's what we assume when the
+    // supplicant didn't tell us which method it used.
+    code_challenge_method = "S256",
+    keys_jwk,
+  }) {
+    log.debug("Webchannel is authorizing an oauth code for a pairing flow");
+    const codeAndState = await this._fxAccounts._internal.authorizeOAuthCode({
+      client_id,
+      access_type: "offline",
+      state,
+      scope,
+      code_challenge,
+      code_challenge_method,
+      keys_jwk,
+    });
+    if (codeAndState.state != state) {
+      throw new Error("OAuth state mismatch");
+    }
+    return codeAndState;
+  },
+
+  /**
    * Returns a boolean to indicate whether an oauth flow is in progress.
    */
   oauthFlowIsActive() {
@@ -918,6 +1015,7 @@ FxAccountsWebChannelHelpers.prototype = {
     return {
       multiService: true,
       pairing: lazy.pairingEnabled,
+      pairingVersion: lazy.pairingVersion,
       choose_what_to_sync: true,
       // This capability is for telling FxA that the current build can accept
       // accounts without passwords/sync keys (third-party auth)
