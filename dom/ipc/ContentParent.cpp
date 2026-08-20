@@ -50,6 +50,7 @@
 #include "mozilla/HangDetails.h"
 #include "mozilla/LookAndFeel.h"
 #include "mozilla/Maybe.h"
+#include "mozilla/MozPromise.h"
 #include "mozilla/NullPrincipal.h"
 #include "mozilla/PageloadEvent.h"
 #include "mozilla/Preferences.h"
@@ -150,6 +151,9 @@
 #include "mozilla/glean/IpcMetrics.h"
 #include "mozilla/glean/PFOGTransport.h"
 #include "mozilla/hal_sandbox/PHalParent.h"
+#ifndef ANDROID
+#  include "mozilla/hwinference/PHWInferenceManagerChild.h"
+#endif  // !ANDROID
 #include "mozilla/intl/L10nRegistry.h"
 #include "mozilla/intl/LocaleService.h"
 #include "mozilla/intl/OSPreferences.h"
@@ -164,6 +168,7 @@
 #include "mozilla/ipc/SharedMemoryHandle.h"
 #include "mozilla/ipc/TestShellParent.h"
 #include "mozilla/ipc/URIUtils.h"
+#include "mozilla/ipc/UtilityProcessManager.h"
 #include "mozilla/layers/CompositorThread.h"
 #include "mozilla/layers/ImageBridgeParent.h"
 #include "mozilla/layers/LayerTreeOwnerTracker.h"
@@ -225,7 +230,6 @@
 #include "nsILocalStorageManager.h"
 #include "nsIMemoryInfoDumper.h"
 #include "nsIMemoryReporter.h"
-#include "nsINavHistoryService.h"
 #include "nsINetworkLinkService.h"
 #include "nsIObserverService.h"
 #include "nsIParentChannel.h"
@@ -1962,6 +1966,12 @@ void ContentParent::ActorDestroy(ActorDestroyReason why) {
   if (fss) {
     fss->Forget(ChildID());
   }
+
+#ifndef ANDROID
+  // A process that dies never sends its ReleaseHWInferenceConnection.
+  mHWInferenceConnections = 0;
+  mHWInferenceKeepAlive = nullptr;
+#endif  // !ANDROID
 
   if (why == NormalShutdown && !mCalledClose) {
     // If we shut down normally but haven't called Close, assume somebody
@@ -5251,6 +5261,34 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateAudioIPCConnection(
   return IPC_OK();
 }
 
+#ifndef ANDROID
+mozilla::ipc::IPCResult ContentParent::RecvRequestHWInferenceConnection(
+    Endpoint<hwinference::PHWInferenceManagerParent>&& aEndpoint) {
+  RefPtr<UtilityProcessKeepAlive> keepAlive =
+      UtilityProcessManager::GetSingleton()->StartContentHWInferenceManager(
+          std::move(aEndpoint), mChildID);
+
+  ++mHWInferenceConnections;
+  // Assigning replaces a keep-alive left over from an instance that has since
+  // crashed, which no longer keeps anything alive.
+  mHWInferenceKeepAlive = std::move(keepAlive);
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult ContentParent::RecvReleaseHWInferenceConnection() {
+  if (mHWInferenceConnections == 0) {
+    return IPC_FAIL(this,
+                    "ReleaseHWInferenceConnection without a matching "
+                    "RequestHWInferenceConnection");
+  }
+
+  if (--mHWInferenceConnections == 0) {
+    mHWInferenceKeepAlive = nullptr;
+  }
+  return IPC_OK();
+}
+#endif  // !ANDROID
+
 already_AddRefed<extensions::PExtensionsParent>
 ContentParent::AllocPExtensionsParent() {
   return MakeAndAddRef<extensions::ExtensionsParent>();
@@ -6262,71 +6300,6 @@ static bool WebDriverSessionRunning() {
   return false;
 }
 
-#ifndef MOZ_GECKOVIEW_HISTORY
-// Whether aDomain (an ETLD+1) was unvisited today, until aNavigationStartTime,
-// per the in-process Places history. Returns false when history is
-// unavailable. Desktop only; GeckoView history lives in the embedding app.
-static bool FirstDailyLoadFromPlaces(const nsACString& aDomain,
-                                     const TimeStamp& aNavigationStartTime) {
-  if (aNavigationStartTime.IsNull()) {
-    return false;
-  }
-
-  nsCOMPtr<nsINavHistoryService> history =
-      do_GetService(NS_NAVHISTORYSERVICE_CONTRACTID);
-  bool historyDisabled = true;
-  if (!history || NS_FAILED(history->GetHistoryDisabled(&historyDisabled)) ||
-      historyDisabled) {
-    return false;
-  }
-
-  nsCOMPtr<nsINavHistoryQuery> query;
-  nsCOMPtr<nsINavHistoryQueryOptions> options;
-  if (NS_FAILED(history->GetNewQuery(getter_AddRefs(query))) ||
-      NS_FAILED(history->GetNewQueryOptions(getter_AddRefs(options)))) {
-    return false;
-  }
-
-  // Convert the monotonic navigation start to Places' wall-clock visit_date.
-  PRTime navigationStart =
-      PR_Now() -
-      static_cast<PRTime>(
-          (TimeStamp::Now() - aNavigationStartTime).ToMicroseconds());
-
-  if (NS_FAILED(query->SetDomain(aDomain)) ||
-      NS_FAILED(query->SetDomainIsHost(false)) ||
-      NS_FAILED(query->SetBeginTimeReference(
-          nsINavHistoryQuery::TIME_RELATIVE_TODAY)) ||
-      NS_FAILED(query->SetBeginTime(0)) ||
-      NS_FAILED(query->SetEndTime(navigationStart)) ||
-      NS_FAILED(options->SetResultType(
-          nsINavHistoryQueryOptions::RESULTS_AS_VISIT)) ||
-      NS_FAILED(options->SetMaxResults(1)) ||
-      NS_FAILED(options->SetQueryType(
-          nsINavHistoryQueryOptions::QUERY_TYPE_HISTORY))) {
-    return false;
-  }
-
-  nsCOMPtr<nsINavHistoryResult> result;
-  if (NS_FAILED(
-          history->ExecuteQuery(query, options, getter_AddRefs(result)))) {
-    return false;
-  }
-
-  nsCOMPtr<nsINavHistoryContainerResultNode> root;
-  if (NS_FAILED(result->GetRoot(getter_AddRefs(root))) ||
-      NS_FAILED(root->SetContainerOpen(true))) {
-    return false;
-  }
-
-  uint32_t visitCount = 0;
-  nsresult rv = root->GetChildCount(&visitCount);
-  root->SetContainerOpen(false);
-
-  return NS_SUCCEEDED(rv) && visitCount == 0;
-}
-#endif
-
 #ifdef MOZ_GECKOVIEW_HISTORY
 // Local midnight (start of the current day in local time) as milliseconds since
 // the Unix epoch.
@@ -6381,7 +6354,8 @@ static void QueryFirstDailyLoad(const nsACString& aDomain,
         callback(aVisitedToday.isSome() && !*aVisitedToday);
       });
 #else
-  aCallback(FirstDailyLoadFromPlaces(aDomain, aNavigationStartTime));
+  aCallback(mozilla::performance::pageload_event::FirstDailyLoadFromPlaces(
+      aDomain, aNavigationStartTime));
 #endif
 }
 
@@ -6439,6 +6413,11 @@ mozilla::ipc::IPCResult ContentParent::RecvRecordPageLoadEvent(
     const MaybeDiscarded<BrowsingContext>& aBrowsingContext) {
   // Check whether a webdriver is running.
   aPageloadEventData.set_usingWebdriver(WebDriverSessionRunning());
+
+#ifndef MOZ_GECKOVIEW_HISTORY
+  aPageloadEventData.set_isActiveClient(
+      mozilla::performance::pageload_event::IsActiveClient());
+#endif
 
 #if defined(ANDROID)
   // Get network link type iff android.
@@ -6524,7 +6503,7 @@ mozilla::ipc::IPCResult ContentParent::RecvPURLClassifierConstructor(
   MOZ_ASSERT(aActor);
   *aSuccess = false;
 
-  auto* actor = static_cast<URLClassifierParent*>(aActor);
+  auto* actor = mozilla::ipc::ActorCast<URLClassifierParent>(aActor);
   nsCOMPtr<nsIPrincipal> principal(aPrincipal);
   if (!principal) {
     actor->ClassificationFailed();
@@ -6541,7 +6520,7 @@ bool ContentParent::DeallocPURLClassifierParent(PURLClassifierParent* aActor) {
   MOZ_ASSERT(aActor);
 
   RefPtr<URLClassifierParent> actor =
-      dont_AddRef(static_cast<URLClassifierParent*>(aActor));
+      dont_AddRef(mozilla::ipc::ActorCast<URLClassifierParent>(aActor));
   return true;
 }
 
@@ -6568,7 +6547,7 @@ mozilla::ipc::IPCResult ContentParent::RecvPURLClassifierLocalConstructor(
     return IPC_FAIL(this, "aURI should not be null");
   }
 
-  auto* actor = static_cast<URLClassifierLocalParent*>(aActor);
+  auto* actor = mozilla::ipc::ActorCast<URLClassifierLocalParent>(aActor);
   return actor->StartClassify(aURI, features);
 }
 
@@ -6578,7 +6557,7 @@ bool ContentParent::DeallocPURLClassifierLocalParent(
   MOZ_ASSERT(aActor);
 
   RefPtr<URLClassifierLocalParent> actor =
-      dont_AddRef(static_cast<URLClassifierLocalParent*>(aActor));
+      dont_AddRef(mozilla::ipc::ActorCast<URLClassifierLocalParent>(aActor));
   return true;
 }
 
@@ -6628,7 +6607,7 @@ mozilla::ipc::IPCResult ContentParent::RecvPURLClassifierLocalByNameConstructor(
     ipcFeatures.AppendElement(IPCURLClassifierFeature(name, tables));
   }
 
-  auto* actor = static_cast<URLClassifierLocalByNameParent*>(aActor);
+  auto* actor = mozilla::ipc::ActorCast<URLClassifierLocalByNameParent>(aActor);
   return actor->StartClassify(aURI, ipcFeatures, aListType);
 }
 
@@ -6637,8 +6616,8 @@ bool ContentParent::DeallocPURLClassifierLocalByNameParent(
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(aActor);
 
-  RefPtr<URLClassifierLocalByNameParent> actor =
-      dont_AddRef(static_cast<URLClassifierLocalByNameParent*>(aActor));
+  RefPtr<URLClassifierLocalByNameParent> actor = dont_AddRef(
+      mozilla::ipc::ActorCast<URLClassifierLocalByNameParent>(aActor));
   return true;
 }
 
@@ -7467,10 +7446,32 @@ mozilla::ipc::IPCResult ContentParent::RecvWindowPostMessage(
     return IPC_OK();
   }
 
+  bool clearSource = false;
   if (!aData.source().IsNull()) {
-    RefPtr<CanonicalBrowsingContext> bc = aData.source().get_canonical();
-    if (!bc || !bc->IsOwnedByProcess(ChildID())) {
-      return IPC_FAIL(this, "RecvWindowPostMessage: unowned source");
+    // If we have a source BrowsingContext, we must also have a valid source
+    // innerWindowId. If this is gone, we need to clear out our source, similar
+    // to what will be done in PostMessageEvent::Run.
+    RefPtr<WindowGlobalParent> wgp =
+        WindowGlobalParent::GetByInnerWindowId(aData.innerWindowId());
+    if (!wgp || wgp->IsDiscarded() || !wgp->IsCurrent()) {
+      clearSource = true;
+    }
+
+    // Do some validation on the provided innerWindowId, if we have it around.
+    if (wgp) {
+      RefPtr<CanonicalBrowsingContext> bc = aData.source().get_canonical();
+      if (wgp->GetBrowsingContext() != bc) {
+        return IPC_FAIL(this, "RecvWindowPostMessage: invalid innerWindowId");
+      }
+      if (wgp->GetContentParent() != this) {
+        return IPC_FAIL(this,
+                        "RecvWindowPostMessage: source is not this process");
+      }
+      if (!wgp->DocumentPrincipal()->Equals(aData.callerPrincipal())) {
+        return IPC_FAIL(
+            this,
+            "RecvWindowPostMessage: callerPrincipal doesn't match source");
+      }
     }
   }
 
@@ -7507,7 +7508,11 @@ mozilla::ipc::IPCResult ContentParent::RecvWindowPostMessage(
     return IPC_OK();
   }
 
-  (void)cp->SendWindowPostMessage(context, aMessage, aData);
+  PostMessageData data(aData);
+  if (clearSource) {
+    data.source() = nullptr;
+  }
+  (void)cp->SendWindowPostMessage(context, aMessage, data);
   return IPC_OK();
 }
 

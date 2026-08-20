@@ -112,7 +112,7 @@ void LockRequestChild::RunAbortAlgorithm() {
 }
 
 inline LockManagerChild* LockRequestChild::CastedManager() const {
-  return static_cast<LockManagerChild*>(Manager());
+  return mozilla::ipc::ActorCast<LockManagerChild>(Manager());
 };
 
 }  // namespace mozilla::dom::locks

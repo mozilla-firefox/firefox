@@ -1782,6 +1782,71 @@ impl Parse for MasonryAutoFlow {
     }
 }
 
+/// Whether the `balance` value of `flex-wrap` is enabled.
+#[inline]
+fn flex_wrap_balance_enabled() -> bool {
+    #[cfg(feature = "servo")]
+    return static_prefs::pref!("layout.flexbox.balance");
+    #[cfg(not(feature = "servo"))]
+    return false;
+}
+
+/// The specified and computed value of the `flex-wrap` property:
+/// `nowrap | [ wrap | wrap-reverse ] || balance`
+///
+/// <https://drafts.csswg.org/css-flexbox-2/#flex-wrap-property>
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[css(bitflags(
+    single = "nowrap",
+    mixed = "wrap,wrap-reverse,balance",
+    validate_mixed = "Self::validate_and_simplify"
+))]
+#[repr(C)]
+pub struct FlexWrap(u8);
+bitflags! {
+    impl FlexWrap: u8 {
+        /// `nowrap`
+        const NOWRAP = 0;
+        /// `wrap` - mutually exclusive with `wrap-reverse`
+        const WRAP = 1 << 0;
+        /// `wrap-reverse` - mutually exclusive with `wrap`
+        const WRAP_REVERSE = 1 << 1;
+        /// `balance`
+        const BALANCE = 1 << 2;
+    }
+}
+
+impl FlexWrap {
+    /// `nowrap | [ wrap | wrap-reverse ] || balance`
+    fn validate_and_simplify(&mut self) -> bool {
+        if self.contains(Self::WRAP | Self::WRAP_REVERSE) {
+            return false;
+        }
+        if self.contains(Self::BALANCE) {
+            if !flex_wrap_balance_enabled() {
+                return false;
+            }
+            // `wrap balance` computes to `balance`.
+            self.remove(Self::WRAP);
+        }
+        true
+    }
+}
+
 #[derive(
     Clone,
     Debug,

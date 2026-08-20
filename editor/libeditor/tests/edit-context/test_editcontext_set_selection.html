@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>Test that EditContext handles eSetSelection correctly.</title>
   <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="/tests/SimpleTest/EventUtils.js"></script>
   <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
 </head>
 <body>
@@ -15,7 +16,7 @@ const editContext = new EditContext({text: 'cạ̀́b'});
 host.editContext = editContext;
 const utils = SpecialPowers.getDOMWindowUtils(window);
 
-function doTest(test) {
+async function doTest(test) {
   const {selectionStart, selectionEnd, description} = test;
   const expectStart = test.expectStart ?? selectionStart;
   const expectEnd = test.expectEnd ?? selectionEnd;
@@ -27,24 +28,20 @@ function doTest(test) {
        `${description}: TextUpdateEvent should not delete any text.`);
     is(e.text, '',
        `${description}: TextUpdateEvent should not insert any text.`);
-  	is(`${e.selectionStart}-${e.selectionEnd}`, expectRange,
-  	  `${description}: TextUpdateEvent.selectionStart/End should be set appropriately.`);
-  	is(`${editContext.selectionStart}-${editContext.selectionEnd}`, expectRange,
-  	  `${description}: EditContext.selectionStart/End should be updated.`);
+    is(`${e.selectionStart}-${e.selectionEnd}`, expectRange,
+       `${description}: TextUpdateEvent.selectionStart/End should be set appropriately.`);
+    is(`${editContext.selectionStart}-${editContext.selectionEnd}`, expectRange,
+       `${description}: EditContext.selectionStart/End should be updated.`);
   }, {once: true});
-  let flags = 0;
-  if (selectionStart > selectionEnd) {
-    flags |= utils.SELECTION_SET_FLAG_REVERSE;
-  }
-  if (test.expandToClusterBoundary) {
-    flags |= utils.SELECTION_EXPAND_TO_CLUSTER_BOUNDARY;
-  }
-	const success = utils.sendSelectionSetEvent(
-	  Math.min(selectionStart, selectionEnd),
-	  Math.abs(selectionStart - selectionEnd),
-	  flags);
-	ok(firedTextUpdate, `${description}: Should fire textupdate.`);
-	ok(success, `${description}: sendSelectionSetEvent should succeed.`);
+  const flags = test.expandToClusterBoundary
+    ? utils.SELECTION_EXPAND_TO_CLUSTER_BOUNDARY
+    : 0;
+  const reverse = selectionStart > selectionEnd;
+  const offset = Math.min(selectionStart, selectionEnd);
+  const length = Math.abs(selectionStart - selectionEnd);
+  const success = await synthesizeSelectionSet(offset, length, reverse, window, flags);
+  ok(firedTextUpdate, `${description}: Should fire textupdate.`);
+  ok(success, `${description}: sendSelectionSetEvent should succeed.`);
 }
 
 const tests = [
@@ -93,8 +90,24 @@ add_task(async () => {
   await SimpleTest.promiseFocus();
   host.focus();
   for (let test of tests) {
-    doTest(test);
+    await doTest(test);
   }
+});
+
+add_task(async () => {
+  host.focus();
+  editContext.updateSelection(1, 4);
+  // Wait for IMEContentObserver to handle the selection change.
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  // Test that this eSetSelection event updates the IMEContentObserver's cached selection,
+  // so it doesn't skip sending the second eSetSelection
+  await synthesizeSelectionSet(3, 0);
+  is(`${editContext.selectionStart}-${editContext.selectionEnd}`, '3-3',
+     'EditContext selection should be updated when eSetSelection is dispatched.');
+  await synthesizeSelectionSet(1, 4);
+  is(`${editContext.selectionStart}-${editContext.selectionEnd}`, '1-5',
+     'EditContext selection should be updated again when eSetSelection is dispatched with original selection.');
+
 });
 
 </script>

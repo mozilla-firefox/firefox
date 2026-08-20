@@ -15,9 +15,9 @@ use crate::{
 
 use jxl_transforms::transform_map::*;
 
+use crate::util::sync::OnceLock;
 use std::borrow::Cow;
 use std::mem;
-use std::sync::OnceLock;
 
 pub const NUM_ORDERS: usize = 13;
 

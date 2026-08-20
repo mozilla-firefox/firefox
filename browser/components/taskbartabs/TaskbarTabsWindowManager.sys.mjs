@@ -6,7 +6,7 @@ import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 const kTaskbarTabsWindowFeatures =
-  "titlebar,close,toolbar,location,personalbar=no,status,menubar=no,resizable,minimizable,scrollbars";
+  "titlebar,toolbar,location,personalbar=no,status,menubar=no,resizable,minimizable,scrollbars";
 
 let lazy = {};
 

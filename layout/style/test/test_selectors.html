@@ -1276,8 +1276,8 @@ function runTests() {
     test_balanced_unparseable("div \\\np");
     test_balanced_unparseable("div\\\np");
 
-    // Test that :-moz-placeholder is parsable.
-    test_parseable(":-moz-placeholder");
+    // Test that :-moz-placeholder is not parsable.
+    test_balanced_unparseable(":-moz-placeholder");
 
     // Test that things other than user-action pseudo-classes are
     // rejected after pseudo-elements.  Some of these tests rely on

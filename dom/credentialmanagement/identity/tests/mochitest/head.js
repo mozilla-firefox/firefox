@@ -16,8 +16,19 @@ async function setupTest(testName, idp_origin = "https://example.net") {
     `${idp_api}/server_manifest.sjs?set_test=${testName}`
   );
   let focusPromise = SimpleTest.promiseFocus();
+  // The IdP cookie is set by the popup's response headers. Most accounts
+  // endpoints reject requests without it, so wait for the popup to report back
+  // rather than racing it.
+  let cookiePromise = new Promise(resolve => {
+    window.addEventListener("message", function listener(event) {
+      if (event.data == "cookie-set") {
+        window.removeEventListener("message", listener);
+        resolve();
+      }
+    });
+  });
   window.open(`${idp_api}/helper_set_cookie.html`, "_blank");
-  await focusPromise;
+  await Promise.all([focusPromise, cookiePromise]);
   return fetchPromise;
 }
 

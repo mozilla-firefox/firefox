@@ -63,6 +63,8 @@ class SessionStoreParent final : public PSessionStoreParent {
  private:
   ~SessionStoreParent() = default;
 
+  bool IsAllowedUpdateTarget(CanonicalBrowsingContext* aBrowsingContext);
+
   already_AddRefed<SessionStoreParent::FlushTabStatePromise>
   FlushSessionStore();
 

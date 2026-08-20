@@ -2,8 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * The origin of this IDL file is
- * http://dev.w3.org/2011/webrtc/editor/webrtc.html#mediastreamevent
+ * The addstream event defined herein is part of the legacy
+ * interface extensions described by
+ *   https://w3c.github.io/webrtc-pc/#legacy-interface-extensions
+ * The event itself was removed. See
+ *   https://blog.mozilla.org/webrtc/the-evolution-of-webrtc/
+ * for background information.
  */
 
 dictionary MediaStreamEventInit : EventInit {

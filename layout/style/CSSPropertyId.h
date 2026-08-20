@@ -73,7 +73,6 @@ struct CSSPropertyId {
   bool IsShorthand() const { return nsCSSProps::IsShorthand(mId); }
 
   bool operator==(const CSSPropertyId&) const = default;
-  bool operator!=(const CSSPropertyId&) const = default;
 
   bool IsValid() const {
     if (mId == eCSSProperty_UNKNOWN) {

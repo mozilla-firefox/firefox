@@ -18,6 +18,13 @@ task-defaults:
         sparse-profile: null
         resources:
             - 'services/app-services-tools/embedded-uniffi-bindgen'
+            - 'Cargo.lock'
+            # List of in-tree dependencies from
+            # cargo tree -p embedded-uniffi-bindgen | grep -oP '(?<='$(pwd)'/)[^)]+' | sort | uniq
+            - 'build/rust/goblin'
+            - 'build/rust/hashbrown'
+            - 'build/rust/toml'
+            - 'third_party/application-services/tools/embedded-uniffi-bindgen'
 
 # For Linux platforms target "*-musl" so that the binary will be statically linked.
 

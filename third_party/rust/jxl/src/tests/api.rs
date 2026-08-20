@@ -23,6 +23,7 @@ fn decode_small_chunks() {
             false,
             None,
             None,
+            None,
         )
         .unwrap();
         Ok(())
@@ -49,7 +50,7 @@ fn test_preview_size_none_for_regular_files() {
     let mut decoder = JxlDecoder::<states::Initialized>::new(options);
     let mut input = file.as_slice();
     let decoder = loop {
-        match decoder.process(&mut input).unwrap() {
+        match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => decoder = fallback,
         }
@@ -64,7 +65,7 @@ fn test_preview_size_some_for_preview_files() {
     let mut decoder = JxlDecoder::<states::Initialized>::new(options);
     let mut input = file.as_slice();
     let decoder = loop {
-        match decoder.process(&mut input).unwrap() {
+        match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => decoder = fallback,
         }
@@ -79,7 +80,7 @@ fn test_set_pixel_format() {
     let mut decoder = JxlDecoder::<states::Initialized>::new(options);
     let mut input = file.as_slice();
     let mut decoder = loop {
-        match decoder.process(&mut input).unwrap() {
+        match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => decoder = fallback,
         }
@@ -103,7 +104,7 @@ fn test_default_output_tf_by_pixel_format() {
     let mut decoder = JxlDecoder::<states::Initialized>::new(options);
     let mut input = file.as_slice();
     let mut decoder = loop {
-        match decoder.process(&mut input).unwrap() {
+        match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => decoder = fallback,
         }
@@ -150,7 +151,7 @@ fn test_fill_opaque_alpha_both_pipelines() {
         macro_rules! advance_decoder {
             ($decoder:expr) => {
                 loop {
-                    match $decoder.process(&mut input).unwrap() {
+                    match $decoder.process(&mut input, None).unwrap() {
                         ProcessingResult::Complete { result } => break result,
                         ProcessingResult::NeedsMoreInput { fallback, .. } => {
                             if input.is_empty() {
@@ -163,7 +164,7 @@ fn test_fill_opaque_alpha_both_pipelines() {
             };
             ($decoder:expr, $buffers:expr) => {
                 loop {
-                    match $decoder.process(&mut input, $buffers).unwrap() {
+                    match $decoder.process(&mut input, $buffers, None).unwrap() {
                         ProcessingResult::Complete { result } => break result,
                         ProcessingResult::NeedsMoreInput { fallback, .. } => {
                             if input.is_empty() {
@@ -356,7 +357,7 @@ fn test_animation_with_reference_frames() {
 
     let mut decoder = decoder;
     let mut decoder = loop {
-        match decoder.process(&mut input).unwrap() {
+        match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => {
                 decoder = fallback;
@@ -378,7 +379,7 @@ fn test_animation_with_reference_frames() {
 
     loop {
         let mut decoder_frame = loop {
-            match decoder.process(&mut input).unwrap() {
+            match decoder.process(&mut input, None).unwrap() {
                 ProcessingResult::Complete { result } => break result,
                 ProcessingResult::NeedsMoreInput { fallback, .. } => {
                     decoder = fallback;
@@ -397,7 +398,10 @@ fn test_animation_with_reference_frames() {
         )];
 
         decoder = loop {
-            match decoder_frame.process(&mut input, &mut buffers).unwrap() {
+            match decoder_frame
+                .process(&mut input, &mut buffers, None)
+                .unwrap()
+            {
                 ProcessingResult::Complete { result } => break result,
                 ProcessingResult::NeedsMoreInput { fallback, .. } => {
                     decoder_frame = fallback;
@@ -430,7 +434,7 @@ fn test_skip_frame_then_decode_next() {
 
     let mut decoder = decoder;
     let mut decoder = loop {
-        match decoder.process(&mut input).unwrap() {
+        match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => {
                 decoder = fallback;
@@ -449,7 +453,7 @@ fn test_skip_frame_then_decode_next() {
     let (width, height) = basic_info.size;
 
     let mut decoder_frame = loop {
-        match decoder.process(&mut input).unwrap() {
+        match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => {
                 decoder = fallback;
@@ -472,7 +476,7 @@ fn test_skip_frame_then_decode_next() {
     );
 
     let mut decoder_frame = loop {
-        match decoder.process(&mut input).unwrap() {
+        match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => {
                 decoder = fallback;
@@ -491,7 +495,10 @@ fn test_skip_frame_then_decode_next() {
     )];
 
     let decoder = loop {
-        match decoder_frame.process(&mut input, &mut buffers).unwrap() {
+        match decoder_frame
+            .process(&mut input, &mut buffers, None)
+            .unwrap()
+        {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => {
                 decoder_frame = fallback;
@@ -524,7 +531,7 @@ fn test_output_format_u8_matches_f32() {
                 decode_with_format::<f32>(&file, &f32_format, use_simple, false);
             let (u8_buffer, _, _) = decode_with_format::<u8>(&file, &u8_format, use_simple, false);
 
-            let tolerance = 0.003;
+            let tolerance = 0.004;
             let mut max_error: f32 = 0.0;
 
             for y in 0..height {
@@ -677,7 +684,7 @@ fn decode_with_format<T: crate::image::ImageDataType>(
     let mut input = file;
 
     let mut decoder = loop {
-        match decoder.process(&mut input).unwrap() {
+        match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => {
                 if input.is_empty() {
@@ -696,7 +703,7 @@ fn decode_with_format<T: crate::image::ImageDataType>(
     let num_samples = pixel_format.color_type.samples_per_pixel();
 
     let decoder = loop {
-        match decoder.process(&mut input).unwrap() {
+        match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => break result,
             ProcessingResult::NeedsMoreInput { fallback, .. } => {
                 if input.is_empty() {
@@ -719,7 +726,7 @@ fn decode_with_format<T: crate::image::ImageDataType>(
 
     let mut decoder = decoder;
     loop {
-        match decoder.process(&mut input, &mut buffers).unwrap() {
+        match decoder.process(&mut input, &mut buffers, None).unwrap() {
             ProcessingResult::Complete { .. } => break,
             ProcessingResult::NeedsMoreInput { fallback, .. } => {
                 if input.is_empty() {
@@ -741,7 +748,7 @@ fn test_fuzzer_smallbuffer_overflow() {
     let data = include_bytes!("../../tests/testdata/fuzzer_smallbuffer_overflow.jxl");
 
     let result = panic::catch_unwind(|| {
-        let _ = decode_internal(data, 1024, false, false, None, None);
+        let _ = decode_internal(data, 1024, false, false, None, None, None);
     });
 
     if let Err(e) = result {
@@ -755,6 +762,17 @@ fn test_fuzzer_smallbuffer_overflow() {
             "Unexpected overflow panic: {}",
             panic_msg
         );
+    }
+}
+
+/// Regression test for https://issues.chromium.org/issues/541318910: flushing a
+/// frame that does not support rendering before the last pass used to force an
+/// eager render of an incomplete group.
+#[test]
+fn flush_without_partial_render_support() {
+    let data = std::fs::read("resources/test/squeeze_empty_residual.jxl").unwrap();
+    for chunk_size in 1..=16 {
+        decode_internal(&data, chunk_size, false, true, None, None, None).unwrap();
     }
 }
 
@@ -823,7 +841,9 @@ fn assert_start_new_frame_matches_sequential(data: &[u8]) {
         let mut decoder = JxlDecoderInner::new(options);
         let mut input = &data[..initial_offset];
 
-        while let ProcessingResult::Complete { .. } = decoder.process(&mut input, None).unwrap() {
+        while let ProcessingResult::Complete { .. } =
+            decoder.process(&mut input, None, None).unwrap()
+        {
             if input.is_empty() {
                 break;
             }
@@ -840,7 +860,7 @@ fn assert_start_new_frame_matches_sequential(data: &[u8]) {
             decoder.start_new_frame(seek_target);
             let mut input = &data[seek_target.decode_start_file_offset as usize..];
 
-            let result = decoder.process(&mut input, None);
+            let result = decoder.process(&mut input, None, None);
             assert!(
                 matches!(result, Ok(ProcessingResult::Complete { .. })),
                 "decoder.process: {result:?}"
@@ -887,7 +907,7 @@ fn assert_start_new_frame_matches_sequential(data: &[u8]) {
             }
 
             assert!(matches!(
-                decoder.process(&mut input, Some(&mut buffers)),
+                decoder.process(&mut input, Some(&mut buffers), None),
                 Ok(ProcessingResult::Complete { .. })
             ));
 
@@ -909,7 +929,7 @@ fn assert_start_new_frame_matches_sequential(data: &[u8]) {
             let mut extra_input = &input[..extra_bytes];
 
             while let ProcessingResult::Complete { .. } =
-                decoder.process(&mut extra_input, None).unwrap()
+                decoder.process(&mut extra_input, None, None).unwrap()
             {
                 if extra_input.is_empty() {
                     break;
@@ -1092,7 +1112,7 @@ fn test_fuzzer_xyb_icc_no_panic() {
     let mut decoder = JxlDecoderInner::new(Default::default());
     let mut input = data;
 
-    if let Ok(ProcessingResult::Complete { .. }) = decoder.process(&mut input, None)
+    if let Ok(ProcessingResult::Complete { .. }) = decoder.process(&mut input, None, None)
         && let Some(profile) = decoder.output_color_profile()
     {
         let _ = profile.try_as_icc();
@@ -1117,7 +1137,7 @@ fn test_scan_frames_only_empty_followup_no_panic_502853162() {
 
     let mut input = data;
     while decoder.has_more_frames() && !input.is_empty() {
-        let _ = decoder.process(&mut input, None).unwrap();
+        let _ = decoder.process(&mut input, None, None).unwrap();
     }
 }
 

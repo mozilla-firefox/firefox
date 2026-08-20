@@ -874,11 +874,11 @@
     },
     {
       "attachment": {
-        "filename": "startpage-16.svg",
-        "hash": "b9aeff79e16d2db1b53574ceacae0149bc3c5b5d6b6dcd3542a1d7034ed64b70",
-        "location": "main-workspace/search-config-icons/a2a88863-029c-4197-8a1c-fee311fc1aae.svg",
+        "filename": "16x16-light-white-background.svg",
+        "hash": "0025e2e3db0c591fcdc453d73706b686feae101b2b8b949521d0df06afdbcad0",
+        "location": "main-workspace/search-config-icons/20260807152136--acae3d3c-b09e-47f0-a9e5-57980d21fc4a--5d2b2470-dc33-45bb-9183-7d49028636fa.svg",
         "mimetype": "image/svg+xml",
-        "size": 1717
+        "size": 1658
       },
       "engineIdentifiers": [
         "startpage"
@@ -886,8 +886,8 @@
       "filter_expression": "env.appinfo.OS != \"iOS\"",
       "id": "acae3d3c-b09e-47f0-a9e5-57980d21fc4a",
       "imageSize": 16,
-      "last_modified": 1774879272191,
-      "schema": 1773705608175
+      "last_modified": 1786121638537,
+      "schema": 1785456011722
     },
     {
       "attachment": {
@@ -1191,6 +1191,23 @@
     },
     {
       "attachment": {
+        "filename": "16x16-light-white-background.pdf",
+        "hash": "9139032d19815e574eeb2b5c085bde9acdfd065036b59b9dc540244f5bceb056",
+        "location": "main-workspace/search-config-icons/20260810224330--fea7a389-2590-4675-8661-50f187dcb888--3b4070c7-7ef8-4485-ab92-5b3baa9fc833.pdf",
+        "mimetype": "application/pdf",
+        "size": 1835
+      },
+      "engineIdentifiers": [
+        "startpage"
+      ],
+      "filter_expression": "env.appinfo.OS == \"iOS\"",
+      "id": "fea7a389-2590-4675-8661-50f187dcb888",
+      "imageSize": 16,
+      "last_modified": 1786412902498,
+      "schema": 1786121638638
+    },
+    {
+      "attachment": {
         "filename": "mercadolivre-16-firefox.ico",
         "hash": "d7fdfd971d874f2ec6f209df6f6b8173d126cd3f7a25daacb94de4259efbcf16",
         "location": "main-workspace/search-config-icons/f8d4c276-9b04-4c70-8ff9-5c1faf55978c.ico",
@@ -1207,5 +1224,5 @@
       "schema": 1743687832067
     }
   ],
-  "timestamp": 1777561787670
+  "timestamp": 1786412902498
 }

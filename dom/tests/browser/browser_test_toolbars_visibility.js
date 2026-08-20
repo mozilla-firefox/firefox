@@ -169,11 +169,6 @@ function testNonDefaultContentToolbarsFromChrome(toolbars) {
  *        the visibility state of the toolbar elements
  */
 function testNonDefaultChromeToolbars(toolbars) {
-  // None of the toolbars should be visible if hidden with chrome privileges
-  ok(
-    !toolbars.locationbar,
-    "locationbar should not be visible with location=no"
-  );
   ok(!toolbars.menubar, "menubar should not be visible with menubar=no");
   ok(
     !toolbars.personalbar,
@@ -181,11 +176,15 @@ function testNonDefaultChromeToolbars(toolbars) {
   );
   // See above.
   todo(!toolbars.statusbar, "statusbar shouldn't be visible when status=no");
+  ok(!toolbars.toolbar, "toolbar should not be visible with toolbar=no");
+  ok(
+    toolbars.locationbar,
+    "locationbar should be visible even with location=no"
+  );
   ok(
     toolbars.scrollbars,
     "scrollbars should be visible even with scrollbars=no"
   );
-  ok(!toolbars.toolbar, "toolbar should not be visible with toolbar=no");
 }
 
 add_setup(async function () {

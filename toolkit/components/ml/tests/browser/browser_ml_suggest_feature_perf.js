@@ -52,15 +52,18 @@ const CUSTOM_NER_OPTIONS = {
   timeoutMS: -1,
 };
 
-const journal = {};
-const runInference2 = async () => {
+const runInference2 = async ({ backend, tag }) => {
+  const journal = {};
   ChromeUtils.defineESModuleGetters(this, {
     MLSuggest: "moz-src:///browser/components/urlbar/private/MLSuggest.sys.mjs",
   });
 
-  // Override INTENT and NER options within MLSuggest
-  MLSuggest.INTENT_OPTIONS = CUSTOM_INTENT_OPTIONS;
-  MLSuggest.NER_OPTIONS = CUSTOM_NER_OPTIONS;
+  // Pin the fallbacks too: MLSuggest falls back from "onnx-native" to
+  // "onnx" on its own, which would report wasm numbers under the native tag.
+  MLSuggest.INTENT_OPTIONS = { ...CUSTOM_INTENT_OPTIONS, backend };
+  MLSuggest.INTENT_OPTIONS_FALLBACK = { ...CUSTOM_INTENT_OPTIONS, backend };
+  MLSuggest.NER_OPTIONS = { ...CUSTOM_NER_OPTIONS, backend };
+  MLSuggest.NER_OPTIONS_FALLBACK = { ...CUSTOM_NER_OPTIONS, backend };
   const modelHubRootUrl = Services.env.get("MOZ_MODELS_HUB");
   if (!modelHubRootUrl) {
     throw new Error(
@@ -77,6 +80,18 @@ const runInference2 = async () => {
     ],
   });
 
+  try {
+    await measureSuggest({ journal, tag });
+  } finally {
+    // The next backend needs a clean MLSuggest and pref state.
+    await MLSuggest.shutdown();
+    await EngineProcess.destroyMLEngine();
+    await cleanup();
+  }
+  reportMetrics(journal);
+};
+
+const measureSuggest = async ({ journal, tag }) => {
   await MLSuggest.initialize();
   const numIterations = 10;
   let query = "restaurants in seattle, wa";
@@ -93,16 +108,16 @@ const runInference2 = async () => {
     name = name.toUpperCase();
 
     let METRICS = [
-      `${name}-${PIPELINE_READY_LATENCY}`,
-      `${name}-${INITIALIZATION_LATENCY}`,
-      `${name}-${MODEL_RUN_LATENCY}`,
-      `${name}-${TOTAL_MEMORY_USAGE}`,
+      `${name}-${PIPELINE_READY_LATENCY}-${tag}`,
+      `${name}-${INITIALIZATION_LATENCY}-${tag}`,
+      `${name}-${MODEL_RUN_LATENCY}-${tag}`,
+      `${name}-${TOTAL_MEMORY_USAGE}-${tag}`,
       ...(addColdStart
         ? [
-            `${name}-${COLD_START_PREFIX}${PIPELINE_READY_LATENCY}`,
-            `${name}-${COLD_START_PREFIX}${INITIALIZATION_LATENCY}`,
-            `${name}-${COLD_START_PREFIX}${MODEL_RUN_LATENCY}`,
-            `${name}-${COLD_START_PREFIX}${TOTAL_MEMORY_USAGE}`,
+            `${name}-${COLD_START_PREFIX}${PIPELINE_READY_LATENCY}-${tag}`,
+            `${name}-${COLD_START_PREFIX}${INITIALIZATION_LATENCY}-${tag}`,
+            `${name}-${COLD_START_PREFIX}${MODEL_RUN_LATENCY}-${tag}`,
+            `${name}-${COLD_START_PREFIX}${TOTAL_MEMORY_USAGE}-${tag}`,
           ]
         : []),
     ];
@@ -110,7 +125,7 @@ const runInference2 = async () => {
     for (let metric of METRICS) {
       journal[metric] = [];
     }
-    journal["SUGGEST-model-run-latency"] = [];
+    journal[`SUGGEST-model-run-latency-${tag}`] = [];
   }
   for (let i = 0; i < numIterations; i++) {
     const startTime = performance.now();
@@ -131,26 +146,22 @@ const runInference2 = async () => {
       if (metricVal === null || metricVal === undefined || metricVal < 0) {
         metricVal = 0;
       }
-      journal[`INTENT-${metricName}`].push(metricVal);
+      journal[`INTENT-${metricName}-${tag}`].push(metricVal);
     }
     for (let [metricName, metricVal] of Object.entries(ner_metrics)) {
       if (metricVal === null || metricVal === undefined || metricVal < 0) {
         metricVal = 0;
       }
-      journal[`NER-${metricName}`].push(metricVal);
+      journal[`NER-${metricName}-${tag}`].push(metricVal);
     }
-    journal[`SUGGEST-model-run-latency`].push(diff);
+    journal[`SUGGEST-model-run-latency-${tag}`].push(diff);
   }
-  await MLSuggest.shutdown();
   Assert.ok(true);
-  await EngineProcess.destroyMLEngine();
-  await cleanup();
 };
 
 /**
  * Tests remote ML Suggest feature performance
  */
 add_task(async function test_ml_suggest_feature() {
-  await runInference2();
-  reportMetrics(journal);
+  await runMLPerfTestForEachBackend({ name: "SUGGEST", run: runInference2 });
 });

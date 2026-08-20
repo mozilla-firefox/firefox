@@ -5,8 +5,12 @@
 package org.mozilla.fenix.helpers
 
 import android.content.Context
+import android.os.Build
+import android.os.Environment
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
+import java.io.File
+import kotlin.io.path.createTempDirectory
 import kotlinx.coroutines.runBlocking
 import mockwebserver3.MockWebServer
 import mozilla.appservices.places.BookmarkRoot
@@ -203,6 +207,44 @@ object MockBrowserDataHelper {
             }
 
             TabCollectionStorage(context).createCollection(title, tabs)
+        }
+    }
+
+    /**
+     * Creates a Netscape-format bookmarks HTML file in the device Downloads directory, suitable for exercising the
+     * "Import bookmarks from file" flow. The file is written inside a fresh temporary directory; callers are
+     * responsible for deleting that directory once the test completes (e.g. `file.parentFile?.deleteRecursively()`).
+     *
+     * @param bookmarks Pairs of bookmark title and URL to include in the file.
+     * @return The created bookmarks HTML [File].
+     */
+    fun createBookmarksHtmlFile(
+        vararg bookmarks: Pair<String, String> = arrayOf("Mozilla" to "https://www.mozilla.org")
+    ): File {
+        val downloadsDirectory =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                requireNotNull(appContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS))
+            } else {
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            }
+
+        downloadsDirectory.mkdirs()
+        val tempFileDirectory =
+            createTempDirectory(directory = downloadsDirectory.toPath(), prefix = "bookmarks_import_").toFile()
+
+        val entries = bookmarks.joinToString("\n") { (title, url) -> """  <DT><A HREF="$url">$title</A>""" }
+
+        return File(tempFileDirectory, "bookmarks.html").apply {
+            writeText(
+                """
+                <!DOCTYPE NETSCAPE-Bookmark-file-1>
+                <HTML>
+                <DL><p>
+                $entries
+                </DL>
+                """
+                    .trimIndent()
+            )
         }
     }
 }

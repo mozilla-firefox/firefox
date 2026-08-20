@@ -28,6 +28,8 @@ browser.jar:
    content/browser/preferences/dialogs/permissions.js
    content/browser/preferences/dialogs/selectBookmark.xhtml
    content/browser/preferences/dialogs/selectBookmark.js
+   content/browser/preferences/dialogs/siteContainer.xhtml
+   content/browser/preferences/dialogs/siteContainer.js
    content/browser/preferences/dialogs/siteDataSettings.xhtml
    content/browser/preferences/dialogs/siteDataSettings.js
 *  content/browser/preferences/dialogs/siteDataRemoveSelected.xhtml

@@ -192,8 +192,6 @@ struct StyleBox {
 
   bool operator==(const StyleBox& aOther) const { return *(*this) == *aOther; }
 
-  bool operator!=(const StyleBox& aOther) const { return *(*this) != *aOther; }
-
  private:
   T* mRaw;
 };

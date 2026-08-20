@@ -88,3 +88,32 @@ add_task(function test_text_processing_edge_cases() {
     "Should not remove suffix if it's >= 20 characters"
   );
 });
+
+// generateClusters must preprocess titles before embedding when it has no
+// precomputed embeddings; stub the embedder to capture its input.
+add_task(
+  async function test_generateClusters_preprocessesTitlesBeforeEmbedding() {
+    const manager = new SmartTabGroupingManager();
+    manager.setDataTitleKey("title");
+
+    let embeddedTexts = null;
+    manager._generateEmbeddings = async texts => {
+      embeddedTexts = texts;
+      return texts.map((_, i) => (i % 2 ? [0, 1] : [1, 0]));
+    };
+
+    const tabs = [
+      { title: "Q3 Roadmap - Confluence" },
+      { title: "Trip Planner | Travel Site" },
+      { title: "AB - Mail" },
+    ];
+    await manager.generateClusters(tabs, null, 0);
+
+    Assert.deepEqual(
+      embeddedTexts,
+      ["Q3 Roadmap", "Trip Planner", "AB - Mail"],
+      "generateClusters strips site suffixes via preprocessText before embedding, " +
+        "leaving titles whose first part is too short untouched"
+    );
+  }
+);

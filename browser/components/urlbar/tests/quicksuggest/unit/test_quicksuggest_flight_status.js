@@ -17,6 +17,11 @@ const TEST_MERINO_SINGLE = [
         values: [
           {
             flight_number: "flight",
+            airline: {
+              name: null,
+              code: null,
+              icon: null,
+            },
             origin: {
               city: "Origin",
               code: "O",
@@ -25,8 +30,12 @@ const TEST_MERINO_SINGLE = [
               city: "Destination",
               code: "D",
             },
-            departure_scheduled_time: "2025-09-17T14:05:00Z",
-            arrival_scheduled_time: "2025-09-17T18:30:00Z",
+            departure: {
+              scheduled_time: "2025-09-17T14:05:00Z",
+            },
+            arrival: {
+              scheduled_time: "2025-09-17T18:30:00Z",
+            },
             status: "Scheduled",
             url: "https://example.com/A1",
           },
@@ -226,13 +235,22 @@ function merinoResult() {
       items: [
         {
           flight_number: "flight",
+          airline: {
+            name: null,
+            code: null,
+            icon: null,
+          },
           origin: {
             city: "Origin",
             code: "O",
           },
           destination: { city: "Destination", code: "D" },
-          departure_scheduled_time: "2025-09-17T14:05:00Z",
-          arrival_scheduled_time: "2025-09-17T18:30:00Z",
+          departure: {
+            scheduled_time: "2025-09-17T14:05:00Z",
+          },
+          arrival: {
+            scheduled_time: "2025-09-17T18:30:00Z",
+          },
           status: "Scheduled",
           url: "https://example.com/A1",
         },

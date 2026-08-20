@@ -2940,10 +2940,12 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
 
 /* ----- Profiles FxA panel ----- */
 
-/* Special case: hide the profiles menuitem if the FxA/Sync panel is shown as
- * a submenu of the app menu, rather than anchored to the FxA/Sync toolbar
- * button. */
-#appMenu-popup panelmultiview[mainViewId="appMenu-mainView"] :is(#PanelUI-fxa-menu-profiles-header-label, #PanelUI-fxa-menu-profile-buttons) {
+/* Special case: hide the profiles menuitem and its separator if the FxA/Sync
+ * panel is shown as a submenu of the app menu, rather than anchored to the
+ * FxA/Sync toolbar button. */
+#appMenu-popup
+  panelmultiview[mainViewId="appMenu-mainView"]
+  :is(#PanelUI-fxa-menu-profiles-header-label, #PanelUI-fxa-menu-profile-buttons, #PanelUI-fxa-menu-profiles-separator) {
   display: none;
 }
 

@@ -46,8 +46,7 @@ class ClangTidyConfig:
                 "Looks like config.yaml is not valid, so we are unable to "
                 "determine header skiplist, using an empty one",
             )
-        finally:
-            return skiplist
+        return skiplist
 
     @functools.cached_property
     def checks(self):
@@ -70,8 +69,7 @@ class ClangTidyConfig:
                 "determine default checkers, using '-checks=-*,mozilla-*'",
             )
             checks.append("mozilla-*")
-        finally:
-            return checks
+        return checks
 
     @functools.cached_property
     def checks_with_data(self):
@@ -94,8 +92,7 @@ class ClangTidyConfig:
                 "determine default checkers, using '-checks=-*,mozilla-*'",
             )
             checks_with_data.append({"name": "mozilla-*", "reliability": "high"})
-        finally:
-            return checks_with_data
+        return checks_with_data
 
     @functools.cached_property
     def checks_config(self):
@@ -129,8 +126,7 @@ class ClangTidyConfig:
                 "determine configuration for checkers, so using default",
             )
             checks_config = None
-        finally:
-            return checks_config
+        return checks_config
 
     @functools.cached_property
     def version(self):

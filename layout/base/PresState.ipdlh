@@ -53,6 +53,8 @@ struct PresState {
   bool disabledSet;
   bool disabled;
   bool droppedDown;
+  bool horizontalOverflow;
+  bool verticalOverflow;
 };
 
 }  // namespace mozilla

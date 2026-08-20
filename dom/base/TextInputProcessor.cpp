@@ -708,20 +708,19 @@ TextInputProcessor::FlushPendingComposition(Event* aDOMKeyEvent,
   // was already started, we shouldn't prevent the change of composition.
   if (dispatcherResult.mDoDefault || wasComposing) {
     // Preceding keydown event may cause destroying the widget.
-    if (NS_FAILED(IsValidStateForComposition())) {
+    if (NS_WARN_IF(NS_FAILED(IsValidStateForComposition()))) {
       return NS_OK;
     }
     nsEventStatus status = nsEventStatus_eIgnore;
     rv = kungFuDeathGrip->FlushPendingComposition(status);
+    NS_WARNING_ASSERTION(
+        NS_SUCCEEDED(rv),
+        "TextEventDispatcher::FlushPendingComposition() failed");
     *aSucceeded = status != nsEventStatus_eConsumeNoDefault;
   }
 
   MaybeDispatchKeyupForComposition(keyboardEvent, aKeyFlags);
-
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-  return NS_OK;
+  return rv;
 }
 
 NS_IMETHODIMP

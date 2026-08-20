@@ -26,6 +26,7 @@ const PREF_MEMORIES_FROM_CONVERSATION =
 const PREF_MEMORIES_FROM_HISTORY =
   "browser.smartwindow.memories.generateFromHistory";
 const PREF_IS_DEFAULT_WINDOW = "browser.smartwindow.isDefaultWindow";
+const PREF_SMARTWINDOW_ENABLED = "browser.smartwindow.enabled";
 const lazy = {};
 
 XPCOMUtils.defineLazyPreferenceGetter(
@@ -60,6 +61,14 @@ XPCOMUtils.defineLazyPreferenceGetter(
   () => SmartWindowTelemetry.updateSetDefaultOptinMetric()
 );
 
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "smartWindowEnabled",
+  PREF_SMARTWINDOW_ENABLED,
+  false,
+  () => SmartWindowTelemetry.updateEnabledMetric()
+);
+
 ChromeUtils.defineESModuleGetters(lazy, {
   getModelForChoice:
     "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
@@ -79,6 +88,7 @@ export const SmartWindowTelemetry = {
     this.updateMemoriesFromConversationMetric();
     this.updateMemoriesFromHistoryMetric();
     this.updateSetDefaultOptinMetric();
+    this.updateEnabledMetric();
   },
 
   updateMemoriesFromConversationMetric() {
@@ -97,6 +107,10 @@ export const SmartWindowTelemetry = {
 
   updateSetDefaultOptinMetric() {
     Glean.smartWindow.setDefaultOptin.set(lazy.isDefaultWindow);
+  },
+
+  updateEnabledMetric() {
+    Glean.smartWindow.enabled.set(lazy.smartWindowEnabled);
   },
 
   async updateModelMetric() {

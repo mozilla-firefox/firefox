@@ -17,6 +17,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.mozilla.fenix.customannotations.Converted
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.FenixTestRule
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
@@ -77,6 +78,14 @@ class SitePermissionsTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2334295
+    @Converted(
+        replacedBy =
+            [
+                "org.mozilla.fenix.ui.efficiency.tests.SitePermissionsTest#audioVideoPermissionWithoutRememberingTheDecisionTest"
+            ],
+        bug = 2064815,
+        since = "2026-08",
+    )
     @SmokeTest
     @Test
     fun audioVideoPermissionWithoutRememberingTheDecisionTest() {
@@ -299,6 +308,11 @@ class SitePermissionsTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2334074
+    @Converted(
+        replacedBy = ["org.mozilla.fenix.ui.efficiency.tests.SitePermissionsTest#blockNotificationsPermissionTest"],
+        bug = 2064815,
+        since = "2026-08",
+    )
     @SmokeTest
     @Test
     fun blockNotificationsPermissionTest() {
@@ -333,6 +347,11 @@ class SitePermissionsTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/251385
+    @Converted(
+        replacedBy = ["org.mozilla.fenix.ui.efficiency.tests.SitePermissionsTest#allowLocationPermissionsTest"],
+        bug = 2064815,
+        since = "2026-08",
+    )
     @SmokeTest
     @Test
     fun allowLocationPermissionsTest() {

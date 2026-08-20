@@ -104,6 +104,12 @@ class TranslationsTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2439667
+    @Converted(
+        replacedBy =
+            ["org.mozilla.fenix.ui.efficiency.tests.TranslationsTest#verifyTheDownloadLanguagesFunctionalityTest"],
+        bug = 2063223,
+        since = "2026-08",
+    )
     @SmokeTest
     @Test
     fun verifyTheDownloadLanguagesFunctionalityTest() {
@@ -123,6 +129,11 @@ class TranslationsTest {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2437991
     @SmokeTest
+    @Converted(
+        replacedBy = ["org.mozilla.fenix.ui.efficiency.tests.TranslationsTest#verifyTheNeverTranslateOptionTest"],
+        bug = 2063228,
+        since = "2026-08",
+    )
     @Test
     fun verifyTheNeverTranslateOptionTest() {
         val firstTestPage = mockWebServer.firstForeignWebPageAsset

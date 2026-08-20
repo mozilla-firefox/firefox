@@ -749,6 +749,11 @@ class TypedSlot {
   static constexpr auto slotName = js::TypedSlot<MOZ_FOR_EACH_SEPARATED( \
       JS_DEFINE_TYPED_SLOT_TYPE_, (, ), (), (__VA_ARGS__))>(index)
 
+// Use alongside JS_DEFINE_TYPED_SLOT to name a slot that can hold a value of
+// any type, and so can't be declared as a TypedSlot.
+#define JS_DEFINE_UNTYPED_SLOT(index, slotName) \
+  static constexpr uint32_t slotName = (index)
+
 namespace detail {
 template <class C>
 struct IsTypedSlot : std::false_type {};

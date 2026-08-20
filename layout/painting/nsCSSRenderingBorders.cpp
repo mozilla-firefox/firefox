@@ -3362,8 +3362,10 @@ ImgDrawResult nsCSSBorderImageRenderer::DrawBorderImage(
   // In this condition, we pass imageSize(a resolved size comes from
   // default sizing algorithm) to renderer as the viewport size.
   CSSSizeOrRatio intrinsicSize = mImageRenderer.ComputeIntrinsicSize();
-  Maybe<nsSize> svgViewportSize =
-      intrinsicSize.CanComputeConcreteSize() ? Nothing() : Some(mImageSize);
+  Maybe<CSSSize> svgViewportSize =
+      intrinsicSize.CanComputeConcreteSize()
+          ? Nothing()
+          : Some(CSSSize::FromAppUnits(mImageSize));
   bool hasIntrinsicRatio = intrinsicSize.HasRatio();
 
   // These helper tables recharacterize the 'slice' and 'width' margins

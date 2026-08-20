@@ -30,7 +30,7 @@ union FactoryRequestResponse
   DeleteDatabaseRequestResponse;
 };
 
-[ManualDealloc, ChildImpl="indexedDB::BackgroundFactoryRequestChild", ParentImpl=virtual]
+[ManualDealloc, ChildImpl="mozilla::dom::indexedDB::BackgroundFactoryRequestChild", ParentImpl=virtual]
 protocol PBackgroundIDBFactoryRequest
 {
   manager PBackgroundIDBFactory;

@@ -41,6 +41,8 @@ skip-if = [
   "socketprocess_networking", # Bug 1759035
 ]
 
+["test_strip_on_share_list.js"]
+
 ["test_tracking_db_service.js"]
 
 ["test_url_classifier_allow_list_category_pref_migration.js"]

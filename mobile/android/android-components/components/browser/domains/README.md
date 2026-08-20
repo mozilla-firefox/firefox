@@ -1,6 +1,6 @@
 # [Android Components](../../../README.md) > Browser > Domains
 
-This component provides APIs for managing localized and customizable domain lists (see [Domains](#domains) and [CustomDomains](#customdomains)). It also contains auto-complete functionality for these lists (see [DomainAutoCompleteProvider](#domainautocompleteprovider)) which can be used in conjuction with our [UI autocomplete component](../../ui/autocomplete/README.md).
+This component provides APIs for managing localized and customizable domain lists (see [Domains](#domains) and [CustomDomains](#customdomains)). It also contains auto-complete functionality for these lists (see [ShippedDomainsProvider](#shippeddomainsprovider) and [CustomDomainsProvider](#customdomainsprovider)) which can be used in conjuction with our [UI autocomplete component](../../ui/autocomplete/README.md).
 
 ## Usage
 
@@ -36,29 +36,28 @@ CustomDomains.save(context, listOf("mozilla.org", "getpocket.com"))
 CustomDomains.remove(context, listOf("nolongerexists.org"))
 ```
 
-### DomainAutoCompleteProvider
+### ShippedDomainsProvider and CustomDomainsProvider
 
-The class provides auto-complete functionality for both `Domains` and `CustomDomains`.
-
-```Kotlin
-// Initialize the provider
-val provider = DomainAutocompleteProvider()
-provider.initialize(
-  context,
-  useShippedDomains = true,
-  useCustomDomains = true,
-  loadDomainsFromDisk = true
-)
-```
-
-Note that when `loadDomainsFromDisk` is set to true there is no need to manually call `load` on either `Domains` or `CustomDomains`.
+These classes provide auto-complete functionality for `Domains` and `CustomDomains` respectively.
 
 ```Kotlin
-// Autocomplete domain lists
-val result = provider.autocomplete("moz")
+// Initialize the provider for shipped domains
+val shippedProvider = ShippedDomainsProvider()
+shippedProvider.initialize(context)
+
+// Initialize the provider for custom domains
+val customProvider = CustomDomainsProvider()
+customProvider.initialize(context)
 ```
 
-The result will contain the autocompleted text (`result.text`), the URL (`result.url`), and the source of the match (`result.source`), which is either `DEFAULT_LIST` if a result was found in the shipped domain list or `CUSTOM_LIST` otherwise. The custom domain list takes precendece over the built-in shipped domain list and the API will only return the first match.
+They both implement `AutocompleteProvider` and can be used to get suggestions:
+
+```Kotlin
+// Get autocomplete suggestions
+val result = shippedProvider.getAutocompleteSuggestion("moz")
+```
+
+The result will contain the input text, the autocompleted text (`result.text`), the URL (`result.url`), the source (`result.source`), and the total number of items in the list (`result.totalItems`).
 
 ## License
 

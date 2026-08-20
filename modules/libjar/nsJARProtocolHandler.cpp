@@ -42,6 +42,20 @@ nsIMIMEService* nsJARProtocolHandler::MimeService() {
   return mMimeService.get();
 }
 
+already_AddRefed<nsIZipReaderCache> nsJARProtocolHandler::GetJarCache() {
+  if (!gJarHandler) {
+    return nullptr;
+  }
+  return do_AddRef(gJarHandler->JarCache());
+}
+
+already_AddRefed<nsIMIMEService> nsJARProtocolHandler::GetMimeService() {
+  if (!gJarHandler) {
+    return nullptr;
+  }
+  return do_AddRef(gJarHandler->MimeService());
+}
+
 NS_IMPL_ISUPPORTS(nsJARProtocolHandler, nsIProtocolHandler,
                   nsISupportsWeakReference)
 
@@ -49,7 +63,11 @@ already_AddRefed<nsJARProtocolHandler> nsJARProtocolHandler::GetSingleton() {
   if (!gJarHandler) {
     gJarHandler = new nsJARProtocolHandler();
     if (NS_SUCCEEDED(gJarHandler->Init())) {
-      ClearOnShutdown(&gJarHandler);
+      // Chrome JS module loading reads from omni.ja, so the handler has to
+      // outlive mozJSModuleLoader::UnloadLoaders(), which runs after
+      // XPCOMShutdownFinal.
+      ClearOnShutdown(&gJarHandler,
+                      mozilla::ShutdownPhase::CCPostLastCycleCollection);
     } else {
       gJarHandler = nullptr;
     }

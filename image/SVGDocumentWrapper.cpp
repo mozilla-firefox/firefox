@@ -66,18 +66,36 @@ nsIFrame* SVGDocumentWrapper::GetRootLayoutFrame() const {
   return rootElem ? rootElem->GetPrimaryFrame() : nullptr;
 }
 
-void SVGDocumentWrapper::UpdateViewportBounds(const nsIntSize& aViewportSize) {
+void SVGDocumentWrapper::UpdateViewportBounds(const CSSSize& aViewportSize) {
   MOZ_ASSERT(!mIgnoreInvalidation, "shouldn't be reentrant");
   mIgnoreInvalidation = true;
+
+  // We want to make sure our (maybe fractional) viewport gets used as-is.
+  // However, the document viewer deals with whole device pixels.
+  //
+  // Ceil our doc viewer bounds (to avoid any potential clipping), and set the
+  // layout viewport explicitly as well.
+  const auto intSize =
+      LayoutDeviceIntSize::Ceil(aViewportSize.width, aViewportSize.height);
+  const nsSize maybeFractionalSize = CSSPixel::ToAppUnits(aViewportSize);
 
   LayoutDeviceIntRect currentBounds;
   mViewer->GetBounds(currentBounds);
 
+  bool changed = false;
+  if (currentBounds.Size() != intSize) {
+    mViewer->SetBounds(LayoutDeviceIntRect(LayoutDeviceIntPoint(), intSize));
+    changed = true;
+  }
+
+  if (RefPtr ps = GetPresShell();
+      ps && ps->GetLayoutViewportSize() != maybeFractionalSize) {
+    ps->SetLayoutViewportSize(maybeFractionalSize, /* aDelay = */ false);
+    changed = true;
+  }
+
   // If the bounds have changed, we need to do a layout flush.
-  if (currentBounds.Size().ToUnknownSize() != aViewportSize) {
-    mViewer->SetBounds(LayoutDeviceIntRect(
-        LayoutDeviceIntPoint(),
-        LayoutDeviceIntSize::FromUnknownSize(aViewportSize)));
+  if (changed) {
     FlushLayout();
   }
 

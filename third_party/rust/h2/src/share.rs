@@ -308,7 +308,7 @@ impl<B: Buf> SendStream<B> {
     /// increased by the connection. Note that `n` here represents the **total**
     /// amount of assigned capacity at that point in time. It is also possible
     /// that `n` is lower than the previous call if, since then, the caller has
-    /// sent data.
+    /// sent data. `n` will always be greater than zero.
     pub fn poll_capacity(&mut self, cx: &mut Context) -> Poll<Option<Result<usize, crate::Error>>> {
         self.inner
             .poll_capacity(cx)

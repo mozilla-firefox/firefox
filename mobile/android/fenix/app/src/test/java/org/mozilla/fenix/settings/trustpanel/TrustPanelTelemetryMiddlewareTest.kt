@@ -14,11 +14,11 @@ import org.junit.runner.RunWith
 import org.mozilla.fenix.GleanMetrics.TrackingProtection
 import org.mozilla.fenix.GleanMetrics.TrustPanel
 import org.mozilla.fenix.helpers.FenixGleanTestRule
+import org.mozilla.fenix.settings.trustpanel.middleware.TRUST_PANEL_TELEMETRY_SOURCE
 import org.mozilla.fenix.settings.trustpanel.middleware.TrustPanelTelemetryMiddleware
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelAction
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelState
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelStore
-import org.mozilla.fenix.trackingprotection.ProtectionsDashboardFragment
 import org.mozilla.fenix.trackingprotection.TrackingProtectionCategory
 import org.robolectric.RobolectricTestRunner
 
@@ -58,7 +58,7 @@ class TrustPanelTelemetryMiddlewareTest {
     }
 
     @Test
-    fun `WHEN trackers protection dashboard action is dispatched THEN record privacy report tapped telemetry with the trust panel source`() {
+    fun `WHEN trackers protection dashboard action is dispatched THEN record privacy report shown telemetry with the trust panel source`() {
         val store = createStore(trustPanelState = TrustPanelState(isTrackingProtectionEnabled = false))
         assertNull(TrackingProtection.privacyReportTapped.testGetValue())
 
@@ -68,7 +68,7 @@ class TrustPanelTelemetryMiddlewareTest {
         assertNotNull(events)
         assertEquals(1, events.size)
         assertEquals(
-            ProtectionsDashboardFragment.SOURCE_TRUST_PANEL,
+            TRUST_PANEL_TELEMETRY_SOURCE,
             events.single().extra?.get("source"),
         )
     }

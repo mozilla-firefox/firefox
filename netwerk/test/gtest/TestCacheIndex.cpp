@@ -161,5 +161,67 @@ TEST_F(FrecencyStorageTest, PerformanceTest) {
       << N << " records";
 }
 
+class CacheIndexEntryUpdateTest : public ::testing::Test {
+ protected:
+  // Any hash will do; ApplyUpdate only asserts that the two entries agree.
+  SHA1Sum::Hash mHash{};
+};
+
+// mFlags packs the file size alongside the boolean flags, so applying an update
+// that carries a new size must replace the size rather than merge it. Merging
+// used to OR the two values together, so 5kB updated to 3kB yielded 7kB.
+TEST_F(CacheIndexEntryUpdateTest, ApplyUpdateReplacesFileSize) {
+  CacheIndexEntry dst(&mHash);
+  dst.InitNew();
+  dst.SetFileSize(5);
+  ASSERT_EQ(dst.GetFileSize(), 5u);
+
+  CacheIndexEntryUpdate update(&mHash);
+  update.InitNew();
+  update.SetFileSize(3);
+
+  update.ApplyUpdate(&dst);
+  EXPECT_EQ(dst.GetFileSize(), 3u);
+}
+
+// Merging could only ever set bits, so an update applied to an entry marked
+// removed left kRemovedMask set and the entry stayed invisible to
+// CacheIndexEntryAutoManage::FindEntry().
+TEST_F(CacheIndexEntryUpdateTest, ApplyUpdateCanClearRemoved) {
+  CacheIndexEntry dst(&mHash);
+  dst.InitNew();
+  dst.MarkRemoved();
+  ASSERT_TRUE(dst.IsRemoved());
+
+  CacheIndexEntryUpdate update(&mHash);
+  update.InitNew();
+
+  update.ApplyUpdate(&dst);
+  EXPECT_FALSE(dst.IsRemoved());
+}
+
+// The file-size branch must not disturb the alt-data bit, and the branch that
+// leaves the size alone must not drop it either.
+TEST_F(CacheIndexEntryUpdateTest, ApplyUpdatePreservesHasAltData) {
+  for (bool sizeUpdated : {false, true}) {
+    CacheIndexEntry dst(&mHash);
+    dst.InitNew();
+    dst.SetFileSize(7);
+
+    // Deliberately no InitNew() here: it marks every field as updated,
+    // including the file size, which is the case we want to exclude.
+    CacheIndexEntryUpdate update(&mHash);
+    update.SetHasAltData(true);
+    if (sizeUpdated) {
+      update.SetFileSize(9);
+    }
+
+    update.ApplyUpdate(&dst);
+    EXPECT_TRUE(dst.GetHasAltData()) << "sizeUpdated=" << sizeUpdated;
+    EXPECT_EQ(dst.GetFileSize(), sizeUpdated ? 9u : 7u)
+        << "sizeUpdated=" << sizeUpdated;
+  }
+}
+
 }  // namespace net
 }  // namespace mozilla

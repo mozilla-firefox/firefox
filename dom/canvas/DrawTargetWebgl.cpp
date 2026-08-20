@@ -1135,6 +1135,19 @@ already_AddRefed<TextureHandle> SharedContextWebgl::CopySnapshot(
     return nullptr;
   }
 
+  IntPoint offset(aRect.TopLeft());
+  IntSize size(aRect.Size());
+  if (aHandle) {
+    // If the handle is a sub-rect of its backing texture...
+    offset += aHandle->GetBounds().TopLeft();
+    size = IntRect(IntPoint(0, 0), aHandle->GetBounds().Size())
+               .Intersect(aRect)
+               .Size();
+  }
+  if (size.IsEmpty()) {
+    return nullptr;
+  }
+
   // If the target is going away, then we can just directly reuse the
   // framebuffer texture since it will never change.
   RefPtr<WebGLTexture> tex = mWebgl->CreateTexture();
@@ -1149,15 +1162,16 @@ already_AddRefed<TextureHandle> SharedContextWebgl::CopySnapshot(
   }
 
   // Create a texture to hold the copy
-  BindAndInitRenderTex(tex, SurfaceFormat::B8G8R8A8, aRect.Size());
+  BindAndInitRenderTex(tex, SurfaceFormat::B8G8R8A8, size);
   // Copy the framebuffer into the texture
-  mWebgl->CopyTexImage(LOCAL_GL_TEXTURE_2D, 0, 0, {0, 0, 0}, {aRect.x, aRect.y},
-                       {uint32_t(aRect.width), uint32_t(aRect.height)});
+  mWebgl->CopyTexImage(LOCAL_GL_TEXTURE_2D, 0, 0, {0, 0, 0},
+                       {offset.x, offset.y},
+                       {uint32_t(size.width), uint32_t(size.height)});
 
   SurfaceFormat format =
       aHandle ? aHandle->GetFormat() : mCurrentTarget->GetFormat();
   already_AddRefed<TextureHandle> result =
-      WrapSnapshot(aRect.Size(), format, tex.forget());
+      WrapSnapshot(size, format, tex.forget());
 
   // Restore the actual framebuffer after reading is done.
   if (aHandle) {
@@ -3261,9 +3275,11 @@ bool SharedContextWebgl::DrawRectAccel(
         }
         texSize = underlyingSurface->GetSize();
         format = underlyingSurface->GetFormat();
-        if (!surfacePattern.mSamplingRect.IsEmpty()) {
-          texSize = surfacePattern.mSamplingRect.Size();
-          offset = surfacePattern.mSamplingRect.TopLeft();
+        IntRect samplingRect = surfacePattern.mSamplingRect.SafeIntersect(
+            IntRect(IntPoint(0, 0), texSize));
+        if (!samplingRect.IsEmpty()) {
+          texSize = samplingRect.Size();
+          offset = samplingRect.TopLeft();
         }
       }
 
@@ -3302,7 +3318,7 @@ bool SharedContextWebgl::DrawRectAccel(
           mUsedTextureMemory -= handle->UsedBytes();
           handle->UpdateSize(texSize);
           mUsedTextureMemory += handle->UsedBytes();
-          handle->SetSamplingOffset(surfacePattern.mSamplingRect.TopLeft());
+          handle->SetSamplingOffset(offset);
         } else {
           // Count reusing a snapshot texture (no readback) as a cache hit.
           mCurrentTarget->mProfile.OnCacheHit();
@@ -3336,7 +3352,7 @@ bool SharedContextWebgl::DrawRectAccel(
         }
         UploadSurfaceToHandle(data, offset, handle);
         // Link the handle to the surface's user data.
-        handle->SetSamplingOffset(surfacePattern.mSamplingRect.TopLeft());
+        handle->SetSamplingOffset(offset);
         if (aHandle) {
           *aHandle = handle;
         } else {

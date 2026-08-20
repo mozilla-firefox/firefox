@@ -7,6 +7,7 @@ use crate::api::JxlColorProfile;
 use crate::api::JxlColorType;
 use crate::api::JxlDataFormat;
 use crate::api::JxlOutputBuffer;
+use crate::api::JxlParallelRunner;
 use crate::bit_reader::BitReader;
 use crate::error::{Error, Result};
 use crate::features::epf::SigmaSource;
@@ -21,8 +22,10 @@ use crate::headers::frame_header::FrameType;
 use crate::headers::{Orientation, color_encoding::ColorSpace, extra_channels::ExtraChannel};
 use crate::image::Image;
 use crate::image::Rect;
-use crate::util::AtomicRefCell;
-use std::sync::Arc;
+use crate::util::SmallVec;
+use crate::util::sync::atomic::{AtomicUsize, Ordering};
+use crate::util::sync::{Arc, RwLock};
+use std::collections::BTreeSet;
 
 #[cfg(test)]
 use crate::render::SimpleRenderPipeline;
@@ -35,7 +38,7 @@ use crate::{
 };
 
 #[cfg(test)]
-macro_rules! pipeline {
+macro_rules! pipeline_mut {
     ($frame: expr, $pipeline: ident, $op: expr) => {
         if $frame.use_simple_pipeline {
             let $pipeline = $frame
@@ -59,9 +62,41 @@ macro_rules! pipeline {
 }
 
 #[cfg(not(test))]
-macro_rules! pipeline {
+macro_rules! pipeline_mut {
     ($frame: expr, $pipeline: ident, $op: expr) => {{
         let $pipeline = $frame.render_pipeline.as_mut().unwrap();
+        $op
+    }};
+}
+
+#[cfg(test)]
+macro_rules! pipeline {
+    ($frame: expr, $pipeline: ident, $op: expr) => {
+        if $frame.use_simple_pipeline {
+            let $pipeline = $frame
+                .render_pipeline
+                .as_ref()
+                .unwrap()
+                .downcast_ref::<SimpleRenderPipeline>()
+                .unwrap();
+            $op
+        } else {
+            use crate::render::LowMemoryRenderPipeline;
+            let $pipeline = $frame
+                .render_pipeline
+                .as_ref()
+                .unwrap()
+                .downcast_ref::<LowMemoryRenderPipeline>()
+                .unwrap();
+            $op
+        }
+    };
+}
+
+#[cfg(not(test))]
+macro_rules! pipeline {
+    ($frame: expr, $pipeline: ident, $op: expr) => {{
+        let $pipeline = $frame.render_pipeline.as_ref().unwrap();
         $op
     }};
 }
@@ -117,6 +152,7 @@ impl Frame {
         groups: Vec<(usize, Vec<(usize, BitReader)>)>,
         do_flush: bool,
         output_profile: &JxlColorProfile,
+        parallel_runner: &mut dyn JxlParallelRunner,
     ) -> Result<bool> {
         if !do_flush && groups.is_empty() {
             // Nothing to do.
@@ -184,17 +220,17 @@ impl Frame {
             }));
         };
 
-        pipeline!(self, p, p.check_buffer_sizes(&mut buffers[..])?);
+        pipeline_mut!(self, p, p.check_buffer_sizes(&mut buffers[..])?);
 
-        let mut buffer_splitter = BufferSplitter::new(&mut buffers[..]);
+        let buffer_splitter = BufferSplitter::new(&mut buffers[..]);
 
-        pipeline!(self, p, p.render_outside_frame(&mut buffer_splitter)?);
+        pipeline_mut!(self, p, p.render_outside_frame(&buffer_splitter)?);
 
         let should_render_non_final = self.allow_rendering_before_last_pass() && do_flush;
 
         let modular_global = &mut self.lf_global.as_mut().unwrap().modular_global;
 
-        modular_global.set_pipeline_used_channels(pipeline!(self, p, p.used_channel_mask()));
+        modular_global.set_pipeline_used_channels(pipeline_mut!(self, p, p.used_channel_mask()));
 
         // STEP 1: figure out what modular buffers will be finalized during this decode, and mark them
         // as such.
@@ -265,7 +301,7 @@ impl Frame {
         if should_render_non_final {
             if self.header.encoding == Encoding::VarDCT {
                 for group in self.group_status.need_vardct_flush.iter() {
-                    pipeline!(self, p, p.mark_group_to_rerender(*group));
+                    pipeline_mut!(self, p, p.mark_group_to_rerender(*group));
                     modular_global.request_rerender(&self.header, *group);
                 }
             }
@@ -293,13 +329,36 @@ impl Frame {
             }
         }
 
-        // STEP 3: Run all the transforms that could be run already.
-        // We do this because some modular images might not have coded channels in HF, so
-        // all the coded channels were already decoded and the modular decoder does not
-        // automatically call run_all_transforms unless a new channel is decoded.
+        let largest_group_area = self.header.group_dim().min(self.header.size().0)
+            * self.header.group_dim().min(self.header.size().1);
 
-        // ... but first, make sure modular_global is ready to run.
+        const THREAD_COUNT_DENOMINATOR: usize = 16;
+
+        let mut groups_of_work = 0;
+
+        if self.header.encoding == Encoding::VarDCT {
+            for (group, _) in groups.iter() {
+                let sz = self.header.group_rect(*group).size;
+                let area = sz.0 * sz.1;
+                if area >= largest_group_area {
+                    groups_of_work += THREAD_COUNT_DENOMINATOR;
+                }
+                if self.group_status.channel_status[*group][0] == DataStatus::Final {
+                    pipeline_mut!(self, p, p.mark_group_to_rerender(*group));
+                }
+            }
+        }
+
+        // STEP 3: Make sure modular_global is ready to run, and prepare the list of
+        // all the decoding/rendering steps that we want to run.
         modular_global.prepare_render(&self.header, |g, c, is_final| {
+            let sz = self.header.group_rect(g).size;
+            let area = sz.0 * sz.1;
+            if area >= largest_group_area {
+                groups_of_work += THREAD_COUNT_DENOMINATOR / 2;
+            } else if area * 2 >= largest_group_area {
+                groups_of_work += THREAD_COUNT_DENOMINATOR / 4;
+            }
             self.group_status.update_status(
                 g,
                 c,
@@ -310,25 +369,128 @@ impl Frame {
                 },
             );
             self.group_status.need_vardct_flush.insert(g);
-            if should_render_non_final {
-                pipeline!(self, p, p.mark_group_to_rerender(g));
+            if should_render_non_final || is_final {
+                pipeline_mut!(self, p, p.mark_group_to_rerender(g));
             }
         });
 
-        let mut pass_to_pipeline = |chan, group, complete, image: Image<i32>| {
+        let extra_groups_to_vardct_render =
+            if should_render_non_final || self.group_status.incomplete_groups == 0 {
+                let mut gr = std::mem::take(&mut self.group_status.need_vardct_flush);
+                for (g, _) in groups.iter() {
+                    gr.remove(g);
+                }
+                gr
+            } else {
+                BTreeSet::new()
+            };
+
+        let ready_steps = modular_global.take_ready_steps();
+
+        for g in extra_groups_to_vardct_render.iter() {
+            let sz = self.header.group_rect(*g).size;
+            let area = sz.0 * sz.1;
+            if area >= largest_group_area {
+                groups_of_work += THREAD_COUNT_DENOMINATOR / 2;
+            }
+        }
+
+        const TRANSFORM_STEPS_PER_TASK: usize = 3;
+
+        enum RenderStep<'a> {
+            Decode {
+                group: usize,
+                passes: Vec<(usize, BitReader<'a>)>,
+            },
+            FlushVarDCT {
+                group: usize,
+            },
+            RunTransformSteps {
+                steps: SmallVec<usize, TRANSFORM_STEPS_PER_TASK>,
+            },
+        }
+
+        let render_steps: Vec<_> = ready_steps
+            .chunks(TRANSFORM_STEPS_PER_TASK)
+            .map(|x| RenderStep::RunTransformSteps {
+                steps: x.iter().copied().collect(),
+            })
+            .chain(
+                extra_groups_to_vardct_render
+                    .iter()
+                    .map(|x| RenderStep::FlushVarDCT { group: *x }),
+            )
+            .chain(groups.into_iter().map(|(g, p)| RenderStep::Decode {
+                group: g,
+                passes: p,
+            }))
+            .collect();
+
+        // STEP 4: actually run the steps.
+
+        let pass_to_pipeline = |chan, group, complete, image: Image<i32>| {
             pipeline!(
                 self,
                 p,
-                p.set_buffer_for_group(chan, group, complete, image, &mut buffer_splitter)?
+                p.set_buffer_for_group(chan, group, complete, image, &buffer_splitter)?
             );
             Ok(())
         };
 
-        modular_global.run_all_transforms(&self.header, &mut pass_to_pipeline)?;
+        let run_step = |i| {
+            match &render_steps[i] {
+                RenderStep::Decode { group, passes } => {
+                    let mut new_passes: SmallVec<_, 11> = passes.iter().cloned().collect();
+                    self.decode_hf_group(
+                        *group,
+                        &mut new_passes,
+                        &buffer_splitter,
+                        should_render_non_final,
+                    )?;
+                }
+                RenderStep::FlushVarDCT { group } => {
+                    self.decode_hf_group(*group, &mut [], &buffer_splitter, true)?;
+                }
+                RenderStep::RunTransformSteps { steps } => {
+                    let mut steps = steps.iter().copied().collect();
+                    self.lf_global
+                        .as_ref()
+                        .unwrap()
+                        .modular_global
+                        .run_transforms(&self.header, &pass_to_pipeline, &mut steps)?;
+                }
+            }
+            Ok(())
+        };
 
-        // STEP 4: decode the groups, eagerly decoding all the data.
-        for (group, mut passes) in groups {
-            self.decode_hf_group(group, &mut passes, &mut buffer_splitter, do_flush)?;
+        // Avoid significantly more than one thread per largest-group worth of work.
+        let max_threads = groups_of_work.div_ceil(THREAD_COUNT_DENOMINATOR).max(1);
+
+        let hw_threads = std::thread::available_parallelism()
+            .map(|x| x.get())
+            .unwrap_or(max_threads);
+
+        if render_steps.len() > max_threads && max_threads < hw_threads {
+            let next_index = AtomicUsize::new(0);
+            parallel_runner.run(max_threads, &|_| loop {
+                let t = next_index.fetch_add(1, Ordering::Relaxed);
+                if t >= render_steps.len() {
+                    return Ok(());
+                }
+                run_step(t)?;
+            })?;
+        } else {
+            parallel_runner.run(render_steps.len(), &run_step)?;
+        }
+
+        for g in render_steps.iter().filter_map(|x| match x {
+            RenderStep::Decode { group, .. } => Some(*group),
+            RenderStep::FlushVarDCT { group } => Some(*group),
+            _ => None,
+        }) {
+            if self.group_status.colour_complete(g) {
+                self.group_status.final_vardct_render_done.insert(g);
+            }
         }
 
         self.lf_global
@@ -336,14 +498,6 @@ impl Frame {
             .unwrap()
             .modular_global
             .validate_state_after_transforms();
-
-        // STEP 5: re-render VarDCT/noise data in rendered groups for which it was
-        // not rendered.
-        if should_render_non_final || self.group_status.incomplete_groups == 0 {
-            for g in std::mem::take(&mut self.group_status.need_vardct_flush) {
-                self.decode_hf_group(g, &mut [], &mut buffer_splitter, true)?;
-            }
-        }
 
         let regions = buffer_splitter.into_changed_regions();
         let rendered = !regions.is_empty() && self.header.frame_type == FrameType::RegularFrame;
@@ -377,12 +531,12 @@ impl Frame {
     pub(crate) fn build_render_pipeline<T: RenderPipeline>(
         decoder_state: &DecoderState,
         frame_header: &FrameHeader,
-        patches: Arc<AtomicRefCell<PatchesDictionary>>,
-        splines: Arc<AtomicRefCell<Splines>>,
-        noise: Arc<AtomicRefCell<Noise>>,
-        lf_quant: Arc<AtomicRefCell<LfQuantFactors>>,
-        color_correlation_params: Arc<AtomicRefCell<ColorCorrelationParams>>,
-        epf_sigma: Arc<AtomicRefCell<SigmaSource>>,
+        patches: Arc<RwLock<PatchesDictionary>>,
+        splines: Arc<RwLock<Splines>>,
+        noise: Arc<RwLock<Noise>>,
+        lf_quant: Arc<RwLock<LfQuantFactors>>,
+        color_correlation_params: Arc<RwLock<ColorCorrelationParams>>,
+        epf_sigma: Arc<RwLock<SigmaSource>>,
         pixel_format: &JxlPixelFormat,
         output_profile: &JxlColorProfile,
     ) -> Result<Box<T>> {
@@ -773,7 +927,7 @@ impl Frame {
                 self.epf_sigma.clone(),
                 pixel_format,
                 output_profile,
-            )? as Box<dyn std::any::Any>
+            )? as Box<dyn std::any::Any + Send + Sync>
         } else {
             Self::build_render_pipeline::<LowMemoryRenderPipeline>(
                 &self.decoder_state,
@@ -786,7 +940,7 @@ impl Frame {
                 self.epf_sigma.clone(),
                 pixel_format,
                 output_profile,
-            )? as Box<dyn std::any::Any>
+            )? as Box<dyn std::any::Any + Send + Sync>
         };
         #[cfg(not(test))]
         let render_pipeline = Self::build_render_pipeline::<LowMemoryRenderPipeline>(

@@ -1001,11 +1001,11 @@ add_task(async function test_deleteNonMatchingModelRevisions() {
     }),
   ]);
 
-  await hub.deleteNonMatchingModelRevisions(
+  await hub.deleteNonMatchingModelRevisions({
     taskName,
-    `${hostname}/org/model2`,
-    "v3"
-  );
+    modelWithHostname: `${hostname}/org/model2`,
+    targetRevision: "v3",
+  });
 
   const [retrievedData, headers] = await cache.getFile({
     model: `${hostname}/org/model`,
@@ -1597,6 +1597,91 @@ add_task(async function test_getting_file_disallowed_custom_hub() {
       `Should throw with https://forbidden.com`
     );
   }
+});
+
+/**
+ * isModelAvailable should resolve from the cache instead of hitting the
+ * network when the file is already present locally.
+ */
+add_task(async function test_isModelAvailable_cached_skips_network() {
+  const hub = new ModelHub({
+    rootUrl: "https://example.com",
+    urlTemplate: "{model}/{revision}",
+    allowDenyList: [{ filter: "ALLOW", urlPrefix: "https://example.com" }],
+  });
+  hub.cache = await initializeCache();
+
+  const model = "acme/bert";
+  const revision = "main";
+  const file = "config.json";
+
+  await hub.cache.put({
+    taskName: "task_model",
+    model: "example.com/acme/bert",
+    revision,
+    file,
+    data: createBlob(),
+    headers: null,
+  });
+
+  const fetchStub = sinon.stub(MLUtils, "fetchUrl");
+
+  const isAvailable = await hub.isModelAvailable(model, revision, { file });
+
+  Assert.ok(isAvailable, "Cached model should be reported as available.");
+  Assert.ok(
+    fetchStub.notCalled,
+    "isModelAvailable should not hit the network for a cached file."
+  );
+
+  fetchStub.restore();
+  await deleteCache(hub.cache);
+});
+
+/**
+ * isModelAvailable should not trust a cached file whose hub has since been
+ * denylisted: it must delete the cached model and report unavailable.
+ */
+add_task(async function test_isModelAvailable_cached_denylisted() {
+  const hub = new ModelHub({
+    rootUrl: "https://forbidden.com",
+    urlTemplate: "{model}/{revision}",
+    allowDenyList: [{ filter: "DENY", urlPrefix: "https://forbidden.com" }],
+  });
+  hub.cache = await initializeCache();
+
+  const model = "acme/bert";
+  const revision = "main";
+  const file = "config.json";
+
+  await hub.cache.put({
+    taskName: "task_model",
+    model: "forbidden.com/acme/bert",
+    revision,
+    file,
+    data: createBlob(),
+    headers: null,
+  });
+
+  const isAvailable = await hub.isModelAvailable(model, revision, { file });
+
+  Assert.ok(
+    !isAvailable,
+    "Cached model on a denylisted hub should be reported unavailable."
+  );
+
+  const dataAfterDenylist = await hub.cache.getFile({
+    model: "forbidden.com/acme/bert",
+    revision,
+    file,
+  });
+  Assert.equal(
+    dataAfterDenylist,
+    null,
+    "The denylisted cached model should be deleted."
+  );
+
+  await deleteCache(hub.cache);
 });
 
 /**

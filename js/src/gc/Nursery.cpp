@@ -967,9 +967,16 @@ void js::Nursery::forwardBufferPointer(uintptr_t* pSlotsElems) {
   //  - Nursery-allocated buffer
   //  - A BufferRelocationOverlay inside the nursery
   //
-  // Note: The buffer has already be relocated. We are just patching stale
+  // Note: The buffer has already been relocated. We are just patching stale
   //       pointers now.
   auto* buffer = reinterpret_cast<void*>(*pSlotsElems);
+
+  // If the pointer is to the beginning of a chunk, then that chunk cannot be a
+  // nursery chunk due to the chunk header. Also, the pointer cannot be to the
+  // end of a previous nursery chunk since the last word is never allocated.
+  if ((uintptr_t(buffer) & ChunkMask) == 0) {
+    return;
+  }
 
   if (!isInside(buffer)) {
     return;

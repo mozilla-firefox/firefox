@@ -137,7 +137,7 @@ function init() {
           event.target.closest('[data-l10n-name="helpus-shareFirefoxLink"]')
         ) {
           event.preventDefault();
-          lazy.Referrals.openReferralsTab(window);
+          lazy.Referrals.openReferralsTab(window, "about_dialog");
         }
       },
       true

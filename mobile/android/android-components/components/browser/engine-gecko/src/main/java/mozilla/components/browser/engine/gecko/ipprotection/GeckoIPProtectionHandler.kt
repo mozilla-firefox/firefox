@@ -161,7 +161,7 @@ internal class GeckoIPProtectionHandler(private val runtime: GeckoRuntime) : IPP
                         if (token != null) {
                             result.complete(token)
                         } else {
-                            result.completeExceptionally(RuntimeException("no-gpi-token"))
+                            result.completeExceptionally(RuntimeException("no_gpi_token"))
                         }
                     }
                     return result

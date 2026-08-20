@@ -14,7 +14,7 @@ include "mozilla/dom/URLClassifierChild.h";
 namespace mozilla {
 namespace dom {
 
-[ManualDealloc, ChildImpl="URLClassifierLocalByNameChild", ParentImpl="URLClassifierLocalByNameParent"]
+[ManualDealloc, ChildImpl="mozilla::dom::URLClassifierLocalByNameChild", ParentImpl="mozilla::dom::URLClassifierLocalByNameParent"]
 protocol PURLClassifierLocalByName
 {
   manager PContent;

@@ -41,10 +41,6 @@ bool AnimationValue::operator==(const AnimationValue& aOther) const {
   return false;
 }
 
-bool AnimationValue::operator!=(const AnimationValue& aOther) const {
-  return !operator==(aOther);
-}
-
 float AnimationValue::GetOpacity() const {
   MOZ_ASSERT(mServo);
   return Servo_AnimationValue_GetOpacity(mServo);

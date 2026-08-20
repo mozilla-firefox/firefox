@@ -107,9 +107,7 @@ class gfxFontconfigFontEntry final : public gfxFT2FontEntryBase {
   void GetVariationInstances(
       nsTArray<gfxFontVariationInstance>& aInstances) override;
 
-  bool HasFontTable(uint32_t aTableTag) override;
   nsresult CopyFontTable(uint32_t aTableTag, nsTArray<uint8_t>&) override;
-  hb_blob_t* GetFontTable(uint32_t aTableTag) override;
   FontTableCache* GetFontTableCache(bool aCreate) override {
     return mFontTableCache;
   };
@@ -120,6 +118,9 @@ class gfxFontconfigFontEntry final : public gfxFT2FontEntryBase {
   virtual ~gfxFontconfigFontEntry();
 
   gfxFont* CreateFontInstance(const gfxFontStyle* aFontStyle) override;
+
+  bool HasFontTableInternal(uint32_t aTableTag) override;
+  hb_blob_t* GetFontTableInternal(uint32_t aTableTag) override;
 
   void GetUserFontFeatures(FcPattern* aPattern);
 

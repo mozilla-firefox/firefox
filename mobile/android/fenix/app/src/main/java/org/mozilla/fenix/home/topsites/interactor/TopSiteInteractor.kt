@@ -71,6 +71,14 @@ interface TopSiteInteractor {
      */
     fun onShowAllTopSitesClicked()
 
+    /**
+     * Records telemetry when the user expands or collapses the shortcuts section. Called when an user clicks on the
+     * expand/collapse control.
+     *
+     * @param isExpanded Whether the section is now expanded (true) or collapsed (false).
+     */
+    fun onExpandToggleClicked(isExpanded: Boolean)
+
     /** Sends telemetry related to the shortcuts library being viewed. */
     fun onShortcutsLibraryViewed()
 
@@ -132,6 +140,10 @@ class DefaultTopSiteInteractor(private val controller: TopSiteController) : TopS
 
     override fun onShowAllTopSitesClicked() {
         controller.handleShowAllTopSitesClicked()
+    }
+
+    override fun onExpandToggleClicked(isExpanded: Boolean) {
+        controller.handleExpandToggleClicked(isExpanded)
     }
 
     override fun onSaveShortcut(

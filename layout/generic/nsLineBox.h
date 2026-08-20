@@ -787,7 +787,6 @@ class GenericLineListIterator {
                "comparing iterators over different lists");
     return mCurrent == aOther.mCurrent;
   }
-  bool operator!=(const self_type&) const = default;
 
 #ifdef DEBUG
   bool IsInSameList(const self_type& aOther) const {

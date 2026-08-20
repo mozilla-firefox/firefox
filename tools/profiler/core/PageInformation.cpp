@@ -16,12 +16,6 @@ PageInformation::PageInformation(uint64_t aTabID, uint64_t aInnerWindowID,
       mEmbedderInnerWindowID(aEmbedderInnerWindowID),
       mIsPrivateBrowsing(aIsPrivateBrowsing) {}
 
-bool PageInformation::Equals(PageInformation* aOtherPageInfo) const {
-  // It's enough to check inner window IDs because they are unique for each
-  // page. Therefore, we don't have to check the tab ID or url.
-  return InnerWindowID() == aOtherPageInfo->InnerWindowID();
-}
-
 void PageInformation::StreamJSON(SpliceableJSONWriter& aWriter) const {
   // Here, we are converting uint64_t to double. Both tab and Inner
   // Window IDs are created using `nsContentUtils::GenerateProcessSpecificId`,

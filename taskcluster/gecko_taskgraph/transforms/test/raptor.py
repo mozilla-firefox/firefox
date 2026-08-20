@@ -23,6 +23,16 @@ SP3_CRITICAL_TESTS = [
     "test-android-hw-a55-14-0-aarch64-shippable/opt-browsertime-benchmark-speedometer3-mobile-fenix",
 ]
 
+# Tests that run on the Speedometer 3 harness, and therefore share its native
+# profiling setup, its power measurements and its longer run times.
+SPEEDOMETER_3_HARNESS_TEST_NAMES = ("speedometer3", "speedometer-experimental")
+
+
+def uses_speedometer_3_harness(test):
+    return any(
+        name in test.get("test-name", "") for name in SPEEDOMETER_3_HARNESS_TEST_NAMES
+    )
+
 
 class RaptorSchema(Schema, kw_only=True):
     activity: Optional[optionally_keyed_by("app", str, use_msgspec=True)] = None  # type: ignore
@@ -284,8 +294,8 @@ def split_page_load_by_url(config, tests):
 
         if len(subtest_symbol) > 10 and "ytp" not in subtest_symbol:
             raise Exception(
-                "Treeherder symbol %s is larger than 10 char! Please use a different symbol."
-                % subtest_symbol
+                f"Treeherder symbol {subtest_symbol} is larger than 10 char! "
+                "Please use a different symbol."
             )
 
         if test["test-name"].startswith("browsertime-"):
@@ -417,8 +427,8 @@ def add_extra_options(config, tests):
             # Bug 2037511 Temporarily disable power-test option for tp6m on a55s
             if "--power-test" not in extra_options:
                 extra_options.append("--power-test")
-        elif "windows" in test_platform and any(
-            t in test["test-name"] for t in ("speedometer3", "tp6")
+        elif "windows" in test_platform and (
+            uses_speedometer_3_harness(test) or "tp6" in test["test-name"]
         ):
             extra_options.append("--power-test")
 
@@ -716,7 +726,7 @@ def add_etw_profile(config, tests):
                 "--browsertime-arg=chrome.args=--js-flags=--no-compact-code-space",
             ])
 
-        if "speedometer3" in test.get("test-name", ""):
+        if uses_speedometer_3_harness(test):
             test["max-run-time"] = 4200  # seconds
             if "--extra-profiler-run" in extra_options:
                 extra_options.remove("--extra-profiler-run")
@@ -735,9 +745,7 @@ def add_etw_profile(config, tests):
             })
 
     for test in tests:
-        if "win" in test.get("test-platform", "") and "speedometer3" in test.get(
-            "test-name", ""
-        ):
+        if "win" in test.get("test-platform", "") and uses_speedometer_3_harness(test):
             np_test = deepcopy(test)
             np_test["test-name"] += "-native-profiling"
             np_test["try-name"] += "-native-profiling"
@@ -765,7 +773,7 @@ def add_samply_profile(config, tests):
             "extra-options", []
         )
 
-        if "speedometer3" in test.get("test-name", ""):
+        if uses_speedometer_3_harness(test):
             test["max-run-time"] = 4200  # seconds
             if "--extra-profiler-run" in extra_options:
                 extra_options.remove("--extra-profiler-run")
@@ -804,7 +812,7 @@ def add_samply_profile(config, tests):
 
     for test in tests:
         if (
-            "speedometer3" in test.get("test-name", "")
+            uses_speedometer_3_harness(test)
             and "macos" in test.get("test-platform", "")
             and test.get("app") in ["firefox"]
         ):
@@ -835,7 +843,7 @@ def add_perf_profile(config, tests):
             "extra-options", []
         )
 
-        if "speedometer3" in test.get("test-name", ""):
+        if uses_speedometer_3_harness(test):
             test["max-run-time"] = 4200  # seconds
             if "--extra-profiler-run" in extra_options:
                 extra_options.remove("--extra-profiler-run")
@@ -860,7 +868,7 @@ def add_perf_profile(config, tests):
 
     for test in tests:
         if (
-            "speedometer3" in test.get("test-name", "")
+            uses_speedometer_3_harness(test)
             and "linux" in test.get("test-platform", "")
             and test.get("app") == "firefox"
         ):

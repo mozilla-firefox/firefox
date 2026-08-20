@@ -331,6 +331,13 @@ pub extern "C" fn fog_test_reset(
     fog_test_reset_internal(data_path_override, app_id_override).into()
 }
 
+/// **TEST-ONLY METHOD**
+/// Shutdown FOG and the Glean SDK.
+#[no_mangle]
+pub extern "C" fn fog_test_shutdown() {
+    glean::shutdown();
+}
+
 // Split out into its own function so I could use `?`
 #[cfg(not(target_os = "android"))]
 fn fog_test_reset_internal(

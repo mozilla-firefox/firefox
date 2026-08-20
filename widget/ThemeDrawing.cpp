@@ -98,7 +98,11 @@ void ThemeDrawing::PaintRoundedRectWithRadius(
       wr::BorderRadius radii = {{backgroundRadius, backgroundRadius},
                                 {backgroundRadius, backgroundRadius},
                                 {backgroundRadius, backgroundRadius},
-                                {backgroundRadius, backgroundRadius}};
+                                {backgroundRadius, backgroundRadius},
+                                1.0f,
+                                1.0f,
+                                1.0f,
+                                1.0f};
       aWrData.mBuilder.PushBorder(backgroundRect, clip, kBackfaceIsVisible,
                                   widths, {sides, 4}, radii);
     }

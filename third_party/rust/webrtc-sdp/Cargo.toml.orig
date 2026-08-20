@@ -1,6 +1,6 @@
 [package]
 name = "webrtc-sdp"
-version = "0.3.13"
+version = "0.3.14"
 authors = ["Nicolas Grunbaum <na-g+github@nostrum.com>", "Nils Ohlmeier <github@ohlmeier.org>"]
 description = "webrtc-sdp parses strings in the format of the Session Description Protocol according to RFC4566. It specifically supports the subset of features required to support WebRTC according to the JSEP draft."
 repository = "https://github.com/mozilla/webrtc-sdp"
@@ -8,6 +8,7 @@ readme = "README.md"
 keywords = ["webrtc", "sdp", "jsep"]
 categories = ["parsing", "network-programming"]
 license = "MPL-2.0"
+rust-version = "1.88.0"
 
 [badges]
 travis-ci = { repository = "mozilla/webrtc-sdp", branch = "master" }

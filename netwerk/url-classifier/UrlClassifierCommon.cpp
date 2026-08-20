@@ -105,7 +105,26 @@ nsresult UrlClassifierCommon::GetTopWindowURI(nsIChannel* aChannel,
     return NS_ERROR_FAILURE;
   }
 
-  uri.forget(aURI);
+  if (!NS_IsAboutBlank(uri)) {
+    uri.forget(aURI);
+    return NS_OK;
+  }
+
+  // An about:blank document URI doesn't identify a site, which happens for
+  // freshly opened popups. Fall back to the document principal, which such a
+  // document inherits from its creator. This intentionally fails for null
+  // principals, e.g. sandboxed popups, which have an opaque origin.
+  nsIPrincipal* principal = wgp->DocumentPrincipal();
+  if (!principal || !principal->GetIsContentPrincipal()) {
+    return NS_ERROR_FAILURE;
+  }
+
+  nsCOMPtr<nsIURI> principalURI = principal->GetURI();
+  if (!principalURI) {
+    return NS_ERROR_FAILURE;
+  }
+
+  principalURI.forget(aURI);
   return NS_OK;
 }
 

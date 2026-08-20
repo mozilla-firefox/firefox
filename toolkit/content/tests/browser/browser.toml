@@ -60,7 +60,6 @@ fail-if = [
 
 ["browser_bug295977_autoscroll_overflow.js"]
 skip-if = [
-  "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && opt && nova", # Bug 2057895
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && opt && a11y_checks && swgl", # Bug 1710788 # Bug 1869961
   "os == 'mac' && os_version == '10.15' && arch == 'x86_64' && debug", # Bug 1775543
   "os == 'win' && arch == 'x86'", # Bug 1775543

@@ -1030,7 +1030,7 @@ where
             iter: delegate,
             pending: SmallVec::new(),
             pending_pos: 0,
-            prefix: ['\u{FFFF}'; 2],
+            prefix: ['\u{FFFF}', '\u{FFFF}'],
             upcoming: SmallVec::new(),
             root,
             tailoring,

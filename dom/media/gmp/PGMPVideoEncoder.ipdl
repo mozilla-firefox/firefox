@@ -15,7 +15,7 @@ include "GMPVideoEncoderChild.h";
 namespace mozilla {
 namespace gmp {
 
-[ChildImpl="GMPVideoEncoderChild", ParentImpl=virtual]
+[ChildImpl="mozilla::gmp::GMPVideoEncoderChild", ParentImpl=virtual]
 async protocol PGMPVideoEncoder
 {
   manager PGMPContent;

@@ -41,7 +41,7 @@ class nsTreeStyleCache {
   class Transition final {
    public:
     Transition(DFAState aState, nsAtom* aSymbol);
-    bool operator==(const Transition& aOther) const;
+    bool operator==(const Transition&) const = default;
     uint32_t Hash() const;
 
    private:

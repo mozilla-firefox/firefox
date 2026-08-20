@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Focus/blur events when focus moved during composition</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script src="/tests/SimpleTest/EventUtils.js"></script>
+<link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css">
+<script>
+"use strict";
+
+SimpleTest.waitForExplicitFinish();
+SimpleTest.waitForFocus(() => {
+  const srcInput = document.getElementById("src");
+  const destInput = document.getElementById("dest");
+  srcInput.focus();
+  const events = [];
+  function logEvent(aEvent) {
+    events.push(aEvent);
+  }
+  for (const type of [
+    "compositionstart",
+    "compositionupdate",
+    "compositionend",
+    "input",
+    "focus",
+    "blur"
+  ]) {
+    srcInput.addEventListener(type, logEvent);
+    destInput.addEventListener(type, logEvent);
+  }
+  srcInput.addEventListener("input", () => destInput.focus());
+
+  synthesizeCompositionChange({
+    composition: {
+      string: "a",
+      clauses: [
+        { length: 1, attr: COMPOSITION_ATTR_RAW_CLAUSE },
+      ],
+    },
+    caret: {
+      start: 1,
+      length: 0,
+    },
+  });
+  synthesizeCompositionChange({
+    composition: {
+      string: "b",
+      clauses: [
+        { length: 1, attr: COMPOSITION_ATTR_RAW_CLAUSE },
+      ],
+    },
+    caret: {
+      start: 1,
+      length: 0,
+    },
+  });
+  function stringifyEvents(aEvents) {
+    if (!aEvents.length) {
+      return "[]";
+    }
+    function stringifyNode(aNode) {
+      if (!aNode) {
+        return "null";
+      }
+      switch (aNode.nodeType) {
+        case Node.ELEMENT_NODE:
+          return `<${aNode.nodeName.toLowerCase()}${
+              aNode.hasAttribute("id") ? ` id="${aNode.getAttribute("id")}"` : ""
+            }>`;
+        default:
+          return `${aNode.nodeName}`;
+      }
+    }
+    function stringifyEvent(aEvent) {
+      return `{ type: "${aEvent.type}", target: ${stringifyNode(aEvent.target)} }`;
+    }
+    let result = "";
+    for (const event of aEvents) {
+      if (result == "") {
+        result = "[ ";
+      } else {
+        result += ", ";
+      }
+      result += stringifyEvent(event);
+    }
+    return result + " ]";
+  }
+  is(
+    stringifyEvents(events),
+    stringifyEvents([
+      { type: "compositionstart", target: srcInput },
+      { type: "compositionupdate", target: srcInput },
+      { type: "input", target: srcInput }, // for composition is updated
+      { type: "input", target: srcInput }, // for composition is committed by blur,
+                                           // see also "dom.input_events.dispatch_before_compositionend" pref
+
+      { type: "blur", target: srcInput },
+      { type: "focus", target: destInput },
+
+      // XXX Should "compositionend" and following "input" be fired before "blur"?
+      { type: "compositionend", target: srcInput },
+      { type: "input", target: srcInput }, // for composition ends
+
+      { type: "compositionstart", target: destInput },
+      { type: "compositionupdate", target: destInput },
+      { type: "input", target: destInput },
+    ]),
+    "A set of blur and focus events should be fired between compositions"
+  );
+  is(srcInput.value, "a", "The first <input> should have the first composition string");
+  is(destInput.value, "b", "The second <input> should have the second composition string");
+
+  synthesizeComposition({type: "compositioncommitasis"});
+
+  SimpleTest.finish();
+});
+</script>
+</head>
+<body>
+<input id="src"><input id="dest">
+</body>
+</html>

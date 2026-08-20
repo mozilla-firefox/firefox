@@ -724,6 +724,7 @@ LoadInfo::LoadInfo(const LoadInfo& rhs)
       mContextForTopLevelLoad(rhs.mContextForTopLevelLoad),
       mSecurityFlags(rhs.mSecurityFlags),
       mSandboxFlags(rhs.mSandboxFlags),
+      mFrameReferrerPolicySnapshot(rhs.mFrameReferrerPolicySnapshot),
       mInternalContentPolicyType(rhs.mInternalContentPolicyType),
       // mServiceWorkerTaintingSynthesized must be handled specially during
       // redirect

@@ -169,7 +169,7 @@ bool nsHostRecord::HasUsableResult(const mozilla::TimeStamp& now,
 
 nsresult nsHostRecord::GetFromStaleCache(bool* aResult) {
   NS_ENSURE_ARG(aResult);
-  *aResult = CheckExpiration(mozilla::TimeStamp::NowLoRes()) == EXP_GRACE;
+  *aResult = mFromStaleCache;
   return NS_OK;
 }
 

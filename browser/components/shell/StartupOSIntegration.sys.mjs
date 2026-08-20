@@ -153,12 +153,6 @@ export let StartupOSIntegration = {
       // likely sees the profile selector on launch.
       if (Services.prefs.getBoolPref(launchOnLoginPref)) {
         Glean.launchOnLogin.lastProfileDisableStartup.record();
-        // Disable launch on login messaging if we are disabling the
-        // feature.
-        Services.prefs.setBoolPref(
-          "browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt",
-          true
-        );
       }
       // To reduce confusion when running multiple Gecko profiles,
       // delete launch on login shortcuts and registry keys so that

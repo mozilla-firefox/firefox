@@ -9,6 +9,8 @@ subsuite = "bhr-aggregation"
 
 ["test_heuristics.py"]
 
+["test_leaf_grouping.py"]
+
 ["test_profile_processor.py"]
 
 ["test_symbolication.py"]

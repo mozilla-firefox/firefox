@@ -47,6 +47,11 @@ int32_t PictureInPictureWindow::Width() const {
   if (!IsStateOpened()) {
     return 0;
   }
+  RefPtr<HTMLVideoElement> videoElement = mAssociatedVideoElement.get();
+  if (videoElement && videoElement->OwnerDoc()->ShouldResistFingerprinting(
+                          RFPTarget::ScreenRect)) {
+    return VideoSizeForRFP().width;
+  }
   return mWidth;
 }
 
@@ -57,13 +62,53 @@ int32_t PictureInPictureWindow::Height() const {
   if (!IsStateOpened()) {
     return 0;
   }
+  RefPtr<HTMLVideoElement> videoElement = mAssociatedVideoElement.get();
+  if (videoElement && videoElement->OwnerDoc()->ShouldResistFingerprinting(
+                          RFPTarget::ScreenRect)) {
+    return VideoSizeForRFP().height;
+  }
   return mHeight;
+}
+
+gfx::IntSize PictureInPictureWindow::VideoSizeForRFP() const {
+  RefPtr<HTMLVideoElement> videoElement = mAssociatedVideoElement.get();
+  if (!videoElement) {
+    return {0, 0};
+  }
+
+  // From PictureInPicture.sys.mjs: "The Picture in Picture window will be a
+  // maximum of a quarter of the screen height, and a third of the screen
+  // width.".
+  // Pretend we are maximizing the video in a 1920x1080 display.
+  const uint32_t maxWidth = 1920 / 3;
+  const uint32_t maxHeight = 1080 / 4;
+  uint32_t width = videoElement->VideoWidth();
+  uint32_t height = videoElement->VideoHeight();
+  if ((height > maxHeight || width > maxWidth) && height > 0) {
+    double aspectRatio = static_cast<double>(width) / height;
+    if (width >= height) {
+      width = maxWidth;
+      height = static_cast<uint32_t>(round(maxWidth / aspectRatio));
+    } else {
+      height = maxHeight;
+      width = static_cast<uint32_t>(round(maxHeight * aspectRatio));
+    }
+  }
+  return {width, height};
 }
 
 void PictureInPictureWindow::NotifyDimensionsChanged(int32_t aWidth,
                                                      int32_t aHeight) {
   mWidth = aWidth;
   mHeight = aHeight;
+
+  RefPtr<HTMLVideoElement> videoElement = mAssociatedVideoElement.get();
+  if (videoElement && videoElement->OwnerDoc()->ShouldResistFingerprinting(
+                          RFPTarget::ScreenRect)) {
+    // With RFP, we spoof the window size to a fixed size that depends on the
+    // video, therefore it does not make sense to trigger a resize event.
+    return;
+  }
 
   // When the size of a Picture-in-Picture window pipWindow changes,
   // the user agent MUST queue a task to fire an event named resize at

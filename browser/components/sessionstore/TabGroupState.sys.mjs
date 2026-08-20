@@ -3,9 +3,14 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /**
+ * @typedef {string} TabGroupId
+ *   Unique ID of a tab group.
+ */
+
+/**
  * @typedef {object} TabGroupStateData
  *   State of a tab group inside of an open window.
- * @property {string} id
+ * @property {TabGroupId} id
  *   Unique ID of the tab group.
  * @property {string} name
  *   User-defined name of the tab group.

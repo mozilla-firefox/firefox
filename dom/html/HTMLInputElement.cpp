@@ -4889,9 +4889,9 @@ void HTMLInputElement::HandleTypeChange(FormControlType aNewType,
   UpdateBarredFromConstraintValidation();
 
   // Changing type might change auto directionality of this or the assigned slot
-  const bool autoDirAssociated = IsAutoDirectionalityAssociated(mType);
-  if (IsAutoDirectionalityAssociated(oldType) != autoDirAssociated) {
-    ResetDirFormAssociatedElement(this, aNotify, true);
+  if (IsAutoDirectionalityAssociated(oldType) !=
+      IsAutoDirectionalityAssociated(mType)) {
+    ResetDirFormAssociatedElement(this, aNotify, HasDirAuto());
   }
   // Special case for <input type=tel> as specified in
   // https://html.spec.whatwg.org/multipage/dom.html#the-directionality

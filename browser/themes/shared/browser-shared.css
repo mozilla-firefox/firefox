@@ -18,10 +18,7 @@
 @import url("chrome://browser/skin/toolbarbuttons.css");
 @import url("chrome://browser/skin/toolbarbutton-icons.css");
 @import url("chrome://browser/skin/menupanel.css");
-@import url("chrome://browser/skin/urlbar/tokens.css");
-@import url("chrome://browser/skin/urlbar/variables.css");
-@import url("chrome://browser/skin/urlbar/view.css");
-@import url("chrome://browser/skin/urlbar-searchbar.css");
+@import url("chrome://browser/skin/urlbar.css");
 @import url("chrome://browser/skin/identity-block/identity-block.css");
 @import url("chrome://browser/skin/notification-icons.css");
 @import url("chrome://browser/skin/addon-notification.css");
@@ -616,6 +613,10 @@ body {
 
   :root[sessionrestored][lwtheme] & {
     transition: var(--ext-theme-background-transition);
+  }
+
+  :root:is([web-extension-popup-window], [chromeless-window]) & {
+    display: none;
   }
 }
 

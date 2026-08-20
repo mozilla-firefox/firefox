@@ -601,6 +601,7 @@ tasks:
             product: test
             job-name: mochitest-browser-screenshots
         loopback-video: true
+        variants: ["no-nova"]
         run-on-projects:
             by-test-platform:
                 linux2404-64.*/opt: ['trunk']
@@ -610,6 +611,8 @@ tasks:
         max-run-time: 3600
         mozharness:
             mochitest-flavor: browser
+            extra-options:
+                - "--setpref=layout.css.devPixelsPerPx=1.0"
         allow-software-gl-layers: false
 
     mochitest-browser-translations:

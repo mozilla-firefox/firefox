@@ -1572,19 +1572,7 @@ void gfxPlatformFontList::StartCmapLoadingFromFamily(uint32_t aStartIndex) {
   }
 }
 
-class LoadCmapsRunnable final : public IdleRunnable,
-                                public nsIObserver,
-                                public nsSupportsWeakReference {
-  NS_DECL_ISUPPORTS_INHERITED
-  NS_DECL_NSIOBSERVER
-
- private:
-  virtual ~LoadCmapsRunnable() {
-    if (nsCOMPtr<nsIObserverService> obs = services::GetObserverService()) {
-      obs->RemoveObserver(this, NS_XPCOM_WILL_SHUTDOWN_OBSERVER_ID);
-    }
-  }
-
+class LoadCmapsRunnable final : public IdleRunnable {
  public:
   LoadCmapsRunnable(uint32_t aGeneration, uint32_t aFamilyIndex)
       : IdleRunnable("gfxPlatformFontList::LoadCmapsRunnable"),
@@ -1608,10 +1596,8 @@ class LoadCmapsRunnable final : public IdleRunnable,
     }
   }
 
-  void Cancel() { mIsCanceled = true; }
-
   NS_IMETHOD Run() override {
-    if (mIsCanceled) {
+    if (AppShutdown::IsInOrBeyond(ShutdownPhase::AppShutdownConfirmed)) {
       return NS_OK;
     }
     auto* pfl = gfxPlatformFontList::PlatformFontList();
@@ -1659,30 +1645,16 @@ class LoadCmapsRunnable final : public IdleRunnable,
   }
 
  private:
+  ~LoadCmapsRunnable() override = default;
+
   uint32_t mGeneration;
   uint32_t mStartIndex;
   uint32_t mIndex;
   TimeStamp mDeadline;
-  bool mIsCanceled = false;
 };
 
-NS_IMPL_ISUPPORTS_INHERITED(LoadCmapsRunnable, IdleRunnable, nsIObserver,
-                            nsISupportsWeakReference);
-
-NS_IMETHODIMP
-LoadCmapsRunnable::Observe(nsISupports* aSubject, const char* aTopic,
-                           const char16_t* aData) {
-  MOZ_ASSERT(!nsCRT::strcmp(aTopic, NS_XPCOM_WILL_SHUTDOWN_OBSERVER_ID),
-             "unexpected topic");
-  Cancel();
-  return NS_OK;
-}
-
 void gfxPlatformFontList::CancelLoadCmapsTask() {
-  if (mLoadCmapsRunnable) {
-    mLoadCmapsRunnable->Cancel();
-    mLoadCmapsRunnable = nullptr;
-  }
+  mLoadCmapsRunnable = nullptr;
 }
 
 void gfxPlatformFontList::StartCmapLoading(uint32_t aGeneration,
@@ -1701,10 +1673,6 @@ void gfxPlatformFontList::StartCmapLoading(uint32_t aGeneration,
     return;
   }
   mLoadCmapsRunnable = new LoadCmapsRunnable(aGeneration, aStartIndex);
-  if (nsCOMPtr<nsIObserverService> obs = services::GetObserverService()) {
-    obs->AddObserver(mLoadCmapsRunnable, NS_XPCOM_WILL_SHUTDOWN_OBSERVER_ID,
-                     /* ownsWeak = */ true);
-  }
   NS_DispatchToMainThreadQueue(do_AddRef(mLoadCmapsRunnable),
                                EventQueuePriority::Idle);
 }

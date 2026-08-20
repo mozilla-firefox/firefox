@@ -234,6 +234,12 @@ class nsHostRecord : public mozilla::LinkedListElement<RefPtr<nsHostRecord>>,
   // seconds), but a use of that negative entry forces an asynchronous refresh.
   bool negative = false;
 
+  // Whether the answer handed to the current consumer came from a stale
+  // (past-TTL, grace-period) cache entry. Captured at serve time: true only
+  // when a grace-period cache hit is returned, and cleared on every fresh
+  // resolution.
+  bool mFromStaleCache = false;
+
   // Explicitly expired
   bool mDoomed = false;
 

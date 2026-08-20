@@ -4,7 +4,9 @@
 
 "use strict";
 
-const { dumpn } = require("resource://devtools/shared/DevToolsUtils.js");
+const {
+  logger,
+} = require("resource://devtools/client/shared/remote-debugging/adb/adb-logger.js");
 const EventEmitter = require("resource://devtools/shared/event-emitter.js");
 const {
   getFileForBinary,
@@ -94,11 +96,11 @@ class AdbProcess extends EventEmitter {
 
     const isAdbRunning = await check();
     if (isAdbRunning) {
-      dumpn("Found ADB process running, not restarting");
+      logger.debug("Found ADB process running, not restarting");
       onSuccessfulStart();
       return;
     }
-    dumpn("Didn't find ADB process running, restarting");
+    logger.debug("Didn't find ADB process running, restarting");
 
     this._didRunInitially = true;
     const process = Cc["@mozilla.org/process/util;1"].createInstance(
@@ -144,9 +146,9 @@ class AdbProcess extends EventEmitter {
     try {
       await runCommand("host:kill");
     } catch (e) {
-      dumpn("Failed to send host:kill command");
+      logger.debug("Failed to send host:kill command");
     }
-    dumpn("adb server was terminated by host:kill");
+    logger.debug("adb server was terminated by host:kill");
     this._ready = false;
     this._didRunInitially = false;
   }

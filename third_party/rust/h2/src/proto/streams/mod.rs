@@ -31,6 +31,12 @@ use crate::proto::*;
 use bytes::Bytes;
 use std::time::Duration;
 
+#[derive(Debug, Eq, PartialEq)]
+pub(super) enum BufferStatus {
+    Complete,
+    CodecFull,
+}
+
 #[derive(Debug)]
 pub struct Config {
     /// Initial maximum number of locally initiated streams.

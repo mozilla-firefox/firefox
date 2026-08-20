@@ -96,9 +96,9 @@ class HTMLVideoElement final : public HTMLMediaElement {
     SetUnsignedIntAttr(nsGkAtoms::height, aValue, 0, aRv);
   }
 
-  uint32_t VideoWidth();
+  uint32_t VideoWidth() const;
 
-  uint32_t VideoHeight();
+  uint32_t VideoHeight() const;
 
   VideoRotation RotationDegrees() const { return mMediaInfo.mVideo.mRotation; }
 
@@ -179,7 +179,7 @@ class HTMLVideoElement final : public HTMLMediaElement {
   void CreateVideoWakeLockIfNeeded();
   void ReleaseVideoWakeLockIfExists();
 
-  gfx::IntSize GetVideoIntrinsicDimensions();
+  gfx::IntSize GetVideoIntrinsicDimensions() const;
 
   RefPtr<WakeLock> mScreenWakeLock;
 

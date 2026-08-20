@@ -6,6 +6,8 @@
 
 #include "mozilla/PodOperations.h"
 
+#include <algorithm>
+
 #include "jit/JitSpewer.h"
 #include "jit/WarpBuilder.h"
 #include "vm/BytecodeIterator.h"
@@ -21,7 +23,7 @@ using namespace js;
 using namespace js::jit;
 
 BytecodeAnalysis::BytecodeAnalysis(TempAllocator& alloc, JSScript* script)
-    : script_(script), infos_(alloc) {}
+    : alloc_(alloc), script_(script), infos_(alloc) {}
 
 bool BytecodeAnalysis::init() {
   if (!infos_.growByUninitialized(script_->length())) {
@@ -69,6 +71,23 @@ bool BytecodeAnalysis::init() {
   // problems. To avoid this, we mark such functions as uninlineable.
   bool normallyReachable = true;
   bool normallyReachableReturn = false;
+
+  // Add all catch/finally try notes to a Vector, then sort them by start
+  // offset. This lets us avoid quadratic behavior for JSOp::Try below.
+  Vector<TryNote, 8, JitAllocPolicy> catchTryNotes(alloc_);
+  if (!catchTryNotes.reserve(script_->trynotes().Length())) {
+    return false;
+  }
+  for (const TryNote& tn : script_->trynotes()) {
+    if (tn.kind() == TryNoteKind::Catch || tn.kind() == TryNoteKind::Finally) {
+      catchTryNotes.infallibleAppend(tn);
+    }
+  }
+  std::sort(
+      catchTryNotes.begin(), catchTryNotes.end(),
+      [](const TryNote& a, const TryNote& b) { return a.start < b.start; });
+
+  size_t tryNoteIndex = 0;
 
   for (const BytecodeLocation& it : AllBytecodesIterable(script_)) {
     JSOp op = it.getOp();
@@ -130,17 +149,23 @@ bool BytecodeAnalysis::init() {
       }
 
       case JSOp::Try: {
-        for (const TryNote& tn : script_->trynotes()) {
-          if (tn.start == offset + JSOpLength_Try &&
-              (tn.kind() == TryNoteKind::Catch ||
-               tn.kind() == TryNoteKind::Finally)) {
-            uint32_t catchOrFinallyOffset = tn.start + tn.length;
-            uint32_t targetDepth =
-                tn.kind() == TryNoteKind::Finally ? stackDepth + 3 : stackDepth;
-            BytecodeInfo& targetInfo = infos_[catchOrFinallyOffset];
-            targetInfo.init(targetDepth);
-            targetInfo.setJumpTarget(/* normallyReachable = */ false);
-          }
+        uint32_t targetOffset = offset + JSOpLength_Try;
+
+        while (tryNoteIndex < catchTryNotes.length() &&
+               catchTryNotes[tryNoteIndex].start < targetOffset) {
+          tryNoteIndex++;
+        }
+
+        while (tryNoteIndex < catchTryNotes.length() &&
+               catchTryNotes[tryNoteIndex].start == targetOffset) {
+          const TryNote& tn = catchTryNotes[tryNoteIndex];
+          uint32_t catchOrFinallyOffset = tn.start + tn.length;
+          uint32_t targetDepth =
+              tn.kind() == TryNoteKind::Finally ? stackDepth + 3 : stackDepth;
+          BytecodeInfo& targetInfo = infos_[catchOrFinallyOffset];
+          targetInfo.init(targetDepth);
+          targetInfo.setJumpTarget(/* normallyReachable = */ false);
+          tryNoteIndex++;
         }
         break;
       }

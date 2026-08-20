@@ -800,14 +800,13 @@ NS_IMETHODIMP CacheStorageService::ClearBaseDomain(
       nsTArray<RefPtr<CacheEntry>> entriesToDelete;
 
       for (CacheEntry* entry : table->Values()) {
-        nsCOMPtr<nsIURI> uri;
-        nsresult rv = NS_NewURI(getter_AddRefs(uri), entry->GetURI());
-        if (NS_WARN_IF(NS_FAILED(rv))) {
+        nsIURI* uri = entry->GetURI();
+        if (NS_WARN_IF(!uri)) {
           continue;
         }
 
         nsAutoCString host;
-        rv = uri->GetHost(host);
+        nsresult rv = uri->GetHost(host);
         // Some entries may not have valid hosts. We can skip them.
         if (NS_FAILED(rv) || host.IsEmpty()) {
           continue;
@@ -876,9 +875,8 @@ nsresult CacheStorageService::ClearOriginInternal(
       nsTArray<RefPtr<CacheEntry>> entriesToDelete;
 
       for (CacheEntry* entry : table->Values()) {
-        nsCOMPtr<nsIURI> uri;
-        rv = NS_NewURI(getter_AddRefs(uri), entry->GetURI());
-        NS_ENSURE_SUCCESS(rv, rv);
+        nsIURI* uri = entry->GetURI();
+        NS_ENSURE_TRUE(uri, NS_ERROR_UNEXPECTED);
 
         nsAutoString origin;
         rv = nsContentUtils::GetWebExposedOriginSerialization(uri, origin);
@@ -1614,7 +1612,7 @@ size_t CacheStorageService::MemoryPool::PurgeAll(uint32_t aWhat,
 // Methods exposed to and used by CacheStorage.
 
 nsresult CacheStorageService::AddStorageEntry(CacheStorage const* aStorage,
-                                              const nsACString& aURI,
+                                              nsIURI* aURI,
                                               const nsACString& aIdExtension,
                                               uint32_t aFlags,
                                               CacheEntryHandle** aResult) {
@@ -1631,9 +1629,11 @@ nsresult CacheStorageService::AddStorageEntry(CacheStorage const* aStorage,
 }
 
 nsresult CacheStorageService::AddStorageEntry(
-    const nsACString& aContextKey, const nsACString& aURI,
-    const nsACString& aIdExtension, bool aWriteToDisk, bool aSkipSizeCheck,
-    bool aPin, uint32_t aFlags, CacheEntryHandle** aResult) {
+    const nsACString& aContextKey, nsIURI* aURI, const nsACString& aIdExtension,
+    bool aWriteToDisk, bool aSkipSizeCheck, bool aPin, uint32_t aFlags,
+    CacheEntryHandle** aResult) {
+  NS_ENSURE_ARG(aURI);
+
   nsresult rv;
 
   nsAutoCString entryKey;
@@ -1686,16 +1686,10 @@ nsresult CacheStorageService::AddStorageEntry(
     // under those NVS rules. The first matching candidate is used as the cache
     // hit. OPEN_TRUNCATE is excluded because truncation always creates a new
     // entry regardless of equivalence.
-    // TODO (bug 2042810): NS_NewURI calls here are needed because the cache
-    // stores URIs as strings (a legacy of bug 1271019, when nsIURI was not
-    // thread-safe). Threading nsIURI through the cache APIs would eliminate
-    // this reparsing.
     if (StaticPrefs::network_cache_no_vary_search() && !entryExists &&
         !(aFlags & nsICacheStorage::OPEN_TRUNCATE)) {
-      nsCOMPtr<nsIURI> incomingURI;
       nsAutoCString basePath;
-      if (NS_SUCCEEDED(NS_NewURI(getter_AddRefs(incomingURI), aURI)) &&
-          NS_SUCCEEDED(ExtractNoVarySearchBasePath(incomingURI, basePath))) {
+      if (NS_SUCCEEDED(ExtractNoVarySearchBasePath(aURI, basePath))) {
         auto candidates = entries->mNoVarySearchIndex.Lookup(basePath);
         if (candidates) {
           nvsHadCandidates = true;
@@ -1716,17 +1710,9 @@ nsresult CacheStorageService::AddStorageEntry(
               continue;
             }
 
-            nsAutoCString candidateSpec;
-            candidate->GetKey(candidateSpec);
-            nsCOMPtr<nsIURI> candidateURI;
-            if (NS_FAILED(
-                    NS_NewURI(getter_AddRefs(candidateURI), candidateSpec))) {
-              continue;
-            }
-
             auto data = ParseNoVarySearchHeader(nvsVal);
-            if (URLsAreEquivalentModuloVariationConfig(incomingURI,
-                                                       candidateURI, data)) {
+            if (URLsAreEquivalentModuloVariationConfig(
+                    aURI, candidate->GetURI(), data)) {
               nvsMatched = true;
               nvsMatchedRuleLabel = NoVarySearchRuleLabel(data.paramsRule);
               entry = candidate;
@@ -1816,9 +1802,11 @@ nsresult CacheStorageService::AddStorageEntry(
 }
 
 nsresult CacheStorageService::CheckStorageEntry(CacheStorage const* aStorage,
-                                                const nsACString& aURI,
+                                                nsIURI* aURI,
                                                 const nsACString& aIdExtension,
                                                 bool* aResult) {
+  NS_ENSURE_ARG(aURI);
+
   nsresult rv;
 
   nsAutoCString contextKey;
@@ -1829,7 +1817,7 @@ nsresult CacheStorageService::CheckStorageEntry(CacheStorage const* aStorage,
   }
 
   LOG(("CacheStorageService::CheckStorageEntry [uri=%s, eid=%s, contextKey=%s]",
-       PromiseFlatCString(aURI).get(), PromiseFlatCString(aIdExtension).get(),
+       aURI->GetSpecOrDefault().get(), PromiseFlatCString(aIdExtension).get(),
        contextKey.get()));
 
   {
@@ -1872,8 +1860,10 @@ nsresult CacheStorageService::CheckStorageEntry(CacheStorage const* aStorage,
 }
 
 nsresult CacheStorageService::GetCacheIndexEntryAttrs(
-    CacheStorage const* aStorage, const nsACString& aURI,
-    const nsACString& aIdExtension, bool* aHasAltData, uint32_t* aFileSizeKb) {
+    CacheStorage const* aStorage, nsIURI* aURI, const nsACString& aIdExtension,
+    bool* aHasAltData, uint32_t* aFileSizeKb) {
+  NS_ENSURE_ARG(aURI);
+
   nsresult rv;
 
   nsAutoCString contextKey;
@@ -1882,7 +1872,7 @@ nsresult CacheStorageService::GetCacheIndexEntryAttrs(
   LOG(
       ("CacheStorageService::GetCacheIndexEntryAttrs [uri=%s, eid=%s, "
        "contextKey=%s]",
-       PromiseFlatCString(aURI).get(), PromiseFlatCString(aIdExtension).get(),
+       aURI->GetSpecOrDefault().get(), PromiseFlatCString(aIdExtension).get(),
        contextKey.get()));
 
   nsAutoCString fileKey;
@@ -1980,10 +1970,12 @@ NS_IMPL_ISUPPORTS(CacheEntryDoomByKeyCallback, CacheFileIOListener,
 }  // namespace
 
 nsresult CacheStorageService::DoomStorageEntry(
-    CacheStorage const* aStorage, const nsACString& aURI,
-    const nsACString& aIdExtension, nsICacheEntryDoomCallback* aCallback) {
+    CacheStorage const* aStorage, nsIURI* aURI, const nsACString& aIdExtension,
+    nsICacheEntryDoomCallback* aCallback) {
+  NS_ENSURE_ARG(aURI);
+
   LOG(("CacheStorageService::DoomStorageEntry %s",
-       PromiseFlatCString(aURI).get()));
+       aURI->GetSpecOrDefault().get()));
 
   NS_ENSURE_ARG(aStorage);
 
@@ -2286,7 +2278,10 @@ bool CacheStorageService::GetCacheEntryInfo(
 // static
 void CacheStorageService::GetCacheEntryInfo(CacheEntry* aEntry,
                                             EntryInfoCallback* aCallback) {
-  nsCString const uriSpec = aEntry->GetURI();
+  nsAutoCString uriSpec;
+  if (nsIURI* uri = aEntry->GetURI()) {
+    uri->GetAsciiSpec(uriSpec);
+  }
   nsCString const enhanceId = aEntry->GetEnhanceID();
 
   nsAutoCString entryKey;

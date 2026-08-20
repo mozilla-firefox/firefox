@@ -8,12 +8,15 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CompoundButton
+import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.materialswitch.MaterialSwitch
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -177,11 +180,13 @@ class InstalledAddonDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
 
     @VisibleForTesting internal fun providePrivateBrowsingSwitch() = binding.allowInPrivateBrowsingSwitch
 
+    private val onEnableSwitchCheckedChange = CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
+        toggleAddon(buttonView as MaterialSwitch, providePrivateBrowsingSwitch(), isChecked)
+    }
+
     @VisibleForTesting
-    @SuppressWarnings("LongMethod")
     internal fun bindEnableSwitch() {
         val switch = provideEnableSwitch()
-        val privateBrowsingSwitch = providePrivateBrowsingSwitch()
         switch.isChecked = addon.isEnabled()
         // When the ad-on is blocklisted or not correctly signed, we do not want to enable the toggle switch
         // because users shouldn't be able to re-enable an add-on in this state.
@@ -193,72 +198,108 @@ class InstalledAddonDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
             switch.isEnabled = false
             return
         }
-        switch.setOnCheckedChangeListener { v, isChecked ->
-            val addonManager = v.context.components.addonManager
-            switch.isClickable = false
-            disableButtons()
-            if (isChecked) {
-                enableAddon(
-                    addonManager,
-                    onSuccess = {
-                        runIfFragmentIsAttached {
-                            this.addon = it
-                            switch.isClickable = true
-                            privateBrowsingSwitch.isVisible = it.isEnabled()
-                            privateBrowsingSwitch.isChecked =
-                                it.incognito != Addon.Incognito.NOT_ALLOWED && it.isAllowedInPrivateBrowsing()
-                            binding.settings.isVisible = shouldSettingsBeVisible()
-                            enableButtons()
-                        }
-                    },
-                    onError = {
-                        runIfFragmentIsAttached {
-                            switch.isClickable = true
-                            enableButtons()
-                            switch.isChecked = addon.isEnabled()
-                            context?.let { ctx ->
-                                showSnackBar(
-                                    binding.root,
-                                    getString(
-                                        addonsR.string.mozac_feature_addons_failed_to_enable,
-                                        addon.translateName(ctx),
-                                    ),
-                                )
-                            }
-                        }
-                    },
-                )
-            } else {
-                binding.settings.isVisible = false
-                addonManager.disableAddon(
-                    addon,
-                    onSuccess = {
-                        runIfFragmentIsAttached {
-                            this.addon = it
-                            switch.isClickable = true
-                            privateBrowsingSwitch.isVisible = it.isEnabled()
-                            enableButtons()
-                        }
-                    },
-                    onError = {
-                        runIfFragmentIsAttached {
-                            switch.isClickable = true
-                            switch.isChecked = addon.isEnabled()
-                            enableButtons()
-                            context?.let { ctx ->
-                                showSnackBar(
-                                    binding.root,
-                                    getString(
-                                        addonsR.string.mozac_feature_addons_failed_to_disable,
-                                        addon.translateName(ctx),
-                                    ),
-                                )
-                            }
-                        }
-                    },
-                )
+        switch.setOnCheckedChangeListener(onEnableSwitchCheckedChange)
+    }
+
+    @VisibleForTesting
+    internal fun toggleAddon(
+        switch: MaterialSwitch,
+        privateBrowsingSwitch: MaterialSwitch,
+        isChecked: Boolean,
+    ) {
+        val addonManager = provideAddonManager()
+        switch.isClickable = false
+        // Re-enabled from onToggleSuccess/onToggleError once the operation completes.
+        disableButtons()
+        if (isChecked) {
+            enableAddon(
+                addonManager,
+                onSuccess = { onToggleSuccess(it, switch, privateBrowsingSwitch, isEnabling = true) },
+                onError = {
+                    onToggleError(
+                        addonsR.string.mozac_feature_addons_failed_to_enable,
+                        switch,
+                        privateBrowsingSwitch,
+                        isChecked,
+                    )
+                },
+            )
+        } else {
+            binding.settings.isVisible = false
+            addonManager.disableAddon(
+                addon,
+                onSuccess = { onToggleSuccess(it, switch, privateBrowsingSwitch, isEnabling = false) },
+                onError = {
+                    onToggleError(
+                        addonsR.string.mozac_feature_addons_failed_to_disable,
+                        switch,
+                        privateBrowsingSwitch,
+                        isChecked,
+                    )
+                },
+            )
+        }
+    }
+
+    private fun onToggleSuccess(
+        updatedAddon: Addon,
+        switch: MaterialSwitch,
+        privateBrowsingSwitch: MaterialSwitch,
+        isEnabling: Boolean,
+    ) {
+        runIfFragmentIsAttached {
+            this.addon = updatedAddon
+            switch.isClickable = true
+            switch.setCheckedSilently(updatedAddon.isEnabled())
+            privateBrowsingSwitch.isVisible = updatedAddon.isEnabled()
+            if (isEnabling) {
+                privateBrowsingSwitch.isChecked =
+                    updatedAddon.incognito != Addon.Incognito.NOT_ALLOWED && updatedAddon.isAllowedInPrivateBrowsing()
+                binding.settings.isVisible = shouldSettingsBeVisible()
+            }
+            enableButtons()
+        }
+    }
+
+    private fun onToggleError(
+        @StringRes messageRes: Int,
+        switch: MaterialSwitch,
+        privateBrowsingSwitch: MaterialSwitch,
+        isChecked: Boolean,
+    ) {
+        runIfFragmentIsAttached {
+            switch.isClickable = true
+            switch.setCheckedSilently(addon.isEnabled())
+            if (!isChecked) {
+                binding.settings.isVisible = shouldSettingsBeVisible()
+            }
+            enableButtons()
+            context?.let { ctx ->
+                showAddonFailureSnackbar(getString(messageRes, addon.translateName(ctx))) {
+                    // If the addon state is already updated by another action,
+                    // we don't need this retry anymore, so skip it.
+                    if (addon.isEnabled() != isChecked) {
+                        toggleAddon(switch, privateBrowsingSwitch, isChecked)
+                    }
+                }
             }
         }
+    }
+
+    private fun MaterialSwitch.setCheckedSilently(isChecked: Boolean) {
+        setOnCheckedChangeListener(null)
+        this.isChecked = isChecked
+        setOnCheckedChangeListener(onEnableSwitchCheckedChange)
+    }
+
+    @VisibleForTesting
+    internal fun showAddonFailureSnackbar(message: String, onRetry: () -> Unit) {
+        showRetryableSnackBar(binding.root, message, retryIfFragmentIsAttached(onRetry))
+    }
+
+    @VisibleForTesting
+    internal fun retryIfFragmentIsAttached(onRetry: () -> Unit): () -> Unit = {
+        runIfFragmentIsAttached { onRetry() }
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -387,35 +428,39 @@ class InstalledAddonDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
         }
     }
 
-    private fun bindRemoveButton() {
+    @VisibleForTesting
+    internal fun bindRemoveButton() {
         binding.removeAddOn.setOnClickListener {
-            setAllInteractiveViewsClickable(binding, false)
-            requireContext()
-                .components
-                .addonManager
-                .uninstallAddon(
-                    addon,
-                    onSuccess = {
-                        runIfFragmentIsAttached {
-                            setAllInteractiveViewsClickable(binding, true)
-                            binding.root.findNavController().popBackStack()
-                        }
-                    },
-                    onError = { _, _ ->
-                        runIfFragmentIsAttached {
-                            setAllInteractiveViewsClickable(binding, true)
-                            context?.let { ctx ->
-                                showSnackBar(
-                                    binding.root,
-                                    getString(
-                                        addonsR.string.mozac_feature_addons_failed_to_uninstall,
-                                        addon.translateName(ctx),
-                                    ),
-                                )
+            fun uninstall() {
+                setAllInteractiveViewsClickable(binding, false)
+                provideAddonManager()
+                    .uninstallAddon(
+                        addon,
+                        onSuccess = {
+                            runIfFragmentIsAttached {
+                                setAllInteractiveViewsClickable(binding, true)
+                                binding.root.findNavController().popBackStack()
                             }
-                        }
-                    },
-                )
+                        },
+                        onError = { _, _ ->
+                            runIfFragmentIsAttached {
+                                setAllInteractiveViewsClickable(binding, true)
+                                context?.let { ctx ->
+                                    showAddonFailureSnackbar(
+                                        getString(
+                                            addonsR.string.mozac_feature_addons_failed_to_uninstall,
+                                            addon.translateName(ctx),
+                                        )
+                                    ) {
+                                        uninstall()
+                                    }
+                                }
+                            }
+                        },
+                    )
+            }
+
+            uninstall()
         }
     }
 

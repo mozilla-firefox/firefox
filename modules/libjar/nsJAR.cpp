@@ -590,6 +590,8 @@ nsZipReaderCache::Init(uint32_t cacheSize) {
   return NS_OK;
 }
 
+// Runs at the very end of XPCOM shutdown, where no service is available any
+// more, not even the observer service we registered with in Init().
 nsZipReaderCache::~nsZipReaderCache() {
   for (const auto& zip : mZips.Values()) {
     zip->SetZipReaderCache(nullptr);

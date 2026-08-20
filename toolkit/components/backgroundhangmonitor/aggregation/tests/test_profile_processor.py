@@ -45,6 +45,10 @@ def _hang(
     # platform, hang_ms, hang_count). At least one annotation is required —
     # the annotationsTable raises if it's still empty when process_thread
     # tries to serialize it. Real BHR data always has annotations.
+    #
+    # Frames are (func, lib, inline_depth); tests that don't care about
+    # inlining pass plain (func, lib) pairs and get depth 0.
+    stack = [f if len(f) == 3 else (f[0], f[1], 0) for f in stack]
     return (
         stack,
         "",
@@ -161,6 +165,65 @@ def test_merge_number_dicts_adds_overlapping_keys():
     a = {"x": 1.0, "y": 2.0}
     b = {"y": 3.0, "z": 4.0}
     assert merge_number_dicts(a, b) == {"x": 1.0, "y": 5.0, "z": 4.0}
+
+
+def _stack_columns(thread):
+    """Map each stack node to (funcName, inlineDepth, inlineRatio)."""
+    st = thread["stackTable"]
+    names = thread["stringArray"]
+    func_name = thread["funcTable"]["name"]
+    return {
+        names[func_name[st["func"][i]]]: (st["inlineDepth"][i], st["inlineRatio"][i])
+        for i in range(1, st["length"])
+    }
+
+
+def test_inline_depth_and_ratio_are_emitted_per_stack_node():
+    p = _make_processor()
+    p.ingest(
+        [_hang([("main", "xul", 0), ("Outer", "xul", 0), ("Inlined", "xul", 1)])],
+        {"20260101": 1.0},
+    )
+    cols = _stack_columns(p.process_into_profile()["threads"][0])
+    assert cols["main"] == (0, 0)
+    assert cols["Outer"] == (0, 0)
+    # Always inlined here, so depth 1 and the whole node's weight is inlined.
+    assert cols["Inlined"] == (1, 1.0)
+
+
+def test_inline_ratio_is_fractional_when_builds_disagree():
+    # The same reconstructed stack from two builds: one inlined the leaf, one
+    # did not. They merge into one node (that is bug 2052961's dedup), and the
+    # ratio records that it was inlined some of the time.
+    p = _make_processor()
+    p.ingest(
+        [
+            _hang([("main", "xul", 0), ("Leaf", "xul", 1)], hang_count=3.0),
+            _hang(
+                [("main", "xul", 0), ("Leaf", "xul", 0)],
+                hang_count=1.0,
+                build_date="20260102",
+            ),
+        ],
+        {"20260101": 1.0, "20260102": 1.0},
+    )
+    depth, ratio = _stack_columns(p.process_into_profile()["threads"][0])["Leaf"]
+    assert depth == 1
+    assert ratio == 0.75  # 3 of 4 hangs inlined
+
+
+def test_inline_columns_run_parallel_to_the_stack_table():
+    p = _make_processor()
+    p.ingest(
+        [_hang([("main", "xul", 0), ("Inlined", "xul", 2)])],
+        {"20260101": 1.0},
+    )
+    st = p.process_into_profile()["threads"][0]["stackTable"]
+    assert len(st["inlineDepth"]) == st["length"]
+    assert len(st["inlineRatio"]) == st["length"]
+    # Root node carries no frame.
+    assert st["inlineDepth"][0] == 0
+    assert st["inlineRatio"][0] == 0
 
 
 if __name__ == "__main__":

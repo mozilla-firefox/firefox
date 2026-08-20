@@ -373,7 +373,7 @@ void SVGImageFrame::PaintSVG(gfxContext& aContext, const gfxMatrix& aTransform,
       // of the SVG image's internal document that is visible, in combination
       // with preserveAspectRatio and viewBox.
       const SVGImageContext context(
-          Some(CSSIntSize::Ceil(width, height)),
+          Some(CSSSize(width, height)),
           Some(imgElem->mPreserveAspectRatio.GetAnimValue()));
 
       // For the actual draw operation to draw crisply (and at the right size),
@@ -617,7 +617,7 @@ bool SVGImageFrame::CreateWebRenderCommands(
       flags |= imgIContainer::FLAG_RECORD_BLOB;
     }
     // Forward preserveAspectRatio to inner SVGs
-    svgContext.SetViewportSize(Some(CSSIntSize::Ceil(width, height)));
+    svgContext.SetViewportSize(Some(CSSSize(width, height)));
     svgContext.SetPreserveAspectRatio(
         Some(imgElem->mPreserveAspectRatio.GetAnimValue()));
   }

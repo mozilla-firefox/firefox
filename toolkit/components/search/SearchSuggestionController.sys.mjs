@@ -426,19 +426,20 @@ export class SearchSuggestionController {
   #reportTelemetryForEngine(context) {
     // If the timer id has been reset, then we have already handled telemetry.
     // This might occur in the context of an abort or or cancel.
-    if (context.gleanTimerId) {
-      let engineId =
-        context.engine instanceof lazy.ConfigSearchEngine
-          ? context.engine.id
-          : "other";
-      // Stop the latency stopwatch.
+    if (
+      context.engine instanceof lazy.ConfigSearchEngine &&
+      context.gleanTimerId
+    ) {
       if (context.aborted) {
-        Glean.searchSuggestions.latency[engineId].cancel(context.gleanTimerId);
+        Glean.searchSuggestions.latency[context.engine.id].cancel(
+          context.gleanTimerId
+        );
       } else {
-        Glean.searchSuggestions.latency[engineId].stopAndAccumulate(
+        Glean.searchSuggestions.latency[context.engine.id].stopAndAccumulate(
           context.gleanTimerId
         );
       }
+
       context.gleanTimerId = 0;
     }
   }
@@ -555,12 +556,10 @@ export class SearchSuggestionController {
       request.send();
     }
 
-    context.gleanTimerId =
-      Glean.searchSuggestions.latency[
-        context.engine instanceof lazy.ConfigSearchEngine
-          ? context.engine.id
-          : "other"
-      ].start();
+    if (context.engine instanceof lazy.ConfigSearchEngine) {
+      context.gleanTimerId =
+        Glean.searchSuggestions.latency[context.engine.id].start();
+    }
 
     return deferredResponse.promise;
   }

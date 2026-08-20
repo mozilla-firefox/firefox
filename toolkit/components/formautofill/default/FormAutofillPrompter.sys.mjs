@@ -1252,7 +1252,7 @@ CONTENT = {
           callbackState: "cancel",
         },
         {
-          l10nId: "address-capture-never-save-button",
+          l10nId: "address-capture-never-save-addresses-button",
           callbackState: "disable",
         },
       ],

@@ -33,8 +33,14 @@ enum SandboxingKind : uint64_t {
   PKCS11_MODULE,
 #endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
 
-  COUNT,
+#ifndef ANDROID
+  HW_INFERENCE,
+#endif  // !ANDROID
 
+  // Add new kinds directly above this one: the gtests, and the
+  // MOZ_DISABLE_CONTENT_SANDBOX "utility:N" syntax, refer to the pre-existing
+  // ones by index.
+  COUNT,
 };
 
 bool IsUtilitySandboxEnabled(const char* envVar, SandboxingKind aKind);

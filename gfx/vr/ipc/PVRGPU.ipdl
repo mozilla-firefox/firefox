@@ -10,7 +10,7 @@ namespace gfx {
 
 // The parent process is the VR process.
 // The child process is the GPU process.
-[NeedsOtherPid, ChildImpl="VRGPUChild", ParentImpl="VRGPUParent", ParentProc=VR, ChildProc=GPU]
+[NeedsOtherPid, ChildImpl="mozilla::gfx::VRGPUChild", ParentImpl="mozilla::gfx::VRGPUParent", ParentProc=VR, ChildProc=GPU]
 async protocol PVRGPU
 {
 parent:

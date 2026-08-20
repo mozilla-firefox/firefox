@@ -403,6 +403,14 @@ class IMEStateManager {
    */
   static bool HasActiveChildSetInputContext();
 
+  static void AdvanceFocusGeneration() {
+    if (sFocusGeneration == UINT32_MAX) [[unlikely]] {
+      sFocusGeneration = 0;
+    } else {
+      sFocusGeneration++;
+    }
+  }
+
   /**
    * This is the runner of OnInstalledMenuKeyboardListener(), called by
    * PseudoFocusChangeRunnable maybe asynchronously.
@@ -464,6 +472,9 @@ class IMEStateManager {
   // SetInputContextForChildProcess() is called.  This is necessary for
   // restoring IME state when menu keyboard listener is uninstalled.
   static InputContext sActiveChildInputContext;
+
+  // The sequencial number of focus changes.
+  static uint32_t sFocusGeneration;
 
   // sInstalledMenuKeyboardListener is true if menu keyboard listener is
   // installed in the process.

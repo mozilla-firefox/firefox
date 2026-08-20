@@ -212,7 +212,6 @@ struct nsStyleImageLayers {
     }
 
     bool operator==(const Repeat& aOther) const = default;
-    bool operator!=(const Repeat& aOther) const = default;
   };
 
   struct Layer {
@@ -272,10 +271,7 @@ struct nsStyleImageLayers {
     // Compute the change hint required by changes in just this layer.
     nsChangeHint CalcDifference(const Layer& aNewLayer) const;
 
-    // An equality operator that compares the images using URL-equality
-    // rather than pointer-equality.
-    bool operator==(const Layer& aOther) const;
-    bool operator!=(const Layer& aOther) const = default;
+    bool operator==(const Layer&) const = default;
   };
 
   // The (positive) number of computed values of each property, since
@@ -1521,8 +1517,7 @@ struct StyleTransition {
   const StyleTransitionProperty& GetProperty() const { return mProperty; }
   StyleTransitionBehavior GetBehavior() const { return mBehavior; }
 
-  bool operator==(const StyleTransition& aOther) const;
-  bool operator!=(const StyleTransition&) const = default;
+  bool operator==(const StyleTransition&) const = default;
 
  private:
   StyleComputedTimingFunction mTimingFunction{
@@ -1553,8 +1548,7 @@ struct StyleAnimation {
   const StyleAnimationRangeStart& GetRangeStart() const { return mRangeStart; }
   const StyleAnimationRangeEnd& GetRangeEnd() const { return mRangeEnd; }
 
-  bool operator==(const StyleAnimation& aOther) const;
-  bool operator!=(const StyleAnimation&) const = default;
+  bool operator==(const StyleAnimation&) const = default;
 
  private:
   StyleComputedTimingFunction mTimingFunction{
@@ -1581,7 +1575,6 @@ struct StyleScrollTimeline {
   StyleScrollAxis GetAxis() const { return mAxis; }
 
   bool operator==(const StyleScrollTimeline&) const = default;
-  bool operator!=(const StyleScrollTimeline&) const = default;
 
  private:
   StyleTimelineName mName;
@@ -1597,7 +1590,6 @@ struct StyleViewTimeline {
   const StyleViewTimelineInset& GetInset() const { return mInset; }
 
   bool operator==(const StyleViewTimeline&) const = default;
-  bool operator!=(const StyleViewTimeline&) const = default;
 
  private:
   StyleTimelineName mName;

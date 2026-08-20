@@ -11,6 +11,7 @@
 #include "mozilla/dom/BrowserSessionStore.h"
 #include "mozilla/dom/BrowserSessionStoreBinding.h"
 #include "mozilla/dom/BrowsingContext.h"
+#include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/InProcessChild.h"
 #include "mozilla/dom/InProcessParent.h"
 #include "mozilla/dom/SessionStoreChild.h"
@@ -190,6 +191,24 @@ mozilla::ipc::IPCResult SessionStoreParent::RecvSessionStoreUpdate(
   return IPC_OK();
 }
 
+bool SessionStoreParent::IsAllowedUpdateTarget(
+    CanonicalBrowsingContext* aBrowsingContext) {
+  // Incremental updates must only carry data for in-process documents of the
+  // process the SessionStoreChild actor lives in, so the target context must
+  // be owned by the sending process and belong to this actor's frame tree.
+  if (InProcessParent::ChildActorFor(this)) {
+    return true;
+  }
+
+  if (!mBrowsingContext || aBrowsingContext->Top() != mBrowsingContext->Top()) {
+    return false;
+  }
+
+  auto* browserParent = static_cast<BrowserParent*>(Manager());
+  return aBrowsingContext->IsOwnedByProcess(
+      browserParent->Manager()->ChildID());
+}
+
 mozilla::ipc::IPCResult SessionStoreParent::RecvIncrementalSessionStoreUpdate(
     const MaybeDiscarded<BrowsingContext>& aBrowsingContext,
     const Maybe<FormData>& aFormData, const Maybe<nsPoint>& aScrollPosition,
@@ -204,7 +223,7 @@ mozilla::ipc::IPCResult SessionStoreParent::RecvIncrementalSessionStoreUpdate(
     } else {
       bc = aBrowsingContext.GetMaybeDiscarded()->Canonical();
     }
-    if (!bc) {
+    if (!bc || !IsAllowedUpdateTarget(bc)) {
       return IPC_OK();
     }
     if (aFormData.isSome()) {
@@ -232,7 +251,7 @@ mozilla::ipc::IPCResult SessionStoreParent::RecvResetSessionStore(
     } else {
       bc = aBrowsingContext.GetMaybeDiscarded()->Canonical();
     }
-    if (!bc) {
+    if (!bc || !IsAllowedUpdateTarget(bc)) {
       return IPC_OK();
     }
     mSessionStore->RemoveSessionStore(bc);

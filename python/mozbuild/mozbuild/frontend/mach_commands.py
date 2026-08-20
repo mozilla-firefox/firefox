@@ -301,7 +301,9 @@ def _get_files_info(command_context, paths, rev=None):
 
     # Normalize to relative from topsrcdir.
     relpaths = []
-    finder = FileFinder(command_context.topsrcdir, find_dotfiles=True, ignore=[".hg"])
+    finder = FileFinder(
+        command_context.topsrcdir, find_dotfiles=True, ignore=[".hg", ".git"]
+    )
     for path in paths:
         for p, _ in finder.find(path):
             a = mozpath.abspath(p)

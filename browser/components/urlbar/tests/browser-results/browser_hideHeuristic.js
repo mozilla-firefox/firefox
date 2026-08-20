@@ -490,7 +490,7 @@ async function search({ value, expectedGroup }) {
   Assert.ok(result, "_resultForCurrentValue is defined");
   Assert.ok(result.heuristic, "_resultForCurrentValue.heuristic is true");
   Assert.equal(
-    UrlbarUtils.getResultGroup(result),
+    UrlbarShared.getResultGroup(result),
     expectedGroup,
     "_resultForCurrentValue has expected group"
   );

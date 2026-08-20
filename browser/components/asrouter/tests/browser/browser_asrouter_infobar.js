@@ -338,10 +338,13 @@ add_task(async function test_formatMessageConfig_array() {
   const browser = win.gBrowser.selectedBrowser;
   const box = win.gNotificationBox;
 
+  // Any Fluent ID that exists works here: this only checks that a string_id
+  // part becomes a <remote-text> carrying that ID, never what it renders as.
+  const sampleFluentId = "pdf-default-notification-message";
   let parts = [
     "A",
     { raw: "B" },
-    { string_id: "launch-on-login-infobar-message" },
+    { string_id: sampleFluentId },
     { href: "https://x.test/", raw: "LINK" },
     "Z",
   ];
@@ -354,7 +357,7 @@ add_task(async function test_formatMessageConfig_array() {
   Assert.equal(nodes[2].localName, "remote-text", "L10n element");
   Assert.equal(
     nodes[2].getAttribute("fluent-remote-id"),
-    "launch-on-login-infobar-message",
+    sampleFluentId,
     "Fluent ID"
   );
   const [, , , a] = nodes;

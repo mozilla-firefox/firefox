@@ -361,7 +361,7 @@ void SerialManagerParent::StartChooserRequest(
   }
 
   auto request = MakeRefPtr<SerialPermissionRequest>(
-      static_cast<WindowGlobalParent*>(Manager()), aAutoselect,
+      mozilla::ipc::ActorCast<WindowGlobalParent>(Manager()), aAutoselect,
       std::move(aPorts));
   rejectInternal.release();
 

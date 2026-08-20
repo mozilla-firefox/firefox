@@ -30,7 +30,7 @@ const DEFAULT_SECTION_LAYOUT = [
         columnCount: 4,
         tiles: [
           {
-            size: "large",
+            size: "medium",
             position: 0,
             hasAd: false,
             hasExcerpt: true,
@@ -43,31 +43,37 @@ const DEFAULT_SECTION_LAYOUT = [
           },
           {
             size: "medium",
-            position: 1,
-            hasAd: true,
-            hasExcerpt: false,
-          },
-          {
-            size: "medium",
             position: 3,
             hasAd: false,
             hasExcerpt: false,
           },
           {
             size: "medium",
-            position: 5,
+            position: 1,
+            hasAd: true,
+            hasExcerpt: false,
+          },
+          {
+            size: "medium",
+            position: 4,
             hasAd: false,
             hasExcerpt: true,
           },
           {
             size: "medium",
-            position: 4,
+            position: 5,
             hasAd: true,
             hasExcerpt: true,
           },
           {
             size: "medium",
             position: 6,
+            hasAd: false,
+            hasExcerpt: true,
+          },
+          {
+            size: "medium",
+            position: 7,
             hasAd: false,
             hasExcerpt: true,
           },
@@ -85,13 +91,13 @@ const DEFAULT_SECTION_LAYOUT = [
           {
             size: "medium",
             position: 2,
-            hasAd: true,
+            hasAd: false,
             hasExcerpt: true,
           },
           {
             size: "medium",
             position: 1,
-            hasAd: false,
+            hasAd: true,
             hasExcerpt: false,
           },
           {
@@ -118,13 +124,19 @@ const DEFAULT_SECTION_LAYOUT = [
             hasAd: false,
             hasExcerpt: false,
           },
+          {
+            size: "medium",
+            position: 7,
+            hasAd: false,
+            hasExcerpt: true,
+          },
         ],
       },
       {
         columnCount: 2,
         tiles: [
           {
-            size: "large",
+            size: "medium",
             position: 0,
             hasAd: false,
             hasExcerpt: true,
@@ -162,6 +174,12 @@ const DEFAULT_SECTION_LAYOUT = [
           {
             size: "medium",
             position: 6,
+            hasAd: false,
+            hasExcerpt: true,
+          },
+          {
+            size: "medium",
+            position: 7,
             hasAd: false,
             hasExcerpt: true,
           },
@@ -209,6 +227,12 @@ const DEFAULT_SECTION_LAYOUT = [
           {
             size: "medium",
             position: 6,
+            hasAd: false,
+            hasExcerpt: true,
+          },
+          {
+            size: "medium",
+            position: 7,
             hasAd: false,
             hasExcerpt: true,
           },

@@ -235,7 +235,8 @@ nsresult URLQueryStringStripper::ManageObservers() {
     if (!StaticPrefs::privacy_query_stripping_strip_on_share_enabled()) {
       // Clean up strip-on-share list
       mStripOnShareGlobal.reset();
-      mStripOnShareMap.Clear();
+      mStripOnShareOriginMap.Clear();
+      mStripOnShareSchemelessSiteMap.Clear();
       rv = mListService->UnregisterStripOnShareObserver(this);
       NS_ENSURE_SUCCESS(rv, rv);
       mObservingStripOnShare = false;
@@ -355,22 +356,26 @@ URLQueryStringStripper::OnQueryStrippingListUpdate(
 NS_IMETHODIMP
 URLQueryStringStripper::OnStripOnShareUpdate(const nsTArray<nsString>& aArgs,
                                              JSContext* aCx) {
+  mStripOnShareOriginMap.Clear();
+  mStripOnShareOriginMap.Clear();
+  mStripOnShareGlobal.reset();
+
   for (const auto& ruleString : aArgs) {
     dom::StripRule rule;
     if (NS_WARN_IF(!rule.Init(ruleString))) {
       // Skipping malformed rules
       continue;
     }
-    for (const auto& origin : rule.mOrigins) {
-      if (rule.mIsGlobal) {
-        // Adding global rules only to mStripOnShareGlobal, not here
-        continue;
-      }
-
-      mStripOnShareMap.InsertOrUpdate(origin, rule);
-    }
     if (rule.mIsGlobal) {
       mStripOnShareGlobal = Some(rule);
+    } else {
+      for (const auto& origin : rule.mOrigins) {
+        mStripOnShareOriginMap.InsertOrUpdate(origin, rule);
+      }
+      for (const auto& schemelessSite : rule.mSchemelessSites) {
+        printf_stderr("Adding schemeless site: %s\n", schemelessSite.get());
+        mStripOnShareSchemelessSiteMap.InsertOrUpdate(schemelessSite, rule);
+      }
     }
   }
 
@@ -400,31 +405,26 @@ URLQueryStringStripper::Observe(nsISupports*, const char* aTopic,
 }
 
 bool URLQueryStringStripper::ShouldStripParam(const nsACString& aHost,
+                                              const nsACString& aSchemelessSite,
                                               const nsACString& aName) {
   nsAutoCString lowerCaseName;
   ToLowerCase(aName, lowerCaseName);
-
+  const auto matches = [&lowerCaseName](const dom::StripRule& aRule) {
+    return aRule.mQueryParams.Contains(lowerCaseName);
+  };
   // Look through the global rules.
-  if (mStripOnShareGlobal.isSome()) {
-    const dom::StripRule& globalRule = mStripOnShareGlobal.ref();
-    for (const auto& param : globalRule.mQueryParams) {
-      if (param == lowerCaseName) {
-        return true;
-      }
-    }
+  if (mStripOnShareGlobal.isSome() && matches(mStripOnShareGlobal.ref())) {
+    return true;
   }
   // Check for site specific rules.
-  bool keyExists;
-  dom::StripRule siteSpecificRule;
-  keyExists = mStripOnShareMap.Get(aHost, &siteSpecificRule);
-  if (keyExists) {
-    for (const auto& param : siteSpecificRule.mQueryParams) {
-      if (param == lowerCaseName) {
-        return true;
-      }
-    }
+  if (auto entry = mStripOnShareOriginMap.Lookup(aHost);
+      entry && matches(entry.Data())) {
+    return true;
   }
-
+  if (auto entry = mStripOnShareSchemelessSiteMap.Lookup(aSchemelessSite);
+      entry && matches(entry.Data())) {
+    return true;
+  }
   // no rule covering
   return false;
 }
@@ -491,10 +491,18 @@ nsresult URLQueryStringStripper::StripForCopyOrShareInternal(
   rv = aURI->GetHost(host);
   NS_ENSURE_SUCCESS(rv, rv);
 
+  const nsCOMPtr<nsIEffectiveTLDService> eTLDService =
+      mozilla::components::EffectiveTLD::Service(&rv);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  nsAutoCString schemelessSite;
+  rv = eTLDService->GetSchemelessSite(aURI, schemelessSite);
+  NS_ENSURE_SUCCESS(rv, rv);
+
   URLParams params;
 
   URLParams::Parse(query, false, [&](nsCString&& aName, nsCString&& aValue) {
-    if (ShouldStripParam(host, aName)) {
+    if (ShouldStripParam(host, schemelessSite, aName)) {
       aStripCount++;
       // If we found a query param to strip in dry mode, skip iterating over the
       // remaining ones (we return greedily). Otherwise don't add the param to

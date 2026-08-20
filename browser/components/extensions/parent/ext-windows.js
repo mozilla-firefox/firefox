@@ -357,7 +357,18 @@ this.windows = class extends ExtensionAPIPersistent {
             }
           }
 
-          args.appendElement(null); // extraOptions
+          // All types other than "normal" create "popup"-type windows.
+          const isPopup =
+            createData.type !== null && createData.type != "normal";
+
+          let extraOptions = null;
+          if (isPopup) {
+            extraOptions = Cc[
+              "@mozilla.org/hash-property-bag;1"
+            ].createInstance(Ci.nsIWritablePropertyBag2);
+            extraOptions.setPropertyAsBool("web-extension-popup-window", true);
+          }
+          args.appendElement(extraOptions); // extraOptions
           args.appendElement(null); // referrerInfo
           args.appendElement(null); // postData
           args.appendElement(null); // allowThirdPartyFixup
@@ -391,10 +402,9 @@ this.windows = class extends ExtensionAPIPersistent {
 
           let features = ["chrome"];
 
-          if (createData.type === null || createData.type == "normal") {
+          if (!isPopup) {
             features.push("dialog=no", "all");
           } else {
-            // All other types create "popup"-type windows by default.
             features.push(
               "dialog",
               "resizable",

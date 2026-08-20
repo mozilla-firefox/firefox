@@ -1332,7 +1332,7 @@ nsresult CollectProcessInfo(ProcessInfo& info) {
     glean::system_cpu::logical_cores.Set(info.cpuCount);
   }
 #endif
-  if (Maybe<hal::HeterogeneousCpuInfo> hetCpuInfo =
+  if (const Maybe<hal::HeterogeneousCpuInfo>& hetCpuInfo =
           hal::GetHeterogeneousCpuInfo()) {
     info.cpuPCount = int32_t(hetCpuInfo->mBigCpus.Count());
     info.cpuMCount = int32_t(hetCpuInfo->mMediumCpus.Count());

@@ -5132,7 +5132,6 @@ gint nsWindow::ConvertBorderStyles(BorderStyle aStyle) {
     return -1;
   }
 
-  // note that we don't handle BorderStyle::Close yet
   if (aStyle & BorderStyle::All) w |= GDK_DECOR_ALL;
   if (aStyle & BorderStyle::Border) w |= GDK_DECOR_BORDER;
   if (aStyle & BorderStyle::ResizeH) w |= GDK_DECOR_RESIZEH;

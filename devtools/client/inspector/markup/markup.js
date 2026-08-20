@@ -120,6 +120,9 @@ const shortcutHandlers = {
     }
   },
   "markupView.edit.key": markupView => {
+    if (!markupView.canEditSelectedNodeHTML()) {
+      return;
+    }
     markupView.beginEditingHTML(markupView._selectedContainer.node);
   },
   "markupView.scrollInto.key": markupView => {
@@ -2227,6 +2230,16 @@ class MarkupView extends EventEmitter {
         }
       );
     });
+  }
+
+  canEditSelectedNodeHTML() {
+    const { selection } = this.inspector;
+    const isFragment = selection.isDocumentFragmentNode();
+    const isAnonymous = selection.isNativeAnonymousNode();
+    const isElement =
+      selection.isElementNode() && !selection.isPseudoElementNode();
+
+    return !isAnonymous && (isElement || isFragment);
   }
 
   /**

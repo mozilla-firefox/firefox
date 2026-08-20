@@ -40,6 +40,9 @@
       const { Assert } = ChromeUtils.importESModule(
         "resource://testing-common/Assert.sys.mjs"
       );
+      const { EnterprisePolicyTesting } = ChromeUtils.importESModule(
+        "resource://testing-common/EnterprisePolicyTesting.sys.mjs"
+      );
       // Import the ExtensionSettingsStore and AddonManager as we need
       // them to correctly disable the extension on click and re-enable
       // the extension in the same task.
@@ -841,6 +844,66 @@
         );
 
         // Unload the test extension and remove the setting control
+        await extension.unload();
+        control.remove();
+      });
+
+      add_task(async function testPolicyLockedExtensionControlledSetting() {
+        const SETTING_ID = "policy-locked-setting";
+        const ADDON_ID = "ext-locked@mochi.test";
+        const ADDON_NAME = "Ext Locked";
+        const STORE_ID = "privacy.containers";
+        const TEST_FLUENT_ID = "test-fluent-id";
+        await SpecialPowers.pushPrefEnv({
+          set: [[PREF_ID, false]],
+        });
+        let extension = ExtensionTestUtils.loadExtension({
+          manifest: {
+            browser_specific_settings: { gecko: { id: ADDON_ID } },
+            name: ADDON_NAME,
+            permissions: ["contextualIdentities", "cookies"],
+          },
+          useAddonManager: "temporary",
+        });
+        await extension.startup();
+
+        // Lock the extension before rendering, so that the control picks up
+        // the policy when it looks up the controlling extension.
+        await EnterprisePolicyTesting.setupPolicyEngineWithJson({
+          policies: { Extensions: { Locked: [ADDON_ID] } },
+        });
+
+        Preferences.addSetting({
+          id: SETTING_ID,
+          pref: PREF_ID,
+          controllingExtensionInfo: {
+            storeId: STORE_ID,
+            l10nId: TEST_FLUENT_ID,
+          },
+        });
+
+        let control = await renderTemplate({
+          l10nId: TEST_FLUENT_ID,
+          id: SETTING_ID,
+        });
+
+        await TestUtils.waitForCondition(
+          () => control.controlEl.disabled,
+          "Wait for the control to become disabled as a side-effect of controlling extension metadata to be found"
+        );
+
+        let messageBar = control.querySelector("moz-message-bar");
+        ok(
+          messageBar,
+          "There should still be an extension controlled message bar element"
+        );
+        is(
+          messageBar.querySelector("moz-button[slot='actions']"),
+          null,
+          "There should be no disable button when policy forbids disabling"
+        );
+
+        await EnterprisePolicyTesting.setupPolicyEngineWithJson("");
         await extension.unload();
         control.remove();
       });

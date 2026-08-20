@@ -389,6 +389,11 @@ async function waitForDoorhanger(browser, type) {
     }
     return notif;
   }, `Waiting for a ${type} notification`);
+  // A dismissed notification doesn't open the panel; for the others callers
+  // expect a panel they can interact with.
+  if (!notif.dismissed) {
+    await BrowserTestUtils.waitForPopupEvent(PopupNotifications.panel, "shown");
+  }
   return notif;
 }
 

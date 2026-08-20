@@ -10,5 +10,7 @@
   <!-- The document title and heading of the error page shown when a website cannot be loaded because the browser is in offline mode. -->
   <string name="mozac_browser_errorpages_offline_title">Bezsaistē</string>
   <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_no_internet_title_2">Izskatās, ka ir sarežģījums ar interneta savienojumu</string>
+  <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_no_internet_error_code">Kļūdas kods: NS_ERROR_OFFLINE</string>
 </resources>

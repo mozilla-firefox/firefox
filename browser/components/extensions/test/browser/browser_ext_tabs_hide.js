@@ -3,8 +3,10 @@
 ChromeUtils.defineESModuleGetters(this, {
   ExtensionControlledPopup:
     "resource:///modules/ExtensionControlledPopup.sys.mjs",
-  SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
-  TabStateFlusher: "resource:///modules/sessionstore/TabStateFlusher.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
+  TabStateFlusher:
+    "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs",
 });
 
 const triggeringPrincipal_base64 = E10SUtils.SERIALIZED_SYSTEMPRINCIPAL;
@@ -308,6 +310,43 @@ const doorHangerDisable = (
 
 add_task(async function test_doorhanger_disable() {
   await doorHangerDisable();
+});
+
+add_task(async function test_no_doorhanger_when_locked_by_policy() {
+  const { EnterprisePolicyTesting } = ChromeUtils.importESModule(
+    "resource://testing-common/EnterprisePolicyTesting.sys.mjs"
+  );
+  const ID = "tabhide-locked@mochi.test";
+
+  await doorhangerTest(
+    async function (extension) {
+      let panel = ExtensionControlledPopup._getAndMaybeCreatePanel(document);
+      is(gBrowser.visibleTabs.length, 3, "There are 3 visible tabs");
+
+      await EnterprisePolicyTesting.setupPolicyEngineWithJson({
+        policies: { Extensions: { Locked: [ID] } },
+      });
+
+      extension.sendMessage("hide", { url: "*://*/?one" });
+      await extension.awaitMessage("done");
+      is(gBrowser.visibleTabs.length, 2, "There are 2 visible tabs now");
+      is(panel.state, "closed", "No doorhanger while the add-on is locked");
+
+      // Dropping the policy lets the doorhanger appear again.
+      await EnterprisePolicyTesting.setupPolicyEngineWithJson("");
+
+      let popupShown = promisePopupShown(panel);
+      extension.sendMessage("hide", { url: "*://*/?two" });
+      await extension.awaitMessage("done");
+      await popupShown;
+      is(gBrowser.visibleTabs.length, 1, "There is 1 visible tab now");
+
+      let popupHidden = promisePopupHidden(panel);
+      panel.hidePopup();
+      await popupHidden;
+    },
+    { browser_specific_settings: { gecko: { id: ID } } }
+  );
 });
 
 add_task(async function test_doorhanger_disable_with_browser_action() {

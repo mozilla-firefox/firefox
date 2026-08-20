@@ -107,16 +107,16 @@ bool RegistryDispatcher::NtCreateKey(IPCInfo* ipc, std::wstring* name,
 
   HANDLE handle;
   NTSTATUS nt_status;
-  ULONG disposition = 0;
-  if (!RegistryPolicy::CreateKeyAction(
-          result, *ipc->client_info, *name, attributes, root, desired_access,
-          title_index, create_options, &handle, &nt_status, &disposition)) {
+  if (!RegistryPolicy::OpenKeyAction(result, *ipc->client_info, *name,
+                                     attributes, root, desired_access, &handle,
+                                     &nt_status)) {
     ipc->return_info.nt_status = STATUS_ACCESS_DENIED;
     return true;
   }
 
-  // Return operation status on the IPC.
-  ipc->return_info.extended[0].unsigned_int = disposition;
+  // Return operation status on the IPC. Equivalent disposition can only be for
+  // existing key.
+  ipc->return_info.extended[0].unsigned_int = REG_OPENED_EXISTING_KEY;
   ipc->return_info.nt_status = nt_status;
   ipc->return_info.handle = handle;
   return true;

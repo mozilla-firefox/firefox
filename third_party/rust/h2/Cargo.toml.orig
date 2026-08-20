@@ -3,7 +3,7 @@ name = "h2"
 # When releasing to crates.io:
 # - Update CHANGELOG.md.
 # - Create git tag
-version = "0.4.13"
+version = "0.4.16"
 license = "MIT"
 authors = [
   "Carl Lerche <me@carllerche.com>",
@@ -45,7 +45,7 @@ futures-sink = { version = "0.3", default-features = false }
 tokio-util = { version = "0.7.1", features = ["codec", "io"] }
 tokio = { version = "1", features = ["io-util"] }
 bytes = "1"
-http = "1"
+http = "1.1"
 tracing = { version = "0.1.35", default-features = false, features = ["std"] }
 fnv = "1.0.5"
 slab = "0.4.2"

@@ -11,12 +11,52 @@ import org.mozilla.fenix.ui.efficiency.helpers.Selector
 import org.mozilla.fenix.ui.efficiency.helpers.SelectorStrategy
 
 object BookmarksSelectors {
+    val TOOLBAR =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TAG,
+            value = BookmarksTestTag.BOOKMARK_TOOLBAR,
+            description = "Bookmarks toolbar",
+            groups = listOf("emptyBookmarksMenuView"),
+        )
+
     val TOOLBAR_TITLE =
         Selector(
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = "Bookmarks",
             description = "Bookmarks Toolbar Title",
-            groups = listOf("requiredForPage"),
+            groups = listOf("requiredForPage", "emptyBookmarksMenuView"),
+        )
+
+    val SORT_MENU_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
+            value = getStringResource(R.string.bookmark_sort_menu_content_desc),
+            description = "Bookmarks sorting options button",
+            groups = listOf("emptyBookmarksMenuView"),
+        )
+
+    val EMPTY_BOOKMARKS_LIST_TITLE =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.bookmark_empty_list_root_title),
+            description = "Empty bookmarks list title",
+            groups = listOf("emptyBookmarksMenuView"),
+        )
+
+    val IMPORT_BOOKMARKS_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
+            value = getStringResource(R.string.bookmark_import_bookmarks_button_content_description),
+            description = "Import bookmarks from file button",
+            groups = listOf("emptyBookmarksMenuView"),
+        )
+
+    val IMPORT_MENU_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.bookmark_import_menu_button),
+            description = "Import from file item in the bookmarks overflow menu",
+            groups = listOf(),
         )
 
     val OPEN_IN_NEW_TAB_BUTTON =
@@ -32,7 +72,7 @@ object BookmarksSelectors {
             strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
             value = getStringResource(R.string.bookmark_navigate_back_button_content_description),
             description = "Bookmark edit navigate up button",
-            groups = listOf("editBookmarksView"),
+            groups = listOf("editBookmarksView", "emptyBookmarksMenuView"),
         )
 
     val EDIT_BOOKMARKS_TOOLBAR_TITLE =
@@ -88,7 +128,7 @@ object BookmarksSelectors {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = "Sign in to sync",
             description = "Sign in to sync button",
-            groups = listOf(),
+            groups = listOf("emptyBookmarksMenuView"),
             name = "SIGN_IN_TO_SYNC_BUTTON",
         )
 
@@ -105,7 +145,7 @@ object BookmarksSelectors {
             strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
             value = getStringResource(R.string.bookmark_add_new_folder_button_content_description),
             description = "Add new bookmark folder button",
-            groups = listOf(),
+            groups = listOf("emptyBookmarksMenuView"),
         )
 
     val ADD_FOLDER_NAME_TEXT_FIELD =
@@ -202,7 +242,12 @@ object BookmarksSelectors {
 
     val all =
         listOf(
+            TOOLBAR,
             TOOLBAR_TITLE,
+            SORT_MENU_BUTTON,
+            EMPTY_BOOKMARKS_LIST_TITLE,
+            IMPORT_BOOKMARKS_BUTTON,
+            IMPORT_MENU_BUTTON,
             OPEN_IN_NEW_TAB_BUTTON,
             NAVIGATE_UP_BUTTON,
             EDIT_BOOKMARKS_TOOLBAR_TITLE,

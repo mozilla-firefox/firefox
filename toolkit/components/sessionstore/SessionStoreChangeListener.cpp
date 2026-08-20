@@ -243,7 +243,7 @@ void SessionStoreChangeListener::FlushSessionStore() {
       continue;
     }
 
-    EnumSet<Change> changes = iter.GetData();
+    const EnumSet<Change>& changes = iter.GetData();
     Maybe<sessionstore::FormData> maybeFormData;
     if (changes.contains(Change::Input)) {
       CollectFormData(document, maybeFormData);

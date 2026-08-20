@@ -1,12 +1,17 @@
 import { AboutWelcomeDefaults } from "modules/AboutWelcomeDefaults.sys.mjs";
 import {
   MultiStageProtonScreen,
+  screenContentShape,
   ProtonScreenActionButtons,
 } from "content-src/components/MultiStageProtonScreen";
 import { ASRouterScreenUtils } from "modules/ASRouterScreenUtils.sys.mjs";
+import { OnboardingMessageProvider } from "modules/OnboardingMessageProvider.sys.mjs";
+import { PanelTestProvider } from "modules/PanelTestProvider.sys.mjs";
 import { MultiStageUtils } from "content-src/lib/multistage-utils.mjs";
+import MultiStageProtonScreenSchema from "../../../../../../../toolkit/components/messaging-system/schemas/MultiStageProtonScreenSchemas/MultiStageProtonScreenSchemas.json";
 import React from "react";
 import { mount } from "enzyme";
+import PropTypes from "prop-types";
 
 describe("MultiStageAboutWelcomeProton module", () => {
   let sandbox;
@@ -21,6 +26,77 @@ describe("MultiStageAboutWelcomeProton module", () => {
   });
 
   describe("MultiStageAWProton component", () => {
+    it("in-tree screen content conforms to the screen propTypes catalog", async () => {
+      const consoleErrorStub = sandbox.stub(console, "error");
+
+      const messages = [
+        ...(await PanelTestProvider.getMessages()),
+        ...(await OnboardingMessageProvider.getUntranslatedMessages()),
+      ];
+
+      const screens = messages
+        .filter(message => message.content?.template === "multistage")
+        .filter(message => Array.isArray(message.content?.screens))
+        .flatMap(message => message.content.screens);
+
+      // eslint-disable-next-line no-shadow
+      for (const screen of screens) {
+        PropTypes.resetWarningCache();
+        PropTypes.checkPropTypes(
+          {
+            content: MultiStageProtonScreen.propTypes.content,
+          },
+          { content: screen.content },
+          "prop",
+          "MultiStageProtonScreen"
+        );
+      }
+
+      const warnings = consoleErrorStub
+        .getCalls()
+        .map(call => call.args[0])
+        .filter(msg => /Failed prop type|Invalid prop/.test(msg));
+
+      assert.deepEqual(
+        warnings,
+        [],
+        `Screen content in PanelTestProvider or OnboardingMessageProvider fails the propTypes catalog (${warnings.length} total warnings): ${warnings.join("\n")}`
+      );
+    });
+
+    it("screen content propTypes stay in sync with the documentation schema", () => {
+      const linkKeys = [
+        "here",
+        "settings",
+        "ios",
+        "android",
+        "terms_of_use",
+        "privacy_notice",
+        "learn-more",
+        "email_link",
+      ];
+      const difference = (a, b) => a.filter(key => !b.includes(key));
+
+      const propTypeKeys = difference(
+        Object.keys(screenContentShape),
+        linkKeys
+      );
+      const schemaKeys = Object.keys(
+        MultiStageProtonScreenSchema.properties.content.properties
+      );
+
+      const inPropTypesOnly = difference(propTypeKeys, schemaKeys);
+      const inSchemaOnly = difference(schemaKeys, propTypeKeys);
+
+      assert.ok(
+        !inPropTypesOnly.length && !inSchemaOnly.length,
+        "The content properties documented in MultiStageProtonScreen.jsx " +
+          "propTypes and MultiStageProtonScreenSchemas.json have drifted.\n" +
+          `In propTypes but missing from schema: [${inPropTypesOnly.join(", ")}]\n` +
+          `In schema but missing from propTypes: [${inSchemaOnly.join(", ")}]`
+      );
+    });
+
     it("should render MultiStageProton Screen", () => {
       const SCREEN_PROPS = {
         content: {

@@ -6,22 +6,6 @@ add_setup(() =>
   })
 );
 
-async function withSplitView(tab1, tab2, taskFn) {
-  await BrowserTestUtils.switchTab(gBrowser, tab1);
-  const splitView = gBrowser.addTabSplitView([tab1, tab2], {
-    insertBefore: tab1,
-  });
-  const splitter = gBrowser.tabpanels.splitViewSplitter;
-  await BrowserTestUtils.waitForMutationCondition(
-    splitter,
-    { attributes: true },
-    () => !splitter.hidden
-  );
-  await taskFn({ tab1, tab2, splitter, splitView });
-  // Closes both tabs.
-  splitView.close();
-}
-
 /**
  * Verify Tab key traversal order: first panel -> splitter -> second panel,
  * and Shift+Tab in reverse.

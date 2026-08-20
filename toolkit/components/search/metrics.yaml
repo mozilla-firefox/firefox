@@ -11,11 +11,10 @@ search.engine.default:
   engine_id:
     type: string
     description: |
-      Deprecated in Fx139, please use provider_id, partner_code,
-      overridden_by_third_party and display_name instead.
+      **Deprecated in Fx 139**, please use `provider_id`, `partner_code`,
+      `overridden_by_third_party` and `display_name` instead.
 
-      The telemetry id of the search engine.
-      For example: "engine1"
+      The telemetry id of the search engine. For example: `google-b-d`.
 
       For application-provided engines, this is the identifier plus telemetry
       suffix supplied by the configuration.
@@ -103,7 +102,7 @@ search.engine.default:
   overridden_by_third_party:
     type: boolean
     description: |
-      Set to true if the user's default search engine has been allowed to be
+      Set to `true` if the user's default search engine has been allowed to be
       overridden by a third-party add-on or OpenSearch engine.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1089670
@@ -153,14 +152,14 @@ search.engine.default:
     type: string
     description: |
       A path relating to where the search engine was installed/loaded from.
+
       For example:
-        `[app]appDefault` for a config search engine.
-        `[addon]<extension id>` for a WebExtension-based engine.
-        `[https]developer.mozilla.org/mdn-web-docs.xml` for an OpenSearch-based
-        engine.
-        `[policy]` for an enteprise policy engine.
-        `[user]` for a search engine defined by the user or generated from a
-        web page.
+      - `[app]<config identifier>` for a config search engine.
+      - `[addon]<extension id>` for a WebExtension-based engine.
+      - `[https]developer.mozilla.org/mdn-web-docs.xml` for an OpenSearch-based engine.
+      - `[policy]` for an enteprise policy engine.
+      - `[user]` for a search engine defined by the user or generated from a web page.
+
       Note: this metric is truncated at 100 characters.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1164159
@@ -182,11 +181,10 @@ search.engine.default:
   submission_url:
     type: url
     description: |
-      The submission URL of the default engine. This is only reported in the
-      cases where:
-        The engine is an application provided engine.
-        The engine has the same name as an application provided engine.
-        The engine matches one of a specific list of well known search engines.
+      The submission URL of the default engine. This is only reported in the cases where:
+      - The engine is an application provided engine.
+      - The engine has the same name as an application provided engine.
+      - The engine matches one of a specific list of well known search engines.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1164159
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
@@ -242,19 +240,18 @@ search.engine.default:
         type: string
         description: |
           The reason for the change of engine. For possible values,
-          see `REASON_CHANGE_MAP` in
-          https://searchfox.org/firefox-main/source/toolkit/components/search/SearchService.sys.mjs
+          see `CHANGE_REASON` list in
+          https://searchfox.org/firefox-main/search?q=CHANGE_REASON+%3D&path=SearchService.sys.mjs&case=false&regexp=false
           This was renamed from change_source to change_reason in Fx 139.
 
 search.engine.private:
   engine_id:
     type: string
     description: |
-      Deprecated in Fx139, please use provider_id, partner_code,
-      overridden_by_third_party and display_name instead.
+      **Deprecated in Fx 139**, please use `provider_id`, `partner_code`,
+      `overridden_by_third_party` and `display_name` instead.
 
-      The telemetry id of the search engine.
-      For example: "engine1"
+      The telemetry id of the search engine. For example: `google-b-d`.
 
       For application-provided engines, this is the identifier plus telemetry
       suffix supplied by the configuration.
@@ -347,7 +344,7 @@ search.engine.private:
   overridden_by_third_party:
     type: boolean
     description: |
-      Set to true if the user's default search engine has been allowed to be
+      Set to `true` if the user's default search engine has been allowed to be
       overridden by a third-party add-on or OpenSearch engine.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1089670
@@ -403,14 +400,14 @@ search.engine.private:
     type: string
     description: |
       A path relating to where the search engine was installed/loaded from.
+
       For example:
-        `[app]appDefault` for a config search engine.
-        `[addon]<extension id>` for a WebExtension-based engine.
-        `[https]developer.mozilla.org/mdn-web-docs.xml` for an OpenSearch-based
-        engine.
-        `[policy]` for an enteprise policy engine.
-        `[user]` for a search engine defined by the user or generated from a
-        web page.
+      - `[app]<config identifier>` for a config search engine.
+      - `[addon]<extension id>` for a WebExtension-based engine.
+      - `[https]developer.mozilla.org/mdn-web-docs.xml` for an OpenSearch-based engine.
+      - `[policy]` for an enteprise policy engine.
+      - `[user]` for a search engine defined by the user or generated from a web page.
+
       Note: this metric is truncated at 100 characters.
 
       If this string is an empty string (`""`), this means that one or both of
@@ -503,8 +500,8 @@ search.engine.private:
         type: string
         description: |
           The reason for the change of engine. For possible values,
-          see `REASON_CHANGE_MAP` in
-          https://searchfox.org/firefox-main/source/toolkit/components/search/SearchService.sys.mjs
+          see `CHANGE_REASON` list in
+          https://searchfox.org/firefox-main/search?q=CHANGE_REASON+%3D&path=SearchService.sys.mjs&case=false&regexp=false
           This was renamed from change_source to change_reason in Fx 139.
 
 search.service:
@@ -527,15 +524,17 @@ search.service:
     type: labeled_counter
     description: |
       Counts the type of initialization statuses on start up.
-      failedSettings - failed loading and migrating the search settings file.
-      failedFetchEngines - failed to load or parse the configuration from remote
-                           settings.
-      failedLoadEngines - failed to create all the search engines from the
-                          configuration or user installed engines.
-      failedLoadSettingsAddonManager - the addon manager ready promise was rejected. (from FF135)
-      settingsCorrupt - the search settings were reset because of an exception, but
-                        the search service still finished initializing. (from FF136)
-      success - search service successfully initialized.
+
+      - `failedSettings` failed loading and migrating the search settings file.
+      - `failedFetchEngines` failed to load or parse the configuration from
+        remote settings.
+      - `failedLoadEngines` failed to create all the search engines from the
+        configuration or user installed engines.
+      - `failedLoadSettingsAddonManager` the addon manager ready promise was
+        rejected. (from Fx 135)
+      - `settingsCorrupt` the search settings were reset because of an exception,
+        but the search service still finished initializing. (from Fx 136)
+      - `success` the search service successfully initialized.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1849013
     data_reviews:
@@ -556,7 +555,7 @@ search.service:
 search.counts:
   totals:
     type: labeled_quantity
-    description: >
+    description: |
       Records the type and number of search engines that a user has installed
       and enabled.
 
@@ -595,7 +594,7 @@ search.counts:
 
   hidden_engines:
     type: labeled_quantity
-    description: >
+    description: |
       Records the count of hidden search engines.
 
       - `oneOff` refers to an engine hidden from only the one-off buttons or
@@ -622,16 +621,17 @@ search.counts:
 browser.searchinit:
   engine_invalid_webextension:
     type: labeled_quantity
-    description: >
-      Records the WebExtension ID of a search engine where the
-      WebExtension is not installed (= 1), disabled (= 2), search engine
-      no longer specified (= 4), a different name (= 5), where the
-      submission URL is different between the search engine and the
-      WebExtension (= 6). The value '3' has been replaced by '6' to
-      distinguish newer entries.
-      This metric was generated to correspond to the Legacy Telemetry
-      scalar browser.searchinit.engine_invalid_webextension, which was removed
-      in Fx 139.
+    description: |
+      Records when a search engine details are not in sync with the associated
+      WebExtension. The labels are the WebExtension identifiers.
+      The values are a custom enumeration with meanings being where the WebExtension:
+
+      1. is not installed
+      2. is disabled
+      3. (Unused, replaced by 6 which has a better algorithm)
+      4. no longer specifies a search engine
+      5. has a different name for the search engine
+      6. has a different submission URL to the search engine
     bugs:
       - https://bugzil.la/1665938
       - https://bugzil.la/1691050
@@ -664,11 +664,9 @@ browser.searchinit:
 
   secure_opensearch_engine_count:
     type: quantity
-    description: >
+    description: |
       Records the number of secure (i.e., using https) OpenSearch search
       engines a given user has installed.
-      This metric was generated to correspond to the Legacy Telemetry
-      scalar browser.searchinit.secure_opensearch_engine_count.
     bugs:
       - https://bugzil.la/1789438
       - https://bugzil.la/1811158
@@ -693,11 +691,9 @@ browser.searchinit:
 
   insecure_opensearch_engine_count:
     type: quantity
-    description: >
+    description: |
       Records the number of insecure (i.e., using http) OpenSearch search
       engines a given user has installed.
-      This metric was generated to correspond to the Legacy Telemetry
-      scalar browser.searchinit.insecure_opensearch_engine_count.
     bugs:
       - https://bugzil.la/1789438
       - https://bugzil.la/1811158
@@ -722,11 +718,9 @@ browser.searchinit:
 
   secure_opensearch_update_count:
     type: quantity
-    description: >
+    description: |
       Records the number of OpenSearch search engines with secure updates
       enabled (i.e., using https) a given user has installed.
-      This metric was generated to correspond to the Legacy Telemetry
-      scalar browser.searchinit.secure_opensearch_update_count.
     bugs:
       - https://bugzil.la/1789438
       - https://bugzil.la/1811158
@@ -751,11 +745,9 @@ browser.searchinit:
 
   insecure_opensearch_update_count:
     type: quantity
-    description: >
+    description: |
       Records the number of OpenSearch search engines with insecure
       updates enabled (i.e., using http) a given user has installed.
-      This metric was generated to correspond to the Legacy Telemetry
-      scalar browser.searchinit.insecure_opensearch_update_count.
     bugs:
       - https://bugzil.la/1789438
       - https://bugzil.la/1811158
@@ -781,28 +773,28 @@ browser.searchinit:
 search.suggestions:
   latency:
     type: labeled_timing_distribution
-    description: >
-      Records the latencies (ms) of search suggestions fetches per search
-      engine. Keys in this histogram are the search engine identifier for
-      configuration provided search engines and 'other' for search engines
-      installed via other methods.
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram SEARCH_SUGGESTIONS_LATENCY_MS.
+    description: |
+      Records the latencies (ms) of search suggestions fetches per configuration
+      search engine. Labels in this distribution are the search engine identifier
+      from the configuration.
 
       This metric was renamed in Gecko 144 from `search.suggestions_latency`
       and changed to report the search engine identifier rather than the telemetry
       identifier.
+
+      This metric was changed in Gecko 156 to not record data from non-configuration
+      search engines.
     time_unit: millisecond
+    data_sensitivity:
+      - technical
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1743885
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1987911
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2061488
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1743885
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1987911
-    data_sensitivity:
-      - technical
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2061488
     notification_emails:
       - fx-search-telemetry@mozilla.com
     expires: never
-    telemetry_mirror: SEARCH_SUGGESTIONS_LATENCY_MS

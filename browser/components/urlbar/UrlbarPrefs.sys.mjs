@@ -287,6 +287,10 @@ const PREF_URLBAR_DEFAULTS = /** @type {PreferenceDefinition[]} */ ([
   // Set default NER threshold value of 0.5
   ["nerThreshold", [0.5, "float"]],
 
+  // Feature gate pref for the <moz-urlbar> on about:newtab and about:home. When
+  // enabled, it supersedes New Tab's handoff search bar.
+  ["newtab.featureGate", false],
+
   // Whether addresses and search results typed into the address bar
   // should be opened in new tabs by default.
   ["openintab", false],
@@ -1297,7 +1301,8 @@ class Preferences {
           })
         );
       }
-      case "searchbar": {
+      case "searchbar":
+      case "newtab_searchbar": {
         // This is a temporary placeholder until searchbar gets its own config.
         return this.#getOrCacheResultGroups(key, () =>
           makeDefaultResultGroups({

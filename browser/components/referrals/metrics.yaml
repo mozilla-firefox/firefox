@@ -28,3 +28,24 @@ browser:
       - jhirsch@mozilla.com
       - nbarrett@mozilla.com
     expires: never
+
+referrals:
+  entrypoint_clicked:
+    type: event
+    description: |
+      Recorded when a user activates one of the referral program entry points
+      to open about:referrals.
+    extra_keys:
+      entrypoint:
+        type: string
+        description: |
+          The UI surface used to open the referrals tab. One of: app_menu,
+          accounts_menu, preferences, help_menu, about_dialog.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064156
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064156
+    notification_emails:
+      - jhirsch@mozilla.com
+      - nbarrett@mozilla.com
+    expires: never

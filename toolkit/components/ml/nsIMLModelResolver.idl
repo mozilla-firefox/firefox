@@ -1,0 +1,60 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+webidl WindowGlobalParent;
+
+/**
+ * Result callback for nsIMLModelResolver.authorizeDownload. Runs with true to
+ * allow the download, false to deny it.
+ */
+[scriptable, function, uuid(d8e9208e-4ffb-4da4-b19d-8923ea59934a)]
+interface nsIMLModelDownloadAuthorizationCallback : nsISupports
+{
+  void resolve(in boolean aAllow);
+};
+
+/**
+ * Per-task policy component for HWInference model management: maps a task's
+ * abstract model ids to ModelHub artifacts, and decides whether downloading
+ * one is allowed. Parent-process only, looked up by HWInference as
+ * "@mozilla.org/ml/model-resolver;1?task=<task>". Because aId must match one
+ * of the resolver's known ids, a less trusted requesting process can only
+ * select among approved artifacts, never name one itself.
+ */
+[scriptable, uuid(f3be56e2-aa39-4335-87c2-9b353db5d3cd)]
+interface nsIMLModelResolver : nsISupports
+{
+  /**
+   * Resolve aId to a concrete ModelHub artifact. Purely a table lookup
+   * against static, in-tree data; always synchronous. Throws
+   * NS_ERROR_NOT_AVAILABLE if aId is unknown.
+   */
+  void resolve(in AUTF8String aId,
+               out AUTF8String aEngine,
+               out AUTF8String aModel,
+               out AUTF8String aRevision,
+               out AUTF8String aFilename);
+
+  /**
+   * Decide whether an artifact returned by resolve() may be downloaded for
+   * aWindow, the document responsible for the request. HWInference has
+   * already checked aWindow belongs to the requesting process. aWindow is
+   * null for privileged-chrome requests: no document to anchor UI on, and the
+   * origin is already trusted.
+   *
+   * aProgressToken tags this download's "ml-model-download-progress"
+   * notifications, so a consumer can tell concurrent downloads apart.
+   *
+   * Called on the parent main thread; answers via aCallback, possibly async,
+   * since an implementation may show UI first.
+   */
+  void authorizeDownload(in AUTF8String aModel,
+                         in AUTF8String aRevision,
+                         in AUTF8String aFilename,
+                         in WindowGlobalParent aWindow,
+                         in AString aProgressToken,
+                         in nsIMLModelDownloadAuthorizationCallback aCallback);
+};

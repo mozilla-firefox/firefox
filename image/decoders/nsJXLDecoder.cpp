@@ -777,7 +777,7 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
   OrientedIntSize size = Size();
 
   uint8_t* currentRow = mPixelBuffer.begin();
-  for (int32_t y = 0; y < size.height; ++y) {
+  for (size_t y = 0; y < size_t(size.height); ++y) {
     uint8_t* pipeInput;
     if (mPixelFormat.value() == PixelFormat::Rgba16f) {
       if (mTransform) {
@@ -787,7 +787,7 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
       } else {
         // No CMS: clip f16 to [0,1].
         const uint16_t* src = reinterpret_cast<const uint16_t*>(currentRow);
-        for (int32_t i = 0; i < size.width * 4; ++i) {
+        for (size_t i = 0; i < size_t(size.width) * 4; ++i) {
           float v = F16ToF32(src[i]);
           mU8RowBuf[i] =
               v <= 0.0f ? 0 : (v >= 1.0f ? 255 : uint8_t(v * 255.0f + 0.5f));
@@ -803,7 +803,7 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
       } else {
         // No CMS: expand gray → Rgba8 without color management.
         uint8_t* out = mU8RowBuf.begin();
-        for (int32_t x = 0; x < size.width; ++x) {
+        for (size_t x = 0; x < size_t(size.width); ++x) {
           uint8_t g = currentRow[x * BytesPerPixel()];
           uint8_t a = mPixelFormat.value() == PixelFormat::GrayAlpha8
                           ? currentRow[x * BytesPerPixel() + 1]
@@ -823,7 +823,7 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
         // JXL CMYK: all channels use 0=max-ink, 255=no-ink; qcms uses 0=no-ink,
         // so invert all. qcms produces RGB8 (3 bytes/pixel); pipe was
         // configured with R8G8B8 inFormat.
-        for (int32_t x = 0; x < size.width; ++x) {
+        for (size_t x = 0; x < size_t(size.width); ++x) {
           out[x * 4] = 255 - currentRow[x * 4];
           out[x * 4 + 1] = 255 - currentRow[x * 4 + 1];
           out[x * 4 + 2] = 255 - currentRow[x * 4 + 2];
@@ -835,7 +835,7 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
         // No CMS: naive CMY+K → RGB without color management.
         // JXL encodes 0=max-ink, 255=no-ink, so R = C*K/255 gives correct
         // luminance.
-        for (int32_t x = 0; x < size.width; ++x) {
+        for (size_t x = 0; x < size_t(size.width); ++x) {
           uint8_t k = kRow ? kRow[x] : 255;
           out[x * 4] = (uint16_t)currentRow[x * 4] * k / 255;
           out[x * 4 + 1] = (uint16_t)currentRow[x * 4 + 1] * k / 255;

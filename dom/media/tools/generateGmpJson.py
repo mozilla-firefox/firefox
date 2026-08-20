@@ -4,15 +4,15 @@
 
 import argparse
 import hashlib
+import json
 import logging
 import re
 from urllib.parse import urlparse, urlunparse
 
 import requests
-from mozfile import json
 
 
-def fetch_url_for_cdms(cdms, urlParams):
+def fetch_url_for_cdms(cdms, urlParams, allow_version_mismatch):
     any_version = None
     for cdm in cdms:
         if "fileName" in cdm:
@@ -74,7 +74,7 @@ def fetch_url_for_cdms(cdms, urlParams):
                 )
             if any_version is None:
                 any_version = version.group(1)
-            elif version.group(1) != any_version:
+            elif version.group(1) != any_version and not allow_version_mismatch:
                 raise Exception(
                     "{} version {} mismatch {}".format(
                         cdm["target"], version.group(1), any_version
@@ -141,7 +141,22 @@ def generate_json_for_cdms(cdms):
     return cdm_json[:-2] + "\n"
 
 
-def calculate_gmpopenh264_json(version: str, version_hash: str, url_base: str) -> str:
+def remove_skipped_targets(cdms, skip_targets):
+    if not skip_targets:
+        return cdms
+    revised_cdms = []
+    for cdm in cdms:
+        if cdm["target"] in skip_targets:
+            continue
+        if "alias" in cdm and cdm["alias"] in skip_targets:
+            continue
+        revised_cdms.append(cdm)
+    return revised_cdms
+
+
+def calculate_gmpopenh264_json(
+    version: str, version_hash: str, url_base: str, skip_targets
+) -> str:
     # fmt: off
     cdms = [
         {"target": "Darwin_aarch64-gcc3", "fileName": "{url_base}/openh264-macosx64-aarch64-{version}.zip"},
@@ -159,6 +174,7 @@ def calculate_gmpopenh264_json(version: str, version_hash: str, url_base: str) -
         {"target": "WINNT_x86_64-msvc-x64-asan", "alias": "WINNT_x86_64-msvc"},
     ]
     # fmt: on
+    cdms = remove_skipped_targets(cdms, skip_targets)
     try:
         fetch_data_for_cdms(cdms, {"url_base": url_base, "version": version_hash})
     except Exception as e:
@@ -182,51 +198,13 @@ def calculate_gmpopenh264_json(version: str, version_hash: str, url_base: str) -
         )
 
 
-def calculate_widevinecdm_json(version: str, url_base: str) -> str:
-    # fmt: off
-    cdms = [
-        {"target": "Darwin_aarch64-gcc3", "fileName": "{url_base}/{version}-mac-arm64.zip"},
-        {"target": "Darwin_x86_64-gcc3", "alias": "Darwin_x86_64-gcc3-u-i386-x86_64"},
-        {"target": "Darwin_x86_64-gcc3-u-i386-x86_64", "fileName": "{url_base}/{version}-mac-x64.zip"},
-        {"target": "Linux_x86_64-gcc3", "fileName": "{url_base}/{version}-linux-x64.zip"},
-        {"target": "Linux_x86_64-gcc3-asan", "alias": "Linux_x86_64-gcc3"},
-        {"target": "WINNT_aarch64-msvc-aarch64", "fileName": "{url_base}/{version}-win-arm64.zip"},
-        {"target": "WINNT_x86-msvc", "fileName": "{url_base}/{version}-win-x86.zip"},
-        {"target": "WINNT_x86-msvc-x64", "alias": "WINNT_x86-msvc"},
-        {"target": "WINNT_x86-msvc-x86", "alias": "WINNT_x86-msvc"},
-        {"target": "WINNT_x86_64-msvc", "fileName": "{url_base}/{version}-win-x64.zip"},
-        {"target": "WINNT_x86_64-msvc-x64", "alias": "WINNT_x86_64-msvc"},
-        {"target": "WINNT_x86_64-msvc-x64-asan", "alias": "WINNT_x86_64-msvc"},
-    ]
-    # fmt: on
-    try:
-        fetch_data_for_cdms(cdms, {"url_base": url_base, "version": version})
-    except Exception as e:
-        logging.error("calculate_widevinecdm_json: could not create JSON due to: %s", e)
-        return ""
-    else:
-        return (
-            "{\n"
-            + '  "hashFunction": "sha512",\n'
-            + f'  "name": "Widevine-{version}",\n'
-            + '  "schema_version": 1000,\n'
-            + '  "vendors": {\n'
-            + '    "gmp-widevinecdm": {\n'
-            + '      "platforms": {\n'
-            + generate_json_for_cdms(cdms)
-            + "      },\n"
-            + f'      "version": "{version}"\n'
-            + "    }\n"
-            + "  }\n"
-            + "}"
-        )
-
-
 def calculate_chrome_component_json(
-    name: str, altname: str, url_base: str, cdms
+    name: str, altname: str, url_base: str, allow_version_mismatch: bool, cdms
 ) -> str:
     try:
-        version = fetch_url_for_cdms(cdms, {"url_base": url_base})
+        version = fetch_url_for_cdms(
+            cdms, {"url_base": url_base}, allow_version_mismatch
+        )
         fetch_data_for_cdms(cdms, {})
     except Exception as e:
         logging.error(
@@ -251,12 +229,15 @@ def calculate_chrome_component_json(
         )
 
 
-def calculate_widevinecdm_component_json(url_base: str) -> str:
+def calculate_widevinecdm_component_json(
+    url_base: str, allow_version_mismatch: bool, skip_targets
+) -> str:
     # fmt: off
     cdms = [
         {"target": "Darwin_aarch64-gcc3", "fileName": "{url_base}&os=mac&arch=arm64&os_arch=arm64"},
         {"target": "Darwin_x86_64-gcc3", "alias": "Darwin_x86_64-gcc3-u-i386-x86_64"},
         {"target": "Darwin_x86_64-gcc3-u-i386-x86_64", "fileName": "{url_base}&os=mac&arch=x64&os_arch=x64"},
+        {"target": "Linux_aarch64-gcc3", "fileName": "{url_base}&os=Linux&arch=arm64&os_arch=arm64"},
         {"target": "Linux_x86_64-gcc3", "fileName": "{url_base}&os=Linux&arch=x64&os_arch=x64"},
         {"target": "Linux_x86_64-gcc3-asan", "alias": "Linux_x86_64-gcc3"},
         {"target": "WINNT_aarch64-msvc-aarch64", "fileName": "{url_base}&os=win&arch=arm64&os_arch=arm64"},
@@ -268,15 +249,19 @@ def calculate_widevinecdm_component_json(url_base: str) -> str:
         {"target": "WINNT_x86_64-msvc-x64-asan", "alias": "WINNT_x86_64-msvc"},
     ]
     # fmt: on
+    cdms = remove_skipped_targets(cdms, skip_targets)
     return calculate_chrome_component_json(
         "Widevine",
         "widevinecdm",
         url_base.format_map({"guid": "oimompecagnajdejgnnjijobebaeigek"}),
+        allow_version_mismatch,
         cdms,
     )
 
 
-def calculate_widevinecdm_l1_component_json(url_base: str) -> str:
+def calculate_widevinecdm_l1_component_json(
+    url_base: str, allow_version_mismatch: bool, skip_targets
+) -> str:
     # fmt: off
     cdms = [
         {"target": "WINNT_x86_64-msvc", "fileName": "{url_base}&os=win&arch=x64&os_arch=x64"},
@@ -284,19 +269,21 @@ def calculate_widevinecdm_l1_component_json(url_base: str) -> str:
         {"target": "WINNT_x86_64-msvc-x64-asan", "alias": "WINNT_x86_64-msvc"},
     ]
     # fmt: on
+    cdms = remove_skipped_targets(cdms, skip_targets)
     return calculate_chrome_component_json(
         "Widevine-L1",
         "widevinecdm-l1",
         url_base.format_map({"guid": "neifaoindggfcjicffkgpmnlppeffabd"}),
+        allow_version_mismatch,
         cdms,
     )
 
 
 def main():
     examples = """examples:
-  python dom/media/tools/generateGmpJson.py widevine 4.10.2557.0 >toolkit/content/gmp-sources/widevinecdm.json
   python dom/media/tools/generateGmpJson.py --url http://localhost:8080 openh264 2.3.1 0a48f4d2e9be2abb4fb01b4c3be83cf44ce91a6e
-  python dom/media/tools/generateGmpJson.py widevine_component"""
+  python dom/media/tools/generateGmpJson.py widevine --skip-targets Linux_aarch64-gcc3
+  python dom/media/tools/generateGmpJson.py widevine_l1"""
 
     parser = argparse.ArgumentParser(
         description="Generate JSON for GMP plugin updates",
@@ -305,7 +292,7 @@ def main():
     )
     parser.add_argument(
         "plugin",
-        help="which plugin: openh264, widevine, widevine_component, widevine_l1_component",
+        help="which plugin: openh264, widevine, widevine_l1",
     )
     parser.add_argument("version", help="version of plugin", nargs="?")
     parser.add_argument("revision", help="revision hash of plugin", nargs="?")
@@ -315,19 +302,24 @@ def main():
         action="store_true",
         help="request upcoming version for component update service",
     )
+    parser.add_argument(
+        "--allow-version-mismatch",
+        action="store_true",
+        help="allow component update service to return different versions for targets",
+    )
+    parser.add_argument(
+        "--skip-targets",
+        action="extend",
+        nargs="+",
+        help="skip including given targets in resulting json",
+    )
     args = parser.parse_args()
 
     if args.plugin == "openh264":
         url_base = "https://ciscobinary.openh264.org"
         if args.version is None or args.revision is None:
             parser.error("openh264 requires version and revision")
-    elif args.plugin == "widevine":
-        url_base = "https://redirector.gvt1.com/edgedl/widevine-cdm"
-        if args.version is None:
-            parser.error("widevine requires version")
-        if args.revision is not None:
-            parser.error("widevine cannot use revision")
-    elif args.plugin in ("widevine_component", "widevine_l1_component"):
+    elif args.plugin in ("widevine", "widevine_l1"):
         url_base = "https://update.googleapis.com/service/update2/crx?response=redirect&x=id%3D{guid}%26uc&acceptformat=crx3&updaterversion=999"
         if args.testrequest:
             url_base += "&testrequest=1"
@@ -343,13 +335,17 @@ def main():
         url_base = url_base[:-1]
 
     if args.plugin == "openh264":
-        json_result = calculate_gmpopenh264_json(args.version, args.revision, url_base)
+        json_result = calculate_gmpopenh264_json(
+            args.version, args.revision, url_base, args.skip_targets
+        )
     elif args.plugin == "widevine":
-        json_result = calculate_widevinecdm_json(args.version, url_base)
-    elif args.plugin == "widevine_component":
-        json_result = calculate_widevinecdm_component_json(url_base)
-    elif args.plugin == "widevine_l1_component":
-        json_result = calculate_widevinecdm_l1_component_json(url_base)
+        json_result = calculate_widevinecdm_component_json(
+            url_base, args.allow_version_mismatch, args.skip_targets
+        )
+    elif args.plugin == "widevine_l1":
+        json_result = calculate_widevinecdm_l1_component_json(
+            url_base, args.allow_version_mismatch, args.skip_targets
+        )
 
     try:
         json.loads(json_result)

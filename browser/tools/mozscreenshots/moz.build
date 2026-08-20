@@ -17,11 +17,15 @@ with Files("permissionPrompts/**"):
 with Files("preferences/**"):
     BUG_COMPONENT = ("Firefox", "Settings UI")
 
+with Files("nova/**"):
+    BUG_COMPONENT = ("Firefox", "Theme")
+
 BROWSER_CHROME_MANIFESTS += [
     # Each test is in it's own directory so it gets run in a clean profile with
     # run-by-dir.
     "controlCenter/browser.toml",
     "devtools/browser.toml",
+    "nova/browser.toml",
     "permissionPrompts/browser.toml",
     "preferences/browser.toml",
     "primaryUI/browser.toml",

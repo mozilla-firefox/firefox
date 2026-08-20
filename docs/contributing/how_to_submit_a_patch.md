@@ -1,3 +1,5 @@
+(how-to-submit-a-patch)=
+
 # How to submit a patch
 
 Submitting a patch, getting it reviewed, and committed to the Firefox

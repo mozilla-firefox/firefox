@@ -3,10 +3,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use std::{
-    fmt::Debug,
-    sync::atomic::{AtomicUsize, Ordering},
+use crate::util::sync::{
+    RwLockReadGuard,
+    atomic::{AtomicUsize, Ordering},
 };
+use std::fmt::Debug;
 
 use crate::{
     error::Result,
@@ -17,9 +18,8 @@ use crate::{
     },
     headers::{frame_header::FrameHeader, modular::WeightedHeader},
     image::{Image, ImageRect, Rect},
-    util::{AtomicRef, AtomicRefMut, SmallVec, tracing_wrappers::*},
+    util::{SmallVec, tracing_wrappers::*},
 };
-use std::ops::{Deref, DerefMut};
 
 use super::{RctOp, RctPermutation};
 
@@ -104,10 +104,8 @@ struct SqueezeInfo<T> {
 fn borrow_channel(
     buffers: &[ModularBufferInfo],
     x: (usize, usize),
-) -> AtomicRef<'_, ModularChannel> {
-    AtomicRef::map(buffers[x.0].buffer_grid[x.1].data.borrow(), |x| {
-        x.as_ref().unwrap()
-    })
+) -> RwLockReadGuard<'_, Option<ModularChannel>> {
+    buffers[x.0].buffer_grid[x.1].data.try_read().unwrap()
 }
 
 impl SqueezeInfo<(usize, usize)> {
@@ -179,7 +177,15 @@ impl SqueezeInfo<(usize, usize)> {
     fn borrow<'a>(
         &'a self,
         buffers: &'a [ModularBufferInfo],
-    ) -> SqueezeInfo<AtomicRef<'a, ModularChannel>> {
+    ) -> SqueezeInfo<RwLockReadGuard<'a, Option<ModularChannel>>> {
+        // If the average buffer has a coarser grid than the output buffer (or no grid
+        // at all), `in_next_avg` can refer to the same buffer and grid position as
+        // `in_avg`. Avoid taking a second read lock on the same RwLock in that case;
+        // `in_next_avg_rect` falls back to the `in_avg` guard.
+        let in_next_avg = self
+            .in_next_avg
+            .filter(|x| *x != self.in_avg)
+            .map(|x| borrow_channel(buffers, x));
         SqueezeInfo {
             kind: self.kind,
             out_rect: self.out_rect,
@@ -187,7 +193,7 @@ impl SqueezeInfo<(usize, usize)> {
             avg_rect: self.avg_rect,
             in_res: borrow_channel(buffers, self.in_res),
             res_rect: self.res_rect,
-            in_next_avg: self.in_next_avg.map(|x| borrow_channel(buffers, x)),
+            in_next_avg,
             out_prev: self.out_prev.map(|x| borrow_channel(buffers, x)),
             next_avg_rect: self.next_avg_rect,
         }
@@ -199,17 +205,19 @@ impl SqueezeInfo<(usize, usize)> {
     }
 }
 
-impl<'a> SqueezeInfo<AtomicRef<'a, ModularChannel>> {
+impl<'a> SqueezeInfo<RwLockReadGuard<'a, Option<ModularChannel>>> {
     fn in_avg_rect(&self) -> ImageRect<'_, i32> {
-        self.in_avg.data.get_rect(self.avg_rect)
+        self.in_avg.as_ref().unwrap().data.get_rect(self.avg_rect)
     }
     fn in_res_rect(&self) -> ImageRect<'_, i32> {
-        self.in_res.data.get_rect(self.res_rect)
+        self.in_res.as_ref().unwrap().data.get_rect(self.res_rect)
     }
     fn in_next_avg_rect(&self) -> Option<ImageRect<'_, i32>> {
-        self.in_next_avg
-            .as_ref()
-            .map(|x| x.data.get_rect(self.next_avg_rect.unwrap()))
+        let rect = self.next_avg_rect?;
+        // `in_next_avg` is None (while `next_avg_rect` is Some) when it aliases
+        // `in_avg`; use the `in_avg` guard in that case.
+        let guard = self.in_next_avg.as_ref().unwrap_or(&self.in_avg);
+        Some(guard.as_ref().unwrap().data.get_rect(rect))
     }
 }
 
@@ -265,7 +273,7 @@ impl TransformStepChunk {
         frame_header: &FrameHeader,
         buffers: &[ModularBufferInfo],
         tranform_scratch_space: &mut TransformScratchSpace,
-        pass_to_pipeline: &mut dyn FnMut(usize, usize, bool, Image<i32>) -> Result<()>,
+        pass_to_pipeline: &dyn Fn(usize, usize, bool, Image<i32>) -> Result<()>,
     ) -> Result<()> {
         let is_final = self.missing_final_deps == 0;
         let buf_out = self.buf_out();
@@ -310,7 +318,7 @@ impl TransformStepChunk {
                     if b_in.data_status == DataStatus::Zero && !b_in.has_buffer() {
                         b_out.ensure_buffer(&buffers[buf_out[i]].info)?;
                     } else {
-                        *b_out.data.borrow_mut() = Some(b_in.get_buffer(is_final)?);
+                        *b_out.data.try_write().unwrap() = Some(b_in.get_buffer(is_final)?);
                     }
                 }
                 with_buffers(buffers, buf_out, out_grid, |mut bufs| {
@@ -350,47 +358,57 @@ impl TransformStepChunk {
                     let grid_x = out_grid % grid_shape.0;
                     let grid_y = out_grid / grid_shape.0;
                     let border = if *predictor == Predictor::Zero { 0 } else { 1 };
-                    let grid_x0 = grid_x.saturating_sub(border);
-                    let grid_y0 = grid_y.saturating_sub(border);
-                    let grid_x1 = grid_x + 1;
-                    let grid_y1 = grid_y + 1;
-                    let mut out_bufs = vec![];
+                    let has_left = border > 0 && grid_x > 0;
+                    let has_top = border > 0 && grid_y > 0;
+                    // Neighbouring grid positions are only read as prediction context,
+                    // so take read locks on them: other transforms (e.g. Output) may
+                    // read them concurrently.
+                    let ctx_guards = |dx: usize, dy: usize| {
+                        buf_out
+                            .iter()
+                            .map(|i| {
+                                let grid = (grid_y - dy) * grid_shape.0 + (grid_x - dx);
+                                borrow_channel(buffers, (*i, grid))
+                            })
+                            .collect::<Vec<_>>()
+                    };
+                    let left_guards = has_left.then(|| ctx_guards(1, 0));
+                    let top_guards = has_top.then(|| ctx_guards(0, 1));
+                    let topleft_guards = (has_left && has_top).then(|| ctx_guards(1, 1));
+                    let left_refs: Option<Vec<&ModularChannel>> = left_guards
+                        .as_ref()
+                        .map(|g| g.iter().map(|x| x.as_ref().unwrap()).collect());
+                    let top_refs: Option<Vec<&ModularChannel>> = top_guards
+                        .as_ref()
+                        .map(|g| g.iter().map(|x| x.as_ref().unwrap()).collect());
+                    let topleft_refs: Option<Vec<&ModularChannel>> = topleft_guards
+                        .as_ref()
+                        .map(|g| g.iter().map(|x| x.as_ref().unwrap()).collect());
+                    let mut guards = vec![];
                     for i in buf_out {
-                        for gy in grid_y0..grid_y1 {
-                            for gx in grid_x0..grid_x1 {
-                                let grid = gy * grid_shape.0 + gx;
-                                let buf = &buffers[*i];
-                                let b = &buf.buffer_grid[grid];
-                                let data = b.data.borrow_mut();
-                                out_bufs.push(AtomicRefMut::map(data, |x| x.as_mut().unwrap()));
-                            }
-                        }
+                        let b = &buffers[*i].buffer_grid[out_grid];
+                        guards.push(b.data.try_write().unwrap());
                     }
                     let mut out_buf_refs: Vec<&mut ModularChannel> =
-                        out_bufs.iter_mut().map(|x| x.deref_mut()).collect();
+                        guards.iter_mut().map(|g| g.as_mut().unwrap()).collect();
                     if matches!(predictor, Predictor::Zero)
                         && buffers[*buf_in].buffer_grid[out_grid].data_status == DataStatus::Zero
                     {
                         super::palette::zero_palette_step_one_group(
-                            &img_pal,
+                            img_pal.as_ref().unwrap(),
                             &mut out_buf_refs,
-                            grid_x - grid_x0,
-                            grid_y - grid_y0,
-                            grid_x1 - grid_x0,
-                            grid_y1 - grid_y0,
                             *num_colors,
                             *num_deltas,
                         );
                     } else {
                         let img_in = borrow_channel(buffers, (*buf_in, out_grid));
                         super::palette::do_palette_step_one_group(
-                            &img_in,
-                            &img_pal,
+                            img_in.as_ref().unwrap(),
+                            img_pal.as_ref().unwrap(),
                             &mut out_buf_refs,
-                            grid_x - grid_x0,
-                            grid_y - grid_y0,
-                            grid_x1 - grid_x0,
-                            grid_y1 - grid_y0,
+                            left_refs.as_deref(),
+                            top_refs.as_deref(),
+                            topleft_refs.as_deref(),
                             *num_colors,
                             *num_deltas,
                             *predictor,
@@ -415,8 +433,6 @@ impl TransformStepChunk {
                 {
                     assert_eq!(out_grid % grid_shape.0, 0);
                     let grid_y = out_grid / grid_shape.0;
-                    let grid_y0 = grid_y.saturating_sub(1);
-                    let grid_y1 = grid_y + 1;
                     let mut in_bufs = vec![];
                     for grid_x in 0..grid_shape.0 {
                         let grid = grid_y * grid_shape.0 + grid_x;
@@ -426,27 +442,37 @@ impl TransformStepChunk {
                         with_buffers(buffers, buf_out, out_grid + grid_x, |_| Ok(()))?;
                     }
                     let in_buf_refs: Vec<&ModularChannel> =
-                        in_bufs.iter().map(|x| x.deref()).collect();
+                        in_bufs.iter().map(|x| x.as_ref().unwrap()).collect();
                     let img_pal = borrow_channel(buffers, (*buf_pal, 0));
-                    let mut out_bufs = vec![];
-                    for i in buf_out {
-                        for grid_y in grid_y0..grid_y1 {
+                    // The previous row of output grids is only read as prediction
+                    // context, so take read locks on it: other transforms (e.g.
+                    // Output) may read it concurrently.
+                    let mut prev_guards = vec![];
+                    if grid_y > 0 {
+                        for i in buf_out {
                             for grid_x in 0..grid_shape.0 {
-                                let grid = grid_y * grid_shape.0 + grid_x;
-                                let buf = &buffers[*i];
-                                let b = &buf.buffer_grid[grid];
-                                let data = b.data.borrow_mut();
-                                out_bufs.push(AtomicRefMut::map(data, |x| x.as_mut().unwrap()));
+                                let grid = (grid_y - 1) * grid_shape.0 + grid_x;
+                                prev_guards.push(borrow_channel(buffers, (*i, grid)));
                             }
                         }
                     }
+                    let prev_refs: Vec<&ModularChannel> =
+                        prev_guards.iter().map(|g| g.as_ref().unwrap()).collect();
+                    let mut guards = vec![];
+                    for i in buf_out {
+                        for grid_x in 0..grid_shape.0 {
+                            let grid = grid_y * grid_shape.0 + grid_x;
+                            let b = &buffers[*i].buffer_grid[grid];
+                            guards.push(b.data.try_write().unwrap());
+                        }
+                    }
                     let mut out_buf_refs: Vec<&mut ModularChannel> =
-                        out_bufs.iter_mut().map(|x| x.deref_mut()).collect();
+                        guards.iter_mut().map(|g| g.as_mut().unwrap()).collect();
                     super::palette::do_palette_step_group_row(
                         &in_buf_refs,
-                        &img_pal,
+                        img_pal.as_ref().unwrap(),
                         &mut out_buf_refs,
-                        grid_y - grid_y0,
+                        (grid_y > 0).then_some(&prev_refs[..]),
                         grid_shape.0,
                         *num_colors,
                         *num_deltas,
@@ -504,11 +530,12 @@ impl TransformStepChunk {
                         }
                         SqueezeStepKind::Regular => {
                             let info = info.borrow(buffers);
+                            let out_prev = info.out_prev.as_ref().map(|g| g.as_ref().unwrap());
                             super::squeeze::do_hsqueeze_step(
                                 &info.in_avg_rect(),
                                 &info.in_res_rect(),
                                 &info.in_next_avg_rect(),
-                                &info.out_prev,
+                                out_prev,
                                 &mut bufs,
                             )
                         }
@@ -562,11 +589,12 @@ impl TransformStepChunk {
                         }
                         SqueezeStepKind::Regular => {
                             let info = info.borrow(buffers);
+                            let out_prev = info.out_prev.as_ref().map(|g| g.as_ref().unwrap());
                             super::squeeze::do_vsqueeze_step(
                                 &info.in_avg_rect(),
                                 &info.in_res_rect(),
                                 &info.in_next_avg_rect(),
-                                &info.out_prev,
+                                out_prev,
                                 &mut bufs,
                             )
                         }
@@ -683,19 +711,37 @@ impl TransformStepChunk {
             }
             TransformStep::Palette {
                 buf_in,
+                buf_out,
                 buf_pal,
                 predictor,
                 ..
             } if !predictor.requires_full_row() => {
                 let b = *buf_in;
                 let grid_idx = buffers[b].get_grid_idx(buffers[b].grid_kind, self.grid_pos);
-                [(b, grid_idx), (*buf_pal, 0)]
-                    .into_iter()
-                    .map(|(a, b)| TransformDependency::new(a, b))
-                    .collect()
+                let mut ans: SmallVec<TransformDependency, 9> = SmallVec::new();
+                ans.push(TransformDependency::new(b, grid_idx));
+                ans.push(TransformDependency::new(*buf_pal, 0));
+                let grid_shape = buffers[b].grid_shape;
+                if *predictor != Predictor::Zero {
+                    let (gx, gy) = (self.grid_pos.0 as isize, self.grid_pos.1 as isize);
+                    let (xs, ys) = (grid_shape.0 as isize, grid_shape.1 as isize);
+                    for (dx, dy) in [(0, -1), (-1, 0), (-1, -1)] {
+                        let (nx, ny) = (gx + dx, gy + dy);
+                        if nx >= 0 && nx < xs && ny >= 0 && ny < ys {
+                            let prev_grid = ny as usize * grid_shape.0 + nx as usize;
+                            for out in buf_out {
+                                ans.push(TransformDependency::new_order_only(*out, prev_grid));
+                            }
+                        }
+                    }
+                }
+                ans
             }
             TransformStep::Palette {
-                buf_in, buf_pal, ..
+                buf_in,
+                buf_pal,
+                buf_out,
+                ..
             } => {
                 let b = *buf_in;
                 let mut ans = SmallVec::new();
@@ -705,6 +751,13 @@ impl TransformStepChunk {
                 for grid_x in 0..grid_shape.0 {
                     ans.push(TransformDependency::new(b, grid_idx + grid_x));
                 }
+                if let Some(prev) = self.grid_pos.1.checked_sub(1) {
+                    let prev_grid = prev * grid_shape.0;
+                    for out in buf_out {
+                        ans.push(TransformDependency::new_order_only(*out, prev_grid));
+                    }
+                }
+
                 ans
             }
             TransformStep::VSqueeze {

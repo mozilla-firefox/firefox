@@ -329,7 +329,7 @@
 
       info("Test reading lz4 encoded data");
       let readData = await IOUtils.read(tmpFileName, { decompress: true });
-      ok(readData.equals(varyingBytes), "IOUtils can write and read back LZ4 encoded data");
+      ok(bytesEqual(readData, varyingBytes), "IOUtils can write and read back LZ4 encoded data");
 
       info("Test writing lz4 compressed data");
       const repeatedBytes = Uint8Array.of(...new Array(50).fill(1));
@@ -338,7 +338,7 @@
 
       info("Test reading lz4 encoded data");
       readData = await IOUtils.read(tmpFileName, { decompress: true });
-      ok(readData.equals(repeatedBytes), "IOUtils can write and read back LZ4 compressed data");
+      ok(bytesEqual(readData, repeatedBytes), "IOUtils can write and read back LZ4 compressed data");
 
       info("Test writing empty lz4 compressed data")
       const empty = new Uint8Array();
@@ -348,11 +348,11 @@
 
       info("Test reading empty lz4 compressed data")
       const readEmpty = await IOUtils.read(tmpFileName, { decompress: true });
-      ok(readEmpty.equals(empty), "IOUtils can write and read back empty buffers with LZ4");
+      ok(bytesEqual(readEmpty, empty), "IOUtils can write and read back empty buffers with LZ4");
       const readEmptyRaw = await IOUtils.read(tmpFileName, { decompress: false });
       is(readEmptyRaw.length, 12, "Expected to read back just the LZ4 header");
       const expectedHeader = Uint8Array.of(109, 111, 122, 76, 122, 52, 48, 0, 0, 0, 0, 0); // "mozLz40\0\0\0\0"
-      ok(readEmptyRaw.equals(expectedHeader), "Expected to read header with content length of 0");
+      ok(bytesEqual(readEmptyRaw, expectedHeader), "Expected to read header with content length of 0");
 
       await cleanup(tmpFileName);
     });

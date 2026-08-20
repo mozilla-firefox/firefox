@@ -61,6 +61,7 @@ tasks:
                 ${EXTRA_ARGS}
                 --geckodriver ${MOZ_FETCHES_DIR}/geckodriver.exe
                 --firefox ${MOZ_FETCHES_DIR}/firefox/firefox.exe
+                --force-new
                 --scenario ${SCENARIO}
                 ../../archive
         worker:
@@ -97,6 +98,7 @@ tasks:
                 ${EXTRA_ARGS}
                 --geckodriver ${MOZ_FETCHES_DIR}/geckodriver
                 --firefox ${MOZ_FETCHES_DIR}/firefox/firefox-bin
+                --force-new
                 --scenario ${SCENARIO}
                 ../../archive
         worker:
@@ -135,6 +137,7 @@ tasks:
                 ${EXTRA_ARGS}
                 --geckodriver ${MOZ_FETCHES_DIR}/geckodriver
                 --firefox ${MOZ_FETCHES_DIR}/target.dmg
+                --force-new
                 --scenario ${SCENARIO}
                 ../../archive
         worker:

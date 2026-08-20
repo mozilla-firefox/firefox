@@ -67,6 +67,8 @@ const ENABLEMENT_PREFS = new Set([
   PRIVACY_ENTRY.enabledPref,
   PRIVACY_ENTRY.systemEnabledPref,
   "trainhopConfig",
+  // Synthetic value from PrefsFeed; turning history back on resumes fetching.
+  "recordsHistory",
 ]);
 
 /**
@@ -357,13 +359,6 @@ export class PrivacyFeed {
   // INIT/SYSTEM_TICK/enablement: keep the live count fresh without re-running
   // the scheduler (no message fields → the reducer keeps the current message).
   async updateCounts() {
-    // @backward-compat { version 145 }
-    // getTodayStats() ships alongside this widget; older platforms have
-    // PrivacyMetricsService (Bug 2010368) without it. Guard until that
-    // version reaches release, then remove this check.
-    if (typeof lazy.PrivacyMetricsService?.getTodayStats !== "function") {
-      return;
-    }
     const counts = await this.fetchTodayCounts();
     // Clear countCeiling: it's a one-render display cap set by the daily-cap
     // message. Without this, a tab showing "100+" stays stuck there across
@@ -406,10 +401,6 @@ export class PrivacyFeed {
   }
 
   async _runMessageSelection() {
-    // @backward-compat { version 145 } — see updateCounts().
-    if (typeof lazy.PrivacyMetricsService?.getTodayStats !== "function") {
-      return;
-    }
     const now = Date.now();
     const [counts, totals, features, profileCreatedMs] = await Promise.all([
       this.fetchTodayCounts(),

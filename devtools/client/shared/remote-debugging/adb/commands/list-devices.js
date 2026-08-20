@@ -4,14 +4,16 @@
 
 "use strict";
 
-const { dumpn } = require("resource://devtools/shared/DevToolsUtils.js");
+const {
+  logger,
+} = require("resource://devtools/client/shared/remote-debugging/adb/adb-logger.js");
 /**
  * The listDevices command is currently unused in DevTools. We are keeping it while
  * working on RemoteDebugging NG, in case it becomes needed later. We will remove it from
  * the codebase if unused at the end of the project. See Bug 1511779.
  */
 const listDevices = function () {
-  dumpn("listDevices");
+  logger.debug("listDevices");
 
   return this.runCommand("host:devices").then(function onSuccess(data) {
     const lines = data.split("\n");

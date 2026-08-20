@@ -93,6 +93,16 @@ function addCompatTask(taskFn) {
       `Testing against ${brandName} ${version} (${channel}) on ${config.host}`
     );
 
+    /**
+     * @backward-compat { version 154 }
+     * This was added during early 156 cycle. With Bug 2064221 we are extending
+     * the backward compatibility window to allow for a gap of 3 versions.
+     * Since the backward compatibility code for v154 was already removed, we
+     * should wait until the beginning of cycle 157 to remove this.
+     *
+     * When Firefox 154 is no longer on release, remove the if block below as
+     * well as the `isReleaseVersionTooOld` helper.
+     */
     if (isReleaseVersionTooOld(config)) {
       ok(
         true,

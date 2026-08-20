@@ -232,6 +232,46 @@ function isGenerator(value) {
   return value && typeof value === "object" && typeof value.next === "function";
 }
 
+/**
+ * Returns a description of an element that is precise enough to find it in the
+ * tree without having to reproduce the failure.
+ *
+ * To be shared with ClickChecks.js and the assertion functions, see bug 2063601.
+ */
+function describeElement(elt) {
+  let desc = elt.localName;
+  if (elt.id) {
+    desc += "#" + elt.id;
+  } else {
+    // Elements without an id are usually generated ones (bookmark folders,
+    // extension menus...), so name whatever else can be used to find them.
+    if (elt.classList.length) {
+      desc += "." + [...elt.classList].join(".");
+    }
+    let label = elt.getAttribute("label") || elt.getAttribute("aria-label");
+    if (label) {
+      desc += `[label="${label}"]`;
+    }
+    let container = elt.parentElement.closest("[id]");
+    if (container) {
+      desc += " inside #" + container.id;
+    }
+  }
+
+  // A panel hosting notifications or several views is only an anchor shared by
+  // unrelated features, so what it currently shows is what identifies it.
+  let contents = [
+    ...elt.querySelectorAll(
+      "popupnotification:not([hidden]), panelview[visible]"
+    ),
+  ];
+  if (contents.length) {
+    desc += " showing " + contents.map(n => describeElement(n)).join(", ");
+  }
+
+  return desc;
+}
+
 function Tester(aTests, structuredLogger, aCallback) {
   this.structuredLogger = structuredLogger;
   this.tests = aTests;
@@ -307,6 +347,14 @@ function Tester(aTests, structuredLogger, aCallback) {
   window.SpecialPowers.SimpleTest = this.SimpleTest;
   window.SpecialPowers.setAsDefaultAssertHandler();
 
+  // In the EventUtils scope, as EventUtils reaches for this.ClickChecks to
+  // suppress the checks for synthesized clicks.
+  this._scriptLoader.loadSubScript(
+    "chrome://mochikit/content/tests/SimpleTest/ClickChecks.js",
+    this.EventUtils
+  );
+  this.ClickChecks = this.EventUtils.ClickChecks;
+
   this._scriptLoader.loadSubScript(
     "chrome://mochikit/content/tests/SimpleTest/AccessibilityUtils.js",
     // AccessibilityUtils are integrated with EventUtils to perform additional
@@ -316,6 +364,10 @@ function Tester(aTests, structuredLogger, aCallback) {
   );
   this.AccessibilityUtils = this.EventUtils.AccessibilityUtils;
 
+  // Before AccessibilityUtils, so that its check runs, and reports, first: the
+  // accessibility checks force refresh driver ticks, which can let a popup
+  // finish opening before we look at its state.
+  this.ClickChecks.init(this.SimpleTest);
   this.AccessibilityUtils.init(this.SimpleTest);
 
   var extensionUtilsScope = {
@@ -403,6 +455,7 @@ function Tester(aTests, structuredLogger, aCallback) {
 Tester.prototype = {
   EventUtils: {},
   AccessibilityUtils: {},
+  ClickChecks: {},
   SimpleTest: {},
   ContentTask: null,
   ExtensionTestUtils: null,
@@ -530,6 +583,70 @@ Tester.prototype = {
     }
     // graphics test window is already gone, just call callback immediately
     aCallback();
+  },
+
+  // Tests shouldn't leave panels or menupopups open: the next test file would
+  // then start with an unexpected popup covering the browser, and get blamed for
+  // the failures it causes. Called before the vsync check so that it waits for
+  // the closing animation of the popups we hide here.
+  async checkForOpenPopups() {
+    if (AppConstants.MOZ_APP_NAME == "thunderbird") {
+      return;
+    }
+
+    this.currentTest.addResult(new testMessage("checking for open popups"));
+
+    // Popups that open on hover close on a timer once the mouse has moved off
+    // them. 'mousecancel' synthesizes the pointer vanishing from the top level
+    // window, which ends the hover without starting a new one anywhere; the
+    // coordinates are unused for this event type.
+    this.EventUtils.synthesizeMouseAtPoint(
+      0,
+      0,
+      { type: "mousecancel" },
+      window
+    );
+
+    // Sticky hover panels stay in the 'open' state for a few ms after the
+    // mousecancel above, so wait rather than fail on a popup that isn't closed.
+    let openPopups = [];
+    try {
+      await this.TestUtils.waitForCondition(() => {
+        openPopups = [...document.querySelectorAll("menupopup,panel")].filter(
+          popup => popup.state != "closed"
+        );
+        return !openPopups.length;
+      }, "waiting for popups to close");
+    } catch (e) {
+      if (!openPopups.length) {
+        // waitForCondition also rejects when the condition function throws, in
+        // which case openPopups is empty and nothing else would be reported.
+        console.error(e);
+        this.currentTest.addResult(
+          new testResult({
+            name: "Failed to check for open popups: " + e,
+            allowFailure: this.currentTest.allowFailure,
+          })
+        );
+      }
+
+      // A popup the test actually leaked has nothing pending to close it, so it
+      // is still in the list the condition built on its last run. Reporting that
+      // list rather than querying again avoids missing a popup that closed
+      // between then and the timeout.
+      let msg = this.currentTest.timedOut
+        ? "Found a popup after previous test timed out"
+        : "Found an unexpected popup at the end of test run";
+      for (let popup of openPopups) {
+        this.currentTest.addResult(
+          new testResult({
+            name: msg + ": " + describeElement(popup),
+            allowFailure: this.currentTest.allowFailure,
+          })
+        );
+        popup.hidePopup();
+      }
+    }
   },
 
   checkWindowsState: function Tester_checkWindowsState() {
@@ -699,6 +816,7 @@ Tester.prototype = {
     DOMWindowTracker.destroy();
     Services.console.unregisterListener(this);
 
+    this.ClickChecks.uninit();
     this.AccessibilityUtils.uninit();
 
     // It's important to terminate the module to avoid crashes on shutdown.
@@ -999,6 +1117,9 @@ Tester.prototype = {
         }
       }
 
+      // After the cleanup functions, which can still click things.
+      this.ClickChecks.forgetMouseDownState();
+
       // Ensure any sinon stubs and spies have been cleaned up before the next test.
       if (Cu.isESModuleLoaded("resource://testing-common/Sinon.sys.mjs")) {
         this.sinon.restore();
@@ -1058,6 +1179,8 @@ Tester.prototype = {
       this.PromiseTestUtils.ensureDOMPromiseRejectionsProcessed();
       this.PromiseTestUtils.assertNoUncaughtRejections();
       this.PromiseTestUtils.assertNoMoreExpectedRejections();
+      await this.checkForOpenPopups();
+
       await this.ensureVsyncDisabled();
 
       Object.keys(window).forEach(function (prop) {
@@ -1503,6 +1626,7 @@ Tester.prototype = {
 
     this.SimpleTest.reset();
     // Reset accessibility environment.
+    this.ClickChecks.reset();
     this.AccessibilityUtils.reset(this.a11y_checks, this.currentTest.path);
 
     // Load the tests into a testscope
@@ -1745,6 +1869,9 @@ Tester.prototype = {
                 "PASS",
                 "Test timed out"
               );
+              // nextTest, which normally does this, doesn't run for a test that
+              // timed out.
+              self.ClickChecks.forgetMouseDownState();
               self._shutdownCleanup(async () => {
                 await self._checkForLeakedWindows(true);
                 self.finish();

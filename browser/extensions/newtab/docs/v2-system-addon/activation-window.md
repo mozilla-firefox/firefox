@@ -140,6 +140,16 @@ Messages for the activation window use the `ActivationWindowMessage` component a
 - **`primaryButton`** (object, optional): Configuration for primary button.
 - **`secondaryButton`** (object, optional): Configuration for secondary button
 
+### Image variants
+
+`imageSrc` may be accompanied by optional variants that let the image adapt to color scheme and viewport width. Supplying any of the narrow/responsive variants opts the message into a "flush" image treatment that bleeds to the card edges, with three layout tiers:
+
+- **Below 866px** (vertical layout): a full-width banner, using `imageSrcResponsive` (and `imageSrcDarkResponsive` in dark mode).
+- **866px–1072px** (horizontal layout): a full-height flush column, using `imageSrcNarrow` (and `imageSrcDarkNarrow` in dark mode). The 1072px breakpoint matches the newtab discovery-stream section switch.
+- **At/above 1072px** (horizontal layout): a full-height flush column, using `imageSrc` (and `imageSrcDark` in dark mode).
+
+Any variant that is not provided falls back to `imageSrc`. Dark-mode variants are selected via `prefers-color-scheme`. Each tier's art is chosen to match that tier's column proportions to minimize cropping.
+
 #### Button Configuration
 
 Each button object has:
@@ -160,6 +170,7 @@ Test messages are available in `browser/components/asrouter/modules/PanelTestPro
 
 - `TEST_ACTIVATION_WINDOW_ENTER_MESSAGE`
 - `TEST_ACTIVATION_WINDOW_EXIT_MESSAGE`
+- `TEST_ACTIVATION_WINDOW_FULL_BLEED_IMAGE`
 
 To test these messages:
 

@@ -70,11 +70,15 @@ class ReferralsClass {
    * Opens about:referrals in a new tab. No-op when referrals are disabled.
    *
    * @param {Window} window The browser window to open the tab in.
+   * @param {string} entrypoint
+   *   The UI surface the tab was opened from. One of: app_menu,
+   *   accounts_menu, preferences, help_menu, about_dialog.
    */
-  openReferralsTab(window) {
+  openReferralsTab(window, entrypoint) {
     if (!this.isEnabled) {
       return;
     }
+    Glean.referrals.entrypointClicked.record({ entrypoint });
     let referralCode = this.getReferralCode();
     let aboutPageURL = new URL(`about:referrals`);
 

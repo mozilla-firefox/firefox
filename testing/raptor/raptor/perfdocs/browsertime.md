@@ -225,6 +225,14 @@ Other methods for adding additional arguments are:
 
 - Define additional arguments in {searchfox}`testing/raptor/raptor/browsertime/base.py <testing/raptor/raptor/browsertime/base.py#220-252>`.
 - Add a `browsertime_args` entry to the appropriate manifest with the desired arguments, i.e. {searchfox}`browsertime-tp6.ini <testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.ini>` for desktop page load tests. {searchfox}`Example of browsertime_args format <testing/raptor/raptor/tests/custom/browsertime-process-switch.ini#27>`.
+- Add a `chrome_args` array to a manifest test to pass Chrome/Chromium command-line flags for that test. The arguments are applied only to Chrome-family apps. For example, the {searchfox}`WebCodecs manifest <testing/raptor/raptor/tests/custom/browsertime-webcodecs.toml>` uses it to provide a fake camera:
+
+  ```toml
+  chrome_args = [
+      "--use-fake-device-for-media-stream",
+      "--use-fake-ui-for-media-stream",
+  ]
+  ```
 
 ## Running Browsertime on Try
 

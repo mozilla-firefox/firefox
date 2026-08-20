@@ -125,12 +125,17 @@ SVGAnimatedTransformList* SVGSVGElement::GetViewTransformList() const {
   return nullptr;
 }
 
-float SVGSVGElement::CurrentScale() const { return mCurrentScale; }
+float SVGSVGElement::CurrentScale() const {
+  return IsInner() ? 1.0f : mCurrentScale;
+}
 
 #define CURRENT_SCALE_MAX 16.0f
 #define CURRENT_SCALE_MIN 0.0625f
 
 void SVGSVGElement::SetCurrentScale(float aCurrentScale) {
+  if (IsInner()) {
+    return;
+  }
   // Prevent bizarre behaviour and maxing out of CPU and memory by clamping
   aCurrentScale =
       std::clamp(aCurrentScale, CURRENT_SCALE_MIN, CURRENT_SCALE_MAX);

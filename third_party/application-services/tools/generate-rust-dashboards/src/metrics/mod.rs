@@ -4,6 +4,7 @@
 
 pub mod counter;
 pub mod distribution;
+pub mod event;
 pub mod labeled_counter;
 pub mod labeled_distribution;
 pub mod rust_component_errors;
@@ -30,6 +31,7 @@ impl Metric {
             Self::LabeledDistribution(metric) => {
                 labeled_distribution::add_to_dashboard(builder, config, metric)
             }
+            Self::Events(metric) => event::add_to_dashboard(builder, config, metric),
         }
     }
 }

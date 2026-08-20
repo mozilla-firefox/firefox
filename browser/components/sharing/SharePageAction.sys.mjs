@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 const lazy = {};
@@ -16,6 +17,33 @@ const ENABLED_PREF = "browser.urlbar.share-button.enabled";
 const BUTTON_ID = "share-button";
 const PANEL_ID = "share-panel";
 const TEMPLATE_ID = "template-share-panel";
+const COPY_LINK_BUTTON_ID = "share-panel-copy-link";
+const OS_SHARE_BUTTON_ID = "share-panel-os-share";
+const MAIL_SHARE_BUTTON_ID = "share-panel-mail";
+const SCREENSHOTS_BUTTON_ID = "share-panel-screenshot";
+const QR_CODE_BUTTON_ID = "share-panel-qr-code";
+const DEVICE_SHARE_BUTTON_ID = "share-panel-send-to-device";
+
+function shouldButtonBeVisible(buttonId, isShareable) {
+  switch (buttonId) {
+    case SCREENSHOTS_BUTTON_ID: {
+      return true;
+    }
+    case OS_SHARE_BUTTON_ID: {
+      return AppConstants.platform !== "linux" && isShareable;
+    }
+    case MAIL_SHARE_BUTTON_ID: {
+      return AppConstants.platform === "linux" && isShareable;
+    }
+    case COPY_LINK_BUTTON_ID:
+    case QR_CODE_BUTTON_ID:
+    case DEVICE_SHARE_BUTTON_ID: {
+      return isShareable;
+    }
+  }
+
+  return false;
+}
 
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
@@ -72,10 +100,19 @@ class SharePageActionClass {
   }
 
   handleEvent(event) {
-    if (event.type === "click") {
-      this.togglePanel(event);
-    } else if (event.type === "command") {
-      this.handleCommand(event);
+    switch (event.type) {
+      case "click": {
+        this.togglePanel(event);
+        break;
+      }
+      case "command": {
+        this.handleCommand(event);
+        break;
+      }
+      case "popupshowing": {
+        this.handlePopupShowing(event);
+        break;
+      }
     }
   }
 
@@ -84,16 +121,28 @@ class SharePageActionClass {
     let hintL10nId;
 
     switch (event.target.id) {
-      case "share-panel-copy-link": {
+      case COPY_LINK_BUTTON_ID: {
         hintL10nId = this.#copyLink(panel);
         break;
       }
-      case "share-panel-screenshot": {
+      case SCREENSHOTS_BUTTON_ID: {
         Services.obs.notifyObservers(
           event.target.documentGlobal,
           "menuitem-screenshot",
           "SharePanel"
         );
+        break;
+      }
+      case QR_CODE_BUTTON_ID: {
+        this.#showQRCode(panel);
+        break;
+      }
+      case OS_SHARE_BUTTON_ID: {
+        this.#handleOsShare(panel);
+        break;
+      }
+      case MAIL_SHARE_BUTTON_ID: {
+        lazy.SharingUtils.sendEmail(panel);
         break;
       }
       default: {
@@ -126,6 +175,29 @@ class SharePageActionClass {
   }
 
   /**
+   * Open the QR code panel for a given url
+   *
+   * @param {Element} panel The share panel
+   */
+  #showQRCode(panel) {
+    let { urlToShare } = lazy.SharingUtils.getLinkToShare(panel);
+    if (!urlToShare) {
+      return;
+    }
+
+    let window = panel.documentGlobal;
+    let browser = panel.contextBrowserToShare?.get();
+
+    lazy.SharingUtils.showQRCodePanel(window, browser, urlToShare);
+  }
+
+  #handleOsShare(panel) {
+    if (AppConstants.platform === "win") {
+      lazy.SharingUtils.shareOnWindows(panel);
+    }
+  }
+
+  /**
    * Shows a confirmation hint on the share button once the panel has closed.
    *
    * @param {Element} panel
@@ -141,6 +213,17 @@ class SharePageActionClass {
       },
       { once: true }
     );
+  }
+
+  handlePopupShowing(event) {
+    const panel = event.target;
+    let isShareable = !!lazy.SharingUtils.getLinkToShare(panel).urlToShare;
+
+    for (let button of panel.querySelectorAll(
+      "#share-panel-mainView toolbarbutton"
+    )) {
+      button.hidden = !shouldButtonBeVisible(button.id, isShareable);
+    }
   }
 
   togglePanel(event) {
@@ -183,6 +266,7 @@ class SharePageActionClass {
       template.replaceWith(template.content);
 
       panel.addEventListener("command", this);
+      panel.addEventListener("popupshowing", this);
     }
 
     return panel;

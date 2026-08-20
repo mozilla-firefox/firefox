@@ -39,6 +39,7 @@ tasks-from:
     - shadow-scheduler.yml
     - taskgraph.yml
     - vendor.yml
+    - vendor-verify.yml
     - webidl.yml
     - webcompat.yml
     - wpt-manifest.yml

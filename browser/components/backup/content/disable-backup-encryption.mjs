@@ -72,11 +72,11 @@ export default class DisableBackupEncryption extends MozLitElement {
         aria-labelledby="backup-disable-encryption-header"
         aria-describedby="backup-disable-encryption-description"
       >
-        <h1
+        <h2
           id="backup-disable-encryption-header"
           class="heading-medium"
           data-l10n-id="disable-backup-encryption-header"
-        ></h1>
+        ></h2>
         <main id="backup-disable-encryption-content">
           <div id="backup-disable-encryption-description">
             <span

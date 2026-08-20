@@ -25,8 +25,10 @@ struct CTypesCallbacks;
 }  // namespace JS
 
 // libffi's ffi_call_plan is only accelerated for the x86-64 System V ABI;
-// elsewhere it just wraps ffi_call, so gate on the targets that benefit.
-#if defined(FFI_VERSION_NUMBER) && FFI_VERSION_NUMBER >= 30700 && \
+// elsewhere it just wraps ffi_call, so gate on the targets that benefit. The
+// version floor is 3.8.0 rather than 3.7.0, where the plan API landed, because
+// the GC accounting needs ffi_call_plan_size.
+#if defined(FFI_VERSION_NUMBER) && FFI_VERSION_NUMBER >= 30800 && \
     defined(__x86_64__) && !defined(__ILP32__) && !defined(_WIN64)
 #  define CTYPES_HAVE_FAST_CALL_PLAN 1
 #endif

@@ -17,11 +17,11 @@ use crate::render_task::{BlurTask, RenderTask, BlurTaskCache};
 use crate::render_task::RenderTaskKind;
 use crate::renderer::{BlendMode, GpuBufferAddress, GpuBufferBuilder};
 use crate::space::SpaceMapper;
-use crate::spatial_tree::SpatialTree;
+use crate::spatial_tree::{SpatialTree, SpatialNodeIndex};
 use crate::surface::{SurfaceDescriptor, SurfaceInfo, calculate_screen_uv};
 use crate::surface::SurfaceIndex;
 use crate::svg_filter::{get_coverage_source_svgfe, FilterGraphNodeKey, FilterGraphOpKey};
-use crate::util::MaxRect;
+use crate::util::{MaxRect, ScaleOffset};
 use smallvec::SmallVec;
 use crate::internal_types::Filter;
 use crate::profiler;
@@ -55,8 +55,13 @@ pub enum PictureCompositeMode {
     TileCache {
         slice_id: SliceId,
     },
-    /// Apply an SVG filter graph
-    SVGFEGraph(Vec<(FilterGraphNode, FilterGraphOp)>),
+    /// Apply an SVG filter graph. The `SpatialNodeIndex` is the spatial node
+    /// the filter subregions are authored against (the filtered element's
+    /// node). For a backdrop filter the graph is composited in backdrop-root
+    /// space, so the subregions must be mapped from the source node into the
+    /// surface's space at frame time. NOT included in the interned
+    /// PictureCompositeKey (interning is unaffected).
+    SVGFEGraph(Vec<(FilterGraphNode, FilterGraphOp)>, SpatialNodeIndex),
     /// A surface that is used as an input to another primitive
     IntermediateSurface,
 }
@@ -100,11 +105,12 @@ impl PictureCompositeMode {
 
                 surface_rect.inflate(blur_inflation_x, blur_inflation_y)
             }
-            PictureCompositeMode::SVGFEGraph(ref filters) => {
+            PictureCompositeMode::SVGFEGraph(ref filters, _) => {
                 // Return prim_subregion for use in get_local_prim_rect, which
                 // is the polygon size.
                 // This must match surface_rects.unclipped_local.
-                get_coverage_target_svgfe(filters, surface_rect.cast_unit())
+                let filters = map_svgfe_subregions(filters, &surface.svgfe_source_map);
+                get_coverage_target_svgfe(&filters, surface_rect.cast_unit())
             }
             _ => {
                 surface_rect
@@ -154,11 +160,12 @@ impl PictureCompositeMode {
 
                 rect
             }
-            PictureCompositeMode::SVGFEGraph(ref filters) => {
+            PictureCompositeMode::SVGFEGraph(ref filters, _) => {
                 // surface_rect may be for source or target, so invalidate based
                 // on both interpretations
-                let target_subregion = get_coverage_source_svgfe(filters, surface_rect.cast());
-                let source_subregion = get_coverage_target_svgfe(filters, surface_rect.cast());
+                let filters = map_svgfe_subregions(filters, &surface.svgfe_source_map);
+                let target_subregion = get_coverage_source_svgfe(&filters, surface_rect.cast());
+                let source_subregion = get_coverage_target_svgfe(&filters, surface_rect.cast());
                 target_subregion.union(&source_subregion)
             }
             _ => {
@@ -679,8 +686,13 @@ pub fn prepare_composite_mode(
                 surface_rects.clipped_local,
             );
         }
-        PictureCompositeMode::SVGFEGraph(ref filters) => {
+        PictureCompositeMode::SVGFEGraph(ref filters, _source_spatial_node_index) => {
             let cmd_buffer_index = frame_state.cmd_buffers.create_cmd_buffer();
+
+            // Map the subregions into the surface's (backdrop-root) space to
+            // match the coverage computed in get_surface_rects.
+            let filters = map_svgfe_subregions(filters, &surface_rects.svgfe_source_map);
+            let filters = &filters;
 
             let prim_subregion = surface_rects.unclipped;
             let target_subregion = surface_rects.clipped;
@@ -850,6 +862,33 @@ pub struct SurfaceAllocInfo {
     pub clipped_notsnapped: DeviceRect,
     pub clipped_local: PictureRect,
     pub uv_rect_kind: UvRectKind,
+    // Only used for SVGFEGraph: mapping from the space the filter subregions
+    // are authored in (the filtered element's spatial node) to the space the
+    // graph is composited in (the surface's spatial node, which for a backdrop
+    // filter is the backdrop root). Identity for regular filters.
+    pub svgfe_source_map: ScaleOffset,
+}
+
+/// Map every absolute subregion in an SVGFE filter graph through `map`, moving
+/// backdrop-filter subregions from the filtered element's space into the space
+/// the graph composites in. This must be a full scale+offset rather than a
+/// translation: a reference frame between the element and the backdrop root may
+/// scale (pdf.js scales its text spans), and a translation alone then misplaces
+/// the subregion. The per-input `offset`/`source_padding`/`target_padding`
+/// fields are relative deltas and are left untouched. `map` is the identity for
+/// regular (non-backdrop) filters, leaving the subregions unchanged.
+fn map_svgfe_subregions(
+    filters: &[(FilterGraphNode, FilterGraphOp)],
+    map: &ScaleOffset,
+) -> Vec<(FilterGraphNode, FilterGraphOp)> {
+    filters.iter().map(|(node, op)| {
+        let mut node = node.clone();
+        node.subregion = map.map_rect(&node.subregion);
+        for input in &mut node.inputs {
+            input.subregion = map.map_rect(&input.subregion);
+        }
+        (node, op.clone())
+    }).collect()
 }
 
 pub fn get_surface_rects(
@@ -877,9 +916,20 @@ pub fn get_surface_rects(
 
     let surface = &mut surfaces[surface_index.0];
 
+    let mut svgfe_source_map = ScaleOffset::identity();
+
     let (clipped_local, unclipped_local, source_local) = match composite_mode {
-        PictureCompositeMode::SVGFEGraph(ref filters) => {
-            let prim_subregion = composite_mode.get_rect(surface, None);
+        PictureCompositeMode::SVGFEGraph(ref filters, _) => {
+            // The subregions are authored against the filtered element's
+            // spatial node, but the graph is composited in this surface's space
+            // (the backdrop root for a backdrop filter). Map them through the
+            // relationship computed when the surface was assigned so they line
+            // up with the captured source and the output prim.
+            svgfe_source_map = surface.svgfe_source_map;
+            let filters = map_svgfe_subregions(filters, &svgfe_source_map);
+            let filters = &filters;
+
+            let prim_subregion = get_coverage_target_svgfe(filters, surface.clipped_local_rect.cast_unit());
 
             let visible_subregion: LayoutRect =
                 prim_subregion.cast_unit()
@@ -1078,6 +1128,7 @@ pub fn get_surface_rects(
         clipped_notsnapped: clipped,
         clipped_local,
         uv_rect_kind,
+        svgfe_source_map,
     })
 }
 
@@ -1236,7 +1287,9 @@ impl From<Option<PictureCompositeMode>> for PictureCompositeKey {
             Some(PictureCompositeMode::ComponentTransferFilter(handle)) => {
                 PictureCompositeKey::ComponentTransfer(handle.uid())
             }
-            Some(PictureCompositeMode::SVGFEGraph(filter_nodes)) => {
+            Some(PictureCompositeMode::SVGFEGraph(filter_nodes, _source_spatial_node)) => {
+                // Deliberately exclude the source spatial node from the interned
+                // key: it does not affect the filter graph identity.
                 PictureCompositeKey::SVGFEGraph(
                     filter_nodes.into_iter().map(|(node, op)| {
                         (node.into(), op.into())

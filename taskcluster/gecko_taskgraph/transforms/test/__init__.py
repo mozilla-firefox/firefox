@@ -588,10 +588,11 @@ def make_job_description(config, tasks):
             label = "test-{}-{}".format(task["test-platform"], task["test-name"])
 
         try_name = task["try-name"]
+        variant_suffix = ""
         if attributes.get("unittest_variant"):
-            suffix = task.pop("variant-suffix")
-            label += suffix
-            try_name += suffix
+            variant_suffix = task.pop("variant-suffix")
+            label += variant_suffix
+            try_name += variant_suffix
 
         if task["chunks"] > 1:
             label += "-{}".format(task["this-chunk"])
@@ -652,7 +653,9 @@ def make_job_description(config, tasks):
             # The test-platform is "<platform>/<build-type>"; '/' isn't allowed
             # in an index name, so join the two with a '-'.
             platform = task["test-platform"].replace("/", "-")
-            index["job-name"] = "{}.{}".format(index["job-name"], platform)
+            index["job-name"] = "{}.{}{}".format(
+                index["job-name"], platform, variant_suffix
+            )
             jobdesc["index"] = index
         jobdesc["run-on-repo-type"] = sorted(task["run-on-repo-type"])
         jobdesc["run-on-projects"] = sorted(task["run-on-projects"])

@@ -65,13 +65,36 @@ const PLATFORMS = {
   Linux: SOFTWARE_CODECS,
 };
 
+function applyOverride(base, videoPlatform) {
+  if (!base.isVideo) {
+    return base;
+  }
+  return { ...base, ...videoPlatform };
+}
+
 async function testWebCodecsEncodingProcess(hasGpu) {
+  // If we aren't remoting video, force the process to be content.
+  const remoteVideoPlatform = SpecialPowers.getBoolPref(
+    "media.use-remote-encoder.video.platform"
+  );
+  let configVideoPlatformOverride = {};
+  if (!remoteVideoPlatform) {
+    configVideoPlatformOverride.process = "content";
+  }
+
   const platformName = SpecialPowers.Services.appinfo.OS;
   const platformTest = PLATFORMS[platformName];
-  for (const test of platformTest) {
+  for (const baseTest of platformTest) {
+    const test = applyOverride(baseTest, configVideoPlatformOverride);
     try {
-      // Skip tests that require a GPU if we don't have one.
-      if (test.requireGpu !== undefined && test.requireGpu && !hasGpu) {
+      // Skip tests that require a GPU if we don't have one, or if we
+      // disabled remoting platform encoders (on Windows we can't get
+      // the hardware encoders then).
+      if (
+        test.requireGpu !== undefined &&
+        test.requireGpu &&
+        (!hasGpu || !remoteVideoPlatform)
+      ) {
         continue;
       }
       // Disable ffvpx hw if needed

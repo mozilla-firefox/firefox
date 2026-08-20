@@ -31,7 +31,8 @@ interface nsIWebBrowserChrome : nsISupports
 
     // Bit 1 is free here.
 
-    const unsigned long CHROME_WINDOW_CLOSE           = 1 << 2;
+    // Bit 2 is free here.
+
     const unsigned long CHROME_WINDOW_RESIZE          = 1 << 3;
 
     // toolbar 'toolbar-menubar' accessible by pressing alt
@@ -40,8 +41,7 @@ interface nsIWebBrowserChrome : nsISupports
     // Various toolbarbutton elements like reload, back/forward...
     const unsigned long CHROME_TOOLBAR                = 1 << 5;
 
-    // Whole toolbar including locationbar
-    const unsigned long CHROME_LOCATIONBAR            = 1 << 6;
+    // Free bit here.
 
     // Bit 7 is free here.
 
@@ -57,9 +57,9 @@ interface nsIWebBrowserChrome : nsISupports
     const unsigned long CHROME_NO_PERSISTENCE         = 1 << 12;
 
     const unsigned long CHROME_ALL =
-        CHROME_WINDOW_CLOSE | CHROME_WINDOW_RESIZE | CHROME_MENUBAR |
-        CHROME_TOOLBAR | CHROME_LOCATIONBAR | CHROME_PERSONAL_TOOLBAR |
-        CHROME_SCROLLBARS | CHROME_TITLEBAR | CHROME_EXTRA;
+        CHROME_WINDOW_RESIZE | CHROME_MENUBAR |
+        CHROME_TOOLBAR | CHROME_PERSONAL_TOOLBAR | CHROME_SCROLLBARS |
+        CHROME_TITLEBAR | CHROME_EXTRA;
 
     // Only applies to dialog windows, all others always have a minimize button
     const unsigned long CHROME_WINDOW_MINIMIZE        = 1 << 14;
@@ -115,9 +115,8 @@ interface nsIWebBrowserChrome : nsISupports
     const unsigned long CHROME_OPENAS_CHROME          = 1 << 31;
 
     const unsigned long CHROME_MINIMAL_POPUP =
-      CHROME_WINDOW_CLOSE | CHROME_WINDOW_RESIZE | CHROME_WINDOW_MINIMIZE |
-      CHROME_LOCATIONBAR | CHROME_SCROLLBARS | CHROME_TITLEBAR |
-      CHROME_NO_PERSISTENCE;
+      CHROME_WINDOW_RESIZE | CHROME_WINDOW_MINIMIZE | CHROME_SCROLLBARS |
+      CHROME_TITLEBAR | CHROME_NO_PERSISTENCE;
 
     const unsigned long CHROME_DOCUMENT_PICTURE_IN_PICTURE_FLAGS =
       CHROME_MINIMAL_POPUP | CHROME_ALWAYS_ON_TOP | CHROME_DOCUMENT_PIP;

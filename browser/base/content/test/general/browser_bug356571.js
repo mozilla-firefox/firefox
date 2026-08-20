@@ -9,12 +9,6 @@ var didFail = false;
 const kPromptServiceUUID = "{6cc9c9fe-bc0b-432b-a410-253ef8bcc699}";
 const kPromptServiceContractID = "@mozilla.org/prompter;1";
 
-// Save original prompt service factory
-const kPromptServiceFactory = Cm.getClassObject(
-  Cc[kPromptServiceContractID],
-  Ci.nsIFactory
-);
-
 var fakePromptServiceFactory = {
   createInstance(aIid) {
     return promptService.QueryInterface(aIid);
@@ -86,7 +80,7 @@ function finishTest() {
     Components.ID(kPromptServiceUUID),
     "Prompt Service",
     kPromptServiceContractID,
-    kPromptServiceFactory
+    null
   );
 
   // Remove the listener

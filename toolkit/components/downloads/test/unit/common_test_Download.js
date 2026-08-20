@@ -478,6 +478,13 @@ add_task(async function test_windows_zoneInformation() {
       },
       expectedZoneId: "[ZoneTransfer]\r\nZoneId=3\r\n",
     },
+    {
+      options: {
+        originalUrl: "https://original.url.com",
+      },
+      expectedZoneId:
+        "[ZoneTransfer]\r\nZoneId=3\r\nHostUrl=https://original.url.com/\r\n",
+    },
   ];
   for (const test of tests) {
     const sourceUrl = test.sourceUrl || httpSourceUrl;

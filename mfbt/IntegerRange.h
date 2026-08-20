@@ -68,30 +68,12 @@ class IntegerIterator {
 
   /* Comparison operators */
 
-  friend bool operator==(const IntegerIterator<IntTypeT>& aIter1,
-                         const IntegerIterator<IntTypeT>& aIter2) {
-    return aIter1.mCurrent == aIter2.mCurrent;
-  }
-  friend bool operator!=(const IntegerIterator<IntTypeT>& aIter1,
-                         const IntegerIterator<IntTypeT>& aIter2) {
-    return aIter1.mCurrent != aIter2.mCurrent;
-  }
-  friend bool operator<(const IntegerIterator<IntTypeT>& aIter1,
-                        const IntegerIterator<IntTypeT>& aIter2) {
-    return aIter1.mCurrent < aIter2.mCurrent;
-  }
-  friend bool operator<=(const IntegerIterator<IntTypeT>& aIter1,
-                         const IntegerIterator<IntTypeT>& aIter2) {
-    return aIter1.mCurrent <= aIter2.mCurrent;
-  }
-  friend bool operator>(const IntegerIterator<IntTypeT>& aIter1,
-                        const IntegerIterator<IntTypeT>& aIter2) {
-    return aIter1.mCurrent > aIter2.mCurrent;
-  }
-  friend bool operator>=(const IntegerIterator<IntTypeT>& aIter1,
-                         const IntegerIterator<IntTypeT>& aIter2) {
-    return aIter1.mCurrent >= aIter2.mCurrent;
-  }
+  bool operator==(const IntegerIterator& aOther) const = default;
+  bool operator!=(const IntegerIterator& aOther) const = default;
+  bool operator<(const IntegerIterator& aOther) const = default;
+  bool operator<=(const IntegerIterator& aOther) const = default;
+  bool operator>(const IntegerIterator& aOther) const = default;
+  bool operator>=(const IntegerIterator& aOther) const = default;
 
  private:
   IntTypeT mCurrent;

@@ -962,18 +962,22 @@ void AddShaderCachesToPolicy(sandboxing::SizeTrackingConfig* aConfig,
                              int32_t aSandboxLevel) {
   // The GPU process needs to write to a shader cache for performance reasons
   if (sProfileDir) {
-    // Currently the GPU process creates the shader-cache directory if it
-    // doesn't exist, so we have to give FILES_ALLOW_ANY access.
-    // FILES_ALLOW_DIR_ANY has been seen to fail on an existing profile although
-    // the root cause hasn't been found. FILES_ALLOW_DIR_ANY has also been
-    // removed from the sandbox code upstream.
-    // It is possible that we might be able to use FILES_ALLOW_READONLY for the
-    // dir if it is already created, bug 1966157 has been filed to track.
-    AddCachedDirRule(aConfig, sandbox::FileSemantics::kAllowAny, sProfileDir,
-                     u"\\shader-cache"_ns);
+    // Create the shader-cache dir ourselves, so we only need to give read
+    // access to it.
+    static constexpr auto kShaderCacheDir = u"\\shader-cache"_ns;
+    static constexpr auto kShaderCacheDirAnyEntry = u"\\shader-cache\\*"_ns;
+    nsAutoString rulePath(*sProfileDir);
+    rulePath.Append(kShaderCacheDir);
+    if (!::CreateDirectoryW(rulePath.get(), nullptr) &&
+        ::GetLastError() != ERROR_ALREADY_EXISTS) {
+      LOG_W("Failed to create shader-cache");
+    }
+
+    AddCachedDirRule(aConfig, sandbox::FileSemantics::kAllowReadonly,
+                     sProfileDir, kShaderCacheDir);
 
     AddCachedDirRule(aConfig, sandbox::FileSemantics::kAllowAny, sProfileDir,
-                     u"\\shader-cache\\*"_ns);
+                     kShaderCacheDirAnyEntry);
   }
 
   // Add GPU specific shader cache rules.
@@ -1877,6 +1881,8 @@ bool SandboxBroker::SetSecurityLevelForUtilityProcess(
 #endif
     case mozilla::ipc::SandboxingKind::WINDOWS_UTILS:
       return BuildUtilitySandbox(config, WindowsUtilitySandboxProps());
+    case mozilla::ipc::SandboxingKind::HW_INFERENCE:
+      return BuildUtilitySandbox(config, GenericUtilitySandboxProps());
     default:
       MOZ_ASSERT_UNREACHABLE("Unknown sandboxing value");
       return false;

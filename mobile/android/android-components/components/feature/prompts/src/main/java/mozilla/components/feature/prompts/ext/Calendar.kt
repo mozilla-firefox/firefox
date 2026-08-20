@@ -6,10 +6,19 @@
 
 package mozilla.components.feature.prompts.ext
 
+import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.Calendar
 import java.util.Date
 
 internal fun Date.toCalendar() = Calendar.getInstance().also { it.time = this }
+
+/**
+ * Returns midnight UTC on the day this [Date] falls on in [zone], the device timezone by default. The time of day is
+ * dropped, not shifted by the timezone offset.
+ */
+internal fun Date.toLocalDayStartAsUtcMillis(zone: ZoneId = ZoneId.systemDefault()): Long =
+    toInstant().atZone(zone).toLocalDate().atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
 
 internal var Calendar.millisecond: Int
     get() = get(Calendar.MILLISECOND)

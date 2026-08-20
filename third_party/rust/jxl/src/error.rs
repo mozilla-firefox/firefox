@@ -116,8 +116,6 @@ pub enum Error {
     PassesLastPassTooLarge,
     #[error("Non-patch reference frame with a crop")]
     NonPatchReferenceWithCrop,
-    #[error("Non-444 chroma subsampling is not allowed when adaptive DC smoothing is enabled")]
-    Non444ChromaSubsampling,
     #[error("Non-444 chroma subsampling is not allowed for bigger than 8x8 transforms")]
     InvalidBlockSizeForChromaSubsampling,
     #[error("Out of memory: {0}")]

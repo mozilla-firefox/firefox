@@ -16,6 +16,7 @@
 #include "base/basictypes.h"
 #include "buildid_section.h"
 #include "jsapi.h"
+#include "mozilla/AppShutdown.h"
 #include "mozilla/AsyncEventDispatcher.h"
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/ContentPrincipal.h"
@@ -1066,7 +1067,10 @@ bool nsFrameLoader::ShowRemoteFrame(nsSubDocumentFrame* aFrame) {
                "ShowRemote only makes sense on remote frames.");
 
   if (!EnsureRemoteBrowser()) {
-    NS_ERROR("Couldn't create child process.");
+    // We know that creation of a browser will fail past shutdown, so we only
+    // assert before shutdown, to avoid failures on debug builds (bug 2055827).
+    NS_ASSERTION(AppShutdown::IsInOrBeyond(ShutdownPhase::AppShutdownConfirmed),
+                 "Couldn't create child process.");
     return false;
   }
 

@@ -38,11 +38,3 @@ uniffi::custom_type!(JsonValue, String, {
     try_lift: |val| Ok(serde_json::from_str(val.as_str())?),
     lower: |obj| obj.to_string(),
 });
-
-// Our UDL uses a `Guid` type.
-use sync_guid::Guid;
-uniffi::custom_type!(Guid, String, {
-    remote,
-    try_lift: |val| Ok(Guid::new(val.as_str())),
-    lower: |obj| obj.into()
-});

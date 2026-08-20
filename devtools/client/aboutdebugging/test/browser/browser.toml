@@ -62,6 +62,9 @@ tags = "webextensions"
 tags = "webextensions"
 
 ["browser_aboutdebugging_addons_manifest_url.js"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 2045293
+]
 
 ["browser_aboutdebugging_addons_popup_picker.js"]
 
@@ -87,6 +90,9 @@ skip-if = [
 ["browser_aboutdebugging_connect_networklocations.js"]
 
 ["browser_aboutdebugging_connect_toggle_usb_devices.js"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 2045293
+]
 
 ["browser_aboutdebugging_connection_prompt_setting.js"]
 

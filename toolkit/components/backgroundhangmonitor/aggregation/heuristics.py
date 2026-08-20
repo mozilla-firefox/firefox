@@ -78,10 +78,11 @@ def _is_js_func_name(func_name):
 def apply_hang_signature_heuristics(stack):
     """Trim a symbolicated stack using the frontend's hang-signature heuristics.
 
-    The input is a list of ``(func_name, lib_name)`` tuples in outer-first
-    (root -> leaf) order. Frames the frontend would mark as hidden are removed
-    entirely so the upstream output has the same shape the frontend would
-    render.
+    The input is a list of ``(func_name, lib_name, inline_depth)`` tuples in
+    outer-first (root -> leaf) order. Frames the frontend would mark as hidden
+    are removed entirely so the upstream output has the same shape the frontend
+    would render. inline_depth rides along untouched: trimming decides which
+    frames survive, not whether a surviving frame was inlined.
 
     Mirrors getHangFrames in hang-stats/bhr.js. Walks the stack leaf-first
     internally (the order the frontend uses) and reverses on return so callers
@@ -90,7 +91,7 @@ def apply_hang_signature_heuristics(stack):
     frames = []
     should_remove_prefix = True
 
-    for func_name, lib_name in reversed(stack):
+    for func_name, lib_name, inline_depth in reversed(stack):
         if func_name.startswith(_EVENT_LOOP_FUNC_PREFIX):
             break
 
@@ -108,7 +109,7 @@ def apply_hang_signature_heuristics(stack):
             i = len(frames) - 1
             while i and frames[i][0].startswith(_JS_INTERNAL_PREFIXES):
                 i -= 1
-            anchor_func, anchor_lib, _ = frames[i]
+            anchor_func, anchor_lib = frames[i][0], frames[i][1]
             anchor_is_js = (
                 not anchor_lib and _is_js_func_name(anchor_func)
             ) or anchor_func.startswith("static bool XPC_WN_")
@@ -125,8 +126,8 @@ def apply_hang_signature_heuristics(stack):
                 for ii in range(len(frames) - 3, len(frames)):
                     frames[ii][2] = True
 
-        frames.append([func_name, lib_name, False])
+        frames.append([func_name, lib_name, False, inline_depth])
 
-    visible = [(f[0], f[1]) for f in frames if not f[2]]
+    visible = [(f[0], f[1], f[3]) for f in frames if not f[2]]
     visible.reverse()
     return visible

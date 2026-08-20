@@ -417,6 +417,27 @@ class DefaultLoader(BaseManifestLoader):
         if "web-platform-tests" in suite:
             manifests = set()
 
+            # Subsuites only partition the (very large) testharness suite. The
+            # reftest/crashtest/wdspec/print-reftest suites are not split, so
+            # they keep every manifest; excluding subsuite paths here would drop
+            # e.g. canvas reftests and webgpu crashtests from every job, since
+            # the subsuite jobs only run testharness (see bug 2017833). Subsuites
+            # whose tests can't run in these jobs (e.g. webgpu CTS reftests, which
+            # need the webgpu job's --timeout-multiplier) are excluded at runtime
+            # via --exclude-tag in kind.yml instead.
+            if suite != "web-platform-tests":
+                for t in tests:
+                    if mozinfo_tags and not any(
+                        x in t.get("tags", []) for x in mozinfo_tags
+                    ):
+                        continue
+                    manifests.add(t["manifest"])
+                return {
+                    "active": list(manifests),
+                    "skipped": [],
+                    "other_dirs": {},
+                }
+
             subsuite = next((x for x in WPT_SUBSUITES.keys() if mozinfo.get(x)), None)
 
             if subsuite:

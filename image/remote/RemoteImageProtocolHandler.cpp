@@ -273,7 +273,7 @@ RemoteImageProtocolHandler::GetImageSurface(imgIContainer* aContainer,
     gfxContext context(drawTarget);
 
     SVGImageContext svgContext;
-    svgContext.SetViewportSize(Some(CSSIntSize(size.width, size.height)));
+    svgContext.SetViewportSize(Some(CSSSize(size.width, size.height)));
     svgContext.SetColorScheme(Some(aColorScheme));
 
     ImgDrawResult res = aContainer->Draw(

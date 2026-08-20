@@ -51,6 +51,10 @@ ADD apport /etc/default/apport
 # Disable font antialiasing for now to match releng's setup
 ADD fonts.conf /builds/worker/.fonts.conf
 
+# Opt-in antialiased fontconfig, for tasks that set FONTCONFIG_FILE to this
+# path. Inert otherwise; see fonts-aa.conf for why.
+ADD fonts-aa.conf /builds/worker/.fonts-aa.conf
+
 # allow the worker user to access video devices
 RUN     usermod -a -G video worker
 

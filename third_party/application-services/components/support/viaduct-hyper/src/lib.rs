@@ -111,7 +111,7 @@ async fn make_request_inner(
         let Some(location) = resp.headers().get("location") else {
             return Err(ViaductError::new_backend_error("location header missing"));
         };
-        url = Url::parse(location.to_str().map_backend_error()?)?;
+        url = url.join(location.to_str().map_backend_error()?)?;
         let new_request = Request {
             method: request.method,
             url: url.clone(),

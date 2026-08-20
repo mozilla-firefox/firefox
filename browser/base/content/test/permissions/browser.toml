@@ -57,6 +57,8 @@ support-files = ["../webrtc/get_user_media.html"]
 
 ["browser_temporary_permissions_api_e2e.js"]
 
+["browser_temporary_permissions_child_clear.js"]
+
 ["browser_temporary_permissions_cross_origin_navigation.js"]
 
 ["browser_temporary_permissions_expiry.js"]

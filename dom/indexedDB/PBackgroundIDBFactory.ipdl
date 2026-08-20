@@ -46,7 +46,7 @@ union GetDatabasesResponse
   DatabaseMetadata[];
 };
 
-[ChildImpl="indexedDB::BackgroundFactoryChild", ParentImpl=virtual]
+[ChildImpl="mozilla::dom::indexedDB::BackgroundFactoryChild", ParentImpl=virtual]
 sync protocol PBackgroundIDBFactory
 {
   manager PBackground;

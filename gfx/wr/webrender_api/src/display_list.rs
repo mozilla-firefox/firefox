@@ -891,6 +891,7 @@ pub struct SaveState {
     next_clip_chain_id: u64,
     shadow_capture_len: usize,
     pending_shadows_len: usize,
+    raster_space_stack_len: usize,
 }
 
 /// DisplayListSection determines the target buffer for the display items.
@@ -1060,6 +1061,10 @@ pub struct DisplayListBuilder {
     /// Held as typed descriptors (not captured markers) and consumed by
     /// `pop_all_shadows`, which desugars them into blur stacking contexts.
     pending_shadows: Vec<PendingShadow>,
+    /// Raster space in effect, one entry per open stacking context plus a
+    /// `Screen` base. Resolving here rather than in the scene builder means one
+    /// stack instead of two that have to agree.
+    raster_space_stack: Vec<di::RasterSpace>,
 }
 
 /// A shadow declared by `push_shadow`, awaiting desugaring at `pop_all_shadows`.
@@ -1106,6 +1111,7 @@ impl DisplayListBuilder {
             glyph_scratch: Vec::new(),
             shadow_capture: Vec::new(),
             pending_shadows: Vec::new(),
+            raster_space_stack: vec![di::RasterSpace::Screen],
         }
     }
 
@@ -1123,6 +1129,9 @@ impl DisplayListBuilder {
         self.off_grid_coords = 0;
         self.shadow_capture.clear();
         self.pending_shadows.clear();
+
+        self.raster_space_stack.clear();
+        self.raster_space_stack.push(di::RasterSpace::Screen);
     }
 
     /// Saves the current display list state, so it may be `restore()`'d.
@@ -1142,6 +1151,7 @@ impl DisplayListBuilder {
             next_clip_chain_id: self.next_clip_chain_id,
             shadow_capture_len: self.shadow_capture.len(),
             pending_shadows_len: self.pending_shadows.len(),
+            raster_space_stack_len: self.raster_space_stack.len(),
         });
     }
 
@@ -1161,6 +1171,9 @@ impl DisplayListBuilder {
         // already handled).
         self.shadow_capture.truncate(state.shadow_capture_len);
         self.pending_shadows.truncate(state.pending_shadows_len);
+
+        // Stacking contexts opened since the save go away with their items.
+        self.raster_space_stack.truncate(state.raster_space_stack_len);
 
         // Drop offsets recorded for spatial nodes defined after the save point;
         // those ids will be reused, so the single-entry cache could be stale.
@@ -1515,49 +1528,52 @@ impl DisplayListBuilder {
         self.glyph_scratch = scratch;
     }
 
-    /// NOTE: gradients must be pushed in the order they're created
-    /// because create_gradient stores the stops in anticipation.
+    /// Normalize `stops` and describe the gradient they make.
+    ///
+    /// Returns the normalized stops alongside the gradient, for the matching
+    /// `push_*` to take: the stops describe the gradient, so they travel with
+    /// it rather than being left in the builder. Nothing is recorded here.
+    ///
+    /// This used to push the stops into the item stream itself, which is why
+    /// gradients had to be pushed in the order they were created - and, since a
+    /// `SetGradientStops` overwrites the last one, really had to be created and
+    /// pushed strictly one at a time. Handing them back removes that hazard.
     pub fn create_gradient(
         &mut self,
         start_point: LayoutPoint,
         end_point: LayoutPoint,
         stops: Vec<di::GradientStop>,
         extend_mode: di::ExtendMode,
-    ) -> di::Gradient {
+    ) -> (di::Gradient, Vec<di::GradientStop>) {
         let mut builder = GradientBuilder::with_stops(stops);
         let gradient = builder.gradient(start_point, end_point, extend_mode);
-        self.push_stops(builder.stops());
-        gradient
+        (gradient, builder.into_stops())
     }
 
-    /// NOTE: gradients must be pushed in the order they're created
-    /// because create_gradient stores the stops in anticipation.
+    /// See [`create_gradient`](#method.create_gradient).
     pub fn create_radial_gradient(
         &mut self,
         center: LayoutPoint,
         radius: LayoutSize,
         stops: Vec<di::GradientStop>,
         extend_mode: di::ExtendMode,
-    ) -> di::RadialGradient {
+    ) -> (di::RadialGradient, Vec<di::GradientStop>) {
         let mut builder = GradientBuilder::with_stops(stops);
         let gradient = builder.radial_gradient(center, radius, extend_mode);
-        self.push_stops(builder.stops());
-        gradient
+        (gradient, builder.into_stops())
     }
 
-    /// NOTE: gradients must be pushed in the order they're created
-    /// because create_gradient stores the stops in anticipation.
+    /// See [`create_gradient`](#method.create_gradient).
     pub fn create_conic_gradient(
         &mut self,
         center: LayoutPoint,
         angle: f32,
         stops: Vec<di::GradientStop>,
         extend_mode: di::ExtendMode,
-    ) -> di::ConicGradient {
+    ) -> (di::ConicGradient, Vec<di::GradientStop>) {
         let mut builder = GradientBuilder::with_stops(stops);
         let gradient = builder.conic_gradient(center, angle, extend_mode);
-        self.push_stops(builder.stops());
-        gradient
+        (gradient, builder.into_stops())
     }
 
     pub fn push_border(
@@ -1566,8 +1582,12 @@ impl DisplayListBuilder {
         bounds: LayoutRect,
         widths: LayoutSideOffsets,
         details: di::BorderDetails,
+        // Stops for a `NinePatchBorderSource` gradient; empty otherwise.
+        gradient_stops: &[di::GradientStop],
     ) {
         let (common, offset) = self.normalize_common(common);
+        self.push_stops(gradient_stops);
+
         let item = di::DisplayItem::Border(di::BorderDisplayItem {
             common,
             bounds: self.shift_rect(bounds, offset),
@@ -1773,8 +1793,10 @@ impl DisplayListBuilder {
         gradient: di::Gradient,
         tile_size: LayoutSize,
         tile_spacing: LayoutSize,
+        stops: &[di::GradientStop],
     ) {
         let (common, offset) = self.normalize_common(common);
+        self.push_stops(stops);
         let item = di::DisplayItem::Gradient(di::GradientDisplayItem {
             common,
             bounds: self.shift_rect(bounds, offset),
@@ -1796,8 +1818,10 @@ impl DisplayListBuilder {
         gradient: di::RadialGradient,
         tile_size: LayoutSize,
         tile_spacing: LayoutSize,
+        stops: &[di::GradientStop],
     ) {
         let (common, offset) = self.normalize_common(common);
+        self.push_stops(stops);
         let item = di::DisplayItem::RadialGradient(di::RadialGradientDisplayItem {
             common,
             bounds: self.shift_rect(bounds, offset),
@@ -1819,8 +1843,10 @@ impl DisplayListBuilder {
         gradient: di::ConicGradient,
         tile_size: LayoutSize,
         tile_spacing: LayoutSize,
+        stops: &[di::GradientStop],
     ) {
         let (common, offset) = self.normalize_common(common);
+        self.push_stops(stops);
         let item = di::DisplayItem::ConicGradient(di::ConicGradientDisplayItem {
             common,
             bounds: self.shift_rect(bounds, offset),
@@ -1923,7 +1949,22 @@ impl DisplayListBuilder {
         flags: di::StackingContextFlags,
         snapshot: Option<di::SnapshotInfo>
     ) {
-        self.push_filters_normalized(filters, filter_datas, spatial_id);
+        self.push_filters(filters, filter_datas, spatial_id);
+
+        // Resolve this context's raster space against its parent: a `Screen`
+        // request inherits the parent, a `Local` request overrides a `Screen`
+        // parent, and nested locals take the coarser of the two scales. The
+        // resolved value is what goes in the item, so the scene builder does not
+        // repeat the walk - see `StackingContext::raster_space`.
+        let resolved_raster_space = match (self.raster_space_stack.last(), raster_space) {
+            (None, _) => raster_space,
+            (Some(parent), di::RasterSpace::Screen) => *parent,
+            (Some(di::RasterSpace::Screen), space) => space,
+            (Some(di::RasterSpace::Local(parent_scale)), di::RasterSpace::Local(scale)) => {
+                di::RasterSpace::Local(parent_scale.max(scale))
+            }
+        };
+        self.raster_space_stack.push(resolved_raster_space);
 
         let item = di::DisplayItem::PushStackingContext(di::PushStackingContextDisplayItem {
             spatial_id,
@@ -1933,7 +1974,7 @@ impl DisplayListBuilder {
                 transform_style,
                 mix_blend_mode,
                 clip_chain_id,
-                raster_space,
+                raster_space: resolved_raster_space,
                 flags,
             },
         });
@@ -1978,6 +2019,7 @@ impl DisplayListBuilder {
     }
 
     pub fn pop_stacking_context(&mut self) {
+        self.raster_space_stack.pop().expect("popped more stacking contexts than were pushed");
         self.push_item(&di::DisplayItem::PopStackingContext);
     }
 
@@ -1995,12 +2037,13 @@ impl DisplayListBuilder {
         filters: &[di::FilterOp],
         filter_datas: &[di::FilterData],
     ) {
-        // Unlike a regular filter, a backdrop filter's picture is anchored to
-        // the backdrop root (resolved from SpatialNodeIndex::UNKNOWN), not to
-        // `common.spatial_id`, so the backdrop root does not re-apply this
-        // node's external scroll offset at frame time. The SVGFE subregion must
-        // therefore stay un-normalized; only the item geometry below is.
-        self.push_filters(filters, filter_datas);
+        // The subregions are normalized against `common.spatial_id`, the same
+        // node as the item geometry below. A backdrop filter's picture composites
+        // in backdrop-root space instead, but that is a difference of *spatial
+        // node*, which frame building maps through the spatial tree
+        // (`SurfaceInfo::svgfe_source_map`) - not a reason to author subregion
+        // and geometry in different coordinate spaces (bug 1975275).
+        self.push_filters(filters, filter_datas, common.spatial_id);
 
         let (common, _offset) = self.normalize_common(common);
         let item = di::DisplayItem::BackdropFilter(di::BackdropFilterDisplayItem {
@@ -2009,38 +2052,38 @@ impl DisplayListBuilder {
         self.push_item(&item);
     }
 
-    /// As `push_filters`, but first normalizes SVGFE filter-graph subregions
-    /// (the only absolutely-positioned filter geometry) by the accumulated
-    /// external scroll offset for `spatial_id`, matching the normalization
-    /// applied to the primitives the filter graph operates on.
-    fn push_filters_normalized(
+    /// Write the filter ops and filter data consumed by the stacking context or
+    /// backdrop filter pushed immediately after this.
+    ///
+    /// SVGFE filter-graph subregions are the only absolutely-positioned filter
+    /// geometry, so they are normalized by the accumulated external scroll offset
+    /// for `spatial_id`, exactly like the primitives the graph operates on. This
+    /// is the only way to push filters, so the normalization cannot be bypassed:
+    /// authoring a subregion in a different space from the geometry it applies to
+    /// was bug 1975275.
+    fn push_filters(
         &mut self,
         filters: &[di::FilterOp],
         filter_datas: &[di::FilterData],
         spatial_id: di::SpatialId,
     ) {
         let offset = self.accumulated_scroll_offset(spatial_id);
-        if offset.is_zero() {
-            self.push_filters(filters, filter_datas);
-            return;
-        }
-
-        let mut filters = filters.to_vec();
-        let grid = self.au_grid;
-        let off_grid = &mut self.off_grid_coords;
-        for filter in &mut filters {
-            if let Some(node) = filter.svgfe_node_mut() {
-                node.subregion = grid.rect(node.subregion, offset, off_grid);
+        let normalized = if offset.is_zero() {
+            // Common case: nothing to shift, so don't clone the filter list.
+            None
+        } else {
+            let grid = self.au_grid;
+            let off_grid = &mut self.off_grid_coords;
+            let mut filters = filters.to_vec();
+            for filter in &mut filters {
+                if let Some(node) = filter.svgfe_node_mut() {
+                    node.subregion = grid.rect(node.subregion, offset, off_grid);
+                }
             }
-        }
-        self.push_filters(&filters, filter_datas);
-    }
+            Some(filters)
+        };
+        let filters = normalized.as_deref().unwrap_or(filters);
 
-    pub fn push_filters(
-        &mut self,
-        filters: &[di::FilterOp],
-        filter_datas: &[di::FilterData],
-    ) {
         if !filters.is_empty() {
             self.push_item(&di::DisplayItem::SetFilterOps);
             self.push_iter(filters);

@@ -144,7 +144,6 @@ struct MOZ_STACK_CLASS RubyColumn {
                  "Should only compare iterators of the same ruby column");
       return mIndex == aIter2.mIndex;
     }
-    bool operator!=(const Iterator& aIter2) const = default;
 
    private:
     Iterator(const RubyColumn& aColumn, int32_t aIndex)

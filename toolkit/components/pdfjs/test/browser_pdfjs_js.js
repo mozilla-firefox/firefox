@@ -38,11 +38,15 @@ add_task(async function test_js_sandbox() {
 
         const text = document.querySelector(`[data-element-id="15R"]`);
 
-        is(text.value, "test", "Text field must containt 'test' string");
+        is(text.value, "test", "Text field must contain 'test' string");
 
-        content.addEventListener("unload", () => {
-          is(sandboxDestroyCount, 1, "Sandbox must have been destroyed");
-        });
+        content.addEventListener(
+          "unload",
+          () => {
+            is(sandboxDestroyCount, 1, "Sandbox must have been destroyed");
+          },
+          { once: true }
+        );
       });
 
       await waitForPdfJSClose(browser);

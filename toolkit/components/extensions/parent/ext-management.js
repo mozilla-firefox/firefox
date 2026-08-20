@@ -318,6 +318,15 @@ this.management = class extends ExtensionAPIPersistent {
           if (!checkAllowedAddon(addon)) {
             throw new ExtensionError("setEnabled not allowed for this addon");
           }
+          if (
+            !enabled &&
+            Services.policies &&
+            !Services.policies.isAllowed(`disable-extension:${id}`)
+          ) {
+            throw new ExtensionError(
+              `Cannot disable add-on ${id}: disallowed by enterprise policy`
+            );
+          }
           if (enabled) {
             await addon.enable();
           } else {

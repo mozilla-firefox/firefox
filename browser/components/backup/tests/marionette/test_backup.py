@@ -971,7 +971,7 @@ class BackupTest(MarionetteTestCase):
         [tabCount, url] = self.marionette.execute_script(
             """
           const { SessionStore } = ChromeUtils.importESModule(
-            "resource:///modules/sessionstore/SessionStore.sys.mjs"
+            "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs"
           );
           const session = SessionStore.getCurrentState(true);
           const win = session.windows[0];

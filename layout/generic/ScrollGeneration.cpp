@@ -12,24 +12,6 @@ template <typename Tag>
 ScrollGeneration<Tag>::ScrollGeneration(uint64_t aValue) : mValue(aValue) {}
 
 template <typename Tag>
-bool ScrollGeneration<Tag>::operator<(
-    const ScrollGeneration<Tag>& aOther) const {
-  return mValue < aOther.mValue;
-}
-
-template <typename Tag>
-bool ScrollGeneration<Tag>::operator==(
-    const ScrollGeneration<Tag>& aOther) const {
-  return mValue == aOther.mValue;
-}
-
-template <typename Tag>
-bool ScrollGeneration<Tag>::operator!=(
-    const ScrollGeneration<Tag>& aOther) const {
-  return !(*this == aOther);
-}
-
-template <typename Tag>
 std::ostream& operator<<(std::ostream& aStream,
                          const ScrollGeneration<Tag>& aGen) {
   return aStream << aGen.mValue;

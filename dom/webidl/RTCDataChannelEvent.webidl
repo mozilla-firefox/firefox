@@ -3,7 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * The origin of this IDL file is
- * http://dev.w3.org/2011/webrtc/editor/webrtc.html#idl-def-RTCDataChannelEvent
+ * https://w3c.github.io/webrtc-pc/#rtcdatachannelevent
  */
 
 dictionary RTCDataChannelEventInit : EventInit {

@@ -2,13 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// @ts-nocheck - TODO - Remove this to type check this file.
-
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 /**
- * @import { ProgressAndStatusCallbackParams } from "./Utils.sys.mjs"
- * @import { ParsedModelHubUrl, AllowDeny } from "../ml.d.ts"
+ * @typedef {import("./Utils.sys.mjs").ProgressAndStatusCallbackParams} ProgressAndStatusCallbackParams
  */
 
 const lazy = {};
@@ -1484,16 +1481,16 @@ export class ModelHub {
   /**
    * Create an instance of ModelHub.
    *
-   * @param {object} [config]
-   * @param {string} [config.rootUrl] - Root URL used to download models.
-   * @param {string} [config.urlTemplate] - The template to retrieve the full URL using a model name and revision.
-   * @param {Array<AllowDeny>} [config.allowDenyList] - Array of URL patterns with filters.
+   * @param {object} config
+   * @param {string} config.rootUrl - Root URL used to download models.
+   * @param {string} config.urlTemplate - The template to retrieve the full URL using a model name and revision.
+   * @param {Array<{filter: 'ALLOW'|'DENY', urlPrefix: string}>} config.allowDenyList - Array of URL patterns with filters.
    * @param {boolean} [config.reset=false] - Whether to reset the database.
    */
   constructor({
     rootUrl = lazy.DEFAULT_ROOT_URL,
     urlTemplate = lazy.DEFAULT_URL_TEMPLATE,
-    allowDenyList,
+    allowDenyList = null,
     reset = false,
   } = {}) {
     this.rootUrl = rootUrl;
@@ -1571,7 +1568,7 @@ export class ModelHub {
    * `https://hub/organization/model/revision/filePath`
    *
    * @param {string} url - The full URL to the model, including protocol and domain - or the relative path.
-   * @returns {ParsedModelHubUrl} An object containing the parsed components of the URL. The
+   * @returns {object} An object containing the parsed components of the URL. The
    *                   object has properties `model`, `modelWithHostname` and `file`,
    *                   and optionally `revision` if the URL includes a version.
    * @throws {Error} Throws an error if the URL does not start with `this.rootUrl` or
@@ -1734,17 +1731,18 @@ export class ModelHub {
   /**
    * Deletes all model files for the specified task and model, except for the specified revision.
    *
-   * @param {string} taskName - The name of the inference task.
-   * @param {string} modelWithHostname - The model name (hostname/organization/name).
-   * @param {string} targetRevision - The revision to keep.
+   * @param {object} config - Configuration object.
+   * @param {string} config.taskName - The name of the inference task.
+   * @param {string} config.modelWithHostname - The model name (hostname/organization/name).
+   * @param {string} config.targetRevision - The revision to keep.
    *
    * @returns {Promise<void>}
    */
-  async deleteNonMatchingModelRevisions(
+  async deleteNonMatchingModelRevisions({
     taskName,
     modelWithHostname,
-    targetRevision
-  ) {
+    targetRevision,
+  }) {
     // Ensure all required parameters are provided
     if (!taskName || !modelWithHostname || !targetRevision) {
       throw new Error(
@@ -1838,6 +1836,8 @@ export class ModelHub {
    * @param {string} config.modelHubRootUrl - root url of the model hub
    * @param {string} config.modelHubUrlTemplate - url template of the model hub
    * @param {?function(ProgressAndStatusCallbackParams):void} config.progressCallback A function to call to indicate progress status.
+   * @param {string} config.featureId - The feature ID requesting the model
+   * @param {string} config.sessionId - The session ID for tracking this download
    * @returns {Promise<[Blob, object]>} The file content
    */
   async getModelFileAsBlob({
@@ -1849,6 +1849,8 @@ export class ModelHub {
     modelHubRootUrl,
     modelHubUrlTemplate,
     progressCallback,
+    featureId,
+    sessionId,
   }) {
     const [filePath, headers] = await this.getModelDataAsFile({
       engineId,
@@ -1859,6 +1861,8 @@ export class ModelHub {
       modelHubRootUrl,
       modelHubUrlTemplate,
       progressCallback,
+      featureId: featureId || engineId,
+      sessionId: sessionId || `${engineId}-${Date.now()}`,
     });
 
     const fileObject = await (
@@ -1881,7 +1885,7 @@ export class ModelHub {
    * @param {string} config.file - The file name.
    * @param {string} config.modelHubRootUrl - root url of the model hub
    * @param {string} config.modelHubUrlTemplate - url template of the model hub
-   * @param {?function(ProgressAndStatusCallbackParams):void} [config.progressCallback] A function to call to indicate progress status.
+   * @param {?function(ProgressAndStatusCallbackParams):void} config.progressCallback A function to call to indicate progress status.
    * @returns {Promise<[ArrayBuffer, headers]>} The file content
    */
   async getModelFileAsArrayBuffer({
@@ -1978,11 +1982,11 @@ export class ModelHub {
    * @param {string} config.file - The file name.
    * @param {string} config.modelHubRootUrl - root url of the model hub
    * @param {string} config.modelHubUrlTemplate - url template of the model hub
-   * @param {?function(ProgressAndStatusCallbackParams):void} [config.progressCallback] A function to call to indicate progress status.
+   * @param {?function(ProgressAndStatusCallbackParams):void} config.progressCallback A function to call to indicate progress status.
    * @param {string} config.featureId - feature id for the model
    * @param {string} config.sessionId - shared across the same session
-   * @param {object} [config.telemetryData] - Additional telemetry data.
-   * @param {?AbortSignal} [config.abortSignal] - AbortSignal to cancel the download.
+   * @param {object} config.telemetryData - Additional telemetry data.
+   * @param {?AbortSignal} config.abortSignal - AbortSignal to cancel the download.
    * @returns {Promise<[string, headers]>} The local path to the file content and headers.
    */
   async getModelDataAsFile({
@@ -2012,12 +2016,6 @@ export class ModelHub {
       modelHubUrlTemplate,
     });
     lazy.console.debug(`Getting model file from ${url}`);
-
-    if (abortSignal === null) {
-      // Guard against a `null` abortSignal which for some reason causes an error
-      // when piping through a Response body.
-      abortSignal = undefined;
-    }
 
     await this.#initCache();
 
@@ -2363,5 +2361,135 @@ export class ModelHub {
     await this.#initCache();
     const owner = ModelOwner.fromModel(model);
     return owner.getIcon();
+  }
+
+  /**
+   * Check if a model is available by attempting to verify a config file exists.
+   * This does a lightweight HEAD request to check model availability without downloading.
+   *
+   * @param {string} model - The model name (organization/name)
+   * @param {string} revision - The model revision
+   * @param {object} options - Additional options
+   * @param {string} [options.file="config.json"] - The file to check for availability
+   * @param {string} [options.modelHubRootUrl] - Root URL of the model hub
+   * @param {string} [options.modelHubUrlTemplate] - URL template of the model hub
+   * @returns {Promise<boolean>} True if the model appears to be available
+   */
+  async isModelAvailable(
+    model,
+    revision,
+    { file = "config.json", modelHubRootUrl, modelHubUrlTemplate } = {}
+  ) {
+    const url = this.#validatedFileUrl(model, revision, {
+      file,
+      modelHubRootUrl,
+      modelHubUrlTemplate,
+    });
+    if (!url) {
+      return false;
+    }
+
+    const cached = await this.#isCachedAndAllowed(model, revision, file, url);
+    if (cached !== null) {
+      return cached;
+    }
+
+    const response = await this.#fetch(url, { method: "HEAD" });
+    return response.ok;
+  }
+
+  /**
+   * Check if a model is already downloaded to the local cache. Unlike
+   * isModelAvailable, this only looks at the local cache: it does no network
+   * request at all, so it only reports true for a model that needs no
+   * download.
+   *
+   * @param {string} model - The model name (organization/name)
+   * @param {string} revision - The model revision
+   * @param {object} options - Additional options
+   * @param {string} [options.file="config.json"] - The file to check
+   * @param {string} [options.modelHubRootUrl] - Root URL of the model hub
+   * @param {string} [options.modelHubUrlTemplate] - URL template of the model hub
+   * @returns {Promise<boolean>} True if the model is already installed
+   */
+  async isModelInstalled(
+    model,
+    revision,
+    { file = "config.json", modelHubRootUrl, modelHubUrlTemplate } = {}
+  ) {
+    const url = this.#validatedFileUrl(model, revision, {
+      file,
+      modelHubRootUrl,
+      modelHubUrlTemplate,
+    });
+    if (!url) {
+      return false;
+    }
+
+    return (
+      (await this.#isCachedAndAllowed(model, revision, file, url)) === true
+    );
+  }
+
+  /**
+   * Shared by isModelAvailable/isModelInstalled: validates the inputs and
+   * builds the hub URL of a model file, returning null if the inputs are
+   * invalid.
+   *
+   * @returns {?string}
+   */
+  #validatedFileUrl(
+    model,
+    revision,
+    { file, modelHubRootUrl, modelHubUrlTemplate }
+  ) {
+    const checkError = ModelHub.checkInput(model, revision, file);
+    if (checkError) {
+      lazy.console.error(
+        `ModelHub: Invalid input for ${model}@${revision}: ${checkError.message}`
+      );
+      return null;
+    }
+
+    return this.#fileUrl({
+      model,
+      revision,
+      file,
+      modelHubRootUrl: modelHubRootUrl || this.rootUrl,
+      modelHubUrlTemplate: modelHubUrlTemplate || this.urlTemplate,
+    });
+  }
+
+  /**
+   * Shared by isModelAvailable/isModelInstalled. Returns null if the file
+   * isn't cached at all (caller decides what to do next, e.g. a network
+   * check). Returns true/false if it is cached: true if its hub is still
+   * allowed, false (after purging the cached model) if it has since been
+   * denylisted.
+   *
+   * @returns {Promise<?boolean>}
+   */
+  async #isCachedAndAllowed(model, revision, file, url) {
+    await this.#initCache();
+    const hostname = new URL(url).hostname;
+    const modelWithHostname = `${hostname}/${model}`;
+    const isCached = await this.cache.fileExists({
+      model: modelWithHostname,
+      revision,
+      file,
+    });
+    if (!isCached) {
+      return null;
+    }
+    const fileAllowed = this.allowedURL(url);
+    if (!fileAllowed.allowed) {
+      await this.cache.deleteModels({
+        model: modelWithHostname,
+        revision,
+        deletedBy: "denylist",
+      });
+      return false;
+    }
+    return true;
   }
 }

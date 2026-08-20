@@ -282,8 +282,8 @@ user-login = "jamienicol"
 user-name = "Jamie Nicol"
 
 [[publisher.h2]]
-version = "0.4.13"
-when = "2026-01-05"
+version = "0.4.16"
+when = "2026-08-17"
 user-id = 359
 user-login = "seanmonstar"
 user-name = "Sean McArthur"
@@ -2597,28 +2597,28 @@ aggregated-from = "https://chromium.googlesource.com/chromium/src/+/main/third_p
 [[audits.google.audits.jxl]]
 who = "Łukasz Anforowicz <lukasza@chromium.org>"
 criteria = "safe-to-deploy"
-version = "0.5.1"
-notes = "Delta review from v0.4.1"
+version = "0.6.0"
+notes = "Delta review from v0.5.1"
 aggregated-from = "https://raw.githubusercontent.com/google/rust-crate-audits/main/manual-sources/additional-audits.toml"
 
 [[audits.google.audits.jxl_macros]]
 who = "Luca Versari <veluca@chromium.org>"
 criteria = "safe-to-deploy"
-version = "0.5.1"
+version = "0.6.0"
 notes = "No unsafe code, no fs access"
 aggregated-from = "https://raw.githubusercontent.com/google/rust-crate-audits/main/manual-sources/additional-audits.toml"
 
 [[audits.google.audits.jxl_simd]]
 who = "Łukasz Anforowicz <lukasza@chromium.org>"
 criteria = "safe-to-deploy"
-version = "0.5.1"
-notes = "Delta review from v0.4.1"
+version = "0.6.0"
+notes = "Delta review from v0.5.1"
 aggregated-from = "https://raw.githubusercontent.com/google/rust-crate-audits/main/manual-sources/additional-audits.toml"
 
 [[audits.google.audits.jxl_transforms]]
 who = "Luca Versari <veluca@chromium.org>"
 criteria = "safe-to-deploy"
-version = "0.5.1"
+version = "0.6.0"
 notes = "No unsafe code, no fs access"
 aggregated-from = "https://raw.githubusercontent.com/google/rust-crate-audits/main/manual-sources/additional-audits.toml"
 

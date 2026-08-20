@@ -16,6 +16,7 @@ class MozTextLabel extends HTMLLabelElement {
   #insertSeparator = false;
   #alwaysAppendAccessKey = false;
   #lastFormattedAccessKey = null;
+  #lastFormattedText = null;
   #observer = null;
 
   // Default to underlining accesskeys for Windows and Linux.
@@ -184,11 +185,14 @@ class MozTextLabel extends HTMLLabelElement {
   formatAccessKey() {
     // Skip doing any DOM manipulation whenever possible:
     let accessKey = this.accessKey || this.getAttribute("shownaccesskey");
+    let text = this.textContent;
     if (
       !MozTextLabel.#underlineAccesskey ||
-      this.#lastFormattedAccessKey == accessKey ||
-      !this.textContent ||
-      !this.textContent.trim()
+      (!accessKey && !this.#lastFormattedAccessKey) ||
+      (this.#lastFormattedAccessKey == accessKey &&
+        this.#lastFormattedText == text) ||
+      !text ||
+      !text.trim()
     ) {
       return;
     }
@@ -196,7 +200,12 @@ class MozTextLabel extends HTMLLabelElement {
     try {
       this.#formatAccessKey(accessKey);
     } finally {
-      queueMicrotask(() => this.#startMutationObserver());
+      this.#lastFormattedText = this.textContent;
+      queueMicrotask(() => {
+        this.#startMutationObserver();
+        // ensure the access key is formatted
+        this.formatAccessKey();
+      });
     }
   }
 

@@ -48,7 +48,6 @@ struct AnimationValue {
   AnimationValue& operator=(AnimationValue&& aOther) = default;
 
   bool operator==(const AnimationValue& aOther) const;
-  bool operator!=(const AnimationValue& aOther) const;
 
   bool IsNull() const { return !mServo; }
 

@@ -74,16 +74,25 @@ TextDirectiveCreator::MustUseRangeBasedMatching(AbstractRange* aRange) {
 
   const uint32_t kMaxLength = StaticPrefs::
       dom_text_fragments_create_text_fragment_exact_match_max_length();
-  const bool rangeTooLong = rangeContent.Length() > kMaxLength;
-  if (rangeTooLong) {
-    TEXT_FRAGMENT_LOG(
-        "Use range-based matching because the target range is too long "
-        "({} chars > {} threshold)",
-        rangeContent.Length(), kMaxLength);
-  } else {
+  if (rangeContent.Length() <= kMaxLength) {
     TEXT_FRAGMENT_LOG("Use exact matching.");
+    return false;
   }
-  return rangeTooLong;
+  // Range-based matching divides the range content into a start and an end
+  // term, which both need to contain a word. If there is only one word, exact
+  // matching is the only option, regardless of the length of the range.
+  if (!TextDirectiveUtil::ContainsAtLeastTwoWords(rangeContent)) {
+    TEXT_FRAGMENT_LOG(
+        "Use exact matching because the target range contains only one word, "
+        "even though it is too long ({} chars > {} threshold).",
+        rangeContent.Length(), kMaxLength);
+    return false;
+  }
+  TEXT_FRAGMENT_LOG(
+      "Use range-based matching because the target range is too long "
+      "({} chars > {} threshold)",
+      rangeContent.Length(), kMaxLength);
+  return true;
 }
 
 Result<UniquePtr<TextDirectiveCreator>, ErrorResult>
@@ -176,6 +185,13 @@ ExactMatchTextDirectiveCreator::CollectContextTerms() {
   MOZ_TRY(CollectPrefixContextTerm());
   MOZ_TRY(CollectSuffixContextTerm());
   mStartContent = MOZ_TRY(TextDirectiveUtil::RangeContentAsString(mRange));
+  if (mStartContent.Length() > kMaxContextTermLength) {
+    TEXT_FRAGMENT_LOG(
+        "Start term is too long ({} chars > {} threshold) and cannot be "
+        "truncated. Aborting.",
+        mStartContent.Length(), kMaxContextTermLength);
+    return false;
+  }
   TEXT_FRAGMENT_LOG("Start term:\n{}", NS_ConvertUTF16toUTF8(mStartContent));
   TEXT_FRAGMENT_LOG("No end term present (exact match).");
   return true;

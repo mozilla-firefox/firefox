@@ -23,7 +23,7 @@ pub use input::*;
 pub use options::*;
 pub use signature::*;
 
-use crate::headers::image_metadata::Orientation;
+use crate::{error::Result, headers::image_metadata::Orientation};
 
 /// This type represents the return value of a function that reads input from a bitstream. The
 /// variant `Complete` indicates that the operation was completed successfully, and its return
@@ -71,4 +71,10 @@ pub struct JxlBasicInfo {
     pub uses_original_profile: bool,
     pub tone_mapping: ToneMapping,
     pub preview_size: Option<(usize, usize)>,
+}
+
+pub type JxlParallelRunnerFun<'a> = dyn Fn(usize) -> Result<()> + Sync + 'a;
+
+pub trait JxlParallelRunner {
+    fn run(&mut self, num: usize, fun: &JxlParallelRunnerFun<'_>) -> Result<()>;
 }

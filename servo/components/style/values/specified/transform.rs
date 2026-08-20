@@ -19,7 +19,8 @@ use crate::values::specified::{
 };
 use crate::Zero;
 use cssparser::{match_ignore_ascii_case, Parser};
-use style_traits::{ParseError, StyleParseErrorKind};
+use std::fmt;
+use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 
 pub use crate::values::generics::transform::TransformStyle;
 
@@ -122,6 +123,14 @@ impl Transform {
     ) -> Result<Self, ParseError<'i>> {
         Self::parse_internal(context, input, AllowUnitlessPerspective::Yes)
     }
+
+    pub(crate) fn to_css_legacy<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        self.to_css(dest)
+    }
+
     /// Internal parse function for deciding if we wish to accept prefixed values or not
     ///
     /// `transform` allows unitless zero angles as an exception, see:

@@ -131,8 +131,16 @@ add_setup(async function setup() {
   });
 
   const originalManager = AutoTabGroupingSuggestions._manager;
+  const originalLlmLabel = AutoTabGroupingSuggestions._llmLabelForGroup;
+  // The cloud LLM namer is unavailable in tests; force the on-device path so
+  // buildProposals uses the stubbed manager's getPredictedLabelForGroup instead
+  // of doing real FxA-token/network work per group.
+  AutoTabGroupingSuggestions._llmLabelForGroup = async () => {
+    throw new Error("force on-device");
+  };
   registerCleanupFunction(() => {
     AutoTabGroupingSuggestions._manager = originalManager;
+    AutoTabGroupingSuggestions._llmLabelForGroup = originalLlmLabel;
     AutoTabGroupingSuggestions._preloadPromise = null;
   });
 });
@@ -761,7 +769,19 @@ describe("Auto Tab Grouping toolbar button", () => {
         "The row's label reports that count"
       );
 
+      const hintShown = BrowserTestUtils.waitForEvent(
+        win.document,
+        "popupshown",
+        true,
+        event => event.target.id === "confirmation-hint"
+      );
       row.click();
+      const { target: hint } = await hintShown;
+      Assert.equal(
+        hint.anchorNode?.id,
+        "smartwindow-group-tabs-button-inner",
+        "The hint points at our button, not the All Tabs button which may be absent"
+      );
       await TestUtils.waitForCondition(
         () => win.gBrowser.tabs.length === tabsBefore - 2,
         "Both duplicate tabs are closed"

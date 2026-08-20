@@ -19,6 +19,7 @@
 #include "nsIAsyncVerifyRedirectCallback.h"
 #include "nsICacheEntry.h"
 #include "nsICacheEntryOpenCallback.h"
+#include "nsICacheStorage.h"
 #include "nsICachingChannel.h"
 #include "nsICorsPreflightCallback.h"
 #include "nsIDNSListener.h"
@@ -231,6 +232,14 @@ class nsHttpChannel final : public HttpBaseChannel,
 
   [[nodiscard]] nsresult OpenCacheEntry(bool isHttps);
   [[nodiscard]] nsresult OpenCacheEntryInternal(bool isHttps);
+  // Records whether the entry the cache handed us is keyed on mCacheEntryURI or
+  // was found through a No-Vary-Search secondary lookup.
+  void NoteCacheEntryKeyMatch(nsICacheEntry* aEntry);
+  // Picks the cache storage matching the channel's current persistence flags.
+  [[nodiscard]] nsresult GetCacheStorage(nsICacheStorage** aStorage);
+  // Before writing a response, swaps out a cache entry that belongs to another
+  // URL (No-Vary-Search match) for a writable entry keyed on mCacheEntryURI.
+  [[nodiscard]] nsresult MaybeReplaceNoVarySearchAliasEntry();
   [[nodiscard]] nsresult ContinueConnect();
 
   [[nodiscard]] nsresult StartRedirectChannelToURI(nsIURI*, uint32_t);
@@ -759,7 +768,12 @@ class nsHttpChannel final : public HttpBaseChannel,
     (uint32_t, HTTPSSVCTelemetryReported, 1),
     (uint32_t, EchConfigUsed, 1),
     (uint32_t, AuthRedirectedChannel, 1),
-    (uint32_t, StorageAccessReloadChannel, 1)
+    (uint32_t, StorageAccessReloadChannel, 1),
+    // True when the cache handed us an entry that is stored under a URL other
+    // than mCacheEntryURI, which only happens when the No-Vary-Search secondary
+    // lookup matched. Such an entry may be revalidated against, but a full
+    // response must not be written back to it.
+    (uint32_t, CacheEntryIsNoVarySearchMatch, 1)
   ))
   // clang-format on
   enum CachedContentValidity : uint8_t { Unset = 0, Invalid = 1, Valid = 2 };

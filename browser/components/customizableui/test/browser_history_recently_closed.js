@@ -8,7 +8,7 @@ const { SessionStoreTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/SessionStoreTestUtils.sys.mjs"
 );
 const { TabStateFlusher } = ChromeUtils.importESModule(
-  "resource:///modules/sessionstore/TabStateFlusher.sys.mjs"
+  "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
 );
 const triggeringPrincipal_base64 = E10SUtils.SERIALIZED_SYSTEMPRINCIPAL;
 

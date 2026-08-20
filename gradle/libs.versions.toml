@@ -83,7 +83,7 @@ androidx-lint = "1.0.0"
 detekt = "1.23.8"
 google-java-format = "1.28.0"
 ktfmt = "0.64"
-spotless = "8.9.0"
+spotless = "8.10.0"
 
 # Mozilla
 glean = "68.0.1"
@@ -105,10 +105,10 @@ mockk = "1.14.11"
 robolectric = "4.16.1"
 
 # Third party libraries
-adjust = "5.7.0"
+adjust = "5.8.0"
 androidsvg = "1.4"
 disklrucache = "2.0.2"
-jetbrains-markdown = "0.7.8"
+jetbrains-markdown = "0.7.9"
 jna = "5.19.1"
 json = "20260719"
 jsoup = "1.23.1"

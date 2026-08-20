@@ -16,9 +16,6 @@ network:
     description: >
       Time spent (ms) during shutdown deleting disk cache v2 for 'clear private
       data' option
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram NETWORK_DISK_CACHE2_SHUTDOWN_CLEAR_PRIVATE.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
@@ -35,9 +32,6 @@ network:
       Final status of the CacheFileOutputStream (0=ok, 1=other error, 2=out of
       memory, 3=disk full, 4=file corrupted, 5=file not found, 6=binding
       aborted)
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram NETWORK_CACHE_V2_OUTPUT_STREAM_STATUS.
     range_min: 0
     range_max: 7
     bucket_count: 8
@@ -57,9 +51,6 @@ network:
       Final status of the CacheFileInputStream (0=ok, 1=other error, 2=out of
       memory, 3=disk full, 4=file corrupted, 5=file not found, 6=binding
       aborted)
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram NETWORK_CACHE_V2_INPUT_STREAM_STATUS.
     range_min: 0
     range_max: 7
     bucket_count: 8
@@ -119,9 +110,6 @@ network:
     description: >
       Percentage of the cache size occupied by given content type. Numbers are
       sampled periodically, every time 2GB of data is written to the cache.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram NETWORK_CACHE_SIZE_SHARE.
     range_min: 0
     range_max: 99
     bucket_count: 100
@@ -148,9 +136,6 @@ network:
     description: >
       Percentage of the entries with the given content type. Numbers are sampled
       periodically, every time 2GB of data is written to the cache.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram NETWORK_CACHE_ENTRY_COUNT_SHARE.
     range_min: 0
     range_max: 99
     bucket_count: 100
@@ -176,9 +161,6 @@ network:
     type: timing_distribution
     description: >
       Time before we reload an HTTP cache entry again to memory
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram HTTP_CACHE_ENTRY_RELOAD_TIME.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
@@ -193,9 +175,6 @@ network:
     type: timing_distribution
     description: >
       Time for which an HTTP cache entry is kept warmed in memory
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram HTTP_CACHE_ENTRY_ALIVE_TIME.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
@@ -210,9 +189,6 @@ network:
     type: custom_distribution
     description: >
       Reuse count of an HTTP cache entry warmed in memory
-
-      This metric was generated to correspond to the Legacy Telemetry linear
-      histogram HTTP_CACHE_ENTRY_REUSE_COUNT.
     range_min: 1
     range_max: 20
     bucket_count: 19

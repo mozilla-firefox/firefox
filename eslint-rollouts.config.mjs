@@ -304,7 +304,11 @@ export default [
       "toolkit/mozapps/update/**",
       "uriloader/**",
     ],
-    ignores: ["devtools/shared/css/parsing-utils.js", "devtools/startup/**"],
+    ignores: [
+      "browser/components/tabbrowser/Tabbrowser.sys.mjs",
+      "devtools/shared/css/parsing-utils.js",
+      "devtools/startup/**",
+    ],
     rules: {
       "jsdoc/check-param-names": "off",
       "jsdoc/require-returns-type": "off",
@@ -472,7 +476,11 @@ export default [
       "widget/tests/file*.js",
       "widget/tests/window_composition_text_querycontent.xhtml",
     ],
-    ignores: ["devtools/shared/css/parsing-utils.js", "devtools/startup/**"],
+    ignores: [
+      "browser/components/tabbrowser/Tabbrowser.sys.mjs",
+      "devtools/shared/css/parsing-utils.js",
+      "devtools/startup/**",
+    ],
     rules: mozilla.turnOff(mozilla.configs["flat/require-jsdoc"].rules),
   },
   {

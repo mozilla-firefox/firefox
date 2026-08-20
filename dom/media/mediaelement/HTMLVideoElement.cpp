@@ -315,7 +315,7 @@ bool HTMLVideoElement::IsInteractiveHTMLContent() const {
          HTMLMediaElement::IsInteractiveHTMLContent();
 }
 
-gfx::IntSize HTMLVideoElement::GetVideoIntrinsicDimensions() {
+gfx::IntSize HTMLVideoElement::GetVideoIntrinsicDimensions() const {
   const auto& sz = mMediaInfo.mVideo.mDisplay;
 
   // Prefer the size of the container as it's more up to date.
@@ -324,7 +324,7 @@ gfx::IntSize HTMLVideoElement::GetVideoIntrinsicDimensions() {
       .valueOr(sz);
 }
 
-uint32_t HTMLVideoElement::VideoWidth() {
+uint32_t HTMLVideoElement::VideoWidth() const {
   if (!HasVideo()) {
     return 0;
   }
@@ -336,7 +336,7 @@ uint32_t HTMLVideoElement::VideoWidth() {
   return size.width;
 }
 
-uint32_t HTMLVideoElement::VideoHeight() {
+uint32_t HTMLVideoElement::VideoHeight() const {
   if (!HasVideo()) {
     return 0;
   }

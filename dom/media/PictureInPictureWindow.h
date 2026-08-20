@@ -47,6 +47,8 @@ class PictureInPictureWindow final : public DOMEventTargetHelper {
  private:
   bool IsStateOpened() const { return mOpened; }
 
+  gfx::IntSize VideoSizeForRFP() const;
+
   WeakPtr<HTMLVideoElement> mAssociatedVideoElement;
   int32_t mWidth = 0;
   int32_t mHeight = 0;

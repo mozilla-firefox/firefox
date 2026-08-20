@@ -1235,6 +1235,9 @@ async function check_results({
     // payload object, so ignore it. There are Suggest tests specifically for
     // dismissals that indirectly test the important aspects of this property.
     suggestionObject: { ignore: true },
+    // Set by the providers manager on dynamic results, not by their provider.
+    viewTemplate: { optional: true },
+    viewUpdate: { optional: true },
     ...conditionalPayloadProperties,
   };
 

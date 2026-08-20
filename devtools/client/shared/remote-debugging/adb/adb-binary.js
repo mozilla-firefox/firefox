@@ -4,7 +4,9 @@
 
 "use strict";
 
-const { dumpn } = require("resource://devtools/shared/DevToolsUtils.js");
+const {
+  logger,
+} = require("resource://devtools/client/shared/remote-debugging/adb/adb-logger.js");
 
 const lazy = {};
 
@@ -48,7 +50,7 @@ async function readFromExtension(fileUri) {
           );
           resolve(JSON.parse(string));
         } catch (e) {
-          dumpn(`Could not read ${fileUri} in the extension: ${e}`);
+          logger.error(`Could not read ${fileUri} in the extension: ${e}`);
           resolve(null);
         }
       }
@@ -86,7 +88,7 @@ async function unpackFile(file) {
           const output = lazy.FileUtils.openAtomicFileOutputStream(outputFile);
           lazy.NetUtil.asyncCopy(input, output, resolve);
         } catch (e) {
-          dumpn(`Could not unpack file ${file} in the extension: ${e}`);
+          logger.error(`Could not unpack file ${file} in the extension: ${e}`);
           reject(e);
         }
       }
@@ -201,20 +203,20 @@ async function getManifestFromUnpacked() {
  */
 async function isUnpacked() {
   if (!(await isManifestUnpacked())) {
-    dumpn("Needs unpacking, no manifest found");
+    logger.debug("Needs unpacking, no manifest found");
     return false;
   }
 
   const manifestInExtension = await getManifestFromExtension();
   const unpackedManifest = await getManifestFromUnpacked();
   if (manifestInExtension.version != unpackedManifest.version) {
-    dumpn(
+    logger.debug(
       `Needs unpacking, extension version ${manifestInExtension.version} != ` +
         `unpacked version ${unpackedManifest.version}`
     );
     return false;
   }
-  dumpn("Already unpacked");
+  logger.debug("Already unpacked");
   return true;
 }
 

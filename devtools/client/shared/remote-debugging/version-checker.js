@@ -34,13 +34,13 @@ function getMajorVersion(platformVersion) {
 
 /**
  * Compute the minimum and maximum supported version for remote debugging for the provided
- * version of Firefox. Backward compatibility policy for devtools supports at most 2
+ * version of Firefox. Backward compatibility policy for devtools supports at most 3
  * versions older than the current version.
  *
  * @param {string} localVersion
  *        The version of the local Firefox instance, eg "67.0"
  * @return {object}
- *         - minVersion {String} the minimum supported version, eg "65.0a1"
+ *         - minVersion {String} the minimum supported version, eg "64.0a1"
  *         - maxVersion {String} the first unsupported version, eg "68.0a1"
  */
 function computeMinMaxVersion(localVersion) {
@@ -50,9 +50,10 @@ function computeMinMaxVersion(localVersion) {
   return {
     // Define the minimum officially supported version of Firefox when connecting to a
     // remote runtime. (Use ".0a1" to support the very first nightly version)
-    // This matches the release channel's version when we are on nightly,
-    // or 2 versions before when we are on other channels.
-    minVersion: localMajorVersion - 2 + ".0a1",
+    // DevTools backward compatibility policy allows to debug Firefox Release
+    // from Nightly, which are usually 2 versions apart, but around release time
+    // Nightly is bumped before release, so we accept 3 versions of gap.
+    minVersion: localMajorVersion - 3 + ".0a1",
     // The maximum version is the first excluded from the support range. That's why we
     // increase the current version by 1 and use ".0a1" to point to the first Nightly.
     // We do not support forward compatibility at all.

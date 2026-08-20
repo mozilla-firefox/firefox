@@ -170,13 +170,8 @@ class DoublyLinkedList final {
       return result;
     }
 
-    bool operator!=(const Iterator& aOther) const {
-      return mCurrent != aOther.mCurrent;
-    }
-
-    bool operator==(const Iterator& aOther) const {
-      return mCurrent == aOther.mCurrent;
-    }
+    bool operator!=(const Iterator& aOther) const = default;
+    bool operator==(const Iterator& aOther) const = default;
 
     explicit operator bool() const { return mCurrent; }
   };

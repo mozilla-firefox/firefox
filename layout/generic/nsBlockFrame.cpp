@@ -1689,7 +1689,6 @@ void nsBlockFrame::Reflow(nsPresContext* aPresContext, ReflowOutput& aMetrics,
     nscoord mBlockCoord = 0;
 
     bool operator==(const BalanceTarget& aOther) const = default;
-    bool operator!=(const BalanceTarget& aOther) const = default;
   };
 
   BalanceTarget balanceTarget;

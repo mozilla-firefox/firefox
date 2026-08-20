@@ -48,6 +48,7 @@ import org.mozilla.fenix.utils.view.addToRadioGroup
 class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment {
     private lateinit var radioLightTheme: RadioButtonPreference
     private lateinit var radioDarkTheme: RadioButtonPreference
+    private lateinit var radioDarkestTheme: RadioButtonPreference
     private lateinit var radioAutoBatteryTheme: RadioButtonPreference
     private lateinit var radioFollowDeviceTheme: RadioButtonPreference
     private val args by navArgs<CustomizationFragmentArgs>()
@@ -110,6 +111,7 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
 
         bindFollowDeviceTheme()
         bindDarkTheme()
+        bindDarkestTheme()
         bindLightTheme()
         bindAutoBatteryTheme()
         setupRadioGroups()
@@ -232,6 +234,7 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
         addToRadioGroup(
             radioLightTheme,
             radioDarkTheme,
+            radioDarkestTheme,
             if (SDK_INT >= Build.VERSION_CODES.P) {
                 radioFollowDeviceTheme
             } else {
@@ -260,6 +263,12 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
             AppTheme.darkThemeSelected.record(AppTheme.DarkThemeSelectedExtra("SETTINGS"))
             setNewTheme(AppCompatDelegate.MODE_NIGHT_YES)
         }
+    }
+
+    private fun bindDarkestTheme() {
+        val settings = requireComponents.settings
+        radioDarkestTheme = requirePreference(R.string.pref_key_oled_theme)
+        radioDarkestTheme.isVisible = settings.enableOledTheme
     }
 
     private fun bindFollowDeviceTheme() {

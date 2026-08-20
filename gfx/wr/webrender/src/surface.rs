@@ -203,6 +203,14 @@ pub struct SurfaceInfo {
     pub allow_snapping: bool,
     /// If true, the scissor rect must be set when drawing this surface
     pub force_scissor_rect: bool,
+    /// For an SVGFEGraph surface, the mapping from the space the filter
+    /// subregions are authored in (the filtered element's spatial node) to this
+    /// surface's spatial node. Non-identity for backdrop filters, whose graph
+    /// composites in backdrop-root space; it is a full scale+offset because an
+    /// intervening reference frame may scale (e.g. pdf.js scales its text
+    /// spans), so a translation alone is not enough. All SVGFE coverage paths
+    /// map the subregions through this so they line up with the geometry.
+    pub svgfe_source_map: ScaleOffset,
 }
 
 impl SurfaceInfo {
@@ -250,6 +258,7 @@ impl SurfaceInfo {
             local_scale,
             allow_snapping,
             force_scissor_rect,
+            svgfe_source_map: ScaleOffset::identity(),
             // TODO: At the moment all culling is done in the root device space but
             // but the plan is to move it to raster space.
             culling_rect: global_culling_rect.cast_unit(),

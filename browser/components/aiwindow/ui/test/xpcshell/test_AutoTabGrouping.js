@@ -224,6 +224,11 @@ add_task(function test_manager_usesSmartWindowTopicModelSlot() {
 
 add_task(async function test_buildProposals_dropsUntitledGroups() {
   const originalManager = AutoTabGroupingSuggestions._manager;
+  const originalLlm = AutoTabGroupingSuggestions._llmLabelForGroup;
+  // LLM unavailable -> exercise the on-device path.
+  AutoTabGroupingSuggestions._llmLabelForGroup = async () => {
+    throw new Error("force on-device");
+  };
   AutoTabGroupingSuggestions._manager = {
     async generateClusters() {
       return {
@@ -242,12 +247,17 @@ add_task(async function test_buildProposals_dropsUntitledGroups() {
     Assert.equal(proposals[0].label, "Work", "The labeled group is kept");
   } finally {
     AutoTabGroupingSuggestions._manager = originalManager;
+    AutoTabGroupingSuggestions._llmLabelForGroup = originalLlm;
     AutoTabGroupingSuggestions._labelCache.clear();
   }
 });
 
 add_task(async function test_buildProposals_cachesLabelsBySourceTabs() {
   const originalManager = AutoTabGroupingSuggestions._manager;
+  const originalLlm = AutoTabGroupingSuggestions._llmLabelForGroup;
+  AutoTabGroupingSuggestions._llmLabelForGroup = async () => {
+    throw new Error("force on-device");
+  };
   const tabs = [
     makeTab({ url: "https://a.example/" }),
     makeTab({ url: "https://b.example/" }),
@@ -279,6 +289,7 @@ add_task(async function test_buildProposals_cachesLabelsBySourceTabs() {
     );
   } finally {
     AutoTabGroupingSuggestions._manager = originalManager;
+    AutoTabGroupingSuggestions._llmLabelForGroup = originalLlm;
     AutoTabGroupingSuggestions._labelCache.clear();
   }
 });

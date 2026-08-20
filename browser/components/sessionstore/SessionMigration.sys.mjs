@@ -6,8 +6,10 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   E10SUtils: "resource://gre/modules/E10SUtils.sys.mjs",
-  SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
-  TabGroupState: "resource:///modules/sessionstore/TabGroupState.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
+  TabGroupState:
+    "moz-src:///browser/components/sessionstore/TabGroupState.sys.mjs",
 });
 
 var SessionMigrationInternal = {

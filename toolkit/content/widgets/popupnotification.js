@@ -147,6 +147,7 @@
       this.menupopup = this.querySelector(
         ".popup-notification-more-actions-popup"
       );
+      this.buttonGroup = this.querySelector(".panel-footer");
 
       let popupnotificationfooter = this.querySelector(
         "popupnotificationfooter"
@@ -216,6 +217,9 @@
           );
         }
       });
+      this.buttonGroup.addEventListener("keydown", event =>
+        this.onButtonGroupKeydown(event)
+      );
       this.checkbox.addEventListener("command", event => {
         PopupNotifications._onCheckboxCommand(event);
       });
@@ -236,6 +240,57 @@
 
     appendNotificationContent(el) {
       this.querySelector(".popup-notification-bottom-content").before(el);
+    }
+
+    get footerFocusableButtons() {
+      let buttons = [];
+      for (let child of this.buttonGroup.children) {
+        if (
+          child.localName !== "moz-button" ||
+          child.hidden ||
+          child.disabled ||
+          !child.buttonEl
+        ) {
+          continue;
+        }
+        buttons.push(child.buttonEl);
+        if (child.isSplitButton) {
+          buttons.push(child.chevronButtonEl);
+        }
+      }
+      return buttons;
+    }
+
+    onButtonGroupKeydown(event) {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+      }
+
+      let isRTL = this.matches(":dir(rtl)");
+      let forwardKey = isRTL ? "ArrowLeft" : "ArrowRight";
+      let backwardKey = isRTL ? "ArrowRight" : "ArrowLeft";
+      if (event.key !== forwardKey && event.key !== backwardKey) {
+        return;
+      }
+
+      let buttons = this.footerFocusableButtons;
+      let currentIndex = buttons.findIndex(
+        button => button.getRootNode().activeElement === button
+      );
+      if (currentIndex === -1) {
+        return;
+      }
+
+      let lastIndex = buttons.length - 1;
+      let nextIndex;
+      if (event.key === forwardKey) {
+        nextIndex = currentIndex === lastIndex ? 0 : currentIndex + 1;
+      } else {
+        nextIndex = currentIndex === 0 ? lastIndex : currentIndex - 1;
+      }
+
+      event.preventDefault();
+      buttons[nextIndex].focus();
     }
   }
 

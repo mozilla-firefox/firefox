@@ -275,6 +275,42 @@ def test_cmd_arguments(
     assert expected_cmd.issubset(set(cmd))
 
 
+@patch("logger.logger.RaptorLogger.info")
+@patch("logger.logger.RaptorLogger.critical")
+@pytest.mark.parametrize(
+    "app, expected",
+    [
+        ("chrome", True),
+        ("custom-car", True),
+        ("firefox", False),
+        ("safari-tp", False),
+    ],
+)
+def test_per_test_chrome_arguments(
+    mock_info, mock_critical, browsertime_options, mock_test, app, expected
+):
+    browsertime_options["app"] = app
+    browsertime_options["run_local"] = True
+    mock_test["chrome_args"] = (
+        "--use-fake-device-for-media-stream\n--use-fake-ui-for-media-stream"
+    )
+    expected_args = {
+        "--chrome.args=--use-fake-device-for-media-stream",
+        "--chrome.args=--use-fake-ui-for-media-stream",
+    }
+
+    with patch.object(
+        BrowsertimeDesktop, "get_browser_meta", return_value=(app, "100")
+    ):
+        browsertime = BrowsertimeDesktop(
+            post_startup_delay=DEFAULT_TIMEOUT, **browsertime_options
+        )
+    browsertime.run_test_setup(mock_test)
+    cmd = browsertime._compose_cmd(mock_test, DEFAULT_TIMEOUT)
+
+    assert expected_args.intersection(cmd) == (expected_args if expected else set())
+
+
 def extract_arg_value(cmd, arg):
     param_index = cmd.index(arg) + 1
     return cmd[param_index]

@@ -1264,6 +1264,21 @@ smart_window:
     notification_emails: *emails
     expires: never
 
+  enabled:
+    type: boolean
+    lifetime: application
+    description: |
+      Records if the user currently has Smart Window enabled.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2047007
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D319283
+    data_sensitivity:
+      - interaction
+      - technical
+    notification_emails: *emails
+    expires: never
+
   set_default_optin:
     type: boolean
     description: |

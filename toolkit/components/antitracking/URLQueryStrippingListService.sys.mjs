@@ -74,6 +74,12 @@ function combineAndParseLists(mainList, arrOfLists) {
         additionalList[key].origins ??= [];
 
         mainList[key].origins.push(...additionalList[key].origins);
+
+        mainList[key].schemelessSites ??= [];
+        additionalList[key].schemelessSites ??= [];
+        mainList[key].schemelessSites.push(
+          ...additionalList[key].schemelessSites
+        );
       } else {
         mainList[key] = additionalList[key];
       }
@@ -89,9 +95,13 @@ function combineAndParseLists(mainList, arrOfLists) {
     mainList[key].origins = (mainList[key].origins ?? []).map(origin =>
       origin.toLowerCase()
     );
+    mainList[key].schemelessSites = (mainList[key].schemelessSites ?? []).map(
+      schemelessSites => schemelessSites.toLowerCase()
+    );
 
     // Removes duplicate origins
     mainList[key].origins = [...new Set(mainList[key].origins)];
+    mainList[key].schemelessSites = [...new Set(mainList[key].schemelessSites)];
 
     // Removes duplicate queryParams
     mainList[key].queryParams = [...new Set(mainList[key].queryParams)];

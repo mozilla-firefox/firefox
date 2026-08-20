@@ -71,6 +71,8 @@ const val ANIMATION_DELAY_MILLIS = 400L
  * @param onClick Interaction dispatched when the button is tapped.
  * @param onInteraction Callback for dispatching [BrowserToolbarEvent]s to the store.
  * @param testTag Optional test tag for this button.
+ * @param onAnimationFinished Optional [BrowserToolbarEvent] dispatched via [onInteraction] once the pill has fully
+ *   collapsed on screen (or immediately, if [animated] is false).
  */
 @Suppress("CognitiveComplexMethod")
 @Composable
@@ -84,6 +86,7 @@ internal fun AnimatedPillButton(
     onClick: BrowserToolbarInteraction,
     onInteraction: (BrowserToolbarEvent) -> Unit,
     testTag: String? = null,
+    onAnimationFinished: BrowserToolbarEvent? = null,
 ) {
     // refactoring planned in https://bugzilla.mozilla.org/show_bug.cgi?id=2030770
     val view = LocalView.current
@@ -101,8 +104,12 @@ internal fun AnimatedPillButton(
 
     LaunchedEffect(fullWidthPx) {
         if (fullWidthPx == 0) return@LaunchedEffect
-        delay(ANIMATION_DELAY_MILLIS)
-        contractionProgress.animateTo(0f, tween(durationMillis = FADE_OUT_DURATION_MILLIS))
+        if (animated) {
+            delay(ANIMATION_DELAY_MILLIS)
+            contractionProgress.animateTo(0f, tween(durationMillis = FADE_OUT_DURATION_MILLIS))
+        }
+
+        onAnimationFinished?.let(onInteraction)
     }
 
     val animatedWidthDp = animatedWidth(fullWidthPx, COLLAPSED_WIDTH, contractionProgress.value, density)

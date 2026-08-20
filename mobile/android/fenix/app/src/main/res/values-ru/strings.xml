@@ -1305,6 +1305,11 @@
   <string name="preference_light_theme">Светлая</string>
   <!-- Preference for using dark theme -->
   <string name="preference_dark_theme">Тёмная</string>
+  <!--
+    Preference for using the OLED theme. For localization, this can be translated as "True Black", "Maximum Darkness",
+    or "Full dark" if needed.
+  -->
+  <string name="preference_oled_theme">Самая тёмная</string>
   <!-- Preference for using using dark or light theme automatically set by battery -->
   <string name="preference_auto_battery_theme">Учитывать режим экономии батареи</string>
   <!-- Preference for using following device theme -->
@@ -1451,6 +1456,8 @@
   <string name="preferences_inactive_tabs">Перемещать старые вкладки в неактивные</string>
   <!-- Title of inactive tabs preference -->
   <string name="preferences_inactive_tabs_title">Вкладки, к которым вы не обращались в течение двух недель, перемещаются в неактивные.</string>
+  <!-- Title for the preference to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_feature">Включить группы вкладок</string>
   <!--
     Privacy report
 
@@ -1700,6 +1707,14 @@
   <string name="ungroup_tab_group_confirmation_dialog_confirm">Разгруппировать</string>
   <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_cancel">Отмена</string>
+  <!-- Custom accessibility action to reorder a tab up rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_up">Переместить вкладку вверх</string>
+  <!-- Custom accessibility action to reorder a tab left rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_left">Переместить вкладку влево</string>
+  <!-- Custom accessibility action to reorder a tab right rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_right">Переместить вкладку вправо</string>
+  <!-- Custom accessibility action to reorder a tab down rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_down">Переместить вкладку вниз</string>
   <!--
     Color labels for tab groups, used for accessibility and selection UI.
 
@@ -3109,6 +3124,8 @@
   <string name="ip_protection_location_picker_title" tools:ignore="UnusedResources">Выберите местоположение VPN</string>
   <!-- Description for what it means to use the Recommended setting and let the app automatically pick the best server location. -->
   <string name="ip_protection_location_fastest_description" tools:ignore="BrandUsage">Firefox находит самое быстрое местоположение</string>
+  <!-- Description for an unavailable VPN location in the location list. -->
+  <string name="ip_protection_location_unavailable_description">Недоступно</string>
   <!-- Error message shown when the selected browser VPN location is unavailable. -->
   <string name="ip_protection_location_unavailable" tools:ignore="UnusedResources">Местоположение недоступно. Выберите другое местоположение.</string>
   <!-- Snackbar (in-app pop-up notification) text shown when the previously selected browser VPN location is unavailable and the recommended location was used instead. -->
@@ -4755,4 +4772,16 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Изоляция сайтов</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Дополнительный барьер между веб-сайтами, который помогает защитить ваши данные на вкладках. Может повлиять на производительность, стабильность, совместимость с веб-сайтами, а также на сохранение истории просмотров.</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description">Подписать PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
+  <string name="pdf_tools_download_content_description">Скачать PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
+  <string name="pdf_tools_print_content_description">Печать PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the sharing options for the PDF being displayed on the screen. -->
+  <string name="pdf_tools_share_content_description">Поделиться PDF</string>
 </resources>

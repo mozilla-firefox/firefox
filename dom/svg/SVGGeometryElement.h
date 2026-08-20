@@ -6,7 +6,6 @@
 #define DOM_SVG_SVGGEOMETRYELEMENT_H_
 
 #include "mozilla/EnumeratedArray.h"
-#include "mozilla/UniquePtr.h"
 #include "mozilla/dom/SVGAnimatedNumber.h"
 #include "mozilla/dom/SVGGraphicsElement.h"
 #include "mozilla/gfx/2D.h"
@@ -72,10 +71,7 @@ class SVGGeometryElement : public SVGGeometryElementBase {
    * Causes this element to discard any Path object that GetOrBuildPath may
    * have cached.
    */
-  void ClearAnyCachedPath() final {
-    mCachedPath = nullptr;
-    mCachedStrokedBounds = nullptr;
-  }
+  void ClearAnyCachedPath() final { mCachedPath = nullptr; }
 
   virtual bool AttributeDefinesGeometry(const nsAtom* aName);
 
@@ -302,22 +298,6 @@ class SVGGeometryElement : public SVGGeometryElementBase {
   static NumberInfo sNumberInfo;
   SVGAnimatedNumber mPathLength;
   mutable RefPtr<Path> mCachedPath;
-
-  // The bounds mBounds are in mPathTransform space.
-  struct CachedStrokedBounds {
-    CachedStrokedBounds(const StrokeOptions& aStrokeOptions,
-                        const Matrix& aPathTransform,
-                        const Matrix& aPathToBounds, const Rect& aBounds)
-        : mStrokeOptions(aStrokeOptions),
-          mPathTransform(aPathTransform),
-          mPathToBounds(aPathToBounds),
-          mBounds(aBounds) {}
-    StrokeOptions mStrokeOptions;
-    Matrix mPathTransform;
-    Matrix mPathToBounds;
-    Rect mBounds;
-  };
-  mutable UniquePtr<CachedStrokedBounds> mCachedStrokedBounds;
 
  private:
   already_AddRefed<Path> GetOrBuildPathForHitTest();

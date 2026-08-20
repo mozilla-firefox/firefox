@@ -1,0 +1,29 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+include "mozilla/ipc/UtilityProcessSandboxing.h";
+
+using mozilla::dom::ContentParentId from "mozilla/dom/ipc/IdType.h";
+
+namespace mozilla {
+namespace hwinference {
+
+// This protocol connects a content process (ChildProc) to its per-connection
+// manager in the HWInference utility process (ParentProc), and will host the
+// task-specific hardware inference actors created over it. This is the
+// riskier of the two HWInference IPC boundaries, since content, unlike a
+// parent-process consumer, may be compromised: actors created under this
+// manager must not trust anything content sends beyond what is defined on
+// this protocol, and must not let a compromised content process act on
+// behalf of, or read data belonging to, another content process's
+// connection.
+// See the "Security" section of toolkit/components/ml/docs/HWInference.md.
+[ParentProc=Utility, ChildProc=Content]
+protocol PHWInferenceManager
+{
+};
+
+} // namespace hwinference
+} // namespace mozilla

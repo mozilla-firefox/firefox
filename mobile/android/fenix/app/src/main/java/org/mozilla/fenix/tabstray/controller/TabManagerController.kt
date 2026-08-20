@@ -34,6 +34,7 @@ import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.Collections
 import org.mozilla.fenix.GleanMetrics.Events
 import org.mozilla.fenix.GleanMetrics.TabsTray
+import org.mozilla.fenix.GleanMetrics.TrackingProtection
 import org.mozilla.fenix.R
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.browser.browsingmode.BrowsingModeManager
@@ -52,6 +53,7 @@ import org.mozilla.fenix.ext.DEFAULT_ACTIVE_DAYS
 import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.ext.openToBrowser
 import org.mozilla.fenix.ext.potentialInactiveTabs
+import org.mozilla.fenix.home.HomeScreenViewModel.Companion.ALL_ACTIVE_NORMAL_TABS
 import org.mozilla.fenix.home.HomeScreenViewModel.Companion.ALL_NORMAL_TABS
 import org.mozilla.fenix.home.HomeScreenViewModel.Companion.ALL_PRIVATE_TABS
 import org.mozilla.fenix.share.ShareFragment
@@ -67,10 +69,11 @@ import org.mozilla.fenix.tabstray.redux.state.Page
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState
 import org.mozilla.fenix.tabstray.redux.store.TabsTrayStore
 import org.mozilla.fenix.tabstray.ui.TabManagementFragmentDirections
-import org.mozilla.fenix.trackingprotection.ProtectionsDashboardFragment
 import org.mozilla.fenix.utils.Settings
 
 internal const val INACTIVE_TABS_FEATURE_NAME = "Inactive tabs"
+
+@VisibleForTesting internal const val TABS_TRAY_TELEMETRY_SOURCE = "tabs_tray"
 
 /** Controller for handling any actions in the tab manager. */
 interface TabManagerController : SyncedTabsController, InactiveTabsController, TabsTrayFabController {
@@ -363,8 +366,8 @@ class DefaultTabManagerController(
     }
 
     /**
-     * Calculates the IDs of normal tabs that should be protected from engine deletion. This includes all inactive tabs
-     * and tabs inside open (visible) tab groups.
+     * Calculates the IDs of normal tabs that should be protected from being selected after other tabs are deleted. This
+     * includes all inactive tabs and tabs inside open (visible) tab groups.
      */
     private fun getExcludedNormalTabIds(): Set<String> {
         val state = tabsTrayStore.state
@@ -424,7 +427,7 @@ class DefaultTabManagerController(
             tabsUseCases.removeTabs(excludedTabIds = excludedTabIds, ids = tabs.map { it.id })
             showUndoSnackbarForTab(isPrivate)
         } else {
-            dismissTabManagerAndNavigateHome(if (isPrivate) ALL_PRIVATE_TABS else ALL_NORMAL_TABS)
+            dismissTabManagerAndNavigateHome(if (isPrivate) ALL_PRIVATE_TABS else ALL_ACTIVE_NORMAL_TABS)
         }
     }
 
@@ -733,12 +736,15 @@ class DefaultTabManagerController(
     }
 
     override fun onPrivacyReportTapped() {
+        TrackingProtection.privacyReportTapped.record(
+            TrackingProtection.PrivacyReportTappedExtra(TABS_TRAY_TELEMETRY_SOURCE)
+        )
+
         val currentSessionId = browserStore.state.selectedTabId
         navController.nav(
             R.id.tabManagementFragment,
             TabManagementFragmentDirections.actionTabManagementFragmentToGlobalProtectionsDashboard(
-                currentSessionId,
-                source = ProtectionsDashboardFragment.SOURCE_TABS_TRAY,
+                customTabSessionId = currentSessionId
             ),
         )
     }

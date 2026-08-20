@@ -19,6 +19,7 @@ import mozilla.components.feature.summarize.PageLoadStarted
 import mozilla.components.feature.summarize.ReceivedParsedDocument
 import mozilla.components.feature.summarize.SettingsBackClicked
 import mozilla.components.feature.summarize.SettingsClicked
+import mozilla.components.feature.summarize.SettingsLoaded
 import mozilla.components.feature.summarize.ShakeConsentRequested
 import mozilla.components.feature.summarize.SignInSummarizationContentAction
 import mozilla.components.feature.summarize.SummarizationAction
@@ -26,6 +27,7 @@ import mozilla.components.feature.summarize.SummarizationCompleted
 import mozilla.components.feature.summarize.SummarizationFailed
 import mozilla.components.feature.summarize.SummarizationRequested
 import mozilla.components.feature.summarize.SummarizationState
+import mozilla.components.feature.summarize.SummarizeSettingsActionWrapper
 import mozilla.components.feature.summarize.ViewAppeared
 import mozilla.components.feature.summarize.ViewDismissed
 import mozilla.components.feature.summarize.content.Content
@@ -137,10 +139,12 @@ class SummarizationTelemetryMiddleware(
             PageLoadCompleted,
             SettingsBackClicked,
             SettingsClicked,
+            is SettingsLoaded,
             ShakeConsentRequested,
             SignInSummarizationContentAction.DismissClicked,
             SignInSummarizationContentAction.LearnMoreClicked,
-            SignInSummarizationContentAction.SignInClicked -> {}
+            SignInSummarizationContentAction.SignInClicked,
+            is SummarizeSettingsActionWrapper -> {}
         }
     }
 

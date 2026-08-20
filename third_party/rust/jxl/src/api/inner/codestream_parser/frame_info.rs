@@ -10,7 +10,7 @@ use std::{
 
 use crate::{
     api::{
-        JxlColorProfile, JxlDecoderOptions, JxlOutputBuffer, JxlPixelFormat,
+        JxlColorProfile, JxlDecoderOptions, JxlOutputBuffer, JxlParallelRunner, JxlPixelFormat,
         inner::{
             CodestreamParser,
             box_parser::CodestreamInput,
@@ -20,7 +20,7 @@ use crate::{
     },
     bit_reader::BitReader,
     error::{Error, Result},
-    frame::{DecoderState, Frame, Section},
+    frame::{DecoderState, Frame, HfMetaSplitter, LfImageSplitter, Section},
     headers::{
         FileHeader,
         encodings::UnconditionalCoder,
@@ -271,13 +271,17 @@ impl FrameInfo {
             self.sections = sections.into_iter().collect();
 
             // Move data from the pre-section buffer into the sections.
+            // Only allocate as much of each section as the pre-section buffer
+            // can fill; the TOC-declared section length is untrusted and may
+            // be much larger than the actual input.
             for buf in self.sections.iter_mut() {
                 if cbuf.is_empty() {
                     break;
                 }
+                let target = buf.len.min(cbuf.len());
                 let mut data = Vec::new();
-                data.try_reserve_exact(buf.len)?;
-                data.resize(buf.len, 0);
+                data.try_reserve_exact(target)?;
+                data.resize(target, 0);
                 buf.data = data;
                 let n = cbuf.take(&mut [IoSliceMut::new(&mut buf.data)]);
                 self.ready_section_data += n;
@@ -362,10 +366,19 @@ impl FrameInfo {
                 (Err(e), _) => return Err(e),
             };
             let mut readable_section_data = self.ready_section_data + available_codestream;
-            // Ensure enough section buffers are available for reading available data.
+            // Ensure enough section buffer space is available for reading the
+            // available data. Section lengths come from the untrusted TOC, so
+            // grow buffers only as far as the data we can actually read; a
+            // truncated stream must not trigger a huge upfront allocation.
             for buf in self.sections.iter_mut() {
-                if buf.data.is_empty() {
-                    buf.data.resize(buf.len, 0);
+                if buf.data.len() < buf.len && buf.data.len() < readable_section_data {
+                    let target = buf.len.min(readable_section_data);
+                    if target == buf.len {
+                        buf.data.try_reserve_exact(target - buf.data.len())?;
+                    } else {
+                        buf.data.try_reserve(target - buf.data.len())?;
+                    }
+                    buf.data.resize(target, 0);
                 }
                 readable_section_data = readable_section_data.saturating_sub(buf.data.len());
                 if readable_section_data == 0 {
@@ -403,6 +416,7 @@ impl FrameInfo {
     }
 
     // Returns whether we modified the pixels.
+    #[allow(clippy::too_many_arguments)]
     fn process_single_section(
         frame: &mut Frame,
         buf: &[u8],
@@ -411,18 +425,33 @@ impl FrameInfo {
         output_profile: &JxlColorProfile,
         pixel_format: &JxlPixelFormat,
         do_flush: bool,
+        parallel_runner: &mut dyn JxlParallelRunner,
     ) -> Result<bool> {
         let mut br = BitReader::new(buf);
         frame.decode_lf_global(&mut br, !is_complete)?;
-        frame.decode_lf_group(0, &mut br)?;
+        {
+            let lf_splitter = frame.lf_image.as_mut().map(LfImageSplitter::new);
+            let hf_meta_splitter = frame.hf_meta.as_mut().map(HfMetaSplitter::new);
+            Frame::decode_lf_group(
+                &frame.header,
+                &frame.decoder_state,
+                frame.lf_global.as_ref().unwrap(),
+                0,
+                &mut br,
+                lf_splitter.as_ref(),
+                hf_meta_splitter.as_ref(),
+            )?;
+        }
+        frame.post_decode_lf_group(0);
         frame.decode_hf_global(&mut br)?;
-        frame.finalize_lf()?;
+        frame.finalize_lf(parallel_runner)?;
         frame.decode_and_render_hf_groups(
             output_buffers,
             pixel_format,
             vec![(0, vec![(0, br)])],
             do_flush,
             output_profile,
+            parallel_runner,
         )
     }
 
@@ -435,6 +464,7 @@ impl FrameInfo {
         output_buffers: &mut Option<&mut [JxlOutputBuffer<'_>]>,
         output_profile: &JxlColorProfile,
         pixel_format: &JxlPixelFormat,
+        parallel_runner: &mut dyn JxlParallelRunner,
     ) -> Result<Option<usize>> {
         let data_for_next_section = self
             .sections
@@ -457,6 +487,7 @@ impl FrameInfo {
                 output_profile,
                 pixel_format,
                 false,
+                parallel_runner,
             )?;
             return Ok(None);
         }
@@ -470,11 +501,36 @@ impl FrameInfo {
             return Ok(data_for_next_section);
         }
 
+        {
+            let lf_splitter = frame.lf_image.as_mut().map(LfImageSplitter::new);
+            let hf_meta_splitter = frame.hf_meta.as_mut().map(HfMetaSplitter::new);
+            let header = &frame.header;
+            let decoder_state = &frame.decoder_state;
+            let lf_global = frame.lf_global.as_ref().unwrap();
+
+            parallel_runner.run(self.lf_sections.len(), &|i: usize| -> Result<()> {
+                let lf_section = &self.lf_sections[i];
+                let Section::Lf { group } = &lf_section.section else {
+                    unreachable!()
+                };
+                Frame::decode_lf_group(
+                    header,
+                    decoder_state,
+                    lf_global,
+                    *group,
+                    &mut BitReader::new(&lf_section.data),
+                    lf_splitter.as_ref(),
+                    hf_meta_splitter.as_ref(),
+                )?;
+                Ok(())
+            })?;
+        }
+
         for lf_section in self.lf_sections.drain(..) {
             let Section::Lf { group } = lf_section.section else {
                 unreachable!()
             };
-            frame.decode_lf_group(group, &mut BitReader::new(&lf_section.data))?;
+            frame.post_decode_lf_group(group);
             self.section_state.remaining_lf -= 1;
         }
 
@@ -484,7 +540,7 @@ impl FrameInfo {
 
         if let Some(hf_global) = self.hf_global_section.take() {
             frame.decode_hf_global(&mut BitReader::new(&hf_global.data))?;
-            frame.finalize_lf()?;
+            frame.finalize_lf(parallel_runner)?;
             self.section_state.hf_global_done = true;
         }
 
@@ -536,6 +592,7 @@ impl FrameInfo {
             group_readers,
             false,
             output_profile,
+            parallel_runner,
         )?;
 
         for g in processed_groups.into_iter() {
@@ -552,6 +609,7 @@ impl FrameInfo {
         output_buffers: &mut [JxlOutputBuffer<'_>],
         output_profile: &JxlColorProfile,
         pixel_format: &JxlPixelFormat,
+        parallel_runner: &mut dyn JxlParallelRunner,
     ) -> Result<()> {
         let Some(frame) = self.frame.as_mut() else {
             return Ok(());
@@ -583,6 +641,7 @@ impl FrameInfo {
                     output_profile,
                     pixel_format,
                     true,
+                    parallel_runner,
                 ) {
                     self.pixels_dirty |= dirty;
                     return Ok(());
@@ -599,6 +658,7 @@ impl FrameInfo {
                 vec![],
                 true,
                 output_profile,
+                parallel_runner,
             )?;
         }
         Ok(())

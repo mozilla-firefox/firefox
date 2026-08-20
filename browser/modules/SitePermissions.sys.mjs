@@ -13,9 +13,13 @@ var gStringBundle = Services.strings.createBundle(
 // UI consumers (identity panel, etc.) update.
 Services.obs.addObserver(
   {
-    observe(subject, _topic, _data) {
-      let permission = subject.QueryInterface(Ci.nsIPermission);
-      let browserId = permission.browserId;
+    observe(subject, _topic, data) {
+      // A bulk clear reports the affected tab as a bare browserId rather than
+      // as an nsIPermission, since no single permission describes it.
+      let browserId =
+        data == "cleared"
+          ? subject?.QueryInterface(Ci.nsISupportsPRUint64).data
+          : subject.QueryInterface(Ci.nsIPermission).browserId;
       if (!browserId) {
         return;
       }

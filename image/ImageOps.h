@@ -7,6 +7,7 @@
 #define mozilla_image_ImageOps_h
 
 #include "ImageMetadata.h"
+#include "Units.h"
 #include "nsCOMPtr.h"
 #include "nsRect.h"
 
@@ -58,14 +59,14 @@ class ImageOps {
    * @param aClip            The rectangle to clip the image against.
    * @param aSVGViewportSize The specific viewort size of aImage. Unless aImage
    *                         is a vector image without intrinsic size, this
-   *                         argument should be pass as Nothing().
+   *                         argument should be passed as Nothing().
    */
   static already_AddRefed<Image> Clip(
       Image* aImage, nsIntRect aClip,
-      const Maybe<nsSize>& aSVGViewportSize = Nothing());
+      const Maybe<CSSSize>& aSVGViewportSize = Nothing());
   static already_AddRefed<imgIContainer> Clip(
       imgIContainer* aImage, nsIntRect aClip,
-      const Maybe<nsSize>& aSVGViewportSize = Nothing());
+      const Maybe<CSSSize>& aSVGViewportSize = Nothing());
 
   /**
    * Creates a version of an existing image which is rotated and/or flipped to

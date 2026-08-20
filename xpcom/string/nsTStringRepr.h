@@ -222,7 +222,7 @@ class nsTStringRepr {
   }
 
   constexpr char_type CharAt(index_type aIndex) const {
-    NS_ASSERTION(aIndex < Length(), "index exceeds allowable range");
+    MOZ_ASSERT(aIndex < Length(), "index exceeds allowable range");
     return mData[aIndex];
   }
 

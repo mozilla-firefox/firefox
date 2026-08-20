@@ -13,8 +13,9 @@
 - [GeckoView for Gecko Engineers](for-gecko-engineers.md): A
   quick-start guide for those already familiar with contributing to
   Firefox development.
-- [Firefox Contributor Guide](contributing-to-firefox.md): Get
-  started as a contributor to Firefox.
+- {ref}`Working on Firefox <working-on-firefox>`: Get started as a
+  contributor to Firefox in general, including submitting and updating
+  patches.
 - [Guide to Native Debugging in Android Studio](native-debugging.md):
   Set up Android Studio for debugging native code.
 - [Architecture overview](geckoview-architecture.md): An overview of

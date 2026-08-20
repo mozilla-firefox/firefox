@@ -68,24 +68,6 @@ mozilla-autofill-head:
         path-prefix: "onnx-models/mozilla/form-autofill-head/v0.1.0/"
         artifact-name: form-autofill-head.tar.zst
 
-distilbart-cnn-12-6:
-    description: Distilbart-cnn-12-6 text summarization model
-    fetch:
-        type: git
-        repo: https://huggingface.co/Mozilla/distilbart-cnn-12-6
-        revision: 7e89ed86d5904288460b5ebb3ebebd9992588701
-        path-prefix: "onnx-models/Mozilla/distilbart-cnn-12-6/main/"
-        artifact-name: distilbart-cnn-12-6.tar.zst
-
-qwen2.5-0.5-instruct:
-    description: Qwen text summarization model
-    fetch:
-        type: git
-        repo: https://huggingface.co/Mozilla/Qwen2.5-0.5B-Instruct
-        revision: fd3f0e7171371df20d5eefc7851cf96706c391de
-        path-prefix: "onnx-models/Mozilla/Qwen2.5-0.5B-Instruct/main/"
-        artifact-name: qwen2_5-0_5_instruct.tar.zst
-
 mozilla-smart-tab-topic:
     description: Smart Tab Topic Model
     fetch:
@@ -121,31 +103,3 @@ Qwen3-0.6B-GGUF:
         revision: 233b3855f89029f46416b3e8fe5970c79b2ad25d
         path-prefix: "onnx-models/unsloth/Qwen3-0.6B-GGUF/main/"
         artifact-name: Qwen3-0.6B-GGUF.tar.zst
-
-
-speecht5-tts:
-    description: microsoft/speecht5_tts with ONNX weights to be compatible with Transformers.js
-    fetch:
-        type: git
-        repo: https://huggingface.co/Xenova/speecht5_tts
-        revision: 73001d8bf5a9a7532c9cede52b5d3c21936939b1
-        path-prefix: "onnx-models/Xenova/speecht5_tts/main/"
-        artifact-name: speecht5_tts.tar.zst
-
-speecht5-tts-vocoder:
-    description: vocoder for speecht5_tts
-    fetch:
-        type: git
-        repo: https://huggingface.co/Xenova/speecht5_hifigan
-        revision: 05bbb2dea568f207f71113f71c9ecc216840238e
-        path-prefix: "onnx-models/Xenova/speecht5_hifigan/main/"
-        artifact-name: speecht5_tts_hifigan.tar.zst
-
-speecht5-tts-speaker:
-    description: speaker embedding for speecht5_tts
-    fetch:
-        type: git
-        repo: https://huggingface.co/datasets/Xenova/transformers.js-docs
-        revision: 4cc21eccd7f4ad1174c2f721c02468e43bf39b60
-        path-prefix: "onnx-models/Xenova/transformers.js-docs/main/"
-        artifact-name: speecht5_tts_speaker_embedding.tar.zst

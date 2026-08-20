@@ -15,7 +15,7 @@ namespace net {
  * again. Hence there's no need for any messages on the protocol itself.
  */
 
-[ManualDealloc, ChildImpl="TransportProviderChild", ParentImpl="TransportProviderParent"]
+[ManualDealloc, ChildImpl="mozilla::net::TransportProviderChild", ParentImpl="mozilla::net::TransportProviderParent"]
 async protocol PTransportProvider
 {
   manager PNecko;

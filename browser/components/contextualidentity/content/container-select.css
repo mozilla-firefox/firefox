@@ -1,0 +1,33 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* stylelint-disable stylelint-plugin-mozilla/use-design-tokens --
+   the identity variables are per-container values defined in usercontext.css
+   and inherited from the host, so no design token matches them. */
+
+.select-option-icon,
+panel-item[icon]::part(button) {
+  fill: var(--identity-icon-color);
+}
+
+.panel-trigger-text {
+  text-overflow: ellipsis;
+}
+
+panel-list {
+  max-width: 20em;
+}
+
+panel-item::part(label) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media -moz-pref("browser.nova.enabled") {
+  .select-option-icon,
+  panel-item[icon]::part(button) {
+    fill: var(--identity-fill-color);
+  }
+}

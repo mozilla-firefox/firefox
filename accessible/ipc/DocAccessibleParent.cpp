@@ -1168,7 +1168,7 @@ void DocAccessibleParent::Destroy() {
 
   // XXX This indirection through the hash map of live documents shouldn't be
   // needed, but be paranoid for now.
-  int32_t actorID = mActorID;
+  uint64_t actorID = mActorID;
   for (uint32_t i = childDocCount - 1; i < childDocCount; i--) {
     DocAccessibleParent* thisDoc = LiveDocs().Get(actorID);
     MOZ_ASSERT(thisDoc);

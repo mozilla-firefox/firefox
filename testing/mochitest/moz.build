@@ -48,6 +48,7 @@ FINAL_TARGET_FILES.content.tests.SimpleTest += [
     "../../docshell/test/chrome/docshell_helpers.js",
     "../modules/StructuredLog.sys.mjs",
     "tests/SimpleTest/AccessibilityUtils.js",
+    "tests/SimpleTest/ClickChecks.js",
     "tests/SimpleTest/DragChildContextBase.sys.mjs",
     "tests/SimpleTest/DragParentContextBase.sys.mjs",
     "tests/SimpleTest/DragSourceChildContext.sys.mjs",

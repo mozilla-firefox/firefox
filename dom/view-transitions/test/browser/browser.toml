@@ -1,4 +1,1 @@
-[DEFAULT]
-prefs = ["dom.viewTransitions.enabled=true"]
-
 ["browser_tab_detach_vt.js"]

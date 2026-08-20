@@ -27,11 +27,11 @@
 # RUN TESTS NOT AFFECTED BY DOWNSCALE-DURING-DECODE:
 # ==================================================
 fuzzy(0-14,0-416) == downscale-svg-1a.html downscale-svg-1-ref.html?80
-fuzzy(65-65,468-480) == downscale-svg-1b.html downscale-svg-1-ref.html?72
-fuzzy(0-8,0-292) == downscale-svg-1c.html downscale-svg-1-ref.html?64
-fuzzy(7-7,208-208) == downscale-svg-1d.html downscale-svg-1-ref.html?53
-fuzzy(54-55,178-178) == downscale-svg-1e.html downscale-svg-1-ref.html?40
-fuzzy(64-64,31-31) == downscale-svg-1f.html downscale-svg-1-ref.html?24
+fuzzy(65-65,192-192) == downscale-svg-1b.html downscale-svg-1-ref.html?72
+fuzzy(0-9,0-292) == downscale-svg-1c.html downscale-svg-1-ref.html?64
+== downscale-svg-1d.html downscale-svg-1-ref.html?53
+fuzzy(54-55,108-178) == downscale-svg-1e.html downscale-svg-1-ref.html?40
+fuzzy(3-3,32-32) == downscale-svg-1f.html downscale-svg-1-ref.html?24
 
 # RUN TESTS WITH DOWNSCALE-DURING-DECODE DISABLED:
 # ================================================

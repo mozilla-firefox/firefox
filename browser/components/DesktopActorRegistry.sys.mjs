@@ -1000,10 +1000,23 @@ let JSWINDOWACTORS = {
     },
     child: {
       esModuleURI: "resource:///actors/UrlbarChild.sys.mjs",
+      events: {
+        // A content-realm `<moz-urlbar>` reads `window.UrlbarActorPort`
+        // synchronously as it connects, and can't create the actor itself, so
+        // the actor has to exist before page script runs.
+        DOMDocElementInserted: {},
+      },
     },
     includeChrome: true,
-    matches: ["chrome://browser/content/browser.xhtml"],
-    remoteTypes: ["parent"],
+    matches: [
+      "chrome://browser/content/browser.xhtml",
+      "about:home",
+      "about:newtab",
+    ],
+    // The actor must never load in a web content process: it exposes the
+    // urlbar's full result set and navigation surface, and it deliberately
+    // doesn't set `safeForUntrustedWebProcess`.
+    remoteTypes: ["parent", "privilegedabout"],
   },
 
   WebRTC: {

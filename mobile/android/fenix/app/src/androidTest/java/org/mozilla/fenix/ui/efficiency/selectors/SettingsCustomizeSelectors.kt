@@ -74,6 +74,14 @@ object SettingsCustomizeSelectors {
             groups = listOf("requiresScroll"),
         )
 
+    val NAVIGATE_BACK_TOOLBAR_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_DESCRIPTION_CONTAINS,
+            value = "Navigate up",
+            description = "Navigate back toolbar button",
+            groups = listOf("requiredForPage"),
+        )
+
     val all =
         listOf(
             SETTINGS_CUSTOMIZE_TITLE,
@@ -84,5 +92,6 @@ object SettingsCustomizeSelectors {
             TOOLBAR_LAYOUT_SIMPLE,
             TOOLBAR_LAYOUT_EXPANDED,
             TOOLBAR_POSITION_BOTTOM,
+            NAVIGATE_BACK_TOOLBAR_BUTTON,
         )
 }

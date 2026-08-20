@@ -299,7 +299,7 @@ add_task(async function test_fetchProxyPass() {
       sends: fail(HTTP_404),
       expects: {
         status: 404,
-        error: "invalid_response",
+        error: "unexpected_status",
         validPass: false,
         validUsage: false,
       },

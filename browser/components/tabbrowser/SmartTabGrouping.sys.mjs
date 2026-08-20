@@ -1324,7 +1324,9 @@ export class SmartTabGroupingManager extends AIFeature {
       this.docEmbeddings = precomputedEmbeddings;
     } else {
       this.docEmbeddings = await this._generateEmbeddings(
-        structuredData.map(a => a[EMBED_TEXT_KEY])
+        structuredData.map(a =>
+          SmartTabGroupingManager.preprocessText(a[EMBED_TEXT_KEY])
+        )
       );
     }
     let bestResultCluster;

@@ -129,7 +129,7 @@ add_task(async function simple_no_result_promise() {
   Assert.equal(result.local.length, 0);
   Assert.equal(result.remote.length, 0);
 
-  assertLatencyCollection(true);
+  assertLatencyCollection(getEngine, true);
 });
 
 add_task(async function simple_remote_no_local_result() {
@@ -163,7 +163,8 @@ add_task(async function simple_third_party_remote_no_local_result() {
   Assert.equal(result.remote[1].value, "modern");
   Assert.equal(result.remote[2].value, "mom");
 
-  assertLatencyCollection(thirdPartyEngine, true);
+  // Data is not recorded for third-party engines.
+  assertLatencyCollection(thirdPartyEngine, false);
 });
 
 add_task(async function simple_remote_no_local_result_alternative_type() {
@@ -1019,21 +1020,20 @@ function updateSearchHistory(operation, value) {
 }
 
 function assertLatencyCollection(engine, shouldRecord) {
-  let latencyDistribution =
-    Glean.searchSuggestions.latency[
-      // Third party engines are always recorded as "other".
-      engine instanceof ConfigSearchEngine ? engine.id : "other"
-    ].testGetValue();
+  Assert.ok(
+    engine instanceof ConfigSearchEngine || !shouldRecord,
+    "shouldRecord should only be true for configuration search engines"
+  );
 
   if (shouldRecord) {
-    Assert.deepEqual(
-      latencyDistribution.count,
+    Assert.equal(
+      Glean.searchSuggestions.latency[engine.id].testGetValue().count,
       1,
       "Should have recorded a latency count"
     );
   } else {
-    Assert.deepEqual(
-      latencyDistribution,
+    Assert.equal(
+      Glean.searchSuggestions.latency[engine.id].testGetValue(),
       null,
       "Should not have recorded a latency count"
     );

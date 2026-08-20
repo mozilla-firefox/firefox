@@ -131,7 +131,7 @@ fn make_and_run_simple_pipeline_impl<InputT: ImageDataType, OutputT: ImageDataTy
             false,
         );
     }
-    let mut pipeline = pipeline.build()?;
+    let pipeline = pipeline.build()?;
 
     let num_groups = image_size.0.shrc(LOG_GROUP_SIZE) * image_size.1.shrc(LOG_GROUP_SIZE);
 
@@ -153,7 +153,7 @@ fn make_and_run_simple_pipeline_impl<InputT: ImageDataType, OutputT: ImageDataTy
         })
         .collect();
 
-    let mut buffer_splitter = BufferSplitter::new(&mut buf_ptrs);
+    let buffer_splitter = BufferSplitter::new(&mut buf_ptrs);
 
     for g in 0..num_groups {
         for &c in all_channels.iter() {
@@ -170,10 +170,12 @@ fn make_and_run_simple_pipeline_impl<InputT: ImageDataType, OutputT: ImageDataTy
                 g,
                 true,
                 extract_group_rect(&input_images[c], g, log_group_size)?,
-                &mut buffer_splitter,
+                &buffer_splitter,
             )?;
         }
     }
+
+    drop(buffer_splitter);
 
     Ok(outputs)
 }

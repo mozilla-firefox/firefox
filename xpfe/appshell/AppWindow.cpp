@@ -2313,9 +2313,6 @@ void AppWindow::ApplyChromeFlags() {
   if (!(mChromeFlags & nsIWebBrowserChrome::CHROME_TOOLBAR))
     newvalue.AppendLiteral("toolbar ");
 
-  if (!(mChromeFlags & nsIWebBrowserChrome::CHROME_LOCATIONBAR))
-    newvalue.AppendLiteral("location ");
-
   if (!(mChromeFlags & nsIWebBrowserChrome::CHROME_PERSONAL_TOOLBAR))
     newvalue.AppendLiteral("directories ");
 

@@ -120,7 +120,7 @@
 #include "vm/JSObject.h"
 #include "vm/NumberObject.h"
 #include "vm/PlainObject.h"    // js::PlainObject
-#include "vm/PromiseObject.h"  // js::PromiseObject, js::PromiseSlot_*
+#include "vm/PromiseObject.h"  // js::PromiseObject
 #include "vm/ProxyObject.h"
 #include "vm/RealmFuses.h"
 #include "vm/RuntimeFuses.h"
@@ -4973,10 +4973,11 @@ static bool SettlePromiseNow(JSContext* cx, unsigned argc, Value* vp) {
   }
 
   int32_t flags = promise->flags();
-  promise->setNeverGCThingFixedSlot(
-      PromiseSlot_Flags,
+  promise->setFixedSlotTyped(
+      PromiseObject::FLAGS_SLOT,
       Int32Value(flags | PROMISE_FLAG_RESOLVED | PROMISE_FLAG_FULFILLED));
-  promise->setFixedSlot(PromiseSlot_ReactionsOrResult, UndefinedValue());
+  promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT,
+                        UndefinedValue());
 
   return true;
 }

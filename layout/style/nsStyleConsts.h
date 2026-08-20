@@ -193,13 +193,6 @@ enum class StyleFlexDirection : uint8_t {
   ColumnReverse,
 };
 
-// See nsStylePosition
-enum class StyleFlexWrap : uint8_t {
-  Nowrap,
-  Wrap,
-  WrapReverse,
-};
-
 // CSS Grid <track-breadth> keywords
 enum class StyleGridTrackBreadth : uint8_t {
   MaxContent = 1,

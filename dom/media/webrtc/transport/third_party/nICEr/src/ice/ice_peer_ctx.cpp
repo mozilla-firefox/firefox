@@ -85,6 +85,12 @@ int nr_ice_peer_ctx_create(nr_ice_ctx *ctx, nr_ice_handler *handler,char *label,
     return(_status);
   }
 
+int nr_ice_peer_ctx_aggressive_nomination(nr_ice_peer_ctx *pctx)
+  {
+    return (pctx->ctx->flags & NR_ICE_CTX_FLAGS_AGGRESSIVE_NOMINATION) &&
+      !pctx->peer_lite;
+  }
+
 
 
 int nr_ice_peer_ctx_parse_stream_attributes(nr_ice_peer_ctx *pctx, nr_ice_media_stream *stream, char **attrs, int attr_ct)

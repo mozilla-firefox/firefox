@@ -17,6 +17,8 @@ support-files = [
 
 ["browser_emailtracking_telemetry.js"]
 
+["browser_popup_tracker.js"]
+
 ["browser_realtime_lookup.js"]
 
 ["browser_realtime_simulation.js"]

@@ -2537,6 +2537,7 @@ export class _ASRouter {
     const PromoInfo = {
       VPN: { enabledPref: "browser.vpn_promo.enabled" },
       PIN: { enabledPref: "browser.promo.pin.enabled" },
+      RELAY: { enabledPref: "browser.promo.relay.enabled" },
     };
     await this.loadMessagesFromAllProviders();
 

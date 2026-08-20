@@ -22,7 +22,6 @@ import org.hamcrest.Matchers.equalTo
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -161,7 +160,6 @@ class PdfCreationTest : BaseSessionTest() {
         }
     }
 
-    @Ignore // TODO: Re-enable it in bug 1846296.
     @NullDelegate(Autofill.Delegate::class)
     @Test
     fun saveAPdfDocument() {
@@ -190,6 +188,26 @@ class PdfCreationTest : BaseSessionTest() {
                 assertThat(
                     "The PDF File must the same as the original one.",
                     it.body?.readBytes(),
+                    equalTo(originalBytes),
+                )
+            }
+        }
+    }
+
+    @NullDelegate(Autofill.Delegate::class)
+    @Test
+    fun saveAContentPdfDocumentWithSaveAsPdf() {
+        activityRule.scenario.onActivity {
+            val originalBytes = getTestBytes(HELLO_PDF_WORLD_PDF_PATH)
+            TestContentProvider.setTestData(originalBytes, "application/pdf")
+            mainSession.loadUri("content://org.mozilla.geckoview.test.provider/pdf")
+            mainSession.waitForPageStop()
+
+            val pdfInputStream = mainSession.saveAsPdf()
+            sessionRule.waitForResult(pdfInputStream).let {
+                assertThat(
+                    "The PDF File must the same as the original one.",
+                    it!!.readBytes(),
                     equalTo(originalBytes),
                 )
             }

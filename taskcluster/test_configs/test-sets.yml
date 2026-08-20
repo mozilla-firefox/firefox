@@ -526,13 +526,6 @@ macosx1500-aarch64-tests:
 # omitted. web-platform-tests is also omitted pending Bug 2038639 (GPU process
 # leak in APZCTreeManager::CheckerboardFlushObservers on headless macOS).
 # Suites can be re-added as headless support improves.
-#
-# In particular, no browser-chrome flavor suite belongs here: browser-test.js
-# calls SimpleTest.waitForFocus before every test, which awaits a focus event
-# with no timeout, and window activation never completes on these workers. That
-# hangs the browser before the first test and burns the full harness timeout on
-# every retry. See Bug 2059365 (mochitest-remote) and Bug 2050174 (the
-# underlying activation issue).
 macosx1500-aarch64-vms-tests:
     - cppunittest
     - crashtest
@@ -542,6 +535,7 @@ macosx1500-aarch64-vms-tests:
     - marionette-unittest
     - mochitest-chrome
     - mochitest-plain
+    - mochitest-remote
     - telemetry-tests-client
     - xpcshell
 

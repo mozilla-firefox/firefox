@@ -70,6 +70,12 @@ class BookmarksPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRu
         return this
     }
 
+    fun importBookmarksFromFile(): BookmarksPage {
+        mozClick(BookmarksSelectors.IMPORT_BOOKMARKS_BUTTON)
+        mozClick(BookmarksSelectors.IMPORT_MENU_BUTTON)
+        return this
+    }
+
     fun setParentFolder(folderName: String): BookmarksPage {
         mozClick(BookmarksSelectors.DEFAULT_BOOKMARKS_FOLDER_TITLE)
         mozClick(BookmarksSelectors.EXPAND_FOLDER_BUTTON("Bookmarks"))

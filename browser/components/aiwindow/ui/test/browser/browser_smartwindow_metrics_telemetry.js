@@ -114,4 +114,46 @@ describe("SmartWindowMetricsTelemetry", () => {
     );
     await SpecialPowers.popPrefEnv();
   });
+
+  it("records enabled as true", async () => {
+    await SpecialPowers.pushPrefEnv({
+      set: [["browser.smartwindow.enabled", true]],
+    });
+    SmartWindowTelemetry.updateEnabledMetric();
+
+    Assert.strictEqual(
+      Glean.smartWindow.enabled.testGetValue(),
+      true,
+      "enabled should be true"
+    );
+    await SpecialPowers.popPrefEnv();
+  });
+
+  it("records enabled as false", async () => {
+    await SpecialPowers.pushPrefEnv({
+      set: [["browser.smartwindow.enabled", false]],
+    });
+    SmartWindowTelemetry.updateEnabledMetric();
+
+    Assert.strictEqual(
+      Glean.smartWindow.enabled.testGetValue(),
+      false,
+      "enabled should be false"
+    );
+    await SpecialPowers.popPrefEnv();
+  });
+
+  it("records enabled when the pref flips to true", async () => {
+    SmartWindowTelemetry.init();
+    await SpecialPowers.pushPrefEnv({
+      set: [["browser.smartwindow.enabled", true]],
+    });
+
+    Assert.strictEqual(
+      Glean.smartWindow.enabled.testGetValue(),
+      true,
+      "enabled should be updated by the pref observer"
+    );
+    await SpecialPowers.popPrefEnv();
+  });
 });

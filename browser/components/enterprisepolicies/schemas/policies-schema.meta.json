@@ -31,6 +31,7 @@
           "description",
           "x-category",
           "x-compatibility",
+          "x-restart-required",
           "examples"
         ],
         "properties": {
@@ -51,6 +52,10 @@
               "firefox_esr": { "$ref": "#/definitions/compatEntry" },
               "firefox_enterprise": { "$ref": "#/definitions/compatEntry" }
             }
+          },
+          "x-restart-required": {
+            "type": "boolean",
+            "description": "Whether the policy takes effect only after a restart. Firefox ignores this flag, since it applies all policies once at startup (set it to true for new policies in Firefox); it is consumed only by Firefox Enterprise, which can apply policies live."
           },
           "examples": {
             "type": "array",

@@ -207,19 +207,11 @@ function useSov({ geo, locale }) {
   );
 }
 
-/**
- * @backward-compat { version 154 }
- * We are turning this on in US/en-US,en-GB,en-CA, but doing it in here so it
- * can trainhop. Drop the `|| "US"` / `|| "en-US,en-GB,en-CA"` fallbacks once
- * 154 hits Release.
- */
 export function useContextualAds({ geo, locale }) {
-  const regions =
-    Services.prefs.getStringPref(REGION_CONTEXTUAL_AD_CONFIG, "") || "US";
-  const locales =
-    Services.prefs.getStringPref(LOCALE_CONTEXTUAL_AD_CONFIG, "") ||
-    "en-US,en-GB,en-CA";
-  return csvHasValue(regions, geo) && csvHasValue(locales, locale);
+  return (
+    csvPrefHasValue(REGION_CONTEXTUAL_AD_CONFIG, geo) &&
+    csvPrefHasValue(LOCALE_CONTEXTUAL_AD_CONFIG, locale)
+  );
 }
 
 // Determine if spocs should be shown for a geo/locale
@@ -1704,16 +1696,16 @@ export const PREFS_CONFIG = new Map([
     },
   ],
   [
-    "widgets.pictureOfTheDay.size",
+    "widgets.stocks.watchlist",
     {
-      title: "Size of the picture of the day widget (small, medium, or large)",
+      title: "Saved stocks widget watchlist ticker symbols (comma-separated)",
       value: "",
     },
   ],
   [
-    "widgets.stocks.size",
+    "widgets.pictureOfTheDay.size",
     {
-      title: "Size of the stocks widget (small, medium, or large)",
+      title: "Size of the picture of the day widget (small, medium, or large)",
       value: "",
     },
   ],

@@ -4,11 +4,15 @@
 ---
 
 task-defaults:
+    dependencies:
+        harness: build-linux64/opt
     fetches:
         toolchain:
             - linux64-node
             - linux64-geckodriver
             - browsertime
+        harness:
+            - artifact: target.perftests.tests.tar.zst
 
     worker:
         env:
@@ -16,11 +20,12 @@ task-defaults:
 
     run:
         clone-with: hg
-        sparse-profile: perftest
-        checkout: true
-        cwd: '{checkout}'
+        # script.py on the bitbar/lambda images imports mozdevice, and the
+        # fetched CI python has no such module, so PYTHONPATH above resolves
+        # it out of the extracted harness relative to this directory.
+        cwd: fetches
         command: >-
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --on-try
             --browsertime-geckodriver ${MOZ_FETCHES_DIR}/geckodriver
@@ -39,7 +44,7 @@ hw-a55-aarch64-shippable-startup-chrome-m-newssite-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -67,7 +72,7 @@ hw-a55-aarch64-shippable-startup-fenix-newssite-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -90,7 +95,7 @@ hw-p6-aarch64-shippable-startup-chrome-m-newssite-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -118,7 +123,7 @@ hw-p6-aarch64-shippable-startup-fenix-newssite-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -141,7 +146,7 @@ hw-s24-aarch64-shippable-startup-chrome-m-newssite-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -169,7 +174,7 @@ hw-s24-aarch64-shippable-startup-fenix-newssite-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -191,7 +196,7 @@ hw-a55-aarch64-shippable-startup-chrome-m-shopify-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -219,7 +224,7 @@ hw-a55-aarch64-shippable-startup-fenix-shopify-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -241,7 +246,7 @@ hw-p6-aarch64-shippable-startup-chrome-m-shopify-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -269,7 +274,7 @@ hw-p6-aarch64-shippable-startup-fenix-shopify-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -291,7 +296,7 @@ hw-s24-aarch64-shippable-startup-chrome-m-shopify-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -319,7 +324,7 @@ hw-s24-aarch64-shippable-startup-fenix-shopify-applink-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -342,7 +347,7 @@ hw-a55-aarch64-shippable-startup-chrome-m-tab-restore-startup:
         clone-with: hg
         command: >-
              mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-             cd $GECKO_PATH &&
+             cd $MOZ_FETCHES_DIR &&
              python3 python/mozperftest/mozperftest/runner.py
              --flavor custom-script
              --app chrome-m
@@ -370,7 +375,7 @@ hw-a55-aarch64-shippable-startup-fenix-tab-restore-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -393,7 +398,7 @@ hw-p6-aarch64-shippable-startup-chrome-m-tab-restore-startup:
         clone-with: hg
         command: >-
              mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-             cd $GECKO_PATH &&
+             cd $MOZ_FETCHES_DIR &&
              python3 python/mozperftest/mozperftest/runner.py
              --flavor custom-script
              --app chrome-m
@@ -421,7 +426,7 @@ hw-p6-aarch64-shippable-startup-fenix-tab-restore-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -444,7 +449,7 @@ hw-s24-aarch64-shippable-startup-chrome-m-tab-restore-startup:
         clone-with: hg
         command: >-
              mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-             cd $GECKO_PATH &&
+             cd $MOZ_FETCHES_DIR &&
              python3 python/mozperftest/mozperftest/runner.py
              --flavor custom-script
              --app chrome-m
@@ -472,7 +477,7 @@ hw-s24-aarch64-shippable-startup-fenix-tab-restore-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -494,7 +499,7 @@ hw-a55-aarch64-shippable-startup-chrome-m-homeview-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -522,7 +527,7 @@ hw-a55-aarch64-shippable-startup-fenix-homeview-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -544,7 +549,7 @@ hw-p6-aarch64-shippable-startup-chrome-m-homeview-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -572,7 +577,7 @@ hw-p6-aarch64-shippable-startup-fenix-homeview-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -594,7 +599,7 @@ hw-s24-aarch64-shippable-startup-chrome-m-homeview-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -622,7 +627,7 @@ hw-s24-aarch64-shippable-startup-fenix-homeview-startup:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -658,7 +663,7 @@ hw-a55-aarch64-shippable-startup-fenix-cold-main-first-frame:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -687,7 +692,7 @@ hw-a55-aarch64-shippable-startup-fenix-cold-view-nav-start:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -715,7 +720,7 @@ hw-a55-aarch64-shippable-startup-focus-cold-main-first-frame:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app focus
@@ -744,7 +749,7 @@ hw-a55-aarch64-shippable-startup-focus-cold-view-nav-start:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app focus
@@ -774,7 +779,7 @@ hw-a55-aarch64-shippable-startup-geckoview-cold-main-first-frame:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app geckoview
@@ -803,7 +808,7 @@ hw-a55-aarch64-shippable-startup-geckoview-cold-view-nav-start:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app geckoview
@@ -825,7 +830,7 @@ hw-a55-aarch64-shippable-startup-chrome-m-cold-main-first-frame:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -853,7 +858,7 @@ hw-p6-aarch64-shippable-startup-fenix-cold-main-first-frame:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -876,7 +881,7 @@ hw-p6-aarch64-shippable-startup-chrome-m-cold-main-first-frame:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -904,7 +909,7 @@ hw-p6-aarch64-shippable-startup-fenix-cold-view-nav-start:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -934,7 +939,7 @@ hw-s24-aarch64-shippable-startup-fenix-cold-main-first-frame:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -957,7 +962,7 @@ hw-s24-aarch64-shippable-startup-chrome-m-cold-main-first-frame:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app chrome-m
@@ -985,7 +990,7 @@ hw-s24-aarch64-shippable-startup-fenix-cold-view-nav-start:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -1006,7 +1011,7 @@ hw-a55-aarch64-perfstats-gv:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor mobile-browser
             --app geckoview
@@ -1036,7 +1041,7 @@ hw-a55-aarch64-perfstats-fenix:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor mobile-browser
             --app fenix
@@ -1072,7 +1077,7 @@ hw-a55-record-websites:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor mobile-browser
             --app geckoview
@@ -1110,7 +1115,7 @@ hw-a55-background-resource-fenix:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             testing/performance/android-resource/main-background.sh
             --app fenix
@@ -1136,7 +1141,7 @@ hw-a55-background-resource-chrome:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             testing/performance/android-resource/main-background.sh
             --app chrome-m
@@ -1166,7 +1171,7 @@ hw-a55-foreground-resource-fenix:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             testing/performance/android-resource/main-foreground.sh
             --app fenix
@@ -1192,7 +1197,7 @@ hw-a55-foreground-resource-chrome:
         clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             testing/performance/android-resource/main-foreground.sh
             --app chrome-m

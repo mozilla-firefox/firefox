@@ -279,9 +279,7 @@ typedef struct {
 #define INIT_DATA_BUF_SIZE 1024
 #define INIT_ATTS_SIZE 16
 #define INIT_ATTS_VERSION 0xFFFFFFFF
-/* BEGIN MOZILLA CHANGE (Avoid slop in poolGrow() allocations) */
-#define INIT_BLOCK_SIZE ((int)(1024 - (offsetof(BLOCK, s) / sizeof(XML_Char))))
-/* END MOZILLA CHANGE */
+#define INIT_BLOCK_SIZE 1024
 #define INIT_BUFFER_SIZE 1024
 
 #define EXPAND_SPARE 24

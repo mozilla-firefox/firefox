@@ -57,6 +57,8 @@ add_task(async function test_enterprise_management_works() {
     await browser.management.setEnabled(addon.id, false);
     addon = await browser.management.get(TEST_ADDON_ID);
     browser.test.assertFalse(addon.enabled, "addon is disabled");
+    // Disabling an already-disabled add-on is a no-op, not an error.
+    await browser.management.setEnabled(addon.id, false);
     await browser.management.setEnabled(addon.id, true);
     addon = await browser.management.get(TEST_ADDON_ID);
     browser.test.assertTrue(addon.enabled, "addon is enabled");
@@ -117,6 +119,64 @@ add_task(async function test_enterprise_management_works() {
   await extension.awaitStartup();
   await extension.awaitMessage("done");
   await extension.unload();
+});
+
+add_task(async function test_enterprise_management_locked_addon() {
+  const TEST_ID = "test_management_policy_locked@tests.mozilla.com";
+
+  async function background(TEST_ADDON_ID) {
+    let addon = await browser.management.get(TEST_ADDON_ID);
+    browser.test.assertTrue(addon.enabled, "addon is enabled");
+    await browser.test.assertRejects(
+      browser.management.setEnabled(TEST_ADDON_ID, false),
+      `Cannot disable add-on ${TEST_ADDON_ID}: disallowed by enterprise policy`,
+      "setEnabled should fail for a locked add-on"
+    );
+    addon = await browser.management.get(TEST_ADDON_ID);
+    browser.test.assertTrue(addon.enabled, "addon is still enabled");
+    browser.test.sendMessage("done");
+  }
+
+  let originalXpi = AddonTestUtils.createTempWebExtensionFile({
+    manifest: {
+      browser_specific_settings: {
+        gecko: {
+          id: TEST_ID,
+        },
+      },
+      name: TEST_ID,
+      permissions: ["management"],
+    },
+    background: `(${background})("${TEST_ADDON_ID}")`,
+  });
+
+  let serverHost = `http://localhost:${server.identity.primaryPort}`;
+
+  let xpiFilename = `/locked.xpi`;
+  server.registerFile(xpiFilename, originalXpi);
+
+  let extension = ExtensionTestUtils.expectExtension(TEST_ID);
+  await Promise.all([
+    AddonTestUtils.promiseInstallEvent("onInstallEnded"),
+    EnterprisePolicyTesting.setupPolicyEngineWithJson({
+      policies: {
+        ExtensionSettings: {
+          [TEST_ID]: {
+            installation_mode: "force_installed",
+            install_url: serverHost + xpiFilename,
+          },
+        },
+        Extensions: {
+          Locked: [TEST_ADDON_ID],
+        },
+      },
+    }),
+  ]);
+  await extension.awaitStartup();
+  await extension.awaitMessage("done");
+  await extension.unload();
+
+  await EnterprisePolicyTesting.setupPolicyEngineWithJson("");
 });
 
 add_task(async function test_no_enterprise_management_fails() {

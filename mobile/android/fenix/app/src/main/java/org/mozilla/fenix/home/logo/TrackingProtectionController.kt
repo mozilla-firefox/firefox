@@ -4,11 +4,14 @@
 
 package org.mozilla.fenix.home.logo
 
+import androidx.annotation.VisibleForTesting
 import androidx.navigation.NavController
+import org.mozilla.fenix.GleanMetrics.TrackingProtection
 import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.home.HomeFragmentDirections
-import org.mozilla.fenix.trackingprotection.ProtectionsDashboardFragment
+
+@VisibleForTesting internal const val HOME_TELEMETRY_SOURCE = "home"
 
 /**
  * Home content controller for handling interactions with the tracking protections pill.
@@ -22,12 +25,12 @@ class TrackingProtectionController(
 ) {
     /** Handle the tracking protections pill being clicked. */
     fun handleProtectionStatusPillClicked() {
+        TrackingProtection.privacyReportTapped.record(
+            TrackingProtection.PrivacyReportTappedExtra(HOME_TELEMETRY_SOURCE)
+        )
         navController.nav(
             R.id.homeFragment,
-            HomeFragmentDirections.actionHomeFragmentToGlobalProtectionsDashboard(
-                currentSessionId,
-                source = ProtectionsDashboardFragment.SOURCE_HOME,
-            ),
+            HomeFragmentDirections.actionHomeFragmentToGlobalProtectionsDashboard(currentSessionId),
         )
     }
 }

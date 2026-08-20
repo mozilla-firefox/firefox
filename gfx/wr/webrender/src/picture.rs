@@ -1170,7 +1170,7 @@ impl PictureInstance {
                                 parent_surface.surface_spatial_node_index,
                             );
 
-                        // The contents of this surface are coplanar, so a perspective
+                        // A perspective surface's contents are coplanar, so a
                         // transform whose only perspective terms are m34/m44 still maps
                         // them with a constant w, and exact scale factors exist. Only a
                         // true keystone (m14/m24 non-zero) has no single reasonable
@@ -1185,9 +1185,18 @@ impl PictureInstance {
                         // at the perspective origin makes the exact scale marginally less
                         // than one for content that is essentially flat, which would
                         // resample it for no reason.
-                        let scale_factors = local_to_surface
-                            .coplanar_scale_factors()
-                            .map_or((1.0, 1.0), |(x, y)| (x.max(1.0), y.max(1.0)));
+                        //
+                        // Both of those only apply to a perspective mapping, and
+                        // `coplanar_scale_factors` also succeeds without one. A surface
+                        // minified by a plain 2d transform must still rasterize small,
+                        // so it keeps its exact, unclamped scale factors.
+                        let scale_factors = if local_to_surface.is_perspective() {
+                            local_to_surface
+                                .coplanar_scale_factors()
+                                .map_or((1.0, 1.0), |(x, y)| (x.max(1.0), y.max(1.0)))
+                        } else {
+                            local_to_surface.scale_factors()
+                        };
 
                         let scale_factors = (
                             scale_factors.0 * parent_surface.world_scale_factors.0,
@@ -1317,7 +1326,7 @@ impl PictureInstance {
                     }
                 };
 
-                let surface = SurfaceInfo::new(
+                let mut surface = SurfaceInfo::new(
                     surface_spatial_node_index,
                     raster_spatial_node_index,
                     frame_context.global_screen_device_rect,
@@ -1328,6 +1337,29 @@ impl PictureInstance {
                     surface_snaps,
                     force_scissor_rect,
                 );
+
+                // For a backdrop filter the SVGFE graph composites in this
+                // surface's (backdrop-root) space, but its subregions are
+                // authored against the filtered element's spatial node. Record
+                // the mapping between the two so every coverage path can map the
+                // subregions consistently. Recomputed per frame, so an async
+                // (APZ) scroll of either node is accounted for.
+                //
+                // Only a 2D scale+offset relationship is handled here; if the
+                // element->backdrop-root transform is not a 2D scale/translation
+                // (e.g. rotation or a 3D transform) `as_2d_scale_offset` returns
+                // None and the mapping stays identity, leaving the subregions
+                // as authored for that rare case.
+                if let PictureCompositeMode::SVGFEGraph(_, source_spatial_node_index) = &composite_mode {
+                    if *source_spatial_node_index != surface_spatial_node_index {
+                        if let Some(scale_offset) = frame_context.spatial_tree
+                            .get_relative_transform(*source_spatial_node_index, surface_spatial_node_index)
+                            .as_2d_scale_offset()
+                        {
+                            surface.svgfe_source_map = scale_offset;
+                        }
+                    }
+                }
 
                 let surface_index = SurfaceIndex(surfaces.len());
 
@@ -2879,6 +2911,7 @@ fn test_large_surface_scale_1() {
             local_scale: (1.0, 1.0),
             allow_snapping: true,
             force_scissor_rect: false,
+            svgfe_source_map: ScaleOffset::identity(),
         },
         SurfaceInfo {
             unclipped_local_rect: PictureRect::new(
@@ -2898,6 +2931,7 @@ fn test_large_surface_scale_1() {
             local_scale: (1.0, 1.0),
             allow_snapping: true,
             force_scissor_rect: false,
+            svgfe_source_map: ScaleOffset::identity(),
         },
     ];
 
@@ -2977,6 +3011,7 @@ fn test_drop_filter_dirty_region_outside_prim() {
             local_scale: (1.0, 1.0),
             allow_snapping: true,
             force_scissor_rect: false,
+            svgfe_source_map: ScaleOffset::identity(),
             culling_rect: VisRect::max_rect(),
         },
         SurfaceInfo {
@@ -2999,6 +3034,7 @@ fn test_drop_filter_dirty_region_outside_prim() {
             local_scale: (1.0, 1.0),
             allow_snapping: true,
             force_scissor_rect: false,
+            svgfe_source_map: ScaleOffset::identity(),
             culling_rect: VisRect::max_rect(),
         },
     ];
@@ -3092,6 +3128,7 @@ fn test_drop_filter_partial_dirty_content_inflate() {
             local_scale: (1.0, 1.0),
             allow_snapping: true,
             force_scissor_rect: false,
+            svgfe_source_map: ScaleOffset::identity(),
             culling_rect: VisRect::max_rect(),
         },
         SurfaceInfo {
@@ -3114,6 +3151,7 @@ fn test_drop_filter_partial_dirty_content_inflate() {
             local_scale: (1.0, 1.0),
             allow_snapping: true,
             force_scissor_rect: false,
+            svgfe_source_map: ScaleOffset::identity(),
             culling_rect: VisRect::max_rect(),
         },
     ];

@@ -149,7 +149,7 @@ document.addEventListener(
             switchToTabHavingURI("about:pdf", true);
             break;
           case "cmd_openReferrals":
-            lazy.Referrals.openReferralsTab(window);
+            lazy.Referrals.openReferralsTab(window, "app_menu");
             break;
           case "Browser:AddBookmarkAs":
             PlacesCommandHook.bookmarkPage();

@@ -14,7 +14,7 @@ namespace mozilla {
 namespace dom {
 namespace indexedDB {
 
-[ManualDealloc, ChildImpl="indexedDB::BackgroundUtilsChild", ParentImpl=virtual]
+[ManualDealloc, ChildImpl="mozilla::dom::indexedDB::BackgroundUtilsChild", ParentImpl=virtual]
 sync protocol PBackgroundIndexedDBUtils
 {
   manager PBackground;

@@ -40,6 +40,7 @@ class JsepSessionCopyableStuff {
   std::vector<std::string> mIceOptions;
   JsepBundlePolicy mBundlePolicy = kBundleBalanced;
   JsepRtcpMuxPolicy mRtcpMuxPolicy = kRtcpMuxNegotiate;
+  bool mAlwaysNegotiateDataChannels = false;
   std::vector<JsepDtlsFingerprint> mDtlsFingerprints;
   uint64_t mSessionId = 0;
   uint64_t mSessionVersion = 0;
@@ -85,6 +86,10 @@ class JsepSessionImpl : public JsepSession, public JsepSessionCopyableStuff {
   nsresult SetBundlePolicy(JsepBundlePolicy policy) override;
   nsresult SetRtcpMuxPolicy(JsepRtcpMuxPolicy policy) override;
   JsepRtcpMuxPolicy GetRtcpMuxPolicy() const override { return mRtcpMuxPolicy; }
+  void SetAlwaysNegotiateDataChannels(
+      bool aAlwaysNegotiateDataChannels) override {
+    mAlwaysNegotiateDataChannels = aAlwaysNegotiateDataChannels;
+  }
 
   virtual bool RemoteIsIceLite() const override { return mRemoteIsIceLite; }
 

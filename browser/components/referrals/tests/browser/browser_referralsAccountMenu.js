@@ -74,6 +74,7 @@ add_task(async function share_firefox_opens_referrals_when_enabled() {
     "TabOpen"
   );
   let hidden = BrowserTestUtils.waitForEvent(document, "popuphidden", true);
+  Services.fog.testResetFOG();
   button.click();
   let tab = (await tabOpened).target;
   await hidden;
@@ -81,6 +82,14 @@ add_task(async function share_firefox_opens_referrals_when_enabled() {
   await TestUtils.waitForCondition(
     () => isReferralsURL(tab.linkedBrowser.currentURI.displaySpec),
     "Waiting for the referrals page to be opened in the new tab"
+  );
+
+  let events = Glean.referrals.entrypointClicked.testGetValue();
+  is(events.length, 1, "One entrypoint_clicked event was recorded");
+  is(
+    events[0].extra.entrypoint,
+    "accounts_menu",
+    "entrypoint_clicked recorded the accounts_menu entrypoint"
   );
   ok(
     isReferralsURL(tab.linkedBrowser.currentURI.displaySpec),

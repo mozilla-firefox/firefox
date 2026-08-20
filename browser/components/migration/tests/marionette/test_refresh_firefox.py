@@ -182,7 +182,7 @@ class TestFirefoxRefresh(MarionetteTestCase):
           const COMPLETE_STATE = Ci.nsIWebProgressListener.STATE_STOP +
                                  Ci.nsIWebProgressListener.STATE_IS_NETWORK;
           let { TabStateFlusher } = ChromeUtils.importESModule(
-            "resource:///modules/sessionstore/TabStateFlusher.sys.mjs"
+            "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
           );
           let expectedURLs = Array.from(arguments[0])
           let expectedOpenGroupID = arguments[1];
@@ -229,7 +229,7 @@ class TestFirefoxRefresh(MarionetteTestCase):
           let resolve = arguments[arguments.length - 1];
           let expectedSavedGroups = Array.from(arguments[0]);
           let { TabStateFlusher } = ChromeUtils.importESModule(
-            "resource:///modules/sessionstore/TabStateFlusher.sys.mjs"
+            "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
           );
 
           let savePromises = [];

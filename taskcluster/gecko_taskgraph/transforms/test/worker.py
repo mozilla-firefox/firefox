@@ -15,6 +15,12 @@ LINUX_WORKER_TYPES = {
     "default": "t-linux-docker-noscratch-amd",
 }
 
+# linux worker types running the in-tree test docker image
+LINUX_DOCKER_WORKER_TYPES = set(LINUX_WORKER_TYPES.values()) | {
+    "t-linux-wayland",
+    "t-linux-xlarge-wayland",
+}
+
 # windows worker types keyed by test-platform and virtualization
 WINDOWS_WORKER_TYPES = {
     "windows10-64": {  # source-test
@@ -285,6 +291,27 @@ def set_wayland_env(config, tasks):
         env["MOZ_ENABLE_WAYLAND"] = "1"
         env["WAYLAND_DISPLAY"] = "wayland-0"
         env["NEED_GNOME_KEYRING"] = "true"
+        yield task
+
+
+@transforms.add
+def set_screenshots_font_antialiasing(config, tasks):
+    """The Linux test image disables font antialiasing image-wide to match
+    releng's setup; mozscreenshots wants real antialiased text for its
+    comparison screenshots, so opt this task back in without touching the
+    other tasks sharing that image.
+
+    The config file only exists in the in-tree Linux docker image, so only
+    tasks running there can point FONTCONFIG_FILE at it: anywhere else this
+    would point fontconfig at a missing file rather than merely losing
+    antialiasing."""
+    for task in tasks:
+        if (
+            task["test-name"] == "mochitest-browser-screenshots"
+            and task["worker-type"] in LINUX_DOCKER_WORKER_TYPES
+        ):
+            env = task.setdefault("worker", {}).setdefault("env", {})
+            env["FONTCONFIG_FILE"] = "/builds/worker/.fonts-aa.conf"
         yield task
 
 

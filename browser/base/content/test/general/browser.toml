@@ -55,6 +55,9 @@ skip-if = [
 # DO NOT ADD MORE TESTS HERE. USE A TOPICAL DIRECTORY INSTEAD.
 
 ["browser_bug356571.js"]
+skip-if = [
+  "true", # This test hasn't done anything since 2010.
+]
 # DO NOT ADD MORE TESTS HERE. USE A TOPICAL DIRECTORY INSTEAD.
 
 ["browser_bug380960.js"]

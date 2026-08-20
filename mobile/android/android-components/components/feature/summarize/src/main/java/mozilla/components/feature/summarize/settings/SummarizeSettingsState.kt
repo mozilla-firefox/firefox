@@ -13,9 +13,12 @@ import mozilla.components.lib.state.State
  * @property isFeatureEnabled Whether page summarization is enabled.
  * @property isGestureEnabled Whether the shake-to-summarize gesture is enabled.
  * @property shakeSensitivity The shake sensitivity of shake-to-summarize
+ * @property isLearnMoreRequested Whether the user asked to read more about the feature. The host is expected to open
+ *   the support article and acknowledge it with [LearnMoreHandled].
  */
 data class SummarizeSettingsState(
     val isFeatureEnabled: Boolean = false,
     val isGestureEnabled: Boolean = false,
     val shakeSensitivity: ShakeSensitivity = ShakeSensitivity.Medium,
+    val isLearnMoreRequested: Boolean = false,
 ) : State

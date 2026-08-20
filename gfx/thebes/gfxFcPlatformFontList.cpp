@@ -639,7 +639,7 @@ bool gfxFontconfigFontEntry::TestCharacterMap(uint32_t aCh) {
   return HasChar(mFontPattern, aCh);
 }
 
-bool gfxFontconfigFontEntry::HasFontTable(uint32_t aTableTag) {
+bool gfxFontconfigFontEntry::HasFontTableInternal(uint32_t aTableTag) {
   if (FTUserFontData* ufd = GetUserFontData()) {
     if (const auto* data = ufd->GetData()) {
       return !!gfxFontUtils::FindTableDirEntry(data, aTableTag);
@@ -648,7 +648,7 @@ bool gfxFontconfigFontEntry::HasFontTable(uint32_t aTableTag) {
   return gfxFT2FontEntryBase::FaceHasTable(GetFTFace(), aTableTag);
 }
 
-hb_blob_t* gfxFontconfigFontEntry::GetFontTable(uint32_t aTableTag) {
+hb_blob_t* gfxFontconfigFontEntry::GetFontTableInternal(uint32_t aTableTag) {
   // for data fonts, read directly from the font data
   if (FTUserFontData* ufd = GetUserFontData()) {
     if (const auto* data = ufd->GetData()) {
@@ -658,7 +658,7 @@ hb_blob_t* gfxFontconfigFontEntry::GetFontTable(uint32_t aTableTag) {
 
   // Use the cache only if it has already been created.
   if (mFontTableCache) {
-    return gfxFontEntry::GetFontTable(aTableTag);
+    return gfxFontEntry::GetFontTableInternal(aTableTag);
   }
 
   auto* table = hb_face_reference_table(GetHBFace(), aTableTag);

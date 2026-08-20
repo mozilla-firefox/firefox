@@ -60,9 +60,14 @@ error[E0277]: the trait bound `String: GetErrorHandling` is not satisfied
 112 | #[handle_error(String)] // Must implement `std::error::Error`
     | ^^^^^^^^^^^^^^^^^^^^^^^ the trait `GetErrorHandling` is not implemented for `String`
     |
-    = help: the following other types implement trait `GetErrorHandling`:
-              Error
-              Error2
+help: the following other types implement trait `GetErrorHandling`
+   --> macro_arguments.rs:29:2
+    |
+ 29 |  impl GetErrorHandling for Error {
+    |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Error`
+...
+ 85 | impl GetErrorHandling for Error2 {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Error2`
 note: required by a bound in `convert_log_report_error`
    --> $WORKSPACE/components/support/error/src/handling.rs
     |

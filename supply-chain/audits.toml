@@ -7873,6 +7873,11 @@ who = "na-g <na-g@nostrum.com>"
 criteria = "safe-to-deploy"
 delta = "0.3.11 -> 0.3.13"
 
+[[audits.webrtc-sdp]]
+who = "Nicolas Grunbaum <ngrunbaum@mozilla.com>"
+criteria = "safe-to-deploy"
+delta = "0.3.13 -> 0.3.14"
+
 [[audits.weedle2]]
 who = "Travis Long <tlong@mozilla.com>"
 criteria = "safe-to-deploy"

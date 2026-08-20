@@ -163,8 +163,7 @@ export class GlobalPCList {
       if (subject instanceof Ci.nsIWritablePropertyBag2) {
         let pluginID = subject.getPropertyAsUint32("pluginID");
         let pluginName = subject.getPropertyAsAString("pluginName");
-        let data = { pluginID, pluginName };
-        this.handleGMPCrash(data);
+        this.handleGMPCrash({ pluginID, pluginName });
       }
     } else if (
       topic == "PeerConnection:response:allow" ||
@@ -194,6 +193,7 @@ setupPrototype(GlobalPCList, {
 
 var _globalPCList = new GlobalPCList();
 
+// eslint-disable-next-line no-shadow
 export class RTCSessionDescription {
   init(win) {
     this._win = win;
@@ -263,6 +263,7 @@ setupPrototype(RTCSessionDescription, {
   QueryInterface: ChromeUtils.generateQI(["nsIDOMGlobalPropertyInitializer"]),
 });
 
+// eslint-disable-next-line no-shadow
 export class RTCPeerConnection {
   constructor() {
     this._pc = null;
@@ -359,6 +360,17 @@ export class RTCPeerConnection {
       if (rtcConfig.bundlePolicy != this._config.bundlePolicy) {
         throw new this._win.DOMException(
           "Cannot change bundlePolicy with setConfiguration",
+          "InvalidModificationError"
+        );
+      }
+
+      // alwaysNegotiateDataChannels must match
+      if (
+        rtcConfig.alwaysNegotiateDataChannels !=
+        this._config.alwaysNegotiateDataChannels
+      ) {
+        throw new this._win.DOMException(
+          "Cannot change alwaysNegotiateDataChannels with setConfiguration",
           "InvalidModificationError"
         );
       }
@@ -721,16 +733,16 @@ export class RTCPeerConnection {
       if (typeof this._win.onerror === "function") {
         this._win.onerror(e.message, e.fileName, e.lineNumber);
       }
-    } catch (e) {
+    } catch (err) {
       // If onerror itself throws, service it.
       try {
         this.logMsg(
-          e.message,
-          e.fileName,
-          e.lineNumber,
+          err.message,
+          err.fileName,
+          err.lineNumber,
           Ci.nsIScriptError.errorFlag
         );
-      } catch (e) {}
+      } catch {}
     }
   }
 
@@ -1285,14 +1297,13 @@ export class RTCPeerConnection {
       );
     }
 
-    let transceiver = this.getTransceivers().find(transceiver => {
-      return (
-        transceiver.sender.track == null &&
-        transceiver.getKind() == track.kind &&
-        !transceiver.stopped &&
-        !transceiver.hasBeenUsedToSend()
-      );
-    });
+    let transceiver = this.getTransceivers().find(
+      t =>
+        t.sender.track == null &&
+        t.getKind() == track.kind &&
+        !t.stopped &&
+        !t.hasBeenUsedToSend()
+    );
 
     if (transceiver) {
       transceiver.sender.setTrack(track);
@@ -1328,7 +1339,7 @@ export class RTCPeerConnection {
     }
 
     let transceiver = this.getTransceivers().find(
-      transceiver => !transceiver.stopped && transceiver.sender == sender
+      t => !t.stopped && t.sender == sender
     );
 
     // If the transceiver was removed due to rollback, let it slide.
@@ -1681,6 +1692,7 @@ setupPrototype(RTCPeerConnection, {
 
 // This is a separate class because we don't want to expose it to DOM.
 
+// eslint-disable-next-line no-shadow
 export class PeerConnectionObserver {
   init(win) {
     this._win = win;
@@ -1877,6 +1889,7 @@ setupPrototype(PeerConnectionObserver, {
   QueryInterface: ChromeUtils.generateQI(["nsIDOMGlobalPropertyInitializer"]),
 });
 
+// eslint-disable-next-line no-shadow
 export class CreateOfferRequest {
   constructor(windowID, innerWindowID, callID, isSecure) {
     Object.assign(this, { windowID, innerWindowID, callID, isSecure });

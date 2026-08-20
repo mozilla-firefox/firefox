@@ -12,8 +12,8 @@ def main(output, input_file, *defines):
     pp = Preprocessor()
     pp.context.update({
         "FFI_EXEC_TRAMPOLINE_TABLE": "0",
-        "FFI_VERSION_NUMBER": "30701",
-        "FFI_VERSION_STRING": "3.7.1",
+        "FFI_VERSION_NUMBER": "30800",
+        "FFI_VERSION_STRING": "3.8.0",
         "HAVE_LONG_DOUBLE": "0",
         "TARGET": buildconfig.substs["FFI_TARGET"],
         "VERSION": "",

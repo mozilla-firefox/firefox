@@ -5,6 +5,7 @@
 #ifndef mozilla_image_SVGDrawingCallback_h
 #define mozilla_image_SVGDrawingCallback_h
 
+#include "Units.h"
 #include "gfxDrawable.h"
 #include "mozilla/gfx/Point.h"
 #include "mozilla/gfx/Types.h"
@@ -16,8 +17,8 @@ class SVGDocumentWrapper;
 class SVGDrawingCallback final : public gfxDrawingCallback {
  public:
   SVGDrawingCallback(SVGDocumentWrapper* aSVGDocumentWrapper,
-                     const gfx::IntSize& aViewportSize,
-                     const gfx::IntSize& aSize, uint32_t aImageFlags);
+                     const CSSSize& aViewportSize, const gfx::IntSize& aSize,
+                     uint32_t aImageFlags);
 
   ~SVGDrawingCallback();
 
@@ -27,7 +28,7 @@ class SVGDrawingCallback final : public gfxDrawingCallback {
 
  private:
   RefPtr<SVGDocumentWrapper> mSVGDocumentWrapper;
-  const gfx::IntSize mViewportSize;
+  const CSSSize mViewportSize;
   const gfx::IntSize mSize;
   uint32_t mImageFlags;
 };

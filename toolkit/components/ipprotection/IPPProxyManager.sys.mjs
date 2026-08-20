@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+import { AUTH_ERRORS } from "moz-src:///toolkit/components/ipprotection/IPPAuthProvider.sys.mjs";
 
 const lazy = {};
 
@@ -78,10 +79,35 @@ export const ERRORS = Object.freeze({
   TIMEOUT: "timeout-error", // Activation took too long and was aborted
   MISSING_PROMISE: "missing-activation-promise", // Expected promise was not returned
   MISSING_ABORT: "missing-abort-controller", // Expected abort controller was not returned
+  MISSING_PASS: "missing-pass", // A rotation completed without a pass or an error
   PASS_UNAVAILABLE: "pass-unavailable", // No pass was returned from the server
   SERVER_NOT_FOUND: "server-not-found", // No server was found for the location
+  SERVERLIST_UNAVAILABLE: "serverlist-unavailable", // The server list could not be fetched
   CANCELED: "activation-canceled", // Activation was canceled
   VPN_UNAVAILABLE: "vpn-unavailable", // VPN unavailable in local region
+  NOT_READY: "not-ready-error", // Activation was requested outside of the ready state
+  QUOTA_EXHAUSTED: "quota-exhausted", // The bandwidth limit has been reached
+  CONNECTION_FAILED: "connection-failed", // The proxy connection never came up
+
+  /**
+   * Maps an auth provider error onto this vocabulary. Causes without a name of
+   * our own pass through unchanged.
+   *
+   * @param {import("./IPPAuthProvider.sys.mjs").AuthError} error
+   * @returns {string}
+   */
+  from(error) {
+    switch (error) {
+      case AUTH_ERRORS.SERVER_ERROR:
+        return ERRORS.CATASTROPHIC;
+      case AUTH_ERRORS.REGION_UNAVAILABLE:
+        return ERRORS.VPN_UNAVAILABLE;
+      case AUTH_ERRORS.QUOTA_EXCEEDED:
+        return ERRORS.QUOTA_EXHAUSTED;
+      default:
+        return error;
+    }
+  },
 });
 
 const LOG_PREF = "browser.ipProtection.log";
@@ -333,12 +359,16 @@ class IPPProxyManagerSingleton extends EventTarget {
       return this.#activatingPromise;
     }
 
-    if (
-      this.#state === IPPProxyStates.NOT_READY ||
-      this.#state === IPPProxyStates.ERROR ||
-      this.#state === IPPProxyStates.PAUSED
-    ) {
-      return { started: false };
+    if (this.#state === IPPProxyStates.NOT_READY) {
+      return { started: false, error: ERRORS.NOT_READY };
+    }
+
+    if (this.#state === IPPProxyStates.PAUSED) {
+      return { started: false, error: ERRORS.QUOTA_EXHAUSTED };
+    }
+
+    if (this.#state === IPPProxyStates.ERROR) {
+      return { started: false, error: this.#errorType ?? ERRORS.GENERIC };
     }
 
     this.#activationAbortController = new AbortController();
@@ -369,17 +399,17 @@ class IPPProxyManagerSingleton extends EventTarget {
     ])
       .then(
         started => {
-          if (
-            this.#state === IPPProxyStates.ERROR ||
-            this.#state === IPPProxyStates.PAUSED
-          ) {
-            return { started: false };
+          if (this.#state === IPPProxyStates.PAUSED) {
+            return { started: false, error: ERRORS.QUOTA_EXHAUSTED };
+          }
+          if (this.#state === IPPProxyStates.ERROR) {
+            return { started: false, error: this.#errorType ?? ERRORS.GENERIC };
           }
           // Proxy failed to start but no error was given.
           if (!started) {
             this.cancelChannelFilter();
             this.updateState();
-            return { started: false };
+            return { started: false, error: ERRORS.GENERIC };
           }
           this.#setState(IPPProxyStates.ACTIVE);
           Glean.ipprotection.started.record({
@@ -408,16 +438,21 @@ class IPPProxyManagerSingleton extends EventTarget {
       throw ERRORS.NETWORK;
     }
 
-    await lazy.IPProtectionServerlist.maybeFetchList();
+    try {
+      await lazy.IPProtectionServerlist.maybeFetchList();
+    } catch (e) {
+      lazy.logConsole.error("Serverlist fetch failed:", e);
+      throw ERRORS.SERVERLIST_UNAVAILABLE;
+    }
 
     const notReady = await lazy.IPProtectionService.authProvider.aboutToStart();
     if (notReady) {
-      throw notReady.error || ERRORS.GENERIC;
+      throw ERRORS.from(notReady.error) || ERRORS.GENERIC;
     }
 
     // Check if we aborted before starting the channel filter.
     if (abortSignal?.aborted) {
-      return false;
+      throw abortSignal.reason ?? ERRORS.CANCELED;
     }
 
     this.createChannelFilter();
@@ -425,8 +460,7 @@ class IPPProxyManagerSingleton extends EventTarget {
     // If the current proxy pass is valid, no need to re-authenticate.
     // Throws an error if the proxy pass is not available.
     if (this.#pass == null || this.#pass.shouldRotate()) {
-      const { pass, usage, error, status } =
-        await this.#getPassAndUsage(abortSignal);
+      const { pass, usage, error } = await this.#getPassAndUsage(abortSignal);
       if (usage) {
         this.#setUsage(usage);
         if (usage.quotaExhausted) {
@@ -436,16 +470,9 @@ class IPPProxyManagerSingleton extends EventTarget {
       }
 
       if (error || !pass) {
-        if (status === 500) {
-          throw ERRORS.CATASTROPHIC;
-        } else if (status === 451) {
-          // This next block should be removed when bug 2058331 is addressed, adding this to Android.
-          if (Services.appinfo.OS === "Android") {
-            throw ERRORS.CATASTROPHIC;
-          }
-          throw ERRORS.VPN_UNAVAILABLE;
-        }
-        throw ERRORS.PASS_UNAVAILABLE;
+        throw typeof error === "string"
+          ? ERRORS.from(error)
+          : ERRORS.PASS_UNAVAILABLE;
       }
       this.#pass = pass;
     }
@@ -473,7 +500,7 @@ class IPPProxyManagerSingleton extends EventTarget {
       return true;
     }
 
-    return false;
+    throw ERRORS.CONNECTION_FAILED;
   }
 
   /**
@@ -542,7 +569,7 @@ class IPPProxyManagerSingleton extends EventTarget {
    */
   switch(country) {
     if (this.#state !== IPPProxyStates.ACTIVE) {
-      return { switched: false };
+      return { switched: false, error: ERRORS.NOT_READY };
     }
 
     const location = country
@@ -631,7 +658,7 @@ class IPPProxyManagerSingleton extends EventTarget {
    * Throws an error on failures.
    *
    * @param {AbortSignal} [abortSignal=null] - a signal to indicate the fetch should be aborted, will then throw an AbortError
-   * @returns {Promise<{pass: ProxyPass | null, usage: ProxyUsage | null, error: string | null}>}
+   * @returns {Promise<{pass?: ProxyPass | null, usage?: ProxyUsage | null, error?: import("./IPPAuthProvider.sys.mjs").AuthError, status?: number}>}
    */
   async #getPassAndUsage(abortSignal = null) {
     let { status, error, pass, usage } =
@@ -643,16 +670,15 @@ class IPPProxyManagerSingleton extends EventTarget {
     });
 
     // Handle quota exceeded as a special case - return null pass with usage
-    if (status === 429 && error === "quota_exceeded") {
+    if (error === AUTH_ERRORS.QUOTA_EXCEEDED) {
       lazy.logConsole.info("Quota exceeded", {
         usage: usage ? `${usage.remaining} / ${usage.max}` : "unknown",
       });
       return { pass: null, usage, error, status };
     }
 
-    // All other error cases
-    if (error || status != 200) {
-      return { error: error || `Status: ${status}`, status };
+    if (error) {
+      return { error, status };
     }
 
     return { pass, usage, status };
@@ -799,7 +825,7 @@ class IPPProxyManagerSingleton extends EventTarget {
 
     if (!pass) {
       lazy.logConsole.debug("Failed to rotate token!");
-      this.#setErrorState("missing_pass");
+      this.#setErrorState(ERRORS.MISSING_PASS);
       return null;
     }
     // Inject the new token in the current connection
@@ -906,7 +932,8 @@ class IPPProxyManagerSingleton extends EventTarget {
   #setErrorState(error) {
     this.#rotation?.controller.abort();
 
-    this.#errorType = typeof error === "string" ? error : ERRORS.GENERIC;
+    this.#errorType =
+      typeof error === "string" ? ERRORS.from(error) : ERRORS.GENERIC;
     if (this.#state === IPPProxyStates.ACTIVE) {
       // If the proxy is active, switch to the error state.
       // Stop will need to be called to move out of the error state.

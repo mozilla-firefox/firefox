@@ -556,12 +556,6 @@ AntiTrackingUtils::GetStoragePermissionStateInParent(nsIChannel* aChannel) {
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return nsILoadInfo::NoStoragePermission;
     }
-    bool triggeringWindowHasStorageAccess;
-    rv =
-        loadInfo->GetTriggeringStorageAccess(&triggeringWindowHasStorageAccess);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return nsILoadInfo::NoStoragePermission;
-    }
 
     nsIScriptSecurityManager* ssm = nsContentUtils::GetSecurityManager();
     RefPtr<nsIPrincipal> channelResultPrincipal;
@@ -572,6 +566,7 @@ AntiTrackingUtils::GetStoragePermissionStateInParent(nsIChannel* aChannel) {
     }
     RefPtr<net::HttpBaseChannel> httpChannel = do_QueryObject(aChannel);
     bool crossSiteInitiated = false;
+    bool triggeringWindowHasStorageAccess = false;
     if (bc && bc->GetParent()->GetCurrentWindowContext()) {
       RefPtr<WindowGlobalParent> triggeringWGP =
           WindowGlobalParent::GetByInnerWindowId(triggeringWindowId);
@@ -581,6 +576,8 @@ AntiTrackingUtils::GetStoragePermissionStateInParent(nsIChannel* aChannel) {
         if (NS_FAILED(rv)) {
           crossSiteInitiated = false;
         }
+        triggeringWindowHasStorageAccess =
+            triggeringWGP->GetUsingStorageAccess();
       }
     }
 

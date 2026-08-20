@@ -695,6 +695,17 @@ class Selection final : public nsSupportsWeakReference,
   MOZ_CAN_RUN_SCRIPT void CollapseToStart(mozilla::ErrorResult& aRv);
 
   /**
+   * Same as CollapseToStart(), but collapses to the start of aRange instead of
+   * to the start of the first range of this selection.  aRange does not need to
+   * be, and does not become, part of this selection.  Callers which only want
+   * the caret at a range's start should prefer this over adding the range and
+   * then calling CollapseToStart(), which makes the whole of aRange part of the
+   * selection first.
+   */
+  MOZ_CAN_RUN_SCRIPT void CollapseToStartOf(const AbstractRange& aRange,
+                                            mozilla::ErrorResult& aRv);
+
+  /**
    * Collapses the whole selection to a single point at the end
    * of the current selection (irrespective of direction).  If content
    * is focused and editable, the caret will blink there.

@@ -9,8 +9,9 @@ use crate::DeviceType;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Argument to Store::prepare_for_sync. See comment there for more info. Only
-/// really intended to be used by tabs engine.
+/// Argument to `SyncEngine::set_clients` - a leaky abstraction of fxa/sync
+/// device ids. These are "short term" IDs in that they don't survive reauth
+/// etc, so used for "recent" things like open tabs.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ClientData {
     pub local_client_id: String,

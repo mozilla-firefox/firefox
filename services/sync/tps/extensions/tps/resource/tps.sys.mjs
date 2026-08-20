@@ -41,7 +41,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   Preference: "resource://tps/modules/prefs.sys.mjs",
   STATUS_OK: "resource://services-sync/constants.sys.mjs",
   Separator: "resource://tps/modules/bookmarks.sys.mjs",
-  SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
   Svc: "resource://services-sync/util.sys.mjs",
   SyncTelemetry: "resource://services-sync/telemetry.sys.mjs",
   WEAVE_VERSION: "resource://services-sync/constants.sys.mjs",

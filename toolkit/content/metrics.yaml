@@ -525,8 +525,14 @@ security.ui.neterror:
       we were online at page load: the captive-portal reading was stale and the
       authoritative re-check came back offline/captive or timed out, so no CTA
       was shown. Connectivity dropping *after* the CTA was shown is a different
-      thing and is counted by search_cta_click_aborted, not here. Records only
-      the reason label, never content.
+      thing and is counted by search_cta_click_aborted, not here.
+      not_top_level means the error document was not the top-level document (a
+      DNS failure inside an embedded document on a page that loaded fine), so no
+      CTA was offered; it is evaluated before the failed URL is looked at, which
+      is why such a load can never appear under keywords_found, no_path or
+      no_meaningful_keywords. When computing shown-rate or click-through rate,
+      exclude not_top_level from the denominator: it is a scope exclusion, not a
+      failure to find keywords. Records only the reason label, never content.
     labels:
       - keywords_found
       - no_path
@@ -535,14 +541,17 @@ security.ui.neterror:
       - search_unavailable
       - engine_not_general
       - connectivity_unconfirmed
+      - not_top_level
     bugs:
       - https://bugzil.la/2055675
       - https://bugzil.la/2055637
       - https://bugzil.la/2055712
+      - https://bugzil.la/2063091
     data_reviews:
       - https://bugzil.la/2055675
       - https://bugzil.la/2055637
       - https://bugzil.la/2055712
+      - https://bugzil.la/2063091
     notification_emails:
       - jbrown@mozilla.com
       - seceng-telemetry@mozilla.com
@@ -610,7 +619,8 @@ security.ui.neterror:
     type: event
     description: >
       How the user left an online dnsNotFound page on which the search CTA was
-      eligible (browser.netError.searchCTA.enabled on, online, not TRR-only).
+      eligible (browser.netError.searchCTA.enabled on, online, not TRR-only, and
+      the top-level document, so a frame records nothing here).
       Recorded exactly once per page: at the click for the three click-driven
       reasons, and at pagehide otherwise. Clicking Search opens a separate tab
       and leaves the error page loaded, so recording that outcome at pagehide
@@ -620,6 +630,7 @@ security.ui.neterror:
       destination).
     bugs:
       - https://bugzil.la/2055717
+      - https://bugzil.la/2063091
     data_reviews:
       - https://bugzil.la/2055717
     notification_emails:

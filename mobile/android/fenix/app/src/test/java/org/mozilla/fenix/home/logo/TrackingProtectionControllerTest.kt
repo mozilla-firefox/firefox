@@ -14,14 +14,15 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import kotlin.test.assertEquals
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mozilla.fenix.GleanMetrics.TrackingProtection
 import org.mozilla.fenix.R
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.home.HomeFragmentDirections
-import org.mozilla.fenix.trackingprotection.ProtectionsDashboardFragment
 
 @RunWith(AndroidJUnit4::class)
 class TrackingProtectionControllerTest {
@@ -44,13 +45,22 @@ class TrackingProtectionControllerTest {
         verify { navController.currentDestination }
         verify {
             navController.navigate(
-                directions =
-                    HomeFragmentDirections.actionHomeFragmentToGlobalProtectionsDashboard(
-                        currentSessionId,
-                        source = ProtectionsDashboardFragment.SOURCE_HOME,
-                    ),
+                directions = HomeFragmentDirections.actionHomeFragmentToGlobalProtectionsDashboard(currentSessionId),
                 navOptions = null,
             )
         }
+    }
+
+    @Test
+    fun `WHEN the protection status pill is clicked THEN telemetry is recorded`() {
+        val navController: NavController = mockk(relaxed = true)
+        val controller = TrackingProtectionController(navController, null)
+
+        controller.handleProtectionStatusPillClicked()
+
+        assertEquals(
+            HOME_TELEMETRY_SOURCE,
+            TrackingProtection.privacyReportTapped.testGetValue()?.last()?.extra?.get("source"),
+        )
     }
 }

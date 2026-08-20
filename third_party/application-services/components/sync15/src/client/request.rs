@@ -601,7 +601,12 @@ mod test {
                 }
             };
 
-            if self.cur_batch.is_none() {
+            if let Some(cur_batch) = &self.cur_batch {
+                assert_eq!(
+                    batch, cur_batch.id,
+                    "We're in a batch but got the wrong batch id"
+                );
+            } else {
                 assert!(
                     batch.is_none() || batch == Some("true".into()),
                     "We shouldn't be in a batch now"
@@ -612,12 +617,6 @@ mod test {
                     records: 0,
                     bytes: 0,
                 });
-            } else {
-                assert_eq!(
-                    batch,
-                    self.cur_batch.as_ref().unwrap().id,
-                    "We're in a batch but got the wrong batch id"
-                );
             }
 
             {

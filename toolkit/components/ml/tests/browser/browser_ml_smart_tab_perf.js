@@ -67,7 +67,7 @@ add_task(async function test_ml_smart_tab_topic() {
     options: requestInfo.runOptions,
   };
 
-  await perfTest({
+  await runMLPerfTest({
     name: "smart-tab-topic",
     options,
     request,
@@ -76,7 +76,7 @@ add_task(async function test_ml_smart_tab_topic() {
     trackPeakMemory: true,
   });
 
-  await perfTest({
+  await runMLPerfTest({
     name: "smart-tab-topic",
     options,
     request,
@@ -132,7 +132,7 @@ async function testEmbedding(trackPeakMemory = false) {
     options: requestInfo.runOptions,
   };
 
-  await perfTest({
+  await runMLPerfTest({
     name: "smart-tab-embedding",
     options,
     request,

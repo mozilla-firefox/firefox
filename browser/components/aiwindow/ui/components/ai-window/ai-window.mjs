@@ -2338,6 +2338,11 @@ export class AIWindow extends MozLitElement {
     conversation.on("chat-conversation:message-update", onUpdate);
 
     try {
+      // Kicked off before the engine and prompt work, which it has no data
+      // dependency on, so a cold or expired token doesn't add a round-trip
+      // between the user hitting send and the request going out.
+      const fxAccountTokenPromise = lazy.openAIEngine.getFxAccountToken();
+
       const { engine, parameters } = await lazy.buildEngineForFeature(
         lazy.MODEL_FEATURES.CHAT,
         {
@@ -2383,6 +2388,7 @@ export class AIWindow extends MozLitElement {
         browsingContext,
         mode: this.mode,
         signal,
+        fxAccountTokenPromise,
       });
 
       ChromeUtils.addProfilerMarker(

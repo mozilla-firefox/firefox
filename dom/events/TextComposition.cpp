@@ -384,7 +384,12 @@ void TextComposition::DispatchCompositionEvent(
   // told it to web apps.  Therefore, we should ignore the delayed events.
   if (mRequestedToCommitOrCancel && !aIsSynthesized) {
     *aStatus = nsEventStatus_eConsumeNoDefault;
-    return;
+    // If this composition is handled in a content process, we need to send the
+    // delayed commit event to the remote process because the content process's
+    // TextEventDispatcher needs to manage its composing state with the event.
+    if (!mBrowserParent) {
+      return;
+    }
   }
 
   // If the content is a container of BrowserParent, composition should be in
@@ -717,6 +722,16 @@ nsresult TextComposition::RequestToCommit(nsIWidget* aWidget, bool aDiscard) {
       mIsRequestingCancel = false;
       mIsRequestingCommit = true;
     }
+    // Request native IME to commit or cancel composition synchronously. Note
+    // that even if we're in a content process, we use synchronous IPC to
+    // request it. Therefore, if native IME handles the request synchronously,
+    // DispatchCompositionEvent() is called with eCompositionCommit or
+    // eCompositionCommitAsIs with setting aIsSynthesized to `false` during this
+    // call.
+    //
+    // If the native IME does not handle the request synchronously, the
+    // corresponding commit event must come later.
+    //
     // FYI: CompositionEvents caused by a call of NotifyIME() may be
     //      discarded by PresShell if it's not safe to dispatch the event.
     nsresult rv = aWidget->NotifyIME(
@@ -729,12 +744,25 @@ nsresult TextComposition::RequestToCommit(nsIWidget* aWidget, bool aDiscard) {
 
   mRequestedToCommitOrCancel = true;
 
-  // If the request is performed synchronously, this must be already destroyed.
+  // If the request is handled by IME synchronously, this has already been
+  // destroyed so that we do nothing anymore.
   if (Destroyed()) {
     return NS_OK;
   }
 
-  // Otherwise, synthesize the commit in content.
+  // If the composition is handled in a content process and the IME does not
+  // commit composition synchronously, we should wait the commit event from IME
+  // and we need to send it later.
+  if (mBrowserParent) {
+    return NS_OK;
+  }
+
+  // Otherwise, synthesize the commit in content because most web apps must
+  // assume that committing composition is handled synchronously. This will
+  // call DispatchCompositionEvent() with eCompositionCommit or
+  // eCompositionCommitAsIs event with setting aIsSynthesized to `true` before
+  // receiving eCompositionCommit or eCompositionCommitAsIs coming from native
+  // IME handler.
   nsAutoString data(aDiscard ? EmptyString() : lastData);
   if (data == mLastData) {
     DispatchCompositionEventRunnable(eCompositionCommitAsIs, u""_ns, true);

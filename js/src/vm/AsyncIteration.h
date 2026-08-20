@@ -290,34 +290,32 @@ bool AsyncGeneratorThrow(JSContext* cx, unsigned argc, Value* vp);
 // stored in the Slot_CachedRequest slot.
 class AsyncGeneratorRequest : public NativeObject {
  private:
-  enum AsyncGeneratorRequestSlots {
-    // Int32 value with CompletionKind.
-    //   Normal: next
-    //   Return: return
-    //   Throw:  throw
-    Slot_CompletionKind = 0,
+  // Int32 value with CompletionKind.
+  //   Normal: next
+  //   Return: return
+  //   Throw:  throw
+  JS_DEFINE_TYPED_SLOT(0, Slot_CompletionKind, Int32, Undefined);
 
-    // The value passed to AsyncGenerator#{next,return,throw}.
-    Slot_CompletionValue,
+  // The value passed to AsyncGenerator#{next,return,throw}.
+  JS_DEFINE_UNTYPED_SLOT(1, Slot_CompletionValue);
 
-    // The promise returned by AsyncGenerator#{next,return,throw}.
-    Slot_Promise,
+  // The promise returned by AsyncGenerator#{next,return,throw}.
+  JS_DEFINE_TYPED_SLOT(2, Slot_Promise, Object, Null, Undefined);
 
-    Slots,
-  };
+  static constexpr uint32_t Slots = 3;
 
   void init(CompletionKind completionKind, const Value& completionValue,
             PromiseObject* promise) {
-    setFixedSlot(Slot_CompletionKind,
-                 Int32Value(static_cast<int32_t>(completionKind)));
+    setFixedSlotTyped(Slot_CompletionKind,
+                      Int32Value(static_cast<int32_t>(completionKind)));
     setFixedSlot(Slot_CompletionValue, completionValue);
-    setFixedSlot(Slot_Promise, ObjectValue(*promise));
+    setFixedSlotTyped(Slot_Promise, ObjectValue(*promise));
   }
 
   // Clear the request data for reuse.
   void clearData() {
     setFixedSlot(Slot_CompletionValue, NullValue());
-    setFixedSlot(Slot_Promise, NullValue());
+    setFixedSlotTyped(Slot_Promise, NullValue());
   }
 
   friend AsyncGeneratorObject;
@@ -332,33 +330,34 @@ class AsyncGeneratorRequest : public NativeObject {
 
   CompletionKind completionKind() const {
     return static_cast<CompletionKind>(
-        getFixedSlot(Slot_CompletionKind).toInt32());
+        getFixedSlotTyped(Slot_CompletionKind).toInt32());
   }
   JS::Value completionValue() const {
     return getFixedSlot(Slot_CompletionValue);
   }
   PromiseObject* promise() const {
-    return &getFixedSlot(Slot_Promise).toObject().as<PromiseObject>();
+    return &getFixedSlotTyped(Slot_Promise).toObject().as<PromiseObject>();
   }
 };
 
 class AsyncGeneratorObject : public AbstractGeneratorObject {
  private:
-  enum AsyncGeneratorObjectSlots {
-    // Int32 value containing one of the |State| fields from below.
-    Slot_State = AbstractGeneratorObject::RESERVED_SLOTS,
+  // Int32 value containing one of the |State| fields from below.
+  JS_DEFINE_TYPED_SLOT(AbstractGeneratorObject::RESERVED_SLOTS, Slot_State,
+                       Int32, Undefined);
 
-    // * null value if this async generator has no requests
-    // * AsyncGeneratorRequest if this async generator has only one request
-    // * list object if this async generator has 2 or more requests
-    Slot_QueueOrRequest,
+  // * null value if this async generator has no requests
+  // * AsyncGeneratorRequest if this async generator has only one request
+  // * list object if this async generator has 2 or more requests
+  JS_DEFINE_TYPED_SLOT(AbstractGeneratorObject::RESERVED_SLOTS + 1,
+                       Slot_QueueOrRequest, Object, Null, Undefined);
 
-    // Cached AsyncGeneratorRequest for later use.
-    // undefined if there's no cache.
-    Slot_CachedRequest,
+  // Cached AsyncGeneratorRequest for later use.
+  // undefined if there's no cache.
+  JS_DEFINE_TYPED_SLOT(AbstractGeneratorObject::RESERVED_SLOTS + 2,
+                       Slot_CachedRequest, Object, Null, Undefined);
 
-    Slots
-  };
+  static constexpr uint32_t Slots = AbstractGeneratorObject::RESERVED_SLOTS + 3;
 
  public:
   enum State {
@@ -395,10 +394,10 @@ class AsyncGeneratorObject : public AbstractGeneratorObject {
   };
 
   State state() const {
-    return static_cast<State>(getFixedSlot(Slot_State).toInt32());
+    return static_cast<State>(getFixedSlotTyped(Slot_State).toInt32());
   }
   void setState(State state_) {
-    setNeverGCThingFixedSlot(Slot_State, Int32Value(state_));
+    setFixedSlotTyped(Slot_State, Int32Value(state_));
   }
 
  private:
@@ -408,31 +407,31 @@ class AsyncGeneratorObject : public AbstractGeneratorObject {
   // stored to the slot.
 
   bool isSingleQueue() const {
-    return getFixedSlot(Slot_QueueOrRequest).isNull() ||
-           getFixedSlot(Slot_QueueOrRequest)
+    return getFixedSlotTyped(Slot_QueueOrRequest).isNull() ||
+           getFixedSlotTyped(Slot_QueueOrRequest)
                .toObject()
                .is<AsyncGeneratorRequest>();
   }
   bool isSingleQueueEmpty() const {
-    return getFixedSlot(Slot_QueueOrRequest).isNull();
+    return getFixedSlotTyped(Slot_QueueOrRequest).isNull();
   }
   void setSingleQueueRequest(AsyncGeneratorRequest* request) {
-    setFixedSlot(Slot_QueueOrRequest, ObjectValue(*request));
+    setFixedSlotTyped(Slot_QueueOrRequest, ObjectValue(*request));
   }
   void clearSingleQueueRequest() {
-    setFixedSlot(Slot_QueueOrRequest, NullValue());
+    setFixedSlotTyped(Slot_QueueOrRequest, NullValue());
   }
   AsyncGeneratorRequest* singleQueueRequest() const {
-    return &getFixedSlot(Slot_QueueOrRequest)
+    return &getFixedSlotTyped(Slot_QueueOrRequest)
                 .toObject()
                 .as<AsyncGeneratorRequest>();
   }
 
   ListObject* queue() const {
-    return &getFixedSlot(Slot_QueueOrRequest).toObject().as<ListObject>();
+    return &getFixedSlotTyped(Slot_QueueOrRequest).toObject().as<ListObject>();
   }
   void setQueue(ListObject* queue_) {
-    setFixedSlot(Slot_QueueOrRequest, ObjectValue(*queue_));
+    setFixedSlotTyped(Slot_QueueOrRequest, ObjectValue(*queue_));
   }
 
  public:
@@ -508,23 +507,25 @@ class AsyncGeneratorObject : public AbstractGeneratorObject {
     }
 
     request->clearData();
-    setFixedSlot(Slot_CachedRequest, ObjectValue(*request));
+    setFixedSlotTyped(Slot_CachedRequest, ObjectValue(*request));
   }
 
  private:
   bool hasCachedRequest() const {
-    return getFixedSlot(Slot_CachedRequest).isObject();
+    return getFixedSlotTyped(Slot_CachedRequest).isObject();
   }
 
   AsyncGeneratorRequest* takeCachedRequest() {
-    auto request = &getFixedSlot(Slot_CachedRequest)
+    auto request = &getFixedSlotTyped(Slot_CachedRequest)
                         .toObject()
                         .as<AsyncGeneratorRequest>();
     clearCachedRequest();
     return request;
   }
 
-  void clearCachedRequest() { setFixedSlot(Slot_CachedRequest, NullValue()); }
+  void clearCachedRequest() {
+    setFixedSlotTyped(Slot_CachedRequest, NullValue());
+  }
 };
 
 JSObject* CreateAsyncFromSyncIterator(JSContext* cx, HandleObject iter,
@@ -532,18 +533,16 @@ JSObject* CreateAsyncFromSyncIterator(JSContext* cx, HandleObject iter,
 
 class AsyncFromSyncIteratorObject : public NativeObject {
  private:
-  enum AsyncFromSyncIteratorObjectSlots {
-    // Object that implements the sync iterator protocol.
-    Slot_Iterator = 0,
+  // Object that implements the sync iterator protocol.
+  JS_DEFINE_TYPED_SLOT(0, Slot_Iterator, Object, Undefined);
 
-    // The `next` property of the iterator object.
-    Slot_NextMethod = 1,
+  // The `next` property of the iterator object.
+  JS_DEFINE_UNTYPED_SLOT(1, Slot_NextMethod);
 
-    Slots
-  };
+  static constexpr uint32_t Slots = 2;
 
   void init(JSObject* iterator, const Value& nextMethod) {
-    setFixedSlot(Slot_Iterator, ObjectValue(*iterator));
+    setFixedSlotTyped(Slot_Iterator, ObjectValue(*iterator));
     setFixedSlot(Slot_NextMethod, nextMethod);
   }
 
@@ -553,7 +552,9 @@ class AsyncFromSyncIteratorObject : public NativeObject {
   static JSObject* create(JSContext* cx, HandleObject iter,
                           HandleValue nextMethod);
 
-  JSObject* iterator() const { return &getFixedSlot(Slot_Iterator).toObject(); }
+  JSObject* iterator() const {
+    return &getFixedSlotTyped(Slot_Iterator).toObject();
+  }
 
   const Value& nextMethod() const { return getFixedSlot(Slot_NextMethod); }
 };

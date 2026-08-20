@@ -2322,9 +2322,22 @@ package org.mozilla.geckoview {
   public static class IPProtectionController.IPProxyException extends RuntimeException {
     method @AnyThread @NonNull public static IPProtectionController.IPProxyException fromErrorString(@Nullable String);
     field public static final int ERROR_ACTIVATION_CANCELED = -6;
+    field public static final int ERROR_AUTH_REQUIRED = -12;
     field public static final int ERROR_CATASTROPHIC = -7;
+    field public static final int ERROR_CONNECTION_FAILED = -16;
+    field public static final int ERROR_ENROLLMENT_FAILED = -13;
+    field public static final int ERROR_GENERIC = -9;
+    field public static final int ERROR_INTERNAL = -18;
+    field public static final int ERROR_INVALID_RESPONSE = -15;
     field public static final int ERROR_NETWORK = -2;
+    field public static final int ERROR_NOT_ENTITLED = -19;
+    field public static final int ERROR_NOT_READY = -10;
+    field public static final int ERROR_NO_AUTH_PROVIDER = -14;
+    field public static final int ERROR_NO_GPI_PROVIDER = -20;
+    field public static final int ERROR_NO_GPI_TOKEN = -21;
     field public static final int ERROR_PASS_UNAVAILABLE = -4;
+    field public static final int ERROR_QUOTA_EXHAUSTED = -11;
+    field public static final int ERROR_SERVERLIST_UNAVAILABLE = -17;
     field public static final int ERROR_SERVER_NOT_FOUND = -5;
     field public static final int ERROR_TIMEOUT = -3;
     field public static final int ERROR_UNKNOWN = -1;

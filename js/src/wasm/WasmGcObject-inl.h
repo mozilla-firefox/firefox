@@ -121,6 +121,9 @@ MOZ_ALWAYS_INLINE WasmStructObject* WasmStructObject::createStructOOL(
   if (MOZ_UNLIKELY(!outlineData)) {
     // AllocateCellBuffer will have called ReportOutOfMemory(cx) itself,
     // so no need to do that here.
+    size_t headerSize = typeDefData->cached.strukt.payloadOffsetIL;
+    memset((uint8_t*)structObj + headerSize, 0,
+           typeDefData->cached.strukt.totalSizeIL - headerSize);
     structObj->setOOLPointer(typeDefData, nullptr);
     return nullptr;
   }

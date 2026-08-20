@@ -44,6 +44,21 @@ run-if = [
 
 ["browser_test_gtk_telemetry.js"]
 
+["browser_test_ime_focus_after_synthesize_composition_caused_moving_focus.js"]
+support-files = ["../file_ime_state_test_helper.js"]
+
+["browser_test_ime_request_commit_async.js"]
+support-files = [
+  "../file_ime_state_test_helper.js",
+  "../file_test_ime_request_commit.js",
+]
+
+["browser_test_ime_request_commit_sync.js"]
+support-files = [
+  "../file_ime_state_test_helper.js",
+  "../file_test_ime_request_commit.js",
+]
+
 ["browser_test_ime_state_after_body_removed_and_reconnected_in_designMode.js"]
 support-files = [ "../file_ime_state_test_helper.js" ]
 

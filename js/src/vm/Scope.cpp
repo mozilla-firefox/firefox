@@ -109,6 +109,7 @@ static bool AddToEnvironmentMap(JSContext* cx, const JSClass* clasp,
   PropertyFlags propFlags = {PropertyFlag::Enumerable};
   switch (bindKind) {
     case BindingKind::Const:
+    case BindingKind::Using:
     case BindingKind::NamedLambdaCallee:
       // Non-writable.
       break;

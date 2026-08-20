@@ -18,6 +18,7 @@
 #include "gc/Zone.h"
 #include "js/friend/DumpFunctions.h"  // js::DumpObject
 #include "js/HashTable.h"
+#include "threading/Thread.h"
 #include "vm/JSContext.h"
 
 #include "gc/ArenaList-inl.h"
@@ -414,6 +415,11 @@ void gc::GCRuntime::endVerifyPreBarriers() {
   marker().reset();
   resetDelayedMarking();
   resetDeferredWeakMaps();
+
+  // Barriers fired during verification also push things onto the mark stack
+  // which are never traced. This can leave things marked black without their
+  // children having been marked to match, so may leave black to gray edges.
+  setGrayBitsInvalid();
 
   for (AllZonesIter zone(this); !zone.done(); zone.next()) {
     zone->bufferAllocator.clearMarkStateAfterBarrierVerification();
@@ -1289,6 +1295,7 @@ bool js::gc::CheckWeakMapEntryMarking(const WeakMapBase* map, Cell* key,
 #endif  // defined(JS_GC_ZEAL) || defined(DEBUG)
 
 #ifdef JS_GC_ZEAL
+
 void GCRuntime::verifyPostBarriers(AutoHeapSession& session) {
   // Walk the entire heap to check for pointers into the nursery that should
   // have been tracked by the store buffer.
@@ -1321,7 +1328,14 @@ void GCRuntime::checkHeapBeforeMinorGC(AutoHeapSession& session) {
     }
   }
 }
-#endif
+
+void js::gc::MaybeSleepForConcurrentMarkingDelays(JSContext* cx) {
+  if (cx->runtime()->hasZealMode(ZealMode::ConcurrentMarkingDelays)) {
+    ThisThread::SleepMilliseconds(1);
+  }
+}
+
+#endif  // JS_GC_ZEAL
 
 // Return whether an arbitrary pointer is within a cell with the given
 // traceKind. Only for assertions and js::debug::* APIs. Note that this works at

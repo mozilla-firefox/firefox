@@ -425,13 +425,6 @@ add_task(async function simplerAndFullUi() {
         ".urlbarView-dynamic-weather-summaryText"
       );
 
-      // `getViewUpdate()` is allowed to be async and `UrlbarView` awaits it even
-      // though the `Weather` implementation is not async. That means the summary
-      // text content will be updated asyncly, so we need to wait for it.
-      await TestUtils.waitForCondition(
-        () => summary.textContent == expectedSummary,
-        "Waiting for the row's summary text to be updated"
-      );
       Assert.equal(
         summary.textContent,
         expectedSummary,
@@ -445,10 +438,6 @@ add_task(async function simplerAndFullUi() {
         WEATHER_SUGGESTION.region_code,
       ].join(" ");
       let title = row.querySelector(".urlbarView-dynamic-weather-title");
-      await TestUtils.waitForCondition(
-        () => title.textContent == expectedTitle,
-        "Waiting for the row's title text to be updated"
-      );
       Assert.equal(
         title.textContent,
         expectedTitle,

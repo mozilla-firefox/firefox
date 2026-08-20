@@ -312,7 +312,7 @@ bool HeapSnapshot::saveStackFrame(const protobuf::StackFrame& frame,
   // Incomplete message.
   if (!frame.has_data()) return false;
 
-  auto data = frame.data();
+  const auto& data = frame.data();
 
   if (!data.has_id()) return false;
   StackFrameId id = data.id();

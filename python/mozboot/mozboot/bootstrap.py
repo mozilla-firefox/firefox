@@ -523,7 +523,7 @@ class Bootstrapper:
         # Wait until after moz-phab setup to check telemetry so that employees
         # will be automatically opted-in.
         if not self.instance.no_interactive and not settings.mach_telemetry.is_set_up:
-            initialize_telemetry_setting(settings, str(checkout_root), str(state_dir))
+            initialize_telemetry_setting(settings, str(checkout_root))
 
         self._output_mozconfig(application, mozconfig_builder)
 

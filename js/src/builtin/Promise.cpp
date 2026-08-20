@@ -29,7 +29,7 @@
 #include "vm/JSObject.h"
 #include "vm/List.h"           // js::ListObject
 #include "vm/PlainObject.h"    // js::PlainObject
-#include "vm/PromiseObject.h"  // js::PromiseObject, js::PromiseSlot_*
+#include "vm/PromiseObject.h"  // js::PromiseObject
 #include "vm/SelfHosting.h"
 #include "vm/Warnings.h"  // js::WarnNumberASCII
 
@@ -496,13 +496,14 @@ class PromiseDebugInfo : public NativeObject {
     debugInfo->setFixedSlot(Slot_AllocationTime,
                             DoubleValue(MillisecondsSinceStartup()));
     debugInfo->setFixedSlot(Slot_ResolutionTime, NumberValue(0));
-    promise->setFixedSlot(PromiseSlot_DebugInfo, ObjectValue(*debugInfo));
+    promise->setFixedSlotTyped(PromiseObject::DEBUG_INFO_SLOT,
+                               ObjectValue(*debugInfo));
 
     return debugInfo;
   }
 
   static PromiseDebugInfo* FromPromise(PromiseObject* promise) {
-    Value val = promise->getFixedSlot(PromiseSlot_DebugInfo);
+    Value val = promise->getFixedSlotTyped(PromiseObject::DEBUG_INFO_SLOT);
     if (val.isObject()) {
       return &val.toObject().as<PromiseDebugInfo>();
     }
@@ -516,10 +517,10 @@ class PromiseDebugInfo : public NativeObject {
    * or in the Id slot of the DebugInfo object.
    */
   static uint64_t id(PromiseObject* promise) {
-    Value idVal(promise->getFixedSlot(PromiseSlot_DebugInfo));
+    Value idVal(promise->getFixedSlotTyped(PromiseObject::DEBUG_INFO_SLOT));
     if (idVal.isUndefined()) {
       idVal.setDouble(++gIDGenerator);
-      promise->setFixedSlot(PromiseSlot_DebugInfo, idVal);
+      promise->setFixedSlotTyped(PromiseObject::DEBUG_INFO_SLOT, idVal);
     } else if (idVal.isObject()) {
       PromiseDebugInfo* debugInfo = FromPromise(promise);
       idVal = debugInfo->getFixedSlot(Slot_Id);
@@ -564,7 +565,8 @@ class PromiseDebugInfo : public NativeObject {
     // create the object now and change it's slots' values around a bit.
     Rooted<PromiseDebugInfo*> debugInfo(cx, FromPromise(promise));
     if (!debugInfo) {
-      RootedValue idVal(cx, promise->getFixedSlot(PromiseSlot_DebugInfo));
+      RootedValue idVal(
+          cx, promise->getFixedSlotTyped(PromiseObject::DEBUG_INFO_SLOT));
       debugInfo = create(cx, promise);
       if (!debugInfo) {
         cx->clearPendingException();
@@ -1176,13 +1178,14 @@ ThenableJob* NewThenableJob(JSContext* cx, ThenableJob::TargetFunction target,
 
 static void AddPromiseFlags(PromiseObject& promise, int32_t flag) {
   int32_t flags = promise.flags();
-  promise.setNeverGCThingFixedSlot(PromiseSlot_Flags, Int32Value(flags | flag));
+  promise.setFixedSlotTyped(PromiseObject::FLAGS_SLOT,
+                            Int32Value(flags | flag));
 }
 
 static void RemovePromiseFlags(PromiseObject& promise, int32_t flag) {
   int32_t flags = promise.flags();
-  promise.setNeverGCThingFixedSlot(PromiseSlot_Flags,
-                                   Int32Value(flags & ~flag));
+  promise.setFixedSlotTyped(PromiseObject::FLAGS_SLOT,
+                            Int32Value(flags & ~flag));
 }
 
 static bool PromiseHasAnyFlag(PromiseObject& promise, int32_t flag) {
@@ -1310,8 +1313,8 @@ void js::SetAlreadyResolvedPromiseWithDefaultResolvingFunction(
     PromiseObject* promise) {
   MOZ_ASSERT(IsPromiseWithDefaultResolvingFunction(promise));
 
-  promise->setFixedSlot(
-      PromiseSlot_Flags,
+  promise->setFixedSlotTyped(
+      PromiseObject::FLAGS_SLOT,
       JS::Int32Value(
           promise->flags() |
           PROMISE_FLAG_DEFAULT_RESOLVING_FUNCTIONS_ALREADY_RESOLVED));
@@ -2047,7 +2050,7 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
   //
   // The same slot is used for the reactions list and the result, so setting
   // the result also removes the reactions list.
-  promise->setFixedSlot(PromiseSlot_ReactionsOrResult, valueOrReason);
+  promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT, valueOrReason);
 
   // FulfillPromise
   // Step 6. Set promise.[[PromiseState]] to fulfilled.
@@ -2058,10 +2061,11 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
   if (state == JS::PromiseState::Fulfilled) {
     flags |= PROMISE_FLAG_FULFILLED;
   }
-  promise->setNeverGCThingFixedSlot(PromiseSlot_Flags, Int32Value(flags));
+  promise->setFixedSlotTyped(PromiseObject::FLAGS_SLOT, Int32Value(flags));
 
   // Also null out the resolve/reject functions so they can be GC'd.
-  promise->setFixedSlot(PromiseSlot_RejectFunction, UndefinedValue());
+  promise->setFixedSlotTyped(PromiseObject::REJECT_FUNCTION_SLOT,
+                             UndefinedValue());
 
   // Now that everything else is done, do the things the debugger needs.
 
@@ -2182,7 +2186,8 @@ enum GetCapabilitiesExecutorSlots {
     return nullptr;
   }
 
-  promise->setFixedSlot(PromiseSlot_RejectFunction, ObjectValue(*reject));
+  promise->setFixedSlotTyped(PromiseObject::REJECT_FUNCTION_SLOT,
+                             ObjectValue(*reject));
 
   // Let the Debugger know about this Promise. Do this after we've set
   // flags and functions
@@ -2396,9 +2401,10 @@ static bool GetCapabilitiesExecutor(JSContext* cx, unsigned argc, Value* vp) {
 }
 
 // Apply f to a mutable handle on each member of a collection of reactions, like
-// that stored in PromiseSlot_ReactionsOrResult on a pending promise. When the
-// reaction record is wrapped, we pass the wrapper, without dereferencing it. If
-// f returns false, then we stop the iteration immediately and return false.
+// that stored in PromiseObject::REACTIONS_OR_RESULT_SLOT on a pending promise.
+// When the reaction record is wrapped, we pass the wrapper, without
+// dereferencing it. If f returns false, then we stop the iteration
+// immediately and return false.
 // Otherwise, we return true.
 //
 // There are several different representations for collections:
@@ -3199,7 +3205,8 @@ static JSFunction* GetRejectFunctionFromResolve(JSFunction* resolve) {
 }
 
 static JSFunction* GetResolveFunctionFromPromise(PromiseObject* promise) {
-  Value rejectFunVal = promise->getFixedSlot(PromiseSlot_RejectFunction);
+  Value rejectFunVal =
+      promise->getFixedSlotTyped(PromiseObject::REJECT_FUNCTION_SLOT);
   if (rejectFunVal.isUndefined()) {
     return nullptr;
   }
@@ -3266,7 +3273,7 @@ CreatePromiseObjectInternal(JSContext* cx, HandleObject proto /* = nullptr */,
   }
 
   // Step 4. Set promise.[[PromiseState]] to pending.
-  promise->initFixedSlot(PromiseSlot_Flags, Int32Value(0));
+  promise->initFixedSlotTyped(PromiseObject::FLAGS_SLOT, Int32Value(0));
 
   // Step 5. Set promise.[[PromiseFulfillReactions]] to a new empty List.
   // Step 6. Set promise.[[PromiseRejectReactions]] to a new empty List.
@@ -3461,18 +3468,20 @@ PromiseObject* PromiseObject::create(JSContext* cx, HandleObject executor,
   }
 
   // Need to wrap the resolution functions before storing them on the Promise.
-  MOZ_ASSERT(promise->getFixedSlot(PromiseSlot_RejectFunction).isUndefined(),
-             "Slot must be undefined so initFixedSlot can be used");
+  MOZ_ASSERT(promise->getFixedSlotTyped(PromiseObject::REJECT_FUNCTION_SLOT)
+                 .isUndefined(),
+             "Slot must be undefined so initFixedSlotTyped can be used");
   if (needsWrapping) {
     AutoRealm ar(cx, promise);
     RootedField<JSObject*, 5> wrappedRejectFn(roots, rejectFn);
     if (!cx->compartment()->wrap(cx, &wrappedRejectFn)) {
       return nullptr;
     }
-    promise->initFixedSlot(PromiseSlot_RejectFunction,
-                           ObjectValue(*wrappedRejectFn));
+    promise->initFixedSlotTyped(PromiseObject::REJECT_FUNCTION_SLOT,
+                                ObjectValue(*wrappedRejectFn));
   } else {
-    promise->initFixedSlot(PromiseSlot_RejectFunction, ObjectValue(*rejectFn));
+    promise->initFixedSlotTyped(PromiseObject::REJECT_FUNCTION_SLOT,
+                                ObjectValue(*rejectFn));
   }
 
   // Step 9. Let completion be
@@ -7664,7 +7673,7 @@ bool js::Promise_then(JSContext* cx, unsigned argc, Value* vp) {
 
   if (reactionsVal.isUndefined()) {
     // If no reactions existed so far, just store the reaction record directly.
-    promise->setFixedSlot(PromiseSlot_ReactionsOrResult, reactionVal);
+    promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT, reactionVal);
     return true;
   }
 
@@ -7695,7 +7704,7 @@ bool js::Promise_then(JSContext* cx, unsigned argc, Value* vp) {
     reactions->initDenseElement(0, reactionsVal);
     reactions->initDenseElement(1, reactionVal);
 
-    promise->setFixedSlot(PromiseSlot_ReactionsOrResult,
+    promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT,
                           ObjectValue(*reactions));
   } else {
     // Otherwise, just store the new reaction.
@@ -7968,7 +7977,8 @@ bool PromiseObject::reject(JSContext* cx, Handle<PromiseObject*> promise,
     return CallDefaultPromiseRejectFunction(cx, promise, rejectionValue);
   }
 
-  RootedValue funVal(cx, promise->getFixedSlot(PromiseSlot_RejectFunction));
+  RootedValue funVal(
+      cx, promise->getFixedSlotTyped(PromiseObject::REJECT_FUNCTION_SLOT));
   MOZ_ASSERT(IsCallable(funVal));
 
   RootedValue dummy(cx);
@@ -8288,7 +8298,7 @@ void PromiseObject::dumpOwnFields(js::JSONPrinter& json) const {
     json.endObject();
   }
 
-  JS::Value debugInfo = getFixedSlot(PromiseSlot_DebugInfo);
+  JS::Value debugInfo = getFixedSlotTyped(DEBUG_INFO_SLOT);
   if (debugInfo.isNumber()) {
     json.formatProperty("id", "%lf", debugInfo.toNumber());
   } else if (debugInfo.isObject() &&

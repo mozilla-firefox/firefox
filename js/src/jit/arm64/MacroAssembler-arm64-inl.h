@@ -232,8 +232,14 @@ void MacroAssembler::xor64(Register64 src, Register64 dest) {
 }
 
 void MacroAssembler::xor32(Register src, Register dest) {
-  Eor(ARMRegister(dest, 32), ARMRegister(dest, 32),
-      Operand(ARMRegister(src, 32)));
+  // Unlike on x86, eor r,r,r is not a recognized zeroing idiom: it carries a
+  // dependency on the old value. Zero through wzr instead.
+  if (src == dest) {
+    Mov(ARMRegister(dest, 32), vixl::wzr);
+  } else {
+    Eor(ARMRegister(dest, 32), ARMRegister(dest, 32),
+        Operand(ARMRegister(src, 32)));
+  }
 }
 
 void MacroAssembler::xor32(Imm32 imm, Register dest) { xor32(imm, dest, dest); }
@@ -260,8 +266,12 @@ void MacroAssembler::xor32(const Address& src, Register dest) {
 }
 
 void MacroAssembler::xorPtr(Register src, Register dest) {
-  Eor(ARMRegister(dest, 64), ARMRegister(dest, 64),
-      Operand(ARMRegister(src, 64)));
+  if (src == dest) {
+    Mov(ARMRegister(dest, 64), vixl::xzr);
+  } else {
+    Eor(ARMRegister(dest, 64), ARMRegister(dest, 64),
+        Operand(ARMRegister(src, 64)));
+  }
 }
 
 void MacroAssembler::xorPtr(Imm32 imm, Register dest) {

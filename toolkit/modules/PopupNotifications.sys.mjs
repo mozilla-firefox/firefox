@@ -331,13 +331,9 @@ export function PopupNotifications(tabbrowser, panel, iconBox, options = {}) {
     }
   };
 
-  let documentElement = this.window.document.documentElement;
-  let locationBarHidden = documentElement
-    .getAttribute("chromehidden")
-    .includes("location");
   let isFullscreen = !!this.window.document.fullscreenElement;
 
-  this.panel.setAttribute("followanchor", !locationBarHidden && !isFullscreen);
+  this.panel.setAttribute("followanchor", !isFullscreen);
 
   // There are no anchor icons in DOM fullscreen mode, but we would
   // still like to show the popup notification. To avoid an infinite
@@ -353,7 +349,7 @@ export function PopupNotifications(tabbrowser, panel, iconBox, options = {}) {
   this.window.addEventListener(
     "MozDOMFullscreen:Exited",
     () => {
-      this.panel.setAttribute("followanchor", !locationBarHidden);
+      this.panel.setAttribute("followanchor", "true");
     },
     true
   );

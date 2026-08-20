@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?csp default-src chrome:; img-src resource: chrome:; ?>
+
+<window
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  data-l10n-id="containers-site-window"
+  data-l10n-attrs="title"
+  persist="width height"
+>
+  <dialog
+    id="site-container-dialog"
+    buttons="accept,cancel"
+    buttondisabledaccept="true"
+    data-l10n-id="containers-site-dialog"
+    data-l10n-attrs="buttonlabelaccept, buttonaccesskeyaccept"
+  >
+    <linkset>
+      <html:link rel="stylesheet" href="chrome://global/skin/global.css" />
+      <html:link
+        rel="stylesheet"
+        href="chrome://browser/skin/usercontext/container-editor.css"
+      />
+      <html:link rel="localization" href="browser/preferences/containers.ftl" />
+    </linkset>
+
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-input-text.mjs"
+    />
+    <script src="chrome://browser/content/preferences/dialogs/siteContainer.js" />
+
+    <html:div id="siteContainerForm" class="site-container-editor" />
+  </dialog>
+</window>

@@ -5,6 +5,7 @@
 #ifndef mozilla_ScrollGeneration_h_
 #define mozilla_ScrollGeneration_h_
 
+#include <compare>
 #include <cstdint>
 #include <iosfwd>
 #include <tuple>
@@ -37,9 +38,7 @@ struct ScrollGeneration final {
 
   uint64_t Raw() const { return mValue; }
 
-  bool operator<(const ScrollGeneration<Tag>& aOther) const;
-  bool operator==(const ScrollGeneration<Tag>& aOther) const;
-  bool operator!=(const ScrollGeneration<Tag>& aOther) const;
+  auto operator<=>(const ScrollGeneration<Tag>&) const = default;
 
   friend std::ostream& operator<< <>(std::ostream& aStream,
                                      const ScrollGeneration<Tag>& aGen);

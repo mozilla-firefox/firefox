@@ -10,7 +10,7 @@ const BAD_CERT = "http://expired.example.com/";
 const UNKNOWN_ISSUER = "http://self-signed.example.com/";
 
 const { TabStateFlusher } = ChromeUtils.importESModule(
-  "resource:///modules/sessionstore/TabStateFlusher.sys.mjs"
+  "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
 );
 
 add_setup(async function () {

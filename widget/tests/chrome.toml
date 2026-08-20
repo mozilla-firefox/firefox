@@ -114,10 +114,22 @@ skip-if = [
 ["test_ime_focus_with_multiple_contenteditable.html"]
 support-files = ["file_ime_state_test_helper.js"]
 
-["test_ime_state_in_contenteditable_on_readonly_change_in_parent.html"]
+["test_ime_request_commit_async_in_parent.html"]
 support-files = [
   "file_ime_state_test_helper.js",
   "file_test_ime_state_in_contenteditable_on_readonly_change.js",
+]
+
+["test_ime_request_commit_sync_in_parent.html"]
+support-files = [
+  "file_ime_state_test_helper.js",
+  "file_test_ime_request_commit.js",
+]
+
+["test_ime_state_in_contenteditable_on_readonly_change_in_parent.html"]
+support-files = [
+  "file_ime_state_test_helper.js",
+  "file_test_ime_request_commit.js",
 ]
 
 ["test_ime_state_in_plugin_in_parent.html"]
@@ -154,7 +166,10 @@ support-files = [
 ]
 
 ["test_ime_state_others_in_parent.html"]
-support-files = ["window_imestate_iframes.html"]
+support-files = [
+  "window_imestate_iframes.html",
+  "window_imestate_iframes.xhtml",
+]
 
 ["test_input_events_on_deactive_window.xhtml"]
 support-files = ["file_input_events_on_deactive_window.html"]

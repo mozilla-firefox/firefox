@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include "jit/arm/Assembler-arm.h"
 #include "jit/MoveResolver.h"
 #include "jit/Registers.h"
 

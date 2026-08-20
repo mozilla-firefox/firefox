@@ -5,13 +5,11 @@
 
 #![allow(clippy::needless_range_loop)]
 
-use std::any::Any;
-
 use crate::{
     image::{Image, ImageDataType},
     render::{
-        RenderPipelineInOutStage, RenderPipelineInPlaceStage, RunInOutStage, RunInPlaceStage,
-        internal::PipelineBuffer,
+        ErasedLocalState, RenderPipelineInOutStage, RenderPipelineInPlaceStage, RunInOutStage,
+        RunInPlaceStage, internal::PipelineBuffer,
     },
     util::{SmallVec, StackOnly, mirror, round_up_size_to_cache_line, tracing_wrappers::*},
 };
@@ -26,7 +24,7 @@ impl<T: RenderPipelineInPlaceStage> RunInPlaceStage<Image<f64>> for T {
         &self,
         chunk_size: usize,
         buffers: &mut [&mut Image<f64>],
-        mut state: Option<&mut dyn Any>,
+        mut state: Option<&mut ErasedLocalState>,
     ) {
         debug!("running inplace stage '{self}' in simple pipeline");
         let numc = buffers.len();
@@ -72,7 +70,7 @@ impl<T: RenderPipelineInOutStage> RunInOutStage<Image<f64>> for T {
         chunk_size: usize,
         input_buffers: &[&Image<f64>],
         output_buffers: &mut [Image<f64>],
-        mut state: Option<&mut dyn Any>,
+        mut state: Option<&mut ErasedLocalState>,
     ) {
         assert_ne!(chunk_size, 0);
         debug!("running inout stage '{self}' in simple pipeline");

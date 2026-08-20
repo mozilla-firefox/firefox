@@ -91,11 +91,14 @@ window.addEventListener(
 // Support context menus on html textareas in the parent process:
 window.addEventListener("contextmenu", e => {
   const HTML_NS = "http://www.w3.org/1999/xhtml";
+  const XUL_NS =
+    "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
   let target = e.composedTarget;
+  let parent = target.parentNode;
   let needsContextMenu =
     target.ownerDocument == document &&
     !e.defaultPrevented &&
-    target.parentNode.nodeName != "moz-input-box" &&
+    !(parent.namespaceURI == XUL_NS && parent.localName == "moz-input-box") &&
     ["textarea", "input"].includes(target.localName) &&
     target.namespaceURI == HTML_NS;
 
@@ -109,15 +112,15 @@ window.addEventListener("contextmenu", e => {
     document.documentElement.appendChild(
       MozXULElement.parseXULToFragment(`
       <menupopup id="textbox-contextmenu" class="textbox-contextmenu">
-        <menuitem data-l10n-id="text-action-undo" command="cmd_undo"></menuitem>
-        <menuitem data-l10n-id="text-action-redo" command="cmd_redo"></menuitem>
+        <menuitem id="edit-contextmenu-undo" data-l10n-id="text-action-undo" command="cmd_undo"></menuitem>
+        <menuitem id="edit-contextmenu-redo" data-l10n-id="text-action-redo" command="cmd_redo"></menuitem>
         <menuseparator></menuseparator>
-        <menuitem data-l10n-id="text-action-cut" command="cmd_cut"></menuitem>
-        <menuitem data-l10n-id="text-action-copy" command="cmd_copy"></menuitem>
-        <menuitem data-l10n-id="text-action-paste" command="cmd_paste"></menuitem>
-        <menuitem data-l10n-id="text-action-delete" command="cmd_delete"></menuitem>
-        <menuitem data-l10n-id="text-action-select-all" command="cmd_selectAll"></menuitem>
-        <menuitem data-l10n-id="text-action-reveal-password" type="checkbox" id="textbox-contextmenu-reveal-password" />
+        <menuitem id="edit-contextmenu-cut" data-l10n-id="text-action-cut" command="cmd_cut"></menuitem>
+        <menuitem id="edit-contextmenu-copy" data-l10n-id="text-action-copy" command="cmd_copy"></menuitem>
+        <menuitem id="edit-contextmenu-paste" data-l10n-id="text-action-paste" command="cmd_paste"></menuitem>
+        <menuitem id="edit-contextmenu-delete" data-l10n-id="text-action-delete" command="cmd_delete"></menuitem>
+        <menuitem id="edit-contextmenu-select-all" data-l10n-id="text-action-select-all" command="cmd_selectAll"></menuitem>
+        <menuitem data-l10n-id="text-action-reveal-password" type="checkbox" id="edit-contextmenu-reveal-password" />
       </menupopup>
     `)
     );
@@ -129,9 +132,7 @@ window.addEventListener("contextmenu", e => {
     target.localName == "input" &&
     target.namespaceURI == HTML_NS &&
     target.type == "password";
-  let revealPassword = popup.querySelector(
-    "#textbox-contextmenu-reveal-password"
-  );
+  let revealPassword = popup.querySelector("#edit-contextmenu-reveal-password");
   // Reassigned on every contextmenu so it acts on the current target.
   revealPassword.oncommand = () => {
     target.revealPassword = !target.revealPassword;

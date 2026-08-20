@@ -1636,6 +1636,14 @@ export class TelemetryFeed {
         this.initializeMac();
         this.recordPageLayoutVariant();
         break;
+      case at.PREF_CHANGED:
+        // Turning history off hides history-dependent widgets, so the enabled
+        // list has to be re-read: unlike a widget's own pref, this flips
+        // enablement without any widget toggle to hang the update off.
+        if (action.data?.name === "recordsHistory") {
+          this.recordEnabledWidgets();
+        }
+        break;
     }
   }
 

@@ -15,6 +15,7 @@ import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import mozilla.components.support.ktx.kotlin.isExtensionUrl
@@ -87,11 +88,19 @@ internal class LinkingMiddleware(private val scope: CoroutineScope) : Middleware
             return Pair(tab.id, observer)
         }
 
+        // Bypass loading of "about:home". This will still add "about:home" to the session history.
+        val loadFlags =
+            if (tab.content.url == ABOUT_HOME_URL) {
+                tab.engineState.initialLoadFlags.withBypassLoadUriDelegate()
+            } else {
+                tab.engineState.initialLoadFlags
+            }
+
         if (tab.content.url.isExtensionUrl()) {
             // The parent tab/session is used as a referrer which is not accurate
             // for extension pages. The extension page is not loaded by the parent
             // tab, but opened by an extension e.g. via browser.tabs.update.
-            performLoadOnMainThread(engineSession, tab.content.url, loadFlags = tab.engineState.initialLoadFlags)
+            performLoadOnMainThread(engineSession, tab.content.url, loadFlags = loadFlags)
         } else {
             val parentEngineSession =
                 if (includeParent && tab is TabSessionState) {
@@ -104,7 +113,7 @@ internal class LinkingMiddleware(private val scope: CoroutineScope) : Middleware
                 engineSession = engineSession,
                 url = tab.content.url,
                 parent = parentEngineSession,
-                loadFlags = tab.engineState.initialLoadFlags,
+                loadFlags = loadFlags,
                 additionalHeaders = tab.engineState.initialAdditionalHeaders,
                 originalInput = tab.originalInput,
                 textDirectiveUserActivation = tab.engineState.initialTextDirectiveUserActivation,
@@ -113,6 +122,16 @@ internal class LinkingMiddleware(private val scope: CoroutineScope) : Middleware
 
         return Pair(tab.id, observer)
     }
+
+    private fun EngineSession.LoadUrlFlags.withBypassLoadUriDelegate() =
+        if (contains(EngineSession.LoadUrlFlags.LOAD_FLAGS_BYPASS_LOAD_URI_DELEGATE)) {
+            this
+        } else {
+            EngineSession.LoadUrlFlags.select(
+                value,
+                EngineSession.LoadUrlFlags.LOAD_FLAGS_BYPASS_LOAD_URI_DELEGATE,
+            )
+        }
 
     private fun performLoadOnMainThread(
         engineSession: EngineSession,

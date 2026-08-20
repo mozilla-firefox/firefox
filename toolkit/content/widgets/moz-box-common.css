@@ -67,6 +67,7 @@
     stroke: var(--box-icon-stroke);
     background-color: var(--box-icon-background, transparent);
     border-radius: var(--box-icon-border-radius, 0);
+    overflow-clip-margin: border-box;
 
     &:not(.nav-icon) {
       fill: var(--box-icon-start-fill, var(--box-icon-fill));

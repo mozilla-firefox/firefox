@@ -149,7 +149,10 @@ class ArtifactJob:
     # is the prefix of the pattern relevant to its location in the archive, and
     # dest_prefix is the prefix to be added that will yield the final path relative
     # to dist/.
-    test_artifact_patterns = {
+    # This must stay an ordered sequence: consumers use the first matching
+    # pattern, and some patterns overlap (a trailing `*` matches a whole
+    # subtree), so more specific patterns have to come first.
+    test_artifact_patterns = (
         ("bin/BadCertAndPinningServer", ("bin", "bin")),
         ("bin/DelegatedCredentialsServer", ("bin", "bin")),
         ("bin/EncryptedClientHelloServer", ("bin", "bin")),
@@ -168,7 +171,7 @@ class ArtifactJob:
         ("bin/http3server", ("bin", "bin")),
         ("bin/plugins/gmp-*/*/*", ("bin/plugins", "bin")),
         ("bin/plugins/*", ("bin/plugins", "plugins")),
-    }
+    )
 
     # We can tell our input is a test archive by this suffix, which happens to
     # be the same across platforms.
@@ -895,7 +898,8 @@ class WinArtifactJob(ArtifactJob):
         return {p.format(product=self.product) for p in self._package_artifact_patterns}
 
     # These are a subset of TEST_HARNESS_BINS in testing/mochitest/Makefile.in.
-    test_artifact_patterns = {
+    # See `ArtifactJob.test_artifact_patterns` for why the order matters.
+    test_artifact_patterns = (
         ("bin/BadCertAndPinningServer.exe", ("bin", "bin")),
         ("bin/DelegatedCredentialsServer.exe", ("bin", "bin")),
         ("bin/EncryptedClientHelloServer.exe", ("bin", "bin")),
@@ -916,7 +920,7 @@ class WinArtifactJob(ArtifactJob):
         ("bin/plugins/gmp-*/*/*", ("bin/plugins", "bin")),
         ("bin/plugins/*", ("bin/plugins", "plugins")),
         ("bin/components/*", ("bin/components", "bin/components")),
-    }
+    )
 
     def process_package_artifact(self, filename, processed_filename):
         added_entry = False

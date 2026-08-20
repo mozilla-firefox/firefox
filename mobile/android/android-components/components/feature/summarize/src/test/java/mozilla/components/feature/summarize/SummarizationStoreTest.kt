@@ -22,6 +22,7 @@ import mozilla.components.concept.llm.AttestationFailure
 import mozilla.components.concept.llm.AuthenticationRequired
 import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.Llm
+import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.concept.llm.Prompt
 import mozilla.components.feature.summarize.SummarizationState.Error
 import mozilla.components.feature.summarize.SummarizationState.Finished
@@ -37,7 +38,13 @@ import mozilla.components.feature.summarize.ext.defaultInstructions
 import mozilla.components.feature.summarize.ext.recipeInstructions
 import mozilla.components.feature.summarize.fakes.FakeCloudProvider
 import mozilla.components.feature.summarize.fakes.FakeLlm
+import mozilla.components.feature.summarize.settings.LearnMoreClicked
+import mozilla.components.feature.summarize.settings.LearnMoreHandled
 import mozilla.components.feature.summarize.settings.SummarizationSettings
+import mozilla.components.feature.summarize.settings.SummarizePagesPreferenceToggled
+import mozilla.components.feature.summarize.settings.SummarizeSettingsMiddleware
+import mozilla.components.feature.summarize.settings.SummarizeSettingsState
+import mozilla.components.ui.richtext.ir.RichDocument
 import mozilla.components.ui.richtext.parsing.Parser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -59,6 +66,83 @@ class SummarizationStoreTest {
     @Before
     fun setUp() {
         reportedErrors.clear()
+    }
+
+    @Test
+    fun `test that the embedded settings learn more request is set and cleared`() {
+        val store =
+            SummarizationStore(
+                initialState =
+                    SummarizationState.Settings(
+                        info = LlmProvider.Info(nameRes = 0),
+                        document = RichDocument(listOf()),
+                        settingsState = SummarizeSettingsState(),
+                    ),
+                reducer = ::summarizationReducer,
+            )
+
+        store.dispatch(SummarizeSettingsActionWrapper(LearnMoreClicked))
+        assertTrue(assertIs<SummarizationState.Settings>(store.state).settingsState.isLearnMoreRequested)
+
+        store.dispatch(SummarizeSettingsActionWrapper(LearnMoreHandled))
+        assertFalse(assertIs<SummarizationState.Settings>(store.state).settingsState.isLearnMoreRequested)
+    }
+
+    @Test
+    fun `test that a wrapped settings action is persisted through the embedding store`() = runTest {
+        val settings = SummarizationSettings.inMemory(isFeatureEnabled = false)
+        val store =
+            SummarizationStore(
+                initialState =
+                    SummarizationState.Settings(
+                        info = LlmProvider.Info(nameRes = 0),
+                        document = RichDocument(listOf()),
+                        settingsState = SummarizeSettingsState(),
+                    ),
+                reducer = ::summarizationReducer,
+                middleware =
+                    listOf(
+                        SummarizationSettingsWrapperMiddleware(
+                            settingsMiddleware =
+                                SummarizeSettingsMiddleware(
+                                    settings = settings,
+                                    scope = backgroundScope,
+                                ),
+                            fetchInitialSettings = { SummarizeSettingsState() },
+                        )
+                    ),
+            )
+
+        store.dispatch(SummarizeSettingsActionWrapper(SummarizePagesPreferenceToggled))
+        testScheduler.runCurrent()
+
+        assertTrue(assertIs<SummarizationState.Settings>(store.state).settingsState.isFeatureEnabled)
+        assertTrue(settings.getFeatureEnabledUserStatus().first() == true)
+    }
+
+    @Test
+    fun `test that the settings screen is opened with the persisted preferences`() = runTest {
+        val persisted = SummarizeSettingsState(isFeatureEnabled = true, isGestureEnabled = true)
+        val store =
+            SummarizationStore(
+                initialState = Summarized(LlmProvider.Info(nameRes = 0), RichDocument(listOf())),
+                reducer = ::summarizationReducer,
+                middleware =
+                    listOf(
+                        SummarizationSettingsWrapperMiddleware(
+                            settingsMiddleware =
+                                SummarizeSettingsMiddleware(
+                                    settings = SummarizationSettings.inMemory(),
+                                    scope = backgroundScope,
+                                ),
+                            fetchInitialSettings = { persisted },
+                        )
+                    ),
+            )
+
+        store.dispatch(SettingsClicked)
+
+        assertEquals(persisted, assertIs<SummarizationState.Settings>(store.state).settingsState)
     }
 
     @Test

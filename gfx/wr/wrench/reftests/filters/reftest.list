@@ -8,6 +8,7 @@ scale(*) fuzzy(2,10000) == svgfe-opacity-linear.yaml svgfe-opacity-linear-ref.ya
 scale(*) fuzzy(2,10000) == svgfe-opacity.yaml svgfe-opacity-ref.yaml
 fuzzy(12,10000) == svgfe-subregion-bigger.yaml svgfe-subregion-bigger-ref.yaml
 scale(*) fuzzy(12,10000) == svgfe-subregion-offset-stacking-context.yaml svgfe-subregion-offset-stacking-context-ref.yaml
+== svgfe-backdrop-scaled-refframe.yaml svgfe-backdrop-scaled-refframe-ref.yaml
 scale(*) == filter-grayscale.yaml filter-grayscale-ref.yaml
 platform(linux,mac) == draw_calls(7) color_targets(7) alpha_targets(0) filter-blur.yaml filter-blur.png
 platform(linux,mac) == filter-blur-downscale-fractional.yaml filter-blur-downscale-fractional.png

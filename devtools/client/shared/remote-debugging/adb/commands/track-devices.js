@@ -7,7 +7,9 @@
 "use strict";
 
 const EventEmitter = require("resource://devtools/shared/event-emitter.js");
-const { dumpn } = require("resource://devtools/shared/DevToolsUtils.js");
+const {
+  logger,
+} = require("resource://devtools/client/shared/remote-debugging/adb/adb-logger.js");
 const { setTimeout } = ChromeUtils.importESModule(
   "resource://gre/modules/Timer.sys.mjs"
 );
@@ -57,17 +59,17 @@ class TrackDevicesCommand extends EventEmitter {
   }
 
   _onOpen() {
-    dumpn("trackDevices onopen");
+    logger.debug("trackDevices onopen");
     const req = client.createRequest("host:track-devices");
     this._socket.send(req);
   }
 
   _onError(event) {
-    dumpn("trackDevices onerror: " + event);
+    logger.debug("trackDevices onerror: " + event);
   }
 
   _onClose() {
-    dumpn("trackDevices onclose");
+    logger.debug("trackDevices onclose");
 
     // Report all devices as disconnected
     this._disconnectAllDevices();
@@ -90,11 +92,11 @@ class TrackDevicesCommand extends EventEmitter {
   }
 
   _onData(event) {
-    dumpn("trackDevices ondata");
+    logger.debug("trackDevices ondata");
     const data = event.data;
-    dumpn("length=" + data.byteLength);
+    logger.debug("length=" + data.byteLength);
     const dec = new TextDecoder();
-    dumpn(dec.decode(new Uint8Array(data)).trim());
+    logger.debug(dec.decode(new Uint8Array(data)).trim());
 
     // check the OKAY or FAIL on first packet.
     if (this._waitForFirst) {

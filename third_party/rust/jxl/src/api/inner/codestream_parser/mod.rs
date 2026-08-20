@@ -5,7 +5,7 @@
 
 use crate::{
     api::{
-        JxlColorProfile, JxlDecoderOptions, JxlOutputBuffer, JxlPixelFormat,
+        JxlColorProfile, JxlDecoderOptions, JxlOutputBuffer, JxlParallelRunner, JxlPixelFormat,
         inner::{
             box_parser::CodestreamInput,
             codestream_parser::{
@@ -187,12 +187,13 @@ impl CodestreamParser {
                 }
                 Err(Error::OutOfBounds(n)) => {
                     let new_range = self.local_buffer.range();
-                    let enlarge = new_range == range && !self.local_buffer.can_read_more();
+                    let made_progress = new_range != range;
+                    let enlarge = !made_progress && !self.local_buffer.can_read_more();
                     if enlarge {
                         self.local_buffer.enlarge();
                     }
                     self.header_needed_bytes = Some(n);
-                    if c > 0 || enlarge {
+                    if c > 0 || made_progress || enlarge {
                         continue;
                     }
                     return Err(Error::OutOfBounds(n));
@@ -207,6 +208,7 @@ impl CodestreamParser {
         input: &mut CodestreamInput,
         decode_options: &JxlDecoderOptions,
         mut output_buffers: Option<&mut [JxlOutputBuffer]>,
+        parallel_runner: &mut dyn JxlParallelRunner,
     ) -> Result<()> {
         if let Some(output_buffers) = &output_buffers {
             validate_output_buffers(output_buffers, self.pixel_format.as_ref())?;
@@ -327,6 +329,7 @@ impl CodestreamParser {
                             &mut output_buffers,
                             self.output_color_profile.as_ref().unwrap(),
                             self.pixel_format.as_ref().unwrap(),
+                            parallel_runner,
                         ) {
                             Ok(None) => Ok(()),
                             Ok(Some(missing)) => Err(Error::OutOfBounds(missing)),

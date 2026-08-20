@@ -9,7 +9,8 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   ContextualIdentityService:
     "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
-  PageWireframes: "resource:///modules/sessionstore/PageWireframes.sys.mjs",
+  PageWireframes:
+    "moz-src:///browser/components/sessionstore/PageWireframes.sys.mjs",
   SponsorProtection:
     "moz-src:///browser/components/newtab/SponsorProtection.sys.mjs",
   TabNotes: "moz-src:///browser/components/tabnotes/TabNotes.sys.mjs",

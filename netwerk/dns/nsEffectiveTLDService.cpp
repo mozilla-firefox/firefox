@@ -9,17 +9,12 @@
 #include "nsEffectiveTLDService.h"
 
 #include "MainThreadUtils.h"
+#include "mozilla/AppShutdown.h"
 #include "mozilla/ClearOnShutdown.h"
-#include "mozilla/Components.h"
-#include "mozilla/MemoryReporting.h"
 #include "mozilla/net/DNS.h"
-#include "nsCRT.h"
 #include "nsContentUtils.h"
-#include "nsIFile.h"
 #include "nsIURI.h"
-#include "nsNetCID.h"
 #include "nsNetUtil.h"
-#include "nsServiceManagerUtils.h"
 
 namespace etld_dafsa {
 
@@ -30,69 +25,17 @@ namespace etld_dafsa {
 
 using namespace mozilla;
 
-NS_IMPL_ISUPPORTS(nsEffectiveTLDService, nsIEffectiveTLDService,
-                  nsIMemoryReporter)
+NS_IMPL_QUERY_INTERFACE(nsEffectiveTLDService, nsIEffectiveTLDService)
 
 // ----------------------------------------------------------------------
 
-static StaticRefPtr<nsEffectiveTLDService> gService;
-
-nsEffectiveTLDService::nsEffectiveTLDService() : mGraph(etld_dafsa::kDafsa) {}
-
-nsresult nsEffectiveTLDService::Init() {
-  MOZ_ASSERT(NS_IsMainThread());
-
-  if (gService) {
-    return NS_ERROR_ALREADY_INITIALIZED;
-  }
-
-  RegisterWeakMemoryReporter(this);
-
-  return NS_OK;
-}
-
-nsEffectiveTLDService::~nsEffectiveTLDService() {
-  UnregisterWeakMemoryReporter(this);
-}
+constinit nsEffectiveTLDService nsEffectiveTLDService::sSingleton(
+    etld_dafsa::kDafsa);
 
 // static
 already_AddRefed<nsIEffectiveTLDService>
 nsEffectiveTLDService::GetXPCOMSingleton() {
-  if (gService) {
-    return do_AddRef(gService);
-  }
-  RefPtr<nsEffectiveTLDService> instance = new nsEffectiveTLDService();
-  nsresult rv = instance->Init();
-  if (NS_FAILED(rv)) {
-    return nullptr;
-  }
-  gService = instance;
-  ClearOnShutdown(&gService);
-  return instance.forget();
-}
-
-MOZ_DEFINE_MALLOC_SIZE_OF(EffectiveTLDServiceMallocSizeOf)
-
-// The amount of heap memory measured here is tiny. It used to be bigger when
-// nsEffectiveTLDService used a separate hash table instead of binary search.
-// Nonetheless, we keep this code here in anticipation of bug 1083971 which will
-// change ETLDEntries::entries to a heap-allocated array modifiable at runtime.
-NS_IMETHODIMP
-nsEffectiveTLDService::CollectReports(nsIHandleReportCallback* aHandleReport,
-                                      nsISupports* aData, bool aAnonymize) {
-  MOZ_COLLECT_REPORT("explicit/network/effective-TLD-service", KIND_HEAP,
-                     UNITS_BYTES,
-                     SizeOfIncludingThis(EffectiveTLDServiceMallocSizeOf),
-                     "Memory used by the effective TLD service.");
-
-  return NS_OK;
-}
-
-size_t nsEffectiveTLDService::SizeOfIncludingThis(
-    mozilla::MallocSizeOf aMallocSizeOf) {
-  size_t n = aMallocSizeOf(this);
-
-  return n;
+  return do_AddRef(&sSingleton);
 }
 
 // External function for dealing with URI's correctly.
@@ -301,22 +244,33 @@ nsresult nsEffectiveTLDService::GetBaseDomainInternal(
   // main thread-only as the cache is not thread-safe.
   Maybe<TldCache::Entry> entry;
   if (aAdditionalParts == 1 && NS_IsMainThread()) {
-    auto p = mMruTable.Lookup(aHostname);
-    if (p) {
-      if (NS_FAILED(p.Data().mResult)) {
-        return p.Data().mResult;
-      }
+    AssertIsOnMainThread();
 
-      // There was a match, just return the cached value.
-      aBaseDomain = p.Data().mBaseDomain;
-      if (trailingDot) {
-        aBaseDomain.Append('.');
-      }
-
-      return NS_OK;
+    // Ensure the cache is initialized
+    if (!mMruTable &&
+        !AppShutdown::IsInOrBeyond(ShutdownPhase::XPCOMShutdownFinal)) {
+      mMruTable = new TldCache();
+      ClearOnShutdown(&mMruTable);
     }
 
-    entry = Some(p);
+    if (mMruTable) {
+      auto p = mMruTable->Lookup(aHostname);
+      if (p) {
+        if (NS_FAILED(p.Data().mResult)) {
+          return p.Data().mResult;
+        }
+
+        // There was a match, just return the cached value.
+        aBaseDomain = p.Data().mBaseDomain;
+        if (trailingDot) {
+          aBaseDomain.Append('.');
+        }
+
+        return NS_OK;
+      }
+
+      entry = Some(p);
+    }
   }
 
   // Check if we're dealing with an IPv4/IPv6 hostname, and return

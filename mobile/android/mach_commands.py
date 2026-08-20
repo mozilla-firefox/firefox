@@ -14,6 +14,7 @@ import zipfile
 import mozpack.path as mozpath
 from mach.decorators import Command, CommandArgument, SubCommand
 from mozbuild.base import MachCommandConditions as conditions
+from mozfile import load_source
 from mozshellutil import split as shell_split
 
 # Mach's conditions facility doesn't support subcommands.  Print a
@@ -744,6 +745,42 @@ def android_update_buildconfig(command_context, project, check=False):
             "All good! {name} is up-to-date with Gradle.",
         )
     return 0
+
+
+@SubCommand(
+    "android",
+    "nimbus-cli",
+    """Download, install and run nimbus-cli against a local Android build.
+
+Arguments are passed through, e.g. `--app fenix --channel developer list`. Use
+`-- --help` for nimbus-cli's own help, and see
+https://experimenter.info/nimbus-cli for the full documentation.""",
+)
+@CommandArgument(
+    "--update",
+    action="store_true",
+    help="Check for a newer nimbus-cli before running, ignoring the cached version.",
+)
+@CommandArgument("args", nargs=argparse.REMAINDER)
+def android_nimbus_cli(command_context, update=False, args=()):
+    if not conditions.is_android(command_context):
+        command_context.log(
+            logging.ERROR,
+            "nimbus-cli",
+            {},
+            "nimbus-cli drives Firefox for Android builds, but no Android build "
+            "was detected.\n"
+            "Switch to a Firefox for Android build context or use 'mach bootstrap'\n"
+            "to setup an Android build environment.",
+        )
+        return 1
+
+    # mobile/android isn't a package, so load the implementation by path rather
+    # than putting this directory on sys.path.
+    nimbus_cli = load_source(
+        "nimbus_cli", os.path.join(os.path.dirname(__file__), "nimbus_cli.py")
+    )
+    return nimbus_cli.run(command_context, args, force_update=update)
 
 
 @Command(

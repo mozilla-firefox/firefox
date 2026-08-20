@@ -37,8 +37,8 @@ class Builder:
         logger.info("max_urls: %s" % self.max_urls)
         self.bookmark_frequency = options.get("bookmark_frequency", BOOKMARK_FREQUENCY)
 
-        # we're syncing only on desktop for now
-        self.syncing = not self.mobile
+        # Syncing is disabled for all platforms
+        self.syncing = False
         if self.syncing:
             self.username, self.password = get_credentials()
             if self.username is None:

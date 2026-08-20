@@ -2796,6 +2796,19 @@ pbNewtab:
     path: "browser/components/asrouter/content-src/schemas/MessagingExperiment.schema.json"
   variables: {}
 
+privateWindowRedesign:
+  description: "Experimental features for the private browsing window redesign"
+  owner: omc-core@mozilla.com
+  hasExposure: false
+  variables:
+    pbwRedesignGate:
+      type: boolean
+      setPref:
+        branch: default
+        pref: "browser.privateWindowRedesign.enabled"
+      description: >-
+        Enables the new private browsing window redesign, including updated styling, promotions, animation and other visual improvements.
+
 backgroundTaskMessage:
   description: "A Firefox Messaging System message for the background task message channel"
   owner: nalexander@mozilla.com
@@ -6017,6 +6030,32 @@ smartWindow:
       description: >-
         Comma-separated list of screen ids that should be hidden in the Smart
         Window first run onboarding.
+
+smartWindowAgentWatch:
+  description: >-
+    Controls the Smart Window agent watch feature - whether users can create a
+    watch task (a task that monitors a page for changes). This gates the capability
+    itself, including its "/watch" command palette entry. Existing Smart Window
+    eligibility checks still apply.
+  owner: yjamora@mozilla.com
+  hasExposure: false
+  variables:
+    enabled:
+      type: boolean
+      setPref:
+        branch: default
+        pref: browser.smartwindow.agent.enabled
+      description: >-
+        Enables the Smart Window Agent Watch feature when true. Set to false
+        to disable the rollout.
+    supportedRegions:
+      type: string
+      setPref:
+        branch: default
+        pref: browser.smartwindow.agent.supportedRegions
+      description: >-
+        Comma-separated list of region codes where the agent watch command is
+        available, for example "US,CA".
 
 contentSharing:
   description: Controls the content sharing feature, which allows users to share browser content.

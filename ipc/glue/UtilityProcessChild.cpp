@@ -307,6 +307,21 @@ mozilla::ipc::IPCResult UtilityProcessChild::RecvStartJSOracleService(
   return IPC_OK();
 }
 
+#ifndef ANDROID
+mozilla::ipc::IPCResult UtilityProcessChild::RecvStartHWInferenceService(
+    Endpoint<PHWInferenceChild>&& aEndpoint) {
+  PROFILER_MARKER_UNTYPED(
+      "UtilityProcessChild::RecvStartHWInferenceService", OTHER,
+      MarkerOptions(MarkerTiming::IntervalUntilNowFrom(mChildStartTime)));
+
+  mHWInferenceInstance = MakeRefPtr<hwinference::HWInferenceChild>();
+  if (!aEndpoint.Bind(mHWInferenceInstance)) {
+    return IPC_FAIL(this, "Invalid endpoint");
+  }
+  return IPC_OK();
+}
+#endif  // !ANDROID
+
 #if defined(XP_WIN)
 mozilla::ipc::IPCResult UtilityProcessChild::RecvStartWindowsUtilsService(
     Endpoint<dom::PWindowsUtilsChild>&& aEndpoint) {

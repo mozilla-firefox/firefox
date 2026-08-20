@@ -25,7 +25,7 @@ mozilla::ipc::IPCResult RemoteWorkerServiceChild::RecvPRemoteWorkerConstructor(
     PRemoteWorkerChild* aActor, const RemoteWorkerData& aData,
     mozilla::ipc::Endpoint<PRemoteWorkerNonLifeCycleOpControllerChild>&&
         aChildEp) {
-  RemoteWorkerChild* actor = static_cast<RemoteWorkerChild*>(aActor);
+  RemoteWorkerChild* actor = mozilla::ipc::ActorCast<RemoteWorkerChild>(aActor);
   actor->ExecWorker(aData, std::move(aChildEp));
   return IPC_OK();
 }

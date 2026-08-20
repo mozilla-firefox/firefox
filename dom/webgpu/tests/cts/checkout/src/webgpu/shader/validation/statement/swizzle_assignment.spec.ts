@@ -3,6 +3,7 @@ Validation tests for swizzle assignments.
 `;
 
 import { makeTestGroup } from '../../../../common/framework/test_group.js';
+import { keysOf } from '../../../../common/util/data_tables.js';
 import { ShaderValidationTest } from '../shader_validation_test.js';
 
 export const g = makeTestGroup(ShaderValidationTest);
@@ -132,17 +133,51 @@ fn main() {
     t.expectCompileResult(false, code);
   });
 
-g.test('invalid_index_into_swizzle_view')
-  .desc('Invalid to index into a swizzle view on the lhs')
+g.test('index_into_swizzle_view')
+  .desc('Validate constant indexing into a swizzle view on the lhs')
+  .params(u =>
+    u
+      .combine('swizzle', ['x', 'xy', 'xx', 'xyz', 'xyzw', 'zxy'] as const)
+      .combine('index', [0, 1, 2, 3, 4] as const)
+  )
   .fn(t => {
     t.skipIfLanguageFeatureNotSupported('swizzle_assignment');
+    const { swizzle, index } = t.params;
+
     const code = `
 @fragment
 fn main() {
-  var v = vec2u();
-  v.xy[0] = 1;
+  var v = vec4u();
+  v.${swizzle}[${index}] = 1u;
+}
 `;
-    t.expectCompileResult(false, code);
+
+    const isVector = swizzle.length > 1;
+    const inBounds = index < swizzle.length;
+    const expected = isVector && inBounds;
+
+    t.expectCompileResult(expected, code);
+  });
+
+g.test('dynamic_index_into_swizzle_view')
+  .desc('Validate dynamic indexing into a swizzle view on the lhs')
+  .params(u => u.combine('swizzle', ['x', 'xy', 'xx', 'xyz', 'xyzw', 'zxy'] as const))
+  .fn(t => {
+    t.skipIfLanguageFeatureNotSupported('swizzle_assignment');
+    const { swizzle } = t.params;
+
+    const code = `
+@fragment
+fn main() {
+  var v = vec4u();
+  var i = 1u;
+  v.${swizzle}[i] = 1u;
+}
+`;
+
+    const isVector = swizzle.length > 1;
+
+    t.expectCompileResult(isVector, code);
   });
 
 g.test('pointer_swizzle_assignment')
@@ -177,5 +212,35 @@ fn main() {
     const has_feature = t.hasLanguageFeature('pointer_composite_access');
     const expected = !use_pointer || has_feature;
 
+    t.expectCompileResult(expected, code);
+  });
+
+const kChainedSwizzleCases = {
+  // Valid cases:
+  xy_y: { chain: 'xy.y', size: 1, pass: true }, // y
+  xx_x: { chain: 'xx.x', size: 1, pass: true }, // x
+  xyy_xy: { chain: 'xyy.xy', size: 2, pass: true }, // xy
+  xxyy_zxy_xy: { chain: 'xxyy.zxy.xy', size: 2, pass: true }, // yx
+  // Invalid cases:
+  xxyy_xy: { chain: 'xxyy.xy', size: 2, pass: false }, // xx
+  xyy_yy: { chain: 'xyy.yy', size: 2, pass: false }, // yy
+  xxyy_zxy_yz: { chain: 'xxyy.zxy.yz', size: 2, pass: false }, // xx
+  zy_xyx: { chain: 'zy.xyx', size: 3, pass: false }, // zyz
+};
+
+g.test('chained_swizzle')
+  .desc('Validate chained swizzles on the LHS of an assignment')
+  .params(u => u.combine('case', keysOf(kChainedSwizzleCases)))
+  .fn(t => {
+    const { chain, size, pass } = kChainedSwizzleCases[t.params.case];
+    const rhs = size === 1 ? '1.0' : `vec${size}f(1.0)`;
+    const code = `
+@fragment
+fn main() {
+  var v = vec4f();
+  v.${chain} = ${rhs};
+}
+`;
+    const expected = pass && t.hasLanguageFeature('swizzle_assignment');
     t.expectCompileResult(expected, code);
   });

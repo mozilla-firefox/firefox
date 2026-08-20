@@ -62,6 +62,16 @@ class SettingsPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRul
         )
         NavigationRegistry.register(
             from = pageName,
+            to = "SettingsPrivateBrowsingPage",
+            steps =
+                listOf(
+                    // "Private browsing" sits below the fold, so scroll it into view first.
+                    NavigationStep.Swipe(SettingsSelectors.PRIVATE_BROWSING_BUTTON),
+                    NavigationStep.Click(SettingsSelectors.PRIVATE_BROWSING_BUTTON),
+                ),
+        )
+        NavigationRegistry.register(
+            from = pageName,
             to = "SettingsCustomizePage",
             steps = listOf(NavigationStep.Click(SettingsSelectors.CUSTOMIZE_BUTTON)),
         )

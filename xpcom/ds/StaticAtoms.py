@@ -1778,7 +1778,6 @@ STATIC_ATOMS = [
     Atom("displaystyle", "displaystyle"),
     Atom("divergence", "divergence"),
     Atom("divide", "divide"),
-    Atom("dom_viewTransitions_enabled", "dom.viewTransitions.enabled"),
     Atom("domain", "domain"),
     Atom("domainofapplication", "domainofapplication"),
     Atom("edge", "edge"),

@@ -54,7 +54,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=1513343
         await popupshown;
 
         const contextmenu = win.document.getElementById("textbox-contextmenu");
-        const revealPassword = contextmenu.querySelector("#textbox-contextmenu-reveal-password");
+        const revealPassword = contextmenu.querySelector("#edit-contextmenu-reveal-password");
         const wasRevealed = element.revealPassword;
 
         let popuphidden = new Promise(r => win.addEventListener("popuphidden", r, { once: true }));
@@ -101,7 +101,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=1513343
       ok(contextmenu.querySelector("[command=cmd_delete]").hasAttribute("disabled"), "delete disabled");
       ok(!contextmenu.querySelector("[command=cmd_selectAll]").hasAttribute("disabled"), "select all enabled");
 
-      let revealPassword = contextmenu.querySelector("#textbox-contextmenu-reveal-password");
+      let revealPassword = contextmenu.querySelector("#edit-contextmenu-reveal-password");
       let isPassword = element.type == "password";
       is(revealPassword.hidden, !isPassword, "reveal password");
 

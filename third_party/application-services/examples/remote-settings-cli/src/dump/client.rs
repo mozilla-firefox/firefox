@@ -345,7 +345,7 @@ impl CollectionDownloader {
         pb: &ProgressBar,
     ) -> Result<()> {
         let base_url = self.get_attachments_base_url()?;
-        let url = format!("{}/bundles/{}--{}.zip", base_url, bucket, collection);
+        let url = format!("{}bundles/{}--{}.zip", base_url, bucket, collection);
 
         pb.set_message(format!(
             "Downloading attachments bundle for {}/{}",

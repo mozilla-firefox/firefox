@@ -449,11 +449,11 @@ class imgMemoryReporter final : public nsIMemoryReporter {
       const SVGImageContext& context = counter.Key().SVGContext();
       surfacePathPrefix.AppendLiteral(", svgContext:[ ");
       if (context.GetViewportSize()) {
-        const CSSIntSize& size = context.GetViewportSize().ref();
+        const CSSSize& size = context.GetViewportSize().ref();
         surfacePathPrefix.AppendLiteral("viewport=(");
-        surfacePathPrefix.AppendInt(size.width);
+        surfacePathPrefix.AppendFloat(size.width);
         surfacePathPrefix.AppendLiteral("x");
-        surfacePathPrefix.AppendInt(size.height);
+        surfacePathPrefix.AppendFloat(size.height);
         surfacePathPrefix.AppendLiteral(") ");
       }
       if (context.GetPreserveAspectRatio()) {

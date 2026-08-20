@@ -210,7 +210,8 @@ mozilla::ipc::IPCResult SocketProcessParent::RecvPDNSRequestConstructor(
     const nsACString& aTrrServer, const int32_t& port, const uint16_t& aType,
     const OriginAttributes& aOriginAttributes,
     const nsIDNSService::DNSFlags& aFlags) {
-  RefPtr<DNSRequestParent> actor = static_cast<DNSRequestParent*>(aActor);
+  RefPtr<DNSRequestParent> actor =
+      mozilla::ipc::ActorCast<DNSRequestParent>(aActor);
   RefPtr<DNSRequestHandler> handler =
       actor->GetDNSRequest()->AsDNSRequestHandler();
   handler->DoAsyncResolve(aHost, aTrrServer, port, aType, aOriginAttributes,
@@ -271,7 +272,7 @@ SocketProcessParent::AllocPProxyConfigLookupParent(
 mozilla::ipc::IPCResult SocketProcessParent::RecvPProxyConfigLookupConstructor(
     PProxyConfigLookupParent* aActor, nsIURI* aURI,
     const uint32_t& aProxyResolveFlags) {
-  static_cast<ProxyConfigLookupParent*>(aActor)->DoProxyLookup();
+  mozilla::ipc::ActorCast<ProxyConfigLookupParent>(aActor)->DoProxyLookup();
   return IPC_OK();
 }
 

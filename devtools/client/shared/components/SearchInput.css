@@ -155,7 +155,9 @@
   justify-content: center;
   align-items: center;
   height: 100%;
-  padding: 4px;
+  margin: 0 3px;
+  padding: 2px;
+  border-radius: 2px;
   background: transparent;
   outline-offset: -2px;
 }

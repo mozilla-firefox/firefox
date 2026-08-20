@@ -31,7 +31,8 @@ mozilla::ipc::IPCResult WebIdentityParent::RecvGetIdentityCredential(
     IdentityCredentialRequestOptions&& aOptions,
     const CredentialMediationRequirement& aMediationRequirement,
     bool aHasUserActivation, const GetIdentityCredentialResolver& aResolver) {
-  WindowGlobalParent* manager = static_cast<WindowGlobalParent*>(Manager());
+  WindowGlobalParent* manager =
+      mozilla::ipc::ActorCast<WindowGlobalParent>(Manager());
   if (!manager) {
     aResolver(NS_ERROR_FAILURE);
     return IPC_OK();
@@ -51,7 +52,8 @@ mozilla::ipc::IPCResult WebIdentityParent::RecvGetIdentityCredential(
 mozilla::ipc::IPCResult WebIdentityParent::RecvDisconnectIdentityCredential(
     const IdentityCredentialDisconnectOptions& aOptions,
     const DisconnectIdentityCredentialResolver& aResolver) {
-  WindowGlobalParent* manager = static_cast<WindowGlobalParent*>(Manager());
+  WindowGlobalParent* manager =
+      mozilla::ipc::ActorCast<WindowGlobalParent>(Manager());
   if (!manager) {
     aResolver(NS_ERROR_FAILURE);
     return IPC_OK();
@@ -66,7 +68,8 @@ mozilla::ipc::IPCResult WebIdentityParent::RecvDisconnectIdentityCredential(
 
 mozilla::ipc::IPCResult WebIdentityParent::RecvPreventSilentAccess(
     const PreventSilentAccessResolver& aResolver) {
-  WindowGlobalParent* manager = static_cast<WindowGlobalParent*>(Manager());
+  WindowGlobalParent* manager =
+      mozilla::ipc::ActorCast<WindowGlobalParent>(Manager());
   if (!manager) {
     aResolver(NS_ERROR_FAILURE);
     return IPC_OK();
@@ -89,7 +92,8 @@ mozilla::ipc::IPCResult WebIdentityParent::RecvPreventSilentAccess(
 
 mozilla::ipc::IPCResult WebIdentityParent::RecvSetLoginStatus(
     LoginStatus aStatus, const SetLoginStatusResolver& aResolver) {
-  WindowGlobalParent* manager = static_cast<WindowGlobalParent*>(Manager());
+  WindowGlobalParent* manager =
+      mozilla::ipc::ActorCast<WindowGlobalParent>(Manager());
   if (!manager) {
     aResolver(NS_ERROR_FAILURE);
     return IPC_OK();

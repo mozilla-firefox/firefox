@@ -5,10 +5,9 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
+  UrlbarContentUtils: "chrome://browser/content/urlbar/UrlbarContentUtils.mjs",
   UrlbarPrefs: "moz-src:///browser/components/urlbar/UrlbarPrefs.sys.mjs",
-  UrlbarQueryContext: "chrome://browser/content/urlbar/UrlbarQueryContext.mjs",
-  UrlbarUtils: "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs",
 });
 
 // The content-side input/view methods a parent-side provider hook may invoke
@@ -27,7 +26,6 @@ const INVOKABLE_CONTENT_ACTIONS = {
 };
 
 /**
- * @import {URIFixupPrimitives} from "chrome://browser/content/urlbar/UrlbarShared.mjs"
  * @import {UrlbarParent} from "./UrlbarParent.sys.mjs"
  * @import {UrlbarParentController} from "moz-src:///browser/components/urlbar/UrlbarParentController.sys.mjs"
  * @import {UrlbarChildController} from "chrome://browser/content/urlbar/UrlbarChildController.mjs"
@@ -119,6 +117,22 @@ export class UrlbarChild extends JSWindowActorChild {
   }
 
   /**
+   * Clones a payload the parent sent into the content realm, so content code can
+   * read it: an object left in this realm reaches content as an Xray, which
+   * denies even `Symbol.iterator`. In the parent both sides share a realm and the
+   * payload passes through as it is.
+   *
+   * @param {any[]} args
+   *   The arguments to hand to content.
+   * @returns {any[]}
+   */
+  #forContent(args) {
+    return this.manager.parentActor
+      ? args
+      : Cu.cloneInto(args, Cu.waiveXrays(this.contentWindow));
+  }
+
+  /**
    * Exposes the actor's content-facing surface on the window for a content-realm
    * `<moz-urlbar>`, which can't reach the `[ChromeOnly]`
    * `windowGlobalChild.getActor` nor hold the system-principal actor. Such an
@@ -143,16 +157,24 @@ export class UrlbarChild extends JSWindowActorChild {
         registerMessagePathInput: input => this.registerMessagePathInput(input),
         registerChildController: (instanceId, child) =>
           this.registerChildController(instanceId, child),
-        whereToOpenLink: event => this.whereToOpenLink(event),
+        whereToOpenLink: event =>
+          lazy.UrlbarContentUtils.whereToOpenLink(event),
         willLoadInBackground: (where, params) =>
-          this.willLoadInBackground(where, params),
+          lazy.UrlbarContentUtils.willLoadInBackground(where, params),
         getFixupPrimitives: (searchString, isPrivate) =>
-          Cu.cloneInto(this.getFixupPrimitives(searchString, isPrivate), win),
-        getDisplaySpec: url => this.getDisplaySpec(url),
-        unEscapeURIForUI: uri => this.unEscapeURIForUI(uri),
-        getSupportUrl: topic => this.getSupportUrl(topic),
+          Cu.cloneInto(
+            lazy.UrlbarContentUtils.getFixupPrimitives(searchString, isPrivate),
+            win
+          ),
+        getDisplaySpec: url => lazy.UrlbarContentUtils.getDisplaySpec(url),
+        unEscapeURIForUI: uri => lazy.UrlbarContentUtils.unEscapeURIForUI(uri),
+        getSupportUrl: topic => lazy.UrlbarContentUtils.getSupportUrl(topic),
+        getPlatform: () => lazy.UrlbarContentUtils.getPlatform(),
+        isWindowPrivate: lazy.PrivateBrowsingUtils.isContentWindowPrivate(
+          this.contentWindow
+        ),
         isTextDirectionRTL: (value, window) =>
-          this.isTextDirectionRTL(value, window),
+          lazy.UrlbarContentUtils.isTextDirectionRTL(value, window),
         getPref: name => Cu.cloneInto(lazy.UrlbarPrefs.get(name), win),
         addPrefObserver: observer => lazy.UrlbarPrefs.addObserver(observer),
         removePrefObserver: observer =>
@@ -163,7 +185,12 @@ export class UrlbarChild extends JSWindowActorChild {
     );
   }
 
-  actorCreated() {
+  /**
+   * `DOMDocElementInserted`, the actor's only registered event, fires as the
+   * document is created, which is early enough to publish the port before page
+   * script runs.
+   */
+  handleEvent() {
     // Only a content realm reads the port; chrome holds the actor and imports
     // UrlbarPrefs directly, so don't publish it on every chrome window.
     if (!this.manager.parentActor) {
@@ -200,105 +227,6 @@ export class UrlbarChild extends JSWindowActorChild {
     this.#childControllers.set(instanceId, new WeakRef(child));
   }
 
-  /**
-   * Forwards to `BrowserUtils.whereToOpenLink`. `UrlbarChildController.whereToOpen`
-   * computes the destination itself but can't import `BrowserUtils` (a system
-   * module) from its content-web scope, so it routes this one call through the
-   * actor, which is privileged and runs in the input's own process.
-   *
-   * @param {Event} event
-   *   The event that triggered the opening.
-   * @returns {"current" | "tabshifted" | "tab" | "save" | "window"}
-   */
-  whereToOpenLink(event) {
-    return lazy.BrowserUtils.whereToOpenLink(event, false, false);
-  }
-
-  /**
-   * Forwards to `BrowserUtils.willLoadInBackground`, for the same reason
-   * `whereToOpenLink` does: the content-web input can't import `BrowserUtils`.
-   *
-   * @param {string} where
-   *   Where the link will open, as returned by `whereToOpenLink`.
-   * @param {object} params
-   *   The params that will be passed to `openLinkIn`.
-   * @returns {boolean}
-   */
-  willLoadInBackground(where, params) {
-    return lazy.BrowserUtils.willLoadInBackground(where, params);
-  }
-
-  /**
-   * Runs URI fixup for a string on behalf of the content-web input, which can't
-   * reach `Services.uriFixup`. Returns only the primitives the callers need, so
-   * the input never holds an `nsIURIFixupInfo`.
-   *
-   * @param {string} searchString
-   *   The string to fix up.
-   * @param {boolean} isPrivate
-   *   Whether the fixup runs for a private context.
-   * @returns {?URIFixupPrimitives}
-   *   The fixup primitives, or null if fixup threw.
-   */
-  getFixupPrimitives(searchString, isPrivate) {
-    return lazy.UrlbarUtils.getFixupPrimitives(searchString, isPrivate);
-  }
-
-  /**
-   * Returns the SUMO URL for a support topic.
-   *
-   * @param {string} topic
-   *   The support page slug to append to the SUMO base URL.
-   * @returns {string}
-   */
-  getSupportUrl(topic) {
-    return Services.urlFormatter.formatURLPref("app.support.baseURL") + topic;
-  }
-
-  /**
-   * Checks whether a given text has right-to-left direction or not.
-   *
-   * @param {string} value The text which should be check for RTL direction.
-   * @param {Window} window The window where 'value' is going to be displayed.
-   * @returns {boolean} Returns true if text has right-to-left direction and
-   *                    false otherwise.
-   */
-  isTextDirectionRTL(value, window) {
-    let directionality = window.windowUtils.getDirectionFromText(value);
-    return directionality == window.windowUtils.DIRECTION_RTL;
-  }
-
-  /**
-   * Returns a URL's display spec, or null if it can't be parsed. Lets the
-   * content-web input normalize a URL without reaching `Services.io`.
-   *
-   * @param {string} url
-   *   The URL to parse.
-   * @returns {?string}
-   *   The display spec, or null if parsing threw.
-   */
-  getDisplaySpec(url) {
-    try {
-      return Services.io.newURI(url).displaySpec;
-    } catch (ex) {
-      return null;
-    }
-  }
-
-  /**
-   * Unescapes a URI's percent-encoding for display, applying the spoofing
-   * protections `nsITextToSubURI` implements. Lets content-realm code render a
-   * URL without reaching `Services.textToSubURI`.
-   *
-   * @param {string} uri
-   *   The URI fragment to unescape.
-   * @returns {string}
-   *   The unescaped fragment.
-   */
-  unEscapeURIForUI(uri) {
-    return Services.textToSubURI.unEscapeURIForUI(uri);
-  }
-
   receiveMessage(message) {
     switch (message.name) {
       case "Notify":
@@ -332,12 +260,11 @@ export class UrlbarChild extends JSWindowActorChild {
     if (!this.manager.parentActor) {
       child = Cu.waiveXrays(child);
     }
-    let deserialized = params.map(param =>
-      param?.serializedQueryContext
-        ? lazy.UrlbarQueryContext.fromWire(param.serializedQueryContext)
-        : param
-    );
-    child.notify(name, ...deserialized);
+    // The wire form crosses as plain data and the child controller builds the
+    // query context from it, so the object is born in the realm that reads it.
+    // Deserializing here would leave content an Xray over it, whose properties
+    // all read `undefined`.
+    child.notifyFromWire(name, ...this.#forContent(params));
   }
 
   /**
@@ -366,7 +293,7 @@ export class UrlbarChild extends JSWindowActorChild {
     if (!this.manager.parentActor) {
       child = Cu.waiveXrays(child);
     }
-    child[target]?.[method](...args);
+    child[target]?.[method](...this.#forContent(args));
   }
 
   #updateEngineStore({ instanceId, args }) {
@@ -380,6 +307,6 @@ export class UrlbarChild extends JSWindowActorChild {
     if (!this.manager.parentActor) {
       child = Cu.waiveXrays(child);
     }
-    child.updateEngineStore(...args);
+    child.updateEngineStore(...this.#forContent(args));
   }
 }

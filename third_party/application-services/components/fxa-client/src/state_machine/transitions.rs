@@ -139,9 +139,10 @@ pub fn transition(
             Ok(S::Disconnected)
         }
         (S::Connected, E::CheckAuthorizationStatus) => {
+            // check_authorization_status() failing should leave us in the original state.
             let active = account
                 .check_authorization_status()
-                .to_state_machine_err(|| S::AuthIssues)?;
+                .to_state_machine_err(|| S::Connected)?;
             Ok(if active { S::Connected } else { S::AuthIssues })
         }
         (S::Connected, E::CallGetProfile) => {

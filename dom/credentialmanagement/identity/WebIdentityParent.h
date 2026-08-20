@@ -19,7 +19,8 @@ class WebIdentityParent final : public PWebIdentityParent {
   virtual void ActorDestroy(ActorDestroyReason aWhy) override;
 
   CanonicalBrowsingContext* MaybeBrowsingContext() {
-    WindowGlobalParent* manager = static_cast<WindowGlobalParent*>(Manager());
+    WindowGlobalParent* manager =
+        mozilla::ipc::ActorCast<WindowGlobalParent>(Manager());
     if (!manager) {
       return nullptr;
     }

@@ -102,6 +102,7 @@ class TIPWrapper {
   #mSelectionChangeListener;
   #mWindow;
   #mSelection;
+  #mCommitCompositionAsynchronously = false;
 
   constructor(aWindow) {
     this.#mWindow = aWindow;
@@ -130,6 +131,28 @@ class TIPWrapper {
     this.#mTIP.keyup(AKey);
   }
 
+  typeJapaneseA() {
+    const AKey = new this.#mWindow.KeyboardEvent("", {
+      ky: "a",
+      code: "KeyA",
+      keyCode: this.#mWindow.KeyboardEvent.DOM_VK_A,
+    });
+    this.#mTIP.setPendingCompositionString("\u3042");
+    this.#mTIP.appendClauseToPendingComposition(1, this.#mTIP.ATTR_RAW_CLAUSE);
+    this.#mTIP.setCaretInPendingComposition(1);
+    return this.#mTIP.flushPendingComposition(AKey);
+  }
+
+  /**
+   * Synchronously cancel composition if there is. So, this is useful to clean
+   * up at finishing a test.
+   */
+  ensureNoComposition() {
+    if (this.#mTIP.hasComposition) {
+      this.#mTIP.cancelComposition();
+    }
+  }
+
   isAvailable() {
     return this.#mTIP != null;
   }
@@ -140,10 +163,26 @@ class TIPWrapper {
     }
     switch (aNotification.type) {
       case "request-to-commit":
-        this.#mTIP.commitComposition();
+        if (this.#mCommitCompositionAsynchronously) {
+          this.#mWindow.requestAnimationFrame(() =>
+            this.#mWindow.requestAnimationFrame(() =>
+              this.#mTIP.commitComposition()
+            )
+          );
+        } else {
+          this.#mTIP.commitComposition();
+        }
         break;
       case "request-to-cancel":
-        this.#mTIP.cancelComposition();
+        if (this.#mCommitCompositionAsynchronously) {
+          this.#mWindow.requestAnimationFrame(() =>
+            this.#mWindow.requestAnimationFrame(() =>
+              this.#mTIP.cancelComposition()
+            )
+          );
+        } else {
+          this.#mTIP.cancelComposition();
+        }
         break;
       case "notify-focus":
       case "notify-blur":
@@ -189,6 +228,14 @@ class TIPWrapper {
    */
   set onSelectionChange(aListener) {
     this.#mSelectionChangeListener = aListener;
+  }
+
+  set commitCompositionAsynchronously(aBool) {
+    this.#mCommitCompositionAsynchronously = aBool;
+  }
+
+  get commitCompositionAsynchronously() {
+    return this.#mCommitCompositionAsynchronously;
   }
 
   get focusBlurNotifications() {

@@ -112,7 +112,7 @@ object BrowserToolbarStoreBuilder {
                                     navController = navController,
                                     summarizationNavigator =
                                         SummarizationNavigator(
-                                            summarizationSettings = components.core.summarizationSettings,
+                                            summarizationSettings = components.core.summarizationSettingsBinding,
                                             eligibilityChecker = components.core.summarizationEligibilityChecker,
                                             getCurrentTab = { browserStore.state.selectedTab },
                                         ),

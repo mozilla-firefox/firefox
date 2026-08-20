@@ -50,14 +50,7 @@ class MOZ_GSL_OWNER Array {
     return mArr[aIndex];
   }
 
-  bool operator==(const Array<T, Length>& aOther) const {
-    for (size_t i = 0; i < Length; i++) {
-      if (mArr[i] != aOther[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
+  bool operator==(const Array& aOther) const = default;
 
   typedef T* iterator;
   typedef const T* const_iterator;

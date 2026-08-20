@@ -8,22 +8,14 @@ const { NetUtil } = ChromeUtils.importESModule(
   "resource://gre/modules/NetUtil.sys.mjs"
 );
 
-const { TelemetryTestUtils } = ChromeUtils.importESModule(
-  "resource://testing-common/TelemetryTestUtils.sys.mjs"
-);
-
 const nsIBinaryInputStream = Components.Constructor(
   "@mozilla.org/binaryinputstream;1",
   "nsIBinaryInputStream",
   "setInputStream"
 );
 
-// Enable the collection (during test) for all products so even products
-// that don't collect the data will be able to run the test without failure.
-Services.prefs.setBoolPref(
-  "toolkit.telemetry.testing.overrideProductsCheck",
-  true
-);
+do_get_profile();
+Services.fog.initializeFOG();
 
 Services.prefs.setBoolPref("network.jar.record_failure_reason", true);
 
@@ -44,6 +36,7 @@ setup();
 
 registerCleanupFunction(async () => {
   Services.prefs.clearUserPref("network.jar.record_failure_reason");
+  Services.fog.testResetFOG();
   try {
     copy.remove(false);
   } catch (e) {}
@@ -79,10 +72,19 @@ Listener.prototype = {
   },
 };
 
-const TELEMETRY_EVENTS_FILTERS = {
-  category: "zero_byte_load",
-  method: "load",
-};
+function assertLoadOthersEvent(sync) {
+  let events = Glean.zeroByteLoad.loadOthers.testGetValue();
+  Assert.equal(events.length, 1);
+  Assert.equal(events[0].category, "zero_byte_load");
+  Assert.equal(events[0].name, "load_others");
+  Assert.deepEqual(events[0].extra, {
+    sync: `${sync}`,
+    file_name: `${fileBase}!/test.txt`,
+    status: "NS_OK",
+    cancelled: "false",
+    cancel_reason: "",
+  });
+}
 
 function makeChan() {
   var uri = "jar:" + Services.io.newFileURI(copy).spec + "!/test.txt";
@@ -93,7 +95,7 @@ function makeChan() {
 add_task(async function test_empty_jar_file_async() {
   var chan = makeChan();
 
-  Services.telemetry.clearEvents();
+  Services.fog.testResetFOG();
 
   await new Promise(resolve => {
     chan.asyncOpen(
@@ -104,30 +106,13 @@ add_task(async function test_empty_jar_file_async() {
     );
   });
 
-  TelemetryTestUtils.assertEvents(
-    [
-      {
-        category: "zero_byte_load",
-        method: "load",
-        object: "others",
-        value: null,
-        extra: {
-          sync: "false",
-          file_name: `${fileBase}!/test.txt`,
-          status: "NS_OK",
-          cancelled: "false",
-          cancel_reason: "",
-        },
-      },
-    ],
-    TELEMETRY_EVENTS_FILTERS
-  );
+  assertLoadOthersEvent(false);
 });
 
 add_task(async function test_empty_jar_file_sync() {
   var chan = makeChan();
 
-  Services.telemetry.clearEvents();
+  Services.fog.testResetFOG();
 
   await new Promise(resolve => {
     let stream = chan.open();
@@ -135,22 +120,5 @@ add_task(async function test_empty_jar_file_sync() {
     resolve();
   });
 
-  TelemetryTestUtils.assertEvents(
-    [
-      {
-        category: "zero_byte_load",
-        method: "load",
-        object: "others",
-        value: null,
-        extra: {
-          sync: "true",
-          file_name: `${fileBase}!/test.txt`,
-          status: "NS_OK",
-          cancelled: "false",
-          cancel_reason: "",
-        },
-      },
-    ],
-    TELEMETRY_EVENTS_FILTERS
-  );
+  assertLoadOthersEvent(true);
 });

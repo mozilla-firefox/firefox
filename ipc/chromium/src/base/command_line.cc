@@ -186,18 +186,22 @@ void CommandLine::Terminate() {
 }
 
 bool CommandLine::HasSwitch(const std::wstring& switch_string) const {
-  std::wstring lowercased_switch(switch_string);
 #if defined(XP_WIN)
+  std::wstring lowercased_switch(switch_string);
   Lowercase(&lowercased_switch);
+#else
+  const std::wstring& lowercased_switch = switch_string;
 #endif
   return switches_.find(WideToASCII(lowercased_switch)) != switches_.end();
 }
 
 std::wstring CommandLine::GetSwitchValue(
     const std::wstring& switch_string) const {
-  std::wstring lowercased_switch(switch_string);
 #if defined(XP_WIN)
+  std::wstring lowercased_switch(switch_string);
   Lowercase(&lowercased_switch);
+#else
+  const std::wstring& lowercased_switch = switch_string;
 #endif
 
   std::map<std::string, StringType>::const_iterator result =

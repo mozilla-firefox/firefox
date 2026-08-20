@@ -121,6 +121,10 @@ struct FFmpegVulkanVideoDecoder {
                         VkImageUsageFlags aImageUsages = 0);
   bool SelectVulkanDecoderPhysicalDevice(
       const StaticMutexAutoLock& aProofOfLock, const nsCString& aRendererNode);
+  bool VulkanCanDecodeFormat(AVCodecID aCodecID, unsigned aAvcodecVersion,
+                             AVBufferRef* aVulkanDeviceContext,
+                             const MediaByteBuffer* aExtraData,
+                             gfx::ColorDepth aColorDepth) const;
   uint32_t mNegotiatedCompositorDecoderVendorID = 0;
   uint32_t mNegotiatedCompositorDecoderDeviceID = 0;
   char mNegotiatedVulkanDeviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE] = {

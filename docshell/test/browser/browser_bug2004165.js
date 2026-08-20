@@ -4,7 +4,7 @@
 "use strict";
 
 const { TabStateFlusher } = ChromeUtils.importESModule(
-  "resource:///modules/sessionstore/TabStateFlusher.sys.mjs"
+  "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
 );
 
 // Go to example.com, do window.open() to obtain an initial about:blank with content principal

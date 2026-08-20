@@ -367,9 +367,7 @@ def initialize(topsrcdir, args=()):
         distro, distro_version = get_distro_and_version()
         vscode_terminal, ssh_connection = get_shell_info()
         vscode_running = get_vscode_running()
-        is_employee = resolve_is_employee(
-            Path(topsrcdir), Path(state_dir), driver.settings
-        )
+        is_employee = resolve_is_employee(Path(topsrcdir), driver.settings)
         fleet_running = get_fleet_running() if is_employee else None
         crowdstrike_running = get_crowdstrike_running() if is_employee else None
         psutil_stats = get_psutil_stats()

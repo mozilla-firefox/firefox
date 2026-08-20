@@ -2157,21 +2157,23 @@ bool WasmComponentObject::construct(JSContext* cx, unsigned argc, Value* vp) {
     return false;
   }
 
-  BytecodeSource source;
-  Rooted<JSObject*> sourceObj(cx, &callArgs[0].toObject());
-  bool isShared;
-  if (!GetBytecodeSource(cx, sourceObj, JSMSG_WASM_BAD_BUF_ARG, &source,
-                         &isShared)) {
-    return false;
-  }
-
   UniqueChars error;
   UniqueCharsVector warnings;
   SharedComponent component;
   {
+    // Limit the lifetime of the bytecode to just compilation and ensure we pin
+    // the buffer. No user code should be running here anyways, so this is very
+    // conservative.
+    BytecodeBufferOrSource bytecode;
+    Rooted<JSObject*> sourceObj(cx, &callArgs[0].toObject());
+    if (!GetBytecodeBufferOrSource(cx, sourceObj, JSMSG_WASM_BAD_BUF_ARG,
+                                   &bytecode)) {
+      return false;
+    }
     AutoPinBufferSourceLength pin(cx, sourceObj.get());
-    component = CompileComponent(*compileArgs, BytecodeBufferOrSource(source),
-                                 &error, &warnings, nullptr);
+
+    component =
+        CompileComponent(*compileArgs, bytecode, &error, &warnings, nullptr);
   }
 
   if (!ReportCompileWarnings(cx, warnings)) {

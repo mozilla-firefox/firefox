@@ -11,7 +11,7 @@
     "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs"
   );
   const { TabStateFlusher } = ChromeUtils.importESModule(
-    "resource:///modules/sessionstore/TabStateFlusher.sys.mjs"
+    "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
   );
   const { ContentSharingUtils } = ChromeUtils.importESModule(
     "moz-src:///browser/components/sharing/ContentSharingUtils.sys.mjs"

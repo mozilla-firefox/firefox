@@ -2403,6 +2403,12 @@ class gfxFont {
   // and should be handled (if possible) using other APIs.
   bool InitMetricsFromSfntTables(Metrics& aMetrics);
 
+#if MOZ_FONTATIONS
+  // Initialize metrics using the font entry's Skrifa font reference.
+  // Returns false if unsuccessful (e.g. the entry has no Skrifa font).
+  bool InitMetricsFromSkrifa(Metrics& aMetrics);
+#endif
+
   // Helper to calculate various derived metrics from the results of
   // InitMetricsFromSfntTables or equivalent platform code
   void CalculateDerivedMetrics(Metrics& aMetrics);

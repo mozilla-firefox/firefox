@@ -1,0 +1,114 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIMLModelDownloadProgressCallback;
+interface nsIMLModelDownloadCompletionCallback;
+
+/**
+ * Callback interface for receiving progress updates during model download
+ */
+[scriptable, function, uuid(e7f880f7-ee8a-445e-87a8-5657d8c47bd9)]
+interface nsIMLModelDownloadProgressCallback : nsISupports
+{
+  /**
+   * Called to report download progress
+   *
+   * @param aProgress - Progress as a percentage (0-100)
+   * @param aCurrentLoaded - Bytes loaded for current file
+   * @param aTotalLoaded - Total bytes loaded across all files
+   * @param aTotal - Total bytes to download (may be 0 if unknown)
+   */
+  void onProgress(in long aProgress, in long long aCurrentLoaded,
+                  in long long aTotalLoaded, in long long aTotal);
+};
+
+/**
+ * Callback interface for receiving completion notification after model download
+ */
+[scriptable, uuid(9c0d1e2f-5678-4321-9012-3456789abcde)]
+interface nsIMLModelDownloadCompletionCallback : nsISupports
+{
+  /**
+   * Called when model download completes successfully
+   *
+   * @param aModel - The model name
+   * @param aRevision - The model revision
+   */
+  void onSuccess(in AString aModel, in AString aRevision);
+
+  /**
+   * Called when model download fails
+   *
+   * @param aError - Error message describing the failure
+   */
+  void onError(in AString aError);
+};
+
+/**
+ * A service for checking model availability and downloading models
+ * from the ML ModelHub for use by C++ components like SpeechRecognition
+ */
+[scriptable, uuid(e381b167-cb68-429c-9d57-35acf9054505)]
+interface nsIMLModelHub : nsISupports
+{
+  /**
+   * Check if a model is available (either cached or downloadable)
+   *
+   * @param aEngineId - The engine ID to use
+   * @param aModel - The model name (organization/name)
+   * @param aRevision - The model revision
+   * @param aFilename - The file name to check
+   * @returns Promise that resolves to true if model is available, false otherwise
+   */
+  Promise isModelAvailable(in AUTF8String aEngineId, in AUTF8String aModel, in AUTF8String aRevision, in AUTF8String aFilename);
+
+  /**
+   * Check if a model is already downloaded to the local cache. Unlike
+   * isModelAvailable, which also reports models that are merely downloadable
+   * from the hub, this only reports true for a model that needs no download.
+   *
+   * @param aEngineId - The engine ID to use
+   * @param aModel - The model name (organization/name)
+   * @param aRevision - The model revision
+   * @param aFilename - The file name to check
+   * @returns Promise that resolves to true if the model is already installed
+   */
+  Promise isModelInstalled(in AUTF8String aEngineId, in AUTF8String aModel, in AUTF8String aRevision, in AUTF8String aFilename);
+
+  /**
+   * Download a model with progress and completion callbacks
+   *
+   * @param aEngineId - The engine ID to use
+   * @param aTaskName - Name of the task (e.g., "speech-recognition")
+   * @param aModel - The model name (organization/name)
+   * @param aRevision - The model revision
+   * @param aFiles - Array of file names to download
+   * @param aProgressToken - Non-empty id tagging this download's progress
+   *   notifications
+   * @param aProgressCallback - Optional callback for progress updates
+   * @param aCompletionCallback - Callback for completion notification
+   * @returns sessionId for tracking this download
+   */
+  AString downloadModel(in AUTF8String aEngineId, in AUTF8String aTaskName,
+                       in AUTF8String aModel, in AUTF8String aRevision,
+                       in Array<AUTF8String> aFiles,
+                       in AString aProgressToken,
+                       in nsIMLModelDownloadProgressCallback aProgressCallback,
+                       in nsIMLModelDownloadCompletionCallback aCompletionCallback);
+
+  /**
+   * Get a blob for a downloaded model file
+   *
+   * @param aEngineId - The engine ID to use
+   * @param aTaskName - Name of the task (e.g., "speech-recognition")
+   * @param aModel - The model name (organization/name)
+   * @param aRevision - The model revision
+   * @param aFile - The file name
+   * @returns Promise that resolves to a Blob for the model file
+   */
+  Promise getModelBlob(in AUTF8String aEngineId, in AUTF8String aTaskName,
+                      in AUTF8String aModel, in AUTF8String aRevision, in AUTF8String aFile);
+};

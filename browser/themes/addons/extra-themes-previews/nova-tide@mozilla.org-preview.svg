@@ -1,7 +1,7 @@
 <!-- This Source Code Form is subject to the terms of the Mozilla Public
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
-<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 680 92">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="92" fill="none" viewBox="0 0 680 92" preserveAspectRatio="none">
   <g clip-path="url(#theme-preview-background)">
     <path id="tabbar-background" d="M0 0h680v92H0z"/>
     <path id="tabbar-gradient-overlay" fill-opacity=".5" d="M0 0h680v92H0z"/>

@@ -64,9 +64,6 @@ class FT2FontEntry final : public gfxFT2FontEntryBase {
 
   nsresult ReadCMAP(FontInfoData* aFontInfoData = nullptr) override;
 
-  hb_blob_t* GetFontTable(uint32_t aTableTag) override;
-
-  bool HasFontTable(uint32_t aTableTag) override;
   nsresult CopyFontTable(uint32_t aTableTag, nsTArray<uint8_t>&) override;
 
   bool HasVariations() override;
@@ -115,6 +112,10 @@ class FT2FontEntry final : public gfxFT2FontEntryBase {
  protected:
   // Protected destructor, to discourage deletion outside of Release():
   ~FT2FontEntry();
+
+  hb_blob_t* GetFontTableInternal(uint32_t aTableTag) override;
+
+  bool HasFontTableInternal(uint32_t aTableTag) override;
 
   FontTableCache* GetFontTableCache(bool aCreate) override;
 

@@ -308,39 +308,4 @@ var tests = [
       );
     },
   },
-  // Test notification when chrome is hidden
-  {
-    id: "Test#11",
-    _oldChromeHidden: document.documentElement.getAttribute("chromehidden"),
-    run() {
-      document.documentElement.setAttribute(
-        "chromehidden",
-        this._oldChromeHidden + " location"
-      );
-      window.locationbar.visible = false;
-      this.notifyObj = new BasicNotification(this.id);
-      this.notification = showNotification(this.notifyObj);
-    },
-    onShown(popup) {
-      checkPopup(popup, this.notifyObj);
-      is(
-        popup.anchorNode.className,
-        "tabbrowser-tab",
-        "notification anchored to tab"
-      );
-      dismissNotification(popup);
-    },
-    onHidden() {
-      ok(
-        this.notifyObj.dismissalCallbackTriggered,
-        "dismissal callback triggered"
-      );
-      this.notification.remove();
-      ok(this.notifyObj.removedCallbackTriggered, "removed callback triggered");
-      document.documentElement.setAttribute(
-        "chromehidden",
-        this._oldChromeHidden
-      );
-    },
-  },
 ];

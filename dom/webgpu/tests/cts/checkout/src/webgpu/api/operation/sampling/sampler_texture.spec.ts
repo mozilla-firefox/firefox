@@ -183,6 +183,11 @@ or storage texture.
       numStorageTexturesInFragmentStage,
     ];
 
+    const numAcross =
+      maxTestableCombosPerStage +
+      numStorageTexturesInVertexStage +
+      numStorageTexturesInFragmentStage;
+
     // Note: We are storing textureId, samplerId in the texture. That suggests we could use rgba32uint
     // texture but we can't do that because we want to be able to set the samplers to linear.
     // Similarly we can't use rgba32float since they're not filterable by default.
@@ -192,40 +197,31 @@ or storage texture.
     // numStorageTexturesPerVertexStage: ${numStorageTexturesInVertexStage}
     // numStorageTexturesPerFragmentStage: ${numStorageTexturesInFragmentStage}
 
-    fn sample(t: texture_2d<f32>, s: sampler, validId: u32, currentId: u32, c: vec4f) -> vec4f {
-      let size = textureDimensions(t, 0);
-      let uv = vec2f((f32(currentId % ${maxSamplersPerShaderStage}) + 0.5) / f32(size.x), 0.5);
-      let v = textureSampleLevel(t, s, uv, 0);
-      return select(c, v, currentId == validId);
-    }
-
-    fn load(t: texture_storage_2d<rgba8unorm, read>, validId: u32, currentId: u32, c: vec4f) -> vec4f {
-      let size = textureDimensions(t);
-      let uv = vec2u(currentId % size.x, 0);
-      let v = textureLoad(t, uv);
-      return select(c, v, currentId == validId);
-    }
-
     ${range(
       2,
       stage => `
       fn useCombos${stage}(id: u32) -> vec4f {
-        var c: vec4f;
+        switch(id) {
 ${range(maxTestableCombosPerStage, i => {
   const texNum = (i / maxSamplersPerShaderStage) | 0;
   const { textureId, texelValue } = addTexture(stage, texNum, false);
   const smpNum = i % maxSamplersPerShaderStage;
   const samplerId = addSampler(stage, smpNum);
   expected[stage].push([texelValue | (stage << 15), smpNum + 1]);
-  return `        c = sample(${textureId}, ${samplerId}, ${i}, id, c);`;
+  const uvX = (smpNum + 0.5) / width;
+  return `          case ${i}u: { return textureSampleLevel(${textureId}, ${samplerId}, vec2f(${uvX}, 0.5), 0); }`;
 }).join('\n')}
 ${range(numStorageTexturesInStage[stage], i => {
   const texNum = textures.length;
   const { textureId, texelValue } = addTexture(stage, texNum, true);
   expected[stage].push([texelValue | (stage << 15), 0]);
-  return `        c = load(${textureId}, ${i + maxTestableCombosPerStage}, id, c);`;
+  const xCoord = (i + maxTestableCombosPerStage) % width;
+  return `          case ${
+    i + maxTestableCombosPerStage
+  }u: { return textureLoad(${textureId}, vec2u(${xCoord}u, 0u)); }`;
 }).join('\n')}
-        return c;
+          default: { return vec4f(0); }
+        }
       }
     `
     ).join('\n\n')}
@@ -237,11 +233,21 @@ ${declarationLines.join('\n')}
       @location(0) value: vec4f,
     };
 
-    @vertex fn vs(@builtin(instance_index) iNdx: u32) -> VOut {
-      return VOut(
-        vec4f(0, 0, 0, 1),
-        useCombos0(iNdx),
+    // All points are rendered in a single draw call. vNdx selects the column
+    // (combo id, replacing the per-draw firstInstance) and the row (0: vertex-stage
+    // results, 1: fragment-stage results) and positions the point at the center of
+    // that texel in clip space (replacing the per-draw 1x1 viewport). The render
+    // target is [numAcross, 2], so the y term below assumes a height of 2.
+    @vertex fn vs(@builtin(vertex_index) vNdx: u32) -> VOut {
+      let x = vNdx % ${numAcross}u;
+      let y = vNdx / ${numAcross}u;
+      let pos = vec4f(
+        (f32(x) + 0.5) / ${numAcross}.0 * 2.0 - 1.0,
+        1.0 - (f32(y) + 0.5),
+        0.0,
+        1.0,
       );
+      return VOut(pos, useCombos0(x));
     }
 
     @fragment fn fs(vin: VOut) -> @location(0) vec4u {
@@ -279,11 +285,6 @@ ${declarationLines.join('\n')}
       })
     );
 
-    const numAcross =
-      maxTestableCombosPerStage +
-      numStorageTexturesInVertexStage +
-      numStorageTexturesInFragmentStage;
-
     const renderTarget = t.createTextureTracked({
       format: 'rg16uint',
       size: [numAcross, 2],
@@ -303,12 +304,9 @@ ${declarationLines.join('\n')}
     });
     pass.setPipeline(pipeline);
     bindGroups.forEach((bindGroup, i) => pass.setBindGroup(i, bindGroup));
-    for (let y = 0; y < 2; ++y) {
-      for (let x = 0; x < numAcross; ++x) {
-        pass.setViewport(x, y, 1, 1, 0, 1);
-        pass.draw(1, 1, 0, x);
-      }
-    }
+    // One point per texel of the [numAcross, 2] target, drawn in a single call
+    // instead of numAcross*2 separate setViewport+draw calls.
+    pass.draw(numAcross * 2);
     pass.end();
 
     device.queue.submit([encoder.finish()]);

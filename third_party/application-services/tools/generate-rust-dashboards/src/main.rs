@@ -41,14 +41,14 @@ fn main() -> Result<()> {
     let mut main_dashboard_builder = main_dashboard::start_dashboard(&config);
     let mut extra_dashboards: Vec<schema::Dashboard> = vec![];
 
-    if config.component_errors {
-        metrics::rust_component_errors::add_to_dashboard(&mut main_dashboard_builder, &config)?;
-        extra_dashboards.push(metrics::rust_component_errors::extra_dashboard(&config)?);
-    }
-
     if config.sync_metrics {
         metrics::sync::add_to_main_dashboard(&mut main_dashboard_builder, &config)?;
         extra_dashboards.push(metrics::sync::extra_dashboard(&config)?);
+    }
+
+    if config.component_errors {
+        metrics::rust_component_errors::add_to_dashboard(&mut main_dashboard_builder, &config)?;
+        extra_dashboards.push(metrics::rust_component_errors::extra_dashboard(&config)?);
     }
 
     for metric in config.main_dashboard_metrics.iter() {

@@ -13,18 +13,10 @@ import kotlinx.coroutines.test.runTest
 import mozilla.components.lib.shake.ShakeSensitivity
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PageSummariesSettingsMiddlewareTest {
-
-    private var learnMoreClicked = false
-
-    @Before
-    fun setup() {
-        learnMoreClicked = false
-    }
 
     @Test
     fun `WHEN summarize pages is toggled on THEN feature is enabled `() = runTest {
@@ -35,9 +27,6 @@ class PageSummariesSettingsMiddlewareTest {
             )
         val middleware = buildMiddleware(settings, this)
         val store = middleware.makeStore()
-
-        store.dispatch(ViewAppeared)
-        this.runCurrent()
 
         store.dispatch(SummarizePagesPreferenceToggled)
         this.runCurrent()
@@ -53,10 +42,7 @@ class PageSummariesSettingsMiddlewareTest {
                 isGestureEnabled = false,
             )
         val middleware = buildMiddleware(settings, this)
-        val store = middleware.makeStore()
-
-        store.dispatch(ViewAppeared)
-        this.runCurrent()
+        val store = middleware.makeStore(SummarizeSettingsState(isFeatureEnabled = true))
 
         store.dispatch(SummarizePagesPreferenceToggled)
         this.runCurrent()
@@ -72,10 +58,7 @@ class PageSummariesSettingsMiddlewareTest {
                 isGestureEnabled = false,
             )
         val middleware = buildMiddleware(settings, this)
-        val store = middleware.makeStore()
-
-        store.dispatch(ViewAppeared)
-        this.runCurrent()
+        val store = middleware.makeStore(SummarizeSettingsState(isFeatureEnabled = true))
 
         store.dispatch(ShakeToSummarizePreferenceToggled)
         this.runCurrent()
@@ -91,10 +74,7 @@ class PageSummariesSettingsMiddlewareTest {
                 isGestureEnabled = true,
             )
         val middleware = buildMiddleware(settings, this)
-        val store = middleware.makeStore()
-
-        store.dispatch(ViewAppeared)
-        this.runCurrent()
+        val store = middleware.makeStore(SummarizeSettingsState(isFeatureEnabled = true, isGestureEnabled = true))
 
         store.dispatch(ShakeToSummarizePreferenceToggled)
         this.runCurrent()
@@ -110,10 +90,7 @@ class PageSummariesSettingsMiddlewareTest {
                 isGestureEnabled = true,
             )
         val middleware = buildMiddleware(settings, this)
-        val store = middleware.makeStore()
-
-        store.dispatch(ViewAppeared)
-        this.runCurrent()
+        val store = middleware.makeStore(SummarizeSettingsState(isFeatureEnabled = true, isGestureEnabled = true))
 
         store.dispatch(SummarizePagesPreferenceToggled)
         this.runCurrent()
@@ -130,10 +107,7 @@ class PageSummariesSettingsMiddlewareTest {
                 isGestureEnabled = true,
             )
         val middleware = buildMiddleware(settings, this)
-        val store = middleware.makeStore()
-
-        store.dispatch(ViewAppeared)
-        this.runCurrent()
+        val store = middleware.makeStore(SummarizeSettingsState(isFeatureEnabled = true, isGestureEnabled = true))
 
         store.dispatch(ShakeSensitivityChanged(ShakeSensitivity.Low))
         this.runCurrent()
@@ -142,30 +116,34 @@ class PageSummariesSettingsMiddlewareTest {
     }
 
     @Test
-    fun `WHEN view appears THEN saved sensitivity is loaded in state`() = runTest {
-        val settings = SummarizationSettings.inMemory(shakeSensitivity = ShakeSensitivity.High)
+    fun `WHEN learn more is requested and handled THEN no preference is persisted`() = runTest {
+        val settings =
+            SummarizationSettings.inMemory(
+                isFeatureEnabled = true,
+                isGestureEnabled = true,
+                shakeSensitivity = ShakeSensitivity.High,
+            )
         val middleware = buildMiddleware(settings, this)
-        val store = middleware.makeStore()
-
-        store.dispatch(ViewAppeared)
-        this.runCurrent()
-
-        assertEquals(ShakeSensitivity.High, store.state.shakeSensitivity)
-    }
-
-    @Test
-    fun `WHEN learn more is clicked THEN callback is invoked`() = runTest {
-        val settings = SummarizationSettings.inMemory()
-        val middleware = buildMiddleware(settings, this)
-        val store = middleware.makeStore()
-
-        store.dispatch(ViewAppeared)
-        this.runCurrent()
+        val store =
+            middleware.makeStore(
+                SummarizeSettingsState(
+                    isFeatureEnabled = true,
+                    isGestureEnabled = true,
+                    shakeSensitivity = ShakeSensitivity.High,
+                )
+            )
 
         store.dispatch(LearnMoreClicked)
         this.runCurrent()
+        assertTrue(store.state.isLearnMoreRequested)
 
-        assertTrue(learnMoreClicked)
+        store.dispatch(LearnMoreHandled)
+        this.runCurrent()
+        assertFalse(store.state.isLearnMoreRequested)
+
+        assertTrue(settings.getFeatureEnabledUserStatus().first() == true)
+        assertTrue(settings.getGestureEnabledUserStatus().first())
+        assertEquals(ShakeSensitivity.High, settings.getShakeSensitivity().first())
     }
 
     private fun buildMiddleware(
@@ -174,14 +152,13 @@ class PageSummariesSettingsMiddlewareTest {
     ) =
         SummarizeSettingsMiddleware(
             settings = settings,
-            onLearnMoreClicked = { learnMoreClicked = true },
             scope = scope,
         )
 
-    private fun SummarizeSettingsMiddleware.makeStore() =
+    private fun SummarizeSettingsMiddleware.makeStore(initialState: SummarizeSettingsState = SummarizeSettingsState()) =
         SummarizeSettingsStore(
-            initialState = SummarizeSettingsState(),
+            initialState = initialState,
             reducer = ::summarizeSettingsReducer,
-            middleware = listOf(this),
+            middleware = listOf(asMiddleware()),
         )
 }

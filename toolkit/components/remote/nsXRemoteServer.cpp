@@ -115,7 +115,7 @@ bool nsXRemoteServer::HandleNewProperty(XID aWindowId, Display* aDisplay,
     }
 
     // Failed to get the data off the window or it was the wrong type?
-    if (!data || !TO_LITTLE_ENDIAN32(*reinterpret_cast<int32_t*>(data))) {
+    if (!data) {
       return false;
     }
 

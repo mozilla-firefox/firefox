@@ -9,6 +9,7 @@ use http::status::{self, StatusCode};
 use std::cmp;
 use std::collections::VecDeque;
 use std::io::Cursor;
+use std::ops::ControlFlow;
 use std::str::Utf8Error;
 
 /// Decodes headers using HPACK
@@ -179,7 +180,7 @@ impl Decoder {
         mut f: F,
     ) -> Result<(), DecoderError>
     where
-        F: FnMut(Header),
+        F: FnMut(Header) -> ControlFlow<()>,
     {
         use self::Representation::*;
 
@@ -204,7 +205,9 @@ impl Decoder {
                     can_resize = false;
                     let entry = self.decode_indexed(src)?;
                     consume(src);
-                    f(entry);
+                    if f(entry).is_break() {
+                        break;
+                    }
                 }
                 LiteralWithIndexing => {
                     tracing::trace!(rem = src.remaining(), kind = %"LiteralWithIndexing");
@@ -215,14 +218,18 @@ impl Decoder {
                     self.table.insert(entry.clone());
                     consume(src);
 
-                    f(entry);
+                    if f(entry).is_break() {
+                        break;
+                    }
                 }
                 LiteralWithoutIndexing => {
                     tracing::trace!(rem = src.remaining(), kind = %"LiteralWithoutIndexing");
                     can_resize = false;
                     let entry = self.decode_literal(src, false)?;
                     consume(src);
-                    f(entry);
+                    if f(entry).is_break() {
+                        break;
+                    }
                 }
                 LiteralNeverIndexed => {
                     tracing::trace!(rem = src.remaining(), kind = %"LiteralNeverIndexed");
@@ -232,7 +239,9 @@ impl Decoder {
 
                     // TODO: Track that this should never be indexed
 
-                    f(entry);
+                    if f(entry).is_break() {
+                        break;
+                    }
                 }
                 SizeUpdate => {
                     tracing::trace!(rem = src.remaining(), kind = %"SizeUpdate");
@@ -851,7 +860,8 @@ mod test {
     fn test_decode_empty() {
         let mut de = Decoder::new(0);
         let mut buf = BytesMut::new();
-        let _: () = de.decode(&mut Cursor::new(&mut buf), |_| {}).unwrap();
+        de.decode(&mut Cursor::new(&mut buf), |_| ControlFlow::Continue(()))
+            .unwrap();
     }
 
     #[test]
@@ -867,6 +877,7 @@ mod test {
         let mut res = vec![];
         de.decode(&mut Cursor::new(&mut buf), |h| {
             res.push(h);
+            ControlFlow::Continue(())
         })
         .unwrap();
 
@@ -907,6 +918,7 @@ mod test {
         let e = de
             .decode(&mut Cursor::new(&mut buf), |h| {
                 res.push(h);
+                ControlFlow::Continue(())
             })
             .unwrap_err();
         // decode error because the header value is partial
@@ -916,6 +928,7 @@ mod test {
         buf.extend(&value[1..]);
         de.decode(&mut Cursor::new(&mut buf), |h| {
             res.push(h);
+            ControlFlow::Continue(())
         })
         .unwrap();
 

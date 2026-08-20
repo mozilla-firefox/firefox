@@ -185,11 +185,11 @@ export default class EnableBackupEncryption extends MozLitElement {
         aria-labelledby="backup-enable-encryption-header"
         aria-describedby="backup-enable-encryption-description"
       >
-        <h1
+        <h2
           id="backup-enable-encryption-header"
           class="heading-medium"
           data-l10n-id=${ifDefined(VALID_L10N_IDS.get(this.type))}
-        ></h1>
+        ></h2>
         <div id="backup-enable-encryption-content">
           ${this.type === VALID_TYPES.SET_PASSWORD
             ? this.descriptionTemplate()

@@ -85,7 +85,8 @@ void FetchEventOpProxyChild::Initialize(
     }
   }
 
-  RemoteWorkerChild* manager = static_cast<RemoteWorkerChild*>(Manager());
+  RemoteWorkerChild* manager =
+      mozilla::ipc::ActorCast<RemoteWorkerChild>(Manager());
   MOZ_ASSERT(manager);
 
   RefPtr<FetchEventOpProxyChild> self = this;

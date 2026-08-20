@@ -13,7 +13,9 @@
 const {
   AdbSocket,
 } = require("resource://devtools/client/shared/remote-debugging/adb/adb-socket.js");
-const { dumpn } = require("resource://devtools/shared/DevToolsUtils.js");
+const {
+  logger,
+} = require("resource://devtools/client/shared/remote-debugging/adb/adb-logger.js");
 
 const OKAY = 0x59414b4f;
 const FAIL = 0x4c494146;
@@ -38,9 +40,9 @@ function getBuffer(packet) {
  */
 function unpackPacket(packet, ignoreResponse) {
   const buffer = getBuffer(packet);
-  dumpn("Len buffer: " + buffer.byteLength);
+  logger.debug("Len buffer: " + buffer.byteLength);
   if (buffer.byteLength === 4 && !ignoreResponse) {
-    dumpn("Packet empty");
+    logger.debug("Packet empty");
     return { length: 0, data: "" };
   }
   let index = 0;
@@ -80,9 +82,9 @@ function checkResponse(packet, expected = OKAY) {
   const buffer = getBuffer(packet);
   const view = new Uint32Array(buffer, 0, 1);
   if (view[0] == FAIL) {
-    dumpn("Response: FAIL");
+    logger.debug("Response: FAIL");
   }
-  dumpn("view[0] = " + view[0]);
+  logger.debug("view[0] = " + view[0]);
   return view[0] == expected;
 }
 
@@ -97,7 +99,7 @@ function createRequest(command) {
   }
 
   const encoder = new TextEncoder();
-  dumpn("Created request: " + length + command);
+  logger.debug("Created request: " + length + command);
   return encoder.encode(length + command);
 }
 

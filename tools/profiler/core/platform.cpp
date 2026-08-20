@@ -912,17 +912,23 @@ class CorePS {
 
   PS_GET(Vector<RefPtr<PageInformation>>&, RegisteredPages)
 
-  static void AppendRegisteredPage(PSLockRef,
-                                   RefPtr<PageInformation>&& aRegisteredPage) {
+  // Takes the page fields rather than a PageInformation, so that the common
+  // case of re-registering an already-known page doesn't have to allocate one
+  // only to throw it away.
+  static void AppendRegisteredPage(PSLockRef, uint64_t aTabID,
+                                   uint64_t aInnerWindowID,
+                                   const nsCString& aUrl,
+                                   uint64_t aEmbedderInnerWindowID,
+                                   bool aIsPrivateBrowsing) {
     MOZ_ASSERT(sInstance);
-    struct RegisteredPageComparator {
-      PageInformation* aA;
-      bool operator()(PageInformation* aB) const { return aA->Equals(aB); }
-    };
 
+    // Inner window IDs are unique for each page, so they are enough to
+    // identify an already-registered page.
     auto foundPageIter = std::find_if(
         sInstance->mRegisteredPages.begin(), sInstance->mRegisteredPages.end(),
-        RegisteredPageComparator{aRegisteredPage.get()});
+        [aInnerWindowID](const RefPtr<PageInformation>& aPage) {
+          return aPage->InnerWindowID() == aInnerWindowID;
+        });
 
     if (foundPageIter != sInstance->mRegisteredPages.end()) {
       if ((*foundPageIter)->Url().EqualsLiteral("about:blank")) {
@@ -938,7 +944,9 @@ class CorePS {
     }
 
     MOZ_RELEASE_ASSERT(
-        sInstance->mRegisteredPages.append(std::move(aRegisteredPage)));
+        sInstance->mRegisteredPages.append(MakeRefPtr<PageInformation>(
+            aTabID, aInnerWindowID, aUrl, aEmbedderInnerWindowID,
+            aIsPrivateBrowsing)));
   }
 
   static void RemoveRegisteredPage(PSLockRef,
@@ -7686,9 +7694,8 @@ void profiler_register_page(uint64_t aTabID, uint64_t aInnerWindowID,
   // When a Browsing context is first loaded, the first url loaded in it will be
   // about:blank. Because of that, this call keeps the first non-about:blank
   // registration of window and discards the previous one.
-  RefPtr<PageInformation> pageInfo = new PageInformation(
-      aTabID, aInnerWindowID, aUrl, aEmbedderInnerWindowID, aIsPrivateBrowsing);
-  CorePS::AppendRegisteredPage(lock, std::move(pageInfo));
+  CorePS::AppendRegisteredPage(lock, aTabID, aInnerWindowID, aUrl,
+                               aEmbedderInnerWindowID, aIsPrivateBrowsing);
 
   // After appending the given page to CorePS, look for the expired
   // pages and remove them if there are any.

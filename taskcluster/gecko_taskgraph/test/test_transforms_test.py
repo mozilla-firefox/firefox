@@ -7,6 +7,7 @@ Tests for the 'tests.py' transforms
 import hashlib
 from functools import partial
 from pprint import pprint
+from types import SimpleNamespace
 
 import mozunit
 import pytest
@@ -15,6 +16,8 @@ from taskgraph.util import json
 from gecko_taskgraph.test.conftest import FakeParameters
 from gecko_taskgraph.transforms import test as test_transforms
 from gecko_taskgraph.transforms.test import chunk
+from gecko_taskgraph.transforms.test.chunk import DYNAMIC_CHUNK_DURATION
+from gecko_taskgraph.util import chunking
 
 
 @pytest.fixture
@@ -23,7 +26,7 @@ def make_test_task():
 
     def inner(**extra):
         task = {
-            "attributes": {},
+            "attributes": {"unittest_suite": "task"},
             "build-platform": "linux64",
             "mozharness": {"extra-options": []},
             "test-platform": "linux64",
@@ -81,7 +84,7 @@ def test_split_variants(monkeypatch, run_full_config_transform, make_test_task):
     def make_expected(variant):
         """Helper to generate expected tasks."""
         return make_test_task(**{
-            "attributes": {"unittest_variant": variant},
+            "attributes": {"unittest_suite": "task", "unittest_variant": variant},
             "description": f"{variant} variant",
             "mozharness": {
                 "extra-options": [f"--setpref={variant}=1"],
@@ -550,6 +553,283 @@ def test_test_paths_do_not_drop_no_manifest_loader_tasks(run_transform):
 
     result = list(run_transform(chunk.set_test_manifests, tasks, params=params))
     assert sorted(t["test-name"] for t in result) == ["cppunittest", "gtest"]
+
+    # Their manifests were not restricted, so their chunks would all run the
+    # same tests and only the first is worth scheduling.
+    assert not any(t["attributes"].get("test-manifests-restricted") for t in result)
+
+
+def _make_test_paths_params(paths, suite="mochitest-browser-chrome"):
+    return FakeParameters({
+        "try_task_config": {
+            "env": {"MOZHARNESS_TEST_PATHS": json.dumps({suite: paths})},
+        },
+        "test_manifest_loader": "default",
+        "head_repository": "",
+        "app_version": "",
+        "backstop": False,
+    })
+
+
+@pytest.fixture
+def path_scoped_task(monkeypatch):
+    """Set up set_test_manifests for a suite of 10 manifests, of which the
+    requested paths hold the first four."""
+    suite_manifests = [f"dir/manifest{i}.toml" for i in range(10)]
+
+    def inner(matched):
+        monkeypatch.setattr(chunk, "guess_mozinfo_from_task", lambda *args, **kw: {})
+        monkeypatch.setattr(
+            chunk,
+            "get_manifest_loader",
+            lambda name, params: SimpleNamespace(
+                get_manifests=lambda suite, mozinfo: {
+                    "active": list(suite_manifests),
+                    "skipped": ["dir/skipped.toml"],
+                    "other_dirs": {},
+                }
+            ),
+        )
+        monkeypatch.setattr(
+            chunk.resolver, "get_test_paths_by_manifest", lambda suite, paths: matched
+        )
+
+        return {
+            "attributes": {"unittest_suite": "mochitest-browser-chrome"},
+            "suite": "mochitest-browser-chrome",
+            "test-name": "mochitest-browser-chrome",
+            "test-platform": "linux64",
+            "test-setting": {},
+            "treeherder-symbol": "M(bc)",
+            "chunks": "dynamic",
+            "default-chunks": 10,
+        }
+
+    inner.suite_manifests = suite_manifests
+    return inner
+
+
+def test_set_test_manifests_restricts_to_test_paths(run_transform, path_scoped_task):
+    """A multi-manifest MOZHARNESS_TEST_PATHS keeps only the manifests holding
+    tests under the requested paths, and scales the chunk counts down to that
+    share of the suite."""
+    matched = {m: [m] for m in path_scoped_task.suite_manifests[:4]}
+    task = path_scoped_task(matched)
+
+    tasks = list(
+        run_transform(
+            chunk.set_test_manifests, task, params=_make_test_paths_params(["dir"])
+        )
+    )
+
+    assert len(tasks) == 1
+    assert tasks[0]["test-manifests"] == {"active": sorted(matched), "skipped": []}
+    assert tasks[0]["default-chunks"] == 4
+    assert tasks[0]["attributes"]["test-manifests-restricted"] is True
+
+
+def test_set_test_manifests_accepts_a_single_test_path_string(
+    run_transform, path_scoped_task
+):
+    """A suite's paths can be given as a string rather than as a list."""
+    matched = {m: [m] for m in path_scoped_task.suite_manifests[:4]}
+    task = path_scoped_task(matched)
+
+    tasks = list(
+        run_transform(
+            chunk.set_test_manifests, task, params=_make_test_paths_params("dir")
+        )
+    )
+
+    assert len(tasks) == 1
+    assert tasks[0]["test-manifests"]["active"] == sorted(matched)
+
+
+def test_set_test_manifests_leaves_chunking_alone_for_test_tags(
+    run_transform, path_scoped_task
+):
+    """A test tag runs only part of each manifest, which the per-manifest runtime
+    data can't account for, so a tagged task is not marked as restricted and
+    keeps being chunked by the harness."""
+    matched = {m: [m] for m in path_scoped_task.suite_manifests[:4]}
+    task = path_scoped_task(matched)
+    params = _make_test_paths_params(["dir"])
+    params["try_task_config"]["env"]["MOZHARNESS_TEST_TAG"] = json.dumps(["a_tag"])
+
+    tasks = list(run_transform(chunk.set_test_manifests, task, params=params))
+
+    assert len(tasks) == 1
+    assert "test-manifests-restricted" not in tasks[0]["attributes"]
+
+
+def test_set_test_manifests_keeps_whole_suite_for_wpt(run_transform, path_scoped_task):
+    """web-platform-tests manifest names hold namespaces rather than source
+    paths, so the task keeps the whole suite for the harness to filter, and is
+    not marked as restricted."""
+    task = path_scoped_task({})
+    task["test-name"] = "web-platform-tests"
+    task["attributes"]["unittest_suite"] = "web-platform-tests"
+    params = _make_test_paths_params(
+        [_TESTS_ROOT + "dom/events"], suite="web-platform-tests"
+    )
+
+    tasks = list(run_transform(chunk.set_test_manifests, task, params=params))
+
+    assert len(tasks) == 1
+    assert tasks[0]["test-manifests"]["active"] == path_scoped_task.suite_manifests
+    assert "test-manifests-restricted" not in tasks[0]["attributes"]
+
+
+def test_set_test_manifests_keeps_narrower_test_paths(run_transform, path_scoped_task):
+    """A path narrower than a manifest, e.g. a single test file, is kept as is so
+    that the task doesn't widen to the whole manifest, and stays at one chunk."""
+    task = path_scoped_task({"dir/manifest0.toml": ["dir/test_one.js"]})
+
+    tasks = list(
+        run_transform(
+            chunk.set_test_manifests,
+            task,
+            params=_make_test_paths_params(["dir/test_one.js"]),
+        )
+    )
+
+    assert len(tasks) == 1
+    assert tasks[0]["test-manifests"] == {"active": ["dir/test_one.js"], "skipped": []}
+    assert tasks[0]["default-chunks"] == 1
+
+
+def test_set_test_manifests_drops_unrelated_tasks(run_transform, path_scoped_task):
+    """A task with no active manifest under the requested paths is dropped."""
+    task = path_scoped_task({})
+
+    tasks = list(
+        run_transform(
+            chunk.set_test_manifests, task, params=_make_test_paths_params(["dir"])
+        )
+    )
+
+    assert tasks == []
+
+
+def test_test_paths_are_split_into_chunks(monkeypatch, run_transform, path_scoped_task):
+    """The manifests matching the requested paths are spread over several
+    chunks, rather than all landing in a single one."""
+    matched = {m: [m] for m in path_scoped_task.suite_manifests[:4]}
+    task = path_scoped_task(matched)
+    params = _make_test_paths_params(["dir"])
+
+    # Each manifest is worth half a chunk, so the four of them need two chunks.
+    runtimes = {m: DYNAMIC_CHUNK_DURATION / 2 for m in matched}
+    monkeypatch.setattr(chunk, "get_runtimes", lambda platform, suite: runtimes)
+    monkeypatch.setattr(chunking, "get_runtimes", lambda platform, suite: runtimes)
+
+    tasks = list(run_transform(chunk.set_test_manifests, task, params=params))
+    tasks = list(run_transform(chunk.resolve_dynamic_chunks, tasks, params=params))
+    assert tasks[0]["chunks"] == 2
+
+    tasks = list(run_transform(chunk.split_chunks, tasks, params=params))
+    assert len(tasks) == 2
+    assert all(t["test-manifests"] for t in tasks)
+    assert sorted(m for t in tasks for m in t["test-manifests"]) == sorted(matched)
+
+
+@pytest.fixture
+def task_with_zero_runtimes(monkeypatch, make_test_task):
+    """A task whose runtime data covers a single one of its ten manifests, the
+    nine others being at 0."""
+
+    def inner(restricted):
+        manifests = [f"manifest{i}.toml" for i in range(10)]
+        runtimes = dict.fromkeys(manifests, 0)
+        runtimes["manifest0.toml"] = DYNAMIC_CHUNK_DURATION
+        monkeypatch.setattr(chunk, "get_runtimes", lambda platform, suite: runtimes)
+
+        return make_test_task(**{
+            "attributes": {
+                "unittest_suite": "task",
+                "test-manifests-restricted": restricted,
+            },
+            "chunks": "dynamic",
+            "default-chunks": 1,
+            "test-manifests": {"active": manifests, "skipped": []},
+        })
+
+    return inner
+
+
+def test_resolve_dynamic_chunks_ignores_zero_runtimes_when_restricted(
+    run_transform, task_with_zero_runtimes
+):
+    """For a restricted task, a manifest at 0 means the runtime data doesn't
+    cover this configuration, so it is filled in with the average of the
+    manifests that do have data rather than counted as instant."""
+    tasks = list(
+        run_transform(chunk.resolve_dynamic_chunks, task_with_zero_runtimes(True))
+    )
+
+    assert tasks[0]["chunks"] == 10
+
+
+def test_resolve_dynamic_chunks_keeps_zero_runtimes_when_unrestricted(
+    run_transform, task_with_zero_runtimes
+):
+    """An unrestricted task runs the whole suite, where the manifests that do
+    have runtime data are representative enough to be used as they are."""
+    tasks = list(
+        run_transform(chunk.resolve_dynamic_chunks, task_with_zero_runtimes(False))
+    )
+
+    assert tasks[0]["chunks"] == 1
+
+
+@pytest.fixture
+def task_with_partial_chunk_runtimes(monkeypatch, make_test_task):
+    """A task whose manifests add up to 1.4 times the target chunk duration."""
+
+    def inner(restricted):
+        manifests = [f"manifest{i}.toml" for i in range(4)]
+        runtimes = dict.fromkeys(manifests, DYNAMIC_CHUNK_DURATION * 0.35)
+        monkeypatch.setattr(chunk, "get_runtimes", lambda platform, suite: runtimes)
+
+        return make_test_task(**{
+            "attributes": {
+                "unittest_suite": "task",
+                "test-manifests-restricted": restricted,
+            },
+            "chunks": "dynamic",
+            "default-chunks": 1,
+            "test-manifests": {"active": manifests, "skipped": []},
+        })
+
+    return inner
+
+
+def test_resolve_dynamic_chunks_rounds_up_when_restricted(
+    run_transform, task_with_partial_chunk_runtimes
+):
+    """A restricted task gets a chunk for the remainder, rather than a single
+    chunk running half again the target duration."""
+    tasks = list(
+        run_transform(
+            chunk.resolve_dynamic_chunks, task_with_partial_chunk_runtimes(True)
+        )
+    )
+
+    assert tasks[0]["chunks"] == 2
+
+
+def test_resolve_dynamic_chunks_rounds_to_nearest_when_unrestricted(
+    run_transform, task_with_partial_chunk_runtimes
+):
+    """For an unrestricted task the remainder is spread over the many chunks the
+    whole suite needs, so the count is rounded to the nearest."""
+    tasks = list(
+        run_transform(
+            chunk.resolve_dynamic_chunks, task_with_partial_chunk_runtimes(False)
+        )
+    )
+
+    assert tasks[0]["chunks"] == 1
 
 
 if __name__ == "__main__":

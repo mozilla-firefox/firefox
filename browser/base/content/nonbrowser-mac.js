@@ -105,6 +105,7 @@ var NonBrowserWindow = {
         document.getElementById("macDockMenuNewPrivateWindow").hidden = true;
         // This mirrors browser-init.js, as the hidden window shares the main menubar.
         document.getElementById("Tools:PrivateBrowsing").hidden = true;
+        document.getElementById("menu_newPrivateWindow").hidden = true;
         document.getElementById("key_privatebrowsing").remove();
       }
       if (BrowserUIUtils.quitShortcutDisabled) {

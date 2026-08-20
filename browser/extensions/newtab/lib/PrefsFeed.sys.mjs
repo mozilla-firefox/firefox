@@ -54,6 +54,23 @@ const TOP_STORIES_USER_VALUE_TEMP_PREF =
 // and observed directly here (not via the branch observer) and broadcast to
 // content to gate the theme picker in the customize panel.
 const BROWSER_NOVA_ENABLED_PREF = "browser.nova.enabled";
+// Whether this profile records browsing history, broadcast as the synthetic
+// `recordsHistory` value to hide history-dependent widgets. Deliberately not
+// named after places.history.enabled: it derives from that pref AND permanent
+// private browsing. Two prefs because "Never remember history" sets autostart,
+// while the custom-mode "Remember browsing and download history" checkbox sets
+// places.history.enabled.
+const RECORDS_HISTORY_PREFS = [
+  "places.history.enabled",
+  "browser.privatebrowsing.autostart",
+];
+
+function recordsHistory() {
+  return (
+    !lazy.PrivateBrowsingUtils.permanentPrivateBrowsing &&
+    Services.prefs.getBoolPref("places.history.enabled", true)
+  );
+}
 
 /**
  * @backward-compat { version 155 }
@@ -594,6 +611,14 @@ export class PrefsFeed {
       Services.prefs.getBoolPref(BROWSER_NOVA_ENABLED_PREF, false);
     Services.prefs.addObserver(BROWSER_NOVA_ENABLED_PREF, this);
 
+    // Seed the tracked value so observe() can tell a real flip from a pref
+    // write that leaves it alone.
+    this._recordsHistory = recordsHistory();
+    values.recordsHistory = this._recordsHistory;
+    for (const pref of RECORDS_HISTORY_PREFS) {
+      Services.prefs.addObserver(pref, this);
+    }
+
     // Add experiment values and default values
     values.featureConfig = lazy.NimbusFeatures.newtab.getAllVariables() || {};
     values.pocketConfig =
@@ -664,6 +689,9 @@ export class PrefsFeed {
       Services.obs.removeObserver(this, lazy.Region.REGION_TOPIC);
     }
     Services.prefs.removeObserver(BROWSER_NOVA_ENABLED_PREF, this);
+    for (const pref of RECORDS_HISTORY_PREFS) {
+      Services.prefs.removeObserver(pref, this);
+    }
   }
 
   /**
@@ -949,6 +977,23 @@ export class PrefsFeed {
               },
             })
           );
+        } else if (RECORDS_HISTORY_PREFS.includes(data)) {
+          // Track the derived value, not the writes: two prefs collapse into one
+          // boolean, so a write that leaves it unchanged (e.g. autostart moving
+          // while places.history.enabled is already false) must not act.
+          const nextRecordsHistory = recordsHistory();
+          if (nextRecordsHistory !== this._recordsHistory) {
+            this._recordsHistory = nextRecordsHistory;
+            // No explicit about:home cache handling: broadcasting re-arms the
+            // cache task via onPreloadedNewTabMessage, so the next write already
+            // captures the updated page.
+            this.store.dispatch(
+              ac.BroadcastToContent({
+                type: at.PREF_CHANGED,
+                data: { name: "recordsHistory", value: nextRecordsHistory },
+              })
+            );
+          }
         }
         break;
     }

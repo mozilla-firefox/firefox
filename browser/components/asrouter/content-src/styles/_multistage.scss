@@ -320,6 +320,94 @@ html {
     flex-direction: column;
   }
 
+  &:has([pos='center-large'][fullscreen]) {
+    .section-main {
+      height: 90%;
+      width: 90%;
+      margin: auto;
+
+      .main-content {
+        box-shadow: none;
+
+        > .secondary-buttons-top-container,
+        > .secondary-cta.top {
+          position: static;
+          align-self: flex-end;
+          padding-block: var(--space-large);
+          padding-inline-end: var(--space-xxlarge);
+        }
+
+        .secondary-buttons-top-container .secondary-cta.top {
+          padding-inline-end: 0;
+        }
+
+        @media not (prefers-contrast) {
+          border: 1px solid var(--border-color-deemphasized);
+          backdrop-filter: blur(8px);
+          background-color: light-dark(
+            color-mix(in srgb, var(--color-black) 5%, transparent),
+            color-mix(in srgb, var(--color-black) 20%, transparent)
+          );
+        }
+
+        .main-content-inner {
+          width: 50%;
+          margin: auto;
+          justify-content: center;
+
+          @media (width <= 720px) {
+            width: 80%;
+          }
+        }
+      }
+    }
+
+    .corner-image-container {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+
+      @media (width <= 720px) {
+        display: none;
+      }
+
+      .brand-logo {
+        margin-block: 0;
+      }
+
+      .corner-image {
+        position: absolute;
+
+        &.bottom-left {
+          bottom: -10px;
+          left: 20px;
+        }
+
+        &.bottom-right {
+          bottom: -10px;
+          right: 20px;
+        }
+
+        &.top-left {
+          top: -10px;
+          left: 20px;
+        }
+
+        &.top-right {
+          top: -10px;
+          right: 20px;
+        }
+      }
+    }
+
+    &:has(theme-picker) {
+      .content-tile {
+        margin-inline: auto;
+      }
+    }
+  }
+
   .section-main {
     display: flex;
     flex-direction: column;
@@ -720,7 +808,7 @@ html {
       }
     }
 
-    &:not([pos='split']) {
+    &:not([pos='split'], [pos='center-large']) {
       .secondary-cta {
         .secondary {
           @include text-link-styles;

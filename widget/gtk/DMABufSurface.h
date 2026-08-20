@@ -273,7 +273,9 @@ class DMABufSurface {
   // Export global ref count object by file descriptor.
   int GlobalRefCountExport();
 
-  void ReleaseDMABuf();
+  // Returns true if the mem was actually released as it can be called
+  // for empty surface too.
+  [[nodiscard]] bool ReleaseDMABuf();
 
 #ifdef MOZ_LOGGING
   void* MapInternal(uint32_t aX, uint32_t aY, uint32_t aWidth, uint32_t aHeight,
@@ -284,7 +286,7 @@ class DMABufSurface {
       mozilla::widget::DMABufDeviceLock* aDeviceLock, int aPlane) = 0;
 
   bool OpenFileDescriptors(mozilla::widget::DMABufDeviceLock* aDeviceLock);
-  void CloseFileDescriptors();
+  bool CloseFileDescriptors();
 
   nsresult ReadIntoBuffer(mozilla::gl::GLContext* aGLContext, uint8_t* aData,
                           int32_t aStride, const mozilla::gfx::IntSize& aSize,

@@ -35,10 +35,7 @@ theme-preview img {
   display: block;
   aspect-ratio: 680 / 92;
   object-fit: cover;
-  /* Increasing the image width a bit over the full card size to avoid
-   * the preview image to leave a small white space between the theme
-   * preview image and the card border */
-  width: 101%;
+  width: 100%;
 
   /* Border bottom box to show more clearly where the preview images ends
    * as shown in the UX specs (especially needed for Nova themes for which

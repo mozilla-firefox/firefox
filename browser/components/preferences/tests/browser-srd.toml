@@ -79,10 +79,6 @@ skip-if = [
 
 ["browser_subdialogs.js"]
 support-files = ["subdialog.xhtml", "subdialog2.xhtml"]
-skip-if = [
-  "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && opt && nova", # Bug 2057850
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && nova", # Bug 2057850
-]
 
 ["browser_tabs_browsing_pane.js"]
 

@@ -227,10 +227,6 @@ Preferences.addSetting(
         // of testing.
         // @ts-ignore bug 1996860
         LaunchOnLogin.enable();
-        Services.prefs.setBoolPref(
-          "browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt",
-          true
-        );
       } else {
         // windowsLaunchOnLogin has been unchecked: delete registry key and shortcut
         // @ts-ignore bug 1996860

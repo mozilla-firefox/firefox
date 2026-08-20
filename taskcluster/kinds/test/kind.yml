@@ -42,8 +42,14 @@ task-defaults:
     run-on-repo-type: [hg]
     attributes:
         retrigger: true
-    use-python: system
-    use-uv: false
+    use-python:
+        by-test-platform:
+            # android-hw tasks are driven by the host's script.py wrapper,
+            # which imports mozdevice from the host environment; a fetched CI
+            # Python would shadow the host Python on PATH and break that import.
+            android-hw.*: system
+            default: default
+    use-uv: true
     require-signed-extensions:
         by-release-type:
             release|esr.*: true
@@ -93,4 +99,4 @@ task-defaults:
                 default:
                     - linux64-minidump-stackwalk
                     - linux64-fix-stacks
-                    - linux64-2404-dbus-python
+                    - linux64-python3.9-dbus-python

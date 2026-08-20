@@ -148,8 +148,9 @@ static Atomic<size_t, Relaxed> gDMABufSurfaceYUVUsed(0);
 void LogMemoryAddRGBA(int aUID, size_t aUsedMem) {
   gDMABufSurfaceRGBAUsed++;
   gDMABufSurfaceMemoryRGBAUsed += aUsedMem;
-  LOGDMAVERBOSES("UID %d Memory RGBA [%zu] mem %" PRId64 " KB (+ %zu KB)", aUID,
-                 static_cast<size_t>(gDMABufSurfaceRGBAUsed),
+  LOGDMAVERBOSES("UID %d Memory RGBA surfaces %zu total mem %" PRId64
+                 " KB (+ %zu KB)",
+                 aUID, static_cast<size_t>(gDMABufSurfaceRGBAUsed),
                  static_cast<int64_t>(gDMABufSurfaceMemoryRGBAUsed) / 1000,
                  aUsedMem / 1000);
 }
@@ -157,8 +158,9 @@ void LogMemoryAddRGBA(int aUID, size_t aUsedMem) {
 void LogMemorySubRGBA(int aUID, size_t aUsedMem) {
   gDMABufSurfaceMemoryRGBAUsed -= aUsedMem;
   gDMABufSurfaceRGBAUsed--;
-  LOGDMAVERBOSES("UID %d Memory RGBA [%zu] mem %" PRId64 " KB (- %zu KB)", aUID,
-                 static_cast<size_t>(gDMABufSurfaceRGBAUsed),
+  LOGDMAVERBOSES("UID %d Memory RGBA surfaces %zu total mem %" PRId64
+                 " KB (- %zu KB)",
+                 aUID, static_cast<size_t>(gDMABufSurfaceRGBAUsed),
                  static_cast<int64_t>(gDMABufSurfaceMemoryRGBAUsed) / 1000,
                  aUsedMem / 1000);
 }
@@ -166,8 +168,9 @@ void LogMemorySubRGBA(int aUID, size_t aUsedMem) {
 void LogMemoryAddYUV(int aUID, size_t aUsedMem) {
   gDMABufSurfaceYUVUsed++;
   gDMABufSurfaceMemoryYUVUsed += aUsedMem;
-  LOGDMAVERBOSES("UID %d Memory YUV [%zu] mem %" PRId64 " KB (+ %zu KB)", aUID,
-                 static_cast<size_t>(gDMABufSurfaceYUVUsed),
+  LOGDMAVERBOSES("UID %d Memory YUV surfaces %zu total mem %" PRId64
+                 " KB (+ %zu KB)",
+                 aUID, static_cast<size_t>(gDMABufSurfaceYUVUsed),
                  static_cast<int64_t>(gDMABufSurfaceMemoryYUVUsed) / 1000,
                  aUsedMem / 1000);
 }
@@ -175,8 +178,9 @@ void LogMemoryAddYUV(int aUID, size_t aUsedMem) {
 void LogMemorySubYUV(int aUID, size_t aUsedMem) {
   gDMABufSurfaceMemoryYUVUsed -= aUsedMem;
   gDMABufSurfaceYUVUsed--;
-  LOGDMAVERBOSES("UID %d Memory YUV [%zu] mem %" PRId64 " KB (- %zu KB)", aUID,
-                 static_cast<size_t>(gDMABufSurfaceYUVUsed),
+  LOGDMAVERBOSES("UID %d Memory YUV surfaces %zu total mem %" PRId64
+                 " KB (- %zu KB)",
+                 aUID, static_cast<size_t>(gDMABufSurfaceYUVUsed),
                  static_cast<int64_t>(gDMABufSurfaceMemoryYUVUsed) / 1000,
                  aUsedMem / 1000);
 }
@@ -434,7 +438,7 @@ void DMABufSurface::GlobalRefCountDelete() {
   }
 }
 
-void DMABufSurface::ReleaseDMABuf() {
+bool DMABufSurface::ReleaseDMABuf() {
   LOGDMABUF("DMABufSurface::ReleaseDMABuf() UID %d", mUID);
 #ifdef MOZ_LOGGING
   for (int i = 0; i < mBufferPlaneCount; i++) {
@@ -442,7 +446,7 @@ void DMABufSurface::ReleaseDMABuf() {
   }
 #endif
 
-  CloseFileDescriptors();
+  bool released = CloseFileDescriptors();
 
   for (int i = 0; i < mBufferPlaneCount; i++) {
     if (mGbmBufferObject[i]) {
@@ -451,6 +455,8 @@ void DMABufSurface::ReleaseDMABuf() {
     }
   }
   mBufferPlaneCount = 0;
+
+  return released;
 }
 
 DMABufSurface::DMABufSurface(SurfaceType aSurfaceType)
@@ -696,12 +702,15 @@ bool DMABufSurface::OpenFileDescriptors(
   return true;
 }
 
-void DMABufSurface::CloseFileDescriptors() {
+bool DMABufSurface::CloseFileDescriptors() {
+  bool released = false;
   for (auto& mDmabufFd : mDmabufFds) {
     if (mDmabufFd) {
       mDmabufFd = nullptr;
+      released = true;
     }
   }
+  return released;
 }
 
 nsresult DMABufSurface::ReadIntoBuffer(mozilla::gl::GLContext* aGLContext,
@@ -1327,8 +1336,9 @@ void DMABufSurfaceRGBA::ReleaseSurface() {
   LOGDMABUF("DMABufSurfaceRGBA::ReleaseSurface() UID %d", mUID);
   MOZ_ASSERT(!IsMapped(), "We can't release mapped buffer!");
   ReleaseTextures();
-  ReleaseDMABuf();
-  LogMemorySubRGBA(GetUID(), GetUsedMemoryRGBA());
+  if (ReleaseDMABuf()) {
+    LogMemorySubRGBA(GetUID(), GetUsedMemoryRGBA());
+  }
 }
 
 #ifdef MOZ_WAYLAND
@@ -1730,9 +1740,6 @@ bool DMABufSurfaceYUV::ImportPRIMESurfaceDescriptor(
     LOGDMABUF("    plane %d size %d x %d format %x", i, mWidth[i], mHeight[i],
               mDrmFormats[i]);
   }
-
-  LogMemoryAddYUV(GetUID(),
-                  GetUsedMemoryYUV(aDesc.fourcc, aDesc.width, aDesc.height));
   return true;
 }
 
@@ -1748,8 +1755,6 @@ void DMABufSurfaceYUV::ReleaseVADRMPRIMESurfaceDescriptor(
       aDesc.objects[object].fd = -1;
     }
   }
-  LogMemorySubYUV(-1,
-                  GetUsedMemoryYUV(aDesc.fourcc, aDesc.width, aDesc.height));
 }
 
 bool DMABufSurfaceYUV::MoveYUVDataImpl(const VADRMPRIMESurfaceDescriptor& aDesc,
@@ -2471,9 +2476,10 @@ int DMABufSurfaceYUV::GetTextureCount() { return mBufferPlaneCount; }
 void DMABufSurfaceYUV::ReleaseSurface() {
   LOGDMABUF("DMABufSurfaceYUV::ReleaseSurface() UID %d", mUID);
   ReleaseTextures();
-  ReleaseDMABuf();
-  LogMemorySubYUV(GetUID(),
-                  GetUsedMemoryYUV(mFOURCCFormat, mWidth[0], mHeight[0]));
+  if (ReleaseDMABuf()) {
+    LogMemorySubYUV(GetUID(),
+                    GetUsedMemoryYUV(mFOURCCFormat, mWidth[0], mHeight[0]));
+  }
 }
 
 nsresult DMABufSurfaceYUV::BuildSurfaceDescriptorBuffer(

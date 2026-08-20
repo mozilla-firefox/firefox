@@ -25,6 +25,9 @@ const lazy = XPCOMUtils.declareLazy({
 
 let _remoteClient = null;
 
+/** @type {Promise<object[]>|null} */
+let _recordsPromise = null;
+
 /**
  * Gets the Remote Settings client for AI window configurations. Subscribes
  * the model-data cache to RS sync events on first use and caches the client
@@ -40,6 +43,8 @@ export function getRemoteClient() {
     bucketName: "main",
   });
   client.on("sync", async () => {
+    // Dropped before the models refresh below, which reads records back.
+    _recordsPromise = null;
     try {
       await refreshModelsDataCache();
     } catch (e) {
@@ -51,6 +56,34 @@ export function getRemoteClient() {
 }
 
 /**
+ * Every record in the AI window collection, memoized for the session and
+ * dropped on sync. `client.get()` is not a cheap repeat read: each call lists
+ * the whole collection out of IndexedDB and re-runs the JEXL filter over every
+ * record, and a single chat submit resolves records three to five times
+ * (model config, system prompt assembly, per-turn browser context).
+ *
+ * @returns {Promise<object[]>}
+ */
+export function getRemoteRecords() {
+  if (_recordsPromise) {
+    return _recordsPromise;
+  }
+  const promise = getRemoteClient()
+    .get()
+    .catch(error => {
+      // Never leave a failed read cached, or one transient error would be
+      // served for the rest of the session. Guarded so a sync that landed
+      // while this read was in flight keeps its fresher entry.
+      if (_recordsPromise === promise) {
+        _recordsPromise = null;
+      }
+      throw error;
+    });
+  _recordsPromise = promise;
+  return promise;
+}
+
+/**
  * Test-only seam: install a fake client. Subsequent `getRemoteClient()` calls
  * return it until cleared.
  *
@@ -58,6 +91,7 @@ export function getRemoteClient() {
  */
 export function _setRemoteClientForTesting(client) {
   _remoteClient = client;
+  _recordsPromise = null;
 }
 
 /**
@@ -65,6 +99,15 @@ export function _setRemoteClientForTesting(client) {
  */
 export function _clearRemoteClientForTesting() {
   _remoteClient = null;
+  _recordsPromise = null;
+}
+
+/**
+ * Test-only seam: drops memoized records without replacing the client, for
+ * tests that mutate a fake client's data between reads.
+ */
+export function _clearRecordsCacheForTesting() {
+  _recordsPromise = null;
 }
 
 const modelPrefObserver = {
@@ -74,6 +117,7 @@ const modelPrefObserver = {
         "Model preference changed, invalidating Remote Settings cache"
       );
       _remoteClient = null;
+      _recordsPromise = null;
     }
   },
 };
@@ -93,6 +137,7 @@ export const MODEL_FEATURES = Object.freeze({
   CHAT: "chat",
   SMART_FORM_FILL: "smart-form-fill",
   TITLE_GENERATION: "title-generation",
+  TAB_GROUP_NAMING: "tab-group-naming",
   CONVERSATION_STARTERS_SIDEBAR_SYSTEM: "conversation-starters-sidebar-system",
   CONVERSATION_SUGGESTIONS_SIDEBAR_STARTER:
     "conversation-suggestions-sidebar-starter",
@@ -145,6 +190,7 @@ export const PURPOSES = Object.freeze({
   CHAT: "chat",
   SMART_FORM_FILL: "smart-form-fill",
   TITLE_GENERATION: "title-generation",
+  TAB_GROUP_NAMING: "auto-tab-grouping",
   CONVERSATION_STARTERS_SIDEBAR: "convo-starters-sidebar",
   MEMORY_GENERATION: "memory-generation",
   // agents
@@ -169,6 +215,7 @@ export const FEATURE_MAJOR_VERSIONS = Object.freeze({
   },
   [MODEL_FEATURES.SMART_FORM_FILL]: 1,
   [MODEL_FEATURES.TITLE_GENERATION]: 1,
+  [MODEL_FEATURES.TAB_GROUP_NAMING]: 1,
   [MODEL_FEATURES.CONVERSATION_STARTERS_SIDEBAR_SYSTEM]: 1,
   [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_SIDEBAR_STARTER]: 3,
   [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_FOLLOWUP]: 1,
@@ -463,8 +510,7 @@ export async function resolveChatModelChoice(
   }
 
   try {
-    const client = getRemoteClient();
-    const allRecords = await client.get();
+    const allRecords = await getRemoteRecords();
 
     const record = selectMainConfig(
       // CHAT model+params live in v2 kind:"params" records.

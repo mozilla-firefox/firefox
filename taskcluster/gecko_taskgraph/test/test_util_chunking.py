@@ -442,7 +442,9 @@ def test_get_manifests(suite, platform, mock_mozinfo):
             for m in items
         ])
     if "web-platform" in suite:
-        assert all([m.startswith("/") and m.count("/") <= 4 for m in items])
+        # Non-testharness wpt suites (e.g. reftest) are not subsuite-partitioned,
+        # so they include deeper manifests such as the webgpu CTS reftests dir.
+        assert all([m.startswith("/") for m in items])
 
 
 @pytest.mark.parametrize(
@@ -538,6 +540,31 @@ def test_get_manifests_wpt_general_excludes_subsuites(platform, mock_mozinfo):
         ), (
             f"{m} should have been excluded from the general web-platform-tests run, since it belongs to a subsuite"
         )
+
+
+@pytest.mark.parametrize(
+    "platform",
+    [
+        ("mac", "x86_64"),
+        ("win", "x86_64"),
+        ("linux", "x86_64"),
+    ],
+)
+def test_get_manifests_non_testharness_keeps_subsuites(platform, mock_mozinfo):
+    """A non-testharness wpt suite is not subsuite-partitioned, so it keeps
+    subsuite manifests such as canvas reftests (which regressed when they were
+    carved out of the reftest job)."""
+    mozinfo = mock_mozinfo(*platform)
+
+    loader = chunking.DefaultLoader([])
+    manifests = loader.get_manifests(
+        "web-platform-tests-reftest", frozenset(mozinfo.items())
+    )
+    active = manifests["active"]
+    assert active
+
+    # canvas reftests belong to a subsuite but must still run in the reftest job.
+    assert any(m.startswith("/html/canvas") for m in active)
 
 
 if __name__ == "__main__":

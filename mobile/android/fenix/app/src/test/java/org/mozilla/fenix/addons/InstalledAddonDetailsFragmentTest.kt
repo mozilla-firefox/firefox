@@ -11,6 +11,7 @@ import androidx.core.view.isVisible
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
 import com.google.android.material.materialswitch.MaterialSwitch
+import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.every
@@ -180,6 +181,136 @@ class InstalledAddonDetailsFragmentTest {
         fragment.bindEnableSwitch()
 
         verify { enableSwitch.isEnabled = false }
+    }
+
+    @Test
+    fun `GIVEN enabling fails WHEN tapping retry on the snackbar THEN the enable is attempted again`() {
+        val addon = mockAddon()
+        every { addon.isEnabled() } returns false
+        every { addon.isSupported() } returns true
+        every { addon.isDisabledAsUnsupported() } returns false
+        setUpFragmentForAddon(addon)
+        every {
+            addonManager.enableAddon(addon, EnableSource.USER, any(), any())
+        } answers { lastArg<(Throwable) -> Unit>().invoke(RuntimeException("boom")) }
+        val onRetry = captureSnackbarRetry()
+
+        fragment.toggleAddon(
+            switch = mockk(relaxed = true),
+            privateBrowsingSwitch = mockk(relaxed = true),
+            isChecked = true,
+        )
+
+        verify(exactly = 1) { addonManager.enableAddon(addon, EnableSource.USER, any(), any()) }
+        verify { fragment.showAddonFailureSnackbar(any(), any()) }
+
+        onRetry.captured.invoke()
+
+        verify(exactly = 2) { addonManager.enableAddon(addon, EnableSource.USER, any(), any()) }
+    }
+
+    @Test
+    fun `GIVEN enabling fails WHEN the addon is enabled again before tapping retry THEN the enable is not attempted again`() {
+        val addon = mockAddon()
+        every { addon.isEnabled() } returns false
+        every { addon.isSupported() } returns true
+        every { addon.isDisabledAsUnsupported() } returns false
+        setUpFragmentForAddon(addon)
+        every {
+            addonManager.enableAddon(addon, EnableSource.USER, any(), any())
+        } answers { lastArg<(Throwable) -> Unit>().invoke(RuntimeException("boom")) }
+        val onRetry = captureSnackbarRetry()
+
+        fragment.toggleAddon(
+            switch = mockk(relaxed = true),
+            privateBrowsingSwitch = mockk(relaxed = true),
+            isChecked = true,
+        )
+
+        verify(exactly = 1) { addonManager.enableAddon(addon, EnableSource.USER, any(), any()) }
+
+        every { addon.isEnabled() } returns true
+
+        onRetry.captured.invoke()
+
+        verify(exactly = 1) { addonManager.enableAddon(addon, EnableSource.USER, any(), any()) }
+    }
+
+    @Test
+    fun `GIVEN disabling fails WHEN tapping retry on the snackbar THEN the disable is attempted again`() {
+        val addon = mockAddon()
+        every { addon.isEnabled() } returns true
+        setUpFragmentForAddon(addon)
+        every {
+            addonManager.disableAddon(addon, any(), any(), any())
+        } answers { lastArg<(Throwable) -> Unit>().invoke(RuntimeException("boom")) }
+        val onRetry = captureSnackbarRetry()
+
+        fragment.toggleAddon(
+            switch = mockk(relaxed = true),
+            privateBrowsingSwitch = mockk(relaxed = true),
+            isChecked = false,
+        )
+
+        verify(exactly = 1) { addonManager.disableAddon(addon, any(), any(), any()) }
+        verify { fragment.showAddonFailureSnackbar(any(), any()) }
+
+        onRetry.captured.invoke()
+
+        verify(exactly = 2) { addonManager.disableAddon(addon, any(), any(), any()) }
+    }
+
+    @Test
+    fun `GIVEN an add-on with a settings page WHEN disabling it fails THEN the settings stay visible`() {
+        val addon = mockAddon()
+        every { addon.isEnabled() } returns true
+        setUpFragmentForAddon(addon)
+        every {
+            addonManager.disableAddon(addon, any(), any(), any())
+        } answers { lastArg<(Throwable) -> Unit>().invoke(RuntimeException("boom")) }
+        captureSnackbarRetry()
+
+        fragment.toggleAddon(
+            switch = mockk(relaxed = true),
+            privateBrowsingSwitch = mockk(relaxed = true),
+            isChecked = false,
+        )
+
+        assertTrue(fragment.binding.settings.isVisible)
+    }
+
+    @Test
+    fun `GIVEN uninstalling fails WHEN tapping retry on the snackbar THEN the uninstall is attempted again`() {
+        val addon = mockAddon()
+        setUpFragmentForAddon(addon)
+        every {
+            addonManager.uninstallAddon(addon, any(), any())
+        } answers { lastArg<(String, Throwable) -> Unit>().invoke("some-addon-id", RuntimeException("boom")) }
+        val onRetry = captureSnackbarRetry()
+        fragment.bindRemoveButton()
+
+        fragment.binding.removeAddOn.performClick()
+
+        verify(exactly = 1) { addonManager.uninstallAddon(addon, any(), any()) }
+        verify { fragment.showAddonFailureSnackbar(any(), any()) }
+
+        onRetry.captured.invoke()
+
+        verify(exactly = 2) { addonManager.uninstallAddon(addon, any(), any()) }
+    }
+
+    @Test
+    fun `GIVEN the fragment is detached WHEN tapping retry on the snackbar THEN the retry action is not run`() {
+        var retried = false
+        val guardedRetry = fragment.retryIfFragmentIsAttached { retried = true }
+
+        every { fragment.context } returns null
+        guardedRetry.invoke()
+        assertFalse(retried)
+
+        every { fragment.context } returns testContext
+        guardedRetry.invoke()
+        assertTrue(retried)
     }
 
     @Test
@@ -549,6 +680,24 @@ class InstalledAddonDetailsFragmentTest {
         every { addon.installedState } returns installedState
 
         return addon
+    }
+
+    private fun setUpFragmentForAddon(addon: Addon) {
+        every { fragment.addon } returns addon
+        every { fragment.context } returns testContext
+        every { fragment.provideAddonManager() } returns addonManager
+        fragment._binding =
+            FragmentInstalledAddOnDetailsBinding.inflate(
+                LayoutInflater.from(testContext),
+                mockk(relaxed = true),
+                false,
+            )
+    }
+
+    private fun captureSnackbarRetry(): CapturingSlot<() -> Unit> {
+        val onRetry = slot<() -> Unit>()
+        every { fragment.showAddonFailureSnackbar(any(), capture(onRetry)) } just Runs
+        return onRetry
     }
 
     companion object {

@@ -1,0 +1,39 @@
+# An SVGFE *backdrop* filter whose subregions must be MAPPED through the full
+# element -> backdrop-root relationship, not merely translated by its offset.
+#
+# The filtered element sits in a scale(2) reference frame, so element space and
+# backdrop-root space differ by a scale. This is the shape pdf.js produces: it
+# scales its text spans, so every find-in-page highlight's backdrop filter has a
+# scaling reference frame between it and the backdrop root.
+#
+# The subregion is authored away from the transform origin (at 100,100 in element
+# space, so 200,200 after the scale) because that is what makes the scale term
+# observable: a scale about the origin barely moves a subregion sitting at the
+# origin, but moves one at 100,100 by 100px. Applying only the ScaleOffset's
+# translation leaves the subregion at 100,100, its coverage no longer overlaps the
+# output, the filter is dropped entirely and the red backdrop shows through
+# unfiltered. See bug 1975275.
+root:
+  items:
+    - type: rect
+      color: red
+      bounds: [200, 200, 100, 100]
+    - type: reference-frame
+      bounds: [0, 0, 50, 50]
+      transform: scale(2)
+      transform-origin: [0, 0]
+      is-2d: true
+      items:
+        - type: backdrop-filter
+          bounds: [100, 100, 50, 50]
+          filters:
+            - svgfe: SourceGraphic
+            - svgfe: flood
+              linear: false
+              color: green
+              subregion: [100, 100, 50, 50]
+            - svgfe: compositeover
+              linear: false
+              subregion: [100, 100, 50, 50]
+              in: 1
+              in2: 0

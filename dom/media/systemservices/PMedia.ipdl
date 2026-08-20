@@ -11,7 +11,7 @@ include "mozilla/media/MediaChild.h";
 namespace mozilla {
 namespace media {
 
-[ManualDealloc, ChildImpl="Child", ParentImpl=virtual]
+[ManualDealloc, ChildImpl="mozilla::media::Child", ParentImpl=virtual]
 protocol PMedia
 {
   manager PContent;

@@ -995,7 +995,6 @@ class nsTextFrame : public nsIFrame {
     LineDecoration(const LineDecoration& aOther) = default;
 
     bool operator==(const LineDecoration& aOther) const = default;
-    bool operator!=(const LineDecoration& aOther) const = default;
   };
   struct TextDecorations {
     AutoTArray<LineDecoration, 1> mOverlines, mUnderlines, mStrikes;
@@ -1009,7 +1008,6 @@ class nsTextFrame : public nsIFrame {
     bool HasOverline() const { return !mOverlines.IsEmpty(); }
     bool HasStrikeout() const { return !mStrikes.IsEmpty(); }
     bool operator==(const TextDecorations& aOther) const = default;
-    bool operator!=(const TextDecorations& aOther) const = default;
   };
   enum TextDecorationColorResolution { eResolvedColors, eUnresolvedColors };
   void GetTextDecorations(nsPresContext* aPresContext,

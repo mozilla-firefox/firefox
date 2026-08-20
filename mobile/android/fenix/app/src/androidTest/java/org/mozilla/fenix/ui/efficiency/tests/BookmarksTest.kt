@@ -4,11 +4,17 @@
 
 package org.mozilla.fenix.ui.efficiency.tests
 
+import java.io.File
+import org.junit.After
 import org.junit.Ignore
 import org.junit.Test
+import org.mozilla.fenix.R
 import org.mozilla.fenix.customannotations.SmokeTest
+import org.mozilla.fenix.helpers.AppAndSystemHelper.stubFilePickerSelection
 import org.mozilla.fenix.helpers.Constants
+import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.helpers.MockBrowserDataHelper.createBookmarkItem
+import org.mozilla.fenix.helpers.MockBrowserDataHelper.createBookmarksHtmlFile
 import org.mozilla.fenix.helpers.MockBrowserDataHelper.generateBookmarkFolder
 import org.mozilla.fenix.helpers.TestAssetHelper.getGenericAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.htmlControlsFormAsset
@@ -24,6 +30,14 @@ class BookmarksTest : BaseTest() {
     // TODO (I. RIOS 3/20/2026): add to BaseTest for State Machine
     private val mockWebServer
         get() = fenixTestRule.mockWebServer
+
+    private var importedBookmarksFile: File? = null
+
+    @After
+    fun tearDownTempFileDirectory() {
+        importedBookmarksFile?.parentFile?.deleteRecursively()
+        importedBookmarksFile = null
+    }
 
     @Ignore("Covered by verifyNavigationReachability[0: BookmarksPage (TBD) — Navigation Reachability]")
     @Test
@@ -182,5 +196,28 @@ class BookmarksTest : BaseTest() {
             .mozClearAndEnterText(editedWebPage.url.toString(), BookmarksSelectors.EDIT_BOOKMARK_ITEM_URL_TEXT_FIELD)
             .mozClick(BookmarksSelectors.NAVIGATE_UP_BUTTON)
         on.bookmarks.navigateToPage().mozClick(BookmarksSelectors.BOOKMARK_TITLE_TEXT)
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/4227084
+    @SmokeTest
+    @Test
+    fun verifyEmptyBookmarksViewImportBookmarksTest() {
+        on.bookmarks
+            .navigateToPage()
+            .mozVerifyElementsByGroup("emptyBookmarksMenuView")
+            .mozClick(BookmarksSelectors.IMPORT_BOOKMARKS_BUTTON)
+            .mozVerify(BookmarksSelectors.IMPORT_MENU_BUTTON)
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/4227091
+    @SmokeTest
+    @Test
+    fun verifyBookmarksImportFromFileTest() {
+        val importedBookmarksFolder = getStringResource(R.string.bookmark_import_destination_default_name)
+        importedBookmarksFile = createBookmarksHtmlFile()
+        stubFilePickerSelection(importedBookmarksFile!!)
+
+        on.bookmarks.navigateToPage().mozVerifyElementsByGroup("emptyBookmarksMenuView")
+        on.bookmarks.importBookmarksFromFile().mozVerify(BookmarksSelectors.BOOKMARK_ITEM(importedBookmarksFolder))
     }
 }

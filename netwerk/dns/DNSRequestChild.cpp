@@ -480,7 +480,8 @@ void DNSRequestSender::StartRequest() {
   if (RefPtr<DNSRequestChild> child = mIPCActor->AsDNSRequestChild()) {
     if (XRE_IsContentProcess()) {
       mozilla::dom::ContentChild* cc =
-          static_cast<mozilla::dom::ContentChild*>(gNeckoChild->Manager());
+          mozilla::ipc::ActorCast<mozilla::dom::ContentChild>(
+              gNeckoChild->Manager());
       if (cc->IsShuttingDown()) {
         return;
       }

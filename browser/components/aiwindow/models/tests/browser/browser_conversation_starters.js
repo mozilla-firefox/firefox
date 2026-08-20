@@ -45,6 +45,16 @@ const { PURPOSES, MODEL_FEATURES } = ChromeUtils.importESModule(
 const { MESSAGE_LENGTH_THRESHOLD } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/memories/MemoriesChatSource.sys.mjs"
 );
+const { resolveUrlsForMemories, getDistanceThreshold } =
+  ChromeUtils.importESModule(
+    "moz-src:///browser/components/aiwindow/models/memories/MemoriesHistorySource.sys.mjs"
+  );
+const { getPlacesSemanticHistoryManager } = ChromeUtils.importESModule(
+  "resource://gre/modules/PlacesSemanticHistoryManager.sys.mjs"
+);
+const { PlacesTestUtils } = ChromeUtils.importESModule(
+  "resource://testing-common/PlacesTestUtils.sys.mjs"
+);
 
 const RESUME_ACTIVITY_TEST_TIME = Date.UTC(2026, 0, 1);
 
@@ -119,6 +129,10 @@ add_setup(async function setupResumeActivityConversationStarterTests() {
     set: [
       ["places.history.enabled", true],
       ["browser.privatebrowsing.autostart", false],
+      [
+        "browser.smartwindow.memories.resumeActivityUrlDistanceThreshold",
+        "0.9",
+      ],
     ],
   });
 
@@ -167,20 +181,22 @@ async function applyUrlHashOverrides(pages) {
 async function addResumeActivityTestMemories(memories) {
   const pages = memories.flatMap(memory => memory.pages).filter(Boolean);
   if (pages.length) {
-    await PlacesUtils.history.insertMany(
+    await PlacesTestUtils.addVisits(
       pages.map((page, index) => ({
-        ...page,
-        visits: [
-          {
-            date: new Date(
-              page.lastVisitDate ?? RESUME_ACTIVITY_TEST_TIME - index * 60_000
-            ),
-            transition: PlacesUtils.history.TRANSITIONS.LINK,
-          },
-        ],
+        url: page.url,
+        title: page.title,
+        visitDate: new Date(
+          page.lastVisitDate ?? RESUME_ACTIVITY_TEST_TIME - index * 60_000
+        ),
+        transition: PlacesUtils.history.TRANSITIONS.LINK,
       }))
     );
     await applyUrlHashOverrides(pages);
+    await waitForEmbeddings(
+      pages.map(
+        ({ url, urlHash }) => urlHash ?? PlacesUtils.history.hashURL(url)
+      )
+    );
   }
 
   const addedMemories = [];
@@ -255,6 +271,159 @@ async function cleanupResumeActivityTestMemories(addedMemories) {
     await PlacesUtils.history.clear();
   }
 }
+
+/**
+ * Mock engine embedding text as a bag of words, giving each distinct word its
+ * own dimension. Keying on the words rather than on the whole string means a
+ * change to the text a caller embeds shifts the distance.
+ */
+class MockMLEngine {
+  #embeddingSize;
+  #dimensions = new Map();
+
+  constructor(embeddingSize) {
+    this.#embeddingSize = embeddingSize;
+  }
+
+  async run(request) {
+    const texts = Array.isArray(request.args[0])
+      ? request.args[0]
+      : request.args;
+    return texts.map(text => this.#embed(text));
+  }
+
+  #embed(text) {
+    const vector = Array(this.#embeddingSize).fill(0);
+    for (const word of text.toLowerCase().match(/[a-z]+/g) ?? []) {
+      if (!this.#dimensions.has(word)) {
+        if (this.#dimensions.size === this.#embeddingSize) {
+          throw new Error(
+            `Test corpus exceeds ${this.#embeddingSize} distinct words`
+          );
+        }
+        this.#dimensions.set(word, this.#dimensions.size);
+      }
+      vector[this.#dimensions.get(word)] = 1;
+    }
+    return vector;
+  }
+}
+
+async function urlHashFor(url) {
+  return PlacesUtils.withConnectionWrapper("test-url-hash", async db => {
+    const rows = await db.execute(
+      "SELECT url_hash FROM moz_places WHERE url = :url",
+      { url }
+    );
+    return rows[0].getResultByName("url_hash");
+  });
+}
+
+function makeSemanticMemory(id, memory_summary, urlHashes, reasoning) {
+  return {
+    id,
+    memory_summary,
+    reasoning,
+    source_ids: { history_source_ids: urlHashes },
+  };
+}
+
+// Each summary shares exactly one word with its own page title and none with
+// the other, so a summary keeps its own page and rejects the other.
+const ALPHA_SUMMARY = "qqzz alpha probe";
+const BETA_SUMMARY = "qqzz beta probe";
+const ALPHA_URL = "https://alpha.moz.com/";
+const BETA_URL = "https://beta.moz.com/";
+
+// A summary sharing no word with either page title, so on its own it is out of
+// range of both and only a matching reasoning can bring a page back in.
+const UNRELATED_SUMMARY = "qqzz probe";
+const BETA_REASONING = "beta entry page";
+
+let sb;
+let semanticManager;
+let alphaHash;
+let betaHash;
+
+/**
+ * Waits until the semantic DB holds an embedding for every given URL hash, so
+ * the distance query has rows to score against.
+ *
+ * @param {Array<number>} urlHashes
+ */
+async function waitForEmbeddings(urlHashes) {
+  const wanted = [...new Set(urlHashes)];
+  const bindings = {};
+  const placeholders = wanted.map((urlHash, index) => {
+    bindings[`urlHash${index}`] = urlHash;
+    return `:urlHash${index}`;
+  });
+  const conn = await semanticManager.getConnection();
+  await TestUtils.waitForCondition(async () => {
+    const [row] = await conn.execute(
+      `SELECT COUNT(DISTINCT url_hash) AS indexed
+       FROM vec_history_mapping
+       WHERE url_hash IN (${placeholders.join(", ")})`,
+      bindings
+    );
+    return row.getResultByName("indexed") === wanted.length;
+  }, "Waiting for the seeded pages to be embedded");
+}
+
+/**
+ * Seeds the two scored pages and waits for them to be embedded.
+ */
+async function ensureSemanticPages() {
+  if (await PlacesUtils.history.fetch(ALPHA_URL)) {
+    return;
+  }
+
+  await PlacesTestUtils.addVisits([
+    { url: ALPHA_URL, title: "alpha entry page" },
+    { url: BETA_URL, title: "beta entry page" },
+  ]);
+  alphaHash = await urlHashFor(ALPHA_URL);
+  betaHash = await urlHashFor(BETA_URL);
+  await waitForEmbeddings([alphaHash, betaHash]);
+}
+
+add_setup(async function setupSemanticUrlResolutionTests() {
+  sb = sinon.createSandbox();
+
+  registerCleanupFunction(async () => {
+    sb.restore();
+    await semanticManager?.shutdown();
+    Services.prefs.clearUserPref("places.semanticHistory.initialized");
+    await SpecialPowers.popPrefEnv();
+  });
+
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.ml.enable", true],
+      ["places.semanticHistory.featureGate", true],
+      ["places.semanticHistory.smartwindow.featureGate", true],
+      ["browser.search.region", "US"],
+    ],
+  });
+
+  await PlacesUtils.history.clear();
+
+  await getPlacesSemanticHistoryManager().shutdown();
+
+  semanticManager = getPlacesSemanticHistoryManager(
+    { changeThresholdCount: 1, deferredTaskInterval: 100 },
+    true
+  );
+
+  sb.stub(semanticManager, "hasSufficientEntriesForSearching").resolves(true);
+  sb.stub(semanticManager, "isEnabledForSmartWindow").value(true);
+
+  await semanticManager.semanticDB.removeDatabaseFiles();
+  await semanticManager.getConnection();
+  semanticManager.embedder.setEngine(
+    new MockMLEngine(semanticManager.embedder.embeddingSize)
+  );
+});
 
 add_task(async function test_getMemoriesForResumeActivityConversationStarter() {
   const cases = [
@@ -600,6 +769,150 @@ add_task(async function test_generateResumeActivityConversationStarters() {
     await cleanupResumeActivityTestMemories(addedMemories);
   }
 });
+
+add_task(
+  async function test_generateResumeActivityConversationStarters_dropsMemoriesWithoutUrls() {
+    const unresolvableUrl = "https://example.com/unresolvable";
+    const testMemories = [
+      makeMemory("Resolvable memory", {
+        reasoning: "Resolvable reason",
+        frecency: 10,
+        pages: [
+          makePage("Resolvable page", {
+            url: "https://example.com/resolvable",
+          }),
+        ],
+      }),
+      makeMemory("Unresolvable memory", {
+        reasoning: "Unresolvable reason",
+        sources: [HISTORY, CONVERSATION],
+        frecency: 5,
+        pages: [makePage("Unresolvable page", { url: unresolvableUrl })],
+        chats: [makeChat("Unresolvable chat")],
+      }),
+    ];
+
+    let addedMemories = [];
+    try {
+      addedMemories = await addResumeActivityTestMemories(testMemories);
+      // The memory keeps its history source id, but the page it points at is
+      // gone from Places, so the id resolves to nothing.
+      await PlacesUtils.history.remove(unresolvableUrl);
+
+      Assert.deepEqual(
+        (await getMemoriesForResumeActivityConversationStarter(2)).map(
+          memory => memory.memory_summary
+        ),
+        ["Resolvable memory", "Unresolvable memory"],
+        "The selector should return both memories, before URL resolution"
+      );
+
+      const mockEngineManager = new MockEngineManager();
+
+      try {
+        const suggestionsPromise = generateResumeActivityConversationStarters();
+        const { request, respond } = await mockEngineManager.captureRequest({
+          purpose: PURPOSES.CHAT,
+        });
+        const userPrompt = request.args[1].content;
+        Assert.ok(
+          userPrompt.includes("memory_summary: Resolvable memory"),
+          "The prompt should include the memory whose URLs resolved"
+        );
+        for (const excludedContent of [
+          "memory_summary: Unresolvable memory",
+          "Unresolvable reason",
+          "Unresolvable page",
+          "Unresolvable chat",
+        ]) {
+          Assert.ok(
+            !userPrompt.includes(excludedContent),
+            `The prompt should exclude: ${excludedContent}`
+          );
+        }
+        Assert.ok(
+          userPrompt.includes("id: 0") && !userPrompt.includes("id: 1"),
+          "The only the memory with resolved URLs should remain, numbered from zero"
+        );
+
+        respond(
+          JSON.stringify([
+            { id: 0, headline: "Resolvable headline", status: "Resolvable" },
+            {
+              id: 1,
+              headline: "Unresolvable headline",
+              status: "Unresolvable",
+            },
+          ])
+        );
+        const suggestions = await suggestionsPromise;
+        Assert.deepEqual(
+          suggestions.map(({ memory, content }) => ({
+            memorySummary: memory.memory_summary,
+            content,
+          })),
+          [
+            {
+              memorySummary: "Resolvable memory",
+              content: {
+                headline: "Resolvable headline",
+                status: "Resolvable",
+                previewTabs: [
+                  {
+                    url: "https://example.com/resolvable",
+                    title: "Resolvable page",
+                  },
+                ],
+              },
+            },
+          ],
+          "The generator should drop memories left without URLs after resolution, and not reassign their card to another memory"
+        );
+      } finally {
+        mockEngineManager.cleanupMocks();
+      }
+    } finally {
+      await cleanupResumeActivityTestMemories(addedMemories);
+    }
+  }
+);
+
+add_task(
+  async function test_generateResumeActivityConversationStarters_noResolvableUrlsSkipsInference() {
+    const unresolvableUrl = "https://example.com/only-unresolvable";
+    const testMemories = [
+      makeMemory("Only unresolvable memory", {
+        frecency: 10,
+        pages: [makePage("Only unresolvable page", { url: unresolvableUrl })],
+      }),
+    ];
+
+    let addedMemories = [];
+    try {
+      addedMemories = await addResumeActivityTestMemories(testMemories);
+      await PlacesUtils.history.remove(unresolvableUrl);
+
+      const mockEngineManager = new MockEngineManager();
+
+      try {
+        Assert.deepEqual(
+          await generateResumeActivityConversationStarters(),
+          [],
+          "No memory with URLs should produce no cards"
+        );
+        Assert.equal(
+          mockEngineManager.engines.size,
+          0,
+          "No memory with URLs should not run inference"
+        );
+      } finally {
+        mockEngineManager.cleanupMocks();
+      }
+    } finally {
+      await cleanupResumeActivityTestMemories(addedMemories);
+    }
+  }
+);
 
 add_task(
   async function test_generateResumeActivityConversationStarters_longInputs() {
@@ -1052,3 +1365,284 @@ add_task(
     }
   }
 );
+
+/**
+ * Tests a call to resolveUrlsForMemories without the semantic filter
+ * returns all hashes.
+ */
+add_task(async function test_without_filter_resolves_every_hash() {
+  await ensureSemanticPages();
+
+  const resolved = await resolveUrlsForMemories([
+    makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash, betaHash]),
+  ]);
+
+  Assert.deepEqual(
+    [...resolved.keys()].sort(),
+    [alphaHash, betaHash].sort(),
+    "Both referenced URLs resolve when the filter is off"
+  );
+  Assert.equal(
+    resolved.get(alphaHash).url,
+    ALPHA_URL,
+    "Resolved entry carries its URL"
+  );
+  Assert.ok(
+    !("distance" in resolved.get(alphaHash)),
+    "Unfiltered path does not add a distance"
+  );
+});
+
+/**
+ * Tests a call to resolveUrlsForMemories with the semantic filter turned
+ * on returns just the close URL
+ */
+add_task(async function test_filter_keeps_urls_close_to_own_summary() {
+  await ensureSemanticPages();
+
+  const resolved = await resolveUrlsForMemories(
+    [makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash, betaHash])],
+    { filterBySummary: true }
+  );
+
+  Assert.deepEqual(
+    [...resolved.keys()],
+    [alphaHash],
+    "Only the URL close to this memory's summary is resolved"
+  );
+
+  const entry = resolved.get(alphaHash);
+  Assert.equal(entry.url, ALPHA_URL, "Resolved entry carries its URL");
+  Assert.equal(
+    entry.title,
+    "alpha entry page",
+    "Resolved entry carries a title"
+  );
+  Assert.greater(entry.lastVisitDate, 0, "Resolved entry carries a visit date");
+  Assert.ok(
+    entry.distance >= 0 && entry.distance <= getDistanceThreshold(),
+    `Resolved entry carries a distance within the threshold, got ${entry.distance}`
+  );
+});
+
+/**
+ * Tests that the URLs returned are the ones closest to each memory's summary.
+ */
+add_task(async function test_each_memory_is_scored_against_its_own_summary() {
+  await ensureSemanticPages();
+
+  const resolved = await resolveUrlsForMemories(
+    [
+      makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash, betaHash]),
+      makeSemanticMemory("m2", BETA_SUMMARY, [alphaHash, betaHash]),
+    ],
+    { filterBySummary: true }
+  );
+
+  Assert.deepEqual(
+    [...resolved.keys()].sort(),
+    [alphaHash, betaHash].sort(),
+    "Each memory contributes the URL matching its own summary"
+  );
+
+  const alphaOnly = await resolveUrlsForMemories(
+    [makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash, betaHash])],
+    { filterBySummary: true }
+  );
+  Assert.deepEqual(
+    [...alphaOnly.keys()],
+    [alphaHash],
+    "The alpha memory alone keeps only the alpha URL"
+  );
+
+  const betaOnly = await resolveUrlsForMemories(
+    [makeSemanticMemory("m2", BETA_SUMMARY, [alphaHash, betaHash])],
+    { filterBySummary: true }
+  );
+  Assert.deepEqual(
+    [...betaOnly.keys()],
+    [betaHash],
+    "The beta memory alone keeps only the beta URL"
+  );
+});
+
+/**
+ * Tests that a URL kept for more than one memory is returned once, scored by
+ * whichever memory it sits closest to.
+ */
+add_task(async function test_shared_url_resolves_once_at_closest_distance() {
+  await ensureSemanticPages();
+
+  const farOnly = await resolveUrlsForMemories(
+    [makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash])],
+    { filterBySummary: true }
+  );
+
+  const shared = await resolveUrlsForMemories(
+    [
+      makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash]),
+      makeSemanticMemory("m2", "alpha entry page", [alphaHash]),
+    ],
+    { filterBySummary: true }
+  );
+
+  Assert.deepEqual(
+    [...shared.keys()],
+    [alphaHash],
+    "A URL shared by several memories is returned once"
+  );
+  Assert.less(
+    shared.get(alphaHash).distance,
+    farOnly.get(alphaHash).distance,
+    "The shared entry keeps the closest of the two memories' distances"
+  );
+});
+
+/**
+ * Tests that resolveUrlsForMemories respected distanceThreshold overrides.
+ */
+add_task(async function test_explicit_threshold_overrides_default() {
+  await ensureSemanticPages();
+
+  const permissive = await resolveUrlsForMemories(
+    [makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash, betaHash])],
+    { filterBySummary: true, distanceThreshold: 2 }
+  );
+
+  Assert.deepEqual(
+    [...permissive.keys()],
+    [alphaHash, betaHash],
+    "A permissive threshold keeps both URLs, ordered closest first"
+  );
+
+  const strict = await resolveUrlsForMemories(
+    [makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash, betaHash])],
+    { filterBySummary: true, distanceThreshold: 0 }
+  );
+
+  Assert.equal(strict.size, 0, "A zero threshold filters everything out");
+});
+
+/**
+ * Tests that including memory reasoning in the embedded text changes
+ * the URLs resolveUrlsForMemories returns.
+ */
+add_task(async function test_reasoning_is_part_of_the_scored_text() {
+  await ensureSemanticPages();
+
+  const summaryOnly = await resolveUrlsForMemories(
+    [makeSemanticMemory("m1", UNRELATED_SUMMARY, [betaHash])],
+    { filterBySummary: true }
+  );
+
+  Assert.equal(
+    summaryOnly.size,
+    0,
+    "The summary alone scores the page out of range"
+  );
+
+  const withReasoning = await resolveUrlsForMemories(
+    [makeSemanticMemory("m2", UNRELATED_SUMMARY, [betaHash], BETA_REASONING)],
+    { filterBySummary: true }
+  );
+
+  Assert.deepEqual(
+    [...withReasoning.keys()],
+    [betaHash],
+    "The reasoning is scored alongside the summary, bringing the page in range"
+  );
+});
+
+/**
+ * Tests that resolveUrlsForMemories skips memories without summaries.
+ */
+add_task(async function test_memory_without_summary_is_skipped() {
+  await ensureSemanticPages();
+
+  const resolved = await resolveUrlsForMemories(
+    [
+      makeSemanticMemory("m1", "   ", [alphaHash]),
+      makeSemanticMemory("m2", BETA_SUMMARY, [betaHash]),
+    ],
+    { filterBySummary: true }
+  );
+
+  Assert.deepEqual(
+    [...resolved.keys()],
+    [betaHash],
+    "A memory with a blank summary cannot be scored, so its URLs are omitted"
+  );
+});
+
+/**
+ * Tests resolveUrlsForMemories falls back to the unfiltered URLs when the
+ * profile cannot run semantic scoring at all.
+ */
+add_task(async function test_semantic_unavailable_falls_back_to_unfiltered() {
+  await ensureSemanticPages();
+
+  sb.stub(semanticManager, "isEnabledForSmartWindow").value(false);
+
+  try {
+    const resolved = await resolveUrlsForMemories(
+      [makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash, betaHash])],
+      { filterBySummary: true }
+    );
+
+    Assert.deepEqual(
+      [...resolved.keys()].sort(),
+      [alphaHash, betaHash].sort(),
+      "Scoring cannot run, so every referenced URL resolves rather than none"
+    );
+    Assert.ok(
+      !("distance" in resolved.get(alphaHash)),
+      "The fallback entries come from the unfiltered path, so carry no distance"
+    );
+  } finally {
+    sb.stub(semanticManager, "isEnabledForSmartWindow").value(true);
+  }
+});
+
+/**
+ * Tests that an empty scoring result is distinguished from scoring being
+ * unavailable: a memory whose URLs are all too far away resolves to nothing
+ * rather than falling back to the unfiltered URLs.
+ */
+add_task(async function test_empty_scoring_result_does_not_fall_back() {
+  await ensureSemanticPages();
+
+  const resolved = await resolveUrlsForMemories(
+    [makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash, betaHash])],
+    { filterBySummary: true, distanceThreshold: 0 }
+  );
+
+  Assert.equal(
+    resolved.size,
+    0,
+    "Scoring ran and kept nothing, which must not be read as unavailable"
+  );
+});
+
+/**
+ * Tests resolveUrlsForMemories returns nothing when places is disabled.
+ */
+add_task(async function test_history_disabled_resolves_nothing() {
+  await ensureSemanticPages();
+
+  Services.prefs.setBoolPref("places.history.enabled", false);
+
+  try {
+    const resolved = await resolveUrlsForMemories(
+      [makeSemanticMemory("m1", ALPHA_SUMMARY, [alphaHash])],
+      { filterBySummary: true }
+    );
+
+    Assert.equal(
+      resolved.size,
+      0,
+      "The history pref gate still applies when filtering"
+    );
+  } finally {
+    Services.prefs.clearUserPref("places.history.enabled");
+  }
+});

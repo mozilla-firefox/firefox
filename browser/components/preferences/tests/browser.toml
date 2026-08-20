@@ -70,11 +70,6 @@ run-if = ["os == 'mac'"]
 
 ["browser_subdialogs.js"]
 support-files = ["subdialog.xhtml", "subdialog2.xhtml"]
-skip-if = [
-  "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && nova", # Bug 2057850
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && nova", # Bug 2057850
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && nova", # Bug 2057850
-]
 
 ["browser_tabs_open_external_next_to_active_tab.js"]
 

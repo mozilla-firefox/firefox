@@ -49,6 +49,12 @@ about-private-browsing-pin-promo-link-text = { PLATFORM() ->
 }
 about-private-browsing-pin-promo-title = No saved cookies or history, right from your desktop. Browse like no one’s watching.
 
+## Strings used in a promotion message for Firefox Relay
+
+about-private-browsing-relay-promo-header = Help prevent inbox spam with email masks
+about-private-browsing-relay-promo-title = Hide your real address with an email mask when you sign up, shop, or share it online.
+about-private-browsing-relay-promo-link-text = Try email masks
+
 ## Strings for the info section of about:privatebrowsing
 
 about-private-browsing-felt-privacy-v1-info-header = Leave no traces on this device

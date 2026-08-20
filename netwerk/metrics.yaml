@@ -290,13 +290,14 @@ networking:
       Counts cookies loaded from the DB grouped by validation result.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1972513
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064977
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1972513
     notification_emails:
       - necko@mozilla.com
       - edgul@mozilla.com
       - baku@mozilla.com
-    expires: 157
+    expires: 167
     labels:
       - eOK
       - eRejectedEmptyNameAndValue
@@ -935,6 +936,7 @@ networking:
      The upload throughput for http/3 request size between 1MB and 10MB. Measured in megabits per second, Mbps.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2003794
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2003794
     data_sensitivity:
@@ -942,7 +944,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
 
   http_3_upload_throughput_10_50:
     type: custom_distribution
@@ -1160,6 +1162,7 @@ networking:
       HTTP3: spurious congestion event to loss induced congestion event ratio (10000 scaling factor).
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1992148
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1992148
     data_sensitivity:
@@ -1167,7 +1170,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
 
   http_3_slow_start_exited:
     type: labeled_counter
@@ -1175,6 +1178,7 @@ networking:
       Counts whether an HTTP3 connections exited slow start.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2004717
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2004717
     data_sensitivity:
@@ -1182,7 +1186,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - exited
       - not_exited
@@ -1193,6 +1197,7 @@ networking:
       Counts whether an HTTP3 connections exited slow start. Is filtered against connections that never grew past the initial congestion window, i.e. only records those that did see growth. Co-exists with http_3_slow_start_exited which is not filtered and also records for connections that never grew the congestion window or never sent data.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
     data_sensitivity:
@@ -1200,7 +1205,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - exited
       - not_exited
@@ -1230,6 +1235,7 @@ networking:
       Records if slow start was exited heuristically or because of a congestion event. Can be used to measure how good an algorithm is at detecting slow start exit before loss occurs. Only records for connections that ever saw congestion window growth.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
     data_sensitivity:
@@ -1237,7 +1243,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - ce
       - heuristic
@@ -1254,6 +1260,7 @@ networking:
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2021867
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2021867
     data_sensitivity:
@@ -1261,7 +1268,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - ce_exit
       - heuristic_exit
@@ -1277,6 +1284,7 @@ networking:
       Only recorded for connections that exited slow start and saw congestion window growth. Is used to approximate accuracy of slow start exit per connection. The labels separate slow start exit reasons, because congestion event and heuristic based exits are fundamentally different cases that would obscure each other if mixed. Acts as an alternative measure to http_3_slow_start_exit_accuracy, which uses the final congestion window instead of w_max.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
     data_sensitivity:
@@ -1284,7 +1292,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - ce_exit
       - heuristic_exit
@@ -1296,6 +1304,7 @@ networking:
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2021867
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2021867
     data_sensitivity:
@@ -1303,7 +1312,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - overshoot
       - undershoot
@@ -1315,6 +1324,7 @@ networking:
       HTTP3: Records if a heuristic-based slow start exit undershot, overshot or exactly matches the congestion window size when closing the connection. Is used to look for systematic tendencies in slow start exit algorithm accuracy direction. Only records for connections that saw congestion window growth.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
     data_sensitivity:
@@ -1322,7 +1332,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - overshoot
       - undershoot
@@ -1338,6 +1348,7 @@ networking:
       Measures how many CSS (Conservative Slow Start) rounds were finished when using HyStart++. Only records for connections that saw congestion window growth. A count that is higher than the RFC threshold value of 5 rounds that are completed by design points at spurious CSS entries and time spent throttling congestion window growth rate during those extra CSS rounds. Values below 5 mean that slow start was not exited (heuristically) on that connection.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
     data_sensitivity:
@@ -1345,7 +1356,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - exited_hystart
       - exited_ce
@@ -1361,6 +1372,7 @@ networking:
       Measures how often CSS (Conservative Slow Start) was entered when using HyStart++. Only records for connections that saw congestion window growth. A jitter-free connection should only see 1 CSS entry. A high value points at spurious CSS entries mid-round, i.e. CSS is entered and exited within 1 RTT, which results time spent throttling congestion window growth rate during those extra ACKs where CSS was active.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
     data_sensitivity:
@@ -1368,7 +1380,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - exited_hystart
       - exited_ce
@@ -1381,6 +1393,7 @@ networking:
       HTTP3: Records the BDP estimate with empty buffers at slow start exit when using SEARCH. The SEARCH draft suggests a cwnd drain-phase using this as a target value; We record it for evaluation without implementing the drain-phase.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
     data_sensitivity:
@@ -1388,7 +1401,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
 
   http_3_search_full_buffer_bdp_estimate:
     type: memory_distribution
@@ -1397,6 +1410,7 @@ networking:
       HTTP3: Records the BDP estimate with full buffers at slow start exit when using SEARCH. The SEARCH draft suggests a cwnd drain-phase using the empty-buffer version of this as a target value; We record this alternative for evaluation without implementing the drain-phase.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
     data_sensitivity:
@@ -1404,7 +1418,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
 
   http_3_search_lookback_bins:
     type: custom_distribution
@@ -1416,6 +1430,7 @@ networking:
       HTTP3: Tracks the per connection maximum of lookback bins needed when RTT inflation prevents SEARCH from evaluating. Helps determine if the EXTRA_BINS constant value is sufficient.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
     data_sensitivity:
@@ -1423,7 +1438,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
 
   http_3_search_rtt_inflated:
     type: labeled_counter
@@ -1431,6 +1446,7 @@ networking:
       HTTP3: Tracks whether a connection couldn't run the SEARCH evaluation because the RTT inflated past the point where there wasn't enough data for lookback.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
     data_sensitivity:
@@ -1438,7 +1454,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - inflated
       - never_inflated
@@ -1455,6 +1471,7 @@ networking:
       The bucket with the 'exited_ce' label is of special interest, since those are connections that then ended up exiting slow start with loss.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
     data_sensitivity:
@@ -1462,7 +1479,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - exited_search
       - exited_ce
@@ -1478,6 +1495,7 @@ networking:
       HTTP3: Records how many resets due to stale data happened for each SEARCH connection. Is labeled by slow start outcome to help with evaluation (i.e. no resets + not_exited makes sense, since the connection might've been very short).
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
     data_sensitivity:
@@ -1485,7 +1503,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - exited_search
       - exited_ce
@@ -1501,6 +1519,7 @@ networking:
       HTTP3: Tracks the maximum number of passed bins for SEARCH connections that had at least one reset due to stale data. Can help evaluate the aggressiveness of the reset mechanism. Starts at 11, because that is the first value that would trigger a reset.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
     data_sensitivity:
@@ -1508,7 +1527,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
 
   http_3_search_zero_bytes_sent:
     type: labeled_custom_distribution
@@ -1520,6 +1539,7 @@ networking:
       HTTP3: Records how often SEARCH observes zero bytes sent in the previous RTT. Provides insight into app-limited behavior. Is labeled by slow start outcome to help reason about results.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
     data_sensitivity:
@@ -1527,7 +1547,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - exited_search
       - exited_ce
@@ -1546,6 +1566,7 @@ networking:
       inflated relative to the minimum path RTT.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
     data_sensitivity:
@@ -1553,7 +1574,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
 
   http_3_search_first_rtt_vs_second_rtt:
     type: custom_distribution
@@ -1568,6 +1589,7 @@ networking:
       instead of the first would improve SEARCH initialization.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2039381
     data_sensitivity:
@@ -1575,7 +1597,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
 
   http_3_congestion_window_growth:
     type: labeled_counter
@@ -1630,6 +1652,7 @@ networking:
       HTTP3: Cubic's w_max parameter value in bytes at connection close. Only records connections that grew past the initial congestion window and set w_max. The parameter stores the congestion window prior to the last congestion event, i.e. the window size at which congestion occurred. Can be used to approximate a path's capacity.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024352
     data_sensitivity:
@@ -1637,7 +1660,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
 
   http_3_rtt:
     type: custom_distribution
@@ -1709,6 +1732,7 @@ networking:
       HTTP3: Records how many congestion events a connection has, with spurious congestion events filtered out. A max range of 180 still gives high granularity in the lower buckets while letting us confirm if we ever actually see connections having very high congestion event counts.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2021867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064979
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2021867
     data_sensitivity:
@@ -1716,7 +1740,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
 
   http_3_congestion_event_reason:
     type: labeled_counter
@@ -1724,6 +1748,7 @@ networking:
       The type of signal that caused a congestion event in Firefox's QUIC stack.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2004031
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064981
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2004031
     data_sensitivity:
@@ -1731,7 +1756,7 @@ networking:
     notification_emails:
       - necko@mozilla.com
       - omansfeld@mozilla.com
-    expires: 157
+    expires: 166
     labels:
       - loss
       - ecn-ce
@@ -2189,9 +2214,6 @@ networking:
     type: dual_labeled_counter
     description: >
       Upgrading display content Channel Disposition
-
-      This metric was generated to correspond to the Legacy Telemetry
-      categorical histogram HTTP_CHANNEL_DISPOSITION_UPGRADE.
     dual_labels:
       key:
         description: No static keys unfortunately.
@@ -2236,9 +2258,6 @@ networking:
     type: dual_labeled_counter
     description: >
       Successfully started HTTP channels when HTTP3 is used
-
-      This metric was generated to correspond to the Legacy Telemetry boolean
-      histogram HTTP3_CHANNEL_ONSTART_SUCCESS.
     dual_labels:
       key:
         labels:
@@ -2717,9 +2736,6 @@ networking:
     description: >
       Time spent blocked in PR_Close when we are not shutting down and there has
       been niether a network nor an offline state change in the last 60s (ms).
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram PRCLOSE_UDP_BLOCKING_TIME_NORMAL.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1944631
@@ -2734,9 +2750,6 @@ networking:
     type: timing_distribution
     description: >
       Time spent blocked in PR_Close during a shutdown (ms).
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram PRCLOSE_UDP_BLOCKING_TIME_SHUTDOWN.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1944631
@@ -2752,9 +2765,6 @@ networking:
     description: >
       Time spent blocked in PR_Close when there has been the connectivity change
       in the last 60s (ms).
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram PRCLOSE_UDP_BLOCKING_TIME_CONNECTIVITY_CHANGE.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1944631
@@ -2769,9 +2779,6 @@ networking:
     description: >
       Time spent blocked in PR_Close when there has been a link change in the
       last 60s (ms).
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram PRCLOSE_UDP_BLOCKING_TIME_LINK_CHANGE.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1944631
@@ -2787,9 +2794,6 @@ networking:
     description: >
       Time spent blocked in PR_Close when the offline state has changed in the
       last 60s (ms).
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram PRCLOSE_UDP_BLOCKING_TIME_OFFLINE.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1944631
@@ -2806,8 +2810,6 @@ network.dns:
     description: >
       This telemetry records the status of the TRR confirmation across.
       The value of the event is one of:   "ok"   "trying"
-      This event was generated to correspond to the Legacy Telemetry event
-      network.dns.trrConfirmation#context.
     bugs:
       - https://bugzil.la/1691408
       - https://bugzil.la/1694949
@@ -2822,9 +2824,7 @@ network.dns:
     extra_keys:
       value:
         description: >
-          The `value` of the event. Mirrors to the Legacy Telemetry
-          event's `value` parameter.
-          The `ConfirmationState`.
+          The `value` of the event: `ConfirmationState`.
         type: quantity
       trigger:
         description: >
@@ -2905,9 +2905,6 @@ network.cookies:
     type: timing_distribution
     description: >
       Time spent on cookie DB open with readahead (ms)
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram MOZ_SQLITE_COOKIES_OPEN_READAHEAD_MS.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1950710
@@ -2918,32 +2915,12 @@ network.cookies:
       - necko@mozilla.com
     expires: never
 
-  open_error:
-    type: labeled_counter
-    description: >
-      Counts the number of times the cookie DB failed to open at startup,
-      labeled by nsresult error name. Used to diagnose cases where the
-      cookie DB may be incorrectly wiped due to transient I/O errors
-      rather than actual corruption.
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1972382
-    data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1972382
-    data_sensitivity:
-      - technical
-    notification_emails:
-      - necko@mozilla.com
-    expires: 157
-
 network:
   id:
     type: custom_distribution
     description: >
       Network identification (0=None, 1=New Ipv4, 2=Same, 3=New IPv6, 4=New
       dual)
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram NETWORK_ID2.
     range_min: 0
     range_max: 6
     bucket_count: 7
@@ -2964,9 +2941,6 @@ network:
     description: >
       Network ID presence when the network connectivity checker reports that we
       have connectivity
-
-      This metric was generated to correspond to the Legacy Telemetry
-      categorical histogram NETWORK_ID_ONLINE.
     labels:
       - absent
       - present
@@ -2983,9 +2957,6 @@ network:
     description: >
       Maximum number of concurrent threads reached during a given download
       session
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram BACKGROUNDFILESAVER_THREAD_COUNT.
     range_min: 0
     range_max: 21
     bucket_count: 22
@@ -3005,9 +2976,6 @@ network:
       Count the number of 0) successful connections to an ipv4 address, 1)
       failed connection an ipv4 address, 2) successful connection to an ipv6
       address and 3) failed connections to an ipv6 address.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram IPV4_AND_IPV6_ADDRESS_CONNECTIVITY.
     range_min: 0
     range_max: 4
     bucket_count: 5
@@ -3025,9 +2993,6 @@ network:
     description: >
       Ratio of used and unused resources preloaded with link rel=preload tag or
       response header, broken down by supported resource type.
-
-      This metric was generated to correspond to the Legacy Telemetry
-      categorical histogram REL_PRELOAD_MISS_RATIO.
     labels:
       - TYPE_SCRIPT_USED
       - TYPE_SCRIPT_UNUSED

@@ -124,7 +124,6 @@ struct AspectRatio {
       const LogicalSize& aContentBoxSizeToBoxSizingAdjust) const;
 
   bool operator==(const AspectRatio&) const = default;
-  bool operator!=(const AspectRatio&) const = default;
 
   bool operator<(const AspectRatio& aOther) const {
     MOZ_ASSERT(

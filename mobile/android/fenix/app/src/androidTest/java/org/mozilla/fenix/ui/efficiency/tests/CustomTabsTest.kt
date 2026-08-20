@@ -13,11 +13,17 @@ import org.mozilla.fenix.helpers.TestAssetHelper.downloadPageAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.getGenericAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.navigablePageStartAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.navigablePageTargetAsset
+import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeLong
 import org.mozilla.fenix.ui.efficiency.helpers.BaseTest
+import org.mozilla.fenix.ui.efficiency.selectors.BrowserPageSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.CustomTabsSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.DownloadsSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.FindInPageSelectors
+import org.mozilla.fenix.ui.efficiency.selectors.MainMenuSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.NotificationSelectors
+import org.mozilla.fenix.ui.efficiency.selectors.SettingsPasswordsSelectors
+import org.mozilla.fenix.ui.efficiency.selectors.SettingsSavedPasswordsSelectors
+import org.mozilla.fenix.ui.efficiency.selectors.SettingsSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.TabHistorySelectors
 import org.mozilla.fenix.ui.efficiency.selectors.ToolbarSelectors
 
@@ -164,5 +170,78 @@ class CustomTabsTest : BaseTest() {
             .mozVerify(TabHistorySelectors.TAB_HISTORY_ITEM(targetPage.url.toString()))
         // Keeps the test self-contained rather than handing the next one an open sheet.
         on.tabHistory.dismissTabHistorySheet()
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3080099
+    // Converted from legacy MainMenuTest.verifyTheMainMenuShareButtonFromCustomTabTest
+    // @SmokeTest even though the legacy test is a plain @Test: the case is in the TestRail smoke pool, as
+    // are its three already-converted custom-tab siblings, so the missing legacy annotation is an oversight.
+    @SmokeTest
+    @Test
+    fun verifyTheMainMenuShareButtonFromCustomTabTest() {
+        val customTabPage = mockWebServer.getGenericAsset(1)
+
+        on.customTabs.launchCustomTab(customTabPage.url.toString(), "TestMenuItem")
+        // Legacy shared straight after launch, without waiting for the page. The share sheet renders either
+        // way, so this is a stabiliser rather than a new assertion: it keeps the sheet's content derived from
+        // the intended page instead of whatever the tab happened to be showing.
+        on.customTabs.verifyWebContent(customTabPage.content)
+        on.customTabs.openMainMenu().mozClick(CustomTabsSelectors.MENU_SHARE)
+        on.shareOverlay.mozVerifyElementsByGroup("shareTabLayout")
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/249659
+    // Converted from legacy CustomTabsTest.verifyLoginSaveInCustomTabTest
+    @SmokeTest
+    @Test
+    fun verifyLoginSaveInCustomTabTest() {
+        on.customTabs.launchCustomTab(LOGIN_FORM_URL, "TestMenuItem")
+
+        // The login-form helpers live on BrowserPage, but they act on device-wide web-id selectors, so they
+        // work just as well inside a custom tab — the same reason CustomTabsPage.clickWebContent delegates
+        // to BrowserPageSelectors. Reused rather than reimplemented because setLoginFormCredentials carries
+        // retry logic for a form that can reload and silently drop what was typed.
+        on.browserPage
+            .setLoginFormCredentials(LOGIN_USERNAME, LOGIN_PASSWORD)
+            .clickSubmitLoginButton()
+            .verifySaveLoginPromptIsDisplayed()
+            // The legacy test stopped at the prompt's container, which its own preceding wait had already
+            // required — so that assertion could not fail on its own. Asserting the Save button as well
+            // makes the prompt actually usable, which is what the next click depends on.
+            .mozVerify(BrowserPageSelectors.SAVE_LOGIN_PROMPT_CONFIRM_BUTTON)
+            .mozClick(BrowserPageSelectors.SAVE_LOGIN_PROMPT_CONFIRM_BUTTON)
+
+        // Re-enter through an external link, as legacy does. Legacy asserted nothing about the result, so a
+        // failure here surfaced much later; assert the browser took over instead. We check ENGINE_VIEW rather
+        // than the web username field: the external-link intent brings the backgrounded browser to the front
+        // through an activity switch, and GeckoView's web-content accessibility nodes are not reliably rebuilt
+        // afterwards (the page loads and the toolbar renders, but the form's a11y ids stay absent), so a
+        // web-field assertion is flaky here. ENGINE_VIEW is the layout-invariant "browser is loaded" signal.
+        on.customTabs.openUrlFromExternalLink(LOGIN_FORM_URL)
+        on.browserPage.mozVerify(BrowserPageSelectors.ENGINE_VIEW, timeout = waitingTimeLong)
+
+        // Driven click-by-click instead of on.settingsSavedPasswords.navigateToPage(): every registered edge
+        // to that page ends in ClickIfPresent(LOGINS_SECURITY_DIALOG_LATER_BUTTON), which would dismiss the
+        // security dialog before it could be asserted — silently dropping a legacy assertion.
+        on.browserPage
+            .mozClick(BrowserPageSelectors.MAIN_MENU_BUTTON)
+            .mozClick(MainMenuSelectors.SETTINGS_BUTTON)
+            .mozClick(SettingsSelectors.PASSWORDS_BUTTON)
+            .mozClick(SettingsPasswordsSelectors.SAVED_PASSWORDS_OPTION)
+            .mozVerify(SettingsSavedPasswordsSelectors.LOGINS_SECURITY_DIALOG_TITLE)
+            .mozClick(SettingsSavedPasswordsSelectors.LOGINS_SECURITY_DIALOG_LATER_BUTTON)
+
+        // Scoped to the saved-passwords list. Legacy used a device-wide By.text wait, which the origin row
+        // on the same screen could also have satisfied — and which was a wait, not an assertion.
+        on.settingsSavedPasswords.mozVerify(SettingsSavedPasswordsSelectors.SAVED_LOGIN_ENTRY(LOGIN_USERNAME))
+    }
+
+    private companion object {
+        // A live external page, as in the legacy test and the converted LoginsTest; the local
+        // password.html asset is not equivalent (it pre-fills a different username and randomises the
+        // password, so it cannot cover these credentials).
+        const val LOGIN_FORM_URL = "https://mozilla-mobile.github.io/testapp/loginForm"
+        const val LOGIN_USERNAME = "mozilla"
+        const val LOGIN_PASSWORD = "firefox"
     }
 }

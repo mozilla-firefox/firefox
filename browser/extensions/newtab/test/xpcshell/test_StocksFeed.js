@@ -182,8 +182,13 @@ add_task(async function test_onPrefChangedAction_enable_disable_reenable() {
   Assert.equal(fetchStub.callCount, 1, "fetched once after enabling");
   Assert.equal(
     feed.store.dispatch.callCount,
-    1,
-    "dispatched once after enabling"
+    2,
+    "dispatches the default update and the watchlist update after enabling"
+  );
+  Assert.equal(
+    feed.store.dispatch.getCall(0).args[0].type,
+    actionTypes.WIDGETS_STOCKS_UPDATE,
+    "the first dispatch is the default ticker update"
   );
 
   enabled = false;
@@ -663,8 +668,16 @@ add_task(async function test_expire_cache_clears_snapshot_and_refetches() {
   });
 
   Assert.ok(setSpy.calledWith("stocks", {}), "clears the saved snapshot");
+  Assert.ok(
+    setSpy.calledWith("stocksWatchlist", {}),
+    "clears the watchlist snapshot too"
+  );
   Assert.equal(fetchStub.callCount, 1, "refetches after expiring the cache");
-  const [update] = feed.store.dispatch.getCalls().at(-1).args;
+  const update = feed.store.dispatch
+    .getCalls()
+    .map(c => c.args[0])
+    .reverse()
+    .find(a => a.type === actionTypes.WIDGETS_STOCKS_UPDATE);
   Assert.equal(update.data.error, true, "a failing refetch shows the error");
   Assert.deepEqual(update.data.tickers, [], "old tickers are cleared");
   sandbox.restore();
@@ -737,5 +750,808 @@ add_task(async function test_success_cancels_pending_retry() {
     "the later success cancels the pending retry"
   );
   Assert.equal(feed.retryTimer, null, "the retry timer is reset after success");
+  sandbox.restore();
+});
+
+add_task(async function test_ensureMerinoClient_reuses_client() {
+  const sandbox = sinon.createSandbox();
+  const feed = new StocksFeed();
+  const client = { name: "TEST", fetch: sinon.stub() };
+  const clientStub = sandbox.stub(feed, "MerinoClient").returns(client);
+  Assert.equal(
+    feed.ensureMerinoClient(),
+    client,
+    "creates and returns a client"
+  );
+  Assert.equal(feed.ensureMerinoClient(), client, "reuses the existing client");
+  Assert.equal(clientStub.callCount, 1, "does not create a second client");
+  sandbox.restore();
+});
+
+add_task(async function test_fetchWatchlistSymbol_dollar_then_bare() {
+  const sandbox = sinon.createSandbox();
+  const feed = new StocksFeed();
+  feed.merino = { name: "TEST" };
+  const helper = sandbox.stub(feed, "_fetchHelper");
+  helper.withArgs("$AAPL").resolves([{ ticker: "AAPL", name: "Apple" }]);
+  Assert.deepEqual(
+    await feed._fetchWatchlistSymbol("AAPL"),
+    { ticker: "AAPL", name: "Apple" },
+    "resolves via the dollar form"
+  );
+  helper.withArgs("$BRK.B").resolves([]);
+  helper.withArgs("BRK.B").resolves([{ ticker: "BRK.B", name: "Berkshire" }]);
+  Assert.deepEqual(
+    await feed._fetchWatchlistSymbol("BRK.B"),
+    { ticker: "BRK.B", name: "Berkshire" },
+    "falls back to the bare form for dotted symbols"
+  );
+  helper.withArgs("$ZZZZ").resolves([]);
+  helper.withArgs("ZZZZ").resolves([]);
+  Assert.strictEqual(
+    await feed._fetchWatchlistSymbol("ZZZZ"),
+    null,
+    "returns null when nothing resolves"
+  );
+  sandbox.restore();
+});
+
+function makeWatchlistFeed(sandbox, { saved = [], tickers = [] } = {}) {
+  const feed = new StocksFeed();
+  feed.merino = { name: "TEST" };
+  feed.tickers = tickers;
+  feed.store = {
+    dispatch: sinon.spy(),
+    getState: () => ({ Prefs: { values: {} } }),
+  };
+  sandbox.stub(feed, "getSavedWatchlistSymbols").returns(saved);
+  sandbox.stub(feed, "_writeWatchlistCache").resolves();
+  sandbox.stub(feed, "ensureMerinoClient").returns({ name: "TEST" });
+  return feed;
+}
+
+add_task(async function test_reconcile_fetches_and_broadcasts_full_snapshot() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeWatchlistFeed(sandbox, { saved: ["AAPL"], tickers: [] });
+  sandbox
+    .stub(feed, "_fetchWatchlistSymbol")
+    .withArgs("AAPL")
+    .resolves({ ticker: "AAPL", name: "Apple" });
+  await feed.reconcileWatchlist({ full: true });
+  Assert.deepEqual(
+    feed.watchlistTickers.map(t => t.ticker),
+    ["AAPL"],
+    "the desired symbol is fetched into watchlistTickers"
+  );
+  const [update] = feed.store.dispatch.getCalls().at(-1).args;
+  Assert.equal(update.type, actionTypes.WIDGETS_STOCKS_WATCHLIST_UPDATE);
+  Assert.deepEqual(
+    update.data.reconciledSymbols,
+    ["AAPL"],
+    "broadcasts the full saved set as reconciled"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_reconcile_saved_default_reports_without_fetch() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeWatchlistFeed(sandbox, {
+    saved: ["SPY"],
+    tickers: [{ ticker: "SPY" }],
+  });
+  const fetchSym = sandbox.stub(feed, "_fetchWatchlistSymbol");
+  await feed.reconcileWatchlist({ full: true });
+  Assert.ok(!fetchSym.called, "a saved default symbol is not network-fetched");
+  const [update] = feed.store.dispatch.getCalls().at(-1).args;
+  Assert.deepEqual(
+    update.data.reconciledSymbols,
+    ["SPY"],
+    "the default symbol is still reported reconciled"
+  );
+  Assert.deepEqual(
+    feed.watchlistTickers,
+    [],
+    "no separate watchlist ticker for a default symbol"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_reconcile_rapid_add_never_reports_pending_ready() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeWatchlistFeed(sandbox, { saved: ["A"], tickers: [] });
+  let aCalls = 0;
+  let resolveA;
+  sandbox.stub(feed, "_fetchWatchlistSymbol").callsFake(sym => {
+    if (sym === "A") {
+      aCalls++;
+      if (aCalls === 1) {
+        return new Promise(r => (resolveA = r));
+      }
+      return Promise.resolve({ ticker: "A", name: "A" });
+    }
+    return Promise.resolve({ ticker: sym, name: sym });
+  });
+  const p = feed.reconcileWatchlist({ full: true });
+  // While A is still fetching, the pref adds B.
+  feed.getSavedWatchlistSymbols.returns(["A", "B"]);
+  feed.reconcileWatchlist({ full: false });
+  resolveA({ ticker: "A", name: "A" });
+  await p;
+  await feed.watchlistWorker;
+  for (const call of feed.store.dispatch.getCalls()) {
+    const d = call.args[0].data;
+    if (d.reconciledSymbols.includes("B")) {
+      Assert.ok(
+        d.watchlistTickers.some(t => t.ticker === "B"),
+        "B is only reported reconciled once its data is present"
+      );
+    }
+  }
+  sandbox.restore();
+});
+
+add_task(async function test_reconcile_bails_after_teardown() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeWatchlistFeed(sandbox, { saved: ["AAPL"], tickers: [] });
+  let resolveA;
+  sandbox
+    .stub(feed, "_fetchWatchlistSymbol")
+    .returns(new Promise(r => (resolveA = r)));
+  const p = feed.reconcileWatchlist({ full: true });
+  feed.stopFetching(); // stop while the symbol fetch is still running
+  resolveA({ ticker: "AAPL", name: "Apple" });
+  await p;
+  Assert.ok(
+    !feed.store.dispatch.called,
+    "a reconcile interrupted by teardown does not broadcast"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_stop_then_reenable_does_not_strand_worker() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeWatchlistFeed(sandbox, { saved: ["A"], tickers: [] });
+  sandbox.stub(feed, "isEnabled").returns(true);
+  let resolveFirst;
+  const fetchSym = sandbox.stub(feed, "_fetchWatchlistSymbol");
+  fetchSym.onFirstCall().returns(new Promise(r => (resolveFirst = r)));
+  fetchSym.onSecondCall().resolves({ ticker: "A", name: "A" });
+  // Queue a second request after stopFetching() bumps the generation, while the
+  // first (now-stale) worker is still running, to check the queued request runs
+  // once the stale worker stops.
+  const p = feed.reconcileWatchlist({ full: true });
+  feed.stopFetching();
+  feed.reconcileWatchlist({ full: true });
+  resolveFirst({ ticker: "A", name: "A" });
+  await p;
+  await feed.watchlistWorker;
+  Assert.deepEqual(
+    feed.watchlistSymbols,
+    ["A"],
+    "the reconciliation requested after re-enable eventually runs"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_init_loads_watchlist() {
+  const sandbox = sinon.createSandbox();
+  stubFeed(sandbox);
+  const feed = new StocksFeed();
+  feed.store = {
+    dispatch: sinon.spy(),
+    getState: () => ({
+      Prefs: {
+        values: {
+          "widgets.stocks.enabled": true,
+          "widgets.system.stocks.enabled": true,
+        },
+      },
+    }),
+  };
+  const reconcile = sandbox.stub(feed, "reconcileWatchlist").resolves();
+  await feed.init();
+  Assert.ok(reconcile.called, "init reconciles the watchlist");
+  sandbox.restore();
+});
+
+add_task(async function test_watchlist_pref_change_incremental_reconcile() {
+  const sandbox = sinon.createSandbox();
+  stubFeed(sandbox);
+  const feed = new StocksFeed();
+  feed.loaded = true;
+  feed.store = {
+    dispatch: sinon.spy(),
+    getState: () => ({
+      Prefs: {
+        values: {
+          "widgets.stocks.enabled": true,
+          "widgets.system.stocks.enabled": true,
+        },
+      },
+    }),
+  };
+  const reconcile = sandbox.stub(feed, "reconcileWatchlist").resolves();
+  await feed.onPrefChangedAction({
+    data: { name: "widgets.stocks.watchlist" },
+  });
+  Assert.ok(
+    reconcile.calledWithMatch({ full: false }),
+    "a watchlist pref change does an incremental reconcile"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_disable_during_init_does_not_load_watchlist() {
+  const sandbox = sinon.createSandbox();
+  sandbox.stub(StocksFeed.prototype, "PersistentCache").returns({
+    get: async () => ({}),
+    set: async () => {},
+  });
+  let resolveFetch;
+  const fetchStub = sandbox
+    .stub()
+    .returns(new Promise(r => (resolveFetch = r)));
+  sandbox
+    .stub(StocksFeed.prototype, "MerinoClient")
+    .returns({ name: "TEST", fetch: fetchStub });
+  sandbox.stub(StocksFeed.prototype, "setTimeout").returns(1);
+  sandbox.stub(StocksFeed.prototype, "clearTimeout");
+  sandbox.stub(StocksFeed.prototype, "Date").returns({ now: () => 1000 });
+  const feed = new StocksFeed();
+  feed.store = {
+    dispatch: sinon.spy(),
+    getState: () => ({
+      Prefs: {
+        values: {
+          "widgets.stocks.enabled": true,
+          "widgets.system.stocks.enabled": true,
+        },
+      },
+    }),
+  };
+  const loadWatchlist = sandbox.stub(feed, "loadWatchlist").resolves();
+  const initPromise = feed.init();
+  feed.stopFetching(); // disabled mid-init, before the fetch resolves
+  resolveFetch([]);
+  await initPromise;
+  Assert.ok(!feed.loaded, "init invalidated by teardown does not mark loaded");
+  Assert.ok(
+    !loadWatchlist.called,
+    "does not load the watchlist after a mid-init teardown"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_refresh_timer_fetches_defaults_only() {
+  const sandbox = sinon.createSandbox();
+  stubFeed(sandbox);
+  let timerCb;
+  StocksFeed.prototype.setTimeout.restore();
+  sandbox.stub(StocksFeed.prototype, "setTimeout").callsFake(fn => {
+    timerCb = fn;
+    return 1;
+  });
+  const feed = new StocksFeed();
+  feed.store = {
+    dispatch: sinon.spy(),
+    getState: () => ({ Prefs: { values: {} } }),
+  };
+  const fetchStocks = sandbox.stub(feed, "fetch").resolves();
+  const reconcile = sandbox.stub(feed, "reconcileWatchlist").resolves();
+  feed.restartFetchTimer();
+  await timerCb();
+  Assert.ok(fetchStocks.called, "the timer fetches the default tickers");
+  Assert.ok(!reconcile.called, "the timer does not reconcile the watchlist");
+  sandbox.restore();
+});
+
+add_task(async function test_system_tick_refreshes_stale_watchlist() {
+  const sandbox = sinon.createSandbox();
+  stubFeed(sandbox);
+  const feed = new StocksFeed();
+  feed.store = {
+    dispatch: sinon.spy(),
+    getState: () => ({
+      Prefs: {
+        values: {
+          "widgets.stocks.enabled": true,
+          "widgets.system.stocks.enabled": true,
+        },
+      },
+    }),
+  };
+  sandbox.stub(feed, "loadStocks").resolves();
+  const reconcile = sandbox.stub(feed, "reconcileWatchlist").resolves();
+  feed.watchlistLastFullRefresh = null; // never refreshed, so stale
+  await feed.onAction({ type: actionTypes.SYSTEM_TICK });
+  Assert.ok(
+    reconcile.calledWithMatch({ full: true }),
+    "a stale watchlist is refreshed on the tick"
+  );
+
+  reconcile.resetHistory();
+  feed.watchlistLastFullRefresh = 1000; // now() is 1000, so fresh
+  await feed.onAction({ type: actionTypes.SYSTEM_TICK });
+  Assert.ok(
+    !reconcile.called,
+    "a fresh watchlist is not refreshed on the tick"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_fetchWatchlistSymbols_stops_when_superseded() {
+  const sandbox = sinon.createSandbox();
+  const feed = new StocksFeed();
+  feed.watchlistGeneration = 0;
+  feed.watchlistRequestedVersion = 1;
+  const calls = [];
+  sandbox.stub(feed, "_fetchWatchlistSymbol").callsFake(async sym => {
+    calls.push(sym);
+    if (calls.length === 5) {
+      // A newer request arrives while earlier symbols are resolving.
+      feed.watchlistRequestedVersion = 2;
+    }
+    return { ticker: sym, name: sym };
+  });
+  const symbols = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+  await feed._fetchWatchlistSymbols(symbols, 0, 1);
+  Assert.equal(
+    calls.length,
+    5,
+    "stops fetching once the request is superseded"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_fetchWatchlistSymbols_serializes_requests() {
+  const sandbox = sinon.createSandbox();
+  const feed = new StocksFeed();
+  feed.watchlistGeneration = 0;
+  feed.watchlistRequestedVersion = 1;
+  let inFlight = 0;
+  let maxInFlight = 0;
+  // Each lookup counts itself as in flight until its promise settles a microtask
+  // later. The Merino client serves one request at a time, so the loop must wait
+  // for each symbol before starting the next; if it fetched in parallel, several
+  // would be counted in flight at once.
+  sandbox.stub(feed, "_fetchWatchlistSymbol").callsFake(sym => {
+    inFlight++;
+    maxInFlight = Math.max(maxInFlight, inFlight);
+    return Promise.resolve().then(() => {
+      inFlight--;
+      return { ticker: sym, name: sym };
+    });
+  });
+  const symbols = ["A", "B", "C", "D", "E", "F"];
+  const results = await feed._fetchWatchlistSymbols(symbols, 0, 1);
+  Assert.equal(maxInFlight, 1, "only one symbol fetch is in flight at a time");
+  Assert.equal(results.size, symbols.length, "every symbol resolved");
+  sandbox.restore();
+});
+
+add_task(
+  async function test_fetchWatchlistSymbol_aborts_on_generation_change() {
+    const sandbox = sinon.createSandbox();
+    const feed = new StocksFeed();
+    feed.watchlistGeneration = 0;
+    const helper = sandbox.stub(feed, "_fetchHelper");
+    helper.withArgs("$AAPL").callsFake(async () => {
+      feed.watchlistGeneration = 1; // widget turned off between the two lookups
+      return [];
+    });
+    helper.withArgs("AAPL").resolves([{ ticker: "AAPL", name: "Apple" }]);
+    const result = await feed._fetchWatchlistSymbol("AAPL", 0);
+    Assert.strictEqual(
+      result,
+      null,
+      "stops before the bare lookup after a generation change"
+    );
+    Assert.ok(!helper.calledWith("AAPL"), "the bare fallback never runs");
+    sandbox.restore();
+  }
+);
+
+add_task(async function test_worker_does_not_restart_without_pending_request() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeWatchlistFeed(sandbox, { saved: ["AAPL"], tickers: [] });
+  sandbox.stub(feed, "isEnabled").returns(true);
+  let resolveFetch;
+  sandbox
+    .stub(feed, "_fetchWatchlistSymbol")
+    .returns(new Promise(r => (resolveFetch = r)));
+  const startSpy = sandbox.spy(feed, "_startWatchlistWorker");
+  const p = feed.reconcileWatchlist({ full: true }); // worker running
+  // Expire Cache neutralizes pending work before the worker settles.
+  feed.watchlistGeneration++;
+  feed.watchlistRequestedVersion = feed.watchlistProcessedVersion;
+  resolveFetch({ ticker: "AAPL", name: "Apple" });
+  await p;
+  Assert.equal(
+    startSpy.callCount,
+    1,
+    "no restart when the pending request was cleared"
+  );
+  Assert.ok(
+    !feed.store.dispatch.called,
+    "the invalidated worker does not broadcast"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_reconcile_is_ignored_during_cache_expiry() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeWatchlistFeed(sandbox, { saved: ["AAPL"], tickers: [] });
+  const startSpy = sandbox.spy(feed, "_startWatchlistWorker");
+  feed.watchlistExpiring = true;
+  await feed.reconcileWatchlist({ full: true });
+  Assert.ok(
+    !startSpy.called,
+    "a reconcile during cache expiry does not start a worker"
+  );
+  sandbox.restore();
+});
+
+function makeSearchFeed(sandbox, { enabled = true } = {}) {
+  const feed = new StocksFeed();
+  feed.store = {
+    dispatch: sinon.spy(),
+    getState: () => ({
+      Prefs: {
+        values: {
+          "widgets.stocks.enabled": enabled,
+          "widgets.system.stocks.enabled": enabled,
+        },
+      },
+    }),
+  };
+  return feed;
+}
+
+// A fake search Merino client. Each fetch() call takes the next outcome in
+// order: { values } for results, or { status } for an error.
+function searchClient(sandbox, outcomes) {
+  const client = {
+    lastFetchStatus: "success",
+    fetch: sandbox.stub(),
+    resetSession: sandbox.stub(),
+  };
+  outcomes.forEach((outcome, i) => {
+    client.fetch.onCall(i).callsFake(async () => {
+      client.lastFetchStatus = outcome.status ?? "success";
+      const values = outcome.values ?? [];
+      return values.length ? [{ custom_details: { polygon: { values } } }] : [];
+    });
+  });
+  return client;
+}
+
+// search() creates one client per call, so a single search reuses one client for
+// its bare and dollar lookups. Hand it the fake by stubbing MerinoClient.
+function stubSearchClient(sandbox, feed, outcomes) {
+  const client = searchClient(sandbox, outcomes);
+  sandbox.stub(feed, "MerinoClient").returns(client);
+  return client;
+}
+
+function lastSearchResponse(feed) {
+  return feed.store.dispatch.getCalls().at(-1)?.args[0];
+}
+
+add_task(async function test_search_success_replies_to_target() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [
+    { values: [{ ticker: "AAPL", name: "Apple" }] },
+  ]);
+  await feed.search("AAPL", "r1", "port-1");
+  const res = lastSearchResponse(feed);
+  Assert.equal(res.type, actionTypes.WIDGETS_STOCKS_SEARCH_RESPONSE);
+  Assert.equal(res.data.status, "success");
+  Assert.deepEqual(res.data.values, [{ ticker: "AAPL", name: "Apple" }]);
+  Assert.equal(res.data.requestId, "r1", "echoes the requestId");
+  Assert.equal(res.data.query, "AAPL", "echoes the query");
+  Assert.equal(res.meta.toTarget, "port-1", "replies only to the asking tab");
+  Assert.equal(client.fetch.callCount, 1, "one call for a bare hit");
+  Assert.ok(
+    client.resetSession.calledOnce,
+    "ends the per-search client's session so it can be released"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_search_empty_after_both_forms() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [
+    { status: "no_suggestion", values: [] },
+    { status: "no_suggestion", values: [] },
+  ]);
+  await feed.search("ZZZZ", "r1", "port-1");
+  const res = lastSearchResponse(feed);
+  Assert.equal(res.data.status, "empty");
+  Assert.deepEqual(res.data.values, []);
+  Assert.equal(
+    client.fetch.callCount,
+    2,
+    'tries the "<query> stock" form when the bare query is empty'
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_search_stock_fallback_resolves_blocklisted() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [
+    { values: [] },
+    { values: [{ ticker: "SPY", name: "SPDR" }] },
+  ]);
+  await feed.search("SPY", "r1", "port-1");
+  const res = lastSearchResponse(feed);
+  Assert.equal(res.data.status, "success");
+  Assert.deepEqual(res.data.values, [{ ticker: "SPY", name: "SPDR" }]);
+  Assert.equal(
+    client.fetch.secondCall.args[0].query,
+    "spy stock",
+    'the fallback uses the "<query> stock" form'
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_search_stock_fallback_resolves_company_name() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [
+    { values: [] },
+    { values: [{ ticker: "AMZN", name: "Amazon.com Inc" }] },
+  ]);
+  await feed.search("Amazon", "r1", "port-1");
+  const res = lastSearchResponse(feed);
+  Assert.equal(res.data.status, "success");
+  Assert.deepEqual(res.data.values, [
+    { ticker: "AMZN", name: "Amazon.com Inc" },
+  ]);
+  Assert.equal(
+    client.fetch.secondCall.args[0].query,
+    "amazon stock",
+    'a company name is looked up lower-cased with a "stock" suffix'
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_search_no_fallback_when_bare_hits() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [
+    { values: [{ ticker: "AAPL" }] },
+  ]);
+  await feed.search("AAPL", "r1", "port-1");
+  Assert.equal(
+    client.fetch.callCount,
+    1,
+    "no dollar fallback after a bare hit"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_search_transport_error_no_fallback() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [
+    { status: "timeout", values: [] },
+  ]);
+  await feed.search("AAPL", "r1", "port-1");
+  Assert.equal(lastSearchResponse(feed).data.status, "error");
+  Assert.equal(
+    client.fetch.callCount,
+    1,
+    "a transport error is not retried with the fallback"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_search_fallback_transport_error_replies_error() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [
+    { values: [] },
+    { status: "timeout", values: [] },
+  ]);
+  await feed.search("ZZZZ", "r1", "port-1");
+  Assert.equal(lastSearchResponse(feed).data.status, "error");
+  Assert.equal(
+    client.fetch.callCount,
+    2,
+    "a transport error on the fallback replies error"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_search_strips_leading_dollars() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [
+    { values: [] },
+    { values: [{ ticker: "BRK.B" }] },
+  ]);
+  await feed.search("$$BRK.B", "r1", "port-1");
+  Assert.equal(
+    client.fetch.firstCall.args[0].query,
+    "BRK.B",
+    "all leading dollars are stripped before the bare lookup"
+  );
+  Assert.equal(
+    client.fetch.secondCall.args[0].query,
+    "brk.b stock",
+    'the fallback appends " stock" to the stripped, lower-cased query'
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_search_whitespace_replies_empty_without_fetch() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [
+    { values: [{ ticker: "SPY" }] },
+  ]);
+  await feed.search("   ", "r1", "port-1");
+  Assert.equal(lastSearchResponse(feed).data.status, "empty");
+  Assert.ok(
+    !client.fetch.called,
+    "a blank query never reaches Merino, which would return the default set"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_search_non_string_replies_error_without_fetch() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [{ values: [] }]);
+  await feed.search(undefined, "r1", "port-1");
+  Assert.equal(lastSearchResponse(feed).data.status, "error");
+  Assert.ok(!client.fetch.called, "a non-string query does not fetch");
+  sandbox.restore();
+});
+
+add_task(async function test_search_unexpected_throw_replies_error() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = {
+    lastFetchStatus: "success",
+    fetch: sandbox.stub().rejects(new Error("boom")),
+    resetSession: sandbox.stub(),
+  };
+  sandbox.stub(feed, "MerinoClient").returns(client);
+  await feed.search("AAPL", "r1", "port-1");
+  Assert.equal(
+    lastSearchResponse(feed).data.status,
+    "error",
+    "an unexpected throw still resolves the tab's loading state"
+  );
+  Assert.ok(
+    client.resetSession.called,
+    "the per-search client's session is ended even on a throw"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_search_disabled_replies_error_without_fetch() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox, { enabled: false });
+  const client = stubSearchClient(sandbox, feed, [
+    { values: [{ ticker: "AAPL" }] },
+  ]);
+  await feed.search("AAPL", "r1", "port-1");
+  Assert.equal(lastSearchResponse(feed).data.status, "error");
+  Assert.ok(!client.fetch.called, "a disabled widget does not fetch");
+  sandbox.restore();
+});
+
+add_task(async function test_search_no_target_does_not_reply() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const client = stubSearchClient(sandbox, feed, [{ values: [] }]);
+  await feed.search("AAPL", "r1", undefined);
+  Assert.ok(
+    !feed.store.dispatch.called,
+    "a request with no reply port dispatches nothing"
+  );
+  Assert.ok(!client.fetch.called, "and does not fetch");
+  sandbox.restore();
+});
+
+add_task(async function test_search_uses_a_separate_client_per_call() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const clientA = searchClient(sandbox, [{ values: [{ ticker: "BRK.B" }] }]);
+  const clientB = searchClient(sandbox, [{ values: [{ ticker: "AAPL" }] }]);
+  const queue = [clientA, clientB];
+  sandbox.stub(feed, "MerinoClient").callsFake(() => queue.shift());
+  // Two searches interleave; each runs on its own client so they cannot abort
+  // each other, and each replies to its own tab.
+  await Promise.all([
+    feed.search("BRK.B", "rA", "port-A"),
+    feed.search("AAPL", "rB", "port-B"),
+  ]);
+  Assert.equal(feed.MerinoClient.callCount, 2, "one client per search");
+  Assert.ok(clientA.fetch.called, "the first search used its own client");
+  Assert.ok(clientB.fetch.called, "the second search used its own client");
+  const byTarget = {};
+  for (const call of feed.store.dispatch.getCalls()) {
+    const [action] = call.args;
+    byTarget[action.meta.toTarget] = action.data;
+  }
+  Assert.equal(byTarget["port-A"].status, "success");
+  Assert.deepEqual(byTarget["port-A"].values, [{ ticker: "BRK.B" }]);
+  Assert.equal(byTarget["port-B"].status, "success");
+  Assert.deepEqual(byTarget["port-B"].values, [{ ticker: "AAPL" }]);
+  sandbox.restore();
+});
+
+add_task(async function test_does_not_touch_feed_state() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  feed.tickers = [{ ticker: "SPY" }];
+  feed.watchlistTickers = [{ ticker: "AAPL" }];
+  feed.merino = {
+    fetch: sandbox.stub().rejects(new Error("default client must not be used")),
+  };
+  const cacheSet = sandbox.stub(feed, "_cacheSet").resolves();
+  stubSearchClient(sandbox, feed, [{ values: [{ ticker: "MSFT" }] }]);
+  await feed.search("MSFT", "r1", "port-1");
+  Assert.deepEqual(
+    feed.tickers,
+    [{ ticker: "SPY" }],
+    "default tickers untouched"
+  );
+  Assert.deepEqual(
+    feed.watchlistTickers,
+    [{ ticker: "AAPL" }],
+    "watchlist tickers untouched"
+  );
+  Assert.ok(
+    !feed.merino.fetch.called,
+    "search does not use the default client"
+  );
+  Assert.ok(!cacheSet.called, "search does not write the cache");
+  const types = feed.store.dispatch.getCalls().map(c => c.args[0].type);
+  Assert.ok(
+    !types.includes(actionTypes.WIDGETS_STOCKS_UPDATE),
+    "search does not broadcast a default update"
+  );
+  Assert.ok(
+    !types.includes(actionTypes.WIDGETS_STOCKS_WATCHLIST_UPDATE),
+    "search does not broadcast a watchlist update"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_onAction_search_request_calls_search() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  const searchStub = sandbox.stub(feed, "search").resolves();
+  await feed.onAction({
+    type: actionTypes.WIDGETS_STOCKS_SEARCH_REQUEST,
+    data: { query: "AAPL", requestId: "r1" },
+    meta: { fromTarget: "port-7" },
+  });
+  Assert.ok(
+    searchStub.calledOnceWith("AAPL", "r1", "port-7"),
+    "onAction routes the request to search()"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_onAction_search_request_missing_meta_is_safe() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeSearchFeed(sandbox);
+  stubSearchClient(sandbox, feed, [{ values: [] }]);
+  await feed.onAction({
+    type: actionTypes.WIDGETS_STOCKS_SEARCH_REQUEST,
+    data: { query: "AAPL", requestId: "r1" },
+  });
+  Assert.ok(
+    !feed.store.dispatch.called,
+    "a request with no reply port dispatches nothing and does not throw"
+  );
   sandbox.restore();
 });

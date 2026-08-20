@@ -2,11 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// eslint-disable-next-line mozilla/use-static-import
-const { AppConstants } = ChromeUtils.importESModule(
-  "resource://gre/modules/AppConstants.sys.mjs"
-);
-
 const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
@@ -172,30 +167,16 @@ export const NewTabGleanUtils = {
       lazy.logConsole.debug(`Registering metric ${name} at runtime`);
 
       // Register the metric
-      // @backward-compat { version 154 }
-      // The runtime registration API grew an additional parameter in Fx154.
-      if (Services.vc.compare(AppConstants.MOZ_APP_VERSION, "154.0a1") < 0) {
-        Services.fog.registerRuntimeMetric(
-          type,
-          category,
-          name,
-          pings,
-          `"${lifetime}"`,
-          disabled,
-          extraArgsJson
-        );
-      } else {
-        Services.fog.registerRuntimeMetric(
-          type,
-          category,
-          name,
-          pings,
-          `"${lifetime}"`,
-          disabled,
-          false /* aInSession */,
-          extraArgsJson
-        );
-      }
+      Services.fog.registerRuntimeMetric(
+        type,
+        category,
+        name,
+        pings,
+        `"${lifetime}"`,
+        disabled,
+        false /* aInSession */,
+        extraArgsJson
+      );
       gleanSuccessMetric.set(true);
     } catch (e) {
       gleanSuccessMetric.set(false);

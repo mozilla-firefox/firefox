@@ -28,6 +28,8 @@ ChromeUtils.defineESModuleGetters(this, {
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
   SelectableProfileService:
     "resource:///modules/profiles/SelectableProfileService.sys.mjs",
+  SessionStartup:
+    "moz-src:///browser/components/sessionstore/SessionStartup.sys.mjs",
   ShellService: "moz-src:///browser/components/shell/ShellService.sys.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
   Spotlight: "resource:///modules/asrouter/Spotlight.sys.mjs",
@@ -3193,6 +3195,44 @@ add_task(async function check_crashCountInLastWeek_onlyCountsRecentCrashes() {
       await ASRouterTargeting.Environment.crashCountInLastWeek,
       2,
       "should only count crashes from within the last 7 days"
+    );
+  } finally {
+    sandbox.restore();
+  }
+});
+
+add_task(async function check_previousSessionCrashed() {
+  const sandbox = sinon.createSandbox();
+  try {
+    sandbox.stub(SessionStartup, "previousSessionCrashed").get(() => true);
+    is(
+      ASRouterTargeting.Environment.previousSessionCrashed,
+      true,
+      "should be true when the previous session crashed"
+    );
+
+    const message = {
+      id: "check_previousSessionCrashed",
+      targeting: "previousSessionCrashed",
+    };
+    is(
+      (await ASRouterTargeting.findMatchingMessage({ messages: [message] }))
+        ?.id,
+      message.id,
+      "should select message targeting previousSessionCrashed when it is true"
+    );
+
+    sandbox.restore();
+    sandbox.stub(SessionStartup, "previousSessionCrashed").get(() => false);
+    is(
+      ASRouterTargeting.Environment.previousSessionCrashed,
+      false,
+      "should be false when the previous session did not crash"
+    );
+    is(
+      await ASRouterTargeting.findMatchingMessage({ messages: [message] }),
+      null,
+      "should not select message targeting previousSessionCrashed when it is false"
     );
   } finally {
     sandbox.restore();

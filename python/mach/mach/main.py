@@ -535,13 +535,13 @@ To see more help for a specific command, run:
 
             machrc, .machrc
         """
-        valid_names = ("machrc", ".machrc")
+        from mach.util import MACHRC_NAMES
 
         def find_in_dir(base: Path):
             if base.is_file():
                 return base
 
-            for name in valid_names:
+            for name in MACHRC_NAMES:
                 path = base / name
                 if path.is_file():
                     return path

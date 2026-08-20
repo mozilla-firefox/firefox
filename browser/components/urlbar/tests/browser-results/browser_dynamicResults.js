@@ -109,13 +109,6 @@ async function checkViewUpdated(provider) {
         `.urlbarView-dynamic-${DYNAMIC_TYPE_NAME}-text`
       );
 
-      // The view's call to provider.getViewUpdate is async, so we need to make
-      // sure the update has been applied before continuing to avoid
-      // intermittent failures.
-      await TestUtils.waitForCondition(
-        () => text.getAttribute("searchString") == searchString
-      );
-
       // The "searchString" attribute of these elements should be updated.
       let elementNames = ["selectable", "text", "button1", "button2"];
       for (let name of elementNames) {
@@ -442,7 +435,7 @@ add_task(async function highlighting() {
       addCallback(this, result);
     }
 
-    getViewUpdate(result, _idsByName) {
+    getViewUpdate(result) {
       let { value: textContent, highlights } =
         result.getDisplayableValueAndHighlights("text", {
           tokens: this._tokens,
@@ -514,7 +507,7 @@ add_task(async function highlighting() {
    * Provides a dynamic result with highlighted text that is then overridden.
    */
   class TestHighlightProviderOveridden extends TestHighlightProvider {
-    getViewUpdate(_result, _idsByName) {
+    getViewUpdate(_result) {
       return {
         text: {
           textContent: "Test title",
@@ -813,11 +806,7 @@ class TestProvider extends UrlbarTestUtils.TestProvider {
     return DYNAMIC_TYPE_VIEW_TEMPLATE;
   }
 
-  getViewUpdate(result, idsByName) {
-    for (let child of DYNAMIC_TYPE_VIEW_TEMPLATE.children) {
-      Assert.ok(idsByName.get(child.name), `idsByName contains ${child.name}`);
-    }
-
+  getViewUpdate(result) {
     return {
       selectable: {
         textContent: "Selectable",

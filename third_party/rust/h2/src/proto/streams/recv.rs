@@ -162,7 +162,10 @@ impl Recv {
         tracing::trace!("opening stream; init_window={}", self.init_window_sz);
         let is_initial = stream.state.recv_open(&frame)?;
 
-        if is_initial {
+        // Informational responses do not transition a remotely reserved stream
+        // out of `ReservedRemote`. As a result, `recv_open` reports each of them
+        // as initial. Only account for the stream once.
+        if is_initial && !stream.is_counted {
             // TODO: be smarter about this logic
             if frame.stream_id() > self.last_processed_id {
                 self.last_processed_id = frame.stream_id();
@@ -377,6 +380,13 @@ impl Recv {
         // If it's not, we put it back
         if let Some(event) = stream.pending_recv.pop_front(&mut self.buffer) {
             match event {
+                Event::Headers(Client(response)) => {
+                    // Final response
+                    stream
+                        .pending_recv
+                        .push_front(&mut self.buffer, Event::Headers(Client(response)));
+                    return Poll::Ready(None);
+                }
                 Event::InformationalHeaders(Client(response)) => {
                     // Found an informational response, return it
                     return Poll::Ready(Some(Ok(response)));
@@ -486,20 +496,18 @@ impl Recv {
     pub fn release_closed_capacity(&mut self, stream: &mut store::Ptr, task: &mut Option<Waker>) {
         debug_assert_eq!(stream.ref_count, 0);
 
-        if stream.in_flight_recv_data == 0 {
-            return;
+        if stream.in_flight_recv_data != 0 {
+            tracing::trace!(
+                "auto-release closed stream ({:?}) capacity: {:?}",
+                stream.id,
+                stream.in_flight_recv_data,
+            );
+
+            self.release_connection_capacity(stream.in_flight_recv_data, task);
+            stream.in_flight_recv_data = 0;
         }
 
-        tracing::trace!(
-            "auto-release closed stream ({:?}) capacity: {:?}",
-            stream.id,
-            stream.in_flight_recv_data,
-        );
-
-        self.release_connection_capacity(stream.in_flight_recv_data, task);
-        stream.in_flight_recv_data = 0;
-
-        self.clear_recv_buffer(stream);
+        self.clear_recv_buffer(stream, task);
     }
 
     /// Set the "target" connection window size.
@@ -729,16 +737,25 @@ impl Recv {
         // Track the data as in-flight
         stream.in_flight_recv_data += sz;
 
-        // We auto-release the padded length, since the user cannot.
-        if let Some(padded_len) = frame.padded_len() {
+        // Auto-release padding overhead (pad_len field + padding bytes),
+        // since the user only sees the data payload via `payload()`.
+        let padding = (frame.flow_controlled_len() - frame.payload().len()) as WindowSize;
+        if padding > 0 {
             tracing::trace!(
-                "recv_data; auto-releasing padded length of {:?} for {:?}",
-                padded_len,
+                "recv_data; auto-releasing padding of {:?} for {:?}",
+                padding,
                 stream.id,
             );
-            let _res = self.release_capacity(padded_len.into(), stream, &mut None);
+            let _res = self.release_capacity(padding, stream, &mut None);
             // cannot fail, we JUST added more in_flight data above.
             debug_assert!(_res.is_ok());
+        }
+
+        // An empty DATA frame without END_STREAM has no effect on the HTTP
+        // message. Padding has already been accounted for and released above,
+        // so there is no event to pass to the user.
+        if frame.payload().is_empty() && !frame.is_end_stream() {
+            return Ok(());
         }
 
         let event = Event::Data(frame.into_payload());
@@ -924,9 +941,22 @@ impl Recv {
         stream.notify_push();
     }
 
-    pub(super) fn clear_recv_buffer(&mut self, stream: &mut Stream) {
-        while stream.pending_recv.pop_front(&mut self.buffer).is_some() {
-            // drop it
+    pub(super) fn clear_recv_buffer(&mut self, stream: &mut Stream, task: &mut Option<Waker>) {
+        let mut to_release: WindowSize = 0;
+        while let Some(event) = stream.pending_recv.pop_front(&mut self.buffer) {
+            if let Event::Data(data) = &event {
+                to_release = to_release
+                    .saturating_add(data.len() as WindowSize)
+                    .min(stream.in_flight_recv_data);
+            }
+        }
+        // Release flow control capacity. Cases:
+        // * User read data but hasn't released: buf=0, in_flight>0 -> release 0
+        // * User released without reading: buf>0, in_flight=0 -> release 0
+        // * Normal drop without reading: buf=in_flight -> full release
+        if to_release > 0 {
+            stream.in_flight_recv_data -= to_release;
+            self.release_connection_capacity(to_release, task);
         }
     }
 
@@ -996,15 +1026,16 @@ impl Recv {
     /// Send any pending refusals.
     pub fn send_pending_refusal<T, B>(
         &mut self,
-        cx: &mut Context,
         dst: &mut Codec<T, Prioritized<B>>,
-    ) -> Poll<io::Result<()>>
+    ) -> io::Result<BufferStatus>
     where
         T: AsyncWrite + Unpin,
         B: Buf,
     {
         if let Some(stream_id) = self.refused {
-            ready!(dst.poll_ready(cx))?;
+            if !dst.has_send_capacity() {
+                return Ok(BufferStatus::CodecFull);
+            }
 
             // Create the RST_STREAM frame
             let frame = frame::Reset::new(stream_id, Reason::REFUSED_STREAM);
@@ -1015,7 +1046,7 @@ impl Recv {
 
         self.refused = None;
 
-        Poll::Ready(Ok(()))
+        Ok(BufferStatus::Complete)
     }
 
     pub fn clear_expired_reset_streams(&mut self, store: &mut Store, counts: &mut Counts) {
@@ -1069,32 +1100,34 @@ impl Recv {
         }
     }
 
-    pub fn poll_complete<T, B>(
+    pub fn buffer_pending<T, B>(
         &mut self,
-        cx: &mut Context,
         store: &mut Store,
         counts: &mut Counts,
         dst: &mut Codec<T, Prioritized<B>>,
-    ) -> Poll<io::Result<()>>
+    ) -> io::Result<BufferStatus>
     where
         T: AsyncWrite + Unpin,
         B: Buf,
     {
         // Send any pending connection level window updates
-        ready!(self.send_connection_window_update(cx, dst))?;
+        if self.send_connection_window_update(dst)? == BufferStatus::CodecFull {
+            return Ok(BufferStatus::CodecFull);
+        }
 
         // Send any pending stream level window updates
-        ready!(self.send_stream_window_updates(cx, store, counts, dst))?;
+        if self.send_stream_window_updates(store, counts, dst)? == BufferStatus::CodecFull {
+            return Ok(BufferStatus::CodecFull);
+        }
 
-        Poll::Ready(Ok(()))
+        Ok(BufferStatus::Complete)
     }
 
     /// Send connection level window update
     fn send_connection_window_update<T, B>(
         &mut self,
-        cx: &mut Context,
         dst: &mut Codec<T, Prioritized<B>>,
-    ) -> Poll<io::Result<()>>
+    ) -> io::Result<BufferStatus>
     where
         T: AsyncWrite + Unpin,
         B: Buf,
@@ -1103,7 +1136,9 @@ impl Recv {
             let frame = frame::WindowUpdate::new(StreamId::zero(), incr);
 
             // Ensure the codec has capacity
-            ready!(dst.poll_ready(cx))?;
+            if !dst.has_send_capacity() {
+                return Ok(BufferStatus::CodecFull);
+            }
 
             // Buffer the WINDOW_UPDATE frame
             dst.buffer(frame.into())
@@ -1115,29 +1150,30 @@ impl Recv {
                 .expect("unexpected flow control state");
         }
 
-        Poll::Ready(Ok(()))
+        Ok(BufferStatus::Complete)
     }
 
     /// Send stream level window update
     pub fn send_stream_window_updates<T, B>(
         &mut self,
-        cx: &mut Context,
         store: &mut Store,
         counts: &mut Counts,
         dst: &mut Codec<T, Prioritized<B>>,
-    ) -> Poll<io::Result<()>>
+    ) -> io::Result<BufferStatus>
     where
         T: AsyncWrite + Unpin,
         B: Buf,
     {
         loop {
             // Ensure the codec has capacity
-            ready!(dst.poll_ready(cx))?;
+            if !dst.has_send_capacity() {
+                return Ok(BufferStatus::CodecFull);
+            }
 
             // Get the next stream
             let stream = match self.pending_window_updates.pop(store) {
                 Some(stream) => stream,
-                None => return Poll::Ready(Ok(())),
+                None => return Ok(BufferStatus::Complete),
             };
 
             counts.transition(stream, |_, stream| {
@@ -1215,7 +1251,7 @@ impl Recv {
             Some(event) => {
                 // Frame is not trailers.. not ready to poll trailers yet.
                 stream.pending_recv.push_front(&mut self.buffer, event);
-
+                stream.recv_task = Some(cx.waker().clone());
                 Poll::Pending
             }
             None => self.schedule_recv(cx, stream),
@@ -1235,6 +1271,52 @@ impl Recv {
             // No more frames will be received
             Poll::Ready(None)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clear_recv_buffer_caps_capacity_before_overflow() {
+        const FRAME_LEN: usize = 1 << 20;
+        const FRAME_COUNT: usize = (u32::MAX as usize / FRAME_LEN) + 1;
+
+        let config = Config {
+            initial_max_send_streams: 0,
+            local_max_buffer_size: 0,
+            local_next_stream_id: 2.into(),
+            local_push_enabled: false,
+            extended_connect_protocol_enabled: false,
+            local_reset_duration: Duration::ZERO,
+            local_reset_max: 0,
+            remote_reset_max: 0,
+            remote_init_window_sz: DEFAULT_INITIAL_WINDOW_SIZE,
+            remote_max_initiated: None,
+            local_max_error_reset_streams: None,
+        };
+        let mut recv = Recv::new(peer::Dyn::Server, &config);
+        let mut store = Store::new();
+        let mut stream = store.insert(
+            StreamId::from(1),
+            Stream::new(StreamId::from(1), 0, DEFAULT_INITIAL_WINDOW_SIZE),
+        );
+        let data = Bytes::from(vec![0; FRAME_LEN]);
+
+        for _ in 0..FRAME_COUNT {
+            stream
+                .pending_recv
+                .push_back(&mut recv.buffer, Event::Data(data.clone()));
+        }
+        stream.in_flight_recv_data = DEFAULT_INITIAL_WINDOW_SIZE;
+        recv.in_flight_data = DEFAULT_INITIAL_WINDOW_SIZE;
+
+        recv.clear_recv_buffer(&mut stream, &mut None);
+
+        assert!(stream.pending_recv.is_empty());
+        assert_eq!(stream.in_flight_recv_data, 0);
+        assert_eq!(recv.in_flight_data, 0);
     }
 }
 

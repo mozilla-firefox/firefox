@@ -6,11 +6,9 @@
 #![allow(clippy::needless_range_loop)]
 #![allow(clippy::too_many_arguments)]
 
-use std::any::Any;
-
 use crate::{
     headers::CustomTransformData,
-    render::{Channels, ChannelsMut, RenderPipelineInOutStage},
+    render::{Channels, ChannelsMut, ErasedLocalState, RenderPipelineInOutStage},
 };
 use jxl_simd::{F32SimdVec, simd_function};
 
@@ -403,8 +401,8 @@ impl<const N: usize, const SHIFT: u8> RenderPipelineInOutStage for Upsample<N, S
         c == self.channel
     }
 
-    fn init_local_state(&self, _thread_index: usize) -> crate::error::Result<Option<Box<dyn Any>>> {
-        Ok(Some(Box::new(UpsampleState::new()) as Box<dyn Any>))
+    fn init_local_state(&self) -> crate::error::Result<Option<Box<ErasedLocalState>>> {
+        Ok(Some(Box::new(UpsampleState::new()) as Box<ErasedLocalState>))
     }
 
     /// Processes a chunk of a row, applying NxN upsampling using a 5x5 kernel.
@@ -415,7 +413,7 @@ impl<const N: usize, const SHIFT: u8> RenderPipelineInOutStage for Upsample<N, S
         xsize: usize,
         input_rows: &Channels<f32>,
         output_rows: &mut ChannelsMut<f32>,
-        state: Option<&mut dyn std::any::Any>,
+        state: Option<&mut ErasedLocalState>,
     ) {
         let input = &input_rows[0];
         let state: &mut UpsampleState = state.unwrap().downcast_mut().unwrap();

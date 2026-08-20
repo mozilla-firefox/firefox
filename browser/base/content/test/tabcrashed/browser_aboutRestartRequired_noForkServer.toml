@@ -17,7 +17,7 @@ prefs = [
 
 ["browser_aboutRestartRequired_buildid_false-positive.js"]
 skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && ccov && nova", # Bug 2057533
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && ccov", # Bug 2057533
   "os == 'win' && os_version == '11.26100' && arch == 'x86_64' && ccov",
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && ccov",
 ]

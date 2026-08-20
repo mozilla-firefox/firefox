@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.summarize
 
+import mozilla.components.feature.summarize.settings.summarizeSettingsReducer
 import mozilla.components.ui.richtext.ir.RichDocument
 
 /**
@@ -29,16 +30,26 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
         is SummarizationCompleted -> state.complete()
         is SummarizationFailed -> SummarizationState.Error(SummarizationError.SummarizationFailed(action.exception))
         is ReceivedParsedDocument -> state.updateDocument(action.document)
-        is SettingsClicked ->
+        is SettingsLoaded ->
             when (state) {
                 is SummarizationState.Summarized ->
-                    SummarizationState.Settings(info = state.info, document = state.document)
+                    SummarizationState.Settings(
+                        info = state.info,
+                        document = state.document,
+                        settingsState = action.settings,
+                    )
                 else -> state
             }
         is SettingsBackClicked ->
             when (state) {
                 is SummarizationState.Settings ->
                     SummarizationState.Summarized(info = state.info, document = state.document)
+                else -> state
+            }
+        is SummarizeSettingsActionWrapper ->
+            when (state) {
+                is SummarizationState.Settings ->
+                    state.copy(settingsState = summarizeSettingsReducer(state.settingsState, action.inner))
                 else -> state
             }
 
@@ -56,6 +67,7 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
         OnDeviceSummarizationShakeConsentAction.AllowClicked,
         OnDeviceSummarizationShakeConsentAction.CancelClicked,
         PageLoadCompleted,
+        SettingsClicked,
         SignInSummarizationContentAction.DismissClicked,
         SignInSummarizationContentAction.LearnMoreClicked,
         SignInSummarizationContentAction.SignInClicked,

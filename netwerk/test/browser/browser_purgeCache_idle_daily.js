@@ -46,11 +46,43 @@ add_task(async function test_idle_cleanup() {
     null
   );
 
-  // Check that telemetry properly detects folders failing to be deleted when readonly
   // Making folders readonly only works on windows
   if (AppConstants.platform == "win") {
+    // A readonly folder used to be left behind forever. The daily sweep now
+    // clears the attribute and retries, so it must be removed (bug 1882163).
     dir.create(Ci.nsIFile.DIRECTORY_TYPE, 0o744);
     dir.QueryInterface(Ci.nsILocalFileWin).readOnly = true;
+
+    Services.obs.notifyObservers(null, "idle-daily");
+
+    await TestUtils.waitForCondition(() => {
+      return !dir.exists();
+    });
+
+    Assert.equal(
+      await Glean.networking.residualCacheFolderCount.testGetValue(),
+      2
+    );
+    Assert.equal(
+      await Glean.networking.residualCacheFolderRemoval.success.testGetValue(),
+      2
+    );
+    Assert.equal(
+      await Glean.networking.residualCacheFolderRemoval.failure.testGetValue(),
+      null
+    );
+
+    // Check that telemetry properly detects folders failing to be deleted.
+    // An open handle without FILE_SHARE_DELETE makes DeleteFileW fail with
+    // ERROR_SHARING_VIOLATION, which clearing the readonly attribute can't
+    // recover from.
+    dir.create(Ci.nsIFile.DIRECTORY_TYPE, 0o744);
+    let lockedFile = dir.clone();
+    lockedFile.append("locked");
+    let stream = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(
+      Ci.nsIFileOutputStream
+    );
+    stream.init(lockedFile, -1, -1, 0);
 
     Services.obs.notifyObservers(null, "idle-daily");
 
@@ -63,18 +95,19 @@ add_task(async function test_idle_cleanup() {
 
     Assert.equal(
       await Glean.networking.residualCacheFolderCount.testGetValue(),
-      2
+      3
     );
     Assert.equal(
       await Glean.networking.residualCacheFolderRemoval.success.testGetValue(),
-      1
+      2
     );
     Assert.equal(
       await Glean.networking.residualCacheFolderRemoval.failure.testGetValue(),
       1
     );
+    Assert.ok(dir.exists(), `Folder ${dir.path} should not have been removed`);
 
-    dir.QueryInterface(Ci.nsILocalFileWin).readOnly = false;
+    stream.close();
     dir.remove(true);
   }
 

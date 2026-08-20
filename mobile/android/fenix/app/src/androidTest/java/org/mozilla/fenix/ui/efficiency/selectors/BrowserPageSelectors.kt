@@ -236,6 +236,14 @@ object BrowserPageSelectors {
             groups = listOf(),
         )
 
+    val UPLOAD_FILE_WEB_INPUT =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_RAW_RES_ID,
+            value = "upload_file",
+            description = "Web form file upload input",
+            groups = listOf(),
+        )
+
     val USERNAME_WEB_FIELD =
         Selector(
             strategy = SelectorStrategy.UIAUTOMATOR_WITH_COMPOSE_TAG,
@@ -514,6 +522,7 @@ object BrowserPageSelectors {
             TRANSLATION_SHEET_TRANSLATE_BUTTON,
             TRANSLATION_SHEET_TRANSLATE_FROM,
             TRANSLATION_SHEET_TRANSLATE_TO,
+            UPLOAD_FILE_WEB_INPUT,
             USERNAME_WEB_FIELD,
             SNACKBAR_ACTION_BUTTON,
         )

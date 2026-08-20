@@ -19,8 +19,6 @@ class nsObserverService final : public nsIObserverService,
  public:
   NS_INLINE_DECL_STATIC_IID(NS_OBSERVERSERVICE_CID)
 
-  nsObserverService();
-
   NS_DECL_ISUPPORTS
   NS_DECL_NSIOBSERVERSERVICE
   NS_DECL_NSIMEMORYREPORTER
@@ -34,14 +32,15 @@ class nsObserverService final : public nsIObserverService,
   NS_IMETHOD UnmarkGrayStrongObservers();
 
  private:
-  ~nsObserverService(void);
+  nsObserverService() = default;
+  ~nsObserverService();
   void RegisterReporter();
   nsresult EnsureValidCall() const;
   nsresult FilterHttpOnTopics(const char* aTopic);
 
   static const size_t kSuspectReferentCount = 100;
-  bool mShuttingDown;
   nsTHashtable<nsObserverList> mObserverTopicTable;
+  bool mShuttingDown = false;
 };
 
 #endif /* nsObserverService_h_ */

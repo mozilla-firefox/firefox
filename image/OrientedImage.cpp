@@ -290,7 +290,7 @@ OrientedImage::Draw(gfxContext* aContext, const nsIntSize& aSize,
     auto oldViewport = aOldContext.GetViewportSize();
     if (oldViewport && mOrientation.SwapsWidthAndHeight()) {
       // Swap width and height:
-      CSSIntSize newViewport(oldViewport->height, oldViewport->width);
+      CSSSize newViewport(oldViewport->height, oldViewport->width);
       context.SetViewportSize(Some(newViewport));
     }
     return context;

@@ -620,7 +620,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
             privateBrowsingLockFeature,
             externalAppLinkStatusBinding,
             summarizeToolbarHighlightBinding,
-            components.core.summarizationSettings,
+            components.core.summarizationSettingsBinding,
             translationsAIControllableFeatureRegistrar,
             ipProtectionPrompter,
         )

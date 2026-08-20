@@ -154,7 +154,8 @@ sealed class Action {
      * @property highlighted Whether to highlight this button.
      * @property onClick [BrowserToolbarInteraction] dispatched when the button is tapped.
      * @property testTag Optional test tag for this button.
-     * @property onAnimationStarted Optional callback invoked when the pill animation starts on screen.
+     * @property onAnimationFinished Optional [BrowserToolbarEvent] dispatched once the pill has fully collapsed on
+     *   screen.
      */
     data class AnimatedPillActionRes(
         @param:DrawableRes val iconResId: Int,
@@ -165,6 +166,6 @@ sealed class Action {
         val highlighted: Boolean = false,
         val onClick: BrowserToolbarInteraction,
         val testTag: String? = null,
-        val onAnimationStarted: (() -> Unit)? = null,
+        val onAnimationFinished: BrowserToolbarEvent? = null,
     ) : Action()
 }

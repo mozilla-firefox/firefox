@@ -219,3 +219,14 @@ async function openSharePanel(win) {
 
   return PanelMultiView.getViewNode(win.document, "share-panel");
 }
+
+async function closeSharePanel(win) {
+  const panel = PanelMultiView.getViewNode(win.document, "share-panel");
+  if (panel.state === "closed") {
+    return;
+  }
+
+  let hidden = BrowserTestUtils.waitForEvent(panel, "popuphidden");
+  panel.hidePopup();
+  await hidden;
+}

@@ -11,6 +11,7 @@
 #include "mozilla/HashFunctions.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/MruCache.h"
+#include "mozilla/PodOperations.h"
 #include "mozilla/RWLock.h"
 #include "mozilla/TextUtils.h"
 #include "nsAtom.h"
@@ -194,8 +195,104 @@ struct AtomCache : public MruCache<AtomTableKey, nsAtom*, AtomCache> {
   }
 };
 
-static AtomCache sRecentlyUsedSmallMainThreadAtoms;
-static AtomCache sRecentlyUsedLargeMainThreadAtoms;
+static AtomCache sRecentlyUsedMainThreadAtoms;
+
+// Set-associative cache for short Latin-1 strings.
+// Up to 7 chars + length are packed into a uint64_t unique signature used for
+// indexing and equality checks.
+// Signatures map to one of |kSets|, each holding |kWays| many atoms. Compared
+// to a direct mapped cache, we can store multiple atoms for the same index and
+// get a higher hit rate.
+struct ShortAtomCache {
+  static constexpr size_t kMaxLength = 7;
+  static constexpr size_t kLogSize = 11;
+  static constexpr size_t kLogWays = 2;
+
+  static_assert(kLogWays <= kLogSize);
+
+  static constexpr size_t kWays = size_t(1) << kLogWays;
+  static constexpr size_t kLogSets = kLogSize - kLogWays;
+  static constexpr size_t kSets = size_t(1) << kLogSets;
+
+  using Signature = uint64_t;
+  static constexpr Signature kInvalidSignature = 0;
+
+  // A bucket of |kWays| many atoms that have the same index.
+  struct Set {
+    Signature mSigs[kWays];
+    nsAtom* MOZ_NON_OWNING_REF mAtoms[kWays];
+  };
+  alignas(64) Set mSets[kSets] = {};
+
+#ifdef HAVE_64BIT_BUILD
+  // Together with the alignment, ensure all sets are aligned to cache lines
+  static_assert(64 % sizeof(Set) == 0 || sizeof(Set) % 64 == 0);
+#endif
+
+  // Rotates to indicate which way to replace next if all are full in some set.
+  uint8_t mNextWay = 0;
+
+  static Signature TryMakeSignature(const char16_t* aStr, size_t aLength) {
+    static_assert(sizeof(Signature) >= kMaxLength + 1);
+    if (aLength == 0 || aLength > kMaxLength) {
+      return kInvalidSignature;
+    }
+    Signature signature = aLength;
+    for (size_t i = 0; i < aLength; i++) {
+      if (aStr[i] > 0xff) {
+        return kInvalidSignature;
+      }
+      signature = (signature << 8) | static_cast<uint8_t>(aStr[i]);
+    }
+    return signature;
+  }
+
+  // Index of the Set this signature falls into
+  static size_t Index(Signature aSig) {
+    static constexpr uint64_t kGoldenRatio64 = 0x9e3779b97f4a7c15ull;
+    return static_cast<size_t>((aSig * kGoldenRatio64) >> (64 - kLogSets));
+  }
+
+  nsAtom* Lookup(Signature aSig) const {
+    const Set& set = mSets[Index(aSig)];
+    for (size_t i = 0; i < kWays; i++) {
+      if (set.mSigs[i] == aSig) {
+        return set.mAtoms[i];
+      }
+    }
+    return nullptr;
+  }
+
+  void Put(Signature aSig, nsAtom* aAtom) {
+    MOZ_ASSERT(aSig != kInvalidSignature);
+
+    Set& set = mSets[Index(aSig)];
+
+    // prefer empty way, otherwise rotate which gets evicted
+    size_t way = 0;
+    while (way < kWays && set.mSigs[way] != kInvalidSignature) {
+      ++way;
+    }
+    if (way == kWays) {
+      way = mNextWay;
+      mNextWay = (mNextWay + 1) & (kWays - 1);
+    }
+
+    set.mSigs[way] = aSig;
+    set.mAtoms[way] = aAtom;
+  }
+
+  void Clear() {
+    PodArrayZero(mSets);
+    mNextWay = 0;
+  }
+};
+
+size_t TestGetShortAtomCacheSize() {
+  return size_t(1) << ShortAtomCache::kLogSize;
+}
+
+static ShortAtomCache sShortAtomCache;
 
 // In order to reduce locking contention for concurrent atomization, we segment
 // the atom table into N subtables, each with a separate lock. If the hash
@@ -236,6 +333,8 @@ class nsAtomTable {
                                    uint32_t aHash);
   already_AddRefed<nsAtom> Atomize(const nsACString& aUTF8String);
   already_AddRefed<nsAtom> AtomizeMainThread(const nsAString& aUTF16String);
+  already_AddRefed<nsAtom> GetOrInsert(const nsAString& aUTF16String,
+                                       AtomTableKey& key);
   nsStaticAtom* GetStaticAtom(const nsAString& aUTF16String);
   void RegisterStaticAtoms(const nsStaticAtom* aAtoms, size_t aAtomsLen);
 
@@ -340,8 +439,8 @@ void nsAtomTable::AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf,
 
 void nsAtomTable::GC(GCKind aKind) {
   MOZ_ASSERT(NS_IsMainThread());
-  sRecentlyUsedSmallMainThreadAtoms.Clear();
-  sRecentlyUsedLargeMainThreadAtoms.Clear();
+  sShortAtomCache.Clear();
+  sRecentlyUsedMainThreadAtoms.Clear();
 
   // Note that this is effectively an incremental GC, since only one subtable
   // is locked at a time.
@@ -582,26 +681,7 @@ already_AddRefed<nsAtom> NS_Atomize(const char16_t* aUTF16String) {
 already_AddRefed<nsAtom> nsAtomTable::Atomize(const nsAString& aUTF16String,
                                               uint32_t aHash) {
   AtomTableKey key(aUTF16String.Data(), aUTF16String.Length(), aHash);
-  nsAtomSubTable& table = SelectSubTable(key);
-  {
-    AutoReadLock lock(table.mLock);
-    if (AtomTableEntry* he = table.Search(key)) {
-      return do_AddRef(he->mAtom);
-    }
-  }
-  AutoWriteLock lock(table.mLock);
-  AtomTableEntry* he = table.Add(key);
-
-  if (he->mAtom) {
-    RefPtr<nsAtom> atom = he->mAtom;
-    return atom.forget();
-  }
-
-  RefPtr<nsAtom> atom =
-      dont_AddRef(nsDynamicAtom::Create(aUTF16String, key.mHash));
-  he->mAtom = atom;
-
-  return atom.forget();
+  return GetOrInsert(aUTF16String, key);
 }
 
 already_AddRefed<nsAtom> NS_Atomize(const nsAString& aUTF16String,
@@ -614,41 +694,53 @@ already_AddRefed<nsAtom> NS_Atomize(const nsAString& aUTF16String) {
   return NS_Atomize(aUTF16String, HashString(aUTF16String));
 }
 
-already_AddRefed<nsAtom> nsAtomTable::AtomizeMainThread(
-    const nsAString& aUTF16String) {
-  MOZ_ASSERT(NS_IsMainThread());
-  RefPtr<nsAtom> retVal;
-  size_t length = aUTF16String.Length();
-  AtomTableKey key(aUTF16String.Data(), length);
-
-  auto p = (length < 5) ? sRecentlyUsedSmallMainThreadAtoms.Lookup(key)
-                        : sRecentlyUsedLargeMainThreadAtoms.Lookup(key);
-  if (p) {
-    retVal = p.Data();
-    return retVal.forget();
-  }
-
-  nsAtomSubTable& table = SelectSubTable(key);
+already_AddRefed<nsAtom> nsAtomTable::GetOrInsert(const nsAString& aUTF16String,
+                                                  AtomTableKey& aKey) {
+  nsAtomSubTable& table = SelectSubTable(aKey);
   {
     AutoReadLock lock(table.mLock);
-    if (AtomTableEntry* he = table.Search(key)) {
-      p.Set(he->mAtom);
+    if (AtomTableEntry* he = table.Search(aKey)) {
       return do_AddRef(he->mAtom);
     }
   }
 
   AutoWriteLock lock(table.mLock);
-  AtomTableEntry* he = table.Add(key);
+  AtomTableEntry* he = table.Add(aKey);
   if (he->mAtom) {
-    retVal = he->mAtom;
-  } else {
-    RefPtr<nsAtom> newAtom =
-        dont_AddRef(nsDynamicAtom::Create(aUTF16String, key.mHash));
-    he->mAtom = newAtom;
-    retVal = std::move(newAtom);
+    return do_AddRef(he->mAtom);
+  }
+  RefPtr<nsAtom> newAtom =
+      dont_AddRef(nsDynamicAtom::Create(aUTF16String, aKey.mHash));
+  he->mAtom = newAtom;
+  return newAtom.forget();
+}
+
+already_AddRefed<nsAtom> nsAtomTable::AtomizeMainThread(
+    const nsAString& aUTF16String) {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  size_t length = aUTF16String.Length();
+  const char16_t* str = aUTF16String.Data();
+
+  if (auto sig = ShortAtomCache::TryMakeSignature(str, length)) {
+    if (nsAtom* cached = sShortAtomCache.Lookup(sig)) {
+      return do_AddRef(cached);
+    }
+    AtomTableKey key(str, length);
+    RefPtr<nsAtom> retVal = GetOrInsert(aUTF16String, key);
+    sShortAtomCache.Put(sig, retVal);
+    return retVal.forget();
   }
 
-  p.Set(retVal);
+  AtomTableKey key(str, length);
+  RefPtr<nsAtom> retVal;
+  auto p = sRecentlyUsedMainThreadAtoms.Lookup(key);
+  if (p) {
+    retVal = p.Data();
+  } else {
+    retVal = GetOrInsert(aUTF16String, key);
+    p.Set(retVal);
+  }
   return retVal.forget();
 }
 

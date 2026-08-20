@@ -683,6 +683,11 @@ export var DownloadIntegration = {
    * @rejects JavaScript exception if any of the operations failed.
    */
   async downloadDone(aDownload) {
+    // For PDF files loaded in pdf.js the originalUrl is the original URL
+    // where the PDF was loaded from, and the url is a blob URL: the former is
+    // the one worth recording in the file metadata.
+    const sourceUrl = aDownload.source.originalUrl ?? aDownload.source.url;
+
     try {
       // On Windows, this will mark any file saved to the file system as coming
       // from the Internet security zone unless Group Policy disables the
@@ -695,7 +700,7 @@ export var DownloadIntegration = {
       // This currently does nothing on other platforms.
       await lazy.gDownloadPlatform.maybeWriteDownloadOriginInformation(
         new lazy.FileUtils.File(aDownload.target.path),
-        lazy.NetUtil.newURI(aDownload.source.url),
+        lazy.NetUtil.newURI(sourceUrl),
         aDownload.source.referrerInfo,
         aDownload.source.isPrivate
       );
@@ -743,7 +748,7 @@ export var DownloadIntegration = {
     }
 
     await lazy.gDownloadPlatform.downloadDone(
-      lazy.NetUtil.newURI(aDownload.source.url),
+      lazy.NetUtil.newURI(sourceUrl),
       aReferrer,
       new lazy.FileUtils.File(aDownload.target.path),
       aDownload.contentType,

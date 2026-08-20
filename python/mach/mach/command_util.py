@@ -63,6 +63,9 @@ MACH_COMMANDS = {
     "bhr-aggregate": MachCommandReference(
         "toolkit/components/backgroundhangmonitor/mach_commands.py"
     ),
+    "bhr-timeseries": MachCommandReference(
+        "toolkit/components/backgroundhangmonitor/mach_commands.py"
+    ),
     "bootstrap": MachCommandReference(
         "python/mozboot/mozboot/mach_commands.py",
     ),

@@ -1090,6 +1090,47 @@ class IceTestPeer : public sigslot::has_slots<> {
     return v;
   }
 
+  bool HasNominatedPair(size_t stream_index, uint64_t component_id = 1) {
+    std::vector<NrIceCandidatePair> pairs;
+    if (NS_FAILED(GetCandidatePairs(stream_index, &pairs))) {
+      return false;
+    }
+
+    return std::any_of(pairs.begin(), pairs.end(),
+                       [component_id](const NrIceCandidatePair& pair) {
+                         return pair.component_id == component_id &&
+                                pair.nominated;
+                       });
+  }
+
+  void AssertRegularlyNominatedAndSelectedPair(size_t stream_index,
+                                               uint64_t component_id = 1) {
+    std::vector<NrIceCandidatePair> pairs;
+    ASSERT_EQ(NS_OK, GetCandidatePairs(stream_index, &pairs));
+
+    size_t nominated = 0;
+    size_t selected = 0;
+    for (const auto& pair : pairs) {
+      if (pair.component_id != component_id) {
+        continue;
+      }
+      if (pair.nominated) {
+        ++nominated;
+      }
+      if (pair.selected) {
+        ++selected;
+        EXPECT_TRUE(pair.nominated);
+        EXPECT_EQ(NrIceCandidatePair::STATE_SUCCEEDED, pair.state);
+        if (pair.local.type == NrIceCandidate::ICE_HOST) {
+          EXPECT_GE(pair.responses_recvd, 2U);
+        }
+      }
+    }
+
+    EXPECT_EQ(1U, nominated);
+    EXPECT_EQ(1U, selected);
+  }
+
   void DumpCandidatePair(const NrIceCandidatePair& pair) {
     std::cerr << std::endl;
     DumpCandidate("Local", pair.local);
@@ -1794,6 +1835,19 @@ class WebRtcIceConnectTest : public StunTest {
       caller->DumpAndCheckActiveCandidates();
       callee->DumpAndCheckActiveCandidates();
     }
+  }
+
+  void ConnectIceLite(IceTestPeer* lite, IceTestPeer* full,
+                      TrickleMode mode = TRICKLE_NONE) {
+    lite->Connect(full, mode, false);
+    full->Connect(lite, mode);
+
+    EXPECT_EQ(NrIceCtx::ICE_CONTROLLED, lite->GetControlling());
+    EXPECT_EQ(NrIceCtx::ICE_CONTROLLING, full->GetControlling());
+    if (mode != TRICKLE_SIMULATE) {
+      ASSERT_TRUE_WAIT(full->ice_connected(), kDefaultTimeout);
+    }
+    EXPECT_FALSE(lite->ice_reached_checking());
   }
 
   void SetExpectedTypes(NrIceCandidate::Type local, NrIceCandidate::Type remote,
@@ -3007,10 +3061,131 @@ TEST_F(WebRtcIceConnectTest, TestConnectIceLiteOfferer) {
   NrIceCtx::GlobalConfig config;
   config.mTcpEnabled = false;
   NrIceCtx::InitializeGlobals(config);
+  Init(false);
   AddStream(1);
   ASSERT_TRUE(Gather());
   p1_->SimulateIceLite();
   Connect();
+
+  std::vector<NrIceCandidatePair> pairs;
+  ASSERT_EQ(NS_OK, p2_->GetCandidatePairs(0, &pairs));
+  EXPECT_EQ(1, std::count_if(pairs.begin(), pairs.end(),
+                             [](const NrIceCandidatePair& pair) {
+                               return pair.nominated;
+                             }));
+  EXPECT_EQ(1, std::count_if(pairs.begin(), pairs.end(),
+                             [](const NrIceCandidatePair& pair) {
+                               return pair.selected;
+                             }));
+}
+
+TEST_F(WebRtcIceConnectTest, TestConnectIceLitePassiveOfferer) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  Init(false);
+  AddStream(1);
+  ASSERT_TRUE(Gather());
+  p1_->SimulateIceLite();
+  ConnectIceLite(p1_.get(), p2_.get());
+  ASSERT_TRUE_WAIT(p2_->HasNominatedPair(0), kDefaultTimeout);
+  p2_->AssertRegularlyNominatedAndSelectedPair(0);
+}
+
+TEST_F(WebRtcIceConnectTest, TestConnectIceLiteAnswerer) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+
+  Init(false);
+  AddStream(1);
+  ASSERT_TRUE(Gather());
+  p2_->SimulateIceLite();
+  ConnectIceLite(p2_.get(), p1_.get());
+  ASSERT_TRUE_WAIT(p1_->HasNominatedPair(0), kDefaultTimeout);
+  p1_->AssertRegularlyNominatedAndSelectedPair(0);
+}
+
+TEST_F(WebRtcIceConnectTest, TestConnectIceLiteServerReflexiveCandidate) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  config.mStunClientMaxTransmits = 3;
+  NrIceCtx::InitializeGlobals(config);
+
+  Init();
+  p2_->UseNat();
+  p2_->SetExpectedTypes(NrIceCandidate::ICE_SERVER_REFLEXIVE,
+                        NrIceCandidate::ICE_HOST);
+
+  AddStream(1);
+  ASSERT_TRUE(Gather());
+  p1_->SimulateIceLite();
+  ConnectIceLite(p1_.get(), p2_.get(), TRICKLE_SIMULATE);
+  for (auto* peer : {p1_.get(), p2_.get()}) {
+    for (auto* candidate : peer->ControlTrickle(0)) {
+      if (!IsIpv4Candidate(candidate->Candidate()).empty()) {
+        candidate->Schedule(0);
+      }
+    }
+  }
+  ASSERT_TRUE_WAIT(p2_->ice_connected(), kDefaultTimeout);
+  ASSERT_TRUE_WAIT(p2_->HasNominatedPair(0), kDefaultTimeout);
+
+  std::vector<NrIceCandidatePair> pairs;
+  ASSERT_EQ(NS_OK, p2_->GetCandidatePairs(0, &pairs));
+  EXPECT_GT(pairs.size(), 1U);
+  p2_->DumpAndCheckActiveCandidates();
+  p2_->AssertRegularlyNominatedAndSelectedPair(0);
+  SendReceive(p2_.get(), p1_.get());
+}
+
+TEST_F(WebRtcIceConnectTest, TestConnectIceLitePeerReflexiveCandidate) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  config.mStunClientMaxTransmits = 3;
+  NrIceCtx::InitializeGlobals(config);
+
+  Init();
+  p2_->UseNat();
+  p2_->SetFilteringType(TestNat::PORT_DEPENDENT);
+  p2_->SetMappingType(TestNat::PORT_DEPENDENT);
+  p2_->SetExpectedTypes(NrIceCandidate::ICE_PEER_REFLEXIVE,
+                        NrIceCandidate::ICE_HOST);
+
+  AddStream(1);
+  ASSERT_TRUE(Gather());
+
+  const auto attributes = p2_->GetAttributes(0);
+  EXPECT_TRUE(std::any_of(
+      attributes.begin(), attributes.end(), [](const std::string& attribute) {
+        return attribute.find(" typ srflx ") != std::string::npos;
+      }));
+
+  p1_->SimulateIceLite();
+  ConnectIceLite(p1_.get(), p2_.get());
+  ASSERT_TRUE_WAIT(p2_->HasNominatedPair(0), kDefaultTimeout);
+
+  std::vector<NrIceCandidatePair> pairs;
+  ASSERT_EQ(NS_OK, p2_->GetCandidatePairs(0, &pairs));
+  EXPECT_GT(pairs.size(), 1U);
+  p2_->DumpAndCheckActiveCandidates();
+  p2_->AssertRegularlyNominatedAndSelectedPair(0);
+}
+
+TEST_F(WebRtcIceConnectTest, TestConnectIceLiteTwoComponents) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+
+  Init(false);
+  AddStream(2);
+  ASSERT_TRUE(Gather());
+  p1_->SimulateIceLite();
+  ConnectIceLite(p1_.get(), p2_.get());
+  ASSERT_TRUE_WAIT(p2_->HasNominatedPair(0, 1), kDefaultTimeout);
+  ASSERT_TRUE_WAIT(p2_->HasNominatedPair(0, 2), kDefaultTimeout);
+  p2_->AssertRegularlyNominatedAndSelectedPair(0, 1);
+  p2_->AssertRegularlyNominatedAndSelectedPair(0, 2);
 }
 
 TEST_F(WebRtcIceConnectTest, TestTrickleBothControllingP1Wins) {
@@ -3049,6 +3224,7 @@ TEST_F(WebRtcIceConnectTest, TestTrickleIceLiteOfferer) {
   NrIceCtx::GlobalConfig config;
   config.mTcpEnabled = false;
   NrIceCtx::InitializeGlobals(config);
+  Init(false);
   AddStream(1);
   ASSERT_TRUE(Gather());
   p1_->SimulateIceLite();
@@ -3056,6 +3232,34 @@ TEST_F(WebRtcIceConnectTest, TestTrickleIceLiteOfferer) {
   SimulateTrickle(0);
   WaitForConnected(1000);
   AssertCheckingReached();
+
+  std::vector<NrIceCandidatePair> pairs;
+  ASSERT_EQ(NS_OK, p2_->GetCandidatePairs(0, &pairs));
+  EXPECT_EQ(1, std::count_if(pairs.begin(), pairs.end(),
+                             [](const NrIceCandidatePair& pair) {
+                               return pair.nominated;
+                             }));
+  EXPECT_EQ(1, std::count_if(pairs.begin(), pairs.end(),
+                             [](const NrIceCandidatePair& pair) {
+                               return pair.selected;
+                             }));
+}
+
+TEST_F(WebRtcIceConnectTest, TestTrickleIceLitePassiveOfferer) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  Init(false);
+  AddStream(1);
+  ASSERT_TRUE(Gather());
+  p1_->SimulateIceLite();
+  ConnectIceLite(p1_.get(), p2_.get(), TRICKLE_SIMULATE);
+  p1_->SimulateTrickle(0);
+  p2_->SimulateTrickle(0);
+  ASSERT_TRUE_WAIT(p2_->ice_connected(), kDefaultTimeout);
+  EXPECT_FALSE(p1_->ice_reached_checking());
+  ASSERT_TRUE_WAIT(p2_->HasNominatedPair(0), kDefaultTimeout);
+  p2_->AssertRegularlyNominatedAndSelectedPair(0);
 }
 
 TEST_F(WebRtcIceConnectTest, TestGatherFullCone) {

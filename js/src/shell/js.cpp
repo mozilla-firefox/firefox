@@ -851,8 +851,8 @@ already_AddRefed<JS::Stencil> OffThreadJob::stealStencil(JSContext* cx) {
 }
 
 struct ShellCompartmentPrivate {
-  GCPtr<ArrayObject*> blackRoot;
-  GCPtr<ArrayObject*> grayRoot;
+  HeapPtr<ArrayObject*> blackRoot;
+  HeapPtr<ArrayObject*> grayRoot;
 };
 
 struct MOZ_STACK_CLASS EnvironmentPreparer
@@ -1088,7 +1088,7 @@ static void TraceRootArrays(JSTracer* trc, gc::MarkColor color) {
         continue;
       }
 
-      GCPtr<ArrayObject*>& array =
+      HeapPtr<ArrayObject*>& array =
           (color == gc::MarkColor::Black) ? priv->blackRoot : priv->grayRoot;
       TraceEdge(trc, &array, "shell root array");
 
@@ -5647,6 +5647,17 @@ static ShellCompartmentPrivate* EnsureShellCompartmentPrivate(JSContext* cx) {
   return priv;
 }
 
+static void ClearShellCompartmentPrivates(JSContext* cx) {
+  for (ZonesIter zone(cx->runtime(), SkipAtoms); !zone.done(); zone.next()) {
+    for (CompartmentsInZoneIter comp(zone); !comp.done(); comp.next()) {
+      auto* priv =
+          static_cast<ShellCompartmentPrivate*>(JS_GetCompartmentPrivate(comp));
+      JS_SetCompartmentPrivate(comp, nullptr);
+      js_delete(priv);
+    }
+  }
+}
+
 static bool ParseModule(JSContext* cx, unsigned argc, Value* vp) {
   CallArgs args = CallArgsFromVp(argc, vp);
   if (!args.requireAtLeast(cx, "parseModule", 1)) {
@@ -8866,7 +8877,7 @@ static bool EnsureRootArray(JSContext* cx, gc::MarkColor color, unsigned argc,
     return false;
   }
 
-  GCPtr<ArrayObject*>& root =
+  HeapPtr<ArrayObject*>& root =
       (color == gc::MarkColor::Black) ? priv->blackRoot : priv->grayRoot;
 
   if (!root && !(root = NewTenuredDenseEmptyArray(cx))) {
@@ -12414,8 +12425,7 @@ ShellContext::~ShellContext() {
   if (cx_) {
     JS_SetContextPrivate(cx_, nullptr);
     JS::SetHostCleanupFinalizationRegistryCallback(cx_, nullptr, nullptr);
-    JS_SetGrayGCRootsTracer(cx_, nullptr, nullptr);
-    JS_RemoveExtraGCRootsTracer(cx_, TraceBlackRoots, nullptr);
+    ClearShellCompartmentPrivates(cx_);
   }
   MOZ_ASSERT(offThreadJobs.empty());
 }

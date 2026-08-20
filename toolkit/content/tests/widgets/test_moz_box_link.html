@@ -45,6 +45,33 @@
           "Has no support-page attribute"
         );
         is(anchor.getAttribute("target"), "_blank", "Sets _blank target");
+        is(
+          anchor.getAttribute("aria-describedby"),
+          "opens-in-new-tab",
+          "Described by opens-in-new-tab text when there is no description"
+        );
+        is(
+          anchor.getAttribute("data-l10n-id"),
+          "moz-box-link-anchor",
+          "Anchor uses fluent id for the opens-in-new-tab tooltip"
+        );
+        const opensInNewTab =
+          host.shadowRoot.getElementById("opens-in-new-tab");
+        ok(opensInNewTab, "Renders opens-in-new-tab description source");
+        is(
+          opensInNewTab.getAttribute("data-l10n-id"),
+          "moz-box-link-opens-in-new-tab",
+          "Opens-in-new-tab text uses expected fluent id"
+        );
+        ok(
+          anchor.querySelector("span"),
+          "Label is wrapped in a span so moz-support-link does not self-label"
+        );
+        is(
+          anchor.textContent.trim(),
+          testLabel,
+          "Anchor text content is only the label"
+        );
 
         is(host.label, testLabel, "Has expected label");
         is(
@@ -57,17 +84,43 @@
         host.description = testDescription;
         await host.updateComplete;
 
+        const anchorWithDescription = host.shadowRoot.querySelector("a");
         is(
           host.descriptionEl.textContent.trim(),
           testDescription,
           "Supports setting a description"
         );
+        ok(
+          !anchorWithDescription.contains(host.descriptionEl),
+          "Description is not a descendant of the anchor"
+        );
+        is(
+          anchorWithDescription.getAttribute("aria-describedby"),
+          "description opens-in-new-tab",
+          "Described by visible description and opens-in-new-tab text"
+        );
+        is(
+          anchorWithDescription.textContent.trim(),
+          testLabel,
+          "Anchor text content remains only the label when description is set"
+        );
+
+        host.description = "";
+        await host.updateComplete;
+        ok(!host.descriptionEl, "Description element is not rendered");
+        is(
+          host.shadowRoot.querySelector("a").getAttribute("aria-describedby"),
+          "opens-in-new-tab",
+          "Described by opens-in-new-tab text when there is no description"
+        );
       });
 
       add_task(async function testMozBoxLinkSupportLink() {
         const supportPage = "test-abc";
+        const testLabel = "Get help";
         const supportPageTemplate = testHelpers.templateFn({
           "support-page": supportPage,
+          label: testLabel,
         });
         const renderTarget =
           await testHelpers.renderTemplate(supportPageTemplate);
@@ -90,6 +143,15 @@
         ok(
           anchor.href.includes(supportPage),
           "href is set as expected on the support link"
+        );
+        is(
+          anchor.textContent.trim(),
+          testLabel,
+          "Support link keeps the provided label instead of defaulting to Learn more"
+        );
+        ok(
+          anchor.querySelector("span"),
+          "Support link label is wrapped in a span"
         );
       });
     </script>

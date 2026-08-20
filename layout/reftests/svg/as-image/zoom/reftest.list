@@ -1,8 +1,8 @@
 # Tests related to SVG being used as an image, with zooming
 
 # Simple <img> tests
-fuzzy(0-1,0-408) == img-zoomIn-1.html squaredCircle-150x150-ref.html
-fuzzy(0-1,0-74) == img-zoomOut-1.html squaredCircle-50x50-ref.html
+fuzzy(0-64,0-1300) == img-zoomIn-1.html squaredCircle-150x150-ref.html
+fuzzy(0-64,0-256) == img-zoomOut-1.html squaredCircle-50x50-ref.html
 
 # Ensure that scaled SVG images aren't fuzzy when tiled.
 fails-if(useDrawSnapshot) == img-fuzzy-zoomOut-1.html           img-fuzzy-zoomOut-1-ref.html

@@ -54,15 +54,18 @@ I420Buffer::I420Buffer(int width,
                        int height,
                        int stride_y,
                        int stride_u,
-                       int stride_v)
+                       int stride_v,
+                       uint8_t* data)
     : width_(width),
       height_(height),
       stride_y_(stride_y),
       stride_u_(stride_u),
       stride_v_(stride_v),
-      data_(static_cast<uint8_t*>(AlignedMalloc(
-          I420DataSize(width, height, stride_y, stride_u, stride_v),
-          kBufferAlignment))) {
+      data_(data ? data
+                 : static_cast<uint8_t*>(AlignedMalloc(
+                       I420DataSize(width, height, stride_y, stride_u,
+                                    stride_v),
+                       kBufferAlignment))) {
   RTC_DCHECK_GE(stride_u, (width + 1) / 2);
   RTC_DCHECK_GE(stride_v, (width + 1) / 2);
 }
@@ -82,6 +85,22 @@ scoped_refptr<I420Buffer> I420Buffer::Create(int width,
                                              int stride_v) {
   return make_ref_counted<I420Buffer>(width, height, stride_y, stride_u,
                                       stride_v);
+}
+
+// static
+scoped_refptr<I420Buffer> I420Buffer::CreateOrNull(int width,
+                                                   int height,
+                                                   int stride_y,
+                                                   int stride_u,
+                                                   int stride_v) {
+  uint8_t* data = AlignedMallocOrNull<uint8_t>(
+      I420DataSize(width, height, stride_y, stride_u, stride_v),
+      kBufferAlignment);
+  if (!data) {
+    return nullptr;
+  }
+  return make_ref_counted<I420Buffer>(width, height, stride_y, stride_u,
+                                      stride_v, data);
 }
 
 // static

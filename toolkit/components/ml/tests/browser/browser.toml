@@ -23,6 +23,8 @@ skip-if = [
 ["browser_ml_best_onnx_fallback.js"]
 support-files = [
   "ml_best_onnx_fallback_stub.worker.mjs",
+  "ml_native_ort_unavailable_stub.worker.mjs",
+  "ml_native_ort_error_stub.worker.mjs",
 ]
 
 ["browser_ml_cache.js"]

@@ -32,8 +32,16 @@ pub fn run(path: &Path, expected_checkpoints: &[(usize, f32)]) {
     };
 
     // Incremental decode with progressive callback
-    let (_, frames) =
-        decode_internal(&file, 123, false, true, None, Some(&mut flush_callback)).unwrap();
+    let (_, frames) = decode_internal(
+        &file,
+        123,
+        false,
+        true,
+        None,
+        Some(&mut flush_callback),
+        None,
+    )
+    .unwrap();
 
     // Record the final state (fully decoded frame has MSE 0.0)
     actual_checkpoints.push((file.len(), 0.0));

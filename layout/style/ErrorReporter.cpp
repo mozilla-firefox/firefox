@@ -10,6 +10,7 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/SchedulerGroup.h"
 #include "mozilla/StaticPrefs_layout.h"
+#include "mozilla/StaticPtr.h"
 #include "mozilla/StyleSheetInlines.h"
 #include "mozilla/css/Loader.h"
 #include "mozilla/dom/Document.h"
@@ -68,10 +69,9 @@ class ShortTermURISpecCache : public Runnable {
 
 bool ErrorReporter::sInitialized = false;
 
-static nsIConsoleService* sConsoleService;
-static nsIFactory* sScriptErrorFactory;
-static nsIStringBundle* sStringBundle;
-static ShortTermURISpecCache* sSpecCache;
+static StaticRefPtr<nsIConsoleService> sConsoleService;
+static StaticRefPtr<nsIStringBundle> sStringBundle;
+static StaticRefPtr<ShortTermURISpecCache> sSpecCache;
 
 void ErrorReporter::InitGlobals() {
   MOZ_RELEASE_ASSERT(NS_IsMainThread());
@@ -81,11 +81,6 @@ void ErrorReporter::InitGlobals() {
 
   nsCOMPtr<nsIConsoleService> cs = do_GetService(NS_CONSOLESERVICE_CONTRACTID);
   if (!cs) {
-    return;
-  }
-
-  nsCOMPtr<nsIFactory> sf = do_GetClassObject(NS_SCRIPTERROR_CONTRACTID);
-  if (!sf) {
     return;
   }
 
@@ -101,9 +96,8 @@ void ErrorReporter::InitGlobals() {
     return;
   }
 
-  cs.forget(&sConsoleService);
-  sf.forget(&sScriptErrorFactory);
-  sb.forget(&sStringBundle);
+  sConsoleService = cs.forget();
+  sStringBundle = sb.forget();
 }
 
 namespace mozilla {
@@ -111,10 +105,9 @@ namespace css {
 
 /* static */
 void ErrorReporter::ReleaseGlobals() {
-  NS_IF_RELEASE(sConsoleService);
-  NS_IF_RELEASE(sScriptErrorFactory);
-  NS_IF_RELEASE(sStringBundle);
-  NS_IF_RELEASE(sSpecCache);
+  sConsoleService = nullptr;
+  sStringBundle = nullptr;
+  sSpecCache = nullptr;
 }
 
 uint64_t ErrorReporter::FindInnerWindowId(const StyleSheet* aSheet,
@@ -213,8 +206,7 @@ void ErrorReporter::OutputError(const nsACString& aSelectors,
   nsAutoCString fileName;
   if (aURI) {
     if (!sSpecCache) {
-      sSpecCache = new ShortTermURISpecCache;
-      NS_ADDREF(sSpecCache);
+      sSpecCache = MakeRefPtr<ShortTermURISpecCache>();
     }
     fileName = sSpecCache->GetSpec(aURI);
   } else {
@@ -222,8 +214,7 @@ void ErrorReporter::OutputError(const nsACString& aSelectors,
   }
 
   nsresult rv;
-  nsCOMPtr<nsIScriptError> errorObject =
-      do_CreateInstance(sScriptErrorFactory, &rv);
+  nsCOMPtr<nsIScriptError> errorObject = components::ScriptError::Create(&rv);
 
   if (NS_SUCCEEDED(rv)) {
     // It is safe to used InitWithSanitizedSource because fileName is

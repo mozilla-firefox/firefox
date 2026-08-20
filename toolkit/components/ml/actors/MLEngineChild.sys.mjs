@@ -41,13 +41,22 @@ const lazy = XPCOMUtils.declareLazy({
 
 /**
  * Cached resolution of "best-onnx" for this inference-child process. Null
- * until the first engine creation attempt observes whether the native
- * runtime is usable; thereafter set to the concrete backend that worked.
+ * until the first request probes native ONNX availability (or an engine
+ * creation observes it); thereafter set to the concrete backend to use.
  * See `dom/onnx/InferenceSession.cpp` for the underlying ORT load.
  *
  * @type {null | "onnx" | "onnx-native"}
  */
 let gBestOnnxBackend = null;
+
+/**
+ * In-flight availability probe deduplicating concurrent cold-cache "best-onnx"
+ * resolutions onto a single worker check. Mirrors the chrome-side cache in
+ * `EngineProcess.sys.mjs`: reset to null on failure so a later request retries.
+ *
+ * @type {null | Promise<string>}
+ */
+let gBestOnnxBackendPromise = null;
 
 const SAFE_OVERRIDE_OPTIONS = [
   "dtype",
@@ -226,18 +235,46 @@ export class MLEngineChild extends JSProcessActorChild {
 
   /**
    * Resolves a requested backend to a concrete backend identifier. "best-onnx"
-   * returns the cached choice if one exists, otherwise optimistically tries
-   * onnx-native (the caller's engine creation will update the cache on success
-   * or fallback). Any other value is already concrete.
+   * returns the cached choice if one exists, otherwise probes native ONNX
+   * availability once per process (deduped via an in-flight promise) and caches
+   * onnx-native or onnx accordingly. If the probe itself fails we leave the
+   * cache unset and fall back to optimistically trying onnx-native, letting the
+   * engine-creation try/catch resolve the real outcome. Any other value is
+   * already concrete.
    *
    * @param {string} backend - Requested backend or "best-onnx".
-   * @returns {string} Resolved backend identifier.
+   * @returns {Promise<string>} Resolved backend identifier.
    */
-  chooseBestBackend(backend) {
-    if (backend === lazy.BACKENDS.bestOnnx) {
-      return gBestOnnxBackend ?? lazy.BACKENDS.onnxNative;
+  async chooseBestBackend(backend) {
+    if (backend !== lazy.BACKENDS.bestOnnx) {
+      return backend;
     }
-    return backend;
+    if (gBestOnnxBackend) {
+      return gBestOnnxBackend;
+    }
+    if (!gBestOnnxBackendPromise) {
+      gBestOnnxBackendPromise = this.#resolveBestOnnxBackend();
+    }
+    const promise = gBestOnnxBackendPromise;
+    return promise.catch(() => {
+      if (gBestOnnxBackendPromise === promise) {
+        gBestOnnxBackendPromise = null;
+      }
+      return lazy.BACKENDS.onnxNative;
+    });
+  }
+
+  /**
+   * Runs the availability probe and records the result in `gBestOnnxBackend`.
+   *
+   * @returns {Promise<string>}
+   */
+  async #resolveBestOnnxBackend() {
+    const available = await this.requestIsNativeOnnxRuntimeAvailable();
+    gBestOnnxBackend = available
+      ? lazy.BACKENDS.onnxNative
+      : lazy.BACKENDS.onnx;
+    return gBestOnnxBackend;
   }
 
   /**
@@ -430,7 +467,7 @@ class EngineDispatcher {
 
     const requestedBackend = pipelineOptions.backend;
     this.pipelineOptions.backend =
-      this.mlEngineChild.chooseBestBackend(requestedBackend);
+      await this.mlEngineChild.chooseBestBackend(requestedBackend);
 
     // Retrigger validation
     this.pipelineOptions = new lazy.PipelineOptions(this.pipelineOptions);

@@ -16,10 +16,12 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   PrivacyFilter: "resource://gre/modules/sessionstore/PrivacyFilter.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
-  RunState: "resource:///modules/sessionstore/RunState.sys.mjs",
-  SessionFile: "resource:///modules/sessionstore/SessionFile.sys.mjs",
-  SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
-  sessionStoreLogger: "resource:///modules/sessionstore/SessionLogger.sys.mjs",
+  RunState: "moz-src:///browser/components/sessionstore/RunState.sys.mjs",
+  SessionFile: "moz-src:///browser/components/sessionstore/SessionFile.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
+  sessionStoreLogger:
+    "moz-src:///browser/components/sessionstore/SessionLogger.sys.mjs",
 });
 
 /*

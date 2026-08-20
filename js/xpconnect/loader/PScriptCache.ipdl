@@ -21,7 +21,7 @@ struct ScriptData {
     uint8_t[] xdrData;
 };
 
-[ManualDealloc, ChildImpl="ScriptCacheChild", ParentImpl="ScriptCacheParent"]
+[ManualDealloc, ChildImpl="mozilla::loader::ScriptCacheChild", ParentImpl="mozilla::loader::ScriptCacheParent"]
 protocol PScriptCache
 {
     manager PContent;

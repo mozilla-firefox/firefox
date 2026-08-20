@@ -3,9 +3,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use std::{
-    ops::DerefMut,
-    sync::atomic::{AtomicUsize, Ordering},
+use crate::util::sync::{
+    Mutex, RwLock,
+    atomic::{AtomicUsize, Ordering},
 };
 
 use crate::{
@@ -16,7 +16,6 @@ use crate::{
     },
     headers::bit_depth::BitDepth,
     image::Image,
-    util::{AtomicRefCell, AtomicRefMut},
 };
 
 use super::ModularBufferInfo;
@@ -77,13 +76,13 @@ impl ModularChannel {
 
 #[derive(Debug)]
 pub(super) struct ModularBuffer {
-    pub(super) data: AtomicRefCell<Option<ModularChannel>>,
+    pub(super) data: RwLock<Option<ModularChannel>>,
     // Number of times this buffer will be used, *including* when it is used for output.
     pub(super) remaining_uses: AtomicUsize,
     // Transform steps that use the image data in this buffer for final renders.
     pub(super) used_by_transforms_final: Vec<usize>,
     // Transform steps that depend on this buffer for the current rendering pass.
-    pub(super) used_by_transforms_current: Vec<usize>,
+    pub(super) used_by_transforms_current: Mutex<Vec<usize>>,
     // Transform step that will produce this channel (None if the channel is final).
     pub(super) produced_by_step: Option<usize>,
     pub(super) size: (usize, usize),
@@ -97,10 +96,10 @@ const DISABLE_MODULAR_BUFFER_DEALLOCATION_FOR_DEBUG: bool = false;
 impl ModularBuffer {
     pub fn new(size: (usize, usize)) -> Self {
         ModularBuffer {
-            data: AtomicRefCell::new(None),
+            data: RwLock::new(None),
             remaining_uses: AtomicUsize::new(0),
             used_by_transforms_final: vec![],
-            used_by_transforms_current: vec![],
+            used_by_transforms_current: Mutex::new(vec![]),
             size,
             data_status: DataStatus::Zero,
             produced_by_step: None,
@@ -108,7 +107,7 @@ impl ModularBuffer {
     }
 
     pub fn has_buffer(&self) -> bool {
-        self.data.borrow().is_some()
+        self.data.try_read().unwrap().is_some()
     }
 
     pub fn make_buffer(&self, info: &ChannelInfo) -> Result<ModularChannel> {
@@ -123,7 +122,7 @@ impl ModularBuffer {
     pub fn ensure_buffer(&self, info: &ChannelInfo) -> Result<()> {
         if !self.has_buffer() {
             let buf = self.make_buffer(info)?;
-            *self.data.borrow_mut() = Some(buf);
+            *self.data.try_write().unwrap() = Some(buf);
         }
         Ok(())
     }
@@ -132,7 +131,7 @@ impl ModularBuffer {
     // If this was the last usage of the buffer, does not actually copy the buffer.
     pub fn get_buffer(&self, can_consume: bool) -> Result<ModularChannel> {
         if !can_consume || DISABLE_MODULAR_BUFFER_DEALLOCATION_FOR_DEBUG {
-            return ModularChannel::try_clone(self.data.borrow().as_ref().unwrap());
+            return ModularChannel::try_clone(self.data.try_read().unwrap().as_ref().unwrap());
         }
         let mut ret = None;
         let _ = self.remaining_uses.fetch_update(
@@ -142,12 +141,17 @@ impl ModularBuffer {
                 let remaining = remaining_pre.checked_sub(1).unwrap();
                 if ret.is_none() {
                     if remaining == 0 {
-                        ret = Some(Ok(self.data.borrow_mut().take().unwrap()))
+                        ret = Some(Ok(self.data.try_write().unwrap().take().unwrap()))
                     } else {
-                        ret = self.data.borrow().as_ref().map(ModularChannel::try_clone);
+                        ret = self
+                            .data
+                            .try_read()
+                            .unwrap()
+                            .as_ref()
+                            .map(ModularChannel::try_clone);
                     }
                 } else if remaining == 0 {
-                    *self.data.borrow_mut() = None;
+                    *self.data.try_write().unwrap() = None;
                 }
                 Some(remaining)
             },
@@ -165,7 +169,7 @@ impl ModularBuffer {
             |remaining_pre: usize| {
                 let remaining = remaining_pre.checked_sub(1).unwrap();
                 if remaining == 0 {
-                    *self.data.borrow_mut() = None;
+                    *self.data.try_write().unwrap() = None;
                 }
                 Some(remaining)
             },
@@ -179,13 +183,12 @@ pub fn with_buffers<T>(
     grid: usize,
     f: impl FnOnce(Vec<&mut ModularChannel>) -> Result<T>,
 ) -> Result<T> {
-    let mut bufs = vec![];
+    let mut guards = vec![];
     for i in indices {
         // Allocate buffers if they are not present.
         let buf = &buffers[*i];
         let b = &buf.buffer_grid[grid];
         b.ensure_buffer(&buf.info)?;
-        let data = b.data.borrow_mut();
 
         // Skip zero-sized *tiles*.
         //
@@ -198,7 +201,8 @@ pub fn with_buffers<T>(
             continue;
         }
 
-        bufs.push(AtomicRefMut::map(data, |x| x.as_mut().unwrap()));
+        guards.push(b.data.try_write().unwrap());
     }
-    f(bufs.iter_mut().map(|x| x.deref_mut()).collect())
+    let bufs: Vec<&mut ModularChannel> = guards.iter_mut().map(|g| g.as_mut().unwrap()).collect();
+    f(bufs)
 }

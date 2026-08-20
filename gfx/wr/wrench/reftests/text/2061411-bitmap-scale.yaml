@@ -4,7 +4,9 @@
 # cannot express one; on the device glyph path that painted the glyph at its
 # untransformed size (bug 2061411, and clipped as well when scaling down -
 # bug 2062234). The reference renders the same content in local raster space,
-# where the shader applies the full transform to the glyph image.
+# where the shader applies the full transform to the glyph image - at the scale the
+# transform asks for, so this also asserts that the glyph is rasterized at its
+# final size rather than scaled up from the untransformed one (bug 2064316).
 root:
   items:
     - type: stacking-context

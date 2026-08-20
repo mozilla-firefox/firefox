@@ -276,17 +276,25 @@ If you use `fish` shell, you won't need to escape `!`, however you will need to 
 
 One or more paths to a file or directory may be specified as positional arguments. When
 specifying paths, the list of available tasks to choose from is filtered down such that
-only suites that have tests in a specified path can be selected. Notably, only the first
-chunk of each suite/platform appears. When the tasks are scheduled, only tests that live
-under one of the specified paths will be run.
+only suites that have tests in a specified path can be selected. When the tasks are
+scheduled, only tests that live under one of the specified paths will be run.
+
+Each task is split into as many chunks as the tests under the specified paths need,
+rather than into the number of chunks the whole suite uses, so a path holding many
+manifests is spread over several jobs.
 
 :::{note}
-When using paths, be aware that all tests under the specified paths will run in the
-same chunk. This might produce a different ordering from what gets run on production
-branches, and may yield different results.
+Be aware that the chunking is computed from the requested paths alone, so it produces a
+different grouping and ordering from what gets run on production branches, and may yield
+different results. Where the manifest runtime data doesn't cover a configuration, the
+number of chunks is a guess.
 
-For suites that restart the browser between each manifest (like mochitest), this
-shouldn't be as big of a concern.
+Suites whose tests the decision task doesn't resolve are not split this way: only their
+first chunk is scheduled, and it runs everything under the specified paths. That covers
+every `web-platform-tests` task, whose manifest names are namespaces rather than source
+paths, along with `jsreftest`, `reftest-qr`, `crashtest-qr`, `marionette-unittest`,
+`jittest`, `cppunittest` and `gtest`. Note that `reftest`, `crashtest` and
+`marionette-integration` do resolve their tests in the decision task, and are split.
 :::
 
 Paths can be used with the interactive `fzf` window, or using the `-q/--query` argument.
@@ -321,9 +329,12 @@ Inside of these tasks, the reftest harness will only run tests that live under
 
 Adding a test tag may be specified as positional arguments. When
 specifying a tag, the list of available tasks to choose from is filtered down such that
-only suites that have tests annotated with the specific tag. Notably, only the first
-chunk of each suite/platform appears. When the tasks are scheduled, only tests that have
-a matching tag in the manifest will be run.
+only suites that have tests annotated with the specific tag. When the tasks are
+scheduled, only tests that have a matching tag in the manifest will be run.
+
+Notably, only the first chunk of each suite/platform appears, including when a tag is
+combined with paths: a tag runs only part of each manifest, which the decision task has
+no runtime data for, so it cannot size the chunks the way it does for paths alone.
 
 :::{note}
 When using tags, be aware that all tests matching the tag will run in the

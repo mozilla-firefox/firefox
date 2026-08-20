@@ -108,6 +108,8 @@ support-files = [
 
 ["browser_aboutNetError_searchCTA_exit.js"]
 
+["browser_aboutNetError_searchCTA_frame.js"]
+
 ["browser_aboutNetError_searchCTA_pbm.js"]
 
 ["browser_aboutNetError_searchCTA_telemetry.js"]

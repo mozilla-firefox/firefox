@@ -262,8 +262,9 @@ add_task(async function test_ui_state_signedin() {
 
   await checkProfilesButtons(manageAccountSeparator, true);
 
-  // The sign-out separator and button sit at the bottom of the secure sync
-  // section, directly below the connected devices list.
+  // In the account (toolbar) menu the sign-out separator and button sit at the
+  // bottom of the secure sync section, directly below the connected devices
+  // list.
   is(
     document.getElementById("PanelUI-sign-out-separator")
       .previousElementSibling,
@@ -312,8 +313,75 @@ add_task(async function test_ui_state_signedin() {
     !BrowserTestUtils.isVisible(profileButtonsContainer),
     "expected profile buttons container to not be visible"
   );
+  // The profiles separator has to be hidden along with the rest of the profiles
+  // section, otherwise it doubles up with the manage account separator.
+  ok(
+    !BrowserTestUtils.isVisible(
+      PanelMultiView.getViewNode(
+        document,
+        "PanelUI-fxa-menu-profiles-separator"
+      )
+    ),
+    "expected profiles separator to not be visible"
+  );
+
+  // In the app menu the sign-out button sits directly below the sync status
+  // section and above the connected devices list, with a separator either side.
+  is(
+    document.getElementById("PanelUI-fxa-menu-account-signout-button")
+      .previousElementSibling,
+    document.getElementById("PanelUI-sign-out-separator"),
+    "The sign-out button sits directly below the sign-out separator in the app menu"
+  );
+  is(
+    document.getElementById("PanelUI-fxa-menu-devices-list")
+      .previousElementSibling,
+    document.getElementById("PanelUI-fxa-menu-account-signout-button"),
+    "The connected devices list sits directly below the sign-out button in the app menu"
+  );
 
   await closeTabAndMainPanel();
+  sandbox.restore();
+});
+
+add_task(async function test_ui_state_signedin_profiles_disabled() {
+  const sandbox = sinon.createSandbox();
+  sandbox.stub(SelectableProfileService, "isEnabled").get(() => false);
+
+  gSync.updateAllUI({
+    status: UIState.STATUS_SIGNED_IN,
+    syncEnabled: true,
+    email: "foo@bar.com",
+    displayName: "Foo Bar",
+    avatarURL: "https://foo.bar",
+    lastSync: new Date(),
+    syncing: false,
+  });
+
+  await openFxaPanel();
+
+  const manageAccountSeparator = document.getElementById(
+    "PanelUI-fxa-menu-manage-account-separator"
+  );
+  ok(
+    isElementVisible(manageAccountSeparator),
+    "The manage account separator is visible when signed in"
+  );
+  for (const id of [
+    "PanelUI-fxa-menu-profiles-header-label",
+    "PanelUI-fxa-menu-profile-buttons",
+  ]) {
+    ok(
+      !isElementVisible(document.getElementById(id)),
+      `${id} is not visible when the profiles feature is disabled`
+    );
+  }
+
+  // With the profiles section hidden, the manage account separator is the only
+  // line dividing the account and secure sync sections.
+  await checkProfilesButtons(manageAccountSeparator, false);
+
+  await closeFxaPanel();
   sandbox.restore();
 });
 

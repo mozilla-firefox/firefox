@@ -1,4 +1,9 @@
 # Changelog
+## [0.3.14] - 2026-08-17
+
+- Change default h264 profile
+- Minimum Rust version >= 1.88
+
 ## [0.3.13] - 2024-09-24
 
 - Add support for AV1

@@ -51,6 +51,7 @@
 
     #backup-filepicker-label {
       text-align: start;
+      font-weight: var(--font-weight-semibold);
     }
 
     #restore-from-backup-no-backup-file-link,

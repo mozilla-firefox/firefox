@@ -6,7 +6,5 @@ skip-if = [
   "asan", # too slow
 ]
 
-["browser_referrer_telemetry.js"]
-
 ["browser_session_history.js"]
 support-files = ["file_session_history.sjs"]

@@ -12,10 +12,12 @@ This test suite can be embedded inside [WPT](https://github.com/web-platform-tes
 
 ## Contributing
 
-Please read the [introductory guidelines](docs/intro/README.md) before contributing.
-Other documentation may be found in [`docs/`](docs/) and in the [helper index](https://gpuweb.github.io/cts/docs/tsdoc/) ([source](docs/helper_index.txt)).
+Please read the [introductory guidelines](https://github.com/gpuweb/cts/blob/main/docs/intro/README.md) before contributing.
+Other documentation may be found in [`docs/`](https://github.com/gpuweb/cts/tree/main/docs) and in
+the [helper index](https://gpuweb.github.io/cts/docs/tsdoc/)
+([source](https://github.com/gpuweb/cts/blob/main/docs/helper_index.txt)).
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) on licensing.
+Read [CONTRIBUTING.md](https://github.com/gpuweb/cts/blob/main/CONTRIBUTING.md) on licensing.
 
 For realtime communication about WebGPU spec and test, join the
 [#WebGPU:matrix.org room](https://app.element.io/#/room/#WebGPU:matrix.org)

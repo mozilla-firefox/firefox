@@ -23,7 +23,7 @@ add_task(async function test_receive_punycode_result() {
       addCallback(this, result);
     }
 
-    getViewUpdate(_result, _idsByName) {
+    getViewUpdate(_result) {
       return {};
     }
   }

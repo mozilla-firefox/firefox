@@ -79,7 +79,8 @@ SimpleChannel::ConnectParent(uint32_t aId) {
   }
 
   mozilla::dom::ContentChild* cc =
-      static_cast<mozilla::dom::ContentChild*>(gNeckoChild->Manager());
+      mozilla::ipc::ActorCast<mozilla::dom::ContentChild>(
+          gNeckoChild->Manager());
   if (cc->IsShuttingDown()) {
     return NS_ERROR_FAILURE;
   }

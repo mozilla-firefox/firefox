@@ -163,16 +163,11 @@ pref(image.testing.decode-sync.enabled,false) == anchor-scroll-01.html anchor-sc
 # that needs a different value overrides it on its own line.
 defaults pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(layout.css.fake-webkit-scrollbar.enabled-domains,"*")
 
-# Test case for @supports selector(::-webkit-scrollbar).
-# We do return true for the @supports
+# Test case for @supports selector(::-webkit-scrollbar). We report the
+# pseudo-element as unsupported even where we do enable it, so the @supports
+# answer doesn't depend on the allowlist.
 == webkit-scrollbar-in-at-supports.html about:blank
-# And we should return false when the document's domain is not on the allowlist.
-pref(layout.css.fake-webkit-scrollbar.enabled-domains,"example.com") HTTP != webkit-scrollbar-in-at-supports.html about:blank
-# Test case for CSS.supports("selector(::-webkit-scrollbar)") (the JS API).
-# We do return true when the pseudo-element is enabled.
-== webkit-scrollbar-in-css-supports.html about:blank
-# And we should return false when the document's domain is not on the allowlist.
-pref(layout.css.fake-webkit-scrollbar.enabled-domains,"example.com") HTTP != webkit-scrollbar-in-css-supports.html about:blank
+pref(layout.css.fake-webkit-scrollbar.enabled-domains,"example.com") HTTP == webkit-scrollbar-in-at-supports.html about:blank
 # Test case where two containers have ::-webkit-scrollbar has non-zero `width` and `height`, thus overlay scrollbars are disabled on the container, but there's another container has no ::-webkit-scrollbar.
 test-pref(ui.useOverlayScrollbars,1) test-pref(layout.testing.overlay-scrollbars.always-visible,false) test-pref(ui.scrollbarFadeBeginDelay,0) ref-pref(ui.useOverlayScrollbars,0) == webkit-scrollbar.html webkit-scrollbar-ref.html
 # And overlay scrollbars are left alone when the document's domain is not on the allowlist.
@@ -211,12 +206,15 @@ skip-if(Android) pref(layout.testing.overlay-scrollbars.always-visible,false) pr
 skip-if(!Android) pref(layout.testing.overlay-scrollbars.always-visible,false) pref(ui.scrollbarFadeBeginDelay,0) pref(ui.useOverlayScrollbars,1) == webkit-scrollbar-on-root-on-mobile.html about:blank
 
 # Test cases for the layout.css.fake-webkit-scrollbar.enabled-domains allowlist
-# itself, so they set the list instead of defaulting it to "*".
-defaults pref(layout.css.fake-webkit-scrollbar.enabled,true)
+# itself, so they set the list instead of defaulting it to "*". They probe the
+# allowlist with ::-webkit-scrollbar { display: none }, which only hides the
+# scrollbar when the pseudo-element is enabled; classic scrollbars keep that
+# observable.
+defaults pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(ui.useOverlayScrollbars,0)
 
 # An entry matches the document's domain exactly. On Android the HTTP host is
 # not "localhost", it's the IP address of the host machine.
-skip-if(Android) pref(layout.css.fake-webkit-scrollbar.enabled-domains,"localhost") HTTP == webkit-scrollbar-in-css-supports.html about:blank
+skip-if(Android) pref(layout.css.fake-webkit-scrollbar.enabled-domains,"localhost") HTTP == webkit-scrollbar-display-none.html webkit-scrollbar-display-none-ref.html
 # An entry starting with "*." matches any sub-domain. The document in the
 # iframe is served from example.org, so "*.org" covers it and "*.example.com"
 # does not.
@@ -224,6 +222,6 @@ skip-if(Android) pref(layout.css.fake-webkit-scrollbar.enabled-domains,"*.org") 
 skip-if(Android) pref(layout.css.fake-webkit-scrollbar.enabled-domains,"*.example.com") HTTP != webkit-scrollbar-allowlist-subdomain.html webkit-scrollbar-allowlist-subdomain-ref.html
 # An empty allowlist lists no domain at all, so it disables the pseudo-element
 # everywhere.
-pref(layout.css.fake-webkit-scrollbar.enabled-domains,"") HTTP != webkit-scrollbar-in-css-supports.html about:blank
+pref(layout.css.fake-webkit-scrollbar.enabled-domains,"") HTTP != webkit-scrollbar-display-none.html webkit-scrollbar-display-none-ref.html
 
 defaults

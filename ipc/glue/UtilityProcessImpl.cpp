@@ -11,6 +11,7 @@
 
 #if defined(XP_WIN) && defined(MOZ_SANDBOX)
 #  include "mozilla/CpuInfo.h"
+#  include "mozilla/llama/LlamaRuntimeLinker.h"
 #  include "mozilla/sandboxTarget.h"
 #  include "WMF.h"
 #  include "WMFDecoderModule.h"
@@ -103,6 +104,10 @@ bool UtilityProcessImpl::Init(int aArgc, char* aArgv[]) {
 #  endif
   ) {
     UtilityMediaServiceParent::WMFPreloadForSandbox();
+  }
+
+  if (*sandboxingKind == SandboxingKind::HW_INFERENCE) {
+    mozilla::llama::LlamaRuntimeLinker::Init();
   }
 
   // Go for it

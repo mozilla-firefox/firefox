@@ -47,7 +47,7 @@ class IPProtectionRepositoryMiddlewareTest {
 
     @Test
     fun `GIVEN vpn has not been used yet WHEN action is not Toggle THEN next is called and hasAlreadyUsedVpn remains false`() {
-        val nonToggleAction = IPProtectionAction.ProxyActiveShown
+        val nonToggleAction = IPProtectionAction.ProxyActivationShown
         var nextCalled = false
 
         middleware.invoke(

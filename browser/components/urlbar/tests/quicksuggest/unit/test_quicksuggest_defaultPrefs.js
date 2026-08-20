@@ -34,30 +34,11 @@ const EXPECTED_PREFS_SUGGEST_DISABLED = {
   "yelp.featureGate": false,
 };
 
-// Expected prefs for native locales in EU countries (e.g., `de` locale in
-// Germany).
-const EXPECTED_PREFS_EU_NATIVE = {
-  ...EXPECTED_PREFS_SUGGEST_DISABLED,
-  "quicksuggest.enabled": true,
-  "quicksuggest.settingsUi": QuickSuggest.SETTINGS_UI.OFFLINE_ONLY,
-  "suggest.quicksuggest.all": true,
-  "suggest.quicksuggest.sponsored": true,
-  "importantDates.featureGate": true,
-  "weather.featureGate": true,
-};
-
-// Expected prefs for `en` locales in EU countries (e.g., `en-US` locale in
-// Germany).
-const EXPECTED_PREFS_EU_EN = {
-  ...EXPECTED_PREFS_SUGGEST_DISABLED,
-  "quicksuggest.enabled": true,
-  "importantDates.featureGate": true,
-};
-
-// Base set of expected prefs for countries where an `en` locale is native
-// (e.g., US, UK). These countries will have slightly different actual expected
-// prefs, which is why this is a base set.
-const EXPECTED_PREFS_BASE_EN_NATIVE = {
+// Base set of expected prefs for native locales in regions where Suggest is
+// enabled, e.g., the `en-US` locale in the U.S., the `de` locale in Germany.
+// Countries may have slightly different actual expected prefs, which is why
+// this is a base set.
+const EXPECTED_PREFS_BASE_NATIVE = {
   ...EXPECTED_PREFS_SUGGEST_DISABLED,
   "quicksuggest.enabled": true,
   "quicksuggest.settingsUi": QuickSuggest.SETTINGS_UI.OFFLINE_ONLY,
@@ -69,25 +50,33 @@ const EXPECTED_PREFS_BASE_EN_NATIVE = {
   "wikipedia.featureGate": true,
 };
 
+// Expected prefs for `en` locales in EU countries (e.g., `en-US` locale in
+// Germany).
+const EXPECTED_PREFS_EU_EN = {
+  ...EXPECTED_PREFS_SUGGEST_DISABLED,
+  "quicksuggest.enabled": true,
+  "importantDates.featureGate": true,
+};
+
 // Region -> locale -> expected prefs when Suggest is enabled
 const EXPECTED_PREFS_BY_LOCALE_BY_REGION = {
   DE: {
-    de: EXPECTED_PREFS_EU_NATIVE,
+    de: EXPECTED_PREFS_BASE_NATIVE,
     ...Object.fromEntries(
       EN_LOCALES.map(locale => [locale, EXPECTED_PREFS_EU_EN])
     ),
   },
   FR: {
-    fr: EXPECTED_PREFS_EU_NATIVE,
+    fr: EXPECTED_PREFS_BASE_NATIVE,
     ...Object.fromEntries(
       EN_LOCALES.map(locale => [locale, EXPECTED_PREFS_EU_EN])
     ),
   },
   GB: Object.fromEntries(
-    EN_LOCALES.map(locale => [locale, EXPECTED_PREFS_BASE_EN_NATIVE])
+    EN_LOCALES.map(locale => [locale, EXPECTED_PREFS_BASE_NATIVE])
   ),
   IT: {
-    it: EXPECTED_PREFS_EU_NATIVE,
+    it: EXPECTED_PREFS_BASE_NATIVE,
     ...Object.fromEntries(
       EN_LOCALES.map(locale => [locale, EXPECTED_PREFS_EU_EN])
     ),
@@ -96,7 +85,7 @@ const EXPECTED_PREFS_BY_LOCALE_BY_REGION = {
     EN_LOCALES.map(locale => [
       locale,
       {
-        ...EXPECTED_PREFS_BASE_EN_NATIVE,
+        ...EXPECTED_PREFS_BASE_NATIVE,
         "addons.featureGate": true,
         "mdn.featureGate": true,
         "yelp.featureGate": true,

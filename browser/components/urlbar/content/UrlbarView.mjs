@@ -3,16 +3,19 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import UrlbarPrefs from "chrome://browser/content/urlbar/UrlbarContentPrefs.mjs";
+import * as UrlbarContentUtils from "chrome://browser/content/urlbar/UrlbarContentUtils.mjs";
 import { UrlbarResult } from "chrome://browser/content/urlbar/UrlbarResult.mjs";
 import { UrlbarShared } from "chrome://browser/content/urlbar/UrlbarShared.mjs";
 import { L10nCache } from "chrome://browser/content/urlbar/L10nCache.mjs";
 
-const lazy = {};
+const lazy = typeof ChromeUtils != "undefined" ? {} : null;
 
-ChromeUtils.defineESModuleGetters(lazy, {
-  UrlbarSearchOneOffs:
-    "moz-src:///browser/components/urlbar/UrlbarSearchOneOffs.sys.mjs",
-});
+if (lazy) {
+  ChromeUtils.defineESModuleGetters(lazy, {
+    UrlbarSearchOneOffs:
+      "moz-src:///browser/components/urlbar/UrlbarSearchOneOffs.sys.mjs",
+  });
+}
 
 // Query selector for selectable elements in results.
 const SELECTABLE_ELEMENT_SELECTOR = "[role=button], [selectable], a";
@@ -25,8 +28,7 @@ const RESULT_MENU_COMMANDS = {
   MANAGE: "manage",
 };
 
-const getBoundsWithoutFlushing = element =>
-  element.documentGlobal.windowUtils.getBoundsWithoutFlushing(element);
+const getBoundsWithoutFlushing = UrlbarShared.getBoundsWithoutFlushing;
 
 // Used to get a unique id to use for row elements, it wraps at 9999, that
 // should be plenty for our needs.
@@ -1281,6 +1283,10 @@ export class UrlbarView {
    * to avoid closing the overflow panel.
    */
   maybeRollupPopups() {
+    if (typeof ChromeUtils == "undefined") {
+      // There are no other chrome popups to roll up in a content document.
+      return;
+    }
     if (
       UrlbarPrefs.get("closeOtherPanelsOnOpen") &&
       !this.input.inOverflowPanel
@@ -1754,7 +1760,7 @@ export class UrlbarView {
           element.removeAttribute(key);
         } else if (typeof value == "boolean") {
           element.toggleAttribute(key, value);
-        } else if (Blob.isInstance(value) && result) {
+        } else if (UrlbarShared.isInstance(value, Blob) && result) {
           element.setAttribute(key, this.#getBlobUrlForResult(result, value));
         } else {
           element.setAttribute(key, value);
@@ -1790,8 +1796,7 @@ export class UrlbarView {
   }
 
   #createRowContentForDynamicType(item, result) {
-    let { dynamicType } = result.payload;
-    let viewTemplate = result.viewTemplate;
+    let { dynamicType, viewTemplate } = result.payload;
     if (!viewTemplate) {
       console.error(`No viewTemplate found for ${result.providerName}`);
       return;
@@ -2307,7 +2312,10 @@ export class UrlbarView {
       }
 
       if (
-        !UrlbarShared.deepEqual(oldResult.viewTemplate, newResult.viewTemplate)
+        !UrlbarShared.deepEqual(
+          oldResult.payload.viewTemplate,
+          newResult.payload.viewTemplate
+        )
       ) {
         return true;
       }
@@ -2673,7 +2681,7 @@ export class UrlbarView {
         });
       this.#updateOverflowTooltip(url, displayedUrl);
 
-      if (this.controller.isTextDirectionRTL(displayedUrl)) {
+      if (UrlbarContentUtils.isTextDirectionRTL(displayedUrl, this.window)) {
         // Stripping the url prefix may change the initial text directionality,
         // causing parts of it to jump to the end. To prevent that we insert a
         // LRM character in place of the prefix.
@@ -2793,34 +2801,15 @@ export class UrlbarView {
     return null;
   }
 
-  async #updateRowForDynamicType(item, result) {
-    // The update is applied asynchronously (getViewUpdate round-trips to
-    // another process on the message path), so expose a promise that resolves
-    // once it lands. Callers that read the updated DOM await it via
-    // UrlbarTestUtils.waitForAutocompleteResultAt.
-    let resolveViewUpdate;
-    item._dynamicViewUpdatePromise = new Promise(
-      resolve => (resolveViewUpdate = resolve)
-    );
-    try {
-      await this.#applyDynamicTypeViewUpdate(item, result);
-    } finally {
-      resolveViewUpdate();
-    }
-  }
-
-  async #applyDynamicTypeViewUpdate(item, result) {
+  #updateRowForDynamicType(item, result) {
     item.setAttribute("dynamicType", result.payload.dynamicType);
 
-    let idsByName = new Map();
     for (let [elementName, node] of item._elements) {
       node.id = `${item.id}-${elementName}`;
-      idsByName.set(elementName, node.id);
     }
 
-    // Get the view update from the result's provider.
-    let viewUpdate = await this.controller.getViewUpdate(result, idsByName);
-    if (item.result != result || !viewUpdate) {
+    let { viewUpdate } = result.payload;
+    if (!viewUpdate) {
       return;
     }
 
@@ -4389,7 +4378,7 @@ export class UrlbarView {
 
     // Attaching the event listener to the window so we can capture `mouseup`
     // outside of the panel when the mouse is dragged.
-    this.panel.documentGlobal.addEventListener("mouseup", this);
+    this.window.addEventListener("mouseup", this);
 
     // Select the element and open a speculative connection unless it's a
     // button. Buttons are special in the two ways listed below. Some buttons
@@ -4430,7 +4419,7 @@ export class UrlbarView {
       return;
     }
 
-    this.panel.documentGlobal.removeEventListener("mouseup", this);
+    this.window.removeEventListener("mouseup", this);
 
     // Since the listener must be on the window use `event.composedPath()`
     // instead of `event.target` to handle shadow DOM encapsulation while
@@ -4503,7 +4492,7 @@ export class UrlbarView {
       case RESULT_MENU_COMMANDS.HELP:
         menuitem.dataset.url =
           result.payload.helpUrl ||
-          this.controller.getSupportUrl("awesome-bar-result-menu");
+          UrlbarContentUtils.getSupportUrl("awesome-bar-result-menu");
         break;
     }
     this.input.pickResult({ result, event, element: menuitem });

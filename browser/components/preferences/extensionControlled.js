@@ -194,7 +194,9 @@ async function showControllingExtension(settingName, addon) {
   setControllingExtensionDescription(description, addon, settingName);
 
   if (elements.button) {
-    elements.button.hidden = false;
+    elements.button.hidden = !(
+      addon.permissions & AddonManager.PERM_CAN_DISABLE
+    );
   }
 
   // Show the controlling extension row and hide the old label.

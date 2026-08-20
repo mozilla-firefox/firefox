@@ -1,6 +1,5 @@
 [DEFAULT]
 prefs = [
-  "dom.viewTransitions.enabled=true",
   "gfx.omta.background-color=true",
   "gfx.font_loader.delay=0",
   "layout.css.motion-path-url.enabled=true",

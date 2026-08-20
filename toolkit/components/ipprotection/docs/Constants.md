@@ -55,6 +55,33 @@ the UI layer.
 
 : VPN service is unavailable in the given region.
 
+`ERRORS.CATASTROPHIC`
+
+: The service failed in a way it cannot recover from.
+
+`ERRORS.NOT_READY`
+
+: Activation was requested while the proxy was not in the `READY` state.
+
+`ERRORS.QUOTA_EXHAUSTED`
+
+: The bandwidth limit has been reached, so the proxy is `PAUSED` rather
+  than activating.
+
+`ERRORS.CONNECTION_FAILED`
+
+: The connection never became active, even though a pass and a server
+  were available.
+
+`ERRORS.SERVERLIST_UNAVAILABLE`
+
+: The list of proxy servers could not be fetched.
+
+`ERRORS.MISSING_PASS`
+
+: Internal consistency guard: a pass rotation completed without returning
+  either a pass or an error. Should never occur in normal operation.
+
 ### Error propagation
 
 Errors thrown inside `IPPProxyManager.start()` are caught by the activation
@@ -63,11 +90,8 @@ promise resolves with `{ started: false, error }`. The panel reads the error
 code from this result to determine which message to show.
 
 Errors that occur while the proxy is already `ACTIVE` (such as a pass
-rotation failure) move the state machine to `IPPProxyStates.ERROR`; in that
-case the panel always surfaces them as a generic error.
-
-`ERRORS.NETWORK` is the only code that maps to a dedicated network error
-message in the UI; all other codes surface as a generic error.
+rotation failure) move the state machine to `IPPProxyStates.ERROR` and are
+recorded as its `errorType`.
 
 `ERRORS.MISSING_PROMISE` and `ERRORS.MISSING_ABORT` are thrown directly
 from `start()` or `stop()` as `Error` objects and bypass the activation

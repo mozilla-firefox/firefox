@@ -296,30 +296,6 @@
     "releaseChannelCollection": "opt-out",
     "description": "GPU Forced Device Reset Reason (OpenSharedHandle)"
   },
-  "FULLSCREEN_TRANSITION_BLACK_MS": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["mozilla-telemetry@upsuper.org"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "low": 100,
-    "high": 5000,
-    "n_buckets": 50,
-    "bug_numbers": [1271160],
-    "description": "The time spent in the fully-black screen in fullscreen transition"
-  },
-  "FULLSCREEN_CHANGE_MS": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["mozilla-telemetry@upsuper.org"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "low": 100,
-    "high": 5000,
-    "n_buckets": 50,
-    "bug_numbers": [1271160],
-    "description": "The time content uses to enter/exit fullscreen regardless of fullscreen transition timeout"
-  },
   "GPU_PROCESS_LAUNCH_TIME_MS_2": {
     "record_in_processes": ["main", "content"],
     "products": ["firefox", "fennec"],
@@ -627,241 +603,6 @@
     "kind": "boolean",
     "description": "WebGL2 creation success",
     "bug_numbers": [1247327]
-  },
-  "HTTP_PAGE_DNS_ISSUE_TIME": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "releaseChannelCollection": "opt-out",
-    "alert_emails": ["necko@mozilla.com", "vogosu@mozilla.com"],
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP page channel: open() -> DNS request issued (ms)",
-    "bug_numbers": [1580077]
-  },
-  "HTTP_PAGE_DNS_LOOKUP_TIME": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "releaseChannelCollection": "opt-out",
-    "alert_emails": ["necko@mozilla.com", "vogosu@mozilla.com"],
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP page channel: DNS lookup time (ms)",
-    "bug_numbers": [1580077]
-  },
-  "HTTP_PAGE_TLS_HANDSHAKE": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox"],
-    "expires_in_version": "never",
-    "releaseChannelCollection": "opt-out",
-    "alert_emails": ["necko@mozilla.com", "ddamjanovic@mozilla.com"],
-    "bug_numbers": [772589, 1580077],
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP page channel: After TCP SYN to Ready for HTTP (ms)"
-  },
-  "HTTP_PAGE_TCP_CONNECTION_2": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "releaseChannelCollection": "opt-out",
-    "alert_emails": ["necko@mozilla.com", "ddamjanovic@mozilla.com"],
-    "bug_numbers": [772589, 1580077],
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP page channel: TCP SYN to Ready for HTTP (ms)"
-  },
-  "HTTP_PAGE_OPEN_TO_FIRST_SENT": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP page channel: Open -> first byte of request sent (ms)"
-  },
-  "HTTP_PAGE_FIRST_SENT_TO_LAST_RECEIVED": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP page channel: First byte of request sent -> last byte of response received (ms)"
-  },
-  "HTTP_PAGE_OPEN_TO_FIRST_RECEIVED": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP page channel: Open -> first byte of reply received (ms)"
-  },
-  "HTTP_PAGE_OPEN_TO_FIRST_FROM_CACHE_V2": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "alert_emails": ["necko@mozilla.com", "mnovotny@mozilla.com"],
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP page channel: Open -> cache read start (ms), [cache2]"
-  },
-  "HTTP_PAGE_COMPLETE_LOAD_V2": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP page channel: Overall load time - all (ms) [cache2]"
-  },
-  "HTTP_SUB_OPEN_TO_FIRST_SENT": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP subitem channel: Open -> first byte of request sent (ms)"
-  },
-  "HTTP_SUB_FIRST_SENT_TO_LAST_RECEIVED": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP subitem channel: First byte of request sent -> last byte of response received (ms)"
-  },
-  "HTTP_SUB_OPEN_TO_FIRST_RECEIVED": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "description": "HTTP subitem channel: Open -> first byte of reply received (ms)"
-  },
-  "HTTP_TRANSACTION_IS_SSL": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["seceng-telemetry@mozilla.com"],
-    "bug_numbers": [1340021],
-    "releaseChannelCollection": "opt-out",
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "description": "Whether an HTTP request occurred over TLS/SSL or not. Recorded during response processing for all requests."
-  },
-  "HTTP_PAGELOAD_IS_SSL": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["seceng-telemetry@mozilla.com"],
-    "bug_numbers": [1340021],
-    "releaseChannelCollection": "opt-out",
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "description": "Whether a HTTP page load was over SSL or not. Recorded during response processing for all first-party page loads."
-  },
-  "HTTP_TRANSACTION_USE_ALTSVC": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "description": "Whether a HTTP transaction was routed via Alt-Svc or not."
-  },
-  "HTTP_ALTSVC_MAPPING_CHANGED_TARGET": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "bug_numbers": [1499149],
-    "alert_emails": ["necko@mozilla.com", "ddamjanovic@mozilla.com"],
-    "kind": "boolean",
-    "description": "Whether or not a new alt-svc mapping would change the target hostname of the existing mapping"
-  },
-  "NETWORK_BACK_PRESSURE_SUSPENSION_RATE_V2": {
-    "record_in_processes": ["main"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "alert_emails": ["necko@mozilla.com", "ddamjanovic@mozilla.com"],
-    "bug_numbers": [1280629, 1494133, 1524552, 1616069, 1668513, 1700824],
-    "kind": "categorical",
-    "labels": [
-      "Suspended",
-      "NotSuspended",
-      "SuspendedLocal",
-      "NotSuspendedLocal"
-    ],
-    "description": "Collect whether the resource is suspended by back pressure. And split by local-ness."
-  },
-  "TLS_EARLY_DATA_ACCEPTED": {
-    "record_in_processes": ["main", "socket"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "description": "TLS early data was used and it was accepted (true) or rejected (false) by the remote host.",
-    "alert_emails": [
-      "necko@mozilla.com",
-      "ddamjanovic@mozilla.com",
-      "vgosu@mozilla.com"
-    ],
-    "bug_numbers": [1296288, 1654309, 1749881],
-    "releaseChannelCollection": "opt-out"
-  },
-  "HTTP_CHANNEL_ONSTART_SUCCESS": {
-    "record_in_processes": ["main"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "description": "Successfully started HTTP channels",
-    "bug_numbers": [1473333, 1587226],
-    "releaseChannelCollection": "opt-out",
-    "alert_emails": ["necko@mozilla.com", "ddamjanovic@mozilla.com"]
-  },
-  "HTTP3_LOSS_RATIO": {
-    "record_in_processes": ["main", "socket"],
-    "products": ["firefox"],
-    "alert_emails": ["necko@mozilla.com", "ddamjanovic@mozilla.com"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 2000,
-    "n_buckets": 100,
-    "bug_numbers": [1677951],
-    "description": "HTTP3: packet loss ratio (multiply by 10000)."
-  },
-  "CACHE_LM_INCONSISTENT": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "description": "Cache discovered inconsistent last-modified entry"
-  },
-  "DNS_CLEANUP_AGE": {
-    "record_in_processes": ["main", "socket"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 1440,
-    "n_buckets": 50,
-    "description": "DNS Cache Entry Age at Removal Time (minutes)"
-  },
-  "DNS_BY_TYPE_CLEANUP_AGE": {
-    "record_in_processes": ["main", "socket"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 1440,
-    "alert_emails": ["necko@mozilla.com", "ddamjanovic@mozilla.com"],
-    "bug_numbers": [1481251],
-    "releaseChannelCollection": "opt-out",
-    "n_buckets": 50,
-    "description": "DNS Cache Entry Age for by-type queries at Removal Time (minutes)"
   },
   "TAB_COUNT": {
     "record_in_processes": ["main"],
@@ -3052,39 +2793,6 @@
     "n_values": 3,
     "description": "Whether the user is in safe mode (No, Yes, Forced)"
   },
-  "SCRIPT_BLOCK_INCORRECT_MIME_3": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["ckerschbaumer@mozilla.com"],
-    "bug_numbers": [1288361, 1299267, 1399990, 1510225, 1581559],
-    "expires_in_version": "never",
-    "kind": "categorical",
-    "labels": [
-      "unknown",
-      "javaScript",
-      "image",
-      "audio",
-      "video",
-      "text_plain",
-      "text_csv",
-      "text_xml",
-      "app_octet_stream",
-      "app_xml",
-      "app_json",
-      "text_json",
-      "text_html",
-      "empty",
-      "serviceworker_load",
-      "worker_load",
-      "importScript_load",
-      "script_load",
-      "same_origin",
-      "CORS_origin",
-      "cross_origin",
-      "worklet_load"
-    ],
-    "description": "Whether the script load has a MIME type of ...?  (unknown, javaScript, image, audio, video, text_plain, text_csv, text_xml, app_octet_stream, app_xml, app_json, text_json, text_html, empty). Whether the script load is from ...?  (serviceworker_load, worker_load, importSript_load, script_load). Whether the script load is of ...?  (same_origin, CORS_origin, cross_origin)"
-  },
   "NEWTAB_PAGE_PINNED_SITES_COUNT": {
     "record_in_processes": ["main", "content"],
     "products": ["firefox", "fennec"],
@@ -3165,19 +2873,6 @@
     ],
     "description": "Records search counts for search access points. The format is: <engine-name>.<search-access-point>. For the urlbar when in search mode, the format is <engine name>.urlbar-searchmode. For the urlbar when an internal @engine shortcut is used, the format is: <engine-name>.alias.",
     "record_into_store": ["main", "account-ecosystem"]
-  },
-  "SEARCH_SUGGESTIONS_LATENCY_MS": {
-    "record_in_processes": ["main"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["fx-search-telemetry@mozilla.com", "adw@mozilla.com"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 50,
-    "keyed": true,
-    "releaseChannelCollection": "opt-out",
-    "bug_numbers": [1743885],
-    "description": "Records the latencies (ms) of search suggestions fetches per search engine. Keys in this histogram are search engine IDs for built-in search engines and 'other' for non-built-in search engines."
   },
   "TOUCH_ENABLED_DEVICE": {
     "record_in_processes": ["main"],
@@ -5129,52 +4824,6 @@
     "bug_numbers": [1499418, 1584109],
     "description": "GeckoView: Time taken to load a page in ms. This includes all static contents, no dynamic content. Loading of about: pages is not counted. Back back navigation (sometimes via BFCache) is included which is a source of bimodality due to the <50ms load times."
   },
-  "HTTP_TRAFFIC_ANALYSIS_3": {
-    "record_in_processes": ["main"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": [
-      "arthur@mozilla.com",
-      "tanvi@mozilla.com",
-      "tihuang@mozilla.com"
-    ],
-    "bug_numbers": [
-      1533363, 1546796, 1546906, 1550756, 1572666, 1590124, 1621800, 1668604,
-      1706842
-    ],
-    "expires_in_version": "never",
-    "kind": "categorical",
-    "n_values": 50,
-    "labels": [
-      "Y0_N1Sys",
-      "Y1_N1",
-      "Y2_N3Oth",
-      "Y3_N3BasicLead",
-      "Y4_N3BasicBg",
-      "Y5_N3BasicOth",
-      "Y6_N3ContentLead",
-      "Y7_N3ContentBg",
-      "Y8_N3ContentOth",
-      "Y9_N3FpLead",
-      "Y10_N3FpBg",
-      "Y11_N3FpOth",
-      "Y12_P1Sys",
-      "Y13_P1",
-      "Y14_P3Oth",
-      "Y15_P3BasicLead",
-      "Y16_P3BasicBg",
-      "Y17_P3BasicOth",
-      "Y18_P3ContentLead",
-      "Y19_P3ContentBg",
-      "Y20_P3ContentOth",
-      "Y21_P3FpLead",
-      "Y22_P3FpBg",
-      "Y23_P3FpOth"
-    ],
-    "keyed": true,
-    "keys": ["Connection", "Transaction"],
-    "releaseChannelCollection": "opt-out",
-    "description": "Numbers of HTTP transactions and connections by type. There are some categories separated by labels based on 5 parameters: 1. normal browsing or private browsing 2. system principal or not 3. first party or third party 4. class of service (Leader/Background/Others) 5. tracking classification (Basic/Content/FingerprintingContent)."
-  },
   "COOKIE_PURGING_ORIGINS_PURGED": {
     "expires_in_version": "never",
     "record_in_processes": ["main"],
@@ -5259,22 +4908,6 @@
     "releaseChannelCollection": "opt-out",
     "n_buckets": 56,
     "description": "How much time (in hours) passed between the current cookie purging activity and the one before that (cookie purging is run on 'daily idle')"
-  },
-  "REFERRER_POLICY_COUNT": {
-    "products": ["firefox"],
-    "record_in_processes": ["main"],
-    "alert_emails": [
-      "tihuang@mozilla.com",
-      "jhofmann@mozilla.com",
-      "ckerschbaumer@mozilla.com",
-      "seceng-telemetry@mozilla.com"
-    ],
-    "expires_in_version": "never",
-    "kind": "enumerated",
-    "n_values": 18,
-    "bug_numbers": [1720869],
-    "description": "The counter of each referrer policy which has been computed for a referrer. The buckets (0-8) are for same-site requests and buckets (9-17) are for cross-site requests. Note that the index matches to the order in ReferrerPolicy.webidl",
-    "releaseChannelCollection": "opt-out"
   },
   "APZ_ZOOM_ACTIVITY": {
     "products": ["firefox"],

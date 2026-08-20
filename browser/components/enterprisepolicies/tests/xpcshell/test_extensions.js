@@ -61,6 +61,13 @@ add_task(async function test_addon_forceinstalled_remote() {
   );
   await assertManagementAPIInstallType(addon.id, "admin");
 
+  await Assert.rejects(
+    addon.disable(),
+    /disallowed by enterprise policy/,
+    "Addon should not be able to be disabled through the AddonManager API."
+  );
+  equal(addon.userDisabled, false, "Addon should still be enabled");
+
   await addon.uninstall();
 });
 

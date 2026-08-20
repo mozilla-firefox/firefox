@@ -260,6 +260,8 @@ skip-if = [
   "os == 'android'",
 ]
 
+["test_caret_browsing_focus_move.html"]
+
 ["test_dynamic_toolbar_max_height.html"]
 support-files = ["file_dynamic_toolbar_max_height.html"]
 

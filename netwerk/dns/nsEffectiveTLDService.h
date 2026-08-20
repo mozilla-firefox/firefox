@@ -5,41 +5,41 @@
 #ifndef EffectiveTLDService_h
 #define EffectiveTLDService_h
 
-#include "mozilla/AutoMemMap.h"
+#include "MainThreadUtils.h"
 #include "mozilla/Dafsa.h"
-#include "mozilla/MemoryReporting.h"
 #include "mozilla/MruCache.h"
-#include "mozilla/RWLock.h"
-#include "nsCOMPtr.h"
+#include "mozilla/StaticPtr.h"
 #include "nsHashKeys.h"
 #include "nsIEffectiveTLDService.h"
-#include "nsIMemoryReporter.h"
 #include "nsString.h"
 
 class nsIIDNService;
 
-class nsEffectiveTLDService final : public nsIEffectiveTLDService,
-                                    public nsIMemoryReporter {
+class nsEffectiveTLDService final : public nsIEffectiveTLDService {
  public:
-  NS_DECL_THREADSAFE_ISUPPORTS
-  NS_DECL_NSIEFFECTIVETLDSERVICE
-  NS_DECL_NSIMEMORYREPORTER
+  // The `nsEffectiveTLDService` is allocated in a static singleton.
+  // We'll use a fake reference count for the type.
+  NS_IMETHOD_(MozExternalRefCountType) AddRef() override { return 2; }
+  NS_IMETHOD_(MozExternalRefCountType) Release() override { return 1; }
+  NS_IMETHOD QueryInterface(REFNSIID aIID, void** aInstancePtr) override;
+  using HasThreadSafeRefCnt = std::true_type;
 
-  nsEffectiveTLDService();
-  nsresult Init();
+  NS_DECL_NSIEFFECTIVETLDSERVICE
 
   static already_AddRefed<nsIEffectiveTLDService> GetXPCOMSingleton();
 
-  size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf);
-
  private:
+  constexpr explicit nsEffectiveTLDService(mozilla::Dafsa::Graph aGraph)
+      : mGraph(aGraph) {}
+
   nsresult GetBaseDomainInternal(nsCString& aHostname, int32_t aAdditionalParts,
                                  bool aOnlyKnownPublicSuffix,
                                  nsACString& aBaseDomain);
-  ~nsEffectiveTLDService();
+
+  static nsEffectiveTLDService sSingleton;
 
   // The DAFSA provides a compact encoding of the rather large eTLD list.
-  mozilla::Dafsa mGraph;
+  const mozilla::Dafsa mGraph;
 
   // Note that the cache entries here can record entries that were cached
   // successfully or unsuccessfully.  mResult must be checked before using an
@@ -69,8 +69,9 @@ class nsEffectiveTLDService final : public nsIEffectiveTLDService,
     }
   };
 
-  // NOTE: Only used on the main thread, so not guarded by mGraphLock.
-  TldCache mMruTable;
+  // Only accessed on the main thread.
+  mozilla::StaticAutoPtr<TldCache> mMruTable
+      MOZ_GUARDED_BY(mozilla::sMainThreadCapability);
 };
 
 #endif  // EffectiveTLDService_h

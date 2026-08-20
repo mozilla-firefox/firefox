@@ -852,6 +852,20 @@ WebTransportSessionProxy::OnStopRequest(nsIRequest* aRequest,
     mStopRequestCalled = true;
   }
 
+  // Notify the listener before activating queued streams: OnSessionReady
+  // retargets event delivery to the socket thread, so activating streams only
+  // afterwards keeps their OnStopSending/OnResetReceived events off the main
+  // thread and out of a race with the retarget.
+  if (listener) {
+    if (succeeded) {
+      listener->OnSessionReady(sessionId);
+    } else {
+      listener->OnSessionClosed(false, closeStatus,
+                                reason);  // TODO: find a better error.
+                                          // Currently error code 0 is used.
+    }
+  }
+
   if (!pendingCreateStreamEvents.IsEmpty()) {
     (void)gSocketTransportService->Dispatch(NS_NewRunnableFunction(
         "WebTransportSessionProxy::DispatchPendingCreateStreamEvents",
@@ -863,23 +877,14 @@ WebTransportSessionProxy::OnStopRequest(nsIRequest* aRequest,
         }));
   }  // otherwise let the CreateStreams just go away
 
-  if (listener) {
-    if (succeeded) {
-      listener->OnSessionReady(sessionId);
-      if (!pendingEvents.IsEmpty()) {
-        (void)gSocketTransportService->Dispatch(NS_NewRunnableFunction(
-            "WebTransportSessionProxy::DispatchPendingEvents",
-            [pendingEvents = std::move(pendingEvents)]() {
-              for (const auto& event : pendingEvents) {
-                event();
-              }
-            }));
-      }
-    } else {
-      listener->OnSessionClosed(false, closeStatus,
-                                reason);  // TODO: find a better error.
-                                          // Currently error code 0 is used.
-    }
+  if (listener && succeeded && !pendingEvents.IsEmpty()) {
+    (void)gSocketTransportService->Dispatch(NS_NewRunnableFunction(
+        "WebTransportSessionProxy::DispatchPendingEvents",
+        [pendingEvents = std::move(pendingEvents)]() {
+          for (const auto& event : pendingEvents) {
+            event();
+          }
+        }));
   }
   return NS_OK;
 }
@@ -1418,7 +1423,16 @@ void WebTransportSessionProxy::OnStopSendingInternal(uint64_t aStreamId,
   nsCOMPtr<WebTransportSessionEventListener> listener;
   {
     MutexAutoLock lock(mMutex);
-    MOZ_ASSERT(mTarget->IsOnCurrentThread());
+    if (!mTarget->IsOnCurrentThread()) {
+      // mTarget changed (RetargetTo) after this runnable was queued; forward to
+      // the current target so the listener is only ever invoked on one thread.
+      mTarget->Dispatch(NS_NewRunnableFunction(
+          "WebTransportSessionProxy::OnStopSendingInternal",
+          [self = RefPtr{this}, aStreamId, aError] {
+            self->OnStopSendingInternal(aStreamId, aError);
+          }));
+      return;
+    }
     if (mState != WebTransportSessionProxyState::ACTIVE || !mListener) {
       return;
     }
@@ -1452,7 +1466,16 @@ void WebTransportSessionProxy::OnResetReceivedInternal(uint64_t aStreamId,
   nsCOMPtr<WebTransportSessionEventListener> listener;
   {
     MutexAutoLock lock(mMutex);
-    MOZ_ASSERT(mTarget->IsOnCurrentThread());
+    if (!mTarget->IsOnCurrentThread()) {
+      // mTarget changed (RetargetTo) after this runnable was queued; forward to
+      // the current target so the listener is only ever invoked on one thread.
+      mTarget->Dispatch(NS_NewRunnableFunction(
+          "WebTransportSessionProxy::OnResetReceivedInternal",
+          [self = RefPtr{this}, aStreamId, aError] {
+            self->OnResetReceivedInternal(aStreamId, aError);
+          }));
+      return;
+    }
     if (mState != WebTransportSessionProxyState::ACTIVE || !mListener) {
       return;
     }

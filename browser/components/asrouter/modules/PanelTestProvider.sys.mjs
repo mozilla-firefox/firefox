@@ -1916,6 +1916,27 @@ const MESSAGES = () => [
     groups: [],
   },
   {
+    id: "TEST_ACTIVATION_WINDOW_FULL_BLEED_IMAGE",
+    template: "newtab_message",
+    content: {
+      messageType: "ActivationWindowMessage",
+      heading: "Welcome to your New Tab!",
+      message:
+        "To make changes, select the pencil icon in the bottom right corner.",
+      imageSrc: "chrome://browser/content/asrouter/assets/kit-peek.svg",
+      imageSrcResponsive:
+        "chrome://browser/content/asrouter/assets/kit-peek-bottom.svg",
+      primaryButton: {
+        label: "Got It",
+        action: { dismiss: true },
+      },
+    },
+    trigger: {
+      id: "newtabMessageCheck",
+    },
+    groups: [],
+  },
+  {
     id: "TEST_ASROUTER_NEWTAB_MESSAGE",
     template: "newtab_message",
     content: {
@@ -3217,7 +3238,6 @@ const MESSAGES = () => [
                 raw: "One click launches your most used sites in a streamlined window with all of Firefox’s protections.",
                 textAlign: "initial",
                 marginInline: "40px",
-                marginInlineEnd: "6px",
                 fontSize: "13px",
               },
             },

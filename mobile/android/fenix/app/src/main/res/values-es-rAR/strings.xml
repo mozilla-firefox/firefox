@@ -1304,6 +1304,11 @@
   <string name="preference_light_theme">Claro</string>
   <!-- Preference for using dark theme -->
   <string name="preference_dark_theme">Oscuro</string>
+  <!--
+    Preference for using the OLED theme. For localization, this can be translated as "True Black", "Maximum Darkness",
+    or "Full dark" if needed.
+  -->
+  <string name="preference_oled_theme">Más oscuro</string>
   <!-- Preference for using using dark or light theme automatically set by battery -->
   <string name="preference_auto_battery_theme">Establecido por ahorro de batería</string>
   <!-- Preference for using following device theme -->
@@ -1450,6 +1455,8 @@
   <string name="preferences_inactive_tabs">Mover pestañas antiguas a inactivas</string>
   <!-- Title of inactive tabs preference -->
   <string name="preferences_inactive_tabs_title">Las pestañas que no viste durante dos semanas se mueven a la sección inactiva.</string>
+  <!-- Title for the preference to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_feature">Habilitar grupos de pestañas</string>
   <!--
     Privacy report
 
@@ -1586,7 +1593,7 @@
   <!-- Title for introducing tab groups via an onboarding card shown in the tab manager. -->
   <string name="tab_group_onboarding_item_title">Crear un grupo de pestañas</string>
   <!-- Description for tab groups onboarding shown in the tab manager when in grid view. -->
-  <string name="tab_group_onboarding_grid_item_description">Arrastra una pestaña sobre otra para agruparlas.</string>
+  <string name="tab_group_onboarding_grid_item_description">Arrastrá una pestaña sobre otra para agruparlas.</string>
   <!-- Description for tab groups onboarding shown in the tab manager when in list view. -->
   <string name="tab_group_onboarding_list_item_description">Seleccioná múltiples pestañas para crear un grupo.</string>
   <!-- Content description (accessibility label) for button to dismiss the tab group onboarding item. -->
@@ -1694,6 +1701,14 @@
   <string name="ungroup_tab_group_confirmation_dialog_confirm">Desagrupar</string>
   <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_cancel">Cancelar</string>
+  <!-- Custom accessibility action to reorder a tab up rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_up">Mover pestaña hacia arriba</string>
+  <!-- Custom accessibility action to reorder a tab left rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_left">Mover pestaña a la izquierda</string>
+  <!-- Custom accessibility action to reorder a tab right rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_right">Mover pestaña a la derecha</string>
+  <!-- Custom accessibility action to reorder a tab down rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_down">Mover pestaña hacia abajo</string>
   <!--
     Color labels for tab groups, used for accessibility and selection UI.
 
@@ -3101,6 +3116,8 @@
   <string name="ip_protection_location_picker_title" tools:ignore="UnusedResources">Elegir ubicación de la VPN</string>
   <!-- Description for what it means to use the Recommended setting and let the app automatically pick the best server location. -->
   <string name="ip_protection_location_fastest_description" tools:ignore="BrandUsage">Firefox encuentra la ubicación más rápida</string>
+  <!-- Description for an unavailable VPN location in the location list. -->
+  <string name="ip_protection_location_unavailable_description">No disponible</string>
   <!-- Error message shown when the selected browser VPN location is unavailable. -->
   <string name="ip_protection_location_unavailable" tools:ignore="UnusedResources">Ubicación no disponible. Seleccionar otra ubicación.</string>
   <!-- Snackbar (in-app pop-up notification) text shown when the previously selected browser VPN location is unavailable and the recommended location was used instead. -->
@@ -4739,4 +4756,16 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Aislamiento de sitio web</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Una barrera adicional entre sitios web que ayuda a proteger tus datos entre pestañas. Puede afectar el rendimiento, la estabilidad, la compatibilidad de los sitios web y cómo se guarda el historial de navegación.</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description">Firmar PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
+  <string name="pdf_tools_download_content_description">Descargar PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
+  <string name="pdf_tools_print_content_description">Imprimir PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the sharing options for the PDF being displayed on the screen. -->
+  <string name="pdf_tools_share_content_description">Compartir PDF</string>
 </resources>

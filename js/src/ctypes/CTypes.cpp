@@ -4463,14 +4463,6 @@ JSObject* CType::DefineBuiltin(JSContext* cx, HandleObject ctypesObj,
   return typeObj;
 }
 
-#ifdef CTYPES_HAVE_FAST_CALL_PLAN
-// ffi_call_plan is incomplete here, so hardcode its size: two pointers, the cif
-// and libffi's internal plan. That internal plan is private to libffi and goes
-// unaccounted, so this is deliberately approximate. AddCellMemory and
-// removeCellMemory must pass the same value.
-static constexpr size_t kCallPlanSize = 2 * sizeof(void*);
-#endif
-
 static void FinalizeFFIType(JS::GCContext* gcx, JSObject* obj,
                             const Value& slot, size_t elementCount) {
   ffi_type* ffiType = static_cast<ffi_type*>(slot.toPrivate());
@@ -4495,7 +4487,9 @@ void CType::Finalize(JS::GCContext* gcx, JSObject* obj) {
         auto fninfo = static_cast<FunctionInfo*>(slot.toPrivate());
 #ifdef CTYPES_HAVE_FAST_CALL_PLAN
         if (fninfo->mCallPlan) {
-          gcx->removeCellMemory(obj, kCallPlanSize,
+          // Query while the plan is still alive; it is immutable, so this
+          // matches what AddCellMemory was given.
+          gcx->removeCellMemory(obj, ffi_call_plan_size(fninfo->mCallPlan),
                                 MemoryUse::CTypeFFICallPlan);
           ffi_call_plan_free(fninfo->mCallPlan);
           fninfo->mCallPlan = nullptr;
@@ -6834,7 +6828,8 @@ static bool CreateFunctionInfo(JSContext* cx, HandleObject typeObj,
   // plan (allocation failure) is fine; the call site falls back to ffi_call.
   fninfo->mCallPlan = ffi_call_plan_alloc(&fninfo->mCIF);
   if (fninfo->mCallPlan) {
-    AddCellMemory(typeObj, kCallPlanSize, MemoryUse::CTypeFFICallPlan);
+    AddCellMemory(typeObj, ffi_call_plan_size(fninfo->mCallPlan),
+                  MemoryUse::CTypeFFICallPlan);
   }
 #endif
 

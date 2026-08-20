@@ -272,4 +272,18 @@ RangeBoundary TextDirectiveUtil::MoveToNextBoundaryPoint(
   });
 }
 
+/* static */ bool TextDirectiveUtil::ContainsAtLeastTwoWords(
+    const nsAString& aString) {
+  uint32_t wordCount = 0;
+  for (uint32_t pos = 0; pos < aString.Length();) {
+    const auto [wordBegin, wordEnd] = intl::WordBreaker::FindWord(aString, pos);
+    if (!WordIsJustWhitespaceOrPunctuation(aString, wordBegin, wordEnd) &&
+        ++wordCount == 2) {
+      return true;
+    }
+    pos = wordEnd;
+  }
+  return false;
+}
+
 }  // namespace mozilla::dom

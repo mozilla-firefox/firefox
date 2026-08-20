@@ -19,28 +19,34 @@ import io.mockk.verify
 import mozilla.appservices.places.BookmarkRoot
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.prompt.ShareData
+import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.fenix.BrowserDirection
 import org.mozilla.fenix.BuildConfig.DEEP_LINK_SCHEME
+import org.mozilla.fenix.GleanMetrics.TrackingProtection
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.NavGraphDirections
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.components.share.ShareSource
 import org.mozilla.fenix.components.usecases.ShareUseCases
+import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.onboarding.MARKETING_CHANNEL_ID
-import org.mozilla.fenix.trackingprotection.ProtectionsDashboardFragment
 import org.mozilla.fenix.utils.Settings
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class HomeDeepLinkIntentProcessorTest {
+
+    @get:Rule val gleanTestRule = FenixGleanTestRule(testContext)
+
     private lateinit var activity: HomeActivity
     private lateinit var navController: NavController
     private lateinit var out: Intent
@@ -408,14 +414,13 @@ class HomeDeepLinkIntentProcessorTest {
 
         verify { activity wasNot Called }
         verify {
-            navController.navigate(
-                NavGraphDirections.actionGlobalProtectionsDashboard(
-                    customTabSessionId = null,
-                    source = ProtectionsDashboardFragment.SOURCE_DEEPLINK,
-                )
-            )
+            navController.navigate(NavGraphDirections.actionGlobalProtectionsDashboard(null))
         }
         verify { out wasNot Called }
+        assertEquals(
+            HOME_DEEPLINK_TELEMETRY_SOURCE,
+            TrackingProtection.privacyReportTapped.testGetValue()?.last()?.extra?.get("source"),
+        )
     }
 
     @Test

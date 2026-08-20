@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.63"
 name = "h2"
-version = "0.4.13"
+version = "0.4.16"
 authors = [
     "Carl Lerche <me@carllerche.com>",
     "Sean McArthur <sean@seanmonstar.com>",
@@ -90,7 +90,7 @@ version = "0.3"
 default-features = false
 
 [dependencies.http]
-version = "1"
+version = "1.1"
 
 [dependencies.indexmap]
 version = "2"

@@ -143,6 +143,22 @@ pub struct TabsRecord {
     pub windows: HashMap<String, TabsRecordWindow>,
 }
 
+// Intended so logging is concise and doesn't leak tab titles, urls, etc.
+// Like `Debug`, but counts the vecs instead of recursing them.
+impl std::fmt::Display for TabsRecord {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TabsRecord {{ id: {}, client_name: {}, tabs: {}, tab_groups: {}, windows: {} }}",
+            self.id,
+            self.client_name,
+            self.tabs.len(),
+            self.tab_groups.len(),
+            self.windows.len()
+        )
+    }
+}
+
 #[cfg(test)]
 pub mod test {
     use super::*;

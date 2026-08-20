@@ -270,12 +270,7 @@ class UrlbarInputTestUtils {
     if (index >= container.children.length) {
       throw new Error("Not enough results");
     }
-    let row = container.children[index];
-    // A dynamic result's view update is applied asynchronously (and lands a
-    // round-trip later on the message path), so wait for it before returning
-    // the row. Undefined for non-dynamic rows, so this is a no-op for them.
-    await row._dynamicViewUpdatePromise;
-    return row;
+    return container.children[index];
   }
 
   /**

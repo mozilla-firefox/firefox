@@ -271,8 +271,8 @@ bool BrowsingContextGroup::IsKnownForMessageReader(
       // The process should only be able to name this BCG if it is
       // subscribed, or if the BCG has been destroyed (and has therefore
       // stopped tracking subscribers).
-      if (topActor->GetSide() == mozilla::ipc::ParentSide && !mDestroyed &&
-          !mSubscribers.Contains(static_cast<ContentParent*>(topActor))) {
+      if (ContentParent* cp = ActorDynCast<ContentParent>(topActor);
+          cp && !mDestroyed && !mSubscribers.Contains(cp)) {
         aReader->FatalError(
             "Process is not subscribed to this BrowsingContextGroup");
         return false;

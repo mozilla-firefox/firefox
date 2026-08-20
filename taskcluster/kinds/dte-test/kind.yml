@@ -1,0 +1,79 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.from_deps
+    - gecko_taskgraph.transforms.release:run_on_releases
+    - gecko_taskgraph.transforms.dte_test:transforms
+    - gecko_taskgraph.transforms.job:transforms
+    - gecko_taskgraph.transforms.task
+
+kind-dependencies:
+    - build
+
+only-for-attributes:
+    - nightly
+    - shippable
+
+only-for-build-platforms:
+    - linux64-shippable/opt
+    - macosx64-shippable/opt
+    - win64-shippable/opt
+
+task-defaults:
+    worker-type: t-linux-docker-amd
+    worker:
+        env:
+            BRANCH: main
+            TEST_SET: nightly
+            WORKFLOW_ID: main.yml
+            BUILD_TASK_ID: {task-reference: '<build>'}
+        max-run-time: 4800
+        docker-image:
+            in-tree: ubuntu2404-test
+
+    shipping-phase: promote
+    shipping-product: firefox
+    run-on-repo-type: [hg]
+    run-on-releases: [nightly]
+    scopes:
+        - secrets:get:project/desktop-test-ops/gha-pat
+
+    description: Start Desktop Test Eng tests via GHA dispatch API call
+
+    treeherder:
+        kind: other
+        tier: 2
+        symbol: dte
+
+    run:
+        checkout: true
+        cwd: '{checkout}'
+        using: run-task
+        command: python3 taskcluster/scripts/tests/run_dte_github_tests.py
+
+tasks:
+    linux:
+        treeherder:
+            platform: linux64/opt
+        from-deps:
+            with-attributes:
+                build_platform: linux64-shippable
+
+    windows:
+        treeherder:
+            platform: windows2012-64/opt
+        from-deps:
+            with-attributes:
+                build_platform: win64-shippable
+
+    macos:
+        treeherder:
+            platform: macosx64/opt
+        from-deps:
+            with-attributes:
+                build_platform: macosx64-shippable

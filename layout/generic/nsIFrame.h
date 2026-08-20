@@ -420,7 +420,6 @@ struct IntrinsicSize {
   }
 
   bool operator==(const IntrinsicSize&) const = default;
-  bool operator!=(const IntrinsicSize&) const = default;
 };
 
 // Pseudo bidi embedding level indicating nonexistence.
@@ -5334,7 +5333,6 @@ class nsIFrame : public nsQueryFrame {
     uint8_t mRight;
     uint8_t mBottom;
     bool operator==(const InkOverflowDeltas& aOther) const = default;
-    bool operator!=(const InkOverflowDeltas& aOther) const = default;
   };
   enum class OverflowStorageType : uint32_t {
     // No overflow area; code relies on this being an all-zero value.

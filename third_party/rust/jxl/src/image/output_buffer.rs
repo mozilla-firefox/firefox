@@ -5,6 +5,8 @@
 
 use std::{fmt::Debug, marker::PhantomData};
 
+use crate::image::ImageDataType;
+
 use super::{RawImageRectMut, Rect, internal::RawImageBuffer};
 
 #[derive(Debug)]
@@ -88,6 +90,10 @@ impl<'a> JxlOutputBuffer<'a> {
         }
     }
 
+    pub(crate) fn typed_row_mut<T: ImageDataType>(&mut self, row: usize) -> &mut [T] {
+        T::cast_slice_mut(self.row_mut(row))
+    }
+
     pub(crate) fn row_mut(&mut self, row: usize) -> &mut [u8] {
         // SAFETY: we have write access to the data due to safety invariant.
         unsafe { self.inner.row_mut(row) }
@@ -97,9 +103,14 @@ impl<'a> JxlOutputBuffer<'a> {
         self.inner.byte_size()
     }
 
-    pub fn rect(&mut self, rect: Rect) -> JxlOutputBuffer<'_> {
+    /// # Safety
+    /// The caller must guarantee that there are no outstanding lends
+    /// of the provided `rect`.
+    pub(crate) unsafe fn rect(&self, rect: Rect) -> JxlOutputBuffer<'_> {
         // Safety note: the return value borrows from `self`, so we are lending our memory to the
-        // returned JxlOutputBuffer.
+        // returned JxlOutputBuffer. The caller guarantees that the region identified by
+        // `rect` does not overlap with other regions with outstanding borrows, so we have
+        // exclusive access to that region.
         Self {
             inner: self.inner.rect(rect),
             _ph: PhantomData,

@@ -9,7 +9,7 @@
  * its own copy of the module).
  */
 
-import UrlbarContentURIUtils from "chrome://browser/content/urlbar/UrlbarContentURIUtils.mjs";
+import * as UrlbarContentUtils from "chrome://browser/content/urlbar/UrlbarContentUtils.mjs";
 import UrlbarPrefs from "chrome://browser/content/urlbar/UrlbarContentPrefs.mjs";
 
 /**
@@ -73,7 +73,41 @@ import UrlbarPrefs from "chrome://browser/content/urlbar/UrlbarContentPrefs.mjs"
 // windows. Real container ids are non-negative, so -1 is a safe sentinel.
 const PRIVATE_USER_CONTEXT_ID = -1;
 
+// `nsIScriptSecurityManager.DEFAULT_USER_CONTEXT_ID`, which a content realm has
+// no `Ci` to read it from.
+const DEFAULT_USER_CONTEXT_ID = 0;
+
 export const UrlbarShared = {
+  /**
+   * Measures an element without flushing layout where that is possible.
+   * `windowUtils` is chrome-only, so a content realm takes the flushing path.
+   *
+   * @param {Element} element
+   *   The element to measure.
+   * @returns {DOMRect}
+   */
+  getBoundsWithoutFlushing:
+    typeof ChromeUtils != "undefined"
+      ? element =>
+          element.documentGlobal.windowUtils.getBoundsWithoutFlushing(element)
+      : element => element.getBoundingClientRect(),
+
+  /**
+   * Checks whether a value implements a DOM interface. `isInstance` is
+   * chrome-only, and unlike `instanceof` it holds for a value from another
+   * global; a content realm compares against its own interface object.
+   *
+   * @param {any} value
+   *   The value to check.
+   * @param {object} iface
+   *   The interface, e.g. `KeyboardEvent`.
+   * @returns {boolean}
+   */
+  isInstance:
+    typeof ChromeUtils != "undefined"
+      ? (value, iface) => iface.isInstance(value)
+      : (value, iface) => value instanceof iface,
+
   // REGEXP_ constants are duplicated from UrlUtils.sys.mjs
   // Regex matching on whitespaces.
   REGEXP_SPACES: /\s+/,
@@ -192,7 +226,7 @@ export const UrlbarShared = {
   }),
 
   // Results are categorized into groups to help the muxer compose them.  See
-  // UrlbarUtils.getResultGroup.  Since result groups are stored in result
+  // getResultGroup.  Since result groups are stored in result
   // groups and result groups are stored in prefs, additions and changes to
   // result groups may require adding UI migrations to BrowserGlue.  Be careful
   // about making trivial changes to existing groups, like renaming them,
@@ -458,7 +492,7 @@ export const UrlbarShared = {
       this.getUserContextIdForOpenPagesTable(
         userContextId,
         isInPrivateWindow
-      ) || Ci.nsIScriptSecurityManager.DEFAULT_USER_CONTEXT_ID
+      ) || DEFAULT_USER_CONTEXT_ID
     );
   },
 
@@ -629,7 +663,7 @@ export const UrlbarShared = {
         : this.ICON.DEFAULT;
     }
     if (
-      URL.isInstance(url) &&
+      this.isInstance(url, URL) &&
       this.PROTOCOLS_WITH_ICONS.includes(url.protocol)
     ) {
       return "page-icon:" + url.href;
@@ -728,7 +762,7 @@ export const UrlbarShared = {
   unEscapeURIForUI(uri) {
     return uri.length > this.MAX_TEXT_LENGTH
       ? uri
-      : UrlbarContentURIUtils.unEscapeURIForUI(uri);
+      : UrlbarContentUtils.unEscapeURIForUI(uri);
   },
 
   /**
@@ -747,7 +781,7 @@ export const UrlbarShared = {
     // the url in utf-8. If the url can't be parsed we fall back to using the
     // string as-is.
     let spec = typeof url == "string" ? url : url.href;
-    let displayString = UrlbarContentURIUtils.getDisplaySpec(spec) ?? spec;
+    let displayString = UrlbarContentUtils.getDisplaySpec(spec) ?? spec;
 
     if (displayString) {
       if (schemeless) {
@@ -864,7 +898,7 @@ export const UrlbarShared = {
    *   Fixup info for `clipboardData`, or null if it couldn't be fixed up. URI
    *   fixup is parent-only, so the caller supplies it, either from
    *   `UrlbarUtils.getFixupPrimitives()` or, from an input, from
-   *   `controller.getFixupPrimitives()`.
+   *   `UrlbarContentUtils.getFixupPrimitives()`.
    * @returns {string}
    *   The sanitized paste data, ready to use.
    */
@@ -937,6 +971,197 @@ export const UrlbarShared = {
         return 3;
     }
     return 1;
+  },
+
+  /**
+   * Returns the group for a result.
+   *
+   * @param {UrlbarResult} result
+   *   The result.
+   * @returns {Values<typeof UrlbarShared.RESULT_GROUP>}
+   *   The result's group.
+   */
+  getResultGroup(result) {
+    // Used for test_suggestedIndexRelativeToGroup.js to make it simpler
+    if (result.group) {
+      return result.group;
+    }
+
+    if (result.hasSuggestedIndex && !result.isSuggestedIndexRelativeToGroup) {
+      return UrlbarShared.RESULT_GROUP.SUGGESTED_INDEX;
+    }
+    if (result.heuristic) {
+      switch (result.providerName) {
+        case "UrlbarProviderAiChat":
+          return UrlbarShared.RESULT_GROUP.HEURISTIC_AI_CHAT;
+        case "UrlbarProviderAliasEngines":
+          return UrlbarShared.RESULT_GROUP.HEURISTIC_ENGINE_ALIAS;
+        case "UrlbarProviderAutofill":
+          return UrlbarShared.RESULT_GROUP.HEURISTIC_AUTOFILL;
+        case "UrlbarProviderBookmarkKeywords":
+          return UrlbarShared.RESULT_GROUP.HEURISTIC_BOOKMARK_KEYWORD;
+        case "UrlbarProviderHeuristicFallback":
+          return UrlbarShared.RESULT_GROUP.HEURISTIC_FALLBACK;
+        case "UrlbarProviderHistoryUrlHeuristic":
+          return UrlbarShared.RESULT_GROUP.HEURISTIC_HISTORY_URL;
+        case "UrlbarProviderOmnibox":
+          return UrlbarShared.RESULT_GROUP.HEURISTIC_OMNIBOX;
+        case "UrlbarProviderRestrictKeywordsAutofill":
+          return UrlbarShared.RESULT_GROUP.HEURISTIC_RESTRICT_KEYWORD_AUTOFILL;
+        case "UrlbarProviderTokenAliasEngines":
+          return UrlbarShared.RESULT_GROUP.HEURISTIC_TOKEN_ALIAS_ENGINE;
+        case "UrlbarProviderSearchTips":
+          return UrlbarShared.RESULT_GROUP.HEURISTIC_SEARCH_TIP;
+        default:
+          if (result.providerName.startsWith("TestProvider")) {
+            return UrlbarShared.RESULT_GROUP.HEURISTIC_TEST;
+          }
+          break;
+      }
+      if (result.providerType == UrlbarShared.PROVIDER_TYPE.EXTENSION) {
+        return UrlbarShared.RESULT_GROUP.HEURISTIC_EXTENSION;
+      }
+      console.error(
+        "Returning HEURISTIC_FALLBACK for unrecognized heuristic result: ",
+        result
+      );
+      return UrlbarShared.RESULT_GROUP.HEURISTIC_FALLBACK;
+    }
+
+    switch (result.providerName) {
+      case "UrlbarProviderAboutPages":
+        return UrlbarShared.RESULT_GROUP.ABOUT_PAGES;
+      case "UrlbarProviderInputHistory":
+        return UrlbarShared.RESULT_GROUP.INPUT_HISTORY;
+      case "UrlbarProviderQuickSuggest":
+        return UrlbarShared.RESULT_GROUP.GENERAL_PARENT;
+      default:
+        break;
+    }
+
+    switch (result.type) {
+      case UrlbarShared.RESULT_TYPE.SEARCH:
+        if (result.source == UrlbarShared.RESULT_SOURCE.HISTORY) {
+          return result.providerName == "UrlbarProviderRecentSearches"
+            ? UrlbarShared.RESULT_GROUP.RECENT_SEARCH
+            : UrlbarShared.RESULT_GROUP.FORM_HISTORY;
+        }
+        if (result.payload.tail && !result.isRichSuggestion) {
+          return UrlbarShared.RESULT_GROUP.TAIL_SUGGESTION;
+        }
+        if (result.payload.suggestion) {
+          return UrlbarShared.RESULT_GROUP.REMOTE_SUGGESTION;
+        }
+        break;
+      case UrlbarShared.RESULT_TYPE.OMNIBOX:
+        return UrlbarShared.RESULT_GROUP.OMNIBOX;
+      case UrlbarShared.RESULT_TYPE.REMOTE_TAB:
+        return UrlbarShared.RESULT_GROUP.REMOTE_TAB;
+      case UrlbarShared.RESULT_TYPE.RESTRICT:
+        return UrlbarShared.RESULT_GROUP.RESTRICT_SEARCH_KEYWORD;
+      case UrlbarShared.RESULT_TYPE.AI_CHAT:
+        return UrlbarShared.RESULT_GROUP.AI;
+    }
+    // When enabled, semantic history results (both history URLs and
+    // switch-to-tab results) get their own group so they fill only the space
+    // left after, and never evict, the plain (non-semantic) results that would
+    // otherwise share the general group.
+    if (
+      result.providerName == "UrlbarProviderSemanticHistorySearch" &&
+      UrlbarPrefs.get("suggest.semanticHistory.separateGroup")
+    ) {
+      return UrlbarShared.RESULT_GROUP.SEMANTIC_HISTORY;
+    }
+    return UrlbarShared.RESULT_GROUP.GENERAL;
+  },
+
+  /**
+   * Extracts a group for search engagement telemetry from a result.
+   *
+   * @param {UrlbarResult} result The result to analyze.
+   * @returns {string} Group name as string.
+   */
+  searchEngagementTelemetryGroup(result) {
+    if (!result) {
+      return "unknown";
+    }
+    if (result.isBestMatch) {
+      return "top_pick";
+    }
+    if (result.providerName === "UrlbarProviderTopSites") {
+      return "top_site";
+    }
+
+    switch (this.getResultGroup(result)) {
+      case UrlbarShared.RESULT_GROUP.INPUT_HISTORY: {
+        return "adaptive_history";
+      }
+      case UrlbarShared.RESULT_GROUP.RECENT_SEARCH: {
+        return "recent_search";
+      }
+      case UrlbarShared.RESULT_GROUP.FORM_HISTORY: {
+        return "search_history";
+      }
+      case UrlbarShared.RESULT_GROUP.TAIL_SUGGESTION:
+      case UrlbarShared.RESULT_GROUP.REMOTE_SUGGESTION: {
+        let group = result.payload.trending
+          ? "trending_search"
+          : "search_suggest";
+        if (result.isRichSuggestion) {
+          group += "_rich";
+        }
+        return group;
+      }
+      case UrlbarShared.RESULT_GROUP.REMOTE_TAB: {
+        return "remote_tab";
+      }
+      case UrlbarShared.RESULT_GROUP.HEURISTIC_EXTENSION:
+      case UrlbarShared.RESULT_GROUP.HEURISTIC_OMNIBOX:
+      case UrlbarShared.RESULT_GROUP.OMNIBOX: {
+        return "addon";
+      }
+      // Semantic history results have their own group for sorting purposes but
+      // are reported as "general" results, as they were before the group split.
+      case UrlbarShared.RESULT_GROUP.GENERAL:
+      case UrlbarShared.RESULT_GROUP.SEMANTIC_HISTORY: {
+        return "general";
+      }
+      // Group of UrlbarProviderQuickSuggest is GENERAL_PARENT.
+      case UrlbarShared.RESULT_GROUP.GENERAL_PARENT: {
+        return "suggest";
+      }
+      case UrlbarShared.RESULT_GROUP.ABOUT_PAGES: {
+        return "about_page";
+      }
+      case UrlbarShared.RESULT_GROUP.SUGGESTED_INDEX: {
+        return "suggested_index";
+      }
+      case UrlbarShared.RESULT_GROUP.RESTRICT_SEARCH_KEYWORD: {
+        return "restrict_keyword";
+      }
+      case UrlbarShared.RESULT_GROUP.AI: {
+        return "ai";
+      }
+    }
+
+    return result.heuristic ? "heuristic" : "unknown";
+  },
+
+  /**
+   * Extracts an action for search engagement telemetry from a result.
+   *
+   * @param {UrlbarResult} result The result to analyze.
+   * @param {string} [pickedActionKey] The key of the action the user picked.
+   * @returns {string} Action key, or a comma-separated list of the keys offered.
+   */
+  searchEngagementTelemetryAction(result, pickedActionKey = null) {
+    if (result.providerName != "UrlbarProviderGlobalActions") {
+      return result.payload.action?.key ?? "none";
+    }
+    if (pickedActionKey) {
+      return pickedActionKey;
+    }
+    return result.payload.actionsResults.map(({ key }) => key).join(",");
   },
 
   /**
@@ -1120,7 +1345,7 @@ export const UrlbarShared = {
    *
    * @param {Array} tokens The tokens to search for.
    * @param {string} str The string to match against.
-   * @param {Values<typeof UrlbarShared.HIGHLIGHT>} highlightType
+   * @param {Values<typeof this.HIGHLIGHT>} highlightType
    *   One of the HIGHLIGHT values:
    *     TYPED: match ranges matching the tokens; or
    *     SUGGESTED: match ranges for words not matching the tokens and the

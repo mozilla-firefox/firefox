@@ -119,8 +119,8 @@ class MediaEncoder {
                UniquePtr<VideoTrackEncoder> aVideoEncoder,
                UniquePtr<MediaQueue<EncodedFrame>> aEncodedAudioQueue,
                UniquePtr<MediaQueue<EncodedFrame>> aEncodedVideoQueue,
-               TrackRate aTrackRate, const nsAString& aMIMEType,
-               uint64_t aMaxMemory, TimeDuration aTimeslice);
+               const nsAString& aMIMEType, uint64_t aMaxMemory,
+               TimeDuration aTimeslice);
 
  public:
   /**
@@ -147,11 +147,6 @@ class MediaEncoder {
    * Connects a MediaStreamTrack with the appropriate encoder.
    */
   void ConnectMediaStreamTrack(dom::MediaStreamTrack* aTrack);
-
-  /**
-   * Removes a connected MediaStreamTrack.
-   */
-  void RemoveMediaStreamTrack(dom::MediaStreamTrack* aTrack);
 
   /**
    * Creates an encoder with the given MIME type. This must be a valid MIME type
@@ -253,6 +248,11 @@ class MediaEncoder {
   void EnsureGraphTrackFrom(MediaTrack* aTrack);
 
   /**
+   * Removes a connected MediaStreamTrack.
+   */
+  void RemoveMediaStreamTrack(dom::MediaStreamTrack* aTrack);
+
+  /**
    * Shuts down gracefully if there is no remaining live track encoder.
    */
   void MaybeShutdown();
@@ -314,9 +314,9 @@ class MediaEncoder {
 
   const UniquePtr<Muxer> mMuxer;
   const UniquePtr<AudioTrackEncoder> mAudioEncoder;
-  const RefPtr<AudioTrackListener> mAudioListener;
+  RefPtr<AudioTrackListener> mAudioListener;
   const UniquePtr<VideoTrackEncoder> mVideoEncoder;
-  const RefPtr<VideoTrackListener> mVideoListener;
+  RefPtr<VideoTrackListener> mVideoListener;
   const RefPtr<EncoderListener> mEncoderListener;
 
  public:

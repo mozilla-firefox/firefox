@@ -796,11 +796,9 @@ dictionary StartViewTransitionOptions {
 
 // https://drafts.csswg.org/css-view-transitions-2/#idl-index
 partial interface Document {
-  [Pref="dom.viewTransitions.enabled"]
   ViewTransition startViewTransition(
     optional (ViewTransitionUpdateCallback or StartViewTransitionOptions) callbackOptions = {}
   );
-  [Pref="dom.viewTransitions.enabled"]
   readonly attribute ViewTransition? activeViewTransition;
 };
 

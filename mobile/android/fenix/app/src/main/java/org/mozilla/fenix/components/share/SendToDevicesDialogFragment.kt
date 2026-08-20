@@ -12,7 +12,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.getSystemService
@@ -27,7 +26,8 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.R as materialR
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import kotlinx.coroutines.Deferred
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import mozilla.components.concept.sync.AccountObserver
 import mozilla.components.concept.sync.AuthType
@@ -49,6 +49,7 @@ import org.mozilla.fenix.share.DefaultShareController.Companion.ACTION_COPY_LINK
 import org.mozilla.fenix.share.ShareViewModel
 import org.mozilla.fenix.share.listadapters.AppShareOption
 import org.mozilla.fenix.share.listadapters.SyncShareOption
+import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 
 /** A [BottomSheetDialogFragment] that allows the user to send a tab to their other devices. */
 class SendToDevicesDialogFragment : BottomSheetDialogFragment() {
@@ -98,10 +99,10 @@ class SendToDevicesDialogFragment : BottomSheetDialogFragment() {
             uiState = uiState,
             onDismiss = { dismiss() },
             onSendToDevice = { option: SyncShareOption.SingleDevice ->
-                sendAndDismiss(sendTabsToDevice(option.device.id, tabs))
+                sendAndDismiss { sendTabsToDevice(option.device.id, tabs) }
             },
             onSendToAll = {
-                sendAndDismiss(sendTabsToAllDevices(tabs))
+                sendAndDismiss { sendTabsToAllDevices(tabs) }
             },
         )
     }
@@ -205,32 +206,73 @@ class SendToDevicesDialogFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private fun sendAndDismiss(deferred: Deferred<Boolean>) {
+    private fun sendAndDismiss(send: suspend () -> Boolean) {
+        val delegate = FenixSnackbarDelegate(requireActivity().findViewById(android.R.id.content))
         lifecycleScope.launch {
-            val success = deferred.await()
-            val message =
-                if (success) {
-                    R.string.sync_sent_tab_snackbar_2
-                } else {
-                    R.string.sync_sent_tab_error_snackbar
-                }
-            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            showSendResult(
+                retryScope = requireActivity().lifecycleScope,
+                onSuccess = { text -> delegate.show(text = text, duration = Snackbar.LENGTH_SHORT) },
+                onFailure = { onRetry ->
+                    delegate.show(
+                        text = R.string.sync_sent_tab_error_snackbar,
+                        duration = Snackbar.LENGTH_LONG,
+                        isError = true,
+                        action = R.string.sync_sent_tab_error_snackbar_action,
+                    ) {
+                        onRetry()
+                    }
+                },
+                send = send,
+            )
             dismiss()
         }
     }
 
-    private fun sendTabsToDevice(
-        deviceId: String,
-        tabs: List<TabData>,
-    ): Deferred<Boolean> {
-        return sendTabUseCases.sendToDeviceAsync.invoke(
-            deviceId = deviceId,
-            tabs = tabs,
-        )
+    /**
+     * Displays a notification with the result of sending tabs.
+     *
+     * Shows a success message if [send] succeeds, or triggers [onFailure] if it fails. If the user retries,
+     * [showSendResult] is called again inside [retryScope]. This ensures the retry operation continues even if the
+     * calling component is dismissed.
+     */
+    internal suspend fun showSendResult(
+        retryScope: CoroutineScope,
+        onSuccess: (Int) -> Unit,
+        onFailure: (onRetry: () -> Unit) -> Unit,
+        send: suspend () -> Boolean,
+    ) {
+        if (send()) {
+            onSuccess(
+                if (tabs.size == 1) {
+                    R.string.sync_sent_tab_snackbar_2
+                } else {
+                    R.string.sync_sent_tabs_snackbar_2
+                }
+            )
+            return
+        }
+
+        onFailure {
+            retryScope.launch {
+                showSendResult(retryScope, onSuccess, onFailure, send)
+            }
+        }
     }
 
-    private fun sendTabsToAllDevices(tabs: List<TabData>): Deferred<Boolean> {
-        return sendTabUseCases.sendToAllAsync.invoke(tabs = tabs)
+    private suspend fun sendTabsToDevice(
+        deviceId: String,
+        tabs: List<TabData>,
+    ): Boolean {
+        return sendTabUseCases.sendToDeviceAsync
+            .invoke(
+                deviceId = deviceId,
+                tabs = tabs,
+            )
+            .await()
+    }
+
+    private suspend fun sendTabsToAllDevices(tabs: List<TabData>): Boolean {
+        return sendTabUseCases.sendToAllAsync.invoke(tabs = tabs).await()
     }
 
     companion object {

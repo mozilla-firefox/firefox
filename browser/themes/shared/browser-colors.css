@@ -8,13 +8,11 @@
   /* These tokens are declared inside of tokens-foundation layer so that the
    * tokens-browser-theme layer can override them with design-system colors
    * on platforms where the native theme is not active (e.g. macOS). */
-  :root {
-    &:where([customtitlebar]) {
-      --toolbox-background-color: ActiveCaption;
-      --toolbox-text-color: CaptionText;
-      --toolbox-background-color-inactive: InactiveCaption;
-      --toolbox-text-color-inactive: InactiveCaptionText;
-    }
+  :root:where([customtitlebar]) {
+    --toolbox-background-color: ActiveCaption;
+    --toolbox-text-color: CaptionText;
+    --toolbox-background-color-inactive: InactiveCaption;
+    --toolbox-text-color-inactive: InactiveCaptionText;
   }
 }
 
@@ -35,6 +33,10 @@
   @media -moz-pref("browser.nova.enabled") and (not ((forced-colors) or (-moz-native-theme))) {
     &:is([theme-in-app], :not([lwtheme])) {
       --chrome-content-separator-color: light-dark(rgb(201, 192, 227), rgb(63, 62, 66));
+
+      /* We can assume that panels and toolbars have reasonably similar colors
+       * for non-lwthemes. */
+      --panel-icon-fill: var(--toolbarbutton-icon-fill);
     }
   }
 

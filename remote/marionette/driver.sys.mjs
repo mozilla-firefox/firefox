@@ -1649,7 +1649,7 @@ export class GeckoDriver {
    *     Reference ID to the element that will be inspected.
    *
    * @returns {string}
-   *     Local tag name of element.
+   *     Qualified name of the element.
    *
    * @throws {InvalidArgumentError}
    *     If <var>id</var> is not a string.

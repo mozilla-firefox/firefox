@@ -5,39 +5,70 @@ use crate::hpack::DecoderError;
 
 use bytes::{BufMut, BytesMut};
 
-// Constructed in the generated `table.rs` file
-struct Decoder {
-    state: u8,
-    maybe_eos: bool,
-}
-
-// These flags must match the ones in genhuff.rs
-
-const MAYBE_EOS: u8 = 1;
-const DECODED: u8 = 2;
-const ERROR: u8 = 4;
+const BRANCH: u16 = 0x8000;
+const TABLE_INDEX_MASK: u16 = 0x7f00;
+const TABLE_WIDTH: usize = 256;
 
 pub fn decode(src: &[u8], buf: &mut BytesMut) -> Result<BytesMut, DecoderError> {
-    let mut decoder = Decoder::new();
-
     // Max compression ratio is >= 0.5
     buf.reserve(src.len() << 1);
 
-    for b in src {
-        if let Some(b) = decoder.decode4(b >> 4)? {
-            buf.put_u8(b);
-        }
+    let mut table = 0;
+    let mut acc = 0u32;
+    let mut bits = 0;
 
-        if let Some(b) = decoder.decode4(b & 0xf)? {
-            buf.put_u8(b);
+    for &byte in src {
+        acc = (acc << 8) | byte as u32;
+        bits += 8;
+
+        while bits >= 8 {
+            let index = (acc >> (bits - 8)) as u8 as usize;
+            let entry = DECODE_TABLE[table * TABLE_WIDTH + index];
+
+            if entry & BRANCH == 0 {
+                buf.put_u8(entry as u8);
+                table = 0;
+                bits -= (entry >> 8) as usize;
+            } else {
+                table = ((entry & TABLE_INDEX_MASK) >> 8) as usize;
+                if table == 0 {
+                    return Err(DecoderError::InvalidHuffmanCode);
+                }
+                bits -= 8;
+            }
         }
     }
 
-    if !decoder.is_final() {
-        return Err(DecoderError::InvalidHuffmanCode);
+    // Fewer than eight bits remain. A prefix of the EOS code (all ones) is
+    // valid padding only when the previous symbol has completed.
+    while bits > 0 {
+        debug_assert!(bits < 8);
+        let padding = (1u32 << bits) - 1;
+        if table == 0 && acc & padding == padding {
+            break;
+        }
+
+        let index = (acc << (8 - bits)) as u8 as usize;
+        let entry = DECODE_TABLE[table * TABLE_WIDTH + index];
+        if entry & BRANCH != 0 {
+            return Err(DecoderError::InvalidHuffmanCode);
+        }
+
+        let used = (entry >> 8) as usize;
+        if used > bits {
+            return Err(DecoderError::InvalidHuffmanCode);
+        }
+
+        buf.put_u8(entry as u8);
+        table = 0;
+        bits -= used;
     }
 
-    Ok(buf.split())
+    if table == 0 {
+        Ok(buf.split())
+    } else {
+        Err(DecoderError::InvalidHuffmanCode)
+    }
 }
 
 pub fn encode(src: &[u8], dst: &mut BytesMut) {
@@ -62,41 +93,6 @@ pub fn encode(src: &[u8], dst: &mut BytesMut) {
         // This writes the EOS token
         bits |= (1 << bits_left) - 1;
         dst.put_u8((bits >> 32) as u8);
-    }
-}
-
-impl Decoder {
-    fn new() -> Decoder {
-        Decoder {
-            state: 0,
-            maybe_eos: false,
-        }
-    }
-
-    // Decodes 4 bits
-    fn decode4(&mut self, input: u8) -> Result<Option<u8>, DecoderError> {
-        // (next-state, byte, flags)
-        let (next, byte, flags) = DECODE_TABLE[self.state as usize][input as usize];
-
-        if flags & ERROR == ERROR {
-            // Data followed the EOS marker
-            return Err(DecoderError::InvalidHuffmanCode);
-        }
-
-        let mut ret = None;
-
-        if flags & DECODED == DECODED {
-            ret = Some(byte);
-        }
-
-        self.state = next;
-        self.maybe_eos = flags & MAYBE_EOS == MAYBE_EOS;
-
-        Ok(ret)
-    }
-
-    fn is_final(&self) -> bool {
-        self.state == 0 || self.maybe_eos
     }
 }
 
@@ -196,4 +192,72 @@ mod test {
             assert_eq!(&decoded[..], &s[..]);
         }
     }
+
+    #[test]
+    fn encode_decode_all_octets() {
+        let src: Vec<_> = (0..=u8::MAX).collect();
+        let mut encoded = BytesMut::new();
+        encode(&src, &mut encoded);
+        assert_eq!(decode(&encoded).unwrap(), src);
+    }
+
+    #[test]
+    fn rejects_eos_and_invalid_padding() {
+        assert_eq!(decode(&[0xff]), Err(DecoderError::InvalidHuffmanCode));
+        assert_eq!(
+            decode(&[0xff, 0xff, 0xff, 0xff]),
+            Err(DecoderError::InvalidHuffmanCode)
+        );
+        assert_eq!(decode(&[0]), Err(DecoderError::InvalidHuffmanCode));
+    }
 }
+
+/*
+// uncomment to run benchmarks
+#[cfg(test)]
+mod bench {
+    extern crate test;
+
+    use self::test::{black_box, Bencher};
+    use super::*;
+
+    fn decode_input(b: &mut Bencher, input: &[u8]) {
+        let mut encoded = BytesMut::new();
+        encode(input, &mut encoded);
+
+        let mut scratch = BytesMut::with_capacity(input.len() * 2);
+        b.bytes = encoded.len() as u64;
+        b.iter(|| {
+            let decoded = decode(black_box(encoded.as_ref()), &mut scratch).unwrap();
+            black_box(decoded);
+        });
+    }
+
+    #[bench]
+    fn decode_short_ascii(b: &mut Bencher) {
+        decode_input(b, b"www.example.com");
+    }
+
+    #[bench]
+    fn decode_header_value(b: &mut Bencher) {
+        decode_input(
+            b,
+            b"text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8",
+        );
+    }
+
+    #[bench]
+    fn decode_long_ascii(b: &mut Bencher) {
+        decode_input(
+            b,
+            b"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0",
+        );
+    }
+
+    #[bench]
+    fn decode_all_octets(b: &mut Bencher) {
+        let input: Vec<_> = (0..=u8::MAX).collect();
+        decode_input(b, &input);
+    }
+}
+*/

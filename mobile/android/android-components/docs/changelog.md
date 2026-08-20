@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 155.0 (In Development)
+* **browser-domains**
+    * ⚠️ **Breaking change**: Removed the deprecated `DomainAutoCompleteProvider` class. Use `ShippedDomainsProvider` or `CustomDomainsProvider` instead.
 * **browser-state**
     * ⚠️ **Breaking change**: Removed `TabPartition` and `TabGroup` from `BrowserState`.
 * **feature-accounts**

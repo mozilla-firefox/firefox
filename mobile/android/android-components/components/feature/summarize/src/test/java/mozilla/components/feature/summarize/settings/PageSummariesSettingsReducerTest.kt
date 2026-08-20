@@ -76,6 +76,32 @@ class PageSummariesSettingsReducerTest {
     }
 
     @Test
+    fun `WHEN learn more is clicked THEN the link is requested`() {
+        val state =
+            SummarizeSettingsState(
+                isFeatureEnabled = true,
+                isGestureEnabled = true,
+                shakeSensitivity = ShakeSensitivity.High,
+            )
+        val result = summarizeSettingsReducer(state, LearnMoreClicked)
+
+        assertEquals(state.copy(isLearnMoreRequested = true), result)
+    }
+
+    @Test
+    fun `WHEN learn more is handled THEN the request is cleared`() {
+        val state =
+            SummarizeSettingsState(
+                isFeatureEnabled = true,
+                isGestureEnabled = true,
+                isLearnMoreRequested = true,
+            )
+        val result = summarizeSettingsReducer(state, LearnMoreHandled)
+
+        assertEquals(state.copy(isLearnMoreRequested = false), result)
+    }
+
+    @Test
     fun `WHEN summarize pages is toggled THEN sensitivity is the same`() {
         val state = SummarizeSettingsState(shakeSensitivity = ShakeSensitivity.High)
         val result =
@@ -84,17 +110,5 @@ class PageSummariesSettingsReducerTest {
                 SummarizePagesPreferenceToggled,
             )
         assertEquals(ShakeSensitivity.High, result.shakeSensitivity)
-    }
-
-    @Test
-    fun `WHEN learn more is clicked THEN state is unchanged`() {
-        val state =
-            SummarizeSettingsState(
-                isFeatureEnabled = true,
-                isGestureEnabled = true,
-            )
-        val result = summarizeSettingsReducer(state, LearnMoreClicked)
-
-        assertEquals(state, result)
     }
 }

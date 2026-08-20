@@ -11,16 +11,18 @@
  */
 
 import UrlbarPrefs from "chrome://browser/content/urlbar/UrlbarContentPrefs.mjs";
+import * as UrlbarContentUtils from "chrome://browser/content/urlbar/UrlbarContentUtils.mjs";
 import { UrlbarShared } from "chrome://browser/content/urlbar/UrlbarShared.mjs";
 
-const lazy = {};
+const lazy = typeof ChromeUtils != "undefined" ? {} : null;
 
-ChromeUtils.defineESModuleGetters(lazy, {
-  BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
-  OpenSearchManager:
-    "moz-src:///browser/components/search/OpenSearchManager.sys.mjs",
-  SearchUIUtils: "moz-src:///browser/components/search/SearchUIUtils.sys.mjs",
-});
+if (lazy) {
+  ChromeUtils.defineESModuleGetters(lazy, {
+    OpenSearchManager:
+      "moz-src:///browser/components/search/OpenSearchManager.sys.mjs",
+    SearchUIUtils: "moz-src:///browser/components/search/SearchUIUtils.sys.mjs",
+  });
+}
 
 /** @type {Localization} */
 let l10n;
@@ -72,11 +74,6 @@ export class SearchModeSwitcher {
    */
   constructor(input) {
     this.#input = input;
-
-    this.QueryInterface = ChromeUtils.generateQI([
-      "nsIObserver",
-      "nsISupportsWeakReference",
-    ]);
 
     this.#panelList = input.querySelector(".searchmode-switcher-panel-list");
     this.#button = input.querySelector(".searchmode-switcher");
@@ -645,10 +642,11 @@ export class SearchModeSwitcher {
     }
     this.#buildSettingsButton();
 
-    // Add engines that can be installed.
-    let openSearchEngines = lazy.OpenSearchManager.getInstallableEngines(
-      browser.selectedBrowser
-    );
+    // Add engines that can be installed. Only a browser window has a page to
+    // offer them from.
+    let openSearchEngines = browser
+      ? lazy.OpenSearchManager.getInstallableEngines(browser.selectedBrowser)
+      : [];
     openSearchEngines = openSearchEngines.slice(
       0,
       SearchModeSwitcher.MAX_OPENSEARCH_ENGINES
@@ -696,7 +694,7 @@ export class SearchModeSwitcher {
    *   Where the search engine result page should be opened.
    */
   #whereToOpenSerp(event) {
-    let where = lazy.BrowserUtils.whereToOpenLink(event, false, true);
+    let where = UrlbarContentUtils.whereToOpenLink(event);
     // Usually, shift means "open in new window", but in the search
     // mode switcher it means "open SERP even if urlbar is empty",
     // so we just return tab, tabshifted or current but never window.

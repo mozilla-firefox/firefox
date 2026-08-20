@@ -34,6 +34,7 @@ import mozilla.components.feature.prompts.ext.millisecond
 import mozilla.components.feature.prompts.ext.minute
 import mozilla.components.feature.prompts.ext.second
 import mozilla.components.feature.prompts.ext.toCalendar
+import mozilla.components.feature.prompts.ext.toLocalDayStartAsUtcMillis
 import mozilla.components.feature.prompts.widget.MonthAndYearPicker
 import mozilla.components.feature.prompts.widget.TimePrecisionPicker
 import mozilla.components.support.utils.TimePicker.shouldShowSecondsPicker
@@ -152,12 +153,17 @@ internal class TimePickerDialogFragment :
         timePicker.show(parentFragmentManager, timePicker.toString())
     }
 
-    private fun createMaterialDatePickerDialog(isDateTimePicker: Boolean = false) {
-        val constraintsBuilder =
-            CalendarConstraints.Builder().apply {
-                minimumDate?.let { setValidator(DateValidatorPointForward.from(it.time)) }
-                maximumDate?.let { setValidator(DateValidatorPointBackward.before(it.time)) }
+    @VisibleForTesting
+    internal fun buildCalendarConstraints(): CalendarConstraints =
+        CalendarConstraints.Builder()
+            .apply {
+                // TODO Bug 2063227 - Date picker ignores the min attribute when the input also specifies max
+                minimumDate?.let { setValidator(DateValidatorPointForward.from(it.toLocalDayStartAsUtcMillis())) }
+                maximumDate?.let { setValidator(DateValidatorPointBackward.before(it.toLocalDayStartAsUtcMillis())) }
             }
+            .build()
+
+    private fun createMaterialDatePickerDialog(isDateTimePicker: Boolean = false) {
         val initialUtcTime = initialDate.time + TimeZone.getDefault().getOffset(initialDate.time)
 
         val datePicker =
@@ -165,7 +171,7 @@ internal class TimePickerDialogFragment :
                 .setSelection(initialUtcTime)
                 .setPositiveButtonText(R.string.mozac_feature_prompts_set_date)
                 .setNegativeButtonText(R.string.mozac_feature_prompts_cancel)
-                .setCalendarConstraints(constraintsBuilder.build())
+                .setCalendarConstraints(buildCalendarConstraints())
                 .build()
 
         datePicker.addOnPositiveButtonClickListener { selection ->

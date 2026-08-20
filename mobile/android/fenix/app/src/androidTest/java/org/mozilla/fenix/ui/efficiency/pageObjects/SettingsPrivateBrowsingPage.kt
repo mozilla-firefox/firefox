@@ -10,8 +10,6 @@ import org.mozilla.fenix.ui.efficiency.helpers.BasePage
 import org.mozilla.fenix.ui.efficiency.helpers.Selector
 import org.mozilla.fenix.ui.efficiency.navigation.NavigationRegistry
 import org.mozilla.fenix.ui.efficiency.navigation.NavigationStep
-import org.mozilla.fenix.ui.efficiency.selectors.HomeSelectors
-import org.mozilla.fenix.ui.efficiency.selectors.MainMenuSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.SettingsPrivateBrowsingSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.SettingsSelectors
 
@@ -20,21 +18,37 @@ class SettingsPrivateBrowsingPage(composeRule: AndroidComposeTestRule<HomeActivi
     override val pageName = "SettingsPrivateBrowsingPage"
 
     init {
+        // Reached only via the Settings hub (SettingsPage -> SettingsPrivateBrowsingPage), like every other
+        // settings subpage. This page intentionally has NO direct HomePage mega-edge: that made the Home route
+        // shorter than the hub route, so BFS routed browser -> Home (via the New tab button, absent on the
+        // private browser) instead of browser -> menu -> Settings -> Private browsing.
         NavigationRegistry.register(
-            from = "HomePage",
-            to = pageName,
+            from = pageName,
+            to = "SettingsPage",
+            steps = listOf(NavigationStep.Click(SettingsSelectors.GO_BACK_BUTTON)),
+        )
+
+        // Return edge for when this page was reached from the browser (menu -> Settings -> Private browsing):
+        // backing out twice lands on the browser the flow came from, not Home. Settings back-navigation is
+        // entry-dependent, so this models the browser-entry return used by the screenshots test.
+        NavigationRegistry.register(
+            from = pageName,
+            to = "BrowserPage",
             steps =
                 listOf(
-                    NavigationStep.Click(HomeSelectors.MAIN_MENU_BUTTON),
-                    NavigationStep.Click(MainMenuSelectors.SETTINGS_BUTTON),
-                    NavigationStep.Swipe(SettingsSelectors.PRIVATE_BROWSING_BUTTON),
-                    NavigationStep.Click(SettingsSelectors.PRIVATE_BROWSING_BUTTON),
+                    NavigationStep.Click(SettingsSelectors.GO_BACK_BUTTON),
+                    NavigationStep.Click(SettingsSelectors.GO_BACK_BUTTON),
                 ),
         )
     }
 
     override fun mozGetSelectorsByGroup(group: String): List<Selector> {
         return SettingsPrivateBrowsingSelectors.all.filter { it.groups.contains(group) }
+    }
+
+    fun toggleAllowScreenshotsInPrivateBrowsing(): SettingsPrivateBrowsingPage {
+        mozClick(SettingsPrivateBrowsingSelectors.ALLOW_SCREENSHOTS_IN_PRIVATE_BROWSING)
+        return this
     }
 
     /**

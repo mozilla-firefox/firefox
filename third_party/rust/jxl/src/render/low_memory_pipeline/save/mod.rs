@@ -4,10 +4,10 @@
 // license that can be found in the LICENSE file.
 
 use crate::{
-    api::{Endianness, JxlDataFormat, JxlOutputBuffer},
+    api::{Endianness, JxlDataFormat},
     error::Result,
     headers::Orientation,
-    render::save::SaveStage,
+    render::{buffer_splitter::OutputChannelRef, save::SaveStage},
 };
 
 use super::row_buffers::RowBuffer;
@@ -21,7 +21,7 @@ impl SaveStage {
     pub(crate) fn save_lowmem(
         &self,
         data: &[&RowBuffer],
-        buffers: &mut [Option<JxlOutputBuffer>],
+        buffers: &mut [Option<OutputChannelRef>],
         group_size: (usize, usize),
         frame_y: usize,
         group_origin: (usize, usize),

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <meta charset=utf-8>
 <title>Test bug 1979050</title>
-<script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
 <script>
 Object.defineProperty(Object.prototype, "imports",
   {
@@ -18,8 +18,8 @@ Object.defineProperty(Object.prototype, "scopes",
     get() {
       ok(false, "scopes getter");
       return {
-        "chrome://mochitests/content/chrome/dom/base/test/jsmodules/importmaps/scope1/": {
-          "./scope1/module_simpleExport.mjs": "/content/chrome/dom/base/test/jsmodules/importmaps/module_simpleExport.mjs"
+        "scope1/": {
+          "./scope1/module_simpleExport.mjs": "./module_simpleExport.mjs"
         }
       };
     }

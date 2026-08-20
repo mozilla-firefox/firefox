@@ -6,11 +6,13 @@ import UrlbarPrefs from "chrome://browser/content/urlbar/UrlbarContentPrefs.mjs"
 import { UrlbarResult } from "chrome://browser/content/urlbar/UrlbarResult.mjs";
 import { UrlbarShared } from "chrome://browser/content/urlbar/UrlbarShared.mjs";
 
-const lazy = {};
+const lazy = typeof ChromeUtils != "undefined" ? {} : null;
 
-ChromeUtils.defineESModuleGetters(lazy, {
-  UrlbarUtils: "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs",
-});
+if (lazy) {
+  ChromeUtils.defineESModuleGetters(lazy, {
+    UrlbarUtils: "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs",
+  });
+}
 
 /**
  * @import {SmartbarInput} from "moz-src:///browser/components/urlbar/content/SmartbarInput.mjs"
@@ -63,7 +65,7 @@ export class UrlbarTelemetryUtils {
     if (details.selType === "dismiss") {
       return "dismiss";
     }
-    if (MouseEvent.isInstance(event)) {
+    if (UrlbarShared.isInstance(event, MouseEvent)) {
       // TODO (Bug 2018250): Don’t rely on `event` and use `selType` or
       // `details.element` if possible.
       return /** @type {HTMLElement} */ (event.target).classList.contains(
@@ -500,7 +502,7 @@ export class UrlbarTelemetryUtils {
     let next = previousSearchWords;
     if (
       (method === "engagement" &&
-        lazy.UrlbarUtils.isPersistedSearchTermsEnabled()) ||
+        lazy?.UrlbarUtils.isPersistedSearchTermsEnabled()) ||
       method === "abandonment"
     ) {
       next = new Set(searchWords);
@@ -595,13 +597,13 @@ export class UrlbarTelemetryUtils {
       : {};
     let numResults = visibleResults.length;
     let groups = visibleResults
-      .map(r => lazy.UrlbarUtils.searchEngagementTelemetryGroup(r))
+      .map(r => UrlbarShared.searchEngagementTelemetryGroup(r))
       .join(",");
     let results = visibleResults
       .map(r => UrlbarShared.searchEngagementTelemetryType(r))
       .join(",");
     let actions = visibleResults
-      .map(r => lazy.UrlbarUtils.searchEngagementTelemetryAction(r))
+      .map(r => UrlbarShared.searchEngagementTelemetryAction(r))
       .filter(v => v)
       .join(",");
 
@@ -612,7 +614,7 @@ export class UrlbarTelemetryUtils {
           selType
         );
         if (selType == "action") {
-          let actionKey = lazy.UrlbarUtils.searchEngagementTelemetryAction(
+          let actionKey = UrlbarShared.searchEngagementTelemetryAction(
             visibleResults[selIndex],
             pickedActionKey
           );

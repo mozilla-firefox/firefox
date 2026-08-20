@@ -18,8 +18,14 @@ DIRS += [
     "tests",
 ]
 
+# ggml has no armv7-android CPU backend variant upstream, so there is no
+# inference engine to run on Android, and consequently no HWInference utility
+# process to talk to: SandboxingKind::HW_INFERENCE does not exist there.
 if CONFIG["MOZ_WIDGET_TOOLKIT"] != "android":
-    DIRS += ["backends/llama"]
+    DIRS += [
+        "backends/llama",
+        "ipc",
+    ]
 
 XPCSHELL_TESTS_MANIFESTS += ["tests/xpcshell/xpcshell.toml"]
 
@@ -30,16 +36,36 @@ BROWSER_CHROME_MANIFESTS += [
     "tests/browser_models/browser_models.toml",
 ]
 
-XPIDL_SOURCES += ["nsIMLUtils.idl"]
+XPIDL_SOURCES += [
+    "nsIMLModelHub.idl",
+    "nsIMLModelResolver.idl",
+    "nsIMLUtils.idl",
+]
 
-UNIFIED_SOURCES += ["MLUtils.cpp"]
-EXPORTS.mozilla.ml += ["MLUtils.h"]
+MOZ_SRC_FILES += [
+    "MLModelHubService.sys.mjs",
+]
+
+UNIFIED_SOURCES += [
+    "MLUtils.cpp",
+]
+
+EXPORTS.mozilla.ml += [
+    "MLUtils.h",
+]
 
 with Files("docs/**"):
     SCHEDULES.exclusive = ["docs"]
 
 XPCOM_MANIFESTS += [
     "components.conf",
+]
+
+LOCAL_INCLUDES += [
+    "/dom/base",
+    "/dom/file/ipc",
+    "/dom/ipc",
+    "/ipc/glue",
 ]
 
 XPIDL_MODULE = "ml"

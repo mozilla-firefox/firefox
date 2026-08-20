@@ -35,14 +35,26 @@ pub struct VarDctBuffers {
 impl VarDctBuffers {
     pub fn new() -> Self {
         Self {
-            scratch: vec![0.0; LF_BUFFER_SIZE],
-            transform_buffer: [
-                vec![0.0; MAX_COEFF_AREA],
-                vec![0.0; MAX_COEFF_AREA],
-                vec![0.0; MAX_COEFF_AREA],
-            ],
-            coeffs_storage: vec![0; 3 * GROUP_DIM * GROUP_DIM],
+            scratch: vec![],
+            transform_buffer: [vec![], vec![], vec![]],
+            coeffs_storage: vec![],
         }
+    }
+
+    pub fn ensure_allocated(&mut self) -> Result<()> {
+        if !self.scratch.is_empty() {
+            return Ok(());
+        }
+        self.scratch.try_reserve_exact(LF_BUFFER_SIZE)?;
+        self.scratch.resize(LF_BUFFER_SIZE, 0.0);
+        for b in self.transform_buffer.iter_mut() {
+            b.try_reserve_exact(MAX_COEFF_AREA)?;
+            b.resize(MAX_COEFF_AREA, 0.0);
+        }
+        self.coeffs_storage
+            .try_reserve_exact(3 * GROUP_DIM * GROUP_DIM)?;
+        self.coeffs_storage.resize(3 * GROUP_DIM * GROUP_DIM, 0);
+        Ok(())
     }
 
     /// Reset buffers to zero for reuse.
@@ -52,12 +64,6 @@ impl VarDctBuffers {
         // transform_buffer does NOT need zeroing: dequant_block fully overwrites
         // all num_coeffs entries before transform_to_pixels reads them.
         self.coeffs_storage.fill(0);
-    }
-}
-
-impl Default for VarDctBuffers {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -379,11 +385,10 @@ pub fn decode_vardct_group(
     group: usize,
     passes: &mut [(usize, BitReader)],
     frame_header: &FrameHeader,
-    lf_global: &mut LfGlobalState,
-    hf_global: &mut HfGlobalState,
+    lf_global: &LfGlobalState,
+    hf_global: &HfGlobalState,
     hf_meta: &HfMetadata,
     lf_image: &[Image<f32>; 3],
-    quant_lf: &Image<u8>,
     quant_biases: &[f32; 4],
     pixels: &mut Option<[Image<f32>; 3]>,
     buffers: &mut VarDctBuffers,
@@ -393,6 +398,7 @@ pub fn decode_vardct_group(
 
     let block_group_rect = frame_header.block_group_rect(group);
     debug!(?block_group_rect);
+    let log_group_dim = frame_header.log_group_dim();
     let mut pass_info = passes
         .iter_mut()
         .map(|(pass, br)| PassInfo::new(hf_global, frame_header, block_group_rect, *pass, br))
@@ -418,22 +424,20 @@ pub fn decode_vardct_group(
     let ytob_map = hf_meta.ytob_map.get_rect(cmap_rect);
     let transform_map = hf_meta.transform_map.get_rect(block_group_rect);
     let raw_quant_map = hf_meta.raw_quant_map.get_rect(block_group_rect);
-    let quant_lf_rect = quant_lf.get_rect(block_group_rect);
-    let block_context_map = lf_global.block_context_map.as_mut().unwrap();
+    let quant_lf_rect = hf_meta.quant_lf.get_rect(block_group_rect);
+    let block_context_map = lf_global.block_context_map.as_ref().unwrap();
     // TODO(veluca): improve coefficient storage (smaller allocations, use 16 bits if possible).
-    let coeffs = match hf_global.hf_coefficients.as_mut() {
-        Some(hf_coefficients) => [
-            hf_coefficients.0.row_mut(group),
-            hf_coefficients.1.row_mut(group),
-            hf_coefficients.2.row_mut(group),
-        ],
-        None => {
-            // Use pooled buffer (already reset to zero in buffers.reset() above)
-            let (coeffs_x, coeffs_y_b) = buffers.coeffs_storage.split_at_mut(GROUP_DIM * GROUP_DIM);
-            let (coeffs_y, coeffs_b) = coeffs_y_b.split_at_mut(GROUP_DIM * GROUP_DIM);
-            [coeffs_x, coeffs_y, coeffs_b]
-        }
+    let mut coeffs;
+    let coeffs = if !hf_global.hf_coefficients.is_empty() {
+        coeffs = hf_global.hf_coefficients[group].try_lock().unwrap();
+        &mut *coeffs
+    } else {
+        &mut buffers.coeffs_storage
     };
+    // Use pooled buffer (already reset to zero in buffers.reset() above)
+    let (coeffs_x, coeffs_y_b) = coeffs.split_at_mut(GROUP_DIM * GROUP_DIM);
+    let (coeffs_y, coeffs_b) = coeffs_y_b.split_at_mut(GROUP_DIM * GROUP_DIM);
+    let coeffs = [coeffs_x, coeffs_y, coeffs_b];
     let mut coeffs_offset = 0;
     let transform_buffer = &mut buffers.transform_buffer;
 
@@ -480,10 +484,16 @@ pub fn decode_vardct_group(
             };
 
             let lf_rects = {
+                // Subsampled LF image is at the top-left corner of each LF group.
+                let lfgx = block_group_rect.origin.0 >> log_group_dim;
+                let lfgy = block_group_rect.origin.1 >> log_group_dim;
+                let lfbx = lfgx << log_group_dim;
+                let lfby = lfgy << log_group_dim;
+
                 let lf_area: [Rect; 3] = core::array::from_fn(|i| Rect {
                     origin: (
-                        (block_group_rect.origin.0 + bx) >> hshift[i],
-                        (block_group_rect.origin.1 + by) >> vshift[i],
+                        lfbx + ((block_group_rect.origin.0 - lfbx + bx) >> hshift[i]),
+                        lfby + ((block_group_rect.origin.1 - lfby + by) >> vshift[i]),
                     ),
                     size: (cx, cy),
                 });
@@ -612,4 +622,49 @@ pub fn decode_vardct_group(
             .check_final_state(&hf_global.passes[*pass].histograms, br)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use test_log::test;
+
+    use crate::error::Result;
+    use crate::image::Rect;
+    use crate::tests::decode::decode;
+
+    #[test]
+    fn subsampled_chroma() -> Result<()> {
+        let (_, mut frames) = decode(include_bytes!("../../resources/test/multiple_lf_420.jxl"))?;
+        let frame = frames.pop().unwrap();
+        let [image]: [_; 1] = frame.try_into().unwrap();
+
+        let rect_lfs = [
+            // Green rect
+            Rect {
+                origin: (2048 * 3, 0),
+                size: (16 * 3, 16),
+            },
+            // Red rect
+            Rect {
+                origin: (0, 2048),
+                size: (16 * 3, 16),
+            },
+        ];
+        for rect in rect_lfs {
+            let view = image.get_rect(rect);
+            for y in 0..view.size().1 {
+                let row = view.row(y);
+                for pixel in row.chunks(3) {
+                    let &[r, g, b] = pixel else {
+                        unreachable!();
+                    };
+                    let max = r.max(g).max(b);
+                    let min = r.min(g).min(b);
+                    assert!(max - min > 0.5);
+                }
+            }
+        }
+
+        Ok(())
+    }
 }

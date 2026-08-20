@@ -6,6 +6,8 @@
 // Test that outerHTML editing keybindings work as expected and that *special*
 // elements like <html>, <body> and <head> can be edited correctly.
 
+const nodeConstants = require("resource://devtools/shared/dom-node-constants.js");
+
 const TEST_URL =
   "data:text/html," +
   "<!DOCTYPE html>" +
@@ -16,7 +18,7 @@ const TEST_URL =
   "</html>";
 const SELECTOR = "#keyboard";
 const OLD_HTML = '<div id="keyboard"></div>';
-const NEW_HTML = '<div id="keyboard">Edited</div>';
+const NEW_HTML = `<div id="keyboard">Edited with a text node long enough that it would show as its own node</div>`;
 
 requestLongerTimeout(2);
 
@@ -31,8 +33,8 @@ add_task(async function () {
   info("Check that copying seletected text in editor works as expected");
   await testCopyTextSelection(inspector);
 
-  info("Check that pressing F2 commits edits");
-  await testF2Commits(inspector);
+  info("Check that pressing F2 works as expected");
+  await testF2(inspector);
 
   info("Check that editing the <body> element works like other nodes");
   await testBody(inspector);
@@ -102,8 +104,8 @@ async function testCopyTextSelection(inspector) {
   await onEditorHiddem;
 }
 
-async function testF2Commits(inspector) {
-  const onEditorShown = once(inspector.markup.htmlEditor, "popupshown");
+async function testF2(inspector) {
+  let onEditorShown = once(inspector.markup.htmlEditor, "popupshown");
   inspector.markup._frame.contentDocument.documentElement.focus();
   EventUtils.sendKey("F2", inspector.markup._frame.contentWindow);
   await onEditorShown;
@@ -127,6 +129,26 @@ async function testF2Commits(inspector) {
     NEW_HTML,
     "F2 commits edits - the node has new HTML."
   );
+
+  info("Check that text node can't be edited");
+  const divNodeFront = await getNodeFront(SELECTOR, inspector);
+  const divNodeFrontChildren = await inspector.walker.children(divNodeFront);
+  const [textNodeFront] = divNodeFrontChildren.nodes;
+  await selectNode(textNodeFront, inspector);
+
+  is(
+    inspector.selection.nodeFront.nodeType,
+    nodeConstants.TEXT_NODE,
+    "We selected the text node"
+  );
+
+  onEditorShown = once(inspector.markup.htmlEditor, "popupshown");
+  inspector.markup._frame.contentDocument.documentElement.focus();
+  EventUtils.sendKey("F2", inspector.markup._frame.contentWindow);
+  const TIMEOUT = Symbol();
+  const timeoutPromise = wait(1000).then(() => TIMEOUT);
+  const raceResult = await Promise.race([onEditorShown, timeoutPromise]);
+  is(raceResult, TIMEOUT, "Editor isn't displayed");
 }
 
 async function testBody(inspector) {

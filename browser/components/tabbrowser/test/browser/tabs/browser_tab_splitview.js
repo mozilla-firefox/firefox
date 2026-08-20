@@ -493,41 +493,6 @@ add_task(async function test_split_view_preserves_multiple_pairings() {
   splitView2.close();
 });
 
-add_task(async function test_click_findbar_to_select_panel() {
-  const tab1 = await addTabAndLoadBrowser();
-  const tab2 = await addTabAndLoadBrowser();
-  const panel1 = document.getElementById(tab1.linkedPanel);
-  const panel2 = document.getElementById(tab2.linkedPanel);
-  await BrowserTestUtils.switchTab(gBrowser, tab1);
-
-  info("Activate split view with the first panel selected.");
-  const splitView = gBrowser.addTabSplitView([tab1, tab2]);
-  await SimpleTest.promiseFocus(tab1.linkedBrowser);
-  Assert.ok(
-    panel1.classList.contains("deck-selected"),
-    "First panel is selected."
-  );
-
-  info("Activate Find in Page within the second panel.");
-  const findbar = await gBrowser.getFindBar(tab2);
-  const promiseFindbarOpen = BrowserTestUtils.waitForEvent(
-    findbar,
-    "findbaropen"
-  );
-  findbar.open();
-  await promiseFindbarOpen;
-
-  info("Select the second panel by clicking the find bar.");
-  findbar.getElement("findbar-textbox").click();
-  await BrowserTestUtils.waitForMutationCondition(
-    panel2,
-    { attributeFilter: ["class"] },
-    () => panel2.classList.contains("deck-selected")
-  );
-
-  splitView.close();
-});
-
 add_task(async function test_moving_tabs() {
   let [tab1, tab2, tab3, tab4] = await Promise.all(
     Array.from({ length: 4 }).map((_, index) =>

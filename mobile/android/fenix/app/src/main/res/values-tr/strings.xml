@@ -3035,7 +3035,7 @@
   <!-- Badge label shown in the menu item when the browser VPN has an error -->
   <string name="ip_protection_menu_error">Hata</string>
   <!-- Badge label shown in the menu item when the user is eligible to use the browser VPN but should authenticate or authorize it first. -->
-  <string name="ip_protection_menu_auth_required">Deneyin</string>
+  <string name="ip_protection_menu_auth_required">Dene</string>
   <!-- Content description for the chevron button that opens the browser VPN settings screen -->
   <string name="ip_protection_navigate_settings">VPN ayarlarını aç</string>
   <!--
@@ -4641,6 +4641,14 @@
   <string name="privacy_notice_updated_homepage_message_privacy_notice" tools:ignore="UnusedResources">Gizlilik Bildirimi</string>
   <!-- The second active link used in privacy_notice_updated_homepage_message -->
   <string name="privacy_notice_updated_homepage_message_learn_more" tools:ignore="UnusedResources">Daha fazla bilgi al</string>
+  <!--
+    Collections migration homepage card
+
+    Title shown on the collections to tab groups migration card on the homepage.
+  -->
+  <string name="collections_migration_homepage_banner_title">Koleksiyonlar artık “grup” oldu</string>
+  <!-- Message shown on the collections to tab groups migration card on the homepage. -->
+  <string name="collections_migration_homepage_card_message">Sekmelerinizi düzenli tutmanın daha basit bir yolu var</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Sekme gruplarımı göster</string>
   <!-- Google Lens prototype related strings -->
@@ -4729,4 +4737,6 @@
   <string name="firefox_labs_no_labs_available_description">Şu anda denenebilecek deneysel özellik yok</string>
   <!-- Title of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Web sitesi izolasyonu</string>
+  <!-- Description of the Firefox Labs Sandboxing experiment. -->
+  <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Sekmeden sekmeye sızabilecek verilerinizi koruyan, web sitelerinin arasına yerleşen ek bir güvenlik katmanı. Performansı, kararlılığı, site uyumluluğunu ve gezinti geçmişinin kaydedilme biçimini etkileyebilir.</string>
 </resources>

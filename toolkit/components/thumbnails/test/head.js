@@ -8,7 +8,8 @@ ChromeUtils.defineESModuleGetters(this, {
   PageThumbs: "resource://gre/modules/PageThumbs.sys.mjs",
   PageThumbsStorage: "resource://gre/modules/PageThumbs.sys.mjs",
   PlacesTestUtils: "resource://testing-common/PlacesTestUtils.sys.mjs",
-  SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
 });
 
 XPCOMUtils.defineLazyServiceGetter(

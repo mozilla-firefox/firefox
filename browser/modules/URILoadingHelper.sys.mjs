@@ -153,6 +153,9 @@ function openInWindow(url, params, sourceWindow) {
   if (params.aiWindow) {
     extraOptions.setPropertyAsBool("ai-window", true);
   }
+  if (chromeless) {
+    extraOptions.setPropertyAsBool("chromeless-window", true);
+  }
 
   var allowThirdPartyFixupSupports = Cc[
     "@mozilla.org/supports-PRBool;1"

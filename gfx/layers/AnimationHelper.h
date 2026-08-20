@@ -31,6 +31,7 @@ class AnimationHelper {
  public:
   struct SampleResult {
     enum class Type : uint8_t { None, Skipped, Sampled };
+    // TODO(bug 2064481): Check if we need ScrollToDelayPhase anymore.
     enum class Reason : uint8_t { None, ScrollToDelayPhase };
     Type mType = Type::None;
     Reason mReason = Reason::None;

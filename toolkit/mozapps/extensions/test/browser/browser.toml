@@ -115,9 +115,6 @@ skip-if = [
 ]
 
 ["browser_html_list_view_recommendations.js"]
-skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && opt && a11y_checks && swgl", # Bug 1858037 to investigate intermittent a11y_checks results for .popup-notification-primary-button.primary.footer-button
-]
 
 ["browser_html_mlmodel_addons.js"]
 

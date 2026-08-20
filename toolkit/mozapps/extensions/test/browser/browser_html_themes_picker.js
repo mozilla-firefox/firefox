@@ -681,3 +681,89 @@ add_task(async function test_picker_reflects_external_addon_install() {
   await closeView(win);
   await SpecialPowers.popPrefEnv();
 });
+
+// The theme preview box is not a whole number of device pixels tall, so
+// painting snaps it and an SVG used as an image is laid out at the snapped
+// size. A preview that relies on the default preserveAspectRatio is therefore
+// letterboxed by a varying amount and appears to jiggle while scrolling, see
+// bug 2059917. Guard against a new preview reintroducing that.
+add_task(async function test_theme_preview_svgs_ignore_aspect_ratio() {
+  const themesListManager = await getThemesList({
+    installSource: "about:addons",
+  });
+
+  const AMO_HOSTED_THEME_IDS = ALL_THEME_IDS.filter(
+    id => id !== DEFAULT_THEME_ID
+  );
+
+  const BUILTIN_THEMES_PREVIEW_URLS = [
+    DEFAULT_THEME_PREVIEW_URL,
+    DEFAULT_THEME_PREVIEW_NOVA_URL,
+    "resource://builtin-themes/dark/preview.svg",
+    "resource://builtin-themes/light/preview.svg",
+    "resource://builtin-themes/alpenglow/preview.svg",
+  ];
+
+  const previewUrls = [...BUILTIN_THEMES_PREVIEW_URLS];
+
+  // Sanity check AMO curated theme preview urls.
+  for (const amoCuratedThemeId of AMO_HOSTED_THEME_IDS) {
+    const amoCuratedThemePreviewUrl =
+      themesListManager.getThemePreviewURL(amoCuratedThemeId);
+    Assert.ok(
+      amoCuratedThemePreviewUrl?.startsWith("resource://"),
+      `Expect bundled theme preview for AMO hosted "${amoCuratedThemeId}" to be a resource:// url ("${amoCuratedThemePreviewUrl}")`
+    );
+    previewUrls.push(amoCuratedThemePreviewUrl);
+  }
+
+  const EXPECTED_THEME_PREVIEWS_URLS_COUNT =
+    BUILTIN_THEMES_PREVIEW_URLS.length + AMO_HOSTED_THEME_IDS.length;
+
+  Assert.equal(
+    previewUrls.length,
+    EXPECTED_THEME_PREVIEWS_URLS_COUNT,
+    "Got theme preview URLs for all built-in themes and curated AMO-hosted themes"
+  );
+
+  for (const url of previewUrls) {
+    const response = await fetch(url);
+    Assert.ok(
+      response.ok,
+      `Expect ${url} to be available as bundled in the omnijar`
+    );
+    const svgRoot = new DOMParser().parseFromString(
+      await response.text(),
+      "image/svg+xml"
+    ).documentElement;
+
+    Assert.equal(
+      svgRoot.getAttribute("preserveAspectRatio"),
+      "none",
+      `Expect ${url} to set preserveAspectRatio="none"`
+    );
+    // preserveAspectRatio only has an effect when a viewBox maps the drawing
+    // onto the viewport, and without one the preview is cropped to the snapped
+    // size instead of being scaled to it.
+    Assert.equal(
+      svgRoot.getAttribute("viewBox"),
+      "0 0 680 92",
+      `Expect ${url} to declare a viewBox set to the expected value`
+    );
+    // Sanity and consistency checks (to make sure that all SVG images for the bundled
+    // theme previews have the width and height properties set consistently with
+    // the viewBox attribute).
+    Assert.ok(
+      svgRoot.hasAttribute("width"),
+      `Expect ${url} to declare an explicit width`
+    );
+    Assert.ok(
+      svgRoot.hasAttribute("height"),
+      `Expect ${url} to declare an explicit height`
+    );
+    Assert.equal(
+      svgRoot.getAttribute("viewBox"),
+      `0 0 ${svgRoot.getAttribute("width")} ${svgRoot.getAttribute("height")}`
+    );
+  }
+});

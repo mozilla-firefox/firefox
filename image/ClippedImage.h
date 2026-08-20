@@ -65,7 +65,7 @@ class ClippedImage : public ImageWrapper {
 
  protected:
   ClippedImage(Image* aImage, nsIntRect aClip,
-               const Maybe<nsSize>& aSVGViewportSize);
+               const Maybe<CSSSize>& aSVGViewportSize);
 
   virtual ~ClippedImage();
 
@@ -84,10 +84,10 @@ class ClippedImage : public ImageWrapper {
   // If we are forced to draw a temporary surface, we cache it here.
   UniquePtr<ClippedImageCachedSurface> mCachedSurface;
 
-  nsIntRect mClip;                    // The region to clip to.
-  Maybe<bool> mShouldClip;            // Memoized ShouldClip() if present.
-  Maybe<nsIntSize> mSVGViewportSize;  // If we're clipping a VectorImage, this
-                                      // is the size of viewport of that image.
+  nsIntRect mClip;                  // The region to clip to.
+  Maybe<bool> mShouldClip;          // Memoized ShouldClip() if present.
+  Maybe<CSSSize> mSVGViewportSize;  // If we're clipping a VectorImage, this
+                                    // is the size of viewport of that image.
   friend class DrawSingleTileCallback;
   friend class ImageOps;
 };

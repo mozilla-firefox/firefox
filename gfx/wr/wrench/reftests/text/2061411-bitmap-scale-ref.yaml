@@ -1,13 +1,15 @@
-# Reference for 2061411-bitmap-scale.yaml: local raster space rasterizes the
-# bitmap glyphs with an identity shape and lets the shader apply the scale to the
-# glyph image, which is the correct result the screen path must now match.
+# Reference for 2061411-bitmap-scale.yaml: the same local raster space the screen
+# path falls back to for a bitmap-strike glyph, with the transform's scale stated
+# explicitly. Screen raster space must pick that scale up on its own, or the glyph
+# is rasterized at its untransformed size and the shader scales the small image
+# up (bug 2064316); 2061411-bitmap-scale-notref.yaml pins that failure mode.
 root:
   items:
     - type: stacking-context
       bounds: [0, 0, 800, 600]
       transform: scale(3)
       transform-origin: [0, 0]
-      raster-space: local(1.0)
+      raster-space: local(3.0)
       items:
         - text: "000"
           origin: 20 40
@@ -19,7 +21,7 @@ root:
       bounds: [0, 0, 800, 600]
       transform: scale(1, 3)
       transform-origin: [0, 0]
-      raster-space: local(1.0)
+      raster-space: local(3.0)
       items:
         - text: "000"
           origin: 20 90
@@ -31,7 +33,7 @@ root:
       bounds: [0, 0, 800, 600]
       transform: scale(3, 1)
       transform-origin: [0, 0]
-      raster-space: local(1.0)
+      raster-space: local(3.0)
       items:
         - text: "000"
           origin: 20 330

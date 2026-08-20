@@ -121,7 +121,7 @@ class IPPFxaActivateAuthProviderSingleton extends IPPAuthProvider {
       }
       return { entitlement: entitlement ?? null };
     } catch (error) {
-      return { error: error.message };
+      return { error: error?.message ?? error };
     }
   }
 
@@ -177,7 +177,7 @@ class IPPFxaActivateAuthProviderSingleton extends IPPAuthProvider {
       this._setEntitlement(entitlement ?? null);
       return { isEnrolledAndEntitled: true, error: null };
     } catch (error) {
-      return { isEnrolledAndEntitled: false, error: error?.message ?? null };
+      return { isEnrolledAndEntitled: false, error: error?.message ?? error };
     } finally {
       this.#isEnrolling = false;
       lazy.IPProtectionService.updateState();

@@ -12,4 +12,5 @@ dictionary StripRule {
   sequence<UTF8String> queryParams = [];
   boolean isGlobal = false;
   sequence<UTF8String> origins = [];
+  sequence<UTF8String> schemelessSites = [];
 };

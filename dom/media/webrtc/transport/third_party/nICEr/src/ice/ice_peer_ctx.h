@@ -67,6 +67,7 @@ typedef STAILQ_HEAD(nr_ice_peer_ctx_head_, nr_ice_peer_ctx_) nr_ice_peer_ctx_hea
 
 int nr_ice_peer_ctx_create(nr_ice_ctx *ctx, nr_ice_handler *handler,char *label, nr_ice_peer_ctx **pctxp);
 void nr_ice_peer_ctx_destroy(nr_ice_peer_ctx** pctxp);
+int nr_ice_peer_ctx_aggressive_nomination(nr_ice_peer_ctx *pctx);
 int nr_ice_peer_ctx_parse_stream_attributes(nr_ice_peer_ctx *pctx, nr_ice_media_stream *stream, char **attrs, int attr_ct);
 int nr_ice_peer_ctx_find_pstream(nr_ice_peer_ctx *pctx, nr_ice_media_stream *stream, nr_ice_media_stream **pstreamp);
 int nr_ice_peer_ctx_remove_pstream(nr_ice_peer_ctx *pctx, nr_ice_media_stream **pstreamp);

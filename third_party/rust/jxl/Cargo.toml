@@ -12,7 +12,7 @@
 [package]
 edition = "2024"
 name = "jxl"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Luca Versari <veluca93@gmail.com>"]
 build = false
 exclude = ["resources/"]
@@ -38,6 +38,7 @@ avx = ["jxl_simd/avx"]
 avx512 = ["jxl_simd/avx512"]
 default = ["all-simd"]
 neon = ["jxl_simd/neon"]
+shuttle = ["dep:shuttle"]
 simd128 = ["jxl_simd/simd128"]
 sse42 = ["jxl_simd/sse42"]
 
@@ -57,19 +58,23 @@ version = "2.0.0"
 version = "1.4.3"
 
 [dependencies.jxl_macros]
-version = "=0.5.1"
+version = "=0.6.0"
 
 [dependencies.jxl_simd]
-version = "=0.5.1"
+version = "=0.6.0"
 
 [dependencies.jxl_transforms]
-version = "=0.5.1"
+version = "=0.6.0"
 
 [dependencies.num-derive]
 version = "0.4"
 
 [dependencies.num-traits]
 version = "0.2.14"
+
+[dependencies.shuttle]
+version = "0.9"
+optional = true
 
 [dependencies.thiserror]
 version = "2.0"
@@ -82,7 +87,7 @@ optional = true
 version = "0.3.2"
 
 [dev-dependencies.jxl_macros]
-version = "=0.5.1"
+version = "=0.6.0"
 features = ["test"]
 
 [dev-dependencies.paste]

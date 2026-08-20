@@ -1,0 +1,11 @@
+# Async-scrolled to 100 from a display list painted at 50, so the content sits at
+# y=0. The flood covers only the top half of the filtered element, leaving the
+# bottom half of the red backdrop unfiltered.
+root:
+  items:
+    - type: rect
+      color: green
+      bounds: [0, 0, 100, 50]
+    - type: rect
+      color: red
+      bounds: [0, 50, 100, 50]

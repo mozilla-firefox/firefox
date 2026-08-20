@@ -200,108 +200,6 @@ export var UrlbarUtils = {
   },
 
   /**
-   * Returns the group for a result.
-   *
-   * @param {UrlbarResult} result
-   *   The result.
-   * @returns {Values<typeof UrlbarShared.RESULT_GROUP>}
-   *   The result's group.
-   */
-  getResultGroup(result) {
-    // Used for test_suggestedIndexRelativeToGroup.js to make it simpler
-    if (result.group) {
-      return result.group;
-    }
-
-    if (result.hasSuggestedIndex && !result.isSuggestedIndexRelativeToGroup) {
-      return UrlbarShared.RESULT_GROUP.SUGGESTED_INDEX;
-    }
-    if (result.heuristic) {
-      switch (result.providerName) {
-        case "UrlbarProviderAiChat":
-          return UrlbarShared.RESULT_GROUP.HEURISTIC_AI_CHAT;
-        case "UrlbarProviderAliasEngines":
-          return UrlbarShared.RESULT_GROUP.HEURISTIC_ENGINE_ALIAS;
-        case "UrlbarProviderAutofill":
-          return UrlbarShared.RESULT_GROUP.HEURISTIC_AUTOFILL;
-        case "UrlbarProviderBookmarkKeywords":
-          return UrlbarShared.RESULT_GROUP.HEURISTIC_BOOKMARK_KEYWORD;
-        case "UrlbarProviderHeuristicFallback":
-          return UrlbarShared.RESULT_GROUP.HEURISTIC_FALLBACK;
-        case "UrlbarProviderHistoryUrlHeuristic":
-          return UrlbarShared.RESULT_GROUP.HEURISTIC_HISTORY_URL;
-        case "UrlbarProviderOmnibox":
-          return UrlbarShared.RESULT_GROUP.HEURISTIC_OMNIBOX;
-        case "UrlbarProviderRestrictKeywordsAutofill":
-          return UrlbarShared.RESULT_GROUP.HEURISTIC_RESTRICT_KEYWORD_AUTOFILL;
-        case "UrlbarProviderTokenAliasEngines":
-          return UrlbarShared.RESULT_GROUP.HEURISTIC_TOKEN_ALIAS_ENGINE;
-        case "UrlbarProviderSearchTips":
-          return UrlbarShared.RESULT_GROUP.HEURISTIC_SEARCH_TIP;
-        default:
-          if (result.providerName.startsWith("TestProvider")) {
-            return UrlbarShared.RESULT_GROUP.HEURISTIC_TEST;
-          }
-          break;
-      }
-      if (result.providerType == UrlbarShared.PROVIDER_TYPE.EXTENSION) {
-        return UrlbarShared.RESULT_GROUP.HEURISTIC_EXTENSION;
-      }
-      console.error(
-        "Returning HEURISTIC_FALLBACK for unrecognized heuristic result: ",
-        result
-      );
-      return UrlbarShared.RESULT_GROUP.HEURISTIC_FALLBACK;
-    }
-
-    switch (result.providerName) {
-      case "UrlbarProviderAboutPages":
-        return UrlbarShared.RESULT_GROUP.ABOUT_PAGES;
-      case "UrlbarProviderInputHistory":
-        return UrlbarShared.RESULT_GROUP.INPUT_HISTORY;
-      case "UrlbarProviderQuickSuggest":
-        return UrlbarShared.RESULT_GROUP.GENERAL_PARENT;
-      default:
-        break;
-    }
-
-    switch (result.type) {
-      case UrlbarShared.RESULT_TYPE.SEARCH:
-        if (result.source == UrlbarShared.RESULT_SOURCE.HISTORY) {
-          return result.providerName == "UrlbarProviderRecentSearches"
-            ? UrlbarShared.RESULT_GROUP.RECENT_SEARCH
-            : UrlbarShared.RESULT_GROUP.FORM_HISTORY;
-        }
-        if (result.payload.tail && !result.isRichSuggestion) {
-          return UrlbarShared.RESULT_GROUP.TAIL_SUGGESTION;
-        }
-        if (result.payload.suggestion) {
-          return UrlbarShared.RESULT_GROUP.REMOTE_SUGGESTION;
-        }
-        break;
-      case UrlbarShared.RESULT_TYPE.OMNIBOX:
-        return UrlbarShared.RESULT_GROUP.OMNIBOX;
-      case UrlbarShared.RESULT_TYPE.REMOTE_TAB:
-        return UrlbarShared.RESULT_GROUP.REMOTE_TAB;
-      case UrlbarShared.RESULT_TYPE.RESTRICT:
-        return UrlbarShared.RESULT_GROUP.RESTRICT_SEARCH_KEYWORD;
-      case UrlbarShared.RESULT_TYPE.AI_CHAT:
-        return UrlbarShared.RESULT_GROUP.AI;
-    }
-    // When enabled, semantic history results (both history URLs and
-    // switch-to-tab results) get their own group so they fill only the space
-    // left after, and never evict, the plain (non-semantic) results that would
-    // otherwise share the general group.
-    if (
-      result.providerName == "UrlbarProviderSemanticHistorySearch" &&
-      lazy.UrlbarPrefs.get("suggest.semanticHistory.separateGroup")
-    ) {
-      return UrlbarShared.RESULT_GROUP.SEMANTIC_HISTORY;
-    }
-    return UrlbarShared.RESULT_GROUP.GENERAL;
-  },
-
-  /**
    * Extracts the URL from a result.
    *
    * @param {UrlbarResult} result
@@ -1201,88 +1099,6 @@ export var UrlbarUtils = {
   },
 
   /**
-   * Extracts a group for search engagement telemetry from a result.
-   *
-   * @param {UrlbarResult} result The result to analyze.
-   * @returns {string} Group name as string.
-   */
-  searchEngagementTelemetryGroup(result) {
-    if (!result) {
-      return "unknown";
-    }
-    if (result.isBestMatch) {
-      return "top_pick";
-    }
-    if (result.providerName === "UrlbarProviderTopSites") {
-      return "top_site";
-    }
-
-    switch (this.getResultGroup(result)) {
-      case UrlbarShared.RESULT_GROUP.INPUT_HISTORY: {
-        return "adaptive_history";
-      }
-      case UrlbarShared.RESULT_GROUP.RECENT_SEARCH: {
-        return "recent_search";
-      }
-      case UrlbarShared.RESULT_GROUP.FORM_HISTORY: {
-        return "search_history";
-      }
-      case UrlbarShared.RESULT_GROUP.TAIL_SUGGESTION:
-      case UrlbarShared.RESULT_GROUP.REMOTE_SUGGESTION: {
-        let group = result.payload.trending
-          ? "trending_search"
-          : "search_suggest";
-        if (result.isRichSuggestion) {
-          group += "_rich";
-        }
-        return group;
-      }
-      case UrlbarShared.RESULT_GROUP.REMOTE_TAB: {
-        return "remote_tab";
-      }
-      case UrlbarShared.RESULT_GROUP.HEURISTIC_EXTENSION:
-      case UrlbarShared.RESULT_GROUP.HEURISTIC_OMNIBOX:
-      case UrlbarShared.RESULT_GROUP.OMNIBOX: {
-        return "addon";
-      }
-      // Semantic history results have their own group for sorting purposes but
-      // are reported as "general" results, as they were before the group split.
-      case UrlbarShared.RESULT_GROUP.GENERAL:
-      case UrlbarShared.RESULT_GROUP.SEMANTIC_HISTORY: {
-        return "general";
-      }
-      // Group of UrlbarProviderQuickSuggest is GENERAL_PARENT.
-      case UrlbarShared.RESULT_GROUP.GENERAL_PARENT: {
-        return "suggest";
-      }
-      case UrlbarShared.RESULT_GROUP.ABOUT_PAGES: {
-        return "about_page";
-      }
-      case UrlbarShared.RESULT_GROUP.SUGGESTED_INDEX: {
-        return "suggested_index";
-      }
-      case UrlbarShared.RESULT_GROUP.RESTRICT_SEARCH_KEYWORD: {
-        return "restrict_keyword";
-      }
-      case UrlbarShared.RESULT_GROUP.AI: {
-        return "ai";
-      }
-    }
-
-    return result.heuristic ? "heuristic" : "unknown";
-  },
-
-  searchEngagementTelemetryAction(result, pickedActionKey = null) {
-    if (result.providerName != "UrlbarProviderGlobalActions") {
-      return result.payload.action?.key ?? "none";
-    }
-    if (pickedActionKey) {
-      return pickedActionKey;
-    }
-    return result.payload.actionsResults.map(({ key }) => key).join(",");
-  },
-
-  /**
    * For use when we want to hash a pair of items in a dictionary
    *
    * @param {string[]} tokens
@@ -1945,6 +1761,14 @@ UrlbarUtils.RESULT_PAYLOAD_SCHEMA = {
       dynamicType: {
         type: "string",
       },
+      // Set by UrlbarProvidersManager when the result is finalized,
+      // so they're not present initially.
+      viewTemplate: {
+        type: "object",
+      },
+      viewUpdate: {
+        type: "object",
+      },
     },
   },
   [UrlbarShared.RESULT_TYPE.RESTRICT]: {
@@ -2326,8 +2150,7 @@ export class UrlbarProvider {
    *   An optional mapping from attribute names to values.  For each
    *   name-value pair, an attribute is added to the element created for the
    *   object. The `id` attribute is reserved and cannot be set by the
-   *   provider. Element IDs are passed back to the provider in getViewUpdate
-   *   if they are needed.
+   *   provider.
    *
    * @property {ViewTemplateElement[]} [children]
    *   An optional list of children.  Each item in the array must be an object
@@ -2344,8 +2167,7 @@ export class UrlbarProvider {
    */
 
   /**
-   * This is called only for dynamic result types, when the urlbar view creates
-   * the view of one of the results of the provider.
+   * This is called only for dynamic result types.
    *
    * @param {UrlbarResult} _result
    *   The result whose view will be created.
@@ -2358,9 +2180,8 @@ export class UrlbarProvider {
   }
 
   /**
-   * This is called only for dynamic result types, when the urlbar view updates
-   * the view of one of the results of the provider.  It should return an object
-   * describing the view update that looks like this:
+   * This is called only for dynamic result types by the providers manager. It
+   * should return an object describing the view update that looks like this:
    *
    *   {
    *     nodeNameFoo: {
@@ -2397,12 +2218,6 @@ export class UrlbarProvider {
    *
    * @param {UrlbarResult} _result
    *   The result whose view will be updated.
-   * @param {Map} _idsByName
-   *   A Map from an element's name, as defined by the provider; to its ID in
-   *   the DOM, as defined by the browser. The browser manages element IDs for
-   *   dynamic results to prevent collisions. However, a provider may need to
-   *   access the IDs of the elements created for its results. For example, to
-   *   set various `aria` attributes.
    * @returns {object}
    *   A view update object as described above.  The names of properties are the
    *   the names of elements declared in the view template.  The values of
@@ -2431,7 +2246,7 @@ export class UrlbarProvider {
    *   {string} [textContent]
    *     A string that will be set as `element.textContent`.
    */
-  getViewUpdate(_result, _idsByName) {
+  getViewUpdate(_result) {
     return null;
   }
 

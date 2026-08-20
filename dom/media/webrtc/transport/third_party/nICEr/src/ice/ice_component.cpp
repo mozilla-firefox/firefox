@@ -1661,25 +1661,39 @@ void nr_ice_component_check_if_failed(nr_ice_component *comp)
     }
   }
 
-int nr_ice_component_select_pair(nr_ice_peer_ctx *pctx, nr_ice_component *comp)
+void nr_ice_component_maybe_select_pair(nr_ice_peer_ctx *pctx, nr_ice_component *comp)
   {
     nr_ice_cand_pair **pairs=0;
     int ct=0;
     nr_ice_cand_pair *pair;
-    int r,_status;
+    int r;
+
+    if(comp->nominated)
+      return;
+
+    assert(pctx->controlling);
+    assert(!nr_ice_peer_ctx_aggressive_nomination(pctx));
 
     /* Size the array */
     pair=TAILQ_FIRST(&comp->stream->check_list);
     while(pair){
-      if (comp->component_id == pair->local->component_id)
-          ct++;
+      if (comp->component_id == pair->local->component_id){
+        if(pair->nominated ||
+           (pair->state == NR_ICE_PAIR_STATE_IN_PROGRESS &&
+            pair->stun_client->mode == NR_ICE_CLIENT_MODE_USE_CANDIDATE))
+          return;
+
+        ct++;
+      }
 
       pair=TAILQ_NEXT(pair,check_queue_entry);
     }
 
     /* Make and fill the array */
-    if(!(pairs=R_NEW_CNT(nr_ice_cand_pair*, ct)))
-      ABORT(R_NO_MEMORY);
+    if(!(pairs=R_NEW_CNT(nr_ice_cand_pair*, ct))){
+      r_log(LOG_ICE,LOG_ERR,"ICE-PEER(%s)/STREAM(%s)/COMP(%d): Failed to allocate candidate pairs",pctx->label,comp->stream->label,comp->component_id);
+      return;
+    }
 
     ct=0;
     pair=TAILQ_FIRST(&comp->stream->check_list);
@@ -1693,13 +1707,10 @@ int nr_ice_component_select_pair(nr_ice_peer_ctx *pctx, nr_ice_component *comp)
     if (pctx->handler) {
       if(r=pctx->handler->vtbl->select_pair(pctx->handler->obj,
         comp->stream,comp->component_id,pairs,ct))
-        ABORT(r);
+        r_log(LOG_ICE,LOG_ERR,"ICE-PEER(%s)/STREAM(%s)/COMP(%d): Pair selection callback failed with %d",pctx->label,comp->stream->label,comp->component_id,r);
     }
 
-    _status=0;
-  abort:
     free(pairs);
-    return(_status);
   }
 
 

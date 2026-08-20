@@ -316,7 +316,7 @@ impl TransformStep {
                             origin: (0, 0),
                         }),
                         &None,
-                        &None,
+                        None,
                         &mut bufs,
                     );
                 }
@@ -343,7 +343,7 @@ impl TransformStep {
                             origin: (0, 0),
                         }),
                         &None,
-                        &None,
+                        None,
                         &mut bufs,
                     );
                 }

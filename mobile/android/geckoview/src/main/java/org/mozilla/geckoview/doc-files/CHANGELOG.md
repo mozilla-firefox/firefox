@@ -13,6 +13,11 @@ exclude: true
 
 ⚠️  breaking change and deprecation notices
 
+## v156
+- Updated [`GeckoSession.saveAsPdf`][156.1] to identify if the currently displayed browser item is a PDF JS page, if so, then save using PDF JS machinery. Otherwise, save the PDF through the Gecko print framework. ([bug 2064162]({{bugzilla}}2064162))
+
+[156.1]: {{javadoc_uri}}/GeckoSession.html#saveAsPdf()
+
 ## v155
 - Added [WebRequestError.ERROR_LOCAL_NETWORK_ACCESS_DENIED] to indicate that a load failed because the user denied the local network access permission on Android 17+.
 - Added the [`IPProxyException.ERROR_CATASTROPHIC`][155.1] and [`IPProxyException.ERROR_VPN_UNAVAILABLE`][155.2]
@@ -2057,4 +2062,4 @@ to allow adding gecko profiler markers.
 [65.24]: {{javadoc_uri}}/CrashReporter.html#sendCrashReport(android.content.Context,android.os.Bundle,java.lang.String)
 [65.25]: {{javadoc_uri}}/GeckoResult.html
 
-[api-version]: 8746a786b9e9fd08dd61321d2973efc43d1ffefa
+[api-version]: 5c2745c5d039441ed4363a985bc4f832f62af800

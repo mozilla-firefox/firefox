@@ -442,11 +442,17 @@ where
                 Ok(())
             }
             // Attempting to read a frame resulted in a stream level error.
-            // This is handled by resetting the frame then trying to read
-            // another frame.
+            // Locally detected stream errors are reported to the peer with
+            // RST_STREAM. Remotely initiated resets have already been applied
+            // by the streams state machine and must not be echoed back.
             Err(Error::Reset(id, reason, initiator)) => {
+                if initiator == Initiator::Remote {
+                    tracing::trace!(?id, ?reason, ?initiator, "stream reset");
+                    return Ok(());
+                }
+
                 debug_assert_eq!(initiator, Initiator::Library);
-                tracing::trace!(?id, ?reason, "stream error");
+                tracing::trace!(?id, ?reason, ?initiator, "stream error");
                 match self.streams.send_reset(id, reason) {
                     Ok(()) => (),
                     Err(crate::proto::error::GoAway { debug_data, reason }) => {

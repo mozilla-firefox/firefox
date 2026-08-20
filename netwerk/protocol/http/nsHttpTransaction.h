@@ -262,6 +262,8 @@ class nsHttpTransaction final : public nsAHttpTransaction,
     mSecurityInfo = aSecurityInfo;
   }
 
+  void RefreshSecurityInfoAfter0RTTAdopt() { MaybeRefreshSecurityInfo(); }
+
  private:
   friend class DeleteHttpTransaction;
   virtual ~nsHttpTransaction();

@@ -6,6 +6,7 @@ package org.mozilla.fenix.ui.efficiency.pageObjects
 
 import android.os.SystemClock
 import android.util.Log
+import android.view.WindowManager
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeTimeoutException
@@ -731,6 +732,29 @@ class BrowserPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule
     /** Assert the web card-number field is autofilled with [number]. */
     fun verifyAutofilledCreditCard(number: String): BrowserPage {
         mozVerify(BrowserPageSelectors.AUTOFILLED_CREDIT_CARD(number), timeout = waitingTime)
+        return this
+    }
+
+    /**
+     * Assert whether screenshots are currently permitted on the app window.
+     *
+     * Android blocks screen capture whenever the window carries [WindowManager.LayoutParams.FLAG_SECURE]. Fenix sets
+     * that flag on the activity window while a private tab is in the foreground and "Allow screenshots in private
+     * browsing" is off, and clears it otherwise. Asserting the flag is the deterministic equivalent of trying to take a
+     * screenshot, without depending on the flaky OS capture path.
+     *
+     * @param allowed true expects screenshots permitted (flag absent); false expects them blocked (flag present).
+     */
+    fun verifyScreenshotsAllowed(allowed: Boolean): BrowserPage {
+        val isSecure = composeRule.runOnUiThread {
+            (composeRule.activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE) != 0
+        }
+        assertTrue(
+            "Expected screenshots to be " +
+                (if (allowed) "allowed (FLAG_SECURE absent)" else "blocked (FLAG_SECURE present)") +
+                ", but FLAG_SECURE was ${if (isSecure) "present" else "absent"}",
+            isSecure != allowed,
+        )
         return this
     }
 

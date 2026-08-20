@@ -407,7 +407,6 @@ class nsFrameList {
     }
 
     bool operator==(const Iterator<FrameTraversal>& aOther) const = default;
-    bool operator!=(const Iterator<FrameTraversal>& aOther) const = default;
 
    private:
     nsIFrame* mCurrent;

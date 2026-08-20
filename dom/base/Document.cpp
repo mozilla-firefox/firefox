@@ -16011,6 +16011,12 @@ void Document::ExitFullscreenInDocTree(Document* aMaybeNotARootDoc) {
     // we would actually do nothing below except crashing ourselves via
     // dispatching the "MozDOMFullscreen:Exited" event to an nonexistent
     // document.
+    //
+    // We still reset this document, otherwise it could keep a stale element
+    // in its top layer with the fullscreen flag set.
+    if (aMaybeNotARootDoc->GetUnretargetedFullscreenElement()) {
+      aMaybeNotARootDoc->CleanupFullscreenState();
+    }
     return;
   }
 
@@ -16525,6 +16531,7 @@ nsTArray<Element*> Document::GetTopLayer() const {
   nsTArray<Element*> elements;
   for (const nsWeakPtr& ptr : mTopLayer) {
     if (nsCOMPtr<Element> elem = do_QueryReferent(ptr)) {
+      MOZ_DIAGNOSTIC_ASSERT(elem->GetComposedDoc() == this);
       elements.AppendElement(elem);
     }
   }
@@ -17282,24 +17289,38 @@ MOZ_CAN_RUN_SCRIPT_BOUNDARY
 bool Document::ApplyFullscreen(UniquePtr<FullscreenRequest> aRequest) {
   Element* elem = aRequest->Element();
 
-  switch (FullscreenElementReadyCheck(*aRequest)) {
-    case ElementReadyCheckResult::eOk:
-      break;
-    case ElementReadyCheckResult::eKeyboardLockOnly:
-      SetKeyboardLockStatusAndMaybeDispatchEvent(this, *aRequest);
-      aRequest->MayResolvePromise();
-      return true;
-    case ElementReadyCheckResult::eSame:
-      aRequest->MayResolvePromise();
-      [[fallthrough]];
-    case ElementReadyCheckResult::eErrorPromiseRejected:
-      return false;
+  // Runs the ready check and returns the value ApplyFullscreen should return,
+  // or Nothing() to keep going.
+  auto readyCheck = [&]() -> Maybe<bool> {
+    switch (FullscreenElementReadyCheck(*aRequest)) {
+      case ElementReadyCheckResult::eOk:
+        return Nothing();
+      case ElementReadyCheckResult::eKeyboardLockOnly:
+        SetKeyboardLockStatusAndMaybeDispatchEvent(this, *aRequest);
+        aRequest->MayResolvePromise();
+        return Some(true);
+      case ElementReadyCheckResult::eSame:
+        aRequest->MayResolvePromise();
+        [[fallthrough]];
+      case ElementReadyCheckResult::eErrorPromiseRejected:
+        return Some(false);
+    }
+    MOZ_ASSERT_UNREACHABLE("Unhandled ElementReadyCheckResult");
+    return Some(false);
+  };
+
+  if (Maybe<bool> result = readyCheck()) {
+    return *result;
   }
 
   RefPtr<Document> doc = aRequest->Document();
   // https://github.com/whatwg/html/pull/12345
   RefPtr<Element> hideUntil = elem->GetTopmostPopoverAncestor(nullptr, false);
   doc->HidePopoversUntil(hideUntil, false, true);
+
+  if (Maybe<bool> result = readyCheck()) {
+    return *result;
+  }
 
   // Stash a reference to any existing fullscreen doc, we'll use this later
   // to detect if the origin which is fullscreen has changed.

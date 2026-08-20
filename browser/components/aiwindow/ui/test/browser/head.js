@@ -26,8 +26,10 @@ ChromeUtils.defineESModuleGetters(this, {
     "moz-src:///browser/components/urlbar/SmartbarMentionsPanelSearch.sys.mjs",
   PlacesTestUtils: "resource://testing-common/PlacesTestUtils.sys.mjs",
   Region: "resource://gre/modules/Region.sys.mjs",
-  SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
-  SessionWindowUI: "resource:///modules/sessionstore/SessionWindowUI.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
+  SessionWindowUI:
+    "moz-src:///browser/components/sessionstore/SessionWindowUI.sys.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
 });
 
@@ -68,6 +70,7 @@ let gIntentEngineStub;
 const MOCK_RS_RECORDS = [
   ["chat", 11],
   ["title-generation", 1],
+  ["tab-group-naming", 1],
   ["conversation-starters-sidebar-system", 1],
   ["conversation-suggestions-sidebar-starter", 3],
   ["conversation-suggestions-followup", 1],
@@ -252,6 +255,38 @@ const MOCK_RS_RECORDS = [
       // placeholder the real prompt has.
       prompts:
         "# Existing Memories\n\n## Existing Memories\n{relevantMemoriesList}",
+      version: "v1.0",
+    },
+    // tab-group-naming resolves through the v2 modular path: a params manifest
+    // plus one module record per prompt module (system-instructions, user-data).
+    {
+      kind: "params",
+      feature: "tab-group-naming",
+      model: "test-model",
+      service_type: "ai",
+      purpose: "auto-tab-grouping",
+      parameters: {},
+      modules: [
+        { name: "system-instructions", version: "v1.0" },
+        { name: "user-data", version: "v1.0" },
+      ],
+      version: "v1.0",
+      is_default: true,
+    },
+    {
+      kind: "module",
+      feature: "tab-group-naming",
+      module: "system-instructions",
+      model: "test-model",
+      prompts: "Name this group of tabs.",
+      version: "v1.0",
+    },
+    {
+      kind: "module",
+      feature: "tab-group-naming",
+      module: "user-data",
+      model: "test-model",
+      prompts: "Tabs:\n{titles}",
       version: "v1.0",
     },
   ]);
@@ -542,7 +577,10 @@ async function testResumeActivityClick(sb, run) {
     win = await openAIWindow();
     const browser = win.gBrowser.selectedBrowser;
     const aiWindow = browser.contentDocument.querySelector("ai-window");
-    const buttons = await getPromptButtons(browser);
+    const buttons = await TestUtils.waitForCondition(async () => {
+      const found = await getPromptButtons(browser);
+      return found.length ? found : false;
+    }, "Wait for prompt buttons to replace loading skeletons");
     await run({ win, browser, aiWindow, buttons });
   } finally {
     if (win) {
@@ -1396,40 +1434,6 @@ async function getSidebarChatMessages(sidebarBrowser) {
 const RENDER_TIMEOUT_MS = 15000;
 
 /**
- * Bounded wrapper around BrowserTestUtils.waitForMutationCondition, which on its
- * own never rejects. Races the (event-driven) mutation wait against a timeout so
- * a missing element fails fast with a clear message instead of hanging until the
- * harness aborts the task.
- *
- * @param {Node} target - The node on which to observe mutations
- * @param {MutationObserverInit} options - Options for MutationObserver.observe()
- * @param {Function} checkFn - Returns the awaited value once it is truthy
- * @param {string} label - Description used in the timeout error message
- * @param {number} [timeoutMs=RENDER_TIMEOUT_MS]
- *
- * @returns {Promise<any>} The value returned by checkFn
- */
-function waitForMutationBounded(
-  target,
-  options,
-  checkFn,
-  label,
-  timeoutMs = RENDER_TIMEOUT_MS
-) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(`Timed out waiting for: ${label}`)),
-      timeoutMs
-    );
-  });
-  return Promise.race([
-    BrowserTestUtils.waitForMutationCondition(target, options, checkFn),
-    timeout,
-  ]).finally(() => clearTimeout(timer));
-}
-
-/**
  * Resolves the #aichat-browser frame for the AI Window hosted in the given
  * browser. By the time the post-response helpers below run, both ai-window and
  * #aichat-browser already exist, so the check resolves immediately; the bound
@@ -1440,14 +1444,14 @@ function waitForMutationBounded(
  * @returns {Promise<MozBrowser>} The #aichat-browser frame
  */
 function getAIChatBrowser(browser) {
-  return waitForMutationBounded(
+  return BrowserTestUtils.waitForMutationCondition(
     browser.contentDocument.documentElement,
     { childList: true, subtree: true },
     () =>
       browser.contentDocument
         ?.querySelector("ai-window")
         ?.shadowRoot?.querySelector("#aichat-browser"),
-    "ai-window #aichat-browser"
+    { msg: "ai-window #aichat-browser", timeout: RENDER_TIMEOUT_MS }
   );
 }
 

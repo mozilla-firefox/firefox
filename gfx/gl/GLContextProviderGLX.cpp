@@ -680,7 +680,7 @@ static bool ChooseConfig(GLXLibrary* glx, Display* display, int screen,
 
     int visid;
     if (glx->fGetFBConfigAttrib(display, curConfig, LOCAL_GLX_VISUAL_ID,
-                                &visid) != Success) {
+                                &visid) != X11Success) {
       continue;
     }
 

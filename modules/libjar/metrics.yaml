@@ -13,17 +13,16 @@ $tags:
 zero_byte_load:
   load_ftl:
     type: event
-    description: >
+    description: &zero_byte_load_load_description >
       Collection of zero_byte_load events as part of the Yellow Screen of
       Death analysis. When a file is loaded synchronously, this event gets
       recorded in nsJARChannel::Open if the content length is zero. For
       asynchronous loads, this event gets recorded in onStopRequest. Note
       that when the load has been cancelled, the consumer could already
       receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#ftl.
     bugs: &zero_byte_load_load_bugs
       - https://bugzil.la/1675823
+      - https://bugzil.la/2062940
     data_reviews: &zero_byte_load_load_data_reviews
       - https://bugzil.la/1675823
     notification_emails:
@@ -52,19 +51,10 @@ zero_byte_load:
         description: >
           Reason why this load was cancelled.
         type: string
-    telemetry_mirror: Zero_byte_load_Load_Ftl
 
   load_dtd:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#dtd.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -73,19 +63,10 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Dtd
 
   load_properties:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#properties.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -94,19 +75,10 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Properties
 
   load_js:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#js.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -115,19 +87,10 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Js
 
   load_xml:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#xml.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -136,19 +99,10 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Xml
 
   load_xhtml:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#xhtml.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -157,19 +111,10 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Xhtml
 
   load_css:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#css.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -178,19 +123,10 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Css
 
   load_json:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#json.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -199,19 +135,10 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Json
 
   load_html:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#html.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -220,19 +147,10 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Html
 
   load_png:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#png.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -241,19 +159,10 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Png
 
   load_svg:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#svg.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -262,19 +171,10 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Svg
 
   load_others:
     type: event
-    description: >
-      Collection of zero_byte_load events as part of the Yellow Screen of
-      Death analysis. When a file is loaded synchronously, this event gets
-      recorded in nsJARChannel::Open if the content length is zero. For
-      asynchronous loads, this event gets recorded in onStopRequest. Note
-      that when the load has been cancelled, the consumer could already
-      receive some data, so this event also captures non-zero-byte loads.
-      This event was generated to correspond to the Legacy Telemetry event
-      zero_byte_load.load#others.
+    description: *zero_byte_load_load_description
     bugs: *zero_byte_load_load_bugs
     data_reviews: *zero_byte_load_load_data_reviews
     notification_emails:
@@ -283,4 +183,3 @@ zero_byte_load:
       - kershaw@mozilla.com
     expires: never
     extra_keys: *zero_byte_load_load_extra
-    telemetry_mirror: Zero_byte_load_Load_Others

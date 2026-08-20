@@ -42,9 +42,15 @@ pub trait YamlHelper {
     fn as_vec_filter_data(&self) -> Option<Vec<FilterData>>;
     fn as_complex_clip_region(&self) -> ComplexClipRegion;
     fn as_sticky_offset_bounds(&self) -> StickyOffsetBounds;
-    fn as_gradient(&self, dl: &mut DisplayListBuilder) -> Gradient;
-    fn as_radial_gradient(&self, dl: &mut DisplayListBuilder) -> RadialGradient;
-    fn as_conic_gradient(&self, dl: &mut DisplayListBuilder) -> ConicGradient;
+    fn as_gradient(&self, dl: &mut DisplayListBuilder) -> (Gradient, Vec<GradientStop>);
+    fn as_radial_gradient(
+        &self,
+        dl: &mut DisplayListBuilder,
+    ) -> (RadialGradient, Vec<GradientStop>);
+    fn as_conic_gradient(
+        &self,
+        dl: &mut DisplayListBuilder,
+    ) -> (ConicGradient, Vec<GradientStop>);
     fn as_complex_clip_regions(&self) -> Vec<ComplexClipRegion>;
     fn as_rotation(&self) -> Option<Rotation>;
 }
@@ -1052,7 +1058,7 @@ impl YamlHelper for Yaml {
         }
     }
 
-    fn as_gradient(&self, dl: &mut DisplayListBuilder) -> Gradient {
+    fn as_gradient(&self, dl: &mut DisplayListBuilder) -> (Gradient, Vec<GradientStop>) {
         let start = self["start"].as_point().expect("gradient must have start");
         let end = self["end"].as_point().expect("gradient must have end");
         let stops = self["stops"]
@@ -1079,7 +1085,7 @@ impl YamlHelper for Yaml {
         dl.create_gradient(start, end, stops, extend_mode)
     }
 
-    fn as_radial_gradient(&self, dl: &mut DisplayListBuilder) -> RadialGradient {
+    fn as_radial_gradient(&self, dl: &mut DisplayListBuilder) -> (RadialGradient, Vec<GradientStop>) {
         let center = self["center"].as_point().expect("radial gradient must have center");
         let radius = self["radius"].as_size().expect("radial gradient must have a radius");
         let stops = self["stops"]
@@ -1106,7 +1112,7 @@ impl YamlHelper for Yaml {
         dl.create_radial_gradient(center, radius, stops, extend_mode)
     }
 
-    fn as_conic_gradient(&self, dl: &mut DisplayListBuilder) -> ConicGradient {
+    fn as_conic_gradient(&self, dl: &mut DisplayListBuilder) -> (ConicGradient, Vec<GradientStop>) {
         let center = self["center"].as_point().expect("conic gradient must have center");
         let angle = self["angle"].as_force_f32().expect("conic gradient must have an angle");
         let stops = self["stops"]

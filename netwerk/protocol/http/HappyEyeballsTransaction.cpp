@@ -243,6 +243,15 @@ void HappyEyeballsTransaction::Transition(State aNext,
         }
       }
 
+      // For an accepted 0-RTT winner the real txn's request was already sent as
+      // early data, so its ReadSegments never runs again to refresh the
+      // security info the way Finish0RTT would. Now that the connection is
+      // attached, do that refresh so the channel doesn't see a null
+      // securityInfo on the resumed connection.
+      if (Entered0RTT()) {
+        mRealTxn->RefreshSecurityInfoAfter0RTTAdopt();
+      }
+
       SetConnection(nullptr);
       // The HET no longer participates in 0-RTT coordination after adoption.
       // Break the RefPtr cycle between ZeroRttHandle::mWinner (RefPtr<HET>)

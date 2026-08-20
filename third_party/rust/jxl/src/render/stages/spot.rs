@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use crate::render::RenderPipelineInPlaceStage;
+use crate::render::{ErasedLocalState, RenderPipelineInPlaceStage};
 
 /// Render spot color
 pub struct SpotColorStage {
@@ -42,7 +42,7 @@ impl RenderPipelineInPlaceStage for SpotColorStage {
         _position: (usize, usize),
         xsize: usize,
         row: &mut [&mut [f32]],
-        _state: Option<&mut dyn std::any::Any>,
+        _state: Option<&mut ErasedLocalState>,
     ) {
         let [row_r, row_g, row_b, row_s] = row else {
             panic!(

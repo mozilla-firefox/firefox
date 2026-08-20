@@ -81,7 +81,7 @@ function run_test() {
 
   // Register the XULAppInfoFactory
   // Make sure the class ID has not already been registered
-  let old_factory = { CID: "", factory: null };
+  let old_factory = { CID: "" };
   if (!registrar.isCIDRegistered(XULAppInfoFactory.CID)) {
     // Check to see if a contract was already registered and
     // register it if it is not. Otherwise, store the previous one
@@ -89,16 +89,13 @@ function run_test() {
     if (registrar.isContractIDRegistered(XULAppInfoFactory.contractID)) {
       dump(
         XULAppInfoFactory.scheme +
-          " is already registered. Storing currently registered object for restoration later."
+          " is already registered. Storing currently registered object for restoration later.\n"
       );
       old_factory.CID = registrar.contractIDToCID(XULAppInfoFactory.contractID);
-      old_factory.factory = Components.manager.getClassObject(
-        Cc[XULAppInfoFactory.contractID],
-        Ci.nsIFactory
-      );
     } else {
       dump(
-        XULAppInfoFactory.scheme + " has never been registered. Registering..."
+        XULAppInfoFactory.scheme +
+          " has never been registered. Registering...\n"
       );
     }
 
@@ -189,7 +186,7 @@ function run_test() {
 
   // Unregister XULAppInfoFactory
   registrar.unregisterFactory(XULAppInfoFactory.CID, XULAppInfoFactory);
-  if (old_factory.factory != null) {
+  if (old_factory.CID != "") {
     registrar.registerFactory(
       old_factory.CID,
       "",

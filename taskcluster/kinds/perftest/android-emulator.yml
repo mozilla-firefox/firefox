@@ -8,16 +8,21 @@
 # server) rather than the linux64-node the on-device tasks use, and a task
 # cannot depend on two toolchains that both provide node.tar.zst.
 task-defaults:
+    dependencies:
+        harness: build-linux64/opt
     fetches:
         toolchain:
             - macosx64-aarch64-node
+        harness:
+            - artifact: target.perftests.tests.tar.zst
     worker:
         env:
             PYTHONPATH: "testing/mozbase/mozdevice:third_party/python/six"
     run:
-        sparse-profile: perftest
-        checkout: true
-        cwd: '{checkout}'
+        # script.py on the device images imports mozdevice, and the fetched CI
+        # python has no such module, so PYTHONPATH above resolves it out of the
+        # extracted harness relative to this directory.
+        cwd: fetches
 
 shippable-newssite-applink-startup:
     worker-type: t-osx-1500-m4
@@ -35,7 +40,8 @@ shippable-newssite-applink-startup:
         tier: 1
     platform: perftest-android-em-arm64/opt
     attributes:
-        cron: true
+        cron: false
+    run-on-projects: [autoland]
     fetches:
         toolchain:
             - android-sdk-macos
@@ -50,7 +56,7 @@ shippable-newssite-applink-startup:
     run:
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix
@@ -76,7 +82,8 @@ shippable-first-frame-startup:
         tier: 1
     platform: perftest-android-em-arm64/opt
     attributes:
-        cron: true
+        cron: false
+    run-on-projects: [autoland]
     fetches:
         toolchain:
             - android-sdk-macos
@@ -91,7 +98,7 @@ shippable-first-frame-startup:
     run:
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
-            cd $GECKO_PATH &&
+            cd $MOZ_FETCHES_DIR &&
             python3 python/mozperftest/mozperftest/runner.py
             --flavor custom-script
             --app fenix

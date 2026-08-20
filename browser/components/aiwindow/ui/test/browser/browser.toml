@@ -90,6 +90,8 @@ skip-if = [
 
 ["browser_aiwindow_assistant_message_footer.js"]
 
+["browser_aiwindow_auto_tab_grouping_labeling.js"]
+
 ["browser_aiwindow_chat_tool_ui.js"]
 
 ["browser_aiwindow_firstrun.js"]

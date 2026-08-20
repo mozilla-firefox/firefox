@@ -85,6 +85,8 @@
     clippy::undocumented_unsafe_blocks
 )]
 #![allow(clippy::type_complexity, clippy::manual_range_contains)]
+// uncomment me to run benchmarks
+//#![cfg_attr(test, feature(test))]
 #![cfg_attr(test, deny(warnings))]
 
 macro_rules! proto_err {

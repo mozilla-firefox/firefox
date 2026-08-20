@@ -57,6 +57,14 @@ gtest:
     description: "GTests run"
     suite: gtest
     treeherder-symbol: GTest
+    use-python:
+        by-test-platform:
+            # DesktopLauncherDownloaderTest spins up `python -m http.server
+            # --protocol`, which requires Python >= 3.11; the default fetched
+            # CI Python is 3.9. Only the Windows gtest runs that test.
+            win.*: "3.11"
+            android-hw.*: system
+            default: default
     instance-size:
         by-test-platform:
             linux.*: large-noscratch

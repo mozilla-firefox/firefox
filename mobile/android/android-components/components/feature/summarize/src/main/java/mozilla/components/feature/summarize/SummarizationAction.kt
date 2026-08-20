@@ -7,6 +7,8 @@ package mozilla.components.feature.summarize
 import mozilla.components.concept.llm.Llm
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.feature.summarize.content.Content
+import mozilla.components.feature.summarize.settings.SummarizeSettingsAction
+import mozilla.components.feature.summarize.settings.SummarizeSettingsState
 import mozilla.components.lib.state.Action
 import mozilla.components.ui.richtext.ir.RichDocument
 
@@ -25,11 +27,29 @@ data object PageLoadStarted : SummarizationAction
 /** The browser page has just finished loading. */
 data object PageLoadCompleted : SummarizationAction
 
-/** The user tapped the settings cog. */
+/**
+ * The user tapped the settings cog. [SummarizationSettingsWrapperMiddleware] reacts by dispatching [SettingsLoaded]
+ * carrying the persisted preferences, so without that middleware installed this is a no-op: the UI knows only that the
+ * cog was tapped, not what to show.
+ */
 data object SettingsClicked : SummarizationAction
+
+/**
+ * The persisted preferences [settings] are available and the settings screen can be shown.
+ *
+ * Dispatched only by [SummarizationSettingsWrapperMiddleware], so that the persisted preferences are carried into the
+ * transition itself and the screen is never composed with the defaults.
+ */
+data class SettingsLoaded(val settings: SummarizeSettingsState) : SummarizationAction
 
 /** The user tapped the back button from settings. */
 data object SettingsBackClicked : SummarizationAction
+
+/**
+ * A wrapper for delegating [SummarizeSettingsAction]s to the settings sub-state of [SummarizationState.Settings] and to
+ * [SummarizationSettingsWrapperMiddleware].
+ */
+data class SummarizeSettingsActionWrapper(val inner: SummarizeSettingsAction) : SummarizationAction
 
 /** Shake Consent has been requested */
 data object ShakeConsentRequested : SummarizationAction

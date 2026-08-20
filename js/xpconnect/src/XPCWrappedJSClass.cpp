@@ -5,6 +5,7 @@
 /* Sharable code and data for wrapper around JSObjects. */
 
 #include "mozilla/Attributes.h"
+#include "mozilla/Components.h"
 #include "mozilla/dom/AutoEntryScript.h"
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/dom/ChromeUtilsBinding.h"
@@ -630,16 +631,16 @@ nsresult nsXPCWrappedJS::CheckForException(XPCCallContext& ccx,
       // Log the exception to the JS Console, so that users can do
       // something with it.
       nsCOMPtr<nsIConsoleService> consoleService(
-          do_GetService(XPC_CONSOLE_CONTRACTID));
-      if (nullptr != consoleService) {
+          components::Console::Service());
+      if (consoleService) {
         nsCOMPtr<nsIScriptError> scriptError =
             do_QueryInterface(xpc_exception->GetData());
 
-        if (nullptr == scriptError) {
+        if (!scriptError) {
           // No luck getting one from the exception, so
           // try to cook one up.
-          scriptError = do_CreateInstance(XPC_SCRIPT_ERROR_CONTRACTID);
-          if (nullptr != scriptError) {
+          scriptError = components::ScriptError::Create();
+          if (scriptError) {
             nsCString newMessage;
             xpc_exception->ToString(cx, newMessage);
             // try to get filename, lineno from the first

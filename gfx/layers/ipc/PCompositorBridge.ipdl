@@ -82,7 +82,7 @@ struct FrameStats {
  * protocol, which is per-browser. A lot of the functions in the protocol are
  * basically multiplexing/demultiplexing stuff in PLayerTransaction.
  */
-[ParentImpl="CompositorBridgeParentBase"]
+[ParentImpl="mozilla::layers::CompositorBridgeParentBase"]
 sync protocol PCompositorBridge
 {
   manager PCompositorManager;

@@ -52,6 +52,10 @@
 namespace webrtc {
 namespace videocapturemodule {
 
+// A reasonable maximum size so "width * height * kBytesPerPixel" doesn't
+// overflow
+constexpr int32_t kMaxVideoCaptureDimension = 16384;
+
 struct {
   uint32_t spa_format;
   VideoType video_type;
@@ -351,6 +355,14 @@ void VideoCaptureModulePipeWire::OnFormatChanged(const struct spa_pod* format) {
     return;
   }
 
+  if (configured_capability_.width <= 0 || configured_capability_.height <= 0 ||
+      configured_capability_.width > kMaxVideoCaptureDimension ||
+      configured_capability_.height > kMaxVideoCaptureDimension) {
+    RTC_LOG(LS_ERROR) << "Unsupported video resolution.";
+    configured_capability_.videoType = VideoType::kUnknown;
+    return;
+  }
+
   RTC_LOG(LS_VERBOSE) << "Configured capture format = "
                       << static_cast<int>(configured_capability_.videoType);
 
@@ -441,8 +453,8 @@ void VideoCaptureModulePipeWire::ProcessBuffers() {
     h = static_cast<struct spa_meta_header*>(
         spa_buffer_find_meta_data(spaBuffer, SPA_META_Header, sizeof(*h)));
 
-    if (h->flags & SPA_META_HEADER_FLAG_CORRUPTED) {
-      RTC_LOG(LS_INFO) << "Dropping corruped frame.";
+    if (h && (h->flags & SPA_META_HEADER_FLAG_CORRUPTED)) {
+      RTC_LOG(LS_INFO) << "Dropping corrupted frame.";
       pw_stream_queue_buffer(stream_, buffer);
       continue;
     }

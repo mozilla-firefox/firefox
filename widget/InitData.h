@@ -58,7 +58,6 @@ enum class BorderStyle : int16_t {
                       // minimized separate from their parent
   Maximize = 1 << 6,  // enables the maxmize button so the user
                       // can maximize the window
-  Close = 1 << 7,     // show the close button
   Default = -1        // whatever the OS wants... i.e. don't do anything
 };
 

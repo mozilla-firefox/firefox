@@ -28,6 +28,15 @@ Object.defineProperty(lazy, "MacSharingService", {
   },
 });
 
+Object.defineProperty(lazy, "ExternalProtocolService", {
+  configurable: true,
+  get() {
+    return Cc["@mozilla.org/uriloader/external-protocol-service;1"].getService(
+      Ci.nsIExternalProtocolService
+    );
+  },
+});
+
 /**
  * Class that populates and handles various sharing options
  */
@@ -119,7 +128,7 @@ class SharingUtilsCls {
     return item;
   }
 
-  async #showQRCodePanel(win, browser, url) {
+  async showQRCodePanel(win, browser, url) {
     let tab = win.gBrowser.getTabForBrowser(browser);
     if (tab && win.gBrowser.selectedTab !== tab) {
       let wait = null;
@@ -139,6 +148,8 @@ class SharingUtilsCls {
     if (!tab || !tab.linkedBrowser || tab.closing) {
       return;
     }
+
+    Glean.qrcode.opened.add(1);
 
     let qrCodeDataURI = null;
     try {
@@ -343,8 +354,7 @@ class SharingUtilsCls {
       let { urlToShare: url } = this.getLinkToShare(node);
       let browser = node.contextBrowserToShare?.get();
       if (url && browser) {
-        Glean.qrcode.opened.add(1);
-        this.#showQRCodePanel(node.documentGlobal, browser, url);
+        this.showQRCodePanel(node.documentGlobal, browser, url);
       }
     } else if (event.target.classList.contains("share-more-button")) {
       this.openMacSharePreferences();
@@ -404,6 +414,24 @@ class SharingUtilsCls {
     lazy.WindowsUIUtils.shareUrl(urlToShare, titleToShare);
   }
 
+  sendEmail(node) {
+    let { urlToShare, titleToShare } = this.getLinkToShare(node);
+    if (!urlToShare) {
+      return;
+    }
+
+    let mailtoUrl =
+      "mailto:?body=" +
+      encodeURIComponent(urlToShare) +
+      "&subject=" +
+      encodeURIComponent(titleToShare ?? "");
+
+    lazy.ExternalProtocolService.loadURI(
+      Services.io.newURI(mailtoUrl),
+      Services.scriptSecurityManager.getSystemPrincipal()
+    );
+  }
+
   shareOnMac(node, serviceName) {
     let { urlToShare, titleToShare } = this.getLinkToShare(node);
     if (!urlToShare) {
@@ -430,6 +458,24 @@ class SharingUtilsCls {
         return Cc["@mozilla.org/windows-ui-utils;1"].getService(
           Ci.nsIWindowsUIUtils
         );
+      },
+    });
+  }
+
+  testOnlyMockExternalProtocolService(mock) {
+    if (!Cu.isInAutomation) {
+      throw new Error("Can only mock utils in automation.");
+    }
+    // eslint-disable-next-line mozilla/valid-lazy
+    Object.defineProperty(lazy, "ExternalProtocolService", {
+      configurable: true,
+      get() {
+        if (mock) {
+          return mock;
+        }
+        return Cc[
+          "@mozilla.org/uriloader/external-protocol-service;1"
+        ].getService(Ci.nsIExternalProtocolService);
       },
     });
   }

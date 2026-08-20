@@ -2,6 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import functools
+from math import ceil
+
 import taskgraph
 from taskgraph.transforms.base import TransformSequence
 from taskgraph.util import json
@@ -16,6 +19,7 @@ from gecko_taskgraph.util.chunking import (
     get_test_tags,
     guess_mozinfo_from_task,
     resolve_manifest_runtimes,
+    resolver,
 )
 from gecko_taskgraph.util.perfile import perfile_number_of_chunks
 
@@ -24,6 +28,26 @@ DYNAMIC_CHUNK_DURATION = 20 * 60  # seconds
 
 
 transforms = TransformSequence()
+
+
+@functools.cache
+def _parse_test_paths(mozharness_test_paths):
+    # A suite's paths can be given as a single string rather than as a list.
+    return {
+        suite: [paths] if isinstance(paths, str) else paths
+        for suite, paths in json.loads(mozharness_test_paths).items()
+    }
+
+
+def _set_manifests_restricted(task):
+    task.setdefault("attributes", {})["test-manifests-restricted"] = True
+
+
+def _requested_test_paths(config):
+    """The test paths |mach try| restricted this push to, keyed by suite."""
+    try_task_config = config.params.get("try_task_config", {}) or {}
+    env = try_task_config.get("env", {})
+    return _parse_test_paths(env.get("MOZHARNESS_TEST_PATHS", "{}"))
 
 
 @transforms.add
@@ -134,56 +158,59 @@ def set_test_manifests(config, tasks):
         # When scheduling with test paths, we often find manifests scheduled but all tests
         # are skipped on a given config.  This will remove the task from the task set if
         # no manifests have active tests for the given task/config
-        mh_test_paths = {}
-        if "MOZHARNESS_TEST_PATHS" in config.params.get("try_task_config", {}).get(
-            "env", {}
-        ):
-            mh_test_paths = json.loads(
-                config.params["try_task_config"]["env"]["MOZHARNESS_TEST_PATHS"]
-            )
+        mh_test_paths = _requested_test_paths(config)
+        test_tags = get_test_tags(config, task.get("worker", {}).get("env", {}))
 
         if (
             mh_test_paths
             and task["attributes"]["unittest_suite"] in mh_test_paths.keys()
         ):
             input_paths = mh_test_paths[task["attributes"]["unittest_suite"]]
-            remaining_manifests = []
 
             if "web-platform-tests" in task["test-name"]:
+                # Manifest names don't hold source paths for this suite, so the
+                # task keeps the whole suite and the harness does the filtering.
                 if _wpt_task_should_run(task["test-name"], input_paths):
                     yield task
                 continue
 
-            # input paths can exist in other directories (i.e. [../../dir/test.js])
-            # we need to look for all [active] manifests that include tests in the path
-            for m in input_paths:
-                if [tm for tm in task["test-manifests"]["active"] if tm.startswith(m)]:
-                    remaining_manifests.append(m)
-
-            # look in the 'other' manifests
-            for m in input_paths:
-                man = m
-                for tm in task["test-manifests"]["other_dirs"]:
-                    matched_dirs = [
-                        dp
-                        for dp in task["test-manifests"]["other_dirs"].get(tm)
-                        if dp.startswith(man)
-                    ]
-                    if matched_dirs:
-                        if tm not in task["test-manifests"]["active"]:
-                            continue
-                        if m not in remaining_manifests:
-                            remaining_manifests.append(m)
-
-            if remaining_manifests == []:
+            # Restrict the task to the manifests that hold tests under the
+            # requested paths, so that chunking is computed from what will
+            # actually run rather than from the whole suite. Entries can be
+            # narrower than a manifest when the requested path is (a single test
+            # file, or a subdirectory of the manifest's directory).
+            test_paths = resolver.get_test_paths_by_manifest(
+                task["suite"], frozenset(input_paths)
+            )
+            suite_manifests = task["test-manifests"]["active"]
+            matched = [m for m in suite_manifests if m in test_paths]
+            if not matched:
                 continue
 
+            active = sorted({p for m in matched for p in test_paths[m]})
+            task["test-manifests"] = {"active": active, "skipped": []}
+
+            # Chunk counts are the number of chunks the whole suite needs; scale
+            # them down to the share of the suite that will run, so that we
+            # neither cram everything into a single chunk nor create empty ones.
+            for key in ("chunks", "default-chunks"):
+                if isinstance(task.get(key), int):
+                    task[key] = min(
+                        ceil(task[key] * len(matched) / len(suite_manifests)),
+                        len(active),
+                    )
+
+            # A test tag runs only part of each of those manifests, and the
+            # runtime data is per manifest, so it can't tell us how long that
+            # is. Leave the chunking to the harness in that case.
+            if not test_tags:
+                _set_manifests_restricted(task)
         elif mh_test_paths:
             # we have test paths and they are not related to the test suite
             # this could be the test suite doesn't support test paths
             continue
         elif (
-            get_test_tags(config, task.get("worker", {}).get("env", {}))
+            test_tags
             and not task["test-manifests"]["active"]
             and not task["test-manifests"]["other_dirs"]
         ):
@@ -214,7 +241,18 @@ def resolve_dynamic_chunks(config, tasks):
             all_runtimes, task["test-manifests"]["active"]
         )
 
-        if not all_runtimes:
+        # A manifest at 0 means the runtime data doesn't cover this
+        # configuration, not that the manifest is instant. That only matters for
+        # a restricted task, where the few manifests it runs can all be at 0 and
+        # make the suite look instant; over a whole suite the manifests that do
+        # have data dominate.
+        restricted = task["attributes"].get("test-manifests-restricted", False)
+        if restricted:
+            runtimes = {m: r for m, r in runtimes.items() if r}
+
+        # With no runtime data to go by, all we can do is use the number of
+        # chunks the suite is configured to use.
+        if not all_runtimes or (restricted and not runtimes):
             task["chunks"] = task.get("default-chunks", 1)
             yield task
             continue
@@ -231,7 +269,14 @@ def resolve_dynamic_chunks(config, tasks):
         missing = [m for m in task["test-manifests"]["active"] if m not in runtimes]
         total += avg * len(missing)
 
-        chunks = int(round(total / DYNAMIC_CHUNK_DURATION))
+        # Rounding to the nearest chunk lets a chunk run for up to half the
+        # target duration longer than that target. That is amortized over the
+        # many chunks a whole suite needs, but a restricted task needs a handful
+        # at most, where it means one chunk running half again as long.
+        if restricted:
+            chunks = ceil(total / DYNAMIC_CHUNK_DURATION)
+        else:
+            chunks = int(round(total / DYNAMIC_CHUNK_DURATION))
 
         # Make sure we never exceed the number of manifests, nor have a chunk
         # length of 0.

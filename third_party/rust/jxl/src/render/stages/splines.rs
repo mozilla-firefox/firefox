@@ -3,16 +3,19 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use std::{any::Any, sync::Arc};
+use crate::util::sync::{Arc, RwLock};
 
-use crate::{features::spline::Splines, render::RenderPipelineInPlaceStage, util::AtomicRefCell};
+use crate::{
+    features::spline::Splines,
+    render::{ErasedLocalState, RenderPipelineInPlaceStage},
+};
 
 pub struct SplinesStage {
-    splines: Arc<AtomicRefCell<Splines>>,
+    splines: Arc<RwLock<Splines>>,
 }
 
 impl SplinesStage {
-    pub fn new(splines: Arc<AtomicRefCell<Splines>>) -> Self {
+    pub fn new(splines: Arc<RwLock<Splines>>) -> Self {
         SplinesStage { splines }
     }
 }
@@ -35,9 +38,9 @@ impl RenderPipelineInPlaceStage for SplinesStage {
         position: (usize, usize),
         xsize: usize,
         row: &mut [&mut [f32]],
-        _state: Option<&mut dyn Any>,
+        _state: Option<&mut ErasedLocalState>,
     ) {
-        let splines = self.splines.borrow();
+        let splines = self.splines.try_read().unwrap();
         if splines.splines.is_empty() {
             return;
         }
@@ -48,11 +51,10 @@ impl RenderPipelineInPlaceStage for SplinesStage {
 
 #[cfg(test)]
 mod test {
-    use std::sync::Arc;
+    use crate::util::sync::{Arc, RwLock};
 
     use crate::features::spline::{Point, QuantizedSpline, Splines};
     use crate::frame::color_correlation_map::ColorCorrelationParams;
-    use crate::util::AtomicRefCell;
     use crate::{error::Result, render::stages::splines::SplinesStage};
     use test_log::test;
 
@@ -96,7 +98,7 @@ mod test {
             .unwrap();
 
         crate::render::test::test_stage_consistency(
-            || SplinesStage::new(Arc::new(AtomicRefCell::new(splines.clone()))),
+            || SplinesStage::new(Arc::new(RwLock::new(splines.clone()))),
             (500, 500),
             6,
         )

@@ -130,6 +130,10 @@ private fun LocationList(
                     LocationOption(
                         label = country.displayName,
                         isSelected = country == selectedLocation,
+                        description =
+                            stringResource(R.string.ip_protection_location_unavailable_description).takeIf {
+                                !country.available
+                            },
                         enabled = country.available,
                         onClick = { onLocationSelected(country) },
                     )
@@ -188,9 +192,9 @@ private fun LocationsEmptyState() {
 private fun LocationOption(
     label: String,
     isSelected: Boolean,
-    onClick: () -> Unit,
     description: String? = null,
     enabled: Boolean = true,
+    onClick: () -> Unit,
 ) {
     MenuTextItem(
         label = label,
@@ -200,8 +204,6 @@ private fun LocationOption(
                 role = Role.RadioButton
             },
         description = description,
-        // We should have alternative design for unavailable items,
-        // tracked in https://bugzilla.mozilla.org/show_bug.cgi?id=2056379
         enabled = enabled,
         iconPainter =
             if (isSelected) {
@@ -284,7 +286,7 @@ private fun IPProtectionLocationsEmptyPreview(@PreviewParameter(PreviewThemeProv
 
 private val SAMPLE_LOCATIONS =
     listOf(
-        Recommended(),
+        Recommended,
         Country(countryCode = "dk", available = true),
         Country(countryCode = "fr", available = true),
         Country(countryCode = "gb", available = false),

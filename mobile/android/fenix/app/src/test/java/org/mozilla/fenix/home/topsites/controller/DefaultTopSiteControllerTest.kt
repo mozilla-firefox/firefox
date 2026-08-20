@@ -1335,6 +1335,28 @@ class DefaultTopSiteControllerTest {
         assertNotNull(ShortcutsLibrary.viewed.testGetValue())
     }
 
+    @Test
+    fun `WHEN the shortcuts section is expanded THEN show_more is recorded`() = runTest {
+        assertNull(TopSites.showMore.testGetValue())
+
+        val controller = createController(this)
+        controller.handleExpandToggleClicked(isExpanded = true)
+
+        assertNotNull(TopSites.showMore.testGetValue())
+        assertNull(TopSites.showLess.testGetValue())
+    }
+
+    @Test
+    fun `WHEN the shortcuts section is collapsed THEN show_less is recorded`() = runTest {
+        assertNull(TopSites.showLess.testGetValue())
+
+        val controller = createController(this)
+        controller.handleExpandToggleClicked(isExpanded = false)
+
+        assertNotNull(TopSites.showLess.testGetValue())
+        assertNull(TopSites.showMore.testGetValue())
+    }
+
     private fun createController(
         scope: CoroutineScope,
         source: TopSitesSource = TopSitesSource.HOMEPAGE,

@@ -3,7 +3,8 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import React, { useEffect, useState } from "react";
-import { Localized } from "./MSLocalized";
+import PropTypes from "prop-types/prop-types";
+import { Localized, CONFIGURABLE_STYLES } from "./MSLocalized";
 import { MultiStageUtils } from "../lib/multistage-utils.mjs";
 import {
   SecondaryCTA,
@@ -21,6 +22,13 @@ import { InstallButton } from "./InstallButton";
 import { SubmenuButton } from "./SubmenuButton";
 
 const DEFAULT_AUTO_ADVANCE_MS = 20000;
+const CORNER_IMAGE_POSITIONS = new Set([
+  "bottom-left",
+  "bottom-right",
+  "top-left",
+  "top-right",
+]);
+const DEFAULT_CORNER_IMAGE_POSITION = "bottom-right";
 
 export const MultiStageProtonScreen = props => {
   const {
@@ -547,6 +555,31 @@ export class ProtonScreen extends React.PureComponent {
     );
   }
 
+  renderCornerImage() {
+    const cornerImage = this.props.content.corner_image;
+    const position = CORNER_IMAGE_POSITIONS.has(cornerImage.position)
+      ? cornerImage.position
+      : DEFAULT_CORNER_IMAGE_POSITION;
+
+    return (
+      <div className={"corner-image-container"}>
+        {this.renderPicture({
+          imageURL: cornerImage.imageURL,
+          darkModeImageURL: cornerImage.darkModeImageURL,
+          reducedMotionImageURL: cornerImage.reducedMotionImageURL,
+          darkModeReducedMotionImageURL:
+            cornerImage.darkModeReducedMotionImageURL,
+          height: cornerImage.height,
+          width: cornerImage.width,
+          marginBlock: cornerImage.marginBlock,
+          marginInline: cornerImage.marginInline,
+          style: cornerImage.style,
+          className: `corner-image ${position}`,
+        })}
+      </div>
+    );
+  }
+
   renderLanguageSwitcher() {
     return this.props.content.languageSwitcher ? (
       <LanguageSwitcher
@@ -824,7 +857,7 @@ export class ProtonScreen extends React.PureComponent {
   }
 
   getCombinedInnerStyles(content, isWideScreen) {
-    const CONFIGURABLE_STYLES = [
+    const INNER_CONTENT_CONFIGURABLE_STYLES = [
       "overflow",
       "display",
       "paddingInline",
@@ -833,6 +866,7 @@ export class ProtonScreen extends React.PureComponent {
       "paddingBlock",
       "paddingBlockStart",
       "paddingBlockEnd",
+      "width",
     ];
 
     const innerContentStyles = isWideScreen
@@ -840,8 +874,10 @@ export class ProtonScreen extends React.PureComponent {
       : content.main_content_style_narrow || {};
 
     const validInnerStyles =
-      MultiStageUtils.getValidStyle(innerContentStyles, CONFIGURABLE_STYLES) ||
-      {};
+      MultiStageUtils.getValidStyle(
+        innerContentStyles,
+        INNER_CONTENT_CONFIGURABLE_STYLES
+      ) || {};
 
     return {
       ...validInnerStyles,
@@ -899,10 +935,23 @@ export class ProtonScreen extends React.PureComponent {
       isWideScreen,
     } = this.props;
     const includeNoodles = content.has_noodles;
+    const isCenterLargeFullscreen =
+      content.position === "center-large" && !!content.fullscreen;
+    const includeCornerImage =
+      !!content.corner_image && isCenterLargeFullscreen;
+    const secondaryCTATop = content.secondary_button_top ? (
+      <SecondaryCTA
+        content={content}
+        handleAction={this.props.handleAction}
+        position="top"
+      />
+    ) : null;
     const hasZapBorder = content.zap_border;
     const hasZapShadow = content.zap_shadow;
     // The default screen position is "center"
-    const isCenterPosition = content.position === "center" || !content.position;
+    const isCenterPosition =
+      ["center", "center-large"].includes(content.position) ||
+      !content.position;
     const hideStepsIndicator =
       autoAdvance ||
       content?.video_container ||
@@ -951,6 +1000,7 @@ export class ProtonScreen extends React.PureComponent {
         }}
         no-rdm={content.no_rdm ? "" : null}
       >
+        {includeCornerImage ? this.renderCornerImage() : null}
         {isCenterPosition ? null : this.renderSecondarySection(content)}
         <div
           className={`section-main ${
@@ -971,13 +1021,7 @@ export class ProtonScreen extends React.PureComponent {
             ])
           }
         >
-          {content.secondary_button_top ? (
-            <SecondaryCTA
-              content={content}
-              handleAction={this.props.handleAction}
-              position="top"
-            />
-          ) : null}
+          {isCenterLargeFullscreen ? null : secondaryCTATop}
           {includeNoodles ? this.renderNoodles() : null}
           {content.more_button ? this.renderMoreButton() : null}
           {content.dismiss_button && !content.reverse_split
@@ -1002,6 +1046,7 @@ export class ProtonScreen extends React.PureComponent {
                 : null,
             }}
           >
+            {isCenterLargeFullscreen ? secondaryCTATop : null}
             {isCenterPosition && this.hasAnimatedContent(content)
               ? this.renderAnimationPlayPauseButton()
               : null}
@@ -1111,3 +1156,491 @@ export class ProtonScreen extends React.PureComponent {
     );
   }
 }
+
+const localizableThingPropTypes = PropTypes.oneOfType([
+  PropTypes.string,
+  PropTypes.exact({
+    // A raw, untranslated string or a $l10n object.
+    raw: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+    // Fluent string identifier from a .ftl file.
+    string_id: PropTypes.string,
+    // Arguments for Fluent strings that have variables.
+    args: PropTypes.object,
+    // A string to use as the element's aria-label attribute value.
+    aria_label: PropTypes.string,
+    // CSS overrides for configurable styles.
+    ...Object.fromEntries(
+      CONFIGURABLE_STYLES.map(key => [
+        key,
+        PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      ])
+    ),
+  }),
+]);
+
+const actionPropTypes = PropTypes.exact({
+  // The special message action id.
+  type: PropTypes.string,
+  // The data to pass to the action if needed.
+  data: PropTypes.object,
+  // If true, dismisses the screen. Can be used in addition to or instead of
+  // a special message action type. If set to 'actionResult', the callout
+  // will only be dismissed after the special message action has resolved
+  // successfully, will only take effect for certain special message ids, and
+  // requires setting 'needsAwait' to true.
+  dismiss: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]),
+  // If true, the action needs to be awaited. Must be true if 'dismiss' is
+  // set to 'actionResult'.
+  needsAwait: PropTypes.bool,
+  // If true, navigates to the next step.
+  navigate: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]),
+  // If true, go back to the previous step.
+  goBack: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]),
+  // If true, the actions for selected checkbox/radio selections are
+  // performed in series. Set to true if this action is for the primary
+  // button and the 'multiselect' tile is used.
+  collectSelect: PropTypes.bool,
+  // If true, collects all text input on action.
+  collectTextInput: PropTypes.bool,
+  // If true, collects content toggle state on action.
+  collectContentToggleState: PropTypes.bool,
+  // Indicates that the action should navigate to a different screen.
+  advance_screens: PropTypes.shape({
+    // The behavior of the screen navigation. Behaves like 'dismiss'.
+    behavior: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]),
+    // How many screens and in which direction to advance. Positive integers
+    // advance forward while negative integers advance backward.
+    direction: PropTypes.number,
+    // The id of the screen to advance to. Id takes priority if both id and
+    // direction are provided.
+    id: PropTypes.string,
+  }),
+});
+
+const buttonPropTypes = PropTypes.exact({
+  // The text to show inside the button.
+  label: localizableThingPropTypes,
+  // The JEXL targeting for conditional button display.
+  targeting: PropTypes.string,
+  // The special message action invoked if the button is clicked.
+  action: actionPropTypes,
+  // If true, shows an arrow icon next to the label.
+  has_arrow_icon: PropTypes.bool,
+  // If true, disables the button. If set to 'hasActiveMultiSelect', disables
+  // the button until the user selects something in the multiselect tiles. If
+  // set to 'hasTextInput', disables the button while the textarea tile is
+  // empty or exceeds the character limit. If set to 'hasActiveSingleSelect',
+  // disables the button until the user selects an option in the single-select
+  // tile.
+  disabled: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]),
+  // Overrides the style of the primary or secondary button.
+  style: PropTypes.oneOf(["primary", "secondary", "link"]),
+  // The text for the RTAMO install button, provided in the primary_button.
+  install_complete_label: localizableThingPropTypes,
+  // If true, the primary_button will be focused when the screen is displayed.
+  should_focus_button: PropTypes.bool,
+  // If there are several buttons, this property of an additional_button can
+  // control the orientation of all the buttons.
+  flow: PropTypes.oneOf(["row", "column"]),
+  // Extra text to show before a secondary button.
+  text: localizableThingPropTypes,
+  // If there are several buttons, this property of an additional_button can
+  // control the justification and alignment of the buttons row/column.
+  // Defaults to 'end'.
+  alignment: PropTypes.oneOf(["end", "start", "space-between"]),
+  // The size of the dismiss_button (20px, 24px, 32px). Defaults to 32px.
+  size: PropTypes.oneOf(["x-small", "small", "large"]),
+  // If true, adds a background to the dismiss_button.
+  background: PropTypes.bool,
+  // CSS override for the marginBlock property.
+  marginBlock: PropTypes.string,
+  // CSS override for the marginInline property.
+  marginInline: PropTypes.string,
+});
+
+export const screenContentShape = {
+  // The layout position of the screen.
+  position: PropTypes.oneOf(["center", "split", "callout"]),
+  // If true, the screens are displayed in fullscreen.
+  fullscreen: PropTypes.bool,
+  // If true, the progress bar will be shown. Defaults to true.
+  progress_bar: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
+  // The default CSS background for the screen.
+  background: PropTypes.string,
+  // The static CSS background for the screen, provided if the default
+  // background has any animated content.
+  background_static: PropTypes.string,
+  // The hero image in the content.
+  hero_image: PropTypes.shape({
+    // The default URL of the hero image.
+    static_url: PropTypes.string,
+    // The URL of the static hero image, provided if the default hero image
+    // has animated content.
+    url: PropTypes.string,
+  }),
+  // A single checkbox action.
+  checkbox: PropTypes.shape({
+    // The text to show next to the checkbox.
+    label: localizableThingPropTypes,
+    // The default value of the checkbox.
+    defaultValue: PropTypes.bool,
+    // The special message action invoked if the checkbox is selected.
+    action: actionPropTypes,
+  }),
+  // The primary button.
+  primary_button: buttonPropTypes,
+  // The secondary button.
+  secondary_button: buttonPropTypes,
+  // The secondary button(s) that are displayed at the top of the screen, above
+  // the main content.
+  secondary_button_top: PropTypes.oneOfType([
+    PropTypes.object,
+    PropTypes.array,
+  ]),
+  // The additional button.
+  additional_button: buttonPropTypes,
+  // The dismiss button.
+  dismiss_button: buttonPropTypes,
+  // A submenu button that can be attached to another button.
+  submenu_button: PropTypes.shape({
+    // Optionally used to control the aria label and can be used to override
+    // CSS styles.
+    label: localizableThingPropTypes,
+    // Overrides the style of the button. Should be set to the same style as
+    // the button it's attached to.
+    style: PropTypes.oneOf(["primary", "secondary"]),
+    // The dropdown menu that appears when the user clicks the split button.
+    submenu: PropTypes.arrayOf(
+      PropTypes.shape({
+        // Submenu can have 3 types of items.
+        type: PropTypes.oneOf(["action", "menu", "separator"]),
+        // The id used to identify the submenu item in telemetry.
+        id: PropTypes.string,
+        // The text to show inside the submenu item.
+        label: localizableThingPropTypes,
+        // Used only for type 'action'. The special message action invoked if
+        // the submenu item is clicked.
+        action: actionPropTypes,
+        // An optional URL specifying an icon to show next to the label.
+        icon: PropTypes.string,
+        // Used only for type 'menu'. The submenu items to show when the user
+        // hovers over this item. Recursive.
+        submenu: PropTypes.arrayOf(PropTypes.object),
+      })
+    ),
+    // The button that the submenu split button is attached to.
+    attached_to: PropTypes.oneOf(["secondary_button", "additional_button"]),
+  }),
+  // Hides the secondary section.
+  hide_secondary_section: PropTypes.string,
+  // The background position for narrow split layouts.
+  split_narrow_bkg_position: PropTypes.string,
+  // If true, the callout hides on outside clicks.
+  autohide: PropTypes.bool,
+  // The callout card width as a CSS value.
+  width: PropTypes.string,
+  // The callout card padding as a CSS value.
+  padding: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  // Used when a single row with a more inline layout is desired. Works well in
+  // tandem with title_logo.
+  layout: PropTypes.string,
+  // If true, adds a colorful gradient border to the screen. This is only
+  // supported for screens with 'hide_arrow' set to true. There is no effect
+  // if HCM or a custom theme add-on is enabled.
+  zap_border: PropTypes.bool,
+  // If true, adds a colorful gradient shadow to the screen. This is only
+  // supported for screens with 'hide_arrow' set to true and either
+  // 'absolute_position' or 'arrow_position'. There is no effect if HCM or a
+  // custom theme add-on is enabled.
+  zap_shadow: PropTypes.bool,
+  // An optional object representing a large illustration to show above other
+  // content.
+  logo: PropTypes.shape({
+    // The image URL.
+    imageURL: PropTypes.string,
+    // The dark mode image URL.
+    darkModeImageURL: PropTypes.string,
+    // The reduced motion image URL.
+    reducedMotionImageURL: PropTypes.string,
+    // The dark mode reduced motion image URL.
+    darkModeReducedMotionImageURL: PropTypes.string,
+    // The <img> alt text.
+    alt: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+    // The CSS style overriding the width property.
+    width: PropTypes.string,
+    // The CSS style overriding the height property.
+    height: PropTypes.string,
+  }),
+  // The text for the headline.
+  title: localizableThingPropTypes,
+  // An optional object representing an icon to show next to the title.
+  title_logo: PropTypes.shape({
+    // The image URL.
+    imageURL: PropTypes.string,
+    // The dark mode image URL.
+    darkModeImageURL: PropTypes.string,
+    // The reduced motion image URL.
+    reducedMotionImageURL: PropTypes.string,
+    // The dark mode reduced motion image URL.
+    darkModeReducedMotionImageURL: PropTypes.string,
+    // The <img> alt text.
+    alt: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+    // The CSS style overriding the width property.
+    width: PropTypes.string,
+    // The CSS style overriding the height property.
+    height: PropTypes.string,
+    // The logo alignment relative to the title.
+    alignment: PropTypes.oneOf(["top", "center", "bottom"]),
+  }),
+  // Optional styling for the title.
+  title_style: PropTypes.string,
+  // The text to show below the title.
+  subtitle: localizableThingPropTypes,
+  // An extra block of configurable content below the title/subtitle but above
+  // the main buttons. Can be placed above the 'tiles' by setting
+  // 'tiles_container.position' to 'after_supporting_content'.
+  above_button_content: PropTypes.arrayOf(
+    PropTypes.shape({
+      // The type of content.
+      type: PropTypes.oneOf(["text", "image"]),
+      // The paragraph text. Can be either a localizableThing that can be
+      // combined with 'link_key's to attach actions to the
+      // `<a data-l10n-name='...'> or an array of either raw strings or a
+      // localizableThing with 'href'/'link_key'/neither.
+      text: PropTypes.oneOfType([localizableThingPropTypes, PropTypes.array]),
+      // A list of the link keys that exist in screen.content. The value of
+      // that key must be an object with an 'action' property and the
+      // 'string_id' in the 'text' object must refer to a Fluent string that
+      // contains an anchor element with `data-l10n-name='LINK_KEY_NAME'`.
+      link_keys: PropTypes.arrayOf(PropTypes.string),
+      // Optional paragraph style.
+      font_styles: PropTypes.string,
+    })
+  ),
+  // Optionally used to override the aria attributes or tooltip of the steps
+  // indicator. Not recommended.
+  steps_indicator: PropTypes.shape({
+    string_id: PropTypes.string,
+  }),
+  // Tile object(s) to display in the screen.
+  tiles: PropTypes.oneOfType([
+    PropTypes.array,
+    PropTypes.shape({
+      // The type of tile. More details can be found in ContentTiles.jsx.
+      type: PropTypes.oneOf([
+        "link",
+        "textbox",
+        "multiselect",
+        "single-select",
+        "theme",
+        "backup_restore",
+        "addons-picker",
+        "migration-wizard",
+        "mobile_downloads",
+        "textarea",
+        "theme-picker",
+        "embedded_browser",
+        "fx_backup_file_path",
+        "fx_backup_password",
+        "confirmation-checklist",
+        "pinnable_sites",
+        "content-toggle",
+        "action_checklist",
+      ]).isRequired,
+      // CSS overrides of the tile container. Any CSS properties starting with
+      // '--' are also allowed.
+      style: PropTypes.object,
+      // Array of tile configurations needed for the tile type.
+      data: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
+    }),
+  ]),
+  // The tiles container.
+  tiles_container: PropTypes.shape({
+    // The position of the tiles container relative to supporting content like
+    // 'above_button_content'. By default, it comes before the supporting
+    // content.
+    position: PropTypes.string,
+    // CSS overrides.
+    style: PropTypes.object,
+  }),
+  // The header for a tiles container.
+  tiles_header: PropTypes.exact({
+    title: localizableThingPropTypes,
+  }),
+  // If true, applies the reverse split layout onto the screen (i.e. inverts
+  // the visual order of the split screens).
+  reverse_split: PropTypes.bool,
+  // The <img> alt text.
+  image_alt_text: localizableThingPropTypes,
+  // The hero text.
+  hero_text: PropTypes.oneOfType([
+    localizableThingPropTypes,
+    PropTypes.shape({
+      title: localizableThingPropTypes,
+      subtitle: localizableThingPropTypes,
+    }),
+  ]),
+  // CSS overrides for the main content style on wide screens.
+  main_content_style: PropTypes.object,
+  // CSS overrides for the main content style on narrow screens.
+  main_content_style_narrow: PropTypes.object,
+  // A CSS override allowing custom justify content on split screens.
+  split_content_justify_content: PropTypes.string,
+  // The action button position.
+  action_buttons_position: PropTypes.oneOf([
+    "after_subtitle",
+    "after_supporting_content",
+    "end",
+  ]),
+  // If true, displays action buttons above main content.
+  action_buttons_above_content: PropTypes.oneOfType([
+    PropTypes.bool,
+    PropTypes.string,
+  ]),
+  // If true, adds noodle illustrations that peek out behind the screen.
+  has_noodles: PropTypes.bool,
+  // If true, sets narrow attribute to the outer element of the screen.
+  narrow: PropTypes.bool,
+  // The language switcher component that appears of there is a language
+  // mismatch screen.
+  languageSwitcher: PropTypes.exact({
+    downloading: localizableThingPropTypes,
+    cancel: localizableThingPropTypes,
+    waiting: localizableThingPropTypes,
+    skip: localizableThingPropTypes,
+    switch: localizableThingPropTypes,
+    continue: localizableThingPropTypes,
+    action: actionPropTypes,
+  }),
+  // Displays the OnboardingVideo component.
+  video_container: PropTypes.object,
+  // Overrides all text color of the screen.
+  text_color: PropTypes.oneOf(["light", "dark"]),
+  // If true, overrides the spotlight screen styling to look like the system
+  // prompt style.
+  isSystemPromptStyleSpotlight: PropTypes.bool,
+  // CSS overrides for the screen style.
+  screen_style: PropTypes.exact({
+    overflow: PropTypes.string,
+    display: PropTypes.string,
+    height: PropTypes.string,
+    width: PropTypes.string,
+    padding: PropTypes.string,
+  }),
+  // If true, prevents the spotlight from entering responsive design mode at
+  // widths less than 800px.
+  no_rdm: PropTypes.bool,
+  // The CSS override for the paddingBlock styling for split layout contents.
+  split_content_padding_block: PropTypes.string,
+  // The CSS override for the paddingInline styling for split layout contents.
+  split_content_padding_inline: PropTypes.string,
+  // Text below the subtitle that can include hyperlinks.
+  cta_paragraph: PropTypes.shape({
+    text: PropTypes.shape({
+      // The Fluent string id for the paragraph text.
+      string_id: PropTypes.string,
+      // The name of the '<a data-l10n-name'=''></a>' marker inside the
+      // string_id.
+      string_name: PropTypes.string,
+    }),
+    // The special message action to be invoked when the cta text is clicked.
+    action: actionPropTypes,
+  }),
+  // Info text displayed at the bottom of the screen.
+  info_text: localizableThingPropTypes,
+  // If true, displays the encrypted backup method as part of the
+  // 'fx_backup_file_path' or 'fx_backup_password' tile type.
+  isEncryptedBackup: PropTypes.bool,
+  // The action for the migration start event as part of the embedded migration
+  // wizard component within about:welcome.
+  migrate_start: PropTypes.shape({ action: actionPropTypes }),
+  // The action for the migration close event as part of the embedded migration
+  // wizard component within about:welcome.
+  migrate_close: PropTypes.shape({ action: actionPropTypes }),
+  // The subtitle text for the action checklist.
+  action_checklist_subtitle: localizableThingPropTypes,
+  // The remove checklist button in the action checklist.
+  remove_checklist_button: PropTypes.shape({
+    // The text inside the remove checklist button.
+    label: localizableThingPropTypes,
+    // The id used to identify the button in telemetry.
+    source_id: PropTypes.string,
+    // The special message action to invoke when the button is clicked.
+    action: actionPropTypes,
+  }),
+  // A submenu button with a button type of 'more'.
+  more_button: PropTypes.shape({
+    // Submenu can have 3 types of items.
+    type: PropTypes.oneOf(["action", "menu", "separator"]),
+    // The id used to identify the submenu item in telemetry.
+    id: PropTypes.string,
+    // The text to show inside the submenu item.
+    label: localizableThingPropTypes,
+    // Used only for type 'action'. The special message action invoked if
+    // the submenu item is clicked.
+    action: actionPropTypes,
+    // An optional URL specifying an icon to show next to the label.
+    icon: PropTypes.string,
+    // Used only for type 'menu'. The submenu items to show when the user
+    // hovers over this item. Recursive.
+    submenu: PropTypes.arrayOf(PropTypes.object),
+  }),
+  // An optional array of event listeners to add to the page where the screen
+  // is shown.
+  page_event_listeners: PropTypes.arrayOf(
+    PropTypes.shape({
+      params: PropTypes.shape({
+        // The event type string. Supports any DOM event type, timeout and
+        // interval for timers, internal feature callout events 'touradvance'
+        // and 'tourend'.
+        type: PropTypes.string,
+        // The target selector.
+        selector: PropTypes.string,
+        options: PropTypes.shape({
+          // If true, handles events in capturing phase.
+          capture: PropTypes.bool,
+          // If true, removes listener after first event.
+          once: PropTypes.bool,
+          // If true, prevents default action in event handler.
+          preventDefault: PropTypes.bool,
+          // Used only for timeout and interval event types to invoke the action
+          // on a timer.
+          interval: PropTypes.number,
+          // If true, extends addEventListener to all windows.
+          every_window: PropTypes.bool,
+        }),
+      }),
+      action: actionPropTypes,
+    })
+  ),
+
+  // Add any `link_key` properties that are used in messages in
+  //    OnboardingMessageProvider.sys.mjs
+  //    FeatureCalloutMessages.sys.mjs
+  //    PanelTestProvider.sys.mjs
+  // to prevent the propTypes validation unit test from throwing an invalid
+  // prop error.
+  here: PropTypes.object,
+  settings: PropTypes.object,
+  ios: PropTypes.object,
+  android: PropTypes.object,
+  terms_of_use: PropTypes.object,
+  privacy_notice: PropTypes.object,
+  "learn-more": PropTypes.object,
+  email_link: PropTypes.object,
+};
+
+const screenContentPropTypes = PropTypes.exact(screenContentShape);
+
+// Update PropTypes here and in `screenContentShape` whenever any content
+// properties are added/removed. See MultiStageProtonScreenSchemas.json for a
+// more detailed, non-enforcing schema of the multistage screen content
+// properties.
+MultiStageProtonScreen.propTypes = {
+  // The unique identifier of the screen content. Each screen in a
+  // message should have a different ID, which can be referenced in
+  // actions to update the tour pref and advance screens.
+  id: PropTypes.string.isRequired,
+  // The main content of this screen.
+  content: screenContentPropTypes,
+};

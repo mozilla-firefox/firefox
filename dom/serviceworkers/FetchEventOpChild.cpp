@@ -303,7 +303,7 @@ mozilla::ipc::IPCResult FetchEventOpChild::RecvRespondWith(
   AssertIsOnMainThread();
 
   RefPtr<RemoteWorkerControllerChild> mgr =
-      static_cast<RemoteWorkerControllerChild*>(Manager());
+      mozilla::ipc::ActorCast<RemoteWorkerControllerChild>(Manager());
 
   mInterceptedChannel->SetRemoteWorkerLaunchStart(
       mgr->GetRemoteWorkerLaunchStart());

@@ -159,7 +159,7 @@ add_task(async function test_default_theme_light() {
     expectDark: true,
     // When nova is enabled, we load a dark in-app (LWT) theme
     expectLWT: NOVA_ENABLED,
-    expectNonNativeTheme: false,
+    expectNonNativeTheme: NOVA_ENABLED,
   });
 
   let prefersColorScheme = await getPrefersColorSchemeInfo({ win: pbmWindowA });
@@ -177,7 +177,7 @@ add_task(async function test_default_theme_light() {
     expectDark: true,
     // When nova is enabled, we load a dark in-app (LWT) theme
     expectLWT: NOVA_ENABLED,
-    expectNonNativeTheme: false,
+    expectNonNativeTheme: NOVA_ENABLED,
   });
 
   await BrowserTestUtils.closeWindow(windowB);
@@ -209,7 +209,7 @@ add_task(async function test_default_theme_dark() {
     expectDark: true,
     // When nova is enabled, we load a dark in-app (LWT) theme
     expectLWT: NOVA_ENABLED,
-    expectNonNativeTheme: false,
+    expectNonNativeTheme: NOVA_ENABLED,
   });
 
   await BrowserTestUtils.closeWindow(pbmWindow);
@@ -240,7 +240,7 @@ add_task(async function test_light_theme_builtin() {
       win: pbmWindow,
       expectDark: true,
       expectLWT: true,
-      expectNonNativeTheme: false,
+      expectNonNativeTheme: true,
     });
   } else {
     await testWindowColorScheme({
@@ -277,7 +277,7 @@ add_task(async function test_dark_theme_builtin() {
     expectDark: true,
     // When nova is enabled, we load a dark in-app (LWT) theme
     expectLWT: NOVA_ENABLED,
-    expectNonNativeTheme: !NOVA_ENABLED,
+    expectNonNativeTheme: true,
   });
 
   await BrowserTestUtils.closeWindow(pbmWindow);
@@ -305,7 +305,7 @@ add_task(async function test_theme_switch_updates_existing_pbm_win() {
     expectDark: true,
     // When nova is enabled, we load a dark in-app (LWT) theme
     expectLWT: NOVA_ENABLED,
-    expectNonNativeTheme: false,
+    expectNonNativeTheme: NOVA_ENABLED,
   });
 
   info("Enabling light theme.");
@@ -327,7 +327,7 @@ add_task(async function test_theme_switch_updates_existing_pbm_win() {
     // When nova is enabled, we load a dark in-app (LWT) theme
     expectDark: NOVA_ENABLED,
     expectLWT: NOVA_ENABLED,
-    expectNonNativeTheme: !NOVA_ENABLED,
+    expectNonNativeTheme: true,
   });
 
   await lightTheme.disable();
@@ -349,7 +349,7 @@ add_task(async function test_theme_switch_updates_existing_pbm_win() {
     expectDark: true,
     // When nova is enabled, we load a dark in-app (LWT) theme
     expectLWT: NOVA_ENABLED,
-    expectNonNativeTheme: !NOVA_ENABLED,
+    expectNonNativeTheme: true,
   });
 
   await darkTheme.disable();

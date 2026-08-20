@@ -29,5 +29,10 @@ OS_LIBS += [
     "user32",
 ]
 
+SPHINX_TREES["/widget/windows/notification-server"] = "docs"
+
+with Files("docs/**"):
+    SCHEDULES.exclusive = ["docs"]
+
 LIBRARY_DEFINES["MOZ_NO_MOZALLOC"] = True
 DisableStlWrapping()

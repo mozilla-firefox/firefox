@@ -824,6 +824,8 @@
   <string name="preferences_toolbar_shortcut">Συντόμευση γραμμής εργαλείων</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_toolbar_select_shortcut">Επιλέξτε συντόμευση</string>
+  <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
+  <string name="toolbar_shortcut_menu_edit_option">Επεξεργασία συντόμευσης</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Χειρονομίες</string>
   <!-- Preference for settings related to visual options -->
@@ -1449,6 +1451,14 @@
   <!-- Title of inactive tabs preference -->
   <string name="preferences_inactive_tabs_title">Μετακίνηση των καρτελών που δεν έχουν προβληθεί για δύο εβδομάδες στην ενότητα «Ανενεργές».</string>
   <!--
+    Privacy report
+
+    Category header of a preference that allows a user to enable or disable the privacy report feature
+  -->
+  <string name="preferences_privacy_report">Αναφορά απορρήτου</string>
+  <!-- Title of the privacy report preference that allows a user to enable or disable the feature -->
+  <string name="preferences_privacy_report_title">Ενεργοποίηση αναφοράς απορρήτου</string>
+  <!--
     Studies
 
     Title of the remove studies button
@@ -1670,6 +1680,8 @@
   <string name="tab_group_three_dot_menu_ungroup">Κατάργηση ομαδοποίησης</string>
   <!-- Text shown on the delete button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_delete">Διαγραφή</string>
+  <!-- Text shown on the share button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_share">Κοινή χρήση</string>
   <!-- Text shown on the close button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_close">Κλείσιμο</string>
   <!-- Title for the Ungroup tab group confirmation dialog. -->
@@ -3388,6 +3400,16 @@
     which navigates the user to a screen displaying all the shortcuts.
   -->
   <string name="homepage_shortcuts_show_all_content_description">Εμφάνιση όλων των συντομεύσεων</string>
+  <!--
+    Label for the button in the shortcuts home screen section that expands the section to show
+    every shortcut.
+  -->
+  <string name="homepage_shortcuts_show_all">Εμφάνιση όλων</string>
+  <!--
+    Label for the button in the shortcuts home screen section that collapses the section back
+    to showing only the first shortcuts.
+  -->
+  <string name="homepage_shortcuts_show_less">Εμφάνιση λιγότερων</string>
   <!-- Label for the "Add shortcut" button displayed as a tile. -->
   <string name="homepage_shortcuts_add_shortcut">Προσθήκη συντόμευσης</string>
   <!-- Title for the "Add to homepage" bottom sheet. -->

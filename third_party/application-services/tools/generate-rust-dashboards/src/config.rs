@@ -52,6 +52,7 @@ pub enum Metric {
     LabeledCounter(LabeledCounterMetric),
     Distribution(DistributionMetric),
     LabeledDistribution(LabeledDistributionMetric),
+    Events(EventsMetric),
 }
 
 /// Glean counter
@@ -152,6 +153,22 @@ pub enum DistributionMetricKind {
     Memory,
     Timing,
     Custom,
+}
+
+/// Track multiple Glean events together
+///
+/// This will create time-series panels with event counts for each event
+pub struct EventsMetric {
+    /// Name to display on the dashboard
+    pub display_name: &'static str,
+    /// Name of the ping ("metrics" by default)
+    pub ping: &'static str,
+    /// Category name (top-level key in metrics.yaml)
+    pub category: &'static str,
+    /// Metric name (key for the metric)
+    pub metrics: Vec<&'static str>,
+    // Which applications report this metric
+    pub applications: Vec<Application>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -261,5 +278,11 @@ impl From<DistributionMetric> for Metric {
 impl From<LabeledDistributionMetric> for Metric {
     fn from(m: LabeledDistributionMetric) -> Self {
         Self::LabeledDistribution(m)
+    }
+}
+
+impl From<EventsMetric> for Metric {
+    fn from(m: EventsMetric) -> Self {
+        Self::Events(m)
     }
 }

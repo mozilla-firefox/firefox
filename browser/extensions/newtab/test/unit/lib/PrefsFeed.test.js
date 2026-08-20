@@ -284,6 +284,95 @@ describe("PrefsFeed", () => {
       })
     );
   });
+  describe("recordsHistory", () => {
+    // The initial values are what the first new tab of a session reads, so the
+    // widget-hiding depends on this being present before any pref changes.
+    it("is included in the initial values when history is on", () => {
+      ServicesStub.prefs.getBoolPref = sinon.stub().returns(true);
+      feed.onAction({ type: at.INIT });
+      const [{ data }] = feed.store.dispatch.firstCall.args;
+      assert.isTrue(data.recordsHistory);
+    });
+    it("is false in the initial values when history is off", () => {
+      const getBoolPref = sinon.stub().returns(true);
+      getBoolPref.withArgs("places.history.enabled", true).returns(false);
+      ServicesStub.prefs.getBoolPref = getBoolPref;
+      feed.onAction({ type: at.INIT });
+      const [{ data }] = feed.store.dispatch.firstCall.args;
+      assert.isFalse(data.recordsHistory);
+    });
+    it("observes both history prefs on init and drops them on uninit", () => {
+      feed.init();
+      feed.uninit();
+      for (const pref of [
+        "places.history.enabled",
+        "browser.privatebrowsing.autostart",
+      ]) {
+        assert.calledWith(ServicesStub.prefs.addObserver, pref, feed);
+        assert.calledWith(ServicesStub.prefs.removeObserver, pref, feed);
+      }
+    });
+    it("broadcasts the value when places.history.enabled changes", () => {
+      ServicesStub.prefs.getBoolPref = sinon.stub().returns(false);
+      feed.observe(null, "nsPref:changed", "places.history.enabled");
+      assert.calledWith(
+        feed.store.dispatch,
+        ac.BroadcastToContent({
+          type: at.PREF_CHANGED,
+          data: { name: "recordsHistory", value: false },
+        })
+      );
+    });
+    it("ignores a pref write that leaves the derived value alone", () => {
+      // Two prefs collapse into one boolean, so moving autostart while
+      // places.history.enabled is already false changes nothing.
+      const getBoolPref = sinon.stub().returns(true);
+      getBoolPref.withArgs("places.history.enabled", true).returns(false);
+      ServicesStub.prefs.getBoolPref = getBoolPref;
+      feed.init();
+      feed.store.dispatch.resetHistory();
+
+      feed.observe(null, "nsPref:changed", "browser.privatebrowsing.autostart");
+      assert.notCalled(feed.store.dispatch);
+    });
+    it("broadcasts once per flip, not once per write", () => {
+      ServicesStub.prefs.getBoolPref = sinon.stub().returns(true);
+      feed.init();
+      feed.store.dispatch.resetHistory();
+
+      const getBoolPref = sinon.stub().returns(true);
+      getBoolPref.withArgs("places.history.enabled", true).returns(false);
+      ServicesStub.prefs.getBoolPref = getBoolPref;
+      feed.observe(null, "nsPref:changed", "places.history.enabled");
+      assert.calledWith(
+        feed.store.dispatch,
+        ac.BroadcastToContent({
+          type: at.PREF_CHANGED,
+          data: { name: "recordsHistory", value: false },
+        })
+      );
+
+      // A second write with the same resulting value is a no-op.
+      feed.store.dispatch.resetHistory();
+      feed.observe(null, "nsPref:changed", "places.history.enabled");
+      assert.notCalled(feed.store.dispatch);
+    });
+    it("is false in permanent private browsing", () => {
+      // Places records no visits there, so the pref alone is not enough.
+      overrider.set({
+        PrivateBrowsingUtils: { enabled: true, permanentPrivateBrowsing: true },
+      });
+      ServicesStub.prefs.getBoolPref = sinon.stub().returns(true);
+      feed.observe(null, "nsPref:changed", "browser.privatebrowsing.autostart");
+      assert.calledWith(
+        feed.store.dispatch,
+        ac.BroadcastToContent({
+          type: at.PREF_CHANGED,
+          data: { name: "recordsHistory", value: false },
+        })
+      );
+    });
+  });
   it("should send a PREF_CHANGED action when onPrefChanged is called", () => {
     feed.onPrefChanged("foo", 2);
     assert.calledWith(

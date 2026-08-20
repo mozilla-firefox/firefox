@@ -84,7 +84,6 @@ class ArrayBufferViewObject : public NativeObject {
  private:
   void* dataPointerEither_() const {
     // Note, do not check whether shared or not
-    // Keep synced with js::Get<Type>ArrayLengthAndData in jsfriendapi.h!
     return maybePtrFromReservedSlot<void>(DATA_SLOT);
   }
 

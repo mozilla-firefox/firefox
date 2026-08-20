@@ -89,9 +89,6 @@ class ReferrerInfo : public nsIReferrerInfo {
   already_AddRefed<ReferrerInfo> CloneWithNewOriginalReferrer(
       nsIURI* aOriginalReferrer) const;
 
-  // Record the telemetry for the referrer policy.
-  void RecordTelemetry(nsIHttpChannel* aChannel);
-
   /*
    * Helper function to create a new ReferrerInfo object from a given document
    * and override referrer policy if needed (for example, when parsing link
@@ -450,12 +447,6 @@ class ReferrerInfo : public nsIReferrerInfo {
 
   // Store a computed referrer for a given channel
   Maybe<nsCString> mComputedReferrer;
-
-#ifdef DEBUG
-  // Indicates if the telemetry has been recorded. This is used to make sure the
-  // telemetry will be only recored once.
-  bool mTelemetryRecorded = false;
-#endif  // DEBUG
 };
 
 }  // namespace mozilla::dom

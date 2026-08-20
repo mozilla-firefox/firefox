@@ -176,6 +176,14 @@ class PuppetWidget final : public nsIWidget,
                        const InputContextAction& aAction) override;
   InputContext GetInputContext() override;
   NativeIMEContext GetNativeIMEContext() override;
+  /**
+   * If this widget has a external event dispatcher listener, it means that
+   * we're dispatching native text input events starting from this process.
+   * I.e., the events do not come from the parent process.
+   */
+  [[nodiscard]] bool HasExternalNativeTextEventDispatcherListener() const {
+    return mNativeTextEventDispatcherListener;
+  }
   TextEventDispatcherListener* GetNativeTextEventDispatcherListener() override {
     return mNativeTextEventDispatcherListener
                ? mNativeTextEventDispatcherListener.get()

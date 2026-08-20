@@ -15,7 +15,7 @@ using JSONParseNode = JSString;
 
 class ParseRecordObject : public NativeObject {
   JS_DEFINE_TYPED_SLOT(0, PARSE_NODE_SLOT, String, Undefined);
-  static constexpr uint32_t VALUE_SLOT = 1;
+  JS_DEFINE_UNTYPED_SLOT(1, VALUE_SLOT);
   static constexpr uint32_t SLOT_COUNT = 2;
 
  public:

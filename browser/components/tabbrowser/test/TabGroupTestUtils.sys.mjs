@@ -3,8 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { BrowserTestUtils } from "resource://testing-common/BrowserTestUtils.sys.mjs";
-import { SessionStore } from "resource:///modules/sessionstore/SessionStore.sys.mjs";
-import { TabStateFlusher } from "resource:///modules/sessionstore/TabStateFlusher.sys.mjs";
+import { SessionStore } from "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs";
+import { TabStateFlusher } from "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs";
 
 /**
  * TabGroupTestUtils providers helpers for working with tab groups

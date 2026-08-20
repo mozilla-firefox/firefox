@@ -1303,6 +1303,11 @@
   <string name="preference_light_theme">Sáng</string>
   <!-- Preference for using dark theme -->
   <string name="preference_dark_theme">Tối</string>
+  <!--
+    Preference for using the OLED theme. For localization, this can be translated as "True Black", "Maximum Darkness",
+    or "Full dark" if needed.
+  -->
+  <string name="preference_oled_theme">Nền đen</string>
   <!-- Preference for using using dark or light theme automatically set by battery -->
   <string name="preference_auto_battery_theme">Đặt theo trình tiết kiệm pin</string>
   <!-- Preference for using following device theme -->
@@ -1449,6 +1454,8 @@
   <string name="preferences_inactive_tabs">Chuyển các thẻ cũ sang không hoạt động</string>
   <!-- Title of inactive tabs preference -->
   <string name="preferences_inactive_tabs_title">Các thẻ mà bạn chưa xem trong hai tuần sẽ được chuyển vào phần không hoạt động.</string>
+  <!-- Title for the preference to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_feature">Bật Nhóm thẻ</string>
   <!--
     Privacy report
 
@@ -1688,6 +1695,14 @@
   <string name="ungroup_tab_group_confirmation_dialog_confirm">Tách nhóm</string>
   <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_cancel">Hủy bỏ</string>
+  <!-- Custom accessibility action to reorder a tab up rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_up">Chuyển thẻ lên trên</string>
+  <!-- Custom accessibility action to reorder a tab left rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_left">Chuyển thẻ sang trái</string>
+  <!-- Custom accessibility action to reorder a tab right rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_right">Chuyển thẻ sang phải</string>
+  <!-- Custom accessibility action to reorder a tab down rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_down">Chuyển thẻ xuống dưới</string>
   <!--
     Color labels for tab groups, used for accessibility and selection UI.
 
@@ -3093,6 +3108,8 @@
   <string name="ip_protection_location_picker_title" tools:ignore="UnusedResources">Chọn địa điểm VPN</string>
   <!-- Description for what it means to use the Recommended setting and let the app automatically pick the best server location. -->
   <string name="ip_protection_location_fastest_description" tools:ignore="BrandUsage">Firefox sẽ tìm kiếm địa điểm nhanh nhất có thể</string>
+  <!-- Description for an unavailable VPN location in the location list. -->
+  <string name="ip_protection_location_unavailable_description">Không sẵn sàng</string>
   <!-- Error message shown when the selected browser VPN location is unavailable. -->
   <string name="ip_protection_location_unavailable" tools:ignore="UnusedResources">Địa điểm không khả dụng. Vui lòng chọn địa điểm khác.</string>
   <!-- Snackbar (in-app pop-up notification) text shown when the previously selected browser VPN location is unavailable and the recommended location was used instead. -->
@@ -4723,4 +4740,16 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Cô lập trang web</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Một lớp bảo vệ bổ sung giữa các trang web giúp bảo vệ dữ liệu của bạn giữa các thẻ. Có thể ảnh hưởng đến hiệu suất, độ ổn định, khả năng tương thích của trang web và cách lưu lịch sử duyệt web.</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description">Ký PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
+  <string name="pdf_tools_download_content_description">Tải xuống PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
+  <string name="pdf_tools_print_content_description">In PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the sharing options for the PDF being displayed on the screen. -->
+  <string name="pdf_tools_share_content_description">Chia sẻ PDF</string>
 </resources>

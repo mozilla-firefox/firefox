@@ -56,26 +56,16 @@ argument = "AtomIdent"
 [selection]
 [target-text]
 [view-transition]
-enabled_in = "ua"
-pref = "dom.viewTransitions.enabled"
 [view-transition-group]
-enabled_in = "ua"
-pref = "dom.viewTransitions.enabled"
 argument = "PtNameAndClassSelector"
 is_element_backed = true
 [view-transition-image-pair]
-enabled_in = "ua"
-pref = "dom.viewTransitions.enabled"
 is_element_backed = true
 argument = "PtNameAndClassSelector"
 [view-transition-old]
-enabled_in = "ua"
-pref = "dom.viewTransitions.enabled"
 is_element_backed = true
 argument = "PtNameAndClassSelector"
 [view-transition-new]
-enabled_in = "ua"
-pref = "dom.viewTransitions.enabled"
 is_element_backed = true
 argument = "PtNameAndClassSelector"
 # The internal implementation usage for View transition to create the snapshot

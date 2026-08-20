@@ -8372,10 +8372,11 @@ tracking_protection:
       source:
         description: |
           The surface the user opened the privacy dashboard from. Possible
-          values are: `home`, `tabs_tray` or `trust_panel`.
+          values are: `home`, `tabs_tray`, `trust_panel` or `deeplink`.
         type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2044067
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2051483
     data_reviews:
       - https://phabricator.services.mozilla.com/D304862
     data_sensitivity:
@@ -9415,6 +9416,40 @@ top_sites:
       - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
       - https://github.com/mozilla-mobile/fenix/pull/20517#pullrequestreview-718069041
       - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Shortcuts
+  show_more:
+    type: event
+    description: |
+      A user tapped the control that expands the shortcuts section to show all
+      of their shortcuts on the homepage.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2063302
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2063302
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Shortcuts
+  show_less:
+    type: event
+    description: |
+      A user tapped the control that collapses the shortcuts section back to the
+      default number of shortcuts on the homepage.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2063302
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2063302
     data_sensitivity:
       - interaction
     notification_emails:
@@ -16664,6 +16699,53 @@ native_share_sheet:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010858
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010858
+    notification_emails:
+      - android-probes@mozilla.com
+    data_sensitivity:
+      - interaction
+    expires: never
+    metadata:
+      tags:
+        - Sharing
+
+pdf_viewer:
+  download_tapped:
+    type: event
+    description: |
+      A user tapped the download button in the PDF viewer tools.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2054916
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D319233
+    notification_emails:
+      - android-probes@mozilla.com
+    data_sensitivity:
+      - interaction
+    expires: never
+    metadata:
+      tags:
+        - Download
+  print_tapped:
+    type: event
+    description: |
+      A user tapped the print button in the PDF viewer tools.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2054917
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D319739
+    notification_emails:
+      - android-probes@mozilla.com
+    data_sensitivity:
+      - interaction
+    expires: never
+  share_tapped:
+    type: event
+    description: |
+      A user tapped the share button in the PDF viewer tools.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2054918
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D319812
     notification_emails:
       - android-probes@mozilla.com
     data_sensitivity:

@@ -3,15 +3,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-pub enum JxlProgressiveMode {
-    /// Renders all pixels in every call to Process.
-    Eager,
-    /// Renders pixels once passes are completed.
-    Pass,
-    /// Renders pixels only once the final frame is ready.
-    FullFrame,
-}
-
 #[non_exhaustive]
 pub struct JxlDecoderOptions {
     pub adjust_orientation: bool,
@@ -19,7 +10,6 @@ pub struct JxlDecoderOptions {
     pub coalescing: bool,
     pub desired_intensity_target: Option<f32>,
     pub skip_preview: bool,
-    pub progressive_mode: JxlProgressiveMode,
     /// Fail decoding images with more than this number of samples, or with frames with
     /// more than this number of samples. The limit counts the product of pixels and
     /// channels, so for example an image with 1 extra channel of size 1024x1024 has 4
@@ -51,7 +41,6 @@ impl Default for JxlDecoderOptions {
             coalescing: true,
             skip_preview: true,
             desired_intensity_target: None,
-            progressive_mode: JxlProgressiveMode::Pass,
             sample_limit: None,
             high_precision: false,
             premultiply_output: false,

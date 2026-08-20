@@ -8,9 +8,10 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
-  SessionStartup: "resource:///modules/sessionstore/SessionStartup.sys.mjs",
+  SessionStartup:
+    "moz-src:///browser/components/sessionstore/SessionStartup.sys.mjs",
   StartupPerformance:
-    "resource:///modules/sessionstore/StartupPerformance.sys.mjs",
+    "moz-src:///browser/components/sessionstore/StartupPerformance.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
 });
 

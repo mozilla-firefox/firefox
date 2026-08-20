@@ -29,8 +29,11 @@ void* GetRightAlign(const void* ptr, size_t alignment);
 
 // Allocates memory of `size` bytes aligned on an `alignment` boundry.
 // The return value is a pointer to the memory. Note that the memory must
-// be de-allocated using AlignedFree.
+// be de-allocated using AlignedFree. Crashes if the allocation fails.
 void* AlignedMalloc(size_t size, size_t alignment);
+// Same as AlignedMalloc, but returns nullptr instead of crashing when the
+// allocation fails.
+void* AlignedMallocOrNull(size_t size, size_t alignment);
 // De-allocates memory created using the AlignedMalloc() API.
 void AlignedFree(void* mem_block);
 
@@ -44,6 +47,10 @@ T* GetRightAlign(const T* ptr, size_t alignment) {
 template <typename T>
 T* AlignedMalloc(size_t size, size_t alignment) {
   return reinterpret_cast<T*>(AlignedMalloc(size, alignment));
+}
+template <typename T>
+T* AlignedMallocOrNull(size_t size, size_t alignment) {
+  return reinterpret_cast<T*>(AlignedMallocOrNull(size, alignment));
 }
 
 // Deleter for use with unique_ptr. E.g., use as

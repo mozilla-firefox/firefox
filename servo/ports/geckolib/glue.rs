@@ -5417,7 +5417,9 @@ pub extern "C" fn Servo_ParsePseudoElement(
         return false;
     }
     let data = unsafe { UrlExtraData::from_ptr_ref(&url_data) };
-    if !ignore_enabled_state && !pseudo.enabled_in_content(data) {
+    if !ignore_enabled_state
+        && !pseudo.enabled_in_content(data, /* for_supports_rule = */ false)
+    {
         return false;
     }
     let (pseudo_type, name) = pseudo.pseudo_type_and_argument();

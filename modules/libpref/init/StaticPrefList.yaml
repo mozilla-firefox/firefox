@@ -1837,6 +1837,15 @@
   value: false
   mirror: always
 
+# When set, the HWInference parent resolves model availability and install
+# requests from an in-process mock instead of the ModelHub (no network,
+# IndexedDB or downloads). The full content->utility->parent IPC chain is
+# still exercised. Used by tests.
+- name: browser.ml.modelHub.testing
+  type: bool
+  value: false
+  mirror: always
+
 - name: browser.navigation.requireUserInteraction
   type: bool
   value: true
@@ -5707,13 +5716,6 @@
   value: 128
   mirror: always
 
-# Is support for View Transitions Level 1 enabled?
-- name: dom.viewTransitions.enabled
-  type: RelaxedAtomicBool
-  value: true
-  mirror: always
-  rust: true
-
 - name: dom.viewTransitions.cross-document.enabled
   type: RelaxedAtomicBool
   value: false
@@ -6026,6 +6028,11 @@
 - name: dom.webkitBlink.dirPicker.enabled
   type: RelaxedAtomicBool
   value: true
+  mirror: always
+
+- name: dom.range.cut_contents.use_flat_tree
+  type: bool
+  value: false
   mirror: always
 
 # If true, when user selects a range, `Selection` will split the range to
@@ -8662,7 +8669,7 @@
 #ifdef XP_MACOSX
 - name: gfx.webrender.enable-client-storage
   type: bool
-  value: true
+  value: false
   mirror: once
 #endif
 
@@ -8995,7 +9002,7 @@
 # intermediate image before the downscaling filter.
 - name: image.jpeg.dct-scaling.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 # Minimum remaining scale factor to leave for the downscaling filter (Lanczos3)
@@ -11823,7 +11830,7 @@
 # so an empty value disables it everywhere. "*" enables it on every domain.
 - name: layout.css.fake-webkit-scrollbar.enabled-domains
   type: DataMutexString
-  value: "mail.google.com,docs.google.com"
+  value: "mail.google.com,docs.google.com,play.google.com,polymarket.com,www.beterbed.nl,www.shazam.com,www.tiktok.com"
   mirror: always
   rust: true
 
@@ -11848,6 +11855,13 @@
 
 # Whether :-moz-broken is supported in content.
 - name: layout.css.moz-broken.content.enabled
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+  rust: true
+
+# Whether :-moz-placeholder is supported in content.
+- name: layout.css.moz-placeholder.content.enabled
   type: RelaxedAtomicBool
   value: false
   mirror: always
@@ -16059,6 +16073,14 @@
   value: true
   mirror: never
 
+# On Android, we use a lower timeout to avoid waiting on a broken
+# DoH connection before we fallback to native. 250 ms is higher than 99th
+# percentile for DoH resolutions on Nightly.
+- name: network.android_doh.rollout_request_timeout_ms
+  type: RelaxedAtomicUint32
+  value: 250
+  mirror: always
+
 # Use GET (rather than POST)
 - name: network.trr.useGET
   type: RelaxedAtomicBool
@@ -19406,12 +19428,6 @@
   value: true
   mirror: always
 
-# Enable caching of bounds for SVG geometry elements
-- name: svg.bounds-caching.enabled
-  type: bool
-  value: @IS_NIGHTLY_BUILD@
-  mirror: always
-
 # Whether SVGImageElement loading is forced to be sync.
 - name: svg.image-element.force-sync-load
   type: bool
@@ -20957,6 +20973,17 @@
 #  - 1: always
 #  - 2: auto (true for flatpak or GTK_USE_PORTAL=1, false otherwise)
 - name: widget.use-xdg-desktop-portal.open-uri
+  type: int32_t
+  value: 2
+  mirror: always
+
+# Whether to show notifications through the XDG Desktop Portal Notification
+# interface directly instead of going through libnotify.
+# https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Notification.html
+#  - 0: never
+#  - 1: always
+#  - 2: auto (currently false while the backend is not feature complete)
+- name: widget.use-xdg-desktop-portal.notification
   type: int32_t
   value: 2
   mirror: always

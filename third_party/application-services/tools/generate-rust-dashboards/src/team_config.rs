@@ -20,19 +20,41 @@ pub fn all_dashboards() -> Vec<TeamConfig> {
             ],
             component_errors: true,
             sync_metrics: true,
-            main_dashboard_metrics: vec![DistributionMetric {
-                kind: DistributionMetricKind::Timing,
-                display_name: "Places run_maintenance() time",
-                ping: "metrics",
-                category: "places_manager",
-                metric: "run_maintenance_time",
-                axis_label: "time",
-                unit: Some(Unit::Milliseconds),
-                value_divisor: Some(1_000_000),
-                applications: vec![Android],
-                link_to: Some("Sync Maintenance Times"),
-            }
-            .into()],
+            main_dashboard_metrics: vec![
+                DistributionMetric {
+                    kind: DistributionMetricKind::Timing,
+                    display_name: "Places run_maintenance() time",
+                    ping: "metrics",
+                    category: "places_manager",
+                    metric: "run_maintenance_time",
+                    axis_label: "time",
+                    unit: Some(Unit::Milliseconds),
+                    value_divisor: Some(1_000_000),
+                    applications: vec![Android],
+                    link_to: Some("Sync Maintenance Times"),
+                }
+                .into(),
+                EventsMetric {
+                    display_name: "Logins key regeneration",
+                    ping: "metrics",
+                    category: "logins_store",
+                    metrics: vec![
+                        "key_regenerated_lost",
+                        "key_regenerated_corrupt",
+                        "key_regenerated_other",
+                    ],
+                    applications: vec![Android, Ios],
+                }
+                .into(),
+                EventsMetric {
+                    display_name: "Credit Card key regeneration",
+                    ping: "metrics",
+                    category: "credit_card_key_regeneration",
+                    metrics: vec!["keychain_data_lost", "lost", "corrupt", "other"],
+                    applications: vec![Ios],
+                }
+                .into(),
+            ],
             extra_dashboards: vec![ExtraDashboard {
                 name: "Sync Maintenance Times",
                 metrics: vec![

@@ -494,7 +494,7 @@ static nsTArray<uint8_t> GetDisplayICCProfile(Display* dpy, Window& root) {
 
   if (XGetWindowProperty(dpy, root, iccAtom, 0, INT_MAX /* length */, X11False,
                          AnyPropertyType, &retAtom, &retFormat, &retLength,
-                         &retAfter, &retProperty) != Success) {
+                         &retAfter, &retProperty) != X11Success) {
     return nsTArray<uint8_t>();
   }
 
@@ -563,7 +563,7 @@ nsTArray<uint8_t> gfxPlatformGtk::GetPlatformCMSOutputProfileData() {
 
   if (XGetWindowProperty(dpy, root, edidAtom, 0, 32, X11False, AnyPropertyType,
                          &retAtom, &retFormat, &retLength, &retAfter,
-                         &retProperty) != Success) {
+                         &retProperty) != X11Success) {
     return nsTArray<uint8_t>();
   }
 

@@ -42,11 +42,20 @@ const TEST_DATA = [
     expected: COMPATIBILITY_STATUS.COMPATIBLE,
   },
   {
-    description: "same build date and older version out of range (-3)",
+    description:
+      "same build date and older version in range (-3 Nightly -> Release during release window)",
     localBuildId: "20190131000000",
     localVersion: "60.0",
     runtimeBuildId: "20190131000000",
     runtimeVersion: "57.0",
+    expected: COMPATIBILITY_STATUS.COMPATIBLE,
+  },
+  {
+    description: "same build date and older version out of range (-4)",
+    localBuildId: "20190131000000",
+    localVersion: "60.0",
+    runtimeBuildId: "20190131000000",
+    runtimeVersion: "56.0",
     expected: COMPATIBILITY_STATUS.TOO_OLD,
   },
   {
@@ -102,9 +111,19 @@ const TEST_DATA = [
     expected: COMPATIBILITY_STATUS.COMPATIBLE,
   },
   {
-    description: "fennec 68 compatibility error raised for 71 -> 68 Android",
+    description:
+      "fennec 68 compatibility error not raised for 71 -> 68 Android",
     localBuildId: "20190131000000",
     localVersion: "71.0",
+    runtimeBuildId: "20190202000000",
+    runtimeVersion: "68.0",
+    runtimeOs: "Android",
+    expected: COMPATIBILITY_STATUS.COMPATIBLE,
+  },
+  {
+    description: "fennec 68 compatibility error raised for 72 -> 68 Android",
+    localBuildId: "20190131000000",
+    localVersion: "72.0",
     runtimeBuildId: "20190202000000",
     runtimeVersion: "68.0",
     runtimeOs: "Android",
@@ -112,9 +131,9 @@ const TEST_DATA = [
   },
   {
     description:
-      "fennec 68 compatibility error not raised for 71 -> 68 non-Android",
+      "fennec 68 compatibility error not raised for 72 -> 68 non-Android",
     localBuildId: "20190131000000",
-    localVersion: "71.0",
+    localVersion: "72.0",
     runtimeBuildId: "20190202000000",
     runtimeVersion: "68.0",
     runtimeOs: "NotAndroid",

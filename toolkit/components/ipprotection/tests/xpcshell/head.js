@@ -10,6 +10,9 @@ const { IPProtectionService, IPProtectionStates } = ChromeUtils.importESModule(
 const { ERRORS, IPPProxyManager, IPPProxyStates } = ChromeUtils.importESModule(
   "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs"
 );
+const { AUTH_ERRORS } = ChromeUtils.importESModule(
+  "moz-src:///toolkit/components/ipprotection/IPPAuthProvider.sys.mjs"
+);
 const { IPPExceptionsManager, IPPPrincipalRules } = ChromeUtils.importESModule(
   "moz-src:///toolkit/components/ipprotection/IPPExceptionsManager.sys.mjs"
 );

@@ -24,6 +24,8 @@ skip-if = [
   "standalone", # Bug 2026600
 ]
 
+["test_overflow_underflow_on_reframe.html"]
+
 ["test_paragraph_movement_scroll.html"]
 
 ["test_paragraph_movement_shadow_dom.html"]

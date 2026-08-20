@@ -396,8 +396,9 @@ void SharedScreenCastStreamPrivate::OnStreamParamChanged(
   params.push_back(reinterpret_cast<spa_pod*>(spa_pod_builder_add_object(
       &builder, SPA_TYPE_OBJECT_ParamMeta, SPA_PARAM_Meta, SPA_PARAM_META_type,
       SPA_POD_Id(SPA_META_Cursor), SPA_PARAM_META_size,
-      SPA_POD_CHOICE_RANGE_Int(CursorMetaSize(64, 64), CursorMetaSize(1, 1),
-                               CursorMetaSize(384, 384)))));
+      SPA_POD_CHOICE_RANGE_Int(
+          CursorMetaSize(64, 64), CursorMetaSize(1, 1),
+          CursorMetaSize(kMaxCursorSize, kMaxCursorSize)))));
   params.push_back(reinterpret_cast<spa_pod*>(spa_pod_builder_add_object(
       &builder, SPA_TYPE_OBJECT_ParamMeta, SPA_PARAM_Meta, SPA_PARAM_META_type,
       SPA_POD_Id(SPA_META_VideoDamage), SPA_PARAM_META_size,
@@ -782,64 +783,85 @@ void SharedScreenCastStreamPrivate::ProcessBuffer(pw_buffer* buffer) {
   // Try to update the mouse cursor first, because it can be the only
   // information carried by the buffer
   {
-    const struct spa_meta_cursor* cursor =
-        static_cast<struct spa_meta_cursor*>(spa_buffer_find_meta_data(
-            spa_buffer, SPA_META_Cursor, sizeof(*cursor)));
+    const struct spa_meta* cursor_meta = static_cast<struct spa_meta*>(
+        spa_buffer_find_meta(spa_buffer, SPA_META_Cursor));
+    const size_t kMaxCursorMetaSize =
+        static_cast<size_t>(CursorMetaSize(kMaxCursorSize, kMaxCursorSize));
+    const size_t meta_size =
+        (cursor_meta && cursor_meta->size <= kMaxCursorMetaSize)
+            ? static_cast<size_t>(cursor_meta->size)
+            : 0;
+    const struct spa_meta_cursor* cursor_shm =
+        (meta_size >= sizeof(struct spa_meta_cursor))
+            ? static_cast<const struct spa_meta_cursor*>(cursor_meta->data)
+            : nullptr;
 
-    if (cursor) {
-      if (spa_meta_cursor_is_valid(cursor)) {
-        struct spa_meta_bitmap* bitmap = nullptr;
+    struct spa_meta_cursor cursor = {};
+    if (cursor_shm) {
+      memcpy(&cursor, cursor_shm, sizeof(struct spa_meta_cursor));
+    }
 
-        if (cursor->bitmap_offset)
-          bitmap =
-              SPA_MEMBER(cursor, cursor->bitmap_offset, struct spa_meta_bitmap);
+    if (spa_meta_cursor_is_valid(&cursor)) {
+      struct spa_meta_bitmap bitmap = {};
 
-        if (bitmap && bitmap->size.width > 0 &&
-            bitmap->size.width <= kMaxCursorSize && bitmap->size.height > 0 &&
-            bitmap->size.height <= kMaxCursorSize &&
-            bitmap->stride >=
-                static_cast<int32_t>(bitmap->size.width * kBytesPerPixel) &&
-            static_cast<uint64_t>(bitmap->stride) * bitmap->size.height <=
-                static_cast<uint64_t>(kMaxCursorSize) * kMaxCursorSize *
-                    kBytesPerPixel) {
-          const uint8_t* bitmap_data =
-              SPA_MEMBER(bitmap, bitmap->offset, uint8_t);
+      if (cursor.bitmap_offset >= sizeof(struct spa_meta_cursor) &&
+          static_cast<uint64_t>(cursor.bitmap_offset) +
+                  sizeof(struct spa_meta_bitmap) <=
+              meta_size) {
+        memcpy(&bitmap,
+               SPA_MEMBER(cursor_shm, cursor.bitmap_offset,
+                          struct spa_meta_bitmap),
+               sizeof(struct spa_meta_bitmap));
+      }
+
+      if (bitmap.size.width > 0 && bitmap.size.width <= kMaxCursorSize &&
+          bitmap.size.height > 0 && bitmap.size.height <= kMaxCursorSize &&
+          bitmap.stride >=
+              static_cast<int32_t>(bitmap.size.width * kBytesPerPixel) &&
+          static_cast<uint64_t>(bitmap.stride) * bitmap.size.height <=
+              static_cast<uint64_t>(kMaxCursorSize) * kMaxCursorSize *
+                  kBytesPerPixel) {
+        if (bitmap.offset >= sizeof(struct spa_meta_bitmap) &&
+            static_cast<uint64_t>(cursor.bitmap_offset) + bitmap.offset +
+                    static_cast<uint64_t>(bitmap.stride) * bitmap.size.height <=
+                meta_size) {
+          const uint8_t* bitmap_data = SPA_MEMBER(
+              cursor_shm, cursor.bitmap_offset + bitmap.offset, uint8_t);
           // TODO(bugs.webrtc.org/436974448): Convert `spa_video_format` to
           // `FourCC`.
           BasicDesktopFrame* mouse_frame = new BasicDesktopFrame(
-              DesktopSize(bitmap->size.width, bitmap->size.height),
-              FOURCC_ARGB);
+              DesktopSize(bitmap.size.width, bitmap.size.height), FOURCC_ARGB);
           mouse_frame->CopyPixelsFrom(
-              bitmap_data, bitmap->stride,
-              DesktopRect::MakeWH(bitmap->size.width, bitmap->size.height));
+              bitmap_data, bitmap.stride,
+              DesktopRect::MakeWH(bitmap.size.width, bitmap.size.height));
           {
             MutexLock latest_frame_lock(&latest_frame_lock_);
             mouse_cursor_ = std::make_unique<MouseCursor>(
-                mouse_frame,
-                DesktopVector(cursor->hotspot.x, cursor->hotspot.y));
+                mouse_frame, DesktopVector(cursor.hotspot.x, cursor.hotspot.y));
           }
 
           if (observer_) {
             observer_->OnCursorShapeChanged();
           }
         }
-        {
-          MutexLock latest_frame_lock(&latest_frame_lock_);
-          mouse_cursor_position_.set(cursor->position.x, cursor->position.y);
-        }
-
-        if (observer_) {
-          observer_->OnCursorPositionChanged();
-        }
-      } else {
-        // Indicate an invalid cursor
-        MutexLock latest_frame_lock(&latest_frame_lock_);
-        mouse_cursor_position_.set(-1, -1);
       }
+      {
+        MutexLock latest_frame_lock(&latest_frame_lock_);
+        mouse_cursor_position_.set(cursor.position.x, cursor.position.y);
+      }
+
+      if (observer_) {
+        observer_->OnCursorPositionChanged();
+      }
+    } else {
+      // Indicate an invalid cursor
+      MutexLock latest_frame_lock(&latest_frame_lock_);
+      mouse_cursor_position_.set(-1, -1);
     }
   }
 
-  if (spa_buffer->datas[0].chunk->flags & SPA_CHUNK_FLAG_CORRUPTED) {
+  if (spa_buffer->n_datas == 0 ||
+      spa_buffer->datas[0].chunk->flags & SPA_CHUNK_FLAG_CORRUPTED) {
     RTC_LOG(LS_INFO) << "Dropping buffer with corrupted or missing data";
     if (observer_) {
       observer_->OnBufferCorruptedData();
@@ -866,18 +888,21 @@ void SharedScreenCastStreamPrivate::ProcessBuffer(pw_buffer* buffer) {
   // metadata. This gives us the size we need in order to allocate the
   // DesktopFrame.
 
-  struct spa_meta_region* videocrop_metadata =
+  struct spa_meta_region videocrop_metadata = {};
+  const struct spa_meta_region* videocrop_shm =
       static_cast<struct spa_meta_region*>(spa_buffer_find_meta_data(
-          spa_buffer, SPA_META_VideoCrop, sizeof(*videocrop_metadata)));
+          spa_buffer, SPA_META_VideoCrop, sizeof(struct spa_meta_region)));
+  if (videocrop_shm) {
+    memcpy(&videocrop_metadata, videocrop_shm, sizeof(struct spa_meta_region));
+  }
 
   // Video size from metadata is bigger than an actual video stream size.
   // The metadata are wrong or we should up-scale the video...in both cases
   // just quit now.
-  if (videocrop_metadata &&
-      (videocrop_metadata->region.size.width >
-           static_cast<uint32_t>(stream_size_.width()) ||
-       videocrop_metadata->region.size.height >
-           static_cast<uint32_t>(stream_size_.height()))) {
+  if (videocrop_metadata.region.size.width >
+          static_cast<uint32_t>(stream_size_.width()) ||
+      videocrop_metadata.region.size.height >
+          static_cast<uint32_t>(stream_size_.height())) {
     RTC_LOG(LS_ERROR) << "Stream metadata sizes are wrong!";
 
     if (observer_) {
@@ -894,7 +919,7 @@ void SharedScreenCastStreamPrivate::ProcessBuffer(pw_buffer* buffer) {
   // only about smaller portion representing the window inside.
   bool videocrop_metadata_use = false;
   const struct spa_rectangle* videocrop_metadata_size =
-      videocrop_metadata ? &videocrop_metadata->region.size : nullptr;
+      videocrop_shm ? &videocrop_metadata.region.size : nullptr;
 
   if (videocrop_metadata_size && videocrop_metadata_size->width != 0 &&
       videocrop_metadata_size->height != 0 &&
@@ -916,16 +941,16 @@ void SharedScreenCastStreamPrivate::ProcessBuffer(pw_buffer* buffer) {
   // that the position doesn't exceed the size of the stream itself.
   // NOTE: Currently it looks there is no implementation using this.
   uint32_t y_offset =
-      videocrop_metadata_use &&
-              (videocrop_metadata->region.position.y + frame_size_.height() <=
+      videocrop_metadata_use && videocrop_metadata.region.position.y >= 0 &&
+              (videocrop_metadata.region.position.y + frame_size_.height() <=
                stream_size_.height())
-          ? videocrop_metadata->region.position.y
+          ? videocrop_metadata.region.position.y
           : 0;
   uint32_t x_offset =
-      videocrop_metadata_use &&
-              (videocrop_metadata->region.position.x + frame_size_.width() <=
+      videocrop_metadata_use && videocrop_metadata.region.position.x >= 0 &&
+              (videocrop_metadata.region.position.x + frame_size_.width() <=
                stream_size_.width())
-          ? videocrop_metadata->region.position.x
+          ? videocrop_metadata.region.position.x
           : 0;
   DesktopVector offset = DesktopVector(x_offset, y_offset);
 

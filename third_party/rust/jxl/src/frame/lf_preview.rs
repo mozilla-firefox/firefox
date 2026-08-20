@@ -11,7 +11,7 @@ use crate::{
     image::{DataTypeTag, Rect},
     render::{
         Channels, ChannelsMut, RenderPipelineInOutStage, RenderPipelineInPlaceStage,
-        buffer_splitter::{BufferSplitter, SaveStageBufferInfo},
+        buffer_splitter::{BufferSplitter, OutputChannelRef, SaveStageBufferInfo},
         low_memory_pipeline::row_buffers::RowBuffer,
         save::SaveStage,
         stages::{
@@ -31,7 +31,7 @@ impl Frame {
         rect: Rect,
         upsampled_rect: Rect,
         orientation: Orientation,
-        output_buffers: &mut [Option<JxlOutputBuffer<'_>>],
+        output_buffers: &mut [Option<OutputChannelRef>],
         full_size: (usize, usize),
         output_color_info: &OutputColorInfo,
         output_tf: &TransferFunction,
@@ -86,7 +86,7 @@ impl Frame {
         };
 
         let upsample_stage = Upsample8x::new(&self.decoder_state.file_header.transform_data, 0);
-        let mut upsample_state = upsample_stage.init_local_state(0)?.unwrap();
+        let mut upsample_state = upsample_stage.init_local_state()?.unwrap();
 
         let xyb_stage = XybStage::new(0, output_color_info.clone());
 
@@ -357,7 +357,8 @@ impl Frame {
         };
         let info = [Some(info)];
         let mut bufs = [Some(JxlOutputBuffer::reborrow(&mut output_buffers[0]))];
-        let mut bufs = BufferSplitter::new(&mut bufs);
+        let bufs = BufferSplitter::new(&mut bufs);
+        // TODO(veluca): parallelize this
         for r in regions {
             let upsampled_rect = Rect {
                 size: (r.size.0 * 8, r.size.1 * 8),

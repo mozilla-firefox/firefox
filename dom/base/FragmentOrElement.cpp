@@ -2092,7 +2092,7 @@ void FragmentOrElement::SetInnerHTMLInternal(const nsAString& aInnerHTML,
   // Step 6: Let registry be the result of looking up a custom element registry
   // given intendedParent.
   Maybe<RefPtr<CustomElementRegistry>> customElementRegistry =
-      nsContentUtils::GetCustomElementRegistry(this);
+      nsContentUtils::GetCustomElementRegistry(target);
 
   if (doc->IsHTMLDocument()) {
     doc->SuspendDOMNotifications();

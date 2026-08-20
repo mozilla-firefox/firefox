@@ -31,7 +31,6 @@ class PageInformation final {
                   bool aIsPrivateBrowsing);
 
   size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
-  bool Equals(PageInformation* aOtherPageInfo) const;
   void StreamJSON(mozilla::baseprofiler::SpliceableJSONWriter& aWriter) const;
 
   uint64_t InnerWindowID() const { return mInnerWindowID; }

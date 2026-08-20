@@ -804,7 +804,7 @@ export const AutoTabGrouping = {
   /**
    * Close this window's duplicate tabs, reusing the same tabbrowser action the
    * All Tabs menu offers. The panel is dismissed first: closing tabs raises a
-   * confirmation hint anchored to the All Tabs button, which an open panel
+   * confirmation hint anchored to the ATG button, which an open panel
    * would cover, and the warning prompt is modal.
    *
    * @param {ChromeWindow} win
@@ -842,7 +842,9 @@ export const AutoTabGrouping = {
     }
 
     try {
-      win.gBrowser.removeAllDuplicateTabs();
+      win.gBrowser.removeAllDuplicateTabs({
+        confirmationAnchor: win.document.getElementById(BUTTON_ID),
+      });
     } catch (e) {
       lazy.console.warn("removeAllDuplicateTabs failed", e);
       errorType = e.name;

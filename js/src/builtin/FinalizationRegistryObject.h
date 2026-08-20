@@ -112,7 +112,7 @@ using RootedFinalizationQueueObject = Rooted<FinalizationQueueObject*>;
 class FinalizationRecordObject : public gc::ObserverListObject {
   JS_DEFINE_TYPED_SLOT(ObserverListObject::SlotCount + 0, QUEUE_SLOT, Object,
                        Undefined);
-  static constexpr uint32_t HELD_VALUE_SLOT = ObserverListObject::SlotCount + 1;
+  JS_DEFINE_UNTYPED_SLOT(ObserverListObject::SlotCount + 1, HELD_VALUE_SLOT);
   // Used for assertions only.
   JS_DEFINE_TYPED_SLOT(ObserverListObject::SlotCount + 2, DEBUG_STATE_SLOT,
                        Int32, Undefined);

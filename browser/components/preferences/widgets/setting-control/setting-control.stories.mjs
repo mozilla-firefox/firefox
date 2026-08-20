@@ -143,6 +143,7 @@ ExtensionControlled.args = {
       l10nId: "extension-controlled-message",
       name: "My Extension",
       supportPage: "preferences",
+      mayDisable: true,
       // NOTE: allowControl defaults to false, but it can be set to true
       allowControl: false,
     },

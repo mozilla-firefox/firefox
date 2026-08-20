@@ -134,10 +134,7 @@ impl HistoryMetadata {
         // encountering it.
         // See `apply_metadata_observation` for where we guard against observing invalid view times.
         let total_view_time: i64 = row.get("total_view_time")?;
-        let total_view_time = match i32::try_from(total_view_time) {
-            Ok(tvt) => tvt,
-            Err(_) => i32::MAX,
-        };
+        let total_view_time = i32::try_from(total_view_time).unwrap_or(i32::MAX);
 
         Ok(Self {
             url: row.get("url")?,

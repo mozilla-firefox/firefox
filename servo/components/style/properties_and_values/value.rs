@@ -387,6 +387,18 @@ impl ComputedValue {
     /// Uncomputes the value so that it can go back into the cascade.
     pub fn to_declared_value(&self) -> properties::CustomDeclarationValue {
         if let ValueInner::Universal(ref var) = self.v {
+            // The attr()-taint of the wrapper must survive the round-trip through the declared
+            // value, otherwise re-cascading the reference-free inner value
+            // would launder the taint and allow attribute-derived URLs to be fetched.
+            // This is necessary because we currently reimplement the cascade for animations in
+            // Servo_GetComputedKeyframeValues. We should instead just use the 'normal' path for
+            // animated values. For more information see Bug 1883255.
+            // https://drafts.csswg.org/css-values-5/#attr-security
+            if self.attr_tainted && !var.is_attr_tainted() {
+                let mut tainted = (**var).clone();
+                tainted.explicitly_attr_tainted = true;
+                return properties::CustomDeclarationValue::Unparsed(Arc::new(tainted));
+            }
             return properties::CustomDeclarationValue::Unparsed(Arc::clone(var));
         }
         properties::CustomDeclarationValue::Parsed(Arc::new(ToComputedValue::from_computed_value(
@@ -672,10 +684,7 @@ impl CustomAnimatedValue {
                     .get_custom_property_registration(&declaration.name);
                 if registration.is_universal() {
                     // FIXME: Do we need to perform substitution here somehow?
-                    ComputedValue::new(
-                        ValueInner::Universal(Arc::clone(value)),
-                        value.url_data.clone(),
-                    )
+                    ComputedValue::universal(Arc::clone(value))
                 } else {
                     let mut input = cssparser::ParserInput::new(&value.css);
                     let mut input = CSSParser::new(&mut input);
@@ -688,12 +697,7 @@ impl CustomAnimatedValue {
                         AllowComputationallyDependent::Yes,
                         /* attr_taint */ Default::default(),
                     )
-                    .unwrap_or_else(|_| {
-                        ComputedValue::new(
-                            ValueInner::Universal(Arc::clone(value)),
-                            value.url_data.clone(),
-                        )
-                    })
+                    .unwrap_or_else(|_| ComputedValue::universal(Arc::clone(value)))
                 }
             }),
             properties::CustomDeclarationValue::Parsed(ref v) => Some(v.to_computed_value(context)),

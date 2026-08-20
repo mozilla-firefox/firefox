@@ -7,10 +7,6 @@
 .stocks {
   @include widget-base-style;
 
-  &.small-widget {
-    grid-row: span 1;
-  }
-
   &.medium-widget {
     grid-row: span 2;
     padding-block-start: var(--space-large);
@@ -33,6 +29,31 @@
     gap: var(--space-small);
     min-inline-size: 0;
   }
+}
+
+// The plain "Stocks" title shown at medium/small. Resets the h2 defaults to match the
+// small widget-title look.
+.stocks-heading {
+  margin: 0;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight);
+  color: var(--text-color-deemphasized);
+}
+
+.stocks-small-symbol {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight);
+  color: var(--text-color-deemphasized);
+}
+
+// Visually hidden but kept in the accessibility tree (same technique as .stock-ticker-sr).
+.stocks .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 // moz-badge renders its label in shadow DOM, so it can only be styled here
@@ -62,12 +83,40 @@
   }
 }
 
-.stocks-title {
-  color: var(--text-color-deemphasized);
-  font-size: var(--font-size-small);
+// Small font like the title; let the button shrink so a long label can truncate.
+.stocks-list-button {
+  --button-font-size-small: var(--font-size-small);
+
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+// Deemphasized text only outside forced colors and Increase Contrast, so those
+// modes keep moz-button's own (higher-contrast) system colour.
+@media (forced-colors: none) and (prefers-contrast: no-preference) {
+  .stocks-list-button {
+    --button-text-color-ghost: var(--text-color-deemphasized);
+  }
+}
+
+// The label is in moz-button's shadow DOM, so reach it via ::part to truncate
+// a long label and keep the context-menu button in the row.
+.stocks-list-button::part(button) {
+  overflow: hidden;
+}
+
+.stocks-list-button::part(moz-button-label) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// A shared newtab rule shrinks checkbox padding; restore the toolkit's so the
+// checkmark doesn't overlap the label.
+#stocks-list-menu panel-item::part(button) {
+  padding-inline-start: calc(
+    var(--panel-menuitem-padding-inline) + var(--icon-size) + var(--space-small)
+  );
 }
 
 .stocks-context-menu-wrapper {
@@ -206,6 +255,33 @@
   font-size: var(--font-size-small);
 }
 
+// No shared tokens match these sizes.
+.stock-ticker--small {
+  --stocks-small-indicator-size: 2.625rem;
+  --stocks-small-indicator-icon-size: 1.375rem;
+  --stocks-small-change-font-size: 1.3125rem;
+
+  // Prevent the row from growing so the list can align it to the bottom.
+  flex: none;
+  gap: var(--space-small);
+}
+
+.stock-ticker--small .stock-indicator {
+  inline-size: var(--stocks-small-indicator-size);
+  block-size: var(--stocks-small-indicator-size);
+  border-width: var(--border-width);
+  background-size: var(--stocks-small-indicator-icon-size);
+}
+
+.stock-ticker--small .stock-ticker-change {
+  font-weight: var(--font-weight);
+  font-size: var(--stocks-small-change-font-size);
+}
+
+.stock-ticker--small .stock-ticker-price {
+  font-size: var(--font-size-root);
+}
+
 .stocks-grid--loading .stock-indicator,
 .stocks-grid--loading .stock-ticker-symbol,
 .stocks-grid--loading .stock-ticker-price,
@@ -221,16 +297,49 @@
 .stocks-list {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--space-xxlarge) - var(--space-xxsmall));
+  gap: var(--space-large);
   margin: var(--space-small) 0 0;
   padding: 0;
   list-style: none;
+}
+
+// The watchlist can hold up to 10 rows, more than fit the large card, so it
+// scrolls inside the widget while the title and dropdown stay fixed above it.
+.stocks-list--watchlist {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+// Rows keep their natural height and stack from the top, so a short list is not
+// stretched to fill the scroll area.
+.stocks-list--watchlist .stock-ticker {
+  flex: none;
+}
+
+.stocks-list--small {
+  flex: 1;
+  justify-content: flex-end;
+  padding-block-end: var(--space-small);
 }
 
 .stock-ticker--large {
   // Large rows span the full card width instead of flexing like grid cells.
   inline-size: auto;
   gap: var(--space-large);
+  padding: calc(var(--space-xsmall) + var(--space-xxsmall));
+  border-radius: var(--border-radius-small);
+  transition: background-color 100ms;
+}
+
+// Skip the custom row highlight in forced colors, where the background and text aren't a
+// guaranteed contrast pair; the focus outline still marks the active row there.
+@media (forced-colors: none) {
+  .stock-ticker--large:hover,
+  .stock-ticker--large:focus-within {
+    background-color: var(--button-background-color-hover);
+  }
 }
 
 .stock-ticker--large .stock-indicator {
@@ -273,10 +382,126 @@
   font-size: var(--font-size-small);
 }
 
+.stock-ticker--large .stock-ticker-action {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 100ms;
+}
+
+.stock-ticker--large .stock-ticker-action::part(button) {
+  inline-size: var(--size-item-medium);
+  block-size: var(--size-item-medium);
+  border: var(--border-width) solid var(--button-border-color);
+  border-radius: var(--border-radius-circle);
+  background-color: var(--button-background-color);
+  --button-icon-fill: var(--button-text-color);
+}
+
+// A disabled add button (watchlist full) needs a clear disabled look. newtab
+// pins --button-background-color-disabled to the enabled colour and only dims to
+// 0.7, which is imperceptible, so fade it further and show a not-allowed cursor.
+// In High Contrast Mode opacity is ignored, so also switch the border and icon to
+// the disabled tokens, which resolve to the system disabled colour there.
+.stock-ticker--large .stock-ticker-action[disabled]::part(button) {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--button-border-color-disabled);
+  --button-icon-fill: var(--button-text-color-disabled);
+}
+
+.stock-ticker--large:hover .stock-ticker-action,
+.stock-ticker--large:focus-within .stock-ticker-action {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .stock-ticker--large .stock-ticker-action {
+    opacity: 1;
+  }
+}
+
+// Decorative (aria-hidden); its accessible label is the visually hidden
+// .stock-ticker-in-watchlist text.
+.stock-ticker--large .stock-ticker-added {
+  flex-shrink: 0;
+  inline-size: var(--size-item-medium);
+  block-size: var(--size-item-medium);
+  border-radius: var(--border-radius-circle);
+  background-color: var(--button-background-color-primary);
+  background-image: url('chrome://global/skin/icons/check.svg');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: var(--icon-size);
+  -moz-context-properties: fill;
+  fill: var(--button-text-color-primary);
+  opacity: 0;
+  transition: opacity 100ms;
+}
+
+.stock-ticker--large:hover .stock-ticker-added,
+.stock-ticker--large:focus-within .stock-ticker-added,
+.stock-ticker--large .stock-ticker-added--confirming {
+  opacity: 1;
+}
+
+// Keep the checkmark perceivable in High Contrast Mode, where the purple fill is dropped.
+@media (forced-colors: active) {
+  .stock-ticker--large .stock-ticker-added {
+    border: var(--border-width) solid CanvasText;
+  }
+}
+
+// Search results show an enabled add button or the saved check without hover; a
+// disabled add button (watchlist full) hover-reveals like the Markets rows.
+.stock-ticker--large.stock-ticker--result .stock-ticker-action:not([disabled]),
+.stock-ticker--large.stock-ticker--result .stock-ticker-added {
+  opacity: 1;
+}
+
 // The dot is a filled shape; forced-colors resets background-color, so pin it to
 // a system colour to keep the separator visible in High Contrast Mode.
 @media (forced-colors: active) {
   .stock-ticker-dot {
     background-color: CanvasText;
   }
+}
+
+.stocks-search {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--space-small);
+}
+
+.stocks-search-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+}
+
+.stocks-search-form {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.stocks-search-input {
+  inline-size: 100%;
+}
+
+// Merino returns at most three results, so the list sits directly under the
+// search box at its natural height rather than filling the panel.
+.stocks-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-large);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stocks-search-message {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--text-color-deemphasized);
 }

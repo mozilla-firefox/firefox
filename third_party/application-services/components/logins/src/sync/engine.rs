@@ -258,11 +258,25 @@ impl LoginsSyncEngine {
         ))?;
         let bsos = stmt.query_and_then(
             named_params! { ":fxa_origin": FXA_CREDENTIALS_ORIGIN },
-            |row| {
+            |row| -> Result<Option<OutgoingBso>> {
                 self.scope.err_if_interrupted()?;
-                Ok(if row.get::<_, bool>("is_deleted")? {
+                let guid: Guid = row.get::<_, String>("guid")?.into();
+                // A guid we consider invalid for the sync server used to panic the
+                // uploader (bug 2056116). We can't serialize such a record, so skip it
+                // rather than let a single login block the whole sync.
+                if !guid.is_valid_for_sync_server() {
+                    // Report the length rather than the guid itself, which is arbitrary
+                    // data we'd rather not send to Sentry.
+                    report_error!(
+                        "logins-invalid-outgoing-guid",
+                        "skipping outgoing login with a guid that is invalid for the sync server (len {})",
+                        guid.len()
+                    );
+                    return Ok(None);
+                }
+                Ok(Some(if row.get::<_, bool>("is_deleted")? {
                     let envelope = OutgoingEnvelope {
-                        id: row.get::<_, String>("guid")?.into(),
+                        id: guid,
                         sortindex: Some(TOMBSTONE_SORTINDEX),
                         ..Default::default()
                     };
@@ -273,10 +287,10 @@ impl LoginsSyncEngine {
                         EncryptedLogin::from_row(row)?.into_bso(db.encdec.as_ref(), unknown)?;
                     bso.envelope.sortindex = Some(DEFAULT_SORTINDEX);
                     bso
-                })
+                }))
             },
         )?;
-        bsos.collect::<Result<_>>()
+        bsos.filter_map(|r| r.transpose()).collect::<Result<_>>()
     }
 
     fn do_apply_incoming(
@@ -450,7 +464,15 @@ impl SyncEngine for LoginsSyncEngine {
         telem: &mut telemetry::Engine,
     ) -> anyhow::Result<Vec<OutgoingBso>> {
         let inbound = self.staged.lock().unwrap().drain(..).collect();
-        Ok(self.do_apply_incoming(inbound, timestamp, telem)?)
+        let outgoing = self.do_apply_incoming(inbound, timestamp, telem)?;
+        // The engine owns its last-sync timestamp but during a sync, that
+        // value is known differently in desktop v mobile. Record a
+        // timestamp if we are given one.
+        if timestamp != ServerTimestamp(0) {
+            let db = self.store.lock_db()?;
+            self.set_last_sync(&db, timestamp)?;
+        }
+        Ok(outgoing)
     }
 
     fn set_uploaded(&self, new_timestamp: ServerTimestamp, ids: Vec<Guid>) -> anyhow::Result<()> {
@@ -458,6 +480,21 @@ impl SyncEngine for LoginsSyncEngine {
             &ids.iter().map(Guid::as_str).collect::<Vec<_>>(),
             new_timestamp,
         )?)
+    }
+
+    // For the Desktop bridge which makes the collection requests.
+    fn last_sync(&self) -> anyhow::Result<Option<ServerTimestamp>> {
+        let db = self.store.lock_db()?;
+        Ok(self.get_last_sync(&db)?)
+    }
+
+    // Force a full re-download next sync without a full reset. Desktop's bridged
+    // engine base calls this for every engine, so logins must implement it
+    // rather than fall back to the no-op default.
+    fn reset_last_sync(&self) -> anyhow::Result<()> {
+        let db = self.store.lock_db()?;
+        self.set_last_sync(&db, ServerTimestamp(0))?;
+        Ok(())
     }
 
     fn get_collection_request(
@@ -821,6 +858,31 @@ mod tests {
         assert!(changes["deleted"].get("deleted").is_some());
         assert!(changes["added"].get("deleted").is_none());
         assert!(changes["changed"].get("deleted").is_none());
+    }
+
+    #[test]
+    fn test_fetch_outgoing_skips_invalid_guid() {
+        ensure_initialized();
+        let store = LoginStore::new_in_memory();
+        // A local login with a guid we consider invalid for the sync server (contains
+        // a comma), inserted directly to mimic a record that was stored before guids
+        // were validated (bug 2056116).
+        insert_login(
+            &store.lock_db().unwrap(),
+            "invalid,guid",
+            Some("password"),
+            None,
+        );
+        // A normal local login that should still be uploaded.
+        insert_login(&store.lock_db().unwrap(), "valid", Some("password"), None);
+
+        // Must not panic, and must upload only the valid record.
+        let changeset = run_fetch_outgoing(store);
+        let ids: Vec<String> = changeset
+            .iter()
+            .map(|b| b.envelope.id.to_string())
+            .collect();
+        assert_eq!(ids, vec!["valid".to_string()]);
     }
 
     #[test]

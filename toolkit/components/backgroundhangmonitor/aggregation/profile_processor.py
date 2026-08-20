@@ -149,6 +149,14 @@ def get_default_thread(name, minimal_sample_table):
         "libs": libs,
         "funcTable": func_table,
         "stackTable": stack_table,
+        # Per stack-node inline accounting, indexed by stack index. A node is
+        # (func, lib, prefix), so this is per calling context: the same
+        # function can be inlined into one caller and not another. Weights are
+        # hang counts, so the emitted ratio is weighted by how much each build
+        # actually hung rather than by how many distinct stacks we saw.
+        "inlineDepthByStack": {},
+        "inlineWeightByStack": {},
+        "totalWeightByStack": {},
         "annotationsTable": annotations_table,
         "pruneStackCache": prune_stack_cache,
         "sampleTable": sample_table,
@@ -166,13 +174,15 @@ def get_default_thread(name, minimal_sample_table):
 
 
 def reconstruct_stack(string_array, func_table, stack_table, lib_table, stack_index):
+    inline_depth = stack_table.get("inlineDepth")
     result = []
     while stack_index != 0:
         func_index = stack_table["func"][stack_index]
         prefix = stack_table["prefix"][stack_index]
         func_name = string_array[func_table["name"][func_index]]
         lib_name = lib_table[func_table["lib"][func_index]]["debugName"]
-        result.append((func_name, lib_name))
+        depth = 0 if inline_depth is None else inline_depth[stack_index]
+        result.append((func_name, lib_name, depth))
         stack_index = prefix
     return result[::-1]
 
@@ -275,7 +285,7 @@ class ProfileProcessor:
         root_stack[0] += hang_ms
 
         last_stack = 0
-        for func_name, lib_name in stack:
+        for func_name, lib_name, _inline_depth in stack:
             last_stack = prune_stack_cache.key_to_index((
                 func_name,
                 lib_name,
@@ -311,9 +321,13 @@ class ProfileProcessor:
                 value,
             ))
 
+        inline_depth_by_stack = thread["inlineDepthByStack"]
+        inline_weight_by_stack = thread["inlineWeightByStack"]
+        total_weight_by_stack = thread["totalWeightByStack"]
+
         last_stack = 0
         last_cache_item_index = 0
-        for func_name, lib_name in stack:
+        for func_name, lib_name, inline_depth in stack:
             cache_item_index = prune_stack_cache.key_to_index((
                 func_name,
                 lib_name,
@@ -327,6 +341,16 @@ class ProfileProcessor:
             ):
                 last_stack = stack_table.key_to_index((func_name, lib_name, last_stack))
                 last_cache_item_index = cache_item_index
+                total_weight_by_stack[last_stack] = (
+                    total_weight_by_stack.get(last_stack, 0.0) + hang_count
+                )
+                if inline_depth:
+                    inline_weight_by_stack[last_stack] = (
+                        inline_weight_by_stack.get(last_stack, 0.0) + hang_count
+                    )
+                    inline_depth_by_stack[last_stack] = max(
+                        inline_depth_by_stack.get(last_stack, 0), inline_depth
+                    )
             else:
                 # Below the acceptance threshold — lump under "(other)" beneath
                 # the parent rather than continuing to expand the tree.
@@ -381,10 +405,35 @@ class ProfileProcessor:
             }
         return date
 
+    def attach_inline_info(self, thread, stack_table):
+        """Add per-stack-node inline columns, parallel to prefix/func.
+
+        inlineDepth is the frame's position in its inlined chain: 0 for a real
+        frame, 1+ for an inlined callee. inlineRatio is the share of hang count
+        at that node where the frame was inlined. The two differ because
+        signatures merge across builds, and a build that inlined a call and one
+        that did not produce the same reconstructed stack (bug 2052961), so a
+        node can be inlined some of the time. Ratio is rounded: unrounded
+        floats defeat compression and roughly double the gzipped artifact.
+        """
+        depths = thread["inlineDepthByStack"]
+        inline_weight = thread["inlineWeightByStack"]
+        total_weight = thread["totalWeightByStack"]
+        length = stack_table["length"]
+
+        stack_table["inlineDepth"] = [depths.get(i, 0) for i in range(length)]
+        stack_table["inlineRatio"] = [
+            round(inline_weight[i] / total_weight[i], 2)
+            if inline_weight.get(i) and total_weight.get(i)
+            else 0
+            for i in range(length)
+        ]
+
     def process_thread(self, thread):
         string_array = thread["stringArray"]
         func_table = thread["funcTable"].struct_of_arrays()
         stack_table = thread["stackTable"].struct_of_arrays()
+        self.attach_inline_info(thread, stack_table)
         annotations_table = thread["annotationsTable"].struct_of_arrays()
         sample_table = thread["sampleTable"].struct_of_arrays()
 

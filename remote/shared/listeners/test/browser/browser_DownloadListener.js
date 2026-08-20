@@ -13,6 +13,10 @@ const TEST_FILE =
   "https://example.com/browser/remote/shared/listeners/test/browser/sample.txt";
 
 add_task(async function test_downloadListener() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.download.alwaysOpenPanel", false]],
+  });
+
   info("Create a download before creating the listener");
   const beforeDownload = await createDownload();
   await beforeDownload.start();

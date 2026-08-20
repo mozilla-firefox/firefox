@@ -54,7 +54,7 @@ union EncodeResultIPDL
 // The child side runs in the content process, and the parent side runs
 // in the RDD/utility/GPU processes. We run a separate IPDL thread for both
 // sides.
-[ChildImpl="RemoteMediaDataEncoderChild", ParentImpl="RemoteMediaDataEncoderParent"]
+[ChildImpl="mozilla::RemoteMediaDataEncoderChild", ParentImpl="mozilla::RemoteMediaDataEncoderParent"]
 async protocol PRemoteEncoder
 {
   manager PRemoteMediaManager;

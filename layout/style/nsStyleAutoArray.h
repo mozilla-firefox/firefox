@@ -37,12 +37,7 @@ class nsStyleAutoArray {
     return res;
   }
 
-  bool operator==(const nsStyleAutoArray& aOther) const {
-    return Length() == aOther.Length() &&
-           mFirstElement == aOther.mFirstElement &&
-           mOtherElements == aOther.mOtherElements;
-  }
-  bool operator!=(const nsStyleAutoArray&) const = default;
+  bool operator==(const nsStyleAutoArray&) const = default;
 
   size_t Length() const { return mOtherElements.Length() + 1; }
   const T& operator[](size_t aIndex) const {

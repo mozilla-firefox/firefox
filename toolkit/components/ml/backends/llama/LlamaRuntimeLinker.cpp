@@ -10,6 +10,10 @@
 #include "nsXPCOMPrivate.h"
 #include "prlink.h"
 
+#ifdef XP_WIN
+#  include <windows.h>
+#endif
+
 mozilla::LazyLogModule gLlamaLinkerLog("LlamaRuntimeLinker");
 
 #define LOG(level, fmt, ...) \
@@ -48,8 +52,16 @@ static PRLibrary* LoadLlamaLib(nsIFile* aFile) {
   PRLibrary* lib = PR_LoadLibraryWithFlags(lspec, PR_LD_NOW | PR_LD_LOCAL);
 #endif
   if (!lib) {
-    LOG(LogLevel::Error, "unable to load library %s",
-        aFile->HumanReadablePath().get());
+    bool exists = false;
+    aFile->Exists(&exists);
+#ifdef XP_WIN
+    LOG(LogLevel::Error,
+        "unable to load library %s (exists=%d, GetLastError=%lu)",
+        aFile->HumanReadablePath().get(), exists, GetLastError());
+#else
+    LOG(LogLevel::Error, "unable to load library %s (exists=%d)",
+        aFile->HumanReadablePath().get(), exists);
+#endif
   }
   return lib;
 }

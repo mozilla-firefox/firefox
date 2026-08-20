@@ -79,7 +79,7 @@ IPCResult RemoteWorkerControllerParent::RecvPFetchEventOpConstructor(
   MOZ_ASSERT(aActor);
 
   RefPtr<FetchEventOpParent> realFetchOp =
-      static_cast<FetchEventOpParent*>(aActor);
+      mozilla::ipc::ActorCast<FetchEventOpParent>(aActor);
   mRemoteWorkerController->ExecServiceWorkerFetchEventOp(aArgs, realFetchOp)
       ->Then(GetCurrentSerialEventTarget(), __func__,
              [fetchOp = std::move(realFetchOp)](
@@ -103,7 +103,7 @@ bool RemoteWorkerControllerParent::DeallocPFetchEventOpParent(
   MOZ_ASSERT(aActor);
 
   RefPtr<FetchEventOpParent> actor =
-      dont_AddRef(static_cast<FetchEventOpParent*>(aActor));
+      dont_AddRef(mozilla::ipc::ActorCast<FetchEventOpParent>(aActor));
   return true;
 }
 

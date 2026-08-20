@@ -20,7 +20,8 @@ add_task(async function testParseFileUri() {
   );
   const mockedRequire = BrowserLoader({
     baseURI: "resource://devtools/client/shared/remote-debugging/adb",
-    window: {},
+    // Needs console for the adb logger.
+    window: { console },
   }).require;
 
   // Prepare a mocked version of the run-command.js module to test

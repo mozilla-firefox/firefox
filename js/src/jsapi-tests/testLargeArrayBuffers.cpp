@@ -54,13 +54,13 @@ BEGIN_TEST(testLargeArrayBuffers) {
     CHECK_EQUAL(length, nbytes);
 
     length = 0;
-    js::GetUint8ArrayLengthAndData(tarr, &length, &isShared, &data);
-    CHECK_EQUAL(length, nbytes);
-
-    length = 0;
     JS::AutoCheckCannotGC nogc(cx);
-    mozilla::Span<uint8_t> span =
-        JS::TypedArray<Scalar::Uint8>::unwrap(tarr).getData(&isShared, nogc);
+    auto ta = JS::Uint8Array::fromObject(tarr);
+    CHECK(!ta.isDetached());
+    CHECK(!ta.isResizable());
+    CHECK(!ta.isImmutable());
+    mozilla::Span<uint8_t> span = ta.getData(&isShared, nogc);
+    CHECK_EQUAL(span.data(), reinterpret_cast<uint8_t*>(data));
     CHECK_EQUAL(span.Length(), nbytes);
 
     length = 0;
@@ -84,14 +84,13 @@ BEGIN_TEST(testLargeArrayBuffers) {
     CHECK_EQUAL(length, nbytes);
 
     length = 0;
-    int16_t* int16Data;
-    js::GetInt16ArrayLengthAndData(tarr, &length, &isShared, &int16Data);
-    CHECK_EQUAL(length, nbytes / 2);
-
-    length = 0;
     JS::AutoCheckCannotGC nogc(cx);
-    mozilla::Span<short> span =
-        JS::TypedArray<Scalar::Int16>::unwrap(tarr).getData(&isShared, nogc);
+    auto ta = JS::Int16Array::fromObject(tarr);
+    CHECK(!ta.isDetached());
+    CHECK(!ta.isResizable());
+    CHECK(!ta.isImmutable());
+    mozilla::Span<short> span = ta.getData(&isShared, nogc);
+    CHECK_EQUAL(span.data(), reinterpret_cast<short*>(data));
     CHECK_EQUAL(span.Length(), nbytes / 2);
 
     length = 0;

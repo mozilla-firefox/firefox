@@ -6,6 +6,7 @@
 import argparse
 import os
 import sys
+import traceback
 
 # easier than setting PYTHONPATH in various platforms
 if __name__ == "__main__":
@@ -79,6 +80,7 @@ def main(args=sys.argv[1:]):
             args.device_name,
         )
     except Exception:
+        print(f"Failed to run condprof: {traceback.format_exc()}")
         sys.exit(4)  # TBPL_RETRY
 
 

@@ -674,6 +674,8 @@ skip-if = [
   "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 2023967
 ]
 
+["browser_tab_splitview_findbar.js"]
+
 ["browser_tab_splitview_footer.js"]
 support-files = ["file_withicon.html"]
 

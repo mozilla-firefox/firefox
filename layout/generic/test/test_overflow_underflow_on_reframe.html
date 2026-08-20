@@ -1,0 +1,55 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>Test that underflow is fired for an element that stops overflowing while reframing</title>
+    <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+    <style>
+      #container {
+        display: flex;
+        width: 100px;
+      }
+      #container.grid {
+        display: grid;
+        grid-template-columns: max-content;
+      }
+      #child {
+        overflow: hidden;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"><div id="child"></div></div>
+
+    <script type="text/javascript">
+      SimpleTest.waitForExplicitFinish();
+
+      // Note that overflow and underflow events are only fired in chrome
+      // documents, hence this being a chrome test.
+      async function runTest() {
+        let container = document.getElementById("container");
+        let child = document.getElementById("child");
+
+        let onOverflow = new Promise(r => child.addEventListener("overflow", r, { once: true }));
+        child.textContent =
+          "A title that is much too long to fit in the container";
+        await onOverflow;
+        ok(true, "overflow event is fired expectedly")
+        ok(child.scrollWidth > child.clientWidth);
+
+        // Recreate the child's frames by changing the container's display, and
+        // at the same time give the child enough room that it no longer
+        // overflows.
+        let onUnderflow = new Promise(r => child.addEventListener("underflow", r, { once: true }));
+        container.classList.add("grid");
+        await onUnderflow;
+        ok(true, "underflow event is fired expectedly")
+        ok(child.scrollWidth <= child.clientWidth);
+
+        SimpleTest.finish();
+      }
+
+      SimpleTest.waitForFocus(runTest);
+    </script>
+  </body>
+</html>

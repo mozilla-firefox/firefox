@@ -80,7 +80,8 @@ bool TestShellCommandParent::RunCallback(const nsAString& aResponse) {
 void TestShellCommandParent::ReleaseCallback() { mCallback.reset(); }
 
 bool TestShellCommandParent::ExecuteCallback(const nsAString& aResponse) {
-  return static_cast<TestShellParent*>(Manager())->CommandDone(this, aResponse);
+  return mozilla::ipc::ActorCast<TestShellParent>(Manager())->CommandDone(
+      this, aResponse);
 }
 
 void TestShellCommandParent::ActorDestroy(ActorDestroyReason why) {

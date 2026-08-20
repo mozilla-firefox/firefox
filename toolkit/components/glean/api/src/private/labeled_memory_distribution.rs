@@ -151,10 +151,10 @@ impl BaseMetric for LabeledMemoryDistributionMetric {
     fn get_base_metric<'a>(&'a self) -> BaseMetricResult<'a, Self::BaseMetricT> {
         match self {
             LabeledMemoryDistributionMetric::Parent(memory_distribution_metric) => {
-                BaseMetricResult::BaseMetric(&memory_distribution_metric)
+                BaseMetricResult::BaseMetric(memory_distribution_metric)
             }
             LabeledMemoryDistributionMetric::Child { id, label } => {
-                BaseMetricResult::IndexLabelPair(*id, &label)
+                BaseMetricResult::IndexLabelPair(*id, label)
             }
         }
     }

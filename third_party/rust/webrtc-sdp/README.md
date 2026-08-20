@@ -10,7 +10,7 @@ A SDP parser written in Rust specifically aimed to handle WebRTC SDP offers and 
 
 ## Dependecies
 
-* Rust >= 1.70.0
+* Rust >= 1.88.0
 * log module
 * serde module
 * serde-derive module

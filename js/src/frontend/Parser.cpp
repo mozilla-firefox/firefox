@@ -1512,6 +1512,7 @@ bool LexicalScopeHasClosedOverBindings(ParseContext* pc,
     switch (bi.kind()) {
       case BindingKind::Let:
       case BindingKind::Const:
+      case BindingKind::Using:
         if (allBindingsClosedOver || bi.closedOver()) {
           return true;
         }

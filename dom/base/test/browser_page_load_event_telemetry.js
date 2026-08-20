@@ -32,6 +32,10 @@ add_task(async function () {
           entry.extra.using_webdriver,
           "Webdriver field should be set to true."
         );
+        Assert.ok(
+          "is_active_client" in entry.extra,
+          "Active client field should be recorded."
+        );
       });
     },
     async () => {

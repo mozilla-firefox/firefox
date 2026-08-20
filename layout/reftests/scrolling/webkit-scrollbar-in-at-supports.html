@@ -3,7 +3,7 @@
 html {
   background-color: red;
 }
-@supports selector(::-webkit-scrollbar) {
+@supports not selector(::-webkit-scrollbar) {
   html {
     background-color: white;
   }

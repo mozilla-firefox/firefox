@@ -22,6 +22,7 @@
 #include "SandboxPolicyContent.h"
 #include "SandboxPolicyGMP.h"
 #include "SandboxPolicyGPU.h"
+#include "SandboxPolicyHWInference.h"
 #include "SandboxPolicyRDD.h"
 #include "SandboxPolicySocket.h"
 #include "SandboxPolicyUtility.h"
@@ -304,7 +305,8 @@ bool StartMacSandbox(MacSandboxInfo const& aInfo, std::string& aErrorMessage) {
   std::string userCacheDir;
   std::string bundleIDCacheDir;
 
-  if (aInfo.type == MacSandboxType_Utility) {
+  if (aInfo.type == MacSandboxType_Utility &&
+      aInfo.utilityKind != ipc::SandboxingKind::HW_INFERENCE) {
     profile = const_cast<char*>(SandboxPolicyUtility);
 
     switch (aInfo.utilityKind) {
@@ -496,6 +498,38 @@ bool StartMacSandbox(MacSandboxInfo const& aInfo, std::string& aErrorMessage) {
     params.push_back("ALLOW_REMOTE_APPLE_IMAGEIO");
     params.push_back(getenv("MOZ_BLOCK_REMOTE_APPLE_IMAGEIO") ? "FALSE"
                                                               : "TRUE");
+  } else if (aInfo.type == MacSandboxType_Utility &&
+             aInfo.utilityKind == ipc::SandboxingKind::HW_INFERENCE) {
+    profile = const_cast<char*>(SandboxPolicyHWInference);
+    params.push_back("SHOULD_LOG");
+    params.push_back(aInfo.shouldLog ? "TRUE" : "FALSE");
+    params.push_back("MAC_OS_VERSION");
+    params.push_back(combinedVersion.c_str());
+    params.push_back("APP_PATH");
+    params.push_back(aInfo.appPath.c_str());
+    params.push_back("HOME_PATH");
+    params.push_back(getenv("HOME"));
+    if (!aInfo.crashServerPort.empty()) {
+      params.push_back("CRASH_PORT");
+      params.push_back(aInfo.crashServerPort.c_str());
+    }
+
+    params.push_back("DARWIN_USER_CACHE_DIR");
+    char confStrBuf[PATH_MAX];
+    if (!confstr(_CS_DARWIN_USER_CACHE_DIR, confStrBuf, sizeof(confStrBuf))) {
+      return false;
+    }
+    if (!GetRealPath(userCacheDir, confStrBuf)) {
+      return false;
+    }
+    params.push_back(userCacheDir.c_str());
+
+    // For accessing shader cache paths in the cache dir that
+    // are derived from the applications bundle ID.
+    bundleIDCacheDir = userCacheDir;
+    bundleIDCacheDir.append("/" MOZ_CHILD_PROCESS_BUNDLEID);
+    params.push_back("BUNDLE_ID_CACHE_DIR");
+    params.push_back(bundleIDCacheDir.c_str());
   } else {
     char* msg = nullptr;
     asprintf(&msg, "Unexpected sandbox type %u", aInfo.type);

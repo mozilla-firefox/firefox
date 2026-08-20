@@ -48,6 +48,9 @@
 //  change at runtime and is already present when the LoginsStore is initialized. In this case, it
 //  makes sense to use the provided StaticKeyManager.
 
+// work around not yet having https://github.com/mozilla/uniffi-rs/pull/2963.
+#![allow(const_evaluatable_unchecked)]
+
 use crate::error::*;
 use std::sync::Arc;
 
@@ -56,6 +59,9 @@ use futures::executor::block_on;
 
 #[cfg(feature = "keydb")]
 use async_trait::async_trait;
+
+#[cfg(feature = "keydb")]
+use parking_lot::RwLock;
 
 #[cfg(feature = "keydb")]
 use nss_as::assert_initialized as assert_nss_initialized;
@@ -200,6 +206,9 @@ pub trait PrimaryPasswordAuthenticator: Send + Sync {
 /// Make sure to initialize NSS using `ensure_initialized_with_profile_dir` before creating a
 /// NSSKeyManager.
 ///
+/// The key is cached after the first retrieval, since fetching it from NSS costs at least one
+/// token round-trip. The cache is dropped whenever the token turns out to be locked again.
+///
 /// # Examples
 /// ```no_run
 /// use async_trait::async_trait;
@@ -234,6 +243,7 @@ pub trait PrimaryPasswordAuthenticator: Send + Sync {
 #[derive(uniffi::Object)]
 pub struct NSSKeyManager {
     primary_password_authenticator: Arc<dyn PrimaryPasswordAuthenticator>,
+    cached_key: RwLock<Option<Vec<u8>>>,
 }
 
 #[cfg(feature = "keydb")]
@@ -247,6 +257,7 @@ impl NSSKeyManager {
         assert_nss_initialized();
         Self {
             primary_password_authenticator,
+            cached_key: RwLock::new(None),
         }
     }
 
@@ -283,6 +294,9 @@ fn api_authenticate_with_primary_password(primary_password: &str) -> ApiResult<b
 impl KeyManager for NSSKeyManager {
     fn get_key(&self) -> ApiResult<Vec<u8>> {
         if api_authentication_with_primary_password_is_needed()? {
+            // The token locked again since we cached the key, so the cached copy must go.
+            *self.cached_key.write() = None;
+
             let primary_password =
                 block_on(self.primary_password_authenticator.get_primary_password())?;
             let mut result = api_authenticate_with_primary_password(&primary_password)?;
@@ -310,6 +324,11 @@ impl KeyManager for NSSKeyManager {
             }
         }
 
+        let cached = self.cached_key.read().clone();
+        if let Some(bytes) = cached {
+            return Ok(bytes);
+        }
+
         let key = get_or_create_aes256_key(KEY_NAME).map_err(|_| LoginsApiError::MissingKey)?;
         let mut bytes: Vec<u8> = Vec::new();
         serde_json::to_writer(
@@ -317,6 +336,7 @@ impl KeyManager for NSSKeyManager {
             &jwcrypto::Jwk::new_direct_from_bytes(None, &key),
         )
         .unwrap();
+        *self.cached_key.write() = Some(bytes.clone());
         Ok(bytes)
     }
 }
@@ -500,20 +520,39 @@ mod tests_keydb {
         let mock_primary_password_authenticator = MockPrimaryPasswordAuthenticator {
             password: "password".to_string(),
         };
-        let nss_key_manager = NSSKeyManager {
-            primary_password_authenticator: Arc::new(mock_primary_password_authenticator),
-        };
+        let nss_key_manager = NSSKeyManager::new(Arc::new(mock_primary_password_authenticator));
         // key from fixtures/profile/key4.db
-        assert_eq!(
-            nss_key_manager.get_key().unwrap(),
-            [
-                123, 34, 107, 116, 121, 34, 58, 34, 111, 99, 116, 34, 44, 34, 107, 34, 58, 34, 66,
-                74, 104, 84, 108, 103, 51, 118, 56, 49, 65, 66, 51, 118, 87, 50, 71, 122, 54, 104,
-                69, 54, 84, 116, 75, 83, 112, 85, 102, 84, 86, 75, 73, 83, 99, 74, 45, 77, 78, 83,
-                67, 117, 99, 34, 125
-            ]
-            .to_vec()
-        )
+        let expected = [
+            123, 34, 107, 116, 121, 34, 58, 34, 111, 99, 116, 34, 44, 34, 107, 34, 58, 34, 66, 74,
+            104, 84, 108, 103, 51, 118, 56, 49, 65, 66, 51, 118, 87, 50, 71, 122, 54, 104, 69, 54,
+            84, 116, 75, 83, 112, 85, 102, 84, 86, 75, 73, 83, 99, 74, 45, 77, 78, 83, 67, 117, 99,
+            34, 125,
+        ]
+        .to_vec();
+        assert_eq!(nss_key_manager.get_key().unwrap(), expected);
+    }
+
+    #[test]
+    fn test_nss_key_manager_caching() {
+        ensure_initialized_with_profile_dir(profile_path());
+        // `password` is the primary password of the profile fixture
+        let nss_key_manager = NSSKeyManager::new(Arc::new(MockPrimaryPasswordAuthenticator {
+            password: "password".to_string(),
+        }));
+
+        let key = nss_key_manager.get_key().unwrap();
+        assert_eq!(*nss_key_manager.cached_key.read(), Some(key.clone()));
+
+        // A sentinel in the cache tells a cached key apart from a freshly fetched one.
+        let sentinel = b"sentinel".to_vec();
+        *nss_key_manager.cached_key.write() = Some(sentinel.clone());
+        assert_eq!(nss_key_manager.get_key().unwrap(), sentinel);
+
+        // Authenticating with a wrong password logs out of the token, so it is locked again and
+        // the cache must be dropped.
+        assert!(!authenticate_with_primary_password("wrong password").unwrap());
+        assert_eq!(nss_key_manager.get_key().unwrap(), key);
+        assert_eq!(*nss_key_manager.cached_key.read(), Some(key));
     }
 
     #[test]

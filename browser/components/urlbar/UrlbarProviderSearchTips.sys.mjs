@@ -84,6 +84,16 @@ export class UrlbarProviderSearchTips extends UrlbarProvider {
   /** @type {?UrlbarProviderSearchTips} */
   static #instance = null;
 
+  /**
+   * Whether and what kind of tip we've shown in the current engagement.
+   *
+   * @type {Values<typeof UrlbarShared.SEARCH_TIP_TYPE>}
+   */
+  showedTipTypeInCurrentEngagement = UrlbarShared.SEARCH_TIP_TYPE.NONE;
+
+  /** @type {Values<typeof UrlbarShared.SEARCH_TIP_TYPE>} */
+  currentTip = UrlbarShared.SEARCH_TIP_TYPE.NONE;
+
   constructor() {
     super();
     if (UrlbarProviderSearchTips.#instance) {
@@ -103,9 +113,6 @@ export class UrlbarProviderSearchTips extends UrlbarProvider {
         break;
       }
     }
-
-    // Whether and what kind of tip we've shown in the current engagement.
-    this.showedTipTypeInCurrentEngagement = UrlbarShared.SEARCH_TIP_TYPE.NONE;
 
     // Used to track browser windows we've seen.
     this._seenWindows = new WeakSet();

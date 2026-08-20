@@ -3,6 +3,9 @@
 
 "use strict";
 
+// This file may timeout before it had a chance to complete its run in test-verify.
+requestLongerTimeout(2);
+
 const { AddonTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/AddonTestUtils.sys.mjs"
 );
@@ -13,6 +16,11 @@ const { sinon } = ChromeUtils.importESModule(
 );
 
 loadTestSubscript("head_unified_extensions.js");
+
+const ONBOARDING_ILLUSTRATION_URL =
+  "chrome://browser/skin/addons/extensions-panel-empty-onboarding.svg";
+const EMPTYSTATE_ILLUSTRATION_URL =
+  "chrome://browser/skin/addons/extensions-panel-empty.svg";
 
 // The createExtensions helper (using ExtensionTestUtils.loadExtension) does
 // not support disabled add-ons. This helper uses AOM directly instead.
@@ -70,6 +78,24 @@ function assertIsEmptyPanelOnboardingExtensions(win) {
     "unified-extensions-empty-content-explain-extensions-onboarding2",
     "Has description explaining extensions"
   );
+  const emptyStateImgEl = emptyStateBox.querySelector("img");
+  ok(
+    emptyStateImgEl.classList.contains(
+      win.gUnifiedExtensions.EMPTY_STATE_ILLUSTRATION_ONBOARDING_CLASS
+    ),
+    "Expect empty state onboarding class to be set"
+  );
+  ok(
+    !emptyStateImgEl.classList.contains(
+      win.gUnifiedExtensions.EMPTY_STATE_ILLUSTRATION_CLASS
+    ),
+    "Expect empty state disabled extensions class to not be set"
+  );
+  is(
+    win.getComputedStyle(emptyStateImgEl).content,
+    `url("${ONBOARDING_ILLUSTRATION_URL}")`,
+    "Got the expected onboarding illustration SVG"
+  );
 
   const discoverButton = getDiscoverButton(win);
   ok(discoverButton, "Got 'Discover button'");
@@ -103,6 +129,27 @@ async function checkManageExtensionsText(elem) {
   if (doc.hasPendingL10nMutations) {
     await BrowserTestUtils.waitForEvent(doc, "L10nMutationsFinished");
   }
+  const emptyStateImgEl = elem
+    .closest("#unified-extensions-empty-state")
+    .querySelector("img");
+  const win = doc.defaultView;
+  ok(
+    emptyStateImgEl.classList.contains(
+      win.gUnifiedExtensions.EMPTY_STATE_ILLUSTRATION_CLASS
+    ),
+    "Expect empty state disabled extensions class to be set"
+  );
+  ok(
+    !emptyStateImgEl.classList.contains(
+      win.gUnifiedExtensions.EMPTY_STATE_ILLUSTRATION_ONBOARDING_CLASS
+    ),
+    "Expect empty state onboarding class to not be set"
+  );
+  is(
+    win.getComputedStyle(emptyStateImgEl).content,
+    `url("${EMPTYSTATE_ILLUSTRATION_URL}")`,
+    "Got the expected extensions disabled illustration SVG"
+  );
   const expectedButtonText = "Manage extensions";
   let expectedTextContent;
   if (l10nId === "unified-extensions-empty-content-explain-enable2") {

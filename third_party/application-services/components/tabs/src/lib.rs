@@ -22,14 +22,6 @@ uniffi::custom_type!(Timestamp, i64, {
 
 uniffi::include_scaffolding!("tabs");
 
-// Our UDL uses a `Guid` type.
-use sync_guid::Guid as TabsGuid;
-uniffi::custom_type!(TabsGuid, String, {
-    remote,
-    try_lift: |val| Ok(TabsGuid::new(val.as_str())),
-    lower: |obj| obj.into(),
-});
-
 pub use crate::storage::{
     ClientRemoteTabs, LocalTabsInfo, RemoteTabRecord, TabGroup, TabsDeviceType, Window, WindowType,
 };

@@ -19,9 +19,6 @@ var newClassID = Services.uuid.generateUUID();
 
 var registrar = Components.manager.QueryInterface(Ci.nsIComponentRegistrar);
 var oldClassID = registrar.contractIDToCID(CONTRACT_ID);
-// TODO: There was a var oldFactory = here causing linter errors as it
-// was unused. We should check if this function call is needed at all.
-Components.manager.getClassObject(Cc[CONTRACT_ID], Ci.nsIFactory);
 registrar.registerFactory(newClassID, "", CONTRACT_ID, factory);
 
 function cleanupFactory() {

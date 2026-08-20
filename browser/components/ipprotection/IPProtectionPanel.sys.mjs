@@ -524,7 +524,14 @@ export class IPProtectionPanel {
       inPrivateBrowsing,
       country
     );
-    if (error && error !== lazy.ERRORS.CANCELED) {
+    // Cancellation, an exhausted quota and a not-ready proxy are already
+    // represented elsewhere in the UI, so they must not raise an error message.
+    const handledElsewhere = [
+      lazy.ERRORS.CANCELED,
+      lazy.ERRORS.QUOTA_EXHAUSTED,
+      lazy.ERRORS.NOT_READY,
+    ];
+    if (error && !handledElsewhere.includes(error)) {
       const errorMessage = this.#errorMessage(error);
       this.setState({
         error: errorMessage,

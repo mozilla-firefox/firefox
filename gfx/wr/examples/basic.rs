@@ -102,6 +102,7 @@ impl Example for App {
             bounds,
             border_widths,
             border_details,
+            &[],
         );
 
         if false {

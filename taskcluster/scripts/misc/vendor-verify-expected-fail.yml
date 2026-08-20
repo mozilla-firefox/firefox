@@ -1,0 +1,35 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Libraries that do NOT re-vendor cleanly yet, read by
+# verify-vendored-library.py. They are still checked, but a failure is expected
+# and the job stays green. If one starts reproducing, the job goes orange with an
+# UNEXPECTED-PASS so the annotation gets removed -- after which the library is a
+# hard requirement and cannot silently regress.
+#
+# Shrink this list over time. Each entry wants a real bug number.
+---
+expected-fail:
+    config/external/rlbox_wasm2c_sandbox/moz.yaml: "TODO bug: sources differ after re-vendoring"
+    dom/canvas/test/webgl-conf/moz.yaml: "TODO bug: re-vendoring fails"
+    dom/media/webrtc/transport/third_party/nICEr/moz.yaml: "TODO bug: re-vendoring fails"
+    dom/webauthn/winwebauthn/moz.yaml: "TODO bug: sources differ after re-vendoring"
+    js/src/irregexp/moz.yaml: "TODO bug: sources differ after re-vendoring"
+    media/libsoundtouch/moz.yaml: "TODO bug: re-vendoring fails in CI"
+    media/libvpx/moz.yaml: "TODO bug: sources differ after re-vendoring"
+    modules/xz-embedded/moz.yaml: "TODO bug: re-vendoring fails"
+    netwerk/sctp/src/moz.yaml: "TODO bug: sources differ after re-vendoring"
+    security/sandbox/linux/launch/glibc_hack/moz.yaml: "TODO bug: re-vendoring fails"
+    testing/mochitest/pywebsocket3/moz.yaml: "TODO bug: sources differ after re-vendoring"
+    third_party/js/cfworker/moz.yaml: "TODO bug: re-vendoring fails"
+    third_party/libepoxy/moz.yaml: "TODO bug: re-vendoring fails"
+    third_party/libsrtp/moz.yaml: "TODO bug: re-vendoring fails"
+    third_party/opentelemetry-cpp/third_party/opentelemetry-proto/moz.yaml: "TODO bug: re-vendoring fails"
+    third_party/rlbox/moz.yaml: "TODO bug: sources differ after re-vendoring"
+    third_party/sqlite3/moz.yaml: "TODO bug: sources differ after re-vendoring"
+    third_party/zucchini/chromium/moz.yaml: "TODO bug: re-vendoring fails"
+    toolkit/components/ml/vendor/openai/moz.yaml: "TODO bug: re-vendoring fails"
+    toolkit/components/pdfjs/moz.yaml: "TODO bug: re-vendoring fails in CI"
+    toolkit/components/protobuf/moz.yaml: "TODO bug: re-vendoring fails"
+    tools/fuzzing/libfuzzer/moz.yaml: "TODO bug: re-vendoring fails"

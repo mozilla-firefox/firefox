@@ -3702,6 +3702,7 @@ nsresult nsHttpChannel::ContinueProcessResponse4(nsresult rv) {
 
   if (NS_SUCCEEDED(rv)) {
     UpdateInhibitPersistentCachingFlag();
+    (void)MaybeReplaceNoVarySearchAliasEntry();
 
     if (mCacheEntry) {
       rv = UpdateExpirationTime();
@@ -3784,6 +3785,8 @@ nsresult nsHttpChannel::ContinueProcessNormal(nsresult rv) {
     Cancel(NS_ERROR_INVALID_CONTENT_ENCODING);
     return NS_ERROR_INVALID_CONTENT_ENCODING;
   }
+
+  (void)MaybeReplaceNoVarySearchAliasEntry();
 
   if (mCacheEntry && !LoadCacheEntryIsReadOnly()) {
     // Must update expiration time early - ParseDictionary reads it, and
@@ -5040,19 +5043,9 @@ nsresult nsHttpChannel::OpenCacheEntryInternal(bool isHttps) {
 
   nsAutoCString cacheKey;
 
-  nsCOMPtr<nsICacheStorageService> cacheStorageService(
-      components::CacheStorage::Service());
-  if (!cacheStorageService) {
-    return NS_ERROR_NOT_AVAILABLE;
-  }
-
   nsCOMPtr<nsICacheStorage> cacheStorage;
   mCacheEntryURI = mURI;
 
-  RefPtr<LoadContextInfo> info = GetLoadContextInfo(this);
-  if (!info) {
-    return NS_ERROR_FAILURE;
-  }
   uint32_t cacheEntryOpenFlags;
   bool offline = gIOService->IsOffline();
 
@@ -5091,17 +5084,7 @@ nsresult nsHttpChannel::OpenCacheEntryInternal(bool isHttps) {
       mRequestHead.HasHeader(nsHttp::If_Match) ||
       mRequestHead.HasHeader(nsHttp::If_Range));
 
-  if (mLoadFlags & INHIBIT_PERSISTENT_CACHING) {
-    rv = cacheStorageService->MemoryCacheStorage(
-        info,  // ? choose app cache as well...
-        getter_AddRefs(cacheStorage));
-  } else if (LoadPinCacheContent()) {
-    rv = cacheStorageService->PinningCacheStorage(info,
-                                                  getter_AddRefs(cacheStorage));
-  } else {
-    rv = cacheStorageService->DiskCacheStorage(info,
-                                               getter_AddRefs(cacheStorage));
-  }
+  rv = GetCacheStorage(getter_AddRefs(cacheStorage));
   NS_ENSURE_SUCCESS(rv, rv);
 
   if ((mClassOfService.Flags() & nsIClassOfService::Leader) ||
@@ -5153,6 +5136,105 @@ nsresult nsHttpChannel::OpenCacheEntryInternal(bool isHttps) {
   return NS_OK;
 }
 
+// We asked the cache for mCacheEntryURI, but the entry we got back may be
+// stored under a different URL: on an exact-key miss the cache falls back to a
+// No-Vary-Search secondary lookup, which can return a sibling entry whose URL
+// is equivalent to ours under its No-Vary-Search header. Record which of the
+// two happened, so that later code can tell whether the entry it holds is
+// really ours to write to.
+void nsHttpChannel::NoteCacheEntryKeyMatch(nsICacheEntry* aEntry) {
+  StoreCacheEntryIsNoVarySearchMatch(false);
+
+  if (!aEntry || !mCacheEntryURI) {
+    return;
+  }
+
+  // Normalize the same way CacheStorage::AsyncOpenURI did to build the key.
+  nsCOMPtr<nsIURI> noRefURI;
+  nsAutoCString spec;
+  if (NS_FAILED(
+          NS_GetURIWithoutRef(mCacheEntryURI, getter_AddRefs(noRefURI))) ||
+      NS_FAILED(noRefURI->GetAsciiSpec(spec))) {
+    return;
+  }
+
+  nsAutoCString key;
+  if (NS_FAILED(aEntry->GetKey(key))) {
+    return;
+  }
+
+  if (!key.Equals(spec)) {
+    LOG(
+        ("nsHttpChannel::NoteCacheEntryKeyMatch [this=%p] No-Vary-Search hit, "
+         "entry is stored under %s",
+         this, key.get()));
+    StoreCacheEntryIsNoVarySearchMatch(true);
+  }
+}
+
+// Picks the storage matching the channel's persistence flags as they stand
+// right now. Called both when first opening the entry and when replacing an
+// alias entry later, by which point a no-store response may have set
+// INHIBIT_PERSISTENT_CACHING and the replacement must be memory-only.
+nsresult nsHttpChannel::GetCacheStorage(nsICacheStorage** aStorage) {
+  nsCOMPtr<nsICacheStorageService> service(components::CacheStorage::Service());
+  if (!service) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
+  RefPtr<LoadContextInfo> info = GetLoadContextInfo(this);
+  if (!info) {
+    return NS_ERROR_FAILURE;
+  }
+
+  if (mLoadFlags & INHIBIT_PERSISTENT_CACHING) {
+    return service->MemoryCacheStorage(info,  // ? choose app cache as well...
+                                       aStorage);
+  }
+  if (LoadPinCacheContent()) {
+    return service->PinningCacheStorage(info, aStorage);
+  }
+  return service->DiskCacheStorage(info, aStorage);
+}
+
+// Called before anything is written to mCacheEntry. When the entry we hold was
+// found through No-Vary-Search it is stored under a different URL, and this
+// response describes mCacheEntryURI only, so writing to it would put our
+// content under someone else's key. Open a fresh entry of our own instead.
+// Releasing the last handle on the borrowed entry reverts it from REVALIDATING
+// back to READY, leaving its own representation untouched.
+nsresult nsHttpChannel::MaybeReplaceNoVarySearchAliasEntry() {
+  if (!LoadCacheEntryIsNoVarySearchMatch() || !mCacheEntry ||
+      LoadCacheEntryIsReadOnly()) {
+    return NS_OK;
+  }
+
+  LOG(("nsHttpChannel::MaybeReplaceNoVarySearchAliasEntry [this=%p]", this));
+
+  nsCOMPtr<nsICacheStorage> storage;
+  nsresult rv = GetCacheStorage(getter_AddRefs(storage));
+  if (NS_SUCCEEDED(rv)) {
+    rv = storage->OpenTruncate(mCacheEntryURI, mCacheIdExtension,
+                               getter_AddRefs(mCacheEntry));
+  }
+
+  if (NS_FAILED(rv)) {
+    LOG(("  failed to open %s, the response will not be cached",
+         mCacheEntryURI->GetSpecOrDefault().get()));
+    mCacheEntry = nullptr;
+    return rv;
+  }
+
+  // We now hold an entry keyed on mCacheEntryURI, so it is ours to write to.
+  StoreCacheEntryIsNoVarySearchMatch(false);
+  StoreCacheEntryIsWriteOnly(true);
+  // The alt-data belonged to the entry we just let go of.
+  mAvailableCachedAltDataType.Truncate();
+  StoreDeliveringAltData(false);
+
+  return NS_OK;
+}
+
 nsresult nsHttpChannel::CheckPartial(nsICacheEntry* aEntry, int64_t* aSize,
                                      int64_t* aContentLength) {
   return nsHttp::CheckPartial(
@@ -5179,6 +5261,8 @@ nsHttpChannel::OnCacheEntryCheck(nsICacheEntry* entry, uint32_t* aResult) {
                             Flow::FromPointer(this));
   LOG(("nsHttpChannel::OnCacheEntryCheck enter [channel=%p entry=%p]", this,
        entry));
+
+  NoteCacheEntryKeyMatch(entry);
 
   nsAutoCString cacheControlRequestHeader;
   (void)mRequestHead.GetHeader(nsHttp::Cache_Control,
@@ -5301,6 +5385,18 @@ nsHttpChannel::OnCacheEntryCheck(nsICacheEntry* entry, uint32_t* aResult) {
     int64_t size, contentLength;
     rv = CheckPartial(entry, &size, &contentLength);
     NS_ENSURE_SUCCESS(rv, rv);
+
+    if (LoadCacheEntryIsNoVarySearchMatch() &&
+        (size == int64_t(-1) ||
+         (contentLength != int64_t(-1) && contentLength != size))) {
+      // Completing this entry means appending our bytes to content stored
+      // under a different URL, and unlike a full response we cannot divert
+      // that to an entry of our own: the range request only makes sense
+      // against what is already there. Refetch from scratch instead.
+      LOG(("  incomplete No-Vary-Search alias entry, not wanted"));
+      *aResult = ENTRY_NOT_WANTED;
+      return NS_OK;
+    }
 
     if (size == int64_t(-1)) {
       LOG(("  write is in progress"));
@@ -5660,6 +5756,7 @@ nsresult nsHttpChannel::OnNormalCacheEntryAvailable(nsICacheEntry* aEntry,
   if (NS_SUCCEEDED(aEntryStatus)) {
     mCacheEntry = aEntry;
     StoreCacheEntryIsWriteOnly(aNew);
+    NoteCacheEntryKeyMatch(aEntry);
   }
 
   return NS_OK;
@@ -6142,6 +6239,12 @@ nsresult nsHttpChannel::InitCacheEntry() {
 
   LOG(("nsHttpChannel::InitCacheEntry [this=%p entry=%p]\n", this,
        mCacheEntry.get()));
+
+  // Normally already handled before the response was applied to the entry, but
+  // recreating an alias entry would doom and rewrite another URL's entry, so
+  // never reach Recreate() below while the flag is still set.
+  rv = MaybeReplaceNoVarySearchAliasEntry();
+  if (NS_FAILED(rv)) return NS_OK;
 
   bool recreate = !LoadCacheEntryIsWriteOnly();
   bool dontPersist = mLoadFlags & INHIBIT_PERSISTENT_CACHING;
@@ -11352,6 +11455,9 @@ nsresult nsHttpChannel::DoAuthRetry(
        aTransWithStickyConn));
 
   MOZ_ASSERT(!mTransaction, "should not have a transaction");
+
+  // Clear security info so it can be repopulated by the retried connection.
+  mSecurityInfo = nullptr;
 
   // Note that we don't have to toggle |IsPending| anymore. See the reasons
   // below.

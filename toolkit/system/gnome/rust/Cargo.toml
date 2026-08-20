@@ -1,0 +1,12 @@
+[package]
+name = "xdg_alerts"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dbus = "0.6.5"
+log = "0.4"
+nserror = { path = "../../../../xpcom/rust/nserror" }
+nsstring = { path = "../../../../xpcom/rust/nsstring" }
+thin-vec = { version = "0.2.1", features = ["gecko-ffi"] }
+xpcom = { path = "../../../../xpcom/rust/xpcom" }

@@ -923,7 +923,8 @@ nsresult IMEContentObserver::MaybeHandleSelectionEvent(
   if (!mNeedsToNotifyIMEOfSelectionChange && mSelectionData.IsInitialized() &&
       mSelectionData.HasRange() &&
       mSelectionData.StartOffset() == aEvent->mOffset &&
-      mSelectionData.Length() == aEvent->mLength) {
+      mSelectionData.Length() == aEvent->mLength &&
+      mSelectionData.mReversed == aEvent->mReversed) {
     if (RefPtr<Selection> selection = GetSelection()) {
       selection->ScrollIntoView(nsISelectionController::SELECTION_FOCUS_REGION);
     }

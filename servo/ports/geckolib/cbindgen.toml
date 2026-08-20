@@ -48,7 +48,9 @@ include = ["style", "app_units", "cssparser", "style_traits", "servo_arc"]
 [struct]
 associated_constants_in_body = true
 derive_eq = true
-derive_neq = true
+# Since C++20, `a != b` is rewritten as `!(a == b)` when no viable operator!= is
+# found, so a derived operator!= is redundant.
+derive_neq = false
 
 [defines]
 # These will actually never be defined, but is handy to avoid cbindgen
@@ -319,6 +321,7 @@ include = [
   "ClipPath",
   "ShapeOutside",
   "GridAutoFlow",
+  "FlexWrap",
   "Cursor",
   "SVGStrokeDashArray",
   "SVGLength",
@@ -468,7 +471,6 @@ renaming_overrides_prefixing = true
   inline Self& operator=(const Self&);
 
   inline bool operator==(const Self& aOther) const;
-  inline bool operator!=(const Self& aOther) const;
 
   inline bool IsLengthOrPercentage() const;
   inline bool IsLength() const;
@@ -741,10 +743,6 @@ renaming_overrides_prefixing = true
   bool operator==(const StyleOwnedArray& other) const {
     return AsSpan() == other.AsSpan();
   }
-
-  bool operator!=(const StyleOwnedArray& other) const {
-    return !(*this == other);
-  }
 """
 
 "OwnedSlice" = """
@@ -778,10 +776,6 @@ renaming_overrides_prefixing = true
   bool operator==(const StyleOwnedSlice& other) const {
     return AsSpan() == other.AsSpan();
   }
-
-  bool operator!=(const StyleOwnedSlice& other) const {
-    return !(*this == other);
-  }
 """
 
 "ArcInner" = """
@@ -797,7 +791,6 @@ renaming_overrides_prefixing = true
 
   inline ~StyleHeaderSlice();
   inline bool operator==(const StyleHeaderSlice& other) const;
-  inline bool operator!=(const StyleHeaderSlice& other) const;
 
   inline Span<const T> AsSpan() const;
   inline size_t Length() const { return len; }
@@ -836,9 +829,6 @@ renaming_overrides_prefixing = true
   }
   bool operator==(const StyleArc& other) const {
     return p == other.p || *(*this) == *other;
-  }
-  bool operator!=(const StyleArc& other) const {
-    return !(*this == other);
   }
 """
 
@@ -970,9 +960,6 @@ renaming_overrides_prefixing = true
 "CssUrlData" = """
   // Implemented in nsStyleStruct.cpp
   bool operator==(const StyleCssUrlData& other) const;
-  bool operator!=(const StyleCssUrlData& other) const {
-    return !(*this == other);
-  }
 """
 
 "LoadData" = """

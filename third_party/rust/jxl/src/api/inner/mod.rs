@@ -13,7 +13,7 @@ use codestream_parser::CodestreamParser;
 
 mod box_parser;
 mod codestream_parser;
-mod process;
+pub(crate) mod process;
 
 pub use box_parser::BoxParserCheckpoint;
 
@@ -136,7 +136,7 @@ mod tests {
 
         for chunk in data.chunks(64) {
             let mut input = chunk;
-            let _ = decoder.process(&mut input, None);
+            let _ = decoder.process(&mut input, None, None);
 
             if decoder.embedded_color_profile().is_none() {
                 assert!(decoder.basic_info().is_none());
@@ -160,7 +160,7 @@ mod tests {
 
         let mut decoder = JxlDecoderInner::new(JxlDecoderOptions::default());
         let mut input = data.as_slice();
-        let result = decoder.process(&mut input, None);
+        let result = decoder.process(&mut input, None, None);
         assert!(
             matches!(
                 result,

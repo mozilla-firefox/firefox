@@ -3027,7 +3027,6 @@ struct LinkedListIterator {
   }
 
   bool operator==(const LinkedListIterator<T>&) const = default;
-  bool operator!=(const LinkedListIterator<T>&) const = default;
 
   const T operator*() const {
     MOZ_ASSERT(mNode);

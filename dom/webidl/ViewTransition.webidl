@@ -6,7 +6,7 @@
  * https://drafts.csswg.org/css-view-transitions-2/#viewtransitiontypeset
  */
 
-[Exposed=Window, Pref="dom.viewTransitions.enabled"]
+[Exposed=Window]
 interface ViewTransitionTypeSet {
   setlike<DOMString>;
 };
@@ -22,7 +22,7 @@ partial interface ViewTransitionTypeSet {
   boolean delete(DOMString type);
 };
 
-[Exposed=Window, Pref="dom.viewTransitions.enabled"]
+[Exposed=Window]
 interface ViewTransition {
   [Throws] readonly attribute Promise<undefined> updateCallbackDone;
   [Throws] readonly attribute Promise<undefined> ready;

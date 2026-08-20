@@ -297,6 +297,11 @@
       );
     }
 
+    connectedMoveCallback() {
+      // No-op: Allows consumers to move <findbar> element in the DOM tree
+      // without destroying and recreating itself (bug 2056718).
+    }
+
     set findMode(val) {
       this._findMode = val;
       this._updateBrowserWithState();

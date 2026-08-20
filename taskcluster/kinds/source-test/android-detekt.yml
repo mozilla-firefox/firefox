@@ -5,7 +5,6 @@
 task-defaults:
     description: 'Run detekt over all modules'
     run:
-        clone-with: hg
         using: gradlew
         gradlew: ['detekt']
     worker:
@@ -33,7 +32,6 @@ task-defaults:
 
 detekt-android-components:
     run:
-        clone-with: hg
         pre-gradlew:
             - ["cd", "mobile/android/android-components"]
     treeherder:
@@ -49,7 +47,6 @@ detekt-focus:
         files-changed:
             - "mobile/android/focus-android/**"
     run:
-        clone-with: hg
         pre-gradlew:
             - ["cd", "mobile/android/focus-android"]
     treeherder:
@@ -65,7 +62,6 @@ detekt-fenix:
         files-changed:
             - "mobile/android/fenix/**"
     run:
-        clone-with: hg
         pre-gradlew:
             - ["cd", "mobile/android/fenix"]
         gradlew: [detekt, 'mozilla-detekt-rules:test']

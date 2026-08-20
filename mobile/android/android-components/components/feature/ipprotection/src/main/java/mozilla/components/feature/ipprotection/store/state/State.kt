@@ -26,7 +26,7 @@ const val BYTES_PER_GB = 1024 * 1024 * 1024f
  * @property resetDate ISO 8601 string for when the monthly allowance resets, or null if unavailable.
  * @property accountState The state of the authenticator being used.
  * @property lastError The last error received from the IPProtection service.
- * @property proxyActiveShown Whether the proxy-active status has been shown to the user.
+ * @property proxyActivation Tracks recent activation or deactivation state changes. See [ProxyActivation].
  * @property activate To turn protection on or off.
  * @property locationState The location selection state.
  */
@@ -39,7 +39,7 @@ data class IPProtectionState(
     val resetDate: String? = null,
     val accountState: AccountState = AccountState(),
     val lastError: String? = null,
-    val proxyActiveShown: Boolean = false,
+    val proxyActivation: ProxyActivation = ProxyActivation.Idle,
     val activate: Boolean? = null,
     val locationState: LocationState = LocationState(),
 ) : State
@@ -84,8 +84,8 @@ data class AccountState(val status: AccountStatus = AccountStatus.Uninitialized)
  * @property locations The list of locations for user to choose from.
  */
 data class LocationState(
-    val selectedLocation: Location = Recommended(),
-    val locations: List<Location> = listOf(Recommended()),
+    val selectedLocation: Location = Recommended,
+    val locations: List<Location> = listOf(Recommended),
 )
 
 /**
@@ -98,7 +98,9 @@ sealed interface Location {
 }
 
 /** The "recommended" (default) location, letting the proxy pick the server automatically. */
-data class Recommended(override val countryCode: String? = null) : Location
+object Recommended : Location {
+    override val countryCode: String? = null
+}
 
 /**
  * A specific country from the IP protection proxy server list.

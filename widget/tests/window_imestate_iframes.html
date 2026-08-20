@@ -33,18 +33,24 @@
 </p>
 <script class="testbody" type="application/javascript">
 
-window.opener.SimpleTest.waitForFocus(runTests, window);
+// The window of the test that embeds this document, set by startTests().
+var gTestWindow = null;
+
+function startTests(aTestWindow) {
+  gTestWindow = aTestWindow;
+  runTests();
+}
 
 function ok(aCondition, aMessage) {
-  window.opener.SimpleTest.ok(aCondition, aMessage);
+  gTestWindow.SimpleTest.ok(aCondition, aMessage);
 }
 
 function is(aLeft, aRight, aMessage) {
-  window.opener.SimpleTest.is(aLeft, aRight, aMessage);
+  gTestWindow.SimpleTest.is(aLeft, aRight, aMessage);
 }
 
 function onUnload() {
-  window.opener.onFinish();
+  gTestWindow.onFinish();
 }
 
 var gFocusObservingElement = null;
@@ -345,7 +351,7 @@ function runTests() {
 
   iframe.style.display = "none";
 
-  window.close();
+  window.browsingContext.topChromeWindow.close();
 }
 
 </script>

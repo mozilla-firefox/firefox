@@ -13,9 +13,7 @@ class MyClass {
 
   explicit MyClass(uint32_t aValue = 0) : mValue(aValue) {}
 
-  bool operator==(const MyClass& aOther) const {
-    return mValue == aOther.mValue;
-  }
+  bool operator==(const MyClass& aOther) const = default;
 
   MyClass operator+(const MyClass& aOther) const {
     return MyClass(mValue + aOther.mValue);

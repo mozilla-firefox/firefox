@@ -215,6 +215,7 @@
     <!-- Theme Settings -->
     <string name="pref_key_light_theme" translatable="false">pref_key_light_theme</string>
     <string name="pref_key_dark_theme" translatable="false">pref_key_dark_theme</string>
+    <string name="pref_key_oled_theme" translatable="false">pref_key_oled_theme</string>
     <string name="pref_key_auto_battery_theme" translatable="false">pref_key_auto_battery_theme</string>
     <string name="pref_key_follow_device_theme" translatable="false">pref_key_follow_device_theme</string>
 
@@ -498,7 +499,7 @@
     <string name="pref_key_enable_shake_to_summarize" translatable="false">pref_key_enable_shake_to_summarize</string>
     <string name="pref_key_page_summaries" translatable="false">pref_key_page_summaries</string>
 
-    <!-- Summarize feature: preference key to track if the user has turned off the shake gesture or not -->
+  <!-- Summarize feature: preference key to track if the user has turned off the shake gesture or not -->
     <string name="pref_key_shake_gesture_enabled" translatable="false">pref_key_shake_gesture_enabled</string>
 
     <!-- Summarize feature: preference key to track how many times we have shown the "Summarize page" menu item to the user.
@@ -518,6 +519,9 @@
 
     <!-- Summarize feature: preference key to track if the user has seen the shake to summarize toolbar CFR-->
     <string name="pref_key_summarize_toolbar_cfr_shown" translatable="false">pref_key_summarize_toolbar_cfr_shown</string>
+
+    <!-- Listen to page -->
+    <string name="pref_key_enable_listen_to_page" translatable="false">pref_key_enable_listen_to_page</string>
 
     <!-- Logins -->
     <string name="pref_key_logins_list_sort_order" translatable="false">pref_key_logins_list_sort_order</string>

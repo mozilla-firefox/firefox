@@ -500,6 +500,16 @@ uint32_t TRRService::GetRequestTimeout() {
     return StaticPrefs::network_trr_strict_fallback_request_timeout_ms();
   }
 
+#if defined(ANDROID)
+  // On Android, the DoH connection is more likely to be broken due to network
+  // changes, etc. We use a slightly lower timeout for doh-rollout
+  // but users in mode 2 or 3 still get the regular timeout.
+  if (StaticPrefs::network_trr_mode() == nsIDNSService::MODE_NATIVEONLY &&
+      mMode == nsIDNSService::MODE_TRRFIRST) {
+    return StaticPrefs::network_android_doh_rollout_request_timeout_ms();
+  }
+#endif
+
   return StaticPrefs::network_trr_request_timeout_ms();
 }
 

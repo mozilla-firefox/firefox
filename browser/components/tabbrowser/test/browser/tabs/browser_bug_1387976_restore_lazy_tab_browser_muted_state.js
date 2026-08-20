@@ -4,7 +4,7 @@
 "use strict";
 
 const { TabState } = ChromeUtils.importESModule(
-  "resource:///modules/sessionstore/TabState.sys.mjs"
+  "moz-src:///browser/components/sessionstore/TabState.sys.mjs"
 );
 
 /**

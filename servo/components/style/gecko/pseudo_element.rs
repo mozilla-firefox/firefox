@@ -471,9 +471,23 @@ impl PseudoElement {
     }
 
     /// Whether this pseudo-element is enabled for all content.
-    pub fn enabled_in_content(&self, url_data: &crate::stylesheets::UrlExtraData) -> bool {
-        Self::type_enabled_in_content(self.pseudo_type())
-            && self.is_pseudo_enabled_for_url(url_data)
+    pub fn enabled_in_content(
+        &self,
+        url_data: &crate::stylesheets::UrlExtraData,
+        for_supports_rule: bool,
+    ) -> bool {
+        if !Self::type_enabled_in_content(self.pseudo_type()) {
+            return false;
+        }
+        if !self.is_pseudo_enabled_for_url(url_data) {
+            return false;
+        }
+        if for_supports_rule && matches!(*self, Self::WebkitScrollbar) {
+            // ::-webkit-scrollbar remains false in @supports even when we "support" it, like
+            // other unknown webkit pseudo-elements.
+            return false;
+        }
+        true
     }
 
     /// Whether this pseudo is enabled explicitly in UA sheets.

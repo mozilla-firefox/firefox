@@ -458,11 +458,11 @@ export class MLEngineParent extends JSProcessActorParent {
     const modelHub = this.modelHub;
     await Promise.all(
       [...this.#modelFilesInUse].map(async ([key, entry]) => {
-        await modelHub.deleteNonMatchingModelRevisions(
-          entry.taskName,
-          entry.modelWithHostname,
-          entry.revision
-        );
+        await modelHub.deleteNonMatchingModelRevisions({
+          taskName: entry.taskName,
+          modelWithHostname: entry.modelWithHostname,
+          targetRevision: entry.revision,
+        });
         this.#modelFilesInUse.delete(key);
       })
     );

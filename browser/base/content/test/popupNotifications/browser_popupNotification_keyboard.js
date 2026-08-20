@@ -278,4 +278,81 @@ var tests = [
       goNext();
     },
   },
+  // Test that the left and right arrow keys move focus between the footer
+  // buttons (secondary "split" button, its dropmarker, and the primary button).
+  {
+    id: "Test#7",
+    run() {
+      this.notifyObj = new BasicNotification(this.id);
+      this.notifyObj.options.persistent = true;
+      // This adds a second secondary action so the dropmarker becomes visible.
+      this.notifyObj.secondaryActions.push({
+        label: "Extra Secondary Action",
+        accessKey: "E",
+        callback() {},
+      });
+      this.notification = showNotification(this.notifyObj);
+    },
+    async onShown(popup) {
+      checkPopup(popup, this.notifyObj);
+
+      let notification = popup.children[0];
+      let { button, secondaryButton } = notification;
+      await button.updateComplete;
+      await secondaryButton.updateComplete;
+
+      is(secondaryButton.type, "split", "secondary button is a split button");
+
+      // The forward direction (ArrowRight in LTR) cycles through the footer
+      // controls in this order:
+      // secondary main button -> dropmarker -> primary button -> (wrap).
+      secondaryButton.buttonEl.focus();
+      is(
+        Services.focus.focusedElement,
+        secondaryButton.buttonEl,
+        "secondary main button is focused"
+      );
+
+      EventUtils.synthesizeKey("KEY_ArrowRight");
+      is(
+        Services.focus.focusedElement,
+        secondaryButton.chevronButtonEl,
+        "ArrowRight moves focus to the dropmarker"
+      );
+
+      EventUtils.synthesizeKey("KEY_ArrowRight");
+      is(
+        Services.focus.focusedElement,
+        button.buttonEl,
+        "ArrowRight moves focus to the primary button"
+      );
+
+      EventUtils.synthesizeKey("KEY_ArrowRight");
+      is(
+        Services.focus.focusedElement,
+        secondaryButton.buttonEl,
+        "ArrowRight wraps focus back to the secondary main button"
+      );
+
+      // ArrowLeft moves focus in the opposite direction.
+      EventUtils.synthesizeKey("KEY_ArrowLeft");
+      is(
+        Services.focus.focusedElement,
+        button.buttonEl,
+        "ArrowLeft wraps focus to the primary button"
+      );
+
+      EventUtils.synthesizeKey("KEY_ArrowLeft");
+      is(
+        Services.focus.focusedElement,
+        secondaryButton.chevronButtonEl,
+        "ArrowLeft moves focus back to the dropmarker"
+      );
+
+      dismissNotification(popup);
+    },
+    onHidden() {
+      this.notification.remove();
+    },
+  },
 ];

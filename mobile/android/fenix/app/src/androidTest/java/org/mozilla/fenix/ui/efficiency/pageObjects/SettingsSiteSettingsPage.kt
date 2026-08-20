@@ -36,4 +36,10 @@ class SettingsSiteSettingsPage(composeRule: AndroidComposeTestRule<HomeActivityI
     override fun mozGetSelectorsByGroup(group: String): List<Selector> {
         return SettingsSiteSettingsSelectors.all.filter { it.groups.contains(group) }
     }
+
+    /** Open a permission's detail screen from the Site settings list (Autoplay, Camera, Location, Microphone, …). */
+    fun openPermission(row: Selector): SettingsSiteSettingsPage {
+        mozClick(row)
+        return this
+    }
 }

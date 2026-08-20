@@ -22,7 +22,7 @@ task-defaults:
     attributes:
         retrigger: true
     use-python: system
-    use-uv: false
+    use-uv: true
     require-signed-extensions:
         by-release-type:
             release|esr.*: true
@@ -247,7 +247,6 @@ tasks:
             chunked: true
             extra-options:
                 - --test-type=testharness
-                - --test-type=crashtest
                 - --default-exclude
                 - --tag=webcodecs
                 - --no-update-status-on-crash
@@ -386,6 +385,9 @@ tasks:
                 - --skip-timeout
                 - --skip-crash
                 - --no-update-status-on-crash
+                # webgpu CTS reftests need the webgpu job's --timeout-multiplier,
+                # so they just time out here.
+                - --exclude-tag=webgpu
 
     web-platform-tests-webgpu:
         description: "Web platform WebGPU test run"
@@ -802,6 +804,10 @@ tasks:
         mozharness:
             extra-options:
                 - --test-type=crashtest
+                # Keep webgpu CTS tests in the webgpu job (they need its
+                # --timeout-multiplier); no webgpu crashtests exist today, but
+                # this guards against them being dumped here and timing out.
+                - --exclude-tag=webgpu
         variants:
             - no-fission
             - webrender-sw

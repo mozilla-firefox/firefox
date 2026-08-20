@@ -61,6 +61,18 @@ pub unsafe trait ImageDataType:
     fn to_f64(self) -> f64;
     #[cfg(test)]
     fn random<R: rand::Rng>(rng: &mut R) -> Self;
+
+    #[inline(always)]
+    fn cast_slice_mut(bytes: &mut [u8]) -> &mut [Self] {
+        // SAFETY: Any type implementing ImageDataType is guaranteed to be a bag-of-bits type with no padding.
+        let (head, mid, tail) = unsafe { bytes.align_to_mut::<Self>() };
+        debug_assert!(head.is_empty(), "byte slice is not aligned for type");
+        debug_assert!(
+            tail.is_empty(),
+            "byte slice length is not a multiple of size"
+        );
+        mid
+    }
 }
 
 #[cfg(test)]

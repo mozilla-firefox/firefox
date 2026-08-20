@@ -136,7 +136,7 @@ add_task(async function test_sessionRestore() {
 
   // Save the current session.
   let { SessionStore } = ChromeUtils.importESModule(
-    "resource:///modules/sessionstore/SessionStore.sys.mjs"
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs"
   );
 
   // Load the custom state and wait for SSTabRestored, as we want to make sure

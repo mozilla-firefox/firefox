@@ -183,7 +183,7 @@ def resolve_is_employee_by_vcs(topsrcdir: Path):
     return "@mozilla.com" in email
 
 
-def resolve_is_employee(topsrcdir: Path, state_dir: Path, settings):
+def resolve_is_employee(topsrcdir: Path, settings):
     """Detect whether the current user is a Mozilla employee.
 
     Checks using Bugzilla authentication, if possible. Otherwise, falls back to checking
@@ -201,25 +201,26 @@ def resolve_is_employee(topsrcdir: Path, state_dir: Path, settings):
 
     is_employee_by_creds = resolve_is_employee_by_credentials(topsrcdir)
     if is_employee_by_creds is not None:
-        record_is_employee_telemetry_setting(settings, state_dir, is_employee_by_creds)
+        record_is_employee_telemetry_setting(settings, is_employee_by_creds)
         return is_employee_by_creds
 
     is_employee_by_vcs = resolve_is_employee_by_vcs(topsrcdir)
     if is_employee_by_vcs is not None:
-        record_is_employee_telemetry_setting(settings, state_dir, is_employee_by_vcs)
+        record_is_employee_telemetry_setting(settings, is_employee_by_vcs)
         return is_employee_by_vcs
 
     return None
 
 
-def record_is_employee_telemetry_setting(settings, state_dir, is_employee):
+def record_is_employee_telemetry_setting(settings, is_employee):
     """Records the is_employee field in the settings file."""
     import configparser
 
     from mach.config import ConfigSettings
     from mach.settings import MachSettings
+    from mach.util import get_global_machrc_path
 
-    settings_path = Path(state_dir) / "machrc"
+    settings_path = get_global_machrc_path()
     file_settings = ConfigSettings()
     file_settings.register_provider(MachSettings)
 
@@ -244,19 +245,19 @@ def record_is_employee_telemetry_setting(settings, state_dir, is_employee):
 
 def record_telemetry_settings(
     main_settings,
-    state_dir: Path,
     is_enabled,
 ):
     import configparser
 
     from mach.config import ConfigSettings
     from mach.settings import MachSettings
+    from mach.util import get_global_machrc_path
 
     # We want to update the user's machrc file. However, the main settings object
     # contains config from "$topsrcdir/machrc" (if it exists) which we don't want
     # to accidentally include. So, we have to create a brand new mozbuild-specific
     # settings, update it, then write to it.
-    settings_path = state_dir / "machrc"
+    settings_path = get_global_machrc_path()
     file_settings = ConfigSettings()
     file_settings.register_provider(MachSettings)
     try:
@@ -327,7 +328,7 @@ def prompt_telemetry_message_contributor():
             return choice == "y"
 
 
-def initialize_telemetry_setting(settings, topsrcdir: str, state_dir: str):
+def initialize_telemetry_setting(settings, topsrcdir: str):
     """Enables telemetry for employees or prompts the user."""
     # If the user doesn't care about telemetry for this invocation, then
     # don't make requests to Bugzilla and/or prompt for whether the
@@ -336,13 +337,10 @@ def initialize_telemetry_setting(settings, topsrcdir: str, state_dir: str):
     if topsrcdir is not None:
         topsrcdir = Path(topsrcdir)
 
-    if state_dir is not None:
-        state_dir = Path(state_dir)
-
     if os.environ.get("DISABLE_TELEMETRY") == "1":
         return
 
-    is_employee = resolve_is_employee(topsrcdir, state_dir, settings)
+    is_employee = resolve_is_employee(topsrcdir, settings)
 
     if is_employee:
         is_enabled = True
@@ -350,4 +348,4 @@ def initialize_telemetry_setting(settings, topsrcdir: str, state_dir: str):
     else:
         is_enabled = prompt_telemetry_message_contributor()
 
-    record_telemetry_settings(settings, state_dir, is_enabled)
+    record_telemetry_settings(settings, is_enabled)

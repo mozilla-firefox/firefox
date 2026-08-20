@@ -53,16 +53,15 @@ vendoring:
 
   patches:
     - 00_xmlchar.patch
-    - 01_noslop.patch
-    - 02_report_mismatched_tag.patch
-    - 03_dont_generate_salt.patch
-    - 04_always_set_eventptrs.patch
-    - 05_getcurrentbyteindex.patch
-    - 06_always_store_rawnames.patch
-    - 07_dont_ignore_undeclared_entity.patch
-    - 08_include_xmlns.patch
-    - 09_internalsubset.patch
-    - 10_version_limit.patch
-    - 11_no_debug_report.patch
-    - 12_unused.patch
-    - 13_high_surrogate_mask.patch
+    - 01_report_mismatched_tag.patch
+    - 02_dont_generate_salt.patch
+    - 03_always_set_eventptrs.patch
+    - 04_getcurrentbyteindex.patch
+    - 05_always_store_rawnames.patch
+    - 06_dont_ignore_undeclared_entity.patch
+    - 07_include_xmlns.patch
+    - 08_internalsubset.patch
+    - 09_version_limit.patch
+    - 10_no_debug_report.patch
+    - 11_unused.patch
+    - 12_high_surrogate_mask.patch

@@ -9,7 +9,6 @@ support-files = [
   "!/dom/media/test/shorter_audio_than_video_3s.webm",
 ]
 prefs = [
-  "dom.viewTransitions.enabled=true",
   "layout.css.content.alt-text.enabled=true",
   # Required for the eval in invokeContentTask in shared-head.js
   "security.allow_eval_with_system_principal=true"

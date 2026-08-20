@@ -46,6 +46,8 @@ const ENV_ENABLED = "MOZ_MARIONETTE";
 // pref being set to 4444.
 const ENV_PRESERVE_PREFS = "MOZ_MARIONETTE_PREF_STATE_ACROSS_RESTARTS";
 
+const EXIT_CODE_NOT_AVAILABLE = 69;
+
 const isRemote =
   Services.appinfo.processType == Services.appinfo.PROCESS_TYPE_CONTENT;
 
@@ -271,7 +273,10 @@ class MarionetteParentProcess {
       await this.server.start();
     } catch (e) {
       lazy.logger.fatal("Marionette server failed to start", e);
-      Services.startup.quit(Ci.nsIAppStartup.eForceQuit);
+      Services.startup.quit(
+        Ci.nsIAppStartup.eForceQuit,
+        EXIT_CODE_NOT_AVAILABLE
+      );
       return;
     }
 

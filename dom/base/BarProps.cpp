@@ -123,8 +123,10 @@ LocationbarProp::LocationbarProp(nsGlobalWindowInner* aWindow)
 LocationbarProp::~LocationbarProp() = default;
 
 bool LocationbarProp::GetVisible(CallerType aCallerType, ErrorResult& aRv) {
-  return BarProp::GetVisibleByFlag(nsIWebBrowserChrome::CHROME_LOCATIONBAR,
-                                   aCallerType, aRv);
+  if (aCallerType != CallerType::System) {
+    return GetVisibleByIsPopup();
+  }
+  return true;
 }
 
 //

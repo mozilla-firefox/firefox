@@ -52,9 +52,24 @@ path:remote/test/puppeteer/
 # for new-style try pushes
 path:try_task_config.json
 
-# app-services tooling.
+# app-services tooling and their dependencies
 path:services/app-services-tools/embedded-uniffi-bindgen
 path:services/app-services-tools/nimbus-fml
+path:Cargo.lock
+path:intl/icu_segmenter_data
+path:third_party/application-services/tools/embedded-uniffi-bindgen
+path:third_party/application-services/components/support/error
+path:third_party/application-services/components/support/error/macros
+path:third_party/application-services/components/support/nimbus-fml
+path:third_party/application-services/components/support/tracing
+path:third_party/application-services/components/viaduct
+path:third_party/rust/autocfg
+path:third_party/rust/icu_collections
+path:third_party/rust/icu_normalizer
+path:third_party/rust/icu_normalizer_data
+path:third_party/rust/icu_properties
+path:third_party/rust/icu_properties_data
+path:third_party/rust/utf8_iter
 
 # Moz.build files are read in filesystem mode
 glob:**/moz.build

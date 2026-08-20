@@ -24,8 +24,15 @@ class OtherSettings:
     config_settings = [("foo.bar", "int", "", 1), ("build.abc", "string", "", "")]
 
 
-def record_enabled_telemetry(mozbuild_path, settings):
-    record_telemetry_settings(settings, mozbuild_path, True)
+def record_enabled_telemetry(settings):
+    record_telemetry_settings(settings, True)
+
+
+@pytest.fixture(autouse=True)
+def machrc_env(tmpdir, monkeypatch):
+    """Keep the developer's own environment from redirecting the writes under test."""
+    monkeypatch.delenv("MACHRC", raising=False)
+    monkeypatch.setenv("MOZBUILD_STATE_PATH", str(tmpdir))
 
 
 @pytest.fixture
@@ -46,7 +53,7 @@ def write_config(mozbuild_path, contents):
 
 
 def test_nonexistent(tmpdir, settings):
-    record_enabled_telemetry(tmpdir, settings)
+    record_enabled_telemetry(settings)
     load_settings_file(tmpdir, settings)
     assert settings.mach_telemetry.is_enabled
 
@@ -58,7 +65,7 @@ def test_file_exists_no_build_section(tmpdir, settings):
 bar = 2
 """,
     )
-    record_enabled_telemetry(tmpdir, settings)
+    record_enabled_telemetry(settings)
     load_settings_file(tmpdir, settings)
     assert settings.mach_telemetry.is_enabled
     assert settings.foo.bar == 2
@@ -74,7 +81,7 @@ bar = 2
 abc = xyz
 """,
     )
-    record_enabled_telemetry(tmpdir, settings)
+    record_enabled_telemetry(settings)
     load_settings_file(tmpdir, settings)
     assert settings.mach_telemetry.is_enabled
     assert settings.build.abc == "xyz"
@@ -89,8 +96,38 @@ def test_malformed_file(tmpdir, settings):
 bar = 1
 """,
     )
-    record_enabled_telemetry(tmpdir, settings)
+    record_enabled_telemetry(settings)
     # Can't load_settings config, it will not have been written!
+
+
+def test_machrc_env_points_at_file(tmpdir, settings, monkeypatch):
+    machrc = tmpdir.join("elsewhere").ensure(dir=True).join("myrc")
+    machrc.write(
+        """[alias]
+foo = bar
+"""
+    )
+    monkeypatch.setenv("MACHRC", str(machrc))
+
+    record_enabled_telemetry(settings)
+
+    assert not os.path.exists(os.path.join(tmpdir, "machrc"))
+    settings.load_file(str(machrc))
+    assert settings.mach_telemetry.is_enabled
+    assert settings.alias["foo"] == "bar"
+
+
+def test_machrc_env_points_at_dir(tmpdir, settings, monkeypatch):
+    machrc_dir = tmpdir.join("elsewhere").ensure(dir=True)
+    machrc_dir.join(".machrc").write("")
+    monkeypatch.setenv("MACHRC", str(machrc_dir))
+
+    record_enabled_telemetry(settings)
+
+    assert not os.path.exists(os.path.join(tmpdir, "machrc"))
+    assert not os.path.exists(os.path.join(machrc_dir, "machrc"))
+    settings.load_file(str(machrc_dir.join(".machrc")))
+    assert settings.mach_telemetry.is_enabled
 
 
 def _initialize_telemetry(settings, is_employee, contributor_prompt_response=None):
@@ -104,7 +141,7 @@ def _initialize_telemetry(settings, is_employee, contributor_prompt_response=Non
     ), mock.patch("mach.config.ConfigSettings"), mock.patch(
         "mach.telemetry.record_is_employee_telemetry_setting"
     ):
-        initialize_telemetry_setting(settings, "", "")
+        initialize_telemetry_setting(settings, "")
         return prompt_mock.call_count == 1
 
 
@@ -152,14 +189,14 @@ def test_initialize_when_request_error_falls_back_to_vcs(settings, monkeypatch):
     ) as prompt_mock, mock.patch(
         "mach.telemetry.record_telemetry_settings"
     ) as record_mock:
-        initialize_telemetry_setting(settings, "", "")
+        initialize_telemetry_setting(settings, "")
         assert prompt_mock.call_count == 0
         assert record_mock.call_count == 1
         args, kwargs = record_mock.call_args
-        assert args[2]
+        assert args[1]
 
 
-def test_resolve_is_employee(tmpdir, monkeypatch):
+def test_resolve_is_employee(monkeypatch):
     monkeypatch.delenv("MOZ_AUTOMATION", raising=False)
 
     def mock_and_run(is_employee_bugzilla, is_employee_vcs):
@@ -171,7 +208,7 @@ def test_resolve_is_employee(tmpdir, monkeypatch):
         ), mock.patch("mach.telemetry.record_is_employee_telemetry_setting"):
             fake_settings = Mock()
             fake_settings.mach_telemetry.is_employee = None
-            return resolve_is_employee(None, str(tmpdir), fake_settings)
+            return resolve_is_employee(None, fake_settings)
 
     assert not mock_and_run(False, False)
     assert not mock_and_run(False, True)
@@ -183,7 +220,7 @@ def test_resolve_is_employee(tmpdir, monkeypatch):
     assert mock_and_run(None, True)
 
 
-def test_resolve_is_employee_no_cache_when_unknown(tmpdir, monkeypatch):
+def test_resolve_is_employee_no_cache_when_unknown(monkeypatch):
     """Test that cache is not updated when employee status cannot be determined."""
     monkeypatch.delenv("MOZ_AUTOMATION", raising=False)
 
@@ -195,7 +232,7 @@ def test_resolve_is_employee_no_cache_when_unknown(tmpdir, monkeypatch):
     ), mock.patch("mach.telemetry.record_is_employee_telemetry_setting") as record_mock:
         fake_settings = Mock()
         fake_settings.mach_telemetry.is_employee = None
-        result = resolve_is_employee(None, str(tmpdir), fake_settings)
+        result = resolve_is_employee(None, fake_settings)
 
         # When we can't determine if somebody is an employee, we should return None
         assert result is None

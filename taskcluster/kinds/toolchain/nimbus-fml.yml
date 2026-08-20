@@ -18,6 +18,24 @@ task-defaults:
         sparse-profile: null
         resources:
             - 'services/app-services-tools/nimbus-fml'
+            - 'Cargo.lock'
+            # List of in-tree dependencies from
+            # cargo tree -p nimbus-fml | grep -oP '(?<='$(pwd)'/)[^)]+' | sort | uniq
+            - 'build/rust/goblin'
+            - 'build/rust/hashbrown'
+            - 'intl/icu_segmenter_data'
+            - 'third_party/application-services/components/support/error'
+            - 'third_party/application-services/components/support/error/macros'
+            - 'third_party/application-services/components/support/nimbus-fml'
+            - 'third_party/application-services/components/support/tracing'
+            - 'third_party/application-services/components/viaduct'
+            - 'third_party/rust/autocfg'
+            - 'third_party/rust/icu_collections'
+            - 'third_party/rust/icu_normalizer'
+            - 'third_party/rust/icu_normalizer_data'
+            - 'third_party/rust/icu_properties'
+            - 'third_party/rust/icu_properties_data'
+            - 'third_party/rust/utf8_iter'
 
 # For Linux platforms target "*-musl" so that the binary will be statically linked.
 

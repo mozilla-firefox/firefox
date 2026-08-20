@@ -11,7 +11,9 @@
 "use strict";
 
 const client = require("resource://devtools/client/shared/remote-debugging/adb/adb-client.js");
-const { dumpn } = require("resource://devtools/shared/DevToolsUtils.js");
+const {
+  logger,
+} = require("resource://devtools/client/shared/remote-debugging/adb/adb-logger.js");
 
 exports.check = async function check() {
   let socket;
@@ -19,7 +21,7 @@ exports.check = async function check() {
   let timerID;
   const TIMEOUT_TIME = 1000;
 
-  dumpn("Asking for host:version");
+  logger.debug("Asking for host:version");
 
   return new Promise(resolve => {
     // On MacOSX connecting to a port which is not started listening gets
@@ -36,7 +38,7 @@ exports.check = async function check() {
     }
 
     const runFSM = function runFSM(packetData) {
-      dumpn("runFSM " + state);
+      logger.debug("runFSM " + state);
       switch (state) {
         case "start": {
           const req = client.createRequest("host:version");
@@ -48,41 +50,41 @@ exports.check = async function check() {
           // TODO: Actually check the version number to make sure the daemon
           //       supports the commands we want to use
           const { length, data } = client.unpackPacket(packetData);
-          dumpn("length: ", length, "data: ", data);
+          logger.debug("length: ", length, "data: ", data);
           socket.close();
           const version = parseInt(data, 16);
           if (version >= 31) {
             finish(true);
           } else {
-            dumpn("killing existing adb as we need version >= 31");
+            logger.debug("killing existing adb as we need version >= 31");
             finish(false);
           }
           break;
         }
         default:
-          dumpn("Unexpected State: " + state);
+          logger.debug("Unexpected State: " + state);
           finish(false);
       }
     };
 
     const setupSocket = function () {
       socket.s.onerror = function () {
-        dumpn("running checker onerror");
+        logger.debug("running checker onerror");
         finish(false);
       };
 
       socket.s.onopen = function () {
-        dumpn("running checker onopen");
+        logger.debug("running checker onopen");
         state = "start";
         runFSM();
       };
 
       socket.s.onclose = function () {
-        dumpn("running checker onclose");
+        logger.debug("running checker onclose");
       };
 
       socket.s.ondata = function (event) {
-        dumpn("running checker ondata");
+        logger.debug("running checker ondata");
         runFSM(event.data);
       };
     };

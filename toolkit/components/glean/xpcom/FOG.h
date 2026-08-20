@@ -8,6 +8,7 @@
 #include "nsIFOG.h"
 #include "nsIObserver.h"
 #include "nsIMemoryReporter.h"
+#include "mozilla/Atomics.h"
 
 namespace mozilla {
 class FOG final : public nsIFOG, public nsIObserver, public nsIMemoryReporter {
@@ -33,6 +34,8 @@ class FOG final : public nsIFOG, public nsIObserver, public nsIMemoryReporter {
   ~FOG() = default;
   static bool ApplyInterestingServerKnobs();
   void Shutdown();
+
+  mozilla::Atomic<bool> mIsShutdown;
 };
 
 };  // namespace mozilla

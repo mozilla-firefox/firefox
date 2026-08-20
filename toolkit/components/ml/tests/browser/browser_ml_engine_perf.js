@@ -60,7 +60,7 @@ add_task(async function test_ml_generic_pipeline() {
     args,
     options: { pooling: "mean", normalize: true },
   };
-  await perfTest({
+  await runMLPerfTest({
     name: "example",
     options,
     request,

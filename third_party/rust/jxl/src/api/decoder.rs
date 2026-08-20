@@ -8,7 +8,7 @@ use super::{
     JxlOutputBuffer, JxlPixelFormat, ProcessingResult,
 };
 use crate::{
-    api::{BoxParserCheckpoint, JxlFrameHeader},
+    api::{BoxParserCheckpoint, JxlFrameHeader, JxlParallelRunner},
     error::Result,
 };
 #[cfg(test)]
@@ -122,8 +122,9 @@ impl JxlDecoder<Initialized> {
     pub fn process(
         mut self,
         input: &mut impl JxlBitstreamInput,
+        parallel_runner: Option<&mut dyn JxlParallelRunner>,
     ) -> Result<ProcessingResult<JxlDecoder<WithImageInfo>, Self>> {
-        let inner_result = self.inner.process(input, None)?;
+        let inner_result = self.inner.process(input, None, parallel_runner)?;
         Ok(self.map_inner_processing_result(inner_result))
     }
 }
@@ -160,8 +161,9 @@ impl JxlDecoder<WithImageInfo> {
     pub fn process(
         mut self,
         input: &mut impl JxlBitstreamInput,
+        parallel_runner: Option<&mut dyn JxlParallelRunner>,
     ) -> Result<ProcessingResult<JxlDecoder<WithFrameInfo>, Self>> {
-        let inner_result = self.inner.process(input, None)?;
+        let inner_result = self.inner.process(input, None, parallel_runner)?;
         Ok(self.map_inner_processing_result(inner_result))
     }
 
@@ -171,8 +173,12 @@ impl JxlDecoder<WithImageInfo> {
     /// previous call to `flush_pixels`; `false` if nothing new was rendered.
     ///
     /// Note: see `process` for alignment requirements for the buffer data.
-    pub fn flush_pixels(&mut self, buffers: &mut [JxlOutputBuffer<'_>]) -> Result<bool> {
-        self.inner.flush_pixels(buffers)
+    pub fn flush_pixels(
+        &mut self,
+        buffers: &mut [JxlOutputBuffer<'_>],
+        parallel_runner: Option<&mut dyn JxlParallelRunner>,
+    ) -> Result<bool> {
+        self.inner.flush_pixels(buffers, parallel_runner)
     }
 
     pub fn has_more_frames(&self) -> bool {
@@ -220,7 +226,7 @@ impl JxlDecoder<WithFrameInfo> {
         mut self,
         input: &mut impl JxlBitstreamInput,
     ) -> Result<ProcessingResult<JxlDecoder<WithImageInfo>, Self>> {
-        let inner_result = self.inner.process(input, None)?;
+        let inner_result = self.inner.process(input, None, None)?;
         Ok(self.map_inner_processing_result(inner_result))
     }
 
@@ -234,8 +240,12 @@ impl JxlDecoder<WithFrameInfo> {
     /// previous call to `flush_pixels`; `false` if nothing new was rendered.
     ///
     /// Note: see `process` for alignment requirements for the buffer data.
-    pub fn flush_pixels(&mut self, buffers: &mut [JxlOutputBuffer<'_>]) -> Result<bool> {
-        self.inner.flush_pixels(buffers)
+    pub fn flush_pixels(
+        &mut self,
+        buffers: &mut [JxlOutputBuffer<'_>],
+        parallel_runner: Option<&mut dyn JxlParallelRunner>,
+    ) -> Result<bool> {
+        self.inner.flush_pixels(buffers, parallel_runner)
     }
 
     /// Guarantees to populate exactly the appropriate part of the buffers.
@@ -249,8 +259,9 @@ impl JxlDecoder<WithFrameInfo> {
         mut self,
         input: &mut In,
         buffers: &mut [JxlOutputBuffer<'_>],
+        parallel_runner: Option<&mut dyn JxlParallelRunner>,
     ) -> Result<ProcessingResult<JxlDecoder<WithImageInfo>, Self>> {
-        let inner_result = self.inner.process(input, Some(buffers))?;
+        let inner_result = self.inner.process(input, Some(buffers), parallel_runner)?;
         Ok(self.map_inner_processing_result(inner_result))
     }
 }

@@ -6,7 +6,12 @@
 
 /* ::::: menupopup ::::: */
 
+*|*:root {
+  --panel-icon-fill: currentColor;
+}
+
 :is(menupopup, panel):where(:not([type="arrow"])) {
+  --panel-icon-fill: currentColor;
   --panel-background-color: Menu;
   --panel-text-color: MenuText;
   --panel-padding: var(--panel-padding-block) 0;
@@ -31,6 +36,8 @@
   min-width: 1px;
   -moz-window-input-region-margin: var(--panel-box-shadow-margin);
   margin: calc(-1 * var(--panel-box-shadow-margin));
+
+  --button-icon-fill: var(--panel-icon-fill);
 
   /* Panel design token theming */
   --background-color-canvas: var(--panel-background-color);

@@ -3,7 +3,7 @@
 SimpleTest.requestCompleteLog();
 loadTestSubscript("head_sessions.js");
 const { TabStateFlusher } = ChromeUtils.importESModule(
-  "resource:///modules/sessionstore/TabStateFlusher.sys.mjs"
+  "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
 );
 
 async function openAndCloseTab(window, url) {

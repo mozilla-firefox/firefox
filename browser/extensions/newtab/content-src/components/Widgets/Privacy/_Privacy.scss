@@ -90,9 +90,11 @@
   .privacy-count-text {
     display: flex;
     flex-direction: column;
+    text-transform: lowercase;
 
     .medium-widget & {
       margin-block-end: var(--space-medium);
+      font-size: var(--newtab-font-size-xsmall);
     }
 
     .has-streak.medium-widget &,
@@ -103,6 +105,8 @@
 
   .has-streak.medium-widget &,
   .has-tip-msg.medium-widget & {
+    justify-content: flex-start;
+
     .privacy-count {
       flex-direction: row;
       align-items: center;
@@ -115,6 +119,7 @@
     align-items: flex-start;
     justify-content: flex-end;
     gap: var(--space-large);
+    padding-inline: var(--space-small);
   }
 
   // Streak reuses the count-block layout (no divider): count then message
@@ -144,7 +149,7 @@
   }
 
   .privacy-empty-details {
-    color: inherit;
+    color: var(--text-color-deemphasized);
     max-width: 75%;
     text-decoration: none;
 
@@ -163,17 +168,18 @@
       background-color: currentColor;
       block-size: var(--icon-size-xsmall);
       inline-size: var(--icon-size-xsmall);
-      mask: url('chrome://global/skin/icons/arrow-right.svg') no-repeat center / contain;
+      mask: url('chrome://global/skin/icons/arrow-right-12.svg') no-repeat center / contain;
     }
 
     &:dir(rtl)::after {
-      mask-image: url('chrome://global/skin/icons/arrow-left.svg');
+      mask-image: url('chrome://global/skin/icons/arrow-left-12.svg');
     }
   }
 }
 
 .privacy-image-icon {
   .medium-widget & {
+    margin-block-start: var(--space-small);
     max-height: var(--icon-size-xlarge)
   }
 
@@ -221,7 +227,7 @@
     width: 1px;
   }
 
-  .privacy-count-sites {
+  .privacy-count-text > :last-child {
     align-items: center;
     display: inline-flex;
     gap: var(--space-xsmall);
@@ -231,11 +237,11 @@
       background-color: currentColor;
       block-size: var(--icon-size-xsmall);
       inline-size: var(--icon-size-xsmall);
-      mask: url('chrome://global/skin/icons/arrow-right.svg') no-repeat center / contain;
+      mask: url('chrome://global/skin/icons/arrow-right-12.svg') no-repeat center / contain;
     }
 
     &:dir(rtl)::after {
-      mask-image: url('chrome://global/skin/icons/arrow-left.svg');
+      mask-image: url('chrome://global/skin/icons/arrow-left-12.svg');
     }
   }
 }
@@ -259,8 +265,14 @@
 .privacy-tip {
   align-self: stretch;
 
+  .medium-widget & {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
   .large-widget & {
-    align-items: center;
+    align-items: flex-start;
     display: flex;
     gap: var(--space-small);
   }
@@ -284,6 +296,10 @@
   align-items: flex-end;
   gap: var(--space-xxsmall);
 
+  .medium-widget & {
+    flex-grow: 1;
+  }
+
   .large-widget & {
     gap: var(--space-small);
   }
@@ -294,8 +310,20 @@
   width: 100%;
   gap: var(--space-small);
 
+  .medium-widget & {
+    flex-grow: 1;
+  }
+
   .privacy-tip-message {
     align-self: flex-start;
     margin: 0;
+  }
+}
+
+// The CTA is the widget's bottom-most element
+.privacy-cta {
+  .has-tip-msg.medium-widget &,
+  .has-streak.medium-widget & {
+    margin-block-start: auto;
   }
 }

@@ -258,9 +258,7 @@ TEST(Tainting, moz_find_and_validate)
       this->b = b;
     }
 
-    bool operator==(const TestClass& other) const {
-      return this->a == other.a && this->b == other.b;
-    }
+    bool operator==(const TestClass& other) const = default;
   };
 
   const mozilla::Array<TestClass, 5> mozarrayOfClassesWithFoo(

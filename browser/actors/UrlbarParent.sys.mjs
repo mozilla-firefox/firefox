@@ -83,11 +83,6 @@ export class UrlbarParent extends JSWindowActorParent {
     }
 
     switch (message.name) {
-      case "GetViewUpdate":
-        return controller.getViewUpdate(
-          lazy.UrlbarResult.fromWire(message.data.result),
-          message.data.idsByName
-        );
       case "GetHeuristicResult":
         return controller
           .getHeuristicResult(

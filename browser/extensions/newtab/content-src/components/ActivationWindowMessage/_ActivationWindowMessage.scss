@@ -15,6 +15,7 @@
   margin-block: 0 var(--space-xlarge);
   margin-inline: auto;
   position: relative;
+  overflow: hidden;
 
   @media (min-width: $break-point-medium) {
     width: $searchbar-width-medium;
@@ -40,9 +41,14 @@
     align-items: flex-start;
     flex-direction: column;
 
+    .activation-window-message-image {
+      display: block;
+    }
+
     img {
-      max-width: var(--image-size-small);
-      max-height: var(--image-size-small);
+      display: block;
+      width: var(--image-size-small);
+      height: var(--image-size-small);
       object-fit: contain;
       align-self: start;
     }
@@ -76,21 +82,21 @@
       gap: var(--space-xlarge);
 
       img {
-        max-width: var(--image-size-medium);
-        max-height: var(--image-size-medium);
+        width: var(--image-size-medium);
+        height: var(--image-size-medium);
       }
     }
 
     &.no-buttons .activation-window-message-inner img {
-      max-width: var(--image-size-medium);
-      max-height: var(--image-size-medium);
+      width: var(--image-size-medium);
+      height: var(--image-size-medium);
     }
   }
 
   @media (min-width: $break-point-widest) {
     .activation-window-message-inner img {
-      max-width: var(--image-size-large);
-      max-height: var(--image-size-large);
+      width: var(--image-size-large);
+      height: var(--image-size-large);
     }
   }
 
@@ -116,5 +122,35 @@
     moz-button {
       min-width: auto;
     }
+  }
+}
+
+@media (min-width: $break-point-large) {
+  .activation-window-message.bleed-image .activation-window-message-image {
+    align-self: stretch;
+    width: 144px;
+    margin-block: calc(-1 * var(--space-large));
+    margin-inline-start: calc(-1 * var(--space-large));
+  }
+
+  .activation-window-message.bleed-image .activation-window-message-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+  }
+}
+
+@media (max-width: $break-point-large) {
+  .activation-window-message.bleed-image .activation-window-message-image {
+    width: calc(100% + 2 * var(--space-large));
+    margin-block-start: calc(-1 * var(--space-large));
+    margin-inline: calc(-1 * var(--space-large));
+  }
+
+  .activation-window-message.bleed-image .activation-window-message-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 0;
   }
 }

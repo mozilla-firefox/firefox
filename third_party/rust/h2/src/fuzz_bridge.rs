@@ -4,12 +4,13 @@ pub mod fuzz_logic {
     use bytes::BytesMut;
     use http::header::HeaderName;
     use std::io::Cursor;
+    use std::ops::ControlFlow;
 
     pub fn fuzz_hpack(data_: &[u8]) {
         let mut decoder_ = hpack::Decoder::new(0);
         let mut buf = BytesMut::new();
         buf.extend(data_);
-        let _dec_res = decoder_.decode(&mut Cursor::new(&mut buf), |_h| {});
+        let _dec_res = decoder_.decode(&mut Cursor::new(&mut buf), |_h| ControlFlow::Continue(()));
 
         if let Ok(s) = std::str::from_utf8(data_) {
             if let Ok(h) = http::Method::from_bytes(s.as_bytes()) {

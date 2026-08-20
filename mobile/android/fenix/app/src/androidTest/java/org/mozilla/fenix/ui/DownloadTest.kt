@@ -158,7 +158,7 @@ class DownloadTest {
         browserScreen(composeTestRule) {}
             .openThreeDotMenu {}
             .clickDownloadsButton {
-                verifyEmptyDownloadsList()
+                verifyEmptyDownloadsListAfterCancel()
             }
     }
 

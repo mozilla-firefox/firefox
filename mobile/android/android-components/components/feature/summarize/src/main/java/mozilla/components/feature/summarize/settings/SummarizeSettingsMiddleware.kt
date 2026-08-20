@@ -5,64 +5,73 @@
 package mozilla.components.feature.summarize.settings
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import mozilla.components.lib.state.Middleware
-import mozilla.components.lib.state.Store
 
 /**
- * Middleware for the summarize settings screen that persists preference changes.
+ * Middleware persisting summarize preference changes.
+ *
+ * It is deliberately not a [Middleware] of a single store type, so that it can run both in the dedicated
+ * [SummarizeSettingsStore] of the settings screen and in any store embedding [SummarizeSettingsState] as a sub-state.
+ * Hosts adapt it with [asMiddleware] or by unwrapping their own action type and supplying the matching accessors.
  *
  * @param settings The [SummarizationSettings] to persist preference changes to.
- * @param onLearnMoreClicked Callback invoked when the learn more link is clicked.
+ * @param scope [CoroutineScope] to run suspended functions on.
  */
 class SummarizeSettingsMiddleware(
     private val settings: SummarizationSettings,
-    private val onLearnMoreClicked: () -> Unit,
     private val scope: CoroutineScope,
-) : Middleware<SummarizeSettingsState, SummarizeSettingsAction> {
-
-    override fun invoke(
-        store: Store<SummarizeSettingsState, SummarizeSettingsAction>,
+) {
+    /**
+     * Handle any middleware logic before an action reaches the [summarizeSettingsReducer].
+     *
+     * @param middlewareContext accessors for the current [SummarizeSettingsState] and dispatcher from the hosting
+     *   store.
+     * @param next The next middleware in the chain.
+     * @param action The current [SummarizeSettingsAction] to process in the middleware.
+     */
+    fun invoke(
+        middlewareContext: Pair<() -> SummarizeSettingsState, (SummarizeSettingsAction) -> Unit>,
         next: (SummarizeSettingsAction) -> Unit,
         action: SummarizeSettingsAction,
     ) {
-        // allow the reducer to run first, so that we can accurately
-        // update our cache based on the updated state
+        val (getState, dispatch) = middlewareContext
+
+        // Some of these side effects persist the reduced state, so the action has to reach the
+        // reducer first.
         next(action)
 
         when (action) {
-            ViewAppeared ->
-                scope.launch {
-                    store.dispatch(
-                        SettingsLoaded(
-                            isFeatureEnabled = settings.getFeatureEnabledUserStatus().first() == true,
-                            isGestureEnabled = settings.getGestureEnabledUserStatus().first(),
-                            shakeSensitivity = settings.getShakeSensitivity().first(),
-                        )
-                    )
-                }
-
             SummarizePagesPreferenceToggled ->
                 scope.launch {
-                    settings.setFeatureEnabledUserStatus(store.state.isFeatureEnabled)
+                    settings.setFeatureEnabledUserStatus(getState().isFeatureEnabled)
                 }
 
             is ShakeSensitivityChanged ->
                 scope.launch {
-                    settings.setShakeSensitivity(store.state.shakeSensitivity)
+                    settings.setShakeSensitivity(getState().shakeSensitivity)
                 }
 
             ShakeToSummarizePreferenceToggled ->
                 scope.launch {
-                    settings.setGestureEnabledUserStatus(store.state.isGestureEnabled)
+                    settings.setGestureEnabledUserStatus(getState().isGestureEnabled)
                 }
 
-            LearnMoreClicked -> {
-                onLearnMoreClicked()
-            }
-
-            is SettingsLoaded -> Unit
+            LearnMoreClicked,
+            LearnMoreHandled -> Unit
         }
     }
 }
+
+/**
+ * Adapts this [SummarizeSettingsMiddleware] for a store whose state and action types are exactly
+ * [SummarizeSettingsState] and [SummarizeSettingsAction].
+ */
+fun SummarizeSettingsMiddleware.asMiddleware(): Middleware<SummarizeSettingsState, SummarizeSettingsAction> =
+    { store, next, action ->
+        this.invoke(
+            middlewareContext = Pair({ store.state }, { store.dispatch(it) }),
+            next = next,
+            action = action,
+        )
+    }

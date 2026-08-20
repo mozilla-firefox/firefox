@@ -2034,6 +2034,12 @@ var gUnifiedExtensions = {
   MESSAGE_DECK_INDEX_HOVER: 1,
   MESSAGE_DECK_INDEX_MENU_HOVER: 2,
 
+  // Mutually exclusive classes set on the extensions panel empty state's <img>,
+  // selecting which illustration to show when the extensions panel is empty
+  // (see onPanelViewShowing, _updateEmptyStateBox and unified-extensions.css).
+  EMPTY_STATE_ILLUSTRATION_CLASS: "extensions-emptypanel-state",
+  EMPTY_STATE_ILLUSTRATION_ONBOARDING_CLASS: "extensions-onboardingpanel-state",
+
   init() {
     if (this._initialized) {
       return;
@@ -2443,57 +2449,55 @@ var gUnifiedExtensions = {
       list.appendChild(item);
     }
 
-    const emptyStateBox = panelview.querySelector(
-      "#unified-extensions-empty-state"
-    );
     if (this.hasExtensionsInPanel(policies)) {
       // Any of the extension lists are non-empty.
-      emptyStateBox.hidden = true;
+      this._updateEmptyStateBox({ panelview, hidden: true });
     } else if (this.isPrivateWindowMissingExtensionsWithoutPBMAccess()) {
-      document.l10n.setAttributes(
-        emptyStateBox.querySelector("h2"),
-        "unified-extensions-empty-reason-private-browsing-not-allowed"
-      );
-      document.l10n.setAttributes(
-        emptyStateBox.querySelector("description"),
-        "unified-extensions-empty-content-explain-enable2"
-      );
-      emptyStateBox.hidden = false;
+      this._updateEmptyStateBox({
+        panelview,
+        hidden: false,
+        headingL10nId:
+          "unified-extensions-empty-reason-private-browsing-not-allowed",
+        descriptionL10nId: "unified-extensions-empty-content-explain-enable2",
+      });
       this.isAtLeastOneExtensionWithPBMOptIn().then(result => {
-        // The "enable" message is somewhat misleading when the user cannot
-        // enable the extension, show a generic message instead (bug 1992179).
         if (!result) {
-          document.l10n.setAttributes(
-            emptyStateBox.querySelector("description"),
-            "unified-extensions-empty-content-explain-manage2"
-          );
+          this._updateEmptyStateBox({
+            panelview,
+            hidden: false,
+            headingL10nId:
+              "unified-extensions-empty-reason-private-browsing-not-allowed",
+            // The "enable" message is somewhat misleading when the user
+            // cannot enable the extension, show a generic message instead
+            // (bug 1992179).
+            descriptionL10nId:
+              "unified-extensions-empty-content-explain-manage2",
+          });
         }
       });
     } else {
-      emptyStateBox.hidden = true;
+      this._updateEmptyStateBox({ panelview, hidden: true });
       this.getDisabledExtensionsInfo().then(disabledExtensionsInfo => {
         if (disabledExtensionsInfo.isAnyDisabled) {
-          document.l10n.setAttributes(
-            emptyStateBox.querySelector("h2"),
-            "unified-extensions-empty-reason-extension-not-enabled"
-          );
-          document.l10n.setAttributes(
-            emptyStateBox.querySelector("description"),
-            disabledExtensionsInfo.isAnyEnableable
+          this._updateEmptyStateBox({
+            panelview,
+            hidden: false,
+            headingL10nId:
+              "unified-extensions-empty-reason-extension-not-enabled",
+            descriptionL10nId: disabledExtensionsInfo.isAnyEnableable
               ? "unified-extensions-empty-content-explain-enable2"
-              : "unified-extensions-empty-content-explain-manage2"
-          );
-          emptyStateBox.hidden = false;
+              : "unified-extensions-empty-content-explain-manage2",
+          });
         } else if (!policies.length) {
-          document.l10n.setAttributes(
-            emptyStateBox.querySelector("h2"),
-            "unified-extensions-empty-reason-zero-extensions-onboarding2"
-          );
-          document.l10n.setAttributes(
-            emptyStateBox.querySelector("description"),
-            "unified-extensions-empty-content-explain-extensions-onboarding2"
-          );
-          emptyStateBox.hidden = false;
+          this._updateEmptyStateBox({
+            panelview,
+            hidden: false,
+            onboarding: true,
+            headingL10nId:
+              "unified-extensions-empty-reason-zero-extensions-onboarding2",
+            descriptionL10nId:
+              "unified-extensions-empty-content-explain-extensions-onboarding2",
+          });
 
           // Without the discovery pane there is nowhere to send the user, so
           // keep the "Manage Extensions" button instead.
@@ -3239,6 +3243,40 @@ var gUnifiedExtensions = {
     }
 
     return messageBar;
+  },
+
+  _updateEmptyStateBox({
+    panelview,
+    hidden,
+    onboarding = false,
+    headingL10nId,
+    descriptionL10nId,
+  }) {
+    const emptyStateBox = panelview.querySelector(
+      "#unified-extensions-empty-state"
+    );
+
+    if (!hidden) {
+      document.l10n.setAttributes(
+        emptyStateBox.querySelector("h2"),
+        headingL10nId
+      );
+      document.l10n.setAttributes(
+        emptyStateBox.querySelector("description"),
+        descriptionL10nId
+      );
+
+      const img = emptyStateBox.querySelector("img");
+      img.classList.toggle(
+        this.EMPTY_STATE_ILLUSTRATION_ONBOARDING_CLASS,
+        onboarding
+      );
+      img.classList.toggle(this.EMPTY_STATE_ILLUSTRATION_CLASS, !onboarding);
+    }
+
+    emptyStateBox.hidden = hidden;
+
+    return emptyStateBox;
   },
 
   _createDiscoverButton() {

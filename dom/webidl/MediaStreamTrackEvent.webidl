@@ -3,7 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * The origin of this IDL file is
- * http://dev.w3.org/2011/webrtc/editor/webrtc.html#mediastreamevent
+ * https://w3c.github.io/mediacapture-main/#mediastreamtrackevent
  */
 
 dictionary MediaStreamTrackEventInit : EventInit {

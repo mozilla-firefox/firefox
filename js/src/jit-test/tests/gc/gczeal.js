@@ -143,3 +143,7 @@ checkGCsWithZeal(25, 10, 100, {major: 5,  minor: 5,  slice: 10});
 //  26: (CheckHeapBeforeMinorGC) Check for invariant violations before every
 //      minor GC
 checkGCsWithZeal(26, 0,  100, {major: 0,  minor: 0,  slice: 0});
+
+//  27: (ConcurrentMarkingDelays) Add a short sleep at a few points in the
+//      mutator that are risky under concurrent marking
+checkGCsWithZeal(27, 0,  100, {major: 0,  minor: 0,  slice: 0});

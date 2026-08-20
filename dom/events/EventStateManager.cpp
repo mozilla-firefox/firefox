@@ -5557,7 +5557,7 @@ void EventStateManager::NotifyMouseOut(WidgetMouseEvent* aMouseEvent,
   // hover state itself, and we have optimizations for hover switching between
   // two nearby elements both deep in the DOM tree that would be defeated by
   // switching the hover state to null here.
-  if (!aMovingInto && !isPointer) {
+  if (!aMovingInto && (!isPointer || aMouseEvent->InputSourceSupportsHover())) {
     // Unset :hover
     SetContentState(nullptr, ElementState::HOVER);
   }
@@ -5664,7 +5664,7 @@ void EventStateManager::NotifyMouseOver(WidgetMouseEvent* aMouseEvent,
                                        aMouseEvent,
                                        isPointer ? ePointerEnter : eMouseEnter);
 
-  if (!isPointer) {
+  if (!isPointer || aMouseEvent->InputSourceSupportsHover()) {
     SetContentState(aContent, ElementState::HOVER);
   }
 

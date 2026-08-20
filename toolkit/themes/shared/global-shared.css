@@ -124,8 +124,6 @@ h3 {
 :root[chromehidden~="menubar"] .chromeclass-menubar,
 :root[chromehidden~="directories"] .chromeclass-directories,
 :root[chromehidden~="extrachrome"] .chromeclass-extrachrome,
-:root[chromehidden~="location"] .chromeclass-location,
-:root[chromehidden~="location"][chromehidden~="toolbar"] .chromeclass-toolbar,
 :root[chromehidden~="toolbar"] .chromeclass-toolbar-additional {
   display: none;
 }

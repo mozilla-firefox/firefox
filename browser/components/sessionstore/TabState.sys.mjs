@@ -6,9 +6,12 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   PrivacyFilter: "resource://gre/modules/sessionstore/PrivacyFilter.sys.mjs",
-  TabAttributes: "resource:///modules/sessionstore/TabAttributes.sys.mjs",
-  TabStateCache: "resource:///modules/sessionstore/TabStateCache.sys.mjs",
-  sessionStoreLogger: "resource:///modules/sessionstore/SessionLogger.sys.mjs",
+  TabAttributes:
+    "moz-src:///browser/components/sessionstore/TabAttributes.sys.mjs",
+  TabStateCache:
+    "moz-src:///browser/components/sessionstore/TabStateCache.sys.mjs",
+  sessionStoreLogger:
+    "moz-src:///browser/components/sessionstore/SessionLogger.sys.mjs",
 });
 
 /**

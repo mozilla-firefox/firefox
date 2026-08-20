@@ -3,7 +3,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-mod atomic_refcell;
 mod bits;
 mod cacheline;
 mod concat_slice;
@@ -13,14 +12,15 @@ mod linalg;
 mod log2;
 mod mirror;
 pub mod ndarray;
+mod per_thread_storage;
 mod rational_poly;
 mod shift_right_ceil;
 mod smallvec;
+pub mod sync;
 pub mod tracing_wrappers;
 mod vec_helpers;
 mod xorshift128plus;
 
-pub use atomic_refcell::*;
 pub use bits::*;
 pub use cacheline::*;
 pub use concat_slice::*;
@@ -30,6 +30,7 @@ pub use linalg::*;
 pub use log2::*;
 pub use mirror::*;
 pub(crate) use ndarray::*;
+pub use per_thread_storage::*;
 pub use rational_poly::*;
 pub use shift_right_ceil::*;
 pub use smallvec::*;

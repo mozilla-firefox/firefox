@@ -80,6 +80,8 @@ import mozilla.components.feature.top.sites.DefaultTopSitesStorage
 import mozilla.components.feature.top.sites.PinnedSiteStorage
 import mozilla.components.feature.webcompat.WebCompatFeature
 import mozilla.components.feature.webnotifications.WebNotificationFeature
+import mozilla.components.lib.ai.controls.AIFeatureBlockStorage
+import mozilla.components.lib.ai.controls.dataStore
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
 import mozilla.components.service.digitalassetlinks.RelationChecker
 import mozilla.components.service.digitalassetlinks.local.StatementApi
@@ -638,8 +640,11 @@ class Core(
 
     val loginExceptionStorage by lazyMonitored { LoginExceptionStorage(context) }
 
-    val summarizationSettings: FenixSummarizationSettingsBinding by lazyMonitored {
-        FenixSummarizationSettingsBinding(SummarizationSettings.dataStore(context))
+    val summarizationSettingsBinding: FenixSummarizationSettingsBinding by lazyMonitored {
+        FenixSummarizationSettingsBinding(
+            summarizationSettings = SummarizationSettings.dataStore(context),
+            aiFeatureBlockStorage = AIFeatureBlockStorage.dataStore(context),
+        )
     }
 
     /**
@@ -648,7 +653,7 @@ class Core(
     val summarizeFeatureSettings: FenixSummarizationFeatureConfiguration by lazyMonitored {
         FenixSummarizationFeatureConfiguration(
             settings = context.components.settings,
-            summarizationSettingsBinding = summarizationSettings,
+            summarizationSettingsBinding = summarizationSettingsBinding,
         )
     }
 

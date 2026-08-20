@@ -48,4 +48,4 @@ uniffi = { version = "0.31", features = ["build"] }
 error-support = { path = "../support/error", features = ["testing"] }
 clap = { version = "4.2", default-features = false, features = ["std", "derive"] }
 tempfile = "3"
-ctor = "0.2.2"
+ctor = "1"

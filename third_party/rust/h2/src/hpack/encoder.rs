@@ -8,6 +8,13 @@ use http::header::{HeaderName, HeaderValue};
 pub struct Encoder {
     table: Table,
     size_update: Option<SizeUpdate>,
+    /// Reusable buffer for the encoded header block of a single frame.
+    ///
+    /// A header block only has to live until it is copied into the
+    /// connection write buffer, so the buffer that holds it can be reused
+    /// across frames instead of being allocated and freed per frame. See
+    /// `take_scratch` / `return_scratch`.
+    scratch: BytesMut,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -21,7 +28,23 @@ impl Encoder {
         Encoder {
             table: Table::new(max_size, capacity),
             size_update: None,
+            scratch: BytesMut::new(),
         }
+    }
+
+    /// Takes the reusable buffer for one header-block encode.
+    ///
+    /// The buffer is returned by `return_scratch` once the encoded block has
+    /// been copied into the write buffer. If it is not returned - the
+    /// CONTINUATION path keeps it, since the remainder is still needed - the
+    /// next call simply starts from a fresh buffer.
+    pub(crate) fn take_scratch(&mut self) -> BytesMut {
+        std::mem::take(&mut self.scratch)
+    }
+
+    /// Returns a fully-written header block buffer for reuse.
+    pub(crate) fn return_scratch(&mut self, scratch: BytesMut) {
+        self.scratch = scratch;
     }
 
     /// Queues a max size update.

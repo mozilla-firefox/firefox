@@ -304,8 +304,17 @@ Object.assign(Chat, {
    * @param {BrowsingContext} options.browsingContext - Omitted for tests only.
    * @param {"fullpage" | "sidebar" | "urlbar"} options.mode - See the MODE in ai-window.mjs
    * @param {AbortSignal} [options.signal]
+   * @param {Promise<string|null>} [options.fxAccountTokenPromise] - A token
+   *   fetch the caller already started, so a cold or expired token resolves
+   *   alongside prompt construction rather than after it. Omit to fetch here.
    */
-  async fetchWithHistory({ conversation, browsingContext, mode, signal }) {
+  async fetchWithHistory({
+    conversation,
+    browsingContext,
+    mode,
+    signal,
+    fxAccountTokenPromise,
+  }) {
     if (!browsingContext && !Cu.isInAutomation) {
       const err = new Error(
         "The browsingContext must exist for fetchWithHistory unless we're in automation."
@@ -313,7 +322,8 @@ Object.assign(Chat, {
       err.clientReason = "missingBrowsingContext";
       throw err;
     }
-    const fxAccountToken = await openAIEngine.getFxAccountToken();
+    const fxAccountToken = await (fxAccountTokenPromise ??
+      openAIEngine.getFxAccountToken());
     if (!fxAccountToken) {
       console.error("fetchWithHistory Account Token null or undefined");
       const fxaError = new Error("FxA token unavailable");

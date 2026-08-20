@@ -1,0 +1,8 @@
+[DEFAULT]
+subsuite = "screenshots"
+support-files = [
+  "../head.js",
+  "../../../components/tabbrowser/test/browser/tabs/audio.ogg",
+]
+
+["browser_nova.js"]

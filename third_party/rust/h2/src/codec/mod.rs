@@ -136,6 +136,12 @@ where
         self.framed_write().poll_ready(cx)
     }
 
+    /// Returns whether the codec can buffer a frame without flushing the
+    /// underlying I/O object.
+    pub(crate) fn has_send_capacity(&mut self) -> bool {
+        self.framed_write().has_capacity()
+    }
+
     /// Buffer a frame.
     ///
     /// `poll_ready` must be called first to ensure that a frame may be

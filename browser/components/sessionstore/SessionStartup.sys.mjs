@@ -36,10 +36,11 @@ ChromeUtils.defineESModuleGetters(lazy, {
   BrowserUsageTelemetry: "resource:///modules/BrowserUsageTelemetry.sys.mjs",
   CrashMonitor: "resource://gre/modules/CrashMonitor.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
-  SessionFile: "resource:///modules/sessionstore/SessionFile.sys.mjs",
+  SessionFile: "moz-src:///browser/components/sessionstore/SessionFile.sys.mjs",
   StartupPerformance:
-    "resource:///modules/sessionstore/StartupPerformance.sys.mjs",
-  sessionStoreLogger: "resource:///modules/sessionstore/SessionLogger.sys.mjs",
+    "moz-src:///browser/components/sessionstore/StartupPerformance.sys.mjs",
+  sessionStoreLogger:
+    "moz-src:///browser/components/sessionstore/SessionLogger.sys.mjs",
 });
 
 const STATE_RUNNING_STR = "running";

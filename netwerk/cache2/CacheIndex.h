@@ -499,15 +499,16 @@ class CacheIndexEntryUpdate : public CacheIndexEntry {
       aDst->mRec->Get()->mFlags ^= kHasAltDataMask;
     }
 
-    if (mUpdateFlags & kFileSizeUpdatedMask) {
-      // Copy all flags except |HasAltData|.
-      aDst->mRec->Get()->mFlags |= (mRec->Get()->mFlags & ~kHasAltDataMask);
-    } else {
-      // Copy all flags except |HasAltData| and file size.
-      aDst->mRec->Get()->mFlags &= kFileSizeMask;
-      aDst->mRec->Get()->mFlags |=
-          (mRec->Get()->mFlags & ~kHasAltDataMask & ~kFileSizeMask);
+    // mFlags packs the file size alongside the boolean flags, so this must be
+    // an assignment and not a merge. Keep |HasAltData|, which the toggle above
+    // has already set, and keep the file size unless the update carries a new
+    // one; take every other bit from the update.
+    uint32_t keepMask = kHasAltDataMask;
+    if (!(mUpdateFlags & kFileSizeUpdatedMask)) {
+      keepMask |= kFileSizeMask;
     }
+    aDst->mRec->Get()->mFlags = (aDst->mRec->Get()->mFlags & keepMask) |
+                                (mRec->Get()->mFlags & ~keepMask);
   }
 
  private:

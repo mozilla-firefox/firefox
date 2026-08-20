@@ -11,6 +11,9 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.spyk
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.TabData
 import mozilla.components.concept.sync.TabPrivacy
@@ -20,8 +23,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mozilla.fenix.R
 import org.robolectric.RobolectricTestRunner
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class SendToDevicesDialogFragmentTest {
 
@@ -135,6 +140,103 @@ class SendToDevicesDialogFragmentTest {
 
         verify(exactly = 1) { fragment.navigateToSignIn() }
     }
+
+    // endregion
+
+    // region showSendResult
+
+    @Test
+    fun `GIVEN a single tab WHEN showSendResult is called with success THEN the single-tab message is shown`() =
+        runTest(UnconfinedTestDispatcher()) {
+            fragment.loadTabData(Bundle().apply { putStringArrayList("urls", arrayListOf("https://example.com")) })
+            var shownText: Int? = null
+
+            fragment.showSendResult(
+                retryScope = backgroundScope,
+                onSuccess = { text -> shownText = text },
+                onFailure = {},
+                send = { true },
+            )
+
+            assertEquals(R.string.sync_sent_tab_snackbar_2, shownText)
+        }
+
+    @Test
+    fun `GIVEN multiple tabs WHEN showSendResult is called with success THEN the multi-tab message is shown`() =
+        runTest(UnconfinedTestDispatcher()) {
+            fragment.loadTabData(
+                Bundle().apply {
+                    putStringArrayList("urls", arrayListOf("https://mozilla.org", "https://example.com"))
+                }
+            )
+            var shownText: Int? = null
+
+            fragment.showSendResult(
+                retryScope = backgroundScope,
+                onSuccess = { text -> shownText = text },
+                onFailure = {},
+                send = { true },
+            )
+
+            assertEquals(R.string.sync_sent_tabs_snackbar_2, shownText)
+        }
+
+    @Test
+    fun `WHEN showSendResult is called with failure THEN a retry action is offered`() =
+        runTest(UnconfinedTestDispatcher()) {
+            var retry: (() -> Unit)? = null
+
+            fragment.showSendResult(
+                retryScope = backgroundScope,
+                onSuccess = {},
+                onFailure = { onRetry -> retry = onRetry },
+                send = { false },
+            )
+
+            kotlin.test.assertNotNull(retry)
+        }
+
+    @Test
+    fun `GIVEN a failed send WHEN the retry action is invoked and succeeds THEN the success message is shown`() =
+        runTest(UnconfinedTestDispatcher()) {
+            fragment.loadTabData(Bundle().apply { putStringArrayList("urls", arrayListOf("https://example.com")) })
+            var retry: (() -> Unit)? = null
+            var shownText: Int? = null
+            var callCount = 0
+
+            fragment.showSendResult(
+                retryScope = backgroundScope,
+                onSuccess = { text -> shownText = text },
+                onFailure = { onRetry -> retry = onRetry },
+                send = {
+                    callCount++
+                    callCount > 1
+                },
+            )
+            retry?.invoke()
+
+            assertEquals(R.string.sync_sent_tab_snackbar_2, shownText)
+        }
+
+    @Test
+    fun `GIVEN a failed send WHEN the retry action is invoked and fails again THEN a new retry action is offered`() =
+        runTest(UnconfinedTestDispatcher()) {
+            var failureCount = 0
+            var retry: (() -> Unit)? = null
+
+            fragment.showSendResult(
+                retryScope = backgroundScope,
+                onSuccess = {},
+                onFailure = { onRetry ->
+                    failureCount++
+                    retry = onRetry
+                },
+                send = { false },
+            )
+            retry?.invoke()
+
+            assertEquals(2, failureCount)
+        }
 
     // endregion
 }

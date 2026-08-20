@@ -151,9 +151,8 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
 
   const trackersToday = privacyData?.trackersToday ?? 0;
   const sitesToday = privacyData?.sitesToday ?? 0;
-  // Gate the metric UI on a real feed update. Before the first broadcast — or
-  // when it's skipped (e.g. the backward-compat guard in PrivacyFeed on older
-  // platforms) — show no metric state rather than a misleading empty/zero one.
+  // Gate the metric UI on a real feed update: before the first broadcast, show
+  // no metric state rather than a misleading empty/zero one.
   const initialized = privacyData?.initialized ?? false;
 
   // Message decision chosen by PrivacyFeed's selector (Bug 2050954).
@@ -196,10 +195,14 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
   // Same readout without the animation, for the screen-reader copy.
   const stableCount = formatCount(trackersToday);
 
-  // trackersToday === 0 is the sole trigger for the empty layout. It must not
-  // also key off `variant === "empty"`: a SYSTEM_TICK refreshes the count
-  // without touching `variant`, so a tab opened at zero would stay empty even
-  // after its count climbs, until the next tab re-runs the selector.
+  // trackersToday === 0 is the sole trigger for the empty layout, so the widget
+  // agrees with about:protections: any blocked activity there shows a count
+  // here. sitesToday is only a Places history proxy, so it can read 0 while the
+  // count stands — that drops its own line below rather than blanking the count
+  // (Bug 2063207). It must not also key off `variant === "empty"`: a SYSTEM_TICK
+  // refreshes the count without touching `variant`, so a tab opened at zero
+  // would stay empty even after its count climbs, until the next tab re-runs
+  // the selector.
   const isEmptyState = trackersToday === 0;
   // Streak and tip both use the count + divider + message layout; "blank"
   // shows the count only (plus a CTA).
@@ -264,7 +267,9 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
     const isNewAward = awardedAt && playedCelebrationRef.current !== awardedAt;
     const isNewMoment = isEarnedMoment && playedMomentRef.current !== messageId;
 
-    if (!isNewAward && !isNewMoment) {
+    // The empty layout renders no count, so celebrating would burn the one-shot
+    // award on an animation nobody sees.
+    if (isEmptyState || (!isNewAward && !isNewMoment)) {
       return;
     }
 
@@ -316,6 +321,7 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
     dispatch,
     hold,
     isEarnedMoment,
+    isEmptyState,
     isMajorMoment,
     isPageVisible,
     messageId,
@@ -503,6 +509,7 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
 
   return (
     <article
+      data-l10n-id="newtab-privacy-widget-label"
       className={`privacy widget col-4 ${widgetSize}-widget${
         initialized && isEmptyState ? " is-empty" : ""
       }${initialized && isTip ? " has-tip-msg" : ""}${
@@ -621,11 +628,13 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
                     data-l10n-id="newtab-privacy-trackers-blocked-today"
                     data-l10n-args={JSON.stringify({ count: trackersToday })}
                   />
-                  <span
-                    className="privacy-count-sites"
-                    data-l10n-id="newtab-privacy-across-sites"
-                    data-l10n-args={JSON.stringify({ count: sitesToday })}
-                  />
+                  {sitesToday > 0 && (
+                    <span
+                      className="privacy-count-sites"
+                      data-l10n-id="newtab-privacy-across-sites"
+                      data-l10n-args={JSON.stringify({ count: sitesToday })}
+                    />
+                  )}
                 </div>
               </a>
               {isStreak && hasMessage && (

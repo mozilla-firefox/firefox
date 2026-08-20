@@ -12,7 +12,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   MacOSLaunchOnLogin:
     "resource://gre/modules/launchonlogin/MacOSLaunchOnLogin.sys.mjs",
   UnsupportedLaunchOnLogin:
-    "resouce://gre/modules/launchonlogin/UnsupportedLaunchOnLogin.sys.mjs",
+    "resource://gre/modules/launchonlogin/UnsupportedLaunchOnLogin.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "gImpl", () => {
@@ -105,15 +105,6 @@ export var LaunchOnLogin = {
    */
   async enablementDetails() {
     let details = await lazy.gImpl.getLaunchOnLoginEnablementDetails();
-    // Even if a user disables it later on we want the launch on login
-    // infobar to remain disabled as the user is aware of the option.
-    if (details.isEnabled) {
-      Services.prefs.setBoolPref(
-        "browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt",
-        true
-      );
-    }
-
     if (Services.policies && !Services.policies.isAllowed("launchOnLogin")) {
       details.isAllowedByPolicy = false;
     }

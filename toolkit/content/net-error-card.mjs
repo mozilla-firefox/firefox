@@ -311,7 +311,9 @@ export class NetErrorCard extends MozLitElement {
     this.checkAndRecordTRRTelemetry();
     this.checkForDomainSuggestions();
 
-    if (this.shouldShowSearchCTA()) {
+    // Eligibility rather than shouldShowSearchCTA(): a frame still asks, so its
+    // decision is still recorded, and only the layout is suppressed.
+    if (this.isSearchCTAEligible()) {
       this.searchCTADomain = this.hostname;
       this.searchCTAInfoPromise = this.requestSearchCTAInfo();
     }
@@ -328,10 +330,10 @@ export class NetErrorCard extends MozLitElement {
     return this.resolvedErrorId === "dnsNotFound" && RPMIsTRROnlyFailure();
   }
 
-  // Whether to render the online dnsNotFound Search CTA layout. The Search
-  // button itself is gated further on a default engine existing (resolved
-  // asynchronously); the redesigned layout and Reload button show regardless.
-  shouldShowSearchCTA() {
+  // Whether this load is in scope for the search CTA at all. Use this one to
+  // decide whether to ask the parent, and shouldShowSearchCTA() to decide
+  // whether to draw anything. A frame asks but never draws (bug 2063091).
+  isSearchCTAEligible() {
     return (
       SEARCH_CTA_ENABLED &&
       this.resolvedErrorId === "dnsNotFound" &&
@@ -339,6 +341,13 @@ export class NetErrorCard extends MozLitElement {
       !isCaptive() &&
       !this.isTRROnlyFailure()
     );
+  }
+
+  // Whether to draw the dnsNotFound Search CTA layout. The Search button needs
+  // a default engine on top of this, which the parent answers later. Frames get
+  // the standard error page instead (bug 2063091).
+  shouldShowSearchCTA() {
+    return this.isSearchCTAEligible() && window.parent == window;
   }
 
   // Whether the Search button itself will render, once the parent has answered.

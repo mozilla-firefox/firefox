@@ -8,13 +8,16 @@ use std::{
     ops::{Deref, Range},
 };
 
-use crate::error::Result;
 use crate::{
     api::{
         JxlBitstreamInput, JxlDecoderInner, JxlOutputBuffer, ProcessingResult,
         inner::box_parser::CodestreamInput,
     },
     bit_reader::BitReader,
+};
+use crate::{
+    api::{JxlParallelRunner, JxlParallelRunnerFun},
+    error::Result,
 };
 
 /// A small buffer, that guarantees to never use more than twice the maximum
@@ -133,6 +136,17 @@ impl Deref for SmallBuffer {
     }
 }
 
+pub(crate) struct SequentialRunner;
+
+impl JxlParallelRunner for SequentialRunner {
+    fn run(&mut self, num: usize, fun: &JxlParallelRunnerFun) -> Result<()> {
+        for i in 0..num {
+            fun(i)?
+        }
+        Ok(())
+    }
+}
+
 impl JxlDecoderInner {
     /// Process more of the input file.
     /// This function will return when reaching the next decoding stage (i.e. finished decoding
@@ -144,11 +158,13 @@ impl JxlDecoderInner {
         &mut self,
         input: &mut dyn JxlBitstreamInput,
         buffers: Option<&mut [JxlOutputBuffer]>,
+        parallel_runner: Option<&mut dyn JxlParallelRunner>,
     ) -> Result<ProcessingResult<(), ()>> {
         ProcessingResult::new(self.codestream_parser.process(
             &mut CodestreamInput::new(&mut self.box_parser, input),
             &self.options,
             buffers,
+            parallel_runner.unwrap_or(&mut SequentialRunner),
         ))
     }
 
@@ -156,18 +172,23 @@ impl JxlDecoderInner {
     /// were written to `buffers` since the previous call to `flush_pixels`;
     /// returns `false` if no new rendering has happened, in which case the
     /// contents of `buffers` are unchanged from the caller's perspective.
-    pub fn flush_pixels(&mut self, buffers: &mut [JxlOutputBuffer]) -> Result<bool> {
+    pub fn flush_pixels(
+        &mut self,
+        buffers: &mut [JxlOutputBuffer],
+        parallel_runner: Option<&mut dyn JxlParallelRunner>,
+    ) -> Result<bool> {
         let Some(profile) = self.codestream_parser.output_color_profile.as_ref() else {
             return Ok(false);
         };
         let Some(pixel_format) = self.codestream_parser.pixel_format.as_ref() else {
             return Ok(false);
         };
-        match self
-            .codestream_parser
-            .frame_info
-            .do_flush(buffers, profile, pixel_format)
-        {
+        match self.codestream_parser.frame_info.do_flush(
+            buffers,
+            profile,
+            pixel_format,
+            parallel_runner.unwrap_or(&mut SequentialRunner),
+        ) {
             Ok(()) | Err(crate::error::Error::OutOfBounds(_)) => {
                 Ok(self.codestream_parser.get_and_clear_pixels_dirty())
             }

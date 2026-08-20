@@ -5,7 +5,7 @@
 
 use crate::color::tf;
 use crate::headers::color_encoding::CustomTransferFunction;
-use crate::render::RenderPipelineInPlaceStage;
+use crate::render::{ErasedLocalState, RenderPipelineInPlaceStage};
 use jxl_simd::{F32SimdVec, simd_function};
 
 /// Apply transfer function to display-referred linear color samples.
@@ -122,7 +122,7 @@ impl RenderPipelineInPlaceStage for FromLinearStage {
         _position: (usize, usize),
         xsize: usize,
         row: &mut [&mut [f32]],
-        _state: Option<&mut dyn std::any::Any>,
+        _state: Option<&mut ErasedLocalState>,
     ) {
         from_linear_process_dispatch(&self.tf, xsize, row)
     }

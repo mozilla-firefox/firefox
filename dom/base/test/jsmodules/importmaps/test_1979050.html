@@ -6,8 +6,8 @@ Object.prototype.imports = {
   "./module_simpleExport.mjs": "./scope1/module_simpleExport.mjs",
 };
 Object.prototype.scopes = {
-  "chrome://mochitests/content/chrome/dom/base/test/jsmodules/importmaps/scope1/": {
-      "./scope1/module_simpleExport.mjs": "/content/chrome/dom/base/test/jsmodules/importmaps/module_simpleExport.mjs"
+  "scope1/": {
+      "./scope1/module_simpleExport.mjs": "./module_simpleExport.mjs"
   }
 };
 Object.prototype.integrity = {
@@ -19,13 +19,16 @@ Object.prototype.integrity = {
 {}
 </script>
 
-<script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
 
 <script type="module" src="module_1979050.mjs"></script>
 <script type="module" src="./scope1/module_1979050.mjs"></script>
 <script type="module" src="./scope1/scope2/module_1979050.mjs"></script>
 <script>
   var result, result2, result3;
+
+  SimpleTest.ok("imports" in Object.prototype,
+                "The import map keys were set on Object.prototype");
 
   SimpleTest.waitForExplicitFinish();
 

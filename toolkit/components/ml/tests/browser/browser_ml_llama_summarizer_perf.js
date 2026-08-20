@@ -187,11 +187,13 @@ async function run_summarizer_with_perf({
     context: { swaFull: false, flashAttn: false },
   };
 
-  await perfTest({
+  await runMLPerfTest({
     name: `sum-${perfName}`,
     options,
     request,
     trackPeakMemory,
+    // Not an ONNX consumer: pin the backend so the matrix does not apply.
+    backends: ["llama.cpp"],
   });
 }
 

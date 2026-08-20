@@ -13,6 +13,7 @@
 using namespace mozilla;
 
 int32_t NS_GetUnusedAtomCount(void);
+size_t TestGetShortAtomCacheSize(void);
 
 namespace TestAtoms {
 
@@ -64,6 +65,44 @@ TEST(Atoms, Null)
   EXPECT_TRUE(atom->Equals(str));
   EXPECT_NE(atom, atomCut);
   EXPECT_TRUE(atomCut->Equals(strCut));
+}
+
+static constexpr nsLiteralString kShortCacheTestStrings[] = {
+    u""_ns,       u"abcdefgh"_ns, u"a"_ns,        u"ab"_ns,
+    u"\0"_ns,     u"abcdefg"_ns,  u"a\0"_ns,      u"\0a"_ns,
+    u"\u00ff"_ns, u"\u0100"_ns,   u"abcdef\0"_ns, u"abcdef\u0100"_ns,
+};
+
+TEST(Atoms, ShortStringCacheCorrectness)
+{
+  for (const auto& str : kShortCacheTestStrings) {
+    RefPtr<nsAtom> uncached = NS_Atomize(str);
+    RefPtr<nsAtom> miss = NS_AtomizeMainThread(str);
+    RefPtr<nsAtom> hit = NS_AtomizeMainThread(str);
+
+    EXPECT_EQ(uncached, miss);
+    EXPECT_EQ(miss, hit);
+    EXPECT_TRUE(hit->Equals(str));
+  }
+}
+
+TEST(Atoms, ShortStringCacheEviction)
+{
+  const uint64_t kCount = TestGetShortAtomCacheSize() + 10;
+
+  constexpr size_t len = 2;
+  ASSERT_LE(kCount, uint64_t(1) << (len * 8));
+
+  for (uint64_t pass = 0; pass < 2; ++pass) {
+    for (uint64_t i = 0; i < kCount; ++i) {
+      char16_t buf[len] = {char16_t(i & 0xff), char16_t((i >> 8) & 0xff)};
+      nsDependentSubstring str(buf, len);
+      RefPtr<nsAtom> atom = NS_AtomizeMainThread(str);
+      RefPtr<nsAtom> atom2 = NS_Atomize(str);
+      EXPECT_TRUE(atom->Equals(str));
+      EXPECT_EQ(atom, atom2);
+    }
+  }
 }
 
 TEST(Atoms, Invalid)

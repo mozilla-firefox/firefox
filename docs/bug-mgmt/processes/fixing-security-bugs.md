@@ -1,3 +1,5 @@
+(fixing-security-bugs)=
+
 # Fixing Security Bugs
 
 A bug has been reported as security-sensitive in Bugzilla and received a

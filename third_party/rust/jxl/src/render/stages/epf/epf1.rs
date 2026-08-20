@@ -3,16 +3,15 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use std::sync::Arc;
+use crate::util::sync::{Arc, RwLock};
 
 use crate::{
     BLOCK_DIM, MIN_SIGMA,
     features::epf::SigmaSource,
     render::{
-        Channels, ChannelsMut, RenderPipelineInOutStage,
+        Channels, ChannelsMut, ErasedLocalState, RenderPipelineInOutStage,
         stages::epf::common::{get_sigma, prepare_sad_mul_storage},
     },
-    util::AtomicRefCell,
 };
 
 use jxl_simd::{F32SimdVec, SimdMask, simd_function};
@@ -24,7 +23,7 @@ pub struct Epf1Stage {
     /// (inverse) multiplier for sigma on borders
     border_sad_mul: f32,
     channel_scale: [f32; 3],
-    sigma: Arc<AtomicRefCell<SigmaSource>>,
+    sigma: Arc<RwLock<SigmaSource>>,
 }
 
 impl std::fmt::Display for Epf1Stage {
@@ -42,7 +41,7 @@ impl Epf1Stage {
         sigma_scale: f32,
         border_sad_mul: f32,
         channel_scale: [f32; 3],
-        sigma: Arc<AtomicRefCell<SigmaSource>>,
+        sigma: Arc<RwLock<SigmaSource>>,
     ) -> Self {
         Self {
             sigma,
@@ -67,7 +66,7 @@ fn epf1_process_row_chunk(
     assert_eq!(input_rows.len(), 3);
     assert_eq!(output_rows.len(), 3);
 
-    let sigma = stage.sigma.borrow();
+    let sigma = stage.sigma.try_read().unwrap();
     let row_sigma = sigma.row(ypos / BLOCK_DIM);
 
     let sm = stage.sigma_scale * 1.65;
@@ -169,7 +168,7 @@ impl RenderPipelineInOutStage for Epf1Stage {
         xsize: usize,
         input_rows: &Channels<f32>,
         output_rows: &mut ChannelsMut<f32>,
-        _state: Option<&mut dyn std::any::Any>,
+        _state: Option<&mut ErasedLocalState>,
     ) {
         epf1_process_row_chunk_dispatch(self, (xpos, ypos), xsize, input_rows, output_rows);
     }

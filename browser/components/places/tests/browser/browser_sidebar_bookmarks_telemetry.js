@@ -65,15 +65,17 @@ add_task(async function test_open_multiple_bookmarks() {
 
     let newWinOpened = BrowserTestUtils.waitForNewWindow();
     // open a bookmark in new window via context menu
-    await synthesizeClickOnSelectedTreeCell(tree, {
-      button: 2,
-      type: "contextmenu",
-    });
+    let popupShown = BrowserTestUtils.waitForPopupEvent(
+      tree.ownerDocument.getElementById("placesContext"),
+      "shown"
+    );
+    synthesizeClickOnSelectedTreeCell(tree, { type: "contextmenu" });
+    await popupShown;
 
-    let openNewWindowOption = document.getElementById(
+    let openNewWindowOption = tree.ownerDocument.getElementById(
       "placesContext_open:newwindow"
     );
-    openNewWindowOption.click();
+    await BrowserTestUtils.activateMenuItem(openNewWindowOption);
 
     let newWin = await newWinOpened;
 

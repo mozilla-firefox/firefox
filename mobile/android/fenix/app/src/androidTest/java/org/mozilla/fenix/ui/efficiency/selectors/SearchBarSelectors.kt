@@ -14,12 +14,16 @@ import org.mozilla.fenix.ui.efficiency.helpers.Selector
 import org.mozilla.fenix.ui.efficiency.helpers.SelectorStrategy
 
 object SearchBarSelectors {
+    // Page-identity anchor for the edit-mode search bar. Must be an EDIT-mode-only handle: the redesigned Home/browser
+    // display toolbar shows the SEARCH_SELECTOR chip too, so anchoring on that alone makes mozIsOnPageNow() (and thus
+    // navigateToPage) falsely believe edit mode is already open and skip the tap that opens it. ADDRESSBAR_SEARCH_BOX
+    // exists only in edit mode (display mode uses ADDRESSBAR_URL_BOX), so it disambiguates the two.
     val TOOLBAR_IN_EDIT_MODE =
         Selector(
             strategy = SelectorStrategy.COMPOSE_BY_TAG,
             value = ADDRESSBAR_SEARCH_BOX,
             description = "Toolbar in edit mode",
-            groups = listOf(),
+            groups = listOf("requiredForPage"),
         )
 
     val URL_TEXT =
@@ -150,6 +154,20 @@ object SearchBarSelectors {
             groups = listOf(),
         )
 
+    // End-of-address-bar button in edit mode. The slot is mutually exclusive: the Google Lens button shows only when
+    // the Lens integration is enabled (Nimbus + user pref), the session is non-private, and Google is the selected
+    // engine; otherwise the QR scanner button takes the slot for general/custom engines. Both are Compose
+    // ActionButtonRes with a content-description and NO testTag
+    // (BrowserToolbarSearchMiddleware.updateSearchEndPageActions),
+    // so we match on the content-description string, keyed off the resource so it survives localization.
+    val GOOGLE_LENS_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
+            value = getStringResource(R.string.lens_search_content_description),
+            description = "Google Lens button (search with image)",
+            groups = listOf(),
+        )
+
     val all =
         listOf(
             TOOLBAR_IN_EDIT_MODE,
@@ -165,5 +183,6 @@ object SearchBarSelectors {
             SEARCH_SUGGESTION_WITH_TEXT(),
             SCAN_BUTTON,
             CLEAR_BUTTON,
+            GOOGLE_LENS_BUTTON,
         )
 }

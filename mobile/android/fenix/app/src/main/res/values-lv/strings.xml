@@ -63,6 +63,13 @@
   <!-- Add bookmark shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_add_bookmark">Pievienot grāmatzīmi</string>
   <!--
+    Preference for using the OLED theme. For localization, this can be translated as "True Black", "Maximum Darkness",
+    or "Full dark" if needed.
+  -->
+  <string name="preference_oled_theme">Vistumšākais</string>
+  <!-- Title for the preference to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_feature">Iespējot ciļņu kopas</string>
+  <!--
     Privacy report
 
     Category header of a preference that allows a user to enable or disable the privacy report feature
@@ -84,6 +91,14 @@
   <string name="add_to_new_tab_group_content_description">Pievienot jaunai ciļņu kopai</string>
   <!-- Text shown on the share button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_share">Kopīgot</string>
+  <!-- Custom accessibility action to reorder a tab up rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_up">Pārvietot cilni augšup</string>
+  <!-- Custom accessibility action to reorder a tab left rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_left">Pārvietot cilni pa kreisi</string>
+  <!-- Custom accessibility action to reorder a tab right rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_right">Pārvietot cilni pa labi</string>
+  <!-- Custom accessibility action to reorder a tab down rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_down">Pārvietot cilni lejup</string>
   <!-- Alert dialog confirmation before deleting multiple download items, this is the title. -->
   <string name="download_delete_multi_select_dialog_confirmation">Vai tiešām izdzēst atlasītos vienumus?</string>
   <!--
@@ -132,6 +147,8 @@
   <string name="preferences_logins_add_login_2">Pievienot paroli</string>
   <!-- Content description, used by tools like screenreaders, to press on the add new login button. -->
   <string name="saved_logins_add_new_login_button_content_description">Pievienot jaunu pieteikšanās vienumu</string>
+  <!-- Description for an unavailable VPN location in the location list. -->
+  <string name="ip_protection_location_unavailable_description">Nepieejams</string>
   <!-- Preference option for adding a card -->
   <string name="preferences_credit_cards_add_credit_card_2">Pievienot karti</string>
   <!-- Preference option for adding an address -->
@@ -176,6 +193,8 @@
   <string name="homepage_shortcuts_add_website">Pievienot tīmekļvietni</string>
   <!-- Translations feature -->
 
+  <!-- The title of the warning card informs the user that the list of languages cannot be loaded. -->
+  <string name="translation_error_could_not_load_languages_warning_text">Nevarēja ielādēt valodas. Jāpārbauda savienojums ar internetu un jāmēģina vēlreiz.</string>
   <!-- The button text to add tabs to the active tab group in the tab creation tool. -->
   <string name="debug_drawer_tab_tools_tab_creation_tool_button_text_active">Pievienot izmantotajām cilnēm</string>
   <!-- The button text to add tabs to the inactive tab group in the tab creation tool. -->
@@ -204,6 +223,8 @@
 
   <!-- ==== Experiment strings. ==== -->
 
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="sports_widget_error_connection_offline_description">Jāpārbauda savienojums ar internetu un jāmēģina vēlreiz.</string>
   <!-- ==== End of Terms of use popup prompt. ==== -->
 
   <!--
@@ -220,4 +241,16 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Tīmekļvietnes nošķiršana</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Papildu šķērslis starp tīmekļvietnēm, kas palīdz aizsargāt datus cilnēs. Var ietekmēt veiktspēju, noturīgumu, tīmekļvietņu saderīgumu un to, kā tiek saglabāta pārlūkošanas vēsture.</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description">Parakstīt PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
+  <string name="pdf_tools_download_content_description">Lejupielādēt PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
+  <string name="pdf_tools_print_content_description">Drukāt PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the sharing options for the PDF being displayed on the screen. -->
+  <string name="pdf_tools_share_content_description">Kopīgot PDF</string>
 </resources>

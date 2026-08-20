@@ -4,7 +4,8 @@
 requestLongerTimeout(3);
 
 ChromeUtils.defineESModuleGetters(globalThis, {
-  SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
 });
 
 const NEVER_REMEMBER_HISTORY_PREF = "browser.privatebrowsing.autostart";

@@ -4,7 +4,6 @@
 
 #include "MediaTrackListener.h"
 
-#include "AudioSegment.h"
 #include "VideoSegment.h"
 
 namespace mozilla {
@@ -15,11 +14,6 @@ namespace mozilla {
 
 #define LOG(type, ...) \
   MOZ_LOG_FMT(gMediaTrackGraphLog, type, MOZ_LOG_EXPAND_ARGS __VA_ARGS__)
-
-void DirectMediaTrackListener::MirrorAndDisableSegment(AudioSegment& aFrom,
-                                                       AudioSegment& aTo) {
-  aTo.AppendNullData(aFrom.GetDuration());
-}
 
 void DirectMediaTrackListener::MirrorAndDisableSegment(
     VideoSegment& aFrom, VideoSegment& aTo, DisabledTrackMode aMode) {
@@ -44,10 +38,7 @@ void DirectMediaTrackListener::NotifyRealtimeTrackDataAndApplyTrackDisabling(
                                ? DisabledTrackMode::SILENCE_BLACK
                                : DisabledTrackMode::SILENCE_FREEZE;
   UniquePtr<MediaSegment> media(aMedia.CreateEmptyClone());
-  if (aMedia.GetType() == MediaSegment::AUDIO) {
-    MirrorAndDisableSegment(static_cast<AudioSegment&>(aMedia),
-                            static_cast<AudioSegment&>(*media));
-  } else if (aMedia.GetType() == MediaSegment::VIDEO) {
+  if (aMedia.GetType() == MediaSegment::VIDEO) {
     MirrorAndDisableSegment(static_cast<VideoSegment&>(aMedia),
                             static_cast<VideoSegment&>(*media), mode);
   } else {

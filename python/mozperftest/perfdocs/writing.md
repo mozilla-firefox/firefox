@@ -142,7 +142,7 @@ toolchain:
     - linux64-hostutils
 ```
 
-Ensure that the `runner.py` script is also running from `MOZ_FETCHES_DIR` instead of the `GECKO_PATH` like other android MozPerftest tests. Everything else is the same as other android MozPerftest tests. Note that `--android-install-apk` needs to be specified to point to the `geckoview_example.apk` that was obtained from the build task. Fenix is not currently supported in CI for Mochitest (see [bug 1902535](https://bugzilla.mozilla.org/show_bug.cgi?id=1902535)).
+Like all other android MozPerftest tests, the `runner.py` script runs from `MOZ_FETCHES_DIR`. Everything else is the same as other android MozPerftest tests. Note that `--android-install-apk` needs to be specified to point to the `geckoview_example.apk` that was obtained from the build task. Fenix is not currently supported in CI for Mochitest (see [bug 1902535](https://bugzilla.mozilla.org/show_bug.cgi?id=1902535)).
 
 ## Custom Script
 

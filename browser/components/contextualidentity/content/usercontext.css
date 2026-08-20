@@ -262,6 +262,7 @@
       height: var(--icon-size-large);
       padding: var(--identity-icon-inset);
       border-radius: var(--border-radius-circle);
+      overflow-clip-margin: border-box;
       background-color: var(--identity-fill-tint);
     }
   }

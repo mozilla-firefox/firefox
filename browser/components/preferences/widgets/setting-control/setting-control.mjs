@@ -508,12 +508,14 @@ export class SettingControl extends SettingElement {
               support-page=${supportPage}
             ></a>`
           : ""}
-        <moz-button
-          slot="actions"
-          @click=${this.disableExtension}
-          ?disabled=${this.isDisablingExtension}
-          data-l10n-id="disable-extension"
-        ></moz-button>
+        ${this.setting.controllingExtensionInfo.mayDisable
+          ? html`<moz-button
+              slot="actions"
+              @click=${this.disableExtension}
+              ?disabled=${this.isDisablingExtension}
+              data-l10n-id="disable-extension"
+            ></moz-button>`
+          : ""}
       </moz-message-bar>`;
     } else if (this.showEnableExtensionMessage) {
       messageBar = html`<moz-message-bar

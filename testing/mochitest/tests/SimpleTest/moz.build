@@ -6,6 +6,7 @@ TEST_HARNESS_FILES.testing.mochitest.tests.SimpleTest += [
     "/docshell/test/chrome/docshell_helpers.js",
     "AccessibilityUtils.js",
     "ChromeTask.js",
+    "ClickChecks.js",
     "DragChildContextBase.sys.mjs",
     "DragParentContextBase.sys.mjs",
     "DragSourceChildContext.sys.mjs",

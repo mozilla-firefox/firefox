@@ -34,6 +34,8 @@
  *                        (only applies when the user has not explicitly set sizePref)
  *   trainhopSidebarKey — key in trainhopConfig.widgets.* for the hasSidebar override;
  *                        null means the sidebar placement is not overridable via trainhop
+ *   requiresHistory    — when true, the widget is hidden entirely on profiles that
+ *                        record no history (see isWidgetDataUnavailable)
  *
  * SIZE PRIORITY
  * sizePref defaults to "" (empty string) in PREFS_CONFIG. An empty value
@@ -139,6 +141,7 @@ export const PREF_WIDGETS_SYSTEM_CROSSWORD_ENABLED =
   "widgets.system.crossword.enabled";
 export const PREF_WIDGETS_STOCKS_ENABLED = "widgets.stocks.enabled";
 export const PREF_STOCKS_SIZE = "widgets.stocks.size";
+export const PREF_STOCKS_WATCHLIST = "widgets.stocks.watchlist";
 export const PREF_WIDGETS_SYSTEM_STOCKS_ENABLED =
   "widgets.system.stocks.enabled";
 export const PREF_CROSSWORD_ENDPOINT = "widgets.crossword.endpoint";
@@ -285,6 +288,7 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsVisibleKey: "privacyVisible",
     widgetsSettingsEnabledKey: "privacyEnabled",
     trainhopNamespace: "widgetPrivacy",
+    requiresHistory: true,
   },
   {
     id: "crossword",
@@ -361,20 +365,35 @@ export function resolveWidgetOrder(prefs) {
 }
 
 /**
+ * Returns true if the widget needs history and this profile records none, so it
+ * could only ever render an empty state (Bug 2063207). An absent
+ * `recordsHistory` counts as available, so a missing PrefsFeed broadcast cannot
+ * hide a working widget.
+ *
+ * @param {object} widget - a WIDGET_REGISTRY entry
+ * @param {object} prefs - current pref values from the Redux store
+ * @returns {boolean}
+ */
+export function isWidgetDataUnavailable(widget, prefs) {
+  return Boolean(widget.requiresHistory && prefs.recordsHistory === false);
+}
+
+/**
  * Returns true if the widget is available to the user, based on the
  * system pref, the trainhopConfig.widgets addable key, or a
  * widgetsSettings.*Visible override (revealing a toggle also makes the widget
  * addable so the toggle is functional). Does not consider whether the user has
  * turned the widget on, or whether the widgets container is enabled.
  *
- * A retired widget is never addable.
+ * A retired widget is never addable, and neither is one whose data source the
+ * profile has turned off (see isWidgetDataUnavailable).
  *
  * @param {object} widget - a WIDGET_REGISTRY entry
  * @param {object} prefs - current pref values from the Redux store
  * @returns {boolean}
  */
 export function isWidgetAddable(widget, prefs) {
-  if (widget.retired) {
+  if (widget.retired || isWidgetDataUnavailable(widget, prefs)) {
     return false;
   }
   return Boolean(
@@ -394,14 +413,15 @@ export function isWidgetAddable(widget, prefs) {
  * does NOT enable the widget — enablement is the widget's own enabled pref,
  * whose default can be overridden via widgetsSettings.*Enabled.
  *
- * A retired widget gets no toggle; checked here too, to beat widgetsConfig.
+ * A retired widget gets no toggle, and neither does one with no data source;
+ * both checked here too, to beat widgetsConfig.
  *
  * @param {object} widget - a WIDGET_REGISTRY entry
  * @param {object} prefs - current pref values from the Redux store
  * @returns {boolean}
  */
 export function isWidgetToggleVisible(widget, prefs) {
-  if (widget.retired) {
+  if (widget.retired || isWidgetDataUnavailable(widget, prefs)) {
     return false;
   }
   return Boolean(

@@ -369,7 +369,16 @@ async function initializeEngine(pipelineOptions, prefs = null) {
   });
   info("Get the engine process");
   const startTime = performance.now();
-  const engine = await createEngine(new PipelineOptions(pipelineOptions));
+  let engine;
+  try {
+    engine = await createEngine(new PipelineOptions(pipelineOptions));
+  } catch (error) {
+    // A failed init would otherwise leak the engine process and the pushed
+    // prefs into the file's remaining runs.
+    await EngineProcess.destroyMLEngine();
+    await cleanup();
+    throw error;
+  }
   const e2eInitTime = performance.now() - startTime;
 
   info("Get Pipeline Options");
@@ -655,11 +664,126 @@ class PeakMemoryTracker {
   }
 }
 /**
+ * Tags used in per-backend metric names, decoupled from the backend
+ * identifiers so perfherder series survive a backend rename.
+ *
+ * @type {Record<string, string>}
+ */
+const BACKEND_TAGS = {
+  "onnx-native": "NATIVE",
+  onnx: "WASM",
+};
+
+/**
+ * Resolves which ONNX backends a perf test should measure. The
+ * MOZ_ML_BACKENDS environment variable (comma separated, set per CI task in
+ * taskcluster/kinds/perftest/*.yml) overrides everything, including
+ * test-provided candidates; without it, this returns the most preferred
+ * candidate that can run here.
+ *
+ * @param {object} [opts]
+ * @param {string[]} [opts.candidates] - Backends to consider, most preferred
+ *   first. Defaults to the full ONNX matrix.
+ * @returns {Promise<string[]>} Concrete backends to measure, never empty.
+ */
+async function resolveBackendMatrix({
+  candidates = ["onnx-native", "onnx"],
+} = {}) {
+  const override = Services.env.get("MOZ_ML_BACKENDS");
+  if (override) {
+    const requested = override
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean);
+    info(`Backend matrix pinned by MOZ_ML_BACKENDS: ${requested.join(", ")}`);
+    return requested;
+  }
+
+  const nativeAvailable =
+    await EngineProcess.requestIsNativeOnnxRuntimeAvailable();
+
+  const matrix = candidates
+    .filter(backend => backend !== "onnx-native" || nativeAvailable)
+    .slice(0, 1);
+
+  info(
+    `Backend matrix: ${matrix.join(", ")} ` +
+      `(native onnxruntime ${nativeAvailable ? "available" : "unavailable"})`
+  );
+
+  if (!matrix.length) {
+    throw new Error(
+      `No backend to measure: none of [${candidates.join(", ")}] can run here`
+    );
+  }
+
+  return matrix;
+}
+
+/**
+ * Runs a performance test on every applicable ONNX backend, tagging metric
+ * names per backend (e.g. "SMART-TAB-TOPIC-model-run-latency-NATIVE") so each
+ * is its own perfherder series. The tag is appended after the metric name so
+ * the names declared in perfMetadata stay substrings of the reported names.
+ * The tag is applied even when a single backend runs, keeping series names
+ * platform-independent.
+ *
+ * @param {object} config - See runMLPerfTestOnBackend, plus:
+ * @param {string[]} [config.backends] - Backend candidates for runs where
+ *   MOZ_ML_BACKENDS is not set. Pass an explicit list for tests whose backend
+ *   is not negotiable (e.g. llama.cpp).
+ */
+async function runMLPerfTest({ backends, ...config }) {
+  await runMLPerfTestForEachBackend({
+    name: config.name,
+    backends,
+    run: ({ backend, tag }) =>
+      runMLPerfTestOnBackend({
+        ...config,
+        tag,
+        options: { ...config.options, backend },
+      }),
+  });
+}
+
+/**
+ * Runs `run` once per applicable ONNX backend, for tests that own their
+ * engine creation and metric naming: they pass `backend` into the options
+ * they build and append `tag` to their metric names. A backend that cannot
+ * run fails the test.
+ *
+ * @param {object} config
+ * @param {string} config.name - Feature name, used for logging.
+ * @param {string[]} [config.backends] - Backend candidates for runs where
+ *   MOZ_ML_BACKENDS is not set, most preferred first. Defaults to the full
+ *   ONNX matrix.
+ * @param {function({backend: string, tag: string}): Promise} config.run -
+ *   Runs and reports the measurements for one backend.
+ */
+async function runMLPerfTestForEachBackend({ name, backends, run }) {
+  const matrix = await resolveBackendMatrix(
+    backends ? { candidates: backends } : {}
+  );
+
+  for (const backend of matrix) {
+    const tag = BACKEND_TAGS[backend] ?? backend.toUpperCase();
+    info(`Running ${name} on backend ${backend}`);
+    await run({ backend, tag });
+  }
+
+  Assert.ok(
+    true,
+    `${name} measured every backend in the matrix (${matrix.join(", ")})`
+  );
+}
+
+/**
  * Runs a performance test for the given name, options, and arguments and
  * reports the results for perfherder.
  */
-async function perfTest({
+async function runMLPerfTestOnBackend({
   name,
+  tag,
   options,
   request,
   iterations = ITERATIONS,
@@ -670,33 +794,34 @@ async function perfTest({
 }) {
   info(`is request null | ${request === null || request === undefined}`);
   name = name.toUpperCase();
+  const taggedMetric = metric => `${name}-${metric}-${tag}`;
 
   let METRICS;
 
   // When tracking peak memory we only do this because we're
   // stressing the system with 500ms callbacks so other netrics are impacted
   if (trackPeakMemory) {
-    METRICS = [`${name}-${PEAK_MEMORY_USAGE}`];
+    METRICS = [PEAK_MEMORY_USAGE];
   } else {
     METRICS = [
-      `${name}-${PIPELINE_READY_LATENCY}`,
-      `${name}-${INITIALIZATION_LATENCY}`,
-      `${name}-${MODEL_RUN_LATENCY}`,
-      `${name}-${TOTAL_MEMORY_USAGE}`,
-      `${name}-${E2E_RUN_LATENCY}`,
-      `${name}-${E2E_INIT_LATENCY}`,
-      `${name}-${FIRST_TOKEN_LATENCY}`,
-      `${name}-${DECODING_LATENCY}`,
-      `${name}-${DECODING_CHARACTERS_SPEED}`,
-      `${name}-${DECODING_TOKEN_SPEED}`,
-      `${name}-${PROMPT_CHARACTERS_SPEED}`,
-      `${name}-${PROMPT_TOKEN_SPEED}`,
+      PIPELINE_READY_LATENCY,
+      INITIALIZATION_LATENCY,
+      MODEL_RUN_LATENCY,
+      TOTAL_MEMORY_USAGE,
+      E2E_RUN_LATENCY,
+      E2E_INIT_LATENCY,
+      FIRST_TOKEN_LATENCY,
+      DECODING_LATENCY,
+      DECODING_CHARACTERS_SPEED,
+      DECODING_TOKEN_SPEED,
+      PROMPT_CHARACTERS_SPEED,
+      PROMPT_TOKEN_SPEED,
       ...(addColdStart
         ? [
-            `${name}-${COLD_START_PREFIX}${PIPELINE_READY_LATENCY}`,
-            `${name}-${COLD_START_PREFIX}${INITIALIZATION_LATENCY}`,
-            `${name}-${COLD_START_PREFIX}${MODEL_RUN_LATENCY}`,
-            `${name}-${COLD_START_PREFIX}${TOTAL_MEMORY_USAGE}`,
+            `${COLD_START_PREFIX}${PIPELINE_READY_LATENCY}`,
+            `${COLD_START_PREFIX}${INITIALIZATION_LATENCY}`,
+            `${COLD_START_PREFIX}${MODEL_RUN_LATENCY}`,
+            `${COLD_START_PREFIX}${TOTAL_MEMORY_USAGE}`,
           ]
         : []),
     ];
@@ -704,7 +829,7 @@ async function perfTest({
 
   const journal = {};
   for (let metric of METRICS) {
-    journal[metric] = [];
+    journal[taggedMetric(metric)] = [];
   }
 
   const pipelineOptions = new PipelineOptions(options);
@@ -724,17 +849,17 @@ async function perfTest({
       browserPrefs,
     });
     if (trackPeakMemory) {
-      journal[`${name}-${PEAK_MEMORY_USAGE}`].push(tracker.stop());
+      journal[taggedMetric(PEAK_MEMORY_USAGE)].push(tracker.stop());
     } else {
       for (let [metricName, metricVal] of Object.entries(metrics)) {
         if (!Number.isFinite(metricVal) || metricVal < 0) {
           metricVal = 0;
         }
         // Add the metric if it wasn't there
-        if (journal[`${name}-${metricName}`] === undefined) {
-          journal[`${name}-${metricName}`] = [];
+        if (journal[taggedMetric(metricName)] === undefined) {
+          journal[taggedMetric(metricName)] = [];
         }
-        journal[`${name}-${metricName}`].push(metricVal);
+        journal[taggedMetric(metricName)].push(metricVal);
       }
     }
   }

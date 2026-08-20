@@ -813,7 +813,7 @@ class CssRuleView extends EventEmitter {
       console.warn("Color scheme emulation is disabled in RFP mode.");
     }
 
-    // @backward-compat { version 155 } Once 155 hits release, we can remove this boolean
+    // @backward-compat { version 155 } Once 155 leaves release, we can remove this boolean
     // and always consider it true (i.e. only keep the code inside the if block)
     const hasReducedMotionEmulationSupport =
       await this.inspector.commands.targetConfigurationCommand.supports(

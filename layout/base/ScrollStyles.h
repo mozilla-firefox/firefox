@@ -29,7 +29,6 @@ struct ScrollStyles {
   ScrollStyles(const nsStyleDisplay&, MapOverflowToValidScrollStyleTag);
 
   bool operator==(const ScrollStyles&) const = default;
-  bool operator!=(const ScrollStyles&) const = default;
 
   bool IsHiddenInBothDirections() const;
 };

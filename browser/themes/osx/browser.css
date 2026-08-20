@@ -60,12 +60,6 @@
   }
 }
 
-/** End titlebar **/
-
-:root[chromehidden~="toolbar"][chromehidden~="location"][chromehidden~="directories"] {
-  border-top: 1px solid rgba(0, 0, 0, 0.65);
-}
-
 /* ----- BOOKMARK TOOLBAR ----- */
 
 #nav-bar-customization-target > #wrapper-personal-bookmarks > #personal-bookmarks {

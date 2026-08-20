@@ -31,8 +31,16 @@ add_setup(async function setup() {
       return "";
     },
   };
+  // Force the on-device naming path so buildProposals never does real
+  // FxA-token/network work if a group is ever labeled (matches the other ATG
+  // tests).
+  const originalLlmLabel = AutoTabGroupingSuggestions._llmLabelForGroup;
+  AutoTabGroupingSuggestions._llmLabelForGroup = async () => {
+    throw new Error("force on-device");
+  };
   registerCleanupFunction(() => {
     AutoTabGroupingSuggestions._manager = originalManager;
+    AutoTabGroupingSuggestions._llmLabelForGroup = originalLlmLabel;
   });
 });
 

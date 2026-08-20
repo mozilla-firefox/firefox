@@ -847,6 +847,10 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
     return storePtr(scratch, address);
   }
   void storePtr(ImmPtr imm, const Address& address) {
+    if (imm.value == nullptr) {
+      Str(vixl::xzr, toMemOperand(address));
+      return;
+    }
     vixl::UseScratchRegisterScope temps(this);
     const ARMRegister scratch64 = temps.AcquireX();
     MOZ_ASSERT(scratch64.asUnsized() != address.base);

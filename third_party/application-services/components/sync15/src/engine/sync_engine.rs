@@ -115,7 +115,7 @@ impl TryFrom<&str> for SyncEngineId {
 /// record into memory at once (ie, we should try and better reflect the upload batch model at
 /// this level)
 ///
-/// Sync Engines should not assume they live for exactly one sync, so `prepare_for_sync()` should
+/// Sync Engines should not assume they live for exactly one sync, so `sync_started()` should
 /// clean up any state, including staged records, from previous syncs.
 ///
 /// Different engines will produce errors of different types.  To accommodate
@@ -123,20 +123,14 @@ impl TryFrom<&str> for SyncEngineId {
 pub trait SyncEngine {
     fn collection_name(&self) -> CollectionName;
 
-    /// Prepares the engine for syncing. The tabs engine currently uses this to
-    /// store the current list of clients, which it uses to look up device names
-    /// and types.
-    ///
-    /// Note that this method is only called by `sync_multiple`, and only if a
-    /// command processor is registered. In particular, `prepare_for_sync` will
-    /// not be called if the store is synced using `sync::synchronize` or
-    /// `sync_multiple::sync_multiple`. It _will_ be called if the store is
-    /// synced via the Sync Manager.
-    ///
-    /// TODO(issue #2590): This is pretty cludgey and will be hard to extend for
-    /// any case other than the tabs case. We should find another way to support
-    /// tabs...
-    fn prepare_for_sync(&self, _get_client_data: &dyn Fn() -> ClientData) -> Result<()> {
+    /// Indicates that a sync is starting.
+    fn sync_started(&self) -> Result<()> {
+        Ok(())
+    }
+
+    /// Supplies the engine with the current set of Sync clients (ie, other
+    /// devices connected to the account). Might be called at any time.
+    fn set_clients(&self, _get_client_data: &dyn Fn() -> ClientData) -> Result<()> {
         Ok(())
     }
 
@@ -228,6 +222,21 @@ pub trait SyncEngine {
     /// or to wipe local data when disconnecting (currently only on desktop
     /// via a bridged-engine).
     fn wipe(&self) -> Result<()>;
+
+    // A couple of desktop specific "bridged engine" helpers, where the
+    // last-modified timestamps for collections are handled differently;
+    // who does the `get_collection_request()` etc impacts the owner of the
+    // timestamp.
+    // Engines should do both or neither, longer term it should be absorbed.
+    /// Return the last sync timestamp, only called for bridged engines.
+    fn last_sync(&self) -> Result<Option<ServerTimestamp>> {
+        unimplemented!("This engine is not used as a bridged engine");
+    }
+
+    /// Reset the last sync timestampf or the engine, only called for bridged engines.
+    fn reset_last_sync(&self) -> Result<()> {
+        unimplemented!("This engine is not used as a bridged engine");
+    }
 }
 
 #[cfg(test)]

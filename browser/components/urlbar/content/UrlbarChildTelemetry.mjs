@@ -108,7 +108,7 @@ export class UrlbarChildTelemetry {
     }
 
     this.#startEventInfo = {
-      timeStamp: event.timeStamp || ChromeUtils.now(),
+      timeStamp: event.timeStamp,
       interactionType:
         interactionType ||
         UrlbarTelemetryUtils.startInteractionType(event, searchString),

@@ -17,6 +17,8 @@
   <string name="mozac_browser_errorpages_archive_not_found">Архіўная версія не знойдзена.</string>
   <!-- A link, shown after no archived copy was found, that searches the web for the page instead. -->
   <string name="mozac_browser_errorpages_archive_search_web">Шукаць у інтэрнэце.</string>
+  <!-- The message shown when the archive service could not be reached to look up an archived copy. -->
+  <string name="mozac_browser_errorpages_archive_unreachable">Не ўдалося звязацца з архіўнай службай.</string>
   <!-- A link, shown after the archive service could not be reached, that retries the lookup. -->
   <string name="mozac_browser_errorpages_archive_retry">Паўтарыць.</string>
   <!-- The document title and heading of an error page shown when a website cannot be loaded for an unknown reason. -->

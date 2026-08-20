@@ -470,7 +470,7 @@ function shouldCallSearchHandoff(conversation) {
  * @returns {Promise<SearchWorkflowResult|FastSearchWorkflowResult>}
  */
 export async function runSearchTheWeb(toolParams, conversation, signal) {
-  return Services.prefs.getBoolPref(SEARCH_THE_WEB_FAST_PREF, false)
+  return Services.prefs.getBoolPref(SEARCH_THE_WEB_FAST_PREF, true)
     ? runFastSearch(toolParams, conversation)
     : runGroundedSearch(toolParams, conversation, signal);
 }

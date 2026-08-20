@@ -3,11 +3,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use std::any::Any;
-
 use crate::{
     render::{
-        Channels, ChannelsMut, RunInPlaceStage,
+        Channels, ChannelsMut, ErasedLocalState, RunInPlaceStage,
         internal::{PipelineBuffer, RunInOutStage},
     },
     util::{ChannelVec, ShiftRightCeil, SmallVec, StackOnly, mirror, tracing_wrappers::*},
@@ -49,7 +47,7 @@ impl<T: RenderPipelineInPlaceStage> RunInPlaceStage<RowBuffer> for T {
             end_of_row,
         }: ExtraInfo,
         buffers: &mut [&mut RowBuffer],
-        state: Option<&mut dyn Any>,
+        state: Option<&mut ErasedLocalState>,
     ) {
         let x0 = RowBuffer::x0_offset::<T::Type>();
         let xpre = if start_of_row { 0 } else { out_extra_x };
@@ -84,7 +82,7 @@ impl<T: RenderPipelineInOutStage> RunInOutStage<RowBuffer> for T {
         }: ExtraInfo,
         input_buffers: &[&RowBuffer],
         output_buffers: &mut [RowBuffer],
-        state: Option<&mut dyn Any>,
+        state: Option<&mut ErasedLocalState>,
     ) {
         let ibordery = Self::BORDER.1 as isize;
         let x0 = RowBuffer::x0_offset::<T::InputT>();

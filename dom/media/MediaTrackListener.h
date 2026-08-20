@@ -10,7 +10,6 @@
 
 namespace mozilla {
 
-class AudioSegment;
 class MediaTrackGraph;
 class MediaStreamVideoSink;
 class VideoSegment;
@@ -101,8 +100,8 @@ class MediaTrackListener {
 
 /**
  * This is a base class for media graph thread listener direct callbacks from
- * within AppendToTrack(). It is bound to a certain track and can only be
- * installed on audio tracks. Once added to a track on any track in the graph,
+ * within AppendToTrack(). It is bound to a certain track, and should be used
+ * only with video tracks. Once added to a track in the graph,
  * the graph will try to install it at that track's source of media data.
  *
  * This works for ForwardedInputTracks, which will forward the listener to the
@@ -132,7 +131,7 @@ class DirectMediaTrackListener : public MediaTrackListener {
    */
   virtual void NotifyRealtimeTrackData(MediaTrackGraph* aGraph,
                                        TrackTime aTrackOffset,
-                                       const MediaSegment& aMedia) {}
+                                       const MediaSegment& aMedia) = 0;
 
   /**
    * When a direct listener is processed for installation by the
@@ -159,7 +158,6 @@ class DirectMediaTrackListener : public MediaTrackListener {
  protected:
   virtual ~DirectMediaTrackListener() = default;
 
-  void MirrorAndDisableSegment(AudioSegment& aFrom, AudioSegment& aTo);
   void MirrorAndDisableSegment(VideoSegment& aFrom, VideoSegment& aTo,
                                DisabledTrackMode aMode);
   void NotifyRealtimeTrackDataAndApplyTrackDisabling(MediaTrackGraph* aGraph,

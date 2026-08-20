@@ -2133,6 +2133,10 @@ bool IMContextWrapper::DispatchKeyEventsForCommittedCharacter(
     WidgetKeyboardEvent& aKeyEvent, bool aDispatchKeyUp) {
   MOZ_ASSERT(aKeyEvent.mMessage == eKeyDown);
 
+  if (NS_WARN_IF(!mLastFocusedWindow)) {
+    return true;
+  }
+
   mKeyboardEventWasDispatched = true;
 
   // Dispatch eKeyDown event

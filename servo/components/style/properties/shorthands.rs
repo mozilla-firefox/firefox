@@ -647,83 +647,6 @@ pub mod vertical_align {
 }
 
 #[cfg(feature = "gecko")]
-pub mod page_break_before {
-    use super::*;
-    pub use crate::properties::generated::shorthands::page_break_before::*;
-
-    use crate::values::specified::BreakBetween;
-
-    pub fn parse_value<'i>(
-        context: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Longhands, ParseError<'i>> {
-        Ok(expanded! {
-            break_before: BreakBetween::parse_legacy(context, input)?,
-        })
-    }
-
-    impl<'a> ToCss for LonghandsToSerialize<'a> {
-        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-        where
-            W: fmt::Write,
-        {
-            self.break_before.to_css_legacy(dest)
-        }
-    }
-}
-
-#[cfg(feature = "gecko")]
-pub mod page_break_after {
-    pub use crate::properties::generated::shorthands::page_break_after::*;
-
-    use super::*;
-    use crate::values::specified::BreakBetween;
-
-    pub fn parse_value<'i>(
-        context: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Longhands, ParseError<'i>> {
-        Ok(expanded! {
-            break_after: BreakBetween::parse_legacy(context, input)?,
-        })
-    }
-
-    impl<'a> ToCss for LonghandsToSerialize<'a> {
-        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-        where
-            W: fmt::Write,
-        {
-            self.break_after.to_css_legacy(dest)
-        }
-    }
-}
-
-#[cfg(feature = "gecko")]
-pub mod page_break_inside {
-    use super::*;
-    pub use crate::properties::generated::shorthands::page_break_inside::*;
-    use crate::values::specified::BreakWithin;
-
-    pub fn parse_value<'i>(
-        context: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Longhands, ParseError<'i>> {
-        Ok(expanded! {
-            break_inside: BreakWithin::parse_legacy(context, input)?,
-        })
-    }
-
-    impl<'a> ToCss for LonghandsToSerialize<'a> {
-        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-        where
-            W: fmt::Write,
-        {
-            self.break_inside.to_css_legacy(dest)
-        }
-    }
-}
-
-#[cfg(feature = "gecko")]
 pub mod offset {
     use super::*;
     pub use crate::properties::generated::shorthands::offset::*;
@@ -819,49 +742,6 @@ pub mod offset {
             }
             Ok(())
         }
-    }
-}
-
-pub mod _webkit_perspective {
-    pub use crate::properties::generated::shorthands::_webkit_perspective::*;
-
-    use super::*;
-
-    pub fn parse_value<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Longhands, ParseError<'i>> {
-        use crate::properties::longhands::perspective;
-        use crate::values::generics::NonNegative;
-        use crate::values::specified::{AllowQuirks, Length, Perspective};
-
-        if let Ok(l) = input.try_parse(|input| {
-            Length::parse_non_negative_quirky(context, input, AllowQuirks::Always)
-        }) {
-            Ok(expanded! {
-                perspective: Perspective::Length(NonNegative(l)),
-            })
-        } else {
-            Ok(expanded! {
-                perspective: perspective::parse(context, input)?
-            })
-        }
-    }
-}
-
-pub mod _webkit_transform {
-    pub use crate::properties::generated::shorthands::_webkit_transform::*;
-
-    use super::*;
-
-    pub fn parse_value<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Longhands, ParseError<'i>> {
-        use crate::values::specified::Transform;
-        Ok(expanded! {
-            transform: Transform::parse_legacy(context, input)?,
-        })
     }
 }
 
@@ -4372,32 +4252,6 @@ pub mod grid {
             dest.write_str(" / ")?;
             self.grid_template_columns.to_css(dest)?;
             Ok(())
-        }
-    }
-}
-
-#[cfg(feature = "gecko")]
-pub mod _webkit_line_clamp {
-    use super::*;
-    pub use crate::properties::generated::shorthands::_webkit_line_clamp::*;
-
-    use crate::values::specified::LineClamp;
-
-    pub fn parse_value<'i>(
-        context: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Longhands, ParseError<'i>> {
-        Ok(expanded! {
-            line_clamp: LineClamp::parse_legacy(context, input)?,
-        })
-    }
-
-    impl<'a> ToCss for LonghandsToSerialize<'a> {
-        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-        where
-            W: fmt::Write,
-        {
-            self.line_clamp.to_css_legacy(dest)
         }
     }
 }

@@ -157,13 +157,6 @@ class Exception;
 }  // namespace mozilla
 
 /***************************************************************************/
-// data declarations...
-extern const char XPC_EXCEPTION_CONTRACTID[];
-extern const char XPC_CONSOLE_CONTRACTID[];
-extern const char XPC_SCRIPT_ERROR_CONTRACTID[];
-extern const char XPC_XPCONNECT_CONTRACTID[];
-
-/***************************************************************************/
 // Helper function.
 
 namespace xpc {

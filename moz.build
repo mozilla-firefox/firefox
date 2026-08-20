@@ -158,6 +158,9 @@ with Files(".vscode/**"):
 with Files(".zed/**"):
     BUG_COMPONENT = ("Developer Infrastructure", "Developer Environment Integration")
 
+with Files(".idea/**"):
+    BUG_COMPONENT = ("Firefox for Android", "Tooling")
+
 with Files(".ycm_extra_conf.py"):
     BUG_COMPONENT = ("Developer Infrastructure", "Developer Environment Integration")
 

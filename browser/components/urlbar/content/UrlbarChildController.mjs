@@ -3,23 +3,22 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { UrlbarShared } from "chrome://browser/content/urlbar/UrlbarShared.mjs";
+import { UrlbarQueryContext } from "chrome://browser/content/urlbar/UrlbarQueryContext.mjs";
 import { UrlbarChildTelemetry } from "chrome://browser/content/urlbar/UrlbarChildTelemetry.mjs";
 import { UrlbarParentControllerProxy } from "chrome://browser/content/urlbar/UrlbarParentControllerProxy.mjs";
+import * as UrlbarContentUtils from "chrome://browser/content/urlbar/UrlbarContentUtils.mjs";
 import UrlbarPrefs from "chrome://browser/content/urlbar/UrlbarContentPrefs.mjs";
 
-const { AppConstants } = ChromeUtils.importESModule(
-  "resource://gre/modules/AppConstants.sys.mjs"
-);
+const lazy = typeof ChromeUtils != "undefined" ? {} : null;
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
-  UrlbarParentController:
-    "moz-src:///browser/components/urlbar/UrlbarParentController.sys.mjs",
-});
+if (lazy) {
+  ChromeUtils.defineESModuleGetters(lazy, {
+    UrlbarParentController:
+      "moz-src:///browser/components/urlbar/UrlbarParentController.sys.mjs",
+  });
+}
 
 /**
- * @import {URIFixupPrimitives} from "chrome://browser/content/urlbar/UrlbarShared.mjs"
  * @import {UrlbarChild} from "../../../actors/UrlbarChild.sys.mjs"
  * @import {UrlbarInput} from "chrome://browser/content/urlbar/UrlbarInput.mjs"
  * @import {UrlbarParentController} from "moz-src:///browser/components/urlbar/UrlbarParentController.sys.mjs"
@@ -59,9 +58,6 @@ export class UrlbarChildController {
   #parentController;
 
   #input;
-
-  /** @type {UrlbarChild} */
-  #actor;
 
   /** @type {UrlbarView} */
   #view = null;
@@ -111,7 +107,6 @@ export class UrlbarChildController {
           )
         )
       : /** @type {UrlbarChild} */ (options.input.window.UrlbarActorPort);
-    this.#actor = actor;
     let { sapName, isPrivate } = options.input;
     // A content-realm input has no in-process parent, so it always takes the
     // message path; a privileged one asks the actor (it honors the
@@ -170,9 +165,6 @@ export class UrlbarChildController {
       (this.#childTelemetry ??= new UrlbarChildTelemetry(this))
     );
   }
-  get platform() {
-    return AppConstants.platform;
-  }
   /**
    * The selection behavior that the user has used to select a result. The
    * setter ignores a change to "arrow" once "tab" has been recorded, since we
@@ -199,9 +191,6 @@ export class UrlbarChildController {
   setView(view) {
     this.#view = view;
   }
-  getViewUpdate(result, idsByName) {
-    return this.#parentController.getViewUpdate(result, idsByName);
-  }
   onBeforeSelection(result, element) {
     return this.#parentController.onBeforeSelection(result, element);
   }
@@ -225,6 +214,25 @@ export class UrlbarChildController {
   }
   removeListener(listener) {
     this.#listeners.delete(listener);
+  }
+  /**
+   * Takes a notification off the wire, building the query context in this realm
+   * before anything reads it.
+   *
+   * @param {string} notification
+   *   The notification, one of `UrlbarShared.NOTIFICATIONS`.
+   * @param {...any} params
+   *   The notification's arguments, the query context in its wire form.
+   */
+  notifyFromWire(notification, ...params) {
+    this.notify(
+      notification,
+      ...params.map(param =>
+        param?.serializedQueryContext
+          ? UrlbarQueryContext.fromWire(param.serializedQueryContext)
+          : param
+      )
+    );
   }
   /**
    * Hands a notification to the listeners, dropping the results and the end of
@@ -435,7 +443,7 @@ export class UrlbarChildController {
       return;
     }
 
-    const isMac = AppConstants.platform == "macosx";
+    const isMac = UrlbarContentUtils.getPlatform() == "macosx";
     // Handle readline/emacs-style navigation bindings on Mac.
     if (
       isMac &&
@@ -777,7 +785,10 @@ export class UrlbarChildController {
     if (this.view.isOpen) {
       return false;
     }
-    if (AppConstants.platform != "macosx" && AppConstants.platform != "linux") {
+    if (
+      UrlbarContentUtils.getPlatform() != "macosx" &&
+      UrlbarContentUtils.getPlatform() != "linux"
+    ) {
       return false;
     }
     let isArrowUp = event.keyCode == KeyEvent.DOM_VK_UP;
@@ -833,78 +844,32 @@ export class UrlbarChildController {
     if (this.#input.sapName == "searchbar") {
       return false;
     }
+    if (!UrlbarShared.isInstance(event, KeyboardEvent)) {
+      return false;
+    }
+    let keyEvent = /** @type {KeyboardEvent} */ (event);
     return (
-      KeyboardEvent.isInstance(event) &&
-      event.keyCode == KeyEvent.DOM_VK_RETURN &&
-      (AppConstants.platform == "macosx" ? event.metaKey : event.ctrlKey) &&
+      keyEvent.keyCode == KeyEvent.DOM_VK_RETURN &&
+      (UrlbarContentUtils.getPlatform() == "macosx"
+        ? keyEvent.metaKey
+        : keyEvent.ctrlKey) &&
       !(/** @type {any} */ (event)._disableCanonization) &&
       UrlbarPrefs.get("ctrlCanonizesURLs")
     );
   }
 
   /**
-   * Gets URI fixup primitives for a string. Runs through the actor since the
-   * content-web input can't reach `Services.uriFixup` (see
-   * `UrlbarChild.getFixupPrimitives`).
-   *
-   * @param {string} searchString
-   *   The string to fix up.
-   * @returns {?URIFixupPrimitives}
-   */
-  getFixupPrimitives(searchString) {
-    return this.#actor.getFixupPrimitives(searchString, this.#input.isPrivate);
-  }
-
-  /**
-   * Gets a URL's display spec. Runs through the actor since the content-web
-   * input can't reach `Services.io` (see `UrlbarChild.getDisplaySpec`).
-   *
-   * @param {string} url
-   *   The URL to parse.
-   * @returns {?string}
-   */
-  getDisplaySpec(url) {
-    return this.#actor.getDisplaySpec(url);
-  }
-
-  /**
-   * Gets the SUMO URL for a support topic. Runs through the actor since the
-   * content-web input can't reach `Services.urlFormatter` (see
-   * `UrlbarChild.getSupportUrl`).
-   *
-   * @param {string} topic
-   *   The support page slug to append to the SUMO base URL.
-   * @returns {string}
-   */
-  getSupportUrl(topic) {
-    return this.#actor.getSupportUrl(topic);
-  }
-
-  /**
-   * Whether a string reads right-to-left. Runs through the actor since the
-   * content-web input can't reach the chrome-only `windowUtils` (see
-   * `UrlbarChild.isTextDirectionRTL`).
-   *
-   * @param {string} value
-   *   The text to check.
-   * @returns {boolean}
-   */
-  isTextDirectionRTL(value) {
-    return this.#actor.isTextDirectionRTL(value, window);
-  }
-
-  /**
    * Determines where a URL/page picked in `<moz-urlbar>` should be opened. Only
-   * the `BrowserUtils.whereToOpenLink` call is routed through the actor (a system
-   * module the content-web scope can't import); everything else, including the
-   * guarded empty-tab read, is content-safe and stays here.
+   * the call to `BrowserUtils.whereToOpenLink` (a system module the content-web
+   * scope can't import) goes through `UrlbarContentUtils`; everything else,
+   * including the guarded empty-tab read, is content-safe and stays here.
    *
    * @param {KeyboardEvent | MouseEvent} event
    *   The event that triggered the opening.
    * @returns {"current" | "tabshifted" | "tab" | "save" | "window"}
    */
   whereToOpen(event) {
-    let isKeyboardEvent = KeyboardEvent.isInstance(event);
+    let isKeyboardEvent = UrlbarShared.isInstance(event, KeyboardEvent);
     let reuseEmpty = isKeyboardEvent;
     /** @type {"current" | "tabshifted" | "tab" | "save" | "window"} */
     let where;
@@ -920,7 +885,7 @@ export class UrlbarChildController {
       // open in current tab to avoid handling as new tab modifier.
       where = "current";
     } else {
-      where = this.#actor.whereToOpenLink(event);
+      where = UrlbarContentUtils.whereToOpenLink(event);
     }
     let openInTabPref =
       this.#input.sapName == "searchbar"
@@ -944,21 +909,6 @@ export class UrlbarChildController {
       where = "current";
     }
     return where;
-  }
-
-  /**
-   * Whether a pick opened with the given `where` will load in the background.
-   * Runs through the actor since the content-web input can't import
-   * `BrowserUtils` (see `UrlbarChild.willLoadInBackground`).
-   *
-   * @param {string} where
-   *   Where the pick will open, as returned by `whereToOpen`.
-   * @param {object} params
-   *   The params that will be passed to `openLinkIn`.
-   * @returns {boolean}
-   */
-  willLoadInBackground(where, params) {
-    return this.#actor.willLoadInBackground(where, params);
   }
 
   focusOnUnifiedSearchButton() {

@@ -265,6 +265,8 @@ skip-if = [
 ["browser_restore_redirect.js"]
 https_first_disabled = true
 
+["browser_restore_respects_pending_minimize.js"]
+
 ["browser_restore_reversed_z_order.js"]
 skip-if = [
   "true", # Bug 1455602

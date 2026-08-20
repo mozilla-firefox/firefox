@@ -17,4 +17,5 @@ harness = false
 [dependencies]
 nsstring = { path = "../../xpcom/rust/nsstring/" }
 skrifa = { version = "0.44.0" }
+style = { path = "../../servo/components/style", features = ["gecko"] }
 thin-vec = { version = "0.2.1" }

@@ -405,7 +405,7 @@ function openAboutDialog() {
 }
 
 function openReferralsPage() {
-  Referrals.openReferralsTab(window);
+  Referrals.openReferralsTab(window, "help_menu");
 }
 
 async function openPreferences(paneID, extraArgs) {

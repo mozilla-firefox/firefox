@@ -39,14 +39,8 @@ disabled = "Disabled as we want to run this only as perftest, not regular CI"
 ["browser_ml_smart_tab_perf.js"]
 disabled = "Disabled as we want to run this only as perftest, not regular CI"
 
-["browser_ml_speecht5_tts.js"]
-disabled = "Disabled as we want to run this only as perftest, not regular CI"
-
 ["browser_ml_suggest_feature_perf.js"]
 disabled = "Disabled as we want to run this only as perftest, not regular CI"
 
 ["browser_ml_suggest_inference.js"]
-disabled = "Disabled as we want to run this only as perftest, not regular CI"
-
-["browser_ml_summarizer_perf.js"]
 disabled = "Disabled as we want to run this only as perftest, not regular CI"

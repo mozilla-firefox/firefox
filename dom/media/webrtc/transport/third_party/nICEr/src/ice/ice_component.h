@@ -91,7 +91,7 @@ int nr_ice_component_service_pre_answer_requests(nr_ice_peer_ctx *pctx, nr_ice_c
 int nr_ice_component_nominated_pair(nr_ice_component *comp, nr_ice_cand_pair *pair);
 void nr_ice_component_failed_pair(nr_ice_component *comp, nr_ice_cand_pair *pair);
 void nr_ice_component_check_if_failed(nr_ice_component *comp);
-int nr_ice_component_select_pair(nr_ice_peer_ctx *pctx, nr_ice_component *comp);
+void nr_ice_component_maybe_select_pair(nr_ice_peer_ctx *pctx, nr_ice_component *comp);
 int nr_ice_component_set_failed(nr_ice_component *comp);
 int nr_ice_component_finalize(nr_ice_component *lcomp, nr_ice_component *rcomp);
 int nr_ice_component_insert_pair(nr_ice_component *pcomp, nr_ice_cand_pair *pair);

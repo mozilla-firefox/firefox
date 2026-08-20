@@ -41,6 +41,34 @@ class MIRGraph;
 class LInstruction;
 enum class CacheOp : uint16_t;
 
+// Describes a range of JIT code for the profiling backends.
+//
+// |name| does not include the source location: the jitdump backend appends it
+// to the symbol name, while the Windows ETW backend reports it out of band, in
+// a SourceLoad event and in the Line/Column fields of the MethodLoad event.
+struct JitCodeDesc {
+  JS::UniqueChars name;
+
+  // Where this code was generated from, when it belongs to a JSScript.
+  // |filename| is borrowed from the script's ScriptSource, which must outlive
+  // this JitCodeDesc. |sourceId| is the ScriptSource id, used to tie the code
+  // to its source in backends that report the two separately.
+  const char* filename = nullptr;
+  uint32_t sourceId = 0;
+  uint32_t line = 0;
+  uint32_t column = 0;
+
+  JitCodeDesc() = default;
+  explicit JitCodeDesc(JS::UniqueChars&& name) : name(std::move(name)) {}
+
+  explicit operator bool() const { return bool(name); }
+  bool hasSource() const { return filename != nullptr; }
+
+  // |name| with " (filename:line:column)" appended, or a copy of |name| if
+  // this code has no source location.
+  JS::UniqueChars nameWithSourceLocation() const;
+};
+
 struct AutoLockPerfSpewer {
   AutoLockPerfSpewer();
   ~AutoLockPerfSpewer();
@@ -105,9 +133,8 @@ class PerfSpewer {
   // file.
   void saveWasmCodeDebugInfo(uintptr_t codeBase, AutoLockPerfSpewer& lock);
 
-  void saveJSProfile(JitCode* code, JS::UniqueChars& desc, JSScript* script);
-  void saveWasmProfile(uintptr_t codeBase, size_t codeSize,
-                       JS::UniqueChars& desc);
+  void saveJSProfile(JitCode* code, JitCodeDesc& desc, JSScript* script);
+  void saveWasmProfile(uintptr_t codeBase, size_t codeSize, JitCodeDesc& desc);
 
   virtual void disable(AutoLockPerfSpewer& lock);
   virtual void disable();
@@ -142,11 +169,10 @@ class PerfSpewer {
 
   static void Init();
 
-  static void CollectJitCodeInfo(JS::UniqueChars& function_name, JitCode* code,
+  static void CollectJitCodeInfo(JitCodeDesc& desc, JitCode* code,
                                  AutoLockPerfSpewer& lock);
-  static void CollectJitCodeInfo(JS::UniqueChars& function_name,
-                                 void* code_addr, uint64_t code_size,
-                                 AutoLockPerfSpewer& lock);
+  static void CollectJitCodeInfo(JitCodeDesc& desc, void* code_addr,
+                                 uint64_t code_size, AutoLockPerfSpewer& lock);
 
   // Tear down recording state: free heap memory allocated using the system
   // allocator and clear the captured profiling state so recording stops. This
@@ -201,7 +227,7 @@ class IonPerfSpewer : public PerfSpewer {
 
   void saveJSProfile(JSContext* cx, JSScript* script, JitCode* code);
   void saveWasmProfile(uintptr_t codeBase, size_t codeSize,
-                       JS::UniqueChars& desc);
+                       JS::UniqueChars&& desc);
 };
 
 class WasmBaselinePerfSpewer : public PerfSpewer {
@@ -216,7 +242,7 @@ class WasmBaselinePerfSpewer : public PerfSpewer {
 
   [[nodiscard]] bool needsToRecordInstruction() const;
   void recordInstruction(MacroAssembler& masm, const wasm::OpBytes& op);
-  void saveProfile(uintptr_t codeBase, size_t codeSize, JS::UniqueChars& desc);
+  void saveProfile(uintptr_t codeBase, size_t codeSize, JS::UniqueChars&& desc);
 };
 
 class BaselineInterpreterPerfSpewer : public PerfSpewer {
@@ -283,12 +309,12 @@ class IonICPerfSpewer : public InlineCachePerfSpewer {
 };
 
 class PerfSpewerRangeRecorder {
-  using OffsetPair = std::tuple<uint32_t, JS::UniqueChars>;
+  using OffsetPair = std::tuple<uint32_t, JitCodeDesc>;
   Vector<OffsetPair, 0, js::SystemAllocPolicy> ranges;
 
   MacroAssembler& masm;
 
-  void appendEntry(JS::UniqueChars& desc);
+  void appendEntry(JitCodeDesc& desc);
 
  public:
   explicit PerfSpewerRangeRecorder(MacroAssembler& masm_) : masm(masm_) {};

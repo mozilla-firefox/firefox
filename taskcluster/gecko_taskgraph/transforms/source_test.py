@@ -15,7 +15,9 @@ from taskgraph.transforms.base import TransformSequence
 from taskgraph.util.attributes import keymatch
 from taskgraph.util.schema import Schema, optionally_keyed_by, resolve_keyed_by
 from taskgraph.util.treeherder import join_symbol, split_symbol
+from taskgraph.util.yaml import load_yaml
 
+from gecko_taskgraph import GECKO
 from gecko_taskgraph.transforms.job import JobDescriptionSchema
 
 
@@ -52,6 +54,10 @@ class SourceTestDescriptionSchema(Schema, forbid_unknown_fields=False, kw_only=T
             ),
         ]
     ] = None
+    # For vendoring-verification tasks: the moz.yaml files this task checks. The
+    # run command and the files-changed patterns are built from this list, in
+    # vendor_verify_members below.
+    members: Optional[list[str]] = None
     # A list of artifacts to install from 'fetch' tasks.
     fetches: Optional[  # type: ignore
         dict[
@@ -76,6 +82,76 @@ def set_job_name(config, jobs):
         if "task-from" in job and job["task-from"] != "kind.yml":
             from_name = os.path.splitext(job["task-from"])[0]
             job["name"] = "{}-{}".format(from_name, job["name"])
+        yield job
+
+
+VENDOR_VERIFY_TASKS_FILE = "vendor-verify.yml"
+VENDOR_VERIFY_WRAPPER = "taskcluster/scripts/misc/verify-vendored-library.py"
+VENDOR_VERIFY_EXPECTED_FAIL = "taskcluster/scripts/misc/vendor-verify-expected-fail.yml"
+# A change to any of these can affect every library's re-vendoring, so they
+# trigger every group: the vendoring machinery, the version-control layer it uses
+# to detect changes (add_remove_files / working_directory_clean / diff), the
+# wrapper, and the annotations it reads.
+VENDOR_VERIFY_SHARED_WHEN = [
+    "python/mozbuild/mozbuild/vendor/**",
+    "python/mozversioncontrol/**",
+    VENDOR_VERIFY_WRAPPER,
+    VENDOR_VERIFY_EXPECTED_FAIL,
+]
+# Some libraries' update-actions run a tool by name rather than by path, so the
+# toolchains the tasks fetch also have to be on PATH. gn is found by path and so
+# needs no entry here.
+VENDOR_VERIFY_TOOL_PATH = "$MOZ_FETCHES_DIR/rustc/bin:$MOZ_FETCHES_DIR/node/bin"
+
+
+def vendor_verify_triggers(member):
+    """files-changed patterns for one vendored library.
+
+    Its moz.yaml directory, which covers the moz.yaml, its patches and any in-tree
+    generated files, plus its vendor-directory -- for some libraries (e.g. gfx/angle
+    vendors into third_party/angle) that lives elsewhere in the tree, so the moz.yaml
+    directory alone would miss changes to the sources.
+    """
+    dirs = {os.path.dirname(member)}
+    try:
+        manifest = load_yaml(os.path.join(GECKO, member)) or {}
+        vendor_dir = (manifest.get("vendoring") or {}).get("vendor-directory")
+        if vendor_dir:
+            dirs.add(vendor_dir.rstrip("/"))
+    except Exception:
+        pass
+    return [f"{d}/**" for d in dirs]
+
+
+@transforms.add
+def vendor_verify_members(config, jobs):
+    """Build the command and triggers for vendoring-verification tasks.
+
+    Tasks in vendor-verify.yml name the libraries they check in `members`. Neither
+    field can be expressed in the yaml: the command has to join the list, and the
+    triggers need each library's moz.yaml read to find its vendor-directory.
+    """
+    for job in jobs:
+        if job.get("task-from") != VENDOR_VERIFY_TASKS_FILE:
+            yield job
+            continue
+        members = sorted(job.pop("members", []))
+        if members:
+            job["run"]["command"] = (
+                f'PATH="{VENDOR_VERIFY_TOOL_PATH}:$PATH" '
+                f"./mach python {VENDOR_VERIFY_WRAPPER} "
+                f"--expected-fail {VENDOR_VERIFY_EXPECTED_FAIL} " + " ".join(members)
+            )
+            triggers = [p for m in members for p in vendor_verify_triggers(m)]
+            job["when"] = {
+                "files-changed": sorted(set(triggers) | set(VENDOR_VERIFY_SHARED_WHEN))
+            }
+        else:
+            # The coverage task verifies no library, so it needs none of the
+            # toolchains, and it is the most frequently triggered of these tasks.
+            # Fetches inherited from task-defaults merge additively, so they cannot
+            # be cleared in the yaml.
+            job.pop("fetches", None)
         yield job
 
 

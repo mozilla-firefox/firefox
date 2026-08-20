@@ -1,0 +1,37 @@
+# An SVGFE *backdrop* filter mid-async-scroll. APZ has moved the scroll frame to
+# 100 but the display list was painted at 50, so the offset baked into the item
+# coordinates (external-scroll-offset) lags the sampled offset by an async delta
+# of 50. This is the state a wheel or fling produces between paints, and the one
+# a subregion offset derived once from the enclosing reference frame cannot
+# handle: it would be wrong by exactly the async delta.
+#
+# Sampled total scroll is scroll-offset + external-scroll-offset, so 50 + 50 =
+# 100 here. Items are authored in painted coordinates (y=50); WebRender adds the
+# baked 50 at push time and the scroll node subtracts the current 100, landing
+# the red backdrop at y=0. The subregion must make the same round trip, and is
+# authored in the same space as the geometry. If it is not normalized it ends up
+# 50px low and red shows through the bottom half. See bug 1975275.
+root:
+  items:
+    - type: scroll-frame
+      bounds: [0, 0, 100, 100]
+      content-size: [100, 1000]
+      external-scroll-offset: [0, 50]
+      scroll-offset: [0, 50]
+      items:
+        - type: rect
+          color: red
+          bounds: [0, 50, 100, 100]
+        - type: backdrop-filter
+          bounds: [0, 50, 100, 100]
+          filters:
+            - svgfe: SourceGraphic
+            - svgfe: flood
+              linear: false
+              color: green
+              subregion: [0, 50, 100, 50]
+            - svgfe: compositeover
+              linear: false
+              subregion: [0, 50, 100, 100]
+              in: 1
+              in2: 0

@@ -6,6 +6,7 @@ package org.mozilla.fenix.tabstray.ui.tabitems
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
@@ -50,8 +52,11 @@ fun TabGroupOnboardingGridItem(
         description = stringResource(R.string.tab_group_onboarding_grid_item_description),
         modifier =
             modifier
+                .fillMaxWidth()
                 .heightIn(min = OnboardingGridItemMinHeight)
-                .testTag(TabsTrayTestTag.TAB_GROUP_ONBOARDING_GRID_ITEM),
+                .testTag(TabsTrayTestTag.TAB_GROUP_ONBOARDING_GRID_ITEM)
+                .focusable(true)
+                .semantics(mergeDescendants = true) {},
         title = stringResource(R.string.tab_group_onboarding_item_title),
         illustration = {
             AnimatedIllustration(
@@ -67,6 +72,7 @@ fun TabGroupOnboardingGridItem(
         },
         contentSpacing = 0.dp,
         verticalAlignment = Alignment.CenterVertically,
+        closeButtonContentDescription = stringResource(R.string.tab_group_onboarding_item_dismiss_content_description),
         onDismiss = onDismiss,
     )
 }
@@ -93,7 +99,9 @@ fun TabGroupOnboardingListItem(
                     top = FirefoxTheme.layout.space.static100,
                     bottom = FirefoxTheme.layout.space.static100,
                 )
-                .testTag(TabsTrayTestTag.TAB_GROUP_ONBOARDING_LIST_ITEM),
+                .testTag(TabsTrayTestTag.TAB_GROUP_ONBOARDING_LIST_ITEM)
+                .focusable(true)
+                .semantics(mergeDescendants = true) {},
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(

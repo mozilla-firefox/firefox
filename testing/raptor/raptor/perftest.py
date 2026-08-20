@@ -944,6 +944,12 @@ class PerftestDesktop(Perftest):
         if self.debug_mode:
             chrome_args.extend(["--auto-open-devtools-for-tabs"])
 
+        chrome_args.extend(
+            arg.strip()
+            for arg in test.get("chrome_args", "").splitlines()
+            if arg.strip()
+        )
+
         return chrome_args
 
     def get_browser_meta(self):

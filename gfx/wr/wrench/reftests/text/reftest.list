@@ -49,10 +49,19 @@ fuzzy(1,26) platform(linux) == subpixel-skew.yaml subpixel-skew.png
 scale(*) fuzzy(1,381) platform(linux) == subpixel-translate.yaml subpixel-translate-ref.yaml
 scale(*) != shadow-rotate.yaml blank.yaml
 platform(linux) == embedded-bitmaps.yaml embedded-bitmaps.png
-scale(*) fuzzy(1,20) platform(linux) == bitmap-glyph-transform.yaml bitmap-glyph-transform-ref.yaml
+# Only meaningful at scale 1.0: wrench emulates a device pixel scale by pushing a
+# root reference frame with a scale transform, and a bitmap-strike run rasterizes at
+# its transform's scale (bug 2064316), so at other scales the test rasterizes at the
+# emulated scale while the reference stays at the 1.0 it names. Gecko's real device
+# pixel scale is not a transform, so nothing is lost there.
+scale(1.0) fuzzy(1,20) platform(linux) == bitmap-glyph-transform.yaml bitmap-glyph-transform-ref.yaml
 # bug 2061411 / 2062234: a scale transform, uniform or not, must reach an
-# embedded-bitmap glyph. FreeType-only (the bitmap strike selection), so linux.
-scale(*) fuzzy(1,20) platform(linux) == 2061411-bitmap-scale.yaml 2061411-bitmap-scale-ref.yaml
+# embedded-bitmap glyph. bug 2064316: it must reach the rasterizer as well, so the
+# glyph is rendered at its final size instead of being scaled up from the
+# untransformed one. FreeType-only (the bitmap strike selection), so linux, and
+# scale 1.0 only for the same reason as bitmap-glyph-transform above.
+scale(1.0) platform(linux) == 2061411-bitmap-scale.yaml 2061411-bitmap-scale-ref.yaml
+scale(1.0) platform(linux) != 2061411-bitmap-scale.yaml 2061411-bitmap-scale-notref.yaml
 fuzzy(1,22) platform(linux) == clipped-transform.yaml clipped-transform.png
 platform(mac) fuzzy(195,30) == color-bitmap-shadow.yaml color-bitmap-shadow-ref.yaml
 scale(*) platform(linux) == writing-modes.yaml writing-modes-ref.yaml

@@ -140,7 +140,7 @@ function initVisibilityChanges(aWindow, aElement) {
       return false;
     }
 
-    return ["http", "https"].includes(aLocation.scheme);
+    return ["http", "https", "moz-extension"].includes(aLocation.scheme);
   };
 
   aWindow.gBrowser.addProgressListener({

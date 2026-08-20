@@ -26,6 +26,11 @@ add_task(async function test_privatebrowsing_disabled() {
     true,
     "The private browsing command should be hidden"
   );
+  is(
+    newWin.document.getElementById("menu_newPrivateWindow").hidden,
+    true,
+    "The File menu private browsing item should be hidden"
+  );
   await BrowserTestUtils.closeWindow(newWin);
 
   await testPageBlockedByPolicy("about:privatebrowsing");

@@ -962,6 +962,10 @@ var View = {
         fluentName = "about-processes-utility-actor-pkcs11-module";
         break;
 
+      case "hwInference":
+        fluentName = "about-processes-utility-actor-hw-inference";
+        break;
+
       default:
         fluentName = "about-processes-utility-actor-unknown";
         break;

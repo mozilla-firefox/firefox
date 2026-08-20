@@ -43,7 +43,6 @@ class DistanceToNearestScrollContainer {
   bool Valid() const { return mDistance != kInvalid; }
 
   bool operator==(const DistanceToNearestScrollContainer&) const = default;
-  bool operator!=(const DistanceToNearestScrollContainer&) const = default;
 
  private:
   // 0 is invalid - a frame itself cannot be its own nearest scroll container.

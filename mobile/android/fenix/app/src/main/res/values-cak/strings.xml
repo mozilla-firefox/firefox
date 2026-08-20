@@ -1304,6 +1304,11 @@
   <string name="preference_light_theme">Yuk\'unel</string>
   <!-- Preference for using dark theme -->
   <string name="preference_dark_theme">Q\'equ\'m</string>
+  <!--
+    Preference for using the OLED theme. For localization, this can be translated as "True Black", "Maximum Darkness",
+    or "Full dark" if needed.
+  -->
+  <string name="preference_oled_theme">Q\'equm</string>
   <!-- Preference for using using dark or light theme automatically set by battery -->
   <string name="preference_auto_battery_theme">Xjikib\'äx ruma ri Yakonel Uchuq\'ab\'äl</string>
   <!-- Preference for using following device theme -->
@@ -1450,6 +1455,8 @@
   <string name="preferences_inactive_tabs">Kejal ri ojer taq ruwi\' pa echupun</string>
   <!-- Title of inactive tabs preference -->
   <string name="preferences_inactive_tabs_title">Ri taq ruwi\' man e\'atz\'eton ta pa ka\'i\' wuqq\'ij yejal pa ri echupun tanaj.</string>
+  <!-- Title for the preference to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_feature">Ketzij molaj taq ruwi\'</string>
   <!--
     Privacy report
 
@@ -1694,6 +1701,14 @@
   <string name="ungroup_tab_group_confirmation_dialog_confirm">Memolaj</string>
   <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_cancel">Tiq\'at</string>
+  <!-- Custom accessibility action to reorder a tab up rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_up">Tisilöx ruwi\' ajsik</string>
+  <!-- Custom accessibility action to reorder a tab left rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_left">Tisilöx ruwi\' pa xokon</string>
+  <!-- Custom accessibility action to reorder a tab right rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_right">Tisilöx ruwi\' pan ajkiq\'a\'</string>
+  <!-- Custom accessibility action to reorder a tab down rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_down">Tisilöx ruwi\' chuxe\'</string>
   <!--
     Color labels for tab groups, used for accessibility and selection UI.
 
@@ -3058,14 +3073,67 @@
   <string name="ip_protection_connecting">Nok…</string>
   <!-- Headline for the browser VPN onboarding card. %s is the name of the app (for example "Firefox"). -->
   <string name="ip_protection_onboarding_card_headline">Titojtob\'ëx z\'aqät VPN richin %s</string>
+  <!--
+    The body of the VPN onboarding card.
+    %1$s is a link using ip_protection_onboarding_body_link (“Browse with extra protection”) as text. It links to a support article about VPN on Firefox.
+    %2$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_onboarding_body">%1$s toq nrewaj ri ak\'ojlib\'al, achi\'el pa Wi-Fi ajwinäq k\'amab\'ey. Tak\'ulu\' %2$d sipan GB jujun ik\'.</string>
+  <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
+  <string name="ip_protection_onboarding_body_link">Katok rik\'in ruwi\' chajinïk</string>
+  <!--
+    The body of the VPN onboarding card for a promotion that provides unlimited data bandwidth for a certain time.
+    %1$s is a localized date (for example "Jun 9") indicating the end of the promotional period.
+    %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_promo">Tatzija\' re cha\'oj re\' richin chi ri awokem yalan ichinan chuqa\' k\'ayew nub\'än richin nilitäj. Tatojtob\'ej wakami richin nak\'ül ruwäch jaqäl k\'am rik\'in ri %1$s. %2$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Tetamäx ch\'aqa\' chik</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Wakami mani</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
+  <string name="ip_protection_connection_error_snackbar">Man xtikïr ta xok pa VPN. Tatojtob\'ej chik pa jujun ch\'uti ramaj.</string>
+  <!--
+    Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
+    %1$d is the total monthly allowance in GB (for example "50").
+  -->
+  <string name="ip_protection_data_limit_reached_snackbar">%1$d GB rutzij VPN okisan. Ri okem xtichojmirisäx ri jun chik ik\'.</string>
   <!-- Snackbar (in-app pop-up notification) action button text that takes the user to the VPN settings screen. -->
   <string name="ip_protection_data_limit_reached_snackbar_action">Taq nuk\'ulem</string>
+  <!-- Description shown on the browser VPN settings screen prompting the user to turn the VPN on. -->
+  <string name="ip_protection_settings_description" tools:ignore="UnusedResources">Tatzija\' ri VPN richin chi ri awokem yalan ichinan chuqa\' k\'ayew nub\'än richin nilitäj.</string>
+  <!-- Title shown on the browser VPN settings screen for location selection section. -->
+  <string name="ip_protection_location_title" tools:ignore="UnusedResources">K\'ojlib\'äl</string>
   <!-- Label for the Recommended server location option which is automatically selected by the browser. -->
   <string name="ip_protection_recommended_location" tools:ignore="UnusedResources">Chilab\'en</string>
+  <!-- Headline for the card that promotes the standalone Mozilla VPN product. -->
+  <string name="ip_protection_mozilla_vpn_upsell_headline" tools:ignore="UnusedResources,BrandUsage">Tachajij awi\' mas rik\'in ri Mozilla VPN</string>
+  <!-- Body for the card that promotes the standalone Mozilla VPN product. -->
+  <string name="ip_protection_mozilla_vpn_upsell_body" tools:ignore="UnusedResources">Tacha\' chi kikojol 300+ taq k\'ojlib\'äl chuqa\' ke\'achajij ronojel ri taq achokoy pa k\'a 5 taq okisaxel.</string>
+  <!-- Label for the button that takes the user to get the standalone Mozilla VPN product. -->
+  <string name="ip_protection_mozilla_vpn_upsell_button" tools:ignore="UnusedResources,BrandUsage">Tik\'ul Mozilla VPN</string>
+  <!-- Title for the browser VPN location picker screen. -->
+  <string name="ip_protection_location_picker_title" tools:ignore="UnusedResources">Ticha\' VPN k\'ojlib\'äl</string>
+  <!-- Description for what it means to use the Recommended setting and let the app automatically pick the best server location. -->
+  <string name="ip_protection_location_fastest_description" tools:ignore="BrandUsage">Firefox anin nrïl ri k\'ojlib\'äl</string>
+  <!-- Description for an unavailable VPN location in the location list. -->
+  <string name="ip_protection_location_unavailable_description">Man wachel ta</string>
+  <!-- Error message shown when the selected browser VPN location is unavailable. -->
+  <string name="ip_protection_location_unavailable" tools:ignore="UnusedResources">Man wachel ta ri k\'ojlib\'äl. Tacha\' jun chik k\'ojlib\'äl.</string>
+  <!-- Snackbar (in-app pop-up notification) text shown when the previously selected browser VPN location is unavailable and the recommended location was used instead. -->
+  <string name="ip_protection_location_unavailable_recommended_snackbar" tools:ignore="UnusedResources">Ri VPN k\'ojlib\'äl xcha\' man k\'o ta. Okinäq pa ri k\'ojlib\'äl chilab\'en.</string>
+  <!-- Title for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_locations_unavailable_title">Man e k\'o ta ri k\'ojlib\'äl</string>
+  <!-- Description for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_locations_unavailable_description">Xok a ri k\'ojlib\'äl chilab\'en.</string>
+  <!-- Title for the browser VPN location selection screen (displayed in the app bar) -->
+  <string name="ip_protection_locations_title">Ticha\' VPN k\'ojlib\'äl</string>
+  <!-- Content description for the browser VPN location selection screen top bar back button -->
+  <string name="ip_protection_locations_navigate_back_button_content_description">Katok pa k\'amaya\'l chi rij</string>
+  <!-- Title for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_location_unavailable_title" tools:ignore="UnusedResources">Ri jun kan k\'ojlib\'äl man k\'o ta</string>
+  <!-- Description for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_location_unavailable_recommended_description" tools:ignore="UnusedResources">Okinäq pa ri k\'ojlib\'äl chilab\'en.</string>
   <!--
     Autofill
 
@@ -3076,6 +3144,10 @@
   <string name="preferences_addresses">Taq ochochib\'äl</string>
   <!-- Preference and title for managing the settings for payment methods -->
   <string name="preferences_credit_cards_2">Rub\'eyal tojïk</string>
+  <!-- Preference for saving and autofilling credit cards -->
+  <string name="preferences_credit_cards_save_and_autofill_cards_2">Tiyak chuqa\' titz\'aqatisäx ri rub\'eyal rutojik</string>
+  <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s nril rusik\'ixik ronojel rub\'eyal rutojik ri e\'ayakon</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Sync tarjeta\' chi kikojol okisab\'äl</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3090,6 +3162,12 @@
   <string name="preferences_addresses_manage_addresses">Kenuk\'samajïx taq ochochib\'äl</string>
   <!-- Preference for saving and filling addresses -->
   <string name="preferences_addresses_save_and_autofill_addresses_2">Keyak chuqa\' kenojisäx ri ochochib\'äl</string>
+  <!-- Preference summary for saving and filling address data -->
+  <string name="preferences_addresses_save_and_autofill_addresses_summary_2">Ke\'atz\'ib\'aj rajilab\'al oyonib\'äl chuqa\' taq rochochib\'al taqoya\'l</string>
+  <!-- Preference option for syncing addresses across devices. This is displayed when the user is not signed into sync -->
+  <string name="preferences_addresses_sync_addresses_across_devices">Sync taq ochochib\'äl chi kikojol okisab\'äl</string>
+  <!-- Preference option for syncing addresses across devices. This is displayed when the user is signed into sync -->
+  <string name="preferences_addresses_sync_addresses">kexim taq ochochib\'äl</string>
   <!-- Content description navigating back from autofill settings screen. -->
   <string name="autofill_settings_navigate_back_button_content_description">Chi rij</string>
   <!-- Title of the "Add card" screen -->
@@ -3122,16 +3200,24 @@
   <string name="credit_cards_cancel_button">Tiq\'at</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Keyak tarjeta\'</string>
+  <!-- Error message for card number validation -->
+  <string name="credit_cards_number_validation_error_message_2">Tatz\'ib\'aj jun okel rajilab\'al tarjeta\'</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Titz\'aqatisäx jun b\'i\'aj</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Man tiq\'at chik richin ye\'atz\'ët ri tarjeta\' e\'ayakon</string>
+  <!-- Title of warning dialog if users have no device authentication set up -->
+  <string name="credit_cards_warning_dialog_title_2">Ke\'ajikib\'a\' ri rub\'eyal yakon taq tojïk</string>
+  <!-- Message of warning dialog if users have no device authentication set up -->
+  <string name="credit_cards_warning_dialog_message_3">Tab\'ana\' runuk\'ulem jun retal ruq\'atoj okisab\'äl, jun PIN o jun ewan tzij richin nachajij ri rub\'eyal tojïk e\'ayakon we xa ta k\'o xtichapo ri awokisab\'al.</string>
   <!-- Positive button to send users to set up a pin of warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_set_up_now">Tib\'an runuk\'ulem wakami</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Jub\'a\' chik na</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Man taq\'ät chik ri awokisab\'al</string>
+  <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
+  <string name="credit_cards_biometric_prompt_unlock_message_2">Tameq\'ata\' richin naowikisaj ri rub\'eyal taq tojïk eyakon</string>
   <!-- Title of the "Add address" screen -->
   <string name="addresses_add_address">Titz\'aqatisäx ochochib\'äl</string>
   <!-- Title of the "Edit address" screen -->
@@ -3180,6 +3266,8 @@
   <string name="addresses_prefecture" tools:ignore="UnusedResources">Prepektur</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. Allowing users to specify a particular area within a city or region. Used in Hong Kong -->
   <string name="addresses_area" tools:ignore="UnusedResources">K\'ojlib\'äl</string>
+  <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. The header for the Do/Si of the address. Do/Si refers to provincial level divisions, pertinent to addresses in South Korea. -->
+  <string name="addresses_do_si" tools:ignore="UnusedResources">Do/Si</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. Used in countries like Nicaragua and Colombia where departments are a key administrative division. -->
   <string name="addresses_department" tools:ignore="UnusedResources">Tinamital</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. Essential for addresses in the United Arab Emirates. -->
@@ -3188,10 +3276,18 @@
   <string name="addresses_oblast" tools:ignore="UnusedResources">Lajtinamït</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. The PIN (Postal Index Number) field, used in India is a code representing a specific area. -->
   <string name="addresses_pin" tools:ignore="UnusedResources">Ximoj</string>
+  <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. The postal code field is universally used in address forms to specify the area code for mail sorting. -->
+  <string name="addresses_postal_code" tools:ignore="UnusedResources">Rub\'itz\'ib\' B\'ow</string>
+  <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. the Eircode field, specific to Ireland is a unique postal code system that helps in precise location identification. -->
+  <string name="addresses_eircode" tools:ignore="UnusedResources">Eircode</string>
+  <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. Used in cases we want to only display the word "Country" over "Country or Region". -->
+  <string name="addresses_country_only" tools:ignore="UnusedResources">Amaq\'</string>
   <!-- The text for the "Save" button for saving an address -->
   <string name="addresses_save_button">Tiyak</string>
   <!-- The text for the "Cancel" button for cancelling adding, updating or deleting an address -->
   <string name="addresses_cancel_button">Tiq\'at</string>
+  <!-- The title for the "Delete address" confirmation dialog -->
+  <string name="addressess_confirm_dialog_message_2">¿La yeyuj ri taq ochochib\'äl</string>
   <!-- The text for the positive button on "Delete address" dialog -->
   <string name="addressess_confirm_dialog_ok_button">Tiyuj</string>
   <!-- The text for the negative button on "Delete address" dialog -->
@@ -3222,6 +3318,10 @@
   <string name="search_add_custom_engine_search_string_example" formatted="false">Tik\'ex k\'ulb\'enïk rik\'in “%s”. Achi\'el: \nhttps://www.google.com/search?q=%s</string>
   <!-- Accessibility description for the form in which details about the custom search engine are entered -->
   <string name="search_add_custom_engine_form_description">Rub\'anikil ichinan kanob\'äl</string>
+  <!-- Label for the TextField in which user enters custom search engine suggestion URL -->
+  <string name="search_add_custom_engine_suggest_url_label">API richin ri ruchilab\'exik kanoxïk (cha\'el)</string>
+  <!-- Placeholder text shown in the Search Suggestion String TextField before a user enters text -->
+  <string name="search_add_custom_engine_suggest_string_hint">API URL richin Kichilab\'exik Kanoxïk</string>
   <!-- The text for the "Save" button for saving a custom search engine -->
   <string name="search_custom_engine_save_button">Tiyak</string>
   <!-- Text shown when a user leaves the name field empty -->
@@ -3252,6 +3352,8 @@
   <string name="browser_menu_add_to_shortcuts">Titz\'aqatisäx ruq\'a\'</string>
   <!-- Browser menu button that removes a shortcut from the home fragment -->
   <string name="browser_menu_remove_from_shortcuts">Tiyu pa ruq\'a\'</string>
+  <!-- Message in delete confirmation dialog for password -->
+  <string name="login_deletion_confirmation_2">¿La kan nawajo\' chi niyuj el re ewan tzij re\'?</string>
   <!-- Positive action of a dialog asking to delete -->
   <string name="dialog_delete_positive">Tiyuj</string>
   <!-- Negative action of a dialog asking to delete login -->
@@ -3266,6 +3368,8 @@
   <string name="saved_login_username_required_2">Titz\'ib\'äx jun ewan rutzij okisaxel</string>
   <!-- The error message in add login view when hostname field is blank. -->
   <string name="saved_login_hostname_required" tools:ignore="UnusedResources">Najowäx rub\'i\' ruk\'u\'x k\'amb\'ey</string>
+  <!-- The error message in add login view when hostname field is blank. -->
+  <string name="saved_login_hostname_required_2" tools:ignore="UnusedResources">Tatz\'ib\'aj rochochib\'al ajk\'am taqoya\'l</string>
   <!-- Voice search button content description -->
   <string name="voice_search_content_description">Tikanöx chi ch\'ab\'äl</string>
   <!-- Voice search prompt description displayed after the user presses the voice search button -->
@@ -3296,6 +3400,10 @@
   <string name="synced_tabs_sign_in_button">Tatikirisaj molojri\'ïl pa yaximon</string>
   <!-- The text displayed when a synced device has no tabs to show in the list of Synced Tabs. -->
   <string name="synced_tabs_no_open_tabs">Majun ruwi\' ejaqon</string>
+  <!-- Content description for expanding a group of synced tabs. -->
+  <string name="synced_tabs_expand_group">Tinimirisäx rumolaj ximon taq ruwi\'</string>
+  <!-- Content description for collapsing a group of synced tabs. -->
+  <string name="synced_tabs_collapse_group">Tich\'utinisäx rumolaj ximon taq ruwi\'</string>
   <!--
     Top Sites
 
@@ -3307,12 +3415,28 @@
     which navigates the user to a screen displaying all the shortcuts.
   -->
   <string name="homepage_shortcuts_show_all_content_description">Kek\'ut pe ronojel chojokem</string>
+  <!--
+    Label for the button in the shortcuts home screen section that expands the section to show
+    every shortcut.
+  -->
+  <string name="homepage_shortcuts_show_all">Tik\'ut ronojel</string>
+  <!--
+    Label for the button in the shortcuts home screen section that collapses the section back
+    to showing only the first shortcuts.
+  -->
+  <string name="homepage_shortcuts_show_less">Tik\'ut jub\'a\'</string>
   <!-- Label for the "Add shortcut" button displayed as a tile. -->
   <string name="homepage_shortcuts_add_shortcut">Titz\'aqatisäx choj okem</string>
   <!-- Title for the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_add_to_homepage">Titz\'aqatisäx pa rutikirib\'al ruxaq</string>
   <!-- Label for the "Add website" button in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_add_website">Titz\'aqatisäx ruxaq ajk\'am</string>
+  <!-- Title text for the "Enter a Website URL" dialog for adding a shortcut. -->
+  <string name="homepage_shortcuts_add_website_title">Tatz\'ib\'aj jun ajk\'am ruxaq URL</string>
+  <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
+  <string name="homepage_shortcuts_popular_sites">Tz\'etel taq ruxaq</string>
+  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
+  <string name="shortcut_max_limit_title">Xaq\'i\' ruchi\' ri chojokem</string>
   <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
   <string name="shortcut_max_limit_content">Richin natz\'aqatisaj jun k\'ak\'a\' ruq\'a\', tayuju\' jun. Tapitz\'a\' ri ruxaq chuqa\' tacha\' tiyuj.</string>
   <!-- Confirmation dialog button text when top sites limit is reached. -->
@@ -3323,6 +3447,8 @@
   <string name="top_sites_rename_dialog_title">B\'i\'aj</string>
   <!-- Hint for renaming title of a shortcut -->
   <string name="shortcut_name_hint">Rub\'i\' ri choj okem</string>
+  <!-- Hint for editing URL of a shortcut. -->
+  <string name="shortcut_url_hint">URL richin chojokem</string>
   <!-- Dialog button text for canceling the rename top site prompt. -->
   <string name="top_sites_rename_dialog_cancel">Tiq\'at</string>
   <!-- Text for the menu button to open the homepage settings. -->
@@ -3331,6 +3457,29 @@
   <string name="top_sites_menu_sponsor_privacy">Ri e qato\'onela\' &amp; ri kichinanem</string>
   <!-- Label text displayed for a sponsored top site. -->
   <string name="top_sites_sponsored_label">To\'on</string>
+  <!-- Text for the menu item to edit a top site. -->
+  <string name="top_sites_edit_top_site">Tinuk\'</string>
+  <!-- Text for the dialog title to edit a top site. -->
+  <string name="top_sites_edit_dialog_title">Tinuk\' chojokem</string>
+  <!-- Button caption to confirm the edit of the top site. -->
+  <string name="top_sites_edit_dialog_save">Tiyak</string>
+  <!-- Error message when the user entered an invalid URL -->
+  <string name="top_sites_edit_dialog_url_error">Tatz\'ib\'aj jun okel URL</string>
+  <!-- Label for the URL edit field in the edit top site dialog. -->
+  <string name="top_sites_edit_dialog_url_title">URL</string>
+  <!--
+    Inactive tabs in the tabs tray
+
+    Title text displayed in the tabs tray when a tab has been unused for 14 days.
+  -->
+  <string name="inactive_tabs_title">Chupül taq ruwi\'</string>
+  <!--
+    Text displayed in the tabs tray, indicating the number of inactive tabs.
+    %d is the number of inactive tabs.
+  -->
+  <string name="inactive_tabs_num_items">Taq ch\'akulal: %d</string>
+  <!-- Content description for closing all inactive tabs -->
+  <string name="inactive_tabs_delete_all">Ketz\'apïx ronojel ri chupül taq ruwi\'</string>
   <!-- Content description for expanding the inactive tabs section. -->
   <string name="inactive_tabs_expand_content_description">Kerik\' chupun taq ruwi\'</string>
   <!-- Content description for collapsing the inactive tabs section. -->
@@ -3353,12 +3502,23 @@
     Search suggestions title for Firefox Suggest.
   -->
   <string name="firefox_suggest_header" tools:ignore="BrandUsage">Firefox Suggest</string>
+  <!--
+    Search suggestions title for trending search suggestions.
+    %s is a placeholder for the name of the search engine providing the trending search suggestions.
+  -->
+  <string name="trending_searches_header_2">Tz\'etel pa %s</string>
   <!-- Title for search suggestions when Google is the default search suggestion engine. -->
   <string name="google_search_engine_suggestion_header">Google Kanob\'äl</string>
   <!-- Title for search suggestions when the default search suggestion engine is anything other than Google. %s is default search engine name. -->
   <string name="other_default_search_engine_suggestion_header">Tikanöx pa %s</string>
   <!-- Title for recent search suggestions. -->
   <string name="recent_searches_header">Nimakol kekanöx</string>
+  <!--
+    Default browser experiment
+
+    Default browser card title
+  -->
+  <string name="default_browser_experiment_card_title">Tajala\' ri awokik\'amaya\'l k\'o wi</string>
   <!-- Default browser card text -->
   <string name="default_browser_experiment_card_text" tools:ignore="BrandUsage">Nub\'än kinuk\'ulem ximonel ajk\'amaya\'l taq ruxaq, taq taqoya\'l chuqa\' taq rutzijol richin yejaq pa ruyonil pa Firefox.</string>
   <!-- Content description radio buttons with a link to more information -->
@@ -3373,6 +3533,11 @@
   <string name="pocket_stories_header_2">Taq b\'anob\'äl</string>
   <!-- Header text for the Stories screen. -->
   <string name="stories_screen_text_news">Taq rutzijol</string>
+  <!--
+    Context description text for the "Discover more" button in the stories home screen section
+    which navigates the user to a screen displaying more stories.
+  -->
+  <string name="stories_discover_more_content_description">Ke\'awila\' ch\'aqa\' taq natab\'äl</string>
   <!-- Content description for the "Navigate back" button on the top app bar of the Stories screen. -->
   <string name="stories_back_button_content_description">Katok pa k\'amaya\'l titzolin</string>
   <!-- Text indicating that the Pocket story that also displays this text is a sponsored story by other 3rd party entity. -->
@@ -3389,6 +3554,8 @@
   <string name="a11y_action_label_collapse">Tich\'utinarisäx</string>
   <!-- Action label for elements that can be expanded if interacting with them. Talkback will append this to say "Double tap to expand". -->
   <string name="a11y_action_label_expand">tirik\'</string>
+  <!-- Action label for links to a website containing documentation about a wallpaper collection. Talkback will append this to say "Double tap to open link to learn more about this collection". -->
+  <string name="a11y_action_label_wallpaper_collection_learn_more">tijaq ximöy richin netamäx ch\'aqa\' chik chi rij ri molb\'äl</string>
   <!-- Translations feature -->
 
   <!--
@@ -3403,18 +3570,71 @@
     %2$s is the name of the language that the page was translated to, for example, "English".
   -->
   <string name="translations_bottom_sheet_title_translation_completed">Tzalq\'omin ruxaq %1$s pa %2$s.</string>
+  <!-- Title for the translation dialog that allows a user to translate the webpage when a user uses the translation feature the first time. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="translations_bottom_sheet_title_first_time">Ketojtob\'ëx ichinan taq tzalq\'omanïk pa %1$s</string>
+  <!-- Additional information on the translation dialog that appears when a user uses the translation feature the first time. %1$s is a link using translations_bottom_sheet_info_message_learn_more as text. -->
+  <string name="translations_bottom_sheet_info_message">Richin awichinaxik, ri taq tzalq\'omanïk majub\'ey ye\'el pa ri awokisaxel. ¡K\'ak\'a\' taq ch\'ab\'äl chuqa\' taq rutzil yepe yan! %1$s</string>
   <!-- Text that links to additional information about the Firefox translations feature. -->
   <string name="translations_bottom_sheet_info_message_learn_more">Tetamäx ch\'aqa\' chik</string>
   <!-- Label for the dropdown to select which language to translate from on the translations dialog. Usually the translate from language selected will be the same as the page language. -->
   <string name="translations_bottom_sheet_translate_from">Titzalq\'omïx chi rij</string>
   <!-- Label for the dropdown to select which language to translate to on the translations dialog. Usually the translate to language selected will be the user's preferred language. -->
   <string name="translations_bottom_sheet_translate_to">Titzalq\'omïx chi</string>
+  <!-- Label for the dropdown to select which language to translate from on the translations dialog when the page language is not supported. This selection is to allow the user to select another language, in case we automatically detected the page language incorrectly. -->
+  <string name="translations_bottom_sheet_translate_from_unsupported_language">Tatojtob\'ej rik\'in jun chik aj ruxe\'el ch\'ab\'äl</string>
   <!-- Button text on the translations dialog to dismiss the dialog and return to the browser. -->
   <string name="translations_bottom_sheet_negative_button">Wakami mani</string>
   <!-- Button text on the translations dialog to restore the translated website back to the original untranslated version. -->
   <string name="translations_bottom_sheet_negative_button_restore">Tik\'ut pe ri qitzij</string>
+  <!-- Accessibility announcement (not visible, for screen readers etc.) for the translations dialog after restore button was pressed that indicates the original untranslated page was loaded. -->
+  <string name="translations_bottom_sheet_restore_accessibility_announcement">Xsamajïx ri qitzij ruxaq man tzalq\'omin ta</string>
   <!-- Button text on the translations dialog when a translation error appears, used to dismiss the dialog and return to the browser. -->
   <string name="translations_bottom_sheet_negative_button_error">Xk\'is</string>
+  <!-- Button text on the translations dialog to begin a translation of the website. -->
+  <string name="translations_bottom_sheet_positive_button">Titzalq\'omïx</string>
+  <!-- Button text on the translations dialog when a translation error appears. -->
+  <string name="translations_bottom_sheet_positive_button_error">Titojtob\'ëx chik</string>
+  <!-- Inactive button text on the translations dialog that indicates a translation is currently in progress. This button will be accompanied by a loading icon. -->
+  <string name="translations_bottom_sheet_translating_in_progress">Nitz\'alq\'omïx</string>
+  <!-- Button content description (not visible, for screen readers etc.) for the translations dialog translate button that indicates a translation is currently in progress. -->
+  <string name="translations_bottom_sheet_translating_in_progress_content_description">Tajin nitzalq\'omïx</string>
+  <!-- Default dropdown option when initially selecting a language from the translations dialog language selection dropdown. -->
+  <string name="translations_bottom_sheet_default_dropdown_selection">Tacha\' jun ch\'ab\'äl</string>
+  <!-- The title of the warning card informs the user that a translation could not be completed. -->
+  <string name="translation_error_could_not_translate_warning_text">Xk\'oje\' jun k\'ayewal toq xtzalq\'omïx. Tatojtob\'ej chik.</string>
+  <!-- The title of the warning card informs the user that the list of languages cannot be loaded. -->
+  <string name="translation_error_could_not_load_languages_warning_text">Man xexamajib\'ëx ta ri taq ch\'ab\'äl. Tanik\'oj ri awokem pan Internet k\'a ri tatojtob\'ej chik.</string>
+  <!-- The title of the warning card informs the user that translations from a language are not supported yet. %1$s is the name of the source language. -->
+  <string name="translation_error_language_not_supported_warning_text_2">Takuyu\', k\'a man yeqak\'ül ta taq rutzalq\'omanïk %1$s.</string>
+  <!-- Snackbar title shown if the user closes the Translation Request dialogue and a translation is in progress. -->
+  <string name="translation_in_progress_snackbar">Nitzalq\'omïx…</string>
+  <!--
+    Title for the data saving mode warning dialog used in the translation request dialog.
+    This dialog will be presented when the user attempts to perform
+    a translation without the necessary language files downloaded first when Android's data saver mode is enabled and the user is not using WiFi.
+    %1$s is the size in kilobytes or megabytes of the language file.
+  -->
+  <string name="translations_download_language_file_dialog_title">¿La niqasäx ch\'ab\'äl pa yakoj taq tzij rub\'anikil (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading">Cha\'el taq tzalq\'omanïk</string>
+  <!-- Toggle switch label that allows a user to set the setting if they would like the browser to always offer or suggest translations when available. -->
+  <string name="translation_option_bottom_sheet_always_translate">Junelïk tisuj tzalq\'omanïk</string>
+  <!-- Toggle switch label that allows a user to set if they would like a given language to automatically translate or not. %1$s is the language name, for example, "Spanish". -->
+  <string name="translation_option_bottom_sheet_always_translate_in_language">Junelïk titzalq\'omïx chi rij %1$s</string>
+  <!-- Toggle switch label that allows a user to set if they would like to never be offered a translation of the given language. %1$s is the language name, for example, "Spanish". -->
+  <string name="translation_option_bottom_sheet_never_translate_in_language">Majub\'ey titzalq\'omïx chi rij %1$s</string>
+  <!-- Toggle switch label that allows a user to set the setting if they would like the browser to never translate the site the user is currently visiting. -->
+  <string name="translation_option_bottom_sheet_never_translate_site">Majub\'ey titzalq\'omïx re ruxaq k\'amaya\'l re\'</string>
+  <!-- Toggle switch description that will appear under the "Never translate these sites" settings toggle switch to provide more information on how this setting interacts with other settings. -->
+  <string name="translation_option_bottom_sheet_switch_never_translate_site_description">Yeruchüp ronojel ri ch\'aqa\' chik taq nuk\'ulem</string>
+  <!-- Toggle switch description that will appear under the "Never translate" and "Always translate" toggle switch settings to provide more information on how these  settings interacts with other settings. -->
+  <string name="translation_option_bottom_sheet_switch_description">Ke\'achupu\' ri taq rusujunik tzalq\'omanïk</string>
+  <!-- Button text for the button that will take the user to the translation settings dialog. -->
+  <string name="translation_option_bottom_sheet_translation_settings">Taq runuk\'ulem tzalq\'omanïk</string>
   <!-- Button text for the button that will take the user to the automatic translations settings dialog. On the automatic translations settings dialog, the user can set if translations should occur automatically for a given language. -->
   <string name="translation_settings_automatic_translation">Ruyonil tzalq\'omanïk</string>
   <!--
@@ -3473,25 +3693,215 @@
   <string name="delete_language_file_dialog_positive_button_text">Tiyuj</string>
   <!-- Button text on the dialog used by the translations feature to cancel deleting a language. -->
   <string name="delete_language_file_dialog_negative_button_text">Tiq\'at</string>
+  <!-- Title text for the protection panel banner when tracking protection is disabled. -->
+  <string name="protection_panel_banner_not_protected_title">Xe\'achüp ri taq chajinïk</string>
+  <!--
+    Description text for the protection panel banner when tracking protection is disabled.
+    %s is the name of the app (for example "Firefox").
+  -->
+  <string name="protection_panel_banner_not_protected_description">%s chupül ruwäch. Niqachilab\'ej chi ketzij chik ri taq chajinïk.</string>
+  <!--
+    Title text for the protection panel banner when tracking protection is enabled.
+    %s is the name of the app (for example "Firefox").
+  -->
+  <string name="protection_panel_banner_protected_title">%s ruchajin ri\'</string>
+  <plurals name="protection_panel_banner_protected_blocked_trackers_description">
+    <!--
+      Description text for the protection panel banner when privacy dashboard is enabled.
+      %1$d is the number of trackers blocked.
+    -->
+    <item quantity="one">%1$d q\'aton ojqanel pa re ruxaq re\'.</item>
+    <item quantity="other">%1$d eq\'aton ojqanela\' pa re ruxaq re\'.</item>
+  </plurals>
+  <!--
+    Description text for the protection panel banner when privacy dashboard is enabled.
+    and there are no trackers blocked.
+  -->
+  <string name="protection_panel_banner_protected_no_blocked_trackers_description">Atchajin.</string>
+  <!-- Label text for the Enhanced Tracking Protection toggle. -->
+  <string name="protection_panel_etp_toggle_label">Utzirisan Chajinïk chuwäch Ojqanem</string>
   <!-- Toggle if Enhanced Tracking Protection is turned on -->
   <string name="protection_panel_etp_toggle_on">Titzij</string>
   <!-- Toggle if Enhanced Tracking Protection is turned off -->
   <string name="protection_panel_etp_toggle_off">Tichup</string>
+  <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is enabled. -->
+  <string name="protection_panel_etp_toggle_enabled_description_2">We k\'o ri man ütz ta pa re ruxaq re\', tatojtob\'ej nachüp.</string>
+  <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
+  <string name="protection_panel_etp_toggle_disabled_description_2">Nichilab\'ëx chi nitzij ri chajinïk chuwäch ojqanem.</string>
   <!--
     Text for displaying the total number of trackers blocked in the protection panel.
     %d is a placeholder for the number of trackers blocked.
   -->
   <string name="protection_panel_num_trackers_blocked">Eq\'aton ojqanela\': %d</string>
+  <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
+  <string name="protection_panel_etp_disabled_no_trackers_blocked">Man eq\'aton ta ri ojqanela\'</string>
+  <!-- Link text to navigate to privacy and security settings from the protection panel. -->
+  <string name="protection_panel_privacy_and_security_settings_2">Runuk\'ulem ichinanem</string>
+  <!-- Title text for the protection panel permissions section. -->
+  <string name="protection_panel_permissions_title">Taq ya\'oj q\'ij</string>
+  <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
+    <!--
+      Text for displaying the total number of trackers blocked in the trackers blocked panel.
+      %1$d is a placeholder for the number of trackers blocked.
+    -->
+    <item quantity="one">%1$d q\'aton ojqanel pa re ruxaq re\'.</item>
+    <item quantity="other">%1$d eq\'aton ojqanela\' pa re ruxaq re\'.</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_social_media_trackers">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked social media trackers.
+      %1$d is a placeholder for the number of social media trackers blocked.
+    -->
+    <item quantity="one">%1$d rojqanel aj winäq k\'amab\'ey</item>
+    <item quantity="other">%1$d kojqanela\' aj winäq k\'amab\'ey</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_cross_site_cookies">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked cross-site tracking cookies.
+      %1$d is a placeholder for the number of cross-site tracking cookies blocked.
+    -->
+    <item quantity="one">%1$d rukuki rojqanik xoch\'in taq ruxaq</item>
+    <item quantity="other">%1$dkikuki kojqanik xoch\'in taq ruxaq</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_cryptominers">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked cryptomining scripts.
+      %1$d is a placeholder for the number of cryptominers blocked.
+    -->
+    <item quantity="one">%1$d kriptominer</item>
+    <item quantity="other">%1$d taq kriptominer</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_fingerprinters">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked fingerprinter scripts.
+      %1$d is a placeholder for the number of fingerprinters blocked.
+    -->
+    <item quantity="one">%1$d fingerprinter</item>
+    <item quantity="other">%1$d fingerprinters</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_trackers_2">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked generic tracking scripts.
+      %1$d is a placeholder for the number of trackers blocked.
+    -->
+    <item quantity="one">%1$d rupam ojqanem</item>
+    <item quantity="other">%1$d rupam ojqanem</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_trackers_blocked_this_week_2">
+    <!--
+      Text for displaying the number of trackers blocked this week in the trackers blocked panel.
+      %1$d is a placeholder for the number of trackers blocked this week.
+    -->
+    <item quantity="one">%1$d q\'aton ojqanel re wuqq\'ij re\'</item>
+    <item quantity="other">%1$d q\'aton ojqanela re wuqq\'ij re\'</item>
+  </plurals>
+  <!--
+    Description text for a dialog confirming whether the user wants to delete all data for current site.
+    %s is a placeholder for the base domain of website.
+  -->
+  <string name="clear_site_data_dialog_description"><![CDATA[Yeruyüj taq kuki chuqa\' taq rutzij ruxaq richin <b>%s</b> nitikïr nutz\'apij molojri\'ïl pa ri taq ajk\'am ruxaq chuqa\' yerujäm ri taq ruch\'ich\' loq\'oj.]]></string>
+  <!-- Button text on the clear site data dialog to allow users to confirm they wish to clear the site data. -->
+  <string name="clear_site_data_dialog_positive_button_text">Tijosq\'ïx</string>
+  <!-- Button text on the clear site data dialog to allow users to cancel the action and not clear the site data. -->
+  <string name="clear_site_data_dialog_negative_button_text">Tiq\'at</string>
+  <!-- Text for the connection security panel when the site is secure. -->
+  <string name="connection_security_panel_secure">Ütz okem</string>
+  <!-- Text for the connection security panel when the site is not secure. -->
+  <string name="connection_security_panel_not_secure">Man ütz ta okem</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
   <string name="connection_security_panel_local_pdf">Re ruxaq k\'amaya\'l re\' yakon pan awokisaxel.</string>
+  <!--
+    Text for the connection security panel to indicate who the certificate was verified by.
+    %s is a placeholder for the name of the certificate authority that issued the certificate.
+  -->
+  <string name="connection_security_panel_verified_by">Nik\'on ruma %s</string>
+  <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the protections dashboard to the bottom of the screen and close it. -->
+  <string name="tracker_protections_dashboard_close_handlebar_content_description">Titz\'apïx panel</string>
+  <!--
+    Text for the connection security panel when the site uses a QWAC.
+    %s is a placeholder for the organization for which the certificate was issued.
+  -->
+  <string name="connection_security_panel_issued_to">Ya\'on chi re %s</string>
+  <!-- Text for the connection security panel when the site uses a QWAC. -->
+  <string name="connection_security_panel_qualified_certificate">Rojqan taq ajowaxïk ejikib\'an pa ri Rutaqonem (EU) 2024/1183.</string>
+  <!--
+    Debug drawer
+
+    The user-facing title of the Debug Drawer feature.
+  -->
+  <string name="debug_drawer_title">Ruchamajib\'al chojmirisanem</string>
+  <!-- Content description (not visible, for screen readers etc.): Navigate back within the debug drawer. -->
+  <string name="debug_drawer_back_button_content_description">Katok pa k\'amaya\'l titzolin</string>
+  <!-- Content description (not visible, for screen readers etc.): Open debug drawer. -->
+  <string name="debug_drawer_fab_content_description">Tijaq rukaxa chojmirisanem</string>
+  <!--
+    Debug drawer tabs tools
+
+    The title of the Tab Tools feature in the Debug Drawer.
+  -->
+  <string name="debug_drawer_tab_tools_title">Kisamajib\'al ruwi\'</string>
+  <!-- The title of the tab count section in Tab Tools. -->
+  <string name="debug_drawer_tab_tools_tab_count_title">Rajilab\'al ruwi\'</string>
+  <!-- The active tab count category in the tab count section in Tab Tools. -->
+  <string name="debug_drawer_tab_tools_tab_count_active">Tzijïl</string>
+  <!-- The inactive tab count category in the tab count section in Tab Tools. -->
+  <string name="debug_drawer_tab_tools_tab_count_inactive">Chupül</string>
+  <!-- The private tab count category in the tab count section in Tab Tools. -->
+  <string name="debug_drawer_tab_tools_tab_count_private">Ichinan</string>
+  <!-- The total tab count category in the tab count section in Tab Tools. -->
+  <string name="debug_drawer_tab_tools_tab_count_total">Ronojel</string>
+  <!-- The title of the tab creation tool section in Tab Tools. -->
+  <string name="debug_drawer_tab_tools_tab_creation_tool_title">Rusamajib\'al richin kinuk\'ik ruwi\'</string>
+  <!-- The label of the text field in the tab creation tool. -->
+  <string name="debug_drawer_tab_tools_tab_creation_tool_text_field_label">Kajilab\'al ruwi\' xkenuk\'</string>
+  <!-- The error message of the text field in the tab creation tool when the text field is empty -->
+  <string name="debug_drawer_tab_tools_tab_quantity_empty_error">Kowöl ruk\'ojlib\'al tzib\'anïk</string>
+  <!-- The error message of the text field in the tab creation tool when the text field has characters other than digits -->
+  <string name="debug_drawer_tab_tools_tab_quantity_non_digits_error">Xa xe ke\'atz\'ib\'aj ajkiq\'a\' tz\'aqät ajilab\'äl</string>
+  <!-- The error message of the text field in the tab creation tool when the text field is a zero -->
+  <string name="debug_drawer_tab_tools_tab_quantity_non_zero_error">Tatz\'ib\'aj jun ajilab\'äl nïm chuwäch ri wa\'ix</string>
+  <!--
+    The error message of the text field in the tab creation tool when the text field is a
+    quantity greater than the max tabs. %1$s is the maximum number of tabs
+    that can be generated in one operation.
+  -->
+  <string name="debug_drawer_tab_tools_tab_quantity_exceed_max_error">Xik\'o ri rajilab\'al ruwi\' (%1$s) ri yeb\'an pa jun jik\'onïk</string>
+  <!-- The button text to add tabs to the active tab group in the tab creation tool. -->
+  <string name="debug_drawer_tab_tools_tab_creation_tool_button_text_active">Ketz\'aqatisäx pa tzijïl taq ruwi\'</string>
+  <!-- The button text to add tabs to the inactive tab group in the tab creation tool. -->
+  <string name="debug_drawer_tab_tools_tab_creation_tool_button_text_inactive">Ketz\'aqatisäx pa chupül taq ruwi\'</string>
   <!-- The button text to add tabs to the private tab group in the tab creation tool. -->
   <string name="debug_drawer_tab_tools_tab_creation_tool_button_text_private">Ketz\'aqatisäx ichinan taq ruwi\'</string>
+  <!--
+    Microsurvey
+    Note: Some strings are marked as unused as they are referenced via the Nimbus experimentation
+    platform and have no persistent reference in code
+
+    Prompt view
+
+    The microsurvey prompt title. Note: The word "Firefox" should NOT be translated
+  -->
+  <string name="micro_survey_prompt_title" tools:ignore="BrandUsage,UnusedResources">Kojato\' richin nikutzilaj Firefox. Xa xe nuk\'waj jun ch\'utiramaj chawäch.</string>
   <!-- The continue button label -->
   <string name="micro_survey_continue_button_label" tools:ignore="UnusedResources">Titikïr chik el</string>
+  <!--
+    Survey view
+
+    The survey header
+  -->
+  <string name="micro_survey_survey_header_2">Tab\'ana\' utzil tanojisaj ri enkwesta</string>
   <!-- The privacy notice link -->
   <string name="micro_survey_privacy_notice_2">Ichinan na\'oj</string>
   <!-- The submit button label text -->
   <string name="micro_survey_submit_button_label">Titaq</string>
+  <!-- The survey completion header -->
+  <string name="micro_survey_survey_header_confirmation" tools:ignore="UnusedResources">Xtz\'aqät enkwesta</string>
+  <!-- The survey completion confirmation text -->
+  <string name="micro_survey_feedback_confirmation">¡Niqamatyoxj ri taq atzij!</string>
+  <!-- Option for likert scale -->
+  <string name="likert_scale_option_1" tools:ignore="UnusedResources">Jumul yikikot</string>
+  <!-- Option for likert scale -->
+  <string name="likert_scale_option_2" tools:ignore="UnusedResources">Yikikot</string>
   <!-- Content description for "X" button that is closing microsurvey. -->
   <string name="microsurvey_close_button_content_description">Titz\'apïx</string>
   <!--
@@ -3548,6 +3958,18 @@
   <string name="certificate_warning_homepage_card_update_now_button" tools:ignore="UnusedResources">Tak\'exa\' ruwäch wakami</string>
   <!-- Homepage card title about old Firefox version. "Update" is a verb. Note: The word "Firefox" should NOT be translated. -->
   <string name="certificate_warning_homepage_card_hca1_title" tools:ignore="BrandUsage,UnusedResources">Tak\'exa\' ruwäch ri Firefox okik\'amaya\'l</string>
+  <!-- Homepage card title about old Firefox version. "Update" is a verb. -->
+  <string name="certificate_warning_homepage_card_hcr1_title" tools:ignore="UnusedResources">Tak\'exa\' chuwäch ri 14 q\'ij richin marso</string>
+  <!-- Homepage card message about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
+  <string name="certificate_warning_homepage_card_hcr1_message" tools:ignore="BrandUsage,UnusedResources">Jun ruxe\' sertipikawo xtik\'o ruq\'ij ruma ri\' ri ruwäch Firefox man ütz ta xtisamajyaj.</string>
+  <!-- Homepage card title about old Firefox version -->
+  <string name="certificate_warning_homepage_card_hcw2_title" tools:ignore="UnusedResources">Xa xe chik jun 7 q\'ij k\'o richin nik\'ex</string>
+  <!-- Homepage card message about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
+  <string name="certificate_warning_homepage_card_hcw2_message" tools:ignore="BrandUsage,UnusedResources">Ri 14 q\'ij richin marso, ri taq tz\'aqat chuqa\' ch\'aqa\' chik taq rub\'anikil Firefox man xkesamäj ta chik ruma jun ruxe\' sertipika\'o\' xtik\'o ruq\'ijul.</string>
+  <!-- Homepage card title about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
+  <string name="certificate_warning_homepage_card_hcw3_title" tools:ignore="BrandUsage,UnusedResources">Ruk\'isib\'äl mul richin k\'o ri Firefox awik\'in</string>
+  <!-- Homepage card message about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
+  <string name="certificate_warning_homepage_card_hcw3_message" tools:ignore="BrandUsage,UnusedResources">Ri ruwäch a Firefox man xtisamäj ta chik ütz ri 14 q\'ij richin marso ruma jun sertipika\'o xtik\'o ruq\'ijul.</string>
   <!-- Push notification title about old Firefox version. "Update" is a noun. -->
   <string name="certificate_warning_push_notification_update_recommended_title" tools:ignore="UnusedResources">K\'exoj chilab\'en</string>
   <!-- TextField Design System Component -->

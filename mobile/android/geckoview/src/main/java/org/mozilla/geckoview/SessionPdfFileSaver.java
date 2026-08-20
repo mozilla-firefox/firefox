@@ -36,14 +36,24 @@ public final class SessionPdfFileSaver {
         .queryBundle("GeckoView:PDFSave", null)
         .map(
             response -> {
-              geckoResult.completeFrom(
+              final GeckoResult<WebResponse> pdfResponse =
                   SessionPdfFileSaver.createResponse(
                       mSession,
                       response.getString("url"),
                       response.getString("filename"),
                       response.getString("originalUrl"),
                       true,
-                      false));
+                      false);
+              if (pdfResponse == null) {
+                geckoResult.completeExceptionally(
+                    new IllegalStateException("Could not get a PDF response."));
+              } else {
+                geckoResult.completeFrom(pdfResponse);
+              }
+              return null;
+            },
+            exception -> {
+              geckoResult.completeExceptionally(exception);
               return null;
             });
     return geckoResult;

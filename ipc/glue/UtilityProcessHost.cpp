@@ -67,13 +67,19 @@ UtilityProcessHost::UtilityProcessHost(SandboxingKind aSandbox,
 #if defined(XP_MACOSX) && defined(MOZ_SANDBOX)
   mDisableOSActivityMode = IsUtilitySandboxEnabled(aSandbox);
 #endif
+#if defined(MOZ_SANDBOX)
   mUtilitySandbox = aSandbox;
+#endif
 }
 
 UtilityProcessHost::~UtilityProcessHost() {
   MOZ_COUNT_DTOR(UtilityProcessHost);
+#if defined(MOZ_SANDBOX)
   LOGD("[%p] UtilityProcessHost::~UtilityProcessHost sandboxingKind=%" PRIu64,
        this, mUtilitySandbox);
+#else
+  LOGD("[%p] UtilityProcessHost::~UtilityProcessHost", this);
+#endif
 }
 
 bool UtilityProcessHost::Launch(geckoargs::ChildProcessArgs aExtraOpts) {
@@ -187,6 +193,13 @@ void UtilityProcessHost::InitAfterConnect(bool aSucceeded) {
         policy = SandboxBrokerPolicyFactory::GetUtilityProcessPolicy(
             GetActor()->OtherPid());
         break;
+
+#  ifndef ANDROID
+      case SandboxingKind::HW_INFERENCE:
+        policy = SandboxBrokerPolicyFactory::GetHWInferencePolicy(
+            GetActor()->OtherPid());
+        break;
+#  endif  // !ANDROID
 
       default:
         MOZ_ASSERT(false, "Invalid SandboxingKind");

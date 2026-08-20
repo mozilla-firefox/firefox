@@ -497,7 +497,7 @@ const CONFIG_PANES = Object.freeze({
   containers: {
     parent: srdSectionEnabled("tabsBrowsing") ? "tabsBrowsing" : "general",
     l10nId: "containers-section-header2",
-    groupIds: ["containers"],
+    groupIds: ["containers", "siteContainers"],
     module: "chrome://browser/content/preferences/config/containers.mjs",
   },
 });

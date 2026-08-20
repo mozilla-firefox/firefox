@@ -26,7 +26,22 @@ const YELP_MERINO_SINGLE = [
       yelp: {
         values: [
           {
-            some_value: "foo",
+            name: "MochaZilla. - Toronto",
+            url: "https://example.com/mochazilla-toronto",
+            image_url: "https://example.com/mochazilla.jpg",
+            address: "123 Firefox Avenue Toronto",
+            pricing: "$$",
+            rating: 4.8,
+            review_count: 989,
+            business_hours: [
+              {
+                open: [
+                  { is_overnight: false, start: "0700", end: "1500", day: 0 },
+                ],
+                hours_type: "REGULAR",
+                is_open_now: false,
+              },
+            ],
           },
         ],
       },
@@ -485,7 +500,22 @@ function yelpMerinoResult() {
       isSponsored: true,
       items: [
         {
-          some_value: "foo",
+          name: "MochaZilla. - Toronto",
+          url: "https://example.com/mochazilla-toronto",
+          image_url: "https://example.com/mochazilla.jpg",
+          address: "123 Firefox Avenue Toronto",
+          pricing: "$$",
+          rating: 4.8,
+          review_count: 989,
+          business_hours: [
+            {
+              open: [
+                { is_overnight: false, start: "0700", end: "1500", day: 0 },
+              ],
+              hours_type: "REGULAR",
+              is_open_now: false,
+            },
+          ],
         },
       ],
     },

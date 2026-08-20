@@ -1,0 +1,7 @@
+# The flood covers the red backdrop exactly: 50x50 at 100,100 in the element's
+# local space is 100x100 at 200,200 through the scale(2) reference frame.
+root:
+  items:
+    - type: rect
+      color: green
+      bounds: [200, 200, 100, 100]

@@ -67,9 +67,6 @@ class DisplayItemClip {
       }
       return true;
     }
-    bool operator!=(const RoundedRect& aOther) const {
-      return !(*this == aOther);
-    }
   };
 
   // Constructs a DisplayItemClip that does no clipping at all.
@@ -159,9 +156,6 @@ class DisplayItemClip {
     return mHaveClipRect == aOther.mHaveClipRect &&
            (!mHaveClipRect || mClipRect.IsEqualInterior(aOther.mClipRect)) &&
            mRoundedClipRects == aOther.mRoundedClipRects;
-  }
-  bool operator!=(const DisplayItemClip& aOther) const {
-    return !(*this == aOther);
   }
 
   bool HasClip() const { return mHaveClipRect; }

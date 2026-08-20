@@ -86,7 +86,6 @@ class nsCSSValue {
   nsCSSValue& operator=(nsCSSValue&& aCopy);
 
   bool operator==(const nsCSSValue& aOther) const;
-  bool operator!=(const nsCSSValue&) const = default;
 
   nsCSSUnit GetUnit() const { return mUnit; }
   bool IsLengthUnit() const {

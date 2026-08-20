@@ -334,7 +334,7 @@ async function searchBrowsingHistoryTimeRange({
  * @param {Array|object} tensor
  * @returns {Array|Float32Array}
  */
-function extractVectorFromTensor(tensor) {
+export function extractVectorFromTensor(tensor) {
   if (!tensor) {
     throw new Error("Unexpected empty tensor");
   }

@@ -52,6 +52,8 @@ skip-if = [
 
 ["test_RemoteSettingsExperimentLoader.js"]
 
+["test_RemoteSettingsExperimentLoader_timer.js"]
+
 ["test_RemoteSettingsExperimentLoader_updateRecipes.js"]
 requesttimeoutfactor = 2  # Slow on Windows
 

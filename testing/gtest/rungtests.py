@@ -212,6 +212,12 @@ class GTests:
             raise Exception("xre_path does not exist: %s", self.xre_path)
         env = dict(os.environ)
         env = self.build_core_environment(env)
+        # Some gtests spawn a Python helper via the PYTHON env var (e.g.
+        # DesktopLauncherDownloaderTest launches `python -m http.server`).
+        # Point it at the interpreter running the harness rather than
+        # inheriting a bare `python3` that ShellExecuteExW on Windows would
+        # resolve to the WindowsApps alias.
+        env["PYTHON"] = sys.executable
         env["PERFHERDER_ALERTING_ENABLED"] = "1"
         pathvar = ""
         if mozinfo.os == "linux":

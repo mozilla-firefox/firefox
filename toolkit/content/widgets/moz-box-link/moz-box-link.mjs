@@ -50,29 +50,53 @@ export default class MozBoxLink extends MozBoxBase {
     />`;
   }
 
-  render() {
-    const template = html`${this.textTemplate()}${this.navIconTemplate()}`;
-    const { supportPage } = this;
+  // Keep description outside the <a> so it is not part of the accessible name.
+  // Expose it (and "Opens in a new tab") via aria-describedby instead.
+  opensInNewTabTemplate() {
+    return html`<span
+      id="opens-in-new-tab"
+      hidden
+      data-l10n-id="moz-box-link-opens-in-new-tab"
+    ></span>`;
+  }
 
+  labelTemplate() {
+    const { supportPage, label, description } = this;
+    const describedBy = description
+      ? "description opens-in-new-tab"
+      : "opens-in-new-tab";
+    // Wrap label in <span> so moz-support-link does not treat the link as
+    // unlabelled and overwrite it with the default "Learn more" string.
+    let labelTextTemplate = label ? html`<span>${label}</span>` : "";
+
+    if (supportPage) {
+      return html`<a
+        class="label box-link-anchor"
+        is="moz-support-link"
+        support-page=${supportPage}
+        data-l10n-id="moz-box-link-anchor"
+        aria-describedby=${describedBy}
+        >${labelTextTemplate}</a
+      >`;
+    }
+
+    return html`<a
+      class="label box-link-anchor"
+      href=${this.href}
+      target="_blank"
+      data-l10n-id="moz-box-link-anchor"
+      aria-describedby=${describedBy}
+      >${labelTextTemplate}</a
+    >`;
+  }
+
+  render() {
     return html`
       ${this.stylesTemplate()}
-      ${supportPage
-        ? html`<a
-            class="button"
-            is="moz-support-link"
-            support-page=${supportPage}
-            data-l10n-id="moz-box-link-anchor"
-          >
-            ${template}
-          </a>`
-        : html`<a
-            class="button"
-            href=${this.href}
-            target="_blank"
-            data-l10n-id="moz-box-link-anchor"
-          >
-            ${template}
-          </a>`}
+      <div class="button">
+        ${this.textTemplate()} ${this.navIconTemplate()}
+        ${this.opensInNewTabTemplate()}
+      </div>
     `;
   }
 }

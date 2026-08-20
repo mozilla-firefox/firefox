@@ -13,7 +13,7 @@ using mozilla::gfx::Rect from "mozilla/gfx/Rect.h";
 namespace mozilla {
 namespace gfx {
 
-[ChildImpl="VRLayerChild", ParentImpl=virtual]
+[ChildImpl="mozilla::gfx::VRLayerChild", ParentImpl=virtual]
 async protocol PVRLayer
 {
   manager PVRManager;

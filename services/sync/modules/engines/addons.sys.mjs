@@ -523,6 +523,10 @@ AddonsStore.prototype = {
         continue;
       }
 
+      if (!AddonUtils.canUninstallAddon(addon.id)) {
+        continue;
+      }
+
       this._log.info("Uninstalling add-on as part of wipe: " + addon.id);
       await Utils.catch.call(this, () => addon.uninstall())();
     }

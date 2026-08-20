@@ -123,11 +123,11 @@ def test_query_sql_includes_correct_sample_slices():
     assert "FARM_FINGERPRINT(document_id), 10000)) < 42" in sql
 
 
-def test_query_sql_targets_the_glean_hang_report_table():
+def test_query_sql_targets_the_redacted_hang_report_view():
     sql = bhr_collection.build_query_sql(
         datetime.date(2026, 5, 1), datetime.date(2026, 5, 1), 1
     )
-    assert "mozdata.firefox_desktop.hang_report" in sql
+    assert "`mozdata.firefox_desktop.hang_report_redacted`" in sql
 
 
 def test_query_sql_filters_build_date_in_sql():
@@ -587,9 +587,10 @@ def test_symbolicate_stacks_resolves_known_frames():
         (("xul.pdb", "ABC"), "1000"): [("nsThread::ProcessNextEvent(bool)", "xul.pdb")],
         (("kernel32.pdb", "XYZ"), "2000"): [("WaitForSingleObjectEx", "kernel32.pdb")],
     }
+    # Nothing inlined here, so every frame is at depth 0.
     assert bhr_collection.symbolicate_stacks(stack, symbol_map) == [
-        ("nsThread::ProcessNextEvent(bool)", "xul.pdb"),
-        ("WaitForSingleObjectEx", "kernel32.pdb"),
+        ("nsThread::ProcessNextEvent(bool)", "xul.pdb", 0),
+        ("WaitForSingleObjectEx", "kernel32.pdb", 0),
     ]
 
 
@@ -604,24 +605,26 @@ def test_symbolicate_stacks_splices_inline_frames():
         ],
         (("xul.pdb", "ABC"), "2000"): [("LeafFunc()", "xul")],
     }
+    # The chain's position becomes inline_depth: the enclosing FUNC is 0 and
+    # each inlined callee counts up from 1 (bug 2059443).
     assert bhr_collection.symbolicate_stacks(stack, symbol_map) == [
-        ("OuterFunc()", "xul"),
-        ("InlinedInner()", "xul"),
-        ("LeafFunc()", "xul"),
+        ("OuterFunc()", "xul", 0),
+        ("InlinedInner()", "xul", 1),
+        ("LeafFunc()", "xul", 0),
     ]
 
 
 def test_symbolicate_stacks_unknown_frame_falls_back_to_debug_name():
     stack = [(("xul.pdb", "ABC"), "9999")]
     assert bhr_collection.symbolicate_stacks(stack, {}) == [
-        ("<unsymbolicated>", "xul.pdb")
+        ("<unsymbolicated>", "xul.pdb", 0)
     ]
 
 
 def test_symbolicate_stacks_none_module_falls_back_to_unknown():
     stack = [(None, "1000")]
     assert bhr_collection.symbolicate_stacks(stack, {}) == [
-        ("<unsymbolicated>", "unknown")
+        ("<unsymbolicated>", "unknown", 0)
     ]
 
 
@@ -651,7 +654,7 @@ def test_symbolicate_hang_applies_symbols_then_heuristics():
     }
     out = bhr_collection.symbolicate_hang(raw_hang, symbol_map)
     # The heuristic stops at ProcessNextEvent, leaving the two inner frames.
-    assert out[0] == [("HandlerFunc", "xul"), ("LeafFunc", "xul")]
+    assert out[0] == [("HandlerFunc", "xul", 0), ("LeafFunc", "xul", 0)]
     # Metadata fields are preserved.
     assert out[1:] == raw_hang[1:]
 
@@ -662,6 +665,15 @@ _BOUNDS_CONFIG = {"hang_lower_bound": 128, "hang_upper_bound": 65536}
 
 
 def _symbolicated_hang(stack, duration, annotations=()):
+    # Frames are (func, lib, inline_depth); tests that don't care about
+    # inlining pass plain (func, lib) pairs and get depth 0. Raw (module,
+    # offset) stacks for symbolicate_hang are left alone.
+    stack = [
+        f
+        if not (isinstance(f, tuple) and len(f) == 2 and isinstance(f[0], str))
+        else (f[0], f[1], 0)
+        for f in stack
+    ]
     return (
         stack,
         duration,
@@ -679,9 +691,11 @@ def test_map_to_hang_data_builds_key_and_value():
     out = bhr_collection.map_to_hang_data(hang, _BOUNDS_CONFIG)
     assert len(out) == 1
     key, value = out[0]
+    # Depth is deliberately absent from the key, so builds that inline
+    # differently still merge; it rides in the value instead.
     assert key[0] == (("FooFunc", "xul"),)  # stack frozen to tuple of pairs
     assert key[2] == "Gecko"  # thread
-    assert value == (250.0, 1.0)
+    assert value == (250.0, 1.0, (0,))
 
 
 def test_map_to_hang_data_drops_below_lower_bound():
@@ -695,7 +709,9 @@ def test_map_to_hang_data_drops_at_or_above_upper_bound():
 
 
 def test_merge_hang_data_sums_duration_and_count():
-    assert bhr_collection.merge_hang_data((100.0, 1.0), (250.0, 2.0)) == (350.0, 3.0)
+    assert bhr_collection.merge_hang_data(
+        (100.0, 1.0, (0, 1)), (250.0, 2.0, (1, 0))
+    ) == (350.0, 3.0, (1, 1))
 
 
 # --- group_hangs (aggregation) ----------------------------------------------
@@ -755,7 +771,8 @@ def test_symbolicate_then_group_full_chain():
 
     assert len(grouped) == 1
     row = grouped[0]
-    assert row[0] == (("FooFunc", "xul"), ("BarFunc", "xul"))
+    # group_hangs folds the merged depths back onto the frames.
+    assert row[0] == (("FooFunc", "xul", 0), ("BarFunc", "xul", 0))
     assert row[-2:] == (500.0, 2.0)
 
 
@@ -800,8 +817,10 @@ def test_aggregate_end_to_end_offline(monkeypatch, tmp_path):
         output_dir=str(tmp_path),
     )
 
-    # Profile shape the frontend expects.
-    assert set(profile.keys()) == {"threads", "usageHoursByDate", "uuid"}
+    # Profile shape the frontend expects. leafGroups is attached by the
+    # near-duplicate grouping pass (empty here: a single hang can't group).
+    assert set(profile.keys()) == {"threads", "usageHoursByDate", "uuid", "leafGroups"}
+    assert profile["leafGroups"] == {"Gecko": []}
     assert profile["usageHoursByDate"] == {"20260502": 1.0}
     assert len(profile["threads"]) == 1
     assert profile["threads"][0]["name"] == "Gecko"

@@ -9,7 +9,7 @@ include "mozilla/RemoteSpellCheckEngineChild.h";
 
 namespace mozilla {
 
-[ManualDealloc, ChildImpl="RemoteSpellcheckEngineChild", ParentImpl="RemoteSpellcheckEngineParent"]
+[ManualDealloc, ChildImpl="mozilla::RemoteSpellcheckEngineChild", ParentImpl="mozilla::RemoteSpellcheckEngineParent"]
 sync protocol PRemoteSpellcheckEngine {
   manager PContent;
 

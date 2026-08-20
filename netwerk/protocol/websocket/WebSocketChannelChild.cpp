@@ -27,13 +27,31 @@ namespace net {
 NS_IMPL_ADDREF(WebSocketChannelChild)
 
 NS_IMETHODIMP_(MozExternalRefCountType) WebSocketChannelChild::Release() {
+  if (!NS_IsMainThread()) {
+    auto [ok, count] = mRefCnt.DecrementWithLimit<2>();
+    if (ok) {
+      NS_LOG_RELEASE(this, count, "WebSocketChannelChild");
+      return count;
+    }
+    nsresult rv = NS_DispatchToMainThread(
+        NewNonOwningRunnableMethod("WebSocketChannelChild::Release", this,
+                                   &WebSocketChannelChild::Release));
+    if (NS_SUCCEEDED(rv)) {
+      return count;
+    }
+    // Dispatch failed (event loop is shutting down). Crash rather than run
+    // main-thread-only logic off-thread.
+    MOZ_CRASH("Failed to dispatch WebSocketChannelChild::Release to main");
+    return count;
+  }
+
   MOZ_ASSERT(0 != mRefCnt, "dup release");
   nsrefcnt count = --mRefCnt;
-  NS_LOG_RELEASE(this, mRefCnt, "WebSocketChannelChild");
+  NS_LOG_RELEASE(this, count, "WebSocketChannelChild");
 
   if (count == 1) {
     MaybeReleaseIPCObject();
-    return mRefCnt;
+    return 1;
   }
 
   if (count == 0) {
@@ -95,14 +113,7 @@ void WebSocketChannelChild::ReleaseIPDLReference() {
 }
 
 void WebSocketChannelChild::MaybeReleaseIPCObject() {
-  if (!NS_IsMainThread()) {
-    nsCOMPtr<nsIEventTarget> target = GetNeckoTarget();
-    MOZ_ALWAYS_SUCCEEDS(target->Dispatch(
-        NewRunnableMethod("WebSocketChannelChild::MaybeReleaseIPCObject", this,
-                          &WebSocketChannelChild::MaybeReleaseIPCObject),
-        NS_DISPATCH_NORMAL));
-    return;
-  }
+  MOZ_ASSERT(NS_IsMainThread());
 
   {
     MutexAutoLock lock(mMutex);
@@ -492,7 +503,8 @@ WebSocketChannelChild::AsyncOpenNative(
         static_cast<mozilla::dom::BrowserChild*>(iBrowserChild.get());
   }
 
-  ContentChild* cc = static_cast<ContentChild*>(gNeckoChild->Manager());
+  ContentChild* cc =
+      mozilla::ipc::ActorCast<ContentChild>(gNeckoChild->Manager());
   if (cc->IsShuttingDown()) {
     return NS_ERROR_FAILURE;
   }

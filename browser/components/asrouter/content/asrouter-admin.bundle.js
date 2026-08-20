@@ -624,7 +624,6 @@ class ASRouterAdminInner extends (react__WEBPACK_IMPORTED_MODULE_1___default().P
       modifiedMessages: [],
       messageBlockList: [],
       multiProfileMessageBlocklist: [],
-      multiProfileMessageImpressions: {},
       evaluationStatus: {},
       stringTargetingParameters: null,
       newStringTargetingParameters: null,

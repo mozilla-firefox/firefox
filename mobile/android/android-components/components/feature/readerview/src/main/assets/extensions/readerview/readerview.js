@@ -47,8 +47,11 @@ class ReaderView {
     let result = new Readability(doc, {
       classesToPreserve: preservedClasses,
     }).parse();
-    result.language = doc.documentElement.lang;
+    result.language = doc.documentElement.getAttribute("lang") || "";
     document.title = result.title;
+    if (result.language) {
+      document.documentElement.lang = result.language;
+    }
 
     let article = Object.assign(
       result,

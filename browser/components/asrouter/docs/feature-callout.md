@@ -78,6 +78,8 @@ A Feature Callout displaying a user feedback survey
 
 You can also test Feature Callouts by adding them to the [local provider](https://searchfox.org/firefox-main/source/browser/components/asrouter/modules/FeatureCalloutMessages.sys.mjs). While slower than using the devtools, this is useful when you want to test the trigger or targeting, or when your callout's anchor is an element that is not visible while on `about:asrouter` (such as a urlbar button).
 
+PropTypes are defined for the `content` prop in the screen renderer component in [`MultiStageProtonScreen.jsx`](https://searchfox.org/firefox-main/source/browser/components/asrouter/content-src/components/MultiStageProtonScreen.jsx). In order to check your Feature Callout message against the defined PropTypes, you can ensure that the PropTypes validation test passes inside the unit tests in [`MultiStageAWProton.test.jsx`](https://searchfox.org/firefox-main/source/browser/components/asrouter/tests/unit/content-src/components/MultiStageAWProton.test.jsx). See [here](https://firefox-source-docs.mozilla.org/browser/components/asrouter/docs/building-and-testing.html#running-unit-tests) for more on running unit tests.
+
 ### Via Experiments:
 
 You can test Feature Callouts by creating an experiment or landing message in tree. [Messaging Journey](https://experimenter.info/messaging/desktop-messaging-journey) captures creating and testing experiments via Nimbus. This is the most time-consuming method, but if your callout will be launched as an experiment, then it also provides the most accurate preview.

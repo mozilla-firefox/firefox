@@ -31,6 +31,12 @@
 
         <org.mozilla.fenix.settings.RadioButtonPreference
             android:defaultValue="false"
+            android:key="@string/pref_key_oled_theme"
+            android:title="@string/preference_oled_theme"
+            android:visible="false" />
+
+        <org.mozilla.fenix.settings.RadioButtonPreference
+            android:defaultValue="false"
             android:key="@string/pref_key_auto_battery_theme"
             android:title="@string/preference_auto_battery_theme"
             app:isPreferenceVisible="@bool/underAPI28" />

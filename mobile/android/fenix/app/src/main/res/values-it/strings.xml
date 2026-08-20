@@ -106,8 +106,6 @@
   <string name="open_in_app_cfr_positive_button_text">Vai alle impostazioni</string>
   <!-- Text for the negative action button -->
   <string name="open_in_app_cfr_negative_button_text">Ignora</string>
-  <!-- Private browsing erase action "contextual feature recommendation" (CFR) -->
-
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
   <string name="camera_permissions_needed_message">È richiesto l’accesso alla fotocamera. Puoi acconsentire all’accesso dalla scheda dei permessi nelle impostazioni di Android.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
@@ -543,8 +541,6 @@
   <string name="onboarding_marketing_body_1" tools:ignore="BrandUsage,UnusedResources">Condividi come hai scoperto Firefox e il fatto che lo utilizzi con i partner per il marketing di Mozilla. Questi dati non vengono mai venduti.</string>
   <!-- Marketing onboarding page button label variant. Button to confirm choice and start browsing. -->
   <string name="onboarding_marketing_positive_button_1" tools:ignore="UnusedResources">Accetta e inizia a navigare</string>
-  <!-- ==== Project "Nova" onboarding strings ==== -->
-
   <!-- "Continue" onboarding button. -->
   <string name="nova_onboarding_continue_button">Continua</string>
   <!-- "Continue browsing" onboarding button. -->
@@ -689,8 +685,6 @@
   <string name="nova_onboarding_app_icon_prompt_title" tools:ignore="UnusedResources">Scegli un’icona personalizzata per l’app</string>
   <!-- App icon onboarding body. -->
   <string name="nova_onboarding_app_icon_prompt_body" tools:ignore="UnusedResources">Dai un tocco personale alla schermata iniziale.</string>
-  <!-- ==== End of Project "Nova" onboarding strings ==== -->
-
   <!--
     Widget Picker
 
@@ -1304,6 +1298,11 @@
   <string name="preference_light_theme">Chiaro</string>
   <!-- Preference for using dark theme -->
   <string name="preference_dark_theme">Scuro</string>
+  <!--
+    Preference for using the OLED theme. For localization, this can be translated as "True Black", "Maximum Darkness",
+    or "Full dark" if needed.
+  -->
+  <string name="preference_oled_theme">Nero assoluto</string>
   <!-- Preference for using using dark or light theme automatically set by battery -->
   <string name="preference_auto_battery_theme">Impostato da Risparmio energetico</string>
   <!-- Preference for using following device theme -->
@@ -1450,6 +1449,8 @@
   <string name="preferences_inactive_tabs">Sposta le vecchie schede nella sezione Inattive</string>
   <!-- Title of inactive tabs preference -->
   <string name="preferences_inactive_tabs_title">La schede che non visualizzi da due settimane vengono spostate nella sezione Inattive.</string>
+  <!-- Title for the preference to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_feature">Attiva gruppi di schede</string>
   <!--
     Privacy report
 
@@ -1694,6 +1695,14 @@
   <string name="ungroup_tab_group_confirmation_dialog_confirm">Separa</string>
   <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_cancel">Annulla</string>
+  <!-- Custom accessibility action to reorder a tab up rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_up">Sposta la scheda in alto</string>
+  <!-- Custom accessibility action to reorder a tab left rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_left">Sposta la scheda a sinistra</string>
+  <!-- Custom accessibility action to reorder a tab right rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_right">Sposta la scheda a destra</string>
+  <!-- Custom accessibility action to reorder a tab down rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_down">Sposta la scheda in basso</string>
   <!--
     Color labels for tab groups, used for accessibility and selection UI.
 
@@ -3101,6 +3110,8 @@
   <string name="ip_protection_location_picker_title" tools:ignore="UnusedResources">Scegli posizione VPN</string>
   <!-- Description for what it means to use the Recommended setting and let the app automatically pick the best server location. -->
   <string name="ip_protection_location_fastest_description" tools:ignore="BrandUsage">Firefox trova la posizione più veloce</string>
+  <!-- Description for an unavailable VPN location in the location list. -->
+  <string name="ip_protection_location_unavailable_description">Non disponibile</string>
   <!-- Error message shown when the selected browser VPN location is unavailable. -->
   <string name="ip_protection_location_unavailable" tools:ignore="UnusedResources">Posizione non disponibile. Scegline un’altra.</string>
   <!-- Snackbar (in-app pop-up notification) text shown when the previously selected browser VPN location is unavailable and the recommended location was used instead. -->
@@ -3541,8 +3552,6 @@
   <string name="a11y_action_label_expand">espandere</string>
   <!-- Action label for links to a website containing documentation about a wallpaper collection. Talkback will append this to say "Double tap to open link to learn more about this collection". -->
   <string name="a11y_action_label_wallpaper_collection_learn_more">aprire il link con ulteriori informazioni su questa raccolta</string>
-  <!-- Translations feature -->
-
   <!--
     Translation request dialog
 
@@ -4210,8 +4219,6 @@
   <string name="certificate_warning_push_notification_pnw2_message" tools:ignore="UnusedResources">Aggiorna prima del 14 marzo per continuare a utilizzare componenti aggiuntivi e altre caratteristiche.</string>
   <!-- Push notification message about old Firefox version -->
   <string name="certificate_warning_push_notification_pnw3_message" tools:ignore="UnusedResources">Alcune funzioni smetteranno di funzionare da domani.</string>
-  <!-- TextField Design System Component -->
-
   <!--
     Setup checklist feature
 
@@ -4370,8 +4377,6 @@
   <string name="settings_search_no_results_message">Prova con un’altra ricerca?</string>
   <!-- Content Description for the button to open Settings Search (to search through settings). -->
   <string name="settings_search_button_content_description">Pulsante di ricerca nelle impostazioni</string>
-  <!-- ==== Terms of use pop up prompt ==== -->
-
   <!-- Title for the pop up prompt -->
   <string name="terms_of_use_prompt_title">Abbiamo un aggiornamento</string>
   <!--
@@ -4396,8 +4401,6 @@
   <string name="terms_of_use_prompt_accept">Accetta</string>
   <!-- Label for a button to postpone accepting the terms of use -->
   <string name="terms_of_use_prompt_postpone">Ricordamelo più tardi</string>
-  <!-- ==== Experiment strings. ==== -->
-
   <!-- A title for the popup prompt. -->
   <string name="terms_of_use_prompt_title_option_a" tools:ignore="UnusedResources">Condizioni di utilizzo del servizio</string>
   <!--
@@ -4627,8 +4630,6 @@
   <string name="sports_widget_error_load_failed_description">Prova ad aggiornare tra qualche minuto.</string>
   <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
   <string name="sports_widget_team_to_be_determined">Squadra da definire</string>
-  <!-- ==== End of Terms of use popup prompt. ==== -->
-
   <!--
     Privacy notice homepage banner
 
@@ -4739,4 +4740,16 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Isolamento dei siti web</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Una barriera aggiuntiva tra i siti web che contribuisce a proteggere i tuoi dati tra schede diverse. Può influire sulle prestazioni, sulla stabilità, sul funzionamento dei siti web e sul salvataggio della cronologia di navigazione.</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description">Firma PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
+  <string name="pdf_tools_download_content_description">Scarica PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
+  <string name="pdf_tools_print_content_description">Stampa PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the sharing options for the PDF being displayed on the screen. -->
+  <string name="pdf_tools_share_content_description">Condividi PDF</string>
 </resources>

@@ -239,6 +239,61 @@ add_task(async function testTemporaryChangeEvent() {
   BrowserTestUtils.removeTab(tab);
 });
 
+// Bulk clears of browser-scoped permissions report the affected tab as a bare
+// browserId instead of an nsIPermission, so they need separate coverage from
+// testTemporaryChangeEvent above.
+add_task(async function testTemporaryBulkClearChangeEvent() {
+  let principal =
+    Services.scriptSecurityManager.createContentPrincipalFromOrigin(
+      "https://example.com"
+    );
+
+  let tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    principal.spec
+  );
+
+  let browser = tab.linkedBrowser;
+  let browserId = browser.browserId;
+
+  let changeEventCount = 0;
+  function listener() {
+    changeEventCount++;
+  }
+
+  browser.addEventListener("PermissionStateChange", listener);
+
+  let setTemporaryBlock = () =>
+    SitePermissions.setForPrincipal(
+      browser.contentPrincipal,
+      "geo",
+      SitePermissions.BLOCK,
+      SitePermissions.SCOPE_TEMPORARY,
+      browser
+    );
+
+  setTemporaryBlock();
+  is(changeEventCount, 1, "Should've changed on set");
+
+  // Goes through removeByActionForBrowser.
+  SitePermissions.clearTemporaryBlockPermissions(browser);
+  is(
+    changeEventCount,
+    2,
+    "Should've changed on clearTemporaryBlockPermissions"
+  );
+
+  setTemporaryBlock();
+  is(changeEventCount, 3, "Should've changed on set");
+
+  Services.perms.removeAllForBrowser(browserId);
+  is(changeEventCount, 4, "Should've changed on removeAllForBrowser");
+
+  browser.removeEventListener("PermissionStateChange", listener);
+
+  BrowserTestUtils.removeTab(tab);
+});
+
 add_task(async function testInvalidPrincipal() {
   // Check that an error is thrown when an invalid principal argument is passed.
   try {

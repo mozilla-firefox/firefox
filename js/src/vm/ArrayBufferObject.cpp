@@ -1865,11 +1865,12 @@ uint8_t* ImmutableArrayBufferObject::inlineDataPointer() const {
 }
 
 uint8_t* ArrayBufferObject::dataPointer() const {
-  return static_cast<uint8_t*>(getFixedSlot(DATA_SLOT).toPrivate());
+  return static_cast<uint8_t*>(getFixedSlotTyped(DATA_SLOT).toPrivate());
 }
 
 SharedMem<uint8_t*> ArrayBufferObject::dataPointerShared() const {
-  return SharedMem<uint8_t*>::unshared(getFixedSlot(DATA_SLOT).toPrivate());
+  return SharedMem<uint8_t*>::unshared(
+      getFixedSlotTyped(DATA_SLOT).toPrivate());
 }
 
 ArrayBufferObject::FreeInfo* ArrayBufferObject::freeInfo() const {
@@ -1921,7 +1922,7 @@ void ArrayBufferObject::releaseData(JS::GCContext* gcx) {
 }
 
 void ArrayBufferObject::setDataPointer(BufferContents contents) {
-  setFixedSlot(DATA_SLOT, PrivateValue(contents.data()));
+  setFixedSlotTyped(DATA_SLOT, PrivateValue(contents.data()));
   setFlags((flags() & ~KIND_MASK) | contents.kind());
 
   if (isExternal()) {
@@ -1932,7 +1933,7 @@ void ArrayBufferObject::setDataPointer(BufferContents contents) {
 }
 
 size_t ArrayBufferObject::byteLength() const {
-  return size_t(getFixedSlot(BYTE_LENGTH_SLOT).toPrivate());
+  return size_t(getFixedSlotTyped(BYTE_LENGTH_SLOT).toPrivate());
 }
 
 inline size_t ArrayBufferObject::associatedBytes() const {
@@ -1947,7 +1948,7 @@ inline size_t ArrayBufferObject::associatedBytes() const {
 
 void ArrayBufferObject::setByteLength(size_t length) {
   MOZ_ASSERT(length <= ArrayBufferObject::ByteLengthLimit);
-  setFixedSlot(BYTE_LENGTH_SLOT, PrivateValue(length));
+  setFixedSlotTyped(BYTE_LENGTH_SLOT, PrivateValue(length));
 }
 
 size_t ArrayBufferObject::wasmMappedSize() const {
@@ -2177,11 +2178,11 @@ void ArrayBufferObject::wasmDiscard(Handle<ArrayBufferObject*> buf,
 }
 
 uint32_t ArrayBufferObject::flags() const {
-  return uint32_t(getFixedSlot(FLAGS_SLOT).toInt32());
+  return uint32_t(getFixedSlotTyped(FLAGS_SLOT).toInt32());
 }
 
 void ArrayBufferObject::setFlags(uint32_t flags) {
-  setFixedSlot(FLAGS_SLOT, Int32Value(flags));
+  setFixedSlotTyped(FLAGS_SLOT, Int32Value(flags));
 }
 
 static constexpr js::gc::AllocKind GetArrayBufferGCObjectKind(size_t numSlots) {
@@ -3244,20 +3245,20 @@ size_t ArrayBufferObject::objectMoved(JSObject* obj, JSObject* old) {
 
   // Fix up possible inline data pointer.
   if (src.hasInlineData()) {
-    dst.setFixedSlot(DATA_SLOT, PrivateValue(dst.inlineDataPointer()));
+    dst.setFixedSlotTyped(DATA_SLOT, PrivateValue(dst.inlineDataPointer()));
   }
 
   return 0;
 }
 
 JSObject* ArrayBufferObject::firstView() {
-  return getFixedSlot(FIRST_VIEW_SLOT).isObject()
-             ? &getFixedSlot(FIRST_VIEW_SLOT).toObject()
+  return getFixedSlotTyped(FIRST_VIEW_SLOT).isObject()
+             ? &getFixedSlotTyped(FIRST_VIEW_SLOT).toObject()
              : nullptr;
 }
 
 void ArrayBufferObject::setFirstView(ArrayBufferViewObject* view) {
-  setFixedSlot(FIRST_VIEW_SLOT, ObjectOrNullValue(view));
+  setFixedSlotTyped(FIRST_VIEW_SLOT, ObjectOrNullValue(view));
 }
 
 bool ArrayBufferObject::addView(JSContext* cx, ArrayBufferViewObject* view) {
@@ -3325,7 +3326,7 @@ void ForEachArrayBufferFlag(uint32_t flags, KnownF known, UnknownF unknown) {
 
 void ArrayBufferObject::dumpOwnFields(js::JSONPrinter& json) const {
   json.formatProperty("byteLength", "%zu",
-                      size_t(getFixedSlot(BYTE_LENGTH_SLOT).toPrivate()));
+                      size_t(getFixedSlotTyped(BYTE_LENGTH_SLOT).toPrivate()));
 
   BufferKindToString(
       bufferKind(),
@@ -3350,7 +3351,7 @@ void ArrayBufferObject::dumpOwnFields(js::JSONPrinter& json) const {
 
 void ArrayBufferObject::dumpOwnStringContent(js::GenericPrinter& out) const {
   out.printf("byteLength=%zu, ",
-             size_t(getFixedSlot(BYTE_LENGTH_SLOT).toPrivate()));
+             size_t(getFixedSlotTyped(BYTE_LENGTH_SLOT).toPrivate()));
 
   BufferKindToString(
       bufferKind(),

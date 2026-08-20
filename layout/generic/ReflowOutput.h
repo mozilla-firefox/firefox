@@ -65,8 +65,6 @@ struct OverflowAreas {
            ScrollableOverflow().IsEqualEdges(aOther.ScrollableOverflow());
   }
 
-  bool operator!=(const OverflowAreas&) const = default;
-
   OverflowAreas operator+(const nsPoint& aPoint) const {
     OverflowAreas result(*this);
     result += aPoint;
@@ -135,7 +133,6 @@ struct OverflowAreas {
 class CollapsingMargin final {
  public:
   bool operator==(const CollapsingMargin&) const = default;
-  bool operator!=(const CollapsingMargin&) const = default;
 
   void Include(nscoord aCoord) {
     if (aCoord > mMostPos) {

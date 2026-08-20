@@ -809,6 +809,17 @@ servo_restyle_damage = "rebuild_box"
 boxed = true
 affects = "layout"
 
+[flex-line-count]
+type = "Integer"
+initial = "1"
+struct = "position"
+engine = "servo"
+servo_pref = "layout.flexbox.balance"
+parse_method = "parse_positive"
+spec = "https://drafts.csswg.org/css-flexbox-2/#flex-line-count-property"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
 [flex-grow]
 type = "NonNegativeNumber"
 initial = "From::from(0.0)"
@@ -2336,10 +2347,8 @@ initial = "computed::ViewTransitionClass::none()"
 struct = "ui"
 servo_pref = "layout.unimplemented"
 animation_type = "discrete"
-gecko_pref = "dom.viewTransitions.enabled"
 spec = "https://drafts.csswg.org/css-view-transitions-2/#view-transition-class-prop"
 affects = ""
-enabled_in = "ua"
 
 [view-transition-name]
 type = "ViewTransitionName"
@@ -2347,10 +2356,8 @@ initial = "computed::ViewTransitionName::none()"
 struct = "ui"
 servo_pref = "layout.unimplemented"
 animation_type = "discrete"
-gecko_pref = "dom.viewTransitions.enabled"
 spec = "https://drafts.csswg.org/css-view-transitions-1/#view-transition-name-prop"
 affects = ""
-enabled_in = "ua"
 
 [vector-effect]
 type = "VectorEffect"
@@ -4045,13 +4052,14 @@ servo_restyle_damage = "rebuild_box"
 keyword = { values = ["row", "row-reverse", "column", "column-reverse"] }
 
 [flex-wrap]
+type = "FlexWrap"
+initial = "computed::FlexWrap::NOWRAP"
 struct = "position"
 spec = "https://drafts.csswg.org/css-flexbox/#flex-wrap-property"
 animation_type = "discrete"
 affects = "layout"
 extra_prefixes = ["webkit"]
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["nowrap", "wrap", "wrap-reverse"] }
 
 [box-sizing]
 struct = "position"

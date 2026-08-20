@@ -16,7 +16,6 @@ const lazy = XPCOMUtils.declareLazy({
   SkippableTimer: "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs",
   UrlbarPrefs: "moz-src:///browser/components/urlbar/UrlbarPrefs.sys.mjs",
   UrlbarShared: "chrome://browser/content/urlbar/UrlbarShared.mjs",
-  UrlbarUtils: "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs",
 });
 
 /**
@@ -53,20 +52,10 @@ const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
  */
 export class TemporaryMerinoClientShim {
   #lazy = XPCOMUtils.declareLazy({
-    /**
-     * @backward-compat { version 154 }
-     * getLogger moved from UrlbarUtils to UrlbarShared in Fx154. UrlbarUtils
-     * exists on every supported version, so feature-detect on it: while it
-     * still has getLogger (<=153) use it; once removed (154+) fall forward to
-     * UrlbarShared. This avoids importing UrlbarShared on 152, where it doesn't
-     * exist yet. Drop this and the UrlbarUtils import once 154 ships to Release.
-     */
-    logger: () => {
-      let mod = lazy.UrlbarUtils.getLogger
-        ? lazy.UrlbarUtils
-        : lazy.UrlbarShared;
-      return mod.getLogger({ prefix: `MerinoClient [${this.#name}]` });
-    },
+    logger: () =>
+      lazy.UrlbarShared.getLogger({
+        prefix: `MerinoClient [${this.#name}]`,
+      }),
   });
 
   /**

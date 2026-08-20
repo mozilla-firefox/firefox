@@ -6,10 +6,13 @@ package mozilla.components.feature.prompts.dialog
 
 import android.widget.NumberPicker
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.android.material.datepicker.CalendarConstraints.DateValidator
 import java.util.Calendar
 import java.util.Date
+import java.util.TimeZone
 import mozilla.components.feature.prompts.R
 import mozilla.components.feature.prompts.dialog.TimePickerDialogFragment.Companion.SELECTION_TYPE_MONTH
+import mozilla.components.feature.prompts.ext.epochMillisAt
 import mozilla.components.feature.prompts.ext.month
 import mozilla.components.feature.prompts.ext.toCalendar
 import mozilla.components.feature.prompts.ext.year
@@ -18,6 +21,8 @@ import mozilla.components.support.test.ext.appCompatContext
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -141,9 +146,72 @@ class TimePickerDialogFragmentTest {
         dialog.show()
     }
 
+    @Test
+    fun `GIVEN a max date in a zone ahead of UTC WHEN building the calendar constraints THEN the max day is valid and the day after is not`() {
+        withTimeZone("Europe/Paris") {
+            val validator = dateValidatorOf(maxDate = "2018-12-31".toDate("yyyy-MM-dd"))
+
+            assertTrue(validator.isValid(epochMillisAt(2018, 12, 31)))
+            assertFalse(validator.isValid(epochMillisAt(2019, 1, 1)))
+        }
+    }
+
+    @Test
+    fun `GIVEN a min date in a zone behind UTC WHEN building the calendar constraints THEN the min day is valid and the day before is not`() {
+        withTimeZone("America/New_York") {
+            val validator = dateValidatorOf(minDate = "2018-12-31".toDate("yyyy-MM-dd"))
+
+            assertTrue(validator.isValid(epochMillisAt(2018, 12, 31)))
+            assertFalse(validator.isValid(epochMillisAt(2018, 12, 30)))
+        }
+    }
+
+    @Test
+    fun `GIVEN a min date with a time of day WHEN building the calendar constraints THEN the min day is valid and the day before is not`() {
+        withTimeZone("UTC") {
+            val validator = dateValidatorOf(minDate = "2018-06-07T08:30".toDate("yyyy-MM-dd'T'HH:mm"))
+
+            assertTrue(validator.isValid(epochMillisAt(2018, 6, 7)))
+            assertFalse(validator.isValid(epochMillisAt(2018, 6, 6)))
+        }
+    }
+
+    @Test
+    fun `GIVEN no min or max date WHEN building the calendar constraints THEN every day is valid`() {
+        withTimeZone("UTC") {
+            val validator = dateValidatorOf()
+
+            assertTrue(validator.isValid(epochMillisAt(1970, 1, 1)))
+            assertTrue(validator.isValid(epochMillisAt(2100, 12, 31)))
+        }
+    }
+
+    private fun dateValidatorOf(minDate: Date? = null, maxDate: Date? = null): DateValidator =
+        TimePickerDialogFragment.newInstance(
+                sessionId = "sessionId",
+                promptRequestUID = "uid",
+                shouldDismissOnLoad = false,
+                initialDate = Date(0),
+                minDate = minDate,
+                maxDate = maxDate,
+            )
+            .buildCalendarConstraints()
+            .dateValidator
+
     private val Calendar.minutes: Int
         get() = get(Calendar.MINUTE)
 
     private val Calendar.hour: Int
         get() = get(Calendar.HOUR_OF_DAY)
+}
+
+/** Runs [block] with the default timezone pinned to [zoneId] and restores the previous timezone afterwards. */
+private inline fun <T> withTimeZone(zoneId: String, block: () -> T): T {
+    val original = TimeZone.getDefault()
+    TimeZone.setDefault(TimeZone.getTimeZone(zoneId))
+    try {
+        return block()
+    } finally {
+        TimeZone.setDefault(original)
+    }
 }

@@ -404,7 +404,7 @@ void HttpChannelParent::InvokeEarlyHintPreloader(
   MOZ_ASSERT(NS_IsMainThread());
 
   ContentParentId cpId =
-      static_cast<ContentParent*>(Manager()->Manager())->ChildID();
+      mozilla::ipc::ActorCast<ContentParent>(Manager()->Manager())->ChildID();
 
   RefPtr<EarlyHintRegistrar> ehr = EarlyHintRegistrar::GetOrCreate();
   if (NS_SUCCEEDED(rv)) {

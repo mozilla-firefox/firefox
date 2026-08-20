@@ -468,6 +468,16 @@ ARCHIVE_FILES = {
         },
         {"source": buildconfig.topsrcdir, "pattern": "testing/mozharness/**"},
         {"source": buildconfig.topsrcdir, "pattern": "browser/config/**"},
+        # Certificates for the HTTP/2 server used by the mobile-startup tests.
+        {
+            "source": buildconfig.topsrcdir,
+            "pattern": "testing/raptor/browsertime/utils/http2-cert.pem",
+        },
+        {
+            "source": buildconfig.topsrcdir,
+            "pattern": "testing/raptor/browsertime/utils/http2-cert.key",
+        },
+        {"source": buildconfig.topsrcdir, "pattern": "netwerk/test/unit/http2-ca.pem"},
         {
             "source": buildconfig.topobjdir,
             "base": "_tests/modules",

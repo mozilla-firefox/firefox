@@ -61,6 +61,11 @@ class CustomTabsTest {
     @get:Rule(order = 2) val memoryLeaksRule = DetectMemoryLeaksRule(composeTestRule = { composeTestRule })
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/249659
+    @Converted(
+        replacedBy = ["org.mozilla.fenix.ui.efficiency.tests.CustomTabsTest#verifyLoginSaveInCustomTabTest"],
+        bug = 2063232,
+        since = "2026-08",
+    )
     @SmokeTest
     @Test
     fun verifyLoginSaveInCustomTabTest() {

@@ -64,6 +64,8 @@ SessionHistoryInfo::SessionHistoryInfo(nsDocShellLoadState* aLoadState,
           aLoadState->PolicyContainer(),
           /* FIXME Is this correct? */
           aLoadState->TypeHint())) {
+  MOZ_DIAGNOSTIC_ASSERT(!mURI->SchemeIs("javascript"));
+
   // Pull the upload stream off of the channel instead of the load state, as
   // ownership has already been transferred from the load state to the channel.
   if (nsCOMPtr<nsIUploadChannel2> postChannel = do_QueryInterface(aChannel)) {
@@ -83,6 +85,7 @@ SessionHistoryInfo::SessionHistoryInfo(nsDocShellLoadState* aLoadState,
 SessionHistoryInfo::SessionHistoryInfo(
     const SessionHistoryInfo& aSharedStateFrom, nsIURI* aURI)
     : mURI(aURI), mSharedState(aSharedStateFrom.mSharedState) {
+  MOZ_DIAGNOSTIC_ASSERT(!mURI || !mURI->SchemeIs("javascript"));
   MaybeUpdateTitleFromURI();
   mHasUserInteraction = aSharedStateFrom.mHasUserInteraction;
 }
@@ -96,6 +99,7 @@ SessionHistoryInfo::SessionHistoryInfo(
       mSharedState(SharedState::Create(
           aTriggeringPrincipal, aPrincipalToInherit,
           aPartitionedPrincipalToInherit, aPolicyContainer, aContentType)) {
+  MOZ_DIAGNOSTIC_ASSERT(!mURI || !mURI->SchemeIs("javascript"));
   MaybeUpdateTitleFromURI();
 }
 
@@ -107,6 +111,7 @@ SessionHistoryInfo::SessionHistoryInfo(
     NS_WARNING("NS_GetFinalChannelURI somehow failed in SessionHistoryInfo?");
     aChannel->GetURI(getter_AddRefs(mURI));
   }
+  MOZ_DIAGNOSTIC_ASSERT(!mURI->SchemeIs("javascript"));
   mLoadType = aLoadType;
 
   nsCOMPtr<nsILoadInfo> loadInfo;
@@ -489,6 +494,7 @@ SessionHistoryEntry::GetURI(nsIURI** aURI) {
 
 NS_IMETHODIMP
 SessionHistoryEntry::SetURI(nsIURI* aURI) {
+  MOZ_DIAGNOSTIC_ASSERT(!aURI->SchemeIs("javascript"));
   mInfo->mURI = aURI;
   return NS_OK;
 }
@@ -1603,6 +1609,11 @@ bool ParamTraits<mozilla::dom::SessionHistoryInfo>::Read(
       !ReadParam(aReader, &aResult->mHasUserActivation) ||
       !ReadParam(aReader, &sharedId)) {
     aReader->FatalError("Error reading fields for SessionHistoryInfo");
+    return false;
+  }
+
+  if (aResult->mURI && aResult->mURI->SchemeIs("javascript")) {
+    aReader->FatalError("javascript: URIs should not enter session history");
     return false;
   }
 

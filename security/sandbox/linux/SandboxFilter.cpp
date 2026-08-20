@@ -2036,6 +2036,10 @@ class RDDSandboxPolicy final : public SandboxPolicyCommon {
       // (bug 2021722).
       case SYS_BIND:
         return Some(Error(EPERM));
+      // Some Vulkan ICDs may also load CUDA, which calls setsockopt.
+      case SYS_GETSOCKOPT:
+      case SYS_SETSOCKOPT:
+        return Some(Allow());
 #endif
 
       case SYS_SOCKET:

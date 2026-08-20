@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+
+<!--
+ Hosts window_imestate_iframes.html in a window without any other focusable
+ chrome, so that its focus navigation tests only see the test content.
+-->
+<window id="imestate-iframes-document" onload="onLoad()"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+<script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+<browser id="browser" type="content" src="window_imestate_iframes.html"
+         style="width: 600px; height: 600px"/>
+
+<script>
+<![CDATA[
+
+function onLoad()
+{
+  SimpleTest.waitForFocus(
+    contentWindow => contentWindow.startTests(window.arguments[0]),
+    document.getElementById("browser"));
+}
+
+]]>
+</script>
+
+</window>

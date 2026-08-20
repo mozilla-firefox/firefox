@@ -50,7 +50,7 @@ add_task(async function testRestoredWindowFeatures() {
     {
       url: "http://example.com/browser/" + DUMMY_PAGE,
       features: "menubar=0,resizable",
-      barprops: { scrollbars: true },
+      barprops: { locationbar: true, scrollbars: true },
       chromeFlags: Ci.nsIWebBrowserChrome.CHROME_WINDOW_RESIZE,
       unsetFlags: Ci.nsIWebBrowserChrome.CHROME_OPENAS_DIALOG,
     },
@@ -65,7 +65,7 @@ add_task(async function testRestoredWindowFeatures() {
     {
       url: "http://example.com/browser/" + DUMMY_PAGE,
       features: "dialog,resizable",
-      barprops: { scrollbars: true },
+      barprops: { locationbar: true, scrollbars: true },
       chromeFlags:
         Ci.nsIWebBrowserChrome.CHROME_OPENAS_DIALOG |
         Ci.nsIWebBrowserChrome.CHROME_WINDOW_RESIZE,

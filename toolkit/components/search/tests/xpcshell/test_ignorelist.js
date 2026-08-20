@@ -221,10 +221,15 @@ function assertPreference(engineName, ignoreListtype, url) {
   let matchResult = prefValue.match(/\d+ (.*?) (?:(https.*|\[.*))/);
   Assert.deepEqual(
     matchResult.slice(1),
-    [
-      `Search engine '${engineName}' matches ${ignoreListtype} ignore list`,
-      url,
-    ],
+    [`Search engine matches ${ignoreListtype} ignore list`, url],
     "Should have set the preference to the last engine ignored"
+  );
+
+  Assert.equal(
+    Services.prefs.getStringPref(
+      SearchUtils.BROWSER_SEARCH_PREF + "lastEngineIgnored.name"
+    ),
+    engineName,
+    "Should have set lastEngineIgnored.name to the blocked engine's name"
   );
 }

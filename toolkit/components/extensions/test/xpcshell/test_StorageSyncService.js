@@ -140,7 +140,7 @@ add_task(async function test_storage_sync_bridged_engine() {
   info("Merge");
   // Three levels of JSON wrapping: each outgoing envelope, the cleartext in
   // each envelope, and the extension storage data in each cleartext payload.
-  let outgoingEnvelopesAsJSON = await engine._bridge.apply();
+  let outgoingEnvelopesAsJSON = await engine._bridge.apply(0);
   let outgoingEnvelopes = outgoingEnvelopesAsJSON.map(json => JSON.parse(json));
   let parsedCleartexts = outgoingEnvelopes.map(e => JSON.parse(e.payload));
   let parsedData = parsedCleartexts.map(c => JSON.parse(c.data));
@@ -216,7 +216,7 @@ add_task(async function test_storage_sync_bridged_engine() {
   );
 
   info("Try applying a second time");
-  let secondApply = await engine._bridge.apply();
+  let secondApply = await engine._bridge.apply(0);
   deepEqual(secondApply, {}, "Shouldn't merge anything on second apply");
 
   info("Wipe all items");

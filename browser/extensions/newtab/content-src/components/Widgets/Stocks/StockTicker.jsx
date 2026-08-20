@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 function getDirection(changePercent) {
   const value = parseFloat(
@@ -76,6 +76,10 @@ function StockTicker({
   ticker,
   price,
   changePercent,
+  watchlistState,
+  onWatchlistToggle,
+  disabled,
+  variant,
 }) {
   const direction = getDirection(changePercent);
   const locale =
@@ -100,9 +104,35 @@ function StockTicker({
       {displayChange}
     </span>
   );
+  // Large-only watchlist control, driven by watchlistState: an add/remove button, or a
+  // non-interactive "added" checkmark on Markets rows.
+  const isActionable = watchlistState === "add" || watchlistState === "remove";
+  const showActionButton =
+    size === "large" && isActionable && typeof onWatchlistToggle === "function";
+  const showAddedIndicator = size === "large" && watchlistState === "added";
+  const actionIcon =
+    watchlistState === "remove"
+      ? "chrome://global/skin/icons/minus.svg"
+      : "chrome://global/skin/icons/plus.svg";
+
+  // Show the checkmark briefly after an add so the user sees the confirmation; afterwards
+  // it appears on hover like the other rows.
+  const [confirming, setConfirming] = useState(false);
+  const confirmTimer = useRef(null);
+  useEffect(() => () => clearTimeout(confirmTimer.current), []);
+  const handleToggle = () => {
+    onWatchlistToggle(ticker, stockName || ticker);
+    if (watchlistState === "add") {
+      setConfirming(true);
+      clearTimeout(confirmTimer.current);
+      confirmTimer.current = setTimeout(() => setConfirming(false), 2000);
+    }
+  };
   return (
     <li
-      className={`stock-ticker stock-ticker--${size}`}
+      className={`stock-ticker stock-ticker--${size}${
+        variant === "search" ? " stock-ticker--result" : ""
+      }`}
       aria-hidden={loading ? "true" : undefined}
     >
       {!loading && (
@@ -122,7 +152,7 @@ function StockTicker({
         aria-hidden="true"
       />
       <span className="stock-ticker-label" aria-hidden="true">
-        {size === "large" ? (
+        {size === "large" && (
           <>
             <span className="stock-ticker-line">
               <span className="stock-ticker-name">{stockName}</span>
@@ -135,7 +165,8 @@ function StockTicker({
               <span className="stock-ticker-price">{displayPrice}</span>
             </span>
           </>
-        ) : (
+        )}
+        {size === "medium" && (
           <>
             <span className="stock-ticker-line">
               <span className="stock-ticker-symbol">{ticker}</span>
@@ -145,7 +176,44 @@ function StockTicker({
             {changeText}
           </>
         )}
+        {size === "small" && (
+          <>
+            {changeText}
+            <span className="stock-ticker-price">{displayPrice}</span>
+          </>
+        )}
       </span>
+      {showActionButton && (
+        <moz-button
+          className="stock-ticker-action"
+          type="icon"
+          size="small"
+          iconSrc={actionIcon}
+          disabled={disabled || undefined}
+          data-l10n-id={
+            watchlistState === "remove"
+              ? "newtab-stocks-remove-from-watchlist"
+              : "newtab-stocks-add-to-watchlist"
+          }
+          data-l10n-args={JSON.stringify({ name: stockName || ticker })}
+          onClick={handleToggle}
+        />
+      )}
+      {showAddedIndicator && (
+        <>
+          <span
+            className="stock-ticker-sr stock-ticker-in-watchlist"
+            data-l10n-id="newtab-stocks-in-watchlist"
+            data-l10n-args={JSON.stringify({ name: stockName || ticker })}
+          />
+          <span
+            className={`stock-ticker-added${
+              confirming ? " stock-ticker-added--confirming" : ""
+            }`}
+            aria-hidden="true"
+          />
+        </>
+      )}
     </li>
   );
 }

@@ -207,6 +207,7 @@ treeherder:
         'py': 'Python checks'
         'java': 'Java checks'
         'rust': 'Rust checks'
+        'vendor': 'Vendoring checks'
         'tests': 'Test verification'
         'android': 'Android checks'
         'Static-Analysis': 'Full tree static-analysis'

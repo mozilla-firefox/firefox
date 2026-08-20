@@ -4459,6 +4459,34 @@ void PermissionManager::ForwardBrowserPermissionToChild(
     uint64_t aBrowserId, bool aIsRemoval) {
   MOZ_ASSERT(XRE_IsParentProcess());
 
+  nsAutoCString origin;
+  nsresult rv = aPrincipal->GetOrigin(origin);
+  if (NS_FAILED(rv)) {
+    return;
+  }
+
+  // A removal has to reach every process that may still hold a copy, not only
+  // the tab's current one: out-of-process iframes, and processes left behind by
+  // a process switch, are seeded by TransmitBrowserPermissionsForPrincipal.
+  // Select them by permission key, as regular permission updates do, so the
+  // origin only reaches processes that were already given it. The key has no
+  // tab dimension, so a process holding this origin for a different tab is
+  // notified too, where the removal is a no-op.
+  if (aIsRemoval) {
+    nsAutoCString permissionKey;
+    GetKeyForPermission(aPrincipal, aType, permissionKey);
+
+    nsTArray<dom::ContentParent*> cplist;
+    dom::ContentParent::GetAll(cplist);
+    for (dom::ContentParent* cp : cplist) {
+      if (cp->NeedsPermissionsUpdate(permissionKey)) {
+        (void)cp->SendSetBrowserPermission(origin, nsCString(aType), aAction,
+                                           aBrowserId, aIsRemoval);
+      }
+    }
+    return;
+  }
+
   RefPtr<dom::BrowsingContext> bc =
       dom::BrowsingContext::GetCurrentTopByBrowserId(aBrowserId);
   if (!bc) {
@@ -4467,12 +4495,6 @@ void PermissionManager::ForwardBrowserPermissionToChild(
 
   dom::ContentParent* cp = bc->Canonical()->GetContentParent();
   if (!cp) {
-    return;
-  }
-
-  nsAutoCString origin;
-  nsresult rv = aPrincipal->GetOrigin(origin);
-  if (NS_FAILED(rv)) {
     return;
   }
 
@@ -4716,19 +4738,16 @@ void PermissionManager::ForwardClearBrowserPermissionsToChild(
     uint64_t aBrowserId, uint32_t aActionFilter) {
   MOZ_ASSERT(XRE_IsParentProcess());
 
-  RefPtr<dom::BrowsingContext> bc =
-      dom::BrowsingContext::GetCurrentTopByBrowserId(aBrowserId);
-  if (!bc) {
-    return;
-  }
-
-  dom::ContentParent* cp = bc->Canonical()->GetContentParent();
-  if (!cp) {
-    return;
-  }
-
-  if (!cp->SendClearBrowserPermissions(aBrowserId, aActionFilter)) {
-    NS_WARNING("Failed to send ClearBrowserPermissions to child");
+  // The BrowserId cannot be resolved back to a BrowsingContext here: the main
+  // caller is tab teardown, and BrowsingContext::Detach unregisters the
+  // BrowserId before it fires "browsing-context-discarded". Broadcast instead.
+  // Unlike SetBrowserPermission this message names no origin, so it discloses
+  // nothing to processes that never held the entry, and clearing a browserId a
+  // process knows nothing about is a no-op.
+  nsTArray<dom::ContentParent*> cplist;
+  dom::ContentParent::GetAll(cplist);
+  for (dom::ContentParent* cp : cplist) {
+    (void)cp->SendClearBrowserPermissions(aBrowserId, aActionFilter);
   }
 }
 

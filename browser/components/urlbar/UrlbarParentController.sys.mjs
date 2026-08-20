@@ -219,26 +219,6 @@ export class UrlbarParentController {
   }
 
   /**
-   * Returns the view update a dynamic result's provider produces for the
-   * given node ids. Mediates the view's access to the (parent-process)
-   * provider.
-   *
-   * @param {UrlbarResult} result The dynamic result.
-   * @param {object} idsByName A map from node names to element ids.
-   * @returns {Promise<object>} The view update.
-   */
-  getViewUpdate(result, idsByName) {
-    // On the message path this round-trips asynchronously, so the provider can
-    // be unregistered by the time it runs. In practice this only happens in
-    // tests, which unregister providers mid-run while a superseded query's row
-    // is still tearing down. The update is then moot; return nothing and let
-    // the view skip it.
-    return this.manager
-      .getProvider(result.providerName)
-      ?.getViewUpdate(result, idsByName);
-  }
-
-  /**
    * Notifies a result's provider that the result is about to be selected.
    * Mediates the view's access to the (parent-process) provider.
    *
@@ -1513,7 +1493,7 @@ export class TelemetryEvent {
     }
 
     this._startEventInfo = {
-      timeStamp: event.timeStamp || ChromeUtils.now(),
+      timeStamp: event.timeStamp,
       interactionType:
         interactionType ||
         lazy.UrlbarTelemetryUtils.startInteractionType(event, searchString),

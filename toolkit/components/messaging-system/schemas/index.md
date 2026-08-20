@@ -24,6 +24,12 @@ Together, they are combined into the {searchfox}`Messaging Experiments <browser/
 is the schema used for Nimbus experiments that target messaging features. All
 incoming messaging experiments will be validated against this schema.
 
+### MultiStageProtonScreen
+
+There is a JSON schema for a multistage screen content, which the Messaging System renders Spotlights and Feature Callouts from, and even shares with about:welcome onboarding. However, this JSON schema isn't used by Nimbus to be enforced on messaging experiments and is only served for the purpose of documenting a catalog of the growing set of content properties.
+
+See JSON schema [here](https://searchfox.org/firefox-main/source/toolkit/components/messaging-system/schemas/MultiStageProtonScreenSchemas/MultiStageProtonScreenSchemas.json).
+
 ## Schema Changes
 
 To add a new message type to the Messaging Experiments schema:

@@ -486,12 +486,12 @@ export default class TurnOnScheduledBackups extends MozLitElement {
         aria-describedby="backup-turn-on-scheduled-description"
         part="form"
       >
-        <h1
+        <h2
           id="backup-turn-on-scheduled-header"
           class="heading-medium"
           data-l10n-id=${this.turnOnBackupHeaderL10nId ||
           "turn-on-scheduled-backups-header"}
-        ></h1>
+        ></h2>
         <main id="backup-turn-on-scheduled-content">
           <div id="backup-turn-on-scheduled-description">
             <span

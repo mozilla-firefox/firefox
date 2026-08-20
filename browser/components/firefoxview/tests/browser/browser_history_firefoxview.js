@@ -6,7 +6,8 @@ const { PlacesTestUtils } = ChromeUtils.importESModule(
 );
 
 ChromeUtils.defineESModuleGetters(globalThis, {
-  SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
 });
 const { ProfileAge } = ChromeUtils.importESModule(
   "resource://gre/modules/ProfileAge.sys.mjs"

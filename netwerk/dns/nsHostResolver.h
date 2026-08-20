@@ -11,7 +11,7 @@
 #include "mozilla/Atomics.h"
 #include "mozilla/CondVar.h"
 #include "mozilla/DataMutex.h"
-#include "mozilla/RWLock.h"
+#include "mozilla/Mutex.h"
 #include "mozilla/StaticPrefs_network.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/net/DNS.h"
@@ -301,7 +301,7 @@ class nsHostResolver : public nsISupports, public AHostResolver {
   // mutable so SizeOfIncludingThis can be const
   // Protects mRecordDB. When held together with mQueue.mLock, always acquire
   // mDBLock first.
-  mutable mozilla::RWLock mDBLock{"nsHostResolver.mDBLock"};
+  mutable Mutex mDBLock{"nsHostResolver.mDBLock"};
   mozilla::net::HostRecordQueue mQueue;
   nsRefPtrHashtable<nsGenericHashKey<nsHostKey>, nsHostRecord> mRecordDB
       MOZ_GUARDED_BY(mDBLock);

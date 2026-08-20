@@ -69,33 +69,12 @@ class EnumeratedIterator {
 
   /* Comparison operators */
 
-  friend bool operator==(const EnumeratedIterator<EnumTypeT>& aIter1,
-                         const EnumeratedIterator<EnumTypeT>& aIter2) {
-    return aIter1.mCurrent == aIter2.mCurrent;
-  }
-
-  friend bool operator!=(const EnumeratedIterator<EnumTypeT>& aIter1,
-                         const EnumeratedIterator<EnumTypeT>& aIter2) {
-    return aIter1.mCurrent != aIter2.mCurrent;
-  }
-
-  friend bool operator<(const EnumeratedIterator<EnumTypeT>& aIter1,
-                        const EnumeratedIterator<EnumTypeT>& aIter2) {
-    return aIter1.mCurrent < aIter2.mCurrent;
-  }
-
-  friend bool operator<=(const EnumeratedIterator<EnumTypeT>& aIter1,
-                         const EnumeratedIterator<EnumTypeT>& aIter2) {
-    return aIter1.mCurrent <= aIter2.mCurrent;
-  }
-  friend bool operator>(const EnumeratedIterator<EnumTypeT>& aIter1,
-                        const EnumeratedIterator<EnumTypeT>& aIter2) {
-    return aIter1.mCurrent > aIter2.mCurrent;
-  }
-  friend bool operator>=(const EnumeratedIterator<EnumTypeT>& aIter1,
-                         const EnumeratedIterator<EnumTypeT>& aIter2) {
-    return aIter1.mCurrent >= aIter2.mCurrent;
-  }
+  bool operator==(const EnumeratedIterator& aOther) const = default;
+  bool operator!=(const EnumeratedIterator& aOther) const = default;
+  bool operator<(const EnumeratedIterator& aOther) const = default;
+  bool operator<=(const EnumeratedIterator& aOther) const = default;
+  bool operator>(const EnumeratedIterator& aOther) const = default;
+  bool operator>=(const EnumeratedIterator& aOther) const = default;
 
  private:
   EnumTypeT mCurrent;

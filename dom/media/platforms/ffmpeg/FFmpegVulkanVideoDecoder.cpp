@@ -6,6 +6,7 @@
 
 #include "FFmpegLog.h"
 #include "FFmpegVideoDecoder.h"
+#include "H264.h"
 #include "mozilla/DataMutex.h"
 #include "mozilla/ScopeExit.h"
 #include "nsPrintfCString.h"
@@ -167,6 +168,40 @@ struct InstanceFunctionCache {
       mGetPhysicalDeviceImageFormatProperties2 = nullptr;
   PFN_vkGetPhysicalDeviceExternalSemaphoreProperties
       mGetPhysicalDeviceExternalSemaphoreProperties = nullptr;
+  PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR
+      mGetPhysicalDeviceVideoCapabilitiesKHR = nullptr;
+  template <typename CodecCaps>
+  struct CachedVideoCaps {
+    bool mQueried = false;
+    bool mValid = false;
+    uint32_t mProfileIdc = 0;
+    uint32_t mLayout = 0;
+    uint32_t mExtra = 0;
+    uint8_t mBitDepth = 0;
+    uint8_t mChromaBitDepth = 0;
+    VkPhysicalDevice mPhysDev = VK_NULL_HANDLE;
+    VkVideoChromaSubsamplingFlagBitsKHR mChroma{};
+    VkVideoCapabilitiesKHR mCaps{};
+    VkVideoDecodeCapabilitiesKHR mDecodeCaps{};
+    CodecCaps mCodecCaps{};
+
+    bool Matches(VkPhysicalDevice aPhysDev, uint32_t aProfileIdc,
+                 uint32_t aLayout, uint32_t aExtra, uint8_t aBitDepth,
+                 uint8_t aChromaBitDepth,
+                 VkVideoChromaSubsamplingFlagBitsKHR aChroma) const {
+      return mQueried && mPhysDev == aPhysDev && mProfileIdc == aProfileIdc &&
+             mLayout == aLayout && mExtra == aExtra && mBitDepth == aBitDepth &&
+             mChromaBitDepth == aChromaBitDepth && mChroma == aChroma;
+    }
+  };
+  CachedVideoCaps<VkVideoDecodeH264CapabilitiesKHR> mH264;
+  CachedVideoCaps<VkVideoDecodeH265CapabilitiesKHR> mHevc;
+#    if LIBAVCODEC_VERSION_MAJOR >= 61
+  CachedVideoCaps<VkVideoDecodeAV1CapabilitiesKHR> mAv1;
+#    endif
+#    if LIBAVCODEC_VERSION_MAJOR >= 62
+  CachedVideoCaps<VkVideoDecodeVP9CapabilitiesKHR> mVp9;
+#    endif
   // Flat array of all the above pointers for use by IsLoaded().
   nsTArray<PFN_vkVoidFunction> mFnPtrs;
 };
@@ -240,7 +275,302 @@ void FFmpegVideoDecoder<LIBAV_VER>::FFmpegVulkanVideoDecoder::
       mGetPhysicalDeviceImageFormatProperties2;
   cache->mGetPhysicalDeviceExternalSemaphoreProperties =
       mGetPhysicalDeviceExternalSemaphoreProperties;
+  cache->mGetPhysicalDeviceVideoCapabilitiesKHR =
+      reinterpret_cast<PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR>(
+          aGetProcAddr(aInst, "vkGetPhysicalDeviceVideoCapabilitiesKHR"));
   cache->mFnPtrs = mInstanceFunctions.Clone();
+  cache->mH264 = {};
+  cache->mHevc = {};
+#    if LIBAVCODEC_VERSION_MAJOR >= 61
+  cache->mAv1 = {};
+#    endif
+#    if LIBAVCODEC_VERSION_MAJOR >= 62
+  cache->mVp9 = {};
+#    endif
+}
+
+namespace {
+
+VkVideoComponentBitDepthFlagBitsKHR VkComponentBitDepth(uint8_t aDepth) {
+  switch (aDepth) {
+    case 8:
+      return VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+    case 10:
+      return VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR;
+    case 12:
+      return VK_VIDEO_COMPONENT_BIT_DEPTH_12_BIT_KHR;
+    default:
+      return static_cast<VkVideoComponentBitDepthFlagBitsKHR>(0);
+  }
+}
+
+uint8_t ColorDepthToBits(gfx::ColorDepth aDepth) {
+  switch (aDepth) {
+    case gfx::ColorDepth::COLOR_10:
+      return 10;
+    case gfx::ColorDepth::COLOR_12:
+      return 12;
+    default:
+      return 8;
+  }
+}
+
+template <typename CodecCaps>
+bool QueryVideoCaps(PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR aGetCaps,
+                    VkPhysicalDevice aPhysDev,
+                    VkVideoCodecOperationFlagBitsKHR aOp,
+                    const void* aCodecProfile, VkStructureType aCodecCapsSType,
+                    VkVideoChromaSubsamplingFlagBitsKHR aChroma,
+                    VkVideoComponentBitDepthFlagBitsKHR aLumaBits,
+                    VkVideoComponentBitDepthFlagBitsKHR aChromaBits,
+                    InstanceFunctionCache::CachedVideoCaps<CodecCaps>* aOut) {
+  if (!aOut) {
+    return false;
+  }
+  *aOut = {};
+  if (!aGetCaps || aPhysDev == VK_NULL_HANDLE || !aCodecProfile || !aChroma ||
+      !aLumaBits) {
+    return false;
+  }
+  if (aChroma != VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR &&
+      !aChromaBits) {
+    return false;
+  }
+
+  VkVideoDecodeUsageInfoKHR usage{};
+  usage.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_USAGE_INFO_KHR;
+  usage.pNext = aCodecProfile;
+  usage.videoUsageHints = VK_VIDEO_DECODE_USAGE_DEFAULT_KHR;
+
+  VkVideoProfileInfoKHR profile{};
+  profile.sType = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
+  profile.pNext = &usage;
+  profile.videoCodecOperation = aOp;
+  profile.chromaSubsampling = aChroma;
+  profile.lumaBitDepth = aLumaBits;
+  profile.chromaBitDepth = aChromaBits;
+
+  aOut->mCodecCaps.sType = aCodecCapsSType;
+  aOut->mDecodeCaps.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
+  aOut->mDecodeCaps.pNext = &aOut->mCodecCaps;
+  aOut->mCaps.sType = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+  aOut->mCaps.pNext = &aOut->mDecodeCaps;
+
+  const VkResult res = aGetCaps(aPhysDev, &profile, &aOut->mCaps);
+  if (res != VK_SUCCESS) {
+    FFMPEGV_LOG("vkGetPhysicalDeviceVideoCapabilitiesKHR failed ({}) op=0x{:x}",
+                (int)res, (unsigned)aOp);
+    *aOut = {};
+    return false;
+  }
+  return true;
+}
+
+template <typename CodecCaps>
+void EnsureVideoCapsSlot(
+    PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR aGetCaps,
+    VkPhysicalDevice aPhysDev, VkVideoCodecOperationFlagBitsKHR aOp,
+    const void* aCodecProfile, VkStructureType aCodecCapsSType,
+    VkVideoChromaSubsamplingFlagBitsKHR aChroma,
+    VkVideoComponentBitDepthFlagBitsKHR aLumaBits,
+    VkVideoComponentBitDepthFlagBitsKHR aChromaBits, uint32_t aProfileIdc,
+    uint32_t aLayout, uint32_t aExtra, uint8_t aBitDepth,
+    uint8_t aChromaBitDepth,
+    InstanceFunctionCache::CachedVideoCaps<CodecCaps>* aSlot) {
+  if (!aSlot || aSlot->Matches(aPhysDev, aProfileIdc, aLayout, aExtra,
+                               aBitDepth, aChromaBitDepth, aChroma)) {
+    return;
+  }
+  const bool valid =
+      QueryVideoCaps(aGetCaps, aPhysDev, aOp, aCodecProfile, aCodecCapsSType,
+                     aChroma, aLumaBits, aChromaBits, aSlot);
+  aSlot->mQueried = true;
+  aSlot->mValid = valid;
+  aSlot->mPhysDev = aPhysDev;
+  aSlot->mProfileIdc = aProfileIdc;
+  aSlot->mLayout = aLayout;
+  aSlot->mExtra = aExtra;
+  aSlot->mBitDepth = aBitDepth;
+  aSlot->mChromaBitDepth = aChromaBitDepth;
+  aSlot->mChroma = aChroma;
+}
+
+void EnsureVideoCaps(InstanceFunctionCache& aCache, VkPhysicalDevice aPhysDev,
+                     gfx::ColorDepth aColorDepth, gfx::ColorDepth aChromaDepth,
+                     VkVideoChromaSubsamplingFlagBitsKHR aChroma,
+                     AVCodecID aCodecID, uint32_t aProfileIdc,
+                     uint32_t aPictureLayout) {
+  const uint8_t bitDepth = ColorDepthToBits(aColorDepth);
+  const uint8_t chromaBitDepth = ColorDepthToBits(aChromaDepth);
+  const auto lumaBits = VkComponentBitDepth(bitDepth);
+  const auto chromaBits =
+      aChroma == VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR
+          ? static_cast<VkVideoComponentBitDepthFlagBitsKHR>(0)
+          : VkComponentBitDepth(chromaBitDepth);
+  auto* getCaps = aCache.mGetPhysicalDeviceVideoCapabilitiesKHR;
+
+  switch (aCodecID) {
+    case AV_CODEC_ID_H264: {
+      VkVideoDecodeH264ProfileInfoKHR h264Profile{};
+      h264Profile.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR;
+      h264Profile.stdProfileIdc =
+          static_cast<StdVideoH264ProfileIdc>(aProfileIdc);
+      h264Profile.pictureLayout =
+          static_cast<VkVideoDecodeH264PictureLayoutFlagBitsKHR>(
+              aPictureLayout);
+      EnsureVideoCapsSlot(
+          getCaps, aPhysDev, VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,
+          &h264Profile, VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR,
+          aChroma, lumaBits, chromaBits, h264Profile.stdProfileIdc,
+          h264Profile.pictureLayout, 0, bitDepth, chromaBitDepth,
+          &aCache.mH264);
+      break;
+    }
+    case AV_CODEC_ID_HEVC: {
+      VkVideoDecodeH265ProfileInfoKHR hevcProfile{};
+      hevcProfile.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_KHR;
+      hevcProfile.stdProfileIdc = STD_VIDEO_H265_PROFILE_IDC_MAIN;
+      EnsureVideoCapsSlot(
+          getCaps, aPhysDev, VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR,
+          &hevcProfile, VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_KHR,
+          aChroma, lumaBits, chromaBits, hevcProfile.stdProfileIdc, 0, 0,
+          bitDepth, chromaBitDepth, &aCache.mHevc);
+      break;
+    }
+#    if LIBAVCODEC_VERSION_MAJOR >= 61
+    case AV_CODEC_ID_AV1: {
+      VkVideoDecodeAV1ProfileInfoKHR av1Profile{};
+      av1Profile.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR;
+      av1Profile.stdProfile = STD_VIDEO_AV1_PROFILE_MAIN;
+      av1Profile.filmGrainSupport = VK_FALSE;
+      EnsureVideoCapsSlot(
+          getCaps, aPhysDev, VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR,
+          &av1Profile, VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_CAPABILITIES_KHR,
+          aChroma, lumaBits, chromaBits, av1Profile.stdProfile, 0,
+          av1Profile.filmGrainSupport, bitDepth, chromaBitDepth, &aCache.mAv1);
+      break;
+    }
+#    endif
+#    if LIBAVCODEC_VERSION_MAJOR >= 62
+    case AV_CODEC_ID_VP9: {
+      VkVideoDecodeVP9ProfileInfoKHR vp9Profile{};
+      vp9Profile.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR;
+      vp9Profile.stdProfile = STD_VIDEO_VP9_PROFILE_0;
+      EnsureVideoCapsSlot(
+          getCaps, aPhysDev, VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR,
+          &vp9Profile, VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR,
+          aChroma, lumaBits, chromaBits, vp9Profile.stdProfile, 0, 0, bitDepth,
+          chromaBitDepth, &aCache.mVp9);
+      break;
+    }
+#    endif
+    default:
+      break;
+  }
+}
+
+uint32_t MapH264VulkanProfileIdc(uint8_t aIdc) {
+  switch (aIdc) {
+    case STD_VIDEO_H264_PROFILE_IDC_BASELINE:
+    case STD_VIDEO_H264_PROFILE_IDC_MAIN:
+    case STD_VIDEO_H264_PROFILE_IDC_HIGH:
+    case STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE:
+      return aIdc;
+#    if LIBAVCODEC_VERSION_MAJOR >= 61
+    case AV_PROFILE_H264_HIGH_10:
+    case AV_PROFILE_H264_HIGH_422:
+    case AV_PROFILE_H264_HIGH_444:
+#    else
+    case FF_PROFILE_H264_HIGH_10:
+    case FF_PROFILE_H264_HIGH_422:
+    case FF_PROFILE_H264_HIGH_444:
+#    endif
+      return STD_VIDEO_H264_PROFILE_IDC_HIGH;
+    default:
+      return STD_VIDEO_H264_PROFILE_IDC_MAIN;
+  }
+}
+
+void H264VulkanProbeFormat(const MediaByteBuffer* aExtraData,
+                           gfx::ColorDepth aLumaDepth,
+                           gfx::ColorDepth* aChromaDepth,
+                           VkVideoChromaSubsamplingFlagBitsKHR* aChroma,
+                           uint32_t* aProfileIdc, uint32_t* aPictureLayout) {
+  SPSData sps;
+  if (!aExtraData || !H264::DecodeSPSFromExtraData(aExtraData, sps)) {
+    *aChroma = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
+    *aChromaDepth = aLumaDepth;
+    *aProfileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
+    *aPictureLayout = VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR;
+    return;
+  }
+  *aProfileIdc = MapH264VulkanProfileIdc(sps.profile_idc);
+  *aPictureLayout =
+      sps.interlaced
+          ? VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR
+          : VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR;
+  switch (sps.chroma_format_idc) {
+    case 0:
+      *aChroma = VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR;
+      break;
+    case 2:
+      *aChroma = VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR;
+      break;
+    case 3:
+      *aChroma = VK_VIDEO_CHROMA_SUBSAMPLING_444_BIT_KHR;
+      break;
+    default:
+      *aChroma = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
+      break;
+  }
+  *aChromaDepth =
+      sps.chroma_format_idc == 0
+          ? aLumaDepth
+          : gfx::ColorDepthForBitDepth(sps.bit_depth_chroma_minus8 + 8);
+}
+
+}  // namespace
+
+bool FFmpegVideoDecoder<LIBAV_VER>::FFmpegVulkanVideoDecoder::
+    VulkanCanDecodeFormat(AVCodecID aCodecID, unsigned aAvcodecVersion,
+                          AVBufferRef* aVulkanDeviceContext,
+                          const MediaByteBuffer* aExtraData,
+                          gfx::ColorDepth aColorDepth) const {
+  if (aCodecID != AV_CODEC_ID_H264 ||
+      aAvcodecVersion >= AV_VERSION_INT(61, 19, 100) || !aVulkanDeviceContext) {
+    return true;
+  }
+
+  const auto* devCtx =
+      reinterpret_cast<AVHWDeviceContext*>(aVulkanDeviceContext->data);
+  const auto* vkCtx = reinterpret_cast<AVVulkanDeviceContext*>(devCtx->hwctx);
+
+  gfx::ColorDepth chromaDepth;
+  VkVideoChromaSubsamplingFlagBitsKHR chroma;
+  uint32_t profileIdc;
+  uint32_t pictureLayout;
+  H264VulkanProbeFormat(aExtraData, aColorDepth, &chromaDepth, &chroma,
+                        &profileIdc, &pictureLayout);
+
+  // FFmpeg < n7.1 (libavcodec < 61.19.100) mishandles COINCIDE without
+  // SEPARATE_REFERENCE_IMAGES and SIGSEGVs in ff_vk_exec_add_dep_frame.
+  auto cache = sInstanceFnCache.Lock();
+  EnsureVideoCaps(*cache, vkCtx->phys_dev, aColorDepth, chromaDepth, chroma,
+                  aCodecID, profileIdc, pictureLayout);
+  if (cache->mH264.mValid) {
+    const bool coincide =
+        cache->mH264.mDecodeCaps.flags &
+        VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR;
+    const bool separate = cache->mH264.mCaps.flags &
+                          VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR;
+    if (coincide && !separate) {
+      FFMPEGV_LOG(
+          "Vulkan H.264 skipped: FFmpeg < n7.1 and driver reports "
+          "COINCIDE without SEPARATE_REFERENCE_IMAGES");
+      return false;
+    }
+  }
+  return true;
 }
 
 void FFmpegVideoDecoder<

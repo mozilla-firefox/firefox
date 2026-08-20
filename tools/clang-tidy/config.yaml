@@ -70,6 +70,11 @@ clang_checkers:
     config:
       - key: AllowedTypes
         value: (mozilla::)?RefPtr
+  - name: performance-unnecessary-copy-initialization
+    reliability: high
+    config:
+      - key: AllowedTypes
+        value: (mozilla::)?(nsCOM|Ref)Ptr
   - name: performance-inefficient-string-concatenation
     reliability: high
   - name: performance-inefficient-vector-operation

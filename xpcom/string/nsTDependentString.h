@@ -103,12 +103,12 @@ class MOZ_GSL_POINTER nsTDependentString : public nsTString<T> {
    */
 
   using nsTString<T>::Rebind;
-  void Rebind(const char_type* aData MOZ_LIFETIME_CAPTURE_BY(this)) {
+  void Rebind(const char_type* aData MOZ_LIFETIME_CAPTURE_BY_THIS) {
     Rebind(aData, char_traits::length(aData));
   }
 
-  void Rebind(const char_type* aStart MOZ_LIFETIME_CAPTURE_BY(this),
-              const char_type* aEnd MOZ_LIFETIME_CAPTURE_BY(this));
+  void Rebind(const char_type* aStart MOZ_LIFETIME_CAPTURE_BY_THIS,
+              const char_type* aEnd MOZ_LIFETIME_CAPTURE_BY_THIS);
   void Rebind(const string_type&, index_type aStartPos);
 
  protected:

@@ -55,6 +55,7 @@ perf:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1923894
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1954216
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1949038
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2063750
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1759744#c5
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1799727#c4
@@ -258,6 +259,14 @@ perf:
           events of at least 40 ms, in ms.
         type: quantity
         unit: ms
+      is_active_client:
+        description: |
+          Whether this profile looks like it belongs to a real person rather
+          than to automation: its browsing history reaches back at least three
+          days and holds at least five distinct pages. False in every other
+          scenario, including when history is disabled or unavailable. Not
+          reported on GeckoView, where history lives in the embedding app.
+        type: boolean
     send_in_pings:
       - pageload
   page_load_domain:
@@ -267,6 +276,7 @@ perf:
         Includes ETLD+1 information and sent with ohttp.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1967780
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2063750
     data_reviews:
       - https://phabricator.services.mozilla.com/D250521
     notification_emails:
@@ -326,6 +336,14 @@ perf:
           with a large enough user base to avoid fingerprinting risk:
           US, DE, FR, GB, CA, PL, JP, IN, BR, ID, MX, IT, ES, NL.
         type: string
+      is_active_client:
+        description: |
+          Whether this profile looks like it belongs to a legitimate user: its
+          browsing history reaches back at least three days and holds at least
+          five distinct pages. False in every other scenario, including when
+          history is disabled or unavailable. Not reported on GeckoView, where
+          history lives in the embedding app.
+        type: boolean
     send_in_pings:
       - pageload-base-domain
 
@@ -977,9 +995,6 @@ dom:
     type: timing_distribution
     description: >
       The time spent in the fully-black screen in fullscreen transition
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram FULLSCREEN_TRANSITION_BLACK_MS.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1271160
@@ -988,7 +1003,6 @@ dom:
     notification_emails:
       - mozilla-telemetry@upsuper.org
     expires: never
-    telemetry_mirror: FULLSCREEN_TRANSITION_BLACK_MS
 
   gc_in_progress:
     type: labeled_timing_distribution

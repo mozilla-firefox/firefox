@@ -11,9 +11,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mozilla.components.feature.summarize.settings.SummarizationSettings
+import mozilla.components.lib.ai.controls.AIFeatureBlockStorage
 import mozilla.components.lib.shake.ShakeSensitivity
 
 /** See [FenixSummarizationSettingsBinding]. */
@@ -27,8 +29,10 @@ interface SummarizationSettingsBinding {
  * Wrapper for the summarization settings managed by the module. This is a convenience class to bridge suspending and
  * non-suspending contents, to be hosted by a lifecycle observer.
  */
-class FenixSummarizationSettingsBinding(private val summarizationSettings: SummarizationSettings) :
-    DefaultLifecycleObserver, SummarizationSettingsBinding {
+class FenixSummarizationSettingsBinding(
+    private val summarizationSettings: SummarizationSettings,
+    private val aiFeatureBlockStorage: AIFeatureBlockStorage,
+) : DefaultLifecycleObserver, SummarizationSettingsBinding {
     private val _isFeatureEnabled = MutableStateFlow(false)
     override val isFeatureEnabled: StateFlow<Boolean> = _isFeatureEnabled
     private val _isGestureEnabled = MutableStateFlow(false)
@@ -39,8 +43,13 @@ class FenixSummarizationSettingsBinding(private val summarizationSettings: Summa
     override fun onCreate(owner: LifecycleOwner) {
         super.onCreate(owner)
         owner.lifecycle.coroutineScope.launch {
+            val isBlocked = aiFeatureBlockStorage.isBlocked.first()
             combine(
-                    summarizationSettings.getFeatureEnabledUserStatus().mapNotNull { it },
+                    summarizationSettings
+                        .getFeatureEnabledUserStatus()
+                        .map({
+                            it ?: !isBlocked
+                        }),
                     summarizationSettings.getGestureEnabledUserStatus(),
                     summarizationSettings.getShakeSensitivity(),
                 ) { featureEnabled, gestureEnabled, sensitivity ->

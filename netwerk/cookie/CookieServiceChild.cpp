@@ -67,7 +67,8 @@ CookieServiceChild::CookieServiceChild() { NeckoChild::InitNeckoChild(); }
 CookieServiceChild::~CookieServiceChild() { gCookieChildService = nullptr; }
 
 void CookieServiceChild::Init() {
-  auto* cc = static_cast<mozilla::dom::ContentChild*>(gNeckoChild->Manager());
+  auto* cc = mozilla::ipc::ActorCast<mozilla::dom::ContentChild>(
+      gNeckoChild->Manager());
   if (cc->IsShuttingDown()) {
     return;
   }
@@ -259,7 +260,7 @@ IPCResult CookieServiceChild::RecvRemoveBatchDeletedCookies(
     nsTArray<OriginAttributes>&& aAttrsList) {
   MOZ_ASSERT(aCookiesList.Length() == aAttrsList.Length());
   for (uint32_t i = 0; i < aCookiesList.Length(); i++) {
-    CookieStruct cookieStruct = aCookiesList.ElementAt(i);
+    const CookieStruct& cookieStruct = aCookiesList.ElementAt(i);
     RemoveSingleCookie(cookieStruct, aAttrsList.ElementAt(i), Nothing());
   }
 

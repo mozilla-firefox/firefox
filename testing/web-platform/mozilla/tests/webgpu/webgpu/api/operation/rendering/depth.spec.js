@@ -537,3 +537,100 @@ fn((t) => {
   }]
   );
 });
+
+g.test('fragment_depth_qualifiers').
+desc(`Validates that less and greater qualifiers to @builtin(frag_depth) are accepted.`).
+params((u) => u.combine('mode', ['less', 'greater'])).
+fn((t) => {
+  t.skipIfLanguageFeatureNotSupported('fragment_depth');
+
+  const { mode } = t.params;
+
+  const textureWidth = 1;
+  const textureHeight = 1;
+  const colorFormat = 'rgba8unorm';
+  const depthFormat = 'depth32float';
+
+  const val = mode === 'less' ? '0.4' : '0.6';
+  const pipeline = t.device.createRenderPipeline({
+    layout: 'auto',
+    vertex: {
+      module: t.device.createShaderModule({
+        code: `
+            @vertex
+            fn main() -> @builtin(position) vec4f {
+              return vec4f(0, 0, 0, 1);
+            }
+          `
+      })
+    },
+    fragment: {
+      module: t.device.createShaderModule({
+        code: `
+            requires fragment_depth;
+
+            struct Output {
+              @location(0) color: vec4f,
+              @builtin(frag_depth, ${mode}) depth: f32,
+            }
+
+            @fragment
+            fn main() -> Output {
+              return Output(vec4f(0, 1, 0, 1), ${val});
+            }
+          `
+      }),
+      targets: [{ format: colorFormat }]
+    },
+    primitive: { topology: 'point-list' },
+    depthStencil: {
+      format: depthFormat,
+      depthWriteEnabled: true,
+      depthCompare: mode
+    }
+  });
+
+  const colorTexture = t.createTextureTracked({
+    size: [textureWidth, textureHeight],
+    format: colorFormat,
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+  });
+
+  const depthTexture = t.createTextureTracked({
+    size: [textureWidth, textureHeight],
+    format: depthFormat,
+    usage: GPUTextureUsage.RENDER_ATTACHMENT
+  });
+
+  const encoder = t.device.createCommandEncoder();
+  const pass = encoder.beginRenderPass({
+    colorAttachments: [
+    {
+      view: colorTexture.createView(),
+      clearValue: { r: 1.0, g: 0.0, b: 0.0, a: 1.0 },
+      loadOp: 'clear',
+      storeOp: 'store'
+    }],
+
+    depthStencilAttachment: {
+      view: depthTexture.createView(),
+      depthClearValue: 0.5,
+      depthLoadOp: 'clear',
+      depthStoreOp: 'store'
+    }
+  });
+
+  pass.setPipeline(pipeline);
+  pass.draw(3);
+  pass.end();
+
+  t.device.queue.submit([encoder.finish()]);
+
+  const expectedColor = new Uint8Array([0, 255, 0, 255]);
+  ttu.expectSinglePixelComparisonsAreOkInTexture(t, { texture: colorTexture }, [
+  {
+    coord: { x: 0, y: 0 },
+    exp: expectedColor
+  }]
+  );
+});

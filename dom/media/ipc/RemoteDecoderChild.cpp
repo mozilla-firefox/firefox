@@ -295,7 +295,7 @@ RemoteMediaManagerChild* RemoteDecoderChild::GetManager() {
   if (!CanSend()) {
     return nullptr;
   }
-  return static_cast<RemoteMediaManagerChild*>(Manager());
+  return mozilla::ipc::ActorCast<RemoteMediaManagerChild>(Manager());
 }
 
 }  // namespace mozilla

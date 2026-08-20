@@ -285,9 +285,7 @@ export class UrlbarProviderQuickSuggest extends UrlbarProvider {
   }
 
   /**
-   * This is called only for dynamic result types, when the urlbar view updates
-   * the view of one of the results of the provider.  It should return an object
-   * describing the view update.
+   * This is called only for dynamic result types.
    *
    * @param {UrlbarResult} result The result whose view will be updated.
    * @returns {object} An object describing the view update.

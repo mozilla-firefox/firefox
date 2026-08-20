@@ -614,8 +614,19 @@ impl LoginDb {
     ) -> Result<Vec<Result<EncryptedLogin>>> {
         let tx = self.unchecked_transaction()?;
         let mut results = vec![];
-        for entry_with_meta in entries_with_meta {
-            let guid = Guid::from_string(entry_with_meta.meta.id.clone());
+        for mut entry_with_meta in entries_with_meta {
+            let guid = match Self::validate_or_fixup_guid(Guid::from_string(
+                entry_with_meta.meta.id.clone(),
+            )) {
+                Ok(guid) => guid,
+                Err(err) => {
+                    results.push(Err(err));
+                    continue;
+                }
+            };
+            // Keep `meta.id` in sync with the (possibly regenerated) guid; it is used
+            // as the stored/envelope id and when encrypting `sec_fields` below.
+            entry_with_meta.meta.id = guid.to_string();
             match self.fixup_and_check_for_dupes(&guid, entry_with_meta.entry) {
                 Ok(new_entry) => {
                     let sec_fields = SecureLoginFields {
@@ -647,6 +658,33 @@ impl LoginDb {
         tx.commit()?;
 
         Ok(results)
+    }
+
+    /// Validates a caller-supplied guid from the "with meta" import path against the
+    /// sync server's rules (see `Guid::is_valid_for_sync_server`). A guid that is
+    /// invalid for the sync server can never have existed on the server, so
+    /// regenerating it loses no sync identity.
+    ///
+    /// With the `fixup_invalid_guids` feature (enabled on Desktop during migration),
+    /// an invalid guid is silently replaced with a fresh random one. Without it, an
+    /// invalid guid is rejected so the problem surfaces at write time instead of being
+    /// persisted and later crashing the sync uploader (bug 2056116).
+    fn validate_or_fixup_guid(guid: Guid) -> Result<Guid> {
+        if guid.is_valid_for_sync_server() {
+            return Ok(guid);
+        }
+        #[cfg(feature = "fixup_invalid_guids")]
+        {
+            warn!("regenerating a login guid that is invalid for the sync server");
+            Ok(Guid::random())
+        }
+        #[cfg(not(feature = "fixup_invalid_guids"))]
+        {
+            Err(InvalidLogin::IllegalFieldValue {
+                field_info: "guid is not valid for the sync server".into(),
+            }
+            .into())
+        }
     }
 
     pub fn add(&self, entry: LoginEntry) -> Result<EncryptedLogin> {
@@ -1572,6 +1610,44 @@ mod tests {
             .expect("should get a record");
 
         assert_eq!(fetched.meta, meta);
+    }
+
+    #[test]
+    fn test_add_with_meta_invalid_guid() {
+        ensure_initialized();
+
+        let now_ms = util::system_time_ms_i64(SystemTime::now());
+        // A guid containing a comma is invalid for the sync server.
+        let meta = LoginMeta {
+            id: "invalid,guid".to_string(),
+            time_created: now_ms,
+            time_password_changed: now_ms,
+            time_last_used: now_ms,
+            times_used: 1,
+            time_last_breach_alert_dismissed: None,
+        };
+        let db = LoginDb::open_in_memory();
+        let result = db.add_with_meta(LoginEntryWithMeta {
+            entry: LoginEntry {
+                origin: "https://www.example.com".into(),
+                http_realm: Some("https://www.example.com".into()),
+                username: "test".into(),
+                password: "sekret".into(),
+                ..LoginEntry::default()
+            },
+            meta,
+        });
+
+        // Without the fixup feature the invalid guid is rejected; with it, the guid
+        // is regenerated to one that is valid for the sync server.
+        #[cfg(not(feature = "fixup_invalid_guids"))]
+        assert!(result.is_err());
+
+        #[cfg(feature = "fixup_invalid_guids")]
+        {
+            let login = result.expect("invalid guid should be repaired");
+            assert!(Guid::new(&login.meta.id).is_valid_for_sync_server());
+        }
     }
 
     #[test]

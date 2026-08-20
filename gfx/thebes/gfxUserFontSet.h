@@ -129,13 +129,8 @@ inline bool operator==(const gfxFontFaceSrc& a, const gfxFontFaceSrc& b) {
   return false;
 }
 
-// Subclassed to store platform-specific code cleaned out when font entry is
-// deleted.
 // Lifetime: from when platform font is created until it is deactivated.
-// If the platform does not need to add any platform-specific code/data here,
-// then the gfxUserFontSet will allocate a base gfxUserFontData and attach
-// to the entry to track the basic user font info fields here.
-class gfxUserFontData {
+class gfxUserFontData final {
  public:
   gfxUserFontData()
       : mSrcIndex(0),
@@ -149,6 +144,7 @@ class gfxUserFontData {
 
   size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
+  RefPtr<FontData> mFontData;   // downloaded data buffer, if any
   nsTArray<uint8_t> mMetadata;  // woff metadata block (compressed), if any
   RefPtr<gfxFontSrcURI> mURI;   // URI of the source, if it was url()
   RefPtr<gfxFontSrcPrincipal>
@@ -773,7 +769,8 @@ class gfxUserFontEntry : public gfxFontEntry {
   void StoreUserFontData(gfxFontEntry* aFontEntry, uint32_t aSrcIndex,
                          bool aPrivate, const nsACString& aOriginalName,
                          FallibleTArray<uint8_t>* aMetadata,
-                         uint32_t aMetaOrigLen, uint8_t aCompression);
+                         uint32_t aMetaOrigLen, uint8_t aCompression,
+                         RefPtr<FontData>&& aFontData);
 
   // Clears and then adds to aResult all of the user font sets that this user
   // font entry has been added to.  This will at least include the owner of this
@@ -813,10 +810,6 @@ class gfxUserFontEntry : public gfxFontEntry {
       mLoader;  // current loader for this entry, if any
   RefPtr<gfxUserFontSet> mLoadingFontSet;
   RefPtr<gfxFontSrcPrincipal> mPrincipal;
-
-  // Sanitized font data for this entry; platform font instances and skrifa
-  // refs may depend on this.
-  RefPtr<FontData> mFontData;
 };
 
 #endif /* GFX_USER_FONT_SET_H */

@@ -12,10 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationManagerCompat
 import com.google.android.play.core.review.ReviewManagerFactory
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.SupervisorJob
 import mozilla.components.concept.ai.controls.AIFeatureBlock
 import mozilla.components.concept.ai.controls.AIFeatureRegistry
 import mozilla.components.feature.addons.AddonManager
@@ -456,13 +453,6 @@ class Components(
 
     val summarizationSettings: SummarizationSettings by lazyMonitored {
         SummarizationSettings.dataStore(context)
-    }
-
-    val summarizationSettingsCache by lazyMonitored {
-        SummarizationSettingsCache(
-            settings = summarizationSettings,
-            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-        )
     }
 
     val aiFeatureRegistry by lazyMonitored {

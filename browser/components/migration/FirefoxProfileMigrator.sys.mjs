@@ -19,7 +19,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
   PlacesBackups: "resource://gre/modules/PlacesBackups.sys.mjs",
   ProfileAge: "resource://gre/modules/ProfileAge.sys.mjs",
-  SessionMigration: "resource:///modules/sessionstore/SessionMigration.sys.mjs",
+  SessionMigration:
+    "moz-src:///browser/components/sessionstore/SessionMigration.sys.mjs",
 });
 
 /**

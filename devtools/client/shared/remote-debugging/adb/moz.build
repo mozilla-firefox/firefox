@@ -11,6 +11,7 @@ DevToolsModules(
     "adb-binary.js",
     "adb-client.js",
     "adb-device.js",
+    "adb-logger.js",
     "adb-process.js",
     "adb-running-checker.js",
     "adb-runtime.js",

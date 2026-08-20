@@ -66,8 +66,8 @@ silk_float silk_burg_modified_FLP(          /* O    returns residual energy     
     }
     silk_memcpy( C_last_row, C_first_row, SILK_MAX_ORDER_LPC * sizeof( double ) );
 
-    /* Initialize */
-    CAb[ 0 ] = CAf[ 0 ] = C0 + FIND_LPC_COND_FAC * C0 + 1e-9f;
+    /* Initialize. Make sure the noise corresponds to at least a unit pulse. */
+    CAb[ 0 ] = CAf[ 0 ] = C0 + FIND_LPC_COND_FAC * C0 + 1e-1;
     invGain = 1.0f;
     reached_max_gain = 0;
     for( n = 0; n < D; n++ ) {

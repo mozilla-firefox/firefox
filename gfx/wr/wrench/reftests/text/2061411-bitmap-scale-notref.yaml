@@ -1,0 +1,42 @@
+# Negative reference for 2061411-bitmap-scale.yaml: local raster space at scale
+# 1.0, i.e. the glyph rasterized at its untransformed size and scaled up by the
+# shader. That is what screen raster space did between bugs 2061411 and 2064316,
+# and it is soft on any backend that resamples the strike at rasterization time,
+# so the test must not match it.
+root:
+  items:
+    - type: stacking-context
+      bounds: [0, 0, 800, 600]
+      transform: scale(3)
+      transform-origin: [0, 0]
+      raster-space: local(1.0)
+      items:
+        - text: "000"
+          origin: 20 40
+          size: 20
+          font: "Proggy.ttf"
+          embedded-bitmaps: true
+
+    - type: stacking-context
+      bounds: [0, 0, 800, 600]
+      transform: scale(1, 3)
+      transform-origin: [0, 0]
+      raster-space: local(1.0)
+      items:
+        - text: "000"
+          origin: 20 90
+          size: 20
+          font: "Proggy.ttf"
+          embedded-bitmaps: true
+
+    - type: stacking-context
+      bounds: [0, 0, 800, 600]
+      transform: scale(3, 1)
+      transform-origin: [0, 0]
+      raster-space: local(1.0)
+      items:
+        - text: "000"
+          origin: 20 330
+          size: 20
+          font: "Proggy.ttf"
+          embedded-bitmaps: true

@@ -39,9 +39,12 @@ ToolbarKeyboardNavigator = {
     if (aElem.getAttribute("keyNav") === "false") {
       return false;
     }
+    const XUL_NS =
+      "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+    const HTML_NS = "http://www.w3.org/1999/xhtml";
     return (
-      aElem.tagName == "toolbarbutton" ||
-      aElem.tagName == "html:moz-button" ||
+      (aElem.namespaceURI == XUL_NS && aElem.localName == "toolbarbutton") ||
+      (aElem.namespaceURI == HTML_NS && aElem.localName == "moz-button") ||
       aElem.getAttribute("role") == "button"
     );
   },

@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use crate::render::RenderPipelineInPlaceStage;
+use crate::render::{ErasedLocalState, RenderPipelineInPlaceStage};
 use jxl_simd::{F32SimdVec, simd_function};
 
 /// Premultiply color channels by alpha.
@@ -74,7 +74,7 @@ impl RenderPipelineInPlaceStage for PremultiplyAlphaStage {
         _position: (usize, usize),
         xsize: usize,
         row: &mut [&mut [f32]],
-        _state: Option<&mut dyn std::any::Any>,
+        _state: Option<&mut ErasedLocalState>,
     ) {
         // The row slice contains only the channels we said we use.
         // The last channel is alpha (since alpha_channel > color channels).

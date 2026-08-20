@@ -433,6 +433,8 @@ skip-if = [
   "http3",
 ]
 
+["test_focus_move_during_composition.html"]
+
 ["test_focus_radio.html"]
 
 ["test_focus_scroll_padding_tab.html"]

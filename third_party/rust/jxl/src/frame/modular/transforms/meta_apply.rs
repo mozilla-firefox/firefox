@@ -3,7 +3,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use std::{collections::HashMap, sync::atomic::AtomicUsize};
+use crate::util::sync::atomic::AtomicUsize;
+use std::collections::HashMap;
 
 use num_traits::FromPrimitive;
 

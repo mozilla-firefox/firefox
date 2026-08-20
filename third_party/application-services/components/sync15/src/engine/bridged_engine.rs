@@ -7,133 +7,62 @@ use crate::{ServerTimestamp, telemetry};
 use anyhow::Result;
 
 use crate::Guid;
-use crate::bso::{IncomingBso, OutgoingBso};
+use crate::bso::IncomingBso;
 
 use super::{CollSyncIds, EngineSyncAssociation, SyncEngine};
 
-/// A BridgedEngine acts as a bridge between application-services, rust
-/// implemented sync engines and sync engines as defined by Desktop Firefox.
+/// Adapts a [`SyncEngine`] to the method set that Desktop Firefox's JS Sync
+/// framework drives (historically the `mozIBridgedSyncEngine` shape). Desktop
+/// owns the fetch loop, so unlike the native Rust sync client it reads and
+/// writes the engine's last-sync time explicitly and manages sync IDs as opaque
+/// strings; this wrapper translates those calls onto the `SyncEngine` trait, and
+/// handles the JSON `String` <-> BSO marshalling that crosses the UniFFI
+/// boundary.
 ///
-/// [Desktop Firefox has an abstract implementation of a Sync
-/// Engine](https://searchfox.org/mozilla-central/source/services/sync/modules/engines.js)
-/// with a number of functions each engine is expected to override. Engines
-/// implemented in Rust use a different shape (specifically, the
-/// [SyncEngine](crate::SyncEngine) trait), so this BridgedEngine trait adapts
-/// between the 2.
-pub trait BridgedEngine: Send + Sync {
-    /// Returns the last sync time, in milliseconds, for this engine's
-    /// collection. This is called before each sync, to determine the lower
-    /// bound for new records to fetch from the server.
-    fn last_sync(&self) -> Result<i64>;
-
-    /// Sets the last sync time, in milliseconds. This is called throughout
-    /// the sync, to fast-forward the stored last sync time to match the
-    /// timestamp on the uploaded records.
-    fn set_last_sync(&self, last_sync_millis: i64) -> Result<()>;
-
-    /// Returns the sync ID for this engine's collection. This is only used in
-    /// tests.
-    fn sync_id(&self) -> Result<Option<String>>;
-
-    /// Resets the sync ID for this engine's collection, returning the new ID.
-    /// As a side effect, implementations should reset all local Sync state,
-    /// as in `reset`.
-    /// (Note that bridged engines never maintain the "global" guid - that's all managed
-    /// by the bridged_engine consumer (ie, desktop). bridged_engines only care about
-    /// the per-collection one.)
-    fn reset_sync_id(&self) -> Result<String>;
-
-    /// Ensures that the locally stored sync ID for this engine's collection
-    /// matches the `new_sync_id` from the server. If the two don't match,
-    /// implementations should reset all local Sync state, as in `reset`.
-    /// This method returns the assigned sync ID, which can be either the
-    /// `new_sync_id`, or a different one if the engine wants to force other
-    /// devices to reset their Sync state for this collection the next time they
-    /// sync.
-    fn ensure_current_sync_id(&self, new_sync_id: &str) -> Result<String>;
-
-    /// Tells the tabs engine about recent FxA devices. A bit of a leaky abstraction as it only
-    /// makes sense for tabs.
-    /// The arg is a json serialized `ClientData` struct.
-    fn prepare_for_sync(&self, _client_data: &str) -> Result<()> {
-        Ok(())
-    }
-
-    /// Indicates that the engine is about to start syncing. This is called
-    /// once per sync, and always before `store_incoming`.
-    fn sync_started(&self) -> Result<()>;
-
-    /// Stages a batch of incoming Sync records. This is called multiple
-    /// times per sync, once for each batch. Implementations can use the
-    /// signal to check if the operation was aborted, and cancel any
-    /// pending work.
-    fn store_incoming(&self, incoming_records: Vec<IncomingBso>) -> Result<()>;
-
-    /// Applies all staged records, reconciling changes on both sides and
-    /// resolving conflicts. Returns a list of records to upload.
-    fn apply(&self) -> Result<ApplyResults>;
-
-    /// Indicates that the given record IDs were uploaded successfully to the
-    /// server. This is called multiple times per sync, once for each batch
-    /// upload.
-    fn set_uploaded(&self, server_modified_millis: i64, ids: &[Guid]) -> Result<()>;
-
-    /// Indicates that all records have been uploaded. At this point, any record
-    /// IDs marked for upload that haven't been passed to `set_uploaded`, can be
-    /// assumed to have failed: for example, because the server rejected a record
-    /// with an invalid TTL or sort index.
-    fn sync_finished(&self) -> Result<()>;
-
-    /// Resets all local Sync state, including any change flags, mirrors, and
-    /// the last sync time, such that the next sync is treated as a first sync
-    /// with all new local data. Does not erase any local user data.
-    fn reset(&self) -> Result<()>;
-
-    /// Erases all local user data for this collection, and any Sync metadata.
-    /// This method is destructive, and unused for most collections.
-    fn wipe(&self) -> Result<()>;
+/// Consuming crates expose a thin newtype around this via the
+/// [`uniffi_bridged_engine!`] macro rather than hand-writing the facade.
+///
+/// All methods return [`anyhow::Result`], which each crate maps onto its own
+/// UniFFI error type via an `impl From<anyhow::Error>`.
+pub struct BridgedEngineWrapper {
+    inner: Box<dyn SyncEngine + Send + Sync>,
 }
 
-// This is an adaptor trait - the idea is that engines can implement this
-// trait along with SyncEngine and get a BridgedEngine for free. It's temporary
-// so we can land this trait without needing to update desktop.
-// Longer term, we should remove both this trait and BridgedEngine entirely, sucking up
-// the breaking change for desktop. The main blocker to this is moving desktop away
-// from the explicit timestamp handling and moving closer to the `get_collection_request`
-// model.
-pub trait BridgedEngineAdaptor: Send + Sync {
-    // These are the main mismatches between the 2 engines
-    fn last_sync(&self) -> Result<i64>;
-    fn set_last_sync(&self, last_sync_millis: i64) -> Result<()>;
-    fn sync_started(&self) -> Result<()> {
-        Ok(())
+impl BridgedEngineWrapper {
+    pub fn new(inner: Box<dyn SyncEngine + Send + Sync>) -> Self {
+        Self { inner }
     }
 
-    fn engine(&self) -> &dyn SyncEngine;
-}
-
-impl<A: BridgedEngineAdaptor> BridgedEngine for A {
-    fn last_sync(&self) -> Result<i64> {
-        self.last_sync()
+    /// The last sync time, in milliseconds. Desktop reads this to build the
+    /// collection URL for fetching incoming records. There is deliberately no
+    /// setter: the engine owns its last-sync time and advances it itself in
+    /// `apply`/`set_uploaded`.
+    pub fn last_sync(&self) -> Result<i64> {
+        Ok(self.inner.last_sync()?.unwrap_or_default().as_millis())
     }
 
-    fn set_last_sync(&self, last_sync_millis: i64) -> Result<()> {
-        self.set_last_sync(last_sync_millis)
+    /// Force a full re-download next sync by resetting the engine-owned
+    /// `last_sync` timestamp - lighter than a full reset.
+    pub fn reset_last_sync(&self) -> Result<()> {
+        self.inner.reset_last_sync()
     }
 
-    fn sync_id(&self) -> Result<Option<String>> {
-        Ok(match self.engine().get_sync_assoc()? {
+    /// The per-collection sync ID, derived from the engine's sync association.
+    /// (Bridged engines never maintain the "global" guid - that's all managed by
+    /// the consumer, ie, Desktop. They only care about the per-collection one.)
+    pub fn sync_id(&self) -> Result<Option<String>> {
+        Ok(match self.inner.get_sync_assoc()? {
             EngineSyncAssociation::Disconnected => None,
             EngineSyncAssociation::Connected(c) => Some(c.coll.into()),
         })
     }
 
-    fn reset_sync_id(&self) -> Result<String> {
-        // Note that bridged engines never maintain the "global" guid - that's all managed
-        // by desktop. bridged_engines only care about the per-collection one.
+    /// Resets the sync ID for this collection, returning the new ID. As a side
+    /// effect this resets all local Sync state, as in `reset`.
+    pub fn reset_sync_id(&self) -> Result<String> {
         let global = Guid::empty();
         let coll = Guid::random();
-        self.engine()
+        self.inner
             .reset(&EngineSyncAssociation::Connected(CollSyncIds {
                 global,
                 coll: coll.clone(),
@@ -141,9 +70,10 @@ impl<A: BridgedEngineAdaptor> BridgedEngine for A {
         Ok(coll.to_string())
     }
 
-    fn ensure_current_sync_id(&self, sync_id: &str) -> Result<String> {
-        let engine = self.engine();
-        let assoc = engine.get_sync_assoc()?;
+    /// Ensures the locally stored sync ID matches `sync_id`; resets local Sync
+    /// state on a mismatch. Returns the assigned sync ID.
+    pub fn ensure_current_sync_id(&self, sync_id: &str) -> Result<String> {
+        let assoc = self.inner.get_sync_assoc()?;
         if matches!(assoc, EngineSyncAssociation::Connected(c) if c.coll == sync_id) {
             debug!("ensure_current_sync_id is current");
         } else {
@@ -151,145 +81,17 @@ impl<A: BridgedEngineAdaptor> BridgedEngine for A {
                 global: Guid::empty(),
                 coll: sync_id.into(),
             };
-            engine.reset(&EngineSyncAssociation::Connected(new_coll_ids))?;
+            self.inner
+                .reset(&EngineSyncAssociation::Connected(new_coll_ids))?;
         }
         Ok(sync_id.to_string())
     }
 
-    fn prepare_for_sync(&self, client_data: &str) -> Result<()> {
+    pub fn set_clients(&self, client_data: &str) -> Result<()> {
         // unwrap here is unfortunate, but can hopefully go away if we can
         // start using the ClientData type instead of the string.
-        self.engine()
-            .prepare_for_sync(&|| serde_json::from_str::<crate::ClientData>(client_data).unwrap())
-    }
-
-    fn sync_started(&self) -> Result<()> {
-        A::sync_started(self)
-    }
-
-    fn store_incoming(&self, incoming_records: Vec<IncomingBso>) -> Result<()> {
-        let engine = self.engine();
-        let mut telem = telemetry::Engine::new(engine.collection_name());
-        engine.stage_incoming(incoming_records, &mut telem)
-    }
-
-    fn apply(&self) -> Result<ApplyResults> {
-        let engine = self.engine();
-        let mut telem = telemetry::Engine::new(engine.collection_name());
-        // Desktop tells a bridged engine to apply the records without telling it
-        // the server timestamp, and once applied, explicitly calls `set_last_sync()`
-        // with that timestamp. So this adaptor needs to call apply with an invalid
-        // timestamp, and hope that later call with the correct timestamp does come.
-        // This isn't ideal as it means the timestamp is updated in a different transaction,
-        // but nothing too bad should happen if it doesn't - we'll just end up applying
-        // the same records again next sync.
-        let records = engine.apply(ServerTimestamp::from_millis(0), &mut telem)?;
-        Ok(ApplyResults {
-            records,
-            num_reconciled: telem
-                .get_incoming()
-                .as_ref()
-                .map(|i| i.get_reconciled() as usize),
-        })
-    }
-
-    fn set_uploaded(&self, millis: i64, ids: &[Guid]) -> Result<()> {
-        self.engine()
-            .set_uploaded(ServerTimestamp::from_millis(millis), ids.to_vec())
-    }
-
-    fn sync_finished(&self) -> Result<()> {
-        self.engine().sync_finished()
-    }
-
-    fn reset(&self) -> Result<()> {
-        self.engine().reset(&EngineSyncAssociation::Disconnected)
-    }
-
-    fn wipe(&self) -> Result<()> {
-        self.engine().wipe()
-    }
-}
-
-// TODO: We should see if we can remove this to reduce the number of types engines need to deal
-// with. num_reconciled is only used for telemetry on desktop.
-#[derive(Debug, Default)]
-pub struct ApplyResults {
-    /// List of records
-    pub records: Vec<OutgoingBso>,
-    /// The number of incoming records whose contents were merged because they
-    /// changed on both sides. None indicates we aren't reporting this
-    /// information.
-    pub num_reconciled: Option<usize>,
-}
-
-impl ApplyResults {
-    pub fn new(records: Vec<OutgoingBso>, num_reconciled: impl Into<Option<usize>>) -> Self {
-        Self {
-            records,
-            num_reconciled: num_reconciled.into(),
-        }
-    }
-}
-
-// Shorthand for engines that don't care.
-impl From<Vec<OutgoingBso>> for ApplyResults {
-    fn from(records: Vec<OutgoingBso>) -> Self {
-        Self {
-            records,
-            num_reconciled: None,
-        }
-    }
-}
-
-/// Wraps a `Box<dyn BridgedEngine>` and centralizes the work every consuming
-/// crate's UniFFI-facing bridged engine needs to do: the JSON `String` <-> BSO
-/// marshalling that crosses the FFI boundary, and 1:1 delegation to the wrapped
-/// engine. Rather than each crate hand-writing this (it was ~100 identical lines
-/// per crate), they expose a thin newtype around this via the
-/// [`uniffi_bridged_engine!`] macro.
-///
-/// All methods return [`anyhow::Result`], which each crate maps onto its own
-/// UniFFI error type via an `impl From<anyhow::Error>`.
-///
-/// Note on the longer-term direction: this type, along with [`BridgedEngine`],
-/// [`BridgedEngineAdaptor`] and [`ApplyResults`], only exists because we still
-/// have two sync-engine traits. Once Desktop moves off explicit timestamp
-/// handling to the `get_collection_request` model (see #2841) we can remove
-/// `BridgedEngine` entirely, have Desktop consume [`SyncEngine`] directly, and
-/// this wrapper collapses into a thin `SyncEngine` -> FFI shim (or goes away).
-/// See the note in `engine/mod.rs` for the migration sequencing.
-pub struct BridgedEngineWrapper {
-    inner: Box<dyn BridgedEngine>,
-}
-
-impl BridgedEngineWrapper {
-    pub fn new(inner: Box<dyn BridgedEngine>) -> Self {
-        Self { inner }
-    }
-
-    pub fn last_sync(&self) -> Result<i64> {
-        self.inner.last_sync()
-    }
-
-    pub fn set_last_sync(&self, last_sync: i64) -> Result<()> {
-        self.inner.set_last_sync(last_sync)
-    }
-
-    pub fn sync_id(&self) -> Result<Option<String>> {
-        self.inner.sync_id()
-    }
-
-    pub fn reset_sync_id(&self) -> Result<String> {
-        self.inner.reset_sync_id()
-    }
-
-    pub fn ensure_current_sync_id(&self, sync_id: &str) -> Result<String> {
-        self.inner.ensure_current_sync_id(sync_id)
-    }
-
-    pub fn prepare_for_sync(&self, client_data: &str) -> Result<()> {
-        self.inner.prepare_for_sync(client_data)
+        self.inner
+            .set_clients(&|| serde_json::from_str::<crate::ClientData>(client_data).unwrap())
     }
 
     pub fn sync_started(&self) -> Result<()> {
@@ -303,31 +105,37 @@ impl BridgedEngineWrapper {
         for inc in incoming {
             bsos.push(serde_json::from_str::<IncomingBso>(&inc)?);
         }
-        self.inner.store_incoming(bsos)
+        let mut telem = telemetry::Engine::new(self.inner.collection_name());
+        self.inner.stage_incoming(bsos, &mut telem)
     }
 
     /// Apply staged records and encode the outgoing `OutgoingBso`s back into
     /// JSON for UniFFI.
-    pub fn apply(&self) -> Result<Vec<String>> {
-        let apply_results = self.inner.apply()?;
-        let mut outgoing = Vec::with_capacity(apply_results.records.len());
-        for e in apply_results.records {
+    ///
+    /// `server_modified_millis` is the collection's server last-modified time,
+    /// passed explicitly by Desktop (which has just stored it as the last sync
+    /// time before calling us). It's forwarded to [`SyncEngine::apply`] exactly
+    /// as the native Rust client does, so reconciliation sees the real
+    /// timestamp.
+    pub fn apply(&self, server_modified_millis: i64) -> Result<Vec<String>> {
+        let mut telem = telemetry::Engine::new(self.inner.collection_name());
+        let records = self.inner.apply(
+            ServerTimestamp::from_millis(server_modified_millis),
+            &mut telem,
+        )?;
+        let mut outgoing = Vec::with_capacity(records.len());
+        for e in records {
             outgoing.push(serde_json::to_string(&e)?);
         }
         Ok(outgoing)
     }
 
-    /// Accepts anything that turns into a [`Guid`], which reconciles the
-    /// per-crate id representation: logins hands us `Vec<String>`, while
-    /// tabs and webext-storage hand us `Vec<sync_guid::Guid>`. Both `String`
-    /// and `Guid` implement `Into<Guid>`.
-    pub fn set_uploaded<G: Into<Guid>>(
-        &self,
-        server_modified_millis: i64,
-        ids: Vec<G>,
-    ) -> Result<()> {
-        let guids: Vec<Guid> = ids.into_iter().map(Into::into).collect();
-        self.inner.set_uploaded(server_modified_millis, &guids)
+    /// The uploaded ids always cross the UniFFI boundary as plain strings; we
+    /// convert them to [`Guid`] for the engine here.
+    pub fn set_uploaded(&self, server_modified_millis: i64, ids: Vec<String>) -> Result<()> {
+        let guids: Vec<Guid> = ids.into_iter().map(Guid::from).collect();
+        self.inner
+            .set_uploaded(ServerTimestamp::from_millis(server_modified_millis), guids)
     }
 
     pub fn sync_finished(&self) -> Result<()> {
@@ -335,7 +143,7 @@ impl BridgedEngineWrapper {
     }
 
     pub fn reset(&self) -> Result<()> {
-        self.inner.reset()
+        self.inner.reset(&EngineSyncAssociation::Disconnected)
     }
 
     pub fn wipe(&self) -> Result<()> {
@@ -349,28 +157,29 @@ impl BridgedEngineWrapper {
 ///
 /// Usage (invoke in the module the crate's UDL `interface` resolves against):
 /// ```ignore
-/// sync15::uniffi_bridged_engine!(LoginsBridgedEngine, String);
-/// sync15::uniffi_bridged_engine!(TabsBridgedEngine, sync_guid::Guid);
+/// sync15::uniffi_bridged_engine!(LoginsBridgedEngine);
+/// sync15::uniffi_bridged_engine!(TabsBridgedEngine);
 /// ```
 ///
-/// `$guid` is the element type the crate's UDL lowers `set_uploaded`'s ids to
-/// (`String` for logins' `sequence<string>`, `sync_guid::Guid` for the tabs and
-/// webext-storage custom-type sequences). The generated methods return
+/// All bridged engines expose the same interface; `set_uploaded` takes ids as a
+/// plain `sequence<string>` in every crate's UDL. The generated methods return
 /// `anyhow::Result`, which the crate's UDL `[Throws=...]` maps to its error type
 /// via the existing `impl From<anyhow::Error>`.
 ///
-/// The macro always emits `prepare_for_sync`; a crate whose UDL doesn't declare
-/// it (logins) simply leaves that inherent method unbound, which is harmless.
+/// The macro always emits `set_clients`; a crate whose UDL doesn't declare it
+/// (logins, webext-storage) simply leaves that inherent method unbound, which is
+/// harmless.
 #[macro_export]
 macro_rules! uniffi_bridged_engine {
-    ($name:ident, $guid:ty) => {
+    ($name:ident) => {
         // This is what UniFFI exposes; it does nothing other than delegate to
-        // the shared `BridgedEngineWrapper`. See
-        // services/interfaces/mozIBridgedSyncEngine.idl for the Desktop contract.
+        // the shared `BridgedEngineWrapper`, which adapts our `SyncEngine`.
         pub struct $name($crate::engine::BridgedEngineWrapper);
 
         impl $name {
-            pub fn new(inner: ::std::boxed::Box<dyn $crate::engine::BridgedEngine>) -> Self {
+            pub fn new(
+                inner: ::std::boxed::Box<dyn $crate::engine::SyncEngine + Send + Sync>,
+            ) -> Self {
                 Self($crate::engine::BridgedEngineWrapper::new(inner))
             }
 
@@ -378,8 +187,8 @@ macro_rules! uniffi_bridged_engine {
                 self.0.last_sync()
             }
 
-            pub fn set_last_sync(&self, last_sync: i64) -> ::anyhow::Result<()> {
-                self.0.set_last_sync(last_sync)
+            pub fn reset_last_sync(&self) -> ::anyhow::Result<()> {
+                self.0.reset_last_sync()
             }
 
             pub fn sync_id(&self) -> ::anyhow::Result<Option<String>> {
@@ -394,8 +203,8 @@ macro_rules! uniffi_bridged_engine {
                 self.0.ensure_current_sync_id(sync_id)
             }
 
-            pub fn prepare_for_sync(&self, client_data: &str) -> ::anyhow::Result<()> {
-                self.0.prepare_for_sync(client_data)
+            pub fn set_clients(&self, client_data: &str) -> ::anyhow::Result<()> {
+                self.0.set_clients(client_data)
             }
 
             pub fn sync_started(&self) -> ::anyhow::Result<()> {
@@ -406,14 +215,14 @@ macro_rules! uniffi_bridged_engine {
                 self.0.store_incoming(incoming)
             }
 
-            pub fn apply(&self) -> ::anyhow::Result<Vec<String>> {
-                self.0.apply()
+            pub fn apply(&self, server_modified_millis: i64) -> ::anyhow::Result<Vec<String>> {
+                self.0.apply(server_modified_millis)
             }
 
             pub fn set_uploaded(
                 &self,
                 server_modified_millis: i64,
-                ids: Vec<$guid>,
+                ids: Vec<String>,
             ) -> ::anyhow::Result<()> {
                 self.0.set_uploaded(server_modified_millis, ids)
             }
@@ -436,50 +245,51 @@ macro_rules! uniffi_bridged_engine {
 #[cfg(test)]
 mod wrapper_tests {
     use super::*;
+    use crate::CollectionName;
     use crate::bso::OutgoingBso;
+    use crate::engine::CollectionRequest;
     use std::sync::Mutex;
 
-    // A minimal BridgedEngine that records the guids passed to `set_uploaded`,
-    // so we can lock in the `Into<Guid>` reconciliation for both `String` and
-    // `Guid` element types.
+    // A minimal SyncEngine that records the guids passed to `set_uploaded`, so
+    // we can confirm the wrapper converts the incoming string ids to `Guid` and
+    // drives a `SyncEngine`.
     #[derive(Default)]
     struct RecordingEngine {
         uploaded: Mutex<Vec<Guid>>,
     }
 
-    impl BridgedEngine for RecordingEngine {
-        fn last_sync(&self) -> Result<i64> {
-            Ok(0)
+    impl SyncEngine for RecordingEngine {
+        fn collection_name(&self) -> CollectionName {
+            "test".into()
         }
-        fn set_last_sync(&self, _: i64) -> Result<()> {
+        fn stage_incoming(
+            &self,
+            _inbound: Vec<IncomingBso>,
+            _telem: &mut telemetry::Engine,
+        ) -> Result<()> {
             Ok(())
         }
-        fn sync_id(&self) -> Result<Option<String>> {
+        fn apply(
+            &self,
+            _timestamp: ServerTimestamp,
+            _telem: &mut telemetry::Engine,
+        ) -> Result<Vec<OutgoingBso>> {
+            Ok(vec![])
+        }
+        fn set_uploaded(&self, _new_timestamp: ServerTimestamp, ids: Vec<Guid>) -> Result<()> {
+            self.uploaded.lock().unwrap().extend(ids);
+            Ok(())
+        }
+        fn get_collection_request(
+            &self,
+            _server_timestamp: ServerTimestamp,
+        ) -> Result<Option<CollectionRequest>> {
             Ok(None)
         }
-        fn reset_sync_id(&self) -> Result<String> {
-            Ok(String::new())
+        fn get_sync_assoc(&self) -> Result<EngineSyncAssociation> {
+            Ok(EngineSyncAssociation::Disconnected)
         }
-        fn ensure_current_sync_id(&self, id: &str) -> Result<String> {
-            Ok(id.to_string())
-        }
-        fn sync_started(&self) -> Result<()> {
-            Ok(())
-        }
-        fn store_incoming(&self, _: Vec<IncomingBso>) -> Result<()> {
-            Ok(())
-        }
-        fn apply(&self) -> Result<ApplyResults> {
-            Ok(Vec::<OutgoingBso>::new().into())
-        }
-        fn set_uploaded(&self, _millis: i64, ids: &[Guid]) -> Result<()> {
-            self.uploaded.lock().unwrap().extend_from_slice(ids);
-            Ok(())
-        }
-        fn sync_finished(&self) -> Result<()> {
-            Ok(())
-        }
-        fn reset(&self) -> Result<()> {
+        fn reset(&self, _assoc: &EngineSyncAssociation) -> Result<()> {
             Ok(())
         }
         fn wipe(&self) -> Result<()> {
@@ -488,11 +298,11 @@ mod wrapper_tests {
     }
 
     #[test]
-    fn set_uploaded_accepts_strings_and_guids() {
+    fn set_uploaded_converts_string_ids() {
         let wrapper = BridgedEngineWrapper::new(Box::new(RecordingEngine::default()));
-        // logins-style: Vec<String>
-        wrapper.set_uploaded(1, vec!["aaaa".to_string()]).unwrap();
-        // tabs/webext-style: Vec<Guid>
-        wrapper.set_uploaded(2, vec![Guid::new("bbbb")]).unwrap();
+        // Every crate now hands us string ids; the wrapper turns them into `Guid`.
+        wrapper
+            .set_uploaded(1, vec!["aaaa".to_string(), "bbbb".to_string()])
+            .unwrap();
     }
 }

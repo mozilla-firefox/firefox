@@ -14,6 +14,11 @@ export function ActivationWindowMessage({
 }) {
   const { content } = messageData;
   const hasButtons = content.primaryButton || content.secondaryButton;
+  const hasResponsiveImage =
+    !!content.imageSrcResponsive ||
+    !!content.imageSrcDarkResponsive ||
+    !!content.imageSrcNarrow ||
+    !!content.imageSrcDarkNarrow;
 
   const onDismiss = useCallback(() => {
     handleDismiss();
@@ -43,11 +48,13 @@ export function ActivationWindowMessage({
 
   return (
     <aside
-      className={
-        hasButtons
-          ? "activation-window-message"
-          : "activation-window-message no-buttons"
-      }
+      className={[
+        "activation-window-message",
+        !hasButtons ? "no-buttons" : "",
+        hasResponsiveImage ? "bleed-image" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <div className="activation-window-message-dismiss">
         <moz-button
@@ -58,14 +65,46 @@ export function ActivationWindowMessage({
         ></moz-button>
       </div>
       <div className="activation-window-message-inner">
-        <img
-          src={
-            content.imageSrc ||
-            "chrome://newtab/content/data/content/assets/kit-in-circle.svg"
-          }
-          alt=""
-          role="presentation"
-        />
+        <picture className="activation-window-message-image">
+          {content.imageSrcDark && (
+            <source
+              srcSet={content.imageSrcDark}
+              media="(min-width: 1072px) and (prefers-color-scheme: dark)"
+            />
+          )}
+          {content.imageSrcDarkNarrow && (
+            <source
+              srcSet={content.imageSrcDarkNarrow}
+              media="(min-width: 866px) and (max-width: 1071.98px) and (prefers-color-scheme: dark)"
+            />
+          )}
+          {content.imageSrcDarkResponsive && (
+            <source
+              srcSet={content.imageSrcDarkResponsive}
+              media="(max-width: 865.98px) and (prefers-color-scheme: dark)"
+            />
+          )}
+          {content.imageSrcNarrow && (
+            <source
+              srcSet={content.imageSrcNarrow}
+              media="(min-width: 866px) and (max-width: 1071.98px)"
+            />
+          )}
+          {content.imageSrcResponsive && (
+            <source
+              srcSet={content.imageSrcResponsive}
+              media="(max-width: 865.98px)"
+            />
+          )}
+          <img
+            src={
+              content.imageSrc ||
+              "chrome://newtab/content/data/content/assets/kit-in-circle.svg"
+            }
+            alt=""
+            role="presentation"
+          />
+        </picture>
         <div>
           {content.heading &&
             (typeof content.heading === "string" ? (

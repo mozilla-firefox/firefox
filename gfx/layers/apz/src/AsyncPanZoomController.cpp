@@ -5906,7 +5906,7 @@ void AsyncPanZoomController::NotifyMainThreadTransaction(
   for (const auto& scrollUpdate : aScrollMetadata.GetScrollUpdates()) {
     APZC_LOG("%p processing scroll update %s\n", this,
              ToString(scrollUpdate).c_str());
-    if (!(Metrics().GetScrollGeneration() < scrollUpdate.GetGeneration())) {
+    if (Metrics().GetScrollGeneration() >= scrollUpdate.GetGeneration()) {
       // This is stale, let's ignore it
       APZC_LOG("%p scrollupdate generation stale, dropping\n", this);
       continue;

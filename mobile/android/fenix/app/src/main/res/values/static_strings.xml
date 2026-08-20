@@ -135,6 +135,8 @@
     <string name="preferences_debug_settings_microsurvey_feature" translatable="false">Enable Microsurvey Feature</string>
     <!-- Label for enabling shake to summarize -->
     <string name="preferences_key_enable_shake_to_summarize" translatable="false">Enable Shake to Summarize Feature Flag</string>
+    <!-- Label for enabling listen to page -->
+    <string name="preferences_key_enable_listen_to_page" translatable="false">Enable Listen to Page Feature Flag</string>
     <!-- Label for enabling remote search configuration -->
     <string name="preferences_debug_settings_remote_search_configuration" translatable="false">Enable Remote Search Configuration (requires restart)</string>
     <!-- Label for enabling Address Sync -->
@@ -412,4 +414,7 @@
 
     <!--  Firefox brand name  -->
     <string name="app_name_firefox" tools:ignore="BrandUsage">Firefox</string>
+
+    <!--  Proper name for the Wrexham wallpaper section title. As it is a brand name we do not want it translated.-->
+    <string name="wallpaper_wrexham_title" translatable="false">Wrexham A.F.C.</string>
 </resources>

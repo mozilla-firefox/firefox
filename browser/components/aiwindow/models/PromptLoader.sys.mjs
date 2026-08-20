@@ -5,7 +5,7 @@
  */
 
 import {
-  getRemoteClient,
+  getRemoteRecords,
   selectMainConfig,
   renderPrompt,
   checkMajorVersion,
@@ -47,6 +47,7 @@ export const FEATURE_PURPOSES = Object.freeze({
   [MODEL_FEATURES.CONVERSATION_SUGGESTIONS_FOLLOWUP]:
     PURPOSES.CONVERSATION_STARTERS_SIDEBAR,
   [MODEL_FEATURES.TITLE_GENERATION]: PURPOSES.TITLE_GENERATION,
+  [MODEL_FEATURES.TAB_GROUP_NAMING]: PURPOSES.TAB_GROUP_NAMING,
   [MODEL_FEATURES.MEMORIES_INITIAL_GENERATION_SYSTEM]:
     PURPOSES.MEMORY_GENERATION,
   [MODEL_FEATURES.MEMORIES_MESSAGE_CLASSIFICATION_SYSTEM]:
@@ -68,7 +69,7 @@ function getDefaultServiceType(feature) {
 const V2_RECORD_KINDS = new Set(["module", "skill", "params"]);
 
 async function loadV2Records() {
-  const records = await getRemoteClient().get();
+  const records = await getRemoteRecords();
   return records.filter(r => V2_RECORD_KINDS.has(r.kind));
 }
 
@@ -363,7 +364,7 @@ export async function buildBrowserContextPrompt(
  * @returns {Promise<object>}
  */
 async function selectFeatureConfig(feature, opts = {}) {
-  const allRecords = await getRemoteClient().get();
+  const allRecords = await getRemoteRecords();
 
   const hasV2Params = allRecords.some(
     r => r.feature === feature && r.kind === "params"

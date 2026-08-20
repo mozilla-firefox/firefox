@@ -63,41 +63,6 @@ NTSTATUS TranslateMaximumAllowed(OBJECT_ATTRIBUTES* obj_attributes,
   return STATUS_SUCCESS;
 }
 
-NTSTATUS NtCreateKeyInTarget(HANDLE* target_key_handle,
-                             ACCESS_MASK desired_access,
-                             OBJECT_ATTRIBUTES* obj_attributes,
-                             ULONG title_index,
-                             UNICODE_STRING* class_name,
-                             ULONG create_options,
-                             ULONG* disposition,
-                             HANDLE target_process) {
-  *target_key_handle = nullptr;
-  NtCreateKeyFunction NtCreateKey = nullptr;
-  ResolveNTFunctionPtr("NtCreateKey", &NtCreateKey);
-
-  if (MAXIMUM_ALLOWED & desired_access) {
-    NTSTATUS status = TranslateMaximumAllowed(obj_attributes, &desired_access);
-    if (!NT_SUCCESS(status)) {
-      return STATUS_ACCESS_DENIED;
-    }
-  }
-
-  HANDLE local_handle = INVALID_HANDLE_VALUE;
-  NTSTATUS status =
-      NtCreateKey(&local_handle, desired_access, obj_attributes, title_index,
-                  class_name, create_options, disposition);
-  if (!NT_SUCCESS(status)) {
-    return status;
-  }
-
-  if (!::DuplicateHandle(::GetCurrentProcess(), local_handle, target_process,
-                         target_key_handle, 0, false,
-                         DUPLICATE_CLOSE_SOURCE | DUPLICATE_SAME_ACCESS)) {
-    return STATUS_ACCESS_DENIED;
-  }
-  return STATUS_SUCCESS;
-}
-
 NTSTATUS NtOpenKeyInTarget(HANDLE* target_key_handle,
                            ACCESS_MASK desired_access,
                            OBJECT_ATTRIBUTES* obj_attributes,
@@ -205,37 +170,6 @@ bool RegistryPolicy::GenerateRules(const wchar_t* name,
     return false;
   }
 
-  return true;
-}
-
-bool RegistryPolicy::CreateKeyAction(EvalResult eval_result,
-                                     const ClientInfo& client_info,
-                                     const std::wstring& key,
-                                     uint32_t attributes,
-                                     HANDLE root_directory,
-                                     uint32_t desired_access,
-                                     uint32_t title_index,
-                                     uint32_t create_options,
-                                     HANDLE* handle,
-                                     NTSTATUS* nt_status,
-                                     ULONG* disposition) {
-  // The only action supported is ASK_BROKER which means create the requested
-  // file as specified.
-  if (ASK_BROKER != eval_result) {
-    *nt_status = STATUS_ACCESS_DENIED;
-    return false;
-  }
-
-  // We don't support creating link keys, volatile keys or backup/restore.
-  if (create_options) {
-    *nt_status = STATUS_ACCESS_DENIED;
-    return false;
-  }
-
-  ObjectAttribs obj_attributes(key, attributes, root_directory);
-  *nt_status = NtCreateKeyInTarget(handle, desired_access, &obj_attributes,
-                                   title_index, nullptr, create_options,
-                                   disposition, client_info.process);
   return true;
 }
 

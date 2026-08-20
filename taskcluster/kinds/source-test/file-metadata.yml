@@ -16,7 +16,6 @@ task-defaults:
         docker-image: {in-tree: "lint"}
         max-run-time: 1800
     run:
-        clone-with: hg
         using: mach
 
 bugzilla-components:
@@ -28,7 +27,6 @@ bugzilla-components:
         product: source
         job-name: source-bugzilla-info
     run:
-        clone-with: hg
         mach: file-info bugzilla-automation /builds/worker/artifacts
     worker:
         max-run-time: 1800
@@ -58,7 +56,6 @@ test-info-xorigin:
             - sysroot-x86_64-linux-gnu
             - sysroot-wasm32-wasi
     run:
-        clone-with: hg
         using: run-task
         cwd: '{checkout}'
         command: >-
@@ -89,7 +86,6 @@ test-info-disabled-by-os:
             - sysroot-x86_64-linux-gnu
             - sysroot-wasm32-wasi
     run:
-        clone-with: hg
         using: run-task
         cwd: '{checkout}'
         command: >-
@@ -124,7 +120,6 @@ test-info-all:
             - sysroot-wasm32-wasi
     use-python: "3.11"
     run:
-        clone-with: hg
         using: run-task
         cwd: '{checkout}'
         command: >-
@@ -152,7 +147,6 @@ test-info-xpcshell-timings-periodic:
             - linux64-node
     use-python: "3.11"
     run:
-        clone-with: hg
         using: run-task
         cwd: '{checkout}'
         command: >-
@@ -175,7 +169,6 @@ test-info-xpcshell-timings-rev:
             - linux64-node
     use-python: "3.11"
     run:
-        clone-with: hg
         using: run-task
         cwd: '{checkout}'
         command: >-
@@ -201,7 +194,6 @@ test-info-mochitest-timings-periodic:
             - linux64-node
     use-python: "3.11"
     run:
-        clone-with: hg
         using: run-task
         cwd: '{checkout}'
         command: >-
@@ -224,7 +216,6 @@ test-info-mochitest-timings-rev:
             - linux64-node
     use-python: "3.11"
     run:
-        clone-with: hg
         using: run-task
         cwd: '{checkout}'
         command: >-
@@ -250,7 +241,6 @@ test-info-manifest-timings-periodic:
             - linux64-node
     use-python: "3.11"
     run:
-        clone-with: hg
         using: run-task
         cwd: '{checkout}'
         command: >-
@@ -277,7 +267,6 @@ test-info-worker-data-periodic:
             - linux64-node
     use-python: "3.11"
     run:
-        clone-with: hg
         using: run-task
         cwd: '{checkout}'
         command: >-

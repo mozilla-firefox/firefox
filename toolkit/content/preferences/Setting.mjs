@@ -130,6 +130,7 @@ import { Preferences } from "chrome://global/content/preferences/Preferences.mjs
  * @property {string} [id] The controlling extension's id.
  * @property {string} [supportPage] A support page to show in the message.
  * @property {boolean} [allowControl] If the control should be enabled while controlled.
+ * @property {boolean} [mayDisable] If the controlling extension may be disabled.
  */
 
 /**
@@ -426,6 +427,9 @@ export class Setting extends EventEmitter {
       if (addon) {
         this.controllingExtensionInfo.name = addon.name;
         this.controllingExtensionInfo.id = info.id;
+        this.controllingExtensionInfo.mayDisable = !!(
+          addon.permissions & lazy.AddonManager.PERM_CAN_DISABLE
+        );
         this.emit("change");
         return;
       }
@@ -436,6 +440,7 @@ export class Setting extends EventEmitter {
   _clearControllingExtensionInfo() {
     delete this.controllingExtensionInfo.id;
     delete this.controllingExtensionInfo.name;
+    delete this.controllingExtensionInfo.mayDisable;
     delete this.controllingExtensionInfo.supportPage;
     // Request an update to the setting control so the UI is in the correct state
     this.onChange();

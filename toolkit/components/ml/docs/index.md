@@ -30,6 +30,7 @@ Learn more about the platform:
 :maxdepth: 1
 
 architecture
+HWInference
 api
 notifications
 models

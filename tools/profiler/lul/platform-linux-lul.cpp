@@ -64,11 +64,11 @@ void read_procmaps(lul::LUL* aLUL) {
   for (size_t i = 0; i < info.GetSize(); i++) {
     const SharedLibrary& lib = info.GetEntry(i);
 
-    std::string nativePath = lib.GetDebugPath();
     uint64_t fileOffset = 0;
     bool isApkEmbedded = false;
 
 #  if defined(GP_OS_android)
+    std::string nativePath = lib.GetDebugPath();
     // Handle libraries loaded directly from inside the APK, whose path uses the
     // "<apk>!/<entry>" syntax (see GetApkEmbeddedLibraryOffset). We map the APK
     // file at the embedded library's offset instead of the unopenable path.
@@ -85,6 +85,8 @@ void read_procmaps(lul::LUL* aLUL) {
       }
       nativePath.erase(apkSeparator);
     }
+#  else
+    const std::string& nativePath = lib.GetDebugPath();
 #  endif
 
     // We can use the standard POSIX-based mapper.

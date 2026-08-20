@@ -68,6 +68,32 @@ fn rect_basic() -> Result<()> {
 }
 
 #[test]
+fn rect_intersects() {
+    let r1 = Rect {
+        origin: (0, 0),
+        size: (10, 10),
+    };
+    let r2 = Rect {
+        origin: (5, 5),
+        size: (10, 10),
+    };
+    let r3 = Rect {
+        origin: (10, 0),
+        size: (10, 10),
+    };
+    let r4 = Rect {
+        origin: (20, 20),
+        size: (10, 10),
+    };
+
+    assert!(r1.intersects(&r2));
+    assert!(r2.intersects(&r1));
+    assert!(!r1.intersects(&r3)); // touch at boundary
+    assert!(!r3.intersects(&r1));
+    assert!(!r1.intersects(&r4));
+}
+
+#[test]
 #[should_panic(expected = "image byte offset must be aligned to element size")]
 fn image_from_raw_rejects_misaligned_offset() {
     use super::OwnedRawImage;

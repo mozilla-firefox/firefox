@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+
+<!--
+ Hosts focus_frameset.html in a window without any other focusable chrome, so
+ that focus navigation tests only see the frameset content.
+-->
+<window id="frameset-document" onload="onLoad()"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+<script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+<browser id="browser" type="content" src="focus_frameset.html"
+         style="width: 400px; height: 400px"/>
+
+<script>
+<![CDATA[
+
+function onLoad()
+{
+  SimpleTest.waitForFocus(contentWindow => window.arguments[0](contentWindow),
+                          document.getElementById("browser"));
+}
+
+]]>
+</script>
+
+</window>

@@ -267,6 +267,51 @@ addAsyncAnimTest(async function() {
   done_scroller();
 });
 
+addAsyncAnimTest(async function no_base_style_crash() {
+  let scroller = await new_scroller();
+  new_div("animation: always_fifty linear; " +
+          "animation-timeline: --scroll_timeline; " +
+          "animation-range: 20% 80%;");
+  await waitForPaintsFlushed();
+
+  scroller.scrollTop = 75;
+  await waitForPaintsFlushed();
+
+  omta_is_approx("transform", { tx: 50 }, 0.1, RunningOn.Compositor,
+                 "scroll transform animations should runs on compositor " +
+                 "thread");
+
+  // Use setAsyncScrollOffset() to update apz (compositor thread only) so that
+  // it samples the before phase on the compositor with the main thread not
+  // having had a chance to do so.
+  let utils = SpecialPowers.wrap(window).windowUtils;
+  utils.setAsyncScrollOffset(scroller, 0, -75);
+
+  // We have no base style, so we keep the previously sampled value until the
+  // main thread catches up.
+  let compositorStr =
+    SpecialPowers.DOMWindowUtils.getOMTAStyle(gDiv, "transform");
+  is(compositorStr, "matrix(1, 0, 0, 1, 50, 0)",
+     `scroll animation without a base style out of animation ranges gets the ` +
+     `OMTA style "${compositorStr}"`);
+
+  utils.advanceTimeAndRefresh(16);
+  utils.restoreNormalRefresh();
+  await waitForPaints();
+
+  scroller.scrollTop = 0;
+  await waitForPaintsFlushed();
+
+  compositorStr = SpecialPowers.DOMWindowUtils.getOMTAStyle(gDiv, "transform");
+  is(compositorStr, "",
+     "scroll animation out of ranges clears its OMTA style");
+  omta_is_approx("transform", { tx: 0 }, 0.1, RunningOn.Either,
+                 "The scroll animation is out of animation ranges");
+
+  done_div();
+  done_scroller();
+});
+
 // The scroll-driven animation is in delay, together with other runing
 // animations.
 addAsyncAnimTest(async function() {

@@ -17,6 +17,7 @@ nserror = { path = "../../../../xpcom/rust/nserror" }
 nsstring = { path = "../../../../xpcom/rust/nsstring" }
 netwerk_helper = { path = "../../../../netwerk/base/rust-helper" }
 xpcom = { path = "../../../../xpcom/rust/xpcom" }
+xdg_alerts = { path = "../../../system/gnome/rust", optional = true }
 prefs_parser = { path = "../../../../modules/libpref/parser" }
 static_prefs = { path = "../../../../modules/libpref/init/static_prefs" }
 profiler_helper = { path = "../../../../tools/profiler/rust-helper" }
@@ -167,7 +168,7 @@ glean_disable_upload = ["fog_control/disable_upload"]
 glean_with_gecko = ["fog_control/with_gecko", "jog/with_gecko"]
 oxidized_breakpad = ["rust_minidump_writer_linux"]
 crashreporter = ["crash_helper_client", "mozannotation_client"]
-with_dbus = ["audio_thread_priority/with_dbus"]
+with_dbus = ["audio_thread_priority/with_dbus", "xdg_alerts"]
 thread_sanitizer = ["xpcom/thread_sanitizer"]
 uniffi_fixtures = ["uniffi-bindgen-gecko-js-test-fixtures"]
 webmidi_midir_impl = ["midir_impl"]

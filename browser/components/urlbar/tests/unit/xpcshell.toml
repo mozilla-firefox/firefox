@@ -10,6 +10,8 @@ support-files = ["data/engine.xml"]
 
 ["test_UrlbarChildController_unit.js"]
 
+["test_UrlbarNewTabComponentRegistrant.js"]
+
 ["test_UrlbarParentController_integration.js"]
 
 ["test_UrlbarParentController_telemetry.js"]

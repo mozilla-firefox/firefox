@@ -3,6 +3,9 @@
 *
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// work around not yet having https://github.com/mozilla/uniffi-rs/pull/2963.
+#![allow(const_evaluatable_unchecked)]
+
 use std::sync::{Arc, OnceLock};
 
 use crate::{ClientSettings, Request, Response, Result, ViaductError};

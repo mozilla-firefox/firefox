@@ -12,6 +12,16 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/tabbrowser/SmartTabGrouping.sys.mjs",
   SmartTabGroupingManager:
     "moz-src:///browser/components/tabbrowser/SmartTabGrouping.sys.mjs",
+  buildConversation:
+    "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs",
+  loadPrompt:
+    "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs",
+  MODEL_FEATURES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
+  renderPrompt: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
+  openAIEngine:
+    "moz-src:///browser/components/aiwindow/models/openAIEngine.sys.mjs",
+  sanitizeUntrustedContent:
+    "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs",
 });
 
 // Dedicated topic-model slot so the SW naming model can be updated independently
@@ -106,6 +116,14 @@ const DEFAULT_FAVICON_URL = "chrome://global/skin/icons/defaultFavicon.svg";
  * guarded against throwing.
  */
 const MAX_LABEL_CACHE_ENTRIES = 50;
+
+// Cap how many tab titles are sent to the LLM for naming, mirroring the
+// on-device path (SmartTabGrouping.getRepresentativeDocuments), to bound the
+// untrusted content in the prompt. Per-title length is capped by
+// sanitizeUntrustedContent.
+const MAX_LABEL_TABS = 10;
+
+const MAX_LABEL_LENGTH = 25;
 
 export const AutoTabGroupingSuggestions = {
   _manager: null,
@@ -221,22 +239,22 @@ export const AutoTabGroupingSuggestions = {
     const groupedTabs = new Set(clusters.flatMap(c => c.tabs));
     const otherTabs = candidates.filter(t => !groupedTabs.has(t));
 
-    const proposals = [];
-    for (const cluster of clusters) {
-      let label = "";
-      try {
-        label = await this._labelForGroup(cluster.tabs, otherTabs);
-      } catch (e) {
-        lazy.console.warn("Label generation failed", e);
-      }
-      // Drop groups the model left unlabeled: an empty title usually flags
-      // content it declined to label (often a Trust & Safety case).
-      const trimmed = label?.trim();
-      if (trimmed) {
-        proposals.push({ label: trimmed, tabs: cluster.tabs });
-      }
-    }
-    return proposals;
+    // Label groups in parallel: LLM naming is a network call, so labeling them
+    // serially would stack the latency across groups.
+    const labeled = await Promise.all(
+      clusters.map(async cluster => {
+        try {
+          const label = await this._labelForGroup(cluster.tabs, otherTabs);
+          return { label: label?.trim(), tabs: cluster.tabs };
+        } catch (e) {
+          lazy.console.warn("Label generation failed", e);
+          return { label: "", tabs: cluster.tabs };
+        }
+      })
+    );
+    // Drop groups the model left unlabeled: an empty title usually flags
+    // content it declined to label (often a Trust & Safety case).
+    return labeled.filter(proposal => proposal.label);
   },
 
   /**
@@ -254,12 +272,62 @@ export const AutoTabGroupingSuggestions = {
     if (this._labelCache.has(key)) {
       return this._labelCache.get(key);
     }
-    const label = await this.manager.getPredictedLabelForGroup(tabs, otherTabs);
+    // Fall back to on-device only when the LLM throws (unavailable). A successful
+    // empty result is a deliberate decline (NSFW); keep it so the group is dropped.
+    let label;
+    try {
+      label = await this._llmLabelForGroup(tabs);
+    } catch (e) {
+      lazy.console.warn("LLM labeling failed; falling back to on-device", e);
+      label = await this.manager.getPredictedLabelForGroup(tabs, otherTabs);
+    }
     if (this._labelCache.size >= MAX_LABEL_CACHE_ENTRIES) {
       this._labelCache.delete(this._labelCache.keys().next().value);
     }
     this._labelCache.set(key, label);
     return label;
+  },
+
+  // Name a group with the Smart Window LLM. Throws when unavailable (caller falls
+  // back to on-device); returns "" on a deliberate decline (NSFW), which drops it.
+  async _llmLabelForGroup(tabs) {
+    const fxAccountToken = await lazy.openAIEngine.getFxAccountToken();
+    if (!fxAccountToken) {
+      throw new Error("Smart Window LLM unavailable: no account token");
+    }
+    const titles = tabs
+      .slice(0, MAX_LABEL_TABS)
+      .map(tab => lazy.sanitizeUntrustedContent(tab.label || ""))
+      .filter(Boolean)
+      .join("\n");
+    const conversation = await lazy.buildConversation(
+      lazy.MODEL_FEATURES.TAB_GROUP_NAMING,
+      {}
+    );
+    const model = conversation.engine.model;
+    const [{ prompt: systemPrompt }, { prompt: userTemplate }] =
+      await Promise.all([
+        lazy.loadPrompt(lazy.MODEL_FEATURES.TAB_GROUP_NAMING, {
+          module: "system-instructions",
+          model,
+        }),
+        lazy.loadPrompt(lazy.MODEL_FEATURES.TAB_GROUP_NAMING, {
+          module: "user-data",
+          model,
+        }),
+      ]);
+    conversation.setSystemMessage(systemPrompt);
+    conversation.addUserMessage(lazy.renderPrompt(userTemplate, { titles }));
+    const response = await conversation.run({ fxAccountToken });
+    const raw = response?.finalOutput?.trim() || "";
+    let label = lazy.sanitizeUntrustedContent(raw, true).trim();
+    if (label.length > MAX_LABEL_LENGTH) {
+      const cut = label.slice(0, MAX_LABEL_LENGTH);
+      const lastSpace = cut.lastIndexOf(" ");
+      label = lastSpace > 0 ? cut.slice(0, lastSpace) : cut;
+    }
+    // Drop a dangling trailing connective left by truncation ("Features and").
+    return label.replace(/\s+(and|or|&)$/i, "").trim();
   },
 
   /**

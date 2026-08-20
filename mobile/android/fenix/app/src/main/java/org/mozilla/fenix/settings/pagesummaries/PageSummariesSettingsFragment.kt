@@ -9,15 +9,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import mozilla.components.feature.summarize.settings.LearnMoreHandled
 import mozilla.components.feature.summarize.settings.SummarizeSettingsContent
 import mozilla.components.feature.summarize.settings.SummarizeSettingsMiddleware
 import mozilla.components.feature.summarize.settings.SummarizeSettingsState
 import mozilla.components.feature.summarize.settings.SummarizeSettingsStore
+import mozilla.components.feature.summarize.settings.asMiddleware
 import mozilla.components.feature.summarize.settings.summarizeSettingsReducer
 import org.mozilla.fenix.R
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
@@ -40,27 +45,35 @@ class PageSummariesSettingsFragment : Fragment(), SystemInsetsPaddedFragment {
         savedInstanceState: Bundle?,
     ): View {
         val summarizeSettings = requireComponents.summarizationSettings
-        val cache = requireComponents.summarizationSettingsCache
+        val cache = requireComponents.core.summarizationSettingsBinding
         val store =
             SummarizeSettingsStore(
                 initialState =
                     SummarizeSettingsState(
-                        isFeatureEnabled = cache.featureEnabled.value,
-                        isGestureEnabled = cache.gestureEnabled.value,
+                        isFeatureEnabled = cache.isFeatureEnabled.value,
+                        isGestureEnabled = cache.isGestureEnabled.value,
                         shakeSensitivity = cache.shakeSensitivity.value,
                     ),
                 reducer = ::summarizeSettingsReducer,
                 middleware =
                     listOf(
                         SummarizeSettingsMiddleware(
-                            settings = summarizeSettings,
-                            onLearnMoreClicked = { openLearnMoreLink() },
-                            scope = viewLifecycleOwner.lifecycleScope,
-                        )
+                                settings = summarizeSettings,
+                                scope = viewLifecycleOwner.lifecycleScope,
+                            )
+                            .asMiddleware()
                     ),
             )
 
         return content {
+            val state by store.stateFlow.collectAsStateWithLifecycle()
+            LaunchedEffect(state.isLearnMoreRequested) {
+                if (state.isLearnMoreRequested) {
+                    openLearnMoreLink()
+                    store.dispatch(LearnMoreHandled)
+                }
+            }
+
             FirefoxTheme {
                 SummarizeSettingsContent(
                     store = store,

@@ -732,7 +732,10 @@ const char gc::ZealModeHelpText[] =
 "    25: (YieldWhileGrayMarking) Incremental GC in two slices that yields\n"
 "        during gray marking\n"
 "    26: (CheckHeapBeforeMinorGC) Check for invariant violations before every\n"
-"        minor GC\n";
+"        minor GC\n"
+"    27: (ConcurrentMarkingDelays) Add a short sleep at select points in the\n"
+"        mutator that could be risky under concurrent marking, to widen race\n"
+"        windows for testing\n";
 // clang-format on
 
 // The set of zeal modes that yield at specific points in collection.

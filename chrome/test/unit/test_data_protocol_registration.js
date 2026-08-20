@@ -51,15 +51,11 @@ function run_test() {
         );
         old_factories.push({
           CID: registrar.contractIDToCID(factory.contractID),
-          factory: Components.manager.getClassObject(
-            Cc[factory.contractID],
-            Ci.nsIFactory
-          ),
         });
         old_factories_inds.push(true);
       } else {
         dump(factory.scheme + " has never been registered. Registering...");
-        old_factories.push({ CID: "", factory: null });
+        old_factories.push({ CID: "" });
         old_factories_inds.push(false);
       }
 

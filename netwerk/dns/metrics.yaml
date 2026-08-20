@@ -16,9 +16,6 @@ dns:
     description: >
       DNS Lookup Type (hit, renewal, negative-hit, literal, overflow,
       network-first, network-shared)
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram DNS_LOOKUP_METHOD2.
     range_min: 0
     range_max: 16
     bucket_count: 17
@@ -37,43 +34,34 @@ dns:
     type: timing_distribution
     description: >
       DNS Cache Entry Age at Removal Time (minutes)
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram DNS_CLEANUP_AGE.
     time_unit: minute
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2062940
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
     notification_emails:
       - necko@mozilla.com
     expires: never
-    telemetry_mirror: DNS_CLEANUP_AGE
 
   by_type_cleanup_age:
     type: timing_distribution
     description: >
       DNS Cache Entry Age for by-type queries at Removal Time (minutes)
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram DNS_BY_TYPE_CLEANUP_AGE.
     time_unit: minute
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1481251
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2062940
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1481251
     notification_emails:
       - necko@mozilla.com
     expires: never
-    telemetry_mirror: DNS_BY_TYPE_CLEANUP_AGE
 
   premature_eviction:
     type: timing_distribution
     description: >
       DNS Cache Entry Age at Removal Time of non-expired entries (minutes)
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram DNS_PREMATURE_EVICTION.
     time_unit: minute
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1460305
@@ -89,9 +77,6 @@ dns:
     description: >
       DNS Cache Entry Age for by-type queries at Removal Time of non-expired
       entries (minutes)
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram DNS_BY_TYPE_PREMATURE_EVICTION.
     time_unit: minute
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1481251
@@ -106,9 +91,6 @@ dns:
     type: labeled_timing_distribution
     description: >
       Time for a completed TRR resolution (msec); Keyed by TRR domain
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram DNS_TRR_LOOKUP_TIME3.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
@@ -128,9 +110,6 @@ dns:
     description: >
       Time from the last received byte of the response until we have notified
       the consumer with a DNS record (msec)
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram DNS_TRR_PROCESSING_TIME.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1608114
@@ -145,9 +124,6 @@ dns:
     description: >
       When in TRR-first mode, it lists the reason we may have skipped TRR, keyed
       by the provider.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_SKIP_REASON_TRR_FIRST2.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -168,9 +144,6 @@ dns:
     description: >
       When in TRR-first mode, if TRR was skipped and native succeeded, it lists
       the reason we may have skipped TRR, keyed by the provider.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_SKIP_REASON_NATIVE_SUCCESS.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -192,9 +165,6 @@ dns:
     description: >
       When in TRR-first mode, if TRR was skipped and native failed, it lists the
       reason we may have skipped TRR, keyed by the provider.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_SKIP_REASON_NATIVE_FAILED.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -214,9 +184,6 @@ dns:
     description: >
       When in TRR-first mode, it lists the reason we may have skipped TRR, keyed
       by the provider. Does not include requests that intentionally skip TRR.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_RELEVANT_SKIP_REASON_TRR_FIRST.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -240,9 +207,6 @@ dns:
       When in TRR-first mode, if TRR was skipped and native succeeded, it lists
       the reason we may have skipped TRR, keyed by the provider. Does not
       include requests that intentionally skip TRR.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_RELEVANT_SKIP_REASON_NATIVE_SUCCESS.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -267,9 +231,6 @@ dns:
       When in TRR-first mode, if TRR was skipped and native failed, it lists the
       reason we may have skipped TRR, keyed by the provider. Does not include
       requests that intentionally skip TRR.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_RELEVANT_SKIP_REASON_NATIVE_FAILED.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -292,9 +253,6 @@ dns:
       When in TRR-first mode, it lists the reason we may have skipped TRR. The
       key is like `<provider>|<skip reason of first attempt>` or just
       `<provider>` used when there was no second attempt.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_SKIP_REASON_STRICT_MODE.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -313,9 +271,6 @@ dns:
     description: >
       When in TRR-first mode, if TRR failed once and was successfully retried,
       it lists the reason for the first failure, keyed by the provider.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_SKIP_REASON_RETRY_SUCCESS.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -334,9 +289,6 @@ dns:
     description: >
       When in TRR-first mode, if TRR failed once and retried unsuccessfully, it
       lists the reason for the first failure, keyed by the provider.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_SKIP_REASON_RETRY_FAILED.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -356,9 +308,6 @@ dns:
       When in TRR-first mode, it lists the reason we may have skipped TRR for
       HTTPS RR, keyed by the provider. Does not include requests that
       intentionally skip TRR.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_RELEVANT_SKIP_REASON_TRR_FIRST_TYPE_REC.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -377,9 +326,6 @@ dns:
     description: >
       Number of times we attempted TRR for a successful lookup in TRR-first
       mode. Keyed by provider.
-
-      This metric was generated to correspond to the Legacy Telemetry enumerated
-      histogram TRR_ATTEMPT_COUNT.
     range_min: 0
     range_max: 10
     bucket_count: 11
@@ -397,9 +343,6 @@ dns:
     type: timing_distribution
     description: >
       Time for a completed native name resolution (msec)
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram DNS_NATIVE_LOOKUP_TIME.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
@@ -414,9 +357,6 @@ dns:
     type: timing_distribution
     description: >
       Time for a completed by-type resolution that has a negative answer (msec).
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram DNS_BY_TYPE_FAILED_LOOKUP_TIME.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1481251
@@ -448,9 +388,6 @@ dns:
     type: timing_distribution
     description: >
       Time in resolve queue waiting to getaddrinfo (msec)
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram DNS_NATIVE_QUEUING.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1470215
@@ -465,9 +402,6 @@ dns:
     type: labeled_counter
     description: >
       DNS: lookup algorithm
-
-      This metric was generated to correspond to the Legacy Telemetry
-      categorical histogram DNS_LOOKUP_ALGORITHM.
     labels:
       - nativeOnly
       - trrRace
@@ -486,9 +420,6 @@ dns:
     type: dual_labeled_counter
     description: >
       HTTP version used by DoH endpoint
-
-      This metric was generated to correspond to the Legacy Telemetry
-      categorical histogram DNS_TRR_HTTP_VERSION2.
     dual_labels:
       key:
         description: string identifying the current DoH server, "(other)" if not a built-in server.
@@ -514,9 +445,6 @@ dns:
     description: >
       TRR-first mode distribution. 0=Worked, 1=fell back fine after TRR fail,
       2=native worked, 3=both failed; Keyed by TRR domain
-
-      This metric was generated to correspond to the Legacy Telemetry
-      categorical histogram DNS_TRR_FIRST4.
     dual_labels:
       key:
         description: string identifying the current DoH server, "(other)" if not a built-in server.
@@ -547,9 +475,6 @@ dns:
     description: >
       Resolve success rate when in TRR-first and called TRR-disabled (fall-back
       mode); Keyed by TRR domain
-
-      This metric was generated to correspond to the Legacy Telemetry boolean
-      histogram DNS_TRR_DISABLED3.
     dual_labels:
       key:
         description: string identifying the current DoH server, "(other)" if not a built-in server.
@@ -576,9 +501,6 @@ dns:
     type: dual_labeled_counter
     description: >
       DNS check for TRR was blocked by blacklist; Keyed by TRR domain
-
-      This metric was generated to correspond to the Legacy Telemetry boolean
-      histogram DNS_TRR_BLACKLISTED3.
     dual_labels:
       key:
         description: string identifying the current DoH server, "(other)" if not a built-in server.
@@ -605,9 +527,6 @@ dns:
     type: dual_labeled_counter
     description: >
       TRR managed to verify NS entry; Keyed by TRR domain
-
-      This metric was generated to correspond to the Legacy Telemetry boolean
-      histogram DNS_TRR_NS_VERFIFIED3.
     dual_labels:
       key:
         description: string identifying the current DoH server, "(other)" if not a built-in server.
@@ -635,9 +554,6 @@ dns:
     description: >
       How often TRR (Trusted Recursive Resolver) requests are fine, time-out or
       error. Keyed by TRR domain
-
-      This metric was generated to correspond to the Legacy Telemetry
-      categorical histogram DNS_TRR_SUCCESS3.
     dual_labels:
       key:
         description: string identifying the current DoH server, "(other)" if not a built-in server.
@@ -709,9 +625,6 @@ dns:
     type: dual_labeled_counter
     description: >
       DNS: lookup algorithm; Keyed by TRR domain
-
-      This metric was generated to correspond to the Legacy Telemetry
-      categorical histogram DNS_LOOKUP_DISPOSITION3.
     dual_labels:
       key:
         description: string identifying the current DoH server, "(other)" if not a built-in server.

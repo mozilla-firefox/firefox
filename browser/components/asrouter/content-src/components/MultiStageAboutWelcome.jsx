@@ -452,7 +452,7 @@ const renderSingleSecondaryCTAButton = ({
     : `secondary`;
   const isPrimary = button?.style === "primary";
   const isTextLink =
-    !["split", "callout"].includes(content.position) &&
+    !["split", "callout", "center-large"].includes(content.position) &&
     content.tiles?.type !== "addons-picker" &&
     !isPrimary;
   const isSplitButton = content.submenu_button?.attached_to === targetElement;

@@ -1,3 +1,5 @@
+(security-bug-approval-process)=
+
 # Security Bug Approval Process
 
 ## How to fix a core-security bug in Firefox - developer guidelines

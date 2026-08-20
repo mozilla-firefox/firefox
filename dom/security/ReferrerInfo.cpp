@@ -1717,25 +1717,6 @@ ReferrerInfo::Write(nsIObjectOutputStream* aStream) {
   return NS_OK;
 }
 
-void ReferrerInfo::RecordTelemetry(nsIHttpChannel* aChannel) {
-#ifdef DEBUG
-  MOZ_ASSERT(!mTelemetryRecorded);
-  mTelemetryRecorded = true;
-#endif  // DEBUG
-
-  // The telemetry probe has 18 buckets. The first 9 buckets are for same-site
-  // requests and the rest 9 buckets are for cross-site requests.
-  uint32_t telemetryOffset =
-      IsCrossSiteRequest(aChannel)
-          ? UnderlyingValue(
-                MaxContiguousEnumValue<dom::ReferrerPolicy>::value) +
-                1
-          : 0;
-
-  glean::security::referrer_policy_count.AccumulateSingleSample(
-      static_cast<uint32_t>(mPolicy) + telemetryOffset);
-}
-
 }  // namespace mozilla::dom
 
 #undef LOG

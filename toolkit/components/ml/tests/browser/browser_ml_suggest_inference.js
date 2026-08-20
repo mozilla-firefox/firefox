@@ -3,15 +3,20 @@ http://creativecommons.org/publicdomain/zero/1.0/ */
 "use strict";
 
 const PREFIX = "inference";
-const METRICS = [
-  `${PREFIX}-${PIPELINE_READY_LATENCY}`,
-  `${PREFIX}-${INITIALIZATION_LATENCY}`,
-  `${PREFIX}-${MODEL_RUN_LATENCY}`,
-  `${PREFIX}-${TOTAL_MEMORY_USAGE}`,
-];
-const journal = {};
-for (let metric of METRICS) {
-  journal[metric] = [1];
+
+// This test checks inference output rather than timings, but perfherder needs
+// a metric per run to accept the job, so it reports placeholders.
+function placeholderMetrics(tag) {
+  const journal = {};
+  for (const metric of [
+    PIPELINE_READY_LATENCY,
+    INITIALIZATION_LATENCY,
+    MODEL_RUN_LATENCY,
+    TOTAL_MEMORY_USAGE,
+  ]) {
+    journal[`${PREFIX}-${metric}-${tag}`] = [1];
+  }
+  return journal;
 }
 
 const perfMetadata = {
@@ -39,7 +44,7 @@ const perfMetadata = {
         },
         {
           name: "inference-total-memory-usage",
-          unit: "ms",
+          unit: "MiB",
           shouldAlert: false,
         },
       ],
@@ -149,14 +154,17 @@ async function perform_inference(queries, type) {
   await writeResultsToFile(results, type);
 }
 
-const runInference2 = async () => {
+const runInference2 = async ({ backend, tag }) => {
   ChromeUtils.defineESModuleGetters(this, {
     MLSuggest: "moz-src:///browser/components/urlbar/private/MLSuggest.sys.mjs",
   });
 
-  // Override INTENT and NER options within MLSuggest
-  MLSuggest.INTENT_OPTIONS = CUSTOM_INTENT_OPTIONS;
-  MLSuggest.NER_OPTIONS = CUSTOM_NER_OPTIONS;
+  // Pin the fallbacks too: MLSuggest falls back from "onnx-native" to
+  // "onnx" on its own, which would report wasm numbers under the native tag.
+  MLSuggest.INTENT_OPTIONS = { ...CUSTOM_INTENT_OPTIONS, backend };
+  MLSuggest.INTENT_OPTIONS_FALLBACK = { ...CUSTOM_INTENT_OPTIONS, backend };
+  MLSuggest.NER_OPTIONS = { ...CUSTOM_NER_OPTIONS, backend };
+  MLSuggest.NER_OPTIONS_FALLBACK = { ...CUSTOM_NER_OPTIONS, backend };
 
   const modelHubRootUrl = Services.env.get("MOZ_MODELS_HUB");
   if (!modelHubRootUrl) {
@@ -173,26 +181,30 @@ const runInference2 = async () => {
   });
 
   const TYPES = ["YELP_KEYWORDS_DATA", "YELP_VAL_DATA", "NER_VAL_DATA"];
-  for (const type of TYPES) {
-    info(`processing ${type} now`);
-    // Read data for the current type
-    const queries = await read_data_by_type(type);
-    if (!queries) {
-      info(`No queries found for type: ${type}`);
-      continue;
+  try {
+    for (const type of TYPES) {
+      info(`processing ${type} now`);
+      // Read data for the current type
+      const queries = await read_data_by_type(type);
+      if (!queries) {
+        info(`No queries found for type: ${type}`);
+        continue;
+      }
+      // Run inference for each query
+      await perform_inference(queries, `${type}-${tag}`);
     }
-    // Run inference for each query
-    await perform_inference(queries, type);
+  } finally {
+    // The next backend needs a clean MLSuggest and pref state.
+    await MLSuggest.shutdown();
+    await EngineProcess.destroyMLEngine();
+    await cleanup();
   }
-  await MLSuggest.shutdown();
-  await EngineProcess.destroyMLEngine();
-  await cleanup();
+  reportMetrics(placeholderMetrics(tag));
 };
 
 /**
  * Tests remote ml model
  */
 add_task(async function test_ml_generic_pipeline() {
-  await runInference2();
-  reportMetrics(journal);
+  await runMLPerfTestForEachBackend({ name: PREFIX, run: runInference2 });
 });

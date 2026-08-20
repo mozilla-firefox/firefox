@@ -1219,7 +1219,9 @@ class TelemetryHandler {
    *   Returns a provider or undefined if no provider was found for the url.
    */
   _getProviderInfoForURL(url) {
-    return this._searchProviderInfo.find(info =>
+    // Provider info is populated asynchronously from Remote Settings during
+    // init, so it may not be available yet for early page loads.
+    return this._searchProviderInfo?.find(info =>
       info.searchPageRegexp.test(url)
     );
   }
@@ -1679,7 +1681,7 @@ class ContentHandler {
       }
 
       let url = wrappedChannel.finalURL;
-      let info = this._searchProviderInfo.find(provider => {
+      let info = this._searchProviderInfo?.find(provider => {
         return provider.telemetryId == item.info.provider;
       });
 
@@ -1717,7 +1719,7 @@ class ContentHandler {
         }
       }
 
-      if (!info.extraAdServersRegexps?.some(regex => regex.test(url))) {
+      if (!info?.extraAdServersRegexps?.some(regex => regex.test(url))) {
         return;
       }
 

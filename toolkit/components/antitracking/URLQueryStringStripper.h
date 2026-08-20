@@ -49,7 +49,9 @@ class URLQueryStringStripper final : public nsIObserver,
 
   // Returns whether there is a rule matching the host that tells us to strip
   // this query parameter.
-  bool ShouldStripParam(const nsACString& aHost, const nsACString& aName);
+  bool ShouldStripParam(const nsACString& aHost,
+                        const nsACString& aSchemelessSite,
+                        const nsACString& aName);
   // Tries parse query parameter value as url and recurse into
   // `StripForCopyOrShareInternal` to strip query parameters for it. Returns how
   // many params were stripped, but at most 1 in dry mode. Modifies aValue to
@@ -68,7 +70,8 @@ class URLQueryStringStripper final : public nsIObserver,
   nsTHashSet<nsCString> mList;
   nsTHashSet<nsCString> mAllowList;
   nsCOMPtr<nsIURLQueryStrippingListService> mListService;
-  nsTHashMap<nsCString, dom::StripRule> mStripOnShareMap;
+  nsTHashMap<nsCString, dom::StripRule> mStripOnShareOriginMap;
+  nsTHashMap<nsCString, dom::StripRule> mStripOnShareSchemelessSiteMap;
   Maybe<dom::StripRule> mStripOnShareGlobal;
   bool mIsInitialized;
   // Indicates whether or not we currently have registered an observer

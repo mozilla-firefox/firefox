@@ -5,7 +5,9 @@
 
 package org.mozilla.fenix.helpers
 
+import android.app.Activity.RESULT_OK
 import android.app.ActivityManager
+import android.app.Instrumentation
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -27,6 +29,8 @@ import androidx.test.espresso.Espresso
 import androidx.test.espresso.IdlingRegistry
 import androidx.test.espresso.IdlingResource
 import androidx.test.espresso.intent.Intents.intended
+import androidx.test.espresso.intent.Intents.intending
+import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
 import androidx.test.espresso.intent.matcher.IntentMatchers.toPackage
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
@@ -589,6 +593,18 @@ object AppAndSystemHelper {
         Log.i(TAG, "denyPermissionAndDontAskAgainButton: Trying to click the negative camera system permission button.")
         itemWithResId("com.android.permissioncontroller:id/permission_deny_and_dont_ask_again_button").click()
         Log.i(TAG, "denyPermissionAndDontAskAgainButton: Clicked the negative camera system permission button.")
+    }
+
+    /**
+     * Stubs the system file picker so that [selectedFile] is returned as the picker result, allowing file-picker flows
+     * to run without user interaction. Espresso Intents must be initialized for the stubbing to take effect.
+     *
+     * @param selectedFile The file the stubbed picker should return.
+     * @param action The intent action to intercept. Defaults to [Intent.ACTION_GET_CONTENT].
+     */
+    fun stubFilePickerSelection(selectedFile: File, action: String = Intent.ACTION_GET_CONTENT) {
+        val resultData = Intent().apply { data = selectedFile.toUri() }
+        intending(hasAction(action)).respondWith(Instrumentation.ActivityResult(RESULT_OK, resultData))
     }
 
     fun verifySystemPhotoAndVideoPickerExists() {

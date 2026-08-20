@@ -74,7 +74,7 @@ ShadowRoot::ShadowRoot(Element* aElement, ShadowRootMode aMode,
     if (*aRegistry) {
       SetCustomElementRegistry(*aRegistry);
     } else {
-      SetKeepCustomElementRegistryNull();
+      SetNullCustomElementRegistry();
     }
   }
 
@@ -1041,15 +1041,6 @@ void ShadowRoot::SetCustomElementRegistry(CustomElementRegistry* aRegistry) {
                "Tried to set a global registry different to docs");
     SetCustomElementRegistryState(CustomElementRegistryState::Global);
   }
-}
-
-/* https://dom.spec.whatwg.org/#shadowroot-keep-custom-element-registry-null */
-void ShadowRoot::SetKeepCustomElementRegistryNull() {
-  MOZ_ASSERT(StaticPrefs::dom_scoped_custom_element_registries_enabled());
-  MOZ_ASSERT(!HasCustomElementRegistry(),
-             "We shouldn't set a custom element registry without clearing "
-             "first");
-  SetCustomElementRegistryState(CustomElementRegistryState::Null);
 }
 
 /* https://dom.spec.whatwg.org/#shadowroot-custom-element-registry */

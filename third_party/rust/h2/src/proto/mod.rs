@@ -33,6 +33,10 @@ pub type WindowSize = u32;
 pub const MAX_WINDOW_SIZE: WindowSize = (1 << 31) - 1; // i32::MAX as u32
 pub const DEFAULT_REMOTE_RESET_STREAM_MAX: usize = 20;
 pub const DEFAULT_LOCAL_RESET_COUNT_MAX: usize = 1024;
+// Approximately the memory occupied by one buffered DATA event. Payloads
+// smaller than this consume more internal bookkeeping than useful data.
+pub const DEFAULT_DATA_FRAME_OVERHEAD_THRESHOLD: usize = 256;
+pub const DEFAULT_DATA_FRAME_BUDGET: usize = DEFAULT_DATA_FRAME_OVERHEAD_THRESHOLD * 100;
 // RFC 9113 suggests allowing at minimum 100 streams, it seems reasonable to
 // by default allow a portion of that to be remembered as reset for some time.
 pub const DEFAULT_RESET_STREAM_MAX: usize = 50;

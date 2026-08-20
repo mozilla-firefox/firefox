@@ -114,9 +114,9 @@ TabEngine.prototype = {
     // ESRs don't cover that.
     const FAR_FUTURE = 4102405200000; // 2100/01/01, used by old versions.
     if ((await this.getLastSync()) === FAR_FUTURE) {
-      await this._bridge.setLastSync(0);
+      await this._bridge.resetLastSync();
     }
-    await this._bridge.prepareForSync(JSON.stringify(clientData));
+    await this._bridge.setClients(JSON.stringify(clientData));
   },
 
   async _syncStartup() {
@@ -273,8 +273,10 @@ TabEngine.prototype = {
       // now just the "upload" part of a sync, which for a rust engine is not obvious.
       // We need to do is ask the rust engine for the changes. Although
       // this is kinda abusing the bridged-engine interface, we know the tabs
-      // implementation of it works ok
-      let outgoing = await this._bridge.apply();
+      // implementation of it works ok.
+      // This is an upload-only path with no incoming records, so the server
+      // timestamp passed to apply() is immaterial - pass 0.
+      let outgoing = await this._bridge.apply(0);
       // We know we always have exactly 1 record.
       let mine = outgoing[0];
       this._log.trace("outgoing bso", mine);

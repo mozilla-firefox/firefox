@@ -507,7 +507,6 @@ nsresult nsAppShellService::JustCreateTopWindow(
                      nsIWebBrowserChrome::CHROME_WINDOW_RESIZE;
   uint32_t barMask = nsIWebBrowserChrome::CHROME_MENUBAR |
                      nsIWebBrowserChrome::CHROME_TOOLBAR |
-                     nsIWebBrowserChrome::CHROME_LOCATIONBAR |
                      nsIWebBrowserChrome::CHROME_TITLEBAR;
   if (widgetInitData.mWindowType == widget::WindowType::Dialog &&
       ((aChromeMask & pipMask) == pipMask) && !(aChromeMask & barMask)) {
@@ -546,9 +545,6 @@ nsresult nsAppShellService::JustCreateTopWindow(
     widgetInitData.mBorderStyle = BorderStyle::Border;
     if (aChromeMask & nsIWebBrowserChrome::CHROME_TITLEBAR) {
       widgetInitData.mBorderStyle |= BorderStyle::Title;
-    }
-    if (aChromeMask & nsIWebBrowserChrome::CHROME_WINDOW_CLOSE) {
-      widgetInitData.mBorderStyle |= BorderStyle::Close;
     }
     if (aChromeMask & nsIWebBrowserChrome::CHROME_WINDOW_RESIZE) {
       widgetInitData.mResizable = true;

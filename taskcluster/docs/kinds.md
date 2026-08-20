@@ -938,6 +938,10 @@ Generate instrumented apks used to generate Baseline Profile for Android apps.
 
 Run baseline profile generation for Android on Firebase TestLab.
 
+## dte-test
+
+Send payload for DTE testing Github Actions.
+
 ## update-test
 
 Run tests to see if the Firefox executable can be updated to the latest release.

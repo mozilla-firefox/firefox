@@ -35,7 +35,7 @@ pub(super) enum FlatTreeNode {
 }
 
 #[inline(always)]
-#[allow(clippy::too_many_arguments, unsafe_code)]
+#[allow(clippy::too_many_arguments)]
 pub(super) fn predict_flat(
     flat_tree: &[FlatTreeNode],
     prediction_data: PredictionData,

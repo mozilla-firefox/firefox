@@ -118,7 +118,8 @@ void ContentPermissionRequestParent::ActorDestroy(ActorDestroyReason why) {
 bool ContentPermissionRequestParent::IsBeingDestroyed() {
   // When ContentParent::MarkAsDead() is called, we are being destroyed.
   // It's unsafe to send out any message now.
-  ContentParent* contentParent = static_cast<ContentParent*>(Manager());
+  ContentParent* contentParent =
+      mozilla::ipc::ActorCast<ContentParent>(Manager());
   return !contentParent->IsAlive();
 }
 

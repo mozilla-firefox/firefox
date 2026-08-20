@@ -127,6 +127,12 @@ private fun WallpaperGroupHeading(
             color = MaterialTheme.colorScheme.onSurface,
             style = FirefoxTheme.typography.subtitle2,
         )
+    } else if (collection.name == Wallpaper.WREXHAM_FIREFOX_COLLECTION) {
+        Text(
+            text = stringResource(R.string.wallpaper_wrexham_title),
+            color = MaterialTheme.colorScheme.onSurface,
+            style = FirefoxTheme.typography.subtitle2,
+        )
     } else {
         val label = stringResource(id = R.string.a11y_action_label_wallpaper_collection_learn_more)
         val headingSemantics: SemanticsPropertyReceiver.() -> Unit =

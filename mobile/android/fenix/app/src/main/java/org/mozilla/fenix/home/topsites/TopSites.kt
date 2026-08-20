@@ -126,7 +126,11 @@ internal fun TopSites(
         onSponsorPrivacyClicked = interactor::onSponsorPrivacyClicked,
         onTopSitesItemBound = onTopSitesItemBound,
         onAddShortcutClicked = onAddShortcutClicked,
-        onExpandToggleClick = { isExpanded = !isExpanded },
+        onExpandToggleClick = {
+            val expanded = !isExpanded
+            isExpanded = expanded
+            interactor.onExpandToggleClicked(expanded)
+        },
         isPager = isPager,
         showAddShortcut = showAddShortcut,
         showExpandToggle = showExpandToggle,

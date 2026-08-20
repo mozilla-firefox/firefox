@@ -8,6 +8,7 @@ import {
   ref,
   classMap,
   ifDefined,
+  styleMap,
 } from "../vendor/lit.all.mjs";
 import { MozBaseInputElement, MozLitElement } from "../lit-utils.mjs";
 
@@ -408,9 +409,11 @@ export default class MozSelect extends MozBaseInputElement {
               ?disabled=${option.disabled}
               ?hidden=${option.hidden}
               icon=${ifDefined(option.iconSrc)}
-              style=${option.iconSrc
-                ? `--select-item-icon-url: url(${option.iconSrc})`
-                : ""}
+              style=${styleMap(
+                option.iconSrc
+                  ? { "--select-item-icon-url": `url(${option.iconSrc})` }
+                  : {}
+              )}
             >
               ${option.label}
             </panel-item>`

@@ -4,6 +4,9 @@
 
 include protocol PBackground;
 
+include "mozilla/dom/MediaTransportChild.h";
+include "mozilla/dom/MediaTransportParent.h";
+
 #ifdef MOZ_WEBRTC
 include WebrtcProxyConfig;
 
@@ -50,7 +53,7 @@ struct IceCandidateAttributePair {
 };
 #endif // MOZ_WEBRTC
 
-[ParentProc=Socket, ChildProc=Content]
+[ParentProc=Socket, ChildProc=Content, ParentImpl="mozilla::MediaTransportParent", ChildImpl="mozilla::MediaTransportChild"]
 async protocol PMediaTransport {
 #ifdef MOZ_WEBRTC
 parent:

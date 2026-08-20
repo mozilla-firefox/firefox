@@ -14,10 +14,6 @@ using namespace mozilla;
 nsTreeStyleCache::Transition::Transition(DFAState aState, nsAtom* aSymbol)
     : mState(aState), mInputSymbol(aSymbol) {}
 
-bool nsTreeStyleCache::Transition::operator==(const Transition& aOther) const {
-  return aOther.mState == mState && aOther.mInputSymbol == mInputSymbol;
-}
-
 uint32_t nsTreeStyleCache::Transition::Hash() const {
   // Make a 32-bit integer that combines the low-order 16 bits of the state and
   // the input symbol.

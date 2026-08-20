@@ -5057,10 +5057,7 @@ static unsigned int WindowMaskForBorderStyle(BorderStyle aBorderStyle) {
     return NSWindowStyleMaskBorderless;
   }
 
-  unsigned int mask = NSWindowStyleMaskTitled;
-  if (allOrDefault || aBorderStyle & BorderStyle::Close) {
-    mask |= NSWindowStyleMaskClosable;
-  }
+  unsigned int mask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
   if (allOrDefault || aBorderStyle & BorderStyle::Minimize) {
     mask |= NSWindowStyleMaskMiniaturizable;
   }
@@ -5089,13 +5086,6 @@ nsresult nsCocoaWindow::CreateNativeWindow(const NSRect& aRect,
     case WindowType::Invisible:
       break;
     case WindowType::Popup:
-      if (aBorderStyle != BorderStyle::Default &&
-          mBorderStyle & BorderStyle::Title) {
-        features |= NSWindowStyleMaskTitled;
-        if (aBorderStyle & BorderStyle::Close) {
-          features |= NSWindowStyleMaskClosable;
-        }
-      }
       break;
     case WindowType::TopLevel:
     case WindowType::Dialog:

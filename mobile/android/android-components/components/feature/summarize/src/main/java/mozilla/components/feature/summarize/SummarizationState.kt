@@ -5,6 +5,7 @@
 package mozilla.components.feature.summarize
 
 import mozilla.components.concept.llm.LlmProvider
+import mozilla.components.feature.summarize.settings.SummarizeSettingsState
 import mozilla.components.lib.state.State
 import mozilla.components.ui.richtext.ir.RichDocument
 
@@ -76,8 +77,13 @@ sealed class SummarizationState : State {
      *
      * @param info metadata about the LLM that generated the summary
      * @param document The document to return to when navigating back.
+     * @param settingsState The state of the embedded summarize settings.
      */
-    data class Settings(val info: LlmProvider.Info, val document: RichDocument) : SummarizationState()
+    data class Settings(
+        val info: LlmProvider.Info,
+        val document: RichDocument,
+        val settingsState: SummarizeSettingsState,
+    ) : SummarizationState()
 
     /** User is finished with the Summarization Flow */
     sealed class Finished : SummarizationState() {

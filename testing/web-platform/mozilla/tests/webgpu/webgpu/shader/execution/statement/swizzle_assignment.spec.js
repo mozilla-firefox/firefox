@@ -246,6 +246,76 @@ const kSwizzleAssignmentCases = {
     swizzle: 'xz.yx',
     rhs: 'vec2i(2,3)',
     expected: [3, 0, 2]
+  },
+  // v = vec4u(1, 2, 3, 4)
+  // v.xyz[0] = 5;
+  vec4u_xyz_indexed_0_constant: {
+    elemType: 'u32',
+    vecSize: 4,
+    initial: [1, 2, 3, 4],
+    swizzle: 'xyz[0]',
+    rhs: '5u',
+    expected: [5, 2, 3, 4]
+  },
+  // v = vec3i(10, 20, 30)
+  // v.zy[1] = 50;
+  vec3i_zy_indexed_1_constant: {
+    elemType: 'i32',
+    vecSize: 3,
+    initial: [10, 20, 30],
+    swizzle: 'zy[1]',
+    rhs: '50i',
+    expected: [10, 50, 30]
+  },
+  // v = vec4f(1.0, 2.0, 3.0, 4.0)
+  // v.yxzw[2] = 5.0;
+  vec4f_yxzw_indexed_2_constant: {
+    elemType: 'f32',
+    vecSize: 4,
+    initial: [1.0, 2.0, 3.0, 4.0],
+    swizzle: 'yxzw[2]',
+    rhs: '5.0f',
+    expected: [1.0, 2.0, 5.0, 4.0]
+  },
+  // v = vec2h(1.0, 2.0)
+  // v.yx[0] = 5.0;
+  vec2h_yx_indexed_0_constant: {
+    elemType: 'f16',
+    vecSize: 2,
+    initial: [1.0, 2.0],
+    swizzle: 'yx[0]',
+    rhs: '5.0h',
+    expected: [1.0, 5.0]
+  },
+  // v = vec2<bool>(true, false)
+  // v.yx[1] = true;
+  vec2_bool_yx_indexed_1_constant: {
+    elemType: 'bool',
+    vecSize: 2,
+    initial: [1, 0],
+    swizzle: 'yx[1]',
+    rhs: 'true',
+    expected: [1, 0]
+  },
+  // v = vec3u(1, 2, 3)
+  // v.xyy.xy = vec2u(4, 5);
+  vec3u_chained_dup_lhs_pass: {
+    elemType: 'u32',
+    vecSize: 3,
+    initial: [1, 2, 3],
+    swizzle: 'xyy.xy',
+    rhs: 'vec2u(4, 5)',
+    expected: [4, 5, 3]
+  },
+  // v = vec2f(1.0, 2.0)
+  // v.xx.x = 5.0;
+  vec2f_chained_dup_lhs_pass: {
+    elemType: 'f32',
+    vecSize: 2,
+    initial: [1.0, 2.0],
+    swizzle: 'xx.x',
+    rhs: '5.0f',
+    expected: [5.0, 2.0]
   }
 };
 
@@ -368,6 +438,39 @@ const kSwizzleCompoundAssignmentCases = {
     op: '*=',
     rhs: 'vec2f(0.5, 2.0)',
     expected: [0.5, 4.0, 3.0]
+  },
+  // v = vec4u(1, 2, 3, 4)
+  // v.xyz[0] += 5;
+  vec4u_xyz_indexed_0_add_5: {
+    elemType: 'u32',
+    vecSize: 4,
+    initial: [1, 2, 3, 4],
+    swizzle: 'xyz[0]',
+    op: '+=',
+    rhs: '5u',
+    expected: [6, 2, 3, 4]
+  },
+  // v = vec3i(10, 20, 30)
+  // v.zy[1] += 50;
+  vec3i_zy_indexed_1_add_50: {
+    elemType: 'i32',
+    vecSize: 3,
+    initial: [10, 20, 30],
+    swizzle: 'zy[1]',
+    op: '+=',
+    rhs: '50i',
+    expected: [10, 70, 30]
+  },
+  // v = vec4f(1.0, 2.0, 3.0, 4.0)
+  // v.yxzw[2] *= 5.0;
+  vec4f_yxzw_indexed_2_mul_5: {
+    elemType: 'f32',
+    vecSize: 4,
+    initial: [1.0, 2.0, 3.0, 4.0],
+    swizzle: 'yxzw[2]',
+    op: '*=',
+    rhs: '5.0f',
+    expected: [1.0, 2.0, 15.0, 4.0]
   }
 };
 
@@ -499,6 +602,159 @@ fn bar() -> vec2u {
   arr[0].x = 2;       // no visible effect
   arr[0].z = 3;       // persists
   return vec2u(4, 5); // will add to x,y
+}
+`
+  }));
+});
+
+g.test('dynamic_index_into_swizzle').
+desc('Test dynamic array indexing into a swizzle view on LHS of assignment').
+params((u) =>
+u.
+combine('elemType', ['u32', 'i32', 'f32', 'f16', 'bool']).
+combine('vecSize', [2, 3, 4]).
+combine('indexType', ['u32', 'i32']).
+beginSubcases().
+combine('address_space', ['function', 'private', 'workgroup', 'storage']).
+combine('memory_view', ['ref', 'ptr']).
+filter((p) => !(p.address_space === 'storage' && p.elemType === 'bool'))
+).
+fn((t) => {
+  const { elemType, vecSize, indexType, address_space, memory_view } = t.params;
+
+  t.skipIfLanguageFeatureNotSupported('swizzle_assignment');
+  if (elemType === 'f16') {
+    t.skipIfDeviceDoesNotHaveFeature('shader-f16');
+  }
+  if (memory_view === 'ptr') {
+    t.skipIfLanguageFeatureNotSupported('pointer_composite_access');
+  }
+
+  // Index 1 maps to x, for all vector size variations.
+  const swizzle = 'yxzw'.substring(0, vecSize);
+
+  const initialValues =
+  elemType === 'bool' ?
+  Array(vecSize).fill('false').join(', ') :
+  [10, 20, 30, 40].slice(0, vecSize).join(', ');
+
+  const rhsValue = elemType === 'bool' ? 'true' : '99';
+  const expectedValues =
+  elemType === 'bool' ? [1, 0, 0, 0].slice(0, vecSize) : [99, 20, 30, 40].slice(0, vecSize);
+
+  const vecType = `vec${vecSize}<${elemType}>`;
+  const outputElemType = elemType === 'bool' ? 'u32' : elemType;
+
+  const indexSuffix = indexType === 'u32' ? 'u' : 'i';
+  const indexDecl = `var idx = 1${indexSuffix};`;
+
+  const var_ref = address_space === 'storage' ? 'outputs.v' : 'v';
+  const lhs =
+  memory_view === 'ptr' ?
+  `let ptr = &${var_ref}; ptr.${swizzle}[idx]` :
+  `${var_ref}.${swizzle}[idx]`;
+
+  const wgsl = `
+requires swizzle_assignment;
+${memory_view === 'ptr' ? 'requires pointer_composite_access;' : ''}
+${elemType === 'f16' ? 'enable f16;' : ''}
+
+struct Outputs {
+  ${address_space === 'storage' ? `v : ${vecType},` : ''}
+  data : array<${outputElemType}>,
+};
+
+@group(0) @binding(1) var<storage, read_write> outputs : Outputs;
+
+${
+  address_space === 'private' || address_space === 'workgroup' ?
+  `var<${address_space}> v : ${vecType};` :
+  ''
+  }
+
+@compute @workgroup_size(1)
+fn main() {
+  ${indexDecl}
+  ${address_space === 'function' ? `var v : ${vecType};` : ''}
+  ${var_ref} = ${vecType}(${initialValues});
+  ${lhs} = ${rhsValue};
+
+  // Store result to Output
+  for (var i = 0; i < ${vecSize}; i++) {
+    outputs.data[i] = ${elemType === 'bool' ? `u32(${var_ref}[i])` : `${var_ref}[i]`};
+  }
+}`;
+
+  runSwizzleAssignmentTest(t, elemType, expectedValues, wgsl);
+});
+
+g.test('indexed_swizzle_eval_order').
+desc(
+  'Tests that the lhs components of an indexed swizzle assignment are evaluated left-to-right (lhs pointer, then index, then rhs).'
+).
+fn((t) => {
+  t.skipIfLanguageFeatureNotSupported('swizzle_assignment');
+  runFlowControlTest(t, (f) => ({
+    entrypoint: `
+  arr[0] = vec4u(1, 1, 1, 1);
+  ${f.expect_order(0)}
+  arr[foo()].xyz[bar()] = baz();
+  ${f.expect_order(4)}
+  if (all(arr[0] == vec4u(1, 99, 1, 1))) {
+    ${f.expect_order(5)}
+  } else {
+    ${f.expect_not_reached()}
+  }
+`,
+    extra: `
+var<private> arr : array<vec4u, 1>;
+fn foo() -> u32 {
+  ${f.expect_order(1)}
+  return 0;
+}
+fn bar() -> u32 {
+  ${f.expect_order(2)}
+  return 1;
+}
+fn baz() -> u32 {
+  ${f.expect_order(3)}
+  return 99;
+}
+`
+  }));
+});
+
+g.test('indexed_swizzle_compound_eval_order').
+desc(
+  'Tests that the lhs components of an indexed swizzle compound assignment are evaluated left-to-right (lhs pointer, then index, then rhs).'
+).
+fn((t) => {
+  t.skipIfLanguageFeatureNotSupported('swizzle_assignment');
+  runFlowControlTest(t, (f) => ({
+    entrypoint: `
+  arr[0] = vec4u(1, 10, 1, 1);
+  ${f.expect_order(0)}
+  arr[foo()].xyz[bar()] += baz();
+  ${f.expect_order(4)}
+  if (all(arr[0] == vec4u(1, 15, 1, 1))) {
+    ${f.expect_order(5)}
+  } else {
+    ${f.expect_not_reached()}
+  }
+`,
+    extra: `
+var<private> arr : array<vec4u, 1>;
+fn foo() -> u32 {
+  ${f.expect_order(1)}
+  return 0;
+}
+fn bar() -> u32 {
+  ${f.expect_order(2)}
+  return 1;
+}
+fn baz() -> u32 {
+  ${f.expect_order(3)}
+  return 5;
 }
 `
   }));

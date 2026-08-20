@@ -54,6 +54,16 @@ class CrossShadowBoundaryRange final : public StaticRange,
   // every boundary change rather than only on initial creation.
   void UpdateCommonAncestor();
 
+  /**
+   * Return true if the boundaries are in the same range root, i.e., in the
+   * same uncomposed document or in the same shadow container.
+   */
+  [[nodiscard]] bool IsPositionedInSameRangeRoot() const {
+    return IsPositioned() &&
+           RangeUtils::ComputeRootNode(mStart.GetContainer()) ==
+               RangeUtils::ComputeRootNode(mEnd.GetContainer());
+  }
+
   // CrossShadowBoundaryRange should have a very limited usage.
   nsresult SetStartAndEnd(nsINode* aStartContainer, uint32_t aStartOffset,
                           nsINode* aEndContainer, uint32_t aEndOffset) = delete;

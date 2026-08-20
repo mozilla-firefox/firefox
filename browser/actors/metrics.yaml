@@ -16,9 +16,6 @@ fullscreen:
     description: >
       The time content uses to enter/exit fullscreen regardless of fullscreen
       transition timeout
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram FULLSCREEN_CHANGE_MS.
     time_unit: millisecond
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1271160
@@ -27,4 +24,3 @@ fullscreen:
     notification_emails:
       - mozilla-telemetry@upsuper.org
     expires: never
-    telemetry_mirror: FULLSCREEN_CHANGE_MS

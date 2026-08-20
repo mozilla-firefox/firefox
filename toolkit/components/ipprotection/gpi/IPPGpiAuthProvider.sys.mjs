@@ -2,7 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { IPPAuthProvider } from "moz-src:///toolkit/components/ipprotection/IPPAuthProvider.sys.mjs";
+import {
+  AUTH_ERRORS,
+  IPPAuthProvider,
+} from "moz-src:///toolkit/components/ipprotection/IPPAuthProvider.sys.mjs";
 import {
   ProxyPass,
   ProxyUsage,
@@ -12,6 +15,9 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   EventDispatcher: "resource://gre/modules/Messaging.sys.mjs",
+  // GPI talks to the same Guardian service, so it shares its status semantics.
+  GuardianClient:
+    "moz-src:///toolkit/components/ipprotection/fxa/GuardianClient.sys.mjs",
   IPProtectionActivator:
     "moz-src:///toolkit/components/ipprotection/IPProtectionActivator.sys.mjs",
   IPProtectionService:
@@ -168,7 +174,7 @@ class IPPGpiAuthProviderSingleton extends IPPAuthProvider {
     const jwt = await this.#enroll();
     return {
       isEnrolledAndEntitled: !!jwt,
-      error: jwt ? null : "enrollment_failed",
+      error: jwt ? null : AUTH_ERRORS.ENROLLMENT_FAILED,
     };
   }
 
@@ -190,7 +196,7 @@ class IPPGpiAuthProviderSingleton extends IPPAuthProvider {
     if (needsEnrollment) {
       const { isEnrolledAndEntitled } = await this.enroll();
       if (!isEnrolledAndEntitled) {
-        return { error: "enrollment_failed" };
+        return { error: AUTH_ERRORS.ENROLLMENT_FAILED };
       }
     }
     return null;
@@ -365,7 +371,7 @@ class IPPGpiAuthProviderSingleton extends IPPAuthProvider {
 
     const authJwt = Services.prefs.getCharPref(AUTH_JWT_PREF, "");
     if (!authJwt) {
-      return { error: "login_needed", usage: null };
+      return { error: AUTH_ERRORS.LOGIN_NEEDED, usage: null };
     }
 
     const url = new URL(this.#guardianEndpoint);
@@ -379,16 +385,16 @@ class IPPGpiAuthProviderSingleton extends IPPAuthProvider {
         signal: abortSignal,
       });
     } catch {
-      return { error: "login_needed", usage: null };
+      return { error: AUTH_ERRORS.LOGIN_NEEDED, usage: null };
     }
 
     if (response.status === 401) {
       if (!allowReenroll) {
-        return { status: 401, error: "unauthorized", usage: null };
+        return { status: 401, error: AUTH_ERRORS.UNAUTHORIZED, usage: null };
       }
       const newJwt = await this.#enroll(abortSignal);
       if (!newJwt) {
-        return { status: 401, error: "unauthorized", usage: null };
+        return { status: 401, error: AUTH_ERRORS.UNAUTHORIZED, usage: null };
       }
       return this.#fetchProxyPass(abortSignal, false);
     }
@@ -400,19 +406,21 @@ class IPPGpiAuthProviderSingleton extends IPPAuthProvider {
       usage = ProxyUsage.fromResponse(response);
     } catch {}
 
-    if (status === 429) {
-      const retryAfter = response.headers.get("Retry-After");
-      return { status, error: "quota_exceeded", usage, retryAfter };
+    const statusError = lazy.GuardianClient.toError(status);
+    if (statusError) {
+      const retryAfter =
+        status === 429 ? response.headers.get("Retry-After") : null;
+      return { status, error: statusError, usage, retryAfter };
     }
 
     try {
       const pass = await ProxyPass.fromResponse(response);
       if (!pass) {
-        return { status, error: "invalid_response", usage };
+        return { status, error: AUTH_ERRORS.INVALID_RESPONSE, usage };
       }
       return { pass, status, usage };
     } catch {
-      return { status, error: "parse_error", usage };
+      return { status, error: AUTH_ERRORS.PARSE_ERROR, usage };
     }
   }
 

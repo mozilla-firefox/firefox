@@ -39,7 +39,7 @@ namespace layers {
  * are implemented. If a new method is needed then PAPZ, APZChild, and RemoteContentController
  * must be updated to handle it.
  */
-[ParentImpl="RemoteContentController"]
+[ParentImpl="mozilla::layers::RemoteContentController"]
 sync protocol PAPZ
 {
   manager PCompositorBridge;

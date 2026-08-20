@@ -105,18 +105,22 @@ add_task(async function test_click_multiple_history_entries() {
       tree.selectNode(parentNode.getChild(0));
     }
 
-    await synthesizeClickOnSelectedTreeCell(tree, {
-      button: 2,
-      type: "contextmenu",
-    });
+    let popupShown = BrowserTestUtils.waitForPopupEvent(
+      tree.ownerDocument.getElementById("placesContext"),
+      "shown"
+    );
+    synthesizeClickOnSelectedTreeCell(tree, { type: "contextmenu" });
+    await popupShown;
 
     TelemetryTestUtils.assertScalarUnset(
       TelemetryTestUtils.getProcessScalars("parent", true, true),
       "sidebar.link"
     );
 
-    let openNewTabOption = document.getElementById("placesContext_open:newtab");
-    openNewTabOption.click();
+    let openNewTabOption = tree.ownerDocument.getElementById(
+      "placesContext_open:newtab"
+    );
+    await BrowserTestUtils.activateMenuItem(openNewTabOption);
 
     TelemetryTestUtils.assertKeyedScalar(
       TelemetryTestUtils.getProcessScalars("parent", true, true),
@@ -131,20 +135,22 @@ add_task(async function test_click_multiple_history_entries() {
 
     let newWinOpened = BrowserTestUtils.waitForNewWindow();
 
-    await synthesizeClickOnSelectedTreeCell(tree, {
-      button: 2,
-      type: "contextmenu",
-    });
+    popupShown = BrowserTestUtils.waitForPopupEvent(
+      tree.ownerDocument.getElementById("placesContext"),
+      "shown"
+    );
+    synthesizeClickOnSelectedTreeCell(tree, { type: "contextmenu" });
+    await popupShown;
 
     TelemetryTestUtils.assertScalarUnset(
       TelemetryTestUtils.getProcessScalars("parent", true, true),
       "sidebar.link"
     );
 
-    let openNewWindowOption = document.getElementById(
+    let openNewWindowOption = tree.ownerDocument.getElementById(
       "placesContext_open:newwindow"
     );
-    openNewWindowOption.click();
+    await BrowserTestUtils.activateMenuItem(openNewWindowOption);
 
     let newWin = await newWinOpened;
 
@@ -163,20 +169,22 @@ add_task(async function test_click_multiple_history_entries() {
 
     let newPrivateWinOpened = BrowserTestUtils.waitForNewWindow();
 
-    await synthesizeClickOnSelectedTreeCell(tree, {
-      button: 2,
-      type: "contextmenu",
-    });
+    popupShown = BrowserTestUtils.waitForPopupEvent(
+      tree.ownerDocument.getElementById("placesContext"),
+      "shown"
+    );
+    synthesizeClickOnSelectedTreeCell(tree, { type: "contextmenu" });
+    await popupShown;
 
     TelemetryTestUtils.assertScalarUnset(
       TelemetryTestUtils.getProcessScalars("parent", true, true),
       "sidebar.link"
     );
 
-    let openNewPrivateWindowOption = document.getElementById(
+    let openNewPrivateWindowOption = tree.ownerDocument.getElementById(
       "placesContext_open:newprivatewindow"
     );
-    openNewPrivateWindowOption.click();
+    await BrowserTestUtils.activateMenuItem(openNewPrivateWindowOption);
 
     let newPrivateWin = await newPrivateWinOpened;
 

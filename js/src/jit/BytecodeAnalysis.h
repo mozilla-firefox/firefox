@@ -46,6 +46,7 @@ struct BytecodeInfo {
 };
 
 class BytecodeAnalysis {
+  TempAllocator& alloc_;
   JSScript* script_;
   Vector<BytecodeInfo, 0, JitAllocPolicy> infos_;
   bool disableIon_ = false;

@@ -7,7 +7,7 @@ make substantive contributions, you must join the CG.
 
 Contributions to the source code repository are subject to the terms of the
 [3-Clause BSD License](./LICENSE.txt).
-**Contributions will also be exported to
+**Contributions may also be exported to
 [web-platform-tests](https://github.com/web-platform-tests/wpt)
 under the same license, and under the terms of its
 [CONTRIBUTING.md](https://github.com/web-platform-tests/wpt/blob/master/CONTRIBUTING.md).**

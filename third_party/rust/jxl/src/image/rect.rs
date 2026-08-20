@@ -5,7 +5,7 @@
 
 use super::DataTypeTag;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Rect {
     pub origin: (usize, usize),
     // width, height
@@ -55,5 +55,12 @@ impl Rect {
                 end.1.min(size.1).saturating_sub(self.origin.1),
             ),
         }
+    }
+
+    pub fn intersects(&self, other: &Rect) -> bool {
+        self.end().0 > other.origin.0
+            && other.end().0 > self.origin.0
+            && self.end().1 > other.origin.1
+            && other.end().1 > self.origin.1
     }
 }

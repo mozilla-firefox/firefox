@@ -421,13 +421,38 @@ add_task(async function test_IPPProxyManager_non_string_error_normalized() {
 });
 
 /**
+ * Tests that a non-string provider error does not reach the activation result,
+ * where it would not survive serialization to GeckoView.
+ */
+add_task(async function test_IPPProxyManager_non_string_error_on_activation() {
+  setupStubs();
+  IPPDummyAuthProvider.setProxyPass({
+    status: 403,
+    error: new Error("boom"),
+    pass: undefined,
+    usage: undefined,
+  });
+
+  await IPProtectionService.init();
+  const result = await IPPProxyManager.start(false);
+
+  Assert.equal(
+    result.error,
+    ERRORS.PASS_UNAVAILABLE,
+    "A non-string provider error is reported as ERRORS.PASS_UNAVAILABLE"
+  );
+
+  IPProtectionService.uninit();
+});
+
+/**
  * Tests that a 500 from Guardian during activation surfaces as CATASTROPHIC.
  */
 add_task(async function test_IPPProxyManager_catastrophic_on_500() {
   setupStubs();
   IPPDummyAuthProvider.setProxyPass({
     status: 500,
-    error: undefined,
+    error: AUTH_ERRORS.SERVER_ERROR,
     pass: undefined,
     usage: undefined,
   });
@@ -1937,8 +1962,8 @@ add_task(async function test_IPPProxyManager_switch_noop_when_not_active() {
 
   Assert.deepEqual(
     result,
-    { switched: false },
-    "switch() should return {switched: false} when not ACTIVE"
+    { switched: false, error: ERRORS.NOT_READY },
+    "switch() should return {switched: false} with a reason when not ACTIVE"
   );
 
   Assert.ok(

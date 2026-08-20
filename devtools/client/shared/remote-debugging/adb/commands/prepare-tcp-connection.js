@@ -4,14 +4,16 @@
 
 "use strict";
 
-const { dumpn } = require("resource://devtools/shared/DevToolsUtils.js");
+const {
+  logger,
+} = require("resource://devtools/client/shared/remote-debugging/adb/adb-logger.js");
 const {
   runCommand,
 } = require("resource://devtools/client/shared/remote-debugging/adb/commands/run-command.js");
 
 // sends adb forward deviceId, localPort and devicePort
 const forwardPort = function (deviceId, localPort, devicePort) {
-  dumpn("forwardPort " + localPort + " -- " + devicePort);
+  logger.debug("forwardPort " + localPort + " -- " + devicePort);
   // Send "host-serial:<serial-number>:<request>",
   // with <request> set to "forward:<local>;<remote>"
   // See https://android.googlesource.com/platform/system/core/+/jb-dev/adb/SERVICES.TXT

@@ -35,10 +35,24 @@
     /* Guard against the illustration overflowing the panel at larger chrome font sizes. */
     max-width: 100%;
     height: auto;
+    /* Keep the same box shape as extensions-panel-empty-onboarding.svg (329x162) for
+     * illustrations with a different native aspect ratio, e.g. extensions-panel-empty.svg. */
+    aspect-ratio: 329 / 162;
+    object-fit: contain;
+
+    &.extensions-onboardingpanel-state {
+      content: url("chrome://browser/skin/addons/extensions-panel-empty-onboarding.svg");
+    }
+
+    &.extensions-emptypanel-state {
+      content: url("chrome://browser/skin/addons/extensions-panel-empty.svg");
+      margin: var(--space-large);
+    }
   }
   > h2 {
-    color: inherit; /* undo var(--text-color-deemphasized) from panelUI-shared.css */
-    font-weight: var(--font-weight-heading); /* undo inherit from panelUI-shared.css that overrode h2's font-weight */
+    /* Horizontally align the heading with the "Manage extensions" button/item at the bottom */
+    margin: var(--panel-menuitem-margin);
+    padding: var(--panel-menuitem-padding);
   }
 
   > description {

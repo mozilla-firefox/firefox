@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use std::sync::Arc;
+use crate::util::sync::Arc;
 
 use crate::{
     error::Result,
@@ -13,7 +13,7 @@ use crate::{
     },
     frame::ReferenceFrame,
     headers::{FileHeader, extra_channels::ExtraChannelInfo, frame_header::*},
-    render::RenderPipelineInPlaceStage,
+    render::{ErasedLocalState, RenderPipelineInPlaceStage},
     util::ChannelVec,
 };
 
@@ -93,7 +93,7 @@ impl RenderPipelineInPlaceStage for BlendingStage {
         c < 3 + self.extra_channels.len()
     }
 
-    fn init_local_state(&self, _thread_index: usize) -> Result<Option<Box<dyn std::any::Any>>> {
+    fn init_local_state(&self) -> Result<Option<Box<ErasedLocalState>>> {
         Ok(Some(Box::new(BlendingScratch::new())))
     }
 
@@ -102,7 +102,7 @@ impl RenderPipelineInPlaceStage for BlendingStage {
         position: (usize, usize),
         xsize: usize,
         row: &mut [&mut [f32]],
-        state: Option<&mut dyn std::any::Any>,
+        state: Option<&mut ErasedLocalState>,
     ) {
         let num_ec = self.extra_channels.len();
         let fg_y0 = self.frame_origin.1 + position.1 as isize;

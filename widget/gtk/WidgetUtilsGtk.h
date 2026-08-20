@@ -64,6 +64,7 @@ enum class PortalKind {
   Settings,
   Location,
   OpenUri,
+  Notification,
 };
 bool ShouldUsePortal(PortalKind);
 

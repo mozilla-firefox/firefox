@@ -1,7 +1,7 @@
 "use strict";
 
 // TODO(Bug 1938594): Remove this allowlisted uncaught rejection once we clarified how
-// the underlying issue hit by SessionStoreInternal.onMoveToNewWindow will be
+// the underlying issue hit by SessionStore.onMoveToNewWindow will be
 // fixed.
 PromiseTestUtils.allowMatchingRejectionsGlobally(
   /Unexpected undefined tabState for onMoveToNewWindow/

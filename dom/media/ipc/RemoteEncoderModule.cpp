@@ -106,6 +106,7 @@ media::EncodeSupportSet RemoteEncoderModule::Supports(
   // TODO(aosmond): The platform specific criteria were copied from the various
   // PEMs in order to pass the WebCodecs WPTs but should eventually be rewritten
   // to generically support any PEM.
+  auto hwPref = aConfig.mHardwarePreference;
 
 #ifdef MOZ_APPLEMEDIA
   // Only two temporal layers supported, and only from 11.3 and more recent
@@ -134,10 +135,19 @@ media::EncodeSupportSet RemoteEncoderModule::Supports(
         return media::EncodeSupportSet{};
     }
   }
+
+  // Some hardware encoders have poor realtime performance, as measured by
+  // the latency between frames. If the config is realtime, and hardware
+  // is required, hardware is allowed, but otherwise not. See bug 2049606.
+  if ((aConfig.mCodec == CodecType::VP8 || aConfig.mCodec == CodecType::VP9) &&
+      aConfig.mUsage == Usage::Realtime &&
+      aConfig.mHardwarePreference == HardwarePreference::None) {
+    hwPref = HardwarePreference::RequireSoftware;
+  }
 #endif
 
   media::EncodeSupportSet supports = SupportsCodec(aConfig.mCodec);
-  switch (aConfig.mHardwarePreference) {
+  switch (hwPref) {
     case HardwarePreference::RequireHardware:
       supports -= media::EncodeSupport::SoftwareEncode;
       break;

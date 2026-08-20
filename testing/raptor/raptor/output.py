@@ -372,13 +372,13 @@ class PerftestOutput(metaclass=ABCMeta):
         if testname.startswith("raptor-v8_7"):
             return 100 * filters.geometric_mean(_filter(vals))
 
-        if testname == "speedometer3":
+        if testname in ("speedometer3", "speedometer-experimental"):
             score = None
             for val, name in vals:
                 if name == "score":
                     score = val
             if score is None:
-                raise Exception("Unable to find score for Speedometer 3")
+                raise Exception(f"Unable to find score for {testname}")
             return score
 
         if "speedometer" in testname:

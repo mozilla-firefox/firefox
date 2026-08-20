@@ -2068,6 +2068,10 @@ static nsresult CreateNativeGlobalForInner(
       aDocument->GetBrowsingContext()->Top()->GetLanguageOverride(),
       aDocument->GetBrowsingContext()->Top()->GetTimezoneOverride());
 
+  if (principal->IsSystemPrincipal()) {
+    creationOptions.setFreezeBuiltins(true);
+  }
+
   // Determine if we need the Components object.
   bool needComponents = principal->IsSystemPrincipal();
   uint32_t flags = needComponents ? 0 : xpc::OMIT_COMPONENTS_OBJECT;
@@ -3854,10 +3858,8 @@ bool nsGlobalWindowOuter::WindowExists(const nsAString& aName,
                                        bool aLookForCallerOnJSStack) {
   MOZ_ASSERT(mDocShell, "Must have docshell");
 
-  if (aForceNoOpener) {
-    return aName.LowerCaseEqualsLiteral("_self") ||
-           aName.LowerCaseEqualsLiteral("_top") ||
-           aName.LowerCaseEqualsLiteral("_parent");
+  if (aForceNoOpener && !nsContentUtils::IsSpecialName(aName)) {
+    return false;
   }
 
   if (WindowGlobalChild* wgc = mInnerWindow->GetWindowGlobalChild()) {

@@ -9,6 +9,9 @@ const { NimbusTestUtils } = ChromeUtils.importESModule(
 
 const PREF_IS_DEFAULT_WINDOW = "browser.smartwindow.isDefaultWindow";
 const PREF_SMARTWINDOW_ENABLED = "browser.smartwindow.enabled";
+const PREF_AGENT_ENABLED = "browser.smartwindow.agent.enabled";
+const PREF_AGENT_SUPPORTED_REGIONS =
+  "browser.smartwindow.agent.supportedRegions";
 
 /**
  * Enrolling in the smartWindow feature with isDefault=true sets the
@@ -131,4 +134,51 @@ add_task(async function test_nimbus_enabled_false_does_not_disable() {
 
   await cleanup();
   await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Enrolling in the smartWindowAgentWatch feature writes its setPref variables
+ * (default branch), so the agent watch capability can be controlled remotely,
+ * and unenrolling restores the built-in defaults.
+ */
+add_task(async function test_nimbus_agent_watch_sets_and_restores_prefs() {
+  is(
+    Services.prefs.getBoolPref(PREF_AGENT_ENABLED),
+    true,
+    "agent.enabled defaults to true before enrollment"
+  );
+  is(
+    Services.prefs.getCharPref(PREF_AGENT_SUPPORTED_REGIONS),
+    "US,CA",
+    "agent.supportedRegions defaults to US,CA before enrollment"
+  );
+
+  const cleanup = await NimbusTestUtils.enrollWithFeatureConfig({
+    featureId: "smartWindowAgentWatch",
+    value: { enabled: false, supportedRegions: "GB" },
+  });
+
+  is(
+    Services.prefs.getBoolPref(PREF_AGENT_ENABLED),
+    false,
+    "agent.enabled reflects the enrolled value"
+  );
+  is(
+    Services.prefs.getCharPref(PREF_AGENT_SUPPORTED_REGIONS),
+    "GB",
+    "agent.supportedRegions reflects the enrolled value"
+  );
+
+  await cleanup();
+
+  is(
+    Services.prefs.getBoolPref(PREF_AGENT_ENABLED),
+    true,
+    "agent.enabled is restored to its default after unenrollment"
+  );
+  is(
+    Services.prefs.getCharPref(PREF_AGENT_SUPPORTED_REGIONS),
+    "US,CA",
+    "agent.supportedRegions is restored to its default after unenrollment"
+  );
 });

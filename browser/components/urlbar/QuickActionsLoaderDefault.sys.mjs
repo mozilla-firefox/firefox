@@ -291,7 +291,7 @@ const DEFAULT_ACTIONS = {
   },
   translate: {
     l10nCommands: ["quickactions-cmd-translate"],
-    icon: "chrome://browser/skin/translations.svg",
+    icon: "chrome://browser/skin/translations-companion.svg",
     label: "quickactions-translate",
     isUnsupported: () => {
       return !(

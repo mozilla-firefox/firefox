@@ -1665,6 +1665,12 @@ class MainMenuTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3080099
+    @Converted(
+        replacedBy =
+            ["org.mozilla.fenix.ui.efficiency.tests.CustomTabsTest#verifyTheMainMenuShareButtonFromCustomTabTest"],
+        bug = 2063252,
+        since = "2026-08",
+    )
     @Test
     fun verifyTheMainMenuShareButtonFromCustomTabTest() {
         val customMenuItem = "TestMenuItem"

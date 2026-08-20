@@ -15,13 +15,15 @@
 
 import { UrlbarShared } from "chrome://browser/content/urlbar/UrlbarShared.mjs";
 
-const lazy = {};
+const lazy = typeof ChromeUtils != "undefined" ? {} : null;
 
-ChromeUtils.defineESModuleGetters(lazy, {
-  JsonSchemaValidator:
-    "resource://gre/modules/components-utils/JsonSchemaValidator.sys.mjs",
-  UrlbarUtils: "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs",
-});
+if (lazy) {
+  ChromeUtils.defineESModuleGetters(lazy, {
+    JsonSchemaValidator:
+      "resource://gre/modules/components-utils/JsonSchemaValidator.sys.mjs",
+    UrlbarUtils: "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs",
+  });
+}
 
 /**
  * @typedef UrlbarAutofillData
@@ -175,18 +177,9 @@ export class UrlbarResult {
   id = undefined;
 
   /**
-   * A dynamic result's view template, computed eagerly when the result is
-   * finalized so the view can read it synchronously without asking the
-   * provider (which, on the actor message path, lives in another process).
-   * Undefined for non-dynamic results.
-   *
-   * @type {object|undefined}
-   */
-  viewTemplate = undefined;
-
-  /**
    * The result menu commands the result's provider offers, computed eagerly
-   * alongside `viewTemplate`. Undefined if the provider offers none.
+   * by the providers manager when the result is finalized.
+   * Undefined if the provider offers none.
    *
    * @type {?UrlbarResultCommand[]|undefined}
    */
@@ -494,8 +487,7 @@ export class UrlbarResult {
    * Serializes this result to a plain, structured-cloneable object for sending
    * across the Urlbar actor boundary. Most data lives in private fields that a
    * bare structuredClone() would drop, so capture it explicitly; `id`,
-   * `rowIndex`, `viewTemplate`, `commands`, and `isSERP` are the public own
-   * properties.
+   * `rowIndex`, `commands`, and `isSERP` are the public own properties.
    *
    * @returns {object} The wire representation; reconstruct with fromWire().
    */
@@ -525,7 +517,6 @@ export class UrlbarResult {
       highlights: this.#highlights,
       id: this.id,
       rowIndex: this.rowIndex,
-      viewTemplate: this.viewTemplate,
       commands: this.commands,
       isSERP: this.isSERP,
     };
@@ -544,7 +535,6 @@ export class UrlbarResult {
     result.providerType = wire.providerType;
     result.id = wire.id;
     result.rowIndex = wire.rowIndex;
-    result.viewTemplate = wire.viewTemplate;
     result.commands = wire.commands;
     result.isSERP = wire.isSERP;
     return result;

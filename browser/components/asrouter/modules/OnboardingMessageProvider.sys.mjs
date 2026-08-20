@@ -60,7 +60,6 @@ const L10N = new Localization([
 
 const HOMEPAGE_PREF = "browser.startup.homepage";
 const NEWTAB_PREF = "browser.newtabpage.enabled";
-const FOURTEEN_DAYS_IN_MS = 14 * 24 * 60 * 60 * 1000;
 const isMSIX =
   AppConstants.platform === "win" &&
   Services.sysinfo.getProperty("hasWinPackageId", false);
@@ -163,6 +162,12 @@ const BASE_MESSAGES = () => [
             {
               type: "SET_DEFAULT_BROWSER",
             },
+            {
+              type: "BLOCK_MESSAGE",
+              data: {
+                id: "MENU_MESSAGE_DEFAULT_CTA_ILLUSTRATION_LAYOUT",
+              },
+            },
           ],
         },
       },
@@ -174,7 +179,7 @@ const BASE_MESSAGES = () => [
       },
     },
     targeting:
-      "'browser.nova.enabled'|preferenceValue != true && source == 'app_menu' && os.isWindows && os.windowsVersion >= 10 && !isDefaultBrowserUncached && !hasActiveEnterprisePolicies && 'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features' | preferenceValue != false",
+      "'browser.nova.enabled'|preferenceValue != true && source == 'app_menu' && os.isWindows && os.windowsVersion >= 10 && !isDefaultBrowser && !hasActiveEnterprisePolicies && 'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features' | preferenceValue != false",
     trigger: {
       id: "menuOpened",
     },
@@ -210,6 +215,12 @@ const BASE_MESSAGES = () => [
             {
               type: "PIN_FIREFOX_TO_TASKBAR",
             },
+            {
+              type: "BLOCK_MESSAGE",
+              data: {
+                id: "MENU_MESSAGE_DEFAULT_CTA_ILLUSTRATION_LAYOUT",
+              },
+            },
           ],
         },
       },
@@ -221,7 +232,7 @@ const BASE_MESSAGES = () => [
       },
     },
     targeting:
-      "'browser.nova.enabled'|preferenceValue != true && source == 'app_menu' && os.isMac && !isDefaultBrowserUncached && !hasActiveEnterprisePolicies && 'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features' | preferenceValue != false",
+      "'browser.nova.enabled'|preferenceValue != true && source == 'app_menu' && os.isMac && !isDefaultBrowser && !hasActiveEnterprisePolicies && 'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features' | preferenceValue != false",
     trigger: {
       id: "menuOpened",
     },
@@ -257,6 +268,12 @@ const BASE_MESSAGES = () => [
             {
               type: "SET_DEFAULT_BROWSER",
             },
+            {
+              type: "BLOCK_MESSAGE",
+              data: {
+                id: "MENU_MESSAGE_DEFAULT_CTA_ILLUSTRATION_LAYOUT",
+              },
+            },
           ],
         },
       },
@@ -268,7 +285,7 @@ const BASE_MESSAGES = () => [
       },
     },
     targeting:
-      "'browser.nova.enabled'|preferenceValue == true && source == 'app_menu' && os.isWindows && os.windowsVersion >= 10 && !isDefaultBrowserUncached && !hasActiveEnterprisePolicies && 'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features'| preferenceValue != false",
+      "'browser.nova.enabled'|preferenceValue == true && source == 'app_menu' && os.isWindows && os.windowsVersion >= 10 && !isDefaultBrowser && !hasActiveEnterprisePolicies && 'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features'| preferenceValue != false",
     trigger: {
       id: "menuOpened",
     },
@@ -306,6 +323,12 @@ const BASE_MESSAGES = () => [
             {
               type: "PIN_FIREFOX_TO_TASKBAR",
             },
+            {
+              type: "BLOCK_MESSAGE",
+              data: {
+                id: "MENU_MESSAGE_DEFAULT_CTA_ILLUSTRATION_LAYOUT",
+              },
+            },
           ],
         },
       },
@@ -317,7 +340,7 @@ const BASE_MESSAGES = () => [
       },
     },
     targeting:
-      "'browser.nova.enabled'|preferenceValue == true && source == 'app_menu' && os.isMac && !isDefaultBrowserUncached && !hasActiveEnterprisePolicies && 'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features'| preferenceValue != false",
+      "'browser.nova.enabled'|preferenceValue == true && source == 'app_menu' && os.isMac && !isDefaultBrowser && !hasActiveEnterprisePolicies && 'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features'| preferenceValue != false",
     trigger: {
       id: "menuOpened",
     },
@@ -1799,131 +1822,54 @@ const BASE_MESSAGES = () => [
     targeting: "doesAppNeedPrivatePin",
   },
   {
-    id: "INFOBAR_LAUNCH_ON_LOGIN",
-    groups: ["cfr"],
-    template: "infobar",
+    id: "PB_NEWTAB_RELAY_PROMO",
+    template: "pb_newtab",
+    type: "default",
+    groups: ["pbNewtab"],
     content: {
-      type: "global",
-      text: {
-        string_id: "launch-on-login-infobar-message",
-      },
-      buttons: [
-        {
-          label: {
-            string_id: "launch-on-login-learnmore",
-          },
-          supportPage: "make-firefox-automatically-open-when-you-start",
-          action: {
-            type: "CANCEL",
-          },
-        },
-        {
-          label: { string_id: "launch-on-login-infobar-reject-button" },
-          action: {
-            type: "CANCEL",
-          },
-        },
-        {
-          label: { string_id: "launch-on-login-infobar-confirm-button" },
-          primary: true,
-          action: {
-            type: "MULTI_ACTION",
-            data: {
-              actions: [
-                {
-                  type: "SET_PREF",
-                  data: {
-                    pref: {
-                      name: "browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt",
-                      value: true,
-                    },
-                  },
+      promoEnabled: true,
+      promoType: "RELAY",
+      promoHeader: "fluent:about-private-browsing-relay-promo-header",
+      promoImageLarge: "chrome://browser/content/assets/relay-promo.svg",
+      promoLinkText: "fluent:about-private-browsing-relay-promo-link-text",
+      promoLinkType: "button",
+      promoSectionStyle: "below-search",
+      promoTitle: "fluent:about-private-browsing-relay-promo-title",
+      promoTitleEnabled: true,
+      promoButton: {
+        action: {
+          type: "MULTI_ACTION",
+          data: {
+            actions: [
+              {
+                type: "OPEN_URL",
+                data: {
+                  args: "https://relay.firefox.com/",
+                  where: "tabshifted",
                 },
-                {
-                  type: "CONFIRM_LAUNCH_ON_LOGIN",
-                },
-              ],
-            },
-          },
-        },
-      ],
-    },
-    frequency: {
-      lifetime: 1,
-    },
-    trigger: { id: "defaultBrowserCheck" },
-    targeting: `source == 'newtab'
-    && 'browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt'|preferenceValue == false
-    && 'browser.startup.windowsLaunchOnLogin.enabled'|preferenceValue == true && isDefaultBrowser && !activeNotifications
-    && !launchOnLoginEnabled`,
-  },
-  {
-    id: "INFOBAR_LAUNCH_ON_LOGIN_FINAL",
-    groups: ["cfr"],
-    template: "infobar",
-    content: {
-      type: "global",
-      text: {
-        string_id: "launch-on-login-infobar-final-message",
-      },
-      buttons: [
-        {
-          label: {
-            string_id: "launch-on-login-learnmore",
-          },
-          supportPage: "make-firefox-automatically-open-when-you-start",
-          action: {
-            type: "CANCEL",
-          },
-        },
-        {
-          label: { string_id: "launch-on-login-infobar-final-reject-button" },
-          action: {
-            type: "SET_PREF",
-            data: {
-              pref: {
-                name: "browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt",
-                value: true,
               },
-            },
+              {
+                type: "BLOCK_MESSAGE",
+                data: {
+                  id: "PB_NEWTAB_RELAY_PROMO",
+                },
+              },
+            ],
           },
         },
+      },
+    },
+    priority: 3,
+    frequency: {
+      custom: [
         {
-          label: { string_id: "launch-on-login-infobar-confirm-button" },
-          primary: true,
-          action: {
-            type: "MULTI_ACTION",
-            data: {
-              actions: [
-                {
-                  type: "SET_PREF",
-                  data: {
-                    pref: {
-                      name: "browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt",
-                      value: true,
-                    },
-                  },
-                },
-                {
-                  type: "CONFIRM_LAUNCH_ON_LOGIN",
-                },
-              ],
-            },
-          },
+          cap: 1,
+          period: 86400000,
         },
       ],
+      lifetime: 12,
     },
-    frequency: {
-      lifetime: 1,
-    },
-    trigger: { id: "defaultBrowserCheck" },
-    targeting: `source == 'newtab'
-    && 'browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt'|preferenceValue == false
-    && 'browser.startup.windowsLaunchOnLogin.enabled'|preferenceValue == true && isDefaultBrowser && !activeNotifications
-    && messageImpressions.INFOBAR_LAUNCH_ON_LOGIN[messageImpressions.INFOBAR_LAUNCH_ON_LOGIN | length - 1]
-    && messageImpressions.INFOBAR_LAUNCH_ON_LOGIN[messageImpressions.INFOBAR_LAUNCH_ON_LOGIN | length - 1] <
-      currentDate|date - ${FOURTEEN_DAYS_IN_MS}
-    && !launchOnLoginEnabled`,
+    targeting: "'browser.privateWindowRedesign.enabled'|preferenceValue",
   },
   {
     id: "RESTORE_FROM_BACKUP",

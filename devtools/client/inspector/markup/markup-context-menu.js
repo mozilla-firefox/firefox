@@ -760,7 +760,7 @@ class MarkupContextMenu {
         id: "node-menu-edithtml",
         label: INSPECTOR_L10N.getStr(`${this.#getEditMarkupString()}.label`),
         accesskey: INSPECTOR_L10N.getStr("inspectorHTMLEdit.accesskey"),
-        disabled: isAnonymous || (!isElement && !isFragment),
+        disabled: !this.markup.canEditSelectedNodeHTML(),
         click: () => this.#editHTML(),
       })
     );

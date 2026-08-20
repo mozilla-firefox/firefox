@@ -2542,7 +2542,7 @@ mod test {
         let decoder = JxlDecoder::new(options);
         let mut input: &[u8] = &data;
 
-        let decoder_info = match decoder.process(&mut input).unwrap() {
+        let decoder_info = match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => result,
             _ => panic!("Expected complete decoding"),
         };
@@ -2584,7 +2584,7 @@ mod test {
         let decoder = JxlDecoder::new(options);
         let mut input: &[u8] = &data;
 
-        let decoder_info = match decoder.process(&mut input).unwrap() {
+        let decoder_info = match decoder.process(&mut input, None).unwrap() {
             ProcessingResult::Complete { result } => result,
             _ => panic!("Expected complete decoding"),
         };

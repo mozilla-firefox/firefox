@@ -180,3 +180,90 @@ def bhr_aggregate(
         },
     )
     return 0
+
+
+@Command(
+    "bhr-timeseries",
+    category="misc",
+    virtualenv_name="bhr-aggregate",
+    description="Build per-signature daily timeseries from bhr-aggregate artifacts.",
+)
+@CommandArgument(
+    "--input-dir",
+    required=True,
+    help="Directory of daily hangs_<tag>_<date>.json artifacts to consume.",
+)
+@CommandArgument(
+    "--output-dir",
+    required=True,
+    help="Directory to write the timeseries artifact and state file into.",
+)
+@CommandArgument(
+    "--output-tag",
+    default="main",
+    help="Tag of the artifacts to read and write (default: main).",
+)
+@CommandArgument(
+    "--end-date",
+    help="Last build date of the window, YYYY-MM-DD (default: latest artifact).",
+)
+@CommandArgument(
+    "--window-days",
+    type=int,
+    default=365,
+    help="Number of days in the rolling window (default: 365).",
+)
+@CommandArgument(
+    "--top-count",
+    type=int,
+    default=500,
+    help="Number of top signatures to publish (default: 500).",
+)
+@CommandArgument(
+    "--per-day-top-n",
+    type=int,
+    default=2000,
+    help="Per-day signatures kept in state, a cushion above --top-count "
+    "(default: 2000).",
+)
+def bhr_timeseries(
+    command_context,
+    input_dir,
+    output_dir,
+    output_tag,
+    end_date,
+    window_days,
+    top_count,
+    per_day_top_n,
+):
+    input_dir = os.path.abspath(os.path.expanduser(input_dir))
+    output_dir = os.path.abspath(os.path.expanduser(output_dir))
+
+    parsed_end_date = None
+    if end_date:
+        try:
+            parsed_end_date = datetime.date.fromisoformat(end_date)
+        except ValueError:
+            print(f"error: --end-date must be YYYY-MM-DD, got {end_date!r}")
+            return 1
+
+    aggregation_dir = os.path.join(
+        command_context.topsrcdir,
+        "toolkit",
+        "components",
+        "backgroundhangmonitor",
+        "aggregation",
+    )
+    sys.path.insert(0, aggregation_dir)
+    import bhr_timeseries
+
+    bhr_timeseries.build_timeseries(
+        input_dir=input_dir,
+        output_dir=output_dir,
+        output_tag=output_tag,
+        end_date=parsed_end_date,
+        window_days=window_days,
+        top_count=top_count,
+        per_day_top_n=per_day_top_n,
+    )
+    return 0

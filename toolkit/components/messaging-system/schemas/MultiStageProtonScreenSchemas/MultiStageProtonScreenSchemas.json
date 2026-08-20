@@ -1,0 +1,1056 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "MultiStageProtonScreen",
+  "description": "A non-enforcing schema for the content of a multistage screen. Keep updated with any new/removed properties to MultiStageProtonScreen.jsx.",
+  "type": "object",
+  "required": ["id"],
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "The unique identifier of the screen content. Each screen in a message should have a different ID, which can be referenced in actions to update the tour pref and advance screens."
+    },
+    "force_hide_steps_indicator": {
+      "type": "boolean",
+      "description": "If true, hides a series of dots that would show up at the bottom of the screen, indicating which screen the user is on. Defaults to false and will already be hidden if there's only one screen."
+    },
+    "anchors": {
+      "type": "array",
+      "description": "An array of anchor objects. Each anchor object represents a single element on the page that the callout should be anchored to. The callout will be anchored to the first visible element in the array.",
+      "items": {
+        "$ref": "#/$defs/anchor"
+      }
+    },
+    "content": {
+      "type": "object",
+      "description": "The content of this screen.",
+      "properties": {
+        "position": {
+          "type": "string",
+          "description": "The layout position of the screen.",
+          "enum": ["center", "split", "callout"]
+        },
+        "fullscreen": {
+          "type": "boolean",
+          "description": "If true, the screens are displayed in fullscreen."
+        },
+        "progress_bar": {
+          "description": "If true, the progress bar will be shown. Defaults to true.",
+          "oneOf": [{ "type": "boolean" }, { "type": "string" }]
+        },
+        "background": {
+          "type": "string",
+          "description": "The CSS background for the screen."
+        },
+        "background_static": {
+          "type": "string",
+          "description": "The static CSS background for the screen, provided if the default background has animated content."
+        },
+        "hero_image": {
+          "type": "object",
+          "description": "The hero image in the content.",
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "The default URL of the hero image."
+            },
+            "static_url": {
+              "type": "string",
+              "description": "The URL of the static hero image, provided if the default hero image has animated content."
+            }
+          }
+        },
+        "checkbox": {
+          "type": "object",
+          "description": "A single checkbox action.",
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/localizableThing",
+              "description": "The text to show next to the checkbox."
+            },
+            "defaultValue": {
+              "type": "boolean",
+              "description": "The default value of the checkbox."
+            },
+            "action": {
+              "$ref": "#/$defs/action",
+              "description": "The special message action invoked if the checkbox is selected."
+            }
+          }
+        },
+        "primary_button": {
+          "type": "object",
+          "description": "The primary button.",
+          "required": ["label"],
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/localizableThing",
+              "description": "The text to show inside the primary button."
+            },
+            "action": {
+              "$ref": "#/$defs/action",
+              "description": "The special message action invoked if the primary button is clicked."
+            },
+            "targeting": {
+              "type": "string",
+              "description": "The JEXL targeting for conditional button display."
+            },
+            "has_arrow_icon": {
+              "type": "boolean",
+              "description": "If true, shows an arrow icon next to the label."
+            },
+            "disabled": {
+              "description": "If true, disables the button. If 'hasActiveMultiSelect', disables the button until the user selects something in the multiselect tiles. If 'hasTextInput', disables the button while the textarea tile is empty or exceeds the character limit. If 'hasActiveSingleSelect', disables the button until the user selects an option in the single-select tile.",
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "string",
+                  "enum": [
+                    "hasActiveMultiSelect",
+                    "hasTextInput",
+                    "hasActiveSingleSelect"
+                  ]
+                }
+              ]
+            },
+            "style": {
+              "type": "string",
+              "description": "Overrides the style of the button.",
+              "enum": ["primary", "secondary"]
+            }
+          }
+        },
+        "secondary_button": {
+          "type": "object",
+          "description": "The secondary button.",
+          "required": ["label"],
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/localizableThing",
+              "description": "The text to show inside the secondary button."
+            },
+            "action": {
+              "$ref": "#/$defs/action",
+              "description": "The special message action invoked if the secondary button is clicked."
+            },
+            "targeting": {
+              "type": "string",
+              "description": "The JEXL targeting for conditional button display."
+            },
+            "has_arrow_icon": {
+              "type": "boolean",
+              "description": "If true, shows an arrow icon next to the label."
+            },
+            "disabled": {
+              "description": "If true, disables the button. If 'hasActiveMultiSelect', disables the button until the user selects something in the multiselect tiles. If 'hasTextInput', disables the button while the textarea tile is empty or exceeds the character limit. If 'hasActiveSingleSelect', disables the button until the user selects an option in the single-select tile.",
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "string",
+                  "enum": [
+                    "hasActiveMultiSelect",
+                    "hasTextInput",
+                    "hasActiveSingleSelect"
+                  ]
+                }
+              ]
+            },
+            "style": {
+              "type": "string",
+              "description": "Overrides the style of the button.",
+              "enum": ["primary", "secondary"]
+            },
+            "text": {
+              "$ref": "#/$defs/localizableThing",
+              "description": "Extra text to show before the button."
+            }
+          }
+        },
+        "secondary_button_top": {
+          "description": "The secondary button(s) at the top of the screen.",
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "$ref": "#/$defs/localizableThing",
+                  "description": "The text to show inside the secondary button."
+                },
+                "action": {
+                  "$ref": "#/$defs/action",
+                  "description": "The special message action invoked if the secondary button is clicked."
+                },
+                "targeting": {
+                  "type": "string",
+                  "description": "The JEXL targeting for conditional button display."
+                }
+              }
+            },
+            {
+              "type": "array",
+              "description": "Use an array when there are multiple secondary buttons at the top of the screen.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/localizableThing",
+                    "description": "The text to show inside the secondary button."
+                  },
+                  "action": {
+                    "$ref": "#/$defs/action",
+                    "description": "The special message action invoked if the secondary button is clicked."
+                  },
+                  "targeting": {
+                    "type": "string",
+                    "description": "The JEXL targeting for conditional button display."
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "additional_button": {
+          "type": "object",
+          "description": "An additional button.",
+          "required": ["label"],
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/localizableThing",
+              "description": "The text to show inside the additional button."
+            },
+            "action": {
+              "$ref": "#/$defs/action",
+              "description": "The special message action invoked if the additional button is clicked."
+            },
+            "targeting": {
+              "type": "string",
+              "description": "The JEXL targeting for conditional button display."
+            },
+            "disabled": {
+              "description": "If true, disables the button. If 'hasActiveMultiSelect', disables the button until the user selects something in the multiselect tiles. If 'hasTextInput', disables the button while the textarea tile is empty or exceeds the character limit. If 'hasActiveSingleSelect', disables the button until the user selects an option in the single-select tile.",
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "string",
+                  "enum": [
+                    "hasActiveMultiSelect",
+                    "hasTextInput",
+                    "hasActiveSingleSelect"
+                  ]
+                }
+              ]
+            },
+            "style": {
+              "type": "string",
+              "description": "Overrides the style of the button.",
+              "enum": ["primary", "secondary", "link"]
+            },
+            "flow": {
+              "type": "string",
+              "description": "If there are several buttons, this property can control the orietnation of the buttons.",
+              "enum": ["row", "column"]
+            },
+            "alignment": {
+              "type": "string",
+              "description": "Justification and alignment of the buttons row/column. Defaults to 'end'.",
+              "enum": ["end", "start", "space-between"]
+            }
+          }
+        },
+        "dismiss_button": {
+          "type": "object",
+          "description": "A dismiss button.",
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/localizableThing",
+              "description": "Optionally used to control the aria attributes and tooltip."
+            },
+            "action": {
+              "$ref": "#/$defs/action",
+              "description": "The special message action invoked if the primary button is clicked."
+            },
+            "size": {
+              "type": "string",
+              "description": "The size of the button (20px, 24px, 32px). Defaults to 32px.",
+              "enum": ["x-small", "small", "large"]
+            },
+            "marginBlock": {
+              "type": "string",
+              "description": "A CSS override for the marginBlock property."
+            },
+            "marginInline": {
+              "type": "string",
+              "description": "A CSS override for the marginInline property."
+            },
+            "background": {
+              "type": "boolean",
+              "description": "If true, adds a background to the dismiss button."
+            }
+          }
+        },
+        "submenu_button": {
+          "type": "object",
+          "description": "A submenu button that can be attached to another button.",
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/localizableThing",
+              "description": "Optionally used to control the aria label and can be used to override CSS styles."
+            },
+            "style": {
+              "type": "string",
+              "description": "Overrides the style of the button. Should be set to the same style as the button it's attached to.",
+              "enum": ["primary", "secondary"]
+            },
+            "attached_to": {
+              "type": "string",
+              "description": "The button that the submenu split button is attached to.",
+              "enum": ["secondary_button", "additional_button"]
+            },
+            "submenu": {
+              "type": "array",
+              "description": "The dropdown menu that appear when the user clicks the split button.",
+              "$ref": "#/$defs/submenuItem"
+            }
+          }
+        },
+        "hide_secondary_section": {
+          "type": "string",
+          "description": "Hides the secondary section."
+        },
+        "split_narrow_bkg_position": {
+          "type": "string",
+          "description": "The background position for narrow split layouts."
+        },
+        "autohide": {
+          "type": "boolean",
+          "description": "If true, the callout hides on outside clicks."
+        },
+        "width": {
+          "type": "string",
+          "description": "The callout card width as a CSS value. Defaults to 400px."
+        },
+        "padding": {
+          "description": "The callout card padding as a CSS value. Defaults to 16px.",
+          "oneOf": [{ "type": "string" }, { "type": "number" }]
+        },
+        "layout": {
+          "type": "string",
+          "description": "Used when a single row with a more inline layout is desired. Works well in tandem with title_logo.",
+          "enum": ["inline"]
+        },
+        "zap_border": {
+          "type": "boolean",
+          "description": "If true, adds a colorful gradient border to the screen. This is only supported for screens with 'hide_arrow'. There is no effect if HCM or a custom theme add-on is enabled."
+        },
+        "zap_shadow": {
+          "type": "boolean",
+          "description": "If true, adds a colorful gradient shadow to the screen. This is only supported for screens with 'hide_arrow' and either 'absolute_position' or 'arrow_position'. There is no effect if HCM or a custom theme add-on is enabled."
+        },
+        "logo": {
+          "type": "object",
+          "description": "An optional object representing a large illustration to show above other content.",
+          "properties": {
+            "imageURL": {
+              "type": "string",
+              "description": "The image URL."
+            },
+            "darkModeImageURL": {
+              "type": "string",
+              "description": "The dark mode image URL."
+            },
+            "reducedMotionImageURL": {
+              "type": "string",
+              "description": "The reduced motion image URL."
+            },
+            "darkModeReducedMotionImageURL": {
+              "type": "string",
+              "description": "The dark mode reduced motion image URL."
+            },
+            "alt": {
+              "type": "string",
+              "description": "The <img> alt text."
+            },
+            "width": {
+              "type": "string",
+              "description": "The CSS style overriding the width property."
+            },
+            "height": {
+              "type": "string",
+              "description": "The CSS style overriding the height property."
+            },
+            "marginBlock": {
+              "type": "string",
+              "description": "The CSS style overriding the marginBlock property."
+            },
+            "marginInline": {
+              "type": "string",
+              "description": "The CSS style overriding the marginInline property."
+            }
+          }
+        },
+        "title": {
+          "$ref": "#/$defs/localizableThing",
+          "description": "The text for the headline."
+        },
+        "title_logo": {
+          "type": "object",
+          "description": "An optional object representing an icon to show next to the title.",
+          "properties": {
+            "imageURL": {
+              "type": "string",
+              "description": "The image URL."
+            },
+            "darkModeImageURL": {
+              "type": "string",
+              "description": "The dark mode image URL."
+            },
+            "reducedMotionImageURL": {
+              "type": "string",
+              "description": "The reduced motion image URL."
+            },
+            "darkModeReducedMotionImageURL": {
+              "type": "string",
+              "description": "The dark mode reduced motion image URL."
+            },
+            "alt": {
+              "type": "string",
+              "description": "The <img> alt text."
+            },
+            "width": {
+              "type": "string",
+              "description": "The CSS style overriding the width property."
+            },
+            "height": {
+              "type": "string",
+              "description": "The CSS style overriding the height property."
+            },
+            "marginBlock": {
+              "type": "string",
+              "description": "The CSS style overriding the marginBlock property."
+            },
+            "marginInline": {
+              "type": "string",
+              "description": "The CSS style overriding the marginInline property."
+            },
+            "alignment": {
+              "type": "string",
+              "description": "The logo alignment relative to the title.",
+              "enum": ["top", "bottom", "center"]
+            }
+          }
+        },
+        "title_style": {
+          "type": "string",
+          "description": "Optional styling for the title.",
+          "enum": ["fancy shine"]
+        },
+        "subtitle": {
+          "$ref": "#/$defs/localizableThing",
+          "description": "The text to show below the title."
+        },
+        "above_button_content": {
+          "type": "array",
+          "description": "An extra block of configurable content below the title/subtitle but above the main buttons. Can be placed above the 'tiles' by setting 'tiles_container.position' to 'after_supporting_content'.",
+          "items": {
+            "type": "object",
+            "description": "Extends 'logo'.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "The type of content.",
+                "enum": ["image", "text"]
+              },
+              "text": {
+                "description": "The paragraph text.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/localizableThing",
+                    "description": "A localizableThing that can be combined with 'link_key's to attach actions to the `<a data-l10n-name='...'>` markers in the Fluent string."
+                  },
+                  {
+                    "type": "array",
+                    "description": "An array of either raw strings or a localizableThing with 'href'/'link_key'/neither.",
+                    "properties": {
+                      "href": {
+                        "type": "string",
+                        "description": "An embedded URL link. Dispatches OPEN_URL with 'args: href'."
+                      },
+                      "where": {
+                        "type": "string",
+                        "description": "The 'where' argument for the OPEN_URL action."
+                      },
+                      "link_key": {
+                        "type": "string",
+                        "description": "Inline link key."
+                      }
+                    }
+                  }
+                ]
+              },
+              "link_keys": {
+                "type": "array",
+                "description": "A list of the link keys that exist in screen.content. The value of that key must be an object with an 'action' property and the 'string_id' in the 'text' object must refer to a Fluent string that contains an anchor element with `data-l10n-name='LINK_KEY_NAME'`."
+              },
+              "font_styles": {
+                "type": "string",
+                "description": "Optional paragraph style.",
+                "enum": ["legal"]
+              }
+            }
+          }
+        },
+        "steps_indicator": {
+          "type": "object",
+          "description": "Optionally used to override the aria attributes or tooltip of the steps indicator. Not recommended.",
+          "properties": {
+            "string_id": {
+              "type": "string"
+            }
+          }
+        },
+        "tiles": {
+          "description": "The tiles configuration for selection screens.",
+          "oneOf": [
+            { "$ref": "#/$defs/tile" },
+            { "type": "array", "items": { "$ref": "#/$defs/tile" } }
+          ]
+        },
+        "tiles_container": {
+          "type": "object",
+          "description": "The tiles container.",
+          "properties": {
+            "position": {
+              "type": "string",
+              "description": "The position of the tiles container relative to supporting content like 'above_button_content'. By default, it comes before the supporting content.",
+              "enum": ["after_supporting_content"]
+            },
+            "style": {
+              "type": "object",
+              "description": "CSS overrides."
+            }
+          }
+        },
+        "tiles_header": {
+          "description": "The header for a tiles container.",
+          "$ref": "#/$defs/localizableThing"
+        },
+        "reverse_split": {
+          "type": "boolean",
+          "description": "If true, applies the reverse split layout onto the screen (i.e. inverts the visual order of the split screens)."
+        },
+        "image_alt_text": {
+          "description": "The <img> alt text.",
+          "$ref": "#/$defs/localizableThing"
+        },
+        "hero_text": {
+          "description": "The hero text.",
+          "$ref": "#/$defs/localizableThing"
+        },
+        "main_content_style": {
+          "type": "object",
+          "description": "CSS overrides for the main content style on wide screens."
+        },
+        "main_content_style_narrow": {
+          "type": "object",
+          "description": "CSS overrides for the main content style on narrow screens."
+        },
+        "split_content_justify_content": {
+          "type": "string",
+          "description": "A CSS override allowing custom justify content on split screens."
+        },
+        "action_buttons_position": {
+          "type": "string",
+          "description": "The action button position.",
+          "enum": ["after_subtitle", "after_supporting_content", "end"]
+        },
+        "action_buttons_above_content": {
+          "description": "If true, displays action buttons above main content.",
+          "oneOf": [{ "type": "boolean" }, { "type": "string" }]
+        },
+        "has_noodles": {
+          "type": "boolean",
+          "description": "If true, adds noodle illustrations that peek out behind the screen."
+        },
+        "narrow": {
+          "type": "boolean",
+          "description": "If true, sets narrow attribute to the outer element of the screen."
+        },
+        "languageSwitcher": {
+          "type": "object",
+          "description": "The language switcher component that appears of there is a language mismatch screen.",
+          "properties": {
+            "downloading": {
+              "$ref": "#/$defs/localizableThing"
+            },
+            "cancel": {
+              "$ref": "#/$defs/localizableThing"
+            },
+            "waiting": {
+              "$ref": "#/$defs/localizableThing"
+            },
+            "skip": {
+              "$ref": "#/$defs/localizableThing"
+            },
+            "switch": {
+              "$ref": "#/$defs/localizableThing"
+            },
+            "continue": {
+              "$ref": "#/$defs/localizableThing"
+            },
+            "action": {
+              "$ref": "#/$defs/action"
+            }
+          }
+        },
+        "video_container": {
+          "type": "object",
+          "description": "Displays the OnboardingVideo component."
+        },
+        "text_color": {
+          "type": "string",
+          "description": "Overrides all text color of the screen.",
+          "enum": ["light", "dark"]
+        },
+        "isSystemPromptStyleSpotlight": {
+          "type": "boolean",
+          "description": "If true, overrides the spotlight screen styling to look like the system prompt style."
+        },
+        "screen_style": {
+          "type": "object",
+          "description": "CSS overrides for the screen style."
+        },
+        "no_rdm": {
+          "type": "boolean",
+          "description": "If true, prevents the spotlight from entering responsive design mode at widths less than 800px."
+        },
+        "split_content_padding_block": {
+          "type": "string",
+          "description": "The CSS override for the paddingBlock styling for split layout contents."
+        },
+        "split_content_padding_inline": {
+          "type": "string",
+          "description": "The CSS override for the paddingInline styling for split layout contents."
+        },
+        "cta_paragraph": {
+          "type": "object",
+          "description": "Text below the subtitle that can include hyperlinks.",
+          "properties": {
+            "text": {
+              "type": "object",
+              "description": "The text to be displayed.",
+              "properties": {
+                "string_id": {
+                  "type": "string",
+                  "description": "The Fluent string id for the paragraph text."
+                },
+                "string_name": {
+                  "type": "string",
+                  "description": "The name of the '<a data-l10n-name'=''></a>' marker inside the string_id."
+                }
+              }
+            },
+            "action": {
+              "type": "object",
+              "description": "The special message action to be invoked when the cta text is clicked.",
+              "$ref": "#/$defs/action"
+            }
+          }
+        },
+        "info_text": {
+          "description": "Info text displayed at the bottom of the screen.",
+          "$ref": "#/$defs/localizableThing"
+        },
+        "isEncryptedBackup": {
+          "type": "boolean",
+          "description": "If true, displays the encrypted backup method as part of the 'fx_backup_file_path' or 'fx_backup_password' tile type."
+        },
+        "migrate_start": {
+          "description": "The action for the migration start event as part of the embedded migration wizard component within about:welcome.",
+          "$ref": "#/$defs/action"
+        },
+        "migrate_close": {
+          "description": "The action for the migration close event as part of the embedded migration wizard component within about:welcome.",
+          "$ref": "#/$defs/action"
+        },
+        "action_checklist_subtitle": {
+          "description": "The subtitle text for the action checklist.",
+          "$ref": "#/$defs/localizableThing"
+        },
+        "remove_checklist_button": {
+          "type": "object",
+          "description": "The remove checklist button in the action checklist.",
+          "properties": {
+            "label": {
+              "description": "The text inside the remove checklist button.",
+              "$ref": "#/$defs/localizableThing"
+            },
+            "source_id": {
+              "type": "string",
+              "description": "The id used to identify the button in telemetry."
+            },
+            "action": {
+              "description": "The special message action to invoke when the button is clicked.",
+              "$ref": "#/$defs/action"
+            }
+          }
+        },
+        "more_button": {
+          "type": "object",
+          "description": "A submenu button with a button type of 'more'.",
+          "properties": {
+            "submenu": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/submenuItem" }
+            }
+          }
+        },
+        "page_event_listeners": {
+          "type": "array",
+          "description": "An optional array of event listeners to add to the page where the screen is shown.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "params": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "The event type string. Supports any DOM event type, timeout and interval for timers, internal feature callout events 'touradvance' and 'tourend'."
+                  },
+                  "selector": {
+                    "type": "string",
+                    "description": "The target selector."
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "addEventListener options.",
+                    "properties": {
+                      "capture": {
+                        "type": "boolean",
+                        "description": "If true, handles events in capturing phase."
+                      },
+                      "once": {
+                        "type": "boolean",
+                        "description": "If true, removes listener after first event."
+                      },
+                      "preventDefault": {
+                        "type": "boolean",
+                        "description": "If true, prevents default action in event handler."
+                      },
+                      "interval": {
+                        "type": "number",
+                        "description": "Used only for timeout and interval event types to invoke the action on a timer."
+                      },
+                      "every_window": {
+                        "type": "boolean",
+                        "description": "If true, extends addEventListener to all windows."
+                      }
+                    }
+                  }
+                }
+              },
+              "action": {
+                "description": "The special message action to be invoked.",
+                "$ref": "#/$defs/action"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "localizableThing": {
+      "description": "Text that can be a raw string or have a Fluent string_id.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "raw": {
+              "type": "string",
+              "description": "A raw, untranslated string, typically used for EN-only experiments."
+            },
+            "string_id": {
+              "type": "string",
+              "description": "Fluent string identifier from a .ftl file."
+            },
+            "args": {
+              "type": "object",
+              "description": "Arguments for Fluent strings that have variables."
+            },
+            "aria_label": {
+              "type": "string",
+              "description": "A string to use as the element's aria-label attribute value."
+            },
+            "color": {
+              "type": "string",
+              "description": "A CSS override for the color property."
+            },
+            "fontSize": {
+              "type": "string",
+              "description": "A CSS override for the fontSize property."
+            },
+            "fontWeight": {
+              "type": "string",
+              "description": "A CSS override for the fontWeight property."
+            },
+            "letterSpacing": {
+              "type": "string",
+              "description": "A CSS override for the letterSpacing property."
+            },
+            "lineHeight": {
+              "type": "string",
+              "description": "A CSS override for the lineHeight property."
+            },
+            "marginBlock": {
+              "type": "string",
+              "description": "A CSS override for the marginBlock property."
+            },
+            "marginInline": {
+              "type": "string",
+              "description": "A CSS override for the marginInline property."
+            },
+            "paddingBlock": {
+              "type": "string",
+              "description": "A CSS override for the paddingBlock property."
+            },
+            "paddingInline": {
+              "type": "string",
+              "description": "A CSS override for the paddingInline property."
+            },
+            "whiteSpace": {
+              "type": "string",
+              "description": "A CSS override for the whiteSpace property."
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "anchor": {
+      "type": "object",
+      "required": ["selector", "panel_position"],
+      "properties": {
+        "selector": {
+          "type": "string",
+          "description": "A CSS selector for the element to anchor to."
+        },
+        "panel_position": {
+          "type": "object",
+          "description": "Represents how the callout should be positioned relative to the anchor element.",
+          "required": ["anchor_attachment", "callout_attachment"],
+          "properties": {
+            "anchor_attachment": {
+              "type": "string",
+              "description": "The point on the anchor that the callout should be tied to.",
+              "enum": [
+                "topleft",
+                "topright",
+                "bottomleft",
+                "bottomright",
+                "leftcenter",
+                "rightcenter",
+                "topcenter",
+                "bottomcenter",
+                "north",
+                "south",
+                "west",
+                "east",
+                "northwest",
+                "northeast",
+                "southwest",
+                "southeast"
+              ]
+            },
+            "callout_attachment": {
+              "type": "string",
+              "description": "The point on the callout that should be tied to the anchor.",
+              "enum": [
+                "topleft",
+                "topright",
+                "bottomleft",
+                "bottomright",
+                "leftcenter",
+                "rightcenter",
+                "topcenter",
+                "bottomcenter",
+                "north",
+                "south",
+                "west",
+                "east",
+                "northwest",
+                "northeast",
+                "southwest",
+                "southeast"
+              ]
+            },
+            "flip": {
+              "type": "string",
+              "description": "The flip behavior to apply to the panel when it would overflow the screen. 'slide' makes the panel slide in the direction it's overflowing, to keep it on screen. If it overflows in the same direction it's aligned relative to the anchor, it will flip in that direction. 'none' just allows the panel to bleed out of bounds, without flipping or sliding.",
+              "enum": ["slide", "none"]
+            },
+            "offset_x": {
+              "type": "number",
+              "description": "Offsets in pixels to apply to the callout position in the horizontal direction."
+            },
+            "offset_y": {
+              "type": "number",
+              "description": "Offsets in pixels to apply to the callout position in the vertical direction."
+            }
+          }
+        },
+        "hide_arrow": {
+          "type": "boolean",
+          "description": "If true, hides the arrow that points from the callout to the anchor."
+        },
+        "no_open_on_anchor": {
+          "type": "boolean",
+          "description": "If true, skips applying the [open] style to the anchor element when the callout is shown."
+        },
+        "arrow_width": {
+          "type": "number",
+          "description": "The width of the arrow in a number of pixels. Defulats to 33.94113 (which corresponds to a triangle with 24px edges)"
+        },
+        "arrow_corner_distance": {
+          "type": "number",
+          "description": "The distance between the arrow and the corner of the parent box element in pixels. Defaults to 12px."
+        },
+        "autofocus": {
+          "type": "object",
+          "description": "Allows you to force an element inside the callout to be focused when the callout is shown.",
+          "properties": {
+            "selector": {
+              "type": "string",
+              "description": "A preferred CSS selector, if you want a specific element to be focused."
+            },
+            "use_defaults": {
+              "type": "boolean",
+              "description": "If 'selector' is provided and the element can't be found, and this is set to false, nothing will be selected. If 'selector' is not provided, this must be true. Defaults to true."
+            }
+          }
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "description": "The special message action to perform.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The special message action id."
+        },
+        "data": {
+          "type": "object",
+          "description": "The data to pass to the action if needed."
+        },
+        "dismiss": {
+          "description": "If true, dismisses the callout/tour. Can be used in addition to or instead of a special message action type. If set to 'actionResult', the callout will only be dismissed after the special message action has resolved successfully, will only take effect for certain special message ids, and requires setting 'needsAwait' to true.",
+          "oneOf": [{ "type": "string" }, { "type": "boolean" }]
+        },
+        "needsAwait": {
+          "type": "boolean",
+          "description": "If true, the action needs to be awaited. Must be true if 'dismiss' is set to 'actionResult'."
+        },
+        "navigate": {
+          "description": "If true, navigates to the next step.",
+          "oneOf": [{ "type": "boolean" }, { "type": "string" }]
+        },
+        "collectSelect": {
+          "type": "boolean",
+          "description": "If true, the actions for selected checkbox/radio selections are performed in series. Set to true if this action is for the primary button and the 'multiselect' tile is used."
+        },
+        "advance_screens": {
+          "type": "object",
+          "description": "Indicates that the action should navigate to a different screen.",
+          "properties": {
+            "behavior": {
+              "description": "Similar to dismiss.",
+              "oneOf": [{ "type": "string" }, { "type": "boolean" }]
+            },
+            "direction": {
+              "type": "number",
+              "description": "How many screens and in which direction to advance. Positive integers advance forward while negative integers advance backward."
+            },
+            "id": {
+              "type": "string",
+              "description": "The id of the screen to advance to. Id takes priority if both id and direction are provided."
+            }
+          }
+        }
+      }
+    },
+    "submenuItem": {
+      "type": "object",
+      "description": "An item in the dropdown menu inside the submenu_button.",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Submenu can have 3 types of items.",
+          "enum": ["action", "menu", "separator"]
+        },
+        "id": {
+          "type": "string",
+          "description": "The id used to identify the submenu item in telemetry."
+        },
+        "label": {
+          "$ref": "#/$defs/localizableThing",
+          "description": "The text to show inside the submenu item."
+        },
+        "action": {
+          "$ref": "#/$defs/action",
+          "description": "Used only for type 'action'. The special message action invoked if the submenu item is clicked."
+        },
+        "icon": {
+          "type": "string",
+          "description": "An optional URL specifying an icon to show next to the label."
+        },
+        "submenu": {
+          "type": "array",
+          "description": "Used only for type 'menu'. The submenu items to show when the user hovers over this item.",
+          "items": { "$ref": "#/$defs/submenuItem" }
+        }
+      }
+    },
+    "tile": {
+      "type": "object",
+      "description": "A tile object. More details can be found in ContentTiles.jsx.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The type of tile.",
+          "enum": [
+            "link",
+            "textbox",
+            "multiselect",
+            "single-select",
+            "theme",
+            "backup_restore",
+            "addons-picker",
+            "migration-wizard",
+            "mobile_downloads",
+            "textarea",
+            "theme-picker",
+            "embedded_browser",
+            "fx_backup_file_path",
+            "fx_backup_password",
+            "confirmation-checklist",
+            "pinnable_sites",
+            "content-toggle"
+          ]
+        },
+        "style": {
+          "type": "object",
+          "description": "CSS overrides of the tile container. Any CSS properties starting with '--' are also allowed."
+        },
+        "data": {
+          "type": "array",
+          "description": "Array of tile configurations."
+        }
+      }
+    }
+  }
+}

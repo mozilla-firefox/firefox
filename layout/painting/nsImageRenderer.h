@@ -228,7 +228,7 @@ class nsImageRenderer {
       const mozilla::CSSIntRect& aSrc,
       mozilla::StyleBorderImageRepeatKeyword aHFill,
       mozilla::StyleBorderImageRepeatKeyword aVFill, const nsSize& aUnitSize,
-      uint8_t aIndex, const mozilla::Maybe<nsSize>& aSVGViewportSize,
+      uint8_t aIndex, const mozilla::Maybe<CSSSize>& aSVGViewportSize,
       const bool aHasIntrinsicRatio);
 
   /**

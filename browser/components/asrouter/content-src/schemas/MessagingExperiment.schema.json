@@ -1156,6 +1156,7 @@
               "enum": [
                 "VPN",
                 "PIN",
+                "RELAY",
                 "OTHER"
               ]
             },

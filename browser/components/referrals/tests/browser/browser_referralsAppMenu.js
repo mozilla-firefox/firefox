@@ -61,6 +61,7 @@ add_task(async function test_visible_and_opens_tab_when_enabled() {
       "popuphidden"
     );
 
+    Services.fog.testResetFOG();
     button.click();
 
     // Clicking the item closes the app menu.
@@ -73,6 +74,14 @@ add_task(async function test_visible_and_opens_tab_when_enabled() {
           "https://www.firefox.com/invite"
         ),
       "Waiting for the referrals tab to be opened"
+    );
+
+    const events = Glean.referrals.entrypointClicked.testGetValue();
+    is(events.length, 1, "One entrypoint_clicked event was recorded");
+    is(
+      events[0].extra.entrypoint,
+      "app_menu",
+      "entrypoint_clicked recorded the app_menu entrypoint"
     );
 
     gBrowser.removeTab(gBrowser.selectedTab);

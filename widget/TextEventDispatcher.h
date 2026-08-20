@@ -142,9 +142,16 @@ class TextEventDispatcher final {
   }
 
   /**
-   * IsDispatchingEvent() returns true while this instance dispatching an event.
+   * Return true if this instance dispatching an event.
    */
-  bool IsDispatchingEvent() const { return mDispatchingEvent > 0; }
+  [[nodiscard]] bool IsDispatchingEvent() const { return mDispatchingEvent; }
+
+  /**
+   * Return true if this instance dispatching aEvent.
+   */
+  [[nodiscard]] bool IsDispatching(const WidgetEvent& aEvent) const {
+    return mDispatchingEvent && mDispatchingEvent->IsDispatching(aEvent);
+  }
 
   /**
    * GetPseudoIMEContext() returns pseudo native IME context if there is an
@@ -406,8 +413,31 @@ class TextEventDispatcher final {
   };
   PendingComposition mPendingComposition;
 
+  class MOZ_STACK_CLASS AutoDispatchingEvent {
+   public:
+    AutoDispatchingEvent(TextEventDispatcher& aDispatcher, WidgetEvent& aEvent)
+        : mDispatcher(aDispatcher),
+          mPrevDispatchingEvent(aDispatcher.mDispatchingEvent),
+          mEvent(aEvent) {
+      mDispatcher->mDispatchingEvent = this;
+    }
+    ~AutoDispatchingEvent() {
+      mDispatcher->mDispatchingEvent = mPrevDispatchingEvent;
+    }
+
+    bool IsDispatching(const WidgetEvent& aEvent) const {
+      return &mEvent == &aEvent ||
+             (mPrevDispatchingEvent &&
+              mPrevDispatchingEvent->IsDispatching(aEvent));
+    }
+
+   private:
+    const OwningNonNull<TextEventDispatcher> mDispatcher;
+    const AutoDispatchingEvent* const mPrevDispatchingEvent;
+    const WidgetEvent& mEvent;
+  };
   // While dispatching an event, this is incremented.
-  uint16_t mDispatchingEvent;
+  const AutoDispatchingEvent* mDispatchingEvent = nullptr;
 
   enum InputTransactionType : uint8_t {
     // No input transaction has been started.

@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -142,23 +142,23 @@ private fun AnimatedPillItem(
     action: AnimatedPillActionRes,
     onInteraction: (BrowserToolbarEvent) -> Unit,
 ) {
-    if (action.animated) {
-        LaunchedEffect(Unit) {
-            action.onAnimationStarted?.invoke()
+    // Recreates the composable when switching pills (e.g., "VPN on" -> "VPN off").
+    // Without `key`, Compose reuses the previous pill's state, skipping the new animation.
+    key(action.textResId) {
+        action.iconDrawable()?.let {
+            AnimatedPillButton(
+                icon = it,
+                overlayIcon = action.overlayDrawable(),
+                text = stringResource(action.textResId),
+                contentDescription = stringResource(action.contentDescriptionResId),
+                highlighted = action.highlighted,
+                animated = action.animated,
+                onClick = action.onClick,
+                onInteraction = onInteraction,
+                testTag = action.testTag,
+                onAnimationFinished = action.onAnimationFinished,
+            )
         }
-    }
-    action.iconDrawable()?.let {
-        AnimatedPillButton(
-            icon = it,
-            overlayIcon = action.overlayDrawable(),
-            text = stringResource(action.textResId),
-            contentDescription = stringResource(action.contentDescriptionResId),
-            highlighted = action.highlighted,
-            animated = action.animated,
-            onClick = action.onClick,
-            onInteraction = onInteraction,
-            testTag = action.testTag,
-        )
     }
 }
 

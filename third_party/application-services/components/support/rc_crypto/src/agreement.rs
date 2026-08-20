@@ -394,11 +394,10 @@ mod tests {
             .agree_static(&UnparsedPublicKey::new(&ECDH_P256, &invalid_pub_key))
             .is_err());
 
-        let mut invalid_pub_key = [0u8; 65];
+        let invalid_pub_key = [0u8; 65];
         assert!(prv_key
             .agree_static(&UnparsedPublicKey::new(&ECDH_P256, &invalid_pub_key))
             .is_err());
-        invalid_pub_key[0] = 0x04;
 
         let mut invalid_pub_key = URL_SAFE_NO_PAD.decode(PUB_KEY_1_B64).unwrap().to_vec();
         invalid_pub_key = invalid_pub_key[0..64].to_vec();

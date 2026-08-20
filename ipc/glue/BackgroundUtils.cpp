@@ -1069,7 +1069,7 @@ nsresult MergeParentLoadInfoForwarder(
   rv = aLoadInfo->SetIsMetaRefresh(aForwarderArgs.isMetaRefresh());
   NS_ENSURE_SUCCESS(rv, rv);
 
-  const Maybe<RFPTargetSet> overriddenFingerprintingSettings =
+  const Maybe<RFPTargetSet>& overriddenFingerprintingSettings =
       aForwarderArgs.overriddenFingerprintingSettings();
   if (overriddenFingerprintingSettings.isSome()) {
     aLoadInfo->SetOverriddenFingerprintingSettings(

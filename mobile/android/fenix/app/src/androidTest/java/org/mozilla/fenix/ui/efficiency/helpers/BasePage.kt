@@ -489,7 +489,7 @@ abstract class BasePage(protected val composeRule: AndroidComposeTestRule<HomeAc
             "Verifying any '${selector.description}' contains text '$text'...",
             1,
         )
-        closeSoftKeyboard()
+        dismissSoftKeyboard()
         val deadline = System.currentTimeMillis() + timeout
         while (System.currentTimeMillis() < deadline) {
             val match =
@@ -549,7 +549,7 @@ abstract class BasePage(protected val composeRule: AndroidComposeTestRule<HomeAc
             "Verifying no '${selector.description}' contains text '$text'...",
             1,
         )
-        closeSoftKeyboard()
+        dismissSoftKeyboard()
         val result = mozGetAllElements(selector)
         if (result == null) {
             rep?.endCmd(success = false, message = "Selector strategy '${selector.strategy}' not supported")
@@ -2278,5 +2278,18 @@ abstract class BasePage(protected val composeRule: AndroidComposeTestRule<HomeAc
                 throw t
             }
         }
+    }
+
+    /**
+     * Hide the soft keyboard, tolerating Espresso's failure to do so.
+     *
+     * closeSoftKeyboard() throws PerformException when the focused view's root is not the one it expects, which happens
+     * whenever no editable view has focus - on the homepage, or after a dialog takes focus. Hiding the keyboard is only
+     * ever a convenience for the assertion that follows, so failing to do it must not fail the test. Protected so page
+     * objects can use it in place of a bare call.
+     */
+    protected fun dismissSoftKeyboard() {
+        runCatching { closeSoftKeyboard() }
+            .onFailure { Log.i("BasePage", "dismissSoftKeyboard: ignored ${it::class.java.simpleName}") }
     }
 }

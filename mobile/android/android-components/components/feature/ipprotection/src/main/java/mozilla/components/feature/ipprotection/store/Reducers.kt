@@ -14,6 +14,7 @@ import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.Country
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.LocationState
+import mozilla.components.feature.ipprotection.store.state.ProxyActivation
 import mozilla.components.feature.ipprotection.store.state.ProxyStatus
 import mozilla.components.feature.ipprotection.store.state.Recommended
 import mozilla.components.feature.ipprotection.store.state.Uninitialized
@@ -67,13 +68,26 @@ internal fun iPProtectionReducer(
                     state.accountState.status
                 }
 
-            // We reset the shown status when it has been shown AND
-            // the status is no longer Active or Activating.
-            val newProxyActiveShown =
-                if (state.proxyActiveShown) {
-                    newProxyStatus == Authorized.Active || newProxyStatus == Authorized.Activating
-                } else {
-                    false
+            // Whether the proxy was already active before this update.
+            // UNLESS it's in ConnectionError: that's a temporary network problem, not a real "off"
+            // state, so we still treat it as active for this check.
+            val wasActive = state.proxyStatus == Authorized.Active || state.proxyStatus == Authorized.ConnectionError
+
+            // Whether the new status means the proxy just stopped being active after going Idle
+            // or reaching its data limit.
+            val stoppedBeingActive = newProxyStatus == Authorized.Idle || newProxyStatus == Authorized.DataLimitReached
+
+            // Whether the proxy just turned on when transitioning into Active from a non-active state.
+            val hasActivated = newProxyStatus == Authorized.Active && state.proxyStatus != Authorized.Active
+
+            // Whether the proxy just turned off after being active (or in a temporary error) and then stopping.
+            val hasDeactivated = wasActive && stoppedBeingActive
+
+            val newProxyActivation =
+                when {
+                    hasActivated -> ProxyActivation.TurningOn
+                    hasDeactivated -> ProxyActivation.TurningOff
+                    else -> state.proxyActivation
                 }
 
             state.copy(
@@ -84,7 +98,7 @@ internal fun iPProtectionReducer(
                 serviceStatus = action.info.serviceState,
                 accountState = state.accountState.copy(status = newAccountStatus),
                 lastError = action.info.lastError,
-                proxyActiveShown = newProxyActiveShown,
+                proxyActivation = newProxyActivation,
                 activate = newActivate,
             )
         }
@@ -95,7 +109,7 @@ internal fun iPProtectionReducer(
                     LocationState(
                         selectedLocation = state.locationState.selectedLocation,
                         locations =
-                            listOf(Recommended()) +
+                            listOf(Recommended) +
                                 action.countries.map {
                                     Country(countryCode = it.code, available = it.available)
                                 },
@@ -182,8 +196,8 @@ internal fun iPProtectionReducer(
             state
         }
 
-        is IPProtectionAction.ProxyActiveShown -> {
-            state.copy(proxyActiveShown = true)
+        is IPProtectionAction.ProxyActivationShown -> {
+            state.copy(proxyActivation = ProxyActivation.Idle)
         }
 
         is IPProtectionAction.ToggleFailed -> {
@@ -308,7 +322,7 @@ private fun IPProtectionState.clearProfileData(action: InternalAction.AccountMan
         remainingDataBytes = -1L,
         maxDataBytes = -1L,
         resetDate = null,
-        proxyActiveShown = false,
+        proxyActivation = ProxyActivation.Idle,
         activate = false,
         accountState = accountState.copy(status = action.status),
     )

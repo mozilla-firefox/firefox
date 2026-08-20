@@ -118,6 +118,12 @@
        fragment purposes. Without this, text across <br> gets concatenated
        (e.g. "test<br>test" becomes "testtest"). -->
   <p id="brWordBoundary">unique_br_start<br id="brWordBoundaryBr">unique_br_end</p>
+  <!-- Test cases for Bug 2061960. These ranges are longer than
+       dom.text_fragments.create_text_fragment.exact_match_max_length, but they
+       contain only one word, so they cannot be divided into a start and an end
+       term. Exact matching must be used regardless of the length. -->
+  <p id="longWordWithLeadingPunctuation">"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</p>
+  <p id="longWordWithTrailingPunctuation">bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".</p>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const empty = document.createTextNode("");
@@ -557,6 +563,24 @@
           endOffset: rangeBasedStartEqualsEndEnd.firstChild.length,
           content: "rangeBasedStartEqualsEndrangeBasedStartEqualsEnd",
           textDirective: "text=rangeBasedStartEqualsEnd,rangeBasedStartEqualsEnd"
+        },
+        {
+          name: "Long single word with leading punctuation falls back to exact matching",
+          startContainer: longWordWithLeadingPunctuation.firstChild,
+          startOffset: 0,
+          endContainer: longWordWithLeadingPunctuation.firstChild,
+          endOffset: longWordWithLeadingPunctuation.firstChild.length,
+          content: `"${"a".repeat(250)}`,
+          textDirective: `text=%22${"a".repeat(250)}`
+        },
+        {
+          name: "Long single word with trailing punctuation falls back to exact matching",
+          startContainer: longWordWithTrailingPunctuation.firstChild,
+          startOffset: 0,
+          endContainer: longWordWithTrailingPunctuation.firstChild,
+          endOffset: longWordWithTrailingPunctuation.firstChild.length,
+          content: `${"b".repeat(250)}".`,
+          textDirective: `text=${"b".repeat(250)}%22%2E`
         }
       ]) {
         const range = document.createRange();
@@ -789,15 +813,35 @@
       ranges = SpecialPowers.wrap(document).fragmentDirective.getTextDirectiveRanges();
       is(ranges.length, 1, `${testCase}: There is one text fragment range on the document`);
       is(ranges[0].toString(), range.toString(), `${testCase}: Ranges have the same content`);
+      SpecialPowers.wrap(document).fragmentDirective.removeAllTextDirectives();
     }
 
-    async function testRangeBasedWithNonBreakableWord() {
-      const testCase = "Range-based text directive with non-breakable word";
+    async function testNonBreakableWord() {
+      let testCase = "Non-breakable word falls back to exact matching";
       const range = document.createRange();
       range.setStart(longWord.firstChild, 0);
       range.setEnd(longWord.firstChild, longWord.firstChild.length);
-      const textDirective = await SpecialPowers.wrap(document).fragmentDirective.createTextDirectiveForRanges([range]);
+      const textDirectiveString = `text=${longWord.firstChild.data}`;
+      let textDirective = await SpecialPowers.wrap(document).fragmentDirective.createTextDirectiveForRanges([range]);
+      is(textDirective, textDirectiveString, `${testCase}: text directive has expected value '${textDirectiveString}'`);
+      location.hash = `:~:${textDirective}`;
+      await rAF();
+      ranges = SpecialPowers.wrap(document).fragmentDirective.getTextDirectiveRanges();
+      is(ranges.length, 1, `${testCase}: There is one text fragment range on the document`);
+      is(ranges[0].toString(), range.toString(), `${testCase}: Ranges have the same content`);
+      SpecialPowers.wrap(document).fragmentDirective.removeAllTextDirectives();
+
+      // An exact match term cannot be truncated, so a non-breakable word which
+      // exceeds the maximum term length must not produce a text directive.
+      testCase = "Non-breakable word exceeding the maximum term length";
+      const veryLongWord = document.createElement("p");
+      veryLongWord.textContent = "c".repeat(2000);
+      document.body.appendChild(veryLongWord);
+      await rAF();
+      range.selectNodeContents(veryLongWord.firstChild);
+      textDirective = await SpecialPowers.wrap(document).fragmentDirective.createTextDirectiveForRanges([range]);
       is(textDirective, null, `${testCase}: This test case should not produce a text directive`);
+      veryLongWord.remove();
     }
 
     async function testMultipleRanges() {
@@ -820,7 +864,7 @@
         await testExpandRangeToWordBoundaries();
         await testNonUniqueTestSurroundedByBlockBoundaries();
         await testRangeBasedWithEmptySurroundingBlocks();
-        await testRangeBasedWithNonBreakableWord();
+        await testNonBreakableWord();
         await testMultipleRanges();
 
     }

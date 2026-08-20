@@ -1,0 +1,10 @@
+gczeal(0);
+gczeal("CheckGrayMarking");
+verifyprebarriers();
+print(gcstate(this));
+grayRoot().a = Symbol();
+gc();
+print(gcstate(this));
+grayRoot();
+schedulezone("");
+startgc();

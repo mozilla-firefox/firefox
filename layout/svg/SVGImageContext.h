@@ -6,6 +6,7 @@
 #define LAYOUT_SVG_SVGIMAGECONTEXT_H_
 
 #include "Units.h"
+#include "mozilla/Casting.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/SVGContextPaint.h"
 #include "mozilla/SVGPreserveAspectRatio.h"
@@ -44,7 +45,7 @@ class SVGImageContext {
    * that utility and stop using Maybe for this parameter.
    */
   explicit SVGImageContext(
-      const Maybe<CSSIntSize>& aViewportSize,
+      const Maybe<CSSSize>& aViewportSize,
       const Maybe<SVGPreserveAspectRatio>& aPreserveAspectRatio = Nothing(),
       const Maybe<ColorScheme>& aColorScheme = Nothing())
       : mViewportSize(aViewportSize),
@@ -63,11 +64,9 @@ class SVGImageContext {
                                      nsISVGPaintContext* aPaintContext,
                                      imgIContainer* aImgContainer);
 
-  const Maybe<CSSIntSize>& GetViewportSize() const { return mViewportSize; }
+  const Maybe<CSSSize>& GetViewportSize() const { return mViewportSize; }
 
-  void SetViewportSize(const Maybe<CSSIntSize>& aSize) {
-    mViewportSize = aSize;
-  }
+  void SetViewportSize(const Maybe<CSSSize>& aSize) { mViewportSize = aSize; }
 
   const Maybe<ColorScheme>& GetColorScheme() const { return mColorScheme; }
 
@@ -113,8 +112,6 @@ class SVGImageContext {
            mLinkParameters == aOther.mLinkParameters;
   }
 
-  bool operator!=(const SVGImageContext&) const = default;
-
   PLDHashNumber Hash() const {
     PLDHashNumber hash = 0;
     if (mContextPaint) {
@@ -127,8 +124,9 @@ class SVGImageContext {
   }
 
  private:
-  static PLDHashNumber HashSize(const CSSIntSize& aSize) {
-    return HashGeneric(aSize.width, aSize.height);
+  static PLDHashNumber HashSize(const CSSSize& aSize) {
+    return HashGeneric(BitwiseCast<uint32_t>(aSize.width),
+                       BitwiseCast<uint32_t>(aSize.height));
   }
   static PLDHashNumber HashPAR(const SVGPreserveAspectRatio& aPAR) {
     return aPAR.Hash();
@@ -152,7 +150,7 @@ class SVGImageContext {
 
   // NOTE: When adding new member-vars, remember to update Hash() & operator==.
   RefPtr<SVGContextPaint> mContextPaint;
-  Maybe<CSSIntSize> mViewportSize;
+  Maybe<CSSSize> mViewportSize;
   Maybe<SVGPreserveAspectRatio> mPreserveAspectRatio;
   Maybe<ColorScheme> mColorScheme;
   StyleLinkParameters mLinkParameters;

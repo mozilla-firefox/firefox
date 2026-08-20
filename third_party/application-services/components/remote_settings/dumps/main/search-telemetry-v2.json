@@ -190,6 +190,340 @@
       "telemetryId": "qwant"
     },
     {
+      "alwaysMatchSERP": {
+        "child": true
+      },
+      "codeParamName": "segment",
+      "components": [
+        {
+          "included": {
+            "parent": {
+              "selector": "iframe[src^='https://www.startpage.com/sp/afs/ads']"
+            }
+          },
+          "topDown": true,
+          "type": "ad_subframe"
+        },
+        {
+          "included": {
+            "children": [
+              {
+                "countChildren": true,
+                "selector": ".glider-slide"
+              }
+            ],
+            "parent": {
+              "selector": ".pa-bg-carousel, .carousel-container"
+            }
+          },
+          "type": "ad_carousel"
+        },
+        {
+          "default": true,
+          "type": "ad_link"
+        }
+      ],
+      "extraAdServersRegexps": [
+        "^https://syndicatedsearch\\.goog/",
+        "https://www\\.bing\\.com/aclick"
+      ],
+      "filter_expression": "env.version|versionCompare(\"152.0a1\")>=0",
+      "id": "233cb5cb-0225-43d1-8ffb-205ef2d8b0ca",
+      "impressionAttributes": [
+        {
+          "key": "is_shopping_page",
+          "url": {
+            "regexp": "[?&]cat=shopping"
+          }
+        },
+        {
+          "element": {
+            "component": {
+              "countImpressions": true,
+              "type": "shopping_tab"
+            },
+            "selector": "button[data-testid='Shopping']"
+          },
+          "key": "shopping_tab_displayed"
+        },
+        {
+          "element": {
+            "selector": ".ai-summaries-qi"
+          },
+          "key": "has_ai_summary"
+        }
+      ],
+      "last_modified": 1779985790144,
+      "organicCodes": [
+        "startpage.udog"
+      ],
+      "queryParamName": "query",
+      "queryParamNames": [
+        "q",
+        "query"
+      ],
+      "schema": 1779580811115,
+      "searchPageMatches": [
+        "https://www.startpage.com/sp/search*"
+      ],
+      "searchPageRegexp": "^https://www\\.startpage\\.com/sp/search",
+      "subframes": [
+        {
+          "regexp": "^https://www\\.startpage\\.com/sp/afs/ads"
+        }
+      ],
+      "taggedCodes": [
+        "startpage.apex.desktop",
+        "startpage.apex.ios",
+        "startpage.apex.android"
+      ],
+      "telemetryId": "startpage"
+    },
+    {
+      "codeParamName": "pc",
+      "components": [
+        {
+          "included": {
+            "children": [
+              {
+                "countChildren": true,
+                "selector": ".pa_item"
+              }
+            ],
+            "parent": {
+              "selector": ".adsMvCarousel"
+            },
+            "related": {
+              "selector": ".cr"
+            }
+          },
+          "type": "ad_carousel"
+        },
+        {
+          "excluded": {
+            "parent": {
+              "selector": "aside"
+            }
+          },
+          "included": {
+            "children": [
+              {
+                "selector": ".b_vlist2col",
+                "type": "ad_sitelink"
+              }
+            ],
+            "parent": {
+              "selector": ".sb_adTA"
+            }
+          },
+          "type": "ad_link"
+        },
+        {
+          "included": {
+            "children": [
+              {
+                "countChildren": true,
+                "selector": ".pa_item, .sb_adTA"
+              }
+            ],
+            "parent": {
+              "selector": "aside"
+            }
+          },
+          "type": "ad_sidebar"
+        },
+        {
+          "included": {
+            "children": [
+              {
+                "selector": "input[name='q']"
+              }
+            ],
+            "parent": {
+              "selector": "form#sb_form"
+            },
+            "related": {
+              "selector": "#sw_as"
+            }
+          },
+          "topDown": true,
+          "type": "incontent_searchbox"
+        },
+        {
+          "included": {
+            "children": [
+              {
+                "eventListeners": [
+                  {
+                    "action": "clicked_accept",
+                    "eventType": "click"
+                  }
+                ],
+                "selector": "button#bnp_btn_accept"
+              },
+              {
+                "eventListeners": [
+                  {
+                    "action": "clicked_reject",
+                    "eventType": "click"
+                  }
+                ],
+                "selector": "button#bnp_btn_reject"
+              },
+              {
+                "eventListeners": [
+                  {
+                    "action": "clicked_more_options",
+                    "eventType": "click"
+                  }
+                ],
+                "selector": "a#bnp_btn_preference"
+              }
+            ],
+            "parent": {
+              "selector": "div#bnp_cookie_banner"
+            }
+          },
+          "topDown": true,
+          "type": "cookie_banner"
+        },
+        {
+          "default": true,
+          "type": "ad_link"
+        }
+      ],
+      "domainExtraction": {
+        "ads": [
+          {
+            "method": "textContent",
+            "selectors": "#b_results .b_ad .b_attribution cite, .adsMvCarousel cite, aside cite"
+          }
+        ],
+        "nonAds": [
+          {
+            "method": "textContent",
+            "selectors": "#b_results .b_algo .b_attribution cite"
+          }
+        ]
+      },
+      "extraAdServersRegexps": [
+        "^https://(?:cn|www)\\.bing\\.com/acli?c?k"
+      ],
+      "filter_expression": "env.version|versionCompare(\"153.0.4\")>=0",
+      "followOnCookies": [
+        {
+          "codeParamName": "PC",
+          "extraCodeParamName": "",
+          "extraCodePrefixes": [],
+          "host": "www.bing.com",
+          "name": "_SS"
+        },
+        {
+          "codeParamName": "PC",
+          "extraCodeParamName": "",
+          "extraCodePrefixes": [],
+          "host": "www.bing.com",
+          "name": "SRCHS"
+        },
+        {
+          "codeParamName": "PC",
+          "extraCodeParamName": "",
+          "extraCodePrefixes": [],
+          "host": "cn.bing.com",
+          "name": "_SS"
+        },
+        {
+          "codeParamName": "PC",
+          "extraCodeParamName": "",
+          "extraCodePrefixes": [],
+          "host": "cn.bing.com",
+          "name": "SRCHS"
+        }
+      ],
+      "id": "5915de28-f276-4b8f-8620-62abc46ecfd4",
+      "impressionAttributes": [
+        {
+          "key": "is_shopping_page",
+          "url": {
+            "regexp": "^/shop?"
+          }
+        },
+        {
+          "element": {
+            "component": {
+              "countImpressions": true,
+              "type": "shopping_tab"
+            },
+            "selector": "#b-scopeListItem-shop a"
+          },
+          "key": "shopping_tab_displayed"
+        },
+        {
+          "element": {
+            "selector": "#b_wpt_container_ml,.gs_aidisc,#copans_container"
+          },
+          "key": "has_ai_summary"
+        }
+      ],
+      "last_modified": 1786632246774,
+      "nonAdsLinkRegexps": [
+        "^https://(?:cn|www).bing.com/ck/a"
+      ],
+      "organicCodes": [],
+      "pageTypeParam": {
+        "enableSPAHandling": true,
+        "keys": [],
+        "pageTypes": [
+          {
+            "enabled": true,
+            "isDefault": true,
+            "name": "web",
+            "target": "default_tab",
+            "values": []
+          }
+        ]
+      },
+      "queryParamName": "q",
+      "queryParamNames": [
+        "q"
+      ],
+      "requireTopLevelImpressionOrigin": true,
+      "schema": 1786612555420,
+      "searchPageMatches": [
+        "https://(?:cn|www).bing.com/search*"
+      ],
+      "searchPageRegexp": "^https://(?:cn|www)\\.bing\\.com/search",
+      "shoppingTab": {
+        "regexp": "^/shop?",
+        "selector": "#b-scopeListItem-shop a"
+      },
+      "subframes": [],
+      "taggedCodes": [
+        "MOZ2",
+        "MOZ4",
+        "MOZ5",
+        "MOZA",
+        "MOZB",
+        "MOZD",
+        "MOZE",
+        "MOZI",
+        "MOZL",
+        "MOZM",
+        "MOZO",
+        "MOZR",
+        "MOZT",
+        "MOZW",
+        "MOZX",
+        "MZABT",
+        "MZCP",
+        "MZTOF",
+        "MZSL01",
+        "MZSL02",
+        "MZSL03"
+      ],
+      "telemetryId": "bing"
+    },
+    {
       "adServerAttributes": [
         "rw"
       ],
@@ -1008,6 +1342,7 @@
       "extraAdServersRegexps": [
         "^https://(?:cn|www)\\.bing\\.com/acli?c?k"
       ],
+      "filter_expression": "env.version|versionCompare(\"153.0.4\")<0",
       "followOnCookies": [
         {
           "codeParamName": "PC",
@@ -1063,7 +1398,7 @@
           "key": "has_ai_summary"
         }
       ],
-      "last_modified": 1774283138114,
+      "last_modified": 1786632246769,
       "nonAdsLinkRegexps": [
         "^https://(?:cn|www).bing.com/ck/a"
       ],
@@ -1072,7 +1407,7 @@
       "queryParamNames": [
         "q"
       ],
-      "schema": 1774280721627,
+      "schema": 1786611457004,
       "searchPageMatches": [
         "https://(?:cn|www).bing.com/search*"
       ],
@@ -1108,5 +1443,5 @@
       "telemetryId": "bing"
     }
   ],
-  "timestamp": 1774283138114
+  "timestamp": 1786632246774
 }

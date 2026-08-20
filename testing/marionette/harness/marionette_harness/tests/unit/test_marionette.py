@@ -4,11 +4,17 @@
 
 import os
 import socket
+import sys
 import time
+import unittest
 
 from marionette_driver import errors
+from marionette_driver.geckoinstance import GeckoInstance
 from marionette_driver.marionette import Marionette
 from marionette_harness import MarionetteTestCase, run_if_manage_instance
+
+
+EXIT_CODE_NOT_AVAILABLE = 69
 
 
 class TestMarionette(MarionetteTestCase):
@@ -52,6 +58,26 @@ class TestMarionette(MarionetteTestCase):
         self.assertFalse(
             os.path.exists(active_port_file), "MarionetteActivePort file removed"
         )
+
+    @unittest.skipIf(sys.platform.startswith("win"), "Bug 2055174")
+    @run_if_manage_instance("Only runnable if Marionette manages the instance")
+    def test_exit_code_for_marionette_server_failure(self):
+        second_marionette = Marionette(host=self.marionette.host, port=self.marionette.port)
+        first_gecko_log = self.marionette.instance.gecko_log
+        gecko_log = first_gecko_log if first_gecko_log == "-" else os.path.dirname(first_gecko_log)
+        second_marionette.instance = GeckoInstance.create(
+            None, host=second_marionette.host,
+            port=second_marionette.port,
+            bin=self.marionette.bin,
+            gecko_log=gecko_log)
+
+        self.addCleanup(second_marionette.instance.close, clean=True)
+
+        with self.assertRaises(OSError):
+            second_marionette.start_binary(second_marionette.startup_timeout)
+
+        exit_code = second_marionette.instance.runner.wait(second_marionette.DEFAULT_SHUTDOWN_TIMEOUT)
+        self.assertEqual(exit_code, EXIT_CODE_NOT_AVAILABLE)
 
     def test_single_active_session(self):
         self.assertEqual(1, self.marionette.execute_script("return 1"))

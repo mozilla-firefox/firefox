@@ -3,8 +3,6 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * The origin of this IDL file is
- * http://dev.w3.org/2011/webrtc/editor/webrtc.html#rtcstatsreport-object
- * http://www.w3.org/2011/04/webrtc/wiki/Stats
  * https://www.w3.org/TR/webrtc-stats/
  */
 
@@ -354,6 +352,7 @@ dictionary RTCConfigurationInternal {
   RTCIceTransportPolicy          iceTransportPolicy;
   required boolean               peerIdentityProvided;
   DOMString                      sdpSemantics;
+  boolean alwaysNegotiateDataChannels = false;
 };
 
 dictionary RTCSdpHistoryInternal {

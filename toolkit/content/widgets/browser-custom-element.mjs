@@ -63,7 +63,8 @@ Object.defineProperty(lazy, "ProcessHangMonitor", {
 Object.defineProperty(lazy, "SessionStore", {
   configurable: true,
   get() {
-    const kURL = "resource:///modules/sessionstore/SessionStore.sys.mjs";
+    const kURL =
+      "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs";
     if (Cu.isESModuleLoaded(kURL)) {
       let { SessionStore } = ChromeUtils.importESModule(kURL);
       // eslint-disable-next-line mozilla/valid-lazy

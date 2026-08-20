@@ -404,6 +404,7 @@ browsertime-benchmark:
                                     - [jetstream3, js3]
                                     - [speedometer2, sp2]
                                     - [speedometer3, sp3]
+                                    - [speedometer-experimental, sp-exp]
                                     - [motionmark-1-3, mm-1.3]
                                     - [motionmark-htmlsuite-1-3, mm-h-1.3]
                                     - [jetstream2, js2]
@@ -413,6 +414,7 @@ browsertime-benchmark:
                                 safari-tp: []
                                 default:
                                     - [speedometer3, sp3]
+                                    - [speedometer-experimental, sp-exp]
                         default:
                             by-app:
                                 firefox:
@@ -425,6 +427,7 @@ browsertime-benchmark:
                                     - [motionmark-htmlsuite-1-3, mm-h-1.3]
                                     - [speedometer2, sp2]
                                     - [speedometer3, sp3]
+                                    - [speedometer-experimental, sp-exp]
                                     - [stylebench, sb]
                                     - [twitch-animation, tw-a]
                                     - [unity-webgl, ugl]
@@ -444,6 +447,7 @@ browsertime-benchmark:
                                 custom-car:
                                     - [speedometer2, sp2]
                                     - [speedometer3, sp3]
+                                    - [speedometer-experimental, sp-exp]
                                     - [motionmark-1-3, mm-1.3]
                                     - [motionmark-htmlsuite-1-3, mm-h-1.3]
                                     - [jetstream3, js3]
@@ -456,6 +460,7 @@ browsertime-benchmark:
                                     - [motionmark-htmlsuite-1-3, mm-h-1.3]
                                     - [speedometer2, sp2]
                                     - [speedometer3, sp3]
+                                    - [speedometer-experimental, sp-exp]
                                     - [stylebench, sb]
                                     - [unity-webgl, ugl]
                                     - [webaudio, wa]
@@ -479,6 +484,7 @@ browsertime-benchmark:
             firefox:
                 by-subtest:
                     jetstream3: 2
+                    speedometer-experimental: 3
                     default:
                         by-test-platform:
                             linux.*clang-trunk.*: 2
@@ -486,6 +492,7 @@ browsertime-benchmark:
             default:
                 by-subtest:
                     unity-webgl: 3
+                    speedometer-experimental: 3
                     jetstream2:
                         by-test-platform:
                             macosx1470.*shippable.*: 3
@@ -534,6 +541,20 @@ browsertime-benchmark:
                             default: []
                     default: []
             speedometer2: []
+            # There is no safari-tp entry because the experimental workloads
+            # aren't in the safari-tp subtest lists.
+            speedometer-experimental:
+                by-app:
+                    firefox:
+                        by-test-platform:
+                            windows11-64-.*-hw-ref-shippable/opt: [trunk]
+                            windows11-64-shippable(-qr)?/opt: [trunk]
+                            windows11-64-24h2-shippable/opt: [trunk]
+                            linux.*shippable.*: [trunk]
+                            macosx1500.*shippable.*: [trunk]
+                            .*nightlyasrelease.*: [autoland, mozilla-central]
+                            default: []
+                    default: []
             motionmark-1-3:
                 by-app:
                     firefox:
@@ -578,6 +599,11 @@ browsertime-benchmark:
             speedometer3:
                 by-test-platform:
                     macosx1400.*shippable.*: 4200
+                    macosx1500.*shippable.*: 4200
+                    macosx1500.*nightlyasrelease.*: 4200
+                    default: 2100
+            speedometer-experimental:
+                by-test-platform:
                     macosx1500.*shippable.*: 4200
                     macosx1500.*nightlyasrelease.*: 4200
                     default: 2100
@@ -902,15 +928,27 @@ browsertime-custom:
 
 browsertime-media-seek:
     raptor:
-        apps: [firefox]
+        apps: [firefox, chrome]
         subtests: [[media-seek, mseek]]
     description: Raptor (browsertime) media seek-latency test
+    limit-platforms:
+        by-app:
+            chrome:
+                - linux.*shippable.*
+                - macosx1470.*shippable.*
+            default: []
     max-run-time: 2700
     run-on-projects:
-        by-test-platform:
-            .*64(?!.*nightlyasrelease).*shippable.*: [trunk]
+        by-app:
+            firefox:
+                by-test-platform:
+                    .*64(?!.*nightlyasrelease).*shippable.*: [trunk]
+                    default: []
             default: []
-    tier: 2
+    tier:
+        by-app:
+            firefox: 2
+            default: 3
     treeherder-symbol: Btime(mseek)
 
 browsertime-first-install:
@@ -1162,9 +1200,6 @@ browsertime-webcodecs:
                 # Since x264 isn't built into Ubuntu 18.04 by default, we skip it.
                 linux.*.*:
                     by-app:
-                        # Camera-source variants rely on Firefox's fake camera device.
-                        # Chrome and custom-car have no equivalent here yet (bug 2044846),
-                        # so they run the non-camera variants only.
                         firefox:
                             - ve-av1-rt
                             - ve-av1-q
@@ -1197,6 +1232,12 @@ browsertime-webcodecs:
                             - [ve-vp8-q-i420, ve-v8q420]
                             - [ve-vp9-rt-i420, ve-v9rt420]
                             - [ve-vp9-q-i420, ve-v9q420]
+                            - [ve-av1-rt-cam, ve-a1rtcam]
+                            - [ve-av1-q-cam, ve-a1qcam]
+                            - [ve-vp8-rt-cam, ve-v8rtcam]
+                            - [ve-vp8-q-cam, ve-v8qcam]
+                            - [ve-vp9-rt-cam, ve-v9rtcam]
+                            - [ve-vp9-q-cam, ve-v9qcam]
                 default:
                     by-app:
                         # Chrome currently refuses to encode H264 at larger resolutions like 720p and 1080p.
@@ -1216,6 +1257,14 @@ browsertime-webcodecs:
                             - [ve-vp8-q-i420, ve-v8q420]
                             - [ve-vp9-rt-i420, ve-v9rt420]
                             - [ve-vp9-q-i420, ve-v9q420]
+                            - [ve-av1-rt-cam, ve-a1rtcam]
+                            - [ve-av1-q-cam, ve-a1qcam]
+                            - [ve-h264-rt-sd-cam, ve-24rscam]
+                            - [ve-h264-q-sd-cam, ve-24qscam]
+                            - [ve-vp8-rt-cam, ve-v8rtcam]
+                            - [ve-vp8-q-cam, ve-v8qcam]
+                            - [ve-vp9-rt-cam, ve-v9rtcam]
+                            - [ve-vp9-q-cam, ve-v9qcam]
                         custom-car:
                             - ve-av1-rt
                             - ve-av1-q
@@ -1231,6 +1280,14 @@ browsertime-webcodecs:
                             - [ve-vp8-q-i420, ve-v8q420]
                             - [ve-vp9-rt-i420, ve-v9rt420]
                             - [ve-vp9-q-i420, ve-v9q420]
+                            - [ve-av1-rt-cam, ve-a1rtcam]
+                            - [ve-av1-q-cam, ve-a1qcam]
+                            - [ve-h264-rt-sd-cam, ve-24rscam]
+                            - [ve-h264-q-sd-cam, ve-24qscam]
+                            - [ve-vp8-rt-cam, ve-v8rtcam]
+                            - [ve-vp8-q-cam, ve-v8qcam]
+                            - [ve-vp9-rt-cam, ve-v9rtcam]
+                            - [ve-vp9-q-cam, ve-v9qcam]
                         default:
                             - ve-av1-rt
                             - ve-av1-q

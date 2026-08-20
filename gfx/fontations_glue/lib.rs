@@ -103,32 +103,29 @@ pub extern "C" fn skrifa_font_get_table(font: &SkrifaFontRef, tag: u32) -> Skrif
     }
 }
 
-// VARIATION SETTINGS
-#[repr(C)]
-pub struct VariationSetting {
-    tag: u32,
-    value: f32,
+/// Check whether a given table is present.
+/// Note that a table that appears in the directory, but has zero length,
+/// is considered to be missing.
+#[no_mangle]
+pub extern "C" fn skrifa_font_has_table(font: &SkrifaFontRef, tag: u32) -> bool {
+    font.0
+        .table_data(skrifa::Tag::from_u32(tag))
+        .is_some_and(|data| data.len() > 0)
 }
 
-impl From<&VariationSetting> for skrifa::setting::VariationSetting {
-    fn from(setting: &VariationSetting) -> Self {
-        Self {
-            selector: Tag::from_u32(setting.tag),
-            value: setting.value,
-        }
-    }
-}
+// VARIATION SETTINGS
+use style::gecko_bindings::structs::gfxFontVariation;
 
 pub struct SkrifaLocation(skrifa::instance::Location);
 
 #[no_mangle]
 pub extern "C" fn skrifa_font_resolve_variations_to_location(
     font: &SkrifaFontRef,
-    settings: &ThinVec<VariationSetting>,
+    settings: &ThinVec<gfxFontVariation>,
 ) -> *mut SkrifaLocation {
-    Box::into_raw(Box::new(SkrifaLocation(
-        font.0.axes().location(settings.iter()),
-    )))
+    Box::into_raw(Box::new(SkrifaLocation(font.0.axes().location(
+        settings.iter().map(|s| (Tag::from_u32(s.mTag), s.mValue)),
+    ))))
 }
 
 #[no_mangle]
@@ -197,7 +194,7 @@ pub extern "C" fn skrifa_font_copy_instance(
     font: &SkrifaFontRef,
     index: usize,
     name: &mut nsCString,
-    settings: &mut ThinVec<VariationSetting>,
+    settings: &mut ThinVec<gfxFontVariation>,
 ) -> bool {
     let instance = match font.0.named_instances().get(index) {
         Some(instance) => instance,
@@ -209,13 +206,13 @@ pub extern "C" fn skrifa_font_copy_instance(
         .english_or_first()
         .map_or_else(|| nsCString::new(), |name| name.to_string().into());
     settings.extend(instance.user_coords().enumerate().map(|(i, value)| {
-        VariationSetting {
-            tag: font
+        gfxFontVariation {
+            mTag: font
                 .0
                 .axes()
                 .get(i)
                 .map_or_else(|| 0, |axis| axis.tag().to_u32()),
-            value,
+            mValue: value,
         }
     }));
     true
@@ -260,23 +257,26 @@ pub extern "C" fn skrifa_font_get_metrics(
     result.max_ascent = metrics.ascent;
     result.max_descent = metrics.descent;
     result.external_leading = metrics.leading;
+
+    // We return 0.0 for these metrics if unavailable; gfxFont::SanitizeMetrics
+    // will fix them up to reasonable defaults.
     if let Some(underline) = metrics.underline {
         result.underline_offset = underline.offset;
         result.underline_size = underline.thickness;
     } else {
-        result.underline_offset = f32::NAN;
-        result.underline_size = f32::NAN;
+        result.underline_offset = 0.0;
+        result.underline_size = 0.0;
     }
     if let Some(strikeout) = metrics.strikeout {
         result.strikeout_offset = strikeout.offset;
         result.strikeout_size = strikeout.thickness;
     } else {
-        result.strikeout_offset = f32::NAN;
-        result.strikeout_size = f32::NAN;
+        result.strikeout_offset = 0.0;
+        result.strikeout_size = 0.0;
     }
-    // Returning NAN here tells Gecko to use fallback heuristics.
-    result.x_height = metrics.x_height.unwrap_or(f32::NAN);
-    result.cap_height = metrics.cap_height.unwrap_or(f32::NAN);
+    result.x_height = metrics.x_height.unwrap_or(0.0);
+    result.cap_height = metrics.cap_height.unwrap_or(0.0);
+
     // Bounding box, or f32::NAN if unknown.
     if let Some(bounds) = metrics.bounds {
         result.x_min = bounds.x_min;

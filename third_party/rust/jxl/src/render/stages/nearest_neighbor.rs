@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use crate::render::{Channels, ChannelsMut, RenderPipelineInOutStage};
+use crate::render::{Channels, ChannelsMut, ErasedLocalState, RenderPipelineInOutStage};
 pub struct NearestNeighbourUpsample {
     channel: usize,
 }
@@ -40,7 +40,7 @@ impl RenderPipelineInOutStage for NearestNeighbourUpsample {
         xsize: usize,
         input_rows: &Channels<f32>,
         output_rows: &mut ChannelsMut<f32>,
-        _state: Option<&mut dyn std::any::Any>,
+        _state: Option<&mut ErasedLocalState>,
     ) {
         let input = &input_rows[0];
         let output = &mut output_rows[0];

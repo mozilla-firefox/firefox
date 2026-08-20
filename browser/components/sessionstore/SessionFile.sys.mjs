@@ -18,10 +18,13 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  sessionStoreLogger: "resource:///modules/sessionstore/SessionLogger.sys.mjs",
-  RunState: "resource:///modules/sessionstore/RunState.sys.mjs",
-  SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
-  SessionWriter: "resource:///modules/sessionstore/SessionWriter.sys.mjs",
+  sessionStoreLogger:
+    "moz-src:///browser/components/sessionstore/SessionLogger.sys.mjs",
+  RunState: "moz-src:///browser/components/sessionstore/RunState.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
+  SessionWriter:
+    "moz-src:///browser/components/sessionstore/SessionWriter.sys.mjs",
 });
 
 const PREF_UPGRADE_BACKUP = "browser.sessionstore.upgradeBackup.latestBuildID";

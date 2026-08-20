@@ -949,7 +949,8 @@ void DrawTargetCairo::DrawSurface(SourceSurface* aSurface, const Rect& aDest,
 void DrawTargetCairo::DrawFilter(FilterNode* aNode, const Rect& aSourceRect,
                                  const Point& aDestPoint,
                                  const DrawOptions& aOptions) {
-  if (!IsValid() || !aNode) {
+  if (!IsValid() || !aNode ||
+      aNode->GetBackendType() != FILTER_BACKEND_SOFTWARE) {
     gfxCriticalNote << "DrawFilter with bad surface "
                     << cairo_surface_status(cairo_get_group_target(mContext));
     return;

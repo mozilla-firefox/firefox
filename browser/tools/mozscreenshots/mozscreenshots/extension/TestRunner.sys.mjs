@@ -486,81 +486,90 @@ export var TestRunner = {
     }, "");
   },
 
-  async _cropImage(window, srcPath, bounds, rects, targetPath) {
-    // eslint-disable-next-line no-shadow
-    const { document, Image } = window;
-    const promise = new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        // Clip the cropping region to the size of the screenshot
-        // This is necessary mostly to deal with offscreen windows, since we
-        // are capturing an image of the operating system's desktop.
-        bounds.left = Math.max(0, bounds.left);
-        bounds.right = Math.min(img.naturalWidth, bounds.right);
-        bounds.top = Math.max(0, bounds.top);
-        bounds.bottom = Math.min(img.naturalHeight, bounds.bottom);
+  /**
+   * imageFileURIString is a screenshot of the whole OS desktop, in desktop
+   * (screen) pixel coordinates. `bounds` and `rects` (from
+   * _findBoundingBox()) are in that same desktop coordinate space, not
+   * window-relative: `rects` are the individual selected elements'
+   * bounding boxes, and `bounds` is their union, i.e. the overall region to
+   * crop out of the desktop screenshot. If the browser window is
+   * positioned partially or fully outside the visible desktop (as can
+   * happen with windows moved off-screen for a test), `bounds`/`rects` can
+   * fall outside the captured image entirely, hence the clamping below.
+   */
+  async _cropImage(window, imageFileURIString, bounds, rects, targetPath) {
+    const { document } = window;
 
-        // Create a new offscreen canvas with the width and height given by the
-        // size of the region we want to crop to
-        const canvas = document.createElementNS(
-          "http://www.w3.org/1999/xhtml",
-          "canvas"
-        );
-        canvas.width = bounds.width;
-        canvas.height = bounds.height;
-        const ctx = canvas.getContext("2d");
-
-        ctx.fillStyle = "hotpink";
-        ctx.fillRect(0, 0, bounds.width, bounds.height);
-
-        for (const rect of rects) {
-          rect.left = Math.max(0, rect.left);
-          rect.right = Math.min(img.naturalWidth, rect.right);
-          rect.top = Math.max(0, rect.top);
-          rect.bottom = Math.min(img.naturalHeight, rect.bottom);
-
-          const width = rect.width;
-          const height = rect.height;
-
-          const screenX = rect.left;
-          const screenY = rect.top;
-
-          const imageX = screenX - bounds.left;
-          const imageY = screenY - bounds.top;
-          ctx.drawImage(
-            img,
-            screenX,
-            screenY,
-            width,
-            height,
-            imageX,
-            imageY,
-            width,
-            height
-          );
-        }
-
-        // Converts the canvas to a binary blob, which can be saved to a png
-        canvas.toBlob(blob => {
-          // Use a filereader to convert the raw binary blob into a writable buffer
-          const fr = new FileReader();
-          fr.onload = e => {
-            const buffer = new Uint8Array(e.target.result);
-            // Save the file and complete the promise
-            IOUtils.write(targetPath, buffer).then(resolve);
-          };
-          // Do the conversion
-          fr.readAsArrayBuffer(blob);
-        });
-      };
-
-      img.onerror = function () {
-        reject(`error loading image ${srcPath}`);
-      };
-      // Load the src image for drawing
-      img.src = srcPath;
+    // colorSpaceConversion: "none" preserves raw pixel values without ICC
+    // profile conversion, ensuring lossless round-tripping.
+    const blob = await fetch(imageFileURIString).then(r => r.blob());
+    const img = await window.createImageBitmap(blob, {
+      colorSpaceConversion: "none",
     });
-    return promise;
+
+    // Clip the cropping region to the size of the screenshot
+    // This is necessary mostly to deal with offscreen windows, since we
+    // are capturing an image of the operating system's desktop.
+    bounds.left = Math.max(0, bounds.left);
+    bounds.right = Math.min(img.width, bounds.right);
+    bounds.top = Math.max(0, bounds.top);
+    bounds.bottom = Math.min(img.height, bounds.bottom);
+
+    // Create a new offscreen canvas with the width and height given by the
+    // size of the region we want to crop to
+    const canvas = document.createElementNS(
+      "http://www.w3.org/1999/xhtml",
+      "canvas"
+    );
+    canvas.width = bounds.width;
+    canvas.height = bounds.height;
+    const ctx = canvas.getContext("2d", { colorSpace: "srgb" });
+    ctx.imageSmoothingEnabled = false;
+
+    ctx.fillStyle = "hotpink";
+    ctx.fillRect(0, 0, bounds.width, bounds.height);
+
+    for (const rect of rects) {
+      rect.left = Math.max(0, rect.left);
+      rect.right = Math.min(img.width, rect.right);
+      rect.top = Math.max(0, rect.top);
+      rect.bottom = Math.min(img.height, rect.bottom);
+
+      const width = rect.width;
+      const height = rect.height;
+      // Where this rect sits in the desktop screenshot (source image).
+      const screenX = rect.left;
+      const screenY = rect.top;
+      // Where this rect lands in the cropped output canvas, relative to
+      // the union bounds computed above.
+      const imageX = screenX - bounds.left;
+      const imageY = screenY - bounds.top;
+
+      ctx.drawImage(
+        img,
+        screenX,
+        screenY,
+        width,
+        height,
+        imageX,
+        imageY,
+        width,
+        height
+      );
+    }
+
+    await new Promise((resolve, reject) => {
+      canvas.toBlob(blob2 => {
+        const fr = new FileReader();
+        fr.onload = e => {
+          IOUtils.write(targetPath, new Uint8Array(e.target.result)).then(
+            resolve
+          );
+        };
+        fr.onerror = reject;
+        fr.readAsArrayBuffer(blob2);
+      }, "image/png");
+    });
   },
 
   /**

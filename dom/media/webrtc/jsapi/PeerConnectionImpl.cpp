@@ -950,6 +950,19 @@ already_AddRefed<RTCRtpTransceiver> PeerConnectionImpl::AddTransceiver(
 bool PeerConnectionImpl::CheckNegotiationNeeded() {
   MOZ_ASSERT(mSignalingState == RTCSignalingState::Stable);
   SyncToJsep();
+
+  // mDataConnection exists when a datachannel was created or an m-section for
+  // data was negotiated.
+  if (mDataConnection) {
+    Maybe<const JsepTransceiver> dcTransceiver =
+        mJsepSession->FindTransceiver([](const JsepTransceiver& aTransceiver) {
+          return aTransceiver.GetMediaType() == SdpMediaSection::kApplication;
+        });
+    if (!dcTransceiver || !dcTransceiver->IsNegotiated()) {
+      return true;
+    }
+  }
+
   return !mLocalIceCredentialsToReplace.empty() ||
          mJsepSession->CheckNegotiationNeeded();
 }
@@ -2628,6 +2641,8 @@ nsresult PeerConnectionImpl::SetConfiguration(
     mTransportHandler->SetProxyConfig(std::move(*proxyConfig));
   }
 
+  mJsepSession->SetAlwaysNegotiateDataChannels(
+      aConfiguration.mAlwaysNegotiateDataChannels);
   // Store the configuration for about:webrtc
   StoreConfigurationForAboutWebrtc(aConfiguration);
 
@@ -4149,6 +4164,8 @@ void PeerConnectionImpl::StoreConfigurationForAboutWebrtc(
   mJsConfiguration.mBundlePolicy.Construct(aConfig.mBundlePolicy);
   mJsConfiguration.mPeerIdentityProvided = !aConfig.mPeerIdentity.IsEmpty();
   mJsConfiguration.mCertificatesProvided = !aConfig.mCertificates.Length();
+  mJsConfiguration.mAlwaysNegotiateDataChannels =
+      aConfig.mAlwaysNegotiateDataChannels;
 }
 
 dom::Sequence<dom::RTCSdpParsingErrorInternal>

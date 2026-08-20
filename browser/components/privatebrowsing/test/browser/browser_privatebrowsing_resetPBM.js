@@ -797,7 +797,7 @@ add_task(async function test_reset_action_closes_pinned_and_selected_tabs() {
   await ResetPBMPanel._restartPBM(win);
 
   info("Wait for all tabs to be closed.");
-  await promisesTabsClosed;
+  await Promise.all(promisesTabsClosed);
 
   Assert.equal(
     win.gBrowser.tabs.length,

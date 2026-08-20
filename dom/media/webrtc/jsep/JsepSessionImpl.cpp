@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 
+#include <algorithm>
 #include <set>
 #include <string>
 #include <utility>
@@ -406,6 +407,19 @@ JsepSession::Result JsepSessionImpl::CreateOffer(
   // Make the basic SDP that is common to offer/answer.
   nsresult rv = CreateGenericSDP(&sdp);
   NS_ENSURE_SUCCESS(rv, dom::PCError::OperationError);
+
+  // Create a data "transceiver" if none exists yet.
+  if (mAlwaysNegotiateDataChannels) {
+    Maybe<JsepTransceiver> dcTransceiver =
+        FindTransceiver([](const JsepTransceiver& aTransceiver) {
+          return aTransceiver.GetMediaType() == SdpMediaSection::kApplication;
+        });
+
+    if (!dcTransceiver) {
+      AddTransceiver(
+          JsepTransceiver(SdpMediaSection::MediaType::kApplication, *mUuidGen));
+    }
+  }
 
   for (size_t level = 0;
        Maybe<JsepTransceiver> transceiver = GetTransceiverForLocal(level);
@@ -1641,6 +1655,18 @@ Maybe<JsepTransceiver> JsepSessionImpl::GetTransceiverForLocal(size_t level) {
 
   // There is no transceiver for |level| right now.
 
+  // The datachannel m-section comes before any m-section that has not been
+  // negotiated yet when the alwaysNegotiateDataChannels flag is set.
+  if (mAlwaysNegotiateDataChannels) {
+    for (auto& transceiver : mTransceivers) {
+      if (transceiver.GetMediaType() == SdpMediaSection::kApplication &&
+          transceiver.IsFreeToUse()) {
+        transceiver.SetLevel(level);
+        return Some(transceiver);
+      }
+    }
+  }
+
   // Look for an RTP transceiver (spec requires us to give the lower levels to
   // new RTP transceivers)
   for (auto& transceiver : mTransceivers) {
@@ -2546,6 +2572,13 @@ bool JsepSessionImpl::CheckNegotiationNeeded() const {
       continue;
     }
 
+    if (transceiver.GetMediaType() == SdpMediaSection::kApplication) {
+      // Whether this needs negotiation depends on whether a datachannel was
+      // created, which JSEP does not know about. `alwaysNegotiateDataChannels`
+      // can also create a datachannel transceiver without a datachannel.
+      continue;
+    }
+
     if (transceiver.IsStopping()) {
       MOZ_MTLOG(ML_DEBUG, "[" << mName
                               << "]: Negotiation needed because of "
@@ -2572,10 +2605,6 @@ bool JsepSessionImpl::CheckNegotiationNeeded() const {
 
     if (!transceiver.HasLevel()) {
       MOZ_CRASH("Associated transceivers should always have a level.");
-      continue;
-    }
-
-    if (transceiver.GetMediaType() == SdpMediaSection::kApplication) {
       continue;
     }
 

@@ -14,6 +14,9 @@
 //   - warm: the video keeps playing, so the decoder stays alive across seeks.
 //   - cold: the video is paused so the decoder is released, and each seek
 //     recreates it (the timeline-scrubbing case).
+// The cold state is measured on Firefox only: it relies on
+// media.dormant-on-pause-timeout-ms to force the release, and raptor applies that
+// pref to Firefox alone.
 // Each measured seek is reported as one replicate.
 
 const { logTest } = require("./utils/profiling");
@@ -137,7 +140,10 @@ const BROWSER_SCRIPT = `
 
       const seekedWarm = await runPhase(v, "warm", earlyTargetSec, lateTargetSec);
       v.pause();
-      const seekedCold = await runPhase(v, "cold", earlyTargetSec, lateTargetSec);
+      let seekedCold = [];
+      if (MEASURE_COLD) {
+        seekedCold = await runPhase(v, "cold", earlyTargetSec, lateTargetSec);
+      }
       notifyDone({ seekedWarm, seekedCold });
     } catch (e) {
       notifyDone({ error: String(e) });
@@ -157,6 +163,7 @@ module.exports = logTest(
     // browsertime (page_cycles). WARMUP leading seeks are discarded (runPhase).
     const SEEKS_PER_LOAD = 30;
     const WARMUP = 2;
+    const MEASURE_COLD = context.options.browser === "firefox";
 
     await commands.navigate("about:blank");
     await commands.wait.byTime(post_startup_delay);
@@ -168,6 +175,9 @@ module.exports = logTest(
       ";\n" +
       "const WARMUP = " +
       WARMUP +
+      ";\n" +
+      "const MEASURE_COLD = " +
+      MEASURE_COLD +
       ";\n" +
       "const B64 = " +
       JSON.stringify(MEDIA_BASE64) +

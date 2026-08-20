@@ -375,6 +375,241 @@ add_task(async function test_aboutwelcome_split_position() {
 });
 
 /**
+ * Test rendering a screen with the "center-large" position
+ */
+add_task(async function test_aboutwelcome_center_large_position() {
+  // Forcing light-mode prevents the test from failing locally if your OS is in dark-mode
+  await SpecialPowers.pushPrefEnv({
+    set: [["ui.systemUsesDarkTheme", 0]],
+  });
+
+  const TEST_CENTER_LARGE_STEP = makeTestContent("TEST_CENTER_LARGE_STEP", {
+    position: "center-large",
+    fullscreen: true,
+    title: "Test title",
+    subtitle: "Test subtitle",
+    corner_image: {
+      position: "bottom-right",
+      imageURL:
+        "chrome://activity-stream/content/data/content/assets/fox-doodle-waving.gif",
+      height: "200px",
+    },
+  });
+
+  const TEST_CENTER_LARGE_JSON = JSON.stringify([TEST_CENTER_LARGE_STEP]);
+  let browser = await openAboutWelcome(TEST_CENTER_LARGE_JSON);
+
+  await test_screen_content(
+    browser,
+    "renders screen main section with the container for the corner image",
+    // Expected selectors:
+    [
+      `main.screen[pos="center-large"]`,
+      `.section-main`,
+      `.corner-image-container`,
+    ]
+  );
+
+  // Ensure main section has center-large template styling.
+  const novaEnabled = Services.prefs.getBoolPref("browser.nova.enabled", false);
+  await test_element_styles(
+    browser,
+    "main.screen .section-main .main-content",
+    // Expected styles:
+    {
+      "backdrop-filter": "blur(8px)",
+      "background-color": "color(srgb 0 0 0 / 0.05)",
+      "border-left-color": novaEnabled
+        ? "rgb(214, 213, 218)"
+        : "rgb(186, 194, 202)",
+      "border-left-style": "solid",
+      "border-left-width": "1px",
+    }
+  );
+
+  // Ensure secondary action has button styling
+  await test_element_styles(
+    browser,
+    ".action-buttons .secondary-cta .secondary",
+    // Expected styles:
+    {
+      // Override default text-link styles
+      "background-color": novaEnabled
+        ? "rgba(0, 0, 0, 0)"
+        : "color(srgb 0.0823529 0.0784314 0.101961 / 0.07)",
+      color: novaEnabled ? "rgb(22, 20, 35)" : "rgb(21, 20, 26)",
+    }
+  );
+  await SpecialPowers.popPrefEnv();
+  browser.closeBrowser();
+});
+
+const CORNER_IMAGE_URL =
+  "chrome://activity-stream/content/data/content/assets/fox-doodle-waving.gif";
+
+const makeCornerImageScreen = (id, cornerImageAdditions, contentAdditions) =>
+  makeTestContent(id, {
+    position: "center-large",
+    fullscreen: true,
+    corner_image: {
+      imageURL: CORNER_IMAGE_URL,
+      height: "200px",
+      ...cornerImageAdditions,
+    },
+    ...contentAdditions,
+  });
+
+/**
+ * Test that the corner image is anchored to each supported corner
+ */
+add_task(async function test_aboutwelcome_corner_image_positions() {
+  const CORNER_OFFSETS = {
+    "bottom-left": { bottom: "-10px", left: "20px" },
+    "bottom-right": { bottom: "-10px", right: "20px" },
+    "top-left": { top: "-10px", left: "20px" },
+    "top-right": { top: "-10px", right: "20px" },
+  };
+
+  for (const [position, offsets] of Object.entries(CORNER_OFFSETS)) {
+    info(`Testing corner image position: ${position}`);
+    const screens = [
+      makeCornerImageScreen(`TEST_CORNER_IMAGE_${position}`, { position }),
+    ];
+    let browser = await openAboutWelcome(JSON.stringify(screens));
+
+    await test_screen_content(
+      browser,
+      `renders the corner image in the ${position} corner, outside section-main`,
+      // Expected selectors:
+      [
+        `main.screen > .corner-image-container picture.corner-image.${position}`,
+      ],
+      // Unexpected selectors:
+      [".section-main .corner-image-container"]
+    );
+
+    await test_element_styles(browser, "picture.corner-image", {
+      position: "absolute",
+      ...offsets,
+    });
+
+    browser.closeBrowser();
+  }
+});
+
+/**
+ * Test that a corner image position outside the allowlist, or omitted entirely,
+ * falls back to bottom-right
+ */
+add_task(async function test_aboutwelcome_corner_image_fallback_position() {
+  const FALLBACK_CASES = [
+    {
+      label: "an unsupported position",
+      cornerImage: { position: "not-a-corner" },
+    },
+    { label: "an omitted position", cornerImage: {} },
+  ];
+
+  for (const { label, cornerImage } of FALLBACK_CASES) {
+    info(`Testing corner image fallback for ${label}`);
+    const screens = [
+      makeCornerImageScreen("TEST_CORNER_IMAGE_FALLBACK", cornerImage),
+    ];
+    let browser = await openAboutWelcome(JSON.stringify(screens));
+
+    await test_screen_content(
+      browser,
+      `falls back to bottom-right for ${label}`,
+      // Expected selectors:
+      ["picture.corner-image.bottom-right"],
+      // Unexpected selectors:
+      ["picture.corner-image.not-a-corner", "picture.corner-image.undefined"]
+    );
+
+    browser.closeBrowser();
+  }
+});
+
+/**
+ * Test that the corner image only renders in the layout that styles it
+ */
+add_task(async function test_aboutwelcome_corner_image_layout_gating() {
+  const UNSTYLED_LAYOUTS = [
+    {
+      label: "center-large without fullscreen",
+      content: { fullscreen: false },
+    },
+    { label: "split", content: { position: "split" } },
+  ];
+
+  for (const { label, content } of UNSTYLED_LAYOUTS) {
+    info(`Testing that the corner image is not rendered for ${label}`);
+    const screens = [
+      makeCornerImageScreen(
+        "TEST_CORNER_IMAGE_GATING",
+        { position: "bottom-right" },
+        content
+      ),
+    ];
+    let browser = await openAboutWelcome(JSON.stringify(screens));
+
+    await test_screen_content(
+      browser,
+      `does not render the corner image for ${label}`,
+      // Expected selectors:
+      [".section-main"],
+      // Unexpected selectors:
+      [".corner-image-container", "picture.corner-image"]
+    );
+
+    browser.closeBrowser();
+  }
+});
+
+/**
+ * Test that the top buttons get their own row inside the card in the
+ * "center-large" layout, rather than being overlaid on the content
+ */
+add_task(async function test_aboutwelcome_center_large_top_buttons_row() {
+  const screens = [
+    makeTestContent("TEST_CENTER_LARGE_TOP_BUTTONS", {
+      position: "center-large",
+      fullscreen: true,
+      secondary_button_top: [
+        { label: { raw: "test button 1" }, action: { navigate: true } },
+        { label: { raw: "test button 2" }, action: { navigate: true } },
+      ],
+    }),
+  ];
+  let browser = await openAboutWelcome(JSON.stringify(screens));
+
+  await test_screen_content(
+    browser,
+    "renders the top buttons as a row inside the card",
+    // Expected selectors:
+    [
+      ".main-content > .secondary-buttons-top-container",
+      "#secondary_button_0",
+      "#secondary_button_1",
+    ],
+    // Unexpected selectors:
+    [".section-main > .secondary-buttons-top-container"]
+  );
+
+  await test_element_styles(
+    browser,
+    ".main-content > .secondary-buttons-top-container",
+    // Expected styles:
+    {
+      position: "static",
+      "align-self": "flex-end",
+    }
+  );
+
+  browser.closeBrowser();
+});
+
+/**
  * Test rendering a screen with a URL value and default color for backdrop
  */
 add_task(async function test_aboutwelcome_with_url_backdrop() {
@@ -826,8 +1061,8 @@ add_task(async function test_aboutwelcome_narrow_property() {
   const logo = JSON.stringify([
     makeTestContent("TEST_LOGO_STEP", {
       logo: {
-        height: "chrome://branding/content/icon64.png",
-        imageURL: "50px",
+        imageURL: "chrome://branding/content/icon64.png",
+        height: "50px",
       },
     }),
   ]);

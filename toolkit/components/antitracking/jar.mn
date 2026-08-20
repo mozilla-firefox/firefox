@@ -6,7 +6,7 @@ toolkit.jar:
   # This is the strip list that contains the query parameters stripped by the strip-on-share feature
   # (In addition to this list, the strip-on-share feature also strips the query params from the qps list).
   # The strip list has the format:
-  # domain1: {queryParams: [param1, param2, ..], origns: [www.site.de, www.site.com,...]}, domain2: {...}
+  # domain1: {queryParams: [param1, param2, ..], origns: [www.site.de, www.site.com,...], schemelessSites: [site2.com]}, domain2: {...}
   # This list will be consumed from the nsIQueryStrippingListService and
   # later be dispatched to the nsIURLQueryStringStripper in a further processed form.
   content/global/antitracking/StripOnShare.json           (StripOnShareLists/MPL2/StripOnShare.json)

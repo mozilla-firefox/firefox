@@ -927,6 +927,10 @@ pub struct StackingContext {
     pub transform_style: TransformStyle,
     pub mix_blend_mode: MixBlendMode,
     pub clip_chain_id: Option<ClipChainId>,
+    /// Raster space already resolved against the enclosing stacking contexts by
+    /// `DisplayListBuilder::push_stacking_context`, not the space its caller
+    /// requested. Resolving on the builder means one raster space stack rather
+    /// than two that have to agree.
     pub raster_space: RasterSpace,
     pub flags: StackingContextFlags,
 }

@@ -21,7 +21,20 @@ function checkGlobal(global, description) {
   checkCtor(global, "Function", description);
 }
 
-add_task(async function () {
+add_task(async function test_shared_system_global() {
   let systemGlobal = Cu.getGlobalForObject(Services);
   checkGlobal(systemGlobal, "system global");
+});
+
+add_task(async function test_browser_window_global() {
+  checkGlobal(window, "browser chrome window");
+});
+
+add_task(async function test_non_system_window_global() {
+  await BrowserTestUtils.withNewTab("about:blank", async function (browser) {
+    let isFrozen = await SpecialPowers.spawn(browser, [], () => {
+      return Object.isFrozen(content.wrappedJSObject.Object);
+    });
+    ok(!isFrozen, "content window builtins should not be frozen");
+  });
 });

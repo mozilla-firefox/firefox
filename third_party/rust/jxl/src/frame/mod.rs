@@ -3,10 +3,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use std::{collections::HashSet, sync::Arc};
+use crate::util::sync::Arc;
+use std::collections::{BTreeSet, HashSet};
 
 use crate::{
-    api::JxlDecoderOptions,
+    api::{JxlDecoderOptions, JxlParallelRunner},
     entropy_coding::decode::Histograms,
     error::Result,
     features::{noise::Noise, patches::PatchesDictionary, spline::Splines},
@@ -17,8 +18,9 @@ use crate::{
         permutation::Permutation,
         toc::Toc,
     },
-    image::Image,
-    util::tracing_wrappers::*,
+    image::{Image, Rect},
+    render::buffer_splitter::{OutputChannelRef, OutputChannelSplitter},
+    util::{PerThreadStorage, tracing_wrappers::*},
 };
 use adaptive_lf_smoothing::adaptive_lf_smoothing;
 use block_context_map::BlockContextMap;
@@ -28,7 +30,7 @@ use quant_weights::DequantMatrices;
 use quantizer::{LfQuantFactors, QuantizerParams};
 
 use crate::features::epf::SigmaSource;
-use crate::util::AtomicRefCell;
+use crate::util::sync::{Mutex, RwLock};
 
 mod adaptive_lf_smoothing;
 mod block_context_map;
@@ -70,7 +72,7 @@ pub struct HfGlobalState {
     num_histograms: u32,
     passes: Vec<PassState>,
     dequant_matrices: DequantMatrices,
-    hf_coefficients: Option<(Image<i32>, Image<i32>, Image<i32>)>,
+    hf_coefficients: Vec<Mutex<Vec<i32>>>,
 }
 
 #[derive(Debug)]
@@ -167,12 +169,63 @@ impl DecoderState {
 }
 
 pub struct HfMetadata {
-    ytox_map: Image<i8>,
-    ytob_map: Image<i8>,
+    pub ytox_map: Image<i8>,
+    pub ytob_map: Image<i8>,
     pub raw_quant_map: Image<i32>,
     pub transform_map: Image<u8>,
     pub epf_map: Image<u8>,
-    used_hf_types: u32,
+    pub quant_lf: Image<u8>,
+}
+
+pub struct LfImageSplitter<'a> {
+    pub channels: [OutputChannelSplitter<'a>; 3],
+}
+
+impl<'a> LfImageSplitter<'a> {
+    pub fn new(lf_image: &'a mut [Image<f32>; 3]) -> Self {
+        let [img0, img1, img2] = lf_image;
+        Self {
+            channels: [
+                OutputChannelSplitter::from_image(img0),
+                OutputChannelSplitter::from_image(img1),
+                OutputChannelSplitter::from_image(img2),
+            ],
+        }
+    }
+
+    pub fn borrow_rect(&self, channel: usize, rect: Rect) -> OutputChannelRef<'a, '_> {
+        self.channels[channel].borrow_typed_rect::<f32>(rect)
+    }
+}
+
+pub struct HfMetaSplitter<'a> {
+    pub ytox_map: OutputChannelSplitter<'a>,
+    pub ytob_map: OutputChannelSplitter<'a>,
+    pub raw_quant_map: OutputChannelSplitter<'a>,
+    pub transform_map: OutputChannelSplitter<'a>,
+    pub epf_map: OutputChannelSplitter<'a>,
+    pub quant_lf: OutputChannelSplitter<'a>,
+}
+
+impl<'a> HfMetaSplitter<'a> {
+    pub fn new(hf_meta: &'a mut HfMetadata) -> Self {
+        Self {
+            ytox_map: OutputChannelSplitter::from_image(&mut hf_meta.ytox_map),
+            ytob_map: OutputChannelSplitter::from_image(&mut hf_meta.ytob_map),
+            raw_quant_map: OutputChannelSplitter::from_image(&mut hf_meta.raw_quant_map),
+            transform_map: OutputChannelSplitter::from_image(&mut hf_meta.transform_map),
+            epf_map: OutputChannelSplitter::from_image(&mut hf_meta.epf_map),
+            quant_lf: OutputChannelSplitter::from_image(&mut hf_meta.quant_lf),
+        }
+    }
+}
+
+pub struct HfMetaViews<'a, 'b> {
+    pub ytox_map: OutputChannelRef<'a, 'b>,
+    pub ytob_map: OutputChannelRef<'a, 'b>,
+    pub raw_quant_map: OutputChannelRef<'a, 'b>,
+    pub transform_map: OutputChannelRef<'a, 'b>,
+    pub epf_map: OutputChannelRef<'a, 'b>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -188,8 +241,8 @@ pub enum DataStatus {
 #[derive(Debug)]
 struct GroupStatus {
     // Groups that should be rendered on the next call to flush().
-    need_vardct_flush: HashSet<usize>,
-    need_modular_flush: HashSet<usize>,
+    need_vardct_flush: BTreeSet<usize>,
+    need_modular_flush: BTreeSet<usize>,
     channel_status: Vec<Vec<DataStatus>>,
     final_vardct_render_done: HashSet<usize>,
     incomplete_groups: usize,
@@ -202,8 +255,8 @@ impl GroupStatus {
         // We don't track noise channels because we pretend they always
         // have the same status as VarDCT channels.
         GroupStatus {
-            need_vardct_flush: HashSet::new(),
-            need_modular_flush: HashSet::new(),
+            need_vardct_flush: BTreeSet::new(),
+            need_modular_flush: BTreeSet::new(),
             channel_status: vec![vec![DataStatus::Zero; 3 + ecs]; count],
             final_vardct_render_done: HashSet::new(),
             incomplete_groups: count,
@@ -227,36 +280,35 @@ impl GroupStatus {
 }
 
 pub struct Frame {
-    header: FrameHeader,
+    pub(super) header: FrameHeader,
     toc: Toc,
     color_channels: usize,
-    lf_global: Option<LfGlobalState>,
-    hf_global: Option<HfGlobalState>,
-    lf_image: Option<[Image<f32>; 3]>,
-    quant_lf: Image<u8>,
-    hf_meta: Option<HfMetadata>,
-    decoder_state: DecoderState,
+    pub(super) lf_global: Option<LfGlobalState>,
+    pub(super) hf_global: Option<HfGlobalState>,
+    pub(super) lf_image: Option<[Image<f32>; 3]>,
+    pub(super) hf_meta: Option<HfMetadata>,
+    pub(super) decoder_state: DecoderState,
     #[cfg(test)]
     use_simple_pipeline: bool,
     #[cfg(test)]
-    render_pipeline: Option<Box<dyn std::any::Any>>,
+    render_pipeline: Option<Box<dyn std::any::Any + Send + Sync>>,
     #[cfg(not(test))]
     render_pipeline: Option<Box<crate::render::LowMemoryRenderPipeline>>,
     reference_frame_data: Option<Vec<Image<f32>>>,
     lf_frame_data: Option<[Image<f32>; 3]>,
     section0_render_up_to_date: bool,
     /// Reusable buffers for VarDCT group decoding.
-    vardct_buffers: Option<group::VarDctBuffers>,
+    vardct_buffers: PerThreadStorage<group::VarDctBuffers>,
     group_status: GroupStatus,
-    patches: Arc<AtomicRefCell<PatchesDictionary>>,
-    splines: Arc<AtomicRefCell<Splines>>,
-    noise: Arc<AtomicRefCell<Noise>>,
-    lf_quant: Arc<AtomicRefCell<LfQuantFactors>>,
-    color_correlation_params: Arc<AtomicRefCell<ColorCorrelationParams>>,
-    epf_sigma: Arc<AtomicRefCell<SigmaSource>>,
+    patches: Arc<RwLock<PatchesDictionary>>,
+    splines: Arc<RwLock<Splines>>,
+    noise: Arc<RwLock<Noise>>,
+    lf_quant: Arc<RwLock<LfQuantFactors>>,
+    color_correlation_params: Arc<RwLock<ColorCorrelationParams>>,
+    epf_sigma: Arc<RwLock<SigmaSource>>,
     // LF groups that received data and thus should trigger a modular
     // re-render of the corresponding groups.
-    dirty_lf_groups: HashSet<usize>,
+    dirty_lf_groups: BTreeSet<usize>,
 }
 
 impl Frame {
@@ -307,22 +359,24 @@ impl Frame {
             .unwrap_or_default()
     }
 
-    pub fn finalize_lf(&mut self) -> Result<()> {
+    pub fn finalize_lf(&mut self, parallel_runner: &mut dyn JxlParallelRunner) -> Result<()> {
         if self.header.should_do_adaptive_lf_smoothing() {
             let lf_global = self.lf_global.as_mut().unwrap();
             let lf_quant = &lf_global.lf_quant;
             let inv_quant_lf = lf_global.quant_params.as_mut().unwrap().inv_quant_lf();
+            let lf_factors = [
+                inv_quant_lf * lf_quant.quant_factors[0],
+                inv_quant_lf * lf_quant.quant_factors[1],
+                inv_quant_lf * lf_quant.quant_factors[2],
+            ];
             adaptive_lf_smoothing(
-                [
-                    inv_quant_lf * lf_quant.quant_factors[0],
-                    inv_quant_lf * lf_quant.quant_factors[1],
-                    inv_quant_lf * lf_quant.quant_factors[2],
-                ],
+                lf_factors,
+                &self.header,
                 self.lf_image.as_mut().unwrap(),
-            )
-        } else {
-            Ok(())
+                parallel_runner,
+            )?;
         }
+        Ok(())
     }
 
     pub fn finalize(mut self) -> Result<Option<DecoderState>> {

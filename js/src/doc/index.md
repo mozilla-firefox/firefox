@@ -23,6 +23,7 @@ bytecode_checklist
 use_counter
 how-we-optimize
 cacheir
+constraints
 Debugger API </devtools-user/debugger-api/index>
 ```
 

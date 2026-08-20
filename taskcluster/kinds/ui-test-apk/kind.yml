@@ -139,7 +139,7 @@ tasks:
                   extract: false
         optimization:
             skip-unless-backstop: null
-        run-on-projects: [trunk]
+        run-on-projects: [autoland-only]
         flank-config: focus/arm-start-test.yml
         treeherder:
             symbol: focus-nightly(ui-test-arm-nightly)
@@ -259,7 +259,7 @@ tasks:
                   extract: false
         optimization:
             skip-unless-backstop: null
-        run-on-projects: [trunk]
+        run-on-projects: [autoland-only]
         flank-config: fenix/arm-start-test.yml
         treeherder:
             symbol: fenix-nightly(ui-test-arm-nightly)

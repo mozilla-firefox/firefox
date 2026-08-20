@@ -12,7 +12,7 @@ using GMPErr from "gmp-errors.h";
 namespace mozilla {
 namespace gmp {
 
-[ChildImpl="GMPStorageChild", ParentImpl=virtual]
+[ChildImpl="mozilla::gmp::GMPStorageChild", ParentImpl=virtual]
 async protocol PGMPStorage
 {
   manager PGMP;

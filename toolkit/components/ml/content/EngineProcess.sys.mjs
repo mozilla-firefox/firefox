@@ -214,6 +214,9 @@ export const FEATURES = {
   "title-generation": {
     engineId: "title-generation-engine",
   },
+  "tab-group-naming": {
+    engineId: "smart-openai",
+  },
   "conversation-suggestions-sidebar-starter": {
     engineId: "smart-openai",
   },

@@ -1,0 +1,76 @@
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+include protocol PHWInferenceManager;
+
+using mozilla::dom::ContentParentId from "mozilla/dom/ipc/IdType.h";
+
+namespace mozilla {
+
+namespace hwinference {
+
+struct GetModelFileSuccess
+{
+  FileDescriptor fd;
+};
+
+struct GetModelError
+{
+  nsresult errorCode;
+};
+
+union GetModelFileResult
+{
+  GetModelFileSuccess;
+  GetModelError;
+};
+
+[ChildProc=Utility]
+protocol PHWInference
+{
+  parent:
+    // id is an abstract, task-defined model id. HWInference looks up the
+    // resolver registered for task (contract id
+    // "@mozilla.org/ml/model-resolver;1?task=<task>", see
+    // nsIMLModelResolver) to validate id and expand it to a concrete
+    // artifact; an unknown id is rejected.
+    async IsModelAvailable(nsCString task,
+                           nsCString id) returns (bool available);
+
+    // Whether the model is already downloaded to the local cache (no
+    // network involved), as opposed to IsModelAvailable which also reports
+    // true for a model that is merely downloadable.
+    async IsModelInstalled(nsCString task,
+                           nsCString id) returns (bool installed);
+
+    // Install (download) a model for a specific task, on behalf of a
+    // requesting content process. innerWindowId and contentId identify the
+    // requester generically; contentId is supplied by the utility (the trusted
+    // id of the content process that owns this connection), never supplied by
+    // content. For requests originating from privileged chrome rather than a
+    // content document, both are 0 (no content to validate; trusted origin).
+    // Whether the download actually happens is decided by the resolver
+    // registered for task (nsIMLModelResolver::authorizeDownload), which also
+    // gets the progress token the parent created for this install.
+    async InstallModel(nsCString task,
+                       nsCString id,
+                       uint64_t innerWindowId,
+                       ContentParentId contentId) returns (bool success);
+
+    // Get the model as a file descriptor. This provides direct access to the
+    // model file from the HWInference process for use with libraries that
+    // require a FILE* handle.
+    async GetModelFile(nsCString task,
+                       nsCString id) returns (GetModelFileResult result);
+
+  child:
+    // Allow content processes to create direct connections to utility
+    async NewContentHWInferenceManager(Endpoint<PHWInferenceManagerParent> endpoint,
+                                       ContentParentId contentId);
+};
+
+} // namespace hwinference
+
+} // namespace mozilla

@@ -277,6 +277,44 @@
           "Updated accesskey character is wrapped accesskey"
         );
       });
+
+      // Formatting the accesskey disconnects the mutation observer until the
+      // end of the microtask queue, so text set in the same task is never seen
+      // by the observer. The label used to stay formatted for the old text,
+      // leaving an accesskey that the new text contains appended in parentheses
+      // instead of underlined.
+      add_task(async function testAccesskeyTextChangeWhileNotObserving() {
+        let label = document.createElement("label", { is: "moz-label" });
+        let text = document.createElement("span");
+        text.textContent = "OK";
+        label.appendChild(text);
+        document.getElementById("content").appendChild(label);
+
+        let getWrapper = () => label.querySelector(".accesskey");
+
+        // "w" isn't in "OK", so it gets appended in parentheses.
+        label.setAttribute("accesskey", "w");
+        is(
+          label.textContent,
+          "OK (W)",
+          "Accesskey is appended when missing from the text"
+        );
+
+        // Still in the same task, so the observer is disconnected here.
+        text.textContent = "Download";
+
+        // formatAccessKey waits a tick so we don't get infinite observer looping
+        await new Promise(r => queueMicrotask(r));
+
+        is(label.textContent, "Download", "The appended accesskey was removed");
+        is(
+          getWrapper().textContent,
+          "w",
+          "The accesskey character in the new text is wrapped"
+        );
+
+        label.remove();
+      });
     </script>
   </body>
 </html>

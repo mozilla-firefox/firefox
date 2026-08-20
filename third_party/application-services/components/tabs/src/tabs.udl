@@ -1,6 +1,3 @@
-[Custom]
-typedef string TabsGuid;
-
 // a local timestamp, a custom type to avoid using the int directly.
 [Custom]
 typedef i64 Timestamp;
@@ -84,7 +81,9 @@ dictionary PendingCommand {
     Timestamp? time_sent;
 };
 
-/// Note the canonical docs for this are in https://searchfox.org/mozilla-central/source/services/interfaces/mozIBridgedSyncEngine.idl
+/// The Desktop-facing bridged sync engine - a thin wrapper over the
+/// `sync15::engine::SyncEngine` implemented by this component (see
+/// `sync15::engine::BridgedEngineWrapper`).
 /// It's only actually used in desktop, but it's fine to expose this everywhere.
 /// NOTE: all timestamps here are milliseconds.
 interface TabsBridgedEngine {
@@ -98,7 +97,7 @@ interface TabsBridgedEngine {
     i64 last_sync();
 
     [Throws=TabsApiError]
-    void set_last_sync(i64 last_sync);
+    void reset_last_sync();
 
     [Throws=TabsApiError]
     string? sync_id();
@@ -110,7 +109,7 @@ interface TabsBridgedEngine {
     string ensure_current_sync_id([ByRef]string new_sync_id);
 
     [Throws=TabsApiError]
-    void prepare_for_sync([ByRef]string client_data);
+    void set_clients([ByRef]string client_data);
 
     [Throws=TabsApiError]
     void sync_started();
@@ -119,10 +118,10 @@ interface TabsBridgedEngine {
     void store_incoming(sequence<string> incoming_envelopes_as_json);
 
     [Throws=TabsApiError]
-    sequence<string> apply();
+    sequence<string> apply(i64 server_modified_millis);
 
     [Throws=TabsApiError]
-    void set_uploaded(i64 new_timestamp, sequence<TabsGuid> uploaded_ids);
+    void set_uploaded(i64 new_timestamp, sequence<string> uploaded_ids);
 
     [Throws=TabsApiError]
     void sync_finished();

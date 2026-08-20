@@ -8,6 +8,7 @@
 #include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/UnderlyingSinkCallbackHelpers.h"
+#include "mozilla/dom/WebTransportError.h"
 #include "nsError.h"
 #include "xpcpublic.h"
 
@@ -84,6 +85,26 @@ TEST(WritableStreamToOutput, BuildErrorStatusPlainObjectReason)
   MOZ_ALWAYS_TRUE(jsapi.Init(xpc::PrivilegedJunkScope()));
   JSContext* cx = jsapi.cx();
   JS::Rooted<JSObject*> obj(cx, JS_NewPlainObject(cx));
+  ASSERT_TRUE(obj);
+
+  RefPtr<DefaultOutputAlgorithms> algorithms = new DefaultOutputAlgorithms();
+  Optional<JS::Handle<JS::Value>> reason(cx, JS::ObjectValue(*obj));
+  EXPECT_EQ(algorithms->BuildErrorStatus(cx, reason),
+            NS_ERROR_WEBTRANSPORT_CODE_BASE);
+}
+
+// A WebTransportError reason with no streamErrorCode (e.g. a session-level
+// error) must not crash trying to unwrap a null Nullable<uint8_t>. See
+// bug 1991126.
+TEST(WritableStreamToOutput, BuildErrorStatusNullStreamErrorCode)
+{
+  AutoJSAPI jsapi;
+  MOZ_ALWAYS_TRUE(jsapi.Init(xpc::PrivilegedJunkScope()));
+  JSContext* cx = jsapi.cx();
+
+  RefPtr<WebTransportError> error = new WebTransportError(
+      "session error"_ns, WebTransportErrorSource::Session);
+  JS::Rooted<JSObject*> obj(cx, error->WrapObject(cx, nullptr));
   ASSERT_TRUE(obj);
 
   RefPtr<DefaultOutputAlgorithms> algorithms = new DefaultOutputAlgorithms();

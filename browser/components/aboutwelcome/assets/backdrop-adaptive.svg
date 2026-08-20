@@ -1,0 +1,88 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<svg width="1431" height="888" viewBox="0 0 1431 888" fill="none" xmlns="http://www.w3.org/2000/svg">
+<style>
+  /* ---- LIGHT MODE (default) ---- */
+  :root, svg {
+    --backdrop: #FCF5F0;
+    --grad-0: url(#g0-light);
+    --grad-1: url(#g1-light);
+    --grad-2: url(#g2-light);
+    --grad-3: url(#g3-light);
+    --hill-opacity: 0.7;
+  }
+
+  /* ---- DARK MODE ---- */
+  @media (prefers-color-scheme: dark) {
+    :root, svg {
+      --backdrop: #210340;
+      --grad-0: url(#g0-dark);
+      --grad-1: url(#g1-dark);
+      --grad-2: url(#g2-dark);
+      --grad-3: url(#g3-dark);
+      --hill-opacity: 1;
+    }
+  }
+
+  .backdrop { fill: var(--backdrop); }
+  .cloud-sm { fill: var(--grad-0); }
+  .cloud-md { fill: var(--grad-1); }
+  .cloud-lg { fill: var(--grad-2); }
+  .hill     { fill: var(--grad-3); fill-opacity: var(--hill-opacity); }
+</style>
+
+<path class="backdrop" d="M1430 0H0V888H1430V0Z"/>
+<path class="cloud-sm" d="M301.563 272.382C287.158 283.82 282.109 292.556 273.256 292.556C257.342 292.556 252.883 308.362 259.353 312.899C271.114 321.128 295.093 316.905 336.341 316.905C382.311 316.905 394.049 316.181 406.421 313.478C422.444 309.979 416.936 287.295 401.022 284.592C385.109 281.89 378.726 287.15 353.479 269.196C335.532 256.431 316.187 260.774 301.563 272.382Z"/>
+<path class="cloud-md" d="M1126.33 194.917C1138.09 203.146 1162.07 198.923 1203.32 198.923C1249.29 198.923 1261.03 198.199 1273.4 195.497C1289.42 191.997 1283.92 169.314 1268 166.611C1252.09 163.908 1245.71 169.169 1220.46 151.215C1202.51 138.449 1183.17 142.793 1168.54 154.4C1154.14 165.839 1149.09 174.574 1140.24 174.574C1124.32 174.574 1119.86 190.381 1126.33 194.917Z"/>
+<path class="cloud-lg" d="M157.54 184.802C168.251 194.961 234.615 193.151 309.548 193.151C393.05 193.151 426.232 193.272 448.725 188.204C477.82 181.64 472.267 154.348 443.37 149.28C414.472 144.212 396.263 112.045 349.157 115.423C302.051 118.802 289.198 134.053 259.229 147.591C229.26 161.129 202.526 159.439 186.438 159.439C157.54 159.439 146.829 174.666 157.54 184.826V184.802Z"/>
+<path class="hill" d="M1373.33 748.175C1270.61 727.373 1230.55 678 1126.39 678C1022.23 678 979.014 721.461 892.255 748.175C836.296 765.405 776.14 771.679 725.012 771.052C583.584 760.989 559.144 712.002 452.188 711.398C360.904 710.892 314.06 750.95 241.969 767.432C157.221 786.809 60.9761 786.544 20.0122 785.313C12.8206 785.096 5.25739 784.854 0.0112305 784.686V888H1430.01V860L1430.03 856.5C1430 855 1430 854 1430.03 851.845V759.517L1429.71 759.456C1428.18 759.163 1426.67 758.873 1425.46 758.647C1411.35 755.912 1395.27 752.652 1376.19 748.783L1373.31 748.199L1373.33 748.175Z"/>
+
+<defs>
+<!-- ============ LIGHT GRADIENTS ============ -->
+<linearGradient id="g0-light" x1="357.114" y1="386.129" x2="291.604" y2="281.281" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FCF5F0"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+<linearGradient id="g1-light" x1="1224.09" y1="268.147" x2="1158.58" y2="163.298" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FCF5F0"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+<linearGradient id="g2-light" x1="351.824" y1="287.38" x2="277.87" y2="118.426" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FCF5F0"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+<linearGradient id="g3-light" x1="715" y1="900.5" x2="714.98" y2="647.208" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFF4EE"/>
+<stop offset="0.22" stop-color="#FCEBEF"/>
+<stop offset="0.57" stop-color="#F7D3F4"/>
+<stop offset="1" stop-color="#EEAEFC"/>
+</linearGradient>
+
+<!-- ============ DARK GRADIENTS ============ -->
+<linearGradient id="g0-dark" x1="337.194" y1="346.562" x2="334.557" y2="246.236" gradientUnits="userSpaceOnUse">
+<stop stop-color="#210340"/>
+<stop offset="0.23" stop-color="#29074C"/>
+<stop offset="0.65" stop-color="#3E126D"/>
+<stop offset="1" stop-color="#541D8F"/>
+</linearGradient>
+<linearGradient id="g1-dark" x1="1204.17" y1="228.581" x2="1201.54" y2="128.254" gradientUnits="userSpaceOnUse">
+<stop stop-color="#210340"/>
+<stop offset="0.23" stop-color="#29074C"/>
+<stop offset="0.65" stop-color="#3E126D"/>
+<stop offset="1" stop-color="#541D8F"/>
+</linearGradient>
+<linearGradient id="g2-dark" x1="312.555" y1="232.738" x2="310.003" y2="94.1347" gradientUnits="userSpaceOnUse">
+<stop stop-color="#210340"/>
+<stop offset="0.23" stop-color="#29074C"/>
+<stop offset="0.65" stop-color="#3E126D"/>
+<stop offset="1" stop-color="#541D8F"/>
+</linearGradient>
+<linearGradient id="g3-dark" x1="714.323" y1="960.127" x2="721.326" y2="578.265" gradientUnits="userSpaceOnUse">
+<stop stop-color="#210340"/>
+<stop offset="0.23" stop-color="#29074C"/>
+<stop offset="0.65" stop-color="#3E126D"/>
+<stop offset="1" stop-color="#541D8F"/>
+</linearGradient>
+</defs>
+</svg>

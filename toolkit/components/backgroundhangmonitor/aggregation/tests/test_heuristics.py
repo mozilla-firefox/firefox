@@ -15,18 +15,31 @@ if _AGGREGATION_DIR not in sys.path:
 from heuristics import apply_hang_signature_heuristics  # noqa: E402
 
 
+def _trim(stack):
+    """Run the heuristics over (func, lib) frames and return (func, lib).
+
+    apply_hang_signature_heuristics takes and returns
+    (func, lib, inline_depth) frames. These tests are about which frames
+    survive trimming, not about inlining, so they work in pairs and let this
+    shim add and drop the depth. test_inline_depth_survives_trimming below
+    covers the depth itself.
+    """
+    trimmed = apply_hang_signature_heuristics([(f[0], f[1], 0) for f in stack])
+    return [(name, lib) for name, lib, _ in trimmed]
+
+
 def test_empty_stack_returns_empty():
-    assert apply_hang_signature_heuristics([]) == []
+    assert _trim([]) == []
 
 
 def test_pure_mozilla_stack_unchanged():
     stack = [("main", "xul"), ("DoStuff", "xul"), ("Inner", "xul")]
-    assert apply_hang_signature_heuristics(stack) == stack
+    assert _trim(stack) == stack
 
 
 def test_pure_non_mozilla_stack_unchanged():
     stack = [("a", "kernel32"), ("b", "kernel32"), ("c", "kernel32")]
-    assert apply_hang_signature_heuristics(stack) == stack
+    assert _trim(stack) == stack
 
 
 def test_non_mozilla_collapsed_to_entry_point():
@@ -44,7 +57,7 @@ def test_non_mozilla_collapsed_to_entry_point():
         ("CallSys", "xul"),
         ("sys1", "kernel32"),
     ]
-    assert apply_hang_signature_heuristics(stack) == expected
+    assert _trim(stack) == expected
 
 
 def test_interposed_nt_alone_does_not_trigger_mozilla_boundary():
@@ -53,7 +66,7 @@ def test_interposed_nt_alone_does_not_trigger_mozilla_boundary():
         ("sys1", "kernel32"),
         ("sys2", "kernel32"),
     ]
-    assert apply_hang_signature_heuristics(stack) == stack
+    assert _trim(stack) == stack
 
 
 def test_interposed_nt_does_not_act_as_boundary_but_outer_moz_frame_does():
@@ -64,7 +77,7 @@ def test_interposed_nt_does_not_act_as_boundary_but_outer_moz_frame_does():
         ("sys2", "kernel32"),
     ]
     expected = [("main", "xul"), ("foo::InterposedNt::CallSys", "xul")]
-    assert apply_hang_signature_heuristics(stack) == expected
+    assert _trim(stack) == expected
 
 
 def test_nested_event_loops_trimmed_to_innermost():
@@ -77,7 +90,7 @@ def test_nested_event_loops_trimmed_to_innermost():
         ("leaf", "xul"),
     ]
     expected = [("InnerHandler", "xul"), ("leaf", "xul")]
-    assert apply_hang_signature_heuristics(stack) == expected
+    assert _trim(stack) == expected
 
 
 def test_spidermonkey_internals_between_js_frames_dropped():
@@ -88,7 +101,7 @@ def test_spidermonkey_internals_between_js_frames_dropped():
         ("inner.js:42", ""),
     ]
     expected = [("doJsCall.js:10", ""), ("inner.js:42", "")]
-    assert apply_hang_signature_heuristics(stack) == expected
+    assert _trim(stack) == expected
 
 
 def test_xpconnect_internals_dropped():
@@ -100,7 +113,7 @@ def test_xpconnect_internals_dropped():
         ("native_leaf", "xul"),
     ]
     expected = [("script.js:99", ""), ("native_leaf", "xul")]
-    assert apply_hang_signature_heuristics(stack) == expected
+    assert _trim(stack) == expected
 
 
 def test_pdb_suffix_matched_as_mozilla():
@@ -115,7 +128,7 @@ def test_pdb_suffix_matched_as_mozilla():
         ("Bar", "xul.pdb"),
         ("sys1", "kernel32.pdb"),
     ]
-    assert apply_hang_signature_heuristics(stack) == expected
+    assert _trim(stack) == expected
 
 
 def test_event_loop_at_leaf_returns_empty():
@@ -123,7 +136,7 @@ def test_event_loop_at_leaf_returns_empty():
         ("main", "xul"),
         ("nsThread::ProcessNextEvent(bool, bool*)", "xul"),
     ]
-    assert apply_hang_signature_heuristics(stack) == []
+    assert _trim(stack) == []
 
 
 # Reference: a faithful Python port of getHangFrames from hang-stats/bhr.js,
@@ -297,9 +310,9 @@ PARITY_STACKS = [
 
 def test_parity_with_reference_frontend_logic_on_synthetic_stacks():
     for stack in PARITY_STACKS:
-        assert apply_hang_signature_heuristics(stack) == reference_get_hang_frames(
-            stack
-        ), f"parity mismatch on stack: {stack}"
+        assert _trim(stack) == reference_get_hang_frames(stack), (
+            f"parity mismatch on stack: {stack}"
+        )
 
 
 def _reconstruct_real_stack(thread, sample_idx):
@@ -349,7 +362,7 @@ def test_parity_with_reference_on_real_hang_aggregates():
             cap = min(n_samples, 2000)
             for i in range(cap):
                 stack = _reconstruct_real_stack(thread, i)
-                ours = apply_hang_signature_heuristics(stack)
+                ours = _trim(stack)
                 theirs = reference_get_hang_frames(stack)
                 assert ours == theirs, (
                     f"parity mismatch in {os.path.basename(path)} "
@@ -358,6 +371,29 @@ def test_parity_with_reference_on_real_hang_aggregates():
                 )
                 checked += 1
     assert checked > 0, "no real samples were actually checked"
+
+
+def test_inline_depth_survives_trimming():
+    # Depth rides through untouched: trimming decides which frames survive,
+    # not whether a surviving frame was inlined. The kernel32 frame is dropped
+    # as a system prefix; the Mozilla frames keep their own depths.
+    stack = [
+        ("main", "xul", 0),
+        ("Outer", "xul", 0),
+        ("Inlined", "xul", 1),
+        ("DeeperInlined", "xul", 2),
+    ]
+    assert apply_hang_signature_heuristics(stack) == stack
+
+
+def test_inline_depth_is_not_part_of_trimming_decisions():
+    # Two stacks identical apart from depth trim to the same frames, so the
+    # signature is unchanged by inlining (bug 2052961's dedup property).
+    plain = [("main", "xul", 0), ("Work", "xul", 0)]
+    inlined = [("main", "xul", 0), ("Work", "xul", 1)]
+    a = [(n, l) for n, l, _ in apply_hang_signature_heuristics(plain)]
+    b = [(n, l) for n, l, _ in apply_hang_signature_heuristics(inlined)]
+    assert a == b
 
 
 if __name__ == "__main__":

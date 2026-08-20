@@ -229,7 +229,9 @@ bool DateInputType::ConvertNumberToString(Decimal aValue, Localized aLocalized,
     components.year = Some(intl::DateTimeFormat::Numeric::Numeric);
     components.month = Some(intl::DateTimeFormat::Month::TwoDigit);
     components.day = Some(intl::DateTimeFormat::Numeric::TwoDigit);
-    return FormatDateTime(aValue.toDouble(), components, aResultString);
+    if (FormatDateTime(aValue.toDouble(), components, aResultString)) {
+      return true;
+    }
   }
   aResultString.AppendPrintf("%04.0f-%02.0f-%02.0f", year, month + 1, day);
   return true;
@@ -281,7 +283,9 @@ bool TimeInputType::ConvertNumberToString(Decimal aValue, Localized aLocalized,
                             ? Some(intl::DateTimeFormat::Numeric::TwoDigit)
                             : Nothing();
     components.fractionalSecondDigits = milliseconds ? Some(3) : Nothing();
-    return FormatDateTime(value, components, aResultString);
+    if (FormatDateTime(value, components, aResultString)) {
+      return true;
+    }
   }
 
   if (milliseconds != 0) {
@@ -443,7 +447,9 @@ bool WeekInputType::ConvertNumberToString(Decimal aValue, Localized aLocalized,
     components.year = Some(intl::DateTimeFormat::Numeric::Numeric);
     components.month = Some(intl::DateTimeFormat::Month::TwoDigit);
     components.day = Some(intl::DateTimeFormat::Numeric::TwoDigit);
-    return FormatDateTime(aValue.toDouble(), components, aResultString);
+    if (FormatDateTime(aValue.toDouble(), components, aResultString)) {
+      return true;
+    }
   }
   aResultString.AppendPrintf("%04.0f-W%02d", year, week);
   return true;
@@ -509,7 +515,9 @@ bool MonthInputType::ConvertNumberToString(Decimal aValue, Localized aLocalized,
         .tm_month = static_cast<PRInt32>(month),
         .tm_year = static_cast<PRInt16>(year),
     };
-    return FormatDateTime(time, components, aResultString);
+    if (FormatDateTime(time, components, aResultString)) {
+      return true;
+    }
   }
   aResultString.AppendPrintf("%04.0f-%02.0f", year, month + 1);
   return true;
@@ -575,7 +583,9 @@ bool DateTimeLocalInputType::ConvertNumberToString(
                             ? Some(intl::DateTimeFormat::Numeric::TwoDigit)
                             : Nothing();
     components.fractionalSecondDigits = milliseconds ? Some(3) : Nothing();
-    return FormatDateTime(value, components, aResultString);
+    if (FormatDateTime(value, components, aResultString)) {
+      return true;
+    }
   }
   if (milliseconds != 0) {
     aResultString.AppendPrintf("%04.0f-%02.0f-%02.0fT%02d:%02d:%02d.%03d", year,

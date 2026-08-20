@@ -1493,6 +1493,77 @@ html {
   display: flex;
   flex-direction: column;
 }
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main {
+  height: 90%;
+  width: 90%;
+  margin: auto;
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content {
+  box-shadow: none;
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content > .secondary-buttons-top-container,
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content > .secondary-cta.top {
+  position: static;
+  align-self: flex-end;
+  padding-block: var(--space-large);
+  padding-inline-end: var(--space-xxlarge);
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content .secondary-buttons-top-container .secondary-cta.top {
+  padding-inline-end: 0;
+}
+@media not (prefers-contrast) {
+  .onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content {
+    border: 1px solid var(--border-color-deemphasized);
+    backdrop-filter: blur(8px);
+    background-color: light-dark(color-mix(in srgb, var(--color-black) 5%, transparent), color-mix(in srgb, var(--color-black) 20%, transparent));
+  }
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content .main-content-inner {
+  width: 50%;
+  margin: auto;
+  justify-content: center;
+}
+@media (width <= 720px) {
+  .onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content .main-content-inner {
+    width: 80%;
+  }
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .corner-image-container {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+@media (width <= 720px) {
+  .onboardingContainer:has([pos=center-large][fullscreen]) .corner-image-container {
+    display: none;
+  }
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .corner-image-container .brand-logo {
+  margin-block: 0;
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .corner-image-container .corner-image {
+  position: absolute;
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .corner-image-container .corner-image.bottom-left {
+  bottom: -10px;
+  left: 20px;
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .corner-image-container .corner-image.bottom-right {
+  bottom: -10px;
+  right: 20px;
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .corner-image-container .corner-image.top-left {
+  top: -10px;
+  left: 20px;
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .corner-image-container .corner-image.top-right {
+  top: -10px;
+  right: 20px;
+}
+.onboardingContainer:has([pos=center-large][fullscreen]):has(theme-picker) .content-tile {
+  margin-inline: auto;
+}
 .onboardingContainer .section-main {
   display: flex;
   flex-direction: column;
@@ -1823,7 +1894,7 @@ html {
   padding: 1.5px 37.5px;
   margin: auto;
 }
-.onboardingContainer .screen:not([pos=split]) .secondary-cta .secondary {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) .secondary-cta .secondary {
   background: none;
   border: none;
   text-decoration: underline;
@@ -1833,24 +1904,24 @@ html {
   font-weight: normal;
   line-height: 20px;
 }
-.onboardingContainer .screen:not([pos=split]) .secondary-cta .secondary:hover {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) .secondary-cta .secondary:hover {
   color: var(--link-color-hover);
 }
-.onboardingContainer .screen:not([pos=split]) .secondary-cta .secondary:active {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) .secondary-cta .secondary:active {
   color: var(--link-color-active);
 }
 @media (prefers-contrast) {
-  .onboardingContainer .screen:not([pos=split]) .secondary-cta .secondary:active {
+  .onboardingContainer .screen:not([pos=split], [pos=center-large]) .secondary-cta .secondary:active {
     text-decoration: none;
   }
 }
-.onboardingContainer .screen:not([pos=split]) .secondary-cta.top button {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) .secondary-cta.top button {
   color: white;
 }
-.onboardingContainer .screen:not([pos=split]) .secondary-cta.top button:hover {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) .secondary-cta.top button:hover {
   color: #E0E0E6;
 }
-.onboardingContainer .screen:not([pos=split]) .additional-cta.cta-link {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) .additional-cta.cta-link {
   background: none;
   padding: 0;
   font-weight: normal;
@@ -1860,27 +1931,27 @@ html {
   cursor: pointer;
   color: var(--link-color);
 }
-.onboardingContainer .screen:not([pos=split]) .additional-cta.cta-link:hover {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) .additional-cta.cta-link:hover {
   color: var(--link-color-hover);
 }
-.onboardingContainer .screen:not([pos=split]) .additional-cta.cta-link:active {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) .additional-cta.cta-link:active {
   color: var(--link-color-active);
 }
 @media (prefers-contrast) {
-  .onboardingContainer .screen:not([pos=split]) .additional-cta.cta-link:active {
+  .onboardingContainer .screen:not([pos=split], [pos=center-large]) .additional-cta.cta-link:active {
     text-decoration: none;
   }
 }
-.onboardingContainer .screen:not([pos=split]) migration-wizard {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) migration-wizard {
   padding: 5px 60px;
 }
-.onboardingContainer .screen:not([pos=split]) migration-wizard::part(header) {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) migration-wizard::part(header) {
   text-align: center;
 }
-.onboardingContainer .screen:not([pos=split]) migration-wizard::part(buttons) {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) migration-wizard::part(buttons) {
   margin: var(--space-xxlarge) auto 0;
 }
-.onboardingContainer .screen:not([pos=split]) .welcome-text:empty {
+.onboardingContainer .screen:not([pos=split], [pos=center-large]) .welcome-text:empty {
   margin: 0;
 }
 .onboardingContainer .screen[pos=split]:where(:not([fullscreen])) {

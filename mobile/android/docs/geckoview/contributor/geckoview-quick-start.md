@@ -40,10 +40,10 @@ As a first step, you need to set up {ref}`mozilla-central <mozilla-central-setup
 and {ref}`Bootstrap <bootstrap-setup>` and build the project.
 
 Once you have got GeckoView building and running, you will want to start
-contributing. There is a general guide to [Performing a Bug Fix for Git
-Developers](contributing-to-firefox.md) for you to follow. To contribute to
-GeckoView specifically, you will need the following additional
-information.
+contributing. The {ref}`Firefox Contributors' Quick Reference
+<firefox-contributors-quick-reference>` covers writing, submitting and
+updating a patch. To contribute to GeckoView specifically, you will need the
+following additional information.
 
 #### Debugging code
 

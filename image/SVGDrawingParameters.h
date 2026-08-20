@@ -31,12 +31,12 @@ struct SVGDrawingParameters {
         region(aRegion),
         samplingFilter(aSamplingFilter),
         svgContext(aSVGContext),
-        viewportSize(aRasterSize),
+        viewportSize(aRasterSize.width, aRasterSize.height),
         animationTime(aAnimationTime),
         flags(aFlags),
         opacity(aOpacity) {
     if (auto sz = aSVGContext.GetViewportSize()) {
-      viewportSize = nsIntSize(sz->width, sz->height);  // XXX losing unit
+      viewportSize = *sz;
     }
   }
 
@@ -46,7 +46,7 @@ struct SVGDrawingParameters {
   ImageRegion region;
   SamplingFilter samplingFilter;
   const SVGImageContext& svgContext;
-  nsIntSize viewportSize;
+  CSSSize viewportSize;
   float animationTime;
   uint32_t flags;
   gfxFloat opacity;

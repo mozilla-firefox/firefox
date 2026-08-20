@@ -346,6 +346,12 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
 
+        requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_listen_to_page).apply {
+            isVisible = Config.channel.isNightlyOrDebug
+            isChecked = settings.listenToPageFeatureFlagEnabled
+            onPreferenceChangeListener = SharedPreferenceUpdater()
+        }
+
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_import_bookmarks).apply {
             isVisible = Config.channel.isDebug
             isChecked = settings.importBookmarksFeatureFlagEnabled

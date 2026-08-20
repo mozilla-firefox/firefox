@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Test for caret placement when focus moves (bug 1968416)</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" href="/tests/SimpleTest/test.css">
+<script>
+"use strict";
+
+SimpleTest.waitForExplicitFinish();
+SimpleTest.waitForFocus(async () => {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["accessibility.browsewithcaret", true],
+    ],
+  });
+
+  const selection = getSelection();
+
+  function checkCaret(aDescription, aExpectedNode, aExpectedOffset) {
+    is(selection.rangeCount, 1, `${aDescription}: should have exactly one range`);
+    ok(selection.isCollapsed, `${aDescription}: selection should be collapsed`);
+    is(selection.anchorNode, aExpectedNode, `${aDescription}: anchor node`);
+    is(selection.anchorOffset, aExpectedOffset, `${aDescription}: anchor offset`);
+    ok(
+      SpecialPowers.wrap(selection).interlinePosition,
+      `${aDescription}: caret should be associated with the start of the next line`
+    );
+  }
+
+  (function test_focus_container() {
+    info("Starting test_focus_container...");
+    document.body.innerHTML = '<div id="container" tabindex="0">abc<span>def</span></div>';
+    const container = document.getElementById("container");
+    container.focus();
+    // A focused node which has children gets the caret at its own start.
+    checkCaret("focusing an element with children", container, 0);
+  })();
+
+  (function test_focus_leaf() {
+    info("Starting test_focus_leaf...");
+    document.body.innerHTML = '<p>abc</p><div id="leaf" tabindex="0"></div><p>def</p>';
+    const leaf = document.getElementById("leaf");
+    leaf.focus();
+    // A focused leaf gets the caret before it, so that it doesn't look selected.
+    checkCaret("focusing a leaf element", document.body, 1);
+  })();
+
+  (function test_focus_form_control() {
+    info("Starting test_focus_form_control...");
+    document.body.innerHTML = '<p>abc</p><button id="button">def</button><p>ghi</p>';
+    document.getElementById("button").focus();
+    checkCaret("focusing a form control", document.body, 1);
+  })();
+
+  (function test_repeated_focus_moves() {
+    info("Starting test_repeated_focus_moves...");
+    document.body.innerHTML =
+      '<div id="wrapper"><button id="first">abc</button><button id="second">def</button></div>';
+    const wrapper = document.getElementById("wrapper");
+    const first = document.getElementById("first");
+    const second = document.getElementById("second");
+    // Both carets share a closest common inclusive ancestor, which is the case
+    // whose marks Selection::CollapseInternal() keeps in place.
+    for (let i = 0; i < 3; i++) {
+      first.focus();
+      checkCaret(`focusing the first button (pass ${i})`, wrapper, 0);
+      second.focus();
+      checkCaret(`focusing the second button (pass ${i})`, wrapper, 1);
+    }
+  })();
+
+  (function test_focus_replaces_selection() {
+    info("Starting test_focus_replaces_selection...");
+    document.body.innerHTML =
+      '<div id="wrapper">abcdef<button id="button">ghi</button>jkl</div>';
+    const wrapper = document.getElementById("wrapper");
+    selection.setBaseAndExtent(wrapper.firstChild, 0, wrapper.lastChild, 3);
+    ok(!selection.isCollapsed, "sanity check: the selection shouldn't be collapsed");
+    document.getElementById("button").focus();
+    checkCaret("focusing while a range of the same subtree is selected", wrapper, 1);
+  })();
+
+  SimpleTest.finish();
+});
+</script>
+</head>
+<body></body>
+</html>

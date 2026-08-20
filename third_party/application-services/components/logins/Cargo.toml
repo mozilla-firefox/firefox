@@ -26,6 +26,12 @@ ignore_form_action_origin_validation_errors = []
 # behavior. Used on Desktop during migration to salvage legacy/addon-generated
 # entries that would otherwise be lost.
 perform_additional_origin_fixups = []
+# Regenerates guids that are invalid for the sync server (empty, > 64 chars, or
+# containing a comma / non-printable byte) when importing via `add_with_meta` /
+# `add_many_with_meta`, instead of rejecting them. Used on Desktop during
+# migration to salvage entries whose guids would otherwise crash the sync
+# uploader (bug 2056116).
+fixup_invalid_guids = []
 
 [dependencies]
 sync15 = { path = "../sync15" }

@@ -12,7 +12,7 @@ const UNKNOWN_ISSUER = "https://self-signed.example.com";
 const BAD_STS_CERT =
   "https://badchain.include-subdomains.pinning.example.com:443";
 const { TabStateFlusher } = ChromeUtils.importESModule(
-  "resource:///modules/sessionstore/TabStateFlusher.sys.mjs"
+  "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
 );
 
 // Security CertError Felt Privacy set to false & true

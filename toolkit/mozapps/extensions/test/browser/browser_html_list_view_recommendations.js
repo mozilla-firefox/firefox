@@ -207,6 +207,7 @@ async function testListRecommendations({ type }) {
   await TestUtils.waitForCondition(() => {
     return panel.children.length == 1 && panel.firstElementChild.id == popupId;
   });
+  await BrowserTestUtils.waitForPopupEvent(panel, "shown");
 
   // Dismiss the popup.
   panel.firstElementChild.button.click();

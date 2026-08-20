@@ -16,6 +16,7 @@
  *
  * ZERO STATE
  *   No trackers blocked today → the empty state (shield icon, no count, no tip).
+ *   A zero *site* count is not a zero state; the component drops that line instead.
  *
  * MESSAGE FAMILIES (the `category` field)
  *   info          Education about tracking / Firefox protections. shield/planet/

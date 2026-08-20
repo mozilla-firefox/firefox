@@ -10,10 +10,6 @@
 //   defaults_to: <what this feature defaults to normally>
 // }
 const DISALLOWED = {
-  location: {
-    flag: Ci.nsIWebBrowserChrome.CHROME_LOCATIONBAR,
-    defaults_to: true,
-  },
   chrome: {
     flag: Ci.nsIWebBrowserChrome.CHROME_OPENAS_CHROME,
     defaults_to: false,
@@ -67,10 +63,6 @@ const DISALLOWED = {
   },
   titlebar: {
     flag: Ci.nsIWebBrowserChrome.CHROME_TITLEBAR,
-    defaults_to: true,
-  },
-  close: {
-    flag: Ci.nsIWebBrowserChrome.CHROME_WINDOW_CLOSE,
     defaults_to: true,
   },
   resizable: {

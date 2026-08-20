@@ -79,7 +79,7 @@ union CursorResponse
   IndexKeyCursorResponse[];
 };
 
-[ChildImpl="indexedDB::BackgroundCursorChildBase", ParentImpl=virtual]
+[ChildImpl="mozilla::dom::indexedDB::BackgroundCursorChildBase", ParentImpl=virtual]
 protocol PBackgroundIDBCursor
 {
   manager PBackgroundIDBTransaction or PBackgroundIDBVersionChangeTransaction;

@@ -9,6 +9,8 @@ import androidx.navigation.findNavController
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.ui.AddonsManagerAdapterDelegate
 import org.mozilla.fenix.BuildConfig
+import org.mozilla.fenix.R
+import org.mozilla.fenix.compose.core.Action
 import org.mozilla.fenix.compose.snackbar.Snackbar
 import org.mozilla.fenix.compose.snackbar.SnackbarState
 import org.mozilla.fenix.ext.components
@@ -21,11 +23,13 @@ import org.mozilla.fenix.settings.SupportUtils
  * @param view A [View] used to determine a parent for the [Snackbar].
  * @param text The text to display in the [Snackbar].
  * @param duration The duration to show the [Snackbar] for.
+ * @param action Optional action button to display alongside the text.
  */
 internal fun showSnackBar(
     view: View,
     text: String,
     duration: SnackbarState.Duration = SnackbarState.Duration.Preset.Short,
+    action: Action? = null,
 ) {
     Snackbar.make(
             snackBarParentView = view,
@@ -33,9 +37,34 @@ internal fun showSnackBar(
                 SnackbarState(
                     message = text,
                     duration = duration,
+                    action = action,
                 ),
         )
         .show()
+}
+
+/**
+ * Shows the Snackbar for a failed add-on operation, with a retry action.
+ *
+ * @param view A [View] used to determine a parent for the [Snackbar].
+ * @param text The text to display in the [Snackbar].
+ * @param onRetry Called when the user taps the retry action.
+ */
+internal fun showRetryableSnackBar(
+    view: View,
+    text: String,
+    onRetry: () -> Unit,
+) {
+    showSnackBar(
+        view = view,
+        text = text,
+        duration = SnackbarState.Duration.Preset.Long,
+        action =
+            Action(
+                label = view.context.getString(R.string.addon_failure_retry_action),
+                onClick = onRetry,
+            ),
+    )
 }
 
 internal fun View.openLearnMoreLink(

@@ -28,6 +28,7 @@ support-files = [
   "window_focus.xhtml",
   "window_focus_inner.xhtml",
   "window_focus_docnav.xhtml",
+  "window_frameset.xhtml",
   "!/dom/tests/mochitest/general/file_clonewrapper.html",
   "!/dom/tests/mochitest/general/file_moving_nodeList.html",
   "!/dom/tests/mochitest/general/file_moving_xhr.html",

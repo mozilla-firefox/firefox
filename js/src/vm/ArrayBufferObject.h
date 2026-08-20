@@ -209,10 +209,10 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared {
 #endif
 
  public:
-  static const uint8_t DATA_SLOT = 0;
-  static const uint8_t BYTE_LENGTH_SLOT = 1;
-  static const uint8_t FIRST_VIEW_SLOT = 2;
-  static const uint8_t FLAGS_SLOT = 3;
+  JS_DEFINE_TYPED_SLOT(0, DATA_SLOT, Private, Undefined);
+  JS_DEFINE_TYPED_SLOT(1, BYTE_LENGTH_SLOT, Private, Undefined);
+  JS_DEFINE_TYPED_SLOT(2, FIRST_VIEW_SLOT, Object, Null, Undefined);
+  JS_DEFINE_TYPED_SLOT(3, FLAGS_SLOT, Int32, Undefined);
 
   static const uint8_t RESERVED_SLOTS = 4;
 
@@ -221,7 +221,7 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared {
   // aligned.
   static constexpr size_t ARRAY_BUFFER_ALIGNMENT = 8;
 
-  static_assert(FLAGS_SLOT == JS_ARRAYBUFFER_FLAGS_SLOT,
+  static_assert(FLAGS_SLOT.index() == JS_ARRAYBUFFER_FLAGS_SLOT,
                 "self-hosted code with burned-in constants must get the "
                 "right flags slot");
 
@@ -558,10 +558,10 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared {
   static void detach(JSContext* cx, Handle<ArrayBufferObject*> buffer);
 
   static constexpr size_t offsetOfByteLengthSlot() {
-    return getFixedSlotOffset(BYTE_LENGTH_SLOT);
+    return getFixedSlotOffsetTyped(BYTE_LENGTH_SLOT);
   }
   static constexpr size_t offsetOfFlagsSlot() {
-    return getFixedSlotOffset(FLAGS_SLOT);
+    return getFixedSlotOffsetTyped(FLAGS_SLOT);
   }
 
  protected:
@@ -756,7 +756,7 @@ class ResizableArrayBufferObject : public ArrayBufferObject {
 
   void setMaxByteLength(size_t length) {
     MOZ_ASSERT(length <= ArrayBufferObject::ByteLengthLimit);
-    setFixedSlot(MAX_BYTE_LENGTH_SLOT, PrivateValue(length));
+    setFixedSlotTyped(MAX_BYTE_LENGTH_SLOT, PrivateValue(length));
   }
 
   void initialize(size_t byteLength, size_t maxByteLength,
@@ -778,7 +778,8 @@ class ResizableArrayBufferObject : public ArrayBufferObject {
       JS::Handle<ResizableArrayBufferObject*> source);
 
  public:
-  static const uint8_t MAX_BYTE_LENGTH_SLOT = ArrayBufferObject::RESERVED_SLOTS;
+  JS_DEFINE_TYPED_SLOT(ArrayBufferObject::RESERVED_SLOTS, MAX_BYTE_LENGTH_SLOT,
+                       Private, Undefined);
 
   static const uint8_t RESERVED_SLOTS = ArrayBufferObject::RESERVED_SLOTS + 1;
 
@@ -789,7 +790,7 @@ class ResizableArrayBufferObject : public ArrayBufferObject {
   static const JSClass class_;
 
   size_t maxByteLength() const {
-    return size_t(getFixedSlot(MAX_BYTE_LENGTH_SLOT).toPrivate());
+    return size_t(getFixedSlotTyped(MAX_BYTE_LENGTH_SLOT).toPrivate());
   }
 
   static ResizableArrayBufferObject* copyAndDetach(

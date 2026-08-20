@@ -15,7 +15,7 @@ namespace mozilla {
 namespace dom {
 namespace indexedDB {
 
-[ChildImpl="indexedDB::BackgroundVersionChangeTransactionChild", ParentImpl=virtual]
+[ChildImpl="mozilla::dom::indexedDB::BackgroundVersionChangeTransactionChild", ParentImpl=virtual]
 protocol PBackgroundIDBVersionChangeTransaction {
   manager PBackgroundIDBDatabase;
 

@@ -196,10 +196,9 @@ Maybe<BlobImageKeyData> BlobSurfaceProvider::RecordDrawing(
                        ? 0.0f
                        : mSVGDocumentWrapper->GetCurrentTimeAsFloat();
 
-  IntSize viewportSize = size;
+  CSSSize viewportSize(size.width, size.height);
   if (auto cssViewportSize = svgContext.GetViewportSize()) {
-    // XXX losing unit
-    viewportSize.SizeTo(cssViewportSize->width, cssViewportSize->height);
+    viewportSize = *cssViewportSize;
   }
 
   {
@@ -229,7 +228,7 @@ Maybe<BlobImageKeyData> BlobSurfaceProvider::RecordDrawing(
 
     nsRect svgRect;
     auto auPerDevPixel = presContext->AppUnitsPerDevPixel();
-    if (size != viewportSize) {
+    if (viewportSize != CSSSize(size.width, size.height)) {
       auto scaleX = double(size.width) / viewportSize.width;
       auto scaleY = double(size.height) / viewportSize.height;
       ctx.SetMatrix(Matrix::Scaling(float(scaleX), float(scaleY)));

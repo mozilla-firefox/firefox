@@ -23,6 +23,16 @@ class SettingsCustomizePage(composeRule: AndroidComposeTestRule<HomeActivityInte
             to = "SettingsPage",
             steps = listOf(NavigationStep.Click(SettingsSelectors.GO_BACK_BUTTON)),
         )
+
+        NavigationRegistry.register(
+            from = pageName,
+            to = "BrowserPage",
+            steps =
+                listOf(
+                    NavigationStep.Click(SettingsCustomizeSelectors.NAVIGATE_BACK_TOOLBAR_BUTTON),
+                    NavigationStep.Click(SettingsSelectors.GO_BACK_BUTTON),
+                ),
+        )
     }
 
     override fun navigateToPage(url: String, forceNavigation: Boolean): SettingsCustomizePage {

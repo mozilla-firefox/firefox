@@ -1728,6 +1728,31 @@ impl Parse for ContainerName {
 /// A specified value for the `perspective` property.
 pub type Perspective = GenericPerspective<NonNegativeLength>;
 
+impl Perspective {
+    /// Parses a `-webkit-perspective` value.
+    pub(crate) fn parse_legacy<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
+        use crate::values::specified::{AllowQuirks, Length};
+        use crate::values::generics::NonNegative;
+        if let Ok(l) = input.try_parse(|input| {
+            Length::parse_non_negative_quirky(context, input, AllowQuirks::Always)
+        }) {
+            return Ok(Self::Length(NonNegative(l)));
+        }
+        Self::parse(context, input)
+    }
+
+    /// Serializes a `-webkit-perspective` value.
+    pub(crate) fn to_css_legacy<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        self.to_css(dest)
+    }
+}
+
 /// https://drafts.csswg.org/css-box/#propdef-float
 #[allow(missing_docs)]
 #[derive(

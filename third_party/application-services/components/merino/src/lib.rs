@@ -20,6 +20,5 @@
 
 pub mod curated_recommendations;
 pub mod suggest;
-pub mod worldcup;
 pub use curated_recommendations::{CuratedRecommendationLocale, CuratedRecommendationsApiError};
 uniffi::setup_scaffolding!("merino");

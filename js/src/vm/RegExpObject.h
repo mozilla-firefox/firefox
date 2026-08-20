@@ -40,7 +40,7 @@ extern RegExpObject* RegExpAlloc(JSContext* cx, NewObjectKind newKind,
 extern JSObject* CloneRegExpObject(JSContext* cx, Handle<RegExpObject*> regex);
 
 class RegExpObject : public NativeObject {
-  static constexpr uint32_t LAST_INDEX_SLOT = 0;
+  JS_DEFINE_UNTYPED_SLOT(0, LAST_INDEX_SLOT);
   JS_DEFINE_TYPED_SLOT(1, SOURCE_SLOT, String, Undefined);
   JS_DEFINE_TYPED_SLOT(2, FLAGS_SLOT, Int32, Undefined);
 

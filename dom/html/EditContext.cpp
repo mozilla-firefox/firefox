@@ -577,6 +577,10 @@ void EditContext::DoSetSelection(WidgetSelectionEvent& aEvent) {
   if (aEvent.mReversed) {
     std::swap(mSelectionStart, mSelectionEnd);
   }
+  if (IMEContentObserver* observer =
+          IMEStateManager::GetActiveContentObserver()) {
+    observer->EditContextSelectionChanged();
+  }
   // We need to fire textupdate so that the web app is aware that the
   // selection has changed.
   FireTextUpdate(0, 0, u""_ns);

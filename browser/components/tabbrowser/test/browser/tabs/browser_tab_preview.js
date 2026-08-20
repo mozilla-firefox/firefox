@@ -16,7 +16,7 @@ const { sinon } = ChromeUtils.importESModule(
 );
 
 const { TabStateFlusher } = ChromeUtils.importESModule(
-  "resource:///modules/sessionstore/TabStateFlusher.sys.mjs"
+  "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
 );
 
 const TabHoverPanelSet = ChromeUtils.importESModule(
@@ -30,49 +30,16 @@ const { TabNotes } = ChromeUtils.importESModule(
 const TAB_PREVIEW_PANEL_ID = "tab-preview-panel";
 const TAB_GROUP_PREVIEW_PANEL_ID = "tabgroup-preview-panel";
 
-const HOVER_ATTEMPTS = 4;
-
-/**
- * Hover an element on the tab strip until its preview panel is open and stays
- * open.
- *
- * A synthesized mouseover sets the hover target without moving the OS pointer.
- * disableNonTestMouseEvents drops most of the platform input that would
- * contradict that, but not all of it, and what remains resynchronises hover to
- * where the pointer physically is. Input that lands while the panel is opening
- * dismisses it the moment it finishes showing, so hover again.
- *
- * @param {Element} element
- * @param {XULPopupElement} panel
- * @param {Window} [win]
- */
-async function hoverUntilPanelOpen(element, panel, win = window) {
-  for (let attempt = 0; attempt < HOVER_ATTEMPTS; attempt++) {
-    if (attempt > 0) {
-      // Leave the strip so that the next mouseover is a fresh enter.
-      const tabs = win.document.getElementById("tabbrowser-tabs");
-      EventUtils.synthesizeMouse(
-        tabs,
-        0,
-        tabs.getBoundingClientRect().height + 10,
-        { type: "mouseout" },
-        win
-      );
-    }
-    if (panel.state != "open") {
-      const shown = BrowserTestUtils.waitForPopupEvent(panel, "shown");
-      EventUtils.synthesizeMouseAtCenter(element, { type: "mouseover" }, win);
-      await shown;
-    }
-    // A dismissal that is already in flight lands on the frame after
-    // popupshown, so let a couple of frames pass before believing the state.
-    await new Promise(resolve =>
-      win.requestAnimationFrame(() => win.requestAnimationFrame(resolve))
-    );
-    if (panel.state == "open") {
-      return;
-    }
-  }
+async function parkNativePointer(win = window) {
+  const browserEl = win.gBrowser.selectedBrowser;
+  const { width, height } = browserEl.getBoundingClientRect();
+  await EventUtils.promiseNativeMouseEvent({
+    type: "mousemove",
+    target: browserEl,
+    offsetX: width - 10,
+    offsetY: height - 10,
+    win,
+  });
 }
 
 async function openTabPreview(tab, win = window) {
@@ -235,11 +202,13 @@ add_setup(async function () {
     ],
   });
 
-  // These tests drive hover with synthesized mouseover events, which set the
-  // hover target without moving the OS pointer. Any real mouse event that
-  // arrives afterwards resynchronises hover to wherever the pointer physically
-  // is and dismisses the preview, and merely showing the panel is enough to
-  // produce one. Drop input that the tests did not generate.
+  // The hover states in these tests are controlled by synthesized events. There
+  // has been a history of problems in these tests caused by improper
+  // interaction between the synthesized event and the position of the OS
+  // pointer. To resolve this, disable all non test events and ensure the OS
+  // pointer is not positioned over the browser chrome at the start of each
+  // test.
+  await parkNativePointer();
   EventUtils.disableNonTestMouseEvents(true);
   registerCleanupFunction(() => {
     EventUtils.disableNonTestMouseEvents(false);
@@ -2181,9 +2150,15 @@ add_task(async function testTabAndTabGroupsWorkTogether() {
     TAB_GROUP_PREVIEW_PANEL_ID
   );
 
-  let tabPreviewEvent;
+  let tabPreviewEvent = BrowserTestUtils.waitForPopupEvent(
+    tabPreviewElement,
+    "shown"
+  );
   let groupPreviewEvent;
-  await hoverUntilPanelOpen(tabToLeft, tabPreviewElement);
+  EventUtils.synthesizeMouseAtCenter(tabToLeft, {
+    type: "mouseover",
+  });
+  await tabPreviewEvent;
   Assert.equal(
     tabPreviewElement.state,
     "open",

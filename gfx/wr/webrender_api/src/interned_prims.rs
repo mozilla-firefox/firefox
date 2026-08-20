@@ -18,7 +18,7 @@ use crate::{
     ImageRendering, LineOrientation, LineStyle, PropertyBinding, YuvColorSpace, YuvFormat,
 };
 use crate::key_types::{
-    BorderRadiusAu, ConicGradientParams, EdgeMask, GradientStopKey, NinePatchDescriptor,
+    BorderRadiusAu, ConicGradientParams, GradientStopKey, NinePatchDescriptor,
     NormalBorderAu, PointKey, PrimKeyCommonData, RadialGradientParams, SizeKey, StretchSizeKey,
     VectorKey,
 };
@@ -129,7 +129,6 @@ pub struct LinearGradient {
     pub stops: Vec<GradientStopKey>,
     pub reverse_stops: bool,
     pub nine_patch: Option<Box<NinePatchDescriptor>>,
-    pub edge_aa_mask: EdgeMask,
 }
 
 #[derive(Clone, Debug, Eq, MallocSizeOf, PartialEq, Hash, Serialize, Deserialize)]

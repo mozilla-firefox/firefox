@@ -231,12 +231,6 @@ inline bool StyleHeaderSlice<H, T>::operator==(
 }
 
 template <typename H, typename T>
-inline bool StyleHeaderSlice<H, T>::operator!=(
-    const StyleHeaderSlice& aOther) const {
-  return !(*this == aOther);
-}
-
-template <typename H, typename T>
 inline StyleHeaderSlice<H, T>::~StyleHeaderSlice() {
   for (T& elem : Span(data, len)) {
     elem.~T();
@@ -702,10 +696,6 @@ bool LengthPercentage::operator==(const LengthPercentage& aOther) const {
     return aOther.IsPercentage() && AsPercentage() == aOther.AsPercentage();
   }
   return aOther.IsCalc() && AsCalc() == aOther.AsCalc();
-}
-
-bool LengthPercentage::operator!=(const LengthPercentage& aOther) const {
-  return !(*this == aOther);
 }
 
 LengthPercentage LengthPercentage::Zero() { return {}; }

@@ -422,7 +422,7 @@ LightweightThemeConsumer.prototype = {
     }
     let builtinThemeConfig = lazy.BuiltInThemeConfig.get(theme.id);
     let hasTheme = theme.id != DEFAULT_THEME_ID && !builtinThemeConfig?.inApp;
-    this._doc.forceNonNativeTheme = !!builtinThemeConfig?.nonNative;
+    this._doc.forceNonNativeTheme = theme.id != DEFAULT_THEME_ID;
 
     let root = this._doc.documentElement;
     root.toggleAttribute("lwtheme-image", !!(hasTheme && theme.headerImage));

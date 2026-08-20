@@ -95,6 +95,7 @@ UNIFIED_SOURCES += [
     "TestWebMBuffered.cpp",
     "TestWebMDemuxer.cpp",
     "TestWebMWriter.cpp",
+    "TestYUVBufferGenerator.cpp",
     "YUVBufferGenerator.cpp",
 ]
 

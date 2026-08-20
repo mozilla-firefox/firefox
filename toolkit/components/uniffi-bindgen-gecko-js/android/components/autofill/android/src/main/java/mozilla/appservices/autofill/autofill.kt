@@ -647,13 +647,9 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_autofill_checksum_method_addressesbridgedengine_last_sync(
     ): Short
-    external fun uniffi_autofill_checksum_method_addressesbridgedengine_prepare_for_sync(
-    ): Short
     external fun uniffi_autofill_checksum_method_addressesbridgedengine_reset(
     ): Short
     external fun uniffi_autofill_checksum_method_addressesbridgedengine_reset_sync_id(
-    ): Short
-    external fun uniffi_autofill_checksum_method_addressesbridgedengine_set_last_sync(
     ): Short
     external fun uniffi_autofill_checksum_method_addressesbridgedengine_set_uploaded(
     ): Short
@@ -755,20 +751,16 @@ internal object UniffiLib {
 ): Long
 external fun uniffi_autofill_fn_free_addressesbridgedengine(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_autofill_fn_method_addressesbridgedengine_apply(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_autofill_fn_method_addressesbridgedengine_apply(`ptr`: Long,`serverModifiedMillis`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_autofill_fn_method_addressesbridgedengine_ensure_current_sync_id(`ptr`: Long,`newSyncId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_autofill_fn_method_addressesbridgedengine_last_sync(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_autofill_fn_method_addressesbridgedengine_prepare_for_sync(`ptr`: Long,`clientData`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
 external fun uniffi_autofill_fn_method_addressesbridgedengine_reset(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_autofill_fn_method_addressesbridgedengine_reset_sync_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_autofill_fn_method_addressesbridgedengine_set_last_sync(`ptr`: Long,`lastSync`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
 external fun uniffi_autofill_fn_method_addressesbridgedengine_set_uploaded(`ptr`: Long,`newTimestamp`: Long,`uploadedIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_autofill_fn_method_addressesbridgedengine_store_incoming(`ptr`: Long,`incomingEnvelopesAsJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1359,19 +1351,15 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
  */
 public interface AddressesBridgedEngineInterface {
     
-    fun `apply`(): List<kotlin.String>
+    fun `apply`(`serverModifiedMillis`: kotlin.Long): List<kotlin.String>
     
     fun `ensureCurrentSyncId`(`newSyncId`: kotlin.String): kotlin.String
     
     fun `lastSync`(): kotlin.Long
     
-    fun `prepareForSync`(`clientData`: kotlin.String)
-    
     fun `reset`()
     
     fun `resetSyncId`(): kotlin.String
-    
-    fun `setLastSync`(`lastSync`: kotlin.Long)
     
     fun `setUploaded`(`newTimestamp`: kotlin.Long, `uploadedIds`: List<kotlin.String>)
     
@@ -1490,13 +1478,13 @@ open class AddressesBridgedEngine: Disposable, AutoCloseable, AddressesBridgedEn
     }
 
     
-    @Throws(AutofillApiException::class)override fun `apply`(): List<kotlin.String> {
+    @Throws(AutofillApiException::class)override fun `apply`(`serverModifiedMillis`: kotlin.Long): List<kotlin.String> {
             return FfiConverterSequenceString.lift(
     callWithHandle {
     uniffiRustCallWithError(AutofillApiException) { _status ->
     UniffiLib.uniffi_autofill_fn_method_addressesbridgedengine_apply(
         it,
-        _status)
+        FfiConverterLong.lower(`serverModifiedMillis`),_status)
 }
     }
     )
@@ -1532,19 +1520,6 @@ open class AddressesBridgedEngine: Disposable, AutoCloseable, AddressesBridgedEn
     
 
     
-    @Throws(AutofillApiException::class)override fun `prepareForSync`(`clientData`: kotlin.String)
-        = 
-    callWithHandle {
-    uniffiRustCallWithError(AutofillApiException) { _status ->
-    UniffiLib.uniffi_autofill_fn_method_addressesbridgedengine_prepare_for_sync(
-        it,
-        FfiConverterString.lower(`clientData`),_status)
-}
-    }
-    
-    
-
-    
     @Throws(AutofillApiException::class)override fun `reset`()
         = 
     callWithHandle {
@@ -1569,19 +1544,6 @@ open class AddressesBridgedEngine: Disposable, AutoCloseable, AddressesBridgedEn
     }
     )
     }
-    
-
-    
-    @Throws(AutofillApiException::class)override fun `setLastSync`(`lastSync`: kotlin.Long)
-        = 
-    callWithHandle {
-    uniffiRustCallWithError(AutofillApiException) { _status ->
-    UniffiLib.uniffi_autofill_fn_method_addressesbridgedengine_set_last_sync(
-        it,
-        FfiConverterLong.lower(`lastSync`),_status)
-}
-    }
-    
     
 
     

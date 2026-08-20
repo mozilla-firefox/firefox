@@ -137,12 +137,17 @@ bool HTMLButtonElement::InAutoState() const {
 }
 
 // https://html.spec.whatwg.org/multipage/#the-button-element%3Aconcept-submit-button
-const nsAttrValue::EnumTableEntry* HTMLButtonElement::ResolveAutoState() const {
+const nsAttrValue::EnumTableEntry* HTMLButtonElement::ResolveAutoState(
+    const nsINode* aParent) const {
   // A button element is said to be a submit button if any of the following are
-  // true: the type attribute is in the Auto state and both the command and
-  // commandfor content attributes are not present; or
-  // the type attribute is in the Submit Button state.
+  // true: the type attribute is in the Auto state, both the command and
+  // commandfor content attributes are not present, and the parent node is not a
+  // select element; or the type attribute is in the Submit Button state.
   if (HasAttr(nsGkAtoms::commandfor) || HasAttr(nsGkAtoms::command)) {
+    return kButtonButtonType;
+  }
+  const nsINode* parent = aParent ? aParent : GetParentNode();
+  if (parent && parent->IsHTMLElement(nsGkAtoms::select)) {
     return kButtonButtonType;
   }
   return kButtonSubmitType;
@@ -414,6 +419,12 @@ void HTMLButtonElement::LegacyCanceledActivationBehavior(
 
 nsresult HTMLButtonElement::BindToTree(BindContext& aContext,
                                        nsINode& aParent) {
+  // Whether this button is a submit button depends on whether its parent is a
+  // select element, so recompute the resolved type before form association.
+  // Use aParent because the parser can bind before the parent link is set.
+  if (InAutoState()) {
+    mType = FormControlType(ResolveAutoState(&aParent)->value);
+  }
   nsresult rv =
       nsGenericHTMLFormControlElementWithState::BindToTree(aContext, aParent);
   NS_ENSURE_SUCCESS(rv, rv);
@@ -426,6 +437,11 @@ nsresult HTMLButtonElement::BindToTree(BindContext& aContext,
 
 void HTMLButtonElement::UnbindFromTree(UnbindContext& aContext) {
   nsGenericHTMLFormControlElementWithState::UnbindFromTree(aContext);
+
+  // The parent may no longer be a select, so recompute the resolved type.
+  if (InAutoState()) {
+    mType = FormControlType(ResolveAutoState()->value);
+  }
 
   UpdateBarredFromConstraintValidation();
   UpdateValidityElementStates(false);

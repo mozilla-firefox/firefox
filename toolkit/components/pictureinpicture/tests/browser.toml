@@ -160,6 +160,8 @@ support-files = ["test-page-with-nan-video-duration.html"]
 
 ["browser_removeVideoElement.js"]
 
+["browser_resistFingerprinting.js"]
+
 ["browser_resizeVideo.js"]
 skip-if = [
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'", # Bug 1594223

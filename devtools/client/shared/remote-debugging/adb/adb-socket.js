@@ -4,7 +4,9 @@
 
 "use strict";
 
-const { dumpn } = require("resource://devtools/shared/DevToolsUtils.js");
+const {
+  logger,
+} = require("resource://devtools/client/shared/remote-debugging/adb/adb-logger.js");
 
 function createTCPSocket(location, port, options) {
   const { TCPSocket } = Cu.getGlobalForObject(
@@ -52,7 +54,7 @@ class AdbSocket {
         dbg += s[i];
       }
     }
-    dumpn(dbg);
+    logger.debug(dbg);
   }
 
   // debugging version of tcpsocket.send()

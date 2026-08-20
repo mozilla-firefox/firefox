@@ -57,9 +57,9 @@ There are a number of requirements that the tab switcher must satisfy. In no par
 
 Per window, an async tab switcher instance is only supposed to exist if one or more tabs still need to have their layers loaded or unloaded. This means that an async tab switcher instance might exist even though a tab switch appears to the user to have completed. This also means that an async tab switcher might continue to exist and handle a new tab switch if the user initiates that tab switch before some background tabs have had their layers unloaded.
 
-There’s only one async tab switcher at a time per window, and it’s owned by the `<xul:tabbrowser>`.
+There’s only one async tab switcher at a time per window, and it’s owned by that window’s `gBrowser`.
 
-A `<xul:tabbrowser>` starts without an async tab switcher, and only once a tab switch (or warming) is initiated by the user is the switcher instantiated.
+A window starts without an async tab switcher, and only once a tab switch (or warming) is initiated by the user is the switcher instantiated.
 
 Once the switcher determines that the tab that the user has requested is being shown, and all background tabs have been properly unloaded or destroyed, the async tab switcher cleans up and destroys itself.
 

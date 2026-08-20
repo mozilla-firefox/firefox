@@ -82,21 +82,38 @@ NS_IMETHODIMP
 nsMacShellService::SetDefaultBrowser(bool aForAllUsers) {
   // Note: We don't support aForAllUsers on Mac OS X.
 
-  CFStringRef firefoxID = ::CFBundleGetIdentifier(::CFBundleGetMainBundle());
-  if (!firefoxID) {
-    return NS_ERROR_FAILURE;
-  }
+  if (@available(macOS 27.0, *)) {
+    // macOS 27 raises a separate prompt for each LSSetDefault* call below
+    // resulting in multiple default browser change confirmation prompts.
+    // The NSWorkspace API, which avoids this problem, is available on macOS
+    // 12+, but limit its use here to macOS 27+ for now to be conservative.
+    // We only set the default application for the http URL scheme.
+    // Empirically, that has been shown to set the default browser and the
+    // default handler for https/http schemes and html files.
+    NSURL* appURL = [[NSBundle mainBundle] bundleURL];
+    if (!appURL) {
+      return NS_ERROR_FAILURE;
+    }
+    [[NSWorkspace sharedWorkspace] setDefaultApplicationAtURL:appURL
+                                         toOpenURLsWithScheme:@"http"
+                                            completionHandler:nil];
+  } else {
+    CFStringRef firefoxID = ::CFBundleGetIdentifier(::CFBundleGetMainBundle());
+    if (!firefoxID) {
+      return NS_ERROR_FAILURE;
+    }
 
-  if (::LSSetDefaultHandlerForURLScheme(CFSTR("http"), firefoxID) != noErr) {
-    return NS_ERROR_FAILURE;
-  }
-  if (::LSSetDefaultHandlerForURLScheme(CFSTR("https"), firefoxID) != noErr) {
-    return NS_ERROR_FAILURE;
-  }
+    if (::LSSetDefaultHandlerForURLScheme(CFSTR("http"), firefoxID) != noErr) {
+      return NS_ERROR_FAILURE;
+    }
+    if (::LSSetDefaultHandlerForURLScheme(CFSTR("https"), firefoxID) != noErr) {
+      return NS_ERROR_FAILURE;
+    }
 
-  if (::LSSetDefaultRoleHandlerForContentType(kUTTypeHTML, kLSRolesAll,
-                                              firefoxID) != noErr) {
-    return NS_ERROR_FAILURE;
+    if (::LSSetDefaultRoleHandlerForContentType(kUTTypeHTML, kLSRolesAll,
+                                                firefoxID) != noErr) {
+      return NS_ERROR_FAILURE;
+    }
   }
 
   nsCOMPtr<nsIPrefBranch> prefs(do_GetService(NS_PREFSERVICE_CONTRACTID));

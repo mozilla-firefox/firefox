@@ -213,6 +213,23 @@ features:
           template-message: sent_from_firefox_template
           download-link: "[Download Link]"
           show-snackbar: true
+  listen-to-page:
+    description: A feature that allows audio listening of a page
+    variables:
+      enabled:
+        type: Boolean
+        description: If true, listen to page will be enabled
+        default: false
+    defaults:
+      - channel: developer
+        value:
+          enabled: false
+      - channel: nightly
+        value:
+          enabled: false
+      - channel: beta
+        value:
+          enabled: false
 
   shake-to-summarize:
     description: A feature that can summarize the content of a page when you shake the screen.

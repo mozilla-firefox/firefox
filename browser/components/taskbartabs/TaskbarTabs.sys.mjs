@@ -119,6 +119,14 @@ export const TaskbarTabs = new (class {
   // Used internally; can expose non-public members in its result.
   async #findOrCreateTaskbarTab(aUrl, aUserContextId, aDetails = {}) {
     await this.#ready;
+
+    if (!aDetails.manifest?.name && aUrl.scheme === "moz-extension") {
+      aDetails.manifest = {
+        ...aDetails.manifest,
+        name: WebExtensionPolicy.getByURI(aUrl)?.name,
+      };
+    }
+
     let result = this.#registry.findOrCreateTaskbarTab(
       aUrl,
       aUserContextId,
@@ -206,8 +214,9 @@ export const TaskbarTabs = new (class {
     }
 
     return {
-      window: win,
+      created,
       taskbarTab,
+      window: win,
     };
   }
 

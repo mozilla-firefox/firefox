@@ -27,3 +27,24 @@ benchmark_port = 62763
 support_class = "speedometer3.py"
 test_script = "speedometer3.js"
 test_url = "http://<host>:<port>/Speedometer3/index.html?raptor"
+
+[speedometer-experimental]
+browser_cycles = 5
+owner = "Performance Team"
+cold = true
+host_from_parent = true
+benchmark_port = 62764
+support_class = "speedometer3.py"
+test_script = "speedometer3.js"
+test_url = "http://<host>:<port>/index.html?raptor&tags=experimental"
+repository = "https://github.com/mozilla/Speedometer"
+repository_revision = "89435e5dfb97cf793516449370f14b2176b4aed7"
+# Media-Streaming starts muted playback from a synthetic click without user
+# activation. Raptor's default Firefox autoplay policy rejects play(), which
+# leaves the workload waiting indefinitely. Chromium permits muted autoplay.
+preferences = [
+  "media.autoplay.default=0",
+  "media.autoplay.blocking_policy=0",
+  "media.allowed-to-play.enabled=true",
+  "media.block-autoplay-until-in-foreground=false",
+]

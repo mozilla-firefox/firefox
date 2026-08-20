@@ -2,6 +2,35 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-a {
-  text-decoration: initial;
+.button {
+  position: relative;
+}
+
+a.box-link-anchor {
+  text-decoration: none;
+  color: inherit;
+
+  /* Expand the hit target so description clicks still activate the link. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+/* Draw focus on the outer button because the anchor's ::after expands the hit
+   target across the whole control. */
+/* stylelint-disable-next-line stylelint-plugin-mozilla/no-has-selector */
+.button:has(.box-link-anchor:focus-visible) {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-inset);
+}
+
+.description,
+.nav-icon {
+  pointer-events: none;
 }

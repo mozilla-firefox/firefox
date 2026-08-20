@@ -15,7 +15,6 @@
 #include "mozilla/RefPtr.h"
 #include "mozilla/SVGContentUtils.h"
 #include "mozilla/SVGUtils.h"
-#include "mozilla/StaticPrefs_svg.h"
 #include "mozilla/dom/DOMPoint.h"
 #include "mozilla/dom/DOMPointBinding.h"
 #include "mozilla/dom/SVGLengthBinding.h"
@@ -47,8 +46,8 @@ void SVGGeometryElement::AfterSetAttr(int32_t aNamespaceID, nsAtom* aName,
                                       const nsAttrValue* aOldValue,
                                       nsIPrincipal* aSubjectPrincipal,
                                       bool aNotify) {
-  if ((mCachedPath || mCachedStrokedBounds) &&
-      aNamespaceID == kNameSpaceID_None && AttributeDefinesGeometry(aName)) {
+  if (mCachedPath && aNamespaceID == kNameSpaceID_None &&
+      AttributeDefinesGeometry(aName)) {
     ClearAnyCachedPath();
   }
   return SVGGeometryElementBase::AfterSetAttr(
@@ -155,24 +154,12 @@ Maybe<Rect> SVGGeometryElement::GetBounds(const Matrix& aPathTransform) {
 Maybe<Rect> SVGGeometryElement::GetStrokedBounds(
     const StrokeOptions& aStrokeOptions, const Matrix& aPathTransform,
     const Matrix& aPathToBounds) {
-  if (mCachedStrokedBounds &&
-      mCachedStrokedBounds->mStrokeOptions == aStrokeOptions &&
-      mCachedStrokedBounds->mPathTransform.ExactlyEquals(aPathTransform) &&
-      mCachedStrokedBounds->mPathToBounds.ExactlyEquals(aPathToBounds)) {
-    return mCachedStrokedBounds->mBounds.IsFinite()
-               ? Some(mCachedStrokedBounds->mBounds)
-               : Nothing();
-  }
-
   if (RefPtr<Path> path = GetTransformedPath(aPathTransform)) {
     Rect bbox = path->GetStrokedBounds(aStrokeOptions, aPathToBounds);
-    if (StaticPrefs::svg_bounds_caching_enabled()) {
-      mCachedStrokedBounds = MakeUnique<CachedStrokedBounds>(
-          aStrokeOptions, aPathTransform, aPathToBounds, bbox);
+    if (bbox.IsFinite()) {
+      return Some(bbox);
     }
-    return bbox.IsFinite() ? Some(bbox) : Nothing();
   }
-  mCachedStrokedBounds = nullptr;
   return Nothing();
 }
 

@@ -74,28 +74,27 @@ add_task(async function opens_with_requested_dimensions() {
 });
 
 add_task(async function browser_chrome_is_hidden() {
-  function chomeElementIsHidden(win, el) {
-    const rect = el.getBoundingClientRect();
-    return el.collapsed || rect.width <= 0;
+  function chomeElementIsHidden(el) {
+    return !BrowserTestUtils.isVisible(el);
   }
 
   const win = await openChromelessAndWaitForLoad(URL_TO_LOAD);
 
   const doc = win.document;
-  const navBar = doc.getElementById("nav-bar");
+  const personalToolbar = doc.getElementById("PersonalToolbar");
   const tabsToolbar = doc.getElementById("TabsToolbar");
   const urlbar = doc.getElementById("urlbar-container");
 
   Assert.ok(
-    chomeElementIsHidden(win, navBar),
-    "Navigation toolbar is not visible in chromeless window"
+    chomeElementIsHidden(personalToolbar),
+    "Personal toolbar is not visible in chromeless window"
   );
   Assert.ok(
-    chomeElementIsHidden(win, tabsToolbar),
+    chomeElementIsHidden(tabsToolbar),
     "Tabs toolbar is not visible in chromeless window"
   );
   Assert.ok(
-    chomeElementIsHidden(win, urlbar),
+    chomeElementIsHidden(urlbar),
     "URLbar is not visible in chromeless window"
   );
 

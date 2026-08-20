@@ -24,20 +24,6 @@ class RegistryPolicy {
   static bool GenerateRules(const wchar_t* name,
                             LowLevelPolicy* policy);
 
-  // Performs the desired policy action on a create request with an
-  // API that is compatible with the IPC-received parameters.
-  static bool CreateKeyAction(EvalResult eval_result,
-                              const ClientInfo& client_info,
-                              const std::wstring& key,
-                              uint32_t attributes,
-                              HANDLE root_directory,
-                              uint32_t desired_access,
-                              uint32_t title_index,
-                              uint32_t create_options,
-                              HANDLE* handle,
-                              NTSTATUS* nt_status,
-                              ULONG* disposition);
-
   // Performs the desired policy action on an open request with an
   // API that is compatible with the IPC-received parameters.
   static bool OpenKeyAction(EvalResult eval_result,

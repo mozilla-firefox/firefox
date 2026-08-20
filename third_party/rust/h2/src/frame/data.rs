@@ -148,10 +148,47 @@ impl Data<Bytes> {
             self.data.len()
         }
     }
+}
 
-    /// If this frame is PADDED, it returns the pad len + 1 (length field).
-    pub(crate) fn padded_len(&self) -> Option<u8> {
-        self.pad_len.map(|n| n + 1)
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bytes::Bytes;
+
+    fn data_frame(data: &[u8], pad_len: Option<u8>) -> Data<Bytes> {
+        Data {
+            stream_id: StreamId::from(1),
+            data: Bytes::copy_from_slice(data),
+            flags: DataFlags::default(),
+            pad_len,
+        }
+    }
+
+    #[test]
+    fn padding_overhead_no_padding() {
+        let frame = data_frame(b"hello", None);
+        assert_eq!(frame.flow_controlled_len() - frame.payload().len(), 0);
+    }
+
+    #[test]
+    fn padding_overhead_small() {
+        let frame = data_frame(b"hello", Some(10));
+        assert_eq!(frame.flow_controlled_len() - frame.payload().len(), 11);
+    }
+
+    #[test]
+    fn padding_overhead_max_does_not_overflow() {
+        // Regression: the old padded_len() returned u8, so pad_len=255
+        // caused 255u8 + 1 = 0. The correct overhead is 256.
+        let frame = data_frame(b"", Some(255));
+        assert_eq!(frame.flow_controlled_len() - frame.payload().len(), 256);
+    }
+
+    #[test]
+    fn padding_overhead_max_with_data() {
+        let frame = data_frame(b"hello", Some(255));
+        assert_eq!(frame.flow_controlled_len() - frame.payload().len(), 256);
+        assert_eq!(frame.flow_controlled_len(), 261);
     }
 }
 

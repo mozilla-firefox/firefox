@@ -731,7 +731,7 @@ void ProtocolParserProtobuf::End() {
       minWaitDuration.seconds() + minWaitDuration.nanos() / 1000000000;
 
   for (int i = 0; i < response.list_update_responses_size(); i++) {
-    auto r = response.list_update_responses(i);
+    const auto& r = response.list_update_responses(i);
     nsAutoCString listName;
     nsresult rv = ProcessOneResponse(r, listName);
     if (NS_SUCCEEDED(rv)) {
@@ -850,7 +850,7 @@ nsresult ProtocolParserProtobuf::ProcessAdditionOrRemoval(
   nsresult ret = NS_OK;
 
   for (int i = 0; i < aUpdate.size(); i++) {
-    auto update = aUpdate.Get(i);
+    const auto& update = aUpdate.Get(i);
     if (!update.has_compression_type()) {
       NS_WARNING(nsPrintfCString("%s with no compression type.",
                                  aIsAddition ? "Addition" : "Removal")
@@ -885,7 +885,7 @@ nsresult ProtocolParserProtobuf::ProcessRawAddition(
     return NS_OK;
   }
 
-  auto rawHashes = aAddition.raw_hashes();
+  const auto& rawHashes = aAddition.raw_hashes();
   if (!rawHashes.has_prefix_size()) {
     NS_WARNING("Raw hash has no prefix size");
     return NS_OK;
@@ -1111,7 +1111,7 @@ void ProtocolParserProtobufV5::End() {
 
   // Iterate over all the hash lists in the response.
   for (int i = 0; i < response.hash_lists_size(); i++) {
-    v5::HashList hashList = response.hash_lists(i);
+    const v5::HashList& hashList = response.hash_lists(i);
     nsAutoCString listName;
     nsresult rv = ProcessOneResponse(hashList, listName);
     if (NS_SUCCEEDED(rv)) {
@@ -1198,7 +1198,7 @@ nsresult ProtocolParserProtobufV5::ProcessOneResponse(
     }
   }
 
-  auto minWaitDuration = aHashList.minimum_wait_duration();
+  const auto& minWaitDuration = aHashList.minimum_wait_duration();
   mUpdateWaitSec =
       minWaitDuration.seconds() + minWaitDuration.nanos() / 1000000000;
 

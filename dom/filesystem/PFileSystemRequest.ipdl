@@ -62,7 +62,7 @@ union FileSystemResponseValue
   FileSystemErrorResponse;
 };
 
-[ChildImpl="FileSystemTaskChildBase"]
+[ChildImpl="mozilla::dom::FileSystemTaskChildBase"]
 protocol PFileSystemRequest
 {
   manager PBackground;

@@ -101,6 +101,7 @@ MOZ_MTLOG_MODULE("mtransport")
 const char kNrIceTransportUdp[] = "udp";
 const char kNrIceTransportTcp[] = "tcp";
 const char kNrIceTransportTls[] = "tls";
+static constexpr UINT4 kRegularNominationDelayMs = 20;
 
 static bool initialized = false;
 
@@ -371,6 +372,19 @@ int NrIceCtx::select_pair(void* obj, nr_ice_media_stream* stream,
   MOZ_MTLOG(ML_DEBUG, "select pair called: potential_ct = " << potential_ct);
   MOZ_ASSERT(stream->local_stream);
   MOZ_ASSERT(!stream->local_stream->obsolete);
+
+  for (int i = 0; i < potential_ct; ++i) {
+    nr_ice_cand_pair* pair = potentials[i];
+    if (pair->state != NR_ICE_PAIR_STATE_SUCCEEDED) {
+      continue;
+    }
+
+    if (pair->restart_nominated_cb_timer) {
+      return 0;
+    }
+
+    return nr_ice_candidate_pair_nominate(pair, kRegularNominationDelayMs);
+  }
 
   return 0;
 }

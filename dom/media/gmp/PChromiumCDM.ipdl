@@ -19,7 +19,7 @@ using cdm::Status from "GMPSanitizedExports.h";
 namespace mozilla {
 namespace gmp {
 
-[ChildImpl=virtual, ParentImpl="ChromiumCDMParent"]
+[ChildImpl=virtual, ParentImpl="mozilla::gmp::ChromiumCDMParent"]
 async protocol PChromiumCDM
 {
   manager PGMPContent;

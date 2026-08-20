@@ -135,7 +135,10 @@ const SUGGEST_PREFS = Object.freeze({
   },
   "amp.featureGate": {
     defaultValues: {
+      DE: [["de"], true],
+      FR: [["fr"], true],
       GB: [EN_LOCALES, true],
+      IT: [["it"], true],
       US: [EN_LOCALES, true],
     },
   },
@@ -179,7 +182,10 @@ const SUGGEST_PREFS = Object.freeze({
   },
   "wikipedia.featureGate": {
     defaultValues: {
+      DE: [["de"], true],
+      FR: [["fr"], true],
       GB: [EN_LOCALES, true],
+      IT: [["it"], true],
       US: [EN_LOCALES, true],
     },
   },

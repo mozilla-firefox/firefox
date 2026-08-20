@@ -8,7 +8,6 @@ prefs = [
   "layout.css.properties-and-values.enabled=true",
   "layout.css.starting-style-at-rules.enabled=true",
   "layout.css.tree-counting-functions.enabled=true",
-  "dom.viewTransitions.enabled=true",
 ]
 support-files = [
   "bug1202095.css",

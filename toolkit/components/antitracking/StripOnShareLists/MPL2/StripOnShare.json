@@ -74,6 +74,9 @@
       "crid",
       "dib",
       "dib_tag",
+      "eac_id",
+      "eac_link",
+      "eac_selected",
       "hsa_cr_id",
       "ipRedirectFrom",
       "ipRedirectOriginalURL",
@@ -203,5 +206,9 @@
   "humblebundle": {
     "queryParams": ["hmb_source", "hmb_medium", "hmb_campaign"],
     "origins": ["www.humblebundle.com"]
+  },
+  "linkedin": {
+    "queryParams": ["rcm"],
+    "origins": ["www.linkedin.com"]
   }
 }

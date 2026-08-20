@@ -26,7 +26,12 @@
 #include "nsProxyRelease.h"
 #include "nsTHashSet.h"
 
+#if MOZ_FONTATIONS
+#  include "mozilla/gfx/fontations_glue_generated.h"
+#endif
+
 using namespace mozilla;
+using namespace mozilla::gfx;
 
 mozilla::LogModule* gfxUserFontSet::GetUserFontsLog() {
   static LazyLogModule sLog("userfonts");
@@ -225,12 +230,10 @@ const uint8_t* gfxUserFontEntry::SanitizeOpenTypeData(
   return static_cast<const uint8_t*>(output.forget());
 }
 
-void gfxUserFontEntry::StoreUserFontData(gfxFontEntry* aFontEntry,
-                                         uint32_t aSrcIndex, bool aPrivate,
-                                         const nsACString& aOriginalName,
-                                         FallibleTArray<uint8_t>* aMetadata,
-                                         uint32_t aMetaOrigLen,
-                                         uint8_t aCompression) {
+void gfxUserFontEntry::StoreUserFontData(
+    gfxFontEntry* aFontEntry, uint32_t aSrcIndex, bool aPrivate,
+    const nsACString& aOriginalName, FallibleTArray<uint8_t>* aMetadata,
+    uint32_t aMetaOrigLen, uint8_t aCompression, RefPtr<FontData>&& aFontData) {
   if (!aFontEntry->mUserFontData) {
     aFontEntry->mUserFontData = MakeUnique<gfxUserFontData>();
   }
@@ -258,6 +261,7 @@ void gfxUserFontEntry::StoreUserFontData(gfxFontEntry* aFontEntry,
     userFontData->mMetaOrigLen = aMetaOrigLen;
     userFontData->mCompression = aCompression;
   }
+  userFontData->mFontData = std::move(aFontData);
 }
 
 size_t gfxUserFontData::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const {
@@ -497,7 +501,7 @@ void gfxUserFontEntry::DoLoadNextSrc(bool aIsContinue) {
         // a private window as there's no issue of caching resources;
         // local fonts are just available all the time.
         StoreUserFontData(fe, mCurrentSrcIndex, false, nsCString(), nullptr, 0,
-                          gfxUserFontData::kUnknownCompression);
+                          gfxUserFontData::kUnknownCompression, nullptr);
         mPlatformFontEntry = fe.forget();
         SetLoadState(STATUS_LOADED);
         glean::webfont::srctype.AccumulateSingleSample(currSrc.mSourceType + 1);
@@ -791,10 +795,6 @@ bool gfxUserFontEntry::LoadPlatformFont(uint32_t aSrcIndex,
     return false;
   }
 
-  // We now own the sanitized font data, and will keep it alive for the
-  // lifetime of the user font entry.
-  mFontData = std::move(fontData);
-
   // Save a copy of the metadata block (if present) for InspectorUtils
   // to use if required. Ownership of the metadata block will be passed
   // to the gfxUserFontData record below.
@@ -811,6 +811,19 @@ bool gfxUserFontEntry::LoadPlatformFont(uint32_t aSrcIndex,
     compression = gfxUserFontData::kBrotliCompression;
   }
 
+#if MOZ_FONTATIONS
+  // Give the new gfxFontEntry a Skrifa reference backed by our downloaded and
+  // sanitized font data.
+  SkrifaFontRef* skf = skrifa_font_new(fontData->Data(), fontData->Length());
+  if (skf) {
+    fe->SetSkrifaFont(skf);
+#  if NIGHTLY_BUILD
+    // also append (skrifa) to the name for devtools visibility
+    originalFullName.AppendLiteral(" (skrifa)");
+#  endif
+  }
+#endif
+
   // copy OpenType feature/language settings from the userfont entry to the
   // newly-created font entry
   fe->mFeatureSettings.AppendElements(mFeatureSettings);
@@ -822,8 +835,10 @@ bool gfxUserFontEntry::LoadPlatformFont(uint32_t aSrcIndex,
   fe->mDescentOverride = mDescentOverride;
   fe->mLineGapOverride = mLineGapOverride;
   fe->mSizeAdjust = mSizeAdjust;
+  // Pass ownership of fontData buffer to the entry's userFontData.
   StoreUserFontData(fe, aSrcIndex, fontSet->GetPrivateBrowsing(),
-                    originalFullName, &metadata, metaOrigLen, compression);
+                    originalFullName, &metadata, metaOrigLen, compression,
+                    std::move(fontData));
   LOG(
       ("userfonts (%p) [src %d] loaded uri: (%s) for (%s) "
        "(%p) gen: %8.8x compress: %d%%\n",

@@ -10,13 +10,15 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
+rust-version = "1.88.0"
 name = "webrtc-sdp"
-version = "0.3.13"
+version = "0.3.14"
 authors = [
     "Nicolas Grunbaum <na-g+github@nostrum.com>",
     "Nils Ohlmeier <github@ohlmeier.org>",
 ]
 build = false
+autolib = false
 autobins = false
 autoexamples = false
 autotests = false
@@ -34,6 +36,23 @@ categories = [
 ]
 license = "MPL-2.0"
 repository = "https://github.com/mozilla/webrtc-sdp"
+
+[badges.codecov]
+branch = "master"
+repository = "mozilla/webrtc-sdp"
+service = "github"
+
+[badges.travis-ci]
+branch = "master"
+repository = "mozilla/webrtc-sdp"
+
+[features]
+default = ["enhanced_debug"]
+enhanced_debug = []
+serialize = [
+    "serde",
+    "serde_derive",
+]
 
 [lib]
 name = "webrtc_sdp"
@@ -63,20 +82,3 @@ version = "2.1.0"
 
 [dev-dependencies.serde_json]
 version = "1.0"
-
-[features]
-default = ["enhanced_debug"]
-enhanced_debug = []
-serialize = [
-    "serde",
-    "serde_derive",
-]
-
-[badges.codecov]
-branch = "master"
-repository = "mozilla/webrtc-sdp"
-service = "github"
-
-[badges.travis-ci]
-branch = "master"
-repository = "mozilla/webrtc-sdp"

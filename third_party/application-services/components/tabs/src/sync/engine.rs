@@ -84,17 +84,13 @@ impl TabsEngine {
         }
     }
 
-    pub fn set_last_sync(&self, last_sync: ServerTimestamp) -> Result<()> {
+    // Internally owned last-sync - written internally from `apply`,
+    // `set_uploaded` and `reset` but otherwise private.
+    fn set_last_sync(&self, last_sync: ServerTimestamp) -> Result<()> {
         let mut storage = self.store.storage.lock().unwrap();
         debug!("Updating last sync to {}", last_sync);
         let last_sync_millis = last_sync.as_millis();
         Ok(storage.put_meta(schema::LAST_SYNC_META_KEY, &last_sync_millis)?)
-    }
-
-    pub fn get_last_sync(&self) -> Result<Option<ServerTimestamp>> {
-        let mut storage = self.store.storage.lock().unwrap();
-        let millis = storage.get_meta::<i64>(schema::LAST_SYNC_META_KEY)?;
-        Ok(millis.map(ServerTimestamp))
     }
 }
 
@@ -103,7 +99,17 @@ impl SyncEngine for TabsEngine {
         "tabs".into()
     }
 
-    fn prepare_for_sync(&self, get_client_data: &dyn Fn() -> ClientData) -> Result<()> {
+    fn last_sync(&self) -> Result<Option<ServerTimestamp>> {
+        let mut storage = self.store.storage.lock().unwrap();
+        let millis = storage.get_meta::<i64>(schema::LAST_SYNC_META_KEY)?;
+        Ok(millis.map(ServerTimestamp))
+    }
+
+    fn reset_last_sync(&self) -> Result<()> {
+        self.set_last_sync(ServerTimestamp(0))
+    }
+
+    fn set_clients(&self, get_client_data: &dyn Fn() -> ClientData) -> Result<()> {
         let mut storage = self.store.storage.lock().unwrap();
         // We only know the client list at sync time, but need to return tabs potentially
         // at any time -- so we store the clients in the meta table to be able to properly
@@ -212,7 +218,7 @@ impl SyncEngine for TabsEngine {
         };
         super::prepare_for_upload(&mut record);
 
-        trace!("outgoing {:?}", record);
+        trace!("outgoing {record}");
         let envelope = OutgoingEnvelope {
             id: local_id.as_str().into(),
             ttl: Some(TABS_CLIENT_TTL),
@@ -232,7 +238,7 @@ impl SyncEngine for TabsEngine {
         &self,
         server_timestamp: ServerTimestamp,
     ) -> Result<Option<CollectionRequest>> {
-        let since = self.get_last_sync()?.unwrap_or_default();
+        let since = self.last_sync()?.unwrap_or_default();
         Ok(if since == server_timestamp {
             None
         } else {
@@ -340,7 +346,7 @@ pub mod test {
             ]),
         };
         engine
-            .prepare_for_sync(&|| client_data.clone())
+            .set_clients(&|| client_data.clone())
             .expect("should work");
 
         let records = vec![
@@ -439,7 +445,7 @@ pub mod test {
             )]),
         };
         engine
-            .prepare_for_sync(&|| client_data.clone())
+            .set_clients(&|| client_data.clone())
             .expect("should work");
 
         let records = vec![json!({
@@ -539,7 +545,7 @@ pub mod test {
 
         assert_eq!(
             engine
-                .get_last_sync()
+                .last_sync()
                 .expect("should work")
                 .expect("should have a value"),
             ServerTimestamp::from_millis(123),

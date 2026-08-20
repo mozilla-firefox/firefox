@@ -266,7 +266,8 @@ class SharedArrayBufferObject : public ArrayBufferObjectMaybeShared {
   // greater than the object's length.
   JS_DEFINE_TYPED_SLOT(1, LENGTH_SLOT, Private, Undefined);
 
-  static_assert(LENGTH_SLOT.index() == ArrayBufferObject::BYTE_LENGTH_SLOT,
+  static_assert(LENGTH_SLOT.index() ==
+                    ArrayBufferObject::BYTE_LENGTH_SLOT.index(),
                 "JIT code assumes the same slot is used for the length");
 
   static const uint8_t RESERVED_SLOTS = 2;

@@ -17,6 +17,7 @@ import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.support.test.any
 import mozilla.components.support.test.mock
 import org.junit.Assert.assertEquals
@@ -82,6 +83,55 @@ class LinkingMiddlewareTest {
                 flags = loadFlags,
                 additionalHeaders = additionalHeaders,
                 textDirectiveUserActivation = true,
+            )
+    }
+
+    @Test
+    fun `GIVEN ABOUT_HOME_URL tab WHEN linking the tab THEN load the URL bypassing the load URI delegate`() {
+        val middleware = LinkingMiddleware(scope)
+
+        val tab = createTab(ABOUT_HOME_URL, id = "1")
+        val store =
+            BrowserStore(
+                initialState = BrowserState(tabs = listOf(tab)),
+                middleware = listOf(middleware),
+            )
+
+        val engineSession: EngineSession = mock()
+        store.dispatch(EngineAction.LinkEngineSessionAction(tab.id, engineSession))
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(engineSession)
+            .loadUrl(
+                url = ABOUT_HOME_URL,
+                flags =
+                    EngineSession.LoadUrlFlags.select(EngineSession.LoadUrlFlags.LOAD_FLAGS_BYPASS_LOAD_URI_DELEGATE),
+            )
+    }
+
+    @Test
+    fun `GIVEN tab is already bypassing the load URI delegate WHEN linking the tab THEN the load flags are unchanged`() {
+        val middleware = LinkingMiddleware(scope)
+
+        val loadFlags =
+            EngineSession.LoadUrlFlags.select(EngineSession.LoadUrlFlags.LOAD_FLAGS_BYPASS_LOAD_URI_DELEGATE)
+        val tab = createTab(ABOUT_HOME_URL, id = "1", initialLoadFlags = loadFlags)
+        val store =
+            BrowserStore(
+                initialState = BrowserState(tabs = listOf(tab)),
+                middleware = listOf(middleware),
+            )
+
+        val engineSession: EngineSession = mock()
+        store.dispatch(EngineAction.LinkEngineSessionAction(tab.id, engineSession))
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(engineSession)
+            .loadUrl(
+                url = ABOUT_HOME_URL,
+                flags = loadFlags,
             )
     }
 

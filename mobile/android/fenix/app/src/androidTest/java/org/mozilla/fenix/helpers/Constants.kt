@@ -25,6 +25,7 @@ object Constants {
         const val ANDROID_SETTINGS = "com.android.settings"
         const val PRINT_SPOOLER = "com.android.printspooler"
         const val PIXEL_LAUNCHER = "com.google.android.apps.nexuslauncher"
+        const val DOCUMENTS_UI = "com.google.android.documentsui"
     }
 
     const val SPEECH_RECOGNITION = "android.speech.action.RECOGNIZE_SPEECH"

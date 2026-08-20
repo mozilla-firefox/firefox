@@ -1502,7 +1502,7 @@ Boolean that's true once Nimbus has loaded remote experiments from Remote Settin
 
 ### `crashCount`
 
-The total number of crashes the user has experienced, as recorded in the [dump files corresponding to submitted crashes](https://searchfox.org/firefox-main/source/toolkit/components/crashes/CrashManager.in.sys.mjs#297-322). This targeting is only available for Mac and Windows users; Linux users will always return a `crashCount` of 0.
+The total number of crashes per 180 days the user has experienced, as recorded by the [crash manager](https://searchfox.org/firefox-main/source/toolkit/components/crashes/CrashManager.in.sys.mjs#1006-1016) at crash time, independent of whether a crash report was submitted.
 
 #### Definition
 
@@ -1512,7 +1512,7 @@ declare const crashCount: Promise<number>;
 
 ### `daysSinceLastCrash`
 
-The number of days since the most recent crash, as recorded in the [dump files corresponding to submitted crashes](https://searchfox.org/firefox-main/source/toolkit/components/crashes/CrashManager.in.sys.mjs#297-322). If there are no recorded crashes, returns `null`. This targeting is only available for Mac and Windows users; Linux users will always return null for `daysSinceLastCrash`.
+The number of days since the most recent crash, as recorded by the [crash manager](https://searchfox.org/firefox-main/source/toolkit/components/crashes/CrashManager.in.sys.mjs#1006-1016) at crash time, independent of whether a crash report was submitted. If there are no recorded crashes, returns `null`.
 
 #### Definition
 
@@ -1522,7 +1522,7 @@ declare const daysSinceLastCrash: Promise<number|null>;
 
 ### `crashCountInLastDay`
 
-The number of crashes the user has experienced in the last 24 hours, as recorded in the [dump files corresponding to submitted crashes](https://searchfox.org/firefox-main/source/toolkit/components/crashes/CrashManager.in.sys.mjs#297-322). This targeting is only available for Mac and Windows users; Linux users will always return a `crashCountInLastDay` of 0.
+The number of crashes the user has experienced in the last 24 hours, as recorded by the [crash manager](https://searchfox.org/firefox-main/source/toolkit/components/crashes/CrashManager.in.sys.mjs#1006-1016) at crash time, independent of whether a crash report was submitted.
 
 #### Definition
 
@@ -1532,12 +1532,22 @@ declare const crashCountInLastDay: Promise<number>;
 
 ### `crashCountInLastWeek`
 
-The number of crashes the user has experienced in the last 7 days, as recorded in the [dump files corresponding to submitted crashes](https://searchfox.org/firefox-main/source/toolkit/components/crashes/CrashManager.in.sys.mjs#297-322). This targeting is only available for Mac and Windows users; Linux users will always return a `crashCountInLastWeek` of 0.
+The number of crashes the user has experienced in the last 7 days, as recorded by the [crash manager](https://searchfox.org/firefox-main/source/toolkit/components/crashes/CrashManager.in.sys.mjs#1006-1016) at crash time, independent of whether a crash report was submitted.
 
 #### Definition
 
 ```ts
 declare const crashCountInLastWeek: Promise<number>;
+```
+
+### `previousSessionCrashed`
+
+`true` if the previous browser session ended in a crash, as reported by [`SessionStartup`](https://searchfox.org/firefox-main/source/browser/components/sessionstore/SessionStartup.sys.mjs#437).
+
+#### Definition
+
+```ts
+declare const previousSessionCrashed: boolean;
 ```
 
 ### `isLaunchOnLogin`

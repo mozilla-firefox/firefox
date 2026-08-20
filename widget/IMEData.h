@@ -5,6 +5,8 @@
 #ifndef mozilla_widget_IMEData_h_
 #define mozilla_widget_IMEData_h_
 
+#include <fmt/format.h>
+
 #include "Units.h"
 #include "mozilla/CheckedInt.h"
 #include "mozilla/EnumSet.h"
@@ -381,6 +383,16 @@ struct NativeIMEContext final {
   }
   bool operator!=(const NativeIMEContext& aOther) const {
     return !(*this == aOther);
+  }
+
+  friend auto format_as(const NativeIMEContext& aContext) {
+    return fmt::format("{{ mRawNativeIMEContext={}, mOriginProcessID={} }}",
+                       reinterpret_cast<void*>(aContext.mRawNativeIMEContext),
+                       aContext.mOriginProcessID);
+  }
+  friend std::ostream& operator<<(std::ostream& aStream,
+                                  const NativeIMEContext& aContext) {
+    return aStream << format_as(aContext);
   }
 };
 

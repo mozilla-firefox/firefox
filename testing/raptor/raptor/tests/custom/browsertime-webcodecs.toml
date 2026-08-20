@@ -72,6 +72,10 @@ test_url = "http://<host>:<port>/index.html?raptor&codecs=vp09.00.10.08&latencyM
 
 ["ve-av1-rt-cam"]
 test_url = "http://<host>:<port>/index.html?raptor&sources=camera&codecs=av01.0.04M.08&latencyModes=realtime&width=1920&height=1080&framerate=30"
+chrome_args = [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+]
 preferences = [
     "media.navigator.permission.disabled=true",
     "media.navigator.streams.fake=true",
@@ -81,6 +85,10 @@ preferences = [
 
 ["ve-av1-q-cam"]
 test_url = "http://<host>:<port>/index.html?raptor&sources=camera&codecs=av01.0.04M.08&latencyModes=quality&width=1920&height=1080&framerate=30"
+chrome_args = [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+]
 preferences = [
     "media.navigator.permission.disabled=true",
     "media.navigator.streams.fake=true",
@@ -90,6 +98,10 @@ preferences = [
 
 ["ve-h264-rt-cam"]
 test_url = "http://<host>:<port>/index.html?raptor&sources=camera&codecs=avc1.42001E:annexb&latencyModes=realtime&width=1920&height=1080&framerate=30"
+chrome_args = [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+]
 preferences = [
     "media.navigator.permission.disabled=true",
     "media.navigator.streams.fake=true",
@@ -99,6 +111,10 @@ preferences = [
 
 ["ve-h264-q-cam"]
 test_url = "http://<host>:<port>/index.html?raptor&sources=camera&codecs=avc1.42001E:avc&latencyModes=quality&width=1920&height=1080&framerate=30"
+chrome_args = [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+]
 preferences = [
     "media.navigator.permission.disabled=true",
     "media.navigator.streams.fake=true",
@@ -108,6 +124,10 @@ preferences = [
 
 ["ve-h264-rt-sd-cam"]
 test_url = "http://<host>:<port>/index.html?raptor&sources=camera&codecs=avc1.42001E:annexb&latencyModes=realtime&width=640&height=480&framerate=30"
+chrome_args = [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+]
 preferences = [
     "media.navigator.permission.disabled=true",
     "media.navigator.streams.fake=true",
@@ -117,6 +137,10 @@ preferences = [
 
 ["ve-h264-q-sd-cam"]
 test_url = "http://<host>:<port>/index.html?raptor&sources=camera&codecs=avc1.42001E:avc&latencyModes=quality&width=640&height=480&framerate=30"
+chrome_args = [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+]
 preferences = [
     "media.navigator.permission.disabled=true",
     "media.navigator.streams.fake=true",
@@ -126,6 +150,10 @@ preferences = [
 
 ["ve-vp8-rt-cam"]
 test_url = "http://<host>:<port>/index.html?raptor&sources=camera&codecs=vp8&latencyModes=realtime&width=1920&height=1080&framerate=30"
+chrome_args = [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+]
 preferences = [
     "media.navigator.permission.disabled=true",
     "media.navigator.streams.fake=true",
@@ -135,6 +163,10 @@ preferences = [
 
 ["ve-vp8-q-cam"]
 test_url = "http://<host>:<port>/index.html?raptor&sources=camera&codecs=vp8&latencyModes=quality&width=1920&height=1080&framerate=30"
+chrome_args = [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+]
 preferences = [
     "media.navigator.permission.disabled=true",
     "media.navigator.streams.fake=true",
@@ -144,6 +176,10 @@ preferences = [
 
 ["ve-vp9-rt-cam"]
 test_url = "http://<host>:<port>/index.html?raptor&sources=camera&codecs=vp09.00.10.08&latencyModes=realtime&width=1920&height=1080&framerate=30"
+chrome_args = [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+]
 preferences = [
     "media.navigator.permission.disabled=true",
     "media.navigator.streams.fake=true",
@@ -153,6 +189,10 @@ preferences = [
 
 ["ve-vp9-q-cam"]
 test_url = "http://<host>:<port>/index.html?raptor&sources=camera&codecs=vp09.00.10.08&latencyModes=quality&width=1920&height=1080&framerate=30"
+chrome_args = [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+]
 preferences = [
     "media.navigator.permission.disabled=true",
     "media.navigator.streams.fake=true",

@@ -4188,7 +4188,7 @@ pub extern "C" fn wr_dp_push_border(
     state
         .frame_builder
         .dl_builder
-        .push_border(&prim_info, rect, widths, border_details);
+        .push_border(&prim_info, rect, widths, border_details, &[]);
 }
 
 #[repr(C)]
@@ -4235,7 +4235,7 @@ pub extern "C" fn wr_dp_push_border_image(
     state
         .frame_builder
         .dl_builder
-        .push_border(&prim_info, rect, params.widths, border_details);
+        .push_border(&prim_info, rect, params.widths, border_details, &[]);
 }
 
 #[no_mangle]
@@ -4261,10 +4261,11 @@ pub extern "C" fn wr_dp_push_border_gradient(
     let stops_slice = unsafe { make_slice(stops, stops_count) };
     let stops_vector = stops_slice.to_owned();
 
-    let gradient = state
-        .frame_builder
-        .dl_builder
-        .create_gradient(start_point, end_point, stops_vector, extend_mode);
+    let (gradient, stops_vector) =
+        state
+            .frame_builder
+            .dl_builder
+            .create_gradient(start_point, end_point, stops_vector, extend_mode);
 
     let border_details = BorderDetails::NinePatch(NinePatchBorder {
         source: NinePatchBorderSource::Gradient(gradient),
@@ -4288,7 +4289,7 @@ pub extern "C" fn wr_dp_push_border_gradient(
     state
         .frame_builder
         .dl_builder
-        .push_border(&prim_info, rect, widths, border_details);
+        .push_border(&prim_info, rect, widths, border_details, &stops_vector);
 }
 
 #[no_mangle]
@@ -4318,10 +4319,11 @@ pub extern "C" fn wr_dp_push_border_radial_gradient(
         widths.left as i32,
     );
 
-    let gradient = state
-        .frame_builder
-        .dl_builder
-        .create_radial_gradient(center, radius, stops_vector, extend_mode);
+    let (gradient, stops_vector) =
+        state
+            .frame_builder
+            .dl_builder
+            .create_radial_gradient(center, radius, stops_vector, extend_mode);
 
     let border_details = BorderDetails::NinePatch(NinePatchBorder {
         source: NinePatchBorderSource::RadialGradient(gradient),
@@ -4345,7 +4347,7 @@ pub extern "C" fn wr_dp_push_border_radial_gradient(
     state
         .frame_builder
         .dl_builder
-        .push_border(&prim_info, rect, widths, border_details);
+        .push_border(&prim_info, rect, widths, border_details, &stops_vector);
 }
 
 #[no_mangle]
@@ -4375,10 +4377,11 @@ pub extern "C" fn wr_dp_push_border_conic_gradient(
         widths.left as i32,
     );
 
-    let gradient = state
-        .frame_builder
-        .dl_builder
-        .create_conic_gradient(center, angle, stops_vector, extend_mode);
+    let (gradient, stops_vector) =
+        state
+            .frame_builder
+            .dl_builder
+            .create_conic_gradient(center, angle, stops_vector, extend_mode);
 
     let border_details = BorderDetails::NinePatch(NinePatchBorder {
         source: NinePatchBorderSource::ConicGradient(gradient),
@@ -4402,7 +4405,7 @@ pub extern "C" fn wr_dp_push_border_conic_gradient(
     state
         .frame_builder
         .dl_builder
-        .push_border(&prim_info, rect, widths, border_details);
+        .push_border(&prim_info, rect, widths, border_details, &stops_vector);
 }
 
 #[no_mangle]
@@ -4425,10 +4428,11 @@ pub extern "C" fn wr_dp_push_linear_gradient(
     let stops_slice = unsafe { make_slice(stops, stops_count) };
     let stops_vector = stops_slice.to_owned();
 
-    let gradient = state
-        .frame_builder
-        .dl_builder
-        .create_gradient(start_point, end_point, stops_vector, extend_mode);
+    let (gradient, stops_vector) =
+        state
+            .frame_builder
+            .dl_builder
+            .create_gradient(start_point, end_point, stops_vector, extend_mode);
 
     let space_and_clip = parent.to_webrender(state.pipeline_id);
 
@@ -4442,7 +4446,7 @@ pub extern "C" fn wr_dp_push_linear_gradient(
     state
         .frame_builder
         .dl_builder
-        .push_gradient(&prim_info, rect, gradient, tile_size, tile_spacing);
+        .push_gradient(&prim_info, rect, gradient, tile_size, tile_spacing, &stops_vector);
 }
 
 #[no_mangle]
@@ -4465,10 +4469,11 @@ pub extern "C" fn wr_dp_push_radial_gradient(
     let stops_slice = unsafe { make_slice(stops, stops_count) };
     let stops_vector = stops_slice.to_owned();
 
-    let gradient = state
-        .frame_builder
-        .dl_builder
-        .create_radial_gradient(center, radius, stops_vector, extend_mode);
+    let (gradient, stops_vector) =
+        state
+            .frame_builder
+            .dl_builder
+            .create_radial_gradient(center, radius, stops_vector, extend_mode);
 
     let space_and_clip = parent.to_webrender(state.pipeline_id);
 
@@ -4479,10 +4484,14 @@ pub extern "C" fn wr_dp_push_radial_gradient(
         flags: prim_flags(is_backface_visible, /* prefer_compositor_surface */ false),
     };
 
-    state
-        .frame_builder
-        .dl_builder
-        .push_radial_gradient(&prim_info, rect, gradient, tile_size, tile_spacing);
+    state.frame_builder.dl_builder.push_radial_gradient(
+        &prim_info,
+        rect,
+        gradient,
+        tile_size,
+        tile_spacing,
+        &stops_vector,
+    );
 }
 
 #[no_mangle]
@@ -4505,10 +4514,11 @@ pub extern "C" fn wr_dp_push_conic_gradient(
     let stops_slice = unsafe { make_slice(stops, stops_count) };
     let stops_vector = stops_slice.to_owned();
 
-    let gradient = state
-        .frame_builder
-        .dl_builder
-        .create_conic_gradient(center, angle, stops_vector, extend_mode);
+    let (gradient, stops_vector) =
+        state
+            .frame_builder
+            .dl_builder
+            .create_conic_gradient(center, angle, stops_vector, extend_mode);
 
     let space_and_clip = parent.to_webrender(state.pipeline_id);
 
@@ -4519,10 +4529,14 @@ pub extern "C" fn wr_dp_push_conic_gradient(
         flags: prim_flags(is_backface_visible, /* prefer_compositor_surface */ false),
     };
 
-    state
-        .frame_builder
-        .dl_builder
-        .push_conic_gradient(&prim_info, rect, gradient, tile_size, tile_spacing);
+    state.frame_builder.dl_builder.push_conic_gradient(
+        &prim_info,
+        rect,
+        gradient,
+        tile_size,
+        tile_spacing,
+        &stops_vector,
+    );
 }
 
 #[no_mangle]

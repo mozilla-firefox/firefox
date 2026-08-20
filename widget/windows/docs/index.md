@@ -6,6 +6,7 @@
 blocklist
 shell/pin-to-taskbar
 shell/set-default
+notification-server/index
 windows-pointing-device/index
 LimitedAccessFeature
 ```

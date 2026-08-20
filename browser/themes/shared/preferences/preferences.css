@@ -1677,6 +1677,15 @@ setting-pane[onsearchpane] {
   }
 }
 
+#site-containers-list {
+  --box-group-max-height: 500px;
+
+  container-select {
+    --select-min-width: 10em;
+    --select-max-width: 10em;
+  }
+}
+
 .products-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

@@ -286,9 +286,6 @@ interface AddressesBridgedEngine {
     i64 last_sync();
 
     [Throws=AutofillApiError]
-    void set_last_sync(i64 last_sync);
-
-    [Throws=AutofillApiError]
     string? sync_id();
 
     [Throws=AutofillApiError]
@@ -298,16 +295,13 @@ interface AddressesBridgedEngine {
     string ensure_current_sync_id([ByRef]string new_sync_id);
 
     [Throws=AutofillApiError]
-    void prepare_for_sync([ByRef]string client_data);
-
-    [Throws=AutofillApiError]
     void sync_started();
 
     [Throws=AutofillApiError]
     void store_incoming(sequence<string> incoming_envelopes_as_json);
 
     [Throws=AutofillApiError]
-    sequence<string> apply();
+    sequence<string> apply(i64 server_modified_millis);
 
     [Throws=AutofillApiError]
     void set_uploaded(i64 new_timestamp, sequence<string> uploaded_ids);

@@ -3,6 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+use crate::render::buffer_splitter::OutputChannelRef;
 use crate::util::f16;
 
 use crate::{
@@ -16,7 +17,7 @@ impl SaveStage {
     pub(super) fn save_simple(
         &self,
         data: &[Image<f64>],
-        buffers: &mut [Option<JxlOutputBuffer>],
+        buffers: &mut [Option<OutputChannelRef>],
     ) -> Result<()> {
         for i in self.channels.iter().skip(1) {
             assert_eq!(data[self.channels[0]].size(), data[*i].size());
@@ -94,7 +95,10 @@ impl SaveStage {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{api::JxlColorType, headers::Orientation, image::Rect, tests::assert_close};
+    use crate::{
+        api::JxlColorType, headers::Orientation, image::Rect,
+        render::buffer_splitter::OutputChannelSplitter, tests::assert_close,
+    };
     use rand::SeedableRng;
     use rand_xorshift::XorShiftRng;
     use test_log::test;
@@ -113,16 +117,16 @@ mod test {
         let src = [Image::<f64>::new_random((128, 128), &mut rng)?];
         let mut dst = Image::<u8>::new_random((128, 128), &mut rng)?;
 
-        save_stage.save_simple(
-            &src,
-            &mut [Some(JxlOutputBuffer::from_image_rect_mut(
-                dst.get_rect_mut(Rect {
-                    size: (128, 128),
-                    origin: (0, 0),
-                })
-                .into_raw(),
-            ))],
-        )?;
+        {
+            let r = Rect {
+                size: (128, 128),
+                origin: (0, 0),
+            };
+            let splitter = OutputChannelSplitter::new(JxlOutputBuffer::from_image_rect_mut(
+                dst.get_rect_mut(r).into_raw(),
+            ));
+            save_stage.save_simple(&src, &mut [Some(splitter.borrow_rect(r))])?;
+        }
 
         for y in 0..128 {
             for x in 0..128 {
@@ -161,16 +165,17 @@ mod test {
         let mut rng = XorShiftRng::seed_from_u64(0);
         let mut dst = Image::<f32>::new_random((ow, oh), &mut rng)?;
 
-        save_stage.save_simple(
-            &src,
-            &mut [Some(JxlOutputBuffer::from_image_rect_mut(
-                dst.get_rect_mut(Rect {
-                    origin: (0, 0),
-                    size: (ow, oh),
-                })
-                .into_raw(),
-            ))],
-        )?;
+        {
+            let r = Rect {
+                size: (ow, oh),
+                origin: (0, 0),
+            };
+            let splitter = OutputChannelSplitter::new(JxlOutputBuffer::from_image_rect_mut(
+                dst.get_rect_mut(r).into_raw(),
+            ));
+            let byte_rect = r.to_byte_rect_sz(std::mem::size_of::<f32>());
+            save_stage.save_simple(&src, &mut [Some(splitter.borrow_rect(byte_rect))])?;
+        }
 
         // Iterate over the DESTINATION image pixels.
         for y_dest in 0..oh {

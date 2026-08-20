@@ -183,9 +183,6 @@ async function starttest(){
 
   info("\nProfile::SpecialPowersRunTime: " + (new Date() - startTime) + "\n");
 
-  // bug 855192
-  ok(SpecialPowers.MockPermissionPrompt, "check mock permission prompt");
-
   // Set a pref using pushPrefEnv to make sure that flushPrefEnv is
   // automatically called before we invoke
   // test_SpecialPowersExtension2.html.

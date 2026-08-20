@@ -11,6 +11,7 @@ import androidx.test.filters.SdkSuppress
 import mozilla.components.concept.engine.mediasession.MediaSession
 import org.junit.Rule
 import org.junit.Test
+import org.mozilla.fenix.customannotations.Converted
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.AppAndSystemHelper.grantSystemPermission
 import org.mozilla.fenix.helpers.FenixTestRule
@@ -86,6 +87,17 @@ class SettingsSitePermissionsTest {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/247680
     // Verifies that you can go to System settings and change app's permissions from inside the app
+    @Converted(
+        replacedBy =
+            [
+                "org.mozilla.fenix.ui.efficiency.tests.SettingsSitePermissionsTest#systemBlockedPermissionsRedirectToSystemAppSettingsTest"
+            ],
+        bug = 2064833,
+        since = "2026-08",
+        notes =
+            "The port also asserts the OS permission state via PackageManager; the legacy row-title assertion " +
+                "cannot fail above API 30, where the disambiguating row summary is not rendered.",
+    )
     @SmokeTest
     @Test
     @SdkSuppress(minSdkVersion = 29)
@@ -129,6 +141,14 @@ class SettingsSitePermissionsTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2095125
+    @Converted(
+        replacedBy =
+            [
+                "org.mozilla.fenix.ui.efficiency.tests.SettingsSitePermissionsTest#verifyAutoplayBlockAudioOnlySettingOnNotMutedVideoTest"
+            ],
+        bug = 2064810,
+        since = "2026-08",
+    )
     @SmokeTest
     @Test
     fun verifyAutoplayBlockAudioOnlySettingOnNotMutedVideoTest() {
@@ -166,6 +186,14 @@ class SettingsSitePermissionsTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2286807
+    @Converted(
+        replacedBy =
+            [
+                "org.mozilla.fenix.ui.efficiency.tests.SettingsSitePermissionsTest#verifyAutoplayBlockAudioOnlySettingOnMutedVideoTest"
+            ],
+        bug = 2064810,
+        since = "2026-08",
+    )
     @SmokeTest
     @Test
     fun verifyAutoplayBlockAudioOnlySettingOnMutedVideoTest() {
@@ -483,6 +511,12 @@ class SettingsSitePermissionsTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/246976
+    @Converted(
+        replacedBy =
+            ["org.mozilla.fenix.ui.efficiency.tests.SettingsSitePermissionsTest#clearAllSitePermissionsExceptionsTest"],
+        bug = 2064823,
+        since = "2026-08",
+    )
     @SmokeTest
     @Test
     fun clearAllSitePermissionsExceptionsTest() {

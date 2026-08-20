@@ -19,6 +19,7 @@ MOZ_SRC_FILES += [
     "QuickSuggest.sys.mjs",
     "SmartbarMentionsPanelSearch.sys.mjs",
     "UrlbarMuxerStandard.sys.mjs",
+    "UrlbarNewTabComponentRegistrant.sys.mjs",
     "UrlbarParentController.sys.mjs",
     "UrlbarPrefs.sys.mjs",
     "UrlbarProviderAboutPages.sys.mjs",

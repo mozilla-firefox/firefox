@@ -46,6 +46,7 @@ macro_rules! maybe_vector_to_string {
                 $fmt_str,
                 $vec.iter()
                     .map(ToString::to_string)
+                    .filter(|s| !s.is_empty())
                     .collect::<Vec<String>>()
                     .join($sep)
             ),
@@ -664,7 +665,7 @@ impl fmt::Display for SdpAttributeFmtpParameters {
                 maybe_print_param(
                     "profile-level-id=",
                     format!("{:06x}", self.profile_level_id),
-                    "420010".to_string()
+                    "42000a".to_string()
                 ),
                 maybe_print_bool_param(
                     "level-asymmetry-allowed",
@@ -716,11 +717,15 @@ pub struct SdpAttributeFmtp {
 
 impl fmt::Display for SdpAttributeFmtp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let parameters = self.parameters.to_string();
+        if parameters.is_empty() {
+            return Ok(());
+        }
         write!(
             f,
             "{pt} {parameter}",
             pt = self.payload_type,
-            parameter = self.parameters
+            parameter = parameters
         )
     }
 }
@@ -1508,7 +1513,13 @@ impl FromStr for SdpAttribute {
 impl fmt::Display for SdpAttribute {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let attr_type_name = SdpAttributeType::from(self).to_string();
-        let attr_to_string = |attr_str: String| attr_type_name + ":" + &attr_str;
+        let attr_to_string = |attr_str: String| {
+            if attr_str.is_empty() {
+                "".to_string()
+            } else {
+                attr_type_name + ":" + &attr_str
+            }
+        };
         match *self {
             SdpAttribute::BundleOnly => SdpAttributeType::BundleOnly.to_string(),
             SdpAttribute::Candidate(ref a) => attr_to_string(a.to_string()),
@@ -1623,28 +1634,28 @@ pub enum SdpAttributeType {
     SsrcGroup,
 }
 
-impl<'a> From<&'a SdpAttribute> for SdpAttributeType {
+impl From<&SdpAttribute> for SdpAttributeType {
     fn from(other: &SdpAttribute) -> Self {
         match *other {
-            SdpAttribute::BundleOnly { .. } => SdpAttributeType::BundleOnly,
+            SdpAttribute::BundleOnly => SdpAttributeType::BundleOnly,
             SdpAttribute::Candidate { .. } => SdpAttributeType::Candidate,
             SdpAttribute::DtlsMessage { .. } => SdpAttributeType::DtlsMessage,
-            SdpAttribute::EndOfCandidates { .. } => SdpAttributeType::EndOfCandidates,
+            SdpAttribute::EndOfCandidates => SdpAttributeType::EndOfCandidates,
             SdpAttribute::Extmap { .. } => SdpAttributeType::Extmap,
-            SdpAttribute::ExtmapAllowMixed { .. } => SdpAttributeType::ExtmapAllowMixed,
+            SdpAttribute::ExtmapAllowMixed => SdpAttributeType::ExtmapAllowMixed,
             SdpAttribute::Fingerprint { .. } => SdpAttributeType::Fingerprint,
             SdpAttribute::Fmtp { .. } => SdpAttributeType::Fmtp,
             SdpAttribute::FrameRate { .. } => SdpAttributeType::FrameRate,
             SdpAttribute::Group { .. } => SdpAttributeType::Group,
-            SdpAttribute::IceLite { .. } => SdpAttributeType::IceLite,
-            SdpAttribute::IceMismatch { .. } => SdpAttributeType::IceMismatch,
+            SdpAttribute::IceLite => SdpAttributeType::IceLite,
+            SdpAttribute::IceMismatch => SdpAttributeType::IceMismatch,
             SdpAttribute::IceOptions { .. } => SdpAttributeType::IceOptions,
             SdpAttribute::IcePacing { .. } => SdpAttributeType::IcePacing,
             SdpAttribute::IcePwd { .. } => SdpAttributeType::IcePwd,
             SdpAttribute::IceUfrag { .. } => SdpAttributeType::IceUfrag,
             SdpAttribute::Identity { .. } => SdpAttributeType::Identity,
             SdpAttribute::ImageAttr { .. } => SdpAttributeType::ImageAttr,
-            SdpAttribute::Inactive { .. } => SdpAttributeType::Inactive,
+            SdpAttribute::Inactive => SdpAttributeType::Inactive,
             SdpAttribute::Label { .. } => SdpAttributeType::Label,
             SdpAttribute::MaxMessageSize { .. } => SdpAttributeType::MaxMessageSize,
             SdpAttribute::MaxPtime { .. } => SdpAttributeType::MaxPtime,
@@ -1653,18 +1664,18 @@ impl<'a> From<&'a SdpAttribute> for SdpAttributeType {
             SdpAttribute::MsidSemantic { .. } => SdpAttributeType::MsidSemantic,
             SdpAttribute::Ptime { .. } => SdpAttributeType::Ptime,
             SdpAttribute::Rid { .. } => SdpAttributeType::Rid,
-            SdpAttribute::Recvonly { .. } => SdpAttributeType::Recvonly,
+            SdpAttribute::Recvonly => SdpAttributeType::Recvonly,
             SdpAttribute::RemoteCandidate { .. } => SdpAttributeType::RemoteCandidate,
             SdpAttribute::Rtcp { .. } => SdpAttributeType::Rtcp,
             SdpAttribute::Rtcpfb { .. } => SdpAttributeType::Rtcpfb,
-            SdpAttribute::RtcpMux { .. } => SdpAttributeType::RtcpMux,
-            SdpAttribute::RtcpMuxOnly { .. } => SdpAttributeType::RtcpMuxOnly,
-            SdpAttribute::RtcpRsize { .. } => SdpAttributeType::RtcpRsize,
+            SdpAttribute::RtcpMux => SdpAttributeType::RtcpMux,
+            SdpAttribute::RtcpMuxOnly => SdpAttributeType::RtcpMuxOnly,
+            SdpAttribute::RtcpRsize => SdpAttributeType::RtcpRsize,
             SdpAttribute::Rtpmap { .. } => SdpAttributeType::Rtpmap,
             SdpAttribute::Sctpmap { .. } => SdpAttributeType::Sctpmap,
             SdpAttribute::SctpPort { .. } => SdpAttributeType::SctpPort,
-            SdpAttribute::Sendonly { .. } => SdpAttributeType::Sendonly,
-            SdpAttribute::Sendrecv { .. } => SdpAttributeType::Sendrecv,
+            SdpAttribute::Sendonly => SdpAttributeType::Sendonly,
+            SdpAttribute::Sendrecv => SdpAttributeType::Sendrecv,
             SdpAttribute::Setup { .. } => SdpAttributeType::Setup,
             SdpAttribute::Simulcast { .. } => SdpAttributeType::Simulcast,
             SdpAttribute::Ssrc { .. } => SdpAttributeType::Ssrc,
@@ -2109,7 +2120,7 @@ fn parse_fmtp(to_parse: &str) -> Result<SdpAttribute, SdpParserInternalError> {
     let mut parameters = SdpAttributeFmtpParameters {
         packetization_mode: 0,
         level_asymmetry_allowed: false,
-        profile_level_id: 0x0042_0010,
+        profile_level_id: 0x0042_000A,
         max_fs: 0,
         max_cpb: 0,
         max_dpb: 0,
@@ -3090,10 +3101,7 @@ fn parse_rtcp(to_parse: &str) -> Result<SdpAttribute, SdpParserInternalError> {
                                 "Rtcp attribute is missing ip address token".to_string(),
                             ));
                         }
-                        Some(x) => match ExplicitlyTypedAddress::try_from((addrtype, x)) {
-                            Ok(address) => address,
-                            Err(e) => return Err(e),
-                        },
+                        Some(x) => ExplicitlyTypedAddress::try_from((addrtype, x))?,
                     };
                     rtcp.set_addr(addr);
                 }

@@ -37,7 +37,7 @@ use crate::{
     TargetingAttributes,
 };
 
-#[ctor::ctor]
+#[ctor::ctor(unsafe)]
 fn init() {
     error_support::init_for_tests_with_level(error_support::Level::Info);
 }

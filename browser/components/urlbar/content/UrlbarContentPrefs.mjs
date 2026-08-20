@@ -23,8 +23,12 @@ function getPrefs() {
   // In child processes the Urlbar actor exposes important UrlbarPrefs methods on
   // the window, as part of the single port it publishes there. To expose more
   // methods, change the Urlbar actor.
-  return /** @type {Pick<typeof UrlbarPrefs, "get" | "addObserver" | "removeObserver">}*/ ({
-    get: p => window.UrlbarActorPort.getPref(p),
+  let get = p => window.UrlbarActorPort.getPref(p);
+  return /** @type {Pick<typeof UrlbarPrefs, "get" | "getScotchBonnetPref" | "addObserver" | "removeObserver">}*/ ({
+    get,
+    // Composed from `get` rather than exposed on the port, since that is all the
+    // privileged implementation does.
+    getScotchBonnetPref: p => get("scotchBonnet.enableOverride") || get(p),
     addObserver: o => window.UrlbarActorPort.addPrefObserver(o),
     removeObserver: o => window.UrlbarActorPort.removePrefObserver(o),
   });

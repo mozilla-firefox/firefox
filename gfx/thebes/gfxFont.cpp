@@ -4329,6 +4329,43 @@ bool gfxFont::InitMetricsFromSfntTables(Metrics& aMetrics) {
   return true;
 }
 
+#if MOZ_FONTATIONS
+bool gfxFont::InitMetricsFromSkrifa(Metrics& aMetrics) {
+  mIsValid = false;
+
+  const auto* skf = mFontEntry->GetSkrifaFont();
+  if (!skf) {
+    return false;
+  }
+
+  SkrifaLocation* location = skrifa_font_resolve_variations_to_location(
+      skf, &mStyle.variationSettings);
+  SkrifaMetrics metrics;
+  skrifa_font_get_metrics(skf, GetAdjustedSize(), location, &metrics);
+  skrifa_location_delete(location);
+
+  // Metrics that are always returned from the Skrifa font.
+  mFUnitsConvFactor = metrics.scale_factor;
+  aMetrics.maxAdvance = metrics.max_advance;
+  aMetrics.aveCharWidth = metrics.ave_char_width;
+  aMetrics.maxAscent = metrics.max_ascent;
+  aMetrics.maxDescent = -metrics.max_descent;  // note inverted sign!
+  aMetrics.externalLeading = metrics.external_leading;
+
+  // These will be zero if unavailable; SanitizeMetrics will adjust them to
+  // reasonable defaults if necessary.
+  aMetrics.underlineOffset = metrics.underline_offset;
+  aMetrics.underlineSize = metrics.underline_size;
+  aMetrics.strikeoutOffset = metrics.strikeout_offset;
+  aMetrics.strikeoutSize = metrics.strikeout_size;
+  aMetrics.xHeight = metrics.x_height;
+  aMetrics.capHeight = metrics.cap_height;
+
+  mIsValid = true;
+  return true;
+}
+#endif
+
 static double RoundToNearestMultiple(double aValue, double aFraction) {
   return floor(aValue / aFraction + 0.5) * aFraction;
 }

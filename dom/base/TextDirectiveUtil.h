@@ -231,6 +231,15 @@ class TextDirectiveUtil final {
                                                 uint32_t aWordEnd);
 
   /**
+   * @brief Returns true if `aString` contains at least two words.
+   *
+   * Words which are just whitespace or punctuation are not counted, following
+   * the same definition of a word as the word boundary algorithms in this
+   * class.
+   */
+  static bool ContainsAtLeastTwoWords(const nsAString& aString);
+
+  /**
    * @brief Finds the position of the beginning of the second word (in
    *        `direction`), then removes everything up to that position from
    *       `aString` and `aWordDistances`.

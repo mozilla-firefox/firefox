@@ -3,7 +3,7 @@
 html { background-color: red; }
 </style>
 <script>
-if (CSS.supports("selector(::-webkit-scrollbar)")) {
+if (!CSS.supports("selector(::-webkit-scrollbar)")) {
   document.documentElement.style.backgroundColor = "white";
 }
 </script>

@@ -9,8 +9,8 @@ use crate::api::{
 };
 use crate::error::Result;
 use crate::headers::{FileHeader, OpsinInverseMatrix};
-use crate::render::RenderPipelineInPlaceStage;
 use crate::render::stages::from_linear;
+use crate::render::{ErasedLocalState, RenderPipelineInPlaceStage};
 use crate::util::{Matrix3x3, inv_3x3_matrix, mul_3x3_matrix};
 use jxl_simd::{F32SimdVec, simd_function};
 
@@ -249,7 +249,7 @@ impl RenderPipelineInPlaceStage for XybStage {
         _position: (usize, usize),
         xsize: usize,
         row: &mut [&mut [f32]],
-        _state: Option<&mut dyn std::any::Any>,
+        _state: Option<&mut ErasedLocalState>,
     ) {
         let [row_x, row_y, row_b] = row else {
             panic!(

@@ -93,6 +93,9 @@ interface TopSiteController {
     /** @see [TopSiteInteractor.onShowAllTopSitesClicked] */
     fun handleShowAllTopSitesClicked()
 
+    /** @see [TopSiteInteractor.onExpandToggleClicked] */
+    fun handleExpandToggleClicked(isExpanded: Boolean)
+
     /** @see [TopSiteInteractor.onShortcutsLibraryViewed] */
     fun handleShortcutsLibraryViewed()
 
@@ -389,6 +392,14 @@ class DefaultTopSiteController(
             R.id.homeFragment,
             HomeFragmentDirections.actionHomeFragmentToShortcutsFragment(),
         )
+    }
+
+    override fun handleExpandToggleClicked(isExpanded: Boolean) {
+        if (isExpanded) {
+            TopSites.showMore.record(NoExtras())
+        } else {
+            TopSites.showLess.record(NoExtras())
+        }
     }
 
     override fun handleShortcutsLibraryViewed() {

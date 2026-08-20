@@ -256,7 +256,7 @@ option(
     help="Indicate that ld64 is free of symbol aliasing bugs",
 )
 
-imply_option("MOZ_LD64_KNOWN_GOOD", moz_automation)
+imply_option("MOZ_LD64_KNOWN_GOOD", True, when=moz_automation)
 
 use_fat_lto = cxx_compiler.try_link(
     ldflags=depends(stlport_libs)(

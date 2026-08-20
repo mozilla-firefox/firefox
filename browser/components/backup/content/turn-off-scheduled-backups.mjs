@@ -55,11 +55,11 @@ export default class TurnOffScheduledBackups extends MozLitElement {
         aria-labelledby="backup-turn-off-scheduled-header"
         aria-describedby="backup-turn-off-scheduled-description"
       >
-        <h1
+        <h2
           id="backup-turn-off-scheduled-header"
           class="heading-medium"
           data-l10n-id="turn-off-scheduled-backups-header"
-        ></h1>
+        ></h2>
         <main id="backup-turn-off-scheduled-content">
           <div id="backup-turn-off-scheduled-description">
             <span

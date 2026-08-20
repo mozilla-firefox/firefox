@@ -524,7 +524,7 @@ MOZ_ALWAYS_INLINE void NativeObject::initEmptyDynamicSlots() {
 }
 
 MOZ_ALWAYS_INLINE void NativeObject::setDictionaryModeSlotSpan(uint32_t span) {
-  MOZ_ASSERT(inDictionaryMode());
+  // This may be called before setShape() has put us into dictionary mode.
 
   if (!hasDynamicSlots()) {
     setEmptyDynamicSlots(span);
@@ -536,7 +536,7 @@ MOZ_ALWAYS_INLINE void NativeObject::setDictionaryModeSlotSpan(uint32_t span) {
 
 MOZ_ALWAYS_INLINE void NativeObject::setEmptyDynamicSlots(
     uint32_t dictionarySlotSpan) {
-  MOZ_ASSERT_IF(!inDictionaryMode(), dictionarySlotSpan == 0);
+  // This may be called before setShape() has put us into dictionary mode.
   MOZ_ASSERT(dictionarySlotSpan <= MAX_FIXED_SLOTS);
 
   slots_ = emptyObjectSlotsForDictionaryObject[dictionarySlotSpan];

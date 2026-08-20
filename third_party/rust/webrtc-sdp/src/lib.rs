@@ -896,7 +896,7 @@ pub fn parse_sdp(sdp: &str, fail_on_warning: bool) -> Result<SdpSession, SdpPars
     session.warnings = warnings;
 
     for warning in &session.warnings {
-        warn!("Warning: {}", &warning);
+        warn!("Warning: {}", warning);
     }
 
     Ok(session)

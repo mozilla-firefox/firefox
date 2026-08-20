@@ -286,7 +286,7 @@ nsresult WritableStreamToOutputAlgorithms::BuildErrorStatus(
     RefPtr<WebTransportError> error;
     UnwrapObject<prototypes::id::WebTransportError, WebTransportError>(
         obj, error, nullptr);
-    if (error) {
+    if (error && !error->GetStreamErrorCode().IsNull()) {
       return net::GetNSResultFromWebTransportError(
           error->GetStreamErrorCode().Value());
     }

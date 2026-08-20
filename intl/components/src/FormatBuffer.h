@@ -29,6 +29,12 @@ class nsTStringToBufferAdapter {
   nsTStringToBufferAdapter(const nsTStringToBufferAdapter&) = delete;
   nsTStringToBufferAdapter& operator=(const nsTStringToBufferAdapter&) = delete;
 
+  ~nsTStringToBufferAdapter() {
+    if (MOZ_UNLIKELY(!mHasWritten)) {
+      mString.Truncate();
+    }
+  }
+
   explicit nsTStringToBufferAdapter(nsTSubstring<CharType>& aString)
       : mString(aString) {}
 
@@ -66,10 +72,12 @@ class nsTStringToBufferAdapter {
     // written. This is necessary because the write happens across FFI
     // boundaries.
     mString.SetLength(amount);
+    mHasWritten = true;
   }
 
  private:
   nsTSubstring<CharType>& mString;
+  bool mHasWritten = false;
 };
 
 }  // namespace mozilla::intl

@@ -28,8 +28,8 @@ You can examine and edit CSS in the Inspector's {ref}`CSS pane<page-inspector-ui
 
 The {ref}`Rules view<page-inspector-ui-tour-rules-view>` lists all the rules that apply to the selected element, ordered from most-specific to least-specific:
 
-```{image} rules_view_ff_87.png
-:alt: Rules view panel as of Firefox 87
+```{image} rules_view.png
+:alt: Rules view panel
 :class: border
 ```
 
@@ -41,8 +41,8 @@ The six buttons on the right top of the rules view allow you to change the displ
 - change the display based on {ref}`prefers-color-scheme media rules <page-inspector-view-media-rules-for-prefers-color-scheme>`.
 - change the display based on {ref}`print media rules <page-inspector-view-media-rules-for-print>`.
 
-```{image} rules_view_buttons_fx_72.png
-:alt: Toolbar buttons of the Rules view, as of Fx 72
+```{image} rules_view_buttons.png
+:alt: Toolbar buttons of the Rules view
 :class: center
 ```
 
@@ -253,9 +253,19 @@ This makes it easy to see which rule is overriding the declaration
 
 (page-inspector-view-media-rules-for-print)=
 
-### View @media rules for Print
+### Emulate media conditions
 
-You can toggle the display into a mode that emulates @media rules for print.
+It is possible to emulate different media conditions in the Inspector. This is useful for testing how a page will look under different conditions.
+
+To emulate a media condition, there is an **@** button in the Rules view toolbar. Clicking this button displays a panel with the available media conditions:
+
+```{image} emulation_panel.png
+:class: border
+```
+
+#### View @media rules for print
+
+You can toggle the display into a mode that emulates @media rules for print by clicking the "Enable" toggle in the @media print section of the emulation panel.
 
 ```{raw} html
 <iframe width="560" height="315" src="https://www.youtube.com/embed/AEmq9hNDOGU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -267,9 +277,13 @@ When on, any rules defined for printing the page will be displayed similar to th
 
 (page-inspector-view-media-rules-for-prefers-color-scheme)=
 
-### View @media rules for prefers-color-scheme
+#### View @media rules for prefers-color-scheme
 
-The color scheme simulator buttons can be used to test the rendering of styles based on the [prefers-color-scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-color-scheme) media query (if any are defined for the page). There are two buttons, which enable the light and dark preference, respectively. Selecting either button deselects the other. If neither button is selected then the simulator does not set a preference, and the browser renders using the default feature value set by the operating system.
+The color scheme emulation options can be used to test the rendering of styles based on the [prefers-color-scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-color-scheme) media query (if any are defined for the page).
+
+Within the emulation panel, there are three radio buttons to toggle emulation of the light mode, the dark mode, and to disable emulation, where disabling emulation means that the browser will render the page based on the operating system's color scheme preference.
+
+In addition to those options, there are two toolbar buttons besides the **@** button for easier access, which enable the light and dark preference, respectively. Selecting either button deselects the other. If neither button is selected, then the emulation is disabled.
 
 ```{eval-rst}
 .. list-table::
@@ -282,8 +296,7 @@ The color scheme simulator buttons can be used to test the rendering of styles b
 
   * - .. image:: color_scheme_null.png
     - null
-    - The ``prefers-color-scheme`` media feature is not set by the simulator.
-
+    - The ``prefers-color-scheme`` media feature is not set by the emulator.
 
   * - .. image:: color_scheme_light.png
     - ``light``
@@ -295,13 +308,23 @@ The color scheme simulator buttons can be used to test the rendering of styles b
 
 ```
 
-Note that if the operating system mode is set to a particular mode, then simulating that mode will not change page rendering (i.e. simulating dark mode when the operating system is using dark mode will not change the display).
+Note that if the operating system mode is set to a particular mode, then emulating that mode will not change page rendering (i.e. emulating dark mode when the operating system is using dark mode will not change the display).
 
 :::{note}
-If `privacy.resistFingerprinting` has been set **true**, the [prefers-color-scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-color-scheme) preference is forced to `light`. You must set\`\`privacy.resistFingerprinting\`\` to **false** in order to use this feature.
+If `privacy.resistFingerprinting` has been set **true**, the [prefers-color-scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-color-scheme) preference is forced to `light`. You must set `privacy.resistFingerprinting` to **false** in order to use this feature.
 :::
 
 (page-inspector-how-to-examine-and-edit-css-examine-computed-css)=
+
+#### View @media rules for prefers-reduced-motion
+
+The reduced motion emulation options can be used to test the rendering of styles based on the [prefers-reduced-motion](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-reduced-motion) media query (if any are defined for the page).
+
+The emulation panel has three radio buttons to toggle emulation of the no-preference mode, the reduced-motion mode, and to disable emulation, where disabling emulation means that the browser will render the page based on the operating system's reduced motion preference.
+
+:::{note}
+If `privacy.resistFingerprinting` has been set **true**, the [prefers-reduced-motion](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-reduced-motion) preference is forced to `no-preference`. You must set `privacy.resistFingerprinting` to **false** in order to use this feature.
+:::
 
 ## Examine computed CSS
 
@@ -414,7 +437,7 @@ You can add new rules in the Rules view. Just right-click to show the context me
 
 There's also a button that enables you to do the same thing:
 
-```{image} rules_panel.png
+```{image} add_rule_button.png
 :class: border
 ```
 

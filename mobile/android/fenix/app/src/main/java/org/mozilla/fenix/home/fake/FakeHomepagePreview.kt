@@ -208,6 +208,10 @@ internal object FakeHomepagePreview {
                     /* no op */
                 }
 
+                override fun onExpandToggleClicked(isExpanded: Boolean) {
+                    /* no op */
+                }
+
                 override fun onShortcutsLibraryViewed() {
                     /* no op */
                 }

@@ -3,14 +3,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#![allow(unsafe_code)]
-
 use std::ops::Range;
 
 use jxl_simd::{F32SimdVec, SimdDescriptor, U8SimdVec, U16SimdVec, simd_function};
 
 use crate::{
     api::{Endianness, JxlDataFormat, JxlOutputBuffer},
+    image::ImageDataType,
     render::low_memory_pipeline::row_buffers::RowBuffer,
 };
 
@@ -232,17 +231,7 @@ pub(super) fn store(
         (1, _, true) => {
             // We can just do a memcpy.
             let input_buf = &input_buf[0].get_row::<u8>(input_y)[byte_start..byte_end];
-            assert_eq!(input_buf.len(), output_buf.len());
-            // SAFETY: we are copying `u8`s, which have an alignment of 1, from a slice of [u8] to
-            // a slice of [u8] of the same length (as we checked just above). Aliasing rules
-            // guarantee that the two slices are non-overlapping.
-            unsafe {
-                std::ptr::copy_nonoverlapping(
-                    input_buf.as_ptr(),
-                    output_buf.as_mut_ptr(),
-                    output_buf.len(),
-                );
-            }
+            output_buf.copy_from_slice(input_buf);
             input_buf.len() / data_format.bytes_per_sample()
         }
         (channels, 1, true) if (2..=4).contains(&channels) => {
@@ -257,11 +246,7 @@ pub(super) fn store(
         (channels, 2, true) if (2..=4).contains(&channels) => {
             let ptr = output_buf.as_mut_ptr();
             if ptr.align_offset(std::mem::align_of::<u16>()) == 0 {
-                let len_u16 = output_buf.len() / 2;
-                // SAFETY: we checked alignment above, and the size is correct by definition.
-                let output_u16 = unsafe {
-                    std::slice::from_raw_parts_mut(output_buf.as_mut_ptr().cast::<u16>(), len_u16)
-                };
+                let output_u16 = u16::cast_slice_mut(output_buf);
                 let start_u16 = byte_start / 2;
                 let end_u16 = byte_end / 2;
                 let mut slices = [&[] as &[u16]; 4];
@@ -276,12 +261,7 @@ pub(super) fn store(
         (channels, 4, true) if (2..=4).contains(&channels) => {
             let ptr = output_buf.as_mut_ptr();
             if ptr.align_offset(std::mem::align_of::<f32>()) == 0 {
-                let len_f32 = output_buf.len() / std::mem::size_of::<f32>();
-                // SAFETY: we checked alignment above, and the size is correct by definition.
-                let output_f32 = unsafe {
-                    std::slice::from_raw_parts_mut(output_buf.as_mut_ptr().cast::<f32>(), len_f32)
-                };
-
+                let output_f32 = f32::cast_slice_mut(output_buf);
                 let start_f32 = byte_start / 4;
                 let end_f32 = byte_end / 4;
 
@@ -289,7 +269,6 @@ pub(super) fn store(
                 for (i, buf) in input_buf.iter().enumerate() {
                     slices[i] = &buf.get_row::<f32>(input_y)[start_f32..end_f32];
                 }
-
                 store_interleaved_f32(&slices[..channels], output_f32)
             } else {
                 0

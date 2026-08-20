@@ -36,11 +36,6 @@ class TrampolineNativeFrameLayout;
 
 class TypedArrayObject : public ArrayBufferViewObject {
  public:
-  static_assert(js::detail::TypedArrayLengthSlot == LENGTH_SLOT,
-                "bad inlined constant in TypedData.h");
-  static_assert(js::detail::TypedArrayDataSlot == DATA_SLOT,
-                "bad inlined constant in TypedData.h");
-
   static bool sameBuffer(const TypedArrayObject* a, const TypedArrayObject* b) {
     // Inline buffers.
     if (!a->hasBuffer() || !b->hasBuffer()) {

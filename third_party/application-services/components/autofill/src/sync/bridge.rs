@@ -2,12 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use crate::db::models::address::InternalAddress;
-use crate::sync::engine::ConfigSyncEngine;
 use crate::Store;
-use anyhow::Result;
 use std::sync::Arc;
-use sync15::engine::BridgedEngineAdaptor;
 
 impl Store {
     /// Returns a bridged sync engine for addresses, for use by Desktop's Sync
@@ -15,40 +11,13 @@ impl Store {
     /// never touches the DB, so this cannot fail.
     pub fn addresses_bridged_engine(self: Arc<Self>) -> Arc<AddressesBridgedEngine> {
         let engine = crate::sync::address::create_engine(self);
-        Arc::new(AddressesBridgedEngine::new(Box::new(
-            AddressesBridgedEngineAdaptor { engine },
-        )))
-    }
-}
-
-/// `ConfigSyncEngine` implements `sync15::SyncEngine`, which is what the sync
-/// manager drives. Desktop instead speaks `mozIBridgedSyncEngine`, whose Rust
-/// shape is `sync15::BridgedEngine`. The two differ only in that the bridge owns
-/// the last-sync timestamp explicitly, so this adaptor supplies that and the
-/// blanket `impl<A: BridgedEngineAdaptor> BridgedEngine for A` provides the rest.
-struct AddressesBridgedEngineAdaptor {
-    engine: ConfigSyncEngine<InternalAddress>,
-}
-
-impl BridgedEngineAdaptor for AddressesBridgedEngineAdaptor {
-    fn last_sync(&self) -> Result<i64> {
-        Ok(self.engine.get_last_sync_millis()?)
-    }
-
-    fn set_last_sync(&self, last_sync_millis: i64) -> Result<()> {
-        self.engine.set_last_sync_millis(last_sync_millis)?;
-        Ok(())
-    }
-
-    fn engine(&self) -> &dyn sync15::engine::SyncEngine {
-        &self.engine
+        Arc::new(AddressesBridgedEngine::new(Box::new(engine)))
     }
 }
 
 // Generates the UniFFI-exposed `AddressesBridgedEngine`, a newtype around
-// `sync15::engine::BridgedEngineWrapper`. The UDL's `set_uploaded` takes
-// `sequence<string>`, hence the `String` id type.
-sync15::uniffi_bridged_engine!(AddressesBridgedEngine, String);
+// `sync15::engine::BridgedEngineWrapper`.
+sync15::uniffi_bridged_engine!(AddressesBridgedEngine);
 
 #[cfg(test)]
 mod tests {
@@ -64,9 +33,10 @@ mod tests {
         let store = Arc::new(Store::new_shared_memory("addresses-bridge").unwrap());
         let bridge = store.addresses_bridged_engine();
 
+        bridge.sync_started().unwrap();
         // Fresh DB: never synced.
         assert_eq!(bridge.last_sync().unwrap(), 0);
-        bridge.set_last_sync(3).unwrap();
+        bridge.set_uploaded(3, vec![]).unwrap();
         assert_eq!(bridge.last_sync().unwrap(), 3);
 
         assert!(bridge.sync_id().unwrap().is_none());
@@ -75,12 +45,12 @@ mod tests {
         assert_eq!(bridge.sync_id().unwrap(), Some("some_guid".to_string()));
         // changing the sync ID resets the timestamp
         assert_eq!(bridge.last_sync().unwrap(), 0);
-        bridge.set_last_sync(3).unwrap();
+        bridge.set_uploaded(3, vec![]).unwrap();
 
         bridge.reset_sync_id().unwrap();
         assert_ne!(bridge.sync_id().unwrap(), Some("some_guid".to_string()));
         assert_eq!(bridge.last_sync().unwrap(), 0);
-        bridge.set_last_sync(3).unwrap();
+        bridge.set_uploaded(3, vec![]).unwrap();
 
         // `reset` clears the guid and the timestamp.
         bridge.reset().unwrap();
@@ -113,12 +83,8 @@ mod tests {
 
         let bridge = store.clone().addresses_bridged_engine();
 
-        // `prepare_for_sync` is what creates the sync staging tables; the client
-        // data it is given is unused by this engine.
-        bridge
-            .prepare_for_sync(r#"{"local_client_id":"my-client","recent_clients":{}}"#)
-            .expect("should prepare for sync");
-        bridge.sync_started().unwrap();
+        // `sync_started` is what creates the sync staging tables.
+        bridge.sync_started().expect("should prepare for sync");
 
         // An incoming remote address that isn't known locally. We build the
         // envelope as raw JSON, exactly as the JS bridge hands it to us.
@@ -144,7 +110,7 @@ mod tests {
 
         // Applying stores the remote record locally and returns the local-only
         // address for upload.
-        let outgoing = bridge.apply().expect("should apply");
+        let outgoing = bridge.apply(1234).expect("should apply");
         let changes: HashMap<String, serde_json::Value> = outgoing
             .into_iter()
             .map(|s| {
@@ -169,15 +135,13 @@ mod tests {
             .expect("remote address should have been stored");
         assert_eq!(stored.street_address, "99 Remote Road");
 
-        // `apply` deliberately stamps last_sync with 0 - Desktop applies without
-        // telling us the server timestamp and sends it separately afterwards.
-        assert_eq!(bridge.last_sync().unwrap(), 0);
-        bridge.set_uploaded(1234, vec![local.guid.clone()]).unwrap();
-        bridge.sync_finished().unwrap();
         assert_eq!(bridge.last_sync().unwrap(), 1234);
+        bridge.set_uploaded(5678, vec![local.guid.clone()]).unwrap();
+        bridge.sync_finished().unwrap();
+        assert_eq!(bridge.last_sync().unwrap(), 5678);
 
         // Acknowledging the upload cleared the record's change counter, so a
         // subsequent sync has nothing to send.
-        assert!(bridge.apply().expect("should apply again").is_empty());
+        assert!(bridge.apply(5678).expect("should apply again").is_empty());
     }
 }

@@ -24,9 +24,32 @@ containers-icon-label2 =
 containers-color-label2 =
     .label = Color
 
-containers-dialog =
-    .buttonlabelaccept = Done
-    .buttonaccesskeyaccept = D
+containers-dialog2 =
+    .buttonlabelaccept = Save
+    .buttonaccesskeyaccept = S
+
+## Dialog that binds a website to a container.
+
+containers-site-window =
+    .title = Add Website
+
+containers-site-label =
+    .label = Website
+    .placeholder = example.com
+
+containers-site-container-label =
+    .label = Container
+
+containers-site-dialog =
+    .buttonlabelaccept = Save
+    .buttonaccesskeyaccept = S
+
+# Shown below the website field when the typed website is not a host, or when
+# it is a URL that does not use the https scheme.
+containers-site-invalid-error = Enter a valid, secure website
+# Shown below the website field when the typed website is already bound to a
+# container.
+containers-site-duplicate-error = This website is already in your list
 
 ## Container creation panel, anchored to the URL bar.
 

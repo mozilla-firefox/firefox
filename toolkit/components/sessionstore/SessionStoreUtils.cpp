@@ -472,7 +472,7 @@ static uint32_t SizeOfFormEntry(const FormEntryValue& aValue) {
         }
       };
 
-      auto ceTuple = aValue.get_CustomElementTuple();
+      const auto& ceTuple = aValue.get_CustomElementTuple();
       size += customElementTupleSize(ceTuple.value());
       size += customElementTupleSize(ceTuple.state());
       break;

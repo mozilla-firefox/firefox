@@ -21,8 +21,8 @@
  */
 
 /**
- * pdfjsVersion = 6.3.183
- * pdfjsBuild = 48bb93b89
+ * pdfjsVersion = 6.3.227
+ * pdfjsBuild = e05127938
  */
 
 ;// ./src/shared/util.js
@@ -1986,6 +1986,7 @@ class FloatingToolbar {
     const editToolbar = this.#toolbar = document.createElement("div");
     editToolbar.className = "editToolbar";
     editToolbar.setAttribute("role", "toolbar");
+    editToolbar.dir = this.#uiManager.direction;
     const signal = this.#uiManager._signal;
     if (signal instanceof AbortSignal && !signal.aborted) {
       editToolbar.addEventListener("contextmenu", noContextMenu, {
@@ -2064,7 +2065,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "df51a2ca-766d-4bd1-bd4e-9faff090d03c";
+const INTERNAL_EVT = "9cec0aca-d738-4ffb-a6aa-af0edf713ce3";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -14435,7 +14436,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "6.3.183",
+    apiVersion: "6.3.227",
     data,
     password,
     disableAutoFetch,
@@ -16092,8 +16093,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "6.3.183";
-const build = "48bb93b89";
+const version = "6.3.227";
+const build = "e05127938";
 
 ;// ./src/display/editor/color_picker.js
 
@@ -19868,11 +19869,16 @@ class AnnotationLayer {
       for (const {
         contentElement,
         data: {
-          id
+          hidden,
+          id,
+          oc
         }
       } of this.#elements) {
         const annotationId = contentElement.id = `${AnnotationPrefix}${id}`;
-        promises.push(this.#structTreeLayer?.getAriaAttributes(annotationId).then(ariaAttributes => {
+        const enableLinkOwnership = contentElement.localName === "a" && !hidden && !oc;
+        promises.push(this.#structTreeLayer?.getAriaAttributes(annotationId, {
+          enableLinkOwnership
+        }).then(ariaAttributes => {
           if (ariaAttributes) {
             for (const [key, value] of ariaAttributes) {
               contentElement.setAttribute(key, value);
@@ -19924,8 +19930,14 @@ class AnnotationLayer {
     this.div.append(fragment);
     await Promise.all(promises);
     if (this.#accessibilityManager) {
-      for (const element of this.#elements) {
-        this.#accessibilityManager.addPointerInTextLayer(element.contentElement, false);
+      const annotationIds = await this.#structTreeLayer?.getAnnotationIds();
+      for (const {
+        contentElement
+      } of this.#elements) {
+        if (annotationIds?.has(contentElement.id)) {
+          continue;
+        }
+        this.#accessibilityManager.addPointerInTextLayer(contentElement, false);
       }
     }
   }

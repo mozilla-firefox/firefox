@@ -1410,13 +1410,6 @@ static DWORD WindowStylesRemovedForBorderStyle(BorderStyle aStyle) {
   if (!(aStyle & BorderStyle::Title)) {
     toRemove |= WS_DLGFRAME;
   }
-  if (!(aStyle & (BorderStyle::Menu | BorderStyle::Close))) {
-    // Looks like getting rid of the system menu also does away with the close
-    // box. So, we only get rid of the system menu and the close box if you
-    // want neither. How does the Windows "Dialog" window class get just
-    // closebox and no sysmenu? Who knows.
-    toRemove |= WS_SYSMENU;
-  }
   if (!(aStyle & BorderStyle::ResizeH)) {
     toRemove |= WS_THICKFRAME;
   }

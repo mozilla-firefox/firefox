@@ -1,0 +1,219 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# One task per group of vendored libraries. Each re-vendors every library in its
+# `members` list at the revision pinned in that library's moz.yaml and checks the
+# result matches what is committed.
+#
+# Every vendored moz.yaml (one with a `vendoring:` section, non-rust) must
+# appear in exactly one group's `members` -- the `coverage` task turns the tree
+# orange for any that don't. Which group a library is in only decides which task
+# verifies it, so put a new one with related libraries.
+#
+# Libraries that do not re-vendor cleanly yet are annotated in
+# taskcluster/scripts/misc/vendor-verify-expected-fail.yml.
+---
+task-defaults:
+    description: Verify that re-vendoring libraries reproduces the committed tree
+    worker-type: t-linux-docker-amd
+    attributes:
+        # Deliberately not wired to the code-review bot: code-review: true would
+        # trip remove_optimization_on_central and run every group unconditionally
+        # on mozilla-central.
+        code-review: false
+    worker:
+        docker-image: {in-tree: static-analysis-build}
+        # A group re-vendors all of its libraries, some of which are slow, so this
+        # needs more than the 20-minute task default.
+        max-run-time: 1800
+        env:
+            MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE: system
+    treeherder:
+        kind: test
+        tier: 1
+    platform: lint/opt
+    run:
+        clone-with: hg
+        using: run-task
+        cwd: '{checkout}'
+    # Some libraries' update-actions need tooling the image doesn't have: gfx/angle
+    # runs gn, and dom/webgpu/tests/cts runs cargo, which in turn runs npm. Fetching
+    # gn also stops the build system bootstrapping it at runtime, which fails in a
+    # task that sets no UPLOAD_DIR. Fetch these for every group rather than tracking
+    # which library needs what -- the libraries that need tooling are spread across
+    # most of the groups, and only the group whose files changed actually runs.
+    fetches:
+        toolchain:
+            - linux64-gn
+            - linux64-node
+            - linux64-rust
+
+algorithms:
+    treeherder:
+        symbol: vendor(algorithms)
+    members:
+        - dom/webauthn/winwebauthn/moz.yaml
+        - mfbt/double-conversion/moz.yaml
+        - modules/brotli/moz.yaml
+        - modules/fdlibm/moz.yaml
+        - modules/xz-embedded/moz.yaml
+        - modules/zlib/moz.yaml
+        - nsprpub/moz.yaml
+        - security/nss/moz.yaml
+        - third_party/gemmology/moz.yaml
+        - third_party/js/PKI.js/moz.yaml
+        - third_party/picosha2/moz.yaml
+        - third_party/simde/moz.yaml
+        - third_party/xsimd/moz.yaml
+        - third_party/zstd/moz.yaml
+        - third_party/zucchini/chromium/moz.yaml
+
+data:
+    treeherder:
+        symbol: vendor(data)
+    members:
+        - mozglue/misc/decimal/moz.yaml
+        - parser/expat/moz.yaml
+        - third_party/msgpack/moz.yaml
+        - third_party/skv/moz.yaml
+        - third_party/sqlite3/ext/sqlite-vec/moz.yaml
+        - third_party/sqlite3/moz.yaml
+        - toolkit/components/jsoncpp/moz.yaml
+        - toolkit/components/protobuf/moz.yaml
+
+fonts:
+    treeherder:
+        symbol: vendor(fonts)
+    members:
+        - extensions/spellcheck/hunspell/moz.yaml
+        - gfx/graphite2/moz.yaml
+        - gfx/harfbuzz/moz.yaml
+        - gfx/ots/moz.yaml
+        - modules/freetype2/moz.yaml
+        - modules/woff2/moz.yaml
+
+gfx:
+    treeherder:
+        symbol: vendor(gfx)
+    members:
+        - dom/canvas/test/webgl-conf/moz.yaml
+        - dom/webgpu/tests/cts/moz.yaml
+        - gfx/angle/moz.yaml
+        - gfx/cairo/moz.yaml
+        - gfx/pixman/moz.yaml
+        - gfx/vr/service/openvr/moz.yaml
+        - media/libjpeg/moz.yaml
+        - media/libpng/moz.yaml
+        - media/libwebp/moz.yaml
+        - third_party/drm/moz.yaml
+        - third_party/gbm/moz.yaml
+        - third_party/libepoxy/moz.yaml
+
+js-engine:
+    treeherder:
+        symbol: vendor(js-engine)
+    members:
+        - js/src/ctypes/libffi/moz.yaml
+        - js/src/irregexp/moz.yaml
+        - js/src/zydis/Zycore/moz.yaml
+        - js/src/zydis/Zydis/moz.yaml
+
+js-ui:
+    treeherder:
+        symbol: vendor(js-ui)
+    members:
+        - devtools/client/shared/vendor/source-map/moz.yaml
+        - third_party/js/cfworker/moz.yaml
+        - third_party/js/prosemirror/moz.yaml
+        - third_party/js/prosemirror/prosemirror-commands/moz.yaml
+        - third_party/js/prosemirror/prosemirror-history/moz.yaml
+        - third_party/js/prosemirror/prosemirror-keymap/moz.yaml
+        - third_party/js/prosemirror/prosemirror-markdown/moz.yaml
+        - third_party/js/prosemirror/prosemirror-model/moz.yaml
+        - third_party/js/prosemirror/prosemirror-schema-basic/moz.yaml
+        - third_party/js/prosemirror/prosemirror-state/moz.yaml
+        - third_party/js/prosemirror/prosemirror-suggestions/moz.yaml
+        - third_party/js/prosemirror/prosemirror-transform/moz.yaml
+        - third_party/js/prosemirror/prosemirror-view/moz.yaml
+        - third_party/js/qrcode/moz.yaml
+        - toolkit/components/pdfjs/moz.yaml
+        - toolkit/components/reader/moz.yaml
+        - toolkit/content/vendor/lit/moz.yaml
+
+media:
+    treeherder:
+        symbol: vendor(media)
+    members:
+        - dom/media/gmp/widevine-adapter/moz.yaml
+        - dom/media/webrtc/transport/third_party/nICEr/moz.yaml
+        - media/libaom/moz.yaml
+        - media/libcubeb/moz.yaml
+        - media/libdav1d/moz.yaml
+        - media/libnestegg/moz.yaml
+        - media/libogg/moz.yaml
+        - media/libopus/moz.yaml
+        - media/libsoundtouch/moz.yaml
+        - media/libspeex_resampler/moz.yaml
+        - media/libvorbis/moz.yaml
+        - media/libvpx/moz.yaml
+        - media/libyuv/moz.yaml
+        - netwerk/sctp/src/moz.yaml
+        - third_party/libsrtp/moz.yaml
+        - third_party/pipewire/moz.yaml
+
+misc:
+    treeherder:
+        symbol: vendor(misc)
+    members:
+        - ipc/chromium/src/third_party/libevent/moz.yaml
+        - mobile/android/android-components/plugins/dependencies/src/main/java/moz.yaml
+        - third_party/application-services/moz.yaml
+        - third_party/content_analysis_sdk/moz.yaml
+        - third_party/cups/moz.yaml
+        - third_party/fmt/moz.yaml
+        - third_party/function2/moz.yaml
+        - third_party/llama.cpp/moz.yaml
+        - third_party/opentelemetry-cpp/moz.yaml
+        - third_party/opentelemetry-cpp/third_party/opentelemetry-proto/moz.yaml
+        - third_party/perfetto/moz.yaml
+        - third_party/python/vsdownload/moz.yaml
+        - toolkit/components/ml/vendor/openai/moz.yaml
+        - toolkit/components/nimbus/schemas/moz.yaml
+        - tools/lint/eslint/eslint-plugin-sdl-vendored/moz.yaml
+
+sandbox:
+    treeherder:
+        symbol: vendor(sandbox)
+    members:
+        - config/external/rlbox_wasm2c_sandbox/moz.yaml
+        - config/external/wasm2c_sandbox_compiler/moz.yaml
+        - security/sandbox/chromium/moz.yaml
+        - security/sandbox/linux/launch/glibc_hack/moz.yaml
+        - third_party/rlbox/moz.yaml
+
+testing:
+    treeherder:
+        symbol: vendor(testing)
+    members:
+        - testing/mochitest/pywebsocket3/moz.yaml
+        - third_party/googletest/moz.yaml
+        - third_party/webkit/PerformanceTests/MotionMark/moz.yaml
+        - third_party/webkit/PerformanceTests/Speedometer3/moz.yaml
+        - third_party/webkit/PerformanceTests/media-capabilities/moz.yaml
+        - third_party/webkit/PerformanceTests/webaudio/moz.yaml
+        - tools/fuzzing/libfuzzer/moz.yaml
+
+# No `members`: this one checks that every vendored library is in a group
+# above, rather than verifying any library itself.
+coverage:
+    description: Check every vendored library is assigned to a vendor-verify group
+    treeherder:
+        symbol: vendor(coverage)
+    run:
+        command: './mach python taskcluster/scripts/misc/check-vendor-coverage.py'
+    when:
+        files-changed:
+            - '**/moz.yaml'
+            - 'taskcluster/kinds/source-test/vendor-verify.yml'
+            - 'taskcluster/scripts/misc/check-vendor-coverage.py'

@@ -512,7 +512,6 @@ class WritingMode {
    * Compare two WritingModes for equality.
    */
   bool operator==(const WritingMode&) const = default;
-  bool operator!=(const WritingMode&) const = default;
 
   /**
    * Check whether two modes are orthogonal to each other.
@@ -865,7 +864,6 @@ class LogicalPoint {
     CHECK_WRITING_MODE(aOther.GetWritingMode());
     return mPoint == aOther.mPoint;
   }
-  bool operator!=(const LogicalPoint&) const = default;
 
   LogicalPoint operator+(const LogicalPoint& aOther) const {
     CHECK_WRITING_MODE(aOther.GetWritingMode());
@@ -1088,7 +1086,6 @@ class LogicalSize {
     CHECK_WRITING_MODE(aOther.GetWritingMode());
     return mSize == aOther.mSize;
   }
-  bool operator!=(const LogicalSize&) const = default;
 
   LogicalSize operator+(const LogicalSize& aOther) const {
     CHECK_WRITING_MODE(aOther.GetWritingMode());
@@ -1204,7 +1201,6 @@ struct LogicalSides final {
     CHECK_WRITING_MODE(aOther.GetWritingMode());
     return mSides == aOther.mSides;
   }
-  bool operator!=(const LogicalSides&) const = default;
 
 #ifdef DEBUG
   WritingMode GetWritingMode() const { return mWritingMode; }
@@ -1510,7 +1506,6 @@ class LogicalMargin {
     CHECK_WRITING_MODE(aMargin.GetWritingMode());
     return mMargin == aMargin.mMargin;
   }
-  bool operator!=(const LogicalMargin&) const = default;
 
   LogicalMargin operator+(const LogicalMargin& aMargin) const {
     CHECK_WRITING_MODE(aMargin.GetWritingMode());

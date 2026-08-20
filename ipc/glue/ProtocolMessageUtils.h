@@ -43,6 +43,29 @@ struct ParamTraits<mozilla::ipc::IProtocol*> {
   static bool Read(MessageReader* aReader, paramType* aResult);
 };
 
+template <mozilla::ipc::IPDLActorType PFooSide>
+struct ParamTraits<PFooSide*> {
+  using paramType = PFooSide*;
+
+  static void Write(MessageWriter* aWriter, const paramType& aParam) {
+    WriteParam(aWriter, static_cast<mozilla::ipc::IProtocol*>(aParam));
+  }
+
+  static bool Read(MessageReader* aReader, paramType* aResult) {
+    mozilla::ipc::IProtocol* result = nullptr;
+    if (!ReadParam(aReader, &result)) {
+      return false;
+    }
+
+    *aResult = ActorDynCast<PFooSide>(result);
+    if (result && !*aResult) {
+      aReader->FatalError("Unexpected actor type");
+      return false;
+    }
+    return true;
+  }
+};
+
 template <>
 struct ParamTraits<mozilla::ipc::UntypedEndpoint> {
   using paramType = mozilla::ipc::UntypedEndpoint;

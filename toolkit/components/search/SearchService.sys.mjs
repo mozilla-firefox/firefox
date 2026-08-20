@@ -1794,7 +1794,13 @@ export const SearchService = new (class SearchService {
       Services.prefs.setCharPref(
         lazy.SearchUtils.BROWSER_SEARCH_PREF + "lastEngineIgnored",
         // Limit length of url to avoid storing too much in prefs.
-        `${Math.trunc(Date.now() / 1000)} Search engine '${name}' matches ${type} ignore list ${url.substring(0, 200)}`
+        `${Math.trunc(Date.now() / 1000)} Search engine matches ${type} ignore list ${url.substring(0, 200)}`
+      );
+      // Kept separate from lastEngineIgnored so the engine name isn't
+      // included if that preference is displayed, e.g. on about:support.
+      Services.prefs.setStringPref(
+        lazy.SearchUtils.BROWSER_SEARCH_PREF + "lastEngineIgnored.name",
+        name
       );
     };
 

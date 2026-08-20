@@ -32,6 +32,11 @@ class RTC_EXPORT I420Buffer : public I420BufferInterface {
                                           int stride_y,
                                           int stride_u,
                                           int stride_v);
+  static scoped_refptr<I420Buffer> CreateOrNull(int width,
+                                                int height,
+                                                int stride_y,
+                                                int stride_u,
+                                                int stride_v);
 
   // Create a new buffer and copy the pixel data.
   static scoped_refptr<I420Buffer> Copy(const I420BufferInterface& buffer);
@@ -100,7 +105,15 @@ class RTC_EXPORT I420Buffer : public I420BufferInterface {
 
  protected:
   I420Buffer(int width, int height);
-  I420Buffer(int width, int height, int stride_y, int stride_u, int stride_v);
+  // If `data` is non-null, it must have been allocated with AlignedMalloc and
+  // be large enough to hold the planes described by the strides; the buffer
+  // takes ownership of it. Otherwise the data is allocated by the constructor.
+  I420Buffer(int width,
+             int height,
+             int stride_y,
+             int stride_u,
+             int stride_v,
+             uint8_t* data = nullptr);
 
   ~I420Buffer() override;
 

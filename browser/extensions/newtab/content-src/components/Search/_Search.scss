@@ -39,6 +39,15 @@ $glyph-forward: url('chrome://browser/skin/forward.svg');
     cursor: default;
     display: flex;
     height: $search-height-new;
+
+    // The address bar component fills the slot the handoff button also fills.
+    moz-urlbar {
+      --urlbar-height: #{$search-height-new};
+      // How far the open results panel reaches past the bar, which the shared
+      // sheet derives from the bar's own height.
+      --urlbar-background-inset-breakout: -8px;
+    }
+
     margin: 0 auto;
     position: relative;
     width: 304px;

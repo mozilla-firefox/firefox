@@ -1,29 +1,23 @@
+// A page render can be cancelled, for example by the scale change the sidebar
+// triggers when it opens, and then no "textlayerrendered" is dispatched for it.
+// So check the state of the DOM instead of pairing up the render events.
 function waitForPdfJS(browser, url = null) {
-  // Runs tests after all "load" event handlers have fired off
-  const loadPromise = new Promise(resolve => {
-    let pageCounter = 0;
-    const removeEventListener1 = BrowserTestUtils.addContentEventListener(
-      browser,
-      "pagerender",
-      () => {
-        pageCounter += 1;
-      },
-      { capture: false, wantUntrusted: true }
-    );
-    const removeEventListener2 = BrowserTestUtils.addContentEventListener(
-      browser,
-      "textlayerrendered",
-      () => {
-        pageCounter -= 1;
-        if (pageCounter === 0) {
-          removeEventListener1();
-          removeEventListener2();
-          resolve();
-        }
-      },
-      { capture: false, wantUntrusted: true }
-    );
-  });
+  const loadPromise = BrowserTestUtils.waitForContentEvent(
+    browser,
+    "textlayerrendered",
+    false,
+    event => {
+      const doc = event.target.ownerDocument || event.target;
+      const pages = doc.querySelectorAll(".page[data-loaded='true']");
+      return (
+        !!pages.length &&
+        Array.from(pages).every(page =>
+          page.querySelector(".textLayer:not([hidden]) .endOfContent")
+        )
+      );
+    },
+    true
+  );
   if (url) {
     BrowserTestUtils.startLoadingURIString(browser, url);
   }
@@ -503,6 +497,22 @@ async function cleanupDownloads(listId = Downloads.PUBLIC) {
     await downloadList.remove(download);
     await download.finalize();
   }
+}
+
+async function closeDownloadPanel() {
+  if (DownloadsPanel.panel.state !== "closed") {
+    const hiddenPromise = BrowserTestUtils.waitForEvent(
+      DownloadsPanel.panel,
+      "popuphidden"
+    );
+    DownloadsPanel.hidePanel();
+    await hiddenPromise;
+  }
+  is(
+    DownloadsPanel.panel.state,
+    "closed",
+    "Check that the download panel is closed"
+  );
 }
 
 function makePDFJSHandler() {

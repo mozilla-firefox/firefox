@@ -351,7 +351,7 @@ CompositorBridgeChild* WebRenderBridgeChild::GetCompositorBridgeChild() {
   if (!IPCOpen()) {
     return nullptr;
   }
-  return static_cast<CompositorBridgeChild*>(Manager());
+  return mozilla::ipc::ActorCast<CompositorBridgeChild>(Manager());
 }
 
 RefPtr<TextureForwarder> WebRenderBridgeChild::GetTextureForwarder() {
@@ -529,7 +529,7 @@ ipc::IShmemAllocator* WebRenderBridgeChild::GetShmemAllocator() {
   if (!IPCOpen()) {
     return nullptr;
   }
-  return static_cast<CompositorBridgeChild*>(Manager());
+  return mozilla::ipc::ActorCast<CompositorBridgeChild>(Manager());
 }
 
 RefPtr<KnowsCompositor> WebRenderBridgeChild::GetForMedia() {

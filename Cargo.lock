@@ -2543,6 +2543,7 @@ version = "0.1.0"
 dependencies = [
  "nsstring",
  "skrifa",
+ "style",
  "thin-vec",
 ]
 
@@ -3046,6 +3047,7 @@ dependencies = [
  "wgpu_bindings",
  "widget_windows",
  "wpf-gpu-raster",
+ "xdg_alerts",
  "xpcom",
  "zlib-rs",
 ]
@@ -3250,9 +3252,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.4.13"
+version = "0.4.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f44da3a8150a6703ed5d34e164b875fd14c2cdab9af1252a9a1020bde2bdc54"
+checksum = "a9f37a958b41b3b19ee2707c06439c0e9e547e847223eb791ecb0cb821c65e27"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -4101,9 +4103,9 @@ dependencies = [
 
 [[package]]
 name = "jxl"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ad19139224d7643adda1d4b9792caea2346ce7a079ef00ae653b1d7a938dce7"
+checksum = "7b36e70efc347a34540f61ae91b7dc304ab0bb69bd6ac62fae182389c2788016"
 dependencies = [
  "array-init",
  "byteorder",
@@ -4125,9 +4127,9 @@ dependencies = [
 
 [[package]]
 name = "jxl_macros"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "341267f3e48d02b0fc44aa3102e0ac46204e726bc63a1caa161431f309e9de42"
+checksum = "96f637cf167445cc64f12f59869e2d2dd4225f1db7e37ec33d1738c2c334d448"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4136,16 +4138,16 @@ dependencies = [
 
 [[package]]
 name = "jxl_simd"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "rustversion",
 ]
 
 [[package]]
 name = "jxl_transforms"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2dae97098351cbffdbca17907de1055bf60be86e692f9d657f5b565e336b43b"
+checksum = "77097b14a98fa6f8bde99bd16dcd19e15a8ecceaba42a8d539138090e92dcf27"
 dependencies = [
  "jxl_simd",
 ]
@@ -5598,7 +5600,7 @@ dependencies = [
  "glob",
  "heck",
  "icu_segmenter",
- "itertools 0.14.999",
+ "itertools 0.15.0",
  "lazy_static",
  "mozilla-central-workspace-hack",
  "regex",
@@ -9149,9 +9151,9 @@ dependencies = [
 
 [[package]]
 name = "webrtc-sdp"
-version = "0.3.13"
+version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a87d58624aae43577604ea137de9dcaf92793eccc4d816efad482001c2e055ca"
+checksum = "6c7eaa5d898cfa76ceef23aa94f954457fdc6acf5c3602d413e8873ff50dff32"
 dependencies = [
  "log",
  "url",
@@ -9597,6 +9599,18 @@ name = "writeable"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9edde0db4769d2dc68579893f2306b26c6ecfbe0ef499b013d731b7b9247e0b9"
+
+[[package]]
+name = "xdg_alerts"
+version = "0.1.0"
+dependencies = [
+ "dbus",
+ "log",
+ "nserror",
+ "nsstring",
+ "thin-vec",
+ "xpcom",
+]
 
 [[package]]
 name = "xml-rs"

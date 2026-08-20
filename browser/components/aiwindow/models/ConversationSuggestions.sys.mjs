@@ -745,11 +745,17 @@ async function generateUncachedResumeActivityConversationStarters() {
     }
 
     const urlsByHash = await lazy.resolveUrlsForMemories(
-      memoriesWithPlaceHashes
+      memoriesWithPlaceHashes,
+      { filterBySummary: true }
     );
-    const memoriesWithUrlsAndTitles = memoriesWithPlaceHashes.map(memory =>
-      attachUrlsToMemory(memory, urlsByHash, MAX_NUM_URLS_PER_MEMORY)
-    );
+    const memoriesWithUrlsAndTitles = memoriesWithPlaceHashes
+      .map(memory =>
+        attachUrlsToMemory(memory, urlsByHash, MAX_NUM_URLS_PER_MEMORY)
+      )
+      .filter(s => !!s.urls.length);
+    if (!memoriesWithUrlsAndTitles.length) {
+      return [];
+    }
 
     // Load prompts and build the conversation for inference
     const conversation = await lazy.buildConversation(

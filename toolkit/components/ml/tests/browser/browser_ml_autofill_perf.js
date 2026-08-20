@@ -120,16 +120,13 @@ const ENGINES = {
   },
 };
 
-// End-to-end per-form latency: one encoder run + one head run.
-// Distinct from the legacy task's auto-generated AUTOFILL-e2e-run-latency
-// (perfTest name "autofill") so the two don't collide in perfherder.
-const E2E_RUN_LATENCY_METRIC = "AUTOFILL-two-engine-e2e-run-latency";
-// Wall-clock to initialize BOTH engines concurrently (Promise.all) -- the real
-// one-time first-use startup cost, matching FormAutofillML.#ensureEngines.
-const CONCURRENT_INIT_LATENCY_METRIC = "AUTOFILL-concurrent-init-latency";
-// Memory of the two-engine pipeline. Distinct name from the legacy
-// AUTOFILL-total-memory-usage so both are tracked independently in perfherder.
-const TWO_ENGINE_MEMORY_METRIC = "AUTOFILL-two-engine-total-memory-usage";
+// "two-engine" keeps these apart from the runMLPerfTest("autofill") series
+// in perfherder.
+const e2eRunLatencyMetric = tag => `AUTOFILL-two-engine-e2e-run-latency-${tag}`;
+const concurrentInitLatencyMetric = tag =>
+  `AUTOFILL-two-engine-concurrent-init-latency-${tag}`;
+const twoEngineMemoryMetric = tag =>
+  `AUTOFILL-two-engine-total-memory-usage-${tag}`;
 
 const perfMetadata = {
   owner: "GenAI Team",
@@ -181,7 +178,7 @@ const perfMetadata = {
         // expressions. Keep them in sync with the *_METRIC constants and the
         // engine metricPrefix values used below.
         {
-          name: "AUTOFILL-concurrent-init-latency",
+          name: "AUTOFILL-two-engine-concurrent-init-latency",
           unit: "ms",
           shouldAlert: false,
         },
@@ -195,8 +192,8 @@ const perfMetadata = {
           unit: "MiB",
           shouldAlert: false,
         },
-        // Per-engine latencies (encoder + head). Literals so the mozperftest
-        // static parser records the SAME names the runtime reports.
+        // Per-engine latencies (encoder + head). The runtime appends the
+        // backend tag; these match as substrings.
         {
           name: "AUTOFILL-encoder-pipeline-ready-latency",
           unit: "ms",
@@ -265,7 +262,7 @@ add_task(async function test_ml_generic_pipeline() {
     options: { pooling: "mean", normalize: true },
   };
 
-  await perfTest({ name: "autofill", options, request });
+  await runMLPerfTest({ name: "autofill", options, request });
 });
 
 /**
@@ -273,13 +270,13 @@ add_task(async function test_ml_generic_pipeline() {
  * latency metrics, prefixed with the engine's `metricPrefix` (e.g.
  * "AUTOFILL-encoder").
  */
-async function runEngineWithMetrics(engine, engineConfig, iterations) {
+async function runEngineWithMetrics(engine, engineConfig, iterations, tag) {
   const journal = {};
   for (let i = 0; i < iterations; i++) {
     const res = await engine.run(engineConfig.request);
     const metrics = fetchMetrics(res.metrics);
     for (const [metricName, metricVal] of Object.entries(metrics)) {
-      const key = `${engineConfig.metricPrefix}-${metricName}`;
+      const key = `${engineConfig.metricPrefix}-${metricName}-${tag}`;
       (journal[key] = journal[key] || []).push(metricVal);
     }
   }
@@ -291,6 +288,13 @@ async function runEngineWithMetrics(engine, engineConfig, iterations) {
  * plus the end-to-end per-form cost (encode -> head).
  */
 add_task(async function test_ml_autofill_two_engine_pipeline() {
+  await runMLPerfTestForEachBackend({
+    name: "AUTOFILL-TWO-ENGINE",
+    run: runTwoEnginePipeline,
+  });
+});
+
+async function runTwoEnginePipeline({ backend, tag }) {
   const configs = Object.values(ENGINES);
 
   // Initialize both engines CONCURRENTLY, matching FormAutofillML.#ensureEngines
@@ -299,7 +303,7 @@ add_task(async function test_ml_autofill_two_engine_pipeline() {
     Promise.all(
       configs.map(async cfg => {
         const { cleanup, engine } = await initializeEngine(
-          new PipelineOptions({ timeoutMS: -1, ...cfg })
+          new PipelineOptions({ timeoutMS: -1, ...cfg, backend })
         );
         return { cleanup, engine, cfg };
       })
@@ -315,11 +319,11 @@ add_task(async function test_ml_autofill_two_engine_pipeline() {
   // Concurrent init wall-clock (Promise.all over both engines): the real
   // one-time first-use startup cost. Measured across ITERATIONS for a median,
   // tearing both engines down between runs so each is a fresh init.
-  combined[CONCURRENT_INIT_LATENCY_METRIC] = [];
+  combined[concurrentInitLatencyMetric(tag)] = [];
   for (let i = 0; i < ITERATIONS; i++) {
     const t0 = performance.now();
     const insts = await initBoth();
-    combined[CONCURRENT_INIT_LATENCY_METRIC].push(performance.now() - t0);
+    combined[concurrentInitLatencyMetric(tag)].push(performance.now() - t0);
     await EngineProcess.destroyMLEngine();
     for (const { cleanup } of insts) {
       await cleanup();
@@ -330,31 +334,36 @@ add_task(async function test_ml_autofill_two_engine_pipeline() {
   const instances = await initBoth();
   info("Encoder and head engines initialized");
 
-  // Per-engine latency (encoder, then head).
-  for (const { engine, cfg } of instances) {
-    merge(await runEngineWithMetrics(engine, cfg, ITERATIONS));
-  }
+  try {
+    // Per-engine latency (encoder, then head).
+    for (const { engine, cfg } of instances) {
+      merge(await runEngineWithMetrics(engine, cfg, ITERATIONS, tag));
+    }
 
-  // End-to-end per-form latency: encode once, then score once -- the real flow.
-  const encoder = instances[0];
-  const head = instances[1];
-  for (let i = 0; i < ITERATIONS; i++) {
-    const start = performance.now();
-    await encoder.engine.run(encoder.cfg.request);
-    await head.engine.run(head.cfg.request);
-    (combined[E2E_RUN_LATENCY_METRIC] =
-      combined[E2E_RUN_LATENCY_METRIC] || []).push(performance.now() - start);
-  }
+    // End-to-end per-form latency: encode once, then score once -- the real flow.
+    const encoder = instances[0];
+    const head = instances[1];
+    for (let i = 0; i < ITERATIONS; i++) {
+      const start = performance.now();
+      await encoder.engine.run(encoder.cfg.request);
+      await head.engine.run(head.cfg.request);
+      (combined[e2eRunLatencyMetric(tag)] =
+        combined[e2eRunLatencyMetric(tag)] || []).push(
+        performance.now() - start
+      );
+    }
 
-  const memUsage = await getTotalMemoryUsage();
-  (combined[TWO_ENGINE_MEMORY_METRIC] =
-    combined[TWO_ENGINE_MEMORY_METRIC] || []).push(memUsage);
+    const memUsage = await getTotalMemoryUsage();
+    (combined[twoEngineMemoryMetric(tag)] =
+      combined[twoEngineMemoryMetric(tag)] || []).push(memUsage);
+  } finally {
+    // The next backend in the matrix starts from a clean engine process.
+    await EngineProcess.destroyMLEngine();
+    for (const { cleanup } of instances) {
+      await cleanup();
+    }
+  }
 
   Assert.ok(true);
   reportMetrics(combined);
-
-  await EngineProcess.destroyMLEngine();
-  for (const { cleanup } of instances) {
-    await cleanup();
-  }
-});
+}

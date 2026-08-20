@@ -144,7 +144,7 @@ static bool IsSingleLine(const nsIFrame* aFlexContainer,
     // These containers are always treated as single-line.
     return true;
   }
-  return aStylePos->mFlexWrap == StyleFlexWrap::Nowrap;
+  return aStylePos->mFlexWrap == StyleFlexWrap::NOWRAP;
 }
 
 // Encapsulates our flex container's main & cross axes. This class is backed by
@@ -4209,7 +4209,7 @@ void FlexboxAxisInfo::InitAxesFromModernProps(const nsIFrame* aFlexContainer) {
   }
 
   // "flex-wrap: wrap-reverse" reverses our cross axis.
-  mIsCrossAxisReversed = stylePos->mFlexWrap == StyleFlexWrap::WrapReverse;
+  mIsCrossAxisReversed = !!(stylePos->mFlexWrap & StyleFlexWrap::WRAP_REVERSE);
 }
 
 FlexboxAxisTracker::FlexboxAxisTracker(

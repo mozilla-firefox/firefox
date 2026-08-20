@@ -3328,6 +3328,47 @@ add_task(async function test_recordEnabledWidgets_partial() {
   );
 });
 
+add_task(async function test_recordEnabledWidgets_excludes_no_history() {
+  info(
+    "recordEnabledWidgets should drop the privacy widget when the profile records no history"
+  );
+  Services.fog.testResetFOG();
+
+  const values = {
+    "widgets.enabled": true,
+    "widgets.privacy.enabled": true,
+    "widgets.system.privacy.enabled": true,
+    "widgets.lists.enabled": true,
+    "widgets.system.lists.enabled": true,
+  };
+
+  let instance = new TelemetryFeed();
+  instance.store = {
+    getState: () => ({ Prefs: { values } }),
+  };
+
+  instance.recordEnabledWidgets();
+  Assert.deepEqual(
+    Glean.newtab.widgetsEnabledList.testGetValue().sort(),
+    ["lists", "privacy"],
+    "privacy is listed while the profile records history"
+  );
+
+  // Turning history off flips enablement without any widget toggle, so the
+  // PREF_CHANGED for the derived value has to re-record the list (Bug 2063207).
+  values.recordsHistory = false;
+  instance.onAction({
+    type: actionTypes.PREF_CHANGED,
+    data: { name: "recordsHistory", value: false },
+  });
+
+  Assert.deepEqual(
+    Glean.newtab.widgetsEnabledList.testGetValue(),
+    ["lists"],
+    "privacy drops out once the profile records no history"
+  );
+});
+
 add_task(async function test_recordEnabledWidgets_trainhop() {
   info(
     "recordEnabledWidgets should count a widget enabled via trainhopConfig when the system pref is off"

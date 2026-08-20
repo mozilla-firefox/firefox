@@ -24,9 +24,10 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 // Reasons this decision layer adds on top of the ones URLKeywordAnalyzer can
-// reach on its own. These describe outcomes the analyzer cannot see, because
-// they depend on the search service rather than on the failed URL.
+// reach on its own. The analyzer cannot see these, because they depend on the
+// frame tree or the search service instead of the failed URL.
 const DECISION_REASONS = Object.freeze({
+  NOT_TOP_LEVEL: "not-top-level",
   SEARCH_UNAVAILABLE: "search-unavailable",
   ENGINE_NOT_GENERAL: "engine-not-general",
   CONNECTIVITY_UNCONFIRMED: "connectivity-unconfirmed",
@@ -258,10 +259,30 @@ export class NetErrorParent extends EscapablePageParent {
    * usable default search engine exists. Content-free and computed locally.
    * Nothing is sent to the network here.
    *
+   * A document inside a frame stops here, before any of that work happens.
+   *
    * @param {string} failedURL The address that failed to resolve.
    * @returns {Promise<object>} { action, query, reason, domain, hasEngine }
    */
   async getSearchCTAInfo(failedURL) {
+    // Most eligible dnsNotFound loads sit in frames the user never sees. Check
+    // that first, so we skip the rest of the work and a frame never lands on a
+    // reason about the URL. We ask the frame tree, not the page (bug 2063091).
+    if (this.browsingContext.parent) {
+      this.recordSearchCTADecision(
+        lazy.SEARCH_CTA_ACTIONS.NONE,
+        DECISION_REASONS.NOT_TOP_LEVEL,
+        false
+      );
+      return {
+        action: lazy.SEARCH_CTA_ACTIONS.NONE,
+        query: "",
+        reason: DECISION_REASONS.NOT_TOP_LEVEL,
+        domain: null,
+        hasEngine: false,
+      };
+    }
+
     const { action, query, reason } = lazy.analyzeURL(failedURL);
 
     // The intro names the registrable domain, so "xyz.example.com" is shown as

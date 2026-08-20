@@ -391,13 +391,15 @@ def _build_pref_links(pref_name, pref_info, firefox_js_overrides, all_js_prefs):
     links = []
     if pref_name in pref_info:
         path = "modules/libpref/init/StaticPrefList.yaml"
-        links.append(f"[StaticPrefList.yaml]({make_searchfox_link(pref_name, path)})")
+        links.append(
+            f'<a href="{make_searchfox_link(pref_name, path)}">StaticPrefList.yaml</a>'
+        )
     if pref_name in all_js_prefs:
         path = "modules/libpref/init/all.js"
-        links.append(f"[all.js]({make_searchfox_link(pref_name, path)})")
+        links.append(f'<a href="{make_searchfox_link(pref_name, path)}">all.js</a>')
     if pref_name in firefox_js_overrides:
         path = "browser/app/profile/firefox.js"
-        links.append(f"[firefox.js]({make_searchfox_link(pref_name, path)})")
+        links.append(f'<a href="{make_searchfox_link(pref_name, path)}">firefox.js</a>')
     if not links:
         return f"`{pref_name}`"
     return f"`{pref_name}`: " + ", ".join(links)

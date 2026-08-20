@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <script src="/tests/SimpleTest/SimpleTest.js"></script>
 <script>
+    // The cookie is already set by the time this document runs, since it comes
+    // from the response headers. Let the opener know before going away.
+    window.opener.postMessage("cookie-set", "*");
     window.close();
 </script>
 

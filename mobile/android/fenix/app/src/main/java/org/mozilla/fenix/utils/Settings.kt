@@ -1240,6 +1240,12 @@ class Settings(
             default = false,
         )
 
+    var shouldUseOledTheme by
+        booleanPreference(
+            appContext.getPreferenceKey(R.string.pref_key_oled_theme),
+            default = false,
+        )
+
     var shouldFollowDeviceTheme by
         booleanPreference(
             appContext.getPreferenceKey(R.string.pref_key_follow_device_theme),
@@ -2724,6 +2730,13 @@ class Settings(
         booleanPreference(
             key = appContext.getPreferenceKey(R.string.pref_key_enable_shake_to_summarize),
             default = { FxNimbus.features.shakeToSummarize.value().enabled },
+        )
+
+    /** Nimbus controlled feature flag that indicates if the Listen to Page feature should be enabled */
+    var listenToPageFeatureFlagEnabled by
+        booleanPreference(
+            key = appContext.getPreferenceKey(R.string.pref_key_enable_listen_to_page),
+            default = { FxNimbus.features.listenToPage.value().enabled },
         )
 
     var aiControlsFeatureFlagEnabled by

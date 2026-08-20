@@ -57,8 +57,6 @@ import mozilla.components.concept.llm.RequestTooLarge
 import mozilla.components.feature.summarize.settings.SettingsAppBar
 import mozilla.components.feature.summarize.settings.SummarizeSettingsContent
 import mozilla.components.feature.summarize.settings.SummarizeSettingsState
-import mozilla.components.feature.summarize.settings.SummarizeSettingsStore
-import mozilla.components.feature.summarize.settings.summarizeSettingsReducer
 import mozilla.components.feature.summarize.ui.ContentTooLongError
 import mozilla.components.feature.summarize.ui.DownloadError
 import mozilla.components.feature.summarize.ui.FxaSignInContent
@@ -85,7 +83,6 @@ private const val DRAG_HANDLE_CORNER_RATIO = 50
 fun SummarizationUi(
     productName: String,
     store: SummarizationStore,
-    settingsStore: SummarizeSettingsStore? = null,
     resolveError: (Throwable) -> Int,
 ) {
     LaunchedEffect(Unit) {
@@ -96,7 +93,6 @@ fun SummarizationUi(
         SummarizationScreen(
             modifier = Modifier.fillMaxWidth(),
             store = store,
-            settingsStore = settingsStore,
             errorCodeFor = resolveError,
         )
     }
@@ -110,7 +106,6 @@ internal val LocalProductName = compositionLocalOf { ProductName("Firefox Debug"
 private fun SummarizationScreen(
     modifier: Modifier = Modifier,
     store: SummarizationStore,
-    settingsStore: SummarizeSettingsStore? = null,
     errorCodeFor: (Throwable) -> Int,
 ) {
     val state by store.stateFlow.collectAsStateWithLifecycle()
@@ -142,7 +137,7 @@ private fun SummarizationScreen(
                 .nestedScroll(rememberNestedScrollInteropConnection()),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 1f - loadingAlpha),
     ) {
-        SummarizationScreenContent(store, settingsStore, errorCodeFor)
+        SummarizationScreenContent(store, errorCodeFor)
     }
 }
 
@@ -163,7 +158,6 @@ private fun Modifier.summaryLoadingGradientCompat(loadingAlpha: Float): Modifier
 @Composable
 private fun SummarizationScreenContent(
     store: SummarizationStore,
-    settingsStore: SummarizeSettingsStore? = null,
     errorCodeFor: (Throwable) -> Int,
 ) {
     val state by store.stateFlow.collectAsStateWithLifecycle()
@@ -213,9 +207,10 @@ private fun SummarizationScreenContent(
         is SummarizationState.Settings -> {
             SettingsAppBar(onBackClicked = { store.dispatch(SettingsBackClicked) })
 
-            if (settingsStore != null) {
-                SummarizeSettingsContent(store = settingsStore)
-            }
+            SummarizeSettingsContent(
+                state = state.settingsState,
+                dispatch = { store.dispatch(SummarizeSettingsActionWrapper(it)) },
+            )
         }
 
         is SummarizationState.SignInRequired -> {
@@ -370,7 +365,11 @@ private class SummarizationStatePreviewProvider : PreviewParameterProvider<Summa
         sequenceOf(
             SummarizationState.Summarizing(info = info),
             SummarizationState.Summarized(info = info, document = parser.parse(previewSummarizedText)),
-            SummarizationState.Settings(info = info, document = RichDocument(listOf())),
+            SummarizationState.Settings(
+                info = info,
+                document = RichDocument(listOf()),
+                settingsState = SummarizeSettingsState(isFeatureEnabled = true, isGestureEnabled = true),
+            ),
             SummarizationState.ShakeConsentRequired,
             SummarizationState.ShakeConsentWithDownloadRequired,
             SummarizationState.Error(SummarizationError.SummarizationFailed(NullPointerException("preview failure"))),
@@ -388,16 +387,6 @@ private fun SummarizationScreenPreview(
                 SummarizationStore(
                     initialState = state,
                     reducer = ::summarizationReducer,
-                    middleware = listOf(),
-                ),
-            settingsStore =
-                SummarizeSettingsStore(
-                    initialState =
-                        SummarizeSettingsState(
-                            isFeatureEnabled = true,
-                            isGestureEnabled = true,
-                        ),
-                    reducer = ::summarizeSettingsReducer,
                     middleware = listOf(),
                 ),
             errorCodeFor = { 9999 },

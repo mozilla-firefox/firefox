@@ -476,7 +476,7 @@ def get_credentials():
         if not TASK_CLUSTER:
             return None, None
         secret = get_tc_secret()
-        password = secret["password"]
-        username = secret["username"]
+        password = secret.get("password", None)
+        username = secret.get("username", None)
     _CACHED["creds"] = username, password
     return username, password

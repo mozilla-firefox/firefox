@@ -378,8 +378,9 @@ AnimationHelper::SampleResult AnimationHelper::SampleAnimationForEachNode(
     }
 
     if (!result.IsSampled()) {
-      if (result.mReason == SampleResult::Reason::ScrollToDelayPhase) {
-        MOZ_ASSERT(currValue && currValue == group.mBaseStyle);
+      if (result.mReason == SampleResult::Reason::ScrollToDelayPhase &&
+          currValue) {
+        MOZ_ASSERT(currValue == group.mBaseStyle);
         baseStyleOfDelayAnimations.AppendElement(std::move(currValue));
       }
       continue;

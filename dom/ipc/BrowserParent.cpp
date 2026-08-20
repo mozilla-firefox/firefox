@@ -409,7 +409,7 @@ TabId BrowserParent::GetTabIdFrom(nsIDocShell* docShell) {
 }
 
 ContentParent* BrowserParent::Manager() const {
-  return static_cast<ContentParent*>(PBrowserParent::Manager());
+  return mozilla::ipc::ActorCast<ContentParent>(PBrowserParent::Manager());
 }
 
 void BrowserParent::AddBrowserParentToTable(layers::LayersId aLayersId,

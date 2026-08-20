@@ -259,7 +259,11 @@ void gfxMacFont::InitMetrics() {
 
   // Try to read 'sfnt' metrics; for local, non-sfnt fonts ONLY, fall back to
   // platform APIs. The InitMetrics...() functions will set mIsValid on success.
-  if (!InitMetricsFromSfntTables(mMetrics) &&
+  if (
+#if MOZ_FONTATIONS
+      !InitMetricsFromSkrifa(mMetrics) &&
+#endif
+      !InitMetricsFromSfntTables(mMetrics) &&
       (!mFontEntry->IsUserFont() || mFontEntry->IsLocalUserFont())) {
     InitMetricsFromPlatform();
   }

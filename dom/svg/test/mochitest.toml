@@ -149,8 +149,6 @@ skip-if = [
 
 ["test_stroke-linecap-hit-testing.xhtml"]
 
-["test_stroked-bbox-caching.xhtml"]
-
 ["test_style_sheet.html"]
 
 ["test_switch.xhtml"]

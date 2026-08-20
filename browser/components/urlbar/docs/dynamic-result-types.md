@@ -95,10 +95,11 @@ instance.
 ### 2. Implement the provider's getViewTemplate method
 
 `getViewTemplate` is a provider method particular to dynamic result type
-providers. It is called by the view for each result the provider produces and
-returns a **view template**: a plain object that declaratively describes the
-DOM subtree to build for the result. See [View Templates] for the shape of
-this object.
+providers. It is called by the providers manager for each result the provider
+produces and returns a **view template**: a plain object that declaratively
+describes the DOM subtree to build for the result. The manager stores it on the
+result as `payload.viewTemplate` and the view uses it when it builds the row.
+See [View Templates] for the shape of this object.
 
 Add the `getViewTemplate` method to the provider:
 
@@ -124,8 +125,9 @@ providers return the same static template regardless of the result.
 
 `getViewUpdate` is a provider method particular to dynamic result type
 providers. Its job is to update the view DOM for a specific result. It's called
-by the view for each result in the view that was created by the provider. It
-returns an object called a view update object.
+by the providers manager for each result the provider produces, and returns an
+object called a view update object. The manager stores it on the result as
+`payload.viewUpdate` and the view applies once it has built the row.
 
 The view template from step 2 describes how to build the DOM structure for all
 results of the dynamic result type. The view update object, in this step,
@@ -141,11 +143,8 @@ Add the `getViewUpdate` method to the provider:
  * @param {UrlbarResult} result
  *   The view update object describes how to update the view DOM for this
  *   particular result.
- * @param {Map} idsByName
- *   A map from names in the view template to the IDs of their corresponding
- *   elements in the DOM.
  */
-getViewUpdate(result, idsByName) {
+getViewUpdate(result) {
   let viewUpdate = {
     // ...
   };
@@ -155,10 +154,6 @@ getViewUpdate(result, idsByName) {
 
 `result` is the result from the provider for which the view update is being
 requested.
-
-`idsByName` is a map from names in the view template to the IDs of their
-corresponding elements in the DOM. This is useful if parts of the view update
-depend on element IDs, as some ARIA attributes do.
 
 The return value is a view update object. It describes in a declarative manner
 the updates that should be performed on the view DOM. See [View Update Objects]
@@ -468,8 +463,10 @@ and view update objects, in practice supporting a11y for dynamic result types
 means including appropriate [ARIA attributes][aria] in the view template and
 view update objects, using the `attributes` property.
 
-Many ARIA attributes depend on element IDs, and that's why the `idsByName`
-parameter to the `getViewUpdate` provider method is useful.
+The view assigns the IDs of the elements it creates for a dynamic result, but
+`getViewUpdate` runs before the row exists, so providers can't refer to them.
+ARIA attributes that take an ID reference therefore can't be set from a
+provider today, but it's possible to add support for that in the future.
 
 Usually, accessible address bar results require the ARIA attribute
 `role=group` on their top-level DOM element to indicate that all the child
@@ -478,21 +475,17 @@ set on the root object in the view template.
 
 ### Example
 
-Continuing the weather forecast example, we'd like for screen readers to know
-that our result is labeled by the city label so that they announce the city when
-the result is selected.
-
-The relevant ARIA attribute is `aria-labelledby`, and its value is the ID of
-the element with the label. In our `getViewUpdate` implementation, we can use
-the `idsByName` map to get the element ID that the view created for our city
-label, like this:
+Continuing the weather forecast example, we'd like for screen readers to
+announce the city when the result is selected. Since we can't point
+`aria-labelledby` at the city label's element, set `aria-label` on the root from
+the view update instead, where the city name is available:
 
 ```javascript
-getViewUpdate(result, idsByName) {
+getViewUpdate(result) {
   return {
     root: {
       attributes: {
-        "aria-labelledby": idsByName.get("cityLabel"),
+        "aria-label": result.payload.city,
       },
     },
     // *snipping the view update object example from earlier*
@@ -522,8 +515,8 @@ property to the top-level object, like this:
 
 Note that we've also included the `role=group` ARIA attribute on the root, as
 discussed above. We could have included it in the view update object instead of
-the view template, but since it doesn't depend on a specific result or element
-ID in the `idsByName` map, the view template makes more sense.
+the view template, but since it doesn't depend on a specific result, the view
+template makes more sense.
 
 ## Mimicking Built-in Address Bar Results
 

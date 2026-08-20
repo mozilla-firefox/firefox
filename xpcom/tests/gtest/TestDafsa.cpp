@@ -12,9 +12,12 @@ namespace dafsa_test_1 {
 #include "dafsa_test_1.inc"  // kDafsa
 }
 
+static_assert(std::is_trivially_destructible_v<Dafsa>);
+
 TEST(Dafsa, Constructor)
 {
-  Dafsa d(dafsa_test_1::kDafsa);
+  static constinit Dafsa d(dafsa_test_1::kDafsa);
+  (void)d;
 }
 
 TEST(Dafsa, StringsFound)

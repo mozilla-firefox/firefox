@@ -78,8 +78,8 @@ function runEditorFlagChangeTests() {
 }
 
 function runEditableSubframeTests() {
-  window.open("window_imestate_iframes.html", "_blank",
-              "width=600,height=600");
+  window.openDialog("window_imestate_iframes.xhtml", "_blank",
+                    "chrome,noopener", window);
 }
 
 function runTestPasswordFieldOnDialog() {

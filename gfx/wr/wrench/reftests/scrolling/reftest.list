@@ -32,3 +32,4 @@ scale(*) == scroll-generation-4.yaml scroll-generation-ref.yaml
 == fractional-sticky.yaml fractional-sticky-ref.yaml
 == svgfe-ext-scroll-offset.yaml svgfe-ext-scroll-offset-ref.yaml
 == svgfe-backdrop-ext-scroll-offset.yaml svgfe-backdrop-ext-scroll-offset-ref.yaml
+== svgfe-backdrop-async-scroll.yaml svgfe-backdrop-async-scroll-ref.yaml

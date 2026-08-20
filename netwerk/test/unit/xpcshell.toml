@@ -515,6 +515,8 @@ prefs = ["browser.cache.disk.encryption.enabled=true"]
 
 ["test_cache2-42-no_cache_writer_hang.js"]
 
+["test_cache2-43-purge-residual-folder.js"]
+
 ["test_cache2_clear_with_principal.js"]
 run-sequentially = ["true"] # httpd server
 
@@ -696,6 +698,7 @@ skip-if = [
 
 ["test_dns_service.js"]
 
+["test_dns_stale_zero_ttl.js"]
 ["test_dns_stress.js"]
 
 ["test_domain_eviction.js"]
@@ -1468,6 +1471,8 @@ run-if = [
 
 ["test_no_cookies_after_last_pb_exit.js"]
 
+["test_no_vary_search_revalidation.js"]
+
 ["test_no_vary_search_telemetry.js"]
 
 ["test_node_execute.js"]
@@ -1571,6 +1576,8 @@ skip-if = [
   "os == 'win' && os_version == '11.26200' && arch == 'x86' && socketprocess_networking",
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && socketprocess_networking",
 ]
+
+["test_proxy_auth_securityInfo.js"]
 
 ["test_proxy_cancel.js"]
 run-sequentially = ["true"] # node server exceptions dont replay well

@@ -30,6 +30,8 @@ const SHARED_DATA_IS_BROWSER_AUTOMATION_KEY =
 
 const PREF_DYNAMIC_START_ENABLED = "remote.experimental.dynamicstart.enabled";
 
+const EXIT_CODE_NOT_AVAILABLE = 69;
+
 const isRemote =
   Services.appinfo.processType == Services.appinfo.PROCESS_TYPE_CONTENT;
 
@@ -349,7 +351,10 @@ class RemoteAgentParentProcess {
         e
       );
 
-      Services.startup.quit(Ci.nsIAppStartup.eForceQuit);
+      Services.startup.quit(
+        Ci.nsIAppStartup.eForceQuit,
+        EXIT_CODE_NOT_AVAILABLE
+      );
     }
   }
 

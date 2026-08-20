@@ -6,7 +6,9 @@
 
 "use strict";
 
-const { dumpn } = require("resource://devtools/shared/DevToolsUtils.js");
+const {
+  logger,
+} = require("resource://devtools/client/shared/remote-debugging/adb/adb-logger.js");
 const client = require("resource://devtools/client/shared/remote-debugging/adb/adb-client.js");
 
 const OKAY = 0x59414b4f;
@@ -19,17 +21,17 @@ const shell = async function (deviceId, command) {
   let state;
   let stdout = "";
 
-  dumpn("shell " + command + " on " + deviceId);
+  logger.debug("shell " + command + " on " + deviceId);
 
   return new Promise((resolve, reject) => {
     const shutdown = function () {
-      dumpn("shell shutdown");
+      logger.debug("shell shutdown");
       socket.close();
       reject("BAD_RESPONSE");
     };
 
     const runFSM = function runFSM(data) {
-      dumpn("runFSM " + state);
+      logger.debug("runFSM " + state);
       let req;
       let ignoreResponseCode = false;
       switch (state) {
@@ -76,30 +78,30 @@ const shell = async function (deviceId, command) {
           break;
         }
         default:
-          dumpn("shell Unexpected State: " + state);
+          logger.debug("shell Unexpected State: " + state);
           reject("UNEXPECTED_STATE");
       }
     };
 
     const socket = client.connect();
     socket.s.onerror = function () {
-      dumpn("shell onerror");
+      logger.debug("shell onerror");
       reject("SOCKET_ERROR");
     };
 
     socket.s.onopen = function () {
-      dumpn("shell onopen");
+      logger.debug("shell onopen");
       state = "start";
       runFSM();
     };
 
     socket.s.onclose = function () {
       resolve(stdout);
-      dumpn("shell onclose");
+      logger.debug("shell onclose");
     };
 
     socket.s.ondata = function (event) {
-      dumpn("shell ondata");
+      logger.debug("shell ondata");
       runFSM(event.data);
     };
   });

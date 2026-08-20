@@ -20,6 +20,7 @@ import mozilla.components.concept.llm.CloudLlmProvider
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.feature.summarize.ErrorReporter
 import mozilla.components.feature.summarize.SummarizationMiddleware
+import mozilla.components.feature.summarize.SummarizationSettingsWrapperMiddleware
 import mozilla.components.feature.summarize.SummarizationState
 import mozilla.components.feature.summarize.SummarizationStore
 import mozilla.components.feature.summarize.content.ContentProvider
@@ -27,6 +28,8 @@ import mozilla.components.feature.summarize.content.PageContentExtractor
 import mozilla.components.feature.summarize.content.PageMetadata
 import mozilla.components.feature.summarize.content.PageMetadataExtractor
 import mozilla.components.feature.summarize.settings.SummarizationSettings
+import mozilla.components.feature.summarize.settings.SummarizeSettingsMiddleware
+import mozilla.components.feature.summarize.settings.SummarizeSettingsState
 import mozilla.components.feature.summarize.summarizationReducer
 
 /**
@@ -38,6 +41,8 @@ import mozilla.components.feature.summarize.summarizationReducer
  * @param connectionType the current network [ConnectionType].
  * @param llmProvider the [LlmProvider] used to summarize the page.
  * @param settings the SummarizationSettings.
+ * @param loadCachedSettings synchronously readable snapshot of the persisted summarize preferences, used to seed the
+ *   embedded settings screen.
  * @param errorReporter reports caught exceptions to the crash reporting service.
  */
 @Suppress("LongParameterList")
@@ -48,6 +53,7 @@ class SummarizationStoreViewModel(
     connectionType: ConnectionType,
     llmProvider: CloudLlmProvider,
     settings: SummarizationSettings,
+    loadCachedSettings: () -> SummarizeSettingsState,
     errorReporter: ErrorReporter,
 ) : ViewModel() {
     private val engineSession = currentTab?.engineState?.engineSession
@@ -72,6 +78,14 @@ class SummarizationStoreViewModel(
                         errorReporter = errorReporter,
                         scope = viewModelScope,
                     ),
+                    SummarizationSettingsWrapperMiddleware(
+                        settingsMiddleware =
+                            SummarizeSettingsMiddleware(
+                                settings = settings,
+                                scope = viewModelScope,
+                            ),
+                        fetchInitialSettings = loadCachedSettings,
+                    ),
                 ),
         )
 
@@ -85,8 +99,11 @@ class SummarizationStoreViewModel(
          * @param connectionType the current network [ConnectionType].
          * @param llmProvider the [LlmProvider] used to summarize the page.
          * @param settings the SummarizationSettings.
+         * @param loadCachedSettings synchronously readable snapshot of the persisted summarize preferences, used to
+         *   seed the embedded settings screen.
          * @param errorReporter reports caught exceptions to the crash reporting service.
          */
+        @Suppress("LongParameterList")
         fun factory(
             currentTab: SessionState?,
             initializedFromShake: Boolean,
@@ -94,6 +111,7 @@ class SummarizationStoreViewModel(
             connectionType: ConnectionType,
             llmProvider: CloudLlmProvider,
             settings: SummarizationSettings,
+            loadCachedSettings: () -> SummarizeSettingsState,
             errorReporter: ErrorReporter,
         ) =
             object : ViewModelProvider.Factory {
@@ -106,6 +124,7 @@ class SummarizationStoreViewModel(
                         llmProvider = llmProvider,
                         connectionType = connectionType,
                         settings = settings,
+                        loadCachedSettings = loadCachedSettings,
                         errorReporter = errorReporter,
                     )
                         as T

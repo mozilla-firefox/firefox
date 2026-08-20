@@ -3,7 +3,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
-import { IPPAuthProvider } from "moz-src:///toolkit/components/ipprotection/IPPAuthProvider.sys.mjs";
+import {
+  AUTH_ERRORS,
+  IPPAuthProvider,
+} from "moz-src:///toolkit/components/ipprotection/IPPAuthProvider.sys.mjs";
 import {
   ProxyPass,
   ProxyUsage,
@@ -82,10 +85,32 @@ class IPPEnterpriseAuthProviderSingleton extends IPPAuthProvider {
   }
 
   /**
+   * Maps an access-connector HTTP status onto its meaning.
+   *
+   * @param {number} status
+   * @returns {import("../IPPAuthProvider.sys.mjs").AuthError | null}
+   * Null when the status carries no error.
+   */
+  static toError(status) {
+    if (status === 200) {
+      return null;
+    }
+    if (status === 401) {
+      return AUTH_ERRORS.UNAUTHORIZED;
+    }
+    if (status >= 500 && status <= 599) {
+      return AUTH_ERRORS.SERVER_ERROR;
+    }
+    return AUTH_ERRORS.UNEXPECTED_STATUS;
+  }
+
+  /**
    * Fetches a proxy pass from the access-connector backend.
    *
+   * A status other than 200 always resolves with an error.
+   *
    * @param {AbortSignal} [abortSignal]
-   * @returns {Promise<{pass?: ProxyPass, status?: number, usage: null, error?: string}>}
+   * @returns {Promise<{pass?: ProxyPass, status?: number, usage: null, error?: import("../IPPAuthProvider.sys.mjs").AuthError}>}
    */
   async fetchProxyPass(abortSignal = null) {
     using tokenHandle = await this.getToken(abortSignal);
@@ -99,21 +124,22 @@ class IPPEnterpriseAuthProviderSingleton extends IPPAuthProvider {
       signal: abortSignal,
     });
     if (!response) {
-      return { error: "login_needed", usage: null };
+      return { error: AUTH_ERRORS.LOGIN_NEEDED, usage: null };
     }
     const status = response.status;
-    if (!response.ok) {
-      return { status, error: `status_${status}`, usage: null };
+    const statusError = IPPEnterpriseAuthProviderSingleton.toError(status);
+    if (statusError) {
+      return { status, error: statusError, usage: null };
     }
     try {
       const pass = await ProxyPass.fromResponse(response);
       if (!pass) {
-        return { status, error: "invalid_response", usage: null };
+        return { status, error: AUTH_ERRORS.INVALID_RESPONSE, usage: null };
       }
       return { pass, status, usage: null };
     } catch (error) {
       lazy.logConsole.error("Error parsing pass:", error);
-      return { status, error: "parse_error", usage: null };
+      return { status, error: AUTH_ERRORS.PARSE_ERROR, usage: null };
     }
   }
 

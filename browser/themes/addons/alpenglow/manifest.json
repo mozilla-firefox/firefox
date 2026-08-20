@@ -121,6 +121,7 @@
       "popup_border": "hsla(255, 100%, 94%, .32)",
       "popup_highlight": "hsla(255, 100%, 94%, .12)",
       "popup_highlight_text": "hsla(0, 0%, 100%, 1)",
+      "popup_icon": "hsla(271, 100%, 77%, 1)",
       "sidebar": "hsla(250, 43%, 25%, 1)",
       "sidebar_text": "hsla(255, 100%, 94%, 1)",
       "sidebar_border": "hsla(255, 100%, 94%, .24)",
@@ -132,7 +133,8 @@
 
   "theme_experiment": {
     "colors": {
-      "focus_outline": "--focus-outline-color"
+      "focus_outline": "--focus-outline-color",
+      "popup_icon": "--panel-icon-fill"
     },
     "properties": {
       "zap_gradient": "--panel-separator-zap-gradient"

@@ -229,7 +229,7 @@ class SVGLoadEventListener final : public nsIDOMEventListener {
 NS_IMPL_ISUPPORTS(SVGLoadEventListener, nsIDOMEventListener)
 
 SVGDrawingCallback::SVGDrawingCallback(SVGDocumentWrapper* aSVGDocumentWrapper,
-                                       const IntSize& aViewportSize,
+                                       const CSSSize& aViewportSize,
                                        const IntSize& aSize,
                                        uint32_t aImageFlags)
     : mSVGDocumentWrapper(aSVGDocumentWrapper),
@@ -271,11 +271,7 @@ bool SVGDrawingCallback::operator()(gfxContext* aContext,
           double(mSize.width) / mViewportSize.width,
           double(mSize.height) / mViewportSize.height));
 
-  nsPresContext* presContext = presShell->GetPresContext();
-  MOZ_ASSERT(presContext, "pres shell w/out pres context");
-
-  nsRect svgRect(0, 0, presContext->DevPixelsToAppUnits(mViewportSize.width),
-                 presContext->DevPixelsToAppUnits(mViewportSize.height));
+  nsRect svgRect(nsPoint(), CSSPixel::ToAppUnits(mViewportSize));
 
   RenderDocumentFlags renderDocFlags =
       RenderDocumentFlags::IgnoreViewportScrolling;

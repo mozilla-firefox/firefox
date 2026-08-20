@@ -9,6 +9,8 @@
 #include <CoreFoundation/CFDictionary.h>
 #include <MacTypes.h>
 
+#include <cstring>
+
 #include "AnnexB.h"
 #include "H264.h"
 #include "ImageContainer.h"
@@ -392,6 +394,80 @@ static Result<OSType, MediaResult> MapPixelFormat(
   return Err(MediaResult(NS_ERROR_NOT_IMPLEMENTED,
                          RESULT_DETAIL("format %s is not supported",
                                        dom::GetEnumString(aFormat).get())));
+}
+
+static Result<OSType, MediaResult> MapPixelFormat(gfx::SurfaceFormat aFormat) {
+  switch (aFormat) {
+    case gfx::SurfaceFormat::B8G8R8A8:
+    case gfx::SurfaceFormat::B8G8R8X8:
+      return kCVPixelFormatType_32BGRA;
+    case gfx::SurfaceFormat::R8G8B8A8:
+    case gfx::SurfaceFormat::R8G8B8X8:
+      return kCVPixelFormatType_32RGBA;
+    case gfx::SurfaceFormat::R8G8B8:
+      return kCVPixelFormatType_24RGB;
+    case gfx::SurfaceFormat::B8G8R8:
+      return kCVPixelFormatType_24BGR;
+    case gfx::SurfaceFormat::A8:
+      return kCVPixelFormatType_OneComponent8;
+    default:
+      return Err(MediaResult(NS_ERROR_NOT_IMPLEMENTED,
+                             RESULT_DETAIL("surface format %d is not supported",
+                                           static_cast<int>(aFormat))));
+  }
+}
+
+static bool CopySurfaceToPixelBuffer(gfx::DataSourceSurface* aSource,
+                                     CVPixelBufferRef aDestination) {
+  gfx::DataSourceSurface::ScopedMap map(aSource, gfx::DataSourceSurface::READ);
+  if (NS_WARN_IF(!map.IsMapped())) {
+    LOGE("Failed to map DataSurface");
+    return false;
+  }
+
+  CVReturn rv = CVPixelBufferLockBaseAddress(aDestination, 0);
+  if (rv != kCVReturnSuccess) {
+    LOGE("CVPixelBufferLockBaseAddress error: {}", rv);
+    return false;
+  }
+  auto unlockBuffer =
+      MakeScopeExit([&] { CVPixelBufferUnlockBaseAddress(aDestination, 0); });
+
+  const gfx::IntSize size = aSource->GetSize();
+  const int32_t sourceStride = map.GetStride();
+  const size_t destinationStride = CVPixelBufferGetBytesPerRow(aDestination);
+  const size_t destinationSize = CVPixelBufferGetDataSize(aDestination);
+  uint8_t* destination =
+      static_cast<uint8_t*>(CVPixelBufferGetBaseAddress(aDestination));
+  const uint8_t* source = map.GetData();
+  if (size.width <= 0 || size.height <= 0 || sourceStride < 0 || !destination ||
+      !source) {
+    LOGE("Unexpected pixel-buffer layout");
+    return false;
+  }
+  const size_t height = static_cast<size_t>(size.height);
+  const size_t sourceStrideSize = static_cast<size_t>(sourceStride);
+  // Positive int32_t widths at up to 4 Bpp fit in macOS's 64-bit size_t.
+  const size_t rowBytes = static_cast<size_t>(size.width) *
+                          gfx::BytesPerPixel(aSource->GetFormat());
+  if (sourceStrideSize < rowBytes || destinationStride < rowBytes) {
+    LOGE("Unexpected pixel-buffer layout");
+    return false;
+  }
+  if (height > destinationSize / destinationStride) {
+    LOGE("Unexpected pixel-buffer layout");
+    return false;
+  }
+  const size_t destinationPadding = destinationStride - rowBytes;
+  for (size_t y = 0; y < height; ++y) {
+    uint8_t* destinationRow = destination + y * destinationStride;
+    memcpy(destinationRow, source + y * sourceStrideSize, rowBytes);
+    if (destinationPadding) {
+      // Avoid passing uninitialized stride padding to VideoToolbox.
+      memset(destinationRow + rowBytes, 0, destinationPadding);
+    }
+  }
+  return true;
 }
 
 RefPtr<MediaDataEncoder::InitPromise> AppleVTEncoder::Init() {
@@ -1059,11 +1135,6 @@ static size_t NumberOfPlanes(OSType aPixelFormat) {
 
 using namespace layers;
 
-static void ReleaseSurface(void* aReleaseRef, const void* aBaseAddress) {
-  RefPtr<gfx::DataSourceSurface> released =
-      dont_AddRef(static_cast<gfx::DataSourceSurface*>(aReleaseRef));
-}
-
 static void ReleaseImage(void* aImageGrip, const void* aDataPtr,
                          size_t aDataSize, size_t aNumOfPlanes,
                          const void** aPlanes) {
@@ -1181,26 +1252,27 @@ CVPixelBufferRef AppleVTEncoder::CreateCVPixelBuffer(Image* aSource) {
     return nullptr;
   }
 
-  gfx::DataSourceSurface::ScopedMap map(dataSurface,
-                                        gfx::DataSourceSurface::READ);
-  if (NS_WARN_IF(!map.IsMapped())) {
-    LOGE("Failed to map DataSurface");
+  auto surfacePfr = MapPixelFormat(dataSurface->GetFormat());
+  if (surfacePfr.isErr()) {
+    MediaResult err = surfacePfr.unwrapErr();
+    LOGE("{}", err.Description().get());
     return nullptr;
   }
 
+  const gfx::IntSize size = dataSurface->GetSize();
   CVPixelBufferRef buffer = nullptr;
-  gfx::DataSourceSurface* dss = dataSurface.forget().take();
-  CVReturn rv = CVPixelBufferCreateWithBytes(
-      kCFAllocatorDefault, dss->GetSize().Width(), dss->GetSize().Height(),
-      pixelFormat, map.GetData(), map.GetStride(), ReleaseSurface, dss, nullptr,
-      &buffer);
-  if (rv == kCVReturnSuccess) {
-    return buffer;
-    // |dss| will be released in |ReleaseSurface()|.
+  CVReturn rv =
+      CVPixelBufferCreate(kCFAllocatorDefault, size.width, size.height,
+                          surfacePfr.unwrap(), nullptr, &buffer);
+  if (rv != kCVReturnSuccess) {
+    LOGE("CVPixelBufferCreate error: {}", rv);
+    return nullptr;
   }
-  LOGE("CVPIxelBufferCreateWithBytes error: {}", rv);
-  RefPtr<gfx::DataSourceSurface> released = dont_AddRef(dss);
-  return nullptr;
+  if (!CopySurfaceToPixelBuffer(dataSurface, buffer)) {
+    CVPixelBufferRelease(buffer);
+    return nullptr;
+  }
+  return buffer;
 }
 
 RefPtr<MediaDataEncoder::EncodePromise> AppleVTEncoder::Drain() {

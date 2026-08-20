@@ -158,10 +158,7 @@ add_task(async function closeAllDuplicateTabs() {
     tabClosingPromises.push(BrowserTestUtils.waitForTabClosing(tab));
   }
 
-  await BrowserTestUtils.switchTab(
-    gBrowser,
-    gBrowser.removeAllDuplicateTabs(initialTab)
-  );
+  await BrowserTestUtils.switchTab(gBrowser, gBrowser.removeAllDuplicateTabs());
 
   await Promise.all(tabClosingPromises);
 
