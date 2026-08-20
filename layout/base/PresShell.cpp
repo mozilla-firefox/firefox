@@ -11696,7 +11696,7 @@ void PresShell::AddAnchorPosAnchorImpl(const nsAtom* aName, nsIFrame* aFrame,
   entry.InsertElementAt(matchOrInsertionIdx, aFrame);
 }
 
-void PresShell::AddAnchorPosAnchor(const Span<const StyleAtom>& aNames, nsIFrame* aFrame) {
+void PresShell::AddAnchorPosAnchor(Span<const StyleAtom> aNames, nsIFrame* aFrame) {
   nsTHashSet<const nsAtom*> added{static_cast<uint32_t>(aNames.Length())};
   for (const auto& styleName : aNames) {
     const auto* name = styleName.AsAtom();
@@ -11708,7 +11708,7 @@ void PresShell::AddAnchorPosAnchor(const Span<const StyleAtom>& aNames, nsIFrame
   }
 }
 
-void PresShell::RemoveAnchorPosAnchor(const Span<const StyleAtom>& aNames, nsIFrame* aFrame) {
+void PresShell::RemoveAnchorPosAnchor(Span<const StyleAtom> aNames, nsIFrame* aFrame) {
   for (const auto& name : aNames) {
     RemoveAnchorPosAnchor(name.AsAtom(), aFrame);
   }

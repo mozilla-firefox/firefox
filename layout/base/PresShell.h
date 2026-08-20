@@ -817,8 +817,8 @@ class PresShell final : public nsStubDocumentObserver,
                                const nsIFrame* aPositionedFrame) const;
   void CollectAnchorNames(const nsIFrame* aPositionedFrame,
                           nsTArray<nsString>& aResult);
-  void AddAnchorPosAnchor(const Span<const StyleAtom>& aNames, nsIFrame* aFrame);
-  void RemoveAnchorPosAnchor(const Span<const StyleAtom>& aNames, nsIFrame* aFrame);
+  void AddAnchorPosAnchor(Span<const StyleAtom> aNames, nsIFrame* aFrame);
+  void RemoveAnchorPosAnchor(Span<const StyleAtom> aNames, nsIFrame* aFrame);
 private:
   void RemoveAnchorPosAnchor(const nsAtom* aName, nsIFrame* aFrame);
 public:
