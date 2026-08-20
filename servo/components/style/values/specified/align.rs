@@ -375,7 +375,7 @@ impl SelfAlignment {
         let overflow_position = input
             .try_parse(parse_overflow_position)
             .unwrap_or(AlignFlags::empty());
-        let self_position = parse_self_position(input, axis)?;
+        let self_position = parse_self_position(input, axis, AllowAnchorCenter::Yes)?;
         Ok(SelfAlignment(overflow_position | self_position))
     }
 
@@ -509,7 +509,7 @@ impl ItemPlacement {
         let overflow = input
             .try_parse(parse_overflow_position)
             .unwrap_or(AlignFlags::empty());
-        let self_position = parse_self_position(input, axis)?;
+        let self_position = parse_self_position(input, axis, AllowAnchorCenter::No)?;
         Ok(ItemPlacement(self_position | overflow))
     }
 }
@@ -660,10 +660,16 @@ fn list_overflow_position_keywords(f: KeywordsCollectFn) {
     f(&["safe", "unsafe"]);
 }
 
+enum AllowAnchorCenter {
+    No,
+    Yes,
+}
+
 // <self-position> | left | right in the inline axis.
 fn parse_self_position<'i, 't>(
     input: &mut Parser<'i, 't>,
     axis: AxisDirection,
+    allow_anchor_center: AllowAnchorCenter,
 ) -> Result<AlignFlags, ParseError<'i>> {
     // NOTE Please also update the `list_self_position_keywords`
     //      function below when this function is updated.
@@ -677,7 +683,7 @@ fn parse_self_position<'i, 't>(
         "self-end" => AlignFlags::SELF_END,
         "left" if axis == AxisDirection::Inline => AlignFlags::LEFT,
         "right" if axis == AxisDirection::Inline => AlignFlags::RIGHT,
-        "anchor-center" => AlignFlags::ANCHOR_CENTER,
+        "anchor-center" if matches!(allow_anchor_center, AllowAnchorCenter::Yes) => AlignFlags::ANCHOR_CENTER,
     })
 }
 
