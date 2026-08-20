@@ -11697,14 +11697,14 @@ void PresShell::AddAnchorPosAnchorImpl(const nsAtom* aName, nsIFrame* aFrame,
 }
 
 void PresShell::AddAnchorPosAnchor(Span<const StyleAtom> aNames, nsIFrame* aFrame) {
-  nsTHashSet<const nsAtom*> added{static_cast<uint32_t>(aNames.Length())};
+  AutoTArray<const nsAtom*, 2> added;
   for (const auto& styleName : aNames) {
     const auto* name = styleName.AsAtom();
     if (added.Contains(name)) {
       continue;
     }
     AddAnchorPosAnchorImpl(name, aFrame, /* aForMerge = */ false);
-    added.Insert(name);
+    added.AppendElement(name);
   }
 }
 
