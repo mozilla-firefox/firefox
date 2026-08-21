@@ -1263,10 +1263,10 @@ bool H264::DecodeRecoverySEI(const mozilla::MediaByteBuffer* aSEI,
     uint8_t aProfile, uint8_t aConstraints, H264_LEVEL aLevel,
     const gfx::IntSize& aSize) {
   // SPS of a 144p video.
-  const uint8_t originSPS[] = {0x4d, 0x40, 0x0c, 0xe8, 0x80, 0x80, 0x9d,
-                               0x80, 0xb5, 0x01, 0x01, 0x01, 0x40, 0x00,
-                               0x00, 0x00, 0x40, 0x00, 0x00, 0x0f, 0x03,
-                               0xc5, 0x0a, 0x44, 0x80};
+  const uint8_t originSPS[] = {0x67, 0x4d, 0x40, 0x0c, 0xe8, 0x80, 0x80,
+                               0x9d, 0x80, 0xb5, 0x01, 0x01, 0x01, 0x40,
+                               0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x0f,
+                               0x03, 0xc5, 0x0a, 0x44, 0x80};
 
   RefPtr<MediaByteBuffer> extraData = new MediaByteBuffer();
   extraData->AppendElements(originSPS, sizeof(originSPS));
@@ -1275,7 +1275,8 @@ bool H264::DecodeRecoverySEI(const mozilla::MediaByteBuffer* aSEI,
   RefPtr<MediaByteBuffer> sps = new MediaByteBuffer();
   BitWriter bw(sps);
 
-  br.ReadBits(8);  // Skip original profile_idc
+  bw.WriteU8(br.ReadBits(8));  // NALU SPS byte
+  br.ReadBits(8);              // Skip original profile_idc
   bw.WriteU8(aProfile);
   br.ReadBits(8);  // Skip original constraint flags && reserved_zero_2bits
   aConstraints =
@@ -1332,7 +1333,7 @@ bool H264::DecodeRecoverySEI(const mozilla::MediaByteBuffer* aSEI,
       EncodeNALUnit(sps->Elements(), sps->Length());
   extraData->Clear();
 
-  const uint8_t PPS[] = {0xeb, 0xef, 0x20};
+  const uint8_t PPS[] = {0x67, 0xeb, 0xef, 0x20};
 
   WriteExtraData(
       extraData, aProfile, aConstraints, static_cast<uint8_t>(aLevel),
@@ -1350,18 +1351,17 @@ void H264::WriteExtraData(MediaByteBuffer* aDestExtraData,
   aDestExtraData->AppendElement(aProfile);
   aDestExtraData->AppendElement(aConstraints);
   aDestExtraData->AppendElement(aLevel);
-  aDestExtraData->AppendElement(3);  // nalLENSize-1
-  aDestExtraData->AppendElement(1);  // numPPS
+  aDestExtraData->AppendElement(
+      0xfc | 3);  // reserved (6 bits) | nalLengthSizeMinusOne (= 3)
+  aDestExtraData->AppendElement(0xe0 | 1);  // reserved (3 bits) | numSPS (= 1)
   uint8_t c[2];
-  mozilla::BigEndian::writeUint16(&c[0], aSPS.Length() + 1);
+  mozilla::BigEndian::writeUint16(&c[0], aSPS.Length());
   aDestExtraData->AppendElements(c, 2);
-  aDestExtraData->AppendElement((0x00 << 7) | (0x3 << 5) | H264_NAL_SPS);
   aDestExtraData->AppendElements(aSPS.Elements(), aSPS.Length());
 
   aDestExtraData->AppendElement(1);  // numPPS
-  mozilla::BigEndian::writeUint16(&c[0], aPPS.Length() + 1);
+  mozilla::BigEndian::writeUint16(&c[0], aPPS.Length());
   aDestExtraData->AppendElements(c, 2);
-  aDestExtraData->AppendElement((0x00 << 7) | (0x3 << 5) | H264_NAL_PPS);
   aDestExtraData->AppendElements(aPPS.Elements(), aPPS.Length());
 }
 
@@ -1395,9 +1395,18 @@ void H264::WriteExtraData(MediaByteBuffer* aDestExtraData,
   avcc.mAVCProfileIndication = reader.ReadBits(8);
   avcc.mProfileCompatibility = reader.ReadBits(8);
   avcc.mAVCLevelIndication = reader.ReadBits(8);
-  (void)reader.ReadBits(6);  // reserved
+  uint8_t padding6Bits = (uint8_t)reader.ReadBits(6);  // reserved
+  if (padding6Bits < 0b111111) {
+    LOG("Padding 6 bits ({}) for Length Size Minus One are not all set!",
+        padding6Bits);
+    return mozilla::Err(NS_ERROR_FAILURE);
+  }
   avcc.mLengthSizeMinusOne = reader.ReadBits(2);
-  (void)reader.ReadBits(3);  // reserved
+  uint8_t padding3Bits = (uint8_t)reader.ReadBits(3);  // reserved
+  if (padding3Bits < 0b111) {
+    LOG("Padding 3 bits ({}) for numSPS are not all set!", padding3Bits);
+    return mozilla::Err(NS_ERROR_FAILURE);
+  }
   const uint8_t numSPS = reader.ReadBits(5);
   for (uint8_t idx = 0; idx < numSPS; idx++) {
     if (reader.BitsLeft() < 16) {
@@ -1502,9 +1511,9 @@ already_AddRefed<mozilla::MediaByteBuffer> AVCCConfig::CreateNewExtraData()
   writer.WriteBits(mAVCProfileIndication, 8);
   writer.WriteBits(mProfileCompatibility, 8);
   writer.WriteBits(mAVCLevelIndication, 8);
-  writer.WriteBits(0x111111, 6);  // reserved
+  writer.WriteBits(0b111111, 6);  // reserved
   writer.WriteBits(mLengthSizeMinusOne, 2);
-  writer.WriteBits(0x111, 3);  // reserved
+  writer.WriteBits(0b111, 3);  // reserved
   writer.WriteBits(mSPSs.Length(), 5);
   for (const auto& nalu : mSPSs) {
     writer.WriteBits(nalu.mNALU.Length(), 16);

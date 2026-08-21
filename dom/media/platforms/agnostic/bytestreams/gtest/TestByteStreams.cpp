@@ -911,6 +911,19 @@ TEST(H264, CreateNewExtraData)
   EXPECT_EQ(*avcc.mBitDepthLumaMinus8, 0);
   EXPECT_EQ(*avcc.mBitDepthChromaMinus8, 0);
 
+  // Create new extradata with non-zero chroma_format,
+  // bit_depth_luma_minus8 and bit_depth_chroma_minus8.
+  *avcc.mChromaFormat = 2;          // 2 bits
+  *avcc.mBitDepthLumaMinus8 = 5;    // 3 bits
+  *avcc.mBitDepthChromaMinus8 = 3;  // 3 bits
+  extradata = avcc.CreateNewExtraData();
+  res = AVCCConfig::Parse(extradata);
+  EXPECT_TRUE(res.isOk());
+  avcc = res.unwrap();
+  EXPECT_EQ(avcc.mChromaFormat.value(), 2);
+  EXPECT_EQ(avcc.mBitDepthLumaMinus8.value(), 5);
+  EXPECT_EQ(avcc.mBitDepthChromaMinus8.value(), 3);
+
   // Use a wrong attribute, which will generate an invalid config
   avcc.mConfigurationVersion = 5;
   extradata = avcc.CreateNewExtraData();
