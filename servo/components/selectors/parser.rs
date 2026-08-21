@@ -3165,7 +3165,7 @@ where
 
     let attribute_flags = parse_attribute_flags(input)?;
     let value = value.as_ref().into();
-    let local_name_lower;
+    let local_name_lower: Impl::LocalName;
     let local_name_is_ascii_lowercase;
     let case_sensitivity;
     {
@@ -3175,8 +3175,12 @@ where
         local_name_lower = local_name_lower_cow.as_ref().into();
         local_name_is_ascii_lowercase = matches!(local_name_lower_cow, Cow::Borrowed(..));
     }
-    let local_name = local_name.as_ref().into();
     if namespace.is_some() || !local_name_is_ascii_lowercase {
+        let local_name = if local_name_is_ascii_lowercase {
+            local_name_lower.clone()
+        } else {
+            local_name.as_ref().into()
+        };
         Ok(Component::AttributeOther(Box::new(
             AttrSelectorWithOptionalNamespace {
                 namespace,
@@ -3191,7 +3195,7 @@ where
         )))
     } else {
         Ok(Component::AttributeInNoNamespace {
-            local_name,
+            local_name: local_name_lower,
             operator,
             value,
             case_sensitivity,
