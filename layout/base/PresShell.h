@@ -819,9 +819,6 @@ class PresShell final : public nsStubDocumentObserver,
                           nsTArray<nsString>& aResult);
   void AddAnchorPosAnchor(Span<const StyleAtom> aNames, nsIFrame* aFrame);
   void RemoveAnchorPosAnchor(Span<const StyleAtom> aNames, nsIFrame* aFrame);
-private:
-  void RemoveAnchorPosAnchor(const nsAtom* aName, nsIFrame* aFrame);
-public:
   enum class AnchorPosUpdateResult {
     NotApplicable,
     Flushed,
@@ -2137,6 +2134,7 @@ public:
     RenderingState mOldState;
   };
   void SetRenderingState(const RenderingState& aState);
+  void RemoveAnchorPosAnchor(const nsAtom* aName, nsIFrame* aFrame);
 
   friend class ::nsPresShellEventCB;
 
