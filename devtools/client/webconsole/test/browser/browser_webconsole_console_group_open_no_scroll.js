@@ -26,10 +26,26 @@ add_task(async function () {
     "output node is scrolled to the bottom"
   );
 
+  await waitForStableScrollPosition(outputScroller);
+
   info("Expand the group");
   groupMessage.querySelector(".arrow").click();
   await waitFor(() => findConsoleAPIMessage(hud, "in group"));
 
+  await waitFor(
+    () =>
+      hasVerticalOverflow(outputScroller) &&
+      !isScrolledToBottom(outputScroller),
+    {
+      toString: () => {
+        return (
+          `Wait for the output node to overflow (${hasVerticalOverflow(outputScroller)}) ` +
+          `and no longer be scrolled to bottom (${isScrolledToBottom(outputScroller)})`
+        );
+      },
+    },
+    50 // interval
+  );
   is(hasVerticalOverflow(outputScroller), true, "output node overflows");
   is(
     isScrolledToBottom(outputScroller),
@@ -65,3 +81,25 @@ add_task(async function () {
     "output node is scrolled to the bottom after adding message in group"
   );
 });
+
+/**
+ * Wait until the scrollTop / scrollHeight / clientHeight of the provided
+ * element becomes stable.
+ *
+ * @param {HTMLElement} el
+ */
+async function waitForStableScrollPosition(el) {
+  let previous;
+  await waitFor(
+    () => {
+      const snapshot = [el.scrollTop, el.scrollHeight, el.clientHeight].join(
+        "-"
+      );
+      const stable = snapshot === previous;
+      previous = snapshot;
+      return stable;
+    },
+    "Wait for the output scroll geometry to stabilize",
+    100
+  );
+}
