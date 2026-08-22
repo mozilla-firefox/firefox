@@ -1,0 +1,695 @@
+// This build uses --enable-artifact-builds, so libxul (and the static
+// XPCOM component registry compiled into it) is a prebuilt binary and can
+// never pick up new components.conf entries. Both this module's content
+// policy and the about:allowlist page register themselves at runtime
+// instead (the same way browser/components/enterprisepolicies/helpers/
+// WebsiteFilter.sys.mjs does), triggered by importing this module once
+// from BrowserGlue.sys.mjs's _beforeUIStartup.
+import "resource:///modules/AboutAllowlist.sys.mjs";
+
+// Whole domains: any path/query on the host (or a subdomain of it) is
+// reachable. See isAllowed().
+const COMPILED_DOMAIN_ALLOWLIST = Object.freeze([
+  "randomnerdtutorials.com",
+  "cerkiew-gdansk.pl",
+  "accuweather.com",
+  "ifixit.com",
+  "aniagotuje.pl",
+  "russianfood.com",
+  "luxmed.pl",
+  "aquastacja.pl",
+  "regiojet.pl",
+  "azbyka.ru",
+  "www.canva.com",
+  "leetcode.com",
+  "pythontutor.ru",
+  "www.w3schools.com",
+  "www.hellointerview.com",
+  "webcammictest.com",
+  "webwhiteboard.com",
+  "miro.com",
+  "ccunpacked.dev",
+]);
+
+// Single pages: only this exact URL is reachable, not the rest of the
+// domain. Must be the full URL including scheme, e.g.
+// "https://stackoverflow.com/questions/2186969/custom-model-binder-for-a-property".
+// Matched against contentLocation.specIgnoringRef, so query strings must
+// match exactly too but a #fragment doesn't matter. See isAllowed().
+const COMPILED_URL_ALLOWLIST = Object.freeze([
+  "https://www.scrapingbee.com/blog/html-agility-pack/",
+  "https://dashboard.scrape.do/login?redirect=%2Foverview",
+  "https://www.w3schools.com/xml/xpath_syntax.asp",
+  "https://medium.com/@pererikbergman/repository-design-pattern-e28c0f3e4a30",
+  "https://www.reddit.com/r/csharp/comments/z3ajmk/what_is_a_task_how_is_it_different_from_async/",
+  "https://stackoverflow.com/questions/2186969/custom-model-binder-for-a-property",
+  "https://access.epam.com/auth/realms/plusx/protocol/openid-connect/auth?state=wqNK1pzydp3x3WuvxXetWU_cFJgRC9HzXgeg8FVV9zoB6IF2D1WIqv9gqBNPCn3OSQtnRBEDJPg0HyEigL--Irtsl3R62xGZtVCF11Obi-6a9c6-VlXKytrR8Z2sGIVnxsQYTWZtTeyMkd4RiaIFEi_oTXBQ2yl71takRmAJ1uY=&response_type=code&client_id=oauth-client.epm-rdpt.rdportal.prod&redirect_uri=https%3A%2F%2Fcampus.epam.com%2Fztna%2Foauth2%2Fcallback",
+  "https://docs.google.com/spreadsheets/d/1NzOBiOtOP1hIl2z3EnZsmrcXN-LUwF9H_Vi0i3h0dpU/edit?gid=0#gid=0",
+  "https://scrape.do/blog/c-sharp-web-scraping/",
+  "https://www.scrapingcourse.com/",
+  "https://www.selenium.dev/selenium/docs/api/dotnet/webdriver/OpenQA.Selenium.html",
+  "https://learn.microsoft.com/en-us/training/paths/build-web-apps-with-blazor/?WT.mc_id=dotnet-35129-website",
+  "https://mudblazor.com/getting-started/installation#manual-install-add-components",
+  "https://demos.blazorbootstrap.com/toasts",
+  "https://learn.microsoft.com/en-us/sql/tools/sql-database-projects/tutorials/create-deploy-sql-project?view=sql-server-ver17&pivots=sq1-visual-studio",
+  "https://learn.microsoft.com/en-us/training/paths/build-web-apps-with-blazor/?source=learn",
+  "https://codewithmukesh.com/blog/pagination-sorting-searching-aspnet-core-webapi/",
+  "https://fls.guru/",
+  "https://snazzymaps.com/",
+  "https://ru.bem.info/methodology/quick-start/",
+  "https://caniuse.com/",
+  "https://html5book.ru/specsimvoly-html/",
+  "https://regexper.com/#%2F%5E%5Cw%2B%28%5B%5C.-%5D%3F%5Cw%2B%29*%40%5Cw%2B%28%5B%5C.-%5D%3F%5Cw%2B%29*%28%5C.%5Cw%7B2%2C8%7D%29%2B%24%2F",
+  "https://developers.google.com/web/tools/chrome-devtools",
+  "https://codecanyon.net/",
+  "https://meliorem.ru/frontend/javascript/spravochnik-javascript-sobytij-dom-elementov/",
+  "http://keycode.info/",
+  "https://browserslist.dev/?q=PjEl",
+  "https://yoksel.github.io/url-encoder/",
+  "https://nosir.github.io/cleave.js/",
+  "https://learn.javascript.ru/closure",
+  "https://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/",
+  "https://usehooks.com/",
+  "https://medium.com/@kumarvinoth/finally-a-better-react-js-folder-structure-821a2210835",
+  "https://redux.js.org/usage/writing-tests#example-app-code",
+  "https://pnpm.io/ru/",
+  "https://nodejs.org/en/download/releases/",
+  "https://fireship.io/courses/angular/start-angular-beginner-tutorial/",
+  "https://fireship.io/lessons/angular-testing-guide-including-firebase/",
+  "https://fireship.io/lessons/material-data-tables-with-firestore/",
+  "https://fireship.io/tags/angular/",
+  "https://fireship.io/lessons/basics-reactive-forms-in-angular/",
+  "https://github.com/angular/angularfire",
+  "https://github.com/codediodeio/angular-firestarter",
+  "https://firestarter.fireship.io/customers",
+  "https://gist.github.com/LayZeeDK/c822cc812f75bb07b7c55d07ba2719b3",
+  "https://hacksnation.com/d/183-download-all-fireship-courses-free/3",
+  "https://developers.facebook.com/apps/570225301583628/settings/basic/",
+  "https://angular.io/guide/observables",
+  "https://www.codewars.com/kata/57256064856584bc47000611/train/javascript",
+  "https://www.geeksforgeeks.org/what-is-the-difference-between-every-and-some-methods-in-javascript/",
+  "https://geek.justjoin.it/jak-dzialaja-map-filter-i-reduce-w-javascript/?gclid=Cj0KCQjwnNyUBhCZARIsAI9AYlEM_MSBrjwZYqcaTAu97S1kfpNBgoj_AiycilI_La1LCL_gTIR04FQaAhB-EALw_wcB",
+  "https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelectorAll",
+  "https://rupl.github.io/unfold/",
+  "https://cssgridgarden.com/#ru",
+  "https://cssgradient.io/",
+  "https://css-tricks.com/box-sizing/",
+  "https://css-tricks.com/snippets/css/a-guide-to-flexbox/",
+  "https://codepen.io/AllThingsSmitty/pen/MyqmdM",
+  "https://www.freepik.com/psd/web-templates",
+  "https://startbootstrap.com/theme/stylish-portfolio",
+  "https://ru.000webhost.com/members/website/list",
+  "https://www.netlify.com/",
+  "https://app.infinityfree.net/accounts/epiz_30567094",
+  "https://hacksnation.com/d/183-download-all-fireship-courses-free/108",
+  "https://www.coursera.org/professional-certificates/meta-front-end-developer?utm_medium=sem&utm_source=gg&utm_campaign=b2c_emea_meta-front-end-developer_meta_ftcof_professional-certificates_arte_feb_24_dr_geo-multi_pmax_gads_lg-all&campaignid=21045376738&adgroupid=&device=c&keyword=&matchtype=&network=x&devicemodel=&adposition=&creativeid=&hide_mobile_promo&gad_source=1&gclid=CjwKCAiA3ZC6BhBaEiwAeqfvykoTldYK-NMKbG9Goc1AfUhLUD7yUnWQnEi3E0JyRqp_zWgPgHIQvBoC93AQAvD_BwE",
+  "chrome://downloads/",
+  "https://npmtrends.com/",
+  "https://nastroyvse.ru/opersys/lix/linux-server-svoimi-rukami.html",
+  "https://linuxjourney.com/",
+  "https://github.com/kamranahmedse/developer-roadmap",
+  "https://suricrasia.online/iceberg/",
+  "https://refactoring.guru/ru/design-patterns/why-learn-patterns",
+  "https://learngitbranching.js.org/",
+  "https://htmlacademy.ru/blog/git/first-aid-git",
+  "https://vk.com/doc232854130_368191366?hash=jJ6KuWU2Vf5InuuAS3hKVo9N7sKuXyzV85mYTkAOKhz&dl=eqj3P5O0xgzHJ9iA6DYvzJTDuZKe1L8Tvv13QIyIO00",
+  "https://regex101.com/",
+  "https://www.digitalocean.com/",
+  "https://editor.swagger.io/",
+  "https://pythontutor.ru/",
+  "http://judge.mipt.ru/mipt_cs_on_python3/labs/lab1.html#id45",
+  "https://courses.prettyprinted.com/p/understanding-django",
+  "https://www.kaggle.com/learn/python",
+  "https://ccbv.co.uk/",
+  "https://www.coursera.org/specializations/data-science-fundamentals-python-sql",
+  "https://www.cnet.com/tech/computing/21-chrome-shortcuts-you-need-to-know/#:~:text=Switch%20to%20previous%20or%20next,next%20tab%20to%20the%20left.",
+  "https://www.hackthebox.com/",
+  "https://leetcode.com/problem-list/top-interview-questions/",
+  "https://www.hackerrank.com/domains/tutorials/30-days-of-code",
+  "https://www.learnshell.org/",
+  "https://www.flaticon.com/home",
+  "https://www.behance.net/",
+  "https://unsplash.com/",
+  "https://color.romanuke.com/page/2/",
+  "https://fontawesome.com/",
+  "https://icons8.de/",
+  "https://colourco.de/",
+  "https://undraw.co/illustrations",
+  "https://www.svgrepo.com/svg/85068/job?edit=true",
+  "https://cs.stanford.edu/people/karpathy/convnetjs//demo/classify2d.html",
+  "https://www.kaggle.com/",
+  "https://devpost.com/",
+  "https://dev.to/",
+  "https://www.topcoder.com/",
+  "https://codeforces.com/",
+  "https://en.wikipedia.org/wiki/List_of_HTTP_status_codes",
+  "https://medium.com/@whosale/optimistic-and-pessimistic-ui-rendering-approaches-bc49d1298cc0",
+  "https://soft360.pl/blog/post/co-to-jest-microsoft-csp.html",
+  "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
+  "https://angular.dev/ecosystem/web-workers",
+  "https://javascript.info/event-loop",
+  "https://github.com/m3y54m/Embedded-Engineering-Roadmap",
+  "https://learnyourway.withgoogle.com/scopes/nDMM6YfG/immersive-text/0",
+  "https://omnis-mbpg.primo.exlibrisgroup.com/discovery/fulldisplay?docid=alma991001872089708210&context=L&vid=48OMNIS_MBPG:48MBPG&lang=pl&search_scope=MyInstitution&adaptor=Local%20Search%20Engine&tab=MBPG&query=any%2Ccontains%2CEric%20Freeman&offset=0",
+  "https://stitch.withgoogle.com/",
+  "https://refactoring.guru/ru",
+  "https://neetcode.io/practice/practice/coreSkills",
+  "https://learn.microsoft.com/en-us/training/modules/build-blazor-todo-list/2-data-binding",
+  "https://mystery.knightlab.com/walkthrough.html",
+  "https://cloud.google.com/learn/paas-vs-iaas-vs-saas",
+  "https://darrenrowse.com/posts/how-i-connected-claude-code-to-my-obsidian-vault-a-guide-for-non-coders",
+  "https://modestprogrammer.pl/ienumerable-vs-iqueryable-czym-sie-roznia-i-kiedy-ktorej-uzyc",
+  "https://www.geeksforgeeks.org/dsa/stack-vs-heap-memory-allocation/",
+  "https://terminaltrove.com/list/",
+  "https://uuidgen.org/v/4",
+  "https://www.weblancer.net/projects/html-verstka-32/verstka-lendinga-1065867/",
+  "https://www.upwork.com/",
+  "https://www.fl.ru/",
+  "https://www.fiverr.com/",
+  "https://support.upwork.com/hc/en-us/articles/211062898-Understanding-and-using-Connects",
+  "https://support.upwork.com/hc/en-us/articles/211063228-Rising-Talent",
+  "https://languagetool.org/ru/",
+  "https://www.learnathome.ru/lessons",
+  "https://www.opensubtitles.org/",
+  "https://youglish.com/pronounce/unfortunately/english?",
+  "https://getyarn.io/yarn-find?text=possible",
+  "https://www.lingq.com/en/learn/en/web/",
+  "https://www.pedocs.de/volltexte/2009/749/pdf/978_3_8274_1723_7_Spitzer.pdf",
+  "http://www.sdkrashen.com/content/books/principles_and_practice.pdf",
+  "https://www.italki.com/?hl=de",
+  "http://www.pileface.com/sollers/pdf/Zarathustra.pdf",
+  "https://bs.to/serie/SpongeBob-Schwammkopf",
+  "https://sjp.pwn.pl/",
+  "https://www.filmweb.pl/video/Zwiastun/Rojst+sezon+2+Zwiastun+nr+1-58387",
+  "https://www.filmweb.pl/serial/%C5%9Alepn%C4%85c+od+%C5%9Bwiate%C5%82-2018-786525",
+  "https://www.reddit.com/r/LucidDreaming/comments/73ih3x/start_here_beginner_guides_faqs_and_resources/",
+  "https://unicode-table.com/ru/sets/superscript-and-subscript-numbers/",
+  "https://docs.google.com/spreadsheets/d/126w-p0catbxeX3dmnb4gMBlVkeusX5NOR21TPg155AI/edit#gid=0",
+  "https://skyline.github.com/",
+  "https://bip.wsb.pl/poznan/wzor-umowy",
+  "https://www.wsb.pl/blog/autor/joanna-polakowska",
+  "https://www.vfsvisaonline.com/Global-PassportTracking/",
+  "https://ug.esn.pl/en",
+  "https://docs.google.com/forms/d/e/1FAIpQLSdJLvYie_Zs0XUbX9NOQiuTpgXs2nmLbekyZOt2WQa1wH7qWA/viewform?fbclid=IwAR0hXMKF7Gw0R_6mk53wvPZt_n5XAiy75JU2N9REl3z9ufvoG9b5GakCsGs",
+  "https://www.gov.pl/web/uw-mazowiecki/studia-i-absolwenci",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu",
+  "https://poland-consult.com/praca/zakon-o-trudoustrojstve-inostrancev.html",
+  "https://poland-consult.com/polezno-znat/dengi/perevod-s-ukrainskoj-karty-v-polshu.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-polyaka/kak-najti-polskie-korni.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/kak-uznat-status.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/otpechatki-palcev.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/vostrebovannye-professii-rp.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/otkaz-v-poluchenii.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/po-pochte.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/zalacznik-1.html",
+  "https://poland-consult.com/novosti/polsha/karty-pobytu-iskusstvennye-ocheredi.html",
+  "https://poland-consult.com/coronavirus/mify-o-kartah-pobytu-2020.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/ne-prihodit-pismo-iz-uzhenda.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/kak-uskorit-poluchenie.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/kak-zapolnit-wniosek.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/na-osnovanii-ucheby.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/kak-oformit.html",
+  "https://poland-consult.com/vnzh-i-pmzh/karta-pobytu/pechat-v-pasporte.html",
+  "https://poland-consult.com/eu/pl/nalogi/ulga-na-krew.html",
+  "https://www.gov.pl/web/udsc-ru/-----4",
+  "https://docs.google.com/spreadsheets/d/131tYa2_wra2lVdZLxXJdh65GDseVn6PgbbFwuMawf3M/edit#gid=0",
+  "https://docs.google.com/spreadsheets/d/1TWvWcbUPbceYsb5I7IwAkpnm4oR__yY24WiwUoB_q0A/edit#gid=0",
+  "https://du.luguniv.edu.ua/",
+  "https://www.reddit.com/r/resumes/",
+  "https://drive.google.com/drive/u/0/folders/16K7FWoHjFwBL2BlpUuwxGqVHvNSCW99p",
+  "https://docs.google.com/spreadsheets/d/1yCikV3x6D7Csp1_OW7VE9ZStTaq__jII_j5tqNvMCeQ/edit?gid=0#gid=0",
+  "https://grow.google/intl/pl/",
+  "https://aws.amazon.com/certification/",
+  "https://learn.microsoft.com/en-us/credentials/certifications/azure-fundamentals/?practice-assessment-type=certification",
+  "https://www.facebook.com/business/learn/certification",
+  "https://www.metacareers.com/profile/home",
+  "https://learn.microsoft.com/en-us/training/modules/describe-cloud-compute/5-define-cloud-models",
+  "https://learn.snowflake.com/en/certifications/",
+  "https://www.databricks.com/learn/certification/data-engineer-associate",
+  "https://lms.santanderopenacademy.com/courses/104/modules",
+  "https://cloud.google.com/learn/certificates?hl=de",
+  "https://cloud.google.com/learn/certification/cloud-developer?hl=de",
+  "https://www.cloudskillsboost.google/paths/17?locale=pl",
+  "https://www.elementsofai.pl/",
+  "https://www.cloudskillsboost.google/paths/118?locale=pl",
+  "https://skillshop.exceedlms.com/student/collection/688653-prepare-for-new-job?locale=pl",
+  "https://skillshop.exceedlms.com/student/collection/680407-increase-productivity?locale=pl",
+  "https://grow.google/intl/pl/courses-and-tools/?category=career",
+  "https://jobs.careers.microsoft.com/actioncenter/submitted",
+  "https://www.linkedin.com/interview-prep/assessments/urn:li:fsd_assessment:(1,a)/question/urn:li:fsd_assessmentQuestion:(10011,aq11)/",
+  "https://app.ultimatecourses.com/",
+  "https://campus.epam.ua/en/training/3984",
+  "https://cloud.google.com/learn/certification/machine-learning-engineer",
+  "https://www.facebook.com/bkMeritoGdanskGdynia",
+  "https://career.luxoft.com/",
+  "https://stackoverflow.com/jobs/companies",
+  "https://careers.honeywell.com/us/en/apply?jobSeqNo=HONEUSHRD244481EXTERNALENUS&atsSource=",
+  "https://www.epam.com/careers",
+  "https://www.google.com/about/careers/applications/jobs/results?location=Poland#!t=jo&jid=127025001&",
+  "https://eagle-r.recruitify.ai/jobs",
+  "https://app.mindpal.co/profile",
+  "https://www.griddynamics.com/careers/discover-openings?city=Gdansk%2C+Poland#content",
+  "https://account.amazon.jobs/de-DE",
+  "https://zapier.com/",
+  "https://www.upwork.com/nx/find-work/best-matches",
+  "https://www.freelancer.pl/",
+  "https://www.google.com/search?q=Fiverr&rlz=1C1ONGR_deDE1100DE1100&sourceid=chrome&ie=UTF-8",
+  "https://www.linkedin.com/jobs/search/?currentJobId=4040634204&f_WT=3%2C1&geoId=104070045&keywords=Python%20Developer&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=R",
+  "https://erasmusintern.org/profile-resume/480876",
+  "https://jobs.dou.ua/",
+  "https://pl.indeed.com/",
+  "https://www.jobbank.gc.ca/dashboard",
+  "https://nofluffjobs.com/",
+  "https://developers.turing.com/dashboard/home?s=outbound",
+  "https://theprotocol.it/praca/frontend-developer-junior-warszawa,oferta,6fe00000-cba4-cabc-5aec-08dc01fadded?utm_away=plMjgzMnw0Nzk3OTE2NTk3NTk0Njk0Mjk5fDQ1MzIw&s=186398832&searchId=070ca980-c049-11ee-8da9-894d62e194de&view=thankyou-apply",
+  "https://justjoin.it/",
+  "https://hub.connectis.pl/offers",
+  "https://merito-gdansk-gdynia.jobteaser.com/pl/dashboard",
+  "https://rocketjobs.pl/",
+  "https://www.accenture.com/pl-en/careers/jobsearch?jk=&sb=1&vw=0&is_rj=0&pg=1",
+  "https://jobs.atos.net/go/Jobs-in-Poland/3677201/",
+  "https://dou.ua/",
+  "https://djinni.co/my/inbox/",
+  "https://www.levels.fyi/jobs/location/poland?searchText=c%23&jobId=132158351264883398",
+  "https://www.eurotechjobs.com/job_search/keyword/c#",
+  "https://habr.com/ru/articles/486820/",
+  "https://www.overleaf.com/project/67753d74b19d51b1af3a6fd3",
+  "https://www.livecareer.pl/cv/cv-po-niemiecku",
+  "https://www.glassdoor.com/member/profile",
+  "https://uk.indeed.com/career-advice",
+  "https://www.facebook.com/groups/802556203473410",
+  "https://join.ventionteams.com/job-openings/page-2",
+  "https://solid.jobs/offers/it",
+  "https://app.inhire.io/getdashboard",
+  "https://remotive.com/",
+  "https://www.google.com/search?q=simulation+developer&oq=simulation+developer&gs_lcrp=EgZjaHJvbWUyCwgAEEUYExg5GIAEMgkIARAAGBMYgAQyCQgCEAAYExiABDIKCAMQABgTGBYYHjIKCAQQABgTGBYYHjIKCAUQABgTGBYYHjIKCAYQABgTGBYYHjIKCAcQABgTGBYYHjIKCAgQABgTGBYYHjIKCAkQABgTGBYYHtIBCDI5MzZqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8",
+  "https://app.unv.org/opportunities/1781262212270336",
+  "https://www.olx.pl/oferta/praca/zatrudnie-kasjera-ke-sprzedawce-CID4-IDKYsen.html",
+  "https://www.merito.pl/gdansk/badania-i-nauka/oferty-pracy?gad_source=1&gclid=Cj0KCQiAq-u9BhCjARIsANLj-s20VyqWAVTdh4KLwg_YfWr7_lKOzzV5DUj6nkF9melsiD6Tpw8M4k0aAvYMEALw_wcB",
+  "https://oferty.praca.gov.pl/portal/lista-wydarzen?parametry=eyJNSUVKU0NFX0dST1VQIjpbeyJtaWVqc2NlIjp7ImlkIjoiV09KRVdPRFpUV086MjIiLCJ2YWx1ZSI6IldPSkVXT0RaVFdPOjIyIiwibGFiZWwiOiJwb21vcnNraWUifX1dfQ%3D%3D",
+  "https://students.pl/oferty/gdansk,gdynia,sopot/",
+  "https://www.gowork.pl/praca/gdynia;l",
+  "https://gdynia.praca.gov.pl/dla-bezrobotnych-i-poszukujacych-pracy",
+  "https://www.velvetjobs.com/job?city=Gda%C5%84sk&country=1791",
+  "https://www.aplikuj.pl/praca/gdynia",
+  "https://www.infopraca.pl/",
+  "https://skillsforall.com/launch?id=9762b32d-0a49-4d7a-b881-498eb3be42cc",
+  "https://subnetmask.info/",
+  "https://42.pl/",
+  "https://pasja-informatyki.pl/sieci-komputerowe/parametry-kabla-typu-skretka/",
+  "https://www.tinkercad.com/things/fuGrdnyCgOO-learning-the-moves/edit?lessonid=EABLWFTIQ2KHDSZ&projectid=O2C1PXBIQ2KHCOD&collectionid=O2C1PXBIQ2KHCOD#/lesson-viewer",
+  "https://www.dropbox.com/s/5qe3cvl6ui9910k/dioda%20zenera%20charakterystyka.xlsx?dl=0",
+  "file:///home/shiva/WSB/2%20Semestr/Podstawy%20Elektroniki/Lab/Zaj%C4%99cia%20II%20Badanie%20p%C3%B3%C5%82przewodnik%C3%B3w/p%E2%94%9C%E2%94%82%E2%94%BC%D0%92przewodniki_diody.pdf",
+  "http://peterhigginson.co.uk/LMC/",
+  "https://devopswithdocker.com/part-1/2-running-and-stopping",
+  "https://github.com/neenjaw/course-devops-with-docker-uh?fbclid=IwAR37rsMA6gvsw2zggw_Ck-_VdFuT_0jwkyX2h1dbOvW3cy9ANvpFw8_a4W8",
+  "https://docs.microsoft.com/pl-pl/dotnet/api/system.collections.generic.hashset-1?view=net-6.0",
+  "https://dotnetfiddle.net/",
+  "https://sites.google.com/view/pmb-laboratoria/programowanie-obiektowe?authuser=0",
+  "http://c-sharp.ue.katowice.pl/?page_id=36",
+  "https://drive.google.com/file/d/1AOmVWM1t-y2maWHgRsrQyYC0KEHQX92R/view",
+  "https://portal.wsb.pl/group/gdansk",
+  "https://moodle2.e-wsb.pl/my/",
+  "https://www.rapidtables.com/convert/number/binary-to-decimal.html",
+  "https://www.calculator.net/binary-calculator.html?number1=10101010&c2op=x&number2=111001101&calctype=op&x=32&y=15",
+  "https://sagecell.sagemath.org/",
+  "https://moodle2.e-wsb.pl/pluginfile.php/5290021/mod_resource/content/1/nazwy%20ang%20funkcji.pdf",
+  "https://excelszkolenie.pl/",
+  "http://wzr.pl/nauka/upload/files/Kokpity%20mened%C5%BCerskie%20w%20analizie%20i%20prezentacji%20danych%20biznesowych%20z%20wykorzystaniem%20MS%20Excel%202016.pdf",
+  "file:///C:/Users/Shiva/Downloads/20dni%20Excel.PDF",
+  "https://www.figma.com/community/explore/files",
+  "https://moodle2.e-wsb.pl/mod/assign/view.php?id=4883002",
+  "https://moodle2.e-wsb.pl/mod/assign/view.php?id=4800602",
+  "http://sta.c64.org/dosprg.html",
+  "https://winworldpc.com/home",
+  "https://www.onlinegdb.com/",
+  "https://kursphp.com/czysty-kod-dobre-praktyki-programowania/",
+  "https://antyweb.pl/jak-programowac-10-bledow-poczatkujacych",
+  "https://cpp0x.pl/artykuly/Inne-artykuly/Dobre-praktyki-wytwarzania-oprogramowania/74",
+  "https://kobietydokodu.pl/niezbednik-juniora-dobre-praktyki-dla-poczatkujacego-programisty/",
+  "http://lanform.com.pl/zlecenia-drobne/krotki-kurs.htm",
+  "https://4programmers.net/C/S%C5%82owa_kluczowe",
+  "https://www.linuxfromscratch.org/",
+  "https://www.techiedelight.com/queue-implementation-in-java/",
+  "https://pages.mini.pw.edu.pl/~estatic/e.mini.pw.edu.pl/sites/default/files/asd_cw.pdf",
+  "https://gitlab.com/trustcontroller/aisd",
+  "https://outlook.office.com/mail/inbox/id/AAQkAGRlM2MzNTY3LThhYWYtNDM0ZS1hZjBhLTJjNmU1MTRmM2NlMAAQAFi7tjbjp7RBpoAS2GZFEds%3D",
+  "https://hide01.ir/",
+  "https://www.wolframalpha.com/input/?i=ln%280%29",
+  "https://ru.wikipedia.org/wiki/%D0%A2%D0%B0%D0%B1%D0%BB%D0%B8%D1%86%D0%B0_%D0%BC%D0%B0%D1%82%D0%B5%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D1%85_%D1%81%D0%B8%D0%BC%D0%B2%D0%BE%D0%BB%D0%BE%D0%B2",
+  "https://habr.com/ru/post/586502/",
+  "https://www.desmos.com/calculator?lang=pl",
+  "https://next.privat24.ua/",
+  "https://www.santander.pl/klient-indywidualny",
+  "https://zenmoney.ru/a/#transactions",
+  "https://kleki.com/",
+  "https://playground.tensorflow.org/#activation=tanh&batchSize=10&dataset=spiral®Dataset=reg-plane&learningRate=0.03®ularizationRate=0&noise=0&networkShape=7,2&seed=0.30741&showTestData=false&discretize=false&percTrainData=80&x=true&y=true&xTimesY=false&xSquared=false&ySquared=false&cosX=false&sinX=false&cosY=false&sinY=false&collectStats=false&problem=classification&initZero=false&hideText=false&showTestData_hide=false",
+  "http://archive.ics.uci.edu/dataset/45/heart+disease",
+  "https://github.com/MuntahaShams/Heart-Disease-Prediction-using-Neural-Networks/blob/master/Heart%20Disease%20Prediction%20with%20Neural%20Networks.ipynb",
+  "https://www.sciencedirect.com/science/article/pii/S2666693624000306",
+  "https://pubmed.ncbi.nlm.nih.gov/23101933/",
+  "file:///C:/Users/DmytroMykhailiuk/Downloads/Scraper%20i%20por%C3%B3wnywarka_Dominika.pdf",
+  "https://colab.research.google.com/drive/1l3RQ9g7qc-3QKVY-hEv76QfdgLiwXDOF#scrollTo=xZS8scDMY3Tt",
+  "https://moodle2.e-wsb.pl/pluginfile.php/8992973/mod_resource/content/1/Standardy%20pisania%20prac%20dyplomowych%202019%28kierunki%20techniczne%29.pdf",
+  "https://www.sciencedirect.com/science/article/pii/S2665917422002070",
+  "https://pdf.sciencedirectassets.com/312075/1-s2.0-S2352914818X00045/1-s2.0-S2352914818300479/main.pdf?X-Amz-Security-Token=IQoJb3JpZ2luX2VjELP%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJGMEQCIGs9VUrCtjLE53xTwjQU20XwEyBT%2BJ63AvFXSLlGbv3UAiBfKLOOsDIpmx64Q9IkSqFHsXgUWQFMXE67DbtB%2B5cCayqyBQgcEAUaDDA1OTAwMzU0Njg2NSIM5fEUiZ3qDrYB%2FbjZKo8FJwcQBGBr8wAy0Q2xPZrPmdp9bkEM46ZEUep86T%2F9xM7cX25vGCVNXGkYZES5nDIsgirtXXSSVXIM7BXqGlNBX1lF3I5L97yIhh71eCWLiUmdOVaiLeK580kCxY3qI%2Fs1H15EwLEMfCb0ZkUnxXoHDDpdessvcuBYCtPi36zmC4Pl5JqyqtztgMiAMBHlcK%2FgJmHvo0GwArsmvvRqryGCFRZnn5h1tOXjnPjmMfQeyu1sNZiXgFhhhfTTR1zelut4S1oWORLL6F0RfTnZ2DysJijPhXXMDS5UhqdiieYtVic3YLmVVqjWPefbCPJBSQYz9LCNmk%2FMWSK0JIOdp%2FaYBrHF22W7v0X4fY9UAEt2IsAD7icZEXlMGh%2FyoOECSuAoI3CmOXxpHNwbKICrRTPvCxZ3c9UlUAZBWlm1PQZYx%2Bw7ofsPEC%2BCaa0ok7ctbfsnmwwGkyhXMX%2FuQEte3MDds4o2fguygX67pzPP3SV8mCLwjdLixnHObv5GV1NMQLgWt8OEKuBKiVHr%2F%2Fc3GobzkPvGkie5LcFc1HLNH7HqCVgkOiqGTMPOM8oPUiC%2BZ034RFQvTivyw%2Fbtnwz7lqJfJ9R4eIdQblWcvYZPf6eUGaOSwuMW08%2FLmxXmBphOWq6Aa2VxsNAewH9gGipABodPJ3%2BGlc251SelNJ8WK9SUVcaW18ZNJ8NDKXa4Ok4%2FclzW%2FRrxJHH%2BL7n8Blioi7QyoZOs%2BY9Y65pBLhHbJ1oVbKXC%2Fx5bK5kLnw8sEFUL6eFkifci9cUNAUBY65978Ximix1yLx1HQb2awIVMElOqy0K%2Bp5Ox2ut3z%2B3Du8y1x2oW61rJARgMmTt%2F4pDPgyOJKIvlx0AQzJjONuqcQcU7uTCeicC4BjqyAfXGMuJrJWXIr%2BX8EC18vHtp%2FdJLDhNCJSoyeKET2WErkqhXfZr03tMaQFr7QYaLbeKRsHHa78xBP7qgXa%2B5bXsmExxNEdfeJrbFxlacfOayHT6QENHzAaAsoT9gMaSk%2Bibsdj8KucChoRwYEG%2B3z0paTAHuBSQQLy%2FKcU2aXvW%2FG5KBTexm5FT9ZCVQ%2Bz0dKUJhCGGYG5JIjjWaVfjgAVtLoEGh4CbGiTScG%2FmmskSzNDQ%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20241016T191300Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=ASIAQ3PHCVTYYJVWKIUO%2F20241016%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=8eff1bb2925e2bfee63651a6c5492e66975e726a984bbd27cd40c9a33c1644d9&hash=e8952569a4fa2968721d5c4c2bca79b938d2f04e5bbb689ad6db362525b72182&host=68042c943591013ac2b2430a89b270f6af2c76d8dfd086a07176afe7c76c2c61&pii=S2352914818300479&tid=spdf-16556445-47bb-475c-a83d-f3f9e6cb9a53&sid=b388e43b2078f34ab25ab1854dc60cccbde5gxrqb&type=client&tsoh=d3d3LnNjaWVuY2VkaXJlY3QuY29t&ua=160a5b04540356065250&rr=8d3a5d160936b1df&cc=pl",
+  "https://developers.google.com/machine-learning?hl=ru",
+  "https://academic.oup.com/europace/article/15/5/742/673395",
+  "https://www.sciencedirect.com/science/article/pii/S0010482518304165?casa_token=v6ei8kHIwa4AAAAA:u0pWy3WydMpxg5a08GTnhaqVbiSuKkGwv0TNNXLBN8tvVtIJ3zNU_s-r56CdnIIiGUaJJPdC3es",
+  "https://www.mdpi.com/1424-8220/24/16/5296",
+  "https://www.physionet.org/content/ptb-xl/1.0.3/",
+  "https://colab.research.google.com/github/google/eng-edu/blob/main/ml/cc/exercises/linear_regression_taxi.ipynb?utm_source=mlcc&utm_campaign=colab-external&utm_medium=referral&utm_content=linear_regression#scrollTo=ph0FE7ZxHY36",
+  "https://link.springer.com/article/10.1007/s11227-023-05583-8",
+  "https://www.nvidia.com/en-us/learn/ai-learning-essentials/?ncid=ref-inpa-719993",
+  "https://neuropsychology.github.io/NeuroKit/examples/ecg_hrv/ecg_hrv.html",
+  "https://www.samproell.io/posts/signal/ecg-library-comparison/",
+  "https://github.com/shap/shap?tab=readme-ov-file",
+  "https://www.mdpi.com/1999-4893/16/2/88",
+  "https://litfl.com/left-anterior-fascicular-block-lafb-ecg-library/",
+  "https://gdynia.jezuici.pl/",
+  "https://contrib.pbslearningmedia.org/WGBH/sj14/sj14-int-religmap/index.html#",
+  "http://lit.lib.ru/img/i/irhin_w_j/kurukulla/8_obetow_mahajany.htm",
+  "https://katab.asia/2022/04/11/psychomathamson/",
+  "https://www.reddit.com/r/TrueAtheism/comments/2v36v9/in_response_to_the_pastor_looking_for_honest/",
+  "https://www.livelib.ru/author/171319/top-petr-kropotkin",
+  "https://apps.openedu.ru/learning/course/course-v1:hse+PHIL+2022/block-v1:hse+PHIL+2022+type@sequential+block@8e27ae0dbae048969c771169ad99b3e0/block-v1:hse+PHIL+2022+type@vertical+block@4653b7fc95ca454592dd3beb9f5b4367",
+  "https://azbyka.ru/sinkretizm",
+  "https://rationalwiki.org/wiki/Biblical_contradictions",
+  "https://rationalwiki.org/wiki/Contradictions_in_Jesus%27_crucifixion",
+  "https://en.wikipedia.org/wiki/Synoptic_Gospels#The_synoptic_problem",
+  "https://en.wikipedia.org/wiki/Lazarus_syndrome",
+  "https://ru.wikipedia.org/wiki/%D0%AF%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F_%D0%91%D0%BE%D0%B3%D0%BE%D1%80%D0%BE%D0%B4%D0%B8%D1%86%D1%8B",
+  "https://en.wikipedia.org/wiki/Our_Lady_of_F%C3%A1tima",
+  "https://pl.wikipedia.org/wiki/Objawienia_Maryjne",
+  "https://pl.wikipedia.org/wiki/Objawienia_w_Gietrzwa%C5%82dzie",
+  "https://pmc.ncbi.nlm.nih.gov/articles/PMC6759672/",
+  "https://www.biblegateway.com/passage/?search=%D0%9E%D1%82%20%D0%9C%D0%B0%D1%82%D1%84%D0%B5%D1%8F%2025%3A14-30&version=ERV-RU",
+  "https://en.wikipedia.org/wiki/The_Passion_Translation",
+  "https://worldviewofjesus.com/2022/08/29/highjacking-christianity-the-passion-translation-and-brian-simmons/",
+  "https://store.steampowered.com/app/747360/Gray_Dawn/?l=polish",
+  "https://www.commentary.org/articles/gershom-scholem/the-holiness-of-sin/",
+  "https://jwa.org/encyclopedia/article/sabbateanism?utm_source=chatgpt.com",
+  "https://en.wikipedia.org/wiki/Frankism?utm_source=chatgpt.com",
+  "https://ru.wikipedia.org/wiki/%D0%A1%D1%82%D1%80%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5",
+  "https://bibliaaudio.pl/sklep/kod-do-aplikacji-biblia-audio-dozywotni/",
+  "https://antio.ru/index.php?showtopic=5787#entry89800",
+  "https://antio.ru/index.php?showtopic=78889&page=1&#entry2335654",
+  "https://pravoslavie.ru/91462.html#_ftnref1",
+  "https://dzen.ru/a/XGLzRrqh2ACtYXvh",
+  "https://www.taniaksiazka.pl/ksiazka/gwiazdy-moim-przeznaczeniem-alfred-bester",
+  "https://dzen.ru/a/ZQhHy-iOoEUpwyRu",
+  "https://www.canada.ca/en/immigration-refugees-citizenship/news/2022/03/canada-ukraine-authorization-for-emergency-travel.html",
+  "https://cronometer.com/#diary",
+  "http://sugarsensitivity.mybb.ru/",
+  "https://www.oum.ru/literature/zdorovoe-pitanie-recepty/veganskie-recepty/veganskie-recepty-vtoryh-blyud/ris-s-karri/",
+  "https://gettingstronger.org/2010/07/improve-eyesight-and-throw-away-your-glasses/",
+  "https://endmyopia.org/",
+  "https://web.archive.org/web/20150402110159/http://demographia.net/padenie-rozhdaemosti-krizis-semi-i-neizbezhnost-depopulyacii-v-evrope-v-pervoy-polovine-xxi-veka",
+  "https://ru.wikipedia.org/wiki/%D0%94%D0%B5%D0%BF%D0%BE%D0%BF%D1%83%D0%BB%D1%8F%D1%86%D0%B8%D1%8F#cite_note-4",
+  "https://data.worldbank.org/indicator/SP.DYN.TFRT.IN?end=2020&locations=IN&start=2020&view=map",
+  "https://twitter.com/hivelrjournal/status/1638340955404382208?s=12",
+  "http://l-n-tolstoy.ru/books/item/f00/s00/z0000009/st003.shtml",
+  "https://ru.wikipedia.org/wiki/%D0%91%D0%B8%D0%B1%D0%BB%D0%B8%D1%8F_%D0%B8_%D1%80%D0%B0%D0%B1%D1%81%D1%82%D0%B2%D0%BE",
+  "https://foma.ru/hristianstvo-i-rabstvo.html",
+  "https://ru.wikipedia.org/wiki/%D0%98%D1%81%D1%82%D0%BE%D1%80%D0%B8%D1%8F_%D1%80%D0%B0%D0%B1%D1%81%D1%82%D0%B2%D0%B0",
+  "https://cyberleninka.ru/article/n/rabstvo-kak-forma-chelovecheskogo-bytiya-videnie-antichnyh-avtorov-v-svete-idey-russkih-filosofov/viewer",
+  "https://azbyka.ru/svoboda",
+  "https://ru.wikipedia.org/wiki/%D0%98%D0%BD%D1%86%D0%B5%D1%81%D1%82#%D0%98%D0%BD%D1%86%D0%B5%D1%81%D1%82_%D0%B2_%D1%86%D0%B0%D1%80%D1%81%D0%BA%D0%BE%D0%B9_%D1%82%D1%80%D0%B0%D0%B4%D0%B8%D1%86%D0%B8%D0%B8_%D0%94%D1%80%D0%B5%D0%B2%D0%BD%D0%B5%D0%B3%D0%BE_%D0%95%D0%B3%D0%B8%D0%BF%D1%82%D0%B0_%D0%B8_%D0%B8%D0%BD%D0%BA%D0%BE%D0%B2",
+  "https://ru.wikipedia.org/wiki/%D0%97%D0%BE%D1%80%D0%BE%D0%B0%D1%81%D1%82%D1%80%D0%B8%D0%B7%D0%BC",
+  "https://ru.wikipedia.org/wiki/%D0%A0%D0%B0%D0%B7%D0%BB%D0%B8%D1%87%D0%B8%D1%8F_%D0%BC%D0%B5%D0%B6%D0%B4%D1%83_%D0%BF%D1%80%D0%B0%D0%B2%D0%BE%D1%81%D0%BB%D0%B0%D0%B2%D0%B8%D0%B5%D0%BC_%D0%B8_%D0%BA%D0%B0%D1%82%D0%BE%D0%BB%D0%B8%D1%86%D0%B8%D0%B7%D0%BC%D0%BE%D0%BC",
+  "https://ru.wikipedia.org/wiki/%D0%9F%D0%BD%D0%B5%D0%B2%D0%BC%D0%B0",
+  "https://ru.wikipedia.org/wiki/%D0%A2%D1%80%D0%B0%D0%B4%D0%B8%D1%86%D0%B8%D0%BE%D0%BD%D0%B0%D0%BB%D0%B8%D0%B7%D0%BC",
+  "https://ru.wikipedia.org/wiki/%D0%9D%D0%B8%D0%BA%D0%B5%D0%BE-%D0%A6%D0%B0%D1%80%D0%B5%D0%B3%D1%80%D0%B0%D0%B4%D1%81%D0%BA%D0%B8%D0%B9_%D0%A1%D0%B8%D0%BC%D0%B2%D0%BE%D0%BB_%D0%B2%D0%B5%D1%80%D1%8B#%D0%A2%D0%B5%D0%BA%D1%81%D1%82",
+  "https://ru.wikipedia.org/wiki/%D0%A5%D1%80%D0%BE%D0%BD%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D1%8F_%D0%BE%D1%82%D0%BC%D0%B5%D0%BD%D1%8B_%D1%80%D0%B0%D0%B1%D1%81%D1%82%D0%B2%D0%B0_%D0%B8_%D0%BA%D1%80%D0%B5%D0%BF%D0%BE%D1%81%D1%82%D0%BD%D0%BE%D0%B3%D0%BE_%D0%BF%D1%80%D0%B0%D0%B2%D0%B0_%D0%BF%D0%BE_%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B0%D0%BC#cite_note-4",
+  "https://www.health.harvard.edu/mind-and-mood/serotonin-the-natural-mood-booster",
+  "https://onedrive.live.com/edit.aspx?resid=30F9C5F0FECD167C!180&wdOrigin=OFFICECOM-WEB.START.EDGEWORTH&wdPreviousSessionSrc=HarmonyWeb&wdPreviousSession=124df93c-d651-4714-a98f-edc70ea91675",
+  "https://app.diagrams.net/#G17yRhnp0SqgeVQpAVln6NG_1t5FiGh-_m#%7B%22pageId%22%3A%22OY1deZ4yAqIChtD307kI%22%7D",
+  "https://eda.ru/recepty/osnovnye-blyuda/grechka-s-gribami-i-zapechennoy-tykvoy-138735",
+  "https://unicef.pl/chce-pomoc/nasze-akcje/pomoz-dzieciom-przezyc-zime?utm_campaign=stay_winterization&utm_medium=display&utm_source=google&utm_term=conv&utm_content=cash&gad_source=2&wbraid=CmUKCQiAy8K8BhDvARJUAJYjkiwqOljm8qpmYqUnttJIfrJL_b_pZzrPh8RnQ2GyQCx9xORqRRFTsFoNgNkiz-DeNpj_wIdttqWrHqKp4DZV94LLKnmqSyPVFlCJwob0yEOgGgINkQ",
+  "https://fightthenewdrug.org/",
+  "https://learn.microsoft.com/en-us/dotnet/csharp/tour-of-csharp/",
+  "https://www.w3schools.com/cs/cs_arrays.php",
+  "https://roadmap.sh/aspnet-core",
+  "https://cp.certmetrics.com/cisco/en/home/dashboard",
+  "https://boson.com/exsim-max-practice-exams/?srsltid=AfmBOoqrCzjGACFVaPHoXXMtaypCO_-9LJ-ZNgnD5Kw6IJypH-DgCQsB",
+  "https://www.reddit.com/r/ccna/",
+  "https://www.networkacademy.io/ccna/network-fundamentals/exploring-data-encapsulation-in-cisco-cml",
+  "https://www.serveracademy.com/courses/active-directory-identity-with-windows-server/installing-the-adds-active-directory-domain-services-server-role",
+  "https://medium.com/@gwenilorac/empowering-your-learning-journey-building-an-active-directory-home-lab-807c436a7f04",
+  "https://www.privacyguides.org/en/basics/why-privacy-matters/",
+  "https://www.serveracademy.com/courses/active-directory-fundamentals/active-directory-console-overview",
+  "https://drive.google.com/drive/folders/1PwK_jWqfUtOjV7gHt8ODutq9QA5cxCgi",
+  "https://pikabu.ru/story/kitayskiy_fayrvol_analiz_sistemyi_internettsenzuryi_i_k_chemu_zhe_stremitsya_rossiya_13545054",
+  "https://en.wikipedia.org/wiki/Great_Firewall",
+  "https://osresearch.net/T430-maximized-flashing/",
+  "https://thinkpads.com/support/hmm/hmm_pdf/t430_t430i_hmm_en_0b48304_03.pdf",
+  "https://www.reddit.com/r/thinkpad/comments/5i20a3/flashing_a_custom_bios_onto_the_t430_how_to/",
+  "https://www.ifixit.com/Device/Lenovo_Thinkpad_T430",
+  "https://libreboot.org/docs/install/",
+  "https://fornex.com/my/vps/34-311177/order/",
+  "https://docs.google.com/document/d/1WleGh4D3_p7TYPhjfKRHQyMYwhZayYZayYY7AZSSzPs/edit?tab=t.0",
+  "https://inteltechniques.com/data/workbook.pdf",
+  "https://workspace.google.com/products/voice/",
+  "https://wiki.healthygamer.gg/en/Addiction",
+  "https://www.merito.pl/english/gdansk/centre-for-advanced-studies",
+  "https://packages.debian.org/trixie/apt",
+  "https://dashboard.api-football.com/login/expirate",
+  "https://www.znanylekarz.pl/lukasz-zielonka/psychoterapeuta/kowale#addresses-section",
+  "https://www.opendoors.pl/przesladowania-chrzescijan/swiatowy-indeks-przesladowan",
+  "https://azbyka.ru/otechnik/Biblia/evangelskij-sinopsis/5_48",
+  "https://www.persecution.com/",
+  "https://ecpat.org/child-sexual-exploitation-in-humanitarian-contexts/",
+  "https://en.wikipedia.org/wiki/Philip_K._Dick",
+  "https://en.wikipedia.org/wiki/Valis_(novel)",
+  "https://en.wikipedia.org/wiki/William_Blake",
+  "https://developer.android.com/codelabs/basic-android-kotlin-compose-first-program?continue=https%3A%2F%2Fdeveloper.android.com%2Fcourses%2Fpathways%2Fandroid-basics-compose-unit-1-pathway-1%23codelab-https%3A%2F%2Fdeveloper.android.com%2Fcodelabs%2Fbasic-android-kotlin-compose-first-program#4",
+  "https://www.shodan.io/",
+  "https://www.znanylekarz.pl/lukasz-zielonka/psychoterapeuta/kowale",
+  "https://joindeleteme.com/privacy-protection-plans/",
+  "https://incogni.com/pricing",
+  "https://en.wikipedia.org/wiki/Korea_Future_Initiative",
+  "https://epsteinexposed.com/news",
+  "https://en.wikipedia.org/wiki/Pizzagate_conspiracy_theory",
+  "https://jmail.world/search?q=blake",
+  "https://www.canva.com/pl_pl/",
+  "https://www.sejda.com/pl/pdf-editor",
+  "https://pixlr.com/e/#editor",
+  "https://zenius-i-vanisher.com/v5.2/viewsimfilecategory.php?categoryid=897",
+  "https://wikileaks.org/",
+  "https://panel.fitkalorie.pl/pl/new-order/create?calorific=66&diet=1&package&testMode=true&variant=2",
+  "https://vk.com/video/@id563680620",
+  "https://coinmarketcap.com/",
+  "https://ru.wikipedia.org/wiki/%D0%98%D1%81%D0%BF%D0%BE%D0%B2%D0%B5%D0%B4%D1%8C_%D1%8D%D0%BA%D0%BE%D0%BD%D0%BE%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%BE%D0%B3%D0%BE_%D1%83%D0%B1%D0%B8%D0%B9%D1%86%D1%8B",
+  "https://zelenka.guru/articles/",
+  "https://kinogo1.biz/5259-ne-smotrite-naverh-2021-mp4/player-2",
+  "https://podcasts.apple.com/pl/podcast/effortless-english-podcast-learn-english-with-aj-hoge/id188333691?l=pl",
+  "https://www.researchgate.net/publication/363699359_Deep_Neural_Network_Approach_for_Artifact_Detection_in_Raw_ECG",
+  "https://www.247roulette.org/",
+  "https://ddosecrets.com/",
+  "https://kursy.intertechacademy.pl/projektowanie-zasilaczy-impulsowych?gad_source=2&wbraid=CmQKCAiAwaG9BhBMElQAuqxnA8MWu_0eG2G4mTHKGKo37Wjo8bJzod6Un6Pmeg_Hqjd3nZP4W6a6F16HWMdN3p5oR5IcFa0yUL94fUs1dwEYpOS1pBmwjHcuwRr4GtCJFdkaAnCN",
+  "https://lifehacker.ru/pampushki-s-chesnokom-recepty/",
+  "https://go2tutors.com/20-rare-weather-events-that-completely-transformed-landscapes/",
+  "https://sekurak.pl/",
+  "https://azbyka.ru/znakomstva/signup-new",
+  "https://azbyka.ru/molitvoslov/molitvy-v-bludnoj-brani.html",
+  "https://www.google.com/search?q=%D0%B1%D0%BE%D0%BC%D0%B6+%D1%81+%D0%B4%D1%80%D0%BE%D0%B1%D0%BE%D0%B2%D0%B8%D0%BA%D0%BE%D0%BC&rlz=1CDGOYI_enDE1100DE1100&oq=%D0%B1%D0%BE%D0%BC%D0%B6+%D1%81+%D0%B4%D1%80%D0%BE%D0%B1%D0%BE%D0%B2%D0%B8%D0%BA%D0%BE%D0%BC&gs_lcrp=EgZjaHJvbWUyCwgAEEUYExg5GIAEMgkIARAAGBMYgAQyCQgCEAAYExiABDIJCAMQABgTGIAEMgkIBBAAGBMYgAQyCQgFEAAYExiABDIJCAYQABgTGIAEMgkIBxAAGBMYgAQyCQgIEAAYExiABDIJCAkQABgTGIAE0gEIMTk4OWowajSoAhOwAgHiAwQYASBf&hl=pl&sourceid=chrome-mobile&ie=UTF-8#fpstate=vclbx&ebo=0",
+  "https://kolejka.gdansk.uw.gov.pl/branch/5",
+  "https://lifehacker.ru/vinegret-recept/",
+  "https://anylang.net/ru/books/de/tak-govoril-zaratustra-kniga-dlya-vseh-i-ni-dlya-kogo/read",
+  "https://obraz.io/dt_gallery/logicalfallacies/",
+  "https://ctmucommunity.org/wiki/Beginner%27s_introduction",
+  "https://eda.ru/recepty/salaty/seld-pod-shuboy-klassicheskaya-48304",
+  "https://www.google.com/search?gs_ssp=eJwBOQDG_woLL2cvMTIyMmM5em4wAUoo0Y3RgNC90YHRgiDRjtC90LPQtdGAINGD0YXQvtC0INCyINC70LXRgdbFHg8&q=%D1%8D%D1%80%D0%BD%D1%81%D1%82+%D1%8E%D0%BD%D0%B3%D0%B5%D1%80+%D1%83%D1%85%D0%BE%D0%B4+%D0%B2+%D0%BB%D0%B5%D1%81&rlz=1CDGOYI_enDE1100DE1100&oq=%D1%8D%D1%80%D0%BD%D0%B5%D1%81%D1%82+%D1%8E%D0%BD%D0%B3%D0%B5%D1%80+&gs_lcrp=EgZjaHJvbWUqCwgBEC4YChgTGIAEMgYIABBFGDkyCwgBEC4YChgTGIAEMgwIAhAAGAoYExgWGB4yBwgDECEYoAEyBwgEECEYoAEyBwgFECEYoAHSAQg1NTA5ajBqN6gCGbACAeIDBBgBIF8&hl=pl&sourceid=chrome-mobile&ie=UTF-8#ebo=0",
+  "https://eda.ru/recepty/salaty/klassicheskij-krabovij-salat-s-ogurcom-47909",
+  "https://www.gastronom.ru/recipe/10803/salat-olive-klassicheskij-sovetskij",
+  "https://aniastarmach.pl/przepis/spaghetti-bolognese/",
+  "https://www.kwestiasmaku.com/przepis/zupa-ogorkowa",
+  "https://www.linkedin.com/sales/ssi",
+  "http://xn--80adancmc3bzi.xn--p1ai/blog/priroda/1198.html",
+  "https://nurosym.com/products/nurosym",
+  "https://www.filmweb.pl/film/Spisek+%C5%BCar%C3%B3wkowy-2010-626947",
+  "https://ia600207.us.archive.org/16/items/tk-Technological-Slavery/tk-Technological-Slavery.pdf",
+  "https://frenzband.com/",
+  "https://zapyataya.eu/politika-aristotel/",
+  "https://en.wikipedia.org/wiki/Isaiah_Scroll",
+  "https://en.wikipedia.org/wiki/Daniel_in_the_lions%27_den",
+  "https://ru.wikipedia.org/wiki/%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA_%D0%BA%D0%B0%D1%80%D1%82%D0%B8%D0%BD_%D0%98%D0%B5%D1%80%D0%BE%D0%BD%D0%B8%D0%BC%D0%B0_%D0%91%D0%BE%D1%81%D1%85%D0%B0",
+  "https://ru.wikipedia.org/wiki/%D0%AF%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F_%D0%B2_%D0%93%D0%B0%D1%80%D0%B0%D0%B1%D0%B0%D0%BD%D0%B4%D0%B0%D0%BB%D0%B5",
+  "https://en.wikipedia.org/wiki/Marian_apparition",
+  "https://en.wikipedia.org/wiki/Constitutional_references_to_God",
+  "https://www.russianfood.com/recipes/recipe.php?rid=159322",
+  "https://ru.wikipedia.org/wiki/%D0%93%D0%B0%D0%BB%D0%BB%D1%8E%D1%86%D0%B8%D0%BD%D0%B0%D1%86%D0%B8%D1%8F#%D0%98%D1%81%D1%82%D0%B8%D0%BD%D0%BD%D1%8B%D0%B5",
+  "https://en.wikipedia.org/wiki/Speaking_in_tongues",
+  "https://en.wikipedia.org/wiki/Eucharistic_miracle",
+  "https://en.wikipedia.org/wiki/Sok%C3%B3%C5%82ka#/media/File:Sok%C3%B3%C5%82ka,_zesp%C3%B3%C5%82_ko%C5%9Bcio%C5%82a_par._p.w._%C5%9Bw._Antoniego,_2_po%C5%82._XIX_01.jpg",
+  "https://en.wikipedia.org/wiki/Spirit_possession",
+  "https://ru.wikipedia.org/wiki/%D0%AD%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D0%B8%D0%B7%D0%BC",
+  "https://azbyka.ru/otechnik/Serafim_Rouz/bytie-sotvorenie-mira-i-pervye-vetkhozavetnye-ljudi/1_1",
+  "https://leetcode.com/problems/rotate-image/",
+  "https://ia601404.us.archive.org/8/items/tk-Technological-Slavery/tk-Technological-Slavery.pdf",
+  "https://www.google.com/search?q=Crimpd&sourceid=chrome&ie=UTF-8",
+  "https://www.google.com/search?q=Lattice+Training&sourceid=chrome&ie=UTF-8",
+  "https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/?view=aspnetcore-10.0",
+  "https://claude.ai/chat/ee5fffa8-7717-4157-bbec-f4182e16f401",
+  "https://learn.microsoft.com/en-us/sql/linux/install-upgrade/quickstart-install-ubuntu?view=sql-server-ver17&tabs=ubuntu2004%2C2505ubuntu2404%2Codbc-ubuntu-2404",
+  "https://learn.microsoft.com/en-us/aspnet/core/blazor/fundamentals/environments?view=aspnetcore-10.0",
+  "https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/types/generics",
+  "https://birdeatsbug.com/blog/contains-text-in-selenium",
+  "https://claude.ai/chat/6b793c8f-d4b3-47b7-8692-e92e5f6ff35a",
+  "https://dotnetmastery.com/Blog/Details?slug=mastering-cancellation-tokens-dotnet",
+  "https://stackoverflow.com/questions/41577376/how-to-read-values-from-the-querystring-with-asp-net-core",
+  "https://learn.microsoft.com/en-us/aspnet/core/mvc/models/model-binding?view=aspnetcore-10.0",
+  "https://medium.com/@mina.abdo/mvc-vs-minimal-apis-in-net-choosing-the-right-approach-3922a4e83a64",
+  "https://www.browserling.com/browser-sandbox",
+  "https://allegro.pl/oferta/nowa-pamiec-ram-micron-mta8atf1g64hz-3g2j1-8gb-ddr4-3200mhz-sodimm-18486756783?utm_feed=aa34192d-eee2-4419-9a9a-de66b9dfae24&utm_content=ps&utm_source=google&utm_medium=cpc&utm_campaign=_elktrk_komputery_pla_ss_ps&ev_adgr=cc-ps-ss&ev_campaign_id=22364529057&gad_source=1&gad_campaignid=22364529057&gbraid=0AAAAAD24kbO3ytkvisIK9Y_yDgfjCa-u2&gclid=CjwKCAjw6f3RBhApEiwAMaCqWdu3rce16ij_KNsxK09jC0R2NHu06LyZEWG-EVfqv-zivFC67KIW0RoC_xAQAvD_BwE",
+  "https://allegro.pl/oferta/pamiec-ram-ddr4-samsung-m471a5244gb0-cwe-4-gb-18250791375?utm_feed=aa34192d-eee2-4419-9a9a-de66b9dfae24&utm_content=ps&utm_source=google&utm_medium=cpc&utm_campaign=_elktrk_komputery_pla_ss_ps&ev_adgr=cc-ps-ss&ev_campaign_id=22364529057&gad_source=1&gad_campaignid=22364529057&gbraid=0AAAAAD24kbO3ytkvisIK9Y_yDgfjCa-u2&gclid=CjwKCAjw6f3RBhApEiwAMaCqWS_jh0c3pbrsTWcAsaf6mm7eu6N5uYWnwESIDVIkV0q4Pik2RN-3SRoCZpEQAvD_BwE",
+  "https://ru.wikipedia.org/wiki/%D0%9A%D0%B0%D0%B4%D0%B4%D0%B0%D1%84%D0%B8,_%D0%9C%D1%83%D0%B0%D0%BC%D0%BC%D0%B0%D1%80",
+  "https://www.reddit.com/r/openclaw/comments/1ry3x06/openclaw_for_tinder_would_anyone_use_this/"
+]);
+
+// Merged so the rest of the module (effective-list computation, removal,
+// the about:allowlist page) can treat domain and single-page entries as one
+// flat, editable list; isAllowed() tells them apart by shape.
+const COMPILED_ALLOWLIST = Object.freeze([
+  ...COMPILED_DOMAIN_ALLOWLIST,
+  ...COMPILED_URL_ALLOWLIST,
+]);
+
+function userListPath() {
+  return PathUtils.join(PathUtils.profileDir, "allowlist-user.json");
+}
+
+async function computeEffectiveList() {
+  try {
+    // The file stores entries (domains or single-page URLs) the user has
+    // removed, not a snapshot of what's allowed -- that way editing
+    // COMPILED_ALLOWLIST later (adding or reordering entries) doesn't get
+    // silently undone by an old snapshot that predates those entries.
+    const removedEntries = JSON.parse(await IOUtils.readUTF8(userListPath()));
+    return COMPILED_ALLOWLIST.filter(entry => !removedEntries.includes(entry));
+  } catch (e) {
+    // No user file yet, or corrupt -> full compiled list is allowed
+    return COMPILED_ALLOWLIST;
+  }
+}
+
+// Module-level so the content-policy instance and the about:allowlist page
+// (both importing this same module) always see the same, live list.
+let effectiveList = COMPILED_ALLOWLIST;
+const readyPromise = computeEffectiveList().then(list => {
+  effectiveList = list;
+});
+
+export function getEffectiveList() {
+  return effectiveList;
+}
+
+// Lets about:allowlist wait for the initial async load instead of racing it.
+// shouldLoad() never awaits this: before startup finishes reading the profile
+// file it just sees the full compiled list, an accepted tradeoff for a
+// self-control tool rather than something worth engineering around.
+export function whenReady() {
+  return readyPromise;
+}
+
+// Delete-only mutator: always a filter() of the current list. There is no
+// exported add/set function, so there is no way to add back or edit an entry.
+export async function removeSite(entry) {
+  if (!effectiveList.includes(entry)) {
+    return;
+  }
+  effectiveList = effectiveList.filter(e => e !== entry);
+  const removedEntries = COMPILED_ALLOWLIST.filter(
+    e => !effectiveList.includes(e)
+  );
+  await IOUtils.writeUTF8(userListPath(), JSON.stringify(removedEntries));
+}
+
+// A list entry is a single-page URL, not a domain, if it parses as an
+// absolute URL (domains are bare hostnames like "example.com" and never
+// parse as one).
+function isUrlEntry(entry) {
+  return URL.canParse(entry);
+}
+
+function isAllowed(contentLocation, list) {
+  const host = contentLocation.host;
+  const url = contentLocation.specIgnoringRef;
+  return list.some(entry =>
+    isUrlEntry(entry)
+      ? url === entry
+      : host === entry || host.endsWith("." + entry)
+  );
+}
+
+// Loopback is always reachable, independent of the allowlist: 127.0.0.0/8
+// (RFC 5735) is the full IPv4 loopback block, not just 127.0.0.1, and "::1"
+// is the IPv6 loopback address. Port is irrelevant here since shouldLoad
+// only ever looks at contentLocation.host.
+function isLoopback(host) {
+  return (
+    host === "localhost" ||
+    host === "::1" ||
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)
+  );
+}
+
+export const SiteAllowlistPolicy = {
+  classDescription: "Site Allowlist Content Policy",
+  classID: Components.ID("{942643a7-5735-41c8-a9a4-fa0a3e89b792}"),
+  contractID: "@mozilla.org/site-allowlist;1",
+
+  QueryInterface: ChromeUtils.generateQI(["nsIContentPolicy"]),
+
+  createInstance(iid) {
+    return this.QueryInterface(iid);
+  },
+
+  shouldLoad(contentLocation, loadInfo) {
+    const type = loadInfo.externalContentPolicyType;
+    if (
+      type !== Ci.nsIContentPolicy.TYPE_DOCUMENT &&
+      type !== Ci.nsIContentPolicy.TYPE_SUBDOCUMENT
+    ) {
+      return Ci.nsIContentPolicy.ACCEPT;
+    }
+    // Only gate real web navigations. contentLocation.host doesn't throw for
+    // chrome:// URIs (it returns the package name, e.g. "browser"), so
+    // checking the scheme is required -- otherwise internal chrome:// loads
+    // (hidden frames, browser UI, etc.) get evaluated against the allowlist
+    // and rejected.
+    if (
+      contentLocation.scheme !== "http" &&
+      contentLocation.scheme !== "https"
+    ) {
+      return Ci.nsIContentPolicy.ACCEPT;
+    }
+    if (isLoopback(contentLocation.host)) {
+      return Ci.nsIContentPolicy.ACCEPT;
+    }
+    return isAllowed(contentLocation, getEffectiveList())
+      ? Ci.nsIContentPolicy.ACCEPT
+      : Ci.nsIContentPolicy.REJECT_REQUEST; // simplest: default network-error page, no custom UI
+  },
+
+  shouldProcess() {
+    return Ci.nsIContentPolicy.ACCEPT;
+  },
+};
+
+const registrar = Components.manager.QueryInterface(Ci.nsIComponentRegistrar);
+if (!registrar.isContractIDRegistered(SiteAllowlistPolicy.contractID)) {
+  registrar.registerFactory(
+    SiteAllowlistPolicy.classID,
+    SiteAllowlistPolicy.classDescription,
+    SiteAllowlistPolicy.contractID,
+    SiteAllowlistPolicy
+  );
+  Services.catMan.addCategoryEntry(
+    "content-policy",
+    SiteAllowlistPolicy.contractID,
+    SiteAllowlistPolicy.contractID,
+    false,
+    true
+  );
+}

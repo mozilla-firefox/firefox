@@ -1,0 +1,5 @@
+EXTRA_JS_MODULES += [
+    "AboutAllowlist.sys.mjs",
+    "SiteAllowlist.sys.mjs",
+]
+JAR_MANIFESTS += ["jar.mn"]

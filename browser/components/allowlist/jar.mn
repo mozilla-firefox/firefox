@@ -1,0 +1,4 @@
+browser.jar:
+  content/browser/allowlist/aboutAllowlist.html   (content/aboutAllowlist.html)
+  content/browser/allowlist/aboutAllowlist.mjs    (content/aboutAllowlist.mjs)
+  content/browser/allowlist/aboutAllowlist.css    (content/aboutAllowlist.css)

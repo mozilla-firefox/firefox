@@ -419,6 +419,10 @@ BrowserGlue.prototype = {
       categoryName: "browser-before-ui-startup",
     });
 
+    // Self-registers the site-allowlist content policy and about:allowlist
+    // page (see SiteAllowlist.sys.mjs for why this isn't done declaratively).
+    ChromeUtils.importESModule("resource:///modules/SiteAllowlist.sys.mjs");
+
     Services.obs.notifyObservers(null, "browser-ui-startup-complete");
   },
 

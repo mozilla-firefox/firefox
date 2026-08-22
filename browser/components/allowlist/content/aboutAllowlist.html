@@ -1,0 +1,46 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this file,
+   - You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!doctype html>
+<html>
+  <head>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src chrome:; object-src 'none'"
+    />
+    <meta charset="utf-8" />
+    <link rel="localization" href="branding/brand.ftl" />
+    <link rel="localization" href="browser/aboutAllowlist.ftl" />
+    <link
+      rel="stylesheet"
+      href="chrome://browser/content/allowlist/aboutAllowlist.css"
+    />
+    <link rel="stylesheet" href="chrome://global/skin/in-content/common.css" />
+    <title data-l10n-id="about-allowlist-title"></title>
+  </head>
+  <body>
+    <main class="main-container">
+      <h1 data-l10n-id="about-allowlist-heading"></h1>
+      <p data-l10n-id="about-allowlist-description"></p>
+      <div id="list"></div>
+      <p id="empty-message" data-l10n-id="about-allowlist-empty" hidden></p>
+    </main>
+    <script
+      type="module"
+      src="chrome://browser/content/allowlist/aboutAllowlist.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-button.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-box-group.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-box-item.mjs"
+    ></script>
+  </body>
+</html>
