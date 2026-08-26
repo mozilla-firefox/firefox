@@ -176,6 +176,10 @@ function getPageActionPopup(window, extensionId) {
   return window.document.getElementById(panelId);
 }
 
+// Resolves as soon as hidePopup() has been called, deliberately not once the
+// popup is hidden: browser_ext_popup_after_close.js clicks immediately after
+// this resolves, and has to do so within security.notification_enable_delay of
+// popuphiding.
 function closePageAction(window, extensionId) {
   let node = getPageActionPopup(window, extensionId);
   if (node) {
