@@ -180,6 +180,12 @@ class _SidebarTestUtils {
       () => win.gBrowser.tabContainer.getAttribute("orient") == toOrientation
     );
     await win.SidebarController.sidebarMain?.updateComplete;
+    // Same wait as waitForRepaint() in head.js. The theme change that carries
+    // -moz-pref() invalidation runs at the top of the next rendering update,
+    // and the dispatched runnable resumes only once that update has finished.
+    await new Promise(resolve =>
+      win.requestAnimationFrame(() => Services.tm.dispatchToMainThread(resolve))
+    );
   }
 }
 
