@@ -14,6 +14,18 @@ add_task(async function test_103_cancel_parent_connect() {
     ],
   });
 
+  // The preload must be cancelled by the parent-connect timeout, never adopted
+  // by the content process. Without this the test would silently go back to
+  // racing the timeout if early hints ever start being processed here.
+  let connectedBack = false;
+  let observer = () => {
+    connectedBack = true;
+  };
+  Services.obs.addObserver(observer, "earlyhints-connectback");
+  registerCleanupFunction(() => {
+    Services.obs.removeObserver(observer, "earlyhints-connectback");
+  });
+
   let observed = TestUtils.topicObserved("http-on-stop-request", subject => {
     subject = subject.QueryInterface(Ci.nsIChannel);
     return subject.URI.spec == BASE_URL + "square2.png";
@@ -29,4 +41,5 @@ add_task(async function test_103_cancel_parent_connect() {
     subject.QueryInterface(Ci.nsIChannel).canceledReason,
     "parent-connect-timeout"
   );
+  Assert.ok(!connectedBack, "the content process must not connect back");
 });

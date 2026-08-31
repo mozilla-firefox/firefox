@@ -1,11 +1,15 @@
 "use strict";
 
-let { setTimeout } = ChromeUtils.importESModule(
-  "resource://gre/modules/Timer.sys.mjs"
+// A 1x1 PNG.
+const IMAGE = atob(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 );
 
-// Sends a 103 Early Hint for square2.png immediately, then delays the 200
-// response to ensure the parent-connect-timeout fires first (bug 1829935).
+// Sends a 103 Early Hint preloading square2.png, then serves an *image*
+// document. An image document has no nsContentSink, so the content process
+// never runs nsContentSink::ProcessHTTPHeaders and therefore never connects
+// back for the early hint. That makes EarlyHintPreloader's parent-connect
+// timeout the only thing that can cancel the preload. See bug 1829935.
 function handleRequest(_request, response) {
   response.seizePower();
 
@@ -16,22 +20,13 @@ function handleRequest(_request, response) {
       `\r\n`
   );
 
-  setTimeout(() => {
-    let body = `<!DOCTYPE html>
-<html>
-<body>
-
-</body>
-</html>
-`;
-    response.write(
-      `HTTP/1.1 200 OK\r\n` +
-        `Content-Type: text/html;charset=utf-8\r\n` +
-        `Cache-Control: no-cache\r\n` +
-        `Content-Length: ${body.length}\r\n` +
-        `\r\n` +
-        body
-    );
-    response.finish();
-  }, 500);
+  response.write(
+    `HTTP/1.1 200 OK\r\n` +
+      `Content-Type: image/png\r\n` +
+      `Cache-Control: no-cache\r\n` +
+      `Content-Length: ${IMAGE.length}\r\n` +
+      `\r\n` +
+      IMAGE
+  );
+  response.finish();
 }
