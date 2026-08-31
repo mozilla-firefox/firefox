@@ -62,6 +62,8 @@ static mozilla::LazyLogModule gGridContainerLog("GridContainer");
 // http://drafts.csswg.org/css-grid/#overlarge-grids
 static const int32_t kMaxLine = 10000;
 static const int32_t kMinLine = -10000;
+static const int32_t kMaxTrack = kMaxLine - 1;
+
 // The maximum line number, in the zero-based translated grid.
 static const uint32_t kTranslatedMaxLine = uint32_t(kMaxLine - kMinLine);
 static const uint32_t kAutoLine = kTranslatedMaxLine + 3457U;
@@ -1510,19 +1512,18 @@ struct nsGridContainerFrame::TrackSizingFunctions {
     if (!aIsSubgrid) {
       ExpandNonRepeatAutoTracks();
     }
-
-#ifdef DEBUG
     if (mHasRepeatAuto) {
+      if (mRepeatAutoStart > kMaxTrack) {
+        // The `repeat(auto-fill/fit)` track is outside the clamped grid.
+        mHasRepeatAuto = false;
+      }
       MOZ_ASSERT(mExpandedTracks.Length() >= 1);
-      const unsigned maxTrack = kMaxLine - 1;
-      // If the exanded tracks are out of range of the maximum track, we
+      // If the expanded tracks are out of range of the maximum track, we
       // can't compare the repeat-auto start. It will be removed later during
       // grid item placement in that situation.
-      if (mExpandedTracks.Length() < maxTrack) {
-        MOZ_ASSERT(mRepeatAutoStart < mExpandedTracks.Length());
-      }
+      MOZ_ASSERT_IF(mExpandedTracks.Length() < kMaxTrack,
+                    mRepeatAutoStart < mExpandedTracks.Length());
     }
-#endif
   }
 
  public:
@@ -1605,9 +1606,8 @@ struct nsGridContainerFrame::TrackSizingFunctions {
    */
   void InitRepeatTracks(const NonNegativeLengthPercentageOrNormal& aGridGap,
                         nscoord aMinSize, nscoord aSize, nscoord aMaxSize) {
-    const uint32_t maxTrack = kMaxLine - 1;
     // Check for a repeat after the maximum allowed track.
-    if (MOZ_UNLIKELY(mRepeatAutoStart >= maxTrack)) {
+    if (MOZ_UNLIKELY(mRepeatAutoStart >= kMaxTrack)) {
       mHasRepeatAuto = false;
       mRepeatAutoStart = 0;
       mRepeatAutoEnd = 0;
@@ -1617,7 +1617,7 @@ struct nsGridContainerFrame::TrackSizingFunctions {
         CalculateRepeatFillCount(aGridGap, aMinSize, aSize, aMaxSize) *
         NumRepeatTracks();
     // Clamp the number of repeat tracks to the maximum possible track.
-    repeatTracks = std::min(repeatTracks, maxTrack - mRepeatAutoStart);
+    repeatTracks = std::min(repeatTracks, kMaxTrack - mRepeatAutoStart);
     SetNumRepeatTracks(repeatTracks);
     // Blank out the removed flags for each of these tracks.
     mRemovedRepeatTracks.SetLength(repeatTracks);
@@ -1846,36 +1846,47 @@ struct nsGridContainerFrame::TrackSizingFunctions {
     mRepeatAutoEnd = mRepeatAutoStart + aNumRepeatTracks;
   }
 
+  [[nodiscard]] bool EmplaceExpandedTrack(size_t aTrackListValueIndex,
+                                          size_t aRepeatIndex) {
+    MOZ_ASSERT(mExpandedTracks.Length() < kMaxLine);
+    if (mExpandedTracks.Length() == kMaxTrack) {
+      return false;
+    }
+    return mExpandedTracks.EmplaceBack(fallible, aTrackListValueIndex,
+                                       aRepeatIndex);
+  }
+
   // Store mTrackListValues into mExpandedTracks with `repeat(INTEGER, ...)`
   // tracks expanded.
   void ExpandNonRepeatAutoTracks() {
+    MOZ_ASSERT(mExpandedTracks.Length() <= kMaxTrack);
     for (size_t i = 0; i < mTrackListValues.Length(); ++i) {
       auto& value = mTrackListValues[i];
       if (value.IsTrackSize()) {
-        mExpandedTracks.EmplaceBack(i, 0);
+        if (!EmplaceExpandedTrack(i, 0)) {
+          return;
+        }
         continue;
       }
       auto& repeat = value.AsTrackRepeat();
       if (!repeat.count.IsNumber()) {
         MOZ_ASSERT(i == mRepeatAutoStart);
-        mRepeatAutoStart = mExpandedTracks.Length();
-        mRepeatAutoEnd = mRepeatAutoStart + repeat.track_sizes.Length();
-        mExpandedTracks.EmplaceBack(i, 0);
+        const auto repeatAutoStart = mExpandedTracks.Length();
+        if (!EmplaceExpandedTrack(i, 0)) {
+          return;
+        }
+        mRepeatAutoStart = repeatAutoStart;
+        mRepeatAutoEnd = repeatAutoStart + repeat.track_sizes.Length();
         continue;
       }
       for (auto j : IntegerRange(repeat.count.AsNumber())) {
         (void)j;
         size_t trackSizesCount = repeat.track_sizes.Length();
         for (auto k : IntegerRange(trackSizesCount)) {
-          mExpandedTracks.EmplaceBack(i, k);
+          if (!EmplaceExpandedTrack(i, k)) {
+            return;
+          }
         }
-      }
-    }
-    if (MOZ_UNLIKELY(mExpandedTracks.Length() > kMaxLine - 1)) {
-      mExpandedTracks.TruncateLength(kMaxLine - 1);
-      if (mHasRepeatAuto && mRepeatAutoStart > kMaxLine - 1) {
-        // The `repeat(auto-fill/fit)` track is outside the clamped grid.
-        mHasRepeatAuto = false;
       }
     }
   }
@@ -1991,6 +2002,12 @@ class MOZ_STACK_CLASS nsGridContainerFrame::LineNameMap {
     SmallPointerArray<const NameList> names;
     const uint32_t end =
         std::min<uint32_t>(lineNameLists.Length(), mClampMaxLine + 1);
+    auto AppendExpandedNames = [&]() -> bool {
+      if (mExpandedLineNames.Length() == size_t(mClampMaxLine)) {
+        return false;
+      }
+      return mExpandedLineNames.AppendElement(std::move(names), fallible);
+    };
     for (uint32_t i = 0; i < end; ++i) {
       if (nameListToMerge) {
         names.AppendElement(nameListToMerge);
@@ -1998,12 +2015,16 @@ class MOZ_STACK_CLASS nsGridContainerFrame::LineNameMap {
       }
       names.AppendElement(&lineNameLists[i]);
       if (i >= trackListValues.Length()) {
-        mExpandedLineNames.AppendElement(std::move(names));
+        if (!AppendExpandedNames()) {
+          return;
+        }
         continue;
       }
       const auto& value = trackListValues[i];
       if (value.IsTrackSize()) {
-        mExpandedLineNames.AppendElement(std::move(names));
+        if (!AppendExpandedNames()) {
+          return;
+        }
         continue;
       }
       const auto& repeat = value.AsTrackRepeat();
@@ -2016,7 +2037,9 @@ class MOZ_STACK_CLASS nsGridContainerFrame::LineNameMap {
         MOZ_ASSERT(repeatNames.Length() >= 2);
         for (const auto j : IntegerRange(repeatNames.Length() - 1)) {
           names.AppendElement(&repeatNames[j]);
-          mExpandedLineNames.AppendElement(std::move(names));
+          if (!AppendExpandedNames()) {
+            return;
+          }
         }
         nameListToMerge = &repeatNames[repeatNames.Length() - 1];
         continue;
@@ -2033,16 +2056,14 @@ class MOZ_STACK_CLASS nsGridContainerFrame::LineNameMap {
                    repeatLineNames.Length() == trackSizesCount + 1);
         for (auto k : IntegerRange(trackSizesCount)) {
           names.AppendElement(&repeatLineNames[k]);
-          mExpandedLineNames.AppendElement(std::move(names));
+          if (!AppendExpandedNames()) {
+            return;
+          }
         }
         if (repeatLineNames.Length() == trackSizesCount + 1) {
           nameListToMerge = &repeatLineNames[trackSizesCount];
         }
       }
-    }
-
-    if (MOZ_UNLIKELY(mExpandedLineNames.Length() > uint32_t(mClampMaxLine))) {
-      mExpandedLineNames.TruncateLength(mClampMaxLine);
     }
   }
 
@@ -2052,16 +2073,20 @@ class MOZ_STACK_CLASS nsGridContainerFrame::LineNameMap {
   void ExpandRepeatLineNamesForSubgrid(
       const StyleGenericLineNameList<StyleInteger>& aStyleLineNameList) {
     const auto& lineNameList = aStyleLineNameList.line_names.AsSpan();
-    const uint32_t maxCount = mClampMaxLine + 1;
-    const uint32_t end = lineNameList.Length();
-    for (uint32_t i = 0; i < end && mExpandedLineNames.Length() < maxCount;
-         ++i) {
-      const auto& item = lineNameList[i];
+    SmallPointerArray<const NameList> names;
+    auto AppendExpandedNames = [&]() -> bool {
+      if (mExpandedLineNames.Length() == size_t(mClampMaxLine)) {
+        return false;
+      }
+      return mExpandedLineNames.AppendElement(std::move(names), fallible);
+    };
+    for (const auto& item : lineNameList) {
       if (item.IsLineNames()) {
         // <line-names> case. Just copy it.
-        SmallPointerArray<const NameList> names;
         names.AppendElement(&item.AsLineNames());
-        mExpandedLineNames.AppendElement(std::move(names));
+        if (!AppendExpandedNames()) {
+          return;
+        }
         continue;
       }
 
@@ -2075,11 +2100,9 @@ class MOZ_STACK_CLASS nsGridContainerFrame::LineNameMap {
         for (uint32_t repeatCount = 0;
              repeatCount < (uint32_t)repeat.count.AsNumber(); ++repeatCount) {
           for (const NameList& lineNames : repeatLineNames) {
-            SmallPointerArray<const NameList> names;
             names.AppendElement(&lineNames);
-            mExpandedLineNames.AppendElement(std::move(names));
-            if (mExpandedLineNames.Length() >= maxCount) {
-              break;
+            if (!AppendExpandedNames()) {
+              return;
             }
           }
         }
@@ -2103,17 +2126,11 @@ class MOZ_STACK_CLASS nsGridContainerFrame::LineNameMap {
       // HasNameAt() only deals with auto-repeat **tracks** currently.
       const size_t len = possibleRepeatLength - repeatRemainder;
       for (size_t j = 0; j < len; ++j) {
-        SmallPointerArray<const NameList> names;
         names.AppendElement(&repeatLineNames[j % fillLen]);
-        mExpandedLineNames.AppendElement(std::move(names));
-        if (mExpandedLineNames.Length() >= maxCount) {
-          break;
+        if (!AppendExpandedNames()) {
+          return;
         }
       }
-    }
-
-    if (MOZ_UNLIKELY(mExpandedLineNames.Length() > uint32_t(mClampMaxLine))) {
-      mExpandedLineNames.TruncateLength(mClampMaxLine);
     }
   }
 
