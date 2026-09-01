@@ -830,6 +830,12 @@ fn specific_bucket_for<'a>(
             )
         },
         Component::Host(ref selector) => {
+            // Even tho we bucket shadow host rules in shadow trees, this rule could be in the
+            // document.
+            //
+            // TODO(emilio): We could return more state during bucketing and just discard the
+            // selector entirely, probably.
+            *bucket_matches = BucketMatches::Unknown;
             if let Some(selector) = selector {
                 find_bucket(
                     selector.iter(),
@@ -839,7 +845,6 @@ fn specific_bucket_for<'a>(
                     /* nested = */ true,
                 )
             } else {
-                // :host rules are bucketed, so we can leave bucket_matches as-is.
                 Bucket::Universal
             }
         },
