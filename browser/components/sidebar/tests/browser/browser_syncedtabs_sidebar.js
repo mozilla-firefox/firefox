@@ -90,6 +90,21 @@ const tabClients = [
   },
 ];
 
+let gSandbox;
+
+/**
+ * A task that throws never reaches its own `sandbox.restore()`. Restoring a
+ * leftover sandbox before the next one is created, and again at the end of the
+ * file, keeps those stubs out of the next test file.
+ */
+function createSandbox() {
+  gSandbox?.restore();
+  gSandbox = sinon.createSandbox();
+  return gSandbox;
+}
+
+registerCleanupFunction(() => gSandbox?.restore());
+
 function verifyContexMenuItemsByL10nIds(menu, expectedItems, message) {
   // verify context menu items by comparing l10n-ids and placement of separators
   const actualItems = Array.from(
@@ -129,7 +144,7 @@ async function waitForSyncedTabListInCard(
 }
 
 add_task(async function test_tabs() {
-  const sandbox = sinon.createSandbox();
+  const sandbox = createSandbox();
   sandbox.stub(lazy.SyncedTabsErrorHandler, "getErrorType").returns(null);
   sandbox.stub(lazy.TabsSetupFlowManager, "uiStateIndex").value(4);
   sandbox.stub(lazy.SyncedTabs, "getTabClients").resolves(tabClients);
@@ -302,7 +317,7 @@ add_task(async function test_syncedtabs_searchbox_focus_and_context_menu() {
 });
 
 add_task(async function test_close_remote_tab_context_menu() {
-  const sandbox = sinon.createSandbox();
+  const sandbox = createSandbox();
   sandbox.stub(lazy.SyncedTabsErrorHandler, "getErrorType").returns(null);
   sandbox.stub(lazy.TabsSetupFlowManager, "uiStateIndex").value(4);
   sandbox.stub(lazy.SyncedTabs, "getTabClients").resolves(tabClients);
@@ -343,7 +358,7 @@ add_task(async function test_close_remote_tab_context_menu() {
 });
 
 add_task(async function test_device_header_context_menu() {
-  const sandbox = sinon.createSandbox();
+  const sandbox = createSandbox();
   sandbox.stub(lazy.SyncedTabsErrorHandler, "getErrorType").returns(null);
   sandbox.stub(lazy.TabsSetupFlowManager, "uiStateIndex").value(4);
   sandbox.stub(lazy.SyncedTabs, "getTabClients").resolves(tabClients);
@@ -431,7 +446,7 @@ add_task(async function test_device_header_context_menu() {
 });
 
 add_task(async function test_connect_additional_devices() {
-  const sandbox = sinon.createSandbox();
+  const sandbox = createSandbox();
   sandbox.stub(lazy.SyncedTabsErrorHandler, "getErrorType").returns(null);
   sandbox.stub(lazy.TabsSetupFlowManager, "uiStateIndex").value(2);
   sandbox.stub(lazy.SyncedTabs, "getTabClients").resolves([
@@ -492,7 +507,7 @@ add_task(async function test_connect_additional_devices() {
 });
 
 add_task(async function test_tabs_click_auxclick() {
-  const sandbox = sinon.createSandbox();
+  const sandbox = createSandbox();
   sandbox.stub(lazy.SyncedTabsErrorHandler, "getErrorType").returns(null);
   sandbox.stub(lazy.TabsSetupFlowManager, "uiStateIndex").value(4);
   sandbox.stub(lazy.SyncedTabs, "getTabClients").resolves(tabClients);
@@ -620,7 +635,7 @@ add_task(async function test_tabs_click_auxclick() {
 
 add_task(async function test_open_in_new_tab_context_menu() {
   // Test synced tabs context menu functionality for "Open in new Tab"
-  const sandbox = sinon.createSandbox();
+  const sandbox = createSandbox();
   sandbox.stub(lazy.SyncedTabsErrorHandler, "getErrorType").returns(null);
   sandbox.stub(lazy.TabsSetupFlowManager, "uiStateIndex").value(4);
   sandbox.stub(lazy.SyncedTabs, "getTabClients").resolves(tabClients);
@@ -683,7 +698,7 @@ add_task(async function test_open_in_new_tab_context_menu() {
 
 add_task(async function test_open_in_new_container_tab_context_menu() {
   // Test synced tabs context menu functionality for "Open in new container Tab"
-  const sandbox = sinon.createSandbox();
+  const sandbox = createSandbox();
   sandbox.stub(lazy.SyncedTabsErrorHandler, "getErrorType").returns(null);
   sandbox.stub(lazy.TabsSetupFlowManager, "uiStateIndex").value(4);
   sandbox.stub(lazy.SyncedTabs, "getTabClients").resolves(tabClients);
