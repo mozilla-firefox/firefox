@@ -79,7 +79,7 @@ async function showSyncedTabsSidebar() {
 
   info("Waiting for the cards list to be populated");
   await BrowserTestUtils.waitForMutationCondition(
-    component,
+    component.shadowRoot,
     { childList: true, subtree: true },
     () => component.cards.length
   );

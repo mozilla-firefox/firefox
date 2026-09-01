@@ -101,13 +101,17 @@ function verifyContexMenuItemsByL10nIds(menu, expectedItems, message) {
   Assert.deepEqual(actualItems, expectedItems, message);
 }
 
-async function waitForSyncedTabListInCard(component, cardIndex = 0) {
+async function waitForSyncedTabListInCard(
+  component,
+  cardIndex = 0,
+  minRows = 1
+) {
   info("Waiting for the cards list to be populated");
   await BrowserTestUtils.waitForMutationCondition(
-    component,
+    component.shadowRoot,
     { childList: true, subtree: true },
     () => {
-      return component.cards.length;
+      return component.cards.length > cardIndex;
     }
   );
   const card = component.cards[cardIndex];
@@ -118,7 +122,7 @@ async function waitForSyncedTabListInCard(component, cardIndex = 0) {
     { childList: true, subtree: true },
     () => {
       info(`Got rowEls: ${tabList.rowEls?.length}`);
-      return tabList.rowEls?.length;
+      return tabList.rowEls?.length >= minRows;
     }
   );
   return tabList.rowEls;
@@ -636,19 +640,7 @@ add_task(async function test_open_in_new_tab_context_menu() {
 
   // Verify "Open in new Tab" context menu item
   info("Verify 'Open in new Tab' context menu item.");
-  let secondTab;
-  await BrowserTestUtils.waitForMutationCondition(
-    component.shadowRoot,
-    { childList: true, subtree: true },
-    () => {
-      const { lists } = component;
-      if (lists.length && lists[0]?.rowEls?.length > 1) {
-        secondTab = lists[0].rowEls[1];
-        return true;
-      }
-      return false;
-    }
-  );
+  const [, secondTab] = await waitForSyncedTabListInCard(component, 0, 2);
 
   // Wait for new tab to open when activating menu item
   // Use the URL from the second tab in our test data
@@ -711,19 +703,7 @@ add_task(async function test_open_in_new_container_tab_context_menu() {
 
   // Verify "Open in new container Tab" context menu item
   info("Verify 'Open in new container Tab' context menu item.");
-  let secondTab;
-  await BrowserTestUtils.waitForMutationCondition(
-    component.shadowRoot,
-    { childList: true, subtree: true },
-    () => {
-      const { lists } = component;
-      if (lists.length && lists[0]?.rowEls?.length > 1) {
-        secondTab = lists[0].rowEls[1];
-        return true;
-      }
-      return false;
-    }
-  );
+  const [, secondTab] = await waitForSyncedTabListInCard(component, 0, 2);
 
   // Wait for new tab to open when activating menu item
   const promiseTabOpened = BrowserTestUtils.waitForNewTab(
