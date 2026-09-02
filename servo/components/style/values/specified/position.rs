@@ -425,6 +425,7 @@ impl AnchorName {
 #[repr(transparent)]
 #[css(comma)]
 #[typed(todo_derive_fields)]
+#[value_info(other_values = "all")]
 pub struct ScopedNameList(
     /// `none | all | <dashed-ident>#`
     #[css(iterable, if_empty = "none")]
