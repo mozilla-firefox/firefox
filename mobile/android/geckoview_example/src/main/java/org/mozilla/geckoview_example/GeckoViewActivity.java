@@ -891,7 +891,7 @@ public class GeckoViewActivity extends AppCompatActivity
 
     if (sGeckoRuntime == null) {
       final GeckoRuntimeSettings.Builder runtimeSettingsBuilder =
-          new GeckoRuntimeSettings.Builder();
+    new GeckoRuntimeSettings.Builder();
 
       if (BuildConfig.DEBUG) {
         // In debug builds, we want to load JavaScript resources fresh with
@@ -923,7 +923,11 @@ public class GeckoViewActivity extends AppCompatActivity
           .globalPrivacyControlEnabled(mGlobalPrivacyControlEnabled.value())
           .aboutConfigEnabled(true);
 
-      sGeckoRuntime = GeckoRuntime.create(this, runtimeSettingsBuilder.build());
+      
+
+
+      sGeckoRuntime = GeckoRuntime.create(
+          this, runtimeSettingsBuilder.build().setCertificateTransparencyMode(1));
 
       sExtensionManager = new WebExtensionManager(sGeckoRuntime, mTabSessionManager);
       mTabSessionManager.setTabObserver(sExtensionManager);
