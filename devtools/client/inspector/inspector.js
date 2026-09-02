@@ -434,7 +434,7 @@ class Inspector extends EventEmitter {
       await this.#initMarkupView();
 
       // Setup the toolbar again, since its content may depend on the current document.
-      this.#setupToolbar();
+      await this.#setupToolbar();
     } catch (e) {
       this.#handleRejectionIfNotDestroyed(e);
       // Only if this isn't a toolbox closing exception,
