@@ -1809,9 +1809,7 @@ pub unsafe extern "C" fn Servo_AuthorStyles_AppendStyleSheet(
     let global_style_data = &*GLOBAL_STYLE_DATA;
     let guard = global_style_data.shared_lock.read();
     let sheet = unsafe { GeckoStyleSheet::new(sheet) };
-    styles
-        .stylesheets
-        .append_stylesheet(None, styles.data.custom_media_map(), sheet, &guard);
+    styles.stylesheets.append_stylesheet(sheet, &guard);
 }
 
 #[unsafe(no_mangle)]
@@ -1823,8 +1821,6 @@ pub unsafe extern "C" fn Servo_AuthorStyles_InsertStyleSheetBefore(
     let global_style_data = &*GLOBAL_STYLE_DATA;
     let guard = global_style_data.shared_lock.read();
     styles.stylesheets.insert_stylesheet_before(
-        None,
-        styles.data.custom_media_map(),
         unsafe { GeckoStyleSheet::new(sheet) },
         unsafe { GeckoStyleSheet::new(before_sheet) },
         &guard,

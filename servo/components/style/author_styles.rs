@@ -64,7 +64,11 @@ where
         stylist: &mut Stylist,
         guard: &SharedRwLockReadGuard,
     ) -> StylesheetInvalidationSet {
-        let (flusher, mut invalidations) = self.stylesheets.flush();
+        // TODO(emilio): We don't collect invalidations for shadow trees, see
+        // Servo_StyleSet_FlushStyleSheets.
+        let (flusher, mut invalidations) =
+            self.stylesheets
+                .flush(None, self.data.custom_media_map(), guard);
         let result = stylist.rebuild_author_data(
             &self.data,
             flusher.sheets,

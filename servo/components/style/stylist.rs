@@ -1066,7 +1066,10 @@ impl Stylist {
 
         self.num_rebuilds += 1;
 
-        let (flusher, mut invalidations) = self.stylesheets.flush();
+        let cascade_data = &self.cascade_data;
+        let (flusher, mut invalidations) = self.stylesheets.flush(&self.device, guards, |origin| {
+            &cascade_data.borrow_for_origin(origin).custom_media
+        });
 
         self.cascade_data
             .rebuild(
@@ -1110,21 +1113,13 @@ impl Stylist {
         before_sheet: StylistSheet,
         guard: &SharedRwLockReadGuard,
     ) {
-        let custom_media = self.cascade_data.custom_media_for_sheet(&sheet, guard);
-        self.stylesheets.insert_stylesheet_before(
-            Some(&self.device),
-            custom_media,
-            sheet,
-            before_sheet,
-            guard,
-        )
+        self.stylesheets
+            .insert_stylesheet_before(sheet, before_sheet, guard)
     }
 
     /// Appends a new stylesheet to the current set.
     pub fn append_stylesheet(&mut self, sheet: StylistSheet, guard: &SharedRwLockReadGuard) {
-        let custom_media = self.cascade_data.custom_media_for_sheet(&sheet, guard);
-        self.stylesheets
-            .append_stylesheet(Some(&self.device), custom_media, sheet, guard)
+        self.stylesheets.append_stylesheet(sheet, guard)
     }
 
     /// Remove a given stylesheet to the current set.
