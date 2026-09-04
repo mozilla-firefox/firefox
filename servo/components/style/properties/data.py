@@ -1202,7 +1202,7 @@ class PropertyRestrictions:
 
     @staticmethod
     def webkit_text_properties():
-        props = set(
+        return set(
             [
                 # Kinda like css-text?
                 "-webkit-text-stroke-width",
@@ -1210,7 +1210,6 @@ class PropertyRestrictions:
                 "-webkit-text-stroke-color",
             ]
         )
-        return props
 
     # https://drafts.csswg.org/css-pseudo/#first-letter-styling
     @staticmethod
@@ -1365,6 +1364,17 @@ class PropertyRestrictions:
             + PropertyRestrictions.shorthand(data, "outline")
             + PropertyRestrictions.shorthand(data, "font")
             + PropertyRestrictions.shorthand(data, "font-synthesis")
+        )
+
+    # https://drafts.csswg.org/css-pseudo/#highlight-pseudos
+    # https://drafts.csswg.org/css-pseudo/#highlight-styling
+    def highlight(data):
+        return set(
+            [
+                "color",
+                "background-color",
+            ]
+            + PropertyRestrictions.spec(data, "css-text-decor")
         )
 
 

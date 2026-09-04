@@ -536,6 +536,7 @@ ${id_set("PrioritaryPropertyIdSet", [p for p in data.longhands if p.is_prioritar
     MARKER_RESTRICTIONS = PropertyRestrictions.marker(data)
     PLACEHOLDER_RESTRICTIONS = PropertyRestrictions.placeholder(data)
     CUE_RESTRICTIONS = PropertyRestrictions.cue(data)
+    HIGHLIGHT_RESTRICTIONS = PropertyRestrictions.highlight(data)
 
     def restriction_flags(property):
         name = property.name
@@ -550,6 +551,8 @@ ${id_set("PrioritaryPropertyIdSet", [p for p in data.longhands if p.is_prioritar
             flags.append("APPLIES_TO_MARKER")
         if name in CUE_RESTRICTIONS:
             flags.append("APPLIES_TO_CUE")
+        if name in HIGHLIGHT_RESTRICTIONS:
+            flags.append("APPLIES_TO_HIGHLIGHT")
         return flags
 
 %>

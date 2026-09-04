@@ -521,19 +521,7 @@ impl PseudoElement {
         self.is_anon_box()
     }
 
-    /// Property flag that properties must have to apply to this pseudo-element.
     #[inline]
-    pub fn property_restriction(&self) -> Option<PropertyFlags> {
-        Some(match *self {
-            PseudoElement::FirstLetter => PropertyFlags::APPLIES_TO_FIRST_LETTER,
-            PseudoElement::FirstLine => PropertyFlags::APPLIES_TO_FIRST_LINE,
-            PseudoElement::Placeholder => PropertyFlags::APPLIES_TO_PLACEHOLDER,
-            PseudoElement::Cue => PropertyFlags::APPLIES_TO_CUE,
-            PseudoElement::Marker => PropertyFlags::APPLIES_TO_MARKER,
-            _ => return None,
-        })
-    }
-
     /// Whether this pseudo-element should actually exist if it has
     /// the given styles.
     pub fn should_exist(&self, style: &ComputedValues) -> bool {

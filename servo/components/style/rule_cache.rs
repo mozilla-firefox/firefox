@@ -185,8 +185,7 @@ impl RuleCache {
         if context
             .builder
             .pseudo
-            .and_then(|p| p.property_restriction())
-            .is_some()
+            .is_some_and(|p| !p.property_restriction().is_empty())
         {
             return None;
         }
@@ -230,7 +229,7 @@ impl RuleCache {
         // A pseudo-element with property restrictions can result in different computed values if
         // it's also used for a non-pseudo.
         // TODO: we could consider inserting them and just checking the builder like we do for zoom.
-        if pseudo.and_then(|p| p.property_restriction()).is_some() {
+        if pseudo.is_some_and(|p| !p.property_restriction().is_empty()) {
             return false;
         }
 

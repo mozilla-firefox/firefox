@@ -62,12 +62,15 @@ bitflags! {
         const APPLIES_TO_CUE = 1 << 4;
         /// This longhand property applies to ::marker.
         const APPLIES_TO_MARKER = 1 << 5;
+        /// Applies to ::highlight() and related (::selection / ::target-text) pseudo-elements.
+        /// https://drafts.csswg.org/css-pseudo/#highlight-styling
+        const APPLIES_TO_HIGHLIGHT = 1 << 6;
         /// This property is a legacy shorthand.
         ///
         /// https://drafts.csswg.org/css-cascade/#legacy-shorthand
-        const IS_LEGACY_SHORTHAND = 1 << 6;
-       /// This shorthand remains enabled even if some subproperties are pref-disabled.
-        const ALLOWS_DISABLED_SUBPROPERTIES = 1 << 7;
+        const IS_LEGACY_SHORTHAND = 1 << 7;
+        /// This shorthand remains enabled even if some subproperties are pref-disabled.
+        const ALLOWS_DISABLED_SUBPROPERTIES = 1 << 8;
 
         /* The following flags are currently not used in Rust code, they
          * only need to be listed in corresponding properties so that
