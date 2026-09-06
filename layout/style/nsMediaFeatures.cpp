@@ -326,7 +326,7 @@ StylePrefersContrast Gecko_MediaFeatures_PrefersContrast(
     return StylePrefersContrast::NoPreference;
   }
   const auto& prefs = PreferenceSheet::PrefsFor(*aDocument);
-  if (!prefs.mUseAccessibilityTheme && prefs.mUseDocumentColors) {
+  if (prefs.mUseDocumentColors) {
     return StylePrefersContrast::NoPreference;
   }
   const auto& colors = prefs.ColorsFor(ColorScheme::Light);
