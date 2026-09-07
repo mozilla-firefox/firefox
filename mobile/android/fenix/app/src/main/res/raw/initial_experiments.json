@@ -138,6 +138,348 @@
     },
     {
       "schemaVersion": "1.12.0",
+      "slug": "android-marketing-card-experiment-de",
+      "id": "android-marketing-card-experiment-de",
+      "appName": "fenix",
+      "appId": "org.mozilla.firefox",
+      "channel": "release",
+      "userFacingName": "Android - Marketing Card Experiment DE",
+      "userFacingDescription": "Android - Marketing Card Experiment DE",
+      "isEnrollmentPaused": false,
+      "isRollout": false,
+      "bucketConfig": {
+        "randomizationUnit": "nimbus_id",
+        "namespace": "fenix-juno-onboarding-marketing-onboarding-card-release-2",
+        "start": 6000,
+        "count": 2000,
+        "total": 10000
+      },
+      "featureIds": [
+        "juno-onboarding",
+        "marketing-onboarding-card"
+      ],
+      "outcomes": [],
+      "branches": [
+        {
+          "slug": "control",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "juno-onboarding",
+              "value": {
+                "cards": {
+                  "marketing": {
+                    "enabled": false
+                  }
+                }
+              }
+            },
+            {
+              "featureId": "marketing-onboarding-card",
+              "value": {
+                "enabled": false
+              }
+            }
+          ]
+        },
+        {
+          "slug": "treatment-c",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "juno-onboarding",
+              "value": {
+                "cards": {
+                  "marketing": {
+                    "enabled": false
+                  },
+                  "marketing-treatment-c-de": {
+                    "card-type": "marketing-data",
+                    "ordering": 20,
+                    "title": "Deine Hilfe für Firefox",
+                    "image-res": "nova_onboarding_marketing",
+                    "primary-button-label": "Ja",
+                    "secondary-button-label": "Nein",
+                    "extra-data": {
+                      "marketing-data": {
+                        "marketing-card-variant": "treatment-c",
+                        "body-line-one-text": "Hilf uns, noch mehr Menschen für Firefox zu gewinnen. Erlaube Mozilla, der Plattform, über die du zu uns gekommen bist, mitzuteilen, dass du Firefox nutzt. (%1$s)",
+                        "body-line-one-link-text": "Mehr erfahren",
+                        "body-line-two-text": "Firefox ist unabhängig und setzt sich für ein offenes Web ein, statt es den Tech-Giganten zu überlassen.",
+                        "body-line-three-text": "Mit deiner Zustimmung hilfst du uns dabei und stärkst Firefox."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "featureId": "marketing-onboarding-card",
+              "value": {
+                "enabled": true
+              }
+            }
+          ]
+        }
+      ],
+      "targeting": "(app_version|versionCompare('156.!') >= 0) && (language in ['de']) && (region in ['DE'])",
+      "startDate": "2026-09-04",
+      "enrollmentEndDate": null,
+      "endDate": null,
+      "proposedDuration": 1,
+      "proposedEnrollment": 14,
+      "referenceBranch": "control",
+      "featureValidationOptOut": false,
+      "localizations": null,
+      "locales": null,
+      "publishedDate": "2026-09-04T16:18:33.733693Z",
+      "isFirefoxLabsOptIn": false,
+      "firefoxLabsTitle": "",
+      "firefoxLabsDescription": "",
+      "firefoxLabsDescriptionLinks": null,
+      "firefoxLabsGroup": "",
+      "requiresRestart": false
+    },
+    {
+      "schemaVersion": "1.12.0",
+      "slug": "android-marketing-card-experiment-es",
+      "id": "android-marketing-card-experiment-es",
+      "appName": "fenix",
+      "appId": "org.mozilla.firefox",
+      "channel": "release",
+      "userFacingName": "Android - Marketing Card Experiment ES",
+      "userFacingDescription": "Android - Marketing Card Experiment DE",
+      "isEnrollmentPaused": false,
+      "isRollout": false,
+      "bucketConfig": {
+        "randomizationUnit": "nimbus_id",
+        "namespace": "fenix-juno-onboarding-marketing-onboarding-card-release-2",
+        "start": 8000,
+        "count": 2000,
+        "total": 10000
+      },
+      "featureIds": [
+        "juno-onboarding",
+        "marketing-onboarding-card"
+      ],
+      "outcomes": [],
+      "branches": [
+        {
+          "slug": "control",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "juno-onboarding",
+              "value": {
+                "cards": {
+                  "marketing": {
+                    "enabled": false
+                  }
+                }
+              }
+            },
+            {
+              "featureId": "marketing-onboarding-card",
+              "value": {
+                "enabled": false
+              }
+            }
+          ]
+        },
+        {
+          "slug": "treatment-c",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "juno-onboarding",
+              "value": {
+                "cards": {
+                  "marketing": {
+                    "enabled": false
+                  },
+                  "marketing-treatment-c-es": {
+                    "card-type": "marketing-data",
+                    "ordering": 20,
+                    "title": "Ayude a Firefox a crecer",
+                    "image-res": "nova_onboarding_marketing",
+                    "primary-button-label": "Sí",
+                    "secondary-button-label": "No",
+                    "extra-data": {
+                      "marketing-data": {
+                        "marketing-card-variant": "treatment-c",
+                        "body-line-one-text": "Firefox puede llegar a más personas si permite que Mozilla indique a la plataforma desde la que llegó que usted usa Firefox. (%1$s)",
+                        "body-line-one-link-text": "Más información",
+                        "body-line-two-text": "Firefox es independiente y defiende una web abierta y libre de monopolios tecnológicos.",
+                        "body-line-three-text": "Su permiso ayuda a que más personas elijan Firefox."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "featureId": "marketing-onboarding-card",
+              "value": {
+                "enabled": true
+              }
+            }
+          ]
+        }
+      ],
+      "targeting": "(app_version|versionCompare('156.!') >= 0) && (language in ['es']) && (region in ['ES'])",
+      "startDate": "2026-09-04",
+      "enrollmentEndDate": null,
+      "endDate": null,
+      "proposedDuration": 1,
+      "proposedEnrollment": 14,
+      "referenceBranch": "control",
+      "featureValidationOptOut": false,
+      "localizations": null,
+      "locales": null,
+      "publishedDate": "2026-09-04T16:19:11.258535Z",
+      "isFirefoxLabsOptIn": false,
+      "firefoxLabsTitle": "",
+      "firefoxLabsDescription": "",
+      "firefoxLabsDescriptionLinks": null,
+      "firefoxLabsGroup": "",
+      "requiresRestart": false
+    },
+    {
+      "schemaVersion": "1.12.0",
+      "slug": "android-marketing-card-experiment-fr",
+      "id": "android-marketing-card-experiment-fr",
+      "appName": "fenix",
+      "appId": "org.mozilla.firefox",
+      "channel": "release",
+      "userFacingName": "Android - Marketing Card Experiment FR",
+      "userFacingDescription": "Android - Marketing Card Experiment FR",
+      "isEnrollmentPaused": false,
+      "isRollout": false,
+      "bucketConfig": {
+        "randomizationUnit": "nimbus_id",
+        "namespace": "fenix-juno-onboarding-marketing-onboarding-card-release-3",
+        "start": 0,
+        "count": 2000,
+        "total": 10000
+      },
+      "featureIds": [
+        "juno-onboarding",
+        "marketing-onboarding-card"
+      ],
+      "outcomes": [],
+      "branches": [
+        {
+          "slug": "control",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "juno-onboarding",
+              "value": {
+                "cards": {
+                  "marketing": {
+                    "enabled": false
+                  }
+                }
+              }
+            },
+            {
+              "featureId": "marketing-onboarding-card",
+              "value": {
+                "enabled": false
+              }
+            }
+          ]
+        },
+        {
+          "slug": "treatment-c",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "juno-onboarding",
+              "value": {
+                "cards": {
+                  "marketing": {
+                    "enabled": false
+                  },
+                  "marketing-treatment-c-fr": {
+                    "card-type": "marketing-data",
+                    "ordering": 20,
+                    "title": "Soutenez Firefox",
+                    "image-res": "nova_onboarding_marketing",
+                    "primary-button-label": "Oui",
+                    "secondary-button-label": "Non",
+                    "extra-data": {
+                      "marketing-data": {
+                        "marketing-card-variant": "treatment-c",
+                        "body-line-one-text": "Aidez-nous à faire découvrir Firefox à encore plus de personnes. Autorisez Mozilla à informer la plateforme par laquelle vous êtes arrivé que vous utilisez Firefox. (%1$s)",
+                        "body-line-one-link-text": "En savoir plus",
+                        "body-line-two-text": "Firefox est indépendant et défend un Web ouvert, plutôt que de le laisser aux mains des géants de la tech.",
+                        "body-line-three-text": "Votre soutien nous aide à renforcer Firefox."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "featureId": "marketing-onboarding-card",
+              "value": {
+                "enabled": true
+              }
+            }
+          ]
+        }
+      ],
+      "targeting": "(app_version|versionCompare('156.!') >= 0) && (language in ['fr']) && (region in ['FR'])",
+      "startDate": "2026-09-04",
+      "enrollmentEndDate": null,
+      "endDate": null,
+      "proposedDuration": 1,
+      "proposedEnrollment": 14,
+      "referenceBranch": "control",
+      "featureValidationOptOut": false,
+      "localizations": null,
+      "locales": null,
+      "publishedDate": "2026-09-04T16:19:36.313416Z",
+      "isFirefoxLabsOptIn": false,
+      "firefoxLabsTitle": "",
+      "firefoxLabsDescription": "",
+      "firefoxLabsDescriptionLinks": null,
+      "firefoxLabsGroup": "",
+      "requiresRestart": false
+    },
+    {
+      "schemaVersion": "1.12.0",
       "slug": "android-marketing-card-removal-eu-removal-release",
       "id": "android-marketing-card-removal-eu-removal-release",
       "appName": "fenix",

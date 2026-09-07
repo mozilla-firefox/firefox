@@ -1,6 +1,25 @@
 {
   "data": [
     {
+      "theme": "dark",
+      "title": "Wrexham",
+      "schema": 1788546906308,
+      "visible": true,
+      "category": "firefox",
+      "attachment": {
+        "hash": "d83b909d6e1bf0db8cc5c583641e0367a6942b509e73041353e3fe0dfd233d8b",
+        "size": 637216,
+        "filename": "approved-proposal-3.avif",
+        "location": "main-workspace/newtab-wallpapers-v2/20260904203317--75b87498-000e-45fa-973b-299d19212ef9--15c05c49-ba17-47ba-a7ac-ca430d967d71.avif",
+        "mimetype": "image/avif"
+      },
+      "visibility_group": "wrexham",
+      "filter_expression": "env.distribution == \"wrexham-001\"",
+      "background_position": "top right",
+      "id": "75b87498-000e-45fa-973b-299d19212ef9",
+      "last_modified": 1788554973606
+    },
+    {
       "order": 10,
       "theme": "light",
       "title": "firefox-orange",
@@ -1414,5 +1433,5 @@
       "last_modified": 1718647622926
     }
   ],
-  "timestamp": 1787198084391
+  "timestamp": 1788554973606
 }

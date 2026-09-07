@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-09-02_06-03-53_UTC
-// COMMIT: 0f1fa47ec45056a19c2fdcd32a08442de9715d12
+// VERSION: 2026-09-05_20-59-48_UTC
+// COMMIT: f540a06159213b6e8ed9c87d2dd3a52373637e92
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -151,14 +151,14 @@ net.ag
 nom.ag
 org.ag
 
-// ai : http://nic.com.ai/
+// ai : https://www.nic.ai/
 ai
 com.ai
 net.ai
 off.ai
 org.ai
 
-// al : http://www.ert.gov.al/ert_alb/faq_det.html?Id=31
+// al : https://akep.al/en/domain-e-application/ -> "Regulations and Decisions"
 al
 com.al
 edu.al
@@ -176,8 +176,7 @@ commune.am
 net.am
 org.am
 
-// ao : https://www.iana.org/domains/root/db/ao.html
-// https://www.dns.ao/ao/
+// ao : https://www.dns.ao/ao/
 ao
 co.ao
 ed.ao
@@ -359,8 +358,7 @@ ac.be
 bf
 gov.bf
 
-// bg : https://www.iana.org/domains/root/db/bg.html
-// https://www.register.bg/user/static/rules/en/index.html
+// bg : https://www.register.bg/ -> "Terms and Conditions"
 bg
 0.bg
 1.bg
@@ -407,8 +405,7 @@ gov.bh
 net.bh
 org.bh
 
-// bi : https://www.iana.org/domains/root/db/bi.html
-// http://whois.nic.bi/
+// bi : http://whois.nic.bi/
 bi
 co.bi
 com.bi
@@ -460,7 +457,7 @@ net.bn
 org.bn
 
 // bo : https://nic.bo
-// Confirmed by registry <soporte@nic.bo> 2024-11-19
+// Confirmed by registry <soporte@nic.bo> 2026-09-01
 bo
 com.bo
 edu.bo
@@ -484,6 +481,7 @@ deporte.bo
 ecologia.bo
 economia.bo
 empresa.bo
+ia.bo
 indigena.bo
 industria.bo
 info.bo
@@ -684,7 +682,7 @@ wiki.br
 xyz.br
 zlg.br
 
-// bs : http://www.nic.bs/rules.html
+// bs : http://www.register.bs/rules.html
 bs
 com.bs
 edu.bs
@@ -704,8 +702,7 @@ org.bt
 // Submitted by registry <jarle@uninett.no>
 bv
 
-// bw : https://www.iana.org/domains/root/db/bw.html
-// https://nic.net.bw/bw-name-structure
+// bw : https://nic.net.bw/bw-name-structure
 bw
 ac.bw
 co.bw
@@ -726,8 +723,7 @@ com.by
 // http://hoster.by/
 of.by
 
-// bz : https://www.iana.org/domains/root/db/bz.html
-// http://www.belizenic.bz/
+// bz : http://www.belizenic.bz/
 bz
 co.bz
 com.bz
@@ -763,8 +759,7 @@ cat
 // cc : https://www.iana.org/domains/root/db/cc.html
 cc
 
-// cd : https://www.iana.org/domains/root/db/cd.html
-// https://www.nic.cd
+// cd : https://www.nic.cd
 cd
 gov.cd
 
@@ -1067,8 +1062,7 @@ org.ee
 pri.ee
 riik.ee
 
-// eg : https://www.iana.org/domains/root/db/eg.html
-// https://domain.eg/en/domain-rules/subdomain-names-types/
+// eg : https://domain.eg/subdomain-names
 eg
 ac.eg
 com.eg
@@ -1210,7 +1204,7 @@ mil.gh
 net.gh
 org.gh
 
-// gi : http://www.nic.gi/rules.html
+// gi : https://www.nic.gi/rules.html
 gi
 com.gi
 edu.gi
@@ -1219,8 +1213,7 @@ ltd.gi
 mod.gi
 org.gi
 
-// gl : https://www.iana.org/domains/root/db/gl.html
-// http://nic.gl
+// gl : http://nic.gl
 gl
 co.gl
 com.gl
@@ -1228,7 +1221,7 @@ edu.gl
 net.gl
 org.gl
 
-// gm : http://www.nic.gm/htmlpages%5Cgm-policy.htm
+// gm : https://www.nic.gm/NIC2/policies.html
 gm
 
 // gn : http://psg.com/dns/gn/gn.txt
@@ -1278,7 +1271,7 @@ mil.gt
 net.gt
 org.gt
 
-// gu : http://gadao.gov.gu/register.html
+// gu : https://give.uog.edu/gu-domain-application-form/
 // University of Guam : https://www.uog.edu
 // Submitted by uognoc@triton.uog.edu
 gu
@@ -1295,8 +1288,7 @@ web.gu
 // gw : https://nic.gw/regras/
 gw
 
-// gy : https://www.iana.org/domains/root/db/gy.html
-// http://registry.gy/
+// gy : http://registry.gy/
 gy
 co.gy
 com.gy
@@ -1342,9 +1334,10 @@ mil.hn
 net.hn
 org.hn
 
-// hr : http://www.dns.hr/documents/pdf/HRTLD-regulations.pdf
+// hr : https://domene.hr/en/portal/faq
 hr
 com.hr
+// From.hr domene : http://from.hr/
 from.hr
 iz.hr
 name.hr
@@ -1537,7 +1530,7 @@ net.io
 nom.io
 org.io
 
-// iq : http://www.cmc.iq/english/iq/iqregister1.htm
+// iq : https://cmc.iq/
 iq
 com.iq
 edu.iq
@@ -1566,8 +1559,7 @@ sch.ir
 // Confirmed by registry <marius@isgate.is> 2024-11-17
 is
 
-// it : https://www.iana.org/domains/root/db/it.html
-// https://www.nic.it/
+// it : https://www.nic.it/
 it
 edu.it
 gov.it
@@ -1987,7 +1979,7 @@ co.je
 net.je
 org.je
 
-// jm : http://www.com.jm/register.html
+// jm : https://www.iana.org/domains/root/db/jm.html
 *.jm
 
 // jo : https://www.dns.jo/JoFamily.aspx
@@ -3854,8 +3846,7 @@ info.ki
 net.ki
 org.ki
 
-// km : https://www.iana.org/domains/root/db/km.html
-// http://www.domaine.km/documents/charte.doc
+// km : https://www.domaine.km/
 km
 ass.km
 com.km
@@ -3867,7 +3858,7 @@ org.km
 prd.km
 tm.km
 // These are only mentioned as proposed suggestions at domaine.km, but
-// https://www.iana.org/domains/root/db/km.html says they're available for registration:
+// https://en.wikipedia.org/wiki/.km says they're available for registration:
 asso.km
 coop.km
 gouv.km
@@ -3877,15 +3868,14 @@ pharmaciens.km
 presse.km
 veterinaire.km
 
-// kn : https://www.iana.org/domains/root/db/kn.html
-// http://www.dot.kn/domainRules.html
+// kn : https://nic.kn/
 kn
 edu.kn
 gov.kn
 net.kn
 org.kn
 
-// kp : http://www.kcce.kp/en_index.php
+// kp : http://www.star.co.kp/
 kp
 com.kp
 edu.kp
@@ -3943,8 +3933,7 @@ ind.kw
 net.kw
 org.kw
 
-// ky : http://www.icta.ky/da_ky_reg_dom.php
-// Confirmed by registry <kysupport@perimeterusa.com> 2008-06-17
+// ky : https://www.ofreg.ky/ict/kydomain-introduction
 ky
 com.ky
 edu.ky
@@ -4035,9 +4024,8 @@ net.ls
 org.ls
 sc.ls
 
-// lt : https://www.iana.org/domains/root/db/lt.html
+// lt : https://www.domreg.lt/
 lt
-// gov.lt : http://www.gov.lt/index_en.php
 gov.lt
 
 // lu : http://www.dns.lu/en/
@@ -4067,8 +4055,7 @@ org.ly
 plc.ly
 sch.ly
 
-// ma : https://www.iana.org/domains/root/db/ma.html
-// http://www.anrt.ma/fr/admin/download/upload/file_fr782.pdf
+// ma : http://www.anrt.ma/fr/admin/download/upload/file_fr782.pdf
 ma
 ac.ma
 co.ma
@@ -4113,8 +4100,7 @@ mh
 // mil : https://www.iana.org/domains/root/db/mil.html
 mil
 
-// mk : https://www.iana.org/domains/root/db/mk.html
-// see also: http://dns.marnet.net.mk/postapka.php
+// mk : https://marnet.mk/ -> "ПРАВИЛНИК"
 mk
 com.mk
 edu.mk
@@ -4150,7 +4136,7 @@ edu.mn
 gov.mn
 org.mn
 
-// mo : http://www.monic.net.mo/
+// mo : https://www.monic.mo/
 mo
 com.mo
 edu.mo
@@ -4161,8 +4147,7 @@ org.mo
 // mobi : https://www.iana.org/domains/root/db/mobi.html
 mobi
 
-// mp : http://www.dot.mp/
-// Confirmed by registry <dcamacho@saipan.com> 2008-06-17
+// mp : http://get.mp/
 mp
 
 // mq : https://www.iana.org/domains/root/db/mq.html
@@ -4302,7 +4287,7 @@ rec.nf
 store.nf
 web.nf
 
-// ng : http://www.nira.org.ng/index.php/join-us/register-ng-domain/189-nira-slds
+// ng : https://www.nira.org.ng/
 ng
 com.ng
 edu.ng
@@ -4315,7 +4300,7 @@ net.ng
 org.ng
 sch.ng
 
-// ni : http://www.nic.ni/
+// ni : https://www.nic.ni/
 ni
 ac.ni
 biz.ni
@@ -4332,8 +4317,7 @@ nom.ni
 org.ni
 web.ni
 
-// nl : https://www.iana.org/domains/root/db/nl.html
-// https://www.sidn.nl/
+// nl : https://www.sidn.nl/
 nl
 
 // no : https://www.norid.no/en/om-domenenavn/regelverk-for-no/
@@ -5107,7 +5091,7 @@ voagat.no
 volda.no
 voss.no
 
-// np : http://www.mos.com.np/register.html
+// np : https://www.mos.com.np/
 *.np
 
 // nr : http://cenpac.net.nr/dns/index.html
@@ -5178,7 +5162,7 @@ nom.pa
 org.pa
 sld.pa
 
-// pe : https://www.nic.pe/InformeFinalComision.pdf
+// pe : https://punto.pe/policy.php
 pe
 com.pe
 edu.pe
@@ -5188,7 +5172,7 @@ net.pe
 nom.pe
 org.pe
 
-// pf : http://www.gobin.info/domainname/formulaire-pf.pdf
+// pf : https://www.iana.org/domains/root/db/pf.html
 pf
 com.pf
 edu.pf
@@ -5209,7 +5193,7 @@ net.ph
 ngo.ph
 org.ph
 
-// pk : https://pk5.pknic.net.pk/pk5/msgNamepk.PK
+// pk : https://www.pknic.net.pk/domain-structure.html
 // Contact Email: staff@pknic.net.pk
 pk
 ac.pk
@@ -5458,11 +5442,13 @@ org.pn
 // post : https://www.iana.org/domains/root/db/post.html
 post
 
-// pr : http://www.nic.pr/index.asp?f=1
+// pr : https://www.domains.pr/
 pr
+ac.pr
 biz.pr
 com.pr
 edu.pr
+est.pr
 gov.pr
 info.pr
 isla.pr
@@ -5470,9 +5456,6 @@ name.pr
 net.pr
 org.pr
 pro.pr
-// these aren't mentioned on nic.pr, but on https://www.iana.org/domains/root/db/pr.html
-ac.pr
-est.pr
 prof.pr
 
 // pro : http://registry.pro/get-pro
@@ -5489,8 +5472,7 @@ law.pro
 med.pro
 recht.pro
 
-// ps : https://www.iana.org/domains/root/db/ps.html
-// http://www.nic.ps/registration/policy.html#reg
+// ps : https://www.pnina.ps/registration-policy/
 ps
 com.ps
 edu.ps
@@ -5593,8 +5575,7 @@ org.sa
 pub.sa
 sch.sa
 
-// sb : http://www.sbnic.net.sb/
-// Submitted by registry <lee.humphries@telekom.com.sb>
+// sb : http://www.nic.net.sb/
 sb
 com.sb
 edu.sb
@@ -5602,7 +5583,7 @@ gov.sb
 net.sb
 org.sb
 
-// sc : http://www.nic.sc/
+// sc : https://www.nic.sc/en/policies.html
 sc
 com.sc
 edu.sc
@@ -5690,8 +5671,7 @@ si
 // Submitted by registry <jarle@uninett.no>
 sj
 
-// sk : https://www.iana.org/domains/root/db/sk.html
-// https://sk-nic.sk/
+// sk : https://sk-nic.sk/
 sk
 org.sk
 
@@ -5716,7 +5696,7 @@ gouv.sn
 org.sn
 univ.sn
 
-// so : http://sonic.so/policies/
+// so : https://sonic.so/policies/
 so
 com.so
 edu.so
@@ -5780,8 +5760,7 @@ mil.sy
 net.sy
 org.sy
 
-// sz : https://www.iana.org/domains/root/db/sz.html
-// http://www.sispa.org.sz/
+// sz : http://www.sispa.org.sz/
 sz
 ac.sz
 co.sz
@@ -5793,15 +5772,13 @@ tc
 // td : https://www.iana.org/domains/root/db/td.html
 td
 
-// tel : https://www.iana.org/domains/root/db/tel.html
-// http://www.telnic.org/
+// tel : http://www.telnic.org/
 tel
 
 // tf : https://www.afnic.fr/wp-media/uploads/2022/12/afnic-naming-policy-2023-01-01.pdf
 tf
 
-// tg : https://www.iana.org/domains/root/db/tg.html
-// http://www.nic.tg/
+// tg : http://www.nic.tg/
 tg
 
 // th : https://www.iana.org/domains/root/db/th.html
@@ -5943,8 +5920,7 @@ mil.tw
 net.tw
 org.tw
 
-// tz : http://www.tznic.or.tz/index.php/domains
-// Submitted by registry <manager@tznic.or.tz>
+// tz : https://karibu.tz/regulations
 tz
 ac.tz
 co.tz
@@ -6352,7 +6328,7 @@ mil.vc
 net.vc
 org.vc
 
-// ve : https://registro.nic.ve/
+// ve : https://nic.ve/
 // https://nic.ve/site/user-agreement -> under "III. Clasificación de Nombres de Dominio"
 // Submitted by registry nic@nic.ve and nicve@conatel.gob.ve
 ve
@@ -6392,8 +6368,7 @@ k12.vi
 net.vi
 org.vi
 
-// vn : https://www.vnnic.vn/en/domain/cctld-vn
-// https://vnnic.vn/sites/default/files/tailieu/vn.cctld.domains.txt
+// vn : https://vnnic.vn/en/domain-name-vn/domain-name/cctldvn
 vn
 ac.vn
 ai.vn
@@ -6508,7 +6483,7 @@ yt
 // U-Label
 
 // xn--mgbaam7a8h ("Emerat", Arabic) : AE
-// http://nic.ae/english/arabicdomain/rules.jsp
+// http://aeda.ae/
 امارات
 
 // xn--y9a3aq ("hye", Armenian) : AM
@@ -6660,11 +6635,11 @@ yt
 ລາວ
 
 // xn--fzc2c9e2c ("Lanka", Sinhalese-Sinhala) : LK
-// https://nic.lk
+// http://www.domains.lk/
 ලංකා
 
 // xn--xkc2al3hye2a ("Ilangai", Tamil) : LK
-// https://nic.lk
+// http://www.domains.lk/
 இலங்கை
 
 // xn--mgbc0a9azcg ("Morocco/al-Maghrib", Arabic) : MA
@@ -6717,7 +6692,7 @@ yt
 рф
 
 // xn--wgbl6a ("Qatar", Arabic) : QA
-// http://www.ict.gov.qa/
+// https://www.cra.gov.qa/
 قطر
 
 // xn--mgberp4a5d4ar ("AlSaudiah", Arabic) : SA
@@ -6780,10 +6755,10 @@ yt
 // xn--mgb2ddes ("AlYemen", Arabic) : YE
 اليمن
 
-// xxx : http://icmregistry.com
+// xxx : https://icmregistry.biz/
 xxx
 
-// ye : http://www.y.net.ye/services/domain_name.htm
+// ye : https://www.iana.org/domains/root/db/ye.html
 ye
 com.ye
 edu.ye
@@ -6813,7 +6788,6 @@ tm.za
 web.za
 
 // zm : https://zicta.zm/
-// Submitted by registry <info@zicta.zm>
 zm
 ac.zm
 biz.zm
@@ -12946,6 +12920,7 @@ icp0.io
 *.raw.icp0.io
 icp1.io
 *.raw.icp1.io
+opencloud.me
 *.icp.net
 caffeine.site
 caffeine.xyz
@@ -14709,6 +14684,78 @@ eastus2.azurestaticapps.net
 westeurope.azurestaticapps.net
 westus2.azurestaticapps.net
 azurewebsites.net
+australiacentral-01.azurewebsites.net
+australiacentral2-01.azurewebsites.net
+australiaeast-01.azurewebsites.net
+australiasoutheast-01.azurewebsites.net
+austriaeast-01.azurewebsites.net
+belgiumcentral-01.azurewebsites.net
+brazilsouth-01.azurewebsites.net
+brazilsoutheast-01.azurewebsites.net
+canadacentral-01.azurewebsites.net
+canadaeast-01.azurewebsites.net
+centralindia-01.azurewebsites.net
+centralus-01.azurewebsites.net
+centraluseuap-01.azurewebsites.net
+chilecentral-01.azurewebsites.net
+denmarkeast-01.azurewebsites.net
+eastasia-01.azurewebsites.net
+eastasiastage-01.azurewebsites.net
+eastus-01.azurewebsites.net
+eastus2-01.azurewebsites.net
+eastus2euap-01.azurewebsites.net
+eastus3-01.azurewebsites.net
+francecentral-01.azurewebsites.net
+francesouth-01.azurewebsites.net
+germanynorth-01.azurewebsites.net
+germanywestcentral-01.azurewebsites.net
+indiasouthcentral-01.azurewebsites.net
+indonesiacentral-01.azurewebsites.net
+israelcentral-01.azurewebsites.net
+israelnorthwest-01.azurewebsites.net
+italynorth-01.azurewebsites.net
+japaneast-01.azurewebsites.net
+japanwest-01.azurewebsites.net
+jioindiacentral-01.azurewebsites.net
+jioindiawest-01.azurewebsites.net
+koreacentral-01.azurewebsites.net
+koreasouth-01.azurewebsites.net
+malaysiawest-01.azurewebsites.net
+mexicocentral-01.azurewebsites.net
+newzealandnorth-01.azurewebsites.net
+northcentralus-01.azurewebsites.net
+northcentralusstage-01.azurewebsites.net
+northeastus5-01.azurewebsites.net
+northeurope-01.azurewebsites.net
+norwayeast-01.azurewebsites.net
+norwaywest-01.azurewebsites.net
+*.p.azurewebsites.net
+polandcentral-01.azurewebsites.net
+qatarcentral-01.azurewebsites.net
+southafricanorth-01.azurewebsites.net
+southafricawest-01.azurewebsites.net
+southcentralus-01.azurewebsites.net
+southcentralus2-01.azurewebsites.net
+southeastasia-01.azurewebsites.net
+southeastus5-01.azurewebsites.net
+southindia-01.azurewebsites.net
+spaincentral-01.azurewebsites.net
+swedencentral-01.azurewebsites.net
+swedensouth-01.azurewebsites.net
+switzerlandnorth-01.azurewebsites.net
+switzerlandwest-01.azurewebsites.net
+taiwannorth-01.azurewebsites.net
+taiwannorthwest-01.azurewebsites.net
+uaecentral-01.azurewebsites.net
+uaenorth-01.azurewebsites.net
+uksouth-01.azurewebsites.net
+ukwest-01.azurewebsites.net
+westcentralus-01.azurewebsites.net
+westeurope-01.azurewebsites.net
+westindia-01.azurewebsites.net
+westus-01.azurewebsites.net
+westus2-01.azurewebsites.net
+westus3-01.azurewebsites.net
 cloudapp.net
 trafficmanager.net
 blob.core.usgovcloudapi.net
@@ -15474,8 +15521,8 @@ git-pages.rit.edu
 
 // Rocket : https://rocket.new
 // Submitted by Rahul Shingala <support@rocket.new>
-*.builtwithrocket.new
 rocketpreview.app
+*.builtwithrocket.new
 
 // Rocky Enterprise Software Foundation : https://resf.org
 // Submitted by Neil Hanlon <neil@resf.org>
