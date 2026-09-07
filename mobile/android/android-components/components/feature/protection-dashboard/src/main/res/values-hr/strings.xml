@@ -7,4 +7,23 @@
 -->
 
 <resources>
+  <!-- Title shown in the protection dashboard header next to the shield icon -->
+  <string name="mozac_protections_dashboard_trackers_blocked_this_week_title">Blokirani programi za praćenje ovaj tjedan</string>
+  <!--
+    Title shown when no trackers have been blocked yet
+    %1$s will be replaced by the app name (e.g. Firefox Focus)
+  -->
+  <string name="mozac_protections_dashboard_empty_title">%1$s blokira programe za praćenje dok pregledavaš.</string>
+  <!-- Subtitle shown when no trackers have been blocked yet -->
+  <string name="mozac_protections_dashboard_empty_subtitle">Vidjet ćeš ih ovdje.</string>
+  <plurals name="mozac_protections_dashboard_total_blocked_since_2">
+    <!--
+      Footer line shown in the dashboard summarizing total trackers blocked
+      since a specific date. %1$d is the trackers count number (e.g. 123).
+      %2$s is the formatted date (e.g. "February 23, 2026").
+    -->
+    <item quantity="one">Blokiran je %1$d program za praćenje od %2$s</item>
+    <item quantity="few">Blokirana su %1$d programa za praćenje od %2$s</item>
+    <item quantity="other">Blokirano je %1$d programa za praćenje od %2$s</item>
+  </plurals>
 </resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <!-- Title of an alert shown when there is an internal VPN error, and the VPN should be disabled to continue using the browser. -->
+  <string name="mozac_feature_ipprotection_unavaliable_dialog_title">Nastaviti bez VPN-a?</string>
+  <!-- Title for a button on the alert shown when VPN errors. The button allows user to navigate into tabs tray, to close those they deem sensitive. -->
+  <string name="mozac_feature_ipprotection_unavaliable_dialog_confirm_button">Upravljaj karticama</string>
+  <!-- Title for a button on the alert shown when VPN errors. The button disabled the VPN, and allows the user to continue using the browser without the extra safety feature. -->
+  <string name="mozac_feature_ipprotection_unavaliable_dialog_dismiss_button">Nastavi</string>
+</resources>

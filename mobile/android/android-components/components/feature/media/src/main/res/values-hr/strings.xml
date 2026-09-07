@@ -31,6 +31,10 @@
   <string name="mozac_feature_media_notification_action_play">Pokreni</string>
   <!-- This is the title of the "pause" action shown in the media notification while web content is playing media. Clicking it will pause currently playing media. On most modern Android system only an icon is visible. But screen readers may read this title. -->
   <string name="mozac_feature_media_notification_action_pause">Pauziraj</string>
+  <!-- This is the title of the "next" action shown in the media notification when the playing web content advertises a next track handler. Clicking it advances to the next track. On most modern Android system only an icon is visible. But screen readers may read this title. -->
+  <string name="mozac_feature_media_notification_action_next">Sljedeće</string>
+  <!-- This is the title of the "previous" action shown in the media notification when the playing web content advertises a previous track handler. Clicking it goes back to the previous track. On most modern Android system only an icon is visible. But screen readers may read this title. -->
+  <string name="mozac_feature_media_notification_action_previous">Prethodno</string>
   <!-- Neutral title of the media notification for when a website that is open in private mode. -->
   <string name="mozac_feature_media_notification_private_mode">Jedna web stranica reproducira medije</string>
 </resources>

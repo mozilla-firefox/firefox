@@ -11,6 +11,13 @@
   <string name="mozac_feature_applinks_open_in">Otvori u …</string>
   <!-- The title of the prompt that warns users their normal browsing session is trying to open another app -->
   <string name="mozac_feature_applinks_normal_confirm_dialog_title">Otvori u drugoj aplikaciji</string>
+  <!-- The title of the prompt that warns users their normal browsing session is trying to open another app -->
+  <string name="mozac_feature_applinks_normal_confirm_dialog_title_2">Otvoriti ovu poveznicu u jednoj drugoj aplikaciji?</string>
+  <!--
+    The title of the prompt with app suffix.
+    %s is a placeholder that will be replaced by an app name
+  -->
+  <string name="mozac_feature_applinks_normal_confirm_dialog_title_with_app_name_2">Otvoriti ovu poveznicu u aplikaciji %s?</string>
   <!--
     The message of the prompt to confirm with users that they want to open the link in another app
     %s is a placeholder that will be replaced by the app name
@@ -18,6 +25,8 @@
   <string name="mozac_feature_applinks_normal_confirm_dialog_message">Želite li napustiti %s da vidite ovaj sadržaj?</string>
   <!-- Opens the selected time -->
   <string name="mozac_feature_applinks_confirm_dialog_confirm">Otvori</string>
+  <!-- Opens the selected app link -->
+  <string name="mozac_feature_applinks_confirm_dialog_confirm_2">Otvori u aplikaciji</string>
   <!-- Cancels the prompt -->
   <string name="mozac_feature_applinks_confirm_dialog_deny">Odustani</string>
   <!-- The label of the checkbox that, depending of user's choice, can change the Open links in apps setting -->
@@ -36,4 +45,6 @@
   <string name="mozac_feature_applinks_unique_identifier">Jedinstveni identifikator</string>
   <!-- The text shown when there is no Firefox URL -->
   <string name="mozac_feature_applinks_none">Ništa</string>
+  <!-- The subtitle showing where the link was navigated from. %s is the domain. -->
+  <string name="mozac_feature_applinks_link_from">Poveznica od %s</string>
 </resources>

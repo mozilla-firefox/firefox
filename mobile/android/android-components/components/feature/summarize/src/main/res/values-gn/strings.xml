@@ -91,6 +91,16 @@
   <string name="mozac_feature_summarize_summary_model">Omombyky %1$s</string>
   <!-- Disclaimer message -->
   <string name="mozac_feature_summarize_disclaimer_message">Pe IA ikatukuaa ojavy</string>
+  <!-- Content description for the thumbs up button used to rate a generated summary as helpful -->
+  <string name="mozac_feature_summarize_feedback_good_content_description">Ñemombyky porã</string>
+  <!-- Accessibility label for the action of the thumbs up button. This will be interpolated into a longer message, equivalent to "Double tap to [rate summary as good]" in English. Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended. -->
+  <string name="mozac_feature_summarize_feedback_good_click_label">embopapapy ñemombyky iporãvarõ</string>
+  <!-- Content description for the thumbs down button used to rate a generated summary as unhelpful -->
+  <string name="mozac_feature_summarize_feedback_bad_content_description">Ñemombyky vai</string>
+  <!-- Accessibility label for the action of the thumbs down button. This will be interpolated into a longer message, equivalent to "Double tap to [rate summary as bad]" in English. Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended. -->
+  <string name="mozac_feature_summarize_feedback_bad_click_label">embopapapy ñemombyky ivaívarõ</string>
+  <!-- Accessibility state of the thumbs up or thumbs down button the user picked, announced when the rating is submitted and whenever that button is focused afterwards. Buttons the user did not pick have no state. -->
+  <string name="mozac_feature_summarize_feedback_state_submitted">Mbopapapy mondopyre</string>
   <!-- Title for the page summary AI controllable feature -->
   <string name="mozac_ai_controls_page_summary_title">Kuatiarogueita mombyky</string>
   <!-- Description for the page summary AI controllable feature -->

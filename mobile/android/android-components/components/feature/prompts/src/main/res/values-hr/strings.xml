@@ -172,6 +172,10 @@
   <string name="mozac_feature_prompts_collapse_address_content_description_2">Skupi spremljene adrese</string>
   <!-- Text for the manage addresses button. -->
   <string name="mozac_feature_prompts_manage_address">Upravljanje adresama</string>
+  <!-- Text for the title of a save address dialog. -->
+  <string name="mozac_feature_prompts_save_address_prompt_title">Spremiti adresu?</string>
+  <!-- Text for the title of an update address dialog, shown when the address adds information to an already saved address. -->
+  <string name="mozac_feature_prompts_update_address_prompt_title">Aktualizirati adresu?</string>
   <!--
     Federated Credential Management prompts
 

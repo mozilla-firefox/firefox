@@ -2403,6 +2403,16 @@
   <string name="sent_from_firefox_template" tools:ignore="UnusedResources">%1$s\n\nАз «%2$s» 🦊 фиристода шуд. Браузери мобилиро кӯшиш кунед: %3$s</string>
   <!-- A short message template for the shared link with a footer. %1$s is the shared link, %2$s is the app name (e.g. Firefox) and %3$s is a download link for the app. -->
   <string name="sent_from_firefox_template_short" tools:ignore="UnusedResources">%1$s\n\nАз «%2$s» 🦊 фиристода шуд %3$s</string>
+  <!-- Send tab to synced devices: Authentication error button - Allows user to re-authenticate -->
+  <string name="sync_send_tab_error_auth_button">Ворид шудан</string>
+  <!-- Send tab to synced devices: Authentication error button - Allows user to remove the currently connected account -->
+  <string name="sync_send_tab_error_auth_remove_account">Барҳам додани ҳисоб</string>
+  <!-- Send tab to synced devices: Empty state title - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_title">Ягон дастгоҳ пайваст нашуд</string>
+  <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">Барои фиристодани варақа, ақаллан дар дастгоҳи дигар ба ҳисоби «Firefox» ворид шавед.</string>
+  <!-- Send tab to synced devices: Connectivity Error title -->
+  <string name="sync_send_tab_error_connection_title">Пайвастшавии Интернети худро тафтиш кунед</string>
   <!--
     Notifications
 

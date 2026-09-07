@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <!-- Title for the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_title">Uvoz lozinki</string>
+  <!-- Description for the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_description">Ostavi ovaj ekran otvorenim. Trebalo bi potrajati samo par sekundi.</string>
+  <!-- Label for the cancel action on the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_cancel">Odustani</string>
+</resources>
