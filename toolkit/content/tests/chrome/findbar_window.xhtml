@@ -640,13 +640,6 @@
         gFindBar._findField.select();
         gFindBar._findField.focus();
 
-        let timeout = ITERATOR_TIMEOUT;
-        if (test.text.length == 1)
-          timeout *= 4;
-        else if (test.text.length == 2)
-          timeout *= 2;
-        timeout += 20;
-        await new Promise(resolve => setTimeout(resolve, timeout));
         await enterStringIntoFindField(test.text, false);
         await promiseMatchesCountResult(test.text, !!test.total);
         if (!test.total) {
@@ -654,7 +647,6 @@
         } else {
           assertMatches(test);
           for (let i = 1; i < test.total; i++) {
-            await new Promise(resolve => setTimeout(resolve, timeout));
             gFindBar.onFindAgainCommand();
             await promiseMatchesCountResult(test.text);
             // test.current + 1, test.current + 2, ..., test.total, 1, ..., test.current
