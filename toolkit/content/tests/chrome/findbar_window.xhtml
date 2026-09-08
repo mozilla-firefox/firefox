@@ -234,20 +234,29 @@
       });
     }
 
-    function promiseMatchesCountResult(expectedString) {
+    /**
+     * Waits for the findbar's match count to be updated for `expectedString`.
+     * A string that isn't found suppresses the searches for the strings that
+     * extend it (`_findFailedString` in findbar.js), so when no match is
+     * expected there is no result carrying `expectedString` to wait for: the
+     * last one is for a prefix of it and reports no matches.
+     */
+    function promiseMatchesCountResult(expectedString, expectMatch = true) {
       return new Promise(resolve => {
         let listener = {
           onMatchesCountResult(result) {
-            if (expectedString && result.searchString != expectedString)
+            let isExpectedResult = expectMatch
+              ? result.searchString == expectedString
+              : !result.total;
+            if (!isExpectedResult) {
               return;
+            }
 
             gFindBar.browser.finder.removeResultListener(listener);
             resolve();
           },
         };
         gFindBar.browser.finder.addResultListener(listener);
-        // Make sure we resolve _at least_ after five times the find iterator timeout.
-        setTimeout(resolve, (ITERATOR_TIMEOUT * 5) + 20);
       });
     }
 
@@ -644,7 +653,7 @@
         timeout += 20;
         await new Promise(resolve => setTimeout(resolve, timeout));
         await enterStringIntoFindField(test.text, false);
-        await promiseMatchesCountResult(test.text);
+        await promiseMatchesCountResult(test.text, !!test.total);
         if (!test.total) {
           ok(!foundMatches.dataset.l10nId, "No message should be shown when 0 matches are expected");
         } else {

@@ -181,7 +181,6 @@ support-files = [
 ["test_findbar.xhtml"]
 skip-if = [
   "os == 'mac' && os_version == '14.70' && arch == 'x86_64' && opt", # Bug 1929437
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 2030058
 ]
 
 ["test_findbar_entireword.xhtml"]
