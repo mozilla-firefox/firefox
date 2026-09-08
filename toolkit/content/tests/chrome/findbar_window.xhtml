@@ -19,9 +19,6 @@
   <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"/>
 
   <script type="application/javascript"><![CDATA[
-    const {AppConstants} = ChromeUtils.importESModule(
-      "resource://gre/modules/AppConstants.sys.mjs"
-    );
     const {BrowserTestUtils} = ChromeUtils.importESModule(
       "resource://testing-common/BrowserTestUtils.sys.mjs"
     );
@@ -117,14 +114,12 @@
         await testStatusText();
       }
 
-      if (!AppConstants.DEBUG) {
-        await testFindCountUI();
-        gFindBar.close();
-        ok(gFindBar.hidden, "Failed to close findbar after testFindCountUI");
-        await testFindCountUI(true);
-        gFindBar.close();
-        ok(gFindBar.hidden, "Failed to close findbar after testFindCountUI - linksOnly");
-      }
+      await testFindCountUI();
+      gFindBar.close();
+      ok(gFindBar.hidden, "Failed to close findbar after testFindCountUI");
+      await testFindCountUI(true);
+      gFindBar.close();
+      ok(gFindBar.hidden, "Failed to close findbar after testFindCountUI - linksOnly");
 
       await openFindbar();
       await testFindAfterCaseChanged();
