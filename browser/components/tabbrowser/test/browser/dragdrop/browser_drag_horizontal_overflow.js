@@ -26,11 +26,13 @@ add_task(async function test_dragstart_on_scroll_button_does_not_grab_tab() {
   const arrowScrollbox = gBrowser.tabContainer.arrowScrollbox;
   Assert.ok(arrowScrollbox.overflowing, "Tab strip is overflowing");
 
-  const button = [
-    arrowScrollbox._scrollButtonDown,
-    arrowScrollbox._scrollButtonUp,
-  ].find(({ disabled }) => !disabled);
-  Assert.ok(button, "There is an enabled scroll button");
+  const button = arrowScrollbox._scrollButtonDown;
+  await BrowserTestUtils.waitForMutationCondition(
+    button,
+    { attributes: true },
+    () => !button.disabled,
+    { msg: "There is an enabled scroll button" }
+  );
 
   const tabOrder = [...gBrowser.tabs];
 
