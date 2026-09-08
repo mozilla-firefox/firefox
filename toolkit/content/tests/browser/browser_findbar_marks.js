@@ -223,15 +223,29 @@ add_task(async function test_found_resize() {
 // have been updated, and if increase is false, the marks should
 // not have been updated.
 async function getMarks(browser, increase, shouldBeOnHScrollbar = false) {
-  let results = await SpecialPowers.spawn(browser, [], () => {
-    let { marks, onHorizontalScrollbar } = content.lastMarks;
-    content.lastMarks = {};
-    return {
-      onHorizontalScrollbar,
-      marks: marks || [],
-      count: content.eventsCount,
-    };
-  });
+  // The marks are updated on a findbar.iteratorTimeout timer, which can fire
+  // long after the find itself has been reported as finished.
+  let results = await SpecialPowers.spawn(
+    browser,
+    [increase, gUpdateCount],
+    async (shouldWait, lastCount) => {
+      if (shouldWait && (content.eventsCount ?? 0) <= lastCount) {
+        await ContentTaskUtils.waitForEvent(
+          content,
+          "find-scrollmarks-changed",
+          true
+        );
+      }
+
+      let { marks, onHorizontalScrollbar } = content.lastMarks;
+      content.lastMarks = {};
+      return {
+        onHorizontalScrollbar,
+        marks: marks || [],
+        count: content.eventsCount,
+      };
+    }
+  );
 
   // The marks are updated whenever the scrollbar is updated and
   // this could happen several times as either a find for multiple
