@@ -14,15 +14,6 @@ function getIdentityMode(aWindow = window) {
   return aWindow.document.getElementById("identity-box").className;
 }
 
-function closeIdentityPopup() {
-  let promise = BrowserTestUtils.waitForEvent(
-    gIdentityHandler._identityPopup,
-    "popuphidden"
-  );
-  gIdentityHandler._identityPopup.hidePopup();
-  return promise;
-}
-
 async function checkConnectionState(state) {
   await openIdentityPopup();
   is(getConnectionState(), state, "connectionState should be " + state);

@@ -4,11 +4,21 @@
 
 "use strict";
 
+// Revealing the advanced panel is gated behind ten animation frames, and frame
+// callbacks are throttled to 1Hz while the window is occluded.
+requestLongerTimeout(2);
+
 const MIXED_CONTENT_URL =
   getRootDirectory(gTestPath).replace(
     "chrome://mochitests/content",
     "https://self-signed.example.com"
   ) + "test-mixedcontent-securityerrors.html";
+
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [["security.dialog_enable_delay", 0]],
+  });
+});
 
 function getConnectionState() {
   return document.getElementById("identity-popup").getAttribute("connection");
@@ -37,33 +47,43 @@ async function checkIdentityPopup(icon) {
     getPopupContentVerifier().textContent.includes("security exception"),
     "Text shows overridden certificate warning."
   );
+
+  await closeIdentityPopup();
 }
 
 async function checkMixedContentCertOverride(feltPrivacyV1) {
-  await BrowserTestUtils.openNewForegroundTab(gBrowser);
-  Services.prefs.setBoolPref(
-    "security.certerrors.felt-privacy-v1",
-    feltPrivacyV1
-  );
-  // check that a warning is shown when loading a page with mixed content and an overridden certificate
-  await loadBadCertPage(MIXED_CONTENT_URL, feltPrivacyV1);
-  await checkIdentityPopup("security-warning.svg");
+  await SpecialPowers.pushPrefEnv({
+    set: [["security.certerrors.felt-privacy-v1", feltPrivacyV1]],
+  });
+  let tab;
+  try {
+    tab = await BrowserTestUtils.openNewForegroundTab(gBrowser);
+    // check that a warning is shown when loading a page with mixed content and an overridden certificate
+    await loadBadCertPage(MIXED_CONTENT_URL, feltPrivacyV1);
+    await checkIdentityPopup("security-warning.svg");
 
-  // check that a warning is shown even without mixed content
-  BrowserTestUtils.startLoadingURIString(
-    gBrowser.selectedBrowser,
-    "https://self-signed.example.com"
-  );
-  await BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser);
-  await checkIdentityPopup("security-warning.svg");
-
-  // remove cert exception
-  let certOverrideService = Cc[
-    "@mozilla.org/security/certoverride;1"
-  ].getService(Ci.nsICertOverrideService);
-  certOverrideService.clearValidityOverride("self-signed.example.com", -1, {});
-  BrowserTestUtils.removeTab(gBrowser.selectedTab);
-  Services.prefs.clearUserPref("security.certerrors.felt-privacy-v1");
+    // check that a warning is shown even without mixed content
+    BrowserTestUtils.startLoadingURIString(
+      gBrowser.selectedBrowser,
+      "https://self-signed.example.com"
+    );
+    await BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser);
+    await checkIdentityPopup("security-warning.svg");
+  } finally {
+    // remove cert exception
+    let certOverrideService = Cc[
+      "@mozilla.org/security/certoverride;1"
+    ].getService(Ci.nsICertOverrideService);
+    certOverrideService.clearValidityOverride(
+      "self-signed.example.com",
+      -1,
+      {}
+    );
+    if (tab) {
+      BrowserTestUtils.removeTab(tab);
+    }
+    await SpecialPowers.popPrefEnv();
+  }
 }
 
 add_task(async () => await checkMixedContentCertOverride(true));

@@ -6,6 +6,19 @@ function openIdentityPopup() {
   return viewShown;
 }
 
+function closeIdentityPopup() {
+  let popup = gIdentityHandler._identityPopup;
+  if (!popup) {
+    return Promise.resolve();
+  }
+  // Register before hiding, and go through gIdentityHandler so that a popup
+  // which is still opening gets its pending open cancelled rather than being
+  // left open with no popuphidden ever firing.
+  let hidden = BrowserTestUtils.waitForPopupEvent(popup, "hidden");
+  gIdentityHandler.hidePopup();
+  return hidden;
+}
+
 function openPermissionPopup() {
   gPermissionPanel._initializePopup();
   let mainView = document.getElementById("permission-popup-mainView");
@@ -350,15 +363,86 @@ async function assertMixedContentBlockingState(tabbrowser, states = {}) {
     );
   }
 
-  if (gIdentityHandler._identityPopup.state != "closed") {
-    let hideEvent = BrowserTestUtils.waitForEvent(
-      gIdentityHandler._identityPopup,
-      "popuphidden"
-    );
-    info("Hiding identity popup");
-    gIdentityHandler._identityPopup.hidePopup();
-    await hideEvent;
-  }
+  info("Hiding identity popup");
+  await closeIdentityPopup();
+}
+
+/**
+ * Click an element in the error page loaded in the selected browser.
+ *
+ * synthesizeMouseAtCenter() dispatches at viewport coordinates without
+ * scrolling or waiting for a paint, so the click is lost unless the element is
+ * laid out, in view and already known to APZ.
+ * promiseElementReadyForUserInput() round-trips a mousemove through real hit
+ * testing and throws if the element never becomes interactive, so a lost click
+ * is reported rather than left to time out the test.
+ *
+ * @param {string} selector Selector for the element, or for the custom element
+ *   hosting it when shadowProperty is passed.
+ * @param {string} [shadowProperty] Property of the element matched by selector
+ *   holding the element to click, for buttons in <net-error-card>'s shadow
+ *   root.
+ */
+async function clickErrorPageElement(selector, shadowProperty) {
+  await SpecialPowers.spawn(
+    gBrowser.selectedBrowser,
+    [selector, shadowProperty],
+    async (contentSelector, contentShadowProperty) => {
+      let element = content.document.querySelector(contentSelector);
+      if (contentShadowProperty) {
+        const host = element.wrappedJSObject;
+        await host.getUpdateComplete();
+        element = host[contentShadowProperty];
+      }
+      element.scrollIntoView({ block: "center" });
+      await EventUtils.promiseElementReadyForUserInput(element, content);
+      EventUtils.synthesizeMouseAtCenter(element, {}, content);
+    }
+  );
+}
+
+/**
+ * Wait until the exception button of the error page can be clicked.
+ *
+ * @param {boolean} feltPrivacyV1 Whether the felt privacy error page is
+ *   enabled.
+ */
+async function waitForExceptionButtonEnabled(feltPrivacyV1) {
+  await SpecialPowers.spawn(
+    gBrowser.selectedBrowser,
+    [feltPrivacyV1],
+    async prefFeltPrivacyV1 => {
+      if (prefFeltPrivacyV1) {
+        const netErrorCardElement =
+          content.document.querySelector("net-error-card");
+        const netErrorCard = netErrorCardElement.wrappedJSObject;
+        // The exception button is not rendered until the advanced panel is
+        // revealed, and is disabled until ten animation frames later.
+        await ContentTaskUtils.waitForMutationCondition(
+          netErrorCardElement.shadowRoot,
+          { childList: true, subtree: true, attributes: true },
+          () =>
+            netErrorCard.exceptionButton &&
+            !netErrorCard.exceptionButton.disabled
+        );
+        return;
+      }
+      const advancedPanel = content.document.getElementById(
+        "badCertAdvancedPanel"
+      );
+      const exceptionButton = content.document.getElementById(
+        "exceptionDialogButton"
+      );
+      // The exception button starts out enabled and is only disabled once
+      // revealing the advanced panel begins, so waiting on the button alone
+      // would return before the panel has been revealed at all.
+      await ContentTaskUtils.waitForMutationCondition(
+        advancedPanel,
+        { attributes: true, subtree: true },
+        () => !advancedPanel.hidden && !exceptionButton.disabled
+      );
+    }
+  );
 }
 
 async function loadBadCertPage(url, feltPrivacyV1) {
@@ -372,47 +456,17 @@ async function loadBadCertPage(url, feltPrivacyV1) {
     loadFlagsSkipCache
   );
   await loaded;
-  await SpecialPowers.spawn(
-    gBrowser.selectedBrowser,
-    [feltPrivacyV1],
-    async prefFeltPrivacyV1 => {
-      if (prefFeltPrivacyV1) {
-        const netErrorCard =
-          content.document.querySelector("net-error-card").wrappedJSObject;
-        await netErrorCard.getUpdateComplete();
-        EventUtils.synthesizeMouseAtCenter(
-          netErrorCard.advancedButton,
-          {},
-          content
-        );
-        await ContentTaskUtils.waitForCondition(() => {
-          return (
-            netErrorCard.exceptionButton &&
-            !netErrorCard.exceptionButton.disabled
-          );
-        }, "Waiting for exception button");
-        netErrorCard.exceptionButton.scrollIntoView(true);
-        EventUtils.synthesizeMouseAtCenter(
-          netErrorCard.exceptionButton,
-          {},
-          content
-        );
-      } else {
-        const advancedButton =
-          content.document.getElementById("advancedButton");
-        advancedButton.scrollIntoView(true);
-        EventUtils.synthesizeMouseAtCenter(advancedButton, {}, content);
-        const exceptionButton = content.document.getElementById(
-          "exceptionDialogButton"
-        );
-        await ContentTaskUtils.waitForCondition(() => {
-          return exceptionButton && !exceptionButton.disabled;
-        }, "Waiting for exception button");
-        exceptionButton.scrollIntoView(true);
-        EventUtils.synthesizeMouseAtCenter(exceptionButton, {}, content);
-      }
-    }
-  );
+
+  if (feltPrivacyV1) {
+    await clickErrorPageElement("net-error-card", "advancedButton");
+    await waitForExceptionButtonEnabled(feltPrivacyV1);
+    await clickErrorPageElement("net-error-card", "exceptionButton");
+  } else {
+    await clickErrorPageElement("#advancedButton");
+    await waitForExceptionButtonEnabled(feltPrivacyV1);
+    await clickErrorPageElement("#exceptionDialogButton");
+  }
+
   await BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser);
 }
 
