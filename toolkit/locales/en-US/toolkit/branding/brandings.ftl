@@ -61,6 +61,6 @@
 
 -smart-window-brand-name =
     { $plural-form ->
-        [true] Smart Windows
-       *[false] Smart Window
+        [true] Fun Smarts
+       *[false] Fun Smart
     }

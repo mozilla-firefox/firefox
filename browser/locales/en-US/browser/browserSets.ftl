@@ -11,6 +11,9 @@ window-zoom-command =
 window-new-shortcut =
     .key = N
 
+fun-smart-new-shortcut =
+    .key = S
+
 window-minimize-shortcut =
     .key = M
 

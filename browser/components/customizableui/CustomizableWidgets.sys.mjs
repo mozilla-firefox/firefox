@@ -792,6 +792,48 @@ if (PrivateBrowsingUtils.enabled) {
   });
 }
 
+CustomizableWidgets.push({
+  id: "funshield-button",
+  l10nId: "toolbar-button-funshield",
+  onCreated(node) {
+    node.setAttribute("type", "checkbox");
+    node.setAttribute("closemenu", "none");
+    node.setAttribute("checked", "false");
+    node.setAttribute("aria-pressed", "false");
+  },
+  onCommand(e) {
+    e.target.documentGlobal.gFunxplorerShield.toggle();
+  },
+});
+
+CustomizableWidgets.push({
+  id: "funvpn-button",
+  l10nId: "toolbar-button-funvpn",
+  onCreated(node) {
+    node.setAttribute("type", "checkbox");
+    node.setAttribute("closemenu", "none");
+    node.setAttribute("checked", "false");
+    node.setAttribute("aria-pressed", "false");
+  },
+  onCommand(e) {
+    e.target.documentGlobal.gFunxplorerVpn.toggle();
+  },
+});
+
+CustomizableWidgets.push({
+  id: "tor-button",
+  l10nId: "toolbar-button-tor",
+  onCreated(node) {
+    node.setAttribute("type", "checkbox");
+    node.setAttribute("closemenu", "none");
+    node.setAttribute("checked", "false");
+    node.setAttribute("aria-pressed", "false");
+  },
+  onCommand(e) {
+    e.target.documentGlobal.gFunxplorerTor.toggle();
+  },
+});
+
 if (Services.prefs.getBoolPref("browser.tabs.groups.alternateMenu", false)) {
   CustomizableWidgets.push({
     id: "tab-groups-button",

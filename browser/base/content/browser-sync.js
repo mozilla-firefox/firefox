@@ -23,6 +23,7 @@ ChromeUtils.defineESModuleGetters(this, {
     "resource://gre/modules/FxAccountsWebChannel.sys.mjs",
 
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
+  FunComputerAccounts: "resource:///modules/FunComputerAccounts.sys.mjs",
   FxAccounts: "resource://gre/modules/FxAccounts.sys.mjs",
   MenuMessage: "resource:///modules/asrouter/MenuMessage.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
@@ -1082,7 +1083,12 @@ var gSync = {
   // once syncing completes (bug 1239042).
   _syncStartTime: 0,
   _syncAnimationTimer: 0,
-  _obs: ["weave:engine:sync:finish", "quit-application", UIState.ON_UPDATE],
+  _obs: [
+    "weave:engine:sync:finish",
+    "quit-application",
+    UIState.ON_UPDATE,
+    "funcomputer-accounts-changed",
+  ],
   // Track whether send tab exposure events have been recorded for current context menu session
   _sendTabExposureRecorded: new Set(),
 
@@ -1185,7 +1191,7 @@ var gSync = {
   handleSyncPromoAction(action, entryPoint) {
     switch (action) {
       case "signin":
-        this.openFxAEmailFirstPage(entryPoint);
+        this.openFunComputerAccount();
         break;
       case "turnonsync":
         this.openSyncSetupForEntryPoint(entryPoint);
@@ -1270,6 +1276,7 @@ var gSync = {
     }
 
     MozXULElement.insertFTLIfNeeded("browser/sync.ftl");
+    MozXULElement.insertFTLIfNeeded("browser/funcomputer-accounts.ftl");
     MozXULElement.insertFTLIfNeeded("browser/newtab/asrouter.ftl");
 
     // Label for the sync buttons.
@@ -1494,6 +1501,7 @@ var gSync = {
       "PanelUI-fxa-menu-account-signout-button"
     );
     signOutButtonEl.hidden = !this.isSignedIn;
+    this.updateFunComputerAccountUI();
 
     panelview.syncedTabsPanelList = new FxAMenuDeviceList(
       PanelMultiView.getViewNode(document, "PanelUI-fxa-menu-devices-list")
@@ -1745,6 +1753,9 @@ var gSync = {
         this.updateAllUI(state);
         break;
       }
+      case "funcomputer-accounts-changed":
+        this.updateFunComputerAccountUI();
+        break;
       case "quit-application":
         // Stop the animation timer on shutdown, since we can't update the UI
         // after this.
@@ -1766,8 +1777,77 @@ var gSync = {
     this.updateSyncButtonsTooltip(state);
     this.updateSyncStatus(state);
     this.updateFxAPanel(state);
+    this.updateFunComputerAccountUI();
     this.ensureFxaDevices();
     this.fetchListOfOAuthClients();
+  },
+
+  async updateFunComputerAccountUI() {
+    let session = null;
+    try {
+      session = await FunComputerAccounts.getSession();
+    } catch (ex) {
+      console.error(ex);
+    }
+    let signedIn = !!(session && session.email);
+    document.documentElement.toggleAttribute("funcomputerstatus", signedIn);
+    if (!signedIn) {
+      return;
+    }
+
+    let label = document.getElementById("fxa-avatar-label");
+    if (label) {
+      label.setAttribute("value", session.email);
+      label.removeAttribute("hidden");
+    }
+    let toolbar = document.getElementById("fxa-toolbar-menu-button");
+    if (toolbar) {
+      toolbar.setAttribute("tooltiptext", session.email);
+    }
+
+    const signInPromoEl = PanelMultiView.getViewNode(
+      document,
+      "PanelUI-fxa-menu-sign-in-promo"
+    );
+    const menuHeaderTitleEl = PanelMultiView.getViewNode(
+      document,
+      "fxa-menu-header-title"
+    );
+    const menuHeaderDescriptionEl = PanelMultiView.getViewNode(
+      document,
+      "fxa-menu-header-description"
+    );
+    const manageAccountButtonEl = PanelMultiView.getViewNode(
+      document,
+      "PanelUI-fxa-menu-manage-account-button"
+    );
+    const signOutSeparator = PanelMultiView.getViewNode(
+      document,
+      "PanelUI-sign-out-separator"
+    );
+    if (signInPromoEl) {
+      signInPromoEl.hidden = true;
+    }
+    if (menuHeaderTitleEl) {
+      document.l10n.setAttributes(menuHeaderTitleEl, "appmenu-account-header");
+    }
+    if (menuHeaderDescriptionEl) {
+      menuHeaderDescriptionEl.hidden = false;
+      menuHeaderDescriptionEl.value = session.email;
+    }
+    if (manageAccountButtonEl) {
+      manageAccountButtonEl.hidden = false;
+    }
+    if (signOutSeparator) {
+      signOutSeparator.hidden = false;
+    }
+    const signOutButtonEl = PanelMultiView.getViewNode(
+      document,
+      "PanelUI-fxa-menu-account-signout-button"
+    );
+    if (signOutButtonEl) {
+      signOutButtonEl.hidden = false;
+    }
   },
 
   // Ensure we have *something* in `fxAccounts.device.recentDeviceList` as some
@@ -2419,15 +2499,19 @@ var gSync = {
     }
   },
 
-  async openSignInAgainPage(entryPoint) {
-    if (!(await FxAccounts.canConnectAccount())) {
-      return;
-    }
-    const url = await FxAccounts.config.promiseConnectAccountURI(entryPoint);
+  openFunComputerAccount() {
+    const url = Services.prefs.getStringPref(
+      "funcomputer.accounts.homeUrl",
+      "about:funcomputer"
+    );
     switchToTabHavingURI(url, true, {
       replaceQueryString: true,
       triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
     });
+  },
+
+  async openSignInAgainPage(entryPoint) {
+    this.openFunComputerAccount();
   },
 
   async openDevicesManagementPage(entryPoint) {
@@ -2506,14 +2590,7 @@ var gSync = {
   },
 
   async openFxAEmailFirstPage(entryPoint, extraParams = {}) {
-    if (!(await FxAccounts.canConnectAccount())) {
-      return;
-    }
-    const url = await FxAccounts.config.promiseConnectAccountURI(
-      entryPoint,
-      extraParams
-    );
-    switchToTabHavingURI(url, true, { replaceQueryString: true });
+    this.openFunComputerAccount();
   },
 
   async openFxAEmailFirstPageFromFxaMenu(sourceElement, extraParams = {}) {
@@ -2525,8 +2602,7 @@ var gSync = {
   },
 
   async openFxAManagePage(entryPoint) {
-    const url = await FxAccounts.config.promiseManageURI(entryPoint);
-    switchToTabHavingURI(url, true, { replaceQueryString: true });
+    this.openFunComputerAccount();
   },
 
   async _openFxAManagePageFromElement(sourceElement) {
@@ -3271,6 +3347,14 @@ var gSync = {
   // Returns true if the disconnection happened (ie, if the user didn't decline
   // when asked to confirm)
   async disconnect({ confirm = true, disconnectAccount = true } = {}) {
+    let funcomputer = await FunComputerAccounts.getSession();
+    if (
+      funcomputer &&
+      UIState.get().status == UIState.STATUS_NOT_CONFIGURED
+    ) {
+      await FunComputerAccounts.logout();
+      return true;
+    }
     if (disconnectAccount) {
       let deleteLocalData = false;
       if (confirm) {
@@ -3471,12 +3555,7 @@ var gSync = {
   },
 
   async signInToSync(sourceElement) {
-    const entryPoint =
-      this._getEntryPointForElement(sourceElement) === "fxa_app_menu"
-        ? "send-tab-app-menu"
-        : "send-tab-account-menu";
-    var url = await FxAccounts.config.promiseConnectAccountURI(entryPoint, {});
-    switchToTabHavingURI(url, true, {});
+    this.openFunComputerAccount();
   },
 
   enableSync() {

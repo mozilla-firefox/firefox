@@ -19,6 +19,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   EveryWindow: "resource:///modules/EveryWindow.sys.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   PrefUtils: "moz-src:///toolkit/modules/PrefUtils.sys.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   SidebarManager:
     "moz-src:///browser/components/sidebar/SidebarManager.sys.mjs",
 });
@@ -1591,12 +1592,31 @@ function onChatEnabledChange(value) {
  *
  * @param {string} value New pref value
  */
+const AGENTIC_CHAT_IDS = new Set(["chatgpt", "claude"]);
+
+function syncAgenticWindow(providerUrl) {
+  if (!AGENTIC_CHAT_IDS.has(GenAI.getProviderId(providerUrl))) {
+    return;
+  }
+  const win = Services.wm.getMostRecentWindow("navigator:browser");
+  if (!win || win.closed || lazy.PrivateBrowsingUtils.isWindowPrivate(win)) {
+    return;
+  }
+  Services.prefs.setBoolPref("browser.smartwindow.enabled", true);
+  Services.prefs.setBoolPref("browser.smartwindow.agent.enabled", true);
+  if (!lazy.AIWindow.isAIWindowActive(win)) {
+    lazy.AIWindow.toggleAIWindow(win, true, "chatbot");
+  }
+}
+
 function onChatProviderChange(value) {
   if (value && lazy.chatEnabled && lazy.chatOpenSidebarOnProviderChange) {
     Services.wm
       .getMostRecentWindow("navigator:browser")
       ?.SidebarController.show("viewGenaiChatSidebar");
   }
+
+  syncAgenticWindow(value);
 
   // Recalculate query limit on provider change
   GenAI.chatLastPrefix = null;

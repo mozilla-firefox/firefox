@@ -271,18 +271,18 @@ export function checkMajorVersion(recordVersion, comparisonVersion) {
 export const FALLBACK_MODELS = {
   0: { model: "custom-model", ownerName: "", labelId: "custom" },
   1: {
-    model: "gemini-3.1-flash-lite",
-    ownerName: "Google",
+    model: "gpt-4o-mini",
+    ownerName: "Funxplorer",
     labelId: "fast",
   },
   2: {
-    model: "qwen3-235b-a22b-instruct-2507-maas",
-    ownerName: "Alibaba",
+    model: "gpt-4o",
+    ownerName: "Funxplorer",
     labelId: "allpurpose",
   },
   3: {
-    model: "gpt-oss-120b",
-    ownerName: "OpenAI",
+    model: "gpt-4.1",
+    ownerName: "Funxplorer",
     labelId: "personal",
   },
 };
@@ -290,25 +290,25 @@ export const FALLBACK_MODELS = {
 export const FALLBACK_MODELS_V2 = {
   0: { model: "custom-model", ownerName: "", labelId: "custom" },
   1: {
-    model: "gemini-3.1-flash-lite",
-    ownerName: "Google",
+    model: "gpt-4o-mini",
+    ownerName: "Funxplorer",
     labelId: "fast",
-    shortName: "Gemini 3.1 Flash Lite",
-    brandName: "Gemini",
+    shortName: "Fun Fast",
+    brandName: "Fun Smart",
   },
   2: {
-    model: "qwen3-235b-a22b-instruct-2507-maas",
-    ownerName: "Alibaba",
+    model: "gpt-4o",
+    ownerName: "Funxplorer",
     labelId: "allpurpose",
-    shortName: "Qwen 3 235B",
-    brandName: "Qwen",
+    shortName: "Fun Smart",
+    brandName: "Fun Smart",
   },
   3: {
-    model: "mistral-small-2603",
-    ownerName: "Mistral",
+    model: "gpt-4.1",
+    ownerName: "Funxplorer",
     labelId: "personal",
-    shortName: "Mistral Small 4",
-    brandName: "Mistral",
+    shortName: "Fun Agent",
+    brandName: "Fun Smart",
   },
 };
 

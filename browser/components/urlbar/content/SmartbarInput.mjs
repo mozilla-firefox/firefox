@@ -5071,6 +5071,11 @@ ${
     resultDetails = null,
     browserId = null,
   }) {
+    let queryHint =
+      resultDetails?.searchTerm ||
+      (this.getAttribute("pageproxystate") == "valid" ? "" : this.value);
+    url = lazy.UrlbarUtils.rewriteFunsearchLoadUrl(url, queryHint);
+
     let userTypedValue;
     if (this.#isAddressbar && where == "current") {
       // Make sure URL is formatted properly (don't show punycode).
@@ -5087,7 +5092,9 @@ ${
       userTypedValue = this.value;
     }
 
-    params.allowThirdPartyFixup = true;
+    params.allowThirdPartyFixup = !(
+      url.startsWith("about:") || url.startsWith("chrome:")
+    );
 
     if (where == "current") {
       params.indicateErrorPageLoad = true;

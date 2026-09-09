@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                       xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+  <ShortName>Funsearch</ShortName>
+  <Description>Search the web with Funsearch</Description>
+  <InputEncoding>UTF-8</InputEncoding>
+  <Image width="16" height="16" type="image/png">https://funsearchapp.netlify.app/logo.png</Image>
+  <Url type="text/html" method="GET" template="https://funsearchapp.netlify.app/?q={searchTerms}"/>
+  <Url type="application/x-suggestions+json" method="GET" template="https://funsearchapp.netlify.app/api/suggest?q={searchTerms}"/>
+  <Url type="application/opensearchdescription+xml" rel="self" template="https://funsearchapp.netlify.app/opensearch.xml"/>
+  <moz:SearchForm>https://funsearchapp.netlify.app/</moz:SearchForm>
+</OpenSearchDescription>

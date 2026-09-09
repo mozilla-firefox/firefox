@@ -12,7 +12,7 @@
 
 .logo-and-wordmark {
   $logo-size: 64px;
-  $wordmark-size: 105px;
+  $wordmark-size: 168px;
 
   // @nova-cleanup(remove-conditional): Make default behavior, remove .nova-enabled selector
   .nova-enabled & {
@@ -76,7 +76,7 @@
   .classic-enabled & {
     @media (max-width: $break-point-medium - 1) {
       $logo-size-small: 64px;
-      $wordmark-small-size: 100px;
+      $wordmark-small-size: 150px;
 
       .logo {
         background-size: $logo-size-small;

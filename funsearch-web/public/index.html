@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Funsearch</title>
+    <meta name="description" content="Funsearch — the Funxplorer search engine." />
+    <link rel="icon" href="/logo.png" type="image/png" />
+    <link
+      rel="search"
+      type="application/opensearchdescription+xml"
+      title="Funsearch"
+      href="/opensearch.xml"
+    />
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/">
+        <img src="/logo.png" alt="Funxplorer" />
+        <span>Funsearch</span>
+      </a>
+      <form id="header-search" class="search-form hidden" action="/" method="get">
+        <label class="visually-hidden" for="q-header">Search</label>
+        <input
+          id="q-header"
+          name="q"
+          type="search"
+          autocomplete="off"
+          placeholder="Search the web"
+        />
+        <button type="submit">Search</button>
+      </form>
+      <div class="account-slot">
+        <button id="sign-in-button" class="google-signin" type="button">
+          Sign in
+        </button>
+        <button id="avatar-button" class="avatar-button hidden" type="button" aria-label="FunComputer account"></button>
+        <div id="account-menu" class="account-menu hidden" hidden>
+          <div id="signed-in" class="signed-in hidden">
+            <p>FunComputer</p>
+            <p id="signed-in-email" class="email"></p>
+            <button id="header-logout" type="button">Sign out</button>
+          </div>
+          <form id="auth-form">
+            <h2>FunComputer</h2>
+            <p id="auth-status" class="auth-status hidden"></p>
+            <label for="email">Email</label>
+            <input id="email" type="email" required autocomplete="username" />
+            <label for="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              required
+              minlength="6"
+              autocomplete="current-password"
+            />
+            <div class="auth-actions">
+              <button type="submit">Sign in</button>
+              <button id="signup" type="button">Create account</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </header>
+    <main>
+      <section id="home" class="home hidden">
+        <img class="home-logo" src="/logo.png" alt="Funxplorer" />
+        <h1>Funsearch</h1>
+        <form id="home-search" class="search-form home-search" action="/" method="get">
+          <label class="visually-hidden" for="q">Search</label>
+          <input
+            id="q"
+            name="q"
+            type="search"
+            required
+            autocomplete="off"
+            placeholder="Search the web"
+          />
+          <button type="submit">Search</button>
+        </form>
+      </section>
+      <section id="status" class="status hidden" hidden></section>
+      <section id="results" class="results hidden"></section>
+      <nav id="pager" class="pager hidden"></nav>
+    </main>
+    <footer>Funsearch · Funxplorer</footer>
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -74,12 +74,12 @@ p {
 .wordmark {
   display: inline-block;
   background: url("chrome://branding/content/firefox-wordmark.svg") no-repeat center center;
-  background-size: 172px;
+  background-size: 250px;
   margin-inline-start: 15px;
   -moz-context-properties: fill;
   fill: currentColor;
   height: 96px;
-  width: 172px;
+  width: 250px;
 }
 
 .search-inner-wrapper {

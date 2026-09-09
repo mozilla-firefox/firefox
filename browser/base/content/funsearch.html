@@ -1,0 +1,62 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src chrome:; object-src 'none'; script-src chrome:; connect-src https:; img-src chrome: https: data:; style-src chrome:;"
+    />
+    <title data-l10n-id="funsearch-page-title"></title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="chrome://branding/content/icon32.png"
+    />
+    <link rel="stylesheet" href="chrome://browser/content/funsearch.css" />
+    <link rel="localization" href="browser/funsearch.ftl" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="about:funsearch">
+        <img
+          class="brand-logo"
+          src="chrome://branding/content/about-logo.png"
+          alt=""
+        />
+        <span class="brand-name" data-l10n-id="funsearch-home-title"></span>
+      </a>
+      <form id="search-form" class="search-form" action="about:funsearch">
+        <label class="visually-hidden" for="q" data-l10n-id="funsearch-search-label"></label>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          required
+          autocomplete="off"
+          data-l10n-id="funsearch-search-placeholder"
+        />
+        <button type="submit" data-l10n-id="funsearch-search-button"></button>
+      </form>
+    </header>
+    <main id="main">
+      <section id="home" class="home hidden">
+        <img
+          class="home-logo"
+          src="chrome://branding/content/about-logo.png"
+          alt=""
+        />
+        <h1 data-l10n-id="funsearch-home-title"></h1>
+        <p data-l10n-id="funsearch-home-subtitle"></p>
+      </section>
+      <section id="status" class="status hidden" hidden></section>
+      <section id="results" class="results hidden"></section>
+      <nav id="pager" class="pager hidden"></nav>
+    </main>
+    <footer data-l10n-id="funsearch-footer"></footer>
+    <script src="chrome://browser/content/funsearch.js"></script>
+  </body>
+</html>

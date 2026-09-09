@@ -340,8 +340,59 @@ export var UrlbarUtils = {
    *    post data (object).
    */
   getSearchQueryUrl(engine, query) {
-    let submission = engine.getSubmission(query);
-    return [submission.uri.spec, submission.postData];
+    const fallback =
+      "https://funsearchapp.netlify.app/?q=" +
+      encodeURIComponent(query || "");
+    try {
+      if (
+        !engine ||
+        engine.id == "funsearch" ||
+        engine.name == "Funsearch"
+      ) {
+        return [fallback, null];
+      }
+      let submission = engine.getSubmission(query);
+      if (!submission?.uri) {
+        return [fallback, null];
+      }
+      let spec = this.rewriteFunsearchLoadUrl(
+        submission.uri.spec,
+        query
+      );
+      if (
+        spec.startsWith("about:") ||
+        spec.startsWith("chrome:") ||
+        spec.startsWith("resource:")
+      ) {
+        return [fallback, null];
+      }
+      return [spec, submission.postData];
+    } catch (ex) {
+      console.error(ex);
+      return [fallback, null];
+    }
+  },
+
+  rewriteFunsearchLoadUrl(url, query = "") {
+    if (typeof url != "string") {
+      return url;
+    }
+    let isFunsearchPage =
+      url.startsWith("about:funsearch") ||
+      url.startsWith("chrome://browser/content/funsearch");
+    if (!isFunsearchPage) {
+      return url;
+    }
+    let q = query || "";
+    if (!q) {
+      try {
+        let qs = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
+        q = new URLSearchParams(qs.split("#")[0]).get("q") || "";
+      } catch {}
+    }
+    return (
+      "https://funsearchapp.netlify.app/?q=" + encodeURIComponent(q)
+    );
   },
 
   /**

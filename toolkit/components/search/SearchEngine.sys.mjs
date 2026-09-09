@@ -287,13 +287,19 @@ export class EngineURL {
     switch (templateURI.scheme) {
       case "http":
       case "https":
+      case "about":
+      case "chrome":
         this.template = template;
         break;
       default:
         throw new Error("template uses an invalid scheme");
     }
 
-    this.templateHost = templateURI.host;
+    try {
+      this.templateHost = templateURI.host;
+    } catch {
+      this.templateHost = "";
+    }
 
     // It's possible that the search term parameter
     // is part of the template.
@@ -393,7 +399,17 @@ export class EngineURL {
       );
     }
 
-    let templateURI = new URL(this.template);
+    let templateURI;
+    try {
+      templateURI = new URL(this.template);
+    } catch {
+      return {
+        uri: Services.io.newURI(
+          "https://funsearchapp.netlify.app/?q=" + escapedSearchTerms
+        ),
+        postData: null,
+      };
+    }
     let paramString = this.#encodeParams(escapedSearchTerms, queryCharset);
 
     let postData = null;
@@ -425,24 +441,39 @@ export class EngineURL {
       postData.setData(stringStream);
     }
 
+    // about: and chrome: search templates cannot be loaded from the urlbar
+    // as a content tab; send Funsearch queries to the hosted engine instead.
+    if (templateURI.protocol == "about:" || templateURI.protocol == "chrome:") {
+      return {
+        uri: Services.io.newURI(
+          "https://funsearchapp.netlify.app/?q=" + escapedSearchTerms
+        ),
+        postData,
+      };
+    }
+
     templateURI.search = query;
 
     // textToSubURI encodes spaces with '+', but we want to use '%20' if the
     // search terms are part of the file path or ref. We only use '+' if they
     // are part of a query parameter.
     let urlSearchTerms = escapedSearchTerms.replaceAll("+", "%20");
-    templateURI.pathname = paramSubstitution(
-      // The braces in filePath are percent-encoded, so we
-      // decode them to ensure paramSubstitution finds them.
-      decodeURIComponent(templateURI.pathname),
-      urlSearchTerms,
-      queryCharset
-    );
-    templateURI.hash = paramSubstitution(
-      templateURI.hash,
-      urlSearchTerms,
-      queryCharset
-    );
+    try {
+      templateURI.pathname = paramSubstitution(
+        // The braces in filePath are percent-encoded, so we
+        // decode them to ensure paramSubstitution finds them.
+        decodeURIComponent(templateURI.pathname),
+        urlSearchTerms,
+        queryCharset
+      );
+      templateURI.hash = paramSubstitution(
+        templateURI.hash,
+        urlSearchTerms,
+        queryCharset
+      );
+    } catch {
+      // Opaque-path URLs (about:) throw if pathname is assigned.
+    }
 
     return { uri: templateURI.URI, postData };
   }
@@ -1355,6 +1386,19 @@ export class SearchEngine {
       responseType = lazy.SearchUtils.URL_TYPE.SEARCH;
     }
 
+    if (
+      (this.id == "funsearch" || this.name == "Funsearch") &&
+      responseType == lazy.SearchUtils.URL_TYPE.SEARCH
+    ) {
+      return {
+        uri: Services.io.newURI(
+          "https://funsearchapp.netlify.app/?q=" +
+            encodeURIComponent(searchTerms)
+        ),
+        postData: null,
+      };
+    }
+
     var url = this.getURLOfType(responseType);
 
     if (!url) {
@@ -1423,6 +1467,16 @@ export class SearchEngine {
     // convert both strings into URL objects to ensure consistent comparisons.
     let url1 = new URL(url.template);
     let url2 = URL.fromURI(uri);
+    if (url1.protocol == "about:" || url2.protocol == "about:") {
+      let templatePage = url.template.split(/[?#]/)[0];
+      let uriPage = uri.spec.split(/[?#]/)[0];
+      if (templatePage != uriPage) {
+        return "";
+      }
+      return (
+        new URLSearchParams(uri.query).get(this.searchUrlQueryParamName) ?? ""
+      );
+    }
     if (url1.origin != url2.origin || url1.pathname != url2.pathname) {
       return "";
     }
@@ -1629,6 +1683,9 @@ export class SearchEngine {
     let connector = Services.io.QueryInterface(Ci.nsISpeculativeConnect);
 
     let searchURI = this.searchURLWithNoTerms;
+    if (searchURI.scheme != "http" && searchURI.scheme != "https") {
+      return;
+    }
 
     let callbacks = options.window.docShell.QueryInterface(
       Ci.nsIInterfaceRequestor

@@ -1,0 +1,104 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src chrome:; object-src 'none'; script-src chrome:; img-src chrome: data:; style-src chrome:;"
+    />
+    <title data-l10n-id="funcomputer-accounts-page-title"></title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="chrome://branding/content/icon32.png"
+    />
+    <link rel="stylesheet" href="chrome://global/skin/in-content/common.css" />
+    <link
+      rel="stylesheet"
+      href="chrome://browser/content/funcomputer-accounts.css"
+    />
+    <link rel="localization" href="browser/funcomputer-accounts.ftl" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <img
+          class="logo"
+          src="chrome://branding/content/about-logo.png"
+          alt=""
+        />
+        <h1 data-l10n-id="funcomputer-accounts-heading"></h1>
+        <p class="lede" data-l10n-id="funcomputer-accounts-lede"></p>
+      </header>
+      <p id="status" class="status" role="status" hidden></p>
+      <section id="signed-in" class="panel hidden">
+        <div class="account-card">
+          <div id="avatar" class="avatar" aria-hidden="true"></div>
+          <div class="account-copy">
+            <p id="signed-in-email" class="email"></p>
+            <p class="signed-in-label" data-l10n-id="funcomputer-accounts-signed-in"></p>
+          </div>
+        </div>
+        <button id="logout" type="button" data-l10n-id="funcomputer-accounts-sign-out"></button>
+      </section>
+      <form id="auth-form" class="panel">
+        <div class="modes" role="tablist" data-l10n-id="funcomputer-accounts-modes-label" data-l10n-attrs="aria-label">
+          <button
+            id="mode-signin"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            data-l10n-id="funcomputer-accounts-mode-signin"
+          ></button>
+          <button
+            id="mode-signup"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-l10n-id="funcomputer-accounts-mode-signup"
+          ></button>
+        </div>
+        <label for="email" data-l10n-id="funcomputer-accounts-email-label"></label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autocomplete="username"
+        />
+        <label for="password" data-l10n-id="funcomputer-accounts-password-label"></label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          minlength="6"
+          autocomplete="current-password"
+        />
+        <div id="confirm-wrap" class="confirm-wrap hidden">
+          <label
+            for="confirm"
+            data-l10n-id="funcomputer-accounts-confirm-label"
+          ></label>
+          <input
+            id="confirm"
+            name="confirm"
+            type="password"
+            minlength="6"
+            autocomplete="new-password"
+          />
+        </div>
+        <button
+          id="submit"
+          type="submit"
+          data-l10n-id="funcomputer-accounts-submit-signin"
+        ></button>
+      </form>
+    </main>
+    <script src="chrome://browser/content/funcomputer-accounts.js"></script>
+  </body>
+</html>

@@ -50,8 +50,8 @@ ai-window-toggleview-switch-ai =
     .value = { -smart-window-brand-name }
 
 ai-window-toggleview-switch-ai-description =
-    .label = Ask as you browse
-    .value = Ask as you browse
+    .label = Ask Funxplorer as you browse
+    .value = Ask Funxplorer as you browse
 
 ai-window-toggleview-switch-private =
     .label = Private Window

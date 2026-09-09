@@ -122,6 +122,10 @@ export const MonitorUIUtils = {
       .map(region => region.trim().toUpperCase())
       .filter(Boolean);
 
+    if (!supportedRegions.length) {
+      return true;
+    }
+
     const homeRegion = lazy.Region.home?.toUpperCase();
     return Boolean(homeRegion && supportedRegions.includes(homeRegion));
   },

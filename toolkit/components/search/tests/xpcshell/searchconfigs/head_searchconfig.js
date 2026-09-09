@@ -498,18 +498,26 @@ class SearchConfigTest {
    *   The test details to use.
    */
   _assertCorrectDomains(location, engine, rules, testDetails) {
-    this.assertOk(
-      rules.domain,
-      `${testDetails.identifier} should have an expectedDomain for the engine ${location}`
-    );
-
     let submission = engine.getSubmission("test", URLTYPE_SEARCH_HTML);
 
-    this.assertOk(
-      submission.uri.host.endsWith(rules.domain),
-      `Should have the correct domain for type: ${URLTYPE_SEARCH_HTML} ${location}.
+    if (rules.scheme) {
+      this.assertEqual(
+        submission.uri.scheme,
+        rules.scheme,
+        `Should have the correct scheme for type: ${URLTYPE_SEARCH_HTML} ${location}.`
+      );
+    } else {
+      this.assertOk(
+        rules.domain,
+        `${testDetails.identifier} should have an expectedDomain for the engine ${location}`
+      );
+
+      this.assertOk(
+        submission.uri.host.endsWith(rules.domain),
+        `Should have the correct domain for type: ${URLTYPE_SEARCH_HTML} ${location}.
        Got "${submission.uri.host}", expected to end with "${rules.domain}".`
-    );
+      );
+    }
 
     submission = engine.getSubmission("test", URLTYPE_SUGGEST_JSON);
     if (testDetails.noSuggestionsURL || rules.noSuggestionsURL) {

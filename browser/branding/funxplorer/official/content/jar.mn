@@ -1,0 +1,22 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+browser.jar:
+% content branding %content/branding/ contentaccessible=yes
+  content/branding/about.png
+  content/branding/about-logo.png
+  content/branding/about-logo.svg
+  content/branding/about-logo@2x.png
+  content/branding/about-logo-private.png
+  content/branding/about-logo-private@2x.png
+  content/branding/about-wordmark.svg
+  content/branding/document.ico                  (../document.ico)
+  content/branding/document_pdf.svg
+  content/branding/firefox-wordmark.svg
+  content/branding/icon16.png                    (../default16.png)
+  content/branding/icon32.png                    (../default32.png)
+  content/branding/icon48.png                    (../default48.png)
+  content/branding/icon64.png                    (../default64.png)
+  content/branding/icon128.png                   (../default128.png)
+  content/branding/aboutDialog.css

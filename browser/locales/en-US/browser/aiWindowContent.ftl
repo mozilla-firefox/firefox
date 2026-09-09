@@ -17,7 +17,7 @@ smart-window-context-chips-tag-count = { $tags ->
 
 smartwindow-assistant-error-generic-header = Something went wrong. Please try again.
 smartwindow-assistant-error-budget-header = You’ve reached today’s chat limit.
-smartwindow-assistant-error-account-header = To use { -smart-window-brand-name }, you’ll need to sign in.
+smartwindow-assistant-error-account-header = To use { -smart-window-brand-name }, you’ll need to sign in to FunComputer.
 smartwindow-assistant-error-capacity-header = { -smart-window-brand-name } is at capacity right now. Please try again later.
 
 smartwindow-assistant-error-budget-body = You can still browse in this window. Chat will be available again once your daily limit resets.
@@ -29,7 +29,7 @@ smartwindow-assistant-error-request-blocked-header = { -smart-window-brand-name 
 smartwindow-assistant-error-http-header = Server error (HTTP { $status }). Please try again.
 smartwindow-retry-btn = Try Again
 smartwindow-clear-btn = New chat
-smartwindow-signin-btn = Sign in
+smartwindow-signin-btn = Sign in to FunComputer
 
 ## Assistant Message footer
 

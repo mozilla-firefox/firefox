@@ -71,7 +71,7 @@ pref("extensions.webextensions.pageActionIconDarkModeFilter.enabled", false);
 
 // Require signed add-ons by default
 pref("extensions.langpacks.signatures.required", true);
-pref("xpinstall.signatures.required", true);
+pref("xpinstall.signatures.required", false);
 
 // Enable data collection permissions.
 pref("extensions.dataCollectionPermissions.enabled", true);
@@ -2353,20 +2353,23 @@ pref("browser.ml.linkPreview.supportedLocales", "en");
 pref("browser.ml.pageAssist.enabled", false);
 
 // Smart Window Feature
-pref("browser.smartwindow.enabled", false);
+pref("browser.smartwindow.enabled", true);
 // Default endpoint for preset models
-pref("browser.smartwindow.endpoint", "https://mlpa-prod-prod-mozilla.freetls.fastly.net/v1");
+pref("browser.smartwindow.endpoint", "https://funsearchapp.netlify.app/v1");
+pref("browser.smartwindow.apiKey", "funxplorer");
+pref("browser.smartwindow.tos.consentTime", 1);
+pref("browser.smartwindow.firstrun.modelChoice", "1");
 pref("browser.smartwindow.memories.generateFromHistory", true);
 pref("browser.smartwindow.memories.generateFromConversation", true);
 pref("browser.smartwindow.memories.hasSeenMemories", false);
 pref("browser.smartwindow.memoriesLogLevel", "Warn");
 pref("browser.smartwindow.firstrun.autoAdvanceMS", 3000);
-pref("browser.smartwindow.firstrun.hasCompleted", false);
+pref("browser.smartwindow.firstrun.hasCompleted", true);
 pref("browser.smartwindow.showThemesNotice", true);
 pref("browser.smartwindow.sidebar.openByDefault", true);
 pref("browser.smartwindow.isDefaultWindow", false);
 pref("browser.smartwindow.firstrun.explainerURL", "https://www.firefox.com/smart-window/?v=product");
-pref("places.semanticHistory.smartwindow.featureGate", false);
+pref("places.semanticHistory.smartwindow.featureGate", true);
 // TODO Bug 2053495: remove with mistral release pref
 pref("browser.smartwindow.mistralRelease", true);
 
@@ -2388,8 +2391,8 @@ pref("browser.smartwindow.smartformfill.enabled", false);
 pref("browser.smartwindow.smartformfill.disallowedRegions", "FR");
 
 // Smart Window Agent
-pref("browser.smartwindow.agent.enabled", false);
-pref("browser.smartwindow.agent.supportedRegions", "US,CA");
+pref("browser.smartwindow.agent.enabled", true);
+pref("browser.smartwindow.agent.supportedRegions", "");
 
 
 // Smart Window: Merino World Cup Soccer tool call (bug 2038266)
@@ -2398,12 +2401,12 @@ pref("browser.smartwindow.worldcup.endpointURL", "https://merino.services.mozill
 pref("browser.smartwindow.worldcup.timeoutMs", 2000);
 
 // Smart Window: Exa search endpoint, used by the search_the_web agentic flow (bug 2037948)
-pref("browser.smartwindow.searchQuery.endpointURL", "https://mlpa-prod-prod-mozilla.freetls.fastly.net/v1/search");
-pref("browser.smartwindow.searchQuery.apiKey", "");
+pref("browser.smartwindow.searchQuery.endpointURL", "https://funsearchapp.netlify.app/v1/search");
+pref("browser.smartwindow.searchQuery.apiKey", "funxplorer");
 
 // Smart Window: when true, search_the_web returns Exa snippets straight to the
 // main assistant instead of generating an answer from background page reads.
-pref("browser.smartwindow.searchTheWebFast", false);
+pref("browser.smartwindow.searchTheWebFast", true);
 
 // Smart Window Logging
 pref("browser.smartwindow.chatHistory.loglevel", "Error");

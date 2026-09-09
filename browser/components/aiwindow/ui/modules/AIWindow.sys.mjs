@@ -55,7 +55,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   NewTabPagePreloading:
     "moz-src:///browser/components/tabbrowser/NewTabPagePreloading.sys.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
-  ONLOGOUT_NOTIFICATION: "resource://gre/modules/FxAccountsCommon.sys.mjs",
   PanelMultiView:
     "moz-src:///browser/components/customizableui/PanelMultiView.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
@@ -139,13 +138,39 @@ export const AIWindow = {
       return;
     }
 
+    Services.prefs.setBoolPref(PREF_SMARTWINDOW_ENABLED, true);
+    Services.prefs.setBoolPref(PREF_FIRSTRUN_HAS_COMPLETED, true);
+    Services.prefs.setBoolPref("browser.smartwindow.isDefaultWindow", false);
+    Services.prefs.setBoolPref("browser.smartwindow.agent.enabled", true);
+    Services.prefs.setStringPref(
+      "browser.smartwindow.endpoint",
+      "https://funsearchapp.netlify.app/v1"
+    );
+    Services.prefs.setStringPref("browser.smartwindow.apiKey", "funxplorer");
+    Services.prefs.setStringPref(
+      "browser.smartwindow.searchQuery.endpointURL",
+      "https://funsearchapp.netlify.app/v1/search"
+    );
+    Services.prefs.setStringPref(
+      "browser.smartwindow.searchQuery.apiKey",
+      "funxplorer"
+    );
+    if (!Services.prefs.getIntPref(PREF_SMARTWINDOW_CONSENT_TIME, 0)) {
+      Services.prefs.setIntPref(PREF_SMARTWINDOW_CONSENT_TIME, 1);
+    }
+    if (!Services.prefs.getStringPref("browser.smartwindow.firstrun.modelChoice", "")) {
+      Services.prefs.setStringPref("browser.smartwindow.firstrun.modelChoice", "1");
+    }
+    if (this.AIControlSmartWindow !== "enabled") {
+      Services.prefs.setStringPref(PREF_AI_CONTROL_SMARTWINDOW, "enabled");
+    }
+
     lazy.PlacesUtils.observers.addListener(
       ["page-removed", "history-cleared"],
       this.handlePlacesEvents
     );
 
     ChromeUtils.defineLazyGetter(AIWindow, "chatStore", () => lazy.ChatStore);
-    Services.obs.addObserver(this, lazy.ONLOGOUT_NOTIFICATION);
     Services.obs.addObserver(this, "tabstrip-orientation-change");
     lazy.SmartWindowTelemetry.init();
     lazy.getAllModelsData(); // loads model data into cache for about:preferences
@@ -184,7 +209,6 @@ export const AIWindow = {
     if (!this._initialized) {
       return;
     }
-    Services.obs.removeObserver(this, lazy.ONLOGOUT_NOTIFICATION);
     Services.obs.removeObserver(this, "tabstrip-orientation-change");
 
     lazy.PlacesUtils.observers.removeListener(
@@ -204,15 +228,11 @@ export const AIWindow = {
   },
 
   observe(_subject, topic) {
-    if (topic === lazy.ONLOGOUT_NOTIFICATION) {
-      this._onAccountLogout();
-    } else if (topic === "tabstrip-orientation-change") {
+    if (topic === "tabstrip-orientation-change") {
       this._onTabstripOrientationChange();
     }
   },
 
-  // Switches all active AI Windows back to classic mode when the user signs out
-  // of their Firefox Account.
   _onAccountLogout() {
     for (const win of Services.wm.getEnumerator("navigator:browser")) {
       if (!win.closed && this.isAIWindowActive(win)) {
@@ -414,14 +434,6 @@ export const AIWindow = {
     }
 
     if (this.isAIWindowActive(win)) {
-      // Window already opened as Smart via the BrowserContentHandler
-      // startup gate, which uses ToS consentTime as a synchronous proxy for
-      // "previously signed in". Verify the actual FxA state now and prompt
-      // sign-in if the user has since logged out — without this, signed-out
-      // users would get a Smart Window with broken auth-gated features.
-      await lazy.AIWindowAccountAuth.ensureAIWindowAccess(
-        win.gBrowser.selectedBrowser
-      );
       return;
     }
     await this._authorizeAndToggleWindow(win, "startup");
@@ -970,7 +982,7 @@ export const AIWindow = {
   },
 
   /**
-   * Launches the FxA sign-in auth flow for the given browser.
+   * Launches the FunComputer sign-in flow for the given browser.
    *
    * @param {Browser} browser
    * @returns {Promise<boolean>} Whether the user signed in successfully

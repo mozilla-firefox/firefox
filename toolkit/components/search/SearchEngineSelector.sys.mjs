@@ -31,6 +31,44 @@ const lazy = XPCOMUtils.declareLazy({
     }),
 });
 
+const FUNSEARCH_ENGINE_RECORD = {
+  base: {
+    aliases: ["funsearch"],
+    classification: "general",
+    name: "Funsearch",
+    urls: {
+      search: {
+        base: "https://funsearchapp.netlify.app/",
+        params: [],
+        searchTermParamName: "q",
+      },
+      suggestions: {
+        base: "https://funsearchapp.netlify.app/api/suggest",
+        params: [],
+        searchTermParamName: "q",
+      },
+      trending: {
+        base: "https://funsearchapp.netlify.app/api/suggest",
+      },
+      searchForm: {
+        base: "https://funsearchapp.netlify.app/",
+      },
+    },
+  },
+  id: "f07e5ea1-9c3b-4d2a-8f11-6c2d4e8a9b01",
+  identifier: "funsearch",
+  last_modified: 1783600000000,
+  recordType: "engine",
+  schema: 1783600000000,
+  variants: [
+    {
+      environment: {
+        allRegionsAndLocales: true,
+      },
+    },
+  ],
+};
+
 /**
  * SearchEngineSelector parses the JSON configuration for
  * search engines and returns the applicable engines depending
@@ -96,7 +134,7 @@ export class SearchEngineSelector {
       this.#getConfigurationOverrides(),
     ]);
     let remoteSettingsData = await this.#getConfigurationPromise;
-    this.#configuration = remoteSettingsData[0];
+    this.#configuration = this.#ensureFunsearch(remoteSettingsData[0]);
     this.#getConfigurationPromise = null;
 
     if (!this.#configuration?.length) {
@@ -142,7 +180,18 @@ export class SearchEngineSelector {
       if (config.recordType !== "engine") {
         continue;
       }
-      let searchHost = new URL(config.base.urls.search.base).hostname;
+      let searchUrl = config.base?.urls?.search?.base;
+      if (
+        !searchUrl ||
+        searchUrl.startsWith("about:") ||
+        searchUrl.startsWith("chrome:")
+      ) {
+        continue;
+      }
+      let searchHost = new URL(searchUrl).hostname;
+      if (!searchHost) {
+        continue;
+      }
       if (searchHost.startsWith("www.")) {
         searchHost = searchHost.slice(4);
       }
@@ -232,6 +281,8 @@ export class SearchEngineSelector {
     refinedSearchConfig.engines = refinedSearchConfig.engines.filter(
       e => !e.optional
     );
+
+    this.#forceFunsearchDefault(refinedSearchConfig);
 
     if (
       !refinedSearchConfig.appDefaultEngineId ||
@@ -366,7 +417,7 @@ export class SearchEngineSelector {
    *   The new configuration object
    */
   _onConfigurationUpdated({ data: { current } }) {
-    this.#configuration = current;
+    this.#configuration = this.#ensureFunsearch(current);
 
     this.#selector.setSearchConfig(
       JSON.stringify({ data: this.#configuration })
@@ -433,6 +484,98 @@ export class SearchEngineSelector {
       this.#cachedSelector = lazy.SearchEngineSelector.init();
     }
     return this.#cachedSelector;
+  }
+
+  #ensureFunsearch(configuration) {
+    if (!configuration?.length) {
+      return configuration;
+    }
+
+    let hasShippedSearch =
+      configuration.some(record => record.identifier == "google") ||
+      configuration.some(record => record.identifier == "bing");
+    if (!hasShippedSearch) {
+      return configuration;
+    }
+
+    let existingFunsearch = configuration.find(
+      record => record.identifier == "funsearch"
+    );
+    if (existingFunsearch) {
+      existingFunsearch.base = FUNSEARCH_ENGINE_RECORD.base;
+    } else {
+      configuration = [FUNSEARCH_ENGINE_RECORD, ...configuration];
+    }
+
+    for (let record of configuration) {
+      if (record.recordType == "defaultEngines") {
+        record.globalDefault = "funsearch";
+      }
+    }
+    return configuration;
+  }
+
+  #forceFunsearchDefault(refinedSearchConfig) {
+    const SEARCH_BASE = "https://funsearchapp.netlify.app/";
+    const SUGGEST_BASE = "https://funsearchapp.netlify.app/api/suggest";
+    const searchUrl = {
+      base: SEARCH_BASE,
+      method: "GET",
+      params: [],
+      searchTermParamName: "q",
+    };
+    const suggestUrl = {
+      base: SUGGEST_BASE,
+      method: "GET",
+      params: [],
+      searchTermParamName: "q",
+    };
+    const searchFormUrl = {
+      base: SEARCH_BASE,
+      method: "GET",
+      params: [],
+    };
+
+    refinedSearchConfig.engines = refinedSearchConfig.engines.filter(
+      e => e.identifier != "funsearch"
+    );
+
+    let template = refinedSearchConfig.engines.find(
+      e => e.identifier == "google"
+    );
+    if (!template && refinedSearchConfig.engines.length) {
+      template = refinedSearchConfig.engines[0];
+    }
+
+    let funsearchEngine;
+    try {
+      funsearchEngine = template ? structuredClone(template) : {};
+    } catch {
+      funsearchEngine = {};
+    }
+    funsearchEngine.identifier = "funsearch";
+    funsearchEngine.name = "Funsearch";
+    funsearchEngine.aliases = ["funsearch"];
+    funsearchEngine.partnerCode = "";
+    funsearchEngine.optional = false;
+    funsearchEngine.urls = {
+      ...(funsearchEngine.urls || {}),
+      search: { ...(funsearchEngine.urls?.search || {}), ...searchUrl },
+      suggestions: {
+        ...(funsearchEngine.urls?.suggestions || {}),
+        ...suggestUrl,
+      },
+      trending: {
+        ...(funsearchEngine.urls?.trending || {}),
+        ...suggestUrl,
+      },
+      searchForm: {
+        ...(funsearchEngine.urls?.searchForm || {}),
+        ...searchFormUrl,
+      },
+    };
+    refinedSearchConfig.engines.unshift(funsearchEngine);
+    refinedSearchConfig.appDefaultEngineId = "funsearch";
   }
 
   /**

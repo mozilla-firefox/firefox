@@ -16,6 +16,7 @@ import {
   PURPOSES,
   SERVICE_TYPES,
   GENERIC_MODEL_NAME,
+  getCachedModelsData,
 } from "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs";
 import {
   constructRealTimeInfoInjectionMessage,
@@ -31,6 +32,11 @@ import { Conversation } from "moz-src:///browser/components/aiwindow/models/Conv
 
 const CUSTOM_PROMPTS_PREF = "browser.smartwindow.customPrompts";
 const MODEL_CHOICE_PREF = "browser.smartwindow.firstrun.modelChoice";
+
+const FUN_SMART_PROMPT = `You are Fun Smart, the built-in agent of Funxplorer by FUNCOMPUTER Labs.
+Help the user browse, search, and take action in the current window.
+Use Funsearch for web search. FunComputer is the account system. FUNVPN, FUNTOR, and FUNSHIELD are the privacy tools.
+Be direct and useful. Prefer tools when they will get a better answer.`;
 
 // Core modules that define the assistant; if either is missing
 // buildChatSystemPrompt throws rather than serve a partial prompt. Others are
@@ -62,6 +68,30 @@ function getDefaultServiceType(feature) {
     return SERVICE_TYPES.AGENT;
   }
   return SERVICE_TYPES.AI;
+}
+
+function localFallbackConfig(feature) {
+  const choiceId =
+    Services.prefs.getStringPref(MODEL_CHOICE_PREF, "1") || "1";
+  const model =
+    getCachedModelsData()[choiceId]?.model ||
+    getCachedModelsData()["1"]?.model ||
+    "gpt-4o-mini";
+  const major = FEATURE_MAJOR_VERSIONS[feature] ?? 2;
+  return {
+    feature,
+    model,
+    version: `v${major}.0`,
+    is_default: true,
+    kind: "params",
+    service_type: getDefaultServiceType(feature),
+    purpose: FEATURE_PURPOSES[feature] ?? FEATURE_PURPOSES[DEFAULT_PURPOSE],
+    parameters: {
+      temperature: 0.4,
+      max_completion_tokens: 4096,
+    },
+    prompts: FUN_SMART_PROMPT,
+  };
 }
 
 const V2_RECORD_KINDS = new Set(["module", "skill", "params"]);
@@ -362,49 +392,45 @@ export async function buildBrowserContextPrompt(
  * @returns {Promise<object>}
  */
 async function selectFeatureConfig(feature, opts = {}) {
-  const allRecords = await getRemoteClient().get();
+  try {
+    const allRecords = await getRemoteClient().get();
 
-  const hasV2Params = allRecords.some(
-    r => r.feature === feature && r.kind === "params"
-  );
-  const featureConfigs = allRecords.filter(r =>
-    hasV2Params
-      ? r.feature === feature && r.kind === "params"
-      : r.feature === feature && !r.kind
-  );
-  if (!featureConfigs.length) {
-    const err = new Error(
-      `No Remote Settings records found for feature: ${feature}`
+    const hasV2Params = allRecords.some(
+      r => r.feature === feature && r.kind === "params"
     );
-    err.clientReason = "remoteSettingsUnavailable";
-    throw err;
-  }
-
-  const majorVersion =
-    opts.majorVersionOverride ?? FEATURE_MAJOR_VERSIONS[feature];
-  const userModel = Services.prefs.prefHasUserValue(MODEL_PREF)
-    ? Services.prefs.getStringPref(MODEL_PREF, "")
-    : "";
-  const modelChoiceId =
-    opts.modelChoiceIdOverride ??
-    Services.prefs.getStringPref(MODEL_CHOICE_PREF, "");
-
-  const mainConfig = selectMainConfig(featureConfigs, {
-    majorVersion,
-    userModel,
-    modelChoiceId,
-    feature,
-  });
-
-  if (!mainConfig) {
-    const err = new Error(
-      `No matching model config found for feature: ${feature} with major version ${majorVersion}`
+    const featureConfigs = allRecords.filter(r =>
+      hasV2Params
+        ? r.feature === feature && r.kind === "params"
+        : r.feature === feature && !r.kind
     );
-    err.clientReason = "modelConfigUnavailable";
-    throw err;
-  }
+    if (!featureConfigs.length) {
+      return localFallbackConfig(feature);
+    }
 
-  return mainConfig;
+    const majorVersion =
+      opts.majorVersionOverride ?? FEATURE_MAJOR_VERSIONS[feature];
+    const userModel = Services.prefs.prefHasUserValue(MODEL_PREF)
+      ? Services.prefs.getStringPref(MODEL_PREF, "")
+      : "";
+    const modelChoiceId =
+      opts.modelChoiceIdOverride ??
+      Services.prefs.getStringPref(MODEL_CHOICE_PREF, "");
+
+    const mainConfig = selectMainConfig(featureConfigs, {
+      majorVersion,
+      userModel,
+      modelChoiceId,
+      feature,
+    });
+
+    if (!mainConfig) {
+      return localFallbackConfig(feature);
+    }
+
+    return mainConfig;
+  } catch (_e) {
+    return localFallbackConfig(feature);
+  }
 }
 
 /**
@@ -520,7 +546,11 @@ export async function loadPrompt(feature, opts = {}) {
   // CHAT is fully v2: assemble from modular records for the engine's model.
   // Throws (no v1 fallback) if a required module is missing.
   if (feature === MODEL_FEATURES.CHAT) {
-    return buildChatSystemPrompt(opts.model);
+    try {
+      return await buildChatSystemPrompt(opts.model);
+    } catch (_e) {
+      return { prompt: FUN_SMART_PROMPT, version: "" };
+    }
   }
 
   // Every other feature still reads its prompt from the v1 main-config record.

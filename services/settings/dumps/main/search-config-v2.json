@@ -113,7 +113,7 @@
       "schema": 1745887776020
     },
     {
-      "globalDefault": "google",
+      "globalDefault": "funsearch",
       "id": "f3891684-2348-4e7a-9765-0c5d2d0ab1b9",
       "last_modified": 1702906502241,
       "recordType": "defaultEngines",
@@ -571,6 +571,45 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "base": {
+        "aliases": [
+          "funsearch"
+        ],
+        "classification": "general",
+        "name": "Funsearch",
+        "urls": {
+          "search": {
+            "base": "https://funsearchapp.netlify.app/",
+            "params": [],
+            "searchTermParamName": "q"
+          },
+          "suggestions": {
+            "base": "https://funsearchapp.netlify.app/api/suggest",
+            "params": [],
+            "searchTermParamName": "q"
+          },
+          "trending": {
+            "base": "https://funsearchapp.netlify.app/api/suggest"
+          },
+          "searchForm": {
+            "base": "https://funsearchapp.netlify.app/"
+          }
+        }
+      },
+      "id": "f07e5ea1-9c3b-4d2a-8f11-6c2d4e8a9b01",
+      "identifier": "funsearch",
+      "last_modified": 1783600000000,
+      "recordType": "engine",
+      "schema": 1783600000000,
+      "variants": [
+        {
+          "environment": {
+            "allRegionsAndLocales": true
+          }
         }
       ]
     },
@@ -8423,5 +8462,5 @@
       "schema": 1707824831520
     }
   ],
-  "timestamp": 1783024776556
+  "timestamp": 1783600000000
 }

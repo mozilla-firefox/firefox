@@ -1,0 +1,142 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--space-xlarge);
+  background: var(--background-color-canvas);
+}
+
+.page {
+  width: min(26rem, 100%);
+  padding: var(--space-xxlarge) var(--space-xlarge);
+  border: var(--card-border);
+  border-radius: var(--card-border-radius);
+  background: var(--card-background-color);
+  box-shadow: var(--card-box-shadow);
+}
+
+.hero {
+  text-align: center;
+  margin-block-end: var(--space-xlarge);
+}
+
+.logo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin-inline: auto;
+  margin-block-end: var(--space-large);
+  object-fit: contain;
+  background: #000;
+  border-radius: var(--border-radius-medium);
+}
+
+h1 {
+  margin: 0;
+  font-size: var(--font-size-xxlarge);
+}
+
+.lede,
+.signed-in-label {
+  color: var(--text-color-deemphasized);
+  margin-block: var(--space-small) 0;
+}
+
+.status {
+  margin: 0 0 var(--space-large);
+  padding: var(--space-small) var(--space-medium);
+  border-radius: var(--border-radius-small);
+  background: var(--background-color-information);
+}
+
+.status.error {
+  background: var(--background-color-critical);
+  color: var(--text-color-error);
+}
+
+.hidden {
+  display: none;
+}
+
+.account-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-large);
+  margin-block-end: var(--space-xlarge);
+  padding: var(--space-large);
+  border: var(--card-border);
+  border-radius: var(--card-border-radius-compact);
+  background: var(--background-color-canvas);
+}
+
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--button-background-color-primary);
+  color: var(--button-text-color-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xlarge);
+}
+
+.email {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+  word-break: break-word;
+}
+
+.modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xsmall);
+  margin-block-end: var(--space-large);
+  padding: var(--space-xsmall);
+  border-radius: var(--border-radius-medium);
+  background: var(--background-color-canvas);
+}
+
+.modes button {
+  margin: 0;
+  min-height: 32px;
+}
+
+.modes button[aria-selected="true"] {
+  background: var(--button-background-color-primary);
+  color: var(--button-text-color-primary);
+}
+
+form.panel {
+  display: grid;
+  gap: var(--space-small);
+}
+
+.confirm-wrap {
+  display: grid;
+  gap: var(--space-small);
+}
+
+#submit,
+#logout {
+  margin-block-start: var(--space-medium);
+  width: 100%;
+}
+
+form.is-busy #submit,
+form.is-busy input,
+form.is-busy button[role="tab"] {
+  pointer-events: none;
+  opacity: 0.7;
+}

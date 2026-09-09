@@ -99,6 +99,36 @@
   list-style-image: url("chrome://browser/skin/privateBrowsing.svg");
 }
 
+#funvpn-button,
+#appMenu-funvpn-button {
+  list-style-image: url("chrome://browser/skin/funvpn.svg");
+}
+
+#funshield-button,
+#appMenu-funshield-button {
+  list-style-image: url("chrome://browser/skin/funshield.svg");
+}
+
+#funshield-button[checked="true"],
+#appMenu-funshield-button[checked="true"] {
+  fill: #7c5cfc;
+}
+
+#funvpn-button[checked="true"],
+#appMenu-funvpn-button[checked="true"] {
+  fill: #5b9dff;
+}
+
+#tor-button,
+#appMenu-tor-button {
+  list-style-image: url("chrome://browser/skin/tor.svg");
+}
+
+#tor-button[checked="true"],
+#appMenu-tor-button[checked="true"] {
+  fill: #7dd3a0;
+}
+
 #find-button {
   list-style-image: url("chrome://global/skin/icons/search-glass.svg");
 }

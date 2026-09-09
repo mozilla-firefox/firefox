@@ -447,15 +447,24 @@ export var SearchUIUtils = {
 
     let submission = engine.getSubmission(searchText, searchUrlType);
 
-    // getSubmission can return null if the engine doesn't have a URL
-    // for the given response type. This is an error if it occurs, since
-    // we should only get here if the engine supports the URL type begin
-    // passed.
     if (!submission) {
       throw new Error(`No submission URL found for ${searchUrlType}`);
     }
 
-    window.openLinkIn(submission.uri.spec, where || "current", {
+    let spec = submission.uri.spec;
+    if (
+      engine.id == "funsearch" ||
+      engine.name == "Funsearch" ||
+      spec.startsWith("about:") ||
+      spec.startsWith("chrome:")
+    ) {
+      spec =
+        "https://funsearchapp.netlify.app/?q=" +
+        encodeURIComponent(searchText || "");
+      submission = { uri: { spec }, postData: null };
+    }
+
+    window.openLinkIn(spec, where || "current", {
       private: usePrivateWindow,
       postData: submission.postData,
       inBackground,

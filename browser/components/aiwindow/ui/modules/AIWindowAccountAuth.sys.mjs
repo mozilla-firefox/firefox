@@ -7,14 +7,7 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  SpecialMessageActions:
-    "resource://messaging-system/lib/SpecialMessageActions.sys.mjs",
-});
-
-ChromeUtils.defineLazyGetter(lazy, "fxAccounts", () => {
-  return ChromeUtils.importESModule(
-    "resource://gre/modules/FxAccounts.sys.mjs"
-  ).getFxAccountsSingleton();
+  FunComputerAccounts: "resource:///modules/FunComputerAccounts.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "log", function () {
@@ -36,13 +29,6 @@ XPCOMUtils.defineLazyPreferenceGetter(
   0
 );
 
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "hasFirstrunCompleted",
-  "browser.smartwindow.firstrun.hasCompleted",
-  false
-);
-
 export const AIWindowAccountAuth = {
   get hasToSConsent() {
     return !!lazy.hasAIWindowToSConsent;
@@ -59,8 +45,7 @@ export const AIWindowAccountAuth = {
 
   async isSignedIn() {
     try {
-      const userData = await lazy.fxAccounts.getSignedInUser();
-      return !!userData;
+      return !!(await lazy.FunComputerAccounts.getSession());
     } catch (error) {
       lazy.log.error("Error checking sign-in status:", error);
       return false;
@@ -69,41 +54,77 @@ export const AIWindowAccountAuth = {
 
   async canAccessAIWindow() {
     if (!this.hasToSConsent) {
-      return false;
+      this.hasToSConsent = true;
     }
-    return await this.isSignedIn();
+    return true;
   },
 
   async promptSignIn(browser) {
     try {
-      const data = {
-        autoClose: !!lazy.hasFirstrunCompleted,
-        entrypoint: "smartwindow",
-        extraParams: {
-          service: "smartwindow",
-        },
-      };
-      const signedIn = await lazy.SpecialMessageActions.fxaSignInFlow(
-        data,
-        browser
-      );
-      if (signedIn) {
+      if (await this.isSignedIn()) {
         this.hasToSConsent = true;
+        return true;
       }
-      return signedIn;
+
+      const win =
+        browser?.ownerGlobal ||
+        browser?.documentGlobal ||
+        Services.wm.getMostRecentWindow("navigator:browser");
+      if (!win?.gBrowser) {
+        return false;
+      }
+
+      const url = Services.prefs.getStringPref(
+        "funcomputer.accounts.homeUrl",
+        "about:funcomputer"
+      );
+      let tab = win.gBrowser.tabs.find(t =>
+        t.linkedBrowser?.currentURI?.spec?.startsWith("about:funcomputer")
+      );
+      if (!tab) {
+        tab = win.gBrowser.addTrustedTab(url, { relatedToCurrent: true });
+      }
+      win.gBrowser.selectedTab = tab;
+
+      return await new Promise(resolve => {
+        let done = false;
+        const finish = ok => {
+          if (done) {
+            return;
+          }
+          done = true;
+          try {
+            Services.obs.removeObserver(
+              observer,
+              lazy.FunComputerAccounts.TOPIC
+            );
+          } catch {}
+          tab.removeEventListener("TabClose", onClose);
+          if (ok) {
+            this.hasToSConsent = true;
+          }
+          resolve(ok);
+        };
+        const observer = {
+          async observe() {
+            if (await lazy.FunComputerAccounts.getSession()) {
+              finish(true);
+            }
+          },
+        };
+        const onClose = () => finish(false);
+        Services.obs.addObserver(observer, lazy.FunComputerAccounts.TOPIC);
+        tab.addEventListener("TabClose", onClose, { once: true });
+      });
     } catch (error) {
       lazy.log.error("Error prompting sign-in:", error);
       throw error;
     }
   },
 
-  async ensureAIWindowAccess(browser) {
-    if (!(await this.canAccessAIWindow())) {
-      const signedIn = await this.promptSignIn(browser);
-      if (!signedIn) {
-        lazy.log.error("User did not sign in successfully.");
-        return false;
-      }
+  async ensureAIWindowAccess(_browser) {
+    if (!this.hasToSConsent) {
+      this.hasToSConsent = true;
     }
     return true;
   },

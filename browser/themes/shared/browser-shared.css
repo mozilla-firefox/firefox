@@ -1861,6 +1861,10 @@ popupnotificationcontent {
   padding-inline-end: var(--toolbar-padding-inline);
 }
 
+:root[ai-window] #navigator-toolbox {
+  border-bottom: var(--border-width) solid #7c5cfc;
+}
+
 /* AI window: hide nav bar on new window or firstrun */
 :root[ai-window][aiwindow-new-window],
 :root[ai-window][aiwindow-first-run] {

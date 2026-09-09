@@ -3,11 +3,8 @@
 
 "use strict";
 
-const { OAUTH_CLIENT_ID, SCOPE_PROFILE_UID, SCOPE_SMART_WINDOW } =
-  ChromeUtils.importESModule("resource://gre/modules/FxAccountsCommon.sys.mjs");
-
-const { getFxAccountsSingleton } = ChromeUtils.importESModule(
-  "resource://gre/modules/FxAccounts.sys.mjs"
+const { FunComputerAccounts } = ChromeUtils.importESModule(
+  "resource:///modules/FunComputerAccounts.sys.mjs"
 );
 
 const { MODEL_FEATURES, SERVICE_TYPES, PURPOSES } = ChromeUtils.importESModule(
@@ -16,65 +13,39 @@ const { MODEL_FEATURES, SERVICE_TYPES, PURPOSES } = ChromeUtils.importESModule(
 
 const TEST_MODEL = "test-model";
 
-add_task(async function test_getFxAccountToken_passes_correct_scope() {
+add_task(async function test_getFxAccountToken_uses_funcomputer_session() {
   const fakeToken = "fake-oauth-token";
-  const fxAccounts = getFxAccountsSingleton();
-
-  const getOAuthTokenStub = sinon
-    .stub(fxAccounts, "getOAuthToken")
-    .resolves(fakeToken);
+  const stub = sinon.stub(FunComputerAccounts, "getSession").resolves({
+    email: "user@funcomputer.test",
+    access_token: fakeToken,
+  });
 
   try {
     const token = await openAIEngine.getFxAccountToken();
-
-    Assert.ok(
-      getOAuthTokenStub.calledOnce,
-      "getOAuthToken should be called once"
-    );
-
-    const callArgs = getOAuthTokenStub.getCall(0).args[0];
-    Assert.ok(callArgs, "getOAuthToken should be called with arguments");
-    Assert.deepEqual(
-      callArgs.scope,
-      [SCOPE_SMART_WINDOW, SCOPE_PROFILE_UID],
-      "getOAuthToken should be called with correct scope array"
-    );
-    Assert.equal(
-      callArgs.client_id,
-      OAUTH_CLIENT_ID,
-      "getOAuthToken should be called with correct client_id"
-    );
     Assert.equal(
       token,
       fakeToken,
-      "getFxAccountToken should return the token from getOAuthToken"
+      "getFxAccountToken should return the FunComputer access token"
     );
   } finally {
-    getOAuthTokenStub.restore();
+    stub.restore();
   }
 });
 
 add_task(async function test_getFxAccountToken_returns_null_on_error() {
-  const fxAccounts = getFxAccountsSingleton();
-
-  const getOAuthTokenStub = sinon
-    .stub(fxAccounts, "getOAuthToken")
-    .rejects(new Error("FxA authentication failed"));
+  const stub = sinon
+    .stub(FunComputerAccounts, "getSession")
+    .rejects(new Error("FunComputer authentication failed"));
 
   try {
     const token = await openAIEngine.getFxAccountToken();
-
-    Assert.ok(
-      getOAuthTokenStub.calledOnce,
-      "getOAuthToken should be called once"
-    );
     Assert.equal(
       token,
       null,
-      "getFxAccountToken should return null when getOAuthToken throws an error"
+      "getFxAccountToken should return null when getSession throws an error"
     );
   } finally {
-    getOAuthTokenStub.restore();
+    stub.restore();
   }
 });
 

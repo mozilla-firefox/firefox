@@ -7,64 +7,41 @@ const { AIWindowAccountAuth } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/AIWindowAccountAuth.sys.mjs"
 );
 
-const { SpecialMessageActions } = ChromeUtils.importESModule(
-  "resource://messaging-system/lib/SpecialMessageActions.sys.mjs"
+const { FunComputerAccounts } = ChromeUtils.importESModule(
+  "resource:///modules/FunComputerAccounts.sys.mjs"
 );
 
-add_task(async function test_autoClose_false_when_firstrun_not_completed() {
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      ["browser.smartwindow.firstrun.hasCompleted", false],
-      ["browser.smartwindow.tos.consentTime", 0],
-    ],
+add_task(async function test_prompt_succeeds_when_funcomputer_signed_in() {
+  const stub = sinon.stub(FunComputerAccounts, "getSession").resolves({
+    email: "user@funcomputer.test",
+    access_token: "tok",
   });
 
-  const stub = sinon
-    .stub(SpecialMessageActions, "fxaSignInFlow")
-    .resolves(true);
-
   try {
-    await AIWindowAccountAuth.promptSignIn(gBrowser.selectedBrowser);
-
-    Assert.ok(stub.calledOnce, "fxaSignInFlow should be called once");
-
-    const callArgs = stub.getCall(0).args[0];
-    Assert.equal(
-      callArgs.autoClose,
-      false,
-      "autoClose should be false when firstrun has not completed"
-    );
+    const ok = await AIWindowAccountAuth.promptSignIn(gBrowser.selectedBrowser);
+    Assert.ok(ok, "promptSignIn succeeds when FunComputer session exists");
+    Assert.ok(AIWindowAccountAuth.hasToSConsent, "ToS consent is recorded");
   } finally {
     stub.restore();
-    await SpecialPowers.popPrefEnv();
   }
 });
 
-add_task(async function test_autoClose_true_when_firstrun_completed() {
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      ["browser.smartwindow.firstrun.hasCompleted", true],
-      ["browser.smartwindow.tos.consentTime", 1735689600],
-    ],
+add_task(async function test_prompt_opens_about_funcomputer() {
+  const stub = sinon.stub(FunComputerAccounts, "getSession").resolves(null);
+
+  const pending = AIWindowAccountAuth.promptSignIn(gBrowser.selectedBrowser);
+  await BrowserTestUtils.waitForCondition(
+    () => gBrowser.currentURI.spec.startsWith("about:funcomputer"),
+    "FunComputer account page opened"
+  );
+
+  stub.restore();
+  sinon.stub(FunComputerAccounts, "getSession").resolves({
+    email: "user@funcomputer.test",
+    access_token: "tok",
   });
+  Services.obs.notifyObservers(null, FunComputerAccounts.TOPIC);
 
-  const stub = sinon
-    .stub(SpecialMessageActions, "fxaSignInFlow")
-    .resolves(true);
-
-  try {
-    await AIWindowAccountAuth.promptSignIn(gBrowser.selectedBrowser);
-
-    Assert.ok(stub.calledOnce, "fxaSignInFlow should be called once");
-
-    const callArgs = stub.getCall(0).args[0];
-    Assert.equal(
-      callArgs.autoClose,
-      true,
-      "autoClose should be true when firstrun has completed"
-    );
-  } finally {
-    stub.restore();
-    await SpecialPowers.popPrefEnv();
-  }
+  Assert.ok(await pending, "sign-in completes after FunComputer session");
+  FunComputerAccounts.getSession.restore();
 });

@@ -249,6 +249,21 @@ XPCOMUtils.defineLazyScriptGetter(
 );
 XPCOMUtils.defineLazyScriptGetter(
   this,
+  "gFunxplorerTor",
+  "chrome://browser/content/browser-tor.js"
+);
+XPCOMUtils.defineLazyScriptGetter(
+  this,
+  "gFunxplorerVpn",
+  "chrome://browser/content/browser-vpn.js"
+);
+XPCOMUtils.defineLazyScriptGetter(
+  this,
+  "gFunxplorerShield",
+  "chrome://browser/content/browser-shield.js"
+);
+XPCOMUtils.defineLazyScriptGetter(
+  this,
   "gBrowserThumbnails",
   "chrome://browser/content/browser-thumbnails.js"
 );

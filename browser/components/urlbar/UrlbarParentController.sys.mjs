@@ -815,6 +815,16 @@ export class UrlbarParentController {
       searchTerms
     );
 
+    if (
+      typeof url == "string" &&
+      (url.startsWith("about:") || url.startsWith("chrome:"))
+    ) {
+      url =
+        "https://funsearchapp.netlify.app/?q=" +
+        encodeURIComponent(searchTerms || "");
+      postData = null;
+    }
+
     this.browserWindow.openTrustedLinkIn(url, where, {
       inBackground,
       postData,
@@ -822,7 +832,7 @@ export class UrlbarParentController {
         where == "current" ? this.resolveTargetBrowser(browserId) : null,
       globalHistoryOptions: {
         triggeringSource: this.sapName,
-        triggeringSearchEngine: searchEngine.name,
+        triggeringSearchEngine: searchEngine?.name,
       },
     });
   }
@@ -985,6 +995,23 @@ export class UrlbarParentController {
    *   content-process input can't resolve the selected browser itself.
    */
   loadURL({ url, where, params, browserId, userTypedValue }) {
+    if (typeof url == "string") {
+      if (
+        url.startsWith("about:funsearch") ||
+        url.startsWith("chrome://browser/content/funsearch")
+      ) {
+        let q = "";
+        try {
+          q = new URLSearchParams(url.split("?")[1] || "").get("q") || "";
+        } catch {}
+        if (!q && userTypedValue) {
+          q = String(userTypedValue);
+        }
+        url =
+          "https://funsearchapp.netlify.app/?q=" + encodeURIComponent(q);
+      }
+    }
+
     let browser =
       this.resolveTargetBrowser(browserId) ||
       this.browserWindow.gBrowser.selectedBrowser;

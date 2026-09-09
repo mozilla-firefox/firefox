@@ -1188,6 +1188,16 @@ toolbar-button-new-private-window =
   .label = New private window
   .tooltiptext = Open a new private browsing window ({ $shortcut })
 
+toolbar-button-funvpn =
+  .label = FUNVPN
+  .tooltiptext = Turn FUNVPN on or off
+toolbar-button-funshield =
+  .label = FUNSHIELD
+  .tooltiptext = Turn FUNSHIELD on or off
+toolbar-button-tor =
+  .label = FUNTOR
+  .tooltiptext = Turn Tor over FUNVPN on or off
+
 toolbar-button-share-tab =
   .label = Share
   .tooltiptext = Share this page

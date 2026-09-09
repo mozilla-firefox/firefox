@@ -258,6 +258,28 @@ const test = new SearchConfigTest([
     ],
   },
   {
+    identifier: "funsearch",
+    aliases: ["@funsearch"],
+    default: {
+      excluded: [
+        {
+          regions: ["cn"],
+          locales: ["zh-CN"],
+        },
+      ],
+    },
+    available: {
+      excluded: [],
+    },
+    details: [
+      {
+        included: [{}],
+        domain: "funsearchapp.netlify.app",
+        telemetryId: "funsearch",
+      },
+    ],
+  },
+  {
     identifier: "ddg",
     aliases: ["@duckduckgo", "@ddg"],
     default: {
@@ -588,14 +610,7 @@ const test = new SearchConfigTest([
     identifier: "google",
     aliases: ["@google"],
     default: {
-      // Included everywhere apart from the exclusions below. These are basically
-      // just excluding what Baidu includes.
-      excluded: [
-        {
-          regions: ["cn"],
-          locales: ["zh-CN"],
-        },
-      ],
+      // Funsearch is the application default; Google remains available.
     },
     available: {
       excluded: [

@@ -70,7 +70,7 @@ fxa-menu-manage-account-subtitle = Manage Account
 
 # Promo shown in the account menu when the user is signed out and no previously
 # signed-in account is remembered, prompting them to sign in and sync.
-fxa-menu-sign-in-promo-heading = Sign in to sync
+fxa-menu-sign-in-promo-heading = Sign in to FunComputer
 fxa-menu-sign-in-promo-message = Get your data everywhere
 fxa-menu-sign-in-promo-button =
     .label = Sign in
@@ -88,7 +88,7 @@ fxa-menu-signed-out-message-unverified = Finish setup
 fxa-avatar-sign-in = Sign in
 fxa-avatar-sign-up = Sign up
 fxa-avatar-tooltip =
-    .tooltiptext = Sign in to your account
+    .tooltiptext = Sign in to your FunComputer account
 
 ## Dialog strings that we show the user when signing into Mozilla account/setting up sync
 

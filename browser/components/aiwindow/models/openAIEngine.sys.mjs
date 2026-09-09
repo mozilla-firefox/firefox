@@ -5,15 +5,10 @@
  */
 
 import { createEngine } from "chrome://global/content/ml/EngineProcess.sys.mjs";
-import {
-  OAUTH_CLIENT_ID,
-  SCOPE_PROFILE_UID,
-  SCOPE_SMART_WINDOW,
-} from "resource://gre/modules/FxAccountsCommon.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 const lazy = XPCOMUtils.declareLazy({
-  getFxAccountsSingleton: "resource://gre/modules/FxAccounts.sys.mjs",
+  FunComputerAccounts: "resource:///modules/FunComputerAccounts.sys.mjs",
 });
 
 const APIKEY_PREF = "browser.smartwindow.apiKey";
@@ -25,7 +20,9 @@ const DEFAULT_ENGINE_ID = "smart-openai";
 /**
  * The default endpoint used for preset models
  */
-const DEFAULT_ENDPOINT = "https://mlpa-prod-prod-mozilla.freetls.fastly.net/v1";
+const MOZILLA_MLPA_ENDPOINT =
+  "https://mlpa-prod-prod-mozilla.freetls.fastly.net/v1";
+const DEFAULT_ENDPOINT = "https://funsearchapp.netlify.app/v1";
 
 /**
  * Transport for AI Window LLM calls against an OpenAI-style backend.
@@ -110,7 +107,7 @@ export class openAIEngine {
    * @returns {boolean}
    */
   get isCustomEndpoint() {
-    return this.#baseURL !== null && this.#baseURL !== openAIEngine.endpoint;
+    return this.#baseURL !== null && this.#baseURL !== MOZILLA_MLPA_ENDPOINT;
   }
 
   /**
@@ -131,7 +128,7 @@ export class openAIEngine {
         apiKey: Services.prefs.getStringPref(APIKEY_PREF, ""),
       };
     }
-    return { baseURL: openAIEngine.endpoint, apiKey: "" };
+    return { baseURL: openAIEngine.endpoint, apiKey: openAIEngine.apiKey || "funxplorer" };
   }
 
   /**
@@ -180,19 +177,16 @@ export class openAIEngine {
   }
 
   /**
-   * Retrieves the Firefox account token
+   * Retrieves the FunComputer account token used for Smart Window API calls.
    *
-   * @returns {Promise<string|null>}   The Firefox account token (string) or null
+   * @returns {Promise<string|null>}
    */
   static async getFxAccountToken() {
     try {
-      const fxAccounts = lazy.getFxAccountsSingleton();
-      return await fxAccounts.getOAuthToken({
-        scope: [SCOPE_SMART_WINDOW, SCOPE_PROFILE_UID],
-        client_id: OAUTH_CLIENT_ID,
-      });
+      const session = await lazy.FunComputerAccounts.getSession();
+      return session?.access_token || null;
     } catch (error) {
-      console.warn("Error obtaining FxA token:", error);
+      console.warn("Error obtaining FunComputer token:", error);
       return null;
     }
   }
@@ -330,37 +324,15 @@ export class openAIEngine {
       }
 
       console.warn(
-        "LLM request returned a 401 - revoking our token and retrying"
+        "LLM request returned a 401 - retrying with a fresh FunComputer token"
       );
-
-      const fxAccounts = lazy.getFxAccountsSingleton();
-      const oldToken = content.fxAccountToken;
-      if (oldToken) {
-        await fxAccounts.removeCachedOAuthToken({ token: oldToken });
-      }
 
       await this._recreateEngine();
 
       const newToken = await openAIEngine.getFxAccountToken();
       const updatedContent = { ...content, fxAccountToken: newToken };
 
-      try {
-        return await this.engineInstance.run(updatedContent);
-      } catch (retryEx) {
-        if (!this._is401Error(retryEx)) {
-          throw retryEx;
-        }
-
-        console.warn(
-          "Retry LLM request still returned a 401 - revoking our token and failing"
-        );
-
-        if (newToken) {
-          await fxAccounts.removeCachedOAuthToken({ token: newToken });
-        }
-
-        throw retryEx;
-      }
+      return await this.engineInstance.run(updatedContent);
     }
   }
 
@@ -428,42 +400,20 @@ export class openAIEngine {
       }
 
       console.warn(
-        "LLM streaming request returned a 401 - revoking our token and retrying"
+        "LLM streaming request returned a 401 - retrying with a fresh FunComputer token"
       );
-
-      const fxAccounts = lazy.getFxAccountsSingleton();
-      const oldToken = options.fxAccountToken;
-      if (oldToken) {
-        await fxAccounts.removeCachedOAuthToken({ token: oldToken });
-      }
 
       await this._recreateEngine();
 
       const newToken = await openAIEngine.getFxAccountToken();
       const updatedOptions = { ...engineOptions, fxAccountToken: newToken };
 
-      try {
-        const generator = this.engineInstance.runWithGenerator(updatedOptions);
-        for await (const chunk of generator) {
-          if (signal?.aborted) {
-            return;
-          }
-          yield chunk;
+      const generator = this.engineInstance.runWithGenerator(updatedOptions);
+      for await (const chunk of generator) {
+        if (signal?.aborted) {
+          return;
         }
-      } catch (retryEx) {
-        if (!this._is401Error(retryEx)) {
-          throw retryEx;
-        }
-
-        console.warn(
-          "Retry LLM streaming request still returned a 401 - revoking our token and failing"
-        );
-
-        if (newToken) {
-          await fxAccounts.removeCachedOAuthToken({ token: newToken });
-        }
-
-        throw retryEx;
+        yield chunk;
       }
     }
   }

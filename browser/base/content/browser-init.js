@@ -964,6 +964,12 @@ var gBrowserInit = {
     });
 
     scheduleIdleTask(() => {
+      gFunxplorerTor.init();
+      gFunxplorerVpn.init();
+      gFunxplorerShield.init();
+    });
+
+    scheduleIdleTask(() => {
       // Read prefers-reduced-motion setting
       let reduceMotionQuery = window.matchMedia(
         "(prefers-reduced-motion: reduce)"

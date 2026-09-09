@@ -1325,7 +1325,7 @@ account-disabled-group =
 
 account-placeholder2 =
     .label = You’re not signed in
-    .description = Sign in and keep your data private, encrypted, and instantly accessible everywhere you use { -brand-short-name }.
+    .description = Sign in to your FunComputer account in { -brand-short-name }.
 
 ## Firefox account - Signed out. Note that "Sync" and "Firefox account" are now
 ## more discrete ("signed in" no longer means "and sync is connected").
@@ -1334,7 +1334,7 @@ sync-signedout-caption = Take Your Web With You
 sync-signedout-description2 = Synchronize your bookmarks, history, tabs, passwords, add-ons, and settings across all your devices.
 
 sync-signedout-account-signin3 =
-    .label = Sign in to sync…
+    .label = Sign in to FunComputer…
     .accesskey = i
 
 sync-signedout-account-signin-4 =

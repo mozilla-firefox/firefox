@@ -578,6 +578,16 @@ export class ConfigSearchEngine extends SearchEngine {
     // XPCOM interfaces pass optional number parameters as 0.
     preferredWidth ||= 16;
 
+    if (this.id == "funsearch") {
+      if (preferredWidth >= 64) {
+        return "chrome://branding/content/icon64.png";
+      }
+      if (preferredWidth >= 32) {
+        return "chrome://branding/content/icon32.png";
+      }
+      return "chrome://branding/content/icon16.png";
+    }
+
     let availableRecords =
       await ConfigSearchEngine.iconHandler.getAvailableRecords(this.id);
     if (!availableRecords.length) {

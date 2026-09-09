@@ -1,0 +1,198 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:root {
+  color-scheme: dark;
+  --fun-bg: #071422;
+  --fun-bg-elevated: #0c1d30;
+  --fun-text: #f4f7fb;
+  --fun-muted: #9bb0c7;
+  --fun-accent: #02bdfb;
+  --fun-accent-strong: #1ad0ff;
+  --fun-border: #1a3a58;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(1200px 500px at 50% -10%, #0a3a5c 0%, var(--fun-bg) 55%);
+  color: var(--fun-text);
+  font:
+    16px/1.5 "Segoe UI",
+    Arial,
+    sans-serif;
+}
+
+.visually-hidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 24px;
+  border-block-end: 1px solid var(--fun-border);
+  background: rgb(7 20 34 / 0.86);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.brand-logo,
+.home-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  background: #000;
+  border-radius: 8px;
+}
+
+.home-logo {
+  width: 128px;
+  height: 128px;
+}
+
+.search-form {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  min-width: 240px;
+  max-width: 720px;
+}
+
+.search-form input {
+  flex: 1;
+  border: 1px solid var(--fun-border);
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: var(--fun-bg-elevated);
+  color: var(--fun-text);
+  font: inherit;
+}
+
+.search-form input:focus {
+  outline: 2px solid var(--fun-accent);
+  border-color: var(--fun-accent);
+}
+
+.search-form button,
+.pager a {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: var(--fun-accent);
+  color: #042033;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.search-form button:hover,
+.pager a:hover {
+  background: var(--fun-accent-strong);
+}
+
+main {
+  flex: 1;
+  width: min(760px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 32px 0 48px;
+}
+
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-block-start: 8vh;
+}
+
+.home h1 {
+  margin: 16px 0 8px;
+  font-size: 2.4rem;
+}
+
+.home p {
+  margin: 0;
+  color: var(--fun-muted);
+}
+
+.hidden {
+  display: none;
+}
+
+.status {
+  color: var(--fun-muted);
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.result h2 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+
+.result a {
+  color: var(--fun-accent-strong);
+  text-decoration: none;
+}
+
+.result a:hover {
+  text-decoration: underline;
+}
+
+.result .url {
+  color: #7dcea0;
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+.result p {
+  margin: 6px 0 0;
+  color: var(--fun-muted);
+}
+
+.pager {
+  display: flex;
+  gap: 12px;
+  margin-block-start: 28px;
+}
+
+footer {
+  padding: 16px;
+  text-align: center;
+  color: var(--fun-muted);
+  font-size: 0.85rem;
+}
