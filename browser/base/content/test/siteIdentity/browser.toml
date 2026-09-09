@@ -128,9 +128,6 @@ support-files = [
 
 ["browser_mixed_content_cert_override.js"]
 tags = "mcb"
-skip-if = [
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1997430
-]
 
 support-files = ["test-mixedcontent-securityerrors.html"]
 
