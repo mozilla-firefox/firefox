@@ -49,8 +49,10 @@ add_task(async function test_backgroundtask_debugger() {
   await pushPref("devtools.browsertoolbox.enable-test-server", true);
   await pushPref("devtools.debugger.prompt-connection", false);
 
-  // Before we start the background task, the preference file must be flushed to disk.
-  Services.prefs.savePrefFile(null);
+  // The task reads this profile's prefs.js, so it has to be on disk before the
+  // task starts. savePrefFile(null) only queues the write; given an explicit
+  // file it writes before returning (bug 2062778).
+  Services.prefs.savePrefFile(Services.dirsvc.get("PrefF", Ci.nsIFile));
 
   // This invokes the test-only background task `BackgroundTask_jsdebugger.jsm`.
   const p = do_backgroundtask("jsdebugger", {

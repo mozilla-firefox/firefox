@@ -25,8 +25,6 @@ prefs = [
 
 ["browser_dbg-backgroundtask-debugging.js"]
 skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && asan", # Bug 1767707
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && debug", # Bug 1767707
   "os == 'mac' && os_version == '14.70' && arch == 'x86_64'", # Bug 1937229
   "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1937229, Bug 2028047
 ]
