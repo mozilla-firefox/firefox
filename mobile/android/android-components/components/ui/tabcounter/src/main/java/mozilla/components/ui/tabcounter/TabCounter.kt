@@ -10,6 +10,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalGridApi
+import androidx.compose.foundation.layout.Grid
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -38,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.base.theme.acornPrivateColorScheme
 import mozilla.components.compose.base.theme.privateColorPalette
@@ -162,11 +166,12 @@ private fun TabCounterText(
             modifier =
                 Modifier.clearAndSetSemantics {
                     testTag = TabCounterTestTags.TAB_COUNTER_TEXT + normalTabCountText
-                },
+                }.padding(top = 1.dp),
             color = contentColor,
             fontSize = with(LocalDensity.current) { counterTabsTextSize.toDp().toSp() },
             fontWeight = FontWeight.W700,
             textAlign = TextAlign.Center,
+            lineHeight = 16.sp,
         )
     }
 }
@@ -184,37 +189,80 @@ object TabCounterTestTags {
     const val PRIVACY_BADGE = "$TAG.privacy_badge"
 }
 
+@OptIn(ExperimentalGridApi::class)
 @PreviewLightDark
 @Preview(locale = "ar")
 @Composable
-private fun TabCounterPreview() {
+private fun TabCounterSingleDigitPreview() {
     AcornTheme {
         Surface {
-            TabCounter(tabCount = 55)
+            Box {
+                Grid(config = {
+                    column(12.dp)
+                    column(12.dp)
+                    row(12.dp)
+                    row(12.dp)
+                    gap(0.5.dp)
+                }) {
+                    Surface(color = Color.Red, modifier = Modifier.fillMaxSize()) { }
+                    Surface(color = Color.Red, modifier = Modifier.fillMaxSize()) { }
+                    Surface(color = Color.Red, modifier = Modifier.fillMaxSize()) { }
+                    Surface(color = Color.Red, modifier = Modifier.fillMaxSize()) { }
+                }
+
+                TabCounter(tabCount = 0)
+            }
         }
     }
 }
 
-@Preview
+@PreviewLightDark
+@Preview(locale = "ar")
 @Composable
-private fun TabCounterPrivatePreview() {
-    AcornTheme(
-        colors = privateColorPalette,
-        colorScheme = acornPrivateColorScheme(),
-    ) {
+private fun TabCounterDoubleDigitPreview() {
+    AcornTheme {
         Surface {
-            TabCounter(tabCount = 55)
+            TabCounter(tabCount = 1)
         }
     }
 }
 
+//@Preview
+//@Composable
+//private fun TabCounterPrivatePreview() {
+//    AcornTheme(
+//        colors = privateColorPalette,
+//        colorScheme = acornPrivateColorScheme(),
+//    ) {
+//        Surface {
+//            TabCounter(tabCount = 55)
+//        }
+//    }
+//}
+
+@OptIn(ExperimentalGridApi::class)
 @PreviewLightDark
 @Preview(locale = "ar")
 @Composable
 private fun InfiniteTabCounterPreview() {
     AcornTheme {
         Surface {
-            TabCounter(tabCount = 100)
+            Box {
+                Grid(config = {
+                    column(12.dp)
+                    column(12.dp)
+                    row(12.dp)
+                    row(12.dp)
+                    gap(0.5.dp)
+                }) {
+                    Surface(color = Color.Red, modifier = Modifier.fillMaxSize()) { }
+                    Surface(color = Color.Red, modifier = Modifier.fillMaxSize()) { }
+                    Surface(color = Color.Red, modifier = Modifier.fillMaxSize()) { }
+                    Surface(color = Color.Red, modifier = Modifier.fillMaxSize()) { }
+                }
+
+                TabCounter(tabCount = 100)
+            }
         }
     }
 }
