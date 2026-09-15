@@ -44,7 +44,7 @@ It corresponds to the `RELEASE_VERSION` number _before_ the release of the new v
 
 We will also want to bump the Android Component's [changelog.md](https://hg.mozilla.org/mozilla-central/file/default/mobile/android/android-components/docs/changelog.md) with the new Nightly development section.
 
-0. Wait for greenlight coming from Release Engineering (see #3 above). You can subscribe to the [release-drivers](https://groups.google.com/a/mozilla.org/g/release-drivers) mailing list and look for an email with subject: "Merge complete: firefox-main to firefox-beta (new release cycle)". ([direct link here](https://groups.google.com/a/mozilla.org/g/release-drivers/search?q=firefox-main%20to%20firefox-beta))
+0. Wait for Release teams to do the merge (see #3 above). To find out if the merge has been done yet, you can check the [version number on the main branch](https://github.com/mozilla-firefox/firefox/blob/main/browser/config/version_display.txt) to see if it has updated to the next version.
 1. File a Bugzilla issue named "Start the Nightly `[nightly_version]` development cycle". ([Example here](https://bugzilla.mozilla.org/show_bug.cgi?id=2004705))
 2. Run `./mobile/android/beta-cut.py BUG_ID`, with `BUG_ID` being the id of the bug you created at step 1. This will:
    - Update the [changelog.md](https://hg.mozilla.org/mozilla-central/file/default/mobile/android/android-components/docs/changelog.md)
