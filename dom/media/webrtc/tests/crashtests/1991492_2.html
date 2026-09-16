@@ -3,10 +3,10 @@
 <script>
     document.addEventListener("DOMContentLoaded", async () => {
       SpecialPowers.wrap(document).notifyUserGestureActivation();
-      const stream = await navigator.mediaDevices.getDisplayMedia({ "video": true });
-      const [track] = stream.getTracks();
       try {
-      await track.applyConstraints({
+        const stream = await navigator.mediaDevices.getDisplayMedia({ "video": true });
+        const [track] = stream.getTracks();
+        await track.applyConstraints({
           frameRate: {
             min: 100,
             max: -1,

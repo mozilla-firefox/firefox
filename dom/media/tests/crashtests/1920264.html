@@ -2,15 +2,18 @@
 <head>
 <script>
 async function start () {
-  for (let i = 0; i < 30; ++i) {
-    SpecialPowers.wrap(document).notifyUserGestureActivation();
-    const s = await navigator.mediaDevices.getDisplayMedia({video: {frameRate: 60}});
-    const [t] = s.getTracks();
-    await t.applyConstraints({frameRate: 59}); // reconfigures backend
-    await new Promise(r => setTimeout(r, i));
-    t.stop();
+  try {
+    for (let i = 0; i < 30; ++i) {
+      SpecialPowers.wrap(document).notifyUserGestureActivation();
+      const s = await navigator.mediaDevices.getDisplayMedia({video: {frameRate: 60}});
+      const [t] = s.getTracks();
+      await t.applyConstraints({frameRate: 59}); // reconfigures backend
+      await new Promise(r => setTimeout(r, i));
+      t.stop();
+    }
+  } finally {
+    document.documentElement.removeAttribute("class")
   }
-  document.documentElement.removeAttribute("class")
 }
 
 document.addEventListener('DOMContentLoaded', start)

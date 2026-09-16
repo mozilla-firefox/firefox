@@ -3,12 +3,15 @@
 <script>
     document.addEventListener("DOMContentLoaded", async () => {
       SpecialPowers.wrap(document).notifyUserGestureActivation();
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        "video": {
-          "height": -2147483584,
-        }
-      });
-      document.documentElement.removeAttribute("class");
+      try {
+        await navigator.mediaDevices.getDisplayMedia({
+          "video": {
+            "height": -2147483584,
+          }
+        });
+      } finally {
+        document.documentElement.removeAttribute("class");
+      }
     })
   </script>
 </head>
