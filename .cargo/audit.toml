@@ -8,4 +8,6 @@ ignore = [
   "RUSTSEC-2024-0436",
   # proc-macro-error2 <https://bugzilla.mozilla.org/show_bug.cgi?id=2053362>
   "RUSTSEC-2026-0173",
+  # ringbuf <https://bugzilla.mozilla.org/show_bug.cgi?id=2074018>
+  "RUSTSEC-2026-0293",
 ]
