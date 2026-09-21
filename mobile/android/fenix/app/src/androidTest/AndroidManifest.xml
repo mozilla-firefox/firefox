@@ -9,6 +9,16 @@
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             tools:node="remove" />
+
+        <!-- On non-debug variants LeakCanary is absent from the app APK, so this provider is only
+             declared here. Android then installs it in the standalone test-APK process it spawns to
+             host ActivityScenario's EmptyActivity, where kotlin-stdlib has been deduplicated away,
+             crashing that process and stalling every teardown for the 45s activity lifecycle
+             timeout. -->
+        <provider
+            android:name="leakcanary.internal.LeakCanaryFileProvider"
+            android:authorities="com.squareup.leakcanary.fileprovider.${applicationId}"
+            tools:node="remove" />
     </application>
 
 </manifest>
