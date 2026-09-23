@@ -141,7 +141,9 @@ complexity:
   LongParameterList:
     active: true
     functionThreshold: 8 # (Default: 6) Increased in https://bugzilla.mozilla.org/show_bug.cgi?id=1872996
-    constructorThreshold: 7
+    # threshold of 10 means up to 9 parameters are allowed
+    # this behavior changed in detekt > 1.23.8 see - https://github.com/detekt/detekt/issues/3679
+    constructorThreshold: 10 # Increased in https://bugzilla.mozilla.org/show_bug.cgi?id=2074093
     ignoreDefaultParameters: true # Enabled in https://github.com/mozilla-mobile/android-components/issues/10835
     ignoreDataClasses: true
     ignoreAnnotatedParameter: []

@@ -290,7 +290,6 @@ sealed class PromptRequest(
      * @property onClear callback that is called when the user requests the picker to be clear up.
      * @property onDismiss A callback executed when dismissed.
      */
-    @Suppress("LongParameterList")
     class TimeSelection(
         val title: String,
         val initialDate: java.util.Date,

@@ -49,7 +49,6 @@ internal const val NOTIFICATION_ID = 1
  * @param activityClass The Activity that the notification will launch if user taps on it
  * @param coroutineContext An instance of [CoroutineContext] used for executing async site permission checks.
  */
-@Suppress("LongParameterList")
 class WebNotificationFeature(
     private val context: Context,
     private val engine: Engine,

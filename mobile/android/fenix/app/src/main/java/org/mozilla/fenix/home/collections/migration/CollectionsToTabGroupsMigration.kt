@@ -45,7 +45,6 @@ private const val BREADCRUMB_CATEGORY = "CollectionsToTabGroupsMigration"
  * @param ioDispatcher The [CoroutineDispatcher] used for reading the collections' session snapshots from disk and
  *   persisting the migration progress.
  */
-@Suppress("LongParameterList")
 class CollectionsToTabGroupsMigration(
     private val tabCollectionStorage: TabCollectionStorage,
     private val restoreUseCase: TabsUseCases.RestoreUseCase,

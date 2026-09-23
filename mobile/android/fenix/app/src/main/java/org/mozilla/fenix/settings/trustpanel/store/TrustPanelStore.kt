@@ -25,7 +25,6 @@ class TrustPanelStore(
         reducer = ::reducer,
         middleware = middleware,
     ) {
-    @Suppress("LongParameterList")
     constructor(
         isTrackingProtectionEnabled: Boolean,
         websiteInfoState: WebsiteInfoState,

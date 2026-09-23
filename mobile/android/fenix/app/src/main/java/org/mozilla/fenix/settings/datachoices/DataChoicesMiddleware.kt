@@ -23,7 +23,6 @@ import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.utils.Settings
 
-@Suppress("LongParameterList")
 internal class DataChoicesMiddleware(
     private val settings: Settings,
     private val nimbusSdk: NimbusApi,

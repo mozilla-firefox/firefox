@@ -63,7 +63,6 @@ import org.mozilla.fenix.webcompat.WebCompatReporterMoreInfoSender
  * @param webCompatReporterMoreInfoSender [WebCompatReporterMoreInfoSender] used to send WebCompat info to
  *   webcompat.com.
  */
-@Suppress("LongParameterList")
 class MenuNavigationMiddleware(
     private val browserStore: BrowserStore,
     private val navController: NavController,

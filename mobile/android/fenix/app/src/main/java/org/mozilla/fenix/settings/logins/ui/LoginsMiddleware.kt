@@ -32,7 +32,6 @@ import org.mozilla.fenix.settings.SupportUtils
  * @param ioDispatcher Coroutine dispatcher for IO operations.
  * @param clipboardManager For copying logins URLs.
  */
-@Suppress("LongParameterList")
 internal class LoginsMiddleware(
     private val loginsStorage: LoginsStorage,
     private val getNavController: () -> NavController,

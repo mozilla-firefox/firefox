@@ -49,7 +49,7 @@ interface RecentlyClosedController {
     fun handleBackPressed(): Boolean
 }
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions")
 class DefaultRecentlyClosedController(
     private val appStore: AppStore,
     private val navController: NavController,

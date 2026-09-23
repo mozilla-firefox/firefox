@@ -33,7 +33,6 @@ import org.mozilla.fenix.tabstray.redux.store.TabsTrayStore
  * @param accountManager An instance of [FxaAccountManager] used for synced tabs authentication.
  * @param lifecycleOwner View lifecycle owner used to determine when to cancel UI jobs.
  */
-@Suppress("LongParameterList")
 class SyncedTabsIntegration(
     private val store: TabsTrayStore,
     private val context: Context,

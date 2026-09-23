@@ -89,7 +89,7 @@ internal data class MutableTabGroup(
  * @param scope The [CoroutineScope] for running the tab data transformation off of the main thread.
  * @param mainScope The [CoroutineScope] used for returning to the main thread.
  */
-@Suppress("LargeClass", "LongParameterList")
+@Suppress("LargeClass")
 class TabStorageMiddleware(
     private val inactiveTabsEnabled: Boolean,
     private val tabGroupsEnabled: Boolean,

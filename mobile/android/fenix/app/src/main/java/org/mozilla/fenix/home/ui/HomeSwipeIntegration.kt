@@ -37,7 +37,6 @@ import org.mozilla.fenix.components.toolbar.gestures.ToolbarHorizontalGesturesHa
  *   out yet.
  * @param tabPreview The [TabPreview] used to display the adjacent tab while swiping.
  */
-@Suppress("LongParameterList")
 class HomeSwipeIntegration(
     private val activity: Activity,
     private val store: BrowserStore,

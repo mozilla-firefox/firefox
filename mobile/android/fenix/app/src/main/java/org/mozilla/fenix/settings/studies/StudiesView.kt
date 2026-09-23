@@ -33,7 +33,6 @@ import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.settings.SupportUtils.SumoTopic.OPT_OUT_STUDIES
 import org.mozilla.fenix.utils.Settings
 
-@Suppress("LongParameterList")
 class StudiesView(
     private val scope: CoroutineScope,
     private val context: Context,

@@ -62,7 +62,6 @@ import mozilla.components.support.ktx.kotlin.stripCommonSubdomains
  * @property ioDispatcher The dispatcher for the work that must not run on the thread the store dispatched on.
  * @property chunker Splits article text into the chunks.
  */
-@Suppress("LongParameterList")
 class ListenMiddleware(
     private val browserStore: BrowserStore,
     private val contentProvider: ContentProvider,

@@ -45,7 +45,6 @@ import mozilla.components.feature.summarize.summarizationReducer
  *   embedded settings screen.
  * @param errorReporter reports caught exceptions to the crash reporting service.
  */
-@Suppress("LongParameterList")
 class SummarizationStoreViewModel(
     currentTab: SessionState?,
     initializedFromShake: Boolean,

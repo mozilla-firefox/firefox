@@ -153,7 +153,6 @@ internal sealed class EditPageEndActionsInteractions : BrowserToolbarEvent {
  * @param scope [CoroutineScope] used for running long running operations in background.
  * @param autocompleteDispatcher [CoroutineContext] used for querying autocomplete suggestions.
  */
-@Suppress("LongParameterList")
 class BrowserToolbarSearchMiddleware(
     private val uiContext: Context,
     private val appStore: AppStore,

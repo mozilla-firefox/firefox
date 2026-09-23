@@ -42,7 +42,7 @@ import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.maxActiveTime
 
 /** Handles intercepting touch events on the toolbar for swipe gestures and executes the necessary animations. */
-@Suppress("LargeClass", "TooManyFunctions", "LongParameterList")
+@Suppress("LargeClass", "TooManyFunctions")
 class ToolbarHorizontalGesturesHandler(
     private val activity: Activity,
     private val contentLayout: View,
