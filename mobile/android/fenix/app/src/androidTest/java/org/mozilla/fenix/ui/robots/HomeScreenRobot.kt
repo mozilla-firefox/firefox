@@ -48,6 +48,7 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiObjectNotFoundException
 import androidx.test.uiautomator.UiScrollable
 import androidx.test.uiautomator.UiSelector
+import kotlin.test.assertNotNull
 import mozilla.components.browser.menu.R as menuR
 import mozilla.components.compose.base.R as composeBaseR
 import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags.ADDRESSBAR_URL_BOX
@@ -58,6 +59,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.helpers.Constants.RETRY_COUNT
 import org.mozilla.fenix.helpers.Constants.TAG
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
+import org.mozilla.fenix.helpers.DataGenerationHelper.sponsoredShortcuts
 import org.mozilla.fenix.helpers.MatcherHelper.assertItemIsChecked
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectExists
 import org.mozilla.fenix.helpers.MatcherHelper.itemContainingText
@@ -256,18 +258,22 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyAddShortcutButtonExists: Verified that the \"Add shortcut\" button exists")
     }
 
-    fun verifySponsoredShortcutDetails(sponsoredShortcutTitle: String, position: Int) {
-        assertUIObjectExists(
-            itemWithResIdAndIndex(resourceId = "top_sites_list.top_site_item", index = position - 1)
-                .getChild(UiSelector().resourceId(TOP_SITE_CARD_FAVICON))
+    /**
+     * Asserts the [ordinal]th sponsored shortcut has a favicon and the expected title.
+     *
+     * @param sponsoredShortcutTitle The shortcut title which is expected.
+     * @param ordinal One-based index among the sponsored shortcuts only, matching
+     *   [org.mozilla.fenix.helpers.DataGenerationHelper.getSponsoredShortcutTitle].
+     */
+    fun verifySponsoredShortcutDetails(sponsoredShortcutTitle: String, ordinal: Int) {
+        val sponsoredShortcut = sponsoredShortcuts()[ordinal - 1]
+        assertNotNull(
+            sponsoredShortcut.findObject(By.res(TOP_SITE_CARD_FAVICON)),
+            "Sponsored shortcut #$ordinal has no favicon",
         )
-        assertUIObjectExists(
-            itemWithResIdAndIndex(resourceId = "top_sites_list.top_site_item", index = position - 1)
-                .getChild(UiSelector().textContains(sponsoredShortcutTitle))
-        )
-        assertUIObjectExists(
-            itemWithResIdAndIndex(resourceId = "top_sites_list.top_site_item", index = position - 1)
-                .getChild(UiSelector().textContains(getStringResource(R.string.top_sites_sponsored_label)))
+        assertNotNull(
+            sponsoredShortcut.findObject(By.textContains(sponsoredShortcutTitle)),
+            "Sponsored shortcut #$ordinal is not titled $sponsoredShortcutTitle",
         )
     }
 

@@ -41,18 +41,17 @@ object Constants {
             "DuckDuckGo" to "t=fpas",
         )
 
-    val firstSponsoredShortcutTitle by lazy { getSponsoredShortcutTitle(2) }
-    val secondSponsoredShortcutTitle by lazy { getSponsoredShortcutTitle(3) }
+    private val firstSponsoredShortcutTitle by lazy { getSponsoredShortcutTitle(1) }
+    private val secondSponsoredShortcutTitle by lazy { getSponsoredShortcutTitle(2) }
 
-    // Expected for en-us defaults
-    val defaultTopSitesList by lazy {
-        mapOf(
-            "Google" to "Google",
-            "First sponsored shortcut" to firstSponsoredShortcutTitle,
-            "Second sponsored shortcut" to secondSponsoredShortcutTitle,
-            "Wikipedia" to "Wikipedia",
-        )
-    }
+    /**
+     * The shortcut titles, which are only present when [AppAndSystemHelper.isDefaultPinnedShortcutsOnHomepage] holds.
+     * Expected for en-us defaults.
+     */
+    val defaultPinnedShortcutTitles by lazy { listOf("Google", "Wikipedia") }
+
+    /** The sponsored shortcuts, which are present on every build type. */
+    val sponsoredShortcutTitles by lazy { listOf(firstSponsoredShortcutTitle, secondSponsoredShortcutTitle) }
 
     // Notes:
     // "Ghostery" - not included in the list because of the name discrepancy between the recommended list and the
