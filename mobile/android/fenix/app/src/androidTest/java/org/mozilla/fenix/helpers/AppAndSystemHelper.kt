@@ -46,6 +46,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import mozilla.appservices.places.BookmarkRoot
+import mozilla.components.browser.state.search.RegionState
 import mozilla.components.browser.storage.sync.PlacesBookmarksStorage
 import mozilla.components.browser.storage.sync.PlacesHistoryStorage
 import mozilla.components.feature.top.sites.TopSite
@@ -53,6 +54,7 @@ import mozilla.components.support.locale.LocaleManager.resetToSystemDefault
 import mozilla.components.support.locale.LocaleManager.setNewLocale
 import org.junit.Assert
 import org.junit.Assert.assertEquals
+import org.mozilla.fenix.Config
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.components.PermissionStorage
 import org.mozilla.fenix.customtabs.ExternalAppBrowserActivity
@@ -955,5 +957,20 @@ object AppAndSystemHelper {
         composeTestRule.waitForIdle()
         Log.i(TAG, "setScreenOrientation: Waited for the compose test rule to be idle.")
         Log.i(TAG, "setScreenOrientation: Orientation set to $orientation.")
+    }
+
+    /**
+     * Whether the default pinned shortcuts are expected on the homepage.
+     *
+     * Mirrors the condition in `DefaultPinnedSitesBinding`.
+     */
+    fun isDefaultPinnedShortcutsOnHomepage(): Boolean {
+        val region = appContext.components.core.store.state.search.region
+        val expected = region != null && (!Config.channel.isReleased || region != RegionState.Default)
+        Log.i(
+            TAG,
+            "isDefaultPinnedShortcutsOnHomepage: region=$region channel=${Config.channel} expected=$expected",
+        )
+        return expected
     }
 }

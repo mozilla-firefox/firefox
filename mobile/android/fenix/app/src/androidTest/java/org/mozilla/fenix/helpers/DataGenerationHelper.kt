@@ -20,17 +20,20 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.UiSelector
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiObject2
 import java.time.LocalDate
 import java.time.LocalTime
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.state.availableSearchEngines
 import org.junit.Assert
+import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.helpers.Constants.TAG
 import org.mozilla.fenix.helpers.Constants.recommendedAddons
 import org.mozilla.fenix.helpers.TestHelper.mDevice
 import org.mozilla.fenix.helpers.TestHelper.waitForAppWindowToBeUpdated
+import org.mozilla.fenix.home.topsites.TopSitesTestTag
 import org.mozilla.fenix.utils.IntentUtils
 
 object DataGenerationHelper {
@@ -126,22 +129,34 @@ object DataGenerationHelper {
         return currentYear + currentMonth + currentDay + currentHour
     }
 
-    /** Returns sponsored shortcut title based on the index. */
-    fun getSponsoredShortcutTitle(position: Int): String {
-        Log.i(
-            TAG,
-            "getSponsoredShortcutTitle: Trying to get the title of the sponsored shortcut at position: ${position - 1}",
-        )
+    /**
+     * Returns the title of the [ordinal]th sponsored shortcut, counting only sponsored shortcuts.
+     *
+     * The shortcuts are located by their sponsored label rather than by their absolute position in the top sites list,
+     * because the number of default pinned shortcuts preceding them varies by release channel and region. See
+     * [sponsoredShortcuts].
+     *
+     * @param ordinal One-based index among the sponsored shortcuts only.
+     */
+    fun getSponsoredShortcutTitle(ordinal: Int): String {
+        Log.i(TAG, "getSponsoredShortcutTitle: Trying to get the title of sponsored shortcut #$ordinal")
         val sponsoredShortcut =
-            mDevice
-                .findObject(UiSelector().resourceId("top_sites_list.top_site_item").index(position - 1))
-                .getChild(UiSelector().resourceId("top_sites_list.top_site_item.top_site_title"))
-                .text
-        Log.i(
-            TAG,
-            "getSponsoredShortcutTitle: The sponsored shortcut at position: ${position - 1} has title: $sponsoredShortcut",
-        )
+            sponsoredShortcuts()[ordinal - 1].findObject(By.res(TopSitesTestTag.TOP_SITE_TITLE)).text
+        Log.i(TAG, "getSponsoredShortcutTitle: Sponsored shortcut #$ordinal has title: $sponsoredShortcut")
         return sponsoredShortcut
+    }
+
+    /**
+     * Returns the top sites that are labelled as sponsored, in the order they appear on the homepage.
+     *
+     * Every shortcut lays out a sponsored label, but it only carries text when the shortcut is sponsored, so matching
+     * on that text distinguishes them.
+     */
+    fun sponsoredShortcuts(): List<UiObject2> {
+        val sponsoredLabel = getStringResource(R.string.top_sites_sponsored_label)
+        return mDevice.findObjects(By.res(TopSitesTestTag.TOP_SITE_ITEM_ROOT)).filter {
+            it.findObject(By.text(sponsoredLabel)) != null
+        }
     }
 
     /** Returns the title of the first matching extension. */
