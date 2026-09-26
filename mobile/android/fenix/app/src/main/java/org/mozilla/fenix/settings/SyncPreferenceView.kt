@@ -31,7 +31,6 @@ import mozilla.components.service.fxa.manager.SyncEnginesStorage
  * @param onReconnectClicked A callback executed when the [syncPreference] is clicked with a preference status of
  *   "Reconnect".
  */
-@Suppress("LongParameterList")
 class SyncPreferenceView(
     private val syncPreference: SyncPreference,
     private val lifecycleOwner: LifecycleOwner,

@@ -59,7 +59,6 @@ interface RecentVisitsController {
 }
 
 /** The default implementation of [RecentVisitsController]. */
-@Suppress("LongParameterList")
 class DefaultRecentVisitsController(
     private val store: BrowserStore,
     private val appStore: AppStore,

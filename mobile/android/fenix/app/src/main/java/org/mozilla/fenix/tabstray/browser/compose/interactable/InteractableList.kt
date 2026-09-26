@@ -155,7 +155,6 @@ interface ListInteractionState {
  * @param liveReorderEnabled Whether reordering should happen 'live' while a drag is active.
  * @param onLongPress Optional callback to be invoked when long pressing an item.
  */
-@Suppress("LongParameterList")
 class ListInteractionStateImpl
 internal constructor(
     private val listState: LazyListState,

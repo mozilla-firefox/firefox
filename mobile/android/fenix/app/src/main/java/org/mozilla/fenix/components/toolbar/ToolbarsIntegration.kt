@@ -33,7 +33,6 @@ import org.mozilla.fenix.utils.Settings
  * @param topToolbarHeight The height of the top toolbar.
  * @param onToolbarsReset Callback to be invoked when the toolbars need to be reset.
  */
-@Suppress("LongParameterList")
 class ToolbarsIntegration(
     private val fullScreenFeature: () -> FullScreenFeature?,
     private val webAppHideToolbarFeature: () -> WebAppHideToolbarFeature?,

@@ -82,7 +82,6 @@ fun createListReorderState(
  * @param onLongPress Optional callback to be invoked when long pressing an item.
  * @param onExitLongPress Optional callback to be invoked when the item is dragged after long press.
  */
-@Suppress("LongParameterList")
 class ListReorderState
 internal constructor(
     private val listState: LazyListState,

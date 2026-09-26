@@ -36,7 +36,6 @@ import mozilla.components.support.base.feature.LifecycleAwareFeature
  * @param presenter See [SyncedTabsPresenter].
  * @param interactor See [SyncedTabsInteractor].
  */
-@Suppress("LongParameterList")
 class SyncedTabsFeature(
     context: Context,
     storage: SyncedTabsStorage,

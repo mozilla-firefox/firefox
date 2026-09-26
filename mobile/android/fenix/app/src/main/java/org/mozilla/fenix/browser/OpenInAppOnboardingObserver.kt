@@ -28,7 +28,6 @@ import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.utils.Settings
 
 /** Displays an [InfoBanner] when a user visits a website that can be opened in an installed native app. */
-@Suppress("LongParameterList")
 class OpenInAppOnboardingObserver(
     private val context: Context,
     private val store: BrowserStore,

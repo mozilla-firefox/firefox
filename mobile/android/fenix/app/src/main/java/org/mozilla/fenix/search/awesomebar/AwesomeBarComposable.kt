@@ -102,7 +102,6 @@ private fun Modifier.awesomeBarContentWidth(useAddressBarFocusMode: Boolean) =
  * @param searchAccessPoint Where search was started from.
  * @param isEdgeToEdgeBackgroundEnabled Whether the Edge2Edge background is enabled.
  */
-@Suppress("LongParameterList")
 class AwesomeBarComposable(
     private val activity: HomeActivity,
     private val fragment: Fragment,

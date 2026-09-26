@@ -26,7 +26,6 @@ import org.mozilla.fenix.library.LibraryPageView
 import org.mozilla.fenix.theme.ThemeManager
 
 /** View that contains and configures the History List */
-@Suppress("LongParameterList")
 class HistoryView(
     container: ViewGroup,
     val store: HistoryFragmentStore,

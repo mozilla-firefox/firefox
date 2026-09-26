@@ -46,7 +46,6 @@ import org.mozilla.fenix.components.appstate.AppAction
  * @param ioDispatcher The dispatcher to be used for background IO work.
  * @param currentTimeMillis provider for the current time in milliseconds, injectable for testing.
  */
-@Suppress("LongParameterList")
 class RecentSyncedTabFeature(
     private val context: Context,
     private val appStore: AppStore,

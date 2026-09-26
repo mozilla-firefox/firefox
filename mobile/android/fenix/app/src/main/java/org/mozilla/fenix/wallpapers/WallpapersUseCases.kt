@@ -30,7 +30,6 @@ import org.mozilla.fenix.utils.Settings
  * @param currentLocale The locale currently being used on the device.
  * @param getDisplaySize Returns the current size of the display, in pixels, that a full screen wallpaper has to cover.
  */
-@Suppress("LongParameterList")
 class WallpapersUseCases(
     settings: Settings,
     filesDir: File,
@@ -108,7 +107,6 @@ class WallpapersUseCases(
         suspend operator fun invoke()
     }
 
-    @Suppress("LongParameterList")
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal class DefaultInitializeWallpaperUseCase(
         private val appStore: AppStore,

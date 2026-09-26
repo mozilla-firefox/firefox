@@ -29,7 +29,6 @@ import org.mozilla.fenix.perf.lazyMonitored
 import org.mozilla.fenix.shortcut.PasswordManagerIntentProcessor
 
 /** Component group for miscellaneous components. */
-@Suppress("LongParameterList")
 class IntentProcessors(
     private val context: Context,
     private val store: BrowserStore,

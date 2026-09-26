@@ -35,7 +35,6 @@ import mozilla.components.support.ktx.android.util.dpToPx
  * @param isInPrimaryState Lambda to return true/false to indicate checkbox primary or secondary state.
  * @param onCheckedChangedListener Callback to be invoked when checkbox is clicked.
  */
-@Suppress("LongParameterList")
 class BrowserMenuImageTextCheckboxButton(
     @DrawableRes imageResource: Int,
     private val label: String,

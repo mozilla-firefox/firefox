@@ -175,7 +175,6 @@ interface GridInteractionState {
  * @param ignoredItems List of keys for non-draggable items.
  * @param liveReorderEnabled Whether item reorders should happen 'live' during a drag.
  */
-@Suppress("LongParameterList")
 class GridInteractionStateImpl
 internal constructor(
     private val gridState: LazyGridState,

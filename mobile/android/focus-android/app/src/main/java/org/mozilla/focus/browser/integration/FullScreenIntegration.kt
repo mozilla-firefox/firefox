@@ -27,7 +27,6 @@ import org.mozilla.focus.ext.hide
 import org.mozilla.focus.ext.showAsFixed
 
 /** Integration for the full-screen feature, managing immersive mode and toolbar visibility. */
-@Suppress("LongParameterList")
 class FullScreenIntegration(
     val activity: Activity,
     val store: BrowserStore,
