@@ -352,9 +352,15 @@ add_task(async function test_send_device_submenu() {
     );
     ok(sendTabSubmenuList, "Send tabs to device submenu panel list exists");
 
-    // navigate down to the "Send tabs" submenu option, and
-    // open it with the right arrow key
-    EventUtils.synthesizeKey("KEY_ArrowDown", { repeat: 4 });
+    // Move Tab is focused. Step past Pin, Mute, and Copy Link to Send.
+    // Add Tab to Group / Add Tab to New Group sits between Move Tab and Pin
+    // when tab groups are enabled.
+    let groupMenuItem = panelList.querySelector(
+      "panel-item[data-l10n-id=fxviewtabrow-move-tab-group], panel-item[data-l10n-id=fxviewtabrow-move-tab-new-group]"
+    );
+    EventUtils.synthesizeKey("KEY_ArrowDown", {
+      repeat: groupMenuItem ? 5 : 4,
+    });
 
     shown = BrowserTestUtils.waitForEvent(sendTabSubmenuList, "shown");
     EventUtils.synthesizeKey("KEY_ArrowRight", {});
@@ -755,4 +761,266 @@ add_task(async function test_send_mobile_unverified_account_text() {
       BrowserTestUtils.removeTab(gBrowser.tabs[0]);
     }
   });
+});
+
+function clickPanelItem(item) {
+  item.shadowRoot.querySelector("button[role=menuitem]").click();
+}
+
+function rowForURL(rows, url) {
+  // rowEls is a NodeList, so it has no find().
+  let row = Array.from(rows).find(item => item.url == url);
+  Assert.ok(row, `Found an open tabs row for ${url}`);
+  return row;
+}
+
+async function cleanupOpenTabsGroups() {
+  for (let group of [...gBrowser.tabGroups]) {
+    await gBrowser.removeTabGroup(group);
+  }
+  // Leave a blank tab rather than the last tab the task opened. Two tabs on
+  // the same URL are indistinguishable to rowForURL, so the next task would
+  // otherwise be looking up a row that may belong to either of them.
+  let blankTab = BrowserTestUtils.addTab(gBrowser, "about:blank");
+  for (let tab of [...gBrowser.tabs]) {
+    if (tab != blankTab) {
+      BrowserTestUtils.removeTab(tab);
+    }
+  }
+}
+
+add_task(async function test_move_tab_to_new_group() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.tabs.groups.enabled", true]],
+  });
+  try {
+    await withFirefoxView({}, async () => {
+      let [cards, rows] = await moreMenuSetup([TEST_URL2, TEST_URL3]);
+      let row = rowForURL(rows, TEST_URL2);
+      let tab = row.tabElement;
+      Assert.equal(tab.group, null, "Tab starts ungrouped");
+
+      let panelList = await openContextMenuForItem(row, cards[0]);
+      let newGroupItem = panelList.querySelector(
+        "panel-item[data-l10n-id=fxviewtabrow-move-tab-new-group]"
+      );
+      ok(newGroupItem, "Flat Add Tab to New Group item is shown");
+      ok(
+        !panelList.querySelector(
+          "panel-item[data-l10n-id=fxviewtabrow-move-tab-group]"
+        ),
+        "Add Tab to Group submenu is hidden when there are no groups"
+      );
+
+      let editor = document.getElementById("tab-group-editor");
+      let panelShown = BrowserTestUtils.waitForPopupEvent(
+        editor.panel,
+        "shown"
+      );
+      let created = BrowserTestUtils.waitForEvent(editor, "TabGroupCreateDone");
+      Services.fog.testResetFOG();
+      clickPanelItem(newGroupItem);
+      let contextEvents = Glean.firefoxviewNext.contextMenuTabs.testGetValue();
+      Assert.equal(contextEvents.length, 1, "Expected one context menu event");
+      Assert.deepEqual(
+        { menu_action: "move-tab-new-group", data_type: "opentabs" },
+        contextEvents[0].extra
+      );
+      await panelShown;
+      Assert.ok(tab.group, "Tab was added to a new group");
+      Assert.ok(tab.group.tabs.includes(tab), "New group contains the tab");
+      // Confirming the editor keeps the group. Hiding the popup is enough;
+      // the name field may not be focused after the menu closes.
+      editor.panel.hidePopup();
+      await created;
+      Assert.ok(tab.group, "Confirming the editor kept the new group");
+    });
+  } finally {
+    await SpecialPowers.popPrefEnv();
+    await cleanupOpenTabsGroups();
+  }
+});
+
+add_task(async function test_move_tab_to_existing_group() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.tabs.groups.enabled", true]],
+  });
+  try {
+    await withFirefoxView({}, async () => {
+      let [cards, rows] = await moreMenuSetup([TEST_URL2, TEST_URL3]);
+      let groupedRow = rowForURL(rows, TEST_URL3);
+      let group = gBrowser.addTabGroup([groupedRow.tabElement], {
+        label: "Work",
+      });
+
+      let openTabs = cards[0].ownerDocument.querySelector(
+        "view-opentabs[name=opentabs]"
+      );
+      await waitUntilRowsMatch(openTabs, 0, getVisibleTabURLs());
+      rows = await getTabRowsForCard(cards[0]);
+
+      let ownGroupRow = rowForURL(rows, TEST_URL3);
+      let ownGroupMenu = await openContextMenuForItem(ownGroupRow, cards[0]);
+      ok(
+        ownGroupMenu.querySelector(
+          "panel-item[data-l10n-id=fxviewtabrow-move-tab-new-group]"
+        ),
+        "A tab already in the only group gets Add Tab to New Group"
+      );
+      ok(
+        !ownGroupMenu.querySelector(`[tab-group-id="${group.id}"]`),
+        "The tab's own group is not listed"
+      );
+      ownGroupMenu.hide(undefined, { force: true });
+
+      let targetRow = rowForURL(rows, TEST_URL2);
+      let targetTab = targetRow.tabElement;
+      let panelList = await openContextMenuForItem(targetRow, cards[0]);
+      let groupMenuItem = panelList.querySelector(
+        "panel-item[data-l10n-id=fxviewtabrow-move-tab-group]"
+      );
+      ok(groupMenuItem, "Add Tab to Group submenu is shown");
+      ok(
+        !panelList.querySelector(
+          "panel-item[data-l10n-id=fxviewtabrow-move-tab-new-group]"
+        ),
+        "Flat Add Tab to New Group item is hidden when a group exists"
+      );
+
+      let submenu = groupMenuItem.shadowRoot.querySelector(
+        "panel-list[id=move-tab-group-menu]"
+      );
+      ok(submenu, "Add Tab to Group submenu exists");
+      ok(
+        submenu.querySelector(
+          "panel-item[data-l10n-id=fxviewtabrow-move-tab-group-new]"
+        ),
+        "Submenu lists New Group"
+      );
+      let groupItem = submenu.querySelector(
+        `panel-item[tab-group-id="${group.id}"]`
+      );
+      ok(groupItem, "Submenu lists the other open group");
+      Assert.equal(groupItem.textContent, "Work", "Group item uses its label");
+      Assert.equal(
+        groupItem.style.getPropertyValue("--tab-group-color"),
+        `var(--tab-group-${group.color})`,
+        "Group item carries the chicklet color"
+      );
+
+      Services.fog.testResetFOG();
+      clickPanelItem(groupItem);
+      let contextEvents = Glean.firefoxviewNext.contextMenuTabs.testGetValue();
+      Assert.equal(contextEvents.length, 1, "Expected one context menu event");
+      Assert.deepEqual(
+        { menu_action: "move-tab-group", data_type: "opentabs" },
+        contextEvents[0].extra
+      );
+      Assert.equal(targetTab.group, group, "Tab moved into the chosen group");
+      Assert.ok(group.tabs.includes(targetTab), "Group contains the moved tab");
+    });
+  } finally {
+    await SpecialPowers.popPrefEnv();
+    await cleanupOpenTabsGroups();
+  }
+});
+
+add_task(async function test_ungroup_tab() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.tabs.groups.enabled", true]],
+  });
+  try {
+    await withFirefoxView({}, async () => {
+      let [cards, rows] = await moreMenuSetup([TEST_URL2, TEST_URL3]);
+      let ungroupedRow = rowForURL(rows, TEST_URL2);
+      let groupedTab = rowForURL(rows, TEST_URL3).tabElement;
+      let group = gBrowser.addTabGroup([groupedTab], { label: "Work" });
+
+      let openTabs = cards[0].ownerDocument.querySelector(
+        "view-opentabs[name=opentabs]"
+      );
+      await waitUntilRowsMatch(openTabs, 0, getVisibleTabURLs());
+      rows = await getTabRowsForCard(cards[0]);
+
+      let ungroupedMenu = await openContextMenuForItem(
+        rowForURL(rows, ungroupedRow.url),
+        cards[0]
+      );
+      ok(
+        !ungroupedMenu.querySelector(
+          "panel-item[data-l10n-id=fxviewtabrow-ungroup-tab]"
+        ),
+        "Remove from Group is absent for a tab that is not in a group"
+      );
+      ungroupedMenu.hide(undefined, { force: true });
+
+      let panelList = await openContextMenuForItem(
+        rowForURL(rows, TEST_URL3),
+        cards[0]
+      );
+      let ungroupItem = panelList.querySelector(
+        "panel-item[data-l10n-id=fxviewtabrow-ungroup-tab]"
+      );
+      ok(ungroupItem, "Remove from Group is shown for a tab in a group");
+
+      // The group holds only this tab, so emptying it removes the group. That
+      // happens off the click, hence the event rather than a bare assertion.
+      let groupRemoved = BrowserTestUtils.waitForEvent(
+        group,
+        "TabGroupRemoved"
+      );
+      Services.fog.testResetFOG();
+      clickPanelItem(ungroupItem);
+      let contextEvents = Glean.firefoxviewNext.contextMenuTabs.testGetValue();
+      Assert.equal(contextEvents.length, 1, "Expected one context menu event");
+      Assert.deepEqual(
+        { menu_action: "ungroup-tab", data_type: "opentabs" },
+        contextEvents[0].extra
+      );
+      Assert.equal(groupedTab.group, null, "Tab was removed from its group");
+      await groupRemoved;
+      Assert.ok(
+        !gBrowser.tabGroups.includes(group),
+        "Emptying the group removed it"
+      );
+    });
+  } finally {
+    await SpecialPowers.popPrefEnv();
+    await cleanupOpenTabsGroups();
+  }
+});
+
+add_task(async function test_tab_group_menu_hidden_when_groups_disabled() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.tabs.groups.enabled", false]],
+  });
+  try {
+    await withFirefoxView({}, async () => {
+      let [cards, rows] = await moreMenuSetup([TEST_URL2]);
+      let row = rowForURL(rows, TEST_URL2);
+      let panelList = await openContextMenuForItem(row, cards[0]);
+      ok(
+        !panelList.querySelector(
+          "panel-item[data-l10n-id=fxviewtabrow-move-tab-new-group]"
+        ),
+        "Add Tab to New Group is absent when groups are disabled"
+      );
+      ok(
+        !panelList.querySelector(
+          "panel-item[data-l10n-id=fxviewtabrow-move-tab-group]"
+        ),
+        "Add Tab to Group is absent when groups are disabled"
+      );
+      ok(
+        !panelList.querySelector(
+          "panel-item[data-l10n-id=fxviewtabrow-ungroup-tab]"
+        ),
+        "Remove from Group is absent when groups are disabled"
+      );
+      panelList.hide(undefined, { force: true });
+    });
+  } finally {
+    await SpecialPowers.popPrefEnv();
+    await cleanupOpenTabsGroups();
+  }
 });

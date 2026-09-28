@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { PrivateBrowsingUtils } from "resource://gre/modules/PrivateBrowsingUtils.sys.mjs";
+import { TabGroupMenu } from "moz-src:///browser/components/tabbrowser/TabGroupMenu.sys.mjs";
 import { TabMetrics } from "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
@@ -181,22 +182,12 @@ export class GroupsPanel {
     let row = doc.createXULElement("toolbaritem");
     row.setAttribute("class", "all-tabs-item all-tabs-group-item");
 
-    row.style.setProperty(
-      "--tab-group-color",
-      `var(--tab-group-${group.color})`
-    );
-    row.style.setProperty(
-      "--tab-group-color-invert",
-      `var(--tab-group-${group.color}-invert)`
-    );
-    row.style.setProperty(
-      "--tab-group-color-pale",
-      `var(--tab-group-${group.color}-pale)`
-    );
-    row.style.setProperty(
-      "--tab-group-background-color",
-      `var(--tab-group-${group.color})`
-    );
+    for (let [property, value] of Object.entries(
+      TabGroupMenu.colorStyles(group.color)
+    )) {
+      row.style.setProperty(property, value);
+    }
+
     let button = doc.createXULElement("toolbarbutton");
     button.setAttribute(
       "class",

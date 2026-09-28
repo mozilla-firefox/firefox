@@ -591,35 +591,13 @@ var TabContextMenu = {
     let savedGroupsToMoveTo = [];
 
     if (TabContextMenu.Tabbrowser.prefs.tabGroupsEnabled) {
-      let selectedGroupCount = new Set(
-        // The filter removes the "null" group for ungrouped tabs.
-        this.contextTabs.map(t => t.group).filter(g => g)
-      ).size;
-
-      openGroupsToMoveTo = gBrowser.getAllTabGroups({
-        sortByLastSeenActive: true,
-      });
-
-      // Determine whether or not the "current" tab group should appear in the
-      // "move tab to group" context menu.
-      if (selectedGroupCount == 1) {
-        let groupToFilter = this.contextTabs[0].group;
-        if (groupToFilter && this.contextTabs.every(t => t.group)) {
-          openGroupsToMoveTo = openGroupsToMoveTo.filter(
-            group => group !== groupToFilter
-          );
-        }
-      }
-
-      // Populate the saved groups context menu
-      // Only enable in non-private windows, or if at least one of the tabs is
-      // considered saveable
-      if (
-        !PrivateBrowsingUtils.isWindowPrivate(window) &&
-        SessionStore.shouldSaveTabsToGroup(this.contextTabs)
-      ) {
-        savedGroupsToMoveTo = SessionStore.getSavedTabGroups();
-      }
+      let {
+        openGroups,
+        savedGroups,
+        groupCount: selectedGroupCount,
+      } = this.TabGroupMenu.getGroupsToMoveTo(this.contextTabs);
+      openGroupsToMoveTo = openGroups;
+      savedGroupsToMoveTo = savedGroups;
 
       if (!openGroupsToMoveTo.length && !savedGroupsToMoveTo.length) {
         if (isAllSplitViewTabs) {
@@ -1130,22 +1108,11 @@ var TabContextMenu = {
       item.classList.add("tab-group-icon-closed");
     }
 
-    item.style.setProperty(
-      "--tab-group-color",
-      `var(--tab-group-${group.color})`
-    );
-    item.style.setProperty(
-      "--tab-group-color-invert",
-      `var(--tab-group-${group.color}-invert)`
-    );
-    item.style.setProperty(
-      "--tab-group-color-pale",
-      `var(--tab-group-${group.color}-pale)`
-    );
-    item.style.setProperty(
-      "--tab-group-background-color",
-      `var(--tab-group-${group.color})`
-    );
+    for (let [property, value] of Object.entries(
+      this.TabGroupMenu.colorStyles(group.color)
+    )) {
+      item.style.setProperty(property, value);
+    }
 
     return item;
   },
@@ -1276,21 +1243,8 @@ var TabContextMenu = {
   },
 
   moveTabsToNewGroup() {
-    let insertBefore = this.contextTab;
-    if (insertBefore.index < gBrowser.pinnedTabCount) {
-      let firstUnpinnedTab = gBrowser.tabs[gBrowser.pinnedTabCount];
-      if (firstUnpinnedTab.splitview) {
-        insertBefore = firstUnpinnedTab.splitview;
-      } else {
-        insertBefore = firstUnpinnedTab;
-      }
-    } else if (this.contextTab.group) {
-      insertBefore = this.contextTab.group;
-    } else if (this.contextTab.splitview) {
-      insertBefore = this.contextTab.splitview;
-    }
-    gBrowser.addTabGroup(this.contextTabs, {
-      insertBefore,
+    this.TabGroupMenu.createGroupFromTabs(this.contextTabs, {
+      anchorTab: this.contextTab,
       metricsContext: gBrowser.TabMetrics.userTriggeredContext(
         gBrowser.TabMetrics.METRIC_SOURCE.TAB_MENU
       ),
@@ -1340,60 +1294,27 @@ var TabContextMenu = {
    * @param {MozTabbrowserTabGroup} group
    */
   moveTabsToGroup(group) {
-    let elementsToMove = new Set();
-    for (let tab of this.contextTabs) {
-      elementsToMove.add(tab.splitview ?? tab);
-    }
-    group.addTabs(
-      Array.from(elementsToMove.values()),
+    this.TabGroupMenu.addTabsToGroup(
+      this.contextTabs,
+      group,
       gBrowser.TabMetrics.userTriggeredContext(
         gBrowser.TabMetrics.METRIC_SOURCE.TAB_MENU
       )
     );
-    group.documentGlobal.focus();
   },
 
   addTabsToSavedGroup(groupId) {
-    let seen = new Set();
-    let tabs = [];
-    for (let tab of this.contextTabs) {
-      if (tab.splitview) {
-        for (let splitTab of tab.splitview.tabs) {
-          if (!seen.has(splitTab)) {
-            seen.add(splitTab);
-            tabs.push(splitTab);
-          }
-        }
-      } else if (!seen.has(tab)) {
-        seen.add(tab);
-        tabs.push(tab);
-      }
-    }
-    SessionStore.addTabsToSavedGroup(
+    this.TabGroupMenu.addTabsToSavedGroup(
+      this.contextTabs,
       groupId,
-      tabs,
       gBrowser.TabMetrics.userTriggeredContext(
         gBrowser.TabMetrics.METRIC_SOURCE.TAB_MENU
       )
     );
-    gBrowser.removeTabs(tabs, {
-      animate: true,
-      metricsContext: gBrowser.TabMetrics.userTriggeredContext(
-        gBrowser.TabMetrics.METRIC_SOURCE.TAB_MENU
-      ),
-    });
   },
 
   ungroupTabsAndSplitViews() {
-    let splitViews = new Set();
-    for (const tab of this.contextTabs) {
-      if (tab.splitview && !splitViews.has(tab.splitview)) {
-        splitViews.add(tab.splitview);
-        gBrowser.ungroupSplitView(tab.splitview);
-      } else if (!tab.splitview) {
-        gBrowser.ungroupTab(tab);
-      }
-    }
+    this.TabGroupMenu.ungroupTabs(this.contextTabs);
   },
 
   moveTabsToSplitView() {
@@ -1488,6 +1409,7 @@ ChromeUtils.defineESModuleGetters(TabContextMenu, {
   GenAI: "moz-src:///browser/components/genai/GenAI.sys.mjs",
   MenuSectionLayout: "resource:///modules/MenuSectionLayout.sys.mjs",
   Tabbrowser: "moz-src:///browser/components/tabbrowser/Tabbrowser.sys.mjs",
+  TabGroupMenu: "moz-src:///browser/components/tabbrowser/TabGroupMenu.sys.mjs",
   TabNotes: "moz-src:///browser/components/tabnotes/TabNotes.sys.mjs",
   TabStateFlusher:
     "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs",

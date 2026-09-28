@@ -56,6 +56,20 @@ fxviewtabrow-move-tab-end = Move to End
     .accesskey = E
 fxviewtabrow-move-tab-window = Move to New Window
     .accesskey = W
+# Shown instead of fxviewtabrow-move-tab-group when there is no group to join.
+# Accesskey avoids the Open tabs menu (v, P/p, M/m, L, n).
+fxviewtabrow-move-tab-new-group = Add Tab to New Group
+    .accesskey = G
+fxviewtabrow-move-tab-group = Add Tab to Group
+    .accesskey = G
+# Accesskey is not G: that letter belongs to the parent item, and n/N belongs to Send.
+fxviewtabrow-move-tab-group-new = New Group
+    .accesskey = R
+fxviewtabrow-move-tab-group-closed = Closed Groups
+    .accesskey = O
+fxviewtabrow-unnamed-group = Unnamed group
+fxviewtabrow-ungroup-tab = Remove from Group
+    .accesskey = R
 fxviewtabrow-send-to-device = Send to Device
     .accesskey = n
 fxviewtabrow-send-to-mobile = Send to Mobile

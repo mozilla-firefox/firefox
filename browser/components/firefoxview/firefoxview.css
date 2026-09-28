@@ -3,6 +3,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 @import url("chrome://global/skin/in-content/common.css");
+/* Tab group chicklet colors for the Open tabs context menu. about:firefoxview
+   doesn't load tabs.css, so it pulls in the same two sources the tab strip
+   uses: the generated Nova tokens, and the unlayered pre-Nova overrides. */
+@import url("chrome://browser/skin/tabbrowser/tab.tokens.css");
+@import url("chrome://browser/skin/tabbrowser/tab-group-colors.css");
 
 :root {
   /* override --background-color-canvas from tokens-shared.css */
@@ -143,6 +148,46 @@ panel-item::part(button):hover {
 
 panel-item::part(button):hover:active {
   background-color: var(--fxview-element-background-active);
+}
+
+/* panel-item copies child text into its shadow label, so the chicklet is the
+   button's background image rather than a child element. Color variables are
+   set inline on the item, same as the tab-strip menu. */
+panel-item.tab-group-icon::part(button) {
+  --panel-item-icon: url("chrome://browser/skin/tabbrowser/tab-group-chicklet.svg");
+  background-image: url("chrome://browser/skin/tabbrowser/tab-group-chicklet.svg");
+  background-repeat: no-repeat;
+  background-size: var(--icon-size);
+  background-position: 12px center;
+  -moz-context-properties: fill, stroke;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  fill: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  stroke: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
+  padding-inline-start: calc(12px + var(--icon-size) + var(--space-small));
+
+  &:dir(rtl),
+  &:-moz-locale-dir(rtl) {
+    background-position-x: right 12px;
+  }
+
+  @media -moz-pref("browser.nova.enabled") {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    fill: var(--tab-group-background-color);
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    stroke: var(--tab-group-background-color);
+  }
+}
+
+panel-item.tab-group-icon-closed::part(button) {
+  fill: transparent;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  stroke: light-dark(var(--tab-group-color), var(--tab-group-color-invert));
+
+  @media -moz-pref("browser.nova.enabled") {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    stroke: var(--tab-group-background-color);
+  }
 }
 
 fxview-empty-state {

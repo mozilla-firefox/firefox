@@ -7,6 +7,9 @@
 // This is loaded into chrome windows with the subscript loader. Wrap in
 // a block to prevent accidentally leaking globals onto `window`.
 {
+  const { TabGroupMenu } = ChromeUtils.importESModule(
+    "moz-src:///browser/components/tabbrowser/TabGroupMenu.sys.mjs"
+  );
   const { TabMetrics } = ChromeUtils.importESModule(
     "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs"
   );
@@ -30,17 +33,7 @@
   );
 
   class MozTabbrowserTabGroupMenu extends MozXULElement {
-    static COLORS = [
-      "blue",
-      "purple",
-      "cyan",
-      "orange",
-      "yellow",
-      "pink",
-      "green",
-      "gray",
-      "red",
-    ];
+    static COLORS = TabGroupMenu.COLORS;
 
     static MESSAGE_IDS = {
       blue: "tab-group-editor-color-selector2-blue",

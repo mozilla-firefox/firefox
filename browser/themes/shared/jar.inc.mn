@@ -319,6 +319,7 @@
   skin/classic/browser/tabbrowser/tab-audio-blocked-circle-12.svg (../shared/tabbrowser/tab-audio-blocked-circle-12.svg)
   skin/classic/browser/tabbrowser/tab-drag-indicator.svg       (../shared/tabbrowser/tab-drag-indicator.svg)
   skin/classic/browser/tabbrowser/tab-group-chicklet.svg       (../shared/tabbrowser/tab-group-chicklet.svg)
+  skin/classic/browser/tabbrowser/tab-group-colors.css         (../shared/tabbrowser/tab-group-colors.css)
   skin/classic/browser/tabbrowser/tab-groups.svg               (../shared/tabbrowser/tab-groups.svg)
   skin/classic/browser/tabbrowser/tab-groups-list.css          (../shared/tabbrowser/tab-groups-list.css)
   skin/classic/browser/tabbrowser/tab-hover-preview.css        (../shared/tabbrowser/tab-hover-preview.css)

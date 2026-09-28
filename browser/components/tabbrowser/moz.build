@@ -6,6 +6,8 @@ with Files("**"):
     BUG_COMPONENT = ("Firefox", "Tabbed Browser")
 with Files("GroupsList.sys.mjs"):
     BUG_COMPONENT = ("Firefox", "Tabbed Browser: Tab Groups")
+with Files("TabGroupMenu.sys.mjs"):
+    BUG_COMPONENT = ("Firefox", "Tabbed Browser: Tab Groups")
 with Files("content/tabgroup.mjs"):
     BUG_COMPONENT = ("Firefox", "Tabbed Browser: Tab Groups")
 with Files("content/tabgroup-menu.js"):
@@ -24,6 +26,7 @@ MOZ_SRC_FILES += [
     "OpenInTabsUtils.sys.mjs",
     "SmartTabGrouping.sys.mjs",
     "Tabbrowser.sys.mjs",
+    "TabGroupMenu.sys.mjs",
     "TabMetrics.sys.mjs",
     "TabsList.sys.mjs",
     "TabUnloader.sys.mjs",

@@ -6,6 +6,8 @@ import {
   classMap,
   html,
   map,
+  nothing,
+  styleMap,
   when,
 } from "chrome://global/content/vendor/lit.all.mjs";
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
@@ -29,6 +31,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   SpecialMessageActions:
     "resource://messaging-system/lib/SpecialMessageActions.sys.mjs",
+  TabGroupMenu: "moz-src:///browser/components/tabbrowser/TabGroupMenu.sys.mjs",
   TabMetrics: "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs",
 });
 
@@ -46,6 +49,13 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "FXA_ENABLED",
   "identity.fxaccounts.enabled"
+);
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "tabGroupsEnabled",
+  "browser.tabs.groups.enabled",
+  false
 );
 
 const TOPIC_DEVICESTATE_CHANGED = "firefox-view.devicestate.changed";
@@ -793,6 +803,148 @@ class OpenTabsContextMenu extends MozLitElement {
     this.ownerViewPage.recordContextMenuTelemetry("move-tab-window", e);
   }
 
+  tabMetricsContext() {
+    // No Firefox View source exists on TabMetrics. TAB_MENU matches the tab
+    // strip's group actions.
+    return lazy.TabMetrics.userTriggeredContext(
+      lazy.TabMetrics.METRIC_SOURCE.TAB_MENU
+    );
+  }
+
+  moveTabToNewGroup(e) {
+    const tab = this.triggerNode?.tabElement;
+    if (!tab?.documentGlobal?.gBrowser) {
+      return;
+    }
+    // The group editor opens in the tab's window. Focus that window first so
+    // the panel isn't buried when the tab lives in another window. Unlike the
+    // tab strip, Firefox View doesn't select the tab, so this view stays put.
+    tab.documentGlobal.focus();
+    lazy.TabGroupMenu.createGroupFromTabs([tab], {
+      metricsContext: this.tabMetricsContext(),
+    });
+    this.ownerViewPage.recordContextMenuTelemetry("move-tab-new-group", e);
+  }
+
+  moveTabToGroup(e) {
+    const tab = this.triggerNode?.tabElement;
+    const groupId = e.currentTarget.getAttribute("tab-group-id");
+    const group = tab?.documentGlobal?.gBrowser?.getTabGroupById(groupId);
+    if (!group) {
+      return;
+    }
+    lazy.TabGroupMenu.addTabsToGroup([tab], group, this.tabMetricsContext());
+    this.ownerViewPage.recordContextMenuTelemetry("move-tab-group", e);
+  }
+
+  moveTabToSavedGroup(e) {
+    const tab = this.triggerNode?.tabElement;
+    const groupId = e.currentTarget.getAttribute("tab-group-id");
+    if (!tab?.documentGlobal?.gBrowser || !groupId) {
+      return;
+    }
+    lazy.TabGroupMenu.addTabsToSavedGroup(
+      [tab],
+      groupId,
+      this.tabMetricsContext()
+    );
+    this.ownerViewPage.recordContextMenuTelemetry("move-tab-saved-group", e);
+  }
+
+  ungroupTab(e) {
+    const tab = this.triggerNode?.tabElement;
+    if (!tab?.group) {
+      return;
+    }
+    lazy.TabGroupMenu.ungroupTabs([tab]);
+    this.ownerViewPage.recordContextMenuTelemetry("ungroup-tab", e);
+  }
+
+  groupMenuItemTemplate(group, isSaved) {
+    const label = group.label ?? group.name;
+    return html`<panel-item
+      class=${isSaved
+        ? "tab-group-icon tab-group-icon-closed"
+        : "tab-group-icon"}
+      style=${styleMap(lazy.TabGroupMenu.colorStyles(group.color))}
+      tab-group-id=${group.id}
+      data-l10n-id=${label ? nothing : "fxviewtabrow-unnamed-group"}
+      @click=${isSaved ? this.moveTabToSavedGroup : this.moveTabToGroup}
+      >${label ?? ""}</panel-item
+    >`;
+  }
+
+  /**
+   * Saved groups sit in this submenu under a heading. A nested panel-list
+   * submenu resolves its owning panel to the outermost list, so Closed Groups
+   * is not a further submenu.
+   *
+   * @param {MozTabbrowserTabGroup[]} openGroups
+   * @param {object[]} savedGroups
+   */
+  tabGroupSubmenuTemplate(openGroups, savedGroups) {
+    return html`<panel-list slot="submenu" id="move-tab-group-menu">
+      <panel-item
+        data-l10n-id="fxviewtabrow-move-tab-group-new"
+        data-l10n-attrs="accesskey"
+        @click=${this.moveTabToNewGroup}
+      ></panel-item>
+      ${when(
+        openGroups.length,
+        () => html`
+          <hr />
+          ${map(openGroups, group => this.groupMenuItemTemplate(group, false))}
+        `
+      )}
+      ${when(
+        savedGroups.length,
+        () => html`
+          <hr />
+          <panel-item
+            data-l10n-id="fxviewtabrow-move-tab-group-closed"
+            disabled="true"
+          ></panel-item>
+          ${map(savedGroups, group => this.groupMenuItemTemplate(group, true))}
+        `
+      )}
+    </panel-list>`;
+  }
+
+  tabGroupMenuTemplate() {
+    const tab = this.triggerNode?.tabElement;
+    if (!tab || !lazy.tabGroupsEnabled) {
+      return null;
+    }
+    const { openGroups, savedGroups } = lazy.TabGroupMenu.getGroupsToMoveTo([
+      tab,
+    ]);
+    if (!openGroups.length && !savedGroups.length) {
+      return html`<panel-item
+        data-l10n-id="fxviewtabrow-move-tab-new-group"
+        data-l10n-attrs="accesskey"
+        @click=${this.moveTabToNewGroup}
+      ></panel-item>`;
+    }
+    return html`<panel-item
+      data-l10n-id="fxviewtabrow-move-tab-group"
+      data-l10n-attrs="accesskey"
+      submenu="move-tab-group-menu"
+      >${this.tabGroupSubmenuTemplate(openGroups, savedGroups)}</panel-item
+    >`;
+  }
+
+  ungroupTabTemplate() {
+    const tab = this.triggerNode?.tabElement;
+    if (!tab?.group || !lazy.tabGroupsEnabled) {
+      return null;
+    }
+    return html`<panel-item
+      data-l10n-id="fxviewtabrow-ungroup-tab"
+      data-l10n-attrs="accesskey"
+      @click=${this.ungroupTab}
+    ></panel-item>`;
+  }
+
   moveMenuTemplate() {
     const tab = this.triggerNode?.tabElement;
     if (!tab) {
@@ -1047,6 +1199,7 @@ class OpenTabsContextMenu extends MozLitElement {
           submenu="move-tab-menu"
           >${this.moveMenuTemplate()}</panel-item
         >
+        ${this.tabGroupMenuTemplate()} ${this.ungroupTabTemplate()}
         <panel-item
           data-l10n-id=${tab.pinned
             ? "fxviewtabrow-unpin-tab"

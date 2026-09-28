@@ -9,9 +9,7 @@ const { TabMetrics } = ChromeUtils.importESModule(
 );
 
 /**
- * Supported tab group colors.
- *
- * @typedef {"blue"|"purple"|"cyan"|"orange"|"yellow"|"pink"|"green"|"gray"|"red"} TabGroupColor
+ * @typedef {import("moz-src:///browser/components/tabbrowser/TabGroupMenu.sys.mjs").TabGroupColor} TabGroupColor
  */
 
 export class MozTabbrowserTabGroup extends MozXULElement {

@@ -1,0 +1,44 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* Pre-Nova tab group chicklet colors, the counterpart to the --tab-group-*
+   tokens tab.tokens.css generates for Nova. Imported by tabs.css for the tab
+   strip and by firefoxview.css for the Open tabs context menu, which doesn't
+   load tabs.css.
+
+   These declarations are deliberately unlayered so they keep outranking the
+   layered Nova tokens, and are matched on :host as well as :root so they also
+   reach the Firefox View shadow roots that link firefoxview.css. */
+:root,
+:host {
+  @media not -moz-pref("browser.nova.enabled") {
+    --tab-group-blue: light-dark(var(--color-blue-70), var(--color-blue-20));
+    --tab-group-blue-invert: light-dark(var(--color-blue-0), var(--color-blue-70));
+    --tab-group-blue-pale: var(--color-blue-0);
+    --tab-group-purple: light-dark(var(--color-purple-70), var(--color-purple-20));
+    --tab-group-purple-invert: light-dark(var(--color-purple-0), var(--color-purple-70));
+    --tab-group-purple-pale: var(--color-purple-0);
+    --tab-group-cyan: light-dark(var(--color-cyan-70), var(--color-cyan-20));
+    --tab-group-cyan-invert: light-dark(var(--color-cyan-0), var(--color-cyan-70));
+    --tab-group-cyan-pale: var(--color-cyan-0);
+    --tab-group-orange: light-dark(var(--color-orange-70), var(--color-orange-20));
+    --tab-group-orange-invert: light-dark(var(--color-orange-0), var(--color-orange-70));
+    --tab-group-orange-pale: var(--color-orange-0);
+    --tab-group-yellow: light-dark(var(--color-yellow-70), var(--color-yellow-20));
+    --tab-group-yellow-invert: light-dark(var(--color-yellow-0), var(--color-yellow-70));
+    --tab-group-yellow-pale: var(--color-yellow-0);
+    --tab-group-pink: light-dark(var(--color-pink-70), var(--color-pink-20));
+    --tab-group-pink-invert: light-dark(var(--color-pink-0), var(--color-pink-70));
+    --tab-group-pink-pale: var(--color-pink-0);
+    --tab-group-green: light-dark(var(--color-green-70), var(--color-green-20));
+    --tab-group-green-invert: light-dark(var(--color-green-0), var(--color-green-70));
+    --tab-group-green-pale: var(--color-green-0);
+    --tab-group-red: light-dark(var(--color-red-70), var(--color-red-20));
+    --tab-group-red-invert: light-dark(var(--color-red-0), var(--color-red-70));
+    --tab-group-red-pale: var(--color-red-0);
+    --tab-group-gray: light-dark(#5e6a77, #99a6b4);
+    --tab-group-gray-invert: light-dark(#f2f9ff, #5e6a77);
+    --tab-group-gray-pale: #f2f9ff;
+  }
+}
