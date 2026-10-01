@@ -1029,7 +1029,7 @@ toolbar[inactive="true"] .urlbar,
     height: 16px;
   }
 
-  .urlbar-background {
+  #urlbar > .urlbar-background {
     background-image: repeating-linear-gradient(-45deg, rgba(255, 60, 60, 0.25) 0 25px, rgba(175, 0, 0, 0.25) 25px 50px);
 
     background-attachment: fixed;
