@@ -837,12 +837,14 @@ div#feature-callout.hidden {
 }
 #feature-callout .screen[pos=callout] .action-buttons .primary,
 #feature-callout .screen[pos=callout] .action-buttons .secondary,
+#feature-callout .screen[pos=callout] .action-buttons .cta-link,
 #feature-callout .screen[pos=callout] .dismiss-button,
 #feature-callout .screen[pos=callout] .more-button {
   border-radius: var(--button-border-radius);
 }
 #feature-callout .screen[pos=callout] .action-buttons .primary:focus-visible,
 #feature-callout .screen[pos=callout] .action-buttons .secondary:focus-visible,
+#feature-callout .screen[pos=callout] .action-buttons .cta-link:focus-visible,
 #feature-callout .screen[pos=callout] .dismiss-button:focus-visible,
 #feature-callout .screen[pos=callout] .more-button:focus-visible {
   box-shadow: none;
@@ -851,6 +853,7 @@ div#feature-callout.hidden {
 }
 #feature-callout .screen[pos=callout] .action-buttons .primary:disabled,
 #feature-callout .screen[pos=callout] .action-buttons .secondary:disabled,
+#feature-callout .screen[pos=callout] .action-buttons .cta-link:disabled,
 #feature-callout .screen[pos=callout] .dismiss-button:disabled,
 #feature-callout .screen[pos=callout] .more-button:disabled {
   opacity: 0.4;

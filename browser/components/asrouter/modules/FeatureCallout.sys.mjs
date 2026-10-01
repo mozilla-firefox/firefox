@@ -2430,10 +2430,10 @@ export class FeatureCallout {
         "primary-button-border-disabled":
           "var(--button-border-color-primary-disabled)",
         // Links
-        "link-color": "LinkText",
-        "link-color-hover": "LinkText",
-        "link-color-active": "ActiveText",
-        "link-color-visited": "VisitedText",
+        "link-color": "var(--link-color)",
+        "link-color-hover": "var(--link-color-hover)",
+        "link-color-active": "var(--link-color-active)",
+        "link-color-visited": "var(--link-color-visited)",
         "icon-success-color": "var(--color-accent-attention)",
         // Dismiss Button
         "dismiss-button-background":

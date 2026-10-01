@@ -392,6 +392,71 @@ add_task(async function feature_callout_chrome_theme() {
   await BrowserTestUtils.closeWindow(win);
 });
 
+add_task(async function feature_callout_link_colors_and_focus() {
+  for (const nova of [false, true]) {
+    await pushPrefs(["browser.nova.enabled", nova]);
+    const win = await BrowserTestUtils.openNewBrowserWindow();
+    try {
+      const message = getTestMessage();
+      message.content.screens[0].content.additional_button = {
+        label: { raw: "Privacy notice" },
+        style: "link",
+        action: { type: "OPEN_URL", data: { args: "https://example.com/" } },
+      };
+      await showFeatureCallout(win.gBrowser.selectedBrowser, message);
+      await waitForCalloutScreen(win.document, "TEST_CALLOUT_1");
+
+      const callout = win.document.querySelector(calloutSelector);
+      const link = callout.querySelector(".cta-link");
+      const reference = win.document.createElement("span");
+      reference.style.cssText =
+        "outline: var(--focus-outline); outline-offset: var(--focus-outline-offset); border-radius: var(--button-border-radius)";
+      callout.append(reference);
+
+      for (const scheme of ["light", "dark"]) {
+        win.document.documentElement.setAttribute("lwt-popup", scheme);
+        for (const [state, token] of [
+          [null, "--link-color"],
+          [":hover", "--link-color-hover"],
+          [":active", "--link-color-active"],
+        ]) {
+          if (state) {
+            InspectorUtils.addPseudoClassLock(link, state);
+          }
+          reference.style.color = `var(${token})`;
+          is(
+            win.getComputedStyle(link).color,
+            win.getComputedStyle(reference).color,
+            `Link uses ${token} in ${scheme} mode with Nova ${nova}`
+          );
+          if (state) {
+            InspectorUtils.removePseudoClassLock(link, state);
+          }
+        }
+
+        InspectorUtils.addPseudoClassLock(link, ":focus-visible");
+        for (const property of [
+          "outlineColor",
+          "outlineStyle",
+          "outlineWidth",
+          "outlineOffset",
+          "borderRadius",
+        ]) {
+          is(
+            win.getComputedStyle(link)[property],
+            win.getComputedStyle(reference)[property],
+            `Link uses themed ${property} in ${scheme} mode with Nova ${nova}`
+          );
+        }
+        InspectorUtils.removePseudoClassLock(link, ":focus-visible");
+      }
+    } finally {
+      await BrowserTestUtils.closeWindow(win);
+      await SpecialPowers.popPrefEnv();
+    }
+  }
+});
+
 add_task(async function feature_callout_pdfjs_theme() {
   const win = await BrowserTestUtils.openNewBrowserWindow();
   await testCallout({
