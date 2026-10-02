@@ -306,6 +306,7 @@ add_task(async function test_vertical_tabs_right_click_other_new_tab_button() {
   info("Windows and tabs opened, waiting for readyWindowsPromise");
   await NonPrivateTabs.readyWindowsPromise;
   info("readyWindowsPromise resolved");
+  await SidebarController.waitUntilStable();
   const newTabButton = sidebar.querySelector("#vertical-tabs-newtab-button");
 
   let popup = findPopup();

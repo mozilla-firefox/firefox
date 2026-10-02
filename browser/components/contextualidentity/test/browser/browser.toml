@@ -47,10 +47,6 @@ skip-if = [
 tags = "bleedover"
 
 ["browser_newtabButton.js"]
-skip-if = [
-  "os == 'mac' && os_version == '10.15' && arch == 'x86_64' && opt", # Bug 1775706
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1775706
-]
 
 ["browser_originattrs_reopenin.js"]
 https_first_disabled = true
