@@ -81,8 +81,10 @@ add_task(async function test_containers_with_left_click() {
 
   let popupShownPromise = BrowserTestUtils.waitForEvent(popup, "popupshown");
   let popupHiddenPromise = BrowserTestUtils.waitForEvent(popup, "popuphidden");
+  // The menu opens on press, so release the button only once it is shown.
   EventUtils.synthesizeMouseAtCenter(newTabButton, { type: "mousedown" });
   await popupShownPromise;
+  EventUtils.synthesizeMouseAtCenter(newTabButton, { type: "mouseup" });
   let contextIdItems = popup.querySelectorAll("menuitem");
   // 4 + default + manage containers
   is(contextIdItems.length, 6, "Has 6 menu items");
@@ -94,6 +96,7 @@ add_task(async function test_containers_with_left_click() {
     EventUtils.synthesizeMouseAtCenter(newTabButton, { type: "mousedown" });
 
     await popupShownPromise;
+    EventUtils.synthesizeMouseAtCenter(newTabButton, { type: "mouseup" });
     let contextIdItem = popup.querySelector(
       `menuitem[data-usercontextid="${i}"]`
     );
