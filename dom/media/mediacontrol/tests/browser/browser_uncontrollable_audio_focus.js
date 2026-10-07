@@ -30,7 +30,7 @@ const HTML_MEDIA_ID = "autoplay";
 const HTMLMediaSource = {
   name: "HTMLMediaElement",
   page: PAGE_HTML_MEDIA,
-  start: tab => checkOrWaitUntilMediaStartedPlaying(tab, HTML_MEDIA_ID),
+  start: startHTMLMediaAndWaitAudible,
   waitForSilenced: tab =>
     checkOrWaitUntilMediaStoppedPlaying(tab, HTML_MEDIA_ID),
   cleanup: () => Promise.resolve(),
@@ -116,6 +116,14 @@ function waitForControllerAudible(tab) {
       }
     });
   });
+}
+
+// Audio focus is only claimed once a tab becomes audible, so wait for that
+// before another source competes for it.
+async function startHTMLMediaAndWaitAudible(tab) {
+  const becameAudible = waitForControllerAudible(tab);
+  await checkOrWaitUntilMediaStartedPlaying(tab, HTML_MEDIA_ID);
+  await becameAudible;
 }
 
 async function startWebAudio(tab) {
