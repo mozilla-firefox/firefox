@@ -9,6 +9,8 @@ import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnySibling
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -22,12 +24,10 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.helpers.Constants.RETRY_COUNT
 import org.mozilla.fenix.helpers.Constants.TAG
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
-import org.mozilla.fenix.helpers.MatcherHelper.assertItemIsChecked
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectExists
 import org.mozilla.fenix.helpers.MatcherHelper.itemContainingText
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithDescription
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
-import org.mozilla.fenix.helpers.TestHelper.mDevice
 
 class SettingsTranslationsRobot(private val composeTestRule: ComposeTestRule) {
 
@@ -245,16 +245,28 @@ class SettingsTranslationsRobot(private val composeTestRule: ComposeTestRule) {
     }
 
     fun verifyAlwaysTranslateOptionState(isChecked: Boolean) =
-        assertItemIsChecked(
-            mDevice.findObject(UiSelector().index(1).className("android.view.View")),
-            isChecked = isChecked,
+        assertAutomaticTranslationOptionState(
+            R.string.automatic_translation_option_always_translate_title_preference,
+            isChecked,
         )
 
     fun verifyNeverTranslateOptionState(isChecked: Boolean) =
-        assertItemIsChecked(
-            mDevice.findObject(UiSelector().index(2).className("android.view.View")),
-            isChecked = isChecked,
+        assertAutomaticTranslationOptionState(
+            R.string.automatic_translation_option_never_translate_title_preference,
+            isChecked,
         )
+
+    /**
+     * Retrieve RadioButtonListItem by its label, rather than by its position, and assert it has the expected selection
+     * state.
+     */
+    private fun assertAutomaticTranslationOptionState(titleId: Int, isSelected: Boolean) {
+        val label = getStringResource(titleId)
+        Log.i(TAG, "assertAutomaticTranslationOptionState: Asserting $label is selected: $isSelected")
+        val option = composeTestRule.onNodeWithText(label)
+        if (isSelected) option.assertIsSelected() else option.assertIsNotSelected()
+        Log.i(TAG, "assertAutomaticTranslationOptionState: Asserted $label is selected: $isSelected")
+    }
 
     class Transition(private val composeTestRule: ComposeTestRule) {
         fun goBackToAutomaticTranslationSubMenu(interact: SettingsTranslationsRobot.() -> Unit): Transition {
