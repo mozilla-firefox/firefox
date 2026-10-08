@@ -339,8 +339,7 @@ bool jit::CallTrampolineNativeJitCode(JSContext* cx, TrampolineNative native,
   // Release temporary buffer used for OSR into Ion.
   cx->runtime()->jitRuntime()->freeIonOsrTempData();
 
-  if (result.isMagic()) {
-    MOZ_ASSERT(result.isMagic(JS_ION_ERROR));
+  if (result.isMagic(JS_ION_ERROR)) {
     return false;
   }
 

@@ -1735,7 +1735,7 @@ bool WarpScriptOracle::maybeReplaceNurseryPointer(
     size_t offset) {
   // ValueOrNurseryValueIndex uses MagicValueUint32 to encode nursery indexes.
   // Assert this doesn't conflict with |v|.
-  MOZ_ASSERT(ValueOrNurseryValueIndex::fromValue(v).isValue());
+  MOZ_RELEASE_ASSERT(ValueOrNurseryValueIndex::fromValue(v).isValue());
 
   if (!v.isGCThing() || !IsInsideNursery(v.toGCThing())) {
     return true;

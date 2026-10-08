@@ -131,8 +131,7 @@ static EnterJitStatus JS_HAZ_JSNATIVE_CALLER EnterJit(JSContext* cx,
     cx->runtime()->jitRuntime()->freeIonOsrTempData();
   }
 
-  if (result.isMagic()) {
-    MOZ_ASSERT(result.isMagic(JS_ION_ERROR));
+  if (result.isMagic(JS_ION_ERROR)) {
     return EnterJitStatus::Error;
   }
 

@@ -161,8 +161,7 @@ static JitExecStatus EnterBaseline(JSContext* cx, EnterJitData& data) {
   // Release temporary buffer used for OSR into Ion.
   cx->runtime()->jitRuntime()->freeIonOsrTempData();
 
-  MOZ_ASSERT_IF(data.result.isMagic(), data.result.isMagic(JS_ION_ERROR));
-  return data.result.isMagic() ? JitExec_Error : JitExec_Ok;
+  return data.result.isMagic(JS_ION_ERROR) ? JitExec_Error : JitExec_Ok;
 }
 
 JitExecStatus jit::EnterBaselineInterpreterAtBranch(JSContext* cx,
