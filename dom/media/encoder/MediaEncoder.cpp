@@ -73,13 +73,11 @@ class BlobStorer : public MutableBlobStorageCallback {
 };
 }  // namespace
 
-class MediaEncoder::AudioTrackListener : public DirectMediaTrackListener {
+class MediaEncoder::AudioTrackListener : public MediaTrackListener {
  public:
   AudioTrackListener(RefPtr<DriftCompensator> aDriftCompensator,
                      RefPtr<MediaEncoder> aMediaEncoder)
-      : mDirectConnected(false),
-        mInitialized(false),
-        mRemoved(false),
+      : mInitialized(false),
         mDriftCompensator(std::move(aDriftCompensator)),
         mMediaEncoder(std::move(aMediaEncoder)),
         mEncoderThread(mMediaEncoder->mEncoderThread),
@@ -87,25 +85,6 @@ class MediaEncoder::AudioTrackListener : public DirectMediaTrackListener {
     MOZ_ASSERT(mMediaEncoder);
     MOZ_ASSERT(mMediaEncoder->mAudioEncoder);
     MOZ_ASSERT(mEncoderThread);
-  }
-
-  void NotifyDirectListenerInstalled(InstallationResult aResult) override {
-    if (aResult == InstallationResult::SUCCESS) {
-      LOG(LogLevel::Info, ("Audio track direct listener installed"));
-      mDirectConnected = true;
-    } else {
-      LOG(LogLevel::Info, ("Audio track failed to install direct listener"));
-      MOZ_ASSERT(!mDirectConnected);
-    }
-  }
-
-  void NotifyDirectListenerUninstalled() override {
-    mDirectConnected = false;
-
-    if (mRemoved) {
-      mMediaEncoder = nullptr;
-      mEncoderThread = nullptr;
-    }
   }
 
   void NotifyQueuedChanges(MediaTrackGraph* aGraph, TrackTime aTrackOffset,
@@ -159,13 +138,8 @@ class MediaEncoder::AudioTrackListener : public DirectMediaTrackListener {
     MOZ_DIAGNOSTIC_ASSERT(NS_SUCCEEDED(rv));
     (void)rv;
 
-    mRemoved = true;
-
-    if (!mDirectConnected) {
-      mMediaEncoder = nullptr;
-      mEncoderThread = nullptr;
-    }
-
+    mMediaEncoder = nullptr;
+    mEncoderThread = nullptr;
     mShutdownHolder.Resolve(true, __func__);
   }
 
@@ -174,9 +148,7 @@ class MediaEncoder::AudioTrackListener : public DirectMediaTrackListener {
   }
 
  private:
-  bool mDirectConnected;
   bool mInitialized;
-  bool mRemoved;
   const RefPtr<DriftCompensator> mDriftCompensator;
   RefPtr<MediaEncoder> mMediaEncoder;
   RefPtr<TaskQueue> mEncoderThread;
@@ -623,7 +595,6 @@ void MediaEncoder::RemoveMediaStreamTrack(MediaStreamTrack* aTrack) {
     }
 
     if (mAudioListener) {
-      audio->RemoveDirectListener(mAudioListener);
       audio->RemoveListener(mAudioListener);
     }
     mAudioTrack = nullptr;
