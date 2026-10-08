@@ -2838,6 +2838,10 @@ bool nsGlobalWindowOuter::AreDialogsEnabled() {
     nsCOMPtr<nsIDocumentViewer> viewer;
     mDocShell->GetDocViewer(getter_AddRefs(viewer));
 
+    if (!viewer) {
+      return false;
+    }
+
     bool isHidden;
     viewer->GetIsHidden(&isHidden);
     if (isHidden) {
