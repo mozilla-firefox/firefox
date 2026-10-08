@@ -178,17 +178,20 @@ static bool PatternIsCompatible(const Pattern& aPattern) {
     case PatternType::LINEAR_GRADIENT: {
       const LinearGradientPattern& pattern =
           static_cast<const LinearGradientPattern&>(aPattern);
-      return pattern.mStops->GetBackendType() == BackendType::CAIRO;
+      return pattern.mStops &&
+             pattern.mStops->GetBackendType() == BackendType::CAIRO;
     }
     case PatternType::RADIAL_GRADIENT: {
       const RadialGradientPattern& pattern =
           static_cast<const RadialGradientPattern&>(aPattern);
-      return pattern.mStops->GetBackendType() == BackendType::CAIRO;
+      return pattern.mStops &&
+             pattern.mStops->GetBackendType() == BackendType::CAIRO;
     }
     case PatternType::CONIC_GRADIENT: {
       const ConicGradientPattern& pattern =
           static_cast<const ConicGradientPattern&>(aPattern);
-      return pattern.mStops->GetBackendType() == BackendType::CAIRO;
+      return pattern.mStops &&
+             pattern.mStops->GetBackendType() == BackendType::CAIRO;
     }
     default:
       return true;
@@ -456,8 +459,7 @@ static inline void CairoPatternAddGradientStop(cairo_pattern_t* aPattern,
                                     aStop.color.a);
 }
 
-// Never returns nullptr. As such, you must always pass in Cairo-compatible
-// patterns, most notably gradients with a GradientStopCairo.
+// Returns nullptr for patterns with incompatible Cairo gradient stops.
 // The pattern returned must have cairo_pattern_destroy() called on it by the
 // caller.
 // As the cairo_pattern_t returned may depend on the Pattern passed in, the
@@ -466,6 +468,10 @@ static inline void CairoPatternAddGradientStop(cairo_pattern_t* aPattern,
 static cairo_pattern_t* GfxPatternToCairoPattern(const Pattern& aPattern,
                                                  Float aAlpha,
                                                  const Matrix& aTransform) {
+  if (!PatternIsCompatible(aPattern)) {
+    return nullptr;
+  }
+
   cairo_pattern_t* pat;
   const Matrix* matrix = nullptr;
 
@@ -1031,10 +1037,6 @@ void DrawTargetCairo::DrawPattern(const Pattern& aPattern,
                                   const DrawOptions& aOptions,
                                   DrawPatternType aDrawType,
                                   bool aPathBoundsClip) {
-  if (!PatternIsCompatible(aPattern)) {
-    return;
-  }
-
   AutoClearDeviceOffset clear(aPattern);
 
   cairo_pattern_t* pat =
@@ -1504,10 +1506,6 @@ void DrawTargetCairo::MaskSurface(const Pattern& aSource, SourceSurface* aMask,
   AutoPrepareForDrawing prep(this, mContext);
   AutoClearDeviceOffset clearSource(aSource);
   AutoClearDeviceOffset clearMask(aMask);
-
-  if (!PatternIsCompatible(aSource)) {
-    return;
-  }
 
   cairo_set_antialias(mContext,
                       GfxAntialiasToCairoAntialias(aOptions.mAntialiasMode));
