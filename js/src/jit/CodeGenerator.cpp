@@ -9797,13 +9797,14 @@ void CodeGenerator::visitSetArgumentsObjectArg(LSetArgumentsObjectArg* lir) {
   Address argAddr(temp, ArgumentsData::offsetOfArgs() +
                             lir->mir()->argno() * sizeof(Value));
   emitPreBarrier(argAddr);
-#ifdef DEBUG
-  Label success;
-  masm.branchTestMagic(Assembler::NotEqual, argAddr, &success);
-  masm.assumeUnreachable(
-      "Result in ArgumentObject shouldn't be JSVAL_TYPE_MAGIC.");
-  masm.bind(&success);
-#endif
+  MIRType valueType = lir->mir()->value()->type();
+  MOZ_RELEASE_ASSERT(!IsMagicType(valueType));
+  if (valueType == MIRType::Value) {
+    Label notMagic;
+    masm.branchTestMagic(Assembler::NotEqual, value, &notMagic);
+    masm.assumeUnreachable("Unexpected magic value stored to ArgumentsObject");
+    masm.bind(&notMagic);
+  }
   masm.storeValue(value, argAddr);
 }
 

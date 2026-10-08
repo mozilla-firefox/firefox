@@ -659,7 +659,9 @@ class CallObject : public EnvironmentObject {
    * slot of the CallObject to access.
    */
   const Value& aliasedFormalFromArguments(const Value& argsValue) {
-    return getSlot(ArgumentsObject::SlotFromMagicScopeSlotValue(argsValue));
+    uint32_t slot = ArgumentsObject::SlotFromMagicScopeSlotValue(argsValue);
+    MOZ_RELEASE_ASSERT(slot < slotSpan());
+    return getSlot(slot);
   }
   inline void setAliasedFormalFromArguments(const Value& argsValue,
                                             const Value& v);

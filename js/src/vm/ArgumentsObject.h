@@ -392,6 +392,7 @@ class ArgumentsObject : public NativeObject {
   void setArg(unsigned i, const Value& v) {
     MOZ_ASSERT(i < data()->numArgs());
     MOZ_RELEASE_ASSERT(!data()->args[i].isMagic());
+    MOZ_RELEASE_ASSERT(!v.isMagic());
     data()->args.setElement(this, i, v);
   }
 

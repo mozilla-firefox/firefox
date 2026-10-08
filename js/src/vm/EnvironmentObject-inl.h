@@ -60,7 +60,9 @@ inline void EnvironmentObject::setAliasedBinding(const BindingIter& bi,
 
 inline void CallObject::setAliasedFormalFromArguments(const Value& argsValue,
                                                       const Value& v) {
-  setSlot(ArgumentsObject::SlotFromMagicScopeSlotValue(argsValue), v);
+  uint32_t slot = ArgumentsObject::SlotFromMagicScopeSlotValue(argsValue);
+  MOZ_RELEASE_ASSERT(slot < slotSpan());
+  setSlot(slot, v);
 }
 
 } /* namespace js */

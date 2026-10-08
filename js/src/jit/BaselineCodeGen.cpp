@@ -4506,6 +4506,10 @@ bool BaselineCompilerCodeGen::emitFormalArgAccess(JSOp op) {
     Register temp = R1.scratchReg();
     emitGuardedCallPreBarrierAnyZone(argAddr, MIRType::Value, temp);
     masm.loadValue(frame.addressOfStackValue(-1), R0);
+    Label notMagic;
+    masm.branchTestMagic(Assembler::NotEqual, R0, &notMagic);
+    masm.assumeUnreachable("Unexpected magic value stored to ArgumentsObject");
+    masm.bind(&notMagic);
     masm.storeValue(R0, argAddr);
 
     MOZ_ASSERT(frame.numUnsyncedSlots() == 0);
@@ -4562,6 +4566,11 @@ bool BaselineInterpreterCodeGen::emitFormalArgAccess(JSOp op) {
       emitGuardedCallPreBarrierAnyZone(argAddr, MIRType::Value,
                                        R0.scratchReg());
       masm.loadValue(frame.addressOfStackValue(-1), R0);
+      Label notMagic;
+      masm.branchTestMagic(Assembler::NotEqual, R0, &notMagic);
+      masm.assumeUnreachable(
+          "Unexpected magic value stored to ArgumentsObject");
+      masm.bind(&notMagic);
       masm.storeValue(R0, argAddr);
 
       // Reload the arguments object.
