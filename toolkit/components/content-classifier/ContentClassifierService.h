@@ -332,8 +332,9 @@ class ContentClassifierService final : public nsIAsyncShutdownBlocker,
 
   // Serial background task queue used for the CPU-heavy half of engine
   // rebuilds (BuildEngineFromRules) plus the lock-holding install /
-  // populate / prune phase. Created in Init(); drained and cleared in
-  // BlockShutdown before RemoveBlocker runs.
+  // populate / prune phase. Created in Init(); cleared in BlockShutdown.
+  // Shutdown does not wait for it to drain: closures already on it are no-ops
+  // once mInitPhase leaves InitSucceeded.
   nsCOMPtr<nsISerialEventTarget> mBuildThread;
 };
 

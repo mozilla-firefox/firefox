@@ -517,20 +517,24 @@ NS_IMETHODIMP ContentClassifierService::BlockShutdown(
   MOZ_LOG(gContentClassifierLog, LogLevel::Info,
           ("ContentClassifierService::BlockShutdown - shutting down"));
 
+  // Flip the phase before anything else. Every build closure re-checks
+  // mInitPhase under mLock before it touches state, so from here on a
+  // queued closure cannot repopulate what ShutdownRSClient is about to
+  // clear. Clearing mBuildThread also closes the dispatch window for any
+  // subsequent UpdateFeatures call.
+  {
+    MutexAutoLock lock(mLock);
+    mInitPhase = InitPhase::ShutdownStarted;
+    mBuildThread = nullptr;
+  }
+
   // ShutdownRSClient clears the filter list data and engines. It also
   // tears down the RS client if one was created (the HTTP-only test
   // path leaves mRSClient null).
   ShutdownRSClient();
 
-  nsCOMPtr<nsISerialEventTarget> buildThread;
   {
     MutexAutoLock lock(mLock);
-
-    mInitPhase = InitPhase::ShutdownStarted;
-    // Clearing mBuildThread closes the dispatch window for any
-    // subsequent UpdateFeatures call. In-flight closures on the queue
-    // are gated by the mInitPhase check above before they touch state.
-    buildThread = std::move(mBuildThread);
 
     Preferences::UnregisterCallback(
         &ContentClassifierService::OnPrefChange,
@@ -559,25 +563,10 @@ NS_IMETHODIMP ContentClassifierService::BlockShutdown(
 
     content_classifier_teardown_domain_resolver();
 
-    if (!buildThread) {
-      RemoveBlocker();
-      return NS_OK;
-    }
+    // Removal is synchronous on purpose. Nothing queued there needs to finish
+    // before shutdown proceeds: closures bail at the mInitPhase check above.
+    RemoveBlocker();
   }
-
-  // Drain mBuildThread, then post back to the main thread to remove
-  // the shutdown blocker. Because mBuildThread is serial, the fence
-  // runs strictly after every already-dispatched build closure, so by
-  // the time FinishShutdown lands no off-thread work is in flight.
-  RefPtr<ContentClassifierService> self = this;
-  buildThread->Dispatch(NS_NewRunnableFunction(
-      "ContentClassifierService::ShutdownFence", [self]() {
-        NS_DispatchToMainThread(NS_NewRunnableFunction(
-            "ContentClassifierService::FinishShutdown", [self]() {
-              MutexAutoLock lock(self->mLock);
-              self->RemoveBlocker();
-            }));
-      }));
 
   return NS_OK;
 }
