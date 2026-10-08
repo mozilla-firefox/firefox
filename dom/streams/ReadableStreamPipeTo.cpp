@@ -619,6 +619,13 @@ void PipeToPump::OnReadFulfilled(JSContext* aCx, JS::Handle<JS::Value> aChunk,
          const RefPtr<WritableStreamDefaultWriter>& aWriter,
          JS::Handle<JS::Value> aChunk)
           MOZ_CAN_RUN_SCRIPT_FOR_DEFINITION -> already_AddRefed<Promise> {
+            // Shutdown may have cleaned up the writer.
+            // (Can't just check the mShuttingDown because
+            // ShutdownWithActionAfterFinishedWrite may be still waiting.)
+            if (!aWriter->GetStream()) {
+              return nullptr;
+            }
+
             RefPtr<Promise> promise =
                 WritableStreamDefaultWriterWrite(aCx, aWriter, aChunk, aRv);
 
