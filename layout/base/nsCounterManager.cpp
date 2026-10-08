@@ -404,24 +404,28 @@ static bool HasCounters(const nsStyleContent& aStyle) {
          !aStyle.mCounterReset.IsEmpty() || !aStyle.mCounterSet.IsEmpty();
 }
 
+// For elements with 'display:list-item' we add a default
+// 'counter-increment:list-item' unless 'counter-increment' already has a
+// value for 'list-item'.
+//
+// https://drafts.csswg.org/css-lists-3/#declaring-a-list-item
+//
+// We inherit `display` for some anonymous boxes, but we don't want them to
+// increment the list-item counter.
+static bool RequiresListItemIncrement(const nsIFrame* aFrame) {
+  return aFrame->StyleDisplay()->IsListItem() && !aFrame->Style()->IsAnonBox();
+}
+
+bool nsCounterManager::HasCounterChanges(const nsIFrame* aFrame) {
+  return RequiresListItemIncrement(aFrame) ||
+         HasCounters(*aFrame->StyleContent());
+}
+
 bool nsCounterManager::AddCounterChanges(nsIFrame* aFrame) {
-  // For elements with 'display:list-item' we add a default
-  // 'counter-increment:list-item' unless 'counter-increment' already has a
-  // value for 'list-item'.
-  //
-  // https://drafts.csswg.org/css-lists-3/#declaring-a-list-item
-  //
-  // We inherit `display` for some anonymous boxes, but we don't want them to
-  // increment the list-item counter.
-  const bool requiresListItemIncrement =
-      aFrame->StyleDisplay()->IsListItem() && !aFrame->Style()->IsAnonBox();
+  MOZ_ASSERT(HasCounterChanges(aFrame));
 
+  const bool requiresListItemIncrement = RequiresListItemIncrement(aFrame);
   const nsStyleContent* styleContent = aFrame->StyleContent();
-
-  if (!requiresListItemIncrement && !HasCounters(*styleContent)) {
-    MOZ_ASSERT(!aFrame->HasAnyStateBits(NS_FRAME_HAS_CSS_COUNTER_STYLE));
-    return false;
-  }
 
   aFrame->AddStateBits(NS_FRAME_HAS_CSS_COUNTER_STYLE);
 

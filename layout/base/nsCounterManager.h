@@ -284,6 +284,9 @@ class nsCounterManager {
   explicit nsCounterManager(mozilla::ContainStyleScope* scope)
       : mScope(scope) {}
 
+  // Whether aFrame resets, increments or sets any counter.
+  static bool HasCounterChanges(const nsIFrame* aFrame);
+
   // Returns true if dirty
   bool AddCounterChanges(nsIFrame* aFrame);
 
