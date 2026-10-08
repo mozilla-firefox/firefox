@@ -10,7 +10,6 @@ const MockFilePicker = SpecialPowers.MockFilePicker;
 const DIRS = [
   Services.dirsvc.get("TmpD", Ci.nsIFile),
   Services.dirsvc.get("Home", Ci.nsIFile),
-  Services.dirsvc.get("Docs", Ci.nsIFile),
 ];
 
 add_setup(async function init() {
