@@ -33,7 +33,8 @@ class PlatformPipeLink
     : public MessageLoopForIO::Watcher
 #endif
 {
-  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(PlatformPipeLink)
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING_WITH_DELETE_ON_EVENT_TARGET(
+      PlatformPipeLink, mIOThread.GetEventTarget())
 
  public:
   PlatformPipeLink(UniqueFileHandle aHandle, uint32_t aBufferSize);
