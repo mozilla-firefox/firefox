@@ -650,6 +650,22 @@ var gBrowserInit = {
     window.addEventListener("mouseout", MousePosTracker);
     window.addEventListener("dragover", MousePosTracker);
 
+    // aHTMLTooltip is used for both the browser UI and in-process <browser>s.
+    // Set an attribute for in-process pages such as about:preferences, so we
+    // can adjust the tooltip style (e.g. follow content's preferred color
+    // scheme) for that case. We only do this for tabbrowser <browser>s, since
+    // other in-process <browser>s (e.g. the sidebar) follow the chrome's style.
+    let htmlTooltip = document.getElementById("aHTMLTooltip");
+    htmlTooltip.addEventListener("popupshowing", () => {
+      let browser =
+        htmlTooltip.triggerNode?.documentGlobal.browsingContext.top
+          .embedderElement;
+      htmlTooltip.toggleAttribute(
+        "contenttooltip",
+        browser?.getTabBrowser() == gBrowser
+      );
+    });
+
     gNavToolbox.addEventListener("customizationstarting", CustomizationHandler);
     gNavToolbox.addEventListener("aftercustomization", CustomizationHandler);
 

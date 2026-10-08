@@ -518,9 +518,15 @@ split-view-footer {
   }
 }
 
-/**
- * Shortcuts
- */
+/* Content tooltips */
+
+#remoteBrowserTooltip,
+#aHTMLTooltip[contenttooltip] {
+  color-scheme: env(-moz-content-preferred-color-scheme);
+}
+
+/* Shortcuts */
+
 #selection-shortcut-action-panel {
   --panel-subview-body-padding: 0;
 
@@ -553,9 +559,7 @@ split-view-footer {
   margin-top: var(--space-small);
 }
 
-/**
- * Dialogs
- */
+/* Dialogs */
 
 .dialogStack {
   z-index: var(--browser-stack-z-index-dialog-stack);
