@@ -211,6 +211,12 @@ static void blendTextureLinearUpscale(S sampler, vec2 uv, int span,
   ivec2 i(clamp(uv, min_uv, max_uv));
   ivec2 frac = i;
   i >>= 7;
+  int32_t maxX = int32_t(sampler->width) - swgl_StepSize;
+  if (i.x.x < 0 || i.x.x > maxX) {
+    blendTextureLinearFallback<BLEND>(sampler, uv, span, uv_step, min_uv,
+                                      max_uv, color, buf);
+    return;
+  }
   P* row0 = (P*)sampler->buf + computeRow(sampler, ivec2_scalar(0, i.y.x));
   P* row1 = row0 + computeNextRowOffset(sampler, ivec2_scalar(0, i.y.x));
   I16 fracx = computeFracX(sampler, i, frac);
@@ -225,10 +231,17 @@ static void blendTextureLinearUpscale(S sampler, vec2 uv, int span,
   // one. However, due to the complication of upscaling, we may not necessarily
   // shift in all the next set of samples.
   for (P* end = buf + span; buf < end; buf += 4) {
+    Float prevX = uv.x;
     uv.x += uv_step.x;
     I32 ixn = cast(uv.x);
     I16 fracn = computeFracNoClamp(ixn);
     ixn >>= 7;
+    // Accumulated UV rounding must not step outside the row.
+    if (uint32_t(ixn.x) > uint32_t(maxX)) {
+      blendTextureLinearFallback<BLEND>(sampler, {prevX, uv.y}, int(end - buf),
+                                        uv_step, min_uv, max_uv, color, buf);
+      return;
+    }
     auto src0n = CONVERT(unaligned_load<packed_type>(&row0[ixn.x]),
                          signed_unpacked_type);
     auto src1n = CONVERT(unaligned_load<packed_type>(&row1[ixn.x]),
