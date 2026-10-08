@@ -314,9 +314,9 @@ class MediaEncoder {
 
   const UniquePtr<Muxer> mMuxer;
   const UniquePtr<AudioTrackEncoder> mAudioEncoder;
-  const RefPtr<AudioTrackListener> mAudioListener;
+  RefPtr<AudioTrackListener> mAudioListener;
   const UniquePtr<VideoTrackEncoder> mVideoEncoder;
-  const RefPtr<VideoTrackListener> mVideoListener;
+  RefPtr<VideoTrackListener> mVideoListener;
   const RefPtr<EncoderListener> mEncoderListener;
 
  public:

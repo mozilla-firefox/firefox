@@ -74,7 +74,9 @@ class BlobStorer : public MutableBlobStorageCallback {
 }  // namespace
 
 class MediaEncoder::AudioTrackListener : public MediaTrackListener {
- public:
+  // Private so that a listener and its encoder strong reference cycle are not
+  // created without registering for NotifyRemoved() to break the cycle and
+  // resolve mShutdownPromise.
   AudioTrackListener(RefPtr<DriftCompensator> aDriftCompensator,
                      RefPtr<MediaEncoder> aMediaEncoder)
       : mInitialized(false),
@@ -85,6 +87,16 @@ class MediaEncoder::AudioTrackListener : public MediaTrackListener {
     MOZ_ASSERT(mMediaEncoder);
     MOZ_ASSERT(mMediaEncoder->mAudioEncoder);
     MOZ_ASSERT(mEncoderThread);
+  }
+
+ public:
+  template <typename TRACK>
+  static RefPtr<AudioTrackListener> Create(DriftCompensator* aDriftCompensator,
+                                           MediaEncoder* aMediaEncoder,
+                                           TRACK* aTrack) {
+    RefPtr listener = new AudioTrackListener(aDriftCompensator, aMediaEncoder);
+    aTrack->AddListener(listener);
+    return listener;
   }
 
   void NotifyQueuedChanges(MediaTrackGraph* aGraph, TrackTime aTrackOffset,
@@ -157,7 +169,6 @@ class MediaEncoder::AudioTrackListener : public MediaTrackListener {
 };
 
 class MediaEncoder::VideoTrackListener : public DirectMediaTrackListener {
- public:
   explicit VideoTrackListener(RefPtr<MediaEncoder> aMediaEncoder)
       : mDirectConnected(false),
         mInitialized(false),
@@ -168,6 +179,15 @@ class MediaEncoder::VideoTrackListener : public DirectMediaTrackListener {
         mShutdownPromise(mShutdownHolder.Ensure(__func__)) {
     MOZ_ASSERT(mMediaEncoder);
     MOZ_ASSERT(mEncoderThread);
+  }
+
+ public:
+  static RefPtr<VideoTrackListener> Create(MediaEncoder* aMediaEncoder,
+                                           VideoStreamTrack* aTrack) {
+    RefPtr listener = new VideoTrackListener(aMediaEncoder);
+    aTrack->AddDirectListener(listener);
+    aTrack->AddListener(listener);
+    return listener;
   }
 
   void NotifyDirectListenerInstalled(InstallationResult aResult) override {
@@ -389,17 +409,13 @@ MediaEncoder::MediaEncoder(
     TimeDuration aTimeslice)
     : mMainThread(GetMainThreadSerialEventTarget()),
       mEncoderThread(std::move(aEncoderThread)),
+      mDriftCompensator(std::move(aDriftCompensator)),
       mEncodedAudioQueue(std::move(aEncodedAudioQueue)),
       mEncodedVideoQueue(std::move(aEncodedVideoQueue)),
       mMuxer(MakeUnique<Muxer>(std::move(aWriter), *mEncodedAudioQueue,
                                *mEncodedVideoQueue)),
       mAudioEncoder(std::move(aAudioEncoder)),
-      mAudioListener(mAudioEncoder ? MakeAndAddRef<AudioTrackListener>(
-                                         std::move(aDriftCompensator), this)
-                                   : nullptr),
       mVideoEncoder(std::move(aVideoEncoder)),
-      mVideoListener(mVideoEncoder ? MakeAndAddRef<VideoTrackListener>(this)
-                                   : nullptr),
       mEncoderListener(MakeAndAddRef<EncoderListener>(mEncoderThread, this)),
       mMimeType(aMimeType),
       mMaxMemory(aMaxMemory),
@@ -530,10 +546,12 @@ void MediaEncoder::ConnectAudioNode(AudioNode* aNode, uint32_t aOutput) {
   mAudioNode = aNode;
 
   if (mPipeTrack) {
-    mPipeTrack->AddListener(mAudioListener);
+    mAudioListener =
+        AudioTrackListener::Create(mDriftCompensator, this, mPipeTrack.get());
     EnsureGraphTrackFrom(mPipeTrack);
   } else {
-    mAudioNode->GetTrack()->AddListener(mAudioListener);
+    mAudioListener = AudioTrackListener::Create(mDriftCompensator, this,
+                                                mAudioNode->GetTrack());
     EnsureGraphTrackFrom(mAudioNode->GetTrack());
   }
 }
@@ -556,12 +574,12 @@ void MediaEncoder::ConnectMediaStreamTrack(MediaStreamTrack* aTrack) {
     }
 
     MOZ_ASSERT(!mAudioTrack, "Only one audio track supported.");
-    MOZ_ASSERT(mAudioListener, "No audio listener for this audio track");
+    MOZ_ASSERT(!mAudioListener, "One audio listener");
 
     LOG(LogLevel::Info, ("Connected to audio track {}", fmt::ptr(aTrack)));
 
     mAudioTrack = audio;
-    audio->AddListener(mAudioListener);
+    mAudioListener = AudioTrackListener::Create(mDriftCompensator, this, audio);
   } else if (VideoStreamTrack* video = aTrack->AsVideoStreamTrack()) {
     if (!mVideoEncoder) {
       // No video encoder for this video track. It could be disabled.
@@ -570,13 +588,12 @@ void MediaEncoder::ConnectMediaStreamTrack(MediaStreamTrack* aTrack) {
     }
 
     MOZ_ASSERT(!mVideoTrack, "Only one video track supported.");
-    MOZ_ASSERT(mVideoListener, "No video listener for this video track");
+    MOZ_ASSERT(!mVideoListener, "One video listener");
 
     LOG(LogLevel::Info, ("Connected to video track {}", fmt::ptr(aTrack)));
 
     mVideoTrack = video;
-    video->AddDirectListener(mVideoListener);
-    video->AddListener(mVideoListener);
+    mVideoListener = VideoTrackListener::Create(this, video);
   } else {
     MOZ_ASSERT(false, "Unknown track type");
   }
