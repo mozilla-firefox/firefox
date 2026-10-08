@@ -22,40 +22,4 @@
 # changes to stick? As of bug 928195, this shouldn't be necessary! Please
 # don't change CLOBBER for WebIDL changes any more.
 
-Modified build files in third_party/libwebrtc - Bug 1857862 - Vendor libwebrtc from 23fc2bee6b
-Modified build files in third_party/libwebrtc - Bug 1857862 - Vendor libwebrtc from 0d8b79eb40
-Modified build files in third_party/libwebrtc - Bug 1857862 - Vendor libwebrtc from 920abcc9bc
-Modified build files in third_party/libwebrtc - Bug 1857862 - Vendor libwebrtc from 950e231b63
-Modified build files in third_party/libwebrtc - Bug 1857862 - Vendor libwebrtc from 32a8169a65
-Modified build files in third_party/libwebrtc - Bug 1857862 - Vendor libwebrtc from d797cb6ca7
-Modified build files in third_party/libwebrtc - Bug 1857862 - Vendor libwebrtc from 3adaeefbc6
-Modified build files in third_party/libwebrtc - Bug 1857862 - Vendor libwebrtc from 17e8a5cc7d
-Merge day clobber 2023-10-23
-Modified build files in third_party/libwebrtc - Bug 1851693 - Vendor libwebrtc from 1cc41ea84f
-Merge day clobber 2026-06-15
-Modified build files in third_party/libwebrtc - Bug 1843113 - Vendor libwebrtc from 8b5bf6dd05
-Modified build files in third_party/libwebrtc - Bug 1847074 - Vendor libwebrtc from 090fe08995
-Modified build files in third_party/libwebrtc - Bug 1847074 - Vendor libwebrtc from b4015689b8
-Modified build files in third_party/libwebrtc - Bug 1847074 (MOZ) - add flexfec_header_reader_writer2.cc to non-unified sources build.
-Modified build files in third_party/libwebrtc - Bug 1847074 - Vendor libwebrtc from b7a688c68e
-Merge day clobber 2026-07-20
-Modified build files in third_party/libwebrtc - Bug 1851693 - Vendor libwebrtc from ade07ca45e
-Modified build files in third_party/libwebrtc - Bug 1839451 - (fix-f6eae959bf) s/rtc_encoder_simulcast_proxy/rtc_simulcast_encoder_adapter/ BUILD ref.
-Modified build files in third_party/libwebrtc - Bug 1833237 - Vendor libwebrtc from 86163248f4
-Modified build files in third_party/libwebrtc - Bug 1839451 - Vendor libwebrtc from 2a256c82ec
-Modified build files in third_party/libwebrtc - Bug 1839451 - Vendor libwebrtc from 65a6ecab33
-Modified build files in third_party/libwebrtc - Bug 1839451 - Vendor libwebrtc from 9109e856d5
-Modified build files in third_party/libwebrtc - Bug 1839451 - Vendor libwebrtc from de0afb7df6
-Modified build files in third_party/libwebrtc - Bug 1839512 - remove unused event_wrapper.cc from libwebrtc build. r?dbaker!
-Modified build files in third_party/libwebrtc - Bug 1851693 (MOZ) - Moved flexfec_03_header_reader_writer.cc back under non-unified sources to fix build after rename from upstream change ade07ca45e.
-Modified build files in third_party/libwebrtc - Bug 1857862 - Vendor libwebrtc from b38d9d2b6f
-Merge day clobber 2026-08-13
-Merge day clobber 2023-11-20
-Modified build files in third_party/libwebrtc - Bug 1860685 - Vendor libwebrtc from 411639ede8
-Modified build files in third_party/libwebrtc - Bug 1860685 - Vendor libwebrtc from 5f14f9e6ed
-Merge day clobber 2026-08-27
-Modified build files in third_party/libwebrtc - Bug 1860685 - Vendor libwebrtc from d23d450a50
-Merge day clobber 2026-09-10
-Modified build files in third_party/libwebrtc - Bug 1860685 - Vendor libwebrtc from f2827c4b1a
-Merge day clobber 2026-09-24
-Modified build files in third_party/libwebrtc - Bug 1871981 - Vendor libwebrtc from fd3b346e27
+Merge day clobber 2026-10-08
