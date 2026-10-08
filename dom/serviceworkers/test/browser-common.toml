@@ -23,6 +23,8 @@ support-files = [
   "service_worker_etp.js",
   "simple_fetch_worker.js",
   "storage_recovery_worker.sjs",
+  "subframe_container.html",
+  "subframe_message_navigate.html",
   "sw_always_updating_inter_sw_postmessage.sjs",
   "sw_inter_sw_postmessage.js",
   "sw_respondwith_serviceworker.js",
@@ -46,6 +48,8 @@ skip-if = [
 ["browser_etp_permission.js"]
 
 ["browser_force_refresh.js"]
+
+["browser_initial_about_blank_subframe_history.js"]
 
 ["browser_intercepted_channel_process_swap.js"]
 

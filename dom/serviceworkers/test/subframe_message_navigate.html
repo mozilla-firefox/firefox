@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Subframe that navigates itself on request</title>
+    <script>
+      window.addEventListener("message", event => {
+        window.location.href = event.data;
+      });
+    </script>
+  </head>
+  <body>
+    subframe
+  </body>
+</html>

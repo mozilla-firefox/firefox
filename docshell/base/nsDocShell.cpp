@@ -9489,9 +9489,10 @@ bool nsDocShell::ShouldDoInitialAboutBlankSyncLoad(
     return false;
   }
 
-  if (mHasStartedLoadingOtherThanInitialBlankURI || !mDocumentViewer ||
-      !mDocumentViewer->GetDocument() ||
-      !mDocumentViewer->GetDocument()->IsUncommittedInitialDocument()) {
+  Document* doc = mDocumentViewer->GetDocument();
+
+  if (mHasStartedLoadingOtherThanInitialBlankURI || !mDocumentViewer || !doc ||
+      !doc->IsUncommittedInitialDocument()) {
     return false;
   }
 
@@ -9517,6 +9518,19 @@ bool nsDocShell::ShouldDoInitialAboutBlankSyncLoad(
         !mBrowsingContext->Group()
              ->UsesOriginAgentCluster(aPrincipalToInherit)
              .isSome()) {
+      return false;
+    }
+
+    // Initial about:blank from SH is kind of broken.
+    // - The IPC round-trip in MaybeHandleSubframeHistory will make the load
+    //   async, but CompleteInitialAboutBlankLoad might at least not replace
+    //   the document. See bug 2007894.
+    // - If an xorigin iframe navigates itself to about:blank and is then
+    //   restored during a parent document reload / traversal, we get here with
+    //   an xorigin about:blank. See bug 2021375.
+    // So at least block xorigin initial about:blank.
+    if (aLoadState->LoadIsFromSessionHistory() &&
+        !aPrincipalToInherit->Equals(doc->GetPrincipal())) {
       return false;
     }
   }
