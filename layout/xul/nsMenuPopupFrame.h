@@ -297,6 +297,7 @@ class nsMenuPopupFrame final : public nsBlockFrame, public nsIWidgetListener {
   bool IsNativeMenu() const { return mIsNativeMenu; }
   bool CanSkipLayout() const;
   bool IsMouseTransparent() const;
+  mozilla::widget::TransparencyMode WidgetTransparencyMode() const;
 
   // Return true if the popup is for a menulist.
   bool IsMenuList() const;
