@@ -756,7 +756,7 @@ nsresult HTMLFormElement::SubmitSubmission(
   }
 
   // If there is no link handler, then we won't actually be able to submit.
-  Document* doc = GetComposedDoc();
+  RefPtr<Document> doc = GetComposedDoc();
   RefPtr<nsDocShell> container =
       doc ? nsDocShell::Cast(doc->GetDocShell()) : nullptr;
   if (!container || IsEditable()) {
