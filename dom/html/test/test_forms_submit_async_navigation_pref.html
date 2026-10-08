@@ -1,0 +1,32 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test the dom.forms.submit_async_navigation preference</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+  <script>
+    async function doTestWith(prefEnabled) {
+      await SpecialPowers.pushPrefEnv({ set: [["dom.forms.submit_async_navigation", prefEnabled ]] });
+      let navigated = false;
+      let iframe = document.querySelector('iframe');
+      let waitForLoad = new Promise(r => iframe.onload = r);
+      iframe.src = "file_forms_submit_async_navigation_pref.html";
+      await waitForLoad;
+      iframe.contentWindow.navigation.onnavigate = () => {
+        navigated = true;
+      };
+      waitForLoad = new Promise(r => iframe.onload = r);
+      document.querySelector('form').submit();
+      is(navigated, !prefEnabled, `Form submission should be ${prefEnabled ? "a" : ""}synchronous with dom.forms.submit_async_navigation=${prefEnabled}`);
+      await waitForLoad;
+    }
+    add_task(() => doTestWith(false));
+    add_task(() => doTestWith(true));
+  </script>
+</head>
+<body>
+<iframe name="i"></iframe>
+<form action="file_forms_submit_async_navigation_pref.html" target="i"><input type="hidden" name="x"></form>
+</body>
+</html>

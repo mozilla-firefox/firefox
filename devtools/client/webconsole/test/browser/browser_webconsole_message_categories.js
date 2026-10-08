@@ -105,6 +105,7 @@ add_task(async function () {
   await pushPref("fission.bfcacheInParent", false);
   await pushPref("devtools.webconsole.filter.css", true);
   await pushPref("devtools.webconsole.filter.net", true);
+  await pushPref("devtools.webconsole.persistlog", true);
 
   const hud = await openNewTabAndConsole(TEST_URI);
   for (let i = 0; i < TESTS.length; i++) {

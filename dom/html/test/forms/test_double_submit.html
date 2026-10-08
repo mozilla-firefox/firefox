@@ -16,13 +16,17 @@ add_task(async function double_submit() {
   });
 
   let numCalls = 0;
+  let {waitForBeforeUnload, resolve} = Promise.withResolvers();
   popup.addEventListener("beforeunload", () => {
     numCalls++;
     info("beforeunload called " + numCalls + " times");
+    resolve();
   });
 
   info("clicking button");
   popup.document.querySelector("button").click();
+  await waitForBeforeUnload;
+  await new Promise(r => setTimeout(r));
 
   is(numCalls, 1, "beforeunload should only fire once");
   popup.close();

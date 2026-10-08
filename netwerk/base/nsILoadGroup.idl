@@ -108,4 +108,7 @@ interface nsILoadGroup : nsIRequest
      */
     [infallible]
     readonly attribute boolean isBrowsingContextDiscarded;
+
+    /** Cancel a single request from the load group. */
+    void cancelRequest(in nsIRequest aRequest, in ACString aReason, in nsresult aStatus);
 };

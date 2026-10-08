@@ -216,6 +216,22 @@ nsLoadGroup::Cancel(nsresult status) {
   return firstError;
 }
 
+nsresult nsLoadGroup::CancelRequest(nsIRequest* aRequest,
+                                    const nsACString& aReason,
+                                    nsresult aStatus) {
+  MOZ_ASSERT(NS_FAILED(aStatus));
+  mStatus = aStatus;
+  mIsCanceling = true;
+  MOZ_ASSERT(mRequests.Contains(aRequest));
+  nsresult result = aRequest->CancelWithReason(aStatus, aReason);
+  if (NS_SUCCEEDED(RemoveRequestFromHashtable(aRequest, aStatus))) {
+    (void)NotifyRemovalObservers(aRequest, aStatus);
+  }
+  mIsCanceling = false;
+  mStatus = NS_OK;
+  return result;
+}
+
 NS_IMETHODIMP
 nsLoadGroup::Suspend() {
   nsresult rv, firstError;

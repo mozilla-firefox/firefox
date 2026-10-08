@@ -701,4 +701,10 @@ interface nsIDocShell : nsIDocShellTreeItem
    * until session history state is moved into the parent process.
    */
   void persistLayoutHistoryState();
+
+  /**
+   * Cancels the planned form submission navigation, if there is any.
+   * https://html.spec.whatwg.org/#planned-navigation
+   */
+  [noscript] void cancelPlannedFormNavigation();
 };

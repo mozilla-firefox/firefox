@@ -3271,6 +3271,13 @@
   value: true
   mirror: always
 
+# Whether to do the navigation for form submission asynchronously
+# (which is what the spec wants)
+- name: dom.forms.submit_async_navigation
+  type: bool
+  value: true
+  mirror: always
+
 # The interval in milliseconds between two Escape key events where the second
 # key event will exit fullscreen, even if it is consumed.
 - name: dom.fullscreen.force_exit_on_multiple_escape_interval

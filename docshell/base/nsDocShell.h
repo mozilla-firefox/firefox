@@ -9,6 +9,7 @@
 #include "mozilla/Encoding.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/NotNull.h"
+#include "mozilla/Result.h"
 #include "mozilla/ScrollbarPreferences.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/WeakPtr.h"
@@ -240,22 +241,8 @@ class nsDocShell final : public nsDocLoader,
                        mozilla::dom::UserNavigationInvolvement aUserInvolvement,
                        nsIPrincipal* aTriggeringPrincipal,
                        nsIPolicyContainer* aPolicyContainer);
-  /**
-   * Process a click on a link.
-   *
-   * Works the same as OnLinkClick() except it happens immediately rather than
-   * through an event.
-   *
-   * @param aContent the content object used for triggering the link.
-   * @param aDocShellLoadState the extended load info for this load.
-   * @param aNoOpenerImplied if the link implies "noopener"
-   * @param aTriggeringPrincipal, if not passed explicitly we fall back to
-   *        the document's principal.
-   */
-  nsresult OnLinkClickSync(nsIContent* aContent,
-                           nsDocShellLoadState* aLoadState,
-                           bool aNoOpenerImplied,
-                           nsIPrincipal* aTriggeringPrincipal);
+  nsresult OnFormSubmit(mozilla::dom::HTMLFormElement* aForm,
+                        nsDocShellLoadState* aLoadState);
 
   /**
    * Process a mouse-over a link.
@@ -587,6 +574,31 @@ class nsDocShell final : public nsDocLoader,
   nsresult SetupNewViewer(
       nsIDocumentViewer* aNewViewer,
       mozilla::dom::WindowGlobalChild* aWindowActor = nullptr);
+
+  // Finds the target browsing context for this load according to
+  // aLoadState->Target() and sets aLoadState->TargetBrowsingContext() to it.
+  nsresult ComputeNamedTargetBrowsingContext(nsDocShellLoadState* aLoadState);
+
+  /**
+   * Process a click on a link.
+   *
+   * Works the same as OnLinkClick() except it happens immediately rather than
+   * through an event.
+   *
+   * @param aContent the content object used for triggering the link.
+   * @param aDocShellLoadState the extended load info for this load.
+   * @param aNoOpenerImplied if the link implies "noopener"
+   * @param aTriggeringPrincipal, if not passed explicitly we fall back to
+   *        the document's principal.
+   */
+  nsresult OnLinkClickSync(nsIContent* aContent,
+                           nsDocShellLoadState* aLoadState,
+                           bool aNoOpenerImplied,
+                           nsIPrincipal* aTriggeringPrincipal);
+  /** Queue a task to run OnLinkClickSync. */
+  mozilla::Result<RefPtr<OnLinkClickEvent>, nsresult> OnLinkClickWithLoadState(
+      nsIContent* aContent, nsDocShellLoadState* aLoadState,
+      bool aNoOpenerImplied, nsIPrincipal* aTriggeringPrincipal);
 
   //
   // Session History
@@ -1157,6 +1169,8 @@ class nsDocShell final : public nsDocLoader,
 
   void SetCurrentURIInternal(nsIURI* aURI);
 
+  void StopPendingJavascriptURLNavigations();
+
   already_AddRefed<nsIWebProgressListener> BCWebProgressListener();
 
   // data members
@@ -1241,6 +1255,16 @@ class nsDocShell final : public nsDocLoader,
   // for which these objects are needed.
   nsCOMPtr<nsIURI> mFailedURI;
   nsCOMPtr<nsIChannel> mFailedChannel;
+
+  /**
+   * Scheduled form submission navigation.
+   * This is only a weak pointer, since we only want to hold onto it
+   * as long as the event is in the queue.
+   * https://html.spec.whatwg.org/#planned-navigation
+   * We only have one per navigable, not one per form as the spec wants,
+   * see https://github.com/whatwg/html/issues/12608
+   */
+  mozilla::WeakPtr<OnLinkClickEvent> mPlannedFormNavigation;
 
   mozilla::UniquePtr<mozilla::gfx::Matrix5x4> mColorMatrix;
 

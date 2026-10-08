@@ -17,9 +17,13 @@ SimpleTest.waitForExplicitFinish();
 SimpleTest.waitForFocus(runTests);
 
 var defaultActionCount = 0;
+let onSubmitNavigation;
 
 function doDefault()
 {
+  if (onSubmitNavigation) {
+    onSubmitNavigation();
+  }
   defaultActionCount++;
 }
 
@@ -43,7 +47,9 @@ async function runTests()
     formDataInEvent = e.formData;
   });
 
+  let waitForSubmission = new Promise(resolve => onSubmitNavigation = resolve);
   form.dispatchEvent(new Event('submit'));
+  await waitForSubmission;
   await new Promise(resolve => SimpleTest.executeSoon(resolve));
 
   is(defaultActionCount, 1, "should only submit once");

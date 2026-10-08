@@ -242,6 +242,9 @@ skip-if = [
 
 ["test_formelements.html"]
 
+["test_forms_submit_async_navigation_pref.html"]
+support-files = ["file_forms_submit_async_navigation_pref.html"]
+
 ["test_fragment_form_pointer.html"]
 
 ["test_frame_count_with_synthetic_doc.html"]

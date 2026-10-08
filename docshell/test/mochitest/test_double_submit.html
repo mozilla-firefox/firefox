@@ -18,24 +18,6 @@
       // eslint-disable-next-line sdl/no-insecure-url
       const CROSS_ORIGIN_URI = "http://test1.example.com/tests/docshell/test/mochitest/ping.html";
 
-      function asyncClick(counts) {
-        let frame = document.createElement('iframe');
-        frame.addEventListener(
-          'load', () => frame.contentWindow.postMessage({command: "start"}, "*"),
-          { once:true });
-        frame.src = "clicker.html";
-
-        addEventListener('message', ({source}) => {
-          if (source === frame.contentWindow) {
-            counts.click++;
-            synthesizeMouse(document.getElementById('button'), 5, 5, {});
-          }
-        }, { once: true });
-
-        document.body.appendChild(frame);
-        return stop;
-      }
-
       function click(button) {
         synthesizeMouse(button, 5, 5, {});
       }
@@ -51,14 +33,14 @@
         let button = document.getElementById('button');
 
         let token = document.getElementById('token');
-        token.value = "first";
+        token.value = "bad";
 
         await new Promise((resolve, reject) => {
-          let counts = { click: 0, submit: 0 };
+          let counts = { submit: 0 };
           form.addEventListener('submit', () => counts.submit++);
-          asyncClick(counts);
           form.requestSubmit(button);
-          token.value = "bad";
+          token.value = "first";
+          click(button);
           let steps = {
             good: {
               entered: false,
@@ -72,7 +54,6 @@
               next: () => { steps.first.entered = true; token.value = "good"; click(button); },
               assertion: () => {
                 ok(!steps.good.entered && !steps.bad.entered, "first message is first")
-                is(counts.click, 1, "clicked");
                 is(counts.submit, 2, "did submit");
               }
             },
