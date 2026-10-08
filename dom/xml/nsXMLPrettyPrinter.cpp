@@ -47,8 +47,9 @@ nsresult nsXMLPrettyPrinter::PrettyPrint(Document* aDocument,
   NS_ENSURE_TRUE(rootElement, NS_ERROR_UNEXPECTED);
 
   // nsXMLContentSink should not ask us to pretty print an XML doc that comes
-  // with a CanAttachShadowDOM() == true root element, but just in case:
-  if (rootElement->CanAttachShadowDOM()) {
+  // with a CanAttachShadowDOM() == true root element or a root element that
+  // already has a shadow root, but just in case:
+  if (rootElement->CanAttachShadowDOM() || rootElement->GetShadowRoot()) {
     MOZ_DIAGNOSTIC_ASSERT(false, "We shouldn't be getting this root element");
     return NS_ERROR_UNEXPECTED;
   }

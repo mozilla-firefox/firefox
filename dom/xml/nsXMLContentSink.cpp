@@ -181,6 +181,11 @@ nsresult nsXMLContentSink::MaybePrettyPrint() {
     nsAutoMicroTask mt;
   }
 
+  if (mDocument->GetRootElement() != mDocElement) {
+    mPrettyPrintXML = false;
+    return NS_OK;
+  }
+
   // stop observing in order to avoid crashing when replacing content
   mDocument->RemoveObserver(this);
   mIsDocumentObserver = false;
