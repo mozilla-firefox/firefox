@@ -115,6 +115,7 @@ mozilla::ipc::IPCResult GMPChild::RecvPreloadLibs(const nsCString& aLibs) {
 #ifdef XP_WIN
   // Items in this must be lowercase!
   constexpr static const char16_t* whitelist[] = {
+      u"dbghelp.dll",      // Dependency for widevine
       u"dxva2.dll",        // Get monitor information
       u"evr.dll",          // MFGetStrideForBitmapInfoHeader
       u"freebl3.dll",      // NSS for clearkey CDM
