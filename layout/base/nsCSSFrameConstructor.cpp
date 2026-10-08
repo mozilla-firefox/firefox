@@ -1505,12 +1505,11 @@ void nsCSSFrameConstructor::NotifyDestroyingFrame(nsIFrame* aFrame) {
 
 struct nsGenConInitializer {
   UniquePtr<nsGenConNode> mNode;
-  nsGenConList* mList;
-  void (nsCSSFrameConstructor::*mDirtyAll)();
+  // Null if we should use the quote list.
+  RefPtr<nsAtom> mCounterListName;
 
-  nsGenConInitializer(UniquePtr<nsGenConNode> aNode, nsGenConList* aList,
-                      void (nsCSSFrameConstructor::*aDirtyAll)())
-      : mNode(std::move(aNode)), mList(aList), mDirtyAll(aDirtyAll) {}
+  nsGenConInitializer(UniquePtr<nsGenConNode> aNode, nsAtom* aCounterListName)
+      : mNode(std::move(aNode)), mCounterListName(aCounterListName) {}
 };
 
 already_AddRefed<nsIContent> nsCSSFrameConstructor::CreateGenConTextNode(
@@ -1589,15 +1588,10 @@ void nsCSSFrameConstructor::CreateGeneratedContent(
         CopyUTF8toUTF16(counters._1.AsString(), separator);
         ptr = CounterStylePtr::FromStyle(counters._2);
       }
-
-      auto* counterList = mContainStyleScopeManager.GetOrCreateCounterList(
-          aOriginatingElement, name);
       auto node = MakeUnique<nsCounterUseNode>(
           std::move(ptr), std::move(separator), aContentIndex,
           /* aAllCounters = */ type == Type::Counters);
-
-      auto initializer = MakeUnique<nsGenConInitializer>(
-          std::move(node), counterList, &nsCSSFrameConstructor::CountersDirty);
+      auto initializer = MakeUnique<nsGenConInitializer>(std::move(node), name);
       RefPtr c = CreateGenConTextNode(aState, u""_ns, std::move(initializer));
       aAddChild(c);
       return;
@@ -1607,10 +1601,8 @@ void nsCSSFrameConstructor::CreateGeneratedContent(
     case Type::NoOpenQuote:
     case Type::NoCloseQuote: {
       auto node = MakeUnique<nsQuoteNode>(type, aContentIndex);
-      auto* quoteList =
-          mContainStyleScopeManager.QuoteListFor(aOriginatingElement);
-      auto initializer = MakeUnique<nsGenConInitializer>(
-          std::move(node), quoteList, &nsCSSFrameConstructor::QuotesDirty);
+      auto initializer =
+          MakeUnique<nsGenConInitializer>(std::move(node), nullptr);
       RefPtr c = CreateGenConTextNode(aState, u""_ns, std::move(initializer));
       aAddChild(c);
       return;
@@ -1796,10 +1788,8 @@ void nsCSSFrameConstructor::CreateGeneratedContentFromListStyleType(
     return;
   }
 
-  auto* counterList = mContainStyleScopeManager.GetOrCreateCounterList(
-      aOriginatingElement, nsGkAtoms::list_item);
-  auto initializer = MakeUnique<nsGenConInitializer>(
-      std::move(node), counterList, &nsCSSFrameConstructor::CountersDirty);
+  auto initializer =
+      MakeUnique<nsGenConInitializer>(std::move(node), nsGkAtoms::list_item);
   RefPtr<nsIContent> child =
       CreateGenConTextNode(aState, EmptyString(), std::move(initializer));
   aAddChild(child);
@@ -3372,17 +3362,28 @@ void nsCSSFrameConstructor::ConstructTextFrame(
 
   InitAndRestoreFrame(aState, aContent, aParentFrame, newFrame);
 
-  // We never need to create a view for a text frame.
-
   if (newFrame->IsGeneratedContentFrame()) {
     UniquePtr<nsGenConInitializer> initializer(
         static_cast<nsGenConInitializer*>(
             aContent->TakeProperty(nsGkAtoms::genConInitializerProperty)));
     if (initializer) {
+      // All generated text has an element as its parent.
+      auto* element = aContent->GetParent()->AsElement();
+      nsGenConList* list = nullptr;
+      if (initializer->mCounterListName) {
+        list = mContainStyleScopeManager.GetOrCreateCounterList(
+            *element, initializer->mCounterListName);
+      } else {
+        list = mContainStyleScopeManager.QuoteListFor(*element);
+      }
       if (initializer->mNode.release()->InitTextFrame(
-              initializer->mList,
-              FindAncestorWithGeneratedContentPseudo(newFrame), newFrame)) {
-        (this->*(initializer->mDirtyAll))();
+              list, FindAncestorWithGeneratedContentPseudo(newFrame),
+              newFrame)) {
+        if (initializer->mCounterListName) {
+          CountersDirty();
+        } else {
+          QuotesDirty();
+        }
       }
     }
   }
