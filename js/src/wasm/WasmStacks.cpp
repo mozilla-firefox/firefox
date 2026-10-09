@@ -819,7 +819,7 @@ ContStackArena::~ContStackArena() {
 /* static */
 UniqueContStackArena ContStackArena::create(ContStackAllocator* owner) {
   size_t arenaSize = owner->arenaSize();
-  void* arenaBase = gc::MapAlignedPages(arenaSize, ContStackAlignment);
+  void* arenaBase = gc::MapAlignedPagesAsStack(arenaSize, ContStackAlignment);
   if (!arenaBase) {
     return nullptr;
   }

@@ -530,6 +530,30 @@ void MapStack(size_t stackSize) {
 #endif
 }
 
+void* MapAlignedPagesAsStack(size_t length, size_t alignment,
+                             StallAndRetry stallAndRetry) {
+  void* region = MapAlignedPages(length, alignment, stallAndRetry);
+  if (!region) {
+    return nullptr;
+  }
+
+#ifdef __OpenBSD__
+  // OpenBSD kills the process if the stack pointer points into memory not
+  // mapped with MAP_STACK. That flag can only be set at mmap() time, so remap
+  // the region in place. The pages are freshly mapped and untouched, so
+  // discarding their contents here is fine.
+  void* result = MozTaggedAnonymousMmap(
+      region, length, int(PageAccess::ReadWrite),
+      MAP_PRIVATE | MAP_ANON | MAP_FIXED | MAP_STACK, -1, 0, "js-gc-stack");
+  if (result != region) {
+    UnmapPages(region, length);
+    return nullptr;
+  }
+#endif
+
+  return region;
+}
+
 void CheckMemorySubsystemOnShutDown() {
   MOZ_ASSERT(gMappedMemorySizeBytes == 0);
 }

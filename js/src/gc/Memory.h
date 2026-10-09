@@ -56,6 +56,12 @@ void UnmapPages(void* region, size_t length);
 // the space that the stack may expand into. (Only on Linux fuzzing builds.)
 void MapStack(size_t stackSize);
 
+// Like MapAlignedPages, but the returned region is also usable as a call stack.
+// Some systems (notably OpenBSD) terminate the process if the stack pointer
+// points into memory that was not mapped with MAP_STACK.
+void* MapAlignedPagesAsStack(size_t length, size_t alignment,
+                             StallAndRetry stallAndRetry = StallAndRetry::No);
+
 // We only decommit unused pages if the system page size is the same as the
 // hardcoded page size for the build.
 bool DecommitEnabled();
