@@ -23,6 +23,9 @@ def _tc_client(service):
     return get_taskcluster_client(service)
 
 
+LATEST_PUSHES_TO_SEARCH = 30
+
+
 def _get_task(branch, revision):
     if branch and revision:
         index = f"gecko.v2.{branch}.revision.{revision}.taskgraph.decision"
@@ -34,6 +37,16 @@ def _get_task(branch, revision):
             raise Exception(f"Could not find decision task for {branch}@{revision}")
         raise Exception("Could not find latest mozilla-central decision task")
     return task
+
+
+def _get_pushlog_id(decision_task_id):
+    prefix = "index.gecko.v2.mozilla-central.pushlog-id."
+    for route in _get_task_details(decision_task_id)["routes"]:
+        if route.startswith(prefix) and route.endswith(".decision"):
+            return int(route[len(prefix) : -len(".decision")])
+    raise Exception(
+        f"Could not find the pushlog ID of decision task {decision_task_id}"
+    )
 
 
 def _get_task_details(task_id):
@@ -107,13 +120,7 @@ def _get_task_status(task_id):
     return status["status"]["state"]
 
 
-def _download_coverage_artifacts(
-    decision_task_id,
-    suites,
-    platforms,
-    cache_dir,
-    suites_to_ignore,
-):
+def _find_test_tasks(decision_task_id, suites, platforms, suites_to_ignore):
     task_data = _get_task_details(decision_task_id)
 
     def _is_test_task(task):
@@ -131,12 +138,53 @@ def _download_coverage_artifacts(
         platform = _get_platform(task["task"]["metadata"]["name"])
         return platforms is None or platform in platforms
 
-    test_tasks = [
+    return [
         task
         for task in _get_tasks_in_group(task_data["taskGroupId"])
         if _is_test_task(task) and _is_in_suites(task) and _is_in_platforms(task)
     ]
 
+
+def _find_latest_finished_test_tasks(suites, platforms, suites_to_ignore):
+    """Find the most recent mozilla-central push whose matching coverage tasks
+    have all finished, so we don't wait for (possibly hours of) pending tasks
+    on the very latest push."""
+    latest_task_id = _get_task(None, None)
+    latest_pushlog_id = _get_pushlog_id(latest_task_id)
+
+    for pushlog_id in range(
+        latest_pushlog_id, max(latest_pushlog_id - LATEST_PUSHES_TO_SEARCH, 0), -1
+    ):
+        if pushlog_id == latest_pushlog_id:
+            task_id = latest_task_id
+        else:
+            task_id = find_task_from_index([
+                f"gecko.v2.mozilla-central.pushlog-id.{pushlog_id}.decision"
+            ])
+            if not task_id:
+                continue
+        test_tasks = _find_test_tasks(task_id, suites, platforms, suites_to_ignore)
+        if test_tasks and all(
+            task["status"]["state"] in FINISHED_STATUSES for task in test_tasks
+        ):
+            if pushlog_id != latest_pushlog_id:
+                print(
+                    f"Using mozilla-central push {pushlog_id} (latest push with "
+                    "finished coverage tasks)."
+                )
+            return test_tasks
+
+    raise Exception(
+        "Could not find a mozilla-central push with finished coverage tasks "
+        f"among the latest {LATEST_PUSHES_TO_SEARCH} pushes."
+    )
+
+
+def _download_coverage_artifacts(
+    test_tasks,
+    suites,
+    cache_dir,
+):
     if suites is not None:
         for suite in suites:
             if not any(
@@ -282,16 +330,19 @@ def coverage_report(
     )
     os.makedirs(output_dir, exist_ok=True)
 
-    task_id = _get_task(branch, revision)
     suites_to_ignore = ignore if ignore is not None else ["talos", "awsy"]
-    artifact_paths = _download_coverage_artifacts(
-        task_id, suite, platform, cache_dir, suites_to_ignore
-    )
+    if branch and revision:
+        test_tasks = _find_test_tasks(
+            _get_task(branch, revision), suite, platform, suites_to_ignore
+        )
+    else:
+        test_tasks = _find_latest_finished_test_tasks(suite, platform, suites_to_ignore)
+    artifact_paths = _download_coverage_artifacts(test_tasks, suite, cache_dir)
     if not artifact_paths:
         target = (
             f"{branch}@{revision}"
             if branch and revision
-            else "the latest mozilla-central push"
+            else "the latest finished mozilla-central push"
         )
         print(
             f"No code coverage artifacts found for {target}. "
