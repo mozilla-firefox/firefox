@@ -3283,7 +3283,7 @@ class DeleteDatabaseOp final : public FactoryOp {
  private:
   ~DeleteDatabaseOp() override = default;
 
-  void LoadPreviousVersion(nsIFile& aDatabaseFile);
+  nsresult LoadPreviousVersion(nsIFile& aDatabaseFile);
 
   nsresult DatabaseOpen() override;
 
@@ -9696,7 +9696,8 @@ Database::AllocPBackgroundIDBTransactionParent(
           aObjectStoreNames,
           [lastName = Maybe<const nsString&>{},
            &objectStores](const nsString& name) mutable
-          -> mozilla::Result<SafeRefPtr<FullObjectStoreMetadata>, nsresult> {
+              -> mozilla::Result<SafeRefPtr<FullObjectStoreMetadata>,
+                                 nsresult> {
             if (lastName) {
               // Make sure that this name is sorted properly and not a
               // duplicate.
@@ -15048,7 +15049,8 @@ nsresult FactoryOp::FinishOpen() {
                              Client::IDB, mDatabaseId);
 
   mDatabaseId.Append('*');
-  mDatabaseId.Append(NS_ConvertUTF16toUTF8(metadata.name()));
+  mDatabaseId.Append(NS_ConvertUTF16toUTF8(
+      GetDatabaseFilenameBase(metadata.name(), mOriginMetadata.mIsPrivate)));
 
   // Need to get database file path before opening the directory.
   // XXX: For what reason?
@@ -16331,7 +16333,7 @@ void OpenDatabaseOp::VersionChangeOp::Cleanup() {
   TransactionDatabaseOperationBase::Cleanup();
 }
 
-void DeleteDatabaseOp::LoadPreviousVersion(nsIFile& aDatabaseFile) {
+nsresult DeleteDatabaseOp::LoadPreviousVersion(nsIFile& aDatabaseFile) {
   AssertIsOnIOThread();
   MOZ_ASSERT(mState == State::DatabaseWorkOpen);
   MOZ_ASSERT(!mPreviousVersion);
@@ -16343,7 +16345,7 @@ void DeleteDatabaseOp::LoadPreviousVersion(nsIFile& aDatabaseFile) {
   nsCOMPtr<mozIStorageService> ss =
       do_GetService(MOZ_STORAGE_SERVICE_CONTRACTID, &rv);
   if (NS_WARN_IF(NS_FAILED(rv))) {
-    return;
+    return NS_OK;
   }
 
   IndexedDatabaseManager* const idm = IndexedDatabaseManager::Get();
@@ -16372,46 +16374,40 @@ void DeleteDatabaseOp::LoadPreviousVersion(nsIFile& aDatabaseFile) {
   // Pass -1 as the directoryLockId to disable quota checking, since we might
   // temporarily exceed quota before deleting the database.
   QM_TRY_INSPECT(const auto& dbFileUrl,
-                 GetDatabaseFileURL(aDatabaseFile, -1, maybeKey), QM_VOID);
+                 GetDatabaseFileURL(aDatabaseFile, -1, maybeKey), NS_OK);
 
   QM_TRY_UNWRAP(const NotNull<nsCOMPtr<mozIStorageConnection>> connection,
-                OpenDatabaseAndHandleBusy(*ss, *dbFileUrl), QM_VOID);
+                OpenDatabaseAndHandleBusy(*ss, *dbFileUrl), NS_OK);
 
-#ifdef DEBUG
-  {
-    QM_TRY_INSPECT(const auto& stmt,
-                   CreateAndExecuteSingleStepStatement<
-                       SingleStepResult::ReturnNullIfNoResult>(
-                       *connection, "SELECT name FROM database"_ns),
-                   QM_VOID);
-
-    QM_TRY(OkIf(stmt), QM_VOID);
-
-    nsString databaseName;
-    rv = stmt->GetString(0, databaseName);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return;
-    }
-
-    MOZ_ASSERT(mCommonParams.metadata().name() == databaseName);
-  }
-#endif
+  // Unreadable metadata must not prevent removal of a damaged database.
+  QM_TRY_INSPECT(const auto& nameStmt,
+                 CreateAndExecuteSingleStepStatement<
+                     SingleStepResult::ReturnNullIfNoResult>(
+                     *connection, "SELECT name FROM database"_ns),
+                 NS_OK);
+  QM_TRY(OkIf(nameStmt), NS_OK);
+  QM_TRY_INSPECT(
+      const auto& storedName,
+      MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(nsString, nameStmt, GetString, 0),
+      NS_OK);
+  QM_TRY(OkIf(databaseName == storedName), NS_ERROR_FILE_CORRUPTED);
 
   QM_TRY_INSPECT(const auto& stmt,
                  CreateAndExecuteSingleStepStatement<
                      SingleStepResult::ReturnNullIfNoResult>(
                      *connection, "SELECT version FROM database"_ns),
-                 QM_VOID);
+                 NS_OK);
 
-  QM_TRY(OkIf(stmt), QM_VOID);
+  QM_TRY(OkIf(stmt), NS_OK);
 
   int64_t version;
   rv = stmt->GetInt64(0, &version);
   if (NS_WARN_IF(NS_FAILED(rv))) {
-    return;
+    return NS_OK;
   }
 
   mPreviousVersion = uint64_t(version);
+  return NS_OK;
 }
 
 nsresult DeleteDatabaseOp::DatabaseOpen() {
@@ -16477,7 +16473,7 @@ nsresult DeleteDatabaseOp::DoDatabaseWork() {
   if (exists) {
     // Parts of this function may fail but that shouldn't prevent us from
     // deleting the file eventually.
-    LoadPreviousVersion(*dbFile);
+    QM_TRY(MOZ_TO_RESULT(LoadPreviousVersion(*dbFile)));
 
     mState = State::BeginVersionChange;
   } else {
