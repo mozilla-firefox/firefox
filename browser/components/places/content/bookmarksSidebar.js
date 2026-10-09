@@ -26,8 +26,15 @@ XPCOMUtils.defineLazyScriptGetter(
 );
 /* End Shared Places Import */
 var gCumulativeSearches = 0;
+var gDeferredSwitcherLoad = Promise.withResolvers();
 
 window.addEventListener("load", () => {
+  // Wait for initialization to finish before loading the switcher.
+  import("chrome://browser/content/sidebar/sidebar-panel-switcher.mjs").then(
+    gDeferredSwitcherLoad.resolve,
+    console.error
+  );
+
   let uidensity = window.top.document.documentElement.getAttribute("uidensity");
   if (uidensity) {
     document.documentElement.setAttribute("uidensity", uidensity);

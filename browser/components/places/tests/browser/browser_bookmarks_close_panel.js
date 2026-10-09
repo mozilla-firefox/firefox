@@ -43,19 +43,19 @@ add_task(async function test_switch_from_legacy_bookmarks_panel() {
   });
 
   await SidebarTestUtils.showPanel(window, "viewBookmarksSidebar");
-  const sidebar = document.getElementById("sidebar");
-  const switcher = sidebar.contentDocument.querySelector(
-    "sidebar-panel-switcher"
+  const { contentDocument, contentWindow } = SidebarController.browser;
+  await contentWindow.gDeferredSwitcherLoad.promise;
+  const switcher = contentDocument.querySelector("sidebar-panel-switcher");
+  await BrowserTestUtils.waitForMutationCondition(
+    switcher.shadowRoot,
+    { characterData: true, childList: true, subtree: true },
+    () => switcher.label,
+    { msg: "The switcher is labelled." }
   );
-  await switcher.updateComplete;
   Assert.ok(BrowserTestUtils.isVisible(switcher), "Panel switcher is visible");
 
   const listShown = BrowserTestUtils.waitForEvent(switcher.panelList, "shown");
-  EventUtils.synthesizeMouseAtCenter(
-    switcher.button,
-    {},
-    sidebar.contentWindow
-  );
+  EventUtils.synthesizeMouseAtCenter(switcher.button, {}, contentWindow);
   await listShown;
   await switcher.updateComplete;
 
@@ -67,7 +67,7 @@ add_task(async function test_switch_from_legacy_bookmarks_panel() {
   );
   Assert.ok(historyItem, "History is available in the switcher");
   const sidebarShown = BrowserTestUtils.waitForEvent(window, "SidebarShown");
-  EventUtils.synthesizeMouseAtCenter(historyItem, {}, sidebar.contentWindow);
+  EventUtils.synthesizeMouseAtCenter(historyItem, {}, contentWindow);
   await sidebarShown;
   Assert.equal(
     SidebarController.currentID,
