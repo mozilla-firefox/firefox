@@ -103,6 +103,8 @@ def _get_suite(task_name):
 
 
 def _get_platform(task_name):
+    if "android" in task_name:
+        return "android"
     if "linux" in task_name:
         return "linux"
     if "win" in task_name:
@@ -285,7 +287,7 @@ def _generate_report(
     "--platform",
     nargs="+",
     default=None,
-    help='Platforms to include. Example: "linux windows".',
+    help='Platforms to include (linux, windows, macos, android). Example: "linux windows".',
 )
 @CommandArgument(
     "--suite",
