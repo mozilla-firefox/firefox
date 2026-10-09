@@ -400,7 +400,7 @@ function compare_suffix_lists {
   ${WGET} -O "${HG_SUFFIX_LOCAL}" "${HG_SUFFIX_URL}"
 
   echo "INFO: diffing in-tree suffix list against the suffix list from publicsuffix.org"
-  ${DIFF} ${PUBLIC_SUFFIX_LOCAL} ${HG_SUFFIX_LOCAL} | tee "${SUFFIX_LIST_DIFF_ARTIFACT}"
+  ${DIFF} ${HG_SUFFIX_LOCAL} ${PUBLIC_SUFFIX_LOCAL} | tee "${SUFFIX_LIST_DIFF_ARTIFACT}"
   if [ -s "${SUFFIX_LIST_DIFF_ARTIFACT}" ]
   then
     return 0
