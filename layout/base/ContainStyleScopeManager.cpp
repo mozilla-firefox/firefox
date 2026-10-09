@@ -139,6 +139,10 @@ bool ContainStyleScopeManager::DestroyCounterNodesFor(nsIFrame* aFrame) {
 }
 
 bool ContainStyleScopeManager::AddCounterChanges(nsIFrame* aNewFrame) {
+  if (!nsCounterManager::HasCounterChanges(aNewFrame)) {
+    MOZ_ASSERT(!aNewFrame->HasAnyStateBits(NS_FRAME_HAS_CSS_COUNTER_STYLE));
+    return false;
+  }
   return GetOrCreateScopeForContent(
              aNewFrame->GetContent()->GetFlattenedTreeParent())
       .GetCounterManager()
