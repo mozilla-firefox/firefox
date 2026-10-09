@@ -522,7 +522,7 @@ already_AddRefed<gfx::SourceSurface> CanvasTranslator::WaitForSurface(
       !mSharedContext->IsContextLost()) {
     surf->mSharedSurface =
         mSharedContext->ExportSharedSurface(mWebglTextureType, surf->mData);
-    if (surf->mSharedSurface) {
+    if (surf->mSharedSurface && surf->mSharedSurface->IsValid()) {
       surf->mSharedSurface->BeginRead();
       *aDesc = surf->mSharedSurface->ToSurfaceDescriptor();
       surf->mSharedSurface->EndRead();
@@ -1823,23 +1823,21 @@ bool CanvasTranslator::ResolveExternalSnapshot(uint64_t aSyncId,
   mExternalSnapshots.erase(it);
 
   RefPtr<gfx::SourceSurface> resolved;
-  if (snapshot.mSharedSurface) {
+  if (snapshot.mSharedSurface && snapshot.mSharedSurface->IsValid()) {
     snapshot.mSharedSurface->BeginRead();
-  }
-  if (snapshot.mDescriptor) {
-    if (aDT) {
-      resolved =
-          aDT->ImportSurfaceDescriptor(*snapshot.mDescriptor, aSize, aFormat);
+    if (snapshot.mDescriptor) {
+      if (aDT) {
+        resolved =
+            aDT->ImportSurfaceDescriptor(*snapshot.mDescriptor, aSize, aFormat);
+      }
+      if (!resolved && gfx::gfxVars::UseAcceleratedCanvas2D() &&
+          EnsureSharedContextWebgl()) {
+        // If we can't import the surface using the DT, then try using the
+        // global shared context to allow for a readback.
+        resolved = mSharedContext->ImportSurfaceDescriptor(
+            *snapshot.mDescriptor, aSize, aFormat);
+      }
     }
-    if (!resolved && gfx::gfxVars::UseAcceleratedCanvas2D() &&
-        EnsureSharedContextWebgl()) {
-      // If we can't import the surface using the DT, then try using the global
-      // shared context to allow for a readback.
-      resolved = mSharedContext->ImportSurfaceDescriptor(*snapshot.mDescriptor,
-                                                         aSize, aFormat);
-    }
-  }
-  if (snapshot.mSharedSurface) {
     snapshot.mSharedSurface->EndRead();
     if (snapshot.mWebgl) {
       snapshot.mWebgl->RecycleSnapshotSharedSurface(snapshot.mSharedSurface);

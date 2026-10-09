@@ -245,7 +245,7 @@ bool SharedSurface_SurfaceTexture::IsBufferAvailable() const {
 }
 
 bool SharedSurface_SurfaceTexture::IsValid() const {
-  return !mSurface->IsReleased();
+  return SharedSurface::IsValid() && !mSurface->IsReleased();
 }
 
 Maybe<layers::SurfaceDescriptor>

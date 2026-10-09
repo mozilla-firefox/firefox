@@ -150,7 +150,7 @@ class SharedSurface {
 
   // Returns true if the surface is still valid to use. If false, the underlying
   // resource has been released and we must allocate a new surface instead.
-  virtual bool IsValid() const { return true; };
+  virtual bool IsValid() const { return bool(mDesc.gl); };
 
   virtual Maybe<layers::SurfaceDescriptor> ToSurfaceDescriptor() = 0;
 
