@@ -86,9 +86,19 @@ class SourceSurfaceRecording final : public SourceSurface {
   }
 
   ~SourceSurfaceRecording() {
-    mRecorder->RemoveStoredObject(this);
-    mRecorder->RecordEvent(
-        RecordedSourceSurfaceDestruction(ReferencePtr(this)));
+    ReferencePtr self(this);
+    if (NS_IsMainThread()) {
+      mRecorder->RemoveStoredObject(self);
+      mRecorder->RecordEvent(RecordedSourceSurfaceDestruction(self));
+      return;
+    }
+
+    // The recorder owns the deletion so no need to hold a strong ref to it.
+    mRecorder->AddPendingDeletion(
+        [recorder = MOZ_KnownLive(mRecorder.get()), self]() {
+          recorder->RemoveStoredObject(self);
+          recorder->RecordEvent(RecordedSourceSurfaceDestruction(self));
+        });
   }
 
   SurfaceType GetType() const override { return SurfaceType::RECORDING; }
