@@ -4981,12 +4981,13 @@ nsCSSFrameConstructor::FindElementData(const Element& aElement,
                                        ItemFlags aFlags) {
   // Don't create frames for non-SVG element children of SVG elements.
   if (!aElement.IsSVGElement()) {
-    // NOTE: Anon content is allowed, the native code should know what it's
-    // doing. In practice we care about ::backdrop and the
-    // custom-content-container.
+    // NOTE: Anon content (from non display: contents) is allowed, the native
+    // code should know what it's doing. In practice we care about ::backdrop
+    // and the custom-content-container.
     if (aParentFrame && IsFrameForSVG(aParentFrame) &&
         !aParentFrame->IsSVGForeignObjectFrame() &&
-        !aElement.IsRootOfNativeAnonymousSubtree()) {
+        (aElement.GetParent() != aParentFrame->GetContent() ||
+         !aElement.IsRootOfNativeAnonymousSubtree())) {
       return nullptr;
     }
     if (aFlags.contains(ItemFlag::IsWithinSVGText)) {
