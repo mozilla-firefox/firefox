@@ -4,6 +4,18 @@
 "use strict";
 
 add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.urlbar.ipc.chromeMessagePassing", false],
+      // Tests get no default Top Sites, but this test opens the view on an
+      // empty string and expects a result even when the opt-in is hidden.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
+  });
+
   registerCleanupFunction(async () => {
     UrlbarPrefs.clear("quicksuggest.online.enabled");
     UrlbarPrefs.clear("quicksuggest.contextualOptIn");

@@ -12,7 +12,14 @@ const outerWrapperClass = Services.prefs.getBoolPref(
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
-    set: [["test.wait300msAfterTabSwitch", true]],
+    set: [
+      ["test.wait300msAfterTabSwitch", true], // Tests get no default Top Sites, but this test needs at least one tile
+      // to read the card background colors from.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
   });
 
   SpecialPowers.registerConsoleListener(function onConsoleMessage(msg) {

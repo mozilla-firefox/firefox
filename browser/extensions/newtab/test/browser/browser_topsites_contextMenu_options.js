@@ -8,6 +8,45 @@
 // scope of the callback. Eslint doesn't know about that.
 /* global ContentTaskUtils */
 
+const { SearchTestUtils } = ChromeUtils.importESModule(
+  "resource://testing-common/SearchTestUtils.sys.mjs"
+);
+
+SearchTestUtils.init(this);
+
+add_setup(async function () {
+  // Set up the configuration so that Baidu is available as a search engine, so
+  // the search shortcut works.
+  await SearchTestUtils.updateRemoteSettingsConfig([
+    {
+      identifier: "google",
+      base: {
+        name: "Google",
+        aliases: ["google"],
+        urls: {
+          search: {
+            base: "https://www.google.com/search",
+            searchTermParamName: "q",
+          },
+        },
+      },
+    },
+    {
+      identifier: "baidu",
+      base: {
+        name: "百度",
+        aliases: ["百度", "baidu"],
+        urls: {
+          search: {
+            base: "https://www.baidu.com/baidu",
+            searchTermParamName: "wd",
+          },
+        },
+      },
+    },
+  ]);
+});
+
 test_newtab({
   async before() {
     // Some reason test-linux1804-64-qr/debug can end up with example.com, so

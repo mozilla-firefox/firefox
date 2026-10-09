@@ -3,6 +3,44 @@
 const { SearchService } = ChromeUtils.importESModule(
   "moz-src:///toolkit/components/search/SearchService.sys.mjs"
 );
+const { SearchTestUtils } = ChromeUtils.importESModule(
+  "resource://testing-common/SearchTestUtils.sys.mjs"
+);
+
+SearchTestUtils.init(this);
+
+add_setup(async function () {
+  // Set up the configuration so that Baidu is available as a search engine, so
+  // the search shortcut works.
+  await SearchTestUtils.updateRemoteSettingsConfig([
+    {
+      identifier: "google",
+      base: {
+        name: "Google",
+        aliases: ["google"],
+        urls: {
+          search: {
+            base: "https://www.google.com/search",
+            searchTermParamName: "q",
+          },
+        },
+      },
+    },
+    {
+      identifier: "baidu",
+      base: {
+        name: "百度",
+        aliases: ["百度", "baidu"],
+        urls: {
+          search: {
+            base: "https://www.baidu.com/baidu",
+            searchTermParamName: "wd",
+          },
+        },
+      },
+    },
+  ]);
+});
 
 // Check TopSites edit modal and overlay show up.
 test_newtab({
@@ -235,7 +273,8 @@ test_newtab({
         engineName: engine.name,
         entry: "topsites_newtab",
         isPreview: false,
-        isGeneralPurposeEngine: false,
+        isGeneralPurposeEngine: true,
+        source: UrlbarUtils.RESULT_SOURCE.SEARCH,
       },
       "The Urlbar is in search mode."
     );

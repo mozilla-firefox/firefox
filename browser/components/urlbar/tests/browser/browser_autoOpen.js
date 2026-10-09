@@ -28,6 +28,17 @@ async function checkOpensOnFocus(win = window) {
 }
 
 add_setup(async function () {
+  // Tests get no default Top Sites, and the empty panel only opens when it has
+  // results to show.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
+  });
+
   // Add some history for the empty panel.
   await PlacesTestUtils.addVisits([
     {

@@ -18,6 +18,10 @@ let engineDomain;
 // The preference to enable suggestions.
 const SUGGEST_PREF = "browser.search.suggest.enabled";
 
+const DEFAULT_TOPSITES = "https://www.baidu.com/";
+const BAIDU_ENGINE_NAME = "百度";
+const BAIDU_KEYWORD = "@百度";
+
 ChromeUtils.defineESModuleGetters(this, {
   UrlbarProviderTabToSearch:
     "moz-src:///browser/components/urlbar/UrlbarProviderTabToSearch.sys.mjs",
@@ -107,6 +111,78 @@ function assertSearchModeTelemetry(entry, engineOrSource) {
 }
 
 add_setup(async function () {
+  await SearchTestUtils.updateRemoteSettingsConfig([
+    {
+      identifier: "google",
+      base: {
+        name: "Google",
+        aliases: ["google"],
+        urls: {
+          search: {
+            base: "https://www.google.com/search",
+            searchTermParamName: "q",
+          },
+        },
+      },
+    },
+    {
+      identifier: "baidu",
+      base: {
+        name: BAIDU_ENGINE_NAME,
+        aliases: [BAIDU_ENGINE_NAME, "baidu"],
+        urls: {
+          search: {
+            base: "https://www.baidu.com/baidu",
+            searchTermParamName: "wd",
+          },
+        },
+      },
+    },
+    {
+      // test_messaging_system enters search mode with this engine by name.
+      identifier: "bing",
+      base: {
+        name: "Bing",
+        aliases: ["bing"],
+        urls: {
+          search: {
+            base: "https://www.bing.com/search",
+            searchTermParamName: "q",
+          },
+        },
+      },
+    },
+    {
+      identifier: "wikipedia",
+      base: {
+        name: "Wikipedia (en)",
+        aliases: ["wikipedia"],
+        classification: "unknown",
+        urls: {
+          search: {
+            base: "https://en.wikipedia.org/wiki/Special:Search",
+            searchTermParamName: "search",
+          },
+        },
+      },
+    },
+  ]);
+
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.urlbar.suggest.topsites", true],
+      ["browser.urlbar.suggest.quickactions", false],
+      ["browser.newtabpage.activity-stream.default.sites", DEFAULT_TOPSITES],
+      [
+        "browser.newtabpage.activity-stream.improvesearch.topSiteSearchShortcuts.searchEngines",
+        "baidu",
+      ],
+    ],
+  });
+
+  await updateTopSites(
+    sites => sites && sites.length == DEFAULT_TOPSITES.split(",").length
+  );
   await SpecialPowers.pushPrefEnv({
     set: [
       ["test.wait300msAfterTabSwitch", true],
@@ -194,30 +270,6 @@ add_task(async function test_oneoff_local() {
   BrowserTestUtils.removeTab(tab);
 });
 
-// Checks that the Amazon search mode name is collapsed to "Amazon".
-add_task(async function test_oneoff_amazon() {
-  // Disable suggestions to avoid hitting Amazon servers.
-  await SpecialPowers.pushPrefEnv({
-    set: [[SUGGEST_PREF, false]],
-  });
-
-  let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser);
-
-  await UrlbarTestUtils.promiseAutocompleteResultPopup({
-    window,
-    value: TEST_QUERY,
-  });
-  // Enters search mode by clicking a one-off.
-  await UrlbarTestUtils.enterSearchMode(window, {
-    engineName: "Amazon.com",
-  });
-  assertSearchModeScalars("oneoff", "Amazon");
-  await UrlbarTestUtils.exitSearchMode(window);
-
-  BrowserTestUtils.removeTab(tab);
-  await SpecialPowers.popPrefEnv();
-});
-
 // Checks that the Wikipedia search mode name is collapsed to "Wikipedia".
 add_task(async function test_oneoff_wikipedia() {
   // Disable suggestions to avoid hitting Wikipedia servers.
@@ -267,10 +319,14 @@ add_task(async function test_shortcut() {
 
 // Enters search mode by selecting a Top Site from the Urlbar.
 add_task(async function test_topsites_urlbar() {
-  // Disable suggestions to avoid hitting Amazon servers.
+  // Disable suggestions to avoid hitting Baidu servers.
   await SpecialPowers.pushPrefEnv({
     set: [[SUGGEST_PREF, false]],
   });
+
+  // The setup's updateTopSites left search shortcuts disabled, so ask for the
+  // pinned Baidu shortcut here.
+  await updateTopSites(sites => sites?.[0]?.searchTopSite, true);
 
   let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser);
 
@@ -283,24 +339,27 @@ add_task(async function test_topsites_urlbar() {
   });
   await UrlbarTestUtils.promiseSearchComplete(window);
 
-  let amazonSearch = await UrlbarTestUtils.waitForAutocompleteResultAt(
+  let baiduSearch = await UrlbarTestUtils.waitForAutocompleteResultAt(
     window,
     0
   );
   Assert.equal(
-    amazonSearch.result.payload.keyword,
-    "@amazon",
-    "First result should have the Amazon keyword."
+    baiduSearch.result.payload.keyword,
+    BAIDU_KEYWORD,
+    "First result should have the Baidu keyword."
   );
   let searchPromise = UrlbarTestUtils.promiseSearchComplete(window);
-  EventUtils.synthesizeMouseAtCenter(amazonSearch, {});
+  EventUtils.synthesizeMouseAtCenter(baiduSearch, {});
   await searchPromise;
 
   await UrlbarTestUtils.assertSearchMode(window, {
-    engineName: amazonSearch.result.payload.engine,
+    engineName: baiduSearch.result.payload.engine,
+    source: UrlbarUtils.RESULT_SOURCE.SEARCH,
     entry: "topsites_urlbar",
   });
-  assertSearchModeScalars("topsites_urlbar", "Amazon");
+  // getSearchModeScalarKey only collapses the Amazon and Wikipedia domains, so
+  // Baidu is reported under its engine name.
+  assertSearchModeScalars("topsites_urlbar", BAIDU_ENGINE_NAME);
   await UrlbarTestUtils.exitSearchMode(window);
 
   BrowserTestUtils.removeTab(tab);

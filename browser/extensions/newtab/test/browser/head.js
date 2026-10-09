@@ -31,16 +31,26 @@ async function toggleTopsitesPref() {
   ]);
 }
 
+// Using a topsite with example.com allows us to open the topsite without a
+// network request.
+const TEST_TOP_SITE = "https://example.com/";
+
 async function setDefaultTopSites() {
   // The pref for TopSites is empty by default.
   await pushPrefs([
     "browser.newtabpage.activity-stream.default.sites",
-    "https://www.youtube.com/,https://www.facebook.com/,https://www.amazon.com/,https://www.reddit.com/,https://www.wikipedia.org/,https://twitter.com/",
+    "https://www.youtube.com/,https://www.facebook.com/,https://www.baidu.com/,https://www.reddit.com/,https://www.wikipedia.org/,https://twitter.com/",
   ]);
   await toggleTopsitesPref();
   await pushPrefs([
     "browser.newtabpage.activity-stream.improvesearch.topSiteSearchShortcuts",
     true,
+  ]);
+  // The shortcuts to pin are region-derived, and Baidu is only listed for CN,
+  // so ask for it explicitly rather than depending on the test's region.
+  await pushPrefs([
+    "browser.newtabpage.activity-stream.improvesearch.topSiteSearchShortcuts.searchEngines",
+    "baidu",
   ]);
 }
 

@@ -8,14 +8,22 @@
 
 "use strict";
 
+const TEST_TOP_SITE = "https://fake.example.com";
+
 add_setup(async function () {
   let sidebarRevampEnabled = Services.prefs.getBoolPref(
     "sidebar.revamp",
     false
   );
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.tabToSearch.onboard.interactionsLeft", 0]],
+    set: [
+      ["browser.urlbar.tabToSearch.onboard.interactionsLeft", 0],
+      // Ensure there is one top site in the list.
+      ["browser.newtabpage.activity-stream.default.sites", TEST_TOP_SITE],
+    ],
   });
+
+  await updateTopSites(sites => sites?.length == 1);
 
   for (let i = 0; i < UrlbarPrefs.get("maxRichResults"); i++) {
     await PlacesTestUtils.addVisits("http://example.com/" + i);

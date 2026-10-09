@@ -229,6 +229,12 @@ async function do_test_support_ntp_colors() {
       // machines with dark system color scheme.
       // FIXME(emilio): This doesn't seem working reliably, at least on macOS.
       ["ui.systemUsesDarkTheme", 0],
+      // Tests get no default Top Sites, but this test needs at least one tile
+      // to read the card background colors from.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
     ],
   });
   NewTabPagePreloading.removePreloadedBrowser(window);

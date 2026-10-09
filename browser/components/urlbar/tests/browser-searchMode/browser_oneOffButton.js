@@ -11,7 +11,15 @@ const TEST_ENGINE_NAME = "test engine";
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.scotchBonnet.enableOverride", false]],
+    set: [
+      ["browser.urlbar.scotchBonnet.enableOverride", false],
+      // Tests get no default Top Sites, and these tasks open the view on an
+      // empty string, which would otherwise leave it closed with no results.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
   });
   await SearchTestUtils.installSearchExtension({
     name: TEST_ENGINE_NAME,

@@ -12,14 +12,20 @@ const { UrlbarProviderClipboard, CLIPBOARD_IMPRESSION_LIMIT } =
     "moz-src:///browser/components/urlbar/UrlbarProviderClipboard.sys.mjs"
   );
 
+const TEST_TOP_SITE = "https://example.com";
+
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.urlbar.clipboard.featureGate", true],
       ["browser.urlbar.scotchBonnet.enableOverride", false],
       ["browser.urlbar.suggest.clipboard", true],
+      ["browser.urlbar.suggest.topsites", true],
+      ["browser.newtabpage.activity-stream.default.sites", TEST_TOP_SITE],
     ],
   });
+
+  await updateTopSites(sites => sites?.length == 1);
 
   registerCleanupFunction(async () => {
     SpecialPowers.clipboardCopyString("");
