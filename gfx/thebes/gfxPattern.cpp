@@ -114,7 +114,9 @@ Pattern* gfxPattern::GetPattern(const DrawTarget* aTarget,
   }
   patternToUser.NudgeToIntegers();
 
-  if (!mStops && !mStopsList.IsEmpty()) {
+  // Ensure stops are compatible with the DT.
+  if (!mStopsList.IsEmpty() &&
+      (!mStops || mStops->GetBackendType() != aTarget->GetBackendType())) {
     mStops = aTarget->CreateGradientStops(mStopsList.Elements(),
                                           mStopsList.Length(), mExtend);
   }
