@@ -132,6 +132,8 @@ if CONFIG["MOZ_WEBRTC"] and CONFIG["OS_TARGET"] != "Android":
     ]
 
 TEST_HARNESS_FILES.gtest += [
+    "../mediasource/test/bug1341228_init.webm",
+    "../mediasource/test/bug2065262_init.webm",
     "../test/av1.mp4",
     "../test/gizmo-frag.mp4",
     "../test/gizmo.mp4",
