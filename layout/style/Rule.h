@@ -102,6 +102,7 @@ class Rule : public nsISupports, public nsWrapperCache, public SupportsWeakPtr {
   virtual void GetCssText(nsACString& aCssText) const = 0;
   void SetCssText(const nsACString& aCssText);
   Rule* GetParentRule() const;
+  already_AddRefed<Rule> GetParentRuleForBindings() const;
   StyleSheet* GetParentStyleSheet() const { return GetStyleSheet(); }
   nsINode* GetAssociatedDocumentOrShadowRoot() const {
     if (!mSheet) {
