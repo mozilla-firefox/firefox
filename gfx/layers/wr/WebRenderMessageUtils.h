@@ -61,7 +61,8 @@ struct ParamTraits<mozilla::wr::ImageDescriptor> {
     if (stride != 0) {
       int bpp = mozilla::gfx::BytesPerPixel(
           mozilla::wr::ImageFormatToSurfaceFormat(format));
-      if (bpp <= 0 || stride / bpp < width) {
+      // If stride specified, width must be > 0.
+      if (bpp <= 0 || width <= 0 || stride / bpp < width) {
         return {};
       }
     }
