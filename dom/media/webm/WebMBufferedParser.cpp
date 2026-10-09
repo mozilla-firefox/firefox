@@ -400,7 +400,11 @@ MediaResult WebMBufferedParser::Append(const unsigned char* aBuffer,
           // init segment. Extend mInitEndOffset over this just-skipped
           // element if we're past Tracks (mInitEndOffset >= 0) but haven't
           // yet seen a Cluster (mClusterOffset < 0).
-          if (mInitEndOffset >= 0 && mClusterOffset < 0) {
+          // A buffer can hold several init segments back to back, so only
+          // extend while still inside the first one
+          // (mLastInitStartOffset < mInitEndOffset).
+          if (mInitEndOffset >= 0 && mClusterOffset < 0 &&
+              mLastInitStartOffset < mInitEndOffset) {
             mInitEndOffset = mBlockEndOffset;
           }
           mState = mNextState;

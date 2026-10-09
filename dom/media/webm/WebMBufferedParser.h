@@ -87,8 +87,8 @@ struct WebMBufferedParser {
   // data.
   int64_t mCurrentOffset;
 
-  // Tracks element's end offset. This indicates the end of the first init
-  // segment. Will only be set if a Segment Information has been found.
+  // End of the first init segment; at or past where Tracks ends. Will only
+  // be set if a Segment Information has been found.
   int64_t mInitEndOffset;
 
   // End offset of the last block parsed.
@@ -150,7 +150,7 @@ struct WebMBufferedParser {
 
     // Will skip the current tracks element and set mInitEndOffset if an init
     // segment has been found.
-    // Currently, only assumes it's the end of the tracks element.
+    // SKIP_DATA may extend it past the end of the tracks element.
     CHECK_INIT_FOUND,
 
     // Skip mSkipBytes of data before resuming parse at mNextState.
