@@ -286,27 +286,32 @@ async function probePool(hosts) {
   return results;
 }
 
+function needsRetry(status) {
+  return (
+    status.error == ERROR_CONNECTING_TO_HOST ||
+    (status.httpStatus == 429 && status.error == ERROR_NO_HSTS_HEADER)
+  );
+}
+
 async function probeHSTSStatuses(hosts) {
   dump("Examining " + hosts.length + " hosts.\n");
+  for (let i = hosts.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [hosts[i], hosts[j]] = [hosts[j], hosts[i]];
+  }
   let probed = await probePool(hosts);
 
-  let results = probed.filter(
-    status => status.error != ERROR_CONNECTING_TO_HOST
-  );
-  let failed = probed.filter(
-    status => status.error == ERROR_CONNECTING_TO_HOST
-  );
-  dump("Retrying " + failed.length + " hosts that could not be reached.\n");
+  let results = probed.filter(status => !needsRetry(status));
+  let failed = probed.filter(needsRetry);
+  dump("Retrying " + failed.length + " hosts that failed or answered 429.\n");
   let retried = await probePool(failed.map(status => ({ name: status.name })));
-  let rescued = retried.filter(
-    status => status.error != ERROR_CONNECTING_TO_HOST
-  );
+  let rescued = retried.filter(status => !needsRetry(status));
   for (let status of rescued) {
     status.rescued = true;
   }
   results = results.concat(retried);
   dump(
-    rescued.length + " of " + failed.length + " retried hosts were reached.\n"
+    rescued.length + " of " + failed.length + " retried hosts were rescued.\n"
   );
 
   dump("HSTS Probe received " + results.length + " statuses.\n");
