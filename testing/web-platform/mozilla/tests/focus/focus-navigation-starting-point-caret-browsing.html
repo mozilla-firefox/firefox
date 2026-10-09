@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset=utf-8>
+<title>Bug 2076648 - Focus navigation should start from caret even if moving caret caused focused element to be blurred</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/resources/testdriver.js"></script>
+<script src="/resources/testdriver-vendor.js"></script>
+<div>
+Hello world.<br>
+<a href="#" id="link1">Link 1</a>
+This is a test.
+<a href="#" id="link2">Link 2</a>
+I like tests.
+<a href="#">Link 3</a>
+The end.
+</div>
+<script>
+"use strict";
+const kUpKey = "\uE013";
+const kTabKey = "\uE004";
+promise_test(async () => {
+  await using caretBrowsingPref = await SpecialPowers.prefEnv({
+    set: [["accessibility.browsewithcaret", true]]
+  });
+  const link1 = document.getElementById("link1");
+  const link2 = document.getElementById("link2");
+  link2.focus();
+  await test_driver.send_keys(link2, kUpKey);
+  assert_equals(document.activeElement, document.body,
+                "Should blur the link when the caret is moved outside of it.");
+  await test_driver.send_keys(document.body, kTabKey);
+  assert_equals(document.activeElement, link1,
+                "Shouldn't start focus navigation from previously-focused content if blur was caused by caret movement.");
+});
+</script>
