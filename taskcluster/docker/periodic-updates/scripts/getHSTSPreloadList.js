@@ -327,10 +327,12 @@ function probeResult(status) {
   }
 }
 
-function extendsStreak(record) {
+function isFailedRun(status) {
+  let result = probeResult(status);
   return (
-    record.result != "ok" &&
-    !(record.result == "no-header" && record.httpStatus < 400)
+    result != "ok" &&
+    status.error != ERROR_MAX_AGE_TOO_LOW &&
+    !(result == "no-header" && status.httpStatus < 400)
   );
 }
 
@@ -362,7 +364,7 @@ async function writeProbeResults(probedStatuses, previousPath) {
     if (record.result == "connect-failed") {
       record.nsresult = status.nsresult;
     }
-    if (extendsStreak(record)) {
+    if (isFailedRun(status)) {
       let streak = previousHosts[status.name]?.streak;
       record.streak = {
         count: (streak?.count ?? 0) + 1,
@@ -569,14 +571,12 @@ async function main(args) {
   await writeProbeResults(probedStatuses, args[1]);
   let statuses = hstsStatuses.concat(probedStatuses).sort(compareHSTSStatus);
   for (let status of statuses) {
-    // If we've encountered an error for this entry (other than the site not
-    // sending an HSTS header), be safe and don't remove it from the list
-    // (given that it was already on the list).
+    // If we couldn't connect to this entry, couldn't process its header, or it
+    // answered 4xx or 5xx without a valid HSTS header, be safe and don't remove
+    // it from the list (given that it was already on the list).
     if (
       !status.forceInclude &&
-      status.error != ERROR_NONE &&
-      status.error != ERROR_NO_HSTS_HEADER &&
-      status.error != ERROR_MAX_AGE_TOO_LOW &&
+      isFailedRun(status) &&
       status.name in currentHosts
     ) {
       // dump("INFO: error connecting to or processing " + status.name + " - using previous status on list\n");
